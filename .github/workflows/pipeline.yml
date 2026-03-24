@@ -6,6 +6,9 @@ on:
     - cron: '0 18 * * *'   # 1pm ET
   workflow_dispatch:        # manual trigger for testing
 
+permissions:
+  contents: write           # allows the bot to commit + push today.json
+
 jobs:
   run-pipeline:
     runs-on: ubuntu-latest
@@ -15,6 +18,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
+          persist-credentials: true
 
       - name: Set up Python
         uses: actions/setup-python@v5
