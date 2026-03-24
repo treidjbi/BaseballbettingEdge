@@ -86,14 +86,14 @@ baseballbettingedge/
 - Fetches today's MLB K props (sport ID 3)
 - Fetches 7-day history to extract opening odds for each prop
 - Rate-limited: 0.55s sleep between requests (2 req/sec Starter plan limit)
-- Returns: `{ pitcher, team, opp_team, game_time, k_line, opening_line, best_over_book, best_over_odds, opening_over_odds, opening_under_odds }`
+- Returns: `{ pitcher, team, opp_team, game_time, k_line, opening_line, best_over_book, best_over_odds, best_under_odds, opening_over_odds, opening_under_odds }`
 
 **`fetch_stats.py`**
 - MLB Stats API (no key required)
 - Fetches confirmed starting pitcher for each game
 - Returns per pitcher: `season_k9`, `recent_k9` (last 5 starts), `career_k9`, `innings_pitched_season`
 - Returns per team: `opp_k_rate` (season batter K%)
-- Falls back to season K/9 only if recent data is unavailable (<3 starts)
+- Falls back to season K/9 only if recent data is unavailable (<3 starts); in this case `recent_k9 = season_k9` so `w_recent` weight does not distort the blend
 
 **`fetch_umpires.py`**
 - Scrapes ump.news for home plate umpire assignments
@@ -106,9 +106,12 @@ Joins all data sources and computes per pitcher:
 
 ```python
 # Blended K/9 — weights shift toward season as IP accumulates
+# Note: if pitcher has <3 starts, recent_k9 = season_k9 (fallback set in fetch_stats.py)
+# so w_recent weight does not distort the blend regardless of start count
 w_season = min(innings_pitched / 60, 0.7)   # caps at 70% by ~60 IP
 w_recent = 0.2
-w_career = 1 - w_season - w_recent
+w_career = 1 - w_season - w_recent           # always sums to 1.0
+# career_k9 fallback: if no MLB career data (rookie), use season_k9
 
 blended_k9 = (w_season * season_k9) + (w_recent * recent_k9) + (w_career * career_k9)
 
@@ -209,7 +212,7 @@ Scorecard / Press Box aesthetic:
   - Dark header bar: `[Pitcher Name · TEAM vs OPP]` + verdict badge
   - Stats row (monospace): Line · λ · EV Over · Best Book
   - Sub-row: adjustment badges (`OPP K% +12%`, `UMP +0.4`) + game time
-  - Price delta inline: `7.5 · -112 ↑ juice -25` (red = juice moving to over)
+  - Price delta inline: `7.5 · -112 ↑ juice -25` — ↑ means juice moving toward the over (books taking over liability), shown in red. ↓ means juice moving toward the under, shown in neutral color.
 
 **Watchlist tab**
 - Top 5 pitchers by `abs(price_delta_over)`, descending
@@ -246,7 +249,7 @@ Pipeline steps: checkout → setup Python → install requirements → run pipel
 
 ### Netlify
 
-- `netlify.toml`: `publish = "dashboard"`, `functions = "netlify/functions"` (stub directory, no active functions in v1)
+- `netlify.toml`: `publish = "dashboard"`, `functions = "netlify/functions"` (stub directory committed as placeholder, no active functions in v1 — prevents Netlify build warning)
 - Auto-deploys on every push to main
 - Dashboard live within ~30s of pipeline push
 
