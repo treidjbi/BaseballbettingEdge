@@ -1,3 +1,6 @@
 [build]
   publish = "dashboard"
   functions = "netlify/functions"
+
+[build.environment]
+  PYTHON_VERSION = "3.11"
