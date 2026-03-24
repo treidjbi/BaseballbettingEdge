@@ -1,0 +1,567 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>BaseballBettingEdge</title>
+  <style>
+    :root {
+      --bg:        #f5f0e8;
+      --surface:   #ffffff;
+      --border:    #d0c8b8;
+      --ink:       #1a1a1a;
+      --ink-dim:   #888888;
+      --fire:      #c0392b;
+      --positive:  #27ae60;
+      --tab-h:     58px;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    html, body {
+      height: 100%;
+      background: var(--bg);
+      color: var(--ink);
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      font-size: 15px;
+    }
+
+    body { display: flex; flex-direction: column; }
+
+    /* ── Top bar ─────────────────────────────────────────── */
+    #top-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 10px 16px;
+      border-bottom: 2px solid var(--ink);
+      background: var(--ink);
+    }
+    #title-date {
+      color: var(--bg);
+      font-weight: 700;
+      font-size: 14px;
+      letter-spacing: .04em;
+    }
+    .badge-ok {
+      background: #27ae60;
+      color: #fff;
+      padding: 2px 10px;
+      border-radius: 3px;
+      font-size: 11px;
+      font-weight: 700;
+      font-family: monospace;
+    }
+    .badge-warn {
+      background: #e67e22;
+      color: #fff;
+      padding: 2px 10px;
+      border-radius: 3px;
+      font-size: 11px;
+      font-weight: 700;
+      font-family: monospace;
+    }
+    .badge-delay {
+      background: #555;
+      color: #ccc;
+      padding: 2px 8px;
+      border-radius: 3px;
+      font-size: 10px;
+      font-family: monospace;
+      margin-left: 6px;
+    }
+
+    /* ── Banners ─────────────────────────────────────────── */
+    .banner-info {
+      background: #d5e8d4;
+      color: #1a1a1a;
+      padding: 8px 16px;
+      font-size: 13px;
+      border-bottom: 1px solid #a8c8a8;
+    }
+    .banner-warn {
+      background: #fff3cd;
+      color: #856404;
+      padding: 8px 16px;
+      font-size: 13px;
+      border-bottom: 1px solid #ffd666;
+    }
+
+    /* ── Layout ──────────────────────────────────────────── */
+    #content {
+      flex: 1;
+      overflow-y: auto;
+      padding-bottom: calc(var(--tab-h) + 8px);
+    }
+    .tab-panel { display: none; padding: 12px 16px; }
+    .tab-panel.active { display: block; }
+
+    /* ── Bottom nav ──────────────────────────────────────── */
+    #nav {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      height: var(--tab-h);
+      background: var(--ink);
+      display: flex;
+      border-top: 2px solid #333;
+      z-index: 100;
+    }
+    .nav-btn {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 2px;
+      background: none;
+      border: none;
+      color: #888;
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: .05em;
+      cursor: pointer;
+      text-transform: uppercase;
+    }
+    .nav-btn.active { color: var(--bg); }
+    .nav-icon { font-size: 20px; }
+
+    /* ── Verdict badges ──────────────────────────────────── */
+    .verdict-badge {
+      padding: 3px 10px;
+      border-radius: 3px;
+      font-size: 11px;
+      font-weight: 800;
+      font-family: 'Courier New', monospace;
+      letter-spacing: .04em;
+      white-space: nowrap;
+    }
+    .verdict-fire   { background: var(--fire); color: #fff; }
+    .verdict-lean   { background: #e67e22; color: #fff; }
+    .verdict-pass   { background: #ccc; color: #555; }
+
+    /* ── Pitcher card ────────────────────────────────────── */
+    .pitcher-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      margin-bottom: 12px;
+      overflow: hidden;
+    }
+    .card-header {
+      background: var(--ink);
+      padding: 9px 12px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .card-header-left {
+      display: flex;
+      align-items: baseline;
+      gap: 6px;
+      min-width: 0;
+    }
+    .pitcher-name {
+      color: var(--bg);
+      font-weight: 700;
+      font-size: 14px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .pitcher-matchup {
+      color: #aaa;
+      font-size: 11px;
+      white-space: nowrap;
+    }
+
+    /* stats grid */
+    .stats-row {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      padding: 10px 12px;
+      border-bottom: 1px solid var(--border);
+      gap: 4px;
+    }
+    .stat-cell { text-align: center; }
+    .stat-label {
+      font-size: 9px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: .07em;
+      color: var(--ink-dim);
+      margin-bottom: 3px;
+    }
+    .stat-value {
+      font-family: 'Courier New', monospace;
+      font-weight: 700;
+      font-size: 17px;
+      color: var(--ink);
+    }
+    .stat-sub {
+      font-family: 'Courier New', monospace;
+      font-size: 10px;
+      color: var(--ink-dim);
+      margin-top: 2px;
+    }
+    .val-pos { color: var(--positive); }
+    .val-neg { color: var(--ink-dim); }
+
+    /* adj row */
+    .adj-row {
+      padding: 7px 12px;
+      display: flex;
+      gap: 6px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+    .adj-badge {
+      font-size: 10px;
+      font-weight: 700;
+      padding: 2px 7px;
+      border-radius: 3px;
+      font-family: monospace;
+    }
+    .adj-pos     { background: #e8f5e9; color: #27ae60; border: 1px solid #c8e6c9; }
+    .adj-neg     { background: #fdecea; color: #c0392b; border: 1px solid #f5c6c6; }
+    .adj-neutral { background: #f5f5f5; color: #888;    border: 1px solid #ddd;    }
+
+    .game-time {
+      font-size: 10px;
+      color: var(--ink-dim);
+      margin-left: auto;
+    }
+
+    .delta-over  { color: var(--fire);    font-weight: 700; font-family: monospace; font-size: 11px; }
+    .delta-under { color: var(--ink-dim); font-weight: 700; font-family: monospace; font-size: 11px; }
+
+    .card-pass { opacity: 0.52; }
+
+    .show-all-row {
+      font-size: 12px;
+      color: var(--ink-dim);
+      margin-bottom: 10px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .show-all-row input { cursor: pointer; }
+
+    /* ── Watchlist ───────────────────────────────────────── */
+    .watchlist-hd {
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: .08em;
+      color: var(--ink-dim);
+      margin-bottom: 10px;
+    }
+    .watch-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: 10px 12px;
+      margin-bottom: 8px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .watch-left {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+      min-width: 0;
+    }
+    .watch-mid {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      gap: 2px;
+      font-family: monospace;
+      font-size: 12px;
+      color: var(--ink-dim);
+    }
+
+    .empty {
+      color: var(--ink-dim);
+      font-size: 13px;
+      padding: 20px 0;
+      text-align: center;
+    }
+
+    /* ── Section header (date) ───────────────────────────── */
+    .section-date {
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: .08em;
+      color: var(--ink-dim);
+      margin-bottom: 12px;
+      padding-bottom: 6px;
+      border-bottom: 1px solid var(--border);
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Top bar -->
+  <div id="top-bar">
+    <span id="title-date">⚾ BaseballBettingEdge</span>
+    <span id="freshness-badge"></span>
+  </div>
+
+  <!-- Freshness banner (conditionally shown) -->
+  <div id="freshness-banner" style="display:none"></div>
+
+  <!-- Main content -->
+  <div id="content">
+    <div id="panel-props" class="tab-panel active"></div>
+    <div id="panel-watch" class="tab-panel"></div>
+  </div>
+
+  <!-- Bottom nav -->
+  <nav id="nav">
+    <button class="nav-btn active" onclick="switchTab('props', this)">
+      <span class="nav-icon">⚾</span>
+      <span>Props</span>
+    </button>
+    <button class="nav-btn" onclick="switchTab('watch', this)">
+      <span class="nav-icon">📋</span>
+      <span>Watchlist</span>
+    </button>
+  </nav>
+
+<script>
+  // ── Config ────────────────────────────────────────────────
+  const DATA_URL    = '../data/processed/today.json';
+  const STALE_HOURS = 6;
+
+  // ── Boot ──────────────────────────────────────────────────
+  document.addEventListener('DOMContentLoaded', loadData);
+
+  async function loadData() {
+    try {
+      const res  = await fetch(DATA_URL + '?t=' + Date.now());
+      if (!res.ok) throw new Error('HTTP ' + res.status);
+      const data = await res.json();
+      renderAll(data);
+    } catch (e) {
+      showBanner('Could not load data — check network or pipeline status. (' + e.message + ')', 'warn');
+      document.getElementById('panel-props').innerHTML =
+        '<p class="empty">No data available.</p>';
+    }
+  }
+
+  function renderAll(data) {
+    // Update title with date
+    const dt = data.date
+      ? new Date(data.date + 'T12:00:00').toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })
+      : '';
+    document.getElementById('title-date').textContent = '⚾ BaseballBettingEdge' + (dt ? '  ·  ' + dt : '');
+
+    setFreshness(data.generated_at);
+
+    if (!data.props_available || !data.pitchers || data.pitchers.length === 0) {
+      showBanner('Props not yet posted — check back after 10am ET.', 'info');
+      document.getElementById('panel-props').innerHTML =
+        '<p class="empty">No props available yet for today.</p>';
+      document.getElementById('panel-watch').innerHTML =
+        '<p class="empty">No movement data yet.</p>';
+      return;
+    }
+
+    renderProps(data.pitchers);
+    renderWatchlist(data.pitchers);
+  }
+
+  // ── Freshness ─────────────────────────────────────────────
+  function setFreshness(generatedAt) {
+    if (!generatedAt) return;
+    const gen   = new Date(generatedAt);
+    const now   = new Date();
+    const hrs   = (now - gen) / 36e5;
+    const time  = gen.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+    const badge = document.getElementById('freshness-badge');
+
+    if (hrs > STALE_HOURS) {
+      badge.innerHTML = '<span class="badge-warn">Data may be outdated</span><span class="badge-delay">60s delay</span>';
+      showBanner('Pipeline may have failed — data is more than 6 hours old.', 'warn');
+    } else {
+      badge.innerHTML = '<span class="badge-ok">Updated ' + time + '</span><span class="badge-delay">60s delay</span>';
+    }
+  }
+
+  function showBanner(msg, type) {
+    const el = document.getElementById('freshness-banner');
+    el.textContent = msg;
+    el.className   = 'banner-' + type;
+    el.style.display = 'block';
+  }
+
+  // ── Helpers ───────────────────────────────────────────────
+  function verdictClass(verdict) {
+    if (verdict && verdict.startsWith('FIRE')) return 'verdict-fire';
+    if (verdict === 'LEAN')                    return 'verdict-lean';
+    return 'verdict-pass';
+  }
+
+  function fmtOdds(n) {
+    if (n == null) return '—';
+    return n > 0 ? '+' + n : String(n);
+  }
+
+  function fmtTime(iso) {
+    if (!iso) return '';
+    try {
+      return new Date(iso).toLocaleTimeString('en-US', {
+        hour: 'numeric', minute: '2-digit', timeZoneName: 'short'
+      });
+    } catch { return iso; }
+  }
+
+  function priceDeltaHtml(delta) {
+    if (!delta) return '';
+    const dir = delta < 0 ? '↑' : '↓';
+    const cls = delta < 0 ? 'delta-over' : 'delta-under';
+    return ` <span class="${cls}">${dir}${Math.abs(delta)}</span>`;
+  }
+
+  function adjBadge(label, actual, avg) {
+    const pct  = ((actual - avg) / avg * 100).toFixed(0);
+    const sign = pct > 0 ? '+' : '';
+    const cls  = pct > 0 ? 'adj-pos' : (pct < 0 ? 'adj-neg' : 'adj-neutral');
+    return `<span class="adj-badge ${cls}">${label} ${sign}${pct}%</span>`;
+  }
+
+  // ── Props tab ─────────────────────────────────────────────
+  const VERDICT_ORDER = { 'FIRE 2u': 0, 'FIRE 1u': 1, 'LEAN': 2, 'PASS': 3 };
+
+  function renderProps(pitchers) {
+    const el     = document.getElementById('panel-props');
+    const sorted = [...pitchers].sort((a, b) =>
+      (VERDICT_ORDER[a.ev_over.verdict] ?? 3) - (VERDICT_ORDER[b.ev_over.verdict] ?? 3)
+    );
+
+    const hasAction = sorted.some(p => p.ev_over.verdict !== 'PASS');
+    let html = '';
+
+    // Date header
+    if (sorted.length > 0) {
+      html += `<div class="section-date">${sorted.length} pitcher${sorted.length !== 1 ? 's' : ''} today</div>`;
+    }
+
+    if (hasAction) {
+      html += `<div class="show-all-row">
+        <label>
+          <input type="checkbox" id="show-all" onchange="togglePassCards()">
+          Show PASS verdicts
+        </label>
+      </div>`;
+    }
+
+    for (const p of sorted) {
+      const isPass = p.ev_over.verdict === 'PASS';
+      const umpHtml = p.ump_k_adj !== 0
+        ? `<span class="adj-badge ${p.ump_k_adj > 0 ? 'adj-pos' : 'adj-neg'}">UMP ${p.ump_k_adj > 0 ? '+' : ''}${p.ump_k_adj}</span>`
+        : '';
+
+      html += `
+      <div class="pitcher-card${isPass ? ' card-pass' : ''}"${isPass ? ' data-pass="1"' : ''}>
+        <div class="card-header">
+          <div class="card-header-left">
+            <span class="pitcher-name">${p.pitcher}</span>
+            <span class="pitcher-matchup">${p.team} vs ${p.opp_team}</span>
+          </div>
+          <span class="verdict-badge ${verdictClass(p.ev_over.verdict)}">${p.ev_over.verdict}</span>
+        </div>
+        <div class="stats-row">
+          <div class="stat-cell">
+            <div class="stat-label">Line</div>
+            <div class="stat-value">${p.k_line}</div>
+            <div class="stat-sub">${fmtOdds(p.best_over_odds)}${priceDeltaHtml(p.price_delta_over)}</div>
+          </div>
+          <div class="stat-cell">
+            <div class="stat-label">λ</div>
+            <div class="stat-value">${p.lambda}</div>
+            <div class="stat-sub">Poisson</div>
+          </div>
+          <div class="stat-cell">
+            <div class="stat-label">EV Over</div>
+            <div class="stat-value ${p.ev_over.ev > 0 ? 'val-pos' : 'val-neg'}">${(p.ev_over.ev * 100).toFixed(1)}%</div>
+            <div class="stat-sub">p=${p.ev_over.win_prob}</div>
+          </div>
+          <div class="stat-cell">
+            <div class="stat-label">Book</div>
+            <div class="stat-value" style="font-size:12px">${p.best_over_book}</div>
+            <div class="stat-sub">${fmtOdds(p.best_over_odds)}</div>
+          </div>
+        </div>
+        <div class="adj-row">
+          ${adjBadge('OPP K%', p.opp_k_rate, 0.227)}
+          ${umpHtml}
+          <span class="game-time">${fmtTime(p.game_time)}</span>
+        </div>
+      </div>`;
+    }
+
+    el.innerHTML = html || '<p class="empty">No props available.</p>';
+
+    // Hide PASS cards by default if there are actionable verdicts
+    if (hasAction) togglePassCards();
+  }
+
+  function togglePassCards() {
+    const show = document.getElementById('show-all')?.checked;
+    document.querySelectorAll('[data-pass="1"]').forEach(el => {
+      el.style.display = show ? 'block' : 'none';
+    });
+  }
+
+  // ── Watchlist tab ─────────────────────────────────────────
+  function renderWatchlist(pitchers) {
+    const el = document.getElementById('panel-watch');
+
+    const movers = [...pitchers]
+      .filter(p => p.price_delta_over !== 0)
+      .sort((a, b) => Math.abs(b.price_delta_over) - Math.abs(a.price_delta_over))
+      .slice(0, 5);
+
+    if (!movers.length) {
+      el.innerHTML = '<p class="empty">No juice movement yet — check back after the 1pm ET run.</p>';
+      return;
+    }
+
+    let html = '<div class="watchlist-hd">Biggest juice moves today</div>';
+    for (const p of movers) {
+      const dir = p.price_delta_over < 0 ? '↑' : '↓';
+      const cls = p.price_delta_over < 0 ? 'delta-over' : 'delta-under';
+      html += `
+      <div class="watch-card">
+        <div class="watch-left">
+          <span class="pitcher-name" style="color:var(--ink)">${p.pitcher}</span>
+          <span class="pitcher-matchup" style="color:var(--ink-dim)">${p.team} vs ${p.opp_team}</span>
+        </div>
+        <div class="watch-mid">
+          <span style="font-size:10px;text-transform:uppercase;letter-spacing:.05em">Over (${p.k_line}K)</span>
+          <span>${fmtOdds(p.opening_over_odds)} → ${fmtOdds(p.best_over_odds)}</span>
+          <span class="${cls}">${dir} ${Math.abs(p.price_delta_over)}</span>
+        </div>
+        <span class="verdict-badge ${verdictClass(p.ev_over.verdict)}">${p.ev_over.verdict}</span>
+      </div>`;
+    }
+
+    el.innerHTML = html;
+  }
+
+  // ── Tab switching ─────────────────────────────────────────
+  function switchTab(name, btn) {
+    document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+    document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+    document.getElementById('panel-' + name).classList.add('active');
+    btn.classList.add('active');
+  }
+</script>
+</body>
+</html>
