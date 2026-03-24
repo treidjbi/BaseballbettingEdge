@@ -16,7 +16,7 @@
 |---|---|
 | `requirements.txt` | Python deps for pipeline |
 | `netlify.toml` | Publish dir + functions stub |
-| `.gitignore` | Ignore .env, __pycache__, .superpowers |
+| `.gitignore` | Ignore __pycache__, .superpowers (no .env — key lives in Windows env) |
 | `data/umpires/career_k_rates.json` | Static 30-umpire K rate delta table |
 | `data/processed/.gitkeep` | Ensure directory is tracked |
 | `netlify/functions/.gitkeep` | Stub dir so Netlify doesn't warn |
@@ -41,10 +41,26 @@
 - Create: `data/processed/.gitkeep`
 - Create: `netlify/functions/.gitkeep`
 
-- [ ] **Step 1: Update .gitignore**
+- [ ] **Step 1: Set RUNDOWN_API_KEY as a persistent Windows User Environment Variable (one-time setup — do this before running the pipeline)**
 
 ```
-.env
+1. Press Win + R → type "sysdm.cpl" → Enter
+2. Advanced tab → Environment Variables
+3. Under "User variables" → New
+   Variable name:  RUNDOWN_API_KEY
+   Variable value: <your TheRundown Starter key>
+4. OK → OK → OK
+5. Restart any open terminals so they pick up the new value
+6. Verify: open a new terminal and run:
+   echo %RUNDOWN_API_KEY%
+   Expected: your key prints (not blank)
+```
+
+The pipeline reads it via `os.environ.get("RUNDOWN_API_KEY")`. GitHub Actions reads from its own repository secret. No `.env` file needed — ever.
+
+- [ ] **Step 2: Update .gitignore**
+
+```
 __pycache__/
 *.pyc
 .superpowers/
@@ -53,16 +69,15 @@ data/processed/today.json
 
 Note: `today.json` is written by the pipeline and committed via GitHub Actions — exclude from manual commits so local test runs don't pollute the repo.
 
-- [ ] **Step 2: Create requirements.txt**
+- [ ] **Step 3: Create requirements.txt**
 
 ```
 requests==2.31.0
 beautifulsoup4==4.12.3
 scipy==1.13.0
-python-dotenv==1.0.1
 ```
 
-- [ ] **Step 3: Create netlify.toml**
+- [ ] **Step 4: Create netlify.toml**
 
 ```toml
 [build]
@@ -70,14 +85,14 @@ python-dotenv==1.0.1
   functions = "netlify/functions"
 ```
 
-- [ ] **Step 4: Create stub directories**
+- [ ] **Step 5: Create stub directories**
 
 ```bash
 touch data/processed/.gitkeep
 touch netlify/functions/.gitkeep
 ```
 
-- [ ] **Step 5: Commit scaffold**
+- [ ] **Step 6: Commit scaffold**
 
 ```bash
 git add .gitignore requirements.txt netlify.toml data/processed/.gitkeep netlify/functions/.gitkeep
@@ -940,7 +955,8 @@ Orchestrator. Calls fetch modules in order, joins data, builds today.json.
 run_pipeline.py
 Orchestrates: fetch_odds → fetch_stats → fetch_umpires → build_features → write today.json
 Run: python pipeline/run_pipeline.py 2026-04-01
-Reads RUNDOWN_API_KEY from environment (or .env file for local runs).
+Reads RUNDOWN_API_KEY from Windows User Environment Variables (set once via sysdm.cpl).
+GitHub Actions reads it from repository secrets.
 """
 import json
 import logging
@@ -948,9 +964,6 @@ import os
 import sys
 from datetime import datetime, timezone
 from pathlib import Path
-
-from dotenv import load_dotenv
-load_dotenv()
 
 from fetch_odds     import fetch_odds
 from fetch_stats    import fetch_stats
@@ -1017,13 +1030,13 @@ if __name__ == "__main__":
     run(date)
 ```
 
-- [ ] **Step 2: Create a `.env` file for local testing (do NOT commit)**
+- [ ] **Step 2: Verify RUNDOWN_API_KEY is available in your terminal**
 
-```
-RUNDOWN_API_KEY=your_key_here
+```bash
+echo %RUNDOWN_API_KEY%
 ```
 
-Verify `.env` is in `.gitignore` before creating.
+Expected: your key prints. If blank, complete Task 1 Step 1 (Windows env var setup) and restart the terminal before continuing.
 
 - [ ] **Step 3: Smoke test pipeline locally**
 
