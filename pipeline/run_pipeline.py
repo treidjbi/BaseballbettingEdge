@@ -27,7 +27,7 @@ logging.basicConfig(
 )
 log = logging.getLogger(__name__)
 
-OUTPUT_PATH = Path(__file__).parent.parent / "data" / "processed" / "today.json"
+OUTPUT_PATH = Path(__file__).parent.parent / "dashboard" / "data" / "processed" / "today.json"
 
 
 def run(date_str: str) -> None:
