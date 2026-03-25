@@ -14,6 +14,7 @@ EDGE_FIRE_1U      = 0.06
 EXPECTED_INNINGS  = 5.5        # fallback only — pipeline uses per-pitcher avg IP
 LEAGUE_AVG_K_RATE = 0.227
 LEAGUE_AVG_SWSTR  = 0.110      # FanGraphs league avg swinging strike rate
+STEAM_DISPLAY_THRESHOLD = 0.75  # show ↓steam label when confidence ≤ this value (delta ≥ 15 pts)
 
 
 def american_to_implied(odds: int) -> float:
@@ -83,6 +84,25 @@ def calc_price_delta(current_odds: int, opening_odds: int) -> int:
     e.g. -110 -> -135 returns -25.
     """
     return current_odds - opening_odds
+
+
+def calc_movement_confidence(delta: int,
+                              noise_floor: int = 10,
+                              full_fade:   int = 30) -> float:
+    """
+    Returns a confidence multiplier (0.0–1.0) based on line movement against the bet side.
+
+    delta > 0  : that side got cheaper (sharp money on the other side) → penalty applied.
+    delta <= 0 : movement in our favour or no movement → no penalty (returns 1.0).
+
+    Linear decay from 1.0 at noise_floor to 0.0 at full_fade.
+    Movements below noise_floor are treated as routine book adjustments (ignored).
+    """
+    if delta <= noise_floor:
+        return 1.0
+    if delta >= full_fade:
+        return 0.0
+    return 1.0 - (delta - noise_floor) / (full_fade - noise_floor)
 
 
 def build_pitcher_record(odds: dict, stats: dict, ump_k_adj: float,

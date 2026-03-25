@@ -11,6 +11,7 @@ from build_features import (
     calc_price_delta,
     blend_k9,
     calc_swstr_mult,
+    calc_movement_confidence,   # ADD THIS LINE
 )
 
 
@@ -204,3 +205,38 @@ class TestBuildPitcherRecord:
         rec = build_pitcher_record(self.BASE_ODDS, self.BASE_STATS, ump_k_adj=0.0)
         assert rec["ev_over"]["verdict"] in ("PASS", "LEAN", "FIRE 1u", "FIRE 2u")
         assert 0 <= rec["ev_over"]["win_prob"] <= 1
+
+
+class TestCalcMovementConfidence:
+    def test_negative_delta_no_penalty(self):
+        # Movement in our favour — no penalty
+        assert calc_movement_confidence(-15) == 1.0
+
+    def test_zero_delta_no_penalty(self):
+        assert calc_movement_confidence(0) == 1.0
+
+    def test_below_noise_floor_no_penalty(self):
+        assert calc_movement_confidence(5) == 1.0
+
+    def test_at_noise_floor_no_penalty(self):
+        # Exactly at noise_floor (10) → still 1.0
+        assert calc_movement_confidence(10) == 1.0
+
+    def test_midpoint_decay(self):
+        # delta=20 is halfway between noise_floor=10 and full_fade=30 → 0.50
+        assert abs(calc_movement_confidence(20) - 0.50) < 0.001
+
+    def test_quarter_decay(self):
+        # delta=15 → (15-10)/(30-10) = 5/20 = 0.25 penalty → 0.75
+        assert abs(calc_movement_confidence(15) - 0.75) < 0.001
+
+    def test_three_quarter_decay(self):
+        # delta=25 → (25-10)/(30-10) = 15/20 = 0.75 penalty → 0.25
+        assert abs(calc_movement_confidence(25) - 0.25) < 0.001
+
+    def test_at_full_fade(self):
+        assert calc_movement_confidence(30) == 0.0
+
+    def test_above_full_fade_clamped(self):
+        # Anything beyond full_fade is still 0.0
+        assert calc_movement_confidence(40) == 0.0
