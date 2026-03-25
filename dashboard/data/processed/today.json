@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-03-25T21:46:50Z",
+  "generated_at": "2026-03-25T22:01:18Z",
   "date": "2026-03-25",
   "props_available": true,
   "pitchers": [
@@ -341,24 +341,24 @@
       "k_line": 7.5,
       "opening_line": 7.5,
       "best_over_book": "Book22",
-      "best_over_odds": 120,
-      "best_under_odds": -160,
-      "opening_over_odds": 120,
+      "best_over_odds": 115,
+      "best_under_odds": -150,
+      "opening_over_odds": 115,
       "opening_under_odds": -160,
       "price_delta_over": 0,
-      "price_delta_under": 0,
+      "price_delta_under": 10,
       "lambda": 6.12,
       "avg_ip": 5.87,
       "swstr_pct": 0.11,
       "opp_k_rate": 0.227,
       "ump_k_adj": 0.0,
       "ev_over": {
-        "ev": -0.1821,
+        "ev": -0.1927,
         "verdict": "PASS",
         "win_prob": 0.272
       },
       "ev_under": {
-        "ev": 0.1122,
+        "ev": 0.1276,
         "verdict": "FIRE 2u",
         "win_prob": 0.728
       }
@@ -521,24 +521,24 @@
       "k_line": 4.5,
       "opening_line": 4.5,
       "best_over_book": "Book22",
-      "best_over_odds": -110,
-      "best_under_odds": -120,
-      "opening_over_odds": -110,
+      "best_over_odds": 100,
+      "best_under_odds": -130,
+      "opening_over_odds": 100,
       "opening_under_odds": -120,
       "price_delta_over": 0,
-      "price_delta_under": 0,
+      "price_delta_under": -10,
       "lambda": 3.35,
       "avg_ip": 4.07,
       "swstr_pct": 0.11,
       "opp_k_rate": 0.227,
       "ump_k_adj": 0.0,
       "ev_over": {
-        "ev": -0.2772,
+        "ev": -0.2534,
         "verdict": "PASS",
         "win_prob": 0.247
       },
       "ev_under": {
-        "ev": 0.208,
+        "ev": 0.1882,
         "verdict": "FIRE 2u",
         "win_prob": 0.753
       }
