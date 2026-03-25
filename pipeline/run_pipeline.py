@@ -15,10 +15,11 @@ from pathlib import Path
 # Allow running from project root or from pipeline/ directory
 sys.path.insert(0, os.path.dirname(__file__))
 
-from fetch_odds     import fetch_odds
-from fetch_stats    import fetch_stats
-from fetch_umpires  import fetch_umpires
-from build_features import build_pitcher_record
+from fetch_odds      import fetch_odds
+from fetch_stats     import fetch_stats
+from fetch_statcast  import fetch_swstr, LEAGUE_AVG_SWSTR
+from fetch_umpires   import fetch_umpires
+from build_features  import build_pitcher_record
 
 logging.basicConfig(
     level=logging.INFO,
@@ -58,14 +59,21 @@ def run(date_str: str) -> None:
         log.error("fetch_stats failed entirely: %s — all pitchers will be skipped", e)
         stats_map = {}
 
-    # 3. Fetch umpire adjustments (ump.news — graceful fallback built in)
+    # 3. Fetch SwStr% (FanGraphs via PyBaseball — graceful fallback to neutral)
+    try:
+        swstr_map = fetch_swstr(int(date_str[:4]), pitcher_names)
+    except Exception as e:
+        log.warning("fetch_swstr failed: %s — using neutral SwStr%% for all", e)
+        swstr_map = {name: LEAGUE_AVG_SWSTR for name in pitcher_names}
+
+    # 4. Fetch umpire adjustments (ump.news — graceful fallback built in)
     try:
         ump_map = fetch_umpires(props)
     except Exception as e:
         log.warning("fetch_umpires failed: %s — using neutral adj for all", e)
         ump_map = {p["pitcher"]: 0.0 for p in props}
 
-    # 4. Build records — per-pitcher error isolation
+    # 5. Build records — per-pitcher error isolation
     records = []
     for odds in props:
         name  = odds["pitcher"]
@@ -74,14 +82,17 @@ def run(date_str: str) -> None:
             log.warning("No stats for %s — skipping", name)
             continue
         try:
-            record = build_pitcher_record(odds, stats, ump_map.get(name, 0.0))
+            record = build_pitcher_record(
+                odds, stats, ump_map.get(name, 0.0),
+                swstr_pct=swstr_map.get(name, LEAGUE_AVG_SWSTR)
+            )
             records.append(record)
             log.info("Built record for %s: λ=%.2f verdict=%s",
                      name, record["lambda"], record["ev_over"]["verdict"])
         except Exception as e:
             log.warning("build_pitcher_record failed for %s: %s — skipping", name, e)
 
-    log.info("Built %d pitcher records out of %d props", len(records), len(props))
+    log.info("Built %d/%d pitcher records (lambda v2: variable IP + SwStr%%)", len(records), len(props))
     _write_output(date_str, records, props_available=True)
     log.info("=== Pipeline complete ===")
 
