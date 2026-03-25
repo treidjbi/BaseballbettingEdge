@@ -71,6 +71,23 @@
       margin-left: 6px;
     }
 
+    /* ── Date selector ──────────────────────────────────────── */
+    #date-select {
+      display: none;   /* shown by JS once index.json loads */
+      background: #333;
+      color: var(--bg);
+      border: 1px solid #555;
+      border-radius: 3px;
+      padding: 3px 8px;
+      font-size: 12px;
+      font-weight: 700;
+      font-family: 'Courier New', monospace;
+      cursor: pointer;
+      letter-spacing: .03em;
+    }
+    #date-select:focus { outline: none; border-color: #888; }
+    #date-select option { background: #222; color: #fff; }
+
     /* ── Banners ─────────────────────────────────────────── */
     .banner-info {
       background: #d5e8d4;
@@ -309,6 +326,7 @@
   <!-- Top bar -->
   <div id="top-bar">
     <span id="title-date">⚾ BaseballBettingEdge</span>
+    <select id="date-select" onchange="onDateChange(this.value)"></select>
     <span id="freshness-badge"></span>
   </div>
 
@@ -335,33 +353,85 @@
 
 <script>
   // ── Config ────────────────────────────────────────────────
-  const DATA_URL    = 'data/processed/today.json';
+  const INDEX_URL   = 'data/processed/index.json';
+  const TODAY_URL   = 'data/processed/today.json';
   const STALE_HOURS = 6;
 
   // ── Boot ──────────────────────────────────────────────────
-  document.addEventListener('DOMContentLoaded', loadData);
+  document.addEventListener('DOMContentLoaded', boot);
 
-  async function loadData() {
+  async function boot() {
     try {
-      const res  = await fetch(DATA_URL + '?t=' + Date.now());
-      if (!res.ok) throw new Error('HTTP ' + res.status);
-      const data = await res.json();
-      renderAll(data);
+      const res = await fetch(INDEX_URL + '?t=' + Date.now());
+      if (!res.ok) throw new Error('no index');
+      const index = await res.json();
+      const dates = Array.isArray(index.dates) ? index.dates : [];
+      populateDateSelector(dates);
+      const selected = dates.length > 0 ? dates[0] : null;
+      await loadDate(selected);
     } catch (e) {
-      showBanner('Could not load data — check network or pipeline status. (' + e.message + ')', 'warn');
-      document.getElementById('panel-props').innerHTML =
-        '<p class="empty">No data available.</p>';
+      // index.json not found — degrade gracefully to today.json
+      await loadDate(null);
     }
   }
 
-  function renderAll(data) {
+  function populateDateSelector(dates) {
+    const sel   = document.getElementById('date-select');
+    const today = new Date().toISOString().slice(0, 10);
+    sel.innerHTML = '';
+    dates.forEach((d, i) => {
+      const opt   = document.createElement('option');
+      opt.value   = d;
+      const label = new Date(d + 'T12:00:00').toLocaleDateString('en-US', {
+        weekday: 'short', month: 'short', day: 'numeric'
+      });
+      opt.textContent = (i === 0 && d === today) ? 'Today  ·  ' + label : label;
+      sel.appendChild(opt);
+    });
+    // Only show dropdown if there are multiple dates to choose from
+    sel.style.display = dates.length > 1 ? 'inline-block' : 'none';
+  }
+
+  async function loadDate(dateStr) {
+    // Clear any existing banners
+    const banner = document.getElementById('freshness-banner');
+    banner.style.display = 'none';
+
+    const today  = new Date().toISOString().slice(0, 10);
+    const isPast = !!(dateStr && dateStr !== today);
+    const url    = dateStr ? `data/processed/${dateStr}.json` : TODAY_URL;
+
+    try {
+      const res  = await fetch(url + '?t=' + Date.now());
+      if (!res.ok) throw new Error('HTTP ' + res.status);
+      const data = await res.json();
+      renderAll(data, isPast);
+    } catch (e) {
+      if (isPast) {
+        showBanner('No data available for this date.', 'info');
+        document.getElementById('panel-props').innerHTML =
+          '<p class="empty">No data available for this date.</p>';
+        document.getElementById('panel-watch').innerHTML = '';
+      } else {
+        showBanner('Could not load data — check network or pipeline status. (' + e.message + ')', 'warn');
+        document.getElementById('panel-props').innerHTML =
+          '<p class="empty">No data available.</p>';
+      }
+    }
+  }
+
+  function onDateChange(dateStr) {
+    loadDate(dateStr);
+  }
+
+  function renderAll(data, isPast = false) {
     // Update title with date
     const dt = data.date
       ? new Date(data.date + 'T12:00:00').toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })
       : '';
     document.getElementById('title-date').textContent = '⚾ BaseballBettingEdge' + (dt ? '  ·  ' + dt : '');
 
-    setFreshness(data.generated_at);
+    setFreshness(data.generated_at, isPast);
 
     if (!data.props_available || !data.pitchers || data.pitchers.length === 0) {
       showBanner('Props not yet posted — check back after 10am ET.', 'info');
@@ -377,18 +447,23 @@
   }
 
   // ── Freshness ─────────────────────────────────────────────
-  function setFreshness(generatedAt) {
+  function setFreshness(generatedAt, isPast) {
     if (!generatedAt) return;
     const gen   = new Date(generatedAt);
     const now   = new Date();
     const hrs   = (now - gen) / 36e5;
-    const time  = gen.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
     const badge = document.getElementById('freshness-badge');
 
-    if (hrs > STALE_HOURS) {
+    if (isPast) {
+      // Past date — show date + time, no stale warning
+      const dateLabel = gen.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+      const timeLabel = gen.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+      badge.innerHTML = '<span class="badge-ok">' + dateLabel + ' · ' + timeLabel + '</span><span class="badge-delay">60s delay</span>';
+    } else if (hrs > STALE_HOURS) {
       badge.innerHTML = '<span class="badge-warn">Data may be outdated</span><span class="badge-delay">60s delay</span>';
       showBanner('Pipeline may have failed — data is more than 6 hours old.', 'warn');
     } else {
+      const time = gen.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
       badge.innerHTML = '<span class="badge-ok">Updated ' + time + '</span><span class="badge-delay">60s delay</span>';
     }
   }
