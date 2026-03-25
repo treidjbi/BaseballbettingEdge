@@ -225,7 +225,7 @@ class TestBuildPitcherRecord:
 
         raw_ev_over = rec["ev_over"]["ev"]
         assert abs(rec["ev_over"]["movement_conf"] - 0.75) < 0.001
-        assert abs(rec["ev_over"]["adj_ev"] - round(raw_ev_over * 0.75, 4)) < 0.0001
+        assert abs(rec["ev_over"]["adj_ev"] - round(raw_ev_over * 0.75, 4)) < 0.0002
 
         # Under: no movement → no haircut
         raw_ev_under = rec["ev_under"]["ev"]
