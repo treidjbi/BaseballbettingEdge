@@ -30,6 +30,17 @@ log = logging.getLogger(__name__)
 OUTPUT_PATH = Path(__file__).parent.parent / "dashboard" / "data" / "processed" / "today.json"
 
 
+def _update_index_dates(existing_dates: list, new_date: str,
+                        max_entries: int = 60) -> list:
+    """
+    Pure function. Prepends new_date, deduplicates, caps at max_entries.
+    Returns a new list, most recent date first.
+    Two pipeline runs on the same date produce exactly one entry.
+    """
+    updated = [new_date] + [d for d in existing_dates if d != new_date]
+    return updated[:max_entries]
+
+
 def run(date_str: str) -> None:
     log.info("=== Pipeline start for %s ===", date_str)
 
