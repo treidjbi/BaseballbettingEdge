@@ -1,6 +1,547 @@
 {
-  "generated_at": "2026-03-25T18:57:31Z",
+  "generated_at": "2026-03-25T21:46:50Z",
   "date": "2026-03-25",
-  "props_available": false,
-  "pitchers": []
+  "props_available": true,
+  "pitchers": [
+    {
+      "pitcher": "Max Fried",
+      "team": "New York",
+      "opp_team": "San Francisco",
+      "game_time": "2026-03-26T00:05:00Z",
+      "k_line": 5.5,
+      "opening_line": 5.5,
+      "best_over_book": "Book22",
+      "best_over_odds": 115,
+      "best_under_odds": -155,
+      "opening_over_odds": 115,
+      "opening_under_odds": -155,
+      "price_delta_over": 0,
+      "price_delta_under": 0,
+      "lambda": 6.15,
+      "avg_ip": 6.67,
+      "swstr_pct": 0.11,
+      "opp_k_rate": 0.227,
+      "ump_k_adj": 0.0,
+      "ev_over": {
+        "ev": 0.1134,
+        "verdict": "FIRE 2u",
+        "win_prob": 0.579
+      },
+      "ev_under": {
+        "ev": -0.1864,
+        "verdict": "PASS",
+        "win_prob": 0.421
+      }
+    },
+    {
+      "pitcher": "Logan Webb",
+      "team": "New York",
+      "opp_team": "San Francisco",
+      "game_time": "2026-03-26T00:05:00Z",
+      "k_line": 6.5,
+      "opening_line": 6.5,
+      "best_over_book": "Book22",
+      "best_over_odds": 105,
+      "best_under_odds": -135,
+      "opening_over_odds": 105,
+      "opening_under_odds": -135,
+      "price_delta_over": 0,
+      "price_delta_under": 0,
+      "lambda": 5.57,
+      "avg_ip": 5.67,
+      "swstr_pct": 0.11,
+      "opp_k_rate": 0.227,
+      "ump_k_adj": 0.0,
+      "ev_over": {
+        "ev": -0.1633,
+        "verdict": "PASS",
+        "win_prob": 0.324
+      },
+      "ev_under": {
+        "ev": 0.1011,
+        "verdict": "FIRE 2u",
+        "win_prob": 0.676
+      }
+    },
+    {
+      "pitcher": "Freddy Peralta",
+      "team": "Pittsburgh",
+      "opp_team": "New York",
+      "game_time": "2026-03-26T17:15:00Z",
+      "k_line": 6.5,
+      "opening_line": 6.5,
+      "best_over_book": "Book22",
+      "best_over_odds": 115,
+      "best_under_odds": -150,
+      "opening_over_odds": 115,
+      "opening_under_odds": -150,
+      "price_delta_over": 0,
+      "price_delta_under": 0,
+      "lambda": 6.03,
+      "avg_ip": 4.6,
+      "swstr_pct": 0.11,
+      "opp_k_rate": 0.227,
+      "ump_k_adj": 0.0,
+      "ev_over": {
+        "ev": -0.0664,
+        "verdict": "PASS",
+        "win_prob": 0.399
+      },
+      "ev_under": {
+        "ev": 0.0013,
+        "verdict": "PASS",
+        "win_prob": 0.601
+      }
+    },
+    {
+      "pitcher": "Paul Skenes",
+      "team": "Pittsburgh",
+      "opp_team": "New York",
+      "game_time": "2026-03-26T17:15:00Z",
+      "k_line": 6.5,
+      "opening_line": 6.5,
+      "best_over_book": "Book22",
+      "best_over_odds": -110,
+      "best_under_odds": -118,
+      "opening_over_odds": -110,
+      "opening_under_odds": -105,
+      "price_delta_over": 0,
+      "price_delta_under": -13,
+      "lambda": 6.2,
+      "avg_ip": 5.33,
+      "swstr_pct": 0.11,
+      "opp_k_rate": 0.227,
+      "ump_k_adj": 0.0,
+      "ev_over": {
+        "ev": -0.0985,
+        "verdict": "PASS",
+        "win_prob": 0.425
+      },
+      "ev_under": {
+        "ev": 0.0334,
+        "verdict": "FIRE 1u",
+        "win_prob": 0.575
+      }
+    },
+    {
+      "pitcher": "Jacob Misiorowski",
+      "team": "Chicago",
+      "opp_team": "Milwaukee",
+      "game_time": "2026-03-26T18:10:00Z",
+      "k_line": 6.5,
+      "opening_line": 6.5,
+      "best_over_book": "Book22",
+      "best_over_odds": 125,
+      "best_under_odds": -160,
+      "opening_over_odds": 125,
+      "opening_under_odds": -155,
+      "price_delta_over": 0,
+      "price_delta_under": -5,
+      "lambda": 5.54,
+      "avg_ip": 4.47,
+      "swstr_pct": 0.11,
+      "opp_k_rate": 0.227,
+      "ump_k_adj": 0.0,
+      "ev_over": {
+        "ev": -0.1245,
+        "verdict": "PASS",
+        "win_prob": 0.32
+      },
+      "ev_under": {
+        "ev": 0.0647,
+        "verdict": "FIRE 2u",
+        "win_prob": 0.68
+      }
+    },
+    {
+      "pitcher": "Shane Smith",
+      "team": "Chicago",
+      "opp_team": "Milwaukee",
+      "game_time": "2026-03-26T18:10:00Z",
+      "k_line": 4.5,
+      "opening_line": 4.5,
+      "best_over_book": "Book22",
+      "best_over_odds": -125,
+      "best_under_odds": -105,
+      "opening_over_odds": -145,
+      "opening_under_odds": -105,
+      "price_delta_over": 20,
+      "price_delta_under": 0,
+      "lambda": 5.37,
+      "avg_ip": 5.2,
+      "swstr_pct": 0.11,
+      "opp_k_rate": 0.227,
+      "ump_k_adj": 0.0,
+      "ev_over": {
+        "ev": 0.0665,
+        "verdict": "FIRE 2u",
+        "win_prob": 0.622
+      },
+      "ev_under": {
+        "ev": -0.1342,
+        "verdict": "PASS",
+        "win_prob": 0.378
+      }
+    },
+    {
+      "pitcher": "Matthew Boyd",
+      "team": "Washington",
+      "opp_team": "Chicago",
+      "game_time": "2026-03-26T18:20:00Z",
+      "k_line": 4.5,
+      "opening_line": 4.5,
+      "best_over_book": "Book22",
+      "best_over_odds": -155,
+      "best_under_odds": 120,
+      "opening_over_odds": -155,
+      "opening_under_odds": 120,
+      "price_delta_over": 0,
+      "price_delta_under": 0,
+      "lambda": 4.93,
+      "avg_ip": 5.27,
+      "swstr_pct": 0.11,
+      "opp_k_rate": 0.227,
+      "ump_k_adj": 0.0,
+      "ev_over": {
+        "ev": -0.0615,
+        "verdict": "PASS",
+        "win_prob": 0.546
+      },
+      "ev_under": {
+        "ev": -0.0009,
+        "verdict": "PASS",
+        "win_prob": 0.454
+      }
+    },
+    {
+      "pitcher": "Cade Cavalli",
+      "team": "Washington",
+      "opp_team": "Chicago",
+      "game_time": "2026-03-26T18:20:00Z",
+      "k_line": 4.5,
+      "opening_line": 4.5,
+      "best_over_book": "Book22",
+      "best_over_odds": 125,
+      "best_under_odds": -160,
+      "opening_over_odds": 125,
+      "opening_under_odds": -160,
+      "price_delta_over": 0,
+      "price_delta_under": 0,
+      "lambda": 4.48,
+      "avg_ip": 4.8,
+      "swstr_pct": 0.11,
+      "opp_k_rate": 0.227,
+      "ump_k_adj": 0.0,
+      "ev_over": {
+        "ev": 0.0205,
+        "verdict": "LEAN",
+        "win_prob": 0.465
+      },
+      "ev_under": {
+        "ev": -0.0803,
+        "verdict": "PASS",
+        "win_prob": 0.535
+      }
+    },
+    {
+      "pitcher": "Trevor Rogers",
+      "team": "Minnesota",
+      "opp_team": "Baltimore",
+      "game_time": "2026-03-26T19:05:00Z",
+      "k_line": 4.5,
+      "opening_line": 4.5,
+      "best_over_book": "Book22",
+      "best_over_odds": -160,
+      "best_under_odds": 125,
+      "opening_over_odds": -160,
+      "opening_under_odds": 125,
+      "price_delta_over": 0,
+      "price_delta_under": 0,
+      "lambda": 4.98,
+      "avg_ip": 5.27,
+      "swstr_pct": 0.11,
+      "opp_k_rate": 0.227,
+      "ump_k_adj": 0.0,
+      "ev_over": {
+        "ev": -0.0597,
+        "verdict": "PASS",
+        "win_prob": 0.556
+      },
+      "ev_under": {
+        "ev": -0.0002,
+        "verdict": "PASS",
+        "win_prob": 0.444
+      }
+    },
+    {
+      "pitcher": "Joe Ryan",
+      "team": "Minnesota",
+      "opp_team": "Baltimore",
+      "game_time": "2026-03-26T19:05:00Z",
+      "k_line": 6.5,
+      "opening_line": 6.5,
+      "best_over_book": "Book22",
+      "best_over_odds": 105,
+      "best_under_odds": -140,
+      "opening_over_odds": 105,
+      "opening_under_odds": -120,
+      "price_delta_over": 0,
+      "price_delta_under": -20,
+      "lambda": 5.18,
+      "avg_ip": 4.6,
+      "swstr_pct": 0.11,
+      "opp_k_rate": 0.227,
+      "ump_k_adj": 0.0,
+      "ev_over": {
+        "ev": -0.2236,
+        "verdict": "PASS",
+        "win_prob": 0.264
+      },
+      "ev_under": {
+        "ev": 0.1525,
+        "verdict": "FIRE 2u",
+        "win_prob": 0.736
+      }
+    },
+    {
+      "pitcher": "Nick Pivetta",
+      "team": "Detroit",
+      "opp_team": "San Diego",
+      "game_time": "2026-03-26T20:10:00Z",
+      "k_line": 5.5,
+      "opening_line": 5.5,
+      "best_over_book": "Book22",
+      "best_over_odds": -145,
+      "best_under_odds": 110,
+      "opening_over_odds": -145,
+      "opening_under_odds": 110,
+      "price_delta_over": 0,
+      "price_delta_under": 0,
+      "lambda": 6.34,
+      "avg_ip": 5.67,
+      "swstr_pct": 0.11,
+      "opp_k_rate": 0.227,
+      "ump_k_adj": 0.0,
+      "ev_over": {
+        "ev": 0.0155,
+        "verdict": "LEAN",
+        "win_prob": 0.607
+      },
+      "ev_under": {
+        "ev": -0.0835,
+        "verdict": "PASS",
+        "win_prob": 0.393
+      }
+    },
+    {
+      "pitcher": "Tarik Skubal",
+      "team": "Detroit",
+      "opp_team": "San Diego",
+      "game_time": "2026-03-26T20:10:00Z",
+      "k_line": 7.5,
+      "opening_line": 7.5,
+      "best_over_book": "Book22",
+      "best_over_odds": 120,
+      "best_under_odds": -160,
+      "opening_over_odds": 120,
+      "opening_under_odds": -160,
+      "price_delta_over": 0,
+      "price_delta_under": 0,
+      "lambda": 6.12,
+      "avg_ip": 5.87,
+      "swstr_pct": 0.11,
+      "opp_k_rate": 0.227,
+      "ump_k_adj": 0.0,
+      "ev_over": {
+        "ev": -0.1821,
+        "verdict": "PASS",
+        "win_prob": 0.272
+      },
+      "ev_under": {
+        "ev": 0.1122,
+        "verdict": "FIRE 2u",
+        "win_prob": 0.728
+      }
+    },
+    {
+      "pitcher": "Garrett Crochet",
+      "team": "Boston",
+      "opp_team": "Cincinnati",
+      "game_time": "2026-03-26T20:10:00Z",
+      "k_line": 7.5,
+      "opening_line": 7.5,
+      "best_over_book": "Book22",
+      "best_over_odds": -110,
+      "best_under_odds": -118,
+      "opening_over_odds": -110,
+      "opening_under_odds": -120,
+      "price_delta_over": 0,
+      "price_delta_under": 2,
+      "lambda": 7.71,
+      "avg_ip": 6.6,
+      "swstr_pct": 0.11,
+      "opp_k_rate": 0.227,
+      "ump_k_adj": 0.0,
+      "ev_over": {
+        "ev": -0.0181,
+        "verdict": "PASS",
+        "win_prob": 0.506
+      },
+      "ev_under": {
+        "ev": -0.047,
+        "verdict": "PASS",
+        "win_prob": 0.494
+      }
+    },
+    {
+      "pitcher": "Andrew Abbott",
+      "team": "Boston",
+      "opp_team": "Cincinnati",
+      "game_time": "2026-03-26T20:10:00Z",
+      "k_line": 4.5,
+      "opening_line": 4.5,
+      "best_over_book": "Book22",
+      "best_over_odds": -150,
+      "best_under_odds": 115,
+      "opening_over_odds": -150,
+      "opening_under_odds": 115,
+      "price_delta_over": 0,
+      "price_delta_under": 0,
+      "lambda": 5.22,
+      "avg_ip": 5.47,
+      "swstr_pct": 0.11,
+      "opp_k_rate": 0.227,
+      "ump_k_adj": 0.0,
+      "ev_over": {
+        "ev": -0.0024,
+        "verdict": "PASS",
+        "win_prob": 0.598
+      },
+      "ev_under": {
+        "ev": -0.0627,
+        "verdict": "PASS",
+        "win_prob": 0.402
+      }
+    },
+    {
+      "pitcher": "Hunter Brown",
+      "team": "Los Angeles",
+      "opp_team": "Houston",
+      "game_time": "2026-03-26T20:10:00Z",
+      "k_line": 7.5,
+      "opening_line": 7.5,
+      "best_over_book": "Book22",
+      "best_over_odds": 115,
+      "best_under_odds": -150,
+      "opening_over_odds": 115,
+      "opening_under_odds": -150,
+      "price_delta_over": 0,
+      "price_delta_under": 0,
+      "lambda": 6.21,
+      "avg_ip": 5.93,
+      "swstr_pct": 0.11,
+      "opp_k_rate": 0.227,
+      "ump_k_adj": 0.0,
+      "ev_over": {
+        "ev": -0.1794,
+        "verdict": "PASS",
+        "win_prob": 0.286
+      },
+      "ev_under": {
+        "ev": 0.1143,
+        "verdict": "FIRE 2u",
+        "win_prob": 0.714
+      }
+    },
+    {
+      "pitcher": "Nathan Eovaldi",
+      "team": "Texas",
+      "opp_team": "Philadelphia",
+      "game_time": "2026-03-26T20:15:00Z",
+      "k_line": 5.5,
+      "opening_line": 5.5,
+      "best_over_book": "Book22",
+      "best_over_odds": 115,
+      "best_under_odds": -150,
+      "opening_over_odds": 115,
+      "opening_under_odds": -150,
+      "price_delta_over": 0,
+      "price_delta_under": 0,
+      "lambda": 5.53,
+      "avg_ip": 6.8,
+      "swstr_pct": 0.11,
+      "opp_k_rate": 0.227,
+      "ump_k_adj": 0.0,
+      "ev_over": {
+        "ev": 0.0107,
+        "verdict": "LEAN",
+        "win_prob": 0.476
+      },
+      "ev_under": {
+        "ev": -0.0758,
+        "verdict": "PASS",
+        "win_prob": 0.524
+      }
+    },
+    {
+      "pitcher": "Matthew Liberatore",
+      "team": "Tampa Bay",
+      "opp_team": "St. Louis",
+      "game_time": "2026-03-26T20:15:00Z",
+      "k_line": 3.5,
+      "opening_line": 3.5,
+      "best_over_book": "Book22",
+      "best_over_odds": -155,
+      "best_under_odds": 120,
+      "opening_over_odds": -155,
+      "opening_under_odds": 120,
+      "price_delta_over": 0,
+      "price_delta_under": 0,
+      "lambda": 4.11,
+      "avg_ip": 5.07,
+      "swstr_pct": 0.11,
+      "opp_k_rate": 0.227,
+      "ump_k_adj": 0.0,
+      "ev_over": {
+        "ev": -0.0193,
+        "verdict": "PASS",
+        "win_prob": 0.589
+      },
+      "ev_under": {
+        "ev": -0.0431,
+        "verdict": "PASS",
+        "win_prob": 0.411
+      }
+    },
+    {
+      "pitcher": "Drew Rasmussen",
+      "team": "Tampa Bay",
+      "opp_team": "St. Louis",
+      "game_time": "2026-03-26T20:15:00Z",
+      "k_line": 4.5,
+      "opening_line": 4.5,
+      "best_over_book": "Book22",
+      "best_over_odds": -110,
+      "best_under_odds": -120,
+      "opening_over_odds": -110,
+      "opening_under_odds": -120,
+      "price_delta_over": 0,
+      "price_delta_under": 0,
+      "lambda": 3.35,
+      "avg_ip": 4.07,
+      "swstr_pct": 0.11,
+      "opp_k_rate": 0.227,
+      "ump_k_adj": 0.0,
+      "ev_over": {
+        "ev": -0.2772,
+        "verdict": "PASS",
+        "win_prob": 0.247
+      },
+      "ev_under": {
+        "ev": 0.208,
+        "verdict": "FIRE 2u",
+        "win_prob": 0.753
+      }
+    }
+  ]
 }
