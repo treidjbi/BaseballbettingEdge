@@ -12,7 +12,23 @@ from bs4 import BeautifulSoup
 
 log = logging.getLogger(__name__)
 
-UMP_NEWS_URL      = "https://www.ump.news"
+UMP_NEWS_URL = "https://www.ump.news"
+
+# Maps ump.news abbreviations to substrings of TheRundown full team names.
+# Key = abbreviation as scraped from ump.news (upper-cased).
+# Value = substring that appears in the full team name from TheRundown API.
+ABBR_TO_NAME_SUBSTR = {
+    "ARI": "Arizona",    "ATL": "Atlanta",     "BAL": "Baltimore",
+    "BOS": "Boston",     "CHC": "Cubs",        "CWS": "White Sox",
+    "CIN": "Cincinnati", "CLE": "Cleveland",   "COL": "Colorado",
+    "DET": "Detroit",    "HOU": "Houston",     "KC":  "Kansas City",
+    "LAA": "Angels",     "LAD": "Dodgers",     "MIA": "Miami",
+    "MIL": "Milwaukee",  "MIN": "Minnesota",   "NYM": "Mets",
+    "NYY": "Yankees",    "OAK": "Oakland",     "PHI": "Philadelphia",
+    "PIT": "Pittsburgh", "SD":  "San Diego",   "SEA": "Seattle",
+    "SF":  "San Francisco", "STL": "St. Louis", "TB": "Tampa",
+    "TEX": "Texas",      "TOR": "Toronto",     "WSH": "Washington",
+}
 CAREER_RATES_PATH = os.path.join(
     os.path.dirname(__file__), "..", "data", "umpires", "career_k_rates.json"
 )
@@ -62,23 +78,43 @@ def scrape_hp_assignments() -> dict:
     return assignments
 
 
+def _build_game_ump_map(assignments: dict) -> dict:
+    """
+    Converts {away_abbr: ump_name} from ump.news into
+    {team_name_substr: ump_name} for both teams in the game.
+    Each game has one HP umpire — both the away pitcher and home pitcher face the same ump.
+    """
+    game_ump = {}
+    for abbr, ump_name in assignments.items():
+        abbr_upper = abbr.upper()
+        substr = ABBR_TO_NAME_SUBSTR.get(abbr_upper)
+        if substr:
+            game_ump[substr.lower()] = ump_name
+    return game_ump
+
+
 def fetch_umpires(props: list) -> dict:
     """
     Main entry point. Returns {pitcher_name: ump_k_adj} for all pitchers.
-    Matches by away team abbreviation (best-effort). Falls back to 0.0.
+    Matches pitcher's team (full name) against ABBR_TO_NAME_SUBSTR lookup.
+    Works for both home and away starters. Falls back to 0.0.
     """
     career_rates = _load_career_rates()
     assignments  = scrape_hp_assignments()
+    game_ump     = _build_game_ump_map(assignments)
 
     result = {}
     for prop in props:
         pitcher  = prop["pitcher"]
-        team_str = prop.get("team", "").upper()
+        # Check both team and opp_team — either pitcher (home or away) faces the same HP ump
+        team_names = [
+            prop.get("team", "").lower(),
+            prop.get("opp_team", "").lower(),
+        ]
 
-        # Best-effort match: check if any scraped abbreviation appears in the team name
         ump_name = None
-        for abbr, name in assignments.items():
-            if abbr in team_str or team_str.startswith(abbr):
+        for substr, name in game_ump.items():
+            if any(substr in t for t in team_names):
                 ump_name = name
                 break
 
@@ -88,9 +124,7 @@ def fetch_umpires(props: list) -> dict:
             result[pitcher] = adj
         else:
             if ump_name:
-                log.info(
-                    "Umpire '%s' not in career table — using 0 for %s", ump_name, pitcher
-                )
+                log.info("Umpire '%s' not in career table — using 0 for %s", ump_name, pitcher)
             else:
                 log.info("No HP assignment found for %s — using 0", pitcher)
             result[pitcher] = 0.0

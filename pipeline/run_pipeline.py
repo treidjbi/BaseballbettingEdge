@@ -53,9 +53,10 @@ def run(date_str: str) -> None:
     try:
         stats_map = fetch_stats(date_str, pitcher_names)
     except Exception as e:
-        log.error("fetch_stats failed: %s", e)
-        _write_output(date_str, [], props_available=False)
-        return
+        # Stats API down: continue with empty map so per-pitcher isolation still runs.
+        # Pitchers with no stats are skipped individually; props_available stays True.
+        log.error("fetch_stats failed entirely: %s — all pitchers will be skipped", e)
+        stats_map = {}
 
     # 3. Fetch umpire adjustments (ump.news — graceful fallback built in)
     try:

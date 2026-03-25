@@ -96,8 +96,9 @@ def parse_k_props(data: dict, opening_odds_map: dict) -> list:
         away_team = next((t["name"] for t in teams if not t.get("is_home")), "")
         home_team = next((t["name"] for t in teams if t.get("is_home")),  "")
 
-        best_prop = None
-        best_book = None
+        best_prop     = None
+        best_book     = None
+        best_over_val = None
 
         for book_id, lines in event.get("lines", {}).items():
             prop = lines.get("pitcher_strikeouts")
@@ -107,9 +108,11 @@ def parse_k_props(data: dict, opening_odds_map: dict) -> list:
             under = american_odds_from_line(prop.get("under_odds"))
             if over is None or under is None:
                 continue
-            if best_prop is None:
-                best_prop = prop
-                best_book = lines.get("book_name", "Unknown")
+            # Select the book with the highest (most favorable) over odds
+            if best_prop is None or over > best_over_val:
+                best_prop     = prop
+                best_book     = lines.get("book_name", "Unknown")
+                best_over_val = over
 
         if not best_prop:
             continue

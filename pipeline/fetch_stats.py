@@ -18,11 +18,27 @@ def _get(path: str, params: dict = None) -> dict:
     return resp.json()
 
 
+def _parse_ip(value) -> float:
+    """
+    Convert MLB's fractional IP string to decimal innings.
+    MLB uses "12.1" to mean 12 full innings + 1 out (= 12.333...), not 12.1 decimal.
+    The digit after the decimal is the out count (0, 1, or 2).
+    """
+    try:
+        s     = str(value or "0").strip()
+        parts = s.split(".")
+        full  = int(parts[0])
+        outs  = int(parts[1]) if len(parts) > 1 else 0
+        return full + outs / 3.0
+    except (ValueError, IndexError):
+        return 0.0
+
+
 def _k9_from_splits(splits: list) -> float | None:
     """Extract K/9 from an MLB stats splits list."""
     for split in splits:
         stat = split.get("stat", {})
-        ip   = float(stat.get("inningsPitched", 0) or 0)
+        ip   = _parse_ip(stat.get("inningsPitched", 0))
         so   = int(stat.get("strikeOuts", 0) or 0)
         if ip > 0:
             return round((so / ip) * 9, 2)
@@ -37,8 +53,8 @@ def fetch_pitcher_stats(person_id: int, season: int) -> dict:
     })
     season_splits = season_data.get("stats", [{}])[0].get("splits", [])
     season_k9     = _k9_from_splits(season_splits) or 0.0
-    ip            = float(
-        (season_splits[0].get("stat", {}) if season_splits else {}).get("inningsPitched", 0) or 0
+    ip            = _parse_ip(
+        (season_splits[0].get("stat", {}) if season_splits else {}).get("inningsPitched", 0)
     )
 
     # Career stats
