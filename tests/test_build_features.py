@@ -10,6 +10,7 @@ from build_features import (
     calc_verdict,
     calc_price_delta,
     blend_k9,
+    calc_swstr_mult,
 )
 
 
@@ -108,3 +109,43 @@ class TestCalcPriceDelta:
 
     def test_no_movement(self):
         assert calc_price_delta(-110, -110) == 0
+
+
+class TestCalcSwstrMult:
+    def test_league_avg_returns_one(self):
+        assert abs(calc_swstr_mult(0.110) - 1.0) < 0.001
+
+    def test_above_avg_returns_gt_one(self):
+        assert calc_swstr_mult(0.150) > 1.0
+
+    def test_below_avg_returns_lt_one(self):
+        assert calc_swstr_mult(0.080) < 1.0
+
+    def test_zero_swstr_returns_one(self):
+        assert calc_swstr_mult(0.0) == 1.0
+
+    def test_known_value(self):
+        assert abs(calc_swstr_mult(0.140) - (0.140 / 0.110)) < 0.001
+
+
+class TestCalcLambdaSwstrMult:
+    def test_swstr_mult_default_unchanged(self):
+        lam_old = calc_lambda(blended_k9=9.0, expected_innings=5.5, opp_k_rate=0.227, ump_k_adj=0)
+        lam_new = calc_lambda(blended_k9=9.0, expected_innings=5.5, opp_k_rate=0.227, ump_k_adj=0, swstr_mult=1.0)
+        assert abs(lam_old - lam_new) < 0.001
+
+    def test_high_swstr_inflates_lambda(self):
+        lam_base = calc_lambda(9.0, 5.5, 0.227, 0, swstr_mult=1.0)
+        lam_high = calc_lambda(9.0, 5.5, 0.227, 0, swstr_mult=1.3)
+        assert lam_high > lam_base
+
+    def test_low_swstr_deflates_lambda(self):
+        lam_base = calc_lambda(9.0, 5.5, 0.227, 0, swstr_mult=1.0)
+        lam_low  = calc_lambda(9.0, 5.5, 0.227, 0, swstr_mult=0.75)
+        assert lam_low < lam_base
+
+    def test_swstr_mult_scales_base_not_ump(self):
+        lam_no_ump   = calc_lambda(9.0, 5.5, 0.227, 0,   swstr_mult=1.3)
+        lam_with_ump = calc_lambda(9.0, 5.5, 0.227, 0.4, swstr_mult=1.3)
+        ump_contribution = lam_with_ump - lam_no_ump
+        assert abs(ump_contribution - (0.4 * 5.5 / 9)) < 0.01

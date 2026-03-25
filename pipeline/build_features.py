@@ -8,11 +8,12 @@ from scipy.stats import poisson
 
 
 # ── Verdict thresholds ──────────────────────────────────────────────────────
-EDGE_PASS      = 0.01
-EDGE_LEAN      = 0.03
-EDGE_FIRE_1U   = 0.06
-EXPECTED_INNINGS = 5.5
+EDGE_PASS         = 0.01
+EDGE_LEAN         = 0.03
+EDGE_FIRE_1U      = 0.06
+EXPECTED_INNINGS  = 5.5        # fallback only — pipeline uses per-pitcher avg IP
 LEAGUE_AVG_K_RATE = 0.227
+LEAGUE_AVG_SWSTR  = 0.110      # FanGraphs league avg swinging strike rate
 
 
 def american_to_implied(odds: int) -> float:
@@ -34,17 +35,30 @@ def blend_k9(season_k9: float, recent_k9: float, career_k9: float, ip: float) ->
     return (w_season * season_k9) + (w_recent * recent_k9) + (w_career * career_k9)
 
 
+def calc_swstr_mult(swstr_pct: float) -> float:
+    """
+    Multiplier on blended_k9 based on SwStr% relative to league average.
+    A pitcher at 14% SwStr% (vs 11% avg) gets a 1.27x boost on expected Ks.
+    Returns 1.0 (neutral) if swstr_pct is zero or missing.
+    """
+    if not swstr_pct:
+        return 1.0
+    return swstr_pct / LEAGUE_AVG_SWSTR
+
+
 def calc_lambda(blended_k9: float, expected_innings: float,
-                opp_k_rate: float, ump_k_adj: float) -> float:
+                opp_k_rate: float, ump_k_adj: float,
+                swstr_mult: float = 1.0) -> float:
     """
     Expected strikeouts (Poisson lambda) for a pitcher start.
     opp_k_rate: opposing team's season batter K% (MLB avg = 0.227)
-    ump_k_adj: career K rate delta for HP umpire (0 if unknown)
+    ump_k_adj:  career K rate delta for HP umpire (0 if unknown)
+    swstr_mult: SwStr% / league_avg_swstr (1.0 = neutral, default)
+                Applied to base Ks only — ump adjustment is additive and unscaled.
     """
-    base = blended_k9 * (expected_innings / 9)
-    opp_factor = opp_k_rate / LEAGUE_AVG_K_RATE
+    base    = blended_k9 * (opp_k_rate / LEAGUE_AVG_K_RATE) * swstr_mult
     ump_add = ump_k_adj * (expected_innings / 9)
-    return (base * opp_factor) + ump_add
+    return (base * (expected_innings / 9)) + ump_add
 
 
 def calc_ev(win_prob: float, odds: int) -> float:
