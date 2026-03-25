@@ -492,8 +492,9 @@
   }
 
   /**
-   * Returns the side (OVER or UNDER) with the higher EV for a pitcher.
-   * Used to pick which side to display on the card badge.
+   * Returns the side (OVER or UNDER) with the higher adjusted EV for a pitcher.
+   * Uses adj_ev (movement-confidence-adjusted) for selection so steam on one side
+   * can flip the recommendation. Used to pick which side to display on the card badge.
    */
   function bestSide(p) {
     if (p.ev_over.adj_ev >= p.ev_under.adj_ev) {
@@ -605,7 +606,7 @@
           <div class="stat-cell">
             <div class="stat-label">EV</div>
             <div class="stat-value ${side.ev > 0 ? 'val-pos' : 'val-neg'}">${(side.ev * 100).toFixed(1)}%</div>
-            <div class="stat-sub">${side.conf <= STEAM_LABEL_THRESHOLD ? '↓steam' : 'p=' + side.winProb}</div>
+            <div class="stat-sub">${(side.conf != null && side.conf <= STEAM_LABEL_THRESHOLD) ? '↓steam' : 'p=' + side.winProb}</div>
           </div>
           <div class="stat-cell">
             <div class="stat-label">Raw EV</div>
