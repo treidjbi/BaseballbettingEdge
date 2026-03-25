@@ -11,7 +11,7 @@ from build_features import (
     calc_price_delta,
     blend_k9,
     calc_swstr_mult,
-    calc_movement_confidence,   # ADD THIS LINE
+    calc_movement_confidence,
 )
 
 
