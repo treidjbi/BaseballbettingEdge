@@ -434,11 +434,19 @@
     setFreshness(data.generated_at, isPast);
 
     if (!data.props_available || !data.pitchers || data.pitchers.length === 0) {
-      showBanner('Props not yet posted — check back after 10am ET.', 'info');
-      document.getElementById('panel-props').innerHTML =
-        '<p class="empty">No props available yet for today.</p>';
-      document.getElementById('panel-watch').innerHTML =
-        '<p class="empty">No movement data yet.</p>';
+      if (isPast) {
+        showBanner('No props were available for this date.', 'info');
+        document.getElementById('panel-props').innerHTML =
+          '<p class="empty">No props were available for this date.</p>';
+        document.getElementById('panel-watch').innerHTML =
+          '<p class="empty">No movement data for this date.</p>';
+      } else {
+        showBanner('Props not yet posted — check back after 10am ET.', 'info');
+        document.getElementById('panel-props').innerHTML =
+          '<p class="empty">No props available yet for today.</p>';
+        document.getElementById('panel-watch').innerHTML =
+          '<p class="empty">No movement data yet.</p>';
+      }
       return;
     }
 
