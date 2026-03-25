@@ -85,20 +85,26 @@ def calc_price_delta(current_odds: int, opening_odds: int) -> int:
     return current_odds - opening_odds
 
 
-def build_pitcher_record(odds: dict, stats: dict, ump_k_adj: float) -> dict:
+def build_pitcher_record(odds: dict, stats: dict, ump_k_adj: float,
+                         swstr_pct: float = LEAGUE_AVG_SWSTR) -> dict:
     """
     Joins one pitcher's odds + stats + umpire adj into a complete record.
     Returns the dict that goes into today.json pitchers array.
+
+    swstr_pct: pitcher's swinging strike rate (decimal, e.g. 0.134).
+               Defaults to league average (neutral multiplier = 1.0).
     """
-    ip = stats.get("innings_pitched_season", 0)
+    ip     = stats.get("innings_pitched_season", 0)
+    avg_ip = stats.get("avg_ip_last5", EXPECTED_INNINGS)
 
     # Apply fallbacks before blending
     season_k9 = stats["season_k9"]
-    recent_k9  = stats.get("recent_k9") if stats.get("starts_count", 0) >= 3 else season_k9
-    career_k9  = stats.get("career_k9") or season_k9  # rookie fallback
+    recent_k9 = stats.get("recent_k9") if stats.get("starts_count", 0) >= 3 else season_k9
+    career_k9 = stats.get("career_k9") or season_k9  # rookie fallback
 
-    blended = blend_k9(season_k9, recent_k9, career_k9, ip)
-    lam = calc_lambda(blended, EXPECTED_INNINGS, stats["opp_k_rate"], ump_k_adj)
+    blended    = blend_k9(season_k9, recent_k9, career_k9, ip)
+    swstr_mult = calc_swstr_mult(swstr_pct)
+    lam        = calc_lambda(blended, avg_ip, stats["opp_k_rate"], ump_k_adj, swstr_mult)
 
     k_line = odds["k_line"]
     # P(K > k_line) = P(K >= ceil(k_line)) = 1 - P(K <= floor(k_line))
@@ -125,6 +131,8 @@ def build_pitcher_record(odds: dict, stats: dict, ump_k_adj: float) -> dict:
         "price_delta_over":   calc_price_delta(best_over_odds,  odds["opening_over_odds"]),
         "price_delta_under":  calc_price_delta(best_under_odds, odds["opening_under_odds"]),
         "lambda":             round(lam, 2),
+        "avg_ip":             avg_ip,
+        "swstr_pct":          round(swstr_pct, 4),
         "opp_k_rate":         stats["opp_k_rate"],
         "ump_k_adj":          ump_k_adj,
         "ev_over":  {"ev": round(ev_over, 4),  "verdict": calc_verdict(ev_over),  "win_prob": round(win_prob_over, 3)},

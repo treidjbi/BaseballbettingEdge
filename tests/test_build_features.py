@@ -149,3 +149,58 @@ class TestCalcLambdaSwstrMult:
         lam_with_ump = calc_lambda(9.0, 5.5, 0.227, 0.4, swstr_mult=1.3)
         ump_contribution = lam_with_ump - lam_no_ump
         assert abs(ump_contribution - (0.4 * 5.5 / 9)) < 0.01
+
+
+class TestBuildPitcherRecord:
+    """Integration test for build_pitcher_record — exercises all fallback paths."""
+
+    BASE_ODDS = {
+        "pitcher": "Test Pitcher", "team": "NYY", "opp_team": "BOS",
+        "game_time": "2026-04-01T23:05:00Z",
+        "k_line": 7.5, "opening_line": 7.5,
+        "best_over_book": "FanDuel", "best_over_odds": -110, "best_under_odds": -110,
+        "opening_over_odds": -110, "opening_under_odds": -110,
+    }
+    BASE_STATS = {
+        "season_k9": 9.0, "recent_k9": 9.0, "career_k9": 9.0,
+        "starts_count": 5, "innings_pitched_season": 30.0,
+        "avg_ip_last5": 6.0, "opp_k_rate": 0.227,
+    }
+
+    def test_returns_expected_keys(self):
+        from build_features import build_pitcher_record
+        rec = build_pitcher_record(self.BASE_ODDS, self.BASE_STATS, ump_k_adj=0.0)
+        for key in ["pitcher", "lambda", "avg_ip", "swstr_pct", "ev_over", "ev_under"]:
+            assert key in rec, f"Missing key: {key}"
+
+    def test_uses_avg_ip_last5_not_constant(self):
+        from build_features import build_pitcher_record
+        rec = build_pitcher_record(self.BASE_ODDS, self.BASE_STATS, ump_k_adj=0.0)
+        # At 9.0 K/9, neutral conditions, 6.0 IP → lambda = 6.0
+        assert abs(rec["lambda"] - 6.0) < 0.05
+        assert rec["avg_ip"] == 6.0
+
+    def test_fallback_to_constant_when_avg_ip_missing(self):
+        from build_features import build_pitcher_record, EXPECTED_INNINGS
+        stats = {**self.BASE_STATS}
+        del stats["avg_ip_last5"]
+        rec = build_pitcher_record(self.BASE_ODDS, stats, ump_k_adj=0.0)
+        assert rec["avg_ip"] == EXPECTED_INNINGS   # 5.5
+
+    def test_rookie_career_fallback(self):
+        from build_features import build_pitcher_record
+        stats = {**self.BASE_STATS, "career_k9": None, "starts_count": 2}
+        rec = build_pitcher_record(self.BASE_ODDS, stats, ump_k_adj=0.0)
+        assert rec["lambda"] > 0
+
+    def test_swstr_pct_above_avg_raises_lambda(self):
+        from build_features import build_pitcher_record
+        rec_neutral = build_pitcher_record(self.BASE_ODDS, self.BASE_STATS, ump_k_adj=0.0, swstr_pct=0.110)
+        rec_high    = build_pitcher_record(self.BASE_ODDS, self.BASE_STATS, ump_k_adj=0.0, swstr_pct=0.150)
+        assert rec_high["lambda"] > rec_neutral["lambda"]
+
+    def test_verdict_and_win_prob_present(self):
+        from build_features import build_pitcher_record
+        rec = build_pitcher_record(self.BASE_ODDS, self.BASE_STATS, ump_k_adj=0.0)
+        assert rec["ev_over"]["verdict"] in ("PASS", "LEAN", "FIRE 1u", "FIRE 2u")
+        assert 0 <= rec["ev_over"]["win_prob"] <= 1
