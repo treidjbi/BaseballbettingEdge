@@ -1,11 +1,62 @@
 import pytest
-from unittest.mock import patch, MagicMock
 import sys
 import os
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'pipeline'))
 
-from fetch_odds import american_odds_from_line, parse_k_props
+from fetch_odds import american_odds_from_line, parse_k_props, _parse_line_value
 
+
+# ── Helper fixtures ────────────────────────────────────────────────────────────
+
+def _make_event(pitcher_name, line_val, over_price, under_price,
+                over_delta=0, under_delta=0, is_main=False,
+                away="New York Yankees", home="Boston Red Sox",
+                event_date="2026-04-01T23:05:00Z"):
+    """Build a minimal TheRundown v2 markets-format event."""
+    return {
+        "event_id": f"evt-{pitcher_name.replace(' ', '')}",
+        "event_date": event_date,
+        "teams": [
+            {"name": away, "is_away": True,  "is_home": False},
+            {"name": home, "is_away": False, "is_home": True},
+        ],
+        "markets": [
+            {
+                "market_id": 19,
+                "name": "pitcher_strikeouts",
+                "participants": [
+                    {
+                        "name": pitcher_name,
+                        "lines": [
+                            {
+                                "value": f"Over {line_val}",
+                                "prices": {
+                                    "22": {
+                                        "price": over_price,
+                                        "price_delta": over_delta,
+                                        "is_main_line": is_main,
+                                    }
+                                },
+                            },
+                            {
+                                "value": f"Under {line_val}",
+                                "prices": {
+                                    "22": {
+                                        "price": under_price,
+                                        "price_delta": under_delta,
+                                        "is_main_line": is_main,
+                                    }
+                                },
+                            },
+                        ],
+                    }
+                ],
+            }
+        ],
+    }
+
+
+# ── Tests: american_odds_from_line ────────────────────────────────────────────
 
 class TestAmericanOddsFromLine:
     def test_parses_negative(self):
@@ -24,88 +75,213 @@ class TestAmericanOddsFromLine:
         assert american_odds_from_line("") is None
 
 
+# ── Tests: _parse_line_value ──────────────────────────────────────────────────
+
+class TestParseLineValue:
+    def test_parses_over(self):
+        assert _parse_line_value("Over 5.5") == ("over", 5.5)
+
+    def test_parses_under(self):
+        assert _parse_line_value("Under 6.5") == ("under", 6.5)
+
+    def test_case_insensitive(self):
+        assert _parse_line_value("OVER 7.5") == ("over", 7.5)
+
+    def test_returns_none_on_garbage(self):
+        assert _parse_line_value("garbage") is None
+
+    def test_returns_none_on_empty(self):
+        assert _parse_line_value("") is None
+
+
+# ── Tests: parse_k_props ──────────────────────────────────────────────────────
+
 class TestParseKProps:
     def test_returns_list_of_dicts(self):
-        mock_response = {
-            "events": [
-                {
-                    "teams": [
-                        {"name": "New York Yankees", "is_home": False},
-                        {"name": "Boston Red Sox",   "is_home": True},
-                    ],
-                    "score": {
-                        "event_status_detail": "Scheduled",
-                        "start_time": "2026-04-01T23:05:00Z"
-                    },
-                    "lines": {
-                        "1": {
-                            "pitcher_strikeouts": {
-                                "pitcher_name": "Gerrit Cole",
-                                "over": 7.5,
-                                "over_odds": -112,
-                                "under_odds": -108,
-                            },
-                            "book_name": "FanDuel"
-                        }
-                    }
-                }
-            ]
-        }
-        result = parse_k_props(mock_response, opening_odds_map={})
+        data = {"events": [_make_event("Gerrit Cole", 7.5, -112, -108)]}
+        result = parse_k_props(data)
         assert len(result) == 1
         assert result[0]["pitcher"] == "Gerrit Cole"
         assert result[0]["k_line"] == 7.5
         assert result[0]["best_over_odds"] == -112
 
-    def test_skips_event_with_no_k_prop(self):
-        mock_response = {
+    def test_skips_event_with_no_k_prop_market(self):
+        data = {
             "events": [
                 {
+                    "event_id": "no-market",
+                    "event_date": "2026-04-01T23:05:00Z",
                     "teams": [
-                        {"name": "NYY", "is_home": False},
-                        {"name": "BOS", "is_home": True},
+                        {"name": "NYY", "is_away": True,  "is_home": False},
+                        {"name": "BOS", "is_away": False, "is_home": True},
                     ],
-                    "score": {
-                        "event_status_detail": "Scheduled",
-                        "start_time": "2026-04-01T23:05:00Z"
-                    },
-                    "lines": {}
+                    "markets": [
+                        {"market_id": 1, "name": "moneyline", "participants": []}
+                    ],
                 }
             ]
         }
-        result = parse_k_props(mock_response, opening_odds_map={})
+        result = parse_k_props(data)
         assert result == []
 
-    def test_applies_opening_odds_from_map(self):
-        mock_response = {
-            "events": [
+    def test_opening_odds_derived_from_price_delta(self):
+        # price_delta = current - opening → opening = current - delta
+        # over: current=-120, delta=10 → opening=-130
+        # under: current=-100, delta=-5 → opening=-95
+        data = {"events": [
+            _make_event("Logan Webb", 6.5,
+                        over_price=-120, under_price=-100,
+                        over_delta=10,  under_delta=-5)
+        ]}
+        result = parse_k_props(data)
+        assert result[0]["opening_over_odds"]  == -130   # -120 - 10
+        assert result[0]["opening_under_odds"] == -95    # -100 - (-5)
+
+    def test_opening_odds_equal_current_when_no_delta(self):
+        data = {"events": [_make_event("Max Fried", 5.5, 115, -155)]}
+        result = parse_k_props(data)
+        assert result[0]["opening_over_odds"]  == 115
+        assert result[0]["opening_under_odds"] == -155
+
+    def test_team_names_from_event(self):
+        data = {"events": [
+            _make_event("Tarik Skubal", 7.5, 120, -160,
+                        away="Detroit Tigers", home="San Diego Padres")
+        ]}
+        result = parse_k_props(data)
+        assert result[0]["team"]     == "Detroit Tigers"
+        assert result[0]["opp_team"] == "San Diego Padres"
+
+    def test_multiple_pitchers_same_event(self):
+        event = {
+            "event_id": "evt-multi",
+            "event_date": "2026-04-01T23:05:00Z",
+            "teams": [
+                {"name": "NYY", "is_away": True,  "is_home": False},
+                {"name": "BOS", "is_away": False, "is_home": True},
+            ],
+            "markets": [
                 {
-                    "teams": [
-                        {"name": "NYY", "is_home": False},
-                        {"name": "BOS", "is_home": True},
+                    "market_id": 19,
+                    "name": "pitcher_strikeouts",
+                    "participants": [
+                        {
+                            "name": "Gerrit Cole",
+                            "lines": [
+                                {"value": "Over 7.5",  "prices": {"1": {"price": -112, "is_main_line": False}}},
+                                {"value": "Under 7.5", "prices": {"1": {"price": -108, "is_main_line": False}}},
+                            ],
+                        },
+                        {
+                            "name": "Chris Sale",
+                            "lines": [
+                                {"value": "Over 6.5",  "prices": {"1": {"price": 100, "is_main_line": False}}},
+                                {"value": "Under 6.5", "prices": {"1": {"price": -130, "is_main_line": False}}},
+                            ],
+                        },
                     ],
-                    "score": {"start_time": "2026-04-01T23:05:00Z"},
-                    "lines": {
-                        "1": {
-                            "pitcher_strikeouts": {
-                                "pitcher_name": "Gerrit Cole",
-                                "over": 7.5,
-                                "over_odds": -120,
-                                "under_odds": -100,
-                            },
-                            "book_name": "DraftKings"
-                        }
-                    }
                 }
-            ]
+            ],
         }
-        opening_map = {
-            "Gerrit Cole": {
-                "opening_over_odds": -110,
-                "opening_under_odds": -110,
-                "opening_line": 7.5,
-            }
+        result = parse_k_props({"events": [event]})
+        assert len(result) == 2
+        names = {r["pitcher"] for r in result}
+        assert names == {"Gerrit Cole", "Chris Sale"}
+
+    def test_selects_best_over_book(self):
+        # Book 1: over=-130 (worse), Book 2: over=-110 (better)
+        event = {
+            "event_id": "evt-bestbook",
+            "event_date": "2026-04-01T23:05:00Z",
+            "teams": [
+                {"name": "NYY", "is_away": True,  "is_home": False},
+                {"name": "BOS", "is_away": False, "is_home": True},
+            ],
+            "markets": [
+                {
+                    "market_id": 19,
+                    "name": "pitcher_strikeouts",
+                    "participants": [
+                        {
+                            "name": "Gerrit Cole",
+                            "lines": [
+                                {
+                                    "value": "Over 7.5",
+                                    "prices": {
+                                        "1": {"price": -130, "is_main_line": False},
+                                        "2": {"price": -110, "is_main_line": False},
+                                    },
+                                },
+                                {
+                                    "value": "Under 7.5",
+                                    "prices": {
+                                        "1": {"price": -100, "is_main_line": False},
+                                        "2": {"price": -120, "is_main_line": False},
+                                    },
+                                },
+                            ],
+                        }
+                    ],
+                }
+            ],
         }
-        result = parse_k_props(mock_response, opening_odds_map=opening_map)
-        assert result[0]["opening_over_odds"] == -110
-        assert result[0]["opening_under_odds"] == -110
+        result = parse_k_props({"events": [event]})
+        assert result[0]["best_over_odds"] == -110   # book 2 wins
+
+    def test_prefers_main_line_when_multiple_lines(self):
+        # Pitcher has 4.5 and 5.5 lines; 5.5 is marked main
+        event = {
+            "event_id": "evt-multiline",
+            "event_date": "2026-04-01T23:05:00Z",
+            "teams": [
+                {"name": "MIN", "is_away": True,  "is_home": False},
+                {"name": "BAL", "is_away": False, "is_home": True},
+            ],
+            "markets": [
+                {
+                    "market_id": 19,
+                    "name": "pitcher_strikeouts",
+                    "participants": [
+                        {
+                            "name": "Trevor Rogers",
+                            "lines": [
+                                {"value": "Over 4.5",  "prices": {"1": {"price": -160, "is_main_line": False}}},
+                                {"value": "Under 4.5", "prices": {"1": {"price":  125, "is_main_line": False}}},
+                                {"value": "Over 5.5",  "prices": {"1": {"price":  120, "is_main_line": True}}},
+                                {"value": "Under 5.5", "prices": {"1": {"price": -160, "is_main_line": True}}},
+                            ],
+                        }
+                    ],
+                }
+            ],
+        }
+        result = parse_k_props({"events": [event]})
+        assert len(result) == 1
+        assert result[0]["k_line"] == 5.5   # main line selected
+
+    def test_skips_pitcher_with_only_over_no_under(self):
+        event = {
+            "event_id": "evt-missing-under",
+            "event_date": "2026-04-01T23:05:00Z",
+            "teams": [
+                {"name": "NYY", "is_away": True,  "is_home": False},
+                {"name": "BOS", "is_away": False, "is_home": True},
+            ],
+            "markets": [
+                {
+                    "market_id": 19,
+                    "name": "pitcher_strikeouts",
+                    "participants": [
+                        {
+                            "name": "Gerrit Cole",
+                            "lines": [
+                                {"value": "Over 7.5", "prices": {"1": {"price": -112, "is_main_line": False}}},
+                                # No Under line
+                            ],
+                        }
+                    ],
+                }
+            ],
+        }
+        result = parse_k_props({"events": [event]})
+        assert result == []

@@ -47,11 +47,11 @@ def _k9_from_splits(splits: list) -> float | None:
 
 def fetch_pitcher_stats(person_id: int, season: int) -> dict:
     """Fetch season K/9, career K/9, recent 5-start K/9, and IP for one pitcher."""
-    # Season stats
+    # Season stats — API returns {"stats": []} when no starts yet (e.g. Opening Day)
     season_data   = _get(f"/people/{person_id}/stats", {
         "stats": "season", "group": "pitching", "season": season
     })
-    season_splits = season_data.get("stats", [{}])[0].get("splits", [])
+    season_splits = (season_data.get("stats") or [{}])[0].get("splits", [])
     season_k9     = _k9_from_splits(season_splits) or 0.0
     ip            = _parse_ip(
         (season_splits[0].get("stat", {}) if season_splits else {}).get("inningsPitched", 0)
@@ -61,14 +61,20 @@ def fetch_pitcher_stats(person_id: int, season: int) -> dict:
     career_data   = _get(f"/people/{person_id}/stats", {
         "stats": "career", "group": "pitching"
     })
-    career_splits = career_data.get("stats", [{}])[0].get("splits", [])
+    career_splits = (career_data.get("stats") or [{}])[0].get("splits", [])
     career_k9     = _k9_from_splits(career_splits) or season_k9
 
-    # Recent game log (last 5 starts)
+    # Recent game log — also try prior season if current season is empty
     log_data      = _get(f"/people/{person_id}/stats", {
         "stats": "gameLog", "group": "pitching", "season": season, "limit": 5
     })
-    starts        = log_data.get("stats", [{}])[0].get("splits", [])
+    starts        = (log_data.get("stats") or [{}])[0].get("splits", [])
+    if not starts:
+        # Opening Day / early season: fall back to last season's game log
+        prior_data = _get(f"/people/{person_id}/stats", {
+            "stats": "gameLog", "group": "pitching", "season": season - 1, "limit": 5
+        })
+        starts     = (prior_data.get("stats") or [{}])[0].get("splits", [])
     starts_count  = len(starts)
     recent_k9     = _k9_from_splits(starts) if starts_count >= 3 else season_k9
 
@@ -108,13 +114,20 @@ def fetch_team_k_rate(team_id: int, season: int) -> float:
 def fetch_stats(date_str: str, pitcher_names: list) -> dict:
     """
     Main entry point. Returns {pitcher_name: stats_dict} for all pitchers on date_str.
+    Fetches schedules for date_str AND date_str+1 to match the UTC-offset behaviour
+    of fetch_odds (ET evening games are filed under the next UTC day).
     Skips pitchers where the confirmed starter cannot be found in the schedule.
     """
+    from datetime import timedelta
     season   = datetime.strptime(date_str, "%Y-%m-%d").year
+    next_day = (datetime.strptime(date_str, "%Y-%m-%d") + timedelta(days=1)).strftime("%Y-%m-%d")
+
+    # Build combined date list for the range query (MLB API supports startDate/endDate)
     schedule = _get("/schedule", {
-        "sportId": 1,
-        "date":    date_str,
-        "hydrate": "probablePitcher,team",
+        "sportId":   1,
+        "startDate": date_str,
+        "endDate":   next_day,
+        "hydrate":   "probablePitcher,team",
     })
 
     stats_by_name = {}
