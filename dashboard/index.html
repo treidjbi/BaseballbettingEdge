@@ -196,7 +196,7 @@
     /* stats grid */
     .stats-row {
       display: grid;
-      grid-template-columns: repeat(4, 1fr);
+      grid-template-columns: repeat(3, 1fr);
       padding: 10px 12px;
       border-bottom: 1px solid var(--border);
       gap: 4px;
@@ -606,12 +606,7 @@
           <div class="stat-cell">
             <div class="stat-label">EV</div>
             <div class="stat-value ${side.ev > 0 ? 'val-pos' : 'val-neg'}">${(side.ev * 100).toFixed(1)}%</div>
-            <div class="stat-sub">${(side.conf != null && side.conf <= STEAM_LABEL_THRESHOLD) ? '↓steam' : 'p=' + side.winProb}</div>
-          </div>
-          <div class="stat-cell">
-            <div class="stat-label">Raw EV</div>
-            <div class="stat-value ${side.rawEv > 0 ? 'val-pos' : 'val-neg'}">${(side.rawEv * 100).toFixed(1)}%</div>
-            <div class="stat-sub">model</div>
+            <div class="stat-sub">${(side.conf != null && side.conf <= STEAM_LABEL_THRESHOLD) ? `↓steam (raw ${(side.rawEv * 100).toFixed(1)}%)` : 'p=' + side.winProb}</div>
           </div>
         </div>
         <div class="adj-row">
