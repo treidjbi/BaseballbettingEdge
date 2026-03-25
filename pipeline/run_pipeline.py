@@ -120,6 +120,47 @@ def _write_output(date_str: str, records: list, props_available: bool) -> None:
         json.dump(output, f, indent=2)
     log.info("Wrote %s (%d pitchers)", OUTPUT_PATH, len(records))
 
+    # Archive dated copy + update index
+    _write_archive(output, date_str)
+
+
+def _write_archive(output: dict, date_str: str) -> None:
+    """
+    Writes a dated archive copy (YYYY-MM-DD.json) and updates index.json.
+    Both files live alongside today.json in dashboard/data/processed/.
+    Failures are logged but do not affect today.json or crash the pipeline.
+    """
+    base_dir = OUTPUT_PATH.parent
+
+    # 1. Write dated archive file
+    dated_path = base_dir / f"{date_str}.json"
+    try:
+        with open(dated_path, "w") as f:
+            json.dump(output, f, indent=2)
+        log.info("Wrote archive: %s", dated_path)
+    except Exception as e:
+        log.warning("Failed to write dated archive %s: %s", dated_path, e)
+        return   # if dated write fails, skip index update too
+
+    # 2. Load existing index.json (create fresh if missing or corrupt)
+    index_path = base_dir / "index.json"
+    existing_dates = []
+    if index_path.exists():
+        try:
+            with open(index_path, "r") as f:
+                existing_dates = json.load(f).get("dates", [])
+        except Exception as e:
+            log.warning("Could not read index.json: %s — rebuilding", e)
+
+    # 3. Update and write index.json
+    new_dates = _update_index_dates(existing_dates, date_str)
+    try:
+        with open(index_path, "w") as f:
+            json.dump({"dates": new_dates}, f, indent=2)
+        log.info("Updated index.json (%d entries)", len(new_dates))
+    except Exception as e:
+        log.warning("Failed to write index.json: %s", e)
+
 
 if __name__ == "__main__":
     date = sys.argv[1] if len(sys.argv) > 1 else datetime.now().strftime("%Y-%m-%d")
