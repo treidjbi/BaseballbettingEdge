@@ -490,6 +490,23 @@
     return 'verdict-pass';
   }
 
+  /**
+   * Returns the side (OVER or UNDER) with the higher EV for a pitcher.
+   * Used to pick which side to display on the card badge.
+   */
+  function bestSide(p) {
+    if (p.ev_over.ev >= p.ev_under.ev) {
+      return { verdict: p.ev_over.verdict,  ev: p.ev_over.ev,  winProb: p.ev_over.win_prob,  direction: 'OVER',  odds: p.best_over_odds  };
+    } else {
+      return { verdict: p.ev_under.verdict, ev: p.ev_under.ev, winProb: p.ev_under.win_prob, direction: 'UNDER', odds: p.best_under_odds };
+    }
+  }
+
+  /** Badge label: 'PASS', 'LEAN OVER', 'FIRE 2u UNDER', etc. */
+  function badgeLabel(side) {
+    return side.verdict === 'PASS' ? 'PASS' : `${side.verdict} ${side.direction}`;
+  }
+
   function fmtOdds(n) {
     if (n == null) return '—';
     return n > 0 ? '+' + n : String(n);
@@ -524,10 +541,10 @@
   function renderProps(pitchers) {
     const el     = document.getElementById('panel-props');
     const sorted = [...pitchers].sort((a, b) =>
-      (VERDICT_ORDER[a.ev_over.verdict] ?? 3) - (VERDICT_ORDER[b.ev_over.verdict] ?? 3)
+      (VERDICT_ORDER[bestSide(a).verdict] ?? 3) - (VERDICT_ORDER[bestSide(b).verdict] ?? 3)
     );
 
-    const hasAction = sorted.some(p => p.ev_over.verdict !== 'PASS');
+    const hasAction = sorted.some(p => bestSide(p).verdict !== 'PASS');
     let html = '';
 
     // Date header
@@ -545,10 +562,12 @@
     }
 
     for (const p of sorted) {
-      const isPass = p.ev_over.verdict === 'PASS';
+      const side   = bestSide(p);
+      const isPass = side.verdict === 'PASS';
       const umpHtml = p.ump_k_adj !== 0
         ? `<span class="adj-badge ${p.ump_k_adj > 0 ? 'adj-pos' : 'adj-neg'}">UMP ${p.ump_k_adj > 0 ? '+' : ''}${p.ump_k_adj}</span>`
         : '';
+      const priceDelta = side.direction === 'OVER' ? p.price_delta_over : p.price_delta_under;
 
       html += `
       <div class="pitcher-card${isPass ? ' card-pass' : ''}"${isPass ? ' data-pass="1"' : ''}>
@@ -557,13 +576,13 @@
             <span class="pitcher-name">${p.pitcher}</span>
             <span class="pitcher-matchup">${p.team} vs ${p.opp_team}</span>
           </div>
-          <span class="verdict-badge ${verdictClass(p.ev_over.verdict)}">${p.ev_over.verdict}</span>
+          <span class="verdict-badge ${verdictClass(side.verdict)}">${badgeLabel(side)}</span>
         </div>
         <div class="stats-row">
           <div class="stat-cell">
             <div class="stat-label">Line</div>
             <div class="stat-value">${p.k_line}</div>
-            <div class="stat-sub">${fmtOdds(p.best_over_odds)}${priceDeltaHtml(p.price_delta_over)}</div>
+            <div class="stat-sub">${fmtOdds(side.odds)}${priceDeltaHtml(priceDelta)}</div>
           </div>
           <div class="stat-cell">
             <div class="stat-label">λ</div>
@@ -571,14 +590,14 @@
             <div class="stat-sub">Poisson</div>
           </div>
           <div class="stat-cell">
-            <div class="stat-label">EV Over</div>
-            <div class="stat-value ${p.ev_over.ev > 0 ? 'val-pos' : 'val-neg'}">${(p.ev_over.ev * 100).toFixed(1)}%</div>
-            <div class="stat-sub">p=${p.ev_over.win_prob}</div>
+            <div class="stat-label">EV</div>
+            <div class="stat-value ${side.ev > 0 ? 'val-pos' : 'val-neg'}">${(side.ev * 100).toFixed(1)}%</div>
+            <div class="stat-sub">p=${side.winProb}</div>
           </div>
           <div class="stat-cell">
             <div class="stat-label">Book</div>
             <div class="stat-value" style="font-size:12px">${p.best_over_book}</div>
-            <div class="stat-sub">${fmtOdds(p.best_over_odds)}</div>
+            <div class="stat-sub">${fmtOdds(side.odds)}</div>
           </div>
         </div>
         <div class="adj-row">
@@ -631,7 +650,7 @@
           <span>${fmtOdds(p.opening_over_odds)} → ${fmtOdds(p.best_over_odds)}</span>
           <span class="${cls}">${dir} ${Math.abs(p.price_delta_over)}</span>
         </div>
-        <span class="verdict-badge ${verdictClass(p.ev_over.verdict)}">${p.ev_over.verdict}</span>
+        <span class="verdict-badge ${verdictClass(bestSide(p).verdict)}">${badgeLabel(bestSide(p))}</span>
       </div>`;
     }
 
