@@ -353,9 +353,10 @@
 
 <script>
   // ── Config ────────────────────────────────────────────────
-  const INDEX_URL   = 'data/processed/index.json';
-  const TODAY_URL   = 'data/processed/today.json';
-  const STALE_HOURS = 6;
+  const INDEX_URL             = 'data/processed/index.json';
+  const TODAY_URL             = 'data/processed/today.json';
+  const STALE_HOURS           = 6;
+  const STEAM_LABEL_THRESHOLD = 0.75;  // show ↓steam when movement_conf ≤ this value
 
   // ── Boot ──────────────────────────────────────────────────
   document.addEventListener('DOMContentLoaded', boot);
@@ -495,10 +496,22 @@
    * Used to pick which side to display on the card badge.
    */
   function bestSide(p) {
-    if (p.ev_over.ev >= p.ev_under.ev) {
-      return { verdict: p.ev_over.verdict,  ev: p.ev_over.ev,  winProb: p.ev_over.win_prob,  direction: 'OVER',  odds: p.best_over_odds  };
+    if (p.ev_over.adj_ev >= p.ev_under.adj_ev) {
+      return { verdict:   p.ev_over.verdict,
+               ev:        p.ev_over.adj_ev,
+               rawEv:     p.ev_over.ev,
+               winProb:   p.ev_over.win_prob,
+               conf:      p.ev_over.movement_conf,
+               direction: 'OVER',
+               odds:      p.best_over_odds };
     } else {
-      return { verdict: p.ev_under.verdict, ev: p.ev_under.ev, winProb: p.ev_under.win_prob, direction: 'UNDER', odds: p.best_under_odds };
+      return { verdict:   p.ev_under.verdict,
+               ev:        p.ev_under.adj_ev,
+               rawEv:     p.ev_under.ev,
+               winProb:   p.ev_under.win_prob,
+               conf:      p.ev_under.movement_conf,
+               direction: 'UNDER',
+               odds:      p.best_under_odds };
     }
   }
 
@@ -592,12 +605,12 @@
           <div class="stat-cell">
             <div class="stat-label">EV</div>
             <div class="stat-value ${side.ev > 0 ? 'val-pos' : 'val-neg'}">${(side.ev * 100).toFixed(1)}%</div>
-            <div class="stat-sub">p=${side.winProb}</div>
+            <div class="stat-sub">${side.conf <= STEAM_LABEL_THRESHOLD ? '↓steam' : 'p=' + side.winProb}</div>
           </div>
           <div class="stat-cell">
-            <div class="stat-label">Book</div>
-            <div class="stat-value" style="font-size:12px">${p.best_over_book}</div>
-            <div class="stat-sub">${fmtOdds(side.odds)}</div>
+            <div class="stat-label">Raw EV</div>
+            <div class="stat-value ${side.rawEv > 0 ? 'val-pos' : 'val-neg'}">${(side.rawEv * 100).toFixed(1)}%</div>
+            <div class="stat-sub">model</div>
           </div>
         </div>
         <div class="adj-row">
