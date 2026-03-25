@@ -136,6 +136,16 @@ def build_pitcher_record(odds: dict, stats: dict, ump_k_adj: float,
     ev_over  = calc_ev(win_prob_over,  best_over_odds)
     ev_under = calc_ev(win_prob_under, best_under_odds)
 
+    # Extract delta variables before applying confidence (must operate on raw floats)
+    price_delta_over  = calc_price_delta(best_over_odds,  odds.get("opening_over_odds",  best_over_odds))
+    price_delta_under = calc_price_delta(best_under_odds, odds.get("opening_under_odds", best_under_odds))
+
+    # Market confidence: positive delta = that side got cheaper = steam on the other side
+    conf_over  = calc_movement_confidence(price_delta_over)
+    conf_under = calc_movement_confidence(price_delta_under)
+    adj_ev_over  = ev_over  * conf_over
+    adj_ev_under = ev_under * conf_under
+
     return {
         "pitcher":            odds["pitcher"],
         "team":               odds["team"],
@@ -148,13 +158,25 @@ def build_pitcher_record(odds: dict, stats: dict, ump_k_adj: float,
         "best_under_odds":    best_under_odds,
         "opening_over_odds":  odds["opening_over_odds"],
         "opening_under_odds": odds["opening_under_odds"],
-        "price_delta_over":   calc_price_delta(best_over_odds,  odds["opening_over_odds"]),
-        "price_delta_under":  calc_price_delta(best_under_odds, odds["opening_under_odds"]),
+        "price_delta_over":   price_delta_over,
+        "price_delta_under":  price_delta_under,
         "lambda":             round(lam, 2),
         "avg_ip":             avg_ip,
         "swstr_pct":          round(swstr_pct, 4),
         "opp_k_rate":         stats["opp_k_rate"],
         "ump_k_adj":          ump_k_adj,
-        "ev_over":  {"ev": round(ev_over, 4),  "verdict": calc_verdict(ev_over),  "win_prob": round(win_prob_over, 3)},
-        "ev_under": {"ev": round(ev_under, 4), "verdict": calc_verdict(ev_under), "win_prob": round(win_prob_under, 3)},
+        "ev_over":  {
+            "ev":            round(ev_over,      4),
+            "adj_ev":        round(adj_ev_over,  4),
+            "verdict":       calc_verdict(adj_ev_over),
+            "win_prob":      round(win_prob_over,  3),
+            "movement_conf": round(conf_over,    4),
+        },
+        "ev_under": {
+            "ev":            round(ev_under,      4),
+            "adj_ev":        round(adj_ev_under,  4),
+            "verdict":       calc_verdict(adj_ev_under),
+            "win_prob":      round(win_prob_under,  3),
+            "movement_conf": round(conf_under,    4),
+        },
     }

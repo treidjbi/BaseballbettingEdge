@@ -206,6 +206,37 @@ class TestBuildPitcherRecord:
         assert rec["ev_over"]["verdict"] in ("PASS", "LEAN", "FIRE 1u", "FIRE 2u")
         assert 0 <= rec["ev_over"]["win_prob"] <= 1
 
+    def test_movement_confidence_applied(self):
+        """
+        When the over line moves from -125 (opening) to -110 (current),
+        price_delta_over = -110 - (-125) = +15 → conf_over = 0.75.
+        adj_ev_over should equal round(raw_ev_over * 0.75, 4).
+        The under has no movement → conf_under = 1.0, adj_ev_under == ev_under.
+        """
+        from build_features import build_pitcher_record
+        odds = {
+            **self.BASE_ODDS,
+            "opening_over_odds": -125,   # over was -125 at open
+            "best_over_odds":    -110,   # over moved to -110 (cheaper) → delta = +15
+            "opening_under_odds": -110,  # under unchanged
+            "best_under_odds":    -110,
+        }
+        rec = build_pitcher_record(odds, self.BASE_STATS, ump_k_adj=0.0)
+
+        raw_ev_over = rec["ev_over"]["ev"]
+        assert abs(rec["ev_over"]["movement_conf"] - 0.75) < 0.001
+        assert abs(rec["ev_over"]["adj_ev"] - round(raw_ev_over * 0.75, 4)) < 0.0001
+
+        # Under: no movement → no haircut
+        raw_ev_under = rec["ev_under"]["ev"]
+        assert abs(rec["ev_under"]["movement_conf"] - 1.0) < 0.001
+        assert rec["ev_under"]["adj_ev"] == raw_ev_under
+
+        # Verdict must be based on adj_ev, not raw ev
+        from build_features import calc_verdict
+        assert rec["ev_over"]["verdict"] == calc_verdict(rec["ev_over"]["adj_ev"])
+        assert rec["ev_under"]["verdict"] == calc_verdict(rec["ev_under"]["adj_ev"])
+
 
 class TestCalcMovementConfidence:
     def test_negative_delta_no_penalty(self):
