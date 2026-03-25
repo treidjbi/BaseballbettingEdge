@@ -72,12 +72,21 @@ def fetch_pitcher_stats(person_id: int, season: int) -> dict:
     starts_count  = len(starts)
     recent_k9     = _k9_from_splits(starts) if starts_count >= 3 else season_k9
 
+    # Average IP per start from last 5 starts — used as expected_innings in calc_lambda.
+    # Falls back to 5.5 if fewer than 3 starts (e.g. early season, call-ups).
+    if starts_count >= 3:
+        ip_values    = [_parse_ip(s.get("stat", {}).get("inningsPitched", 0)) for s in starts]
+        avg_ip_last5 = round(sum(ip_values) / len(ip_values), 2)
+    else:
+        avg_ip_last5 = 5.5
+
     return {
         "season_k9":              season_k9,
         "career_k9":              career_k9,
         "recent_k9":              recent_k9,
         "starts_count":           starts_count,
         "innings_pitched_season": ip,
+        "avg_ip_last5":           avg_ip_last5,
     }
 
 
