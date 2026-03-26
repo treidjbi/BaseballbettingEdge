@@ -266,7 +266,9 @@
     .delta-over  { color: var(--fire);    font-weight: 700; font-family: monospace; font-size: 11px; }
     .delta-under { color: var(--ink-dim); font-weight: 700; font-family: monospace; font-size: 11px; }
 
-    .card-pass { opacity: 0.52; }
+    .card-pass    { opacity: 0.52; }
+    .card-started { opacity: 0.4; }
+    .badge-started { background: #555 !important; color: #aaa !important; font-weight: 500; }
 
     .show-all-row {
       font-size: 12px;
@@ -589,21 +591,23 @@
     }
 
     for (const p of sorted) {
-      const side   = bestSide(p);
-      const isPass = side.verdict === 'PASS';
+      const side      = bestSide(p);
+      const isPass    = side.verdict === 'PASS';
+      const FOUR_HOURS_MS = 4 * 60 * 60 * 1000;
+      const isStarted = !!(p.game_time && Date.now() > new Date(p.game_time).getTime() + FOUR_HOURS_MS);
       const umpHtml = p.ump_k_adj !== 0
         ? `<span class="adj-badge ${p.ump_k_adj > 0 ? 'adj-pos' : 'adj-neg'}">UMP ${p.ump_k_adj > 0 ? '+' : ''}${p.ump_k_adj}</span>`
         : '';
       const priceDelta = side.direction === 'OVER' ? p.price_delta_over : p.price_delta_under;
 
       html += `
-      <div class="pitcher-card${isPass ? ' card-pass' : ''}"${isPass ? ' data-pass="1"' : ''}>
+      <div class="pitcher-card${isPass ? ' card-pass' : ''}${isStarted ? ' card-started' : ''}"${isPass ? ' data-pass="1"' : ''}>
         <div class="card-header">
           <div class="card-header-left">
             <span class="pitcher-name">${p.pitcher}</span>
             <span class="pitcher-matchup">${p.team} vs ${p.opp_team}</span>
           </div>
-          <span class="verdict-badge ${verdictClass(side.verdict)}">${badgeLabel(side)}</span>
+          <span class="verdict-badge ${isStarted ? 'badge-started' : verdictClass(side.verdict)}">${isStarted ? 'STARTED' : badgeLabel(side)}</span>
         </div>
         <div class="stats-row">
           <div class="stat-cell">

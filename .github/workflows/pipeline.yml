@@ -4,6 +4,7 @@ on:
   schedule:
     - cron: '0 14 * * *'   # 9am ET (UTC-5)
     - cron: '0 18 * * *'   # 1pm ET
+    - cron: '0 1 * * *'    # 8pm ET (1am UTC)
   workflow_dispatch:        # manual trigger for testing
 
 permissions:
