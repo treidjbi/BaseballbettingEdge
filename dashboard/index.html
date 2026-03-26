@@ -31,11 +31,15 @@
     /* ── Top bar ─────────────────────────────────────────── */
     #top-bar {
       display: flex;
+      flex-direction: column;
+      border-bottom: 2px solid var(--ink);
+      background: var(--ink);
+    }
+    #top-row {
+      display: flex;
       justify-content: space-between;
       align-items: center;
       padding: 10px 16px;
-      border-bottom: 2px solid var(--ink);
-      background: var(--ink);
     }
     #title-date {
       color: var(--bg);
@@ -72,18 +76,25 @@
     }
 
     /* ── Date selector ──────────────────────────────────────── */
+    #date-row {
+      display: none;   /* shown by JS when 2+ dates exist */
+      padding: 0 16px 8px;
+    }
     #date-select {
-      display: none;   /* shown by JS once index.json loads */
+      display: block;
+      width: 100%;
+      box-sizing: border-box;
       background: #333;
       color: var(--bg);
       border: 1px solid #555;
-      border-radius: 3px;
-      padding: 3px 8px;
+      border-radius: 4px;
+      padding: 6px 12px;
       font-size: 12px;
       font-weight: 700;
       font-family: 'Courier New', monospace;
       cursor: pointer;
       letter-spacing: .03em;
+      text-align: center;
     }
     #date-select:focus { outline: none; border-color: #888; }
     #date-select option { background: #222; color: #fff; }
@@ -325,9 +336,13 @@
 
   <!-- Top bar -->
   <div id="top-bar">
-    <span id="title-date">⚾ BaseballBettingEdge</span>
-    <select id="date-select" onchange="onDateChange(this.value)"></select>
-    <span id="freshness-badge"></span>
+    <div id="top-row">
+      <span id="title-date">⚾ BaseballBettingEdge</span>
+      <span id="freshness-badge"></span>
+    </div>
+    <div id="date-row">
+      <select id="date-select" onchange="onDateChange(this.value)"></select>
+    </div>
   </div>
 
   <!-- Freshness banner (conditionally shown) -->
@@ -368,7 +383,9 @@
       const index = await res.json();
       const dates = Array.isArray(index.dates) ? index.dates : [];
       populateDateSelector(dates);
-      const selected = dates.length > 0 ? dates[0] : null;
+      const today = new Date().toISOString().slice(0, 10);
+      const selected = dates.includes(today) ? today : (dates.length > 0 ? dates[0] : null);
+      if (selected) document.getElementById('date-select').value = selected;
       await loadDate(selected);
     } catch (e) {
       // index.json not found — degrade gracefully to today.json
@@ -390,7 +407,7 @@
       sel.appendChild(opt);
     });
     // Only show dropdown if there are multiple dates to choose from
-    sel.style.display = dates.length > 1 ? 'inline-block' : 'none';
+    document.getElementById('date-row').style.display = dates.length > 1 ? 'block' : 'none';
   }
 
   async function loadDate(dateStr) {
