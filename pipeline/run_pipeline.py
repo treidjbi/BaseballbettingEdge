@@ -39,7 +39,8 @@ def _game_date_et(game_time_str: str, fallback: str) -> str:
     try:
         dt_utc = datetime.fromisoformat(game_time_str.replace("Z", "+00:00"))
         return dt_utc.astimezone(ZoneInfo("America/New_York")).strftime("%Y-%m-%d")
-    except Exception:
+    except Exception as e:
+        log.warning("_game_date_et: could not parse %r — falling back to %r (%s)", game_time_str, fallback, e)
         return fallback
 
 
@@ -141,6 +142,10 @@ def _write_archive(output: dict, run_date_str: str) -> None:
         buckets.setdefault(gd, []).append(p)
 
     if not buckets:
+        # No pitchers (props not yet posted or all skipped) — still write a dated
+        # placeholder so this date appears in the dashboard's date selector.
+        # Using run_date_str is correct here: pipeline runs after midnight ET are
+        # uncommon and the date always matches the game slate date.
         buckets[run_date_str] = []
 
     # 2. Write one archive file per game date
