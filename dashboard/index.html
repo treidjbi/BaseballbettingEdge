@@ -443,12 +443,6 @@
   }
 
   function renderAll(data, isPast = false) {
-    // Update title with date
-    const dt = data.date
-      ? new Date(data.date + 'T12:00:00').toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })
-      : '';
-    document.getElementById('title-date').textContent = '⚾ BaseballBettingEdge' + (dt ? '  ·  ' + dt : '');
-
     setFreshness(data.generated_at, isPast);
 
     if (!data.props_available || !data.pitchers || data.pitchers.length === 0) {
