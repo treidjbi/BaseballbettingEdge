@@ -148,6 +148,18 @@ def _write_archive(output: dict, run_date_str: str) -> None:
         # uncommon and the date always matches the game slate date.
         buckets[run_date_str] = []
 
+    # 1b. Re-write today.json with ONLY ET-today pitchers (strip out any
+    #     tomorrow games the API returned alongside today's slate).
+    today_pitchers = buckets.get(run_date_str, [])
+    today_output = {**output, "date": run_date_str, "pitchers": today_pitchers}
+    try:
+        with open(OUTPUT_PATH, "w") as f:
+            json.dump(today_output, f, indent=2)
+        log.info("Re-wrote today.json with %d ET-today pitchers (stripped %d other-date)",
+                 len(today_pitchers), len(output.get("pitchers", [])) - len(today_pitchers))
+    except Exception as e:
+        log.warning("Failed to re-write today.json: %s", e)
+
     # 2. Write one archive file per game date
     any_written = False
     for game_date, pitchers in buckets.items():

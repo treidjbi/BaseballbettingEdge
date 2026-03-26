@@ -99,6 +99,7 @@
     }
     #date-select:focus { outline: none; border-color: #888; }
     #date-select option { background: #222; color: #fff; }
+    #date-select::-webkit-calendar-picker-indicator { filter: invert(1); cursor: pointer; }
 
     /* ── Banners ─────────────────────────────────────────── */
     .banner-info {
@@ -342,7 +343,7 @@
       <span id="freshness-badge"></span>
     </div>
     <div id="date-row">
-      <select id="date-select" onchange="onDateChange(this.value)"></select>
+      <input type="date" id="date-select" onchange="onDateChange(this.value)" />
     </div>
   </div>
 
@@ -378,37 +379,31 @@
   document.addEventListener('DOMContentLoaded', boot);
 
   async function boot() {
+    const today = new Date().toISOString().slice(0, 10);
+    // Always default the date picker to today
+    document.getElementById('date-select').value = today;
     try {
       const res = await fetch(INDEX_URL + '?t=' + Date.now());
       if (!res.ok) throw new Error('no index');
       const index = await res.json();
       const dates = Array.isArray(index.dates) ? index.dates : [];
       populateDateSelector(dates);
-      const today = new Date().toISOString().slice(0, 10);
-      const selected = dates.includes(today) ? today : (dates.length > 0 ? dates[0] : null);
-      if (selected) document.getElementById('date-select').value = selected;
-      await loadDate(selected);
     } catch (e) {
-      // index.json not found — degrade gracefully to today.json
-      await loadDate(null);
+      // index.json not found — still show the date picker with no min bound
+      document.getElementById('date-row').style.display = 'block';
     }
+    await loadDate(today);
   }
 
   function populateDateSelector(dates) {
-    const sel   = document.getElementById('date-select');
-    const today = new Date().toISOString().slice(0, 10);
-    sel.innerHTML = '';
-    dates.forEach((d, i) => {
-      const opt   = document.createElement('option');
-      opt.value   = d;
-      const label = new Date(d + 'T12:00:00').toLocaleDateString('en-US', {
-        weekday: 'short', month: 'short', day: 'numeric'
-      });
-      opt.textContent = (i === 0 && d === today) ? 'Today  ·  ' + label : label;
-      sel.appendChild(opt);
-    });
-    // Only show dropdown if there are multiple dates to choose from
-    document.getElementById('date-row').style.display = dates.length > 1 ? 'block' : 'none';
+    const sel = document.getElementById('date-select');
+    const row = document.getElementById('date-row');
+    // Set the earliest available date as the minimum (dates are descending, so last = oldest)
+    if (dates && dates.length > 0) {
+      sel.min = dates[dates.length - 1];
+    }
+    // Always show the date picker so user can explore any date
+    row.style.display = 'block';
   }
 
   async function loadDate(dateStr) {
@@ -416,9 +411,11 @@
     const banner = document.getElementById('freshness-banner');
     banner.style.display = 'none';
 
-    const today  = new Date().toISOString().slice(0, 10);
-    const isPast = !!(dateStr && dateStr !== today);
-    const url    = dateStr ? `data/processed/${dateStr}.json` : TODAY_URL;
+    const today    = new Date().toISOString().slice(0, 10);
+    const isPast   = !!(dateStr && dateStr < today);
+    const isFuture = !!(dateStr && dateStr > today);
+    // Always load by explicit date file; fall back to today.json only if no dateStr
+    const url = dateStr ? `data/processed/${dateStr}.json` : TODAY_URL;
 
     try {
       const res  = await fetch(url + '?t=' + Date.now());
@@ -426,16 +423,20 @@
       const data = await res.json();
       renderAll(data, isPast);
     } catch (e) {
-      if (isPast) {
-        showBanner('No data available for this date.', 'info');
-        document.getElementById('panel-props').innerHTML =
-          '<p class="empty">No data available for this date.</p>';
-        document.getElementById('panel-watch').innerHTML = '';
+      let msg, emptyMsg;
+      if (isFuture) {
+        msg      = 'No data yet for this date — check back once lines post.';
+        emptyMsg = "Lines aren't posted yet for this date. Check back closer to game time.";
+      } else if (isPast) {
+        msg      = 'No historical data for this date.';
+        emptyMsg = 'No data available for this date.';
       } else {
-        showBanner('Could not load data — check network or pipeline status. (' + e.message + ')', 'warn');
-        document.getElementById('panel-props').innerHTML =
-          '<p class="empty">No data available.</p>';
+        msg      = 'Could not load data — check network or pipeline status. (' + e.message + ')';
+        emptyMsg = 'No data available.';
       }
+      showBanner(msg, isFuture ? 'info' : (isPast ? 'info' : 'warn'));
+      document.getElementById('panel-props').innerHTML = `<p class="empty">${emptyMsg}</p>`;
+      document.getElementById('panel-watch').innerHTML = '';
     }
   }
 

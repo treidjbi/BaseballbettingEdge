@@ -15,6 +15,7 @@ EXPECTED_INNINGS  = 5.5        # fallback only — pipeline uses per-pitcher avg
 LEAGUE_AVG_K_RATE = 0.227
 LEAGUE_AVG_SWSTR  = 0.110      # FanGraphs league avg swinging strike rate
 STEAM_DISPLAY_THRESHOLD = 0.75  # show ↓steam label when confidence ≤ this value (delta ≥ 15 pts)
+OPP_K_PRIOR_GAMES       = 50   # Bayesian prior: how many games league average is "worth"
 
 
 def american_to_implied(odds: int) -> float:
@@ -47,17 +48,39 @@ def calc_swstr_mult(swstr_pct: float) -> float:
     return swstr_pct / LEAGUE_AVG_SWSTR
 
 
+def bayesian_opp_k(obs_k_rate: float, opp_games_played: int,
+                   league_avg: float = LEAGUE_AVG_K_RATE,
+                   prior: int = OPP_K_PRIOR_GAMES) -> float:
+    """
+    Regress observed opponent K% toward league average weighted by sample size.
+
+    Early season (8 games, prior=50): extreme rates barely move the needle.
+    Mid-season (~81 games): observed data is ~62% of the blend.
+    Full season (162 games): observed data is ~76% of the blend.
+
+    opp_games_played=0 → returns league average (safe default, full regression).
+    """
+    if opp_games_played <= 0:
+        return league_avg
+    return (opp_games_played * obs_k_rate + prior * league_avg) / (opp_games_played + prior)
+
+
 def calc_lambda(blended_k9: float, expected_innings: float,
                 opp_k_rate: float, ump_k_adj: float,
-                swstr_mult: float = 1.0) -> float:
+                swstr_mult: float = 1.0,
+                opp_games_played: int = 0) -> float:
     """
     Expected strikeouts (Poisson lambda) for a pitcher start.
-    opp_k_rate: opposing team's season batter K% (MLB avg = 0.227)
-    ump_k_adj:  career K rate delta for HP umpire (0 if unknown)
-    swstr_mult: SwStr% / league_avg_swstr (1.0 = neutral, default)
-                Applied to base Ks only — ump adjustment is additive and unscaled.
+    opp_k_rate:       opposing team's season batter K% (MLB avg = 0.227)
+    ump_k_adj:        career K rate delta for HP umpire (0 if unknown)
+    swstr_mult:       SwStr% / league_avg_swstr (1.0 = neutral, default)
+                      Applied to base Ks only — ump adjustment is additive and unscaled.
+    opp_games_played: games the opposing team has played this season. Used to
+                      Bayesian-regress opp_k_rate toward league average early in season.
+                      Defaults to 0 → full regression to league average (safe early-season default).
     """
-    base    = blended_k9 * (opp_k_rate / LEAGUE_AVG_K_RATE) * swstr_mult
+    adj_opp_k = bayesian_opp_k(opp_k_rate, opp_games_played)
+    base    = blended_k9 * (adj_opp_k / LEAGUE_AVG_K_RATE) * swstr_mult
     ump_add = ump_k_adj * (expected_innings / 9)
     return (base * (expected_innings / 9)) + ump_add
 
@@ -122,9 +145,11 @@ def build_pitcher_record(odds: dict, stats: dict, ump_k_adj: float,
     recent_k9 = stats.get("recent_k9") if stats.get("starts_count", 0) >= 3 else season_k9
     career_k9 = stats.get("career_k9") or season_k9  # rookie fallback
 
-    blended    = blend_k9(season_k9, recent_k9, career_k9, ip)
-    swstr_mult = calc_swstr_mult(swstr_pct)
-    lam        = calc_lambda(blended, avg_ip, stats["opp_k_rate"], ump_k_adj, swstr_mult)
+    blended       = blend_k9(season_k9, recent_k9, career_k9, ip)
+    swstr_mult    = calc_swstr_mult(swstr_pct)
+    opp_games     = stats.get("opp_games_played", 0)
+    lam           = calc_lambda(blended, avg_ip, stats["opp_k_rate"], ump_k_adj,
+                                swstr_mult, opp_games_played=opp_games)
 
     k_line = odds["k_line"]
     # P(K > k_line) = P(K >= ceil(k_line)) = 1 - P(K <= floor(k_line))

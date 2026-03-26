@@ -12,6 +12,8 @@ from build_features import (
     blend_k9,
     calc_swstr_mult,
     calc_movement_confidence,
+    bayesian_opp_k,
+    LEAGUE_AVG_K_RATE,
 )
 
 
@@ -55,11 +57,15 @@ class TestCalcLambda:
         assert abs(lam - 5.5) < 0.01  # 9.0 * 5.5 / 9 = 5.5
 
     def test_high_k_opponent_inflates_lambda(self):
-        lam = calc_lambda(blended_k9=9.0, expected_innings=5.5, opp_k_rate=0.255, ump_k_adj=0)
+        # Pass opp_games_played=162 so Bayesian blend trusts observed data
+        lam = calc_lambda(blended_k9=9.0, expected_innings=5.5, opp_k_rate=0.255,
+                          ump_k_adj=0, opp_games_played=162)
         assert lam > 5.5
 
     def test_low_k_opponent_deflates_lambda(self):
-        lam = calc_lambda(blended_k9=9.0, expected_innings=5.5, opp_k_rate=0.200, ump_k_adj=0)
+        # Pass opp_games_played=162 so Bayesian blend trusts observed data
+        lam = calc_lambda(blended_k9=9.0, expected_innings=5.5, opp_k_rate=0.200,
+                          ump_k_adj=0, opp_games_played=162)
         assert lam < 5.5
 
     def test_positive_ump_adj_raises_lambda(self):
@@ -271,3 +277,42 @@ class TestCalcMovementConfidence:
     def test_above_full_fade_clamped(self):
         # Anything beyond full_fade is still 0.0
         assert calc_movement_confidence(40) == 0.0
+
+
+class TestBayesianOppK:
+    def test_zero_games_returns_league_avg(self):
+        # No data → full regression to mean
+        assert bayesian_opp_k(0.40, 0) == pytest.approx(LEAGUE_AVG_K_RATE)
+
+    def test_negative_games_returns_league_avg(self):
+        # Guard against bad data
+        assert bayesian_opp_k(0.40, -5) == pytest.approx(LEAGUE_AVG_K_RATE)
+
+    def test_early_season_extreme_high_regressed(self):
+        # 8 games, extreme 45% K rate (OPP K% +145% territory)
+        # With prior=50: (8*0.45 + 50*0.227) / 58 = (3.6 + 11.35) / 58 ≈ 0.2578
+        result = bayesian_opp_k(0.45, 8)
+        assert result < 0.27   # well below observed 0.45
+        assert result > LEAGUE_AVG_K_RATE  # still slightly above average
+
+    def test_early_season_extreme_low_regressed(self):
+        # Low opp K% team gets pulled up toward average (symmetric)
+        result = bayesian_opp_k(0.15, 8)
+        assert result > 0.20   # pulled up toward 0.227
+        assert result < LEAGUE_AVG_K_RATE  # still slightly below average
+
+    def test_mid_season_partial_trust(self):
+        # 81 games: (81*0.30 + 50*0.227) / 131 ≈ 0.274
+        result = bayesian_opp_k(0.30, 81)
+        assert 0.265 < result < 0.285
+
+    def test_full_season_dominates(self):
+        # 162 games, prior=50: (162*0.30 + 50*0.227) / 212 ≈ 0.2828
+        # Observed data dominates — result clearly above league avg (0.227)
+        result = bayesian_opp_k(0.30, 162)
+        assert result > 0.275  # well above league avg, trending toward observed 0.30
+
+    def test_league_avg_obs_unchanged(self):
+        # If observed == league avg, result should equal league avg regardless of games
+        assert bayesian_opp_k(LEAGUE_AVG_K_RATE, 8) == pytest.approx(LEAGUE_AVG_K_RATE)
+        assert bayesian_opp_k(LEAGUE_AVG_K_RATE, 162) == pytest.approx(LEAGUE_AVG_K_RATE)
