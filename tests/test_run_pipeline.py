@@ -1,38 +1,25 @@
 import sys, os
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'pipeline'))
 
-from run_pipeline import _update_index_dates
+from run_pipeline import _game_date_et
 
 
-class TestUpdateIndexDates:
-    def test_prepends_new_date(self):
-        result = _update_index_dates(["2026-03-26", "2026-03-25"], "2026-03-27")
-        assert result[0] == "2026-03-27"
+class TestGameDateEt:
+    def test_utc_midnight_converts_to_previous_et_date(self):
+        # 00:05 UTC on Mar 26 is 20:05 ET on Mar 25 (ET = UTC-4 in summer / UTC-5 in winter)
+        # Mar 26 is after DST spring-forward (2026), so ET = UTC-4; 00:05Z → 20:05 ET Mar 25
+        result = _game_date_et("2026-03-26T00:05:00Z", "2026-03-26")
+        assert result == "2026-03-25"
 
-    def test_existing_dates_preserved_in_order(self):
-        result = _update_index_dates(["2026-03-26", "2026-03-25"], "2026-03-27")
-        assert result == ["2026-03-27", "2026-03-26", "2026-03-25"]
+    def test_afternoon_game_stays_same_et_date(self):
+        # 19:10 UTC = 15:10 ET (EDT, UTC-4) — still Mar 26
+        result = _game_date_et("2026-03-26T19:10:00Z", "2026-03-26")
+        assert result == "2026-03-26"
 
-    def test_deduplicates_same_date(self):
-        # Running pipeline twice on same day should not duplicate the date
-        result = _update_index_dates(["2026-03-27", "2026-03-26"], "2026-03-27")
-        assert result.count("2026-03-27") == 1
-        assert len(result) == 2
+    def test_empty_string_returns_fallback(self):
+        result = _game_date_et("", "2026-03-25")
+        assert result == "2026-03-25"
 
-    def test_caps_at_max_entries(self):
-        # List must be most-recent-first, so descending — "2026-01-01" is oldest (last)
-        existing = [f"2026-01-{i:02d}" for i in range(60, 0, -1)]  # 60 dates, most recent first
-        result = _update_index_dates(existing, "2026-03-27", max_entries=60)
-        assert len(result) == 60
-        assert result[0] == "2026-03-27"
-        assert "2026-01-01" not in result  # oldest entry dropped
-
-    def test_empty_existing_returns_single_entry(self):
-        result = _update_index_dates([], "2026-03-27")
-        assert result == ["2026-03-27"]
-
-    def test_respects_custom_max_entries(self):
-        existing = ["2026-03-26", "2026-03-25", "2026-03-24"]
-        result = _update_index_dates(existing, "2026-03-27", max_entries=3)
-        assert len(result) == 3
-        assert "2026-03-24" not in result
+    def test_unparseable_string_returns_fallback(self):
+        result = _game_date_et("not-a-date", "2026-03-25")
+        assert result == "2026-03-25"

@@ -10,6 +10,7 @@ import logging
 import os
 import sys
 from datetime import datetime, timezone
+from zoneinfo import ZoneInfo
 from pathlib import Path
 
 # Allow running from project root or from pipeline/ directory
@@ -30,15 +31,17 @@ log = logging.getLogger(__name__)
 OUTPUT_PATH = Path(__file__).parent.parent / "dashboard" / "data" / "processed" / "today.json"
 
 
-def _update_index_dates(existing_dates: list, new_date: str,
-                        max_entries: int = 60) -> list:
-    """
-    Pure function. Prepends new_date, deduplicates, caps at max_entries.
-    Returns a new list, most recent date first.
-    Two pipeline runs on the same date produce exactly one entry.
-    """
-    updated = [new_date] + [d for d in existing_dates if d != new_date]
-    return updated[:max_entries]
+def _game_date_et(game_time_str: str, fallback: str) -> str:
+    """Convert a UTC ISO game_time string to an ET calendar date (YYYY-MM-DD).
+    Falls back to `fallback` if the string is missing or unparseable."""
+    if not game_time_str:
+        return fallback
+    try:
+        dt_utc = datetime.fromisoformat(game_time_str.replace("Z", "+00:00"))
+        return dt_utc.astimezone(ZoneInfo("America/New_York")).strftime("%Y-%m-%d")
+    except Exception as e:
+        log.warning("_game_date_et: could not parse %r — falling back to %r (%s)", game_time_str, fallback, e)
+        return fallback
 
 
 def run(date_str: str) -> None:
@@ -124,40 +127,53 @@ def _write_output(date_str: str, records: list, props_available: bool) -> None:
     _write_archive(output, date_str)
 
 
-def _write_archive(output: dict, date_str: str) -> None:
+def _write_archive(output: dict, run_date_str: str) -> None:
     """
-    Writes a dated archive copy (YYYY-MM-DD.json) and updates index.json.
-    Both files live alongside today.json in dashboard/data/processed/.
+    Groups pitchers by their ET game date and writes one YYYY-MM-DD.json per
+    game date. Rebuilds index.json from all dated files in the directory.
     Failures are logged but do not affect today.json or crash the pipeline.
     """
     base_dir = OUTPUT_PATH.parent
 
-    # 1. Write dated archive file
-    dated_path = base_dir / f"{date_str}.json"
-    try:
-        with open(dated_path, "w") as f:
-            json.dump(output, f, indent=2)
-        log.info("Wrote archive: %s", dated_path)
-    except Exception as e:
-        log.warning("Failed to write dated archive %s: %s", dated_path, e)
-        return   # if dated write fails, skip index update too
+    # 1. Group pitchers by ET game date
+    buckets: dict[str, list] = {}
+    for p in output.get("pitchers", []):
+        gd = _game_date_et(p.get("game_time", ""), run_date_str)
+        buckets.setdefault(gd, []).append(p)
 
-    # 2. Load existing index.json (create fresh if missing or corrupt)
-    index_path = base_dir / "index.json"
-    existing_dates = []
-    if index_path.exists():
+    if not buckets:
+        # No pitchers (props not yet posted or all skipped) — still write a dated
+        # placeholder so this date appears in the dashboard's date selector.
+        # Using run_date_str is correct here: pipeline runs after midnight ET are
+        # uncommon and the date always matches the game slate date.
+        buckets[run_date_str] = []
+
+    # 2. Write one archive file per game date
+    any_written = False
+    for game_date, pitchers in buckets.items():
+        dated_output = {**output, "date": game_date, "pitchers": pitchers}
+        dated_path = base_dir / f"{game_date}.json"
         try:
-            with open(index_path, "r") as f:
-                existing_dates = json.load(f).get("dates", [])
+            with open(dated_path, "w") as f:
+                json.dump(dated_output, f, indent=2)
+            log.info("Wrote archive: %s (%d pitchers)", dated_path, len(pitchers))
+            any_written = True
         except Exception as e:
-            log.warning("Could not read index.json: %s — rebuilding", e)
+            log.warning("Failed to write dated archive %s: %s", dated_path, e)
 
-    # 3. Update and write index.json
-    new_dates = _update_index_dates(existing_dates, date_str)
+    if not any_written:
+        return
+
+    # 3. Rebuild index.json from all dated files (glob for YYYY-MM-DD.json)
+    index_path = base_dir / "index.json"
+    all_dates = sorted(
+        {p.stem for p in base_dir.glob("[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9].json")},
+        reverse=True
+    )[:60]
     try:
         with open(index_path, "w") as f:
-            json.dump({"dates": new_dates}, f, indent=2)
-        log.info("Updated index.json (%d entries)", len(new_dates))
+            json.dump({"dates": all_dates}, f, indent=2)
+        log.info("Updated index.json (%d entries)", len(all_dates))
     except Exception as e:
         log.warning("Failed to write index.json: %s", e)
 
