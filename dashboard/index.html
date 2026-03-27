@@ -372,7 +372,10 @@
 
 <script>
   // ── Config ────────────────────────────────────────────────
-  const RAW_BASE              = 'https://raw.githubusercontent.com/treidjbi/baseballbettingedge/main/dashboard/data/processed';
+  const IS_LOCAL              = location.hostname === 'localhost' || location.hostname === '127.0.0.1' || location.protocol === 'file:';
+  const RAW_BASE              = IS_LOCAL
+    ? 'data/processed'
+    : 'https://raw.githubusercontent.com/treidjbi/baseballbettingedge/main/dashboard/data/processed';
   const INDEX_URL             = `${RAW_BASE}/index.json`;
   const TODAY_URL             = `${RAW_BASE}/today.json`;
   const STALE_HOURS           = 6;
