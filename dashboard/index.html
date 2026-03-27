@@ -372,8 +372,9 @@
 
 <script>
   // ── Config ────────────────────────────────────────────────
-  const INDEX_URL             = 'data/processed/index.json';
-  const TODAY_URL             = 'data/processed/today.json';
+  const RAW_BASE              = 'https://raw.githubusercontent.com/treidjbi/baseballbettingedge/main/dashboard/data/processed';
+  const INDEX_URL             = `${RAW_BASE}/index.json`;
+  const TODAY_URL             = `${RAW_BASE}/today.json`;
   const STALE_HOURS           = 6;
   const STEAM_LABEL_THRESHOLD = 0.75;  // show ↓steam when movement_conf ≤ this value
 
@@ -417,7 +418,7 @@
     const isPast   = !!(dateStr && dateStr < today);
     const isFuture = !!(dateStr && dateStr > today);
     // Always load by explicit date file; fall back to today.json only if no dateStr
-    const url = dateStr ? `data/processed/${dateStr}.json` : TODAY_URL;
+    const url = dateStr ? `${RAW_BASE}/${dateStr}.json` : TODAY_URL;
 
     try {
       const res  = await fetch(url + '?t=' + Date.now());
