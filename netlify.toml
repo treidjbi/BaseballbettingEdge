@@ -1,6 +1,7 @@
 [build]
   publish = "dashboard"
   functions = "netlify/functions"
+  ignore = "git diff --quiet ${CACHED_COMMIT_REF:-HEAD^1} HEAD -- dashboard/index.html netlify/functions/ netlify.toml"
 
 [build.environment]
   PYTHON_VERSION = "3.11"
