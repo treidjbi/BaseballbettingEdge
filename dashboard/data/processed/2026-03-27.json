@@ -1,6 +1,211 @@
 {
-  "generated_at": "2026-03-27T03:47:13Z",
+  "generated_at": "2026-03-27T04:13:15Z",
   "date": "2026-03-27",
-  "props_available": false,
-  "pitchers": []
+  "props_available": true,
+  "pitchers": [
+    {
+      "pitcher": "Robbie Ray",
+      "team": "New York",
+      "opp_team": "San Francisco",
+      "game_time": "2026-03-27T20:35:00Z",
+      "k_line": 5.5,
+      "opening_line": 5.5,
+      "best_over_book": "Book23",
+      "best_over_odds": -146,
+      "best_under_odds": 110,
+      "opening_over_odds": -146,
+      "opening_under_odds": 104,
+      "price_delta_over": 0,
+      "price_delta_under": 6,
+      "lambda": 5.41,
+      "avg_ip": 4.53,
+      "swstr_pct": 0.11,
+      "opp_k_rate": 0.3,
+      "ump_k_adj": 0.0,
+      "ev_over": {
+        "ev": -0.1386,
+        "adj_ev": -0.1386,
+        "verdict": "PASS",
+        "win_prob": 0.455,
+        "movement_conf": 1.0
+      },
+      "ev_under": {
+        "ev": 0.0689,
+        "adj_ev": 0.0689,
+        "verdict": "FIRE 2u",
+        "win_prob": 0.545,
+        "movement_conf": 1.0
+      }
+    },
+    {
+      "pitcher": "Cam Schlittler",
+      "team": "New York",
+      "opp_team": "San Francisco",
+      "game_time": "2026-03-27T20:35:00Z",
+      "k_line": 4.5,
+      "opening_line": 4.5,
+      "best_over_book": "Book23",
+      "best_over_odds": -130,
+      "best_under_odds": -102,
+      "opening_over_odds": -130,
+      "opening_under_odds": 110,
+      "price_delta_over": 0,
+      "price_delta_under": -212,
+      "lambda": 5.72,
+      "avg_ip": 4.93,
+      "swstr_pct": 0.11,
+      "opp_k_rate": 0.1765,
+      "ump_k_adj": 0.0,
+      "ev_over": {
+        "ev": 0.111,
+        "adj_ev": 0.111,
+        "verdict": "FIRE 2u",
+        "win_prob": 0.676,
+        "movement_conf": 1.0
+      },
+      "ev_under": {
+        "ev": -0.1811,
+        "adj_ev": -0.1811,
+        "verdict": "PASS",
+        "win_prob": 0.324,
+        "movement_conf": 1.0
+      }
+    },
+    {
+      "pitcher": "Luis Severino",
+      "team": "Oakland",
+      "opp_team": "Toronto",
+      "game_time": "2026-03-27T23:07:00Z",
+      "k_line": 3.5,
+      "opening_line": 3.5,
+      "best_over_book": "Book23",
+      "best_over_odds": -138,
+      "best_under_odds": 104,
+      "opening_over_odds": -138,
+      "opening_under_odds": 102,
+      "price_delta_over": 0,
+      "price_delta_under": 2,
+      "lambda": 5.06,
+      "avg_ip": 5.27,
+      "swstr_pct": 0.11,
+      "opp_k_rate": 0.227,
+      "ump_k_adj": 0.0,
+      "ev_over": {
+        "ev": 0.164,
+        "adj_ev": 0.164,
+        "verdict": "FIRE 2u",
+        "win_prob": 0.744,
+        "movement_conf": 1.0
+      },
+      "ev_under": {
+        "ev": -0.234,
+        "adj_ev": -0.234,
+        "verdict": "PASS",
+        "win_prob": 0.256,
+        "movement_conf": 1.0
+      }
+    },
+    {
+      "pitcher": "Kevin Gausman",
+      "team": "Oakland",
+      "opp_team": "Toronto",
+      "game_time": "2026-03-27T23:07:00Z",
+      "k_line": 5.5,
+      "opening_line": 5.5,
+      "best_over_book": "Book23",
+      "best_over_odds": -130,
+      "best_under_odds": -102,
+      "opening_over_odds": -130,
+      "opening_under_odds": -104,
+      "price_delta_over": 0,
+      "price_delta_under": 2,
+      "lambda": 6.1,
+      "avg_ip": 6.47,
+      "swstr_pct": 0.11,
+      "opp_k_rate": 0.227,
+      "ump_k_adj": 0.0,
+      "ev_over": {
+        "ev": 0.0049,
+        "adj_ev": 0.0049,
+        "verdict": "PASS",
+        "win_prob": 0.57,
+        "movement_conf": 1.0
+      },
+      "ev_under": {
+        "ev": -0.075,
+        "adj_ev": -0.075,
+        "verdict": "PASS",
+        "win_prob": 0.43,
+        "movement_conf": 1.0
+      }
+    },
+    {
+      "pitcher": "Chris Sale",
+      "team": "Kansas City",
+      "opp_team": "Atlanta",
+      "game_time": "2026-03-27T23:15:00Z",
+      "k_line": 6.5,
+      "opening_line": 6.5,
+      "best_over_book": "Book23",
+      "best_over_odds": 100,
+      "best_under_odds": -132,
+      "opening_over_odds": 100,
+      "opening_under_odds": -132,
+      "price_delta_over": 0,
+      "price_delta_under": 0,
+      "lambda": 7.65,
+      "avg_ip": 6.07,
+      "swstr_pct": 0.11,
+      "opp_k_rate": 0.227,
+      "ump_k_adj": 0.0,
+      "ev_over": {
+        "ev": 0.142,
+        "adj_ev": 0.142,
+        "verdict": "FIRE 2u",
+        "win_prob": 0.642,
+        "movement_conf": 1.0
+      },
+      "ev_under": {
+        "ev": -0.2109,
+        "adj_ev": -0.2109,
+        "verdict": "PASS",
+        "win_prob": 0.358,
+        "movement_conf": 1.0
+      }
+    },
+    {
+      "pitcher": "Cole Ragans",
+      "team": "Kansas City",
+      "opp_team": "Atlanta",
+      "game_time": "2026-03-27T23:15:00Z",
+      "k_line": 6.5,
+      "opening_line": 6.5,
+      "best_over_book": "Book23",
+      "best_over_odds": -102,
+      "best_under_odds": -130,
+      "opening_over_odds": -102,
+      "opening_under_odds": -130,
+      "price_delta_over": 0,
+      "price_delta_under": 0,
+      "lambda": 5.21,
+      "avg_ip": 4.2,
+      "swstr_pct": 0.11,
+      "opp_k_rate": 0.227,
+      "ump_k_adj": 0.0,
+      "ev_over": {
+        "ev": -0.2361,
+        "adj_ev": -0.2361,
+        "verdict": "PASS",
+        "win_prob": 0.269,
+        "movement_conf": 1.0
+      },
+      "ev_under": {
+        "ev": 0.166,
+        "adj_ev": 0.166,
+        "verdict": "FIRE 2u",
+        "win_prob": 0.731,
+        "movement_conf": 1.0
+      }
+    }
+  ]
 }
