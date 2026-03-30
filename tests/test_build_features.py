@@ -1,6 +1,9 @@
 import pytest
 import sys
 import os
+import json
+import tempfile
+from unittest.mock import patch
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'pipeline'))
 
 from build_features import (
@@ -13,6 +16,7 @@ from build_features import (
     calc_swstr_mult,
     calc_movement_confidence,
     bayesian_opp_k,
+    build_pitcher_record,
     LEAGUE_AVG_K_RATE,
 )
 
@@ -316,3 +320,156 @@ class TestBayesianOppK:
         # If observed == league avg, result should equal league avg regardless of games
         assert bayesian_opp_k(LEAGUE_AVG_K_RATE, 8) == pytest.approx(LEAGUE_AVG_K_RATE)
         assert bayesian_opp_k(LEAGUE_AVG_K_RATE, 162) == pytest.approx(LEAGUE_AVG_K_RATE)
+
+
+# -- load_params tests --
+
+class TestLoadParams:
+    def test_missing_file_returns_defaults(self):
+        with patch("build_features.PARAMS_PATH", "/nonexistent/path/params.json"):
+            from build_features import load_params
+            p = load_params()
+        assert p["lambda_bias"] == 0.0
+        assert p["ump_scale"] == 1.0
+        assert p["ev_thresholds"]["fire2"] == 0.06
+
+    def test_malformed_file_returns_defaults(self):
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False) as f:
+            f.write("not json{{{")
+            path = f.name
+        with patch("build_features.PARAMS_PATH", path):
+            from build_features import load_params
+            p = load_params()
+        os.unlink(path)
+        assert p["lambda_bias"] == 0.0
+
+    def test_valid_file_overrides_defaults(self):
+        data = {"lambda_bias": 0.3, "ump_scale": 0.8,
+                "ev_thresholds": {"fire2": 0.07, "fire1": 0.04, "lean": 0.015},
+                "weight_season_cap": 0.65, "weight_recent": 0.25}
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False) as f:
+            json.dump(data, f)
+            path = f.name
+        with patch("build_features.PARAMS_PATH", path):
+            from build_features import load_params
+            p = load_params()
+        os.unlink(path)
+        assert p["lambda_bias"] == 0.3
+        assert p["ev_thresholds"]["fire2"] == 0.07
+
+    def test_partial_file_merges_with_defaults(self):
+        data = {"lambda_bias": 0.5}
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False) as f:
+            json.dump(data, f)
+            path = f.name
+        with patch("build_features.PARAMS_PATH", path):
+            from build_features import load_params
+            p = load_params()
+        os.unlink(path)
+        assert p["lambda_bias"] == 0.5
+        assert p["ump_scale"] == 1.0  # default intact
+
+    def test_partial_ev_thresholds_merges_not_replaces(self):
+        """Partial ev_thresholds in file should merge with defaults, not replace entire dict."""
+        data = {"ev_thresholds": {"fire2": 0.07}}  # only fire2 provided
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False) as f:
+            json.dump(data, f)
+            path = f.name
+        with patch("build_features.PARAMS_PATH", path):
+            from build_features import load_params
+            p = load_params()
+        os.unlink(path)
+        assert p["ev_thresholds"]["fire2"] == 0.07   # overridden
+        assert p["ev_thresholds"]["fire1"] == 0.03   # default preserved
+        assert p["ev_thresholds"]["lean"]  == 0.01   # default preserved
+
+
+# -- blend_k9 weight params tests --
+
+class TestBlendK9Params:
+    def test_custom_season_cap_applied(self):
+        # With cap=0.5: w_season=min(90/60, 0.5)=0.5, w_recent=0.2, w_career=0.3
+        result = blend_k9(10.0, 9.0, 8.0, ip=90, weight_season_cap=0.5, weight_recent=0.2)
+        expected = 0.5 * 10.0 + 0.2 * 9.0 + 0.3 * 8.0  # 5.0+1.8+2.4=9.2
+        assert abs(result - expected) < 0.01
+
+    def test_custom_recent_weight_applied(self):
+        result = blend_k9(10.0, 9.0, 8.0, ip=0, weight_season_cap=0.70, weight_recent=0.30)
+        # w_season=0, w_recent=0.30, w_career=0.70
+        expected = 0.0 * 10.0 + 0.30 * 9.0 + 0.70 * 8.0  # 0+2.7+5.6=8.3
+        assert abs(result - expected) < 0.01
+
+    def test_w_career_never_negative(self):
+        # weight_season_cap=0.8, weight_recent=0.3 → sum>1 at high IP, career should be 0 not negative
+        result = blend_k9(10.0, 9.0, 8.0, ip=90, weight_season_cap=0.8, weight_recent=0.3)
+        assert result >= 0
+
+
+# -- calc_verdict threshold params tests --
+
+class TestCalcVerdictThresholds:
+    def test_custom_thresholds(self):
+        t = {"lean": 0.005, "fire1": 0.02, "fire2": 0.05}
+        assert calc_verdict(0.003, t) == "PASS"
+        assert calc_verdict(0.01, t) == "LEAN"
+        assert calc_verdict(0.03, t) == "FIRE 1u"
+        assert calc_verdict(0.06, t) == "FIRE 2u"
+
+    def test_default_thresholds_unchanged(self):
+        assert calc_verdict(0.005) == "PASS"
+        assert calc_verdict(0.02) == "LEAN"
+        assert calc_verdict(0.04) == "FIRE 1u"
+        assert calc_verdict(0.07) == "FIRE 2u"
+
+
+# -- build_pitcher_record output fields --
+
+SAMPLE_ODDS = {
+    "pitcher": "Test Pitcher", "team": "Test Team", "opp_team": "Opp Team",
+    "game_time": "2026-04-01T17:05:00Z", "k_line": 6.5,
+    "opening_line": 6.5, "best_over_book": "FD",
+    "best_over_odds": -115, "best_under_odds": -105,
+    "opening_over_odds": -110, "opening_under_odds": -110,
+}
+SAMPLE_STATS = {
+    "season_k9": 9.0, "recent_k9": 9.0, "career_k9": 8.0,
+    "innings_pitched_season": 30.0, "avg_ip_last5": 5.5,
+    "opp_k_rate": 0.227, "opp_games_played": 20, "starts_count": 5,
+}
+
+class TestBuildPitcherRecordFields:
+    def test_raw_lambda_and_lambda_present(self):
+        rec = build_pitcher_record(SAMPLE_ODDS, SAMPLE_STATS, 0.0)
+        assert "raw_lambda" in rec
+        assert "lambda" in rec
+
+    def test_raw_lambda_equals_lambda_when_no_bias(self):
+        with patch("build_features.PARAMS_PATH", "/nonexistent"):
+            rec = build_pitcher_record(SAMPLE_ODDS, SAMPLE_STATS, 0.0)
+        assert rec["raw_lambda"] == rec["lambda"]
+
+    def test_lambda_bias_applied_to_lambda_not_raw(self):
+        data = {"lambda_bias": 0.5}
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False) as f:
+            json.dump(data, f); path = f.name
+        with patch("build_features.PARAMS_PATH", path):
+            rec = build_pitcher_record(SAMPLE_ODDS, SAMPLE_STATS, 0.0)
+        os.unlink(path)
+        assert abs(rec["lambda"] - (rec["raw_lambda"] + 0.5)) < 0.01
+
+    def test_k9_components_in_output(self):
+        rec = build_pitcher_record(SAMPLE_ODDS, SAMPLE_STATS, 0.0)
+        assert "season_k9" in rec
+        assert "recent_k9" in rec
+        assert "career_k9" in rec
+
+    def test_ump_scale_applied(self):
+        data = {"ump_scale": 0.0}
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False) as f:
+            json.dump(data, f); path = f.name
+        with patch("build_features.PARAMS_PATH", path):
+            rec_scaled = build_pitcher_record(SAMPLE_ODDS, SAMPLE_STATS, 1.0)
+        with patch("build_features.PARAMS_PATH", "/nonexistent"):
+            rec_default = build_pitcher_record(SAMPLE_ODDS, SAMPLE_STATS, 1.0)
+        os.unlink(path)
+        assert rec_scaled["raw_lambda"] < rec_default["raw_lambda"]

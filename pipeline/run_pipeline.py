@@ -44,8 +44,25 @@ def _game_date_et(game_time_str: str, fallback: str) -> str:
         return fallback
 
 
-def run(date_str: str) -> None:
-    log.info("=== Pipeline start for %s ===", date_str)
+def _run_evening_steps(run_type: str) -> None:
+    """Run result fetching and calibration on the 8pm pipeline run."""
+    if run_type != "evening":
+        return
+    log.info("=== Evening steps: fetch_results + calibrate ===")
+    try:
+        from fetch_results import run as run_results
+        run_results()
+    except Exception as e:
+        log.error("fetch_results failed: %s", e)
+    try:
+        from calibrate import run as run_calibrate
+        run_calibrate()
+    except Exception as e:
+        log.error("calibrate failed: %s", e)
+
+
+def run(date_str: str, run_type: str = "full") -> None:
+    log.info("=== Pipeline start for %s (run_type=%s) ===", date_str, run_type)
 
     # 1. Fetch odds (TheRundown)
     try:
@@ -56,11 +73,13 @@ def run(date_str: str) -> None:
     except Exception as e:
         log.error("fetch_odds failed: %s", e)
         _write_output(date_str, [], props_available=False)
+        _run_evening_steps(run_type)
         return
 
     if not props:
         log.warning("No K props returned — props may not be posted yet")
         _write_output(date_str, [], props_available=False)
+        _run_evening_steps(run_type)
         return
 
     # 2. Fetch stats (MLB Stats API)
@@ -109,6 +128,7 @@ def run(date_str: str) -> None:
     log.info("Built %d/%d pitcher records (lambda v2: variable IP + SwStr%%)", len(records), len(props))
     _write_output(date_str, records, props_available=True)
     log.info("=== Pipeline complete ===")
+    _run_evening_steps(run_type)
 
 
 def _write_output(date_str: str, records: list, props_available: bool) -> None:
@@ -191,5 +211,12 @@ def _write_archive(output: dict, run_date_str: str) -> None:
 
 
 if __name__ == "__main__":
-    date = sys.argv[1] if len(sys.argv) > 1 else datetime.now().strftime("%Y-%m-%d")
-    run(date)
+    import argparse
+    parser = argparse.ArgumentParser()
+    parser.add_argument("date", nargs="?",
+                        default=datetime.now().strftime("%Y-%m-%d"),
+                        help="Game date YYYY-MM-DD")
+    parser.add_argument("--run-type", choices=["full", "evening"], default="full",
+                        help="'evening' adds result fetching and calibration")
+    args = parser.parse_args()
+    run(args.date, run_type=args.run_type)

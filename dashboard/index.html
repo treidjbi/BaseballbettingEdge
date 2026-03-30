@@ -334,6 +334,16 @@
       padding-bottom: 6px;
       border-bottom: 1px solid var(--border);
     }
+
+    /* ── Performance tab ─────────────────────────────────────────── */
+    .perf-table { width: 100%; border-collapse: collapse; margin-bottom: 1rem; }
+    .perf-table th, .perf-table td { padding: 8px 12px; text-align: left; border-bottom: 1px solid #333; }
+    .perf-table th { font-weight: 600; color: #aaa; font-size: 0.85rem; }
+    .perf-lam { font-size: 0.9rem; color: #ccc; margin: 0.5rem 0; }
+    .perf-cal { font-size: 0.82rem; color: #888; margin-top: 0.5rem; }
+    .perf-empty { color: #888; padding: 2rem 0; text-align: center; }
+    .roi-pos { color: #4caf50; }
+    .roi-neg { color: #f44336; }
   </style>
 </head>
 <body>
@@ -356,6 +366,7 @@
   <div id="content">
     <div id="panel-props" class="tab-panel active"></div>
     <div id="panel-watch" class="tab-panel"></div>
+    <div id="panel-perf" class="tab-panel"></div>
   </div>
 
   <!-- Bottom nav -->
@@ -367,6 +378,10 @@
     <button class="nav-btn" onclick="switchTab('watch', this)">
       <span class="nav-icon">📋</span>
       <span>Watchlist</span>
+    </button>
+    <button class="nav-btn" onclick="switchTab('perf', this)">
+      <span class="nav-icon">📊</span>
+      <span>Performance</span>
     </button>
   </nav>
 
@@ -380,6 +395,9 @@
   const TODAY_URL             = `${RAW_BASE}/today.json`;
   const STALE_HOURS           = 6;
   const STEAM_LABEL_THRESHOLD = 0.75;  // show ↓steam when movement_conf ≤ this value
+  const PERF_URL = IS_LOCAL
+    ? '../data/performance.json'
+    : 'https://raw.githubusercontent.com/treidjbi/baseballbettingedge/main/data/performance.json';
 
   // ── Boot ──────────────────────────────────────────────────
   document.addEventListener('DOMContentLoaded', boot);
@@ -693,6 +711,65 @@
     document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
     document.getElementById('panel-' + name).classList.add('active');
     btn.classList.add('active');
+    if (name === 'perf') loadPerformance();
+  }
+
+  // ── Performance tab ───────────────────────────────────────
+  async function loadPerformance() {
+    const el = document.getElementById('panel-perf');
+    try {
+      const resp = await fetch(PERF_URL + '?t=' + Date.now());
+      if (!resp.ok) throw new Error('not found');
+      const data = await resp.json();
+      renderPerformance(data, el);
+    } catch {
+      el.innerHTML = '<p class="perf-empty">Performance data not yet available.</p>';
+    }
+  }
+
+  function renderPerformance(data, el) {
+    if (!data || data.total_picks < 10) {
+      el.innerHTML = '<p class="perf-empty">Not enough data yet — check back after opening week.</p>';
+      return;
+    }
+
+    const verdicts = ['FIRE 2u', 'FIRE 1u', 'LEAN'];
+    const rows = verdicts.map(v => {
+      const b = data.by_verdict && data.by_verdict[v];
+      if (!b || b.picks === 0) {
+        return `<tr><td>${v}</td><td colspan="4" style="color:#666">No picks yet</td></tr>`;
+      }
+      const roiClass = b.roi >= 0 ? 'roi-pos' : 'roi-neg';
+      return `<tr>
+        <td><strong>${v}</strong></td>
+        <td>${b.picks}</td>
+        <td>${(b.win_pct * 100).toFixed(1)}%</td>
+        <td class="${roiClass}">${b.roi >= 0 ? '+' : ''}${b.roi.toFixed(2)}u</td>
+        <td>${(b.avg_ev * 100).toFixed(1)}%</td>
+      </tr>`;
+    }).join('');
+
+    const la = data.lambda_accuracy;
+    const lambdaRow = la && la.avg_predicted != null
+      ? `<p class="perf-lam">Model predicted <strong>${la.avg_predicted.toFixed(2)}</strong> avg Ks &mdash; actual was <strong>${la.avg_actual.toFixed(2)}</strong> (bias: ${la.bias >= 0 ? '+' : ''}${la.bias.toFixed(2)})</p>`
+      : '';
+
+    const calNote = data.last_calibrated
+      ? `<p class="perf-cal">Last recalibrated ${data.last_calibrated.slice(0, 10)} &mdash; n=${data.calibration_sample} picks</p>`
+      : `<p class="perf-cal">Not yet calibrated &mdash; need ${data.total_picks}/30 closed picks</p>`;
+
+    el.innerHTML = `
+      <table class="perf-table">
+        <thead>
+          <tr>
+            <th>Verdict</th><th>Picks</th><th>Win %</th><th>ROI</th><th>Avg EV</th>
+          </tr>
+        </thead>
+        <tbody>${rows}</tbody>
+      </table>
+      ${lambdaRow}
+      ${calNote}
+    `;
   }
 </script>
 </body>

@@ -1,10 +1,35 @@
 """
 build_features.py
 Joins odds, stats, and umpire data. Computes lambda, Poisson EV, verdicts, price deltas.
-All functions are pure (no I/O) for testability.
+load_params() reads data/params.json for calibrated parameters (safe I/O with fallback).
+All other functions are pure (no I/O) for testability.
 """
 import math
+import json
+from pathlib import Path
 from scipy.stats import poisson
+
+PARAMS_PATH = str(Path(__file__).parent.parent / "data" / "params.json")
+
+DEFAULTS = {
+    "ev_thresholds": {"fire2": 0.06, "fire1": 0.03, "lean": 0.01},
+    "weight_season_cap": 0.70,
+    "weight_recent": 0.20,
+    "ump_scale": 1.0,
+    "lambda_bias": 0.0,
+}
+
+def load_params() -> dict:
+    try:
+        with open(PARAMS_PATH) as f:
+            data = json.load(f)
+    except (FileNotFoundError, json.JSONDecodeError, OSError):
+        return dict(DEFAULTS)
+
+    result = {**DEFAULTS, **data}
+    # Deep merge nested ev_thresholds so partial files don't drop keys
+    result["ev_thresholds"] = {**DEFAULTS["ev_thresholds"], **data.get("ev_thresholds", {})}
+    return result
 
 
 # ── Verdict thresholds ──────────────────────────────────────────────────────
@@ -25,15 +50,16 @@ def american_to_implied(odds: int) -> float:
     return abs(odds) / (abs(odds) + 100)
 
 
-def blend_k9(season_k9: float, recent_k9: float, career_k9: float, ip: float) -> float:
+def blend_k9(season_k9: float, recent_k9: float, career_k9: float, ip: float,
+             weight_season_cap: float = 0.70, weight_recent: float = 0.20) -> float:
     """
     Weighted blend of K/9 rates. Weights shift toward season as IP accumulates.
     Callers must substitute season_k9 for recent_k9 if pitcher has <3 starts,
     and season_k9 for career_k9 if pitcher is a rookie with no MLB career data.
     """
-    w_season = min(ip / 60, 0.7)
-    w_recent = 0.2
-    w_career = 1.0 - w_season - w_recent
+    w_season = min(ip / 60, weight_season_cap)
+    w_recent = weight_recent
+    w_career = max(0.0, 1.0 - w_season - w_recent)
     return (w_season * season_k9) + (w_recent * recent_k9) + (w_career * career_k9)
 
 
@@ -90,13 +116,14 @@ def calc_ev(win_prob: float, odds: int) -> float:
     return win_prob - american_to_implied(odds)
 
 
-def calc_verdict(ev: float) -> str:
+def calc_verdict(ev: float, thresholds: dict | None = None) -> str:
     """Map EV to a betting verdict string."""
-    if ev <= EDGE_PASS:
+    t = thresholds or {"lean": EDGE_PASS, "fire1": EDGE_LEAN, "fire2": EDGE_FIRE_1U}
+    if ev <= t["lean"]:
         return "PASS"
-    if ev <= EDGE_LEAN:
+    if ev <= t["fire1"]:
         return "LEAN"
-    if ev <= EDGE_FIRE_1U:
+    if ev <= t["fire2"]:
         return "FIRE 1u"
     return "FIRE 2u"
 
@@ -137,23 +164,30 @@ def build_pitcher_record(odds: dict, stats: dict, ump_k_adj: float,
     swstr_pct: pitcher's swinging strike rate (decimal, e.g. 0.134).
                Defaults to league average (neutral multiplier = 1.0).
     """
+    params = load_params()
+    thresholds = params["ev_thresholds"]
+
     ip     = stats.get("innings_pitched_season", 0)
     avg_ip = stats.get("avg_ip_last5", EXPECTED_INNINGS)
 
-    # Apply fallbacks before blending
     season_k9 = stats["season_k9"]
     recent_k9 = stats.get("recent_k9") if stats.get("starts_count", 0) >= 3 else season_k9
-    career_k9 = stats.get("career_k9") or season_k9  # rookie fallback
+    career_k9 = stats.get("career_k9") or season_k9
 
-    blended       = blend_k9(season_k9, recent_k9, career_k9, ip)
-    swstr_mult    = calc_swstr_mult(swstr_pct)
-    opp_games     = stats.get("opp_games_played", 0)
-    lam           = calc_lambda(blended, avg_ip, stats["opp_k_rate"], ump_k_adj,
-                                swstr_mult, opp_games_played=opp_games)
+    blended    = blend_k9(season_k9, recent_k9, career_k9, ip,
+                          weight_season_cap=params["weight_season_cap"],
+                          weight_recent=params["weight_recent"])
+    swstr_mult = calc_swstr_mult(swstr_pct)
+    opp_games  = stats.get("opp_games_played", 0)
+
+    scaled_ump_k_adj = ump_k_adj * params["ump_scale"]
+    raw_lam = calc_lambda(blended, avg_ip, stats["opp_k_rate"], scaled_ump_k_adj,
+                          swstr_mult, opp_games_played=opp_games)
+    applied_lam = raw_lam + params["lambda_bias"]
+    applied_lam = max(0.01, applied_lam)  # guard against negative bias producing invalid Poisson lambda
 
     k_line = odds["k_line"]
-    # P(K > k_line) = P(K >= ceil(k_line)) = 1 - P(K <= floor(k_line))
-    win_prob_over  = 1 - poisson.cdf(math.floor(k_line), lam)
+    win_prob_over  = 1 - poisson.cdf(math.floor(k_line), applied_lam)
     win_prob_under = 1 - win_prob_over
 
     best_over_odds  = odds["best_over_odds"]
@@ -161,11 +195,9 @@ def build_pitcher_record(odds: dict, stats: dict, ump_k_adj: float,
     ev_over  = calc_ev(win_prob_over,  best_over_odds)
     ev_under = calc_ev(win_prob_under, best_under_odds)
 
-    # Extract delta variables before applying confidence (must operate on raw floats)
     price_delta_over  = calc_price_delta(best_over_odds,  odds.get("opening_over_odds",  best_over_odds))
     price_delta_under = calc_price_delta(best_under_odds, odds.get("opening_under_odds", best_under_odds))
 
-    # Market confidence: positive delta = that side got cheaper = steam on the other side
     conf_over  = calc_movement_confidence(price_delta_over)
     conf_under = calc_movement_confidence(price_delta_under)
     adj_ev_over  = ev_over  * conf_over
@@ -185,22 +217,26 @@ def build_pitcher_record(odds: dict, stats: dict, ump_k_adj: float,
         "opening_under_odds": odds["opening_under_odds"],
         "price_delta_over":   price_delta_over,
         "price_delta_under":  price_delta_under,
-        "lambda":             round(lam, 2),
+        "raw_lambda":         round(raw_lam, 2),
+        "lambda":             round(applied_lam, 2),
         "avg_ip":             avg_ip,
         "swstr_pct":          round(swstr_pct, 4),
         "opp_k_rate":         stats["opp_k_rate"],
         "ump_k_adj":          ump_k_adj,
+        "season_k9":          round(season_k9, 2),
+        "recent_k9":          round(recent_k9, 2),
+        "career_k9":          round(career_k9, 2),
         "ev_over":  {
             "ev":            round(ev_over,      4),
             "adj_ev":        round(adj_ev_over,  4),
-            "verdict":       calc_verdict(adj_ev_over),
+            "verdict":       calc_verdict(adj_ev_over,  thresholds),
             "win_prob":      round(win_prob_over,  3),
             "movement_conf": round(conf_over,    4),
         },
         "ev_under": {
             "ev":            round(ev_under,      4),
             "adj_ev":        round(adj_ev_under,  4),
-            "verdict":       calc_verdict(adj_ev_under),
+            "verdict":       calc_verdict(adj_ev_under, thresholds),
             "win_prob":      round(win_prob_under,  3),
             "movement_conf": round(conf_under,    4),
         },
