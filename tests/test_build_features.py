@@ -369,6 +369,20 @@ class TestLoadParams:
         assert p["lambda_bias"] == 0.5
         assert p["ump_scale"] == 1.0  # default intact
 
+    def test_partial_ev_thresholds_merges_not_replaces(self):
+        """Partial ev_thresholds in file should merge with defaults, not replace entire dict."""
+        data = {"ev_thresholds": {"fire2": 0.07}}  # only fire2 provided
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False) as f:
+            json.dump(data, f)
+            path = f.name
+        with patch("build_features.PARAMS_PATH", path):
+            from build_features import load_params
+            p = load_params()
+        os.unlink(path)
+        assert p["ev_thresholds"]["fire2"] == 0.07   # overridden
+        assert p["ev_thresholds"]["fire1"] == 0.03   # default preserved
+        assert p["ev_thresholds"]["lean"]  == 0.01   # default preserved
+
 
 # -- blend_k9 weight params tests --
 

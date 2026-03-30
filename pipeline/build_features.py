@@ -21,9 +21,14 @@ DEFAULTS = {
 def load_params() -> dict:
     try:
         with open(PARAMS_PATH) as f:
-            return {**DEFAULTS, **json.load(f)}
+            data = json.load(f)
     except (FileNotFoundError, json.JSONDecodeError, OSError):
         return dict(DEFAULTS)
+
+    result = {**DEFAULTS, **data}
+    # Deep merge nested ev_thresholds so partial files don't drop keys
+    result["ev_thresholds"] = {**DEFAULTS["ev_thresholds"], **data.get("ev_thresholds", {})}
+    return result
 
 
 # ── Verdict thresholds ──────────────────────────────────────────────────────
