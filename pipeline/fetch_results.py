@@ -96,3 +96,114 @@ def seed_picks(today_json_path: Path = TODAY_JSON) -> int:
                 inserted += cur.rowcount
 
     return inserted
+
+
+def _et_dates() -> tuple[str, str]:
+    now_et = datetime.now(ET)
+    return (
+        now_et.strftime("%Y-%m-%d"),
+        (now_et - timedelta(days=1)).strftime("%Y-%m-%d"),
+    )
+
+
+def _normalize(name: str) -> str:
+    nfkd = unicodedata.normalize("NFKD", name)
+    return "".join(c for c in nfkd if not unicodedata.combining(c)).lower().strip()
+
+
+def _calc_pnl(result: str, odds: int) -> float:
+    if result == "win":
+        return odds / 100.0 if odds > 0 else 100.0 / abs(odds)
+    if result == "loss":
+        return -1.0
+    return 0.0  # push, void, cancelled
+
+
+def fetch_and_close_results() -> int:
+    """Close out open picks for yesterday ET. Returns count of picks resolved."""
+    _, yesterday_et = _et_dates()
+
+    with get_db() as conn:
+        open_picks = conn.execute(
+            "SELECT * FROM picks WHERE date=? AND result IS NULL", (yesterday_et,)
+        ).fetchall()
+
+    if not open_picks:
+        log.info("No open picks for %s", yesterday_et)
+        return 0
+
+    try:
+        resp = requests.get(f"{MLB_BASE}/schedule", params={
+            "sportId": 1, "date": yesterday_et, "hydrate": "boxscore",
+        }, timeout=30)
+        resp.raise_for_status()
+        schedule = resp.json()
+    except Exception as e:
+        log.error("MLB schedule fetch failed: %s", e)
+        return 0
+
+    # Build name->ks and track which teams have finalized games
+    ks_by_name: dict[str, int] = {}
+    finalized_teams: set[str] = set()
+
+    for date_entry in schedule.get("dates", []):
+        for game in date_entry.get("games", []):
+            is_final = game.get("status", {}).get("abstractGameState") == "Final"
+            boxscore = game.get("boxscore", {})
+
+            for ts in ("home", "away"):
+                team_info = game.get("teams", {}).get(ts, {}).get("team", {})
+                team_keys = {team_info.get("name", "").lower(),
+                             team_info.get("abbreviation", "").lower()}
+                if is_final:
+                    finalized_teams |= team_keys
+
+                if not is_final:
+                    continue
+
+                players = boxscore.get("teams", {}).get(ts, {}).get("players", {})
+                pitchers_order = boxscore.get("teams", {}).get(ts, {}).get("pitchers", [])
+                if not pitchers_order:
+                    continue
+
+                starter = players.get(f"ID{pitchers_order[0]}", {})
+                name = starter.get("person", {}).get("fullName", "")
+                ks   = starter.get("stats", {}).get("pitching", {}).get("strikeOuts")
+                if name and ks is not None:
+                    ks_by_name[_normalize(name)] = int(ks)
+
+    closed = 0
+    now_str = datetime.now(pytz.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+
+    with get_db() as conn:
+        for pick in open_picks:
+            norm = _normalize(pick["pitcher"])
+            team_norm = pick["team"].lower()
+
+            if norm in ks_by_name:
+                actual_ks = ks_by_name[norm]
+                k_line    = pick["k_line"]
+                side      = pick["side"]
+                if actual_ks > k_line:
+                    result = "win" if side == "over" else "loss"
+                elif actual_ks < k_line:
+                    result = "loss" if side == "over" else "win"
+                else:
+                    result = "push"
+                pnl = _calc_pnl(result, pick["odds"])
+                conn.execute(
+                    "UPDATE picks SET actual_ks=?,result=?,pnl=?,fetched_at=? WHERE id=?",
+                    (actual_ks, result, pnl, now_str, pick["id"])
+                )
+                closed += 1
+
+            elif any(team_norm in ft or ft in team_norm for ft in finalized_teams):
+                # Game finished but pitcher not in starters → scratched
+                conn.execute(
+                    "UPDATE picks SET result='void',pnl=0.0,fetched_at=? WHERE id=?",
+                    (now_str, pick["id"])
+                )
+                closed += 1
+
+    log.info("Closed %d picks for %s", closed, yesterday_et)
+    return closed

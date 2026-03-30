@@ -1,6 +1,6 @@
 import json, os, sys, sqlite3, tempfile, pytest
 from pathlib import Path
-from unittest.mock import patch
+from unittest.mock import patch, MagicMock
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'pipeline'))
 
@@ -114,3 +114,159 @@ class TestSeedPicks:
         p, _ = today_json
         assert fr.seed_picks(p) == 2
         assert fr.seed_picks(p) == 0  # second run inserts nothing
+
+
+def _make_schedule_response(pitcher_name: str, ks: int, game_final: bool = True):
+    """Build a minimal MLB schedule+boxscore API response."""
+    return {
+        "dates": [{
+            "date": "2026-04-14",
+            "games": [{
+                "gamePk": 111111,
+                "status": {"abstractGameState": "Final" if game_final else "Live"},
+                "teams": {
+                    "home": {"team": {"name": "New York Yankees", "abbreviation": "NYY"}},
+                    "away": {"team": {"name": "Boston Red Sox",   "abbreviation": "BOS"}},
+                },
+                "boxscore": {
+                    "teams": {
+                        "home": {
+                            "pitchers": [123],
+                            "players": {
+                                "ID123": {
+                                    "person": {"fullName": pitcher_name},
+                                    "stats": {"pitching": {"strikeOuts": ks}},
+                                }
+                            },
+                        },
+                        "away": {"pitchers": [], "players": {}},
+                    }
+                },
+            }]
+        }]
+    }
+
+
+class TestFetchAndCloseResults:
+    def _seed_yesterday_pick(self, db_path, fr, pitcher="Gerrit Cole", side="over",
+                              k_line=7.5, odds=-115, verdict="FIRE 1u"):
+        import sqlite3
+        conn = sqlite3.connect(db_path)
+        conn.execute("""
+            INSERT INTO picks (date, pitcher, team, side, k_line, verdict,
+                               ev, adj_ev, raw_lambda, applied_lambda, odds, movement_conf)
+            VALUES (date('now','-1 day','localtime'), ?,?,?,?,?,0.05,0.05,7.2,7.2,?,1.0)
+        """, (pitcher, "New York", side, k_line, verdict, odds))
+        conn.commit()
+        conn.close()
+
+    def test_win_over_recorded(self, tmp_db):
+        db_path, fr = tmp_db
+        self._seed_yesterday_pick(db_path, fr, pitcher="Gerrit Cole", side="over", k_line=7.5)
+
+        mock_resp = MagicMock()
+        mock_resp.json.return_value = _make_schedule_response("Gerrit Cole", ks=8)
+        mock_resp.raise_for_status = MagicMock()
+
+        with patch("fetch_results.requests.get", return_value=mock_resp):
+            count = fr.fetch_and_close_results()
+
+        import sqlite3
+        conn = sqlite3.connect(db_path)
+        row = conn.execute("SELECT result, actual_ks, pnl FROM picks WHERE pitcher='Gerrit Cole'").fetchone()
+        conn.close()
+        assert row[0] == "win"
+        assert row[1] == 8
+        assert row[2] > 0
+
+    def test_loss_over_recorded(self, tmp_db):
+        db_path, fr = tmp_db
+        self._seed_yesterday_pick(db_path, fr, pitcher="Gerrit Cole", side="over", k_line=7.5)
+
+        mock_resp = MagicMock()
+        mock_resp.json.return_value = _make_schedule_response("Gerrit Cole", ks=6)
+        mock_resp.raise_for_status = MagicMock()
+
+        with patch("fetch_results.requests.get", return_value=mock_resp):
+            fr.fetch_and_close_results()
+
+        import sqlite3
+        conn = sqlite3.connect(db_path)
+        row = conn.execute("SELECT result, pnl FROM picks WHERE pitcher='Gerrit Cole'").fetchone()
+        conn.close()
+        assert row[0] == "loss"
+        assert row[1] == -1.0
+
+    def test_push_recorded(self, tmp_db):
+        """Whole number line, pitcher hits exactly the line."""
+        db_path, fr = tmp_db
+        self._seed_yesterday_pick(db_path, fr, pitcher="Gerrit Cole", side="over", k_line=7.0)
+
+        mock_resp = MagicMock()
+        mock_resp.json.return_value = _make_schedule_response("Gerrit Cole", ks=7)
+        mock_resp.raise_for_status = MagicMock()
+
+        with patch("fetch_results.requests.get", return_value=mock_resp):
+            fr.fetch_and_close_results()
+
+        import sqlite3
+        conn = sqlite3.connect(db_path)
+        row = conn.execute("SELECT result, pnl FROM picks").fetchone()
+        conn.close()
+        assert row[0] == "push"
+        assert row[1] == 0.0
+
+    def test_game_not_final_skipped(self, tmp_db):
+        db_path, fr = tmp_db
+        self._seed_yesterday_pick(db_path, fr)
+
+        mock_resp = MagicMock()
+        mock_resp.json.return_value = _make_schedule_response("Gerrit Cole", ks=8, game_final=False)
+        mock_resp.raise_for_status = MagicMock()
+
+        with patch("fetch_results.requests.get", return_value=mock_resp):
+            count = fr.fetch_and_close_results()
+
+        import sqlite3
+        conn = sqlite3.connect(db_path)
+        row = conn.execute("SELECT result FROM picks").fetchone()
+        conn.close()
+        assert row[0] is None  # not closed
+        assert count == 0
+
+    def test_void_when_game_final_but_name_mismatch(self, tmp_db):
+        """Pitcher scratched: game Final but their name not in starters."""
+        db_path, fr = tmp_db
+        self._seed_yesterday_pick(db_path, fr, pitcher="Gerrit Cole")
+
+        mock_resp = MagicMock()
+        mock_resp.json.return_value = _make_schedule_response("Other Pitcher", ks=5)
+        mock_resp.raise_for_status = MagicMock()
+
+        with patch("fetch_results.requests.get", return_value=mock_resp):
+            fr.fetch_and_close_results()
+
+        import sqlite3
+        conn = sqlite3.connect(db_path)
+        row = conn.execute("SELECT result, pnl FROM picks WHERE pitcher='Gerrit Cole'").fetchone()
+        conn.close()
+        assert row[0] == "void"
+        assert row[1] == 0.0
+
+    def test_pnl_positive_odds(self, tmp_db):
+        db_path, fr = tmp_db
+        self._seed_yesterday_pick(db_path, fr, odds=120, side="under", k_line=7.5)
+
+        mock_resp = MagicMock()
+        # under wins when actual < line: 6 < 7.5
+        mock_resp.json.return_value = _make_schedule_response("Gerrit Cole", ks=6)
+        mock_resp.raise_for_status = MagicMock()
+
+        with patch("fetch_results.requests.get", return_value=mock_resp):
+            fr.fetch_and_close_results()
+
+        import sqlite3
+        conn = sqlite3.connect(db_path)
+        pnl = conn.execute("SELECT pnl FROM picks").fetchone()[0]
+        conn.close()
+        assert abs(pnl - 1.20) < 0.01
