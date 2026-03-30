@@ -192,9 +192,11 @@ class TestPhase2Calibration:
         assert data["ump_scale"] <= 1.5
 
     def test_build_performance_is_pure(self, tmp_env):
-        """build_performance() should not do I/O — takes closed list, returns dict."""
+        """build_performance() should not do I/O — takes closed list and optional params, returns dict."""
         db, perf, params, cal = tmp_env
-        result = cal.build_performance([])
+        # Call with no params file existing — should not crash or do I/O
+        result = cal.build_performance([], current_params=None)
         assert isinstance(result, dict)
         assert result["total_picks"] == 0
         assert result["by_verdict"] == {}
+        assert result["last_calibrated"] is None

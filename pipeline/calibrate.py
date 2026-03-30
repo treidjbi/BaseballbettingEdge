@@ -67,7 +67,7 @@ def _american_to_implied(odds: int) -> float:
     return abs(odds) / (abs(odds) + 100)
 
 
-def build_performance(closed: list) -> dict:
+def build_performance(closed: list, current_params: dict | None = None) -> dict:
     """Aggregate closed picks into a performance dict. Pure function (no I/O)."""
     total = len(closed)
     by_verdict: dict[str, dict] = {}
@@ -113,7 +113,8 @@ def build_performance(closed: list) -> dict:
     else:
         lam_acc = {"avg_predicted": None, "avg_actual": None, "bias": None}
 
-    params = _load_current_params()
+    # Use passed params instead of reading from disk
+    params = current_params or {}
     last_cal = params.get("updated_at")
     cal_n    = params.get("sample_size", 0) if last_cal else None
 
@@ -250,7 +251,8 @@ def run() -> None:
     closed = _load_closed_picks()
     n = len(closed)
 
-    perf = build_performance(closed)
+    current_params = _load_current_params()
+    perf = build_performance(closed, current_params=current_params)
     write_performance(perf)
 
     log.info("Calibration: %d closed picks", n)
@@ -259,7 +261,6 @@ def run() -> None:
         log.info("Below Phase 1 threshold (%d), skipping calibration", PHASE1_THRESHOLD)
         return
 
-    current_params = _load_current_params()
     updated_params = _calibrate_phase1(closed, current_params)
 
     if n >= PHASE2_THRESHOLD:
