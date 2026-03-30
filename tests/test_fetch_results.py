@@ -270,3 +270,69 @@ class TestFetchAndCloseResults:
         pnl = conn.execute("SELECT pnl FROM picks").fetchone()[0]
         conn.close()
         assert abs(pnl - 1.20) < 0.01
+
+
+class TestCloseOrphans:
+    def _insert_pick(self, db_path, date_str, pitcher="Test Pitcher"):
+        import sqlite3
+        conn = sqlite3.connect(db_path)
+        conn.execute("""
+            INSERT INTO picks (date, pitcher, team, side, k_line, verdict,
+                               ev, adj_ev, raw_lambda, applied_lambda, odds, movement_conf)
+            VALUES (?,?,?,?,?,?,0.05,0.05,6.0,6.0,-110,1.0)
+        """, (date_str, pitcher, "Test", "over", 6.5, "FIRE 1u"))
+        conn.commit()
+        conn.close()
+
+    def test_old_null_result_marked_cancelled(self, tmp_db):
+        db_path, fr = tmp_db
+        from datetime import datetime, timedelta
+        import pytz
+        ET = pytz.timezone("America/New_York")
+        old_date = (datetime.now(ET) - timedelta(days=4)).strftime("%Y-%m-%d")
+        self._insert_pick(db_path, old_date)
+
+        fr.close_orphans()
+
+        import sqlite3
+        conn = sqlite3.connect(db_path)
+        row = conn.execute("SELECT result, pnl FROM picks").fetchone()
+        conn.close()
+        assert row[0] == "cancelled"
+        assert row[1] == 0.0
+
+    def test_recent_null_result_untouched(self, tmp_db):
+        db_path, fr = tmp_db
+        from datetime import datetime, timedelta
+        import pytz
+        ET = pytz.timezone("America/New_York")
+        yesterday = (datetime.now(ET) - timedelta(days=1)).strftime("%Y-%m-%d")
+        self._insert_pick(db_path, yesterday)
+
+        fr.close_orphans()
+
+        import sqlite3
+        conn = sqlite3.connect(db_path)
+        row = conn.execute("SELECT result FROM picks").fetchone()
+        conn.close()
+        assert row[0] is None  # untouched
+
+    def test_already_closed_untouched(self, tmp_db):
+        db_path, fr = tmp_db
+        from datetime import datetime, timedelta
+        import pytz
+        ET = pytz.timezone("America/New_York")
+        old_date = (datetime.now(ET) - timedelta(days=5)).strftime("%Y-%m-%d")
+        self._insert_pick(db_path, old_date)
+        import sqlite3
+        conn = sqlite3.connect(db_path)
+        conn.execute("UPDATE picks SET result='win', pnl=0.87")
+        conn.commit()
+        conn.close()
+
+        fr.close_orphans()
+
+        conn = sqlite3.connect(db_path)
+        row = conn.execute("SELECT result FROM picks").fetchone()
+        conn.close()
+        assert row[0] == "win"  # unchanged

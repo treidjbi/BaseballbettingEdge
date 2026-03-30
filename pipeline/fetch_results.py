@@ -207,3 +207,31 @@ def fetch_and_close_results() -> int:
 
     log.info("Closed %d picks for %s", closed, yesterday_et)
     return closed
+
+
+def close_orphans() -> int:
+    """Mark picks older than 3 days with NULL result as 'cancelled'. Returns count updated."""
+    threshold = (datetime.now(ET) - timedelta(days=3)).strftime("%Y-%m-%d")
+    now_str = datetime.now(pytz.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+
+    with get_db() as conn:
+        cur = conn.execute("""
+            UPDATE picks SET result='cancelled', pnl=0.0, fetched_at=?
+            WHERE result IS NULL AND date <= ?
+        """, (now_str, threshold))
+        count = cur.rowcount
+
+    if count:
+        log.info("Marked %d orphan picks as cancelled (threshold: %s)", count, threshold)
+    return count
+
+
+def run() -> None:
+    """Main entry point for the 8pm pipeline run."""
+    init_db()
+    seeded = seed_picks()
+    log.info("Seeded %d picks for today", seeded)
+    closed = fetch_and_close_results()
+    log.info("Closed %d results for yesterday", closed)
+    cancelled = close_orphans()
+    log.info("Cancelled %d orphan picks", cancelled)
