@@ -1,7 +1,8 @@
 """
 build_features.py
 Joins odds, stats, and umpire data. Computes lambda, Poisson EV, verdicts, price deltas.
-All functions are pure (no I/O) for testability.
+load_params() reads data/params.json for calibrated parameters (safe I/O with fallback).
+All other functions are pure (no I/O) for testability.
 """
 import math
 import json
@@ -183,6 +184,7 @@ def build_pitcher_record(odds: dict, stats: dict, ump_k_adj: float,
     raw_lam = calc_lambda(blended, avg_ip, stats["opp_k_rate"], scaled_ump_k_adj,
                           swstr_mult, opp_games_played=opp_games)
     applied_lam = raw_lam + params["lambda_bias"]
+    applied_lam = max(0.01, applied_lam)  # guard against negative bias producing invalid Poisson lambda
 
     k_line = odds["k_line"]
     win_prob_over  = 1 - poisson.cdf(math.floor(k_line), applied_lam)
