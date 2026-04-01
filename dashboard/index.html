@@ -386,6 +386,11 @@
   </nav>
 
 <script>
+  // ── XSS escape helper ────────────────────────────────────
+  function esc(str) {
+    return String(str ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+
   // ── Config ────────────────────────────────────────────────
   const IS_LOCAL              = location.hostname === 'localhost' || location.hostname === '127.0.0.1' || location.protocol === 'file:';
   const RAW_BASE              = IS_LOCAL
@@ -626,8 +631,8 @@
       <div class="pitcher-card${isPass ? ' card-pass' : ''}${isStarted ? ' card-started' : ''}"${isPass ? ' data-pass="1"' : ''}>
         <div class="card-header">
           <div class="card-header-left">
-            <span class="pitcher-name">${p.pitcher}</span>
-            <span class="pitcher-matchup">${p.team} vs ${p.opp_team}</span>
+            <span class="pitcher-name">${esc(p.pitcher)}</span>
+            <span class="pitcher-matchup">${esc(p.team)} vs ${esc(p.opp_team)}</span>
           </div>
           <span class="verdict-badge ${isStarted ? 'badge-started' : verdictClass(side.verdict)}">${isStarted ? 'STARTED' : badgeLabel(side)}</span>
         </div>
@@ -674,8 +679,12 @@
     const el = document.getElementById('panel-watch');
 
     const movers = [...pitchers]
-      .filter(p => p.price_delta_over !== 0)
-      .sort((a, b) => Math.abs(b.price_delta_over) - Math.abs(a.price_delta_over))
+      .filter(p => p.price_delta_over !== 0 || p.price_delta_under !== 0)
+      .sort((a, b) => {
+        const maxA = Math.max(Math.abs(a.price_delta_over || 0), Math.abs(a.price_delta_under || 0));
+        const maxB = Math.max(Math.abs(b.price_delta_over || 0), Math.abs(b.price_delta_under || 0));
+        return maxB - maxA;
+      })
       .slice(0, 5);
 
     if (!movers.length) {
@@ -690,8 +699,8 @@
       html += `
       <div class="watch-card">
         <div class="watch-left">
-          <span class="pitcher-name" style="color:var(--ink)">${p.pitcher}</span>
-          <span class="pitcher-matchup" style="color:var(--ink-dim)">${p.team} vs ${p.opp_team}</span>
+          <span class="pitcher-name" style="color:var(--ink)">${esc(p.pitcher)}</span>
+          <span class="pitcher-matchup" style="color:var(--ink-dim)">${esc(p.team)} vs ${esc(p.opp_team)}</span>
         </div>
         <div class="watch-mid">
           <span style="font-size:10px;text-transform:uppercase;letter-spacing:.05em">Over (${p.k_line}K)</span>
@@ -711,7 +720,10 @@
     document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
     document.getElementById('panel-' + name).classList.add('active');
     btn.classList.add('active');
-    if (name === 'perf') loadPerformance();
+    if (name === 'perf' && !window._perfLoaded) {
+      loadPerformance();
+      window._perfLoaded = true;
+    }
   }
 
   // ── Performance tab ───────────────────────────────────────
