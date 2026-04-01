@@ -247,6 +247,29 @@ class TestBuildPitcherRecord:
         assert rec["ev_over"]["verdict"] == calc_verdict(rec["ev_over"]["adj_ev"])
         assert rec["ev_under"]["verdict"] == calc_verdict(rec["ev_under"]["adj_ev"])
 
+    def test_win_prob_over_plus_under_sum_to_one_half_line(self):
+        """For half-point lines, over + under should sum to 1.0 (no push mass)."""
+        from build_features import build_pitcher_record
+        odds = {**self.BASE_ODDS, "k_line": 7.5}
+        rec = build_pitcher_record(odds, self.BASE_STATS, ump_k_adj=0.0)
+        total = rec["ev_over"]["win_prob"] + rec["ev_under"]["win_prob"]
+        assert abs(total - 1.0) < 0.001
+
+    def test_win_prob_over_plus_under_sum_to_one_integer_line(self):
+        """For integer lines, over + under should sum to < 1.0 (push mass exists)."""
+        from build_features import build_pitcher_record
+        from scipy.stats import poisson
+        import math
+        odds = {**self.BASE_ODDS, "k_line": 7.0}
+        rec = build_pitcher_record(odds, self.BASE_STATS, ump_k_adj=0.0)
+        total = rec["ev_over"]["win_prob"] + rec["ev_under"]["win_prob"]
+        # They should sum to < 1.0 (push probability is the gap)
+        assert total < 1.0
+        # And specifically the gap should equal P(X == 7) at the applied lambda
+        lam = rec["lambda"]
+        push_prob = poisson.pmf(7, lam)
+        assert abs((1.0 - total) - push_prob) < 0.002
+
 
 class TestCalcMovementConfidence:
     def test_negative_delta_no_penalty(self):

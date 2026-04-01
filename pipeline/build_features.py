@@ -188,7 +188,7 @@ def build_pitcher_record(odds: dict, stats: dict, ump_k_adj: float,
 
     k_line = odds["k_line"]
     win_prob_over  = 1 - poisson.cdf(math.floor(k_line), applied_lam)
-    win_prob_under = 1 - win_prob_over
+    win_prob_under = poisson.cdf(math.ceil(k_line) - 1, applied_lam)
 
     best_over_odds  = odds["best_over_odds"]
     best_under_odds = odds["best_under_odds"]
