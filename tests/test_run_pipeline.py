@@ -1,4 +1,7 @@
 import sys, os
+import json
+from pathlib import Path
+from unittest.mock import patch, MagicMock
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'pipeline'))
 
 from run_pipeline import _game_date_et
@@ -50,3 +53,88 @@ def test_default_date_uses_et_not_utc():
         args = parser.parse_args([])
         # Should be ET date (April 1), not UTC date (April 2)
         assert args.date == "2026-04-01"
+
+
+def _sample_prop():
+    return {
+        "pitcher": "Test Pitcher", "team": "", "opp_team": "",
+        "game_time": "2026-04-01T23:05:00Z", "k_line": 6.5, "opening_line": 6.5,
+        "best_over_book": "FD", "best_over_odds": -110, "best_under_odds": -110,
+        "opening_over_odds": -110, "opening_under_odds": -110,
+    }
+
+def _sample_stats():
+    return {
+        "season_k9": 9.0, "recent_k9": 9.0, "career_k9": 8.0,
+        "starts_count": 5, "innings_pitched_season": 30.0,
+        "avg_ip_last5": 5.5, "opp_k_rate": 0.227, "opp_games_played": 10,
+        "team": "Test Team", "opp_team": "Opp Team",
+    }
+
+
+def test_run_writes_today_json(tmp_path):
+    """run() should always write today.json even if it has 0 pitchers."""
+    import run_pipeline
+    out_path = tmp_path / "today.json"
+
+    with patch.object(run_pipeline, "OUTPUT_PATH", out_path), \
+         patch("run_pipeline.fetch_odds", return_value=[_sample_prop()]), \
+         patch("run_pipeline.fetch_stats", return_value={"Test Pitcher": _sample_stats()}), \
+         patch("run_pipeline.fetch_swstr", return_value={"Test Pitcher": 0.110}), \
+         patch("run_pipeline.fetch_umpires", return_value={"Test Pitcher": 0.0}), \
+         patch("run_pipeline._write_archive"):  # skip archive for unit test
+        run_pipeline.run("2026-04-01")
+
+    assert out_path.exists()
+    data = json.loads(out_path.read_text())
+    assert data["date"] == "2026-04-01"
+    assert len(data["pitchers"]) == 1
+
+
+def test_run_writes_empty_output_when_no_props(tmp_path):
+    """run() should write today.json with props_available=False when no odds returned."""
+    import run_pipeline
+    out_path = tmp_path / "today.json"
+
+    with patch.object(run_pipeline, "OUTPUT_PATH", out_path), \
+         patch("run_pipeline.fetch_odds", return_value=[]), \
+         patch("run_pipeline._write_archive"), \
+         patch("run_pipeline._run_evening_steps"):
+        run_pipeline.run("2026-04-01")
+
+    assert out_path.exists()
+    data = json.loads(out_path.read_text())
+    assert data["props_available"] is False
+    assert data["pitchers"] == []
+
+
+def test_run_evening_calls_results_and_calibrate(tmp_path):
+    """run_type='evening' should invoke fetch_results.run and calibrate.run."""
+    import run_pipeline
+    out_path = tmp_path / "today.json"
+
+    results_called = []
+    calibrate_called = []
+
+    def fake_results_run():
+        results_called.append(True)
+
+    def fake_calibrate_run():
+        calibrate_called.append(True)
+
+    with patch.object(run_pipeline, "OUTPUT_PATH", out_path), \
+         patch("run_pipeline.fetch_odds", return_value=[]), \
+         patch("run_pipeline._write_archive"):
+        import sys
+        fake_fetch_results = MagicMock()
+        fake_fetch_results.run = fake_results_run
+        fake_calibrate = MagicMock()
+        fake_calibrate.run = fake_calibrate_run
+        with patch.dict(sys.modules, {
+            "fetch_results": fake_fetch_results,
+            "calibrate": fake_calibrate,
+        }):
+            run_pipeline.run("2026-04-01", run_type="evening")
+
+    assert len(results_called) == 1, "fetch_results.run() was not called"
+    assert len(calibrate_called) == 1, "calibrate.run() was not called"
