@@ -134,7 +134,7 @@ def fetch_and_close_results() -> int:
 
     try:
         resp = requests.get(f"{MLB_BASE}/schedule", params={
-            "sportId": 1, "date": yesterday_et, "hydrate": "boxscore",
+            "sportId": 1, "date": yesterday_et,
         }, timeout=30)
         resp.raise_for_status()
         schedule = resp.json()
@@ -143,13 +143,14 @@ def fetch_and_close_results() -> int:
         return 0
 
     # Build name->ks and track which teams have finalized games
+    # Fetch each game's boxscore directly — hydrate=boxscore returns empty data
     ks_by_name: dict[str, int] = {}
     finalized_teams: set[str] = set()
 
     for date_entry in schedule.get("dates", []):
         for game in date_entry.get("games", []):
             is_final = game.get("status", {}).get("abstractGameState") == "Final"
-            boxscore = game.get("boxscore", {})
+            game_pk  = game.get("gamePk")
 
             for ts in ("home", "away"):
                 team_info = game.get("teams", {}).get(ts, {}).get("team", {})
@@ -158,14 +159,22 @@ def fetch_and_close_results() -> int:
                 if is_final:
                     finalized_teams |= team_keys
 
-                if not is_final:
-                    continue
+            if not is_final or not game_pk:
+                continue
 
-                players = boxscore.get("teams", {}).get(ts, {}).get("players", {})
+            try:
+                bs_resp = requests.get(f"{MLB_BASE}/game/{game_pk}/boxscore", timeout=30)
+                bs_resp.raise_for_status()
+                boxscore = bs_resp.json()
+            except Exception as e:
+                log.warning("Boxscore fetch failed for game %s: %s", game_pk, e)
+                continue
+
+            for ts in ("home", "away"):
+                players       = boxscore.get("teams", {}).get(ts, {}).get("players", {})
                 pitchers_order = boxscore.get("teams", {}).get(ts, {}).get("pitchers", [])
                 if not pitchers_order:
                     continue
-
                 starter = players.get(f"ID{pitchers_order[0]}", {})
                 name = starter.get("person", {}).get("fullName", "")
                 ks   = starter.get("stats", {}).get("pitching", {}).get("strikeOuts")
