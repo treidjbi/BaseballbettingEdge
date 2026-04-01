@@ -229,18 +229,24 @@ def _calibrate_phase2(closed_picks: list, current_params: dict) -> dict:
             import numpy as np
             from scipy.optimize import nnls
             X = np.array([[d[0], d[1], d[2]] for d in blend_data])
-            y = np.array([d[3] for d in blend_data])
+            y = np.array([d[3] for d in blend_data], dtype=float)
+
+            # Normalize each feature column to mean=1 for unit-consistent regression
             col_means = X.mean(axis=0)
             col_means[col_means == 0] = 1.0
             X_norm = X / col_means
-            coeffs, _ = nnls(X_norm, y)
-            coeffs_scaled = coeffs / col_means
-            total = coeffs_scaled.sum()
+
+            # Also normalize y to mean=1 so coefficients are in comparable units
+            y_mean = y.mean() if y.mean() != 0 else 1.0
+            y_norm = y / y_mean
+
+            coeffs, _ = nnls(X_norm, y_norm)
+            total = coeffs.sum()
             if total > 0:
-                w = coeffs_scaled / total
-                w = [max(0.05, wi) for wi in w]
+                w = coeffs / total          # normalize to sum=1
+                w = [max(0.05, wi) for wi in w]  # floor each weight at 5%
                 w_total = sum(w)
-                w = [wi / w_total for wi in w]
+                w = [wi / w_total for wi in w]   # renormalize after floor
                 params["weight_season_cap"] = round(min(0.85, max(0.40, w[0])), 3)
                 params["weight_recent"]     = round(min(0.40, max(0.05, w[1])), 3)
         except Exception as e:

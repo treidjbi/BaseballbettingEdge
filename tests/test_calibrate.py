@@ -307,3 +307,38 @@ class TestPhase2Calibration:
         assert len(result["rows"]) == 6
         assert all(r["picks"] == 0 for r in result["rows"])
         assert result["last_calibrated"] is None
+
+
+def test_phase2_blend_weights_sum_to_one():
+    """After Phase 2 calibration with data where season_k9 is the best predictor,
+    weight_season_cap should dominate, and weights should sum to <= 1.0."""
+    import sys, os
+    sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'pipeline'))
+    from calibrate import _calibrate_phase2
+
+    # 60 rows with varied K/9 values; actual_ks correlates most with season_k9
+    import random
+    random.seed(42)
+    picks = []
+    for i in range(60):
+        s_k9 = 7.0 + (i % 8) * 0.5   # 7.0 to 10.5
+        r_k9 = 8.0 + (i % 4) * 0.25   # 8.0 to 8.75
+        c_k9 = 7.5 + (i % 5) * 0.3    # 7.5 to 8.7
+        # actual_ks strongly tracks season_k9
+        actual = round(s_k9 * 0.55)
+        picks.append({
+            "season_k9": s_k9, "recent_k9": r_k9, "career_k9": c_k9,
+            "actual_ks": actual, "ump_k_adj": 0.0, "raw_lambda": 5.0,
+        })
+
+    params = {"weight_season_cap": 0.70, "weight_recent": 0.20, "ump_scale": 1.0,
+              "lambda_bias": 0.0, "ev_thresholds": {}}
+    result = _calibrate_phase2(picks, params)
+    ws = result["weight_season_cap"]
+    wr = result["weight_recent"]
+    # Weights must sum to <= 1.0 (career = 1 - ws - wr)
+    assert ws + wr <= 1.0
+    assert ws >= 0.05
+    assert wr >= 0.05
+    # Season weight should be at least as large as recent (season is the better predictor)
+    assert ws >= wr
