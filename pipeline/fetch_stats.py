@@ -160,6 +160,13 @@ def fetch_stats(date_str: str, pitcher_names: list) -> dict:
                     log.warning("Team K rate fetch failed for %s: %s", opp_team.get("name"), e)
                     opp_k_rate = 0.227
 
-                stats_by_name[name] = {**pstats, "opp_k_rate": opp_k_rate}
+                team_name     = team_data.get("team", {}).get("name", "")
+                opp_team_name = opp_team.get("name", "")
+                stats_by_name[name] = {
+                    **pstats,
+                    "opp_k_rate":  opp_k_rate,
+                    "team":        team_name,
+                    "opp_team":    opp_team_name,
+                }
 
     return stats_by_name

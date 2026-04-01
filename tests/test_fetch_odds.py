@@ -143,14 +143,16 @@ class TestParseKProps:
         assert result[0]["opening_over_odds"]  == 115
         assert result[0]["opening_under_odds"] == -155
 
-    def test_team_names_from_event(self):
+    def test_team_names_empty_in_fetch_odds(self):
+        """fetch_odds cannot determine home/away per pitcher — team fields are empty strings.
+        Team resolution happens in fetch_stats via the MLB schedule API."""
         data = {"events": [
             _make_event("Tarik Skubal", 7.5, 120, -160,
                         away="Detroit Tigers", home="San Diego Padres")
         ]}
         result = parse_k_props(data)
-        assert result[0]["team"]     == "Detroit Tigers"
-        assert result[0]["opp_team"] == "San Diego Padres"
+        assert result[0]["team"]     == ""
+        assert result[0]["opp_team"] == ""
 
     def test_multiple_pitchers_same_event(self):
         event = {
@@ -258,6 +260,44 @@ class TestParseKProps:
         result = parse_k_props({"events": [event]})
         assert len(result) == 1
         assert result[0]["k_line"] == 5.5   # main line selected
+
+def test_home_pitcher_gets_empty_team_not_away():
+    """fetch_odds cannot determine home/away per pitcher — team fields must be empty strings."""
+    import sys, os
+    sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'pipeline'))
+    from fetch_odds import _parse_event_k_props
+    event = {
+        "teams": [
+            {"name": "Yankees", "is_away": True, "is_home": False},
+            {"name": "Red Sox", "is_away": False, "is_home": True},
+        ],
+        "event_date": "2026-04-01T23:05:00Z",
+        "markets": [{
+            "market_id": 19,
+            "participants": [
+                {
+                    "name": "Away Pitcher",
+                    "lines": [
+                        {"value": "Over 6.5", "prices": {"1": {"price": -110, "is_main_line": True, "price_delta": 0}}},
+                        {"value": "Under 6.5", "prices": {"1": {"price": -110, "is_main_line": True, "price_delta": 0}}}
+                    ]
+                },
+                {
+                    "name": "Home Pitcher",
+                    "lines": [
+                        {"value": "Over 5.5", "prices": {"1": {"price": -115, "is_main_line": True, "price_delta": 0}}},
+                        {"value": "Under 5.5", "prices": {"1": {"price": -105, "is_main_line": True, "price_delta": 0}}}
+                    ]
+                },
+            ]
+        }]
+    }
+    results = _parse_event_k_props(event)
+    assert len(results) == 2
+    for r in results:
+        assert r["team"] == "", f"Expected empty team, got {r['team']!r}"
+        assert r["opp_team"] == "", f"Expected empty opp_team, got {r['opp_team']!r}"
+
 
     def test_skips_pitcher_with_only_over_no_under(self):
         event = {

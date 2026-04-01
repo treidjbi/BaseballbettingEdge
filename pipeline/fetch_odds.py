@@ -156,8 +156,8 @@ def _parse_event_k_props(event: dict) -> list:
 
             results.append({
                 "pitcher":            pitcher_name,
-                "team":               away_team,
-                "opp_team":           home_team,
+                "team":               "",        # resolved by fetch_stats via MLB schedule
+                "opp_team":           "",        # resolved by fetch_stats via MLB schedule
                 "game_time":          game_time,
                 "k_line":             main_val,
                 "opening_line":       main_val,

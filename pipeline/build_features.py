@@ -167,6 +167,10 @@ def build_pitcher_record(odds: dict, stats: dict, ump_k_adj: float,
     params = load_params()
     thresholds = params["ev_thresholds"]
 
+    # team/opp_team: stats dict is authoritative (from MLB schedule); odds fallback for safety
+    team     = stats.get("team")     or odds.get("team", "")
+    opp_team = stats.get("opp_team") or odds.get("opp_team", "")
+
     ip     = stats.get("innings_pitched_season", 0)
     avg_ip = stats.get("avg_ip_last5", EXPECTED_INNINGS)
 
@@ -205,8 +209,8 @@ def build_pitcher_record(odds: dict, stats: dict, ump_k_adj: float,
 
     return {
         "pitcher":            odds["pitcher"],
-        "team":               odds["team"],
-        "opp_team":           odds["opp_team"],
+        "team":               team,
+        "opp_team":           opp_team,
         "game_time":          odds["game_time"],
         "k_line":             k_line,
         "opening_line":       odds.get("opening_line", k_line),

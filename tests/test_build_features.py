@@ -270,6 +270,16 @@ class TestBuildPitcherRecord:
         push_prob = poisson.pmf(7, lam)
         assert abs((1.0 - total) - push_prob) < 0.002
 
+    def test_team_from_stats_overrides_empty_string_from_odds(self):
+        """When stats contains team/opp_team (from MLB schedule), build_pitcher_record
+        should output those values, not the empty strings from fetch_odds."""
+        from build_features import build_pitcher_record
+        odds = {**self.BASE_ODDS, "team": "", "opp_team": ""}
+        stats = {**self.BASE_STATS, "team": "Boston Red Sox", "opp_team": "New York Yankees"}
+        rec = build_pitcher_record(odds, stats, ump_k_adj=0.0)
+        assert rec["team"] == "Boston Red Sox"
+        assert rec["opp_team"] == "New York Yankees"
+
 
 class TestCalcMovementConfidence:
     def test_negative_delta_no_penalty(self):
