@@ -2,9 +2,17 @@ name: Baseball Pipeline
 
 on:
   schedule:
-    - cron: '0 14 * * *'   # 9am ET (UTC-5)
-    - cron: '0 18 * * *'   # 1pm ET
-    - cron: '0 1 * * *'    # 8pm ET (1am UTC)
+    # Morning run: 9:00 AM ET
+    # EDT (Mar–Nov): UTC-4 → 13:00 UTC
+    # EST (Nov–Mar): UTC-5 → 14:00 UTC
+    - cron: '0 13 * * *'   # 9am EDT (primary — baseball season)
+    - cron: '0 14 * * *'   # 9am EST (offseason)
+    # Midday run: 1:00 PM ET
+    - cron: '0 17 * * *'   # 1pm EDT
+    - cron: '0 18 * * *'   # 1pm EST
+    # Evening run: 8:00 PM ET
+    - cron: '0 0 * * *'    # 8pm EDT (midnight UTC)
+    - cron: '0 1 * * *'    # 8pm EST (1am UTC)
   workflow_dispatch:        # manual trigger for testing
 
 permissions:
@@ -33,10 +41,10 @@ jobs:
         env:
           RUNDOWN_API_KEY: ${{ secrets.RUNDOWN_API_KEY }}
         run: |
-          if [ "${{ github.event.schedule }}" = "0 1 * * *" ]; then
-            python pipeline/run_pipeline.py $(date +%Y-%m-%d) --run-type evening
+          if [ "${{ github.event.schedule }}" = "0 0 * * *" ] || [ "${{ github.event.schedule }}" = "0 1 * * *" ]; then
+            python pipeline/run_pipeline.py $(TZ=America/New_York date +%Y-%m-%d) --run-type evening
           else
-            python pipeline/run_pipeline.py $(date +%Y-%m-%d)
+            python pipeline/run_pipeline.py $(TZ=America/New_York date +%Y-%m-%d)
           fi
 
       - name: Commit pipeline output
@@ -45,7 +53,6 @@ jobs:
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add dashboard/data/processed/
           test -f dashboard/data/performance.json && git add dashboard/data/performance.json || true
-          test -f data/results.db && git add data/results.db || true
           test -f data/params.json && git add data/params.json || true
           git diff --staged --quiet || git commit -m "chore: pipeline update $(date -u +%Y-%m-%dT%H:%M:%SZ)"
           git pull --rebase
