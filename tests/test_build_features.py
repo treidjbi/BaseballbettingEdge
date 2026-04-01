@@ -280,6 +280,17 @@ class TestBuildPitcherRecord:
         assert rec["team"] == "Boston Red Sox"
         assert rec["opp_team"] == "New York Yankees"
 
+    def test_opp_games_played_affects_lambda(self):
+        """opp_games_played=0 (no data) should produce same lambda as league avg opp.
+        opp_games_played=162 with high K% team should produce higher lambda."""
+        from build_features import build_pitcher_record
+        stats_no_games = {**self.BASE_STATS, "opp_k_rate": 0.30, "opp_games_played": 0}
+        stats_full_season = {**self.BASE_STATS, "opp_k_rate": 0.30, "opp_games_played": 162}
+        rec_no = build_pitcher_record(self.BASE_ODDS, stats_no_games, ump_k_adj=0.0)
+        rec_full = build_pitcher_record(self.BASE_ODDS, stats_full_season, ump_k_adj=0.0)
+        # With 162 games of 0.30 K%, lambda should be higher than with 0 games (league avg)
+        assert rec_full["lambda"] > rec_no["lambda"]
+
 
 class TestCalcMovementConfidence:
     def test_negative_delta_no_penalty(self):

@@ -96,8 +96,9 @@ def fetch_pitcher_stats(person_id: int, season: int) -> dict:
     }
 
 
-def fetch_team_k_rate(team_id: int, season: int) -> float:
-    """Fetch a team's season batter K% (strikeouts / plate appearances)."""
+def fetch_team_k_rate(team_id: int, season: int) -> tuple[float, int]:
+    """Fetch a team's season batter K% and games played.
+    Returns (k_rate, games_played). Falls back to (0.227, 0) on missing data."""
     data   = _get(f"/teams/{team_id}/stats", {
         "stats": "season", "group": "hitting", "season": season
     })
@@ -106,9 +107,10 @@ def fetch_team_k_rate(team_id: int, season: int) -> float:
         stat = split.get("stat", {})
         pa   = int(stat.get("plateAppearances", 0) or 0)
         so   = int(stat.get("strikeOuts", 0) or 0)
+        gp   = int(stat.get("gamesPlayed", 0) or 0)
         if pa > 0:
-            return round(so / pa, 4)
-    return 0.227  # fall back to league average
+            return round(so / pa, 4), gp
+    return 0.227, 0  # fall back to league average, no games
 
 
 def fetch_stats(date_str: str, pitcher_names: list) -> dict:
@@ -155,18 +157,19 @@ def fetch_stats(date_str: str, pitcher_names: list) -> dict:
                 opp_team    = game.get("teams", {}).get(opp_side, {}).get("team", {})
                 opp_team_id = opp_team.get("id")
                 try:
-                    opp_k_rate = fetch_team_k_rate(opp_team_id, season) if opp_team_id else 0.227
+                    opp_k_rate, opp_games_played = fetch_team_k_rate(opp_team_id, season) if opp_team_id else (0.227, 0)
                 except Exception as e:
                     log.warning("Team K rate fetch failed for %s: %s", opp_team.get("name"), e)
-                    opp_k_rate = 0.227
+                    opp_k_rate, opp_games_played = 0.227, 0
 
                 team_name     = team_data.get("team", {}).get("name", "")
                 opp_team_name = opp_team.get("name", "")
                 stats_by_name[name] = {
                     **pstats,
-                    "opp_k_rate":  opp_k_rate,
-                    "team":        team_name,
-                    "opp_team":    opp_team_name,
+                    "opp_k_rate":       opp_k_rate,
+                    "opp_games_played": opp_games_played,
+                    "team":             team_name,
+                    "opp_team":         opp_team_name,
                 }
 
     return stats_by_name
