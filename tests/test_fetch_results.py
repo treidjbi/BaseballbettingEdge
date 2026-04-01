@@ -177,7 +177,7 @@ class TestFetchAndCloseResults:
             INSERT INTO picks (date, pitcher, team, side, k_line, verdict,
                                ev, adj_ev, raw_lambda, applied_lambda, odds, movement_conf)
             VALUES (date('now','-1 day','localtime'), ?,?,?,?,?,0.05,0.05,7.2,7.2,?,1.0)
-        """, (pitcher, "New York", side, k_line, verdict, odds))
+        """, (pitcher, "New York Yankees", side, k_line, verdict, odds))
         conn.commit()
         conn.close()
 
@@ -357,3 +357,78 @@ class TestCloseOrphans:
         row = conn.execute("SELECT result FROM picks").fetchone()
         conn.close()
         assert row[0] == "win"  # unchanged
+
+
+def test_void_detection_does_not_cross_match_ny_teams(tmp_path):
+    """A Mets pitcher should NOT be voided when only a Yankees game is final."""
+    import sys, os
+    sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'pipeline'))
+    import fetch_results
+    from unittest.mock import patch, MagicMock
+
+    db_path = tmp_path / "results.db"
+    with patch.object(fetch_results, "DB_PATH", db_path):
+        fetch_results.init_db()
+        # Seed a Mets pitcher pick for yesterday
+        with fetch_results.get_db() as conn:
+            conn.execute("""
+                INSERT INTO picks (date, pitcher, team, side, k_line, verdict, ev, adj_ev,
+                                   raw_lambda, applied_lambda, odds, movement_conf)
+                VALUES ('2026-03-31','Jacob deGrom','new york mets','over',
+                        6.5,'FIRE 2u',0.10,0.09,5.5,5.5,-110,1.0)
+            """)
+
+        # Schedule: only Yankees game is final — Mets game is NOT final
+        schedule_resp = MagicMock()
+        schedule_resp.raise_for_status = MagicMock()
+        schedule_resp.json.return_value = {
+            "dates": [{
+                "games": [
+                    {
+                        "gamePk": 1,
+                        "status": {"abstractGameState": "Final"},
+                        "teams": {
+                            "home": {"team": {"name": "New York Yankees", "abbreviation": "NYY"}},
+                            "away": {"team": {"name": "Boston Red Sox", "abbreviation": "BOS"}},
+                        }
+                    },
+                    {
+                        "gamePk": 2,
+                        "status": {"abstractGameState": "Live"},  # Mets game NOT final
+                        "teams": {
+                            "home": {"team": {"name": "New York Mets", "abbreviation": "NYM"}},
+                            "away": {"team": {"name": "Atlanta Braves", "abbreviation": "ATL"}},
+                        }
+                    }
+                ]
+            }]
+        }
+
+        boxscore_resp = MagicMock()
+        boxscore_resp.raise_for_status = MagicMock()
+        boxscore_resp.json.return_value = {
+            "teams": {
+                "home": {"pitchers": [999], "players": {
+                    "ID999": {"person": {"fullName": "Gerrit Cole"},
+                              "stats": {"pitching": {"strikeOuts": 8}}}
+                }},
+                "away": {"pitchers": [], "players": {}}
+            }
+        }
+
+        def mock_get(url, **kwargs):
+            if "boxscore" in url:
+                return boxscore_resp
+            return schedule_resp
+
+        with patch("fetch_results.requests.get", side_effect=mock_get):
+            with patch("fetch_results._et_dates", return_value=("2026-04-01", "2026-03-31")):
+                closed = fetch_results.fetch_and_close_results()
+
+        # Mets pitcher should NOT be voided (Yankees game finished but Mets game did not)
+        with fetch_results.get_db() as conn:
+            pick = conn.execute(
+                "SELECT result FROM picks WHERE pitcher='Jacob deGrom'"
+            ).fetchone()
+        assert pick["result"] is None  # still open — not voided
+        assert closed == 0

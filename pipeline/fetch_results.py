@@ -210,7 +210,7 @@ def fetch_and_close_results() -> int:
                 )
                 closed += 1
 
-            elif any(team_norm in ft or ft in team_norm for ft in finalized_teams):
+            elif team_norm in finalized_teams:
                 # Game finished but pitcher not in starters → scratched
                 conn.execute(
                     "UPDATE picks SET result='void',pnl=0.0,fetched_at=? WHERE id=?",
