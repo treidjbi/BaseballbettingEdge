@@ -17,6 +17,7 @@ BASE_URL   = "https://therundown.io/api/v2"
 SPORT_ID   = 3   # MLB
 MARKET_ID  = 19  # pitcher_strikeouts
 THROTTLE_S = 0.55
+_last_call_time: float = 0.0
 
 
 def _headers() -> dict:
@@ -31,7 +32,11 @@ def _headers() -> dict:
 
 def throttled_get(url: str, params: dict = None) -> dict:
     """GET with rate-limit throttle. Raises on non-200."""
-    time.sleep(THROTTLE_S)
+    global _last_call_time
+    elapsed = time.time() - _last_call_time
+    if elapsed < THROTTLE_S:
+        time.sleep(THROTTLE_S - elapsed)
+    _last_call_time = time.time()
     resp = requests.get(url, headers=_headers(), params=params, timeout=15)
     resp.raise_for_status()
     return resp.json()
@@ -171,12 +176,8 @@ def _parse_event_k_props(event: dict) -> list:
     return results
 
 
-def parse_k_props(data: dict, opening_odds_map: dict = None) -> list:
-    """
-    Parse a TheRundown events response (new markets format) into K-prop dicts.
-    opening_odds_map is accepted for backward-compat but ignored — the API now
-    provides price_delta directly in each price entry.
-    """
+def parse_k_props(data: dict) -> list:
+    """Parse a TheRundown events response (new markets format) into K-prop dicts."""
     results = []
     for event in data.get("events", []):
         results.extend(_parse_event_k_props(event))
