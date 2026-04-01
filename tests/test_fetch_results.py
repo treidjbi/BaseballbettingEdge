@@ -168,6 +168,40 @@ def _make_schedule_response(pitcher_name: str, ks: int, game_final: bool = True)
     }
 
 
+def _sched_resp(game_pk=12345, is_final=True):
+    """Minimal schedule API response for two-call HTTP flow tests."""
+    return {
+        "dates": [{
+            "games": [{
+                "gamePk": game_pk,
+                "status": {"abstractGameState": "Final" if is_final else "Live"},
+                "teams": {
+                    "home": {"team": {"name": "New York Yankees", "abbreviation": "NYY"}},
+                    "away": {"team": {"name": "Boston Red Sox", "abbreviation": "BOS"}},
+                }
+            }]
+        }]
+    }
+
+
+def _bs_resp(starter_name="Gerrit Cole", starter_id=123, ks=7):
+    """Minimal boxscore API response for two-call HTTP flow tests."""
+    return {
+        "teams": {
+            "home": {
+                "pitchers": [starter_id],
+                "players": {
+                    f"ID{starter_id}": {
+                        "person": {"fullName": starter_name},
+                        "stats": {"pitching": {"strikeOuts": ks}}
+                    }
+                }
+            },
+            "away": {"pitchers": [], "players": {}}
+        }
+    }
+
+
 class TestFetchAndCloseResults:
     def _seed_yesterday_pick(self, db_path, fr, pitcher="Gerrit Cole", side="over",
                               k_line=7.5, odds=-115, verdict="FIRE 1u"):
@@ -185,11 +219,20 @@ class TestFetchAndCloseResults:
         db_path, fr = tmp_db
         self._seed_yesterday_pick(db_path, fr, pitcher="Gerrit Cole", side="over", k_line=7.5)
 
-        mock_resp = MagicMock()
-        mock_resp.json.return_value = _make_schedule_response("Gerrit Cole", ks=8)
-        mock_resp.raise_for_status = MagicMock()
+        schedule_mock = MagicMock()
+        schedule_mock.json.return_value = _sched_resp(game_pk=111111, is_final=True)
+        schedule_mock.raise_for_status = MagicMock()
 
-        with patch("fetch_results.requests.get", return_value=mock_resp):
+        boxscore_mock = MagicMock()
+        boxscore_mock.json.return_value = _bs_resp("Gerrit Cole", 123, ks=8)
+        boxscore_mock.raise_for_status = MagicMock()
+
+        def mock_get(url, **kwargs):
+            if "boxscore" in url:
+                return boxscore_mock
+            return schedule_mock
+
+        with patch("fetch_results.requests.get", side_effect=mock_get):
             count = fr.fetch_and_close_results()
 
         import sqlite3
@@ -204,11 +247,20 @@ class TestFetchAndCloseResults:
         db_path, fr = tmp_db
         self._seed_yesterday_pick(db_path, fr, pitcher="Gerrit Cole", side="over", k_line=7.5)
 
-        mock_resp = MagicMock()
-        mock_resp.json.return_value = _make_schedule_response("Gerrit Cole", ks=6)
-        mock_resp.raise_for_status = MagicMock()
+        schedule_mock = MagicMock()
+        schedule_mock.json.return_value = _sched_resp(game_pk=111111, is_final=True)
+        schedule_mock.raise_for_status = MagicMock()
 
-        with patch("fetch_results.requests.get", return_value=mock_resp):
+        boxscore_mock = MagicMock()
+        boxscore_mock.json.return_value = _bs_resp("Gerrit Cole", 123, ks=6)
+        boxscore_mock.raise_for_status = MagicMock()
+
+        def mock_get(url, **kwargs):
+            if "boxscore" in url:
+                return boxscore_mock
+            return schedule_mock
+
+        with patch("fetch_results.requests.get", side_effect=mock_get):
             fr.fetch_and_close_results()
 
         import sqlite3
@@ -223,11 +275,20 @@ class TestFetchAndCloseResults:
         db_path, fr = tmp_db
         self._seed_yesterday_pick(db_path, fr, pitcher="Gerrit Cole", side="over", k_line=7.0)
 
-        mock_resp = MagicMock()
-        mock_resp.json.return_value = _make_schedule_response("Gerrit Cole", ks=7)
-        mock_resp.raise_for_status = MagicMock()
+        schedule_mock = MagicMock()
+        schedule_mock.json.return_value = _sched_resp(game_pk=111111, is_final=True)
+        schedule_mock.raise_for_status = MagicMock()
 
-        with patch("fetch_results.requests.get", return_value=mock_resp):
+        boxscore_mock = MagicMock()
+        boxscore_mock.json.return_value = _bs_resp("Gerrit Cole", 123, ks=7)
+        boxscore_mock.raise_for_status = MagicMock()
+
+        def mock_get(url, **kwargs):
+            if "boxscore" in url:
+                return boxscore_mock
+            return schedule_mock
+
+        with patch("fetch_results.requests.get", side_effect=mock_get):
             fr.fetch_and_close_results()
 
         import sqlite3
@@ -241,11 +302,21 @@ class TestFetchAndCloseResults:
         db_path, fr = tmp_db
         self._seed_yesterday_pick(db_path, fr)
 
-        mock_resp = MagicMock()
-        mock_resp.json.return_value = _make_schedule_response("Gerrit Cole", ks=8, game_final=False)
-        mock_resp.raise_for_status = MagicMock()
+        schedule_mock = MagicMock()
+        schedule_mock.json.return_value = _sched_resp(game_pk=111111, is_final=False)
+        schedule_mock.raise_for_status = MagicMock()
 
-        with patch("fetch_results.requests.get", return_value=mock_resp):
+        # No boxscore call expected when game is not final, but define it defensively
+        boxscore_mock = MagicMock()
+        boxscore_mock.json.return_value = _bs_resp("Gerrit Cole", 123, ks=8)
+        boxscore_mock.raise_for_status = MagicMock()
+
+        def mock_get(url, **kwargs):
+            if "boxscore" in url:
+                return boxscore_mock
+            return schedule_mock
+
+        with patch("fetch_results.requests.get", side_effect=mock_get):
             count = fr.fetch_and_close_results()
 
         import sqlite3
@@ -260,11 +331,20 @@ class TestFetchAndCloseResults:
         db_path, fr = tmp_db
         self._seed_yesterday_pick(db_path, fr, pitcher="Gerrit Cole")
 
-        mock_resp = MagicMock()
-        mock_resp.json.return_value = _make_schedule_response("Other Pitcher", ks=5)
-        mock_resp.raise_for_status = MagicMock()
+        schedule_mock = MagicMock()
+        schedule_mock.json.return_value = _sched_resp(game_pk=111111, is_final=True)
+        schedule_mock.raise_for_status = MagicMock()
 
-        with patch("fetch_results.requests.get", return_value=mock_resp):
+        boxscore_mock = MagicMock()
+        boxscore_mock.json.return_value = _bs_resp("Other Pitcher", 123, ks=5)
+        boxscore_mock.raise_for_status = MagicMock()
+
+        def mock_get(url, **kwargs):
+            if "boxscore" in url:
+                return boxscore_mock
+            return schedule_mock
+
+        with patch("fetch_results.requests.get", side_effect=mock_get):
             fr.fetch_and_close_results()
 
         import sqlite3
@@ -278,12 +358,21 @@ class TestFetchAndCloseResults:
         db_path, fr = tmp_db
         self._seed_yesterday_pick(db_path, fr, odds=120, side="under", k_line=7.5)
 
-        mock_resp = MagicMock()
-        # under wins when actual < line: 6 < 7.5
-        mock_resp.json.return_value = _make_schedule_response("Gerrit Cole", ks=6)
-        mock_resp.raise_for_status = MagicMock()
+        schedule_mock = MagicMock()
+        schedule_mock.json.return_value = _sched_resp(game_pk=111111, is_final=True)
+        schedule_mock.raise_for_status = MagicMock()
 
-        with patch("fetch_results.requests.get", return_value=mock_resp):
+        boxscore_mock = MagicMock()
+        # under wins when actual < line: 6 < 7.5
+        boxscore_mock.json.return_value = _bs_resp("Gerrit Cole", 123, ks=6)
+        boxscore_mock.raise_for_status = MagicMock()
+
+        def mock_get(url, **kwargs):
+            if "boxscore" in url:
+                return boxscore_mock
+            return schedule_mock
+
+        with patch("fetch_results.requests.get", side_effect=mock_get):
             fr.fetch_and_close_results()
 
         import sqlite3
@@ -432,3 +521,45 @@ def test_void_detection_does_not_cross_match_ny_teams(tmp_path):
             ).fetchone()
         assert pick["result"] is None  # still open — not voided
         assert closed == 0
+
+
+def test_fetch_and_close_results_calls_boxscore_separately(tmp_path):
+    """Verify fetch_and_close_results makes two HTTP calls: schedule then boxscore."""
+    import sys, os
+    sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'pipeline'))
+    import fetch_results
+    from unittest.mock import patch, MagicMock
+
+    db_path = tmp_path / "results.db"
+    with patch.object(fetch_results, "DB_PATH", db_path):
+        fetch_results.init_db()
+        with fetch_results.get_db() as conn:
+            conn.execute("""
+                INSERT INTO picks (date, pitcher, team, side, k_line, verdict, ev, adj_ev,
+                                   raw_lambda, applied_lambda, odds, movement_conf)
+                VALUES ('2026-03-31','Chris Sale','Boston Red Sox','over',7.5,'FIRE 2u',0.10,0.09,
+                        5.5,5.5,-110,1.0)
+            """)
+
+        schedule_mock = MagicMock()
+        schedule_mock.json.return_value = _sched_resp(game_pk=99, is_final=True)
+        schedule_mock.raise_for_status = MagicMock()
+
+        boxscore_mock = MagicMock()
+        boxscore_mock.json.return_value = _bs_resp("Chris Sale", 456, ks=8)
+        boxscore_mock.raise_for_status = MagicMock()
+
+        call_count = [0]
+        def mock_get(url, **kwargs):
+            call_count[0] += 1
+            if "boxscore" in url:
+                return boxscore_mock
+            return schedule_mock
+
+        with patch("fetch_results.requests.get", side_effect=mock_get):
+            with patch("fetch_results._et_dates", return_value=("2026-04-01", "2026-03-31")):
+                closed = fetch_results.fetch_and_close_results()
+
+        # Two HTTP calls: schedule + boxscore
+        assert call_count[0] == 2
+        assert closed == 1
