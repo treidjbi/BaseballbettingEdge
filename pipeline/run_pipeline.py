@@ -125,7 +125,7 @@ def run(date_str: str, run_type: str = "full") -> None:
         except Exception as e:
             log.warning("build_pitcher_record failed for %s: %s — skipping", name, e)
 
-    log.info("Built %d/%d pitcher records (lambda v2: variable IP + SwStr%%)", len(records), len(props))
+    log.info("Built %d/%d pitcher records", len(records), len(props))
     _write_output(date_str, records, props_available=True)
     log.info("=== Pipeline complete ===")
     _run_evening_steps(run_type)
@@ -214,7 +214,7 @@ if __name__ == "__main__":
     import argparse
     parser = argparse.ArgumentParser()
     parser.add_argument("date", nargs="?",
-                        default=datetime.now().strftime("%Y-%m-%d"),
+                        default=datetime.now(ZoneInfo("America/New_York")).strftime("%Y-%m-%d"),
                         help="Game date YYYY-MM-DD")
     parser.add_argument("--run-type", choices=["full", "evening"], default="full",
                         help="'evening' adds result fetching and calibration")
