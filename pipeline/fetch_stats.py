@@ -5,7 +5,7 @@ Returns a dict keyed by pitcher name with stats needed for build_features.
 """
 import logging
 import requests
-from datetime import datetime
+from datetime import datetime, timedelta
 
 log = logging.getLogger(__name__)
 
@@ -13,9 +13,19 @@ MLB_BASE = "https://statsapi.mlb.com/api/v1"
 
 
 def _get(path: str, params: dict = None) -> dict:
-    resp = requests.get(f"{MLB_BASE}{path}", params=params, timeout=15)
-    resp.raise_for_status()
-    return resp.json()
+    """GET with 3-attempt retry and exponential backoff."""
+    import time
+    last_err = None
+    for attempt in range(3):
+        try:
+            resp = requests.get(f"{MLB_BASE}{path}", params=params, timeout=15)
+            resp.raise_for_status()
+            return resp.json()
+        except Exception as e:
+            last_err = e
+            if attempt < 2:
+                time.sleep(2 ** attempt)  # 1s, 2s
+    raise last_err
 
 
 def _parse_ip(value) -> float:
@@ -120,7 +130,6 @@ def fetch_stats(date_str: str, pitcher_names: list) -> dict:
     of fetch_odds (ET evening games are filed under the next UTC day).
     Skips pitchers where the confirmed starter cannot be found in the schedule.
     """
-    from datetime import timedelta
     season   = datetime.strptime(date_str, "%Y-%m-%d").year
     next_day = (datetime.strptime(date_str, "%Y-%m-%d") + timedelta(days=1)).strftime("%Y-%m-%d")
 
