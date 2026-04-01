@@ -694,8 +694,10 @@
 
     let html = '<div class="watchlist-hd">Biggest juice moves today</div>';
     for (const p of movers) {
-      const dir = p.price_delta_over < 0 ? '↑' : '↓';
-      const cls = p.price_delta_over < 0 ? 'delta-over' : 'delta-under';
+      const useOver = Math.abs(p.price_delta_over || 0) >= Math.abs(p.price_delta_under || 0);
+      const activeDelta = useOver ? (p.price_delta_over || 0) : (p.price_delta_under || 0);
+      const dir = activeDelta < 0 ? '↑' : '↓';
+      const cls = activeDelta < 0 ? 'delta-over' : 'delta-under';
       html += `
       <div class="watch-card">
         <div class="watch-left">
@@ -705,7 +707,7 @@
         <div class="watch-mid">
           <span style="font-size:10px;text-transform:uppercase;letter-spacing:.05em">Over (${p.k_line}K)</span>
           <span>${fmtOdds(p.opening_over_odds)} → ${fmtOdds(p.best_over_odds)}</span>
-          <span class="${cls}">${dir} ${Math.abs(p.price_delta_over)}</span>
+          <span class="${cls}">${dir} ${Math.abs(activeDelta)}</span>
         </div>
         <span class="verdict-badge ${verdictClass(bestSide(p).verdict)}">${badgeLabel(bestSide(p))}</span>
       </div>`;
@@ -746,10 +748,10 @@
     }
 
     const tableRows = data.rows.map(r => {
-      const side = r.side.charAt(0).toUpperCase() + r.side.slice(1);
+      const side = esc(r.side.charAt(0).toUpperCase() + r.side.slice(1));
       if (r.picks === 0) {
         return `<tr>
-          <td><strong>${r.verdict}</strong></td>
+          <td><strong>${esc(r.verdict)}</strong></td>
           <td>${side}</td>
           <td colspan="4" style="color:#666">—</td>
         </tr>`;
@@ -759,7 +761,7 @@
       const avgEv   = r.avg_ev   != null ? (r.avg_ev * 100).toFixed(1) + '%' : '—';
       const roiClass = r.roi != null ? (r.roi >= 0 ? 'roi-pos' : 'roi-neg') : '';
       return `<tr>
-        <td><strong>${r.verdict}</strong></td>
+        <td><strong>${esc(r.verdict)}</strong></td>
         <td>${side}</td>
         <td>${r.picks}</td>
         <td>${winPct}</td>
@@ -774,7 +776,7 @@
       : '';
 
     const calNote = data.last_calibrated
-      ? `<p class="perf-cal">Last recalibrated ${data.last_calibrated.slice(0, 10)} &mdash; n=${data.calibration_sample} picks</p>`
+      ? `<p class="perf-cal">Last recalibrated ${esc(data.last_calibrated.slice(0, 10))} &mdash; n=${data.calibration_sample} picks</p>`
       : `<p class="perf-cal">Not yet calibrated &mdash; need ${data.total_picks}/30 closed picks</p>`;
 
     el.innerHTML = `
