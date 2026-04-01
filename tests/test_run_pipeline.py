@@ -98,8 +98,7 @@ def test_run_writes_empty_output_when_no_props(tmp_path):
 
     with patch.object(run_pipeline, "OUTPUT_PATH", out_path), \
          patch("run_pipeline.fetch_odds", return_value=[]), \
-         patch("run_pipeline._write_archive"), \
-         patch("run_pipeline._run_evening_steps"):
+         patch("run_pipeline._write_archive"):
         run_pipeline.run("2026-04-01")
 
     assert out_path.exists()
