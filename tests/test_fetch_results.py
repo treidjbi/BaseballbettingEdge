@@ -49,6 +49,27 @@ def today_json(tmp_path):
     return p, data
 
 
+def test_seed_picks_missing_file_returns_zero():
+    """seed_picks should return 0 and log a warning when today.json is missing."""
+    import sys, os
+    sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'pipeline'))
+    from pathlib import Path
+    from fetch_results import seed_picks
+    result = seed_picks(Path("/nonexistent/path/today.json"))
+    assert result == 0
+
+
+def test_seed_picks_corrupt_json_returns_zero(tmp_path):
+    """seed_picks should return 0 when today.json contains invalid JSON."""
+    import sys, os
+    sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'pipeline'))
+    from fetch_results import seed_picks
+    bad_json = tmp_path / "today.json"
+    bad_json.write_text("{not valid json{{")
+    result = seed_picks(bad_json)
+    assert result == 0
+
+
 class TestInitDb:
     def test_creates_picks_table(self, tmp_db):
         db_path, fr = tmp_db

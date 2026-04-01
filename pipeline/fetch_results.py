@@ -67,8 +67,12 @@ def init_db() -> None:
 
 def seed_picks(today_json_path: Path = TODAY_JSON) -> int:
     """Insert non-PASS picks from today.json. Returns count of new rows inserted."""
-    with open(today_json_path) as f:
-        data = json.load(f)
+    try:
+        with open(today_json_path) as f:
+            data = json.load(f)
+    except (FileNotFoundError, json.JSONDecodeError, OSError) as e:
+        log.warning("seed_picks: could not read %s: %s — skipping seed", today_json_path, e)
+        return 0
 
     game_date = data["date"]
     inserted = 0
