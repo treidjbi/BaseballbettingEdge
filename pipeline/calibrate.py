@@ -215,9 +215,15 @@ def _calibrate_phase2(closed_picks: list, current_params: dict) -> dict:
         resids = [d[1] for d in ump_data]
         if len(set(umps)) > 1:
             corr, _ = pearsonr(umps, resids)
-            if abs(corr) < 0.05:
-                current_scale = params.get("ump_scale", 1.0)
+            import math
+            current_scale = params.get("ump_scale", 1.0)
+            if not math.isnan(corr) and corr > 0.15:
+                # Strong positive correlation: ump adjustment is predictive — increase weight
+                params["ump_scale"] = round(max(0.0, min(1.5, current_scale + 0.05)), 3)
+            elif math.isnan(corr) or abs(corr) < 0.05:
+                # Near-zero or undefined correlation: ump adjustment not predictive — decrease weight
                 params["ump_scale"] = round(max(0.0, min(1.5, current_scale - 0.05)), 3)
+            # Between 0.05 and 0.15: leave scale unchanged
 
     # Blend weights: linear regression on k9 components
     blend_data = [(r["season_k9"], r["recent_k9"], r["career_k9"], r["actual_ks"])

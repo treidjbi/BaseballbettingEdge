@@ -342,3 +342,49 @@ def test_phase2_blend_weights_sum_to_one():
     assert wr >= 0.05
     # Season weight should be at least as large as recent (season is the better predictor)
     assert ws >= wr
+
+
+def test_ump_scale_increases_when_correlated():
+    """When ump_k_adj strongly correlates with residuals, ump_scale should increase."""
+    import sys, os
+    sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'pipeline'))
+    from calibrate import _calibrate_phase2
+
+    # Create data with strong positive correlation between ump_k_adj and residual
+    picks = []
+    for i in range(60):
+        ump_adj = (i % 5) * 1.0  # 0.0, 1.0, 2.0, 3.0, 4.0
+        residual = ump_adj * 2    # perfect positive correlation
+        picks.append({
+            "season_k9": 9.0, "recent_k9": 8.0, "career_k9": 7.0,
+            "ump_k_adj": ump_adj,
+            "actual_ks": int(5 + residual),
+            "raw_lambda": 5.0,
+        })
+
+    params = {"weight_season_cap": 0.70, "weight_recent": 0.20,
+              "ump_scale": 1.0, "lambda_bias": 0.0, "ev_thresholds": {}}
+    result = _calibrate_phase2(picks, params)
+    assert result["ump_scale"] > 1.0  # should have increased
+
+
+def test_ump_scale_decreases_when_uncorrelated():
+    """When ump_k_adj shows no correlation with residuals, ump_scale should decrease."""
+    import sys, os
+    sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'pipeline'))
+    from calibrate import _calibrate_phase2
+
+    picks = []
+    for i in range(60):
+        ump_adj = 0.1 + (i % 3) * 0.1  # 0.1, 0.2, 0.3 (varied)
+        picks.append({
+            "season_k9": 9.0, "recent_k9": 8.0, "career_k9": 7.0,
+            "ump_k_adj": ump_adj,
+            "actual_ks": 5,  # constant actual Ks → zero correlation with ump_k_adj
+            "raw_lambda": 5.0,
+        })
+
+    params = {"weight_season_cap": 0.70, "weight_recent": 0.20,
+              "ump_scale": 1.0, "lambda_bias": 0.0, "ev_thresholds": {}}
+    result = _calibrate_phase2(picks, params)
+    assert result["ump_scale"] < 1.0  # should have decreased
