@@ -728,24 +728,31 @@
   }
 
   function renderPerformance(data, el) {
-    if (!data || data.total_picks < 10) {
-      el.innerHTML = '<p class="perf-empty">Not enough data yet — check back after opening week.</p>';
+    if (!data || !Array.isArray(data.rows)) {
+      el.innerHTML = '<p class="perf-empty">Performance data not yet available.</p>';
       return;
     }
 
-    const verdicts = ['FIRE 2u', 'FIRE 1u', 'LEAN'];
-    const rows = verdicts.map(v => {
-      const b = data.by_verdict && data.by_verdict[v];
-      if (!b || b.picks === 0) {
-        return `<tr><td>${v}</td><td colspan="4" style="color:#666">No picks yet</td></tr>`;
+    const tableRows = data.rows.map(r => {
+      const side = r.side.charAt(0).toUpperCase() + r.side.slice(1);
+      if (r.picks === 0) {
+        return `<tr>
+          <td><strong>${r.verdict}</strong></td>
+          <td>${side}</td>
+          <td colspan="4" style="color:#666">—</td>
+        </tr>`;
       }
-      const roiClass = b.roi >= 0 ? 'roi-pos' : 'roi-neg';
+      const winPct  = r.win_pct  != null ? (r.win_pct * 100).toFixed(1) + '%' : '—';
+      const roi     = r.roi      != null ? (r.roi >= 0 ? '+' : '') + r.roi.toFixed(2) + '%' : '—';
+      const avgEv   = r.avg_ev   != null ? (r.avg_ev * 100).toFixed(1) + '%' : '—';
+      const roiClass = r.roi != null ? (r.roi >= 0 ? 'roi-pos' : 'roi-neg') : '';
       return `<tr>
-        <td><strong>${v}</strong></td>
-        <td>${b.picks}</td>
-        <td>${(b.win_pct * 100).toFixed(1)}%</td>
-        <td class="${roiClass}">${b.roi >= 0 ? '+' : ''}${b.roi.toFixed(2)}u</td>
-        <td>${(b.avg_ev * 100).toFixed(1)}%</td>
+        <td><strong>${r.verdict}</strong></td>
+        <td>${side}</td>
+        <td>${r.picks}</td>
+        <td>${winPct}</td>
+        <td class="${roiClass}">${roi}</td>
+        <td>${avgEv}</td>
       </tr>`;
     }).join('');
 
@@ -762,10 +769,10 @@
       <table class="perf-table">
         <thead>
           <tr>
-            <th>Verdict</th><th>Picks</th><th>Win %</th><th>ROI</th><th>Avg EV</th>
+            <th>Verdict</th><th>Side</th><th>Picks</th><th>Win %</th><th>ROI</th><th>Avg EV</th>
           </tr>
         </thead>
-        <tbody>${rows}</tbody>
+        <tbody>${tableRows}</tbody>
       </table>
       ${lambdaRow}
       ${calNote}

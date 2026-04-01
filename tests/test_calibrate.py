@@ -29,7 +29,9 @@ def tmp_env(tmp_path):
 def _insert_closed_pick(db_path, result, verdict="FIRE 1u", odds=-110,
                          adj_ev=0.04, raw_lambda=7.0, actual_ks=8,
                          date_offset_days=1, ump_k_adj=0.1,
-                         season_k9=9.0, recent_k9=8.5, career_k9=8.8):
+                         season_k9=9.0, recent_k9=8.5, career_k9=8.8,
+                         side="over"):
+    """Insert a closed pick into the test DB. Default side='over' matches original hardcoded value."""
     date_str = (datetime.now() - timedelta(days=date_offset_days)).strftime("%Y-%m-%d")
     fetched = datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ")
     pnl = 0.87 if result == "win" else (-1.0 if result == "loss" else 0.0)
@@ -41,13 +43,21 @@ def _insert_closed_pick(db_path, result, verdict="FIRE 1u", odds=-110,
                            season_k9, recent_k9, career_k9, ump_k_adj)
         VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
     """, (
-        date_str, f"Pitcher-{date_offset_days}", "Team", "over", 7.5, verdict,
+        date_str, f"Pitcher-{date_offset_days}", "Team", side, 7.5, verdict,
         adj_ev, adj_ev, raw_lambda, raw_lambda, odds, 1.0,
         result, actual_ks, pnl, fetched,
         season_k9, recent_k9, career_k9, ump_k_adj,
     ))
     conn.commit()
     conn.close()
+
+
+def _find_row(data, verdict, side):
+    """Helper: find a row in data['rows'] by verdict + side."""
+    for r in data["rows"]:
+        if r["verdict"] == verdict and r["side"] == side:
+            return r
+    return None
 
 
 # ── Performance JSON tests ───────────────────────────────────────────────────
@@ -61,14 +71,17 @@ class TestPerformanceJson:
         assert "total_picks" in data
         assert data["total_picks"] == 0
 
-    def test_by_verdict_excludes_pass(self, tmp_env):
+    def test_rows_excludes_pass(self, tmp_env):
         db, perf, params, cal = tmp_env
         _insert_closed_pick(db, "win", verdict="PASS")
         _insert_closed_pick(db, "loss", verdict="FIRE 1u", date_offset_days=2)
         cal.run()
         data = json.loads(perf.read_text())
-        assert "PASS" not in data["by_verdict"]
-        assert "FIRE 1u" in data["by_verdict"]
+        verdicts_in_rows = [r["verdict"] for r in data["rows"]]
+        assert "PASS" not in verdicts_in_rows
+        fire1u_over = _find_row(data, "FIRE 1u", "over")
+        assert fire1u_over is not None
+        assert fire1u_over["picks"] == 1
 
     def test_win_pct_calculated(self, tmp_env):
         db, perf, params, cal = tmp_env
@@ -77,7 +90,7 @@ class TestPerformanceJson:
         _insert_closed_pick(db, "loss", verdict="FIRE 1u", date_offset_days=4)
         cal.run()
         data = json.loads(perf.read_text())
-        tier = data["by_verdict"]["FIRE 1u"]
+        tier = _find_row(data, "FIRE 1u", "over")
         assert tier["wins"] == 3
         assert tier["losses"] == 1
         assert abs(tier["win_pct"] - 0.75) < 0.01
@@ -103,6 +116,99 @@ class TestPerformanceJson:
         db, perf, params, cal = tmp_env
         cal.run()
         assert not params.exists()
+
+
+# ── Rows array structure tests ───────────────────────────────────────────────
+
+class TestRowsStructure:
+    _EXPECTED_ORDER = [
+        ("FIRE 2u", "over"),
+        ("FIRE 2u", "under"),
+        ("FIRE 1u", "over"),
+        ("FIRE 1u", "under"),
+        ("LEAN",    "over"),
+        ("LEAN",    "under"),
+    ]
+
+    def test_always_six_rows(self, tmp_env):
+        db, perf, params, cal = tmp_env
+        cal.run()
+        data = json.loads(perf.read_text())
+        assert len(data["rows"]) == 6
+
+    def test_fixed_row_order(self, tmp_env):
+        db, perf, params, cal = tmp_env
+        _insert_closed_pick(db, "win", verdict="LEAN", side="under")
+        cal.run()
+        data = json.loads(perf.read_text())
+        actual = [(r["verdict"], r["side"]) for r in data["rows"]]
+        assert actual == self._EXPECTED_ORDER
+
+    def test_zero_pick_rows_have_null_stats(self, tmp_env):
+        db, perf, params, cal = tmp_env
+        cal.run()
+        data = json.loads(perf.read_text())
+        for r in data["rows"]:
+            assert r["picks"] == 0
+            assert r["win_pct"] is None
+            assert r["roi"] is None
+            assert r["avg_ev"] is None
+
+    def test_over_and_under_aggregate_independently(self, tmp_env):
+        db, perf, params, cal = tmp_env
+        # Insert 2 over wins for FIRE 1u
+        _insert_closed_pick(db, "win", verdict="FIRE 1u", side="over", date_offset_days=1)
+        _insert_closed_pick(db, "win", verdict="FIRE 1u", side="over", date_offset_days=2)
+        # Insert 1 under loss for FIRE 1u
+        _insert_closed_pick(db, "loss", verdict="FIRE 1u", side="under", date_offset_days=3)
+        cal.run()
+        data = json.loads(perf.read_text())
+        over_row  = _find_row(data, "FIRE 1u", "over")
+        under_row = _find_row(data, "FIRE 1u", "under")
+        assert over_row["picks"] == 2
+        assert over_row["wins"] == 2
+        assert under_row["picks"] == 1
+        assert under_row["losses"] == 1
+        # No bleed-through between sides
+        assert over_row["losses"] == 0
+        assert under_row["wins"] == 0
+
+    def test_push_only_bucket(self, tmp_env):
+        db, perf, params, cal = tmp_env
+        _insert_closed_pick(db, "push", verdict="LEAN", side="over", adj_ev=0.015)
+        cal.run()
+        data = json.loads(perf.read_text())
+        row = _find_row(data, "LEAN", "over")
+        assert row["picks"] == 1
+        assert row["pushes"] == 1
+        assert row["win_pct"] is None          # wins + losses == 0
+        assert row["roi"] == 0.0               # pnl=0 for push
+        assert row["avg_ev"] is not None       # adj_ev is NOT NULL in schema
+
+    def test_roi_formula_percent_of_stake(self, tmp_env):
+        """ROI = (total_pnl / picks) * 100, not raw total_pnl."""
+        db, perf, params, cal = tmp_env
+        # 1 win at -110 → pnl = 0.87; 1 loss → pnl = -1.0 → total_pnl = -0.13
+        _insert_closed_pick(db, "win",  verdict="FIRE 2u", side="over",
+                             odds=-110, adj_ev=0.07, date_offset_days=1)
+        _insert_closed_pick(db, "loss", verdict="FIRE 2u", side="over",
+                             odds=-110, adj_ev=0.07, date_offset_days=2)
+        cal.run()
+        data = json.loads(perf.read_text())
+        row = _find_row(data, "FIRE 2u", "over")
+        # Expected: (0.87 + -1.0) / 2 * 100 = -6.5
+        assert row["roi"] == pytest.approx(-6.5, abs=0.1)
+
+    def test_win_pct_excludes_pushes_from_denominator(self, tmp_env):
+        """win_pct = wins / (wins + losses), not wins / picks."""
+        db, perf, params, cal = tmp_env
+        _insert_closed_pick(db, "win",  verdict="LEAN", side="under", date_offset_days=1)
+        _insert_closed_pick(db, "push", verdict="LEAN", side="under", date_offset_days=2)
+        cal.run()
+        data = json.loads(perf.read_text())
+        row = _find_row(data, "LEAN", "under")
+        assert row["picks"] == 2
+        assert row["win_pct"] == pytest.approx(1.0, abs=0.01)  # 1 win / (1+0 losses) = 1.0
 
 
 # ── Phase 1 calibration tests ────────────────────────────────────────────────
@@ -198,5 +304,6 @@ class TestPhase2Calibration:
         result = cal.build_performance([], current_params=None)
         assert isinstance(result, dict)
         assert result["total_picks"] == 0
-        assert result["by_verdict"] == {}
+        assert len(result["rows"]) == 6
+        assert all(r["picks"] == 0 for r in result["rows"])
         assert result["last_calibrated"] is None

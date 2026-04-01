@@ -67,38 +67,58 @@ def _american_to_implied(odds: int) -> float:
     return abs(odds) / (abs(odds) + 100)
 
 
+_ROW_ORDER = [
+    ("FIRE 2u", "over"),
+    ("FIRE 2u", "under"),
+    ("FIRE 1u", "over"),
+    ("FIRE 1u", "under"),
+    ("LEAN",    "over"),
+    ("LEAN",    "under"),
+]
+
+
 def build_performance(closed: list, current_params: dict | None = None) -> dict:
     """Aggregate closed picks into a performance dict. Pure function (no I/O)."""
     total = len(closed)
-    by_verdict: dict[str, dict] = {}
+    buckets: dict[tuple, dict] = {}
 
     for row in closed:
         v = row["verdict"]
         if v == "PASS":
             continue
-        if v not in by_verdict:
-            by_verdict[v] = {"picks": 0, "wins": 0, "losses": 0, "pushes": 0,
-                              "total_pnl": 0.0, "sum_ev": 0.0}
-        b = by_verdict[v]
-        b["picks"] += 1
+        s = row["side"]
+        key = (v, s)
+        if key not in buckets:
+            buckets[key] = {"picks": 0, "wins": 0, "losses": 0, "pushes": 0,
+                            "total_pnl": 0.0, "sum_ev": 0.0}
+        b = buckets[key]
+        b["picks"]     += 1
         b["total_pnl"] += row["pnl"] or 0.0
-        b["sum_ev"] += row["adj_ev"] or 0.0
+        b["sum_ev"]    += row["adj_ev"] or 0.0
         if row["result"] == "win":    b["wins"]   += 1
-        elif row["result"] == "loss": b["losses"]  += 1
-        elif row["result"] == "push": b["pushes"]  += 1
+        elif row["result"] == "loss": b["losses"] += 1
+        elif row["result"] == "push": b["pushes"] += 1
 
-    formatted: dict[str, dict] = {}
-    for v, b in by_verdict.items():
-        picks = b["picks"]
-        formatted[v] = {
-            "picks":   picks,
-            "wins":    b["wins"],
-            "losses":  b["losses"],
-            "pushes":  b["pushes"],
-            "win_pct": round(b["wins"] / picks, 3) if picks else 0.0,
-            "roi":     round(b["total_pnl"], 2),
-            "avg_ev":  round(b["sum_ev"] / picks, 4) if picks else 0.0,
-        }
+    rows = []
+    for (v, s) in _ROW_ORDER:
+        b = buckets.get((v, s), {"picks": 0, "wins": 0, "losses": 0,
+                                  "pushes": 0, "total_pnl": 0.0, "sum_ev": 0.0})
+        picks    = b["picks"]
+        wl       = b["wins"] + b["losses"]
+        win_pct  = round(b["wins"] / wl, 3) if wl else None
+        roi      = round((b["total_pnl"] / picks) * 100, 2) if picks else None
+        avg_ev   = round(b["sum_ev"] / picks, 4) if picks else None
+        rows.append({
+            "verdict":  v,
+            "side":     s,
+            "picks":    picks,
+            "wins":     b["wins"],
+            "losses":   b["losses"],
+            "pushes":   b["pushes"],
+            "win_pct":  win_pct,
+            "roi":      roi,
+            "avg_ev":   avg_ev,
+        })
 
     lam_rows = [(r["raw_lambda"], r["actual_ks"]) for r in closed
                 if r["raw_lambda"] is not None and r["actual_ks"] is not None]
@@ -123,7 +143,7 @@ def build_performance(closed: list, current_params: dict | None = None) -> dict:
         "total_picks":        total,
         "last_calibrated":    last_cal,
         "calibration_sample": cal_n,
-        "by_verdict":         formatted,
+        "rows":               rows,
         "lambda_accuracy":    lam_acc,
         "params":             params if last_cal else None,
     }
@@ -234,7 +254,7 @@ def _load_closed_picks() -> list:
     try:
         conn = _get_db()
         rows = conn.execute("""
-            SELECT verdict, result, odds, adj_ev, raw_lambda, actual_ks,
+            SELECT verdict, side, result, odds, adj_ev, raw_lambda, actual_ks,
                    season_k9, recent_k9, career_k9, ump_k_adj, fetched_at, pnl
             FROM picks
             WHERE result IN ('win','loss','push')
