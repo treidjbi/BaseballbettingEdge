@@ -245,6 +245,7 @@
       gap: 6px;
       align-items: center;
       flex-wrap: wrap;
+      min-width: 0;
     }
     .adj-badge {
       font-size: 10px;
@@ -261,6 +262,8 @@
       font-size: 10px;
       color: var(--ink-dim);
       margin-left: auto;
+      flex-shrink: 0;
+      white-space: nowrap;
     }
 
     .delta-over  { color: var(--fire);    font-weight: 700; font-family: monospace; font-size: 11px; }
@@ -513,7 +516,7 @@
       // Past date — show date + time, no stale warning
       const dateLabel = gen.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
       const timeLabel = gen.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
-      badge.innerHTML = '<span class="badge-ok">' + dateLabel + ' · ' + timeLabel + '</span><span class="badge-delay">60s delay</span>';
+      badge.innerHTML = '<span class="badge-ok">' + dateLabel + ' · ' + timeLabel + '</span>';
     } else if (hrs > STALE_HOURS) {
       badge.innerHTML = '<span class="badge-warn">Data may be outdated</span><span class="badge-delay">60s delay</span>';
       showBanner('Pipeline may have failed — data is more than 6 hours old.', 'warn');
@@ -592,7 +595,7 @@
     const pct  = ((actual - avg) / avg * 100).toFixed(0);
     const sign = pct > 0 ? '+' : '';
     const cls  = pct > 0 ? 'adj-pos' : (pct < 0 ? 'adj-neg' : 'adj-neutral');
-    return `<span class="adj-badge ${cls}">${label} ${sign}${pct}%</span>`;
+    return `<span class="adj-badge ${cls}">${label} ${sign}${pct}% vs avg</span>`;
   }
 
   // ── Props tab ─────────────────────────────────────────────
@@ -605,6 +608,7 @@
     );
 
     const hasAction = sorted.some(p => bestSide(p).verdict !== 'PASS');
+    const passCount = sorted.filter(p => bestSide(p).verdict === 'PASS').length;
     let html = '';
 
     // Date header
@@ -616,7 +620,7 @@
       html += `<div class="show-all-row">
         <label>
           <input type="checkbox" id="show-all" onchange="togglePassCards()">
-          Show PASS verdicts
+          Show PASS verdicts${passCount > 0 ? ` (${passCount})` : ''}
         </label>
       </div>`;
     }
@@ -760,7 +764,7 @@
         return `<tr>
           <td><strong>${esc(r.verdict)}</strong></td>
           <td>${side}</td>
-          <td colspan="5" style="color:#666">—</td>
+          <td colspan="5" style="color:var(--ink-dim)">—</td>
         </tr>`;
       }
       const winPct   = r.win_pct  != null ? (r.win_pct * 100).toFixed(1) + '%' : '—';
