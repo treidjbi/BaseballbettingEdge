@@ -705,8 +705,8 @@
           <span class="pitcher-matchup" style="color:var(--ink-dim)">${esc(p.team)} vs ${esc(p.opp_team)}</span>
         </div>
         <div class="watch-mid">
-          <span style="font-size:10px;text-transform:uppercase;letter-spacing:.05em">Over (${p.k_line}K)</span>
-          <span>${fmtOdds(p.opening_over_odds)} → ${fmtOdds(p.best_over_odds)}</span>
+          <span style="font-size:10px;text-transform:uppercase;letter-spacing:.05em">${useOver ? 'Over' : 'Under'} (${p.k_line}K)</span>
+          <span>${fmtOdds(useOver ? p.opening_over_odds : p.opening_under_odds)} → ${fmtOdds(useOver ? p.best_over_odds : p.best_under_odds)}</span>
           <span class="${cls}">${dir} ${Math.abs(activeDelta)}</span>
         </div>
         <span class="verdict-badge ${verdictClass(bestSide(p).verdict)}">${badgeLabel(bestSide(p))}</span>

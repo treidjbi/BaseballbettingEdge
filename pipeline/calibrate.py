@@ -223,7 +223,10 @@ def _calibrate_phase2(closed_picks: list, current_params: dict) -> dict:
             elif math.isnan(corr) or abs(corr) < 0.05:
                 # Near-zero or undefined correlation: ump adjustment not predictive — decrease weight
                 params["ump_scale"] = round(max(0.0, min(1.5, current_scale - 0.05)), 3)
-            # Between 0.05 and 0.15: leave scale unchanged
+            elif corr < -0.15:
+                # Strong negative correlation: ump adjustment predicts wrong direction — decrease weight
+                params["ump_scale"] = round(max(0.0, min(1.5, current_scale - 0.05)), 3)
+            # Between -0.15 and -0.05, or 0.05 and 0.15: leave scale unchanged
 
     # Blend weights: linear regression on k9 components
     blend_data = [(r["season_k9"], r["recent_k9"], r["career_k9"], r["actual_ks"])
