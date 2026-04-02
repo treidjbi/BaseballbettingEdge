@@ -583,7 +583,7 @@
 
   function priceDeltaHtml(delta) {
     if (!delta) return '';
-    const dir = delta < 0 ? '↑' : '↓';
+    const dir = delta < 0 ? '↓' : '↑';
     const cls = delta < 0 ? 'delta-over' : 'delta-under';
     return ` <span class="${cls}">${dir}${Math.abs(delta)}</span>`;
   }
@@ -647,9 +647,9 @@
             <div class="stat-sub">${fmtOdds(side.odds)}${priceDeltaHtml(priceDelta)}</div>
           </div>
           <div class="stat-cell">
-            <div class="stat-label">λ</div>
+            <div class="stat-label">Proj K</div>
             <div class="stat-value">${p.lambda}</div>
-            <div class="stat-sub">Poisson</div>
+            <div class="stat-sub">vs line ${p.k_line}</div>
           </div>
           <div class="stat-cell">
             <div class="stat-label">EV</div>
@@ -700,7 +700,7 @@
     for (const p of movers) {
       const useOver = Math.abs(p.price_delta_over || 0) >= Math.abs(p.price_delta_under || 0);
       const activeDelta = useOver ? (p.price_delta_over || 0) : (p.price_delta_under || 0);
-      const dir = activeDelta < 0 ? '↑' : '↓';
+      const dir = activeDelta < 0 ? '↓' : '↑';
       const cls = activeDelta < 0 ? 'delta-over' : 'delta-under';
       html += `
       <div class="watch-card">
