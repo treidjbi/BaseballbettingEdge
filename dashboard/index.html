@@ -337,13 +337,13 @@
 
     /* ── Performance tab ─────────────────────────────────────────── */
     .perf-table { width: 100%; border-collapse: collapse; margin-bottom: 1rem; }
-    .perf-table th, .perf-table td { padding: 8px 12px; text-align: left; border-bottom: 1px solid #333; }
-    .perf-table th { font-weight: 600; color: #aaa; font-size: 0.85rem; }
-    .perf-lam { font-size: 0.9rem; color: #ccc; margin: 0.5rem 0; }
-    .perf-cal { font-size: 0.82rem; color: #888; margin-top: 0.5rem; }
-    .perf-empty { color: #888; padding: 2rem 0; text-align: center; }
-    .roi-pos { color: #4caf50; }
-    .roi-neg { color: #f44336; }
+    .perf-table th, .perf-table td { padding: 8px 12px; text-align: left; border-bottom: 1px solid var(--border); }
+    .perf-table th { font-weight: 600; color: var(--ink-dim); font-size: 0.85rem; }
+    .perf-lam { font-size: 0.9rem; color: var(--ink); margin: 0.5rem 0; }
+    .perf-cal { font-size: 0.82rem; color: var(--ink-dim); margin-top: 0.5rem; }
+    .perf-empty { color: var(--ink-dim); padding: 2rem 0; text-align: center; }
+    .roi-pos { color: var(--positive); }
+    .roi-neg { color: var(--fire); }
   </style>
 </head>
 <body>
@@ -760,18 +760,22 @@
         return `<tr>
           <td><strong>${esc(r.verdict)}</strong></td>
           <td>${side}</td>
-          <td colspan="4" style="color:#666">—</td>
+          <td colspan="5" style="color:#666">—</td>
         </tr>`;
       }
-      const winPct  = r.win_pct  != null ? (r.win_pct * 100).toFixed(1) + '%' : '—';
-      const roi     = r.roi      != null ? (r.roi >= 0 ? '+' : '') + r.roi.toFixed(2) + '%' : '—';
-      const avgEv   = r.avg_ev   != null ? (r.avg_ev * 100).toFixed(1) + '%' : '—';
+      const winPct   = r.win_pct  != null ? (r.win_pct * 100).toFixed(1) + '%' : '—';
+      const roi      = r.roi      != null ? (r.roi >= 0 ? '+' : '') + r.roi.toFixed(2) + '%' : '—';
+      const avgEv    = r.avg_ev   != null ? (r.avg_ev * 100).toFixed(1) + '%' : '—';
       const roiClass = r.roi != null ? (r.roi >= 0 ? 'roi-pos' : 'roi-neg') : '';
+      const unitsRaw = r.roi != null ? (r.roi / 100) * r.picks : null;
+      const units    = unitsRaw != null ? (unitsRaw >= 0 ? '+' : '') + unitsRaw.toFixed(1) + 'u' : '—';
+      const unitsClass = unitsRaw != null ? (unitsRaw >= 0 ? 'roi-pos' : 'roi-neg') : '';
       return `<tr>
         <td><strong>${esc(r.verdict)}</strong></td>
         <td>${side}</td>
         <td>${r.picks}</td>
         <td>${winPct}</td>
+        <td class="${unitsClass}">${units}</td>
         <td class="${roiClass}">${roi}</td>
         <td>${avgEv}</td>
       </tr>`;
@@ -784,13 +788,13 @@
 
     const calNote = data.last_calibrated
       ? `<p class="perf-cal">Last recalibrated ${esc(data.last_calibrated.slice(0, 10))} &mdash; n=${data.calibration_sample} picks</p>`
-      : `<p class="perf-cal">Not yet calibrated &mdash; need ${data.total_picks}/30 closed picks</p>`;
+      : `<p class="perf-cal">Tracking ${data.total_picks} pick${data.total_picks !== 1 ? 's' : ''} &mdash; accuracy stats unlock at 30 graded results</p>`;
 
     el.innerHTML = `
       <table class="perf-table">
         <thead>
           <tr>
-            <th>Verdict</th><th>Side</th><th>Picks</th><th>Win %</th><th>ROI</th><th>Avg EV</th>
+            <th>Verdict</th><th>Side</th><th>Picks</th><th>Win %</th><th>Units</th><th>ROI</th><th>Avg EV</th>
           </tr>
         </thead>
         <tbody>${tableRows}</tbody>
