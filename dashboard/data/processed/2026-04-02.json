@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-04-02T02:07:58Z",
+  "generated_at": "2026-04-02T03:40:49Z",
   "date": "2026-04-02",
   "props_available": true,
   "pitchers": [
@@ -21,7 +21,7 @@
       "lambda": 11.73,
       "avg_ip": 5.5,
       "swstr_pct": 0.174,
-      "opp_k_rate": 0.2197,
+      "opp_k_rate": 0.2143,
       "ump_k_adj": 0.0,
       "season_k9": 18.69,
       "recent_k9": 18.69,
@@ -59,7 +59,7 @@
       "lambda": 8.74,
       "avg_ip": 5.5,
       "swstr_pct": 0.144,
-      "opp_k_rate": 0.2573,
+      "opp_k_rate": 0.25,
       "ump_k_adj": 0.0,
       "season_k9": 11.25,
       "recent_k9": 11.25,
@@ -76,6 +76,44 @@
         "adj_ev": -0.2736,
         "verdict": "PASS",
         "win_prob": 0.231,
+        "movement_conf": 1.0
+      }
+    },
+    {
+      "pitcher": "Ryne Nelson",
+      "team": "Atlanta",
+      "opp_team": "Arizona",
+      "game_time": "2026-04-03T01:40:00Z",
+      "k_line": 4.5,
+      "opening_line": 4.5,
+      "best_over_book": "Book25",
+      "best_over_odds": 102,
+      "best_under_odds": -102,
+      "opening_over_odds": -111,
+      "opening_under_odds": 111,
+      "price_delta_over": 213,
+      "price_delta_under": -213,
+      "raw_lambda": 4.87,
+      "lambda": 4.87,
+      "avg_ip": 5.5,
+      "swstr_pct": 0.12,
+      "opp_k_rate": 0.2,
+      "ump_k_adj": 0.0,
+      "season_k9": 7.71,
+      "recent_k9": 7.71,
+      "career_k9": 7.14,
+      "ev_over": {
+        "ev": 0.0406,
+        "adj_ev": 0.0,
+        "verdict": "PASS",
+        "win_prob": 0.536,
+        "movement_conf": 0.0
+      },
+      "ev_under": {
+        "ev": -0.0406,
+        "adj_ev": -0.0406,
+        "verdict": "PASS",
+        "win_prob": 0.464,
         "movement_conf": 1.0
       }
     }
