@@ -373,7 +373,7 @@
   <nav id="nav">
     <button class="nav-btn active" onclick="switchTab('props', this)">
       <span class="nav-icon">⚾</span>
-      <span>Props</span>
+      <span>Picks</span>
     </button>
     <button class="nav-btn" onclick="switchTab('watch', this)">
       <span class="nav-icon">📋</span>
@@ -431,6 +431,10 @@
     if (dates && dates.length > 0) {
       sel.min = dates[dates.length - 1];
     }
+    // Set max to tomorrow so users can see lines the night before they post
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    sel.max = tomorrow.toISOString().slice(0, 10);
     // Always show the date picker so user can explore any date
     row.style.display = 'block';
   }
@@ -493,7 +497,7 @@
       return;
     }
 
-    renderProps(data.pitchers);
+    renderProps(data.pitchers, isPast);
     renderWatchlist(data.pitchers);
   }
 
@@ -594,7 +598,7 @@
   // ── Props tab ─────────────────────────────────────────────
   const VERDICT_ORDER = { 'FIRE 2u': 0, 'FIRE 1u': 1, 'LEAN': 2, 'PASS': 3 };
 
-  function renderProps(pitchers) {
+  function renderProps(pitchers, isPast = false) {
     const el     = document.getElementById('panel-props');
     const sorted = [...pitchers].sort((a, b) =>
       (VERDICT_ORDER[bestSide(a).verdict] ?? 3) - (VERDICT_ORDER[bestSide(b).verdict] ?? 3)
@@ -605,7 +609,7 @@
 
     // Date header
     if (sorted.length > 0) {
-      html += `<div class="section-date">${sorted.length} pitcher${sorted.length !== 1 ? 's' : ''} today</div>`;
+      html += `<div class="section-date">${sorted.length} pitcher${sorted.length !== 1 ? 's' : ''}${isPast ? '' : ' today'}</div>`;
     }
 
     if (hasAction) {
