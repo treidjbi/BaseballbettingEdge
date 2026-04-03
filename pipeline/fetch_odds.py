@@ -19,6 +19,30 @@ MARKET_ID  = 19  # pitcher_strikeouts
 THROTTLE_S = 0.55
 _last_call_time: float = 0.0
 
+# TheRundown v2 book IDs. Verify against live API response if lines are missing.
+# To discover available IDs: log list(lines_data[main_val]["over"].keys()) in _parse_event_k_props
+BOOK_ID_MAP = {
+    "11": "FanDuel",
+    "6":  "BetMGM",
+    "3":  "DraftKings",
+}
+REF_BOOK_PRIORITY = ["11", "6", "3"]   # FanDuel → BetMGM → DraftKings
+
+
+def _select_ref_book(available_books: dict) -> tuple:
+    """
+    Select reference book from available_books dict {book_id: price_info}.
+    Priority: FanDuel → BetMGM → DraftKings → any available.
+    Returns (book_id, human_name) or (None, None) if no books available.
+    """
+    for book_id in REF_BOOK_PRIORITY:
+        if book_id in available_books:
+            return book_id, BOOK_ID_MAP[book_id]
+    if available_books:
+        book_id = next(iter(available_books))
+        return book_id, BOOK_ID_MAP.get(book_id, f"Book{book_id}")
+    return None, None
+
 
 def _headers() -> dict:
     key = os.environ.get("RUNDOWN_API_KEY", "")
@@ -130,34 +154,32 @@ def _parse_event_k_props(event: dict) -> list:
 
             chosen = lines_data[main_val]
 
-            # Best over: highest over odds across all books
-            best_over_price = None
-            best_book_id    = None
-            for book_id, bd in chosen["over"].items():
-                if best_over_price is None or bd["price"] > best_over_price:
-                    best_over_price = bd["price"]
-                    best_book_id    = book_id
-
-            if best_over_price is None or not chosen["under"]:
-                continue  # need both sides
-
-            # Under: prefer same book as best over, else take best under odds
-            if best_book_id in chosen["under"]:
-                best_under_price = chosen["under"][best_book_id]["price"]
-                over_delta       = chosen["over"][best_book_id]["delta"]
-                under_delta      = chosen["under"][best_book_id]["delta"]
+            # Select reference book (FanDuel → BetMGM → DraftKings → any)
+            ref_book_id, ref_book_name = _select_ref_book(chosen["over"])
+            if ref_book_id is None:
+                continue  # no over-side data at all
+            if ref_book_id in chosen["under"]:
+                ref_over  = chosen["over"][ref_book_id]
+                ref_under = chosen["under"][ref_book_id]
             else:
-                best_under_entry = max(chosen["under"].values(), key=lambda bd: bd["price"])
-                best_under_price = best_under_entry["price"]
-                under_delta      = best_under_entry["delta"]
-                over_delta       = chosen["over"][best_book_id]["delta"]
+                # Ref book has over but not under — use ref book for over, best available for under
+                under_book_id, _ = _select_ref_book(chosen["under"])
+                if under_book_id is None:
+                    continue
+                ref_over  = chosen["over"][ref_book_id]
+                ref_under = chosen["under"][under_book_id]
 
-            if best_under_price is None:
+            ref_over_price  = ref_over["price"]
+            ref_under_price = ref_under["price"]
+            over_delta      = ref_over.get("delta", 0) or 0
+            under_delta     = ref_under.get("delta", 0) or 0
+
+            if ref_over_price is None or ref_under_price is None:
                 continue
 
             # Opening odds: price_delta = current - opening → opening = current - delta
-            opening_over  = best_over_price  - over_delta
-            opening_under = best_under_price - under_delta
+            opening_over  = ref_over_price  - over_delta
+            opening_under = ref_under_price - under_delta
 
             results.append({
                 "pitcher":            pitcher_name,
@@ -166,9 +188,10 @@ def _parse_event_k_props(event: dict) -> list:
                 "game_time":          game_time,
                 "k_line":             main_val,
                 "opening_line":       main_val,
-                "best_over_book":     f"Book{best_book_id}",
-                "best_over_odds":     best_over_price,
-                "best_under_odds":    best_under_price,
+                "ref_book":           ref_book_name,
+                "best_over_book":     ref_book_name,
+                "best_over_odds":     ref_over_price,
+                "best_under_odds":    ref_under_price,
                 "opening_over_odds":  opening_over,
                 "opening_under_odds": opening_under,
             })

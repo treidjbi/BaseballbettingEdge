@@ -3,7 +3,7 @@ import sys
 import os
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'pipeline'))
 
-from fetch_odds import american_odds_from_line, parse_k_props, _parse_line_value
+from fetch_odds import american_odds_from_line, parse_k_props, _parse_line_value, _select_ref_book
 
 
 # ── Helper fixtures ────────────────────────────────────────────────────────────
@@ -190,45 +190,73 @@ class TestParseKProps:
         names = {r["pitcher"] for r in result}
         assert names == {"Gerrit Cole", "Chris Sale"}
 
-    def test_selects_best_over_book(self):
-        # Book 1: over=-130 (worse), Book 2: over=-110 (better)
+    def test_selects_ref_book_by_priority(self):
+        """Selects FanDuel (book 11) over a better-priced unknown book."""
         event = {
-            "event_id": "evt-bestbook",
+            "event_id": "evt-refbook",
             "event_date": "2026-04-01T23:05:00Z",
             "teams": [
                 {"name": "NYY", "is_away": True,  "is_home": False},
                 {"name": "BOS", "is_away": False, "is_home": True},
             ],
-            "markets": [
-                {
-                    "market_id": 19,
-                    "name": "pitcher_strikeouts",
-                    "participants": [
+            "markets": [{
+                "market_id": 19,
+                "name": "pitcher_strikeouts",
+                "participants": [{
+                    "name": "Gerrit Cole",
+                    "lines": [
                         {
-                            "name": "Gerrit Cole",
-                            "lines": [
-                                {
-                                    "value": "Over 7.5",
-                                    "prices": {
-                                        "1": {"price": -130, "is_main_line": False},
-                                        "2": {"price": -110, "is_main_line": False},
-                                    },
-                                },
-                                {
-                                    "value": "Under 7.5",
-                                    "prices": {
-                                        "1": {"price": -100, "is_main_line": False},
-                                        "2": {"price": -120, "is_main_line": False},
-                                    },
-                                },
-                            ],
-                        }
+                            "value": "Over 7.5",
+                            "prices": {
+                                "25": {"price": -105, "is_main_line": True, "price_delta": 0},
+                                "11": {"price": -115, "is_main_line": True, "price_delta": 0},
+                            },
+                        },
+                        {
+                            "value": "Under 7.5",
+                            "prices": {
+                                "25": {"price": -115, "is_main_line": True, "price_delta": 0},
+                                "11": {"price": -105, "is_main_line": True, "price_delta": 0},
+                            },
+                        },
                     ],
-                }
-            ],
+                }],
+            }],
         }
         result = parse_k_props({"events": [event]})
-        assert result[0]["best_over_odds"] == -110   # book 2 wins
+        assert result[0]["best_over_odds"] == -115   # FanDuel (11), not best price (-105)
+        assert result[0]["ref_book"] == "FanDuel"
+
+    def test_falls_back_to_any_book_when_no_priority_book(self):
+        """Uses first available book when no priority book is present."""
+        event = {
+            "event_id": "evt-fallback",
+            "event_date": "2026-04-01T23:05:00Z",
+            "teams": [
+                {"name": "NYY", "is_away": True,  "is_home": False},
+                {"name": "BOS", "is_away": False, "is_home": True},
+            ],
+            "markets": [{
+                "market_id": 19,
+                "name": "pitcher_strikeouts",
+                "participants": [{
+                    "name": "Gerrit Cole",
+                    "lines": [
+                        {
+                            "value": "Over 7.5",
+                            "prices": {"25": {"price": -110, "is_main_line": True, "price_delta": 0}},
+                        },
+                        {
+                            "value": "Under 7.5",
+                            "prices": {"25": {"price": -110, "is_main_line": True, "price_delta": 0}},
+                        },
+                    ],
+                }],
+            }],
+        }
+        result = parse_k_props({"events": [event]})
+        assert len(result) == 1
+        assert result[0]["ref_book"] == "Book25"
 
     def test_prefers_main_line_when_multiple_lines(self):
         # Pitcher has 4.5 and 5.5 lines; 5.5 is marked main
@@ -325,3 +353,40 @@ def test_home_pitcher_gets_empty_team_not_away():
         }
         result = parse_k_props({"events": [event]})
         assert result == []
+
+
+class TestSelectRefBook:
+    def test_prefers_fanduel(self):
+        books = {
+            "11": {"price": -110, "is_main": True, "delta": 0},
+            "3":  {"price": -108, "is_main": True, "delta": 0},
+        }
+        book_id, name = _select_ref_book(books)
+        assert book_id == "11"
+        assert name == "FanDuel"
+
+    def test_falls_back_to_betmgm(self):
+        books = {
+            "6": {"price": -112, "is_main": True, "delta": 0},
+            "3": {"price": -108, "is_main": True, "delta": 0},
+        }
+        book_id, name = _select_ref_book(books)
+        assert book_id == "6"
+        assert name == "BetMGM"
+
+    def test_falls_back_to_draftkings(self):
+        books = {"3": {"price": -108, "is_main": True, "delta": 0}}
+        book_id, name = _select_ref_book(books)
+        assert book_id == "3"
+        assert name == "DraftKings"
+
+    def test_falls_back_to_any_book(self):
+        books = {"25": {"price": -110, "is_main": True, "delta": 0}}
+        book_id, name = _select_ref_book(books)
+        assert book_id == "25"
+        assert name == "Book25"
+
+    def test_returns_none_for_empty_books(self):
+        book_id, name = _select_ref_book({})
+        assert book_id is None
+        assert name is None
