@@ -327,32 +327,32 @@ def test_home_pitcher_gets_empty_team_not_away():
         assert r["opp_team"] == "", f"Expected empty opp_team, got {r['opp_team']!r}"
 
 
-    def test_skips_pitcher_with_only_over_no_under(self):
-        event = {
-            "event_id": "evt-missing-under",
-            "event_date": "2026-04-01T23:05:00Z",
-            "teams": [
-                {"name": "NYY", "is_away": True,  "is_home": False},
-                {"name": "BOS", "is_away": False, "is_home": True},
-            ],
-            "markets": [
-                {
-                    "market_id": 19,
-                    "name": "pitcher_strikeouts",
-                    "participants": [
-                        {
-                            "name": "Gerrit Cole",
-                            "lines": [
-                                {"value": "Over 7.5", "prices": {"1": {"price": -112, "is_main_line": False}}},
-                                # No Under line
-                            ],
-                        }
-                    ],
-                }
-            ],
-        }
-        result = parse_k_props({"events": [event]})
-        assert result == []
+def test_skips_pitcher_with_only_over_no_under():
+    event = {
+        "event_id": "evt-missing-under",
+        "event_date": "2026-04-01T23:05:00Z",
+        "teams": [
+            {"name": "NYY", "is_away": True,  "is_home": False},
+            {"name": "BOS", "is_away": False, "is_home": True},
+        ],
+        "markets": [
+            {
+                "market_id": 19,
+                "name": "pitcher_strikeouts",
+                "participants": [
+                    {
+                        "name": "Gerrit Cole",
+                        "lines": [
+                            {"value": "Over 7.5", "prices": {"1": {"price": -112, "is_main_line": False}}},
+                            # No Under line
+                        ],
+                    }
+                ],
+            }
+        ],
+    }
+    result = parse_k_props({"events": [event]})
+    assert result == []
 
 
 class TestSelectRefBook:
