@@ -22,11 +22,11 @@ _last_call_time: float = 0.0
 # TheRundown v2 book IDs. Verify against live API response if lines are missing.
 # To discover available IDs: log list(lines_data[main_val]["over"].keys()) in _parse_event_k_props
 BOOK_ID_MAP = {
-    "11": "FanDuel",
-    "6":  "BetMGM",
-    "3":  "DraftKings",
+    "23": "FanDuel",
+    "22": "BetMGM",
+    "19": "DraftKings",
 }
-REF_BOOK_PRIORITY = ["11", "6", "3"]   # FanDuel → BetMGM → DraftKings
+REF_BOOK_PRIORITY = ["23", "22", "19"]   # FanDuel → BetMGM → DraftKings
 
 
 def _select_ref_book(available_books: dict) -> tuple:

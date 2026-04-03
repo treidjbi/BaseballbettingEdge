@@ -191,7 +191,7 @@ class TestParseKProps:
         assert names == {"Gerrit Cole", "Chris Sale"}
 
     def test_selects_ref_book_by_priority(self):
-        """Selects FanDuel (book 11) over a better-priced unknown book."""
+        """Selects FanDuel (book 23) over a better-priced unknown book."""
         event = {
             "event_id": "evt-refbook",
             "event_date": "2026-04-01T23:05:00Z",
@@ -209,14 +209,14 @@ class TestParseKProps:
                             "value": "Over 7.5",
                             "prices": {
                                 "25": {"price": -105, "is_main_line": True, "price_delta": 0},
-                                "11": {"price": -115, "is_main_line": True, "price_delta": 0},
+                                "23": {"price": -115, "is_main_line": True, "price_delta": 0},
                             },
                         },
                         {
                             "value": "Under 7.5",
                             "prices": {
                                 "25": {"price": -115, "is_main_line": True, "price_delta": 0},
-                                "11": {"price": -105, "is_main_line": True, "price_delta": 0},
+                                "23": {"price": -105, "is_main_line": True, "price_delta": 0},
                             },
                         },
                     ],
@@ -224,7 +224,7 @@ class TestParseKProps:
             }],
         }
         result = parse_k_props({"events": [event]})
-        assert result[0]["best_over_odds"] == -115   # FanDuel (11), not best price (-105)
+        assert result[0]["best_over_odds"] == -115   # FanDuel (23), not best price (-105)
         assert result[0]["ref_book"] == "FanDuel"
 
     def test_falls_back_to_any_book_when_no_priority_book(self):
@@ -358,26 +358,26 @@ def test_home_pitcher_gets_empty_team_not_away():
 class TestSelectRefBook:
     def test_prefers_fanduel(self):
         books = {
-            "11": {"price": -110, "is_main": True, "delta": 0},
-            "3":  {"price": -108, "is_main": True, "delta": 0},
+            "23": {"price": -110, "is_main": True, "delta": 0},
+            "19": {"price": -108, "is_main": True, "delta": 0},
         }
         book_id, name = _select_ref_book(books)
-        assert book_id == "11"
+        assert book_id == "23"
         assert name == "FanDuel"
 
     def test_falls_back_to_betmgm(self):
         books = {
-            "6": {"price": -112, "is_main": True, "delta": 0},
-            "3": {"price": -108, "is_main": True, "delta": 0},
+            "22": {"price": -112, "is_main": True, "delta": 0},
+            "19": {"price": -108, "is_main": True, "delta": 0},
         }
         book_id, name = _select_ref_book(books)
-        assert book_id == "6"
+        assert book_id == "22"
         assert name == "BetMGM"
 
     def test_falls_back_to_draftkings(self):
-        books = {"3": {"price": -108, "is_main": True, "delta": 0}}
+        books = {"19": {"price": -108, "is_main": True, "delta": 0}}
         book_id, name = _select_ref_book(books)
-        assert book_id == "3"
+        assert book_id == "19"
         assert name == "DraftKings"
 
     def test_falls_back_to_any_book(self):
