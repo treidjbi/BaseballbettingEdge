@@ -29,6 +29,7 @@ def today_json(tmp_path):
                 "season_k9": 9.1, "recent_k9": 8.8, "career_k9": 9.0,
                 "avg_ip": 5.8, "opp_k_rate": 0.235, "ump_k_adj": 0.2,
                 "best_over_odds": -115, "best_under_odds": -105,
+                "ref_book": "FanDuel",
                 "ev_over":  {"ev": 0.05, "adj_ev": 0.05, "verdict": "FIRE 1u", "win_prob": 0.58, "movement_conf": 1.0},
                 "ev_under": {"ev": -0.02, "adj_ev": -0.02, "verdict": "PASS", "win_prob": 0.42, "movement_conf": 1.0},
             },
@@ -39,6 +40,7 @@ def today_json(tmp_path):
                 "season_k9": 8.5, "recent_k9": 8.2, "career_k9": 8.8,
                 "avg_ip": 5.5, "opp_k_rate": 0.220, "ump_k_adj": 0.0,
                 "best_over_odds": -110, "best_under_odds": -110,
+                "ref_book": "FanDuel",
                 "ev_over":  {"ev": 0.008, "adj_ev": 0.008, "verdict": "PASS",   "win_prob": 0.51, "movement_conf": 1.0},
                 "ev_under": {"ev": 0.07,  "adj_ev": 0.07,  "verdict": "FIRE 2u","win_prob": 0.49, "movement_conf": 1.0},
             },
@@ -90,6 +92,14 @@ class TestInitDb:
         db_path, fr = tmp_db
         fr.init_db()  # second call
 
+    def test_ref_book_column_exists(self, tmp_db):
+        """picks table should have a ref_book column."""
+        db_path, fr = tmp_db
+        conn = sqlite3.connect(db_path)
+        cols = [row[1] for row in conn.execute("PRAGMA table_info(picks)").fetchall()]
+        conn.close()
+        assert "ref_book" in cols
+
 
 class TestSeedPicks:
     def test_only_non_pass_sides_inserted(self, tmp_db, today_json):
@@ -135,6 +145,108 @@ class TestSeedPicks:
         p, _ = today_json
         assert fr.seed_picks(p) == 2
         assert fr.seed_picks(p) == 0  # second run inserts nothing
+
+    def test_seeds_ref_book(self, tmp_db, today_json):
+        """seed_picks stores ref_book from today.json."""
+        db_path, fr = tmp_db
+        p, _ = today_json
+        fr.seed_picks(p)
+        conn = sqlite3.connect(db_path)
+        row = conn.execute("SELECT ref_book FROM picks WHERE pitcher='Gerrit Cole'").fetchone()
+        conn.close()
+        assert row is not None
+        assert row[0] == "FanDuel"
+
+
+class TestLoadHistoryIntoDb:
+    def test_loads_closed_picks_into_db(self, tmp_db, tmp_path):
+        """load_history_into_db inserts history records into the DB."""
+        db_path, fr = tmp_db
+        history = [
+            {
+                "date": "2026-03-31", "pitcher": "Max Fried", "team": "NYY",
+                "side": "over", "k_line": 5.5, "verdict": "FIRE 2u",
+                "ev": 0.08, "adj_ev": 0.08, "raw_lambda": 6.1, "applied_lambda": 6.1,
+                "odds": -110, "movement_conf": 1.0,
+                "season_k9": 9.0, "recent_k9": 8.5, "career_k9": 9.2,
+                "avg_ip": 5.5, "ump_k_adj": 0.1, "opp_k_rate": 0.23,
+                "result": "win", "actual_ks": 7, "pnl": 0.909,
+                "fetched_at": "2026-04-01T03:00:00Z", "ref_book": "FanDuel",
+            }
+        ]
+        history_path = tmp_path / "picks_history.json"
+        history_path.write_text(json.dumps(history))
+        fr.load_history_into_db(history_path)
+        conn = sqlite3.connect(db_path)
+        rows = conn.execute("SELECT pitcher, result FROM picks").fetchall()
+        conn.close()
+        assert ("Max Fried", "win") in rows
+
+    def test_ignores_duplicate_on_reload(self, tmp_db, tmp_path):
+        """Calling load_history_into_db twice doesn't duplicate records."""
+        db_path, fr = tmp_db
+        history = [
+            {
+                "date": "2026-03-31", "pitcher": "Max Fried", "team": "NYY",
+                "side": "over", "k_line": 5.5, "verdict": "FIRE 2u",
+                "ev": 0.08, "adj_ev": 0.08, "raw_lambda": 6.1, "applied_lambda": 6.1,
+                "odds": -110, "movement_conf": 1.0,
+                "season_k9": 9.0, "recent_k9": 8.5, "career_k9": 9.2,
+                "avg_ip": 5.5, "ump_k_adj": 0.1, "opp_k_rate": 0.23,
+                "result": "win", "actual_ks": 7, "pnl": 0.909,
+                "fetched_at": "2026-04-01T03:00:00Z", "ref_book": "FanDuel",
+            }
+        ]
+        history_path = tmp_path / "picks_history.json"
+        history_path.write_text(json.dumps(history))
+        fr.load_history_into_db(history_path)
+        fr.load_history_into_db(history_path)
+        conn = sqlite3.connect(db_path)
+        count = conn.execute("SELECT COUNT(*) FROM picks").fetchone()[0]
+        conn.close()
+        assert count == 1
+
+    def test_returns_zero_if_file_missing(self, tmp_db, tmp_path):
+        """load_history_into_db returns 0 when history file doesn't exist."""
+        db_path, fr = tmp_db
+        result = fr.load_history_into_db(tmp_path / "nonexistent.json")
+        assert result == 0
+
+
+class TestExportDbToHistory:
+    def test_writes_closed_picks_to_json(self, tmp_db, tmp_path):
+        """export_db_to_history writes all closed picks to JSON."""
+        db_path, fr = tmp_db
+        with sqlite3.connect(db_path) as conn:
+            conn.execute("""
+                INSERT INTO picks (date, pitcher, team, side, k_line, verdict,
+                  ev, adj_ev, raw_lambda, applied_lambda, odds, movement_conf,
+                  result, actual_ks, pnl)
+                VALUES ('2026-04-01','Zack Wheeler','PHI','over',6.5,'FIRE 2u',
+                  0.09,0.09,7.1,7.1,-108,1.0,'win',8,0.926)
+            """)
+            conn.execute("""
+                INSERT INTO picks (date, pitcher, team, side, k_line, verdict,
+                  ev, adj_ev, raw_lambda, applied_lambda, odds, movement_conf,
+                  result)
+                VALUES ('2026-04-02','Dylan Cease','SDP','over',5.5,'FIRE 1u',
+                  0.05,0.05,6.0,6.0,-110,1.0, NULL)
+            """)
+        history_path = tmp_path / "picks_history.json"
+        fr.export_db_to_history(history_path)
+        written = json.loads(history_path.read_text())
+        pitchers = [r["pitcher"] for r in written]
+        assert "Zack Wheeler" in pitchers
+        assert "Dylan Cease" not in pitchers  # open pick excluded
+
+    def test_overwrites_existing_file(self, tmp_db, tmp_path):
+        """export_db_to_history replaces existing history file."""
+        db_path, fr = tmp_db
+        history_path = tmp_path / "picks_history.json"
+        history_path.write_text('[{"stale": true}]')
+        fr.export_db_to_history(history_path)
+        written = json.loads(history_path.read_text())
+        assert written == []  # empty DB → empty array
 
 
 def _make_schedule_response(pitcher_name: str, ks: int, game_final: bool = True):

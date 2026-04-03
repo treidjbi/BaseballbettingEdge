@@ -19,8 +19,9 @@ log = logging.getLogger(__name__)
 ET = pytz.timezone("America/New_York")
 MLB_BASE = "https://statsapi.mlb.com/api/v1"
 
-DB_PATH = Path(__file__).parent.parent / "data" / "results.db"
-TODAY_JSON = Path(__file__).parent.parent / "dashboard" / "data" / "processed" / "today.json"
+DB_PATH      = Path(__file__).parent.parent / "data" / "results.db"
+TODAY_JSON   = Path(__file__).parent.parent / "dashboard" / "data" / "processed" / "today.json"
+HISTORY_PATH = Path(__file__).parent.parent / "data" / "picks_history.json"
 
 
 def get_db() -> sqlite3.Connection:
@@ -53,6 +54,7 @@ def init_db() -> None:
                 avg_ip          REAL,
                 ump_k_adj       REAL,
                 opp_k_rate      REAL,
+                ref_book        TEXT,
                 result          TEXT,
                 actual_ks       INTEGER,
                 pnl             REAL,
@@ -88,18 +90,81 @@ def seed_picks(today_json_path: Path = TODAY_JSON) -> int:
                     INSERT OR IGNORE INTO picks
                     (date, pitcher, team, side, k_line, verdict, ev, adj_ev,
                      raw_lambda, applied_lambda, odds, movement_conf,
-                     season_k9, recent_k9, career_k9, avg_ip, ump_k_adj, opp_k_rate)
-                    VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+                     season_k9, recent_k9, career_k9, avg_ip, ump_k_adj, opp_k_rate,
+                     ref_book)
+                    VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
                 """, (
                     game_date, p["pitcher"], p["team"], side,
                     p["k_line"], ev_data["verdict"], ev_data["ev"], ev_data["adj_ev"],
                     p.get("raw_lambda", p["lambda"]), p["lambda"], odds, ev_data["movement_conf"],
                     p.get("season_k9"), p.get("recent_k9"), p.get("career_k9"),
                     p.get("avg_ip"), p.get("ump_k_adj"), p.get("opp_k_rate"),
+                    p.get("ref_book"),
                 ))
                 inserted += cur.rowcount
 
     return inserted
+
+
+def load_history_into_db(history_path: Path = HISTORY_PATH) -> int:
+    """Load closed picks from picks_history.json into DB. Returns count inserted."""
+    try:
+        with open(history_path) as f:
+            picks = json.load(f)
+    except (FileNotFoundError, json.JSONDecodeError, OSError) as e:
+        log.warning("load_history_into_db: could not read %s: %s — skipping", history_path, e)
+        return 0
+
+    inserted = 0
+    with get_db() as conn:
+        for p in picks:
+            cur = conn.execute("""
+                INSERT OR IGNORE INTO picks
+                (date, pitcher, team, side, k_line, verdict, ev, adj_ev,
+                 raw_lambda, applied_lambda, odds, movement_conf,
+                 season_k9, recent_k9, career_k9, avg_ip, ump_k_adj, opp_k_rate,
+                 ref_book, result, actual_ks, pnl, fetched_at)
+                VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+            """, (
+                p.get("date"), p.get("pitcher"), p.get("team"), p.get("side"),
+                p.get("k_line"), p.get("verdict"), p.get("ev"), p.get("adj_ev"),
+                p.get("raw_lambda"), p.get("applied_lambda"), p.get("odds"),
+                p.get("movement_conf"), p.get("season_k9"), p.get("recent_k9"),
+                p.get("career_k9"), p.get("avg_ip"), p.get("ump_k_adj"),
+                p.get("opp_k_rate"), p.get("ref_book"), p.get("result"),
+                p.get("actual_ks"), p.get("pnl"), p.get("fetched_at"),
+            ))
+            inserted += cur.rowcount
+
+    log.info("load_history_into_db: inserted %d picks from history", inserted)
+    return inserted
+
+
+def export_db_to_history(history_path: Path = HISTORY_PATH) -> int:
+    """Export all closed picks from DB to picks_history.json. Returns count written."""
+    with get_db() as conn:
+        rows = conn.execute("""
+            SELECT date, pitcher, team, side, k_line, verdict, ev, adj_ev,
+                   raw_lambda, applied_lambda, odds, movement_conf,
+                   season_k9, recent_k9, career_k9, avg_ip, ump_k_adj, opp_k_rate,
+                   ref_book, result, actual_ks, pnl, fetched_at
+            FROM picks
+            WHERE result IS NOT NULL
+            ORDER BY date, pitcher, side
+        """).fetchall()
+
+    cols = ["date", "pitcher", "team", "side", "k_line", "verdict", "ev", "adj_ev",
+            "raw_lambda", "applied_lambda", "odds", "movement_conf",
+            "season_k9", "recent_k9", "career_k9", "avg_ip", "ump_k_adj", "opp_k_rate",
+            "ref_book", "result", "actual_ks", "pnl", "fetched_at"]
+    picks = [dict(zip(cols, row)) for row in rows]
+
+    history_path.parent.mkdir(parents=True, exist_ok=True)
+    with open(history_path, "w") as f:
+        json.dump(picks, f, indent=2)
+
+    log.info("export_db_to_history: wrote %d closed picks", len(picks))
+    return len(picks)
 
 
 def _et_dates() -> tuple[str, str]:
@@ -242,9 +307,13 @@ def close_orphans() -> int:
 def run() -> None:
     """Main entry point for the 8pm pipeline run."""
     init_db()
+    loaded = load_history_into_db()
+    log.info("Loaded %d picks from history into DB", loaded)
     seeded = seed_picks()
     log.info("Seeded %d picks for today", seeded)
     closed = fetch_and_close_results()
     log.info("Closed %d results for yesterday", closed)
     cancelled = close_orphans()
     log.info("Cancelled %d orphan picks", cancelled)
+    exported = export_db_to_history()
+    log.info("Exported %d closed picks to history", exported)
