@@ -1,19 +1,19 @@
 {
-  "generated_at": "2026-04-03T20:16:46Z",
-  "total_picks": 110,
-  "last_calibrated": "2026-04-02T03:40:49Z",
+  "generated_at": "2026-04-03T20:29:51Z",
+  "total_picks": 114,
+  "last_calibrated": "2026-04-03T20:16:46Z",
   "calibration_sample": 110,
   "rows": [
     {
       "verdict": "FIRE 2u",
       "side": "over",
-      "picks": 52,
-      "wins": 28,
-      "losses": 24,
+      "picks": 54,
+      "wins": 29,
+      "losses": 25,
       "pushes": 0,
-      "win_pct": 0.538,
-      "roi": 4.46,
-      "avg_ev": 0.1749
+      "win_pct": 0.537,
+      "roi": 4.19,
+      "avg_ev": 0.1776
     },
     {
       "verdict": "FIRE 2u",
@@ -40,23 +40,23 @@
     {
       "verdict": "FIRE 1u",
       "side": "under",
-      "picks": 6,
-      "wins": 6,
+      "picks": 7,
+      "wins": 7,
       "losses": 0,
       "pushes": 0,
       "win_pct": 1.0,
-      "roi": 101.37,
-      "avg_ev": 0.0442
+      "roi": 98.79,
+      "avg_ev": 0.0434
     },
     {
       "verdict": "LEAN",
       "side": "over",
-      "picks": 8,
-      "wins": 4,
+      "picks": 9,
+      "wins": 5,
       "losses": 4,
       "pushes": 0,
-      "win_pct": 0.5,
-      "roi": 0.25,
+      "win_pct": 0.556,
+      "roi": 8.45,
       "avg_ev": 0.0215
     },
     {
@@ -72,21 +72,21 @@
     }
   ],
   "lambda_accuracy": {
-    "avg_predicted": 5.06,
-    "avg_actual": 5.11,
-    "bias": 0.05
+    "avg_predicted": 5.08,
+    "avg_actual": 5.09,
+    "bias": 0.01
   },
   "params": {
     "ev_thresholds": {
       "fire2": 0.06,
-      "fire1": 0.035,
+      "fire1": 0.04,
       "lean": 0.005
     },
     "weight_season_cap": 0.7,
     "weight_recent": 0.2,
     "ump_scale": 1.0,
     "lambda_bias": 0.045,
-    "updated_at": "2026-04-02T03:40:49Z",
+    "updated_at": "2026-04-03T20:16:46Z",
     "sample_size": 110
   }
 }
