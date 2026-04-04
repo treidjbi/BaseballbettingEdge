@@ -1,41 +1,41 @@
 {
-  "generated_at": "2026-04-04T03:29:59Z",
-  "total_picks": 114,
-  "last_calibrated": "2026-04-04T01:46:45Z",
-  "calibration_sample": 114,
+  "generated_at": "2026-04-04T17:16:25Z",
+  "total_picks": 137,
+  "last_calibrated": "2026-04-04T17:16:25Z",
+  "calibration_sample": 137,
   "rows": [
     {
       "verdict": "FIRE 2u",
       "side": "over",
-      "picks": 54,
-      "wins": 29,
-      "losses": 25,
+      "picks": 64,
+      "wins": 31,
+      "losses": 33,
       "pushes": 0,
-      "win_pct": 0.537,
-      "roi": 4.19,
-      "avg_ev": 0.1776
+      "win_pct": 0.484,
+      "roi": -6.61,
+      "avg_ev": 0.1885
     },
     {
       "verdict": "FIRE 2u",
       "side": "under",
-      "picks": 35,
-      "wins": 17,
-      "losses": 18,
+      "picks": 45,
+      "wins": 24,
+      "losses": 21,
       "pushes": 0,
-      "win_pct": 0.486,
-      "roi": -5.65,
-      "avg_ev": 0.2582
+      "win_pct": 0.533,
+      "roi": 1.23,
+      "avg_ev": 0.2605
     },
     {
       "verdict": "FIRE 1u",
       "side": "over",
-      "picks": 7,
-      "wins": 4,
+      "picks": 8,
+      "wins": 5,
       "losses": 3,
       "pushes": 0,
-      "win_pct": 0.571,
-      "roi": 13.2,
-      "avg_ev": 0.0427
+      "win_pct": 0.625,
+      "roi": 20.23,
+      "avg_ev": 0.0448
     },
     {
       "verdict": "FIRE 1u",
@@ -51,13 +51,13 @@
     {
       "verdict": "LEAN",
       "side": "over",
-      "picks": 9,
-      "wins": 5,
+      "picks": 11,
+      "wins": 7,
       "losses": 4,
       "pushes": 0,
-      "win_pct": 0.556,
-      "roi": 8.45,
-      "avg_ev": 0.0215
+      "win_pct": 0.636,
+      "roi": 23.62,
+      "avg_ev": 0.0224
     },
     {
       "verdict": "LEAN",
@@ -72,21 +72,31 @@
     }
   ],
   "lambda_accuracy": {
-    "avg_predicted": 5.08,
-    "avg_actual": 5.09,
-    "bias": 0.01
+    "avg_predicted": 5.23,
+    "avg_actual": 5.05,
+    "bias": -0.18
   },
   "params": {
     "ev_thresholds": {
       "fire2": 0.06,
-      "fire1": 0.04,
+      "fire1": 0.055,
       "lean": 0.005
     },
     "weight_season_cap": 0.7,
     "weight_recent": 0.2,
     "ump_scale": 1.0,
-    "lambda_bias": 0.012,
-    "updated_at": "2026-04-04T01:46:45Z",
-    "sample_size": 114
-  }
+    "lambda_bias": -0.179,
+    "updated_at": "2026-04-04T17:16:25Z",
+    "sample_size": 137,
+    "calibration_notes": [
+      "[2026-04-04] Lambda bias adjusted +0.012 \u2192 -0.179 (model was systematically under-predicting Ks)",
+      "[2026-04-04] FIRE 1u EV threshold raised 5.0% \u2192 5.5% (strong recent win rate)",
+      "[2026-04-04] FIRE 1u EV threshold raised 4.5% \u2192 5.0% (strong recent win rate)"
+    ]
+  },
+  "calibration_notes": [
+    "[2026-04-04] Lambda bias adjusted +0.012 \u2192 -0.179 (model was systematically under-predicting Ks)",
+    "[2026-04-04] FIRE 1u EV threshold raised 5.0% \u2192 5.5% (strong recent win rate)",
+    "[2026-04-04] FIRE 1u EV threshold raised 4.5% \u2192 5.0% (strong recent win rate)"
+  ]
 }

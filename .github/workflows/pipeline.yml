@@ -13,6 +13,9 @@ on:
     # Evening run: 8:00 PM ET
     - cron: '0 0 * * *'    # 8pm EDT (midnight UTC)
     - cron: '0 1 * * *'    # 8pm EST (1am UTC)
+    # Grading run: 3:00 AM ET (grades previous night's games after they finish)
+    - cron: '0 7 * * *'    # 3am EDT (7am UTC)
+    - cron: '0 8 * * *'    # 3am EST (8am UTC)
   workflow_dispatch:        # manual trigger for testing
 
 permissions:
@@ -43,6 +46,8 @@ jobs:
         run: |
           if [ "${{ github.event.schedule }}" = "0 0 * * *" ] || [ "${{ github.event.schedule }}" = "0 1 * * *" ]; then
             python pipeline/run_pipeline.py $(TZ=America/New_York date +%Y-%m-%d) --run-type evening
+          elif [ "${{ github.event.schedule }}" = "0 7 * * *" ] || [ "${{ github.event.schedule }}" = "0 8 * * *" ]; then
+            python pipeline/run_pipeline.py $(TZ=America/New_York date +%Y-%m-%d) --run-type grading
           else
             python pipeline/run_pipeline.py $(TZ=America/New_York date +%Y-%m-%d)
           fi

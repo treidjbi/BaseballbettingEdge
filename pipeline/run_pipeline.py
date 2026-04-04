@@ -44,11 +44,9 @@ def _game_date_et(game_time_str: str, fallback: str) -> str:
         return fallback
 
 
-def _run_evening_steps(run_type: str) -> None:
-    """Run result fetching and calibration on the 8pm pipeline run."""
-    if run_type != "evening":
-        return
-    log.info("=== Evening steps: fetch_results + calibrate ===")
+def _run_grading_steps() -> None:
+    """Run result fetching and calibration. Called for evening and grading-only runs."""
+    log.info("=== Grading steps: fetch_results + calibrate ===")
     try:
         from fetch_results import run as run_results
         run_results()
@@ -64,6 +62,11 @@ def _run_evening_steps(run_type: str) -> None:
 def run(date_str: str, run_type: str = "full") -> None:
     log.info("=== Pipeline start for %s (run_type=%s) ===", date_str, run_type)
 
+    if run_type == "grading":
+        log.info("Grading-only run — skipping odds/stats pipeline")
+        _run_grading_steps()
+        return
+
     # 1. Fetch odds (TheRundown)
     try:
         props = fetch_odds(date_str)
@@ -73,13 +76,15 @@ def run(date_str: str, run_type: str = "full") -> None:
     except Exception as e:
         log.error("fetch_odds failed: %s", e)
         _write_output(date_str, [], props_available=False)
-        _run_evening_steps(run_type)
+        if run_type == "evening":
+            _run_grading_steps()
         return
 
     if not props:
         log.warning("No K props returned — props may not be posted yet")
         _write_output(date_str, [], props_available=False)
-        _run_evening_steps(run_type)
+        if run_type == "evening":
+            _run_grading_steps()
         return
 
     # 2. Fetch stats (MLB Stats API)
@@ -127,8 +132,25 @@ def run(date_str: str, run_type: str = "full") -> None:
 
     log.info("Built %d/%d pitcher records", len(records), len(props))
     _write_output(date_str, records, props_available=True)
+
+    # Seed picks at every run so the first-seen line (earliest in the day) is locked in.
+    # INSERT OR IGNORE in seed_picks means subsequent runs never overwrite the initial line.
+    # Immediately export to history (including open picks) so they survive the next
+    # ephemeral GitHub Actions runner — without this, open picks would be lost between runs.
+    try:
+        from fetch_results import seed_picks, export_db_to_history
+        seeded = seed_picks()
+        log.info("Seeded %d new picks from today.json", seeded)
+        if seeded > 0:
+            export_db_to_history()
+            log.info("Persisted open picks to history")
+    except Exception as e:
+        log.warning("seed_picks failed: %s", e)
+
+    if run_type == "evening":
+        _run_grading_steps()
+
     log.info("=== Pipeline complete ===")
-    _run_evening_steps(run_type)
 
 
 def _write_output(date_str: str, records: list, props_available: bool) -> None:
@@ -216,7 +238,7 @@ if __name__ == "__main__":
     parser.add_argument("date", nargs="?",
                         default=datetime.now(ZoneInfo("America/New_York")).strftime("%Y-%m-%d"),
                         help="Game date YYYY-MM-DD")
-    parser.add_argument("--run-type", choices=["full", "evening"], default="full",
-                        help="'evening' adds result fetching and calibration")
+    parser.add_argument("--run-type", choices=["full", "evening", "grading"], default="full",
+                        help="'evening' adds result fetching and calibration; 'grading' skips odds pipeline and only grades")
     args = parser.parse_args()
     run(args.date, run_type=args.run_type)
