@@ -344,6 +344,10 @@
     .perf-table th { font-weight: 600; color: var(--ink-dim); font-size: 0.85rem; }
     .perf-lam { font-size: 0.9rem; color: var(--ink); margin: 0.5rem 0; }
     .perf-cal { font-size: 0.82rem; color: var(--ink-dim); margin-top: 0.5rem; }
+    .perf-notes { margin-top: 1.25rem; border: 1px solid var(--border); border-radius: 6px; padding: 0.75rem 1rem; background: var(--surface-alt, var(--surface)); }
+    .perf-notes-title { font-size: 0.8rem; font-weight: 600; color: var(--ink-dim); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.5rem; }
+    .perf-notes ul { margin: 0; padding-left: 1.2rem; }
+    .perf-notes li { font-size: 0.85rem; color: var(--ink); margin-bottom: 0.25rem; line-height: 1.4; }
     .perf-empty { color: var(--ink-dim); padding: 2rem 0; text-align: center; }
     .roi-pos { color: var(--positive); }
     .roi-neg { color: var(--fire); }
@@ -794,6 +798,14 @@
       ? `<p class="perf-cal">Last recalibrated ${esc(data.last_calibrated.slice(0, 10))} &mdash; n=${data.calibration_sample} picks</p>`
       : `<p class="perf-cal">Tracking ${data.total_picks} pick${data.total_picks !== 1 ? 's' : ''} &mdash; accuracy stats unlock at 30 graded results</p>`;
 
+    const notes = Array.isArray(data.calibration_notes) ? data.calibration_notes : [];
+    const notesBox = notes.length > 0
+      ? `<div class="perf-notes">
+           <div class="perf-notes-title">Model Calibration Log</div>
+           <ul>${notes.map(n => `<li>${esc(n)}</li>`).join('')}</ul>
+         </div>`
+      : '';
+
     el.innerHTML = `
       <table class="perf-table">
         <thead>
@@ -805,6 +817,7 @@
       </table>
       ${lambdaRow}
       ${calNote}
+      ${notesBox}
     `;
   }
 </script>

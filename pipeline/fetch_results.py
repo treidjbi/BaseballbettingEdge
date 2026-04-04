@@ -305,12 +305,11 @@ def close_orphans() -> int:
 
 
 def run() -> None:
-    """Main entry point for the 8pm pipeline run."""
+    """Main entry point for grading runs (evening and 3am). Does NOT seed picks —
+    seeding is handled by run_pipeline.py at every run to lock in the earliest-seen line."""
     init_db()
     loaded = load_history_into_db()
     log.info("Loaded %d picks from history into DB", loaded)
-    seeded = seed_picks()
-    log.info("Seeded %d picks for today", seeded)
     closed = fetch_and_close_results()
     log.info("Closed %d results for yesterday", closed)
     cancelled = close_orphans()

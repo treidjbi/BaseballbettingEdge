@@ -77,7 +77,56 @@ _ROW_ORDER = [
 ]
 
 
-def build_performance(closed: list, current_params: dict | None = None) -> dict:
+def build_calibration_notes(old_params: dict, new_params: dict) -> list[str]:
+    """Generate human-readable notes describing what changed during calibration."""
+    notes = []
+
+    old_bias = old_params.get("lambda_bias", 0.0)
+    new_bias = new_params.get("lambda_bias", 0.0)
+    if abs(new_bias - old_bias) >= 0.005:
+        direction = "over" if new_bias > 0 else "under"
+        notes.append(
+            f"Lambda bias adjusted {old_bias:+.3f} \u2192 {new_bias:+.3f} "
+            f"(model was systematically {direction}-predicting Ks)"
+        )
+
+    old_ev = old_params.get("ev_thresholds", DEFAULTS["ev_thresholds"])
+    new_ev = new_params.get("ev_thresholds", DEFAULTS["ev_thresholds"])
+    label_map = {"fire2": "FIRE 2u", "fire1": "FIRE 1u", "lean": "LEAN"}
+    for key, label in label_map.items():
+        ov = old_ev.get(key, DEFAULTS["ev_thresholds"][key])
+        nv = new_ev.get(key, DEFAULTS["ev_thresholds"][key])
+        if abs(nv - ov) >= 0.0005:
+            direction = "raised" if nv > ov else "lowered"
+            reason = "strong recent win rate" if nv > ov else "win rate below expectation"
+            notes.append(
+                f"{label} EV threshold {direction} {ov*100:.1f}% \u2192 {nv*100:.1f}% ({reason})"
+            )
+
+    old_ump = old_params.get("ump_scale", 1.0)
+    new_ump = new_params.get("ump_scale", 1.0)
+    if abs(new_ump - old_ump) >= 0.005:
+        direction = "increased" if new_ump > old_ump else "decreased"
+        reason = "umpire adjustment correlates positively with outcomes" if new_ump > old_ump else "umpire adjustment not reliably predictive"
+        notes.append(
+            f"Umpire scale {direction} {old_ump:.3f} \u2192 {new_ump:.3f} ({reason})"
+        )
+
+    old_ws = old_params.get("weight_season_cap", DEFAULTS["weight_season_cap"])
+    new_ws = new_params.get("weight_season_cap", DEFAULTS["weight_season_cap"])
+    old_wr = old_params.get("weight_recent", DEFAULTS["weight_recent"])
+    new_wr = new_params.get("weight_recent", DEFAULTS["weight_recent"])
+    if abs(new_ws - old_ws) >= 0.005 or abs(new_wr - old_wr) >= 0.005:
+        notes.append(
+            f"K/9 blend weights updated: season {old_ws*100:.0f}% \u2192 {new_ws*100:.0f}%, "
+            f"recent {old_wr*100:.0f}% \u2192 {new_wr*100:.0f}%"
+        )
+
+    return notes
+
+
+def build_performance(closed: list, current_params: dict | None = None,
+                      calibration_notes: list[str] | None = None) -> dict:
     """Aggregate closed picks into a performance dict. Pure function (no I/O)."""
     total = len(closed)
     buckets: dict[tuple, dict] = {}
@@ -139,13 +188,14 @@ def build_performance(closed: list, current_params: dict | None = None) -> dict:
     cal_n    = params.get("sample_size", 0) if last_cal else None
 
     return {
-        "generated_at":       datetime.now(pytz.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
-        "total_picks":        total,
-        "last_calibrated":    last_cal,
-        "calibration_sample": cal_n,
-        "rows":               rows,
-        "lambda_accuracy":    lam_acc,
-        "params":             params if last_cal else None,
+        "generated_at":        datetime.now(pytz.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
+        "total_picks":         total,
+        "last_calibrated":     last_cal,
+        "calibration_sample":  cal_n,
+        "rows":                rows,
+        "lambda_accuracy":     lam_acc,
+        "params":              params if last_cal else None,
+        "calibration_notes":   calibration_notes or [],
     }
 
 
@@ -287,13 +337,12 @@ def run() -> None:
     n = len(closed)
 
     current_params = _load_current_params()
-    perf = build_performance(closed, current_params=current_params)
-    write_performance(perf)
-
     log.info("Calibration: %d closed picks", n)
 
     if n < PHASE1_THRESHOLD:
         log.info("Below Phase 1 threshold (%d), skipping calibration", PHASE1_THRESHOLD)
+        perf = build_performance(closed, current_params=current_params)
+        write_performance(perf)
         return
 
     updated_params = _calibrate_phase1(closed, current_params)
@@ -304,7 +353,25 @@ def run() -> None:
     updated_params["updated_at"]  = datetime.now(pytz.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
     updated_params["sample_size"] = n
 
+    # Generate notes describing what changed, then persist in params.json
+    notes = build_calibration_notes(current_params, updated_params)
+    if notes:
+        log.info("Calibration changes: %s", "; ".join(notes))
+    # Carry forward any existing notes, prepend new ones with timestamp
+    existing_notes = current_params.get("calibration_notes", [])
+    if notes:
+        timestamp = datetime.now(pytz.utc).strftime("%Y-%m-%d")
+        stamped = [f"[{timestamp}] {note}" for note in notes]
+        updated_params["calibration_notes"] = stamped + existing_notes
+    else:
+        updated_params["calibration_notes"] = existing_notes
+
     PARAMS_PATH.parent.mkdir(parents=True, exist_ok=True)
     with open(PARAMS_PATH, "w") as f:
         json.dump(updated_params, f, indent=2)
     log.info("Wrote params.json (n=%d)", n)
+
+    # Write performance.json with the updated params and notes
+    perf = build_performance(closed, current_params=updated_params,
+                             calibration_notes=updated_params.get("calibration_notes", []))
+    write_performance(perf)

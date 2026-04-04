@@ -1,13 +1,18 @@
 {
   "ev_thresholds": {
     "fire2": 0.06,
-    "fire1": 0.045,
+    "fire1": 0.055,
     "lean": 0.005
   },
   "weight_season_cap": 0.7,
   "weight_recent": 0.2,
   "ump_scale": 1.0,
-  "lambda_bias": 0.012,
-  "updated_at": "2026-04-04T03:29:59Z",
-  "sample_size": 114
+  "lambda_bias": -0.179,
+  "updated_at": "2026-04-04T17:16:25Z",
+  "sample_size": 137,
+  "calibration_notes": [
+    "[2026-04-04] Lambda bias adjusted +0.012 \u2192 -0.179 (model was systematically under-predicting Ks)",
+    "[2026-04-04] FIRE 1u EV threshold raised 5.0% \u2192 5.5% (strong recent win rate)",
+    "[2026-04-04] FIRE 1u EV threshold raised 4.5% \u2192 5.0% (strong recent win rate)"
+  ]
 }
