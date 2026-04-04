@@ -141,7 +141,9 @@ def load_history_into_db(history_path: Path = HISTORY_PATH) -> int:
 
 
 def export_db_to_history(history_path: Path = HISTORY_PATH) -> int:
-    """Export all closed picks from DB to picks_history.json. Returns count written."""
+    """Export all picks (open and closed) from DB to picks_history.json.
+    Open picks (result IS NULL) are included so they survive across ephemeral
+    GitHub Actions runners and can be graded by the next run."""
     with get_db() as conn:
         rows = conn.execute("""
             SELECT date, pitcher, team, side, k_line, verdict, ev, adj_ev,
@@ -149,7 +151,6 @@ def export_db_to_history(history_path: Path = HISTORY_PATH) -> int:
                    season_k9, recent_k9, career_k9, avg_ip, ump_k_adj, opp_k_rate,
                    ref_book, result, actual_ks, pnl, fetched_at
             FROM picks
-            WHERE result IS NOT NULL
             ORDER BY date, pitcher, side
         """).fetchall()
 

@@ -135,10 +135,15 @@ def run(date_str: str, run_type: str = "full") -> None:
 
     # Seed picks at every run so the first-seen line (earliest in the day) is locked in.
     # INSERT OR IGNORE in seed_picks means subsequent runs never overwrite the initial line.
+    # Immediately export to history (including open picks) so they survive the next
+    # ephemeral GitHub Actions runner — without this, open picks would be lost between runs.
     try:
-        from fetch_results import seed_picks
+        from fetch_results import seed_picks, export_db_to_history
         seeded = seed_picks()
         log.info("Seeded %d new picks from today.json", seeded)
+        if seeded > 0:
+            export_db_to_history()
+            log.info("Persisted open picks to history")
     except Exception as e:
         log.warning("seed_picks failed: %s", e)
 
