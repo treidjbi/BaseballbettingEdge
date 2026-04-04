@@ -59,6 +59,19 @@ def _run_grading_steps() -> None:
         log.error("calibrate failed: %s", e)
 
 
+def _has_valid_output(date_str: str) -> bool:
+    """Return True if today.json already has valid props for date_str. Prevents a
+    failed/empty API call from overwriting a good earlier run's output."""
+    try:
+        with open(OUTPUT_PATH) as f:
+            existing = json.load(f)
+        return (existing.get("date") == date_str
+                and existing.get("props_available") is True
+                and len(existing.get("pitchers", [])) > 0)
+    except Exception:
+        return False
+
+
 def run(date_str: str, run_type: str = "full") -> None:
     log.info("=== Pipeline start for %s (run_type=%s) ===", date_str, run_type)
 
@@ -75,14 +88,16 @@ def run(date_str: str, run_type: str = "full") -> None:
         sys.exit(1)
     except Exception as e:
         log.error("fetch_odds failed: %s", e)
-        _write_output(date_str, [], props_available=False)
+        if not _has_valid_output(date_str):
+            _write_output(date_str, [], props_available=False)
         if run_type == "evening":
             _run_grading_steps()
         return
 
     if not props:
         log.warning("No K props returned — props may not be posted yet")
-        _write_output(date_str, [], props_available=False)
+        if not _has_valid_output(date_str):
+            _write_output(date_str, [], props_available=False)
         if run_type == "evening":
             _run_grading_steps()
         return
@@ -137,8 +152,11 @@ def run(date_str: str, run_type: str = "full") -> None:
     # INSERT OR IGNORE in seed_picks means subsequent runs never overwrite the initial line.
     # Immediately export to history (including open picks) so they survive the next
     # ephemeral GitHub Actions runner — without this, open picks would be lost between runs.
+    # Must init DB and load history first so export doesn't overwrite historical closed picks.
     try:
-        from fetch_results import seed_picks, export_db_to_history
+        from fetch_results import init_db, load_history_into_db, seed_picks, export_db_to_history
+        init_db()
+        load_history_into_db()
         seeded = seed_picks()
         log.info("Seeded %d new picks from today.json", seeded)
         if seeded > 0:
