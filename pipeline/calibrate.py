@@ -84,7 +84,7 @@ def build_calibration_notes(old_params: dict, new_params: dict) -> list[str]:
     old_bias = old_params.get("lambda_bias", 0.0)
     new_bias = new_params.get("lambda_bias", 0.0)
     if abs(new_bias - old_bias) >= 0.005:
-        direction = "over" if new_bias > 0 else "under"
+        direction = "under" if new_bias > 0 else "over"
         notes.append(
             f"Lambda bias adjusted {old_bias:+.3f} \u2192 {new_bias:+.3f} "
             f"(model was systematically {direction}-predicting Ks)"
