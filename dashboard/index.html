@@ -369,7 +369,9 @@
       color: var(--ink-dim);
       margin-bottom: 12px;
       padding-bottom: 6px;
-      border-bottom: 1px solid var(--border);
+      border-bottom: 2px solid var(--fire);
+      width: fit-content;
+      padding-right: 16px;
     }
 
     /* ── Performance tab ─────────────────────────────────────────── */
@@ -680,9 +682,12 @@
         ? `<span class="adj-badge ${p.ump_k_adj > 0 ? 'adj-pos' : 'adj-neg'}">UMP ${p.ump_k_adj > 0 ? '+' : ''}${p.ump_k_adj}</span>`
         : '';
       const priceDelta = side.direction === 'OVER' ? p.price_delta_over : p.price_delta_under;
+      const evBorder = side.ev >= 0.25 ? 'border-left:3px solid var(--fire)'
+                     : side.ev >= 0.15 ? 'border-left:3px solid #e67e22'
+                     : '';
 
       html += `
-      <div class="pitcher-card${isPass ? ' card-pass' : ''}${isStarted ? ' card-started' : ''}"${isPass ? ' data-pass="1"' : ''}>
+      <div class="pitcher-card${isPass ? ' card-pass' : ''}${isStarted ? ' card-started' : ''}"${isPass ? ' data-pass="1"' : ''}${evBorder ? ` style="${evBorder}"` : ''}>
         <div class="card-header">
           <div class="card-header-left">
             <span class="pitcher-name">${esc(p.pitcher)}</span>
