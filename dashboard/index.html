@@ -4,10 +4,14 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>BaseballBettingEdge</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;700&family=Oswald:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <script src="https://unpkg.com/@phosphor-icons/web@2.1.1"></script>
   <style>
     :root {
       --bg:        #f5f0e8;
-      --surface:   #ffffff;
+      --surface:   #faf6ee;
       --border:    #d0c8b8;
       --ink:       #1a1a1a;
       --ink-dim:   #888888;
@@ -22,7 +26,7 @@
       height: 100%;
       background: var(--bg);
       color: var(--ink);
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      font-family: 'Oswald', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
       font-size: 15px;
     }
 
@@ -42,10 +46,28 @@
       padding: 10px 16px;
     }
     #title-date {
-      color: var(--bg);
+      display: flex;
+      flex-direction: column;
+      gap: 0;
+      white-space: nowrap;
+    }
+    .wordmark-top {
+      color: rgba(245, 240, 232, 0.7);
+      font-family: 'Oswald', sans-serif;
+      font-size: 11px;
+      font-weight: 400;
+      letter-spacing: .12em;
+      text-transform: uppercase;
+      line-height: 1;
+    }
+    .wordmark-bottom {
+      color: #ffffff;
+      font-family: 'Oswald', sans-serif;
+      font-size: 15px;
       font-weight: 700;
-      font-size: 14px;
       letter-spacing: .04em;
+      text-transform: uppercase;
+      line-height: 1.2;
     }
     .badge-ok {
       background: #27ae60;
@@ -91,7 +113,7 @@
       padding: 6px 12px;
       font-size: 12px;
       font-weight: 700;
-      font-family: 'Courier New', monospace;
+      font-family: 'IBM Plex Mono', 'Courier New', monospace;
       cursor: pointer;
       letter-spacing: .03em;
       text-align: center;
@@ -155,7 +177,7 @@
       text-transform: uppercase;
     }
     .nav-btn.active { color: var(--bg); }
-    .nav-icon { font-size: 20px; }
+    .nav-icon { font-size: 20px; line-height: 1; }
 
     /* ── Verdict badges ──────────────────────────────────── */
     .verdict-badge {
@@ -163,11 +185,20 @@
       border-radius: 3px;
       font-size: 11px;
       font-weight: 800;
-      font-family: 'Courier New', monospace;
+      font-family: 'IBM Plex Mono', 'Courier New', monospace;
       letter-spacing: .04em;
       white-space: nowrap;
     }
-    .verdict-fire   { background: var(--fire); color: #fff; }
+    @keyframes fire-pulse {
+      0%,100% { box-shadow: 0 0 6px rgba(192,57,43,0.4); }
+      50%      { box-shadow: 0 0 12px rgba(192,57,43,0.7); }
+    }
+    .verdict-fire {
+      background: var(--fire);
+      color: #fff;
+      box-shadow: 0 0 8px rgba(192,57,43,0.5);
+      animation: fire-pulse 2s ease-in-out infinite;
+    }
     .verdict-lean   { background: #e67e22; color: #fff; }
     .verdict-pass   { background: #ccc; color: #555; }
 
@@ -178,9 +209,10 @@
       border-radius: 4px;
       margin-bottom: 12px;
       overflow: hidden;
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.8), 0 1px 3px rgba(0,0,0,0.08);
     }
     .card-header {
-      background: var(--ink);
+      background: repeating-linear-gradient(45deg, #1a1a1a, #1a1a1a 2px, #222 2px, #222 8px);
       padding: 9px 12px;
       display: flex;
       justify-content: space-between;
@@ -194,8 +226,9 @@
     }
     .pitcher-name {
       color: var(--bg);
+      font-family: 'Oswald', sans-serif;
       font-weight: 700;
-      font-size: 14px;
+      font-size: 15px;
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
@@ -216,21 +249,22 @@
     }
     .stat-cell { text-align: center; }
     .stat-label {
-      font-size: 9px;
+      font-size: 10px;
       font-weight: 700;
       text-transform: uppercase;
       letter-spacing: .07em;
       color: var(--ink-dim);
       margin-bottom: 3px;
     }
+    .stats-row .stat-cell:nth-child(2) .stat-label { color: var(--fire); }
     .stat-value {
-      font-family: 'Courier New', monospace;
+      font-family: 'IBM Plex Mono', 'Courier New', monospace;
       font-weight: 700;
       font-size: 17px;
       color: var(--ink);
     }
     .stat-sub {
-      font-family: 'Courier New', monospace;
+      font-family: 'IBM Plex Mono', 'Courier New', monospace;
       font-size: 10px;
       color: var(--ink-dim);
       margin-top: 2px;
@@ -358,7 +392,10 @@
   <!-- Top bar -->
   <div id="top-bar">
     <div id="top-row">
-      <span id="title-date">⚾ BaseballBettingEdge</span>
+      <div id="title-date">
+        <span class="wordmark-top">Baseball</span>
+        <span class="wordmark-bottom">Betting Edge</span>
+      </div>
       <span id="freshness-badge"></span>
     </div>
     <div id="date-row">
@@ -379,15 +416,15 @@
   <!-- Bottom nav -->
   <nav id="nav">
     <button class="nav-btn active" onclick="switchTab('props', this)">
-      <span class="nav-icon">⚾</span>
+      <i class="ph ph-baseball nav-icon"></i>
       <span>Picks</span>
     </button>
     <button class="nav-btn" onclick="switchTab('watch', this)">
-      <span class="nav-icon">📋</span>
+      <i class="ph ph-eye nav-icon"></i>
       <span>Watchlist</span>
     </button>
     <button class="nav-btn" onclick="switchTab('perf', this)">
-      <span class="nav-icon">📊</span>
+      <i class="ph ph-chart-bar nav-icon"></i>
       <span>Performance</span>
     </button>
   </nav>
