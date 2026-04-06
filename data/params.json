@@ -2,15 +2,16 @@
   "ev_thresholds": {
     "fire2": 0.06,
     "fire1": 0.06,
-    "lean": 0.02
+    "lean": 0.025
   },
   "weight_season_cap": 0.4,
   "weight_recent": 0.089,
   "ump_scale": 1.0,
   "lambda_bias": -0.222,
-  "updated_at": "2026-04-06T01:59:58Z",
+  "updated_at": "2026-04-06T03:55:24Z",
   "sample_size": 164,
   "calibration_notes": [
+    "[2026-04-06] LEAN EV threshold raised 2.0% \u2192 2.5% (strong recent win rate)",
     "[2026-04-06] LEAN EV threshold raised 1.5% \u2192 2.0% (strong recent win rate)",
     "[2026-04-05] LEAN EV threshold raised 1.0% \u2192 1.5% (strong recent win rate)",
     "[2026-04-05] Lambda bias adjusted -0.179 \u2192 -0.222 (model was systematically under-predicting Ks)",
