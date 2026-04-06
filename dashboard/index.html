@@ -47,27 +47,22 @@
     }
     #title-date {
       display: flex;
-      flex-direction: column;
-      gap: 0;
+      flex-direction: row;
+      align-items: center;
+      gap: 10px;
       white-space: nowrap;
     }
-    .wordmark-top {
-      color: rgba(245, 240, 232, 0.7);
-      font-family: 'Oswald', sans-serif;
-      font-size: 11px;
-      font-weight: 400;
-      letter-spacing: .12em;
-      text-transform: uppercase;
-      line-height: 1;
+    .k-mark {
+      flex-shrink: 0;
     }
     .wordmark-bottom {
       color: #ffffff;
       font-family: 'Oswald', sans-serif;
-      font-size: 15px;
+      font-size: 16px;
       font-weight: 700;
-      letter-spacing: .04em;
+      letter-spacing: .06em;
       text-transform: uppercase;
-      line-height: 1.2;
+      line-height: 1;
     }
     .badge-ok {
       background: #27ae60;
@@ -176,7 +171,7 @@
       cursor: pointer;
       text-transform: uppercase;
     }
-    .nav-btn.active { color: var(--bg); }
+    .nav-btn.active { color: var(--bg); border-top: 2px solid var(--fire); padding-top: 2px; }
     .nav-icon { font-size: 20px; line-height: 1; }
 
     /* ── Verdict badges ──────────────────────────────────── */
@@ -199,7 +194,7 @@
       box-shadow: 0 0 8px rgba(192,57,43,0.5);
       animation: fire-pulse 2s ease-in-out infinite;
     }
-    .verdict-lean   { background: #e67e22; color: #fff; }
+    .verdict-lean   { background: transparent; border: 1px solid #e67e22; color: #e67e22; }
     .verdict-pass   { background: #ccc; color: #555; }
 
     /* ── Pitcher card ────────────────────────────────────── */
@@ -228,7 +223,8 @@
       color: var(--bg);
       font-family: 'Oswald', sans-serif;
       font-weight: 700;
-      font-size: 15px;
+      font-size: 17px;
+      letter-spacing: .02em;
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
@@ -393,7 +389,10 @@
   <div id="top-bar">
     <div id="top-row">
       <div id="title-date">
-        <span class="wordmark-top">Baseball</span>
+        <svg class="k-mark" width="28" height="28" viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <circle cx="14" cy="14" r="12" stroke="var(--fire)" stroke-width="2"/>
+          <text x="14" y="19" text-anchor="middle" font-family="Oswald, sans-serif" font-weight="700" font-size="14" fill="#fff">K</text>
+        </svg>
         <span class="wordmark-bottom">Betting Edge</span>
       </div>
       <span id="freshness-badge"></span>
@@ -416,15 +415,15 @@
   <!-- Bottom nav -->
   <nav id="nav">
     <button class="nav-btn active" onclick="switchTab('props', this)">
-      <i class="ph ph-baseball nav-icon"></i>
+      <i class="ph-bold ph-baseball nav-icon"></i>
       <span>Picks</span>
     </button>
     <button class="nav-btn" onclick="switchTab('watch', this)">
-      <i class="ph ph-eye nav-icon"></i>
+      <i class="ph-bold ph-eye nav-icon"></i>
       <span>Watchlist</span>
     </button>
     <button class="nav-btn" onclick="switchTab('perf', this)">
-      <i class="ph ph-chart-bar nav-icon"></i>
+      <i class="ph-bold ph-chart-bar nav-icon"></i>
       <span>Performance</span>
     </button>
   </nav>
