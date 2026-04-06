@@ -490,6 +490,16 @@
     return String(str ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
   }
 
+  // ── Theme toggle ───────────────────────────────────────────
+  function toggleTheme() {
+    const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+    const next = isDark ? 'light' : 'dark';
+    document.documentElement.setAttribute('data-theme', next);
+    document.getElementById('theme-toggle').innerHTML =
+      next === 'dark' ? '<i class="ph-bold ph-sun"></i>' : '<i class="ph-bold ph-moon"></i>';
+    try { localStorage.setItem('theme', next); } catch(e) {}
+  }
+
   // ── Config ────────────────────────────────────────────────
   const IS_LOCAL              = location.hostname === 'localhost' || location.hostname === '127.0.0.1' || location.protocol === 'file:';
   const RAW_BASE              = IS_LOCAL
@@ -614,11 +624,11 @@
       const timeLabel = gen.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
       badge.innerHTML = '<span class="badge-ok">' + dateLabel + ' · ' + timeLabel + '</span>';
     } else if (hrs > STALE_HOURS) {
-      badge.innerHTML = '<span class="badge-warn">Data may be outdated</span><span class="badge-delay">60s delay</span>';
+      badge.innerHTML = '<span class="badge-warn">Data may be outdated</span>';
       showBanner('Pipeline may have failed — data is more than 6 hours old.', 'warn');
     } else {
       const time = gen.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
-      badge.innerHTML = '<span class="badge-ok">Updated ' + time + '</span><span class="badge-delay">60s delay</span>';
+      badge.innerHTML = '<span class="badge-ok">Updated ' + time + '</span>';
     }
   }
 
