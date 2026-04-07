@@ -185,10 +185,14 @@ class TestBuildPitcherRecord:
             assert key in rec, f"Missing key: {key}"
 
     def test_uses_avg_ip_last5_not_constant(self):
-        from build_features import build_pitcher_record
+        from build_features import build_pitcher_record, load_params
         rec = build_pitcher_record(self.BASE_ODDS, self.BASE_STATS, ump_k_adj=0.0)
-        # At 9.0 K/9, neutral conditions, 6.0 IP → lambda = 6.0
-        assert abs(rec["lambda"] - 6.0) < 0.05
+        # At 9.0 K/9, neutral conditions, 6.0 IP → raw_lambda = 6.0.
+        # applied_lambda = raw_lambda + lambda_bias (from params), so assert
+        # against the bias-adjusted expectation rather than the raw value.
+        params = load_params()
+        expected_lam = 6.0 + params.get("lambda_bias", 0.0)
+        assert abs(rec["lambda"] - expected_lam) < 0.05
         assert rec["avg_ip"] == 6.0
 
     def test_fallback_to_constant_when_avg_ip_missing(self):

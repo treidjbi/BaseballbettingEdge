@@ -191,6 +191,14 @@ def build_pitcher_record(odds: dict, stats: dict, ump_k_adj: float,
     applied_lam = max(0.01, applied_lam)  # guard against negative bias producing invalid Poisson lambda
 
     k_line = odds["k_line"]
+
+    # Cap applied_lam at ±MAX_LAMBDA_LINE_GAP from the k_line before computing win probs.
+    # Data shows picks with gap ≥ 3 win at only 21% — the model over-reaches on extreme
+    # predictions and generates inflated EVs that don't reflect real edge.
+    MAX_LAMBDA_LINE_GAP = 2.5
+    applied_lam = min(applied_lam, k_line + MAX_LAMBDA_LINE_GAP)
+    applied_lam = max(applied_lam, k_line - MAX_LAMBDA_LINE_GAP)
+
     win_prob_over  = 1 - poisson.cdf(math.floor(k_line), applied_lam)
     win_prob_under = poisson.cdf(math.ceil(k_line) - 1, applied_lam)
 
