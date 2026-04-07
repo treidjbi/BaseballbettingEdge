@@ -47,6 +47,14 @@ _EV_THRESHOLD_BOUNDS = {
 # for winning would suppress valid signals. Only FIRE tiers are calibrated.
 _CALIBRATE_THRESHOLDS = {"FIRE 2u", "FIRE 1u"}
 
+# Minimum picks in the 30-day window before a tier's EV threshold can move.
+# Higher bar for FIRE tiers — they require real conviction before adjusting
+# since early-season small samples caused FIRE 1u to collapse previously.
+_CALIBRATE_MIN_PICKS = {
+    "FIRE 2u": 30,
+    "FIRE 1u": 30,
+}
+
 _VERDICT_TO_THRESHOLD = {
     "FIRE 2u": "fire2",
     "FIRE 1u": "fire1",
@@ -250,7 +258,7 @@ def _calibrate_phase1(closed_picks: list, current_params: dict) -> dict:
         # not to be tightened when it's winning. Only FIRE tiers are calibrated.
         if verdict not in _CALIBRATE_THRESHOLDS:
             continue
-        if len(rows) < 10:
+        if len(rows) < _CALIBRATE_MIN_PICKS.get(verdict, 10):
             continue
         wins  = sum(1 for r in rows if r["result"] == "win")
         total = sum(1 for r in rows if r["result"] in ("win", "loss"))
