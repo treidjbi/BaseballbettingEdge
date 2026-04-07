@@ -238,8 +238,13 @@ def _calibrate_phase1(closed_picks: list, current_params: dict) -> dict:
         target_bias = sum(a - p for p, a in lam_pairs) / len(lam_pairs)
         current_bias = current_params.get("lambda_bias", 0.0)
         delta = target_bias - current_bias
-        clamped_delta = max(-LAMBDA_BIAS_MAX_DELTA, min(LAMBDA_BIAS_MAX_DELTA, delta))
-        params["lambda_bias"] = round(current_bias + clamped_delta, 3)
+        if abs(delta) <= LAMBDA_BIAS_MAX_DELTA:
+            # Already within one step of the target — converge fully so that
+            # re-running with the same data is idempotent (no further movement).
+            params["lambda_bias"] = round(target_bias, 3)
+        else:
+            step = LAMBDA_BIAS_MAX_DELTA if delta > 0 else -LAMBDA_BIAS_MAX_DELTA
+            params["lambda_bias"] = round(current_bias + step, 3)
 
     # EV threshold adjustment — 30-day rolling window
     cutoff = (datetime.now(pytz.utc) - timedelta(days=30)).strftime("%Y-%m-%dT%H:%M:%SZ")
