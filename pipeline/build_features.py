@@ -57,6 +57,10 @@ def blend_k9(season_k9: float, recent_k9: float, career_k9: float, ip: float,
     w_season = min(ip / 60, weight_season_cap)
     w_recent = weight_recent
     w_career = max(0.0, 1.0 - w_season - w_recent)
+    w_total = w_season + w_recent + w_career
+    w_season /= w_total
+    w_recent /= w_total
+    w_career /= w_total
     return (w_season * season_k9) + (w_recent * recent_k9) + (w_career * career_k9)
 
 

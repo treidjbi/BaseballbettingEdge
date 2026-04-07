@@ -318,9 +318,9 @@ def run() -> None:
     if notes:
         timestamp = datetime.now(pytz.utc).strftime("%Y-%m-%d")
         stamped = [f"[{timestamp}] {note}" for note in notes]
-        updated_params["calibration_notes"] = stamped + existing_notes
+        updated_params["calibration_notes"] = (stamped + existing_notes)[:50]
     else:
-        updated_params["calibration_notes"] = existing_notes
+        updated_params["calibration_notes"] = existing_notes[:50]
 
     PARAMS_PATH.parent.mkdir(parents=True, exist_ok=True)
     with open(PARAMS_PATH, "w") as f:
