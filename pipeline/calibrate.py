@@ -261,6 +261,12 @@ def _calibrate_phase1(closed_picks: list, current_params: dict) -> dict:
     thresholds["fire1"] = min(thresholds["fire1"], thresholds["fire2"] - 0.01)
     thresholds["lean"]  = min(thresholds["lean"],  thresholds["fire1"] - 0.005)
 
+    # Clamp lean to its absolute bounds. The calibration loop skips LEAN rows,
+    # so without this an existing config with lean=0.03 would never be brought
+    # down to the new max of 0.02 — leaving signals suppressed despite this fix.
+    _lo, _hi = _EV_THRESHOLD_BOUNDS["lean"]
+    thresholds["lean"] = round(max(_lo, min(_hi, thresholds["lean"])), 4)
+
     return params
 
 
