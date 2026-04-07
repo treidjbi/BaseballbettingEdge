@@ -1,30 +1,30 @@
 {
-  "generated_at": "2026-04-07T01:56:04Z",
-  "total_picks": 195,
-  "last_calibrated": "2026-04-07T01:56:04Z",
-  "calibration_sample": 195,
+  "generated_at": "2026-04-07T10:57:07Z",
+  "total_picks": 221,
+  "last_calibrated": "2026-04-07T10:57:07Z",
+  "calibration_sample": 221,
   "rows": [
     {
       "verdict": "FIRE 2u",
       "side": "over",
-      "picks": 90,
-      "wins": 43,
-      "losses": 47,
+      "picks": 102,
+      "wins": 45,
+      "losses": 57,
       "pushes": 0,
-      "win_pct": 0.478,
-      "roi": -8.42,
-      "avg_ev": 0.2153
+      "win_pct": 0.441,
+      "roi": -15.48,
+      "avg_ev": 0.2144
     },
     {
       "verdict": "FIRE 2u",
       "side": "under",
-      "picks": 65,
-      "wins": 34,
-      "losses": 31,
+      "picks": 71,
+      "wins": 38,
+      "losses": 33,
       "pushes": 0,
-      "win_pct": 0.523,
-      "roi": -1.58,
-      "avg_ev": 0.264
+      "win_pct": 0.535,
+      "roi": 0.65,
+      "avg_ev": 0.2545
     },
     {
       "verdict": "FIRE 1u",
@@ -40,55 +40,58 @@
     {
       "verdict": "FIRE 1u",
       "side": "under",
-      "picks": 7,
-      "wins": 7,
+      "picks": 8,
+      "wins": 8,
       "losses": 0,
       "pushes": 0,
       "win_pct": 1.0,
-      "roi": 98.79,
+      "roi": 100.19,
       "avg_ev": 0.0434
     },
     {
       "verdict": "LEAN",
       "side": "over",
-      "picks": 16,
-      "wins": 11,
-      "losses": 5,
+      "picks": 19,
+      "wins": 12,
+      "losses": 7,
       "pushes": 0,
-      "win_pct": 0.688,
-      "roi": 36.97,
-      "avg_ev": 0.0214
+      "win_pct": 0.632,
+      "roi": 25.87,
+      "avg_ev": 0.0244
     },
     {
       "verdict": "LEAN",
       "side": "under",
-      "picks": 8,
-      "wins": 4,
-      "losses": 4,
+      "picks": 12,
+      "wins": 7,
+      "losses": 5,
       "pushes": 0,
-      "win_pct": 0.5,
-      "roi": 1.88,
-      "avg_ev": 0.0259
+      "win_pct": 0.583,
+      "roi": 15.46,
+      "avg_ev": 0.0266
     }
   ],
   "lambda_accuracy": {
-    "avg_predicted": 5.31,
-    "avg_actual": 4.97,
-    "bias": -0.33
+    "avg_predicted": 5.38,
+    "avg_actual": 4.86,
+    "bias": -0.52
   },
   "params": {
     "ev_thresholds": {
-      "fire2": 0.06,
+      "fire2": 0.055,
       "fire1": 0.035,
       "lean": 0.01
     },
     "weight_season_cap": 0.4,
-    "weight_recent": 0.09,
+    "weight_recent": 0.059,
     "ump_scale": 1.0,
-    "lambda_bias": -0.331,
-    "updated_at": "2026-04-07T01:56:04Z",
-    "sample_size": 195,
+    "lambda_bias": -0.381,
+    "updated_at": "2026-04-07T10:57:07Z",
+    "sample_size": 221,
     "calibration_notes": [
+      "[2026-04-07] Lambda bias adjusted -0.331 \u2192 -0.381 (model was systematically over-predicting Ks)",
+      "[2026-04-07] FIRE 2u EV threshold lowered 6.0% \u2192 5.5% (win rate below expectation)",
+      "[2026-04-07] K/9 blend weights updated: season 40% \u2192 40%, recent 9% \u2192 6%",
       "[2026-04-07] FIRE 1u EV threshold raised 3.0% \u2192 3.5% (strong recent win rate)",
       "[2026-04-07] Thresholds manually reset: fire1 and lean were miscalibrated to fire2 level, collapsing FIRE 1u tier and suppressing LEAN signals. Restored to lean=1%, fire1=3%, fire2=6%.",
       "[2026-04-06] Lambda bias adjusted -0.222 \u2192 -0.331 (model was systematically over-predicting Ks)",
@@ -106,6 +109,9 @@
     ]
   },
   "calibration_notes": [
+    "[2026-04-07] Lambda bias adjusted -0.331 \u2192 -0.381 (model was systematically over-predicting Ks)",
+    "[2026-04-07] FIRE 2u EV threshold lowered 6.0% \u2192 5.5% (win rate below expectation)",
+    "[2026-04-07] K/9 blend weights updated: season 40% \u2192 40%, recent 9% \u2192 6%",
     "[2026-04-07] FIRE 1u EV threshold raised 3.0% \u2192 3.5% (strong recent win rate)",
     "[2026-04-07] Thresholds manually reset: fire1 and lean were miscalibrated to fire2 level, collapsing FIRE 1u tier and suppressing LEAN signals. Restored to lean=1%, fire1=3%, fire2=6%.",
     "[2026-04-06] Lambda bias adjusted -0.222 \u2192 -0.331 (model was systematically over-predicting Ks)",
