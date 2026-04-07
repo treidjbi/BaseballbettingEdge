@@ -257,24 +257,15 @@ class TestPhase1Calibration:
         assert data["lambda_bias"] > 0
         assert data["lambda_bias"] <= cal.LAMBDA_BIAS_MAX_DELTA + 0.001
 
-    def test_ev_threshold_bounds_enforced(self, tmp_env):
-        db, perf, params, cal = tmp_env
-        for i in range(40):
-            _insert_closed_pick(db, "win", verdict="FIRE 2u", odds=-110,
-                                 adj_ev=0.08, raw_lambda=7.0, actual_ks=9,
-                                 date_offset_days=i+1)
-        cal.run()
-        data = json.loads(params.read_text())
-        assert data["ev_thresholds"]["fire2"] <= 0.10  # max bound
-
     def test_params_json_has_required_fields(self, tmp_env):
         db, perf, params, cal = tmp_env
         self._fill_picks(db, 30)
         cal.run()
         data = json.loads(params.read_text())
-        for field in ("updated_at", "sample_size", "ev_thresholds",
+        for field in ("updated_at", "sample_size",
                       "weight_season_cap", "weight_recent", "ump_scale", "lambda_bias"):
             assert field in data, f"Missing field: {field}"
+        assert "ev_thresholds" not in data  # thresholds are static, not calibrated
 
 
 # ── Phase 2 calibration tests ────────────────────────────────────────────────
@@ -340,7 +331,7 @@ def test_phase2_blend_weights_sum_to_one():
         })
 
     params = {"weight_season_cap": 0.70, "weight_recent": 0.20, "ump_scale": 1.0,
-              "lambda_bias": 0.0, "ev_thresholds": {}}
+              "lambda_bias": 0.0}
     result = _calibrate_phase2(picks, params)
     ws = result["weight_season_cap"]
     wr = result["weight_recent"]
@@ -371,7 +362,7 @@ def test_ump_scale_increases_when_correlated():
         })
 
     params = {"weight_season_cap": 0.70, "weight_recent": 0.20,
-              "ump_scale": 1.0, "lambda_bias": 0.0, "ev_thresholds": {}}
+              "ump_scale": 1.0, "lambda_bias": 0.0}
     result = _calibrate_phase2(picks, params)
     assert result["ump_scale"] > 1.0  # should have increased
 
@@ -393,6 +384,6 @@ def test_ump_scale_decreases_when_uncorrelated():
         })
 
     params = {"weight_season_cap": 0.70, "weight_recent": 0.20,
-              "ump_scale": 1.0, "lambda_bias": 0.0, "ev_thresholds": {}}
+              "ump_scale": 1.0, "lambda_bias": 0.0}
     result = _calibrate_phase2(picks, params)
     assert result["ump_scale"] < 1.0  # should have decreased

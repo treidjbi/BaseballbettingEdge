@@ -106,7 +106,7 @@ class TestCalcVerdict:
         assert calc_verdict(0.04) == "FIRE 1u"
 
     def test_fire_2u(self):
-        assert calc_verdict(0.07) == "FIRE 2u"
+        assert calc_verdict(0.08) == "FIRE 2u"
 
 
 class TestCalcPriceDelta:
@@ -379,7 +379,7 @@ class TestLoadParams:
             p = load_params()
         assert p["lambda_bias"] == 0.0
         assert p["ump_scale"] == 1.0
-        assert p["ev_thresholds"]["fire2"] == 0.06
+        assert "ev_thresholds" not in p  # thresholds are now static constants, not in params
 
     def test_malformed_file_returns_defaults(self):
         with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False) as f:
@@ -393,7 +393,6 @@ class TestLoadParams:
 
     def test_valid_file_overrides_defaults(self):
         data = {"lambda_bias": 0.3, "ump_scale": 0.8,
-                "ev_thresholds": {"fire2": 0.07, "fire1": 0.04, "lean": 0.015},
                 "weight_season_cap": 0.65, "weight_recent": 0.25}
         with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False) as f:
             json.dump(data, f)
@@ -403,7 +402,7 @@ class TestLoadParams:
             p = load_params()
         os.unlink(path)
         assert p["lambda_bias"] == 0.3
-        assert p["ev_thresholds"]["fire2"] == 0.07
+        assert p["ump_scale"] == 0.8
 
     def test_partial_file_merges_with_defaults(self):
         data = {"lambda_bias": 0.5}
@@ -417,9 +416,9 @@ class TestLoadParams:
         assert p["lambda_bias"] == 0.5
         assert p["ump_scale"] == 1.0  # default intact
 
-    def test_partial_ev_thresholds_merges_not_replaces(self):
-        """Partial ev_thresholds in file should merge with defaults, not replace entire dict."""
-        data = {"ev_thresholds": {"fire2": 0.07}}  # only fire2 provided
+    def test_ev_thresholds_not_in_params(self):
+        """ev_thresholds are static constants, never loaded from params file."""
+        data = {"ev_thresholds": {"fire2": 0.99}}  # should be ignored
         with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False) as f:
             json.dump(data, f)
             path = f.name
@@ -427,9 +426,10 @@ class TestLoadParams:
             from build_features import load_params
             p = load_params()
         os.unlink(path)
-        assert p["ev_thresholds"]["fire2"] == 0.07   # overridden
-        assert p["ev_thresholds"]["fire1"] == 0.03   # default preserved
-        assert p["ev_thresholds"]["lean"]  == 0.01   # default preserved
+        # ev_thresholds from file is ignored — it may appear as a stale key
+        # but the pipeline never reads it; calc_verdict uses module constants
+        from build_features import EDGE_FIRE_1U
+        assert EDGE_FIRE_1U == 0.07
 
 
 # -- blend_k9 weight params tests --
@@ -456,18 +456,17 @@ class TestBlendK9Params:
 # -- calc_verdict threshold params tests --
 
 class TestCalcVerdictThresholds:
-    def test_custom_thresholds(self):
-        t = {"lean": 0.005, "fire1": 0.02, "fire2": 0.05}
-        assert calc_verdict(0.003, t) == "PASS"
-        assert calc_verdict(0.01, t) == "LEAN"
-        assert calc_verdict(0.03, t) == "FIRE 1u"
-        assert calc_verdict(0.06, t) == "FIRE 2u"
-
-    def test_default_thresholds_unchanged(self):
+    def test_static_thresholds(self):
+        """EV thresholds are fixed: LEAN 1-3%, FIRE 1u 3-7%, FIRE 2u >7%."""
         assert calc_verdict(0.005) == "PASS"
         assert calc_verdict(0.02) == "LEAN"
-        assert calc_verdict(0.04) == "FIRE 1u"
-        assert calc_verdict(0.07) == "FIRE 2u"
+        assert calc_verdict(0.05) == "FIRE 1u"
+        assert calc_verdict(0.08) == "FIRE 2u"
+        # Boundary tests
+        assert calc_verdict(0.01) == "PASS"     # exactly 1% → PASS
+        assert calc_verdict(0.03) == "LEAN"     # exactly 3% → LEAN
+        assert calc_verdict(0.07) == "FIRE 1u"  # exactly 7% → FIRE 1u
+        assert calc_verdict(0.071) == "FIRE 2u" # just over 7% → FIRE 2u
 
 
 # -- build_pitcher_record output fields --

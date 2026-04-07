@@ -12,7 +12,6 @@ from scipy.stats import poisson
 PARAMS_PATH = str(Path(__file__).parent.parent / "data" / "params.json")
 
 DEFAULTS = {
-    "ev_thresholds": {"fire2": 0.06, "fire1": 0.03, "lean": 0.01},
     "weight_season_cap": 0.70,
     "weight_recent": 0.20,
     "ump_scale": 1.0,
@@ -27,15 +26,13 @@ def load_params() -> dict:
         return dict(DEFAULTS)
 
     result = {**DEFAULTS, **data}
-    # Deep merge nested ev_thresholds so partial files don't drop keys
-    result["ev_thresholds"] = {**DEFAULTS["ev_thresholds"], **data.get("ev_thresholds", {})}
     return result
 
 
 # ── Verdict thresholds ──────────────────────────────────────────────────────
-EDGE_PASS         = 0.01
-EDGE_LEAN         = 0.03
-EDGE_FIRE_1U      = 0.06
+EDGE_PASS         = 0.01   # EV ≤ 1% → PASS
+EDGE_LEAN         = 0.03   # EV 1–3% → LEAN
+EDGE_FIRE_1U      = 0.07   # EV 3–7% → FIRE 1u, >7% → FIRE 2u
 EXPECTED_INNINGS  = 5.5        # fallback only — pipeline uses per-pitcher avg IP
 LEAGUE_AVG_K_RATE = 0.227
 LEAGUE_AVG_SWSTR  = 0.110      # FanGraphs league avg swinging strike rate
@@ -116,14 +113,13 @@ def calc_ev(win_prob: float, odds: int) -> float:
     return win_prob - american_to_implied(odds)
 
 
-def calc_verdict(ev: float, thresholds: dict | None = None) -> str:
-    """Map EV to a betting verdict string."""
-    t = thresholds or {"lean": EDGE_PASS, "fire1": EDGE_LEAN, "fire2": EDGE_FIRE_1U}
-    if ev <= t["lean"]:
+def calc_verdict(ev: float) -> str:
+    """Map EV to a betting verdict string. Thresholds are static."""
+    if ev <= EDGE_PASS:
         return "PASS"
-    if ev <= t["fire1"]:
+    if ev <= EDGE_LEAN:
         return "LEAN"
-    if ev <= t["fire2"]:
+    if ev <= EDGE_FIRE_1U:
         return "FIRE 1u"
     return "FIRE 2u"
 
@@ -165,7 +161,6 @@ def build_pitcher_record(odds: dict, stats: dict, ump_k_adj: float,
                Defaults to league average (neutral multiplier = 1.0).
     """
     params = load_params()
-    thresholds = params["ev_thresholds"]
 
     # team/opp_team: stats dict is authoritative (from MLB schedule); odds fallback for safety
     team     = stats.get("team")     or odds.get("team", "")
@@ -241,14 +236,14 @@ def build_pitcher_record(odds: dict, stats: dict, ump_k_adj: float,
         "ev_over":  {
             "ev":            round(ev_over,      4),
             "adj_ev":        round(adj_ev_over,  4),
-            "verdict":       calc_verdict(adj_ev_over,  thresholds),
+            "verdict":       calc_verdict(adj_ev_over),
             "win_prob":      round(win_prob_over,  3),
             "movement_conf": round(conf_over,    4),
         },
         "ev_under": {
             "ev":            round(ev_under,      4),
             "adj_ev":        round(adj_ev_under,  4),
-            "verdict":       calc_verdict(adj_ev_under, thresholds),
+            "verdict":       calc_verdict(adj_ev_under),
             "win_prob":      round(win_prob_under,  3),
             "movement_conf": round(conf_under,    4),
         },
