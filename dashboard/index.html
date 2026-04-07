@@ -708,12 +708,10 @@
   }
 
   // ── Props tab ─────────────────────────────────────────────
-  const VERDICT_ORDER = { 'FIRE 2u': 0, 'FIRE 1u': 1, 'LEAN': 2, 'PASS': 3 };
-
   function renderProps(pitchers, isPast = false) {
     const el     = document.getElementById('panel-props');
     const sorted = [...pitchers].sort((a, b) =>
-      (VERDICT_ORDER[bestSide(a).verdict] ?? 3) - (VERDICT_ORDER[bestSide(b).verdict] ?? 3)
+      (a.game_time || '').localeCompare(b.game_time || '')
     );
 
     const hasAction = sorted.some(p => bestSide(p).verdict !== 'PASS');
