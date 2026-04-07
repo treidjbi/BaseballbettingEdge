@@ -33,9 +33,14 @@ DEFAULTS = {
 
 _EV_THRESHOLD_BOUNDS = {
     "fire2": (0.04, 0.10),
-    "fire1": (0.02, 0.06),
-    "lean":  (0.005, 0.03),
+    "fire1": (0.02, 0.05),   # max 5% — keeps a meaningful gap below fire2
+    "lean":  (0.005, 0.02),  # max 2% — LEAN is a surface-the-edge tier, not calibrated up
 }
+
+# LEAN is intentionally excluded from win-rate threshold calibration.
+# Its purpose is to surface minor edges for user judgment — penalising it
+# for winning would suppress valid signals. Only FIRE tiers are calibrated.
+_CALIBRATE_THRESHOLDS = {"FIRE 2u", "FIRE 1u"}
 
 _VERDICT_TO_THRESHOLD = {
     "FIRE 2u": "fire2",
@@ -231,6 +236,10 @@ def _calibrate_phase1(closed_picks: list, current_params: dict) -> dict:
 
     thresholds = params["ev_thresholds"]
     for verdict, rows in by_verdict.items():
+        # LEAN is excluded — it exists to surface minor edges for user judgment,
+        # not to be tightened when it's winning. Only FIRE tiers are calibrated.
+        if verdict not in _CALIBRATE_THRESHOLDS:
+            continue
         if len(rows) < 10:
             continue
         wins  = sum(1 for r in rows if r["result"] == "win")
@@ -246,6 +255,11 @@ def _calibrate_phase1(closed_picks: list, current_params: dict) -> dict:
             thresholds[key] = min(hi, round(current + 0.005, 4))
         elif observed < implied - 0.03:
             thresholds[key] = max(lo, round(current - 0.005, 4))
+
+    # Enforce tier ordering: lean < fire1 < fire2 with minimum gaps.
+    # Prevents calibration drift from collapsing adjacent tiers.
+    thresholds["fire1"] = min(thresholds["fire1"], thresholds["fire2"] - 0.01)
+    thresholds["lean"]  = min(thresholds["lean"],  thresholds["fire1"] - 0.005)
 
     return params
 
