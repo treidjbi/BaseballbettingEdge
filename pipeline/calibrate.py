@@ -23,6 +23,11 @@ PERFORMANCE_PATH  = Path(__file__).parent.parent / "dashboard" / "data" / "perfo
 PHASE1_THRESHOLD  = 30
 PHASE2_THRESHOLD  = 60
 
+# Maximum lambda bias shift per calibration run. Prevents a single bad day
+# from causing a large overnight swing early in the season (small n). As the
+# sample grows the true mean stabilises anyway; this just smooths convergence.
+LAMBDA_BIAS_MAX_DELTA = 0.05
+
 DEFAULTS = {
     "ev_thresholds": {"fire2": 0.06, "fire1": 0.03, "lean": 0.01},
     "weight_season_cap": 0.70,
@@ -216,12 +221,17 @@ def _calibrate_phase1(closed_picks: list, current_params: dict) -> dict:
     params = dict(current_params)
     params["ev_thresholds"] = dict(current_params["ev_thresholds"])
 
-    # Lambda bias — uses raw_lambda as baseline to avoid drift across cycles
+    # Lambda bias — uses raw_lambda as baseline to avoid drift across cycles.
+    # Change is capped at ±LAMBDA_BIAS_MAX_DELTA per run so a single bad day
+    # can't cause a large overnight swing, especially early in the season.
     lam_pairs = [(r["raw_lambda"], r["actual_ks"]) for r in closed_picks
                  if r["raw_lambda"] is not None and r["actual_ks"] is not None]
     if lam_pairs:
-        bias = sum(a - p for p, a in lam_pairs) / len(lam_pairs)
-        params["lambda_bias"] = round(bias, 3)
+        target_bias = sum(a - p for p, a in lam_pairs) / len(lam_pairs)
+        current_bias = current_params.get("lambda_bias", 0.0)
+        delta = target_bias - current_bias
+        clamped_delta = max(-LAMBDA_BIAS_MAX_DELTA, min(LAMBDA_BIAS_MAX_DELTA, delta))
+        params["lambda_bias"] = round(current_bias + clamped_delta, 3)
 
     # EV threshold adjustment — 30-day rolling window
     cutoff = (datetime.now(pytz.utc) - timedelta(days=30)).strftime("%Y-%m-%dT%H:%M:%SZ")

@@ -234,20 +234,28 @@ class TestPhase1Calibration:
         assert params.exists()
 
     def test_lambda_bias_corrects_over_prediction(self, tmp_env):
-        """Model predicts 8.0, actual is 7 → bias = -1.0."""
+        """Model predicts 8.0, actual is 7 → target bias is -1.0.
+        With dampening, a single run moves at most LAMBDA_BIAS_MAX_DELTA in the
+        correct direction from the starting value of 0.0."""
         db, perf, params, cal = tmp_env
         self._fill_picks(db, 35, raw_lambda=8.0, actual_ks=7)
         cal.run()
         data = json.loads(params.read_text())
-        assert abs(data["lambda_bias"] - (-1.0)) < 0.1
+        # Bias must be negative (correct direction) and capped at max delta
+        assert data["lambda_bias"] < 0
+        assert abs(data["lambda_bias"]) <= cal.LAMBDA_BIAS_MAX_DELTA + 0.001
 
     def test_lambda_bias_corrects_under_prediction(self, tmp_env):
-        """Model predicts 6.0, actual is 7 → bias = +1.0."""
+        """Model predicts 6.0, actual is 7 → target bias is +1.0.
+        With dampening, a single run moves at most LAMBDA_BIAS_MAX_DELTA in the
+        correct direction from the starting value of 0.0."""
         db, perf, params, cal = tmp_env
         self._fill_picks(db, 35, raw_lambda=6.0, actual_ks=7)
         cal.run()
         data = json.loads(params.read_text())
+        # Bias must be positive (correct direction) and capped at max delta
         assert data["lambda_bias"] > 0
+        assert data["lambda_bias"] <= cal.LAMBDA_BIAS_MAX_DELTA + 0.001
 
     def test_ev_threshold_bounds_enforced(self, tmp_env):
         db, perf, params, cal = tmp_env
