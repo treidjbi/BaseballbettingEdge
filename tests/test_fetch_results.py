@@ -237,7 +237,7 @@ class TestExportDbToHistory:
         written = json.loads(history_path.read_text())
         pitchers = [r["pitcher"] for r in written]
         assert "Zack Wheeler" in pitchers
-        assert "Dylan Cease" not in pitchers  # open pick excluded
+        assert "Dylan Cease" in pitchers  # open picks included for GHA persistence
 
     def test_overwrites_existing_file(self, tmp_db, tmp_path):
         """export_db_to_history replaces existing history file."""
