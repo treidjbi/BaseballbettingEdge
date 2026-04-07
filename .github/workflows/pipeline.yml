@@ -2,24 +2,18 @@ name: Baseball Pipeline
 
 on:
   schedule:
-    # Morning run: 9:00 AM ET
-    # EDT (Mar–Nov): UTC-4 → 13:00 UTC
-    # EST (Nov–Mar): UTC-5 → 14:00 UTC
-    - cron: '0 13 * * *'   # 9am EDT (primary — baseball season)
-    - cron: '0 14 * * *'   # 9am EST (offseason)
-    # Midday run: 1:00 PM ET
-    - cron: '0 17 * * *'   # 1pm EDT
-    - cron: '0 18 * * *'   # 1pm EST
-    # Evening run: 8:00 PM ET
-    - cron: '0 0 * * *'    # 8pm EDT (midnight UTC)
-    - cron: '0 1 * * *'    # 8pm EST (1am UTC)
-    # Grading run: 3:00 AM ET (grades previous night's games after they finish)
-    - cron: '0 7 * * *'    # 3am EDT (7am UTC)
-    - cron: '0 8 * * *'    # 3am EST (8am UTC)
+    # All times are America/Phoenix (UTC-7, no DST — crons never change).
+    #
+    # 7:00 PM Phoenix = 02:00 UTC  — preview run: fetch next-day lines as opening baseline
+    - cron: '0 2 * * *'
+    # 3:00 AM Phoenix = 10:00 UTC  — grading run: grade previous day + calibrate
+    - cron: '0 10 * * *'
+    # 6:00 AM Phoenix = 13:00 UTC  — full run: finalize picks (treats 7pm lines as opening)
+    - cron: '0 13 * * *'
   workflow_dispatch:        # manual trigger for testing
 
 permissions:
-  contents: write           # allows the bot to commit + push today.json
+  contents: write           # allows the bot to commit + push output files
 
 jobs:
   run-pipeline:
@@ -44,12 +38,18 @@ jobs:
         env:
           RUNDOWN_API_KEY: ${{ secrets.RUNDOWN_API_KEY }}
         run: |
-          if [ "${{ github.event.schedule }}" = "0 0 * * *" ] || [ "${{ github.event.schedule }}" = "0 1 * * *" ]; then
-            python pipeline/run_pipeline.py $(TZ=America/New_York date +%Y-%m-%d) --run-type evening
-          elif [ "${{ github.event.schedule }}" = "0 7 * * *" ] || [ "${{ github.event.schedule }}" = "0 8 * * *" ]; then
-            python pipeline/run_pipeline.py $(TZ=America/New_York date +%Y-%m-%d) --run-type grading
+          if [ "${{ github.event.schedule }}" = "0 2 * * *" ]; then
+            # 7pm Phoenix — preview: fetch tomorrow's lines as opening baseline
+            TOMORROW=$(TZ=America/Phoenix date -d '+1 day' +%Y-%m-%d)
+            python pipeline/run_pipeline.py $TOMORROW --run-type preview
+
+          elif [ "${{ github.event.schedule }}" = "0 10 * * *" ]; then
+            # 3am Phoenix — grading: grade previous day's picks + calibrate
+            python pipeline/run_pipeline.py $(TZ=America/Phoenix date +%Y-%m-%d) --run-type grading
+
           else
-            python pipeline/run_pipeline.py $(TZ=America/New_York date +%Y-%m-%d)
+            # 6am Phoenix — full: finalize today's picks (uses 7pm preview lines as opening)
+            python pipeline/run_pipeline.py $(TZ=America/Phoenix date +%Y-%m-%d)
           fi
 
       - name: Commit pipeline output
@@ -58,8 +58,9 @@ jobs:
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add dashboard/data/processed/
           test -f dashboard/data/performance.json && git add dashboard/data/performance.json || true
-          test -f data/picks_history.json && git add data/picks_history.json || true
-          test -f data/params.json && git add data/params.json || true
+          test -f data/picks_history.json        && git add data/picks_history.json        || true
+          test -f data/params.json               && git add data/params.json               || true
+          test -f data/preview_lines.json        && git add data/preview_lines.json        || true
           git diff --staged --quiet || git commit -m "chore: pipeline update $(date -u +%Y-%m-%dT%H:%M:%SZ)"
           git pull --rebase
           git push

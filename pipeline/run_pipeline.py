@@ -28,7 +28,8 @@ logging.basicConfig(
 )
 log = logging.getLogger(__name__)
 
-OUTPUT_PATH = Path(__file__).parent.parent / "dashboard" / "data" / "processed" / "today.json"
+OUTPUT_PATH   = Path(__file__).parent.parent / "dashboard" / "data" / "processed" / "today.json"
+PREVIEW_PATH  = Path(__file__).parent.parent / "data" / "preview_lines.json"
 
 
 def _game_date_et(game_time_str: str, fallback: str) -> str:
@@ -42,6 +43,77 @@ def _game_date_et(game_time_str: str, fallback: str) -> str:
     except Exception as e:
         log.warning("_game_date_et: could not parse %r — falling back to %r (%s)", game_time_str, fallback, e)
         return fallback
+
+
+def _run_preview(tomorrow_str: str) -> None:
+    """7pm run: fetch next-day lines and store to preview_lines.json.
+    Does not seed picks to the DB — the 6am run treats these as opening lines
+    so any sharp movement overnight is captured by the movement confidence haircut."""
+    log.info("=== Preview run: fetching lines for %s ===", tomorrow_str)
+    try:
+        props = fetch_odds(tomorrow_str)
+    except Exception as e:
+        log.error("fetch_odds failed in preview run: %s", e)
+        return
+
+    if not props:
+        log.warning("No K props posted yet for %s — preview skipped", tomorrow_str)
+        return
+
+    preview = {
+        "date":       tomorrow_str,
+        "fetched_at": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
+        "lines": {
+            p["pitcher"]: {
+                "k_line":     p["k_line"],
+                "over_odds":  p["best_over_odds"],
+                "under_odds": p["best_under_odds"],
+            }
+            for p in props
+        },
+    }
+    PREVIEW_PATH.parent.mkdir(parents=True, exist_ok=True)
+    with open(PREVIEW_PATH, "w") as f:
+        json.dump(preview, f, indent=2)
+    log.info("Preview: stored %d pitcher lines for %s", len(preview["lines"]), tomorrow_str)
+
+
+def _load_preview_lines(date_str: str) -> dict:
+    """Load 7pm preview lines if they exist and match today's date.
+    Returns {pitcher_name: {k_line, over_odds, under_odds}} or empty dict."""
+    try:
+        with open(PREVIEW_PATH) as f:
+            preview = json.load(f)
+        if preview.get("date") == date_str:
+            lines = preview.get("lines", {})
+            log.info("Loaded %d preview lines from 7pm run (%s)", len(lines), preview.get("fetched_at", ""))
+            return lines
+        log.info("Preview file is for %s, not %s — ignoring", preview.get("date"), date_str)
+    except (FileNotFoundError, json.JSONDecodeError):
+        pass
+    return {}
+
+
+def _apply_preview_openings(props: list, preview_lines: dict) -> None:
+    """Override opening odds with 7pm preview lines where available and the
+    k_line hasn't shifted. This lets the movement confidence haircut detect
+    sharp action that came in between the 7pm and 6am runs."""
+    applied = 0
+    for prop in props:
+        name = prop["pitcher"]
+        prev = preview_lines.get(name)
+        if not prev:
+            continue
+        # Only apply if the line itself hasn't moved — a shifted k_line means
+        # the market repriced completely and the old opening is misleading.
+        if prev.get("k_line") != prop.get("k_line"):
+            log.info("Line shifted for %s (preview %.1f → now %.1f) — skipping opening override",
+                     name, prev.get("k_line"), prop.get("k_line"))
+            continue
+        prop["opening_over_odds"]  = prev["over_odds"]
+        prop["opening_under_odds"] = prev["under_odds"]
+        applied += 1
+    log.info("Applied 7pm preview openings to %d/%d pitchers", applied, len(props))
 
 
 def _run_grading_steps() -> None:
@@ -80,6 +152,13 @@ def run(date_str: str, run_type: str = "full") -> None:
         _run_grading_steps()
         return
 
+    if run_type == "preview":
+        _run_preview(date_str)
+        return
+
+    # Full run: load 7pm preview lines to use as opening baseline for movement detection
+    preview_lines = _load_preview_lines(date_str)
+
     # 1. Fetch odds (TheRundown)
     try:
         props = fetch_odds(date_str)
@@ -90,17 +169,18 @@ def run(date_str: str, run_type: str = "full") -> None:
         log.error("fetch_odds failed: %s", e)
         if not _has_valid_output(date_str):
             _write_output(date_str, [], props_available=False)
-        if run_type == "evening":
-            _run_grading_steps()
         return
 
     if not props:
         log.warning("No K props returned — props may not be posted yet")
         if not _has_valid_output(date_str):
             _write_output(date_str, [], props_available=False)
-        if run_type == "evening":
-            _run_grading_steps()
         return
+
+    # Overlay 7pm preview lines as opening odds so movement between 7pm and
+    # 6am is captured by the movement confidence haircut in build_features.
+    if preview_lines:
+        _apply_preview_openings(props, preview_lines)
 
     # 2. Fetch stats (MLB Stats API)
     pitcher_names = [p["pitcher"] for p in props]
@@ -164,9 +244,6 @@ def run(date_str: str, run_type: str = "full") -> None:
             log.info("Persisted open picks to history")
     except Exception as e:
         log.warning("seed_picks failed: %s", e)
-
-    if run_type == "evening":
-        _run_grading_steps()
 
     log.info("=== Pipeline complete ===")
 
@@ -256,7 +333,7 @@ if __name__ == "__main__":
     parser.add_argument("date", nargs="?",
                         default=datetime.now(ZoneInfo("America/New_York")).strftime("%Y-%m-%d"),
                         help="Game date YYYY-MM-DD")
-    parser.add_argument("--run-type", choices=["full", "evening", "grading"], default="full",
-                        help="'evening' adds result fetching and calibration; 'grading' skips odds pipeline and only grades")
+    parser.add_argument("--run-type", choices=["full", "grading", "preview"], default="full",
+                        help="'grading' grades previous day + calibrates; 'preview' fetches next-day lines without seeding picks")
     args = parser.parse_args()
     run(args.date, run_type=args.run_type)
