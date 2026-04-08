@@ -7,6 +7,7 @@ Run as part of the 8pm pipeline run only.
 """
 import json
 import logging
+import math
 import sqlite3
 from datetime import datetime, timedelta
 from pathlib import Path
@@ -23,10 +24,14 @@ PERFORMANCE_PATH  = Path(__file__).parent.parent / "dashboard" / "data" / "perfo
 PHASE1_THRESHOLD  = 30
 PHASE2_THRESHOLD  = 60
 
-# Maximum lambda bias shift per calibration run. Prevents a single bad day
-# from causing a large overnight swing early in the season (small n). As the
-# sample grows the true mean stabilises anyway; this just smooths convergence.
-LAMBDA_BIAS_MAX_DELTA = 0.05
+# Adaptive lambda bias step size: scales with sqrt(n / LAMBDA_BIAS_SCALE_N).
+# At n=30 (phase 1 floor): max step = 0.05 — cautious, sample is small.
+# At n=100: max step = ~0.09 — faster convergence as estimate stabilises.
+# At n=252: max step = ~0.14 — near-immediate convergence for reliable estimates.
+# Hard ceiling at 0.15 to prevent any single run from overcorrecting.
+LAMBDA_BIAS_BASE_DELTA = 0.05
+LAMBDA_BIAS_SCALE_N    = 30
+LAMBDA_BIAS_MAX_DELTA  = 0.15  # hard ceiling regardless of n
 
 DEFAULTS = {
     "weight_season_cap": 0.70,
@@ -189,19 +194,24 @@ def _calibrate_phase1(closed_picks: list, current_params: dict) -> dict:
     params = dict(current_params)
 
     # Lambda bias — uses raw_lambda as baseline to avoid drift across cycles.
-    # Change is capped at ±LAMBDA_BIAS_MAX_DELTA per run so a single bad day
-    # can't cause a large overnight swing, especially early in the season.
+    # Step size scales with sqrt(n / LAMBDA_BIAS_SCALE_N): cautious early in the
+    # season when sample is small, converges faster mid-season when the mean is stable.
     lam_pairs = [(r["raw_lambda"], r["actual_ks"]) for r in closed_picks
                  if r["raw_lambda"] is not None and r["actual_ks"] is not None]
     if lam_pairs:
-        target_bias = sum(a - p for p, a in lam_pairs) / len(lam_pairs)
+        n            = len(lam_pairs)
+        target_bias  = sum(a - p for p, a in lam_pairs) / n
         current_bias = current_params.get("lambda_bias", 0.0)
-        delta = target_bias - current_bias
-        if abs(delta) <= LAMBDA_BIAS_MAX_DELTA:
+        delta        = target_bias - current_bias
+        adaptive_cap = min(LAMBDA_BIAS_MAX_DELTA,
+                           LAMBDA_BIAS_BASE_DELTA * math.sqrt(n / LAMBDA_BIAS_SCALE_N))
+        if abs(delta) <= adaptive_cap:
             params["lambda_bias"] = round(target_bias, 3)
         else:
-            step = LAMBDA_BIAS_MAX_DELTA if delta > 0 else -LAMBDA_BIAS_MAX_DELTA
+            step = adaptive_cap if delta > 0 else -adaptive_cap
             params["lambda_bias"] = round(current_bias + step, 3)
+        log.info("Lambda bias: target=%.3f current=%.3f adaptive_cap=%.3f (n=%d)",
+                 target_bias, current_bias, adaptive_cap, n)
 
     return params
 
@@ -270,8 +280,19 @@ def _calibrate_phase2(closed_picks: list, current_params: dict) -> dict:
     return params
 
 
+def _current_season_start() -> str:
+    """Returns the season start date floor (March 1 of the current calendar year)."""
+    return f"{datetime.now().year}-03-01"
+
+
 def _load_closed_picks() -> list:
-    """Load all closed picks from DB. Returns empty list if DB missing."""
+    """Load current-season closed picks from DB. Returns empty list if DB missing.
+
+    Filtered to the current calendar season (date >= March 1 of current year) so
+    picks graded under a different formula or roster environment don't distort
+    calibration. Each new season starts fresh from zero bias.
+    """
+    season_start = _current_season_start()
     try:
         conn = _get_db()
         rows = conn.execute("""
@@ -279,8 +300,10 @@ def _load_closed_picks() -> list:
                    season_k9, recent_k9, career_k9, ump_k_adj, fetched_at, pnl
             FROM picks
             WHERE result IN ('win','loss','push')
-        """).fetchall()
+              AND date >= ?
+        """, (season_start,)).fetchall()
         conn.close()
+        log.info("Loaded %d closed picks since %s", len(rows), season_start)
         return rows
     except Exception as e:
         log.error("Could not load picks for calibration: %s", e)

@@ -19,6 +19,7 @@ sys.path.insert(0, os.path.dirname(__file__))
 from fetch_odds      import fetch_odds
 from fetch_stats     import fetch_stats
 from fetch_statcast  import fetch_swstr, LEAGUE_AVG_SWSTR
+_SWSTR_NEUTRAL = {"swstr_pct": LEAGUE_AVG_SWSTR, "career_swstr_pct": None}
 from fetch_umpires   import fetch_umpires
 from build_features  import build_pitcher_record
 
@@ -193,11 +194,12 @@ def run(date_str: str, run_type: str = "full") -> None:
         stats_map = {}
 
     # 3. Fetch SwStr% (FanGraphs via PyBaseball — graceful fallback to neutral)
+    # Returns {name: {"swstr_pct": float, "career_swstr_pct": float | None}}
     try:
         swstr_map = fetch_swstr(int(date_str[:4]), pitcher_names)
     except Exception as e:
         log.warning("fetch_swstr failed: %s — using neutral SwStr%% for all", e)
-        swstr_map = {name: LEAGUE_AVG_SWSTR for name in pitcher_names}
+        swstr_map = {name: _SWSTR_NEUTRAL for name in pitcher_names}
 
     # 4. Fetch umpire adjustments (ump.news — graceful fallback built in)
     try:
@@ -217,7 +219,7 @@ def run(date_str: str, run_type: str = "full") -> None:
         try:
             record = build_pitcher_record(
                 odds, stats, ump_map.get(name, 0.0),
-                swstr_pct=swstr_map.get(name, LEAGUE_AVG_SWSTR)
+                swstr_data=swstr_map.get(name, _SWSTR_NEUTRAL)
             )
             records.append(record)
             log.info("Built record for %s: λ=%.2f verdict=%s",
