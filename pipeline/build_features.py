@@ -101,6 +101,35 @@ def calc_swstr_delta_k9(current_swstr: float, career_swstr: float | None,
     return raw_delta_k9 * weight
 
 
+def calc_lineup_k_rate(
+    lineup: list[dict] | None,
+    batter_stats: dict,
+    pitcher_throws: str,
+) -> float | None:
+    """
+    Compute the mean K rate for a batting lineup against a given pitcher handedness.
+
+    Returns the unregressed raw mean — do NOT Bayesian-regress here.
+    calc_lambda() applies bayesian_opp_k() to whatever rate it receives.
+
+    Returns None when lineup is None or empty (caller falls back to team K%).
+    Unknown batters use LEAGUE_AVG_K_RATE.
+
+    lineup:         list of {"name": str, "bats": str} dicts
+    batter_stats:   {name: {"vs_R": float, "vs_L": float}} from fetch_batter_stats
+    pitcher_throws: "R" or "L"
+    """
+    if not lineup:
+        return None
+    split_key = "vs_R" if pitcher_throws == "R" else "vs_L"
+    rates = []
+    for batter in lineup:
+        name = batter.get("name", "")
+        splits = batter_stats.get(name)
+        rates.append(splits[split_key] if splits else LEAGUE_AVG_K_RATE)
+    return sum(rates) / len(rates)
+
+
 def bayesian_opp_k(obs_k_rate: float, opp_games_played: int,
                    league_avg: float = LEAGUE_AVG_K_RATE,
                    prior: int = OPP_K_PRIOR_GAMES) -> float:
@@ -186,14 +215,19 @@ def calc_movement_confidence(delta: int,
 
 
 def build_pitcher_record(odds: dict, stats: dict, ump_k_adj: float,
-                         swstr_data: dict | None = None) -> dict:
+                         swstr_data: dict | None = None,
+                         lineup: list[dict] | None = None,
+                         batter_stats: dict | None = None) -> dict:
     """
     Joins one pitcher's odds + stats + umpire adj into a complete record.
     Returns the dict that goes into today.json pitchers array.
 
-    swstr_data: {"swstr_pct": float, "career_swstr_pct": float | None}
-                from fetch_statcast.fetch_swstr(). Defaults to league-average
-                current SwStr% with no career baseline (zero delta adjustment).
+    swstr_data:   {"swstr_pct": float, "career_swstr_pct": float | None}
+                  from fetch_statcast.fetch_swstr(). Defaults to league-average
+                  current SwStr% with no career baseline (zero delta adjustment).
+    lineup:       list of {"name": str, "bats": str} dicts (confirmed starting lineup).
+                  When provided with batter_stats, overrides stats["opp_k_rate"].
+    batter_stats: {name: {"vs_R": float, "vs_L": float}} from fetch_batter_stats.
     """
     params = load_params()
 
@@ -224,10 +258,16 @@ def build_pitcher_record(odds: dict, stats: dict, ump_k_adj: float,
         swstr_k9_scale=params.get("swstr_k9_scale", SWSTR_K9_SCALE)
     )
 
+    lineup_rate = None
+    if lineup is not None and batter_stats is not None:
+        lineup_rate = calc_lineup_k_rate(lineup, batter_stats, stats.get("throws", "R"))
+    effective_opp_k_rate = lineup_rate if lineup_rate is not None else stats["opp_k_rate"]
+    lineup_used = lineup_rate is not None
+
     opp_games        = stats.get("opp_games_played", 0)
     scaled_ump_k_adj = ump_k_adj * params["ump_scale"]
 
-    raw_lam = calc_lambda(blended, avg_ip, stats["opp_k_rate"], scaled_ump_k_adj,
+    raw_lam = calc_lambda(blended, avg_ip, effective_opp_k_rate, scaled_ump_k_adj,
                           swstr_delta_k9=swstr_delta, opp_games_played=opp_games)
     applied_lam = raw_lam + params["lambda_bias"]
     applied_lam = max(0.01, applied_lam)  # guard against negative bias producing invalid Poisson lambda
@@ -277,7 +317,8 @@ def build_pitcher_record(odds: dict, stats: dict, ump_k_adj: float,
         "swstr_pct":          round(swstr_pct, 4),
         "career_swstr_pct":   round(career_swstr_pct, 4) if career_swstr_pct is not None else None,
         "swstr_delta_k9":     round(swstr_delta, 3),
-        "opp_k_rate":         stats["opp_k_rate"],
+        "opp_k_rate":         effective_opp_k_rate,
+        "lineup_used":        lineup_used,
         "ump_k_adj":          ump_k_adj,
         "season_k9":          round(season_k9, 2),
         "recent_k9":          round(recent_k9, 2),
