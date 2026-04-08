@@ -367,6 +367,43 @@ def test_ump_scale_increases_when_correlated():
     assert result["ump_scale"] > 1.0  # should have increased
 
 
+def test_load_closed_picks_uses_locked_adj_ev_when_present(tmp_path):
+    """_load_closed_picks should return locked_adj_ev in place of adj_ev when set."""
+    import sqlite3, sys, os
+    sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'pipeline'))
+    from unittest.mock import patch
+    import calibrate
+
+    db = tmp_path / "results.db"
+    conn = sqlite3.connect(db)
+    conn.row_factory = sqlite3.Row
+    conn.execute("""
+        CREATE TABLE picks (
+            date TEXT, verdict TEXT, side TEXT, result TEXT, odds INTEGER,
+            adj_ev REAL, locked_adj_ev REAL,
+            raw_lambda REAL, actual_ks INTEGER,
+            season_k9 REAL, recent_k9 REAL, career_k9 REAL,
+            avg_ip REAL, ump_k_adj REAL, swstr_delta_k9 REAL,
+            fetched_at TEXT, pnl REAL
+        )
+    """)
+    conn.execute("""
+        INSERT INTO picks VALUES
+        ('2026-04-10','FIRE 1u','over','win',-115, 0.08, 0.05,
+         6.8, 7, 9.0, 8.5, 9.2, 5.8, 0.1, 0.02, '2026-04-10T12:00:00Z', 0.87)
+    """)
+    conn.commit()
+    conn.close()
+
+    with patch("calibrate.DB_PATH", db), \
+         patch("calibrate._current_season_start", return_value="2026-03-01"):
+        picks = calibrate._load_closed_picks()
+
+    assert len(picks) == 1
+    # locked_adj_ev (0.05) should take precedence over adj_ev (0.08)
+    assert abs(picks[0]["adj_ev"] - 0.05) < 0.001
+
+
 def test_ump_scale_decreases_when_uncorrelated():
     """When ump_k_adj shows no correlation with residuals, ump_scale should decrease."""
     import sys, os

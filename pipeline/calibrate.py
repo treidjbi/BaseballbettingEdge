@@ -348,7 +348,9 @@ def _load_closed_picks() -> list:
     try:
         conn = _get_db()
         rows = conn.execute("""
-            SELECT verdict, side, result, odds, adj_ev, raw_lambda, actual_ks,
+            SELECT verdict, side, result, odds,
+                   COALESCE(locked_adj_ev, adj_ev) AS adj_ev,
+                   raw_lambda, actual_ks,
                    season_k9, recent_k9, career_k9, avg_ip, ump_k_adj,
                    swstr_delta_k9, fetched_at, pnl
             FROM picks
