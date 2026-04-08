@@ -59,6 +59,7 @@
       color: var(--ink);
       font-family: 'Oswald', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
       font-size: 15px;
+      overflow-x: hidden;
     }
 
     body { display: flex; flex-direction: column; }
@@ -412,7 +413,7 @@
     }
 
     /* ── Performance tab ─────────────────────────────────────────── */
-    .perf-table { width: 100%; border-collapse: collapse; margin-bottom: 1rem; }
+    .perf-table { width: 100%; border-collapse: collapse; margin-bottom: 1rem; table-layout: fixed; }
     .perf-table th, .perf-table td { padding: 8px 12px; text-align: left; border-bottom: 1px solid var(--border); }
     .perf-table th { font-weight: 600; color: var(--ink-dim); font-size: 0.85rem; }
     .perf-lam { font-size: 0.9rem; color: var(--ink); margin: 0.5rem 0; }
