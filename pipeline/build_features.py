@@ -31,8 +31,8 @@ def load_params() -> dict:
 
 # ── Verdict thresholds ──────────────────────────────────────────────────────
 EDGE_PASS         = 0.01   # EV ≤ 1% → PASS
-EDGE_LEAN         = 0.03   # EV 1–3% → LEAN
-EDGE_FIRE_1U      = 0.07   # EV 3–7% → FIRE 1u, >7% → FIRE 2u
+EDGE_FIRE_1U      = 0.03   # EV 1–3% → FIRE 1u
+EDGE_FIRE_2U      = 0.09   # EV 3–9% → FIRE 2u, >9% → FIRE 3u
 EXPECTED_INNINGS  = 5.5        # fallback only — pipeline uses per-pitcher avg IP
 LEAGUE_AVG_K_RATE = 0.227
 LEAGUE_AVG_SWSTR  = 0.110      # FanGraphs league avg swinging strike rate
@@ -121,11 +121,11 @@ def calc_verdict(ev: float) -> str:
     """Map EV to a betting verdict string. Thresholds are static."""
     if ev <= EDGE_PASS:
         return "PASS"
-    if ev <= EDGE_LEAN:
-        return "LEAN"
     if ev <= EDGE_FIRE_1U:
         return "FIRE 1u"
-    return "FIRE 2u"
+    if ev <= EDGE_FIRE_2U:
+        return "FIRE 2u"
+    return "FIRE 3u"
 
 
 def calc_price_delta(current_odds: int, opening_odds: int) -> int:

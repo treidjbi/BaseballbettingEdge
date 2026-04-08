@@ -59,12 +59,12 @@ def _american_to_implied(odds: int) -> float:
 
 
 _ROW_ORDER = [
+    ("FIRE 3u", "over"),
+    ("FIRE 3u", "under"),
     ("FIRE 2u", "over"),
     ("FIRE 2u", "under"),
     ("FIRE 1u", "over"),
     ("FIRE 1u", "under"),
-    ("LEAN",    "over"),
-    ("LEAN",    "under"),
 ]
 
 

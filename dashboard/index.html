@@ -235,7 +235,6 @@
       box-shadow: 0 0 8px rgba(192,57,43,0.5);
       animation: fire-pulse 2s ease-in-out infinite;
     }
-    .verdict-lean   { background: transparent; border: 1px solid #e67e22; color: #e67e22; }
     .verdict-pass   { background: #ccc; color: #555; }
 
     /* ── Pitcher card ────────────────────────────────────── */
@@ -646,7 +645,6 @@
   // ── Helpers ───────────────────────────────────────────────
   function verdictClass(verdict) {
     if (verdict && verdict.startsWith('FIRE')) return 'verdict-fire';
-    if (verdict === 'LEAN')                    return 'verdict-lean';
     return 'verdict-pass';
   }
 
