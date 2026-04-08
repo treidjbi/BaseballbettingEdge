@@ -110,6 +110,7 @@ def test_run_writes_empty_output_when_no_props(tmp_path):
 def test_run_calls_lock_due_picks(tmp_path):
     """run() should call lock_due_picks before seeding picks."""
     import run_pipeline
+    run_pipeline._batter_stats_cache = None
     out_path = tmp_path / "today.json"
     lock_calls = []
 
@@ -125,6 +126,11 @@ def test_run_calls_lock_due_picks(tmp_path):
          patch("run_pipeline.fetch_lineups_for_pitcher", return_value=None), \
          patch("run_pipeline.fetch_batter_stats_cached", return_value={}), \
          patch("run_pipeline.lock_due_picks", mock_lock), \
+         patch("run_pipeline.init_db"), \
+         patch("run_pipeline.load_history_into_db"), \
+         patch("run_pipeline.get_db", return_value=MagicMock()), \
+         patch("run_pipeline.seed_picks", return_value=0), \
+         patch("run_pipeline.export_db_to_history"), \
          patch("run_pipeline._write_archive"):
         run_pipeline.run("2026-04-01")
 

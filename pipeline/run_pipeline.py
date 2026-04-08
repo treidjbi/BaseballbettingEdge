@@ -165,8 +165,10 @@ def _run_grading_steps() -> None:
     # Lock all open picks before grading so we grade with final lines
     try:
         conn = get_db()
-        locked = lock_due_picks(conn, datetime.now(timezone.utc), lock_all_past=True)
-        conn.close()
+        try:
+            locked = lock_due_picks(conn, datetime.now(timezone.utc), lock_all_past=True)
+        finally:
+            conn.close()
         if locked > 0:
             export_db_to_history()
             log.info("Pre-grading lock: locked %d picks", locked)
@@ -296,8 +298,10 @@ def run(date_str: str, run_type: str = "full") -> None:
         init_db()
         load_history_into_db()
         conn = get_db()
-        locked = lock_due_picks(conn, datetime.now(timezone.utc), lock_all_past=False)
-        conn.close()
+        try:
+            locked = lock_due_picks(conn, datetime.now(timezone.utc), lock_all_past=False)
+        finally:
+            conn.close()
         seeded = seed_picks()
         log.info("Seeded %d new picks, locked %d picks from today.json", seeded, locked)
         if seeded > 0 or locked > 0:
