@@ -104,12 +104,16 @@ def fetch_swstr(season: int, pitcher_names: list) -> dict:
     # ── Assemble results ──────────────────────────────────────────────────────
     result = {}
     for name in pitcher_names:
-        current = current_lookup.get(name) or current_lookup.get(name.lower())
+        current = current_lookup.get(name)
+        if current is None:
+            current = current_lookup.get(name.lower())
         if current is None:
             log.info("fetch_swstr: '%s' not found in FanGraphs current season — using neutral", name)
             current = LEAGUE_AVG_SWSTR
 
-        career = career_lookup.get(name) or career_lookup.get(name.lower())
+        career = career_lookup.get(name)
+        if career is None:
+            career = career_lookup.get(name.lower())
         # career is None for rookies or when the career fetch failed — handled gracefully downstream
 
         log.info("fetch_swstr: %s → SwStr%% %.1f%% (career: %s)",

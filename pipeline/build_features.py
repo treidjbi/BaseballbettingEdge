@@ -91,10 +91,10 @@ def calc_swstr_delta_k9(current_swstr: float, career_swstr: float | None,
 
     Examples (swstr_k9_scale=30):
       Pitcher at 13% vs 11% career (+2pp delta):  +0.60 K/9 (fully undampened)
-      Same pitcher after 3 starts:                +0.14 K/9 (23% weight at 3/(3+10))
+      Same pitcher after 3 starts:                +0.14 K/9 (~23% weight at 3/(3+10))
       After 10 starts:                            +0.30 K/9 (50% weight)
     """
-    if not current_swstr or not career_swstr or n_starts <= 0:
+    if current_swstr is None or career_swstr is None or n_starts <= 0:
         return 0.0
     raw_delta_k9 = (current_swstr - career_swstr) * swstr_k9_scale
     weight = n_starts / (n_starts + SWSTR_PRIOR_STARTS)

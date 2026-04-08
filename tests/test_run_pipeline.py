@@ -80,7 +80,7 @@ def test_run_writes_today_json(tmp_path):
     with patch.object(run_pipeline, "OUTPUT_PATH", out_path), \
          patch("run_pipeline.fetch_odds", return_value=[_sample_prop()]), \
          patch("run_pipeline.fetch_stats", return_value={"Test Pitcher": _sample_stats()}), \
-         patch("run_pipeline.fetch_swstr", return_value={"Test Pitcher": 0.110}), \
+         patch("run_pipeline.fetch_swstr", return_value={"Test Pitcher": {"swstr_pct": 0.110, "career_swstr_pct": None}}), \
          patch("run_pipeline.fetch_umpires", return_value={"Test Pitcher": 0.0}), \
          patch("run_pipeline._write_archive"):  # skip archive for unit test
         run_pipeline.run("2026-04-01")

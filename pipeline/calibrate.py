@@ -21,8 +21,9 @@ DB_PATH           = Path(__file__).parent.parent / "data" / "results.db"
 PARAMS_PATH       = Path(__file__).parent.parent / "data" / "params.json"
 PERFORMANCE_PATH  = Path(__file__).parent.parent / "dashboard" / "data" / "performance.json"
 
-PHASE1_THRESHOLD  = 30
-PHASE2_THRESHOLD  = 60
+PHASE1_THRESHOLD       = 30
+PHASE2_THRESHOLD       = 60
+SWSTR_SCALE_THRESHOLD  = 100
 
 # Adaptive lambda bias step size: scales with sqrt(n / LAMBDA_BIAS_SCALE_N).
 # At n=30 (phase 1 floor): max step = 0.05 — cautious, sample is small.
@@ -243,7 +244,6 @@ def _calibrate_phase2(closed_picks: list, current_params: dict) -> dict:
         resids = [d[1] for d in ump_data]
         if len(set(umps)) > 1:
             corr, _ = pearsonr(umps, resids)
-            import math
             current_scale = params.get("ump_scale", 1.0)
             if not math.isnan(corr) and corr > 0.15:
                 # Strong positive correlation: ump adjustment is predictive — increase weight
@@ -260,7 +260,6 @@ def _calibrate_phase2(closed_picks: list, current_params: dict) -> dict:
     # Requires n>=100 so the SwStr% delta has enough variety to measure signal.
     # swstr_delta_k9 stored in picks is the post-dampened K/9 delta (before avg_ip scaling).
     # We multiply by avg_ip/9 to approximate the lambda contribution for this pick.
-    SWSTR_SCALE_THRESHOLD = 100
     if len(closed_picks) >= SWSTR_SCALE_THRESHOLD:
         swstr_data = [
             (r["swstr_delta_k9"] * (r["avg_ip"] / 9.0),
@@ -280,14 +279,22 @@ def _calibrate_phase2(closed_picks: list, current_params: dict) -> dict:
                 if not math.isnan(corr) and corr > 0.15:
                     # Delta predicts more Ks than model gives credit for — increase scale
                     params["swstr_k9_scale"] = round(max(5.0, min(60.0, current_scale + 2.0)), 1)
+                    log.info("swstr_k9_scale: corr=%.3f → increasing %.1f to %.1f (n=%d)",
+                             corr, current_scale, params["swstr_k9_scale"], len(swstr_data))
                 elif math.isnan(corr) or abs(corr) < 0.05:
                     # Near-zero or undefined correlation — delta not adding signal, reduce
                     params["swstr_k9_scale"] = round(max(5.0, min(60.0, current_scale - 2.0)), 1)
+                    log.info("swstr_k9_scale: corr=%.3f → decreasing %.1f to %.1f (n=%d)",
+                             corr, current_scale, params["swstr_k9_scale"], len(swstr_data))
                 elif corr < -0.15:
                     # Negative correlation — delta predicting wrong direction, reduce
                     params["swstr_k9_scale"] = round(max(5.0, min(60.0, current_scale - 2.0)), 1)
-                log.info("swstr_k9_scale: corr=%.3f current=%.1f new=%.1f (n=%d)",
-                         corr, current_scale, params["swstr_k9_scale"], len(swstr_data))
+                    log.info("swstr_k9_scale: corr=%.3f → decreasing %.1f to %.1f (n=%d)",
+                             corr, current_scale, params["swstr_k9_scale"], len(swstr_data))
+                else:
+                    # Between -0.15 and 0.15: leave scale unchanged
+                    log.info("swstr_k9_scale: corr=%.3f → no change (scale=%.1f, n=%d)",
+                             corr, current_scale, len(swstr_data))
 
     # Blend weights: linear regression on k9 components
     blend_data = [(r["season_k9"], r["recent_k9"], r["career_k9"], r["actual_ks"])
