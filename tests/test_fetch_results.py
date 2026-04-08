@@ -644,6 +644,46 @@ def test_void_detection_does_not_cross_match_ny_teams(tmp_path):
         assert closed == 0
 
 
+def test_schema_has_game_time_and_lock_columns(tmp_db):
+    """init_db should create all new columns."""
+    db_path, fr = tmp_db
+    conn = sqlite3.connect(db_path)
+    cols = {row[1] for row in conn.execute("PRAGMA table_info(picks)")}
+    conn.close()
+    assert "game_time"     in cols
+    assert "lineup_used"   in cols
+    assert "locked_at"     in cols
+    assert "locked_k_line" in cols
+    assert "locked_odds"   in cols
+    assert "locked_adj_ev" in cols
+    assert "locked_verdict" in cols
+
+
+def test_seed_picks_stores_game_time(tmp_db, today_json):
+    """seed_picks should store game_time from today.json."""
+    db_path, fr = tmp_db
+    json_path, _ = today_json
+    with patch("fetch_results.TODAY_JSON", json_path):
+        fr.seed_picks(json_path)
+    conn = sqlite3.connect(db_path)
+    rows = conn.execute("SELECT game_time FROM picks").fetchall()
+    conn.close()
+    assert all(r[0] is not None for r in rows)
+    assert rows[0][0] == "2026-04-15T17:05:00Z"
+
+
+def test_seed_picks_stores_lineup_used_false_by_default(tmp_db, today_json):
+    """seed_picks should store lineup_used=0 when field absent from today.json."""
+    db_path, fr = tmp_db
+    json_path, _ = today_json
+    with patch("fetch_results.TODAY_JSON", json_path):
+        fr.seed_picks(json_path)
+    conn = sqlite3.connect(db_path)
+    rows = conn.execute("SELECT lineup_used FROM picks").fetchall()
+    conn.close()
+    assert all(r[0] == 0 for r in rows)
+
+
 def test_fetch_and_close_results_calls_boxscore_separately(tmp_path):
     """Verify fetch_and_close_results makes two HTTP calls: schedule then boxscore."""
     import sys, os

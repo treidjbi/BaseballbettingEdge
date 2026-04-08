@@ -56,6 +56,13 @@ def init_db() -> None:
                 opp_k_rate      REAL,
                 swstr_delta_k9  REAL,
                 ref_book        TEXT,
+                game_time       TEXT,
+                lineup_used     INTEGER NOT NULL DEFAULT 0,
+                locked_at       TEXT,
+                locked_k_line   REAL,
+                locked_odds     INTEGER,
+                locked_adj_ev   REAL,
+                locked_verdict  TEXT,
                 result          TEXT,
                 actual_ks       INTEGER,
                 pnl             REAL,
@@ -71,6 +78,19 @@ def init_db() -> None:
             conn.execute("ALTER TABLE picks ADD COLUMN swstr_delta_k9 REAL")
         except sqlite3.OperationalError:
             pass  # column already exists
+        for col, defn in [
+            ("game_time",      "TEXT"),
+            ("lineup_used",    "INTEGER NOT NULL DEFAULT 0"),
+            ("locked_at",      "TEXT"),
+            ("locked_k_line",  "REAL"),
+            ("locked_odds",    "INTEGER"),
+            ("locked_adj_ev",  "REAL"),
+            ("locked_verdict", "TEXT"),
+        ]:
+            try:
+                conn.execute(f"ALTER TABLE picks ADD COLUMN {col} {defn}")
+            except sqlite3.OperationalError:
+                pass  # column already exists
 
 
 def seed_picks(today_json_path: Path = TODAY_JSON) -> int:
@@ -97,8 +117,8 @@ def seed_picks(today_json_path: Path = TODAY_JSON) -> int:
                     (date, pitcher, team, side, k_line, verdict, ev, adj_ev,
                      raw_lambda, applied_lambda, odds, movement_conf,
                      season_k9, recent_k9, career_k9, avg_ip, ump_k_adj, opp_k_rate,
-                     swstr_delta_k9, ref_book)
-                    VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+                     swstr_delta_k9, ref_book, game_time, lineup_used)
+                    VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
                 """, (
                     game_date, p["pitcher"], p["team"], side,
                     p["k_line"], ev_data["verdict"], ev_data["ev"], ev_data["adj_ev"],
@@ -107,6 +127,8 @@ def seed_picks(today_json_path: Path = TODAY_JSON) -> int:
                     p.get("avg_ip"), p.get("ump_k_adj"), p.get("opp_k_rate"),
                     p.get("swstr_delta_k9"),
                     p.get("ref_book"),
+                    p.get("game_time"),
+                    int(bool(p.get("lineup_used", False))),
                 ))
                 inserted += cur.rowcount
 
