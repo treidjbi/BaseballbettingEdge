@@ -684,6 +684,36 @@ def test_seed_picks_stores_lineup_used_false_by_default(tmp_db, today_json):
     assert all(r[0] == 0 for r in rows)
 
 
+def test_seed_picks_stores_lineup_used_true(tmp_db, tmp_path):
+    """seed_picks should store lineup_used=1 when field is True in today.json."""
+    import json as _json
+    data = {
+        "date": "2026-04-15",
+        "props_available": True,
+        "pitchers": [{
+            "pitcher": "Gerrit Cole", "team": "New York", "opp_team": "Boston",
+            "game_time": "2026-04-15T17:05:00Z", "k_line": 7.5,
+            "raw_lambda": 7.2, "lambda": 7.2,
+            "season_k9": 9.1, "recent_k9": 8.8, "career_k9": 9.0,
+            "avg_ip": 5.8, "opp_k_rate": 0.235, "ump_k_adj": 0.2,
+            "best_over_odds": -115, "best_under_odds": -105,
+            "ref_book": "FanDuel",
+            "lineup_used": True,
+            "ev_over":  {"ev": 0.05, "adj_ev": 0.05, "verdict": "FIRE 1u", "win_prob": 0.58, "movement_conf": 1.0},
+            "ev_under": {"ev": -0.02, "adj_ev": -0.02, "verdict": "PASS", "win_prob": 0.42, "movement_conf": 1.0},
+        }],
+    }
+    json_path = tmp_path / "today_lineup.json"
+    json_path.write_text(_json.dumps(data))
+    db_path, fr = tmp_db
+    import sqlite3 as _sqlite3
+    fr.seed_picks(json_path)
+    conn = _sqlite3.connect(db_path)
+    val = conn.execute("SELECT lineup_used FROM picks WHERE side='over'").fetchone()[0]
+    conn.close()
+    assert val == 1
+
+
 def test_fetch_and_close_results_calls_boxscore_separately(tmp_path):
     """Verify fetch_and_close_results makes two HTTP calls: schedule then boxscore."""
     import sys, os
