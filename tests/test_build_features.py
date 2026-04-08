@@ -99,14 +99,14 @@ class TestCalcVerdict:
     def test_pass_negative(self):
         assert calc_verdict(-0.05) == "PASS"
 
+    def test_lean(self):
+        assert calc_verdict(0.02) == "LEAN"
+
     def test_fire_1u(self):
-        assert calc_verdict(0.02) == "FIRE 1u"
+        assert calc_verdict(0.05) == "FIRE 1u"
 
     def test_fire_2u(self):
-        assert calc_verdict(0.05) == "FIRE 2u"
-
-    def test_fire_3u(self):
-        assert calc_verdict(0.10) == "FIRE 3u"
+        assert calc_verdict(0.10) == "FIRE 2u"
 
 
 class TestCalcPriceDelta:
@@ -217,7 +217,7 @@ class TestBuildPitcherRecord:
     def test_verdict_and_win_prob_present(self):
         from build_features import build_pitcher_record
         rec = build_pitcher_record(self.BASE_ODDS, self.BASE_STATS, ump_k_adj=0.0)
-        assert rec["ev_over"]["verdict"] in ("PASS", "FIRE 1u", "FIRE 2u", "FIRE 3u")
+        assert rec["ev_over"]["verdict"] in ("PASS", "LEAN", "FIRE 1u", "FIRE 2u")
         assert 0 <= rec["ev_over"]["win_prob"] <= 1
 
     def test_movement_confidence_applied(self):
@@ -428,9 +428,8 @@ class TestLoadParams:
         os.unlink(path)
         # ev_thresholds from file is ignored — it may appear as a stale key
         # but the pipeline never reads it; calc_verdict uses module constants
-        from build_features import EDGE_FIRE_1U, EDGE_FIRE_2U
-        assert EDGE_FIRE_1U == 0.03
-        assert EDGE_FIRE_2U == 0.09
+        from build_features import EDGE_FIRE_1U
+        assert EDGE_FIRE_1U == 0.09
 
 
 # -- blend_k9 weight params tests --
@@ -458,16 +457,16 @@ class TestBlendK9Params:
 
 class TestCalcVerdictThresholds:
     def test_static_thresholds(self):
-        """EV thresholds are fixed: FIRE 1u 1-3%, FIRE 2u 3-9%, FIRE 3u >9%."""
+        """EV thresholds are fixed: LEAN 1-3%, FIRE 1u 3-9%, FIRE 2u >9%."""
         assert calc_verdict(0.005) == "PASS"
-        assert calc_verdict(0.02) == "FIRE 1u"
-        assert calc_verdict(0.05) == "FIRE 2u"
-        assert calc_verdict(0.10) == "FIRE 3u"
+        assert calc_verdict(0.02) == "LEAN"
+        assert calc_verdict(0.05) == "FIRE 1u"
+        assert calc_verdict(0.10) == "FIRE 2u"
         # Boundary tests
         assert calc_verdict(0.01) == "PASS"      # exactly 1% → PASS
-        assert calc_verdict(0.03) == "FIRE 1u"   # exactly 3% → FIRE 1u
-        assert calc_verdict(0.09) == "FIRE 2u"   # exactly 9% → FIRE 2u
-        assert calc_verdict(0.091) == "FIRE 3u"  # just over 9% → FIRE 3u
+        assert calc_verdict(0.03) == "LEAN"      # exactly 3% → LEAN
+        assert calc_verdict(0.09) == "FIRE 1u"   # exactly 9% → FIRE 1u
+        assert calc_verdict(0.091) == "FIRE 2u"  # just over 9% → FIRE 2u
 
 
 # -- build_pitcher_record output fields --

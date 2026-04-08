@@ -122,12 +122,12 @@ class TestPerformanceJson:
 
 class TestRowsStructure:
     _EXPECTED_ORDER = [
-        ("FIRE 3u", "over"),
-        ("FIRE 3u", "under"),
         ("FIRE 2u", "over"),
         ("FIRE 2u", "under"),
         ("FIRE 1u", "over"),
         ("FIRE 1u", "under"),
+        ("LEAN",    "over"),
+        ("LEAN",    "under"),
     ]
 
     def test_always_six_rows(self, tmp_env):
@@ -138,7 +138,7 @@ class TestRowsStructure:
 
     def test_fixed_row_order(self, tmp_env):
         db, perf, params, cal = tmp_env
-        _insert_closed_pick(db, "win", verdict="FIRE 3u", side="under")
+        _insert_closed_pick(db, "win", verdict="LEAN", side="under")
         cal.run()
         data = json.loads(perf.read_text())
         actual = [(r["verdict"], r["side"]) for r in data["rows"]]
@@ -175,10 +175,10 @@ class TestRowsStructure:
 
     def test_push_only_bucket(self, tmp_env):
         db, perf, params, cal = tmp_env
-        _insert_closed_pick(db, "push", verdict="FIRE 3u", side="over", adj_ev=0.015)
+        _insert_closed_pick(db, "push", verdict="LEAN", side="over", adj_ev=0.015)
         cal.run()
         data = json.loads(perf.read_text())
-        row = _find_row(data, "FIRE 3u", "over")
+        row = _find_row(data, "LEAN", "over")
         assert row["picks"] == 1
         assert row["pushes"] == 1
         assert row["win_pct"] is None          # wins + losses == 0
@@ -202,11 +202,11 @@ class TestRowsStructure:
     def test_win_pct_excludes_pushes_from_denominator(self, tmp_env):
         """win_pct = wins / (wins + losses), not wins / picks."""
         db, perf, params, cal = tmp_env
-        _insert_closed_pick(db, "win",  verdict="FIRE 3u", side="under", date_offset_days=1)
-        _insert_closed_pick(db, "push", verdict="FIRE 3u", side="under", date_offset_days=2)
+        _insert_closed_pick(db, "win",  verdict="LEAN", side="under", date_offset_days=1)
+        _insert_closed_pick(db, "push", verdict="LEAN", side="under", date_offset_days=2)
         cal.run()
         data = json.loads(perf.read_text())
-        row = _find_row(data, "FIRE 3u", "under")
+        row = _find_row(data, "LEAN", "under")
         assert row["picks"] == 2
         assert row["win_pct"] == pytest.approx(1.0, abs=0.01)  # 1 win / (1+0 losses) = 1.0
 
