@@ -1,4 +1,5 @@
 import json, os, sys, sqlite3, tempfile, pytest
+from datetime import datetime, timezone, timedelta
 from pathlib import Path
 from unittest.mock import patch, MagicMock
 
@@ -754,3 +755,77 @@ def test_fetch_and_close_results_calls_boxscore_separately(tmp_path):
         # Two HTTP calls: schedule + boxscore
         assert call_count[0] == 2
         assert closed == 1
+
+
+def _seed_pick_with_game_time(conn, game_time_str, side="over", adj_ev=0.05, odds=-115):
+    """Helper: insert a minimal open pick with given game_time."""
+    conn.execute("""
+        INSERT INTO picks (date, pitcher, team, side, k_line, verdict, ev, adj_ev,
+                           raw_lambda, applied_lambda, odds, movement_conf, game_time)
+        VALUES ('2026-04-15','Test Pitcher','NYY',?,7.5,'FIRE 1u',0.05,?,7.2,7.2,?,1.0,?)
+    """, (side, adj_ev, odds, game_time_str))
+    conn.commit()
+
+
+def test_lock_due_picks_locks_imminent_game(tmp_db):
+    """A pick whose game starts in 20 min should be locked."""
+    db_path, fr = tmp_db
+    now = datetime(2026, 4, 15, 17, 0, 0, tzinfo=timezone.utc)
+    game_time = "2026-04-15T17:20:00Z"  # 20 min from now
+    with fr.get_db() as conn:
+        _seed_pick_with_game_time(conn, game_time)
+    count = fr.lock_due_picks(fr.get_db(), now, lock_window_minutes=30)
+    assert count == 1
+    with fr.get_db() as conn:
+        row = conn.execute("SELECT locked_at, locked_odds, locked_adj_ev FROM picks").fetchone()
+    assert row["locked_at"] is not None
+    assert row["locked_odds"] == -115
+    assert abs(row["locked_adj_ev"] - 0.05) < 0.001
+
+
+def test_lock_due_picks_skips_future_game(tmp_db):
+    """A pick with game in 2 hours should NOT be locked."""
+    db_path, fr = tmp_db
+    now = datetime(2026, 4, 15, 15, 0, 0, tzinfo=timezone.utc)
+    game_time = "2026-04-15T17:10:00Z"  # 2h 10min away
+    with fr.get_db() as conn:
+        _seed_pick_with_game_time(conn, game_time)
+    count = fr.lock_due_picks(fr.get_db(), now, lock_window_minutes=30)
+    assert count == 0
+
+
+def test_lock_due_picks_idempotent(tmp_db):
+    """Calling lock twice should not update locked_at a second time."""
+    db_path, fr = tmp_db
+    now = datetime(2026, 4, 15, 17, 0, 0, tzinfo=timezone.utc)
+    game_time = "2026-04-15T17:10:00Z"
+    with fr.get_db() as conn:
+        _seed_pick_with_game_time(conn, game_time)
+    fr.lock_due_picks(fr.get_db(), now)
+    with fr.get_db() as conn:
+        first_locked_at = conn.execute("SELECT locked_at FROM picks").fetchone()[0]
+    fr.lock_due_picks(fr.get_db(), now)
+    with fr.get_db() as conn:
+        second_locked_at = conn.execute("SELECT locked_at FROM picks").fetchone()[0]
+    assert first_locked_at == second_locked_at
+
+
+def test_lock_due_picks_all_past_locks_everything(tmp_db):
+    """lock_all_past=True locks all open picks regardless of game_time."""
+    db_path, fr = tmp_db
+    now = datetime(2026, 4, 16, 4, 0, 0, tzinfo=timezone.utc)  # 3am next day
+    with fr.get_db() as conn:
+        _seed_pick_with_game_time(conn, "2026-04-15T17:10:00Z", side="over")
+        _seed_pick_with_game_time(conn, None, side="under")  # NULL game_time
+    count = fr.lock_due_picks(fr.get_db(), now, lock_all_past=True)
+    assert count == 2
+
+
+def test_lock_due_picks_skips_null_game_time_without_lock_all_past(tmp_db):
+    """A pick with NULL game_time is skipped in normal mode."""
+    db_path, fr = tmp_db
+    now = datetime(2026, 4, 15, 17, 0, 0, tzinfo=timezone.utc)
+    with fr.get_db() as conn:
+        _seed_pick_with_game_time(conn, None)
+    count = fr.lock_due_picks(fr.get_db(), now, lock_all_past=False)
+    assert count == 0

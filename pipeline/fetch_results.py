@@ -8,7 +8,7 @@ import json
 import logging
 import sqlite3
 import unicodedata
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 import pytz
@@ -133,6 +133,49 @@ def seed_picks(today_json_path: Path = TODAY_JSON) -> int:
                 inserted += cur.rowcount
 
     return inserted
+
+
+def lock_due_picks(conn: sqlite3.Connection, now: datetime,
+                   lock_window_minutes: int = 30,
+                   lock_all_past: bool = False) -> int:
+    """
+    Lock open picks at T-{lock_window_minutes}min before game_time.
+    lock_all_past=True: lock ALL unlocked open picks (used by 3am grading run).
+    Returns count of picks locked.
+    """
+    locked_at_str = now.strftime("%Y-%m-%dT%H:%M:%SZ")
+    cutoff = now + timedelta(minutes=lock_window_minutes)
+    cutoff_str = cutoff.strftime("%Y-%m-%dT%H:%M:%SZ")
+
+    if lock_all_past:
+        rows = conn.execute("""
+            SELECT id, k_line, odds, adj_ev, verdict
+            FROM picks
+            WHERE locked_at IS NULL AND result IS NULL
+        """).fetchall()
+    else:
+        rows = conn.execute("""
+            SELECT id, k_line, odds, adj_ev, verdict
+            FROM picks
+            WHERE locked_at IS NULL
+              AND result IS NULL
+              AND game_time IS NOT NULL
+              AND game_time <= ?
+        """, (cutoff_str,)).fetchall()
+
+    count = 0
+    for row in rows:
+        conn.execute("""
+            UPDATE picks
+            SET locked_at = ?, locked_k_line = ?, locked_odds = ?,
+                locked_adj_ev = ?, locked_verdict = ?
+            WHERE id = ? AND locked_at IS NULL
+        """, (locked_at_str, row["k_line"], row["odds"],
+              row["adj_ev"], row["verdict"], row["id"]))
+        count += conn.execute("SELECT changes()").fetchone()[0]
+    conn.commit()
+    log.info("lock_due_picks: locked %d picks (lock_all_past=%s)", count, lock_all_past)
+    return count
 
 
 def load_history_into_db(history_path: Path = HISTORY_PATH) -> int:
