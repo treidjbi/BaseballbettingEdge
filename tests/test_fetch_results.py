@@ -314,6 +314,10 @@ def _bs_resp(starter_name="Gerrit Cole", starter_id=123, ks=7):
     }
 
 
+_FIXED_TODAY     = "2026-04-08"
+_FIXED_YESTERDAY = "2026-04-07"
+
+
 class TestFetchAndCloseResults:
     def _seed_yesterday_pick(self, db_path, fr, pitcher="Gerrit Cole", side="over",
                               k_line=7.5, odds=-115, verdict="FIRE 1u"):
@@ -322,8 +326,8 @@ class TestFetchAndCloseResults:
         conn.execute("""
             INSERT INTO picks (date, pitcher, team, side, k_line, verdict,
                                ev, adj_ev, raw_lambda, applied_lambda, odds, movement_conf)
-            VALUES (date('now','-1 day','localtime'), ?,?,?,?,?,0.05,0.05,7.2,7.2,?,1.0)
-        """, (pitcher, "New York Yankees", side, k_line, verdict, odds))
+            VALUES (?, ?,?,?,?,?,0.05,0.05,7.2,7.2,?,1.0)
+        """, (_FIXED_YESTERDAY, pitcher, "New York Yankees", side, k_line, verdict, odds))
         conn.commit()
         conn.close()
 
@@ -344,7 +348,8 @@ class TestFetchAndCloseResults:
                 return boxscore_mock
             return schedule_mock
 
-        with patch("fetch_results.requests.get", side_effect=mock_get):
+        with patch("fetch_results._et_dates", return_value=(_FIXED_TODAY, _FIXED_YESTERDAY)), \
+             patch("fetch_results.requests.get", side_effect=mock_get):
             count = fr.fetch_and_close_results()
 
         import sqlite3
@@ -372,7 +377,8 @@ class TestFetchAndCloseResults:
                 return boxscore_mock
             return schedule_mock
 
-        with patch("fetch_results.requests.get", side_effect=mock_get):
+        with patch("fetch_results._et_dates", return_value=(_FIXED_TODAY, _FIXED_YESTERDAY)), \
+             patch("fetch_results.requests.get", side_effect=mock_get):
             fr.fetch_and_close_results()
 
         import sqlite3
@@ -400,7 +406,8 @@ class TestFetchAndCloseResults:
                 return boxscore_mock
             return schedule_mock
 
-        with patch("fetch_results.requests.get", side_effect=mock_get):
+        with patch("fetch_results._et_dates", return_value=(_FIXED_TODAY, _FIXED_YESTERDAY)), \
+             patch("fetch_results.requests.get", side_effect=mock_get):
             fr.fetch_and_close_results()
 
         import sqlite3
@@ -456,7 +463,8 @@ class TestFetchAndCloseResults:
                 return boxscore_mock
             return schedule_mock
 
-        with patch("fetch_results.requests.get", side_effect=mock_get):
+        with patch("fetch_results._et_dates", return_value=(_FIXED_TODAY, _FIXED_YESTERDAY)), \
+             patch("fetch_results.requests.get", side_effect=mock_get):
             fr.fetch_and_close_results()
 
         import sqlite3
@@ -484,7 +492,8 @@ class TestFetchAndCloseResults:
                 return boxscore_mock
             return schedule_mock
 
-        with patch("fetch_results.requests.get", side_effect=mock_get):
+        with patch("fetch_results._et_dates", return_value=(_FIXED_TODAY, _FIXED_YESTERDAY)), \
+             patch("fetch_results.requests.get", side_effect=mock_get):
             fr.fetch_and_close_results()
 
         import sqlite3
