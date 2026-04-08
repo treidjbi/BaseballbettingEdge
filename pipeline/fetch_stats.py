@@ -153,7 +153,8 @@ def fetch_stats(date_str: str, pitcher_names: list) -> dict:
                 if name not in pitcher_names:
                     continue
 
-                pid     = pitcher["id"]
+                pid    = pitcher["id"]
+                throws = pitcher.get("pitchHand", {}).get("code", "R")
                 team_id = team_data.get("team", {}).get("id")
 
                 try:
@@ -175,6 +176,7 @@ def fetch_stats(date_str: str, pitcher_names: list) -> dict:
                 opp_team_name = opp_team.get("name", "")
                 stats_by_name[name] = {
                     **pstats,
+                    "throws":           throws,
                     "opp_k_rate":       opp_k_rate,
                     "opp_games_played": opp_games_played,
                     "team":             team_name,

@@ -20,8 +20,12 @@ from fetch_odds      import fetch_odds
 from fetch_stats     import fetch_stats
 from fetch_statcast  import fetch_swstr, LEAGUE_AVG_SWSTR
 _SWSTR_NEUTRAL = {"swstr_pct": LEAGUE_AVG_SWSTR, "career_swstr_pct": None}
-from fetch_umpires   import fetch_umpires
-from build_features  import build_pitcher_record
+from fetch_umpires      import fetch_umpires
+from fetch_lineups      import fetch_lineups
+from fetch_batter_stats import fetch_batter_stats
+from build_features     import build_pitcher_record
+from fetch_results      import (init_db, load_history_into_db, seed_picks,
+                                export_db_to_history, lock_due_picks, get_db)
 
 logging.basicConfig(
     level=logging.INFO,
@@ -30,6 +34,27 @@ logging.basicConfig(
 log = logging.getLogger(__name__)
 
 OUTPUT_PATH   = Path(__file__).parent.parent / "dashboard" / "data" / "processed" / "today.json"
+
+_batter_stats_cache: dict | None = None
+
+
+def fetch_batter_stats_cached(season: int) -> dict:
+    global _batter_stats_cache
+    if _batter_stats_cache is None:
+        try:
+            _batter_stats_cache = fetch_batter_stats(season)
+        except Exception as e:
+            log.warning("fetch_batter_stats failed: %s — using empty dict", e)
+            _batter_stats_cache = {}
+    return _batter_stats_cache
+
+
+def fetch_lineups_for_pitcher(date_str: str, team: str) -> list[dict] | None:
+    try:
+        return fetch_lineups(date_str, team)
+    except Exception as e:
+        log.warning("fetch_lineups failed for %s: %s", team, e)
+        return None
 PREVIEW_PATH  = Path(__file__).parent.parent / "data" / "preview_lines.json"
 
 
@@ -117,17 +142,45 @@ def _apply_preview_openings(props: list, preview_lines: dict) -> None:
     log.info("Applied 7pm preview openings to %d/%d pitchers", applied, len(props))
 
 
+def _import_fetch_results_run():
+    from fetch_results import run as _r
+    return _r
+
+def _import_calibrate_run():
+    from calibrate import run as _r
+    return _r
+
+# Module-level aliases used for patching in tests
+def fetch_results_run():
+    _import_fetch_results_run()()
+
+def calibrate_run():
+    _import_calibrate_run()()
+
+
 def _run_grading_steps() -> None:
     """Run result fetching and calibration. Called for evening and grading-only runs."""
     log.info("=== Grading steps: fetch_results + calibrate ===")
+
+    # Lock all open picks before grading so we grade with final lines
     try:
-        from fetch_results import run as run_results
-        run_results()
+        conn = get_db()
+        try:
+            locked = lock_due_picks(conn, datetime.now(timezone.utc), lock_all_past=True)
+        finally:
+            conn.close()
+        if locked > 0:
+            export_db_to_history()
+            log.info("Pre-grading lock: locked %d picks", locked)
+    except Exception as e:
+        log.warning("lock_due_picks in grading run failed: %s", e)
+
+    try:
+        fetch_results_run()
     except Exception as e:
         log.error("fetch_results failed: %s", e)
     try:
-        from calibrate import run as run_calibrate
-        run_calibrate()
+        calibrate_run()
     except Exception as e:
         log.error("calibrate failed: %s", e)
 
@@ -208,7 +261,10 @@ def run(date_str: str, run_type: str = "full") -> None:
         log.warning("fetch_umpires failed: %s — using neutral adj for all", e)
         ump_map = {p["pitcher"]: 0.0 for p in props}
 
-    # 5. Build records — per-pitcher error isolation
+    # 5. Fetch batter stats (FanGraphs — cached, graceful fallback to {})
+    batter_stats = fetch_batter_stats_cached(int(date_str[:4]))
+
+    # 6. Build records — per-pitcher error isolation
     records = []
     for odds in props:
         name  = odds["pitcher"]
@@ -217,9 +273,12 @@ def run(date_str: str, run_type: str = "full") -> None:
             log.warning("No stats for %s — skipping", name)
             continue
         try:
+            lineup = fetch_lineups_for_pitcher(date_str, stats.get("team", ""))
             record = build_pitcher_record(
                 odds, stats, ump_map.get(name, 0.0),
-                swstr_data=swstr_map.get(name, _SWSTR_NEUTRAL)
+                swstr_data=swstr_map.get(name, _SWSTR_NEUTRAL),
+                lineup=lineup,
+                batter_stats=batter_stats if lineup else None,
             )
             records.append(record)
             log.info("Built record for %s: λ=%.2f verdict=%s",
@@ -236,14 +295,20 @@ def run(date_str: str, run_type: str = "full") -> None:
     # ephemeral GitHub Actions runner — without this, open picks would be lost between runs.
     # Must init DB and load history first so export doesn't overwrite historical closed picks.
     try:
-        from fetch_results import init_db, load_history_into_db, seed_picks, export_db_to_history
         init_db()
         load_history_into_db()
+        # Lock before seeding: picks arriving within T-30min will miss this lock window
+        # but will be caught by the grading run's lock_all_past=True pass.
+        conn = get_db()
+        try:
+            locked = lock_due_picks(conn, datetime.now(timezone.utc), lock_all_past=False)
+        finally:
+            conn.close()
         seeded = seed_picks()
-        log.info("Seeded %d new picks from today.json", seeded)
-        if seeded > 0:
+        log.info("Seeded %d new picks, locked %d picks from today.json", seeded, locked)
+        if seeded > 0 or locked > 0:
             export_db_to_history()
-            log.info("Persisted open picks to history")
+            log.info("Persisted open/locked picks to history")
     except Exception as e:
         log.warning("seed_picks failed: %s", e)
 

@@ -75,6 +75,7 @@ def _sample_stats():
 def test_run_writes_today_json(tmp_path):
     """run() should always write today.json even if it has 0 pitchers."""
     import run_pipeline
+    run_pipeline._batter_stats_cache = None
     out_path = tmp_path / "today.json"
 
     with patch.object(run_pipeline, "OUTPUT_PATH", out_path), \
@@ -82,6 +83,8 @@ def test_run_writes_today_json(tmp_path):
          patch("run_pipeline.fetch_stats", return_value={"Test Pitcher": _sample_stats()}), \
          patch("run_pipeline.fetch_swstr", return_value={"Test Pitcher": {"swstr_pct": 0.110, "career_swstr_pct": None}}), \
          patch("run_pipeline.fetch_umpires", return_value={"Test Pitcher": 0.0}), \
+         patch("run_pipeline.fetch_lineups_for_pitcher", return_value=None), \
+         patch("run_pipeline.fetch_batter_stats_cached", return_value={}), \
          patch("run_pipeline._write_archive"):  # skip archive for unit test
         run_pipeline.run("2026-04-01")
 
@@ -105,6 +108,54 @@ def test_run_writes_empty_output_when_no_props(tmp_path):
     data = json.loads(out_path.read_text())
     assert data["props_available"] is False
     assert data["pitchers"] == []
+
+
+def test_run_calls_lock_due_picks(tmp_path):
+    """run() should call lock_due_picks before seeding picks."""
+    import run_pipeline
+    run_pipeline._batter_stats_cache = None
+    out_path = tmp_path / "today.json"
+    lock_calls = []
+
+    def mock_lock(conn, now, lock_window_minutes=30, lock_all_past=False):
+        lock_calls.append({"lock_all_past": lock_all_past})
+        return 0
+
+    with patch.object(run_pipeline, "OUTPUT_PATH", out_path), \
+         patch("run_pipeline.fetch_odds", return_value=[_sample_prop()]), \
+         patch("run_pipeline.fetch_stats", return_value={"Test Pitcher": _sample_stats()}), \
+         patch("run_pipeline.fetch_swstr", return_value={"Test Pitcher": {"swstr_pct": 0.110, "career_swstr_pct": None}}), \
+         patch("run_pipeline.fetch_umpires", return_value={"Test Pitcher": 0.0}), \
+         patch("run_pipeline.fetch_lineups_for_pitcher", return_value=None), \
+         patch("run_pipeline.fetch_batter_stats_cached", return_value={}), \
+         patch("run_pipeline.lock_due_picks", mock_lock), \
+         patch("run_pipeline.init_db"), \
+         patch("run_pipeline.load_history_into_db"), \
+         patch("run_pipeline.get_db", return_value=MagicMock()), \
+         patch("run_pipeline.seed_picks", return_value=0), \
+         patch("run_pipeline.export_db_to_history"), \
+         patch("run_pipeline._write_archive"):
+        run_pipeline.run("2026-04-01")
+
+    assert len(lock_calls) >= 1
+    assert lock_calls[0]["lock_all_past"] is False
+
+
+def test_grading_run_calls_lock_all_past(tmp_path):
+    """Grading run should call lock_due_picks(lock_all_past=True)."""
+    import run_pipeline
+    lock_calls = []
+
+    def mock_lock(conn, now, lock_window_minutes=30, lock_all_past=False):
+        lock_calls.append({"lock_all_past": lock_all_past})
+        return 0
+
+    with patch("run_pipeline.lock_due_picks", mock_lock), \
+         patch("run_pipeline.fetch_results_run"), \
+         patch("run_pipeline.calibrate_run"):
+        run_pipeline.run("2026-04-01", run_type="grading")
+
+    assert any(c["lock_all_past"] is True for c in lock_calls)
 
 
 def test_run_evening_calls_results_and_calibrate(tmp_path):

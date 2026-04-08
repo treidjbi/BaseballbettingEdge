@@ -56,6 +56,13 @@ def init_db() -> None:
                 opp_k_rate      REAL,
                 swstr_delta_k9  REAL,
                 ref_book        TEXT,
+                game_time       TEXT,
+                lineup_used     INTEGER NOT NULL DEFAULT 0,
+                locked_at       TEXT,
+                locked_k_line   REAL,
+                locked_odds     INTEGER,
+                locked_adj_ev   REAL,
+                locked_verdict  TEXT,
                 result          TEXT,
                 actual_ks       INTEGER,
                 pnl             REAL,
@@ -71,6 +78,19 @@ def init_db() -> None:
             conn.execute("ALTER TABLE picks ADD COLUMN swstr_delta_k9 REAL")
         except sqlite3.OperationalError:
             pass  # column already exists
+        for col, defn in [
+            ("game_time",      "TEXT"),
+            ("lineup_used",    "INTEGER NOT NULL DEFAULT 0"),
+            ("locked_at",      "TEXT"),
+            ("locked_k_line",  "REAL"),
+            ("locked_odds",    "INTEGER"),
+            ("locked_adj_ev",  "REAL"),
+            ("locked_verdict", "TEXT"),
+        ]:
+            try:
+                conn.execute(f"ALTER TABLE picks ADD COLUMN {col} {defn}")
+            except sqlite3.OperationalError:
+                pass  # column already exists
 
 
 def seed_picks(today_json_path: Path = TODAY_JSON) -> int:
@@ -97,8 +117,8 @@ def seed_picks(today_json_path: Path = TODAY_JSON) -> int:
                     (date, pitcher, team, side, k_line, verdict, ev, adj_ev,
                      raw_lambda, applied_lambda, odds, movement_conf,
                      season_k9, recent_k9, career_k9, avg_ip, ump_k_adj, opp_k_rate,
-                     swstr_delta_k9, ref_book)
-                    VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+                     swstr_delta_k9, ref_book, game_time, lineup_used)
+                    VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
                 """, (
                     game_date, p["pitcher"], p["team"], side,
                     p["k_line"], ev_data["verdict"], ev_data["ev"], ev_data["adj_ev"],
@@ -107,14 +127,61 @@ def seed_picks(today_json_path: Path = TODAY_JSON) -> int:
                     p.get("avg_ip"), p.get("ump_k_adj"), p.get("opp_k_rate"),
                     p.get("swstr_delta_k9"),
                     p.get("ref_book"),
+                    p.get("game_time"),
+                    int(bool(p.get("lineup_used", False))),
                 ))
                 inserted += cur.rowcount
 
     return inserted
 
 
-def load_history_into_db(history_path: Path = HISTORY_PATH) -> int:
+def lock_due_picks(conn: sqlite3.Connection, now: datetime,
+                   lock_window_minutes: int = 30,
+                   lock_all_past: bool = False) -> int:
+    """
+    Lock open picks at T-{lock_window_minutes}min before game_time.
+    lock_all_past=True: lock ALL unlocked open picks (used by 3am grading run).
+    Returns count of picks locked.
+    """
+    locked_at_str = now.strftime("%Y-%m-%dT%H:%M:%SZ")
+    cutoff = now + timedelta(minutes=lock_window_minutes)
+    cutoff_str = cutoff.strftime("%Y-%m-%dT%H:%M:%SZ")
+
+    if lock_all_past:
+        rows = conn.execute("""
+            SELECT id, k_line, odds, adj_ev, verdict
+            FROM picks
+            WHERE locked_at IS NULL AND result IS NULL
+        """).fetchall()
+    else:
+        rows = conn.execute("""
+            SELECT id, k_line, odds, adj_ev, verdict
+            FROM picks
+            WHERE locked_at IS NULL
+              AND result IS NULL
+              AND game_time IS NOT NULL
+              AND game_time <= ?
+        """, (cutoff_str,)).fetchall()
+
+    count = 0
+    for row in rows:
+        conn.execute("""
+            UPDATE picks
+            SET locked_at = ?, locked_k_line = ?, locked_odds = ?,
+                locked_adj_ev = ?, locked_verdict = ?
+            WHERE id = ? AND locked_at IS NULL
+        """, (locked_at_str, row["k_line"], row["odds"],
+              row["adj_ev"], row["verdict"], row["id"]))
+        count += conn.execute("SELECT changes()").fetchone()[0]
+    conn.commit()
+    log.info("lock_due_picks: locked %d picks (lock_all_past=%s)", count, lock_all_past)
+    return count
+
+
+def load_history_into_db(history_path: Path = None) -> int:
     """Load closed picks from picks_history.json into DB. Returns count inserted."""
+    if history_path is None:
+        history_path = HISTORY_PATH
     try:
         with open(history_path) as f:
             picks = json.load(f)
@@ -130,8 +197,10 @@ def load_history_into_db(history_path: Path = HISTORY_PATH) -> int:
                 (date, pitcher, team, side, k_line, verdict, ev, adj_ev,
                  raw_lambda, applied_lambda, odds, movement_conf,
                  season_k9, recent_k9, career_k9, avg_ip, ump_k_adj, opp_k_rate,
-                 swstr_delta_k9, ref_book, result, actual_ks, pnl, fetched_at)
-                VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+                 swstr_delta_k9, ref_book, result, actual_ks, pnl, fetched_at,
+                 game_time, lineup_used,
+                 locked_at, locked_k_line, locked_odds, locked_adj_ev, locked_verdict)
+                VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
             """, (
                 p.get("date"), p.get("pitcher"), p.get("team"), p.get("side"),
                 p.get("k_line"), p.get("verdict"), p.get("ev"), p.get("adj_ev"),
@@ -140,6 +209,9 @@ def load_history_into_db(history_path: Path = HISTORY_PATH) -> int:
                 p.get("career_k9"), p.get("avg_ip"), p.get("ump_k_adj"),
                 p.get("opp_k_rate"), p.get("swstr_delta_k9"), p.get("ref_book"),
                 p.get("result"), p.get("actual_ks"), p.get("pnl"), p.get("fetched_at"),
+                p.get("game_time"), int(bool(p.get("lineup_used", False))),
+                p.get("locked_at"), p.get("locked_k_line"), p.get("locked_odds"),
+                p.get("locked_adj_ev"), p.get("locked_verdict"),
             ))
             inserted += cur.rowcount
 
@@ -147,16 +219,20 @@ def load_history_into_db(history_path: Path = HISTORY_PATH) -> int:
     return inserted
 
 
-def export_db_to_history(history_path: Path = HISTORY_PATH) -> int:
+def export_db_to_history(history_path: Path = None) -> int:
     """Export all picks (open and closed) from DB to picks_history.json.
     Open picks (result IS NULL) are included so they survive across ephemeral
     GitHub Actions runners and can be graded by the next run."""
+    if history_path is None:
+        history_path = HISTORY_PATH
     with get_db() as conn:
         rows = conn.execute("""
             SELECT date, pitcher, team, side, k_line, verdict, ev, adj_ev,
                    raw_lambda, applied_lambda, odds, movement_conf,
                    season_k9, recent_k9, career_k9, avg_ip, ump_k_adj, opp_k_rate,
-                   swstr_delta_k9, ref_book, result, actual_ks, pnl, fetched_at
+                   swstr_delta_k9, ref_book, result, actual_ks, pnl, fetched_at,
+                   game_time, lineup_used,
+                   locked_at, locked_k_line, locked_odds, locked_adj_ev, locked_verdict
             FROM picks
             ORDER BY date, pitcher, side
         """).fetchall()
@@ -164,7 +240,9 @@ def export_db_to_history(history_path: Path = HISTORY_PATH) -> int:
     cols = ["date", "pitcher", "team", "side", "k_line", "verdict", "ev", "adj_ev",
             "raw_lambda", "applied_lambda", "odds", "movement_conf",
             "season_k9", "recent_k9", "career_k9", "avg_ip", "ump_k_adj", "opp_k_rate",
-            "swstr_delta_k9", "ref_book", "result", "actual_ks", "pnl", "fetched_at"]
+            "swstr_delta_k9", "ref_book", "result", "actual_ks", "pnl", "fetched_at",
+            "game_time", "lineup_used",
+            "locked_at", "locked_k_line", "locked_odds", "locked_adj_ev", "locked_verdict"]
     picks = [dict(zip(cols, row)) for row in rows]
 
     history_path.parent.mkdir(parents=True, exist_ok=True)
@@ -276,7 +354,8 @@ def fetch_and_close_results() -> int:
                     result = "loss" if side == "over" else "win"
                 else:
                     result = "push"
-                pnl = _calc_pnl(result, pick["odds"])
+                graded_odds = pick["locked_odds"] if pick["locked_odds"] is not None else pick["odds"]
+                pnl = _calc_pnl(result, graded_odds)
                 conn.execute(
                     "UPDATE picks SET actual_ks=?,result=?,pnl=?,fetched_at=? WHERE id=?",
                     (actual_ks, result, pnl, now_str, pick["id"])

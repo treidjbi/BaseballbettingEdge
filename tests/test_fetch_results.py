@@ -1,4 +1,5 @@
 import json, os, sys, sqlite3, tempfile, pytest
+from datetime import datetime, timezone, timedelta
 from pathlib import Path
 from unittest.mock import patch, MagicMock
 
@@ -7,11 +8,13 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'pipeline'))
 
 @pytest.fixture
 def tmp_db(tmp_path):
-    """Patch DB_PATH to a temp file, yield path."""
+    """Patch DB_PATH and HISTORY_PATH to temp files, yield path."""
     db = tmp_path / "results.db"
-    with patch("fetch_results.DB_PATH", db):
+    history = tmp_path / "picks_history.json"
+    with patch("fetch_results.DB_PATH", db), patch("fetch_results.HISTORY_PATH", history):
         import fetch_results
         fetch_results.init_db()
+        fetch_results.HISTORY_PATH = history
         yield db, fetch_results
 
 
@@ -644,6 +647,76 @@ def test_void_detection_does_not_cross_match_ny_teams(tmp_path):
         assert closed == 0
 
 
+def test_schema_has_game_time_and_lock_columns(tmp_db):
+    """init_db should create all new columns."""
+    db_path, fr = tmp_db
+    conn = sqlite3.connect(db_path)
+    cols = {row[1] for row in conn.execute("PRAGMA table_info(picks)")}
+    conn.close()
+    assert "game_time"     in cols
+    assert "lineup_used"   in cols
+    assert "locked_at"     in cols
+    assert "locked_k_line" in cols
+    assert "locked_odds"   in cols
+    assert "locked_adj_ev" in cols
+    assert "locked_verdict" in cols
+
+
+def test_seed_picks_stores_game_time(tmp_db, today_json):
+    """seed_picks should store game_time from today.json."""
+    db_path, fr = tmp_db
+    json_path, _ = today_json
+    with patch("fetch_results.TODAY_JSON", json_path):
+        fr.seed_picks(json_path)
+    conn = sqlite3.connect(db_path)
+    rows = conn.execute("SELECT game_time FROM picks").fetchall()
+    conn.close()
+    assert all(r[0] is not None for r in rows)
+    assert rows[0][0] == "2026-04-15T17:05:00Z"
+
+
+def test_seed_picks_stores_lineup_used_false_by_default(tmp_db, today_json):
+    """seed_picks should store lineup_used=0 when field absent from today.json."""
+    db_path, fr = tmp_db
+    json_path, _ = today_json
+    with patch("fetch_results.TODAY_JSON", json_path):
+        fr.seed_picks(json_path)
+    conn = sqlite3.connect(db_path)
+    rows = conn.execute("SELECT lineup_used FROM picks").fetchall()
+    conn.close()
+    assert all(r[0] == 0 for r in rows)
+
+
+def test_seed_picks_stores_lineup_used_true(tmp_db, tmp_path):
+    """seed_picks should store lineup_used=1 when field is True in today.json."""
+    import json as _json
+    data = {
+        "date": "2026-04-15",
+        "props_available": True,
+        "pitchers": [{
+            "pitcher": "Gerrit Cole", "team": "New York", "opp_team": "Boston",
+            "game_time": "2026-04-15T17:05:00Z", "k_line": 7.5,
+            "raw_lambda": 7.2, "lambda": 7.2,
+            "season_k9": 9.1, "recent_k9": 8.8, "career_k9": 9.0,
+            "avg_ip": 5.8, "opp_k_rate": 0.235, "ump_k_adj": 0.2,
+            "best_over_odds": -115, "best_under_odds": -105,
+            "ref_book": "FanDuel",
+            "lineup_used": True,
+            "ev_over":  {"ev": 0.05, "adj_ev": 0.05, "verdict": "FIRE 1u", "win_prob": 0.58, "movement_conf": 1.0},
+            "ev_under": {"ev": -0.02, "adj_ev": -0.02, "verdict": "PASS", "win_prob": 0.42, "movement_conf": 1.0},
+        }],
+    }
+    json_path = tmp_path / "today_lineup.json"
+    json_path.write_text(_json.dumps(data))
+    db_path, fr = tmp_db
+    import sqlite3 as _sqlite3
+    fr.seed_picks(json_path)
+    conn = _sqlite3.connect(db_path)
+    val = conn.execute("SELECT lineup_used FROM picks WHERE side='over'").fetchone()[0]
+    conn.close()
+    assert val == 1
+
+
 def test_fetch_and_close_results_calls_boxscore_separately(tmp_path):
     """Verify fetch_and_close_results makes two HTTP calls: schedule then boxscore."""
     import sys, os
@@ -684,3 +757,184 @@ def test_fetch_and_close_results_calls_boxscore_separately(tmp_path):
         # Two HTTP calls: schedule + boxscore
         assert call_count[0] == 2
         assert closed == 1
+
+
+def _seed_pick_with_game_time(conn, game_time_str, side="over", adj_ev=0.05, odds=-115):
+    """Helper: insert a minimal open pick with given game_time."""
+    conn.execute("""
+        INSERT INTO picks (date, pitcher, team, side, k_line, verdict, ev, adj_ev,
+                           raw_lambda, applied_lambda, odds, movement_conf, game_time)
+        VALUES ('2026-04-15','Test Pitcher','NYY',?,7.5,'FIRE 1u',0.05,?,7.2,7.2,?,1.0,?)
+    """, (side, adj_ev, odds, game_time_str))
+    conn.commit()
+
+
+def test_lock_due_picks_locks_imminent_game(tmp_db):
+    """A pick whose game starts in 20 min should be locked."""
+    db_path, fr = tmp_db
+    now = datetime(2026, 4, 15, 17, 0, 0, tzinfo=timezone.utc)
+    game_time = "2026-04-15T17:20:00Z"  # 20 min from now
+    with fr.get_db() as conn:
+        _seed_pick_with_game_time(conn, game_time)
+    with fr.get_db() as conn:
+        count = fr.lock_due_picks(conn, now, lock_window_minutes=30)
+    assert count == 1
+    with fr.get_db() as conn:
+        row = conn.execute("SELECT locked_at, locked_odds, locked_adj_ev FROM picks").fetchone()
+    assert row["locked_at"] is not None
+    assert row["locked_odds"] == -115
+    assert abs(row["locked_adj_ev"] - 0.05) < 0.001
+
+
+def test_lock_due_picks_skips_future_game(tmp_db):
+    """A pick with game in 2 hours should NOT be locked."""
+    db_path, fr = tmp_db
+    now = datetime(2026, 4, 15, 15, 0, 0, tzinfo=timezone.utc)
+    game_time = "2026-04-15T17:10:00Z"  # 2h 10min away
+    with fr.get_db() as conn:
+        _seed_pick_with_game_time(conn, game_time)
+    with fr.get_db() as conn:
+        count = fr.lock_due_picks(conn, now, lock_window_minutes=30)
+    assert count == 0
+
+
+def test_lock_due_picks_idempotent(tmp_db):
+    """Calling lock twice should not update locked_at a second time."""
+    db_path, fr = tmp_db
+    now = datetime(2026, 4, 15, 17, 0, 0, tzinfo=timezone.utc)
+    game_time = "2026-04-15T17:10:00Z"
+    with fr.get_db() as conn:
+        _seed_pick_with_game_time(conn, game_time)
+    with fr.get_db() as conn:
+        fr.lock_due_picks(conn, now)
+    with fr.get_db() as conn:
+        first_locked_at = conn.execute("SELECT locked_at FROM picks").fetchone()[0]
+    with fr.get_db() as conn:
+        fr.lock_due_picks(conn, now)
+    with fr.get_db() as conn:
+        second_locked_at = conn.execute("SELECT locked_at FROM picks").fetchone()[0]
+    assert first_locked_at == second_locked_at
+
+
+def test_lock_due_picks_all_past_locks_everything(tmp_db):
+    """lock_all_past=True locks all open picks regardless of game_time."""
+    db_path, fr = tmp_db
+    now = datetime(2026, 4, 16, 4, 0, 0, tzinfo=timezone.utc)  # 3am next day
+    with fr.get_db() as conn:
+        _seed_pick_with_game_time(conn, "2026-04-15T17:10:00Z", side="over")
+        _seed_pick_with_game_time(conn, None, side="under")  # NULL game_time
+    with fr.get_db() as conn:
+        count = fr.lock_due_picks(conn, now, lock_all_past=True)
+    assert count == 2
+
+
+def test_lock_due_picks_skips_null_game_time_without_lock_all_past(tmp_db):
+    """A pick with NULL game_time is skipped in normal mode."""
+    db_path, fr = tmp_db
+    now = datetime(2026, 4, 15, 17, 0, 0, tzinfo=timezone.utc)
+    with fr.get_db() as conn:
+        _seed_pick_with_game_time(conn, None)
+    with fr.get_db() as conn:
+        count = fr.lock_due_picks(conn, now, lock_all_past=False)
+    assert count == 0
+
+
+def test_grading_uses_locked_odds_for_pnl(tmp_db):
+    """fetch_and_close_results() must use locked_odds (not odds) when computing P&L."""
+    db_path, fr = tmp_db
+
+    # Seed a pick for yesterday with odds=-115 but locked_odds=-200
+    with fr.get_db() as conn:
+        conn.execute("""
+            INSERT INTO picks (date, pitcher, team, side, k_line, verdict,
+                               ev, adj_ev, raw_lambda, applied_lambda,
+                               odds, movement_conf,
+                               locked_odds, locked_at)
+            VALUES (?, 'Gerrit Cole', 'New York Yankees', 'over', 7.5, 'FIRE 1u',
+                    0.05, 0.05, 7.2, 7.2,
+                    -115, 1.0,
+                    -200, '2026-04-07T17:00:00Z')
+        """, (_FIXED_YESTERDAY,))
+
+    schedule_mock = MagicMock()
+    schedule_mock.json.return_value = _sched_resp(game_pk=111111, is_final=True)
+    schedule_mock.raise_for_status = MagicMock()
+
+    # ks=8 > k_line=7.5 → over wins
+    boxscore_mock = MagicMock()
+    boxscore_mock.json.return_value = _bs_resp("Gerrit Cole", 123, ks=8)
+    boxscore_mock.raise_for_status = MagicMock()
+
+    def mock_get(url, **kwargs):
+        if "boxscore" in url:
+            return boxscore_mock
+        return schedule_mock
+
+    with patch("fetch_results._et_dates", return_value=(_FIXED_TODAY, _FIXED_YESTERDAY)), \
+         patch("fetch_results.requests.get", side_effect=mock_get):
+        count = fr.fetch_and_close_results()
+
+    assert count == 1
+
+    # P&L must be calculated from locked_odds=-200, not odds=-115
+    # _calc_pnl("win", -200) = 100/200 = 0.5
+    expected_pnl = fr._calc_pnl("win", -200)
+    conn = sqlite3.connect(db_path)
+    row = conn.execute(
+        "SELECT result, pnl, locked_odds FROM picks WHERE pitcher='Gerrit Cole'"
+    ).fetchone()
+    conn.close()
+
+    assert row[0] == "win"
+    assert row[1] == pytest.approx(expected_pnl)   # ~0.5, NOT ~0.87 (which -115 would give)
+    assert row[2] == -200
+
+    # Also verify locked_odds survives the history export
+    fr.export_db_to_history()
+    with open(fr.HISTORY_PATH) as f:
+        history = json.load(f)
+    cole_over = next(p for p in history if p["pitcher"] == "Gerrit Cole" and p["side"] == "over")
+    assert cole_over.get("locked_odds") == -200
+
+
+def test_history_export_includes_lock_columns(tmp_db, today_json):
+    """export_db_to_history should include all new columns."""
+    db_path, fr = tmp_db
+    json_path, _ = today_json
+    fr.seed_picks(json_path)
+    fr.export_db_to_history()
+    with open(fr.HISTORY_PATH) as f:
+        history = json.load(f)
+    assert len(history) > 0
+    pick = history[0]
+    for col in ("game_time", "lineup_used", "locked_at", "locked_k_line",
+                "locked_odds", "locked_adj_ev", "locked_verdict"):
+        assert col in pick, f"missing column: {col}"
+
+
+def test_history_load_includes_lock_columns(tmp_db, today_json):
+    """load_history_into_db should load locked_* columns from history."""
+    db_path, fr = tmp_db
+    json_path, _ = today_json
+    fr.seed_picks(json_path)
+    # Manually write history with lock columns
+    history = [{"date": "2026-04-10", "pitcher": "Old Pick", "team": "BOS", "side": "over",
+                "k_line": 6.5, "verdict": "LEAN", "ev": 0.02, "adj_ev": 0.02,
+                "raw_lambda": 6.0, "applied_lambda": 6.0, "odds": -110,
+                "movement_conf": 1.0, "result": "win", "actual_ks": 7, "pnl": 0.91,
+                "fetched_at": "2026-04-10T12:00:00Z",
+                "game_time": "2026-04-10T17:05:00Z", "lineup_used": 1,
+                "locked_at": "2026-04-10T16:35:00Z", "locked_k_line": 6.5,
+                "locked_odds": -110, "locked_adj_ev": 0.02, "locked_verdict": "LEAN"}]
+    import json as _json
+    fr.HISTORY_PATH.write_text(_json.dumps(history))
+    fr.load_history_into_db()
+    conn = sqlite3.connect(db_path)
+    row = conn.execute(
+        "SELECT locked_at, locked_odds, game_time, lineup_used FROM picks WHERE pitcher = 'Old Pick'"
+    ).fetchone()
+    conn.close()
+    assert row[0] == "2026-04-10T16:35:00Z"
+    assert row[1] == -110
+    assert row[2] == "2026-04-10T17:05:00Z"
+    assert row[3] == 1

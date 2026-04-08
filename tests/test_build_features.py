@@ -14,6 +14,7 @@ from build_features import (
     calc_price_delta,
     blend_k9,
     calc_swstr_delta_k9,
+    calc_lineup_k_rate,
     calc_movement_confidence,
     bayesian_opp_k,
     build_pitcher_record,
@@ -562,3 +563,76 @@ class TestBuildPitcherRecordFields:
             rec_default = build_pitcher_record(SAMPLE_ODDS, SAMPLE_STATS, 1.0)
         os.unlink(path)
         assert rec_scaled["raw_lambda"] < rec_default["raw_lambda"]
+
+
+# ── Lineup K rate tests ────────────────────────────────────────────────────
+
+SAMPLE_BATTER_STATS = {
+    "Aaron Judge":  {"vs_R": 0.280, "vs_L": 0.210},
+    "Mookie Betts": {"vs_R": 0.150, "vs_L": 0.115},
+}
+
+SAMPLE_LINEUP = [
+    {"name": "Aaron Judge",  "bats": "R"},
+    {"name": "Mookie Betts", "bats": "R"},
+]
+
+
+class TestCalcLineupKRate:
+    def test_none_lineup_returns_none(self):
+        assert calc_lineup_k_rate(None, SAMPLE_BATTER_STATS, "R") is None
+
+    def test_empty_lineup_returns_none(self):
+        assert calc_lineup_k_rate([], SAMPLE_BATTER_STATS, "R") is None
+
+    def test_righty_pitcher_uses_vs_r_split(self):
+        result = calc_lineup_k_rate(SAMPLE_LINEUP, SAMPLE_BATTER_STATS, "R")
+        expected = (0.280 + 0.150) / 2
+        assert result is not None
+        assert abs(result - expected) < 0.001
+
+    def test_lefty_pitcher_uses_vs_l_split(self):
+        result = calc_lineup_k_rate(SAMPLE_LINEUP, SAMPLE_BATTER_STATS, "L")
+        expected = (0.210 + 0.115) / 2
+        assert result is not None
+        assert abs(result - expected) < 0.001
+
+    def test_unknown_batter_uses_league_avg(self):
+        lineup = [{"name": "Unknown Batter", "bats": "R"}]
+        result = calc_lineup_k_rate(lineup, SAMPLE_BATTER_STATS, "R")
+        assert abs(result - LEAGUE_AVG_K_RATE) < 0.001
+
+    def test_return_value_is_unregressed_raw_mean(self):
+        """Return value must NOT be Bayesian-regressed — calc_lambda handles that."""
+        lineup = [{"name": "Aaron Judge", "bats": "R"}]
+        result = calc_lineup_k_rate(lineup, SAMPLE_BATTER_STATS, "R")
+        # Should equal raw vs_R value exactly, not regressed toward league avg
+        assert abs(result - 0.280) < 0.001
+
+
+class TestBuildPitcherRecordLineup:
+    def test_build_pitcher_record_lineup_used_false_without_lineup(self):
+        """build_pitcher_record without lineup params should have lineup_used=False."""
+        record = build_pitcher_record(SAMPLE_ODDS, SAMPLE_STATS, 0.0)
+        assert record["lineup_used"] is False
+
+    def test_build_pitcher_record_lineup_used_true_with_lineup(self):
+        """build_pitcher_record with lineup params should have lineup_used=True."""
+        stats = {**SAMPLE_STATS, "throws": "R"}
+        record = build_pitcher_record(
+            SAMPLE_ODDS, stats, 0.0,
+            lineup=SAMPLE_LINEUP, batter_stats=SAMPLE_BATTER_STATS
+        )
+        assert record["lineup_used"] is True
+
+    def test_build_pitcher_record_lineup_changes_opp_k_rate(self):
+        """EV should differ when lineup provides different K rate than team average."""
+        stats = {**SAMPLE_STATS, "throws": "R", "opp_k_rate": 0.227}
+        # Lineup with very high K batters
+        high_k_lineup = [{"name": "Aaron Judge", "bats": "R"}]  # 0.280 vs R
+        record_with_lineup = build_pitcher_record(
+            SAMPLE_ODDS, stats, 0.0, swstr_data=None,
+            lineup=high_k_lineup, batter_stats=SAMPLE_BATTER_STATS
+        )
+        record_without = build_pitcher_record(SAMPLE_ODDS, stats, 0.0)
+        assert record_with_lineup["lambda"] != record_without["lambda"]
