@@ -38,6 +38,7 @@ DEFAULTS = {
     "weight_recent":     0.20,
     "ump_scale":         1.0,
     "lambda_bias":       0.0,
+    "swstr_k9_scale":    30.0,
 }
 
 
@@ -103,6 +104,17 @@ def build_calibration_notes(old_params: dict, new_params: dict) -> list[str]:
         notes.append(
             f"K/9 blend weights updated: season {old_ws*100:.0f}% \u2192 {new_ws*100:.0f}%, "
             f"recent {old_wr*100:.0f}% \u2192 {new_wr*100:.0f}%"
+        )
+
+    old_swstr_scale = old_params.get("swstr_k9_scale", DEFAULTS.get("swstr_k9_scale", 30.0))
+    new_swstr_scale = new_params.get("swstr_k9_scale", DEFAULTS.get("swstr_k9_scale", 30.0))
+    if abs(new_swstr_scale - old_swstr_scale) >= 0.5:
+        direction = "increased" if new_swstr_scale > old_swstr_scale else "decreased"
+        reason = ("SwStr%% delta correlates positively with K outcomes"
+                  if new_swstr_scale > old_swstr_scale
+                  else "SwStr%% delta not reliably predictive of K outcomes")
+        notes.append(
+            f"SwStr%% K/9 scale {direction} {old_swstr_scale:.1f} \u2192 {new_swstr_scale:.1f} ({reason})"
         )
 
     return notes
@@ -244,6 +256,39 @@ def _calibrate_phase2(closed_picks: list, current_params: dict) -> dict:
                 params["ump_scale"] = round(max(0.0, min(1.5, current_scale - 0.05)), 3)
             # Between -0.15 and -0.05, or 0.05 and 0.15: leave scale unchanged
 
+    # SwStr% K/9 scale: Pearson correlation between swstr_delta contribution and residual.
+    # Requires n>=100 so the SwStr% delta has enough variety to measure signal.
+    # swstr_delta_k9 stored in picks is the post-dampened K/9 delta (before avg_ip scaling).
+    # We multiply by avg_ip/9 to approximate the lambda contribution for this pick.
+    SWSTR_SCALE_THRESHOLD = 100
+    if len(closed_picks) >= SWSTR_SCALE_THRESHOLD:
+        swstr_data = [
+            (r["swstr_delta_k9"] * (r["avg_ip"] / 9.0),
+             r["actual_ks"] - r["raw_lambda"])
+            for r in closed_picks
+            if r["swstr_delta_k9"] is not None
+            and r["avg_ip"] is not None
+            and r["raw_lambda"] is not None
+            and r["actual_ks"] is not None
+        ]
+        if len(swstr_data) >= SWSTR_SCALE_THRESHOLD:
+            contribs = [d[0] for d in swstr_data]
+            resids   = [d[1] for d in swstr_data]
+            if len(set(contribs)) > 1:  # need variance to compute correlation
+                corr, _ = pearsonr(contribs, resids)
+                current_scale = params.get("swstr_k9_scale", 30.0)
+                if not math.isnan(corr) and corr > 0.15:
+                    # Delta predicts more Ks than model gives credit for — increase scale
+                    params["swstr_k9_scale"] = round(max(5.0, min(60.0, current_scale + 2.0)), 1)
+                elif math.isnan(corr) or abs(corr) < 0.05:
+                    # Near-zero or undefined correlation — delta not adding signal, reduce
+                    params["swstr_k9_scale"] = round(max(5.0, min(60.0, current_scale - 2.0)), 1)
+                elif corr < -0.15:
+                    # Negative correlation — delta predicting wrong direction, reduce
+                    params["swstr_k9_scale"] = round(max(5.0, min(60.0, current_scale - 2.0)), 1)
+                log.info("swstr_k9_scale: corr=%.3f current=%.1f new=%.1f (n=%d)",
+                         corr, current_scale, params["swstr_k9_scale"], len(swstr_data))
+
     # Blend weights: linear regression on k9 components
     blend_data = [(r["season_k9"], r["recent_k9"], r["career_k9"], r["actual_ks"])
                   for r in closed_picks
@@ -297,7 +342,8 @@ def _load_closed_picks() -> list:
         conn = _get_db()
         rows = conn.execute("""
             SELECT verdict, side, result, odds, adj_ev, raw_lambda, actual_ks,
-                   season_k9, recent_k9, career_k9, ump_k_adj, fetched_at, pnl
+                   season_k9, recent_k9, career_k9, avg_ip, ump_k_adj,
+                   swstr_delta_k9, fetched_at, pnl
             FROM picks
             WHERE result IN ('win','loss','push')
               AND date >= ?
