@@ -133,7 +133,7 @@ def test_run_evening_calls_results_and_calibrate(tmp_path):
             "fetch_results": fake_fetch_results,
             "calibrate": fake_calibrate,
         }):
-            run_pipeline.run("2026-04-01", run_type="evening")
+            run_pipeline.run("2026-04-01", run_type="grading")
 
     assert len(results_called) == 1, "fetch_results.run() was not called"
     assert len(calibrate_called) == 1, "calibrate.run() was not called"

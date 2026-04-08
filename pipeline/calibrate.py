@@ -7,6 +7,7 @@ Run as part of the 8pm pipeline run only.
 """
 import json
 import logging
+import math
 import sqlite3
 from datetime import datetime, timedelta
 from pathlib import Path
@@ -23,24 +24,21 @@ PERFORMANCE_PATH  = Path(__file__).parent.parent / "dashboard" / "data" / "perfo
 PHASE1_THRESHOLD  = 30
 PHASE2_THRESHOLD  = 60
 
+# Adaptive lambda bias step size: scales with sqrt(n / LAMBDA_BIAS_SCALE_N).
+# At n=30 (phase 1 floor): max step = 0.05 — cautious, sample is small.
+# At n=100: max step = ~0.09 — faster convergence as estimate stabilises.
+# At n=252: max step = ~0.14 — near-immediate convergence for reliable estimates.
+# Hard ceiling at 0.15 to prevent any single run from overcorrecting.
+LAMBDA_BIAS_BASE_DELTA = 0.05
+LAMBDA_BIAS_SCALE_N    = 30
+LAMBDA_BIAS_MAX_DELTA  = 0.15  # hard ceiling regardless of n
+
 DEFAULTS = {
-    "ev_thresholds": {"fire2": 0.06, "fire1": 0.03, "lean": 0.01},
     "weight_season_cap": 0.70,
     "weight_recent":     0.20,
     "ump_scale":         1.0,
     "lambda_bias":       0.0,
-}
-
-_EV_THRESHOLD_BOUNDS = {
-    "fire2": (0.04, 0.10),
-    "fire1": (0.02, 0.06),
-    "lean":  (0.005, 0.03),
-}
-
-_VERDICT_TO_THRESHOLD = {
-    "FIRE 2u": "fire2",
-    "FIRE 1u": "fire1",
-    "LEAN":    "lean",
+    "swstr_k9_scale":    30.0,
 }
 
 
@@ -49,7 +47,6 @@ def _load_current_params() -> dict:
         with open(PARAMS_PATH) as f:
             data = json.load(f)
         result = {**DEFAULTS, **data}
-        result["ev_thresholds"] = {**DEFAULTS["ev_thresholds"], **data.get("ev_thresholds", {})}
         return result
     except (FileNotFoundError, json.JSONDecodeError, OSError):
         return dict(DEFAULTS)
@@ -90,19 +87,6 @@ def build_calibration_notes(old_params: dict, new_params: dict) -> list[str]:
             f"(model was systematically {direction}-predicting Ks)"
         )
 
-    old_ev = old_params.get("ev_thresholds", DEFAULTS["ev_thresholds"])
-    new_ev = new_params.get("ev_thresholds", DEFAULTS["ev_thresholds"])
-    label_map = {"fire2": "FIRE 2u", "fire1": "FIRE 1u", "lean": "LEAN"}
-    for key, label in label_map.items():
-        ov = old_ev.get(key, DEFAULTS["ev_thresholds"][key])
-        nv = new_ev.get(key, DEFAULTS["ev_thresholds"][key])
-        if abs(nv - ov) >= 0.0005:
-            direction = "raised" if nv > ov else "lowered"
-            reason = "strong recent win rate" if nv > ov else "win rate below expectation"
-            notes.append(
-                f"{label} EV threshold {direction} {ov*100:.1f}% \u2192 {nv*100:.1f}% ({reason})"
-            )
-
     old_ump = old_params.get("ump_scale", 1.0)
     new_ump = new_params.get("ump_scale", 1.0)
     if abs(new_ump - old_ump) >= 0.005:
@@ -120,6 +104,17 @@ def build_calibration_notes(old_params: dict, new_params: dict) -> list[str]:
         notes.append(
             f"K/9 blend weights updated: season {old_ws*100:.0f}% \u2192 {new_ws*100:.0f}%, "
             f"recent {old_wr*100:.0f}% \u2192 {new_wr*100:.0f}%"
+        )
+
+    old_swstr_scale = old_params.get("swstr_k9_scale", DEFAULTS.get("swstr_k9_scale", 30.0))
+    new_swstr_scale = new_params.get("swstr_k9_scale", DEFAULTS.get("swstr_k9_scale", 30.0))
+    if abs(new_swstr_scale - old_swstr_scale) >= 0.5:
+        direction = "increased" if new_swstr_scale > old_swstr_scale else "decreased"
+        reason = ("SwStr%% delta correlates positively with K outcomes"
+                  if new_swstr_scale > old_swstr_scale
+                  else "SwStr%% delta not reliably predictive of K outcomes")
+        notes.append(
+            f"SwStr%% K/9 scale {direction} {old_swstr_scale:.1f} \u2192 {new_swstr_scale:.1f} ({reason})"
         )
 
     return notes
@@ -207,45 +202,28 @@ def write_performance(perf: dict) -> None:
 
 
 def _calibrate_phase1(closed_picks: list, current_params: dict) -> dict:
-    """Calibrate lambda_bias and EV thresholds. Returns updated params dict."""
+    """Calibrate lambda_bias only. EV thresholds are static. Returns updated params dict."""
     params = dict(current_params)
-    params["ev_thresholds"] = dict(current_params["ev_thresholds"])
 
-    # Lambda bias — uses raw_lambda as baseline to avoid drift across cycles
+    # Lambda bias — uses raw_lambda as baseline to avoid drift across cycles.
+    # Step size scales with sqrt(n / LAMBDA_BIAS_SCALE_N): cautious early in the
+    # season when sample is small, converges faster mid-season when the mean is stable.
     lam_pairs = [(r["raw_lambda"], r["actual_ks"]) for r in closed_picks
                  if r["raw_lambda"] is not None and r["actual_ks"] is not None]
     if lam_pairs:
-        bias = sum(a - p for p, a in lam_pairs) / len(lam_pairs)
-        params["lambda_bias"] = round(bias, 3)
-
-    # EV threshold adjustment — 30-day rolling window
-    cutoff = (datetime.now(pytz.utc) - timedelta(days=30)).strftime("%Y-%m-%dT%H:%M:%SZ")
-    recent = [r for r in closed_picks if (r["fetched_at"] or "") >= cutoff]
-
-    by_verdict: dict[str, list] = {}
-    for row in recent:
-        v = row["verdict"]
-        if v not in _VERDICT_TO_THRESHOLD:
-            continue
-        by_verdict.setdefault(v, []).append(row)
-
-    thresholds = params["ev_thresholds"]
-    for verdict, rows in by_verdict.items():
-        if len(rows) < 10:
-            continue
-        wins  = sum(1 for r in rows if r["result"] == "win")
-        total = sum(1 for r in rows if r["result"] in ("win", "loss"))
-        if total == 0:
-            continue
-        observed = wins / total
-        implied  = sum(_american_to_implied(r["odds"]) for r in rows) / len(rows)
-        key      = _VERDICT_TO_THRESHOLD[verdict]
-        lo, hi   = _EV_THRESHOLD_BOUNDS[key]
-        current  = thresholds[key]
-        if observed > implied + 0.03:
-            thresholds[key] = min(hi, round(current + 0.005, 4))
-        elif observed < implied - 0.03:
-            thresholds[key] = max(lo, round(current - 0.005, 4))
+        n            = len(lam_pairs)
+        target_bias  = sum(a - p for p, a in lam_pairs) / n
+        current_bias = current_params.get("lambda_bias", 0.0)
+        delta        = target_bias - current_bias
+        adaptive_cap = min(LAMBDA_BIAS_MAX_DELTA,
+                           LAMBDA_BIAS_BASE_DELTA * math.sqrt(n / LAMBDA_BIAS_SCALE_N))
+        if abs(delta) <= adaptive_cap:
+            params["lambda_bias"] = round(target_bias, 3)
+        else:
+            step = adaptive_cap if delta > 0 else -adaptive_cap
+            params["lambda_bias"] = round(current_bias + step, 3)
+        log.info("Lambda bias: target=%.3f current=%.3f adaptive_cap=%.3f (n=%d)",
+                 target_bias, current_bias, adaptive_cap, n)
 
     return params
 
@@ -277,6 +255,39 @@ def _calibrate_phase2(closed_picks: list, current_params: dict) -> dict:
                 # Strong negative correlation: ump adjustment predicts wrong direction — decrease weight
                 params["ump_scale"] = round(max(0.0, min(1.5, current_scale - 0.05)), 3)
             # Between -0.15 and -0.05, or 0.05 and 0.15: leave scale unchanged
+
+    # SwStr% K/9 scale: Pearson correlation between swstr_delta contribution and residual.
+    # Requires n>=100 so the SwStr% delta has enough variety to measure signal.
+    # swstr_delta_k9 stored in picks is the post-dampened K/9 delta (before avg_ip scaling).
+    # We multiply by avg_ip/9 to approximate the lambda contribution for this pick.
+    SWSTR_SCALE_THRESHOLD = 100
+    if len(closed_picks) >= SWSTR_SCALE_THRESHOLD:
+        swstr_data = [
+            (r["swstr_delta_k9"] * (r["avg_ip"] / 9.0),
+             r["actual_ks"] - r["raw_lambda"])
+            for r in closed_picks
+            if r["swstr_delta_k9"] is not None
+            and r["avg_ip"] is not None
+            and r["raw_lambda"] is not None
+            and r["actual_ks"] is not None
+        ]
+        if len(swstr_data) >= SWSTR_SCALE_THRESHOLD:
+            contribs = [d[0] for d in swstr_data]
+            resids   = [d[1] for d in swstr_data]
+            if len(set(contribs)) > 1:  # need variance to compute correlation
+                corr, _ = pearsonr(contribs, resids)
+                current_scale = params.get("swstr_k9_scale", 30.0)
+                if not math.isnan(corr) and corr > 0.15:
+                    # Delta predicts more Ks than model gives credit for — increase scale
+                    params["swstr_k9_scale"] = round(max(5.0, min(60.0, current_scale + 2.0)), 1)
+                elif math.isnan(corr) or abs(corr) < 0.05:
+                    # Near-zero or undefined correlation — delta not adding signal, reduce
+                    params["swstr_k9_scale"] = round(max(5.0, min(60.0, current_scale - 2.0)), 1)
+                elif corr < -0.15:
+                    # Negative correlation — delta predicting wrong direction, reduce
+                    params["swstr_k9_scale"] = round(max(5.0, min(60.0, current_scale - 2.0)), 1)
+                log.info("swstr_k9_scale: corr=%.3f current=%.1f new=%.1f (n=%d)",
+                         corr, current_scale, params["swstr_k9_scale"], len(swstr_data))
 
     # Blend weights: linear regression on k9 components
     blend_data = [(r["season_k9"], r["recent_k9"], r["career_k9"], r["actual_ks"])
@@ -314,17 +325,31 @@ def _calibrate_phase2(closed_picks: list, current_params: dict) -> dict:
     return params
 
 
+def _current_season_start() -> str:
+    """Returns the season start date floor (March 1 of the current calendar year)."""
+    return f"{datetime.now().year}-03-01"
+
+
 def _load_closed_picks() -> list:
-    """Load all closed picks from DB. Returns empty list if DB missing."""
+    """Load current-season closed picks from DB. Returns empty list if DB missing.
+
+    Filtered to the current calendar season (date >= March 1 of current year) so
+    picks graded under a different formula or roster environment don't distort
+    calibration. Each new season starts fresh from zero bias.
+    """
+    season_start = _current_season_start()
     try:
         conn = _get_db()
         rows = conn.execute("""
             SELECT verdict, side, result, odds, adj_ev, raw_lambda, actual_ks,
-                   season_k9, recent_k9, career_k9, ump_k_adj, fetched_at, pnl
+                   season_k9, recent_k9, career_k9, avg_ip, ump_k_adj,
+                   swstr_delta_k9, fetched_at, pnl
             FROM picks
             WHERE result IN ('win','loss','push')
-        """).fetchall()
+              AND date >= ?
+        """, (season_start,)).fetchall()
         conn.close()
+        log.info("Loaded %d closed picks since %s", len(rows), season_start)
         return rows
     except Exception as e:
         log.error("Could not load picks for calibration: %s", e)
@@ -362,9 +387,9 @@ def run() -> None:
     if notes:
         timestamp = datetime.now(pytz.utc).strftime("%Y-%m-%d")
         stamped = [f"[{timestamp}] {note}" for note in notes]
-        updated_params["calibration_notes"] = stamped + existing_notes
+        updated_params["calibration_notes"] = (stamped + existing_notes)[:50]
     else:
-        updated_params["calibration_notes"] = existing_notes
+        updated_params["calibration_notes"] = existing_notes[:50]
 
     PARAMS_PATH.parent.mkdir(parents=True, exist_ok=True)
     with open(PARAMS_PATH, "w") as f:

@@ -4,10 +4,14 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>BaseballBettingEdge</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;700&family=Oswald:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <script src="https://unpkg.com/@phosphor-icons/web@2.1.1"></script>
   <style>
     :root {
       --bg:        #f5f0e8;
-      --surface:   #ffffff;
+      --surface:   #faf6ee;
       --border:    #d0c8b8;
       --ink:       #1a1a1a;
       --ink-dim:   #888888;
@@ -16,14 +20,46 @@
       --tab-h:     58px;
     }
 
+    [data-theme='dark'] {
+      --bg:      #0d1929;
+      --surface: #132035;
+      --border:  #1e3050;
+      --ink:     #f0ede6;
+      --ink-dim: #6b7f99;
+    }
+
+    /* ── Dark mode targeted overrides ───────────────────────── */
+    [data-theme='dark'] #top-bar { background: #080f1a; border-bottom-color: #1e3050; }
+    [data-theme='dark'] #nav { background: #080f1a; border-top-color: #1e3050; }
+    [data-theme='dark'] .nav-btn { color: #6b7f99; }
+    [data-theme='dark'] .card-header {
+      background: repeating-linear-gradient(45deg, #080f1a, #080f1a 2px, #0d1929 2px, #0d1929 8px);
+    }
+    [data-theme='dark'] .pitcher-card {
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.05), 0 1px 3px rgba(0,0,0,0.3);
+    }
+    [data-theme='dark'] .pitcher-name { color: #f0ede6; }
+    [data-theme='dark'] .pitcher-matchup { color: #6b7f99; }
+    [data-theme='dark'] .adj-pos { background: #0d2b1a; border-color: #1a5c35; }
+    [data-theme='dark'] .adj-neg { background: #2b0d0d; border-color: #5c1a1a; }
+    [data-theme='dark'] .adj-neutral { background: #132035; border-color: #1e3050; color: #6b7f99; }
+    [data-theme='dark'] .verdict-pass { background: #1e3050; color: #6b7f99; }
+    [data-theme='dark'] .badge-started { background: #1e3050 !important; color: #6b7f99 !important; }
+    [data-theme='dark'] .banner-info { background: #0d2b1a; border-bottom-color: #1a5c35; color: #f0ede6; }
+    [data-theme='dark'] .banner-warn { background: #2b1f0d; border-bottom-color: #5c3d1a; color: #f0ede6; }
+    [data-theme='dark'] #date-select { border-color: #1e3050; color: #f0ede6; }
+    [data-theme='dark'] #date-select:focus { border-color: #6b7f99; }
+    [data-theme='dark'] .nav-btn.active { color: #f0ede6; }
+
     * { margin: 0; padding: 0; box-sizing: border-box; }
 
     html, body {
       height: 100%;
       background: var(--bg);
       color: var(--ink);
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      font-family: 'Oswald', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
       font-size: 15px;
+      overflow-x: hidden;
     }
 
     body { display: flex; flex-direction: column; }
@@ -42,10 +78,23 @@
       padding: 10px 16px;
     }
     #title-date {
-      color: var(--bg);
+      display: flex;
+      flex-direction: row;
+      align-items: center;
+      gap: 10px;
+      white-space: nowrap;
+    }
+    .k-mark {
+      flex-shrink: 0;
+    }
+    .wordmark-bottom {
+      color: #ffffff;
+      font-family: 'Oswald', sans-serif;
+      font-size: 16px;
       font-weight: 700;
-      font-size: 14px;
-      letter-spacing: .04em;
+      letter-spacing: .06em;
+      text-transform: uppercase;
+      line-height: 1;
     }
     .badge-ok {
       background: #27ae60;
@@ -65,37 +114,45 @@
       font-weight: 700;
       font-family: monospace;
     }
-    .badge-delay {
-      background: #555;
-      color: #ccc;
-      padding: 2px 8px;
-      border-radius: 3px;
-      font-size: 10px;
-      font-family: monospace;
-      margin-left: 6px;
+    /* ── Top-right cluster ───────────────────────────────────── */
+    #top-right {
+      display: flex;
+      align-items: center;
     }
+
+    /* ── Theme toggle ──────────────────────────────────────── */
+    #theme-toggle {
+      background: none;
+      border: none;
+      cursor: pointer;
+      font-size: 18px;
+      padding: 0;
+      line-height: 1;
+      color: #fff;
+    }
+
+    /* Freshness badge — scoped overrides for relocated badge under wordmark */
+    #freshness-badge .badge-ok,
+    #freshness-badge .badge-warn { font-size: 10px; padding: 1px 6px; }
 
     /* ── Date selector ──────────────────────────────────────── */
     #date-row {
-      display: none;   /* shown by JS when 2+ dates exist */
-      padding: 0 16px 8px;
+      display: none;   /* shown by JS when dates exist */
+      flex: 1;
+      justify-content: center;
+      margin: 0 16px;
     }
     #date-select {
-      display: block;
-      width: 100%;
-      box-sizing: border-box;
-      background: #333;
+      background: transparent;
       color: var(--bg);
       border: 1px solid #555;
       border-radius: 4px;
-      padding: 6px 12px;
-      font-size: 12px;
+      padding: 3px 6px;
+      font-size: 11px;
       font-weight: 700;
-      font-family: 'Courier New', monospace;
+      font-family: 'IBM Plex Mono', 'Courier New', monospace;
       cursor: pointer;
       letter-spacing: .03em;
-      text-align: center;
-      text-align-last: center;
     }
     #date-select:focus { outline: none; border-color: #888; }
     #date-select option { background: #222; color: #fff; }
@@ -154,8 +211,9 @@
       cursor: pointer;
       text-transform: uppercase;
     }
-    .nav-btn.active { color: var(--bg); }
-    .nav-icon { font-size: 20px; }
+    .nav-btn.active { color: var(--bg); border-top: 2px solid var(--fire); padding-top: 2px; }
+    .nav-btn span { font-family: 'Oswald', sans-serif; letter-spacing: .08em; }
+    .nav-icon { font-size: 20px; line-height: 1; }
 
     /* ── Verdict badges ──────────────────────────────────── */
     .verdict-badge {
@@ -163,12 +221,21 @@
       border-radius: 3px;
       font-size: 11px;
       font-weight: 800;
-      font-family: 'Courier New', monospace;
+      font-family: 'IBM Plex Mono', 'Courier New', monospace;
       letter-spacing: .04em;
       white-space: nowrap;
     }
-    .verdict-fire   { background: var(--fire); color: #fff; }
-    .verdict-lean   { background: #e67e22; color: #fff; }
+    @keyframes fire-pulse {
+      0%,100% { box-shadow: 0 0 6px rgba(192,57,43,0.4); }
+      50%      { box-shadow: 0 0 12px rgba(192,57,43,0.7); }
+    }
+    .verdict-fire {
+      background: var(--fire);
+      color: #fff;
+      box-shadow: 0 0 8px rgba(192,57,43,0.5);
+      animation: fire-pulse 2s ease-in-out infinite;
+    }
+    .verdict-lean   { background: transparent; border: 1px solid #e67e22; color: #e67e22; }
     .verdict-pass   { background: #ccc; color: #555; }
 
     /* ── Pitcher card ────────────────────────────────────── */
@@ -178,9 +245,10 @@
       border-radius: 4px;
       margin-bottom: 12px;
       overflow: hidden;
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.8), 0 1px 3px rgba(0,0,0,0.08);
     }
     .card-header {
-      background: var(--ink);
+      background: repeating-linear-gradient(45deg, #1a1a1a, #1a1a1a 2px, #222 2px, #222 8px);
       padding: 9px 12px;
       display: flex;
       justify-content: space-between;
@@ -194,8 +262,10 @@
     }
     .pitcher-name {
       color: var(--bg);
+      font-family: 'Oswald', sans-serif;
       font-weight: 700;
-      font-size: 14px;
+      font-size: 17px;
+      letter-spacing: .02em;
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
@@ -215,22 +285,24 @@
       gap: 4px;
     }
     .stat-cell { text-align: center; }
+    .stats-row .stat-cell:first-child { border-right: 1px solid var(--border); padding-right: 8px; }
     .stat-label {
-      font-size: 9px;
+      font-size: 10px;
       font-weight: 700;
       text-transform: uppercase;
       letter-spacing: .07em;
       color: var(--ink-dim);
       margin-bottom: 3px;
     }
+    .stats-row .stat-cell:nth-child(2) .stat-label { color: var(--fire); }
     .stat-value {
-      font-family: 'Courier New', monospace;
+      font-family: 'IBM Plex Mono', 'Courier New', monospace;
       font-weight: 700;
       font-size: 17px;
       color: var(--ink);
     }
     .stat-sub {
-      font-family: 'Courier New', monospace;
+      font-family: 'IBM Plex Mono', 'Courier New', monospace;
       font-size: 10px;
       color: var(--ink-dim);
       margin-top: 2px;
@@ -335,11 +407,13 @@
       color: var(--ink-dim);
       margin-bottom: 12px;
       padding-bottom: 6px;
-      border-bottom: 1px solid var(--border);
+      border-bottom: 2px solid var(--fire);
+      width: fit-content;
+      padding-right: 16px;
     }
 
     /* ── Performance tab ─────────────────────────────────────────── */
-    .perf-table { width: 100%; border-collapse: collapse; margin-bottom: 1rem; }
+    .perf-table { width: 100%; border-collapse: collapse; margin-bottom: 1rem; table-layout: fixed; }
     .perf-table th, .perf-table td { padding: 8px 12px; text-align: left; border-bottom: 1px solid var(--border); }
     .perf-table th { font-weight: 600; color: var(--ink-dim); font-size: 0.85rem; }
     .perf-lam { font-size: 0.9rem; color: var(--ink); margin: 0.5rem 0; }
@@ -352,17 +426,39 @@
     .roi-pos { color: var(--positive); }
     .roi-neg { color: var(--fire); }
   </style>
+  <script>
+  (function() {
+    var saved = 'light';
+    try { saved = localStorage.getItem('theme') || 'light'; } catch(e) {}
+    document.documentElement.setAttribute('data-theme', saved);
+    document.addEventListener('DOMContentLoaded', function() {
+      document.getElementById('theme-toggle').innerHTML =
+        saved === 'dark' ? '<i class="ph-bold ph-sun"></i>' : '<i class="ph-bold ph-moon"></i>';
+    });
+  })();
+  </script>
 </head>
 <body>
 
   <!-- Top bar -->
   <div id="top-bar">
     <div id="top-row">
-      <span id="title-date">⚾ BaseballBettingEdge</span>
-      <span id="freshness-badge"></span>
-    </div>
-    <div id="date-row">
-      <input type="date" id="date-select" onchange="onDateChange(this.value)" />
+      <div id="title-date">
+        <svg class="k-mark" width="28" height="28" viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <circle cx="14" cy="14" r="12" stroke="var(--fire)" stroke-width="2"/>
+          <text x="14" y="19" text-anchor="middle" font-family="Oswald, sans-serif" font-weight="700" font-size="14" fill="#fff">K</text>
+        </svg>
+        <div>
+          <span class="wordmark-bottom">Betting Edge</span>
+          <span id="freshness-badge" style="display:block;font-size:10px;color:#6b7f99;font-family:'IBM Plex Mono',monospace;margin-top:1px"></span>
+        </div>
+      </div>
+      <div id="date-row">
+        <input type="date" id="date-select" onchange="onDateChange(this.value)" />
+      </div>
+      <div id="top-right">
+        <button id="theme-toggle" onclick="toggleTheme()" title="Day game / Night game"></button>
+      </div>
     </div>
   </div>
 
@@ -379,15 +475,15 @@
   <!-- Bottom nav -->
   <nav id="nav">
     <button class="nav-btn active" onclick="switchTab('props', this)">
-      <span class="nav-icon">⚾</span>
+      <i class="ph-bold ph-baseball nav-icon"></i>
       <span>Picks</span>
     </button>
     <button class="nav-btn" onclick="switchTab('watch', this)">
-      <span class="nav-icon">📋</span>
+      <i class="ph-bold ph-eye nav-icon"></i>
       <span>Watchlist</span>
     </button>
     <button class="nav-btn" onclick="switchTab('perf', this)">
-      <span class="nav-icon">📊</span>
+      <i class="ph-bold ph-chart-bar nav-icon"></i>
       <span>Performance</span>
     </button>
   </nav>
@@ -396,6 +492,16 @@
   // ── XSS escape helper ────────────────────────────────────
   function esc(str) {
     return String(str ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+
+  // ── Theme toggle ───────────────────────────────────────────
+  function toggleTheme() {
+    const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+    const next = isDark ? 'light' : 'dark';
+    document.documentElement.setAttribute('data-theme', next);
+    document.getElementById('theme-toggle').innerHTML =
+      next === 'dark' ? '<i class="ph-bold ph-sun"></i>' : '<i class="ph-bold ph-moon"></i>';
+    try { localStorage.setItem('theme', next); } catch(e) {}
   }
 
   // ── Config ────────────────────────────────────────────────
@@ -522,11 +628,11 @@
       const timeLabel = gen.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
       badge.innerHTML = '<span class="badge-ok">' + dateLabel + ' · ' + timeLabel + '</span>';
     } else if (hrs > STALE_HOURS) {
-      badge.innerHTML = '<span class="badge-warn">Data may be outdated</span><span class="badge-delay">60s delay</span>';
+      badge.innerHTML = '<span class="badge-warn">Data may be outdated</span>';
       showBanner('Pipeline may have failed — data is more than 6 hours old.', 'warn');
     } else {
       const time = gen.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
-      badge.innerHTML = '<span class="badge-ok">Updated ' + time + '</span><span class="badge-delay">60s delay</span>';
+      badge.innerHTML = '<span class="badge-ok">Updated ' + time + '</span>';
     }
   }
 
@@ -603,12 +709,10 @@
   }
 
   // ── Props tab ─────────────────────────────────────────────
-  const VERDICT_ORDER = { 'FIRE 2u': 0, 'FIRE 1u': 1, 'LEAN': 2, 'PASS': 3 };
-
   function renderProps(pitchers, isPast = false) {
     const el     = document.getElementById('panel-props');
     const sorted = [...pitchers].sort((a, b) =>
-      (VERDICT_ORDER[bestSide(a).verdict] ?? 3) - (VERDICT_ORDER[bestSide(b).verdict] ?? 3)
+      (a.game_time || '').localeCompare(b.game_time || '')
     );
 
     const hasAction = sorted.some(p => bestSide(p).verdict !== 'PASS');
@@ -638,9 +742,12 @@
         ? `<span class="adj-badge ${p.ump_k_adj > 0 ? 'adj-pos' : 'adj-neg'}">UMP ${p.ump_k_adj > 0 ? '+' : ''}${p.ump_k_adj}</span>`
         : '';
       const priceDelta = side.direction === 'OVER' ? p.price_delta_over : p.price_delta_under;
+      const evBorder = side.ev >= 0.25 ? 'border-left:3px solid var(--fire)'
+                     : side.ev >= 0.15 ? 'border-left:3px solid #e67e22'
+                     : '';
 
       html += `
-      <div class="pitcher-card${isPass ? ' card-pass' : ''}${isStarted ? ' card-started' : ''}"${isPass ? ' data-pass="1"' : ''}>
+      <div class="pitcher-card${isPass ? ' card-pass' : ''}${isStarted ? ' card-started' : ''}"${isPass ? ' data-pass="1"' : ''}${evBorder ? ` style="${evBorder}"` : ''}>
         <div class="card-header">
           <div class="card-header-left">
             <span class="pitcher-name">${esc(p.pitcher)}</span>

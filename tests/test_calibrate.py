@@ -234,39 +234,38 @@ class TestPhase1Calibration:
         assert params.exists()
 
     def test_lambda_bias_corrects_over_prediction(self, tmp_env):
-        """Model predicts 8.0, actual is 7 → bias = -1.0."""
+        """Model predicts 8.0, actual is 7 → target bias is -1.0.
+        With dampening, a single run moves at most LAMBDA_BIAS_MAX_DELTA in the
+        correct direction from the starting value of 0.0."""
         db, perf, params, cal = tmp_env
         self._fill_picks(db, 35, raw_lambda=8.0, actual_ks=7)
         cal.run()
         data = json.loads(params.read_text())
-        assert abs(data["lambda_bias"] - (-1.0)) < 0.1
+        # Bias must be negative (correct direction) and capped at max delta
+        assert data["lambda_bias"] < 0
+        assert abs(data["lambda_bias"]) <= cal.LAMBDA_BIAS_MAX_DELTA + 0.001
 
     def test_lambda_bias_corrects_under_prediction(self, tmp_env):
-        """Model predicts 6.0, actual is 7 → bias = +1.0."""
+        """Model predicts 6.0, actual is 7 → target bias is +1.0.
+        With dampening, a single run moves at most LAMBDA_BIAS_MAX_DELTA in the
+        correct direction from the starting value of 0.0."""
         db, perf, params, cal = tmp_env
         self._fill_picks(db, 35, raw_lambda=6.0, actual_ks=7)
         cal.run()
         data = json.loads(params.read_text())
+        # Bias must be positive (correct direction) and capped at max delta
         assert data["lambda_bias"] > 0
-
-    def test_ev_threshold_bounds_enforced(self, tmp_env):
-        db, perf, params, cal = tmp_env
-        for i in range(40):
-            _insert_closed_pick(db, "win", verdict="FIRE 2u", odds=-110,
-                                 adj_ev=0.08, raw_lambda=7.0, actual_ks=9,
-                                 date_offset_days=i+1)
-        cal.run()
-        data = json.loads(params.read_text())
-        assert data["ev_thresholds"]["fire2"] <= 0.10  # max bound
+        assert data["lambda_bias"] <= cal.LAMBDA_BIAS_MAX_DELTA + 0.001
 
     def test_params_json_has_required_fields(self, tmp_env):
         db, perf, params, cal = tmp_env
         self._fill_picks(db, 30)
         cal.run()
         data = json.loads(params.read_text())
-        for field in ("updated_at", "sample_size", "ev_thresholds",
+        for field in ("updated_at", "sample_size",
                       "weight_season_cap", "weight_recent", "ump_scale", "lambda_bias"):
             assert field in data, f"Missing field: {field}"
+        assert "ev_thresholds" not in data  # thresholds are static, not calibrated
 
 
 # ── Phase 2 calibration tests ────────────────────────────────────────────────
@@ -332,7 +331,7 @@ def test_phase2_blend_weights_sum_to_one():
         })
 
     params = {"weight_season_cap": 0.70, "weight_recent": 0.20, "ump_scale": 1.0,
-              "lambda_bias": 0.0, "ev_thresholds": {}}
+              "lambda_bias": 0.0}
     result = _calibrate_phase2(picks, params)
     ws = result["weight_season_cap"]
     wr = result["weight_recent"]
@@ -363,7 +362,7 @@ def test_ump_scale_increases_when_correlated():
         })
 
     params = {"weight_season_cap": 0.70, "weight_recent": 0.20,
-              "ump_scale": 1.0, "lambda_bias": 0.0, "ev_thresholds": {}}
+              "ump_scale": 1.0, "lambda_bias": 0.0}
     result = _calibrate_phase2(picks, params)
     assert result["ump_scale"] > 1.0  # should have increased
 
@@ -385,6 +384,6 @@ def test_ump_scale_decreases_when_uncorrelated():
         })
 
     params = {"weight_season_cap": 0.70, "weight_recent": 0.20,
-              "ump_scale": 1.0, "lambda_bias": 0.0, "ev_thresholds": {}}
+              "ump_scale": 1.0, "lambda_bias": 0.0}
     result = _calibrate_phase2(picks, params)
     assert result["ump_scale"] < 1.0  # should have decreased

@@ -12,11 +12,11 @@ from scipy.stats import poisson
 PARAMS_PATH = str(Path(__file__).parent.parent / "data" / "params.json")
 
 DEFAULTS = {
-    "ev_thresholds": {"fire2": 0.06, "fire1": 0.03, "lean": 0.01},
     "weight_season_cap": 0.70,
     "weight_recent": 0.20,
     "ump_scale": 1.0,
     "lambda_bias": 0.0,
+    "swstr_k9_scale": 30.0,
 }
 
 def load_params() -> dict:
@@ -27,20 +27,27 @@ def load_params() -> dict:
         return dict(DEFAULTS)
 
     result = {**DEFAULTS, **data}
-    # Deep merge nested ev_thresholds so partial files don't drop keys
-    result["ev_thresholds"] = {**DEFAULTS["ev_thresholds"], **data.get("ev_thresholds", {})}
     return result
 
 
 # ── Verdict thresholds ──────────────────────────────────────────────────────
-EDGE_PASS         = 0.01
-EDGE_LEAN         = 0.03
-EDGE_FIRE_1U      = 0.06
+EDGE_PASS         = 0.01   # EV ≤ 1% → PASS
+EDGE_LEAN         = 0.03   # EV 1–3% → LEAN
+EDGE_FIRE_1U      = 0.09   # EV 3–9% → FIRE 1u, >9% → FIRE 2u
 EXPECTED_INNINGS  = 5.5        # fallback only — pipeline uses per-pitcher avg IP
 LEAGUE_AVG_K_RATE = 0.227
 LEAGUE_AVG_SWSTR  = 0.110      # FanGraphs league avg swinging strike rate
 STEAM_DISPLAY_THRESHOLD = 0.75  # show ↓steam label when confidence ≤ this value (delta ≥ 15 pts)
 OPP_K_PRIOR_GAMES       = 50   # Bayesian prior: how many games league average is "worth"
+
+# SwStr% delta → K/9 conversion factor. Each 0.01 (1 percentage point) of SwStr%
+# above/below the pitcher's career norm adjusts blended K/9 by this many runs.
+# Conservative starting value — calibrated upward in Phase 2 (n≥100 picks).
+SWSTR_K9_SCALE   = 30.0
+# Bayesian prior starts: treat n starts of current-season SwStr% as reliable only
+# after this many starts. At 3 starts (early season) the delta is ~23% weighted;
+# at 10 starts it is 50%; at 20 starts it is 67%.
+SWSTR_PRIOR_STARTS = 10
 
 
 def american_to_implied(odds: int) -> float:
@@ -60,18 +67,38 @@ def blend_k9(season_k9: float, recent_k9: float, career_k9: float, ip: float,
     w_season = min(ip / 60, weight_season_cap)
     w_recent = weight_recent
     w_career = max(0.0, 1.0 - w_season - w_recent)
+    w_total = w_season + w_recent + w_career
+    w_season /= w_total
+    w_recent /= w_total
+    w_career /= w_total
     return (w_season * season_k9) + (w_recent * recent_k9) + (w_career * career_k9)
 
 
-def calc_swstr_mult(swstr_pct: float) -> float:
+def calc_swstr_delta_k9(current_swstr: float, career_swstr: float | None,
+                        n_starts: int, swstr_k9_scale: float = SWSTR_K9_SCALE) -> float:
     """
-    Multiplier on blended_k9 based on SwStr% relative to league average.
-    A pitcher at 14% SwStr% (vs 11% avg) gets a 1.27x boost on expected Ks.
-    Returns 1.0 (neutral) if swstr_pct is zero or missing.
+    Additive K/9 adjustment based on how the pitcher's current SwStr% compares to
+    their career baseline. Replaces the old raw-vs-league-average multiplier which
+    double-counted swing-and-miss ability already captured in K/9 rates.
+
+    Returns 0.0 (no adjustment) when:
+      - career_swstr is None (rookie or data unavailable)
+      - current_swstr is missing/zero
+      - n_starts is 0
+
+    Bayesian dampening: early in the season (few starts) the delta is shrunk toward
+    zero because the current-season SwStr% sample is small and noisy.
+
+    Examples (swstr_k9_scale=30):
+      Pitcher at 13% vs 11% career (+2pp delta):  +0.60 K/9 (fully undampened)
+      Same pitcher after 3 starts:                +0.14 K/9 (23% weight at 3/(3+10))
+      After 10 starts:                            +0.30 K/9 (50% weight)
     """
-    if not swstr_pct:
-        return 1.0
-    return swstr_pct / LEAGUE_AVG_SWSTR
+    if not current_swstr or not career_swstr or n_starts <= 0:
+        return 0.0
+    raw_delta_k9 = (current_swstr - career_swstr) * swstr_k9_scale
+    weight = n_starts / (n_starts + SWSTR_PRIOR_STARTS)
+    return raw_delta_k9 * weight
 
 
 def bayesian_opp_k(obs_k_rate: float, opp_games_played: int,
@@ -93,21 +120,25 @@ def bayesian_opp_k(obs_k_rate: float, opp_games_played: int,
 
 def calc_lambda(blended_k9: float, expected_innings: float,
                 opp_k_rate: float, ump_k_adj: float,
-                swstr_mult: float = 1.0,
+                swstr_delta_k9: float = 0.0,
                 opp_games_played: int = 0) -> float:
     """
     Expected strikeouts (Poisson lambda) for a pitcher start.
-    opp_k_rate:       opposing team's season batter K% (MLB avg = 0.227)
-    ump_k_adj:        career K rate delta for HP umpire (0 if unknown)
-    swstr_mult:       SwStr% / league_avg_swstr (1.0 = neutral, default)
-                      Applied to base Ks only — ump adjustment is additive and unscaled.
+
+    blended_k9:     weighted blend of season/recent/career K/9 rates
+    opp_k_rate:     opposing team's season batter K% (MLB avg = 0.227)
+    ump_k_adj:      career K rate delta for HP umpire (0 if unknown)
+    swstr_delta_k9: additive K/9 adjustment from SwStr% career-relative delta.
+                    Positive = pitcher generating more whiffs than their career norm.
+                    Defaults to 0 (no adjustment). See calc_swstr_delta_k9().
     opp_games_played: games the opposing team has played this season. Used to
-                      Bayesian-regress opp_k_rate toward league average early in season.
-                      Defaults to 0 → full regression to league average (safe early-season default).
+                    Bayesian-regress opp_k_rate toward league average early in season.
+                    Defaults to 0 → full regression to league average (safe early-season default).
     """
-    adj_opp_k = bayesian_opp_k(opp_k_rate, opp_games_played)
-    base    = blended_k9 * (adj_opp_k / LEAGUE_AVG_K_RATE) * swstr_mult
-    ump_add = ump_k_adj * (expected_innings / 9)
+    adj_opp_k  = bayesian_opp_k(opp_k_rate, opp_games_played)
+    adj_k9     = blended_k9 + swstr_delta_k9
+    base       = adj_k9 * (adj_opp_k / LEAGUE_AVG_K_RATE)
+    ump_add    = ump_k_adj * (expected_innings / 9)
     return (base * (expected_innings / 9)) + ump_add
 
 
@@ -116,14 +147,13 @@ def calc_ev(win_prob: float, odds: int) -> float:
     return win_prob - american_to_implied(odds)
 
 
-def calc_verdict(ev: float, thresholds: dict | None = None) -> str:
-    """Map EV to a betting verdict string."""
-    t = thresholds or {"lean": EDGE_PASS, "fire1": EDGE_LEAN, "fire2": EDGE_FIRE_1U}
-    if ev <= t["lean"]:
+def calc_verdict(ev: float) -> str:
+    """Map EV to a betting verdict string. Thresholds are static."""
+    if ev <= EDGE_PASS:
         return "PASS"
-    if ev <= t["fire1"]:
+    if ev <= EDGE_LEAN:
         return "LEAN"
-    if ev <= t["fire2"]:
+    if ev <= EDGE_FIRE_1U:
         return "FIRE 1u"
     return "FIRE 2u"
 
@@ -156,41 +186,61 @@ def calc_movement_confidence(delta: int,
 
 
 def build_pitcher_record(odds: dict, stats: dict, ump_k_adj: float,
-                         swstr_pct: float = LEAGUE_AVG_SWSTR) -> dict:
+                         swstr_data: dict | None = None) -> dict:
     """
     Joins one pitcher's odds + stats + umpire adj into a complete record.
     Returns the dict that goes into today.json pitchers array.
 
-    swstr_pct: pitcher's swinging strike rate (decimal, e.g. 0.134).
-               Defaults to league average (neutral multiplier = 1.0).
+    swstr_data: {"swstr_pct": float, "career_swstr_pct": float | None}
+                from fetch_statcast.fetch_swstr(). Defaults to league-average
+                current SwStr% with no career baseline (zero delta adjustment).
     """
     params = load_params()
-    thresholds = params["ev_thresholds"]
+
+    if swstr_data is None:
+        swstr_data = {"swstr_pct": LEAGUE_AVG_SWSTR, "career_swstr_pct": None}
+
+    swstr_pct        = swstr_data.get("swstr_pct", LEAGUE_AVG_SWSTR) or LEAGUE_AVG_SWSTR
+    career_swstr_pct = swstr_data.get("career_swstr_pct")   # None = not available
 
     # team/opp_team: stats dict is authoritative (from MLB schedule); odds fallback for safety
     team     = stats.get("team")     or odds.get("team", "")
     opp_team = stats.get("opp_team") or odds.get("opp_team", "")
 
-    ip     = stats.get("innings_pitched_season", 0)
-    avg_ip = stats.get("avg_ip_last5", EXPECTED_INNINGS)
+    ip       = stats.get("innings_pitched_season", 0)
+    avg_ip   = stats.get("avg_ip_last5", EXPECTED_INNINGS)
+    n_starts = stats.get("starts_count", 0)
 
     season_k9 = stats["season_k9"]
     recent_k9 = stats.get("recent_k9") if stats.get("starts_count", 0) >= 3 else season_k9
     career_k9 = stats.get("career_k9") or season_k9
 
-    blended    = blend_k9(season_k9, recent_k9, career_k9, ip,
-                          weight_season_cap=params["weight_season_cap"],
-                          weight_recent=params["weight_recent"])
-    swstr_mult = calc_swstr_mult(swstr_pct)
-    opp_games  = stats.get("opp_games_played", 0)
+    blended   = blend_k9(season_k9, recent_k9, career_k9, ip,
+                         weight_season_cap=params["weight_season_cap"],
+                         weight_recent=params["weight_recent"])
 
+    swstr_delta = calc_swstr_delta_k9(
+        swstr_pct, career_swstr_pct, n_starts,
+        swstr_k9_scale=params.get("swstr_k9_scale", SWSTR_K9_SCALE)
+    )
+
+    opp_games        = stats.get("opp_games_played", 0)
     scaled_ump_k_adj = ump_k_adj * params["ump_scale"]
+
     raw_lam = calc_lambda(blended, avg_ip, stats["opp_k_rate"], scaled_ump_k_adj,
-                          swstr_mult, opp_games_played=opp_games)
+                          swstr_delta_k9=swstr_delta, opp_games_played=opp_games)
     applied_lam = raw_lam + params["lambda_bias"]
     applied_lam = max(0.01, applied_lam)  # guard against negative bias producing invalid Poisson lambda
 
     k_line = odds["k_line"]
+
+    # Cap applied_lam at ±MAX_LAMBDA_LINE_GAP from the k_line before computing win probs.
+    # Data shows picks with gap ≥ 3 win at only 21% — the model over-reaches on extreme
+    # predictions and generates inflated EVs that don't reflect real edge.
+    MAX_LAMBDA_LINE_GAP = 2.5
+    applied_lam = min(applied_lam, k_line + MAX_LAMBDA_LINE_GAP)
+    applied_lam = max(applied_lam, k_line - MAX_LAMBDA_LINE_GAP)
+
     win_prob_over  = 1 - poisson.cdf(math.floor(k_line), applied_lam)
     win_prob_under = poisson.cdf(math.ceil(k_line) - 1, applied_lam)
 
@@ -225,6 +275,8 @@ def build_pitcher_record(odds: dict, stats: dict, ump_k_adj: float,
         "lambda":             round(applied_lam, 2),
         "avg_ip":             avg_ip,
         "swstr_pct":          round(swstr_pct, 4),
+        "career_swstr_pct":   round(career_swstr_pct, 4) if career_swstr_pct is not None else None,
+        "swstr_delta_k9":     round(swstr_delta, 3),
         "opp_k_rate":         stats["opp_k_rate"],
         "ump_k_adj":          ump_k_adj,
         "season_k9":          round(season_k9, 2),
@@ -233,14 +285,14 @@ def build_pitcher_record(odds: dict, stats: dict, ump_k_adj: float,
         "ev_over":  {
             "ev":            round(ev_over,      4),
             "adj_ev":        round(adj_ev_over,  4),
-            "verdict":       calc_verdict(adj_ev_over,  thresholds),
+            "verdict":       calc_verdict(adj_ev_over),
             "win_prob":      round(win_prob_over,  3),
             "movement_conf": round(conf_over,    4),
         },
         "ev_under": {
             "ev":            round(ev_under,      4),
             "adj_ev":        round(adj_ev_under,  4),
-            "verdict":       calc_verdict(adj_ev_under, thresholds),
+            "verdict":       calc_verdict(adj_ev_under),
             "win_prob":      round(win_prob_under,  3),
             "movement_conf": round(conf_under,    4),
         },
