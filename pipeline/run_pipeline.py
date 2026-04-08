@@ -297,6 +297,8 @@ def run(date_str: str, run_type: str = "full") -> None:
     try:
         init_db()
         load_history_into_db()
+        # Lock before seeding: picks arriving within T-30min will miss this lock window
+        # but will be caught by the grading run's lock_all_past=True pass.
         conn = get_db()
         try:
             locked = lock_due_picks(conn, datetime.now(timezone.utc), lock_all_past=False)

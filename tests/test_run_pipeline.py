@@ -75,6 +75,7 @@ def _sample_stats():
 def test_run_writes_today_json(tmp_path):
     """run() should always write today.json even if it has 0 pitchers."""
     import run_pipeline
+    run_pipeline._batter_stats_cache = None
     out_path = tmp_path / "today.json"
 
     with patch.object(run_pipeline, "OUTPUT_PATH", out_path), \
@@ -82,6 +83,8 @@ def test_run_writes_today_json(tmp_path):
          patch("run_pipeline.fetch_stats", return_value={"Test Pitcher": _sample_stats()}), \
          patch("run_pipeline.fetch_swstr", return_value={"Test Pitcher": {"swstr_pct": 0.110, "career_swstr_pct": None}}), \
          patch("run_pipeline.fetch_umpires", return_value={"Test Pitcher": 0.0}), \
+         patch("run_pipeline.fetch_lineups_for_pitcher", return_value=None), \
+         patch("run_pipeline.fetch_batter_stats_cached", return_value={}), \
          patch("run_pipeline._write_archive"):  # skip archive for unit test
         run_pipeline.run("2026-04-01")
 
