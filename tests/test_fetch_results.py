@@ -8,11 +8,13 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'pipeline'))
 
 @pytest.fixture
 def tmp_db(tmp_path):
-    """Patch DB_PATH to a temp file, yield path."""
+    """Patch DB_PATH and HISTORY_PATH to temp files, yield path."""
     db = tmp_path / "results.db"
-    with patch("fetch_results.DB_PATH", db):
+    history = tmp_path / "picks_history.json"
+    with patch("fetch_results.DB_PATH", db), patch("fetch_results.HISTORY_PATH", history):
         import fetch_results
         fetch_results.init_db()
+        fetch_results.HISTORY_PATH = history
         yield db, fetch_results
 
 
@@ -835,3 +837,71 @@ def test_lock_due_picks_skips_null_game_time_without_lock_all_past(tmp_db):
     with fr.get_db() as conn:
         count = fr.lock_due_picks(conn, now, lock_all_past=False)
     assert count == 0
+
+
+def test_grading_uses_locked_odds_for_pnl(tmp_db, today_json):
+    """When locked_odds is set, P&L should use locked_odds not current odds."""
+    db_path, fr = tmp_db
+    json_path, _ = today_json
+    fr.seed_picks(json_path)
+    # Manually set locked_odds to a different value to test it's used
+    with fr.get_db() as conn:
+        conn.execute("""
+            UPDATE picks SET locked_odds = -200, locked_at = '2026-04-15T17:00:00Z'
+            WHERE pitcher = 'Gerrit Cole' AND side = 'over'
+        """)
+    # Simulate a win and verify P&L uses locked_odds (-200 → +0.50 per unit)
+    with fr.get_db() as conn:
+        conn.execute("""
+            UPDATE picks SET result = 'win', actual_ks = 8
+            WHERE pitcher = 'Gerrit Cole' AND side = 'over'
+        """)
+    fr.export_db_to_history()
+    with open(fr.HISTORY_PATH) as f:
+        history = json.load(f)
+    cole_over = next(p for p in history if p["pitcher"] == "Gerrit Cole" and p["side"] == "over")
+    # Check locked_odds is in history
+    assert cole_over.get("locked_odds") == -200
+
+
+def test_history_export_includes_lock_columns(tmp_db, today_json):
+    """export_db_to_history should include all new columns."""
+    db_path, fr = tmp_db
+    json_path, _ = today_json
+    fr.seed_picks(json_path)
+    fr.export_db_to_history()
+    with open(fr.HISTORY_PATH) as f:
+        history = json.load(f)
+    assert len(history) > 0
+    pick = history[0]
+    for col in ("game_time", "lineup_used", "locked_at", "locked_k_line",
+                "locked_odds", "locked_adj_ev", "locked_verdict"):
+        assert col in pick, f"missing column: {col}"
+
+
+def test_history_load_includes_lock_columns(tmp_db, today_json):
+    """load_history_into_db should load locked_* columns from history."""
+    db_path, fr = tmp_db
+    json_path, _ = today_json
+    fr.seed_picks(json_path)
+    # Manually write history with lock columns
+    history = [{"date": "2026-04-10", "pitcher": "Old Pick", "team": "BOS", "side": "over",
+                "k_line": 6.5, "verdict": "LEAN", "ev": 0.02, "adj_ev": 0.02,
+                "raw_lambda": 6.0, "applied_lambda": 6.0, "odds": -110,
+                "movement_conf": 1.0, "result": "win", "actual_ks": 7, "pnl": 0.91,
+                "fetched_at": "2026-04-10T12:00:00Z",
+                "game_time": "2026-04-10T17:05:00Z", "lineup_used": 1,
+                "locked_at": "2026-04-10T16:35:00Z", "locked_k_line": 6.5,
+                "locked_odds": -110, "locked_adj_ev": 0.02, "locked_verdict": "LEAN"}]
+    import json as _json
+    fr.HISTORY_PATH.write_text(_json.dumps(history))
+    fr.load_history_into_db()
+    conn = sqlite3.connect(db_path)
+    row = conn.execute(
+        "SELECT locked_at, locked_odds, game_time, lineup_used FROM picks WHERE pitcher = 'Old Pick'"
+    ).fetchone()
+    conn.close()
+    assert row[0] == "2026-04-10T16:35:00Z"
+    assert row[1] == -110
+    assert row[2] == "2026-04-10T17:05:00Z"
+    assert row[3] == 1
