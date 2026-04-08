@@ -839,28 +839,61 @@ def test_lock_due_picks_skips_null_game_time_without_lock_all_past(tmp_db):
     assert count == 0
 
 
-def test_grading_uses_locked_odds_for_pnl(tmp_db, today_json):
-    """When locked_odds is set, P&L should use locked_odds not current odds."""
+def test_grading_uses_locked_odds_for_pnl(tmp_db):
+    """fetch_and_close_results() must use locked_odds (not odds) when computing P&L."""
     db_path, fr = tmp_db
-    json_path, _ = today_json
-    fr.seed_picks(json_path)
-    # Manually set locked_odds to a different value to test it's used
+
+    # Seed a pick for yesterday with odds=-115 but locked_odds=-200
     with fr.get_db() as conn:
         conn.execute("""
-            UPDATE picks SET locked_odds = -200, locked_at = '2026-04-15T17:00:00Z'
-            WHERE pitcher = 'Gerrit Cole' AND side = 'over'
-        """)
-    # Simulate a win and verify P&L uses locked_odds (-200 → +0.50 per unit)
-    with fr.get_db() as conn:
-        conn.execute("""
-            UPDATE picks SET result = 'win', actual_ks = 8
-            WHERE pitcher = 'Gerrit Cole' AND side = 'over'
-        """)
+            INSERT INTO picks (date, pitcher, team, side, k_line, verdict,
+                               ev, adj_ev, raw_lambda, applied_lambda,
+                               odds, movement_conf,
+                               locked_odds, locked_at)
+            VALUES (?, 'Gerrit Cole', 'New York Yankees', 'over', 7.5, 'FIRE 1u',
+                    0.05, 0.05, 7.2, 7.2,
+                    -115, 1.0,
+                    -200, '2026-04-07T17:00:00Z')
+        """, (_FIXED_YESTERDAY,))
+
+    schedule_mock = MagicMock()
+    schedule_mock.json.return_value = _sched_resp(game_pk=111111, is_final=True)
+    schedule_mock.raise_for_status = MagicMock()
+
+    # ks=8 > k_line=7.5 → over wins
+    boxscore_mock = MagicMock()
+    boxscore_mock.json.return_value = _bs_resp("Gerrit Cole", 123, ks=8)
+    boxscore_mock.raise_for_status = MagicMock()
+
+    def mock_get(url, **kwargs):
+        if "boxscore" in url:
+            return boxscore_mock
+        return schedule_mock
+
+    with patch("fetch_results._et_dates", return_value=(_FIXED_TODAY, _FIXED_YESTERDAY)), \
+         patch("fetch_results.requests.get", side_effect=mock_get):
+        count = fr.fetch_and_close_results()
+
+    assert count == 1
+
+    # P&L must be calculated from locked_odds=-200, not odds=-115
+    # _calc_pnl("win", -200) = 100/200 = 0.5
+    expected_pnl = fr._calc_pnl("win", -200)
+    conn = sqlite3.connect(db_path)
+    row = conn.execute(
+        "SELECT result, pnl, locked_odds FROM picks WHERE pitcher='Gerrit Cole'"
+    ).fetchone()
+    conn.close()
+
+    assert row[0] == "win"
+    assert row[1] == pytest.approx(expected_pnl)   # ~0.5, NOT ~0.87 (which -115 would give)
+    assert row[2] == -200
+
+    # Also verify locked_odds survives the history export
     fr.export_db_to_history()
     with open(fr.HISTORY_PATH) as f:
         history = json.load(f)
     cole_over = next(p for p in history if p["pitcher"] == "Gerrit Cole" and p["side"] == "over")
-    # Check locked_odds is in history
     assert cole_over.get("locked_odds") == -200
 
 
