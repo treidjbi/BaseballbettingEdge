@@ -13,11 +13,12 @@ from build_features import (
     calc_verdict,
     calc_price_delta,
     blend_k9,
-    calc_swstr_mult,
+    calc_swstr_delta_k9,
     calc_movement_confidence,
     bayesian_opp_k,
     build_pitcher_record,
     LEAGUE_AVG_K_RATE,
+    LEAGUE_AVG_SWSTR,
 )
 
 
@@ -122,42 +123,56 @@ class TestCalcPriceDelta:
         assert calc_price_delta(-110, -110) == 0
 
 
-class TestCalcSwstrMult:
-    def test_league_avg_returns_one(self):
-        assert abs(calc_swstr_mult(0.110) - 1.0) < 0.001
+class TestCalcSwstrDeltaK9:
+    def test_at_career_norm_returns_zero(self):
+        assert calc_swstr_delta_k9(0.110, 0.110, 10) == 0.0
 
-    def test_above_avg_returns_gt_one(self):
-        assert calc_swstr_mult(0.150) > 1.0
+    def test_no_career_returns_zero(self):
+        assert calc_swstr_delta_k9(0.150, None, 10) == 0.0
 
-    def test_below_avg_returns_lt_one(self):
-        assert calc_swstr_mult(0.080) < 1.0
+    def test_zero_starts_returns_zero(self):
+        assert calc_swstr_delta_k9(0.150, 0.110, 0) == 0.0
 
-    def test_zero_swstr_returns_one(self):
-        assert calc_swstr_mult(0.0) == 1.0
+    def test_above_career_positive_delta(self):
+        # current 13%, career 11%, 10 starts → (0.02 * 30) * (10/20) = 0.30
+        result = calc_swstr_delta_k9(0.13, 0.11, 10)
+        assert abs(result - 0.30) < 0.001
 
-    def test_known_value(self):
-        assert abs(calc_swstr_mult(0.140) - (0.140 / 0.110)) < 0.001
+    def test_below_career_negative_delta(self):
+        result = calc_swstr_delta_k9(0.09, 0.11, 10)
+        assert result < 0.0
+
+    def test_dampening_increases_with_starts(self):
+        delta_3  = calc_swstr_delta_k9(0.13, 0.11, 3)
+        delta_20 = calc_swstr_delta_k9(0.13, 0.11, 20)
+        assert delta_20 > delta_3   # more starts → less dampening → larger delta
+
+    def test_custom_scale(self):
+        # scale=50: (0.02 * 50) * (10/20) = 0.50
+        result = calc_swstr_delta_k9(0.13, 0.11, 10, swstr_k9_scale=50.0)
+        assert abs(result - 0.50) < 0.001
 
 
-class TestCalcLambdaSwstrMult:
-    def test_swstr_mult_default_unchanged(self):
-        lam_old = calc_lambda(blended_k9=9.0, expected_innings=5.5, opp_k_rate=0.227, ump_k_adj=0)
-        lam_new = calc_lambda(blended_k9=9.0, expected_innings=5.5, opp_k_rate=0.227, ump_k_adj=0, swstr_mult=1.0)
-        assert abs(lam_old - lam_new) < 0.001
+class TestCalcLambdaSwstrDelta:
+    def test_zero_delta_unchanged(self):
+        lam_no_delta = calc_lambda(9.0, 5.5, 0.227, 0, swstr_delta_k9=0.0)
+        lam_default  = calc_lambda(9.0, 5.5, 0.227, 0)
+        assert abs(lam_no_delta - lam_default) < 0.001
 
-    def test_high_swstr_inflates_lambda(self):
-        lam_base = calc_lambda(9.0, 5.5, 0.227, 0, swstr_mult=1.0)
-        lam_high = calc_lambda(9.0, 5.5, 0.227, 0, swstr_mult=1.3)
+    def test_positive_delta_inflates_lambda(self):
+        lam_base = calc_lambda(9.0, 5.5, 0.227, 0, swstr_delta_k9=0.0)
+        lam_high = calc_lambda(9.0, 5.5, 0.227, 0, swstr_delta_k9=0.5)
         assert lam_high > lam_base
 
-    def test_low_swstr_deflates_lambda(self):
-        lam_base = calc_lambda(9.0, 5.5, 0.227, 0, swstr_mult=1.0)
-        lam_low  = calc_lambda(9.0, 5.5, 0.227, 0, swstr_mult=0.75)
+    def test_negative_delta_deflates_lambda(self):
+        lam_base = calc_lambda(9.0, 5.5, 0.227, 0, swstr_delta_k9=0.0)
+        lam_low  = calc_lambda(9.0, 5.5, 0.227, 0, swstr_delta_k9=-0.5)
         assert lam_low < lam_base
 
-    def test_swstr_mult_scales_base_not_ump(self):
-        lam_no_ump   = calc_lambda(9.0, 5.5, 0.227, 0,   swstr_mult=1.3)
-        lam_with_ump = calc_lambda(9.0, 5.5, 0.227, 0.4, swstr_mult=1.3)
+    def test_delta_does_not_scale_ump_contribution(self):
+        # ump contribution is additive and independent of the swstr delta
+        lam_no_ump   = calc_lambda(9.0, 5.5, 0.227, 0.0, swstr_delta_k9=0.5)
+        lam_with_ump = calc_lambda(9.0, 5.5, 0.227, 0.4, swstr_delta_k9=0.5)
         ump_contribution = lam_with_ump - lam_no_ump
         assert abs(ump_contribution - (0.4 * 5.5 / 9)) < 0.01
 
@@ -208,11 +223,38 @@ class TestBuildPitcherRecord:
         rec = build_pitcher_record(self.BASE_ODDS, stats, ump_k_adj=0.0)
         assert rec["lambda"] > 0
 
-    def test_swstr_pct_above_avg_raises_lambda(self):
+    def test_swstr_above_career_raises_lambda(self):
+        # Pitcher at 15% SwStr% vs 11% career baseline → positive delta → higher lambda
         from build_features import build_pitcher_record
-        rec_neutral = build_pitcher_record(self.BASE_ODDS, self.BASE_STATS, ump_k_adj=0.0, swstr_pct=0.110)
-        rec_high    = build_pitcher_record(self.BASE_ODDS, self.BASE_STATS, ump_k_adj=0.0, swstr_pct=0.150)
+        rec_neutral = build_pitcher_record(
+            self.BASE_ODDS, self.BASE_STATS, ump_k_adj=0.0,
+            swstr_data={"swstr_pct": 0.110, "career_swstr_pct": 0.110}
+        )
+        rec_high = build_pitcher_record(
+            self.BASE_ODDS, self.BASE_STATS, ump_k_adj=0.0,
+            swstr_data={"swstr_pct": 0.150, "career_swstr_pct": 0.110}
+        )
         assert rec_high["lambda"] > rec_neutral["lambda"]
+
+    def test_swstr_at_career_no_adjustment(self):
+        # Pitcher exactly at their career norm → zero delta → same lambda as no swstr data
+        from build_features import build_pitcher_record
+        rec_no_data = build_pitcher_record(self.BASE_ODDS, self.BASE_STATS, ump_k_adj=0.0)
+        rec_at_norm = build_pitcher_record(
+            self.BASE_ODDS, self.BASE_STATS, ump_k_adj=0.0,
+            swstr_data={"swstr_pct": 0.120, "career_swstr_pct": 0.120}
+        )
+        assert abs(rec_at_norm["lambda"] - rec_no_data["lambda"]) < 0.01
+
+    def test_swstr_no_career_no_adjustment(self):
+        # No career baseline available (rookie) → zero delta → same as neutral
+        from build_features import build_pitcher_record
+        rec_no_data  = build_pitcher_record(self.BASE_ODDS, self.BASE_STATS, ump_k_adj=0.0)
+        rec_no_career = build_pitcher_record(
+            self.BASE_ODDS, self.BASE_STATS, ump_k_adj=0.0,
+            swstr_data={"swstr_pct": 0.150, "career_swstr_pct": None}
+        )
+        assert abs(rec_no_career["lambda"] - rec_no_data["lambda"]) < 0.01
 
     def test_verdict_and_win_prob_present(self):
         from build_features import build_pitcher_record
