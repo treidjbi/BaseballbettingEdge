@@ -29,37 +29,19 @@ PHASE2_THRESHOLD  = 60
 LAMBDA_BIAS_MAX_DELTA = 0.05
 
 DEFAULTS = {
-    "ev_thresholds": {"fire2": 0.06, "fire1": 0.03, "lean": 0.01},
+    "ev_thresholds": {"fire2": 0.07, "fire1": 0.03, "lean": 0.01},
     "weight_season_cap": 0.70,
     "weight_recent":     0.20,
     "ump_scale":         1.0,
     "lambda_bias":       0.0,
 }
 
-_EV_THRESHOLD_BOUNDS = {
-    "fire2": (0.04, 0.10),
-    "fire1": (0.02, 0.05),   # max 5% — keeps a meaningful gap below fire2
-    "lean":  (0.005, 0.02),  # max 2% — LEAN is a surface-the-edge tier, not calibrated up
-}
-
-# LEAN is intentionally excluded from win-rate threshold calibration.
-# Its purpose is to surface minor edges for user judgment — penalising it
-# for winning would suppress valid signals. Only FIRE tiers are calibrated.
-_CALIBRATE_THRESHOLDS = {"FIRE 2u", "FIRE 1u"}
-
-# Minimum picks in the 30-day window before a tier's EV threshold can move.
-# Higher bar for FIRE tiers — they require real conviction before adjusting
-# since early-season small samples caused FIRE 1u to collapse previously.
-_CALIBRATE_MIN_PICKS = {
-    "FIRE 2u": 30,
-    "FIRE 1u": 30,
-}
-
-_VERDICT_TO_THRESHOLD = {
-    "FIRE 2u": "fire2",
-    "FIRE 1u": "fire1",
-    "LEAN":    "lean",
-}
+# EV tier bands are fixed — the model's EV output is the signal.
+# Threshold calibration was removed because: the underlying model is already
+# corrected via lambda bias, gap cap, and movement confidence. Adjusting bin
+# boundaries in response to results penalises winning tiers and rewards losing
+# ones, which is the opposite of what a well-calibrated model needs.
+# Only lambda bias, ump_scale, and blend weights are calibrated from results.
 
 
 def _load_current_params() -> dict:
@@ -108,18 +90,7 @@ def build_calibration_notes(old_params: dict, new_params: dict) -> list[str]:
             f"(model was systematically {direction}-predicting Ks)"
         )
 
-    old_ev = old_params.get("ev_thresholds", DEFAULTS["ev_thresholds"])
-    new_ev = new_params.get("ev_thresholds", DEFAULTS["ev_thresholds"])
-    label_map = {"fire2": "FIRE 2u", "fire1": "FIRE 1u", "lean": "LEAN"}
-    for key, label in label_map.items():
-        ov = old_ev.get(key, DEFAULTS["ev_thresholds"][key])
-        nv = new_ev.get(key, DEFAULTS["ev_thresholds"][key])
-        if abs(nv - ov) >= 0.0005:
-            direction = "raised" if nv > ov else "lowered"
-            reason = "strong recent win rate" if nv > ov else "win rate below expectation"
-            notes.append(
-                f"{label} EV threshold {direction} {ov*100:.1f}% \u2192 {nv*100:.1f}% ({reason})"
-            )
+    # EV thresholds are fixed — no notes generated for them.
 
     old_ump = old_params.get("ump_scale", 1.0)
     new_ump = new_params.get("ump_scale", 1.0)
@@ -246,49 +217,11 @@ def _calibrate_phase1(closed_picks: list, current_params: dict) -> dict:
             step = LAMBDA_BIAS_MAX_DELTA if delta > 0 else -LAMBDA_BIAS_MAX_DELTA
             params["lambda_bias"] = round(current_bias + step, 3)
 
-    # EV threshold adjustment — 30-day rolling window
-    cutoff = (datetime.now(pytz.utc) - timedelta(days=30)).strftime("%Y-%m-%dT%H:%M:%SZ")
-    recent = [r for r in closed_picks if (r["fetched_at"] or "") >= cutoff]
-
-    by_verdict: dict[str, list] = {}
-    for row in recent:
-        v = row["verdict"]
-        if v not in _VERDICT_TO_THRESHOLD:
-            continue
-        by_verdict.setdefault(v, []).append(row)
-
+    # EV thresholds are fixed bands — not calibrated from results.
+    # Enforce ordering as a safety net in case params.json is manually edited.
     thresholds = params["ev_thresholds"]
-    for verdict, rows in by_verdict.items():
-        # LEAN is excluded — it exists to surface minor edges for user judgment,
-        # not to be tightened when it's winning. Only FIRE tiers are calibrated.
-        if verdict not in _CALIBRATE_THRESHOLDS:
-            continue
-        if len(rows) < _CALIBRATE_MIN_PICKS.get(verdict, 10):
-            continue
-        wins  = sum(1 for r in rows if r["result"] == "win")
-        total = sum(1 for r in rows if r["result"] in ("win", "loss"))
-        if total == 0:
-            continue
-        observed = wins / total
-        implied  = sum(_american_to_implied(r["odds"]) for r in rows) / len(rows)
-        key      = _VERDICT_TO_THRESHOLD[verdict]
-        lo, hi   = _EV_THRESHOLD_BOUNDS[key]
-        current  = thresholds[key]
-        if observed > implied + 0.03:
-            thresholds[key] = min(hi, round(current + 0.005, 4))
-        elif observed < implied - 0.03:
-            thresholds[key] = max(lo, round(current - 0.005, 4))
-
-    # Enforce tier ordering: lean < fire1 < fire2 with minimum gaps.
-    # Prevents calibration drift from collapsing adjacent tiers.
     thresholds["fire1"] = min(thresholds["fire1"], thresholds["fire2"] - 0.01)
     thresholds["lean"]  = min(thresholds["lean"],  thresholds["fire1"] - 0.005)
-
-    # Clamp lean to its absolute bounds. The calibration loop skips LEAN rows,
-    # so without this an existing config with lean=0.03 would never be brought
-    # down to the new max of 0.02 — leaving signals suppressed despite this fix.
-    _lo, _hi = _EV_THRESHOLD_BOUNDS["lean"]
-    thresholds["lean"] = round(max(_lo, min(_hi, thresholds["lean"])), 4)
 
     return params
 

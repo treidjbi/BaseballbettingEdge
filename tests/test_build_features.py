@@ -106,7 +106,7 @@ class TestCalcVerdict:
         assert calc_verdict(0.04) == "FIRE 1u"
 
     def test_fire_2u(self):
-        assert calc_verdict(0.07) == "FIRE 2u"
+        assert calc_verdict(0.08) == "FIRE 2u"
 
 
 class TestCalcPriceDelta:
@@ -379,7 +379,7 @@ class TestLoadParams:
             p = load_params()
         assert p["lambda_bias"] == 0.0
         assert p["ump_scale"] == 1.0
-        assert p["ev_thresholds"]["fire2"] == 0.06
+        assert p["ev_thresholds"]["fire2"] == 0.07
 
     def test_malformed_file_returns_defaults(self):
         with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False) as f:
@@ -467,7 +467,7 @@ class TestCalcVerdictThresholds:
         assert calc_verdict(0.005) == "PASS"
         assert calc_verdict(0.02) == "LEAN"
         assert calc_verdict(0.04) == "FIRE 1u"
-        assert calc_verdict(0.07) == "FIRE 2u"
+        assert calc_verdict(0.08) == "FIRE 2u"
 
 
 # -- build_pitcher_record output fields --

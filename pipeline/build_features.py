@@ -12,7 +12,7 @@ from scipy.stats import poisson
 PARAMS_PATH = str(Path(__file__).parent.parent / "data" / "params.json")
 
 DEFAULTS = {
-    "ev_thresholds": {"fire2": 0.06, "fire1": 0.03, "lean": 0.01},
+    "ev_thresholds": {"fire2": 0.07, "fire1": 0.03, "lean": 0.01},
     "weight_season_cap": 0.70,
     "weight_recent": 0.20,
     "ump_scale": 1.0,
@@ -35,7 +35,7 @@ def load_params() -> dict:
 # ── Verdict thresholds ──────────────────────────────────────────────────────
 EDGE_PASS         = 0.01
 EDGE_LEAN         = 0.03
-EDGE_FIRE_1U      = 0.06
+EDGE_FIRE_1U      = 0.07
 EXPECTED_INNINGS  = 5.5        # fallback only — pipeline uses per-pitcher avg IP
 LEAGUE_AVG_K_RATE = 0.227
 LEAGUE_AVG_SWSTR  = 0.110      # FanGraphs league avg swinging strike rate
