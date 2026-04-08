@@ -8,7 +8,7 @@ import json
 import logging
 import sqlite3
 import unicodedata
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timedelta
 from pathlib import Path
 
 import pytz
