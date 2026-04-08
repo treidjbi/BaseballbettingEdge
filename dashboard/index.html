@@ -425,6 +425,26 @@
     .perf-empty { color: var(--ink-dim); padding: 2rem 0; text-align: center; }
     .roi-pos { color: var(--positive); }
     .roi-neg { color: var(--fire); }
+
+    #refresh-btn {
+      background: transparent;
+      border: 1px solid #4a9eff;
+      color: #4a9eff;
+      padding: 4px 12px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 13px;
+      font-family: inherit;
+      margin-right: 8px;
+    }
+    #refresh-btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+    #refresh-btn.running {
+      color: #888;
+      border-color: #888;
+    }
   </style>
   <script>
   (function() {
@@ -457,6 +477,9 @@
         <input type="date" id="date-select" onchange="onDateChange(this.value)" />
       </div>
       <div id="top-right">
+        <button id="refresh-btn" onclick="triggerRefresh()" title="Re-run pipeline to update lines and lineups">
+          ↻ Refresh
+        </button>
         <button id="theme-toggle" onclick="toggleTheme()" title="Day game / Night game"></button>
       </div>
     </div>
@@ -926,6 +949,36 @@
       ${calNote}
       ${notesBox}
     `;
+  }
+
+  async function triggerRefresh() {
+    const btn = document.getElementById('refresh-btn');
+    btn.disabled = true;
+    btn.classList.add('running');
+    btn.textContent = '⟳ Running… (~3 min)';
+
+    try {
+      const res = await fetch('/.netlify/functions/trigger-pipeline', { method: 'POST' });
+      const data = await res.json();
+      if (data.status === 'triggered') {
+        btn.textContent = '✓ Triggered';
+      } else {
+        btn.textContent = '✗ Failed';
+        setTimeout(() => { btn.textContent = '↻ Refresh'; btn.disabled = false; btn.classList.remove('running'); }, 5000);
+        return;
+      }
+    } catch (e) {
+      btn.textContent = '✗ Error';
+      setTimeout(() => { btn.textContent = '↻ Refresh'; btn.disabled = false; btn.classList.remove('running'); }, 5000);
+      return;
+    }
+
+    // Re-enable after 3 minutes
+    setTimeout(() => {
+      btn.textContent = '↻ Refresh';
+      btn.disabled = false;
+      btn.classList.remove('running');
+    }, 3 * 60 * 1000);
   }
 </script>
 </body>
