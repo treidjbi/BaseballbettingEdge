@@ -38,11 +38,37 @@ This treats +100 and -100 as the same point (even money) on the odds number line
 
 Determine whether line movement supports or opposes the model's recommended side (OVER or UNDER).
 
-For the model's recommended side:
-- Odds became **more expensive** (more negative, or crossed from + to −) → market agrees → **steam with** (green ↑)
-- Odds became **less expensive** (more positive, or crossed from − to +) → market disagrees → **steam against** (red ↓)
+**Direction determination** — did a side get cheaper or more expensive?
 
-The movement is measured on **whichever side (over/under) had the larger corrected delta**, and the "steam with/against" label is relative to the model's pick. If the under gets cheaper, that inherently means the over is getting more expensive — so "steam with" applies to an OVER recommendation.
+```
+function sideGotCheaper(opening, current):
+  // Convert to implied probability: lower prob = cheaper
+  // For negative odds: prob = |odds| / (|odds| + 100)
+  // For positive odds: prob = 100 / (odds + 100)
+  // If implied prob decreased, the side got cheaper (less favored)
+  return impliedProb(current) < impliedProb(opening)
+```
+
+Equivalently without computing probabilities:
+- Both negative: current is closer to 0 (e.g., -154 → -120) → got cheaper
+- Both positive: current is larger (e.g., +110 → +140) → got cheaper
+- Crossed + to −: got more expensive (became the favorite)
+- Crossed − to +: got cheaper (became the underdog)
+
+**Decision matrix** — the movement is measured on whichever side (over/under) had the larger corrected delta:
+
+| Model recommends | Side with biggest move | That side got... | Label |
+|---|---|---|---|
+| OVER | OVER | more expensive | **steam with** |
+| OVER | OVER | cheaper | **steam against** |
+| OVER | UNDER | more expensive | **steam against** |
+| OVER | UNDER | cheaper | **steam with** |
+| UNDER | UNDER | more expensive | **steam with** |
+| UNDER | UNDER | cheaper | **steam against** |
+| UNDER | OVER | more expensive | **steam against** |
+| UNDER | OVER | cheaper | **steam with** |
+
+Rule: if the biggest-moving side IS the model's recommended side, "more expensive" = steam with. If it's the OPPOSITE side, "more expensive" = steam against. (Over and under are inversely related.)
 
 ### 3. Picks Tab — Compact Inline Display
 
@@ -60,7 +86,8 @@ Arrow direction represents **model alignment**, not raw odds direction. Green up
 **Filtering:**
 - Only show FIRE and LEAN verdict picks (exclude PASS)
 - Only show picks with non-zero movement
-- If no qualifying picks, show "No significant steam today"
+- If no qualifying picks, show "No significant steam yet — check back after the 1pm ET run"
+- Cap at **5 entries** (same as current)
 
 **Sort:** Biggest corrected cents moved first (descending).
 
@@ -80,8 +107,10 @@ Replace `.delta-over` / `.delta-under` classes with:
 ### 6. Edge Cases
 
 - **Zero movement:** No arrow/label shown; pick excluded from Watchlist
-- **No qualifying picks on Watchlist:** Display "No significant steam today"
+- **No qualifying picks on Watchlist:** Display "No significant steam yet — check back after the 1pm ET run"
 - **Same-side movement (no zero crossing):** Standard `|current - opening|` math
+- **Null/missing opening odds:** Backend defaults missing opening to best odds (delta = 0); frontend guards against null/undefined — treat as no movement
+- **Past picks (`isPast` flag):** Steam display applies to past picks too (historical context is useful)
 
 ## Files Modified
 
@@ -93,6 +122,9 @@ Replace `.delta-over` / `.delta-under` classes with:
 
 ## Out of Scope
 
-- No changes to backend data pipeline or model logic
 - No changes to steam haircut / EV adjustment calculations
 - No changes to the Performance tab
+
+## Known Issue — Backend Delta Math
+
+The same naive subtraction exists in `build_features.py` (`calc_price_delta`), where it feeds into `calc_movement_confidence()` and `adj_ev`. This means zero-crossing pitchers get over-penalized (e.g., a 26-cent move treated as 226 cents fully fades confidence to 0.0). **This is a separate fix** that should be addressed in a follow-up task — this spec only fixes the frontend display.
