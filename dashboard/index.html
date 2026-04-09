@@ -894,26 +894,29 @@
   function renderWatchlist(pitchers) {
     const el = document.getElementById('panel-watch');
 
+    // Filter: FIRE/LEAN only, with non-zero corrected movement
     const movers = [...pitchers]
-      .filter(p => p.price_delta_over !== 0 || p.price_delta_under !== 0)
-      .sort((a, b) => {
-        const maxA = Math.max(Math.abs(a.price_delta_over || 0), Math.abs(a.price_delta_under || 0));
-        const maxB = Math.max(Math.abs(b.price_delta_over || 0), Math.abs(b.price_delta_under || 0));
-        return maxB - maxA;
+      .map(p => {
+        const side = bestSide(p);
+        const steam = steamLabel(p, side.direction);
+        return { p, side, steam };
       })
+      .filter(({ side, steam }) =>
+        side.verdict !== 'PASS' && steam != null && steam.cents > 0
+      )
+      .sort((a, b) => b.steam.cents - a.steam.cents)
       .slice(0, 5);
 
     if (!movers.length) {
-      el.innerHTML = '<p class="empty">No juice movement yet — check back after the 1pm ET run.</p>';
+      el.innerHTML = '<p class="empty">No significant steam yet — check back after the 1pm ET run.</p>';
       return;
     }
 
-    let html = '<div class="watchlist-hd">Biggest juice moves today</div>';
-    for (const p of movers) {
-      const useOver = Math.abs(p.price_delta_over || 0) >= Math.abs(p.price_delta_under || 0);
-      const activeDelta = useOver ? (p.price_delta_over || 0) : (p.price_delta_under || 0);
-      const dir = activeDelta < 0 ? '↓' : '↑';
-      const cls = activeDelta < 0 ? 'delta-over' : 'delta-under';
+    let html = '<div class="watchlist-hd">Biggest steam moves today</div>';
+    for (const { p, side, steam } of movers) {
+      // Show odds for the side with the bigger move
+      const openOdds = steam.biggerIsOver ? p.opening_over_odds : p.opening_under_odds;
+      const currOdds = steam.biggerIsOver ? p.best_over_odds : p.best_under_odds;
       html += `
       <div class="watch-card">
         <div class="watch-left">
@@ -921,14 +924,11 @@
           <span class="pitcher-matchup" style="color:var(--ink-dim)">${esc(p.team)} vs ${esc(p.opp_team)}</span>
         </div>
         <div class="watch-mid">
-          <span style="font-size:10px;text-transform:uppercase;letter-spacing:.05em">${useOver ? 'Over' : 'Under'} (${p.k_line}K)</span>
-          <span>${fmtOdds(useOver ? p.opening_over_odds : p.opening_under_odds)} → ${fmtOdds(useOver ? p.best_over_odds : p.best_under_odds)}</span>
-          <span class="${cls}">${dir} ${Math.abs(activeDelta)}</span>
-          ${(bestSide(p).direction === 'OVER') !== useOver
-            ? `<span style="font-size:9px;color:var(--ink-dim);font-style:italic">model favors ${bestSide(p).direction.toLowerCase()}</span>`
-            : ''}
+          <span style="font-size:10px;text-transform:uppercase;letter-spacing:.05em">${side.direction} (${p.k_line}K)</span>
+          <span>${fmtOdds(openOdds)} → ${fmtOdds(currOdds)}</span>
+          ${steam.html}
         </div>
-        <span class="verdict-badge ${verdictClass(bestSide(p).verdict)}">${badgeLabel(bestSide(p))}</span>
+        <span class="verdict-badge ${verdictClass(side.verdict)}">${badgeLabel(side)}</span>
       </div>`;
     }
 
