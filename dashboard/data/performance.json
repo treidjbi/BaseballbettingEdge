@@ -1,80 +1,80 @@
 {
-  "generated_at": "2026-04-09T11:00:33Z",
-  "total_picks": 0,
+  "generated_at": "2026-04-09T13:23:58Z",
+  "total_picks": 24,
   "last_calibrated": "2026-04-08T00:00:00Z",
   "calibration_sample": 0,
   "rows": [
     {
       "verdict": "FIRE 2u",
       "side": "over",
-      "picks": 0,
-      "wins": 0,
-      "losses": 0,
+      "picks": 5,
+      "wins": 3,
+      "losses": 2,
       "pushes": 0,
-      "win_pct": null,
-      "roi": null,
-      "avg_ev": null
+      "win_pct": 0.6,
+      "roi": 19.02,
+      "avg_ev": 0.1014
     },
     {
       "verdict": "FIRE 2u",
       "side": "under",
-      "picks": 0,
-      "wins": 0,
-      "losses": 0,
+      "picks": 7,
+      "wins": 6,
+      "losses": 1,
       "pushes": 0,
-      "win_pct": null,
-      "roi": null,
-      "avg_ev": null
+      "win_pct": 0.857,
+      "roi": 73.06,
+      "avg_ev": 0.1727
     },
     {
       "verdict": "FIRE 1u",
       "side": "over",
-      "picks": 0,
-      "wins": 0,
-      "losses": 0,
+      "picks": 7,
+      "wins": 3,
+      "losses": 4,
       "pushes": 0,
-      "win_pct": null,
-      "roi": null,
-      "avg_ev": null
+      "win_pct": 0.429,
+      "roi": -14.08,
+      "avg_ev": 0.0478
     },
     {
       "verdict": "FIRE 1u",
       "side": "under",
-      "picks": 0,
-      "wins": 0,
+      "picks": 1,
+      "wins": 1,
       "losses": 0,
       "pushes": 0,
-      "win_pct": null,
-      "roi": null,
-      "avg_ev": null
+      "win_pct": 1.0,
+      "roi": 104.0,
+      "avg_ev": 0.0549
     },
     {
       "verdict": "LEAN",
       "side": "over",
-      "picks": 0,
+      "picks": 1,
       "wins": 0,
-      "losses": 0,
+      "losses": 1,
       "pushes": 0,
-      "win_pct": null,
-      "roi": null,
-      "avg_ev": null
+      "win_pct": 0.0,
+      "roi": -100.0,
+      "avg_ev": 0.0297
     },
     {
       "verdict": "LEAN",
       "side": "under",
-      "picks": 0,
-      "wins": 0,
-      "losses": 0,
+      "picks": 3,
+      "wins": 2,
+      "losses": 1,
       "pushes": 0,
-      "win_pct": null,
-      "roi": null,
-      "avg_ev": null
+      "win_pct": 0.667,
+      "roi": 38.0,
+      "avg_ev": 0.0165
     }
   ],
   "lambda_accuracy": {
-    "avg_predicted": null,
-    "avg_actual": null,
-    "bias": null
+    "avg_predicted": 5.32,
+    "avg_actual": 4.0,
+    "bias": -1.32
   },
   "params": {
     "weight_season_cap": 0.4,
@@ -84,6 +84,7 @@
     "swstr_k9_scale": 30.0,
     "updated_at": "2026-04-08T00:00:00Z",
     "sample_size": 0,
+    "formula_change_date": "2026-04-08",
     "calibration_notes": [
       "[2026-04-08] FORMULA CHANGE: SwStr% multiplier removed (was double-counting K ability already in K/9). Replaced with career-relative delta (additive K/9 adjustment). Lambda bias reset to 0.0 \u2014 recalibrates from scratch under new formula.",
       "[2026-04-08] Adaptive calibration step size: cap now scales with sqrt(n/30), range 0.05-0.15 instead of fixed 0.05.",
