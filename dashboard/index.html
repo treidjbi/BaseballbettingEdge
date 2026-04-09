@@ -838,7 +838,7 @@
       const umpHtml = p.ump_k_adj !== 0
         ? `<span class="adj-badge ${p.ump_k_adj > 0 ? 'adj-pos' : 'adj-neg'}">UMP ${p.ump_k_adj > 0 ? '+' : ''}${p.ump_k_adj}</span>`
         : '';
-      const priceDelta = side.direction === 'OVER' ? p.price_delta_over : p.price_delta_under;
+      const steamIndicator = steamHtml(p, side.direction);
       const evBorder = side.ev >= 0.25 ? 'border-left:3px solid var(--fire)'
                      : side.ev >= 0.15 ? 'border-left:3px solid #e67e22'
                      : '';
@@ -856,7 +856,7 @@
           <div class="stat-cell">
             <div class="stat-label">Line</div>
             <div class="stat-value">${p.k_line}</div>
-            <div class="stat-sub">${fmtOdds(side.odds)}${priceDeltaHtml(priceDelta)}</div>
+            <div class="stat-sub">${fmtOdds(side.odds)}${steamIndicator}</div>
           </div>
           <div class="stat-cell">
             <div class="stat-label">Proj K</div>
