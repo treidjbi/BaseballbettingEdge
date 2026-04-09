@@ -717,11 +717,85 @@
     } catch { return iso; }
   }
 
-  function priceDeltaHtml(delta) {
-    if (!delta) return '';
-    const dir = delta < 0 ? '↓' : '↑';
-    const cls = delta < 0 ? 'delta-over' : 'delta-under';
-    return ` <span class="${cls}">${dir}${Math.abs(delta)}</span>`;
+  /**
+   * Zero-crossing-aware cents-moved calculation.
+   * Treats +100 and -100 as the same point (even money).
+   * Returns absolute magnitude (always >= 0).
+   */
+  function calcCentsMove(opening, current) {
+    if (opening == null || current == null) return 0;
+    const sameSign = (opening > 0 && current > 0) || (opening < 0 && current < 0);
+    if (sameSign) return Math.abs(current - opening);
+    // Crosses even money: distance from each side to the +100/-100 boundary
+    return (Math.abs(opening) - 100) + (Math.abs(current) - 100);
+  }
+
+  /**
+   * Did this side get cheaper (less favored by the book)?
+   * Uses implied probability: cheaper = lower implied prob.
+   * Returns true if the side got cheaper, false if more expensive.
+   */
+  function sideGotCheaper(opening, current) {
+    if (opening == null || current == null) return false;
+    function impliedProb(odds) {
+      return odds < 0
+        ? Math.abs(odds) / (Math.abs(odds) + 100)
+        : 100 / (odds + 100);
+    }
+    return impliedProb(current) < impliedProb(opening);
+  }
+
+  /**
+   * Core steam computation shared by steamHtml and steamLabel.
+   * Returns { cents, steamWith, biggerIsOver } or null if no movement.
+   */
+  function _steamCore(p, modelDir) {
+    const overMove  = calcCentsMove(p.opening_over_odds, p.best_over_odds);
+    const underMove = calcCentsMove(p.opening_under_odds, p.best_under_odds);
+    const biggerIsOver = overMove >= underMove;
+    const cents = biggerIsOver ? overMove : underMove;
+    if (cents === 0) return null;
+
+    // Did the bigger-moving side get cheaper?
+    const cheaper = biggerIsOver
+      ? sideGotCheaper(p.opening_over_odds, p.best_over_odds)
+      : sideGotCheaper(p.opening_under_odds, p.best_under_odds);
+
+    // Decision matrix: same side as model + more expensive = steam with
+    // If measuring the opposite side, invert (over/under are inversely related)
+    const sameSide = (biggerIsOver ? 'OVER' : 'UNDER') === modelDir;
+    const steamWith = sameSide ? !cheaper : cheaper;
+
+    return { cents, steamWith, biggerIsOver };
+  }
+
+  /**
+   * Compact steam indicator for the Picks tab.
+   * Green ↑N = movement supports model's side.
+   * Red ↓N = movement against model's side.
+   */
+  function steamHtml(p, modelDir) {
+    const core = _steamCore(p, modelDir);
+    if (!core) return '';
+    const arrow = core.steamWith ? '↑' : '↓';
+    const cls   = core.steamWith ? 'steam-with' : 'steam-against';
+    return ` <span class="${cls}">${arrow}${core.cents}</span>`;
+  }
+
+  /**
+   * Full steam label for the Watchlist tab.
+   * Returns e.g. "Steam with ↑26" (green) or "Steam against ↓16" (red).
+   * Also returns metadata for the card layout.
+   */
+  function steamLabel(p, modelDir) {
+    const core = _steamCore(p, modelDir);
+    if (!core) return null;
+    return {
+      cents: core.cents,
+      steamWith: core.steamWith,
+      biggerIsOver: core.biggerIsOver,
+      html: `<span class="${core.steamWith ? 'steam-with' : 'steam-against'}">${core.steamWith ? 'Steam with' : 'Steam against'} ${core.steamWith ? '↑' : '↓'}${core.cents}</span>`
+    };
   }
 
   function adjBadge(label, actual, avg) {
