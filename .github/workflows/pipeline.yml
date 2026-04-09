@@ -10,6 +10,20 @@ on:
     - cron: '0 10 * * *'
     # 6:00 AM Phoenix = 13:00 UTC  — full run: finalize picks (treats 7pm lines as opening)
     - cron: '0 13 * * *'
+    # Refresh + lock runs: fetch fresh odds/lineups, update unlocked picks, lock T-30min.
+    # Multiple passes to absorb GHA scheduling delays and catch lineup postings.
+    # 8:00 AM Phoenix = 15:00 UTC
+    - cron: '0 15 * * *'
+    # 10:00 AM Phoenix = 17:00 UTC
+    - cron: '0 17 * * *'
+    # 12:00 PM Phoenix = 19:00 UTC
+    - cron: '0 19 * * *'
+    # 2:00 PM Phoenix = 21:00 UTC
+    - cron: '0 21 * * *'
+    # 4:00 PM Phoenix = 23:00 UTC
+    - cron: '0 23 * * *'
+    # 6:00 PM Phoenix = 01:00 UTC (next day)
+    - cron: '0 1 * * *'
   workflow_dispatch:        # manual trigger for testing
 
 permissions:
@@ -38,18 +52,31 @@ jobs:
         env:
           RUNDOWN_API_KEY: ${{ secrets.RUNDOWN_API_KEY }}
         run: |
-          if [ "${{ github.event.schedule }}" = "0 2 * * *" ]; then
+          SCHEDULE="${{ github.event.schedule }}"
+          TODAY=$(TZ=America/Phoenix date +%Y-%m-%d)
+
+          if [ "$SCHEDULE" = "0 2 * * *" ]; then
             # 7pm Phoenix — preview: fetch tomorrow's lines as opening baseline
             TOMORROW=$(TZ=America/Phoenix date -d '+1 day' +%Y-%m-%d)
             python pipeline/run_pipeline.py $TOMORROW --run-type preview
 
-          elif [ "${{ github.event.schedule }}" = "0 10 * * *" ]; then
+          elif [ "$SCHEDULE" = "0 10 * * *" ]; then
             # 3am Phoenix — grading: grade previous day's picks + calibrate
-            python pipeline/run_pipeline.py $(TZ=America/Phoenix date +%Y-%m-%d) --run-type grading
+            python pipeline/run_pipeline.py $TODAY --run-type grading
+
+          elif [ "$SCHEDULE" = "0 15 * * *" ] || \
+               [ "$SCHEDULE" = "0 17 * * *" ] || \
+               [ "$SCHEDULE" = "0 19 * * *" ] || \
+               [ "$SCHEDULE" = "0 21 * * *" ] || \
+               [ "$SCHEDULE" = "0 23 * * *" ] || \
+               [ "$SCHEDULE" = "0 1 * * *" ]; then
+            # 8am/10am/noon/2pm/4pm/6pm Phoenix — full refresh: fresh odds + lineups,
+            # update unlocked picks with latest verdict/EV, then lock T-30min picks
+            python pipeline/run_pipeline.py $TODAY
 
           else
             # 6am Phoenix — full: finalize today's picks (uses 7pm preview lines as opening)
-            python pipeline/run_pipeline.py $(TZ=America/Phoenix date +%Y-%m-%d)
+            python pipeline/run_pipeline.py $TODAY
           fi
 
       - name: Commit pipeline output

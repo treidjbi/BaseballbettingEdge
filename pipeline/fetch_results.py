@@ -94,7 +94,8 @@ def init_db() -> None:
 
 
 def seed_picks(today_json_path: Path = TODAY_JSON) -> int:
-    """Insert non-PASS picks from today.json. Returns count of new rows inserted."""
+    """Insert non-PASS picks from today.json and refresh unlocked picks with
+    latest verdict/odds/EV.  Returns count of new rows inserted."""
     try:
         with open(today_json_path) as f:
             data = json.load(f)
@@ -104,6 +105,7 @@ def seed_picks(today_json_path: Path = TODAY_JSON) -> int:
 
     game_date = data["date"]
     inserted = 0
+    updated = 0
 
     with get_db() as conn:
         for p in data.get("pitchers", []):
@@ -132,6 +134,26 @@ def seed_picks(today_json_path: Path = TODAY_JSON) -> int:
                 ))
                 inserted += cur.rowcount
 
+                # Refresh unlocked picks with latest data (odds, lineup, verdict)
+                if cur.rowcount == 0:
+                    conn.execute("""
+                        UPDATE picks
+                        SET verdict = ?, ev = ?, adj_ev = ?, odds = ?,
+                            k_line = ?, applied_lambda = ?, movement_conf = ?,
+                            lineup_used = ?, game_time = ?
+                        WHERE date = ? AND pitcher = ? AND side = ?
+                          AND locked_at IS NULL AND result IS NULL
+                    """, (
+                        ev_data["verdict"], ev_data["ev"], ev_data["adj_ev"], odds,
+                        p["k_line"], p["lambda"], ev_data["movement_conf"],
+                        int(bool(p.get("lineup_used", False))),
+                        p.get("game_time"),
+                        game_date, p["pitcher"], side,
+                    ))
+                    updated += conn.execute("SELECT changes()").fetchone()[0]
+
+    if updated > 0:
+        log.info("seed_picks: updated %d unlocked picks with fresh data", updated)
     return inserted
 
 

@@ -158,6 +158,26 @@ def calibrate_run():
     _import_calibrate_run()()
 
 
+def _run_lock_only(date_str: str) -> None:
+    """Lock picks within T-30min of game time. No odds/stats fetch."""
+    log.info("=== Lock-only run for %s ===", date_str)
+    try:
+        init_db()
+        load_history_into_db()
+        conn = get_db()
+        try:
+            locked = lock_due_picks(conn, datetime.now(timezone.utc), lock_all_past=False)
+        finally:
+            conn.close()
+        if locked > 0:
+            export_db_to_history()
+            log.info("Lock-only: locked %d picks", locked)
+        else:
+            log.info("Lock-only: no picks due for locking yet")
+    except Exception as e:
+        log.error("Lock-only run failed: %s", e)
+
+
 def _run_grading_steps() -> None:
     """Run result fetching and calibration. Called for evening and grading-only runs."""
     log.info("=== Grading steps: fetch_results + calibrate ===")
@@ -204,6 +224,10 @@ def run(date_str: str, run_type: str = "full") -> None:
     if run_type == "grading":
         log.info("Grading-only run — skipping odds/stats pipeline")
         _run_grading_steps()
+        return
+
+    if run_type == "lock":
+        _run_lock_only(date_str)
         return
 
     if run_type == "preview":
@@ -400,7 +424,7 @@ if __name__ == "__main__":
     parser.add_argument("date", nargs="?",
                         default=datetime.now(ZoneInfo("America/New_York")).strftime("%Y-%m-%d"),
                         help="Game date YYYY-MM-DD")
-    parser.add_argument("--run-type", choices=["full", "grading", "preview"], default="full",
+    parser.add_argument("--run-type", choices=["full", "grading", "preview", "lock"], default="full",
                         help="'grading' grades previous day + calibrates; 'preview' fetches next-day lines without seeding picks")
     args = parser.parse_args()
     run(args.date, run_type=args.run_type)
