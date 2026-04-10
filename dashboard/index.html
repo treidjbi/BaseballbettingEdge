@@ -413,18 +413,52 @@
     }
 
     /* ── Performance tab ─────────────────────────────────────────── */
-    .perf-table { width: 100%; border-collapse: collapse; margin-bottom: 1rem; table-layout: fixed; }
-    .perf-table th, .perf-table td { padding: 8px 12px; text-align: left; border-bottom: 1px solid var(--border); }
-    .perf-table th { font-weight: 600; color: var(--ink-dim); font-size: 0.85rem; }
+    .perf-strip { display: flex; background: var(--surface); border-bottom: 1px solid var(--border); padding: 12px 0; }
+    .perf-strip-block { flex: 1; display: flex; flex-direction: column; align-items: center; padding: 0 4px; position: relative; }
+    .perf-strip-block + .perf-strip-block::before { content: ''; position: absolute; left: 0; top: 10%; bottom: 10%; width: 1px; background: var(--border); }
+    .perf-strip-label { font-size: 10px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--ink-dim); font-family: 'Oswald', sans-serif; font-weight: 700; margin-bottom: 4px; }
+    .perf-strip-value { font-size: 22px; font-weight: 700; font-family: 'IBM Plex Mono', monospace; color: var(--ink); line-height: 1; }
+    .perf-strip-sub { font-size: 10px; color: var(--ink-dim); font-family: 'IBM Plex Mono', monospace; margin-top: 2px; }
+    .perf-strip-value.pos { color: var(--positive); }
+    .perf-strip-value.neg { color: var(--fire); }
+    .perf-filters { display: flex; gap: 6px; padding: 10px 16px; background: var(--bg); border-bottom: 1px solid var(--border); overflow-x: auto; -webkit-overflow-scrolling: touch; }
+    .perf-filter-btn { padding: 5px 12px; border-radius: 20px; font-size: 11px; font-weight: 700; font-family: 'Oswald', sans-serif; text-transform: uppercase; letter-spacing: 0.06em; border: 1px solid var(--border); background: var(--surface); color: var(--ink-dim); cursor: pointer; white-space: nowrap; }
+    .perf-filter-btn.active { background: rgba(192,57,43,0.10); border-color: var(--fire); color: var(--fire); }
+    .perf-filter-btn.active[data-filter="LEAN"] { background: rgba(230,126,34,0.10); border-color: #e67e22; color: #e67e22; }
+    .perf-flex-table { width: 100%; }
+    .perf-flex-row { display: flex; align-items: center; min-height: 44px; border-bottom: 1px solid var(--border); padding: 0 4px; }
+    .perf-flex-row.perf-header-row { min-height: auto; padding: 8px 4px; background: var(--bg); position: sticky; top: 0; z-index: 1; }
+    .perf-row-alt { background: rgba(0,0,0,0.03); }
+    [data-theme='dark'] .perf-row-alt { background: rgba(255,255,255,0.025); }
+    .perf-col-verdict { width: 18%; padding: 0 2px 0 4px; }
+    .perf-col-side    { width: 10%; text-align: center; }
+    .perf-col-picks   { width: 8%;  text-align: center; }
+    .perf-col-winpct  { width: 13%; text-align: right; }
+    .perf-col-units   { width: 13%; text-align: right; }
+    .perf-col-roi     { width: 16%; text-align: right; }
+    .perf-col-avgev   { width: 12%; text-align: right; padding-right: 6px; flex-shrink: 0; }
+    .perf-header-row div { font-size: 11px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--ink-dim); font-family: 'Oswald', sans-serif; font-weight: 700; }
+    .perf-verdict-badge { display: inline-block; font-size: 11px; font-weight: 800; font-family: 'IBM Plex Mono', monospace; text-transform: uppercase; letter-spacing: 0.03em; padding: 2px 6px; border-radius: 10px; line-height: 1.4; white-space: nowrap; }
+    .pvb-fire { background: rgba(192,57,43,0.12); border: 1px solid var(--fire); color: var(--fire); animation: fire-pulse 2s ease-in-out infinite; }
+    .pvb-lean { background: transparent; border: 1px solid #e67e22; color: #e67e22; }
+    .pvb-pass { background: #ccc; color: #555; border: 1px solid #bbb; }
+    .perf-side { font-size: 12px; font-weight: 500; font-family: 'Oswald', sans-serif; color: var(--ink); }
+    .perf-num  { font-family: 'IBM Plex Mono', monospace; font-size: 13px; color: var(--ink); }
+    .perf-picks  { font-weight: 500; }
+    .perf-winpct { font-weight: 600; }
+    .perf-units  { font-weight: 700; }
+    .perf-roi    { font-weight: 700; }
+    .perf-avgev  { font-weight: 500; font-size: 12px; color: var(--ink-dim); }
+    .perf-num.pos { color: var(--positive); }
+    .perf-num.neg { color: var(--fire); }
     .perf-lam { font-size: 0.9rem; color: var(--ink); margin: 0.5rem 0; }
     .perf-cal { font-size: 0.82rem; color: var(--ink-dim); margin-top: 0.5rem; }
-    .perf-notes { margin-top: 1.25rem; border: 1px solid var(--border); border-radius: 6px; padding: 0.75rem 1rem; background: var(--surface-alt, var(--surface)); }
+    .perf-notes { margin-top: 20px; border: 1px solid var(--border); border-radius: 6px; padding: 0.75rem 1rem; background: var(--surface-alt, var(--surface)); }
     .perf-notes-title { font-size: 0.8rem; font-weight: 600; color: var(--ink-dim); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.5rem; }
     .perf-notes ul { margin: 0; padding-left: 1.2rem; }
     .perf-notes li { font-size: 0.85rem; color: var(--ink); margin-bottom: 0.25rem; line-height: 1.4; }
     .perf-empty { color: var(--ink-dim); padding: 2rem 0; text-align: center; }
-    .roi-pos { color: var(--positive); }
-    .roi-neg { color: var(--fire); }
+    .perf-footer { padding: 0 16px 16px; }
 
     #refresh-btn {
       background: transparent;
@@ -750,23 +784,19 @@
    * Returns { cents, steamWith, biggerIsOver } or null if no movement.
    */
   function _steamCore(p, modelDir) {
-    const overMove  = calcCentsMove(p.opening_over_odds, p.best_over_odds);
-    const underMove = calcCentsMove(p.opening_under_odds, p.best_under_odds);
-    const biggerIsOver = overMove >= underMove;
-    const cents = biggerIsOver ? overMove : underMove;
+    // Always track the model's recommended side — we want to know whether
+    // the market is moving with or against our specific pick direction.
+    const isOver    = modelDir === 'OVER';
+    const openOdds  = isOver ? p.opening_over_odds  : p.opening_under_odds;
+    const currOdds  = isOver ? p.best_over_odds      : p.best_under_odds;
+    const cents     = calcCentsMove(openOdds, currOdds);
     if (cents === 0) return null;
 
-    // Did the bigger-moving side get cheaper?
-    const cheaper = biggerIsOver
-      ? sideGotCheaper(p.opening_over_odds, p.best_over_odds)
-      : sideGotCheaper(p.opening_under_odds, p.best_under_odds);
+    // Model side got more expensive = market agrees = steam with.
+    const cheaper   = sideGotCheaper(openOdds, currOdds);
+    const steamWith = !cheaper;
 
-    // Decision matrix: same side as model + more expensive = steam with
-    // If measuring the opposite side, invert (over/under are inversely related)
-    const sameSide = (biggerIsOver ? 'OVER' : 'UNDER') === modelDir;
-    const steamWith = sameSide ? !cheaper : cheaper;
-
-    return { cents, steamWith, biggerIsOver };
+    return { cents, steamWith, biggerIsOver: isOver };
   }
 
   /**
@@ -960,69 +990,144 @@
     }
   }
 
+  function perfVerdictBadge(verdict) {
+    const v = (verdict || '').toUpperCase();
+    let cls = 'pvb-pass';
+    if (v.startsWith('FIRE')) cls = 'pvb-fire';
+    else if (v === 'LEAN') cls = 'pvb-lean';
+    return `<span class="perf-verdict-badge ${cls}">${esc(verdict)}</span>`;
+  }
+
   function renderPerformance(data, el) {
     if (!data || !Array.isArray(data.rows)) {
       el.innerHTML = '<p class="perf-empty">Performance data not yet available.</p>';
       return;
     }
 
-    const tableRows = data.rows.map(r => {
-      const side = esc(r.side.charAt(0).toUpperCase() + r.side.slice(1));
-      if (r.picks === 0) {
-        return `<tr>
-          <td><strong>${esc(r.verdict)}</strong></td>
-          <td>${side}</td>
-          <td colspan="5" style="color:var(--ink-dim)">—</td>
-        </tr>`;
-      }
-      const winPct   = r.win_pct  != null ? (r.win_pct * 100).toFixed(1) + '%' : '—';
-      const roi      = r.roi      != null ? (r.roi >= 0 ? '+' : '') + r.roi.toFixed(2) + '%' : '—';
-      const avgEv    = r.avg_ev   != null ? (r.avg_ev * 100).toFixed(1) + '%' : '—';
-      const roiClass = r.roi != null ? (r.roi >= 0 ? 'roi-pos' : 'roi-neg') : '';
-      const unitsRaw = r.roi != null ? (r.roi / 100) * r.picks : null;
-      const units    = unitsRaw != null ? (unitsRaw >= 0 ? '+' : '') + unitsRaw.toFixed(1) + 'u' : '—';
-      const unitsClass = unitsRaw != null ? (unitsRaw >= 0 ? 'roi-pos' : 'roi-neg') : '';
-      return `<tr>
-        <td><strong>${esc(r.verdict)}</strong></td>
-        <td>${side}</td>
-        <td>${r.picks}</td>
-        <td>${winPct}</td>
-        <td class="${unitsClass}">${units}</td>
-        <td class="${roiClass}">${roi}</td>
-        <td>${avgEv}</td>
-      </tr>`;
-    }).join('');
-
+    // Build footer content (unchanged section)
     const la = data.lambda_accuracy;
     const lambdaRow = la && la.avg_predicted != null
       ? `<p class="perf-lam">Model predicted <strong>${la.avg_predicted.toFixed(2)}</strong> avg Ks &mdash; actual was <strong>${la.avg_actual.toFixed(2)}</strong> (bias: ${la.bias >= 0 ? '+' : ''}${la.bias.toFixed(2)})</p>`
       : '';
-
     const calNote = data.last_calibrated
       ? `<p class="perf-cal">Last recalibrated ${esc(data.last_calibrated.slice(0, 10))} &mdash; n=${data.calibration_sample} picks</p>`
       : `<p class="perf-cal">Tracking ${data.total_picks} pick${data.total_picks !== 1 ? 's' : ''} &mdash; accuracy stats unlock at 30 graded results</p>`;
-
-    const notes = Array.isArray(data.calibration_notes) ? data.calibration_notes : [];
+    const notes = Array.isArray(data.calibration_notes) ? data.calibration_notes.slice(-10) : [];
     const notesBox = notes.length > 0
-      ? `<div class="perf-notes">
-           <div class="perf-notes-title">Model Calibration Log</div>
-           <ul>${notes.map(n => `<li>${esc(n)}</li>`).join('')}</ul>
-         </div>`
+      ? `<div class="perf-notes"><div class="perf-notes-title">Model Calibration Log</div><ul>${notes.map(n => `<li>${esc(n)}</li>`).join('')}</ul></div>`
       : '';
 
     el.innerHTML = `
-      <table class="perf-table">
-        <thead>
-          <tr>
-            <th>Verdict</th><th>Side</th><th>Picks</th><th>Win %</th><th>Units</th><th>ROI</th><th>Avg EV</th>
-          </tr>
-        </thead>
-        <tbody>${tableRows}</tbody>
-      </table>
-      ${lambdaRow}
-      ${calNote}
-      ${notesBox}
+      <div id="perf-strip-wrap"></div>
+      <div class="perf-filters">
+        <button class="perf-filter-btn active" data-filter="ALL">ALL</button>
+        <button class="perf-filter-btn" data-filter="FIRE 2u">FIRE 2u</button>
+        <button class="perf-filter-btn" data-filter="FIRE 1u">FIRE 1u</button>
+        <button class="perf-filter-btn" data-filter="LEAN">LEAN</button>
+      </div>
+      <div id="perf-table-wrap"></div>
+      <div class="perf-footer">${lambdaRow}${calNote}${notesBox}</div>
     `;
+
+    function buildAggregate(rows) {
+      let totalPicks = 0, totalWins = 0, totalUnits = 0;
+      rows.forEach(r => {
+        if (r.picks > 0) {
+          totalPicks += r.picks;
+          if (r.win_pct != null) totalWins += Math.round(r.picks * r.win_pct);
+          if (r.roi != null) totalUnits += (r.roi / 100) * r.picks;
+        }
+      });
+      const totalLosses = totalPicks - totalWins;
+      const hasData = totalPicks > 0;
+      const aggWinPct = hasData ? (totalWins / totalPicks * 100).toFixed(1) + '%' : '—';
+      const aggUnits  = hasData ? (totalUnits >= 0 ? '+' : '') + totalUnits.toFixed(1) + 'u' : '—';
+      const aggROI    = hasData ? (totalUnits >= 0 ? '+' : '') + (totalUnits / totalPicks * 100).toFixed(1) + '%' : '—';
+      const posCls = hasData && totalUnits > 0 ? 'pos' : '';
+      const negCls = hasData && totalUnits < 0 ? 'neg' : '';
+      return `<div class="perf-strip">
+        <div class="perf-strip-block">
+          <div class="perf-strip-label">Record</div>
+          <div class="perf-strip-value">${hasData ? totalWins + '-' + totalLosses : '—'}</div>
+          <div class="perf-strip-sub">${totalPicks} picks</div>
+        </div>
+        <div class="perf-strip-block">
+          <div class="perf-strip-label">Win %</div>
+          <div class="perf-strip-value">${aggWinPct}</div>
+        </div>
+        <div class="perf-strip-block">
+          <div class="perf-strip-label">Net Units</div>
+          <div class="perf-strip-value ${posCls || negCls}">${aggUnits}</div>
+        </div>
+        <div class="perf-strip-block">
+          <div class="perf-strip-label">ROI</div>
+          <div class="perf-strip-value ${posCls || negCls}">${aggROI}</div>
+        </div>
+      </div>`;
+    }
+
+    function buildTable(rows) {
+      const rowsHtml = rows.map((r, i) => {
+        const side = esc(r.side.charAt(0).toUpperCase() + r.side.slice(1));
+        const altCls = i % 2 === 1 ? 'perf-row-alt' : '';
+        if (r.picks === 0) {
+          return `<div class="perf-flex-row ${altCls}">
+            <div class="perf-col-verdict">${perfVerdictBadge(r.verdict)}</div>
+            <div class="perf-col-side perf-side">${side}</div>
+            <div class="perf-col-picks perf-num perf-picks" style="color:var(--ink-dim)">0</div>
+            <div class="perf-col-winpct perf-num" style="color:var(--ink-dim)">—</div>
+            <div class="perf-col-units perf-num perf-units" style="color:var(--ink-dim)">—</div>
+            <div class="perf-col-roi perf-num perf-roi" style="color:var(--ink-dim)">—</div>
+            <div class="perf-col-avgev perf-num perf-avgev">—</div>
+          </div>`;
+        }
+        const winPct   = r.win_pct != null ? (r.win_pct * 100).toFixed(1) + '%' : '—';
+        const roiVal   = r.roi != null ? (r.roi >= 0 ? '+' : '') + r.roi.toFixed(2) + '%' : '—';
+        const avgEv    = r.avg_ev != null ? (r.avg_ev * 100).toFixed(1) + '%' : '—';
+        const unitsRaw = r.roi != null ? (r.roi / 100) * r.picks : null;
+        const units    = unitsRaw != null ? (unitsRaw >= 0 ? '+' : '') + unitsRaw.toFixed(1) + 'u' : '—';
+        const uCls = unitsRaw != null ? (unitsRaw > 0 ? 'pos' : unitsRaw < 0 ? 'neg' : '') : '';
+        const rCls = r.roi != null ? (r.roi > 0 ? 'pos' : r.roi < 0 ? 'neg' : '') : '';
+        return `<div class="perf-flex-row ${altCls}">
+          <div class="perf-col-verdict">${perfVerdictBadge(r.verdict)}</div>
+          <div class="perf-col-side perf-side">${side}</div>
+          <div class="perf-col-picks perf-num perf-picks">${r.picks}</div>
+          <div class="perf-col-winpct perf-num perf-winpct">${winPct}</div>
+          <div class="perf-col-units perf-num perf-units ${uCls}">${units}</div>
+          <div class="perf-col-roi perf-num perf-roi ${rCls}">${roiVal}</div>
+          <div class="perf-col-avgev perf-num perf-avgev">${avgEv}</div>
+        </div>`;
+      }).join('') || `<div style="padding:16px;color:var(--ink-dim);text-align:center;font-size:13px">No data for this tier</div>`;
+
+      return `<div class="perf-flex-table">
+        <div class="perf-flex-row perf-header-row">
+          <div class="perf-col-verdict">Verdict</div>
+          <div class="perf-col-side" style="text-align:center">Side</div>
+          <div class="perf-col-picks" style="text-align:center">Picks</div>
+          <div class="perf-col-winpct" style="text-align:right">Win %</div>
+          <div class="perf-col-units" style="text-align:right">Units</div>
+          <div class="perf-col-roi" style="text-align:right">ROI</div>
+          <div class="perf-col-avgev" style="text-align:right;padding-right:6px">Avg EV</div>
+        </div>
+        ${rowsHtml}
+      </div>`;
+    }
+
+    function applyFilter(filter) {
+      const rows = filter === 'ALL' ? data.rows : data.rows.filter(r => r.verdict === filter);
+      document.getElementById('perf-strip-wrap').innerHTML = buildAggregate(rows);
+      document.getElementById('perf-table-wrap').innerHTML = buildTable(rows);
+    }
+
+    el.querySelectorAll('.perf-filter-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        el.querySelectorAll('.perf-filter-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        applyFilter(btn.dataset.filter);
+      });
+    });
+
+    applyFilter('ALL');
   }
 
   async function triggerRefresh() {
