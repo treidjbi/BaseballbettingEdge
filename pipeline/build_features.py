@@ -17,6 +17,8 @@ DEFAULTS = {
     "ump_scale": 1.0,
     "lambda_bias": 0.0,
     "swstr_k9_scale": 30.0,
+    "opp_k_prior_games": 50,   # Bayesian prior weight on opponent K% (games of league avg)
+    "swstr_prior_starts": 10,  # Bayesian prior weight on SwStr% delta (starts of career avg)
 }
 
 def load_params() -> dict:
@@ -75,7 +77,8 @@ def blend_k9(season_k9: float, recent_k9: float, career_k9: float, ip: float,
 
 
 def calc_swstr_delta_k9(current_swstr: float, career_swstr: float | None,
-                        n_starts: int, swstr_k9_scale: float = SWSTR_K9_SCALE) -> float:
+                        n_starts: int, swstr_k9_scale: float = SWSTR_K9_SCALE,
+                        swstr_prior_starts: int = SWSTR_PRIOR_STARTS) -> float:
     """
     Additive K/9 adjustment based on how the pitcher's current SwStr% compares to
     their career baseline. Replaces the old raw-vs-league-average multiplier which
@@ -97,7 +100,7 @@ def calc_swstr_delta_k9(current_swstr: float, career_swstr: float | None,
     if current_swstr is None or career_swstr is None or n_starts <= 0:
         return 0.0
     raw_delta_k9 = (current_swstr - career_swstr) * swstr_k9_scale
-    weight = n_starts / (n_starts + SWSTR_PRIOR_STARTS)
+    weight = n_starts / (n_starts + swstr_prior_starts)
     return raw_delta_k9 * weight
 
 
@@ -150,7 +153,8 @@ def bayesian_opp_k(obs_k_rate: float, opp_games_played: int,
 def calc_lambda(blended_k9: float, expected_innings: float,
                 opp_k_rate: float, ump_k_adj: float,
                 swstr_delta_k9: float = 0.0,
-                opp_games_played: int = 0) -> float:
+                opp_games_played: int = 0,
+                opp_k_prior: int = OPP_K_PRIOR_GAMES) -> float:
     """
     Expected strikeouts (Poisson lambda) for a pitcher start.
 
@@ -163,8 +167,9 @@ def calc_lambda(blended_k9: float, expected_innings: float,
     opp_games_played: games the opposing team has played this season. Used to
                     Bayesian-regress opp_k_rate toward league average early in season.
                     Defaults to 0 → full regression to league average (safe early-season default).
+    opp_k_prior:    Bayesian prior weight (in games) on opponent K%. Loaded from params.json.
     """
-    adj_opp_k  = bayesian_opp_k(opp_k_rate, opp_games_played)
+    adj_opp_k  = bayesian_opp_k(opp_k_rate, opp_games_played, prior=opp_k_prior)
     adj_k9     = blended_k9 + swstr_delta_k9
     base       = adj_k9 * (adj_opp_k / LEAGUE_AVG_K_RATE)
     ump_add    = ump_k_adj * (expected_innings / 9)
@@ -255,7 +260,8 @@ def build_pitcher_record(odds: dict, stats: dict, ump_k_adj: float,
 
     swstr_delta = calc_swstr_delta_k9(
         swstr_pct, career_swstr_pct, n_starts,
-        swstr_k9_scale=params.get("swstr_k9_scale", SWSTR_K9_SCALE)
+        swstr_k9_scale=params.get("swstr_k9_scale", SWSTR_K9_SCALE),
+        swstr_prior_starts=params.get("swstr_prior_starts", SWSTR_PRIOR_STARTS),
     )
 
     lineup_rate = None
@@ -268,7 +274,8 @@ def build_pitcher_record(odds: dict, stats: dict, ump_k_adj: float,
     scaled_ump_k_adj = ump_k_adj * params["ump_scale"]
 
     raw_lam = calc_lambda(blended, avg_ip, effective_opp_k_rate, scaled_ump_k_adj,
-                          swstr_delta_k9=swstr_delta, opp_games_played=opp_games)
+                          swstr_delta_k9=swstr_delta, opp_games_played=opp_games,
+                          opp_k_prior=params.get("opp_k_prior_games", OPP_K_PRIOR_GAMES))
     applied_lam = raw_lam + params["lambda_bias"]
     applied_lam = max(0.01, applied_lam)  # guard against negative bias producing invalid Poisson lambda
 
