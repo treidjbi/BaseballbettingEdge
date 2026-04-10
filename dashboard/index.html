@@ -229,11 +229,21 @@
       0%,100% { box-shadow: 0 0 6px rgba(192,57,43,0.4); }
       50%      { box-shadow: 0 0 12px rgba(192,57,43,0.7); }
     }
+    @keyframes fire-pulse-blue {
+      0%,100% { box-shadow: 0 0 6px rgba(30,58,95,0.4); }
+      50%      { box-shadow: 0 0 12px rgba(147,197,253,0.5); }
+    }
     .verdict-fire {
       background: var(--fire);
       color: #fff;
       box-shadow: 0 0 8px rgba(192,57,43,0.5);
       animation: fire-pulse 2s ease-in-out infinite;
+    }
+    .verdict-fire-over {
+      background: #1e3a5f;
+      color: #93c5fd;
+      box-shadow: 0 0 8px rgba(30,58,95,0.5);
+      animation: fire-pulse-blue 2s ease-in-out infinite;
     }
     .verdict-lean   { background: transparent; border: 1px solid #e67e22; color: #e67e22; }
     .verdict-pass   { background: #ccc; color: #555; }
@@ -442,6 +452,7 @@
     .perf-verdict-badge { display: inline-block; font-size: 11px; font-weight: 800; font-family: 'IBM Plex Mono', monospace; text-transform: uppercase; letter-spacing: 0.03em; padding: 2px 6px; border-radius: 10px; line-height: 1.4; white-space: nowrap; }
     .perf-flex-row:not(.perf-header-row) .perf-verdict-badge { font-size: 10px; padding: 2px 5px; }
     .pvb-fire { background: rgba(192,57,43,0.12); border: 1px solid var(--fire); color: var(--fire); animation: fire-pulse 2s ease-in-out infinite; }
+    .pvb-fire-over { background: rgba(30,58,95,0.12); border: 1px solid #1e3a5f; color: #93c5fd; animation: fire-pulse-blue 2s ease-in-out infinite; }
     .pvb-lean { background: transparent; border: 1px solid #e67e22; color: #e67e22; }
     .pvb-pass { background: #ccc; color: #555; border: 1px solid #bbb; }
     .perf-side { font-size: 12px; font-weight: 500; font-family: 'Oswald', sans-serif; color: var(--ink); }
@@ -703,8 +714,8 @@
   }
 
   // ── Helpers ───────────────────────────────────────────────
-  function verdictClass(verdict) {
-    if (verdict && verdict.startsWith('FIRE')) return 'verdict-fire';
+  function verdictClass(verdict, direction) {
+    if (verdict && verdict.startsWith('FIRE')) return direction === 'OVER' ? 'verdict-fire-over' : 'verdict-fire';
     if (verdict === 'LEAN')                    return 'verdict-lean';
     return 'verdict-pass';
   }
@@ -734,9 +745,11 @@
     }
   }
 
-  /** Badge label: 'PASS', 'LEAN OVER', 'FIRE 2u UNDER', etc. */
+  /** Badge label: 'PASS', '↓ LEAN UNDER', '↑ FIRE 2u OVER', etc. */
   function badgeLabel(side) {
-    return side.verdict === 'PASS' ? 'PASS' : `${side.verdict} ${side.direction}`;
+    if (side.verdict === 'PASS') return 'PASS';
+    const arrow = side.direction === 'OVER' ? '↑' : '↓';
+    return `${arrow} ${side.verdict} ${side.direction}`;
   }
 
   function fmtOdds(n) {
@@ -882,7 +895,7 @@
             <span class="pitcher-name">${esc(p.pitcher)}</span>
             <span class="pitcher-matchup">${esc(p.team)} vs ${esc(p.opp_team)}</span>
           </div>
-          <span class="verdict-badge ${isStarted ? 'badge-started' : verdictClass(side.verdict)}">${isStarted ? 'STARTED' : badgeLabel(side)}</span>
+          <span class="verdict-badge ${isStarted ? 'badge-started' : verdictClass(side.verdict, side.direction)}">${isStarted ? 'STARTED' : badgeLabel(side)}</span>
         </div>
         <div class="stats-row">
           <div class="stat-cell">
@@ -960,7 +973,7 @@
           <span>${fmtOdds(openOdds)} → ${fmtOdds(currOdds)}</span>
           ${steam.html}
         </div>
-        <span class="verdict-badge ${verdictClass(side.verdict)}">${badgeLabel(side)}</span>
+        <span class="verdict-badge ${verdictClass(side.verdict, side.direction)}">${badgeLabel(side)}</span>
       </div>`;
     }
 
@@ -992,10 +1005,11 @@
     }
   }
 
-  function perfVerdictBadge(verdict) {
+  function perfVerdictBadge(verdict, side) {
     const v = (verdict || '').toUpperCase();
+    const isOver = (side || '').toUpperCase() === 'OVER';
     let cls = 'pvb-pass';
-    if (v.startsWith('FIRE')) cls = 'pvb-fire';
+    if (v.startsWith('FIRE')) cls = isOver ? 'pvb-fire-over' : 'pvb-fire';
     else if (v === 'LEAN') cls = 'pvb-lean';
     return `<span class="perf-verdict-badge ${cls}">${esc(verdict)}</span>`;
   }
@@ -1074,7 +1088,7 @@
         const altCls = i % 2 === 1 ? 'perf-row-alt' : '';
         if (r.picks === 0) {
           return `<div class="perf-flex-row ${altCls}">
-            <div class="perf-col-verdict">${perfVerdictBadge(r.verdict)}</div>
+            <div class="perf-col-verdict">${perfVerdictBadge(r.verdict, r.side)}</div>
             <div class="perf-col-side perf-side">${side}</div>
             <div class="perf-col-picks perf-num perf-picks" style="color:var(--ink-dim)">0</div>
             <div class="perf-col-winpct perf-num" style="color:var(--ink-dim)">—</div>
@@ -1091,7 +1105,7 @@
         const uCls = unitsRaw != null ? (unitsRaw > 0 ? 'pos' : unitsRaw < 0 ? 'neg' : '') : '';
         const rCls = r.roi != null ? (r.roi > 0 ? 'pos' : r.roi < 0 ? 'neg' : '') : '';
         return `<div class="perf-flex-row ${altCls}">
-          <div class="perf-col-verdict">${perfVerdictBadge(r.verdict)}</div>
+          <div class="perf-col-verdict">${perfVerdictBadge(r.verdict, r.side)}</div>
           <div class="perf-col-side perf-side">${side}</div>
           <div class="perf-col-picks perf-num perf-picks">${r.picks}</div>
           <div class="perf-col-winpct perf-num perf-winpct">${winPct}</div>
