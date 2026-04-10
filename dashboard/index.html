@@ -435,8 +435,8 @@
     .perf-col-picks   { width: 8%;  text-align: center; }
     .perf-col-winpct  { width: 13%; text-align: right; }
     .perf-col-units   { width: 13%; text-align: right; }
-    .perf-col-roi     { width: 16%; text-align: right; }
-    .perf-col-avgev   { width: 12%; text-align: right; padding-right: 6px; flex-shrink: 0; }
+    .perf-col-roi     { width: 16%; text-align: right; padding-right: 8px; }
+    .perf-col-avgev   { width: 12%; text-align: right; padding-right: 6px; padding-left: 10px; flex-shrink: 0; }
     .perf-header-row div { font-size: 11px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--ink-dim); font-family: 'Oswald', sans-serif; font-weight: 700; }
     .perf-verdict-badge { display: inline-block; font-size: 11px; font-weight: 800; font-family: 'IBM Plex Mono', monospace; text-transform: uppercase; letter-spacing: 0.03em; padding: 2px 6px; border-radius: 10px; line-height: 1.4; white-space: nowrap; }
     .pvb-fire { background: rgba(192,57,43,0.12); border: 1px solid var(--fire); color: var(--fire); animation: fire-pulse 2s ease-in-out infinite; }
@@ -1012,7 +1012,7 @@
     const calNote = data.last_calibrated
       ? `<p class="perf-cal">Last recalibrated ${esc(data.last_calibrated.slice(0, 10))} &mdash; n=${data.calibration_sample} picks</p>`
       : `<p class="perf-cal">Tracking ${data.total_picks} pick${data.total_picks !== 1 ? 's' : ''} &mdash; accuracy stats unlock at 30 graded results</p>`;
-    const notes = Array.isArray(data.calibration_notes) ? data.calibration_notes.slice(-10) : [];
+    const notes = Array.isArray(data.calibration_notes) ? data.calibration_notes.slice(0, 10) : [];
     const notesBox = notes.length > 0
       ? `<div class="perf-notes"><div class="perf-notes-title">Model Calibration Log</div><ul>${notes.map(n => `<li>${esc(n)}</li>`).join('')}</ul></div>`
       : '';
@@ -1082,7 +1082,7 @@
           </div>`;
         }
         const winPct   = r.win_pct != null ? (r.win_pct * 100).toFixed(1) + '%' : '—';
-        const roiVal   = r.roi != null ? (r.roi >= 0 ? '+' : '') + r.roi.toFixed(2) + '%' : '—';
+        const roiVal   = r.roi != null ? (r.roi >= 0 ? '+' : '') + r.roi.toFixed(1) + '%' : '—';
         const avgEv    = r.avg_ev != null ? (r.avg_ev * 100).toFixed(1) + '%' : '—';
         const unitsRaw = r.roi != null ? (r.roi / 100) * r.picks : null;
         const units    = unitsRaw != null ? (unitsRaw >= 0 ? '+' : '') + unitsRaw.toFixed(1) + 'u' : '—';
