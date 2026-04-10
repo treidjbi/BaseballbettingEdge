@@ -636,3 +636,15 @@ class TestBuildPitcherRecordLineup:
         )
         record_without = build_pitcher_record(SAMPLE_ODDS, stats, 0.0)
         assert record_with_lineup["lambda"] != record_without["lambda"]
+
+    def test_build_pitcher_record_includes_pitcher_throws(self):
+        """pitcher_throws should be present and reflect stats['throws']."""
+        stats = {**SAMPLE_STATS, "throws": "L"}
+        rec = build_pitcher_record(SAMPLE_ODDS, stats, ump_k_adj=0.0)
+        assert rec["pitcher_throws"] == "L"
+
+    def test_build_pitcher_record_throws_defaults_to_R_when_missing(self):
+        """pitcher_throws should default to 'R' when throws key is absent."""
+        stats = {k: v for k, v in SAMPLE_STATS.items() if k != "throws"}
+        rec = build_pitcher_record(SAMPLE_ODDS, stats, ump_k_adj=0.0)
+        assert rec["pitcher_throws"] == "R"
