@@ -136,8 +136,12 @@ def seed_picks(today_json_path: Path = TODAY_JSON) -> int:
                     (date, pitcher, team, side, k_line, verdict, ev, adj_ev,
                      raw_lambda, applied_lambda, odds, movement_conf,
                      season_k9, recent_k9, career_k9, avg_ip, ump_k_adj, opp_k_rate,
-                     swstr_delta_k9, ref_book, game_time, lineup_used)
-                    VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+                     swstr_delta_k9, ref_book, game_time, lineup_used,
+                     opp_team, pitcher_throws,
+                     best_over_odds, best_under_odds,
+                     opening_over_odds, opening_under_odds,
+                     swstr_pct, career_swstr_pct)
+                    VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
                 """, (
                     game_date, p["pitcher"], p["team"], side,
                     p["k_line"], ev_data["verdict"], ev_data["ev"], ev_data["adj_ev"],
@@ -148,16 +152,30 @@ def seed_picks(today_json_path: Path = TODAY_JSON) -> int:
                     p.get("ref_book"),
                     p.get("game_time"),
                     int(bool(p.get("lineup_used", False))),
+                    p.get("opp_team"),
+                    p.get("pitcher_throws"),
+                    p.get("best_over_odds"),
+                    p.get("best_under_odds"),
+                    p.get("opening_over_odds"),
+                    p.get("opening_under_odds"),
+                    p.get("swstr_pct"),
+                    p.get("career_swstr_pct"),
                 ))
                 inserted += cur.rowcount
 
-                # Refresh unlocked picks with latest data (odds, lineup, verdict)
+                # Refresh unlocked picks with latest data (odds, lineup, verdict, and stats)
                 if cur.rowcount == 0:
                     conn.execute("""
                         UPDATE picks
                         SET verdict = ?, ev = ?, adj_ev = ?, odds = ?,
                             k_line = ?, applied_lambda = ?, movement_conf = ?,
-                            lineup_used = ?, game_time = ?
+                            lineup_used = ?, game_time = ?,
+                            raw_lambda = ?,
+                            opp_k_rate = ?, swstr_delta_k9 = ?,
+                            season_k9 = ?, recent_k9 = ?, career_k9 = ?,
+                            avg_ip = ?, ump_k_adj = ?, swstr_pct = ?,
+                            best_over_odds = ?, best_under_odds = ?,
+                            opening_over_odds = ?, opening_under_odds = ?
                         WHERE date = ? AND pitcher = ? AND side = ?
                           AND locked_at IS NULL AND result IS NULL
                     """, (
@@ -165,6 +183,12 @@ def seed_picks(today_json_path: Path = TODAY_JSON) -> int:
                         p["k_line"], p["lambda"], ev_data["movement_conf"],
                         int(bool(p.get("lineup_used", False))),
                         p.get("game_time"),
+                        p.get("raw_lambda", p["lambda"]),
+                        p.get("opp_k_rate"), p.get("swstr_delta_k9"),
+                        p.get("season_k9"), p.get("recent_k9"), p.get("career_k9"),
+                        p.get("avg_ip"), p.get("ump_k_adj"), p.get("swstr_pct"),
+                        p.get("best_over_odds"), p.get("best_under_odds"),
+                        p.get("opening_over_odds"), p.get("opening_under_odds"),
                         game_date, p["pitcher"], side,
                     ))
                     updated += conn.execute("SELECT changes()").fetchone()[0]

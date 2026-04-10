@@ -33,6 +33,12 @@ def today_json(tmp_path):
                 "avg_ip": 5.8, "opp_k_rate": 0.235, "ump_k_adj": 0.2,
                 "best_over_odds": -115, "best_under_odds": -105,
                 "ref_book": "FanDuel",
+                "pitcher_throws": "R",
+                "opening_over_odds": -110,
+                "opening_under_odds": -110,
+                "swstr_pct": 0.120,
+                "career_swstr_pct": 0.110,
+                "swstr_delta_k9": 0.05,
                 "ev_over":  {"ev": 0.05, "adj_ev": 0.05, "verdict": "FIRE 1u", "win_prob": 0.58, "movement_conf": 1.0},
                 "ev_under": {"ev": -0.02, "adj_ev": -0.02, "verdict": "PASS", "win_prob": 0.42, "movement_conf": 1.0},
             },
@@ -44,6 +50,12 @@ def today_json(tmp_path):
                 "avg_ip": 5.5, "opp_k_rate": 0.220, "ump_k_adj": 0.0,
                 "best_over_odds": -110, "best_under_odds": -110,
                 "ref_book": "FanDuel",
+                "pitcher_throws": "R",
+                "opening_over_odds": -110,
+                "opening_under_odds": -110,
+                "swstr_pct": 0.115,
+                "career_swstr_pct": 0.108,
+                "swstr_delta_k9": 0.03,
                 "ev_over":  {"ev": 0.008, "adj_ev": 0.008, "verdict": "PASS",   "win_prob": 0.51, "movement_conf": 1.0},
                 "ev_under": {"ev": 0.07,  "adj_ev": 0.07,  "verdict": "FIRE 2u","win_prob": 0.49, "movement_conf": 1.0},
             },
@@ -990,3 +1002,121 @@ class TestNewColumns:
         # Existing row must still be present
         with sqlite3.connect(db) as conn:
             assert conn.execute("SELECT COUNT(*) FROM picks").fetchone()[0] == 1
+
+
+class TestSeedPicksNewFields:
+
+    def _make_today_json(self, tmp_path, extra_fields=None):
+        """Build a minimal today.json with one FIRE 1u over pick."""
+        base = {
+            "date": "2026-04-15",
+            "props_available": True,
+            "pitchers": [{
+                "pitcher": "Gerrit Cole", "team": "New York Yankees",
+                "opp_team": "Boston Red Sox",
+                "pitcher_throws": "R",
+                "game_time": "2026-04-15T23:05:00Z",
+                "k_line": 7.5,
+                "raw_lambda": 7.2, "lambda": 7.2,
+                "season_k9": 9.1, "recent_k9": 8.8, "career_k9": 9.0,
+                "avg_ip": 5.8, "opp_k_rate": 0.235, "ump_k_adj": 0.2,
+                "swstr_delta_k9": 0.15, "swstr_pct": 0.132, "career_swstr_pct": 0.120,
+                "best_over_odds": -115, "best_under_odds": -105,
+                "opening_over_odds": -110, "opening_under_odds": -110,
+                "ref_book": "FanDuel",
+                "lineup_used": False,
+                "ev_over":  {"ev": 0.05, "adj_ev": 0.05, "verdict": "FIRE 1u",
+                             "win_prob": 0.58, "movement_conf": 1.0},
+                "ev_under": {"ev": -0.02, "adj_ev": -0.02, "verdict": "PASS",
+                             "win_prob": 0.42, "movement_conf": 1.0},
+            }],
+        }
+        if extra_fields:
+            base["pitchers"][0].update(extra_fields)
+        p = tmp_path / "today.json"
+        p.write_text(json.dumps(base))
+        return p
+
+    def test_insert_stores_new_fields(self, tmp_db, tmp_path):
+        db_path, fr = tmp_db
+        today = self._make_today_json(tmp_path)
+        fr.seed_picks(today)
+
+        conn = fr.get_db()
+        row = conn.execute(
+            "SELECT opp_team, pitcher_throws, best_over_odds, best_under_odds, "
+            "opening_over_odds, opening_under_odds, swstr_pct, career_swstr_pct "
+            "FROM picks WHERE pitcher='Gerrit Cole' AND side='over'"
+        ).fetchone()
+        conn.close()
+
+        assert row["opp_team"] == "Boston Red Sox"
+        assert row["pitcher_throws"] == "R"
+        assert row["best_over_odds"] == -115
+        assert row["best_under_odds"] == -105
+        assert row["opening_over_odds"] == -110
+        assert row["opening_under_odds"] == -110
+        assert abs(row["swstr_pct"] - 0.132) < 0.001
+        assert abs(row["career_swstr_pct"] - 0.120) < 0.001
+
+    def test_update_refreshes_stats_on_second_run(self, tmp_db, tmp_path):
+        """A second seed_picks call with updated data should refresh stats + odds on unlocked picks."""
+        db_path, fr = tmp_db
+        today_v1 = self._make_today_json(tmp_path)
+        fr.seed_picks(today_v1)
+
+        today_v2 = self._make_today_json(tmp_path, extra_fields={
+            "best_over_odds": -125,
+            "opp_k_rate": 0.248,
+            "swstr_delta_k9": 0.20,
+            "lineup_used": True,
+            "lambda": 7.4,
+            "ev_over": {"ev": 0.06, "adj_ev": 0.06, "verdict": "FIRE 1u",
+                        "win_prob": 0.60, "movement_conf": 1.0},
+            "ev_under": {"ev": -0.03, "adj_ev": -0.03, "verdict": "PASS",
+                         "win_prob": 0.40, "movement_conf": 1.0},
+        })
+        fr.seed_picks(today_v2)
+
+        conn = fr.get_db()
+        row = conn.execute(
+            "SELECT best_over_odds, opp_k_rate, swstr_delta_k9, lineup_used, applied_lambda "
+            "FROM picks WHERE pitcher='Gerrit Cole' AND side='over'"
+        ).fetchone()
+        conn.close()
+
+        assert row["best_over_odds"] == -125, "odds should refresh on second run"
+        assert abs(row["opp_k_rate"] - 0.248) < 0.001, "opp_k_rate should refresh when lineup arrives"
+        assert abs(row["swstr_delta_k9"] - 0.20) < 0.001
+        assert row["lineup_used"] == 1
+        assert abs(row["applied_lambda"] - 7.4) < 0.01
+
+    def test_locked_pick_stats_not_refreshed(self, tmp_db, tmp_path):
+        """Once a pick is locked, stats and odds must not change."""
+        db_path, fr = tmp_db
+        today_v1 = self._make_today_json(tmp_path)
+        fr.seed_picks(today_v1)
+
+        conn = fr.get_db()
+        conn.execute(
+            "UPDATE picks SET locked_at='2026-04-15T22:35:00Z' "
+            "WHERE pitcher='Gerrit Cole' AND side='over'"
+        )
+        conn.commit()
+        conn.close()
+
+        today_v2 = self._make_today_json(tmp_path, extra_fields={
+            "best_over_odds": -140,
+            "opp_k_rate": 0.260,
+        })
+        fr.seed_picks(today_v2)
+
+        conn = fr.get_db()
+        row = conn.execute(
+            "SELECT best_over_odds, opp_k_rate FROM picks "
+            "WHERE pitcher='Gerrit Cole' AND side='over'"
+        ).fetchone()
+        conn.close()
+
+        assert row["best_over_odds"] == -115, "locked pick odds must not change"
+        assert abs(row["opp_k_rate"] - 0.235) < 0.001, "locked pick stats must not change"
