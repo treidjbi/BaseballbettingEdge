@@ -938,3 +938,55 @@ def test_history_load_includes_lock_columns(tmp_db, today_json):
     assert row[1] == -110
     assert row[2] == "2026-04-10T17:05:00Z"
     assert row[3] == 1
+
+
+class TestNewColumns:
+    """All new schema columns must exist after init_db()."""
+
+    NEW_COLS = [
+        "opp_team", "pitcher_throws",
+        "best_over_odds", "best_under_odds",
+        "opening_over_odds", "opening_under_odds",
+        "swstr_pct", "career_swstr_pct",
+    ]
+
+    def test_new_columns_exist_after_init(self, tmp_db):
+        db_path, fr = tmp_db
+        conn = fr.get_db()
+        cols = {row[1] for row in conn.execute("PRAGMA table_info(picks)")}
+        conn.close()
+        for col in self.NEW_COLS:
+            assert col in cols, f"Missing column: {col}"
+
+    def test_migration_adds_columns_to_existing_db(self, tmp_path):
+        """init_db on a pre-existing DB without new columns must add them safely."""
+        db = tmp_path / "old.db"
+        # Create a minimal old-schema DB (no new columns)
+        with sqlite3.connect(db) as conn:
+            conn.execute("""
+                CREATE TABLE picks (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    date TEXT, pitcher TEXT, team TEXT, side TEXT,
+                    k_line REAL, verdict TEXT, ev REAL, adj_ev REAL,
+                    raw_lambda REAL, applied_lambda REAL, odds INTEGER,
+                    movement_conf REAL, result TEXT
+                )
+            """)
+            conn.execute(
+                "INSERT INTO picks (date,pitcher,team,side,k_line,verdict,ev,adj_ev,"
+                "raw_lambda,applied_lambda,odds,movement_conf) "
+                "VALUES ('2026-04-01','P','T','over',5.5,'LEAN',0.02,0.02,5.0,5.0,-115,1.0)"
+            )
+
+        with patch("fetch_results.DB_PATH", db):
+            import fetch_results
+            fetch_results.init_db()
+            conn = fetch_results.get_db()
+            cols = {row[1] for row in conn.execute("PRAGMA table_info(picks)")}
+            conn.close()
+
+        for col in self.NEW_COLS:
+            assert col in cols, f"Migration failed to add: {col}"
+        # Existing row must still be present
+        with sqlite3.connect(db) as conn:
+            assert conn.execute("SELECT COUNT(*) FROM picks").fetchone()[0] == 1

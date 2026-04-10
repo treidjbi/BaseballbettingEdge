@@ -56,6 +56,14 @@ def init_db() -> None:
                 opp_k_rate      REAL,
                 swstr_delta_k9  REAL,
                 ref_book        TEXT,
+                opp_team        TEXT,
+                pitcher_throws  TEXT,
+                best_over_odds  INTEGER,
+                best_under_odds INTEGER,
+                opening_over_odds  INTEGER,
+                opening_under_odds INTEGER,
+                swstr_pct       REAL,
+                career_swstr_pct REAL,
                 game_time       TEXT,
                 lineup_used     INTEGER NOT NULL DEFAULT 0,
                 locked_at       TEXT,
@@ -79,13 +87,22 @@ def init_db() -> None:
         except sqlite3.OperationalError:
             pass  # column already exists
         for col, defn in [
-            ("game_time",      "TEXT"),
-            ("lineup_used",    "INTEGER NOT NULL DEFAULT 0"),
-            ("locked_at",      "TEXT"),
-            ("locked_k_line",  "REAL"),
-            ("locked_odds",    "INTEGER"),
-            ("locked_adj_ev",  "REAL"),
-            ("locked_verdict", "TEXT"),
+            ("game_time",          "TEXT"),
+            ("lineup_used",        "INTEGER NOT NULL DEFAULT 0"),
+            ("locked_at",          "TEXT"),
+            ("locked_k_line",      "REAL"),
+            ("locked_odds",        "INTEGER"),
+            ("locked_adj_ev",      "REAL"),
+            ("locked_verdict",     "TEXT"),
+            # New columns
+            ("opp_team",           "TEXT"),
+            ("pitcher_throws",     "TEXT"),
+            ("best_over_odds",     "INTEGER"),
+            ("best_under_odds",    "INTEGER"),
+            ("opening_over_odds",  "INTEGER"),
+            ("opening_under_odds", "INTEGER"),
+            ("swstr_pct",          "REAL"),
+            ("career_swstr_pct",   "REAL"),
         ]:
             try:
                 conn.execute(f"ALTER TABLE picks ADD COLUMN {col} {defn}")
