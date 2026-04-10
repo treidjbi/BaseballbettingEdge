@@ -1,41 +1,41 @@
 {
-  "generated_at": "2026-04-09T13:23:58Z",
-  "total_picks": 24,
-  "last_calibrated": "2026-04-08T00:00:00Z",
-  "calibration_sample": 0,
+  "generated_at": "2026-04-10T10:56:46Z",
+  "total_picks": 39,
+  "last_calibrated": "2026-04-10T10:56:46Z",
+  "calibration_sample": 39,
   "rows": [
     {
       "verdict": "FIRE 2u",
       "side": "over",
-      "picks": 5,
-      "wins": 3,
+      "picks": 6,
+      "wins": 4,
       "losses": 2,
       "pushes": 0,
-      "win_pct": 0.6,
-      "roi": 19.02,
-      "avg_ev": 0.1014
+      "win_pct": 0.667,
+      "roi": 38.18,
+      "avg_ev": 0.1342
     },
     {
       "verdict": "FIRE 2u",
       "side": "under",
-      "picks": 7,
-      "wins": 6,
-      "losses": 1,
+      "picks": 13,
+      "wins": 9,
+      "losses": 4,
       "pushes": 0,
-      "win_pct": 0.857,
-      "roi": 73.06,
-      "avg_ev": 0.1727
+      "win_pct": 0.692,
+      "roi": 38.69,
+      "avg_ev": 0.2121
     },
     {
       "verdict": "FIRE 1u",
       "side": "over",
-      "picks": 7,
-      "wins": 3,
-      "losses": 4,
+      "picks": 11,
+      "wins": 6,
+      "losses": 5,
       "pushes": 0,
-      "win_pct": 0.429,
-      "roi": -14.08,
-      "avg_ev": 0.0478
+      "win_pct": 0.545,
+      "roi": 3.79,
+      "avg_ev": 0.0552
     },
     {
       "verdict": "FIRE 1u",
@@ -51,41 +51,42 @@
     {
       "verdict": "LEAN",
       "side": "over",
-      "picks": 1,
+      "picks": 2,
       "wins": 0,
-      "losses": 1,
+      "losses": 2,
       "pushes": 0,
       "win_pct": 0.0,
       "roi": -100.0,
-      "avg_ev": 0.0297
+      "avg_ev": 0.0212
     },
     {
       "verdict": "LEAN",
       "side": "under",
-      "picks": 3,
-      "wins": 2,
-      "losses": 1,
+      "picks": 6,
+      "wins": 4,
+      "losses": 2,
       "pushes": 0,
       "win_pct": 0.667,
-      "roi": 38.0,
-      "avg_ev": 0.0165
+      "roi": 23.44,
+      "avg_ev": 0.0202
     }
   ],
   "lambda_accuracy": {
-    "avg_predicted": 5.32,
-    "avg_actual": 4.0,
-    "bias": -1.32
+    "avg_predicted": 4.86,
+    "avg_actual": 4.28,
+    "bias": -0.58
   },
   "params": {
     "weight_season_cap": 0.4,
     "weight_recent": 0.085,
     "ump_scale": 1.0,
-    "lambda_bias": 0.0,
+    "lambda_bias": -0.057,
     "swstr_k9_scale": 30.0,
-    "updated_at": "2026-04-08T00:00:00Z",
-    "sample_size": 0,
+    "updated_at": "2026-04-10T10:56:46Z",
+    "sample_size": 39,
     "formula_change_date": "2026-04-08",
     "calibration_notes": [
+      "[2026-04-10] Lambda bias adjusted +0.000 \u2192 -0.057 (model was systematically over-predicting Ks)",
       "[2026-04-08] FORMULA CHANGE: SwStr% multiplier removed (was double-counting K ability already in K/9). Replaced with career-relative delta (additive K/9 adjustment). Lambda bias reset to 0.0 \u2014 recalibrates from scratch under new formula.",
       "[2026-04-08] Adaptive calibration step size: cap now scales with sqrt(n/30), range 0.05-0.15 instead of fixed 0.05.",
       "[2026-04-08] Calibration season-filtered: only current-season picks (date >= 2026-03-01) used for bias calculation.",
@@ -112,5 +113,31 @@
       "[2026-04-04] FIRE 1u EV threshold raised 4.5% \u2192 5.0% (strong recent win rate)"
     ]
   },
-  "calibration_notes": []
+  "calibration_notes": [
+    "[2026-04-10] Lambda bias adjusted +0.000 \u2192 -0.057 (model was systematically over-predicting Ks)",
+    "[2026-04-08] FORMULA CHANGE: SwStr% multiplier removed (was double-counting K ability already in K/9). Replaced with career-relative delta (additive K/9 adjustment). Lambda bias reset to 0.0 \u2014 recalibrates from scratch under new formula.",
+    "[2026-04-08] Adaptive calibration step size: cap now scales with sqrt(n/30), range 0.05-0.15 instead of fixed 0.05.",
+    "[2026-04-08] Calibration season-filtered: only current-season picks (date >= 2026-03-01) used for bias calculation.",
+    "[2026-04-08] Added swstr_k9_scale=30.0 (calibratable): converts SwStr% career delta to additive K/9 adjustment.",
+    "[2026-04-08] EV tier thresholds adjusted: LEAN 1-3%, FIRE 1u 3-9%, FIRE 2u >9%",
+    "[2026-04-08] Lambda bias adjusted -0.381 \u2192 -0.393 (model was systematically over-predicting Ks)",
+    "[2026-04-08] K/9 blend weights updated: season 40% \u2192 40%, recent 6% \u2192 8%",
+    "[2026-04-07] Lambda bias adjusted -0.331 \u2192 -0.381 (model was systematically over-predicting Ks)",
+    "[2026-04-07] FIRE 2u EV threshold lowered 6.0% \u2192 5.5% (win rate below expectation)",
+    "[2026-04-07] K/9 blend weights updated: season 40% \u2192 40%, recent 9% \u2192 6%",
+    "[2026-04-07] FIRE 1u EV threshold raised 3.0% \u2192 3.5% (strong recent win rate)",
+    "[2026-04-07] Thresholds manually reset: fire1 and lean were miscalibrated to fire2 level, collapsing FIRE 1u tier and suppressing LEAN signals. Restored to lean=1%, fire1=3%, fire2=6%.",
+    "[2026-04-06] Lambda bias adjusted -0.222 \u2192 -0.331 (model was systematically over-predicting Ks)",
+    "[2026-04-06] LEAN EV threshold raised 2.5% \u2192 3.0% (strong recent win rate)",
+    "[2026-04-06] LEAN EV threshold raised 2.0% \u2192 2.5% (strong recent win rate)",
+    "[2026-04-06] LEAN EV threshold raised 1.5% \u2192 2.0% (strong recent win rate)",
+    "[2026-04-05] LEAN EV threshold raised 1.0% \u2192 1.5% (strong recent win rate)",
+    "[2026-04-05] Lambda bias adjusted -0.179 \u2192 -0.222 (model was systematically under-predicting Ks)",
+    "[2026-04-05] LEAN EV threshold raised 0.5% \u2192 1.0% (strong recent win rate)",
+    "[2026-04-05] K/9 blend weights updated: season 70% \u2192 40%, recent 20% \u2192 9%",
+    "[2026-04-04] FIRE 1u EV threshold raised 5.5% \u2192 6.0% (strong recent win rate)",
+    "[2026-04-04] Lambda bias adjusted +0.012 \u2192 -0.179 (model was systematically under-predicting Ks)",
+    "[2026-04-04] FIRE 1u EV threshold raised 5.0% \u2192 5.5% (strong recent win rate)",
+    "[2026-04-04] FIRE 1u EV threshold raised 4.5% \u2192 5.0% (strong recent win rate)"
+  ]
 }
