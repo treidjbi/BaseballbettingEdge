@@ -1,0 +1,89 @@
+{
+  "generated_at": "2026-04-10T00:28:14Z",
+  "date": "2026-04-10",
+  "props_available": true,
+  "pitchers": [
+    {
+      "pitcher": "Steven Matz",
+      "team": "Tampa Bay Rays",
+      "opp_team": "New York Yankees",
+      "game_time": "2026-04-10T23:10:00Z",
+      "k_line": 4.5,
+      "opening_line": 4.5,
+      "best_over_book": "Book12",
+      "best_over_odds": -110,
+      "best_under_odds": -120,
+      "opening_over_odds": -110,
+      "opening_under_odds": -120,
+      "price_delta_over": 0,
+      "price_delta_under": 0,
+      "raw_lambda": 5.26,
+      "lambda": 5.26,
+      "avg_ip": 5.5,
+      "swstr_pct": 0.11,
+      "career_swstr_pct": null,
+      "swstr_delta_k9": 0.0,
+      "opp_k_rate": 0.2634,
+      "lineup_used": false,
+      "ump_k_adj": 0.0,
+      "season_k9": 8.18,
+      "recent_k9": 8.18,
+      "career_k9": 8.42,
+      "ev_over": {
+        "ev": 0.0809,
+        "adj_ev": 0.0809,
+        "verdict": "FIRE 1u",
+        "win_prob": 0.605,
+        "movement_conf": 1.0
+      },
+      "ev_under": {
+        "ev": -0.1501,
+        "adj_ev": -0.1501,
+        "verdict": "PASS",
+        "win_prob": 0.395,
+        "movement_conf": 1.0
+      }
+    },
+    {
+      "pitcher": "Bryce Elder",
+      "team": "Atlanta Braves",
+      "opp_team": "Cleveland Guardians",
+      "game_time": "2026-04-10T23:15:00Z",
+      "k_line": 4.5,
+      "opening_line": 4.5,
+      "best_over_book": "Book12",
+      "best_over_odds": -105,
+      "best_under_odds": -125,
+      "opening_over_odds": 105,
+      "opening_under_odds": -135,
+      "price_delta_over": -210,
+      "price_delta_under": 10,
+      "raw_lambda": 4.79,
+      "lambda": 4.79,
+      "avg_ip": 5.5,
+      "swstr_pct": 0.11,
+      "career_swstr_pct": null,
+      "swstr_delta_k9": 0.0,
+      "opp_k_rate": 0.226,
+      "lineup_used": false,
+      "ump_k_adj": 0.0,
+      "season_k9": 9.0,
+      "recent_k9": 9.0,
+      "career_k9": 7.34,
+      "ev_over": {
+        "ev": 0.0092,
+        "adj_ev": 0.0092,
+        "verdict": "PASS",
+        "win_prob": 0.521,
+        "movement_conf": 1.0
+      },
+      "ev_under": {
+        "ev": -0.077,
+        "adj_ev": -0.077,
+        "verdict": "PASS",
+        "win_prob": 0.479,
+        "movement_conf": 1.0
+      }
+    }
+  ]
+}
