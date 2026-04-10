@@ -257,20 +257,27 @@ def load_history_into_db(history_path: Path = None) -> int:
         for p in picks:
             cur = conn.execute("""
                 INSERT OR IGNORE INTO picks
-                (date, pitcher, team, side, k_line, verdict, ev, adj_ev,
-                 raw_lambda, applied_lambda, odds, movement_conf,
+                (date, pitcher, team, opp_team, pitcher_throws, side, k_line,
+                 verdict, ev, adj_ev, raw_lambda, applied_lambda, odds, movement_conf,
                  season_k9, recent_k9, career_k9, avg_ip, ump_k_adj, opp_k_rate,
-                 swstr_delta_k9, ref_book, result, actual_ks, pnl, fetched_at,
-                 game_time, lineup_used,
+                 swstr_delta_k9, swstr_pct, career_swstr_pct, ref_book,
+                 best_over_odds, best_under_odds, opening_over_odds, opening_under_odds,
+                 result, actual_ks, pnl, fetched_at, game_time, lineup_used,
                  locked_at, locked_k_line, locked_odds, locked_adj_ev, locked_verdict)
-                VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+                VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
             """, (
-                p.get("date"), p.get("pitcher"), p.get("team"), p.get("side"),
+                p.get("date"), p.get("pitcher"), p.get("team"),
+                p.get("opp_team"), p.get("pitcher_throws"),
+                p.get("side"),
                 p.get("k_line"), p.get("verdict"), p.get("ev"), p.get("adj_ev"),
                 p.get("raw_lambda"), p.get("applied_lambda"), p.get("odds"),
-                p.get("movement_conf"), p.get("season_k9"), p.get("recent_k9"),
-                p.get("career_k9"), p.get("avg_ip"), p.get("ump_k_adj"),
-                p.get("opp_k_rate"), p.get("swstr_delta_k9"), p.get("ref_book"),
+                p.get("movement_conf"),
+                p.get("season_k9"), p.get("recent_k9"), p.get("career_k9"),
+                p.get("avg_ip"), p.get("ump_k_adj"), p.get("opp_k_rate"),
+                p.get("swstr_delta_k9"), p.get("swstr_pct"), p.get("career_swstr_pct"),
+                p.get("ref_book"),
+                p.get("best_over_odds"), p.get("best_under_odds"),
+                p.get("opening_over_odds"), p.get("opening_under_odds"),
                 p.get("result"), p.get("actual_ks"), p.get("pnl"), p.get("fetched_at"),
                 p.get("game_time"), int(bool(p.get("lineup_used", False))),
                 p.get("locked_at"), p.get("locked_k_line"), p.get("locked_odds"),
@@ -290,22 +297,32 @@ def export_db_to_history(history_path: Path = None) -> int:
         history_path = HISTORY_PATH
     with get_db() as conn:
         rows = conn.execute("""
-            SELECT date, pitcher, team, side, k_line, verdict, ev, adj_ev,
+            SELECT date, pitcher, team, opp_team, pitcher_throws, side, k_line,
+                   verdict, ev, adj_ev,
                    raw_lambda, applied_lambda, odds, movement_conf,
                    season_k9, recent_k9, career_k9, avg_ip, ump_k_adj, opp_k_rate,
-                   swstr_delta_k9, ref_book, result, actual_ks, pnl, fetched_at,
+                   swstr_delta_k9, swstr_pct, career_swstr_pct, ref_book,
+                   best_over_odds, best_under_odds,
+                   opening_over_odds, opening_under_odds,
+                   result, actual_ks, pnl, fetched_at,
                    game_time, lineup_used,
                    locked_at, locked_k_line, locked_odds, locked_adj_ev, locked_verdict
             FROM picks
             ORDER BY date, pitcher, side
         """).fetchall()
 
-    cols = ["date", "pitcher", "team", "side", "k_line", "verdict", "ev", "adj_ev",
-            "raw_lambda", "applied_lambda", "odds", "movement_conf",
-            "season_k9", "recent_k9", "career_k9", "avg_ip", "ump_k_adj", "opp_k_rate",
-            "swstr_delta_k9", "ref_book", "result", "actual_ks", "pnl", "fetched_at",
-            "game_time", "lineup_used",
-            "locked_at", "locked_k_line", "locked_odds", "locked_adj_ev", "locked_verdict"]
+    cols = [
+        "date", "pitcher", "team", "opp_team", "pitcher_throws", "side", "k_line",
+        "verdict", "ev", "adj_ev",
+        "raw_lambda", "applied_lambda", "odds", "movement_conf",
+        "season_k9", "recent_k9", "career_k9", "avg_ip", "ump_k_adj", "opp_k_rate",
+        "swstr_delta_k9", "swstr_pct", "career_swstr_pct", "ref_book",
+        "best_over_odds", "best_under_odds",
+        "opening_over_odds", "opening_under_odds",
+        "result", "actual_ks", "pnl", "fetched_at",
+        "game_time", "lineup_used",
+        "locked_at", "locked_k_line", "locked_odds", "locked_adj_ev", "locked_verdict",
+    ]
     picks = [dict(zip(cols, row)) for row in rows]
 
     history_path.parent.mkdir(parents=True, exist_ok=True)

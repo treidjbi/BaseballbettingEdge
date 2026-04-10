@@ -1120,3 +1120,70 @@ class TestSeedPicksNewFields:
 
         assert row["best_over_odds"] == -115, "locked pick odds must not change"
         assert abs(row["opp_k_rate"] - 0.235) < 0.001, "locked pick stats must not change"
+
+
+class TestExportLoadRoundTrip:
+    """New fields survive a full DB → JSON → DB round trip."""
+
+    def test_new_fields_survive_export_and_reload(self, tmp_db, tmp_path):
+        import json
+        db_path, fr = tmp_db
+        history = tmp_path / "history.json"
+
+        # Insert directly so we control all fields
+        conn = fr.get_db()
+        conn.execute("""
+            INSERT INTO picks
+            (date, pitcher, team, opp_team, pitcher_throws, side, k_line,
+             verdict, ev, adj_ev, raw_lambda, applied_lambda, odds, movement_conf,
+             season_k9, recent_k9, career_k9, avg_ip, ump_k_adj, opp_k_rate,
+             swstr_delta_k9, swstr_pct, career_swstr_pct,
+             best_over_odds, best_under_odds, opening_over_odds, opening_under_odds,
+             ref_book, game_time, lineup_used, result, actual_ks, pnl, fetched_at)
+            VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+        """, (
+            "2026-04-15", "Export Test", "NYY", "BOS", "L", "over",
+            6.5, "FIRE 1u", 0.05, 0.05, 6.2, 6.2, -115, 1.0,
+            9.1, 8.8, 9.0, 5.8, 0.0, 0.235,
+            0.12, 0.130, 0.115,
+            -115, -105, -110, -110,
+            "FanDuel", "2026-04-15T23:05:00Z", 0,
+            "win", 8, 0.87, "2026-04-16T03:00:00Z",
+        ))
+        conn.commit()
+        conn.close()
+
+        # Export
+        fr.export_db_to_history(history)
+
+        # Verify JSON contains new fields
+        with open(history) as f:
+            exported = json.load(f)
+        assert len(exported) == 1
+        p = exported[0]
+        assert p["opp_team"] == "BOS"
+        assert p["pitcher_throws"] == "L"
+        assert p["best_over_odds"] == -115
+        assert p["best_under_odds"] == -105
+        assert p["opening_over_odds"] == -110
+        assert p["opening_under_odds"] == -110
+        assert abs(p["swstr_pct"] - 0.130) < 0.001
+        assert abs(p["career_swstr_pct"] - 0.115) < 0.001
+
+        # Reload into a fresh DB and verify
+        from unittest.mock import patch
+        fresh_db = tmp_path / "fresh.db"
+        with patch("fetch_results.DB_PATH", fresh_db):
+            fr.init_db()
+            fr.load_history_into_db(history)
+            conn2 = fr.get_db()
+            row = conn2.execute(
+                "SELECT opp_team, pitcher_throws, best_over_odds, swstr_pct "
+                "FROM picks WHERE pitcher='Export Test'"
+            ).fetchone()
+            conn2.close()
+
+        assert row["opp_team"] == "BOS"
+        assert row["pitcher_throws"] == "L"
+        assert row["best_over_odds"] == -115
+        assert abs(row["swstr_pct"] - 0.130) < 0.001
