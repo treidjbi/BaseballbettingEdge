@@ -430,15 +430,17 @@
     .perf-flex-row.perf-header-row { min-height: auto; padding: 8px 4px; background: var(--bg); position: sticky; top: 0; z-index: 1; }
     .perf-row-alt { background: rgba(0,0,0,0.03); }
     [data-theme='dark'] .perf-row-alt { background: rgba(255,255,255,0.025); }
-    .perf-col-verdict { width: 18%; padding: 0 2px 0 4px; }
-    .perf-col-side    { width: 10%; text-align: center; }
-    .perf-col-picks   { width: 8%;  text-align: center; }
-    .perf-col-winpct  { width: 13%; text-align: right; }
-    .perf-col-units   { width: 13%; text-align: right; }
-    .perf-col-roi     { width: 16%; text-align: right; padding-right: 8px; }
-    .perf-col-avgev   { width: 12%; text-align: right; padding-right: 6px; padding-left: 10px; flex-shrink: 0; }
+    .perf-col-verdict { width: 22%; padding: 0 6px 0 4px; }
+    .perf-col-side    { width: 12%; text-align: center; padding-right: 6px; }
+    .perf-col-picks   { width: 8%;  text-align: center; padding-right: 6px; }
+    .perf-col-winpct  { width: 12%; text-align: right; padding-right: 6px; }
+    .perf-col-units   { width: 16%; text-align: right; padding-right: 6px; min-width: 48px; }
+    .perf-col-roi     { width: 16%; text-align: right; padding-right: 6px; min-width: 48px; }
+    .perf-col-avgev   { width: 14%; text-align: right; padding-right: 6px; flex-shrink: 0; }
     .perf-header-row div { font-size: 11px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--ink-dim); font-family: 'Oswald', sans-serif; font-weight: 700; }
+    .perf-header-row .perf-col-avgev { font-size: 11px; color: var(--ink-dim); font-weight: 700; }
     .perf-verdict-badge { display: inline-block; font-size: 11px; font-weight: 800; font-family: 'IBM Plex Mono', monospace; text-transform: uppercase; letter-spacing: 0.03em; padding: 2px 6px; border-radius: 10px; line-height: 1.4; white-space: nowrap; }
+    .perf-flex-row:not(.perf-header-row) .perf-verdict-badge { font-size: 10px; padding: 2px 5px; }
     .pvb-fire { background: rgba(192,57,43,0.12); border: 1px solid var(--fire); color: var(--fire); animation: fire-pulse 2s ease-in-out infinite; }
     .pvb-lean { background: transparent; border: 1px solid #e67e22; color: #e67e22; }
     .pvb-pass { background: #ccc; color: #555; border: 1px solid #bbb; }
@@ -1107,7 +1109,7 @@
           <div class="perf-col-winpct" style="text-align:right">Win %</div>
           <div class="perf-col-units" style="text-align:right">Units</div>
           <div class="perf-col-roi" style="text-align:right">ROI</div>
-          <div class="perf-col-avgev" style="text-align:right;padding-right:6px">Avg EV</div>
+          <div class="perf-col-avgev" style="text-align:right">EV</div>
         </div>
         ${rowsHtml}
       </div>`;
