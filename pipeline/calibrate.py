@@ -398,7 +398,8 @@ def run() -> None:
 
     if n < PHASE1_THRESHOLD:
         log.info("Below Phase 1 threshold (%d), skipping calibration", PHASE1_THRESHOLD)
-        perf = build_performance(closed, current_params=current_params)
+        perf = build_performance(closed, current_params=current_params,
+                                 calibration_notes=current_params.get("calibration_notes", []))
         write_performance(perf)
         return
 

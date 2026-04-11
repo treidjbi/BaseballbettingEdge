@@ -354,31 +354,20 @@ def _calc_pnl(result: str, odds: int) -> float:
     return 0.0  # push, void, cancelled
 
 
-def fetch_and_close_results() -> int:
-    """Close out open picks for yesterday ET. Returns count of picks resolved."""
-    _, yesterday_et = _et_dates()
-
-    with get_db() as conn:
-        open_picks = conn.execute(
-            "SELECT * FROM picks WHERE date=? AND result IS NULL", (yesterday_et,)
-        ).fetchall()
-
-    if not open_picks:
-        log.info("No open picks for %s", yesterday_et)
-        return 0
-
+def _grade_picks_for_date(grade_date: str, date_picks: list) -> int:
+    """Fetch MLB results for grade_date and close the given open picks. Returns count resolved."""
     try:
         resp = requests.get(f"{MLB_BASE}/schedule", params={
-            "sportId": 1, "date": yesterday_et,
+            "sportId": 1, "date": grade_date,
         }, timeout=30)
         resp.raise_for_status()
         schedule = resp.json()
     except Exception as e:
-        log.error("MLB schedule fetch failed: %s", e)
+        log.error("MLB schedule fetch failed for %s: %s", grade_date, e)
         return 0
 
-    # Build name->ks and track which teams have finalized games
-    # Fetch each game's boxscore directly — hydrate=boxscore returns empty data
+    # Build name->ks and track which teams have finalized games.
+    # Fetch each game's boxscore directly — hydrate=boxscore returns empty data.
     ks_by_name: dict[str, int] = {}
     finalized_teams: set[str] = set()
 
@@ -406,7 +395,7 @@ def fetch_and_close_results() -> int:
                 continue
 
             for ts in ("home", "away"):
-                players       = boxscore.get("teams", {}).get(ts, {}).get("players", {})
+                players        = boxscore.get("teams", {}).get(ts, {}).get("players", {})
                 pitchers_order = boxscore.get("teams", {}).get(ts, {}).get("pitchers", [])
                 if not pitchers_order:
                     continue
@@ -420,8 +409,8 @@ def fetch_and_close_results() -> int:
     now_str = datetime.now(pytz.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
 
     with get_db() as conn:
-        for pick in open_picks:
-            norm = _normalize(pick["pitcher"])
+        for pick in date_picks:
+            norm      = _normalize(pick["pitcher"])
             team_norm = pick["team"].lower()
 
             if norm in ks_by_name:
@@ -450,8 +439,44 @@ def fetch_and_close_results() -> int:
                 )
                 closed += 1
 
-    log.info("Closed %d picks for %s", closed, yesterday_et)
+    log.info("Closed %d picks for %s", closed, grade_date)
     return closed
+
+
+def fetch_and_close_results() -> int:
+    """Close out open picks for all past dates. Returns count of picks resolved.
+
+    Grades every date that has open picks before today, not just yesterday.
+    This makes grading resilient to missed runs: if the grading job is skipped
+    or the MLB API is briefly unavailable on a given night, the next successful
+    run will pick up and grade all outstanding open picks automatically.
+    """
+    today_et, _ = _et_dates()
+
+    with get_db() as conn:
+        open_picks = conn.execute(
+            "SELECT * FROM picks WHERE date<? AND result IS NULL", (today_et,)
+        ).fetchall()
+
+    if not open_picks:
+        log.info("No open picks to grade")
+        return 0
+
+    # Group by date and grade each past date separately so each gets its own
+    # MLB schedule + boxscore fetch.
+    from collections import defaultdict
+    picks_by_date: dict[str, list] = defaultdict(list)
+    for pick in open_picks:
+        picks_by_date[pick["date"]].append(pick)
+
+    dates = sorted(picks_by_date.keys())
+    log.info("Grading open picks across %d date(s): %s", len(dates), dates)
+
+    total_closed = 0
+    for grade_date in dates:
+        total_closed += _grade_picks_for_date(grade_date, picks_by_date[grade_date])
+
+    return total_closed
 
 
 def close_orphans() -> int:
