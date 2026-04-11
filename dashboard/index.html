@@ -44,7 +44,8 @@
     [data-theme='dark'] .adj-neg { background: #2b0d0d; border-color: #5c1a1a; }
     [data-theme='dark'] .adj-neutral { background: #132035; border-color: #1e3050; color: #6b7f99; }
     [data-theme='dark'] .verdict-pass { background: #1e3050; color: #6b7f99; }
-    [data-theme='dark'] .badge-started { background: #1e3050 !important; color: #6b7f99 !important; }
+    [data-theme='dark'] .badge-live  { background: #0d2b1a !important; color: #27ae60 !important; border-color: #1a5c35 !important; }
+    [data-theme='dark'] .badge-final { background: #132035 !important; color: #6b7f99 !important; border-color: #1e3050 !important; }
     [data-theme='dark'] .banner-info { background: #0d2b1a; border-bottom-color: #1a5c35; color: #f0ede6; }
     [data-theme='dark'] .banner-warn { background: #2b1f0d; border-bottom-color: #5c3d1a; color: #f0ede6; }
     [data-theme='dark'] #date-select { border-color: #1e3050; color: #f0ede6; }
@@ -351,9 +352,33 @@
     .steam-with    { color: #27ae60;      font-weight: 700; font-family: monospace; font-size: 11px; }
     .steam-against { color: var(--fire);   font-weight: 700; font-family: monospace; font-size: 11px; }
 
-    .card-pass    { opacity: 0.52; }
-    .card-started { opacity: 0.4; }
-    .badge-started { background: #555 !important; color: #aaa !important; font-weight: 500; }
+    .card-pass        { opacity: 0.52; }
+    .card-in-progress { opacity: 0.78; }
+    .card-final       { opacity: 0.55; }
+
+    /* ── Game state badges (shown in adj row for started games) ── */
+    .badge-live  { background: #e8f5e9; color: #27ae60; border-color: #c8e6c9; }
+    .badge-final { background: #f0f0f0; color: #888;    border-color: #ddd;    }
+
+    /* ── Divider between upcoming and started sections ────────── */
+    .game-divider {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin: 20px 0 14px;
+      color: var(--ink-dim);
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: .08em;
+    }
+    .game-divider::before,
+    .game-divider::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: var(--border);
+    }
 
     .show-all-row {
       font-size: 12px;
@@ -851,22 +876,108 @@
   }
 
   // ── Props tab ─────────────────────────────────────────────
-  function renderProps(pitchers, isPast = false) {
-    const el     = document.getElementById('panel-props');
-    const sorted = [...pitchers].sort((a, b) =>
-      (a.game_time || '').localeCompare(b.game_time || '')
-    );
 
-    const hasAction = sorted.some(p => bestSide(p).verdict !== 'PASS');
-    const passCount = sorted.filter(p => bestSide(p).verdict === 'PASS').length;
+  /** Derive game state from the server-computed field or fall back to time-based estimate. */
+  function getGameState(p) {
+    if (p.game_state) return p.game_state;
+    if (!p.game_time) return 'pregame';
+    const elapsed = Date.now() - new Date(p.game_time).getTime();
+    if (elapsed < 0)           return 'pregame';
+    if (elapsed < 4 * 36e5)   return 'in_progress';
+    return 'final';
+  }
+
+  /** Render a single pitcher card for the given game state. */
+  function renderCard(p, gameState) {
+    const side    = bestSide(p);
+    const isPass  = side.verdict === 'PASS';
+    const started = gameState !== 'pregame';
+
+    const umpHtml = p.ump_k_adj !== 0
+      ? `<span class="adj-badge ${p.ump_k_adj > 0 ? 'adj-pos' : 'adj-neg'}">UMP ${p.ump_k_adj > 0 ? '+' : ''}${p.ump_k_adj}</span>`
+      : '';
+
+    // Steam only meaningful pre-game; suppress after lock
+    const steamIndicator = started ? '' : steamHtml(p, side.direction);
+
+    // EV left-border accent only for upcoming picks
+    const evBorder = !started && side.ev >= 0.25 ? 'border-left:3px solid var(--fire)'
+                   : !started && side.ev >= 0.15 ? 'border-left:3px solid #e67e22'
+                   : '';
+
+    // State badge shown in adj-row for started games
+    const stateBadge = started
+      ? `<span class="adj-badge ${gameState === 'in_progress' ? 'badge-live' : 'badge-final'}">${gameState === 'in_progress' ? '● LIVE' : 'FINAL'}</span>`
+      : '';
+
+    // Card opacity class — PASS cards in upcoming section get card-pass
+    const cardCls = started
+      ? (gameState === 'in_progress' ? 'card-in-progress' : 'card-final')
+      : (isPass ? 'card-pass' : '');
+
+    // PASS hiding only applies to upcoming section (data-pass attr)
+    const passAttr = (!started && isPass) ? ' data-pass="1"' : '';
+
+    // EV sub-label: suppress steam annotation for locked games
+    const evSub = !started && side.conf != null && side.conf <= STEAM_LABEL_THRESHOLD
+      ? `↓steam (raw ${(side.rawEv * 100).toFixed(1)}%)`
+      : 'p=' + side.winProb;
+
+    return `
+    <div class="pitcher-card${cardCls ? ' ' + cardCls : ''}"${passAttr}${evBorder ? ` style="${evBorder}"` : ''}>
+      <div class="card-header">
+        <div class="card-header-left">
+          <span class="pitcher-name">${esc(p.pitcher)}</span>
+          <span class="pitcher-matchup">${esc(p.team)} vs ${esc(p.opp_team)}</span>
+        </div>
+        <span class="verdict-badge ${verdictClass(side.verdict, side.direction)}">${badgeLabel(side)}</span>
+      </div>
+      <div class="stats-row">
+        <div class="stat-cell">
+          <div class="stat-label">Line</div>
+          <div class="stat-value">${p.k_line}</div>
+          <div class="stat-sub">${fmtOdds(side.odds)}${steamIndicator}</div>
+        </div>
+        <div class="stat-cell">
+          <div class="stat-label">Proj K</div>
+          <div class="stat-value">${p.lambda}</div>
+          <div class="stat-sub">vs line ${p.k_line}</div>
+        </div>
+        <div class="stat-cell">
+          <div class="stat-label">EV</div>
+          <div class="stat-value ${side.ev > 0 ? 'val-pos' : 'val-neg'}">${(side.ev * 100).toFixed(1)}%</div>
+          <div class="stat-sub">${evSub}</div>
+        </div>
+      </div>
+      <div class="adj-row">
+        ${adjBadge('OPP K%', p.opp_k_rate, 0.227)}
+        ${umpHtml}
+        ${stateBadge}
+        <span class="game-time">${fmtTime(p.game_time)}</span>
+      </div>
+    </div>`;
+  }
+
+  function renderProps(pitchers, isPast = false) {
+    const el = document.getElementById('panel-props');
+
+    // Split into upcoming and started, each sorted by game time
+    const byTime = (a, b) => (a.game_time || '').localeCompare(b.game_time || '');
+    const upcoming = pitchers.filter(p => getGameState(p) === 'pregame').sort(byTime);
+    const started  = pitchers.filter(p => getGameState(p) !== 'pregame').sort(byTime);
+
+    const hasAction  = upcoming.some(p => bestSide(p).verdict !== 'PASS');
+    const passCount  = upcoming.filter(p => bestSide(p).verdict === 'PASS').length;
+
     let html = '';
 
-    // Date header
-    if (sorted.length > 0) {
-      html += `<div class="section-date">${sorted.length} pitcher${sorted.length !== 1 ? 's' : ''}${isPast ? '' : ' today'}</div>`;
+    // Date / count header
+    if (pitchers.length > 0) {
+      html += `<div class="section-date">${pitchers.length} pitcher${pitchers.length !== 1 ? 's' : ''}${isPast ? '' : ' today'}</div>`;
     }
 
-    if (hasAction) {
+    // PASS toggle — only relevant for the upcoming section
+    if (hasAction && upcoming.length > 0) {
       html += `<div class="show-all-row">
         <label>
           <input type="checkbox" id="show-all" onchange="togglePassCards()">
@@ -875,56 +986,24 @@
       </div>`;
     }
 
-    for (const p of sorted) {
-      const side      = bestSide(p);
-      const isPass    = side.verdict === 'PASS';
-      const FOUR_HOURS_MS = 4 * 60 * 60 * 1000;
-      const isStarted = !!(p.game_time && Date.now() > new Date(p.game_time).getTime() + FOUR_HOURS_MS);
-      const umpHtml = p.ump_k_adj !== 0
-        ? `<span class="adj-badge ${p.ump_k_adj > 0 ? 'adj-pos' : 'adj-neg'}">UMP ${p.ump_k_adj > 0 ? '+' : ''}${p.ump_k_adj}</span>`
-        : '';
-      const steamIndicator = steamHtml(p, side.direction);
-      const evBorder = side.ev >= 0.25 ? 'border-left:3px solid var(--fire)'
-                     : side.ev >= 0.15 ? 'border-left:3px solid #e67e22'
-                     : '';
+    // ── Upcoming section ──────────────────────────────────────
+    for (const p of upcoming) {
+      html += renderCard(p, 'pregame');
+    }
 
-      html += `
-      <div class="pitcher-card${isPass ? ' card-pass' : ''}${isStarted ? ' card-started' : ''}"${isPass ? ' data-pass="1"' : ''}${evBorder ? ` style="${evBorder}"` : ''}>
-        <div class="card-header">
-          <div class="card-header-left">
-            <span class="pitcher-name">${esc(p.pitcher)}</span>
-            <span class="pitcher-matchup">${esc(p.team)} vs ${esc(p.opp_team)}</span>
-          </div>
-          <span class="verdict-badge ${isStarted ? 'badge-started' : verdictClass(side.verdict, side.direction)}">${isStarted ? 'STARTED' : badgeLabel(side)}</span>
-        </div>
-        <div class="stats-row">
-          <div class="stat-cell">
-            <div class="stat-label">Line</div>
-            <div class="stat-value">${p.k_line}</div>
-            <div class="stat-sub">${fmtOdds(side.odds)}${steamIndicator}</div>
-          </div>
-          <div class="stat-cell">
-            <div class="stat-label">Proj K</div>
-            <div class="stat-value">${p.lambda}</div>
-            <div class="stat-sub">vs line ${p.k_line}</div>
-          </div>
-          <div class="stat-cell">
-            <div class="stat-label">EV</div>
-            <div class="stat-value ${side.ev > 0 ? 'val-pos' : 'val-neg'}">${(side.ev * 100).toFixed(1)}%</div>
-            <div class="stat-sub">${(side.conf != null && side.conf <= STEAM_LABEL_THRESHOLD) ? `↓steam (raw ${(side.rawEv * 100).toFixed(1)}%)` : 'p=' + side.winProb}</div>
-          </div>
-        </div>
-        <div class="adj-row">
-          ${adjBadge('OPP K%', p.opp_k_rate, 0.227)}
-          ${umpHtml}
-          <span class="game-time">${fmtTime(p.game_time)}</span>
-        </div>
-      </div>`;
+    // ── Divider ───────────────────────────────────────────────
+    if (started.length > 0) {
+      html += `<div class="game-divider"><span>In Progress / Final</span></div>`;
+    }
+
+    // ── Started section (locked snapshots, read-only display) ─
+    for (const p of started) {
+      html += renderCard(p, getGameState(p));
     }
 
     el.innerHTML = html || '<p class="empty">No props available.</p>';
 
-    // Hide PASS cards by default if there are actionable verdicts
+    // Hide PASS cards by default if there are actionable upcoming verdicts
     if (hasAction) togglePassCards();
   }
 

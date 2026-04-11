@@ -11,17 +11,27 @@ on:
     # 6:00 AM Phoenix = 13:00 UTC  — full run: finalize picks (treats 7pm lines as opening)
     - cron: '0 13 * * *'
     # Refresh + lock runs: fetch fresh odds/lineups, update unlocked picks, lock T-30min.
-    # Multiple passes to absorb GHA scheduling delays and catch lineup postings.
+    # Runs every hour 8am–6pm Phoenix to tighten the lock window.
     # 8:00 AM Phoenix = 15:00 UTC
     - cron: '0 15 * * *'
+    # 9:00 AM Phoenix = 16:00 UTC
+    - cron: '0 16 * * *'
     # 10:00 AM Phoenix = 17:00 UTC
     - cron: '0 17 * * *'
+    # 11:00 AM Phoenix = 18:00 UTC
+    - cron: '0 18 * * *'
     # 12:00 PM Phoenix = 19:00 UTC
     - cron: '0 19 * * *'
+    # 1:00 PM Phoenix = 20:00 UTC
+    - cron: '0 20 * * *'
     # 2:00 PM Phoenix = 21:00 UTC
     - cron: '0 21 * * *'
+    # 3:00 PM Phoenix = 22:00 UTC
+    - cron: '0 22 * * *'
     # 4:00 PM Phoenix = 23:00 UTC
     - cron: '0 23 * * *'
+    # 5:00 PM Phoenix = 00:00 UTC (next day)
+    - cron: '0 0 * * *'
     # 6:00 PM Phoenix = 01:00 UTC (next day)
     - cron: '0 1 * * *'
   workflow_dispatch:        # manual trigger for testing
@@ -65,12 +75,17 @@ jobs:
             python pipeline/run_pipeline.py $TODAY --run-type grading
 
           elif [ "$SCHEDULE" = "0 15 * * *" ] || \
+               [ "$SCHEDULE" = "0 16 * * *" ] || \
                [ "$SCHEDULE" = "0 17 * * *" ] || \
+               [ "$SCHEDULE" = "0 18 * * *" ] || \
                [ "$SCHEDULE" = "0 19 * * *" ] || \
+               [ "$SCHEDULE" = "0 20 * * *" ] || \
                [ "$SCHEDULE" = "0 21 * * *" ] || \
+               [ "$SCHEDULE" = "0 22 * * *" ] || \
                [ "$SCHEDULE" = "0 23 * * *" ] || \
+               [ "$SCHEDULE" = "0 0 * * *" ] || \
                [ "$SCHEDULE" = "0 1 * * *" ]; then
-            # 8am/10am/noon/2pm/4pm/6pm Phoenix — full refresh: fresh odds + lineups,
+            # 8am–6pm Phoenix (hourly) — full refresh: fresh odds + lineups,
             # update unlocked picks with latest verdict/EV, then lock T-30min picks
             python pipeline/run_pipeline.py $TODAY
 
