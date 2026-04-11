@@ -39,6 +39,13 @@ on:
 permissions:
   contents: write           # allows the bot to commit + push output files
 
+# Prevent two runs from writing picks_history.json simultaneously.
+# cancel-in-progress: false queues the newer run instead of discarding it,
+# so no scheduled run is silently dropped.
+concurrency:
+  group: pipeline-run
+  cancel-in-progress: false
+
 jobs:
   run-pipeline:
     runs-on: ubuntu-latest
@@ -104,5 +111,12 @@ jobs:
           test -f data/params.json               && git add data/params.json               || true
           test -f data/preview_lines.json        && git add data/preview_lines.json        || true
           git diff --staged --quiet || git commit -m "chore: pipeline update $(date -u +%Y-%m-%dT%H:%M:%SZ)"
-          git pull --rebase
-          git push
+          # Retry push up to 4 times with exponential backoff (2 / 4 / 8 / 16 s).
+          # The concurrency group above prevents overlapping runs, but a transient
+          # network hiccup can still fail a push; retrying keeps picks_history.json
+          # from going stale on the remote.
+          for attempt in 1 2 3 4; do
+            git pull --rebase && git push && break
+            echo "Push attempt $attempt failed; retrying in $((2 ** attempt))s..."
+            sleep $((2 ** attempt))
+          done

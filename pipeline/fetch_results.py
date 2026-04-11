@@ -6,6 +6,7 @@ Run as part of the 8pm pipeline run only.
 """
 import json
 import logging
+import os
 import sqlite3
 import unicodedata
 from datetime import datetime, timedelta
@@ -326,10 +327,22 @@ def export_db_to_history(history_path: Path = None) -> int:
     picks = [dict(zip(cols, row)) for row in rows]
 
     history_path.parent.mkdir(parents=True, exist_ok=True)
-    with open(history_path, "w") as f:
-        json.dump(picks, f, indent=2)
+    # Write atomically: dump to a temp file in the same directory, then rename.
+    # os.replace() is atomic on POSIX — a crash or disk-full during the write
+    # leaves the original picks_history.json intact instead of corrupting it.
+    tmp_path = str(history_path) + ".tmp"
+    try:
+        with open(tmp_path, "w") as f:
+            json.dump(picks, f, indent=2)
+        os.replace(tmp_path, history_path)
+    except Exception:
+        try:
+            os.unlink(tmp_path)
+        except OSError:
+            pass
+        raise
 
-    log.info("export_db_to_history: wrote %d closed picks", len(picks))
+    log.info("export_db_to_history: wrote %d picks", len(picks))
     return len(picks)
 
 

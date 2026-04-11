@@ -521,9 +521,13 @@ def run(date_str: str, run_type: str = "full") -> None:
             conn.close()
         seeded = seed_picks()
         log.info("Seeded %d new picks, locked %d picks from today.json", seeded, locked)
-        if seeded > 0 or locked > 0:
-            export_db_to_history()
-            log.info("Persisted open/locked picks to history")
+        # Always export: captures newly inserted picks, intra-day odds/lineup
+        # updates to unlocked picks, and freshly locked snapshots.  The git
+        # commit step skips an empty commit when nothing changed, so this is
+        # safe to call unconditionally and prevents a "seeded==0 && locked==0"
+        # run from leaving picks_history.json stale after a runner reset.
+        export_db_to_history()
+        log.info("Persisted open/locked picks to history")
     except Exception as e:
         log.warning("seed_picks failed: %s", e)
 
