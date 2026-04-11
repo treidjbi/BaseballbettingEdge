@@ -455,18 +455,22 @@ def run(date_str: str, run_type: str = "full") -> None:
 
     # 3. Fetch SwStr% (FanGraphs via PyBaseball — graceful fallback to neutral)
     # Returns {name: {"swstr_pct": float, "career_swstr_pct": float | None}}
+    swstr_ok = True
     try:
         swstr_map = fetch_swstr(int(date_str[:4]), pitcher_names)
     except Exception as e:
         log.warning("fetch_swstr failed: %s — using neutral SwStr%% for all", e)
         swstr_map = {name: _SWSTR_NEUTRAL for name in pitcher_names}
+        swstr_ok = False
 
     # 4. Fetch umpire adjustments (ump.news — graceful fallback built in)
+    ump_ok = True
     try:
         ump_map = fetch_umpires(props)
     except Exception as e:
         log.warning("fetch_umpires failed: %s — using neutral adj for all", e)
         ump_map = {p["pitcher"]: 0.0 for p in props}
+        ump_ok = False
 
     # 5. Fetch batter stats (FanGraphs — cached, graceful fallback to {})
     batter_stats = fetch_batter_stats_cached(int(date_str[:4]))
@@ -487,6 +491,10 @@ def run(date_str: str, run_type: str = "full") -> None:
                 lineup=lineup,
                 batter_stats=batter_stats if lineup else None,
             )
+            # Mark whether all external data APIs returned real data.
+            # Picks with data_complete=False are excluded from calibration so
+            # a bad-API run doesn't skew lambda_bias / ump_scale / swstr_k9_scale.
+            record["data_complete"] = swstr_ok and ump_ok
             records.append(record)
             log.info("Built record for %s: λ=%.2f verdict=%s",
                      name, record["lambda"], record["ev_over"]["verdict"])
@@ -502,7 +510,17 @@ def run(date_str: str, run_type: str = "full") -> None:
     records = _merge_with_locked_snapshots(records, date_str, now_utc)
     _annotate_game_states(records, now_utc)
 
-    _write_output(date_str, records, props_available=True)
+    # Guard: if the stats API failed entirely and produced 0 records, don't
+    # silently wipe out a previously good today.json.  Locked snapshots from
+    # _merge_with_locked_snapshots ensure started games are still present, so
+    # a non-empty records list here means at least some data is valid.
+    if records or not _has_valid_output(date_str):
+        _write_output(date_str, records, props_available=True)
+    else:
+        log.warning(
+            "Stats pipeline returned 0 records despite %d odds entries — "
+            "keeping existing today.json to avoid losing valid picks data", len(props)
+        )
 
     # Seed picks at every run so the first-seen line (earliest in the day) is locked in.
     # INSERT OR IGNORE in seed_picks means subsequent runs never overwrite the initial line.
@@ -542,11 +560,10 @@ def _write_output(date_str: str, records: list, props_available: bool) -> None:
         "pitchers":       records,
     }
     OUTPUT_PATH.parent.mkdir(parents=True, exist_ok=True)
-    with open(OUTPUT_PATH, "w") as f:
-        json.dump(output, f, indent=2)
-    log.info("Wrote %s (%d pitchers)", OUTPUT_PATH, len(records))
-
-    # Archive dated copy + update index
+    # today.json is written exactly once inside _write_archive, filtered to
+    # ET-today pitchers only.  Writing it here first (with all records including
+    # possible tomorrow games) would create a brief dirty window and risk leaving
+    # a mixed-date file behind if _write_archive throws before its own write.
     _write_archive(output, date_str)
 
 
@@ -571,14 +588,16 @@ def _write_archive(output: dict, run_date_str: str) -> None:
         # uncommon and the date always matches the game slate date.
         buckets[run_date_str] = []
 
-    # 1b. Re-write today.json with ONLY ET-today pitchers (strip out any
+    # 1b. Write today.json with ONLY ET-today pitchers (strip out any
     #     tomorrow games the API returned alongside today's slate).
+    #     This is the single write of today.json — _write_output intentionally
+    #     skips an early write so we never have a dirty mixed-date version on disk.
     today_pitchers = buckets.get(run_date_str, [])
     today_output = {**output, "date": run_date_str, "pitchers": today_pitchers}
     try:
         with open(OUTPUT_PATH, "w") as f:
             json.dump(today_output, f, indent=2)
-        log.info("Re-wrote today.json with %d ET-today pitchers (stripped %d other-date)",
+        log.info("Wrote today.json with %d ET-today pitchers (stripped %d other-date)",
                  len(today_pitchers), len(output.get("pitchers", [])) - len(today_pitchers))
     except Exception as e:
         log.warning("Failed to re-write today.json: %s", e)

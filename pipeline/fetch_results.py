@@ -104,6 +104,11 @@ def init_db() -> None:
             ("opening_under_odds", "INTEGER"),
             ("swstr_pct",          "REAL"),
             ("career_swstr_pct",   "REAL"),
+            # Tracks whether all external data APIs (SwStr%, umpire) returned
+            # real data for this pick.  0 = at least one API fell back to a
+            # neutral synthetic value.  Calibration excludes incomplete picks so
+            # a bad-data run doesn't bias lambda_bias / ump_scale / swstr_k9_scale.
+            ("data_complete",      "INTEGER NOT NULL DEFAULT 1"),
         ]:
             try:
                 conn.execute(f"ALTER TABLE picks ADD COLUMN {col} {defn}")
@@ -141,8 +146,8 @@ def seed_picks(today_json_path: Path = TODAY_JSON) -> int:
                      opp_team, pitcher_throws,
                      best_over_odds, best_under_odds,
                      opening_over_odds, opening_under_odds,
-                     swstr_pct, career_swstr_pct)
-                    VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+                     swstr_pct, career_swstr_pct, data_complete)
+                    VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
                 """, (
                     game_date, p["pitcher"], p["team"], side,
                     p["k_line"], ev_data["verdict"], ev_data["ev"], ev_data["adj_ev"],
@@ -161,6 +166,8 @@ def seed_picks(today_json_path: Path = TODAY_JSON) -> int:
                     p.get("opening_under_odds"),
                     p.get("swstr_pct"),
                     p.get("career_swstr_pct"),
+                    # Default True for picks from old today.json files that predate this field
+                    int(bool(p.get("data_complete", True))),
                 ))
                 inserted += cur.rowcount
 
@@ -264,8 +271,9 @@ def load_history_into_db(history_path: Path = None) -> int:
                  swstr_delta_k9, swstr_pct, career_swstr_pct, ref_book,
                  best_over_odds, best_under_odds, opening_over_odds, opening_under_odds,
                  result, actual_ks, pnl, fetched_at, game_time, lineup_used,
-                 locked_at, locked_k_line, locked_odds, locked_adj_ev, locked_verdict)
-                VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+                 locked_at, locked_k_line, locked_odds, locked_adj_ev, locked_verdict,
+                 data_complete)
+                VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
             """, (
                 p.get("date"), p.get("pitcher"), p.get("team"),
                 p.get("opp_team"), p.get("pitcher_throws"),
@@ -283,6 +291,8 @@ def load_history_into_db(history_path: Path = None) -> int:
                 p.get("game_time"), int(bool(p.get("lineup_used", False))),
                 p.get("locked_at"), p.get("locked_k_line"), p.get("locked_odds"),
                 p.get("locked_adj_ev"), p.get("locked_verdict"),
+                # Default True: old history entries predate this field and had real data
+                int(bool(p.get("data_complete", True))),
             ))
             inserted += cur.rowcount
 
@@ -307,7 +317,8 @@ def export_db_to_history(history_path: Path = None) -> int:
                    opening_over_odds, opening_under_odds,
                    result, actual_ks, pnl, fetched_at,
                    game_time, lineup_used,
-                   locked_at, locked_k_line, locked_odds, locked_adj_ev, locked_verdict
+                   locked_at, locked_k_line, locked_odds, locked_adj_ev, locked_verdict,
+                   data_complete
             FROM picks
             ORDER BY date, pitcher, side
         """).fetchall()
@@ -323,6 +334,7 @@ def export_db_to_history(history_path: Path = None) -> int:
         "result", "actual_ks", "pnl", "fetched_at",
         "game_time", "lineup_used",
         "locked_at", "locked_k_line", "locked_odds", "locked_adj_ev", "locked_verdict",
+        "data_complete",
     ]
     picks = [dict(zip(cols, row)) for row in rows]
 
@@ -493,8 +505,14 @@ def fetch_and_close_results() -> int:
 
 
 def close_orphans() -> int:
-    """Mark picks older than 3 days with NULL result as 'cancelled'. Returns count updated."""
-    threshold = (datetime.now(ET) - timedelta(days=3)).strftime("%Y-%m-%d")
+    """Mark picks older than 7 days with NULL result as 'cancelled'. Returns count updated.
+
+    7 days (up from 3) gives enough runway for the MLB Stats API to recover from
+    an extended outage without permanently cancelling picks that could still be
+    graded.  fetch_and_close_results() always runs first and will grade anything
+    it can, so orphan-cancellation is only a last resort for truly missing data.
+    """
+    threshold = (datetime.now(ET) - timedelta(days=7)).strftime("%Y-%m-%d")
     now_str = datetime.now(pytz.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
 
     with get_db() as conn:

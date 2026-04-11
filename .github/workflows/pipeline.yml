@@ -117,6 +117,10 @@ jobs:
           # from going stale on the remote.
           for attempt in 1 2 3 4; do
             git pull --rebase && git push && break
+            if [ "$attempt" = "4" ]; then
+              echo "ERROR: git push failed after 4 attempts — picks_history.json may be stale on remote" >&2
+              exit 1
+            fi
             echo "Push attempt $attempt failed; retrying in $((2 ** attempt))s..."
             sleep $((2 ** attempt))
           done
