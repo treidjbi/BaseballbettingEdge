@@ -58,6 +58,99 @@ def fetch_lineups_for_pitcher(date_str: str, team: str) -> list[dict] | None:
 PREVIEW_PATH  = Path(__file__).parent.parent / "data" / "preview_lines.json"
 
 
+def _merge_with_locked_snapshots(fresh_records: list, date_str: str, now: datetime) -> list:
+    """
+    For games that have already started, preserve the last pre-game snapshot from
+    the existing today.json instead of overwriting with fresh (post-start) data.
+
+    Rules:
+    - Started pitchers (game_time <= now) in existing today.json → carry snapshot forward
+    - Upcoming pitchers (game_time > now) → use fresh data from current run
+    - New pitchers not seen in any prior run today whose game has already started → suppress
+    """
+    try:
+        with open(OUTPUT_PATH) as f:
+            existing = json.load(f)
+        if existing.get("date") != date_str:
+            return fresh_records  # Different date — no snapshots to preserve
+        existing_pitchers: dict[str, dict] = {
+            p["pitcher"]: p for p in existing.get("pitchers", [])
+        }
+    except Exception:
+        return fresh_records  # No existing file yet — nothing to preserve
+
+    # Identify which existing pitchers' games have already started
+    started_names: set[str] = set()
+    for name, p in existing_pitchers.items():
+        game_time_str = p.get("game_time")
+        if not game_time_str:
+            continue
+        try:
+            game_time = datetime.fromisoformat(game_time_str.replace("Z", "+00:00"))
+            if now >= game_time:
+                started_names.add(name)
+        except Exception:
+            pass
+
+    if not started_names:
+        return fresh_records  # No games started yet — use all fresh data
+
+    result: list = []
+
+    # Preserve locked snapshots for started games (carry exact pre-game data forward)
+    for name in started_names:
+        result.append(existing_pitchers[name])
+
+    # Add fresh records for upcoming games only
+    for r in fresh_records:
+        name = r["pitcher"]
+        if name in started_names:
+            continue  # Game started — use locked snapshot (already added above)
+        if name in existing_pitchers:
+            # Known pitcher, game not yet started — use fresh data
+            result.append(r)
+        else:
+            # New pitcher not seen in any prior run today.
+            # If their game has already started, suppress them to avoid confusion.
+            game_time_str = r.get("game_time")
+            is_started = False
+            if game_time_str:
+                try:
+                    gt = datetime.fromisoformat(game_time_str.replace("Z", "+00:00"))
+                    is_started = now >= gt
+                except Exception:
+                    pass
+            if not is_started:
+                result.append(r)
+
+    return result
+
+
+def _annotate_game_states(records: list, now: datetime) -> None:
+    """
+    Add/update the `game_state` field on every record based on current time.
+    Values: 'pregame' | 'in_progress' | 'final'
+    Final is approximated as 4 hours after scheduled game time.
+    Called after merging so locked snapshots get their state refreshed correctly.
+    """
+    for r in records:
+        game_time_str = r.get("game_time")
+        if not game_time_str:
+            r["game_state"] = "pregame"
+            continue
+        try:
+            game_time = datetime.fromisoformat(game_time_str.replace("Z", "+00:00"))
+            elapsed = (now - game_time).total_seconds()
+            if elapsed < 0:
+                r["game_state"] = "pregame"
+            elif elapsed < 4 * 3600:
+                r["game_state"] = "in_progress"
+            else:
+                r["game_state"] = "final"
+        except Exception:
+            r["game_state"] = "pregame"
+
+
 def _game_date_et(game_time_str: str, fallback: str) -> str:
     """Convert a UTC ISO game_time string to an ET calendar date (YYYY-MM-DD).
     Falls back to `fallback` if the string is missing or unparseable."""
@@ -311,6 +404,14 @@ def run(date_str: str, run_type: str = "full") -> None:
             log.warning("build_pitcher_record failed for %s: %s — skipping", name, e)
 
     log.info("Built %d/%d pitcher records", len(records), len(props))
+
+    # Preserve locked snapshots: once a game has started, freeze its card data so
+    # post-game-start odds movements don't change what the dashboard displays.
+    # New pitchers appearing after game start are suppressed.
+    now_utc = datetime.now(timezone.utc)
+    records = _merge_with_locked_snapshots(records, date_str, now_utc)
+    _annotate_game_states(records, now_utc)
+
     _write_output(date_str, records, props_available=True)
 
     # Seed picks at every run so the first-seen line (earliest in the day) is locked in.
