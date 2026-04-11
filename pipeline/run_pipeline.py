@@ -102,7 +102,6 @@ def _merge_with_locked_snapshots(fresh_records: list, date_str: str, now: dateti
         result.append(existing_pitchers[name])
 
     # Add fresh records for upcoming games only
-    fresh_by_name = {r["pitcher"]: r for r in fresh_records}
     for r in fresh_records:
         name = r["pitcher"]
         if name in started_names:
