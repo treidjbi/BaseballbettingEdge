@@ -4,6 +4,7 @@ Fetches pitcher and team stats from the MLB Stats API (free, no key required).
 Returns a dict keyed by pitcher name with stats needed for build_features.
 """
 import logging
+import unicodedata
 import requests
 from datetime import datetime, timedelta
 
@@ -26,6 +27,13 @@ def _get(path: str, params: dict = None) -> dict:
             if attempt < 2:
                 time.sleep(2 ** attempt)  # 1s, 2s
     raise last_err
+
+
+def _normalize_name(name: str) -> str:
+    """Strip accents/diacritics and lowercase for fuzzy pitcher name matching.
+    Handles mismatches like TheRundown 'Jose Berrios' vs MLB API 'José Berríos'."""
+    nfkd = unicodedata.normalize("NFKD", name)
+    return "".join(c for c in nfkd if not unicodedata.combining(c)).lower().strip()
 
 
 def _parse_ip(value) -> float:
@@ -129,9 +137,21 @@ def fetch_stats(date_str: str, pitcher_names: list) -> dict:
     Fetches schedules for date_str AND date_str+1 to match the UTC-offset behaviour
     of fetch_odds (ET evening games are filed under the next UTC day).
     Skips pitchers where the confirmed starter cannot be found in the schedule.
+
+    Name matching is accent-insensitive: TheRundown may return 'Jose Berrios' while
+    the MLB API returns 'José Berríos'. Both normalize to 'jose berrios' and match.
+    The original TheRundown name is preserved as the dict key so downstream lookups
+    (stats_map.get(odds["pitcher"])) continue to work without modification.
     """
     season   = datetime.strptime(date_str, "%Y-%m-%d").year
     next_day = (datetime.strptime(date_str, "%Y-%m-%d") + timedelta(days=1)).strftime("%Y-%m-%d")
+
+    # Build normalized lookup: stripped/lowercased name → original TheRundown name
+    norm_to_orig: dict[str, str] = {}
+    for n in pitcher_names:
+        key = _normalize_name(n)
+        if key not in norm_to_orig:
+            norm_to_orig[key] = n
 
     # Build combined date list for the range query (MLB API supports startDate/endDate)
     schedule = _get("/schedule", {
@@ -149,9 +169,15 @@ def fetch_stats(date_str: str, pitcher_names: list) -> dict:
                 pitcher   = team_data.get("probablePitcher")
                 if not pitcher:
                     continue
-                name = pitcher.get("fullName", "")
-                if name not in pitcher_names:
+                mlb_name  = pitcher.get("fullName", "")
+                norm_mlb  = _normalize_name(mlb_name)
+                if norm_mlb not in norm_to_orig:
                     continue
+                # Use the original TheRundown name as the key so run_pipeline's
+                # stats_map.get(odds["pitcher"]) resolves correctly.
+                name = norm_to_orig[norm_mlb]
+                if mlb_name != name:
+                    log.info("Name normalised: %r (MLB) → %r (TheRundown)", mlb_name, name)
 
                 pid    = pitcher["id"]
                 throws = pitcher.get("pitchHand", {}).get("code", "R")

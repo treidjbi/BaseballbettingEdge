@@ -5,7 +5,7 @@ from unittest.mock import patch, MagicMock
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'pipeline'))
 
-from fetch_stats import fetch_stats, _parse_ip, _k9_from_splits
+from fetch_stats import fetch_stats, _parse_ip, _k9_from_splits, _normalize_name
 
 
 # ── Helpers ────────────────────────────────────────────────────────────────────
@@ -200,3 +200,68 @@ def test_fetch_stats_skips_unknown_pitchers():
 
     assert "Unknown Pitcher" not in stats
     assert "Gerrit Cole" not in stats
+
+
+# ── Tests: _normalize_name ─────────────────────────────────────────────────────
+
+class TestNormalizeName:
+    def test_strips_accents(self):
+        assert _normalize_name("José Berríos") == "jose berrios"
+
+    def test_lowercase(self):
+        assert _normalize_name("Gerrit Cole") == "gerrit cole"
+
+    def test_strips_tildes(self):
+        assert _normalize_name("Julio Urías") == "julio urias"
+
+    def test_strips_cedilla(self):
+        assert _normalize_name("Félix Hernández") == "felix hernandez"
+
+    def test_unaccented_unchanged(self):
+        assert _normalize_name("Zack Wheeler") == "zack wheeler"
+
+    def test_strips_leading_trailing_whitespace(self):
+        assert _normalize_name("  Gerrit Cole  ") == "gerrit cole"
+
+
+# ── Tests: accent-insensitive name matching ────────────────────────────────────
+
+def test_fetch_stats_matches_accented_mlb_name_to_plain_rundown_name():
+    """MLB API may return 'José Berríos' while TheRundown sends 'Jose Berrios'.
+    fetch_stats must match them and return stats under the TheRundown name."""
+    pitcher_id = 621244
+    # MLB schedule returns accented name; pitcher_names list has plain TheRundown name.
+    with patch("requests.get", side_effect=_make_requests_get_side_effect(
+        "José Berríos", pitcher_id, pitch_hand_code="R"
+    )):
+        stats = fetch_stats("2026-04-15", ["Jose Berrios"])
+
+    # Stats should be keyed by TheRundown name (no accent) so run_pipeline lookups work
+    assert "Jose Berrios" in stats, "Expected TheRundown name 'Jose Berrios' as key"
+    assert "José Berríos" not in stats, "Accented MLB name should not be the key"
+
+
+def test_fetch_stats_matches_plain_rundown_name_with_accented_mlb_name():
+    """Inverse: TheRundown sends 'Julio Urías' (accented) and MLB API has 'Julio Urias'."""
+    pitcher_id = 650556
+    with patch("requests.get", side_effect=_make_requests_get_side_effect(
+        "Julio Urias", pitcher_id, pitch_hand_code="L"
+    )):
+        stats = fetch_stats("2026-04-15", ["Julio Urías"])
+
+    assert "Julio Urías" in stats, "Expected TheRundown name 'Julio Urías' as key"
+    assert "Julio Urias" not in stats
+
+
+def test_fetch_stats_accent_match_preserves_stats_content():
+    """Accent-matched pitcher should have all expected stat keys."""
+    pitcher_id = 621244
+    with patch("requests.get", side_effect=_make_requests_get_side_effect(
+        "José Berríos", pitcher_id, pitch_hand_code="R"
+    )):
+        stats = fetch_stats("2026-04-15", ["Jose Berrios"])
+
+    result = stats.get("Jose Berrios", {})
+    for key in ("season_k9", "career_k9", "recent_k9", "avg_ip_last5", "opp_k_rate",
+                "team", "opp_team", "throws"):
+        assert key in result, f"Missing key after accent match: {key}"

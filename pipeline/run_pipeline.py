@@ -164,10 +164,47 @@ def _game_date_et(game_time_str: str, fallback: str) -> str:
         return fallback
 
 
+def _write_dated_archive_only(records: list, date_str: str, props_available: bool) -> None:
+    """Write a dated archive file for date_str without touching today.json.
+    Used by the preview run so the dashboard shows tomorrow's lines before the 6am run."""
+    base_dir = OUTPUT_PATH.parent
+    base_dir.mkdir(parents=True, exist_ok=True)
+    output = {
+        "generated_at":    datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
+        "date":            date_str,
+        "props_available": props_available,
+        "pitchers":        records,
+    }
+    dated_path = base_dir / f"{date_str}.json"
+    try:
+        with open(dated_path, "w") as f:
+            json.dump(output, f, indent=2)
+        log.info("Wrote preview archive: %s (%d pitchers)", dated_path, len(records))
+    except Exception as e:
+        log.warning("Failed to write preview archive %s: %s", dated_path, e)
+        return
+
+    # Rebuild index so the date shows up in the dashboard's date selector
+    index_path = base_dir / "index.json"
+    all_dates = sorted(
+        {p.stem for p in base_dir.glob("[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9].json")},
+        reverse=True,
+    )[:60]
+    try:
+        with open(index_path, "w") as f:
+            json.dump({"dates": all_dates}, f, indent=2)
+        log.info("Updated index.json for preview (%d entries)", len(all_dates))
+    except Exception as e:
+        log.warning("Failed to write index.json: %s", e)
+
+
 def _run_preview(tomorrow_str: str) -> None:
-    """7pm run: fetch next-day lines and store to preview_lines.json.
-    Does not seed picks to the DB — the 6am run treats these as opening lines
-    so any sharp movement overnight is captured by the movement confidence haircut."""
+    """7pm run: fetch next-day lines, store to preview_lines.json, and write a full
+    set of pitcher records to the dated dashboard archive so the dashboard shows
+    tomorrow's lines starting from the 7pm snapshot.
+
+    Pick seeding is intentionally skipped — the 6am full run seeds picks and applies
+    these 7pm lines as opening odds for overnight movement detection."""
     log.info("=== Preview run: fetching lines for %s ===", tomorrow_str)
     try:
         props = fetch_odds(tomorrow_str)
@@ -179,6 +216,7 @@ def _run_preview(tomorrow_str: str) -> None:
         log.warning("No K props posted yet for %s — preview skipped", tomorrow_str)
         return
 
+    # 1. Save opening-baseline snapshot used by tomorrow's 6am full run
     preview = {
         "date":       tomorrow_str,
         "fetched_at": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
@@ -195,6 +233,58 @@ def _run_preview(tomorrow_str: str) -> None:
     with open(PREVIEW_PATH, "w") as f:
         json.dump(preview, f, indent=2)
     log.info("Preview: stored %d pitcher lines for %s", len(preview["lines"]), tomorrow_str)
+
+    # 2. Build full pitcher records for tomorrow so the dashboard shows them tonight.
+    #    The 6am full run will overwrite this archive with fresher data and will apply
+    #    the 7pm preview lines above as opening odds for movement detection.
+    pitcher_names = [p["pitcher"] for p in props]
+
+    try:
+        stats_map = fetch_stats(tomorrow_str, pitcher_names)
+    except Exception as e:
+        log.error("Preview: fetch_stats failed: %s — writing props-only archive", e)
+        _write_dated_archive_only([], tomorrow_str, props_available=True)
+        return
+
+    try:
+        swstr_map = fetch_swstr(int(tomorrow_str[:4]), pitcher_names)
+    except Exception as e:
+        log.warning("Preview: fetch_swstr failed: %s — using neutral SwStr%%", e)
+        swstr_map = {name: _SWSTR_NEUTRAL for name in pitcher_names}
+
+    try:
+        ump_map = fetch_umpires(props)
+    except Exception as e:
+        log.warning("Preview: fetch_umpires failed: %s — using neutral adj", e)
+        ump_map = {p["pitcher"]: 0.0 for p in props}
+
+    batter_stats = fetch_batter_stats_cached(int(tomorrow_str[:4]))
+
+    records = []
+    for odds in props:
+        name  = odds["pitcher"]
+        stats = stats_map.get(name)
+        if not stats:
+            log.warning("Preview: no stats for %s — skipping", name)
+            continue
+        try:
+            lineup = fetch_lineups_for_pitcher(tomorrow_str, stats.get("team", ""))
+            record = build_pitcher_record(
+                odds, stats, ump_map.get(name, 0.0),
+                swstr_data=swstr_map.get(name, _SWSTR_NEUTRAL),
+                lineup=lineup,
+                batter_stats=batter_stats if lineup else None,
+            )
+            records.append(record)
+            log.info("Preview: built record for %s: λ=%.2f verdict=%s",
+                     name, record["lambda"], record["ev_over"]["verdict"])
+        except Exception as e:
+            log.warning("Preview: build_pitcher_record failed for %s: %s — skipping", name, e)
+
+    now_utc = datetime.now(timezone.utc)
+    _annotate_game_states(records, now_utc)
+    _write_dated_archive_only(records, tomorrow_str, props_available=True)
+    log.info("Preview: wrote %d/%d pitcher records for %s", len(records), len(props), tomorrow_str)
 
 
 def _load_preview_lines(date_str: str) -> dict:
