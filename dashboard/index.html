@@ -612,11 +612,23 @@
     ? '../data/performance.json'
     : 'https://raw.githubusercontent.com/treidjbi/baseballbettingedge/main/dashboard/data/performance.json';
 
+  // ── App date (Phoenix-aware) ──────────────────────────────
+  /** Returns the current slate date in Phoenix time (UTC-7, no DST).
+   *  Stays on today until 9pm Phoenix, then advances to tomorrow so
+   *  the evening preview lines are visible as they post. */
+  function getAppDate() {
+    const nowPhoenix = new Date(Date.now() - 7 * 60 * 60 * 1000);
+    if (nowPhoenix.getUTCHours() >= 21) {
+      nowPhoenix.setUTCDate(nowPhoenix.getUTCDate() + 1);
+    }
+    return nowPhoenix.toISOString().slice(0, 10);
+  }
+
   // ── Boot ──────────────────────────────────────────────────
   document.addEventListener('DOMContentLoaded', boot);
 
   async function boot() {
-    const today = new Date().toISOString().slice(0, 10);
+    const today = getAppDate();
     // Always default the date picker to today
     document.getElementById('date-select').value = today;
     try {
@@ -652,7 +664,7 @@
     const banner = document.getElementById('freshness-banner');
     banner.style.display = 'none';
 
-    const today    = new Date().toISOString().slice(0, 10);
+    const today    = getAppDate();
     const isPast   = !!(dateStr && dateStr < today);
     const isFuture = !!(dateStr && dateStr > today);
     // Always load by explicit date file; fall back to today.json only if no dateStr
@@ -1018,25 +1030,26 @@
   function renderWatchlist(pitchers) {
     const el = document.getElementById('panel-watch');
 
-    // Filter: FIRE/LEAN only, with non-zero corrected movement
+    // Filter: FIRE/LEAN only, pre-game only, with non-zero movement on model's side
     const movers = [...pitchers]
       .map(p => {
         const side = bestSide(p);
         const steam = steamLabel(p, side.direction);
         return { p, side, steam };
       })
-      .filter(({ side, steam }) =>
-        side.verdict !== 'PASS' && steam != null && steam.cents > 0
+      .filter(({ p, side, steam }) =>
+        side.verdict !== 'PASS' &&
+        getGameState(p) === 'pregame' &&
+        steam != null && steam.cents > 0
       )
-      .sort((a, b) => b.steam.cents - a.steam.cents)
-      .slice(0, 5);
+      .sort((a, b) => b.steam.cents - a.steam.cents);
 
     if (!movers.length) {
-      el.innerHTML = '<p class="empty">No significant steam yet — check back after the 1pm ET run.</p>';
+      el.innerHTML = '<p class="empty">No steam moves yet — check back once lines update.</p>';
       return;
     }
 
-    let html = '<div class="watchlist-hd">Biggest steam moves today</div>';
+    let html = '<div class="watchlist-hd">Steam moves today</div>';
     for (const { p, side, steam } of movers) {
       // Show odds for the side with the bigger move
       const openOdds = steam.biggerIsOver ? p.opening_over_odds : p.opening_under_odds;
