@@ -4,9 +4,9 @@ Fetches pitcher and team stats from the MLB Stats API (free, no key required).
 Returns a dict keyed by pitcher name with stats needed for build_features.
 """
 import logging
-import unicodedata
 import requests
 from datetime import datetime, timedelta
+from name_utils import normalize as _normalize_name
 
 log = logging.getLogger(__name__)
 
@@ -28,12 +28,6 @@ def _get(path: str, params: dict = None) -> dict:
                 time.sleep(2 ** attempt)  # 1s, 2s
     raise last_err
 
-
-def _normalize_name(name: str) -> str:
-    """Strip accents/diacritics and lowercase for fuzzy pitcher name matching.
-    Handles mismatches like TheRundown 'Jose Berrios' vs MLB API 'José Berríos'."""
-    nfkd = unicodedata.normalize("NFKD", name)
-    return "".join(c for c in nfkd if not unicodedata.combining(c)).lower().strip()
 
 
 def _parse_ip(value) -> float:

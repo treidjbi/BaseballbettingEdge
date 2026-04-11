@@ -8,6 +8,7 @@ import math
 import json
 from pathlib import Path
 from scipy.stats import poisson
+from name_utils import normalize as _norm
 
 PARAMS_PATH = str(Path(__file__).parent.parent / "data" / "params.json")
 
@@ -128,7 +129,9 @@ def calc_lineup_k_rate(
     rates = []
     for batter in lineup:
         name = batter.get("name", "")
-        splits = batter_stats.get(name)
+        # batter_stats keys are normalized (accent-stripped + lowercased) by
+        # fetch_batter_stats._build_lookup; normalize here to match.
+        splits = batter_stats.get(_norm(name))
         rates.append(splits[split_key] if splits else LEAGUE_AVG_K_RATE)
     return sum(rates) / len(rates)
 
