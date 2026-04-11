@@ -1,91 +1,92 @@
 {
-  "generated_at": "2026-04-11T16:07:18Z",
-  "total_picks": 32,
-  "last_calibrated": "2026-04-11T16:07:18Z",
-  "calibration_sample": 32,
+  "generated_at": "2026-04-11T16:12:29Z",
+  "total_picks": 56,
+  "last_calibrated": "2026-04-11T16:12:29Z",
+  "calibration_sample": 56,
   "rows": [
     {
       "verdict": "FIRE 2u",
       "side": "over",
-      "picks": 8,
-      "wins": 3,
-      "losses": 5,
+      "picks": 13,
+      "wins": 6,
+      "losses": 7,
       "pushes": 0,
-      "win_pct": 0.375,
-      "roi": -24.63,
-      "avg_ev": 0.2125
+      "win_pct": 0.462,
+      "roi": -7.84,
+      "avg_ev": 0.1698
     },
     {
       "verdict": "FIRE 2u",
       "side": "under",
-      "picks": 8,
-      "wins": 4,
-      "losses": 4,
+      "picks": 15,
+      "wins": 10,
+      "losses": 5,
       "pushes": 0,
-      "win_pct": 0.5,
-      "roi": -10.28,
-      "avg_ev": 0.1719
+      "win_pct": 0.667,
+      "roi": 28.61,
+      "avg_ev": 0.1723
     },
     {
       "verdict": "FIRE 1u",
       "side": "over",
-      "picks": 10,
-      "wins": 4,
-      "losses": 6,
+      "picks": 17,
+      "wins": 7,
+      "losses": 10,
       "pushes": 0,
-      "win_pct": 0.4,
-      "roi": -23.58,
-      "avg_ev": 0.0609
+      "win_pct": 0.412,
+      "roi": -19.67,
+      "avg_ev": 0.0555
     },
     {
       "verdict": "FIRE 1u",
       "side": "under",
-      "picks": 1,
-      "wins": 1,
+      "picks": 2,
+      "wins": 2,
       "losses": 0,
       "pushes": 0,
       "win_pct": 1.0,
-      "roi": 89.29,
-      "avg_ev": 0.0665
+      "roi": 96.64,
+      "avg_ev": 0.0607
     },
     {
       "verdict": "LEAN",
       "side": "over",
-      "picks": 4,
+      "picks": 5,
       "wins": 1,
-      "losses": 3,
+      "losses": 4,
       "pushes": 0,
-      "win_pct": 0.25,
-      "roi": -45.5,
-      "avg_ev": 0.0148
+      "win_pct": 0.2,
+      "roi": -56.4,
+      "avg_ev": 0.0178
     },
     {
       "verdict": "LEAN",
       "side": "under",
-      "picks": 1,
-      "wins": 0,
-      "losses": 1,
+      "picks": 4,
+      "wins": 2,
+      "losses": 2,
       "pushes": 0,
-      "win_pct": 0.0,
-      "roi": -100.0,
-      "avg_ev": 0.0151
+      "win_pct": 0.5,
+      "roi": 3.5,
+      "avg_ev": 0.0162
     }
   ],
   "lambda_accuracy": {
-    "avg_predicted": 4.98,
-    "avg_actual": 4.53,
-    "bias": -0.44
+    "avg_predicted": 5.12,
+    "avg_actual": 4.3,
+    "bias": -0.82
   },
   "params": {
     "weight_season_cap": 0.4,
     "weight_recent": 0.085,
     "ump_scale": 1.0,
-    "lambda_bias": -0.109,
+    "lambda_bias": -0.177,
     "swstr_k9_scale": 30.0,
-    "updated_at": "2026-04-11T16:07:18Z",
-    "sample_size": 32,
+    "updated_at": "2026-04-11T16:12:29Z",
+    "sample_size": 56,
     "formula_change_date": "2026-04-08",
     "calibration_notes": [
+      "[2026-04-11] Lambda bias adjusted -0.109 \u2192 -0.177 (model was systematically over-predicting Ks)",
       "[2026-04-11] Lambda bias adjusted -0.057 \u2192 -0.109 (model was systematically over-predicting Ks)",
       "[2026-04-10] Lambda bias adjusted +0.000 \u2192 -0.057 (model was systematically over-predicting Ks)",
       "[2026-04-08] FORMULA CHANGE: SwStr% multiplier removed (was double-counting K ability already in K/9). Replaced with career-relative delta (additive K/9 adjustment). Lambda bias reset to 0.0 \u2014 recalibrates from scratch under new formula.",
@@ -115,6 +116,7 @@
     ]
   },
   "calibration_notes": [
+    "[2026-04-11] Lambda bias adjusted -0.109 \u2192 -0.177 (model was systematically over-predicting Ks)",
     "[2026-04-11] Lambda bias adjusted -0.057 \u2192 -0.109 (model was systematically over-predicting Ks)",
     "[2026-04-10] Lambda bias adjusted +0.000 \u2192 -0.057 (model was systematically over-predicting Ks)",
     "[2026-04-08] FORMULA CHANGE: SwStr% multiplier removed (was double-counting K ability already in K/9). Replaced with career-relative delta (additive K/9 adjustment). Lambda bias reset to 0.0 \u2014 recalibrates from scratch under new formula.",
