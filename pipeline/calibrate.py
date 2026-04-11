@@ -48,9 +48,17 @@ def _load_current_params() -> dict:
         with open(PARAMS_PATH) as f:
             data = json.load(f)
         result = {**DEFAULTS, **data}
-        return result
     except (FileNotFoundError, json.JSONDecodeError, OSError):
-        return dict(DEFAULTS)
+        result = dict(DEFAULTS)
+
+    # Clamp all numeric params to sane ranges so a manual edit or a
+    # calibration bug can't silently apply an absurd value to every pick.
+    result["lambda_bias"]       = max(-2.0,  min(2.0,   result.get("lambda_bias", 0.0)))
+    result["ump_scale"]         = max(0.0,   min(3.0,   result.get("ump_scale", 1.0)))
+    result["swstr_k9_scale"]    = max(5.0,   min(100.0, result.get("swstr_k9_scale", 30.0)))
+    result["weight_season_cap"] = max(0.10,  min(0.95,  result.get("weight_season_cap", 0.70)))
+    result["weight_recent"]     = max(0.05,  min(0.50,  result.get("weight_recent", 0.20)))
+    return result
 
 
 def _get_db() -> sqlite3.Connection:
@@ -379,7 +387,12 @@ def _load_closed_picks() -> list:
             FROM picks
             WHERE result IN ('win','loss','push')
               AND date >= ?
+              AND (data_complete IS NULL OR data_complete != 0)
         """, (cutoff,)).fetchall()
+        # data_complete IS NULL: picks from before this column was added — treated
+        # as complete because they predate the API-fallback tracking feature.
+        # data_complete = 0: SwStr% or umpire API fell back to synthetic neutral
+        # values, which can bias lambda_bias, ump_scale, and swstr_k9_scale.
         conn.close()
         log.info("Loaded %d closed picks since %s", len(rows), cutoff)
         return rows

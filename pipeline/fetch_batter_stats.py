@@ -12,6 +12,7 @@ aggregate K% is used automatically.
 """
 import logging
 from build_features import LEAGUE_AVG_K_RATE
+from name_utils import normalize as _norm
 
 log = logging.getLogger(__name__)
 
@@ -43,7 +44,9 @@ def _fetch_splits(season: int):
 
 
 def _build_lookup(df, name_col: str = "Name", k_col: str = "K%") -> dict:
-    """Build {name: k_rate} lookup from a FanGraphs DataFrame."""
+    """Build {normalized_name: k_rate} lookup from a FanGraphs DataFrame.
+    Keys are accent-stripped + lowercased so MLB API batter names (used in
+    lineups) match FanGraphs names regardless of diacritic differences."""
     result = {}
     if df is None or df.empty:
         return result
@@ -51,7 +54,7 @@ def _build_lookup(df, name_col: str = "Name", k_col: str = "K%") -> dict:
         name = row.get(name_col)
         k = row.get(k_col)
         if name and k is not None:
-            result[str(name)] = float(k)
+            result[_norm(str(name))] = float(k)
     return result
 
 
@@ -81,6 +84,8 @@ def fetch_batter_stats(season: int) -> dict:
 
     result = {}
     for name, agg_k in agg_lookup.items():
+        # name is already normalized (from _build_lookup); keep it that way so
+        # calc_lineup_k_rate() can resolve with _norm(batter_name) as the key.
         if use_splits:
             vs_r = vs_r_lookup.get(name, agg_k)
             vs_l = vs_l_lookup.get(name, agg_k)

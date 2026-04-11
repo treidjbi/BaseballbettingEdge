@@ -13,6 +13,7 @@ Falls back to {"swstr_pct": LEAGUE_AVG_SWSTR, "career_swstr_pct": None} on any f
 """
 import logging
 from pybaseball import pitching_stats
+from name_utils import normalize as _norm
 
 log = logging.getLogger(__name__)
 
@@ -37,14 +38,15 @@ def _parse_swstr(value) -> float:
 
 
 def _build_swstr_lookup(df, swstr_col: str) -> dict:
-    """Build {normalized_name: swstr_pct} from a FanGraphs DataFrame."""
+    """Build {normalized_name: swstr_pct} from a FanGraphs DataFrame.
+    Keys are accent-stripped + lowercased via name_utils.normalize so that
+    FanGraphs names (e.g. 'Shōta Imanaga') match TheRundown names ('Shota Imanaga')."""
     lookup = {}
     for _, row in df.iterrows():
         name = row.get("Name", "")
         if not name:
             continue
-        lookup[name] = _parse_swstr(row[swstr_col])
-        lookup[name.lower()] = lookup[name]   # case-insensitive key
+        lookup[_norm(name)] = _parse_swstr(row[swstr_col])
     return lookup
 
 
@@ -104,16 +106,12 @@ def fetch_swstr(season: int, pitcher_names: list) -> dict:
     # ── Assemble results ──────────────────────────────────────────────────────
     result = {}
     for name in pitcher_names:
-        current = current_lookup.get(name)
-        if current is None:
-            current = current_lookup.get(name.lower())
+        current = current_lookup.get(_norm(name))
         if current is None:
             log.info("fetch_swstr: '%s' not found in FanGraphs current season — using neutral", name)
             current = LEAGUE_AVG_SWSTR
 
-        career = career_lookup.get(name)
-        if career is None:
-            career = career_lookup.get(name.lower())
+        career = career_lookup.get(_norm(name))
         # career is None for rookies or when the career fetch failed — handled gracefully downstream
 
         log.info("fetch_swstr: %s → SwStr%% %.1f%% (career: %s)",
