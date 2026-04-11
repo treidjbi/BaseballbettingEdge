@@ -4,6 +4,9 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>BaseballBettingEdge</title>
+  <link rel="manifest" href="/manifest.json">
+  <meta name="theme-color" content="#0d1929">
+  <meta name="apple-mobile-web-app-capable" content="yes">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;700&family=Oswald:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -517,6 +520,25 @@
       color: #888;
       border-color: #888;
     }
+    #notify-btn {
+      background: transparent;
+      border: 1px solid var(--border);
+      color: var(--ink-dim);
+      width: 32px;
+      height: 32px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 16px;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      margin-right: 8px;
+      padding: 0;
+    }
+    #notify-btn.active {
+      border-color: #4a9eff;
+      color: #4a9eff;
+    }
   </style>
   <script>
   (function() {
@@ -549,6 +571,9 @@
         <input type="date" id="date-select" onchange="onDateChange(this.value)" />
       </div>
       <div id="top-right">
+        <button id="notify-btn" onclick="toggleNotifications()" title="Enable push notifications">
+          <i class="ph-bold ph-bell" id="notify-icon"></i>
+        </button>
         <button id="refresh-btn" onclick="triggerRefresh()" title="Re-run pipeline to update lines and lineups">
           ↻ Refresh
         </button>
@@ -644,6 +669,7 @@
   document.addEventListener('DOMContentLoaded', boot);
 
   async function boot() {
+    initNotifications(); // non-blocking — registers SW and shows bell if supported
     const today = getAppDate();
     // Always default the date picker to today
     document.getElementById('date-select').value = today;
@@ -1282,6 +1308,101 @@
       btn.disabled = false;
       btn.classList.remove('running');
     }, 3 * 60 * 1000);
+  }
+
+  // ── Push Notifications ────────────────────────────────────────
+  let swRegistration = null;
+
+  async function initNotifications() {
+    if (!('serviceWorker' in navigator) || !('PushManager' in window)) return;
+
+    try {
+      swRegistration = await navigator.serviceWorker.register('/sw.js');
+    } catch (err) {
+      console.warn('SW registration failed:', err);
+      return;
+    }
+
+    const btn = document.getElementById('notify-btn');
+    btn.style.display = 'flex';
+
+    const existing = await swRegistration.pushManager.getSubscription();
+    updateNotifyBtn(existing != null);
+  }
+
+  function updateNotifyBtn(subscribed) {
+    const btn = document.getElementById('notify-btn');
+    const icon = document.getElementById('notify-icon');
+    if (subscribed) {
+      btn.classList.add('active');
+      btn.title = 'Notifications on — click to disable';
+      icon.className = 'ph-bold ph-bell-ringing';
+    } else {
+      btn.classList.remove('active');
+      btn.title = 'Enable push notifications';
+      icon.className = 'ph-bold ph-bell';
+    }
+  }
+
+  async function toggleNotifications() {
+    if (!swRegistration) return;
+
+    const existing = await swRegistration.pushManager.getSubscription();
+
+    if (existing) {
+      await existing.unsubscribe();
+      fetch('/.netlify/functions/save-subscription', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ endpoint: existing.endpoint }),
+      }).catch(() => {});
+      updateNotifyBtn(false);
+      return;
+    }
+
+    if (Notification.permission === 'denied') {
+      alert('Notifications are blocked. Please allow them in your browser settings.');
+      return;
+    }
+
+    // Fetch public VAPID key from server
+    let vapidPublicKey;
+    try {
+      const res = await fetch('/.netlify/functions/save-subscription');
+      vapidPublicKey = (await res.json()).vapidPublicKey;
+    } catch (err) {
+      console.error('Could not fetch VAPID key:', err);
+      return;
+    }
+
+    const permission = await Notification.requestPermission();
+    if (permission !== 'granted') return;
+
+    let subscription;
+    try {
+      subscription = await swRegistration.pushManager.subscribe({
+        userVisibleOnly: true,
+        applicationServerKey: urlBase64ToUint8Array(vapidPublicKey),
+      });
+    } catch (err) {
+      console.error('Push subscribe failed:', err);
+      return;
+    }
+
+    fetch('/.netlify/functions/save-subscription', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(subscription),
+    }).catch(() => {});
+
+    updateNotifyBtn(true);
+  }
+
+  function urlBase64ToUint8Array(b64) {
+    const padding = '='.repeat((4 - b64.length % 4) % 4);
+    const base64 = (b64 + padding).replace(/-/g, '+').replace(/_/g, '/');
+    const raw = atob(base64);
+    return Uint8Array.from([...raw].map((c) => c.charCodeAt(0)));
   }
 </script>
 </body>

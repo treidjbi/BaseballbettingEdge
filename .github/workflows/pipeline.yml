@@ -124,3 +124,30 @@ jobs:
             echo "Push attempt $attempt failed; retrying in $((2 ** attempt))s..."
             sleep $((2 ** attempt))
           done
+
+      - name: Send push notifications
+        if: success()
+        env:
+          NOTIFY_SECRET: ${{ secrets.NOTIFY_SECRET }}
+          NETLIFY_SITE_URL: ${{ secrets.NETLIFY_SITE_URL }}
+        run: |
+          # Skip if secrets not configured yet
+          if [ -z "$NOTIFY_SECRET" ] || [ -z "$NETLIFY_SITE_URL" ]; then
+            echo "Push notifications not configured — skipping (set NOTIFY_SECRET and NETLIFY_SITE_URL secrets to enable)"
+            exit 0
+          fi
+          SCHEDULE="${{ github.event.schedule }}"
+          if [ "$SCHEDULE" = "0 10 * * *" ]; then
+            RUN_TYPE="grading"
+          elif [ "$SCHEDULE" = "0 2 * * *" ]; then
+            RUN_TYPE="preview"
+          else
+            RUN_TYPE="full"
+          fi
+          curl -sf -X POST \
+            -H "x-notify-secret: $NOTIFY_SECRET" \
+            -H "Content-Type: application/json" \
+            -d "{\"runType\":\"$RUN_TYPE\"}" \
+            "$NETLIFY_SITE_URL/.netlify/functions/send-notifications" \
+            && echo "Notifications sent" \
+            || echo "Notification call failed (non-fatal)"
