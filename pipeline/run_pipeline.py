@@ -92,10 +92,8 @@ def _merge_with_locked_snapshots(fresh_records: list, date_str: str, now: dateti
         except Exception:
             pass
 
-    if not started_names:
-        return fresh_records  # No games started yet — use all fresh data
-
     result: list = []
+    fresh_names: set[str] = {r["pitcher"] for r in fresh_records}
 
     # Preserve locked snapshots for started games (carry exact pre-game data forward)
     for name in started_names:
@@ -122,6 +120,23 @@ def _merge_with_locked_snapshots(fresh_records: list, date_str: str, now: dateti
                     pass
             if not is_started:
                 result.append(r)
+
+    # Carry forward existing upcoming picks that the current odds batch is missing.
+    # TheRundown removes props 20-30 min before first pitch, so a run close to
+    # game time may return fewer pitchers than were present earlier in the day.
+    # Without this, a manual refresh near game time would wipe valid earlier picks.
+    for name, p in existing_pitchers.items():
+        if name in started_names or name in fresh_names:
+            continue  # Already handled above
+        game_time_str = p.get("game_time")
+        if not game_time_str:
+            continue
+        try:
+            gt = datetime.fromisoformat(game_time_str.replace("Z", "+00:00"))
+            if now < gt:  # Game hasn't started — preserve the pick
+                result.append(p)
+        except Exception:
+            pass
 
     return result
 
