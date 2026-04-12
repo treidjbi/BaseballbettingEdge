@@ -4,8 +4,8 @@ on:
   schedule:
     # All times are America/Phoenix (UTC-7, no DST — crons never change).
     #
-    # 7:00 PM Phoenix = 02:00 UTC  — preview run: fetch next-day lines as opening baseline
-    - cron: '0 2 * * *'
+    # 12:00 AM (midnight) Phoenix = 07:00 UTC  — preview run: fetch today's lines as opening baseline
+    - cron: '0 7 * * *'
     # 3:00 AM Phoenix = 10:00 UTC  — grading run: grade previous day + calibrate
     - cron: '0 10 * * *'
     # 6:00 AM Phoenix = 13:00 UTC  — full run: finalize picks (treats 7pm lines as opening)
@@ -94,10 +94,10 @@ jobs:
           SCHEDULE="${{ github.event.schedule }}"
           TODAY=$(TZ=America/Phoenix date +%Y-%m-%d)
 
-          if [ "$SCHEDULE" = "0 2 * * *" ]; then
-            # 7pm Phoenix — preview: fetch tomorrow's lines as opening baseline
-            TOMORROW=$(TZ=America/Phoenix date -d '+1 day' +%Y-%m-%d)
-            python pipeline/run_pipeline.py $TOMORROW --run-type preview
+          if [ "$SCHEDULE" = "0 7 * * *" ]; then
+            # midnight Phoenix — preview: fetch today's lines as opening baseline
+            # At midnight we've already rolled into the game day, so TODAY is correct
+            python pipeline/run_pipeline.py $TODAY --run-type preview
 
           elif [ "$SCHEDULE" = "0 10 * * *" ]; then
             # 3am Phoenix — grading: grade previous day's picks + calibrate
@@ -129,7 +129,7 @@ jobs:
             python pipeline/run_pipeline.py $TODAY
 
           else
-            # 6am Phoenix — full: finalize today's picks (uses 7pm preview lines as opening)
+            # 6am Phoenix — full: finalize today's picks (uses midnight preview lines as opening)
             python pipeline/run_pipeline.py $TODAY
           fi
 
