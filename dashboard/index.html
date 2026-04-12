@@ -589,6 +589,22 @@
     return String(str ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
   }
 
+  // ── Team abbreviation lookup ──────────────────────────────
+  const MLB_ABBR = {
+    "Arizona Diamondbacks":"ARI","Atlanta Braves":"ATL","Baltimore Orioles":"BAL",
+    "Boston Red Sox":"BOS","Chicago Cubs":"CHC","Chicago White Sox":"CWS",
+    "Cincinnati Reds":"CIN","Cleveland Guardians":"CLE","Colorado Rockies":"COL",
+    "Detroit Tigers":"DET","Houston Astros":"HOU","Kansas City Royals":"KC",
+    "Los Angeles Angels":"LAA","Los Angeles Dodgers":"LAD","Miami Marlins":"MIA",
+    "Milwaukee Brewers":"MIL","Minnesota Twins":"MIN","New York Mets":"NYM",
+    "New York Yankees":"NYY","Oakland Athletics":"OAK","Philadelphia Phillies":"PHI",
+    "Pittsburgh Pirates":"PIT","San Diego Padres":"SD","San Francisco Giants":"SF",
+    "Seattle Mariners":"SEA","St. Louis Cardinals":"STL","Tampa Bay Rays":"TB",
+    "Texas Rangers":"TEX","Toronto Blue Jays":"TOR","Washington Nationals":"WSH",
+    "Athletics":"OAK"
+  };
+  function abbr(name) { return MLB_ABBR[name] || name; }
+
   // ── Theme toggle ───────────────────────────────────────────
   function toggleTheme() {
     const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
@@ -940,7 +956,7 @@
       <div class="card-header">
         <div class="card-header-left">
           <span class="pitcher-name">${esc(p.pitcher)}</span>
-          <span class="pitcher-matchup">${esc(p.team)} vs ${esc(p.opp_team)}</span>
+          <span class="pitcher-matchup">${abbr(p.team)} vs ${abbr(p.opp_team)}</span>
         </div>
         <span class="verdict-badge ${verdictClass(side.verdict, side.direction)}">${badgeLabel(side)}</span>
       </div>
@@ -1058,7 +1074,7 @@
       <div class="watch-card">
         <div class="watch-left">
           <span class="pitcher-name" style="color:var(--ink)">${esc(p.pitcher)}</span>
-          <span class="pitcher-matchup" style="color:var(--ink-dim)">${esc(p.team)} vs ${esc(p.opp_team)}</span>
+          <span class="pitcher-matchup" style="color:var(--ink-dim)">${abbr(p.team)} vs ${abbr(p.opp_team)}</span>
         </div>
         <div class="watch-mid">
           <span style="font-size:10px;text-transform:uppercase;letter-spacing:.05em">${side.direction} (${p.k_line}K)</span>
