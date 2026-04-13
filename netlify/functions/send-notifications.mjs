@@ -1,23 +1,23 @@
 /**
- * send-notifications.js
+ * send-notifications — Netlify Functions v2
  * Called by GitHub Actions after each pipeline commit.
  * Reads today's picks, compares to last-known state stored in Netlify Blobs,
  * and fires push notifications for meaningful changes:
  *   - New FIRE picks appearing on the slate
- *   - Picks transitioning to locked (game starting)
+ *   - LEAN → FIRE upgrades
+ *   - Picks transitioning to locked (batched if multiple in one run)
  *   - Daily results summary (grading run only)
  *
  * Required Netlify env vars:
- *   VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY, VAPID_SUBJECT (e.g. "mailto:you@example.com")
- *   NOTIFY_SECRET — shared secret; GitHub Actions passes this in x-notify-secret header
- *
- * Required GitHub Actions secrets (passed as env vars):
- *   NOTIFY_SECRET, NETLIFY_SITE_URL
+ *   VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY, VAPID_SUBJECT, NOTIFY_SECRET
  */
-const webPush = require('web-push');
-const { getStore } = require('@netlify/blobs');
+import webPush from 'web-push';
+import { getStore } from '@netlify/blobs';
 
 const RAW_BASE = 'https://raw.githubusercontent.com/treidjbi/baseballbettingedge/main';
+
+const json = (status, body) =>
+  new Response(JSON.stringify(body), { status, headers: { 'Content-Type': 'application/json' } });
 
 async function fetchJSON(url) {
   const res = await fetch(`${url}?t=${Date.now()}`);
@@ -45,25 +45,26 @@ function getFirePicks(pitchers) {
   return picks;
 }
 
-exports.handler = async (event) => {
-  if (event.httpMethod !== 'POST') {
-    return { statusCode: 405, body: JSON.stringify({ error: 'Method not allowed' }) };
-  }
+export default async (req) => {
+  if (req.method !== 'POST') return json(405, { error: 'Method not allowed' });
 
   const { NOTIFY_SECRET, VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY, VAPID_SUBJECT } = process.env;
 
-  if (!NOTIFY_SECRET || event.headers['x-notify-secret'] !== NOTIFY_SECRET) {
-    return { statusCode: 401, body: JSON.stringify({ error: 'Unauthorized' }) };
+  if (!NOTIFY_SECRET || req.headers.get('x-notify-secret') !== NOTIFY_SECRET) {
+    return json(401, { error: 'Unauthorized' });
   }
   if (!VAPID_PUBLIC_KEY || !VAPID_PRIVATE_KEY || !VAPID_SUBJECT) {
     console.error('send-notifications: VAPID env vars not set');
-    return { statusCode: 500, body: JSON.stringify({ error: 'VAPID not configured' }) };
+    return json(500, { error: 'VAPID not configured' });
   }
 
   webPush.setVapidDetails(VAPID_SUBJECT, VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY);
 
   let runType = 'full';
-  try { runType = JSON.parse(event.body || '{}').runType || 'full'; } catch {}
+  try {
+    const body = await req.json();
+    runType = body?.runType || 'full';
+  } catch {}
 
   // ── Fetch current picks data ──────────────────────────────────
   let todayData;
@@ -71,7 +72,7 @@ exports.handler = async (event) => {
     todayData = await fetchJSON(`${RAW_BASE}/dashboard/data/processed/today.json`);
   } catch (err) {
     console.error('send-notifications: failed to fetch today.json:', err.message);
-    return { statusCode: 500, body: JSON.stringify({ error: 'Could not fetch picks data' }) };
+    return json(500, { error: 'Could not fetch picks data' });
   }
 
   const date = todayData.date;
@@ -91,11 +92,7 @@ exports.handler = async (event) => {
   const fireEmoji = (v) => (v === 'FIRE 2u' ? '🔥🔥' : '🔥');
 
   if (prevPicks) {
-    // New day already started — check incremental changes
-
-    // 1. New FIRE picks on the slate, OR LEAN→FIRE upgrades
-    //    (LEAN picks appearing for the first time are intentionally silent —
-    //     too noisy and they don't warrant a buzz unless they upgrade.)
+    // 1. New FIRE picks + LEAN→FIRE upgrades
     for (const [key, pick] of Object.entries(currentPicks)) {
       const prev = prevPicks[key];
       if (!prev) {
@@ -107,7 +104,6 @@ exports.handler = async (event) => {
           });
         }
       } else if (isFire(pick.verdict) && !isFire(prev.verdict)) {
-        // upgrade from LEAN → FIRE 1u / FIRE 2u
         notifications.push({
           title: `${fireEmoji(pick.verdict)} Upgraded to ${pick.verdict}`,
           body: `${pick.pitcher} — ${pick.side.toUpperCase()} ${pick.k_line} Ks`,
@@ -116,13 +112,10 @@ exports.handler = async (event) => {
       }
     }
 
-    // 2. Picks that just locked (game starting) — batched to one notification
-    //    per run to avoid 5+ buzzes when multiple games start at the same time.
+    // 2. Batched lock notifications
     const justLocked = [];
     for (const [key, pick] of Object.entries(currentPicks)) {
-      if (pick.locked && !prevPicks[key]?.locked) {
-        justLocked.push(pick);
-      }
+      if (pick.locked && !prevPicks[key]?.locked) justLocked.push(pick);
     }
     if (justLocked.length === 1) {
       const p = justLocked[0];
@@ -141,9 +134,7 @@ exports.handler = async (event) => {
     }
   } else {
     // First run of the day (or new slate) — announce FIRE picks
-    const firePicks = Object.values(currentPicks).filter(
-      (p) => p.verdict === 'FIRE 2u' || p.verdict === 'FIRE 1u'
-    );
+    const firePicks = Object.values(currentPicks).filter((p) => isFire(p.verdict));
     if (firePicks.length > 0) {
       const count = firePicks.length;
       const top = firePicks[0];
@@ -165,7 +156,6 @@ exports.handler = async (event) => {
     }
 
     if (picksHistory) {
-      // "Yesterday" in Phoenix time (UTC-7, no DST)
       const nowPhx = new Date(Date.now() - 7 * 60 * 60 * 1000);
       const yPhx = new Date(nowPhx);
       yPhx.setUTCDate(yPhx.getUTCDate() - 1);
@@ -200,7 +190,7 @@ exports.handler = async (event) => {
   }
 
   if (notifications.length === 0) {
-    return { statusCode: 200, body: JSON.stringify({ sent: 0, message: 'No changes detected' }) };
+    return json(200, { sent: 0, message: 'No changes detected' });
   }
 
   // ── Load subscribers and send ─────────────────────────────────
@@ -210,11 +200,11 @@ exports.handler = async (event) => {
     ({ blobs } = await subStore.list());
   } catch (err) {
     console.error('send-notifications: failed to list subscriptions:', err.message);
-    return { statusCode: 500, body: JSON.stringify({ error: 'Could not load subscriptions' }) };
+    return json(500, { error: 'Could not load subscriptions' });
   }
 
   if (!blobs || blobs.length === 0) {
-    return { statusCode: 200, body: JSON.stringify({ sent: 0, message: 'No subscribers' }) };
+    return json(200, { sent: 0, message: 'No subscribers' });
   }
 
   let sent = 0;
@@ -239,16 +229,12 @@ exports.handler = async (event) => {
     }
   }
 
-  // Clean up expired subscriptions
   await Promise.allSettled([...staleKeys].map((k) => subStore.delete(k)));
 
-  return {
-    statusCode: 200,
-    body: JSON.stringify({
-      sent,
-      notifications: notifications.length,
-      subscribers: blobs.length,
-      staleRemoved: staleKeys.size,
-    }),
-  };
+  return json(200, {
+    sent,
+    notifications: notifications.length,
+    subscribers: blobs.length,
+    staleRemoved: staleKeys.size,
+  });
 };
