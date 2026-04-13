@@ -87,30 +87,57 @@ exports.handler = async (event) => {
   const notifications = [];
   const prevPicks = (prevState?.date === date) ? (prevState.picks || {}) : null;
 
+  const isFire = (v) => v === 'FIRE 1u' || v === 'FIRE 2u';
+  const fireEmoji = (v) => (v === 'FIRE 2u' ? '🔥🔥' : '🔥');
+
   if (prevPicks) {
     // New day already started — check incremental changes
 
-    // 1. New FIRE picks (pitcher+side not seen before on this date)
+    // 1. New FIRE picks on the slate, OR LEAN→FIRE upgrades
+    //    (LEAN picks appearing for the first time are intentionally silent —
+    //     too noisy and they don't warrant a buzz unless they upgrade.)
     for (const [key, pick] of Object.entries(currentPicks)) {
-      if (!prevPicks[key]) {
-        const emoji = pick.verdict === 'FIRE 2u' ? '🔥🔥' : '🔥';
+      const prev = prevPicks[key];
+      if (!prev) {
+        if (isFire(pick.verdict)) {
+          notifications.push({
+            title: `${fireEmoji(pick.verdict)} New FIRE Pick`,
+            body: `${pick.pitcher} — ${pick.verdict} ${pick.side.toUpperCase()} ${pick.k_line} Ks`,
+            tag: `new-${key}`,
+          });
+        }
+      } else if (isFire(pick.verdict) && !isFire(prev.verdict)) {
+        // upgrade from LEAN → FIRE 1u / FIRE 2u
         notifications.push({
-          title: `${emoji} New FIRE Pick`,
-          body: `${pick.pitcher} — ${pick.verdict} ${pick.side.toUpperCase()} ${pick.k_line} Ks`,
-          tag: `new-${key}`,
+          title: `${fireEmoji(pick.verdict)} Upgraded to ${pick.verdict}`,
+          body: `${pick.pitcher} — ${pick.side.toUpperCase()} ${pick.k_line} Ks`,
+          tag: `upgrade-${key}`,
         });
       }
     }
 
-    // 2. Picks that just locked (game starting)
+    // 2. Picks that just locked (game starting) — batched to one notification
+    //    per run to avoid 5+ buzzes when multiple games start at the same time.
+    const justLocked = [];
     for (const [key, pick] of Object.entries(currentPicks)) {
       if (pick.locked && !prevPicks[key]?.locked) {
-        notifications.push({
-          title: `🔒 ${pick.pitcher} Locked`,
-          body: `${pick.verdict} — ${pick.side.toUpperCase()} ${pick.k_line} Ks`,
-          tag: `locked-${key}`,
-        });
+        justLocked.push(pick);
       }
+    }
+    if (justLocked.length === 1) {
+      const p = justLocked[0];
+      notifications.push({
+        title: `🔒 ${p.pitcher} Locked`,
+        body: `${p.verdict} — ${p.side.toUpperCase()} ${p.k_line} Ks`,
+        tag: `locked-${date}-${p.pitcher}`,
+      });
+    } else if (justLocked.length > 1) {
+      const names = justLocked.map((p) => p.pitcher).join(', ');
+      notifications.push({
+        title: `🔒 ${justLocked.length} picks locked`,
+        body: names.length > 140 ? names.slice(0, 137) + '…' : names,
+        tag: `locked-batch-${date}-${Date.now()}`,
+      });
     }
   } else {
     // First run of the day (or new slate) — announce FIRE picks
