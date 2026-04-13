@@ -84,8 +84,8 @@ def test_run_writes_today_json(tmp_path):
          patch("run_pipeline.fetch_swstr", return_value={"Test Pitcher": {"swstr_pct": 0.110, "career_swstr_pct": None}}), \
          patch("run_pipeline.fetch_umpires", return_value={"Test Pitcher": 0.0}), \
          patch("run_pipeline.fetch_lineups_for_pitcher", return_value=None), \
-         patch("run_pipeline.fetch_batter_stats_cached", return_value={}), \
-         patch("run_pipeline._write_archive"):  # skip archive for unit test
+         patch("run_pipeline.fetch_batter_stats_cached", return_value={}):
+        # _write_archive is the sole writer of today.json — don't patch it out.
         run_pipeline.run("2026-04-01")
 
     assert out_path.exists()
@@ -100,8 +100,7 @@ def test_run_writes_empty_output_when_no_props(tmp_path):
     out_path = tmp_path / "today.json"
 
     with patch.object(run_pipeline, "OUTPUT_PATH", out_path), \
-         patch("run_pipeline.fetch_odds", return_value=[]), \
-         patch("run_pipeline._write_archive"):
+         patch("run_pipeline.fetch_odds", return_value=[]):
         run_pipeline.run("2026-04-01")
 
     assert out_path.exists()

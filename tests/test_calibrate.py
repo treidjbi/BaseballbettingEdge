@@ -5,8 +5,6 @@ from unittest.mock import patch
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'pipeline'))
 
-import pytz
-
 
 @pytest.fixture
 def tmp_env(tmp_path):
@@ -384,11 +382,15 @@ def test_load_closed_picks_uses_locked_adj_ev_when_present(tmp_path):
             raw_lambda REAL, actual_ks INTEGER,
             season_k9 REAL, recent_k9 REAL, career_k9 REAL,
             avg_ip REAL, ump_k_adj REAL, swstr_delta_k9 REAL,
-            fetched_at TEXT, pnl REAL
+            fetched_at TEXT, pnl REAL,
+            data_complete INTEGER NOT NULL DEFAULT 1
         )
     """)
     conn.execute("""
-        INSERT INTO picks VALUES
+        INSERT INTO picks (date, verdict, side, result, odds, adj_ev, locked_adj_ev,
+                           raw_lambda, actual_ks, season_k9, recent_k9, career_k9,
+                           avg_ip, ump_k_adj, swstr_delta_k9, fetched_at, pnl)
+        VALUES
         ('2026-04-10','FIRE 1u','over','win',-115, 0.08, 0.05,
          6.8, 7, 9.0, 8.5, 9.2, 5.8, 0.1, 0.02, '2026-04-10T12:00:00Z', 0.87)
     """)

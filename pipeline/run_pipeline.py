@@ -89,8 +89,11 @@ def _merge_with_locked_snapshots(fresh_records: list, date_str: str, now: dateti
             game_time = datetime.fromisoformat(game_time_str.replace("Z", "+00:00"))
             if now >= game_time:
                 started_names.add(name)
-        except Exception:
-            pass
+        except (ValueError, TypeError) as e:
+            # Don't silently swallow: if game_time is malformed the pick is stuck
+            # in "not started" forever and carries stale data across runs.
+            log.warning("Unparseable game_time %r for %s: %s — treating as not started",
+                        game_time_str, name, e)
 
     result: list = []
     fresh_names: set[str] = {r["pitcher"] for r in fresh_records}

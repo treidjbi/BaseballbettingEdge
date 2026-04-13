@@ -12,8 +12,11 @@ import sqlite3
 from datetime import datetime, timedelta
 from pathlib import Path
 
-import pytz
+from zoneinfo import ZoneInfo
+
 from scipy.stats import pearsonr
+
+UTC = ZoneInfo("UTC")
 
 log = logging.getLogger(__name__)
 
@@ -24,6 +27,12 @@ PERFORMANCE_PATH  = Path(__file__).parent.parent / "dashboard" / "data" / "perfo
 PHASE1_THRESHOLD       = 30
 PHASE2_THRESHOLD       = 60
 SWSTR_SCALE_THRESHOLD  = 100
+
+# Calibration notes older than this are dropped so the dashboard doesn't show
+# stale rationale from months ago. Hard cap of 20 entries as a secondary bound
+# in case calibration runs happen more than once per day.
+CALIBRATION_NOTES_MAX_AGE_DAYS = 14
+CALIBRATION_NOTES_MAX_ENTRIES  = 20
 
 # Adaptive lambda bias step size: scales with sqrt(n / LAMBDA_BIAS_SCALE_N).
 # At n=30 (phase 1 floor): max step = 0.05 — cautious, sample is small.
@@ -42,6 +51,37 @@ DEFAULTS = {
     "swstr_k9_scale":    30.0,
 }
 
+# Param clamp ranges — single source of truth used on both read and write so a
+# calibration bug can't silently produce absurd values that only get clamped
+# on the next read (which masks the underlying bad write).
+PARAM_CLAMPS = {
+    "lambda_bias":       (-2.0,  2.0),
+    "ump_scale":         ( 0.0,  3.0),
+    "swstr_k9_scale":    ( 5.0, 100.0),
+    "weight_season_cap": ( 0.10, 0.95),
+    "weight_recent":     ( 0.05, 0.50),
+}
+
+
+def _clamp_params(params: dict) -> dict:
+    """Return a copy of params with all clampable numeric values in range.
+
+    Applied on both read (`_load_current_params`) and write (before JSON dump)
+    so either path catches out-of-range values. If a clamp triggers on write,
+    a warning is logged so we don't silently cover up a bad calibration.
+    """
+    result = dict(params)
+    for key, (lo, hi) in PARAM_CLAMPS.items():
+        if key not in result or result[key] is None:
+            continue
+        raw = result[key]
+        clamped = max(lo, min(hi, raw))
+        if clamped != raw:
+            log.warning("Calibration clamp: %s=%.4f outside [%.2f, %.2f] → %.4f",
+                        key, raw, lo, hi, clamped)
+        result[key] = clamped
+    return result
+
 
 def _load_current_params() -> dict:
     try:
@@ -51,14 +91,8 @@ def _load_current_params() -> dict:
     except (FileNotFoundError, json.JSONDecodeError, OSError):
         result = dict(DEFAULTS)
 
-    # Clamp all numeric params to sane ranges so a manual edit or a
-    # calibration bug can't silently apply an absurd value to every pick.
-    result["lambda_bias"]       = max(-2.0,  min(2.0,   result.get("lambda_bias", 0.0)))
-    result["ump_scale"]         = max(0.0,   min(3.0,   result.get("ump_scale", 1.0)))
-    result["swstr_k9_scale"]    = max(5.0,   min(100.0, result.get("swstr_k9_scale", 30.0)))
-    result["weight_season_cap"] = max(0.10,  min(0.95,  result.get("weight_season_cap", 0.70)))
-    result["weight_recent"]     = max(0.05,  min(0.50,  result.get("weight_recent", 0.20)))
-    return result
+    # Clamp on read (defense in depth — _clamp_params also runs on write).
+    return _clamp_params(result)
 
 
 def _get_db() -> sqlite3.Connection:
@@ -81,6 +115,33 @@ _ROW_ORDER = [
     ("LEAN",    "over"),
     ("LEAN",    "under"),
 ]
+
+
+_NOTE_DATE_RE = __import__("re").compile(r"^\[(\d{4}-\d{2}-\d{2})\]")
+
+
+def _prune_stale_notes(notes: list[str]) -> list[str]:
+    """Drop calibration notes older than CALIBRATION_NOTES_MAX_AGE_DAYS.
+
+    Notes without a parseable `[YYYY-MM-DD]` prefix are kept (can't prove age).
+    """
+    if not notes:
+        return []
+    cutoff = datetime.now(UTC).date() - timedelta(days=CALIBRATION_NOTES_MAX_AGE_DAYS)
+    kept: list[str] = []
+    for note in notes:
+        m = _NOTE_DATE_RE.match(note)
+        if not m:
+            kept.append(note)
+            continue
+        try:
+            note_date = datetime.strptime(m.group(1), "%Y-%m-%d").date()
+        except ValueError:
+            kept.append(note)
+            continue
+        if note_date >= cutoff:
+            kept.append(note)
+    return kept
 
 
 def build_calibration_notes(old_params: dict, new_params: dict) -> list[str]:
@@ -192,7 +253,7 @@ def build_performance(closed: list, current_params: dict | None = None,
     cal_n    = params.get("sample_size", 0) if last_cal else None
 
     return {
-        "generated_at":        datetime.now(pytz.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
+        "generated_at":        datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%SZ"),
         "total_picks":         total,
         "last_calibrated":     last_cal,
         "calibration_sample":  cal_n,
@@ -264,14 +325,23 @@ def _calibrate_phase2(closed_picks: list, current_params: dict) -> dict:
                 params["ump_scale"] = round(max(0.0, min(1.5, current_scale - 0.05)), 3)
             # Between -0.15 and -0.05, or 0.05 and 0.15: leave scale unchanged
 
-    # SwStr% K/9 scale: Pearson correlation between swstr_delta contribution and residual.
-    # Requires n>=100 so the SwStr% delta has enough variety to measure signal.
-    # swstr_delta_k9 stored in picks is the post-dampened K/9 delta (before avg_ip scaling).
-    # We multiply by avg_ip/9 to approximate the lambda contribution for this pick.
+    # SwStr% K/9 scale: Pearson correlation between swstr_delta contribution and a
+    # SwStr%-neutral residual. Requires n>=100 so the SwStr% delta has enough
+    # variety to measure signal.
+    #
+    # swstr_delta_k9 stored in picks is the post-dampened K/9 delta (before
+    # avg_ip scaling). Multiplying by avg_ip/9 gives the lambda contribution.
+    #
+    # NOTE on residual: raw_lambda already contains the SwStr% contribution (see
+    # calc_lambda), so correlating against (actual - raw_lambda) is confounded —
+    # the more SwStr% is already applied, the less residual is left for it to
+    # explain, producing artificially low correlation. We strip the SwStr%
+    # contribution back out to get a clean residual before correlating:
+    #     clean_residual = (actual - raw_lambda) + swstr_contribution
     if len(closed_picks) >= SWSTR_SCALE_THRESHOLD:
         swstr_data = [
             (r["swstr_delta_k9"] * (r["avg_ip"] / 9.0),
-             r["actual_ks"] - r["raw_lambda"])
+             (r["actual_ks"] - r["raw_lambda"]) + r["swstr_delta_k9"] * (r["avg_ip"] / 9.0))
             for r in closed_picks
             if r["swstr_delta_k9"] is not None
             and r["avg_ip"] is not None
@@ -421,21 +491,27 @@ def run() -> None:
     if n >= PHASE2_THRESHOLD:
         updated_params = _calibrate_phase2(closed, updated_params)
 
-    updated_params["updated_at"]  = datetime.now(pytz.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+    updated_params["updated_at"]  = datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%SZ")
     updated_params["sample_size"] = n
 
     # Generate notes describing what changed, then persist in params.json
     notes = build_calibration_notes(current_params, updated_params)
     if notes:
         log.info("Calibration changes: %s", "; ".join(notes))
-    # Carry forward any existing notes, prepend new ones with timestamp
-    existing_notes = current_params.get("calibration_notes", [])
+    # Carry forward recent existing notes, prepend new ones with timestamp.
+    # Expire notes older than CALIBRATION_NOTES_MAX_AGE_DAYS so the dashboard
+    # doesn't show month-old rationale that no longer reflects current params.
+    existing_notes = _prune_stale_notes(current_params.get("calibration_notes", []))
     if notes:
-        timestamp = datetime.now(pytz.utc).strftime("%Y-%m-%d")
+        timestamp = datetime.now(UTC).strftime("%Y-%m-%d")
         stamped = [f"[{timestamp}] {note}" for note in notes]
-        updated_params["calibration_notes"] = (stamped + existing_notes)[:50]
+        updated_params["calibration_notes"] = (stamped + existing_notes)[:CALIBRATION_NOTES_MAX_ENTRIES]
     else:
-        updated_params["calibration_notes"] = existing_notes[:50]
+        updated_params["calibration_notes"] = existing_notes[:CALIBRATION_NOTES_MAX_ENTRIES]
+
+    # Clamp on write: catches out-of-range values at the source and logs a
+    # warning so a bad calibration is visible instead of silently fixed on read.
+    updated_params = _clamp_params(updated_params)
 
     PARAMS_PATH.parent.mkdir(parents=True, exist_ok=True)
     with open(PARAMS_PATH, "w") as f:

@@ -28,8 +28,10 @@ def test_fetch_batter_stats_returns_splits(monkeypatch):
     monkeypatch.setattr("fetch_batter_stats._fetch_aggregate", lambda season: SAMPLE_AGGREGATE)
     monkeypatch.setattr("fetch_batter_stats._fetch_splits", lambda season: (SAMPLE_VS_R, SAMPLE_VS_L))
     result = fetch_batter_stats.fetch_batter_stats(2026)
-    assert abs(result["Mookie Betts"]["vs_R"] - 0.150) < 0.001
-    assert abs(result["Mookie Betts"]["vs_L"] - 0.115) < 0.001
+    # Keys are normalized by _build_lookup so lineup names from MLB Stats API
+    # (which may have accents/casing differences) match reliably.
+    assert abs(result["mookie betts"]["vs_R"] - 0.150) < 0.001
+    assert abs(result["mookie betts"]["vs_L"] - 0.115) < 0.001
 
 
 def test_fetch_batter_stats_falls_back_to_aggregate_when_splits_fail(monkeypatch):
@@ -39,8 +41,8 @@ def test_fetch_batter_stats_falls_back_to_aggregate_when_splits_fail(monkeypatch
         raise AttributeError("no splits")
     monkeypatch.setattr("fetch_batter_stats._fetch_splits", raise_splits)
     result = fetch_batter_stats.fetch_batter_stats(2026)
-    assert abs(result["Mookie Betts"]["vs_R"] - 0.135) < 0.001
-    assert abs(result["Mookie Betts"]["vs_L"] - 0.135) < 0.001
+    assert abs(result["mookie betts"]["vs_R"] - 0.135) < 0.001
+    assert abs(result["mookie betts"]["vs_L"] - 0.135) < 0.001
 
 
 def test_fetch_batter_stats_unknown_batter_returns_league_avg(monkeypatch):

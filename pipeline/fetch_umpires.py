@@ -10,6 +10,8 @@ import os
 import requests
 from bs4 import BeautifulSoup
 
+from name_utils import normalize as _normalize
+
 log = logging.getLogger(__name__)
 
 UMP_NEWS_URL = "https://www.ump.news"
@@ -35,8 +37,15 @@ CAREER_RATES_PATH = os.path.join(
 
 
 def _load_career_rates() -> dict:
+    """Return career K adjustments keyed by normalized umpire name.
+
+    Normalizes keys (lower + accent-strip) so lookups tolerate casing or
+    diacritical differences between ump.news ("Jose Garcia") and the career
+    rates file ("José García") without silently falling back to 0.0.
+    """
     with open(CAREER_RATES_PATH, "r") as f:
-        return json.load(f)
+        raw = json.load(f)
+    return {_normalize(k): v for k, v in raw.items()}
 
 
 def scrape_hp_assignments() -> dict:
@@ -118,8 +127,9 @@ def fetch_umpires(props: list) -> dict:
                 ump_name = name
                 break
 
-        if ump_name and ump_name in career_rates:
-            adj = career_rates[ump_name]
+        ump_key = _normalize(ump_name) if ump_name else None
+        if ump_key and ump_key in career_rates:
+            adj = career_rates[ump_key]
             log.info("Pitcher %s: ump %s → adj %+.2f", pitcher, ump_name, adj)
             result[pitcher] = adj
         else:

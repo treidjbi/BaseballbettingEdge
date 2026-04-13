@@ -13,9 +13,11 @@ import logging
 import sys
 from datetime import datetime
 from pathlib import Path
+from zoneinfo import ZoneInfo
 
-import pytz
 import requests
+
+UTC = ZoneInfo("UTC")
 
 # Reuse init_db, get_db, _normalize, _calc_pnl from fetch_results
 sys.path.insert(0, str(Path(__file__).parent))
@@ -121,7 +123,7 @@ def _close_date(date_str: str) -> int:
                     ks_by_name[_normalize(name)] = int(ks)
 
     closed = 0
-    now_str = datetime.now(pytz.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+    now_str = datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%SZ")
 
     with get_db() as conn:
         for pick in open_picks:

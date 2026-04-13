@@ -45,7 +45,8 @@ OPP_K_PRIOR_GAMES       = 50   # Bayesian prior: how many games league average i
 
 # SwStr% delta → K/9 conversion factor. Each 0.01 (1 percentage point) of SwStr%
 # above/below the pitcher's career norm adjusts blended K/9 by this many runs.
-# Conservative starting value — calibrated upward in Phase 2 (n≥100 picks).
+# This constant is only a fallback default; the live value is calibrated each
+# run and loaded from params.json (see calibrate.py::_calibrate_phase2).
 SWSTR_K9_SCALE   = 30.0
 # Bayesian prior starts: treat n starts of current-season SwStr% as reliable only
 # after this many starts. At 3 starts (early season) the delta is ~23% weighted;

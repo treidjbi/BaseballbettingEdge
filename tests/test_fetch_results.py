@@ -533,9 +533,10 @@ class TestCloseOrphans:
     def test_old_null_result_marked_cancelled(self, tmp_db):
         db_path, fr = tmp_db
         from datetime import datetime, timedelta
-        import pytz
-        ET = pytz.timezone("America/New_York")
-        old_date = (datetime.now(ET) - timedelta(days=4)).strftime("%Y-%m-%d")
+        from zoneinfo import ZoneInfo
+        ET = ZoneInfo("America/New_York")
+        # close_orphans threshold is 7 days — use 8 to guarantee we're past it.
+        old_date = (datetime.now(ET) - timedelta(days=8)).strftime("%Y-%m-%d")
         self._insert_pick(db_path, old_date)
 
         fr.close_orphans()
@@ -550,8 +551,8 @@ class TestCloseOrphans:
     def test_recent_null_result_untouched(self, tmp_db):
         db_path, fr = tmp_db
         from datetime import datetime, timedelta
-        import pytz
-        ET = pytz.timezone("America/New_York")
+        from zoneinfo import ZoneInfo
+        ET = ZoneInfo("America/New_York")
         yesterday = (datetime.now(ET) - timedelta(days=1)).strftime("%Y-%m-%d")
         self._insert_pick(db_path, yesterday)
 
@@ -566,8 +567,8 @@ class TestCloseOrphans:
     def test_already_closed_untouched(self, tmp_db):
         db_path, fr = tmp_db
         from datetime import datetime, timedelta
-        import pytz
-        ET = pytz.timezone("America/New_York")
+        from zoneinfo import ZoneInfo
+        ET = ZoneInfo("America/New_York")
         old_date = (datetime.now(ET) - timedelta(days=5)).strftime("%Y-%m-%d")
         self._insert_pick(db_path, old_date)
         import sqlite3

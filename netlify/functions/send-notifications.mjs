@@ -13,8 +13,35 @@
  */
 import webPush from 'web-push';
 import { getStore } from '@netlify/blobs';
+import { timingSafeEqual } from 'node:crypto';
 
 const RAW_BASE = 'https://raw.githubusercontent.com/treidjbi/baseballbettingedge/main';
+
+/**
+ * Constant-time string compare. Protects against timing attacks on the shared
+ * NOTIFY_SECRET since the function is exposed on the public internet.
+ * Returns false for any length mismatch or non-string input without leaking
+ * where the strings diverge.
+ */
+function safeSecretEqual(a, b) {
+  if (typeof a !== 'string' || typeof b !== 'string') return false;
+  const ba = Buffer.from(a);
+  const bb = Buffer.from(b);
+  if (ba.length !== bb.length) return false;
+  return timingSafeEqual(ba, bb);
+}
+
+/**
+ * Current date in America/Phoenix (UTC-7, no DST) as "YYYY-MM-DD".
+ * Replaces the hardcoded `Date.now() - 7*60*60*1000` math so the day boundary
+ * matches the user's local day even if Node's default TZ differs.
+ */
+function phoenixDateString(d = new Date()) {
+  return new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'America/Phoenix',
+    year: 'numeric', month: '2-digit', day: '2-digit',
+  }).format(d);
+}
 
 const json = (status, body) =>
   new Response(JSON.stringify(body), { status, headers: { 'Content-Type': 'application/json' } });
@@ -50,7 +77,7 @@ export default async (req) => {
 
   const { NOTIFY_SECRET, VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY, VAPID_SUBJECT } = process.env;
 
-  if (!NOTIFY_SECRET || req.headers.get('x-notify-secret') !== NOTIFY_SECRET) {
+  if (!NOTIFY_SECRET || !safeSecretEqual(req.headers.get('x-notify-secret') || '', NOTIFY_SECRET)) {
     return json(401, { error: 'Unauthorized' });
   }
   if (!VAPID_PUBLIC_KEY || !VAPID_PRIVATE_KEY || !VAPID_SUBJECT) {
@@ -158,10 +185,14 @@ export default async (req) => {
       });
     } else if (justLocked.length > 1) {
       const names = justLocked.map((p) => p.pitcher).join(', ');
+      // Tag uses date + sorted pitcher keys only — omitting Date.now() lets the
+      // OS deduplicate if the same batch re-fires (e.g., pipeline retries) so
+      // users don't see "5 picks locked" twice in five minutes.
+      const batchKey = justLocked.map((p) => `${p.pitcher}|${p.side}`).sort().join('~');
       notifications.push({
         title: `🔒 ${justLocked.length} picks locked`,
         body: names.length > 140 ? names.slice(0, 137) + '…' : names,
-        tag: `locked-batch-${date}-${Date.now()}`,
+        tag: `locked-batch-${date}-${batchKey}`,
       });
     }
   } else {
@@ -188,10 +219,14 @@ export default async (req) => {
     }
 
     if (picksHistory) {
-      const nowPhx = new Date(Date.now() - 7 * 60 * 60 * 1000);
-      const yPhx = new Date(nowPhx);
-      yPhx.setUTCDate(yPhx.getUTCDate() - 1);
-      const yDate = yPhx.toISOString().slice(0, 10);
+      // "Yesterday" from the user's perspective = Phoenix-local yesterday.
+      // Compute today in Phoenix, then subtract one day — correct regardless
+      // of Netlify runtime TZ and stable across the 11pm→midnight boundary.
+      const todayPhx = phoenixDateString();              // e.g. "2026-04-13"
+      const [y, m, d] = todayPhx.split('-').map(Number);
+      const yesterday = new Date(Date.UTC(y, m - 1, d));
+      yesterday.setUTCDate(yesterday.getUTCDate() - 1);
+      const yDate = yesterday.toISOString().slice(0, 10);
 
       const graded = picksHistory.filter((p) => p.date === yDate && p.result != null);
       if (graded.length > 0) {

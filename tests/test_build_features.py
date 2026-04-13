@@ -567,9 +567,12 @@ class TestBuildPitcherRecordFields:
 
 # ── Lineup K rate tests ────────────────────────────────────────────────────
 
+# Keys match production: fetch_batter_stats._build_lookup normalizes names
+# (accent-stripped + lowercased) so calc_lineup_k_rate can do its own normalize()
+# on incoming batter names and match them reliably across APIs.
 SAMPLE_BATTER_STATS = {
-    "Aaron Judge":  {"vs_R": 0.280, "vs_L": 0.210},
-    "Mookie Betts": {"vs_R": 0.150, "vs_L": 0.115},
+    "aaron judge":  {"vs_R": 0.280, "vs_L": 0.210},
+    "mookie betts": {"vs_R": 0.150, "vs_L": 0.115},
 }
 
 SAMPLE_LINEUP = [

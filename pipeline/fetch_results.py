@@ -8,16 +8,18 @@ import json
 import logging
 import os
 import sqlite3
-import unicodedata
 from datetime import datetime, timedelta
 from pathlib import Path
+from zoneinfo import ZoneInfo
 
-import pytz
 import requests
+
+from name_utils import normalize as _normalize
 
 log = logging.getLogger(__name__)
 
-ET = pytz.timezone("America/New_York")
+ET = ZoneInfo("America/New_York")
+UTC = ZoneInfo("UTC")
 MLB_BASE = "https://statsapi.mlb.com/api/v1"
 
 DB_PATH      = Path(__file__).parent.parent / "data" / "results.db"
@@ -171,7 +173,13 @@ def seed_picks(today_json_path: Path = TODAY_JSON) -> int:
                 ))
                 inserted += cur.rowcount
 
-                # Refresh unlocked picks with latest data (odds, lineup, verdict, and stats)
+                # Refresh unlocked picks with latest data (odds, lineup, verdict, and stats).
+                # NOTE: opening_over_odds / opening_under_odds are intentionally NOT updated —
+                # they're captured only on INSERT so the original opening line stays frozen
+                # for CLV / line-movement tracking. Overwriting them on every refresh
+                # silently erased the real opening line and broke movement_conf.
+                # COALESCE guards legacy rows where opening is NULL: fills on first refresh
+                # after this fix, then never touches it again.
                 if cur.rowcount == 0:
                     conn.execute("""
                         UPDATE picks
@@ -183,7 +191,8 @@ def seed_picks(today_json_path: Path = TODAY_JSON) -> int:
                             season_k9 = ?, recent_k9 = ?, career_k9 = ?,
                             avg_ip = ?, ump_k_adj = ?, swstr_pct = ?,
                             best_over_odds = ?, best_under_odds = ?,
-                            opening_over_odds = ?, opening_under_odds = ?
+                            opening_over_odds = COALESCE(opening_over_odds, ?),
+                            opening_under_odds = COALESCE(opening_under_odds, ?)
                         WHERE date = ? AND pitcher = ? AND side = ?
                           AND locked_at IS NULL AND result IS NULL
                     """, (
@@ -366,11 +375,6 @@ def _et_dates() -> tuple[str, str]:
     )
 
 
-def _normalize(name: str) -> str:
-    nfkd = unicodedata.normalize("NFKD", name)
-    return "".join(c for c in nfkd if not unicodedata.combining(c)).lower().strip()
-
-
 def _calc_pnl(result: str, odds: int) -> float:
     if result == "win":
         return odds / 100.0 if odds > 0 else 100.0 / abs(odds)
@@ -431,7 +435,7 @@ def _grade_picks_for_date(grade_date: str, date_picks: list) -> int:
                     ks_by_name[_normalize(name)] = int(ks)
 
     closed = 0
-    now_str = datetime.now(pytz.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+    now_str = datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%SZ")
 
     with get_db() as conn:
         for pick in date_picks:
@@ -513,7 +517,7 @@ def close_orphans() -> int:
     it can, so orphan-cancellation is only a last resort for truly missing data.
     """
     threshold = (datetime.now(ET) - timedelta(days=7)).strftime("%Y-%m-%d")
-    now_str = datetime.now(pytz.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+    now_str = datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%SZ")
 
     with get_db() as conn:
         cur = conn.execute("""
