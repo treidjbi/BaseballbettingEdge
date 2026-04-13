@@ -61,10 +61,42 @@ export default async (req) => {
   webPush.setVapidDetails(VAPID_SUBJECT, VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY);
 
   let runType = 'full';
+  let isTest = false;
   try {
     const body = await req.json();
     runType = body?.runType || 'full';
+    isTest = body?.test === true;
   } catch {}
+
+  // ── Test mode — send a single dummy push to all subscribers ───
+  if (isTest) {
+    const subStore = getStore({ name: 'push-subscriptions', consistency: 'strong' });
+    const { blobs } = await subStore.list();
+    if (!blobs || blobs.length === 0) return json(200, { sent: 0, message: 'No subscribers' });
+
+    const testNotif = {
+      title: '⚾ Test notification',
+      body: 'Push notifications are working!',
+      tag: `test-${Date.now()}`,
+      url: '/',
+    };
+
+    let sent = 0;
+    const staleKeys = new Set();
+    for (const blob of blobs) {
+      const sub = await subStore.get(blob.key, { type: 'json' }).catch(() => null);
+      if (!sub) continue;
+      try {
+        await webPush.sendNotification(sub, JSON.stringify(testNotif));
+        sent++;
+      } catch (err) {
+        if (err.statusCode === 404 || err.statusCode === 410) staleKeys.add(blob.key);
+        else console.error(`test push failed for ${blob.key}:`, err.message);
+      }
+    }
+    await Promise.allSettled([...staleKeys].map((k) => subStore.delete(k)));
+    return json(200, { sent, subscribers: blobs.length, mode: 'test' });
+  }
 
   // ── Fetch current picks data ──────────────────────────────────
   let todayData;
