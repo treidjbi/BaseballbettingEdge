@@ -2,12 +2,13 @@
   "weight_season_cap": 0.4,
   "weight_recent": 0.05,
   "ump_scale": 1.0,
-  "lambda_bias": -0.353,
+  "lambda_bias": -0.453,
   "swstr_k9_scale": 30.0,
-  "updated_at": "2026-04-13T11:19:00Z",
-  "sample_size": 106,
+  "updated_at": "2026-04-14T11:04:37Z",
+  "sample_size": 121,
   "formula_change_date": "2026-04-08",
   "calibration_notes": [
+    "[2026-04-14] Lambda bias adjusted -0.353 \u2192 -0.453 (model was systematically over-predicting Ks)",
     "[2026-04-13] Lambda bias adjusted -0.259 \u2192 -0.353 (model was systematically over-predicting Ks)",
     "[2026-04-12] Lambda bias adjusted -0.177 \u2192 -0.259 (model was systematically over-predicting Ks)",
     "[2026-04-12] K/9 blend weights updated: season 40% \u2192 40%, recent 8% \u2192 6%",
@@ -26,17 +27,6 @@
     "[2026-04-07] K/9 blend weights updated: season 40% \u2192 40%, recent 9% \u2192 6%",
     "[2026-04-07] FIRE 1u EV threshold raised 3.0% \u2192 3.5% (strong recent win rate)",
     "[2026-04-07] Thresholds manually reset: fire1 and lean were miscalibrated to fire2 level, collapsing FIRE 1u tier and suppressing LEAN signals. Restored to lean=1%, fire1=3%, fire2=6%.",
-    "[2026-04-06] Lambda bias adjusted -0.222 \u2192 -0.331 (model was systematically over-predicting Ks)",
-    "[2026-04-06] LEAN EV threshold raised 2.5% \u2192 3.0% (strong recent win rate)",
-    "[2026-04-06] LEAN EV threshold raised 2.0% \u2192 2.5% (strong recent win rate)",
-    "[2026-04-06] LEAN EV threshold raised 1.5% \u2192 2.0% (strong recent win rate)",
-    "[2026-04-05] LEAN EV threshold raised 1.0% \u2192 1.5% (strong recent win rate)",
-    "[2026-04-05] Lambda bias adjusted -0.179 \u2192 -0.222 (model was systematically under-predicting Ks)",
-    "[2026-04-05] LEAN EV threshold raised 0.5% \u2192 1.0% (strong recent win rate)",
-    "[2026-04-05] K/9 blend weights updated: season 70% \u2192 40%, recent 20% \u2192 9%",
-    "[2026-04-04] FIRE 1u EV threshold raised 5.5% \u2192 6.0% (strong recent win rate)",
-    "[2026-04-04] Lambda bias adjusted +0.012 \u2192 -0.179 (model was systematically under-predicting Ks)",
-    "[2026-04-04] FIRE 1u EV threshold raised 5.0% \u2192 5.5% (strong recent win rate)",
-    "[2026-04-04] FIRE 1u EV threshold raised 4.5% \u2192 5.0% (strong recent win rate)"
+    "[2026-04-06] Lambda bias adjusted -0.222 \u2192 -0.331 (model was systematically over-predicting Ks)"
   ]
 }
