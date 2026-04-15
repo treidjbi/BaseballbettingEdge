@@ -1,13 +1,15 @@
 {
   "weight_season_cap": 0.4,
-  "weight_recent": 0.05,
+  "weight_recent": 0.084,
   "ump_scale": 1.0,
-  "lambda_bias": -0.453,
+  "lambda_bias": -0.565,
   "swstr_k9_scale": 30.0,
-  "updated_at": "2026-04-14T11:04:37Z",
-  "sample_size": 121,
+  "updated_at": "2026-04-15T10:59:59Z",
+  "sample_size": 150,
   "formula_change_date": "2026-04-08",
   "calibration_notes": [
+    "[2026-04-15] Lambda bias adjusted -0.453 \u2192 -0.565 (model was systematically over-predicting Ks)",
+    "[2026-04-15] K/9 blend weights updated: season 40% \u2192 40%, recent 5% \u2192 8%",
     "[2026-04-14] Lambda bias adjusted -0.353 \u2192 -0.453 (model was systematically over-predicting Ks)",
     "[2026-04-13] Lambda bias adjusted -0.259 \u2192 -0.353 (model was systematically over-predicting Ks)",
     "[2026-04-12] Lambda bias adjusted -0.177 \u2192 -0.259 (model was systematically over-predicting Ks)",
@@ -25,8 +27,6 @@
     "[2026-04-07] Lambda bias adjusted -0.331 \u2192 -0.381 (model was systematically over-predicting Ks)",
     "[2026-04-07] FIRE 2u EV threshold lowered 6.0% \u2192 5.5% (win rate below expectation)",
     "[2026-04-07] K/9 blend weights updated: season 40% \u2192 40%, recent 9% \u2192 6%",
-    "[2026-04-07] FIRE 1u EV threshold raised 3.0% \u2192 3.5% (strong recent win rate)",
-    "[2026-04-07] Thresholds manually reset: fire1 and lean were miscalibrated to fire2 level, collapsing FIRE 1u tier and suppressing LEAN signals. Restored to lean=1%, fire1=3%, fire2=6%.",
-    "[2026-04-06] Lambda bias adjusted -0.222 \u2192 -0.331 (model was systematically over-predicting Ks)"
+    "[2026-04-07] FIRE 1u EV threshold raised 3.0% \u2192 3.5% (strong recent win rate)"
   ]
 }
