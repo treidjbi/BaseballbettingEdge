@@ -55,10 +55,10 @@ by_date = Counter(p.get("date", "unknown") for p in null_rows)
 for d, n in sorted(by_date.items()):
     print(f"  {d}  n={n}")
 
-print(f"\nFirst non-null date: {min((p['date'] for p in non_null), default='none')}")
-print(f"Last null date:      {max((p['date'] for p in null_rows), default='none')}")
+print(f"\nFirst non-null date: {min((p.get('date', 'unknown') for p in non_null), default='none')}")
+print(f"Last null date:      {max((p.get('date', 'unknown') for p in null_rows), default='none')}")
 
 # Is there a pitcher pattern?
 print("\nTop-10 pitchers with null pitcher_throws:")
-for pitcher, n in Counter(p["pitcher"] for p in null_rows).most_common(10):
+for pitcher, n in Counter(p.get("pitcher", "unknown") for p in null_rows).most_common(10):
     print(f"  {pitcher:<30} n={n}")

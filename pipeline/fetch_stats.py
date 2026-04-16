@@ -62,8 +62,9 @@ def fetch_pitch_hand(person_id: int) -> str | None:
 
     The MLB /schedule endpoint with hydrate=probablePitcher,team only returns
     {id, fullName, link} on probablePitcher — pitchHand is NOT hydrated. So we
-    fall back to /people/{id}, which always returns pitchHand. Returns None on
-    fetch failure or missing data so callers can choose their own default.
+    fall back to /people/{id}, which always returns pitchHand. Returns 'R' or
+    'L' on success, or None on fetch failure / missing data so callers can
+    choose their own default.
     """
     try:
         data = _get(f"/people/{person_id}")
@@ -74,7 +75,7 @@ def fetch_pitch_hand(person_id: int) -> str | None:
     if not people:
         return None
     code = (people[0].get("pitchHand") or {}).get("code")
-    if code in ("R", "L", "S"):
+    if code in ("R", "L"):
         return code
     return None
 
@@ -203,7 +204,7 @@ def fetch_stats(date_str: str, pitcher_names: list) -> dict:
                 # pitcher in production silently became 'R' (see analytics/
                 # diagnostics/a1_pitcher_throws.py for the bug history).
                 throws = (pitcher.get("pitchHand") or {}).get("code")
-                if throws not in ("R", "L", "S"):
+                if throws not in ("R", "L"):
                     throws = fetch_pitch_hand(pid) or "R"
                 team_id = team_data.get("team", {}).get("id")
 

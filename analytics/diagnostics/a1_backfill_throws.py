@@ -91,7 +91,9 @@ def main() -> int:
             p["pitcher_throws"] = new_hand
             updated += 1
 
-    HIST.write_text(json.dumps(picks, indent=2))
+    tmp = HIST.with_suffix(".json.tmp")
+    tmp.write_text(json.dumps(picks, indent=2))
+    tmp.replace(HIST)   # atomic on both Windows and POSIX
     print(f"\nUpdated {updated} rows. Wrote {HIST}")
     return 0
 
