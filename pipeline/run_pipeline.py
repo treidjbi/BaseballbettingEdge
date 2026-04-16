@@ -379,6 +379,78 @@ def _run_lock_only(date_str: str) -> None:
         log.error("Lock-only run failed: %s", e)
 
 
+def _enrich_archives_with_results() -> None:
+    """Inject grading results (actual_ks, result) into dated archive files
+    so the dashboard can display W/L on past dates."""
+    try:
+        conn = get_db()
+        try:
+            rows = conn.execute("""
+                SELECT date, pitcher, side, result, actual_ks
+                FROM picks
+                WHERE result IN ('win', 'loss', 'push')
+            """).fetchall()
+        finally:
+            conn.close()
+    except Exception as e:
+        log.warning("_enrich_archives_with_results: DB read failed: %s", e)
+        return
+
+    if not rows:
+        return
+
+    by_date: dict[str, list] = {}
+    for row in rows:
+        by_date.setdefault(row["date"], []).append(row)
+
+    base_dir = OUTPUT_PATH.parent
+    enriched = 0
+    for date_str, picks in by_date.items():
+        archive_path = base_dir / f"{date_str}.json"
+        if not archive_path.exists():
+            continue
+
+        try:
+            with open(archive_path) as f:
+                archive = json.load(f)
+        except Exception:
+            continue
+
+        lookup: dict[str, dict] = {}
+        for pick in picks:
+            lookup.setdefault(pick["pitcher"], {})[pick["side"]] = pick
+
+        modified = False
+        for p in archive.get("pitchers", []):
+            name = p["pitcher"]
+            if name not in lookup:
+                continue
+
+            pick_data = lookup[name]
+            any_pick = next(iter(pick_data.values()))
+            if any_pick["actual_ks"] is not None:
+                p["actual_ks"] = any_pick["actual_ks"]
+                modified = True
+
+            for side_key in ("over", "under"):
+                if side_key in pick_data and pick_data[side_key]["result"]:
+                    ev_key = f"ev_{side_key}"
+                    if ev_key in p:
+                        p[ev_key]["result"] = pick_data[side_key]["result"]
+                        modified = True
+
+        if modified:
+            try:
+                with open(archive_path, "w") as f:
+                    json.dump(archive, f, indent=2)
+                enriched += 1
+            except Exception as e:
+                log.warning("Failed to enrich archive %s: %s", date_str, e)
+
+    if enriched:
+        log.info("Enriched %d archive(s) with grading results", enriched)
+
+
 def _run_grading_steps() -> None:
     """Run result fetching and calibration. Called for evening and grading-only runs."""
     log.info("=== Grading steps: fetch_results + calibrate ===")
@@ -400,6 +472,10 @@ def _run_grading_steps() -> None:
         fetch_results_run()
     except Exception as e:
         log.error("fetch_results failed: %s", e)
+    try:
+        _enrich_archives_with_results()
+    except Exception as e:
+        log.warning("Archive enrichment failed: %s", e)
     try:
         calibrate_run()
     except Exception as e:

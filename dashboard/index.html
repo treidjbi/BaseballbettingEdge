@@ -49,6 +49,9 @@
     [data-theme='dark'] .verdict-pass { background: #1e3050; color: #6b7f99; }
     [data-theme='dark'] .badge-live  { background: #0d2b1a !important; color: #27ae60 !important; border-color: #1a5c35 !important; }
     [data-theme='dark'] .badge-final { background: #132035 !important; color: #6b7f99 !important; border-color: #1e3050 !important; }
+    [data-theme='dark'] .result-win  { background: #1a5c35; color: #4ade80; }
+    [data-theme='dark'] .result-loss { background: #5c1a1a; color: #f87171; }
+    [data-theme='dark'] .result-push { background: #1e3050; color: #6b7f99; }
     [data-theme='dark'] .banner-info { background: #0d2b1a; border-bottom-color: #1a5c35; color: #f0ede6; }
     [data-theme='dark'] .banner-warn { background: #2b1f0d; border-bottom-color: #5c3d1a; color: #f0ede6; }
     [data-theme='dark'] #date-select { border-color: #1e3050; color: #f0ede6; }
@@ -251,6 +254,29 @@
     }
     .verdict-lean   { background: transparent; border: 1px solid #e67e22; color: #e67e22; }
     .verdict-pass   { background: #ccc; color: #555; }
+
+    /* ── Result badges (graded past dates) ───────────────── */
+    .result-badge {
+      display: inline-block;
+      font-size: 11px;
+      font-weight: 800;
+      font-family: 'IBM Plex Mono', 'Courier New', monospace;
+      padding: 3px 8px;
+      border-radius: 3px;
+      margin-left: 6px;
+      letter-spacing: .04em;
+    }
+    .result-win  { background: #27ae60; color: #fff; }
+    .result-loss { background: #c0392b; color: #fff; }
+    .result-push { background: #999; color: #fff; }
+
+    .grading-summary {
+      font-family: 'IBM Plex Mono', 'Courier New', monospace;
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--ink);
+      margin-bottom: 12px;
+    }
 
     /* ── Pitcher card ────────────────────────────────────── */
     .pitcher-card {
@@ -812,7 +838,8 @@
                winProb:   p.ev_over.win_prob,
                conf:      p.ev_over.movement_conf,
                direction: 'OVER',
-               odds:      p.best_over_odds };
+               odds:      p.best_over_odds,
+               result:    p.ev_over.result };
     } else {
       return { verdict:   p.ev_under.verdict,
                ev:        p.ev_under.adj_ev,
@@ -820,7 +847,8 @@
                winProb:   p.ev_under.win_prob,
                conf:      p.ev_under.movement_conf,
                direction: 'UNDER',
-               odds:      p.best_under_odds };
+               odds:      p.best_under_odds,
+               result:    p.ev_under.result };
     }
   }
 
@@ -984,7 +1012,7 @@
           <span class="pitcher-name">${esc(p.pitcher)}</span>
           <span class="pitcher-matchup">${abbr(p.team)} vs ${abbr(p.opp_team)}</span>
         </div>
-        <span class="verdict-badge ${verdictClass(side.verdict, side.direction)}">${badgeLabel(side)}</span>
+        <span class="verdict-badge ${verdictClass(side.verdict, side.direction)}">${badgeLabel(side)}</span>${side.result ? `<span class="result-badge result-${side.result}">${side.result === 'win' ? 'W' : side.result === 'loss' ? 'L' : 'P'}</span>` : ''}
       </div>
       <div class="stats-row">
         <div class="stat-cell">
@@ -995,7 +1023,7 @@
         <div class="stat-cell">
           <div class="stat-label">Proj K</div>
           <div class="stat-value">${p.lambda}</div>
-          <div class="stat-sub">vs line ${p.k_line}</div>
+          <div class="stat-sub">${p.actual_ks != null ? `Actual: ${p.actual_ks}` : `vs line ${p.k_line}`}</div>
         </div>
         <div class="stat-cell">
           <div class="stat-label">EV</div>
@@ -1028,6 +1056,17 @@
     // Date / count header
     if (pitchers.length > 0) {
       html += `<div class="section-date">${pitchers.length} pitcher${pitchers.length !== 1 ? 's' : ''}${isPast ? '' : ' today'}</div>`;
+    }
+
+    // Grading summary for past dates with results
+    if (isPast) {
+      const graded = pitchers.filter(p => { const s = bestSide(p); return s.result && s.verdict !== 'PASS'; });
+      if (graded.length > 0) {
+        const wins = graded.filter(p => bestSide(p).result === 'win').length;
+        const losses = graded.filter(p => bestSide(p).result === 'loss').length;
+        const pushes = graded.filter(p => bestSide(p).result === 'push').length;
+        html += `<div class="grading-summary">${wins}W \u2013 ${losses}L${pushes ? ` \u2013 ${pushes}P` : ''}</div>`;
+      }
     }
 
     // PASS toggle — only relevant for the upcoming section
