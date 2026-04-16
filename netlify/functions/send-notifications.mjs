@@ -6,6 +6,7 @@
  *   - New FIRE picks appearing on the slate
  *   - LEAN → FIRE upgrades
  *   - Picks transitioning to locked (batched if multiple in one run)
+ *   - Game-time reminders (~30 min before first pitch, one per pick, deduped)
  *   - Daily results summary (grading run only)
  *
  * Required Netlify env vars:
@@ -66,6 +67,7 @@ function getFirePicks(pitchers) {
         k_line: p.k_line,
         locked: p.game_state === 'in_progress' || p.game_state === 'final',
         game_state: p.game_state,
+        game_time: p.game_time || null,
       };
     }
   }
@@ -209,7 +211,41 @@ export default async (req) => {
     }
   }
 
-  // 3. Daily results summary (grading run only)
+  // 3. Game-time reminders: "go bet this" alerts ~30 min before first pitch.
+  //    Fires once per pick (deduped via `reminded` set in state blob).
+  //    Window: 5–75 min before game_time. With 30-min pipeline cadence,
+  //    each pick hits this window on exactly one run.
+  const REMINDER_MIN_MS = 5 * 60 * 1000;
+  const REMINDER_MAX_MS = 75 * 60 * 1000;
+  const now = Date.now();
+  const prevReminded = new Set(
+    (prevState?.date === date) ? (prevState.reminded || []) : []
+  );
+  const newReminded = new Set(prevReminded);
+
+  if (runType === 'full') {
+    for (const [key, pick] of Object.entries(currentPicks)) {
+      if (pick.locked || !pick.game_time || prevReminded.has(key)) continue;
+
+      const gameMs = new Date(pick.game_time).getTime();
+      if (Number.isNaN(gameMs)) continue;
+      const minsUntil = Math.round((gameMs - now) / 60_000);
+      const msUntil = gameMs - now;
+
+      if (msUntil >= REMINDER_MIN_MS && msUntil <= REMINDER_MAX_MS) {
+        const verdictEmoji = pick.verdict.startsWith('FIRE') ? '🔥' : '📋';
+        notifications.push({
+          title: `⏰ ${pick.pitcher} ${pick.side.toUpperCase()} ${pick.k_line} Ks`,
+          body: `${verdictEmoji} ${pick.verdict} — first pitch ~${minsUntil} min`,
+          tag: `reminder-${date}-${key}`,
+          renotify: true,
+        });
+        newReminded.add(key);
+      }
+    }
+  }
+
+  // 4. Daily results summary (grading run only)
   if (runType === 'grading') {
     let picksHistory;
     try {
@@ -250,6 +286,7 @@ export default async (req) => {
     await stateStore.setJSON('latest', {
       date,
       picks: currentPicks,
+      reminded: [...newReminded],
       updatedAt: new Date().toISOString(),
     });
   } catch (err) {
