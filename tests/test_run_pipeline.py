@@ -151,6 +151,7 @@ def test_grading_run_calls_lock_all_past(tmp_path):
 
     with patch("run_pipeline.lock_due_picks", mock_lock), \
          patch("run_pipeline.fetch_results_run"), \
+         patch("run_pipeline._enrich_archives_with_results"), \
          patch("run_pipeline.calibrate_run"):
         run_pipeline.run("2026-04-01", run_type="grading")
 
@@ -279,7 +280,8 @@ def test_run_evening_calls_results_and_calibrate(tmp_path):
 
     with patch.object(run_pipeline, "OUTPUT_PATH", out_path), \
          patch("run_pipeline.fetch_odds", return_value=[]), \
-         patch("run_pipeline._write_archive"):
+         patch("run_pipeline._write_archive"), \
+         patch("run_pipeline._enrich_archives_with_results"):
         import sys
         fake_fetch_results = MagicMock()
         fake_fetch_results.run = fake_results_run
