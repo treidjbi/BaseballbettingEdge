@@ -105,6 +105,15 @@ python -m pytest tests/test_build_features.py -v
 5. Lambda = (adjusted_K/9 × opp_K_factor × innings/9) + ump_adjustment + lambda_bias
 6. Poisson CDF → over/under win probabilities → EV vs book odds → verdict
 
+### EV Verdict Thresholds
+
+Thresholds live in `pipeline/build_features.py` (`EDGE_LEAN`, `EDGE_FIRE_1U`):
+
+- **PASS** — EV ≤ 1% (no bet)
+- **LEAN** — EV 1–3% (tracked, not staked)
+- **FIRE 1u** — EV 3–9% (1-unit play)
+- **FIRE 2u** — EV > 9% (2-unit play, truly elite edge)
+
 ## Calibration
 
 `calibrate.py` runs during the grading step:

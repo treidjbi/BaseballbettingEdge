@@ -1060,11 +1060,14 @@
 
     // Grading summary for past dates with results
     if (isPast) {
-      const graded = pitchers.filter(p => { const s = bestSide(p); return s.result && s.verdict !== 'PASS'; });
-      if (graded.length > 0) {
-        const wins = graded.filter(p => bestSide(p).result === 'win').length;
-        const losses = graded.filter(p => bestSide(p).result === 'loss').length;
-        const pushes = graded.filter(p => bestSide(p).result === 'push').length;
+      const results = pitchers
+        .map(p => bestSide(p))
+        .filter(s => s.result && s.verdict !== 'PASS')
+        .map(s => s.result);
+      if (results.length > 0) {
+        const wins = results.filter(r => r === 'win').length;
+        const losses = results.filter(r => r === 'loss').length;
+        const pushes = results.filter(r => r === 'push').length;
         html += `<div class="grading-summary">${wins}W \u2013 ${losses}L${pushes ? ` \u2013 ${pushes}P` : ''}</div>`;
       }
     }

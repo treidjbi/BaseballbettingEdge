@@ -53,8 +53,9 @@ async function fetchJSON(url) {
   return res.json();
 }
 
-// Picks worth tracking: either side has a non-PASS verdict
-function getFirePicks(pitchers) {
+// Picks worth tracking: either side has a non-PASS verdict (LEAN, FIRE 1u, FIRE 2u).
+// LEAN picks ARE included — game-time reminders fire for any actionable pick.
+function getNonPassPicks(pitchers) {
   const picks = {};
   for (const p of pitchers) {
     for (const side of ['over', 'under']) {
@@ -138,7 +139,7 @@ export default async (req) => {
 
   const date = todayData.date;
   const pitchers = todayData.pitchers || [];
-  const currentPicks = getFirePicks(pitchers);
+  const currentPicks = getNonPassPicks(pitchers);
 
   // ── Load previous state ───────────────────────────────────────
   const stateStore = getStore({ name: 'notification-state', consistency: 'strong' });
@@ -238,7 +239,6 @@ export default async (req) => {
           title: `⏰ ${pick.pitcher} ${pick.side.toUpperCase()} ${pick.k_line} Ks`,
           body: `${verdictEmoji} ${pick.verdict} — first pitch ~${minsUntil} min`,
           tag: `reminder-${date}-${key}`,
-          renotify: true,
         });
         newReminded.add(key);
       }

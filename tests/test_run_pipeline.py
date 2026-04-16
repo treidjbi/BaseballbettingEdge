@@ -264,6 +264,91 @@ def test_preview_run_does_not_touch_today_json_when_it_exists(tmp_path):
     assert data["pitchers"][0]["pitcher"] == "Today Guy", "today.json pitchers were overwritten"
 
 
+def test_enrich_archives_with_results_injects_actual_ks_and_result(tmp_path):
+    """_enrich_archives_with_results should write actual_ks + per-side result into
+    matching dated archive files so the dashboard can render W/L badges on past dates."""
+    import run_pipeline
+
+    archive_path = tmp_path / "2026-04-10.json"
+    archive_path.write_text(json.dumps({
+        "date": "2026-04-10",
+        "pitchers": [
+            {
+                "pitcher": "Cole",
+                "k_line": 6.5,
+                "ev_over":  {"verdict": "FIRE 1u", "adj_ev": 0.05},
+                "ev_under": {"verdict": "PASS",    "adj_ev": -0.02},
+            },
+            {
+                "pitcher": "Unmatched Pitcher",  # no graded pick — should be untouched
+                "k_line": 5.5,
+                "ev_over":  {"verdict": "PASS"},
+                "ev_under": {"verdict": "LEAN"},
+            },
+        ],
+    }))
+
+    rows = [
+        {"date": "2026-04-10", "pitcher": "Cole", "side": "over",
+         "result": "win", "actual_ks": 8},
+    ]
+    mock_conn = MagicMock()
+    mock_conn.execute.return_value.fetchall.return_value = rows
+
+    # Point OUTPUT_PATH at a file whose parent is tmp_path so base_dir matches.
+    with patch.object(run_pipeline, "OUTPUT_PATH", tmp_path / "today.json"), \
+         patch("run_pipeline.get_db", return_value=mock_conn):
+        run_pipeline._enrich_archives_with_results()
+
+    data = json.loads(archive_path.read_text())
+    cole = data["pitchers"][0]
+    assert cole["actual_ks"] == 8
+    assert cole["ev_over"]["result"] == "win"
+    assert "result" not in cole["ev_under"], "PASS side should not be enriched"
+
+    # Unmatched pitcher should be left alone
+    other = data["pitchers"][1]
+    assert "actual_ks" not in other
+    assert "result" not in other["ev_under"]
+
+
+def test_enrich_archives_with_results_no_rows_is_noop(tmp_path):
+    """When the DB has no graded picks, the function must return cleanly and
+    not touch any archives. Also verifies safe DB-read-failure behavior."""
+    import run_pipeline
+
+    archive_path = tmp_path / "2026-04-10.json"
+    original = {"date": "2026-04-10", "pitchers": [{"pitcher": "Cole", "ev_over": {}}]}
+    archive_path.write_text(json.dumps(original))
+
+    mock_conn = MagicMock()
+    mock_conn.execute.return_value.fetchall.return_value = []
+
+    with patch.object(run_pipeline, "OUTPUT_PATH", tmp_path / "today.json"), \
+         patch("run_pipeline.get_db", return_value=mock_conn):
+        run_pipeline._enrich_archives_with_results()
+
+    # Archive must be byte-identical when no graded picks exist.
+    assert json.loads(archive_path.read_text()) == original
+
+
+def test_enrich_archives_with_results_skips_missing_archive(tmp_path):
+    """Graded picks for a date with no archive file must not raise."""
+    import run_pipeline
+
+    rows = [
+        {"date": "2026-03-01", "pitcher": "Cole", "side": "over",
+         "result": "win", "actual_ks": 7},
+    ]
+    mock_conn = MagicMock()
+    mock_conn.execute.return_value.fetchall.return_value = rows
+
+    with patch.object(run_pipeline, "OUTPUT_PATH", tmp_path / "today.json"), \
+         patch("run_pipeline.get_db", return_value=mock_conn):
+        # Should not raise even though 2026-03-01.json does not exist.
+        run_pipeline._enrich_archives_with_results()
+
+
 def test_run_evening_calls_results_and_calibrate(tmp_path):
     """run_type='evening' should invoke fetch_results.run and calibrate.run."""
     import run_pipeline
