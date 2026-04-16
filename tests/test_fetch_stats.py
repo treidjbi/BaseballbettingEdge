@@ -190,6 +190,50 @@ def test_fetch_stats_throws_defaults_to_R_when_missing():
     assert stats.get("Test Pitcher", {}).get("throws") == "R"
 
 
+def test_fetch_stats_uses_people_endpoint_when_schedule_omits_pitchhand():
+    """Reproduces the live A1 bug: in production, the MLB /schedule endpoint
+    with hydrate=probablePitcher,team returns only {id, fullName, link} on
+    probablePitcher — pitchHand is NEVER hydrated. The fix is to fall back
+    to the /people/{id} endpoint, which always returns pitchHand. A
+    left-handed pitcher must come back as 'L', not the default 'R'.
+    """
+    pitcher_id = 571578  # Patrick Corbin, real LHP
+    schedule = _make_schedule("Patrick Corbin", pitcher_id, pitch_hand_code=None)
+    pitcher_stats = _make_pitcher_stats_response()
+    team_stats = _make_team_stats_response()
+
+    def side_effect(url, params=None, timeout=None):
+        mock_resp = MagicMock()
+        mock_resp.raise_for_status = MagicMock()
+        if "/schedule" in url:
+            # Schedule omits pitchHand entirely (matches production behaviour).
+            mock_resp.json.return_value = schedule
+        elif f"/people/{pitcher_id}/stats" in url:
+            mock_resp.json.return_value = pitcher_stats
+        elif f"/people/{pitcher_id}" in url:
+            # /people/{id} returns full person record including pitchHand.
+            mock_resp.json.return_value = {
+                "people": [{
+                    "id": pitcher_id,
+                    "fullName": "Patrick Corbin",
+                    "pitchHand": {"code": "L", "description": "Left"},
+                }]
+            }
+        elif "/teams/" in url:
+            mock_resp.json.return_value = team_stats
+        else:
+            mock_resp.json.return_value = {"stats": []}
+        return mock_resp
+
+    with patch("requests.get", side_effect=side_effect):
+        stats = fetch_stats("2026-04-15", ["Patrick Corbin"])
+
+    assert stats.get("Patrick Corbin", {}).get("throws") == "L", (
+        "fetch_stats should fall back to /people/{id} when /schedule omits "
+        "pitchHand — otherwise every pitcher silently becomes 'R' in production."
+    )
+
+
 def test_fetch_stats_skips_unknown_pitchers():
     """fetch_stats should not return entries for pitchers not in the schedule."""
     pitcher_id = 543037

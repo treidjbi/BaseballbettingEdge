@@ -57,6 +57,28 @@ def _k9_from_splits(splits: list) -> float | None:
     return None
 
 
+def fetch_pitch_hand(person_id: int) -> str | None:
+    """Fetch a pitcher's throwing hand ('R' or 'L') from /people/{id}.
+
+    The MLB /schedule endpoint with hydrate=probablePitcher,team only returns
+    {id, fullName, link} on probablePitcher — pitchHand is NOT hydrated. So we
+    fall back to /people/{id}, which always returns pitchHand. Returns None on
+    fetch failure or missing data so callers can choose their own default.
+    """
+    try:
+        data = _get(f"/people/{person_id}")
+    except Exception as e:
+        log.warning("fetch_pitch_hand: /people/%s failed: %s", person_id, e)
+        return None
+    people = data.get("people") or []
+    if not people:
+        return None
+    code = (people[0].get("pitchHand") or {}).get("code")
+    if code in ("R", "L", "S"):
+        return code
+    return None
+
+
 def fetch_pitcher_stats(person_id: int, season: int) -> dict:
     """Fetch season K/9, career K/9, recent 5-start K/9, and IP for one pitcher."""
     # Season stats — API returns {"stats": []} when no starts yet (e.g. Opening Day)
@@ -174,7 +196,15 @@ def fetch_stats(date_str: str, pitcher_names: list) -> dict:
                     log.info("Name normalised: %r (MLB) → %r (TheRundown)", mlb_name, name)
 
                 pid    = pitcher["id"]
-                throws = pitcher.get("pitchHand", {}).get("code", "R")
+                # The /schedule endpoint with hydrate=probablePitcher,team does
+                # not actually hydrate pitchHand — it only returns id/fullName/
+                # link. So if the schedule didn't give us a hand, fall back to
+                # /people/{id}, which always does. Without this fallback every
+                # pitcher in production silently became 'R' (see analytics/
+                # diagnostics/a1_pitcher_throws.py for the bug history).
+                throws = (pitcher.get("pitchHand") or {}).get("code")
+                if throws not in ("R", "L", "S"):
+                    throws = fetch_pitch_hand(pid) or "R"
                 team_id = team_data.get("team", {}).get("id")
 
                 try:
