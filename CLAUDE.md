@@ -155,3 +155,14 @@ FanGraphs      → fetch_batter_stats → batter_stats{}
 - `build_features` functions are pure (no I/O) for easy testing
 - Test files mirror pipeline modules: `test_build_features.py`, `test_calibrate.py`, etc.
 - Run full suite: `python -m pytest tests/ -v`
+
+## End-of-Season Evaluation Notes
+
+### Lambda Bias Architecture (evaluate after 2026 season)
+
+The current `lambda_bias` is a single calibrated offset that tries to handle both systematic model error and in-season K rate drift. A more durable long-term fix would be separating these into two distinct corrections:
+
+- **Static bias offset** — calibrated annually from the prior season's aggregate model error. Set once before Opening Day and held fixed.
+- **Dynamic seasonal adjustment** — follows actual league K/9 trends week over week (e.g. a rolling delta vs. the season-opening baseline). Captures real shifts in run environment, umpire squeeze trends, or rule changes mid-season.
+
+Splitting them would make calibration more interpretable and reduce the risk of the dynamic signal contaminating the static correction (or vice versa).
