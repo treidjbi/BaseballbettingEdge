@@ -72,9 +72,20 @@ If any task in this plan appears to require touching those live files beyond sch
 ### Execution log (update as tasks complete)
 
 Branch: `model-audit-phase-a` (off `main` at `30ddb01`).
-Merge-to-main strategy: agreed to fold the whole branch back to `main` at the
-Phase A→B HARD STOP checkpoint so calibration sees Phase A as a single
-formula-change moment (bump `formula_change_date` at merge time).
+Merge-to-main strategy: fold the whole branch back to `main` at the Phase A→B
+HARD STOP checkpoint.
+
+**Calibration handling at merge (IMPORTANT — user decision, policy P4):**
+- **Do NOT bump `formula_change_date`.** `lambda_bias` (currently ~`-0.55` and
+  converging) stays untouched. The bias scalar is additive and self-healing:
+  if Path A + A1 shift mean lambda by a few hundredths, lambda_bias will drift
+  to absorb that over the next 1–2 weeks of fresh picks. Resetting would cost
+  the ~200+ graded picks of residual history powering current convergence
+  speed, which is a larger loss than the small formula-drift distortion.
+- **Do NOT reset grading.** Grades are boolean facts about actual K counts; they
+  don't depend on the formula that produced the line.
+- **Do** note the formula tightening in the merge commit body as a breadcrumb
+  for future debugging.
 
 | Task | Status | Commits | Notes |
 |---|---|---|---|
@@ -84,7 +95,7 @@ formula-change moment (bump `formula_change_date` at merge time).
 | A3 — ump_k_adj | ⏳ next | — | Next task after this checkpoint. |
 | A2 — opening_odds | ⏳ | — | |
 | A4 — bookmaker breakdown | ⏳ | — | |
-| A→B checkpoint | ⏳ | — | Verify activation rates moved after 24h fresh data, then merge to main + bump `formula_change_date`. |
+| A→B checkpoint | ⏳ | — | Verify activation rates moved after 24h fresh data, then merge to main. **Do NOT** bump `formula_change_date` or reset grading (see calibration-handling block above). |
 
 **Expected wall time:** 1–2 hours active work (diagnostics + fixes + tests), plus ~24h of fresh pipeline runs before the A→B checkpoint to confirm activation rates move.
 
