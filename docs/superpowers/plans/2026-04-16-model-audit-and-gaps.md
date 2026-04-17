@@ -69,6 +69,23 @@ If any task in this plan appears to require touching those live files beyond sch
 
 ## PHASE A — Data Plumbing Verification
 
+### Execution log (update as tasks complete)
+
+Branch: `model-audit-phase-a` (off `main` at `30ddb01`).
+Merge-to-main strategy: agreed to fold the whole branch back to `main` at the
+Phase A→B HARD STOP checkpoint so calibration sees Phase A as a single
+formula-change moment (bump `formula_change_date` at merge time).
+
+| Task | Status | Commits | Notes |
+|---|---|---|---|
+| Pre-work 0.1–0.3 | ✅ done | `30ddb01` | Tests green (242), baseline snapshot captured in commit body. |
+| A1 — pitcher_throws | ✅ done | `0407846`, `517f473`, `8a76f30`, `8463f8e`, `16d513e`, `cbbce97` | See A1 block below. Tests 242→243. Bug window docs in `docs/data-caveats.md`, pointer in CLAUDE.md (`8c4210c`). |
+| Path A platoon delta | ✅ done | `e824447` | Latently dormant before A1 (every pitcher was `"R"`). Tests 97/97 in build_features. |
+| A3 — ump_k_adj | ⏳ next | — | Next task after this checkpoint. |
+| A2 — opening_odds | ⏳ | — | |
+| A4 — bookmaker breakdown | ⏳ | — | |
+| A→B checkpoint | ⏳ | — | Verify activation rates moved after 24h fresh data, then merge to main + bump `formula_change_date`. |
+
 **Expected wall time:** 1–2 hours active work (diagnostics + fixes + tests), plus ~24h of fresh pipeline runs before the A→B checkpoint to confirm activation rates move.
 
 Each of A1–A3 has the same shape: (1) write a diagnostic, (2) interpret, (3) if broken, write a failing test + fix; if dormant-by-design, document in a comment. A4 is a straight analytics addition.
