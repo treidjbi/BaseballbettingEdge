@@ -2,7 +2,29 @@
 fetch_umpires.py
 Scrapes ump.news for HP umpire assignments. Returns {pitcher_name: ump_k_adj}.
 Falls back to ump_k_adj = 0.0 if assignment not posted or umpire not in career table.
-Note: Assignments typically posted ~10am ET — 9am pipeline run may return all zeros.
+
+Known data-source issues (2026-04-17, Task A3 audit — analytics/diagnostics/a3_ump_adj.py):
+  * The `www.ump.news` domain currently does not resolve from public DNS
+    (8.8.8.8, 1.1.1.1 all return NXDOMAIN). As a consequence, every scrape
+    attempt fails with a requests exception, scrape_hp_assignments() returns
+    an empty dict, and fetch_umpires() returns 0.0 for every pitcher.
+  * This matches what we see in picks_history.json: 447/447 rows (100%) have
+    ump_k_adj == 0.0 exactly. There are no null / non-zero historical values.
+  * The failure is logged at WARNING level by scrape_hp_assignments but the
+    pipeline is built to degrade gracefully — an all-zero ump signal is
+    equivalent to "no umpire effect modeled" and does not corrupt lambda.
+  * Secondary (legacy) concern: even when the domain worked, assignments
+    were typically posted ~10am ET, AFTER the 6am PT (9am ET) full-run
+    finalization, so staked picks tended to lock with ump_k_adj=0 anyway.
+    The 30-min refresh loop could in theory catch the post-10am update
+    before T-30 lock, but this is best-effort.
+
+Recovery options (out of scope for Task A3 — user decision):
+  - Find a replacement data source (e.g. umpscorecards.com, MLB's own
+    officials endpoint, Baseball Savant).
+  - Drop ump_k_adj from the model entirely and rebalance lambda_bias.
+  - Keep the current graceful-degradation behavior and treat ump effects
+    as neutral unless/until a live source is restored.
 """
 import json
 import logging

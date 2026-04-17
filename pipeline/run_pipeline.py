@@ -717,6 +717,10 @@ def run(date_str: str, run_type: str = "full") -> None:
         swstr_ok = False
 
     # 4. Fetch umpire adjustments (ump.news — graceful fallback built in)
+    # NOTE (Task A3, 2026-04-17): ump.news domain is currently NXDOMAIN.
+    # fetch_umpires returns a dict of all-0.0 values (no exception), so
+    # ump_ok stays True and ump_map.get(name, 0.0) below is a no-op for
+    # every pitcher. See pipeline/fetch_umpires.py header for full context.
     ump_ok = True
     try:
         ump_map = fetch_umpires(props)
