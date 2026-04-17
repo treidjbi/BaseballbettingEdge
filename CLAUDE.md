@@ -179,6 +179,81 @@ before shipping.
 - **Graceful degradation**: Each data source can fail independently. SwStr%, umpires, lineups all fall back to neutral values. `data_complete` flag excludes degraded picks from calibration.
 - **Movement confidence**: Line movement against bet side applies a 0–1 haircut to EV (noise_floor=10pts, full_fade=30pts).
 
+## Data-Volume Reminders
+
+Check these whenever you read this file and compare the trigger to current state
+(`data/params.json` `sample_size`, today's date, etc). If a trigger has been met,
+surface the reminder to the user as a suggested next step.
+
+### Batter Handedness — Upgrade from Path A to Path B
+
+**Current state (as of 2026-04-16):** Path A is live. `build_features.calc_lineup_k_rate`
+applies a league-average platoon K% delta per batter (`PLATOON_K_DELTA` table) based
+on the `(batter_hand, pitcher_throws)` matchup. Switch-hitters are modeled as batting
+opposite the pitcher's hand. Per-batter vs-L / vs-R splits are **not** yet wired —
+`fetch_batter_stats._fetch_splits` is still stubbed (it raises `AttributeError` and
+falls back to aggregate K%).
+
+**Trigger to upgrade (Path B):** When `params.json.sample_size >= 400` **OR** the
+current date is on/after **2026-05-25** (~50+ PA per split for most regulars),
+remind the user we can upgrade to real per-batter handedness splits:
+
+1. Implement `_fetch_splits()` in [pipeline/fetch_batter_stats.py](pipeline/fetch_batter_stats.py)
+   using pybaseball's `splits_leaderboards` or a direct FanGraphs splits URL to
+   return real `vs_R` / `vs_L` K% per batter.
+2. In [pipeline/build_features.py](pipeline/build_features.py), remove the
+   `+ platoon_k_delta(...)` adjustment from `calc_lineup_k_rate` (per-batter splits
+   already encode the platoon effect). Keep `PLATOON_K_DELTA` / `platoon_k_delta()`
+   around as a fallback for batters missing from the splits lookup.
+3. Apply Bayesian regression of each batter's vs-L / vs-R K% toward the
+   league-wide same-hand or opposite-hand average, weighted by per-split PA, to
+   handle thin samples.
+4. Bump `formula_change_date` in `params.json` to the deploy date so calibration
+   resets `lambda_bias` cleanly under the new formula.
+
+Related tests: `TestCalcLineupKRate`, `TestPlatoonKDelta` in
+[tests/test_build_features.py](tests/test_build_features.py).
+
+### End-of-Season Infrastructure Review (prep for 2027+)
+
+**Trigger:** When the current season is over (roughly October or whenever
+`params.json.updated_at` has gone 30+ days without change), remind the user
+to do an infrastructure/scale review before the 2027 season starts.
+
+**Topics to walk through:**
+
+1. **`picks_history.json` size.** At end of season, compare size vs repo
+   comfort. If > ~10 MB and still growing, evaluate: (a) split by season
+   (`data/picks_history_2026.json`, `..._2027.json`) or (b) migrate to a
+   committed SQLite or Parquet file (faster load, smaller diff).
+2. **Per-day archive directory.** `dashboard/data/processed/YYYY-MM-DD.json`
+   will have ~180 files per season. Evaluate whether to gzip archives, move
+   old seasons to a subfolder, or serve from an object store.
+3. **Pipeline runtime.** Measure typical full-run wall time. If GitHub
+   Actions minutes or TheRundown API quota are getting tight, consider
+   caching unchanged data between the 30-min refreshes or batching fetches.
+4. **Calibration window.** Re-evaluate whether `formula_change_date`-based
+   filtering is still the right approach, or whether multi-season rolling
+   calibration would be more stable.
+5. **Line shopping / book coverage.** Check if TheRundown's best-line data
+   is still sufficient vs. pulling per-book explicitly for EV optimization.
+6. **Notifications / PWA.** Audit subscription counts and delivery rates
+   via Netlify function logs — clean up dead endpoints.
+7. **Dashboard.** Decide if the single-file HTML is still the right call
+   or if a build step (Vite/Astro) is worth the complexity for next season.
+
+Goal: spend a deliberate day planning scale improvements while there's no
+active season pressure, rather than patching mid-season.
+
+## Local analytics deep-dive
+
+`analytics/performance.py` is a standalone local tool for slicing
+`picks_history.json` beyond the dashboard's performance tab. Not part of
+the pipeline. Setup: `pip install -r analytics/requirements.txt`. Run:
+`python analytics/performance.py` (optional `--since YYYY-MM-DD` /
+`--min-ev 0.03`). Prints tables to the console and saves plots to the
+gitignored `analytics/output/`. See [analytics/README.md](analytics/README.md).
+
 ## Testing Notes
 
 - Tests use `unittest.mock` extensively to mock API calls

@@ -18,6 +18,8 @@ from build_features import (
     calc_movement_confidence,
     bayesian_opp_k,
     build_pitcher_record,
+    platoon_k_delta,
+    PLATOON_K_DELTA,
     LEAGUE_AVG_K_RATE,
     LEAGUE_AVG_SWSTR,
 )
@@ -588,29 +590,85 @@ class TestCalcLineupKRate:
     def test_empty_lineup_returns_none(self):
         assert calc_lineup_k_rate([], SAMPLE_BATTER_STATS, "R") is None
 
-    def test_righty_pitcher_uses_vs_r_split(self):
+    def test_righty_pitcher_uses_vs_r_split_with_platoon(self):
+        # RHB vs RHP adds PLATOON_K_DELTA[("R","R")] per batter.
         result = calc_lineup_k_rate(SAMPLE_LINEUP, SAMPLE_BATTER_STATS, "R")
-        expected = (0.280 + 0.150) / 2
+        rr = PLATOON_K_DELTA[("R", "R")]
+        expected = ((0.280 + rr) + (0.150 + rr)) / 2
         assert result is not None
         assert abs(result - expected) < 0.001
 
-    def test_lefty_pitcher_uses_vs_l_split(self):
+    def test_lefty_pitcher_uses_vs_l_split_with_platoon(self):
+        # RHB vs LHP adds PLATOON_K_DELTA[("R","L")] per batter.
         result = calc_lineup_k_rate(SAMPLE_LINEUP, SAMPLE_BATTER_STATS, "L")
-        expected = (0.210 + 0.115) / 2
+        rl = PLATOON_K_DELTA[("R", "L")]
+        expected = ((0.210 + rl) + (0.115 + rl)) / 2
         assert result is not None
         assert abs(result - expected) < 0.001
 
-    def test_unknown_batter_uses_league_avg(self):
+    def test_unknown_batter_uses_league_avg_with_platoon(self):
         lineup = [{"name": "Unknown Batter", "bats": "R"}]
         result = calc_lineup_k_rate(lineup, SAMPLE_BATTER_STATS, "R")
-        assert abs(result - LEAGUE_AVG_K_RATE) < 0.001
+        expected = LEAGUE_AVG_K_RATE + PLATOON_K_DELTA[("R", "R")]
+        assert abs(result - expected) < 0.001
 
     def test_return_value_is_unregressed_raw_mean(self):
         """Return value must NOT be Bayesian-regressed — calc_lambda handles that."""
         lineup = [{"name": "Aaron Judge", "bats": "R"}]
         result = calc_lineup_k_rate(lineup, SAMPLE_BATTER_STATS, "R")
-        # Should equal raw vs_R value exactly, not regressed toward league avg
+        # Raw vs_R split + platoon delta, no regression toward league avg.
+        expected = 0.280 + PLATOON_K_DELTA[("R", "R")]
+        assert abs(result - expected) < 0.001
+
+    def test_lefty_batter_vs_righty_pitcher_gets_platoon_advantage(self):
+        lineup = [{"name": "Aaron Judge", "bats": "L"}]
+        result = calc_lineup_k_rate(lineup, SAMPLE_BATTER_STATS, "R")
+        expected = 0.280 + PLATOON_K_DELTA[("L", "R")]
+        assert abs(result - expected) < 0.001
+        # sanity: L-vs-R is a platoon advantage (negative delta)
+        assert PLATOON_K_DELTA[("L", "R")] < 0
+
+    def test_switch_hitter_vs_righty_treated_as_lefty(self):
+        lineup = [{"name": "Aaron Judge", "bats": "S"}]
+        result = calc_lineup_k_rate(lineup, SAMPLE_BATTER_STATS, "R")
+        expected = 0.280 + PLATOON_K_DELTA[("L", "R")]
+        assert abs(result - expected) < 0.001
+
+    def test_switch_hitter_vs_lefty_treated_as_righty(self):
+        lineup = [{"name": "Aaron Judge", "bats": "S"}]
+        result = calc_lineup_k_rate(lineup, SAMPLE_BATTER_STATS, "L")
+        expected = 0.210 + PLATOON_K_DELTA[("R", "L")]
+        assert abs(result - expected) < 0.001
+
+    def test_missing_bats_field_gets_neutral_delta(self):
+        lineup = [{"name": "Aaron Judge"}]  # no "bats" key
+        result = calc_lineup_k_rate(lineup, SAMPLE_BATTER_STATS, "R")
+        # Neutral delta = raw split, no platoon adjustment.
         assert abs(result - 0.280) < 0.001
+
+
+class TestPlatoonKDelta:
+    def test_all_four_hand_matchups_return_table_values(self):
+        for (b, p), delta in PLATOON_K_DELTA.items():
+            assert platoon_k_delta(b, p) == delta
+
+    def test_switch_hitter_vs_righty_uses_left_delta(self):
+        assert platoon_k_delta("S", "R") == PLATOON_K_DELTA[("L", "R")]
+
+    def test_switch_hitter_vs_lefty_uses_right_delta(self):
+        assert platoon_k_delta("S", "L") == PLATOON_K_DELTA[("R", "L")]
+
+    def test_unknown_hand_returns_zero(self):
+        assert platoon_k_delta("", "R") == 0.0
+        assert platoon_k_delta("X", "R") == 0.0
+
+    def test_platoon_advantage_sign_conventions(self):
+        # Opposite-hand matchups should favor the batter (negative K delta).
+        assert PLATOON_K_DELTA[("R", "L")] < 0
+        assert PLATOON_K_DELTA[("L", "R")] < 0
+        # Same-hand matchups should favor the pitcher (positive K delta).
+        assert PLATOON_K_DELTA[("R", "R")] > 0
+        assert PLATOON_K_DELTA[("L", "L")] > 0
 
 
 class TestBuildPitcherRecordLineup:

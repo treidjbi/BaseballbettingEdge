@@ -48,6 +48,33 @@ OPP_K_PRIOR_GAMES       = 50   # Bayesian prior: how many games league average i
 # This constant is only a fallback default; the live value is calibrated each
 # run and loaded from params.json (see calibrate.py::_calibrate_phase2).
 SWSTR_K9_SCALE   = 30.0
+
+# League-average platoon K% deltas (additive, rate points) applied on top of a
+# batter's K% based on the (batter_hand, pitcher_throws) matchup. Values reflect
+# multi-season MLB aggregate splits. Switch-hitters ("S") are modeled as batting
+# opposite the pitcher's hand (standard convention).
+#
+# Path A stopgap: until per-batter vs-L/vs-R samples stabilize mid-season and
+# fetch_batter_stats._fetch_splits is implemented, this captures the platoon
+# signal at the league level. See CLAUDE.md "Batter Handedness Upgrade" reminder.
+PLATOON_K_DELTA = {
+    ("R", "R"): 0.005,   # RHB vs RHP: slight same-hand K bump
+    ("R", "L"): -0.010,  # RHB vs LHP: platoon advantage
+    ("L", "R"): -0.015,  # LHB vs RHP: strong platoon advantage
+    ("L", "L"): 0.020,   # LHB vs LHP: reverse platoon (rare PA, stark split)
+}
+
+
+def platoon_k_delta(batter_hand: str, pitcher_throws: str) -> float:
+    """
+    League-average K% adjustment for a (batter_hand, pitcher_throws) matchup.
+
+    Switch-hitters ("S") are modeled as batting opposite the pitcher's hand.
+    Missing or unknown handedness returns 0.0 (neutral).
+    """
+    if batter_hand == "S":
+        batter_hand = "L" if pitcher_throws == "R" else "R"
+    return PLATOON_K_DELTA.get((batter_hand, pitcher_throws), 0.0)
 # Bayesian prior starts: treat n starts of current-season SwStr% as reliable only
 # after this many starts. At 3 starts (early season) the delta is ~23% weighted;
 # at 10 starts it is 50%; at 20 starts it is 67%.
@@ -114,11 +141,15 @@ def calc_lineup_k_rate(
     """
     Compute the mean K rate for a batting lineup against a given pitcher handedness.
 
+    Applies a league-average platoon K% delta per batter based on the
+    (batter_hand, pitcher_throws) matchup. See platoon_k_delta().
+
     Returns the unregressed raw mean — do NOT Bayesian-regress here.
     calc_lambda() applies bayesian_opp_k() to whatever rate it receives.
 
     Returns None when lineup is None or empty (caller falls back to team K%).
-    Unknown batters use LEAGUE_AVG_K_RATE.
+    Unknown batters use LEAGUE_AVG_K_RATE as the base rate; platoon delta is
+    still applied when the batter's handedness is known.
 
     lineup:         list of {"name": str, "bats": str} dicts
     batter_stats:   {name: {"vs_R": float, "vs_L": float}} from fetch_batter_stats
@@ -130,10 +161,10 @@ def calc_lineup_k_rate(
     rates = []
     for batter in lineup:
         name = batter.get("name", "")
-        # batter_stats keys are normalized (accent-stripped + lowercased) by
-        # fetch_batter_stats._build_lookup; normalize here to match.
+        batter_hand = batter.get("bats", "")
         splits = batter_stats.get(_norm(name))
-        rates.append(splits[split_key] if splits else LEAGUE_AVG_K_RATE)
+        base_k = splits[split_key] if splits else LEAGUE_AVG_K_RATE
+        rates.append(base_k + platoon_k_delta(batter_hand, pitcher_throws))
     return sum(rates) / len(rates)
 
 
