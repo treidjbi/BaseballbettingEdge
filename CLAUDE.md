@@ -179,6 +179,24 @@ before shipping.
 - **Graceful degradation**: Each data source can fail independently. SwStr%, umpires, lineups all fall back to neutral values. `data_complete` flag excludes degraded picks from calibration.
 - **Movement confidence**: Line movement against bet side applies a 0–1 haircut to EV (noise_floor=10pts, full_fade=30pts).
 
+## Data Caveats (historical data quirks)
+
+Before slicing `data/picks_history.json` or writing analytics that recompute
+features from stored inputs, check [docs/data-caveats.md](docs/data-caveats.md).
+Known windows where stored fields do not match what a clean rerun would produce:
+
+- **2026-04-11 → 2026-04-17 — `pitcher_throws` bug window.** MLB `/schedule`
+  hydrate silently failed to return `pitchHand`, so every pitcher at decision
+  time was treated as RHP. The stored `pitcher_throws` field has since been
+  corrected for the full history (commits `0407846`, `517f473`, `8463f8e`),
+  but `lambda` for picks in this window was computed with the R-assumption and
+  was **not** recomputed. Calibration is unaffected (residuals use stored
+  lambda, not pitcher_throws). Handedness-sliced analytics can treat the full
+  dataset uniformly; input-replay analytics should note the discrepancy.
+
+See `docs/data-caveats.md` for the full remediation trail and guidance per
+analysis type.
+
 ## Data-Volume Reminders
 
 Check these whenever you read this file and compare the trigger to current state
