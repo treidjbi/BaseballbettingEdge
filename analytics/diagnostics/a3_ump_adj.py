@@ -84,7 +84,6 @@ sys.path.insert(0, str(ROOT / "pipeline"))
 from fetch_umpires import (  # noqa: E402
     scrape_hp_assignments,
     _load_career_rates,
-    _build_game_ump_map,
     fetch_umpires,
     ABBR_TO_NAME_SUBSTR,
 )
@@ -194,15 +193,16 @@ print("=" * 70)
 print("Diagnosis summary")
 print("=" * 70)
 if not assignments:
-    print("-> scrape_hp_assignments returned EMPTY dict. Likely causes:")
-    print("   (a) ump.news hasn't posted today's assignments yet, or")
-    print("   (b) site HTML structure changed and the selector no longer matches, or")
-    print("   (c) network error (check the WARNING log above).")
-    print("   Path A3.3 or A3.5 applies depending on which.")
+    print("-> scrape_hp_assignments returned EMPTY dict. Check the WARNING log above.")
+    print("   Known state (2026-04-17): ump.news is NXDOMAIN — the domain no longer")
+    print("   resolves. If that's still the failure mode, path A3.5 applies: document")
+    print("   + keep the warn-and-degrade contract (see pipeline/fetch_umpires.py header).")
+    print("   Other possibilities if ump.news comes back: site HTML changed (update the")
+    print("   selector) or pre-10am-ET timing (assignments not posted yet).")
 elif assignments and not rnonzero:
     print("-> Scrape returned assignments but fetch_umpires produced all zeros.")
     print("   Likely a name-matching / abbreviation-mapping problem. Path A3.4.")
 elif assignments and rnonzero:
-    print("-> Scrape + lookup both work TODAY. The historical all-zero pattern is")
-    print("   most likely a timing issue: 6am pipeline ran before ump.news posted.")
-    print("   Path A3.5 (document timing).")
+    print("-> Scrape + lookup both work TODAY. If historical picks are all zero, the")
+    print("   outage was transient (domain returned, or pipeline ran before ~10am ET")
+    print("   posting). Path A3.5 (document).")
