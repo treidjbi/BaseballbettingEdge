@@ -93,18 +93,19 @@ HARD STOP checkpoint.
 | A1 — pitcher_throws | ✅ done | `0407846`, `517f473`, `8a76f30`, `8463f8e`, `16d513e`, `cbbce97` | See A1 block below. Tests 242→243. Bug window docs in `docs/data-caveats.md`, pointer in CLAUDE.md (`8c4210c`). |
 | Path A platoon delta | ✅ done | `e824447` | Latently dormant before A1 (every pitcher was `"R"`). Tests 97/97 in build_features. |
 | A3 — ump_k_adj (investigation) | ✅ done (path A3.5) | `7d9f11b`, `2760244`, `0b1c066` | Finding: **ump.news domain is NXDOMAIN** — permanently dead. 447/447 historical picks have `ump_k_adj = 0.0`. Documented + pinned contract tests. Tests 243→251. |
-| A3-fix — source replacement | ✅ done | `0142b0f`, `f09a4ee`, `9507dd0`, `0308536` | **User picked option (a): replace source.** Swapped to MLB Stats API `/schedule?hydrate=officials` (same API we already use for pitcher stats). `scrape_hp_assignments` renamed to `fetch_hp_assignments(date_str)`; `fetch_umpires(props, date_str)` threads the date through; `_abbr_for_team_name` helper added for reverse lookup. Fixed latent `ump_ok` logic bug (was staying True on silent empty dict — now `ump_ok = len(ump_map) > 0 and any(v != 0.0 for v in ump_map.values())`) **Option W**: forward-only, historical `data_complete=True` rows preserved (P4 — calibration momentum protected). Code-review fixes in `0308536`: docstring accuracy + **OAK abbreviation updated to `"Athletics"`** (A's relocated — both TheRundown and MLB API now return "Athletics" with no city prefix, was silently skipping every A's game in the reverse lookup) + unknown-team log level `info → warning`. Tests 251→259. Caveat note added to `docs/data-caveats.md`. **Known coverage cap flagged as follow-up:** `data/umpires/career_k_rates.json` only has 30 umpires (includes retired names); actual 2026 HP umpire match rate is ~21% (13/62 unique umps). Expanding the file is a separate task. |
+| A3-fix — source replacement | ✅ done | `0142b0f`, `f09a4ee`, `9507dd0`, `0308536` | **User picked option (a): replace source.** Swapped to MLB Stats API `/schedule?hydrate=officials` (same API we already use for pitcher stats). `scrape_hp_assignments` renamed to `fetch_hp_assignments(date_str)`; `fetch_umpires(props, date_str)` threads the date through; `_abbr_for_team_name` helper added for reverse lookup. Fixed latent `ump_ok` logic bug (was staying True on silent empty dict — now `ump_ok = len(ump_map) > 0 and any(v != 0.0 for v in ump_map.values())`) **Option W**: forward-only, historical `data_complete=True` rows preserved (P4 — calibration momentum protected). Code-review fixes in `0308536`: docstring accuracy + **OAK abbreviation updated to `"Athletics"`** (A's relocated — both TheRundown and MLB API now return "Athletics" with no city prefix, was silently skipping every A's game in the reverse lookup) + unknown-team log level `info → warning`. Tests 251→259. Caveat note added to `docs/data-caveats.md`. **Known coverage cap flagged as follow-up:** `data/umpires/career_k_rates.json` only has 30 umpires (includes retired names); actual 2026 HP umpire match rate is ~21% (13/62 unique umps). Expanding the file is A3b below. |
+| A3b — career_k_rates expansion | ⏳ | — | Expand `data/umpires/career_k_rates.json` from 30 → ~100 active umpires. Current match rate 21%; goal ≥75% of 2026 HP assignments. Per user preference (2026-04-17): "lets go to the carrer_k_rates expansion first before A2. id rather go in order and have this stuff work before moving on and forgetting broken pieces." |
 | A2 — opening_odds | ⏳ | — | |
 | A4 — bookmaker breakdown | ⏳ | — | |
-| A→B checkpoint | ⏳ | — | Verify activation rates moved after 24h fresh data, then merge to main. **Do NOT** bump `formula_change_date` or reset grading (see calibration-handling block above). |
+| A→B checkpoint | ⏳ | — | Verify activation rates moved after 24h fresh data, then merge to main. **Do NOT** bump `formula_change_date` or reset grading (see calibration-handling block above). Also verify v2 UI still renders (see backward-compat block in `⏸️ Checkpoint A → B` section). |
 
 **Expected wall time:** 1–2 hours active work (diagnostics + fixes + tests), plus ~24h of fresh pipeline runs before the A→B checkpoint to confirm activation rates move.
 
 Each of A1–A3 has the same shape: (1) write a diagnostic, (2) interpret, (3) if broken, write a failing test + fix; if dormant-by-design, document in a comment. A4 is a straight analytics addition.
 
 **Phase A success criteria (verify before checkpoint):**
-- `pitcher_throws` null rate drops from ~28% → near 0% on picks made after the fix commit
-- `ump_k_adj` nonzero rate rises from 0% → expected range (typically 30-60% of picks — not every ump has public data)
+- `pitcher_throws` null rate drops from ~28% → near 0% on picks made after the fix commit ✅
+- `ump_k_adj` nonzero rate rises from 0% → expected range. Target after A3b: ≥50% of picks (up from current ~21% ceiling driven by stale `career_k_rates.json`)
 - `opening_*_odds` null rate drops meaningfully (exact target depends on A2.3 finding)
 - A4 produces a per-bookmaker row, even if mostly `<unknown>` until B runs against cleaner data
 
@@ -112,12 +113,13 @@ If those rates don't move after the fixes land and a day of fresh data flows, so
 
 **Execution order (by leverage, highest first):**
 
-1. **A1 — pitcher_throws nulls** (28% blind spot on the platoon delta shipped 2026-04-16)
-2. **A3 — ump_k_adj all zero** (100% of post-4/8 picks — signal dead across every game)
-3. **A2 — opening_*_odds nulls** (affects movement_conf haircut, not core lambda)
-4. **A4 — per-bookmaker analytics** (measurement; do last so B phase has the column available)
+1. **A1 — pitcher_throws nulls** ✅ done (28% blind spot on the platoon delta shipped 2026-04-16)
+2. **A3 — ump_k_adj all zero** ✅ done — investigation + A3-fix source replacement complete (100% of post-4/8 picks had dead signal; new source live, ~21% coverage via stale career_k_rates.json)
+3. **A3b — career_k_rates expansion** ⏳ next — get career_k_rates match rate from 21% → ≥75% before moving on (user preference 2026-04-17: finish fixing the ump pipeline before opening_odds work so nothing stays broken)
+4. **A2 — opening_*_odds nulls** (affects movement_conf haircut, not core lambda)
+5. **A4 — per-bookmaker analytics** (measurement; do last so B phase has the column available)
 
-Tasks are numbered stably (A1/A2/A3/A4 = pitcher_throws/opening_odds/ump/bookmaker) for cross-reference purposes, but **work them in the 1→3→2→4 order above.**
+Tasks are numbered stably (A1/A2/A3/A4 = pitcher_throws/opening_odds/ump/bookmaker; A3b inserted after A3 for data-coverage expansion) for cross-reference purposes, but **work them in the 1→3→3b→2→4 order above.**
 
 ### Task A1: pitcher_throws null-rate investigation  *(execute 1st — highest leverage)*
 
@@ -271,7 +273,70 @@ git commit -m "chore(a1): backfill pitcher_throws for historical picks (N rows)"
 
 ---
 
-### Task A2: opening_*_odds null-rate investigation  *(execute 3rd)*
+### Task A3b: career_k_rates expansion  *(execute 3rd — finish the ump pipeline before opening_odds)*
+
+**Goal:** Raise `data/umpires/career_k_rates.json` match rate against the live 2026 HP umpire pool from ~21% (13/62 unique umps) to ≥75%. Without this, the A3-fix source replacement ships a working pipeline that still mostly returns `ump_k_adj = 0` because most assignments don't hit the lookup table.
+
+**Background (2026-04-17):** A3-fix replaced ump.news with MLB Stats API, which now correctly delivers an HP umpire name for every game. But `data/umpires/career_k_rates.json` was seeded 2026-03-24 with 30 hand-curated entries, several of whom are retired (Angel Hernandez, Ted Barrett, Paul Nauert, Bill Miller, CB Bucknor). Measured match rate against 2026 assignments: 13/62 unique umps = 21%. Target: ≥47/62 = 75%.
+
+**Files:**
+- Modify: `data/umpires/career_k_rates.json`
+- Optional: `scripts/seed_umpire_career_rates.py` (new, if we write a seeder)
+
+**Design constraints:**
+- Format must stay: `{ "Umpire Name": delta_vs_league_avg_K_pct }` — `build_features` reads this as an additive signal.
+- Name-matching is accent-insensitive via `name_utils.normalize_name`; store canonical form with accents if possible, match will handle strip.
+- Deltas are signed decimals (K% above/below league avg), typically in range ±0.5.
+- Don't include pitchers or other names — this is HP-only career career-K-rate-delta data.
+
+**Open investigation questions (answer in A3b.0 spike before coding):**
+1. Does MLB Stats API expose pitching-by-umpire splits we can derive a K% from? (If yes, we can programmatically seed all active umps with no manual curation.)
+2. Is Baseball Savant's umpire scorecard data public enough to scrape? (Has actual PA-weighted K% per ump.)
+3. Does `umpscorecards.com` expose structured data or just HTML? (May need parse.)
+4. Would Retrosheet event files be easier (historical, won't pick up 2026 rookies)?
+
+**Step A3b.0: Spike — identify easiest data source**
+
+Investigate in roughly this order (cheapest → hardest):
+- MLB Stats API `/teams/stats` with umpire filter → probably doesn't exist
+- MLB Stats API `/people/{ump_id}` for officials → check whether career stats field exists for umpires
+- Baseball Savant — search for umpire K% leaderboard
+- umpscorecards.com — check for JSON endpoint (`/api/...`)
+- Pybaseball — check if any function exposes umpire data
+- Retrosheet raw event files
+
+Write a quick script in `analytics/diagnostics/a3b_source_spike.py` that prints the first ~5 umpires + their K% from whichever source works. Commit the spike with findings.
+
+**Step A3b.1: Spec the seeder (or manual file)**
+
+Based on A3b.0, decide:
+- **Path 1 (programmatic):** Write `scripts/seed_umpire_career_rates.py` to fetch all active umps + K% from the chosen source, compute delta vs league-avg-K%, write JSON. Add a pytest smoke test.
+- **Path 2 (manual if programmatic fails):** Hand-expand the 30-entry file to ~100 by cross-referencing the 62 unique umps already seen in 2026 assignments. Less durable (need to redo yearly) but acceptable as a stopgap.
+
+**Step A3b.2: Run + verify**
+
+```bash
+# After seeder or manual edit
+python analytics/diagnostics/a3_ump_adj.py
+# Expect: Section 3 career_rates lookup rate ≥75% on 2026 HP assignments
+```
+
+**Step A3b.3: Commit**
+
+```bash
+git add data/umpires/career_k_rates.json [scripts/seed_umpire_career_rates.py] [tests/...]
+git commit -m "feat(a3b): expand career_k_rates.json to N umps (was 30; match rate X% → Y%)"
+```
+
+**Step A3b.4: Update plan + caveats**
+
+Mark A3b ✅ done in the execution log table. Note the match rate movement in `docs/data-caveats.md` under the 2026-04-17 cutover section.
+
+**Backward-compat:** Pure data file expansion. No schema change. `build_features` reads the same JSON the same way. v1 / v2 dashboards unaffected.
+
+---
+
+### Task A2: opening_*_odds null-rate investigation  *(execute 4th, after A3b)*
 
 **Files:**
 - Inspect: [pipeline/fetch_odds.py:195-196](pipeline/fetch_odds.py), [pipeline/run_pipeline.py:340-341](pipeline/run_pipeline.py), [pipeline/fetch_results.py:193-196](pipeline/fetch_results.py)
@@ -653,6 +718,11 @@ Discuss with the user:
 - **A1 (`pitcher_throws`)** — field already exists and was None-tolerant; dashboard and analytics stay compatible whether A1 backfilled or not.
 - **A2 adds one new field: `opening_odds_source`** (enum string, nullable). Existing rows predate the field and will have it absent; `calc_movement_confidence` must treat both missing-field and `"first_seen"` identically (no haircut). SQLite `picks` table gains a nullable column. Dashboard ignores unknown fields and reads `opening_*_odds` as before — no dashboard change needed. Analytics (B1–B6, `analytics/performance.py`) must use defensive column access (`_col()` pattern from B5) when reading `opening_odds_source` since older pick rows lack it.
 - **A3 / A4** — no new fields added.
+
+**V2 dashboard compatibility check (added 2026-04-17):** A v2 dashboard UI landed on `main` 2026-04-17 (commit `4bb54a8`, `dashboard/v2.html` + `v2-app.jsx` + `v2-data.js`, served at `/v2.html`). V1 (`dashboard/index.html`) remains the default. Before merging phase-a back to main:
+- **Do not rename or remove** any `today.json` field. V2 adapter (`dashboard/v2-data.js`) reads, non-exhaustively: `pitcher, team, opp_team, pitcher_throws, game_time, k_line, opening_line, best_over_odds, best_under_odds, opening_over_odds, opening_under_odds, lambda, avg_ip, opp_k_rate, ump_k_adj, season_k9, recent_k9, career_k9, ev_over, ev_under, game_state, best_over_book, swstr_pct, swstr_delta_k9, data_complete`. Adding new nullable fields (like A2's `opening_odds_source`) is safe.
+- **Manual smoke test before merge:** after deploying a phase-a-driven pipeline run to Netlify, load `/` (v1) AND `/v2.html` (v2) and confirm cards render. Check browser console for `v2-data.js` field-access errors. No pipeline change in phase A renames fields, but verify anyway — the whole point of the rollout plan is to not break v2.
+- See `CLAUDE.md` → "In-Flight Work: V2 Dashboard UI" and `docs/superpowers/plans/2026-04-17-v2-ui-rollout.md` for the full rollout context.
 
 ---
 
