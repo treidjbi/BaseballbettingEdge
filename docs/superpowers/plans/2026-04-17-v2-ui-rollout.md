@@ -14,6 +14,15 @@
 
 ---
 
+## Current Status (updated 2026-04-17)
+
+- **Phase 0: DONE.** Merged to `main` as commit `4bb54a8`. `/v2.html` is live on `baseballbettingedge.netlify.app` alongside unchanged `/`.
+- **Phase 1 (dogfooding): in progress.** User is dogfooding the weekend slates.
+- **Phase 2 (port SW/push): queued for week of 2026-04-20.** Pick up here next.
+- **Bug caught during verification:** v1 `index.html` line 1230 computes `totalUnits` as flat-1u per pick, ignoring the F2u/F1u/LEAN staking ladder from CLAUDE.md. v2 does it correctly. Not fixing v1 — it's being retired.
+
+---
+
 ## File Map
 
 **Already on this branch (`ui-redesign-eval`), uncommitted:**
@@ -34,9 +43,11 @@
 
 ---
 
-## Phase 0 — Land on main, deploy at `/v2.html`
+## Phase 0 — Land on main, deploy at `/v2.html` ✅ DONE 2026-04-17
 
 **What changes:** v2 ships as a sibling static page. `/` still serves `index.html`. Users only see v2 if they explicitly type `/v2.html` or follow a link we share. Nothing auto-redirects.
+
+**Shipped:** merged into `main` as commit `4bb54a8` (merge of `daa5eaa` + `2c23ae1`). All Phase 0 tasks complete.
 
 ### Task 0.1: Update Netlify ignore rule so v2 files trigger deploys
 
