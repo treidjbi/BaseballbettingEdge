@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-04-17T22:04:46Z",
+  "generated_at": "2026-04-17T22:20:53Z",
   "date": "2026-04-17",
   "props_available": true,
   "pitchers": [
@@ -46,7 +46,7 @@
         "movement_conf": 1.0
       },
       "data_complete": true,
-      "game_state": "in_progress"
+      "game_state": "final"
     },
     {
       "pitcher": "Kodai Senga",
@@ -88,6 +88,51 @@
         "adj_ev": -0.0409,
         "verdict": "PASS",
         "win_prob": 0.572,
+        "movement_conf": 1.0
+      },
+      "data_complete": true,
+      "game_state": "final"
+    },
+    {
+      "pitcher": "Tanner Bibee",
+      "team": "Cleveland Guardians",
+      "opp_team": "Baltimore Orioles",
+      "pitcher_throws": "R",
+      "game_time": "2026-04-17T22:10:00Z",
+      "k_line": 5.5,
+      "opening_line": 5.5,
+      "best_over_book": "FanDuel",
+      "ref_book": "FanDuel",
+      "best_over_odds": -138,
+      "best_under_odds": 104,
+      "opening_over_odds": -138,
+      "opening_under_odds": 104,
+      "price_delta_over": 0,
+      "price_delta_under": 0,
+      "raw_lambda": 4.83,
+      "lambda": 4.34,
+      "avg_ip": 4.58,
+      "swstr_pct": 0.11,
+      "career_swstr_pct": null,
+      "swstr_delta_k9": 0.0,
+      "opp_k_rate": 0.2388,
+      "lineup_used": false,
+      "ump_k_adj": 0.0,
+      "season_k9": 8.84,
+      "recent_k9": 12.6,
+      "career_k9": 8.85,
+      "ev_over": {
+        "ev": -0.3105,
+        "adj_ev": -0.3105,
+        "verdict": "PASS",
+        "win_prob": 0.269,
+        "movement_conf": 1.0
+      },
+      "ev_under": {
+        "ev": 0.2405,
+        "adj_ev": 0.2405,
+        "verdict": "FIRE 2u",
+        "win_prob": 0.731,
         "movement_conf": 1.0
       },
       "data_complete": true,
@@ -136,52 +181,7 @@
         "movement_conf": 0.0
       },
       "data_complete": true,
-      "game_state": "pregame"
-    },
-    {
-      "pitcher": "Tanner Bibee",
-      "team": "Cleveland Guardians",
-      "opp_team": "Baltimore Orioles",
-      "pitcher_throws": "R",
-      "game_time": "2026-04-17T22:10:00Z",
-      "k_line": 5.5,
-      "opening_line": 5.5,
-      "best_over_book": "FanDuel",
-      "ref_book": "FanDuel",
-      "best_over_odds": -138,
-      "best_under_odds": 104,
-      "opening_over_odds": -138,
-      "opening_under_odds": 104,
-      "price_delta_over": 0,
-      "price_delta_under": 0,
-      "raw_lambda": 4.83,
-      "lambda": 4.34,
-      "avg_ip": 4.58,
-      "swstr_pct": 0.11,
-      "career_swstr_pct": null,
-      "swstr_delta_k9": 0.0,
-      "opp_k_rate": 0.2388,
-      "lineup_used": false,
-      "ump_k_adj": 0.0,
-      "season_k9": 8.84,
-      "recent_k9": 12.6,
-      "career_k9": 8.85,
-      "ev_over": {
-        "ev": -0.3105,
-        "adj_ev": -0.3105,
-        "verdict": "PASS",
-        "win_prob": 0.269,
-        "movement_conf": 1.0
-      },
-      "ev_under": {
-        "ev": 0.2405,
-        "adj_ev": 0.2405,
-        "verdict": "FIRE 2u",
-        "win_prob": 0.731,
-        "movement_conf": 1.0
-      },
-      "data_complete": true,
-      "game_state": "pregame"
+      "game_state": "in_progress"
     },
     {
       "pitcher": "Taijuan Walker",
@@ -1183,12 +1183,12 @@
       "opening_line": 4.5,
       "best_over_book": "FanDuel",
       "ref_book": "FanDuel",
-      "best_over_odds": -158,
-      "best_under_odds": 118,
+      "best_over_odds": -154,
+      "best_under_odds": 116,
       "opening_over_odds": -158,
       "opening_under_odds": 118,
-      "price_delta_over": 0,
-      "price_delta_under": 0,
+      "price_delta_over": 4,
+      "price_delta_under": -2,
       "raw_lambda": 6.02,
       "lambda": 5.53,
       "avg_ip": 5.22,
@@ -1202,15 +1202,15 @@
       "recent_k9": 18.0,
       "career_k9": 8.39,
       "ev_over": {
-        "ev": 0.0349,
-        "adj_ev": 0.0349,
+        "ev": 0.041,
+        "adj_ev": 0.041,
         "verdict": "FIRE 1u",
         "win_prob": 0.647,
         "movement_conf": 1.0
       },
       "ev_under": {
-        "ev": -0.106,
-        "adj_ev": -0.106,
+        "ev": -0.1102,
+        "adj_ev": -0.1102,
         "verdict": "PASS",
         "win_prob": 0.353,
         "movement_conf": 1.0
