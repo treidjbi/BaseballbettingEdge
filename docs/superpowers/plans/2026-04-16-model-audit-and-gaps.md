@@ -94,10 +94,54 @@ HARD STOP checkpoint.
 | Path A platoon delta | ✅ done | `e824447` | Latently dormant before A1 (every pitcher was `"R"`). Tests 97/97 in build_features. |
 | A3 — ump_k_adj (investigation) | ✅ done (path A3.5) | `7d9f11b`, `2760244`, `0b1c066` | Finding: **ump.news domain is NXDOMAIN** — permanently dead. 447/447 historical picks have `ump_k_adj = 0.0`. Documented + pinned contract tests. Tests 243→251. |
 | A3-fix — source replacement | ✅ done | `0142b0f`, `f09a4ee`, `9507dd0`, `0308536` | **User picked option (a): replace source.** Swapped to MLB Stats API `/schedule?hydrate=officials` (same API we already use for pitcher stats). `scrape_hp_assignments` renamed to `fetch_hp_assignments(date_str)`; `fetch_umpires(props, date_str)` threads the date through; `_abbr_for_team_name` helper added for reverse lookup. Fixed latent `ump_ok` logic bug (was staying True on silent empty dict — now `ump_ok = len(ump_map) > 0 and any(v != 0.0 for v in ump_map.values())`) **Option W**: forward-only, historical `data_complete=True` rows preserved (P4 — calibration momentum protected). Code-review fixes in `0308536`: docstring accuracy + **OAK abbreviation updated to `"Athletics"`** (A's relocated — both TheRundown and MLB API now return "Athletics" with no city prefix, was silently skipping every A's game in the reverse lookup) + unknown-team log level `info → warning`. Tests 251→259. Caveat note added to `docs/data-caveats.md`. **Known coverage cap flagged as follow-up:** `data/umpires/career_k_rates.json` only has 30 umpires (includes retired names); actual 2026 HP umpire match rate is ~21% (13/62 unique umps). Expanding the file is A3b below. |
-| A3b — career_k_rates expansion | ⏳ | — | Expand `data/umpires/career_k_rates.json` from 30 → ~100 active umpires. Current match rate 21%; goal ≥75% of 2026 HP assignments. Per user preference (2026-04-17): "lets go to the carrer_k_rates expansion first before A2. id rather go in order and have this stuff work before moving on and forgetting broken pieces." |
+| A3b.0 — source spike | ✅ done | `c326deb` | Evaluated 4 sources. Picked MLB Stats API `/game/{pk}/boxscore` aggregation. Rejected: umpscorecards.com (accuracy-focused metrics, cross-checked anti-correlated with hand-curated K-rates), pybaseball statcast (`umpire` column deprecated, always NaN), BR/FanGraphs/Savant (403/404). Full rationale in `analytics/diagnostics/a3b_source_spike.py` docstring. |
+| A3b.1 — seeder script | ✅ done | `f54f184` | `scripts/seed_umpire_career_rates.py` — resumable (progress persisted per-day to `analytics/output/seed_progress.json`, gitignored), exponential-backoff retries on transient failures, individual game errors logged but don't stop the run. |
+| A3b.2 — seed run | 🔄 running (background, started 2026-04-17 14:32 local) | — | Window: `--start 2024-03-28 --end 2025-10-01 --min-games 20`. Pace ~26s per game-day (MLB API network-latency bound, not throttle-bound). 553 total days, ~370 game days → ETA ~2.5 hours from start. Log: `analytics/output/seed_umpire_career_rates.log`. Progress: `analytics/output/seed_progress.json`. If the process dies, re-invoking the same command resumes; add `--fresh` to force restart. |
+| A3b.3 — write + verify + commit | ⏳ blocked on A3b.2 | — | When seeder completes: (1) verify `career_k_rates.json` was written with ≥100 umps, (2) re-run `analytics/diagnostics/a3_ump_adj.py` to confirm match rate against 2026 HP assignments rose to ≥75% (from 22%), (3) sanity-check delta range — expect ±0.5 to ±1.0 K/game (wider than hand-curated ±0.5, which is fine — `ump_scale` in `params.json` will compensate during calibration phase 2), (4) commit with the match-rate movement in the message, (5) note match-rate movement in `docs/data-caveats.md` under 2026-04-17 cutover section. |
 | A2 — opening_odds | ⏳ | — | |
 | A4 — bookmaker breakdown | ⏳ | — | |
 | A→B checkpoint | ⏳ | — | Verify activation rates moved after 24h fresh data, then merge to main. **Do NOT** bump `formula_change_date` or reset grading (see calibration-handling block above). Also verify v2 UI still renders (see backward-compat block in `⏸️ Checkpoint A → B` section). |
+
+---
+
+### Monday-pickup checklist (2026-04-20, after weekend break)
+
+**Context on return:** Friday afternoon (2026-04-17) we kicked off the A3b.2 seed
+run in the background and stepped away. Multiple things to check before continuing:
+
+1. **Is the seeder still running?** In a fresh shell, check for the python process
+   or the log file tail:
+   ```bash
+   tail -5 analytics/output/seed_umpire_career_rates.log
+   # If the last line is "Wrote N umpires to ..." → done, move to step 2.
+   # If the last line is a "day X/553" progress line within the last few min → still running, wait.
+   # If nothing has been logged in hours and no "Wrote" line → it died. Resume with:
+   #   python scripts/seed_umpire_career_rates.py --start 2024-03-28 --end 2025-10-01 --min-games 20
+   #   (no --fresh — it will resume from progress file)
+   ```
+
+2. **If the seeder finished:**
+   ```bash
+   # Verify output file populated
+   python -c "import json; d = json.load(open('data/umpires/career_k_rates.json')); print(f'{len(d)} umps; range {min(d.values()):+.3f} .. {max(d.values()):+.3f}; mean {sum(d.values())/len(d):+.4f}')"
+
+   # Verify 2026 match rate rose to ≥75%
+   python analytics/diagnostics/a3_ump_adj.py 2>&1 | grep "Totals:"
+
+   # If both look right, commit:
+   git add data/umpires/career_k_rates.json
+   git commit -m "feat(a3b): expand career_k_rates.json (30 → N umps, 22% → X% match rate)"
+
+   # Then mark A3b.3 ✅ in this plan + append caveat note to docs/data-caveats.md.
+   ```
+
+3. **After A3b is fully ✅:** proceed to **Task A2** (opening_*_odds nulls). The
+   plan body below has A2 fully specified — no more scoping needed.
+
+4. **Branch state reminder:** work is on `model-audit-phase-a`. `main` has an
+   extra commit (`6fec2e9` — v2 UI coexistence note in CLAUDE.md) that is NOT
+   on phase-a yet. No need to merge that back into phase-a; it'll come in
+   naturally when phase-a merges to main at the A→B checkpoint.
 
 **Expected wall time:** 1–2 hours active work (diagnostics + fixes + tests), plus ~24h of fresh pipeline runs before the A→B checkpoint to confirm activation rates move.
 
