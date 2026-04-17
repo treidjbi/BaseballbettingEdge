@@ -31,7 +31,8 @@
         "adj_ev": 0.4123,
         "verdict": "FIRE 2u",
         "win_prob": 0.853,
-        "movement_conf": 1.0
+        "movement_conf": 1.0,
+        "result": "loss"
       },
       "ev_under": {
         "ev": -0.4123,
@@ -39,7 +40,8 @@
         "verdict": "PASS",
         "win_prob": 0.147,
         "movement_conf": 1.0
-      }
+      },
+      "actual_ks": 3
     },
     {
       "pitcher": "Cole Ragans",
@@ -114,8 +116,10 @@
         "adj_ev": 0.0387,
         "verdict": "FIRE 1u",
         "win_prob": 0.584,
-        "movement_conf": 1.0
-      }
+        "movement_conf": 1.0,
+        "result": "win"
+      },
+      "actual_ks": 3
     },
     {
       "pitcher": "David Peterson",
@@ -145,7 +149,8 @@
         "adj_ev": 0.0217,
         "verdict": "LEAN",
         "win_prob": 0.596,
-        "movement_conf": 1.0
+        "movement_conf": 1.0,
+        "result": "win"
       },
       "ev_under": {
         "ev": -0.084,
@@ -153,7 +158,8 @@
         "verdict": "PASS",
         "win_prob": 0.404,
         "movement_conf": 1.0
-      }
+      },
+      "actual_ks": 5
     },
     {
       "pitcher": "Robbie Ray",
@@ -183,7 +189,8 @@
         "adj_ev": 0.0795,
         "verdict": "FIRE 2u",
         "win_prob": 0.594,
-        "movement_conf": 1.0
+        "movement_conf": 1.0,
+        "result": "win"
       },
       "ev_under": {
         "ev": -0.1497,
@@ -191,7 +198,8 @@
         "verdict": "PASS",
         "win_prob": 0.406,
         "movement_conf": 1.0
-      }
+      },
+      "actual_ks": 7
     }
   ]
 }

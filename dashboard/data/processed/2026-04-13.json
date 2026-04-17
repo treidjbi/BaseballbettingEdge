@@ -88,10 +88,12 @@
         "adj_ev": 0.0736,
         "verdict": "FIRE 1u",
         "win_prob": 0.653,
-        "movement_conf": 1.0
+        "movement_conf": 1.0,
+        "result": "loss"
       },
       "data_complete": true,
-      "game_state": "final"
+      "game_state": "final",
+      "actual_ks": 8
     },
     {
       "pitcher": "Yusei Kikuchi",
@@ -133,10 +135,12 @@
         "adj_ev": 0.0697,
         "verdict": "FIRE 1u",
         "win_prob": 0.646,
-        "movement_conf": 1.0
+        "movement_conf": 1.0,
+        "result": "win"
       },
       "data_complete": true,
-      "game_state": "final"
+      "game_state": "final",
+      "actual_ks": 3
     },
     {
       "pitcher": "Justin Wrobleski",
@@ -223,10 +227,12 @@
         "adj_ev": 0.0257,
         "verdict": "LEAN",
         "win_prob": 0.536,
-        "movement_conf": 1.0
+        "movement_conf": 1.0,
+        "result": "win"
       },
       "data_complete": true,
-      "game_state": "final"
+      "game_state": "final",
+      "actual_ks": 2
     },
     {
       "pitcher": "Bailey Ober",
@@ -268,10 +274,12 @@
         "adj_ev": 0.1243,
         "verdict": "FIRE 2u",
         "win_prob": 0.737,
-        "movement_conf": 1.0
+        "movement_conf": 1.0,
+        "result": "loss"
       },
       "data_complete": true,
-      "game_state": "final"
+      "game_state": "final",
+      "actual_ks": 7
     },
     {
       "pitcher": "George Kirby",
@@ -351,7 +359,8 @@
         "adj_ev": -0.0181,
         "verdict": "PASS",
         "win_prob": 0.458,
-        "movement_conf": 1.0
+        "movement_conf": 1.0,
+        "result": "loss"
       },
       "ev_under": {
         "ev": -0.0516,
@@ -361,7 +370,8 @@
         "movement_conf": 1.0
       },
       "data_complete": true,
-      "game_state": "final"
+      "game_state": "final",
+      "actual_ks": 4
     },
     {
       "pitcher": "Will Warren",
@@ -403,10 +413,12 @@
         "adj_ev": 0.1428,
         "verdict": "FIRE 2u",
         "win_prob": 0.648,
-        "movement_conf": 1.0
+        "movement_conf": 1.0,
+        "result": "loss"
       },
       "data_complete": true,
-      "game_state": "final"
+      "game_state": "final",
+      "actual_ks": 6
     },
     {
       "pitcher": "Javier Assad",
@@ -493,10 +505,12 @@
         "adj_ev": -0.0038,
         "verdict": "PASS",
         "win_prob": 0.603,
-        "movement_conf": 1.0
+        "movement_conf": 1.0,
+        "result": "win"
       },
       "data_complete": true,
-      "game_state": "final"
+      "game_state": "final",
+      "actual_ks": 3
     },
     {
       "pitcher": "Luis Severino",
@@ -538,10 +552,12 @@
         "adj_ev": 0.0534,
         "verdict": "FIRE 1u",
         "win_prob": 0.545,
-        "movement_conf": 0.5
+        "movement_conf": 0.5,
+        "result": "loss"
       },
       "data_complete": true,
-      "game_state": "in_progress"
+      "game_state": "in_progress",
+      "actual_ks": 7
     },
     {
       "pitcher": "Mike Burrows",
@@ -628,10 +644,12 @@
         "adj_ev": 0.0305,
         "verdict": "FIRE 1u",
         "win_prob": 0.572,
-        "movement_conf": 1.0
+        "movement_conf": 1.0,
+        "result": "loss"
       },
       "data_complete": true,
-      "game_state": "in_progress"
+      "game_state": "in_progress",
+      "actual_ks": 7
     },
     {
       "pitcher": "Ryne Nelson",
@@ -673,10 +691,12 @@
         "adj_ev": 0.2254,
         "verdict": "FIRE 2u",
         "win_prob": 0.684,
-        "movement_conf": 1.0
+        "movement_conf": 1.0,
+        "result": "loss"
       },
       "data_complete": true,
-      "game_state": "final"
+      "game_state": "final",
+      "actual_ks": 7
     },
     {
       "pitcher": "Garrett Crochet",
@@ -718,10 +738,12 @@
         "adj_ev": 0.0264,
         "verdict": "LEAN",
         "win_prob": 0.555,
-        "movement_conf": 1.0
+        "movement_conf": 1.0,
+        "result": "win"
       },
       "data_complete": true,
-      "game_state": "final"
+      "game_state": "final",
+      "actual_ks": 0
     },
     {
       "pitcher": "Cade Cavalli",
@@ -763,10 +785,12 @@
         "adj_ev": 0.0449,
         "verdict": "FIRE 1u",
         "win_prob": 0.48,
-        "movement_conf": 1.0
+        "movement_conf": 1.0,
+        "result": "win"
       },
       "data_complete": true,
-      "game_state": "final"
+      "game_state": "final",
+      "actual_ks": 2
     },
     {
       "pitcher": "Dean Kremer",
@@ -808,10 +832,12 @@
         "adj_ev": 0.2136,
         "verdict": "FIRE 2u",
         "win_prob": 0.838,
-        "movement_conf": 1.0
+        "movement_conf": 1.0,
+        "result": "loss"
       },
       "data_complete": true,
-      "game_state": "final"
+      "game_state": "final",
+      "actual_ks": 9
     },
     {
       "pitcher": "Paul Skenes",
@@ -853,10 +879,12 @@
         "adj_ev": 0.3491,
         "verdict": "FIRE 2u",
         "win_prob": 0.868,
-        "movement_conf": 1.0
+        "movement_conf": 1.0,
+        "result": "win"
       },
       "data_complete": true,
-      "game_state": "final"
+      "game_state": "final",
+      "actual_ks": 6
     },
     {
       "pitcher": "Nathan Eovaldi",
@@ -898,10 +926,12 @@
         "adj_ev": 0.1476,
         "verdict": "FIRE 2u",
         "win_prob": 0.788,
-        "movement_conf": 1.0
+        "movement_conf": 1.0,
+        "result": "loss"
       },
       "data_complete": true,
-      "game_state": "in_progress"
+      "game_state": "in_progress",
+      "actual_ks": 7
     }
   ]
 }

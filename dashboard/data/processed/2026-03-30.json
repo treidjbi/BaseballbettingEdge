@@ -34,8 +34,10 @@
         "adj_ev": 0.0358,
         "verdict": "FIRE 1u",
         "win_prob": 0.471,
-        "movement_conf": 1.0
-      }
+        "movement_conf": 1.0,
+        "result": "win"
+      },
+      "actual_ks": 4
     },
     {
       "pitcher": "Simeon Woods Richardson",
@@ -61,7 +63,8 @@
         "adj_ev": 0.2874,
         "verdict": "FIRE 2u",
         "win_prob": 0.792,
-        "movement_conf": 1.0
+        "movement_conf": 1.0,
+        "result": "loss"
       },
       "ev_under": {
         "ev": -0.2874,
@@ -69,7 +72,8 @@
         "verdict": "PASS",
         "win_prob": 0.208,
         "movement_conf": 0.0
-      }
+      },
+      "actual_ks": 2
     },
     {
       "pitcher": "Chris Bassitt",
@@ -95,7 +99,8 @@
         "adj_ev": 0.06,
         "verdict": "FIRE 2u",
         "win_prob": 0.555,
-        "movement_conf": 1.0
+        "movement_conf": 1.0,
+        "result": "loss"
       },
       "ev_under": {
         "ev": -0.06,
@@ -103,7 +108,8 @@
         "verdict": "PASS",
         "win_prob": 0.445,
         "movement_conf": 1.0
-      }
+      },
+      "actual_ks": 3
     },
     {
       "pitcher": "Jack Leiter",
@@ -129,7 +135,8 @@
         "adj_ev": 0.1836,
         "verdict": "FIRE 2u",
         "win_prob": 0.739,
-        "movement_conf": 1.0
+        "movement_conf": 1.0,
+        "result": "win"
       },
       "ev_under": {
         "ev": -0.1836,
@@ -137,7 +144,8 @@
         "verdict": "PASS",
         "win_prob": 0.261,
         "movement_conf": 1.0
-      }
+      },
+      "actual_ks": 8
     },
     {
       "pitcher": "Taijuan Walker",
@@ -170,8 +178,10 @@
         "adj_ev": 0.1624,
         "verdict": "FIRE 2u",
         "win_prob": 0.742,
-        "movement_conf": 1.0
-      }
+        "movement_conf": 1.0,
+        "result": "win"
+      },
+      "actual_ks": 2
     },
     {
       "pitcher": "Foster Griffin",
@@ -204,8 +214,10 @@
         "adj_ev": 0.249,
         "verdict": "FIRE 2u",
         "win_prob": 0.704,
-        "movement_conf": 1.0
-      }
+        "movement_conf": 1.0,
+        "result": "loss"
+      },
+      "actual_ks": 5
     },
     {
       "pitcher": "Davis Martin",
@@ -231,7 +243,8 @@
         "adj_ev": 0.0391,
         "verdict": "FIRE 1u",
         "win_prob": 0.572,
-        "movement_conf": 1.0
+        "movement_conf": 1.0,
+        "result": "win"
       },
       "ev_under": {
         "ev": -0.1045,
@@ -239,7 +252,8 @@
         "verdict": "PASS",
         "win_prob": 0.428,
         "movement_conf": 1.0
-      }
+      },
+      "actual_ks": 6
     },
     {
       "pitcher": "Chris Paddack",
@@ -272,8 +286,10 @@
         "adj_ev": 0.1364,
         "verdict": "FIRE 2u",
         "win_prob": 0.622,
-        "movement_conf": 1.0
-      }
+        "movement_conf": 1.0,
+        "result": "loss"
+      },
+      "actual_ks": 6
     },
     {
       "pitcher": "Braxton Ashcraft",
@@ -306,8 +322,10 @@
         "adj_ev": 0.272,
         "verdict": "FIRE 2u",
         "win_prob": 0.677,
-        "movement_conf": 1.0
-      }
+        "movement_conf": 1.0,
+        "result": "win"
+      },
+      "actual_ks": 3
     },
     {
       "pitcher": "Chase Burns",
@@ -340,8 +358,10 @@
         "adj_ev": 0.3872,
         "verdict": "FIRE 2u",
         "win_prob": 0.997,
-        "movement_conf": 1.0
-      }
+        "movement_conf": 1.0,
+        "result": "win"
+      },
+      "actual_ks": 7
     },
     {
       "pitcher": "Tomoyuki Sugano",
@@ -367,7 +387,8 @@
         "adj_ev": 0.0119,
         "verdict": "LEAN",
         "win_prob": 0.592,
-        "movement_conf": 1.0
+        "movement_conf": 1.0,
+        "result": "win"
       },
       "ev_under": {
         "ev": -0.0119,
@@ -375,7 +396,8 @@
         "verdict": "PASS",
         "win_prob": 0.408,
         "movement_conf": 1.0
-      }
+      },
+      "actual_ks": 4
     },
     {
       "pitcher": "Cody Ponce",
@@ -408,8 +430,10 @@
         "adj_ev": 0.3583,
         "verdict": "FIRE 2u",
         "win_prob": 0.813,
-        "movement_conf": 1.0
-      }
+        "movement_conf": 1.0,
+        "result": "win"
+      },
+      "actual_ks": 3
     },
     {
       "pitcher": "Bryce Elder",
@@ -435,7 +459,8 @@
         "adj_ev": 0.0153,
         "verdict": "LEAN",
         "win_prob": 0.592,
-        "movement_conf": 1.0
+        "movement_conf": 1.0,
+        "result": "win"
       },
       "ev_under": {
         "ev": -0.0866,
@@ -443,7 +468,8 @@
         "verdict": "PASS",
         "win_prob": 0.408,
         "movement_conf": 1.0
-      }
+      },
+      "actual_ks": 5
     },
     {
       "pitcher": "Jacob Lopez",
@@ -469,7 +495,8 @@
         "adj_ev": 0.0682,
         "verdict": "FIRE 2u",
         "win_prob": 0.563,
-        "movement_conf": 1.0
+        "movement_conf": 1.0,
+        "result": "loss"
       },
       "ev_under": {
         "ev": -0.1395,
@@ -477,7 +504,8 @@
         "verdict": "PASS",
         "win_prob": 0.437,
         "movement_conf": 1.0
-      }
+      },
+      "actual_ks": 0
     },
     {
       "pitcher": "Kyle Harrison",
@@ -510,8 +538,10 @@
         "adj_ev": 0.2251,
         "verdict": "FIRE 2u",
         "win_prob": 0.64,
-        "movement_conf": 1.0
-      }
+        "movement_conf": 1.0,
+        "result": "loss"
+      },
+      "actual_ks": 8
     },
     {
       "pitcher": "Nick Martinez",
@@ -544,8 +574,10 @@
         "adj_ev": 0.508,
         "verdict": "FIRE 2u",
         "win_prob": 0.943,
-        "movement_conf": 1.0
-      }
+        "movement_conf": 1.0,
+        "result": "win"
+      },
+      "actual_ks": 3
     },
     {
       "pitcher": "Edward Cabrera",
@@ -578,8 +610,10 @@
         "adj_ev": 0.1746,
         "verdict": "FIRE 2u",
         "win_prob": 0.66,
-        "movement_conf": 1.0
-      }
+        "movement_conf": 1.0,
+        "result": "win"
+      },
+      "actual_ks": 5
     },
     {
       "pitcher": "Ryan Johnson",
@@ -612,8 +646,10 @@
         "adj_ev": 0.4025,
         "verdict": "FIRE 2u",
         "win_prob": 0.993,
-        "movement_conf": 1.0
-      }
+        "movement_conf": 1.0,
+        "result": "win"
+      },
+      "actual_ks": 2
     },
     {
       "pitcher": "Clay Holmes",
@@ -680,8 +716,10 @@
         "adj_ev": 0.3964,
         "verdict": "FIRE 2u",
         "win_prob": 0.906,
-        "movement_conf": 1.0
-      }
+        "movement_conf": 1.0,
+        "result": "win"
+      },
+      "actual_ks": 1
     },
     {
       "pitcher": "Lance McCullers Jr.",
@@ -714,8 +752,10 @@
         "adj_ev": 0.3093,
         "verdict": "FIRE 2u",
         "win_prob": 0.964,
-        "movement_conf": 1.0
-      }
+        "movement_conf": 1.0,
+        "result": "loss"
+      },
+      "actual_ks": 9
     },
     {
       "pitcher": "Ranger Suarez",
@@ -741,7 +781,8 @@
         "adj_ev": 0.0199,
         "verdict": "LEAN",
         "win_prob": 0.675,
-        "movement_conf": 1.0
+        "movement_conf": 1.0,
+        "result": "loss"
       },
       "ev_under": {
         "ev": -0.0199,
@@ -749,7 +790,8 @@
         "verdict": "PASS",
         "win_prob": 0.325,
         "movement_conf": 1.0
-      }
+      },
+      "actual_ks": 3
     },
     {
       "pitcher": "Ryan Weathers",
@@ -782,8 +824,10 @@
         "adj_ev": 0.1387,
         "verdict": "FIRE 2u",
         "win_prob": 0.771,
-        "movement_conf": 1.0
-      }
+        "movement_conf": 1.0,
+        "result": "loss"
+      },
+      "actual_ks": 7
     },
     {
       "pitcher": "Luis Castillo",
@@ -809,7 +853,8 @@
         "adj_ev": 0.1124,
         "verdict": "FIRE 2u",
         "win_prob": 0.622,
-        "movement_conf": 1.0
+        "movement_conf": 1.0,
+        "result": "win"
       },
       "ev_under": {
         "ev": -0.1124,
@@ -817,7 +862,8 @@
         "verdict": "PASS",
         "win_prob": 0.378,
         "movement_conf": 1.0
-      }
+      },
+      "actual_ks": 7
     },
     {
       "pitcher": "Walker Buehler",
@@ -843,7 +889,8 @@
         "adj_ev": 0.0664,
         "verdict": "FIRE 2u",
         "win_prob": 0.571,
-        "movement_conf": 1.0
+        "movement_conf": 1.0,
+        "result": "loss"
       },
       "ev_under": {
         "ev": -0.0664,
@@ -851,7 +898,8 @@
         "verdict": "PASS",
         "win_prob": 0.429,
         "movement_conf": 1.0
-      }
+      },
+      "actual_ks": 3
     },
     {
       "pitcher": "Landen Roupp",
@@ -884,8 +932,10 @@
         "adj_ev": 0.069,
         "verdict": "FIRE 2u",
         "win_prob": 0.677,
-        "movement_conf": 1.0
-      }
+        "movement_conf": 1.0,
+        "result": "loss"
+      },
+      "actual_ks": 7
     },
     {
       "pitcher": "Roki Sasaki",
@@ -918,8 +968,10 @@
         "adj_ev": 0.3426,
         "verdict": "FIRE 2u",
         "win_prob": 0.752,
-        "movement_conf": 1.0
-      }
+        "movement_conf": 1.0,
+        "result": "loss"
+      },
+      "actual_ks": 4
     },
     {
       "pitcher": "Parker Messick",
@@ -945,7 +997,8 @@
         "adj_ev": 0.0575,
         "verdict": "FIRE 1u",
         "win_prob": 0.478,
-        "movement_conf": 1.0
+        "movement_conf": 1.0,
+        "result": "win"
       },
       "ev_under": {
         "ev": -0.0575,
@@ -953,7 +1006,8 @@
         "verdict": "PASS",
         "win_prob": 0.522,
         "movement_conf": 1.0
-      }
+      },
+      "actual_ks": 5
     },
     {
       "pitcher": "Michael Soroka",
@@ -986,8 +1040,10 @@
         "adj_ev": 0.6081,
         "verdict": "FIRE 2u",
         "win_prob": 0.993,
-        "movement_conf": 1.0
-      }
+        "movement_conf": 1.0,
+        "result": "loss"
+      },
+      "actual_ks": 10
     },
     {
       "pitcher": "Justin Verlander",
@@ -1013,7 +1069,8 @@
         "adj_ev": 0.3076,
         "verdict": "FIRE 2u",
         "win_prob": 0.853,
-        "movement_conf": 1.0
+        "movement_conf": 1.0,
+        "result": "loss"
       },
       "ev_under": {
         "ev": -0.3076,
@@ -1021,7 +1078,8 @@
         "verdict": "PASS",
         "win_prob": 0.147,
         "movement_conf": 1.0
-      }
+      },
+      "actual_ks": 1
     }
   ]
 }

@@ -43,10 +43,12 @@
         "adj_ev": 0.0838,
         "verdict": "FIRE 1u",
         "win_prob": 0.584,
-        "movement_conf": 1.0
+        "movement_conf": 1.0,
+        "result": "loss"
       },
       "data_complete": true,
-      "game_state": "final"
+      "game_state": "final",
+      "actual_ks": 10
     },
     {
       "pitcher": "Brayan Bello",
@@ -133,10 +135,12 @@
         "adj_ev": 0.0505,
         "verdict": "FIRE 1u",
         "win_prob": 0.644,
-        "movement_conf": 1.0
+        "movement_conf": 1.0,
+        "result": "win"
       },
       "data_complete": true,
-      "game_state": "final"
+      "game_state": "final",
+      "actual_ks": 3
     },
     {
       "pitcher": "Freddy Peralta",
@@ -178,10 +182,12 @@
         "adj_ev": 0.1177,
         "verdict": "FIRE 2u",
         "win_prob": 0.56,
-        "movement_conf": 1.0
+        "movement_conf": 1.0,
+        "result": "win"
       },
       "data_complete": true,
-      "game_state": "final"
+      "game_state": "final",
+      "actual_ks": 6
     },
     {
       "pitcher": "Chris Sale",
@@ -223,10 +229,12 @@
         "adj_ev": 0.1776,
         "verdict": "FIRE 2u",
         "win_prob": 0.636,
-        "movement_conf": 1.0
+        "movement_conf": 1.0,
+        "result": "win"
       },
       "data_complete": true,
-      "game_state": "final"
+      "game_state": "final",
+      "actual_ks": 6
     },
     {
       "pitcher": "Andre Pallante",
@@ -268,10 +276,12 @@
         "adj_ev": 0.0741,
         "verdict": "FIRE 1u",
         "win_prob": 0.564,
-        "movement_conf": 1.0
+        "movement_conf": 1.0,
+        "result": "win"
       },
       "data_complete": true,
-      "game_state": "final"
+      "game_state": "final",
+      "actual_ks": 2
     },
     {
       "pitcher": "Tarik Skubal",
@@ -313,10 +323,12 @@
         "adj_ev": 0.2663,
         "verdict": "FIRE 2u",
         "win_prob": 0.761,
-        "movement_conf": 1.0
+        "movement_conf": 1.0,
+        "result": "win"
       },
       "data_complete": true,
-      "game_state": "final"
+      "game_state": "final",
+      "actual_ks": 7
     },
     {
       "pitcher": "Andrew Painter",
@@ -403,10 +415,12 @@
         "adj_ev": 0.0813,
         "verdict": "FIRE 1u",
         "win_prob": 0.581,
-        "movement_conf": 1.0
+        "movement_conf": 1.0,
+        "result": "win"
       },
       "data_complete": true,
-      "game_state": "final"
+      "game_state": "final",
+      "actual_ks": 4
     },
     {
       "pitcher": "Jose Soriano",
@@ -441,7 +455,8 @@
         "adj_ev": 0.1096,
         "verdict": "FIRE 2u",
         "win_prob": 0.619,
-        "movement_conf": 1.0
+        "movement_conf": 1.0,
+        "result": "win"
       },
       "ev_under": {
         "ev": -0.1808,
@@ -451,7 +466,8 @@
         "movement_conf": 1.0
       },
       "data_complete": true,
-      "game_state": "final"
+      "game_state": "final",
+      "actual_ks": 10
     },
     {
       "pitcher": "Logan Gilbert",
@@ -493,10 +509,12 @@
         "adj_ev": 0.1049,
         "verdict": "FIRE 2u",
         "win_prob": 0.685,
-        "movement_conf": 1.0
+        "movement_conf": 1.0,
+        "result": "loss"
       },
       "data_complete": true,
-      "game_state": "final"
+      "game_state": "final",
+      "actual_ks": 7
     },
     {
       "pitcher": "Noah Cameron",
@@ -538,10 +556,12 @@
         "adj_ev": 0.0054,
         "verdict": "PASS",
         "win_prob": 0.491,
-        "movement_conf": 1.0
+        "movement_conf": 1.0,
+        "result": "win"
       },
       "data_complete": true,
-      "game_state": "final"
+      "game_state": "final",
+      "actual_ks": 4
     },
     {
       "pitcher": "Nick Pivetta",
@@ -583,10 +603,12 @@
         "adj_ev": 0.2626,
         "verdict": "FIRE 2u",
         "win_prob": 0.846,
-        "movement_conf": 1.0
+        "movement_conf": 1.0,
+        "result": "win"
       },
       "data_complete": true,
-      "game_state": "final"
+      "game_state": "final",
+      "actual_ks": 4
     },
     {
       "pitcher": "Roki Sasaki",
@@ -666,7 +688,8 @@
         "adj_ev": 0.1079,
         "verdict": "FIRE 2u",
         "win_prob": 0.701,
-        "movement_conf": 1.0
+        "movement_conf": 1.0,
+        "result": "loss"
       },
       "ev_under": {
         "ev": -0.1776,
@@ -676,7 +699,8 @@
         "movement_conf": 1.0
       },
       "data_complete": true,
-      "game_state": "final"
+      "game_state": "final",
+      "actual_ks": 3
     },
     {
       "pitcher": "Cody Bolton",
@@ -711,7 +735,8 @@
         "adj_ev": 0.2747,
         "verdict": "FIRE 2u",
         "win_prob": 0.84,
-        "movement_conf": 1.0
+        "movement_conf": 1.0,
+        "result": "loss"
       },
       "ev_under": {
         "ev": -0.3449,
@@ -721,7 +746,8 @@
         "movement_conf": 1.0
       },
       "data_complete": true,
-      "game_state": "final"
+      "game_state": "final",
+      "actual_ks": 1
     },
     {
       "pitcher": "Bubba Chandler",
@@ -756,7 +782,8 @@
         "adj_ev": 0.0889,
         "verdict": "FIRE 1u",
         "win_prob": 0.644,
-        "movement_conf": 1.0
+        "movement_conf": 1.0,
+        "result": "loss"
       },
       "ev_under": {
         "ev": -0.1591,
@@ -766,7 +793,8 @@
         "movement_conf": 1.0
       },
       "data_complete": true,
-      "game_state": "final"
+      "game_state": "final",
+      "actual_ks": 4
     },
     {
       "pitcher": "Cam Schlittler",
@@ -801,7 +829,8 @@
         "adj_ev": 0.0543,
         "verdict": "FIRE 1u",
         "win_prob": 0.604,
-        "movement_conf": 1.0
+        "movement_conf": 1.0,
+        "result": "win"
       },
       "ev_under": {
         "ev": -0.123,
@@ -811,7 +840,8 @@
         "movement_conf": 1.0
       },
       "data_complete": true,
-      "game_state": "final"
+      "game_state": "final",
+      "actual_ks": 8
     },
     {
       "pitcher": "Drew Rasmussen",
@@ -898,10 +928,12 @@
         "adj_ev": 0.1864,
         "verdict": "FIRE 2u",
         "win_prob": 0.813,
-        "movement_conf": 1.0
+        "movement_conf": 1.0,
+        "result": "win"
       },
       "data_complete": true,
-      "game_state": "final"
+      "game_state": "final",
+      "actual_ks": 1
     },
     {
       "pitcher": "Jacob deGrom",
@@ -936,7 +968,8 @@
         "adj_ev": -0.013,
         "verdict": "PASS",
         "win_prob": 0.622,
-        "movement_conf": 1.0
+        "movement_conf": 1.0,
+        "result": "win"
       },
       "ev_under": {
         "ev": -0.0568,
@@ -946,7 +979,8 @@
         "movement_conf": 1.0
       },
       "data_complete": true,
-      "game_state": "final"
+      "game_state": "final",
+      "actual_ks": 9
     },
     {
       "pitcher": "Sandy Alcantara",
@@ -981,7 +1015,8 @@
         "adj_ev": 0.1317,
         "verdict": "FIRE 2u",
         "win_prob": 0.608,
-        "movement_conf": 1.0
+        "movement_conf": 1.0,
+        "result": "loss"
       },
       "ev_under": {
         "ev": -0.2014,
@@ -991,7 +1026,8 @@
         "movement_conf": 1.0
       },
       "data_complete": true,
-      "game_state": "final"
+      "game_state": "final",
+      "actual_ks": 4
     },
     {
       "pitcher": "Taj Bradley",
@@ -1026,7 +1062,8 @@
         "adj_ev": 0.133,
         "verdict": "FIRE 2u",
         "win_prob": 0.726,
-        "movement_conf": 1.0
+        "movement_conf": 1.0,
+        "result": "win"
       },
       "ev_under": {
         "ev": -0.2027,
@@ -1036,7 +1073,8 @@
         "movement_conf": 1.0
       },
       "data_complete": true,
-      "game_state": "final"
+      "game_state": "final",
+      "actual_ks": 7
     },
     {
       "pitcher": "Zac Gallen",
@@ -1078,10 +1116,12 @@
         "adj_ev": 0.1509,
         "verdict": "FIRE 2u",
         "win_prob": 0.568,
-        "movement_conf": 1.0
+        "movement_conf": 1.0,
+        "result": "win"
       },
       "data_complete": true,
-      "game_state": "final"
+      "game_state": "final",
+      "actual_ks": 2
     },
     {
       "pitcher": "Grant Taylor",
@@ -1116,7 +1156,8 @@
         "adj_ev": 0.0723,
         "verdict": "FIRE 1u",
         "win_prob": 0.398,
-        "movement_conf": 1.0
+        "movement_conf": 1.0,
+        "result": "win"
       },
       "ev_under": {
         "ev": -0.1429,
@@ -1126,7 +1167,8 @@
         "movement_conf": 1.0
       },
       "data_complete": true,
-      "game_state": "final"
+      "game_state": "final",
+      "actual_ks": 2
     },
     {
       "pitcher": "Brandon Woodruff",
@@ -1168,10 +1210,12 @@
         "adj_ev": 0.033,
         "verdict": "FIRE 1u",
         "win_prob": 0.496,
-        "movement_conf": 1.0
+        "movement_conf": 1.0,
+        "result": "loss"
       },
       "data_complete": true,
-      "game_state": "final"
+      "game_state": "final",
+      "actual_ks": 6
     },
     {
       "pitcher": "Zack Littell",
@@ -1258,10 +1302,12 @@
         "adj_ev": 0.1177,
         "verdict": "FIRE 2u",
         "win_prob": 0.711,
-        "movement_conf": 1.0
+        "movement_conf": 1.0,
+        "result": "win"
       },
       "data_complete": true,
-      "game_state": "final"
+      "game_state": "final",
+      "actual_ks": 5
     },
     {
       "pitcher": "Kyle Freeland",
@@ -1303,10 +1349,12 @@
         "adj_ev": 0.0361,
         "verdict": "FIRE 1u",
         "win_prob": 0.512,
-        "movement_conf": 1.0
+        "movement_conf": 1.0,
+        "result": "win"
       },
       "data_complete": true,
-      "game_state": "final"
+      "game_state": "final",
+      "actual_ks": 0
     },
     {
       "pitcher": "Aaron Civale",
@@ -1341,7 +1389,8 @@
         "adj_ev": 0.0301,
         "verdict": "FIRE 1u",
         "win_prob": 0.489,
-        "movement_conf": 1.0
+        "movement_conf": 1.0,
+        "result": "loss"
       },
       "ev_under": {
         "ev": -0.1013,
@@ -1351,7 +1400,8 @@
         "movement_conf": 1.0
       },
       "data_complete": true,
-      "game_state": "final"
+      "game_state": "final",
+      "actual_ks": 3
     }
   ]
 }

@@ -36,7 +36,8 @@
         "adj_ev": 0.0397,
         "verdict": "FIRE 1u",
         "win_prob": 0.601,
-        "movement_conf": 1.0
+        "movement_conf": 1.0,
+        "result": "win"
       },
       "ev_under": {
         "ev": -0.1109,
@@ -46,7 +47,8 @@
         "movement_conf": 1.0
       },
       "data_complete": true,
-      "game_state": "final"
+      "game_state": "final",
+      "actual_ks": 5
     },
     {
       "pitcher": "Jordan Leasure",
@@ -88,10 +90,12 @@
         "adj_ev": 0.0,
         "verdict": "PASS",
         "win_prob": 0.879,
-        "movement_conf": 0.0
+        "movement_conf": 0.0,
+        "result": "win"
       },
       "data_complete": true,
-      "game_state": "final"
+      "game_state": "final",
+      "actual_ks": 0
     },
     {
       "pitcher": "Luis Castillo",
@@ -133,10 +137,12 @@
         "adj_ev": 0.0,
         "verdict": "PASS",
         "win_prob": 0.637,
-        "movement_conf": 0.0
+        "movement_conf": 0.0,
+        "result": "win"
       },
       "data_complete": true,
-      "game_state": "in_progress"
+      "game_state": "in_progress",
+      "actual_ks": 3
     },
     {
       "pitcher": "Chase Burns",
@@ -223,10 +229,12 @@
         "adj_ev": 0.303,
         "verdict": "FIRE 2u",
         "win_prob": 0.831,
-        "movement_conf": 1.0
+        "movement_conf": 1.0,
+        "result": "win"
       },
       "data_complete": true,
-      "game_state": "in_progress"
+      "game_state": "in_progress",
+      "actual_ks": 3
     },
     {
       "pitcher": "Shane Baz",
@@ -268,10 +276,12 @@
         "adj_ev": 0.1223,
         "verdict": "FIRE 2u",
         "win_prob": 0.757,
-        "movement_conf": 1.0
+        "movement_conf": 1.0,
+        "result": "loss"
       },
       "data_complete": true,
-      "game_state": "final"
+      "game_state": "final",
+      "actual_ks": 6
     },
     {
       "pitcher": "Landen Roupp",
@@ -313,10 +323,12 @@
         "adj_ev": 0.0184,
         "verdict": "LEAN",
         "win_prob": 0.565,
-        "movement_conf": 0.5
+        "movement_conf": 0.5,
+        "result": "loss"
       },
       "data_complete": true,
-      "game_state": "final"
+      "game_state": "final",
+      "actual_ks": 6
     },
     {
       "pitcher": "Brent Suter",
@@ -358,10 +370,12 @@
         "adj_ev": 0.044,
         "verdict": "FIRE 1u",
         "win_prob": 0.703,
-        "movement_conf": 1.0
+        "movement_conf": 1.0,
+        "result": "win"
       },
       "data_complete": true,
-      "game_state": "final"
+      "game_state": "final",
+      "actual_ks": 2
     },
     {
       "pitcher": "Brandon Sproat",
@@ -403,10 +417,12 @@
         "adj_ev": 0.0629,
         "verdict": "FIRE 1u",
         "win_prob": 0.775,
-        "movement_conf": 0.3
+        "movement_conf": 0.3,
+        "result": "loss"
       },
       "data_complete": true,
-      "game_state": "final"
+      "game_state": "final",
+      "actual_ks": 6
     },
     {
       "pitcher": "Jacob Lopez",
@@ -448,10 +464,12 @@
         "adj_ev": 0.3302,
         "verdict": "FIRE 2u",
         "win_prob": 0.886,
-        "movement_conf": 0.9
+        "movement_conf": 0.9,
+        "result": "win"
       },
       "data_complete": true,
-      "game_state": "final"
+      "game_state": "final",
+      "actual_ks": 5
     },
     {
       "pitcher": "Kris Bubic",
@@ -493,10 +511,12 @@
         "adj_ev": 0.011,
         "verdict": "LEAN",
         "win_prob": 0.539,
-        "movement_conf": 1.0
+        "movement_conf": 1.0,
+        "result": "win"
       },
       "data_complete": true,
-      "game_state": "final"
+      "game_state": "final",
+      "actual_ks": 3
     },
     {
       "pitcher": "Walker Buehler",
@@ -538,10 +558,12 @@
         "adj_ev": -0.0094,
         "verdict": "PASS",
         "win_prob": 0.54,
-        "movement_conf": 1.0
+        "movement_conf": 1.0,
+        "result": "loss"
       },
       "data_complete": true,
-      "game_state": "in_progress"
+      "game_state": "in_progress",
+      "actual_ks": 7
     },
     {
       "pitcher": "Max Fried",
@@ -583,10 +605,12 @@
         "adj_ev": 0.1316,
         "verdict": "FIRE 2u",
         "win_prob": 0.724,
-        "movement_conf": 0.85
+        "movement_conf": 0.85,
+        "result": "win"
       },
       "data_complete": true,
-      "game_state": "final"
+      "game_state": "final",
+      "actual_ks": 3
     },
     {
       "pitcher": "Parker Messick",
@@ -628,10 +652,12 @@
         "adj_ev": 0.0,
         "verdict": "PASS",
         "win_prob": 0.637,
-        "movement_conf": 0.0
+        "movement_conf": 0.0,
+        "result": "loss"
       },
       "data_complete": true,
-      "game_state": "final"
+      "game_state": "final",
+      "actual_ks": 9
     },
     {
       "pitcher": "Steven Matz",
@@ -673,10 +699,12 @@
         "adj_ev": 0.0955,
         "verdict": "FIRE 2u",
         "win_prob": 0.736,
-        "movement_conf": 1.0
+        "movement_conf": 1.0,
+        "result": "win"
       },
       "data_complete": true,
-      "game_state": "final"
+      "game_state": "final",
+      "actual_ks": 4
     },
     {
       "pitcher": "Foster Griffin",
@@ -718,10 +746,12 @@
         "adj_ev": 0.1143,
         "verdict": "FIRE 2u",
         "win_prob": 0.725,
-        "movement_conf": 0.7
+        "movement_conf": 0.7,
+        "result": "loss"
       },
       "data_complete": true,
-      "game_state": "final"
+      "game_state": "final",
+      "actual_ks": 7
     },
     {
       "pitcher": "Braxton Ashcraft",
@@ -808,10 +838,12 @@
         "adj_ev": 0.0133,
         "verdict": "LEAN",
         "win_prob": 0.54,
-        "movement_conf": 0.65
+        "movement_conf": 0.65,
+        "result": "win"
       },
       "data_complete": true,
-      "game_state": "final"
+      "game_state": "final",
+      "actual_ks": 3
     },
     {
       "pitcher": "Patrick Corbin",

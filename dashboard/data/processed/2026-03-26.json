@@ -27,7 +27,8 @@
         "adj_ev": 0.0837,
         "verdict": "FIRE 2u",
         "win_prob": 0.56,
-        "movement_conf": 1.0
+        "movement_conf": 1.0,
+        "result": "win"
       },
       "ev_under": {
         "ev": -0.1518,
@@ -35,7 +36,8 @@
         "verdict": "PASS",
         "win_prob": 0.44,
         "movement_conf": 1.0
-      }
+      },
+      "actual_ks": 7
     },
     {
       "pitcher": "Paul Skenes",
@@ -61,7 +63,8 @@
         "adj_ev": 0.0803,
         "verdict": "FIRE 2u",
         "win_prob": 0.545,
-        "movement_conf": 1.0
+        "movement_conf": 1.0,
+        "result": "loss"
       },
       "ev_under": {
         "ev": -0.1455,
@@ -69,7 +72,8 @@
         "verdict": "PASS",
         "win_prob": 0.455,
         "movement_conf": 1.0
-      }
+      },
+      "actual_ks": 1
     },
     {
       "pitcher": "Jacob Misiorowski",
@@ -95,7 +99,8 @@
         "adj_ev": 0.3365,
         "verdict": "FIRE 2u",
         "win_prob": 0.781,
-        "movement_conf": 1.0
+        "movement_conf": 1.0,
+        "result": "win"
       },
       "ev_under": {
         "ev": -0.3963,
@@ -103,7 +108,8 @@
         "verdict": "PASS",
         "win_prob": 0.219,
         "movement_conf": 1.0
-      }
+      },
+      "actual_ks": 11
     },
     {
       "pitcher": "Shane Smith",
@@ -129,7 +135,8 @@
         "adj_ev": 0.1522,
         "verdict": "FIRE 2u",
         "win_prob": 0.676,
-        "movement_conf": 1.0
+        "movement_conf": 1.0,
+        "result": "loss"
       },
       "ev_under": {
         "ev": -0.2173,
@@ -137,7 +144,8 @@
         "verdict": "PASS",
         "win_prob": 0.324,
         "movement_conf": 1.0
-      }
+      },
+      "actual_ks": 2
     },
     {
       "pitcher": "Matthew Boyd",
@@ -163,7 +171,8 @@
         "adj_ev": 0.1706,
         "verdict": "FIRE 2u",
         "win_prob": 0.793,
-        "movement_conf": 1.0
+        "movement_conf": 1.0,
+        "result": "win"
       },
       "ev_under": {
         "ev": -0.2377,
@@ -171,7 +180,8 @@
         "verdict": "PASS",
         "win_prob": 0.207,
         "movement_conf": 1.0
-      }
+      },
+      "actual_ks": 7
     },
     {
       "pitcher": "Cade Cavalli",
@@ -197,7 +207,8 @@
         "adj_ev": 0.2192,
         "verdict": "FIRE 2u",
         "win_prob": 0.811,
-        "movement_conf": 1.0
+        "movement_conf": 1.0,
+        "result": "win"
       },
       "ev_under": {
         "ev": -0.2872,
@@ -205,7 +216,8 @@
         "verdict": "PASS",
         "win_prob": 0.189,
         "movement_conf": 1.0
-      }
+      },
+      "actual_ks": 5
     },
     {
       "pitcher": "Trevor Rogers",
@@ -299,7 +311,8 @@
         "adj_ev": 0.0361,
         "verdict": "FIRE 1u",
         "win_prob": 0.611,
-        "movement_conf": 1.0
+        "movement_conf": 1.0,
+        "result": "loss"
       },
       "ev_under": {
         "ev": -0.0983,
@@ -307,7 +320,8 @@
         "verdict": "PASS",
         "win_prob": 0.389,
         "movement_conf": 1.0
-      }
+      },
+      "actual_ks": 4
     },
     {
       "pitcher": "Tarik Skubal",
@@ -340,8 +354,10 @@
         "adj_ev": 0.1022,
         "verdict": "FIRE 2u",
         "win_prob": 0.729,
-        "movement_conf": 1.0
-      }
+        "movement_conf": 1.0,
+        "result": "win"
+      },
+      "actual_ks": 6
     },
     {
       "pitcher": "Garrett Crochet",
@@ -374,8 +390,10 @@
         "adj_ev": 0.0259,
         "verdict": "LEAN",
         "win_prob": 0.571,
-        "movement_conf": 1.0
-      }
+        "movement_conf": 1.0,
+        "result": "loss"
+      },
+      "actual_ks": 8
     },
     {
       "pitcher": "Andrew Abbott",
@@ -408,8 +426,10 @@
         "adj_ev": 0.0492,
         "verdict": "FIRE 1u",
         "win_prob": 0.504,
-        "movement_conf": 1.0
-      }
+        "movement_conf": 1.0,
+        "result": "win"
+      },
+      "actual_ks": 4
     },
     {
       "pitcher": "Hunter Brown",
@@ -469,7 +489,8 @@
         "adj_ev": 0.0621,
         "verdict": "FIRE 2u",
         "win_prob": 0.517,
-        "movement_conf": 1.0
+        "movement_conf": 1.0,
+        "result": "win"
       },
       "ev_under": {
         "ev": -0.132,
@@ -477,7 +498,8 @@
         "verdict": "PASS",
         "win_prob": 0.483,
         "movement_conf": 1.0
-      }
+      },
+      "actual_ks": 7
     },
     {
       "pitcher": "Matthew Liberatore",
@@ -571,7 +593,8 @@
         "adj_ev": 0.2772,
         "verdict": "FIRE 2u",
         "win_prob": 0.722,
-        "movement_conf": 1.0
+        "movement_conf": 1.0,
+        "result": "loss"
       },
       "ev_under": {
         "ev": -0.3371,
@@ -579,7 +602,8 @@
         "verdict": "PASS",
         "win_prob": 0.278,
         "movement_conf": 1.0
-      }
+      },
+      "actual_ks": 2
     },
     {
       "pitcher": "Yoshinobu Yamamoto",
@@ -605,7 +629,8 @@
         "adj_ev": 0.2551,
         "verdict": "FIRE 2u",
         "win_prob": 0.831,
-        "movement_conf": 1.0
+        "movement_conf": 1.0,
+        "result": "win"
       },
       "ev_under": {
         "ev": -0.3265,
@@ -613,7 +638,8 @@
         "verdict": "PASS",
         "win_prob": 0.169,
         "movement_conf": 1.0
-      }
+      },
+      "actual_ks": 6
     },
     {
       "pitcher": "Logan Gilbert",
@@ -646,8 +672,10 @@
         "adj_ev": 0.0184,
         "verdict": "LEAN",
         "win_prob": 0.622,
-        "movement_conf": 1.0
-      }
+        "movement_conf": 1.0,
+        "result": "loss"
+      },
+      "actual_ks": 7
     },
     {
       "pitcher": "Tanner Bibee",
@@ -673,7 +701,8 @@
         "adj_ev": 0.1532,
         "verdict": "FIRE 2u",
         "win_prob": 0.588,
-        "movement_conf": 1.0
+        "movement_conf": 1.0,
+        "result": "win"
       },
       "ev_under": {
         "ev": -0.223,
@@ -681,7 +710,8 @@
         "verdict": "PASS",
         "win_prob": 0.412,
         "movement_conf": 1.0
-      }
+      },
+      "actual_ks": 7
     }
   ]
 }

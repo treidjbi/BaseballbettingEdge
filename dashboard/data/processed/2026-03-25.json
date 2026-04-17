@@ -27,7 +27,8 @@
         "adj_ev": 0.1122,
         "verdict": "FIRE 2u",
         "win_prob": 0.735,
-        "movement_conf": 1.0
+        "movement_conf": 1.0,
+        "result": "loss"
       },
       "ev_under": {
         "ev": -0.1793,
@@ -35,7 +36,8 @@
         "verdict": "PASS",
         "win_prob": 0.265,
         "movement_conf": 1.0
-      }
+      },
+      "actual_ks": 4
     },
     {
       "pitcher": "Logan Webb",
@@ -68,8 +70,10 @@
         "adj_ev": 0.1011,
         "verdict": "FIRE 2u",
         "win_prob": 0.676,
-        "movement_conf": 1.0
-      }
+        "movement_conf": 1.0,
+        "result": "loss"
+      },
+      "actual_ks": 7
     },
     {
       "pitcher": "Freddy Peralta",

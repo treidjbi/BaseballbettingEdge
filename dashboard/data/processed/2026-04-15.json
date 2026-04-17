@@ -43,10 +43,12 @@
         "adj_ev": 0.2138,
         "verdict": "FIRE 2u",
         "win_prob": 0.814,
-        "movement_conf": 1.0
+        "movement_conf": 1.0,
+        "result": "win"
       },
       "data_complete": true,
-      "game_state": "final"
+      "game_state": "final",
+      "actual_ks": 1
     },
     {
       "pitcher": "Seth Lugo",
@@ -133,10 +135,12 @@
         "adj_ev": 0.3534,
         "verdict": "FIRE 2u",
         "win_prob": 0.944,
-        "movement_conf": 1.0
+        "movement_conf": 1.0,
+        "result": "win"
       },
       "data_complete": true,
-      "game_state": "in_progress"
+      "game_state": "in_progress",
+      "actual_ks": 3
     },
     {
       "pitcher": "Jake Irvin",
@@ -178,10 +182,12 @@
         "adj_ev": 0.0509,
         "verdict": "FIRE 1u",
         "win_prob": 0.678,
-        "movement_conf": 1.0
+        "movement_conf": 1.0,
+        "result": "loss"
       },
       "data_complete": true,
-      "game_state": "final"
+      "game_state": "final",
+      "actual_ks": 5
     },
     {
       "pitcher": "Bryce Elder",
@@ -358,10 +364,12 @@
         "adj_ev": 0.1423,
         "verdict": "FIRE 2u",
         "win_prob": 0.745,
-        "movement_conf": 1.0
+        "movement_conf": 1.0,
+        "result": "win"
       },
       "data_complete": true,
-      "game_state": "final"
+      "game_state": "final",
+      "actual_ks": 3
     },
     {
       "pitcher": "Rhett Lowder",
@@ -403,10 +411,12 @@
         "adj_ev": 0.0522,
         "verdict": "FIRE 1u",
         "win_prob": 0.585,
-        "movement_conf": 1.0
+        "movement_conf": 1.0,
+        "result": "loss"
       },
       "data_complete": true,
-      "game_state": "final"
+      "game_state": "final",
+      "actual_ks": 4
     },
     {
       "pitcher": "Dylan Cease",
@@ -448,10 +458,12 @@
         "adj_ev": 0.0737,
         "verdict": "FIRE 1u",
         "win_prob": 0.537,
-        "movement_conf": 1.0
+        "movement_conf": 1.0,
+        "result": "win"
       },
       "data_complete": true,
-      "game_state": "final"
+      "game_state": "final",
+      "actual_ks": 6
     },
     {
       "pitcher": "Chad Patrick",
@@ -493,10 +505,12 @@
         "adj_ev": 0.2072,
         "verdict": "FIRE 2u",
         "win_prob": 0.813,
-        "movement_conf": 1.0
+        "movement_conf": 1.0,
+        "result": "win"
       },
       "data_complete": true,
-      "game_state": "final"
+      "game_state": "final",
+      "actual_ks": 2
     },
     {
       "pitcher": "Eduardo Rodriguez",
@@ -538,10 +552,12 @@
         "adj_ev": 0.0329,
         "verdict": "FIRE 1u",
         "win_prob": 0.482,
-        "movement_conf": 0.7
+        "movement_conf": 0.7,
+        "result": "win"
       },
       "data_complete": true,
-      "game_state": "final"
+      "game_state": "final",
+      "actual_ks": 3
     },
     {
       "pitcher": "Connelly Early",
@@ -621,7 +637,8 @@
         "adj_ev": 0.0692,
         "verdict": "FIRE 1u",
         "win_prob": 0.569,
-        "movement_conf": 1.0
+        "movement_conf": 1.0,
+        "result": "win"
       },
       "ev_under": {
         "ev": -0.1381,
@@ -631,7 +648,8 @@
         "movement_conf": 1.0
       },
       "data_complete": true,
-      "game_state": "final"
+      "game_state": "final",
+      "actual_ks": 4
     },
     {
       "pitcher": "Dustin May",
@@ -673,10 +691,12 @@
         "adj_ev": 0.1155,
         "verdict": "FIRE 2u",
         "win_prob": 0.596,
-        "movement_conf": 1.0
+        "movement_conf": 1.0,
+        "result": "loss"
       },
       "data_complete": true,
-      "game_state": "final"
+      "game_state": "final",
+      "actual_ks": 4
     },
     {
       "pitcher": "Spencer Arrighetti",
@@ -718,10 +738,12 @@
         "adj_ev": 0.0787,
         "verdict": "FIRE 1u",
         "win_prob": 0.672,
-        "movement_conf": 1.0
+        "movement_conf": 1.0,
+        "result": "loss"
       },
       "data_complete": true,
-      "game_state": "in_progress"
+      "game_state": "in_progress",
+      "actual_ks": 10
     },
     {
       "pitcher": "Kumar Rocker",
@@ -808,10 +830,12 @@
         "adj_ev": 0.0143,
         "verdict": "LEAN",
         "win_prob": 0.509,
-        "movement_conf": 1.0
+        "movement_conf": 1.0,
+        "result": "loss"
       },
       "data_complete": true,
-      "game_state": "final"
+      "game_state": "final",
+      "actual_ks": 6
     },
     {
       "pitcher": "Jack Kochanowicz",
@@ -853,10 +877,12 @@
         "adj_ev": 0.0355,
         "verdict": "FIRE 1u",
         "win_prob": 0.642,
-        "movement_conf": 1.0
+        "movement_conf": 1.0,
+        "result": "loss"
       },
       "data_complete": true,
-      "game_state": "final"
+      "game_state": "final",
+      "actual_ks": 6
     },
     {
       "pitcher": "Clay Holmes",
@@ -891,7 +917,8 @@
         "adj_ev": 0.0693,
         "verdict": "FIRE 1u",
         "win_prob": 0.682,
-        "movement_conf": 1.0
+        "movement_conf": 1.0,
+        "result": "win"
       },
       "ev_under": {
         "ev": -0.1404,
@@ -901,7 +928,8 @@
         "movement_conf": 1.0
       },
       "data_complete": true,
-      "game_state": "in_progress"
+      "game_state": "in_progress",
+      "actual_ks": 4
     },
     {
       "pitcher": "Jesse Scholtens",
@@ -988,10 +1016,12 @@
         "adj_ev": 0.0,
         "verdict": "PASS",
         "win_prob": 0.711,
-        "movement_conf": 0.0
+        "movement_conf": 0.0,
+        "result": "win"
       },
       "data_complete": true,
-      "game_state": "final"
+      "game_state": "final",
+      "actual_ks": 4
     },
     {
       "pitcher": "Randy Vasquez",
@@ -1026,7 +1056,8 @@
         "adj_ev": 0.0152,
         "verdict": "LEAN",
         "win_prob": 0.474,
-        "movement_conf": 1.0
+        "movement_conf": 1.0,
+        "result": "win"
       },
       "ev_under": {
         "ev": -0.0863,
@@ -1036,7 +1067,8 @@
         "movement_conf": 1.0
       },
       "data_complete": true,
-      "game_state": "in_progress"
+      "game_state": "in_progress",
+      "actual_ks": 6
     },
     {
       "pitcher": "Luis Gil",
@@ -1161,7 +1193,8 @@
         "adj_ev": 0.1299,
         "verdict": "FIRE 2u",
         "win_prob": 0.71,
-        "movement_conf": 1.0
+        "movement_conf": 1.0,
+        "result": "loss"
       },
       "ev_under": {
         "ev": -0.2,
@@ -1171,7 +1204,8 @@
         "movement_conf": 1.0
       },
       "data_complete": true,
-      "game_state": "in_progress"
+      "game_state": "in_progress",
+      "actual_ks": 1
     },
     {
       "pitcher": "Slade Cecconi",
@@ -1213,10 +1247,12 @@
         "adj_ev": 0.0217,
         "verdict": "LEAN",
         "win_prob": 0.657,
-        "movement_conf": 1.0
+        "movement_conf": 1.0,
+        "result": "win"
       },
       "data_complete": true,
-      "game_state": "final"
+      "game_state": "final",
+      "actual_ks": 4
     },
     {
       "pitcher": "Emerson Hancock",
@@ -1251,7 +1287,8 @@
         "adj_ev": 0.0706,
         "verdict": "FIRE 1u",
         "win_prob": 0.65,
-        "movement_conf": 1.0
+        "movement_conf": 1.0,
+        "result": "win"
       },
       "ev_under": {
         "ev": -0.1406,
@@ -1261,7 +1298,8 @@
         "movement_conf": 1.0
       },
       "data_complete": true,
-      "game_state": "in_progress"
+      "game_state": "in_progress",
+      "actual_ks": 6
     },
     {
       "pitcher": "Shota Imanaga",
@@ -1303,10 +1341,12 @@
         "adj_ev": 0.0802,
         "verdict": "FIRE 1u",
         "win_prob": 0.608,
-        "movement_conf": 1.0
+        "movement_conf": 1.0,
+        "result": "loss"
       },
       "data_complete": true,
-      "game_state": "final"
+      "game_state": "final",
+      "actual_ks": 11
     },
     {
       "pitcher": "Jack Flaherty",
@@ -1348,10 +1388,12 @@
         "adj_ev": 0.1042,
         "verdict": "FIRE 2u",
         "win_prob": 0.728,
-        "movement_conf": 1.0
+        "movement_conf": 1.0,
+        "result": "loss"
       },
       "data_complete": true,
-      "game_state": "final"
+      "game_state": "final",
+      "actual_ks": 7
     }
   ]
 }

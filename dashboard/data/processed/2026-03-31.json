@@ -31,7 +31,8 @@
         "adj_ev": 0.127,
         "verdict": "FIRE 2u",
         "win_prob": 0.642,
-        "movement_conf": 1.0
+        "movement_conf": 1.0,
+        "result": "win"
       },
       "ev_under": {
         "ev": -0.127,
@@ -39,7 +40,8 @@
         "verdict": "PASS",
         "win_prob": 0.358,
         "movement_conf": 1.0
-      }
+      },
+      "actual_ks": 7
     },
     {
       "pitcher": "Zach Eflin",
@@ -76,8 +78,10 @@
         "adj_ev": 0.2537,
         "verdict": "FIRE 2u",
         "win_prob": 0.689,
-        "movement_conf": 1.0
-      }
+        "movement_conf": 1.0,
+        "result": "loss"
+      },
+      "actual_ks": 7
     },
     {
       "pitcher": "Janson Junk",
@@ -152,8 +156,10 @@
         "adj_ev": 0.3286,
         "verdict": "FIRE 2u",
         "win_prob": 0.953,
-        "movement_conf": 1.0
-      }
+        "movement_conf": 1.0,
+        "result": "loss"
+      },
+      "actual_ks": 4
     },
     {
       "pitcher": "Andrew Painter",
@@ -190,8 +196,10 @@
         "adj_ev": 0.4612,
         "verdict": "FIRE 2u",
         "win_prob": 1.0,
-        "movement_conf": 0.95
-      }
+        "movement_conf": 0.95,
+        "result": "loss"
+      },
+      "actual_ks": 8
     },
     {
       "pitcher": "Brandon Williamson",
@@ -228,8 +236,10 @@
         "adj_ev": 0.1304,
         "verdict": "FIRE 2u",
         "win_prob": 0.69,
-        "movement_conf": 1.0
-      }
+        "movement_conf": 1.0,
+        "result": "win"
+      },
+      "actual_ks": 3
     },
     {
       "pitcher": "Bubba Chandler",
@@ -266,8 +276,10 @@
         "adj_ev": 0.1273,
         "verdict": "FIRE 2u",
         "win_prob": 0.721,
-        "movement_conf": 1.0
-      }
+        "movement_conf": 1.0,
+        "result": "loss"
+      },
+      "actual_ks": 6
     },
     {
       "pitcher": "Ryan Feltner",
@@ -297,7 +309,8 @@
         "adj_ev": 0.1464,
         "verdict": "FIRE 2u",
         "win_prob": 0.62,
-        "movement_conf": 1.0
+        "movement_conf": 1.0,
+        "result": "win"
       },
       "ev_under": {
         "ev": -0.1464,
@@ -305,7 +318,8 @@
         "verdict": "PASS",
         "win_prob": 0.38,
         "movement_conf": 1.0
-      }
+      },
+      "actual_ks": 4
     },
     {
       "pitcher": "Max Scherzer",
@@ -342,8 +356,10 @@
         "adj_ev": 0.3249,
         "verdict": "FIRE 2u",
         "win_prob": 0.82,
-        "movement_conf": 1.0
-      }
+        "movement_conf": 1.0,
+        "result": "win"
+      },
+      "actual_ks": 4
     },
     {
       "pitcher": "Aaron Civale",
@@ -380,8 +396,10 @@
         "adj_ev": 0.2623,
         "verdict": "FIRE 2u",
         "win_prob": 0.743,
-        "movement_conf": 1.0
-      }
+        "movement_conf": 1.0,
+        "result": "win"
+      },
+      "actual_ks": 3
     },
     {
       "pitcher": "Jameson Taillon",
@@ -418,8 +436,10 @@
         "adj_ev": 0.0597,
         "verdict": "FIRE 1u",
         "win_prob": 0.51,
-        "movement_conf": 1.0
-      }
+        "movement_conf": 1.0,
+        "result": "win"
+      },
+      "actual_ks": 3
     },
     {
       "pitcher": "Brandon Woodruff",
@@ -449,7 +469,8 @@
         "adj_ev": 0.0919,
         "verdict": "FIRE 2u",
         "win_prob": 0.577,
-        "movement_conf": 1.0
+        "movement_conf": 1.0,
+        "result": "win"
       },
       "ev_under": {
         "ev": -0.0919,
@@ -457,7 +478,8 @@
         "verdict": "PASS",
         "win_prob": 0.423,
         "movement_conf": 1.0
-      }
+      },
+      "actual_ks": 6
     },
     {
       "pitcher": "Shane McClanahan",
@@ -494,8 +516,10 @@
         "adj_ev": 0.0384,
         "verdict": "FIRE 1u",
         "win_prob": 0.623,
-        "movement_conf": 1.0
-      }
+        "movement_conf": 1.0,
+        "result": "win"
+      },
+      "actual_ks": 4
     },
     {
       "pitcher": "Andre Pallante",
@@ -525,7 +549,8 @@
         "adj_ev": 0.1167,
         "verdict": "FIRE 2u",
         "win_prob": 0.522,
-        "movement_conf": 1.0
+        "movement_conf": 1.0,
+        "result": "loss"
       },
       "ev_under": {
         "ev": -0.1167,
@@ -533,7 +558,8 @@
         "verdict": "PASS",
         "win_prob": 0.478,
         "movement_conf": 1.0
-      }
+      },
+      "actual_ks": 3
     },
     {
       "pitcher": "Kodai Senga",
@@ -570,8 +596,10 @@
         "adj_ev": 0.0678,
         "verdict": "FIRE 2u",
         "win_prob": 0.497,
-        "movement_conf": 1.0
-      }
+        "movement_conf": 1.0,
+        "result": "loss"
+      },
+      "actual_ks": 9
     },
     {
       "pitcher": "Brayan Bello",
@@ -601,7 +629,8 @@
         "adj_ev": 0.0016,
         "verdict": "PASS",
         "win_prob": 0.608,
-        "movement_conf": 1.0
+        "movement_conf": 1.0,
+        "result": "loss"
       },
       "ev_under": {
         "ev": -0.0708,
@@ -609,7 +638,8 @@
         "verdict": "PASS",
         "win_prob": 0.392,
         "movement_conf": 1.0
-      }
+      },
+      "actual_ks": 2
     },
     {
       "pitcher": "Hunter Brown",
@@ -639,7 +669,8 @@
         "adj_ev": 0.0814,
         "verdict": "FIRE 2u",
         "win_prob": 0.601,
-        "movement_conf": 1.0
+        "movement_conf": 1.0,
+        "result": "win"
       },
       "ev_under": {
         "ev": -0.1502,
@@ -647,7 +678,8 @@
         "verdict": "PASS",
         "win_prob": 0.399,
         "movement_conf": 1.0
-      }
+      },
+      "actual_ks": 8
     },
     {
       "pitcher": "Max Fried",
@@ -684,8 +716,10 @@
         "adj_ev": 0.1747,
         "verdict": "FIRE 2u",
         "win_prob": 0.794,
-        "movement_conf": 1.0
-      }
+        "movement_conf": 1.0,
+        "result": "win"
+      },
+      "actual_ks": 6
     },
     {
       "pitcher": "Logan Gilbert",
@@ -715,15 +749,18 @@
         "adj_ev": -0.1768,
         "verdict": "PASS",
         "win_prob": 0.288,
-        "movement_conf": 1.0
+        "movement_conf": 1.0,
+        "result": "loss"
       },
       "ev_under": {
         "ev": 0.1768,
         "adj_ev": 0.1768,
         "verdict": "FIRE 2u",
         "win_prob": 0.712,
-        "movement_conf": 1.0
-      }
+        "movement_conf": 1.0,
+        "result": "win"
+      },
+      "actual_ks": 6
     },
     {
       "pitcher": "Brandon Pfaadt",
@@ -753,7 +790,8 @@
         "adj_ev": 0.1527,
         "verdict": "FIRE 2u",
         "win_prob": 0.692,
-        "movement_conf": 1.0
+        "movement_conf": 1.0,
+        "result": "loss"
       },
       "ev_under": {
         "ev": -0.1527,
@@ -761,7 +799,8 @@
         "verdict": "PASS",
         "win_prob": 0.308,
         "movement_conf": 1.0
-      }
+      },
+      "actual_ks": 3
     },
     {
       "pitcher": "Casey Mize",
@@ -791,7 +830,8 @@
         "adj_ev": 0.0264,
         "verdict": "LEAN",
         "win_prob": 0.457,
-        "movement_conf": 1.0
+        "movement_conf": 1.0,
+        "result": "win"
       },
       "ev_under": {
         "ev": -0.0978,
@@ -799,7 +839,8 @@
         "verdict": "PASS",
         "win_prob": 0.543,
         "movement_conf": 1.0
-      }
+      },
+      "actual_ks": 9
     },
     {
       "pitcher": "Logan Webb",
@@ -829,7 +870,8 @@
         "adj_ev": 0.0395,
         "verdict": "FIRE 1u",
         "win_prob": 0.535,
-        "movement_conf": 1.0
+        "movement_conf": 1.0,
+        "result": "loss"
       },
       "ev_under": {
         "ev": -0.0395,
@@ -837,7 +879,8 @@
         "verdict": "PASS",
         "win_prob": 0.465,
         "movement_conf": 1.0
-      }
+      },
+      "actual_ks": 5
     },
     {
       "pitcher": "Shohei Ohtani",
@@ -874,8 +917,10 @@
         "adj_ev": 0.1016,
         "verdict": "FIRE 2u",
         "win_prob": 0.685,
-        "movement_conf": 1.0
-      }
+        "movement_conf": 1.0,
+        "result": "win"
+      },
+      "actual_ks": 6
     },
     {
       "pitcher": "Tanner Bibee",
@@ -905,7 +950,8 @@
         "adj_ev": 0.2103,
         "verdict": "FIRE 2u",
         "win_prob": 0.725,
-        "movement_conf": 1.0
+        "movement_conf": 1.0,
+        "result": "loss"
       },
       "ev_under": {
         "ev": -0.2103,
@@ -913,7 +959,8 @@
         "verdict": "PASS",
         "win_prob": 0.275,
         "movement_conf": 1.0
-      }
+      },
+      "actual_ks": 4
     }
   ]
 }

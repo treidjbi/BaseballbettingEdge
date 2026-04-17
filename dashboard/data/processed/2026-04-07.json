@@ -107,7 +107,8 @@
         "adj_ev": 0.0397,
         "verdict": "FIRE 1u",
         "win_prob": 0.652,
-        "movement_conf": 1.0
+        "movement_conf": 1.0,
+        "result": "win"
       },
       "ev_under": {
         "ev": -0.1108,
@@ -115,7 +116,8 @@
         "verdict": "PASS",
         "win_prob": 0.348,
         "movement_conf": 1.0
-      }
+      },
+      "actual_ks": 6
     },
     {
       "pitcher": "Shane Smith",
@@ -152,8 +154,10 @@
         "adj_ev": 0.4094,
         "verdict": "FIRE 2u",
         "win_prob": 0.868,
-        "movement_conf": 1.0
-      }
+        "movement_conf": 1.0,
+        "result": "loss"
+      },
+      "actual_ks": 8
     },
     {
       "pitcher": "Zac Gallen",
@@ -259,7 +263,8 @@
         "adj_ev": 0.2707,
         "verdict": "FIRE 2u",
         "win_prob": 0.505,
-        "movement_conf": 1.0
+        "movement_conf": 1.0,
+        "result": "loss"
       },
       "ev_under": {
         "ev": -0.2914,
@@ -267,7 +272,8 @@
         "verdict": "PASS",
         "win_prob": 0.495,
         "movement_conf": 1.0
-      }
+      },
+      "actual_ks": 3
     },
     {
       "pitcher": "Andrew Abbott",
@@ -335,7 +341,8 @@
         "adj_ev": 0.0547,
         "verdict": "FIRE 1u",
         "win_prob": 0.596,
-        "movement_conf": 1.0
+        "movement_conf": 1.0,
+        "result": "win"
       },
       "ev_under": {
         "ev": -0.1243,
@@ -343,7 +350,8 @@
         "verdict": "PASS",
         "win_prob": 0.404,
         "movement_conf": 1.0
-      }
+      },
+      "actual_ks": 6
     },
     {
       "pitcher": "Nick Pivetta",
@@ -791,7 +799,8 @@
         "adj_ev": 0.0198,
         "verdict": "LEAN",
         "win_prob": 0.623,
-        "movement_conf": 1.0
+        "movement_conf": 1.0,
+        "result": "win"
       },
       "ev_under": {
         "ev": -0.0902,
@@ -799,7 +808,8 @@
         "verdict": "PASS",
         "win_prob": 0.377,
         "movement_conf": 1.0
-      }
+      },
+      "actual_ks": 10
     },
     {
       "pitcher": "Nathan Eovaldi",
@@ -912,8 +922,10 @@
         "adj_ev": 0.0594,
         "verdict": "FIRE 1u",
         "win_prob": 0.55,
-        "movement_conf": 1.0
-      }
+        "movement_conf": 1.0,
+        "result": "loss"
+      },
+      "actual_ks": 5
     },
     {
       "pitcher": "Mike Burrows",
