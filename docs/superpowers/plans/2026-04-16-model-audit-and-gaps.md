@@ -92,6 +92,23 @@ Tasks are numbered stably (A1/A2/A3/A4 = pitcher_throws/opening_odds/ump/bookmak
 
 ### Task A1: pitcher_throws null-rate investigation  *(execute 1st — highest leverage)*
 
+> **✅ COMPLETE (2026-04-17)** — 5 commits on branch `model-audit-phase-a`:
+> `0407846` fix → `517f473` backfill 307 None rows → `8a76f30` polish →
+> `8463f8e` rewrite 43 post-cutover R→L rows → `16d513e` docs SHA fill-in.
+>
+> **Root cause (discovered, plan's hypothesis was wrong):** MLB `/schedule`
+> hydrate never returned `pitchHand` — every pitcher silently defaulted to
+> `"R"`. Fix added a `/people/{id}` fallback. Backfill filled 307 historical
+> nulls via `/people/search`.
+>
+> **P1 advisory resolved:** 133 post-cutover rows (2026-04-11..2026-04-17)
+> were also forced to `"R"` by the bug. Rewrote 43 rows R→L (128 unique
+> pitchers looked up; 0 lookup failures). Calibration math unaffected —
+> `calibrate.py` reads stored `lambda`, not `pitcher_throws`. Bug window
+> documented in [docs/data-caveats.md](../../data-caveats.md).
+>
+> **Tests:** 242 → 243 passing (one new test for /people fallback).
+
 **Files:**
 - Inspect: [pipeline/fetch_stats.py:177](pipeline/fetch_stats.py), [pipeline/build_features.py:346](pipeline/build_features.py), [pipeline/fetch_results.py:164](pipeline/fetch_results.py)
 - Possibly modify: [pipeline/fetch_stats.py](pipeline/fetch_stats.py) and/or [pipeline/fetch_results.py](pipeline/fetch_results.py)
