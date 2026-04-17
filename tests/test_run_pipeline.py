@@ -101,6 +101,71 @@ def test_run_writes_today_json(tmp_path):
     assert len(data["pitchers"]) == 1
 
 
+def test_data_complete_false_when_ump_map_all_zero(tmp_path):
+    """Regression (Task A3, 2026-04-17): when fetch_umpires returns all-zero
+    values (no officials posted yet, or no career_k_rates match), ump_ok
+    must be False and data_complete on the written record must be False.
+
+    Before the fix, ump_ok stayed True whenever fetch_umpires didn't raise —
+    which meant 447/447 historical picks were marked data_complete=True
+    even though ump signal was effectively absent. Going-forward only:
+    historical rows are not rewritten (see docs/data-caveats.md).
+    """
+    import run_pipeline
+    run_pipeline._batter_stats_cache = None
+    out_path = tmp_path / "today.json"
+
+    with patch.object(run_pipeline, "OUTPUT_PATH", out_path), \
+         patch("run_pipeline.fetch_odds", return_value=[_sample_prop()]), \
+         patch("run_pipeline.fetch_stats", return_value={"Test Pitcher": _sample_stats()}), \
+         patch("run_pipeline.fetch_swstr", return_value={"Test Pitcher": {"swstr_pct": 0.110, "career_swstr_pct": None}}), \
+         patch("run_pipeline.fetch_umpires", return_value={"Test Pitcher": 0.0}), \
+         patch("run_pipeline.fetch_lineups_for_pitcher", return_value=None), \
+         patch("run_pipeline.fetch_batter_stats_cached", return_value={}), \
+         patch("run_pipeline.init_db"), \
+         patch("run_pipeline.load_history_into_db"), \
+         patch("run_pipeline.get_db", return_value=MagicMock()), \
+         patch("run_pipeline.lock_due_picks", return_value=0), \
+         patch("run_pipeline.seed_picks", return_value=0), \
+         patch("run_pipeline.export_db_to_history"):
+        run_pipeline.run("2026-04-01")
+
+    data = json.loads(out_path.read_text())
+    assert len(data["pitchers"]) == 1
+    assert data["pitchers"][0]["data_complete"] is False, (
+        "Expected data_complete=False when ump_map is all-zero "
+        "(no real ump adjustment signal)"
+    )
+
+
+def test_data_complete_true_when_ump_map_has_nonzero(tmp_path):
+    """Mirror of the above: when at least one pitcher has a real nonzero
+    ump adjustment, ump_ok=True and data_complete=True (assuming other
+    inputs are also OK)."""
+    import run_pipeline
+    run_pipeline._batter_stats_cache = None
+    out_path = tmp_path / "today.json"
+
+    with patch.object(run_pipeline, "OUTPUT_PATH", out_path), \
+         patch("run_pipeline.fetch_odds", return_value=[_sample_prop()]), \
+         patch("run_pipeline.fetch_stats", return_value={"Test Pitcher": _sample_stats()}), \
+         patch("run_pipeline.fetch_swstr", return_value={"Test Pitcher": {"swstr_pct": 0.110, "career_swstr_pct": None}}), \
+         patch("run_pipeline.fetch_umpires", return_value={"Test Pitcher": 0.25}), \
+         patch("run_pipeline.fetch_lineups_for_pitcher", return_value=None), \
+         patch("run_pipeline.fetch_batter_stats_cached", return_value={}), \
+         patch("run_pipeline.init_db"), \
+         patch("run_pipeline.load_history_into_db"), \
+         patch("run_pipeline.get_db", return_value=MagicMock()), \
+         patch("run_pipeline.lock_due_picks", return_value=0), \
+         patch("run_pipeline.seed_picks", return_value=0), \
+         patch("run_pipeline.export_db_to_history"):
+        run_pipeline.run("2026-04-01")
+
+    data = json.loads(out_path.read_text())
+    assert len(data["pitchers"]) == 1
+    assert data["pitchers"][0]["data_complete"] is True
+
+
 def test_run_writes_empty_output_when_no_props(tmp_path):
     """run() should write today.json with props_available=False when no odds returned."""
     import run_pipeline

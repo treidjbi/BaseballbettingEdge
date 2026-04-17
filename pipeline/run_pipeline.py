@@ -721,13 +721,18 @@ def run(date_str: str, run_type: str = "full") -> None:
     # replaces the dead ump.news scrape. Pre-game on game-day, officials often
     # aren't posted yet — that returns an empty map and the 30-min refresh loop
     # picks them up before T-30 lock. See pipeline/fetch_umpires.py for details.
-    ump_ok = True
     try:
         ump_map = fetch_umpires(props, date_str)
     except Exception as e:
         log.warning("fetch_umpires failed: %s — using neutral adj for all", e)
         ump_map = {p["pitcher"]: 0.0 for p in props}
-        ump_ok = False
+    # ump_ok is True only when at least one pitcher got a real (nonzero)
+    # adjustment. An empty map or all-zero map means officials weren't
+    # posted yet OR none of today's HP umps are in career_k_rates.json —
+    # either way, ump signal is effectively absent and data_complete should
+    # reflect that going forward. Historical data_complete=True rows are
+    # NOT rewritten (see docs/data-caveats.md).
+    ump_ok = len(ump_map) > 0 and any(v != 0.0 for v in ump_map.values())
 
     # 5. Fetch batter stats (FanGraphs — cached, graceful fallback to {})
     batter_stats = fetch_batter_stats_cached(int(date_str[:4]))
