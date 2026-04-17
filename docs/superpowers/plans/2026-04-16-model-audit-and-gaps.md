@@ -92,7 +92,7 @@ HARD STOP checkpoint.
 | Pre-work 0.1–0.3 | ✅ done | `30ddb01` | Tests green (242), baseline snapshot captured in commit body. |
 | A1 — pitcher_throws | ✅ done | `0407846`, `517f473`, `8a76f30`, `8463f8e`, `16d513e`, `cbbce97` | See A1 block below. Tests 242→243. Bug window docs in `docs/data-caveats.md`, pointer in CLAUDE.md (`8c4210c`). |
 | Path A platoon delta | ✅ done | `e824447` | Latently dormant before A1 (every pitcher was `"R"`). Tests 97/97 in build_features. |
-| A3 — ump_k_adj | ⏳ next | — | Next task after this checkpoint. |
+| A3 — ump_k_adj | ✅ done (path A3.5) | `7d9f11b`, `2760244` | Finding: **ump.news domain is NXDOMAIN** — permanently dead (not a timing issue, not a name-matching bug). 447/447 historical picks have `ump_k_adj = 0.0`. Existing graceful degradation (warn-and-return-empty) works correctly. Chose A3.5: documented NXDOMAIN state in `pipeline/fetch_umpires.py` header + inline NOTE at `run_pipeline.py` call site; added 8 contract tests in `tests/test_fetch_umpires.py` pinning the warn-on-failure / abbr-map / name-matching behavior so the pipeline is ready if a replacement source comes online. Tests 243→251. **Two open user-level items surfaced to user**: (a) fate of the feature (replace source / drop from λ / keep neutral degradation), (b) latent `data_complete` / `ump_ok` bug in `run_pipeline.py` ~L561-567 where silent `{}` return leaves `ump_ok=True` — NOT fixed (flipping would exclude 100% of current picks from calibration, violating P4). |
 | A2 — opening_odds | ⏳ | — | |
 | A4 — bookmaker breakdown | ⏳ | — | |
 | A→B checkpoint | ⏳ | — | Verify activation rates moved after 24h fresh data, then merge to main. **Do NOT** bump `formula_change_date` or reset grading (see calibration-handling block above). |
