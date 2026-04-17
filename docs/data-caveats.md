@@ -1,5 +1,55 @@
 # Data caveats for picks_history.json
 
+## 2026-04-17 — ump.news to MLB Stats API cutover
+
+Prior to 2026-04-17, the pipeline scraped `www.ump.news` for HP umpire
+assignments. That domain has been NXDOMAIN for the entire season (see
+`analytics/diagnostics/a3_ump_adj.py` and the old
+`pipeline/fetch_umpires.py` header). Every scrape raised, the warn-and-
+return-empty path ran, and `fetch_umpires` returned `0.0` for every
+pitcher. Net result: **100% (447/447) of historical picks have
+`ump_k_adj == 0.0` exactly.**
+
+On 2026-04-17 we swapped the source to the MLB Stats API schedule
+endpoint with `hydrate=officials`
+(`statsapi.mlb.com/api/v1/schedule?sportId=1&date={date}&hydrate=officials`)
+and fixed a latent logic bug: `ump_ok` was previously `True` whenever
+`fetch_umpires` didn't raise, even if every returned value was 0. After
+2026-04-17, `ump_ok` is `True` only when at least one pitcher got a
+real (nonzero) ump adjustment.
+
+### Impact on stored fields
+
+- **`ump_k_adj` in picks_history (pre-cutover):** 0.0 everywhere. This
+  is accurate — the model saw a neutral ump signal because the source
+  was dead.
+- **`data_complete` in picks_history (pre-cutover):** `True` for rows
+  that met the other-source checks (swstr_ok, etc.) even though the
+  ump input was silently absent. **These rows were not rewritten.**
+- **`data_complete` post-cutover:** reflects the corrected logic. On
+  days where officials aren't posted yet or no HP ump is in the local
+  career-rates table, `data_complete` will be `False`.
+
+### Why the historical rows were not rewritten
+
+Calibration uses `residual = actual_ks - stored_lambda`. Because
+`ump_k_adj = 0` contributes 0 to `lambda`, residuals are identical
+whether the pre-cutover `data_complete` flag said the pick had a real
+ump signal or not. `lambda_bias` (~-0.55 and actively converging) is
+therefore valid regardless of the flag bug; rewriting flags would only
+reshape the `n` in the data_complete-filtered subset without changing
+any calibrated parameter.
+
+### Known follow-up: career_k_rates.json coverage
+
+`data/umpires/career_k_rates.json` currently holds 30 umpires and
+includes retired names (Angel Hernandez, Ted Barrett, Paul Nauert,
+Bill Miller). The 2026 season is using 62 unique HP umps so far — the
+live match rate is ~21%. Expanding the table is a separate, tracked
+follow-up task; until it lands, expect many post-cutover picks to
+still land at `ump_k_adj = 0` (correctly now, with `data_complete =
+False` when the whole slate comes back empty).
+
 ## 2026-04-11 to 2026-04-17 — pitcher_throws bug window
 
 A bug in `pipeline/fetch_stats.py` (fixed by commit `0407846`) caused the MLB
