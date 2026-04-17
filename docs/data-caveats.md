@@ -22,7 +22,7 @@ A bug in `pipeline/fetch_stats.py` (fixed by commit `0407846`) caused the MLB
 - **Historical None rows (pre-2026-04-11):** backfilled in commit `517f473`
   via `/people/search`.
 - **Post-cutover "R" rows (this window):** rewritten to correct handedness
-  in commit [fill-in after your commit] via
+  in commit `8463f8e` via
   `analytics/diagnostics/a1_rewrite_post_cutover_throws.py`. The stored
   `lambda` for these rows was NOT recomputed — it still reflects the value
   the model produced at decision time (with R-assumed platoon delta).
