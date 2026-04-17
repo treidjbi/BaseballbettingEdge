@@ -168,6 +168,7 @@ def test_abbr_for_team_name_matches_common_teams():
         ("San Francisco Giants", "SF"),
         ("St. Louis Cardinals", "STL"),
         ("Tampa Bay Rays", "TB"),
+        ("Athletics", "OAK"),
     ]
     for full_name, expected in cases:
         assert fetch_umpires._abbr_for_team_name(full_name) == expected, (

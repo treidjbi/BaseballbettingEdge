@@ -48,7 +48,7 @@ ABBR_TO_NAME_SUBSTR = {
     "DET": "Detroit",    "HOU": "Houston",     "KC":  "Kansas City",
     "LAA": "Angels",     "LAD": "Dodgers",     "MIA": "Miami",
     "MIL": "Milwaukee",  "MIN": "Minnesota",   "NYM": "Mets",
-    "NYY": "Yankees",    "OAK": "Oakland",     "PHI": "Philadelphia",
+    "NYY": "Yankees",    "OAK": "Athletics",   "PHI": "Philadelphia",
     "PIT": "Pittsburgh", "SD":  "San Diego",   "SEA": "Seattle",
     "SF":  "San Francisco", "STL": "St. Louis", "TB": "Tampa",
     "TEX": "Texas",      "TOR": "Toronto",     "WSH": "Washington",
@@ -140,7 +140,7 @@ def fetch_hp_assignments(date_str: str) -> dict:
                 assignments[away_abbr] = hp_name
             else:
                 # Unknown team name — don't crash, just warn once per miss.
-                log.info(
+                log.warning(
                     "MLB schedule: no ABBR_TO_NAME_SUBSTR match for '%s' (vs '%s'); skipping",
                     away_name, home_name,
                 )
@@ -154,8 +154,11 @@ def _build_game_ump_map(assignments: dict) -> dict:
     """
     Converts {away_abbr: ump_name} into {team_name_substr: ump_name}.
     Each game has one HP umpire — both the away pitcher and home pitcher
-    face the same ump. (Home-team keying is added separately when the
-    assignments dict is iterated; this helper keeps the away-keyed shape.)
+    face the same ump.
+
+    Note: keys are the AWAY team's name substring only. fetch_umpires()
+    covers the home starter by checking BOTH prop["team"] and
+    prop["opp_team"] against these keys (both pitchers face the same HP).
     """
     game_ump = {}
     for abbr, ump_name in assignments.items():
