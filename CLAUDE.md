@@ -141,6 +141,36 @@ FanGraphs      → fetch_batter_stats → batter_stats{}
               fetch_results (box scores) → grade → calibrate
 ```
 
+## In-Flight Work: V2 Dashboard UI
+
+A v2 dashboard UI landed on main 2026-04-17 (commit `4bb54a8`) and is being
+rewired live. It coexists with the v1 dashboard:
+
+- **v1 (default):** `dashboard/index.html` — still the default URL, still served
+  as the fallback through every phase of the v2 rollout. Do **not** break it.
+- **v2 (preview):** `dashboard/v2.html` + `dashboard/v2-app.jsx` +
+  `dashboard/v2-data.js` — served at `/v2.html`. The adapter `v2-data.js` reads
+  a specific field list from `today.json` (see the rollout plan below).
+
+**Constraint on any pipeline change:** `today.json` / per-pitcher record schema
+must stay backward-compatible with BOTH v1 and v2 through the full rollout.
+The v2 adapter reads (non-exhaustive): `pitcher, team, opp_team,
+pitcher_throws, game_time, k_line, opening_line, best_over_odds,
+best_under_odds, opening_over_odds, opening_under_odds, lambda, avg_ip,
+opp_k_rate, ump_k_adj, season_k9, recent_k9, career_k9, ev_over, ev_under,
+game_state, best_over_book, swstr_pct, swstr_delta_k9, data_complete`. Renaming
+or removing any of these = breaking v2. Adding new nullable fields is safe.
+
+**Where to look before changing pipeline output:**
+- Rollout plan: [docs/superpowers/plans/2026-04-17-v2-ui-rollout.md](docs/superpowers/plans/2026-04-17-v2-ui-rollout.md)
+- Deferred pipeline wishlist (things v2 would like but doesn't block on):
+  [docs/ui-redesign/deferred-pipeline-work.md](docs/ui-redesign/deferred-pipeline-work.md)
+- V2 adapter source of truth for field dependencies: [dashboard/v2-data.js](dashboard/v2-data.js)
+
+If a pipeline change you're making adds, renames, or changes the semantics of
+any of the listed fields — stop and cross-reference the rollout plan + adapter
+before shipping.
+
 ## Important Patterns
 
 - **Locked snapshots**: Once a game starts, its card data is frozen in today.json. Post-start API runs don't overwrite pre-game snapshots.
