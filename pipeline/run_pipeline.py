@@ -275,7 +275,7 @@ def _run_preview(tomorrow_str: str) -> None:
         swstr_map = {name: _SWSTR_NEUTRAL for name in pitcher_names}
 
     try:
-        ump_map = fetch_umpires(props)
+        ump_map = fetch_umpires(props, tomorrow_str)
     except Exception as e:
         log.warning("Preview: fetch_umpires failed: %s — using neutral adj", e)
         ump_map = {p["pitcher"]: 0.0 for p in props}
@@ -716,14 +716,14 @@ def run(date_str: str, run_type: str = "full") -> None:
         swstr_map = {name: _SWSTR_NEUTRAL for name in pitcher_names}
         swstr_ok = False
 
-    # 4. Fetch umpire adjustments (ump.news — graceful fallback built in)
-    # NOTE (Task A3, 2026-04-17): ump.news domain is currently NXDOMAIN.
-    # fetch_umpires returns a dict of all-0.0 values (no exception), so
-    # ump_ok stays True and ump_map.get(name, 0.0) below is a no-op for
-    # every pitcher. See pipeline/fetch_umpires.py header for full context.
+    # 4. Fetch umpire adjustments (MLB Stats API officials hydrate — graceful fallback built in)
+    # Source (2026-04-17 cutover): statsapi.mlb.com /schedule?hydrate=officials
+    # replaces the dead ump.news scrape. Pre-game on game-day, officials often
+    # aren't posted yet — that returns an empty map and the 30-min refresh loop
+    # picks them up before T-30 lock. See pipeline/fetch_umpires.py for details.
     ump_ok = True
     try:
-        ump_map = fetch_umpires(props)
+        ump_map = fetch_umpires(props, date_str)
     except Exception as e:
         log.warning("fetch_umpires failed: %s — using neutral adj for all", e)
         ump_map = {p["pitcher"]: 0.0 for p in props}

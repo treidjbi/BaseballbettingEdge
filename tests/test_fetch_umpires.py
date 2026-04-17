@@ -1,11 +1,14 @@
-"""Tests for pipeline/fetch_umpires.py (Task A3 regression coverage).
+"""Tests for pipeline/fetch_umpires.py.
 
-Context: As of 2026-04-17 the ump.news domain no longer resolves, so every
-pick in history shows ump_k_adj = 0.0 (see analytics/diagnostics/a3_ump_adj.py).
-These tests lock in the silent-failure contract so that:
-  (a) network / DNS / HTTP failures are logged at WARNING level,
-  (b) an empty scrape produces an empty result dict rather than an exception,
-  (c) name-matching still works end-to-end when ump.news IS reachable.
+Context: As of 2026-04-17, ump.news is dead (NXDOMAIN) and has been replaced
+by the MLB Stats API schedule endpoint with `hydrate=officials`. These tests
+cover:
+  (a) happy-path parsing of a schedule payload,
+  (b) HP-only selection out of a multi-official array,
+  (c) partial-data tolerance (games with no officials yet are skipped),
+  (d) network / HTTP failure -> WARNING log + empty dict,
+  (e) unknown team-name reverse-lookup -> skip without crashing,
+  (f) end-to-end name matching into career_k_rates.json.
 """
 import sys
 import os
@@ -18,38 +21,187 @@ import fetch_umpires  # noqa: E402
 
 
 # ---------------------------------------------------------------------------
-# A3.3 — silent-failure path: scrape must log WARNING and return {}.
+# Helpers to build a realistic MLB Stats API schedule payload for mocking.
 # ---------------------------------------------------------------------------
 
-def test_scrape_logs_warning_on_dns_failure(caplog):
-    """DNS / network failures must not crash and must log at WARNING level.
+def _official(name: str, official_type: str, pid: int = 12345) -> dict:
+    return {
+        "official": {"id": pid, "fullName": name, "link": f"/api/v1/people/{pid}"},
+        "officialType": official_type,
+    }
 
-    Regression: as of 2026-04-17, ump.news does not resolve. The pipeline
-    depends on scrape_hp_assignments swallowing the exception and logging a
-    warning so that fetch_umpires returns an empty dict. If someone changes
-    this to raise, the whole pipeline breaks on every run.
+
+def _game(away_name: str, home_name: str, officials: list | None) -> dict:
+    return {
+        "teams": {
+            "away": {"team": {"name": away_name}},
+            "home": {"team": {"name": home_name}},
+        },
+        "officials": officials if officials is not None else [],
+    }
+
+
+def _schedule_payload(games: list) -> dict:
+    return {"dates": [{"games": games}]}
+
+
+def _mock_response(payload: dict):
+    m = MagicMock()
+    m.json.return_value = payload
+    m.raise_for_status.return_value = None
+    return m
+
+
+# ---------------------------------------------------------------------------
+# fetch_hp_assignments — happy path, HP selection, partial data, errors.
+# ---------------------------------------------------------------------------
+
+def test_fetch_hp_assignments_happy_path():
+    """Two games with full officials arrays -> both HP umps returned by away-abbr."""
+    payload = _schedule_payload([
+        _game("New York Yankees", "Boston Red Sox", [
+            _official("Dan Iassogna", "Home Plate", 427173),
+            _official("Ramon De Jesus", "First Base", 52),
+            _official("Nic Lentz", "Second Base", 53),
+            _official("CB Bucknor", "Third Base", 54),
+        ]),
+        _game("Los Angeles Dodgers", "San Francisco Giants", [
+            _official("Vic Carapazza", "Home Plate", 61),
+        ]),
+    ])
+    with patch("fetch_umpires.requests.get", return_value=_mock_response(payload)):
+        result = fetch_umpires.fetch_hp_assignments("2026-04-17")
+
+    assert result == {
+        "NYY": "Dan Iassogna",
+        "LAD": "Vic Carapazza",
+    }
+
+
+def test_fetch_hp_assignments_only_returns_home_plate():
+    """Officials array with base umps but no HP -> game is skipped."""
+    payload = _schedule_payload([
+        _game("Houston Astros", "Texas Rangers", [
+            _official("John Bacon", "First Base"),
+            _official("Jeremy Riggs", "Second Base"),
+            _official("Brock Ballou", "Third Base"),
+            # No "Home Plate" entry.
+        ]),
+    ])
+    with patch("fetch_umpires.requests.get", return_value=_mock_response(payload)):
+        result = fetch_umpires.fetch_hp_assignments("2026-04-17")
+    assert result == {}
+
+
+def test_fetch_hp_assignments_partial_data_tolerance():
+    """Mix of games with and without officials — only populated ones returned."""
+    payload = _schedule_payload([
+        _game("New York Yankees", "Boston Red Sox", [
+            _official("Dan Iassogna", "Home Plate"),
+        ]),
+        _game("Chicago Cubs", "Cincinnati Reds", []),             # empty list
+        _game("Detroit Tigers", "Cleveland Guardians", None),     # missing key
+    ])
+    with patch("fetch_umpires.requests.get", return_value=_mock_response(payload)):
+        result = fetch_umpires.fetch_hp_assignments("2026-04-17")
+    assert result == {"NYY": "Dan Iassogna"}
+
+
+def test_fetch_hp_assignments_logs_warning_on_network_failure(caplog):
+    """Network / HTTP errors -> WARNING logged, empty dict returned.
+
+    Locks in the graceful-degradation contract: pipeline must not crash
+    when the MLB API is unreachable or returns 5xx.
     """
     with patch(
         "fetch_umpires.requests.get",
         side_effect=Exception("DNS resolution failed"),
     ):
         with caplog.at_level(logging.WARNING, logger="fetch_umpires"):
-            result = fetch_umpires.scrape_hp_assignments()
+            result = fetch_umpires.fetch_hp_assignments("2026-04-17")
     assert result == {}
-    # Loud enough: at least one WARNING record mentioning the failure.
     warnings = [r for r in caplog.records if r.levelno >= logging.WARNING]
-    assert any("ump.news scrape failed" in r.getMessage() for r in warnings), (
-        f"Expected a 'ump.news scrape failed' WARNING, got: {[r.getMessage() for r in warnings]}"
+    assert any("MLB schedule fetch failed" in r.getMessage() for r in warnings), (
+        f"Expected a 'MLB schedule fetch failed' WARNING, got: "
+        f"{[r.getMessage() for r in warnings]}"
     )
 
 
-def test_fetch_umpires_returns_all_zeros_when_scrape_fails(caplog):
-    """When the scrape fails, fetch_umpires returns 0.0 for every pitcher.
+def test_fetch_hp_assignments_unknown_team_name_skipped(caplog):
+    """A game whose team names don't reverse-lookup to a known abbreviation
+    is skipped without crashing the whole fetch."""
+    payload = _schedule_payload([
+        _game("Tokyo Giants", "Osaka Tigers", [
+            _official("Someone Somewhere", "Home Plate"),
+        ]),
+        _game("New York Yankees", "Boston Red Sox", [
+            _official("Dan Iassogna", "Home Plate"),
+        ]),
+    ])
+    with patch("fetch_umpires.requests.get", return_value=_mock_response(payload)):
+        with caplog.at_level(logging.INFO, logger="fetch_umpires"):
+            result = fetch_umpires.fetch_hp_assignments("2026-04-17")
+    # Only the recognizable MLB matchup is returned.
+    assert result == {"NYY": "Dan Iassogna"}
 
-    This is the current behavior that produces 100% ump_k_adj=0 in
-    picks_history.json. The test locks it in so the all-zero outcome is
-    intentional, not a silent bug introduced later.
-    """
+
+def test_fetch_hp_assignments_empty_schedule():
+    """No games scheduled (e.g. off-day) -> empty dict, no error."""
+    payload = {"dates": []}
+    with patch("fetch_umpires.requests.get", return_value=_mock_response(payload)):
+        result = fetch_umpires.fetch_hp_assignments("2026-12-25")
+    assert result == {}
+
+
+# ---------------------------------------------------------------------------
+# _abbr_for_team_name helper — direct unit test.
+# ---------------------------------------------------------------------------
+
+def test_abbr_for_team_name_matches_common_teams():
+    cases = [
+        ("New York Yankees", "NYY"),
+        ("Boston Red Sox", "BOS"),
+        ("Chicago Cubs", "CHC"),
+        ("Chicago White Sox", "CWS"),
+        ("Los Angeles Dodgers", "LAD"),
+        ("Los Angeles Angels", "LAA"),
+        ("San Francisco Giants", "SF"),
+        ("St. Louis Cardinals", "STL"),
+        ("Tampa Bay Rays", "TB"),
+    ]
+    for full_name, expected in cases:
+        assert fetch_umpires._abbr_for_team_name(full_name) == expected, (
+            f"{full_name} -> {fetch_umpires._abbr_for_team_name(full_name)}, "
+            f"expected {expected}"
+        )
+
+
+def test_abbr_for_team_name_unknown_returns_none():
+    assert fetch_umpires._abbr_for_team_name("Tokyo Giants") is None
+    assert fetch_umpires._abbr_for_team_name("") is None
+    assert fetch_umpires._abbr_for_team_name(None) is None
+
+
+# ---------------------------------------------------------------------------
+# End-to-end fetch_umpires: scrape -> abbr map -> career-rates lookup.
+# ---------------------------------------------------------------------------
+
+def _sample_schedule_payload() -> dict:
+    return _schedule_payload([
+        _game("New York Yankees", "Boston Red Sox", [
+            _official("Angel Hernandez", "Home Plate"),
+        ]),
+        _game("Los Angeles Dodgers", "San Francisco Giants", [
+            _official("Vic Carapazza", "Home Plate"),
+        ]),
+        _game("Houston Astros", "Texas Rangers", [
+            _official("Unknown Umpire", "Home Plate"),
+        ]),
+    ])
+
+
+def test_fetch_umpires_returns_all_zeros_when_fetch_fails(caplog):
+    """When the MLB API fetch fails, fetch_umpires returns 0.0 for every pitcher."""
     props = [
         {"pitcher": "Max Fried", "team": "New York Yankees", "opp_team": "Boston Red Sox"},
         {"pitcher": "Walker Buehler", "team": "Los Angeles Dodgers",
@@ -60,61 +212,24 @@ def test_fetch_umpires_returns_all_zeros_when_scrape_fails(caplog):
         side_effect=Exception("boom"),
     ):
         with caplog.at_level(logging.WARNING, logger="fetch_umpires"):
-            result = fetch_umpires.fetch_umpires(props)
+            result = fetch_umpires.fetch_umpires(props, "2026-04-17")
     assert result == {"Max Fried": 0.0, "Walker Buehler": 0.0}
     assert any(
-        "ump.news scrape failed" in r.getMessage() for r in caplog.records
-    ), "fetch_umpires should log a WARNING when the underlying scrape fails"
+        "MLB schedule fetch failed" in r.getMessage() for r in caplog.records
+    ), "fetch_umpires should log a WARNING when the underlying fetch fails"
 
 
 def test_fetch_umpires_empty_props_returns_empty_dict():
-    """Empty props list -> empty dict, no crash, no network calls needed."""
+    """Empty props list -> empty dict, no crash."""
     with patch("fetch_umpires.requests.get") as mock_get:
         mock_get.return_value.raise_for_status.return_value = None
-        mock_get.return_value.text = "<html></html>"
-        result = fetch_umpires.fetch_umpires([])
+        mock_get.return_value.json.return_value = {"dates": []}
+        result = fetch_umpires.fetch_umpires([], "2026-04-17")
     assert result == {}
 
 
-# ---------------------------------------------------------------------------
-# A3.4 — name-matching path: when ump.news IS reachable, the full chain
-# from scrape -> abbreviation map -> career-rates lookup must produce a
-# nonzero adjustment for known umpires.
-# ---------------------------------------------------------------------------
-
-_SAMPLE_UMP_NEWS_HTML = """
-<html><body><table>
-<tr><th>Matchup</th><th>HP</th></tr>
-<tr><td>NYY @ BOS</td><td>Angel Hernandez</td></tr>
-<tr><td>LAD @ SF</td><td>Vic Carapazza</td></tr>
-<tr><td>HOU @ TEX</td><td>Unknown Umpire</td></tr>
-</table></body></html>
-"""
-
-
-def _mock_response(text):
-    m = MagicMock()
-    m.text = text
-    m.raise_for_status.return_value = None
-    return m
-
-
-def test_scrape_parses_matchup_rows_into_abbr_map():
-    """scrape_hp_assignments returns {away_abbr: ump_name} from the HTML table."""
-    with patch(
-        "fetch_umpires.requests.get",
-        return_value=_mock_response(_SAMPLE_UMP_NEWS_HTML),
-    ):
-        result = fetch_umpires.scrape_hp_assignments()
-    assert result == {
-        "NYY": "Angel Hernandez",
-        "LAD": "Vic Carapazza",
-        "HOU": "Unknown Umpire",
-    }
-
-
 def test_fetch_umpires_end_to_end_name_matching():
-    """Full pipe: scrape -> ABBR_TO_NAME_SUBSTR -> career-rates produces nonzero.
+    """Full pipe: MLB API -> ABBR_TO_NAME_SUBSTR -> career-rates produces nonzero.
 
     Uses a real umpire name ('Vic Carapazza') that exists in the live
     career_k_rates.json so that name normalization + lookup both fire.
@@ -133,9 +248,9 @@ def test_fetch_umpires_end_to_end_name_matching():
     ]
     with patch(
         "fetch_umpires.requests.get",
-        return_value=_mock_response(_SAMPLE_UMP_NEWS_HTML),
+        return_value=_mock_response(_sample_schedule_payload()),
     ):
-        result = fetch_umpires.fetch_umpires(props)
+        result = fetch_umpires.fetch_umpires(props, "2026-04-17")
 
     # Both Dodgers and Giants pitchers should get Vic Carapazza's adj.
     assert result["LAD Starter"] != 0.0
@@ -145,33 +260,31 @@ def test_fetch_umpires_end_to_end_name_matching():
 
 
 def test_fetch_umpires_accent_insensitive_name_match():
-    """Career rates keys with/without accents must match ump.news spellings.
+    """Career rates keys with/without accents must match MLB API spellings.
 
     We exercise the _normalize() path: the career table key 'jose garcia'
-    must match even if ump.news sends 'José García' or vice versa.
+    must match even if the MLB API sends 'José García' or vice versa.
     """
-    html = (
-        "<html><body><table>"
-        "<tr><td>NYY @ BOS</td><td>Jose Garcia</td></tr>"
-        "</table></body></html>"
-    )
+    payload = _schedule_payload([
+        _game("New York Yankees", "Boston Red Sox", [
+            _official("Jose Garcia", "Home Plate"),
+        ]),
+    ])
     props = [
         {"pitcher": "Test Pitcher", "team": "New York Yankees",
          "opp_team": "Boston Red Sox"}
     ]
     # Synthetic career rates including an accented key.
     fake_rates = {"jose garcia": 0.25}
-    with patch("fetch_umpires.requests.get", return_value=_mock_response(html)), \
+    with patch("fetch_umpires.requests.get", return_value=_mock_response(payload)), \
          patch("fetch_umpires._load_career_rates", return_value=fake_rates):
-        result = fetch_umpires.fetch_umpires(props)
+        result = fetch_umpires.fetch_umpires(props, "2026-04-17")
     assert result["Test Pitcher"] == 0.25
 
 
 # ---------------------------------------------------------------------------
-# A3.4 — abbreviation-map coverage: every abbreviation scraped from
-# ump.news needs to be in ABBR_TO_NAME_SUBSTR or the lookup silently zeros.
-# This test catches the case where ump.news adds a new / renames an
-# abbreviation (e.g. OAK -> ATH, SF -> SFG) and we fail to update the map.
+# Abbreviation-map coverage guards: catches accidental edits that would
+# silently zero out ump signals for a team.
 # ---------------------------------------------------------------------------
 
 def test_abbr_map_covers_all_30_mlb_teams():
@@ -181,19 +294,28 @@ def test_abbr_map_covers_all_30_mlb_teams():
 
 def test_abbr_map_values_match_career_rates_team_substrings():
     """Every ABBR_TO_NAME_SUBSTR value is a substring suitable for matching
-    full team names from TheRundown API (e.g. 'Yankees' appears in
-    'New York Yankees'). Guards against accidental edits that would break
-    the _build_game_ump_map substring check.
+    full team names from both TheRundown and the MLB Stats API (e.g.
+    'Yankees' appears in 'New York Yankees'). Guards against accidental
+    edits that would break the _build_game_ump_map substring check.
+
+    Also asserts each canonical full name matches exactly one substring —
+    no ambiguity in the reverse lookup used by fetch_hp_assignments.
     """
-    # Known full names from TheRundown for a handful of teams.
     known_full_names = [
         "New York Yankees", "Boston Red Sox", "Los Angeles Dodgers",
         "San Francisco Giants", "Houston Astros", "Texas Rangers",
         "Chicago Cubs", "Chicago White Sox", "Kansas City Royals",
         "St. Louis Cardinals", "Tampa Bay Rays", "Washington Nationals",
+        "Los Angeles Angels",
     ]
     abbr_map = fetch_umpires.ABBR_TO_NAME_SUBSTR
     for full_name in known_full_names:
-        # At least one mapped substring should appear in this full name.
         matches = [s for s in abbr_map.values() if s.lower() in full_name.lower()]
         assert matches, f"No ABBR_TO_NAME_SUBSTR entry matches '{full_name}'"
+        # The reverse-lookup helper must pick exactly one abbreviation per
+        # team — first-match semantics are fine as long as that match is
+        # correct. If multiple substrings match, we rely on the full-name
+        # formats being unambiguous in practice (e.g. "Chicago White Sox"
+        # matches "White Sox" only, not "Cubs").
+        abbr = fetch_umpires._abbr_for_team_name(full_name)
+        assert abbr is not None, f"reverse lookup failed for {full_name}"

@@ -75,23 +75,26 @@ else:
     for d in any_nonzero_dates:
         print(f"  {d}  {by_date_nonzero[d]}/{by_date_total[d]} nonzero")
 
-# ---- 2. Live ump.news scrape ---------------------------------------------
+# ---- 2. Live MLB Stats API officials fetch --------------------------------
 print()
 print("=" * 70)
-print("2. Live scrape_hp_assignments() output")
+print("2. Live fetch_hp_assignments() output (MLB Stats API /schedule?hydrate=officials)")
 print("=" * 70)
 sys.path.insert(0, str(ROOT / "pipeline"))
 from fetch_umpires import (  # noqa: E402
-    scrape_hp_assignments,
+    fetch_hp_assignments,
     _load_career_rates,
     fetch_umpires,
     ABBR_TO_NAME_SUBSTR,
 )
 
+from datetime import date as _date  # noqa: E402
+
+_today_str = _date.today().strftime("%Y-%m-%d")
 try:
-    assignments = scrape_hp_assignments()
+    assignments = fetch_hp_assignments(_today_str)
 except Exception as exc:
-    print(f"scrape_hp_assignments() raised: {exc!r}")
+    print(f"fetch_hp_assignments() raised: {exc!r}")
     assignments = {}
 
 print(f"Assignments returned: {len(assignments)}")
@@ -178,7 +181,7 @@ if not used_today:
     ]
     print(f"Synthetic props: {len(synth_props)} (pairs: NYY/BOS, LAD/SF, HOU/TEX)")
 
-result = fetch_umpires(synth_props)
+result = fetch_umpires(synth_props, _today_str)
 print(f"\nfetch_umpires() returned {len(result)} entries")
 rnonzero = [(k, v) for k, v in result.items() if abs(v) > 1e-6]
 rzero = [(k, v) for k, v in result.items() if v == 0.0]

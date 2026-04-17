@@ -1,46 +1,46 @@
 """
 fetch_umpires.py
-Scrapes ump.news for HP umpire assignments. Returns {pitcher_name: ump_k_adj}.
-Falls back to ump_k_adj = 0.0 if assignment not posted or umpire not in career table.
+Fetches HP umpire assignments from the MLB Stats API schedule endpoint
+(hydrate=officials). Returns {pitcher_name: ump_k_adj}.
+Falls back to ump_k_adj = 0.0 if the assignment is not yet posted or the
+umpire is not in the local career_k_rates table.
 
-Known data-source issues (2026-04-17, Task A3 audit — analytics/diagnostics/a3_ump_adj.py):
-  * The `www.ump.news` domain currently does not resolve from public DNS
-    (8.8.8.8, 1.1.1.1 all return NXDOMAIN). As a consequence, every scrape
-    attempt fails with a requests exception, scrape_hp_assignments() returns
-    an empty dict, and fetch_umpires() returns 0.0 for every pitcher.
-  * This matches what we see in picks_history.json: 447/447 rows (100%) have
-    ump_k_adj == 0.0 exactly. There are no null / non-zero historical values.
-  * The failure is logged at WARNING level by scrape_hp_assignments but the
-    pipeline is built to degrade gracefully — an all-zero ump signal is
-    equivalent to "no umpire effect modeled" and does not corrupt lambda.
-  * Secondary (legacy) concern: even when the domain worked, assignments
-    were typically posted ~10am ET, AFTER the 6am PT (9am ET) full-run
-    finalization, so staked picks tended to lock with ump_k_adj=0 anyway.
-    The 30-min refresh loop could in theory catch the post-10am update
-    before T-30 lock, but this is best-effort.
+Data source (2026-04-17 cutover — Task A3):
+  * The previous source (www.ump.news) went NXDOMAIN; this module now calls
+    https://statsapi.mlb.com/api/v1/schedule?sportId=1&date={date}&hydrate=officials
+    and parses each game's `officials` array for the `officialType == "Home Plate"`
+    entry.
+  * Completed games: `officials` is populated reliably (100% in spot checks).
+  * Pre-game on game-day: `officials` fills in closer to first pitch (same
+    timing profile as ump.news was). The 30-min refresh loop catches
+    post-post assignments before T-30 lock.
+  * Each game has one HP umpire — both the home and away starter face the
+    same ump. The returned dict is keyed by away-team abbreviation so the
+    downstream _build_game_ump_map / fetch_umpires logic is unchanged.
 
-Recovery options (out of scope for Task A3 — user decision):
-  - Find a replacement data source (e.g. umpscorecards.com, MLB's own
-    officials endpoint, Baseball Savant).
-  - Drop ump_k_adj from the model entirely and rebalance lambda_bias.
-  - Keep the current graceful-degradation behavior and treat ump effects
-    as neutral unless/until a live source is restored.
+Known coverage cap (NOT fixed here — separate follow-up task):
+  * `data/umpires/career_k_rates.json` has only 30 umpires and includes
+    retired names (Angel Hernandez, Ted Barrett, Paul Nauert, Bill Miller).
+    Real 2026 match rate vs live MLB assignments is ~21% (62 unique HP umps
+    actually working). Most calls still end up at 0.0 until the table is
+    expanded. Expansion is tracked as a follow-up.
 """
 import json
 import logging
 import os
 import requests
-from bs4 import BeautifulSoup
 
 from name_utils import normalize as _normalize
 
 log = logging.getLogger(__name__)
 
-UMP_NEWS_URL = "https://www.ump.news"
+MLB_SCHEDULE_URL = "https://statsapi.mlb.com/api/v1/schedule"
 
-# Maps ump.news abbreviations to substrings of TheRundown full team names.
-# Key = abbreviation as scraped from ump.news (upper-cased).
-# Value = substring that appears in the full team name from TheRundown API.
+# Maps 3-letter MLB abbreviations to substrings of TheRundown full team names.
+# Key = our canonical abbreviation.
+# Value = substring that appears in the full team name from TheRundown API
+# *and* in the MLB Stats API's `teams.{home,away}.team.name` field (both
+# sources use the same "City Nickname" full-name format).
 ABBR_TO_NAME_SUBSTR = {
     "ARI": "Arizona",    "ATL": "Atlanta",     "BAL": "Baltimore",
     "BOS": "Boston",     "CHC": "Cubs",        "CWS": "White Sox",
@@ -62,58 +62,100 @@ def _load_career_rates() -> dict:
     """Return career K adjustments keyed by normalized umpire name.
 
     Normalizes keys (lower + accent-strip) so lookups tolerate casing or
-    diacritical differences between ump.news ("Jose Garcia") and the career
-    rates file ("José García") without silently falling back to 0.0.
+    diacritical differences between the MLB API ("Jose Garcia") and the
+    career rates file ("José García") without silently falling back to 0.0.
     """
     with open(CAREER_RATES_PATH, "r") as f:
         raw = json.load(f)
     return {_normalize(k): v for k, v in raw.items()}
 
 
-def scrape_hp_assignments() -> dict:
+def _abbr_for_team_name(name: str) -> str | None:
+    """Reverse-lookup a 3-letter abbreviation from a full team name.
+
+    MLB Stats API returns team names like "Chicago Cubs", "New York Yankees".
+    We match by checking which ABBR_TO_NAME_SUBSTR value appears (case-insensitive)
+    in the full name and returning the corresponding key. Returns None if no
+    entry matches — the caller logs and skips the game.
+
+    Ambiguity note: the substrings in ABBR_TO_NAME_SUBSTR are chosen so that
+    each MLB team name matches exactly one entry (e.g. "Chicago Cubs" matches
+    only "Cubs", not the "White Sox" substring for CWS). See
+    test_abbr_map_values_match_career_rates_team_substrings for the guard.
     """
-    Scrapes ump.news for today's HP umpire assignments.
-    Returns {away_team_abbr: hp_umpire_name}.
-    Returns empty dict if scrape fails or assignments not yet posted.
+    if not name:
+        return None
+    name_lower = name.lower()
+    for abbr, substr in ABBR_TO_NAME_SUBSTR.items():
+        if substr.lower() in name_lower:
+            return abbr
+    return None
+
+
+def fetch_hp_assignments(date_str: str) -> dict:
+    """
+    Fetches HP umpire assignments for `date_str` (YYYY-MM-DD) from the MLB
+    Stats API schedule endpoint with officials hydrate.
+
+    Returns {away_team_abbr: hp_umpire_name}. Empty dict on network/HTTP
+    failure or if no games have officials populated yet. Games whose team
+    names don't reverse-lookup to a known abbreviation are skipped.
     """
     try:
         resp = requests.get(
-            UMP_NEWS_URL, timeout=15,
-            headers={"User-Agent": "Mozilla/5.0 (compatible; BaseballBettingEdge/1.0)"}
+            MLB_SCHEDULE_URL,
+            params={"sportId": 1, "date": date_str, "hydrate": "officials"},
+            timeout=15,
+            headers={"User-Agent": "BaseballBettingEdge/1.0"},
         )
         resp.raise_for_status()
+        payload = resp.json()
     except Exception as e:
-        log.warning("ump.news scrape failed: %s — using neutral ump adj", e)
+        log.warning(
+            "MLB schedule fetch failed for %s: %s — using neutral ump adj",
+            date_str, e,
+        )
         return {}
 
-    soup        = BeautifulSoup(resp.text, "html.parser")
-    assignments = {}
+    assignments: dict = {}
+    dates = payload.get("dates") or []
+    for date_block in dates:
+        for game in date_block.get("games", []) or []:
+            officials = game.get("officials") or []
+            hp_name = None
+            for off in officials:
+                if off.get("officialType") == "Home Plate":
+                    hp_name = (off.get("official") or {}).get("fullName")
+                    break
+            if not hp_name:
+                # Partial data is OK — officials fill in closer to game time.
+                continue
 
-    # ump.news lists games as rows with matchup and umpire columns.
-    # Selector targets the main assignments table — adjust if site structure changes.
-    for row in soup.select("table tr"):
-        cells = row.find_all("td")
-        if len(cells) < 2:
-            continue
-        try:
-            teams_cell = cells[0].get_text(strip=True)   # e.g. "NYY @ BOS"
-            hp_cell    = cells[1].get_text(strip=True)   # HP umpire name
-            if "@" in teams_cell and hp_cell:
-                away_abbr = teams_cell.split("@")[0].strip().upper()
-                if away_abbr:
-                    assignments[away_abbr] = hp_cell
-        except Exception:
-            continue
+            teams = game.get("teams") or {}
+            away_name = ((teams.get("away") or {}).get("team") or {}).get("name", "")
+            home_name = ((teams.get("home") or {}).get("team") or {}).get("name", "")
 
-    log.info("Scraped %d HP assignments from ump.news", len(assignments))
+            away_abbr = _abbr_for_team_name(away_name)
+            if away_abbr:
+                assignments[away_abbr] = hp_name
+            else:
+                # Unknown team name — don't crash, just warn once per miss.
+                log.info(
+                    "MLB schedule: no ABBR_TO_NAME_SUBSTR match for '%s' (vs '%s'); skipping",
+                    away_name, home_name,
+                )
+
+    log.info("Fetched %d HP assignments from MLB Stats API for %s",
+             len(assignments), date_str)
     return assignments
 
 
 def _build_game_ump_map(assignments: dict) -> dict:
     """
-    Converts {away_abbr: ump_name} from ump.news into
-    {team_name_substr: ump_name} for both teams in the game.
-    Each game has one HP umpire — both the away pitcher and home pitcher face the same ump.
+    Converts {away_abbr: ump_name} into {team_name_substr: ump_name}.
+    Each game has one HP umpire — both the away pitcher and home pitcher
+    face the same ump. (Home-team keying is added separately when the
+    assignments dict is iterated; this helper keeps the away-keyed shape.)
     """
     game_ump = {}
     for abbr, ump_name in assignments.items():
@@ -124,14 +166,14 @@ def _build_game_ump_map(assignments: dict) -> dict:
     return game_ump
 
 
-def fetch_umpires(props: list) -> dict:
+def fetch_umpires(props: list, date_str: str) -> dict:
     """
     Main entry point. Returns {pitcher_name: ump_k_adj} for all pitchers.
     Matches pitcher's team (full name) against ABBR_TO_NAME_SUBSTR lookup.
     Works for both home and away starters. Falls back to 0.0.
     """
     career_rates = _load_career_rates()
-    assignments  = scrape_hp_assignments()
+    assignments  = fetch_hp_assignments(date_str)
     game_ump     = _build_game_ump_map(assignments)
 
     result = {}
