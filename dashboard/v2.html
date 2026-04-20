@@ -185,6 +185,35 @@ body { display: flex; flex-direction: column; }
 .v2-datepill.past-win::after { background: var(--pos); }
 .v2-datepill.past-loss::after { background: var(--neg); }
 
+/* ── Past-date grading: summary banner + per-card result pill ───── */
+.v2-grading-summary {
+  margin: 12px 18px 4px;
+  padding: 10px 14px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12.5px; font-weight: 600;
+  display: flex; justify-content: center; gap: 14px;
+  letter-spacing: .02em;
+}
+.v2-grading-summary .w { color: var(--pos); }
+.v2-grading-summary .l { color: var(--neg); }
+.v2-grading-summary .p { color: var(--ink-2); opacity: .7; }
+.v2-grading-summary .n { color: var(--ink-2); opacity: .6; font-weight: 500; }
+.v2-result-pill {
+  display: inline-flex; align-items: center; justify-content: center;
+  min-width: 20px; height: 20px; padding: 0 6px;
+  border-radius: 999px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10.5px; font-weight: 800; letter-spacing: .04em;
+  margin-left: 6px;
+  color: white;
+}
+.v2-result-pill.win   { background: var(--pos); }
+.v2-result-pill.loss  { background: var(--neg); }
+.v2-result-pill.push  { background: var(--ink-2); color: var(--bg); }
+
 /* ── Daily digest pill ───────────────────────── */
 .v2-digest {
   margin: 14px 18px 4px;
