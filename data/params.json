@@ -1,13 +1,15 @@
 {
   "weight_season_cap": 0.4,
-  "weight_recent": 0.122,
+  "weight_recent": 0.097,
   "ump_scale": 1.0,
-  "lambda_bias": -0.414,
+  "lambda_bias": -0.342,
   "swstr_k9_scale": 30.0,
-  "updated_at": "2026-04-19T10:40:26Z",
-  "sample_size": 238,
+  "updated_at": "2026-04-20T11:19:54Z",
+  "sample_size": 267,
   "formula_change_date": "2026-04-08",
   "calibration_notes": [
+    "[2026-04-20] Lambda bias adjusted -0.414 \u2192 -0.342 (model was systematically over-predicting Ks)",
+    "[2026-04-20] K/9 blend weights updated: season 40% \u2192 40%, recent 12% \u2192 10%",
     "[2026-04-19] Lambda bias adjusted -0.446 \u2192 -0.414 (model was systematically over-predicting Ks)",
     "[2026-04-19] K/9 blend weights updated: season 40% \u2192 40%, recent 8% \u2192 12%",
     "[2026-04-18] Lambda bias adjusted -0.492 \u2192 -0.446 (model was systematically over-predicting Ks)",
@@ -25,8 +27,6 @@
     "[2026-04-11] Lambda bias adjusted -0.109 \u2192 -0.177 (model was systematically over-predicting Ks)",
     "[2026-04-11] Lambda bias adjusted -0.057 \u2192 -0.109 (model was systematically over-predicting Ks)",
     "[2026-04-10] Lambda bias adjusted +0.000 \u2192 -0.057 (model was systematically over-predicting Ks)",
-    "[2026-04-08] FORMULA CHANGE: SwStr% multiplier removed (was double-counting K ability already in K/9). Replaced with career-relative delta (additive K/9 adjustment). Lambda bias reset to 0.0 \u2014 recalibrates from scratch under new formula.",
-    "[2026-04-08] Adaptive calibration step size: cap now scales with sqrt(n/30), range 0.05-0.15 instead of fixed 0.05.",
-    "[2026-04-08] Calibration season-filtered: only current-season picks (date >= 2026-03-01) used for bias calculation."
+    "[2026-04-08] FORMULA CHANGE: SwStr% multiplier removed (was double-counting K ability already in K/9). Replaced with career-relative delta (additive K/9 adjustment). Lambda bias reset to 0.0 \u2014 recalibrates from scratch under new formula."
   ]
 }

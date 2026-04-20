@@ -1,91 +1,93 @@
 {
-  "generated_at": "2026-04-19T10:40:26Z",
-  "total_picks": 238,
-  "last_calibrated": "2026-04-19T10:40:26Z",
-  "calibration_sample": 238,
+  "generated_at": "2026-04-20T11:19:54Z",
+  "total_picks": 267,
+  "last_calibrated": "2026-04-20T11:19:54Z",
+  "calibration_sample": 267,
   "rows": [
     {
       "verdict": "FIRE 2u",
       "side": "over",
-      "picks": 27,
-      "wins": 11,
-      "losses": 16,
+      "picks": 30,
+      "wins": 13,
+      "losses": 17,
       "pushes": 0,
-      "win_pct": 0.407,
-      "roi": -18.01,
-      "avg_ev": 0.1559
+      "win_pct": 0.433,
+      "roi": -13.9,
+      "avg_ev": 0.1587
     },
     {
       "verdict": "FIRE 2u",
       "side": "under",
-      "picks": 81,
-      "wins": 50,
-      "losses": 31,
+      "picks": 91,
+      "wins": 55,
+      "losses": 36,
       "pushes": 0,
-      "win_pct": 0.617,
-      "roi": 16.94,
-      "avg_ev": 0.1898
+      "win_pct": 0.604,
+      "roi": 14.59,
+      "avg_ev": 0.1906
     },
     {
       "verdict": "FIRE 1u",
       "side": "over",
-      "picks": 40,
-      "wins": 23,
+      "picks": 41,
+      "wins": 24,
       "losses": 17,
       "pushes": 0,
-      "win_pct": 0.575,
-      "roi": 12.04,
-      "avg_ev": 0.057
+      "win_pct": 0.585,
+      "roi": 15.26,
+      "avg_ev": 0.0568
     },
     {
       "verdict": "FIRE 1u",
       "side": "under",
-      "picks": 49,
-      "wins": 31,
-      "losses": 18,
+      "picks": 58,
+      "wins": 35,
+      "losses": 23,
       "pushes": 0,
-      "win_pct": 0.633,
-      "roi": 24.29,
-      "avg_ev": 0.0549
+      "win_pct": 0.603,
+      "roi": 16.36,
+      "avg_ev": 0.0556
     },
     {
       "verdict": "LEAN",
       "side": "over",
-      "picks": 15,
+      "picks": 16,
       "wins": 5,
-      "losses": 10,
+      "losses": 11,
       "pushes": 0,
-      "win_pct": 0.333,
-      "roi": -37.92,
-      "avg_ev": 0.0183
+      "win_pct": 0.312,
+      "roi": -41.8,
+      "avg_ev": 0.0184
     },
     {
       "verdict": "LEAN",
       "side": "under",
-      "picks": 26,
-      "wins": 15,
-      "losses": 11,
+      "picks": 31,
+      "wins": 18,
+      "losses": 13,
       "pushes": 0,
-      "win_pct": 0.577,
-      "roi": 13.38,
-      "avg_ev": 0.0196
+      "win_pct": 0.581,
+      "roi": 11.67,
+      "avg_ev": 0.0189
     }
   ],
   "lambda_accuracy": {
     "avg_predicted": 4.94,
-    "avg_actual": 4.53,
-    "bias": -0.41
+    "avg_actual": 4.6,
+    "bias": -0.34
   },
   "params": {
     "weight_season_cap": 0.4,
-    "weight_recent": 0.122,
+    "weight_recent": 0.097,
     "ump_scale": 1.0,
-    "lambda_bias": -0.414,
+    "lambda_bias": -0.342,
     "swstr_k9_scale": 30.0,
-    "updated_at": "2026-04-19T10:40:26Z",
-    "sample_size": 238,
+    "updated_at": "2026-04-20T11:19:54Z",
+    "sample_size": 267,
     "formula_change_date": "2026-04-08",
     "calibration_notes": [
+      "[2026-04-20] Lambda bias adjusted -0.414 \u2192 -0.342 (model was systematically over-predicting Ks)",
+      "[2026-04-20] K/9 blend weights updated: season 40% \u2192 40%, recent 12% \u2192 10%",
       "[2026-04-19] Lambda bias adjusted -0.446 \u2192 -0.414 (model was systematically over-predicting Ks)",
       "[2026-04-19] K/9 blend weights updated: season 40% \u2192 40%, recent 8% \u2192 12%",
       "[2026-04-18] Lambda bias adjusted -0.492 \u2192 -0.446 (model was systematically over-predicting Ks)",
@@ -103,12 +105,12 @@
       "[2026-04-11] Lambda bias adjusted -0.109 \u2192 -0.177 (model was systematically over-predicting Ks)",
       "[2026-04-11] Lambda bias adjusted -0.057 \u2192 -0.109 (model was systematically over-predicting Ks)",
       "[2026-04-10] Lambda bias adjusted +0.000 \u2192 -0.057 (model was systematically over-predicting Ks)",
-      "[2026-04-08] FORMULA CHANGE: SwStr% multiplier removed (was double-counting K ability already in K/9). Replaced with career-relative delta (additive K/9 adjustment). Lambda bias reset to 0.0 \u2014 recalibrates from scratch under new formula.",
-      "[2026-04-08] Adaptive calibration step size: cap now scales with sqrt(n/30), range 0.05-0.15 instead of fixed 0.05.",
-      "[2026-04-08] Calibration season-filtered: only current-season picks (date >= 2026-03-01) used for bias calculation."
+      "[2026-04-08] FORMULA CHANGE: SwStr% multiplier removed (was double-counting K ability already in K/9). Replaced with career-relative delta (additive K/9 adjustment). Lambda bias reset to 0.0 \u2014 recalibrates from scratch under new formula."
     ]
   },
   "calibration_notes": [
+    "[2026-04-20] Lambda bias adjusted -0.414 \u2192 -0.342 (model was systematically over-predicting Ks)",
+    "[2026-04-20] K/9 blend weights updated: season 40% \u2192 40%, recent 12% \u2192 10%",
     "[2026-04-19] Lambda bias adjusted -0.446 \u2192 -0.414 (model was systematically over-predicting Ks)",
     "[2026-04-19] K/9 blend weights updated: season 40% \u2192 40%, recent 8% \u2192 12%",
     "[2026-04-18] Lambda bias adjusted -0.492 \u2192 -0.446 (model was systematically over-predicting Ks)",
@@ -126,8 +128,6 @@
     "[2026-04-11] Lambda bias adjusted -0.109 \u2192 -0.177 (model was systematically over-predicting Ks)",
     "[2026-04-11] Lambda bias adjusted -0.057 \u2192 -0.109 (model was systematically over-predicting Ks)",
     "[2026-04-10] Lambda bias adjusted +0.000 \u2192 -0.057 (model was systematically over-predicting Ks)",
-    "[2026-04-08] FORMULA CHANGE: SwStr% multiplier removed (was double-counting K ability already in K/9). Replaced with career-relative delta (additive K/9 adjustment). Lambda bias reset to 0.0 \u2014 recalibrates from scratch under new formula.",
-    "[2026-04-08] Adaptive calibration step size: cap now scales with sqrt(n/30), range 0.05-0.15 instead of fixed 0.05.",
-    "[2026-04-08] Calibration season-filtered: only current-season picks (date >= 2026-03-01) used for bias calculation."
+    "[2026-04-08] FORMULA CHANGE: SwStr% multiplier removed (was double-counting K ability already in K/9). Replaced with career-relative delta (additive K/9 adjustment). Lambda bias reset to 0.0 \u2014 recalibrates from scratch under new formula."
   ]
 }
