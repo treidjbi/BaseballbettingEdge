@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-04-20T14:27:11Z",
+  "generated_at": "2026-04-20T16:04:38Z",
   "date": "2026-04-20",
   "props_available": true,
   "pitchers": [
@@ -46,7 +46,7 @@
         "movement_conf": 1.0
       },
       "data_complete": true,
-      "game_state": "pregame"
+      "game_state": "in_progress"
     },
     {
       "pitcher": "Jack Flaherty",
@@ -91,7 +91,7 @@
         "movement_conf": 1.0
       },
       "data_complete": true,
-      "game_state": "pregame"
+      "game_state": "in_progress"
     },
     {
       "pitcher": "Slade Cecconi",
@@ -103,12 +103,12 @@
       "opening_line": 3.5,
       "best_over_book": "FanDuel",
       "ref_book": "FanDuel",
-      "best_over_odds": -158,
-      "best_under_odds": 118,
-      "opening_over_odds": -158,
-      "opening_under_odds": 120,
-      "price_delta_over": 0,
-      "price_delta_under": -2,
+      "best_over_odds": -166,
+      "best_under_odds": 124,
+      "opening_over_odds": -162,
+      "opening_under_odds": 122,
+      "price_delta_over": -4,
+      "price_delta_under": 2,
       "raw_lambda": 4.21,
       "lambda": 3.87,
       "avg_ip": 4.92,
@@ -122,16 +122,16 @@
       "recent_k9": 10.38,
       "career_k9": 7.43,
       "ev_over": {
-        "ev": -0.0725,
-        "adj_ev": -0.0725,
+        "ev": -0.0842,
+        "adj_ev": -0.0842,
         "verdict": "PASS",
         "win_prob": 0.54,
         "movement_conf": 1.0
       },
       "ev_under": {
-        "ev": 0.0014,
-        "adj_ev": 0.0014,
-        "verdict": "PASS",
+        "ev": 0.0137,
+        "adj_ev": 0.0137,
+        "verdict": "LEAN",
         "win_prob": 0.46,
         "movement_conf": 1.0
       },
@@ -194,11 +194,11 @@
       "best_over_book": "Book25",
       "ref_book": "Book25",
       "best_over_odds": 117,
-      "best_under_odds": -133,
-      "opening_over_odds": 108,
-      "opening_under_odds": -122,
-      "price_delta_over": 9,
-      "price_delta_under": -11,
+      "best_under_odds": -122,
+      "opening_over_odds": 127,
+      "opening_under_odds": -127,
+      "price_delta_over": -10,
+      "price_delta_under": 5,
       "raw_lambda": 3.84,
       "lambda": 3.49,
       "avg_ip": 5.75,
@@ -219,8 +219,8 @@
         "movement_conf": 1.0
       },
       "ev_under": {
-        "ev": -0.0327,
-        "adj_ev": -0.0327,
+        "ev": -0.0114,
+        "adj_ev": -0.0114,
         "verdict": "PASS",
         "win_prob": 0.538,
         "movement_conf": 1.0
@@ -463,12 +463,12 @@
       "opening_line": 5.5,
       "best_over_book": "FanDuel",
       "ref_book": "FanDuel",
-      "best_over_odds": -136,
-      "best_under_odds": 102,
+      "best_over_odds": 100,
+      "best_under_odds": -132,
       "opening_over_odds": -136,
       "opening_under_odds": 102,
-      "price_delta_over": 0,
-      "price_delta_under": 0,
+      "price_delta_over": 236,
+      "price_delta_under": -234,
       "raw_lambda": 5.5,
       "lambda": 5.16,
       "avg_ip": 6.08,
@@ -482,16 +482,16 @@
       "recent_k9": 4.26,
       "career_k9": 8.63,
       "ev_over": {
-        "ev": -0.1643,
-        "adj_ev": -0.1643,
+        "ev": -0.088,
+        "adj_ev": -0.0,
         "verdict": "PASS",
         "win_prob": 0.412,
-        "movement_conf": 1.0
+        "movement_conf": 0.0
       },
       "ev_under": {
-        "ev": 0.093,
-        "adj_ev": 0.093,
-        "verdict": "FIRE 2u",
+        "ev": 0.019,
+        "adj_ev": 0.019,
+        "verdict": "LEAN",
         "win_prob": 0.588,
         "movement_conf": 1.0
       },
@@ -598,12 +598,12 @@
       "opening_line": 2.5,
       "best_over_book": "FanDuel",
       "ref_book": "FanDuel",
-      "best_over_odds": -174,
-      "best_under_odds": 130,
+      "best_over_odds": -178,
+      "best_under_odds": 132,
       "opening_over_odds": -174,
       "opening_under_odds": 130,
-      "price_delta_over": 0,
-      "price_delta_under": 0,
+      "price_delta_over": -4,
+      "price_delta_under": 2,
       "raw_lambda": 4.1,
       "lambda": 3.76,
       "avg_ip": 5.5,
@@ -617,15 +617,15 @@
       "recent_k9": 3.38,
       "career_k9": 7.76,
       "ev_over": {
-        "ev": 0.0888,
-        "adj_ev": 0.0888,
+        "ev": 0.0836,
+        "adj_ev": 0.0836,
         "verdict": "FIRE 1u",
         "win_prob": 0.724,
         "movement_conf": 1.0
       },
       "ev_under": {
-        "ev": -0.1587,
-        "adj_ev": -0.1587,
+        "ev": -0.1549,
+        "adj_ev": -0.1549,
         "verdict": "PASS",
         "win_prob": 0.276,
         "movement_conf": 1.0
@@ -688,12 +688,12 @@
       "opening_line": 7.5,
       "best_over_book": "FanDuel",
       "ref_book": "FanDuel",
-      "best_over_odds": -110,
-      "best_under_odds": -120,
+      "best_over_odds": -112,
+      "best_under_odds": -118,
       "opening_over_odds": -114,
       "opening_under_odds": -114,
-      "price_delta_over": 4,
-      "price_delta_under": -6,
+      "price_delta_over": 2,
+      "price_delta_under": -4,
       "raw_lambda": 7.63,
       "lambda": 7.29,
       "avg_ip": 5.17,
@@ -707,15 +707,15 @@
       "recent_k9": 20.25,
       "career_k9": 10.97,
       "ev_over": {
-        "ev": -0.0799,
-        "adj_ev": -0.0799,
+        "ev": -0.0844,
+        "adj_ev": -0.0844,
         "verdict": "PASS",
         "win_prob": 0.444,
         "movement_conf": 1.0
       },
       "ev_under": {
-        "ev": 0.0107,
-        "adj_ev": 0.0107,
+        "ev": 0.0148,
+        "adj_ev": 0.0148,
         "verdict": "LEAN",
         "win_prob": 0.556,
         "movement_conf": 1.0
@@ -733,12 +733,12 @@
       "opening_line": 5.5,
       "best_over_book": "FanDuel",
       "ref_book": "FanDuel",
-      "best_over_odds": -110,
-      "best_under_odds": -120,
+      "best_over_odds": -114,
+      "best_under_odds": -114,
       "opening_over_odds": 132,
       "opening_under_odds": -178,
-      "price_delta_over": -242,
-      "price_delta_under": 58,
+      "price_delta_over": -246,
+      "price_delta_under": 64,
       "raw_lambda": 6.43,
       "lambda": 6.09,
       "avg_ip": 5.67,
@@ -752,14 +752,14 @@
       "recent_k9": 17.36,
       "career_k9": 9.99,
       "ev_over": {
-        "ev": 0.0448,
-        "adj_ev": 0.0448,
+        "ev": 0.0359,
+        "adj_ev": 0.0359,
         "verdict": "FIRE 1u",
         "win_prob": 0.569,
         "movement_conf": 1.0
       },
       "ev_under": {
-        "ev": -0.114,
+        "ev": -0.1013,
         "adj_ev": -0.0,
         "verdict": "PASS",
         "win_prob": 0.431,
