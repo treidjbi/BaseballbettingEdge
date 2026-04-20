@@ -45,6 +45,19 @@ function bestSide(p) {
   }
   return   { ...p.ev_under, direction: "UNDER", odds: p.best_under_odds, opening: p.opening_under_odds };
 }
+// Slate is "past" when the user is viewing an archived YYYY-MM-DD earlier than today.
+// Enables W/L badges on cards + grading summary banner at the top of the list.
+function isPastSlate() {
+  const today   = window.__v2GetAppDate ? window.__v2GetAppDate() : new Date().toISOString().slice(0, 10);
+  const current = window.V2_CURRENT_DATE || today;
+  return current < today;
+}
+// Result pill for past-date cards. `result` is "win" | "loss" | "push" (from ev_*.result).
+function ResultPill({ result }) {
+  if (!result) return null;
+  const label = result === "win" ? "W" : result === "loss" ? "L" : "P";
+  return <span className={`v2-result-pill ${result}`}>{label}</span>;
+}
 function verdictClass(v, dir) {
   if (v && v.startsWith("FIRE")) return dir === "OVER" ? "fire-over" : "fire";
   if (v === "LEAN") return "lean";
@@ -154,6 +167,10 @@ function PickCard({ p, onOpen }) {
   const cls = verdictClass(side.verdict, side.direction);
   const started = p.game_state !== "pregame";
   const cardMod = started ? "final" : (side.verdict === "PASS" ? "pass" : cls);
+  // Past-date: show the W/L pill inline with the verdict badge. We show it even
+  // for PASS cards that happen to carry a result, since v1 did — it's useful
+  // context ("what would have happened if we'd played this").
+  const past = isPastSlate();
 
   return (
     <article
@@ -181,7 +198,10 @@ function PickCard({ p, onOpen }) {
             <span className="v2-pitcher-throws">{p.pitcher_throws}HP</span>
           </div>
         </div>
-        <VerdictBadge side={side} />
+        <div style={{display:"flex",alignItems:"center"}}>
+          <VerdictBadge side={side} />
+          {past && <ResultPill result={side.result} />}
+        </div>
       </div>
 
       <div className="v2-line">
@@ -628,10 +648,34 @@ function ErrorState({ onRetry }) {
 }
 
 // ── Tab: Picks ──
+// Aggregate W/L for a past slate. Mirrors v1 index.html: excludes PASS from
+// the count so the summary reflects picks we actually would have played.
+function GradingSummary({ pitchers }) {
+  let w = 0, l = 0, p = 0, n = 0;
+  for (const pit of pitchers) {
+    const side = bestSide(pit);
+    if (side.verdict === "PASS" || !side.result) continue;
+    if (side.result === "win")  w++;
+    else if (side.result === "loss") l++;
+    else if (side.result === "push") p++;
+    n++;
+  }
+  if (n === 0) return null;
+  return (
+    <div className="v2-grading-summary">
+      <span className="w">{w}W</span>
+      <span className="n">·</span>
+      <span className="l">{l}L</span>
+      {p > 0 && <><span className="n">·</span><span className="p">{p}P</span></>}
+    </div>
+  );
+}
+
 function PicksTab({ pitchersOverride }) {
   const [filter, setFilter] = useState("ALL");
   const [detail, setDetail] = useState(null);
   const pitchers = pitchersOverride ?? window.V2_DATA.pitchers;
+  const past = isPastSlate();
   const filtered = useMemo(() => {
     if (filter === "ALL") return pitchers;
     if (filter === "FIRE") return pitchers.filter(p => bestSide(p).verdict.startsWith("FIRE"));
@@ -685,6 +729,8 @@ function PicksTab({ pitchersOverride }) {
         </div>
         <DateBar />
       </div>
+
+      {past && <GradingSummary pitchers={pitchers} />}
 
       <div className="v2-digest">
         <div className="v2-digest-count">{fires.length}</div>
