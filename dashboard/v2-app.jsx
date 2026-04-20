@@ -167,10 +167,11 @@ function PickCard({ p, onOpen }) {
   const cls = verdictClass(side.verdict, side.direction);
   const started = p.game_state !== "pregame";
   const cardMod = started ? "final" : (side.verdict === "PASS" ? "pass" : cls);
-  // Past-date: show the W/L pill inline with the verdict badge. We show it even
-  // for PASS cards that happen to carry a result, since v1 did — it's useful
-  // context ("what would have happened if we'd played this").
+  // Past-date: show the W/L pill inline with the verdict badge — but only for
+  // picks we would have actually played. PASS cards don't get a result pill
+  // (matches the grading-summary banner, which also excludes PASS).
   const past = isPastSlate();
+  const showResult = past && side.verdict !== "PASS";
 
   return (
     <article
@@ -200,7 +201,7 @@ function PickCard({ p, onOpen }) {
         </div>
         <div style={{display:"flex",alignItems:"center"}}>
           <VerdictBadge side={side} />
-          {past && <ResultPill result={side.result} />}
+          {showResult && <ResultPill result={side.result} />}
         </div>
       </div>
 
@@ -549,35 +550,13 @@ function PickDetail({ p, onClose }) {
           </div>
         </div>
 
+        {/* Footer: single full-width Close. Previous iterations placed a
+            "Bet {side} on {book}" deeplink placeholder + status pills (Live /
+            No bet placed / No actionable edge) alongside it — all were
+            non-functional stubs and the state they echoed is already visible
+            in the sheet body (verdict badge, live block, result block). */}
         <div className="v2-sheet-actions">
           <button className="v2-btn-ghost" onClick={onClose}>Close</button>
-          {isLive && (
-            <button className="v2-btn-primary" disabled style={{opacity:.55, cursor:"not-allowed"}}>
-              Live · Track in-game
-            </button>
-          )}
-          {isFinal && result?.outcome !== "pass" && (
-            <button className="v2-btn-primary">
-              View grade details
-              <span className="v2-btn-arrow">→</span>
-            </button>
-          )}
-          {isFinal && result?.outcome === "pass" && (
-            <button className="v2-btn-primary" disabled style={{opacity:.55, cursor:"not-allowed"}}>
-              No bet placed
-            </button>
-          )}
-          {!isLive && !isFinal && !isPass && (
-            <button className="v2-btn-primary">
-              Bet {best.direction} {p.k_line} on {best.direction === "OVER" ? (p.best_over_book || "book") : (p.best_under_book || "book")}
-              <span className="v2-btn-arrow">↗</span>
-            </button>
-          )}
-          {!isLive && !isFinal && isPass && (
-            <button className="v2-btn-primary" disabled style={{opacity:.55, cursor:"not-allowed"}}>
-              No actionable edge
-            </button>
-          )}
         </div>
       </div>
     </>,

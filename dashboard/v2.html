@@ -786,6 +786,10 @@ body { display: flex; flex-direction: column; }
   background: var(--chip); color: var(--ink);
   min-width: 84px;
 }
+/* Sole-action footer: let the Close button fill the row (since we dropped
+   the right-side CTA). Scoped to sheet-actions so the ErrorState retry
+   button, which also uses v2-btn-ghost, is unaffected. */
+.v2-sheet-actions .v2-btn-ghost { flex: 1; }
 
 /* ── States: empty / loading / error ──────────── */
 .v2-state {
