@@ -40,15 +40,36 @@ therefore valid regardless of the flag bug; rewriting flags would only
 reshape the `n` in the data_complete-filtered subset without changing
 any calibrated parameter.
 
-### Known follow-up: career_k_rates.json coverage
+### Follow-up resolved: career_k_rates.json expansion (2026-04-20)
 
-`data/umpires/career_k_rates.json` currently holds 30 umpires and
-includes retired names (Angel Hernandez, Ted Barrett, Paul Nauert,
-Bill Miller). The 2026 season is using 62 unique HP umps so far — the
-live match rate is ~21%. Expanding the table is a separate, tracked
-follow-up task; until it lands, expect many post-cutover picks to
-still land at `ump_k_adj = 0` (correctly now, with `data_complete =
-False` when the whole slate comes back empty).
+Originally noted: the pre-expansion table held 30 umps (including
+retired names) against 62 live 2026 HP umps → ~21% match.
+
+On 2026-04-20 we ran `scripts/seed_umpire_career_rates.py` against
+the 2024-03-28 → 2025-10-01 regular-season window. The seeder pulls
+every Final game's HP umpire via the `/schedule?hydrate=officials`
+endpoint and per-game strikeout totals via `/game/{pk}/boxscore`,
+then computes `delta = ump_mean_K_per_game - league_mean_K_per_game`.
+Filter: `--min-games 20` to drop small-sample noise.
+
+Result:
+- 4,855 games aggregated, 96 unique HP umps seen
+- 87 umps met the n≥20 filter and were written to `career_k_rates.json`
+- League mean K/game across the window: 16.855
+- Delta range: -1.40 (Shane Livensparger) to +1.93 (Ron Kulpa)
+- Live 2026 match rate: 22% (11/51) → 94% (59/63 umps in the past week)
+- Still missing (4): Felix Neon, Jen Pawol, Tyler Jones, Willie Traynor —
+  likely AAA call-ups without enough 2024-25 MLB HP games to survive the
+  min-games filter. They'll populate as their sample sizes grow.
+
+Scale note: pre-expansion hand-curated deltas ranged ±0.52. Seeder-
+derived deltas range ~±1.9 — wider because the hand-curated file was
+conservatively scaled by the original author. This is **not** a unit
+change — both are in "K per game vs league average." The calibrated
+`ump_scale` parameter in `data/params.json` (currently 1.0) will shrink
+to compensate during phase-2 calibration as more ump-signal residuals
+land in the dataset. This is the same self-healing behavior that handles
+any source-signal change.
 
 ## 2026-04-11 to 2026-04-17 — pitcher_throws bug window
 
