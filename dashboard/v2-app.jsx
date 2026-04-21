@@ -815,6 +815,7 @@ function PicksTab({ pitchersOverride }) {
             <button className="v2-icon-btn" title="Theme" onClick={() => window.__v2Theme?.toggleTheme()}>
               {window.__v2Theme?.theme === "dark" ? Icon.sun : Icon.moon}
             </button>
+            <a href="/legacy" className="v2-classic-link" title="Switch to classic dashboard">classic</a>
           </div>
         </div>
         <DateBar />

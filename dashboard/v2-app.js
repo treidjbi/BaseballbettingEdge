@@ -1267,7 +1267,11 @@ function PicksTab({
     className: "v2-icon-btn",
     title: "Theme",
     onClick: () => window.__v2Theme?.toggleTheme()
-  }, window.__v2Theme?.theme === "dark" ? Icon.sun : Icon.moon))), /*#__PURE__*/React.createElement(DateBar, null)), past && /*#__PURE__*/React.createElement(GradingSummary, {
+  }, window.__v2Theme?.theme === "dark" ? Icon.sun : Icon.moon), /*#__PURE__*/React.createElement("a", {
+    href: "/legacy",
+    className: "v2-classic-link",
+    title: "Switch to classic dashboard"
+  }, "classic"))), /*#__PURE__*/React.createElement(DateBar, null)), past && /*#__PURE__*/React.createElement(GradingSummary, {
     pitchers: pitchers
   }), /*#__PURE__*/React.createElement("div", {
     className: "v2-digest"
