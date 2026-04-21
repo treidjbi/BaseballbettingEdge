@@ -187,6 +187,11 @@ def seed_picks(today_json_path: Path = TODAY_JSON) -> int:
                 # frozen. A later refresh may arrive with source='first_seen' (preview merge
                 # didn't fire that run) but we don't want to downgrade an existing 'preview'
                 # tag — same invariant as opening_*_odds.
+                # Note: we deliberately do NOT COALESCE-fill source for legacy rows whose
+                # opening_*_odds just got back-filled above. Per policy P1 (no retroactive
+                # labeling), a legacy row with back-filled odds must stay source=NULL — the
+                # odds it now holds are current-fetch values, not a real opening baseline,
+                # and calc_movement_confidence treats NULL source as no-haircut (correct).
                 if cur.rowcount == 0:
                     conn.execute("""
                         UPDATE picks

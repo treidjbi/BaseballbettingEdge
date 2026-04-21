@@ -400,6 +400,12 @@ class TestCalcMovementConfidence:
         # Legacy row (no source tag) — must not get haircut
         assert calc_movement_confidence(40, opening_odds_source=None) == 1.0
 
+    def test_movement_confidence_returns_1_when_source_is_empty_string(self):
+        # Guard against a future `if not source:` refactor — "" is falsy but
+        # the gate checks `!= "preview"`, which is the correct invariant.
+        # Locks in the explicit-equality contract.
+        assert calc_movement_confidence(40, opening_odds_source="") == 1.0
+
     def test_movement_confidence_applies_haircut_when_source_is_preview(self):
         # Same large adverse delta, but now source is the overnight baseline —
         # haircut applies (delta=40 > full_fade=30 → 0.0)
