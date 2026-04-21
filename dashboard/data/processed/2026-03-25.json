@@ -37,7 +37,16 @@
         "win_prob": 0.265,
         "movement_conf": 1.0
       },
-      "actual_ks": 4
+      "actual_ks": 4,
+      "result": {
+        "final_k": 4,
+        "side_taken": "over",
+        "line_at_bet": 4.5,
+        "odds_at_bet": -165,
+        "outcome": "loss",
+        "units_won": -2.0,
+        "units_risked": 2.0
+      }
     },
     {
       "pitcher": "Logan Webb",
@@ -73,7 +82,16 @@
         "movement_conf": 1.0,
         "result": "loss"
       },
-      "actual_ks": 7
+      "actual_ks": 7,
+      "result": {
+        "final_k": 7,
+        "side_taken": "under",
+        "line_at_bet": 6.5,
+        "odds_at_bet": -135,
+        "outcome": "loss",
+        "units_won": -2.0,
+        "units_risked": 2.0
+      }
     },
     {
       "pitcher": "Freddy Peralta",

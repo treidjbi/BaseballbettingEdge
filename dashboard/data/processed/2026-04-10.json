@@ -46,7 +46,16 @@
         "movement_conf": 1.0
       },
       "game_state": "final",
-      "actual_ks": 10
+      "actual_ks": 10,
+      "result": {
+        "final_k": 10,
+        "side_taken": "over",
+        "line_at_bet": 5.5,
+        "odds_at_bet": 118,
+        "outcome": "win",
+        "units_won": 0.0,
+        "units_risked": 0.0
+      }
     },
     {
       "pitcher": "Connelly Early",
@@ -91,7 +100,16 @@
         "movement_conf": 1.0
       },
       "game_state": "final",
-      "actual_ks": 5
+      "actual_ks": 5,
+      "result": {
+        "final_k": 5,
+        "side_taken": "over",
+        "line_at_bet": 5.5,
+        "odds_at_bet": 116,
+        "outcome": "loss",
+        "units_won": -2.0,
+        "units_risked": 2.0
+      }
     },
     {
       "pitcher": "Tatsuya Imai",
@@ -136,7 +154,16 @@
         "movement_conf": 1.0
       },
       "game_state": "in_progress",
-      "actual_ks": 0
+      "actual_ks": 0,
+      "result": {
+        "final_k": 0,
+        "side_taken": "over",
+        "line_at_bet": 5.5,
+        "odds_at_bet": 102,
+        "outcome": "loss",
+        "units_won": -2.0,
+        "units_risked": 2.0
+      }
     },
     {
       "pitcher": "Shane Baz",
@@ -181,7 +208,16 @@
         "result": "win"
       },
       "game_state": "final",
-      "actual_ks": 4
+      "actual_ks": 4,
+      "result": {
+        "final_k": 4,
+        "side_taken": "under",
+        "line_at_bet": 5.5,
+        "odds_at_bet": -132,
+        "outcome": "win",
+        "units_won": 1.5152,
+        "units_risked": 2.0
+      }
     },
     {
       "pitcher": "Shota Imanaga",
@@ -226,7 +262,16 @@
         "result": "loss"
       },
       "game_state": "final",
-      "actual_ks": 9
+      "actual_ks": 9,
+      "result": {
+        "final_k": 9,
+        "side_taken": "under",
+        "line_at_bet": 5.5,
+        "odds_at_bet": 115,
+        "outcome": "loss",
+        "units_won": -2.0,
+        "units_risked": 2.0
+      }
     },
     {
       "pitcher": "Aaron Ashby",
@@ -271,7 +316,16 @@
         "result": "loss"
       },
       "game_state": "final",
-      "actual_ks": 4
+      "actual_ks": 4,
+      "result": {
+        "final_k": 4,
+        "side_taken": "under",
+        "line_at_bet": 1.5,
+        "odds_at_bet": 110,
+        "outcome": "loss",
+        "units_won": -2.0,
+        "units_risked": 2.0
+      }
     },
     {
       "pitcher": "Kris Bubic",
@@ -316,7 +370,16 @@
         "result": "loss"
       },
       "game_state": "final",
-      "actual_ks": 11
+      "actual_ks": 11,
+      "result": {
+        "final_k": 11,
+        "side_taken": "under",
+        "line_at_bet": 5.5,
+        "odds_at_bet": 102,
+        "outcome": "loss",
+        "units_won": -0.0,
+        "units_risked": 0.0
+      }
     },
     {
       "pitcher": "Keider Montero",
@@ -361,7 +424,16 @@
         "movement_conf": 1.0
       },
       "game_state": "final",
-      "actual_ks": 7
+      "actual_ks": 7,
+      "result": {
+        "final_k": 7,
+        "side_taken": "over",
+        "line_at_bet": 3.5,
+        "odds_at_bet": 106,
+        "outcome": "win",
+        "units_won": 2.12,
+        "units_risked": 2.0
+      }
     },
     {
       "pitcher": "Tomoyuki Sugano",
@@ -406,7 +478,16 @@
         "movement_conf": 1.0
       },
       "game_state": "in_progress",
-      "actual_ks": 3
+      "actual_ks": 3,
+      "result": {
+        "final_k": 3,
+        "side_taken": "over",
+        "line_at_bet": 3.5,
+        "odds_at_bet": 110,
+        "outcome": "loss",
+        "units_won": -1.0,
+        "units_risked": 1.0
+      }
     },
     {
       "pitcher": "Tyler Glasnow",
@@ -581,7 +662,16 @@
         "result": "win"
       },
       "game_state": "final",
-      "actual_ks": 3
+      "actual_ks": 3,
+      "result": {
+        "final_k": 3,
+        "side_taken": "under",
+        "line_at_bet": 4.5,
+        "odds_at_bet": -166,
+        "outcome": "win",
+        "units_won": 1.2048,
+        "units_risked": 2.0
+      }
     },
     {
       "pitcher": "Steven Matz",
@@ -626,7 +716,16 @@
         "result": "loss"
       },
       "game_state": "final",
-      "actual_ks": 7
+      "actual_ks": 7,
+      "result": {
+        "final_k": 7,
+        "side_taken": "under",
+        "line_at_bet": 4.5,
+        "odds_at_bet": -118,
+        "outcome": "loss",
+        "units_won": -2.0,
+        "units_risked": 2.0
+      }
     },
     {
       "pitcher": "Emerson Hancock",
@@ -800,7 +899,16 @@
         "movement_conf": 0.0
       },
       "game_state": "final",
-      "actual_ks": 4
+      "actual_ks": 4,
+      "result": {
+        "final_k": 4,
+        "side_taken": "over",
+        "line_at_bet": 5.5,
+        "odds_at_bet": -112,
+        "outcome": "loss",
+        "units_won": -0.0,
+        "units_risked": 0.0
+      }
     },
     {
       "pitcher": "Chase Burns",
@@ -845,7 +953,16 @@
         "movement_conf": 0.0
       },
       "game_state": "final",
-      "actual_ks": 2
+      "actual_ks": 2,
+      "result": {
+        "final_k": 2,
+        "side_taken": "over",
+        "line_at_bet": 7.5,
+        "odds_at_bet": -158,
+        "outcome": "loss",
+        "units_won": -1.0,
+        "units_risked": 1.0
+      }
     },
     {
       "pitcher": "Dustin May",
@@ -890,7 +1007,16 @@
         "movement_conf": 0.0
       },
       "game_state": "final",
-      "actual_ks": 4
+      "actual_ks": 4,
+      "result": {
+        "final_k": 4,
+        "side_taken": "over",
+        "line_at_bet": 4.5,
+        "odds_at_bet": -130,
+        "outcome": "loss",
+        "units_won": -0.0,
+        "units_risked": 0.0
+      }
     },
     {
       "pitcher": "Walker Buehler",
@@ -935,7 +1061,16 @@
         "movement_conf": 1.0
       },
       "game_state": "in_progress",
-      "actual_ks": 4
+      "actual_ks": 4,
+      "result": {
+        "final_k": 4,
+        "side_taken": "over",
+        "line_at_bet": 4.5,
+        "odds_at_bet": 110,
+        "outcome": "loss",
+        "units_won": -2.0,
+        "units_risked": 2.0
+      }
     },
     {
       "pitcher": "Chris Paddack",
@@ -980,7 +1115,16 @@
         "movement_conf": 0.9
       },
       "game_state": "final",
-      "actual_ks": 4
+      "actual_ks": 4,
+      "result": {
+        "final_k": 4,
+        "side_taken": "over",
+        "line_at_bet": 3.5,
+        "odds_at_bet": -154,
+        "outcome": "win",
+        "units_won": 1.2987,
+        "units_risked": 2.0
+      }
     },
     {
       "pitcher": "Carmen Mlodzinski",
@@ -1025,7 +1169,16 @@
         "movement_conf": 1.0
       },
       "game_state": "final",
-      "actual_ks": 2
+      "actual_ks": 2,
+      "result": {
+        "final_k": 2,
+        "side_taken": "over",
+        "line_at_bet": 4.5,
+        "odds_at_bet": 120,
+        "outcome": "loss",
+        "units_won": -2.0,
+        "units_risked": 2.0
+      }
     },
     {
       "pitcher": "Jake Irvin",
@@ -1070,7 +1223,16 @@
         "movement_conf": 1.0
       },
       "game_state": "final",
-      "actual_ks": 5
+      "actual_ks": 5,
+      "result": {
+        "final_k": 5,
+        "side_taken": "over",
+        "line_at_bet": 4.5,
+        "odds_at_bet": 124,
+        "outcome": "win",
+        "units_won": 1.24,
+        "units_risked": 1.0
+      }
     },
     {
       "pitcher": "Davis Martin",
@@ -1116,7 +1278,16 @@
         "result": "win"
       },
       "game_state": "final",
-      "actual_ks": 3
+      "actual_ks": 3,
+      "result": {
+        "final_k": 3,
+        "side_taken": "over",
+        "line_at_bet": 3.5,
+        "odds_at_bet": -118,
+        "outcome": "loss",
+        "units_won": -2.0,
+        "units_risked": 2.0
+      }
     },
     {
       "pitcher": "Slade Cecconi",
@@ -1162,7 +1333,16 @@
         "result": "win"
       },
       "game_state": "final",
-      "actual_ks": 3
+      "actual_ks": 3,
+      "result": {
+        "final_k": 3,
+        "side_taken": "under",
+        "line_at_bet": 4.5,
+        "odds_at_bet": -152,
+        "outcome": "win",
+        "units_won": 1.3158,
+        "units_risked": 2.0
+      }
     },
     {
       "pitcher": "Simeon Woods Richardson",
@@ -1207,7 +1387,16 @@
         "result": "win"
       },
       "game_state": "final",
-      "actual_ks": 2
+      "actual_ks": 2,
+      "result": {
+        "final_k": 2,
+        "side_taken": "under",
+        "line_at_bet": 3.5,
+        "odds_at_bet": 116,
+        "outcome": "win",
+        "units_won": 2.32,
+        "units_risked": 2.0
+      }
     },
     {
       "pitcher": "J.T. Ginn",
@@ -1252,7 +1441,16 @@
         "result": "loss"
       },
       "game_state": "final",
-      "actual_ks": 4
+      "actual_ks": 4,
+      "result": {
+        "final_k": 4,
+        "side_taken": "under",
+        "line_at_bet": 3.5,
+        "odds_at_bet": 114,
+        "outcome": "loss",
+        "units_won": -2.0,
+        "units_risked": 2.0
+      }
     },
     {
       "pitcher": "Bryce Elder",
@@ -1297,7 +1495,16 @@
         "movement_conf": 1.0
       },
       "game_state": "final",
-      "actual_ks": 3
+      "actual_ks": 3,
+      "result": {
+        "final_k": 3,
+        "side_taken": "over",
+        "line_at_bet": 4.5,
+        "odds_at_bet": 110,
+        "outcome": "loss",
+        "units_won": -1.0,
+        "units_risked": 1.0
+      }
     }
   ]
 }

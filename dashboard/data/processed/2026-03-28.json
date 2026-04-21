@@ -37,7 +37,16 @@
         "movement_conf": 1.0,
         "result": "win"
       },
-      "actual_ks": 2
+      "actual_ks": 2,
+      "result": {
+        "final_k": 2,
+        "side_taken": "under",
+        "line_at_bet": 5.5,
+        "odds_at_bet": -120,
+        "outcome": "win",
+        "units_won": 0.8333,
+        "units_risked": 1.0
+      }
     },
     {
       "pitcher": "Eduardo Rodriguez",
@@ -73,7 +82,16 @@
         "win_prob": 0.207,
         "movement_conf": 1.0
       },
-      "actual_ks": 5
+      "actual_ks": 5,
+      "result": {
+        "final_k": 5,
+        "side_taken": "over",
+        "line_at_bet": 3.5,
+        "odds_at_bet": 111,
+        "outcome": "win",
+        "units_won": 2.22,
+        "units_risked": 2.0
+      }
     },
     {
       "pitcher": "Tyler Glasnow",
@@ -109,7 +127,16 @@
         "win_prob": 0.485,
         "movement_conf": 1.0
       },
-      "actual_ks": 6
+      "actual_ks": 6,
+      "result": {
+        "final_k": 6,
+        "side_taken": "over",
+        "line_at_bet": 6.5,
+        "odds_at_bet": 170,
+        "outcome": "loss",
+        "units_won": -2.0,
+        "units_risked": 2.0
+      }
     },
     {
       "pitcher": "Joey Cantillo",
@@ -145,7 +172,16 @@
         "win_prob": 0.352,
         "movement_conf": 1.0
       },
-      "actual_ks": 5
+      "actual_ks": 5,
+      "result": {
+        "final_k": 5,
+        "side_taken": "over",
+        "line_at_bet": 5.5,
+        "odds_at_bet": 117,
+        "outcome": "loss",
+        "units_won": -2.0,
+        "units_risked": 2.0
+      }
     },
     {
       "pitcher": "Bryan Woo",
@@ -181,7 +217,16 @@
         "movement_conf": 1.0,
         "result": "loss"
       },
-      "actual_ks": 9
+      "actual_ks": 9,
+      "result": {
+        "final_k": 9,
+        "side_taken": "under",
+        "line_at_bet": 6.5,
+        "odds_at_bet": -135,
+        "outcome": "loss",
+        "units_won": -2.0,
+        "units_risked": 2.0
+      }
     }
   ]
 }

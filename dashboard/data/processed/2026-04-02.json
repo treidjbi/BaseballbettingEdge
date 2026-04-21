@@ -41,7 +41,16 @@
         "win_prob": 0.147,
         "movement_conf": 1.0
       },
-      "actual_ks": 3
+      "actual_ks": 3,
+      "result": {
+        "final_k": 3,
+        "side_taken": "over",
+        "line_at_bet": 3.5,
+        "odds_at_bet": 127,
+        "outcome": "loss",
+        "units_won": -2.0,
+        "units_risked": 2.0
+      }
     },
     {
       "pitcher": "Cole Ragans",
@@ -119,7 +128,16 @@
         "movement_conf": 1.0,
         "result": "win"
       },
-      "actual_ks": 3
+      "actual_ks": 3,
+      "result": {
+        "final_k": 3,
+        "side_taken": "under",
+        "line_at_bet": 4.5,
+        "odds_at_bet": -120,
+        "outcome": "win",
+        "units_won": 0.8333,
+        "units_risked": 1.0
+      }
     },
     {
       "pitcher": "David Peterson",
@@ -159,7 +177,16 @@
         "win_prob": 0.404,
         "movement_conf": 1.0
       },
-      "actual_ks": 5
+      "actual_ks": 5,
+      "result": {
+        "final_k": 5,
+        "side_taken": "over",
+        "line_at_bet": 4.5,
+        "odds_at_bet": -135,
+        "outcome": "win",
+        "units_won": 0.0,
+        "units_risked": 0.0
+      }
     },
     {
       "pitcher": "Robbie Ray",
@@ -199,7 +226,16 @@
         "win_prob": 0.406,
         "movement_conf": 1.0
       },
-      "actual_ks": 7
+      "actual_ks": 7,
+      "result": {
+        "final_k": 7,
+        "side_taken": "over",
+        "line_at_bet": 5.5,
+        "odds_at_bet": -106,
+        "outcome": "win",
+        "units_won": 1.8868,
+        "units_risked": 2.0
+      }
     }
   ]
 }
