@@ -207,7 +207,9 @@
   async function fetchDateIndex() {
     try {
       const idx = await fetchJSON(`${RAW_BASE}/index.json`);
-      return Array.isArray(idx.dates) ? idx.dates : [];
+      if (!Array.isArray(idx.dates)) return [];
+      // Handle both old shape (strings) and new shape ({date, wins, losses})
+      return idx.dates.map(d => typeof d === 'string' ? { date: d, wins: 0, losses: 0 } : d);
     } catch {
       return [];
     }
@@ -234,7 +236,8 @@
       window.V2_DATA  = buildV2Data(todayJson);
       window.V2_PERF  = buildV2Perf(perfWithNotes);
       window.V2_STEAM = buildV2Steam(todayJson);
-      window.V2_DATES = dateIndex;
+      window.V2_DATES     = dateIndex;
+      window.V2_DATE_META = Object.fromEntries(dateIndex.map(d => [d.date, d]));
       window.V2_CURRENT_DATE = dateToLoad;
       window.V2_APP_STATE = (window.V2_DATA.pitchers.length === 0) ? 'empty' : 'ready';
     } catch (err) {
@@ -242,7 +245,8 @@
       window.V2_DATA  = { pitchers: [] };
       window.V2_PERF  = { total_picks: 0, total_units: 0, total_roi: 0, record: '0-0-0', rows: [] };
       window.V2_STEAM = { rows: [] };
-      window.V2_DATES = [];
+      window.V2_DATES     = [];
+      window.V2_DATE_META = {};
       window.V2_CURRENT_DATE = getAppDate();
       window.V2_APP_STATE = 'error';
       window.V2_APP_ERROR = String(err.message || err);

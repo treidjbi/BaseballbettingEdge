@@ -617,7 +617,8 @@ function PickCard({
 function DateBar() {
   const today = window.__v2GetAppDate ? window.__v2GetAppDate() : new Date().toISOString().slice(0, 10);
   const current = window.V2_CURRENT_DATE || today;
-  const archive = new Set(window.V2_DATES || []);
+  const meta = window.V2_DATE_META || {};
+  const archive = new Set(Object.keys(meta).concat((window.V2_DATES || []).map(d => typeof d === "string" ? d : d.date)));
   const parse = s => {
     const [y, m, d] = s.split("-").map(Number);
     return new Date(Date.UTC(y, m - 1, d));
@@ -635,7 +636,9 @@ function DateBar() {
       d: String(d.getUTCDate()).padStart(2, "0"),
       dow: dayNames[d.getUTCDay()],
       isToday: iso === today,
-      archived: archive.has(iso)
+      archived: archive.has(iso),
+      wins: meta[iso]?.wins ?? 0,
+      losses: meta[iso]?.losses ?? 0
     });
   }
   const navigate = iso => {
@@ -648,7 +651,9 @@ function DateBar() {
   }, entries.map(x => {
     const isActive = x.iso === current;
     const clickable = x.isToday || x.archived;
-    const cls = "v2-datepill" + (isActive ? " today" : "");
+    const isPast = x.archived && !x.isToday;
+    const dotCls = isPast && (x.wins > 0 || x.losses > 0) ? x.wins >= x.losses ? " past-win" : " past-loss" : "";
+    const cls = "v2-datepill" + (isActive ? " today" : "") + dotCls;
     return /*#__PURE__*/React.createElement("div", {
       key: x.iso,
       className: cls,
