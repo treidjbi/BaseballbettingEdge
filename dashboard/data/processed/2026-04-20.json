@@ -36,7 +36,8 @@
         "adj_ev": 0.013,
         "verdict": "LEAN",
         "win_prob": 0.569,
-        "movement_conf": 1.0
+        "movement_conf": 1.0,
+        "result": "loss"
       },
       "ev_under": {
         "ev": -0.0831,
@@ -46,7 +47,17 @@
         "movement_conf": 0.0
       },
       "data_complete": true,
-      "game_state": "in_progress"
+      "game_state": "in_progress",
+      "actual_ks": 5,
+      "result": {
+        "final_k": 5,
+        "side_taken": "over",
+        "line_at_bet": 5.5,
+        "odds_at_bet": -125,
+        "outcome": "loss",
+        "units_won": -0.0,
+        "units_risked": 0.0
+      }
     },
     {
       "pitcher": "Slade Cecconi",
@@ -88,10 +99,21 @@
         "adj_ev": 0.0291,
         "verdict": "LEAN",
         "win_prob": 0.46,
-        "movement_conf": 1.0
+        "movement_conf": 1.0,
+        "result": "win"
       },
       "data_complete": true,
-      "game_state": "final"
+      "game_state": "final",
+      "actual_ks": 2,
+      "result": {
+        "final_k": 2,
+        "side_taken": "under",
+        "line_at_bet": 3.5,
+        "odds_at_bet": 132,
+        "outcome": "win",
+        "units_won": 0.0,
+        "units_risked": 0.0
+      }
     },
     {
       "pitcher": "Justin Wrobleski",
@@ -133,10 +155,21 @@
         "adj_ev": 0.0531,
         "verdict": "FIRE 1u",
         "win_prob": 0.656,
-        "movement_conf": 0.7
+        "movement_conf": 0.7,
+        "result": "win"
       },
       "data_complete": true,
-      "game_state": "in_progress"
+      "game_state": "in_progress",
+      "actual_ks": 3,
+      "result": {
+        "final_k": 3,
+        "side_taken": "under",
+        "line_at_bet": 4.5,
+        "odds_at_bet": -138,
+        "outcome": "win",
+        "units_won": 0.7246,
+        "units_risked": 1.0
+      }
     },
     {
       "pitcher": "Seth Lugo",
@@ -178,10 +211,21 @@
         "adj_ev": 0.019,
         "verdict": "LEAN",
         "win_prob": 0.588,
-        "movement_conf": 1.0
+        "movement_conf": 1.0,
+        "result": "loss"
       },
       "data_complete": true,
-      "game_state": "final"
+      "game_state": "final",
+      "actual_ks": 7,
+      "result": {
+        "final_k": 7,
+        "side_taken": "under",
+        "line_at_bet": 5.5,
+        "odds_at_bet": -136,
+        "outcome": "loss",
+        "units_won": -0.0,
+        "units_risked": 0.0
+      }
     },
     {
       "pitcher": "Sonny Gray",
@@ -223,10 +267,21 @@
         "adj_ev": 0.1984,
         "verdict": "FIRE 2u",
         "win_prob": 0.782,
-        "movement_conf": 1.0
+        "movement_conf": 1.0,
+        "result": "win"
       },
       "data_complete": true,
-      "game_state": "final"
+      "game_state": "final",
+      "actual_ks": 2,
+      "result": {
+        "final_k": 2,
+        "side_taken": "under",
+        "line_at_bet": 5.5,
+        "odds_at_bet": -140,
+        "outcome": "win",
+        "units_won": 1.4286,
+        "units_risked": 2.0
+      }
     },
     {
       "pitcher": "Rhett Lowder",
@@ -306,7 +361,8 @@
         "adj_ev": 0.0888,
         "verdict": "FIRE 1u",
         "win_prob": 0.724,
-        "movement_conf": 1.0
+        "movement_conf": 1.0,
+        "result": "loss"
       },
       "ev_under": {
         "ev": -0.1587,
@@ -316,7 +372,17 @@
         "movement_conf": 1.0
       },
       "data_complete": true,
-      "game_state": "in_progress"
+      "game_state": "in_progress",
+      "actual_ks": 1,
+      "result": {
+        "final_k": 1,
+        "side_taken": "over",
+        "line_at_bet": 2.5,
+        "odds_at_bet": -174,
+        "outcome": "loss",
+        "units_won": -1.0,
+        "units_risked": 1.0
+      }
     },
     {
       "pitcher": "Jake Irvin",
@@ -351,7 +417,8 @@
         "adj_ev": -0.0054,
         "verdict": "PASS",
         "win_prob": 0.564,
-        "movement_conf": 1.0
+        "movement_conf": 1.0,
+        "result": "win"
       },
       "ev_under": {
         "ev": -0.0636,
@@ -361,7 +428,17 @@
         "movement_conf": 1.0
       },
       "data_complete": true,
-      "game_state": "final"
+      "game_state": "final",
+      "actual_ks": 4,
+      "result": {
+        "final_k": 4,
+        "side_taken": "over",
+        "line_at_bet": 3.5,
+        "odds_at_bet": -117,
+        "outcome": "win",
+        "units_won": 0.0,
+        "units_risked": 0.0
+      }
     },
     {
       "pitcher": "Max Meyer",
@@ -403,10 +480,21 @@
         "adj_ev": 0.1016,
         "verdict": "FIRE 2u",
         "win_prob": 0.726,
-        "movement_conf": 1.0
+        "movement_conf": 1.0,
+        "result": "loss"
       },
       "data_complete": true,
-      "game_state": "final"
+      "game_state": "final",
+      "actual_ks": 8,
+      "result": {
+        "final_k": 8,
+        "side_taken": "under",
+        "line_at_bet": 5.5,
+        "odds_at_bet": -166,
+        "outcome": "loss",
+        "units_won": -2.0,
+        "units_risked": 2.0
+      }
     },
     {
       "pitcher": "Jesse Scholtens",
@@ -448,10 +536,21 @@
         "adj_ev": 0.1258,
         "verdict": "FIRE 2u",
         "win_prob": 0.656,
-        "movement_conf": 1.0
+        "movement_conf": 1.0,
+        "result": "loss"
       },
       "data_complete": true,
-      "game_state": "final"
+      "game_state": "final",
+      "actual_ks": 6,
+      "result": {
+        "final_k": 6,
+        "side_taken": "under",
+        "line_at_bet": 4.5,
+        "odds_at_bet": -104,
+        "outcome": "loss",
+        "units_won": -2.0,
+        "units_risked": 2.0
+      }
     },
     {
       "pitcher": "Aaron Nola",
@@ -486,7 +585,8 @@
         "adj_ev": 0.0558,
         "verdict": "FIRE 1u",
         "win_prob": 0.519,
-        "movement_conf": 1.0
+        "movement_conf": 1.0,
+        "result": "loss"
       },
       "ev_under": {
         "ev": -0.1251,
@@ -496,7 +596,17 @@
         "movement_conf": 1.0
       },
       "data_complete": true,
-      "game_state": "final"
+      "game_state": "final",
+      "actual_ks": 5,
+      "result": {
+        "final_k": 5,
+        "side_taken": "over",
+        "line_at_bet": 5.5,
+        "odds_at_bet": 116,
+        "outcome": "loss",
+        "units_won": -1.0,
+        "units_risked": 1.0
+      }
     },
     {
       "pitcher": "Dylan Cease",
@@ -538,10 +648,21 @@
         "adj_ev": 0.0148,
         "verdict": "LEAN",
         "win_prob": 0.556,
-        "movement_conf": 1.0
+        "movement_conf": 1.0,
+        "result": "loss"
       },
       "data_complete": true,
-      "game_state": "in_progress"
+      "game_state": "in_progress",
+      "actual_ks": 12,
+      "result": {
+        "final_k": 12,
+        "side_taken": "under",
+        "line_at_bet": 7.5,
+        "odds_at_bet": -118,
+        "outcome": "loss",
+        "units_won": -0.0,
+        "units_risked": 0.0
+      }
     },
     {
       "pitcher": "Jack Flaherty",
@@ -583,10 +704,21 @@
         "adj_ev": 0.1429,
         "verdict": "FIRE 2u",
         "win_prob": 0.619,
-        "movement_conf": 1.0
+        "movement_conf": 1.0,
+        "result": "win"
       },
       "data_complete": true,
-      "game_state": "final"
+      "game_state": "final",
+      "actual_ks": 3,
+      "result": {
+        "final_k": 3,
+        "side_taken": "under",
+        "line_at_bet": 5.5,
+        "odds_at_bet": 110,
+        "outcome": "win",
+        "units_won": 2.2,
+        "units_risked": 2.0
+      }
     },
     {
       "pitcher": "Kyle Bradish",
@@ -628,10 +760,21 @@
         "adj_ev": 0.0343,
         "verdict": "FIRE 1u",
         "win_prob": 0.466,
-        "movement_conf": 0.7
+        "movement_conf": 0.7,
+        "result": "loss"
       },
       "data_complete": true,
-      "game_state": "final"
+      "game_state": "final",
+      "actual_ks": 7,
+      "result": {
+        "final_k": 7,
+        "side_taken": "under",
+        "line_at_bet": 4.5,
+        "odds_at_bet": 124,
+        "outcome": "loss",
+        "units_won": -0.0,
+        "units_risked": 0.0
+      }
     },
     {
       "pitcher": "Colin Rea",
@@ -673,10 +816,21 @@
         "adj_ev": 0.1253,
         "verdict": "FIRE 2u",
         "win_prob": 0.732,
-        "movement_conf": 1.0
+        "movement_conf": 1.0,
+        "result": "loss"
       },
       "data_complete": true,
-      "game_state": "final"
+      "game_state": "final",
+      "actual_ks": 5,
+      "result": {
+        "final_k": 5,
+        "side_taken": "under",
+        "line_at_bet": 4.5,
+        "odds_at_bet": -154,
+        "outcome": "loss",
+        "units_won": -2.0,
+        "units_risked": 2.0
+      }
     },
     {
       "pitcher": "J.T. Ginn",
@@ -718,10 +872,21 @@
         "adj_ev": 0.32,
         "verdict": "FIRE 2u",
         "win_prob": 0.885,
-        "movement_conf": 1.0
+        "movement_conf": 1.0,
+        "result": "loss"
       },
       "data_complete": true,
-      "game_state": "in_progress"
+      "game_state": "in_progress",
+      "actual_ks": 6,
+      "result": {
+        "final_k": 6,
+        "side_taken": "under",
+        "line_at_bet": 4.5,
+        "odds_at_bet": -130,
+        "outcome": "loss",
+        "units_won": -2.0,
+        "units_risked": 2.0
+      }
     },
     {
       "pitcher": "Bryce Elder",
@@ -756,7 +921,8 @@
         "adj_ev": 0.061,
         "verdict": "FIRE 1u",
         "win_prob": 0.496,
-        "movement_conf": 1.0
+        "movement_conf": 1.0,
+        "result": "win"
       },
       "ev_under": {
         "ev": -0.1308,
@@ -766,7 +932,17 @@
         "movement_conf": 1.0
       },
       "data_complete": true,
-      "game_state": "final"
+      "game_state": "final",
+      "actual_ks": 6,
+      "result": {
+        "final_k": 6,
+        "side_taken": "over",
+        "line_at_bet": 4.5,
+        "odds_at_bet": 130,
+        "outcome": "win",
+        "units_won": 1.3,
+        "units_risked": 1.0
+      }
     },
     {
       "pitcher": "Emerson Hancock",
@@ -846,7 +1022,8 @@
         "adj_ev": 0.1444,
         "verdict": "FIRE 2u",
         "win_prob": 0.76,
-        "movement_conf": 0.8
+        "movement_conf": 0.8,
+        "result": "loss"
       },
       "ev_under": {
         "ev": -0.2505,
@@ -856,7 +1033,17 @@
         "movement_conf": 1.0
       },
       "data_complete": true,
-      "game_state": "final"
+      "game_state": "final",
+      "actual_ks": 3,
+      "result": {
+        "final_k": 3,
+        "side_taken": "over",
+        "line_at_bet": 4.5,
+        "odds_at_bet": -138,
+        "outcome": "loss",
+        "units_won": -2.0,
+        "units_risked": 2.0
+      }
     },
     {
       "pitcher": "Michael McGreevy",
@@ -898,10 +1085,21 @@
         "adj_ev": 0.0177,
         "verdict": "LEAN",
         "win_prob": 0.656,
-        "movement_conf": 0.55
+        "movement_conf": 0.55,
+        "result": "win"
       },
       "data_complete": true,
-      "game_state": "final"
+      "game_state": "final",
+      "actual_ks": 3,
+      "result": {
+        "final_k": 3,
+        "side_taken": "under",
+        "line_at_bet": 3.5,
+        "odds_at_bet": -166,
+        "outcome": "win",
+        "units_won": 0.0,
+        "units_risked": 0.0
+      }
     }
   ]
 }

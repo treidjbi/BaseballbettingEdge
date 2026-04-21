@@ -1,91 +1,93 @@
 {
-  "generated_at": "2026-04-20T11:19:54Z",
-  "total_picks": 267,
-  "last_calibrated": "2026-04-20T11:19:54Z",
-  "calibration_sample": 267,
+  "generated_at": "2026-04-21T11:08:37Z",
+  "total_picks": 285,
+  "last_calibrated": "2026-04-21T11:08:37Z",
+  "calibration_sample": 285,
   "rows": [
     {
       "verdict": "FIRE 2u",
       "side": "over",
-      "picks": 30,
+      "picks": 31,
       "wins": 13,
-      "losses": 17,
+      "losses": 18,
       "pushes": 0,
-      "win_pct": 0.433,
-      "roi": -13.9,
-      "avg_ev": 0.1587
+      "win_pct": 0.419,
+      "roi": -16.67,
+      "avg_ev": 0.1583
     },
     {
       "verdict": "FIRE 2u",
       "side": "under",
-      "picks": 91,
-      "wins": 55,
-      "losses": 36,
+      "picks": 97,
+      "wins": 57,
+      "losses": 40,
       "pushes": 0,
-      "win_pct": 0.604,
-      "roi": 14.59,
-      "avg_ev": 0.1906
+      "win_pct": 0.588,
+      "roi": 11.44,
+      "avg_ev": 0.1895
     },
     {
       "verdict": "FIRE 1u",
       "side": "over",
-      "picks": 41,
-      "wins": 24,
-      "losses": 17,
+      "picks": 44,
+      "wins": 25,
+      "losses": 19,
       "pushes": 0,
-      "win_pct": 0.585,
-      "roi": 15.26,
-      "avg_ev": 0.0568
+      "win_pct": 0.568,
+      "roi": 12.63,
+      "avg_ev": 0.0576
     },
     {
       "verdict": "FIRE 1u",
       "side": "under",
-      "picks": 58,
-      "wins": 35,
+      "picks": 59,
+      "wins": 36,
       "losses": 23,
       "pushes": 0,
-      "win_pct": 0.603,
-      "roi": 16.36,
+      "win_pct": 0.61,
+      "roi": 17.31,
       "avg_ev": 0.0556
     },
     {
       "verdict": "LEAN",
       "side": "over",
-      "picks": 16,
-      "wins": 5,
-      "losses": 11,
+      "picks": 18,
+      "wins": 6,
+      "losses": 12,
       "pushes": 0,
-      "win_pct": 0.312,
-      "roi": -41.8,
-      "avg_ev": 0.0184
+      "win_pct": 0.333,
+      "roi": -37.96,
+      "avg_ev": 0.0181
     },
     {
       "verdict": "LEAN",
       "side": "under",
-      "picks": 31,
-      "wins": 18,
-      "losses": 13,
+      "picks": 36,
+      "wins": 20,
+      "losses": 16,
       "pushes": 0,
-      "win_pct": 0.581,
-      "roi": 11.67,
+      "win_pct": 0.556,
+      "roi": 7.05,
       "avg_ev": 0.0189
     }
   ],
   "lambda_accuracy": {
     "avg_predicted": 4.94,
-    "avg_actual": 4.6,
-    "bias": -0.34
+    "avg_actual": 4.62,
+    "bias": -0.32
   },
   "params": {
     "weight_season_cap": 0.4,
-    "weight_recent": 0.097,
+    "weight_recent": 0.11,
     "ump_scale": 1.0,
-    "lambda_bias": -0.342,
+    "lambda_bias": -0.321,
     "swstr_k9_scale": 30.0,
-    "updated_at": "2026-04-20T11:19:54Z",
-    "sample_size": 267,
+    "updated_at": "2026-04-21T11:08:37Z",
+    "sample_size": 285,
     "formula_change_date": "2026-04-08",
     "calibration_notes": [
+      "[2026-04-21] Lambda bias adjusted -0.342 \u2192 -0.321 (model was systematically over-predicting Ks)",
+      "[2026-04-21] K/9 blend weights updated: season 40% \u2192 40%, recent 10% \u2192 11%",
       "[2026-04-20] Lambda bias adjusted -0.414 \u2192 -0.342 (model was systematically over-predicting Ks)",
       "[2026-04-20] K/9 blend weights updated: season 40% \u2192 40%, recent 12% \u2192 10%",
       "[2026-04-19] Lambda bias adjusted -0.446 \u2192 -0.414 (model was systematically over-predicting Ks)",
@@ -103,12 +105,12 @@
       "[2026-04-12] Lambda bias adjusted -0.177 \u2192 -0.259 (model was systematically over-predicting Ks)",
       "[2026-04-12] K/9 blend weights updated: season 40% \u2192 40%, recent 8% \u2192 6%",
       "[2026-04-11] Lambda bias adjusted -0.109 \u2192 -0.177 (model was systematically over-predicting Ks)",
-      "[2026-04-11] Lambda bias adjusted -0.057 \u2192 -0.109 (model was systematically over-predicting Ks)",
-      "[2026-04-10] Lambda bias adjusted +0.000 \u2192 -0.057 (model was systematically over-predicting Ks)",
-      "[2026-04-08] FORMULA CHANGE: SwStr% multiplier removed (was double-counting K ability already in K/9). Replaced with career-relative delta (additive K/9 adjustment). Lambda bias reset to 0.0 \u2014 recalibrates from scratch under new formula."
+      "[2026-04-11] Lambda bias adjusted -0.057 \u2192 -0.109 (model was systematically over-predicting Ks)"
     ]
   },
   "calibration_notes": [
+    "[2026-04-21] Lambda bias adjusted -0.342 \u2192 -0.321 (model was systematically over-predicting Ks)",
+    "[2026-04-21] K/9 blend weights updated: season 40% \u2192 40%, recent 10% \u2192 11%",
     "[2026-04-20] Lambda bias adjusted -0.414 \u2192 -0.342 (model was systematically over-predicting Ks)",
     "[2026-04-20] K/9 blend weights updated: season 40% \u2192 40%, recent 12% \u2192 10%",
     "[2026-04-19] Lambda bias adjusted -0.446 \u2192 -0.414 (model was systematically over-predicting Ks)",
@@ -126,8 +128,6 @@
     "[2026-04-12] Lambda bias adjusted -0.177 \u2192 -0.259 (model was systematically over-predicting Ks)",
     "[2026-04-12] K/9 blend weights updated: season 40% \u2192 40%, recent 8% \u2192 6%",
     "[2026-04-11] Lambda bias adjusted -0.109 \u2192 -0.177 (model was systematically over-predicting Ks)",
-    "[2026-04-11] Lambda bias adjusted -0.057 \u2192 -0.109 (model was systematically over-predicting Ks)",
-    "[2026-04-10] Lambda bias adjusted +0.000 \u2192 -0.057 (model was systematically over-predicting Ks)",
-    "[2026-04-08] FORMULA CHANGE: SwStr% multiplier removed (was double-counting K ability already in K/9). Replaced with career-relative delta (additive K/9 adjustment). Lambda bias reset to 0.0 \u2014 recalibrates from scratch under new formula."
+    "[2026-04-11] Lambda bias adjusted -0.057 \u2192 -0.109 (model was systematically over-predicting Ks)"
   ]
 }
