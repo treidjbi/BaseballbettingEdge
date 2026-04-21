@@ -2,7 +2,7 @@
 [build]
   publish = "dashboard"
   functions = "netlify/functions"
-  ignore = "git diff --quiet ${CACHED_COMMIT_REF:-HEAD^1} HEAD -- dashboard/index.html dashboard/v2.html dashboard/v2-app.jsx dashboard/v2-data.js dashboard/sw.js dashboard/manifest.json dashboard/icon.svg netlify/functions/ netlify.toml"
+  ignore = "git diff --quiet ${CACHED_COMMIT_REF:-HEAD^1} HEAD -- dashboard/index.html dashboard/v2.html dashboard/v2-app.jsx dashboard/v2-app.js dashboard/v2-data.js dashboard/sw.js dashboard/manifest.json dashboard/icon.svg netlify/functions/ netlify.toml"
 
 [build.environment]
   PYTHON_VERSION = "3.11"
