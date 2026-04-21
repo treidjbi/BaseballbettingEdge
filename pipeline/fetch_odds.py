@@ -161,9 +161,10 @@ def _parse_event_k_props(event: dict) -> list:
             if ref_book_id in chosen["under"]:
                 ref_over  = chosen["over"][ref_book_id]
                 ref_under = chosen["under"][ref_book_id]
+                under_book_name = ref_book_name
             else:
                 # Ref book has over but not under — use ref book for over, best available for under
-                under_book_id, _ = _select_ref_book(chosen["under"])
+                under_book_id, under_book_name = _select_ref_book(chosen["under"])
                 if under_book_id is None:
                     continue
                 ref_over  = chosen["over"][ref_book_id]
@@ -190,6 +191,7 @@ def _parse_event_k_props(event: dict) -> list:
                 "opening_line":       main_val,
                 "ref_book":           ref_book_name,
                 "best_over_book":     ref_book_name,
+                "best_under_book":    under_book_name,
                 "best_over_odds":     ref_over_price,
                 "best_under_odds":    ref_under_price,
                 "opening_over_odds":  opening_over,

@@ -33,7 +33,8 @@ logging.basicConfig(
 )
 log = logging.getLogger(__name__)
 
-OUTPUT_PATH   = Path(__file__).parent.parent / "dashboard" / "data" / "processed" / "today.json"
+OUTPUT_PATH    = Path(__file__).parent.parent / "dashboard" / "data" / "processed" / "today.json"
+HISTORY_PATH   = Path(__file__).parent.parent / "data" / "picks_history.json"
 
 _batter_stats_cache: dict | None = None
 
@@ -208,9 +209,11 @@ def _write_dated_archive_only(records: list, date_str: str, props_available: boo
         {p.stem for p in base_dir.glob("[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9].json")},
         reverse=True,
     )[:60]
+    results_by_date = _date_results_from_history()
+    date_entries = [{"date": d, **results_by_date.get(d, {"wins": 0, "losses": 0})} for d in all_dates]
     try:
         with open(index_path, "w") as f:
-            json.dump({"dates": all_dates}, f, indent=2)
+            json.dump({"dates": date_entries}, f, indent=2)
         log.info("Updated index.json for preview (%d entries)", len(all_dates))
     except Exception as e:
         log.warning("Failed to write index.json: %s", e)
@@ -661,6 +664,29 @@ def _write_output(date_str: str, records: list, props_available: bool) -> None:
     _write_archive(output, date_str)
 
 
+def _date_results_from_history() -> dict:
+    """Return {date_str: {"wins": N, "losses": N}} from picks_history.json.
+    Only graded FIRE picks count (staked picks). Fails silently → empty dict."""
+    try:
+        with open(HISTORY_PATH) as f:
+            history = json.load(f)
+    except Exception:
+        return {}
+    by_date: dict[str, dict] = {}
+    for pick in history:
+        date = pick.get("date")
+        result = pick.get("result")
+        verdict = pick.get("verdict", "")
+        if not date or result not in ("win", "loss") or not verdict.startswith("FIRE"):
+            continue
+        entry = by_date.setdefault(date, {"wins": 0, "losses": 0})
+        if result == "win":
+            entry["wins"] += 1
+        else:
+            entry["losses"] += 1
+    return by_date
+
+
 def _write_archive(output: dict, run_date_str: str) -> None:
     """
     Groups pitchers by their ET game date and writes one YYYY-MM-DD.json per
@@ -718,9 +744,11 @@ def _write_archive(output: dict, run_date_str: str) -> None:
         {p.stem for p in base_dir.glob("[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9].json")},
         reverse=True
     )[:60]
+    results_by_date = _date_results_from_history()
+    date_entries = [{"date": d, **results_by_date.get(d, {"wins": 0, "losses": 0})} for d in all_dates]
     try:
         with open(index_path, "w") as f:
-            json.dump({"dates": all_dates}, f, indent=2)
+            json.dump({"dates": date_entries}, f, indent=2)
         log.info("Updated index.json (%d entries)", len(all_dates))
     except Exception as e:
         log.warning("Failed to write index.json: %s", e)
