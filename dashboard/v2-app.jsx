@@ -31,6 +31,7 @@ const Icon = {
   down:  <svg viewBox="0 0 10 10" width="10" height="10" fill="currentColor" aria-hidden="true"><path d="M5 8.5L1 2h8z"/></svg>,
   live:  <svg viewBox="0 0 8 8" width="8" height="8" fill="currentColor" aria-hidden="true"><circle cx="4" cy="4" r="4"/></svg>,
   bell:  <svg viewBox="0 0 16 16" width="15" height="15" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M3.5 12h9l-1.2-1.6V7.2a3.3 3.3 0 0 0-2.6-3.3v-.4a.7.7 0 0 0-1.4 0v.4A3.3 3.3 0 0 0 4.7 7.2v3.2z"/><path d="M6.5 13.5a1.5 1.5 0 0 0 3 0"/></svg>,
+  bellOn: <svg viewBox="0 0 16 16" width="15" height="15" fill="currentColor" stroke="none"><path d="M8 1.5a.7.7 0 0 0-.7.7v.4a3.3 3.3 0 0 0-2.6 3.3v3.2L3.5 10.4V12h9v-1.6l-1.2-1.6V7.2a3.3 3.3 0 0 0-2.6-3.3v-.4A.7.7 0 0 0 8 1.5z"/><path d="M6.5 13.5a1.5 1.5 0 0 0 3 0z"/><line x1="1" y1="2" x2="3" y2="4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/><line x1="15" y1="2" x2="13" y2="4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/><line x1="8" y1="0" x2="8" y2="1.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/></svg>,
   moon:  <svg viewBox="0 0 16 16" width="15" height="15" fill="currentColor"><path d="M8 1.5A6.5 6.5 0 1 0 14.5 8 5 5 0 0 1 8 1.5z"/></svg>,
   sun:   <svg viewBox="0 0 16 16" width="15" height="15" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"><circle cx="8" cy="8" r="2.8" fill="currentColor"/><path d="M8 1v1.5M8 13.5V15M1 8h1.5M13.5 8H15M3 3l1 1M12 12l1 1M13 3l-1 1M4 12l-1 1"/></svg>,
   refresh:<svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M14 3v4h-4"/><path d="M13.5 7A6 6 0 1 0 14 10"/></svg>,
@@ -38,6 +39,72 @@ const Icon = {
   steam: <svg viewBox="0 0 20 20" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round"><path d="M5 14l4-4 3 3 4-5"/><path d="M13 8h3v3"/></svg>,
   results:<svg viewBox="0 0 20 20" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round"><rect x="3.5" y="9" width="3.5" height="7.5" rx=".6"/><rect x="8.5" y="5" width="3.5" height="11.5" rx=".6"/><rect x="13.5" y="11" width="3.5" height="5.5" rx=".6"/></svg>,
 };
+
+function urlBase64ToUint8Array(b64) {
+  const padding = '='.repeat((4 - b64.length % 4) % 4);
+  const base64 = (b64 + padding).replace(/-/g, '+').replace(/_/g, '/');
+  const raw = atob(base64);
+  return Uint8Array.from([...raw].map(c => c.charCodeAt(0)));
+}
+
+function useNotifications() {
+  const [supported, setSupported] = useState(false);
+  const [subscribed, setSubscribed] = useState(false);
+  const swRef = React.useRef(null);
+
+  React.useEffect(() => {
+    if (!('serviceWorker' in navigator) || !('PushManager' in window)) return;
+    navigator.serviceWorker.register('/sw.js')
+      .then(reg => {
+        swRef.current = reg;
+        setSupported(true);
+        return reg.pushManager.getSubscription();
+      })
+      .then(existing => setSubscribed(existing != null))
+      .catch(() => {});
+  }, []);
+
+  async function toggleNotify() {
+    const reg = swRef.current;
+    if (!reg) return;
+    const existing = await reg.pushManager.getSubscription();
+    if (existing) {
+      await existing.unsubscribe();
+      fetch('/.netlify/functions/save-subscription', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ endpoint: existing.endpoint }),
+      }).catch(() => {});
+      setSubscribed(false);
+      return;
+    }
+    if (Notification.permission === 'denied') {
+      alert('Notifications are blocked. Please allow them in your browser settings.');
+      return;
+    }
+    let vapidPublicKey;
+    try {
+      const res = await fetch('/.netlify/functions/save-subscription');
+      vapidPublicKey = (await res.json()).vapidPublicKey;
+    } catch { return; }
+    const permission = await Notification.requestPermission();
+    if (permission !== 'granted') return;
+    try {
+      const sub = await reg.pushManager.subscribe({
+        userVisibleOnly: true,
+        applicationServerKey: urlBase64ToUint8Array(vapidPublicKey),
+      });
+      fetch('/.netlify/functions/save-subscription', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(sub),
+      }).catch(() => {});
+      setSubscribed(true);
+    } catch {}
+  }
+
+  return { supported, subscribed, toggleNotify };
+}
 
 function bestSide(p) {
   if (p.ev_over.adj_ev >= p.ev_under.adj_ev) {
@@ -653,6 +720,7 @@ function GradingSummary({ pitchers }) {
 function PicksTab({ pitchersOverride }) {
   const [filter, setFilter] = useState("ALL");
   const [detail, setDetail] = useState(null);
+  const { supported: notifySupported, subscribed: notifyOn, toggleNotify } = useNotifications();
   const pitchers = pitchersOverride ?? window.V2_DATA.pitchers;
   const past = isPastSlate();
   const filtered = useMemo(() => {
@@ -695,9 +763,15 @@ function PicksTab({ pitchersOverride }) {
             </div>
           </div>
           <div className="v2-header-actions">
-            <button className="v2-icon-btn active" title="Notifications">
-              {Icon.bell}
-            </button>
+            {notifySupported && (
+              <button
+                className={`v2-icon-btn${notifyOn ? " active" : ""}`}
+                title={notifyOn ? "Notifications on — click to disable" : "Enable push notifications"}
+                onClick={toggleNotify}
+              >
+                {notifyOn ? Icon.bellOn : Icon.bell}
+              </button>
+            )}
             <button className="v2-icon-btn" title="Refresh" onClick={() => location.reload()}>
               {Icon.refresh}
             </button>
