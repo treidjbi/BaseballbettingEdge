@@ -7,5 +7,17 @@
 [build.environment]
   PYTHON_VERSION = "3.11"
 
+[[redirects]]
+  from = "/"
+  to = "/v2.html"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/legacy"
+  to = "/index.html"
+  status = 200
+  force = true
+
 [[plugins]]
   package = "@netlify/plugin-functions-install-core"
