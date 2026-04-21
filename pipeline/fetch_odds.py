@@ -214,6 +214,11 @@ def _parse_event_k_props(event: dict) -> list:
                 "best_under_odds":    ref_under_price,
                 "opening_over_odds":  opening_over,
                 "opening_under_odds": opening_under,
+                # Opening is within-day (TheRundown's price_delta is start-of-current-trading-day).
+                # run_pipeline._apply_preview_openings promotes to "preview" when the 7pm
+                # overnight baseline is available. Distinct sources have different semantics
+                # for movement_conf — see calc_movement_confidence.
+                "opening_odds_source": "first_seen",
                 "book_odds":          book_odds or None,
             })
 

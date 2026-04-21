@@ -343,6 +343,11 @@ def _apply_preview_openings(props: list, preview_lines: dict) -> None:
             continue
         prop["opening_over_odds"]  = prev["over_odds"]
         prop["opening_under_odds"] = prev["under_odds"]
+        # Promote source so calc_movement_confidence trusts this as a true
+        # overnight baseline. On skip paths above (no match / k_line shift),
+        # source stays whatever fetch_odds tagged ("first_seen"), which gates
+        # movement_conf to a no-op haircut.
+        prop["opening_odds_source"] = "preview"
         applied += 1
     log.info("Applied 7pm preview openings to %d/%d pitchers", applied, len(props))
 

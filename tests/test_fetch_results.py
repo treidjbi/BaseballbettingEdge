@@ -1188,3 +1188,134 @@ class TestExportLoadRoundTrip:
         assert row["pitcher_throws"] == "L"
         assert row["best_over_odds"] == -115
         assert abs(row["swstr_pct"] - 0.130) < 0.001
+
+
+class TestOpeningOddsSource:
+    """Task A2: opening_odds_source ∈ {'preview', 'first_seen'} or NULL for
+    pre-migration legacy rows. INSERT captures whatever source was tagged at
+    decision time; subsequent refreshes never overwrite it (same rule as
+    opening_*_odds). Export/load preserves the field (legacy rows round-trip
+    as None, not coerced to a default)."""
+
+    def _make_today_json(self, tmp_path, source="first_seen"):
+        """Build a minimal today.json with one FIRE 1u over pick and the given
+        opening_odds_source tag."""
+        base = {
+            "date": "2026-04-15",
+            "props_available": True,
+            "pitchers": [{
+                "pitcher": "Gerrit Cole", "team": "New York Yankees",
+                "opp_team": "Boston Red Sox",
+                "pitcher_throws": "R",
+                "game_time": "2026-04-15T23:05:00Z",
+                "k_line": 7.5,
+                "raw_lambda": 7.2, "lambda": 7.2,
+                "season_k9": 9.1, "recent_k9": 8.8, "career_k9": 9.0,
+                "avg_ip": 5.8, "opp_k_rate": 0.235, "ump_k_adj": 0.2,
+                "swstr_delta_k9": 0.15, "swstr_pct": 0.132, "career_swstr_pct": 0.120,
+                "best_over_odds": -115, "best_under_odds": -105,
+                "opening_over_odds": -110, "opening_under_odds": -110,
+                "opening_odds_source": source,
+                "ref_book": "FanDuel",
+                "lineup_used": False,
+                "ev_over":  {"ev": 0.05, "adj_ev": 0.05, "verdict": "FIRE 1u",
+                             "win_prob": 0.58, "movement_conf": 1.0},
+                "ev_under": {"ev": -0.02, "adj_ev": -0.02, "verdict": "PASS",
+                             "win_prob": 0.42, "movement_conf": 1.0},
+            }],
+        }
+        p = tmp_path / "today.json"
+        p.write_text(json.dumps(base))
+        return p
+
+    def test_seed_picks_inserts_opening_odds_source(self, tmp_db, tmp_path):
+        db_path, fr = tmp_db
+        today = self._make_today_json(tmp_path, source="first_seen")
+        fr.seed_picks(today)
+
+        conn = fr.get_db()
+        row = conn.execute(
+            "SELECT opening_odds_source FROM picks "
+            "WHERE pitcher='Gerrit Cole' AND side='over'"
+        ).fetchone()
+        conn.close()
+        assert row["opening_odds_source"] == "first_seen"
+
+    def test_seed_picks_inserts_opening_odds_source_preview(self, tmp_db, tmp_path):
+        db_path, fr = tmp_db
+        today = self._make_today_json(tmp_path, source="preview")
+        fr.seed_picks(today)
+
+        conn = fr.get_db()
+        row = conn.execute(
+            "SELECT opening_odds_source FROM picks "
+            "WHERE pitcher='Gerrit Cole' AND side='over'"
+        ).fetchone()
+        conn.close()
+        assert row["opening_odds_source"] == "preview"
+
+    def test_seed_picks_update_does_not_overwrite_opening_odds_source(
+            self, tmp_db, tmp_path):
+        """Same invariant as opening_*_odds: once captured on INSERT, the source
+        stays frozen. Simulates a later 6am/refresh run where preview_lines
+        was absent (and fetch_odds therefore emitted source='first_seen') —
+        the DB must still show 'preview' from the original insert."""
+        db_path, fr = tmp_db
+        today_v1 = self._make_today_json(tmp_path, source="preview")
+        fr.seed_picks(today_v1)
+
+        today_v2 = self._make_today_json(tmp_path, source="first_seen")
+        fr.seed_picks(today_v2)
+
+        conn = fr.get_db()
+        row = conn.execute(
+            "SELECT opening_odds_source FROM picks "
+            "WHERE pitcher='Gerrit Cole' AND side='over'"
+        ).fetchone()
+        conn.close()
+        assert row["opening_odds_source"] == "preview", (
+            "opening_odds_source must stay frozen to the first-seen value, "
+            "same as opening_*_odds"
+        )
+
+    def test_export_db_to_history_includes_opening_odds_source(
+            self, tmp_db, tmp_path):
+        """Export round-trips opening_odds_source to picks_history.json.
+        Legacy rows (source IS NULL) must land as None, not 'first_seen' —
+        that's how diagnostics tell pre-migration rows apart."""
+        db_path, fr = tmp_db
+        history = tmp_path / "history.json"
+
+        conn = fr.get_db()
+        # Row 1: tagged source
+        conn.execute("""
+            INSERT INTO picks
+            (date, pitcher, team, side, k_line, verdict, ev, adj_ev,
+             raw_lambda, applied_lambda, odds, movement_conf,
+             opening_odds_source)
+            VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)
+        """, (
+            "2026-04-15", "Tagged Pitcher", "NYY", "over", 7.5, "FIRE 1u",
+            0.05, 0.05, 7.2, 7.2, -115, 1.0,
+            "first_seen",
+        ))
+        # Row 2: legacy — no source
+        conn.execute("""
+            INSERT INTO picks
+            (date, pitcher, team, side, k_line, verdict, ev, adj_ev,
+             raw_lambda, applied_lambda, odds, movement_conf)
+            VALUES (?,?,?,?,?,?,?,?,?,?,?,?)
+        """, (
+            "2026-04-01", "Legacy Pitcher", "NYY", "over", 6.5, "LEAN",
+            0.02, 0.02, 6.2, 6.2, -110, 1.0,
+        ))
+        conn.commit()
+        conn.close()
+
+        fr.export_db_to_history(history)
+        with open(history) as f:
+            exported = json.load(f)
+
+        by_name = {p["pitcher"]: p for p in exported}
+        assert by_name["Tagged Pitcher"]["opening_odds_source"] == "first_seen"
+        assert by_name["Legacy Pitcher"]["opening_odds_source"] is None

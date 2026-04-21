@@ -65,6 +65,7 @@ def init_db() -> None:
                 best_under_odds INTEGER,
                 opening_over_odds  INTEGER,
                 opening_under_odds INTEGER,
+                opening_odds_source TEXT,
                 swstr_pct       REAL,
                 career_swstr_pct REAL,
                 game_time       TEXT,
@@ -104,6 +105,7 @@ def init_db() -> None:
             ("best_under_odds",    "INTEGER"),
             ("opening_over_odds",  "INTEGER"),
             ("opening_under_odds", "INTEGER"),
+            ("opening_odds_source", "TEXT"),
             ("swstr_pct",          "REAL"),
             ("career_swstr_pct",   "REAL"),
             # Tracks whether all external data APIs (SwStr%, umpire) returned
@@ -147,9 +149,9 @@ def seed_picks(today_json_path: Path = TODAY_JSON) -> int:
                      swstr_delta_k9, ref_book, game_time, lineup_used,
                      opp_team, pitcher_throws,
                      best_over_odds, best_under_odds,
-                     opening_over_odds, opening_under_odds,
+                     opening_over_odds, opening_under_odds, opening_odds_source,
                      swstr_pct, career_swstr_pct, data_complete)
-                    VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+                    VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
                 """, (
                     game_date, p["pitcher"], p["team"], side,
                     p["k_line"], ev_data["verdict"], ev_data["ev"], ev_data["adj_ev"],
@@ -166,6 +168,7 @@ def seed_picks(today_json_path: Path = TODAY_JSON) -> int:
                     p.get("best_under_odds"),
                     p.get("opening_over_odds"),
                     p.get("opening_under_odds"),
+                    p.get("opening_odds_source"),
                     p.get("swstr_pct"),
                     p.get("career_swstr_pct"),
                     # Default True for picks from old today.json files that predate this field
@@ -180,6 +183,10 @@ def seed_picks(today_json_path: Path = TODAY_JSON) -> int:
                 # silently erased the real opening line and broke movement_conf.
                 # COALESCE guards legacy rows where opening is NULL: fills on first refresh
                 # after this fix, then never touches it again.
+                # opening_odds_source follows the same rule: once captured on INSERT it stays
+                # frozen. A later refresh may arrive with source='first_seen' (preview merge
+                # didn't fire that run) but we don't want to downgrade an existing 'preview'
+                # tag — same invariant as opening_*_odds.
                 if cur.rowcount == 0:
                     conn.execute("""
                         UPDATE picks
@@ -279,10 +286,11 @@ def load_history_into_db(history_path: Path = None) -> int:
                  season_k9, recent_k9, career_k9, avg_ip, ump_k_adj, opp_k_rate,
                  swstr_delta_k9, swstr_pct, career_swstr_pct, ref_book,
                  best_over_odds, best_under_odds, opening_over_odds, opening_under_odds,
+                 opening_odds_source,
                  result, actual_ks, pnl, fetched_at, game_time, lineup_used,
                  locked_at, locked_k_line, locked_odds, locked_adj_ev, locked_verdict,
                  data_complete)
-                VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+                VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
             """, (
                 p.get("date"), p.get("pitcher"), p.get("team"),
                 p.get("opp_team"), p.get("pitcher_throws"),
@@ -296,6 +304,10 @@ def load_history_into_db(history_path: Path = None) -> int:
                 p.get("ref_book"),
                 p.get("best_over_odds"), p.get("best_under_odds"),
                 p.get("opening_over_odds"), p.get("opening_under_odds"),
+                # Legacy rows predate this field — p.get() returns None, which
+                # lands as SQL NULL (distinct from "first_seen").  Do NOT
+                # retroactively label (Task A2 policy P1).
+                p.get("opening_odds_source"),
                 p.get("result"), p.get("actual_ks"), p.get("pnl"), p.get("fetched_at"),
                 p.get("game_time"), int(bool(p.get("lineup_used", False))),
                 p.get("locked_at"), p.get("locked_k_line"), p.get("locked_odds"),
@@ -323,7 +335,7 @@ def export_db_to_history(history_path: Path = None) -> int:
                    season_k9, recent_k9, career_k9, avg_ip, ump_k_adj, opp_k_rate,
                    swstr_delta_k9, swstr_pct, career_swstr_pct, ref_book,
                    best_over_odds, best_under_odds,
-                   opening_over_odds, opening_under_odds,
+                   opening_over_odds, opening_under_odds, opening_odds_source,
                    result, actual_ks, pnl, fetched_at,
                    game_time, lineup_used,
                    locked_at, locked_k_line, locked_odds, locked_adj_ev, locked_verdict,
@@ -339,7 +351,7 @@ def export_db_to_history(history_path: Path = None) -> int:
         "season_k9", "recent_k9", "career_k9", "avg_ip", "ump_k_adj", "opp_k_rate",
         "swstr_delta_k9", "swstr_pct", "career_swstr_pct", "ref_book",
         "best_over_odds", "best_under_odds",
-        "opening_over_odds", "opening_under_odds",
+        "opening_over_odds", "opening_under_odds", "opening_odds_source",
         "result", "actual_ks", "pnl", "fetched_at",
         "game_time", "lineup_used",
         "locked_at", "locked_k_line", "locked_odds", "locked_adj_ev", "locked_verdict",

@@ -271,6 +271,10 @@ class TestBuildPitcherRecord:
         price_delta_over = -110 - (-125) = +15 → conf_over = 0.75.
         adj_ev_over should equal round(raw_ev_over * 0.75, 4).
         The under has no movement → conf_under = 1.0, adj_ev_under == ev_under.
+
+        Task A2: source must be 'preview' for the haircut to apply — a
+        within-day 'first_seen' opening is not a valid baseline for overnight
+        movement comparison.
         """
         from build_features import build_pitcher_record
         odds = {
@@ -279,6 +283,7 @@ class TestBuildPitcherRecord:
             "best_over_odds":    -110,   # over moved to -110 (cheaper) → delta = +15
             "opening_under_odds": -110,  # under unchanged
             "best_under_odds":    -110,
+            "opening_odds_source": "preview",
         }
         rec = build_pitcher_record(odds, self.BASE_STATS, ump_k_adj=0.0)
 
@@ -342,38 +347,68 @@ class TestBuildPitcherRecord:
 
 
 class TestCalcMovementConfidence:
+    # Task A2: these tests exercise the decay curve and therefore pass
+    # opening_odds_source="preview" so the haircut actually applies. Tests
+    # that specifically cover the source-gating behaviour live further down
+    # in this class.
+
     def test_negative_delta_no_penalty(self):
         # Movement in our favour — no penalty
-        assert calc_movement_confidence(-15) == 1.0
+        assert calc_movement_confidence(-15, opening_odds_source="preview") == 1.0
 
     def test_zero_delta_no_penalty(self):
-        assert calc_movement_confidence(0) == 1.0
+        assert calc_movement_confidence(0, opening_odds_source="preview") == 1.0
 
     def test_below_noise_floor_no_penalty(self):
-        assert calc_movement_confidence(5) == 1.0
+        assert calc_movement_confidence(5, opening_odds_source="preview") == 1.0
 
     def test_at_noise_floor_no_penalty(self):
         # Exactly at noise_floor (10) → still 1.0
-        assert calc_movement_confidence(10) == 1.0
+        assert calc_movement_confidence(10, opening_odds_source="preview") == 1.0
 
     def test_midpoint_decay(self):
         # delta=20 is halfway between noise_floor=10 and full_fade=30 → 0.50
-        assert abs(calc_movement_confidence(20) - 0.50) < 0.001
+        assert abs(calc_movement_confidence(20, opening_odds_source="preview") - 0.50) < 0.001
 
     def test_quarter_decay(self):
         # delta=15 → (15-10)/(30-10) = 5/20 = 0.25 penalty → 0.75
-        assert abs(calc_movement_confidence(15) - 0.75) < 0.001
+        assert abs(calc_movement_confidence(15, opening_odds_source="preview") - 0.75) < 0.001
 
     def test_three_quarter_decay(self):
         # delta=25 → (25-10)/(30-10) = 15/20 = 0.75 penalty → 0.25
-        assert abs(calc_movement_confidence(25) - 0.25) < 0.001
+        assert abs(calc_movement_confidence(25, opening_odds_source="preview") - 0.25) < 0.001
 
     def test_at_full_fade(self):
-        assert calc_movement_confidence(30) == 0.0
+        assert calc_movement_confidence(30, opening_odds_source="preview") == 0.0
 
     def test_above_full_fade_clamped(self):
         # Anything beyond full_fade is still 0.0
-        assert calc_movement_confidence(40) == 0.0
+        assert calc_movement_confidence(40, opening_odds_source="preview") == 0.0
+
+    # ── Task A2: source-gated haircut ─────────────────────────────────────────
+    # Movement_conf is only meaningful when the opening baseline is a true
+    # overnight opening (tagged 'preview' after the 7pm merge). For within-day
+    # 'first_seen' openings (and legacy None rows), we must not apply any
+    # haircut — otherwise we're comparing current odds to a baseline that's
+    # hours old instead of a day old, which was the original 4/8 semantic bug.
+
+    def test_movement_confidence_returns_1_when_source_is_first_seen(self):
+        # Large adverse delta that would normally zero out the signal
+        assert calc_movement_confidence(40, opening_odds_source="first_seen") == 1.0
+
+    def test_movement_confidence_returns_1_when_source_is_none(self):
+        # Legacy row (no source tag) — must not get haircut
+        assert calc_movement_confidence(40, opening_odds_source=None) == 1.0
+
+    def test_movement_confidence_applies_haircut_when_source_is_preview(self):
+        # Same large adverse delta, but now source is the overnight baseline —
+        # haircut applies (delta=40 > full_fade=30 → 0.0)
+        assert calc_movement_confidence(40, opening_odds_source="preview") == 0.0
+
+    def test_movement_confidence_preview_midpoint_decay_unchanged(self):
+        # Existing midpoint logic still holds when source is 'preview'
+        result = calc_movement_confidence(20, opening_odds_source="preview")
+        assert abs(result - 0.50) < 0.001
 
 
 class TestBayesianOppK:

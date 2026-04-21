@@ -752,3 +752,72 @@ def test_write_steam_no_snapshot_when_no_book_odds(tmp_path):
 
     data = json.loads(steam_path.read_text())
     assert data["snapshots"] == []
+
+
+# ── Tests: _apply_preview_openings + opening_odds_source (Task A2) ────────────
+
+def test_apply_preview_openings_sets_source_preview_on_match():
+    """When preview_lines has a matching entry with same k_line, opening_odds_source
+    is promoted from 'first_seen' to 'preview' and opening_*_odds are overwritten
+    with the 7pm overnight values."""
+    import run_pipeline
+
+    props = [{
+        "pitcher":            "Gerrit Cole",
+        "k_line":             7.5,
+        "opening_over_odds":  -112,   # within-day opening from fetch_odds
+        "opening_under_odds": -108,
+        "opening_odds_source": "first_seen",
+    }]
+    preview_lines = {
+        "Gerrit Cole": {"k_line": 7.5, "over_odds": -120, "under_odds": -100},
+    }
+    run_pipeline._apply_preview_openings(props, preview_lines)
+
+    assert props[0]["opening_odds_source"] == "preview"
+    assert props[0]["opening_over_odds"]  == -120
+    assert props[0]["opening_under_odds"] == -100
+
+
+def test_apply_preview_openings_leaves_source_first_seen_on_kline_shift():
+    """If the k_line moved overnight, the 7pm preview opening is stale — we must
+    NOT override opening_*_odds AND the source must remain 'first_seen'."""
+    import run_pipeline
+
+    props = [{
+        "pitcher":            "Gerrit Cole",
+        "k_line":             7.5,     # current line
+        "opening_over_odds":  -112,
+        "opening_under_odds": -108,
+        "opening_odds_source": "first_seen",
+    }]
+    preview_lines = {
+        "Gerrit Cole": {"k_line": 6.5,  # preview had a different line
+                        "over_odds": -120, "under_odds": -100},
+    }
+    run_pipeline._apply_preview_openings(props, preview_lines)
+
+    assert props[0]["opening_odds_source"] == "first_seen"
+    assert props[0]["opening_over_odds"]  == -112   # unchanged
+    assert props[0]["opening_under_odds"] == -108   # unchanged
+
+
+def test_apply_preview_openings_leaves_source_first_seen_when_no_preview_match():
+    """If preview_lines has no entry for this pitcher, source stays first_seen
+    and opening_*_odds are untouched."""
+    import run_pipeline
+
+    props = [{
+        "pitcher":            "Gerrit Cole",
+        "k_line":             7.5,
+        "opening_over_odds":  -112,
+        "opening_under_odds": -108,
+        "opening_odds_source": "first_seen",
+    }]
+    preview_lines = {}  # empty — preview step didn't fire
+
+    run_pipeline._apply_preview_openings(props, preview_lines)
+
+    assert props[0]["opening_odds_source"] == "first_seen"
+    assert props[0]["opening_over_odds"]  == -112
+    assert props[0]["opening_under_odds"] == -108

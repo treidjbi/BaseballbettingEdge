@@ -237,7 +237,8 @@ def calc_price_delta(current_odds: int, opening_odds: int) -> int:
 
 def calc_movement_confidence(delta: int,
                               noise_floor: int = 10,
-                              full_fade:   int = 30) -> float:
+                              full_fade:   int = 30,
+                              opening_odds_source: str | None = None) -> float:
     """
     Returns a confidence multiplier (0.0–1.0) based on line movement against the bet side.
 
@@ -246,7 +247,16 @@ def calc_movement_confidence(delta: int,
 
     Linear decay from 1.0 at noise_floor to 0.0 at full_fade.
     Movements below noise_floor are treated as routine book adjustments (ignored).
+
+    opening_odds_source gates the haircut (Task A2): only a "preview"-tagged
+    opening is a true overnight baseline worth penalising against. For
+    "first_seen" (within-day opening from TheRundown's price_delta) or None
+    (legacy row pre-migration), we return 1.0 — applying the haircut against
+    a same-day opening compares current odds to a baseline only hours old,
+    which was the original 4/8 semantic bug.
     """
+    if opening_odds_source != "preview":
+        return 1.0
     if delta <= noise_floor:
         return 1.0
     if delta >= full_fade:
@@ -334,8 +344,10 @@ def build_pitcher_record(odds: dict, stats: dict, ump_k_adj: float,
     price_delta_over  = calc_price_delta(best_over_odds,  odds.get("opening_over_odds",  best_over_odds))
     price_delta_under = calc_price_delta(best_under_odds, odds.get("opening_under_odds", best_under_odds))
 
-    conf_over  = calc_movement_confidence(price_delta_over)
-    conf_under = calc_movement_confidence(price_delta_under)
+    conf_over  = calc_movement_confidence(price_delta_over,
+                                           opening_odds_source=odds.get("opening_odds_source"))
+    conf_under = calc_movement_confidence(price_delta_under,
+                                           opening_odds_source=odds.get("opening_odds_source"))
     adj_ev_over  = ev_over  * conf_over
     adj_ev_under = ev_under * conf_under
 
@@ -353,6 +365,7 @@ def build_pitcher_record(odds: dict, stats: dict, ump_k_adj: float,
         "best_under_odds":    best_under_odds,
         "opening_over_odds":  odds["opening_over_odds"],
         "opening_under_odds": odds["opening_under_odds"],
+        "opening_odds_source": odds.get("opening_odds_source"),
         "price_delta_over":   price_delta_over,
         "price_delta_under":  price_delta_under,
         "raw_lambda":         round(raw_lam, 2),

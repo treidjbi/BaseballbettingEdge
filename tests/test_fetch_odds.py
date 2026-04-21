@@ -451,3 +451,26 @@ class TestBookOdds:
         result = parse_k_props({"events": [event]})
         bo = result[0]["book_odds"]
         assert "BetRivers" not in (bo or {})
+
+
+# ── Tests: opening_odds_source (Task A2) ──────────────────────────────────────
+
+class TestOpeningOddsSource:
+    """fetch_odds has no knowledge of overnight preview — every prop it emits
+    starts life labeled 'first_seen'. Promotion to 'preview' happens later in
+    run_pipeline._apply_preview_openings."""
+
+    def test_parse_k_props_tags_source_first_seen(self):
+        result = parse_k_props({"events": [_multi_book_event()]})
+        assert len(result) == 1
+        assert result[0]["opening_odds_source"] == "first_seen"
+
+    def test_parse_k_props_tags_source_first_seen_with_delta(self):
+        # Even when price_delta is non-zero (within-day movement), source is
+        # still 'first_seen' — the delta-based opening is a within-day opening,
+        # not an overnight opening.
+        event = _make_event("Shane Bieber", 6.5, -115, -105,
+                            over_delta=-5, under_delta=5, is_main=True)
+        result = parse_k_props({"events": [event]})
+        assert len(result) == 1
+        assert result[0]["opening_odds_source"] == "first_seen"
