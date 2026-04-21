@@ -232,6 +232,50 @@ remind the user we can upgrade to real per-batter handedness splits:
 Related tests: `TestCalcLineupKRate`, `TestPlatoonKDelta` in
 [tests/test_build_features.py](tests/test_build_features.py).
 
+### Umpire career_k_rates — Periodic Re-seed
+
+**Current state (as of 2026-04-21):** `data/umpires/career_k_rates.json` holds
+per-umpire K-per-game deltas vs. league average for ~87 HP umpires (up from
+30 after Task A3b expansion on 2026-04-20, ~94% post-4/8 sample match). The
+seed script [scripts/seed_umpire_career_rates.py](scripts/seed_umpire_career_rates.py)
+derives deltas empirically from MLB Stats API boxscores (schedule + boxscore
+per game, aggregated per umpire, subtracted from league mean). `fetch_umpires.py`
+reads the cached JSON at pipeline time.
+
+These deltas drift slowly — a single season of calls adds maybe ±0.1 K/game
+to a veteran umpire's career average — but they do drift, and new umpires
+appear in-season.
+
+**Trigger to re-seed:** Whenever **any** of the following is true:
+
+- The current month is **May**, **July**, or **September** (quarterly cadence
+  roughly aligned with calls-per-year turnover)
+- A pipeline log shows a run matched <85% of umpires in the last 30 days
+  (analytics: check `ump_k_adj == 0` rate on staked-only picks)
+- A new season has started and career_k_rates was last seeded in the prior
+  season (check `data/umpires/career_k_rates.json` mtime)
+
+**How to re-seed (background, resumable):**
+
+```bash
+# Full re-seed across recent seasons (run once at start of season):
+python scripts/seed_umpire_career_rates.py --start 2024-03-28 --end 2025-10-01
+
+# Mid-season YTD top-up (run quarterly — only adds current-season games):
+python scripts/seed_umpire_career_rates.py --start 2026-03-20 --end $(date +%F)
+```
+
+- Long windows run in hours; resumable via `analytics/output/seed_progress.json`
+- Safe to run in the background — no pipeline side effects, writes a single
+  JSON at the end
+- After completion, diff the JSON vs. the prior version. Commit the update
+  if any career K/game delta shifted by **≥0.1** or if new umpires were added.
+  Shifts below that threshold are below the noise floor of `ump_scale` and
+  not worth a commit.
+
+**Do NOT bump `formula_change_date`** — career_k_rates updates do not change
+the model formula; `lambda_bias` self-heals through normal calibration.
+
 ### End-of-Season Infrastructure Review (prep for 2027+)
 
 **Trigger:** When the current season is over (roughly October or whenever
