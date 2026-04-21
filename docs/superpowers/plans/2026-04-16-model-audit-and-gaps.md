@@ -100,7 +100,8 @@ HARD STOP checkpoint.
 | A3b.3 — write + verify + commit | ✅ done | *(see git log — commit after `0c57be1` on phase-a)* | 87 umps written (filtered at n≥20). Live 2026 match rate jumped **22% → 94%** (59/63 umps seen in past week). 4 umps still missing (Felix Neon, Jen Pawol, Tyler Jones, Willie Traynor) — AAA call-ups without enough 2024-25 MLB sample. `docs/data-caveats.md` updated. Scale: seeder deltas range ±1.9 K/game (vs hand-curated ±0.52), `ump_scale` (currently 1.0) will shrink during phase-2 calibration as ump-signal residuals accumulate. |
 | A2 — opening_odds | ✅ done (Option 2 — premise refuted, enum added) | `0ff1699` (diag), `0496053` (final polish), `3922ebf` (impl, pre-rebase SHA) | **Diagnostic refuted the plan's null-writer premise.** Of 306 null-opening rows, ALL have null `best_*_odds` too — they're pre-ALTER-TABLE-ADD-COLUMN legacy rows that couldn't be back-filled by `seed_picks` UPDATE (locked/graded rows). Post-migration cohort (141 picks since 2026-04-11): opening_*_odds populated 141/141 (100%), movement_conf != 1.0 fires on 9.2%. No live null-writer bug. **Still shipped Option 2** to fix the remaining semantic gap: `fetch_odds` always computes opening from `best - price_delta` (within-day), but `_apply_preview_openings` can upgrade to overnight 7pm baseline — previously indistinguishable to `calc_movement_confidence`. Added `opening_odds_source` ∈ {"preview", "first_seen", None}; gated haircut to only fire when source=="preview". Full plumbing: fetch_odds tags "first_seen", preview-merge promotes to "preview", schema+migration in fetch_results, INSERT captures/UPDATE freezes, export round-trips, build_features gates. 14 new tests. Tests 280→294. **Also included: rebase of phase-a onto origin/main** (brought in steam Phase A per-book odds tracking + v2 UI finalization; 1 trivial .gitignore conflict resolved; 1 pre-existing `test_write_dated_archive_only_creates_dated_file` failure on main is NOT ours — index-schema drift, flagged by steam authors). Spec-review + code-review both passed. |
 | A4 — bookmaker breakdown | ✅ done | `d2c27b3` | Added `by_bookmaker(df)` to `analytics/performance.py` + wired into `main()`. Smoke-tested with `--since 2026-04-08`: 6 book rows, FanDuel dominates at 132/231 staked (57%), 63 `<unknown>` rows are pre-column-migration legacy. Follow-up flagged (not A4-scope): `ref_book` values are stored as raw TheRundown numeric IDs (`Book25`, `Book3`, etc.) except FanDuel which resolves to a name — worth wiring `fetch_odds.TRACKED_BOOKS` through the display path in a later Phase B refinement. Added defensive `ref_book not in columns` guard since `analytics/` isn't in pytest coverage. |
-| A→B checkpoint | ⏳ | — | Verify activation rates moved after 24h fresh data, then merge to main. **Do NOT** bump `formula_change_date` or reset grading (see calibration-handling block above). Also verify v2 UI still renders (see backward-compat block in `⏸️ Checkpoint A → B` section). |
+| A→B checkpoint — merge | ✅ done (2026-04-21) | `phase-a` → `main` | Full branch merged. Book-scoping finalized as Option B (priority-only, no fallback — `fetch_odds._select_ref_book` returns `(None, None)` when no target book is available, caller skips pick). Post-merge live run confirmed 25/28 picks on FanDuel, `opening_odds_source` split 20 preview / 5 first_seen / 3 missing — all correct per A2 design. V2 UI smoke-tested OK. Companion infra work folded in same sitting: branch tree cleaned (21 stale remotes + 2 local + 2 tags pruned), preview cron moved 7pm → midnight (cron `0 2 * * *` → `0 7 * * *`, date arg `TOMORROW` → `TODAY`, CLAUDE.md schedule block updated), `pipeline/run_pipeline.py` + `pipeline/fetch_odds.py` + tests doc-drift "7pm" → "midnight" sweep. `lambda_bias` and `formula_change_date` untouched per P4. |
+| A→B checkpoint — soak re-audit | ⏳ pending | — | **Re-audit Phase A diagnostics after a couple of slates have run under the post-Option-B + midnight-preview pipeline.** Re-run `a1_pitcher_throws.py`, `a2_opening_odds.py`, `a3_ump_adj.py` against the fresh sample; confirm activation rates moved (pitcher_throws null → ~0% forward-only, ump_k_adj nonzero rate ≥ expected, movement_conf != 1.0 rate tracks A2's 9.2% baseline). Only proceed to Phase B after re-audit confirms clean signals — see `⏸️ Checkpoint A → B` section for the re-audit checklist. |
 
 ---
 
@@ -757,6 +758,25 @@ Discuss with the user:
 - What did each diagnostic reveal? Were the plumbing bugs real, or were those features dormant-by-design?
 - If bugs were real and fixed, wait ~24h for new picks to flow with corrected data before Phase B — otherwise B's new slices will still see the broken state.
 - If nothing actionable was found, fine — continue to Phase B once confirmed.
+
+**Merge status (2026-04-21):** ✅ Phase A branch merged to main. Book-scoping Option B live, midnight preview live, branch tree cleaned. `lambda_bias` and `formula_change_date` untouched (P4). See execution-log row "A→B checkpoint — merge" above for commit scope.
+
+**Soak re-audit step (BLOCKS Phase B kickoff):** the user explicitly wants Phase A diagnostics re-run against a fresh post-merge sample before Phase B starts. The merge day's data is mixed (pre- and post-Option-B picks in the same slate via `INSERT OR IGNORE` semantics); re-auditing now would still see that transition state. Wait until at least **2 full slates** have graded under the new pipeline, then:
+
+1. Re-run each diagnostic with `--since <merge_date>`:
+   ```bash
+   python analytics/diagnostics/a1_pitcher_throws.py
+   python analytics/diagnostics/a2_opening_odds.py
+   python analytics/diagnostics/a3_ump_adj.py
+   python analytics/performance.py --since <merge_date>   # verify by_bookmaker row counts
+   ```
+2. Compare against the Phase A success criteria (line 150 block):
+   - `pitcher_throws` null rate on post-merge picks: should be ~0% (forward-only, historical window stays as documented in `docs/data-caveats.md`).
+   - `ump_k_adj` nonzero rate: should be ≥ ~90% now that career_k_rates covers 87 umps and A3-fix source swap is live.
+   - `opening_*_odds` null rate on post-merge picks: should be ~0% (A2 plumbing is confirmed working; null rows are legacy pre-migration).
+   - `movement_conf != 1.0` rate: should track the ~9% baseline established by A2 diagnostic, now gated by `opening_odds_source == "preview"` → will only fire on picks where midnight preview actually captured a baseline.
+3. If any metric regressed or stayed stuck, **re-diagnose before Phase B** — do not paper over with a Phase B measurement addition, because B's slices assume the plumbing is clean.
+4. Once the re-audit passes, post the numbers to the user and wait for explicit "proceed to Phase B" reply before starting B1.
 
 **Backward-compat check for Phase A:**
 - **A1 (`pitcher_throws`)** — field already exists and was None-tolerant; dashboard and analytics stay compatible whether A1 backfilled or not.
