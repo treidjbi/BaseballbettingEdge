@@ -22,6 +22,9 @@
     ? 'data/performance.json'
     : 'https://raw.githubusercontent.com/treidjbi/baseballbettingedge/main/dashboard/data/performance.json';
   const PARAMS_URL = 'https://raw.githubusercontent.com/treidjbi/baseballbettingedge/main/data/params.json';
+  const STEAM_URL = IS_LOCAL
+    ? 'data/processed/steam.json'
+    : 'https://raw.githubusercontent.com/treidjbi/baseballbettingedge/main/dashboard/data/processed/steam.json';
 
   // Stakes-per-pick mapping — mirrors CLAUDE.md thresholds.
   const STAKE = { 'FIRE 2u': 2, 'FIRE 1u': 1, 'LEAN': 0, 'PASS': 0 };
@@ -203,6 +206,41 @@
     return { updated_at: today.generated_at, rows };
   }
 
+  // ── Steam feed from steam.json (Phase A: books_moved counts) ──
+  // Falls back to synthetic steam if steamJson is null or has no snapshots.
+  // books_moved requires ≥2 snapshots; books_total is populated from snapshot 1+.
+  function buildV2SteamFromFile(steamJson, todayJson) {
+    const base = buildV2Steam(todayJson);
+    if (!steamJson || !steamJson.snapshots?.length) return base;
+
+    const snaps  = steamJson.snapshots;
+    const first  = snaps[0];
+    const latest = snaps[snaps.length - 1];
+
+    for (const row of base.rows) {
+      const latestP = latest.pitchers?.[row.pitcher];
+      if (!latestP) continue;
+
+      const books = Object.keys(latestP).filter(k => k !== 'k_line');
+      row.books_total = books.length;
+
+      if (snaps.length >= 2) {
+        const firstP = first.pitchers?.[row.pitcher];
+        if (firstP) {
+          let moved = 0;
+          for (const book of books) {
+            const fo = firstP[book]?.[row.direction];
+            const lo = latestP[book]?.[row.direction];
+            if (fo != null && lo != null && fo !== lo) moved++;
+          }
+          row.books_moved = moved;
+        }
+      }
+    }
+
+    return base;
+  }
+
   // ── Fetch archived dates for the DateBar ───────────────────────
   async function fetchDateIndex() {
     try {
@@ -226,16 +264,17 @@
     const dataUrl = `${RAW_BASE}/${dateToLoad}.json`;
 
     try {
-      const [todayJson, perfJson, paramsJson, dateIndex] = await Promise.all([
+      const [todayJson, perfJson, paramsJson, dateIndex, steamJson] = await Promise.all([
         fetchJSON(dataUrl).catch(() => fetchJSON(`${RAW_BASE}/today.json`)),
         fetchJSON(PERF_URL).catch(() => ({ rows: [], total_picks: 0 })),
         fetchJSON(PARAMS_URL).catch(() => ({})),
         fetchDateIndex(),
+        fetchJSON(STEAM_URL).catch(() => null),
       ]);
       const perfWithNotes = { ...perfJson, calibration_notes: paramsJson.calibration_notes || perfJson.calibration_notes || [] };
       window.V2_DATA  = buildV2Data(todayJson);
       window.V2_PERF  = buildV2Perf(perfWithNotes);
-      window.V2_STEAM = buildV2Steam(todayJson);
+      window.V2_STEAM = buildV2SteamFromFile(steamJson, todayJson);
       window.V2_DATES     = dateIndex;
       window.V2_DATE_META = Object.fromEntries(dateIndex.map(d => [d.date, d]));
       window.V2_CURRENT_DATE = dateToLoad;

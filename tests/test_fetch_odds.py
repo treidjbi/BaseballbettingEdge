@@ -390,3 +390,64 @@ class TestSelectRefBook:
         book_id, name = _select_ref_book({})
         assert book_id is None
         assert name is None
+
+
+# ── Tests: book_odds in parse output ────────────────────────────────��────────
+
+def _multi_book_event(pitcher="Gerrit Cole", line_val=7.5,
+                      books=("23", "22", "19", "30")):
+    """Event with multiple tracked books, all with over and under on same line."""
+    prices_over  = {b: {"price": -110, "is_main_line": True, "price_delta": 0} for b in books}
+    prices_under = {b: {"price": -110, "is_main_line": True, "price_delta": 0} for b in books}
+    return {
+        "event_id": "evt-multibook",
+        "event_date": "2026-04-01T23:05:00Z",
+        "teams": [
+            {"name": "NYY", "is_away": True,  "is_home": False},
+            {"name": "BOS", "is_away": False, "is_home": True},
+        ],
+        "markets": [{
+            "market_id": 19,
+            "participants": [{
+                "name": pitcher,
+                "lines": [
+                    {"value": f"Over {line_val}",  "prices": prices_over},
+                    {"value": f"Under {line_val}", "prices": prices_under},
+                ],
+            }],
+        }],
+    }
+
+
+class TestBookOdds:
+    def test_book_odds_populated_for_tracked_books(self):
+        result = parse_k_props({"events": [_multi_book_event()]})
+        assert len(result) == 1
+        bo = result[0]["book_odds"]
+        assert bo is not None
+        assert "FanDuel"    in bo   # book 23
+        assert "BetMGM"     in bo   # book 22
+        assert "DraftKings" in bo   # book 19
+        assert "BetRivers"  in bo   # book 30
+
+    def test_book_odds_entry_has_over_and_under(self):
+        result = parse_k_props({"events": [_multi_book_event()]})
+        fd = result[0]["book_odds"]["FanDuel"]
+        assert fd["over"]  == -110
+        assert fd["under"] == -110
+
+    def test_book_odds_none_when_no_tracked_book(self):
+        # Only untracked book "1" present — no tracked books → book_odds is None
+        result = parse_k_props({"events": [_multi_book_event(books=["1"])]})
+        assert result[0]["book_odds"] is None
+
+    def test_book_odds_excludes_book_missing_one_side(self):
+        # BetRivers (30) has over but no under → should not appear in book_odds
+        event = _multi_book_event(books=["23", "22"])
+        # Manually add a book with only over
+        event["markets"][0]["participants"][0]["lines"][0]["prices"]["30"] = {
+            "price": -112, "is_main_line": True, "price_delta": 0
+        }
+        result = parse_k_props({"events": [event]})
+        bo = result[0]["book_odds"]
+        assert "BetRivers" not in (bo or {})

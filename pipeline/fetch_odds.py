@@ -25,8 +25,17 @@ BOOK_ID_MAP = {
     "23": "FanDuel",
     "22": "BetMGM",
     "19": "DraftKings",
+    "30": "BetRivers",
 }
 REF_BOOK_PRIORITY = ["23", "22", "19"]   # FanDuel → BetMGM → DraftKings
+
+# Books tracked in steam.json snapshots.
+TRACKED_BOOKS = {
+    "23": "FanDuel",
+    "22": "BetMGM",
+    "19": "DraftKings",
+    "30": "BetRivers",
+}
 
 
 def _select_ref_book(available_books: dict) -> tuple:
@@ -154,6 +163,15 @@ def _parse_event_k_props(event: dict) -> list:
 
             chosen = lines_data[main_val]
 
+            # Capture per-book odds for steam tracking (tracked books only).
+            book_odds: dict = {}
+            for book_id, book_name in TRACKED_BOOKS.items():
+                if book_id in chosen["over"] and book_id in chosen["under"]:
+                    book_odds[book_name] = {
+                        "over":  chosen["over"][book_id]["price"],
+                        "under": chosen["under"][book_id]["price"],
+                    }
+
             # Select reference book (FanDuel → BetMGM → DraftKings → any)
             ref_book_id, ref_book_name = _select_ref_book(chosen["over"])
             if ref_book_id is None:
@@ -196,6 +214,7 @@ def _parse_event_k_props(event: dict) -> list:
                 "best_under_odds":    ref_under_price,
                 "opening_over_odds":  opening_over,
                 "opening_under_odds": opening_under,
+                "book_odds":          book_odds or None,
             })
 
     return results

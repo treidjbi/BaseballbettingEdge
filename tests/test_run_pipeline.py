@@ -597,3 +597,93 @@ def test_backfill_higher_stake_wins_tiebreak(tmp_path):
     assert r["side_taken"] == "over"
     assert r["units_risked"] == 2.0
     assert r["outcome"] == "win"
+
+
+# ── Tests: _write_steam ───────────────────────────────────────────────────────
+
+def _steam_pitcher(name="Gerrit Cole", k_line=7.5,
+                   fd_over=-115, fd_under=-105):
+    return {
+        "pitcher": name,
+        "k_line": k_line,
+        "book_odds": {"FanDuel": {"over": fd_over, "under": fd_under}},
+    }
+
+
+def test_write_steam_creates_file_with_one_snapshot(tmp_path):
+    """First call on a given date should create steam.json with one snapshot."""
+    import run_pipeline
+
+    steam_path = tmp_path / "steam.json"
+    with patch.object(run_pipeline, "STEAM_PATH", steam_path):
+        run_pipeline._write_steam([_steam_pitcher()], "2026-04-21")
+
+    data = json.loads(steam_path.read_text())
+    assert data["date"] == "2026-04-21"
+    assert len(data["snapshots"]) == 1
+    snap = data["snapshots"][0]
+    assert "Gerrit Cole" in snap["pitchers"]
+    assert snap["pitchers"]["Gerrit Cole"]["k_line"] == 7.5
+    assert snap["pitchers"]["Gerrit Cole"]["FanDuel"]["over"] == -115
+
+
+def test_write_steam_appends_snapshot_same_day(tmp_path):
+    """Subsequent calls on the same day should append, not reset."""
+    import run_pipeline
+
+    steam_path = tmp_path / "steam.json"
+    with patch.object(run_pipeline, "STEAM_PATH", steam_path):
+        run_pipeline._write_steam([_steam_pitcher(fd_over=-115)], "2026-04-21")
+        run_pipeline._write_steam([_steam_pitcher(fd_over=-120)], "2026-04-21")
+
+    data = json.loads(steam_path.read_text())
+    assert len(data["snapshots"]) == 2
+    assert data["snapshots"][0]["pitchers"]["Gerrit Cole"]["FanDuel"]["over"] == -115
+    assert data["snapshots"][1]["pitchers"]["Gerrit Cole"]["FanDuel"]["over"] == -120
+
+
+def test_write_steam_resets_on_new_day(tmp_path):
+    """Calling with a different date should reset snapshots to a fresh list."""
+    import run_pipeline
+
+    steam_path = tmp_path / "steam.json"
+    with patch.object(run_pipeline, "STEAM_PATH", steam_path):
+        run_pipeline._write_steam([_steam_pitcher()], "2026-04-20")
+        run_pipeline._write_steam([_steam_pitcher()], "2026-04-21")
+
+    data = json.loads(steam_path.read_text())
+    assert data["date"] == "2026-04-21"
+    assert len(data["snapshots"]) == 1
+
+
+def test_write_steam_skips_pitchers_without_book_odds(tmp_path):
+    """Pitchers with null or empty book_odds must be omitted from the snapshot."""
+    import run_pipeline
+
+    steam_path = tmp_path / "steam.json"
+    pitchers = [
+        {"pitcher": "Cole",    "k_line": 7.5, "book_odds": {"FanDuel": {"over": -115, "under": -105}}},
+        {"pitcher": "Webb",    "k_line": 6.5, "book_odds": None},
+        {"pitcher": "Fried",   "k_line": 5.5, "book_odds": {}},
+    ]
+    with patch.object(run_pipeline, "STEAM_PATH", steam_path):
+        run_pipeline._write_steam(pitchers, "2026-04-21")
+
+    data = json.loads(steam_path.read_text())
+    snap = data["snapshots"][0]["pitchers"]
+    assert "Cole"  in snap
+    assert "Webb"  not in snap
+    assert "Fried" not in snap
+
+
+def test_write_steam_no_snapshot_when_no_book_odds(tmp_path):
+    """If no pitcher has book_odds, no snapshot entry should be appended."""
+    import run_pipeline
+
+    steam_path = tmp_path / "steam.json"
+    with patch.object(run_pipeline, "STEAM_PATH", steam_path):
+        run_pipeline._write_steam([{"pitcher": "Webb", "k_line": 6.5, "book_odds": None}],
+                                  "2026-04-21")
+
+    data = json.loads(steam_path.read_text())
+    assert data["snapshots"] == []

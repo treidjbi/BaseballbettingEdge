@@ -350,4 +350,5 @@ def build_pitcher_record(odds: dict, stats: dict, ump_k_adj: float,
             "win_prob":      round(win_prob_under,  3),
             "movement_conf": round(conf_under,    4),
         },
+        "book_odds": odds.get("book_odds") or None,
     }

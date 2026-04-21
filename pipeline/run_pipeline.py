@@ -34,6 +34,7 @@ logging.basicConfig(
 log = logging.getLogger(__name__)
 
 OUTPUT_PATH    = Path(__file__).parent.parent / "dashboard" / "data" / "processed" / "today.json"
+STEAM_PATH     = Path(__file__).parent.parent / "dashboard" / "data" / "processed" / "steam.json"
 HISTORY_PATH   = Path(__file__).parent.parent / "data" / "picks_history.json"
 
 _batter_stats_cache: dict | None = None
@@ -382,6 +383,47 @@ def _run_lock_only(date_str: str) -> None:
         log.error("Lock-only run failed: %s", e)
 
 
+def _write_steam(pitchers: list, run_date_str: str) -> None:
+    """Append a per-book odds snapshot to steam.json. Resets on a new day.
+
+    Only pitchers that have book_odds data (at least one tracked book) are
+    included in each snapshot. Called on full/refresh runs only — not during
+    preview or grading runs where live odds aren't being re-fetched.
+    """
+    now_iso = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+
+    existing: dict = {}
+    try:
+        with open(STEAM_PATH) as f:
+            existing = json.load(f)
+    except Exception:
+        pass
+
+    if existing.get("date") != run_date_str:
+        existing = {"date": run_date_str, "snapshots": []}
+
+    pitcher_snap: dict = {}
+    for p in pitchers:
+        book_odds = p.get("book_odds")
+        if not book_odds:
+            continue
+        pitcher_snap[p["pitcher"]] = {"k_line": p.get("k_line"), **book_odds}
+
+    if pitcher_snap:
+        existing["snapshots"].append({"t": now_iso, "pitchers": pitcher_snap})
+
+    existing["updated_at"] = now_iso
+
+    try:
+        STEAM_PATH.parent.mkdir(parents=True, exist_ok=True)
+        with open(STEAM_PATH, "w") as f:
+            json.dump(existing, f, indent=2)
+        log.info("Wrote steam.json (%d snapshot(s), %d pitcher(s))",
+                 len(existing["snapshots"]), len(pitcher_snap))
+    except Exception as e:
+        log.warning("Failed to write steam.json: %s", e)
+
+
 def _verdict_stake(verdict) -> float:
     """Units staked for a verdict string. LEAN = 0 (tracked, not staked)."""
     if verdict and "2u" in verdict:
@@ -727,6 +769,7 @@ def run(date_str: str, run_type: str = "full") -> None:
     # a non-empty records list here means at least some data is valid.
     if records or not _has_valid_output(date_str):
         _write_output(date_str, records, props_available=True)
+        _write_steam(records, date_str)
     else:
         log.warning(
             "Stats pipeline returned 0 records despite %d odds entries — "
