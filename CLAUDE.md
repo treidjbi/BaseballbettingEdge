@@ -37,7 +37,7 @@ netlify/functions/  Serverless functions
 data/               Shared data files
   params.json           Calibrated model parameters (lambda_bias, weights, etc.)
   picks_history.json    All picks with results (JSON, committed by pipeline)
-  preview_lines.json    7pm preview opening lines for next day
+  preview_lines.json    Midnight preview opening lines for the upcoming game day
   processed/            (gitignored intermediate data)
   umpires/              Umpire data cache
 
@@ -47,9 +47,12 @@ tests/              pytest test suite
 ## Pipeline Schedule (GitHub Actions)
 
 All times America/Phoenix (UTC-7, no DST):
-- **7:00 PM** — Preview: fetch next-day opening lines → `preview_lines.json`
+- **12:00 AM (midnight)** — Preview: fetch current-day opening lines → `preview_lines.json`.
+  At midnight we've just rolled into the game day, so the run uses TODAY's
+  date. Later start time (vs. the prior 7 PM) gives more pitchers time to
+  be announced, which improves coverage.
 - **3:00 AM** — Grading: grade yesterday's picks + calibrate `params.json`
-- **6:00 AM** — Full run: finalize today's picks (uses 7pm lines as opening baseline)
+- **6:00 AM** — Full run: finalize today's picks (uses midnight lines as opening baseline)
 - **8 AM–6 PM every 30 min** — Refresh: fetch fresh odds/lineups, update unlocked picks, lock T-30min
 
 ## Key Commands
