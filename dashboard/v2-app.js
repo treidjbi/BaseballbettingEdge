@@ -1334,6 +1334,8 @@ function PicksTab({
 function PerfTab() {
   const d = window.V2_PERF;
   const maxAbsRoi = Math.max(...d.rows.map(r => Math.abs(r.roi)));
+  const [showCalib, setShowCalib] = useState(false);
+  const notes = d.calibration_notes || [];
   return /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("div", {
     className: "v2-header"
   }, /*#__PURE__*/React.createElement("div", {
@@ -1349,7 +1351,9 @@ function PerfTab() {
   }, "Season \xB7 ", d.total_picks ?? 0, " graded picks"))), /*#__PURE__*/React.createElement("div", {
     className: "v2-header-actions"
   }, /*#__PURE__*/React.createElement("button", {
-    className: "v2-icon-btn"
+    className: `v2-icon-btn${showCalib ? " active" : ""}`,
+    title: "Calibration log",
+    onClick: () => setShowCalib(s => !s)
   }, /*#__PURE__*/React.createElement("svg", {
     viewBox: "0 0 16 16",
     width: "14",
@@ -1360,7 +1364,25 @@ function PerfTab() {
     strokeLinecap: "round"
   }, /*#__PURE__*/React.createElement("path", {
     d: "M2 4h12M4 8h8M6 12h4"
-  })))))), /*#__PURE__*/React.createElement("div", {
+  })))))), showCalib && /*#__PURE__*/React.createElement("div", {
+    className: "v2-calib-panel"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "v2-calib-title"
+  }, "Calibration log \xB7 ", notes.length, " entries"), notes.length === 0 && /*#__PURE__*/React.createElement("div", {
+    className: "v2-calib-empty"
+  }, "No calibration notes yet."), notes.map((n, i) => {
+    const match = n.match(/^\[(\d{4}-\d{2}-\d{2})\]\s*(.+)$/);
+    const date = match ? match[1] : null;
+    const text = match ? match[2] : n;
+    return /*#__PURE__*/React.createElement("div", {
+      key: i,
+      className: "v2-calib-row"
+    }, date && /*#__PURE__*/React.createElement("span", {
+      className: "v2-calib-date"
+    }, date), /*#__PURE__*/React.createElement("span", {
+      className: "v2-calib-text"
+    }, text));
+  })), /*#__PURE__*/React.createElement("div", {
     className: "v2-perf-hero"
   }, /*#__PURE__*/React.createElement("div", {
     className: `v2-perf-units ${d.total_units >= 0 ? "pos" : "neg"}`

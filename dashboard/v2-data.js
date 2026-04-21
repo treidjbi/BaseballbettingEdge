@@ -21,6 +21,7 @@
   const PERF_URL = IS_LOCAL
     ? 'data/performance.json'
     : 'https://raw.githubusercontent.com/treidjbi/baseballbettingedge/main/dashboard/data/performance.json';
+  const PARAMS_URL = 'https://raw.githubusercontent.com/treidjbi/baseballbettingedge/main/data/params.json';
 
   // Stakes-per-pick mapping — mirrors CLAUDE.md thresholds.
   const STAKE = { 'FIRE 2u': 2, 'FIRE 1u': 1, 'LEAN': 0, 'PASS': 0 };
@@ -135,6 +136,7 @@
       win_rate: winRate,
       last_calibrated: perf.last_calibrated,
       calibration_sample: perf.calibration_sample,
+      calibration_notes: perf.calibration_notes || [],
     };
   }
 
@@ -222,13 +224,15 @@
     const dataUrl = `${RAW_BASE}/${dateToLoad}.json`;
 
     try {
-      const [todayJson, perfJson, dateIndex] = await Promise.all([
+      const [todayJson, perfJson, paramsJson, dateIndex] = await Promise.all([
         fetchJSON(dataUrl).catch(() => fetchJSON(`${RAW_BASE}/today.json`)),
         fetchJSON(PERF_URL).catch(() => ({ rows: [], total_picks: 0 })),
+        fetchJSON(PARAMS_URL).catch(() => ({})),
         fetchDateIndex(),
       ]);
+      const perfWithNotes = { ...perfJson, calibration_notes: paramsJson.calibration_notes || perfJson.calibration_notes || [] };
       window.V2_DATA  = buildV2Data(todayJson);
-      window.V2_PERF  = buildV2Perf(perfJson);
+      window.V2_PERF  = buildV2Perf(perfWithNotes);
       window.V2_STEAM = buildV2Steam(todayJson);
       window.V2_DATES = dateIndex;
       window.V2_CURRENT_DATE = dateToLoad;

@@ -874,6 +874,8 @@ function PicksTab({ pitchersOverride }) {
 function PerfTab() {
   const d = window.V2_PERF;
   const maxAbsRoi = Math.max(...d.rows.map(r => Math.abs(r.roi)));
+  const [showCalib, setShowCalib] = useState(false);
+  const notes = d.calibration_notes || [];
 
   return (
     <>
@@ -887,10 +889,33 @@ function PerfTab() {
             </div>
           </div>
           <div className="v2-header-actions">
-            <button className="v2-icon-btn"><svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"><path d="M2 4h12M4 8h8M6 12h4"/></svg></button>
+            <button
+              className={`v2-icon-btn${showCalib ? " active" : ""}`}
+              title="Calibration log"
+              onClick={() => setShowCalib(s => !s)}
+            >
+              <svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"><path d="M2 4h12M4 8h8M6 12h4"/></svg>
+            </button>
           </div>
         </div>
       </div>
+      {showCalib && (
+        <div className="v2-calib-panel">
+          <div className="v2-calib-title">Calibration log · {notes.length} entries</div>
+          {notes.length === 0 && <div className="v2-calib-empty">No calibration notes yet.</div>}
+          {notes.map((n, i) => {
+            const match = n.match(/^\[(\d{4}-\d{2}-\d{2})\]\s*(.+)$/);
+            const date = match ? match[1] : null;
+            const text = match ? match[2] : n;
+            return (
+              <div key={i} className="v2-calib-row">
+                {date && <span className="v2-calib-date">{date}</span>}
+                <span className="v2-calib-text">{text}</span>
+              </div>
+            );
+          })}
+        </div>
+      )}
 
       <div className="v2-perf-hero">
         <div className={`v2-perf-units ${d.total_units >= 0 ? "pos" : "neg"}`}>
