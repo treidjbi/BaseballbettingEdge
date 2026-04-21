@@ -1,5 +1,6 @@
 import sys, os
 import json
+import pytest
 from pathlib import Path
 from unittest.mock import patch, MagicMock
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'pipeline'))
@@ -270,9 +271,23 @@ def test_preview_run_does_not_touch_today_json_when_it_exists(tmp_path):
     assert data["pitchers"][0]["pitcher"] == "Today Guy", "today.json pitchers were overwritten"
 
 
+def _mock_pick(pitcher="Cole", side="over", result="win", actual_ks=8,
+               verdict="FIRE 1u", locked_verdict=None,
+               k_line=6.5, locked_k_line=None,
+               odds=-110, locked_odds=None, pnl=0.9091, date="2026-04-10"):
+    return {
+        "date": date, "pitcher": pitcher, "side": side,
+        "result": result, "actual_ks": actual_ks,
+        "verdict": verdict, "locked_verdict": locked_verdict,
+        "k_line": k_line, "locked_k_line": locked_k_line,
+        "odds": odds, "locked_odds": locked_odds,
+        "pnl": pnl,
+    }
+
+
 def test_enrich_archives_with_results_injects_actual_ks_and_result(tmp_path):
-    """_enrich_archives_with_results should write actual_ks + per-side result into
-    matching dated archive files so the dashboard can render W/L badges on past dates."""
+    """_enrich_archives_with_results should write actual_ks, per-side result, and
+    top-level result object into matching dated archive files."""
     import run_pipeline
 
     archive_path = tmp_path / "2026-04-10.json"
@@ -294,10 +309,7 @@ def test_enrich_archives_with_results_injects_actual_ks_and_result(tmp_path):
         ],
     }))
 
-    rows = [
-        {"date": "2026-04-10", "pitcher": "Cole", "side": "over",
-         "result": "win", "actual_ks": 8},
-    ]
+    rows = [_mock_pick()]
     mock_conn = MagicMock()
     mock_conn.execute.return_value.fetchall.return_value = rows
 
@@ -312,10 +324,20 @@ def test_enrich_archives_with_results_injects_actual_ks_and_result(tmp_path):
     assert cole["ev_over"]["result"] == "win"
     assert "result" not in cole["ev_under"], "PASS side should not be enriched"
 
+    r = cole["result"]
+    assert r["final_k"] == 8
+    assert r["side_taken"] == "over"
+    assert r["outcome"] == "win"
+    assert r["line_at_bet"] == 6.5
+    assert r["odds_at_bet"] == -110
+    assert r["units_risked"] == 1.0
+    assert r["units_won"] == pytest.approx(0.9091, abs=1e-4)
+
     # Unmatched pitcher should be left alone
     other = data["pitchers"][1]
     assert "actual_ks" not in other
     assert "result" not in other["ev_under"]
+    assert "result" not in other
 
 
 def test_enrich_archives_with_results_no_rows_is_noop(tmp_path):
@@ -342,10 +364,7 @@ def test_enrich_archives_with_results_skips_missing_archive(tmp_path):
     """Graded picks for a date with no archive file must not raise."""
     import run_pipeline
 
-    rows = [
-        {"date": "2026-03-01", "pitcher": "Cole", "side": "over",
-         "result": "win", "actual_ks": 7},
-    ]
+    rows = [_mock_pick(date="2026-03-01")]
     mock_conn = MagicMock()
     mock_conn.execute.return_value.fetchall.return_value = rows
 
@@ -386,3 +405,195 @@ def test_run_evening_calls_results_and_calibrate(tmp_path):
 
     assert len(results_called) == 1, "fetch_results.run() was not called"
     assert len(calibrate_called) == 1, "calibrate.run() was not called"
+
+
+# ── Tests: _verdict_stake ─────────────────────────────────────────────────────
+
+class TestVerdictStake:
+    def test_fire_2u(self):
+        from run_pipeline import _verdict_stake
+        assert _verdict_stake("FIRE 2u") == 2.0
+
+    def test_fire_1u(self):
+        from run_pipeline import _verdict_stake
+        assert _verdict_stake("FIRE 1u") == 1.0
+
+    def test_lean_is_zero(self):
+        from run_pipeline import _verdict_stake
+        assert _verdict_stake("LEAN") == 0.0
+
+    def test_none_is_zero(self):
+        from run_pipeline import _verdict_stake
+        assert _verdict_stake(None) == 0.0
+
+
+# ── Tests: _build_result_obj ──────────────────────────────────────────────────
+
+class TestBuildResultObj:
+    def test_fire_1u_win_at_minus_110(self):
+        from run_pipeline import _build_result_obj
+        pick = _mock_pick(verdict="FIRE 1u", result="win", actual_ks=8,
+                          k_line=6.5, odds=-110, pnl=100/110)
+        r = _build_result_obj(pick)
+        assert r["outcome"] == "win"
+        assert r["units_risked"] == 1.0
+        assert r["units_won"] == pytest.approx(100/110, abs=1e-4)
+        assert r["final_k"] == 8
+        assert r["side_taken"] == "over"
+        assert r["line_at_bet"] == 6.5
+        assert r["odds_at_bet"] == -110
+
+    def test_fire_2u_loss(self):
+        from run_pipeline import _build_result_obj
+        pick = _mock_pick(verdict="FIRE 2u", result="loss", actual_ks=5,
+                          k_line=6.5, odds=-120, pnl=-1.0)
+        r = _build_result_obj(pick)
+        assert r["units_risked"] == 2.0
+        assert r["units_won"] == pytest.approx(-2.0, abs=1e-4)
+        assert r["outcome"] == "loss"
+
+    def test_lean_units_are_zero(self):
+        from run_pipeline import _build_result_obj
+        pick = _mock_pick(verdict="LEAN", result="win", actual_ks=7,
+                          k_line=5.5, odds=-110, pnl=100/110)
+        r = _build_result_obj(pick)
+        assert r["units_risked"] == 0.0
+        assert r["units_won"] == 0.0
+        assert r["outcome"] == "win"
+
+    def test_locked_odds_take_precedence(self):
+        from run_pipeline import _build_result_obj
+        pick = _mock_pick(verdict="FIRE 1u", result="win", actual_ks=7,
+                          k_line=6.5, odds=-110, locked_k_line=6.0, locked_odds=-115, pnl=100/115)
+        r = _build_result_obj(pick)
+        assert r["line_at_bet"] == 6.0
+        assert r["odds_at_bet"] == -115
+
+    def test_locked_verdict_takes_precedence(self):
+        from run_pipeline import _build_result_obj
+        pick = _mock_pick(verdict="LEAN", locked_verdict="FIRE 2u",
+                          result="win", actual_ks=8, k_line=6.5, odds=-110, pnl=100/110)
+        r = _build_result_obj(pick)
+        assert r["units_risked"] == 2.0
+
+
+# ── Tests: backfill_result_embeds ─────────────────────────────────────────────
+
+def test_backfill_result_embeds_writes_result_objects(tmp_path):
+    """backfill_result_embeds reads picks_history.json and embeds result objects
+    into matching archive files."""
+    import run_pipeline
+
+    history = [
+        {
+            "date": "2026-04-10", "pitcher": "Cole", "side": "over",
+            "result": "win", "actual_ks": 8,
+            "verdict": "FIRE 1u", "locked_verdict": None,
+            "k_line": 6.5, "locked_k_line": None,
+            "odds": -110, "locked_odds": None, "pnl": 100/110,
+        },
+    ]
+    history_path = tmp_path / "picks_history.json"
+    history_path.write_text(json.dumps(history))
+
+    archive_path = tmp_path / "processed" / "2026-04-10.json"
+    archive_path.parent.mkdir()
+    archive_path.write_text(json.dumps({
+        "date": "2026-04-10",
+        "pitchers": [
+            {"pitcher": "Cole", "k_line": 6.5,
+             "ev_over": {"verdict": "FIRE 1u"}, "ev_under": {"verdict": "PASS"}},
+        ],
+    }))
+
+    with patch.object(run_pipeline, "HISTORY_PATH", history_path), \
+         patch.object(run_pipeline, "OUTPUT_PATH", tmp_path / "processed" / "today.json"):
+        n = run_pipeline.backfill_result_embeds()
+
+    assert n == 1
+    data = json.loads(archive_path.read_text())
+    cole = data["pitchers"][0]
+    assert cole["actual_ks"] == 8
+    assert cole["ev_over"]["result"] == "win"
+    r = cole["result"]
+    assert r["final_k"] == 8
+    assert r["side_taken"] == "over"
+    assert r["outcome"] == "win"
+    assert r["units_risked"] == 1.0
+
+
+def test_backfill_result_embeds_skips_void_and_cancelled(tmp_path):
+    """void and cancelled picks must not produce a result object."""
+    import run_pipeline
+
+    history = [
+        {"date": "2026-04-10", "pitcher": "Cole", "side": "over",
+         "result": "void", "actual_ks": None,
+         "verdict": "FIRE 1u", "locked_verdict": None,
+         "k_line": 6.5, "locked_k_line": None,
+         "odds": -110, "locked_odds": None, "pnl": 0.0},
+    ]
+    history_path = tmp_path / "picks_history.json"
+    history_path.write_text(json.dumps(history))
+
+    archive_path = tmp_path / "processed" / "2026-04-10.json"
+    archive_path.parent.mkdir()
+    original = {"date": "2026-04-10", "pitchers": [
+        {"pitcher": "Cole", "ev_over": {"verdict": "FIRE 1u"}, "ev_under": {"verdict": "PASS"}}
+    ]}
+    archive_path.write_text(json.dumps(original))
+
+    with patch.object(run_pipeline, "HISTORY_PATH", history_path), \
+         patch.object(run_pipeline, "OUTPUT_PATH", tmp_path / "processed" / "today.json"):
+        n = run_pipeline.backfill_result_embeds()
+
+    assert n == 0
+    assert json.loads(archive_path.read_text()) == original
+
+
+def test_backfill_result_embeds_missing_history_is_noop(tmp_path):
+    """Missing picks_history.json must return 0 without raising."""
+    import run_pipeline
+
+    with patch.object(run_pipeline, "HISTORY_PATH", tmp_path / "nonexistent.json"), \
+         patch.object(run_pipeline, "OUTPUT_PATH", tmp_path / "today.json"):
+        n = run_pipeline.backfill_result_embeds()
+
+    assert n == 0
+
+
+def test_backfill_higher_stake_wins_tiebreak(tmp_path):
+    """When a pitcher has both over (FIRE 2u win) and under (FIRE 1u loss), the
+    result object should reflect the FIRE 2u pick as the primary."""
+    import run_pipeline
+
+    history = [
+        {"date": "2026-04-10", "pitcher": "Cole", "side": "over",
+         "result": "win", "actual_ks": 8,
+         "verdict": "FIRE 2u", "locked_verdict": None,
+         "k_line": 6.5, "locked_k_line": None, "odds": -120, "locked_odds": None, "pnl": 100/120},
+        {"date": "2026-04-10", "pitcher": "Cole", "side": "under",
+         "result": "loss", "actual_ks": 8,
+         "verdict": "FIRE 1u", "locked_verdict": None,
+         "k_line": 6.5, "locked_k_line": None, "odds": -110, "locked_odds": None, "pnl": -1.0},
+    ]
+    history_path = tmp_path / "picks_history.json"
+    history_path.write_text(json.dumps(history))
+
+    archive_path = tmp_path / "processed" / "2026-04-10.json"
+    archive_path.parent.mkdir()
+    archive_path.write_text(json.dumps({
+        "date": "2026-04-10",
+        "pitchers": [{"pitcher": "Cole", "k_line": 6.5,
+                      "ev_over": {"verdict": "FIRE 2u"}, "ev_under": {"verdict": "FIRE 1u"}}],
+    }))
+
+    with patch.object(run_pipeline, "HISTORY_PATH", history_path), \
+         patch.object(run_pipeline, "OUTPUT_PATH", tmp_path / "processed" / "today.json"):
+        run_pipeline.backfill_result_embeds()
+
+    data = json.loads(archive_path.read_text())
+    r = data["pitchers"][0]["result"]
+    assert r["side_taken"] == "over"
+    assert r["units_risked"] == 2.0
+    assert r["outcome"] == "win"

@@ -382,14 +382,43 @@ def _run_lock_only(date_str: str) -> None:
         log.error("Lock-only run failed: %s", e)
 
 
+def _verdict_stake(verdict) -> float:
+    """Units staked for a verdict string. LEAN = 0 (tracked, not staked)."""
+    if verdict and "2u" in verdict:
+        return 2.0
+    if verdict and ("1u" in verdict or verdict.startswith("FIRE")):
+        return 1.0
+    return 0.0
+
+
+def _build_result_obj(pick) -> dict:
+    """Build the v2 result object from a pick row (sqlite3.Row or dict)."""
+    v = pick["locked_verdict"] or pick["verdict"]
+    units_risked = _verdict_stake(v)
+    pnl = pick["pnl"] if pick["pnl"] is not None else 0.0
+    line_at_bet = pick["locked_k_line"] if pick["locked_k_line"] is not None else pick["k_line"]
+    odds_at_bet = pick["locked_odds"] if pick["locked_odds"] is not None else pick["odds"]
+    return {
+        "final_k": pick["actual_ks"],
+        "side_taken": pick["side"],
+        "line_at_bet": line_at_bet,
+        "odds_at_bet": odds_at_bet,
+        "outcome": pick["result"],
+        "units_won": round(pnl * units_risked, 4),
+        "units_risked": units_risked,
+    }
+
+
 def _enrich_archives_with_results() -> None:
-    """Inject grading results (actual_ks, result) into dated archive files
-    so the dashboard can display W/L on past dates."""
+    """Inject grading results into dated archive files so the dashboard can
+    display W/L on past dates and v2 can render the FINAL state detail sheet."""
     try:
         conn = get_db()
         try:
             rows = conn.execute("""
-                SELECT date, pitcher, side, result, actual_ks
+                SELECT date, pitcher, side, result, actual_ks,
+                       locked_k_line, k_line, locked_odds, odds,
+                       locked_verdict, verdict, pnl
                 FROM picks
                 WHERE result IN ('win', 'loss', 'push')
             """).fetchall()
@@ -442,6 +471,18 @@ def _enrich_archives_with_results() -> None:
                         p[ev_key]["result"] = pick_data[side_key]["result"]
                         modified = True
 
+            # Embed top-level result object for v2 FINAL state detail sheet.
+            # Primary pick = highest-staked; ties broken by wins over losses.
+            primary = max(
+                pick_data.values(),
+                key=lambda pk: (
+                    _verdict_stake(pk["locked_verdict"] or pk["verdict"]),
+                    pk["result"] == "win",
+                ),
+            )
+            p["result"] = _build_result_obj(primary)
+            modified = True
+
         if modified:
             try:
                 with open(archive_path, "w") as f:
@@ -452,6 +493,79 @@ def _enrich_archives_with_results() -> None:
 
     if enriched:
         log.info("Enriched %d archive(s) with grading results", enriched)
+
+
+def backfill_result_embeds() -> int:
+    """Backfill result objects into historical archive files from picks_history.json.
+
+    Reads directly from picks_history.json (no DB required) so it can be run
+    standalone to update archives without waiting for the next grading run.
+    Safe to re-run — overwrites the result key only on pitchers with graded picks.
+    """
+    try:
+        with open(HISTORY_PATH) as f:
+            picks = json.load(f)
+    except (FileNotFoundError, json.JSONDecodeError, OSError) as e:
+        log.warning("backfill_result_embeds: could not read picks_history.json: %s", e)
+        return 0
+
+    by_date: dict[str, dict] = {}
+    for p in picks:
+        if p.get("result") not in ("win", "loss", "push"):
+            continue
+        date, pitcher, side = p.get("date"), p.get("pitcher"), p.get("side")
+        if not all([date, pitcher, side]):
+            continue
+        by_date.setdefault(date, {}).setdefault(pitcher, {})[side] = p
+
+    base_dir = OUTPUT_PATH.parent
+    enriched = 0
+    for date_str, pitcher_picks in by_date.items():
+        archive_path = base_dir / f"{date_str}.json"
+        if not archive_path.exists():
+            continue
+        try:
+            with open(archive_path) as f:
+                archive = json.load(f)
+        except Exception:
+            continue
+
+        modified = False
+        for p in archive.get("pitchers", []):
+            name = p["pitcher"]
+            if name not in pitcher_picks:
+                continue
+            pick_data = pitcher_picks[name]
+
+            any_pick = next(iter(pick_data.values()))
+            if any_pick.get("actual_ks") is not None:
+                p["actual_ks"] = any_pick["actual_ks"]
+
+            for side_key, pick in pick_data.items():
+                ev_key = f"ev_{side_key}"
+                if ev_key in p and pick.get("result"):
+                    p[ev_key]["result"] = pick["result"]
+
+            primary = max(
+                pick_data.values(),
+                key=lambda pk: (
+                    _verdict_stake(pk.get("locked_verdict") or pk.get("verdict")),
+                    pk.get("result") == "win",
+                ),
+            )
+            p["result"] = _build_result_obj(primary)
+            modified = True
+
+        if modified:
+            try:
+                with open(archive_path, "w") as f:
+                    json.dump(archive, f, indent=2)
+                enriched += 1
+            except Exception as e:
+                log.warning("backfill_result_embeds: failed to write %s: %s", archive_path, e)
+
+    log.info("backfill_result_embeds: updated %d archive(s)", enriched)
+    return enriched
 
 
 def _run_grading_steps() -> None:
