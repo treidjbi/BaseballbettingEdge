@@ -257,21 +257,32 @@ appear in-season.
 
 **How to re-seed (background, resumable):**
 
-```bash
-# Full re-seed across recent seasons (run once at start of season):
-python scripts/seed_umpire_career_rates.py --start 2024-03-28 --end 2025-10-01
+The seeder is **replace-semantics**, not additive — it re-derives deltas from
+scratch for the given window. To pick up drift safely, you must run a wide
+multi-season window so each ump has hundreds of games.
 
-# Mid-season YTD top-up (run quarterly — only adds current-season games):
-python scripts/seed_umpire_career_rates.py --start 2026-03-20 --end $(date +%F)
+```bash
+# ✅ RIGHT: wide multi-season window captures 2026 games additively
+#    (when run during/after the 2026 season with a 3-year window):
+python scripts/seed_umpire_career_rates.py \
+    --start 2024-03-28 --end $(date +%F) --output data/umpires/career_k_rates.json
+
+# ❌ WRONG: short YTD-only window produces sample noise, not drift
+#    (validated 2026-04-21: median |shift| = 1.76 K/game on a 32-day run —
+#    pure small-sample variance, not real career drift)
 ```
 
-- Long windows run in hours; resumable via `analytics/output/seed_progress.json`
+- Wide windows run in hours; resumable via `analytics/output/seed_progress.json`
 - Safe to run in the background — no pipeline side effects, writes a single
   JSON at the end
 - After completion, diff the JSON vs. the prior version. Commit the update
   if any career K/game delta shifted by **≥0.1** or if new umpires were added.
   Shifts below that threshold are below the noise floor of `ump_scale` and
   not worth a commit.
+- For a quick "is there a new ump in the pool" check without re-running a
+  multi-hour seed, write to a side-file (e.g. `analytics/output/seeds/*.json`)
+  and diff name sets only — but **don't** use a short-window file to update
+  career deltas.
 
 **Do NOT bump `formula_change_date`** — career_k_rates updates do not change
 the model formula; `lambda_bias` self-heals through normal calibration.
