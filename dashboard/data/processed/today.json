@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-04-21T20:14:11Z",
+  "generated_at": "2026-04-21T20:39:54Z",
   "date": "2026-04-21",
   "props_available": true,
   "pitchers": [
@@ -368,6 +368,58 @@
       "game_state": "pregame"
     },
     {
+      "pitcher": "Chase Burns",
+      "team": "Cincinnati Reds",
+      "opp_team": "Tampa Bay Rays",
+      "pitcher_throws": "R",
+      "game_time": "2026-04-21T22:40:00Z",
+      "k_line": 5.5,
+      "opening_line": 5.5,
+      "best_over_book": "FanDuel",
+      "ref_book": "FanDuel",
+      "best_over_odds": -104,
+      "best_under_odds": -128,
+      "opening_over_odds": -118,
+      "opening_under_odds": -112,
+      "opening_odds_source": "preview",
+      "price_delta_over": 14,
+      "price_delta_under": -16,
+      "raw_lambda": 6.42,
+      "lambda": 6.1,
+      "avg_ip": 5.58,
+      "swstr_pct": 0.11,
+      "career_swstr_pct": null,
+      "swstr_delta_k9": 0.0,
+      "opp_k_rate": 0.1835,
+      "lineup_used": false,
+      "ump_k_adj": 0.0,
+      "season_k9": 8.87,
+      "recent_k9": 12.6,
+      "career_k9": 12.2,
+      "ev_over": {
+        "ev": 0.0608,
+        "adj_ev": 0.0486,
+        "verdict": "FIRE 1u",
+        "win_prob": 0.571,
+        "movement_conf": 0.8
+      },
+      "ev_under": {
+        "ev": -0.132,
+        "adj_ev": -0.132,
+        "verdict": "PASS",
+        "win_prob": 0.429,
+        "movement_conf": 1.0
+      },
+      "book_odds": {
+        "FanDuel": {
+          "over": -104,
+          "under": -128
+        }
+      },
+      "data_complete": false,
+      "game_state": "pregame"
+    },
+    {
       "pitcher": "Reynaldo Lopez",
       "team": "Atlanta Braves",
       "opp_team": "Washington Nationals",
@@ -637,13 +689,13 @@
       "opening_line": 5.5,
       "best_over_book": "FanDuel",
       "ref_book": "FanDuel",
-      "best_over_odds": -172,
-      "best_under_odds": 128,
+      "best_over_odds": -168,
+      "best_under_odds": 126,
       "opening_over_odds": -172,
       "opening_under_odds": 128,
       "opening_odds_source": "preview",
-      "price_delta_over": 0,
-      "price_delta_under": 0,
+      "price_delta_over": 4,
+      "price_delta_under": -2,
       "raw_lambda": 6.73,
       "lambda": 6.4,
       "avg_ip": 5.67,
@@ -657,23 +709,23 @@
       "recent_k9": 10.5,
       "career_k9": 10.09,
       "ev_over": {
-        "ev": -0.0154,
-        "adj_ev": -0.0154,
+        "ev": -0.0099,
+        "adj_ev": -0.0099,
         "verdict": "PASS",
         "win_prob": 0.617,
         "movement_conf": 1.0
       },
       "ev_under": {
-        "ev": -0.0555,
-        "adj_ev": -0.0555,
+        "ev": -0.0594,
+        "adj_ev": -0.0594,
         "verdict": "PASS",
         "win_prob": 0.383,
         "movement_conf": 1.0
       },
       "book_odds": {
         "FanDuel": {
-          "over": -172,
-          "under": 128
+          "over": -168,
+          "under": 126
         }
       },
       "data_complete": false,
@@ -689,13 +741,13 @@
       "opening_line": 6.5,
       "best_over_book": "FanDuel",
       "ref_book": "FanDuel",
-      "best_over_odds": 114,
-      "best_under_odds": -152,
+      "best_over_odds": 112,
+      "best_under_odds": -148,
       "opening_over_odds": 116,
       "opening_under_odds": -154,
       "opening_odds_source": "preview",
-      "price_delta_over": -2,
-      "price_delta_under": 2,
+      "price_delta_over": -4,
+      "price_delta_under": 6,
       "raw_lambda": 6.38,
       "lambda": 6.06,
       "avg_ip": 5.5,
@@ -709,23 +761,23 @@
       "recent_k9": 12.6,
       "career_k9": 8.52,
       "ev_over": {
-        "ev": -0.0646,
-        "adj_ev": -0.0646,
+        "ev": -0.069,
+        "adj_ev": -0.069,
         "verdict": "PASS",
         "win_prob": 0.403,
         "movement_conf": 1.0
       },
       "ev_under": {
-        "ev": -0.0058,
-        "adj_ev": -0.0058,
+        "ev": 0.0006,
+        "adj_ev": 0.0006,
         "verdict": "PASS",
         "win_prob": 0.597,
         "movement_conf": 1.0
       },
       "book_odds": {
         "FanDuel": {
-          "over": 114,
-          "under": -152
+          "over": 112,
+          "under": -148
         }
       },
       "data_complete": false,
@@ -882,6 +934,58 @@
         "FanDuel": {
           "over": 102,
           "under": -136
+        }
+      },
+      "data_complete": false,
+      "game_state": "pregame"
+    },
+    {
+      "pitcher": "Kumar Rocker",
+      "team": "Texas Rangers",
+      "opp_team": "Pittsburgh Pirates",
+      "pitcher_throws": "R",
+      "game_time": "2026-04-22T00:05:00Z",
+      "k_line": 4.5,
+      "opening_line": 4.5,
+      "best_over_book": "FanDuel",
+      "ref_book": "FanDuel",
+      "best_over_odds": -102,
+      "best_under_odds": -130,
+      "opening_over_odds": -102,
+      "opening_under_odds": -130,
+      "opening_odds_source": "first_seen",
+      "price_delta_over": 0,
+      "price_delta_under": 0,
+      "raw_lambda": 4.4,
+      "lambda": 4.08,
+      "avg_ip": 4.89,
+      "swstr_pct": 0.11,
+      "career_swstr_pct": null,
+      "swstr_delta_k9": 0.0,
+      "opp_k_rate": 0.2288,
+      "lineup_used": false,
+      "ump_k_adj": 0.0,
+      "season_k9": 8.59,
+      "recent_k9": 5.4,
+      "career_k9": 8.34,
+      "ev_over": {
+        "ev": -0.1185,
+        "adj_ev": -0.1185,
+        "verdict": "PASS",
+        "win_prob": 0.387,
+        "movement_conf": 1.0
+      },
+      "ev_under": {
+        "ev": 0.0483,
+        "adj_ev": 0.0483,
+        "verdict": "FIRE 1u",
+        "win_prob": 0.613,
+        "movement_conf": 1.0
+      },
+      "book_odds": {
+        "FanDuel": {
+          "over": -102,
+          "under": -130
         }
       },
       "data_complete": false,
@@ -1157,13 +1261,13 @@
       "opening_line": 4.5,
       "best_over_book": "FanDuel",
       "ref_book": "FanDuel",
-      "best_over_odds": -132,
-      "best_under_odds": 100,
-      "opening_over_odds": -130,
-      "opening_under_odds": -102,
+      "best_over_odds": -140,
+      "best_under_odds": 106,
+      "opening_over_odds": -132,
+      "opening_under_odds": 100,
       "opening_odds_source": "first_seen",
-      "price_delta_over": -2,
-      "price_delta_under": 202,
+      "price_delta_over": -8,
+      "price_delta_under": 6,
       "raw_lambda": 4.74,
       "lambda": 4.42,
       "avg_ip": 5.5,
@@ -1177,23 +1281,23 @@
       "recent_k9": 5.06,
       "career_k9": 8.12,
       "ev_over": {
-        "ev": -0.1162,
-        "adj_ev": -0.1162,
+        "ev": -0.1306,
+        "adj_ev": -0.1306,
         "verdict": "PASS",
         "win_prob": 0.453,
         "movement_conf": 1.0
       },
       "ev_under": {
-        "ev": 0.0472,
-        "adj_ev": 0.0472,
+        "ev": 0.0618,
+        "adj_ev": 0.0618,
         "verdict": "FIRE 1u",
         "win_prob": 0.547,
         "movement_conf": 1.0
       },
       "book_odds": {
         "FanDuel": {
-          "over": -132,
-          "under": 100
+          "over": -140,
+          "under": 106
         }
       },
       "data_complete": false,
@@ -1209,13 +1313,13 @@
       "opening_line": 4.5,
       "best_over_book": "FanDuel",
       "ref_book": "FanDuel",
-      "best_over_odds": 132,
-      "best_under_odds": -178,
-      "opening_over_odds": 134,
-      "opening_under_odds": -180,
+      "best_over_odds": 134,
+      "best_under_odds": -180,
+      "opening_over_odds": 132,
+      "opening_under_odds": -178,
       "opening_odds_source": "first_seen",
-      "price_delta_over": -2,
-      "price_delta_under": 2,
+      "price_delta_over": 2,
+      "price_delta_under": -2,
       "raw_lambda": 4.86,
       "lambda": 4.53,
       "avg_ip": 5.08,
@@ -1229,23 +1333,23 @@
       "recent_k9": 11.25,
       "career_k9": 8.91,
       "ev_over": {
-        "ev": 0.0433,
-        "adj_ev": 0.0433,
+        "ev": 0.047,
+        "adj_ev": 0.047,
         "verdict": "FIRE 1u",
         "win_prob": 0.474,
         "movement_conf": 1.0
       },
       "ev_under": {
-        "ev": -0.1146,
-        "adj_ev": -0.1146,
+        "ev": -0.1172,
+        "adj_ev": -0.1172,
         "verdict": "PASS",
         "win_prob": 0.526,
         "movement_conf": 1.0
       },
       "book_odds": {
         "FanDuel": {
-          "over": 132,
-          "under": -178
+          "over": 134,
+          "under": -180
         }
       },
       "data_complete": false,
@@ -1350,58 +1454,6 @@
         "FanDuel": {
           "over": -104,
           "under": -128
-        }
-      },
-      "data_complete": false,
-      "game_state": "pregame"
-    },
-    {
-      "pitcher": "Chase Burns",
-      "team": "Cincinnati Reds",
-      "opp_team": "Tampa Bay Rays",
-      "pitcher_throws": "R",
-      "game_time": "2026-04-21T22:40:00Z",
-      "k_line": 5.5,
-      "opening_line": 5.5,
-      "best_over_book": "FanDuel",
-      "ref_book": "FanDuel",
-      "best_over_odds": -106,
-      "best_under_odds": -125,
-      "opening_over_odds": -118,
-      "opening_under_odds": -112,
-      "opening_odds_source": "preview",
-      "price_delta_over": 12,
-      "price_delta_under": -13,
-      "raw_lambda": 6.42,
-      "lambda": 6.1,
-      "avg_ip": 5.58,
-      "swstr_pct": 0.11,
-      "career_swstr_pct": null,
-      "swstr_delta_k9": 0.0,
-      "opp_k_rate": 0.1835,
-      "lineup_used": false,
-      "ump_k_adj": 0.0,
-      "season_k9": 8.87,
-      "recent_k9": 12.6,
-      "career_k9": 12.2,
-      "ev_over": {
-        "ev": 0.056,
-        "adj_ev": 0.0504,
-        "verdict": "FIRE 1u",
-        "win_prob": 0.571,
-        "movement_conf": 0.9
-      },
-      "ev_under": {
-        "ev": -0.1262,
-        "adj_ev": -0.1262,
-        "verdict": "PASS",
-        "win_prob": 0.429,
-        "movement_conf": 1.0
-      },
-      "book_odds": {
-        "FanDuel": {
-          "over": -106,
-          "under": -125
         }
       },
       "data_complete": false,
