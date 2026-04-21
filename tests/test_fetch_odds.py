@@ -170,15 +170,15 @@ class TestParseKProps:
                         {
                             "name": "Gerrit Cole",
                             "lines": [
-                                {"value": "Over 7.5",  "prices": {"1": {"price": -112, "is_main_line": False}}},
-                                {"value": "Under 7.5", "prices": {"1": {"price": -108, "is_main_line": False}}},
+                                {"value": "Over 7.5",  "prices": {"23": {"price": -112, "is_main_line": False}}},
+                                {"value": "Under 7.5", "prices": {"23": {"price": -108, "is_main_line": False}}},
                             ],
                         },
                         {
                             "name": "Chris Sale",
                             "lines": [
-                                {"value": "Over 6.5",  "prices": {"1": {"price": 100, "is_main_line": False}}},
-                                {"value": "Under 6.5", "prices": {"1": {"price": -130, "is_main_line": False}}},
+                                {"value": "Over 6.5",  "prices": {"23": {"price": 100, "is_main_line": False}}},
+                                {"value": "Under 6.5", "prices": {"23": {"price": -130, "is_main_line": False}}},
                             ],
                         },
                     ],
@@ -227,10 +227,12 @@ class TestParseKProps:
         assert result[0]["best_over_odds"] == -115   # FanDuel (23), not best price (-105)
         assert result[0]["ref_book"] == "FanDuel"
 
-    def test_falls_back_to_any_book_when_no_priority_book(self):
-        """Uses first available book when no priority book is present."""
+    def test_skips_pitcher_when_no_target_book_offered(self):
+        """Option B: when only an untracked book (e.g. Book25) offers the line,
+        skip the pitcher entirely rather than falling back. The user can't
+        place those picks, so surfacing them is worse than surfacing nothing."""
         event = {
-            "event_id": "evt-fallback",
+            "event_id": "evt-no-target-book",
             "event_date": "2026-04-01T23:05:00Z",
             "teams": [
                 {"name": "NYY", "is_away": True,  "is_home": False},
@@ -255,8 +257,7 @@ class TestParseKProps:
             }],
         }
         result = parse_k_props({"events": [event]})
-        assert len(result) == 1
-        assert result[0]["ref_book"] == "Book25"
+        assert result == []
 
     def test_prefers_main_line_when_multiple_lines(self):
         # Pitcher has 4.5 and 5.5 lines; 5.5 is marked main
@@ -275,10 +276,10 @@ class TestParseKProps:
                         {
                             "name": "Trevor Rogers",
                             "lines": [
-                                {"value": "Over 4.5",  "prices": {"1": {"price": -160, "is_main_line": False}}},
-                                {"value": "Under 4.5", "prices": {"1": {"price":  125, "is_main_line": False}}},
-                                {"value": "Over 5.5",  "prices": {"1": {"price":  120, "is_main_line": True}}},
-                                {"value": "Under 5.5", "prices": {"1": {"price": -160, "is_main_line": True}}},
+                                {"value": "Over 4.5",  "prices": {"23": {"price": -160, "is_main_line": False}}},
+                                {"value": "Under 4.5", "prices": {"23": {"price":  125, "is_main_line": False}}},
+                                {"value": "Over 5.5",  "prices": {"23": {"price":  120, "is_main_line": True}}},
+                                {"value": "Under 5.5", "prices": {"23": {"price": -160, "is_main_line": True}}},
                             ],
                         }
                     ],
@@ -306,15 +307,15 @@ def test_home_pitcher_gets_empty_team_not_away():
                 {
                     "name": "Away Pitcher",
                     "lines": [
-                        {"value": "Over 6.5", "prices": {"1": {"price": -110, "is_main_line": True, "price_delta": 0}}},
-                        {"value": "Under 6.5", "prices": {"1": {"price": -110, "is_main_line": True, "price_delta": 0}}}
+                        {"value": "Over 6.5", "prices": {"23": {"price": -110, "is_main_line": True, "price_delta": 0}}},
+                        {"value": "Under 6.5", "prices": {"23": {"price": -110, "is_main_line": True, "price_delta": 0}}}
                     ]
                 },
                 {
                     "name": "Home Pitcher",
                     "lines": [
-                        {"value": "Over 5.5", "prices": {"1": {"price": -115, "is_main_line": True, "price_delta": 0}}},
-                        {"value": "Under 5.5", "prices": {"1": {"price": -105, "is_main_line": True, "price_delta": 0}}}
+                        {"value": "Over 5.5", "prices": {"23": {"price": -115, "is_main_line": True, "price_delta": 0}}},
+                        {"value": "Under 5.5", "prices": {"23": {"price": -105, "is_main_line": True, "price_delta": 0}}}
                     ]
                 },
             ]
@@ -343,7 +344,7 @@ def test_skips_pitcher_with_only_over_no_under():
                     {
                         "name": "Gerrit Cole",
                         "lines": [
-                            {"value": "Over 7.5", "prices": {"1": {"price": -112, "is_main_line": False}}},
+                            {"value": "Over 7.5", "prices": {"23": {"price": -112, "is_main_line": False}}},
                             # No Under line
                         ],
                     }
@@ -380,22 +381,68 @@ class TestSelectRefBook:
         assert book_id == "19"
         assert name == "DraftKings"
 
-    def test_falls_back_to_any_book(self):
+    def test_falls_back_to_betrivers(self):
+        books = {"30": {"price": -110, "is_main": True, "delta": 0}}
+        book_id, name = _select_ref_book(books)
+        assert book_id == "30"
+        assert name == "BetRivers"
+
+    def test_falls_back_to_caesars(self):
+        books = {"20": {"price": -110, "is_main": True, "delta": 0}}
+        book_id, name = _select_ref_book(books)
+        assert book_id == "20"
+        assert name == "Caesars"
+
+    def test_falls_back_to_fanatics(self):
+        books = {"38": {"price": -110, "is_main": True, "delta": 0}}
+        book_id, name = _select_ref_book(books)
+        assert book_id == "38"
+        assert name == "Fanatics"
+
+    def test_returns_none_when_only_untracked_book(self):
+        """Option B: no fallback to unknown books. Book25 is not in the
+        priority list, so _select_ref_book returns (None, None) and the
+        caller skips the pitcher."""
         books = {"25": {"price": -110, "is_main": True, "delta": 0}}
         book_id, name = _select_ref_book(books)
-        assert book_id == "25"
-        assert name == "Book25"
+        assert book_id is None
+        assert name is None
 
     def test_returns_none_for_empty_books(self):
         book_id, name = _select_ref_book({})
         assert book_id is None
         assert name is None
 
+    def test_priority_order_fanduel_over_all(self):
+        """FanDuel wins over every other target book when all are present."""
+        books = {
+            "23": {"price": -110, "is_main": True, "delta": 0},
+            "22": {"price": -108, "is_main": True, "delta": 0},
+            "19": {"price": -105, "is_main": True, "delta": 0},
+            "30": {"price": -100, "is_main": True, "delta": 0},
+            "20": {"price": -102, "is_main": True, "delta": 0},
+            "38": {"price": -104, "is_main": True, "delta": 0},
+        }
+        book_id, name = _select_ref_book(books)
+        assert book_id == "23"
+        assert name == "FanDuel"
+
+    def test_caesars_beats_fanatics(self):
+        """When only Caesars and Fanatics are present, Caesars wins
+        (it's earlier in REF_BOOK_PRIORITY)."""
+        books = {
+            "38": {"price": -110, "is_main": True, "delta": 0},
+            "20": {"price": -110, "is_main": True, "delta": 0},
+        }
+        book_id, name = _select_ref_book(books)
+        assert book_id == "20"
+        assert name == "Caesars"
+
 
 # ── Tests: book_odds in parse output ────────────────────────────────��────────
 
 def _multi_book_event(pitcher="Gerrit Cole", line_val=7.5,
-                      books=("23", "22", "19", "30")):
+                      books=("23", "22", "19", "30", "20", "38")):
     """Event with multiple tracked books, all with over and under on same line."""
     prices_over  = {b: {"price": -110, "is_main_line": True, "price_delta": 0} for b in books}
     prices_under = {b: {"price": -110, "is_main_line": True, "price_delta": 0} for b in books}
@@ -429,6 +476,8 @@ class TestBookOdds:
         assert "BetMGM"     in bo   # book 22
         assert "DraftKings" in bo   # book 19
         assert "BetRivers"  in bo   # book 30
+        assert "Caesars"    in bo   # book 20
+        assert "Fanatics"   in bo   # book 38
 
     def test_book_odds_entry_has_over_and_under(self):
         result = parse_k_props({"events": [_multi_book_event()]})
@@ -436,10 +485,12 @@ class TestBookOdds:
         assert fd["over"]  == -110
         assert fd["under"] == -110
 
-    def test_book_odds_none_when_no_tracked_book(self):
-        # Only untracked book "1" present — no tracked books → book_odds is None
+    def test_pitcher_skipped_when_no_target_book(self):
+        # Option B: only untracked book "1" present → pitcher is skipped
+        # entirely (no fallback). Previously book_odds was None; now the
+        # whole prop is dropped.
         result = parse_k_props({"events": [_multi_book_event(books=["1"])]})
-        assert result[0]["book_odds"] is None
+        assert result == []
 
     def test_book_odds_excludes_book_missing_one_side(self):
         # BetRivers (30) has over but no under → should not appear in book_odds
@@ -474,3 +525,38 @@ class TestOpeningOddsSource:
         result = parse_k_props({"events": [event]})
         assert len(result) == 1
         assert result[0]["opening_odds_source"] == "first_seen"
+
+
+# ── Tests: Option B skip logging ──────────────────────────────────────────────
+
+class TestOptionBSkipLogging:
+    """Option B emits an INFO log when a pitcher is dropped for having no
+    target-book offer. That keeps the behavior visible in pipeline logs
+    without blowing up verbosity (expected to fire on a handful of outliers
+    per day per historical data)."""
+
+    def test_logs_when_no_target_book_offers_over(self, caplog):
+        import logging
+        caplog.set_level(logging.INFO, logger="fetch_odds")
+        event = {
+            "event_id": "evt-skip",
+            "event_date": "2026-04-01T23:05:00Z",
+            "teams": [
+                {"name": "NYY", "is_away": True,  "is_home": False},
+                {"name": "BOS", "is_away": False, "is_home": True},
+            ],
+            "markets": [{
+                "market_id": 19,
+                "participants": [{
+                    "name": "Gerrit Cole",
+                    "lines": [
+                        {"value": "Over 7.5",  "prices": {"25": {"price": -110, "is_main_line": True, "price_delta": 0}}},
+                        {"value": "Under 7.5", "prices": {"25": {"price": -110, "is_main_line": True, "price_delta": 0}}},
+                    ],
+                }],
+            }],
+        }
+        result = parse_k_props({"events": [event]})
+        assert result == []
+        assert any("Gerrit Cole" in r.getMessage() and "skipping" in r.getMessage()
+                   for r in caplog.records)

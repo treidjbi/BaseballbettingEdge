@@ -21,35 +21,48 @@ _last_call_time: float = 0.0
 
 # TheRundown v2 book IDs. Verify against live API response if lines are missing.
 # To discover available IDs: log list(lines_data[main_val]["over"].keys()) in _parse_event_k_props
+# Caesars (20) and Fanatics (38) are best-guess IDs — if a pitcher's ref_book
+# shows up as "Book<N>" in picks_history.json for an N not in this map, update
+# the map. Option B (Task A4 follow-up): only target books count; untracked
+# books now trigger a skip rather than a fallback, so picks only surface when
+# the user can actually place the bet.
 BOOK_ID_MAP = {
     "23": "FanDuel",
     "22": "BetMGM",
     "19": "DraftKings",
     "30": "BetRivers",
+    "20": "Caesars",
+    "38": "Fanatics",
 }
-REF_BOOK_PRIORITY = ["23", "22", "19"]   # FanDuel → BetMGM → DraftKings
+# Priority order for picking the reference book on the card. Higher-priority
+# books come first; _select_ref_book returns the first match.
+REF_BOOK_PRIORITY = ["23", "22", "19", "30", "20", "38"]
 
-# Books tracked in steam.json snapshots.
+# Books tracked in steam.json snapshots (Steam Phase A). Same set as
+# BOOK_ID_MAP today; kept as a separate name so steam tracking and ref-book
+# selection can diverge later if needed.
 TRACKED_BOOKS = {
     "23": "FanDuel",
     "22": "BetMGM",
     "19": "DraftKings",
     "30": "BetRivers",
+    "20": "Caesars",
+    "38": "Fanatics",
 }
 
 
 def _select_ref_book(available_books: dict) -> tuple:
     """
     Select reference book from available_books dict {book_id: price_info}.
-    Priority: FanDuel → BetMGM → DraftKings → any available.
-    Returns (book_id, human_name) or (None, None) if no books available.
+    Priority order: FanDuel → BetMGM → DraftKings → BetRivers → Caesars → Fanatics.
+    Returns (book_id, human_name) or (None, None) if NO priority book is
+    available. This is the Option B behavior: we deliberately do NOT fall back
+    to unknown books — a pick the user cannot actually place is worse than no
+    pick, so the caller in _parse_event_k_props skips the pitcher entirely.
     """
     for book_id in REF_BOOK_PRIORITY:
         if book_id in available_books:
             return book_id, BOOK_ID_MAP[book_id]
-    if available_books:
-        book_id = next(iter(available_books))
-        return book_id, BOOK_ID_MAP.get(book_id, f"Book{book_id}")
     return None, None
 
 
@@ -172,18 +185,33 @@ def _parse_event_k_props(event: dict) -> list:
                         "under": chosen["under"][book_id]["price"],
                     }
 
-            # Select reference book (FanDuel → BetMGM → DraftKings → any)
+            # Select reference book from the priority list. Option B: untracked
+            # books trigger a skip so we don't surface picks on books the user
+            # can't place. The over and under sides are resolved independently
+            # so we accept e.g. FanDuel over / BetMGM under if those are the
+            # best priority matches on each side.
             ref_book_id, ref_book_name = _select_ref_book(chosen["over"])
             if ref_book_id is None:
-                continue  # no over-side data at all
+                log.info(
+                    "no target book offered an over line for %s — skipping "
+                    "(available books: %s)",
+                    pitcher_name, sorted(chosen["over"].keys()),
+                )
+                continue
             if ref_book_id in chosen["under"]:
                 ref_over  = chosen["over"][ref_book_id]
                 ref_under = chosen["under"][ref_book_id]
                 under_book_name = ref_book_name
             else:
-                # Ref book has over but not under — use ref book for over, best available for under
+                # Ref book has over but not under — pick the next priority book
+                # that offers an under. Still priority-only (no fallback).
                 under_book_id, under_book_name = _select_ref_book(chosen["under"])
                 if under_book_id is None:
+                    log.info(
+                        "no target book offered an under line for %s — skipping "
+                        "(available books: %s)",
+                        pitcher_name, sorted(chosen["under"].keys()),
+                    )
                     continue
                 ref_over  = chosen["over"][ref_book_id]
                 ref_under = chosen["under"][under_book_id]
