@@ -153,6 +153,19 @@ def by_lineup(df: pd.DataFrame) -> None:
     print(_row("lineup_used = False", s[s["lineup_used"] == 0]))
 
 
+def by_bookmaker(df: pd.DataFrame) -> None:
+    """Per-reference-book performance. Which book's line is most/least predictive?"""
+    print("\n-- By reference book (staked only) -----------------------------------")
+    s = staked(df)
+    if "ref_book" not in s.columns:
+        print("  skip: ref_book column missing from picks_history.json")
+        return
+    books = s["ref_book"].fillna("<unknown>").value_counts().index.tolist()
+    for book in books:
+        sub = s[s["ref_book"].fillna("<unknown>") == book]
+        print(_row(f"book = {book}", sub))
+
+
 # -- Plots -------------------------------------------------------------------
 
 def plot_calibration(df: pd.DataFrame) -> None:
@@ -288,6 +301,7 @@ def main() -> None:
     by_movement(df)
     by_umpire_adj(df)
     by_lineup(df)
+    by_bookmaker(df)
 
     print("\n-- Plots -------------------------------------------------------------")
     plot_calibration(df)
