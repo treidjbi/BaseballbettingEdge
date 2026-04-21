@@ -47,6 +47,36 @@ function urlBase64ToUint8Array(b64) {
   return Uint8Array.from([...raw].map(c => c.charCodeAt(0)));
 }
 
+function usePipelineTrigger() {
+  const [state, setState] = useState("idle"); // idle | running | triggered | error
+
+  async function trigger() {
+    if (state === "running") return;
+    setState("running");
+    try {
+      const res = await fetch("/.netlify/functions/trigger-pipeline", { method: "POST" });
+      const data = await res.json();
+      if (data.status === "triggered") {
+        setState("triggered");
+        setTimeout(() => setState("idle"), 3 * 60 * 1000);
+      } else {
+        setState("error");
+        setTimeout(() => setState("idle"), 5000);
+      }
+    } catch {
+      setState("error");
+      setTimeout(() => setState("idle"), 5000);
+    }
+  }
+
+  const title = state === "running"  ? "Running… (~3 min)"
+              : state === "triggered" ? "Triggered!"
+              : state === "error"     ? "Error — try again"
+              : "Refresh pipeline";
+
+  return { trigger, state, title };
+}
+
 function useNotifications() {
   const [supported, setSupported] = useState(false);
   const [subscribed, setSubscribed] = useState(false);
@@ -721,6 +751,7 @@ function PicksTab({ pitchersOverride }) {
   const [filter, setFilter] = useState("ALL");
   const [detail, setDetail] = useState(null);
   const { supported: notifySupported, subscribed: notifyOn, toggleNotify } = useNotifications();
+  const { trigger: triggerPipeline, state: pipelineState, title: pipelineTitle } = usePipelineTrigger();
   const pitchers = pitchersOverride ?? window.V2_DATA.pitchers;
   const past = isPastSlate();
   const filtered = useMemo(() => {
@@ -772,7 +803,13 @@ function PicksTab({ pitchersOverride }) {
                 {notifyOn ? Icon.bellOn : Icon.bell}
               </button>
             )}
-            <button className="v2-icon-btn" title="Refresh" onClick={() => location.reload()}>
+            <button
+              className={`v2-icon-btn${pipelineState === "triggered" ? " active" : ""}`}
+              title={pipelineTitle}
+              onClick={triggerPipeline}
+              disabled={pipelineState === "running"}
+              style={pipelineState === "running" ? { opacity: 0.5 } : {}}
+            >
               {Icon.refresh}
             </button>
             <button className="v2-icon-btn" title="Theme" onClick={() => window.__v2Theme?.toggleTheme()}>
