@@ -14,12 +14,21 @@
 
 ---
 
-## Current Status (updated 2026-04-17)
+## Current Status (updated 2026-04-21) — ✅ PLAN COMPLETE
 
-- **Phase 0: DONE.** Merged to `main` as commit `4bb54a8`. `/v2.html` is live on `baseballbettingedge.netlify.app` alongside unchanged `/`.
-- **Phase 1 (dogfooding): in progress.** User is dogfooding the weekend slates.
-- **Phase 2 (port SW/push): queued for week of 2026-04-20.** Pick up here next.
-- **Bug caught during verification:** v1 `index.html` line 1230 computes `totalUnits` as flat-1u per pick, ignoring the F2u/F1u/LEAN staking ladder from CLAUDE.md. v2 does it correctly. Not fixing v1 — it's being retired.
+All phases landed. `/` now serves v2; v1 preserved at `/legacy`. Plan is closed.
+
+- **Phase 0: DONE 2026-04-17.** Merge `4bb54a8`. `/v2.html` went live alongside `/`.
+- **Phase 1 (dogfooding): DONE 2026-04-17 → 2026-04-20.** Weekend pass clean. Two small follow-ups landed before moving on:
+  - `64c600b` — W/L pill + grading summary on past-date slates (merge `689e923`)
+  - `87a54d4` — suppress W/L pill on PASS cards + collapse sheet footer to full-width CLOSE (merge `058970d`)
+- **Phase 2 (SW + push): DONE 2026-04-20.** PR #13, commit `66d4839`. `useNotifications()` hook in `v2-app.jsx` handles SW registration + subscribe/unsubscribe. Bell icon wired in the v2 header. Same `/sw.js` serves both shells at scope `/`.
+- **Phase 3 (precompile Babel): DONE 2026-04-20.** PR #14, commit `f841d5d`. `v2-app.js` is the committed build artifact; `v2.html` loads it via plain `<script src>`. Build command noted in an HTML comment: `babel v2-app.jsx --presets=@babel/preset-react -o v2-app.js`. Recompile before committing JSX changes.
+- **Phase 4+5 (v2 becomes default): DONE 2026-04-20.** PRs #15 / commits `8ff98aa` + `c2f375d`. `netlify.toml` now has `/ → /v2.html` and `/legacy → /index.html` redirects. `index.html` still physically present and reachable, per the "keep the fallback alive" policy.
+- **Also shipped alongside:**
+  - `2ff8a10` — v2 refresh button wired to the `trigger-pipeline` Netlify function.
+  - `fa2d713` (PR #17) — date-pill W/L dots + `best_under_book` (cleared deferred items from `docs/ui-redesign/deferred-pipeline-work.md`).
+- **Bug caught during Phase 0 verification, intentionally left alone:** v1 `index.html` line 1230 computes `totalUnits` as flat-1u per pick, ignoring the F2u/F1u/LEAN staking ladder from CLAUDE.md. v2 does it correctly. Not fixing v1 — it's retired at `/legacy`.
 
 ---
 
@@ -122,7 +131,7 @@ Revert the merge commit. `/v2.html` 404s, `/` is unaffected. No data, no users a
 
 ---
 
-## Phase 1 — Personal dogfooding window (no code changes)
+## Phase 1 — Personal dogfooding window (no code changes) ✅ DONE 2026-04-20
 
 **What changes:** Nothing in the repo. Just usage and observation.
 
@@ -149,7 +158,7 @@ Nothing to roll back — no code changed. Just stop using `/v2.html`.
 
 ---
 
-## Phase 2 — Port PWA/push notifications into v2
+## Phase 2 — Port PWA/push notifications into v2 ✅ DONE 2026-04-20 (PR #13, `66d4839`)
 
 **What changes:** v2.html gets the service-worker registration + push-subscription plumbing that `index.html` already has, so "Install as app" and game-time push reminders work when loading from `/v2.html`. `index.html` is not touched.
 
@@ -188,7 +197,7 @@ Revert the Phase 2 commit. SW registration disappears from v2, `index.html` unch
 
 ---
 
-## Phase 3 — Precompile JSX (kill in-browser Babel)
+## Phase 3 — Precompile JSX (kill in-browser Babel) ✅ DONE 2026-04-20 (PR #14, `f841d5d`)
 
 **What changes:** `dashboard/v2-app.jsx` is compiled to `dashboard/v2-app.js` at build time (or locally, committed). `v2.html`'s `<script type="text/babel">` tag is replaced with `<script src="v2-app.js">`. Babel CDN `<script>` is removed.
 
@@ -232,7 +241,7 @@ Revert the commit. `v2.html` goes back to `<script type="text/babel">`, in-brows
 
 ---
 
-## Phase 4 — Soft redirect: prefer v2 at `/`, keep a fallback URL
+## Phase 4 — Soft redirect: prefer v2 at `/`, keep a fallback URL ✅ DONE 2026-04-20 (PR #15, `8ff98aa` + `c2f375d`)
 
 **What changes:** `/` starts serving v2 by default. `index.html` moves to `/legacy` (or `/classic`) and remains fully functional. Bookmarks to `/` get v2 immediately; bookmarks to `/index.html` still resolve (we preserve the file name).
 
@@ -262,7 +271,7 @@ Remove the redirect block from `netlify.toml`, redeploy. `/` serves `index.html`
 
 ---
 
-## Phase 5 — Stop touching index.html for new features (but keep it alive)
+## Phase 5 — Stop touching index.html for new features (but keep it alive) ✅ DONE 2026-04-20 (PR #15)
 
 **What changes:** Nothing structural. This is a **policy** phase.
 
