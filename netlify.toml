@@ -2,7 +2,13 @@
 [build]
   publish = "dashboard"
   functions = "netlify/functions"
-  ignore = "git diff --quiet ${CACHED_COMMIT_REF:-HEAD^1} HEAD -- dashboard/index.html dashboard/v2.html dashboard/v2-app.jsx dashboard/v2-app.js dashboard/v2-data.js dashboard/sw.js dashboard/manifest.json dashboard/icon.svg dashboard/data/processed/steam.json netlify/functions/ netlify.toml"
+  # Only rebuild when actual frontend assets, functions, or config change.
+  # Pipeline-written JSON under dashboard/data/processed/ (today.json, steam.json,
+  # per-day archives) is fetched at runtime by v2-data.js directly from GitHub raw,
+  # so it does NOT need to be baked into the Netlify bundle. Including steam.json
+  # here previously triggered ~48 pointless rebuilds per day (every 30-min pipeline
+  # run). See dashboard/v2-data.js STEAM_URL / RAW_BASE for the runtime fetch path.
+  ignore = "git diff --quiet ${CACHED_COMMIT_REF:-HEAD^1} HEAD -- dashboard/index.html dashboard/v2.html dashboard/v2-app.jsx dashboard/v2-app.js dashboard/v2-data.js dashboard/sw.js dashboard/manifest.json dashboard/icon.svg netlify/functions/ netlify.toml"
 
 [build.environment]
   PYTHON_VERSION = "3.11"
