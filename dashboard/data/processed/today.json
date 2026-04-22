@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-04-22T20:15:45Z",
+  "generated_at": "2026-04-22T20:42:46Z",
   "date": "2026-04-22",
   "props_available": true,
   "pitchers": [
@@ -50,58 +50,6 @@
         "FanDuel": {
           "over": -118,
           "under": -112
-        }
-      },
-      "data_complete": false,
-      "game_state": "in_progress"
-    },
-    {
-      "pitcher": "Peter Lambert",
-      "team": "Houston Astros",
-      "opp_team": "Cleveland Guardians",
-      "pitcher_throws": "R",
-      "game_time": "2026-04-22T17:10:00Z",
-      "k_line": 4.5,
-      "opening_line": 4.5,
-      "best_over_book": "FanDuel",
-      "ref_book": "FanDuel",
-      "best_over_odds": 124,
-      "best_under_odds": -166,
-      "opening_over_odds": 118,
-      "opening_under_odds": -158,
-      "opening_odds_source": "first_seen",
-      "price_delta_over": 6,
-      "price_delta_under": -8,
-      "raw_lambda": 5.08,
-      "lambda": 4.73,
-      "avg_ip": 5.5,
-      "swstr_pct": 0.11,
-      "career_swstr_pct": null,
-      "swstr_delta_k9": 0.0,
-      "opp_k_rate": 0.2086,
-      "lineup_used": false,
-      "ump_k_adj": 0.0,
-      "season_k9": 14.4,
-      "recent_k9": 14.4,
-      "career_k9": 6.84,
-      "ev_over": {
-        "ev": 0.0646,
-        "adj_ev": 0.0646,
-        "verdict": "FIRE 1u",
-        "win_prob": 0.511,
-        "movement_conf": 1.0
-      },
-      "ev_under": {
-        "ev": -0.1351,
-        "adj_ev": -0.1351,
-        "verdict": "PASS",
-        "win_prob": 0.489,
-        "movement_conf": 1.0
-      },
-      "book_odds": {
-        "FanDuel": {
-          "over": 124,
-          "under": -166
         }
       },
       "data_complete": false,
@@ -212,52 +160,104 @@
       "game_state": "final"
     },
     {
-      "pitcher": "Nick Martinez",
-      "team": "Tampa Bay Rays",
-      "opp_team": "Cincinnati Reds",
+      "pitcher": "Tanner Bibee",
+      "team": "Cleveland Guardians",
+      "opp_team": "Houston Astros",
       "pitcher_throws": "R",
       "game_time": "2026-04-22T17:10:00Z",
       "k_line": 4.5,
       "opening_line": 4.5,
       "best_over_book": "FanDuel",
       "ref_book": "FanDuel",
-      "best_over_odds": 114,
-      "best_under_odds": -152,
-      "opening_over_odds": 126,
-      "opening_under_odds": -168,
+      "best_over_odds": -158,
+      "best_under_odds": 118,
+      "opening_over_odds": -154,
+      "opening_under_odds": 116,
       "opening_odds_source": "preview",
-      "price_delta_over": -12,
-      "price_delta_under": 16,
-      "raw_lambda": 3.7,
-      "lambda": 3.35,
-      "avg_ip": 5.5,
+      "price_delta_over": -4,
+      "price_delta_under": 2,
+      "raw_lambda": 4.75,
+      "lambda": 4.41,
+      "avg_ip": 4.87,
       "swstr_pct": 0.11,
       "career_swstr_pct": null,
       "swstr_delta_k9": 0.0,
-      "opp_k_rate": 0.2462,
+      "opp_k_rate": 0.1937,
       "lineup_used": false,
       "ump_k_adj": 0.0,
-      "season_k9": 5.73,
-      "recent_k9": 4.5,
-      "career_k9": 6.4,
+      "season_k9": 8.51,
+      "recent_k9": 12.6,
+      "career_k9": 8.84,
       "ev_over": {
-        "ev": -0.2205,
-        "adj_ev": -0.2205,
+        "ev": -0.1618,
+        "adj_ev": -0.1618,
         "verdict": "PASS",
-        "win_prob": 0.247,
+        "win_prob": 0.451,
         "movement_conf": 1.0
       },
       "ev_under": {
-        "ev": 0.1501,
-        "adj_ev": 0.1051,
+        "ev": 0.0907,
+        "adj_ev": 0.0907,
         "verdict": "FIRE 2u",
-        "win_prob": 0.753,
-        "movement_conf": 0.7
+        "win_prob": 0.549,
+        "movement_conf": 1.0
       },
       "book_odds": {
         "FanDuel": {
-          "over": 114,
-          "under": -152
+          "over": -158,
+          "under": 118
+        }
+      },
+      "data_complete": false,
+      "game_state": "in_progress"
+    },
+    {
+      "pitcher": "Brandon Williamson",
+      "team": "Cincinnati Reds",
+      "opp_team": "Tampa Bay Rays",
+      "pitcher_throws": "L",
+      "game_time": "2026-04-22T17:10:00Z",
+      "k_line": 3.5,
+      "opening_line": 3.5,
+      "best_over_book": "FanDuel",
+      "ref_book": "FanDuel",
+      "best_over_odds": 102,
+      "best_under_odds": -136,
+      "opening_over_odds": -112,
+      "opening_under_odds": -118,
+      "opening_odds_source": "preview",
+      "price_delta_over": 214,
+      "price_delta_under": -18,
+      "raw_lambda": 3.44,
+      "lambda": 3.1,
+      "avg_ip": 5.17,
+      "swstr_pct": 0.11,
+      "career_swstr_pct": null,
+      "swstr_delta_k9": 0.0,
+      "opp_k_rate": 0.1882,
+      "lineup_used": false,
+      "ump_k_adj": 0.0,
+      "season_k9": 5.23,
+      "recent_k9": 5.79,
+      "career_k9": 7.22,
+      "ev_over": {
+        "ev": -0.1206,
+        "adj_ev": -0.0,
+        "verdict": "PASS",
+        "win_prob": 0.374,
+        "movement_conf": 0.0
+      },
+      "ev_under": {
+        "ev": 0.0492,
+        "adj_ev": 0.0492,
+        "verdict": "FIRE 1u",
+        "win_prob": 0.626,
+        "movement_conf": 1.0
+      },
+      "book_odds": {
+        "FanDuel": {
+          "over": 102,
+          "under": -136
         }
       },
       "data_complete": false,
@@ -310,6 +310,110 @@
         "FanDuel": {
           "over": -118,
           "under": -112
+        }
+      },
+      "data_complete": false,
+      "game_state": "in_progress"
+    },
+    {
+      "pitcher": "Peter Lambert",
+      "team": "Houston Astros",
+      "opp_team": "Cleveland Guardians",
+      "pitcher_throws": "R",
+      "game_time": "2026-04-22T17:10:00Z",
+      "k_line": 4.5,
+      "opening_line": 4.5,
+      "best_over_book": "FanDuel",
+      "ref_book": "FanDuel",
+      "best_over_odds": 124,
+      "best_under_odds": -166,
+      "opening_over_odds": 118,
+      "opening_under_odds": -158,
+      "opening_odds_source": "first_seen",
+      "price_delta_over": 6,
+      "price_delta_under": -8,
+      "raw_lambda": 5.08,
+      "lambda": 4.73,
+      "avg_ip": 5.5,
+      "swstr_pct": 0.11,
+      "career_swstr_pct": null,
+      "swstr_delta_k9": 0.0,
+      "opp_k_rate": 0.2086,
+      "lineup_used": false,
+      "ump_k_adj": 0.0,
+      "season_k9": 14.4,
+      "recent_k9": 14.4,
+      "career_k9": 6.84,
+      "ev_over": {
+        "ev": 0.0646,
+        "adj_ev": 0.0646,
+        "verdict": "FIRE 1u",
+        "win_prob": 0.511,
+        "movement_conf": 1.0
+      },
+      "ev_under": {
+        "ev": -0.1351,
+        "adj_ev": -0.1351,
+        "verdict": "PASS",
+        "win_prob": 0.489,
+        "movement_conf": 1.0
+      },
+      "book_odds": {
+        "FanDuel": {
+          "over": 124,
+          "under": -166
+        }
+      },
+      "data_complete": false,
+      "game_state": "in_progress"
+    },
+    {
+      "pitcher": "Aaron Civale",
+      "team": "Athletics",
+      "opp_team": "Seattle Mariners",
+      "pitcher_throws": "R",
+      "game_time": "2026-04-22T20:10:00Z",
+      "k_line": 4.5,
+      "opening_line": 4.5,
+      "best_over_book": "FanDuel",
+      "ref_book": "FanDuel",
+      "best_over_odds": -132,
+      "best_under_odds": 100,
+      "opening_over_odds": -146,
+      "opening_under_odds": 110,
+      "opening_odds_source": "preview",
+      "price_delta_over": 14,
+      "price_delta_under": -10,
+      "raw_lambda": 4.25,
+      "lambda": 3.9,
+      "avg_ip": 5.08,
+      "swstr_pct": 0.11,
+      "career_swstr_pct": null,
+      "swstr_delta_k9": 0.0,
+      "opp_k_rate": 0.2418,
+      "lineup_used": false,
+      "ump_k_adj": 0.0,
+      "season_k9": 7.08,
+      "recent_k9": 5.4,
+      "career_k9": 8.08,
+      "ev_over": {
+        "ev": -0.217,
+        "adj_ev": -0.1736,
+        "verdict": "PASS",
+        "win_prob": 0.352,
+        "movement_conf": 0.8
+      },
+      "ev_under": {
+        "ev": 0.1481,
+        "adj_ev": 0.1481,
+        "verdict": "FIRE 2u",
+        "win_prob": 0.648,
+        "movement_conf": 1.0
+      },
+      "book_odds": {
+        "FanDuel": {
+          "over": -132,
+          "under": 100
         }
       },
       "data_complete": false,
@@ -420,104 +524,52 @@
       "game_state": "in_progress"
     },
     {
-      "pitcher": "Tanner Bibee",
-      "team": "Cleveland Guardians",
-      "opp_team": "Houston Astros",
+      "pitcher": "Nick Martinez",
+      "team": "Tampa Bay Rays",
+      "opp_team": "Cincinnati Reds",
       "pitcher_throws": "R",
       "game_time": "2026-04-22T17:10:00Z",
       "k_line": 4.5,
       "opening_line": 4.5,
       "best_over_book": "FanDuel",
       "ref_book": "FanDuel",
-      "best_over_odds": -158,
-      "best_under_odds": 118,
-      "opening_over_odds": -154,
-      "opening_under_odds": 116,
+      "best_over_odds": 114,
+      "best_under_odds": -152,
+      "opening_over_odds": 126,
+      "opening_under_odds": -168,
       "opening_odds_source": "preview",
-      "price_delta_over": -4,
-      "price_delta_under": 2,
-      "raw_lambda": 4.75,
-      "lambda": 4.41,
-      "avg_ip": 4.87,
+      "price_delta_over": -12,
+      "price_delta_under": 16,
+      "raw_lambda": 3.7,
+      "lambda": 3.35,
+      "avg_ip": 5.5,
       "swstr_pct": 0.11,
       "career_swstr_pct": null,
       "swstr_delta_k9": 0.0,
-      "opp_k_rate": 0.1937,
+      "opp_k_rate": 0.2462,
       "lineup_used": false,
       "ump_k_adj": 0.0,
-      "season_k9": 8.51,
-      "recent_k9": 12.6,
-      "career_k9": 8.84,
+      "season_k9": 5.73,
+      "recent_k9": 4.5,
+      "career_k9": 6.4,
       "ev_over": {
-        "ev": -0.1618,
-        "adj_ev": -0.1618,
+        "ev": -0.2205,
+        "adj_ev": -0.2205,
         "verdict": "PASS",
-        "win_prob": 0.451,
+        "win_prob": 0.247,
         "movement_conf": 1.0
       },
       "ev_under": {
-        "ev": 0.0907,
-        "adj_ev": 0.0907,
+        "ev": 0.1501,
+        "adj_ev": 0.1051,
         "verdict": "FIRE 2u",
-        "win_prob": 0.549,
-        "movement_conf": 1.0
+        "win_prob": 0.753,
+        "movement_conf": 0.7
       },
       "book_odds": {
         "FanDuel": {
-          "over": -158,
-          "under": 118
-        }
-      },
-      "data_complete": false,
-      "game_state": "in_progress"
-    },
-    {
-      "pitcher": "Aaron Civale",
-      "team": "Athletics",
-      "opp_team": "Seattle Mariners",
-      "pitcher_throws": "R",
-      "game_time": "2026-04-22T20:10:00Z",
-      "k_line": 4.5,
-      "opening_line": 4.5,
-      "best_over_book": "FanDuel",
-      "ref_book": "FanDuel",
-      "best_over_odds": -132,
-      "best_under_odds": 100,
-      "opening_over_odds": -146,
-      "opening_under_odds": 110,
-      "opening_odds_source": "preview",
-      "price_delta_over": 14,
-      "price_delta_under": -10,
-      "raw_lambda": 4.25,
-      "lambda": 3.9,
-      "avg_ip": 5.08,
-      "swstr_pct": 0.11,
-      "career_swstr_pct": null,
-      "swstr_delta_k9": 0.0,
-      "opp_k_rate": 0.2418,
-      "lineup_used": false,
-      "ump_k_adj": 0.0,
-      "season_k9": 7.08,
-      "recent_k9": 5.4,
-      "career_k9": 8.08,
-      "ev_over": {
-        "ev": -0.217,
-        "adj_ev": -0.1736,
-        "verdict": "PASS",
-        "win_prob": 0.352,
-        "movement_conf": 0.8
-      },
-      "ev_under": {
-        "ev": 0.1481,
-        "adj_ev": 0.1481,
-        "verdict": "FIRE 2u",
-        "win_prob": 0.648,
-        "movement_conf": 1.0
-      },
-      "book_odds": {
-        "FanDuel": {
-          "over": -132,
-          "under": 100
+          "over": 114,
+          "under": -152
         }
       },
       "data_complete": false,
@@ -574,58 +626,6 @@
       },
       "data_complete": false,
       "game_state": "final"
-    },
-    {
-      "pitcher": "Brandon Williamson",
-      "team": "Cincinnati Reds",
-      "opp_team": "Tampa Bay Rays",
-      "pitcher_throws": "L",
-      "game_time": "2026-04-22T17:10:00Z",
-      "k_line": 3.5,
-      "opening_line": 3.5,
-      "best_over_book": "FanDuel",
-      "ref_book": "FanDuel",
-      "best_over_odds": 102,
-      "best_under_odds": -136,
-      "opening_over_odds": -112,
-      "opening_under_odds": -118,
-      "opening_odds_source": "preview",
-      "price_delta_over": 214,
-      "price_delta_under": -18,
-      "raw_lambda": 3.44,
-      "lambda": 3.1,
-      "avg_ip": 5.17,
-      "swstr_pct": 0.11,
-      "career_swstr_pct": null,
-      "swstr_delta_k9": 0.0,
-      "opp_k_rate": 0.1882,
-      "lineup_used": false,
-      "ump_k_adj": 0.0,
-      "season_k9": 5.23,
-      "recent_k9": 5.79,
-      "career_k9": 7.22,
-      "ev_over": {
-        "ev": -0.1206,
-        "adj_ev": -0.0,
-        "verdict": "PASS",
-        "win_prob": 0.374,
-        "movement_conf": 0.0
-      },
-      "ev_under": {
-        "ev": 0.0492,
-        "adj_ev": 0.0492,
-        "verdict": "FIRE 1u",
-        "win_prob": 0.626,
-        "movement_conf": 1.0
-      },
-      "book_odds": {
-        "FanDuel": {
-          "over": 102,
-          "under": -136
-        }
-      },
-      "data_complete": false,
-      "game_state": "in_progress"
     },
     {
       "pitcher": "Casey Mize",
@@ -1096,6 +1096,58 @@
       "game_state": "pregame"
     },
     {
+      "pitcher": "Tomoyuki Sugano",
+      "team": "Colorado Rockies",
+      "opp_team": "San Diego Padres",
+      "pitcher_throws": "R",
+      "game_time": "2026-04-23T00:40:00Z",
+      "k_line": 2.5,
+      "opening_line": 2.5,
+      "best_over_book": "FanDuel",
+      "ref_book": "FanDuel",
+      "best_over_odds": -180,
+      "best_under_odds": 134,
+      "opening_over_odds": -200,
+      "opening_under_odds": 148,
+      "opening_odds_source": "preview",
+      "price_delta_over": 20,
+      "price_delta_under": -14,
+      "raw_lambda": 3.68,
+      "lambda": 3.34,
+      "avg_ip": 5.17,
+      "swstr_pct": 0.11,
+      "career_swstr_pct": null,
+      "swstr_delta_k9": 0.0,
+      "opp_k_rate": 0.2181,
+      "lineup_used": false,
+      "ump_k_adj": 0.0,
+      "season_k9": 6.53,
+      "recent_k9": 7.71,
+      "career_k9": 6.13,
+      "ev_over": {
+        "ev": 0.0052,
+        "adj_ev": 0.0026,
+        "verdict": "PASS",
+        "win_prob": 0.648,
+        "movement_conf": 0.5
+      },
+      "ev_under": {
+        "ev": -0.0754,
+        "adj_ev": -0.0754,
+        "verdict": "PASS",
+        "win_prob": 0.352,
+        "movement_conf": 1.0
+      },
+      "book_odds": {
+        "FanDuel": {
+          "over": -180,
+          "under": 134
+        }
+      },
+      "data_complete": false,
+      "game_state": "pregame"
+    },
+    {
       "pitcher": "Eduardo Rodriguez",
       "team": "Arizona Diamondbacks",
       "opp_team": "Chicago White Sox",
@@ -1350,58 +1402,6 @@
         "FanDuel": {
           "over": 118,
           "under": -158
-        }
-      },
-      "data_complete": false,
-      "game_state": "pregame"
-    },
-    {
-      "pitcher": "Tomoyuki Sugano",
-      "team": "Colorado Rockies",
-      "opp_team": "San Diego Padres",
-      "pitcher_throws": "R",
-      "game_time": "2026-04-23T00:40:00Z",
-      "k_line": 2.5,
-      "opening_line": 2.5,
-      "best_over_book": "FanDuel",
-      "ref_book": "FanDuel",
-      "best_over_odds": -182,
-      "best_under_odds": 136,
-      "opening_over_odds": -200,
-      "opening_under_odds": 148,
-      "opening_odds_source": "preview",
-      "price_delta_over": 18,
-      "price_delta_under": -12,
-      "raw_lambda": 3.68,
-      "lambda": 3.34,
-      "avg_ip": 5.17,
-      "swstr_pct": 0.11,
-      "career_swstr_pct": null,
-      "swstr_delta_k9": 0.0,
-      "opp_k_rate": 0.2181,
-      "lineup_used": false,
-      "ump_k_adj": 0.0,
-      "season_k9": 6.53,
-      "recent_k9": 7.71,
-      "career_k9": 6.13,
-      "ev_over": {
-        "ev": 0.0026,
-        "adj_ev": 0.0016,
-        "verdict": "PASS",
-        "win_prob": 0.648,
-        "movement_conf": 0.6
-      },
-      "ev_under": {
-        "ev": -0.0718,
-        "adj_ev": -0.0718,
-        "verdict": "PASS",
-        "win_prob": 0.352,
-        "movement_conf": 1.0
-      },
-      "book_odds": {
-        "FanDuel": {
-          "over": -182,
-          "under": 136
         }
       },
       "data_complete": false,
