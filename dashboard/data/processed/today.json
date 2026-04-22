@@ -1,8 +1,268 @@
 {
-  "generated_at": "2026-04-22T19:01:38Z",
+  "generated_at": "2026-04-22T19:46:52Z",
   "date": "2026-04-22",
   "props_available": true,
   "pitchers": [
+    {
+      "pitcher": "Nick Martinez",
+      "team": "Tampa Bay Rays",
+      "opp_team": "Cincinnati Reds",
+      "pitcher_throws": "R",
+      "game_time": "2026-04-22T17:10:00Z",
+      "k_line": 4.5,
+      "opening_line": 4.5,
+      "best_over_book": "FanDuel",
+      "ref_book": "FanDuel",
+      "best_over_odds": 114,
+      "best_under_odds": -152,
+      "opening_over_odds": 126,
+      "opening_under_odds": -168,
+      "opening_odds_source": "preview",
+      "price_delta_over": -12,
+      "price_delta_under": 16,
+      "raw_lambda": 3.7,
+      "lambda": 3.35,
+      "avg_ip": 5.5,
+      "swstr_pct": 0.11,
+      "career_swstr_pct": null,
+      "swstr_delta_k9": 0.0,
+      "opp_k_rate": 0.2462,
+      "lineup_used": false,
+      "ump_k_adj": 0.0,
+      "season_k9": 5.73,
+      "recent_k9": 4.5,
+      "career_k9": 6.4,
+      "ev_over": {
+        "ev": -0.2205,
+        "adj_ev": -0.2205,
+        "verdict": "PASS",
+        "win_prob": 0.247,
+        "movement_conf": 1.0
+      },
+      "ev_under": {
+        "ev": 0.1501,
+        "adj_ev": 0.1051,
+        "verdict": "FIRE 2u",
+        "win_prob": 0.753,
+        "movement_conf": 0.7
+      },
+      "book_odds": {
+        "FanDuel": {
+          "over": 114,
+          "under": -152
+        }
+      },
+      "data_complete": false,
+      "game_state": "in_progress"
+    },
+    {
+      "pitcher": "Michael Wacha",
+      "team": "Kansas City Royals",
+      "opp_team": "Baltimore Orioles",
+      "pitcher_throws": "R",
+      "game_time": "2026-04-22T18:10:00Z",
+      "k_line": 5.5,
+      "opening_line": 5.5,
+      "best_over_book": "FanDuel",
+      "ref_book": "FanDuel",
+      "best_over_odds": 126,
+      "best_under_odds": -168,
+      "opening_over_odds": 128,
+      "opening_under_odds": -172,
+      "opening_odds_source": "preview",
+      "price_delta_over": -2,
+      "price_delta_under": 4,
+      "raw_lambda": 6.31,
+      "lambda": 5.96,
+      "avg_ip": 6.75,
+      "swstr_pct": 0.11,
+      "career_swstr_pct": null,
+      "swstr_delta_k9": 0.0,
+      "opp_k_rate": 0.25,
+      "lineup_used": false,
+      "ump_k_adj": 0.0,
+      "season_k9": 7.67,
+      "recent_k9": 10.5,
+      "career_k9": 7.83,
+      "ev_over": {
+        "ev": 0.1058,
+        "adj_ev": 0.1058,
+        "verdict": "FIRE 2u",
+        "win_prob": 0.548,
+        "movement_conf": 1.0
+      },
+      "ev_under": {
+        "ev": -0.1751,
+        "adj_ev": -0.1751,
+        "verdict": "PASS",
+        "win_prob": 0.452,
+        "movement_conf": 1.0
+      },
+      "book_odds": {
+        "FanDuel": {
+          "over": 126,
+          "under": -168
+        }
+      },
+      "data_complete": false,
+      "game_state": "in_progress"
+    },
+    {
+      "pitcher": "Jose Soriano",
+      "team": "Los Angeles Angels",
+      "opp_team": "Toronto Blue Jays",
+      "pitcher_throws": "R",
+      "game_time": "2026-04-22T19:07:00Z",
+      "k_line": 5.5,
+      "opening_line": 5.5,
+      "best_over_book": "FanDuel",
+      "ref_book": "FanDuel",
+      "best_over_odds": -118,
+      "best_under_odds": -112,
+      "opening_over_odds": -114,
+      "opening_under_odds": -114,
+      "opening_odds_source": "preview",
+      "price_delta_over": -4,
+      "price_delta_under": 2,
+      "raw_lambda": 6.61,
+      "lambda": 6.26,
+      "avg_ip": 6.53,
+      "swstr_pct": 0.11,
+      "career_swstr_pct": null,
+      "swstr_delta_k9": 0.0,
+      "opp_k_rate": 0.1787,
+      "lineup_used": false,
+      "ump_k_adj": 0.0,
+      "season_k9": 10.74,
+      "recent_k9": 10.5,
+      "career_k9": 8.68,
+      "ev_over": {
+        "ev": 0.0542,
+        "adj_ev": 0.0542,
+        "verdict": "FIRE 1u",
+        "win_prob": 0.595,
+        "movement_conf": 1.0
+      },
+      "ev_under": {
+        "ev": -0.1238,
+        "adj_ev": -0.1238,
+        "verdict": "PASS",
+        "win_prob": 0.405,
+        "movement_conf": 1.0
+      },
+      "book_odds": {
+        "FanDuel": {
+          "over": -118,
+          "under": -112
+        }
+      },
+      "data_complete": false,
+      "game_state": "in_progress"
+    },
+    {
+      "pitcher": "Eric Lauer",
+      "team": "Toronto Blue Jays",
+      "opp_team": "Los Angeles Angels",
+      "pitcher_throws": "L",
+      "game_time": "2026-04-22T19:07:00Z",
+      "k_line": 4.5,
+      "opening_line": 4.5,
+      "best_over_book": "FanDuel",
+      "ref_book": "FanDuel",
+      "best_over_odds": -118,
+      "best_under_odds": -112,
+      "opening_over_odds": 100,
+      "opening_under_odds": -132,
+      "opening_odds_source": "preview",
+      "price_delta_over": -218,
+      "price_delta_under": 20,
+      "raw_lambda": 4.8,
+      "lambda": 4.46,
+      "avg_ip": 4.42,
+      "swstr_pct": 0.11,
+      "career_swstr_pct": null,
+      "swstr_delta_k9": 0.0,
+      "opp_k_rate": 0.2557,
+      "lineup_used": false,
+      "ump_k_adj": 0.0,
+      "season_k9": 8.15,
+      "recent_k9": 15.19,
+      "career_k9": 8.57,
+      "ev_over": {
+        "ev": -0.0818,
+        "adj_ev": -0.0818,
+        "verdict": "PASS",
+        "win_prob": 0.459,
+        "movement_conf": 1.0
+      },
+      "ev_under": {
+        "ev": 0.0122,
+        "adj_ev": 0.0061,
+        "verdict": "PASS",
+        "win_prob": 0.541,
+        "movement_conf": 0.5
+      },
+      "book_odds": {
+        "FanDuel": {
+          "over": -118,
+          "under": -112
+        }
+      },
+      "data_complete": false,
+      "game_state": "in_progress"
+    },
+    {
+      "pitcher": "Peter Lambert",
+      "team": "Houston Astros",
+      "opp_team": "Cleveland Guardians",
+      "pitcher_throws": "R",
+      "game_time": "2026-04-22T17:10:00Z",
+      "k_line": 4.5,
+      "opening_line": 4.5,
+      "best_over_book": "FanDuel",
+      "ref_book": "FanDuel",
+      "best_over_odds": 124,
+      "best_under_odds": -166,
+      "opening_over_odds": 118,
+      "opening_under_odds": -158,
+      "opening_odds_source": "first_seen",
+      "price_delta_over": 6,
+      "price_delta_under": -8,
+      "raw_lambda": 5.08,
+      "lambda": 4.73,
+      "avg_ip": 5.5,
+      "swstr_pct": 0.11,
+      "career_swstr_pct": null,
+      "swstr_delta_k9": 0.0,
+      "opp_k_rate": 0.2086,
+      "lineup_used": false,
+      "ump_k_adj": 0.0,
+      "season_k9": 14.4,
+      "recent_k9": 14.4,
+      "career_k9": 6.84,
+      "ev_over": {
+        "ev": 0.0646,
+        "adj_ev": 0.0646,
+        "verdict": "FIRE 1u",
+        "win_prob": 0.511,
+        "movement_conf": 1.0
+      },
+      "ev_under": {
+        "ev": -0.1351,
+        "adj_ev": -0.1351,
+        "verdict": "PASS",
+        "win_prob": 0.489,
+        "movement_conf": 1.0
+      },
+      "book_odds": {
+        "FanDuel": {
+          "over": 124,
+          "under": -166
+        }
+      },
+      "data_complete": false,
+      "game_state": "in_progress"
+    },
     {
       "pitcher": "Kyle Leahy",
       "team": "St. Louis Cardinals",
@@ -108,162 +368,6 @@
       "game_state": "in_progress"
     },
     {
-      "pitcher": "Peter Lambert",
-      "team": "Houston Astros",
-      "opp_team": "Cleveland Guardians",
-      "pitcher_throws": "R",
-      "game_time": "2026-04-22T17:10:00Z",
-      "k_line": 4.5,
-      "opening_line": 4.5,
-      "best_over_book": "FanDuel",
-      "ref_book": "FanDuel",
-      "best_over_odds": 124,
-      "best_under_odds": -166,
-      "opening_over_odds": 118,
-      "opening_under_odds": -158,
-      "opening_odds_source": "first_seen",
-      "price_delta_over": 6,
-      "price_delta_under": -8,
-      "raw_lambda": 5.08,
-      "lambda": 4.73,
-      "avg_ip": 5.5,
-      "swstr_pct": 0.11,
-      "career_swstr_pct": null,
-      "swstr_delta_k9": 0.0,
-      "opp_k_rate": 0.2086,
-      "lineup_used": false,
-      "ump_k_adj": 0.0,
-      "season_k9": 14.4,
-      "recent_k9": 14.4,
-      "career_k9": 6.84,
-      "ev_over": {
-        "ev": 0.0646,
-        "adj_ev": 0.0646,
-        "verdict": "FIRE 1u",
-        "win_prob": 0.511,
-        "movement_conf": 1.0
-      },
-      "ev_under": {
-        "ev": -0.1351,
-        "adj_ev": -0.1351,
-        "verdict": "PASS",
-        "win_prob": 0.489,
-        "movement_conf": 1.0
-      },
-      "book_odds": {
-        "FanDuel": {
-          "over": 124,
-          "under": -166
-        }
-      },
-      "data_complete": false,
-      "game_state": "in_progress"
-    },
-    {
-      "pitcher": "Chris Bassitt",
-      "team": "Baltimore Orioles",
-      "opp_team": "Kansas City Royals",
-      "pitcher_throws": "R",
-      "game_time": "2026-04-22T18:10:00Z",
-      "k_line": 3.5,
-      "opening_line": 3.5,
-      "best_over_book": "FanDuel",
-      "ref_book": "FanDuel",
-      "best_over_odds": -118,
-      "best_under_odds": -112,
-      "opening_over_odds": 100,
-      "opening_under_odds": -132,
-      "opening_odds_source": "preview",
-      "price_delta_over": -218,
-      "price_delta_under": 20,
-      "raw_lambda": 3.08,
-      "lambda": 2.74,
-      "avg_ip": 4.0,
-      "swstr_pct": 0.11,
-      "career_swstr_pct": null,
-      "swstr_delta_k9": 0.0,
-      "opp_k_rate": 0.2348,
-      "lineup_used": false,
-      "ump_k_adj": 0.0,
-      "season_k9": 3.94,
-      "recent_k9": 6.23,
-      "career_k9": 8.33,
-      "ev_over": {
-        "ev": -0.2467,
-        "adj_ev": -0.2467,
-        "verdict": "PASS",
-        "win_prob": 0.295,
-        "movement_conf": 1.0
-      },
-      "ev_under": {
-        "ev": 0.1771,
-        "adj_ev": 0.0886,
-        "verdict": "FIRE 1u",
-        "win_prob": 0.705,
-        "movement_conf": 0.5
-      },
-      "book_odds": {
-        "FanDuel": {
-          "over": -118,
-          "under": -112
-        }
-      },
-      "data_complete": false,
-      "game_state": "in_progress"
-    },
-    {
-      "pitcher": "Michael Wacha",
-      "team": "Kansas City Royals",
-      "opp_team": "Baltimore Orioles",
-      "pitcher_throws": "R",
-      "game_time": "2026-04-22T18:10:00Z",
-      "k_line": 5.5,
-      "opening_line": 5.5,
-      "best_over_book": "FanDuel",
-      "ref_book": "FanDuel",
-      "best_over_odds": 126,
-      "best_under_odds": -168,
-      "opening_over_odds": 128,
-      "opening_under_odds": -172,
-      "opening_odds_source": "preview",
-      "price_delta_over": -2,
-      "price_delta_under": 4,
-      "raw_lambda": 6.31,
-      "lambda": 5.96,
-      "avg_ip": 6.75,
-      "swstr_pct": 0.11,
-      "career_swstr_pct": null,
-      "swstr_delta_k9": 0.0,
-      "opp_k_rate": 0.25,
-      "lineup_used": false,
-      "ump_k_adj": 0.0,
-      "season_k9": 7.67,
-      "recent_k9": 10.5,
-      "career_k9": 7.83,
-      "ev_over": {
-        "ev": 0.1058,
-        "adj_ev": 0.1058,
-        "verdict": "FIRE 2u",
-        "win_prob": 0.548,
-        "movement_conf": 1.0
-      },
-      "ev_under": {
-        "ev": -0.1751,
-        "adj_ev": -0.1751,
-        "verdict": "PASS",
-        "win_prob": 0.452,
-        "movement_conf": 1.0
-      },
-      "book_odds": {
-        "FanDuel": {
-          "over": 126,
-          "under": -168
-        }
-      },
-      "data_complete": false,
-      "game_state": "in_progress"
-    },
-    {
       "pitcher": "Brandon Williamson",
       "team": "Cincinnati Reds",
       "opp_team": "Tampa Bay Rays",
@@ -310,58 +414,6 @@
         "FanDuel": {
           "over": 102,
           "under": -136
-        }
-      },
-      "data_complete": false,
-      "game_state": "in_progress"
-    },
-    {
-      "pitcher": "Nick Martinez",
-      "team": "Tampa Bay Rays",
-      "opp_team": "Cincinnati Reds",
-      "pitcher_throws": "R",
-      "game_time": "2026-04-22T17:10:00Z",
-      "k_line": 4.5,
-      "opening_line": 4.5,
-      "best_over_book": "FanDuel",
-      "ref_book": "FanDuel",
-      "best_over_odds": 114,
-      "best_under_odds": -152,
-      "opening_over_odds": 126,
-      "opening_under_odds": -168,
-      "opening_odds_source": "preview",
-      "price_delta_over": -12,
-      "price_delta_under": 16,
-      "raw_lambda": 3.7,
-      "lambda": 3.35,
-      "avg_ip": 5.5,
-      "swstr_pct": 0.11,
-      "career_swstr_pct": null,
-      "swstr_delta_k9": 0.0,
-      "opp_k_rate": 0.2462,
-      "lineup_used": false,
-      "ump_k_adj": 0.0,
-      "season_k9": 5.73,
-      "recent_k9": 4.5,
-      "career_k9": 6.4,
-      "ev_over": {
-        "ev": -0.2205,
-        "adj_ev": -0.2205,
-        "verdict": "PASS",
-        "win_prob": 0.247,
-        "movement_conf": 1.0
-      },
-      "ev_under": {
-        "ev": 0.1501,
-        "adj_ev": 0.1051,
-        "verdict": "FIRE 2u",
-        "win_prob": 0.753,
-        "movement_conf": 0.7
-      },
-      "book_odds": {
-        "FanDuel": {
-          "over": 114,
-          "under": -152
         }
       },
       "data_complete": false,
@@ -420,13 +472,13 @@
       "game_state": "in_progress"
     },
     {
-      "pitcher": "Eric Lauer",
-      "team": "Toronto Blue Jays",
-      "opp_team": "Los Angeles Angels",
-      "pitcher_throws": "L",
-      "game_time": "2026-04-22T19:07:00Z",
-      "k_line": 4.5,
-      "opening_line": 4.5,
+      "pitcher": "Chris Bassitt",
+      "team": "Baltimore Orioles",
+      "opp_team": "Kansas City Royals",
+      "pitcher_throws": "R",
+      "game_time": "2026-04-22T18:10:00Z",
+      "k_line": 3.5,
+      "opening_line": 3.5,
       "best_over_book": "FanDuel",
       "ref_book": "FanDuel",
       "best_over_odds": -118,
@@ -436,30 +488,30 @@
       "opening_odds_source": "preview",
       "price_delta_over": -218,
       "price_delta_under": 20,
-      "raw_lambda": 4.8,
-      "lambda": 4.46,
-      "avg_ip": 4.42,
+      "raw_lambda": 3.08,
+      "lambda": 2.74,
+      "avg_ip": 4.0,
       "swstr_pct": 0.11,
       "career_swstr_pct": null,
       "swstr_delta_k9": 0.0,
-      "opp_k_rate": 0.2557,
+      "opp_k_rate": 0.2348,
       "lineup_used": false,
       "ump_k_adj": 0.0,
-      "season_k9": 8.15,
-      "recent_k9": 15.19,
-      "career_k9": 8.57,
+      "season_k9": 3.94,
+      "recent_k9": 6.23,
+      "career_k9": 8.33,
       "ev_over": {
-        "ev": -0.0818,
-        "adj_ev": -0.0818,
+        "ev": -0.2467,
+        "adj_ev": -0.2467,
         "verdict": "PASS",
-        "win_prob": 0.459,
+        "win_prob": 0.295,
         "movement_conf": 1.0
       },
       "ev_under": {
-        "ev": 0.0122,
-        "adj_ev": 0.0061,
-        "verdict": "PASS",
-        "win_prob": 0.541,
+        "ev": 0.1771,
+        "adj_ev": 0.0886,
+        "verdict": "FIRE 1u",
+        "win_prob": 0.705,
         "movement_conf": 0.5
       },
       "book_odds": {
@@ -469,59 +521,7 @@
         }
       },
       "data_complete": false,
-      "game_state": "pregame"
-    },
-    {
-      "pitcher": "Jose Soriano",
-      "team": "Los Angeles Angels",
-      "opp_team": "Toronto Blue Jays",
-      "pitcher_throws": "R",
-      "game_time": "2026-04-22T19:07:00Z",
-      "k_line": 5.5,
-      "opening_line": 5.5,
-      "best_over_book": "FanDuel",
-      "ref_book": "FanDuel",
-      "best_over_odds": -118,
-      "best_under_odds": -112,
-      "opening_over_odds": -114,
-      "opening_under_odds": -114,
-      "opening_odds_source": "preview",
-      "price_delta_over": -4,
-      "price_delta_under": 2,
-      "raw_lambda": 6.61,
-      "lambda": 6.26,
-      "avg_ip": 6.53,
-      "swstr_pct": 0.11,
-      "career_swstr_pct": null,
-      "swstr_delta_k9": 0.0,
-      "opp_k_rate": 0.1787,
-      "lineup_used": false,
-      "ump_k_adj": 0.0,
-      "season_k9": 10.74,
-      "recent_k9": 10.5,
-      "career_k9": 8.68,
-      "ev_over": {
-        "ev": 0.0542,
-        "adj_ev": 0.0542,
-        "verdict": "FIRE 1u",
-        "win_prob": 0.595,
-        "movement_conf": 1.0
-      },
-      "ev_under": {
-        "ev": -0.1238,
-        "adj_ev": -0.1238,
-        "verdict": "PASS",
-        "win_prob": 0.405,
-        "movement_conf": 1.0
-      },
-      "book_odds": {
-        "FanDuel": {
-          "over": -118,
-          "under": -112
-        }
-      },
-      "data_complete": false,
-      "game_state": "pregame"
+      "game_state": "in_progress"
     },
     {
       "pitcher": "Aaron Civale",
@@ -533,13 +533,13 @@
       "opening_line": 4.5,
       "best_over_book": "FanDuel",
       "ref_book": "FanDuel",
-      "best_over_odds": -148,
-      "best_under_odds": 112,
+      "best_over_odds": -146,
+      "best_under_odds": 110,
       "opening_over_odds": -146,
       "opening_under_odds": 110,
       "opening_odds_source": "preview",
-      "price_delta_over": -2,
-      "price_delta_under": 2,
+      "price_delta_over": 0,
+      "price_delta_under": 0,
       "raw_lambda": 4.25,
       "lambda": 3.9,
       "avg_ip": 5.08,
@@ -553,23 +553,23 @@
       "recent_k9": 5.4,
       "career_k9": 8.08,
       "ev_over": {
-        "ev": -0.2449,
-        "adj_ev": -0.2449,
+        "ev": -0.2416,
+        "adj_ev": -0.2416,
         "verdict": "PASS",
         "win_prob": 0.352,
         "movement_conf": 1.0
       },
       "ev_under": {
-        "ev": 0.1764,
-        "adj_ev": 0.1764,
+        "ev": 0.1719,
+        "adj_ev": 0.1719,
         "verdict": "FIRE 2u",
         "win_prob": 0.648,
         "movement_conf": 1.0
       },
       "book_odds": {
         "FanDuel": {
-          "over": -148,
-          "under": 112
+          "over": -146,
+          "under": 110
         }
       },
       "data_complete": false,
@@ -585,13 +585,13 @@
       "opening_line": 6.5,
       "best_over_book": "FanDuel",
       "ref_book": "FanDuel",
-      "best_over_odds": -122,
-      "best_under_odds": -108,
+      "best_over_odds": -125,
+      "best_under_odds": -106,
       "opening_over_odds": -122,
       "opening_under_odds": -108,
       "opening_odds_source": "preview",
-      "price_delta_over": 0,
-      "price_delta_under": 0,
+      "price_delta_over": -3,
+      "price_delta_under": 2,
       "raw_lambda": 6.6,
       "lambda": 6.26,
       "avg_ip": 5.8,
@@ -605,23 +605,23 @@
       "recent_k9": 11.81,
       "career_k9": 9.54,
       "ev_over": {
-        "ev": -0.1147,
-        "adj_ev": -0.1147,
+        "ev": -0.1207,
+        "adj_ev": -0.1207,
         "verdict": "PASS",
         "win_prob": 0.435,
         "movement_conf": 1.0
       },
       "ev_under": {
-        "ev": 0.046,
-        "adj_ev": 0.046,
+        "ev": 0.0506,
+        "adj_ev": 0.0506,
         "verdict": "FIRE 1u",
         "win_prob": 0.565,
         "movement_conf": 1.0
       },
       "book_odds": {
         "FanDuel": {
-          "over": -122,
-          "under": -108
+          "over": -125,
+          "under": -106
         }
       },
       "data_complete": false,
@@ -637,13 +637,13 @@
       "opening_line": 4.5,
       "best_over_book": "FanDuel",
       "ref_book": "FanDuel",
-      "best_over_odds": -158,
-      "best_under_odds": 118,
+      "best_over_odds": -154,
+      "best_under_odds": 116,
       "opening_over_odds": -154,
       "opening_under_odds": 116,
       "opening_odds_source": "preview",
-      "price_delta_over": -4,
-      "price_delta_under": 2,
+      "price_delta_over": 0,
+      "price_delta_under": 0,
       "raw_lambda": 5.74,
       "lambda": 5.4,
       "avg_ip": 5.67,
@@ -657,23 +657,23 @@
       "recent_k9": 13.5,
       "career_k9": 7.59,
       "ev_over": {
-        "ev": 0.0138,
-        "adj_ev": 0.0138,
+        "ev": 0.0199,
+        "adj_ev": 0.0199,
         "verdict": "LEAN",
         "win_prob": 0.626,
         "movement_conf": 1.0
       },
       "ev_under": {
-        "ev": -0.0849,
-        "adj_ev": -0.0849,
+        "ev": -0.0892,
+        "adj_ev": -0.0892,
         "verdict": "PASS",
         "win_prob": 0.374,
         "movement_conf": 1.0
       },
       "book_odds": {
         "FanDuel": {
-          "over": -158,
-          "under": 118
+          "over": -154,
+          "under": 116
         }
       },
       "data_complete": false,
@@ -1313,13 +1313,13 @@
       "opening_line": 4.5,
       "best_over_book": "FanDuel",
       "ref_book": "FanDuel",
-      "best_over_odds": -104,
-      "best_under_odds": -128,
+      "best_over_odds": -106,
+      "best_under_odds": -125,
       "opening_over_odds": -106,
       "opening_under_odds": -125,
       "opening_odds_source": "preview",
-      "price_delta_over": 2,
-      "price_delta_under": -3,
+      "price_delta_over": 0,
+      "price_delta_under": 0,
       "raw_lambda": 5.05,
       "lambda": 4.71,
       "avg_ip": 4.67,
@@ -1333,23 +1333,23 @@
       "recent_k9": 11.25,
       "career_k9": 9.24,
       "ev_over": {
-        "ev": -0.0031,
-        "adj_ev": -0.0031,
+        "ev": -0.0079,
+        "adj_ev": -0.0079,
         "verdict": "PASS",
         "win_prob": 0.507,
         "movement_conf": 1.0
       },
       "ev_under": {
-        "ev": -0.0681,
-        "adj_ev": -0.0681,
+        "ev": -0.0622,
+        "adj_ev": -0.0622,
         "verdict": "PASS",
         "win_prob": 0.493,
         "movement_conf": 1.0
       },
       "book_odds": {
         "FanDuel": {
-          "over": -104,
-          "under": -128
+          "over": -106,
+          "under": -125
         }
       },
       "data_complete": false,
