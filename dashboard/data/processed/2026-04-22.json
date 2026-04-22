@@ -1,112 +1,8 @@
 {
-  "generated_at": "2026-04-22T03:48:01Z",
+  "generated_at": "2026-04-22T03:54:29Z",
   "date": "2026-04-22",
   "props_available": true,
   "pitchers": [
-    {
-      "pitcher": "Eric Lauer",
-      "team": "Toronto Blue Jays",
-      "opp_team": "Los Angeles Angels",
-      "pitcher_throws": "L",
-      "game_time": "2026-04-22T19:07:00Z",
-      "k_line": 4.5,
-      "opening_line": 4.5,
-      "best_over_book": "FanDuel",
-      "ref_book": "FanDuel",
-      "best_over_odds": -114,
-      "best_under_odds": -114,
-      "opening_over_odds": -112,
-      "opening_under_odds": -118,
-      "opening_odds_source": "first_seen",
-      "price_delta_over": -2,
-      "price_delta_under": 4,
-      "raw_lambda": 4.7,
-      "lambda": 4.38,
-      "avg_ip": 4.42,
-      "swstr_pct": 0.11,
-      "career_swstr_pct": null,
-      "swstr_delta_k9": 0.0,
-      "opp_k_rate": 0.2562,
-      "lineup_used": false,
-      "ump_k_adj": 0.0,
-      "season_k9": 8.15,
-      "recent_k9": 15.19,
-      "career_k9": 8.57,
-      "ev_over": {
-        "ev": -0.0881,
-        "adj_ev": -0.0881,
-        "verdict": "PASS",
-        "win_prob": 0.445,
-        "movement_conf": 1.0
-      },
-      "ev_under": {
-        "ev": 0.0227,
-        "adj_ev": 0.0227,
-        "verdict": "LEAN",
-        "win_prob": 0.555,
-        "movement_conf": 1.0
-      },
-      "book_odds": {
-        "FanDuel": {
-          "over": -114,
-          "under": -114
-        }
-      },
-      "data_complete": false,
-      "game_state": "pregame"
-    },
-    {
-      "pitcher": "Jose Soriano",
-      "team": "Los Angeles Angels",
-      "opp_team": "Toronto Blue Jays",
-      "pitcher_throws": "R",
-      "game_time": "2026-04-22T19:07:00Z",
-      "k_line": 5.5,
-      "opening_line": 5.5,
-      "best_over_book": "FanDuel",
-      "ref_book": "FanDuel",
-      "best_over_odds": -112,
-      "best_under_odds": -118,
-      "opening_over_odds": -114,
-      "opening_under_odds": -114,
-      "opening_odds_source": "first_seen",
-      "price_delta_over": 2,
-      "price_delta_under": -4,
-      "raw_lambda": 6.56,
-      "lambda": 6.24,
-      "avg_ip": 6.53,
-      "swstr_pct": 0.11,
-      "career_swstr_pct": null,
-      "swstr_delta_k9": 0.0,
-      "opp_k_rate": 0.1782,
-      "lineup_used": false,
-      "ump_k_adj": 0.0,
-      "season_k9": 10.74,
-      "recent_k9": 10.5,
-      "career_k9": 8.68,
-      "ev_over": {
-        "ev": 0.0642,
-        "adj_ev": 0.0642,
-        "verdict": "FIRE 1u",
-        "win_prob": 0.593,
-        "movement_conf": 1.0
-      },
-      "ev_under": {
-        "ev": -0.1338,
-        "adj_ev": -0.1338,
-        "verdict": "PASS",
-        "win_prob": 0.407,
-        "movement_conf": 1.0
-      },
-      "book_odds": {
-        "FanDuel": {
-          "over": -112,
-          "under": -118
-        }
-      },
-      "data_complete": false,
-      "game_state": "pregame"
-    },
     {
       "pitcher": "Max Fried",
       "team": "New York Yankees",
@@ -269,17 +165,17 @@
       "opp_team": "Washington Nationals",
       "pitcher_throws": "L",
       "game_time": "2026-04-22T22:45:00Z",
-      "k_line": 3.5,
-      "opening_line": 3.5,
+      "k_line": 2.5,
+      "opening_line": 2.5,
       "best_over_book": "FanDuel",
       "ref_book": "FanDuel",
-      "best_over_odds": 116,
-      "best_under_odds": -154,
-      "opening_over_odds": 140,
-      "opening_under_odds": -188,
+      "best_over_odds": -182,
+      "best_under_odds": 136,
+      "opening_over_odds": -182,
+      "opening_under_odds": 136,
       "opening_odds_source": "first_seen",
-      "price_delta_over": -24,
-      "price_delta_under": 34,
+      "price_delta_over": 0,
+      "price_delta_under": 0,
       "raw_lambda": 3.11,
       "lambda": 2.79,
       "avg_ip": 5.08,
@@ -293,23 +189,23 @@
       "recent_k9": 6.23,
       "career_k9": 6.34,
       "ev_over": {
-        "ev": -0.1578,
-        "adj_ev": -0.1578,
+        "ev": -0.118,
+        "adj_ev": -0.118,
         "verdict": "PASS",
-        "win_prob": 0.305,
+        "win_prob": 0.527,
         "movement_conf": 1.0
       },
       "ev_under": {
-        "ev": 0.0886,
-        "adj_ev": 0.0886,
+        "ev": 0.0489,
+        "adj_ev": 0.0489,
         "verdict": "FIRE 1u",
-        "win_prob": 0.695,
+        "win_prob": 0.473,
         "movement_conf": 1.0
       },
       "book_odds": {
         "FanDuel": {
-          "over": 116,
-          "under": -154
+          "over": -182,
+          "under": 136
         }
       },
       "data_complete": false,
