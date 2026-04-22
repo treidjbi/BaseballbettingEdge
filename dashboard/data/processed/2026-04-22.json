@@ -1,55 +1,55 @@
 {
-  "generated_at": "2026-04-22T17:31:45Z",
+  "generated_at": "2026-04-22T18:01:10Z",
   "date": "2026-04-22",
   "props_available": true,
   "pitchers": [
     {
-      "pitcher": "Tanner Bibee",
-      "team": "Cleveland Guardians",
-      "opp_team": "Houston Astros",
+      "pitcher": "Kyle Leahy",
+      "team": "St. Louis Cardinals",
+      "opp_team": "Miami Marlins",
       "pitcher_throws": "R",
-      "game_time": "2026-04-22T17:10:00Z",
-      "k_line": 4.5,
-      "opening_line": 4.5,
+      "game_time": "2026-04-22T16:10:00Z",
+      "k_line": 3.5,
+      "opening_line": 3.5,
       "best_over_book": "FanDuel",
       "ref_book": "FanDuel",
-      "best_over_odds": -158,
-      "best_under_odds": 118,
-      "opening_over_odds": -154,
-      "opening_under_odds": 116,
+      "best_over_odds": -114,
+      "best_under_odds": -114,
+      "opening_over_odds": -114,
+      "opening_under_odds": -114,
       "opening_odds_source": "preview",
-      "price_delta_over": -4,
-      "price_delta_under": 2,
-      "raw_lambda": 4.75,
-      "lambda": 4.41,
-      "avg_ip": 4.87,
+      "price_delta_over": 0,
+      "price_delta_under": 0,
+      "raw_lambda": 3.18,
+      "lambda": 2.84,
+      "avg_ip": 4.75,
       "swstr_pct": 0.11,
       "career_swstr_pct": null,
       "swstr_delta_k9": 0.0,
-      "opp_k_rate": 0.1937,
+      "opp_k_rate": 0.2106,
       "lineup_used": false,
       "ump_k_adj": 0.0,
-      "season_k9": 8.51,
-      "recent_k9": 12.6,
-      "career_k9": 8.84,
+      "season_k9": 6.16,
+      "recent_k9": 1.8,
+      "career_k9": 7.32,
       "ev_over": {
-        "ev": -0.1618,
-        "adj_ev": -0.1618,
+        "ev": -0.2163,
+        "adj_ev": -0.2163,
         "verdict": "PASS",
-        "win_prob": 0.451,
+        "win_prob": 0.316,
         "movement_conf": 1.0
       },
       "ev_under": {
-        "ev": 0.0907,
-        "adj_ev": 0.0907,
+        "ev": 0.1509,
+        "adj_ev": 0.1509,
         "verdict": "FIRE 2u",
-        "win_prob": 0.549,
+        "win_prob": 0.684,
         "movement_conf": 1.0
       },
       "book_odds": {
         "FanDuel": {
-          "over": -158,
-          "under": 118
+          "over": -114,
+          "under": -114
         }
       },
       "data_complete": false,
@@ -102,58 +102,6 @@
         "FanDuel": {
           "over": 124,
           "under": -166
-        }
-      },
-      "data_complete": false,
-      "game_state": "in_progress"
-    },
-    {
-      "pitcher": "Kyle Leahy",
-      "team": "St. Louis Cardinals",
-      "opp_team": "Miami Marlins",
-      "pitcher_throws": "R",
-      "game_time": "2026-04-22T16:10:00Z",
-      "k_line": 3.5,
-      "opening_line": 3.5,
-      "best_over_book": "FanDuel",
-      "ref_book": "FanDuel",
-      "best_over_odds": -114,
-      "best_under_odds": -114,
-      "opening_over_odds": -114,
-      "opening_under_odds": -114,
-      "opening_odds_source": "preview",
-      "price_delta_over": 0,
-      "price_delta_under": 0,
-      "raw_lambda": 3.18,
-      "lambda": 2.84,
-      "avg_ip": 4.75,
-      "swstr_pct": 0.11,
-      "career_swstr_pct": null,
-      "swstr_delta_k9": 0.0,
-      "opp_k_rate": 0.2106,
-      "lineup_used": false,
-      "ump_k_adj": 0.0,
-      "season_k9": 6.16,
-      "recent_k9": 1.8,
-      "career_k9": 7.32,
-      "ev_over": {
-        "ev": -0.2163,
-        "adj_ev": -0.2163,
-        "verdict": "PASS",
-        "win_prob": 0.316,
-        "movement_conf": 1.0
-      },
-      "ev_under": {
-        "ev": 0.1509,
-        "adj_ev": 0.1509,
-        "verdict": "FIRE 2u",
-        "win_prob": 0.684,
-        "movement_conf": 1.0
-      },
-      "book_odds": {
-        "FanDuel": {
-          "over": -114,
-          "under": -114
         }
       },
       "data_complete": false,
@@ -316,6 +264,58 @@
       "game_state": "in_progress"
     },
     {
+      "pitcher": "Tanner Bibee",
+      "team": "Cleveland Guardians",
+      "opp_team": "Houston Astros",
+      "pitcher_throws": "R",
+      "game_time": "2026-04-22T17:10:00Z",
+      "k_line": 4.5,
+      "opening_line": 4.5,
+      "best_over_book": "FanDuel",
+      "ref_book": "FanDuel",
+      "best_over_odds": -158,
+      "best_under_odds": 118,
+      "opening_over_odds": -154,
+      "opening_under_odds": 116,
+      "opening_odds_source": "preview",
+      "price_delta_over": -4,
+      "price_delta_under": 2,
+      "raw_lambda": 4.75,
+      "lambda": 4.41,
+      "avg_ip": 4.87,
+      "swstr_pct": 0.11,
+      "career_swstr_pct": null,
+      "swstr_delta_k9": 0.0,
+      "opp_k_rate": 0.1937,
+      "lineup_used": false,
+      "ump_k_adj": 0.0,
+      "season_k9": 8.51,
+      "recent_k9": 12.6,
+      "career_k9": 8.84,
+      "ev_over": {
+        "ev": -0.1618,
+        "adj_ev": -0.1618,
+        "verdict": "PASS",
+        "win_prob": 0.451,
+        "movement_conf": 1.0
+      },
+      "ev_under": {
+        "ev": 0.0907,
+        "adj_ev": 0.0907,
+        "verdict": "FIRE 2u",
+        "win_prob": 0.549,
+        "movement_conf": 1.0
+      },
+      "book_odds": {
+        "FanDuel": {
+          "over": -158,
+          "under": 118
+        }
+      },
+      "data_complete": false,
+      "game_state": "in_progress"
+    },
+    {
       "pitcher": "Chris Bassitt",
       "team": "Baltimore Orioles",
       "opp_team": "Kansas City Royals",
@@ -326,12 +326,12 @@
       "best_over_book": "FanDuel",
       "ref_book": "FanDuel",
       "best_over_odds": -118,
-      "best_under_odds": -110,
+      "best_under_odds": -112,
       "opening_over_odds": 100,
       "opening_under_odds": -132,
       "opening_odds_source": "preview",
       "price_delta_over": -218,
-      "price_delta_under": 22,
+      "price_delta_under": 20,
       "raw_lambda": 3.08,
       "lambda": 2.74,
       "avg_ip": 4.0,
@@ -352,16 +352,16 @@
         "movement_conf": 1.0
       },
       "ev_under": {
-        "ev": 0.1816,
-        "adj_ev": 0.0726,
+        "ev": 0.1771,
+        "adj_ev": 0.0886,
         "verdict": "FIRE 1u",
         "win_prob": 0.705,
-        "movement_conf": 0.4
+        "movement_conf": 0.5
       },
       "book_odds": {
         "FanDuel": {
           "over": -118,
-          "under": -110
+          "under": -112
         }
       },
       "data_complete": false,
@@ -377,13 +377,13 @@
       "opening_line": 4.5,
       "best_over_book": "FanDuel",
       "ref_book": "FanDuel",
-      "best_over_odds": -120,
-      "best_under_odds": -110,
+      "best_over_odds": -118,
+      "best_under_odds": -112,
       "opening_over_odds": 100,
       "opening_under_odds": -132,
       "opening_odds_source": "preview",
-      "price_delta_over": -220,
-      "price_delta_under": 22,
+      "price_delta_over": -218,
+      "price_delta_under": 20,
       "raw_lambda": 4.8,
       "lambda": 4.46,
       "avg_ip": 4.42,
@@ -397,23 +397,23 @@
       "recent_k9": 15.19,
       "career_k9": 8.57,
       "ev_over": {
-        "ev": -0.086,
-        "adj_ev": -0.086,
+        "ev": -0.0818,
+        "adj_ev": -0.0818,
         "verdict": "PASS",
         "win_prob": 0.459,
         "movement_conf": 1.0
       },
       "ev_under": {
-        "ev": 0.0167,
-        "adj_ev": 0.0067,
+        "ev": 0.0122,
+        "adj_ev": 0.0061,
         "verdict": "PASS",
         "win_prob": 0.541,
-        "movement_conf": 0.4
+        "movement_conf": 0.5
       },
       "book_odds": {
         "FanDuel": {
-          "over": -120,
-          "under": -110
+          "over": -118,
+          "under": -112
         }
       },
       "data_complete": false,
@@ -897,13 +897,13 @@
       "opening_line": 4.5,
       "best_over_book": "FanDuel",
       "ref_book": "FanDuel",
-      "best_over_odds": 104,
-      "best_under_odds": -138,
-      "opening_over_odds": 102,
-      "opening_under_odds": -136,
+      "best_over_odds": 102,
+      "best_under_odds": -136,
+      "opening_over_odds": 104,
+      "opening_under_odds": -138,
       "opening_odds_source": "first_seen",
-      "price_delta_over": 2,
-      "price_delta_under": -2,
+      "price_delta_over": -2,
+      "price_delta_under": 2,
       "raw_lambda": 5.08,
       "lambda": 4.74,
       "avg_ip": 5.5,
@@ -917,23 +917,23 @@
       "recent_k9": 9.0,
       "career_k9": 8.47,
       "ev_over": {
-        "ev": 0.0221,
-        "adj_ev": 0.0221,
+        "ev": 0.0172,
+        "adj_ev": 0.0172,
         "verdict": "LEAN",
         "win_prob": 0.512,
         "movement_conf": 1.0
       },
       "ev_under": {
-        "ev": -0.0921,
-        "adj_ev": -0.0921,
+        "ev": -0.0885,
+        "adj_ev": -0.0885,
         "verdict": "PASS",
         "win_prob": 0.488,
         "movement_conf": 1.0
       },
       "book_odds": {
         "FanDuel": {
-          "over": 104,
-          "under": -138
+          "over": 102,
+          "under": -136
         }
       },
       "data_complete": false,
@@ -1209,13 +1209,13 @@
       "opening_line": 4.5,
       "best_over_book": "FanDuel",
       "ref_book": "FanDuel",
-      "best_over_odds": -112,
-      "best_under_odds": -118,
+      "best_over_odds": -118,
+      "best_under_odds": -112,
       "opening_over_odds": 114,
       "opening_under_odds": -152,
       "opening_odds_source": "preview",
-      "price_delta_over": -226,
-      "price_delta_under": 34,
+      "price_delta_over": -232,
+      "price_delta_under": 40,
       "raw_lambda": 4.99,
       "lambda": 4.64,
       "avg_ip": 5.75,
@@ -1229,14 +1229,14 @@
       "recent_k9": 9.0,
       "career_k9": 8.89,
       "ev_over": {
-        "ev": -0.0331,
-        "adj_ev": -0.0331,
+        "ev": -0.0461,
+        "adj_ev": -0.0461,
         "verdict": "PASS",
         "win_prob": 0.495,
         "movement_conf": 1.0
       },
       "ev_under": {
-        "ev": -0.0365,
+        "ev": -0.0235,
         "adj_ev": -0.0,
         "verdict": "PASS",
         "win_prob": 0.505,
@@ -1244,8 +1244,8 @@
       },
       "book_odds": {
         "FanDuel": {
-          "over": -112,
-          "under": -118
+          "over": -118,
+          "under": -112
         }
       },
       "data_complete": false,
@@ -1261,13 +1261,13 @@
       "opening_line": 3.5,
       "best_over_book": "FanDuel",
       "ref_book": "FanDuel",
-      "best_over_odds": 110,
-      "best_under_odds": -146,
+      "best_over_odds": 112,
+      "best_under_odds": -148,
       "opening_over_odds": 106,
       "opening_under_odds": -140,
       "opening_odds_source": "preview",
-      "price_delta_over": 4,
-      "price_delta_under": -6,
+      "price_delta_over": 6,
+      "price_delta_under": -8,
       "raw_lambda": 3.86,
       "lambda": 3.52,
       "avg_ip": 4.33,
@@ -1281,23 +1281,23 @@
       "recent_k9": 9.64,
       "career_k9": 8.77,
       "ev_over": {
-        "ev": -0.0089,
-        "adj_ev": -0.0089,
+        "ev": -0.0044,
+        "adj_ev": -0.0044,
         "verdict": "PASS",
         "win_prob": 0.467,
         "movement_conf": 1.0
       },
       "ev_under": {
-        "ev": -0.0608,
-        "adj_ev": -0.0608,
+        "ev": -0.0641,
+        "adj_ev": -0.0641,
         "verdict": "PASS",
         "win_prob": 0.533,
         "movement_conf": 1.0
       },
       "book_odds": {
         "FanDuel": {
-          "over": 110,
-          "under": -146
+          "over": 112,
+          "under": -148
         }
       },
       "data_complete": false,
@@ -1313,13 +1313,13 @@
       "opening_line": 4.5,
       "best_over_book": "FanDuel",
       "ref_book": "FanDuel",
-      "best_over_odds": -106,
-      "best_under_odds": -125,
+      "best_over_odds": -104,
+      "best_under_odds": -128,
       "opening_over_odds": -106,
       "opening_under_odds": -125,
       "opening_odds_source": "preview",
-      "price_delta_over": 0,
-      "price_delta_under": 0,
+      "price_delta_over": 2,
+      "price_delta_under": -3,
       "raw_lambda": 5.05,
       "lambda": 4.71,
       "avg_ip": 4.67,
@@ -1333,23 +1333,23 @@
       "recent_k9": 11.25,
       "career_k9": 9.24,
       "ev_over": {
-        "ev": -0.0079,
-        "adj_ev": -0.0079,
+        "ev": -0.0031,
+        "adj_ev": -0.0031,
         "verdict": "PASS",
         "win_prob": 0.507,
         "movement_conf": 1.0
       },
       "ev_under": {
-        "ev": -0.0622,
-        "adj_ev": -0.0622,
+        "ev": -0.0681,
+        "adj_ev": -0.0681,
         "verdict": "PASS",
         "win_prob": 0.493,
         "movement_conf": 1.0
       },
       "book_odds": {
         "FanDuel": {
-          "over": -106,
-          "under": -125
+          "over": -104,
+          "under": -128
         }
       },
       "data_complete": false,
