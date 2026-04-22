@@ -88,6 +88,18 @@
 
   function buildV2Data(today) {
     const pitchers = (today.pitchers || []).map(normalizePitcher);
+    // Defensive sort by game_time ascending — the pipeline can emit pitchers out
+    // of order (late-arriving lineup/odds data gets appended), which bubbles up
+    // to the UI as "one 3:40 game at the bottom of the Upcoming list."
+    // v2-app.jsx's PicksTab filter → upcoming/live split preserves this order,
+    // so sorting once here is sufficient. Secondary sort on pitcher name keeps
+    // same-time games stable across runs. localeCompare works because
+    // game_time is ISO UTC (e.g. '2026-04-22T22:40:00Z').
+    pitchers.sort((a, b) => {
+      const t = (a.game_time || '').localeCompare(b.game_time || '');
+      if (t !== 0) return t;
+      return (a.pitcher || '').localeCompare(b.pitcher || '');
+    });
     return { generated_at: today.generated_at, date: today.date, pitchers };
   }
 
