@@ -1,8 +1,164 @@
 {
-  "generated_at": "2026-04-22T14:09:36Z",
+  "generated_at": "2026-04-22T14:29:01Z",
   "date": "2026-04-22",
   "props_available": true,
   "pitchers": [
+    {
+      "pitcher": "Aaron Civale",
+      "team": "Athletics",
+      "opp_team": "Seattle Mariners",
+      "pitcher_throws": "R",
+      "game_time": "2026-04-22T20:10:00Z",
+      "k_line": 5.5,
+      "opening_line": 5.5,
+      "best_over_book": "FanDuel",
+      "ref_book": "FanDuel",
+      "best_over_odds": 132,
+      "best_under_odds": -178,
+      "opening_over_odds": 132,
+      "opening_under_odds": -178,
+      "opening_odds_source": "first_seen",
+      "price_delta_over": 0,
+      "price_delta_under": 0,
+      "raw_lambda": 4.25,
+      "lambda": 3.9,
+      "avg_ip": 5.08,
+      "swstr_pct": 0.11,
+      "career_swstr_pct": null,
+      "swstr_delta_k9": 0.0,
+      "opp_k_rate": 0.2418,
+      "lineup_used": false,
+      "ump_k_adj": 0.0,
+      "season_k9": 7.08,
+      "recent_k9": 5.4,
+      "career_k9": 8.08,
+      "ev_over": {
+        "ev": -0.2314,
+        "adj_ev": -0.2314,
+        "verdict": "PASS",
+        "win_prob": 0.2,
+        "movement_conf": 1.0
+      },
+      "ev_under": {
+        "ev": 0.16,
+        "adj_ev": 0.16,
+        "verdict": "FIRE 2u",
+        "win_prob": 0.8,
+        "movement_conf": 1.0
+      },
+      "book_odds": {
+        "FanDuel": {
+          "over": 132,
+          "under": -178
+        }
+      },
+      "data_complete": false,
+      "game_state": "pregame"
+    },
+    {
+      "pitcher": "Ranger Suarez",
+      "team": "Boston Red Sox",
+      "opp_team": "New York Yankees",
+      "pitcher_throws": "L",
+      "game_time": "2026-04-22T22:45:00Z",
+      "k_line": 4.5,
+      "opening_line": 4.5,
+      "best_over_book": "FanDuel",
+      "ref_book": "FanDuel",
+      "best_over_odds": -128,
+      "best_under_odds": -104,
+      "opening_over_odds": -128,
+      "opening_under_odds": -104,
+      "opening_odds_source": "preview",
+      "price_delta_over": 0,
+      "price_delta_under": 0,
+      "raw_lambda": 4.54,
+      "lambda": 4.19,
+      "avg_ip": 5.58,
+      "swstr_pct": 0.11,
+      "career_swstr_pct": null,
+      "swstr_delta_k9": 0.0,
+      "opp_k_rate": 0.244,
+      "lineup_used": false,
+      "ump_k_adj": 0.0,
+      "season_k9": 6.04,
+      "recent_k9": 6.23,
+      "career_k9": 8.26,
+      "ev_over": {
+        "ev": -0.153,
+        "adj_ev": -0.153,
+        "verdict": "PASS",
+        "win_prob": 0.408,
+        "movement_conf": 1.0
+      },
+      "ev_under": {
+        "ev": 0.0818,
+        "adj_ev": 0.0818,
+        "verdict": "FIRE 1u",
+        "win_prob": 0.592,
+        "movement_conf": 1.0
+      },
+      "book_odds": {
+        "FanDuel": {
+          "over": -128,
+          "under": -104
+        }
+      },
+      "data_complete": false,
+      "game_state": "pregame"
+    },
+    {
+      "pitcher": "Martin Perez",
+      "team": "Atlanta Braves",
+      "opp_team": "Washington Nationals",
+      "pitcher_throws": "L",
+      "game_time": "2026-04-22T22:45:00Z",
+      "k_line": 3.5,
+      "opening_line": 3.5,
+      "best_over_book": "FanDuel",
+      "ref_book": "FanDuel",
+      "best_over_odds": 112,
+      "best_under_odds": -148,
+      "opening_over_odds": 118,
+      "opening_under_odds": -158,
+      "opening_odds_source": "preview",
+      "price_delta_over": -6,
+      "price_delta_under": 10,
+      "raw_lambda": 3.11,
+      "lambda": 2.76,
+      "avg_ip": 5.08,
+      "swstr_pct": 0.11,
+      "career_swstr_pct": null,
+      "swstr_delta_k9": 0.0,
+      "opp_k_rate": 0.2055,
+      "lineup_used": false,
+      "ump_k_adj": 0.0,
+      "season_k9": 4.43,
+      "recent_k9": 6.23,
+      "career_k9": 6.34,
+      "ev_over": {
+        "ev": -0.1723,
+        "adj_ev": -0.1723,
+        "verdict": "PASS",
+        "win_prob": 0.299,
+        "movement_conf": 1.0
+      },
+      "ev_under": {
+        "ev": 0.1038,
+        "adj_ev": 0.1038,
+        "verdict": "FIRE 2u",
+        "win_prob": 0.701,
+        "movement_conf": 1.0
+      },
+      "book_odds": {
+        "FanDuel": {
+          "over": 112,
+          "under": -148
+        }
+      },
+      "data_complete": false,
+      "game_state": "pregame"
+    },
     {
       "pitcher": "Janson Junk",
       "team": "Miami Marlins",
@@ -316,58 +472,6 @@
       "game_state": "pregame"
     },
     {
-      "pitcher": "Aaron Civale",
-      "team": "Athletics",
-      "opp_team": "Seattle Mariners",
-      "pitcher_throws": "R",
-      "game_time": "2026-04-22T20:10:00Z",
-      "k_line": 4.5,
-      "opening_line": 4.5,
-      "best_over_book": "FanDuel",
-      "ref_book": "FanDuel",
-      "best_over_odds": -148,
-      "best_under_odds": 112,
-      "opening_over_odds": -146,
-      "opening_under_odds": 110,
-      "opening_odds_source": "preview",
-      "price_delta_over": -2,
-      "price_delta_under": 2,
-      "raw_lambda": 4.25,
-      "lambda": 3.9,
-      "avg_ip": 5.08,
-      "swstr_pct": 0.11,
-      "career_swstr_pct": null,
-      "swstr_delta_k9": 0.0,
-      "opp_k_rate": 0.2418,
-      "lineup_used": false,
-      "ump_k_adj": 0.0,
-      "season_k9": 7.08,
-      "recent_k9": 5.4,
-      "career_k9": 8.08,
-      "ev_over": {
-        "ev": -0.2449,
-        "adj_ev": -0.2449,
-        "verdict": "PASS",
-        "win_prob": 0.352,
-        "movement_conf": 1.0
-      },
-      "ev_under": {
-        "ev": 0.1764,
-        "adj_ev": 0.1764,
-        "verdict": "FIRE 2u",
-        "win_prob": 0.648,
-        "movement_conf": 1.0
-      },
-      "book_odds": {
-        "FanDuel": {
-          "over": -148,
-          "under": 112
-        }
-      },
-      "data_complete": false,
-      "game_state": "pregame"
-    },
-    {
       "pitcher": "Logan Gilbert",
       "team": "Seattle Mariners",
       "opp_team": "Athletics",
@@ -576,58 +680,6 @@
       "game_state": "pregame"
     },
     {
-      "pitcher": "Ranger Suarez",
-      "team": "Boston Red Sox",
-      "opp_team": "New York Yankees",
-      "pitcher_throws": "L",
-      "game_time": "2026-04-22T22:45:00Z",
-      "k_line": 4.5,
-      "opening_line": 4.5,
-      "best_over_book": "FanDuel",
-      "ref_book": "FanDuel",
-      "best_over_odds": -128,
-      "best_under_odds": -104,
-      "opening_over_odds": -128,
-      "opening_under_odds": -104,
-      "opening_odds_source": "preview",
-      "price_delta_over": 0,
-      "price_delta_under": 0,
-      "raw_lambda": 4.54,
-      "lambda": 4.19,
-      "avg_ip": 5.58,
-      "swstr_pct": 0.11,
-      "career_swstr_pct": null,
-      "swstr_delta_k9": 0.0,
-      "opp_k_rate": 0.244,
-      "lineup_used": false,
-      "ump_k_adj": 0.0,
-      "season_k9": 6.04,
-      "recent_k9": 6.23,
-      "career_k9": 8.26,
-      "ev_over": {
-        "ev": -0.153,
-        "adj_ev": -0.153,
-        "verdict": "PASS",
-        "win_prob": 0.408,
-        "movement_conf": 1.0
-      },
-      "ev_under": {
-        "ev": 0.0818,
-        "adj_ev": 0.0818,
-        "verdict": "FIRE 1u",
-        "win_prob": 0.592,
-        "movement_conf": 1.0
-      },
-      "book_odds": {
-        "FanDuel": {
-          "over": -128,
-          "under": -104
-        }
-      },
-      "data_complete": false,
-      "game_state": "pregame"
-    },
-    {
       "pitcher": "Zack Littell",
       "team": "Washington Nationals",
       "opp_team": "Atlanta Braves",
@@ -674,58 +726,6 @@
         "FanDuel": {
           "over": -104,
           "under": -128
-        }
-      },
-      "data_complete": false,
-      "game_state": "pregame"
-    },
-    {
-      "pitcher": "Martin Perez",
-      "team": "Atlanta Braves",
-      "opp_team": "Washington Nationals",
-      "pitcher_throws": "L",
-      "game_time": "2026-04-22T22:45:00Z",
-      "k_line": 3.5,
-      "opening_line": 3.5,
-      "best_over_book": "FanDuel",
-      "ref_book": "FanDuel",
-      "best_over_odds": 112,
-      "best_under_odds": -148,
-      "opening_over_odds": 118,
-      "opening_under_odds": -158,
-      "opening_odds_source": "preview",
-      "price_delta_over": -6,
-      "price_delta_under": 10,
-      "raw_lambda": 3.11,
-      "lambda": 2.76,
-      "avg_ip": 5.08,
-      "swstr_pct": 0.11,
-      "career_swstr_pct": null,
-      "swstr_delta_k9": 0.0,
-      "opp_k_rate": 0.2055,
-      "lineup_used": false,
-      "ump_k_adj": 0.0,
-      "season_k9": 4.43,
-      "recent_k9": 6.23,
-      "career_k9": 6.34,
-      "ev_over": {
-        "ev": -0.1723,
-        "adj_ev": -0.1723,
-        "verdict": "PASS",
-        "win_prob": 0.299,
-        "movement_conf": 1.0
-      },
-      "ev_under": {
-        "ev": 0.1038,
-        "adj_ev": 0.1038,
-        "verdict": "FIRE 2u",
-        "win_prob": 0.701,
-        "movement_conf": 1.0
-      },
-      "book_odds": {
-        "FanDuel": {
-          "over": 112,
-          "under": -148
         }
       },
       "data_complete": false,
