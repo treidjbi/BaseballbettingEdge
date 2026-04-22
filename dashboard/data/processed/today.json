@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-04-22T16:07:18Z",
+  "generated_at": "2026-04-22T16:39:08Z",
   "date": "2026-04-22",
   "props_available": true,
   "pitchers": [
@@ -53,7 +53,7 @@
         }
       },
       "data_complete": false,
-      "game_state": "pregame"
+      "game_state": "in_progress"
     },
     {
       "pitcher": "Kyle Leahy",
@@ -105,7 +105,7 @@
         }
       },
       "data_complete": false,
-      "game_state": "pregame"
+      "game_state": "in_progress"
     },
     {
       "pitcher": "Brandon Williamson",
@@ -169,13 +169,13 @@
       "opening_line": 4.5,
       "best_over_book": "FanDuel",
       "ref_book": "FanDuel",
-      "best_over_odds": 118,
-      "best_under_odds": -158,
+      "best_over_odds": 114,
+      "best_under_odds": -152,
       "opening_over_odds": 126,
       "opening_under_odds": -168,
       "opening_odds_source": "preview",
-      "price_delta_over": -8,
-      "price_delta_under": 10,
+      "price_delta_over": -12,
+      "price_delta_under": 16,
       "raw_lambda": 3.7,
       "lambda": 3.35,
       "avg_ip": 5.5,
@@ -189,23 +189,23 @@
       "recent_k9": 4.5,
       "career_k9": 6.4,
       "ev_over": {
-        "ev": -0.212,
-        "adj_ev": -0.212,
+        "ev": -0.2205,
+        "adj_ev": -0.2205,
         "verdict": "PASS",
         "win_prob": 0.247,
         "movement_conf": 1.0
       },
       "ev_under": {
-        "ev": 0.1409,
-        "adj_ev": 0.1409,
+        "ev": 0.1501,
+        "adj_ev": 0.1051,
         "verdict": "FIRE 2u",
         "win_prob": 0.753,
-        "movement_conf": 1.0
+        "movement_conf": 0.7
       },
       "book_odds": {
         "FanDuel": {
-          "over": 118,
-          "under": -158
+          "over": 114,
+          "under": -152
         }
       },
       "data_complete": false,
@@ -429,13 +429,13 @@
       "opening_line": 4.5,
       "best_over_book": "FanDuel",
       "ref_book": "FanDuel",
-      "best_over_odds": -118,
-      "best_under_odds": -112,
+      "best_over_odds": -120,
+      "best_under_odds": -110,
       "opening_over_odds": 100,
       "opening_under_odds": -132,
       "opening_odds_source": "preview",
-      "price_delta_over": -218,
-      "price_delta_under": 20,
+      "price_delta_over": -220,
+      "price_delta_under": 22,
       "raw_lambda": 4.8,
       "lambda": 4.46,
       "avg_ip": 4.42,
@@ -449,23 +449,23 @@
       "recent_k9": 15.19,
       "career_k9": 8.57,
       "ev_over": {
-        "ev": -0.0818,
-        "adj_ev": -0.0818,
+        "ev": -0.086,
+        "adj_ev": -0.086,
         "verdict": "PASS",
         "win_prob": 0.459,
         "movement_conf": 1.0
       },
       "ev_under": {
-        "ev": 0.0122,
-        "adj_ev": 0.0061,
+        "ev": 0.0167,
+        "adj_ev": 0.0067,
         "verdict": "PASS",
         "win_prob": 0.541,
-        "movement_conf": 0.5
+        "movement_conf": 0.4
       },
       "book_odds": {
         "FanDuel": {
-          "over": -118,
-          "under": -112
+          "over": -120,
+          "under": -110
         }
       },
       "data_complete": false,
@@ -1053,13 +1053,13 @@
       "opening_line": 5.5,
       "best_over_book": "FanDuel",
       "ref_book": "FanDuel",
-      "best_over_odds": -108,
-      "best_under_odds": -122,
+      "best_over_odds": -102,
+      "best_under_odds": -130,
       "opening_over_odds": -110,
       "opening_under_odds": -120,
       "opening_odds_source": "preview",
-      "price_delta_over": 2,
-      "price_delta_under": -2,
+      "price_delta_over": 8,
+      "price_delta_under": -10,
       "raw_lambda": 6.04,
       "lambda": 5.69,
       "avg_ip": 5.67,
@@ -1073,23 +1073,23 @@
       "recent_k9": 4.5,
       "career_k9": 9.55,
       "ev_over": {
-        "ev": -0.0158,
-        "adj_ev": -0.0158,
+        "ev": -0.0015,
+        "adj_ev": -0.0015,
         "verdict": "PASS",
         "win_prob": 0.503,
         "movement_conf": 1.0
       },
       "ev_under": {
-        "ev": -0.053,
-        "adj_ev": -0.053,
+        "ev": -0.0686,
+        "adj_ev": -0.0686,
         "verdict": "PASS",
         "win_prob": 0.497,
         "movement_conf": 1.0
       },
       "book_odds": {
         "FanDuel": {
-          "over": -108,
-          "under": -122
+          "over": -102,
+          "under": -130
         }
       },
       "data_complete": false,
