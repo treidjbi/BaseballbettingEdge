@@ -776,7 +776,17 @@ Discuss with the user:
    - `opening_*_odds` null rate on post-merge picks: should be ~0% (A2 plumbing is confirmed working; null rows are legacy pre-migration).
    - `movement_conf != 1.0` rate: should track the ~9% baseline established by A2 diagnostic, now gated by `opening_odds_source == "preview"` → will only fire on picks where midnight preview actually captured a baseline.
 3. If any metric regressed or stayed stuck, **re-diagnose before Phase B** — do not paper over with a Phase B measurement addition, because B's slices assume the plumbing is clean.
-4. Once the re-audit passes, post the numbers to the user and wait for explicit "proceed to Phase B" reply before starting B1.
+4. Review UI/data-quality observations surfaced during the soak window. Two items observed 2026-04-22, both likely root-caused in the `build_features` post-odds join:
+
+   - **Pitcher ordering (cosmetic).** `today.json.pitchers[]` sometimes emits out of `game_time` order when late-arriving lineup/odds data appends to the array. Client-side defensive sort shipped 2026-04-22 in `dashboard/v2-data.js` `buildV2Data` (sorts by `(game_time, pitcher)` ascending). On audit day, decide whether to push the sort back to the pipeline emit step (`build_features.py` or `run_pipeline.py`) or leave the client-side fix as sufficient.
+
+   - **Phantom pitcher entries (correctness / real-money — higher severity).** Same-game duplicate pitcher records + entries for pitchers who didn't actually start (gameday swaps). Example: 2026-04-22 slate had **Chad Patrick (FIRE 2u UNDER, didn't pitch)** and **Martin Perez (didn't pitch; teammate Zack Littell did)** on the card. Likely cause: `fetch_odds` returns announced-then-swapped pitchers while the prop market stays live (TheRundown voids on no-action); `build_features` doesn't cross-reference against the confirmed starter. **Audit actions:**
+     - (a) Check `today.json` / archived per-day files on the soak window for duplicate `(date, team+opp_team)` tuples.
+     - (b) Check pitcher-name mismatches vs. the confirmed starter from `fetch_lineups` / MLB Stats API "probable pitcher" per game.
+     - (c) Verify no phantom picks graded into `picks_history.json` during the soak — if any did, they need manual filtering (or explicit flagging) before running `performance.py` for the re-audit, otherwise calibration sees bogus 0-K "under wins."
+     - If phantoms recur beyond the soak window, promote to a hotfix Phase A task (e.g. A7: "post-odds starter validation against lineups") **before** Phase B kickoff. This is plumbing, so it belongs in Phase A even if it lands late.
+
+5. Once the re-audit passes (numeric thresholds + UI/correctness observations both clean), post the numbers to the user and wait for explicit "proceed to Phase B" reply before starting B1.
 
 **Backward-compat check for Phase A:**
 - **A1 (`pitcher_throws`)** — field already exists and was None-tolerant; dashboard and analytics stay compatible whether A1 backfilled or not.
