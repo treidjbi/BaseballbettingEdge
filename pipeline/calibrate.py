@@ -191,8 +191,19 @@ def build_calibration_notes(old_params: dict, new_params: dict) -> list[str]:
 
 
 def build_performance(closed: list, current_params: dict | None = None,
-                      calibration_notes: list[str] | None = None) -> dict:
-    """Aggregate closed picks into a performance dict. Pure function (no I/O)."""
+                      calibration_notes: list[str] | None = None,
+                      calibration_sample: int | None = None) -> dict:
+    """Aggregate closed picks into a performance dict. Pure function (no I/O).
+
+    `closed` is all graded picks since the calibration cutoff (including ones
+    where an external signal degraded and `data_complete=0`). Those still count
+    as real bets with real outcomes for the dashboard rollup.
+
+    `calibration_sample` is the narrower count passed separately so the
+    dashboard can surface "N picks calibrated from" distinct from "total picks"
+    whenever a data-quality filter excluded some rows from the param updates.
+    Falls back to `current_params["sample_size"]` for back-compat if not given.
+    """
     total = len(closed)
     buckets: dict[tuple, dict] = {}
 
@@ -250,7 +261,13 @@ def build_performance(closed: list, current_params: dict | None = None,
     # Use passed params instead of reading from disk
     params = current_params or {}
     last_cal = params.get("updated_at")
-    cal_n    = params.get("sample_size", 0) if last_cal else None
+    # Prefer the explicit split-filter count; fall back to params.sample_size for
+    # callers that haven't been updated yet (keeps the field populated in legacy
+    # code paths rather than silently going None).
+    if calibration_sample is not None:
+        cal_n = calibration_sample
+    else:
+        cal_n = params.get("sample_size", 0) if last_cal else None
 
     return {
         "generated_at":        datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%SZ"),
@@ -441,9 +458,16 @@ def _calibration_cutoff() -> str:
 def _load_closed_picks() -> list:
     """Load current-season closed picks from DB. Returns empty list if DB missing.
 
-    Filtered to the effective calibration cutoff (the later of March 1 and any
-    formula_change_date) so picks graded under a different formula don't distort
-    calibration. Old picks remain in picks_history.json for reference.
+    Returns ALL graded picks since the effective calibration cutoff (the later
+    of March 1 and any formula_change_date). Includes picks where an external
+    signal (SwStr%, umpire) fell back to a synthetic neutral value —
+    `data_complete` is carried through so callers can filter further.
+
+    **Design note (split filter):** `data_complete=0` rows stay visible for the
+    dashboard performance rollup — those were real bets with real outcomes and
+    the user's record should reflect them. Calibration applies an additional
+    strict filter via `_filter_calibration_complete()` so synthetic inputs
+    don't bias `lambda_bias` / `ump_scale` / `swstr_k9_scale`.
     """
     cutoff = _calibration_cutoff()
     try:
@@ -453,16 +477,11 @@ def _load_closed_picks() -> list:
                    COALESCE(locked_adj_ev, adj_ev) AS adj_ev,
                    raw_lambda, actual_ks,
                    season_k9, recent_k9, career_k9, avg_ip, ump_k_adj,
-                   swstr_delta_k9, fetched_at, pnl
+                   swstr_delta_k9, fetched_at, pnl, data_complete
             FROM picks
             WHERE result IN ('win','loss','push')
               AND date >= ?
-              AND (data_complete IS NULL OR data_complete != 0)
         """, (cutoff,)).fetchall()
-        # data_complete IS NULL: picks from before this column was added — treated
-        # as complete because they predate the API-fallback tracking feature.
-        # data_complete = 0: SwStr% or umpire API fell back to synthetic neutral
-        # values, which can bias lambda_bias, ump_scale, and swstr_k9_scale.
         conn.close()
         log.info("Loaded %d closed picks since %s", len(rows), cutoff)
         return rows
@@ -471,25 +490,55 @@ def _load_closed_picks() -> list:
         return []
 
 
+def _filter_calibration_complete(closed: list) -> list:
+    """Narrow a list of closed picks to only those with complete data signals.
+
+    data_complete IS NULL: picks from before this column was added — treated
+    as complete because they predate the API-fallback tracking feature.
+    data_complete = 0: SwStr% or umpire API fell back to synthetic neutral
+    values, which can bias lambda_bias, ump_scale, and swstr_k9_scale.
+
+    Used by calibration to keep param updates honest; `build_performance()`
+    deliberately does NOT apply this filter so real bets with real outcomes
+    still show up in the dashboard rollup.
+    """
+    return [r for r in closed if (r["data_complete"] is None
+                                  or r["data_complete"] != 0)]
+
+
 def run() -> None:
-    """Main entry point. Always writes performance.json. Writes params.json when n>=30."""
-    closed = _load_closed_picks()
-    n = len(closed)
+    """Main entry point. Always writes performance.json. Writes params.json when n>=30.
+
+    Split-filter design: `closed` holds every graded pick since the calibration
+    cutoff (used for the dashboard performance rollup), while `closed_complete`
+    narrows to picks with complete SwStr%/umpire signals (used for param
+    calibration). Keeping these separate lets the user see their real betting
+    record on the dashboard even on days where an external signal degraded,
+    without teaching `lambda_bias` / `ump_scale` / `swstr_k9_scale` off
+    synthetic neutral inputs.
+    """
+    closed          = _load_closed_picks()
+    closed_complete = _filter_calibration_complete(closed)
+    total           = len(closed)
+    n               = len(closed_complete)
+    log.info("Loaded %d total closed picks; %d pass calibration data_complete filter",
+             total, n)
 
     current_params = _load_current_params()
-    log.info("Calibration: %d closed picks", n)
+    log.info("Calibration: %d closed picks (complete-data)", n)
 
     if n < PHASE1_THRESHOLD:
         log.info("Below Phase 1 threshold (%d), skipping calibration", PHASE1_THRESHOLD)
         perf = build_performance(closed, current_params=current_params,
-                                 calibration_notes=current_params.get("calibration_notes", []))
+                                 calibration_notes=current_params.get("calibration_notes", []),
+                                 calibration_sample=n)
         write_performance(perf)
         return
 
-    updated_params = _calibrate_phase1(closed, current_params)
+    updated_params = _calibrate_phase1(closed_complete, current_params)
 
     if n >= PHASE2_THRESHOLD:
-        updated_params = _calibrate_phase2(closed, updated_params)
+        updated_params = _calibrate_phase2(closed_complete, updated_params)
 
     updated_params["updated_at"]  = datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%SZ")
     updated_params["sample_size"] = n
@@ -520,5 +569,6 @@ def run() -> None:
 
     # Write performance.json with the updated params and notes
     perf = build_performance(closed, current_params=updated_params,
-                             calibration_notes=updated_params.get("calibration_notes", []))
+                             calibration_notes=updated_params.get("calibration_notes", []),
+                             calibration_sample=n)
     write_performance(perf)

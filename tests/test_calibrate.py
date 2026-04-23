@@ -426,3 +426,137 @@ def test_ump_scale_decreases_when_uncorrelated():
               "ump_scale": 1.0, "lambda_bias": 0.0}
     result = _calibrate_phase2(picks, params)
     assert result["ump_scale"] < 1.0  # should have decreased
+
+
+# ── Split-filter tests: calibration strict, performance inclusive ──────────
+
+def _insert_pick_with_complete(db_path, result, data_complete=1,
+                                verdict="FIRE 1u", side="over",
+                                raw_lambda=7.0, actual_ks=8,
+                                date_offset_days=1):
+    """Insert a closed pick with an explicit data_complete flag.
+
+    Separate from the module-level `_insert_closed_pick` helper so existing
+    tests keep their defaults; this helper is used by the split-filter tests
+    that need to distinguish complete-signal rows from degraded-signal rows.
+    """
+    date_str = (datetime.now() - timedelta(days=date_offset_days)).strftime("%Y-%m-%d")
+    fetched = datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ")
+    pnl = 0.87 if result == "win" else (-1.0 if result == "loss" else 0.0)
+    conn = sqlite3.connect(db_path)
+    conn.execute("""
+        INSERT INTO picks (date, pitcher, team, side, k_line, verdict, ev, adj_ev,
+                           raw_lambda, applied_lambda, odds, movement_conf,
+                           result, actual_ks, pnl, fetched_at,
+                           season_k9, recent_k9, career_k9, ump_k_adj,
+                           data_complete)
+        VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+    """, (
+        date_str, f"Pitcher-{date_offset_days}-{side}", "Team", side, 7.5, verdict,
+        0.04, 0.04, raw_lambda, raw_lambda, -110, 1.0,
+        result, actual_ks, pnl, fetched,
+        9.0, 8.5, 8.8, 0.1,
+        int(bool(data_complete)),
+    ))
+    conn.commit()
+    conn.close()
+
+
+class TestSplitFilter:
+    """The data_complete filter is split: strict for calibration, inclusive
+    for the dashboard performance rollup.
+
+    Rationale: a day where SwStr% or umpire data fell back to synthetic
+    neutral values still contains real bets with real outcomes — the user's
+    record should reflect them in the dashboard total.  But param updates
+    (lambda_bias, ump_scale, swstr_k9_scale) must not learn from synthetic
+    inputs, so calibration keeps the strict filter.
+    """
+
+    def test_load_closed_picks_returns_all_regardless_of_data_complete(
+            self, tmp_env):
+        db, perf, params, cal = tmp_env
+        _insert_pick_with_complete(db, "win", data_complete=1, date_offset_days=1)
+        _insert_pick_with_complete(db, "loss", data_complete=0, date_offset_days=2)
+
+        with patch("calibrate._current_season_start", return_value="2026-03-01"):
+            picks = cal._load_closed_picks()
+
+        assert len(picks) == 2, (
+            "_load_closed_picks must return every graded pick since the cutoff "
+            "— the data_complete filter moved to _filter_calibration_complete"
+        )
+
+    def test_filter_calibration_complete_excludes_degraded_rows(self, tmp_env):
+        db, perf, params, cal = tmp_env
+        # dict-shaped rows mirror what the pure helper actually sees in tests
+        # that call _calibrate_phase1 / _calibrate_phase2 directly; sqlite3.Row
+        # indexes identically so this is representative.
+        closed = [
+            {"data_complete": 1},
+            {"data_complete": 0},
+            {"data_complete": None},  # pre-column legacy row — treat as complete
+            {"data_complete": 1},
+        ]
+        out = cal._filter_calibration_complete(closed)
+        assert len(out) == 3
+        assert all(r["data_complete"] != 0 for r in out)
+
+    def test_performance_shows_all_graded_picks_calibration_uses_only_complete(
+            self, tmp_env):
+        """End-to-end: run() should surface all 3 graded picks in the
+        performance rollup (real bets, real outcomes) while calibration_sample
+        reflects only the 2 complete-data rows."""
+        db, perf, params, cal = tmp_env
+        # 2 complete picks + 1 degraded, all W/L (non-PASS)
+        _insert_pick_with_complete(db, "win", data_complete=1,
+                                    verdict="FIRE 1u", side="over",
+                                    date_offset_days=1)
+        _insert_pick_with_complete(db, "win", data_complete=1,
+                                    verdict="FIRE 1u", side="over",
+                                    date_offset_days=2)
+        _insert_pick_with_complete(db, "loss", data_complete=0,
+                                    verdict="FIRE 1u", side="over",
+                                    date_offset_days=3)
+
+        with patch("calibrate._current_season_start", return_value="2026-03-01"):
+            cal.run()
+
+        data = json.loads(perf.read_text())
+        # Dashboard total reflects real bets (all 3)
+        assert data["total_picks"] == 3
+        # Calibration sample excludes the degraded row (only 2)
+        assert data["calibration_sample"] == 2
+        # Per-verdict rollup reflects real bets — degraded loss counts here
+        fire1u_over = _find_row(data, "FIRE 1u", "over")
+        assert fire1u_over["picks"] == 3
+        assert fire1u_over["wins"] == 2
+        assert fire1u_over["losses"] == 1
+
+    def test_calibration_sample_matches_sample_size_in_params(self, tmp_env):
+        """After calibration runs, params.json.sample_size must match
+        performance.json.calibration_sample — the two numbers describe the
+        same thing (strict-filter count) from different artifacts, so they
+        must never drift apart."""
+        db, perf, params, cal = tmp_env
+        # 30+ W/L picks required to cross PHASE1_THRESHOLD
+        for i in range(35):
+            _insert_pick_with_complete(db, "win", data_complete=1,
+                                        verdict="FIRE 1u", side="over",
+                                        raw_lambda=7.0, actual_ks=8,
+                                        date_offset_days=i + 1)
+        # Sprinkle in a few degraded rows that should NOT count toward sample
+        for i in range(3):
+            _insert_pick_with_complete(db, "loss", data_complete=0,
+                                        verdict="FIRE 1u", side="over",
+                                        raw_lambda=7.0, actual_ks=3,
+                                        date_offset_days=50 + i)
+
+        with patch("calibrate._current_season_start", return_value="2026-03-01"):
+            cal.run()
+
+        params_data = json.loads(params.read_text())
+        perf_data   = json.loads(perf.read_text())
+        assert params_data["sample_size"] == perf_data["calibration_sample"]
+        assert params_data["sample_size"] == 35
+        assert perf_data["total_picks"] == 38

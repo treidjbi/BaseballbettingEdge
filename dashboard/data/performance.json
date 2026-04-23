@@ -1,63 +1,63 @@
 {
-  "generated_at": "2026-04-23T11:10:41Z",
-  "total_picks": 304,
-  "last_calibrated": "2026-04-23T11:10:41Z",
+  "generated_at": "2026-04-23T15:17:26Z",
+  "total_picks": 323,
+  "last_calibrated": "2026-04-23T15:17:26Z",
   "calibration_sample": 304,
   "rows": [
     {
       "verdict": "FIRE 2u",
       "side": "over",
-      "picks": 31,
+      "picks": 32,
       "wins": 13,
-      "losses": 18,
+      "losses": 19,
       "pushes": 0,
-      "win_pct": 0.419,
-      "roi": -16.67,
-      "avg_ev": 0.1583
+      "win_pct": 0.406,
+      "roi": -19.28,
+      "avg_ev": 0.1566
     },
     {
       "verdict": "FIRE 2u",
       "side": "under",
-      "picks": 101,
-      "wins": 60,
-      "losses": 41,
+      "picks": 107,
+      "wins": 63,
+      "losses": 44,
       "pushes": 0,
-      "win_pct": 0.594,
-      "roi": 12.23,
-      "avg_ev": 0.1889
+      "win_pct": 0.589,
+      "roi": 11.41,
+      "avg_ev": 0.1892
     },
     {
       "verdict": "FIRE 1u",
       "side": "over",
-      "picks": 48,
-      "wins": 28,
-      "losses": 20,
+      "picks": 51,
+      "wins": 30,
+      "losses": 21,
       "pushes": 0,
-      "win_pct": 0.583,
-      "roi": 16.08,
-      "avg_ev": 0.0584
+      "win_pct": 0.588,
+      "roi": 17.88,
+      "avg_ev": 0.0582
     },
     {
       "verdict": "FIRE 1u",
       "side": "under",
-      "picks": 64,
-      "wins": 38,
-      "losses": 26,
+      "picks": 70,
+      "wins": 43,
+      "losses": 27,
       "pushes": 0,
-      "win_pct": 0.594,
-      "roi": 15.0,
-      "avg_ev": 0.0564
+      "win_pct": 0.614,
+      "roi": 18.6,
+      "avg_ev": 0.0563
     },
     {
       "verdict": "LEAN",
       "side": "over",
-      "picks": 23,
-      "wins": 8,
-      "losses": 15,
+      "picks": 26,
+      "wins": 10,
+      "losses": 16,
       "pushes": 0,
-      "win_pct": 0.348,
-      "roi": -35.82,
-      "avg_ev": 0.0187
+      "win_pct": 0.385,
+      "roi": -29.6,
+      "avg_ev": 0.0186
     },
     {
       "verdict": "LEAN",
@@ -72,9 +72,9 @@
     }
   ],
   "lambda_accuracy": {
-    "avg_predicted": 4.94,
+    "avg_predicted": 4.92,
     "avg_actual": 4.6,
-    "bias": -0.35
+    "bias": -0.32
   },
   "params": {
     "weight_season_cap": 0.4,
@@ -82,7 +82,7 @@
     "ump_scale": 1.0,
     "lambda_bias": -0.345,
     "swstr_k9_scale": 30.0,
-    "updated_at": "2026-04-23T11:10:41Z",
+    "updated_at": "2026-04-23T15:17:26Z",
     "sample_size": 304,
     "formula_change_date": "2026-04-08",
     "calibration_notes": [

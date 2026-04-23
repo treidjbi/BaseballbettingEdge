@@ -1319,3 +1319,144 @@ class TestOpeningOddsSource:
         by_name = {p["pitcher"]: p for p in exported}
         assert by_name["Tagged Pitcher"]["opening_odds_source"] == "first_seen"
         assert by_name["Legacy Pitcher"]["opening_odds_source"] is None
+
+
+class TestDataCompleteRefresh:
+    """Regression tests for the data_complete UPDATE bug.
+
+    Before the fix, data_complete was only set on INSERT — the UPDATE path
+    in seed_picks silently left the stored value frozen at the 6am full-run
+    value.  On days where the 6am run saw ump_ok=False (HPs not yet posted),
+    the flag stayed at 0 all day even after refresh runs filled in real
+    umpire + SwStr data, causing the entire slate to be excluded from
+    calibration and the dashboard performance rollup.
+
+    The fix adds `data_complete = ?` to the UPDATE SET clause so the flag
+    tracks the latest state of the underlying inputs.
+    """
+
+    def _make_today_json(self, tmp_path, data_complete=True):
+        """Minimal today.json with one FIRE 1u over pick and the given flag."""
+        base = {
+            "date": "2026-04-15",
+            "props_available": True,
+            "pitchers": [{
+                "pitcher": "Gerrit Cole", "team": "New York Yankees",
+                "opp_team": "Boston Red Sox",
+                "pitcher_throws": "R",
+                "game_time": "2026-04-15T23:05:00Z",
+                "k_line": 7.5,
+                "raw_lambda": 7.2, "lambda": 7.2,
+                "season_k9": 9.1, "recent_k9": 8.8, "career_k9": 9.0,
+                "avg_ip": 5.8, "opp_k_rate": 0.235, "ump_k_adj": 0.2,
+                "swstr_delta_k9": 0.15, "swstr_pct": 0.132, "career_swstr_pct": 0.120,
+                "best_over_odds": -115, "best_under_odds": -105,
+                "opening_over_odds": -110, "opening_under_odds": -110,
+                "ref_book": "FanDuel",
+                "lineup_used": False,
+                "data_complete": data_complete,
+                "ev_over":  {"ev": 0.05, "adj_ev": 0.05, "verdict": "FIRE 1u",
+                             "win_prob": 0.58, "movement_conf": 1.0},
+                "ev_under": {"ev": -0.02, "adj_ev": -0.02, "verdict": "PASS",
+                             "win_prob": 0.42, "movement_conf": 1.0},
+            }],
+        }
+        p = tmp_path / "today.json"
+        p.write_text(json.dumps(base))
+        return p
+
+    def test_update_promotes_data_complete_from_false_to_true(
+            self, tmp_db, tmp_path):
+        """Simulates 6am run inserting with data_complete=0 (ump_ok=False,
+        HPs not posted yet), then a refresh run arriving with
+        data_complete=1 after the umpire feed populated.  The stored flag
+        must promote — otherwise the slate stays excluded from calibration
+        and the dashboard rollup all day."""
+        db_path, fr = tmp_db
+
+        # First seed — inputs degraded (simulates 6am before HPs posted)
+        t0 = self._make_today_json(tmp_path, data_complete=False)
+        fr.seed_picks(t0)
+
+        conn = fr.get_db()
+        row = conn.execute(
+            "SELECT data_complete FROM picks "
+            "WHERE pitcher='Gerrit Cole' AND side='over'"
+        ).fetchone()
+        conn.close()
+        assert row["data_complete"] == 0, "insert should have stored the degraded flag"
+
+        # Second seed — inputs now clean (simulates later refresh run)
+        t1 = self._make_today_json(tmp_path, data_complete=True)
+        fr.seed_picks(t1)
+
+        conn = fr.get_db()
+        row = conn.execute(
+            "SELECT data_complete FROM picks "
+            "WHERE pitcher='Gerrit Cole' AND side='over'"
+        ).fetchone()
+        conn.close()
+        assert row["data_complete"] == 1, (
+            "UPDATE must refresh data_complete so a clean refresh promotes "
+            "the slate out of the calibration exclusion filter"
+        )
+
+    def test_update_demotes_data_complete_from_true_to_false(
+            self, tmp_db, tmp_path):
+        """The inverse: if a later run sees a signal regression (e.g.
+        umpire feed went stale), data_complete must demote.  Keeps the
+        flag honest as a 'current state' gauge rather than a sticky
+        latch in either direction."""
+        db_path, fr = tmp_db
+
+        t0 = self._make_today_json(tmp_path, data_complete=True)
+        fr.seed_picks(t0)
+
+        t1 = self._make_today_json(tmp_path, data_complete=False)
+        fr.seed_picks(t1)
+
+        conn = fr.get_db()
+        row = conn.execute(
+            "SELECT data_complete FROM picks "
+            "WHERE pitcher='Gerrit Cole' AND side='over'"
+        ).fetchone()
+        conn.close()
+        assert row["data_complete"] == 0, (
+            "UPDATE must demote data_complete when inputs regress — "
+            "the flag is latest-state, not sticky"
+        )
+
+    def test_update_does_not_touch_locked_rows(self, tmp_db, tmp_path):
+        """Locked picks are frozen (locked_at IS NOT NULL) — the refresh
+        UPDATE explicitly filters them out.  A post-lock signal change must
+        NOT rewrite data_complete on a locked row, otherwise we'd mutate
+        the record after the decision was stamped.  This is an existing
+        invariant; the fix must not break it."""
+        db_path, fr = tmp_db
+
+        # Insert with degraded flag then manually lock the row
+        t0 = self._make_today_json(tmp_path, data_complete=False)
+        fr.seed_picks(t0)
+
+        conn = fr.get_db()
+        conn.execute(
+            "UPDATE picks SET locked_at = '2026-04-15T22:35:00Z' "
+            "WHERE pitcher='Gerrit Cole' AND side='over'"
+        )
+        conn.commit()
+        conn.close()
+
+        # Later refresh arrives clean
+        t1 = self._make_today_json(tmp_path, data_complete=True)
+        fr.seed_picks(t1)
+
+        conn = fr.get_db()
+        row = conn.execute(
+            "SELECT data_complete FROM picks "
+            "WHERE pitcher='Gerrit Cole' AND side='over'"
+        ).fetchone()
+        conn.close()
+        assert row["data_complete"] == 0, (
+            "locked rows must stay frozen — post-lock signal changes "
+            "cannot rewrite the stored data_complete"
+        )

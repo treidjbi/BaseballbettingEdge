@@ -193,6 +193,15 @@ def seed_picks(today_json_path: Path = TODAY_JSON) -> int:
                 # odds it now holds are current-fetch values, not a real opening baseline,
                 # and calc_movement_confidence treats NULL source as no-haircut (correct).
                 if cur.rowcount == 0:
+                    # data_complete is refreshed on every update: the 6am full
+                    # run often inserts with ump_ok=False (HPs not posted yet),
+                    # but the 30-min refresh runs later in the day typically
+                    # fill in real ump + SwStr data.  Before this fix, the flag
+                    # was frozen at insert-time, so a clean-data slate could
+                    # silently stay data_complete=0 all day — excluding the
+                    # entire slate from calibration and from the dashboard
+                    # performance rollup.  Taking the latest flag matches the
+                    # latest state of the pick's underlying inputs.
                     conn.execute("""
                         UPDATE picks
                         SET verdict = ?, ev = ?, adj_ev = ?, odds = ?,
@@ -204,7 +213,8 @@ def seed_picks(today_json_path: Path = TODAY_JSON) -> int:
                             avg_ip = ?, ump_k_adj = ?, swstr_pct = ?,
                             best_over_odds = ?, best_under_odds = ?,
                             opening_over_odds = COALESCE(opening_over_odds, ?),
-                            opening_under_odds = COALESCE(opening_under_odds, ?)
+                            opening_under_odds = COALESCE(opening_under_odds, ?),
+                            data_complete = ?
                         WHERE date = ? AND pitcher = ? AND side = ?
                           AND locked_at IS NULL AND result IS NULL
                     """, (
@@ -218,6 +228,7 @@ def seed_picks(today_json_path: Path = TODAY_JSON) -> int:
                         p.get("avg_ip"), p.get("ump_k_adj"), p.get("swstr_pct"),
                         p.get("best_over_odds"), p.get("best_under_odds"),
                         p.get("opening_over_odds"), p.get("opening_under_odds"),
+                        int(bool(p.get("data_complete", True))),
                         game_date, p["pitcher"], side,
                     ))
                     updated += conn.execute("SELECT changes()").fetchone()[0]
