@@ -707,6 +707,126 @@ git commit -m "fix(a3): [chosen remediation for ump_k_adj]"
 
 ---
 
+#### Re-audit finding 2026-04-23 — ROOT CAUSE ISOLATED (A3.7)
+
+Running the A3 diagnostic on 2026-04-23 + an end-to-end reproduction pinned the exact bug. None of the A3.3/A3.4 branches are the right fix — the cause is upstream of `fetch_umpires`.
+
+**Evidence chain:**
+1. `picks_history.json` has 601 picks across 29 days (2026-03-25 → 2026-04-23). **601/601 have `ump_k_adj == 0`.** Zero nonzero, zero null. Every pick, every day since records begin.
+2. `dashboard/data/processed/today.json` for 2026-04-23 has 18/18 pitchers with `ump_k_adj == 0.0` (all pregame, none locked — so `_merge_with_locked_snapshots` is not carrying forward stale data).
+3. Calling `fetch_hp_assignments("2026-04-23")` returns 7 HPs (ATL, MIL, PHI, SD, CWS, LAD, NYY). Live endpoint is healthy.
+4. Calling `fetch_umpires(props, "2026-04-23")` where `props` is taken from `today.json["pitchers"]` (i.e. enriched records) returns **14/18 nonzero** (Logan Webb +1.02, Skubal +0.225, Feltner -0.510, etc.). So `fetch_umpires` itself works and `career_k_rates.json` has the needed names.
+5. Running the full pipeline (`python pipeline/run_pipeline.py 2026-04-23`) writes 18/18 zeros and logs `"No HP assignment found for <every pitcher>"`. Same date, same HP assignments dict (7 games), but **zero matches during the pipeline call**.
+6. Inspecting the raw `fetch_odds("2026-04-23")` output: every prop has `team: ""` and `opp_team: ""` — empty placeholder strings.
+7. `fetch_umpires` iterates props and matches `prop["team"]` / `prop["opp_team"]` (lowercased) against the ABBR_TO_NAME_SUBSTR substrings. With empty strings, nothing matches. Every pitcher hits the `result[pitcher] = 0.0` fallback.
+
+**Why team is empty at this point in the pipeline:** commit `79bf3dc` (2026-04-01 — *"fix: resolve team/opp_team from MLB schedule instead of odds API (home pitcher swap bug)"*) moved team resolution out of `fetch_odds` and into `fetch_stats`, because TheRundown's participant list has no per-pitcher home/away flag. `fetch_stats` populates `team`/`opp_team` onto the *record* produced by `build_pitcher_record`, but the raw `props` list passed to `fetch_umpires` is never mutated. So `fetch_umpires` sees empty strings.
+
+**Timeline impact:**
+- Pre-`79bf3dc` (before 2026-04-01): ump name-matching was already unreliable due to `career_k_rates.json` having only ~30 names (Task A3b expanded to ~87 on 2026-04-20), but at least team substrings were present. Probably few matches but not guaranteed zero.
+- Post-`79bf3dc` (2026-04-01 onward, ~22 days): every run. Every pick. Zero matches. Signal completely silent.
+
+This is the silent-feature death that Task B5 is designed to catch — but it predates B5 by weeks.
+
+**Proposed fix (smallest-blast-radius, surgical):**
+
+In `pipeline/run_pipeline.py`, after `fetch_stats` returns, mutate each `prop` to pick up `team` / `opp_team` from the stats map before calling `fetch_umpires`:
+
+```python
+# pipeline/run_pipeline.py — after stats_map = fetch_stats(...) returns
+# Backfill team / opp_team onto props so fetch_umpires can match team names.
+# fetch_odds leaves these empty (TheRundown has no home/away flag);
+# fetch_stats resolves them from the MLB schedule side loop.
+for prop in props:
+    s = stats_map.get(prop["pitcher"])
+    if s:
+        prop["team"] = s.get("team", "") or prop.get("team", "")
+        prop["opp_team"] = s.get("opp_team", "") or prop.get("opp_team", "")
+```
+
+Graceful: if `stats_map` is empty (stats API down), props stay with empty team → `fetch_umpires` returns zeros → `ump_ok=False` → `data_complete=False` → picks excluded from calibration. Same safe degraded behavior as today, just no longer the default path.
+
+**Policy note:** This is a formula-activating fix, not a formula change. `ump_k_adj` has been a term in the lambda equation the whole time; it's just been frozen at 0. When the fix lands, every future pick will have real ump_k_adj feeding into lambda. That's a non-trivial shift in model behavior — `lambda_bias` will reconverge under the newly-active signal.
+
+**Decision point for user:** bump `formula_change_date` in `data/params.json` or not?
+- **Don't bump:** `lambda_bias` self-heals over ~30 new picks (Phase 1 trigger). During that window the aggregate bias mixes "formula with dead ump_k_adj" and "formula with live ump_k_adj" residuals, which is noisier but the user has explicitly said keep bias converging.
+- **Bump:** calibration restarts cleanly from zero on the first grading run post-fix. Trades a smaller-sample `lambda_bias` in the short term for a cleaner attribution of the live-ump signal going forward. This aligns with the standard "activating a real signal that's been frozen" precedent (Task A3b didn't bump because coverage was already partial; this is activating from 0%).
+
+Recommendation: **don't bump** — matches the user's explicit "don't reset lambda_bias" constraint. The signal magnitude is small enough (max |ump_k_adj| ≈ 1.0 K/game, scaled by `ump_scale` and `expected_innings/9`) that the noise window is manageable.
+
+- [ ] **Step A3.7: Red test — reproduce the bug with a failing pipeline integration test**
+
+In `tests/test_run_pipeline.py`, add a test that mocks `fetch_odds` (returns props with empty team), `fetch_stats` (returns stats_map with real team names), `fetch_umpires` (stub that asserts on the team fields it sees), and verifies the built record has nonzero `ump_k_adj` when the career_rates table has the HP ump.
+
+```python
+def test_ump_map_sees_team_names_populated_by_fetch_stats():
+    """Regression: fetch_odds leaves team='' (TheRundown has no home/away flag).
+    fetch_stats resolves team via MLB schedule. fetch_umpires must be called
+    AFTER stats populates team onto props, else every ump match fails silently."""
+    props_in = [{"pitcher": "Logan Webb", "team": "", "opp_team": "", ...}]
+    stats_map = {"Logan Webb": {"team": "San Francisco Giants", "opp_team": "Los Angeles Dodgers", ...}}
+    captured_props = []
+    def fake_fetch_umpires(props, date_str):
+        captured_props.extend(p.copy() for p in props)
+        return {p["pitcher"]: 0.0 for p in props}
+    # patch fetch_odds, fetch_stats, fetch_umpires into run_pipeline
+    # run pipeline for a test date
+    # assert captured_props[0]["team"] == "San Francisco Giants"
+```
+
+Run: `python -m pytest tests/test_run_pipeline.py::test_ump_map_sees_team_names_populated_by_fetch_stats -v`
+Expected: FAIL (bug reproduced)
+
+- [ ] **Step A3.8: Apply the fix**
+
+Add the 5-line team/opp_team backfill loop in `run_pipeline.py` between `fetch_stats(...)` (line ~707) and `fetch_umpires(...)` (line ~730). Include a comment explaining why (reference commit `79bf3dc`).
+
+- [ ] **Step A3.9: Green test + downstream impact check**
+
+```bash
+python -m pytest tests/ -v
+```
+Full suite must stay green. Then run a manual pipeline for 2026-04-23, verify `today.json` shows nonzero `ump_k_adj` for the 14 pitchers whose HP is in `career_k_rates.json`.
+
+- [ ] **Step A3.10: Decide on `formula_change_date` bump**
+
+Surface the decision to user with the analysis above. If "don't bump" (recommended): add a note to the commit message documenting that `lambda_bias` will self-heal. If "bump": edit `data/params.json`, set `formula_change_date` to the deploy date, leave `lambda_bias` untouched and let calibration filter it out on the next grading run.
+
+- [ ] **Step A3.11: Backfill historical ump_k_adj? (explicit decision required)**
+
+Historical picks have `ump_k_adj = 0` because of this bug. Backfilling them would require:
+- For each closed pick, look up the HP umpire via MLB Stats API for that game date
+- Resolve against the *current* `career_k_rates.json` (which has grown over time — not ideal for historical attribution)
+- Recompute and UPDATE the stored value
+
+**Recommendation: do NOT backfill.** Reasons:
+1. `career_k_rates.json` coverage expanded on 2026-04-20 (Task A3b). A backfill would apply today's coverage to old picks, creating a counterfactual lambda the model never produced.
+2. `lambda` on those picks was computed with ump contribution = 0. Changing `ump_k_adj` retroactively without recomputing lambda would desync the record.
+3. Calibration uses stored `raw_lambda` residuals — backfilling `ump_k_adj` in isolation introduces a phantom correlation.
+4. The split filter from commit `89e3e4f` already excludes current-day-and-forward degraded picks from calibration via `data_complete`; historical picks stay grandfathered.
+
+Document the choice in `docs/data-caveats.md` — add a new "ump_k_adj dead-signal window" entry covering 2026-04-01 → (fix-deploy-date) with the rationale for the no-backfill policy.
+
+- [ ] **Step A3.12: Commit**
+
+```bash
+git add pipeline/run_pipeline.py tests/test_run_pipeline.py docs/data-caveats.md
+git commit -m "fix(a3): populate team/opp_team on props before fetch_umpires
+
+ump_k_adj has been silently 0 for every pick since 2026-04-01 (commit 79bf3dc
+moved team resolution from fetch_odds to fetch_stats but fetch_umpires reads
+prop[\"team\"] which was never mutated).  Backfill team onto props from
+stats_map before calling fetch_umpires so name-matching actually fires.
+
+Root cause + evidence chain: see docs/superpowers/plans/2026-04-16-model-audit-and-gaps.md
+(re-audit finding 2026-04-23, Task A3.7-A3.12).
+
+Historical picks are NOT backfilled (see docs/data-caveats.md).
+lambda_bias self-heals via normal calibration — formula_change_date NOT bumped."
+```
+
+---
+
 ### Task A4: Add bookmaker breakdown to analytics  *(execute 4th — measurement)*
 
 **Files:**

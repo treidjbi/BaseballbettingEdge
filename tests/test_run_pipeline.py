@@ -166,6 +166,63 @@ def test_data_complete_true_when_ump_map_has_nonzero(tmp_path):
     assert data["pitchers"][0]["data_complete"] is True
 
 
+def test_fetch_umpires_receives_props_with_team_populated_from_stats(tmp_path):
+    """Regression (re-audit 2026-04-23): fetch_odds emits team='' and opp_team=''
+    because TheRundown's participant list has no home/away flag (see commit
+    79bf3dc, 2026-04-01). fetch_stats resolves team/opp_team via the MLB
+    schedule side loop. The pipeline must backfill those fields onto props
+    from stats_map BEFORE calling fetch_umpires — fetch_umpires team-matches
+    on prop['team'] / prop['opp_team'] against ABBR_TO_NAME_SUBSTR substrings.
+    Without the backfill, every pitcher silently hits ump_k_adj=0.0 and the
+    entire umpire signal is dead.
+
+    Dead-signal window before this fix: 2026-04-01 → 2026-04-23 (601/601
+    stored picks had ump_k_adj=0). See docs/data-caveats.md."""
+    import run_pipeline
+    run_pipeline._batter_stats_cache = None
+    out_path = tmp_path / "today.json"
+
+    seen_by_fetch_umpires: list[dict] = []
+    def spy_fetch_umpires(props, date_str):
+        # Snapshot what fetch_umpires sees at call time so we can assert
+        # team fields are populated before the function reads them.
+        seen_by_fetch_umpires.extend(
+            {"pitcher": p["pitcher"],
+             "team": p.get("team", ""),
+             "opp_team": p.get("opp_team", "")}
+            for p in props
+        )
+        return {p["pitcher"]: 0.5 for p in props}
+
+    with patch.object(run_pipeline, "OUTPUT_PATH", out_path), \
+         patch("run_pipeline.fetch_odds", return_value=[_sample_prop()]), \
+         patch("run_pipeline.fetch_stats", return_value={"Test Pitcher": _sample_stats()}), \
+         patch("run_pipeline.fetch_swstr", return_value={"Test Pitcher": {"swstr_pct": 0.110, "career_swstr_pct": None}}), \
+         patch("run_pipeline.fetch_umpires", side_effect=spy_fetch_umpires), \
+         patch("run_pipeline.fetch_lineups_for_pitcher", return_value=None), \
+         patch("run_pipeline.fetch_batter_stats_cached", return_value={}), \
+         patch("run_pipeline.init_db"), \
+         patch("run_pipeline.load_history_into_db"), \
+         patch("run_pipeline.get_db", return_value=MagicMock()), \
+         patch("run_pipeline.lock_due_picks", return_value=0), \
+         patch("run_pipeline.seed_picks", return_value=0), \
+         patch("run_pipeline.export_db_to_history"):
+        run_pipeline.run("2026-04-01")
+
+    assert len(seen_by_fetch_umpires) == 1, (
+        f"fetch_umpires should have been called once; got {len(seen_by_fetch_umpires)}"
+    )
+    assert seen_by_fetch_umpires[0]["team"] == "Test Team", (
+        f"fetch_umpires received team={seen_by_fetch_umpires[0]['team']!r} — expected "
+        f"'Test Team' (the value fetch_stats resolved). Pipeline must backfill "
+        f"team/opp_team onto props from stats_map before fetch_umpires runs."
+    )
+    assert seen_by_fetch_umpires[0]["opp_team"] == "Opp Team", (
+        f"fetch_umpires received opp_team={seen_by_fetch_umpires[0]['opp_team']!r} — "
+        f"expected 'Opp Team' from stats_map backfill."
+    )
+
+
 def test_run_writes_empty_output_when_no_props(tmp_path):
     """run() should write today.json with props_available=False when no odds returned."""
     import run_pipeline

@@ -726,6 +726,21 @@ def run(date_str: str, run_type: str = "full") -> None:
     # replaces the dead ump.news scrape. Pre-game on game-day, officials often
     # aren't posted yet — that returns an empty map and the 30-min refresh loop
     # picks them up before T-30 lock. See pipeline/fetch_umpires.py for details.
+    #
+    # Backfill team/opp_team onto props from stats_map BEFORE fetch_umpires runs.
+    # fetch_odds leaves these as empty strings because TheRundown's participant
+    # list has no per-pitcher home/away flag (commit 79bf3dc, 2026-04-01 —
+    # "resolve team/opp_team from MLB schedule instead of odds API"). fetch_stats
+    # resolves them via the MLB schedule side loop. Without this backfill,
+    # fetch_umpires team-matches on empty strings and every pitcher silently
+    # hits ump_k_adj=0.0 — dead-signal window 2026-04-01 → 2026-04-23 (601/601
+    # stored picks had ump_k_adj=0; see docs/data-caveats.md + re-audit finding
+    # in docs/superpowers/plans/2026-04-16-model-audit-and-gaps.md, Task A3.7).
+    for prop in props:
+        s = stats_map.get(prop["pitcher"])
+        if s:
+            prop["team"] = s.get("team") or prop.get("team", "")
+            prop["opp_team"] = s.get("opp_team") or prop.get("opp_team", "")
     try:
         ump_map = fetch_umpires(props, date_str)
     except Exception as e:

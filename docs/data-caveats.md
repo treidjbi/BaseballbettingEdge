@@ -1,5 +1,68 @@
 # Data caveats for picks_history.json
 
+## 2026-04-01 to 2026-04-23 — ump_k_adj dead-signal window
+
+A latent wiring bug kept the umpire signal completely silent for 22 days
+*after* the 2026-04-17 source cutover. Symptoms and root cause:
+
+- **601/601 stored picks** across 2026-03-25 → 2026-04-23 have
+  `ump_k_adj == 0.0` exactly. Zero nonzero, zero null.
+- Live `fetch_umpires(enriched_props, date_str)` returned real nonzero
+  deltas the whole time (verified 2026-04-23: 14/18 nonzero on-day).
+
+### Root cause
+
+On 2026-04-01, commit `79bf3dc` (*"fix: resolve team/opp_team from MLB
+schedule instead of odds API (home pitcher swap bug)"*) moved `team`/
+`opp_team` resolution out of `fetch_odds` and into `fetch_stats`, because
+TheRundown's participant list has no per-pitcher home/away flag.
+`fetch_odds` since then emits `team=""` and `opp_team=""`; `fetch_stats`
+populates them later onto the *built record*. But `fetch_umpires` reads
+`prop["team"]` / `prop["opp_team"]` and is called *between* `fetch_stats`
+and `build_pitcher_record`, against the raw `props` list — which had
+empty strings. Every team-substring match failed, every pitcher silently
+hit `result[pitcher] = 0.0`. No exception, no warning — just a dead
+signal for 22 days.
+
+Remediated 2026-04-23 by backfilling `team`/`opp_team` onto props from
+`stats_map` before `fetch_umpires` runs. See root-cause write-up in
+`docs/superpowers/plans/2026-04-16-model-audit-and-gaps.md` (Task A3.7).
+
+### Impact on stored fields
+
+- **`ump_k_adj` in picks_history 2026-04-01 → fix-date:** `0.0`
+  everywhere. This is accurate — the model saw a neutral ump signal
+  because the wiring was broken.
+- **`lambda` in picks_history for this window:** computed with
+  ump contribution = 0. Residual calibration uses
+  `residual = actual_ks - stored_lambda`, so `lambda_bias` convergence
+  is unaffected by the bug (0 was the value the model actually used).
+
+### Why historical rows were NOT backfilled
+
+Two independent reasons, either sufficient on its own:
+
+1. **`career_k_rates.json` coverage has drifted during the window.**
+   Task A3b (2026-04-20) expanded the table from ~30 umps to ~87.
+   Applying today's coverage to old picks would fabricate deltas the
+   model never could have produced — counterfactual, not historical.
+2. **Lambda was scored against ump_k_adj=0.** Retroactively writing a
+   nonzero `ump_k_adj` without recomputing `lambda` would desync the
+   stored record; recomputing `lambda` would corrupt residual-based
+   calibration (`raw_lambda` is the baseline for convergence).
+
+`data_complete` already filters degraded rows out of calibration going
+forward (split filter, commit `89e3e4f`). Historical rows stay
+grandfathered.
+
+### Implication for analytics
+
+- Ump-signal analytics should treat 2026-04-01 → fix-date as a
+  dead-signal window. Any slice of `ump_k_adj` effectiveness against
+  pre-fix residuals will show zero correlation (by construction).
+- Post-fix picks should show the real signal. The B6 feature-
+  contribution audit in the plan catches this kind of dormant feature.
+
 ## 2026-04-17 — ump.news to MLB Stats API cutover
 
 Prior to 2026-04-17, the pipeline scraped `www.ump.news` for HP umpire
