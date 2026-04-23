@@ -1,0 +1,111 @@
+{
+  "generated_at": "2026-04-23T00:10:34Z",
+  "date": "2026-04-23",
+  "props_available": true,
+  "pitchers": [
+    {
+      "pitcher": "Tarik Skubal",
+      "team": "Detroit Tigers",
+      "opp_team": "Milwaukee Brewers",
+      "pitcher_throws": "L",
+      "game_time": "2026-04-23T17:10:00Z",
+      "k_line": 7.5,
+      "opening_line": 7.5,
+      "best_over_book": "FanDuel",
+      "ref_book": "FanDuel",
+      "best_over_odds": 116,
+      "best_under_odds": -154,
+      "opening_over_odds": 116,
+      "opening_under_odds": -154,
+      "opening_odds_source": "first_seen",
+      "price_delta_over": 0,
+      "price_delta_under": 0,
+      "raw_lambda": 6.6,
+      "lambda": 6.25,
+      "avg_ip": 6.07,
+      "swstr_pct": 0.11,
+      "career_swstr_pct": null,
+      "swstr_delta_k9": 0.0,
+      "opp_k_rate": 0.2138,
+      "lineup_used": false,
+      "ump_k_adj": 0.0,
+      "season_k9": 9.79,
+      "recent_k9": 9.0,
+      "career_k9": 10.41,
+      "ev_over": {
+        "ev": -0.1717,
+        "adj_ev": -0.1717,
+        "verdict": "PASS",
+        "win_prob": 0.291,
+        "movement_conf": 1.0
+      },
+      "ev_under": {
+        "ev": 0.1024,
+        "adj_ev": 0.1024,
+        "verdict": "FIRE 2u",
+        "win_prob": 0.709,
+        "movement_conf": 1.0
+      },
+      "book_odds": {
+        "FanDuel": {
+          "over": 116,
+          "under": -154
+        }
+      },
+      "data_complete": false,
+      "game_state": "pregame"
+    },
+    {
+      "pitcher": "Brandon Sproat",
+      "team": "Milwaukee Brewers",
+      "opp_team": "Detroit Tigers",
+      "pitcher_throws": "R",
+      "game_time": "2026-04-23T17:10:00Z",
+      "k_line": 4.5,
+      "opening_line": 4.5,
+      "best_over_book": "FanDuel",
+      "ref_book": "FanDuel",
+      "best_over_odds": 116,
+      "best_under_odds": -154,
+      "opening_over_odds": 116,
+      "opening_under_odds": -154,
+      "opening_odds_source": "first_seen",
+      "price_delta_over": 0,
+      "price_delta_under": 0,
+      "raw_lambda": 3.81,
+      "lambda": 3.46,
+      "avg_ip": 4.25,
+      "swstr_pct": 0.11,
+      "career_swstr_pct": null,
+      "swstr_delta_k9": 0.0,
+      "opp_k_rate": 0.2149,
+      "lineup_used": false,
+      "ump_k_adj": 0.0,
+      "season_k9": 8.47,
+      "recent_k9": 9.0,
+      "career_k9": 7.88,
+      "ev_over": {
+        "ev": -0.1958,
+        "adj_ev": -0.1958,
+        "verdict": "PASS",
+        "win_prob": 0.267,
+        "movement_conf": 1.0
+      },
+      "ev_under": {
+        "ev": 0.1265,
+        "adj_ev": 0.1265,
+        "verdict": "FIRE 2u",
+        "win_prob": 0.733,
+        "movement_conf": 1.0
+      },
+      "book_odds": {
+        "FanDuel": {
+          "over": 116,
+          "under": -154
+        }
+      },
+      "data_complete": false,
+      "game_state": "pregame"
+    }
+  ]
+}
