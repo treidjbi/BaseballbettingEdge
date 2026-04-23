@@ -1,55 +1,55 @@
 {
-  "generated_at": "2026-04-23T18:06:22Z",
+  "generated_at": "2026-04-23T18:41:57Z",
   "date": "2026-04-23",
   "props_available": true,
   "pitchers": [
     {
-      "pitcher": "Brandon Sproat",
-      "team": "Milwaukee Brewers",
-      "opp_team": "Detroit Tigers",
+      "pitcher": "Cade Cavalli",
+      "team": "Washington Nationals",
+      "opp_team": "Atlanta Braves",
       "pitcher_throws": "R",
-      "game_time": "2026-04-23T17:10:00Z",
-      "k_line": 4.5,
-      "opening_line": 4.5,
+      "game_time": "2026-04-23T17:05:00Z",
+      "k_line": 3.5,
+      "opening_line": 3.5,
       "best_over_book": "FanDuel",
       "ref_book": "FanDuel",
-      "best_over_odds": 130,
-      "best_under_odds": -174,
-      "opening_over_odds": 118,
-      "opening_under_odds": -158,
+      "best_over_odds": -130,
+      "best_under_odds": -102,
+      "opening_over_odds": -130,
+      "opening_under_odds": -102,
       "opening_odds_source": "preview",
-      "price_delta_over": 12,
-      "price_delta_under": -16,
-      "raw_lambda": 3.81,
-      "lambda": 3.46,
-      "avg_ip": 4.25,
+      "price_delta_over": 0,
+      "price_delta_under": 0,
+      "raw_lambda": 3.56,
+      "lambda": 3.21,
+      "avg_ip": 3.93,
       "swstr_pct": 0.11,
       "career_swstr_pct": null,
       "swstr_delta_k9": 0.0,
-      "opp_k_rate": 0.2154,
+      "opp_k_rate": 0.188,
       "lineup_used": false,
       "ump_k_adj": 0.0,
-      "season_k9": 8.47,
-      "recent_k9": 9.0,
-      "career_k9": 7.88,
+      "season_k9": 8.24,
+      "recent_k9": 12.27,
+      "career_k9": 7.93,
       "ev_over": {
-        "ev": -0.1671,
-        "adj_ev": -0.1504,
+        "ev": -0.1648,
+        "adj_ev": -0.1648,
         "verdict": "PASS",
-        "win_prob": 0.268,
-        "movement_conf": 0.9
+        "win_prob": 0.4,
+        "movement_conf": 1.0
       },
       "ev_under": {
-        "ev": 0.0973,
-        "adj_ev": 0.0973,
+        "ev": 0.0946,
+        "adj_ev": 0.0946,
         "verdict": "FIRE 2u",
-        "win_prob": 0.732,
+        "win_prob": 0.6,
         "movement_conf": 1.0
       },
       "book_odds": {
         "FanDuel": {
-          "over": 130,
-          "under": -174
+          "over": -130,
+          "under": -102
         }
       },
       "data_complete": false,
@@ -108,52 +108,104 @@
       "game_state": "in_progress"
     },
     {
-      "pitcher": "Cade Cavalli",
-      "team": "Washington Nationals",
-      "opp_team": "Atlanta Braves",
+      "pitcher": "Brandon Sproat",
+      "team": "Milwaukee Brewers",
+      "opp_team": "Detroit Tigers",
       "pitcher_throws": "R",
-      "game_time": "2026-04-23T17:05:00Z",
-      "k_line": 3.5,
-      "opening_line": 3.5,
+      "game_time": "2026-04-23T17:10:00Z",
+      "k_line": 4.5,
+      "opening_line": 4.5,
       "best_over_book": "FanDuel",
       "ref_book": "FanDuel",
-      "best_over_odds": -130,
-      "best_under_odds": -102,
-      "opening_over_odds": -130,
-      "opening_under_odds": -102,
+      "best_over_odds": 130,
+      "best_under_odds": -174,
+      "opening_over_odds": 118,
+      "opening_under_odds": -158,
       "opening_odds_source": "preview",
-      "price_delta_over": 0,
-      "price_delta_under": 0,
-      "raw_lambda": 3.56,
-      "lambda": 3.21,
-      "avg_ip": 3.93,
+      "price_delta_over": 12,
+      "price_delta_under": -16,
+      "raw_lambda": 3.81,
+      "lambda": 3.46,
+      "avg_ip": 4.25,
       "swstr_pct": 0.11,
       "career_swstr_pct": null,
       "swstr_delta_k9": 0.0,
-      "opp_k_rate": 0.188,
+      "opp_k_rate": 0.2154,
       "lineup_used": false,
       "ump_k_adj": 0.0,
-      "season_k9": 8.24,
-      "recent_k9": 12.27,
-      "career_k9": 7.93,
+      "season_k9": 8.47,
+      "recent_k9": 9.0,
+      "career_k9": 7.88,
       "ev_over": {
-        "ev": -0.1648,
-        "adj_ev": -0.1648,
+        "ev": -0.1671,
+        "adj_ev": -0.1504,
         "verdict": "PASS",
-        "win_prob": 0.4,
-        "movement_conf": 1.0
+        "win_prob": 0.268,
+        "movement_conf": 0.9
       },
       "ev_under": {
-        "ev": 0.0946,
-        "adj_ev": 0.0946,
+        "ev": 0.0973,
+        "adj_ev": 0.0973,
         "verdict": "FIRE 2u",
-        "win_prob": 0.6,
+        "win_prob": 0.732,
         "movement_conf": 1.0
       },
       "book_odds": {
         "FanDuel": {
-          "over": -130,
-          "under": -102
+          "over": 130,
+          "under": -174
+        }
+      },
+      "data_complete": false,
+      "game_state": "in_progress"
+    },
+    {
+      "pitcher": "Cristopher Sanchez",
+      "team": "Philadelphia Phillies",
+      "opp_team": "Chicago Cubs",
+      "pitcher_throws": "L",
+      "game_time": "2026-04-23T18:20:00Z",
+      "k_line": 5.5,
+      "opening_line": 5.5,
+      "best_over_book": "FanDuel",
+      "ref_book": "FanDuel",
+      "best_over_odds": -106,
+      "best_under_odds": -125,
+      "opening_over_odds": -158,
+      "opening_under_odds": 118,
+      "opening_odds_source": "preview",
+      "price_delta_over": 52,
+      "price_delta_under": -243,
+      "raw_lambda": 6.82,
+      "lambda": 6.48,
+      "avg_ip": 5.67,
+      "swstr_pct": 0.11,
+      "career_swstr_pct": null,
+      "swstr_delta_k9": 0.0,
+      "opp_k_rate": 0.211,
+      "lineup_used": false,
+      "ump_k_adj": 0.0,
+      "season_k9": 12.39,
+      "recent_k9": 15.0,
+      "career_k9": 8.74,
+      "ev_over": {
+        "ev": 0.1131,
+        "adj_ev": 0.0,
+        "verdict": "PASS",
+        "win_prob": 0.628,
+        "movement_conf": 0.0
+      },
+      "ev_under": {
+        "ev": -0.1832,
+        "adj_ev": -0.1832,
+        "verdict": "PASS",
+        "win_prob": 0.372,
+        "movement_conf": 1.0
+      },
+      "book_odds": {
+        "FanDuel": {
+          "over": -106,
+          "under": -125
         }
       },
       "data_complete": false,
@@ -261,59 +313,7 @@
         }
       },
       "data_complete": false,
-      "game_state": "pregame"
-    },
-    {
-      "pitcher": "Cristopher Sanchez",
-      "team": "Philadelphia Phillies",
-      "opp_team": "Chicago Cubs",
-      "pitcher_throws": "L",
-      "game_time": "2026-04-23T18:20:00Z",
-      "k_line": 5.5,
-      "opening_line": 5.5,
-      "best_over_book": "FanDuel",
-      "ref_book": "FanDuel",
-      "best_over_odds": -106,
-      "best_under_odds": -125,
-      "opening_over_odds": -158,
-      "opening_under_odds": 118,
-      "opening_odds_source": "preview",
-      "price_delta_over": 52,
-      "price_delta_under": -243,
-      "raw_lambda": 6.82,
-      "lambda": 6.48,
-      "avg_ip": 5.67,
-      "swstr_pct": 0.11,
-      "career_swstr_pct": null,
-      "swstr_delta_k9": 0.0,
-      "opp_k_rate": 0.211,
-      "lineup_used": false,
-      "ump_k_adj": 0.0,
-      "season_k9": 12.39,
-      "recent_k9": 15.0,
-      "career_k9": 8.74,
-      "ev_over": {
-        "ev": 0.1131,
-        "adj_ev": 0.0,
-        "verdict": "PASS",
-        "win_prob": 0.628,
-        "movement_conf": 0.0
-      },
-      "ev_under": {
-        "ev": -0.1832,
-        "adj_ev": -0.1832,
-        "verdict": "PASS",
-        "win_prob": 0.372,
-        "movement_conf": 1.0
-      },
-      "book_odds": {
-        "FanDuel": {
-          "over": -106,
-          "under": -125
-        }
-      },
-      "data_complete": false,
-      "game_state": "pregame"
+      "game_state": "in_progress"
     },
     {
       "pitcher": "Ryan Feltner",
@@ -637,12 +637,12 @@
       "opening_line": 6.5,
       "best_over_book": "FanDuel",
       "ref_book": "FanDuel",
-      "best_over_odds": 118,
+      "best_over_odds": 116,
       "best_under_odds": -158,
       "opening_over_odds": 100,
       "opening_under_odds": -132,
       "opening_odds_source": "preview",
-      "price_delta_over": 18,
+      "price_delta_over": 16,
       "price_delta_under": -26,
       "raw_lambda": 7.15,
       "lambda": 6.81,
@@ -657,11 +657,11 @@
       "recent_k9": 13.5,
       "career_k9": 10.73,
       "ev_over": {
-        "ev": 0.0624,
-        "adj_ev": 0.0374,
+        "ev": 0.0581,
+        "adj_ev": 0.0407,
         "verdict": "FIRE 1u",
         "win_prob": 0.521,
-        "movement_conf": 0.6
+        "movement_conf": 0.7
       },
       "ev_under": {
         "ev": -0.1335,
@@ -672,7 +672,7 @@
       },
       "book_odds": {
         "FanDuel": {
-          "over": 118,
+          "over": 116,
           "under": -158
         }
       },
