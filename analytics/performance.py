@@ -17,6 +17,7 @@ no notebook. Edit it freely to answer whatever question comes up next.
 """
 import argparse
 import json
+import re
 from pathlib import Path
 
 import matplotlib.pyplot as plt
@@ -28,6 +29,22 @@ OUTPUT_DIR = Path(__file__).resolve().parent / "output"
 
 # LEAN picks are tracked but not staked (per CLAUDE.md EV thresholds).
 VERDICT_UNITS = {"LEAN": 0.0, "FIRE 1u": 1.0, "FIRE 2u": 2.0}
+
+# Pre-Option-B (commit 8b272b6, 2026-04-21 09:54 PT) _select_ref_book fell back
+# to f"Book{book_id}" for untracked books. 49 historical rows carry those
+# placeholders (Book25, Book3, Book2, Book12). The UPDATE path doesn't touch
+# ref_book, so they're permanently grandfathered. Collapse them into one
+# "<untracked-legacy>" bucket in the per-book slice so the table stays readable
+# without rewriting history.
+_BOOKN_PLACEHOLDER_RE = re.compile(r"^Book\d+$")
+
+
+def _normalize_ref_book(val):
+    if val is None or (isinstance(val, float) and pd.isna(val)):
+        return "<unknown>"
+    if _BOOKN_PLACEHOLDER_RE.match(str(val)):
+        return "<untracked-legacy>"
+    return val
 
 
 # -- Load --------------------------------------------------------------------
@@ -154,15 +171,21 @@ def by_lineup(df: pd.DataFrame) -> None:
 
 
 def by_bookmaker(df: pd.DataFrame) -> None:
-    """Per-reference-book performance. Which book's line is most/least predictive?"""
+    """Per-reference-book performance. Which book's line is most/least predictive?
+
+    Pre-Option-B rows with 'BookN' placeholder labels are collapsed into a
+    single '<untracked-legacy>' bucket — they're frozen history and can't be
+    re-resolved to real sportsbook names.
+    """
     print("\n-- By reference book (staked only) -----------------------------------")
     s = staked(df)
     if "ref_book" not in s.columns:
         print("  skip: ref_book column missing from picks_history.json")
         return
-    books = s["ref_book"].fillna("<unknown>").value_counts().index.tolist()
+    normalized = s["ref_book"].map(_normalize_ref_book)
+    books = normalized.value_counts().index.tolist()
     for book in books:
-        sub = s[s["ref_book"].fillna("<unknown>") == book]
+        sub = s[normalized == book]
         print(_row(f"book = {book}", sub))
 
 
