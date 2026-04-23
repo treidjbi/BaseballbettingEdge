@@ -1,5 +1,69 @@
 # Data caveats for picks_history.json
 
+## 2026-03-25 to 2026-04-23 — lineup_used dead-signal window
+
+For the full lifetime of `lineup_used` through 2026-04-23, **602/602 stored
+picks have `lineup_used = False`**. Zero picks ever saw per-batter lineup
+K% signal at decision time.
+
+### Root cause
+
+`pipeline/fetch_lineups.py` hit `/schedule?hydrate=lineups` and tried to
+filter the hydrated player list by the `battingOrder` field. That field
+does not exist on the schedule hydrate payload — it only lives on
+`/game/{pk}/boxscore` as `teams.{away,home}.battingOrder` (ordered ID
+list) plus per-player entries in `teams.{away,home}.players`. The filter
+therefore matched zero players, the function returned `None` on every
+call, and `build_features` fell back to the team-aggregate
+`stats["opp_k_rate"]` as the opposing K% estimate.
+
+Verified live 2026-04-23 against Cardinals @ Marlins 2026-04-22
+(`game_pk=823878`) that the schedule hydrate returns nine position
+players with no `battingOrder` key, and the boxscore carries the
+ordered list + per-player info.
+
+### Remediation (2026-04-23, Task A5)
+
+`fetch_lineups` rewritten to do two calls: `/schedule` → `(gamePk,
+side_key)`, then `/game/{pk}/boxscore` → ordered batter dicts. Signature
+unchanged (`fetch_lineups(date_str, team_name) -> list[dict] | None`),
+graceful-None behavior preserved on every error path. Smoke-tested live
+— all five probe teams for 2026-04-22 returned 9 batters.
+
+### Impact on stored fields
+
+- **`lineup_used` pre-fix:** `False` on 100% of picks. Accurate — the
+  model actually used the team-aggregate fallback.
+- **`opp_k_rate` used at decision time pre-fix:** team-aggregate from
+  `fetch_stats`, not per-batter Bayesian-regressed. This is the value
+  the model actually consumed, so `lambda` is internally consistent.
+- **Handedness-sliced analytics pre-fix:** any per-batter signal
+  (`fetch_batter_stats`, the `PLATOON_K_DELTA` table in
+  `build_features.calc_lineup_k_rate`) never fired, because the
+  function was always called with `lineup=None`.
+
+### Why historical rows were NOT backfilled
+
+Same A3 precedent as the ump_k_adj window:
+
+1. **Stored `lambda` reflects lineup=None code path.** Recomputing
+   `opp_k_rate` from real lineups today would desync stored record from
+   stored lambda and corrupt residual-based calibration.
+2. **`lambda_bias` is valid as-is.** Residuals = `actual_ks -
+   stored_lambda`; `lambda_bias` (~-0.55 and converging) absorbs the
+   systematic offset from the team-aggregate fallback. Self-healing via
+   normal calibration once real lineup data starts flowing.
+
+No `formula_change_date` bump — model formula is unchanged; only the
+input source quality improves.
+
+### Implication for analytics
+
+- `lineup_used` false-rate should collapse from 100% to a small
+  residual (morning-run pregame-pending games) starting 2026-04-24.
+- Per-batter handedness analytics (Path A platoon delta, Path B
+  per-batter splits when enabled) only become measurable post-fix.
+
 ## 2026-04-01 to 2026-04-23 — ump_k_adj dead-signal window
 
 A latent wiring bug kept the umpire signal completely silent for 22 days
