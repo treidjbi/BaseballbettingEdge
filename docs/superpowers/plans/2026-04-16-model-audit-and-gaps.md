@@ -870,6 +870,214 @@ git commit -m "feat(a4): add per-bookmaker slice to analytics/performance.py"
 
 ---
 
+### Task A5: Fix `fetch_lineups` (silent-dead-signal, structurally identical to A3)  *(soak re-audit 2026-04-23)*
+
+**Re-audit finding 2026-04-23:** `lineup_used` is `False` on **602/602 picks all-time** (not just post-merge). Root cause: MLB `/schedule?hydrate=lineups` returns the 9 starting position players but **without** a `battingOrder` field. `fetch_lineups.py:48` filters `if p.get("battingOrder")` → empty list → function returns `None` → `build_features.lineup_used = False`. Same silent-signal-death shape as A3 (upstream API changed silently; no exception, no warning, just permanent zeros).
+
+**Mitigation already in place:** when `lineup is None`, `build_features` falls back to `stats["opp_k_rate"]` (team-aggregate K rate from `fetch_team_k_rate`). So the model has opp-K signal — just at team-aggregate resolution rather than per-batter-with-platoon-splits. Not a zero-signal hole like A3.
+
+**Correct data source:** `/game/{pk}/boxscore` — the boxscore endpoint carries `battingOrder` as both (a) team-level ordered player-ID list at `teams.{away,home}.battingOrder`, and (b) per-player `battingOrder` strings (e.g., `"100"`, `"200"`). Verified live 2026-04-23 on Cardinals @ Marlins 2026-04-22 (final game).
+
+**Files:**
+- Modify: [pipeline/fetch_lineups.py](pipeline/fetch_lineups.py)
+- Modify: [tests/test_fetch_lineups.py](tests/test_fetch_lineups.py) (if it exists; otherwise create)
+- Append-only: [docs/data-caveats.md](docs/data-caveats.md) — new dead-signal-window entry matching A3's shape
+
+- [ ] **Step A5.1: Red test — reproduce the current silent-None failure**
+
+Add a test that mocks the CURRENT `/schedule?hydrate=lineups` response shape (players WITHOUT `battingOrder`) and asserts the function returns `None`. Green (bug-as-current-behavior). Then update it post-fix to the new boxscore-based behavior.
+
+Actually the more useful red test asserts **post-fix correctness**: mock the boxscore endpoint's response, assert `fetch_lineups` returns the 9-batter ordered list with bats. That one fails pre-fix (function still calls /schedule) and passes post-fix.
+
+- [ ] **Step A5.2: Rewrite `fetch_lineups` to use `/game/{pk}/boxscore`**
+
+Keep the function signature identical (`fetch_lineups(date_str: str, team_name: str) -> list[dict] | None`). Inside:
+1. GET `/schedule?sportId=1&date={date_str}` (no lineup hydrate needed — just for `gamePk`s and team names).
+2. For each game, find the one where `team_name` matches `teams.{away,home}.team.name` (case-insensitive).
+3. GET `/game/{pk}/boxscore`.
+4. Read `teams.{away|home}.battingOrder` (list of 9 ints in batting order).
+5. For each id, look up `teams.{away|home}.players[f"ID{id}"].person.{fullName, batSide.code}`.
+6. Return `[{"name": full_name, "bats": bats_code}, ...]` in batting order.
+7. If `battingOrder` is empty (pregame before lineup posted) or any lookup fails, return `None` — same graceful-degradation semantics as before.
+
+Keep `return None` on HTTP errors, no-match-on-team, and pregame-not-yet-posted cases.
+
+- [ ] **Step A5.3: Green test + pipeline smoke run**
+
+```bash
+python -m pytest tests/test_fetch_lineups.py -v
+python -m pytest tests/ -v     # full suite
+python pipeline/run_pipeline.py 2026-04-22   # picked-date where games are final
+```
+
+Expected: smoke run shows non-zero `lineup_used=True` rate on the 2026-04-22 final-game slate, logged as "fetch_lineups: 9 batters found for X" lines.
+
+- [ ] **Step A5.4: Add dead-signal-window caveat**
+
+Append new section to [docs/data-caveats.md](docs/data-caveats.md):
+
+```markdown
+## 2026-03-25 to {fix-deploy-date} — lineup_used silent-None window
+
+fetch_lineups.py filtered players by battingOrder, but the /schedule?hydrate=lineups
+endpoint doesn't return that field — it only exists on /game/{pk}/boxscore. Every
+lineup fetch returned None silently; every pick in picks_history.json through
+the fix date has lineup_used=False.
+
+Mitigation: build_features falls back to stats["opp_k_rate"] (team-aggregate K
+rate) when lineup is None, so opp-K signal was present at lower resolution —
+not a zero-signal bug like A3. Historical picks are NOT backfilled (lambda was
+scored against the team-aggregate rate; retroactively overwriting lineup_used
+to True without recomputing lambda would desync the stored record). Calibration
+is unaffected — residuals use stored_lambda, which reflects the value the model
+actually produced.
+
+Post-fix: lineup_used should be True for any pitcher on a slate where lineups
+are posted by lock window. Pregame-before-posting rows stay False (correct).
+```
+
+- [ ] **Step A5.5: Commit**
+
+```bash
+git add pipeline/fetch_lineups.py tests/test_fetch_lineups.py docs/data-caveats.md
+git commit -m "fix(a5): switch fetch_lineups to /game/{pk}/boxscore for battingOrder
+
+/schedule?hydrate=lineups returns the 9 starting position players but omits
+battingOrder — the filter in fetch_lineups was always dropping everything and
+silently returning None. lineup_used has been False on 602/602 picks all-time.
+
+Boxscore endpoint has battingOrder both as teams.{away,home}.battingOrder
+(ordered id list) and per-player battingOrder strings. Keep the same return
+shape (list of {name, bats} in batting order) so build_features is unchanged.
+
+Historical picks stay as-is (see docs/data-caveats.md). lambda_bias self-heals
+via normal calibration — formula_change_date NOT bumped."
+```
+
+---
+
+### Task A6: Collapse `BookN` placeholders in analytics `by_bookmaker`  *(soak re-audit 2026-04-23)*
+
+**Re-audit finding 2026-04-23:** 49 all-time picks carry placeholder `ref_book` labels (`Book25`, `Book3`, `Book2`, `Book12`) from the pre-Option-B fallback `f"Book{book_id}"` path in `_select_ref_book`. Option B (commit `8b272b6`, 2026-04-21 09:54 PT) skips unknown books entirely, so no new `BookN` labels are emitted. The UPDATE path (`fetch_results.py:205-233`) deliberately doesn't touch `ref_book`, so these 49 rows stay grandfathered.
+
+Two soak-window picks (`Carmen Mlodzinski` 2026-04-21 Book3; `Randy Vasquez` 2026-04-21 Book2) are **pre-Option-B insertions** refreshed post-merge, not Option-B regressions. No new action needed at the pipeline level.
+
+The only visible problem is cosmetic: `analytics/performance.py`'s `by_bookmaker` groups by `ref_book` as-is, so the per-book table shows separate `Book2` / `Book3` rows that the user can't act on. Collapse them into a single `<untracked-legacy>` bucket.
+
+**Files:**
+- Modify: [analytics/performance.py](analytics/performance.py) — `by_bookmaker` function
+
+- [ ] **Step A6.1: Add regex-based placeholder collapse**
+
+Inside `by_bookmaker`, before grouping, map any `ref_book` matching `^Book\d+$` to `<untracked-legacy>`. Keep `<unknown>` as the label for true `None` / missing.
+
+```python
+import re
+_BOOKN_PLACEHOLDER = re.compile(r"^Book\d+$")
+
+def _normalize_ref_book(val):
+    if val is None:
+        return "<unknown>"
+    if _BOOKN_PLACEHOLDER.match(val):
+        return "<untracked-legacy>"
+    return val
+```
+
+Apply via `.map(_normalize_ref_book)` inside `by_bookmaker` before `.value_counts()`.
+
+- [ ] **Step A6.2: Smoke-run and verify**
+
+```bash
+python analytics/performance.py --since 2026-04-21
+```
+
+Expected in the By-reference-book section: `FanDuel` dominant, a single `<untracked-legacy>` row collapsing the two soak-window placeholders (Book2 + Book3 = 2 picks), no bare `Book2`/`Book3` rows.
+
+- [ ] **Step A6.3: Commit**
+
+```bash
+git add analytics/performance.py
+git commit -m "feat(a6): collapse pre-Option-B BookN placeholders in by_bookmaker slice"
+```
+
+---
+
+### Task A7: Phantom-starter guard in run_pipeline  *(soak re-audit 2026-04-23)*
+
+**Re-audit finding 2026-04-23:** 2 phantom picks graded void in the 3-day soak window (Chad Patrick 2026-04-22 FIRE 2u UNDER MIL/DET, didn't pitch; Martin Perez 2026-04-22 FIRE 2u UNDER ATL/WAS, didn't pitch — Zack Littell replaced him). 2 in 3 days clears the plan's recurrence threshold (line 907). Calibration is safe — void grade kept them out — but the user still sees FIRE 2u cards for non-starters, which wastes slate slots and erodes trust.
+
+**Root cause:** `fetch_odds` returns announced-then-swapped pitchers while TheRundown keeps the prop market live (book will auto-void on no-action). `run_pipeline` doesn't cross-reference announced pitcher against the MLB Stats API's `probablePitcher` hydrate before seeding.
+
+**Design principles:**
+- **P1 (soft-reject, not hard-skip):** flag mismatches with a new `starter_mismatch=True` field rather than dropping picks silently. Preserves the existing "first-seen pitcher locks in" semantics AND gives the dashboard a place to down-rank or hide these picks.
+- **P2 (lock window as final gate):** only act on mismatches that persist past the T-30min lock window — earlier in the day, `probablePitcher` often trails the rundown by hours. Skipping too early would drop legitimate starters who just haven't been confirmed yet.
+- **P3 (no historical rewrites):** the two known phantoms stay in picks_history as void. No backfill of `starter_mismatch` on older rows — precedent matches A3/A5.
+
+**Files:**
+- Modify: [pipeline/run_pipeline.py](pipeline/run_pipeline.py) — add starter cross-reference in the per-pitcher build loop
+- Modify: [pipeline/build_features.py](pipeline/build_features.py) — emit `starter_mismatch` field on each record
+- Modify: [tests/test_run_pipeline.py](tests/test_run_pipeline.py) — regression tests
+
+- [ ] **Step A7.1: Red test — reproduce the phantom case**
+
+Mock `fetch_odds` to return a pitcher who differs from MLB's `probablePitcher` for that game. Mock `fetch_stats` / schedule to return the real starter. Assert the output record has `starter_mismatch=True` post-fix (FAIL pre-fix, since field doesn't exist).
+
+- [ ] **Step A7.2: Emit `probablePitcher` per-team in `fetch_stats`**
+
+`fetch_stats` already calls the MLB schedule with `hydrate=probablePitcher,team`. Expose the probable pitcher name in its return dict per team so the downstream cross-reference can use it:
+
+```python
+# fetch_stats.py — inside the per-team block
+probable = team_data.get("probablePitcher", {})
+probable_name = probable.get("fullName")  # may be None
+stats_by_name[name]["probable_name"] = probable_name  # same as `name` when aligned
+```
+
+- [ ] **Step A7.3: Add mismatch flag in build_pitcher_record**
+
+```python
+# build_features.py — inside build_pitcher_record, near the other flags
+probable_name = stats.get("probable_name") or odds["pitcher"]
+starter_mismatch = _normalize(probable_name) != _normalize(odds["pitcher"])
+# ...
+return {
+    ...
+    "starter_mismatch":   starter_mismatch,
+    ...
+}
+```
+
+- [ ] **Step A7.4: Green test + pipeline smoke run**
+
+```bash
+python -m pytest tests/test_run_pipeline.py -v
+python -m pytest tests/ -v
+python pipeline/run_pipeline.py 2026-04-22  # phantom date
+```
+
+Expected: Chad Patrick / Martin Perez records have `starter_mismatch=True` on the 2026-04-22 smoke run; all other records have `starter_mismatch=False`.
+
+- [ ] **Step A7.5: Dashboard / data-complete integration (deferred to A7.5b)**
+
+Leave `data_complete` untouched for this landing — we want to observe mismatch prevalence for a few days before deciding whether to exclude from calibration. Dashboard v2 can read `starter_mismatch` defensively (`record.starter_mismatch === true` → show "unconfirmed starter" banner) if it wants to, but no v2-data.js change is in scope for A7 itself.
+
+- [ ] **Step A7.6: Commit**
+
+```bash
+git add pipeline/fetch_stats.py pipeline/build_features.py pipeline/run_pipeline.py tests/
+git commit -m "feat(a7): flag starter_mismatch for picks where odds pitcher != MLB probablePitcher
+
+Cross-references TheRundown's announced pitcher against MLB Stats API's
+probablePitcher hydrate per game. When they diverge (announced-then-swapped
+scratches), stamps starter_mismatch=True on the record.
+
+Nondestructive: the pick is still emitted; dashboard/analytics can down-rank or
+hide based on the flag. No calibration change — data_complete untouched. Void
+grading remains the final safety net for real money."
+```
+
+---
+
 ### ⏸️ Checkpoint A → B (HARD STOP)
 
 **STOP HERE. Do not proceed to Phase B automatically, even in auto mode.** Post the findings from A1/A2/A3 diagnostics to the user and explicitly wait for a "proceed" reply.
