@@ -148,7 +148,7 @@ def test_fetch_stats_returns_expected_keys():
     with patch("requests.get", side_effect=_make_requests_get_side_effect(
         "Gerrit Cole", pitcher_id, pitch_hand_code="R"
     )):
-        stats = fetch_stats("2026-04-15", ["Gerrit Cole"])
+        stats, _probables = fetch_stats("2026-04-15", ["Gerrit Cole"])
 
     assert "Gerrit Cole" in stats
     result = stats["Gerrit Cole"]
@@ -162,7 +162,7 @@ def test_fetch_stats_returns_throws_field():
     with patch("requests.get", side_effect=_make_requests_get_side_effect(
         "Gerrit Cole", pitcher_id, pitch_hand_code="R"
     )):
-        stats = fetch_stats("2026-04-15", ["Gerrit Cole"])
+        stats, _probables = fetch_stats("2026-04-15", ["Gerrit Cole"])
 
     assert "throws" in stats.get("Gerrit Cole", {}), "throws key missing from stats"
     assert stats["Gerrit Cole"]["throws"] in ("R", "L"), "throws should be R or L"
@@ -174,7 +174,7 @@ def test_fetch_stats_throws_value_matches_api():
     with patch("requests.get", side_effect=_make_requests_get_side_effect(
         "Clayton Kershaw", pitcher_id, pitch_hand_code="L"
     )):
-        stats = fetch_stats("2026-04-15", ["Clayton Kershaw"])
+        stats, _probables = fetch_stats("2026-04-15", ["Clayton Kershaw"])
 
     assert stats.get("Clayton Kershaw", {}).get("throws") == "L"
 
@@ -185,7 +185,7 @@ def test_fetch_stats_throws_defaults_to_R_when_missing():
     with patch("requests.get", side_effect=_make_requests_get_side_effect(
         "Test Pitcher", pitcher_id, pitch_hand_code=None  # None means pitchHand key omitted
     )):
-        stats = fetch_stats("2026-04-15", ["Test Pitcher"])
+        stats, _probables = fetch_stats("2026-04-15", ["Test Pitcher"])
 
     assert stats.get("Test Pitcher", {}).get("throws") == "R"
 
@@ -226,7 +226,7 @@ def test_fetch_stats_uses_people_endpoint_when_schedule_omits_pitchhand():
         return mock_resp
 
     with patch("requests.get", side_effect=side_effect):
-        stats = fetch_stats("2026-04-15", ["Patrick Corbin"])
+        stats, _probables = fetch_stats("2026-04-15", ["Patrick Corbin"])
 
     assert stats.get("Patrick Corbin", {}).get("throws") == "L", (
         "fetch_stats should fall back to /people/{id} when /schedule omits "
@@ -240,7 +240,7 @@ def test_fetch_stats_skips_unknown_pitchers():
     with patch("requests.get", side_effect=_make_requests_get_side_effect(
         "Gerrit Cole", pitcher_id
     )):
-        stats = fetch_stats("2026-04-15", ["Unknown Pitcher"])
+        stats, _probables = fetch_stats("2026-04-15", ["Unknown Pitcher"])
 
     assert "Unknown Pitcher" not in stats
     assert "Gerrit Cole" not in stats
@@ -278,7 +278,7 @@ def test_fetch_stats_matches_accented_mlb_name_to_plain_rundown_name():
     with patch("requests.get", side_effect=_make_requests_get_side_effect(
         "José Berríos", pitcher_id, pitch_hand_code="R"
     )):
-        stats = fetch_stats("2026-04-15", ["Jose Berrios"])
+        stats, _probables = fetch_stats("2026-04-15", ["Jose Berrios"])
 
     # Stats should be keyed by TheRundown name (no accent) so run_pipeline lookups work
     assert "Jose Berrios" in stats, "Expected TheRundown name 'Jose Berrios' as key"
@@ -291,7 +291,7 @@ def test_fetch_stats_matches_plain_rundown_name_with_accented_mlb_name():
     with patch("requests.get", side_effect=_make_requests_get_side_effect(
         "Julio Urias", pitcher_id, pitch_hand_code="L"
     )):
-        stats = fetch_stats("2026-04-15", ["Julio Urías"])
+        stats, _probables = fetch_stats("2026-04-15", ["Julio Urías"])
 
     assert "Julio Urías" in stats, "Expected TheRundown name 'Julio Urías' as key"
     assert "Julio Urias" not in stats
@@ -303,7 +303,7 @@ def test_fetch_stats_accent_match_preserves_stats_content():
     with patch("requests.get", side_effect=_make_requests_get_side_effect(
         "José Berríos", pitcher_id, pitch_hand_code="R"
     )):
-        stats = fetch_stats("2026-04-15", ["Jose Berrios"])
+        stats, _probables = fetch_stats("2026-04-15", ["Jose Berrios"])
 
     result = stats.get("Jose Berrios", {})
     for key in ("season_k9", "career_k9", "recent_k9", "avg_ip_last5", "opp_k_rate",

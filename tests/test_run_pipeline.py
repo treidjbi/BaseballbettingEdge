@@ -81,7 +81,7 @@ def test_run_writes_today_json(tmp_path):
 
     with patch.object(run_pipeline, "OUTPUT_PATH", out_path), \
          patch("run_pipeline.fetch_odds", return_value=[_sample_prop()]), \
-         patch("run_pipeline.fetch_stats", return_value={"Test Pitcher": _sample_stats()}), \
+         patch("run_pipeline.fetch_stats", return_value=({"Test Pitcher": _sample_stats()}, {})), \
          patch("run_pipeline.fetch_swstr", return_value={"Test Pitcher": {"swstr_pct": 0.110, "career_swstr_pct": None}}), \
          patch("run_pipeline.fetch_umpires", return_value={"Test Pitcher": 0.0}), \
          patch("run_pipeline.fetch_lineups_for_pitcher", return_value=None), \
@@ -117,7 +117,7 @@ def test_data_complete_false_when_ump_map_all_zero(tmp_path):
 
     with patch.object(run_pipeline, "OUTPUT_PATH", out_path), \
          patch("run_pipeline.fetch_odds", return_value=[_sample_prop()]), \
-         patch("run_pipeline.fetch_stats", return_value={"Test Pitcher": _sample_stats()}), \
+         patch("run_pipeline.fetch_stats", return_value=({"Test Pitcher": _sample_stats()}, {})), \
          patch("run_pipeline.fetch_swstr", return_value={"Test Pitcher": {"swstr_pct": 0.110, "career_swstr_pct": None}}), \
          patch("run_pipeline.fetch_umpires", return_value={"Test Pitcher": 0.0}), \
          patch("run_pipeline.fetch_lineups_for_pitcher", return_value=None), \
@@ -148,7 +148,7 @@ def test_data_complete_true_when_ump_map_has_nonzero(tmp_path):
 
     with patch.object(run_pipeline, "OUTPUT_PATH", out_path), \
          patch("run_pipeline.fetch_odds", return_value=[_sample_prop()]), \
-         patch("run_pipeline.fetch_stats", return_value={"Test Pitcher": _sample_stats()}), \
+         patch("run_pipeline.fetch_stats", return_value=({"Test Pitcher": _sample_stats()}, {})), \
          patch("run_pipeline.fetch_swstr", return_value={"Test Pitcher": {"swstr_pct": 0.110, "career_swstr_pct": None}}), \
          patch("run_pipeline.fetch_umpires", return_value={"Test Pitcher": 0.25}), \
          patch("run_pipeline.fetch_lineups_for_pitcher", return_value=None), \
@@ -196,7 +196,7 @@ def test_fetch_umpires_receives_props_with_team_populated_from_stats(tmp_path):
 
     with patch.object(run_pipeline, "OUTPUT_PATH", out_path), \
          patch("run_pipeline.fetch_odds", return_value=[_sample_prop()]), \
-         patch("run_pipeline.fetch_stats", return_value={"Test Pitcher": _sample_stats()}), \
+         patch("run_pipeline.fetch_stats", return_value=({"Test Pitcher": _sample_stats()}, {})), \
          patch("run_pipeline.fetch_swstr", return_value={"Test Pitcher": {"swstr_pct": 0.110, "career_swstr_pct": None}}), \
          patch("run_pipeline.fetch_umpires", side_effect=spy_fetch_umpires), \
          patch("run_pipeline.fetch_lineups_for_pitcher", return_value=None), \
@@ -251,7 +251,7 @@ def test_run_calls_lock_due_picks(tmp_path):
 
     with patch.object(run_pipeline, "OUTPUT_PATH", out_path), \
          patch("run_pipeline.fetch_odds", return_value=[_sample_prop()]), \
-         patch("run_pipeline.fetch_stats", return_value={"Test Pitcher": _sample_stats()}), \
+         patch("run_pipeline.fetch_stats", return_value=({"Test Pitcher": _sample_stats()}, {})), \
          patch("run_pipeline.fetch_swstr", return_value={"Test Pitcher": {"swstr_pct": 0.110, "career_swstr_pct": None}}), \
          patch("run_pipeline.fetch_umpires", return_value={"Test Pitcher": 0.0}), \
          patch("run_pipeline.fetch_lineups_for_pitcher", return_value=None), \
@@ -344,7 +344,7 @@ def test_preview_run_writes_dated_archive_and_preview_json(tmp_path):
     with patch.object(run_pipeline, "OUTPUT_PATH",  today_path), \
          patch.object(run_pipeline, "PREVIEW_PATH", preview_path), \
          patch("run_pipeline.fetch_odds",  return_value=[prop]), \
-         patch("run_pipeline.fetch_stats", return_value={"Tomorrow Pitcher": _sample_stats()}), \
+         patch("run_pipeline.fetch_stats", return_value=({"Tomorrow Pitcher": _sample_stats()}, {})), \
          patch("run_pipeline.fetch_swstr", return_value={"Tomorrow Pitcher": {"swstr_pct": 0.11, "career_swstr_pct": None}}), \
          patch("run_pipeline.fetch_umpires", return_value={"Tomorrow Pitcher": 0.0}), \
          patch("run_pipeline.fetch_lineups_for_pitcher", return_value=None), \
@@ -381,7 +381,7 @@ def test_preview_run_does_not_touch_today_json_when_it_exists(tmp_path):
     with patch.object(run_pipeline, "OUTPUT_PATH",  today_path), \
          patch.object(run_pipeline, "PREVIEW_PATH", preview_path), \
          patch("run_pipeline.fetch_odds",  return_value=[prop]), \
-         patch("run_pipeline.fetch_stats", return_value={"Tomorrow Pitcher": _sample_stats()}), \
+         patch("run_pipeline.fetch_stats", return_value=({"Tomorrow Pitcher": _sample_stats()}, {})), \
          patch("run_pipeline.fetch_swstr", return_value={"Tomorrow Pitcher": {"swstr_pct": 0.11, "career_swstr_pct": None}}), \
          patch("run_pipeline.fetch_umpires", return_value={"Tomorrow Pitcher": 0.0}), \
          patch("run_pipeline.fetch_lineups_for_pitcher", return_value=None), \
@@ -878,3 +878,90 @@ def test_apply_preview_openings_leaves_source_first_seen_when_no_preview_match()
     assert props[0]["opening_odds_source"] == "first_seen"
     assert props[0]["opening_over_odds"]  == -112
     assert props[0]["opening_under_odds"] == -108
+
+
+# ---------------------------------------------------------------------------
+# Task A7: phantom-starter re-stamp. _restamp_starter_mismatch is the single
+# authority for the `starter_mismatch` flag post-merge. It handles both
+# freshly-built records (whose build_pitcher_record already set the flag
+# correctly) AND locked snapshots from earlier runs (which predate any pitcher
+# swap and need a fresh check against MLB's current probable).
+# ---------------------------------------------------------------------------
+def test_restamp_starter_mismatch_flips_locked_snapshot_on_phantom():
+    """Locked snapshot with stale starter_mismatch=False gets flipped to True
+    when MLB's current probable differs from the record's pitcher."""
+    import run_pipeline
+    records = [{
+        "pitcher": "Chad Patrick",
+        "team": "Detroit Tigers",
+        "starter_mismatch": False,  # stale — seeded before the swap
+    }]
+    probables = {"Detroit Tigers": "Zack Littell"}
+    run_pipeline._restamp_starter_mismatch(records, probables)
+    assert records[0]["starter_mismatch"] is True
+
+
+def test_restamp_starter_mismatch_stays_false_on_aligned_case():
+    """Happy path: MLB probable matches the record's pitcher → flag stays False."""
+    import run_pipeline
+    records = [{
+        "pitcher": "Gerrit Cole",
+        "team": "New York Yankees",
+        "starter_mismatch": False,
+    }]
+    probables = {"New York Yankees": "Gerrit Cole"}
+    run_pipeline._restamp_starter_mismatch(records, probables)
+    assert records[0]["starter_mismatch"] is False
+
+
+def test_restamp_starter_mismatch_accent_insensitive():
+    """Accented MLB name vs unaccented odds name → no mismatch."""
+    import run_pipeline
+    records = [{
+        "pitcher": "Jose Berrios",
+        "team": "Toronto Blue Jays",
+        "starter_mismatch": False,
+    }]
+    probables = {"Toronto Blue Jays": "José Berríos"}
+    run_pipeline._restamp_starter_mismatch(records, probables)
+    assert records[0]["starter_mismatch"] is False
+
+
+def test_restamp_starter_mismatch_leaves_flag_alone_when_no_probable():
+    """MLB hasn't posted a probable for this team yet (None) — leave the
+    existing flag untouched rather than falsely clearing a real mismatch."""
+    import run_pipeline
+    records = [{
+        "pitcher": "Chad Patrick",
+        "team": "Detroit Tigers",
+        "starter_mismatch": True,  # set correctly upstream
+    }]
+    probables = {"Detroit Tigers": None}
+    run_pipeline._restamp_starter_mismatch(records, probables)
+    assert records[0]["starter_mismatch"] is True
+
+
+def test_restamp_starter_mismatch_skips_team_not_in_map():
+    """Team missing from probables_by_team (stale locked record from a past
+    date, or MLB API blip) — leave flag untouched."""
+    import run_pipeline
+    records = [{
+        "pitcher": "Shohei Ohtani",
+        "team": "Los Angeles Dodgers",
+        "starter_mismatch": False,
+    }]
+    probables = {"New York Yankees": "Gerrit Cole"}  # different team only
+    run_pipeline._restamp_starter_mismatch(records, probables)
+    assert records[0]["starter_mismatch"] is False  # unchanged
+
+
+def test_restamp_starter_mismatch_empty_map_noop():
+    """fetch_stats fell back to {} (API down) — helper should no-op cleanly."""
+    import run_pipeline
+    records = [{
+        "pitcher": "Chad Patrick",
+        "team": "Detroit Tigers",
+        "starter_mismatch": False,
+    }]
+    run_pipeline._restamp_starter_mismatch(records, {})
+    assert records[0]["starter_mismatch"] is False

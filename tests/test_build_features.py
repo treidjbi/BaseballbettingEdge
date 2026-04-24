@@ -345,6 +345,44 @@ class TestBuildPitcherRecord:
         # With 162 games of 0.30 K%, lambda should be higher than with 0 games (league avg)
         assert rec_full["lambda"] > rec_no["lambda"]
 
+    # ---------------------------------------------------------------------
+    # Task A7: phantom starter guard — build_pitcher_record emits
+    # `starter_mismatch` when the MLB probablePitcher fetched by fetch_stats
+    # doesn't match the odds pitcher name. Real-world trigger: TheRundown
+    # keeps the prop market live after the team announces a pitcher swap
+    # (Chad Patrick / Martin Perez, 2026-04-22).
+    # ---------------------------------------------------------------------
+    def test_starter_mismatch_false_when_probable_matches(self):
+        """Happy path: stats.probable_name == odds.pitcher → starter_mismatch=False."""
+        from build_features import build_pitcher_record
+        stats = {**self.BASE_STATS, "probable_name": "Test Pitcher"}
+        rec = build_pitcher_record(self.BASE_ODDS, stats, ump_k_adj=0.0)
+        assert rec["starter_mismatch"] is False
+
+    def test_starter_mismatch_true_when_probable_differs(self):
+        """Phantom case: MLB's probable disagrees with the odds pitcher → True."""
+        from build_features import build_pitcher_record
+        stats = {**self.BASE_STATS, "probable_name": "Zack Littell"}
+        odds = {**self.BASE_ODDS, "pitcher": "Martin Perez"}
+        rec = build_pitcher_record(odds, stats, ump_k_adj=0.0)
+        assert rec["starter_mismatch"] is True
+
+    def test_starter_mismatch_false_when_probable_name_missing(self):
+        """probable_name absent from stats (older stats_map entries, preview path)
+        → default to False rather than a false-positive mismatch."""
+        from build_features import build_pitcher_record
+        stats = {**self.BASE_STATS}  # no probable_name key
+        rec = build_pitcher_record(self.BASE_ODDS, stats, ump_k_adj=0.0)
+        assert rec["starter_mismatch"] is False
+
+    def test_starter_mismatch_accent_insensitive(self):
+        """Name normalization handles accents so José Berríos == Jose Berrios."""
+        from build_features import build_pitcher_record
+        stats = {**self.BASE_STATS, "probable_name": "José Berríos"}
+        odds = {**self.BASE_ODDS, "pitcher": "Jose Berrios"}
+        rec = build_pitcher_record(odds, stats, ump_k_adj=0.0)
+        assert rec["starter_mismatch"] is False
+
 
 class TestCalcMovementConfidence:
     # Task A2: these tests exercise the decay curve and therefore pass

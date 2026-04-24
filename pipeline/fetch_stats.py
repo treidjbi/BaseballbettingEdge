@@ -148,17 +148,35 @@ def fetch_team_k_rate(team_id: int, season: int) -> tuple[float, int]:
     return 0.227, 0  # fall back to league average, no games
 
 
-def fetch_stats(date_str: str, pitcher_names: list) -> dict:
+def fetch_stats(date_str: str, pitcher_names: list) -> tuple[dict, dict]:
     """
-    Main entry point. Returns {pitcher_name: stats_dict} for all pitchers on date_str.
-    Fetches schedules for date_str AND date_str+1 to match the UTC-offset behaviour
-    of fetch_odds (ET evening games are filed under the next UTC day).
-    Skips pitchers where the confirmed starter cannot be found in the schedule.
+    Main entry point.  Returns **(stats_by_name, probables_by_team)**.
 
-    Name matching is accent-insensitive: TheRundown may return 'Jose Berrios' while
-    the MLB API returns 'José Berríos'. Both normalize to 'jose berrios' and match.
-    The original TheRundown name is preserved as the dict key so downstream lookups
-    (stats_map.get(odds["pitcher"])) continue to work without modification.
+    `stats_by_name` — `{pitcher_name: stats_dict}` for pitchers whose
+    TheRundown name matches MLB's probable for some scheduled team.
+    Unchanged shape from prior versions plus one new field, `probable_name`,
+    which is the matched MLB fullName (used by build_features for
+    `starter_mismatch`).
+
+    `probables_by_team` — `{team_name: probable_pitcher_fullName_or_None}`
+    captured for **every** scheduled side regardless of whether MLB's
+    probable matched a TheRundown pitcher name. Lets run_pipeline
+    cross-check the odds pitcher against MLB's current probable on the
+    team side, which is the only way to flag phantoms — when the book
+    keeps the prop market live on a pitcher who got scratched, MLB's
+    probable for that team has already swapped but fetch_stats's name
+    filter would silently drop the mismatch. (Task A7, 2026-04-23.)
+
+    Fetches schedules for date_str AND date_str+1 to match the UTC-offset
+    behaviour of fetch_odds (ET evening games are filed under the next
+    UTC day).  Skips pitchers where the confirmed starter cannot be
+    found in the schedule.
+
+    Name matching is accent-insensitive: TheRundown may return 'Jose Berrios'
+    while the MLB API returns 'José Berríos'. Both normalize to 'jose berrios'
+    and match. The original TheRundown name is preserved as the dict key so
+    downstream lookups (stats_map.get(odds["pitcher"])) continue to work
+    without modification.
     """
     season   = datetime.strptime(date_str, "%Y-%m-%d").year
     next_day = (datetime.strptime(date_str, "%Y-%m-%d") + timedelta(days=1)).strftime("%Y-%m-%d")
@@ -178,12 +196,21 @@ def fetch_stats(date_str: str, pitcher_names: list) -> dict:
         "hydrate":   "probablePitcher,team",
     })
 
-    stats_by_name = {}
+    stats_by_name: dict = {}
+    probables_by_team: dict = {}
     for date_block in schedule.get("dates", []):
         for game in date_block.get("games", []):
             for side in ("away", "home"):
                 team_data = game.get("teams", {}).get(side, {})
+                team_name = team_data.get("team", {}).get("name", "")
                 pitcher   = team_data.get("probablePitcher")
+
+                # A7: record MLB's probable per team BEFORE the match filter,
+                # so run_pipeline can flag phantom-starter mismatches even
+                # when MLB has already swapped away from the odds pitcher.
+                if team_name:
+                    probables_by_team[team_name] = (pitcher or {}).get("fullName")
+
                 if not pitcher:
                     continue
                 mlb_name  = pitcher.get("fullName", "")
@@ -223,7 +250,6 @@ def fetch_stats(date_str: str, pitcher_names: list) -> dict:
                     log.warning("Team K rate fetch failed for %s: %s", opp_team.get("name"), e)
                     opp_k_rate, opp_games_played = 0.227, 0
 
-                team_name     = team_data.get("team", {}).get("name", "")
                 opp_team_name = opp_team.get("name", "")
                 stats_by_name[name] = {
                     **pstats,
@@ -232,6 +258,7 @@ def fetch_stats(date_str: str, pitcher_names: list) -> dict:
                     "opp_games_played": opp_games_played,
                     "team":             team_name,
                     "opp_team":         opp_team_name,
+                    "probable_name":    mlb_name,  # A7: happy-path mirror
                 }
 
-    return stats_by_name
+    return stats_by_name, probables_by_team

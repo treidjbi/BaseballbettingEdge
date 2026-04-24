@@ -318,6 +318,20 @@ def build_pitcher_record(odds: dict, stats: dict, ump_k_adj: float,
     opp_games        = stats.get("opp_games_played", 0)
     scaled_ump_k_adj = ump_k_adj * params["ump_scale"]
 
+    # Task A7: phantom-starter guard. When MLB's probablePitcher for this team
+    # disagrees with TheRundown's announced pitcher (the key under which we
+    # fetched odds), the book is likely still holding a market on someone who
+    # got scratched — picks like that void on no-action, which wastes slate
+    # slots and erodes trust even though calibration is safe. `probable_name`
+    # comes from fetch_stats and is accent-insensitive-equal to `odds["pitcher"]`
+    # in the happy path; any divergence trips starter_mismatch. Default to False
+    # when probable_name is absent (older cached stats, preview path) rather
+    # than false-positive-flagging every record.
+    probable_name = stats.get("probable_name")
+    starter_mismatch = (
+        bool(probable_name) and _norm(probable_name) != _norm(odds["pitcher"])
+    )
+
     raw_lam = calc_lambda(blended, avg_ip, effective_opp_k_rate, scaled_ump_k_adj,
                           swstr_delta_k9=swstr_delta, opp_games_played=opp_games,
                           opp_k_prior=params.get("opp_k_prior_games", OPP_K_PRIOR_GAMES))
@@ -377,6 +391,7 @@ def build_pitcher_record(odds: dict, stats: dict, ump_k_adj: float,
         "opp_k_rate":         effective_opp_k_rate,
         "lineup_used":        lineup_used,
         "ump_k_adj":          ump_k_adj,
+        "starter_mismatch":   starter_mismatch,
         "season_k9":          round(season_k9, 2),
         "recent_k9":          round(recent_k9, 2),
         "career_k9":          round(career_k9, 2),

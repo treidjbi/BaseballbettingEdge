@@ -24,6 +24,7 @@ from fetch_umpires      import fetch_umpires
 from fetch_lineups      import fetch_lineups
 from fetch_batter_stats import fetch_batter_stats
 from build_features     import build_pitcher_record
+from name_utils         import normalize as _normalize_name
 from fetch_results      import (init_db, load_history_into_db, seed_picks,
                                 export_db_to_history, lock_due_picks, get_db)
 
@@ -171,6 +172,37 @@ def _annotate_game_states(records: list, now: datetime) -> None:
             r["game_state"] = "pregame"
 
 
+def _restamp_starter_mismatch(records: list, probables_by_team: dict) -> None:
+    """A7 post-merge re-stamp: flag `starter_mismatch` on every record (fresh
+    AND locked) whenever MLB's current probablePitcher for the record's team
+    disagrees with the odds pitcher name we have on file.
+
+    Rationale: `build_pitcher_record` sets `starter_mismatch` at build time
+    using `stats["probable_name"]`, but fetch_stats's name-filter drops
+    entries entirely when the TheRundown pitcher doesn't match MLB's probable
+    — so freshly-built records can't see that divergence. Locked snapshots
+    from an earlier pre-swap run carry a stale `starter_mismatch=False` until
+    re-stamped. This helper is the single authority for both cases.
+
+    Safe default: when probables_by_team has no entry for a record's team
+    (e.g. early preview where MLB's probable is `null`, or team-name mismatch),
+    leave the existing flag alone rather than false-positive-clearing it.
+    """
+    if not probables_by_team:
+        return
+    for r in records:
+        team = r.get("team")
+        if not team or team not in probables_by_team:
+            continue
+        probable = probables_by_team.get(team)
+        if not probable:
+            # MLB hasn't posted a probable yet for this team — don't flag.
+            continue
+        r["starter_mismatch"] = (
+            _normalize_name(probable) != _normalize_name(r.get("pitcher", ""))
+        )
+
+
 def _game_date_et(game_time_str: str, fallback: str) -> str:
     """Convert a UTC ISO game_time string to an ET calendar date (YYYY-MM-DD).
     Falls back to `fallback` if the string is missing or unparseable."""
@@ -262,7 +294,7 @@ def _run_preview(tomorrow_str: str) -> None:
     pitcher_names = [p["pitcher"] for p in props]
 
     try:
-        stats_map = fetch_stats(tomorrow_str, pitcher_names)
+        stats_map, probables_by_team = fetch_stats(tomorrow_str, pitcher_names)
     except Exception as e:
         log.error("Preview: fetch_stats failed: %s — writing props-only archive", e)
         _write_dated_archive_only([], tomorrow_str, props_available=True)
@@ -704,12 +736,13 @@ def run(date_str: str, run_type: str = "full") -> None:
     # 2. Fetch stats (MLB Stats API)
     pitcher_names = [p["pitcher"] for p in props]
     try:
-        stats_map = fetch_stats(date_str, pitcher_names)
+        stats_map, probables_by_team = fetch_stats(date_str, pitcher_names)
     except Exception as e:
         # Stats API down: continue with empty map so per-pitcher isolation still runs.
         # Pitchers with no stats are skipped individually; props_available stays True.
         log.error("fetch_stats failed entirely: %s — all pitchers will be skipped", e)
         stats_map = {}
+        probables_by_team = {}
 
     # 3. Fetch SwStr% (FanGraphs via PyBaseball — graceful fallback to neutral)
     # Returns {name: {"swstr_pct": float, "career_swstr_pct": float | None}}
@@ -791,6 +824,17 @@ def run(date_str: str, run_type: str = "full") -> None:
     now_utc = datetime.now(timezone.utc)
     records = _merge_with_locked_snapshots(records, date_str, now_utc)
     _annotate_game_states(records, now_utc)
+
+    # A7: phantom-starter re-stamp (post-merge). `build_pitcher_record` already
+    # set `starter_mismatch` for freshly-built records using stats.probable_name,
+    # but locked snapshots from earlier runs predate any swap and may now carry
+    # a stale False. Re-check each record against MLB's current probable for
+    # the record's team — when they differ, flag so the dashboard can warn.
+    # Example: Chad Patrick / Martin Perez (2026-04-22) were seeded FIRE 2u at
+    # 6am, scratched mid-day, and graded void. Void kept calibration safe;
+    # this flag lets v2 hide or down-rank the card the moment MLB's probable
+    # flips, rather than silently serving a dead pick to the user.
+    _restamp_starter_mismatch(records, probables_by_team)
 
     # Guard: if the stats API failed entirely and produced 0 records, don't
     # silently wipe out a previously good today.json.  Locked snapshots from
