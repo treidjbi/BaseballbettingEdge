@@ -64,8 +64,19 @@ def _load_career_rates() -> dict:
     Normalizes keys (lower + accent-strip) so lookups tolerate casing or
     diacritical differences between the MLB API ("Jose Garcia") and the
     career rates file ("José García") without silently falling back to 0.0.
+
+    ``encoding="utf-8"`` is explicit (not the platform default) because this
+    file contains accented umpire names (e.g. "Alfonso Márquez"). Without it,
+    Python's ``open()`` falls back to the locale default — cp1252 on Windows
+    (works), utf-8 on Linux (works for valid utf-8). The bug we hit on
+    2026-04-24: the JSON itself was once written with a Latin-1 byte (0xe1)
+    instead of utf-8 (0xc3 0xa1) for "á", which cp1252 happily decoded but
+    utf-8 raised on. That made career rates load fine locally and silently
+    raise on the GitHub Actions runner — which collapsed every ump_k_adj to
+    0.0 in production for weeks. Pinning the encoding kills both halves of
+    that failure mode (locale-default ambiguity + accidental misencoding).
     """
-    with open(CAREER_RATES_PATH, "r") as f:
+    with open(CAREER_RATES_PATH, "r", encoding="utf-8") as f:
         raw = json.load(f)
     return {_normalize(k): v for k, v in raw.items()}
 
