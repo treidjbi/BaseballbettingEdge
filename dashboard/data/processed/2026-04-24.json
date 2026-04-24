@@ -1,8 +1,114 @@
 {
-  "generated_at": "2026-04-24T02:36:46Z",
+  "generated_at": "2026-04-24T03:58:28Z",
   "date": "2026-04-24",
   "props_available": true,
   "pitchers": [
+    {
+      "pitcher": "Andrew Abbott",
+      "team": "Cincinnati Reds",
+      "opp_team": "Detroit Tigers",
+      "pitcher_throws": "L",
+      "game_time": "2026-04-24T22:40:00Z",
+      "k_line": 4.5,
+      "opening_line": 4.5,
+      "best_over_book": "FanDuel",
+      "ref_book": "FanDuel",
+      "best_over_odds": -114,
+      "best_under_odds": -118,
+      "opening_over_odds": -114,
+      "opening_under_odds": -114,
+      "opening_odds_source": "first_seen",
+      "price_delta_over": 0,
+      "price_delta_under": -4,
+      "raw_lambda": 3.65,
+      "lambda": 3.31,
+      "avg_ip": 4.93,
+      "swstr_pct": 0.11,
+      "career_swstr_pct": null,
+      "swstr_delta_k9": 0.0,
+      "opp_k_rate": 0.216,
+      "lineup_used": false,
+      "ump_k_adj": 0.0,
+      "starter_mismatch": false,
+      "season_k9": 5.47,
+      "recent_k9": 6.0,
+      "career_k9": 8.17,
+      "ev_over": {
+        "ev": -0.2936,
+        "adj_ev": -0.2936,
+        "verdict": "PASS",
+        "win_prob": 0.239,
+        "movement_conf": 1.0
+      },
+      "ev_under": {
+        "ev": 0.2196,
+        "adj_ev": 0.2196,
+        "verdict": "FIRE 2u",
+        "win_prob": 0.761,
+        "movement_conf": 1.0
+      },
+      "book_odds": {
+        "FanDuel": {
+          "over": -114,
+          "under": -118
+        }
+      },
+      "data_complete": false,
+      "game_state": "pregame"
+    },
+    {
+      "pitcher": "Framber Valdez",
+      "team": "Detroit Tigers",
+      "opp_team": "Cincinnati Reds",
+      "pitcher_throws": "L",
+      "game_time": "2026-04-24T22:40:00Z",
+      "k_line": 5.5,
+      "opening_line": 5.5,
+      "best_over_book": "FanDuel",
+      "ref_book": "FanDuel",
+      "best_over_odds": -122,
+      "best_under_odds": -108,
+      "opening_over_odds": -125,
+      "opening_under_odds": -106,
+      "opening_odds_source": "first_seen",
+      "price_delta_over": 3,
+      "price_delta_under": -2,
+      "raw_lambda": 4.89,
+      "lambda": 4.55,
+      "avg_ip": 6.0,
+      "swstr_pct": 0.11,
+      "career_swstr_pct": null,
+      "swstr_delta_k9": 0.0,
+      "opp_k_rate": 0.21700000000000003,
+      "lineup_used": true,
+      "ump_k_adj": 0.0,
+      "starter_mismatch": false,
+      "season_k9": 6.0,
+      "recent_k9": 7.5,
+      "career_k9": 8.69,
+      "ev_over": {
+        "ev": -0.2446,
+        "adj_ev": -0.2446,
+        "verdict": "PASS",
+        "win_prob": 0.305,
+        "movement_conf": 1.0
+      },
+      "ev_under": {
+        "ev": 0.1758,
+        "adj_ev": 0.1758,
+        "verdict": "FIRE 2u",
+        "win_prob": 0.695,
+        "movement_conf": 1.0
+      },
+      "book_odds": {
+        "FanDuel": {
+          "over": -122,
+          "under": -108
+        }
+      },
+      "data_complete": false,
+      "game_state": "pregame"
+    },
     {
       "pitcher": "Brayan Bello",
       "team": "Boston Red Sox",
@@ -66,13 +172,13 @@
       "opening_line": 3.5,
       "best_over_book": "FanDuel",
       "ref_book": "FanDuel",
-      "best_over_odds": -118,
-      "best_under_odds": -112,
+      "best_over_odds": -120,
+      "best_under_odds": -110,
       "opening_over_odds": -118,
       "opening_under_odds": -112,
       "opening_odds_source": "first_seen",
-      "price_delta_over": 0,
-      "price_delta_under": 0,
+      "price_delta_over": -2,
+      "price_delta_under": 2,
       "raw_lambda": 3.86,
       "lambda": 3.52,
       "avg_ip": 5.5,
@@ -87,23 +193,23 @@
       "recent_k9": 3.6,
       "career_k9": 7.04,
       "ev_over": {
-        "ev": -0.0746,
-        "adj_ev": -0.0746,
+        "ev": -0.0788,
+        "adj_ev": -0.0788,
         "verdict": "PASS",
         "win_prob": 0.467,
         "movement_conf": 1.0
       },
       "ev_under": {
-        "ev": 0.005,
-        "adj_ev": 0.005,
+        "ev": 0.0095,
+        "adj_ev": 0.0095,
         "verdict": "PASS",
         "win_prob": 0.533,
         "movement_conf": 1.0
       },
       "book_odds": {
         "FanDuel": {
-          "over": -118,
-          "under": -112
+          "over": -120,
+          "under": -110
         }
       },
       "data_complete": false,
@@ -216,6 +322,112 @@
       "game_state": "pregame"
     },
     {
+      "pitcher": "Michael Lorenzen",
+      "team": "Colorado Rockies",
+      "opp_team": "New York Mets",
+      "pitcher_throws": "R",
+      "game_time": "2026-04-24T23:10:00Z",
+      "k_line": 4.5,
+      "opening_line": 4.5,
+      "best_over_book": "FanDuel",
+      "ref_book": "FanDuel",
+      "best_over_odds": 114,
+      "best_under_odds": -152,
+      "opening_over_odds": 114,
+      "opening_under_odds": -152,
+      "opening_odds_source": "first_seen",
+      "price_delta_over": 0,
+      "price_delta_under": 0,
+      "raw_lambda": 2.7,
+      "lambda": 2.36,
+      "avg_ip": 3.47,
+      "swstr_pct": 0.11,
+      "career_swstr_pct": null,
+      "swstr_delta_k9": 0.0,
+      "opp_k_rate": 0.232,
+      "lineup_used": true,
+      "ump_k_adj": 0.0,
+      "starter_mismatch": false,
+      "season_k9": 6.65,
+      "recent_k9": 6.0,
+      "career_k9": 7.45,
+      "ev_over": {
+        "ev": -0.3768,
+        "adj_ev": -0.3768,
+        "verdict": "PASS",
+        "win_prob": 0.091,
+        "movement_conf": 1.0
+      },
+      "ev_under": {
+        "ev": 0.3063,
+        "adj_ev": 0.3063,
+        "verdict": "FIRE 2u",
+        "win_prob": 0.909,
+        "movement_conf": 1.0
+      },
+      "book_odds": {
+        "FanDuel": {
+          "over": 114,
+          "under": -152
+        }
+      },
+      "data_complete": false,
+      "game_state": "pregame"
+    },
+    {
+      "pitcher": "Freddy Peralta",
+      "team": "New York Mets",
+      "opp_team": "Colorado Rockies",
+      "pitcher_throws": "R",
+      "game_time": "2026-04-24T23:10:00Z",
+      "k_line": 6.5,
+      "opening_line": 6.5,
+      "best_over_book": "FanDuel",
+      "ref_book": "FanDuel",
+      "best_over_odds": -140,
+      "best_under_odds": 106,
+      "opening_over_odds": -140,
+      "opening_under_odds": 106,
+      "opening_odds_source": "first_seen",
+      "price_delta_over": 0,
+      "price_delta_under": 0,
+      "raw_lambda": 6.36,
+      "lambda": 6.01,
+      "avg_ip": 5.33,
+      "swstr_pct": 0.11,
+      "career_swstr_pct": null,
+      "swstr_delta_k9": 0.0,
+      "opp_k_rate": 0.232,
+      "lineup_used": true,
+      "ump_k_adj": 0.0,
+      "starter_mismatch": false,
+      "season_k9": 9.45,
+      "recent_k9": 12.6,
+      "career_k9": 11.1,
+      "ev_over": {
+        "ev": -0.1879,
+        "adj_ev": -0.1879,
+        "verdict": "PASS",
+        "win_prob": 0.395,
+        "movement_conf": 1.0
+      },
+      "ev_under": {
+        "ev": 0.1192,
+        "adj_ev": 0.1192,
+        "verdict": "FIRE 2u",
+        "win_prob": 0.605,
+        "movement_conf": 1.0
+      },
+      "book_odds": {
+        "FanDuel": {
+          "over": -140,
+          "under": 106
+        }
+      },
+      "data_complete": false,
+      "game_state": "pregame"
+    },
+    {
       "pitcher": "Andrew Painter",
       "team": "Philadelphia Phillies",
       "opp_team": "Atlanta Braves",
@@ -225,13 +437,13 @@
       "opening_line": 3.5,
       "best_over_book": "FanDuel",
       "ref_book": "FanDuel",
-      "best_over_odds": -178,
-      "best_under_odds": 132,
-      "opening_over_odds": -178,
-      "opening_under_odds": 132,
+      "best_over_odds": -162,
+      "best_under_odds": 122,
+      "opening_over_odds": -146,
+      "opening_under_odds": 110,
       "opening_odds_source": "first_seen",
-      "price_delta_over": 0,
-      "price_delta_under": 0,
+      "price_delta_over": -16,
+      "price_delta_under": 12,
       "raw_lambda": 5.3,
       "lambda": 4.96,
       "avg_ip": 4.58,
@@ -246,23 +458,23 @@
       "recent_k9": 13.5,
       "career_k9": 9.82,
       "ev_over": {
-        "ev": 0.0885,
-        "adj_ev": 0.0885,
-        "verdict": "FIRE 1u",
+        "ev": 0.1104,
+        "adj_ev": 0.1104,
+        "verdict": "FIRE 2u",
         "win_prob": 0.729,
         "movement_conf": 1.0
       },
       "ev_under": {
-        "ev": -0.1598,
-        "adj_ev": -0.1598,
+        "ev": -0.1792,
+        "adj_ev": -0.1792,
         "verdict": "PASS",
         "win_prob": 0.271,
         "movement_conf": 1.0
       },
       "book_odds": {
         "FanDuel": {
-          "over": -178,
-          "under": 132
+          "over": -162,
+          "under": 122
         }
       },
       "data_complete": false,
@@ -278,13 +490,13 @@
       "opening_line": 4.5,
       "best_over_book": "FanDuel",
       "ref_book": "FanDuel",
-      "best_over_odds": -154,
-      "best_under_odds": 116,
+      "best_over_odds": -146,
+      "best_under_odds": 110,
       "opening_over_odds": -154,
       "opening_under_odds": 116,
       "opening_odds_source": "first_seen",
-      "price_delta_over": 0,
-      "price_delta_under": 0,
+      "price_delta_over": 8,
+      "price_delta_under": -6,
       "raw_lambda": 4.78,
       "lambda": 4.44,
       "avg_ip": 5.27,
@@ -299,23 +511,23 @@
       "recent_k9": 7.2,
       "career_k9": 9.19,
       "ev_over": {
-        "ev": -0.1506,
-        "adj_ev": -0.1506,
+        "ev": -0.1378,
+        "adj_ev": -0.1378,
         "verdict": "PASS",
         "win_prob": 0.456,
         "movement_conf": 1.0
       },
       "ev_under": {
-        "ev": 0.0813,
-        "adj_ev": 0.0813,
+        "ev": 0.0681,
+        "adj_ev": 0.0681,
         "verdict": "FIRE 1u",
         "win_prob": 0.544,
         "movement_conf": 1.0
       },
       "book_odds": {
         "FanDuel": {
-          "over": -154,
-          "under": 116
+          "over": -146,
+          "under": 110
         }
       },
       "data_complete": false,
