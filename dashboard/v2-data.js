@@ -65,6 +65,10 @@
       avg_ip: p.avg_ip,
       opp_k_rate: p.opp_k_rate,
       ump_k_adj: p.ump_k_adj ?? 0,
+      // Signal-confirmation flags surfaced in the sheet's "Why this pick" header.
+      // lineup_used=true when the starting 9 came from MLB's boxscore (A5); false
+      // while we're still falling back to the projected lineup.
+      lineup_used: p.lineup_used === true,
       season_k9: p.season_k9,
       recent_k9: p.recent_k9,
       career_k9: p.career_k9,

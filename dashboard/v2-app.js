@@ -899,6 +899,30 @@ function PickDetail({
     className: "v2-stat-row"
   }, /*#__PURE__*/React.createElement("span", {
     className: "lbl"
+  }, Icon.users, " Lineup"), p.lineup_used ? /*#__PURE__*/React.createElement("span", {
+    className: "val pos"
+  }, "Confirmed") : /*#__PURE__*/React.createElement("span", {
+    className: "val",
+    style: {
+      color: "var(--ink-dim)"
+    }
+  }, "Projected")), /*#__PURE__*/React.createElement("div", {
+    className: "v2-stat-row"
+  }, /*#__PURE__*/React.createElement("span", {
+    className: "lbl"
+  }, Icon.ump, " Umpire"), ump !== 0 ? /*#__PURE__*/React.createElement("span", {
+    className: `val ${umpSupports ? "pos" : "neg"}`
+  }, "Confirmed", /*#__PURE__*/React.createElement("span", {
+    className: "delta"
+  }, ump > 0 ? "+" : "", ump.toFixed(2))) : /*#__PURE__*/React.createElement("span", {
+    className: "val",
+    style: {
+      color: "var(--ink-dim)"
+    }
+  }, "TBA")), /*#__PURE__*/React.createElement("div", {
+    className: "v2-stat-row"
+  }, /*#__PURE__*/React.createElement("span", {
+    className: "lbl"
   }, Icon.users, " Opp. K-rate (bats)"), /*#__PURE__*/React.createElement("span", {
     className: `val ${oppSupports ? "pos" : "neg"}`
   }, (p.opp_k_rate * 100).toFixed(1), "%", /*#__PURE__*/React.createElement("span", {
@@ -923,13 +947,7 @@ function PickDetail({
     className: "lbl"
   }, "Career K/9"), /*#__PURE__*/React.createElement("span", {
     className: "val"
-  }, p.career_k9.toFixed(1))), ump !== 0 && /*#__PURE__*/React.createElement("div", {
-    className: "v2-stat-row"
-  }, /*#__PURE__*/React.createElement("span", {
-    className: "lbl"
-  }, "Umpire K adj."), /*#__PURE__*/React.createElement("span", {
-    className: `val ${umpSupports ? "pos" : "neg"}`
-  }, ump > 0 ? "+" : "", ump.toFixed(2)))), /*#__PURE__*/React.createElement("div", {
+  }, p.career_k9.toFixed(1)))), /*#__PURE__*/React.createElement("div", {
     className: "v2-sheet-section"
   }, /*#__PURE__*/React.createElement("div", {
     className: "h"

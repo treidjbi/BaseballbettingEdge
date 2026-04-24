@@ -579,6 +579,25 @@ function PickDetail({ p, onClose }) {
         <div className="v2-sheet-section">
           <div className="h">Why this pick</div>
           <div className="v2-stat-row">
+            <span className="lbl">{Icon.users} Lineup</span>
+            {p.lineup_used ? (
+              <span className="val pos">Confirmed</span>
+            ) : (
+              <span className="val" style={{color: "var(--ink-dim)"}}>Projected</span>
+            )}
+          </div>
+          <div className="v2-stat-row">
+            <span className="lbl">{Icon.ump} Umpire</span>
+            {ump !== 0 ? (
+              <span className={`val ${umpSupports ? "pos" : "neg"}`}>
+                Confirmed
+                <span className="delta">{ump > 0 ? "+" : ""}{ump.toFixed(2)}</span>
+              </span>
+            ) : (
+              <span className="val" style={{color: "var(--ink-dim)"}}>TBA</span>
+            )}
+          </div>
+          <div className="v2-stat-row">
             <span className="lbl">{Icon.users} Opp. K-rate (bats)</span>
             <span className={`val ${oppSupports ? "pos" : "neg"}`}>
               {(p.opp_k_rate * 100).toFixed(1)}%
@@ -600,14 +619,6 @@ function PickDetail({ p, onClose }) {
             <span className="lbl">Career K/9</span>
             <span className="val">{p.career_k9.toFixed(1)}</span>
           </div>
-          {ump !== 0 && (
-            <div className="v2-stat-row">
-              <span className="lbl">Umpire K adj.</span>
-              <span className={`val ${umpSupports ? "pos" : "neg"}`}>
-                {ump > 0 ? "+" : ""}{ump.toFixed(2)}
-              </span>
-            </div>
-          )}
         </div>
 
         <div className="v2-sheet-section">
