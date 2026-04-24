@@ -1,8 +1,61 @@
 {
-  "generated_at": "2026-04-24T19:52:15Z",
+  "generated_at": "2026-04-24T20:05:33Z",
   "date": "2026-04-24",
   "props_available": true,
   "pitchers": [
+    {
+      "pitcher": "Andrew Abbott",
+      "team": "Cincinnati Reds",
+      "opp_team": "Detroit Tigers",
+      "pitcher_throws": "L",
+      "game_time": "2026-04-24T22:40:00Z",
+      "k_line": 4.5,
+      "opening_line": 4.5,
+      "best_over_book": "FanDuel",
+      "ref_book": "FanDuel",
+      "best_over_odds": -104,
+      "best_under_odds": -128,
+      "opening_over_odds": -114,
+      "opening_under_odds": -118,
+      "opening_odds_source": "preview",
+      "price_delta_over": 10,
+      "price_delta_under": -10,
+      "raw_lambda": 3.66,
+      "lambda": 3.32,
+      "avg_ip": 4.93,
+      "swstr_pct": 0.11,
+      "career_swstr_pct": null,
+      "swstr_delta_k9": 0.0,
+      "opp_k_rate": 0.21700000000000003,
+      "lineup_used": true,
+      "ump_k_adj": 0.0,
+      "starter_mismatch": true,
+      "season_k9": 5.47,
+      "recent_k9": 6.0,
+      "career_k9": 8.17,
+      "ev_over": {
+        "ev": -0.2696,
+        "adj_ev": -0.2696,
+        "verdict": "PASS",
+        "win_prob": 0.24,
+        "movement_conf": 1.0
+      },
+      "ev_under": {
+        "ev": 0.1984,
+        "adj_ev": 0.1984,
+        "verdict": "FIRE 2u",
+        "win_prob": 0.76,
+        "movement_conf": 1.0
+      },
+      "book_odds": {
+        "FanDuel": {
+          "over": -104,
+          "under": -128
+        }
+      },
+      "data_complete": false,
+      "game_state": "pregame"
+    },
     {
       "pitcher": "Framber Valdez",
       "team": "Detroit Tigers",
@@ -278,13 +331,13 @@
       "opening_line": 5.5,
       "best_over_book": "FanDuel",
       "ref_book": "FanDuel",
-      "best_over_odds": 118,
-      "best_under_odds": -158,
-      "opening_over_odds": 120,
-      "opening_under_odds": -160,
+      "best_over_odds": 128,
+      "best_under_odds": -172,
+      "opening_over_odds": 126,
+      "opening_under_odds": -168,
       "opening_odds_source": "first_seen",
-      "price_delta_over": -2,
-      "price_delta_under": 2,
+      "price_delta_over": 2,
+      "price_delta_under": -4,
       "raw_lambda": 7.12,
       "lambda": 6.77,
       "avg_ip": 5.53,
@@ -299,23 +352,76 @@
       "recent_k9": 18.69,
       "career_k9": 9.68,
       "ev_over": {
-        "ev": 0.2107,
-        "adj_ev": 0.2107,
+        "ev": 0.2308,
+        "adj_ev": 0.2308,
         "verdict": "FIRE 2u",
         "win_prob": 0.669,
         "movement_conf": 1.0
       },
       "ev_under": {
-        "ev": -0.2818,
-        "adj_ev": -0.2818,
+        "ev": -0.3017,
+        "adj_ev": -0.3017,
         "verdict": "PASS",
         "win_prob": 0.331,
         "movement_conf": 1.0
       },
       "book_odds": {
         "FanDuel": {
-          "over": 118,
-          "under": -158
+          "over": 128,
+          "under": -172
+        }
+      },
+      "data_complete": false,
+      "game_state": "pregame"
+    },
+    {
+      "pitcher": "Drew Rasmussen",
+      "team": "Tampa Bay Rays",
+      "opp_team": "Minnesota Twins",
+      "pitcher_throws": "R",
+      "game_time": "2026-04-24T23:10:00Z",
+      "k_line": 4.5,
+      "opening_line": 4.5,
+      "best_over_book": "FanDuel",
+      "ref_book": "FanDuel",
+      "best_over_odds": -166,
+      "best_under_odds": 124,
+      "opening_over_odds": -144,
+      "opening_under_odds": 108,
+      "opening_odds_source": "preview",
+      "price_delta_over": -22,
+      "price_delta_under": 16,
+      "raw_lambda": 4.39,
+      "lambda": 4.04,
+      "avg_ip": 4.92,
+      "swstr_pct": 0.11,
+      "career_swstr_pct": null,
+      "swstr_delta_k9": 0.0,
+      "opp_k_rate": 0.232,
+      "lineup_used": true,
+      "ump_k_adj": 0.0,
+      "starter_mismatch": true,
+      "season_k9": 9.15,
+      "recent_k9": 3.6,
+      "career_k9": 8.39,
+      "ev_over": {
+        "ev": -0.245,
+        "adj_ev": -0.245,
+        "verdict": "PASS",
+        "win_prob": 0.379,
+        "movement_conf": 1.0
+      },
+      "ev_under": {
+        "ev": 0.1745,
+        "adj_ev": 0.1222,
+        "verdict": "FIRE 2u",
+        "win_prob": 0.621,
+        "movement_conf": 0.7
+      },
+      "book_odds": {
+        "FanDuel": {
+          "over": -166,
+          "under": 124
         }
       },
       "data_complete": false,
@@ -384,13 +490,13 @@
       "opening_line": 6.5,
       "best_over_book": "FanDuel",
       "ref_book": "FanDuel",
-      "best_over_odds": -140,
-      "best_under_odds": 106,
+      "best_over_odds": -144,
+      "best_under_odds": 108,
       "opening_over_odds": -144,
       "opening_under_odds": 108,
       "opening_odds_source": "preview",
-      "price_delta_over": 4,
-      "price_delta_under": -2,
+      "price_delta_over": 0,
+      "price_delta_under": 0,
       "raw_lambda": 6.36,
       "lambda": 6.01,
       "avg_ip": 5.33,
@@ -405,23 +511,23 @@
       "recent_k9": 12.6,
       "career_k9": 11.1,
       "ev_over": {
-        "ev": -0.1879,
-        "adj_ev": -0.1879,
+        "ev": -0.1948,
+        "adj_ev": -0.1948,
         "verdict": "PASS",
         "win_prob": 0.395,
         "movement_conf": 1.0
       },
       "ev_under": {
-        "ev": 0.1192,
-        "adj_ev": 0.1192,
+        "ev": 0.1238,
+        "adj_ev": 0.1238,
         "verdict": "FIRE 2u",
         "win_prob": 0.605,
         "movement_conf": 1.0
       },
       "book_odds": {
         "FanDuel": {
-          "over": -140,
-          "under": 106
+          "over": -144,
+          "under": 108
         }
       },
       "data_complete": false,
@@ -444,31 +550,31 @@
       "opening_odds_source": "preview",
       "price_delta_over": 0,
       "price_delta_under": 0,
-      "raw_lambda": 5.0,
-      "lambda": 4.66,
+      "raw_lambda": 5.3,
+      "lambda": 4.96,
       "avg_ip": 4.58,
       "swstr_pct": 0.11,
       "career_swstr_pct": null,
       "swstr_delta_k9": 0.0,
-      "opp_k_rate": 0.1946,
-      "lineup_used": false,
+      "opp_k_rate": 0.232,
+      "lineup_used": true,
       "ump_k_adj": 0.0,
       "starter_mismatch": true,
       "season_k9": 9.82,
       "recent_k9": 13.5,
       "career_k9": 9.82,
       "ev_over": {
-        "ev": 0.0685,
-        "adj_ev": 0.0685,
-        "verdict": "FIRE 1u",
-        "win_prob": 0.684,
+        "ev": 0.1134,
+        "adj_ev": 0.1134,
+        "verdict": "FIRE 2u",
+        "win_prob": 0.729,
         "movement_conf": 1.0
       },
       "ev_under": {
-        "ev": -0.1384,
-        "adj_ev": -0.1384,
+        "ev": -0.1833,
+        "adj_ev": -0.1833,
         "verdict": "PASS",
-        "win_prob": 0.316,
+        "win_prob": 0.271,
         "movement_conf": 1.0
       },
       "book_odds": {
@@ -490,12 +596,12 @@
       "opening_line": 4.5,
       "best_over_book": "FanDuel",
       "ref_book": "FanDuel",
-      "best_over_odds": -152,
+      "best_over_odds": -148,
       "best_under_odds": 114,
       "opening_over_odds": -144,
       "opening_under_odds": 108,
       "opening_odds_source": "preview",
-      "price_delta_over": -8,
+      "price_delta_over": -4,
       "price_delta_under": 6,
       "raw_lambda": 4.78,
       "lambda": 4.44,
@@ -511,8 +617,8 @@
       "recent_k9": 7.2,
       "career_k9": 9.19,
       "ev_over": {
-        "ev": -0.1475,
-        "adj_ev": -0.1475,
+        "ev": -0.1411,
+        "adj_ev": -0.1411,
         "verdict": "PASS",
         "win_prob": 0.456,
         "movement_conf": 1.0
@@ -526,7 +632,7 @@
       },
       "book_odds": {
         "FanDuel": {
-          "over": -152,
+          "over": -148,
           "under": 114
         }
       },
@@ -550,31 +656,31 @@
       "opening_odds_source": "preview",
       "price_delta_over": 2,
       "price_delta_under": -2,
-      "raw_lambda": 3.0,
-      "lambda": 2.65,
+      "raw_lambda": 2.94,
+      "lambda": 2.6,
       "avg_ip": 3.93,
       "swstr_pct": 0.11,
       "career_swstr_pct": null,
       "swstr_delta_k9": 0.0,
-      "opp_k_rate": 0.245,
-      "lineup_used": false,
+      "opp_k_rate": 0.232,
+      "lineup_used": true,
       "ump_k_adj": 0.0,
       "starter_mismatch": true,
       "season_k9": 6.86,
       "recent_k9": 7.2,
       "career_k9": 6.44,
       "ev_over": {
-        "ev": -0.3402,
-        "adj_ev": -0.3402,
+        "ev": -0.3524,
+        "adj_ev": -0.3524,
         "verdict": "PASS",
-        "win_prob": 0.275,
+        "win_prob": 0.263,
         "movement_conf": 1.0
       },
       "ev_under": {
-        "ev": 0.2703,
-        "adj_ev": 0.2703,
+        "ev": 0.2824,
+        "adj_ev": 0.2824,
         "verdict": "FIRE 2u",
-        "win_prob": 0.725,
+        "win_prob": 0.737,
         "movement_conf": 1.0
       },
       "book_odds": {
@@ -808,44 +914,44 @@
       "opening_line": 5.5,
       "best_over_book": "FanDuel",
       "ref_book": "FanDuel",
-      "best_over_odds": 104,
-      "best_under_odds": -138,
+      "best_over_odds": 108,
+      "best_under_odds": -144,
       "opening_over_odds": 104,
       "opening_under_odds": -138,
       "opening_odds_source": "preview",
-      "price_delta_over": 0,
-      "price_delta_under": 0,
-      "raw_lambda": 5.7,
-      "lambda": 5.36,
+      "price_delta_over": 4,
+      "price_delta_under": -6,
+      "raw_lambda": 5.63,
+      "lambda": 5.29,
       "avg_ip": 5.33,
       "swstr_pct": 0.11,
       "career_swstr_pct": null,
       "swstr_delta_k9": 0.0,
-      "opp_k_rate": 0.2403,
-      "lineup_used": false,
+      "opp_k_rate": 0.232,
+      "lineup_used": true,
       "ump_k_adj": 0.0,
       "starter_mismatch": true,
       "season_k9": 9.79,
       "recent_k9": 13.5,
       "career_k9": 7.89,
       "ev_over": {
-        "ev": -0.0441,
-        "adj_ev": -0.0441,
+        "ev": -0.0465,
+        "adj_ev": -0.0465,
         "verdict": "PASS",
-        "win_prob": 0.446,
+        "win_prob": 0.434,
         "movement_conf": 1.0
       },
       "ev_under": {
-        "ev": -0.026,
-        "adj_ev": -0.026,
+        "ev": -0.0245,
+        "adj_ev": -0.0245,
         "verdict": "PASS",
-        "win_prob": 0.554,
+        "win_prob": 0.566,
         "movement_conf": 1.0
       },
       "book_odds": {
         "FanDuel": {
-          "over": 104,
-          "under": -138
+          "over": 108,
+          "under": -144
         }
       },
       "data_complete": false,
@@ -952,6 +1058,59 @@
         "FanDuel": {
           "over": -162,
           "under": 122
+        }
+      },
+      "data_complete": false,
+      "game_state": "pregame"
+    },
+    {
+      "pitcher": "George Kirby",
+      "team": "Seattle Mariners",
+      "opp_team": "St. Louis Cardinals",
+      "pitcher_throws": "R",
+      "game_time": "2026-04-25T00:15:00Z",
+      "k_line": 5.5,
+      "opening_line": 5.5,
+      "best_over_book": "FanDuel",
+      "ref_book": "FanDuel",
+      "best_over_odds": 106,
+      "best_under_odds": -140,
+      "opening_over_odds": -112,
+      "opening_under_odds": -118,
+      "opening_odds_source": "preview",
+      "price_delta_over": 218,
+      "price_delta_under": -22,
+      "raw_lambda": 6.1,
+      "lambda": 5.76,
+      "avg_ip": 6.67,
+      "swstr_pct": 0.11,
+      "career_swstr_pct": null,
+      "swstr_delta_k9": 0.0,
+      "opp_k_rate": 0.232,
+      "lineup_used": true,
+      "ump_k_adj": 0.0,
+      "starter_mismatch": true,
+      "season_k9": 7.29,
+      "recent_k9": 9.0,
+      "career_k9": 8.69,
+      "ev_over": {
+        "ev": 0.0289,
+        "adj_ev": 0.0,
+        "verdict": "PASS",
+        "win_prob": 0.514,
+        "movement_conf": 0.0
+      },
+      "ev_under": {
+        "ev": -0.0977,
+        "adj_ev": -0.0977,
+        "verdict": "PASS",
+        "win_prob": 0.486,
+        "movement_conf": 1.0
+      },
+      "book_odds": {
+        "FanDuel": {
+          "over": 106,
+          "under": -140
         }
       },
       "data_complete": false,
@@ -1217,165 +1376,6 @@
         "FanDuel": {
           "over": -158,
           "under": 118
-        }
-      },
-      "data_complete": false,
-      "game_state": "pregame"
-    },
-    {
-      "pitcher": "Andrew Abbott",
-      "team": "Cincinnati Reds",
-      "opp_team": "Detroit Tigers",
-      "pitcher_throws": "L",
-      "game_time": "2026-04-24T22:40:00Z",
-      "k_line": 4.5,
-      "opening_line": 4.5,
-      "best_over_book": "FanDuel",
-      "ref_book": "FanDuel",
-      "best_over_odds": -104,
-      "best_under_odds": -128,
-      "opening_over_odds": -114,
-      "opening_under_odds": -118,
-      "opening_odds_source": "preview",
-      "price_delta_over": 10,
-      "price_delta_under": -10,
-      "raw_lambda": 3.65,
-      "lambda": 3.31,
-      "avg_ip": 4.93,
-      "swstr_pct": 0.11,
-      "career_swstr_pct": null,
-      "swstr_delta_k9": 0.0,
-      "opp_k_rate": 0.216,
-      "lineup_used": false,
-      "ump_k_adj": 0.0,
-      "starter_mismatch": true,
-      "season_k9": 5.47,
-      "recent_k9": 6.0,
-      "career_k9": 8.17,
-      "ev_over": {
-        "ev": -0.2707,
-        "adj_ev": -0.2707,
-        "verdict": "PASS",
-        "win_prob": 0.239,
-        "movement_conf": 1.0
-      },
-      "ev_under": {
-        "ev": 0.1994,
-        "adj_ev": 0.1994,
-        "verdict": "FIRE 2u",
-        "win_prob": 0.761,
-        "movement_conf": 1.0
-      },
-      "book_odds": {
-        "FanDuel": {
-          "over": -104,
-          "under": -128
-        }
-      },
-      "data_complete": false,
-      "game_state": "pregame"
-    },
-    {
-      "pitcher": "George Kirby",
-      "team": "Seattle Mariners",
-      "opp_team": "St. Louis Cardinals",
-      "pitcher_throws": "R",
-      "game_time": "2026-04-25T00:15:00Z",
-      "k_line": 5.5,
-      "opening_line": 5.5,
-      "best_over_book": "FanDuel",
-      "ref_book": "FanDuel",
-      "best_over_odds": -106,
-      "best_under_odds": -125,
-      "opening_over_odds": -112,
-      "opening_under_odds": -118,
-      "opening_odds_source": "preview",
-      "price_delta_over": 6,
-      "price_delta_under": -7,
-      "raw_lambda": 6.03,
-      "lambda": 5.68,
-      "avg_ip": 6.67,
-      "swstr_pct": 0.11,
-      "career_swstr_pct": null,
-      "swstr_delta_k9": 0.0,
-      "opp_k_rate": 0.2237,
-      "lineup_used": false,
-      "ump_k_adj": 0.0,
-      "starter_mismatch": true,
-      "season_k9": 7.29,
-      "recent_k9": 9.0,
-      "career_k9": 8.69,
-      "ev_over": {
-        "ev": -0.0122,
-        "adj_ev": -0.0122,
-        "verdict": "PASS",
-        "win_prob": 0.502,
-        "movement_conf": 1.0
-      },
-      "ev_under": {
-        "ev": -0.0579,
-        "adj_ev": -0.0579,
-        "verdict": "PASS",
-        "win_prob": 0.498,
-        "movement_conf": 1.0
-      },
-      "book_odds": {
-        "FanDuel": {
-          "over": -106,
-          "under": -125
-        }
-      },
-      "data_complete": false,
-      "game_state": "pregame"
-    },
-    {
-      "pitcher": "Drew Rasmussen",
-      "team": "Tampa Bay Rays",
-      "opp_team": "Minnesota Twins",
-      "pitcher_throws": "R",
-      "game_time": "2026-04-24T23:10:00Z",
-      "k_line": 4.5,
-      "opening_line": 4.5,
-      "best_over_book": "FanDuel",
-      "ref_book": "FanDuel",
-      "best_over_odds": -144,
-      "best_under_odds": 108,
-      "opening_over_odds": -144,
-      "opening_under_odds": 108,
-      "opening_odds_source": "preview",
-      "price_delta_over": 0,
-      "price_delta_under": 0,
-      "raw_lambda": 4.38,
-      "lambda": 4.04,
-      "avg_ip": 4.92,
-      "swstr_pct": 0.11,
-      "career_swstr_pct": null,
-      "swstr_delta_k9": 0.0,
-      "opp_k_rate": 0.2319,
-      "lineup_used": false,
-      "ump_k_adj": 0.0,
-      "starter_mismatch": true,
-      "season_k9": 9.15,
-      "recent_k9": 3.6,
-      "career_k9": 8.39,
-      "ev_over": {
-        "ev": -0.2112,
-        "adj_ev": -0.2112,
-        "verdict": "PASS",
-        "win_prob": 0.379,
-        "movement_conf": 1.0
-      },
-      "ev_under": {
-        "ev": 0.1403,
-        "adj_ev": 0.1403,
-        "verdict": "FIRE 2u",
-        "win_prob": 0.621,
-        "movement_conf": 1.0
-      },
-      "book_odds": {
-        "FanDuel": {
-          "over": -144,
-          "under": 108
         }
       },
       "data_complete": false,
