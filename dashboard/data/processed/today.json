@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-04-24T22:06:37Z",
+  "generated_at": "2026-04-24T22:20:26Z",
   "date": "2026-04-24",
   "props_available": true,
   "pitchers": [
@@ -104,6 +104,59 @@
         "FanDuel": {
           "over": -122,
           "under": -108
+        }
+      },
+      "data_complete": false,
+      "game_state": "pregame"
+    },
+    {
+      "pitcher": "Brayan Bello",
+      "team": "Boston Red Sox",
+      "opp_team": "Baltimore Orioles",
+      "pitcher_throws": "R",
+      "game_time": "2026-04-24T23:05:00Z",
+      "k_line": 4.5,
+      "opening_line": 4.5,
+      "best_over_book": "FanDuel",
+      "ref_book": "FanDuel",
+      "best_over_odds": 110,
+      "best_under_odds": -146,
+      "opening_over_odds": -138,
+      "opening_under_odds": 104,
+      "opening_odds_source": "preview",
+      "price_delta_over": 248,
+      "price_delta_under": -250,
+      "raw_lambda": 3.49,
+      "lambda": 3.15,
+      "avg_ip": 4.67,
+      "swstr_pct": 0.11,
+      "career_swstr_pct": null,
+      "swstr_delta_k9": 0.0,
+      "opp_k_rate": 0.232,
+      "lineup_used": true,
+      "ump_k_adj": 0.0,
+      "starter_mismatch": true,
+      "season_k9": 6.27,
+      "recent_k9": 3.86,
+      "career_k9": 7.64,
+      "ev_over": {
+        "ev": -0.2662,
+        "adj_ev": -0.0,
+        "verdict": "PASS",
+        "win_prob": 0.21,
+        "movement_conf": 0.0
+      },
+      "ev_under": {
+        "ev": 0.1965,
+        "adj_ev": 0.1965,
+        "verdict": "FIRE 2u",
+        "win_prob": 0.79,
+        "movement_conf": 1.0
+      },
+      "book_odds": {
+        "FanDuel": {
+          "over": 110,
+          "under": -146
         }
       },
       "data_complete": false,
@@ -278,13 +331,13 @@
       "opening_line": 5.5,
       "best_over_book": "FanDuel",
       "ref_book": "FanDuel",
-      "best_over_odds": 122,
-      "best_under_odds": -162,
-      "opening_over_odds": 124,
-      "opening_under_odds": -166,
+      "best_over_odds": 126,
+      "best_under_odds": -168,
+      "opening_over_odds": 122,
+      "opening_under_odds": -162,
       "opening_odds_source": "first_seen",
-      "price_delta_over": -2,
-      "price_delta_under": 4,
+      "price_delta_over": 4,
+      "price_delta_under": -6,
       "raw_lambda": 7.12,
       "lambda": 6.77,
       "avg_ip": 5.53,
@@ -299,76 +352,23 @@
       "recent_k9": 18.69,
       "career_k9": 9.68,
       "ev_over": {
-        "ev": 0.2189,
-        "adj_ev": 0.2189,
+        "ev": 0.2269,
+        "adj_ev": 0.2269,
         "verdict": "FIRE 2u",
         "win_prob": 0.669,
         "movement_conf": 1.0
       },
       "ev_under": {
-        "ev": -0.2877,
-        "adj_ev": -0.2877,
+        "ev": -0.2962,
+        "adj_ev": -0.2962,
         "verdict": "PASS",
         "win_prob": 0.331,
         "movement_conf": 1.0
       },
       "book_odds": {
         "FanDuel": {
-          "over": 122,
-          "under": -162
-        }
-      },
-      "data_complete": false,
-      "game_state": "pregame"
-    },
-    {
-      "pitcher": "Drew Rasmussen",
-      "team": "Tampa Bay Rays",
-      "opp_team": "Minnesota Twins",
-      "pitcher_throws": "R",
-      "game_time": "2026-04-24T23:10:00Z",
-      "k_line": 4.5,
-      "opening_line": 4.5,
-      "best_over_book": "FanDuel",
-      "ref_book": "FanDuel",
-      "best_over_odds": -168,
-      "best_under_odds": 126,
-      "opening_over_odds": -144,
-      "opening_under_odds": 108,
-      "opening_odds_source": "preview",
-      "price_delta_over": -24,
-      "price_delta_under": 18,
-      "raw_lambda": 4.39,
-      "lambda": 4.04,
-      "avg_ip": 4.92,
-      "swstr_pct": 0.11,
-      "career_swstr_pct": null,
-      "swstr_delta_k9": 0.0,
-      "opp_k_rate": 0.232,
-      "lineup_used": true,
-      "ump_k_adj": 0.0,
-      "starter_mismatch": true,
-      "season_k9": 9.15,
-      "recent_k9": 3.6,
-      "career_k9": 8.39,
-      "ev_over": {
-        "ev": -0.2478,
-        "adj_ev": -0.2478,
-        "verdict": "PASS",
-        "win_prob": 0.379,
-        "movement_conf": 1.0
-      },
-      "ev_under": {
-        "ev": 0.1785,
-        "adj_ev": 0.1071,
-        "verdict": "FIRE 2u",
-        "win_prob": 0.621,
-        "movement_conf": 0.6
-      },
-      "book_odds": {
-        "FanDuel": {
-          "over": -168,
-          "under": 126
+          "over": 126,
+          "under": -168
         }
       },
       "data_complete": false,
@@ -437,13 +437,13 @@
       "opening_line": 6.5,
       "best_over_book": "FanDuel",
       "ref_book": "FanDuel",
-      "best_over_odds": -144,
-      "best_under_odds": 108,
+      "best_over_odds": -140,
+      "best_under_odds": 106,
       "opening_over_odds": -144,
       "opening_under_odds": 108,
       "opening_odds_source": "preview",
-      "price_delta_over": 0,
-      "price_delta_under": 0,
+      "price_delta_over": 4,
+      "price_delta_under": -2,
       "raw_lambda": 6.36,
       "lambda": 6.01,
       "avg_ip": 5.33,
@@ -458,23 +458,23 @@
       "recent_k9": 12.6,
       "career_k9": 11.1,
       "ev_over": {
-        "ev": -0.1948,
-        "adj_ev": -0.1948,
+        "ev": -0.1879,
+        "adj_ev": -0.1879,
         "verdict": "PASS",
         "win_prob": 0.395,
         "movement_conf": 1.0
       },
       "ev_under": {
-        "ev": 0.1238,
-        "adj_ev": 0.1238,
+        "ev": 0.1192,
+        "adj_ev": 0.1192,
         "verdict": "FIRE 2u",
         "win_prob": 0.605,
         "movement_conf": 1.0
       },
       "book_odds": {
         "FanDuel": {
-          "over": -144,
-          "under": 108
+          "over": -140,
+          "under": 106
         }
       },
       "data_complete": false,
@@ -1276,25 +1276,25 @@
       "game_state": "pregame"
     },
     {
-      "pitcher": "Brayan Bello",
-      "team": "Boston Red Sox",
-      "opp_team": "Baltimore Orioles",
+      "pitcher": "Drew Rasmussen",
+      "team": "Tampa Bay Rays",
+      "opp_team": "Minnesota Twins",
       "pitcher_throws": "R",
-      "game_time": "2026-04-24T23:05:00Z",
+      "game_time": "2026-04-24T23:10:00Z",
       "k_line": 4.5,
       "opening_line": 4.5,
       "best_over_book": "FanDuel",
       "ref_book": "FanDuel",
-      "best_over_odds": 110,
-      "best_under_odds": -146,
-      "opening_over_odds": -138,
-      "opening_under_odds": 104,
+      "best_over_odds": -168,
+      "best_under_odds": 126,
+      "opening_over_odds": -144,
+      "opening_under_odds": 108,
       "opening_odds_source": "preview",
-      "price_delta_over": 248,
-      "price_delta_under": -250,
-      "raw_lambda": 3.49,
-      "lambda": 3.15,
-      "avg_ip": 4.67,
+      "price_delta_over": -24,
+      "price_delta_under": 18,
+      "raw_lambda": 4.39,
+      "lambda": 4.04,
+      "avg_ip": 4.92,
       "swstr_pct": 0.11,
       "career_swstr_pct": null,
       "swstr_delta_k9": 0.0,
@@ -1302,27 +1302,27 @@
       "lineup_used": true,
       "ump_k_adj": 0.0,
       "starter_mismatch": true,
-      "season_k9": 6.27,
-      "recent_k9": 3.86,
-      "career_k9": 7.64,
+      "season_k9": 9.15,
+      "recent_k9": 3.6,
+      "career_k9": 8.39,
       "ev_over": {
-        "ev": -0.2662,
-        "adj_ev": -0.0,
+        "ev": -0.2478,
+        "adj_ev": -0.2478,
         "verdict": "PASS",
-        "win_prob": 0.21,
-        "movement_conf": 0.0
+        "win_prob": 0.379,
+        "movement_conf": 1.0
       },
       "ev_under": {
-        "ev": 0.1965,
-        "adj_ev": 0.1965,
+        "ev": 0.1785,
+        "adj_ev": 0.1071,
         "verdict": "FIRE 2u",
-        "win_prob": 0.79,
-        "movement_conf": 1.0
+        "win_prob": 0.621,
+        "movement_conf": 0.6
       },
       "book_odds": {
         "FanDuel": {
-          "over": 110,
-          "under": -146
+          "over": -168,
+          "under": 126
         }
       },
       "data_complete": false,
@@ -1384,6 +1384,7 @@
   ],
   "ump_diagnostics": {
     "hp_count_fetched": -1,
-    "pitcher_nonzero_count": 0
+    "pitcher_nonzero_count": 0,
+    "error": "UnicodeDecodeError: 'utf-8' codec can't decode byte 0xe1 in position 158: invalid continuation byte"
   }
 }
