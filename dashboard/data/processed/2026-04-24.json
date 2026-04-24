@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-04-24T03:58:28Z",
+  "generated_at": "2026-04-24T04:13:26Z",
   "date": "2026-04-24",
   "props_available": true,
   "pitchers": [
@@ -13,12 +13,12 @@
       "opening_line": 4.5,
       "best_over_book": "FanDuel",
       "ref_book": "FanDuel",
-      "best_over_odds": -114,
+      "best_over_odds": -112,
       "best_under_odds": -118,
       "opening_over_odds": -114,
       "opening_under_odds": -114,
       "opening_odds_source": "first_seen",
-      "price_delta_over": 0,
+      "price_delta_over": 2,
       "price_delta_under": -4,
       "raw_lambda": 3.65,
       "lambda": 3.31,
@@ -34,8 +34,8 @@
       "recent_k9": 6.0,
       "career_k9": 8.17,
       "ev_over": {
-        "ev": -0.2936,
-        "adj_ev": -0.2936,
+        "ev": -0.2892,
+        "adj_ev": -0.2892,
         "verdict": "PASS",
         "win_prob": 0.239,
         "movement_conf": 1.0
@@ -49,7 +49,7 @@
       },
       "book_odds": {
         "FanDuel": {
-          "over": -114,
+          "over": -112,
           "under": -118
         }
       },
@@ -67,12 +67,12 @@
       "best_over_book": "FanDuel",
       "ref_book": "FanDuel",
       "best_over_odds": -122,
-      "best_under_odds": -108,
+      "best_under_odds": -106,
       "opening_over_odds": -125,
-      "opening_under_odds": -106,
+      "opening_under_odds": -108,
       "opening_odds_source": "first_seen",
       "price_delta_over": 3,
-      "price_delta_under": -2,
+      "price_delta_under": 2,
       "raw_lambda": 4.89,
       "lambda": 4.55,
       "avg_ip": 6.0,
@@ -94,8 +94,8 @@
         "movement_conf": 1.0
       },
       "ev_under": {
-        "ev": 0.1758,
-        "adj_ev": 0.1758,
+        "ev": 0.1804,
+        "adj_ev": 0.1804,
         "verdict": "FIRE 2u",
         "win_prob": 0.695,
         "movement_conf": 1.0
@@ -103,7 +103,7 @@
       "book_odds": {
         "FanDuel": {
           "over": -122,
-          "under": -108
+          "under": -106
         }
       },
       "data_complete": false,
@@ -269,59 +269,6 @@
       "game_state": "pregame"
     },
     {
-      "pitcher": "Max Scherzer",
-      "team": "Toronto Blue Jays",
-      "opp_team": "Cleveland Guardians",
-      "pitcher_throws": "R",
-      "game_time": "2026-04-24T23:07:00Z",
-      "k_line": 3.5,
-      "opening_line": 3.5,
-      "best_over_book": "FanDuel",
-      "ref_book": "FanDuel",
-      "best_over_odds": -144,
-      "best_under_odds": 108,
-      "opening_over_odds": -146,
-      "opening_under_odds": 110,
-      "opening_odds_source": "first_seen",
-      "price_delta_over": 2,
-      "price_delta_under": -2,
-      "raw_lambda": 3.78,
-      "lambda": 3.44,
-      "avg_ip": 4.08,
-      "swstr_pct": 0.11,
-      "career_swstr_pct": null,
-      "swstr_delta_k9": 0.0,
-      "opp_k_rate": 0.2112,
-      "lineup_used": false,
-      "ump_k_adj": 0.0,
-      "starter_mismatch": false,
-      "season_k9": 5.51,
-      "recent_k9": 6.0,
-      "career_k9": 10.57,
-      "ev_over": {
-        "ev": -0.1403,
-        "adj_ev": -0.1403,
-        "verdict": "PASS",
-        "win_prob": 0.45,
-        "movement_conf": 1.0
-      },
-      "ev_under": {
-        "ev": 0.0693,
-        "adj_ev": 0.0693,
-        "verdict": "FIRE 1u",
-        "win_prob": 0.55,
-        "movement_conf": 1.0
-      },
-      "book_odds": {
-        "FanDuel": {
-          "over": -144,
-          "under": 108
-        }
-      },
-      "data_complete": false,
-      "game_state": "pregame"
-    },
-    {
       "pitcher": "Michael Lorenzen",
       "team": "Colorado Rockies",
       "opp_team": "New York Mets",
@@ -369,59 +316,6 @@
         "FanDuel": {
           "over": 114,
           "under": -152
-        }
-      },
-      "data_complete": false,
-      "game_state": "pregame"
-    },
-    {
-      "pitcher": "Freddy Peralta",
-      "team": "New York Mets",
-      "opp_team": "Colorado Rockies",
-      "pitcher_throws": "R",
-      "game_time": "2026-04-24T23:10:00Z",
-      "k_line": 6.5,
-      "opening_line": 6.5,
-      "best_over_book": "FanDuel",
-      "ref_book": "FanDuel",
-      "best_over_odds": -140,
-      "best_under_odds": 106,
-      "opening_over_odds": -140,
-      "opening_under_odds": 106,
-      "opening_odds_source": "first_seen",
-      "price_delta_over": 0,
-      "price_delta_under": 0,
-      "raw_lambda": 6.36,
-      "lambda": 6.01,
-      "avg_ip": 5.33,
-      "swstr_pct": 0.11,
-      "career_swstr_pct": null,
-      "swstr_delta_k9": 0.0,
-      "opp_k_rate": 0.232,
-      "lineup_used": true,
-      "ump_k_adj": 0.0,
-      "starter_mismatch": false,
-      "season_k9": 9.45,
-      "recent_k9": 12.6,
-      "career_k9": 11.1,
-      "ev_over": {
-        "ev": -0.1879,
-        "adj_ev": -0.1879,
-        "verdict": "PASS",
-        "win_prob": 0.395,
-        "movement_conf": 1.0
-      },
-      "ev_under": {
-        "ev": 0.1192,
-        "adj_ev": 0.1192,
-        "verdict": "FIRE 2u",
-        "win_prob": 0.605,
-        "movement_conf": 1.0
-      },
-      "book_odds": {
-        "FanDuel": {
-          "over": -140,
-          "under": 106
         }
       },
       "data_complete": false,
@@ -528,6 +422,59 @@
         "FanDuel": {
           "over": -146,
           "under": 110
+        }
+      },
+      "data_complete": false,
+      "game_state": "pregame"
+    },
+    {
+      "pitcher": "Miles Mikolas",
+      "team": "Washington Nationals",
+      "opp_team": "Chicago White Sox",
+      "pitcher_throws": "R",
+      "game_time": "2026-04-24T23:40:00Z",
+      "k_line": 3.5,
+      "opening_line": 3.5,
+      "best_over_book": "FanDuel",
+      "ref_book": "FanDuel",
+      "best_over_odds": -162,
+      "best_under_odds": 122,
+      "opening_over_odds": -162,
+      "opening_under_odds": 122,
+      "opening_odds_source": "first_seen",
+      "price_delta_over": 0,
+      "price_delta_under": 0,
+      "raw_lambda": 2.94,
+      "lambda": 2.6,
+      "avg_ip": 3.93,
+      "swstr_pct": 0.11,
+      "career_swstr_pct": null,
+      "swstr_delta_k9": 0.0,
+      "opp_k_rate": 0.232,
+      "lineup_used": true,
+      "ump_k_adj": 0.0,
+      "starter_mismatch": false,
+      "season_k9": 6.86,
+      "recent_k9": 7.2,
+      "career_k9": 6.44,
+      "ev_over": {
+        "ev": -0.3553,
+        "adj_ev": -0.3553,
+        "verdict": "PASS",
+        "win_prob": 0.263,
+        "movement_conf": 1.0
+      },
+      "ev_under": {
+        "ev": 0.2865,
+        "adj_ev": 0.2865,
+        "verdict": "FIRE 2u",
+        "win_prob": 0.737,
+        "movement_conf": 1.0
+      },
+      "book_odds": {
+        "FanDuel": {
+          "over": -162,
+          "under": 122
         }
       },
       "data_complete": false,
