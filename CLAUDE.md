@@ -2,7 +2,7 @@
 
 ## What This Project Does
 
-MLB pitcher strikeout prop betting model. Fetches daily K props from TheRundown API, combines with pitcher stats (MLB Stats API), swinging-strike rates (FanGraphs/PyBaseball), umpire tendencies (ump.news), and opposing lineup K rates to produce a Poisson-based expected strikeout (lambda) for each pitcher. Computes EV against book odds and outputs verdicts (PASS / LEAN / FIRE 1u / FIRE 2u).
+MLB pitcher strikeout prop betting model. Fetches daily K props from TheRundown API, combines with pitcher stats (MLB Stats API), swinging-strike rates (FanGraphs/PyBaseball), umpire tendencies (MLB officials + cached career rates), and opposing lineup K rates to produce a Poisson-based expected strikeout (lambda) for each pitcher. Computes EV against book odds and outputs verdicts (PASS / LEAN / FIRE 1u / FIRE 2u).
 
 Results are displayed on a static dashboard hosted on Netlify with push notification support.
 
@@ -14,7 +14,7 @@ pipeline/           Python data pipeline (runs on GitHub Actions)
   fetch_odds.py       TheRundown API v2 — K prop lines (market_id=19)
   fetch_stats.py      MLB Stats API — pitcher season/recent/career K/9, avg IP, team data
   fetch_statcast.py   PyBaseball/FanGraphs — swinging strike rates (SwStr%)
-  fetch_umpires.py    ump.news — HP umpire K rate adjustments
+  fetch_umpires.py    MLB Stats API officials + cached career rates — HP umpire K rate adjustments
   fetch_lineups.py    Confirmed lineups
   fetch_batter_stats.py  FanGraphs — batter K% splits (vs L/R)
   build_features.py   Joins all data → computes lambda, Poisson EV, verdicts
@@ -99,6 +99,85 @@ python -m pytest tests/test_build_features.py -v
 - **Netlify** — static dashboard hosting + serverless functions
 - **Single-file HTML dashboard** — vanilla JS, no build step, IBM Plex Mono + Oswald fonts
 
+## API Wiring Notes
+
+These are the API-shape details that have caused real bugs in this repo.
+Read this before debugging any data-source issue.
+
+### TheRundown v2 (`pipeline/fetch_odds.py`)
+
+- Response shape is `events[] -> markets[] -> participants[] -> lines[] -> prices{book_id}`.
+- Pitcher strikeout props live at `market_id=19`.
+- `fetch_odds` intentionally leaves `team=""` and `opp_team=""`. TheRundown
+  does not provide a per-prop team mapping we trust enough to stamp those
+  fields directly, so `fetch_stats` resolves them later against MLB probables.
+- `line["value"]` is a string like `"Over 7.5"` / `"Under 7.5"` and is parsed
+  into `(direction, line_val)`.
+- `price_delta` means `current - opening`, so reconstructed opening odds are
+  `current - price_delta`.
+- Ref-book selection is **priority-based**, not best-price-based. Current
+  priority is FanDuel -> BetMGM -> DraftKings -> BetRivers -> Caesars -> Fanatics.
+- Option B is live: if no target book exists, the prop is skipped rather than
+  falling back to an unknown book.
+- `book_odds` is the tracked per-book snapshot used for `steam.json`.
+- `opening_odds_source` starts as `"first_seen"` in `fetch_odds`; promotion to
+  `"preview"` only happens later in `run_pipeline._apply_preview_openings()`.
+
+### MLB Stats API probable starters (`pipeline/fetch_stats.py`)
+
+- `fetch_stats(date_str, pitcher_names)` returns a **2-tuple**:
+  `(stats_by_name, probables_by_team)`.
+- `stats_by_name` is keyed by the original TheRundown pitcher name so
+  `stats_map.get(odds["pitcher"])` still works after normalization.
+- `probables_by_team` exists to catch scratch / phantom cases where MLB's
+  current probable no longer matches the odds pitcher (`starter_mismatch`).
+- `/schedule?hydrate=probablePitcher,team` does **not** reliably include
+  `pitchHand`. When it is missing, the code must fall back to `/people/{id}`.
+- Name matching between TheRundown and MLB must stay accent-insensitive.
+  `name_utils.normalize()` is load-bearing here.
+
+### MLB Stats API lineups (`pipeline/fetch_lineups.py`)
+
+- The lineup flow is a **two-call** flow:
+  1. `/schedule` to find `gamePk` and whether the requested team is `away` or `home`
+  2. `/game/{gamePk}/boxscore` to get the actual ordered lineup
+- Do **not** expect usable batting-order data from schedule hydrate.
+  `battingOrder` lives on `boxscore.teams.{away|home}.battingOrder`.
+- Batter details live under `boxscore.teams.{away|home}.players["ID{player_id}"]`.
+- Returned lineup shape is `[{"name": ..., "bats": ...}, ...]` in batting order.
+- Empty `battingOrder` is a normal pregame state and should return `None`.
+
+### MLB Stats API officials / umpires (`pipeline/fetch_umpires.py`)
+
+- `ump.news` is dead. Live source is now
+  `/schedule?sportId=1&date=YYYY-MM-DD&hydrate=officials`.
+- Home-plate umpire is found by scanning each game's `officials[]` for
+  `officialType == "Home Plate"`.
+- The assignment map is built from the away-team abbreviation, then later
+  matched back to props using both `team` and `opp_team` because both starters
+  face the same HP umpire.
+- `career_k_rates.json` is the second half of the umpire signal. Missing ump in
+  that file still resolves to `0.0`, even if officials were fetched correctly.
+- Team-name reverse lookup is substring-based through `ABBR_TO_NAME_SUBSTR`;
+  if a team-name format changes, ump matching can silently die.
+
+### FanGraphs / PyBaseball batter K data (`pipeline/fetch_batter_stats.py`)
+
+- Aggregate batter K% is live.
+- True handedness splits are **not** live yet. `_fetch_splits()` is still a
+  deliberate stub that raises and falls back to aggregate K% for both `vs_R`
+  and `vs_L`.
+- Current caller contract is:
+  `{normalized_batter_name: {"vs_R": float, "vs_L": float}}`
+
+### FanGraphs / PyBaseball SwStr (`pipeline/fetch_statcast.py`)
+
+- Current-season SwStr% comes from `pitching_stats(season, season, qual=0)`.
+- Career baseline is the 3-season window before the current season.
+- Values are normalized to decimals (`0.134`, not `13.4`).
+- Missing pitcher or source failure should degrade to league-average
+  `LEAGUE_AVG_SWSTR`, not break the pipeline.
+
 ## Model Overview
 
 1. Blend pitcher K/9: weighted mix of season, recent (last 5 starts), and career K/9
@@ -129,10 +208,10 @@ Thresholds live in `pipeline/build_features.py` (`EDGE_LEAN`, `EDGE_FIRE_1U`):
 
 ```
 TheRundown API → fetch_odds → props[]
-MLB Stats API  → fetch_stats → stats_map{}
+MLB Stats API  → fetch_stats → (stats_map{}, probables_by_team{})
 FanGraphs      → fetch_swstr → swstr_map{}
-ump.news       → fetch_umpires → ump_map{}
-Lineups API    → fetch_lineups → lineup[]
+MLB Stats API  → fetch_umpires (hydrate=officials) → ump_map{}
+MLB Stats API  → fetch_lineups (/schedule → /game/{pk}/boxscore) → lineup[]
 FanGraphs      → fetch_batter_stats → batter_stats{}
                     ↓
               build_features.build_pitcher_record()
@@ -143,6 +222,16 @@ FanGraphs      → fetch_batter_stats → batter_stats{}
                     ↓
               fetch_results (box scores) → grade → calibrate
 ```
+
+## Dashboard Status Override (2026-04-24)
+
+The v2 rollout is complete. Treat the older "In-Flight Work: V2 Dashboard UI"
+section below as historical rollout context, not current status.
+
+- **v2 is the default UI** via `/` and `dashboard/v2.html`
+- **v1 is the legacy fallback** via `/legacy` and `dashboard/index.html`
+- The compatibility warning still matters: `today.json` must remain backward-
+  compatible with both dashboards unless the legacy path is intentionally retired
 
 ## In-Flight Work: V2 Dashboard UI
 
@@ -181,6 +270,19 @@ before shipping.
 - **Ephemeral DB**: SQLite DB is rebuilt from `picks_history.json` each run (GitHub Actions runners are stateless).
 - **Graceful degradation**: Each data source can fail independently. SwStr%, umpires, lineups all fall back to neutral values. `data_complete` flag excludes degraded picks from calibration.
 - **Movement confidence**: Line movement against bet side applies a 0–1 haircut to EV (noise_floor=10pts, full_fade=30pts).
+
+**Additional pattern notes (2026-04-24):**
+
+- `opening_*_odds` and `opening_odds_source` are not interchangeable.
+  `"preview"` means overnight baseline from `preview_lines.json`;
+  `"first_seen"` means reconstructed within-day opening from TheRundown
+  `price_delta`.
+- `lineup_used`, `data_complete`, `opp_k_rate`, `swstr_delta_k9`, current odds,
+  and similar fields should refresh on unlocked rows. Once `locked_at` is set,
+  they freeze.
+- If a module uses `/schedule` plus a second MLB endpoint (`/people/{id}`,
+  `/game/{pk}/boxscore`), that is usually because the first endpoint looked
+  sufficient but omitted a load-bearing field in production.
 
 ## Data Caveats (historical data quirks)
 
@@ -335,6 +437,11 @@ gitignored `analytics/output/`. See [analytics/README.md](analytics/README.md).
 - Tests use `unittest.mock` extensively to mock API calls
 - `build_features` functions are pure (no I/O) for easy testing
 - Test files mirror pipeline modules: `test_build_features.py`, `test_calibrate.py`, etc.
+- For external data bugs, the tests are often the clearest payload-contract
+  reference. Check `tests/test_fetch_odds.py`, `tests/test_fetch_stats.py`,
+  `tests/test_fetch_lineups.py`, `tests/test_fetch_umpires.py`, and
+  `tests/test_fetch_batter_stats.py` before assuming an endpoint works the way
+  its docs suggest.
 - Run full suite: `python -m pytest tests/ -v`
 
 ## End-of-Season Evaluation Notes
