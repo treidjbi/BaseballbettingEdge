@@ -213,8 +213,9 @@ def test_fetch_umpires_returns_all_zeros_when_fetch_fails(caplog):
         side_effect=Exception("boom"),
     ):
         with caplog.at_level(logging.WARNING, logger="fetch_umpires"):
-            result = fetch_umpires.fetch_umpires(props, "2026-04-17")
+            result, diagnostics = fetch_umpires.fetch_umpires(props, "2026-04-17")
     assert result == {"Max Fried": 0.0, "Walker Buehler": 0.0}
+    assert diagnostics == {"hp_count_fetched": 0, "pitcher_nonzero_count": 0}
     assert any(
         "MLB schedule fetch failed" in r.getMessage() for r in caplog.records
     ), "fetch_umpires should log a WARNING when the underlying fetch fails"
@@ -225,8 +226,9 @@ def test_fetch_umpires_empty_props_returns_empty_dict():
     with patch("fetch_umpires.requests.get") as mock_get:
         mock_get.return_value.raise_for_status.return_value = None
         mock_get.return_value.json.return_value = {"dates": []}
-        result = fetch_umpires.fetch_umpires([], "2026-04-17")
+        result, diagnostics = fetch_umpires.fetch_umpires([], "2026-04-17")
     assert result == {}
+    assert diagnostics == {"hp_count_fetched": 0, "pitcher_nonzero_count": 0}
 
 
 def test_fetch_umpires_end_to_end_name_matching():
@@ -251,13 +253,18 @@ def test_fetch_umpires_end_to_end_name_matching():
         "fetch_umpires.requests.get",
         return_value=_mock_response(_sample_schedule_payload()),
     ):
-        result = fetch_umpires.fetch_umpires(props, "2026-04-17")
+        result, diagnostics = fetch_umpires.fetch_umpires(props, "2026-04-17")
 
     # Both Dodgers and Giants pitchers should get Vic Carapazza's adj.
     assert result["LAD Starter"] != 0.0
     assert result["SF Starter"] == result["LAD Starter"]
     # Unknown umpire falls back to 0.0.
     assert result["HOU Starter"] == 0.0
+    # 3 games fetched (NYY, LAD, HOU); 2 pitchers (LAD/SF same game) matched
+    # to a known career rate, HOU starter dropped to 0 because 'Unknown Umpire'
+    # isn't in career_k_rates.
+    assert diagnostics["hp_count_fetched"] == 3
+    assert diagnostics["pitcher_nonzero_count"] == 2
 
 
 def test_fetch_umpires_accent_insensitive_name_match():
@@ -279,14 +286,67 @@ def test_fetch_umpires_accent_insensitive_name_match():
     fake_rates = {"jose garcia": 0.25}
     with patch("fetch_umpires.requests.get", return_value=_mock_response(payload)), \
          patch("fetch_umpires._load_career_rates", return_value=fake_rates):
-        result = fetch_umpires.fetch_umpires(props, "2026-04-17")
+        result, diagnostics = fetch_umpires.fetch_umpires(props, "2026-04-17")
     assert result["Test Pitcher"] == 0.25
+    assert diagnostics == {"hp_count_fetched": 1, "pitcher_nonzero_count": 1}
 
 
 # ---------------------------------------------------------------------------
 # Abbreviation-map coverage guards: catches accidental edits that would
 # silently zero out ump signals for a team.
 # ---------------------------------------------------------------------------
+
+def test_fetch_umpires_diagnostics_distinguish_api_empty_from_match_failure():
+    """Pin the prod-diagnostic contract added 2026-04-24.
+
+    Three failure modes produce the same 0-pitcher-nonzero output and we need
+    to tell them apart from today.json alone:
+
+      (a) MLB API returned empty officials (pregame, HPs not posted yet)
+          → hp_count_fetched == 0
+      (b) fetch_umpires threw before returning (network / SSL)
+          → run_pipeline substitutes {"hp_count_fetched": -1, ...}; not tested
+             here since that substitution is in run_pipeline, not fetch_umpires
+      (c) HPs fetched fine but team-match dropped everything (the soak-day
+          bug we're hunting)
+          → hp_count_fetched > 0, pitcher_nonzero_count == 0
+
+    This test covers (a) and (c) end-to-end.
+    """
+    # Mode (a): schedule payload with zero games that have officials posted
+    payload_empty = _schedule_payload([
+        _game("New York Yankees", "Boston Red Sox", []),  # officials absent
+    ])
+    props = [{"pitcher": "NYY Starter", "team": "New York Yankees",
+              "opp_team": "Boston Red Sox"}]
+    with patch("fetch_umpires.requests.get",
+               return_value=_mock_response(payload_empty)):
+        _result, diag_a = fetch_umpires.fetch_umpires(props, "2026-04-17")
+    assert diag_a == {"hp_count_fetched": 0, "pitcher_nonzero_count": 0}, (
+        "Empty officials must be distinguishable as hp_count_fetched=0"
+    )
+
+    # Mode (c): HP fetched for a game, but the pitcher's team fields are
+    # blank — the exact A3 pre-fix state. Matching returns 0 for every pitcher.
+    payload_full = _schedule_payload([
+        _game("New York Yankees", "Boston Red Sox", [
+            _official("Vic Carapazza", "Home Plate"),
+        ]),
+    ])
+    props_blank = [{"pitcher": "NYY Starter", "team": "", "opp_team": ""}]
+    with patch("fetch_umpires.requests.get",
+               return_value=_mock_response(payload_full)):
+        _result, diag_c = fetch_umpires.fetch_umpires(props_blank, "2026-04-17")
+    assert diag_c["hp_count_fetched"] == 1, (
+        "HP WAS fetched — diagnostic must reflect that even when matching "
+        "drops everything downstream"
+    )
+    assert diag_c["pitcher_nonzero_count"] == 0, (
+        "With blank team fields, matching fails — nonzero count must be 0 "
+        "so the caller sees the hp>0/nonzero=0 signature that fingerprints "
+        "the production-only match-failure failure mode"
+    )
+
 
 def test_abbr_map_covers_all_30_mlb_teams():
     """ABBR_TO_NAME_SUBSTR must have exactly 30 entries (one per MLB team)."""

@@ -83,7 +83,7 @@ def test_run_writes_today_json(tmp_path):
          patch("run_pipeline.fetch_odds", return_value=[_sample_prop()]), \
          patch("run_pipeline.fetch_stats", return_value=({"Test Pitcher": _sample_stats()}, {})), \
          patch("run_pipeline.fetch_swstr", return_value={"Test Pitcher": {"swstr_pct": 0.110, "career_swstr_pct": None}}), \
-         patch("run_pipeline.fetch_umpires", return_value={"Test Pitcher": 0.0}), \
+         patch("run_pipeline.fetch_umpires", return_value=({"Test Pitcher": 0.0}, {"hp_count_fetched": 0, "pitcher_nonzero_count": 0})), \
          patch("run_pipeline.fetch_lineups_for_pitcher", return_value=None), \
          patch("run_pipeline.fetch_batter_stats_cached", return_value={}), \
          patch("run_pipeline.init_db"), \
@@ -119,7 +119,7 @@ def test_data_complete_false_when_ump_map_all_zero(tmp_path):
          patch("run_pipeline.fetch_odds", return_value=[_sample_prop()]), \
          patch("run_pipeline.fetch_stats", return_value=({"Test Pitcher": _sample_stats()}, {})), \
          patch("run_pipeline.fetch_swstr", return_value={"Test Pitcher": {"swstr_pct": 0.110, "career_swstr_pct": None}}), \
-         patch("run_pipeline.fetch_umpires", return_value={"Test Pitcher": 0.0}), \
+         patch("run_pipeline.fetch_umpires", return_value=({"Test Pitcher": 0.0}, {"hp_count_fetched": 0, "pitcher_nonzero_count": 0})), \
          patch("run_pipeline.fetch_lineups_for_pitcher", return_value=None), \
          patch("run_pipeline.fetch_batter_stats_cached", return_value={}), \
          patch("run_pipeline.init_db"), \
@@ -150,7 +150,7 @@ def test_data_complete_true_when_ump_map_has_nonzero(tmp_path):
          patch("run_pipeline.fetch_odds", return_value=[_sample_prop()]), \
          patch("run_pipeline.fetch_stats", return_value=({"Test Pitcher": _sample_stats()}, {})), \
          patch("run_pipeline.fetch_swstr", return_value={"Test Pitcher": {"swstr_pct": 0.110, "career_swstr_pct": None}}), \
-         patch("run_pipeline.fetch_umpires", return_value={"Test Pitcher": 0.25}), \
+         patch("run_pipeline.fetch_umpires", return_value=({"Test Pitcher": 0.25}, {"hp_count_fetched": 1, "pitcher_nonzero_count": 1})), \
          patch("run_pipeline.fetch_lineups_for_pitcher", return_value=None), \
          patch("run_pipeline.fetch_batter_stats_cached", return_value={}), \
          patch("run_pipeline.init_db"), \
@@ -192,7 +192,12 @@ def test_fetch_umpires_receives_props_with_team_populated_from_stats(tmp_path):
              "opp_team": p.get("opp_team", "")}
             for p in props
         )
-        return {p["pitcher"]: 0.5 for p in props}
+        ump_map = {p["pitcher"]: 0.5 for p in props}
+        diagnostics = {
+            "hp_count_fetched":      len(props),
+            "pitcher_nonzero_count": len(ump_map),
+        }
+        return ump_map, diagnostics
 
     with patch.object(run_pipeline, "OUTPUT_PATH", out_path), \
          patch("run_pipeline.fetch_odds", return_value=[_sample_prop()]), \
@@ -253,7 +258,7 @@ def test_run_calls_lock_due_picks(tmp_path):
          patch("run_pipeline.fetch_odds", return_value=[_sample_prop()]), \
          patch("run_pipeline.fetch_stats", return_value=({"Test Pitcher": _sample_stats()}, {})), \
          patch("run_pipeline.fetch_swstr", return_value={"Test Pitcher": {"swstr_pct": 0.110, "career_swstr_pct": None}}), \
-         patch("run_pipeline.fetch_umpires", return_value={"Test Pitcher": 0.0}), \
+         patch("run_pipeline.fetch_umpires", return_value=({"Test Pitcher": 0.0}, {"hp_count_fetched": 0, "pitcher_nonzero_count": 0})), \
          patch("run_pipeline.fetch_lineups_for_pitcher", return_value=None), \
          patch("run_pipeline.fetch_batter_stats_cached", return_value={}), \
          patch("run_pipeline.lock_due_picks", mock_lock), \
@@ -346,7 +351,7 @@ def test_preview_run_writes_dated_archive_and_preview_json(tmp_path):
          patch("run_pipeline.fetch_odds",  return_value=[prop]), \
          patch("run_pipeline.fetch_stats", return_value=({"Tomorrow Pitcher": _sample_stats()}, {})), \
          patch("run_pipeline.fetch_swstr", return_value={"Tomorrow Pitcher": {"swstr_pct": 0.11, "career_swstr_pct": None}}), \
-         patch("run_pipeline.fetch_umpires", return_value={"Tomorrow Pitcher": 0.0}), \
+         patch("run_pipeline.fetch_umpires", return_value=({"Tomorrow Pitcher": 0.0}, {"hp_count_fetched": 0, "pitcher_nonzero_count": 0})), \
          patch("run_pipeline.fetch_lineups_for_pitcher", return_value=None), \
          patch("run_pipeline.fetch_batter_stats_cached", return_value={}):
         run_pipeline._run_preview("2026-04-12")
@@ -383,7 +388,7 @@ def test_preview_run_does_not_touch_today_json_when_it_exists(tmp_path):
          patch("run_pipeline.fetch_odds",  return_value=[prop]), \
          patch("run_pipeline.fetch_stats", return_value=({"Tomorrow Pitcher": _sample_stats()}, {})), \
          patch("run_pipeline.fetch_swstr", return_value={"Tomorrow Pitcher": {"swstr_pct": 0.11, "career_swstr_pct": None}}), \
-         patch("run_pipeline.fetch_umpires", return_value={"Tomorrow Pitcher": 0.0}), \
+         patch("run_pipeline.fetch_umpires", return_value=({"Tomorrow Pitcher": 0.0}, {"hp_count_fetched": 0, "pitcher_nonzero_count": 0})), \
          patch("run_pipeline.fetch_lineups_for_pitcher", return_value=None), \
          patch("run_pipeline.fetch_batter_stats_cached", return_value={}):
         run_pipeline._run_preview("2026-04-12")

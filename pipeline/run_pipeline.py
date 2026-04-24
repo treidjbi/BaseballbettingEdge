@@ -307,7 +307,7 @@ def _run_preview(tomorrow_str: str) -> None:
         swstr_map = {name: _SWSTR_NEUTRAL for name in pitcher_names}
 
     try:
-        ump_map = fetch_umpires(props, tomorrow_str)
+        ump_map, _ump_diag = fetch_umpires(props, tomorrow_str)
     except Exception as e:
         log.warning("Preview: fetch_umpires failed: %s — using neutral adj", e)
         ump_map = {p["pitcher"]: 0.0 for p in props}
@@ -775,10 +775,15 @@ def run(date_str: str, run_type: str = "full") -> None:
             prop["team"] = s.get("team") or prop.get("team", "")
             prop["opp_team"] = s.get("opp_team") or prop.get("opp_team", "")
     try:
-        ump_map = fetch_umpires(props, date_str)
+        ump_map, ump_diagnostics = fetch_umpires(props, date_str)
     except Exception as e:
         log.warning("fetch_umpires failed: %s — using neutral adj for all", e)
         ump_map = {p["pitcher"]: 0.0 for p in props}
+        # Sentinel values so the diagnostic surfaces the "fetch_umpires blew
+        # up entirely" branch distinctly from "HPs not posted yet" (0/0) and
+        # "HPs posted but nothing matched" (>0/0). today.json writers downstream
+        # pass this straight through to consumers.
+        ump_diagnostics = {"hp_count_fetched": -1, "pitcher_nonzero_count": 0}
     # ump_ok is True only when at least one pitcher got a real (nonzero)
     # adjustment. An empty map or all-zero map means officials weren't
     # posted yet OR none of today's HP umps are in career_k_rates.json —
@@ -786,6 +791,12 @@ def run(date_str: str, run_type: str = "full") -> None:
     # reflect that going forward. Historical data_complete=True rows are
     # NOT rewritten (see docs/data-caveats.md).
     ump_ok = len(ump_map) > 0 and any(v != 0.0 for v in ump_map.values())
+    log.info(
+        "Ump diagnostics: hp_count_fetched=%s, pitcher_nonzero_count=%s, ump_ok=%s",
+        ump_diagnostics["hp_count_fetched"],
+        ump_diagnostics["pitcher_nonzero_count"],
+        ump_ok,
+    )
 
     # 5. Fetch batter stats (FanGraphs — cached, graceful fallback to {})
     batter_stats = fetch_batter_stats_cached(int(date_str[:4]))
@@ -841,7 +852,8 @@ def run(date_str: str, run_type: str = "full") -> None:
     # _merge_with_locked_snapshots ensure started games are still present, so
     # a non-empty records list here means at least some data is valid.
     if records or not _has_valid_output(date_str):
-        _write_output(date_str, records, props_available=True)
+        _write_output(date_str, records, props_available=True,
+                      ump_diagnostics=ump_diagnostics)
         _write_steam(records, date_str)
     else:
         log.warning(
@@ -879,13 +891,23 @@ def run(date_str: str, run_type: str = "full") -> None:
     log.info("=== Pipeline complete ===")
 
 
-def _write_output(date_str: str, records: list, props_available: bool) -> None:
+def _write_output(date_str: str, records: list, props_available: bool,
+                  ump_diagnostics: dict | None = None) -> None:
     output = {
         "generated_at":   datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
         "date":           date_str,
         "props_available": props_available,
         "pitchers":       records,
     }
+    # Surface fetch_umpires diagnostic counts at the top level so the user can
+    # tell, from today.json alone, whether a zero ump_k_adj slate is "MLB API
+    # returned no officials" (hp_count_fetched==0), "fetch_umpires threw"
+    # (==-1), or "we fetched assignments but matching dropped them"
+    # (hp_count_fetched>0 and pitcher_nonzero_count==0). Added 2026-04-24 in
+    # response to a soak-day production/local divergence. Schema is nullable
+    # on read so v1/v2 dashboards remain unaffected (neither reads it).
+    if ump_diagnostics is not None:
+        output["ump_diagnostics"] = ump_diagnostics
     OUTPUT_PATH.parent.mkdir(parents=True, exist_ok=True)
     # today.json is written exactly once inside _write_archive, filtered to
     # ET-today pitchers only.  Writing it here first (with all records including

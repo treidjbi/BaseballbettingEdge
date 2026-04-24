@@ -169,11 +169,26 @@ def _build_game_ump_map(assignments: dict) -> dict:
     return game_ump
 
 
-def fetch_umpires(props: list, date_str: str) -> dict:
+def fetch_umpires(props: list, date_str: str) -> tuple[dict, dict]:
     """
-    Main entry point. Returns {pitcher_name: ump_k_adj} for all pitchers.
-    Matches pitcher's team (full name) against ABBR_TO_NAME_SUBSTR lookup.
-    Works for both home and away starters. Falls back to 0.0.
+    Main entry point. Returns a 2-tuple:
+
+        (result, diagnostics)
+
+      * ``result`` — ``{pitcher_name: ump_k_adj}`` for every input pitcher.
+        Falls back to ``0.0`` when we can't resolve an HP umpire with a known
+        career K-rate. Matches the pitcher's team (full name) against
+        ``ABBR_TO_NAME_SUBSTR`` so both home and away starters in the same
+        game land on the same HP umpire.
+
+      * ``diagnostics`` — ``{"hp_count_fetched": int, "pitcher_nonzero_count": int}``.
+        Surfaced on today.json so we can distinguish "MLB hasn't posted HPs
+        yet" (fetched==0) from "API worked but matching dropped everything"
+        (fetched>0, nonzero==0) without digging into CI logs. See the
+        ``ump_diagnostics`` block in ``_write_output`` for the output shape.
+
+    2-tuple return shape intentionally mirrors ``fetch_stats`` (A7, commit
+    ee5d44c) so the same precedent applies: callers unpack explicitly.
     """
     career_rates = _load_career_rates()
     assignments  = fetch_hp_assignments(date_str)
@@ -206,4 +221,8 @@ def fetch_umpires(props: list, date_str: str) -> dict:
                 log.info("No HP assignment found for %s — using 0", pitcher)
             result[pitcher] = 0.0
 
-    return result
+    diagnostics = {
+        "hp_count_fetched":      len(assignments),
+        "pitcher_nonzero_count": sum(1 for v in result.values() if v != 0.0),
+    }
+    return result, diagnostics
