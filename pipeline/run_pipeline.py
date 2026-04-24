@@ -781,9 +781,16 @@ def run(date_str: str, run_type: str = "full") -> None:
         ump_map = {p["pitcher"]: 0.0 for p in props}
         # Sentinel values so the diagnostic surfaces the "fetch_umpires blew
         # up entirely" branch distinctly from "HPs not posted yet" (0/0) and
-        # "HPs posted but nothing matched" (>0/0). today.json writers downstream
-        # pass this straight through to consumers.
-        ump_diagnostics = {"hp_count_fetched": -1, "pitcher_nonzero_count": 0}
+        # "HPs posted but nothing matched" (>0/0). The error field carries
+        # the exception type + message into today.json so the failure mode
+        # is readable without CI log access — observed 2026-04-24 when the
+        # first diagnostic run surfaced hp_count_fetched=-1 but swallowed
+        # the root cause in log.warning.
+        ump_diagnostics = {
+            "hp_count_fetched":      -1,
+            "pitcher_nonzero_count": 0,
+            "error":                 f"{type(e).__name__}: {e}",
+        }
     # ump_ok is True only when at least one pitcher got a real (nonzero)
     # adjustment. An empty map or all-zero map means officials weren't
     # posted yet OR none of today's HP umps are in career_k_rates.json —
