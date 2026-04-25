@@ -29,6 +29,9 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent.parent
 HIST = ROOT / "data" / "picks_history.json"
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from ump_diag_utils import unpack_fetch_umpires_result  # noqa: E402
+
 # Global policy P2: fail loud if picks_history is missing.
 if not HIST.exists():
     print(f"ERROR: {HIST} not found. Run the pipeline at least once to generate it.")
@@ -181,12 +184,14 @@ if not used_today:
     ]
     print(f"Synthetic props: {len(synth_props)} (pairs: NYY/BOS, LAD/SF, HOU/TEX)")
 
-result = fetch_umpires(synth_props, _today_str)
+result, diagnostics = unpack_fetch_umpires_result(fetch_umpires(synth_props, _today_str))
 print(f"\nfetch_umpires() returned {len(result)} entries")
 rnonzero = [(k, v) for k, v in result.items() if abs(v) > 1e-6]
 rzero = [(k, v) for k, v in result.items() if v == 0.0]
 print(f"  nonzero: {len(rnonzero)}")
 print(f"  zero:    {len(rzero)}")
+if diagnostics:
+    print(f"  diagnostics: {diagnostics}")
 for k, v in sorted(result.items()):
     print(f"    {k:30} -> {v:+.4f}")
 
