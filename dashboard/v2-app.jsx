@@ -16,10 +16,21 @@ const ABBR = {
 };
 const ab = n => ABBR[n] || n;
 const fmtOdds = n => n == null ? "—" : (n > 0 ? `+${n}` : `${n}`);
+const PHX_TZ = "America/Phoenix";
+const phxDateISO = () => new Intl.DateTimeFormat("en-CA", {
+  timeZone: PHX_TZ,
+  year: "numeric",
+  month: "2-digit",
+  day: "2-digit",
+}).format(new Date());
 const fmtTime = iso => {
   if (!iso) return "";
   const d = new Date(iso);
-  return d.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" });
+  return d.toLocaleTimeString("en-US", {
+    hour: "numeric",
+    minute: "2-digit",
+    timeZone: PHX_TZ,
+  });
 };
 
 // ── Tiny inline icons (no external font/web component) ──
@@ -145,7 +156,7 @@ function bestSide(p) {
 // Slate is "past" when the user is viewing an archived YYYY-MM-DD earlier than today.
 // Enables W/L badges on cards + grading summary banner at the top of the list.
 function isPastSlate() {
-  const today   = window.__v2GetAppDate ? window.__v2GetAppDate() : new Date().toISOString().slice(0, 10);
+  const today   = window.__v2GetAppDate ? window.__v2GetAppDate() : phxDateISO();
   const current = window.V2_CURRENT_DATE || today;
   return current < today;
 }
@@ -329,7 +340,7 @@ function PickCard({ p, onOpen }) {
 
 // ── Date scroller — renders 3 days back → 3 days forward from slate date ──
 function DateBar() {
-  const today = window.__v2GetAppDate ? window.__v2GetAppDate() : new Date().toISOString().slice(0, 10);
+  const today = window.__v2GetAppDate ? window.__v2GetAppDate() : phxDateISO();
   const current = window.V2_CURRENT_DATE || today;
   const meta = window.V2_DATE_META || {};
   const archive = new Set(Object.keys(meta).concat(
