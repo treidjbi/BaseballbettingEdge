@@ -381,15 +381,19 @@ function DateBar() {
           : "";
         const cls = "v2-datepill" + (isActive ? " today" : "") + dotCls;
         return (
-          <div
+          <button
             key={x.iso}
+            type="button"
             className={cls}
             style={{ opacity: clickable ? 1 : 0.35, cursor: clickable ? "pointer" : "default" }}
             onClick={clickable ? () => navigate(x.iso) : undefined}
+            disabled={!clickable}
+            aria-current={isActive ? "date" : undefined}
+            aria-label={`${x.dow} ${x.iso}`}
           >
             <span className="dow">{x.dow}</span>
             <span className="d">{x.d}</span>
-          </div>
+          </button>
         );
       })}
     </div>
@@ -447,7 +451,7 @@ function PickDetail({ p, onClose }) {
 
   // Whether each stat supports the pick direction
   const supportsUnder = best.direction === "UNDER";
-  const oppSupports = supportsUnder ? oppDelta > 0 : oppDelta < 0;
+  const oppSupports = supportsUnder ? oppDelta < 0 : oppDelta > 0;
   const k9Supports = supportsUnder ? k9Delta < 0 : k9Delta > 0;
   const umpSupports = supportsUnder ? ump < 0 : ump > 0;
 

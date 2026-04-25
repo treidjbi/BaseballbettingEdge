@@ -38,12 +38,20 @@ const ABBR = {
 };
 const ab = n => ABBR[n] || n;
 const fmtOdds = n => n == null ? "—" : n > 0 ? `+${n}` : `${n}`;
+const PHX_TZ = "America/Phoenix";
+const phxDateISO = () => new Intl.DateTimeFormat("en-CA", {
+  timeZone: PHX_TZ,
+  year: "numeric",
+  month: "2-digit",
+  day: "2-digit"
+}).format(new Date());
 const fmtTime = iso => {
   if (!iso) return "";
   const d = new Date(iso);
   return d.toLocaleTimeString("en-US", {
     hour: "numeric",
-    minute: "2-digit"
+    minute: "2-digit",
+    timeZone: PHX_TZ
   });
 };
 
@@ -615,7 +623,7 @@ function PickCard({
 
 // ── Date scroller — renders 3 days back → 3 days forward from slate date ──
 function DateBar() {
-  const today = window.__v2GetAppDate ? window.__v2GetAppDate() : new Date().toISOString().slice(0, 10);
+  const today = window.__v2GetAppDate ? window.__v2GetAppDate() : phxDateISO();
   const current = window.V2_CURRENT_DATE || today;
   const meta = window.V2_DATE_META || {};
   const archive = new Set(Object.keys(meta).concat((window.V2_DATES || []).map(d => typeof d === "string" ? d : d.date)));
@@ -654,14 +662,18 @@ function DateBar() {
     const isPast = x.archived && !x.isToday;
     const dotCls = isPast && (x.wins > 0 || x.losses > 0) ? x.wins >= x.losses ? " past-win" : " past-loss" : "";
     const cls = "v2-datepill" + (isActive ? " today" : "") + dotCls;
-    return /*#__PURE__*/React.createElement("div", {
+    return /*#__PURE__*/React.createElement("button", {
       key: x.iso,
+      type: "button",
       className: cls,
       style: {
         opacity: clickable ? 1 : 0.35,
         cursor: clickable ? "pointer" : "default"
       },
-      onClick: clickable ? () => navigate(x.iso) : undefined
+      onClick: clickable ? () => navigate(x.iso) : undefined,
+      disabled: !clickable,
+      "aria-current": isActive ? "date" : undefined,
+      "aria-label": `${x.dow} ${x.iso}`
     }, /*#__PURE__*/React.createElement("span", {
       className: "dow"
     }, x.dow), /*#__PURE__*/React.createElement("span", {
@@ -748,7 +760,7 @@ function PickDetail({
 
   // Whether each stat supports the pick direction
   const supportsUnder = best.direction === "UNDER";
-  const oppSupports = supportsUnder ? oppDelta > 0 : oppDelta < 0;
+  const oppSupports = supportsUnder ? oppDelta < 0 : oppDelta > 0;
   const k9Supports = supportsUnder ? k9Delta < 0 : k9Delta > 0;
   const umpSupports = supportsUnder ? ump < 0 : ump > 0;
 
