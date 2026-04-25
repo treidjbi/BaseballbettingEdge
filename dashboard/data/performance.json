@@ -1,30 +1,30 @@
 {
-  "generated_at": "2026-04-24T11:07:29Z",
-  "total_picks": 338,
-  "last_calibrated": "2026-04-24T11:07:29Z",
-  "calibration_sample": 304,
+  "generated_at": "2026-04-25T10:45:10Z",
+  "total_picks": 360,
+  "last_calibrated": "2026-04-25T10:45:10Z",
+  "calibration_sample": 312,
   "rows": [
     {
       "verdict": "FIRE 2u",
       "side": "over",
-      "picks": 34,
+      "picks": 38,
       "wins": 14,
-      "losses": 20,
+      "losses": 24,
       "pushes": 0,
-      "win_pct": 0.412,
-      "roi": -18.67,
-      "avg_ev": 0.1547
+      "win_pct": 0.368,
+      "roi": -27.24,
+      "avg_ev": 0.1552
     },
     {
       "verdict": "FIRE 2u",
       "side": "under",
-      "picks": 113,
-      "wins": 66,
-      "losses": 47,
+      "picks": 124,
+      "wins": 70,
+      "losses": 54,
       "pushes": 0,
-      "win_pct": 0.584,
-      "roi": 9.8,
-      "avg_ev": 0.1906
+      "win_pct": 0.565,
+      "roi": 5.69,
+      "avg_ev": 0.1876
     },
     {
       "verdict": "FIRE 1u",
@@ -40,52 +40,54 @@
     {
       "verdict": "FIRE 1u",
       "side": "under",
-      "picks": 71,
-      "wins": 43,
-      "losses": 28,
+      "picks": 75,
+      "wins": 46,
+      "losses": 29,
       "pushes": 0,
-      "win_pct": 0.606,
-      "roi": 16.93,
-      "avg_ev": 0.0566
+      "win_pct": 0.613,
+      "roi": 18.72,
+      "avg_ev": 0.0569
     },
     {
       "verdict": "LEAN",
       "side": "over",
-      "picks": 26,
-      "wins": 10,
+      "picks": 27,
+      "wins": 11,
       "losses": 16,
       "pushes": 0,
-      "win_pct": 0.385,
-      "roi": -29.6,
-      "avg_ev": 0.0186
+      "win_pct": 0.407,
+      "roi": -26.16,
+      "avg_ev": 0.0184
     },
     {
       "verdict": "LEAN",
       "side": "under",
-      "picks": 40,
-      "wins": 23,
-      "losses": 17,
+      "picks": 42,
+      "wins": 24,
+      "losses": 18,
       "pushes": 0,
-      "win_pct": 0.575,
-      "roi": 9.6,
-      "avg_ev": 0.019
+      "win_pct": 0.571,
+      "roi": 8.27,
+      "avg_ev": 0.0189
     }
   ],
   "lambda_accuracy": {
     "avg_predicted": 4.92,
-    "avg_actual": 4.67,
-    "bias": -0.25
+    "avg_actual": 4.66,
+    "bias": -0.26
   },
   "params": {
     "weight_season_cap": 0.4,
-    "weight_recent": 0.141,
+    "weight_recent": 0.147,
     "ump_scale": 1.0,
-    "lambda_bias": -0.345,
+    "lambda_bias": -0.306,
     "swstr_k9_scale": 30.0,
-    "updated_at": "2026-04-24T11:07:29Z",
-    "sample_size": 304,
+    "updated_at": "2026-04-25T10:45:10Z",
+    "sample_size": 312,
     "formula_change_date": "2026-04-08",
     "calibration_notes": [
+      "[2026-04-25] Lambda bias adjusted -0.345 \u2192 -0.306 (model was systematically over-predicting Ks)",
+      "[2026-04-25] K/9 blend weights updated: season 40% \u2192 40%, recent 14% \u2192 15%",
       "[2026-04-22] Lambda bias adjusted -0.321 \u2192 -0.345 (model was systematically over-predicting Ks)",
       "[2026-04-22] K/9 blend weights updated: season 40% \u2192 40%, recent 11% \u2192 14%",
       "[2026-04-21] Lambda bias adjusted -0.342 \u2192 -0.321 (model was systematically over-predicting Ks)",
@@ -103,12 +105,12 @@
       "[2026-04-15] Lambda bias adjusted -0.453 \u2192 -0.565 (model was systematically over-predicting Ks)",
       "[2026-04-15] K/9 blend weights updated: season 40% \u2192 40%, recent 5% \u2192 8%",
       "[2026-04-14] Lambda bias adjusted -0.353 \u2192 -0.453 (model was systematically over-predicting Ks)",
-      "[2026-04-13] Lambda bias adjusted -0.259 \u2192 -0.353 (model was systematically over-predicting Ks)",
-      "[2026-04-12] Lambda bias adjusted -0.177 \u2192 -0.259 (model was systematically over-predicting Ks)",
-      "[2026-04-12] K/9 blend weights updated: season 40% \u2192 40%, recent 8% \u2192 6%"
+      "[2026-04-13] Lambda bias adjusted -0.259 \u2192 -0.353 (model was systematically over-predicting Ks)"
     ]
   },
   "calibration_notes": [
+    "[2026-04-25] Lambda bias adjusted -0.345 \u2192 -0.306 (model was systematically over-predicting Ks)",
+    "[2026-04-25] K/9 blend weights updated: season 40% \u2192 40%, recent 14% \u2192 15%",
     "[2026-04-22] Lambda bias adjusted -0.321 \u2192 -0.345 (model was systematically over-predicting Ks)",
     "[2026-04-22] K/9 blend weights updated: season 40% \u2192 40%, recent 11% \u2192 14%",
     "[2026-04-21] Lambda bias adjusted -0.342 \u2192 -0.321 (model was systematically over-predicting Ks)",
@@ -126,8 +128,6 @@
     "[2026-04-15] Lambda bias adjusted -0.453 \u2192 -0.565 (model was systematically over-predicting Ks)",
     "[2026-04-15] K/9 blend weights updated: season 40% \u2192 40%, recent 5% \u2192 8%",
     "[2026-04-14] Lambda bias adjusted -0.353 \u2192 -0.453 (model was systematically over-predicting Ks)",
-    "[2026-04-13] Lambda bias adjusted -0.259 \u2192 -0.353 (model was systematically over-predicting Ks)",
-    "[2026-04-12] Lambda bias adjusted -0.177 \u2192 -0.259 (model was systematically over-predicting Ks)",
-    "[2026-04-12] K/9 blend weights updated: season 40% \u2192 40%, recent 8% \u2192 6%"
+    "[2026-04-13] Lambda bias adjusted -0.259 \u2192 -0.353 (model was systematically over-predicting Ks)"
   ]
 }
