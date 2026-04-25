@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-04-25T03:40:27Z",
+  "generated_at": "2026-04-25T03:47:20Z",
   "date": "2026-04-25",
   "props_available": true,
   "pitchers": [
@@ -331,12 +331,12 @@
       "opening_line": 6.5,
       "best_over_book": "FanDuel",
       "ref_book": "FanDuel",
-      "best_over_odds": -154,
+      "best_over_odds": -152,
       "best_under_odds": 116,
-      "opening_over_odds": -152,
+      "opening_over_odds": -154,
       "opening_under_odds": 114,
       "opening_odds_source": "first_seen",
-      "price_delta_over": -2,
+      "price_delta_over": 2,
       "price_delta_under": 2,
       "raw_lambda": 5.83,
       "lambda": 5.49,
@@ -352,8 +352,8 @@
       "recent_k9": 11.81,
       "career_k9": 10.06,
       "ev_over": {
-        "ev": -0.2945,
-        "adj_ev": -0.2945,
+        "ev": -0.2914,
+        "adj_ev": -0.2914,
         "verdict": "PASS",
         "win_prob": 0.312,
         "movement_conf": 1.0
@@ -367,7 +367,7 @@
       },
       "book_odds": {
         "FanDuel": {
-          "over": -154,
+          "over": -152,
           "under": 116
         }
       },
@@ -384,13 +384,13 @@
       "opening_line": 5.5,
       "best_over_book": "FanDuel",
       "ref_book": "FanDuel",
-      "best_over_odds": 128,
-      "best_under_odds": -172,
-      "opening_over_odds": 126,
-      "opening_under_odds": -168,
+      "best_over_odds": 126,
+      "best_under_odds": -168,
+      "opening_over_odds": 128,
+      "opening_under_odds": -172,
       "opening_odds_source": "first_seen",
-      "price_delta_over": 2,
-      "price_delta_under": -4,
+      "price_delta_over": -2,
+      "price_delta_under": 4,
       "raw_lambda": 4.59,
       "lambda": 4.25,
       "avg_ip": 5.93,
@@ -405,76 +405,23 @@
       "recent_k9": 3.38,
       "career_k9": 9.17,
       "ev_over": {
-        "ev": -0.1839,
-        "adj_ev": -0.1839,
+        "ev": -0.1878,
+        "adj_ev": -0.1878,
         "verdict": "PASS",
         "win_prob": 0.255,
         "movement_conf": 1.0
       },
       "ev_under": {
-        "ev": 0.1129,
-        "adj_ev": 0.1129,
+        "ev": 0.1184,
+        "adj_ev": 0.1184,
         "verdict": "FIRE 2u",
         "win_prob": 0.745,
         "movement_conf": 1.0
       },
       "book_odds": {
         "FanDuel": {
-          "over": 128,
-          "under": -172
-        }
-      },
-      "data_complete": true,
-      "game_state": "pregame"
-    },
-    {
-      "pitcher": "Mike Burrows",
-      "team": "Houston Astros",
-      "opp_team": "New York Yankees",
-      "pitcher_throws": "R",
-      "game_time": "2026-04-25T23:10:00Z",
-      "k_line": 5.5,
-      "opening_line": 5.5,
-      "best_over_book": "FanDuel",
-      "ref_book": "FanDuel",
-      "best_over_odds": -136,
-      "best_under_odds": 102,
-      "opening_over_odds": -144,
-      "opening_under_odds": 108,
-      "opening_odds_source": "first_seen",
-      "price_delta_over": 8,
-      "price_delta_under": -6,
-      "raw_lambda": 5.28,
-      "lambda": 4.93,
-      "avg_ip": 5.33,
-      "swstr_pct": 0.11,
-      "career_swstr_pct": null,
-      "swstr_delta_k9": 0.0,
-      "opp_k_rate": 0.232,
-      "lineup_used": true,
-      "ump_k_adj": 0.062,
-      "starter_mismatch": false,
-      "season_k9": 8.44,
-      "recent_k9": 9.53,
-      "career_k9": 8.86,
-      "ev_over": {
-        "ev": -0.2037,
-        "adj_ev": -0.2037,
-        "verdict": "PASS",
-        "win_prob": 0.373,
-        "movement_conf": 1.0
-      },
-      "ev_under": {
-        "ev": 0.1324,
-        "adj_ev": 0.1324,
-        "verdict": "FIRE 2u",
-        "win_prob": 0.627,
-        "movement_conf": 1.0
-      },
-      "book_odds": {
-        "FanDuel": {
-          "over": -136,
-          "under": 102
+          "over": 126,
+          "under": -168
         }
       },
       "data_complete": true,
@@ -490,13 +437,13 @@
       "opening_line": 5.5,
       "best_over_book": "FanDuel",
       "ref_book": "FanDuel",
-      "best_over_odds": 108,
-      "best_under_odds": -144,
+      "best_over_odds": 110,
+      "best_under_odds": -146,
       "opening_over_odds": 108,
       "opening_under_odds": -144,
       "opening_odds_source": "first_seen",
-      "price_delta_over": 0,
-      "price_delta_under": 0,
+      "price_delta_over": 2,
+      "price_delta_under": -2,
       "raw_lambda": 6.39,
       "lambda": 6.05,
       "avg_ip": 5.67,
@@ -511,23 +458,23 @@
       "recent_k9": 14.54,
       "career_k9": 7.88,
       "ev_over": {
-        "ev": 0.0812,
-        "adj_ev": 0.0812,
+        "ev": 0.0857,
+        "adj_ev": 0.0857,
         "verdict": "FIRE 1u",
         "win_prob": 0.562,
         "movement_conf": 1.0
       },
       "ev_under": {
-        "ev": -0.1521,
-        "adj_ev": -0.1521,
+        "ev": -0.1554,
+        "adj_ev": -0.1554,
         "verdict": "PASS",
         "win_prob": 0.438,
         "movement_conf": 1.0
       },
       "book_odds": {
         "FanDuel": {
-          "over": 108,
-          "under": -144
+          "over": 110,
+          "under": -146
         }
       },
       "data_complete": true,
@@ -854,6 +801,6 @@
   ],
   "ump_diagnostics": {
     "hp_count_fetched": 14,
-    "pitcher_nonzero_count": 32
+    "pitcher_nonzero_count": 31
   }
 }
