@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-04-25T16:47:55Z",
+  "generated_at": "2026-04-25T17:06:30Z",
   "date": "2026-04-25",
   "props_available": true,
   "pitchers": [
@@ -409,12 +409,12 @@
       "best_over_book": "FanDuel",
       "ref_book": "FanDuel",
       "best_over_odds": -158,
-      "best_under_odds": 118,
+      "best_under_odds": 116,
       "opening_over_odds": -158,
       "opening_under_odds": 118,
       "opening_odds_source": "preview",
       "price_delta_over": 0,
-      "price_delta_under": 0,
+      "price_delta_under": -2,
       "raw_lambda": 5.82,
       "lambda": 5.51,
       "avg_ip": 5.67,
@@ -436,8 +436,8 @@
         "movement_conf": 1.0
       },
       "ev_under": {
-        "ev": 0.0677,
-        "adj_ev": 0.0677,
+        "ev": 0.0635,
+        "adj_ev": 0.0635,
         "verdict": "FIRE 1u",
         "win_prob": 0.526,
         "movement_conf": 1.0
@@ -445,7 +445,7 @@
       "book_odds": {
         "FanDuel": {
           "over": -158,
-          "under": 118
+          "under": 116
         },
         "BetMGM": {
           "over": -155,
@@ -1177,8 +1177,8 @@
           "under": -120
         },
         "BetMGM": {
-          "over": -115,
-          "under": -115
+          "over": -110,
+          "under": -120
         }
       },
       "data_complete": true,
@@ -1397,8 +1397,8 @@
           "under": 108
         },
         "BetMGM": {
-          "over": -160,
-          "under": 120
+          "over": -155,
+          "under": 115
         }
       },
       "data_complete": true,
@@ -1454,8 +1454,8 @@
           "under": 104
         },
         "BetMGM": {
-          "over": -140,
-          "under": 105
+          "over": -135,
+          "under": 100
         }
       },
       "data_complete": true,
@@ -1568,8 +1568,8 @@
           "under": -136
         },
         "BetMGM": {
-          "over": -115,
-          "under": -115
+          "over": 105,
+          "under": -140
         }
       },
       "data_complete": true,
