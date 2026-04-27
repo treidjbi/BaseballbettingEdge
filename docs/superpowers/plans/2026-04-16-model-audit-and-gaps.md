@@ -2396,6 +2396,27 @@ git commit -m "feat(c5): surface data-source warnings in today.json and dashboar
 
 ---
 
+**Post-Phase-C live-check update - 2026-04-27 night**
+
+- The Phase B/C landing is on `main`, and the first production workflow run confirmed the
+  live output path is healthy:
+  - `today.json` shows live SwStr fields, live park factors, live rest fields, and top-level
+    `data_warnings`.
+- The first live-check also exposed a bounded persistence bug:
+  - new Phase C fields were present in `today.json` but were not surviving the
+    `today.json -> results.db -> picks_history.json` round-trip.
+- Root cause: `pipeline/fetch_results.py` had not been extended to persist the new Phase C
+  fields (`is_opener`, `opener_note`, `days_since_last_start`, `last_pitch_count`,
+  `rest_k9_delta`, `park_factor`) through schema creation/migration, seed refresh, history
+  load, and history export.
+- Status: fixed locally with focused regression coverage in `tests/test_fetch_results.py`.
+- Verification after the fix:
+  - `python -m pytest tests/test_fetch_results.py -q` -> `53 passed`
+  - `python -m pytest tests -q` -> `379 passed`
+- Remaining gate before treating the Phase C live-check as fully closed:
+  - run one fresh pipeline/workflow after this persistence patch lands, then confirm fresh
+    `picks_history.json` rows now retain the Phase C fields alongside live SwStr data.
+
 ## Completion
 
 After all phases:

@@ -961,6 +961,9 @@ class TestNewColumns:
         "best_over_odds", "best_under_odds",
         "opening_over_odds", "opening_under_odds",
         "swstr_pct", "career_swstr_pct",
+        "is_opener", "opener_note",
+        "days_since_last_start", "last_pitch_count",
+        "rest_k9_delta", "park_factor",
     ]
 
     def test_new_columns_exist_after_init(self, tmp_db):
@@ -1022,6 +1025,9 @@ class TestSeedPicksNewFields:
                 "season_k9": 9.1, "recent_k9": 8.8, "career_k9": 9.0,
                 "avg_ip": 5.8, "opp_k_rate": 0.235, "ump_k_adj": 0.2,
                 "swstr_delta_k9": 0.15, "swstr_pct": 0.132, "career_swstr_pct": 0.120,
+                "is_opener": False, "opener_note": None,
+                "days_since_last_start": 5, "last_pitch_count": 96,
+                "rest_k9_delta": 0.0, "park_factor": 0.98,
                 "best_over_odds": -115, "best_under_odds": -105,
                 "opening_over_odds": -110, "opening_under_odds": -110,
                 "ref_book": "FanDuel",
@@ -1060,6 +1066,33 @@ class TestSeedPicksNewFields:
         assert abs(row["swstr_pct"] - 0.132) < 0.001
         assert abs(row["career_swstr_pct"] - 0.120) < 0.001
 
+    def test_insert_stores_phase_c_fields(self, tmp_db, tmp_path):
+        db_path, fr = tmp_db
+        today = self._make_today_json(tmp_path, extra_fields={
+            "is_opener": True,
+            "opener_note": "Opener/bullpen game - forced PASS.",
+            "days_since_last_start": 3,
+            "last_pitch_count": 112,
+            "rest_k9_delta": -0.5,
+            "park_factor": 1.04,
+        })
+        fr.seed_picks(today)
+
+        conn = fr.get_db()
+        row = conn.execute(
+            "SELECT is_opener, opener_note, days_since_last_start, "
+            "last_pitch_count, rest_k9_delta, park_factor "
+            "FROM picks WHERE pitcher='Gerrit Cole' AND side='over'"
+        ).fetchone()
+        conn.close()
+
+        assert row["is_opener"] == 1
+        assert row["opener_note"] == "Opener/bullpen game - forced PASS."
+        assert row["days_since_last_start"] == 3
+        assert row["last_pitch_count"] == 112
+        assert abs(row["rest_k9_delta"] - (-0.5)) < 0.001
+        assert abs(row["park_factor"] - 1.04) < 0.001
+
     def test_update_refreshes_stats_on_second_run(self, tmp_db, tmp_path):
         """A second seed_picks call with updated data should refresh stats + odds on unlocked picks."""
         db_path, fr = tmp_db
@@ -1070,6 +1103,10 @@ class TestSeedPicksNewFields:
             "best_over_odds": -125,
             "opp_k_rate": 0.248,
             "swstr_delta_k9": 0.20,
+            "days_since_last_start": 4,
+            "last_pitch_count": 88,
+            "rest_k9_delta": -0.1,
+            "park_factor": 1.02,
             "lineup_used": True,
             "lambda": 7.4,
             "ev_over": {"ev": 0.06, "adj_ev": 0.06, "verdict": "FIRE 1u",
@@ -1081,7 +1118,9 @@ class TestSeedPicksNewFields:
 
         conn = fr.get_db()
         row = conn.execute(
-            "SELECT best_over_odds, opp_k_rate, swstr_delta_k9, lineup_used, applied_lambda "
+            "SELECT best_over_odds, opp_k_rate, swstr_delta_k9, lineup_used, "
+            "applied_lambda, days_since_last_start, last_pitch_count, "
+            "rest_k9_delta, park_factor "
             "FROM picks WHERE pitcher='Gerrit Cole' AND side='over'"
         ).fetchone()
         conn.close()
@@ -1091,6 +1130,10 @@ class TestSeedPicksNewFields:
         assert abs(row["swstr_delta_k9"] - 0.20) < 0.001
         assert row["lineup_used"] == 1
         assert abs(row["applied_lambda"] - 7.4) < 0.01
+        assert row["days_since_last_start"] == 4
+        assert row["last_pitch_count"] == 88
+        assert abs(row["rest_k9_delta"] - (-0.1)) < 0.001
+        assert abs(row["park_factor"] - 1.02) < 0.001
 
     def test_locked_pick_stats_not_refreshed(self, tmp_db, tmp_path):
         """Once a pick is locked, stats and odds must not change."""
@@ -1140,8 +1183,11 @@ class TestExportLoadRoundTrip:
              season_k9, recent_k9, career_k9, avg_ip, ump_k_adj, opp_k_rate,
              swstr_delta_k9, swstr_pct, career_swstr_pct,
              best_over_odds, best_under_odds, opening_over_odds, opening_under_odds,
-             ref_book, game_time, lineup_used, result, actual_ks, pnl, fetched_at)
-            VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+             ref_book, game_time, lineup_used,
+             is_opener, opener_note, days_since_last_start, last_pitch_count,
+             rest_k9_delta, park_factor,
+             result, actual_ks, pnl, fetched_at)
+            VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
         """, (
             "2026-04-15", "Export Test", "NYY", "BOS", "L", "over",
             6.5, "FIRE 1u", 0.05, 0.05, 6.2, 6.2, -115, 1.0,
@@ -1149,6 +1195,7 @@ class TestExportLoadRoundTrip:
             0.12, 0.130, 0.115,
             -115, -105, -110, -110,
             "FanDuel", "2026-04-15T23:05:00Z", 0,
+            1, "Opener/bullpen game - forced PASS.", 3, 111, -0.5, 1.04,
             "win", 8, 0.87, "2026-04-16T03:00:00Z",
         ))
         conn.commit()
@@ -1170,6 +1217,12 @@ class TestExportLoadRoundTrip:
         assert p["opening_under_odds"] == -110
         assert abs(p["swstr_pct"] - 0.130) < 0.001
         assert abs(p["career_swstr_pct"] - 0.115) < 0.001
+        assert p["is_opener"] == 1
+        assert p["opener_note"] == "Opener/bullpen game - forced PASS."
+        assert p["days_since_last_start"] == 3
+        assert p["last_pitch_count"] == 111
+        assert abs(p["rest_k9_delta"] - (-0.5)) < 0.001
+        assert abs(p["park_factor"] - 1.04) < 0.001
 
         # Reload into a fresh DB and verify
         from unittest.mock import patch
@@ -1179,7 +1232,9 @@ class TestExportLoadRoundTrip:
             fr.load_history_into_db(history)
             conn2 = fr.get_db()
             row = conn2.execute(
-                "SELECT opp_team, pitcher_throws, best_over_odds, swstr_pct "
+                "SELECT opp_team, pitcher_throws, best_over_odds, swstr_pct, "
+                "is_opener, opener_note, days_since_last_start, last_pitch_count, "
+                "rest_k9_delta, park_factor "
                 "FROM picks WHERE pitcher='Export Test'"
             ).fetchone()
             conn2.close()
@@ -1188,6 +1243,12 @@ class TestExportLoadRoundTrip:
         assert row["pitcher_throws"] == "L"
         assert row["best_over_odds"] == -115
         assert abs(row["swstr_pct"] - 0.130) < 0.001
+        assert row["is_opener"] == 1
+        assert row["opener_note"] == "Opener/bullpen game - forced PASS."
+        assert row["days_since_last_start"] == 3
+        assert row["last_pitch_count"] == 111
+        assert abs(row["rest_k9_delta"] - (-0.5)) < 0.001
+        assert abs(row["park_factor"] - 1.04) < 0.001
 
 
 class TestOpeningOddsSource:
