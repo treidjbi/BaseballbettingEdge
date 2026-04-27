@@ -2413,9 +2413,13 @@ git commit -m "feat(c5): surface data-source warnings in today.json and dashboar
 - Verification after the fix:
   - `python -m pytest tests/test_fetch_results.py -q` -> `53 passed`
   - `python -m pytest tests -q` -> `379 passed`
-- Remaining gate before treating the Phase C live-check as fully closed:
-  - run one fresh pipeline/workflow after this persistence patch lands, then confirm fresh
-    `picks_history.json` rows now retain the Phase C fields alongside live SwStr data.
+- Final follow-up check before treating the Phase C live-check as fully closed:
+  - on **2026-04-29**, inspect the fresh `2026-04-28` rows in `picks_history.json` and
+    confirm they retain the Phase C fields alongside live SwStr data:
+    `is_opener`, `opener_note`, `days_since_last_start`, `last_pitch_count`,
+    `rest_k9_delta`, and `park_factor`.
+  - `2026-04-27` remains a mixed transition slate and should not be treated as the clean
+    persistence baseline.
 
 ## Completion
 
