@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-04-27T14:54:31Z",
+  "generated_at": "2026-04-27T16:23:47Z",
   "date": "2026-04-27",
   "props_available": true,
   "pitchers": [
@@ -13,10 +13,10 @@
       "opening_line": 4.5,
       "best_over_book": "FanDuel",
       "ref_book": "FanDuel",
-      "best_over_odds": 114,
-      "best_under_odds": -152,
-      "opening_over_odds": 112,
-      "opening_under_odds": -148,
+      "best_over_odds": 132,
+      "best_under_odds": -178,
+      "opening_over_odds": 130,
+      "opening_under_odds": -174,
       "opening_odds_source": "first_seen",
       "price_delta_over": 2,
       "price_delta_under": -4,
@@ -34,27 +34,27 @@
       "recent_k9": 3.6,
       "career_k9": 8.44,
       "ev_over": {
-        "ev": -0.1074,
-        "adj_ev": -0.1074,
+        "ev": -0.0712,
+        "adj_ev": -0.0712,
         "verdict": "PASS",
         "win_prob": 0.36,
         "movement_conf": 1.0
       },
       "ev_under": {
-        "ev": 0.037,
-        "adj_ev": 0.037,
-        "verdict": "FIRE 1u",
+        "ev": -0.0001,
+        "adj_ev": -0.0001,
+        "verdict": "PASS",
         "win_prob": 0.64,
         "movement_conf": 1.0
       },
       "book_odds": {
         "FanDuel": {
-          "over": 114,
-          "under": -152
+          "over": 132,
+          "under": -178
         },
         "BetMGM": {
-          "over": 110,
-          "under": -150
+          "over": 130,
+          "under": -175
         }
       },
       "data_complete": false,
@@ -70,13 +70,13 @@
       "opening_line": 4.5,
       "best_over_book": "FanDuel",
       "ref_book": "FanDuel",
-      "best_over_odds": -138,
-      "best_under_odds": 104,
-      "opening_over_odds": -136,
-      "opening_under_odds": 102,
+      "best_over_odds": -132,
+      "best_under_odds": 100,
+      "opening_over_odds": -130,
+      "opening_under_odds": -102,
       "opening_odds_source": "first_seen",
       "price_delta_over": -2,
-      "price_delta_under": 2,
+      "price_delta_under": 202,
       "raw_lambda": 5.3,
       "lambda": 5.05,
       "avg_ip": 6.13,
@@ -91,23 +91,23 @@
       "recent_k9": 7.5,
       "career_k9": 8.57,
       "ev_over": {
-        "ev": -0.0113,
-        "adj_ev": -0.0113,
+        "ev": -0.0004,
+        "adj_ev": -0.0004,
         "verdict": "PASS",
         "win_prob": 0.569,
         "movement_conf": 1.0
       },
       "ev_under": {
-        "ev": -0.0588,
-        "adj_ev": -0.0588,
+        "ev": -0.0686,
+        "adj_ev": -0.0686,
         "verdict": "PASS",
         "win_prob": 0.431,
         "movement_conf": 1.0
       },
       "book_odds": {
         "FanDuel": {
-          "over": -138,
-          "under": 104
+          "over": -132,
+          "under": 100
         },
         "BetMGM": {
           "over": -110,
@@ -125,15 +125,15 @@
       "game_time": "2026-04-27T22:40:00Z",
       "k_line": 4.5,
       "opening_line": 4.5,
-      "best_over_book": "BetMGM",
-      "ref_book": "BetMGM",
-      "best_over_odds": -120,
-      "best_under_odds": -110,
-      "opening_over_odds": -115,
-      "opening_under_odds": -115,
+      "best_over_book": "FanDuel",
+      "ref_book": "FanDuel",
+      "best_over_odds": -125,
+      "best_under_odds": -106,
+      "opening_over_odds": -122,
+      "opening_under_odds": -108,
       "opening_odds_source": "first_seen",
-      "price_delta_over": -5,
-      "price_delta_under": 5,
+      "price_delta_over": -3,
+      "price_delta_under": 2,
       "raw_lambda": 4.27,
       "lambda": 4.03,
       "avg_ip": 4.93,
@@ -148,23 +148,84 @@
       "recent_k9": 6.75,
       "career_k9": 8.18,
       "ev_over": {
-        "ev": -0.1691,
-        "adj_ev": -0.1691,
+        "ev": -0.1792,
+        "adj_ev": -0.1792,
         "verdict": "PASS",
         "win_prob": 0.376,
         "movement_conf": 1.0
       },
       "ev_under": {
-        "ev": 0.0999,
-        "adj_ev": 0.0999,
+        "ev": 0.1091,
+        "adj_ev": 0.1091,
         "verdict": "FIRE 2u",
         "win_prob": 0.624,
         "movement_conf": 1.0
       },
       "book_odds": {
+        "FanDuel": {
+          "over": -125,
+          "under": -106
+        },
         "BetMGM": {
-          "over": -120,
-          "under": -110
+          "over": -110,
+          "under": -120
+        }
+      },
+      "data_complete": false,
+      "game_state": "pregame"
+    },
+    {
+      "pitcher": "Dylan Cease",
+      "team": "Toronto Blue Jays",
+      "opp_team": "Boston Red Sox",
+      "pitcher_throws": "R",
+      "game_time": "2026-04-27T23:07:00Z",
+      "k_line": 7.5,
+      "opening_line": 7.5,
+      "best_over_book": "FanDuel",
+      "ref_book": "FanDuel",
+      "best_over_odds": -108,
+      "best_under_odds": -122,
+      "opening_over_odds": -106,
+      "opening_under_odds": -125,
+      "opening_odds_source": "first_seen",
+      "price_delta_over": -2,
+      "price_delta_under": 3,
+      "raw_lambda": 8.14,
+      "lambda": 7.89,
+      "avg_ip": 5.13,
+      "swstr_pct": 0.11,
+      "career_swstr_pct": null,
+      "swstr_delta_k9": 0.0,
+      "opp_k_rate": 0.223,
+      "lineup_used": false,
+      "ump_k_adj": 0.0,
+      "starter_mismatch": true,
+      "season_k9": 15.43,
+      "recent_k9": 20.25,
+      "career_k9": 11.02,
+      "ev_over": {
+        "ev": 0.0131,
+        "adj_ev": 0.0131,
+        "verdict": "LEAN",
+        "win_prob": 0.532,
+        "movement_conf": 1.0
+      },
+      "ev_under": {
+        "ev": -0.0818,
+        "adj_ev": -0.0818,
+        "verdict": "PASS",
+        "win_prob": 0.468,
+        "movement_conf": 1.0
+      },
+      "book_odds": {
+        "FanDuel": {
+          "over": -108,
+          "under": -122
+        },
+        "BetMGM": {
+          "over": -135,
+          "under": 100
         }
       },
       "data_complete": false,
@@ -180,13 +241,13 @@
       "opening_line": 4.5,
       "best_over_book": "FanDuel",
       "ref_book": "FanDuel",
-      "best_over_odds": 128,
-      "best_under_odds": -172,
-      "opening_over_odds": 126,
-      "opening_under_odds": -168,
+      "best_over_odds": 126,
+      "best_under_odds": -168,
+      "opening_over_odds": 128,
+      "opening_under_odds": -172,
       "opening_odds_source": "first_seen",
-      "price_delta_over": 2,
-      "price_delta_under": -4,
+      "price_delta_over": -2,
+      "price_delta_under": 4,
       "raw_lambda": 4.01,
       "lambda": 3.76,
       "avg_ip": 5.4,
@@ -201,23 +262,23 @@
       "recent_k9": 6.23,
       "career_k9": 8.26,
       "ev_over": {
-        "ev": -0.1141,
-        "adj_ev": -0.1141,
+        "ev": -0.118,
+        "adj_ev": -0.118,
         "verdict": "PASS",
         "win_prob": 0.324,
         "movement_conf": 1.0
       },
       "ev_under": {
-        "ev": 0.0432,
-        "adj_ev": 0.0432,
+        "ev": 0.0487,
+        "adj_ev": 0.0487,
         "verdict": "FIRE 1u",
         "win_prob": 0.676,
         "movement_conf": 1.0
       },
       "book_odds": {
         "FanDuel": {
-          "over": 128,
-          "under": -172
+          "over": 126,
+          "under": -168
         }
       },
       "data_complete": false,
@@ -234,11 +295,11 @@
       "best_over_book": "FanDuel",
       "ref_book": "FanDuel",
       "best_over_odds": -118,
-      "best_under_odds": -112,
-      "opening_over_odds": -114,
-      "opening_under_odds": -114,
+      "best_under_odds": -110,
+      "opening_over_odds": -120,
+      "opening_under_odds": -112,
       "opening_odds_source": "first_seen",
-      "price_delta_over": -4,
+      "price_delta_over": 2,
       "price_delta_under": 2,
       "raw_lambda": 3.78,
       "lambda": 3.54,
@@ -261,8 +322,8 @@
         "movement_conf": 1.0
       },
       "ev_under": {
-        "ev": 0.0007,
-        "adj_ev": 0.0007,
+        "ev": 0.0052,
+        "adj_ev": 0.0052,
         "verdict": "PASS",
         "win_prob": 0.529,
         "movement_conf": 1.0
@@ -270,11 +331,11 @@
       "book_odds": {
         "FanDuel": {
           "over": -118,
-          "under": -112
+          "under": -110
         },
         "BetMGM": {
-          "over": -120,
-          "under": -110
+          "over": -115,
+          "under": -115
         }
       },
       "data_complete": false,
@@ -400,13 +461,13 @@
       "opening_line": 4.5,
       "best_over_book": "FanDuel",
       "ref_book": "FanDuel",
-      "best_over_odds": -138,
-      "best_under_odds": 104,
-      "opening_over_odds": -140,
-      "opening_under_odds": 106,
+      "best_over_odds": -140,
+      "best_under_odds": 106,
+      "opening_over_odds": -138,
+      "opening_under_odds": 104,
       "opening_odds_source": "first_seen",
-      "price_delta_over": 2,
-      "price_delta_under": -2,
+      "price_delta_over": -2,
+      "price_delta_under": 2,
       "raw_lambda": 8.42,
       "lambda": 7.0,
       "avg_ip": 5.5,
@@ -421,23 +482,23 @@
       "recent_k9": 13.5,
       "career_k9": 13.5,
       "ev_over": {
-        "ev": 0.2472,
-        "adj_ev": 0.2472,
+        "ev": 0.2437,
+        "adj_ev": 0.2437,
         "verdict": "FIRE 2u",
         "win_prob": 0.827,
         "movement_conf": 1.0
       },
       "ev_under": {
-        "ev": -0.3172,
-        "adj_ev": -0.3172,
+        "ev": -0.3124,
+        "adj_ev": -0.3124,
         "verdict": "PASS",
         "win_prob": 0.173,
         "movement_conf": 1.0
       },
       "book_odds": {
         "FanDuel": {
-          "over": -138,
-          "under": 104
+          "over": -140,
+          "under": 106
         },
         "BetMGM": {
           "over": -125,
@@ -459,11 +520,11 @@
       "ref_book": "FanDuel",
       "best_over_odds": -144,
       "best_under_odds": 108,
-      "opening_over_odds": -136,
-      "opening_under_odds": 102,
+      "opening_over_odds": -146,
+      "opening_under_odds": 110,
       "opening_odds_source": "first_seen",
-      "price_delta_over": -8,
-      "price_delta_under": 6,
+      "price_delta_over": 2,
+      "price_delta_under": -2,
       "raw_lambda": 6.27,
       "lambda": 6.02,
       "avg_ip": 7.0,
@@ -562,6 +623,59 @@
       "game_state": "pregame"
     },
     {
+      "pitcher": "Randy Vasquez",
+      "team": "San Diego Padres",
+      "opp_team": "Chicago Cubs",
+      "pitcher_throws": "R",
+      "game_time": "2026-04-28T01:40:00Z",
+      "k_line": 4.5,
+      "opening_line": 4.5,
+      "best_over_book": "FanDuel",
+      "ref_book": "FanDuel",
+      "best_over_odds": 136,
+      "best_under_odds": -186,
+      "opening_over_odds": 138,
+      "opening_under_odds": -182,
+      "opening_odds_source": "first_seen",
+      "price_delta_over": -2,
+      "price_delta_under": -4,
+      "raw_lambda": 5.27,
+      "lambda": 5.03,
+      "avg_ip": 5.73,
+      "swstr_pct": 0.11,
+      "career_swstr_pct": null,
+      "swstr_delta_k9": 0.0,
+      "opp_k_rate": 0.2142,
+      "lineup_used": false,
+      "ump_k_adj": 0.0,
+      "starter_mismatch": true,
+      "season_k9": 9.42,
+      "recent_k9": 12.0,
+      "career_k9": 6.13,
+      "ev_over": {
+        "ev": 0.1409,
+        "adj_ev": 0.1409,
+        "verdict": "FIRE 2u",
+        "win_prob": 0.565,
+        "movement_conf": 1.0
+      },
+      "ev_under": {
+        "ev": -0.215,
+        "adj_ev": -0.215,
+        "verdict": "PASS",
+        "win_prob": 0.435,
+        "movement_conf": 1.0
+      },
+      "book_odds": {
+        "FanDuel": {
+          "over": 136,
+          "under": -186
+        }
+      },
+      "data_complete": false,
+      "game_state": "pregame"
+    },
+    {
       "pitcher": "Matthew Boyd",
       "team": "Chicago Cubs",
       "opp_team": "San Diego Padres",
@@ -611,8 +725,8 @@
           "under": 130
         },
         "BetMGM": {
-          "over": -135,
-          "under": 100
+          "over": -155,
+          "under": 115
         }
       },
       "data_complete": false,
@@ -681,13 +795,13 @@
       "opening_line": 4.5,
       "best_over_book": "FanDuel",
       "ref_book": "FanDuel",
-      "best_over_odds": 130,
-      "best_under_odds": -174,
-      "opening_over_odds": 128,
-      "opening_under_odds": -172,
+      "best_over_odds": 122,
+      "best_under_odds": -162,
+      "opening_over_odds": 124,
+      "opening_under_odds": -166,
       "opening_odds_source": "first_seen",
-      "price_delta_over": 2,
-      "price_delta_under": -2,
+      "price_delta_over": -2,
+      "price_delta_under": 4,
       "raw_lambda": 5.02,
       "lambda": 4.78,
       "avg_ip": 4.8,
@@ -702,23 +816,23 @@
       "recent_k9": 13.5,
       "career_k9": 8.23,
       "ev_over": {
-        "ev": 0.085,
-        "adj_ev": 0.085,
+        "ev": 0.0694,
+        "adj_ev": 0.0694,
         "verdict": "FIRE 1u",
         "win_prob": 0.52,
         "movement_conf": 1.0
       },
       "ev_under": {
-        "ev": -0.1548,
-        "adj_ev": -0.1548,
+        "ev": -0.1381,
+        "adj_ev": -0.1381,
         "verdict": "PASS",
         "win_prob": 0.48,
         "movement_conf": 1.0
       },
       "book_odds": {
         "FanDuel": {
-          "over": 130,
-          "under": -174
+          "over": 122,
+          "under": -162
         },
         "BetMGM": {
           "over": 110,
