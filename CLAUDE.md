@@ -174,9 +174,13 @@ Read this before debugging any data-source issue.
 
 - Current-season SwStr% comes from `pitching_stats(season, season, qual=0)`.
 - Career baseline is the 3-season window before the current season.
+- That baseline is the mean of the three prior seasons fetched
+  season-by-season, not one combined multi-year scrape.
 - Values are normalized to decimals (`0.134`, not `13.4`).
 - Missing pitcher or source failure should degrade to league-average
   `LEAGUE_AVG_SWSTR`, not break the pipeline.
+- If `career_swstr_pct` suddenly goes null across the board, check
+  `pipeline/fetch_statcast.py` before trusting Phase B bias slices.
 
 ## Model Overview
 

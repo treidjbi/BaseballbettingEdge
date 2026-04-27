@@ -302,6 +302,7 @@ def _run_preview(tomorrow_str: str) -> None:
 
     try:
         swstr_map = fetch_swstr(int(tomorrow_str[:4]), pitcher_names)
+        swstr_map.pop("__meta__", None)
     except Exception as e:
         log.warning("Preview: fetch_swstr failed: %s — using neutral SwStr%%", e)
         swstr_map = {name: _SWSTR_NEUTRAL for name in pitcher_names}
@@ -749,6 +750,8 @@ def run(date_str: str, run_type: str = "full") -> None:
     swstr_ok = True
     try:
         swstr_map = fetch_swstr(int(date_str[:4]), pitcher_names)
+        swstr_meta = swstr_map.pop("__meta__", {})
+        swstr_ok = bool(swstr_meta.get("current_usable", True) and swstr_meta.get("career_usable", True))
     except Exception as e:
         log.warning("fetch_swstr failed: %s — using neutral SwStr%% for all", e)
         swstr_map = {name: _SWSTR_NEUTRAL for name in pitcher_names}

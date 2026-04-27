@@ -232,3 +232,41 @@ A bug in `pipeline/fetch_stats.py` (fixed by commit `0407846`) caused the MLB
 - BUT: `lambda` for picks in this window was computed with R-assumption.
   If an analysis recomputes lambda from inputs (rare), it should note this
   discrepancy. Most analytics only read the stored `lambda`, which is fine.
+
+## 2026-04-08 to 2026-04-27 — SwStr delta neutral window
+
+From the 2026-04-08 formula-change date through the 2026-04-27 deploy,
+`career_swstr_pct` was null across the board, so `swstr_delta_k9` stayed at
+`0.0` for every stored pick even though current-season `swstr_pct` was present.
+
+### Root cause
+
+`pipeline/fetch_statcast.py` tried to build the "career" baseline from one
+multi-season FanGraphs window instead of averaging the three prior seasons
+season-by-season. The aggregate window did not yield a usable per-pitcher
+baseline for Phase B, so downstream code saw `career_swstr_pct = None` and
+treated the SwStr adjustment as neutral.
+
+### Impact on stored fields
+
+- **`career_swstr_pct` in picks_history for this window:** `null`
+  everywhere. Accurate — the pipeline failed open and stored "career
+  baseline unavailable."
+- **`swstr_delta_k9` / `lambda` in picks_history for this window:**
+  computed with neutral SwStr delta. Residual calibration remains internally
+  consistent because the stored `lambda` reflects the value actually used at
+  decision time.
+
+### Why historical rows were NOT backfilled
+
+Same precedent as the other dead-signal windows above: rewriting
+`career_swstr_pct` or `swstr_delta_k9` without recomputing `lambda` would
+desync stored inputs from stored outputs, and recomputing `lambda` would
+invalidate residual-based calibration. Historical picks stay as-scored.
+
+### Implication for analytics
+
+- Treat 2026-04-08 -> 2026-04-27 as a SwStr dead-signal / neutral-delta
+  window when slicing Phase B behavior.
+- Post-deploy picks are the first rows where `career_swstr_pct` and
+  non-neutral SwStr deltas should be expected to appear.
