@@ -39,8 +39,8 @@ def today_json(tmp_path):
                 "swstr_pct": 0.120,
                 "career_swstr_pct": 0.110,
                 "swstr_delta_k9": 0.05,
-                "ev_over":  {"ev": 0.05, "adj_ev": 0.05, "verdict": "FIRE 1u", "win_prob": 0.58, "movement_conf": 1.0},
-                "ev_under": {"ev": -0.02, "adj_ev": -0.02, "verdict": "PASS", "win_prob": 0.42, "movement_conf": 1.0},
+                "ev_over":  {"edge": 0.032, "ev": 0.05, "adj_ev": 0.05, "verdict": "FIRE 1u", "win_prob": 0.58, "movement_conf": 1.0},
+                "ev_under": {"edge": -0.018, "ev": -0.02, "adj_ev": -0.02, "verdict": "PASS", "win_prob": 0.42, "movement_conf": 1.0},
             },
             {
                 "pitcher": "Shane Bieber", "team": "Cleveland", "opp_team": "Detroit",
@@ -56,8 +56,8 @@ def today_json(tmp_path):
                 "swstr_pct": 0.115,
                 "career_swstr_pct": 0.108,
                 "swstr_delta_k9": 0.03,
-                "ev_over":  {"ev": 0.008, "adj_ev": 0.008, "verdict": "PASS",   "win_prob": 0.51, "movement_conf": 1.0},
-                "ev_under": {"ev": 0.07,  "adj_ev": 0.07,  "verdict": "FIRE 2u","win_prob": 0.49, "movement_conf": 1.0},
+                "ev_over":  {"edge": 0.004, "ev": 0.008, "adj_ev": 0.008, "verdict": "PASS",   "win_prob": 0.51, "movement_conf": 1.0},
+                "ev_under": {"edge": 0.041, "ev": 0.07,  "adj_ev": 0.07,  "verdict": "FIRE 2u","win_prob": 0.49, "movement_conf": 1.0},
             },
         ],
     }
@@ -154,6 +154,7 @@ class TestSeedPicks:
         assert row["k_line"] == 7.5
         assert row["odds"] == -115
         assert row["raw_lambda"] == 7.2
+        assert row["edge"] == 0.032
 
     def test_returns_inserted_count(self, tmp_db, today_json):
         db_path, fr = tmp_db
@@ -181,6 +182,7 @@ class TestLoadHistoryIntoDb:
             {
                 "date": "2026-03-31", "pitcher": "Max Fried", "team": "NYY",
                 "side": "over", "k_line": 5.5, "verdict": "FIRE 2u",
+                "edge": 0.031,
                 "ev": 0.08, "adj_ev": 0.08, "raw_lambda": 6.1, "applied_lambda": 6.1,
                 "odds": -110, "movement_conf": 1.0,
                 "season_k9": 9.0, "recent_k9": 8.5, "career_k9": 9.2,
@@ -204,6 +206,7 @@ class TestLoadHistoryIntoDb:
             {
                 "date": "2026-03-31", "pitcher": "Max Fried", "team": "NYY",
                 "side": "over", "k_line": 5.5, "verdict": "FIRE 2u",
+                "edge": 0.031,
                 "ev": 0.08, "adj_ev": 0.08, "raw_lambda": 6.1, "applied_lambda": 6.1,
                 "odds": -110, "movement_conf": 1.0,
                 "season_k9": 9.0, "recent_k9": 8.5, "career_k9": 9.2,
@@ -235,17 +238,17 @@ class TestExportDbToHistory:
         with sqlite3.connect(db_path) as conn:
             conn.execute("""
                 INSERT INTO picks (date, pitcher, team, side, k_line, verdict,
-                  ev, adj_ev, raw_lambda, applied_lambda, odds, movement_conf,
+                  edge, ev, adj_ev, raw_lambda, applied_lambda, odds, movement_conf,
                   result, actual_ks, pnl)
                 VALUES ('2026-04-01','Zack Wheeler','PHI','over',6.5,'FIRE 2u',
-                  0.09,0.09,7.1,7.1,-108,1.0,'win',8,0.926)
+                  0.041,0.09,0.09,7.1,7.1,-108,1.0,'win',8,0.926)
             """)
             conn.execute("""
                 INSERT INTO picks (date, pitcher, team, side, k_line, verdict,
-                  ev, adj_ev, raw_lambda, applied_lambda, odds, movement_conf,
+                  edge, ev, adj_ev, raw_lambda, applied_lambda, odds, movement_conf,
                   result)
                 VALUES ('2026-04-02','Dylan Cease','SDP','over',5.5,'FIRE 1u',
-                  0.05,0.05,6.0,6.0,-110,1.0, NULL)
+                  0.026,0.05,0.05,6.0,6.0,-110,1.0, NULL)
             """)
         history_path = tmp_path / "picks_history.json"
         fr.export_db_to_history(history_path)
@@ -253,6 +256,8 @@ class TestExportDbToHistory:
         pitchers = [r["pitcher"] for r in written]
         assert "Zack Wheeler" in pitchers
         assert "Dylan Cease" in pitchers  # open picks included for GHA persistence
+        wheeler = next(r for r in written if r["pitcher"] == "Zack Wheeler")
+        assert wheeler["edge"] == pytest.approx(0.041)
 
     def test_overwrites_existing_file(self, tmp_db, tmp_path):
         """export_db_to_history replaces existing history file."""
@@ -921,7 +926,7 @@ def test_history_export_includes_lock_columns(tmp_db, today_json):
     assert len(history) > 0
     pick = history[0]
     for col in ("game_time", "lineup_used", "locked_at", "locked_k_line",
-                "locked_odds", "locked_adj_ev", "locked_verdict"):
+                "locked_odds", "locked_adj_ev", "locked_verdict", "edge"):
         assert col in pick, f"missing column: {col}"
 
 
@@ -932,7 +937,7 @@ def test_history_load_includes_lock_columns(tmp_db, today_json):
     fr.seed_picks(json_path)
     # Manually write history with lock columns
     history = [{"date": "2026-04-10", "pitcher": "Old Pick", "team": "BOS", "side": "over",
-                "k_line": 6.5, "verdict": "LEAN", "ev": 0.02, "adj_ev": 0.02,
+                "k_line": 6.5, "verdict": "LEAN", "edge": 0.011, "ev": 0.02, "adj_ev": 0.02,
                 "raw_lambda": 6.0, "applied_lambda": 6.0, "odds": -110,
                 "movement_conf": 1.0, "result": "win", "actual_ks": 7, "pnl": 0.91,
                 "fetched_at": "2026-04-10T12:00:00Z",
@@ -944,19 +949,21 @@ def test_history_load_includes_lock_columns(tmp_db, today_json):
     fr.load_history_into_db()
     conn = sqlite3.connect(db_path)
     row = conn.execute(
-        "SELECT locked_at, locked_odds, game_time, lineup_used FROM picks WHERE pitcher = 'Old Pick'"
+        "SELECT locked_at, locked_odds, game_time, lineup_used, edge FROM picks WHERE pitcher = 'Old Pick'"
     ).fetchone()
     conn.close()
     assert row[0] == "2026-04-10T16:35:00Z"
     assert row[1] == -110
     assert row[2] == "2026-04-10T17:05:00Z"
     assert row[3] == 1
+    assert row[4] == pytest.approx(0.011)
 
 
 class TestNewColumns:
     """All new schema columns must exist after init_db()."""
 
     NEW_COLS = [
+        "edge",
         "opp_team", "pitcher_throws",
         "best_over_odds", "best_under_odds",
         "opening_over_odds", "opening_under_odds",

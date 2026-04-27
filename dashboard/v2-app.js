@@ -611,11 +611,11 @@ function PickCard({
     className: "v2-line-cell"
   }, /*#__PURE__*/React.createElement("div", {
     className: "v2-line-label"
-  }, "EV \xB7 Win%"), /*#__PURE__*/React.createElement("div", {
+  }, "EV ROI \xB7 Edge"), /*#__PURE__*/React.createElement("div", {
     className: `v2-line-value ${side.adj_ev > 0 ? "pos" : "neg"}`
   }, side.adj_ev > 0 ? "+" : "", (side.adj_ev * 100).toFixed(1), "%"), /*#__PURE__*/React.createElement("div", {
     className: "v2-line-sub mono"
-  }, "p = ", (side.win_prob * 100).toFixed(1), "%"))), /*#__PURE__*/React.createElement(WhyPills, {
+  }, "edge ", (side.edge ?? side.ev) > 0 ? "+" : "", (((side.edge ?? side.ev) || 0) * 100).toFixed(1), "% \xB7 p = ", (side.win_prob * 100).toFixed(1), "%"))), /*#__PURE__*/React.createElement(WhyPills, {
     p: p,
     side: side
   }));
@@ -734,8 +734,8 @@ function PickDetail({
     }, fmtOdds(s.odds), " \xB7 open ", fmtOdds(s.opening)), /*#__PURE__*/React.createElement("div", {
       className: `ev ${pos ? "pos" : "neg"}`
     }, pos ? "+" : "", (s.adj_ev * 100).toFixed(1), "%"), /*#__PURE__*/React.createElement("div", {
-      className: "wp"
-    }, "p = ", (s.win_prob * 100).toFixed(1), "%"));
+    className: "wp"
+  }, "p = ", (s.win_prob * 100).toFixed(1), "% \xB7 edge ", ((s.edge ?? s.ev) || 0) > 0 ? "+" : "", (((s.edge ?? s.ev) || 0) * 100).toFixed(1), "%"));
   };
 
   // Line movement: fake a 12-step history from open → current
@@ -869,7 +869,7 @@ function PickDetail({
     className: "v2-sheet-section"
   }, /*#__PURE__*/React.createElement("div", {
     className: "h"
-  }, "Sides \xB7 EV comparison"), /*#__PURE__*/React.createElement("div", {
+  }, "Sides \xB7 EV ROI comparison"), /*#__PURE__*/React.createElement("div", {
     className: "v2-sides"
   }, /*#__PURE__*/React.createElement(SideCard, {
     s: sideOver
@@ -1010,13 +1010,19 @@ function PickDetail({
     className: "v2-stat-row"
   }, /*#__PURE__*/React.createElement("span", {
     className: "lbl"
-  }, "Raw EV"), /*#__PURE__*/React.createElement("span", {
+  }, "Edge"), /*#__PURE__*/React.createElement("span", {
+    className: `val ${((best.edge ?? best.ev) || 0) > 0 ? "pos" : "neg"}`
+  }, ((best.edge ?? best.ev) || 0) > 0 ? "+" : "", (((best.edge ?? best.ev) || 0) * 100).toFixed(1), "%")), /*#__PURE__*/React.createElement("div", {
+    className: "v2-stat-row"
+  }, /*#__PURE__*/React.createElement("span", {
+    className: "lbl"
+  }, "Raw EV ROI"), /*#__PURE__*/React.createElement("span", {
     className: "val"
   }, best.ev > 0 ? "+" : "", (best.ev * 100).toFixed(1), "%")), /*#__PURE__*/React.createElement("div", {
     className: "v2-stat-row"
   }, /*#__PURE__*/React.createElement("span", {
     className: "lbl"
-  }, "Adjusted EV"), /*#__PURE__*/React.createElement("span", {
+  }, "Adjusted EV ROI"), /*#__PURE__*/React.createElement("span", {
     className: `val ${best.adj_ev > 0 ? "pos" : "neg"}`
   }, best.adj_ev > 0 ? "+" : "", (best.adj_ev * 100).toFixed(1), "%"))), /*#__PURE__*/React.createElement("div", {
     className: "v2-sheet-actions"
@@ -1037,11 +1043,11 @@ function EmptyState({
     },
     FIRE: {
       ttl: "No FIRE picks",
-      sub: "Model didn't find any 1u+ edges in today's slate. That's a signal, not a bug — skip days are a strategy."
+      sub: "Model didn't find any 1u+ ROI edges in today's slate. That's a signal, not a bug — skip days are a strategy."
     },
     LEAN: {
       ttl: "No leans",
-      sub: "Nothing between +2% and +5% EV right now."
+      sub: "Nothing between +2% and +6% EV ROI right now."
     },
     LIVE: {
       ttl: "No games live",
@@ -1321,7 +1327,7 @@ function PicksTab({
   }, fires.length > 0 ? (() => {
     const avgEv = fires.reduce((s, p) => s + bestSide(p).adj_ev, 0) / fires.length * 100;
     const pre = fires.filter(p => p.game_state === "pregame").length;
-    return `${fires.length} actionable · avg EV +${avgEv.toFixed(1)}% · ${pre} pregame`;
+    return `${fires.length} actionable · avg EV ROI +${avgEv.toFixed(1)}% · ${pre} pregame`;
   })() : "No FIRE picks in slate")), /*#__PURE__*/React.createElement("svg", {
     viewBox: "0 0 16 16",
     width: "14",
@@ -1660,3 +1666,5 @@ const root = ReactDOM.createRoot(document.getElementById("root"));
   } catch {/* adapter already set error state */}
   root.render(/*#__PURE__*/React.createElement(App, null));
 })();
+
+

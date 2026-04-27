@@ -3,14 +3,14 @@ analytics/performance.py — local deep-dive into picks_history.json.
 
 Prints summary tables to stdout and saves plots to analytics/output/.
 Covers overall record, verdict-tier ROI, calibration (predicted lambda vs
-actual K), EV-bucket realized edge, line-movement impact, umpire impact,
+actual K), EV-ROI bucket realized edge, line-movement impact, umpire impact,
 and lineup-availability impact.
 
 Usage:
     pip install -r analytics/requirements.txt   # first time only
     python analytics/performance.py
-    python analytics/performance.py --since 2026-04-08   # filter by date
-    python analytics/performance.py --min-ev 0.03        # only FIRE tier EV
+    python analytics/performance.py --since 2026-04-28   # filter by ROI-era date
+    python analytics/performance.py --min-ev 0.06        # only FIRE tier EV ROI
 
 The script is intentionally standalone — no pipeline imports, no tests,
 no notebook. Edit it freely to answer whatever question comes up next.
@@ -27,7 +27,7 @@ ROOT = Path(__file__).resolve().parent.parent
 PICKS_PATH = ROOT / "data" / "picks_history.json"
 OUTPUT_DIR = Path(__file__).resolve().parent / "output"
 
-# LEAN picks are tracked but not staked (per CLAUDE.md EV thresholds).
+# LEAN picks are tracked but not staked (per current EV ROI thresholds).
 VERDICT_UNITS = {"LEAN": 0.0, "FIRE 1u": 1.0, "FIRE 2u": 2.0}
 
 # Pre-Option-B (commit 8b272b6, 2026-04-21 09:54 PT) _select_ref_book fell back
@@ -107,8 +107,8 @@ def summary(df: pd.DataFrame) -> None:
     print(f"  Graded W/L:               {len(g)}")
     print(f"  Date range:               {df['date'].min().date()} -> {df['date'].max().date()}")
     if df["date"].min() < pd.Timestamp("2026-04-28"):
-        print("  WARNING: report includes pre-2026-04-28 rows from the dead-SwStr window.")
-        print("           For live-window-only evaluation, use --since 2026-04-28 once confirmed rows exist.")
+        print("  WARNING: report includes pre-2026-04-28 rows from the pre-ROI / dead-SwStr window.")
+        print("           For live-window-only evaluation, use --since 2026-04-28.")
     print(_row("All graded (FIRE+LEAN)", df))
     print(_row("Staked only (FIRE 1u/2u)", staked(df)))
 
@@ -137,14 +137,14 @@ def by_throws(df: pd.DataFrame) -> None:
 
 
 def by_ev_bucket(df: pd.DataFrame) -> None:
-    """Does higher predicted EV actually produce higher realized ROI?"""
-    print("\n-- By adjusted EV bucket (staked only) ------------------------------")
+    """Does higher predicted EV ROI actually produce higher realized ROI?"""
+    print("\n-- By adjusted EV ROI bucket (staked only) --------------------------")
     s = staked(df).copy()
-    bins = [-1, 0.03, 0.05, 0.07, 0.09, 0.15, 1]
-    labels = ["<3%", "3-5%", "5-7%", "7-9%", "9-15%", ">15%"]
+    bins = [-1, 0.02, 0.06, 0.17, 1]
+    labels = ["<2%", "2-6%", "6-17%", ">17%"]
     s["ev_bucket"] = pd.cut(pd.to_numeric(s["adj_ev"], errors="coerce"), bins=bins, labels=labels)
     for lbl in labels:
-        print(_row(f"adj EV {lbl}", s[s["ev_bucket"] == lbl]))
+        print(_row(f"adj EV ROI {lbl}", s[s["ev_bucket"] == lbl]))
 
 
 def by_movement(df: pd.DataFrame) -> None:

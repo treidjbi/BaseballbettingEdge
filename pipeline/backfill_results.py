@@ -47,13 +47,15 @@ def _seed_historical(json_path: Path) -> tuple[str, int]:
                     continue
                 cur = conn.execute("""
                     INSERT OR IGNORE INTO picks
-                    (date, pitcher, team, side, k_line, verdict, ev, adj_ev,
+                    (date, pitcher, team, side, k_line, verdict, edge, ev, adj_ev,
                      raw_lambda, applied_lambda, odds, movement_conf,
                      season_k9, recent_k9, career_k9, avg_ip, ump_k_adj, opp_k_rate)
-                    VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+                    VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
                 """, (
                     game_date, p["pitcher"], p["team"], side,
-                    p["k_line"], ev_data["verdict"], ev_data["ev"], ev_data["adj_ev"],
+                    p["k_line"], ev_data["verdict"],
+                    ev_data.get("edge", ev_data["ev"]),
+                    ev_data["ev"], ev_data["adj_ev"],
                     p.get("raw_lambda", p["lambda"]), p["lambda"], odds,
                     ev_data.get("movement_conf", 1.0),
                     p.get("season_k9"), p.get("recent_k9"), p.get("career_k9"),

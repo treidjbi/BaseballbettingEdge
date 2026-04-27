@@ -34,9 +34,9 @@ def load_params() -> dict:
 
 
 # ── Verdict thresholds ──────────────────────────────────────────────────────
-EDGE_PASS         = 0.01   # EV ≤ 1% → PASS
-EDGE_LEAN         = 0.03   # EV 1–3% → LEAN
-EDGE_FIRE_1U      = 0.09   # EV 3–9% → FIRE 1u, >9% → FIRE 2u
+EDGE_PASS         = 0.02   # EV ROI < 2% → PASS
+EDGE_LEAN         = 0.06   # EV ROI 2–6% → LEAN
+EDGE_FIRE_1U      = 0.17   # EV ROI 6–17% → FIRE 1u, >17% → FIRE 2u
 EXPECTED_INNINGS  = 5.5        # fallback only — pipeline uses per-pitcher avg IP
 LEAGUE_AVG_K_RATE = 0.227
 LEAGUE_AVG_SWSTR  = 0.110      # FanGraphs league avg swinging strike rate
@@ -89,6 +89,13 @@ def american_to_implied(odds: int) -> float:
     if odds > 0:
         return 100 / (odds + 100)
     return abs(odds) / (abs(odds) + 100)
+
+
+def american_to_profit_per_unit(odds: int) -> float:
+    """Profit on a 1.0u stake when the bet wins."""
+    if odds > 0:
+        return odds / 100
+    return 100 / abs(odds)
 
 
 def blend_k9(season_k9: float, recent_k9: float, career_k9: float, ip: float,
@@ -233,18 +240,24 @@ def calc_lambda(blended_k9: float, expected_innings: float,
     return park_mult + ump_add
 
 
-def calc_ev(win_prob: float, odds: int) -> float:
-    """EV = win_prob - implied_probability(odds)."""
+def calc_edge(win_prob: float, odds: int) -> float:
+    """Probability edge = model win probability minus implied probability."""
     return win_prob - american_to_implied(odds)
+
+
+def calc_ev(win_prob: float, odds: int) -> float:
+    """Expected ROI on 1.0u risked."""
+    lose_prob = 1.0 - win_prob
+    return (win_prob * american_to_profit_per_unit(odds)) - lose_prob
 
 
 def calc_verdict(ev: float) -> str:
     """Map EV to a betting verdict string. Thresholds are static."""
-    if ev <= EDGE_PASS:
+    if ev < EDGE_PASS:
         return "PASS"
-    if ev <= EDGE_LEAN:
+    if ev < EDGE_LEAN:
         return "LEAN"
-    if ev <= EDGE_FIRE_1U:
+    if ev < EDGE_FIRE_1U:
         return "FIRE 1u"
     return "FIRE 2u"
 
@@ -399,6 +412,8 @@ def build_pitcher_record(odds: dict, stats: dict, ump_k_adj: float,
 
     best_over_odds  = odds["best_over_odds"]
     best_under_odds = odds["best_under_odds"]
+    edge_over  = calc_edge(win_prob_over,  best_over_odds)
+    edge_under = calc_edge(win_prob_under, best_under_odds)
     ev_over  = calc_ev(win_prob_over,  best_over_odds)
     ev_under = calc_ev(win_prob_under, best_under_odds)
 
@@ -454,6 +469,7 @@ def build_pitcher_record(odds: dict, stats: dict, ump_k_adj: float,
         "recent_k9":          round(recent_k9, 2),
         "career_k9":          round(career_k9, 2),
         "ev_over":  {
+            "edge":          round(edge_over,    4),
             "ev":            round(ev_over,      4),
             "adj_ev":        round(adj_ev_over,  4),
             "verdict":       over_verdict,
@@ -461,6 +477,7 @@ def build_pitcher_record(odds: dict, stats: dict, ump_k_adj: float,
             "movement_conf": round(conf_over,    4),
         },
         "ev_under": {
+            "edge":          round(edge_under,    4),
             "ev":            round(ev_under,      4),
             "adj_ev":        round(adj_ev_under,  4),
             "verdict":       under_verdict,

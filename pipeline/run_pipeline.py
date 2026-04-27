@@ -250,6 +250,21 @@ def _resolve_park_factor(home_team_name: str, park_factors: dict, pitcher_name: 
     return park_factor
 
 
+def _record_slot_key(record: dict) -> tuple[str, str, str] | None:
+    """
+    Team/game identity for snapshot reconciliation.
+
+    Intentionally excludes pitcher name so a replacement starter maps to the
+    same slot as the scratched arm.
+    """
+    team = (record.get("team") or "").strip().lower()
+    opp_team = (record.get("opp_team") or "").strip().lower()
+    game_time = record.get("game_time")
+    if not team or not game_time:
+        return None
+    return (team, opp_team, game_time)
+
+
 def _merge_with_locked_snapshots(fresh_records: list, date_str: str, now: datetime) -> list:
     """
     For games that have already started, preserve the last pre-game snapshot from
@@ -289,6 +304,10 @@ def _merge_with_locked_snapshots(fresh_records: list, date_str: str, now: dateti
 
     result: list = []
     fresh_names: set[str] = {r["pitcher"] for r in fresh_records}
+    fresh_slot_keys = {
+        slot_key for slot_key in (_record_slot_key(r) for r in fresh_records)
+        if slot_key is not None
+    }
 
     # Preserve locked snapshots for started games (carry exact pre-game data forward)
     for name in started_names:
@@ -323,6 +342,9 @@ def _merge_with_locked_snapshots(fresh_records: list, date_str: str, now: dateti
     for name, p in existing_pitchers.items():
         if name in started_names or name in fresh_names:
             continue  # Already handled above
+        slot_key = _record_slot_key(p)
+        if slot_key is not None and slot_key in fresh_slot_keys:
+            continue  # Same game slot now belongs to a replacement starter
         game_time_str = p.get("game_time")
         if not game_time_str:
             continue

@@ -45,6 +45,7 @@ def init_db() -> None:
                 side            TEXT NOT NULL,
                 k_line          REAL NOT NULL,
                 verdict         TEXT NOT NULL,
+                edge            REAL,
                 ev              REAL NOT NULL,
                 adj_ev          REAL NOT NULL,
                 raw_lambda      REAL NOT NULL,
@@ -104,6 +105,7 @@ def init_db() -> None:
             ("locked_odds",        "INTEGER"),
             ("locked_adj_ev",      "REAL"),
             ("locked_verdict",     "TEXT"),
+            ("edge",               "REAL"),
             # New columns
             ("opp_team",           "TEXT"),
             ("pitcher_throws",     "TEXT"),
@@ -134,7 +136,7 @@ def init_db() -> None:
 
 def seed_picks(today_json_path: Path = TODAY_JSON) -> int:
     """Insert non-PASS picks from today.json and refresh unlocked picks with
-    latest verdict/odds/EV.  Returns count of new rows inserted."""
+    latest verdict/odds/edge/EV.  Returns count of new rows inserted."""
     try:
         with open(today_json_path) as f:
             data = json.load(f)
@@ -155,7 +157,7 @@ def seed_picks(today_json_path: Path = TODAY_JSON) -> int:
                 odds = p[f"best_{side}_odds"]
                 cur = conn.execute("""
                     INSERT OR IGNORE INTO picks
-                    (date, pitcher, team, side, k_line, verdict, ev, adj_ev,
+                    (date, pitcher, team, side, k_line, verdict, edge, ev, adj_ev,
                      raw_lambda, applied_lambda, odds, movement_conf,
                      season_k9, recent_k9, career_k9, avg_ip, ump_k_adj, opp_k_rate,
                      swstr_delta_k9, ref_book, game_time, lineup_used,
@@ -165,10 +167,12 @@ def seed_picks(today_json_path: Path = TODAY_JSON) -> int:
                      best_over_odds, best_under_odds,
                      opening_over_odds, opening_under_odds, opening_odds_source,
                      swstr_pct, career_swstr_pct, data_complete)
-                    VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+                    VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
                 """, (
                     game_date, p["pitcher"], p["team"], side,
-                    p["k_line"], ev_data["verdict"], ev_data["ev"], ev_data["adj_ev"],
+                    p["k_line"], ev_data["verdict"],
+                    ev_data.get("edge", ev_data["ev"]),
+                    ev_data["ev"], ev_data["adj_ev"],
                     p.get("raw_lambda", p["lambda"]), p["lambda"], odds, ev_data["movement_conf"],
                     p.get("season_k9"), p.get("recent_k9"), p.get("career_k9"),
                     p.get("avg_ip"), p.get("ump_k_adj"), p.get("opp_k_rate"),
@@ -224,7 +228,7 @@ def seed_picks(today_json_path: Path = TODAY_JSON) -> int:
                     # latest state of the pick's underlying inputs.
                     conn.execute("""
                         UPDATE picks
-                        SET verdict = ?, ev = ?, adj_ev = ?, odds = ?,
+                        SET verdict = ?, edge = ?, ev = ?, adj_ev = ?, odds = ?,
                             k_line = ?, applied_lambda = ?, movement_conf = ?,
                             lineup_used = ?, game_time = ?,
                             raw_lambda = ?,
@@ -241,7 +245,9 @@ def seed_picks(today_json_path: Path = TODAY_JSON) -> int:
                         WHERE date = ? AND pitcher = ? AND side = ?
                           AND locked_at IS NULL AND result IS NULL
                     """, (
-                        ev_data["verdict"], ev_data["ev"], ev_data["adj_ev"], odds,
+                        ev_data["verdict"],
+                        ev_data.get("edge", ev_data["ev"]),
+                        ev_data["ev"], ev_data["adj_ev"], odds,
                         p["k_line"], p["lambda"], ev_data["movement_conf"],
                         int(bool(p.get("lineup_used", False))),
                         p.get("game_time"),
@@ -327,7 +333,7 @@ def load_history_into_db(history_path: Path = None) -> int:
             cur = conn.execute("""
                 INSERT OR IGNORE INTO picks
                 (date, pitcher, team, opp_team, pitcher_throws, side, k_line,
-                 verdict, ev, adj_ev, raw_lambda, applied_lambda, odds, movement_conf,
+                 verdict, edge, ev, adj_ev, raw_lambda, applied_lambda, odds, movement_conf,
                  season_k9, recent_k9, career_k9, avg_ip, ump_k_adj, opp_k_rate,
                  swstr_delta_k9, swstr_pct, career_swstr_pct, ref_book,
                  best_over_odds, best_under_odds, opening_over_odds, opening_under_odds,
@@ -336,12 +342,14 @@ def load_history_into_db(history_path: Path = None) -> int:
                  result, actual_ks, pnl, fetched_at, game_time, lineup_used,
                  locked_at, locked_k_line, locked_odds, locked_adj_ev, locked_verdict,
                  data_complete)
-                VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+                VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
             """, (
                 p.get("date"), p.get("pitcher"), p.get("team"),
                 p.get("opp_team"), p.get("pitcher_throws"),
                 p.get("side"),
-                p.get("k_line"), p.get("verdict"), p.get("ev"), p.get("adj_ev"),
+                p.get("k_line"), p.get("verdict"),
+                p.get("edge", p.get("ev")),
+                p.get("ev"), p.get("adj_ev"),
                 p.get("raw_lambda"), p.get("applied_lambda"), p.get("odds"),
                 p.get("movement_conf"),
                 p.get("season_k9"), p.get("recent_k9"), p.get("career_k9"),
@@ -382,7 +390,7 @@ def export_db_to_history(history_path: Path = None) -> int:
     with get_db() as conn:
         rows = conn.execute("""
             SELECT date, pitcher, team, opp_team, pitcher_throws, side, k_line,
-                   verdict, ev, adj_ev,
+                   verdict, edge, ev, adj_ev,
                    raw_lambda, applied_lambda, odds, movement_conf,
                    season_k9, recent_k9, career_k9, avg_ip, ump_k_adj, opp_k_rate,
                    swstr_delta_k9, swstr_pct, career_swstr_pct, ref_book,
@@ -400,7 +408,7 @@ def export_db_to_history(history_path: Path = None) -> int:
 
     cols = [
         "date", "pitcher", "team", "opp_team", "pitcher_throws", "side", "k_line",
-        "verdict", "ev", "adj_ev",
+        "verdict", "edge", "ev", "adj_ev",
         "raw_lambda", "applied_lambda", "odds", "movement_conf",
         "season_k9", "recent_k9", "career_k9", "avg_ip", "ump_k_adj", "opp_k_rate",
         "swstr_delta_k9", "swstr_pct", "career_swstr_pct", "ref_book",

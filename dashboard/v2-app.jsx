@@ -325,11 +325,13 @@ function PickCard({ p, onOpen }) {
           <ProjBar line={p.k_line} lambda={p.lambda} />
         </div>
         <div className="v2-line-cell">
-          <div className="v2-line-label">EV · Win%</div>
+          <div className="v2-line-label">EV ROI · Edge</div>
           <div className={`v2-line-value ${side.adj_ev > 0 ? "pos" : "neg"}`}>
             {side.adj_ev > 0 ? "+" : ""}{(side.adj_ev * 100).toFixed(1)}%
           </div>
-          <div className="v2-line-sub mono">p = {(side.win_prob * 100).toFixed(1)}%</div>
+          <div className="v2-line-sub mono">
+            edge {(side.edge ?? side.ev) > 0 ? "+" : ""}{(((side.edge ?? side.ev) || 0) * 100).toFixed(1)}% · p = {(side.win_prob * 100).toFixed(1)}%
+          </div>
         </div>
       </div>
 
@@ -426,7 +428,9 @@ function PickDetail({ p, onClose }) {
         <div className={`ev ${pos ? "pos" : "neg"}`}>
           {pos ? "+" : ""}{(s.adj_ev * 100).toFixed(1)}%
         </div>
-        <div className="wp">p = {(s.win_prob * 100).toFixed(1)}%</div>
+        <div className="wp">
+          p = {(s.win_prob * 100).toFixed(1)}% · edge {((s.edge ?? s.ev) || 0) > 0 ? "+" : ""}{((((s.edge ?? s.ev) || 0) * 100).toFixed(1))}%
+        </div>
       </div>
     );
   };
@@ -562,7 +566,7 @@ function PickDetail({ p, onClose }) {
         )}
 
         <div className="v2-sheet-section">
-          <div className="h">Sides · EV comparison</div>
+          <div className="h">Sides · EV ROI comparison</div>
           <div className="v2-sides">
             <SideCard s={sideOver} />
             <SideCard s={sideUnder} />
@@ -671,11 +675,17 @@ function PickDetail({ p, onClose }) {
             <span className="val">{(best.movement_conf * 100).toFixed(0)}%</span>
           </div>
           <div className="v2-stat-row">
-            <span className="lbl">Raw EV</span>
+            <span className="lbl">Edge</span>
+            <span className={`val ${((best.edge ?? best.ev) || 0) > 0 ? "pos" : "neg"}`}>
+              {((best.edge ?? best.ev) || 0) > 0 ? "+" : ""}{((((best.edge ?? best.ev) || 0) * 100).toFixed(1))}%
+            </span>
+          </div>
+          <div className="v2-stat-row">
+            <span className="lbl">Raw EV ROI</span>
             <span className="val">{best.ev > 0 ? "+" : ""}{(best.ev * 100).toFixed(1)}%</span>
           </div>
           <div className="v2-stat-row">
-            <span className="lbl">Adjusted EV</span>
+            <span className="lbl">Adjusted EV ROI</span>
             <span className={`val ${best.adj_ev > 0 ? "pos" : "neg"}`}>
               {best.adj_ev > 0 ? "+" : ""}{(best.adj_ev * 100).toFixed(1)}%
             </span>
@@ -700,8 +710,8 @@ function PickDetail({ p, onClose }) {
 function EmptyState({ filter }) {
   const messages = {
     ALL:  { ttl: "No slate today", sub: "MLB is off. Check back tomorrow — the next slate posts around 9 AM ET." },
-    FIRE: { ttl: "No FIRE picks", sub: "Model didn't find any 1u+ edges in today's slate. That's a signal, not a bug — skip days are a strategy." },
-    LEAN: { ttl: "No leans", sub: "Nothing between +2% and +5% EV right now." },
+    FIRE: { ttl: "No FIRE picks", sub: "Model didn't find any 1u+ ROI edges in today's slate. That's a signal, not a bug — skip days are a strategy." },
+    LEAN: { ttl: "No leans", sub: "Nothing between +2% and +6% EV ROI right now." },
     LIVE: { ttl: "No games live", sub: "First pitch hasn't dropped yet. Live picks will appear here during games." }
   };
   const m = messages[filter] || messages.ALL;
@@ -867,7 +877,7 @@ function PicksTab({ pitchersOverride }) {
               ? (() => {
                   const avgEv = fires.reduce((s, p) => s + bestSide(p).adj_ev, 0) / fires.length * 100;
                   const pre   = fires.filter(p => p.game_state === "pregame").length;
-                  return `${fires.length} actionable · avg EV +${avgEv.toFixed(1)}% · ${pre} pregame`;
+                  return `${fires.length} actionable · avg EV ROI +${avgEv.toFixed(1)}% · ${pre} pregame`;
                 })()
               : "No FIRE picks in slate"}
           </div>

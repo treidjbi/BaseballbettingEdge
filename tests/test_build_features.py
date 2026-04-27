@@ -10,6 +10,7 @@ from build_features import (
     american_to_implied,
     calc_lambda,
     calc_ev,
+    calc_edge,
     calc_verdict,
     calc_price_delta,
     blend_k9,
@@ -96,17 +97,27 @@ class TestCalcLambda:
 
 
 class TestCalcEV:
-    def test_positive_ev_when_win_prob_beats_implied(self):
+    def test_positive_ev_when_expected_profit_is_positive(self):
         ev = calc_ev(win_prob=0.572, odds=-112)
         assert ev > 0
 
-    def test_negative_ev_when_implied_beats_win_prob(self):
+    def test_negative_ev_when_expected_profit_is_negative(self):
         ev = calc_ev(win_prob=0.40, odds=-110)
         assert ev < 0
 
     def test_zero_ev_at_breakeven(self):
         ev = calc_ev(win_prob=0.5238, odds=-110)
         assert abs(ev) < 0.002
+
+    def test_plus_money_ev_uses_payout_not_probability_gap(self):
+        ev = calc_ev(win_prob=0.55, odds=120)
+        assert abs(ev - 0.21) < 0.001
+
+
+class TestCalcEdge:
+    def test_edge_is_probability_gap(self):
+        edge = calc_edge(win_prob=0.55, odds=-110)
+        assert abs(edge - (0.55 - american_to_implied(-110))) < 0.0001
 
 
 class TestCalcVerdict:
@@ -119,11 +130,20 @@ class TestCalcVerdict:
     def test_lean(self):
         assert calc_verdict(0.02) == "LEAN"
 
+    def test_lean_mid_band(self):
+        assert calc_verdict(0.04) == "LEAN"
+
     def test_fire_1u(self):
-        assert calc_verdict(0.05) == "FIRE 1u"
+        assert calc_verdict(0.08) == "FIRE 1u"
 
     def test_fire_2u(self):
-        assert calc_verdict(0.10) == "FIRE 2u"
+        assert calc_verdict(0.18) == "FIRE 2u"
+
+    def test_band_boundaries(self):
+        assert calc_verdict(0.0199) == "PASS"
+        assert calc_verdict(0.02) == "LEAN"
+        assert calc_verdict(0.06) == "FIRE 1u"
+        assert calc_verdict(0.17) == "FIRE 2u"
 
 
 class TestIsOpener:
@@ -648,7 +668,7 @@ class TestLoadParams:
         # ev_thresholds from file is ignored — it may appear as a stale key
         # but the pipeline never reads it; calc_verdict uses module constants
         from build_features import EDGE_FIRE_1U
-        assert EDGE_FIRE_1U == 0.09
+        assert EDGE_FIRE_1U == 0.17
 
 
 # -- blend_k9 weight params tests --
@@ -676,16 +696,16 @@ class TestBlendK9Params:
 
 class TestCalcVerdictThresholds:
     def test_static_thresholds(self):
-        """EV thresholds are fixed: LEAN 1-3%, FIRE 1u 3-9%, FIRE 2u >9%."""
+        """EV ROI thresholds are fixed: LEAN 2-6%, FIRE 1u 6-17%, FIRE 2u 17%+."""
         assert calc_verdict(0.005) == "PASS"
         assert calc_verdict(0.02) == "LEAN"
-        assert calc_verdict(0.05) == "FIRE 1u"
-        assert calc_verdict(0.10) == "FIRE 2u"
+        assert calc_verdict(0.08) == "FIRE 1u"
+        assert calc_verdict(0.18) == "FIRE 2u"
         # Boundary tests
-        assert calc_verdict(0.01) == "PASS"      # exactly 1% → PASS
-        assert calc_verdict(0.03) == "LEAN"      # exactly 3% → LEAN
-        assert calc_verdict(0.09) == "FIRE 1u"   # exactly 9% → FIRE 1u
-        assert calc_verdict(0.091) == "FIRE 2u"  # just over 9% → FIRE 2u
+        assert calc_verdict(0.0199) == "PASS"      # just under 2% → PASS
+        assert calc_verdict(0.06) == "FIRE 1u"     # exactly 6% → FIRE 1u
+        assert calc_verdict(0.17) == "FIRE 2u"     # exactly 17% → FIRE 2u
+        assert calc_verdict(0.1699) == "FIRE 1u"   # just under 17% → FIRE 1u
 
 
 # -- build_pitcher_record output fields --

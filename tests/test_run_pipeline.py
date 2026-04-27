@@ -1376,6 +1376,45 @@ def test_restamp_starter_mismatch_stays_false_on_aligned_case():
     assert records[0]["starter_mismatch"] is False
 
 
+def test_merge_with_locked_snapshots_replaces_scratched_upcoming_pitcher(tmp_path):
+    """Pregame starter replacement should evict the stale upcoming card for that
+    same game instead of carrying both pitchers forward."""
+    import run_pipeline
+    from datetime import datetime, timezone
+
+    output_path = tmp_path / "today.json"
+    existing = {
+        "date": "2026-04-22",
+        "pitchers": [{
+            "pitcher": "Chad Patrick",
+            "team": "Detroit Tigers",
+            "opp_team": "Tampa Bay Rays",
+            "game_time": "2026-04-22T23:10:00Z",
+        }],
+    }
+    output_path.write_text(json.dumps(existing))
+
+    fresh_records = [{
+        "pitcher": "Zack Littell",
+        "team": "Detroit Tigers",
+        "opp_team": "Tampa Bay Rays",
+        "game_time": "2026-04-22T23:10:00Z",
+    }]
+
+    with patch.object(run_pipeline, "OUTPUT_PATH", output_path):
+        merged = run_pipeline._merge_with_locked_snapshots(
+            fresh_records,
+            "2026-04-22",
+            datetime(2026, 4, 22, 18, 0, tzinfo=timezone.utc),
+        )
+
+    names = [p["pitcher"] for p in merged]
+    assert names == ["Zack Littell"], (
+        "Starter replacement before first pitch should replace the stale card "
+        "for that game, not preserve both pitchers"
+    )
+
+
 def test_restamp_starter_mismatch_accent_insensitive():
     """Accented MLB name vs unaccented odds name → no mismatch."""
     import run_pipeline

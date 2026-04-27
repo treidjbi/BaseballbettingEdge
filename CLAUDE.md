@@ -2,7 +2,7 @@
 
 ## What This Project Does
 
-MLB pitcher strikeout prop betting model. Fetches daily K props from TheRundown API, combines with pitcher stats (MLB Stats API), swinging-strike rates (FanGraphs/PyBaseball), umpire tendencies (MLB officials + cached career rates), and opposing lineup K rates to produce a Poisson-based expected strikeout (lambda) for each pitcher. Computes EV against book odds and outputs verdicts (PASS / LEAN / FIRE 1u / FIRE 2u).
+MLB pitcher strikeout prop betting model. Fetches daily K props from TheRundown API, combines with pitcher stats (MLB Stats API), swinging-strike rates (FanGraphs/PyBaseball), umpire tendencies (MLB officials + cached career rates), and opposing lineup K rates to produce a Poisson-based expected strikeout (lambda) for each pitcher. Computes probability edge plus expected ROI against book odds and outputs verdicts (PASS / LEAN / FIRE 1u / FIRE 2u).
 
 Results are displayed on a static dashboard hosted on Netlify with push notification support.
 
@@ -17,7 +17,7 @@ pipeline/           Python data pipeline (runs on GitHub Actions)
   fetch_umpires.py    MLB Stats API officials + cached career rates — HP umpire K rate adjustments
   fetch_lineups.py    Confirmed lineups
   fetch_batter_stats.py  FanGraphs — batter K% splits (vs L/R)
-  build_features.py   Joins all data → computes lambda, Poisson EV, verdicts
+  build_features.py   Joins all data → computes lambda, edge, EV ROI, verdicts
   calibrate.py        Auto-calibrates params (lambda_bias, ump_scale, blend weights, swstr_k9_scale)
   fetch_results.py    Seeds picks into SQLite, fetches box scores, grades results
   backfill_results.py Backfill historical results
@@ -222,7 +222,7 @@ Read this before debugging any data-source issue.
 3. Opponent K%: Bayesian-regressed team/lineup strikeout rate
 4. Umpire adjustment: HP umpire career K rate delta
 5. Lambda = (adjusted_K/9 × opp_K_factor × innings/9) + ump_adjustment + lambda_bias
-6. Poisson CDF → over/under win probabilities → EV vs book odds → verdict
+6. Poisson CDF → over/under win probabilities → probability edge + EV ROI vs book odds → verdict
 
 ### Opener handling
 
@@ -275,14 +275,20 @@ Read this before debugging any data-source issue.
   fallback. Losing only the career baseline means the current SwStr value is
   still live and only the delta is zeroed.
 
-### EV Verdict Thresholds
+### EV / Edge Semantics
 
-Thresholds live in `pipeline/build_features.py` (`EDGE_LEAN`, `EDGE_FIRE_1U`):
+- `ev_*["edge"]` is the probability gap: model win probability minus implied probability.
+- `ev_*["ev"]` is expected ROI on a 1.0u risked stake.
+- `ev_*["adj_ev"]` is the movement-confidence-adjusted EV ROI used for ranking and verdict display.
 
-- **PASS** — EV ≤ 1% (no bet)
-- **LEAN** — EV 1–3% (tracked, not staked)
-- **FIRE 1u** — EV 3–9% (1-unit play)
-- **FIRE 2u** — EV > 9% (2-unit play, truly elite edge)
+### Verdict Thresholds
+
+Thresholds live in `pipeline/build_features.py` (`EDGE_PASS`, `EDGE_LEAN`, `EDGE_FIRE_1U`):
+
+- **PASS** — EV ROI < 2% (no bet)
+- **LEAN** — EV ROI 2–6% (tracked, not staked)
+- **FIRE 1u** — EV ROI 6–17% (1-unit play)
+- **FIRE 2u** — EV ROI ≥ 17% (2-unit play, truly elite edge)
 
 ## Calibration
 
@@ -291,10 +297,10 @@ Thresholds live in `pipeline/build_features.py` (`EDGE_LEAN`, `EDGE_FIRE_1U`):
 - **Phase 2 (n>=60)**: ump_scale, K/9 blend weights (season_cap, recent), swstr_k9_scale
 - Parameters saved to `data/params.json` with calibration notes
 - Only uses current-season picks after any `formula_change_date`
-- Current live boundary: `formula_change_date = 2026-04-27` marks the first
-  confirmed post-SwStr-live era. This preserves historical picks/results for
-  analysis while preventing calibration from learning across the dead-SwStr
-  window (`2026-04-08` → pre-fix 2026-04-27 rows).
+- Current live boundary: `formula_change_date = 2026-04-28` marks the first
+  clean post-ROI / post-SwStr-live calibration era. This preserves historical
+  picks/results for analysis while preventing calibration from learning across
+  the dead-SwStr window and the 2026-04-27 EV-semantics transition slate.
 
 ## Data Flow
 
@@ -526,7 +532,7 @@ active season pressure, rather than patching mid-season.
 `picks_history.json` beyond the dashboard's performance tab. Not part of
 the pipeline. Setup: `pip install -r analytics/requirements.txt`. Run:
 `python analytics/performance.py` (optional `--since YYYY-MM-DD` /
-`--min-ev 0.03`). Prints tables to the console and saves plots to the
+`--min-ev 0.06`). Prints tables to the console and saves plots to the
 gitignored `analytics/output/`. See [analytics/README.md](analytics/README.md).
 
 ## Testing Notes

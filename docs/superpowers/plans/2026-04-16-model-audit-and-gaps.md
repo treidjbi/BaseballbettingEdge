@@ -1592,9 +1592,12 @@ the full A→C story stays visible in one document.
   `today.json` shows `15/16` non-null `career_swstr_pct` and `15/16` nonzero
   `swstr_delta_k9`).
 - **Calibration boundary decision:** accepted. `formula_change_date` is now
-  bumped to `2026-04-27` to mark the first confirmed post-SwStr-live era.
-  Current params are intentionally preserved as priors; this is a data-learning
-  fence, not a cold restart of `lambda_bias` / `ump_scale` / `swstr_k9_scale`.
+  bumped to `2026-04-28` to mark the first clean post-SwStr-live / post-ROI
+  era. `2026-04-27` is treated as the transition slate because the EV metric
+  was later redefined from a probability gap to true ROI with `edge` stored
+  separately. Current params are intentionally preserved as priors; this is a
+  data-learning fence, not a cold restart of `lambda_bias` / `ump_scale` /
+  `swstr_k9_scale`.
 - With that boundary in place, **Phase C is unblocked**.
 
 **Interpretation guidance**

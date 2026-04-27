@@ -881,8 +881,8 @@
   }
 
   /**
-   * Returns the side (OVER or UNDER) with the higher adjusted EV for a pitcher.
-   * Uses adj_ev (movement-confidence-adjusted) for selection so steam on one side
+   * Returns the side (OVER or UNDER) with the higher adjusted EV ROI for a pitcher.
+   * Uses adj_ev (movement-confidence-adjusted ROI) for selection so steam on one side
    * can flip the recommendation. Used to pick which side to display on the card badge.
    */
   function bestSide(p) {
@@ -890,6 +890,7 @@
       return { verdict:   p.ev_over.verdict,
                ev:        p.ev_over.adj_ev,
                rawEv:     p.ev_over.ev,
+               edge:      p.ev_over.edge ?? p.ev_over.ev,
                winProb:   p.ev_over.win_prob,
                conf:      p.ev_over.movement_conf,
                direction: 'OVER',
@@ -899,6 +900,7 @@
       return { verdict:   p.ev_under.verdict,
                ev:        p.ev_under.adj_ev,
                rawEv:     p.ev_under.ev,
+               edge:      p.ev_under.edge ?? p.ev_under.ev,
                winProb:   p.ev_under.win_prob,
                conf:      p.ev_under.movement_conf,
                direction: 'UNDER',
@@ -1037,9 +1039,9 @@
     // Steam only meaningful pre-game; suppress after lock
     const steamIndicator = started ? '' : steamHtml(p, side.direction);
 
-    // EV left-border accent only for upcoming picks
-    const evBorder = !started && side.ev >= 0.25 ? 'border-left:3px solid var(--fire)'
-                   : !started && side.ev >= 0.15 ? 'border-left:3px solid #e67e22'
+    // EV ROI left-border accent only for upcoming picks
+    const evBorder = !started && side.ev >= 0.17 ? 'border-left:3px solid var(--fire)'
+                   : !started && side.ev >= 0.06 ? 'border-left:3px solid #e67e22'
                    : '';
 
     // State badge shown in adj-row for started games
@@ -1055,10 +1057,10 @@
     // PASS hiding only applies to upcoming section (data-pass attr)
     const passAttr = (!started && isPass) ? ' data-pass="1"' : '';
 
-    // EV sub-label: suppress steam annotation for locked games
+    // EV ROI sub-label: keep both probability edge and win rate visible.
     const evSub = !started && side.conf != null && side.conf <= STEAM_LABEL_THRESHOLD
-      ? `↓steam (raw ${(side.rawEv * 100).toFixed(1)}%)`
-      : 'p=' + side.winProb;
+      ? `edge ${(side.edge * 100).toFixed(1)}% · ↓steam (raw ROI ${(side.rawEv * 100).toFixed(1)}%)`
+      : `edge ${(side.edge * 100).toFixed(1)}% · p=${side.winProb}`;
 
     return `
     <div class="pitcher-card${cardCls ? ' ' + cardCls : ''}"${passAttr}${evBorder ? ` style="${evBorder}"` : ''}>
@@ -1081,7 +1083,7 @@
           <div class="stat-sub">${p.actual_ks != null ? `Actual: ${p.actual_ks}` : `vs line ${p.k_line}`}</div>
         </div>
         <div class="stat-cell">
-          <div class="stat-label">EV</div>
+          <div class="stat-label">EV ROI</div>
           <div class="stat-value ${side.ev > 0 ? 'val-pos' : 'val-neg'}">${(side.ev * 100).toFixed(1)}%</div>
           <div class="stat-sub">${evSub}</div>
         </div>
@@ -1354,7 +1356,7 @@
           <div class="perf-col-winpct" style="text-align:right">Win %</div>
           <div class="perf-col-units" style="text-align:right">Units</div>
           <div class="perf-col-roi" style="text-align:right">ROI</div>
-          <div class="perf-col-avgev" style="text-align:right">EV</div>
+          <div class="perf-col-avgev" style="text-align:right">EV ROI</div>
         </div>
         ${rowsHtml}
       </div>`;
