@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-04-27T21:34:33Z",
+  "generated_at": "2026-04-27T21:50:32Z",
   "date": "2026-04-27",
   "props_available": true,
   "data_warnings": [
@@ -330,15 +330,15 @@
       "game_time": "2026-04-27T23:40:00Z",
       "k_line": 3.5,
       "opening_line": 3.5,
-      "best_over_book": "BetMGM",
-      "ref_book": "BetMGM",
-      "best_over_odds": -110,
-      "best_under_odds": -120,
-      "opening_over_odds": -115,
-      "opening_under_odds": -115,
+      "best_over_book": "FanDuel",
+      "ref_book": "FanDuel",
+      "best_over_odds": -120,
+      "best_under_odds": -110,
+      "opening_over_odds": -118,
+      "opening_under_odds": -112,
       "opening_odds_source": "first_seen",
-      "price_delta_over": 5,
-      "price_delta_under": -5,
+      "price_delta_over": -2,
+      "price_delta_under": 2,
       "raw_lambda": 3.52,
       "lambda": 3.28,
       "avg_ip": 5.8,
@@ -359,20 +359,24 @@
       "recent_k9": 5.9,
       "career_k9": 5.08,
       "ev_over": {
-        "ev": -0.1089,
-        "adj_ev": -0.1089,
+        "ev": -0.1306,
+        "adj_ev": -0.1306,
         "verdict": "PASS",
         "win_prob": 0.415,
         "movement_conf": 1.0
       },
       "ev_under": {
-        "ev": 0.0397,
-        "adj_ev": 0.0397,
+        "ev": 0.0613,
+        "adj_ev": 0.0613,
         "verdict": "FIRE 1u",
         "win_prob": 0.585,
         "movement_conf": 1.0
       },
       "book_odds": {
+        "FanDuel": {
+          "over": -120,
+          "under": -110
+        },
         "BetMGM": {
           "over": -110,
           "under": -120
@@ -391,13 +395,13 @@
       "opening_line": 3.5,
       "best_over_book": "FanDuel",
       "ref_book": "FanDuel",
-      "best_over_odds": -162,
-      "best_under_odds": 122,
-      "opening_over_odds": -166,
-      "opening_under_odds": 124,
+      "best_over_odds": -166,
+      "best_under_odds": 124,
+      "opening_over_odds": -162,
+      "opening_under_odds": 122,
       "opening_odds_source": "first_seen",
-      "price_delta_over": 4,
-      "price_delta_under": -2,
+      "price_delta_over": -4,
+      "price_delta_under": 2,
       "raw_lambda": 3.53,
       "lambda": 3.28,
       "avg_ip": 4.67,
@@ -418,23 +422,23 @@
       "recent_k9": 7.71,
       "career_k9": 8.55,
       "ev_over": {
-        "ev": -0.2026,
-        "adj_ev": -0.2026,
+        "ev": -0.2084,
+        "adj_ev": -0.2084,
         "verdict": "PASS",
         "win_prob": 0.416,
         "movement_conf": 1.0
       },
       "ev_under": {
-        "ev": 0.1339,
-        "adj_ev": 0.1339,
+        "ev": 0.1379,
+        "adj_ev": 0.1379,
         "verdict": "FIRE 2u",
         "win_prob": 0.584,
         "movement_conf": 1.0
       },
       "book_odds": {
         "FanDuel": {
-          "over": -162,
-          "under": 122
+          "over": -166,
+          "under": 124
         }
       },
       "data_complete": true,
@@ -639,13 +643,13 @@
       "opening_line": 5.5,
       "best_over_book": "FanDuel",
       "ref_book": "FanDuel",
-      "best_over_odds": -144,
-      "best_under_odds": 108,
-      "opening_over_odds": -146,
-      "opening_under_odds": 110,
+      "best_over_odds": -146,
+      "best_under_odds": 110,
+      "opening_over_odds": -144,
+      "opening_under_odds": 108,
       "opening_odds_source": "first_seen",
-      "price_delta_over": 2,
-      "price_delta_under": -2,
+      "price_delta_over": -2,
+      "price_delta_under": 2,
       "raw_lambda": 5.6,
       "lambda": 5.35,
       "avg_ip": 5.07,
@@ -666,23 +670,23 @@
       "recent_k9": 10.3,
       "career_k9": 8.8,
       "ev_over": {
-        "ev": -0.1447,
-        "adj_ev": -0.1447,
+        "ev": -0.148,
+        "adj_ev": -0.148,
         "verdict": "PASS",
         "win_prob": 0.445,
         "movement_conf": 1.0
       },
       "ev_under": {
-        "ev": 0.0737,
-        "adj_ev": 0.0737,
+        "ev": 0.0783,
+        "adj_ev": 0.0783,
         "verdict": "FIRE 1u",
         "win_prob": 0.555,
         "movement_conf": 1.0
       },
       "book_odds": {
         "FanDuel": {
-          "over": -144,
-          "under": 108
+          "over": -146,
+          "under": 110
         },
         "BetMGM": {
           "over": -135,
