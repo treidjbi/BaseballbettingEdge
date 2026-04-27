@@ -1,10 +1,10 @@
 {
-  "generated_at": "2026-04-27T21:50:32Z",
+  "generated_at": "2026-04-27T21:51:37Z",
   "date": "2026-04-27",
   "props_available": true,
   "data_warnings": [
-    "fetch_lineups: confirmed 11/16 opposing lineups (5 still projected)",
-    "fetch_batter_stats missing splits for 11/16 opposing lineups"
+    "fetch_lineups: confirmed 12/16 opposing lineups (4 still projected)",
+    "fetch_batter_stats missing splits for 12/16 opposing lineups"
   ],
   "pitchers": [
     {
@@ -17,13 +17,13 @@
       "opening_line": 4.5,
       "best_over_book": "FanDuel",
       "ref_book": "FanDuel",
-      "best_over_odds": 132,
-      "best_under_odds": -178,
-      "opening_over_odds": 130,
-      "opening_under_odds": -174,
+      "best_over_odds": 130,
+      "best_under_odds": -174,
+      "opening_over_odds": 132,
+      "opening_under_odds": -178,
       "opening_odds_source": "first_seen",
-      "price_delta_over": 2,
-      "price_delta_under": -4,
+      "price_delta_over": -2,
+      "price_delta_under": 4,
       "raw_lambda": 5.14,
       "lambda": 4.89,
       "avg_ip": 4.87,
@@ -44,23 +44,23 @@
       "recent_k9": 9.25,
       "career_k9": 8.44,
       "ev_over": {
-        "ev": 0.1098,
-        "adj_ev": 0.1098,
+        "ev": 0.106,
+        "adj_ev": 0.106,
         "verdict": "FIRE 2u",
         "win_prob": 0.541,
         "movement_conf": 1.0
       },
       "ev_under": {
-        "ev": -0.1811,
-        "adj_ev": -0.1811,
+        "ev": -0.1758,
+        "adj_ev": -0.1758,
         "verdict": "PASS",
         "win_prob": 0.459,
         "movement_conf": 1.0
       },
       "book_odds": {
         "FanDuel": {
-          "over": 132,
-          "under": -178
+          "over": 130,
+          "under": -174
         },
         "BetMGM": {
           "over": 130,
@@ -713,8 +713,8 @@
       "opening_odds_source": "first_seen",
       "price_delta_over": -2,
       "price_delta_under": 2,
-      "raw_lambda": 5.49,
-      "lambda": 5.24,
+      "raw_lambda": 5.69,
+      "lambda": 5.45,
       "avg_ip": 5.73,
       "is_opener": false,
       "opener_note": null,
@@ -724,26 +724,26 @@
       "days_since_last_start": 6,
       "last_pitch_count": 84,
       "rest_k9_delta": 0.0,
-      "opp_k_rate": 0.2142,
-      "lineup_used": false,
+      "opp_k_rate": 0.232,
+      "lineup_used": true,
       "park_factor": 1.02,
-      "ump_k_adj": 0.0,
+      "ump_k_adj": 0.078,
       "starter_mismatch": true,
       "season_k9": 9.42,
       "recent_k9": 9.42,
       "career_k9": 6.13,
       "ev_over": {
-        "ev": 0.1699,
-        "adj_ev": 0.1699,
+        "ev": 0.2031,
+        "adj_ev": 0.2031,
         "verdict": "FIRE 2u",
-        "win_prob": 0.601,
+        "win_prob": 0.634,
         "movement_conf": 1.0
       },
       "ev_under": {
-        "ev": -0.2412,
-        "adj_ev": -0.2412,
+        "ev": -0.2744,
+        "adj_ev": -0.2744,
         "verdict": "PASS",
-        "win_prob": 0.399,
+        "win_prob": 0.366,
         "movement_conf": 1.0
       },
       "book_odds": {
@@ -752,7 +752,7 @@
           "under": -178
         }
       },
-      "data_complete": false,
+      "data_complete": true,
       "game_state": "pregame"
     },
     {
@@ -772,8 +772,8 @@
       "opening_odds_source": "first_seen",
       "price_delta_over": 4,
       "price_delta_under": -2,
-      "raw_lambda": 5.9,
-      "lambda": 5.66,
+      "raw_lambda": 5.94,
+      "lambda": 5.7,
       "avg_ip": 4.67,
       "is_opener": false,
       "opener_note": null,
@@ -786,23 +786,23 @@
       "opp_k_rate": 0.2189,
       "lineup_used": false,
       "park_factor": 1.02,
-      "ump_k_adj": 0.0,
+      "ump_k_adj": 0.078,
       "starter_mismatch": true,
       "season_k9": 14.14,
       "recent_k9": 14.14,
       "career_k9": 8.71,
       "ev_over": {
-        "ev": 0.0314,
-        "adj_ev": 0.0314,
+        "ev": 0.0371,
+        "adj_ev": 0.0371,
         "verdict": "FIRE 1u",
-        "win_prob": 0.666,
+        "win_prob": 0.672,
         "movement_conf": 1.0
       },
       "ev_under": {
-        "ev": -0.1012,
-        "adj_ev": -0.1012,
+        "ev": -0.1069,
+        "adj_ev": -0.1069,
         "verdict": "PASS",
-        "win_prob": 0.334,
+        "win_prob": 0.328,
         "movement_conf": 1.0
       },
       "book_odds": {
@@ -815,7 +815,7 @@
           "under": 115
         }
       },
-      "data_complete": false,
+      "data_complete": true,
       "game_state": "pregame"
     },
     {
@@ -1005,7 +1005,7 @@
     }
   ],
   "ump_diagnostics": {
-    "hp_count_fetched": 6,
-    "pitcher_nonzero_count": 11
+    "hp_count_fetched": 7,
+    "pitcher_nonzero_count": 13
   }
 }
