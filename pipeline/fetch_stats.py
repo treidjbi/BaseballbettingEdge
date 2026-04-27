@@ -11,6 +11,8 @@ from name_utils import normalize as _normalize_name
 log = logging.getLogger(__name__)
 
 MLB_BASE = "https://statsapi.mlb.com/api/v1"
+RECENT_START_LOOKBACK = 10
+RECENT_START_COUNT = 5
 
 
 def _get(path: str, params: dict = None) -> dict:
@@ -47,14 +49,61 @@ def _parse_ip(value) -> float:
 
 
 def _k9_from_splits(splits: list) -> float | None:
-    """Extract K/9 from an MLB stats splits list."""
+    """Extract aggregate K/9 from one or more MLB stats splits."""
+    total_ip = 0.0
+    total_so = 0
     for split in splits:
         stat = split.get("stat", {})
         ip   = _parse_ip(stat.get("inningsPitched", 0))
         so   = int(stat.get("strikeOuts", 0) or 0)
         if ip > 0:
-            return round((so / ip) * 9, 2)
-    return None
+            total_ip += ip
+            total_so += so
+    if total_ip <= 0:
+        return None
+    return round((total_so / total_ip) * 9, 2)
+
+
+def _parse_split_date(value) -> datetime | None:
+    """Parse an MLB game log date string like 2026-03-29."""
+    if not value:
+        return None
+    try:
+        return datetime.strptime(str(value), "%Y-%m-%d")
+    except ValueError:
+        return None
+
+
+def _sort_starts_by_date_desc(starts: list) -> list:
+    """Return started game-log rows newest-first when date data exists."""
+    return sorted(
+        starts,
+        key=lambda split: _parse_split_date(split.get("date")) or datetime.min,
+        reverse=True,
+    )
+
+
+def _extract_days_since_last_start(target_date: datetime, starts: list) -> int | None:
+    """Compute rest days from the latest started game in the game log slice."""
+    if not starts:
+        return None
+    last_start_date = _parse_split_date(starts[0].get("date"))
+    if last_start_date is None or last_start_date > target_date:
+        return None
+    return (target_date - last_start_date).days
+
+
+def _extract_last_pitch_count(starts: list) -> int | None:
+    """Read the pitch count from the latest started game in the game log slice."""
+    if not starts:
+        return None
+    pitch_count = starts[0].get("stat", {}).get("numberOfPitches")
+    if pitch_count in (None, ""):
+        return None
+    try:
+        return int(pitch_count)
+    except (TypeError, ValueError):
+        return None
 
 
 def fetch_pitch_hand(person_id: int) -> str | None:
@@ -80,7 +129,7 @@ def fetch_pitch_hand(person_id: int) -> str | None:
     return None
 
 
-def fetch_pitcher_stats(person_id: int, season: int) -> dict:
+def fetch_pitcher_stats(person_id: int, season: int, target_date: datetime | None = None) -> dict:
     """Fetch season K/9, career K/9, recent 5-start K/9, and IP for one pitcher."""
     # Season stats — API returns {"stats": []} when no starts yet (e.g. Opening Day)
     season_data   = _get(f"/people/{person_id}/stats", {
@@ -101,25 +150,35 @@ def fetch_pitcher_stats(person_id: int, season: int) -> dict:
 
     # Recent game log — also try prior season if current season is empty
     log_data      = _get(f"/people/{person_id}/stats", {
-        "stats": "gameLog", "group": "pitching", "season": season, "limit": 5
+        "stats": "gameLog", "group": "pitching", "season": season, "limit": RECENT_START_LOOKBACK
     })
     starts        = (log_data.get("stats") or [{}])[0].get("splits", [])
+    starts        = [s for s in starts if int(s.get("stat", {}).get("gamesStarted", 0) or 0) > 0]
     if not starts:
         # Opening Day / early season: fall back to last season's game log
         prior_data = _get(f"/people/{person_id}/stats", {
-            "stats": "gameLog", "group": "pitching", "season": season - 1, "limit": 5
+            "stats": "gameLog", "group": "pitching", "season": season - 1, "limit": RECENT_START_LOOKBACK
         })
         starts     = (prior_data.get("stats") or [{}])[0].get("splits", [])
+        starts     = [s for s in starts if int(s.get("stat", {}).get("gamesStarted", 0) or 0) > 0]
+    starts        = _sort_starts_by_date_desc(starts)
+    starts        = starts[:RECENT_START_COUNT]
     starts_count  = len(starts)
+    recent_start_ips = [_parse_ip(s.get("stat", {}).get("inningsPitched", 0)) for s in starts]
     recent_k9     = _k9_from_splits(starts) if starts_count >= 3 else season_k9
 
     # Average IP per start from last 5 starts — used as expected_innings in calc_lambda.
     # Falls back to 5.5 if fewer than 3 starts (e.g. early season, call-ups).
     if starts_count >= 3:
-        ip_values    = [_parse_ip(s.get("stat", {}).get("inningsPitched", 0)) for s in starts]
-        avg_ip_last5 = round(sum(ip_values) / len(ip_values), 2)
+        avg_ip_last5 = round(sum(recent_start_ips) / len(recent_start_ips), 2)
     else:
         avg_ip_last5 = 5.5
+
+    days_since_last_start = (
+        _extract_days_since_last_start(target_date, starts)
+        if target_date is not None else None
+    )
+    last_pitch_count = _extract_last_pitch_count(starts)
 
     return {
         "season_k9":              season_k9,
@@ -128,6 +187,9 @@ def fetch_pitcher_stats(person_id: int, season: int) -> dict:
         "starts_count":           starts_count,
         "innings_pitched_season": ip,
         "avg_ip_last5":           avg_ip_last5,
+        "recent_start_ips":       recent_start_ips,
+        "days_since_last_start":  days_since_last_start,
+        "last_pitch_count":       last_pitch_count,
     }
 
 
@@ -178,8 +240,9 @@ def fetch_stats(date_str: str, pitcher_names: list) -> tuple[dict, dict]:
     downstream lookups (stats_map.get(odds["pitcher"])) continue to work
     without modification.
     """
-    season   = datetime.strptime(date_str, "%Y-%m-%d").year
-    next_day = (datetime.strptime(date_str, "%Y-%m-%d") + timedelta(days=1)).strftime("%Y-%m-%d")
+    target_date = datetime.strptime(date_str, "%Y-%m-%d")
+    season = target_date.year
+    next_day = (target_date + timedelta(days=1)).strftime("%Y-%m-%d")
 
     # Build normalized lookup: stripped/lowercased name → original TheRundown name
     norm_to_orig: dict[str, str] = {}
@@ -199,6 +262,7 @@ def fetch_stats(date_str: str, pitcher_names: list) -> tuple[dict, dict]:
     stats_by_name: dict = {}
     probables_by_team: dict = {}
     for date_block in schedule.get("dates", []):
+        game_date = _parse_split_date(date_block.get("date")) or target_date
         for game in date_block.get("games", []):
             for side in ("away", "home"):
                 team_data = game.get("teams", {}).get(side, {})
@@ -236,7 +300,7 @@ def fetch_stats(date_str: str, pitcher_names: list) -> tuple[dict, dict]:
                 team_id = team_data.get("team", {}).get("id")
 
                 try:
-                    pstats = fetch_pitcher_stats(pid, season)
+                    pstats = fetch_pitcher_stats(pid, season, target_date=game_date)
                 except Exception as e:
                     log.warning("Stats fetch failed for %s: %s", name, e)
                     continue
@@ -251,6 +315,7 @@ def fetch_stats(date_str: str, pitcher_names: list) -> tuple[dict, dict]:
                     opp_k_rate, opp_games_played = 0.227, 0
 
                 opp_team_name = opp_team.get("name", "")
+                park_team_name = team_name if side == "home" else opp_team_name
                 stats_by_name[name] = {
                     **pstats,
                     "throws":           throws,
@@ -258,6 +323,7 @@ def fetch_stats(date_str: str, pitcher_names: list) -> tuple[dict, dict]:
                     "opp_games_played": opp_games_played,
                     "team":             team_name,
                     "opp_team":         opp_team_name,
+                    "park_team":        park_team_name,
                     "probable_name":    mlb_name,  # A7: happy-path mirror
                 }
 

@@ -7,6 +7,7 @@ GitHub Actions reads it from repository secrets.
 """
 import json
 import logging
+import math
 import os
 import sys
 from datetime import datetime, timezone
@@ -25,6 +26,7 @@ from fetch_lineups      import fetch_lineups
 from fetch_batter_stats import fetch_batter_stats
 from build_features     import build_pitcher_record
 from name_utils         import normalize as _normalize_name
+from team_codes         import TEAM_NAME_TO_CODE
 from fetch_results      import (init_db, load_history_into_db, seed_picks,
                                 export_db_to_history, lock_due_picks, get_db)
 
@@ -33,6 +35,121 @@ logging.basicConfig(
     format="%(asctime)s %(levelname)s %(message)s"
 )
 log = logging.getLogger(__name__)
+
+
+def _row_data_complete(*, swstr_meta: dict, swstr_row: dict | None, ump_k_adj: float) -> bool:
+    """Return True only when this pitcher's upstream SwStr and ump inputs are live."""
+    if ump_k_adj == 0.0:
+        return False
+
+    if not swstr_meta.get("current_usable", True):
+        return False
+
+    if not swstr_meta.get("career_usable", True):
+        return False
+
+    if not swstr_row or swstr_row.get("swstr_pct") is None:
+        return False
+
+    return True
+
+
+def _count_scheduled_games(props: list[dict]) -> int:
+    if not props:
+        return 0
+
+    fallback_games = (len(props) + 1) // 2
+    matchups = {
+        tuple(sorted((prop.get("team", ""), prop.get("opp_team", ""))))
+        for prop in props
+        if prop.get("team") and prop.get("opp_team")
+    }
+    resolved_prop_count = sum(
+        1 for prop in props
+        if prop.get("team") and prop.get("opp_team")
+    )
+    if matchups and resolved_prop_count == len(props):
+        return len(matchups)
+
+    return fallback_games
+
+
+def _lineup_has_missing_split(
+    lineup: list[dict] | None,
+    batter_stats: dict,
+    pitcher_throws: str,
+) -> bool:
+    if not lineup:
+        return False
+
+    split_key = "vs_R" if pitcher_throws == "R" else "vs_L"
+    for batter in lineup:
+        batter_name = _normalize_name(batter.get("name", ""))
+        splits = batter_stats.get(batter_name)
+        if not splits or splits.get(split_key) is None:
+            return True
+    return False
+
+
+def _swstr_warning_from_meta(swstr_meta: dict[str, bool]) -> str | None:
+    current_usable = bool(swstr_meta.get("current_usable", True))
+    career_usable = bool(swstr_meta.get("career_usable", True))
+    if current_usable and career_usable:
+        return None
+    if current_usable and not career_usable:
+        return "fetch_swstr career baseline unavailable, zeroing SwStr delta"
+    if not current_usable and career_usable:
+        return "fetch_swstr current-season values unavailable, using neutral SwStr fallback"
+    return "fetch_swstr current and career data unavailable, using neutral SwStr fallback"
+
+
+def collect_data_warnings(
+    *,
+    props: list[dict],
+    ump_diagnostics: dict | None = None,
+    swstr_warning: str | None = None,
+    lineup_confirmed_count: int | None = None,
+    lineup_missing_splits_count: int | None = None,
+    lineup_total_count: int | None = None,
+) -> list[str]:
+    warnings: list[str] = []
+    total_lineups = lineup_total_count if lineup_total_count is not None else len(props)
+    scheduled_games = _count_scheduled_games(props)
+
+    hp_count_fetched = None
+    if ump_diagnostics is not None:
+        hp_count_fetched = ump_diagnostics.get("hp_count_fetched")
+    if scheduled_games > 0 and hp_count_fetched == 0:
+        warnings.append(
+            f"fetch_umpires returned 0 entries for {scheduled_games} scheduled games"
+        )
+
+    if swstr_warning:
+        warnings.append(swstr_warning)
+
+    if (
+        lineup_confirmed_count is not None
+        and total_lineups > 0
+        and 0 <= lineup_confirmed_count < total_lineups
+    ):
+        projected_count = total_lineups - lineup_confirmed_count
+        warnings.append(
+            "fetch_lineups: confirmed "
+            f"{lineup_confirmed_count}/{total_lineups} opposing lineups "
+            f"({projected_count} still projected)"
+        )
+
+    if (
+        lineup_missing_splits_count is not None
+        and total_lineups > 0
+        and lineup_missing_splits_count > 0
+    ):
+        warnings.append(
+            "fetch_batter_stats missing splits for "
+            f"{lineup_missing_splits_count}/{total_lineups} opposing lineups"
+        )
+
+    return warnings
 
 OUTPUT_PATH    = Path(__file__).parent.parent / "dashboard" / "data" / "processed" / "today.json"
 STEAM_PATH     = Path(__file__).parent.parent / "dashboard" / "data" / "processed" / "steam.json"
@@ -59,6 +176,78 @@ def fetch_lineups_for_pitcher(date_str: str, team: str) -> list[dict] | None:
         log.warning("fetch_lineups failed for %s: %s", team, e)
         return None
 PREVIEW_PATH  = Path(__file__).parent.parent / "data" / "preview_lines.json"
+PARK_FACTORS_PATH = Path(__file__).parent.parent / "data" / "park_factors.json"
+
+
+def _load_park_factors() -> dict:
+    try:
+        with open(PARK_FACTORS_PATH, encoding="utf-8") as f:
+            park_factors = json.load(f)
+    except (FileNotFoundError, json.JSONDecodeError, OSError) as e:
+        log.warning(
+            "Park factors unavailable at %s: %s; defaulting park_factor=1.0 for this run",
+            PARK_FACTORS_PATH,
+            e,
+        )
+        return {}
+
+    if not isinstance(park_factors, dict):
+        log.warning(
+            "Park factors file %s did not contain an object; defaulting park_factor=1.0 for this run",
+            PARK_FACTORS_PATH,
+        )
+        return {}
+
+    factors = park_factors.get("factors", {})
+    if not isinstance(factors, dict):
+        log.warning(
+            "Park factors file %s did not contain a 'factors' object; defaulting park_factor=1.0 for this run",
+            PARK_FACTORS_PATH,
+        )
+        return {}
+
+    return factors
+
+
+def _resolve_park_factor(home_team_name: str, park_factors: dict, pitcher_name: str) -> float:
+    if not home_team_name:
+        log.warning(
+            "Park factor defaulted to 1.0 for %s: missing home team name",
+            pitcher_name,
+        )
+        return 1.0
+
+    team_code = TEAM_NAME_TO_CODE.get(home_team_name)
+    if not team_code:
+        log.warning(
+            "Park factor defaulted to 1.0 for %s: unknown home team %r",
+            pitcher_name,
+            home_team_name,
+        )
+        return 1.0
+
+    park_factor = park_factors.get(team_code)
+    if not isinstance(park_factor, (int, float)):
+        log.warning(
+            "Park factor defaulted to 1.0 for %s: no entry for %s (%s)",
+            pitcher_name,
+            home_team_name,
+            team_code,
+        )
+        return 1.0
+
+    park_factor = float(park_factor)
+    if not math.isfinite(park_factor) or park_factor <= 0:
+        log.warning(
+            "Park factor defaulted to 1.0 for %s: invalid value %r for %s (%s)",
+            pitcher_name,
+            park_factor,
+            home_team_name,
+            team_code,
+        )
+        return 1.0
+
+    return park_factor
 
 
 def _merge_with_locked_snapshots(fresh_records: list, date_str: str, now: datetime) -> list:
@@ -225,6 +414,7 @@ def _write_dated_archive_only(records: list, date_str: str, props_available: boo
         "generated_at":    datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
         "date":            date_str,
         "props_available": props_available,
+        "data_warnings":   [],
         "pitchers":        records,
     }
     dated_path = base_dir / f"{date_str}.json"
@@ -314,6 +504,7 @@ def _run_preview(tomorrow_str: str) -> None:
         ump_map = {p["pitcher"]: 0.0 for p in props}
 
     batter_stats = fetch_batter_stats_cached(int(tomorrow_str[:4]))
+    park_factors = _load_park_factors()
 
     records = []
     for odds in props:
@@ -324,8 +515,16 @@ def _run_preview(tomorrow_str: str) -> None:
             continue
         try:
             lineup = fetch_lineups_for_pitcher(tomorrow_str, stats.get("team", ""))
+            park_factor = _resolve_park_factor(
+                stats.get("park_team") or stats.get("team") or odds.get("team", ""),
+                park_factors,
+                name,
+            )
             record = build_pitcher_record(
-                odds, stats, ump_map.get(name, 0.0),
+                odds,
+                stats,
+                ump_map.get(name, 0.0),
+                park_factor=park_factor,
                 swstr_data=swstr_map.get(name, _SWSTR_NEUTRAL),
                 lineup=lineup,
                 batter_stats=batter_stats if lineup else None,
@@ -747,15 +946,21 @@ def run(date_str: str, run_type: str = "full") -> None:
 
     # 3. Fetch SwStr% (FanGraphs via PyBaseball — graceful fallback to neutral)
     # Returns {name: {"swstr_pct": float, "career_swstr_pct": float | None}}
-    swstr_ok = True
+    swstr_meta = {"current_usable": True, "career_usable": True}
+    swstr_warning = None
     try:
         swstr_map = fetch_swstr(int(date_str[:4]), pitcher_names)
-        swstr_meta = swstr_map.pop("__meta__", {})
-        swstr_ok = bool(swstr_meta.get("current_usable", True) and swstr_meta.get("career_usable", True))
+        raw_swstr_meta = swstr_map.pop("__meta__", {})
+        swstr_meta = {
+            "current_usable": bool(raw_swstr_meta.get("current_usable", True)),
+            "career_usable": bool(raw_swstr_meta.get("career_usable", True)),
+        }
+        swstr_warning = _swstr_warning_from_meta(swstr_meta)
     except Exception as e:
         log.warning("fetch_swstr failed: %s — using neutral SwStr%% for all", e)
         swstr_map = {name: _SWSTR_NEUTRAL for name in pitcher_names}
-        swstr_ok = False
+        swstr_meta = {"current_usable": False, "career_usable": False}
+        swstr_warning = _swstr_warning_from_meta(swstr_meta)
 
     # 4. Fetch umpire adjustments (MLB Stats API officials hydrate — graceful fallback built in)
     # Source (2026-04-17 cutover): statsapi.mlb.com /schedule?hydrate=officials
@@ -810,6 +1015,10 @@ def run(date_str: str, run_type: str = "full") -> None:
 
     # 5. Fetch batter stats (FanGraphs — cached, graceful fallback to {})
     batter_stats = fetch_batter_stats_cached(int(date_str[:4]))
+    park_factors = _load_park_factors()
+    lineup_confirmed_count = 0
+    lineup_missing_splits_count = 0
+    lineup_total_count = 0
 
     # 6. Build records — per-pitcher error isolation
     records = []
@@ -820,17 +1029,37 @@ def run(date_str: str, run_type: str = "full") -> None:
             log.warning("No stats for %s — skipping", name)
             continue
         try:
+            lineup_total_count += 1
             lineup = fetch_lineups_for_pitcher(date_str, stats.get("team", ""))
+            swstr_row = swstr_map.get(name)
+            ump_k_adj = ump_map.get(name, 0.0)
+            pitcher_throws = stats.get("throws", "R")
+            if lineup is not None:
+                lineup_confirmed_count += 1
+                if _lineup_has_missing_split(lineup, batter_stats, pitcher_throws):
+                    lineup_missing_splits_count += 1
+            park_factor = _resolve_park_factor(
+                stats.get("park_team") or stats.get("team") or odds.get("team", ""),
+                park_factors,
+                name,
+            )
             record = build_pitcher_record(
-                odds, stats, ump_map.get(name, 0.0),
-                swstr_data=swstr_map.get(name, _SWSTR_NEUTRAL),
+                odds,
+                stats,
+                ump_k_adj,
+                park_factor=park_factor,
+                swstr_data=swstr_row or _SWSTR_NEUTRAL,
                 lineup=lineup,
                 batter_stats=batter_stats if lineup else None,
             )
             # Mark whether all external data APIs returned real data.
             # Picks with data_complete=False are excluded from calibration so
             # a bad-API run doesn't skew lambda_bias / ump_scale / swstr_k9_scale.
-            record["data_complete"] = swstr_ok and ump_ok
+            record["data_complete"] = _row_data_complete(
+                swstr_meta=swstr_meta,
+                swstr_row=swstr_row,
+                ump_k_adj=ump_k_adj,
+            )
             records.append(record)
             log.info("Built record for %s: λ=%.2f verdict=%s",
                      name, record["lambda"], record["ev_over"]["verdict"])
@@ -838,6 +1067,14 @@ def run(date_str: str, run_type: str = "full") -> None:
             log.warning("build_pitcher_record failed for %s: %s — skipping", name, e)
 
     log.info("Built %d/%d pitcher records", len(records), len(props))
+    data_warnings = collect_data_warnings(
+        props=props,
+        ump_diagnostics=ump_diagnostics,
+        swstr_warning=swstr_warning,
+        lineup_confirmed_count=lineup_confirmed_count,
+        lineup_missing_splits_count=lineup_missing_splits_count,
+        lineup_total_count=lineup_total_count,
+    )
 
     # Preserve locked snapshots: once a game has started, freeze its card data so
     # post-game-start odds movements don't change what the dashboard displays.
@@ -863,7 +1100,8 @@ def run(date_str: str, run_type: str = "full") -> None:
     # a non-empty records list here means at least some data is valid.
     if records or not _has_valid_output(date_str):
         _write_output(date_str, records, props_available=True,
-                      ump_diagnostics=ump_diagnostics)
+                      ump_diagnostics=ump_diagnostics,
+                      data_warnings=data_warnings)
         _write_steam(records, date_str)
     else:
         log.warning(
@@ -902,11 +1140,13 @@ def run(date_str: str, run_type: str = "full") -> None:
 
 
 def _write_output(date_str: str, records: list, props_available: bool,
-                  ump_diagnostics: dict | None = None) -> None:
+                  ump_diagnostics: dict | None = None,
+                  data_warnings: list[str] | None = None) -> None:
     output = {
         "generated_at":   datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
         "date":           date_str,
         "props_available": props_available,
+        "data_warnings":  data_warnings or [],
         "pitchers":       records,
     }
     # Surface fetch_umpires diagnostic counts at the top level so the user can

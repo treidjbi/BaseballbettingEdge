@@ -13,10 +13,13 @@ from build_features import (
     calc_verdict,
     calc_price_delta,
     blend_k9,
+    calc_rest_k9_delta,
     calc_swstr_delta_k9,
     calc_lineup_k_rate,
     calc_movement_confidence,
     bayesian_opp_k,
+    is_opener,
+    OPENER_NOTE,
     build_pitcher_record,
     platoon_k_delta,
     PLATOON_K_DELTA,
@@ -81,6 +84,16 @@ class TestCalcLambda:
         lam_with_ump = calc_lambda(9.0, 5.5, 0.227, 0.4)
         assert lam_with_ump > lam_no_ump
 
+    def test_park_factor_above_one_boosts_lambda_multiplicatively(self):
+        lam_neutral = calc_lambda(9.0, 5.5, 0.227, 0.0, park_factor=1.0)
+        lam_hitter = calc_lambda(9.0, 5.5, 0.227, 0.0, park_factor=1.2)
+        assert lam_hitter == pytest.approx(lam_neutral * 1.2)
+
+    def test_park_factor_default_is_neutral(self):
+        lam_default = calc_lambda(9.0, 5.5, 0.227, 0.0)
+        lam_explicit = calc_lambda(9.0, 5.5, 0.227, 0.0, park_factor=1.0)
+        assert lam_default == pytest.approx(lam_explicit)
+
 
 class TestCalcEV:
     def test_positive_ev_when_win_prob_beats_implied(self):
@@ -111,6 +124,20 @@ class TestCalcVerdict:
 
     def test_fire_2u(self):
         assert calc_verdict(0.10) == "FIRE 2u"
+
+
+class TestIsOpener:
+    def test_true_with_two_short_recent_starts(self):
+        assert is_opener([1.0, 2.0]) is True
+
+    def test_false_with_empty_list(self):
+        assert is_opener([]) is False
+
+    def test_false_with_only_one_short_start(self):
+        assert is_opener([1.0]) is False
+
+    def test_false_when_mean_meets_threshold(self):
+        assert is_opener([2.5, 2.5, 2.5]) is False
 
 
 class TestCalcPriceDelta:
@@ -156,6 +183,23 @@ class TestCalcSwstrDeltaK9:
         assert abs(result - 0.50) < 0.001
 
 
+class TestCalcRestK9Delta:
+    def test_missing_data_returns_zero(self):
+        assert calc_rest_k9_delta(None, None) == 0.0
+
+    def test_short_rest_penalty(self):
+        assert calc_rest_k9_delta(3, 100) == pytest.approx(-0.3)
+
+    def test_high_pitch_count_penalty(self):
+        assert calc_rest_k9_delta(5, 111) == pytest.approx(-0.2)
+
+    def test_penalties_stack_additively(self):
+        assert calc_rest_k9_delta(3, 112) == pytest.approx(-0.5)
+
+    def test_neutral_when_thresholds_do_not_fire(self):
+        assert calc_rest_k9_delta(4, 110) == 0.0
+
+
 class TestCalcLambdaSwstrDelta:
     def test_zero_delta_unchanged(self):
         lam_no_delta = calc_lambda(9.0, 5.5, 0.227, 0, swstr_delta_k9=0.0)
@@ -193,13 +237,13 @@ class TestBuildPitcherRecord:
     BASE_STATS = {
         "season_k9": 9.0, "recent_k9": 9.0, "career_k9": 9.0,
         "starts_count": 5, "innings_pitched_season": 30.0,
-        "avg_ip_last5": 6.0, "opp_k_rate": 0.227,
+        "avg_ip_last5": 6.0, "recent_start_ips": [6.0, 6.0, 6.0, 6.0, 6.0], "opp_k_rate": 0.227,
     }
 
     def test_returns_expected_keys(self):
         from build_features import build_pitcher_record
         rec = build_pitcher_record(self.BASE_ODDS, self.BASE_STATS, ump_k_adj=0.0)
-        for key in ["pitcher", "lambda", "avg_ip", "swstr_pct", "ev_over", "ev_under"]:
+        for key in ["pitcher", "lambda", "avg_ip", "swstr_pct", "park_factor", "ev_over", "ev_under"]:
             assert key in rec, f"Missing key: {key}"
 
     def test_uses_avg_ip_last5_not_constant(self):
@@ -259,11 +303,52 @@ class TestBuildPitcherRecord:
         )
         assert abs(rec_no_career["lambda"] - rec_no_data["lambda"]) < 0.01
 
+    def test_rest_penalty_reduces_lambda_and_surfaces_breadcrumbs(self):
+        from build_features import build_pitcher_record
+        rested_stats = {
+            **self.BASE_STATS,
+            "days_since_last_start": 5,
+            "last_pitch_count": 95,
+        }
+        taxed_stats = {
+            **self.BASE_STATS,
+            "days_since_last_start": 3,
+            "last_pitch_count": 112,
+        }
+        rec_rested = build_pitcher_record(self.BASE_ODDS, rested_stats, ump_k_adj=0.0)
+        rec_taxed = build_pitcher_record(self.BASE_ODDS, taxed_stats, ump_k_adj=0.0)
+        assert rec_taxed["raw_lambda"] < rec_rested["raw_lambda"]
+        assert rec_taxed["days_since_last_start"] == 3
+        assert rec_taxed["last_pitch_count"] == 112
+        assert rec_taxed["rest_k9_delta"] == pytest.approx(-0.5)
+
     def test_verdict_and_win_prob_present(self):
         from build_features import build_pitcher_record
         rec = build_pitcher_record(self.BASE_ODDS, self.BASE_STATS, ump_k_adj=0.0)
         assert rec["ev_over"]["verdict"] in ("PASS", "LEAN", "FIRE 1u", "FIRE 2u")
         assert 0 <= rec["ev_over"]["win_prob"] <= 1
+
+    def test_opener_forces_both_verdicts_to_pass(self):
+        from build_features import build_pitcher_record
+        stats = {**self.BASE_STATS, "recent_start_ips": [1.0, 2.0, 2.0]}
+        rec = build_pitcher_record(self.BASE_ODDS, stats, ump_k_adj=0.0)
+        assert rec["is_opener"] is True
+        assert rec["avg_ip"] == pytest.approx(1.67, rel=0.01)
+        assert rec["opener_note"] == OPENER_NOTE
+        assert rec["ev_over"]["adj_ev"] == 0.0
+        assert rec["ev_under"]["adj_ev"] == 0.0
+        assert rec["ev_over"]["verdict"] == "PASS"
+        assert rec["ev_under"]["verdict"] == "PASS"
+
+    def test_non_opener_leaves_verdict_logic_unchanged(self):
+        from build_features import build_pitcher_record, calc_verdict
+        rec = build_pitcher_record(self.BASE_ODDS, self.BASE_STATS, ump_k_adj=0.0)
+        assert rec["is_opener"] is False
+        assert rec["opener_note"] is None
+        assert rec["ev_over"]["verdict"] == calc_verdict(rec["ev_over"]["adj_ev"])
+        assert rec["ev_under"]["verdict"] == calc_verdict(rec["ev_under"]["adj_ev"])
+        assert rec["ev_over"]["adj_ev"] != 0.0
+        assert rec["ev_under"]["adj_ev"] != 0.0
 
     def test_movement_confidence_applied(self):
         """
@@ -344,6 +429,16 @@ class TestBuildPitcherRecord:
         rec_full = build_pitcher_record(self.BASE_ODDS, stats_full_season, ump_k_adj=0.0)
         # With 162 games of 0.30 K%, lambda should be higher than with 0 games (league avg)
         assert rec_full["lambda"] > rec_no["lambda"]
+
+    def test_park_factor_is_carried_and_changes_lambda(self):
+        from build_features import build_pitcher_record
+        rec_neutral = build_pitcher_record(self.BASE_ODDS, self.BASE_STATS, ump_k_adj=0.0)
+        rec_boosted = build_pitcher_record(
+            self.BASE_ODDS, self.BASE_STATS, ump_k_adj=0.0, park_factor=1.1
+        )
+        assert rec_neutral["park_factor"] == pytest.approx(1.0)
+        assert rec_boosted["park_factor"] == pytest.approx(1.1)
+        assert rec_boosted["raw_lambda"] > rec_neutral["raw_lambda"]
 
     # ---------------------------------------------------------------------
     # Task A7: phantom starter guard — build_pitcher_record emits
@@ -605,6 +700,7 @@ SAMPLE_ODDS = {
 SAMPLE_STATS = {
     "season_k9": 9.0, "recent_k9": 9.0, "career_k9": 8.0,
     "innings_pitched_season": 30.0, "avg_ip_last5": 5.5,
+    "recent_start_ips": [5.5, 5.5, 5.5, 5.5, 5.5],
     "opp_k_rate": 0.227, "opp_games_played": 20, "starts_count": 5,
 }
 

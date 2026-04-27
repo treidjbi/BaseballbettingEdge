@@ -315,12 +315,49 @@ def _calibrate_phase1(closed_picks: list, current_params: dict) -> dict:
     return params
 
 
+def _ump_neutral_residual(*, actual_ks: float, raw_lambda: float,
+                          ump_k_adj: float, avg_ip: float | None,
+                          current_ump_scale: float) -> float:
+    """Undo the currently modeled ump contribution before phase-2 correlation.
+
+    raw_lambda already includes the active ump term from calc_lambda():
+        ump_k_adj * current_ump_scale * (avg_ip / 9)
+    so correlating against (actual_ks - raw_lambda) suppresses the very signal
+    we want to measure. Add that modeled contribution back to get an
+    ump-neutral residual. If avg_ip is unavailable, fall back to the historical
+    residual to avoid changing row eligibility/threshold behavior.
+    """
+    residual = actual_ks - raw_lambda
+    if avg_ip is None:
+        return residual
+    modeled_ump_contribution = ump_k_adj * current_ump_scale * (avg_ip / 9.0)
+    return residual + modeled_ump_contribution
+
+
+def _row_optional_value(row, key: str, default=None):
+    """Return row[key] when available for dicts or sqlite3.Row-like objects."""
+    if hasattr(row, "get"):
+        return row.get(key, default)
+    try:
+        return row[key]
+    except (KeyError, IndexError, TypeError):
+        return default
+
+
 def _calibrate_phase2(closed_picks: list, current_params: dict) -> dict:
     """Calibrate ump_scale and blend weights. Returns updated params dict."""
     params = dict(current_params)
 
-    # Ump scale: Pearson correlation between ump_k_adj and residual
-    ump_data = [(r["ump_k_adj"], r["actual_ks"] - r["raw_lambda"])
+    # Ump scale: Pearson correlation between ump_k_adj and an ump-neutral residual.
+    # raw_lambda already includes the current ump effect, so add the modeled
+    # contribution back before correlating (same pattern as SwStr below).
+    current_ump_scale = params.get("ump_scale", 1.0)
+    ump_data = [(r["ump_k_adj"],
+                 _ump_neutral_residual(actual_ks=r["actual_ks"],
+                                       raw_lambda=r["raw_lambda"],
+                                       ump_k_adj=r["ump_k_adj"],
+                                       avg_ip=_row_optional_value(r, "avg_ip"),
+                                       current_ump_scale=current_ump_scale))
                 for r in closed_picks
                 if r["ump_k_adj"] is not None and r["raw_lambda"] is not None
                 and r["actual_ks"] is not None]
@@ -330,7 +367,7 @@ def _calibrate_phase2(closed_picks: list, current_params: dict) -> dict:
         resids = [d[1] for d in ump_data]
         if len(set(umps)) > 1:
             corr, _ = pearsonr(umps, resids)
-            current_scale = params.get("ump_scale", 1.0)
+            current_scale = current_ump_scale
             if not math.isnan(corr) and corr > 0.15:
                 # Strong positive correlation: ump adjustment is predictive — increase weight
                 params["ump_scale"] = round(max(0.0, min(1.5, current_scale + 0.05)), 3)

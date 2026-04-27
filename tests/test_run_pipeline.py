@@ -64,6 +64,35 @@ def _sample_prop():
         "opening_over_odds": -110, "opening_under_odds": -110,
     }
 
+
+def _sample_prop_for(name):
+    prop = _sample_prop().copy()
+    prop["pitcher"] = name
+    return prop
+
+
+def _sample_props_for_game_count(game_count):
+    props = []
+    for idx in range(game_count):
+        away_team = f"Away Team {idx}"
+        home_team = f"Home Team {idx}"
+        game_time = f"2026-04-{(idx % 28) + 1:02d}T23:05:00Z"
+
+        away_prop = _sample_prop_for(f"Away Pitcher {idx}")
+        away_prop["team"] = away_team
+        away_prop["opp_team"] = home_team
+        away_prop["game_time"] = game_time
+        props.append(away_prop)
+
+        home_prop = _sample_prop_for(f"Home Pitcher {idx}")
+        home_prop["team"] = home_team
+        home_prop["opp_team"] = away_team
+        home_prop["game_time"] = game_time
+        props.append(home_prop)
+
+    return props
+
+
 def _sample_stats():
     return {
         "season_k9": 9.0, "recent_k9": 9.0, "career_k9": 8.0,
@@ -71,6 +100,147 @@ def _sample_stats():
         "avg_ip_last5": 5.5, "opp_k_rate": 0.227, "opp_games_played": 10,
         "team": "Test Team", "opp_team": "Opp Team",
     }
+
+
+def _sample_stats_for(team, opp_team):
+    stats = _sample_stats().copy()
+    stats["team"] = team
+    stats["opp_team"] = opp_team
+    stats["park_team"] = opp_team
+    return stats
+
+
+def test_collect_data_warnings_warns_when_umpires_return_zero_entries_for_games():
+    from run_pipeline import collect_data_warnings
+
+    warnings = collect_data_warnings(
+        props=_sample_props_for_game_count(15),
+        ump_diagnostics={"hp_count_fetched": 0},
+        swstr_warning=None,
+        lineup_confirmed_count=30,
+        lineup_missing_splits_count=0,
+    )
+
+    assert warnings == [
+        "fetch_umpires returned 0 entries for 15 scheduled games",
+    ]
+
+
+def test_collect_data_warnings_clean_run_returns_empty_list():
+    from run_pipeline import collect_data_warnings
+
+    warnings = collect_data_warnings(
+        props=_sample_props_for_game_count(3),
+        ump_diagnostics={"hp_count_fetched": 3},
+        swstr_warning=None,
+        lineup_confirmed_count=6,
+        lineup_missing_splits_count=0,
+    )
+
+    assert warnings == []
+
+
+def test_collect_data_warnings_counts_lineup_coverage_in_lineups_not_games():
+    from run_pipeline import collect_data_warnings
+
+    warnings = collect_data_warnings(
+        props=_sample_props_for_game_count(2),
+        ump_diagnostics={"hp_count_fetched": 2},
+        swstr_warning=None,
+        lineup_confirmed_count=3,
+        lineup_missing_splits_count=0,
+    )
+
+    assert warnings == [
+        "fetch_lineups: confirmed 3/4 opposing lineups (1 still projected)",
+    ]
+
+
+def test_collect_data_warnings_handles_half_covered_lineup_slate():
+    from run_pipeline import collect_data_warnings
+
+    warnings = collect_data_warnings(
+        props=_sample_props_for_game_count(3),
+        ump_diagnostics={"hp_count_fetched": 3},
+        swstr_warning=None,
+        lineup_confirmed_count=3,
+        lineup_missing_splits_count=0,
+    )
+
+    assert warnings == [
+        "fetch_lineups: confirmed 3/6 opposing lineups (3 still projected)",
+    ]
+
+
+def test_collect_data_warnings_reports_missing_batter_splits_in_lineup_units():
+    from run_pipeline import collect_data_warnings
+
+    warnings = collect_data_warnings(
+        props=_sample_props_for_game_count(15),
+        ump_diagnostics={"hp_count_fetched": 15},
+        swstr_warning=None,
+        lineup_confirmed_count=30,
+        lineup_missing_splits_count=8,
+    )
+
+    assert warnings == [
+        "fetch_batter_stats missing splits for 8/30 opposing lineups",
+    ]
+
+
+def test_collect_data_warnings_includes_swstr_warning_when_present():
+    from run_pipeline import collect_data_warnings
+
+    warnings = collect_data_warnings(
+        props=_sample_props_for_game_count(1),
+        ump_diagnostics={"hp_count_fetched": 1},
+        swstr_warning="fetch_swstr career baseline unavailable, zeroing SwStr delta",
+        lineup_confirmed_count=2,
+        lineup_missing_splits_count=0,
+    )
+
+    assert warnings == [
+        "fetch_swstr career baseline unavailable, zeroing SwStr delta",
+    ]
+
+
+def test_collect_data_warnings_falls_back_to_prop_count_when_some_matchups_are_unresolved():
+    from run_pipeline import collect_data_warnings
+
+    props = _sample_props_for_game_count(2)
+    props[2]["team"] = ""
+    props[2]["opp_team"] = ""
+    props[3]["team"] = ""
+    props[3]["opp_team"] = ""
+
+    warnings = collect_data_warnings(
+        props=props,
+        ump_diagnostics={"hp_count_fetched": 0},
+        swstr_warning=None,
+        lineup_confirmed_count=4,
+        lineup_missing_splits_count=0,
+    )
+
+    assert warnings == [
+        "fetch_umpires returned 0 entries for 2 scheduled games",
+    ]
+
+
+def test_collect_data_warnings_uses_lineup_eligible_total_when_provided():
+    from run_pipeline import collect_data_warnings
+
+    warnings = collect_data_warnings(
+        props=_sample_props_for_game_count(2),
+        ump_diagnostics={"hp_count_fetched": 2},
+        swstr_warning=None,
+        lineup_confirmed_count=0,
+        lineup_missing_splits_count=0,
+        lineup_total_count=1,
+    )
+
+    assert warnings == [
+        "fetch_lineups: confirmed 0/1 opposing lineups (1 still projected)",
+    ]
 
 
 def test_run_writes_today_json(tmp_path):
@@ -99,6 +269,180 @@ def test_run_writes_today_json(tmp_path):
     data = json.loads(out_path.read_text())
     assert data["date"] == "2026-04-01"
     assert len(data["pitchers"]) == 1
+
+
+def test_run_writes_data_warnings_to_today_json(tmp_path):
+    import run_pipeline
+    run_pipeline._batter_stats_cache = None
+
+    out_path = tmp_path / "today.json"
+    props = _sample_props_for_game_count(1)
+    stats_map = {
+        "Away Pitcher 0": _sample_stats_for("Away Team 0", "Home Team 0"),
+        "Home Pitcher 0": _sample_stats_for("Home Team 0", "Away Team 0"),
+    }
+
+    def fake_build_pitcher_record(odds, stats, ump_k_adj, **kwargs):
+        return {
+            "pitcher": odds["pitcher"],
+            "team": stats["team"],
+            "opp_team": stats["opp_team"],
+            "game_time": odds["game_time"],
+            "lambda": 4.2,
+            "ev_over": {"verdict": "LEAN"},
+        }
+
+    def fake_fetch_lineups(date_str, team):
+        if team == "Away Team 0":
+            return [{"name": "Known Batter", "bats": "R"}]
+        return None
+
+    with patch.object(run_pipeline, "OUTPUT_PATH", out_path), \
+         patch("run_pipeline.fetch_odds", return_value=props), \
+         patch("run_pipeline.fetch_stats", return_value=(stats_map, {})), \
+         patch("run_pipeline.fetch_swstr", return_value={
+             "Away Pitcher 0": {"swstr_pct": 0.110, "career_swstr_pct": None},
+             "Home Pitcher 0": {"swstr_pct": 0.109, "career_swstr_pct": None},
+             "__meta__": {"current_usable": True, "career_usable": True},
+         }), \
+         patch("run_pipeline.fetch_umpires", return_value=(
+             {"Away Pitcher 0": 0.25, "Home Pitcher 0": 0.25},
+             {"hp_count_fetched": 1, "pitcher_nonzero_count": 2},
+         )), \
+         patch("run_pipeline.build_pitcher_record", side_effect=fake_build_pitcher_record), \
+         patch("run_pipeline.fetch_lineups_for_pitcher", side_effect=fake_fetch_lineups), \
+         patch("run_pipeline.fetch_batter_stats_cached", return_value={"known batter": {"vs_R": 0.2, "vs_L": 0.21}}), \
+         patch("run_pipeline.init_db"), \
+         patch("run_pipeline.load_history_into_db"), \
+         patch("run_pipeline.get_db", return_value=MagicMock()), \
+         patch("run_pipeline.lock_due_picks", return_value=0), \
+         patch("run_pipeline.seed_picks", return_value=0), \
+         patch("run_pipeline.export_db_to_history"), \
+         patch("run_pipeline._write_steam"):
+        run_pipeline.run("2026-04-01")
+
+    data = json.loads(out_path.read_text())
+    assert data["data_warnings"] == [
+        "fetch_lineups: confirmed 1/2 opposing lineups (1 still projected)",
+    ]
+
+
+def test_run_forwards_resolved_park_factor_to_build_pitcher_record(tmp_path):
+    import run_pipeline
+    run_pipeline._batter_stats_cache = None
+
+    out_path = tmp_path / "today.json"
+    park_factors_path = tmp_path / "park_factors.json"
+    park_factors_path.write_text(json.dumps({"_source": {}, "factors": {"SEA": 1.04}}))
+
+    prop = _sample_prop_for("Park Factor Pitcher")
+    stats = _sample_stats_for("Seattle Mariners", "Opp Team")
+    stats["park_team"] = "Seattle Mariners"
+    captured = {}
+
+    def fake_build_pitcher_record(
+        odds,
+        stats,
+        ump_k_adj,
+        *,
+        park_factor=None,
+        swstr_data=None,
+        lineup=None,
+        batter_stats=None,
+    ):
+        captured["park_factor"] = park_factor
+        return {
+            "pitcher": odds["pitcher"],
+            "team": stats["team"],
+            "game_time": odds["game_time"],
+            "lambda": 4.2,
+            "ev_over": {"verdict": "LEAN"},
+        }
+
+    with patch.object(run_pipeline, "OUTPUT_PATH", out_path), \
+         patch.object(run_pipeline, "PARK_FACTORS_PATH", park_factors_path), \
+         patch("run_pipeline.fetch_odds", return_value=[prop]), \
+         patch("run_pipeline.fetch_stats", return_value=({"Park Factor Pitcher": stats}, {})), \
+         patch("run_pipeline.fetch_swstr", return_value={"Park Factor Pitcher": {"swstr_pct": 0.110, "career_swstr_pct": None}}), \
+         patch("run_pipeline.fetch_umpires", return_value=({"Park Factor Pitcher": 0.0}, {"hp_count_fetched": 0, "pitcher_nonzero_count": 0})), \
+         patch("run_pipeline.build_pitcher_record", side_effect=fake_build_pitcher_record), \
+         patch("run_pipeline.fetch_lineups_for_pitcher", return_value=None), \
+         patch("run_pipeline.fetch_batter_stats_cached", return_value={}), \
+         patch("run_pipeline.init_db"), \
+         patch("run_pipeline.load_history_into_db"), \
+         patch("run_pipeline.get_db", return_value=MagicMock()), \
+         patch("run_pipeline.lock_due_picks", return_value=0), \
+         patch("run_pipeline.seed_picks", return_value=0), \
+         patch("run_pipeline.export_db_to_history"):
+        run_pipeline.run("2026-04-01")
+
+    assert captured["park_factor"] == pytest.approx(1.04)
+
+
+def test_resolve_park_factor_defaults_to_one_for_unknown_team():
+    import run_pipeline
+
+    assert run_pipeline._resolve_park_factor("Unknown Team", {"SEA": 1.04}, "Test Pitcher") == 1.0
+
+
+def test_resolve_park_factor_defaults_to_one_for_invalid_value():
+    import run_pipeline
+
+    assert run_pipeline._resolve_park_factor("Seattle Mariners", {"SEA": float("nan")}, "Test Pitcher") == 1.0
+
+
+def test_run_park_factor_affects_real_lambda_across_parks(tmp_path):
+    import run_pipeline
+    run_pipeline._batter_stats_cache = None
+
+    props = [
+        _sample_prop_for("Rockies Pitcher"),
+        _sample_prop_for("Mariners Pitcher"),
+    ]
+    stats_map = {
+        "Rockies Pitcher": {**_sample_stats_for("Colorado Rockies", "Los Angeles Dodgers"), "park_team": "Colorado Rockies"},
+        "Mariners Pitcher": {**_sample_stats_for("Seattle Mariners", "Texas Rangers"), "park_team": "Seattle Mariners"},
+    }
+    swstr_map = {
+        "Rockies Pitcher": {"swstr_pct": 0.110, "career_swstr_pct": None},
+        "Mariners Pitcher": {"swstr_pct": 0.110, "career_swstr_pct": None},
+        "__meta__": {"current_usable": True, "career_usable": True},
+    }
+    ump_map = {"Rockies Pitcher": 0.25, "Mariners Pitcher": 0.25}
+
+    out = {}
+    def spy_write_output(date_str, records, props_available, ump_diagnostics=None, data_warnings=None):
+        out["records"] = records
+
+    park_factors_path = tmp_path / "park_factors.json"
+    park_factors_path.write_text(json.dumps({
+        "_source": {},
+        "factors": {"COL": 0.96, "SEA": 1.04},
+    }))
+
+    with patch.object(run_pipeline, "OUTPUT_PATH", tmp_path / "today.json"), \
+         patch.object(run_pipeline, "PARK_FACTORS_PATH", park_factors_path), \
+         patch("run_pipeline.fetch_odds", return_value=props), \
+         patch("run_pipeline.fetch_stats", return_value=(stats_map, {})), \
+         patch("run_pipeline.fetch_swstr", return_value=swstr_map), \
+         patch("run_pipeline.fetch_umpires", return_value=(ump_map, {"hp_count_fetched": 2, "pitcher_nonzero_count": 2})), \
+         patch("run_pipeline.fetch_lineups_for_pitcher", return_value=None), \
+         patch("run_pipeline.fetch_batter_stats_cached", return_value={}), \
+         patch("run_pipeline._merge_with_locked_snapshots", side_effect=lambda records, date_str, now: records), \
+         patch("run_pipeline._write_output", side_effect=spy_write_output), \
+         patch("run_pipeline._write_steam"), \
+         patch("run_pipeline.init_db"), \
+         patch("run_pipeline.load_history_into_db"), \
+         patch("run_pipeline.get_db", return_value=MagicMock()), \
+         patch("run_pipeline.lock_due_picks", return_value=0), \
+         patch("run_pipeline.seed_picks", return_value=0), \
+         patch("run_pipeline.export_db_to_history"):
+        run_pipeline.run("2026-04-01")
+
+    by_pitcher = {row["pitcher"]: row for row in out["records"]}
+    assert by_pitcher["Rockies Pitcher"]["park_factor"] == pytest.approx(0.96)
+    assert by_pitcher["Mariners Pitcher"]["park_factor"] == pytest.approx(1.04)
+    assert by_pitcher["Rockies Pitcher"]["raw_lambda"] < by_pitcher["Mariners Pitcher"]["raw_lambda"]
 
 
 def test_data_complete_false_when_ump_map_all_zero(tmp_path):
@@ -149,7 +493,10 @@ def test_data_complete_true_when_ump_map_has_nonzero(tmp_path):
     with patch.object(run_pipeline, "OUTPUT_PATH", out_path), \
          patch("run_pipeline.fetch_odds", return_value=[_sample_prop()]), \
          patch("run_pipeline.fetch_stats", return_value=({"Test Pitcher": _sample_stats()}, {})), \
-         patch("run_pipeline.fetch_swstr", return_value={"Test Pitcher": {"swstr_pct": 0.110, "career_swstr_pct": None}}), \
+         patch("run_pipeline.fetch_swstr", return_value={
+             "Test Pitcher": {"swstr_pct": 0.110, "career_swstr_pct": 0.105},
+             "__meta__": {"current_usable": True, "career_usable": True},
+         }), \
          patch("run_pipeline.fetch_umpires", return_value=({"Test Pitcher": 0.25}, {"hp_count_fetched": 1, "pitcher_nonzero_count": 1})), \
          patch("run_pipeline.fetch_lineups_for_pitcher", return_value=None), \
          patch("run_pipeline.fetch_batter_stats_cached", return_value={}), \
@@ -164,6 +511,115 @@ def test_data_complete_true_when_ump_map_has_nonzero(tmp_path):
     data = json.loads(out_path.read_text())
     assert len(data["pitchers"]) == 1
     assert data["pitchers"][0]["data_complete"] is True
+
+
+def test_row_data_complete_true_when_pitcher_missing_career_but_transport_is_live():
+    from run_pipeline import _row_data_complete
+
+    assert _row_data_complete(
+        swstr_meta={"current_usable": True, "career_usable": True},
+        swstr_row={"swstr_pct": 0.11, "career_swstr_pct": None},
+        ump_k_adj=0.25,
+    ) is True
+
+
+def test_row_data_complete_false_when_swstr_transport_is_globally_unusable():
+    from run_pipeline import _row_data_complete
+
+    assert _row_data_complete(
+        swstr_meta={"current_usable": True, "career_usable": False},
+        swstr_row={"swstr_pct": 0.11, "career_swstr_pct": None},
+        ump_k_adj=0.25,
+    ) is False
+
+
+def test_row_data_complete_false_when_pitcher_has_no_real_ump_coverage():
+    from run_pipeline import _row_data_complete
+
+    assert _row_data_complete(
+        swstr_meta={"current_usable": True, "career_usable": True},
+        swstr_row={"swstr_pct": 0.11, "career_swstr_pct": None},
+        ump_k_adj=0.0,
+    ) is False
+
+
+def test_row_data_complete_true_when_row_inputs_are_live():
+    from run_pipeline import _row_data_complete
+
+    assert _row_data_complete(
+        swstr_meta={"current_usable": True, "career_usable": True},
+        swstr_row={"swstr_pct": 0.11, "career_swstr_pct": None},
+        ump_k_adj=0.25,
+    ) is True
+
+
+def test_data_complete_is_row_specific_for_mixed_slate(tmp_path):
+    import run_pipeline
+    run_pipeline._batter_stats_cache = None
+
+    props = [
+        _sample_prop_for("Covered Pitcher"),
+        _sample_prop_for("Missing Coverage Pitcher"),
+    ]
+    stats_map = {
+        "Covered Pitcher": _sample_stats_for("Covered Team", "Opp A"),
+        "Missing Coverage Pitcher": _sample_stats_for("Missing Team", "Opp B"),
+    }
+    swstr_map = {
+        "Covered Pitcher": {"swstr_pct": 0.110, "career_swstr_pct": 0.105},
+        "Missing Coverage Pitcher": {"swstr_pct": 0.112, "career_swstr_pct": 0.109},
+        "__meta__": {"current_usable": True, "career_usable": True},
+    }
+    ump_map = {
+        "Covered Pitcher": 0.25,
+        "Missing Coverage Pitcher": 0.0,
+    }
+
+    def fake_build_pitcher_record(odds, stats, ump_k_adj, *, swstr_data, lineup, batter_stats, park_factor):
+        return {
+            "pitcher": odds["pitcher"],
+            "team": stats["team"],
+            "game_time": odds["game_time"],
+            "lambda": 4.2,
+            "ev_over": {"verdict": "LEAN"},
+            "ump_k_adj": ump_k_adj,
+            "swstr_pct": swstr_data["swstr_pct"],
+            "career_swstr_pct": swstr_data["career_swstr_pct"],
+            "park_factor": park_factor,
+        }
+
+    captured = {}
+    def spy_write_output(date_str, records, props_available, ump_diagnostics=None, data_warnings=None):
+        captured["date_str"] = date_str
+        captured["records"] = records
+        captured["props_available"] = props_available
+        captured["ump_diagnostics"] = ump_diagnostics
+        captured["data_warnings"] = data_warnings
+
+    with patch.object(run_pipeline, "OUTPUT_PATH", tmp_path / "today.json"), \
+         patch("run_pipeline.fetch_odds", return_value=props), \
+         patch("run_pipeline.fetch_stats", return_value=(stats_map, {})), \
+         patch("run_pipeline.fetch_swstr", return_value=swstr_map), \
+         patch("run_pipeline.fetch_umpires", return_value=(ump_map, {"hp_count_fetched": 2, "pitcher_nonzero_count": 1})), \
+         patch("run_pipeline.build_pitcher_record", side_effect=fake_build_pitcher_record), \
+         patch("run_pipeline._merge_with_locked_snapshots", side_effect=lambda records, date_str, now: records), \
+         patch("run_pipeline._write_output", side_effect=spy_write_output), \
+         patch("run_pipeline._write_steam"), \
+         patch("run_pipeline.fetch_lineups_for_pitcher", return_value=None), \
+         patch("run_pipeline.fetch_batter_stats_cached", return_value={}), \
+         patch("run_pipeline.init_db"), \
+         patch("run_pipeline.load_history_into_db"), \
+         patch("run_pipeline.get_db", return_value=MagicMock()), \
+         patch("run_pipeline.lock_due_picks", return_value=0), \
+         patch("run_pipeline.seed_picks", return_value=0), \
+         patch("run_pipeline.export_db_to_history"):
+        run_pipeline.run("2026-04-01")
+
+    assert captured["date_str"] == "2026-04-01"
+    assert captured["props_available"] is True
+    by_pitcher = {row["pitcher"]: row for row in captured["records"]}
+    assert by_pitcher["Covered Pitcher"]["data_complete"] is True
+    assert by_pitcher["Missing Coverage Pitcher"]["data_complete"] is False
 
 
 def test_fetch_umpires_receives_props_with_team_populated_from_stats(tmp_path):
@@ -318,7 +774,8 @@ def test_write_dated_archive_only_creates_dated_file(tmp_path):
 
     index = tmp_path / "index.json"
     assert index.exists()
-    assert "2026-04-12" in json.loads(index.read_text())["dates"]
+    entries = json.loads(index.read_text())["dates"]
+    assert any(entry["date"] == "2026-04-12" for entry in entries)
 
 
 def test_write_dated_archive_only_does_not_touch_today_json(tmp_path):

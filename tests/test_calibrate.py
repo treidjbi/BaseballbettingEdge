@@ -28,7 +28,7 @@ def _insert_closed_pick(db_path, result, verdict="FIRE 1u", odds=-110,
                          adj_ev=0.04, raw_lambda=7.0, actual_ks=8,
                          date_offset_days=1, ump_k_adj=0.1,
                          season_k9=9.0, recent_k9=8.5, career_k9=8.8,
-                         side="over"):
+                         avg_ip=5.0, side="over"):
     """Insert a closed pick into the test DB. Default side='over' matches original hardcoded value."""
     date_str = (datetime.now() - timedelta(days=date_offset_days)).strftime("%Y-%m-%d")
     fetched = datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ")
@@ -38,13 +38,13 @@ def _insert_closed_pick(db_path, result, verdict="FIRE 1u", odds=-110,
         INSERT INTO picks (date, pitcher, team, side, k_line, verdict, ev, adj_ev,
                            raw_lambda, applied_lambda, odds, movement_conf,
                            result, actual_ks, pnl, fetched_at,
-                           season_k9, recent_k9, career_k9, ump_k_adj)
-        VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+                           season_k9, recent_k9, career_k9, avg_ip, ump_k_adj)
+        VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
     """, (
         date_str, f"Pitcher-{date_offset_days}", "Team", side, 7.5, verdict,
         adj_ev, adj_ev, raw_lambda, raw_lambda, odds, 1.0,
         result, actual_ks, pnl, fetched,
-        season_k9, recent_k9, career_k9, ump_k_adj,
+        season_k9, recent_k9, career_k9, avg_ip, ump_k_adj,
     ))
     conn.commit()
     conn.close()
@@ -269,6 +269,19 @@ class TestPhase1Calibration:
 # ── Phase 2 calibration tests ────────────────────────────────────────────────
 
 class TestPhase2Calibration:
+    def test_ump_neutral_residual_adds_back_current_ump_contribution(self, tmp_env):
+        db, perf, params, cal = tmp_env
+
+        residual = cal._ump_neutral_residual(
+            actual_ks=7.0,
+            raw_lambda=6.0,
+            ump_k_adj=0.6,
+            avg_ip=4.5,
+            current_ump_scale=1.5,
+        )
+
+        assert residual == pytest.approx(1.45)
+
     def test_phase2_not_triggered_below_60(self, tmp_env):
         db, perf, params, cal = tmp_env
         for i in range(59):
@@ -293,6 +306,33 @@ class TestPhase2Calibration:
         data = json.loads(params.read_text())
         assert data["ump_scale"] >= 0.0
         assert data["ump_scale"] <= 1.5
+
+    def test_phase2_ump_calibration_supports_sqlite_rows(self, tmp_env):
+        db, perf, params, cal = tmp_env
+        current_scale = 0.5
+        existing = dict(cal.DEFAULTS)
+        existing["ump_scale"] = current_scale
+        with open(params, "w") as f:
+            json.dump(existing, f)
+
+        for i in range(60):
+            ump_adj = float(i % 5)
+            raw_lambda = 5.0 + (ump_adj * current_scale)
+            _insert_closed_pick(
+                db,
+                "win" if i % 2 == 0 else "loss",
+                raw_lambda=raw_lambda,
+                actual_ks=raw_lambda,
+                ump_k_adj=ump_adj,
+                avg_ip=9.0,
+                date_offset_days=i + 1,
+            )
+
+        with patch("calibrate._current_season_start", return_value="2026-01-01"):
+            cal.run()
+
+        data = json.loads(params.read_text())
+        assert data["ump_scale"] > current_scale
 
     def test_build_performance_is_pure(self, tmp_env):
         """build_performance() should not do I/O — takes closed list and optional params, returns dict."""
@@ -347,22 +387,26 @@ def test_ump_scale_increases_when_correlated():
     sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'pipeline'))
     from calibrate import _calibrate_phase2
 
-    # Create data with strong positive correlation between ump_k_adj and residual
+    # raw_lambda already includes the current ump effect. The neutral residual
+    # needs that modeled contribution added back before correlation, otherwise
+    # the residual goes flat and the old calibration logic misreads the signal.
     picks = []
+    current_scale = 0.5
     for i in range(60):
         ump_adj = (i % 5) * 1.0  # 0.0, 1.0, 2.0, 3.0, 4.0
-        residual = ump_adj * 2    # perfect positive correlation
+        raw_lambda = 5.0 + (ump_adj * current_scale)
         picks.append({
             "season_k9": 9.0, "recent_k9": 8.0, "career_k9": 7.0,
             "ump_k_adj": ump_adj,
-            "actual_ks": int(5 + residual),
-            "raw_lambda": 5.0,
+            "avg_ip": 9.0,
+            "actual_ks": raw_lambda,
+            "raw_lambda": raw_lambda,
         })
 
     params = {"weight_season_cap": 0.70, "weight_recent": 0.20,
-              "ump_scale": 1.0, "lambda_bias": 0.0}
+              "ump_scale": current_scale, "lambda_bias": 0.0}
     result = _calibrate_phase2(picks, params)
-    assert result["ump_scale"] > 1.0  # should have increased
+    assert result["ump_scale"] > current_scale  # should have increased
 
 
 def test_load_closed_picks_uses_locked_adj_ev_when_present(tmp_path):
@@ -391,8 +435,8 @@ def test_load_closed_picks_uses_locked_adj_ev_when_present(tmp_path):
                            raw_lambda, actual_ks, season_k9, recent_k9, career_k9,
                            avg_ip, ump_k_adj, swstr_delta_k9, fetched_at, pnl)
         VALUES
-        ('2026-04-10','FIRE 1u','over','win',-115, 0.08, 0.05,
-         6.8, 7, 9.0, 8.5, 9.2, 5.8, 0.1, 0.02, '2026-04-10T12:00:00Z', 0.87)
+        ('2026-04-28','FIRE 1u','over','win',-115, 0.08, 0.05,
+         6.8, 7, 9.0, 8.5, 9.2, 5.8, 0.1, 0.02, '2026-04-28T12:00:00Z', 0.87)
     """)
     conn.commit()
     conn.close()
@@ -413,19 +457,22 @@ def test_ump_scale_decreases_when_uncorrelated():
     from calibrate import _calibrate_phase2
 
     picks = []
+    current_scale = 0.5
     for i in range(60):
         ump_adj = 0.1 + (i % 3) * 0.1  # 0.1, 0.2, 0.3 (varied)
+        raw_lambda = 5.0 + (ump_adj * current_scale)
         picks.append({
             "season_k9": 9.0, "recent_k9": 8.0, "career_k9": 7.0,
             "ump_k_adj": ump_adj,
-            "actual_ks": 5,  # constant actual Ks → zero correlation with ump_k_adj
-            "raw_lambda": 5.0,
+            "avg_ip": 9.0,
+            "actual_ks": 5.0,  # fixed actual Ks + modeled ump already in raw_lambda
+            "raw_lambda": raw_lambda,
         })
 
     params = {"weight_season_cap": 0.70, "weight_recent": 0.20,
-              "ump_scale": 1.0, "lambda_bias": 0.0}
+              "ump_scale": current_scale, "lambda_bias": 0.0}
     result = _calibrate_phase2(picks, params)
-    assert result["ump_scale"] < 1.0  # should have decreased
+    assert result["ump_scale"] < current_scale  # should have decreased
 
 
 # ── Split-filter tests: calibration strict, performance inclusive ──────────

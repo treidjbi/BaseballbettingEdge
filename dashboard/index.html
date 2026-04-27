@@ -54,6 +54,7 @@
     [data-theme='dark'] .result-push { background: #1e3050; color: #6b7f99; }
     [data-theme='dark'] .banner-info { background: #0d2b1a; border-bottom-color: #1a5c35; color: #f0ede6; }
     [data-theme='dark'] .banner-warn { background: #2b1f0d; border-bottom-color: #5c3d1a; color: #f0ede6; }
+    [data-theme='dark'] .data-warnings-panel { background: #2b1f0d; border-bottom-color: #5c3d1a; color: #f0ede6; }
     [data-theme='dark'] #date-select { border-color: #1e3050; color: #f0ede6; }
     [data-theme='dark'] #date-select:focus { border-color: #6b7f99; }
     [data-theme='dark'] .nav-btn.active { color: #f0ede6; }
@@ -141,6 +142,8 @@
     /* Freshness badge — scoped overrides for relocated badge under wordmark */
     #freshness-badge .badge-ok,
     #freshness-badge .badge-warn { font-size: 10px; padding: 1px 6px; }
+    #data-warning-badge { display: block; margin-top: 4px; }
+    #data-warning-badge .badge-warn { font-size: 10px; padding: 1px 6px; }
 
     /* ── Date selector ──────────────────────────────────────── */
     #date-row {
@@ -179,6 +182,28 @@
       padding: 8px 16px;
       font-size: 13px;
       border-bottom: 1px solid #ffd666;
+    }
+    .data-warnings-panel {
+      display: none;
+      background: #fff3cd;
+      color: #856404;
+      padding: 10px 16px 12px;
+      border-bottom: 1px solid #ffd666;
+    }
+    .data-warnings-title {
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      margin-bottom: 6px;
+    }
+    .data-warnings-list {
+      margin: 0;
+      padding-left: 18px;
+      font-size: 13px;
+    }
+    .data-warnings-list li + li {
+      margin-top: 4px;
     }
 
     /* ── Layout ──────────────────────────────────────────── */
@@ -591,6 +616,7 @@
         <div>
           <span class="wordmark-bottom">Betting Edge</span>
           <span id="freshness-badge" style="display:block;font-size:10px;color:#6b7f99;font-family:'IBM Plex Mono',monospace;margin-top:1px"></span>
+          <span id="data-warning-badge"></span>
         </div>
       </div>
       <div id="date-row">
@@ -615,6 +641,7 @@
 
   <!-- Freshness banner (conditionally shown) -->
   <div id="freshness-banner" style="display:none"></div>
+  <div id="data-warnings-panel" class="data-warnings-panel"></div>
 
   <!-- Main content -->
   <div id="content">
@@ -736,6 +763,7 @@
     // Clear any existing banners
     const banner = document.getElementById('freshness-banner');
     banner.style.display = 'none';
+    setDataWarnings([]);
 
     const today    = getAppDate();
     const isPast   = !!(dateStr && dateStr < today);
@@ -772,6 +800,7 @@
 
   function renderAll(data, isPast = false) {
     setFreshness(data.generated_at, isPast);
+    setDataWarnings(Array.isArray(data.data_warnings) ? data.data_warnings : []);
 
     if (!data.props_available || !data.pitchers || data.pitchers.length === 0) {
       if (isPast) {
@@ -821,6 +850,27 @@
     el.textContent = msg;
     el.className   = 'banner-' + type;
     el.style.display = 'block';
+  }
+
+  function setDataWarnings(warnings) {
+    const badge = document.getElementById('data-warning-badge');
+    const panel = document.getElementById('data-warnings-panel');
+    const items = Array.isArray(warnings) ? warnings.filter(Boolean) : [];
+
+    if (items.length === 0) {
+      badge.innerHTML = '';
+      panel.innerHTML = '';
+      panel.style.display = 'none';
+      return;
+    }
+
+    const label = items.length === 1 ? '1 data warning' : `${items.length} data warnings`;
+    badge.innerHTML = `<span class="badge-warn">${label}</span>`;
+    panel.innerHTML = `
+      <div class="data-warnings-title">Data Warnings</div>
+      <ul class="data-warnings-list">${items.map(msg => `<li>${esc(msg)}</li>`).join('')}</ul>
+    `;
+    panel.style.display = 'block';
   }
 
   // ── Helpers ───────────────────────────────────────────────

@@ -101,7 +101,7 @@ HARD STOP checkpoint.
 | A2 — opening_odds | ✅ done (Option 2 — premise refuted, enum added) | `0ff1699` (diag), `0496053` (final polish), `3922ebf` (impl, pre-rebase SHA) | **Diagnostic refuted the plan's null-writer premise.** Of 306 null-opening rows, ALL have null `best_*_odds` too — they're pre-ALTER-TABLE-ADD-COLUMN legacy rows that couldn't be back-filled by `seed_picks` UPDATE (locked/graded rows). Post-migration cohort (141 picks since 2026-04-11): opening_*_odds populated 141/141 (100%), movement_conf != 1.0 fires on 9.2%. No live null-writer bug. **Still shipped Option 2** to fix the remaining semantic gap: `fetch_odds` always computes opening from `best - price_delta` (within-day), but `_apply_preview_openings` can upgrade to overnight 7pm baseline — previously indistinguishable to `calc_movement_confidence`. Added `opening_odds_source` ∈ {"preview", "first_seen", None}; gated haircut to only fire when source=="preview". Full plumbing: fetch_odds tags "first_seen", preview-merge promotes to "preview", schema+migration in fetch_results, INSERT captures/UPDATE freezes, export round-trips, build_features gates. 14 new tests. Tests 280→294. **Also included: rebase of phase-a onto origin/main** (brought in steam Phase A per-book odds tracking + v2 UI finalization; 1 trivial .gitignore conflict resolved; 1 pre-existing `test_write_dated_archive_only_creates_dated_file` failure on main is NOT ours — index-schema drift, flagged by steam authors). Spec-review + code-review both passed. |
 | A4 — bookmaker breakdown | ✅ done | `d2c27b3` | Added `by_bookmaker(df)` to `analytics/performance.py` + wired into `main()`. Smoke-tested with `--since 2026-04-08`: 6 book rows, FanDuel dominates at 132/231 staked (57%), 63 `<unknown>` rows are pre-column-migration legacy. Follow-up flagged (not A4-scope): `ref_book` values are stored as raw TheRundown numeric IDs (`Book25`, `Book3`, etc.) except FanDuel which resolves to a name — worth wiring `fetch_odds.TRACKED_BOOKS` through the display path in a later Phase B refinement. Added defensive `ref_book not in columns` guard since `analytics/` isn't in pytest coverage. |
 | A→B checkpoint — merge | ✅ done (2026-04-21) | `phase-a` → `main` | Full branch merged. Book-scoping finalized as Option B (priority-only, no fallback — `fetch_odds._select_ref_book` returns `(None, None)` when no target book is available, caller skips pick). Post-merge live run confirmed 25/28 picks on FanDuel, `opening_odds_source` split 20 preview / 5 first_seen / 3 missing — all correct per A2 design. V2 UI smoke-tested OK. Companion infra work folded in same sitting: branch tree cleaned (21 stale remotes + 2 local + 2 tags pruned), preview cron moved 7pm → midnight (cron `0 2 * * *` → `0 7 * * *`, date arg `TOMORROW` → `TODAY`, CLAUDE.md schedule block updated), `pipeline/run_pipeline.py` + `pipeline/fetch_odds.py` + tests doc-drift "7pm" → "midnight" sweep. `lambda_bias` and `formula_change_date` untouched per P4. |
-| A→B checkpoint — soak re-audit | ⏳ pending | — | **Re-audit Phase A diagnostics after a couple of slates have run under the post-Option-B + midnight-preview pipeline.** Re-run `a1_pitcher_throws.py`, `a2_opening_odds.py`, `a3_ump_adj.py` against the fresh sample; confirm activation rates moved (pitcher_throws null → ~0% forward-only, ump_k_adj nonzero rate ≥ expected, movement_conf != 1.0 rate tracks A2's 9.2% baseline). Only proceed to Phase B after re-audit confirms clean signals — see `⏸️ Checkpoint A → B` section for the re-audit checklist. |
+| A→B checkpoint — soak re-audit | ✅ done (2026-04-27) | — | Re-audit completed after the weekend soak. A1 stayed clean (`pitcher_throws` nulls `0/680`), A2 stayed clean (post-migration opening odds `374/374`), A5 lineup usage cleared the morning-lineup target, and forward-only A3 coverage proved that ump adjustments were landing on fresh slates (`7/23` on 2026-04-24, `23/28` on 2026-04-25, `24/27` on 2026-04-26). User accepted the forward-only interpretation and explicitly approved Phase B. |
 
 ---
 
@@ -1464,6 +1464,184 @@ Discuss:
 
 ---
 
+### Addendum — 2026-04-27 (Post-Phase-B Status / Pre-Phase-C Gate)
+
+This addendum records what actually happened after the original B→C hard stop so
+the full A→C story stays visible in one document.
+
+**What is complete**
+
+- **Phase A** is complete and accepted. The post-merge soak re-audit passed
+  the practical forward-only checkpoint and the user approved proceeding.
+- **Phase B** is complete. `analytics/performance.py` now includes B1–B6:
+  residuals by side, residuals by lambda bucket, per-pitcher residual ranking,
+  9–15% dead-zone profiling, signal activation rates, and feature-contribution
+  means.
+- **Phase B findings were meaningful enough to pause.** The fresh slices showed:
+  over-side residuals worse than under-side, negative residual concentration in
+  higher-lambda buckets, and a dead `swstr_delta_k9` activation rate.
+
+**What the SwStr follow-up found**
+
+- A dedicated follow-up plan was created:
+  `docs/superpowers/plans/2026-04-27-swstr-signal-repair-and-rebaseline.md`
+- That follow-up repaired the **internal SwStr plumbing**:
+  `pipeline/fetch_statcast.py` now builds career SwStr baselines
+  season-by-season instead of relying on one multi-year query.
+- Regression coverage and diagnostics were added:
+  `tests/test_fetch_statcast.py` and
+  `analytics/diagnostics/b5_swstr_activation.py`.
+- The historical Phase B interpretation remains valid as a **dead-signal
+  window** from `2026-04-08` through the SwStr repair deploy window; we are not
+  backfilling or regrading.
+
+**SwStr status after review**
+
+- The upstream SwStr transport repair is now **landed on `main`** via commit
+  `92b61cd` (`fix: restore live SwStr fetch and surface degradation`).
+- Local verification after that merge shows `fetch_swstr()` is again pulling
+  live current-season + prior-season values instead of returning
+  league-average / `None` for every pitcher.
+- The code review still surfaced follow-up work before Phase C:
+  the transport layer is fixed, but calibration/tracking/analytics still carry
+  reviewable risks.
+
+**New pre-Phase-C follow-up queue**
+
+1. **Use today's run as the first forward proof, then check tomorrow's stored picks.**
+   Confirm fresh rows show non-neutral `career_swstr_pct` and non-zero
+   `swstr_delta_k9` at expected activation rates now that the upstream fetch is
+   live on `main`.
+2. **Harden SwStr/ump health tracking from slate-level to pitcher-level.**
+   `data_complete` is currently too coarse; mixed-quality slates can still mark
+   degraded pitcher rows as complete. Fix this before trusting future
+   calibration samples.
+3. **Repair phase-2 calibration math before Phase C.**
+   At minimum:
+   - fix `ump_scale` calibration so it measures against an ump-neutral residual
+     instead of a residual that already subtracts the current ump effect
+   - decide whether K/9 blend-weight calibration should remain outcome-based or
+     be refit against a residualized target
+4. **Resolve the post-SwStr-live calibration boundary decision.**
+   User direction (2026-04-27): preserving stored historical picks/results is
+   more important than preserving one continuous calibration era. If the repair
+   changed signal semantics enough that mixed dead/live SwStr rows would poison
+   calibration, it is acceptable to add a new post-fix calibration boundary or
+   reset `lambda_bias` / related tracking **without rewriting historical
+   pick/result rows**. This is now an explicit follow-up decision point, not a
+   forbidden move.
+5. **Repair the Phase B analytics before using them as Phase C prioritization truth.**
+   At minimum:
+   - make PnL / ROI stake-weighted
+   - bucket on `adj_ev` where verdicts/staking were driven by `adj_ev`
+   - separate true "no move" rows from `first_seen` / ungated rows
+   - avoid mixing dead-window and live-window slices without explicit fencing
+6. **Only then start Phase C.**
+   Phase C remains the next model-signal pass (C1 opener, C2 park, C3 rest,
+   C4 variance/tail, C5 data warnings), but it should begin only after the
+   repaired SwStr path and the follow-up calibration/tracking fixes above are in
+   place.
+7. **After Phase C, run a dedicated overall projection/output evaluation.**
+   That future plan should answer the higher-level question: "Are we projecting
+   Ks properly?" using the repaired inputs plus the full A+B+C signal set.
+
+**Progress update - 2026-04-27 evening**
+
+- **Completed today: row-level completeness hardening.**
+  `pipeline/run_pipeline.py` now computes `data_complete` per pitcher instead
+  of per slate. A row now requires:
+  - real pitcher-level ump coverage
+  - globally usable SwStr transport metadata
+  - live per-row `swstr_pct`
+  but it does **not** incorrectly reject rookies / no-prior-baseline pitchers
+  just because `career_swstr_pct` is naturally `None`.
+- **Completed today: phase-2 ump calibration repair.**
+  `pipeline/calibrate.py` now measures ump signal against an
+  ump-neutral residual instead of `actual_ks - raw_lambda`, and regression
+  coverage now includes both direct helper tests and a DB-backed phase-2 path.
+- **Completed today: Phase B analytics cleanup.**
+  `analytics/performance.py` now:
+  - uses stake-weighted PnL / ROI
+  - buckets on `adj_ev`
+  - reports movement truthfully via `opening_odds_source`
+  - warns when the requested slice still includes the dead-SwStr window
+- **Completed today: forward-proof diagnostic.**
+  Added `analytics/diagnostics/pre_c_swstr_confirmation.py` so tomorrow's SwStr
+  confirmation is a clean rerun, not another code change.
+
+**What is still blocked tonight**
+
+- The first run of `pre_c_swstr_confirmation.py` shows the currently stored
+  `2026-04-27` rows are **not** yet the forward-proof slate:
+  - fresh rows since `2026-04-27`: `12`
+  - non-null `career_swstr_pct`: `0`
+  - nonzero `swstr_delta_k9`: `0`
+  - `data_complete == 1`: `0`
+  - `today.json` live snapshot: `16` pitchers, `0` non-null
+    `career_swstr_pct`, `0` nonzero `swstr_delta_k9`
+- Interpretation: this does **not** invalidate the transport repair on `main`;
+  it means the currently stored `2026-04-27` artifacts are still pre-confirmation
+  rows for purposes of the SwStr gate. The true forward proof must come from the
+  next fresh post-repair stored run.
+- Therefore **Phase C is still paused tonight**. The remaining pre-Phase-C gate
+  is tomorrow's stored-row confirmation, followed immediately by the calibration
+  boundary decision in item 4 above.
+- **Update after production rerun / sync:** the GitHub workflow has now stored
+  live SwStr values on fresh `2026-04-27` rows (`14` fresh rows, `12` with
+  nonzero `swstr_delta_k9`, `13` with `data_complete == 1`; synced
+  `today.json` shows `15/16` non-null `career_swstr_pct` and `15/16` nonzero
+  `swstr_delta_k9`).
+- **Calibration boundary decision:** accepted. `formula_change_date` is now
+  bumped to `2026-04-27` to mark the first confirmed post-SwStr-live era.
+  Current params are intentionally preserved as priors; this is a data-learning
+  fence, not a cold restart of `lambda_bias` / `ump_scale` / `swstr_k9_scale`.
+- With that boundary in place, **Phase C is unblocked**.
+
+**Interpretation guidance**
+
+- Do **not** treat the original Phase B over-bias / high-lambda findings as
+  canceled. Treat them as provisional until SwStr is confirmed live again.
+- If those shapes still hold after SwStr recovery and Phase C, they should feed
+  a separate calibration / projection-evaluation plan rather than being folded
+  ad hoc into C.
+
+**Questions queued for the post-Phase-C evaluation**
+
+When A+B+C are all landed and soaked, the next review should explicitly answer:
+
+1. **Does the current `lambda_bias` / calibration-era strategy still fit the
+   new model state?**
+   Earlier in A/B we intentionally kept `formula_change_date` and live
+   calibration momentum intact. After the SwStr repair and the pre-Phase-C
+   review, the user is now open to a new post-fix calibration boundary if that
+   proves cleaner than mixing dead-signal and live-signal rows. After the full
+   signal set has soaked, re-check whether the current tracking/calibration
+   approach is still absorbing changes cleanly, or whether the model now needs
+   more explicit tracking of post-change regimes.
+
+2. **Does strikeout environment drift across the season enough to justify a
+   seasonal or monthly baseline adjustment?**
+   Open question: average strikeout rates may move as the season progresses.
+   Evaluate whether monthly / rolling historical K-environment adjustments are
+   warranted, or whether the existing inputs and calibration already capture
+   that drift well enough.
+
+3. **Are the current inputs being combined correctly, not just collected
+   correctly?**
+   After compaction and after Phase C, run a code-review / model-review pass on
+   the full projection assembly:
+   - are correlated inputs being double-counted?
+   - are additive vs multiplicative adjustments being used in the right places?
+   - are any signals overweighted, underweighted, or logically conflicting?
+   - does the final lambda construction still match the intended model story?
+
+4. **Should the next plan be a dedicated overall projection-evaluation audit?**
+   Likely yes. If the above questions still matter after Phase C soak, write a
+   separate plan focused on "Are we projecting Ks properly?" rather than adding
+   more features immediately.
+
+---
+
 ## PHASE C — Model Signal Additions
 
 **Expected wall time per C task:** 1–3 hours active work (TDD cycle + wiring + test run) + ~48h production soak before the activation gate is checked. Spread across days, not one sitting — each signal needs time in production before the next lands so calibration can attribute changes cleanly. C2 has extra manual load from C2.1b (park factor research, ~1h).
@@ -1589,6 +1767,22 @@ The `is_opener` and `opener_note` fields are new in `today.json`. Check [dashboa
 - [ ] **Step C1.9: 48h activation gate**
 
 Wait ~48h after C1 merges, then re-run `python analytics/performance.py --since <c1-deploy-date>`. **Gate:** `is_opener` field should be populated (True or False, not missing) for ≥98% of picks. `is_opener=True` itself should fire for ~0-5% of picks per day on average (genuinely rare). If activation is 0% everywhere, the wiring's bypassed somewhere — re-diagnose before moving on.
+
+**Progress update - 2026-04-27 late evening**
+
+- **C1 implementation is in place and fully green locally (`351 passed`).**
+- `fetch_stats.py` now requests a wider recent game-log window, filters to actual
+  starts via `gamesStarted > 0`, and keeps the last five true starts as
+  `recent_start_ips` so mixed relief appearances do not poison opener detection.
+- `build_features.py` now emits `is_opener` and `opener_note` on each record.
+  Openers are forced to `PASS`, and `adj_ev` is zeroed on opener rows so
+  downstream adj-EV ranking/watchlist logic stays neutral even if raw EV or
+  win-probability remain visible for inspection.
+- Dashboard schema check: no code change needed. `dashboard/index.html` selects
+  cards/watchlist entries off verdict + adjusted EV paths and tolerates missing
+  optional fields, so the additive `is_opener` / `opener_note` fields are safe.
+- **Remaining gate:** C1.9 still needs the 48h production activation read before
+  C1 can be called soaked.
 
 ---
 
@@ -1786,6 +1980,18 @@ Prefer listing the specific files rather than `pipeline/` / `tests/` globs so an
 
 Wait ~48h, then check B5 slice. **Gate:** `park_factor` should be **populated** (non-null, numeric) for **≥98% of picks** — any missing value means team→park lookup is broken for that team code. A secondary-but-optional signal: `park_factor != 1.0` fires for ≥60% of picks; a park rounded to exactly 1.00 is legitimate, so don't hard-gate on this. If populated rate is <50%, the mapping is returning defaults too often — re-diagnose. Do NOT backfill historical picks with park factors — see global policy P1.
 
+**Progress update - 2026-04-27 late evening**
+
+- C2 code path is implemented and verified.
+- `data/park_factors.json` now exists with nested `factors` metadata + all 30 team codes.
+- `pipeline/team_codes.py` is the canonical full-name→code mapping and includes compatibility aliases for renamed franchises so venue resolution does not silently fall back to neutral when upstream team labels drift.
+- `fetch_stats.py` now emits `park_team` so away starters resolve to the actual venue/home team instead of their own club.
+- `build_features.calc_lambda()` now applies `park_factor` multiplicatively to the rate-driven portion of lambda, while umpire remains additive.
+- `run_pipeline._resolve_park_factor()` now hard-fails safe to `1.0` for missing team names, unknown team names, missing file entries, non-finite values, or non-positive values, with a warning in logs.
+- Added integration coverage proving otherwise-identical pitchers produce lower `raw_lambda` in a low-K park than in a higher-K park through the real run path.
+- Full suite after C2 hardening: `361 passed`.
+- One provenance follow-up remains open by design: the FanGraphs source is recorded honestly in `park_factors.json`, but the originally-planned Baseball Savant cross-check is still pending. Treat that as a data-refresh / provenance task, not a blocker for C3.
+
 ---
 
 ### Task C3: Pitcher rest / recent workload
@@ -1888,6 +2094,20 @@ git commit -m "feat(c3): apply rest/workload K/9 delta"
 
 Wait ~48h, then check the data via B5 / a quick script. **Gate:** `days_since_last_start` and `last_pitch_count` populated for ≥90% of starting pitchers. Non-zero `rest_k9_delta` will be rarer (fires only on short rest or high recent pitch count — expect ~10-25% of picks). If the populated-fields rate is <50%, the MLB API fetch isn't working and C3 is effectively dormant — re-diagnose.
 
+**Progress update - 2026-04-27 late evening**
+
+- C3 code path is implemented and verified.
+- Added `analytics/diagnostics/c3_rest_data_probe.py` to confirm the existing MLB Stats API game log already exposes top-level per-start `date` plus `stat.numberOfPitches`.
+- `fetch_stats.py` now surfaces `days_since_last_start` and `last_pitch_count` from the latest true start.
+- Started game logs are now sorted newest-first by split date before the recent-start slice is taken. This fixes two issues at once: C3 rest/workload now keys off the real latest start, and `recent_k9` / `recent_start_ips` no longer depend on raw API row order.
+- Rest days for UTC-shifted games now use the actual schedule block date, not just the original request date, so `date_str + 1` pitchers do not get an off-by-one short-rest penalty.
+- `build_features.calc_rest_k9_delta()` landed with the conservative table from the plan: `<4 days => -0.3`, `>110 pitches => -0.2`, additive, missing-data neutral.
+- `build_pitcher_record()` now applies `rest_k9_delta` to the blended K/9 before lambda and writes forward-only breadcrumbs (`days_since_last_start`, `last_pitch_count`, `rest_k9_delta`) into the record.
+- Verification:
+  - `python -m pytest tests/test_fetch_stats.py tests/test_build_features.py -q` → `152 passed`
+  - `python analytics/diagnostics/c3_rest_data_probe.py --player-id 571927 --season 2026 --limit 5` → confirmed live `date` + `numberOfPitches`
+  - `python -m pytest tests -q` → `369 passed`
+
 ---
 
 ### Task C4: K-variance / Poisson tail haircut
@@ -1939,6 +2159,12 @@ git commit -m "docs(c4): placeholder plan for bucketed lambda calibration (C4 sk
 ```
 
 **Then** proceed to the Completion section (Z.1–Z.4). Prior C commits (C1, C2, C3) still stand independently. Note the skip decision and the placeholder in the Z.3 CLAUDE.md update.
+
+**Decision note - 2026-04-27 late evening**
+
+- C4 is being skipped per C4.1.
+- Reason: Phase B already showed the problem is bucket-shaped (`high-lambda` residual degradation), not a generic all-extreme-EV problem. A uniform haircut would hide the calibration shape instead of fixing it.
+- Follow-up is tracked in a dedicated placeholder plan: `docs/superpowers/plans/2026-04-27-bucketed-lambda-calibration.md`.
 
 - [ ] **Step C4.2: Write failing test**
 
@@ -2146,6 +2372,27 @@ python -m pytest tests/ -q
 git add tests/ pipeline/ dashboard/index.html
 git commit -m "feat(c5): surface data-source warnings in today.json and dashboard"
 ```
+
+**Progress update - 2026-04-27 late evening**
+
+- C5 code path is implemented and verified.
+- `run_pipeline.collect_data_warnings(...)` now exists as a pure helper so warning logic can be tested without an end-to-end pipeline mock.
+- `today.json` now carries a top-level `data_warnings` array; clean runs write `[]`.
+- Units contract is live:
+  - HP ump coverage warnings count scheduled `games`
+  - lineup and batter-split warnings count opposing `lineups`
+- Mixed-resolution warning math is hardened:
+  - scheduled-game count falls back to full slate size when only some props resolved team names
+  - lineup warning denominator only counts pitchers that actually reached the lineup-fetch path, so dropped `fetch_stats` rows are not mislabeled as projected lineups
+- SwStr warning text now distinguishes partial degradation from full fallback:
+  - career baseline unavailable → delta zeroed
+  - current-season unavailable → neutral current-season fallback
+  - both unavailable → full neutral SwStr fallback
+- Dashboard changes are additive only: a small warning badge near the freshness badge plus a warning panel under the freshness banner area.
+- Verification:
+  - `python -m pytest tests/test_run_pipeline.py -k "collect_data_warnings or writes_data_warnings" -q` → `9 passed`
+  - `python -m pytest tests/test_run_pipeline.py -q` → `65 passed`
+  - `python -m pytest tests -q` → `378 passed`
 
 ---
 

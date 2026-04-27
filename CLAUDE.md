@@ -133,6 +133,17 @@ Read this before debugging any data-source issue.
   current probable no longer matches the odds pitcher (`starter_mismatch`).
 - `/schedule?hydrate=probablePitcher,team` does **not** reliably include
   `pitchHand`. When it is missing, the code must fall back to `/people/{id}`.
+- `recent_start_ips` comes from pitcher `gameLog`, but it is **not** the raw
+  last 5 appearances. The fetch widens the lookback, filters to
+  `gamesStarted > 0`, then keeps the last 5 true starts so mixed relief usage
+  does not poison opener detection.
+- Started game logs should be sorted newest-first by split date before the
+  recent-start slice is taken. Do not trust the raw MLB API row order.
+- `recent_k9` is the aggregate K/9 across that recent true-start slice, not the
+  first game-log row's K/9.
+- `park_team` is the venue breadcrumb used for park-factor lookup. For home
+  starters it is their own team name; for away starters it is the opponent's
+  home team name.
 - Name matching between TheRundown and MLB must stay accent-insensitive.
   `name_utils.normalize()` is load-bearing here.
 
@@ -172,7 +183,9 @@ Read this before debugging any data-source issue.
 
 ### FanGraphs / PyBaseball SwStr (`pipeline/fetch_statcast.py`)
 
-- Current-season SwStr% comes from `pitching_stats(season, season, qual=0)`.
+- Current-season SwStr% comes from the FanGraphs leaderboard JSON endpoint
+  (`https://www.fangraphs.com/api/leaders/major-league/data`), not the old
+  legacy `pitching_stats()` scrape path.
 - Career baseline is the 3-season window before the current season.
 - That baseline is the mean of the three prior seasons fetched
   season-by-season, not one combined multi-year scrape.
@@ -181,6 +194,26 @@ Read this before debugging any data-source issue.
   `LEAGUE_AVG_SWSTR`, not break the pipeline.
 - If `career_swstr_pct` suddenly goes null across the board, check
   `pipeline/fetch_statcast.py` before trusting Phase B bias slices.
+- Live production confirmation: the repaired transport was verified end-to-end
+  on 2026-04-27. Fresh workflow-stored rows from that date forward are the
+  first post-fix SwStr-live calibration era.
+
+### Park factors (`data/park_factors.json`, `pipeline/team_codes.py`)
+
+- Park factors live in `data/park_factors.json` under a nested `factors` dict.
+  Metadata at the file root is part of the contract; do not flatten it.
+- The pipeline stores full MLB team names in the live stats payload, so
+  `pipeline/team_codes.py` is the canonical name→code mapping for park-factor
+  resolution.
+- `TEAM_NAME_TO_CODE` intentionally includes a few historical / alias names
+  (`Oakland Athletics`, `Anaheim Angels`, etc.) so upstream label drift
+  degrades to the right code instead of silently defaulting to neutral.
+- `run_pipeline._resolve_park_factor()` must fail safe to `1.0` when a venue
+  name is missing, unknown, or mapped to an invalid factor (missing, non-finite,
+  or <= 0). Log a warning and keep the run alive.
+- Current provenance note: FanGraphs research is recorded in the file; the
+  planned Baseball Savant cross-check is still pending and should be treated as
+  a data-refresh follow-up, not as a live-run blocker.
 
 ## Model Overview
 
@@ -190,6 +223,57 @@ Read this before debugging any data-source issue.
 4. Umpire adjustment: HP umpire career K rate delta
 5. Lambda = (adjusted_K/9 × opp_K_factor × innings/9) + ump_adjustment + lambda_bias
 6. Poisson CDF → over/under win probabilities → EV vs book odds → verdict
+
+### Opener handling
+
+- `build_features.is_opener()` flags likely opener / bullpen games when the
+  recent-start IP sample averages below `2.5` innings across at least `2`
+  starts.
+- Openers are forward-only metadata in `today.json` via `is_opener` and
+  `opener_note`.
+- When opener is true, both sides are forced to `PASS` and adjusted EV is
+  zeroed so verdict-driven and adj-EV-driven UI paths stay neutral.
+- Raw EV / win probability still remain on the record for inspection; the
+  actionable suppression happens through verdict + adjusted EV.
+
+### Park-factor handling
+
+- `calc_lambda(..., park_factor=1.0)` applies park factor multiplicatively to
+  the rate-driven portion of lambda before the additive umpire term.
+- Park factor is a forward-only signal. Do not backfill historical rows with it.
+- Unknown venues should show up as `park_factor=1.0` plus a warning, not as a
+  hard pipeline failure.
+
+### Rest / workload handling
+
+- `fetch_stats.py` now exposes `days_since_last_start` and `last_pitch_count`
+  from the latest true start in the MLB game log.
+- Rest for UTC-shifted games must be computed from the actual schedule block
+  date, not blindly from the original `date_str` request.
+- `calc_rest_k9_delta()` is intentionally conservative:
+  - `<4` days since last start => `-0.3` K/9
+  - `>110` pitches in the last start => `-0.2` K/9
+  - penalties stack
+  - missing data stays neutral
+- `rest_k9_delta` is forward-only metadata in the record output and is applied
+  to the blended K/9 before lambda.
+
+### Data warnings / degraded-source visibility
+
+- `today.json` now includes a top-level `data_warnings` array. Empty array means
+  clean run; the dashboard should hide the warning UI in that case.
+- `run_pipeline.collect_data_warnings()` is the pure warning contract. Prefer
+  testing there instead of broad orchestration mocks when changing warning text
+  or counting logic.
+- Units matter:
+  - HP ump coverage warnings are counted in scheduled `games`
+  - lineup and batter-split warnings are counted in opposing `lineups`
+- Lineup warning denominators should only count pitchers that actually reached
+  the lineup-fetch path. Do not blame a dropped `fetch_stats` row on
+  `fetch_lineups`.
+- SwStr warnings should distinguish partial degradation from a full neutral
+  fallback. Losing only the career baseline means the current SwStr value is
+  still live and only the delta is zeroed.
 
 ### EV Verdict Thresholds
 
@@ -207,6 +291,10 @@ Thresholds live in `pipeline/build_features.py` (`EDGE_LEAN`, `EDGE_FIRE_1U`):
 - **Phase 2 (n>=60)**: ump_scale, K/9 blend weights (season_cap, recent), swstr_k9_scale
 - Parameters saved to `data/params.json` with calibration notes
 - Only uses current-season picks after any `formula_change_date`
+- Current live boundary: `formula_change_date = 2026-04-27` marks the first
+  confirmed post-SwStr-live era. This preserves historical picks/results for
+  analysis while preventing calibration from learning across the dead-SwStr
+  window (`2026-04-08` → pre-fix 2026-04-27 rows).
 
 ## Data Flow
 
@@ -272,7 +360,9 @@ before shipping.
 - **Locked snapshots**: Once a game starts, its card data is frozen in today.json. Post-start API runs don't overwrite pre-game snapshots.
 - **Pick seeding**: `INSERT OR IGNORE` — first-seen line is locked in. Subsequent runs update unlocked picks only.
 - **Ephemeral DB**: SQLite DB is rebuilt from `picks_history.json` each run (GitHub Actions runners are stateless).
-- **Graceful degradation**: Each data source can fail independently. SwStr%, umpires, lineups all fall back to neutral values. `data_complete` flag excludes degraded picks from calibration.
+- **Graceful degradation**: Each data source can fail independently. SwStr%, umpires, lineups all fall back to neutral values. `data_complete` now reflects pitcher-level completeness (not just slate-level success) and excludes degraded picks from calibration.
+- **User-visible degradation**: silent failures should also surface in
+  `today.json.data_warnings` so the dashboard can warn without requiring a CI-log read.
 - **Movement confidence**: Line movement against bet side applies a 0–1 haircut to EV (noise_floor=10pts, full_fade=30pts).
 
 **Additional pattern notes (2026-04-24):**
@@ -414,14 +504,17 @@ to do an infrastructure/scale review before the 2027 season starts.
 3. **Pipeline runtime.** Measure typical full-run wall time. If GitHub
    Actions minutes or TheRundown API quota are getting tight, consider
    caching unchanged data between the 30-min refreshes or batching fetches.
-4. **Calibration window.** Re-evaluate whether `formula_change_date`-based
+4. **Park-factor provenance.** Refresh `data/park_factors.json`, confirm team
+   aliases still match live upstream names, and finish or refresh the Savant
+   cross-check before the next season.
+5. **Calibration window.** Re-evaluate whether `formula_change_date`-based
    filtering is still the right approach, or whether multi-season rolling
    calibration would be more stable.
-5. **Line shopping / book coverage.** Check if TheRundown's best-line data
+6. **Line shopping / book coverage.** Check if TheRundown's best-line data
    is still sufficient vs. pulling per-book explicitly for EV optimization.
-6. **Notifications / PWA.** Audit subscription counts and delivery rates
+7. **Notifications / PWA.** Audit subscription counts and delivery rates
    via Netlify function logs — clean up dead endpoints.
-7. **Dashboard.** Decide if the single-file HTML is still the right call
+8. **Dashboard.** Decide if the single-file HTML is still the right call
    or if a build step (Vite/Astro) is worth the complexity for next season.
 
 Goal: spend a deliberate day planning scale improvements while there's no

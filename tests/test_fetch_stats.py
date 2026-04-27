@@ -10,7 +10,7 @@ from fetch_stats import fetch_stats, _parse_ip, _k9_from_splits, _normalize_name
 
 # ── Helpers ────────────────────────────────────────────────────────────────────
 
-def _make_schedule(pitcher_name, pitcher_id, pitch_hand_code="R"):
+def _make_schedule(pitcher_name, pitcher_id, pitch_hand_code="R", block_date=None):
     """Build a minimal MLB schedule API response with one game."""
     pitcher_obj = {
         "id": pitcher_id,
@@ -22,6 +22,7 @@ def _make_schedule(pitcher_name, pitcher_id, pitch_hand_code="R"):
     return {
         "dates": [
             {
+                "date": block_date,
                 "games": [
                     {
                         "teams": {
@@ -59,6 +60,47 @@ def _make_pitcher_stats_response(so=45, ip="45.0"):
     }
 
 
+def _make_pitcher_game_log_response(
+    innings_list,
+    strikeouts_list=None,
+    games_started_list=None,
+    dates=None,
+    pitch_counts=None,
+):
+    """Build a minimal MLB pitcher gameLog response from per-start innings."""
+    if strikeouts_list is None:
+        strikeouts_list = [3] * len(innings_list)
+    if games_started_list is None:
+        games_started_list = [1] * len(innings_list)
+    if dates is None:
+        dates = [None] * len(innings_list)
+    if pitch_counts is None:
+        pitch_counts = [None] * len(innings_list)
+
+    splits = []
+    for innings, strikeouts, games_started, start_date, pitch_count in zip(
+        innings_list,
+        strikeouts_list,
+        games_started_list,
+        dates,
+        pitch_counts,
+    ):
+        split = {
+            "stat": {
+                "strikeOuts": strikeouts,
+                "inningsPitched": innings,
+                "gamesStarted": games_started,
+            }
+        }
+        if start_date is not None:
+            split["date"] = start_date
+        if pitch_count is not None:
+            split["stat"]["numberOfPitches"] = pitch_count
+        splits.append(split)
+
+    return {"stats": [{"splits": splits}]}
+
+
 def _make_team_stats_response(pa=1500, so=360):
     """Build a minimal MLB team hitting stats API response."""
     return {
@@ -78,13 +120,21 @@ def _make_team_stats_response(pa=1500, so=360):
     }
 
 
-def _make_requests_get_side_effect(pitcher_name, pitcher_id, pitch_hand_code="R"):
+def _make_requests_get_side_effect(
+    pitcher_name,
+    pitcher_id,
+    pitch_hand_code="R",
+    recent_start_ips=None,
+):
     """
     Return a side_effect function for requests.get that serves different
     responses based on the URL being called.
     """
     schedule = _make_schedule(pitcher_name, pitcher_id, pitch_hand_code)
     pitcher_stats = _make_pitcher_stats_response()
+    pitcher_game_log = _make_pitcher_game_log_response(
+        recent_start_ips or ["6.0", "6.0", "6.0", "6.0", "6.0"]
+    )
     team_stats = _make_team_stats_response()
 
     def side_effect(url, params=None, timeout=None):
@@ -93,7 +143,10 @@ def _make_requests_get_side_effect(pitcher_name, pitcher_id, pitch_hand_code="R"
         if "/schedule" in url:
             mock_resp.json.return_value = schedule
         elif f"/people/{pitcher_id}/stats" in url:
-            mock_resp.json.return_value = pitcher_stats
+            if params and params.get("stats") == "gameLog":
+                mock_resp.json.return_value = pitcher_game_log
+            else:
+                mock_resp.json.return_value = pitcher_stats
         elif f"/teams/" in url:
             mock_resp.json.return_value = team_stats
         else:
@@ -152,7 +205,7 @@ def test_fetch_stats_returns_expected_keys():
 
     assert "Gerrit Cole" in stats
     result = stats["Gerrit Cole"]
-    for key in ("season_k9", "career_k9", "recent_k9", "avg_ip_last5", "opp_k_rate", "team", "opp_team"):
+    for key in ("season_k9", "career_k9", "recent_k9", "avg_ip_last5", "recent_start_ips", "opp_k_rate", "team", "opp_team", "park_team"):
         assert key in result, f"Missing key: {key}"
 
 
@@ -306,6 +359,199 @@ def test_fetch_stats_accent_match_preserves_stats_content():
         stats, _probables = fetch_stats("2026-04-15", ["Jose Berrios"])
 
     result = stats.get("Jose Berrios", {})
-    for key in ("season_k9", "career_k9", "recent_k9", "avg_ip_last5", "opp_k_rate",
+    for key in ("season_k9", "career_k9", "recent_k9", "avg_ip_last5", "recent_start_ips", "opp_k_rate",
                 "team", "opp_team", "throws"):
         assert key in result, f"Missing key after accent match: {key}"
+
+
+def test_fetch_stats_returns_recent_start_ips_as_decimals():
+    pitcher_id = 543037
+    with patch("requests.get", side_effect=_make_requests_get_side_effect(
+        "Gerrit Cole", pitcher_id, pitch_hand_code="R",
+        recent_start_ips=["1.0", "1.2", "2.0", "2.1", "3.0"]
+    )):
+        stats, _probables = fetch_stats("2026-04-15", ["Gerrit Cole"])
+
+    assert stats["Gerrit Cole"]["recent_start_ips"] == pytest.approx(
+        [1.0, 1 + 2/3, 2.0, 2 + 1/3, 3.0]
+    )
+
+
+def test_fetch_stats_extracts_rest_days_and_last_pitch_count_from_latest_start():
+    pitcher_id = 543037
+    pitcher_stats = _make_pitcher_stats_response()
+    game_log = _make_pitcher_game_log_response(
+        ["6.0", "5.0", "4.0"],
+        strikeouts_list=[8, 6, 4],
+        dates=["2026-04-06", "2026-04-12", "2026-03-31"],
+        pitch_counts=[94, 112, 81],
+    )
+    team_stats = _make_team_stats_response()
+
+    def side_effect(url, params=None, timeout=None):
+        mock_resp = MagicMock()
+        mock_resp.raise_for_status = MagicMock()
+        if "/schedule" in url:
+            mock_resp.json.return_value = _make_schedule("Gerrit Cole", pitcher_id, "R")
+        elif f"/people/{pitcher_id}/stats" in url:
+            if params and params.get("stats") == "gameLog":
+                mock_resp.json.return_value = game_log
+            else:
+                mock_resp.json.return_value = pitcher_stats
+        elif "/teams/" in url:
+            mock_resp.json.return_value = team_stats
+        else:
+            mock_resp.json.return_value = {"stats": []}
+        return mock_resp
+
+    with patch("requests.get", side_effect=side_effect):
+        stats, _probables = fetch_stats("2026-04-15", ["Gerrit Cole"])
+
+    assert stats["Gerrit Cole"]["days_since_last_start"] == 3
+    assert stats["Gerrit Cole"]["last_pitch_count"] == 112
+    assert stats["Gerrit Cole"]["recent_start_ips"] == pytest.approx([5.0, 6.0, 4.0])
+    assert stats["Gerrit Cole"]["recent_k9"] == pytest.approx(round((18 / 15.0) * 9, 2))
+
+
+def test_fetch_stats_uses_actual_second_schedule_block_date_for_rest_days():
+    pitcher_id = 543037
+    pitcher_stats = _make_pitcher_stats_response()
+    game_log = _make_pitcher_game_log_response(
+        ["6.0", "5.0"],
+        strikeouts_list=[8, 6],
+        dates=["2026-04-12", "2026-04-06"],
+        pitch_counts=[102, 94],
+    )
+    team_stats = _make_team_stats_response()
+
+    def side_effect(url, params=None, timeout=None):
+        mock_resp = MagicMock()
+        mock_resp.raise_for_status = MagicMock()
+        if "/schedule" in url:
+            mock_resp.json.return_value = _make_schedule(
+                "Gerrit Cole",
+                pitcher_id,
+                "R",
+                block_date="2026-04-16",
+            )
+        elif f"/people/{pitcher_id}/stats" in url:
+            if params and params.get("stats") == "gameLog":
+                mock_resp.json.return_value = game_log
+            else:
+                mock_resp.json.return_value = pitcher_stats
+        elif "/teams/" in url:
+            mock_resp.json.return_value = team_stats
+        else:
+            mock_resp.json.return_value = {"stats": []}
+        return mock_resp
+
+    with patch("requests.get", side_effect=side_effect):
+        stats, _probables = fetch_stats("2026-04-15", ["Gerrit Cole"])
+
+    assert stats["Gerrit Cole"]["days_since_last_start"] == 4
+    assert stats["Gerrit Cole"]["last_pitch_count"] == 102
+
+
+def test_fetch_stats_sets_park_team_to_home_team_for_away_pitcher():
+    pitcher_id = 543037
+    with patch("requests.get", side_effect=_make_requests_get_side_effect(
+        "Gerrit Cole", pitcher_id, pitch_hand_code="R"
+    )):
+        stats, _probables = fetch_stats("2026-04-15", ["Gerrit Cole"])
+
+    assert stats["Gerrit Cole"]["team"] == "New York Yankees"
+    assert stats["Gerrit Cole"]["opp_team"] == "Boston Red Sox"
+    assert stats["Gerrit Cole"]["park_team"] == "Boston Red Sox"
+
+
+def test_fetch_stats_recent_start_ips_filters_out_relief_outings():
+    pitcher_id = 543037
+    pitcher_stats = _make_pitcher_stats_response()
+    mixed_game_log = _make_pitcher_game_log_response(
+        ["1.0", "2.0", "5.0", "6.0"],
+        games_started_list=[0, 0, 1, 1],
+    )
+    team_stats = _make_team_stats_response()
+
+    def side_effect(url, params=None, timeout=None):
+        mock_resp = MagicMock()
+        mock_resp.raise_for_status = MagicMock()
+        if "/schedule" in url:
+            mock_resp.json.return_value = _make_schedule("Gerrit Cole", pitcher_id, "R")
+        elif f"/people/{pitcher_id}/stats" in url:
+            if params and params.get("stats") == "gameLog":
+                mock_resp.json.return_value = mixed_game_log
+            else:
+                mock_resp.json.return_value = pitcher_stats
+        elif "/teams/" in url:
+            mock_resp.json.return_value = team_stats
+        else:
+            mock_resp.json.return_value = {"stats": []}
+        return mock_resp
+
+    with patch("requests.get", side_effect=side_effect):
+        stats, _probables = fetch_stats("2026-04-15", ["Gerrit Cole"])
+
+    assert stats["Gerrit Cole"]["recent_start_ips"] == pytest.approx([5.0, 6.0])
+
+
+def test_fetch_stats_recent_start_ips_looks_back_far_enough_for_five_real_starts():
+    pitcher_id = 543037
+    pitcher_stats = _make_pitcher_stats_response()
+    mixed_splits = _make_pitcher_game_log_response(
+        ["1.0", "2.0", "5.0", "6.0", "7.0", "8.0", "9.0"],
+        games_started_list=[0, 0, 1, 1, 1, 1, 1],
+    )["stats"][0]["splits"]
+    team_stats = _make_team_stats_response()
+
+    def side_effect(url, params=None, timeout=None):
+        mock_resp = MagicMock()
+        mock_resp.raise_for_status = MagicMock()
+        if "/schedule" in url:
+            mock_resp.json.return_value = _make_schedule("Gerrit Cole", pitcher_id, "R")
+        elif f"/people/{pitcher_id}/stats" in url:
+            if params and params.get("stats") == "gameLog":
+                limit = int(params.get("limit", len(mixed_splits)))
+                mock_resp.json.return_value = {"stats": [{"splits": mixed_splits[:limit]}]}
+            else:
+                mock_resp.json.return_value = pitcher_stats
+        elif "/teams/" in url:
+            mock_resp.json.return_value = team_stats
+        else:
+            mock_resp.json.return_value = {"stats": []}
+        return mock_resp
+
+    with patch("requests.get", side_effect=side_effect):
+        stats, _probables = fetch_stats("2026-04-15", ["Gerrit Cole"])
+
+    assert stats["Gerrit Cole"]["recent_start_ips"] == pytest.approx([5.0, 6.0, 7.0, 8.0, 9.0])
+
+
+def test_fetch_stats_recent_start_ips_uses_prior_season_fallback():
+    pitcher_id = 543037
+    pitcher_stats = _make_pitcher_stats_response()
+    prior_game_log = _make_pitcher_game_log_response(["1.0", "2.0", "2.2"])
+    team_stats = _make_team_stats_response()
+
+    def side_effect(url, params=None, timeout=None):
+        mock_resp = MagicMock()
+        mock_resp.raise_for_status = MagicMock()
+        if "/schedule" in url:
+            mock_resp.json.return_value = _make_schedule("Gerrit Cole", pitcher_id, "R")
+        elif f"/people/{pitcher_id}/stats" in url:
+            if params and params.get("stats") == "gameLog" and params.get("season") == 2026:
+                mock_resp.json.return_value = {"stats": [{"splits": []}]}
+            elif params and params.get("stats") == "gameLog" and params.get("season") == 2025:
+                mock_resp.json.return_value = prior_game_log
+            else:
+                mock_resp.json.return_value = pitcher_stats
+        elif "/teams/" in url:
+            mock_resp.json.return_value = team_stats
+        else:
+            mock_resp.json.return_value = {"stats": []}
+        return mock_resp
+
+    with patch("requests.get", side_effect=side_effect):
+        stats, _probables = fetch_stats("2026-04-15", ["Gerrit Cole"])
+
+    assert stats["Gerrit Cole"]["recent_start_ips"] == pytest.approx([1.0, 2.0, 2 + 2/3])
