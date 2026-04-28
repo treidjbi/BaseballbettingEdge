@@ -1,80 +1,80 @@
 {
-  "generated_at": "2026-04-27T11:44:30Z",
-  "total_picks": 412,
-  "last_calibrated": "2026-04-27T11:44:30Z",
-  "calibration_sample": 362,
+  "generated_at": "2026-04-28T11:46:19Z",
+  "total_picks": 0,
+  "last_calibrated": "2026-04-27T23:21:48Z",
+  "calibration_sample": 0,
   "rows": [
     {
       "verdict": "FIRE 2u",
       "side": "over",
-      "picks": 43,
-      "wins": 17,
-      "losses": 26,
+      "picks": 0,
+      "wins": 0,
+      "losses": 0,
       "pushes": 0,
-      "win_pct": 0.395,
-      "roi": -21.14,
-      "avg_ev": 0.1555
+      "win_pct": null,
+      "roi": null,
+      "avg_ev": null
     },
     {
       "verdict": "FIRE 2u",
       "side": "under",
-      "picks": 140,
-      "wins": 76,
-      "losses": 64,
+      "picks": 0,
+      "wins": 0,
+      "losses": 0,
       "pushes": 0,
-      "win_pct": 0.543,
-      "roi": 1.73,
-      "avg_ev": 0.1858
+      "win_pct": null,
+      "roi": null,
+      "avg_ev": null
     },
     {
       "verdict": "FIRE 1u",
       "side": "over",
-      "picks": 64,
-      "wins": 37,
-      "losses": 27,
+      "picks": 0,
+      "wins": 0,
+      "losses": 0,
       "pushes": 0,
-      "win_pct": 0.578,
-      "roi": 14.41,
-      "avg_ev": 0.0582
+      "win_pct": null,
+      "roi": null,
+      "avg_ev": null
     },
     {
       "verdict": "FIRE 1u",
       "side": "under",
-      "picks": 87,
-      "wins": 53,
-      "losses": 34,
+      "picks": 0,
+      "wins": 0,
+      "losses": 0,
       "pushes": 0,
-      "win_pct": 0.609,
-      "roi": 17.12,
-      "avg_ev": 0.0577
+      "win_pct": null,
+      "roi": null,
+      "avg_ev": null
     },
     {
       "verdict": "LEAN",
       "side": "over",
-      "picks": 33,
-      "wins": 13,
-      "losses": 20,
+      "picks": 0,
+      "wins": 0,
+      "losses": 0,
       "pushes": 0,
-      "win_pct": 0.394,
-      "roi": -29.51,
-      "avg_ev": 0.0181
+      "win_pct": null,
+      "roi": null,
+      "avg_ev": null
     },
     {
       "verdict": "LEAN",
       "side": "under",
-      "picks": 45,
-      "wins": 26,
-      "losses": 19,
+      "picks": 0,
+      "wins": 0,
+      "losses": 0,
       "pushes": 0,
-      "win_pct": 0.578,
-      "roi": 8.48,
-      "avg_ev": 0.0193
+      "win_pct": null,
+      "roi": null,
+      "avg_ev": null
     }
   ],
   "lambda_accuracy": {
-    "avg_predicted": 4.94,
-    "avg_actual": 4.72,
-    "bias": -0.22
+    "avg_predicted": null,
+    "avg_actual": null,
+    "bias": null
   },
   "params": {
     "weight_season_cap": 0.4,
@@ -82,10 +82,12 @@
     "ump_scale": 0.95,
     "lambda_bias": -0.245,
     "swstr_k9_scale": 30.0,
-    "updated_at": "2026-04-27T11:44:30Z",
+    "updated_at": "2026-04-27T23:21:48Z",
     "sample_size": 362,
-    "formula_change_date": "2026-04-08",
+    "formula_change_date": "2026-04-28",
     "calibration_notes": [
+      "[2026-04-27] EV now tracks true ROI, probability gap is stored separately as edge, and the clean post-change calibration era starts on 2026-04-28",
+      "[2026-04-27] Live SwStr transport confirmed; preserved current params as priors and stopped learning from the dead-SwStr window",
       "[2026-04-27] Lambda bias adjusted -0.317 \u2192 -0.245 (model was systematically over-predicting Ks)",
       "[2026-04-27] K/9 blend weights updated: season 40% \u2192 40%, recent 15% \u2192 17%",
       "[2026-04-26] Lambda bias adjusted -0.306 \u2192 -0.317 (model was systematically over-predicting Ks)",
@@ -109,6 +111,8 @@
     ]
   },
   "calibration_notes": [
+    "[2026-04-27] EV now tracks true ROI, probability gap is stored separately as edge, and the clean post-change calibration era starts on 2026-04-28",
+    "[2026-04-27] Live SwStr transport confirmed; preserved current params as priors and stopped learning from the dead-SwStr window",
     "[2026-04-27] Lambda bias adjusted -0.317 \u2192 -0.245 (model was systematically over-predicting Ks)",
     "[2026-04-27] K/9 blend weights updated: season 40% \u2192 40%, recent 15% \u2192 17%",
     "[2026-04-26] Lambda bias adjusted -0.306 \u2192 -0.317 (model was systematically over-predicting Ks)",
