@@ -172,7 +172,6 @@ def fetch_batter_stats_cached(season: int) -> dict:
         try:
             _batter_stats_cache = fetch_batter_stats(season)
         except Exception as e:
-            build_failures.append(name)
             log.warning("fetch_batter_stats failed: %s — using empty dict", e)
             _batter_stats_cache = {}
     return _batter_stats_cache

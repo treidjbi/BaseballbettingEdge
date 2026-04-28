@@ -264,6 +264,11 @@
     return base;
   }
 
+  function steamJsonForDate(steamJson, slateDate) {
+    if (!steamJson || !steamJson.snapshots?.length) return null;
+    return steamJson.date === slateDate ? steamJson : null;
+  }
+
   // ── Fetch archived dates for the DateBar ───────────────────────
   async function fetchDateIndex() {
     try {
@@ -294,11 +299,12 @@
         fetchDateIndex(),
         fetchJSON(STEAM_URL).catch(() => null),
       ]);
+      const datedSteam = steamJsonForDate(steamJson, todayJson.date);
       const perfWithNotes = { ...perfJson, calibration_notes: paramsJson.calibration_notes || perfJson.calibration_notes || [] };
       window.V2_DATA  = buildV2Data(todayJson);
       window.V2_PERF  = buildV2Perf(perfWithNotes);
-      window.V2_STEAM = buildV2SteamFromFile(steamJson, todayJson);
-      window.V2_STEAM_RAW = steamJson || { snapshots: [] };
+      window.V2_STEAM = buildV2SteamFromFile(datedSteam, todayJson);
+      window.V2_STEAM_RAW = datedSteam || { snapshots: [] };
       window.V2_DATES     = dateIndex;
       window.V2_DATE_META = Object.fromEntries(dateIndex.map(d => [d.date, d]));
       window.V2_CURRENT_DATE = dateToLoad;

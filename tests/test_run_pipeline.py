@@ -22,6 +22,16 @@ def test_run_pipeline_tests_do_not_target_repo_steam_artifact():
     assert run_pipeline.STEAM_PATH.resolve() != repo_steam_path
 
 
+def test_fetch_batter_stats_cached_falls_back_to_empty_dict_on_fetch_failure():
+    import run_pipeline
+
+    run_pipeline._batter_stats_cache = None
+
+    with patch("run_pipeline.fetch_batter_stats", side_effect=RuntimeError("boom")):
+        assert run_pipeline.fetch_batter_stats_cached(2026) == {}
+        assert run_pipeline.fetch_batter_stats_cached(2026) == {}
+
+
 class TestGameDateEt:
     def test_utc_midnight_converts_to_previous_et_date(self):
         # 00:05 UTC on Mar 26 is 20:05 ET on Mar 25 (ET = UTC-4 in summer / UTC-5 in winter)
