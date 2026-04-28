@@ -6,7 +6,7 @@
 
 **Architecture:** This is an operating cadence, not a model-change plan. It treats `2026-04-28+` as the clean post-ROI / post-SwStr-live regime, re-runs the evaluation diagnostics on a fixed schedule, and records decisions only when enough clean graded rows exist to support them.
 
-**Tech Stack:** Python 3.11, pytest, `data/picks_history.json`, `data/params.json`, `analytics/diagnostics/e1_regime_map.py`, `e2_storage_integrity.py`, `e3_projection_audit.py`, `e4_bet_selection_audit.py`, markdown notes in `analytics/output/`.
+**Tech Stack:** Python 3.11, pytest, `data/picks_history.json`, `data/params.json`, `analytics/diagnostics/e1_regime_map.py`, `e2_storage_integrity.py`, `e3_projection_audit.py`, `e4_bet_selection_audit.py`, `therundown_fetch_audit.py`, markdown notes in `analytics/output/`.
 
 ---
 
@@ -18,6 +18,7 @@ Over the next seven days, we want to answer these questions with clean-window ev
 2. Is lambda-shape still the dominant miss, especially in the upper buckets?
 3. Are we converting good projections into bets correctly, or is the 2u ladder still too aggressive?
 4. Is `edge` separating stronger than `adj_ev`, even after the ROI semantics cleanup?
+5. Can TheRundown intake be made cheaper and less noisy without losing resolved pitcher coverage?
 
 This cadence deliberately avoids random tweaks while the first clean regime accumulates.
 
@@ -35,11 +36,13 @@ This cadence deliberately avoids random tweaks while the first clean regime accu
 **Run repeatedly**
 - `C:/Users/TylerReid/Desktop/Claude-Work/BaseballBettingEdge/analytics/diagnostics/e3_projection_audit.py`
 - `C:/Users/TylerReid/Desktop/Claude-Work/BaseballBettingEdge/analytics/diagnostics/e4_bet_selection_audit.py`
+- `C:/Users/TylerReid/Desktop/Claude-Work/BaseballBettingEdge/analytics/diagnostics/therundown_fetch_audit.py`
 - `C:/Users/TylerReid/Desktop/Claude-Work/BaseballBettingEdge/analytics/performance.py`
 
 **Write local-only outputs**
 - `C:/Users/TylerReid/Desktop/Claude-Work/BaseballBettingEdge/analytics/output/e3_projection_audit.md`
 - `C:/Users/TylerReid/Desktop/Claude-Work/BaseballBettingEdge/analytics/output/e4_bet_selection_audit.md`
+- `C:/Users/TylerReid/Desktop/Claude-Work/BaseballBettingEdge/analytics/output/therundown_fetch_audit.md`
 - `C:/Users/TylerReid/Desktop/Claude-Work/BaseballBettingEdge/analytics/output/e5_synthesis.md`
 - `C:/Users/TylerReid/Desktop/Claude-Work/BaseballBettingEdge/analytics/output/post_phase_c_weekly_check.md`
 
@@ -52,6 +55,7 @@ This cadence deliberately avoids random tweaks while the first clean regime accu
 - Do not change staking during this cadence.
 - Do not judge the new model from `2026-04-24` through `2026-04-27`; that window is transition-only.
 - Treat `2026-04-28+` as the only clean regime for decisions about the new model.
+- Do not change TheRundown production query parameters from one slate alone. Require at least two audit runs where the cheaper query preserves resolved pitcher coverage.
 - If a day’s pipeline is obviously degraded, record it and exclude it from interpretation before making model decisions.
 
 ---
@@ -211,11 +215,57 @@ Append to `analytics/output/post_phase_c_weekly_check.md`:
 
 ---
 
-### Task 5: Make the one-week decision
+### Task 5: Audit TheRundown intake noise and CLV/steam readiness
+
+**Files:**
+- Run: `C:/Users/TylerReid/Desktop/Claude-Work/BaseballBettingEdge/analytics/diagnostics/therundown_fetch_audit.py`
+- Write local-only: `C:/Users/TylerReid/Desktop/Claude-Work/BaseballBettingEdge/analytics/output/therundown_fetch_audit.md`
+
+- [ ] **Step 1: Run the TheRundown query-shape audit after a fresh pipeline run**
+
+Run:
+
+```bash
+python analytics/diagnostics/therundown_fetch_audit.py 2026-04-28 > analytics/output/therundown_fetch_audit.md
+```
+
+Replace `2026-04-28` with the current slate date during future check-ins.
+
+Expected:
+- `offset_affiliates` should preserve resolved pitcher coverage versus `current`
+- `offset_affiliates` should use fewer datapoints than `current`
+- `offset_affiliates_main_line` is expected to be too sparse until proven otherwise
+- `books_seen` should confirm which TheRundown affiliate IDs are actually present, including whether Kalshi `25` is available
+
+- [ ] **Step 2: Record the daily TheRundown intake read**
+
+Append a bullet to `analytics/output/post_phase_c_weekly_check.md`:
+
+```markdown
+- YYYY-MM-DD TheRundown read: current resolved = X, offset+affiliate resolved = Y, datapoints saved = Z%, books seen = [...]
+```
+
+- [ ] **Step 3: Decide whether production fetch can be narrowed**
+
+Only queue a production fetch change if at least two audit runs show:
+- `offset_affiliates` matches or improves resolved pitcher count
+- no important target book disappears
+- Kalshi `25` is present often enough to track
+- `main_line=true` remains too sparse or becomes reliable enough to reconsider
+
+Expected decision signals:
+- if `offset_affiliates` preserves coverage, queue a small production query update
+- if Kalshi is present but thin, track it in steam/audit first before making it actionable
+- if official openers become necessary for CLV, queue an opener comparison task rather than relying on `price_delta`
+
+---
+
+### Task 6: Make the one-week decision
 
 **Files:**
 - Read: `C:/Users/TylerReid/Desktop/Claude-Work/BaseballBettingEdge/analytics/output/e3_projection_audit.md`
 - Read: `C:/Users/TylerReid/Desktop/Claude-Work/BaseballBettingEdge/analytics/output/e4_bet_selection_audit.md`
+- Read: `C:/Users/TylerReid/Desktop/Claude-Work/BaseballBettingEdge/analytics/output/therundown_fetch_audit.md`
 - Modify local-only: `C:/Users/TylerReid/Desktop/Claude-Work/BaseballBettingEdge/analytics/output/e5_synthesis.md`
 
 - [ ] **Step 1: At the one-week mark, update the synthesis memo**
@@ -228,6 +278,7 @@ Add a dated section:
 - Clean graded rows observed: X
 - Projection read: ...
 - Bet-selection read: ...
+- TheRundown intake read: ...
 - Recommended next implementation track: ...
 ```
 
@@ -237,6 +288,7 @@ Choose exactly one:
 - `projection-first`
 - `bet-selection-first`
 - `environment/opponent-first`
+- `therundown-intake-first`
 - `two-stage` if one small storage or instrumentation fix still blocks confidence
 
 - [ ] **Step 3: Explicitly defer what should wait**
@@ -259,5 +311,6 @@ This cadence is successful if, after roughly a week of clean post-`2026-04-28` h
 2. Is the next biggest win lambda shape, environment structure, or bet conversion?
 3. Is `adj_ev` the right main ranking signal, or is `edge` still carrying more truth?
 4. Is `FIRE 2u` still justified?
+5. Can the TheRundown query be narrowed to reduce data-point burn/noise while preserving resolved pitcher coverage?
 
 If those are still answered with “not enough clean data,” the right response is to extend the cadence, not to start random tuning.

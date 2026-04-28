@@ -33,6 +33,8 @@ def build_connection_health(
     }
     build_failure_names = set(build_failures or [])
     sample_unresolved_pitchers: list[str] = []
+    sample_intake_filtered_pitchers: list[str] = []
+    sample_feature_build_failures: list[str] = []
     missing_stats_count = 0
     feature_build_failures_count = 0
 
@@ -42,24 +44,34 @@ def build_connection_health(
             continue
         if name in build_failure_names:
             feature_build_failures_count += 1
+            if len(sample_feature_build_failures) < sample_size:
+                sample_feature_build_failures.append(name)
         else:
             missing_stats_count += 1
+            if len(sample_intake_filtered_pitchers) < sample_size:
+                sample_intake_filtered_pitchers.append(name)
         if len(sample_unresolved_pitchers) < sample_size:
             sample_unresolved_pitchers.append(name)
 
     unresolved_count = missing_stats_count + feature_build_failures_count
+    model_candidate_count = sum(
+        1
+        for prop in props
+        if stats_map.get((prop.get("pitcher") or "").strip())
+    )
     return {
         "props_seen": len(props),
-        "stats_resolved": sum(
-            1
-            for prop in props
-            if stats_map.get((prop.get("pitcher") or "").strip())
-        ),
+        "stats_resolved": model_candidate_count,
         "records_built": len(records),
         "unresolved_count": unresolved_count,
+        "model_candidate_count": model_candidate_count,
+        "intake_filtered_count": missing_stats_count,
         "missing_stats_count": missing_stats_count,
+        "unresolved_after_stats_count": feature_build_failures_count,
         "feature_build_failures_count": feature_build_failures_count,
         "degraded": unresolved_count > 0,
+        "sample_intake_filtered_pitchers": sample_intake_filtered_pitchers,
+        "sample_feature_build_failures": sample_feature_build_failures,
         "sample_unresolved_pitchers": sample_unresolved_pitchers,
     }
 

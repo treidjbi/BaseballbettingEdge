@@ -41,9 +41,18 @@ def test_build_connection_health_counts_missing_stats_and_build_failures():
         "stats_resolved": 2,
         "records_built": 1,
         "unresolved_count": 2,
+        "model_candidate_count": 2,
+        "intake_filtered_count": 1,
         "missing_stats_count": 1,
+        "unresolved_after_stats_count": 1,
         "feature_build_failures_count": 1,
         "degraded": True,
+        "sample_intake_filtered_pitchers": [
+            "Missing Stats Pitcher",
+        ],
+        "sample_feature_build_failures": [
+            "Build Failed Pitcher",
+        ],
         "sample_unresolved_pitchers": [
             "Missing Stats Pitcher",
             "Build Failed Pitcher",
