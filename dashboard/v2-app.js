@@ -1408,11 +1408,7 @@ function PicksTab({
     className: "v2-icon-btn",
     title: "Theme",
     onClick: () => window.__v2Theme?.toggleTheme()
-  }, window.__v2Theme?.theme === "dark" ? Icon.sun : Icon.moon), React.createElement("a", {
-    href: "/legacy",
-    className: "v2-classic-link",
-    title: "Switch to classic dashboard"
-  }, "classic"))), React.createElement(DateBar, null)), past && React.createElement(GradingSummary, {
+  }, window.__v2Theme?.theme === "dark" ? Icon.sun : Icon.moon))), React.createElement(DateBar, null)), past && React.createElement(GradingSummary, {
     pitchers: pitchers
   }), React.createElement("div", {
     className: "v2-digest"
@@ -1733,7 +1729,7 @@ function App() {
         color: "var(--neg)"
       }
     }, "Connection error"))))), React.createElement(ErrorState, {
-      onRetry: () => setAppState("ready")
+      onRetry: () => window.location.reload()
     }));
     if (appState === "empty") return React.createElement(PicksTab, {
       pitchersOverride: []

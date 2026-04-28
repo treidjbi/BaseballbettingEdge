@@ -556,7 +556,7 @@ def _run_preview(tomorrow_str: str) -> None:
             log.warning("Preview: no stats for %s — skipping", name)
             continue
         try:
-            lineup = fetch_lineups_for_pitcher(tomorrow_str, stats.get("team", ""))
+            lineup = fetch_lineups_for_pitcher(tomorrow_str, stats.get("opp_team", ""))
             park_factor = _resolve_park_factor(
                 stats.get("park_team") or stats.get("team") or odds.get("team", ""),
                 park_factors,
@@ -1119,7 +1119,7 @@ def run(date_str: str, run_type: str = "full") -> None:
             continue
         try:
             lineup_total_count += 1
-            lineup = fetch_lineups_for_pitcher(date_str, stats.get("team", ""))
+            lineup = fetch_lineups_for_pitcher(date_str, stats.get("opp_team", ""))
             swstr_row = swstr_map.get(name)
             ump_k_adj = ump_map.get(name, 0.0)
             pitcher_throws = stats.get("throws", "R")
@@ -1154,6 +1154,7 @@ def run(date_str: str, run_type: str = "full") -> None:
                      name, record["lambda"], record["ev_over"]["verdict"])
         except Exception as e:
             log.warning("build_pitcher_record failed for %s: %s — skipping", name, e)
+            build_failures.append(name)
 
     connection_health = build_connection_health(
         props,

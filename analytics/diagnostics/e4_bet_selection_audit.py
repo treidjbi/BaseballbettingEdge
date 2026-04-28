@@ -3,10 +3,17 @@
 from __future__ import annotations
 
 import json
+import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
 HISTORY_PATH = ROOT / "data" / "picks_history.json"
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
+
+from analytics.diagnostics.e1_regime_map import classify_regime
+
+CLEAN_REGIME = "post_roi_clean"
 
 VERDICT_UNITS = {
     "LEAN": 0.0,
@@ -76,6 +83,20 @@ def _graded_rows(rows: list[dict]) -> list[dict]:
     return [row for row in rows if row.get("result") in {"win", "loss"}]
 
 
+def is_clean_window_row(row: dict) -> bool:
+    raw_date = row.get("date")
+    if raw_date in (None, ""):
+        return False
+    try:
+        return classify_regime(str(raw_date)) == CLEAN_REGIME
+    except ValueError:
+        return False
+
+
+def clean_window_rows(rows: list[dict]) -> list[dict]:
+    return [row for row in rows if is_clean_window_row(row)]
+
+
 def _init_metrics() -> dict[str, float | int | None]:
     return {
         "rows": 0,
@@ -129,20 +150,16 @@ def summarize_by_edge_bucket(rows: list[dict]) -> dict[str, dict]:
     ))
 
 
-def build_bet_selection_report(rows: list[dict]) -> str:
+def _render_summary_group(lines: list[str], rows: list[dict]) -> None:
+    if not _graded_rows(rows):
+        lines.append("- No graded rows in this section yet.")
+        return
+
     verdict_summary = summarize_by_verdict(rows)
     adj_ev_summary = summarize_by_adj_ev_bucket(rows)
     edge_summary = summarize_by_edge_bucket(rows)
 
-    lines = [
-        "# E4 Bet Selection Audit",
-        "",
-        "This audit keeps projection quality separate from bet conversion. It asks whether verdicts, EV ROI tiers, and edge tiers are turning into the right staked decisions.",
-        "",
-        "## By Verdict",
-        "",
-    ]
-
+    lines.extend(["", "### By Verdict", ""])
     for bucket in VERDICT_ORDER:
         if bucket not in verdict_summary:
             continue
@@ -152,7 +169,7 @@ def build_bet_selection_report(rows: list[dict]) -> str:
             f"- `{bucket}`: graded={row['graded_rows']}, wins={row['wins']}, losses={row['losses']}, units={row['units_risked']:.1f}, weighted_pnl={row['weighted_pnl']:+.2f}, roi={roi}"
         )
 
-    lines.extend(["", "## By Adjusted EV ROI Bucket", ""])
+    lines.extend(["", "### By Adjusted EV ROI Bucket", ""])
     for bucket in ADJ_EV_ORDER:
         if bucket not in adj_ev_summary:
             continue
@@ -162,7 +179,7 @@ def build_bet_selection_report(rows: list[dict]) -> str:
             f"- `{bucket}`: graded={row['graded_rows']}, wins={row['wins']}, losses={row['losses']}, units={row['units_risked']:.1f}, weighted_pnl={row['weighted_pnl']:+.2f}, roi={roi}"
         )
 
-    lines.extend(["", "## By Edge Bucket", ""])
+    lines.extend(["", "### By Edge Bucket", ""])
     for bucket in EDGE_ORDER:
         if bucket not in edge_summary:
             continue
@@ -171,6 +188,31 @@ def build_bet_selection_report(rows: list[dict]) -> str:
         lines.append(
             f"- `{bucket}`: graded={row['graded_rows']}, wins={row['wins']}, losses={row['losses']}, units={row['units_risked']:.1f}, weighted_pnl={row['weighted_pnl']:+.2f}, roi={roi}"
         )
+
+
+def build_bet_selection_report(rows: list[dict]) -> str:
+    clean_rows = clean_window_rows(rows)
+
+    lines = [
+        "# E4 Bet Selection Audit",
+        "",
+        "This audit keeps projection quality separate from bet conversion. It asks whether verdicts, EV ROI tiers, and edge tiers are turning into the right staked decisions.",
+        "",
+        "## Clean Post-ROI Window (2026-04-28+)",
+        "",
+        "Current decision reads use only rows classified as `post_roi_clean` by E1.",
+    ]
+    _render_summary_group(lines, clean_rows)
+
+    lines.extend(
+        [
+            "",
+            "## All-History Context",
+            "",
+            "This section keeps older and transition regimes visible as context, but it should not drive current clean-window decisions.",
+        ]
+    )
+    _render_summary_group(lines, rows)
 
     lines.extend(
         [

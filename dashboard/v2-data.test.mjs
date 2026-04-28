@@ -18,6 +18,7 @@ function jsonResponse(payload) {
 
 async function runV2DataTest({
   locationSearch = "",
+  now = null,
   todayJson,
   perfJson = { rows: [], total_picks: 0 },
   paramsJson = {},
@@ -25,8 +26,17 @@ async function runV2DataTest({
   steamJson = null,
 }) {
   const window = {};
+  const TestDate = now == null ? Date : class extends Date {
+    constructor(...args) {
+      super(...(args.length ? args : [now]));
+    }
+    static now() {
+      return now;
+    }
+  };
   const fetch = async (url) => {
     const bareUrl = String(url).split("?t=")[0];
+    if (/\/\d{4}-\d{2}-\d{2}\.json$/.test(bareUrl)) return jsonResponse(todayJson);
     if (bareUrl.endsWith("/2026-04-27.json")) return jsonResponse(todayJson);
     if (bareUrl.endsWith("/today.json")) return jsonResponse(todayJson);
     if (bareUrl.endsWith("/performance.json")) return jsonResponse(perfJson);
@@ -45,7 +55,7 @@ async function runV2DataTest({
     },
     fetch,
     console,
-    Date,
+    Date: TestDate,
     URLSearchParams,
     setTimeout,
     clearTimeout,
@@ -56,6 +66,17 @@ async function runV2DataTest({
   await window.__v2DataPromise;
   return window;
 }
+
+test("getAppDate stays on current Phoenix date after 9pm", async () => {
+  const todayJson = { date: "2026-04-28", generated_at: "2026-04-28T04:30:00Z", pitchers: [] };
+  const window = await runV2DataTest({
+    now: Date.parse("2026-04-29T04:30:00Z"), // 2026-04-28 9:30 PM in Phoenix
+    todayJson,
+  });
+
+  assert.equal(window.__v2GetAppDate(), "2026-04-28");
+  assert.equal(window.V2_CURRENT_DATE, "2026-04-28");
+});
 
 test("archive loads ignore steam snapshots from a different date", async () => {
   const todayJson = {

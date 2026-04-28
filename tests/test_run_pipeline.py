@@ -496,6 +496,56 @@ def test_run_writes_data_warnings_to_today_json(tmp_path):
     ]
 
 
+def test_run_fetches_opposing_lineup_for_pitcher_projection(tmp_path):
+    import run_pipeline
+    run_pipeline._batter_stats_cache = None
+
+    out_path = tmp_path / "today.json"
+    prop = _sample_prop_for("Lineup Direction Pitcher")
+    stats = _sample_stats_for("Pitcher Team", "Opponent Team")
+    requested_lineup_teams = []
+
+    def fake_fetch_lineups(date_str, team):
+        requested_lineup_teams.append(team)
+        return [{"name": "Opponent Batter", "bats": "R"}]
+
+    def fake_build_pitcher_record(odds, stats, ump_k_adj, *, lineup, batter_stats, **kwargs):
+        assert lineup == [{"name": "Opponent Batter", "bats": "R"}]
+        return {
+            "pitcher": odds["pitcher"],
+            "team": stats["team"],
+            "opp_team": stats["opp_team"],
+            "game_time": odds["game_time"],
+            "lambda": 4.2,
+            "ev_over": {"verdict": "LEAN"},
+        }
+
+    with patch.object(run_pipeline, "OUTPUT_PATH", out_path), \
+         patch("run_pipeline.fetch_odds", return_value=[prop]), \
+         patch("run_pipeline.fetch_stats", return_value=({"Lineup Direction Pitcher": stats}, {})), \
+         patch("run_pipeline.fetch_swstr", return_value={
+             "Lineup Direction Pitcher": {"swstr_pct": 0.110, "career_swstr_pct": 0.105},
+             "__meta__": {"current_usable": True, "career_usable": True},
+         }), \
+         patch("run_pipeline.fetch_umpires", return_value=(
+             {"Lineup Direction Pitcher": 0.25},
+             {"hp_count_fetched": 1, "pitcher_nonzero_count": 1},
+         )), \
+         patch("run_pipeline.fetch_lineups_for_pitcher", side_effect=fake_fetch_lineups), \
+         patch("run_pipeline.fetch_batter_stats_cached", return_value={"opponent batter": {"vs_R": 0.2, "vs_L": 0.21}}), \
+         patch("run_pipeline.build_pitcher_record", side_effect=fake_build_pitcher_record), \
+         patch("run_pipeline.init_db"), \
+         patch("run_pipeline.load_history_into_db"), \
+         patch("run_pipeline.get_db", return_value=MagicMock()), \
+         patch("run_pipeline.lock_due_picks", return_value=0), \
+         patch("run_pipeline.seed_picks", return_value=0), \
+         patch("run_pipeline.export_db_to_history"), \
+         patch("run_pipeline._write_steam"):
+        run_pipeline.run("2026-04-01")
+
+    assert requested_lineup_teams == ["Opponent Team"]
+
+
 def test_run_forwards_resolved_park_factor_to_build_pitcher_record(tmp_path):
     import run_pipeline
     run_pipeline._batter_stats_cache = None
@@ -852,6 +902,44 @@ def test_fetch_umpires_receives_props_with_team_populated_from_stats(tmp_path):
         f"fetch_umpires received opp_team={seen_by_fetch_umpires[0]['opp_team']!r} — "
         f"expected 'Opp Team' from stats_map backfill."
     )
+
+
+def test_run_records_feature_build_failures_in_connection_health(tmp_path):
+    import run_pipeline
+    run_pipeline._batter_stats_cache = None
+
+    prop = _sample_prop_for("Build Failure Pitcher")
+    captured = {}
+
+    def fake_write_output(date_str, records, props_available, **kwargs):
+        captured["connection_health"] = kwargs.get("connection_health")
+
+    with patch.object(run_pipeline, "OUTPUT_PATH", tmp_path / "today.json"), \
+         patch("run_pipeline.fetch_odds", return_value=[prop]), \
+         patch("run_pipeline.fetch_stats", return_value=({"Build Failure Pitcher": _sample_stats()}, {})), \
+         patch("run_pipeline.fetch_swstr", return_value={
+             "Build Failure Pitcher": {"swstr_pct": 0.110, "career_swstr_pct": 0.105},
+             "__meta__": {"current_usable": True, "career_usable": True},
+         }), \
+         patch("run_pipeline.fetch_umpires", return_value=(
+             {"Build Failure Pitcher": 0.25},
+             {"hp_count_fetched": 1, "pitcher_nonzero_count": 1},
+         )), \
+         patch("run_pipeline.fetch_lineups_for_pitcher", return_value=None), \
+         patch("run_pipeline.fetch_batter_stats_cached", return_value={}), \
+         patch("run_pipeline.build_pitcher_record", side_effect=RuntimeError("bad feature payload")), \
+         patch("run_pipeline._write_output", side_effect=fake_write_output), \
+         patch("run_pipeline._write_steam"), \
+         patch("run_pipeline.init_db"), \
+         patch("run_pipeline.load_history_into_db"), \
+         patch("run_pipeline.get_db", return_value=MagicMock()), \
+         patch("run_pipeline.lock_due_picks", return_value=0), \
+         patch("run_pipeline.seed_picks", return_value=0), \
+         patch("run_pipeline.export_db_to_history"):
+        run_pipeline.run("2026-04-01")
+
+    assert captured["connection_health"]["feature_build_failures_count"] == 1
+    assert captured["connection_health"]["missing_stats_count"] == 0
 
 
 def test_run_writes_empty_output_when_no_props(tmp_path):

@@ -31,11 +31,16 @@
   // Stakes-per-pick mapping — mirrors CLAUDE.md thresholds.
   const STAKE = { 'FIRE 2u': 2, 'FIRE 1u': 1, 'LEAN': 0, 'PASS': 0 };
 
-  // Slate date — Phoenix-aware, flips to tomorrow after 9pm so preview lines render.
+  // Slate date - Phoenix-aware. Midnight preview runs now cover the current game day.
   function getAppDate() {
-    const nowPhx = new Date(Date.now() - 7 * 60 * 60 * 1000);
-    if (nowPhx.getUTCHours() >= 21) nowPhx.setUTCDate(nowPhx.getUTCDate() + 1);
-    return nowPhx.toISOString().slice(0, 10);
+    const parts = new Intl.DateTimeFormat('en-US', {
+      timeZone: 'America/Phoenix',
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+    }).formatToParts(new Date());
+    const byType = Object.fromEntries(parts.map(p => [p.type, p.value]));
+    return `${byType.year}-${byType.month}-${byType.day}`;
   }
 
   async function fetchJSON(url) {

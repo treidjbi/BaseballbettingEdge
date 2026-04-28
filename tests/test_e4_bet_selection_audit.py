@@ -2,6 +2,7 @@ import pytest
 
 from analytics.diagnostics.e4_bet_selection_audit import (
     adj_ev_bucket,
+    build_bet_selection_report,
     edge_bucket,
     stake_units,
     summarize_by_adj_ev_bucket,
@@ -138,3 +139,64 @@ def test_summarize_by_edge_bucket_is_stake_aware():
     assert summary["4-6%"]["units_risked"] == 1.0
     assert summary["4-6%"]["weighted_pnl"] == pytest.approx(-1.0)
     assert summary["4-6%"]["roi"] == pytest.approx(-1.0)
+
+
+def test_report_presents_clean_window_before_all_history_context():
+    rows = [
+        {
+            "date": "2026-04-27",
+            "edge": 0.045,
+            "adj_ev": 0.08,
+            "verdict": "FIRE 1u",
+            "result": "win",
+            "pnl": 0.5,
+        },
+        {
+            "date": "2026-04-28",
+            "edge": 0.045,
+            "adj_ev": 0.08,
+            "verdict": "FIRE 1u",
+            "result": "loss",
+            "pnl": -1.0,
+        },
+    ]
+
+    report = build_bet_selection_report(rows)
+
+    clean_heading = "## Clean Post-ROI Window (2026-04-28+)"
+    context_heading = "## All-History Context"
+    clean_start = report.index(clean_heading)
+    context_start = report.index(context_heading)
+    clean_section = report[clean_start:context_start]
+    context_section = report[context_start:]
+
+    assert clean_start < context_start
+    assert (
+        "- `FIRE 1u`: graded=1, wins=0, losses=1, units=1.0, "
+        "weighted_pnl=-1.00, roi=-100.00%"
+    ) in clean_section
+    assert (
+        "- `FIRE 1u`: graded=2, wins=1, losses=1, units=2.0, "
+        "weighted_pnl=-0.50, roi=-25.00%"
+    ) in context_section
+
+
+def test_report_says_when_clean_window_has_no_graded_rows():
+    rows = [
+        {
+            "date": "2026-04-27",
+            "edge": 0.045,
+            "adj_ev": 0.08,
+            "verdict": "FIRE 1u",
+            "result": "win",
+            "pnl": 0.5,
+        },
+    ]
+
+    report = build_bet_selection_report(rows)
+    clean_section = report[
+        report.index("## Clean Post-ROI Window (2026-04-28+)"):
+        report.index("## All-History Context")
+    ]
+
+    assert "- No graded rows in this section yet." in clean_section

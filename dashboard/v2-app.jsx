@@ -1010,7 +1010,6 @@ function PicksTab({ pitchersOverride }) {
             <button className="v2-icon-btn" title="Theme" onClick={() => window.__v2Theme?.toggleTheme()}>
               {window.__v2Theme?.theme === "dark" ? Icon.sun : Icon.moon}
             </button>
-            <a href="/legacy" className="v2-classic-link" title="Switch to classic dashboard">classic</a>
           </div>
         </div>
         <DateBar />
@@ -1294,7 +1293,7 @@ function App() {
           <div><div className="v2-wordmark">Betting Edge</div>
           <div className="v2-subtitle" style={{color:"var(--neg)"}}>Connection error</div></div></div>
       </div></div>
-      <ErrorState onRetry={() => setAppState("ready")} />
+      <ErrorState onRetry={() => window.location.reload()} />
     </>);
     if (appState === "empty") return <PicksTab pitchersOverride={[]} />;
     return <PicksTab />;
