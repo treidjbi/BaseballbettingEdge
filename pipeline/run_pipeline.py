@@ -679,10 +679,12 @@ def _write_steam(pitchers: list, run_date_str: str) -> None:
         pass
 
     if existing.get("date") != run_date_str:
-        existing = {"date": run_date_str, "snapshots": []}
+        existing = {"date": run_date_str, "snapshots": [], "archive_dates": []}
 
     pitcher_snap: dict = {}
+    archive_dates = set(existing.get("archive_dates") or [])
     for p in pitchers:
+        archive_dates.add(_game_date_et(p.get("game_time", ""), run_date_str))
         book_odds = p.get("book_odds")
         if not book_odds:
             continue
@@ -691,6 +693,7 @@ def _write_steam(pitchers: list, run_date_str: str) -> None:
     if pitcher_snap:
         existing["snapshots"].append({"t": now_iso, "pitchers": pitcher_snap})
 
+    existing["archive_dates"] = sorted(archive_dates)
     existing["updated_at"] = now_iso
 
     try:

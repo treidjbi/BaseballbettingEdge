@@ -1356,10 +1356,12 @@ def test_backfill_higher_stake_wins_tiebreak(tmp_path):
 # ── Tests: _write_steam ───────────────────────────────────────────────────────
 
 def _steam_pitcher(name="Gerrit Cole", k_line=7.5,
-                   fd_over=-115, fd_under=-105):
+                   fd_over=-115, fd_under=-105,
+                   game_time="2026-04-21T23:10:00Z"):
     return {
         "pitcher": name,
         "k_line": k_line,
+        "game_time": game_time,
         "book_odds": {"FanDuel": {"over": fd_over, "under": fd_under}},
     }
 
@@ -1408,6 +1410,23 @@ def test_write_steam_resets_on_new_day(tmp_path):
     data = json.loads(steam_path.read_text())
     assert data["date"] == "2026-04-21"
     assert len(data["snapshots"]) == 1
+
+
+def test_write_steam_records_archive_dates_for_cross_midnight_et_games(tmp_path):
+    """steam.json should advertise the ET archive dates covered by its snapshots."""
+    import run_pipeline
+
+    steam_path = tmp_path / "steam.json"
+    late_game = _steam_pitcher(
+        name="Late Night Pitcher",
+        game_time="2026-04-28T00:05:00Z",
+    )
+    with patch.object(run_pipeline, "STEAM_PATH", steam_path):
+        run_pipeline._write_steam([late_game], "2026-04-28")
+
+    data = json.loads(steam_path.read_text())
+    assert data["date"] == "2026-04-28"
+    assert data["archive_dates"] == ["2026-04-27"]
 
 
 def test_write_steam_skips_pitchers_without_book_odds(tmp_path):

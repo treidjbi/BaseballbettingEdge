@@ -266,6 +266,9 @@
 
   function steamJsonForDate(steamJson, slateDate) {
     if (!steamJson || !steamJson.snapshots?.length) return null;
+    if (Array.isArray(steamJson.archive_dates) && steamJson.archive_dates.includes(slateDate)) {
+      return steamJson;
+    }
     return steamJson.date === slateDate ? steamJson : null;
   }
 
