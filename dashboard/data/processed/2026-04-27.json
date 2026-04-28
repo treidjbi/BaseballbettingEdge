@@ -1,9 +1,9 @@
 {
-  "generated_at": "2026-04-28T21:54:30Z",
+  "generated_at": "2026-04-28T22:29:39Z",
   "date": "2026-04-27",
   "props_available": true,
   "data_warnings": [
-    "fetch_lineups: confirmed 27/31 opposing lineups (4 still projected)",
+    "fetch_lineups: confirmed 29/31 opposing lineups (2 still projected)",
     "fetch_batter_stats missing splits for 1/31 opposing lineups"
   ],
   "pitchers": [
@@ -24,7 +24,7 @@
       "opening_odds_source": "first_seen",
       "price_delta_over": 0,
       "price_delta_under": 0,
-      "raw_lambda": 6.63,
+      "raw_lambda": 6.53,
       "lambda": 4.0,
       "avg_ip": 6.0,
       "is_opener": false,
@@ -35,10 +35,10 @@
       "days_since_last_start": 6,
       "last_pitch_count": 91,
       "rest_k9_delta": 0.0,
-      "opp_k_rate": 0.206,
-      "lineup_used": false,
+      "opp_k_rate": 0.2465443702222222,
+      "lineup_used": true,
       "park_factor": 1.0,
-      "ump_k_adj": 0.0,
+      "ump_k_adj": -0.871,
       "starter_mismatch": false,
       "season_k9": 9.38,
       "recent_k9": 9.38,
@@ -65,20 +65,20 @@
           "under": -100000
         }
       },
-      "data_complete": false,
+      "data_complete": true,
       "game_state": "final"
     }
   ],
   "ump_diagnostics": {
-    "hp_count_fetched": 14,
-    "pitcher_nonzero_count": 28
+    "hp_count_fetched": 15,
+    "pitcher_nonzero_count": 30
   },
   "connection_health": {
-    "props_seen": 117,
+    "props_seen": 116,
     "stats_resolved": 31,
     "records_built": 31,
-    "unresolved_count": 86,
-    "missing_stats_count": 86,
+    "unresolved_count": 85,
+    "missing_stats_count": 85,
     "feature_build_failures_count": 0,
     "degraded": true,
     "sample_unresolved_pitchers": [

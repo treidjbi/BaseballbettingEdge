@@ -1,9 +1,9 @@
 {
-  "generated_at": "2026-04-28T21:54:30Z",
+  "generated_at": "2026-04-28T22:29:39Z",
   "date": "2026-04-28",
   "props_available": true,
   "data_warnings": [
-    "fetch_lineups: confirmed 27/31 opposing lineups (4 still projected)",
+    "fetch_lineups: confirmed 29/31 opposing lineups (2 still projected)",
     "fetch_batter_stats missing splits for 1/31 opposing lineups"
   ],
   "pitchers": [
@@ -70,7 +70,7 @@
         }
       },
       "data_complete": true,
-      "game_state": "pregame"
+      "game_state": "in_progress"
     },
     {
       "pitcher": "Tanner Bibee",
@@ -135,7 +135,7 @@
         }
       },
       "data_complete": true,
-      "game_state": "pregame"
+      "game_state": "in_progress"
     },
     {
       "pitcher": "Kai-Wei Teng",
@@ -143,17 +143,17 @@
       "opp_team": "Baltimore Orioles",
       "pitcher_throws": "R",
       "game_time": "2026-04-28T22:35:00Z",
-      "k_line": 2.5,
-      "opening_line": 2.5,
-      "best_over_book": "BetMGM",
-      "ref_book": "BetMGM",
-      "best_over_odds": -185,
-      "best_under_odds": 135,
-      "opening_over_odds": -155,
-      "opening_under_odds": 115,
+      "k_line": 3.5,
+      "opening_line": 3.5,
+      "best_over_book": "FanDuel",
+      "ref_book": "FanDuel",
+      "best_over_odds": 124,
+      "best_under_odds": -166,
+      "opening_over_odds": 126,
+      "opening_under_odds": -168,
       "opening_odds_source": "first_seen",
-      "price_delta_over": -30,
-      "price_delta_under": 20,
+      "price_delta_over": -2,
+      "price_delta_under": 2,
       "raw_lambda": 4.12,
       "lambda": 3.87,
       "avg_ip": 3.93,
@@ -174,25 +174,29 @@
       "recent_k9": 14.19,
       "career_k9": 9.73,
       "ev_over": {
-        "edge": 0.0938,
-        "ev": 0.1446,
-        "adj_ev": 0.1446,
-        "verdict": "FIRE 1u",
-        "win_prob": 0.743,
+        "edge": 0.0953,
+        "ev": 0.2134,
+        "adj_ev": 0.2134,
+        "verdict": "FIRE 2u",
+        "win_prob": 0.542,
         "movement_conf": 1.0
       },
       "ev_under": {
-        "edge": -0.1685,
-        "ev": -0.396,
-        "adj_ev": -0.396,
+        "edge": -0.1658,
+        "ev": -0.2656,
+        "adj_ev": -0.2656,
         "verdict": "PASS",
-        "win_prob": 0.257,
+        "win_prob": 0.458,
         "movement_conf": 1.0
       },
       "book_odds": {
+        "FanDuel": {
+          "over": 124,
+          "under": -166
+        },
         "BetMGM": {
-          "over": -185,
-          "under": 135
+          "over": 160,
+          "under": -220
         }
       },
       "data_complete": true,
@@ -321,8 +325,8 @@
           "under": -110
         },
         "BetMGM": {
-          "over": -105,
-          "under": -125
+          "over": -110,
+          "under": -120
         }
       },
       "data_complete": true,
@@ -386,8 +390,8 @@
           "under": -102
         },
         "BetMGM": {
-          "over": -140,
-          "under": 105
+          "over": -130,
+          "under": -105
         }
       },
       "data_complete": true,
@@ -1772,8 +1776,8 @@
       "opening_odds_source": "first_seen",
       "price_delta_over": 0,
       "price_delta_under": 0,
-      "raw_lambda": 3.65,
-      "lambda": 3.4,
+      "raw_lambda": 3.15,
+      "lambda": 2.91,
       "avg_ip": 5.4,
       "is_opener": false,
       "opener_note": null,
@@ -1786,25 +1790,25 @@
       "opp_k_rate": 0.213,
       "lineup_used": false,
       "park_factor": 1.0,
-      "ump_k_adj": 0.0,
+      "ump_k_adj": -0.871,
       "starter_mismatch": false,
       "season_k9": 5.67,
       "recent_k9": 5.67,
       "career_k9": 6.51,
       "ev_over": {
-        "edge": -0.0435,
-        "ev": -0.0895,
-        "adj_ev": -0.0895,
+        "edge": -0.1539,
+        "ev": -0.3171,
+        "adj_ev": -0.3171,
         "verdict": "PASS",
-        "win_prob": 0.442,
+        "win_prob": 0.332,
         "movement_conf": 1.0
       },
       "ev_under": {
-        "edge": -0.0253,
-        "ev": -0.0434,
-        "adj_ev": -0.0434,
-        "verdict": "PASS",
-        "win_prob": 0.558,
+        "edge": 0.0852,
+        "ev": 0.146,
+        "adj_ev": 0.146,
+        "verdict": "FIRE 1u",
+        "win_prob": 0.668,
         "movement_conf": 1.0
       },
       "book_odds": {
@@ -1817,7 +1821,7 @@
           "under": -105
         }
       },
-      "data_complete": false,
+      "data_complete": true,
       "game_state": "pregame"
     },
     {
@@ -1837,8 +1841,8 @@
       "opening_odds_source": "first_seen",
       "price_delta_over": 0,
       "price_delta_under": 0,
-      "raw_lambda": 6.63,
-      "lambda": 6.39,
+      "raw_lambda": 6.53,
+      "lambda": 6.29,
       "avg_ip": 6.0,
       "is_opener": false,
       "opener_note": null,
@@ -1848,28 +1852,28 @@
       "days_since_last_start": 6,
       "last_pitch_count": 91,
       "rest_k9_delta": 0.0,
-      "opp_k_rate": 0.206,
-      "lineup_used": false,
+      "opp_k_rate": 0.2465443702222222,
+      "lineup_used": true,
       "park_factor": 1.0,
-      "ump_k_adj": 0.0,
+      "ump_k_adj": -0.871,
       "starter_mismatch": false,
       "season_k9": 9.38,
       "recent_k9": 9.38,
       "career_k9": 11.32,
       "ev_over": {
-        "edge": -0.0632,
-        "ev": -0.1217,
-        "adj_ev": -0.1217,
+        "edge": -0.0793,
+        "ev": -0.1528,
+        "adj_ev": -0.1528,
         "verdict": "PASS",
-        "win_prob": 0.456,
+        "win_prob": 0.44,
         "movement_conf": 1.0
       },
       "ev_under": {
-        "edge": -0.0056,
-        "ev": -0.0102,
-        "adj_ev": -0.0102,
+        "edge": 0.0105,
+        "ev": 0.0192,
+        "adj_ev": 0.0192,
         "verdict": "PASS",
-        "win_prob": 0.544,
+        "win_prob": 0.56,
         "movement_conf": 1.0
       },
       "book_odds": {
@@ -1882,20 +1886,20 @@
           "under": 100
         }
       },
-      "data_complete": false,
+      "data_complete": true,
       "game_state": "pregame"
     }
   ],
   "ump_diagnostics": {
-    "hp_count_fetched": 14,
-    "pitcher_nonzero_count": 28
+    "hp_count_fetched": 15,
+    "pitcher_nonzero_count": 30
   },
   "connection_health": {
-    "props_seen": 117,
+    "props_seen": 116,
     "stats_resolved": 31,
     "records_built": 31,
-    "unresolved_count": 86,
-    "missing_stats_count": 86,
+    "unresolved_count": 85,
+    "missing_stats_count": 85,
     "feature_build_failures_count": 0,
     "degraded": true,
     "sample_unresolved_pitchers": [
