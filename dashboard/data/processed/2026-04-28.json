@@ -1,10 +1,10 @@
 {
-  "generated_at": "2026-04-28T17:49:28Z",
+  "generated_at": "2026-04-28T18:00:13Z",
   "date": "2026-04-28",
   "props_available": true,
   "data_warnings": [
     "fetch_umpires returned 0 entries for 15 scheduled games",
-    "fetch_lineups: confirmed 0/27 opposing lineups (27 still projected)"
+    "fetch_lineups: confirmed 0/26 opposing lineups (26 still projected)"
   ],
   "pitchers": [
     {
@@ -132,71 +132,6 @@
         "BetMGM": {
           "over": -115,
           "under": -115
-        }
-      },
-      "data_complete": false,
-      "game_state": "pregame"
-    },
-    {
-      "pitcher": "Kai-Wei Teng",
-      "team": "Houston Astros",
-      "opp_team": "Baltimore Orioles",
-      "pitcher_throws": "R",
-      "game_time": "2026-04-28T22:35:00Z",
-      "k_line": 3.5,
-      "opening_line": 3.5,
-      "best_over_book": "FanDuel",
-      "ref_book": "FanDuel",
-      "best_over_odds": 124,
-      "best_under_odds": -166,
-      "opening_over_odds": 126,
-      "opening_under_odds": -168,
-      "opening_odds_source": "first_seen",
-      "price_delta_over": -2,
-      "price_delta_under": 2,
-      "raw_lambda": 4.5,
-      "lambda": 4.25,
-      "avg_ip": 3.93,
-      "is_opener": false,
-      "opener_note": null,
-      "swstr_pct": 0.0973,
-      "career_swstr_pct": 0.1001,
-      "swstr_delta_k9": -0.029,
-      "days_since_last_start": 220,
-      "last_pitch_count": 74,
-      "rest_k9_delta": 0.0,
-      "opp_k_rate": 0.2418,
-      "lineup_used": false,
-      "park_factor": 0.99,
-      "ump_k_adj": 0.0,
-      "starter_mismatch": false,
-      "season_k9": 8.64,
-      "recent_k9": 14.19,
-      "career_k9": 9.73,
-      "ev_over": {
-        "edge": 0.1678,
-        "ev": 0.3759,
-        "adj_ev": 0.3759,
-        "verdict": "FIRE 2u",
-        "win_prob": 0.614,
-        "movement_conf": 1.0
-      },
-      "ev_under": {
-        "edge": -0.2383,
-        "ev": -0.3819,
-        "adj_ev": -0.3819,
-        "verdict": "PASS",
-        "win_prob": 0.386,
-        "movement_conf": 1.0
-      },
-      "book_odds": {
-        "FanDuel": {
-          "over": 124,
-          "under": -166
-        },
-        "BetMGM": {
-          "over": 160,
-          "under": -220
         }
       },
       "data_complete": false,
@@ -1644,6 +1579,71 @@
       },
       "data_complete": false,
       "game_state": "pregame"
+    },
+    {
+      "pitcher": "Kai-Wei Teng",
+      "team": "Houston Astros",
+      "opp_team": "Baltimore Orioles",
+      "pitcher_throws": "R",
+      "game_time": "2026-04-28T22:35:00Z",
+      "k_line": 3.5,
+      "opening_line": 3.5,
+      "best_over_book": "FanDuel",
+      "ref_book": "FanDuel",
+      "best_over_odds": 124,
+      "best_under_odds": -166,
+      "opening_over_odds": 126,
+      "opening_under_odds": -168,
+      "opening_odds_source": "first_seen",
+      "price_delta_over": -2,
+      "price_delta_under": 2,
+      "raw_lambda": 4.5,
+      "lambda": 4.25,
+      "avg_ip": 3.93,
+      "is_opener": false,
+      "opener_note": null,
+      "swstr_pct": 0.0973,
+      "career_swstr_pct": 0.1001,
+      "swstr_delta_k9": -0.029,
+      "days_since_last_start": 220,
+      "last_pitch_count": 74,
+      "rest_k9_delta": 0.0,
+      "opp_k_rate": 0.2418,
+      "lineup_used": false,
+      "park_factor": 0.99,
+      "ump_k_adj": 0.0,
+      "starter_mismatch": false,
+      "season_k9": 8.64,
+      "recent_k9": 14.19,
+      "career_k9": 9.73,
+      "ev_over": {
+        "edge": 0.1678,
+        "ev": 0.3759,
+        "adj_ev": 0.3759,
+        "verdict": "FIRE 2u",
+        "win_prob": 0.614,
+        "movement_conf": 1.0
+      },
+      "ev_under": {
+        "edge": -0.2383,
+        "ev": -0.3819,
+        "adj_ev": -0.3819,
+        "verdict": "PASS",
+        "win_prob": 0.386,
+        "movement_conf": 1.0
+      },
+      "book_odds": {
+        "FanDuel": {
+          "over": 124,
+          "under": -166
+        },
+        "BetMGM": {
+          "over": 160,
+          "under": -220
+        }
+      },
+      "data_complete": false,
+      "game_state": "pregame"
     }
   ],
   "ump_diagnostics": {
@@ -1651,11 +1651,11 @@
     "pitcher_nonzero_count": 0
   },
   "connection_health": {
-    "props_seen": 117,
-    "stats_resolved": 27,
-    "records_built": 27,
-    "unresolved_count": 90,
-    "missing_stats_count": 90,
+    "props_seen": 115,
+    "stats_resolved": 26,
+    "records_built": 26,
+    "unresolved_count": 89,
+    "missing_stats_count": 89,
     "feature_build_failures_count": 0,
     "degraded": true,
     "sample_unresolved_pitchers": [
