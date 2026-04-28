@@ -1,6 +1,6 @@
 import json, os, sys, sqlite3, tempfile, pytest
 from pathlib import Path
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from unittest.mock import patch
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'pipeline'))
@@ -31,7 +31,7 @@ def _insert_closed_pick(db_path, result, verdict="FIRE 1u", odds=-110,
                          avg_ip=5.0, side="over"):
     """Insert a closed pick into the test DB. Default side='over' matches original hardcoded value."""
     date_str = (datetime.now() - timedelta(days=date_offset_days)).strftime("%Y-%m-%d")
-    fetched = datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ")
+    fetched = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
     pnl = 0.87 if result == "win" else (-1.0 if result == "loss" else 0.0)
     conn = sqlite3.connect(db_path)
     conn.execute("""
@@ -488,7 +488,7 @@ def _insert_pick_with_complete(db_path, result, data_complete=1,
     that need to distinguish complete-signal rows from degraded-signal rows.
     """
     date_str = (datetime.now() - timedelta(days=date_offset_days)).strftime("%Y-%m-%d")
-    fetched = datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ")
+    fetched = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
     pnl = 0.87 if result == "win" else (-1.0 if result == "loss" else 0.0)
     conn = sqlite3.connect(db_path)
     conn.execute("""
