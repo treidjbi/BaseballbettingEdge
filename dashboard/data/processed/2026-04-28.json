@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-04-28T20:46:08Z",
+  "generated_at": "2026-04-28T20:58:36Z",
   "date": "2026-04-28",
   "props_available": true,
   "data_warnings": [
@@ -143,17 +143,17 @@
       "opp_team": "Baltimore Orioles",
       "pitcher_throws": "R",
       "game_time": "2026-04-28T22:35:00Z",
-      "k_line": 2.5,
-      "opening_line": 2.5,
-      "best_over_book": "BetMGM",
-      "ref_book": "BetMGM",
-      "best_over_odds": -155,
-      "best_under_odds": 115,
-      "opening_over_odds": -165,
-      "opening_under_odds": 125,
+      "k_line": 3.5,
+      "opening_line": 3.5,
+      "best_over_book": "FanDuel",
+      "ref_book": "FanDuel",
+      "best_over_odds": 124,
+      "best_under_odds": -166,
+      "opening_over_odds": 126,
+      "opening_under_odds": -168,
       "opening_odds_source": "first_seen",
-      "price_delta_over": 10,
-      "price_delta_under": -10,
+      "price_delta_over": -2,
+      "price_delta_under": 2,
       "raw_lambda": 4.12,
       "lambda": 3.87,
       "avg_ip": 3.93,
@@ -174,25 +174,29 @@
       "recent_k9": 14.19,
       "career_k9": 9.73,
       "ev_over": {
-        "edge": 0.1351,
-        "ev": 0.2223,
-        "adj_ev": 0.2223,
+        "edge": 0.0953,
+        "ev": 0.2134,
+        "adj_ev": 0.2134,
         "verdict": "FIRE 2u",
-        "win_prob": 0.743,
+        "win_prob": 0.542,
         "movement_conf": 1.0
       },
       "ev_under": {
-        "edge": -0.2081,
-        "ev": -0.4474,
-        "adj_ev": -0.4474,
+        "edge": -0.1658,
+        "ev": -0.2656,
+        "adj_ev": -0.2656,
         "verdict": "PASS",
-        "win_prob": 0.257,
+        "win_prob": 0.458,
         "movement_conf": 1.0
       },
       "book_odds": {
+        "FanDuel": {
+          "over": 124,
+          "under": -166
+        },
         "BetMGM": {
-          "over": -155,
-          "under": 115
+          "over": 160,
+          "under": -220
         }
       },
       "data_complete": true,
@@ -256,8 +260,8 @@
           "under": 108
         },
         "BetMGM": {
-          "over": -150,
-          "under": 110
+          "over": -145,
+          "under": 105
         }
       },
       "data_complete": true,
@@ -1521,13 +1525,13 @@
       "opening_line": 5.5,
       "best_over_book": "BetMGM",
       "ref_book": "BetMGM",
-      "best_over_odds": 125,
-      "best_under_odds": -165,
-      "opening_over_odds": -115,
-      "opening_under_odds": -115,
+      "best_over_odds": 105,
+      "best_under_odds": -140,
+      "opening_over_odds": 115,
+      "opening_under_odds": -155,
       "opening_odds_source": "first_seen",
-      "price_delta_over": 240,
-      "price_delta_under": -50,
+      "price_delta_over": -10,
+      "price_delta_under": 15,
       "raw_lambda": 5.58,
       "lambda": 5.34,
       "avg_ip": 5.73,
@@ -1548,25 +1552,25 @@
       "recent_k9": 9.1,
       "career_k9": 8.51,
       "ev_over": {
-        "edge": -0.0013,
-        "ev": -0.003,
-        "adj_ev": -0.003,
+        "edge": -0.0447,
+        "ev": -0.0916,
+        "adj_ev": -0.0916,
         "verdict": "PASS",
         "win_prob": 0.443,
         "movement_conf": 1.0
       },
       "ev_under": {
-        "edge": -0.0658,
-        "ev": -0.1056,
-        "adj_ev": -0.1056,
+        "edge": -0.0264,
+        "ev": -0.0453,
+        "adj_ev": -0.0453,
         "verdict": "PASS",
         "win_prob": 0.557,
         "movement_conf": 1.0
       },
       "book_odds": {
         "BetMGM": {
-          "over": 125,
-          "under": -165
+          "over": 105,
+          "under": -140
         }
       },
       "data_complete": false,
