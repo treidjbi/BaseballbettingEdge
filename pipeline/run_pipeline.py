@@ -10,11 +10,14 @@ import logging
 import math
 import os
 import sys
+from time import perf_counter
 from datetime import datetime, timezone
 from zoneinfo import ZoneInfo
 from pathlib import Path
 
 # Allow running from project root or from pipeline/ directory
+ROOT_DIR = Path(__file__).resolve().parent.parent
+sys.path.insert(0, str(ROOT_DIR))
 sys.path.insert(0, os.path.dirname(__file__))
 
 from fetch_odds      import fetch_odds
@@ -29,6 +32,11 @@ from name_utils         import normalize as _normalize_name
 from team_codes         import TEAM_NAME_TO_CODE
 from fetch_results      import (init_db, load_history_into_db, seed_picks,
                                 export_db_to_history, lock_due_picks, get_db)
+from analytics.diagnostics.d_connection_health import (
+    build_connection_health,
+    format_integrity_warning,
+    format_stage_summary,
+)
 
 logging.basicConfig(
     level=logging.INFO,
@@ -164,6 +172,7 @@ def fetch_batter_stats_cached(season: int) -> dict:
         try:
             _batter_stats_cache = fetch_batter_stats(season)
         except Exception as e:
+            build_failures.append(name)
             log.warning("fetch_batter_stats failed: %s — using empty dict", e)
             _batter_stats_cache = {}
     return _batter_stats_cache
@@ -414,6 +423,18 @@ def _restamp_starter_mismatch(records: list, probables_by_team: dict) -> None:
         )
 
 
+def _drop_pregame_starter_mismatches(records: list) -> tuple[list, int]:
+    """Remove pregame cards whose pitcher no longer matches MLB's probable."""
+    kept = []
+    dropped = 0
+    for record in records:
+        if record.get("starter_mismatch") and record.get("game_state", "pregame") == "pregame":
+            dropped += 1
+            continue
+        kept.append(record)
+    return kept, dropped
+
+
 def _game_date_et(game_time_str: str, fallback: str) -> str:
     """Convert a UTC ISO game_time string to an ET calendar date (YYYY-MM-DD).
     Falls back to `fallback` if the string is missing or unparseable."""
@@ -523,7 +544,7 @@ def _run_preview(tomorrow_str: str) -> None:
         ump_map, _ump_diag = fetch_umpires(props, tomorrow_str)
     except Exception as e:
         log.warning("Preview: fetch_umpires failed: %s — using neutral adj", e)
-        ump_map = {p["pitcher"]: 0.0 for p in props}
+        ump_map = {p["pitcher"]: 0.0 for p in model_props}
 
     batter_stats = fetch_batter_stats_cached(int(tomorrow_str[:4]))
     park_factors = _load_park_factors()
@@ -933,6 +954,7 @@ def run(date_str: str, run_type: str = "full") -> None:
     preview_lines = _load_preview_lines(date_str)
 
     # 1. Fetch odds (TheRundown)
+    stage_started = perf_counter()
     try:
         props = fetch_odds(date_str)
     except EnvironmentError as e:
@@ -943,6 +965,7 @@ def run(date_str: str, run_type: str = "full") -> None:
         if not _has_valid_output(date_str):
             _write_output(date_str, [], props_available=False)
         return
+    log.info("%s", format_stage_summary("fetch_odds", perf_counter() - stage_started, props=len(props)))
 
     if not props:
         log.warning("No K props returned — props may not be posted yet")
@@ -957,6 +980,7 @@ def run(date_str: str, run_type: str = "full") -> None:
 
     # 2. Fetch stats (MLB Stats API)
     pitcher_names = [p["pitcher"] for p in props]
+    stage_started = perf_counter()
     try:
         stats_map, probables_by_team = fetch_stats(date_str, pitcher_names)
     except Exception as e:
@@ -965,13 +989,31 @@ def run(date_str: str, run_type: str = "full") -> None:
         log.error("fetch_stats failed entirely: %s — all pitchers will be skipped", e)
         stats_map = {}
         probables_by_team = {}
+    log.info(
+        "%s",
+        format_stage_summary(
+            "fetch_stats",
+            perf_counter() - stage_started,
+            requested=len(pitcher_names),
+            resolved=len(stats_map),
+        ),
+    )
+    model_props = [prop for prop in props if stats_map.get(prop["pitcher"])]
+    dropped_props = len(props) - len(model_props)
+    if dropped_props:
+        log.warning(
+            "Skipping %d props with no resolved starter stats before downstream feature fetches",
+            dropped_props,
+        )
+    model_pitcher_names = [prop["pitcher"] for prop in model_props]
 
     # 3. Fetch SwStr% (FanGraphs via PyBaseball — graceful fallback to neutral)
     # Returns {name: {"swstr_pct": float, "career_swstr_pct": float | None}}
     swstr_meta = {"current_usable": True, "career_usable": True}
     swstr_warning = None
+    stage_started = perf_counter()
     try:
-        swstr_map = fetch_swstr(int(date_str[:4]), pitcher_names)
+        swstr_map = fetch_swstr(int(date_str[:4]), model_pitcher_names)
         raw_swstr_meta = swstr_map.pop("__meta__", {})
         swstr_meta = {
             "current_usable": bool(raw_swstr_meta.get("current_usable", True)),
@@ -980,9 +1022,19 @@ def run(date_str: str, run_type: str = "full") -> None:
         swstr_warning = _swstr_warning_from_meta(swstr_meta)
     except Exception as e:
         log.warning("fetch_swstr failed: %s — using neutral SwStr%% for all", e)
-        swstr_map = {name: _SWSTR_NEUTRAL for name in pitcher_names}
+        swstr_map = {name: _SWSTR_NEUTRAL for name in model_pitcher_names}
         swstr_meta = {"current_usable": False, "career_usable": False}
         swstr_warning = _swstr_warning_from_meta(swstr_meta)
+    log.info(
+        "%s",
+        format_stage_summary(
+            "fetch_swstr",
+            perf_counter() - stage_started,
+            requested=len(model_pitcher_names),
+            resolved=len(swstr_map),
+            fallback=int(not swstr_meta.get("current_usable", True)),
+        ),
+    )
 
     # 4. Fetch umpire adjustments (MLB Stats API officials hydrate — graceful fallback built in)
     # Source (2026-04-17 cutover): statsapi.mlb.com /schedule?hydrate=officials
@@ -999,13 +1051,14 @@ def run(date_str: str, run_type: str = "full") -> None:
     # hits ump_k_adj=0.0 — dead-signal window 2026-04-01 → 2026-04-23 (601/601
     # stored picks had ump_k_adj=0; see docs/data-caveats.md + re-audit finding
     # in docs/superpowers/plans/2026-04-16-model-audit-and-gaps.md, Task A3.7).
-    for prop in props:
+    for prop in model_props:
         s = stats_map.get(prop["pitcher"])
         if s:
             prop["team"] = s.get("team") or prop.get("team", "")
             prop["opp_team"] = s.get("opp_team") or prop.get("opp_team", "")
+    stage_started = perf_counter()
     try:
-        ump_map, ump_diagnostics = fetch_umpires(props, date_str)
+        ump_map, ump_diagnostics = fetch_umpires(model_props, date_str)
     except Exception as e:
         log.warning("fetch_umpires failed: %s — using neutral adj for all", e)
         ump_map = {p["pitcher"]: 0.0 for p in props}
@@ -1034,6 +1087,16 @@ def run(date_str: str, run_type: str = "full") -> None:
         ump_diagnostics["pitcher_nonzero_count"],
         ump_ok,
     )
+    log.info(
+        "%s",
+        format_stage_summary(
+            "fetch_umpires",
+            perf_counter() - stage_started,
+            props=len(model_props),
+            nonzero=ump_diagnostics["pitcher_nonzero_count"],
+            fallback=int(not ump_ok),
+        ),
+    )
 
     # 5. Fetch batter stats (FanGraphs — cached, graceful fallback to {})
     batter_stats = fetch_batter_stats_cached(int(date_str[:4]))
@@ -1041,10 +1104,12 @@ def run(date_str: str, run_type: str = "full") -> None:
     lineup_confirmed_count = 0
     lineup_missing_splits_count = 0
     lineup_total_count = 0
+    stage_started = perf_counter()
+    build_failures: list[str] = []
 
     # 6. Build records — per-pitcher error isolation
     records = []
-    for odds in props:
+    for odds in model_props:
         name  = odds["pitcher"]
         stats = stats_map.get(name)
         if not stats:
@@ -1088,9 +1153,27 @@ def run(date_str: str, run_type: str = "full") -> None:
         except Exception as e:
             log.warning("build_pitcher_record failed for %s: %s — skipping", name, e)
 
+    connection_health = build_connection_health(
+        props,
+        stats_map,
+        records,
+        build_failures=build_failures,
+    )
     log.info("Built %d/%d pitcher records", len(records), len(props))
+    log.info(
+        "%s",
+        format_stage_summary(
+            "build_records",
+            perf_counter() - stage_started,
+            built=len(records),
+            unresolved=connection_health["unresolved_count"],
+        ),
+    )
+    integrity_warning = format_integrity_warning(connection_health)
+    if integrity_warning:
+        log.warning("%s", integrity_warning)
     data_warnings = collect_data_warnings(
-        props=props,
+        props=model_props,
         ump_diagnostics=ump_diagnostics,
         swstr_warning=swstr_warning,
         lineup_confirmed_count=lineup_confirmed_count,
@@ -1115,6 +1198,12 @@ def run(date_str: str, run_type: str = "full") -> None:
     # this flag lets v2 hide or down-rank the card the moment MLB's probable
     # flips, rather than silently serving a dead pick to the user.
     _restamp_starter_mismatch(records, probables_by_team)
+    records, dropped_mismatches = _drop_pregame_starter_mismatches(records)
+    if dropped_mismatches:
+        log.warning(
+            "Dropped %d pregame starter-mismatch record(s) before output/seeding",
+            dropped_mismatches,
+        )
 
     # Guard: if the stats API failed entirely and produced 0 records, don't
     # silently wipe out a previously good today.json.  Locked snapshots from
@@ -1123,7 +1212,8 @@ def run(date_str: str, run_type: str = "full") -> None:
     if records or not _has_valid_output(date_str):
         _write_output(date_str, records, props_available=True,
                       ump_diagnostics=ump_diagnostics,
-                      data_warnings=data_warnings)
+                      data_warnings=data_warnings,
+                      connection_health=connection_health)
         _write_steam(records, date_str)
     else:
         log.warning(
@@ -1163,7 +1253,8 @@ def run(date_str: str, run_type: str = "full") -> None:
 
 def _write_output(date_str: str, records: list, props_available: bool,
                   ump_diagnostics: dict | None = None,
-                  data_warnings: list[str] | None = None) -> None:
+                  data_warnings: list[str] | None = None,
+                  connection_health: dict | None = None) -> None:
     output = {
         "generated_at":   datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
         "date":           date_str,
@@ -1180,6 +1271,8 @@ def _write_output(date_str: str, records: list, props_available: bool,
     # on read so v1/v2 dashboards remain unaffected (neither reads it).
     if ump_diagnostics is not None:
         output["ump_diagnostics"] = ump_diagnostics
+    if connection_health is not None:
+        output["connection_health"] = connection_health
     OUTPUT_PATH.parent.mkdir(parents=True, exist_ok=True)
     # today.json is written exactly once inside _write_archive, filtered to
     # ET-today pitchers only.  Writing it here first (with all records including

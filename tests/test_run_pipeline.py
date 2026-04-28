@@ -271,6 +271,151 @@ def test_run_writes_today_json(tmp_path):
     assert len(data["pitchers"]) == 1
 
 
+def test_run_logs_stage_summaries_for_full_run(tmp_path, caplog):
+    """Full runs should emit one concise key=value summary per major stage."""
+    import logging
+    import run_pipeline
+    run_pipeline._batter_stats_cache = None
+    out_path = tmp_path / "today.json"
+    caplog.set_level(logging.INFO)
+
+    with patch.object(run_pipeline, "OUTPUT_PATH", out_path), \
+         patch("run_pipeline.fetch_odds", return_value=[_sample_prop()]), \
+         patch("run_pipeline.fetch_stats", return_value=({"Test Pitcher": _sample_stats()}, {})), \
+         patch("run_pipeline.fetch_swstr", return_value={"Test Pitcher": {"swstr_pct": 0.110, "career_swstr_pct": None}}), \
+         patch("run_pipeline.fetch_umpires", return_value=({"Test Pitcher": 0.25}, {"hp_count_fetched": 1, "pitcher_nonzero_count": 1})), \
+         patch("run_pipeline.fetch_lineups_for_pitcher", return_value=None), \
+         patch("run_pipeline.fetch_batter_stats_cached", return_value={}), \
+         patch("run_pipeline.init_db"), \
+         patch("run_pipeline.load_history_into_db"), \
+         patch("run_pipeline.get_db", return_value=MagicMock()), \
+         patch("run_pipeline.lock_due_picks", return_value=0), \
+         patch("run_pipeline.seed_picks", return_value=0), \
+         patch("run_pipeline.export_db_to_history"):
+        run_pipeline.run("2026-04-01")
+
+    messages = [record.getMessage() for record in caplog.records]
+    assert any(msg.startswith("stage=fetch_odds ms=") and "props=1" in msg for msg in messages)
+    assert any(
+        msg.startswith("stage=fetch_stats ms=")
+        and "requested=1" in msg
+        and "resolved=1" in msg
+        for msg in messages
+    )
+    assert any(
+        msg.startswith("stage=fetch_swstr ms=")
+        and "requested=1" in msg
+        and "resolved=1" in msg
+        for msg in messages
+    )
+    assert any(
+        msg.startswith("stage=fetch_umpires ms=")
+        and "props=1" in msg
+        and "nonzero=1" in msg
+        for msg in messages
+    )
+    assert any(
+        msg.startswith("stage=build_records ms=")
+        and "built=1" in msg
+        and "unresolved=0" in msg
+        for msg in messages
+    )
+
+
+def test_run_writes_connection_health_and_warns_on_unresolved_props(tmp_path, caplog):
+    """Props that survive intake but never become records should be surfaced."""
+    import logging
+    import run_pipeline
+    run_pipeline._batter_stats_cache = None
+    out_path = tmp_path / "today.json"
+    caplog.set_level(logging.INFO)
+
+    props = [
+        {**_sample_prop(), "pitcher": "Resolved Pitcher"},
+        {**_sample_prop(), "pitcher": "Missing Stats Pitcher"},
+    ]
+    stats_map = {
+        "Resolved Pitcher": _sample_stats(),
+    }
+
+    with patch.object(run_pipeline, "OUTPUT_PATH", out_path), \
+         patch("run_pipeline.fetch_odds", return_value=props), \
+         patch("run_pipeline.fetch_stats", return_value=(stats_map, {})), \
+         patch("run_pipeline.fetch_swstr", return_value={"Resolved Pitcher": {"swstr_pct": 0.110, "career_swstr_pct": None}}), \
+         patch("run_pipeline.fetch_umpires", return_value=({"Resolved Pitcher": 0.25}, {"hp_count_fetched": 1, "pitcher_nonzero_count": 1})), \
+         patch("run_pipeline.fetch_lineups_for_pitcher", return_value=None), \
+         patch("run_pipeline.fetch_batter_stats_cached", return_value={}), \
+         patch("run_pipeline.init_db"), \
+         patch("run_pipeline.load_history_into_db"), \
+         patch("run_pipeline.get_db", return_value=MagicMock()), \
+         patch("run_pipeline.lock_due_picks", return_value=0), \
+         patch("run_pipeline.seed_picks", return_value=0), \
+         patch("run_pipeline.export_db_to_history"):
+        run_pipeline.run("2026-04-01")
+
+    data = json.loads(out_path.read_text())
+    health = data["connection_health"]
+    assert health["props_seen"] == 2
+    assert health["stats_resolved"] == 1
+    assert health["records_built"] == 1
+    assert health["unresolved_count"] == 1
+    assert health["missing_stats_count"] == 1
+    assert health["feature_build_failures_count"] == 0
+    assert health["degraded"] is True
+    assert health["sample_unresolved_pitchers"] == ["Missing Stats Pitcher"]
+
+    assert any(
+        msg == (
+            "Slate integrity warning: unresolved_props=1 "
+            "missing_stats=1 build_failures=0 sample=Missing Stats Pitcher"
+        )
+        for msg in (record.getMessage() for record in caplog.records)
+    )
+
+
+def test_run_filters_downstream_feature_fetches_to_stats_resolved_props(tmp_path):
+    """Props with no resolved starter stats should be excluded from later
+    feature fetches so junk intake does not bloat runtime or lambda inputs."""
+    import run_pipeline
+    run_pipeline._batter_stats_cache = None
+    out_path = tmp_path / "today.json"
+
+    props = [
+        {**_sample_prop(), "pitcher": "Resolved Pitcher"},
+        {**_sample_prop(), "pitcher": "Unresolved Pitcher"},
+    ]
+    stats_map = {
+        "Resolved Pitcher": _sample_stats(),
+    }
+    swstr_mock = MagicMock(return_value={"Resolved Pitcher": {"swstr_pct": 0.110, "career_swstr_pct": None}})
+    ump_mock = MagicMock(return_value=({"Resolved Pitcher": 0.25}, {"hp_count_fetched": 1, "pitcher_nonzero_count": 1}))
+
+    with patch.object(run_pipeline, "OUTPUT_PATH", out_path), \
+         patch("run_pipeline.fetch_odds", return_value=props), \
+         patch("run_pipeline.fetch_stats", return_value=(stats_map, {})), \
+         patch("run_pipeline.fetch_swstr", swstr_mock), \
+         patch("run_pipeline.fetch_umpires", ump_mock), \
+         patch("run_pipeline.fetch_lineups_for_pitcher", return_value=None), \
+         patch("run_pipeline.fetch_batter_stats_cached", return_value={}), \
+         patch("run_pipeline.init_db"), \
+         patch("run_pipeline.load_history_into_db"), \
+         patch("run_pipeline.get_db", return_value=MagicMock()), \
+         patch("run_pipeline.lock_due_picks", return_value=0), \
+         patch("run_pipeline.seed_picks", return_value=0), \
+         patch("run_pipeline.export_db_to_history"):
+        run_pipeline.run("2026-04-01")
+
+    swstr_args = swstr_mock.call_args[0]
+    assert swstr_args == (2026, ["Resolved Pitcher"])
+
+    ump_props = ump_mock.call_args[0][0]
+    assert [prop["pitcher"] for prop in ump_props] == ["Resolved Pitcher"]
+
+    data = json.loads(out_path.read_text())
+    assert data["connection_health"]["unresolved_count"] == 1
+    assert data["connection_health"]["sample_unresolved_pitchers"] == ["Unresolved Pitcher"]
+
+
 def test_run_writes_data_warnings_to_today_json(tmp_path):
     import run_pipeline
     run_pipeline._batter_stats_cache = None
@@ -411,7 +556,7 @@ def test_run_park_factor_affects_real_lambda_across_parks(tmp_path):
     ump_map = {"Rockies Pitcher": 0.25, "Mariners Pitcher": 0.25}
 
     out = {}
-    def spy_write_output(date_str, records, props_available, ump_diagnostics=None, data_warnings=None):
+    def spy_write_output(date_str, records, props_available, ump_diagnostics=None, data_warnings=None, connection_health=None):
         out["records"] = records
 
     park_factors_path = tmp_path / "park_factors.json"
@@ -589,12 +734,13 @@ def test_data_complete_is_row_specific_for_mixed_slate(tmp_path):
         }
 
     captured = {}
-    def spy_write_output(date_str, records, props_available, ump_diagnostics=None, data_warnings=None):
+    def spy_write_output(date_str, records, props_available, ump_diagnostics=None, data_warnings=None, connection_health=None):
         captured["date_str"] = date_str
         captured["records"] = records
         captured["props_available"] = props_available
         captured["ump_diagnostics"] = ump_diagnostics
         captured["data_warnings"] = data_warnings
+        captured["connection_health"] = connection_health
 
     with patch.object(run_pipeline, "OUTPUT_PATH", tmp_path / "today.json"), \
          patch("run_pipeline.fetch_odds", return_value=props), \
@@ -1466,3 +1612,32 @@ def test_restamp_starter_mismatch_empty_map_noop():
     }]
     run_pipeline._restamp_starter_mismatch(records, {})
     assert records[0]["starter_mismatch"] is False
+
+
+def test_drop_pregame_starter_mismatches_suppresses_only_pregame_cards():
+    import run_pipeline
+
+    records = [
+        {"pitcher": "Ghost Starter", "starter_mismatch": True, "game_state": "pregame"},
+        {"pitcher": "Started Ghost", "starter_mismatch": True, "game_state": "in_progress"},
+        {"pitcher": "Real Starter", "starter_mismatch": False, "game_state": "pregame"},
+    ]
+
+    kept, dropped = run_pipeline._drop_pregame_starter_mismatches(records)
+
+    assert dropped == 1
+    assert [r["pitcher"] for r in kept] == ["Started Ghost", "Real Starter"]
+
+
+def test_drop_pregame_starter_mismatches_defaults_missing_game_state_to_pregame():
+    import run_pipeline
+
+    records = [
+        {"pitcher": "Ghost Starter", "starter_mismatch": True},
+        {"pitcher": "Real Starter", "starter_mismatch": False},
+    ]
+
+    kept, dropped = run_pipeline._drop_pregame_starter_mismatches(records)
+
+    assert dropped == 1
+    assert [r["pitcher"] for r in kept] == ["Real Starter"]

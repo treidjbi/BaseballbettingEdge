@@ -10,7 +10,7 @@ from fetch_stats import fetch_stats, _parse_ip, _k9_from_splits, _normalize_name
 
 # ── Helpers ────────────────────────────────────────────────────────────────────
 
-def _make_schedule(pitcher_name, pitcher_id, pitch_hand_code="R", block_date=None):
+def _make_schedule(pitcher_name, pitcher_id, pitch_hand_code="R", block_date=None, game_date=None):
     """Build a minimal MLB schedule API response with one game."""
     pitcher_obj = {
         "id": pitcher_id,
@@ -25,6 +25,7 @@ def _make_schedule(pitcher_name, pitcher_id, pitch_hand_code="R", block_date=Non
                 "date": block_date,
                 "games": [
                     {
+                        "gameDate": game_date or f"{block_date or '2026-04-15'}T23:05:00Z",
                         "teams": {
                             "away": {
                                 "probablePitcher": pitcher_obj,
@@ -433,6 +434,7 @@ def test_fetch_stats_uses_actual_second_schedule_block_date_for_rest_days():
                 pitcher_id,
                 "R",
                 block_date="2026-04-16",
+                game_date="2026-04-16T02:10:00Z",
             )
         elif f"/people/{pitcher_id}/stats" in url:
             if params and params.get("stats") == "gameLog":
@@ -555,3 +557,71 @@ def test_fetch_stats_recent_start_ips_uses_prior_season_fallback():
         stats, _probables = fetch_stats("2026-04-15", ["Gerrit Cole"])
 
     assert stats["Gerrit Cole"]["recent_start_ips"] == pytest.approx([1.0, 2.0, 2 + 2/3])
+
+
+def test_fetch_stats_filters_schedule_to_target_et_date():
+    """Adjacent UTC schedule blocks must not overwrite the current ET slate."""
+    pitcher_id = 543037
+    pitcher_stats = _make_pitcher_stats_response()
+    pitcher_game_log = _make_pitcher_game_log_response(["6.0", "6.0", "6.0"])
+    team_stats = _make_team_stats_response()
+    schedule = {
+        "dates": [
+            {
+                "date": "2026-04-15",
+                "games": [
+                    {
+                        "gameDate": "2026-04-16T02:10:00Z",  # 2026-04-15 ET
+                        "teams": {
+                            "away": {
+                                "probablePitcher": {"id": pitcher_id, "fullName": "Gerrit Cole", "pitchHand": {"code": "R"}},
+                                "team": {"id": 147, "name": "New York Yankees"},
+                            },
+                            "home": {
+                                "team": {"id": 111, "name": "Boston Red Sox"},
+                            },
+                        },
+                    }
+                ],
+            },
+            {
+                "date": "2026-04-16",
+                "games": [
+                    {
+                        "gameDate": "2026-04-16T18:10:00Z",  # 2026-04-16 ET
+                        "teams": {
+                            "away": {
+                                "probablePitcher": {"id": 999999, "fullName": "Wrong Day Starter", "pitchHand": {"code": "R"}},
+                                "team": {"id": 147, "name": "New York Yankees"},
+                            },
+                            "home": {
+                                "team": {"id": 111, "name": "Boston Red Sox"},
+                            },
+                        },
+                    }
+                ],
+            },
+        ]
+    }
+
+    def side_effect(url, params=None, timeout=None):
+        mock_resp = MagicMock()
+        mock_resp.raise_for_status = MagicMock()
+        if "/schedule" in url:
+            mock_resp.json.return_value = schedule
+        elif f"/people/{pitcher_id}/stats" in url:
+            if params and params.get("stats") == "gameLog":
+                mock_resp.json.return_value = pitcher_game_log
+            else:
+                mock_resp.json.return_value = pitcher_stats
+        elif "/teams/" in url:
+            mock_resp.json.return_value = team_stats
+        else:
+            mock_resp.json.return_value = {"stats": []}
+        return mock_resp
+
+    with patch("requests.get", side_effect=side_effect):
+        stats, probables = fetch_stats("2026-04-15", ["Gerrit Cole"])
+
+    assert "Gerrit Cole" in stats
+    assert probables["New York Yankees"] == "Gerrit Cole"

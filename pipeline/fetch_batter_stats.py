@@ -11,16 +11,56 @@ for the installed version. If `_fetch_splits` raises AttributeError, the fallbac
 aggregate K% is used automatically.
 """
 import logging
+import html
+import re
+
+import pandas as pd
+import requests
+
 from build_features import LEAGUE_AVG_K_RATE
 from name_utils import normalize as _norm
 
 log = logging.getLogger(__name__)
+FANGRAPHS_LEADERBOARD_URL = "https://www.fangraphs.com/api/leaders/major-league/data"
+FANGRAPHS_TIMEOUT_SECONDS = 30
+FANGRAPHS_PAGE_SIZE = 5000
 
 
 def _fetch_aggregate(season: int):
-    """Fetch aggregate batter stats from FanGraphs. Returns DataFrame."""
-    from pybaseball import batting_stats
-    return batting_stats(season, qual=0)
+    """Fetch aggregate batter stats from FanGraphs JSON. Returns DataFrame."""
+    response = requests.get(
+        FANGRAPHS_LEADERBOARD_URL,
+        params={
+            "pos": "all",
+            "stats": "bat",
+            "lg": "all",
+            "qual": "0",
+            "type": "8",
+            "season": str(season),
+            "season1": str(season),
+            "ind": "0",
+            "month": "0",
+            "pageitems": str(FANGRAPHS_PAGE_SIZE),
+            "startdate": "",
+            "enddate": "",
+        },
+        timeout=FANGRAPHS_TIMEOUT_SECONDS,
+    )
+    response.raise_for_status()
+    payload = response.json()
+    rows = payload.get("data", []) if isinstance(payload, dict) else []
+
+    normalized_rows = []
+    for row in rows:
+        if not isinstance(row, dict):
+            continue
+        name = row.get("PlayerName") or html.unescape(re.sub(r"<[^>]+>", "", str(row.get("Name", "")))).strip()
+        k_rate = row.get("K%")
+        if not name or k_rate is None:
+            continue
+        normalized_rows.append({"Name": str(name).strip(), "K%": float(k_rate)})
+
+    return pd.DataFrame(normalized_rows, columns=["Name", "K%"])
 
 
 def _fetch_splits(season: int):

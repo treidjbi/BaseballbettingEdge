@@ -918,7 +918,7 @@ function PicksTab({ pitchersOverride }) {
 // ── Tab: Performance ──
 function PerfTab() {
   const d = window.V2_PERF;
-  const maxAbsRoi = Math.max(...d.rows.map(r => Math.abs(r.roi)));
+  const maxAbsRoi = Math.max(0, ...d.rows.map(r => typeof r.roi === "number" ? Math.abs(r.roi) : 0));
   const [showCalib, setShowCalib] = useState(false);
   const notes = d.calibration_notes || [];
 
@@ -993,8 +993,10 @@ function PerfTab() {
           const badgeCls = isFire
             ? (r.side === "over" ? "fire-over" : "fire")
             : (r.side === "over" ? "lean-over" : "lean-under");
-          const roiPct = r.roi;
-          const pct = Math.min(1, Math.abs(roiPct) / Math.max(maxAbsRoi, 1));
+          const roiPct = typeof r.roi === "number" ? r.roi : null;
+          const winPct = typeof r.win_pct === "number" ? r.win_pct : null;
+          const hasRoi = roiPct != null;
+          const pct = hasRoi ? Math.min(1, Math.abs(roiPct) / Math.max(maxAbsRoi, 1)) : 0;
           return (
             <div key={i} className="v2-tier-row">
               <div className={`v2-tier-badge ${badgeCls}`}>
@@ -1004,19 +1006,19 @@ function PerfTab() {
               <div className="v2-tier-bar-wrap">
                 <div className="v2-tier-bar-head">
                   <span>{r.picks} picks · {r.wins}-{r.losses}</span>
-                  <span className="wr">{(r.win_pct * 100).toFixed(1)}%</span>
+                  <span className="wr">{winPct != null ? `${(winPct * 100).toFixed(1)}%` : "--"}</span>
                 </div>
                 <div className="v2-tier-bar">
                   <div className="break" style={{left:"50%"}}/>
-                  {roiPct >= 0 ? (
+                  {hasRoi ? roiPct >= 0 ? (
                     <div className="fill pos" style={{left:"50%", width: `${pct * 50}%`}}/>
                   ) : (
                     <div className="fill neg" style={{right:"50%", width: `${pct * 50}%`, left:"auto"}}/>
-                  )}
+                  ) : null}
                 </div>
               </div>
-              <div className={`v2-tier-roi ${roiPct >= 0 ? "pos" : "neg"}`}>
-                {roiPct >= 0 ? "+" : ""}{roiPct.toFixed(1)}%
+              <div className={`v2-tier-roi ${hasRoi ? (roiPct >= 0 ? "pos" : "neg") : ""}`}>
+                {hasRoi ? `${roiPct >= 0 ? "+" : ""}${roiPct.toFixed(1)}%` : "--"}
                 <span className="n">ROI</span>
               </div>
             </div>
