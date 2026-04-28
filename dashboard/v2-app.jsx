@@ -16,6 +16,8 @@ const ABBR = {
 };
 const ab = n => ABBR[n] || n;
 const fmtOdds = n => n == null ? "—" : (n > 0 ? `+${n}` : `${n}`);
+const isFiniteNumber = (v) => typeof v === "number" && Number.isFinite(v);
+const fmtFixedOrDash = (v, digits = 1) => isFiniteNumber(v) ? v.toFixed(digits) : "--";
 const PHX_TZ = "America/Phoenix";
 const phxDateISO = () => new Intl.DateTimeFormat("en-CA", {
   timeZone: PHX_TZ,
@@ -519,16 +521,26 @@ function PickDetail({ p, onClose }) {
     document.body.style.overflow = "hidden";
     return () => { window.removeEventListener("keydown", h); document.body.style.overflow = ""; };
   }, [onClose]);
-  const SideCard = ({ s }) => {
+  const SideCard = ({ s: rawSide }) => {
+    const s = {
+      ...rawSide,
+      adj_ev: isFiniteNumber(rawSide.adj_ev) ? rawSide.adj_ev : 0,
+      win_prob: isFiniteNumber(rawSide.win_prob) ? rawSide.win_prob : 0,
+      ev: isFiniteNumber(rawSide.ev) ? rawSide.ev : 0,
+      edge: isFiniteNumber(rawSide.edge) ? rawSide.edge : null,
+    };
     const picked = s.direction === best.direction;
-    const pos = s.adj_ev > 0;
+    const adjEv = isFiniteNumber(s.adj_ev) ? s.adj_ev : null;
+    const winProb = isFiniteNumber(s.win_prob) ? s.win_prob : null;
+    const edgeVal = isFiniteNumber(s.edge ?? s.ev) ? (s.edge ?? s.ev) : null;
+    const pos = adjEv != null && adjEv > 0;
     return (
       <div className={`v2-side-card ${picked ? "picked" : ""}`}>
         {picked && <span className="badge-mini">PICK</span>}
         <div className="dir">{s.direction} {p.k_line}</div>
         <div className="odds">{fmtOdds(s.odds)} · open {fmtOdds(s.opening)}</div>
-        <div className={`ev ${pos ? "pos" : "neg"}`}>
-          {pos ? "+" : ""}{(s.adj_ev * 100).toFixed(1)}%
+        <div className={`ev ${adjEv == null ? "" : pos ? "pos" : "neg"}`}>
+          {adjEv == null ? "--" : `${pos ? "+" : ""}${(adjEv * 100).toFixed(1)}%`}
         </div>
         <div className="wp">
           p = {(s.win_prob * 100).toFixed(1)}% · edge {((s.edge ?? s.ev) || 0) > 0 ? "+" : ""}{((((s.edge ?? s.ev) || 0) * 100).toFixed(1))}%
@@ -540,14 +552,22 @@ function PickDetail({ p, onClose }) {
   // Stat deltas vs league average (rough thresholds)
   const LEAGUE_K = 0.22;
   const LEAGUE_K9 = 8.5;
-  const oppDelta = (p.opp_k_rate - LEAGUE_K) * 100;
-  const k9Delta = p.recent_k9 - LEAGUE_K9;
-  const ump = p.ump_k_adj;
+  const lambda = isFiniteNumber(p.lambda) ? p.lambda : null;
+  const kLine = isFiniteNumber(p.k_line) ? p.k_line : null;
+  const avgIp = isFiniteNumber(p.avg_ip) ? p.avg_ip : null;
+  const oppKRate = isFiniteNumber(p.opp_k_rate) ? p.opp_k_rate : null;
+  const recentK9 = isFiniteNumber(p.recent_k9) ? p.recent_k9 : null;
+  const seasonK9 = isFiniteNumber(p.season_k9) ? p.season_k9 : null;
+  const careerK9 = isFiniteNumber(p.career_k9) ? p.career_k9 : null;
+  const parkFactor = isFiniteNumber(p.park_factor) ? p.park_factor : null;
+  const oppDelta = oppKRate == null ? null : (oppKRate - LEAGUE_K) * 100;
+  const k9Delta = recentK9 == null ? null : recentK9 - LEAGUE_K9;
+  const ump = isFiniteNumber(p.ump_k_adj) ? p.ump_k_adj : 0;
 
   // Whether each stat supports the pick direction
   const supportsUnder = best.direction === "UNDER";
-  const oppSupports = supportsUnder ? oppDelta < 0 : oppDelta > 0;
-  const k9Supports = supportsUnder ? k9Delta < 0 : k9Delta > 0;
+  const oppSupports = oppDelta == null ? null : supportsUnder ? oppDelta < 0 : oppDelta > 0;
+  const k9Supports = k9Delta == null ? null : supportsUnder ? k9Delta < 0 : k9Delta > 0;
   const umpSupports = supportsUnder ? ump < 0 : ump > 0;
 
   // State flags
@@ -590,8 +610,8 @@ function PickDetail({ p, onClose }) {
               <span className="live-k-lbl">K</span>
             </div>
             <div className="live-meta">
-              Projected final: <b>{live.proj_final_k.toFixed(1)} K</b>
-              <span className={`live-verdict ${live.proj_final_k > p.k_line ? "over" : "under"}`}>
+              Projected final: <b>{fmtFixedOrDash(live.proj_final_k, 1)} K</b>
+              <span className={`live-verdict ${isFiniteNumber(live.proj_final_k) && kLine != null && live.proj_final_k > kLine ? "over" : "under"}`}>
                 {live.proj_final_k > p.k_line ? "→ OVER pace" : "→ UNDER pace"}
               </span>
             </div>
@@ -650,7 +670,7 @@ function PickDetail({ p, onClose }) {
               <span className="state-lbl">NO EDGE</span>
             </div>
             <div className="pass-copy">
-              Model projection ({p.lambda.toFixed(2)} K) is too close to the line ({p.k_line}) on both sides.
+              Model projection ({fmtFixedOrDash(lambda, 2)} K) is too close to the line ({kLine ?? "--"}) on both sides.
               Skipping this one.
             </div>
           </div>
@@ -668,21 +688,21 @@ function PickDetail({ p, onClose }) {
           <div className="h">Projection</div>
           <div className="v2-stat-row">
             <span className="lbl">Line (K)</span>
-            <span className="val">{p.k_line}</span>
+            <span className="val">{kLine ?? "--"}</span>
           </div>
           <div className="v2-stat-row">
             <span className="lbl">Model λ</span>
-            <span className="val">{p.lambda.toFixed(2)}</span>
+            <span className="val">{fmtFixedOrDash(lambda, 2)}</span>
           </div>
           <div className="v2-stat-row">
             <span className="lbl">Edge</span>
-            <span className={`val ${p.lambda > p.k_line ? "pos" : "neg"}`}>
-              {p.lambda > p.k_line ? "+" : ""}{(p.lambda - p.k_line).toFixed(2)} K
+            <span className={`val ${lambda == null || kLine == null ? "" : lambda > kLine ? "pos" : "neg"}`}>
+              {lambda == null || kLine == null ? "--" : `${lambda > kLine ? "+" : ""}${(lambda - kLine).toFixed(2)} K`}
             </span>
           </div>
           <div className="v2-stat-row">
             <span className="lbl">Expected IP</span>
-            <span className="val">{p.avg_ip.toFixed(1)}</span>
+            <span className="val">{fmtFixedOrDash(avgIp, 1)}</span>
           </div>
         </div>
 
@@ -709,9 +729,9 @@ function PickDetail({ p, onClose }) {
           </div>
           <div className="v2-stat-row">
             <span className="lbl">Park factor</span>
-            {p.park_factor != null ? (
-              <span className={`val ${helpers.parkFactorTone ? helpers.parkFactorTone(p.park_factor, best.direction) : ""}`}>
-                {p.park_factor.toFixed(2)}
+            {parkFactor != null ? (
+              <span className={`val ${helpers.parkFactorTone ? helpers.parkFactorTone(parkFactor, best.direction) : ""}`}>
+                {parkFactor.toFixed(2)}
               </span>
             ) : (
               <span className="val" style={{color: "var(--ink-dim)"}}>Unknown</span>
@@ -749,25 +769,25 @@ function PickDetail({ p, onClose }) {
           )}
           <div className="v2-stat-row">
             <span className="lbl">{Icon.users} Opp. K-rate (bats)</span>
-            <span className={`val ${oppSupports ? "pos" : "neg"}`}>
-              {(p.opp_k_rate * 100).toFixed(1)}%
-              <span className="delta">{oppDelta >= 0 ? "+" : ""}{oppDelta.toFixed(1)} vs lg</span>
+            <span className={`val ${oppSupports == null ? "" : oppSupports ? "pos" : "neg"}`}>
+              {oppKRate == null ? "--" : `${(oppKRate * 100).toFixed(1)}%`}
+              {oppDelta != null && <span className="delta">{oppDelta >= 0 ? "+" : ""}{oppDelta.toFixed(1)} vs lg</span>}
             </span>
           </div>
           <div className="v2-stat-row">
             <span className="lbl">{Icon.ball} Recent K/9 (L5)</span>
-            <span className={`val ${k9Supports ? "pos" : "neg"}`}>
-              {p.recent_k9.toFixed(1)}
-              <span className="delta">{k9Delta >= 0 ? "+" : ""}{k9Delta.toFixed(1)} vs lg</span>
+            <span className={`val ${k9Supports == null ? "" : k9Supports ? "pos" : "neg"}`}>
+              {fmtFixedOrDash(recentK9, 1)}
+              {k9Delta != null && <span className="delta">{k9Delta >= 0 ? "+" : ""}{k9Delta.toFixed(1)} vs lg</span>}
             </span>
           </div>
           <div className="v2-stat-row">
             <span className="lbl">Season K/9</span>
-            <span className="val">{p.season_k9.toFixed(1)}</span>
+            <span className="val">{fmtFixedOrDash(seasonK9, 1)}</span>
           </div>
           <div className="v2-stat-row">
             <span className="lbl">Career K/9</span>
-            <span className="val">{p.career_k9.toFixed(1)}</span>
+            <span className="val">{fmtFixedOrDash(careerK9, 1)}</span>
           </div>
         </div>
 
