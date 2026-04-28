@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-04-28T21:39:05Z",
+  "generated_at": "2026-04-28T21:54:30Z",
   "date": "2026-04-28",
   "props_available": true,
   "data_warnings": [
@@ -147,13 +147,13 @@
       "opening_line": 2.5,
       "best_over_book": "BetMGM",
       "ref_book": "BetMGM",
-      "best_over_odds": -155,
-      "best_under_odds": 115,
-      "opening_over_odds": -165,
-      "opening_under_odds": 125,
+      "best_over_odds": -185,
+      "best_under_odds": 135,
+      "opening_over_odds": -155,
+      "opening_under_odds": 115,
       "opening_odds_source": "first_seen",
-      "price_delta_over": 10,
-      "price_delta_under": -10,
+      "price_delta_over": -30,
+      "price_delta_under": 20,
       "raw_lambda": 4.12,
       "lambda": 3.87,
       "avg_ip": 3.93,
@@ -174,25 +174,25 @@
       "recent_k9": 14.19,
       "career_k9": 9.73,
       "ev_over": {
-        "edge": 0.1351,
-        "ev": 0.2223,
-        "adj_ev": 0.2223,
-        "verdict": "FIRE 2u",
+        "edge": 0.0938,
+        "ev": 0.1446,
+        "adj_ev": 0.1446,
+        "verdict": "FIRE 1u",
         "win_prob": 0.743,
         "movement_conf": 1.0
       },
       "ev_under": {
-        "edge": -0.2081,
-        "ev": -0.4474,
-        "adj_ev": -0.4474,
+        "edge": -0.1685,
+        "ev": -0.396,
+        "adj_ev": -0.396,
         "verdict": "PASS",
         "win_prob": 0.257,
         "movement_conf": 1.0
       },
       "book_odds": {
         "BetMGM": {
-          "over": -155,
-          "under": 115
+          "over": -185,
+          "under": 135
         }
       },
       "data_complete": true,
@@ -256,8 +256,8 @@
           "under": 108
         },
         "BetMGM": {
-          "over": -145,
-          "under": 105
+          "over": -150,
+          "under": 110
         }
       },
       "data_complete": true,
@@ -586,13 +586,13 @@
       "opening_line": 3.5,
       "best_over_book": "BetMGM",
       "ref_book": "BetMGM",
-      "best_over_odds": -135,
-      "best_under_odds": 100,
+      "best_over_odds": -140,
+      "best_under_odds": 105,
       "opening_over_odds": -135,
       "opening_under_odds": 100,
       "opening_odds_source": "first_seen",
-      "price_delta_over": 0,
-      "price_delta_under": 0,
+      "price_delta_over": -5,
+      "price_delta_under": 5,
       "raw_lambda": 2.89,
       "lambda": 2.64,
       "avg_ip": 4.8,
@@ -613,25 +613,25 @@
       "recent_k9": 5.62,
       "career_k9": 7.21,
       "ev_over": {
-        "edge": -0.3009,
-        "ev": -0.5239,
-        "adj_ev": -0.5239,
+        "edge": -0.3098,
+        "ev": -0.5311,
+        "adj_ev": -0.5311,
         "verdict": "PASS",
         "win_prob": 0.274,
         "movement_conf": 1.0
       },
       "ev_under": {
-        "edge": 0.2265,
-        "ev": 0.453,
-        "adj_ev": 0.453,
+        "edge": 0.2387,
+        "ev": 0.4893,
+        "adj_ev": 0.4893,
         "verdict": "FIRE 2u",
         "win_prob": 0.726,
         "movement_conf": 1.0
       },
       "book_odds": {
         "BetMGM": {
-          "over": -135,
-          "under": 100
+          "over": -140,
+          "under": 105
         }
       },
       "data_complete": true,
@@ -1521,15 +1521,15 @@
       "opening_line": 3.5,
       "best_over_book": "BetMGM",
       "ref_book": "BetMGM",
-      "best_over_odds": -155,
-      "best_under_odds": 115,
-      "opening_over_odds": -160,
-      "opening_under_odds": 120,
+      "best_over_odds": -135,
+      "best_under_odds": 100,
+      "opening_over_odds": -155,
+      "opening_under_odds": 115,
       "opening_odds_source": "first_seen",
-      "price_delta_over": 5,
-      "price_delta_under": -5,
-      "raw_lambda": 4.64,
-      "lambda": 4.39,
+      "price_delta_over": 20,
+      "price_delta_under": -15,
+      "raw_lambda": 4.76,
+      "lambda": 4.52,
       "avg_ip": 5.13,
       "is_opener": false,
       "opener_note": null,
@@ -1542,31 +1542,31 @@
       "opp_k_rate": 0.28687065688888885,
       "lineup_used": true,
       "park_factor": 1.01,
-      "ump_k_adj": -0.278,
+      "ump_k_adj": -0.044,
       "starter_mismatch": false,
       "season_k9": 7.36,
       "recent_k9": 7.36,
       "career_k9": 8.08,
       "ev_over": {
-        "edge": 0.0312,
-        "ev": 0.0513,
-        "adj_ev": 0.0513,
-        "verdict": "LEAN",
-        "win_prob": 0.639,
+        "edge": 0.0863,
+        "ev": 0.1502,
+        "adj_ev": 0.1502,
+        "verdict": "FIRE 1u",
+        "win_prob": 0.661,
         "movement_conf": 1.0
       },
       "ev_under": {
-        "edge": -0.1042,
-        "ev": -0.224,
-        "adj_ev": -0.224,
+        "edge": -0.1608,
+        "ev": -0.3215,
+        "adj_ev": -0.3215,
         "verdict": "PASS",
-        "win_prob": 0.361,
+        "win_prob": 0.339,
         "movement_conf": 1.0
       },
       "book_odds": {
         "BetMGM": {
-          "over": -155,
-          "under": 115
+          "over": -135,
+          "under": 100
         }
       },
       "data_complete": true,
@@ -1584,13 +1584,13 @@
       "ref_book": "BetMGM",
       "best_over_odds": 105,
       "best_under_odds": -140,
-      "opening_over_odds": 115,
-      "opening_under_odds": -155,
+      "opening_over_odds": 105,
+      "opening_under_odds": -140,
       "opening_odds_source": "first_seen",
-      "price_delta_over": -10,
-      "price_delta_under": 15,
-      "raw_lambda": 5.11,
-      "lambda": 4.87,
+      "price_delta_over": 0,
+      "price_delta_under": 0,
+      "raw_lambda": 5.25,
+      "lambda": 5.01,
       "avg_ip": 5.73,
       "is_opener": false,
       "opener_note": null,
@@ -1603,25 +1603,25 @@
       "opp_k_rate": 0.19850305222222223,
       "lineup_used": true,
       "park_factor": 1.01,
-      "ump_k_adj": -0.278,
+      "ump_k_adj": -0.044,
       "starter_mismatch": false,
       "season_k9": 9.1,
       "recent_k9": 9.1,
       "career_k9": 8.51,
       "ev_over": {
-        "edge": -0.1272,
-        "ev": -0.2607,
-        "adj_ev": -0.2607,
+        "edge": -0.1024,
+        "ev": -0.2099,
+        "adj_ev": -0.2099,
         "verdict": "PASS",
-        "win_prob": 0.361,
+        "win_prob": 0.385,
         "movement_conf": 1.0
       },
       "ev_under": {
-        "edge": 0.0561,
-        "ev": 0.0961,
-        "adj_ev": 0.0961,
-        "verdict": "FIRE 1u",
-        "win_prob": 0.639,
+        "edge": 0.0312,
+        "ev": 0.0535,
+        "adj_ev": 0.0535,
+        "verdict": "LEAN",
+        "win_prob": 0.615,
         "movement_conf": 1.0
       },
       "book_odds": {
@@ -1891,11 +1891,11 @@
     "pitcher_nonzero_count": 28
   },
   "connection_health": {
-    "props_seen": 116,
+    "props_seen": 117,
     "stats_resolved": 31,
     "records_built": 31,
-    "unresolved_count": 85,
-    "missing_stats_count": 85,
+    "unresolved_count": 86,
+    "missing_stats_count": 86,
     "feature_build_failures_count": 0,
     "degraded": true,
     "sample_unresolved_pitchers": [
