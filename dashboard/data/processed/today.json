@@ -1,10 +1,10 @@
 {
-  "generated_at": "2026-04-28T16:49:10Z",
+  "generated_at": "2026-04-28T17:13:45Z",
   "date": "2026-04-28",
   "props_available": true,
   "data_warnings": [
-    "fetch_umpires returned 0 entries for 158 scheduled games",
-    "fetch_lineups: confirmed 0/25 opposing lineups (25 still projected)"
+    "fetch_umpires returned 0 entries for 181 scheduled games",
+    "fetch_lineups: confirmed 0/26 opposing lineups (26 still projected)"
   ],
   "pitchers": [
     {
@@ -193,6 +193,10 @@
         "FanDuel": {
           "over": -144,
           "under": 108
+        },
+        "BetMGM": {
+          "over": -155,
+          "under": 115
         }
       },
       "data_complete": false,
@@ -340,11 +344,11 @@
       "ref_book": "BetMGM",
       "best_over_odds": -155,
       "best_under_odds": 115,
-      "opening_over_odds": -150,
-      "opening_under_odds": 110,
+      "opening_over_odds": -155,
+      "opening_under_odds": 115,
       "opening_odds_source": "first_seen",
-      "price_delta_over": -5,
-      "price_delta_under": 5,
+      "price_delta_over": 0,
+      "price_delta_under": 0,
       "raw_lambda": 6.92,
       "lambda": 6.67,
       "avg_ip": 5.6,
@@ -695,8 +699,8 @@
           "under": -112
         },
         "BetMGM": {
-          "over": -140,
-          "under": 105
+          "over": -130,
+          "under": -105
         }
       },
       "data_complete": false,
@@ -888,6 +892,67 @@
         "BetMGM": {
           "over": 125,
           "under": -165
+        }
+      },
+      "data_complete": false,
+      "game_state": "pregame"
+    },
+    {
+      "pitcher": "Jose Soriano",
+      "team": "Los Angeles Angels",
+      "opp_team": "Chicago White Sox",
+      "pitcher_throws": "R",
+      "game_time": "2026-04-28T23:40:00Z",
+      "k_line": 5.5,
+      "opening_line": 5.5,
+      "best_over_book": "BetMGM",
+      "ref_book": "BetMGM",
+      "best_over_odds": -160,
+      "best_under_odds": 120,
+      "opening_over_odds": -155,
+      "opening_under_odds": 115,
+      "opening_odds_source": "first_seen",
+      "price_delta_over": -5,
+      "price_delta_under": 5,
+      "raw_lambda": 6.97,
+      "lambda": 6.72,
+      "avg_ip": 6.33,
+      "is_opener": false,
+      "opener_note": null,
+      "swstr_pct": 0.134,
+      "career_swstr_pct": 0.1206,
+      "swstr_delta_k9": 0.134,
+      "days_since_last_start": 6,
+      "last_pitch_count": 84,
+      "rest_k9_delta": 0.0,
+      "opp_k_rate": 0.2462,
+      "lineup_used": false,
+      "park_factor": 0.99,
+      "ump_k_adj": 0.0,
+      "starter_mismatch": true,
+      "season_k9": 10.27,
+      "recent_k9": 10.23,
+      "career_k9": 8.66,
+      "ev_over": {
+        "edge": 0.0474,
+        "ev": 0.077,
+        "adj_ev": 0.077,
+        "verdict": "FIRE 1u",
+        "win_prob": 0.663,
+        "movement_conf": 1.0
+      },
+      "ev_under": {
+        "edge": -0.1173,
+        "ev": -0.2581,
+        "adj_ev": -0.2581,
+        "verdict": "PASS",
+        "win_prob": 0.337,
+        "movement_conf": 1.0
+      },
+      "book_odds": {
+        "BetMGM": {
+          "over": -160,
+          "under": 120
         }
       },
       "data_complete": false,
