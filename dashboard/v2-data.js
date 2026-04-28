@@ -63,15 +63,20 @@
       best_under_odds: p.best_under_odds,
       opening_over_odds: p.opening_over_odds ?? p.best_over_odds,
       opening_under_odds: p.opening_under_odds ?? p.best_under_odds,
-      lambda: p.lambda,
-      avg_ip: p.avg_ip,
-      opp_k_rate: p.opp_k_rate,
-      ump_k_adj: p.ump_k_adj ?? 0,
-      // Signal-confirmation flags surfaced in the sheet's "Why this pick" header.
-      // lineup_used=true when the starting 9 came from MLB's boxscore (A5); false
-      // while we're still falling back to the projected lineup.
-      lineup_used: p.lineup_used === true,
-      season_k9: p.season_k9,
+        lambda: p.lambda,
+        avg_ip: p.avg_ip,
+        opp_k_rate: p.opp_k_rate,
+        park_factor: p.park_factor ?? null,
+        ump_k_adj: p.ump_k_adj ?? 0,
+        umpire: p.umpire ?? null,
+        // Signal-confirmation flags surfaced in the sheet's "Why this pick" header.
+        // lineup_used=true when the starting 9 came from MLB's boxscore (A5); false
+        // while we're still falling back to the projected lineup.
+        lineup_used: p.lineup_used === true,
+        days_since_last_start: p.days_since_last_start ?? null,
+        last_pitch_count: p.last_pitch_count ?? null,
+        rest_k9_delta: p.rest_k9_delta ?? null,
+        season_k9: p.season_k9,
       recent_k9: p.recent_k9,
       career_k9: p.career_k9,
       ev_over: p.ev_over,
