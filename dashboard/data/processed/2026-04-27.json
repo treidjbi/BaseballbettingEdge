@@ -1,9 +1,9 @@
 {
-  "generated_at": "2026-04-28T17:13:45Z",
+  "generated_at": "2026-04-28T17:34:08Z",
   "date": "2026-04-27",
   "props_available": true,
   "data_warnings": [
-    "fetch_umpires returned 0 entries for 181 scheduled games",
+    "fetch_umpires returned 0 entries for 15 scheduled games",
     "fetch_lineups: confirmed 0/26 opposing lineups (26 still projected)"
   ],
   "pitchers": [
@@ -39,7 +39,7 @@
       "lineup_used": false,
       "park_factor": 1.0,
       "ump_k_adj": 0.0,
-      "starter_mismatch": true,
+      "starter_mismatch": false,
       "season_k9": 9.38,
       "recent_k9": 9.38,
       "career_k9": 11.32,
@@ -72,5 +72,19 @@
   "ump_diagnostics": {
     "hp_count_fetched": 0,
     "pitcher_nonzero_count": 0
+  },
+  "connection_health": {
+    "props_seen": 116,
+    "stats_resolved": 26,
+    "records_built": 26,
+    "unresolved_count": 90,
+    "missing_stats_count": 90,
+    "feature_build_failures_count": 0,
+    "degraded": true,
+    "sample_unresolved_pitchers": [
+      "Max Fried",
+      "Jake Burger",
+      "Ryan McMahon"
+    ]
   }
 }
