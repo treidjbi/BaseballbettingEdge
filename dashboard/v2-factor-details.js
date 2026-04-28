@@ -70,11 +70,16 @@
     }
 
     function formatUmpire(umpire, umpKAdj) {
+      const adj = toNumber(umpKAdj);
+
       if (umpire == null) {
-        return "TBA";
+        if (adj == null || adj === 0) {
+          return "TBA";
+        }
+
+        return `Assigned (${formatSignedNumber(adj, 2)})`;
       }
 
-      const adj = toNumber(umpKAdj);
       if (adj == null || adj === 0) {
         return String(umpire);
       }
@@ -90,6 +95,15 @@
 
       const support = direction === "OVER" ? n > 0 : n < 0;
       return support ? "pos" : "neg";
+    }
+
+    function toneForSignedValue(value) {
+      const n = toNumber(value);
+      if (n == null || n === 0) {
+        return n === 0 ? "neutral" : null;
+      }
+
+      return n > 0 ? "pos" : "neg";
     }
 
     function parkFactorTone(parkFactor, direction) {
@@ -132,11 +146,13 @@
     }
 
     function umpStatus(umpire, umpKAdj) {
+      const adj = toNumber(umpKAdj);
+
       if (umpire == null) {
-        return "missing";
+        return adj == null || adj === 0 ? "missing" : "active";
       }
 
-      if (toNumber(umpKAdj) === 0) {
+      if (adj === 0) {
         return "neutral";
       }
 
@@ -145,12 +161,13 @@
 
     function buildFactorGroups(pick, direction) {
       const dir = normalizeDirection(direction ?? pick?.direction);
+      const selectedSide = dir === "UNDER" ? pick?.ev_under : pick?.ev_over;
       const line = toNumber(pick?.k_line);
       const lambda = toNumber(pick?.lambda);
-      const rawEvRoi = toNumber(pick?.raw_ev_roi);
-      const adjEvRoi = toNumber(pick?.adj_ev_roi);
+      const rawEvRoi = toNumber(selectedSide?.ev ?? pick?.raw_ev_roi);
+      const adjEvRoi = toNumber(selectedSide?.adj_ev ?? pick?.adj_ev_roi);
       const avgIp = toNumber(pick?.avg_ip);
-      const edge = line != null && lambda != null ? lambda - line : null;
+      const edge = toNumber(selectedSide?.edge ?? pick?.edge);
       const oppKRate = toNumber(pick?.opp_k_rate);
       const recentK9 = toNumber(pick?.recent_k9);
       const seasonK9 = toNumber(pick?.season_k9);
@@ -193,8 +210,8 @@
               value: formatEvRoi(rawEvRoi),
               rawValue: rawEvRoi,
               status: rawEvRoi == null ? "missing" : (rawEvRoi === 0 ? "neutral" : "active"),
-              tone: toneForDirection(rawEvRoi, dir),
-              note: "Unadjusted edge",
+              tone: toneForSignedValue(rawEvRoi),
+              note: "Selected-side raw EV ROI",
             }),
             buildRow({
               key: "adjusted_ev_roi",
@@ -202,17 +219,17 @@
               value: formatEvRoi(adjEvRoi),
               rawValue: adjEvRoi,
               status: adjEvRoi == null ? "missing" : (adjEvRoi === 0 ? "neutral" : "active"),
-              tone: toneForDirection(adjEvRoi, dir),
-              note: "After movement and context adjustments",
+              tone: toneForSignedValue(adjEvRoi),
+              note: "Selected-side adjusted EV ROI",
             }),
             buildRow({
               key: "edge",
-              label: "Edge",
-              value: `${formatSignedNumber(edge, 2)} K`,
+              label: "Probability edge",
+              value: formatEvRoi(edge),
               rawValue: edge,
               status: edge == null ? "missing" : (edge === 0 ? "neutral" : "active"),
-              tone: toneForDirection(edge, dir),
-              note: "Projection minus line",
+              tone: toneForSignedValue(edge),
+              note: "Selected-side probability edge",
             }),
             buildRow({
               key: "expected_ip",
@@ -299,10 +316,12 @@
               key: "ump",
               label: "Umpire",
               value: formatUmpire(umpire, umpKAdj),
-              rawValue: umpire,
+              rawValue: umpire ?? umpKAdj,
               status: umpStatus(umpire, umpKAdj),
               tone: toneForDirection(umpKAdj, dir),
-              note: umpire == null ? "TBA" : "Home plate umpire context",
+              note: umpire == null
+                ? (umpKAdj == null || umpKAdj === 0 ? "TBA" : "Assigned home plate umpire context")
+                : "Home plate umpire context",
             }),
             buildRow({
               key: "lineup",

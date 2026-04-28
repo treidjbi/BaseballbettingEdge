@@ -494,6 +494,11 @@ function PickDetail({ p, onClose }) {
   const sideUnder = { ...p.ev_under, direction: "UNDER", odds: p.best_under_odds, opening: p.opening_under_odds };
   const best = bestSide(p);
   const helpers = getMovementHelpers();
+  const [showFactorDetails, setShowFactorDetails] = useState(false);
+  const factorGroups = useMemo(() => {
+    const buildFactorGroups = window.V2FactorDetails?.buildFactorGroups;
+    return buildFactorGroups ? buildFactorGroups(p, best.direction) : [];
+  }, [p, best.direction]);
   const steam = steamInfo(p, best.direction) || { cents: 0, steamWith: false };
   const movement = helpers.buildPickedSideMovement
     ? helpers.buildPickedSideMovement(window.V2_STEAM_RAW || { snapshots: [] }, {
@@ -712,6 +717,36 @@ function PickDetail({ p, onClose }) {
               <span className="val" style={{color: "var(--ink-dim)"}}>Unknown</span>
             )}
           </div>
+          <button
+            type="button"
+            className="v2-factor-toggle"
+            aria-expanded={showFactorDetails}
+            aria-controls="v2-factor-details"
+            onClick={() => setShowFactorDetails((prev) => !prev)}
+          >
+            {showFactorDetails ? "Hide factor details" : "Show factor details"}
+          </button>
+          {showFactorDetails && (
+            <div className="v2-factor-panel" id="v2-factor-details">
+              {factorGroups.map((group) => (
+                <div className="v2-factor-group" key={group.key}>
+                  <div className="v2-factor-group-h">{group.label}</div>
+                  <div className="v2-factor-rows">
+                    {group.rows.map((row) => (
+                      <div className="v2-factor-row" key={row.key}>
+                        <div className="v2-factor-row-top">
+                          <span className="v2-factor-label">{row.label}</span>
+                          <span className={`v2-factor-pill ${row.status}`}>{row.status}</span>
+                        </div>
+                        <div className={`v2-factor-value ${row.tone ? row.tone : ""}`}>{row.value}</div>
+                        {row.note && <div className="v2-factor-note">{row.note}</div>}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
           <div className="v2-stat-row">
             <span className="lbl">{Icon.users} Opp. K-rate (bats)</span>
             <span className={`val ${oppSupports ? "pos" : "neg"}`}>
