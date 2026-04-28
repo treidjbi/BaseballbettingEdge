@@ -1,10 +1,10 @@
 {
-  "generated_at": "2026-04-28T19:23:06Z",
+  "generated_at": "2026-04-28T20:01:57Z",
   "date": "2026-04-27",
   "props_available": true,
   "data_warnings": [
-    "fetch_lineups: confirmed 9/27 opposing lineups (18 still projected)",
-    "fetch_batter_stats missing splits for 1/27 opposing lineups"
+    "fetch_lineups: confirmed 20/30 opposing lineups (10 still projected)",
+    "fetch_batter_stats missing splits for 1/30 opposing lineups"
   ],
   "pitchers": [
     {
@@ -70,15 +70,15 @@
     }
   ],
   "ump_diagnostics": {
-    "hp_count_fetched": 7,
-    "pitcher_nonzero_count": 13
+    "hp_count_fetched": 11,
+    "pitcher_nonzero_count": 22
   },
   "connection_health": {
-    "props_seen": 117,
-    "stats_resolved": 27,
-    "records_built": 27,
-    "unresolved_count": 90,
-    "missing_stats_count": 90,
+    "props_seen": 116,
+    "stats_resolved": 30,
+    "records_built": 30,
+    "unresolved_count": 86,
+    "missing_stats_count": 86,
     "feature_build_failures_count": 0,
     "degraded": true,
     "sample_unresolved_pitchers": [
