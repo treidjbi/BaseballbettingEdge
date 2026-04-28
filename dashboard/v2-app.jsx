@@ -210,7 +210,7 @@ function MovementChart({ movement }) {
   const topPad = 10;
   const lineBandTop = 58;
   const lineBandBottom = 82;
-  const odds = points.map((p) => impliedProb(p.odds)).filter((v) => v != null);
+  const odds = points.map((p) => p.odds).filter((v) => v != null);
   const lines = points.map((p) => p.kLine);
   const minOdds = Math.min(...odds);
   const maxOdds = Math.max(...odds);
@@ -218,9 +218,8 @@ function MovementChart({ movement }) {
   const maxLine = Math.max(...lines);
   const xFor = (idx) => points.length === 1 ? width / 2 : (idx / (points.length - 1)) * width;
   const yForOdds = (val) => {
-    const prob = impliedProb(val);
-    if (prob == null || minOdds === maxOdds) return topPad + 18;
-    return topPad + ((maxOdds - prob) / (maxOdds - minOdds)) * 36;
+    if (val == null || minOdds === maxOdds) return topPad + 18;
+    return topPad + ((maxOdds - val) / (maxOdds - minOdds)) * 36;
   };
   const yForLine = (val) => {
     if (minLine === maxLine) return (lineBandTop + lineBandBottom) / 2;
