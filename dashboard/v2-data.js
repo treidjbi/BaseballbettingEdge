@@ -4,6 +4,8 @@
  *  Transforms the existing pipeline output (dashboard/data/processed/today.json
  *  and dashboard/data/performance.json) into the shapes the v2 React prototype
  *  expects on window.V2_DATA / window.V2_PERF / window.V2_STEAM.
+ *  Raw steam snapshots are also exposed on window.V2_STEAM_RAW for the detail
+ *  sheet movement chart.
  *
  *  Fields the pipeline doesn't produce yet are omitted or synthesized; v2-app.jsx
  *  degrades gracefully for those. See docs/ui-redesign/deferred-pipeline-work.md
@@ -291,6 +293,7 @@
       window.V2_DATA  = buildV2Data(todayJson);
       window.V2_PERF  = buildV2Perf(perfWithNotes);
       window.V2_STEAM = buildV2SteamFromFile(steamJson, todayJson);
+      window.V2_STEAM_RAW = steamJson || { snapshots: [] };
       window.V2_DATES     = dateIndex;
       window.V2_DATE_META = Object.fromEntries(dateIndex.map(d => [d.date, d]));
       window.V2_CURRENT_DATE = dateToLoad;
@@ -300,6 +303,7 @@
       window.V2_DATA  = { pitchers: [] };
       window.V2_PERF  = { total_picks: 0, total_units: 0, total_roi: 0, record: '0-0-0', rows: [] };
       window.V2_STEAM = { rows: [] };
+      window.V2_STEAM_RAW = { snapshots: [] };
       window.V2_DATES     = [];
       window.V2_DATE_META = {};
       window.V2_CURRENT_DATE = getAppDate();

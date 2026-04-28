@@ -190,6 +190,86 @@ function steamInfo(p, dir) {
   return { cents, steamWith: !sideCheaper(o, c) };
 }
 
+function impliedProb(odds) {
+  if (odds == null) return null;
+  return odds < 0 ? Math.abs(odds) / (Math.abs(odds) + 100) : 100 / (odds + 100);
+}
+
+function getMovementHelpers() {
+  return window.V2MovementHelpers || {};
+}
+
+function MovementChart({ movement }) {
+  if (!movement?.ready) {
+    return <div className="v2-move-empty">Not enough FanDuel history yet</div>;
+  }
+
+  const points = movement.points || [];
+  const width = 320;
+  const height = 92;
+  const topPad = 10;
+  const lineBandTop = 58;
+  const lineBandBottom = 82;
+  const odds = points.map((p) => impliedProb(p.odds)).filter((v) => v != null);
+  const lines = points.map((p) => p.kLine);
+  const minOdds = Math.min(...odds);
+  const maxOdds = Math.max(...odds);
+  const minLine = Math.min(...lines);
+  const maxLine = Math.max(...lines);
+  const xFor = (idx) => points.length === 1 ? width / 2 : (idx / (points.length - 1)) * width;
+  const yForOdds = (val) => {
+    const prob = impliedProb(val);
+    if (prob == null || minOdds === maxOdds) return topPad + 18;
+    return topPad + ((maxOdds - prob) / (maxOdds - minOdds)) * 36;
+  };
+  const yForLine = (val) => {
+    if (minLine === maxLine) return (lineBandTop + lineBandBottom) / 2;
+    return lineBandTop + ((maxLine - val) / (maxLine - minLine)) * (lineBandBottom - lineBandTop);
+  };
+
+  const oddsPath = points
+    .map((pt, idx) => `${idx === 0 ? "M" : "L"} ${xFor(idx).toFixed(1)} ${yForOdds(pt.odds).toFixed(1)}`)
+    .join(" ");
+  const linePath = points
+    .map((pt, idx) => {
+      if (idx === 0) {
+        return `M ${xFor(idx).toFixed(1)} ${yForLine(pt.kLine).toFixed(1)}`;
+      }
+      const prev = points[idx - 1];
+      return `L ${xFor(idx).toFixed(1)} ${yForLine(prev.kLine).toFixed(1)} L ${xFor(idx).toFixed(1)} ${yForLine(pt.kLine).toFixed(1)}`;
+    })
+    .join(" ");
+
+  return (
+    <div className="v2-move-chart-wrap">
+      <svg className="v2-move-chart" viewBox={`0 0 ${width} ${height}`} preserveAspectRatio="none">
+        <path d={oddsPath} className="v2-move-odds-line" />
+        <path d={linePath} className="v2-move-kline-step" />
+        {points.map((pt, idx) => (
+          <React.Fragment key={`${pt.t}-${idx}`}>
+            <circle
+              className={`v2-move-point ${idx === 0 ? "start" : idx === points.length - 1 ? "end" : ""}`}
+              cx={xFor(idx)}
+              cy={yForOdds(pt.odds)}
+              r={idx === points.length - 1 ? 3 : 2.2}
+            />
+            <circle
+              className="v2-move-line-point"
+              cx={xFor(idx)}
+              cy={yForLine(pt.kLine)}
+              r={1.6}
+            />
+          </React.Fragment>
+        ))}
+      </svg>
+      <div className="v2-move-legend">
+        <span className="odds">picked-side odds</span>
+        <span className="line">K line</span>
+      </div>
+    </div>
+  );
+}
+
 // ── Verdict badge (big, two-line) ──
 function VerdictBadge({ side }) {
   const v = side.verdict;
@@ -274,7 +354,13 @@ function PickCard({ p, onOpen }) {
   const side = bestSide(p);
   const cls = verdictClass(side.verdict, side.direction);
   const started = p.game_state !== "pregame";
-  const cardMod = started ? "final" : (side.verdict === "PASS" ? "pass" : cls);
+  const directionMod =
+    side.verdict === "PASS"
+      ? "pass"
+      : side.direction === "OVER"
+        ? "over-pick"
+        : "under-pick";
+  const cardMod = started ? "final" : `${cls} ${directionMod}`;
   // Past-date: show the W/L pill inline with the verdict badge — but only for
   // picks we would have actually played. PASS cards don't get a result pill
   // (matches the grading-summary banner, which also excludes PASS).
@@ -408,7 +494,17 @@ function PickDetail({ p, onClose }) {
   const sideOver = { ...p.ev_over, direction: "OVER", odds: p.best_over_odds, opening: p.opening_over_odds };
   const sideUnder = { ...p.ev_under, direction: "UNDER", odds: p.best_under_odds, opening: p.opening_under_odds };
   const best = bestSide(p);
+  const helpers = getMovementHelpers();
   const steam = steamInfo(p, best.direction) || { cents: 0, steamWith: false };
+  const movement = helpers.buildPickedSideMovement
+    ? helpers.buildPickedSideMovement(window.V2_STEAM_RAW || { snapshots: [] }, {
+        pitcher: p.pitcher,
+        direction: best.direction,
+      })
+    : { ready: false, points: [], reason: "helpers_missing" };
+  const movementSummary = helpers.summarizeLineMovement
+    ? helpers.summarizeLineMovement(movement)
+    : null;
 
   // ESC to close
   React.useEffect(() => {
@@ -434,17 +530,6 @@ function PickDetail({ p, onClose }) {
       </div>
     );
   };
-
-  // Line movement: fake a 12-step history from open → current
-  const moveSteps = 12;
-  const delta = (p.k_line - p.opening_line);
-  const bars = Array.from({ length: moveSteps }, (_, i) => {
-    const t = i / (moveSteps - 1);
-    // small noise + drift
-    const noise = (Math.sin(i * 1.3) * 0.15) - (i * 0.02);
-    const v = 0.5 + (delta * 0.4 * t) + noise;
-    return Math.max(0.15, Math.min(1, v));
-  });
 
   // Stat deltas vs league average (rough thresholds)
   const LEAGUE_K = 0.22;
@@ -596,7 +681,7 @@ function PickDetail({ p, onClose }) {
         </div>
 
         <div className="v2-sheet-section">
-          <div className="h">Why this pick</div>
+          <div className="h">Why this bet</div>
           <div className="v2-stat-row">
             <span className="lbl">{Icon.users} Lineup</span>
             {p.lineup_used ? (
@@ -614,6 +699,16 @@ function PickDetail({ p, onClose }) {
               </span>
             ) : (
               <span className="val" style={{color: "var(--ink-dim)"}}>TBA</span>
+            )}
+          </div>
+          <div className="v2-stat-row">
+            <span className="lbl">Park factor</span>
+            {p.park_factor != null ? (
+              <span className={`val ${helpers.parkFactorTone ? helpers.parkFactorTone(p.park_factor, best.direction) : ""}`}>
+                {p.park_factor.toFixed(2)}
+              </span>
+            ) : (
+              <span className="val" style={{color: "var(--ink-dim)"}}>Unknown</span>
             )}
           </div>
           <div className="v2-stat-row">
@@ -641,26 +736,25 @@ function PickDetail({ p, onClose }) {
         </div>
 
         <div className="v2-sheet-section">
-          <div className="h">Line movement · {steam.cents > 0 ? `${steam.cents}¢ ${steam.steamWith ? "→" : "←"} ${best.direction}` : "No steam"}</div>
+          <div className="h">
+            {`FanDuel · ${best.direction} · open to now`}
+            {movementSummary?.lineMoved && (
+              <span className="v2-line-move-badge">
+                {`line moved ${movementSummary.openingLine} -> ${movementSummary.currentLine}`}
+              </span>
+            )}
+          </div>
           <div className="v2-stat-row">
             <span className="lbl">Opening line</span>
             <span className="val">{p.opening_line} · {fmtOdds(p.opening_over_odds)}/{fmtOdds(p.opening_under_odds)}</span>
           </div>
           <div className="v2-stat-row">
             <span className="lbl">Current line</span>
-            <span className="val">{p.k_line} · {fmtOdds(p.best_over_odds)}/{fmtOdds(p.best_under_odds)}</span>
+            <span className="val">{p.k_line} · {fmtOdds(sideOver.odds)}/{fmtOdds(sideUnder.odds)}</span>
           </div>
-          <div className="v2-linemove">
-            {bars.map((v, i) => (
-              <div
-                key={i}
-                className={`v2-linemove-bar ${i >= moveSteps - 3 ? "hot" : ""}`}
-                style={{ height: `${v * 100}%` }}
-              />
-            ))}
-          </div>
+          <MovementChart movement={movement} />
           <div style={{fontSize:11, color:"var(--ink-dim)", marginTop:6, fontFamily:"JetBrains Mono, monospace"}}>
-            open → now · 12h window
+            {steam.cents > 0 ? `${steam.cents}¢ ${steam.steamWith ? "with" : "against"} the pick` : "No steam signal at the picked side price"}
           </div>
         </div>
 
