@@ -8,6 +8,20 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'pipeline'))
 from run_pipeline import _game_date_et, _write_dated_archive_only
 
 
+@pytest.fixture(autouse=True)
+def isolate_steam_path(tmp_path, monkeypatch):
+    import run_pipeline
+
+    monkeypatch.setattr(run_pipeline, "STEAM_PATH", tmp_path / "steam.json")
+
+
+def test_run_pipeline_tests_do_not_target_repo_steam_artifact():
+    import run_pipeline
+
+    repo_steam_path = (Path.cwd() / "dashboard/data/processed/steam.json").resolve()
+    assert run_pipeline.STEAM_PATH.resolve() != repo_steam_path
+
+
 class TestGameDateEt:
     def test_utc_midnight_converts_to_previous_et_date(self):
         # 00:05 UTC on Mar 26 is 20:05 ET on Mar 25 (ET = UTC-4 in summer / UTC-5 in winter)
