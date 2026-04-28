@@ -46,6 +46,36 @@ test("buildPickedSideMovement returns FanDuel picked-side odds and k-line points
   );
 });
 
+test("buildPickedSideMovement prepends the opening point when preview/open differs from snapshots", () => {
+  const movement = buildPickedSideMovement(
+    {
+      snapshots: [
+        {
+          t: "2026-04-28T16:49:10Z",
+          pitchers: {
+            "Shane Baz": {
+              k_line: 4.5,
+              FanDuel: { over: -144, under: 108 },
+            },
+          },
+        },
+      ],
+    },
+    {
+      pitcher: "Shane Baz",
+      direction: "UNDER",
+      openingLine: 4.5,
+      openingOdds: 104,
+    },
+  );
+
+  assert.equal(movement.ready, true);
+  assert.equal(movement.points.length, 2);
+  assert.equal(movement.points[0].t, "open");
+  assert.equal(movement.points[0].odds, 104);
+  assert.equal(movement.points[1].odds, 108);
+});
+
 test("buildPickedSideMovement returns empty state when there are fewer than two usable points", () => {
   const result = buildPickedSideMovement(
     { snapshots: [steam.snapshots[0]] },

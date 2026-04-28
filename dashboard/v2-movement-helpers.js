@@ -22,6 +22,8 @@
       const direction = pick?.direction === "UNDER" ? "UNDER" : "OVER";
       const oddsKey = direction === "OVER" ? "over" : "under";
       const points = [];
+      const openingOdds = pick?.openingOdds;
+      const openingLine = pick?.openingLine;
 
       for (const snapshot of snapshots) {
         const entry = snapshot?.pitchers?.[pick?.pitcher];
@@ -37,6 +39,23 @@
           odds,
           kLine,
         });
+      }
+
+      if (openingOdds != null && openingLine != null) {
+        const first = points[0];
+        const openingDiffers =
+          !first ||
+          first.odds !== openingOdds ||
+          first.kLine !== openingLine;
+
+        if (openingDiffers) {
+          points.unshift({
+            t: "open",
+            odds: openingOdds,
+            kLine: openingLine,
+            synthetic: true,
+          });
+        }
       }
 
       if (points.length < 2) {

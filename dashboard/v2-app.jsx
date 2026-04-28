@@ -500,6 +500,8 @@ function PickDetail({ p, onClose }) {
     ? helpers.buildPickedSideMovement(window.V2_STEAM_RAW || { snapshots: [] }, {
         pitcher: p.pitcher,
         direction: best.direction,
+        openingLine: p.opening_line,
+        openingOdds: best.direction === "OVER" ? p.opening_over_odds : p.opening_under_odds,
       })
     : { ready: false, points: [], reason: "helpers_missing" };
   const movementSummary = helpers.summarizeLineMovement

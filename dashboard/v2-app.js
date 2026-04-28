@@ -765,7 +765,9 @@ function PickDetail({
     snapshots: []
   }, {
     pitcher: p.pitcher,
-    direction: best.direction
+    direction: best.direction,
+    openingLine: p.opening_line,
+    openingOdds: best.direction === "OVER" ? p.opening_over_odds : p.opening_under_odds
   }) : {
     ready: false,
     points: [],
