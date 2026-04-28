@@ -6,6 +6,7 @@ Returns a dict keyed by pitcher name with stats needed for build_features.
 import logging
 import requests
 from datetime import datetime, timedelta
+from zoneinfo import ZoneInfo
 from name_utils import normalize as _normalize_name
 
 log = logging.getLogger(__name__)
@@ -13,6 +14,7 @@ log = logging.getLogger(__name__)
 MLB_BASE = "https://statsapi.mlb.com/api/v1"
 RECENT_START_LOOKBACK = 10
 RECENT_START_COUNT = 5
+ET = ZoneInfo("America/New_York")
 
 
 def _get(path: str, params: dict = None) -> dict:
@@ -68,6 +70,21 @@ def _parse_split_date(value) -> datetime | None:
     """Parse an MLB game log date string like 2026-03-29."""
     if not value:
         return None
+    try:
+        return datetime.strptime(str(value), "%Y-%m-%d")
+    except ValueError:
+        return None
+
+
+def _schedule_game_date_et(game: dict, fallback_date_str: str) -> str:
+    """Return the game calendar date in ET for schedule filtering."""
+    game_date = game.get("gameDate")
+    if game_date:
+        try:
+            return datetime.fromisoformat(game_date.replace("Z", "+00:00")).astimezone(ET).strftime("%Y-%m-%d")
+        except ValueError:
+            pass
+    return fallback_date_str
     try:
         return datetime.strptime(str(value), "%Y-%m-%d")
     except ValueError:
@@ -262,8 +279,11 @@ def fetch_stats(date_str: str, pitcher_names: list) -> tuple[dict, dict]:
     stats_by_name: dict = {}
     probables_by_team: dict = {}
     for date_block in schedule.get("dates", []):
-        game_date = _parse_split_date(date_block.get("date")) or target_date
+        block_date_str = date_block.get("date") or date_str
         for game in date_block.get("games", []):
+            if _schedule_game_date_et(game, block_date_str) != date_str:
+                continue
+            game_date = _parse_split_date(block_date_str) or target_date
             for side in ("away", "home"):
                 team_data = game.get("teams", {}).get(side, {})
                 team_name = team_data.get("team", {}).get("name", "")

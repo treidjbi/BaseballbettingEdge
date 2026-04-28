@@ -23,6 +23,27 @@ SAMPLE_VS_L = pd.DataFrame([
 ])
 
 
+def test_fetch_aggregate_uses_fangraphs_json_payload(monkeypatch):
+    payload = {
+        "data": [
+            {"PlayerName": "Mookie Betts", "K%": 0.135},
+            {"Name": "<a>Freddie Freeman</a>", "K%": 0.098},
+        ]
+    }
+
+    response = MagicMock()
+    response.raise_for_status.return_value = None
+    response.json.return_value = payload
+    fake_get = MagicMock(return_value=response)
+    monkeypatch.setattr(fetch_batter_stats.requests, "get", fake_get)
+
+    df = fetch_batter_stats._fetch_aggregate(2026)
+
+    assert list(df["Name"]) == ["Mookie Betts", "Freddie Freeman"]
+    assert list(df["K%"]) == [0.135, 0.098]
+    assert fake_get.call_args.kwargs["params"]["stats"] == "bat"
+
+
 def test_fetch_batter_stats_returns_splits(monkeypatch):
     """When splits available, returns vs_R and vs_L per batter."""
     monkeypatch.setattr("fetch_batter_stats._fetch_aggregate", lambda season: SAMPLE_AGGREGATE)

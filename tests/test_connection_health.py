@@ -1,0 +1,51 @@
+from analytics.diagnostics.d_connection_health import (
+    build_connection_health,
+    format_stage_summary,
+)
+
+
+def test_format_stage_summary_uses_stable_key_value_output():
+    message = format_stage_summary(
+        "fetch_stats",
+        0.1234,
+        requested=2,
+        resolved=1,
+    )
+
+    assert message == "stage=fetch_stats ms=123 requested=2 resolved=1"
+
+
+def test_build_connection_health_counts_missing_stats_and_build_failures():
+    props = [
+        {"pitcher": "Built Pitcher"},
+        {"pitcher": "Missing Stats Pitcher"},
+        {"pitcher": "Build Failed Pitcher"},
+    ]
+    stats_map = {
+        "Built Pitcher": {"team": "A"},
+        "Build Failed Pitcher": {"team": "B"},
+    }
+    records = [
+        {"pitcher": "Built Pitcher"},
+    ]
+
+    health = build_connection_health(
+        props,
+        stats_map,
+        records,
+        build_failures=["Build Failed Pitcher"],
+    )
+
+    assert health == {
+        "props_seen": 3,
+        "stats_resolved": 2,
+        "records_built": 1,
+        "unresolved_count": 2,
+        "missing_stats_count": 1,
+        "feature_build_failures_count": 1,
+        "degraded": True,
+        "sample_unresolved_pitchers": [
+            "Missing Stats Pitcher",
+            "Build Failed Pitcher",
+        ],
+    }

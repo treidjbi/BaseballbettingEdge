@@ -171,7 +171,7 @@ jobs:
           SCHEDULE="${{ github.event.schedule }}"
           if [ "$SCHEDULE" = "0 10 * * *" ]; then
             RUN_TYPE="grading"
-          elif [ "$SCHEDULE" = "0 2 * * *" ]; then
+          elif [ "$SCHEDULE" = "0 7 * * *" ]; then
             RUN_TYPE="preview"
           else
             RUN_TYPE="full"

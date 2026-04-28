@@ -1,9 +1,10 @@
 import pytest
 import sys
 import os
+from unittest.mock import patch
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'pipeline'))
 
-from fetch_odds import american_odds_from_line, parse_k_props, _parse_line_value, _select_ref_book
+from fetch_odds import american_odds_from_line, parse_k_props, _parse_line_value, _select_ref_book, _headers
 
 
 # ── Helper fixtures ────────────────────────────────────────────────────────────
@@ -73,6 +74,25 @@ class TestAmericanOddsFromLine:
 
     def test_returns_none_on_empty(self):
         assert american_odds_from_line("") is None
+
+
+class TestHeaders:
+    def test_headers_raises_if_missing_api_key(self):
+        with patch.dict("os.environ", {}, clear=True):
+            with pytest.raises(EnvironmentError) as exc:
+                _headers()
+            assert "RUNDOWN_API_KEY not set" in str(exc.value)
+
+    def test_headers_uses_api_key_from_env(self):
+        with patch.dict("os.environ", {"RUNDOWN_API_KEY": "abc123"}):
+            headers = _headers()
+            assert headers["X-TheRundown-Key"] == "abc123"
+            assert headers["Accept"] == "application/json"
+
+    def test_headers_strip_whitespace_from_api_key(self):
+        with patch.dict("os.environ", {"RUNDOWN_API_KEY": "  abc123 \n"}):
+            headers = _headers()
+            assert headers["X-TheRundown-Key"] == "abc123"
 
 
 # ── Tests: _parse_line_value ──────────────────────────────────────────────────
@@ -289,6 +309,46 @@ class TestParseKProps:
         result = parse_k_props({"events": [event]})
         assert len(result) == 1
         assert result[0]["k_line"] == 5.5   # main line selected
+
+    def test_skips_participant_marked_as_position_player(self):
+        """Obvious non-pitchers should be dropped when the payload itself tags
+        them as a position player."""
+        event = {
+            "event_id": "evt-position-player",
+            "event_date": "2026-04-01T23:05:00Z",
+            "teams": [
+                {"name": "LAA", "is_away": True, "is_home": False},
+                {"name": "CLE", "is_away": False, "is_home": True},
+            ],
+            "markets": [{
+                "market_id": 19,
+                "name": "pitcher_strikeouts",
+                "participants": [{
+                    "name": "Mike Trout",
+                    "primaryPosition": {"abbreviation": "CF", "code": "8"},
+                    "lines": [
+                        {"value": "Over 0.5", "prices": {"23": {"price": -110, "is_main_line": True, "price_delta": 0}}},
+                        {"value": "Under 0.5", "prices": {"23": {"price": -110, "is_main_line": True, "price_delta": 0}}},
+                    ],
+                }],
+            }],
+        }
+        result = parse_k_props({"events": [event]})
+        assert result == []
+
+    def test_skips_obviously_bad_sub_one_point_five_k_props(self):
+        """A starter-only model should never accept sub-1.5 strikeout lines."""
+        data = {"events": [_make_event("Jose Ramirez", 0.5, -110, -110)]}
+        result = parse_k_props(data)
+        assert result == []
+
+    def test_keeps_one_point_five_strikeout_line(self):
+        """The low-line guard must stay conservative and still allow 1.5 props."""
+        data = {"events": [_make_event("Ryan Pepiot", 1.5, -118, -102)]}
+        result = parse_k_props(data)
+        assert len(result) == 1
+        assert result[0]["pitcher"] == "Ryan Pepiot"
+        assert result[0]["k_line"] == 1.5
 
 def test_home_pitcher_gets_empty_team_not_away():
     """fetch_odds cannot determine home/away per pitcher — team fields must be empty strings."""

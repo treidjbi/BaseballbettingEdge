@@ -49,6 +49,45 @@ TRACKED_BOOKS = {
     "20": "Caesars",
     "38": "Fanatics",
 }
+PITCHER_POSITION_MARKERS = {"1", "p", "sp", "rp", "pitcher", "starting pitcher", "relief pitcher"}
+MIN_REASONABLE_PITCHER_K_LINE = 1.5
+
+
+def _normalize_position_marker(value) -> str:
+    if value is None:
+        return ""
+    return str(value).strip().lower()
+
+
+def _participant_position_markers(participant: dict) -> set[str]:
+    markers: set[str] = set()
+    position_nodes = [participant]
+    for key in ("player", "athlete", "person"):
+        node = participant.get(key)
+        if isinstance(node, dict):
+            position_nodes.append(node)
+
+    for node in position_nodes:
+        for key in ("primaryPosition", "position"):
+            position = node.get(key)
+            if isinstance(position, dict):
+                for field in ("abbreviation", "code", "name", "type"):
+                    marker = _normalize_position_marker(position.get(field))
+                    if marker:
+                        markers.add(marker)
+            else:
+                marker = _normalize_position_marker(position)
+                if marker:
+                    markers.add(marker)
+
+    return markers
+
+
+def _is_obvious_non_pitcher_participant(participant: dict) -> bool:
+    markers = _participant_position_markers(participant)
+    if not markers:
+        return False
+    return markers.isdisjoint(PITCHER_POSITION_MARKERS)
 
 
 def _select_ref_book(available_books: dict) -> tuple:
@@ -67,7 +106,7 @@ def _select_ref_book(available_books: dict) -> tuple:
 
 
 def _headers() -> dict:
-    key = os.environ.get("RUNDOWN_API_KEY", "")
+    key = os.environ.get("RUNDOWN_API_KEY", "").strip()
     if not key:
         raise EnvironmentError(
             "RUNDOWN_API_KEY not set. "
@@ -133,6 +172,13 @@ def _parse_event_k_props(event: dict) -> list:
             pitcher_name = participant.get("name", "")
             if not pitcher_name:
                 continue
+            if _is_obvious_non_pitcher_participant(participant):
+                log.info(
+                    "skipping %s: participant metadata marks a non-pitcher (%s)",
+                    pitcher_name,
+                    sorted(_participant_position_markers(participant)),
+                )
+                continue
 
             # Collect {line_val: {direction: {book_id: {price, is_main, delta}}}}
             lines_data: dict = {}
@@ -175,6 +221,14 @@ def _parse_event_k_props(event: dict) -> list:
                 )
 
             chosen = lines_data[main_val]
+            if main_val < MIN_REASONABLE_PITCHER_K_LINE:
+                log.info(
+                    "skipping %s: k_line %.1f is below the starter-only floor of %.1f",
+                    pitcher_name,
+                    main_val,
+                    MIN_REASONABLE_PITCHER_K_LINE,
+                )
+                continue
 
             # Capture per-book odds for steam tracking (tracked books only).
             book_odds: dict = {}

@@ -1374,7 +1374,7 @@ function PicksTab({
 // ── Tab: Performance ──
 function PerfTab() {
   const d = window.V2_PERF;
-  const maxAbsRoi = Math.max(...d.rows.map(r => Math.abs(r.roi)));
+  const maxAbsRoi = Math.max(0, ...d.rows.map(r => typeof r.roi === "number" ? Math.abs(r.roi) : 0));
   const [showCalib, setShowCalib] = useState(false);
   const notes = d.calibration_notes || [];
   return /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("div", {
@@ -1457,8 +1457,10 @@ function PerfTab() {
     const isFire = r.verdict.startsWith("FIRE");
     const isFire2 = r.verdict === "FIRE 2u";
     const badgeCls = isFire ? r.side === "over" ? "fire-over" : "fire" : r.side === "over" ? "lean-over" : "lean-under";
-    const roiPct = r.roi;
-    const pct = Math.min(1, Math.abs(roiPct) / Math.max(maxAbsRoi, 1));
+    const roiPct = typeof r.roi === "number" ? r.roi : null;
+    const winPct = typeof r.win_pct === "number" ? r.win_pct : null;
+    const hasRoi = roiPct != null;
+    const pct = hasRoi ? Math.min(1, Math.abs(roiPct) / Math.max(maxAbsRoi, 1)) : 0;
     return /*#__PURE__*/React.createElement("div", {
       key: i,
       className: "v2-tier-row"
@@ -1472,14 +1474,14 @@ function PerfTab() {
       className: "v2-tier-bar-head"
     }, /*#__PURE__*/React.createElement("span", null, r.picks, " picks \xB7 ", r.wins, "-", r.losses), /*#__PURE__*/React.createElement("span", {
       className: "wr"
-    }, (r.win_pct * 100).toFixed(1), "%")), /*#__PURE__*/React.createElement("div", {
+    }, winPct != null ? `${(winPct * 100).toFixed(1)}%` : "--")), /*#__PURE__*/React.createElement("div", {
       className: "v2-tier-bar"
     }, /*#__PURE__*/React.createElement("div", {
       className: "break",
       style: {
         left: "50%"
       }
-    }), roiPct >= 0 ? /*#__PURE__*/React.createElement("div", {
+    }), hasRoi ? roiPct >= 0 ? /*#__PURE__*/React.createElement("div", {
       className: "fill pos",
       style: {
         left: "50%",
@@ -1492,9 +1494,9 @@ function PerfTab() {
         width: `${pct * 50}%`,
         left: "auto"
       }
-    }))), /*#__PURE__*/React.createElement("div", {
-      className: `v2-tier-roi ${roiPct >= 0 ? "pos" : "neg"}`
-    }, roiPct >= 0 ? "+" : "", roiPct.toFixed(1), "%", /*#__PURE__*/React.createElement("span", {
+    }) : null)), /*#__PURE__*/React.createElement("div", {
+      className: `v2-tier-roi ${hasRoi ? roiPct >= 0 ? "pos" : "neg" : ""}`
+    }, hasRoi ? `${roiPct >= 0 ? "+" : ""}${roiPct.toFixed(1)}%` : "--", /*#__PURE__*/React.createElement("span", {
       className: "n"
     }, "ROI")));
   })));
