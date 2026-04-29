@@ -46,7 +46,38 @@
         "outcome": "loss",
         "units_won": -2.0,
         "units_risked": 2.0
-      }
+      },
+      "tracked_picks": [
+        {
+          "date": "2026-03-25",
+          "pitcher": "Max Fried",
+          "team": "New York",
+          "opp_team": null,
+          "side": "over",
+          "display_side": "OVER",
+          "verdict": "FIRE 2u",
+          "locked_verdict": null,
+          "display_verdict": "FIRE 2u",
+          "k_line": 4.5,
+          "locked_k_line": null,
+          "display_k_line": 4.5,
+          "odds": -165,
+          "locked_odds": null,
+          "display_odds": -165,
+          "adj_ev": 0.1122,
+          "locked_adj_ev": null,
+          "display_adj_ev": 0.1122,
+          "edge": 0.1122,
+          "ev": 0.1122,
+          "result": "loss",
+          "actual_ks": 4,
+          "pnl": -1.0,
+          "locked_at": null,
+          "status": "tracking",
+          "game_time": null,
+          "data_complete": 1
+        }
+      ]
     },
     {
       "pitcher": "Logan Webb",
@@ -91,7 +122,38 @@
         "outcome": "loss",
         "units_won": -2.0,
         "units_risked": 2.0
-      }
+      },
+      "tracked_picks": [
+        {
+          "date": "2026-03-25",
+          "pitcher": "Logan Webb",
+          "team": "New York",
+          "opp_team": null,
+          "side": "under",
+          "display_side": "UNDER",
+          "verdict": "FIRE 2u",
+          "locked_verdict": null,
+          "display_verdict": "FIRE 2u",
+          "k_line": 6.5,
+          "locked_k_line": null,
+          "display_k_line": 6.5,
+          "odds": -135,
+          "locked_odds": null,
+          "display_odds": -135,
+          "adj_ev": 0.1011,
+          "locked_adj_ev": null,
+          "display_adj_ev": 0.1011,
+          "edge": 0.1011,
+          "ev": 0.1011,
+          "result": "loss",
+          "actual_ks": 7,
+          "pnl": -1.0,
+          "locked_at": null,
+          "status": "tracking",
+          "game_time": null,
+          "data_complete": 1
+        }
+      ]
     },
     {
       "pitcher": "Freddy Peralta",
@@ -125,7 +187,8 @@
         "verdict": "PASS",
         "win_prob": 0.601,
         "movement_conf": 1.0
-      }
+      },
+      "tracked_picks": []
     },
     {
       "pitcher": "Paul Skenes",
@@ -159,7 +222,8 @@
         "verdict": "FIRE 1u",
         "win_prob": 0.575,
         "movement_conf": 1.0
-      }
+      },
+      "tracked_picks": []
     },
     {
       "pitcher": "Jacob Misiorowski",
@@ -193,7 +257,8 @@
         "verdict": "LEAN",
         "win_prob": 0.68,
         "movement_conf": 0.25
-      }
+      },
+      "tracked_picks": []
     },
     {
       "pitcher": "Shane Smith",
@@ -227,7 +292,8 @@
         "verdict": "PASS",
         "win_prob": 0.378,
         "movement_conf": 1.0
-      }
+      },
+      "tracked_picks": []
     },
     {
       "pitcher": "Matthew Boyd",
@@ -261,7 +327,8 @@
         "verdict": "PASS",
         "win_prob": 0.454,
         "movement_conf": 1.0
-      }
+      },
+      "tracked_picks": []
     },
     {
       "pitcher": "Cade Cavalli",
@@ -295,7 +362,8 @@
         "verdict": "PASS",
         "win_prob": 0.535,
         "movement_conf": 1.0
-      }
+      },
+      "tracked_picks": []
     },
     {
       "pitcher": "Trevor Rogers",
@@ -329,7 +397,8 @@
         "verdict": "PASS",
         "win_prob": 0.444,
         "movement_conf": 1.0
-      }
+      },
+      "tracked_picks": []
     },
     {
       "pitcher": "Joe Ryan",
@@ -363,7 +432,8 @@
         "verdict": "FIRE 2u",
         "win_prob": 0.736,
         "movement_conf": 1.0
-      }
+      },
+      "tracked_picks": []
     },
     {
       "pitcher": "Nick Pivetta",
@@ -397,7 +467,8 @@
         "verdict": "PASS",
         "win_prob": 0.393,
         "movement_conf": 1.0
-      }
+      },
+      "tracked_picks": []
     },
     {
       "pitcher": "Tarik Skubal",
@@ -431,7 +502,8 @@
         "verdict": "FIRE 2u",
         "win_prob": 0.728,
         "movement_conf": 1.0
-      }
+      },
+      "tracked_picks": []
     },
     {
       "pitcher": "Garrett Crochet",
@@ -465,7 +537,8 @@
         "verdict": "PASS",
         "win_prob": 0.494,
         "movement_conf": 1.0
-      }
+      },
+      "tracked_picks": []
     },
     {
       "pitcher": "Andrew Abbott",
@@ -499,7 +572,8 @@
         "verdict": "PASS",
         "win_prob": 0.402,
         "movement_conf": 1.0
-      }
+      },
+      "tracked_picks": []
     },
     {
       "pitcher": "Hunter Brown",
@@ -533,7 +607,8 @@
         "verdict": "FIRE 2u",
         "win_prob": 0.714,
         "movement_conf": 1.0
-      }
+      },
+      "tracked_picks": []
     },
     {
       "pitcher": "Nathan Eovaldi",
@@ -567,7 +642,8 @@
         "verdict": "PASS",
         "win_prob": 0.524,
         "movement_conf": 1.0
-      }
+      },
+      "tracked_picks": []
     },
     {
       "pitcher": "Matthew Liberatore",
@@ -601,7 +677,8 @@
         "verdict": "PASS",
         "win_prob": 0.411,
         "movement_conf": 1.0
-      }
+      },
+      "tracked_picks": []
     },
     {
       "pitcher": "Drew Rasmussen",
@@ -635,7 +712,68 @@
         "verdict": "FIRE 2u",
         "win_prob": 0.753,
         "movement_conf": 1.0
-      }
+      },
+      "tracked_picks": []
+    }
+  ],
+  "tracked_picks": [
+    {
+      "date": "2026-03-25",
+      "pitcher": "Logan Webb",
+      "team": "New York",
+      "opp_team": null,
+      "side": "under",
+      "display_side": "UNDER",
+      "verdict": "FIRE 2u",
+      "locked_verdict": null,
+      "display_verdict": "FIRE 2u",
+      "k_line": 6.5,
+      "locked_k_line": null,
+      "display_k_line": 6.5,
+      "odds": -135,
+      "locked_odds": null,
+      "display_odds": -135,
+      "adj_ev": 0.1011,
+      "locked_adj_ev": null,
+      "display_adj_ev": 0.1011,
+      "edge": 0.1011,
+      "ev": 0.1011,
+      "result": "loss",
+      "actual_ks": 7,
+      "pnl": -1.0,
+      "locked_at": null,
+      "status": "tracking",
+      "game_time": null,
+      "data_complete": 1
+    },
+    {
+      "date": "2026-03-25",
+      "pitcher": "Max Fried",
+      "team": "New York",
+      "opp_team": null,
+      "side": "over",
+      "display_side": "OVER",
+      "verdict": "FIRE 2u",
+      "locked_verdict": null,
+      "display_verdict": "FIRE 2u",
+      "k_line": 4.5,
+      "locked_k_line": null,
+      "display_k_line": 4.5,
+      "odds": -165,
+      "locked_odds": null,
+      "display_odds": -165,
+      "adj_ev": 0.1122,
+      "locked_adj_ev": null,
+      "display_adj_ev": 0.1122,
+      "edge": 0.1122,
+      "ev": 0.1122,
+      "result": "loss",
+      "actual_ks": 4,
+      "pnl": -1.0,
+      "locked_at": null,
+      "status": "tracking",
+      "game_time": null,
+      "data_complete": 1
     }
   ]
 }
