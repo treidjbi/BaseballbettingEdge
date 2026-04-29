@@ -138,18 +138,87 @@
         "so": 1,
         "k_rate": 0.25
       }
+    },
+    "mlbam:670764": {
+      "name": "Taylor Walls",
+      "bats": "R",
+      "mlbam_id": 670764,
+      "bbref_id": "wallsta01",
+      "season": 2026,
+      "vs_R": {
+        "pa": 44,
+        "so": 12,
+        "k_rate": 0.2727
+      },
+      "vs_L": {
+        "pa": 25,
+        "so": 6,
+        "k_rate": 0.24
+      }
+    },
+    "mlbam:680757": {
+      "name": "Steven Kwan",
+      "bats": "R",
+      "mlbam_id": 680757,
+      "bbref_id": "kwanst01",
+      "season": 2026,
+      "vs_R": {
+        "pa": 84,
+        "so": 10,
+        "k_rate": 0.119
+      },
+      "vs_L": {
+        "pa": 41,
+        "so": 5,
+        "k_rate": 0.122
+      }
+    },
+    "mlbam:800050": {
+      "name": "Chase DeLauter",
+      "bats": "R",
+      "mlbam_id": 800050,
+      "bbref_id": "delauch01",
+      "season": 2026,
+      "vs_R": {
+        "pa": 82,
+        "so": 9,
+        "k_rate": 0.1098
+      },
+      "vs_L": {
+        "pa": 30,
+        "so": 4,
+        "k_rate": 0.1333
+      }
+    },
+    "mlbam:608070": {
+      "name": "Jos\u00e9 Ram\u00edrez",
+      "bats": "R",
+      "mlbam_id": 608070,
+      "bbref_id": "ramirjo01",
+      "season": 2026,
+      "vs_R": {
+        "pa": 95,
+        "so": 13,
+        "k_rate": 0.1368
+      },
+      "vs_L": {
+        "pa": 39,
+        "so": 4,
+        "k_rate": 0.1026
+      }
     }
   },
-  "updated_at": "2026-04-29T19:31:55Z",
+  "updated_at": "2026-04-29T19:51:11Z",
   "last_run": {
     "projection_status": "collection_only",
-    "requested_batters": 207,
-    "already_cached": 199,
-    "attempted": 8,
-    "collected": 8,
+    "requested_batters": 216,
+    "already_cached": 8,
+    "attempted": 4,
+    "collected": 4,
     "failed": 0,
-    "cache_size": 8,
+    "queued_not_attempted": 204,
+    "cache_size": 12,
     "errors": [],
-    "updated_at": "2026-04-29T19:31:55Z"
+    "updated_at": "2026-04-29T19:51:11Z"
   }
 }
