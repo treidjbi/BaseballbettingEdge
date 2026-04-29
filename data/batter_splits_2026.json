@@ -342,22 +342,56 @@
         "so": 5,
         "k_rate": 0.125
       }
+    },
+    "mlbam:669720": {
+      "name": "Austin Hays",
+      "bats": "R",
+      "mlbam_id": 669720,
+      "bbref_id": "haysau01",
+      "season": 2026,
+      "vs_R": {
+        "pa": 27,
+        "so": 9,
+        "k_rate": 0.3333
+      },
+      "vs_L": {
+        "pa": 8,
+        "so": 3,
+        "k_rate": 0.375
+      }
+    },
+    "mlbam:695657": {
+      "name": "Colson Montgomery",
+      "bats": "R",
+      "mlbam_id": 695657,
+      "bbref_id": "montgco01",
+      "season": 2026,
+      "vs_R": {
+        "pa": 85,
+        "so": 24,
+        "k_rate": 0.2824
+      },
+      "vs_L": {
+        "pa": 38,
+        "so": 13,
+        "k_rate": 0.3421
+      }
     }
   },
-  "updated_at": "2026-04-29T20:43:41Z",
+  "updated_at": "2026-04-29T21:17:24Z",
   "last_run": {
     "projection_status": "collection_only",
     "requested_batters": 234,
-    "already_cached": 17,
+    "already_cached": 19,
     "attempted": 4,
     "collected": 2,
     "failed": 2,
-    "queued_not_attempted": 213,
-    "cache_size": 20,
+    "queued_not_attempted": 211,
+    "cache_size": 22,
     "errors": [
       "Travis Bazzana: no bbref id",
       "Munetaka Murakami: no bbref id"
     ],
-    "updated_at": "2026-04-29T20:43:41Z"
+    "updated_at": "2026-04-29T21:17:24Z"
   }
 }
