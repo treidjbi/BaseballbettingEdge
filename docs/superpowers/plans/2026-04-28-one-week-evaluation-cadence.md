@@ -30,6 +30,7 @@ This cadence deliberately avoids random tweaks while the first clean regime accu
 - `C:/Users/TylerReid/Desktop/Claude-Work/BaseballBettingEdge/data/picks_history.json`
 - `C:/Users/TylerReid/Desktop/Claude-Work/BaseballBettingEdge/data/params.json`
 - `C:/Users/TylerReid/Desktop/Claude-Work/BaseballBettingEdge/docs/superpowers/plans/2026-04-27-post-phase-c-model-evaluation.md`
+- `C:/Users/TylerReid/Desktop/Claude-Work/BaseballBettingEdge/docs/superpowers/plans/2026-04-29-input-quality-gates-and-data-maturity.md`
 - `C:/Users/TylerReid/Desktop/Claude-Work/BaseballBettingEdge/analytics/output/e1_regime_map.md`
 - `C:/Users/TylerReid/Desktop/Claude-Work/BaseballBettingEdge/analytics/output/e2_storage_integrity.md`
 
@@ -53,6 +54,7 @@ This cadence deliberately avoids random tweaks while the first clean regime accu
 - Do not change `formula_change_date` during this cadence.
 - Do not change verdict thresholds during this cadence.
 - Do not change staking during this cadence.
+- Input quality gates are the queued implementation path for hard-limiting unsafe FIRE picks; they should preserve raw model output while changing only actionable verdicts.
 - Do not judge the new model from `2026-04-24` through `2026-04-27`; that window is transition-only.
 - Treat `2026-04-28+` as the only clean regime for decisions about the new model.
 - Do not change TheRundown production query parameters from one slate alone. Require at least two audit runs where the cheaper query preserves resolved pitcher coverage.

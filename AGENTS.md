@@ -321,6 +321,30 @@ Thresholds live in `pipeline/build_features.py` (`EDGE_PASS`, `EDGE_LEAN`, `EDGE
 - **FIRE 1u** — EV ROI 6–17% (1-unit play)
 - **FIRE 2u** — EV ROI ≥ 17% (2-unit play, truly elite edge)
 
+### Input quality gates (planned)
+
+The queued implementation plan is
+`docs/superpowers/plans/2026-04-29-input-quality-gates-and-data-maturity.md`.
+
+Planned contract:
+
+- Add per-pitcher `input_quality_flags`, `projection_safe`,
+  `quality_gate_level`, `quality_gate_reasons`, `verdict_cap_reason`, and
+  `data_maturity`.
+- Preserve raw model output via side-level `raw_verdict` and `raw_adj_ev`.
+- Treat side-level `verdict` as the actionable betting decision after gates.
+- Severe flags force actionable PASS while preserving the raw projection for
+  audit. Severe flags include opener, starter mismatch, unresolved probable,
+  missing game time, missing pitcher K profile, malformed line/odds, invalid
+  lambda inputs, and missing team/opponent mapping.
+- Soft flags cap conviction. One meaningful soft flag caps at `FIRE 1u`; two
+  or more cap at `LEAN`. Soft flags include projected/partial lineup, unrated
+  or thin-sample umpire, missing career SwStr baseline, neutral park fallback,
+  first-seen opening, thin recent-start sample, and partial movement history.
+- `FIRE 2u` should require clean major data, not just a large EV number.
+- New pitchers, umpires, lineups, and market feeds graduate through explicit
+  maturity states instead of being trusted all at once.
+
 ## Calibration
 
 `calibrate.py` runs during the grading step:

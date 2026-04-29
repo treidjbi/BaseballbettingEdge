@@ -1,6 +1,6 @@
 # Current State
 
-Last updated: 2026-04-28
+Last updated: 2026-04-29
 
 ## Read Order
 
@@ -49,6 +49,14 @@ The active decision cadence is defined in:
 
 That plan governs the next week of evaluation work and should be treated as the
 current decision framework for new analysis in this regime.
+
+The queued implementation plan for hard-limiting unsafe high-conviction picks is:
+
+- `docs/superpowers/plans/2026-04-29-input-quality-gates-and-data-maturity.md`
+
+That plan should be used when implementing per-pitcher input quality flags,
+projection safety, raw/actionable verdict separation, and maturity thresholds
+for pitchers, umpires, lineups, and market data.
 
 ## Historical Context
 
