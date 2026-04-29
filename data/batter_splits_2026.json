@@ -257,21 +257,72 @@
         "so": 2,
         "k_rate": 0.0606
       }
+    },
+    "mlbam:666310": {
+      "name": "Bo Naylor",
+      "bats": "R",
+      "mlbam_id": 666310,
+      "bbref_id": "naylobo01",
+      "season": 2026,
+      "vs_R": {
+        "pa": 59,
+        "so": 15,
+        "k_rate": 0.2542
+      },
+      "vs_L": {
+        "pa": 10,
+        "so": 2,
+        "k_rate": 0.2
+      }
+    },
+    "mlbam:677587": {
+      "name": "Brayan Rocchio",
+      "bats": "R",
+      "mlbam_id": 677587,
+      "bbref_id": "rocchbr01",
+      "season": 2026,
+      "vs_R": {
+        "pa": 75,
+        "so": 8,
+        "k_rate": 0.1067
+      },
+      "vs_L": {
+        "pa": 34,
+        "so": 3,
+        "k_rate": 0.0882
+      }
+    },
+    "mlbam:805367": {
+      "name": "Chase Meidroth",
+      "bats": "R",
+      "mlbam_id": 805367,
+      "bbref_id": "meidrch01",
+      "season": 2026,
+      "vs_R": {
+        "pa": 88,
+        "so": 20,
+        "k_rate": 0.2273
+      },
+      "vs_L": {
+        "pa": 34,
+        "so": 7,
+        "k_rate": 0.2059
+      }
     }
   },
-  "updated_at": "2026-04-29T20:02:28Z",
+  "updated_at": "2026-04-29T20:16:42Z",
   "last_run": {
     "projection_status": "collection_only",
     "requested_batters": 216,
-    "already_cached": 12,
+    "already_cached": 15,
     "attempted": 4,
     "collected": 3,
     "failed": 1,
-    "queued_not_attempted": 200,
-    "cache_size": 15,
+    "queued_not_attempted": 197,
+    "cache_size": 18,
     "errors": [
       "Travis Bazzana: no bbref id"
     ],
-    "updated_at": "2026-04-29T20:02:28Z"
+    "updated_at": "2026-04-29T20:16:42Z"
   }
 }
