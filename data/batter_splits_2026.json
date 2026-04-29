@@ -376,22 +376,56 @@
         "so": 13,
         "k_rate": 0.3421
       }
+    },
+    "mlbam:700337": {
+      "name": "Edgar Quero",
+      "bats": "R",
+      "mlbam_id": 700337,
+      "bbref_id": "queroed01",
+      "season": 2026,
+      "vs_R": {
+        "pa": 53,
+        "so": 11,
+        "k_rate": 0.2075
+      },
+      "vs_L": {
+        "pa": 26,
+        "so": 5,
+        "k_rate": 0.1923
+      }
+    },
+    "mlbam:671976": {
+      "name": "Tristan Peters",
+      "bats": "R",
+      "mlbam_id": 671976,
+      "bbref_id": "petertr01",
+      "season": 2026,
+      "vs_R": {
+        "pa": 70,
+        "so": 17,
+        "k_rate": 0.2429
+      },
+      "vs_L": {
+        "pa": 1,
+        "so": 1,
+        "k_rate": 1.0
+      }
     }
   },
-  "updated_at": "2026-04-29T21:17:24Z",
+  "updated_at": "2026-04-29T21:41:14Z",
   "last_run": {
     "projection_status": "collection_only",
-    "requested_batters": 234,
-    "already_cached": 19,
+    "requested_batters": 225,
+    "already_cached": 21,
     "attempted": 4,
     "collected": 2,
     "failed": 2,
-    "queued_not_attempted": 211,
-    "cache_size": 22,
+    "queued_not_attempted": 200,
+    "cache_size": 24,
     "errors": [
       "Travis Bazzana: no bbref id",
       "Munetaka Murakami: no bbref id"
     ],
-    "updated_at": "2026-04-29T21:17:24Z"
+    "updated_at": "2026-04-29T21:41:14Z"
   }
 }
