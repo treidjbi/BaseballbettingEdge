@@ -175,7 +175,93 @@ Append a bullet to `analytics/output/post_phase_c_weekly_check.md`:
 
 ---
 
-### Task 4: Run the broad analytics health-check every 2-3 days
+### Task 4: Run a daily post-slate pick review
+
+**Files:**
+- Read: `C:/Users/TylerReid/Desktop/Claude-Work/BaseballBettingEdge/data/picks_history.json`
+- Read: `C:/Users/TylerReid/Desktop/Claude-Work/BaseballBettingEdge/dashboard/data/processed/YYYY-MM-DD.json`
+- Write local-only: `C:/Users/TylerReid/Desktop/Claude-Work/BaseballBettingEdge/analytics/output/post_phase_c_weekly_check.md`
+
+- [ ] **Step 1: Identify yesterday's graded slate**
+
+Use the latest fully graded date in `picks_history.json`, not the current ungraded slate.
+
+Expected:
+- if today's games are still open, review yesterday
+- if grading has not run yet, wait for the grading cycle or clearly mark the read as incomplete
+
+- [ ] **Step 2: Compare yesterday against the clean post-bump regime first**
+
+Treat the 2026-04-27 model bump as a regime boundary:
+- `2026-04-28+` is the clean post-bump evaluation window
+- `2026-04-27` is transition/live-check context
+- the prior two-week window is baseline context only, not apples-to-apples model evidence
+
+Compute or record:
+- tracked record and staked FIRE record
+- units risked, weighted PnL, and ROI
+- FIRE 1u / FIRE 2u / LEAN mix
+- over / under mix and win rate
+- mean and median residual (`actual_ks - lambda`)
+- over residual mean and under residual mean
+- model margin versus actual margin by picked side
+- edge bucket and adjusted-EV bucket performance
+
+Expected:
+- a bad day with mean residual near zero points more toward side conversion, variance, or bet-selection/ranking than global lambda failure
+- a bad day with large same-direction residuals points more toward projection shape or missing inputs
+
+- [ ] **Step 3: Inspect close-loss and tail-loss shape**
+
+Count and list:
+- losses by `0.5 K`
+- losses by `1.5+ K`
+- high-confidence losses where model margin was at least `0.75 K`
+- high-edge bucket performance, especially `6%+ edge` and `17%+ adjusted EV`
+
+Expected decision signals:
+- many `0.5 K` losses can be variance and should not trigger formula changes alone
+- repeated high-edge losses across multiple clean slates should queue bet-conversion/ranking review
+- repeated high-confidence projection misses in the same archetype should queue projection/environment review
+
+- [ ] **Step 4: Cross-check data/source context before interpreting the model**
+
+Check:
+- `opening_odds_source` and whether preview/open tracking was live
+- `movement_conf` distribution
+- `lineup_used` split
+- `data_complete` split
+- `ref_book` split
+- obvious scratch/opener/degraded-source flags
+
+Expected:
+- if preview/open tracking is degraded, do not over-read steam/CLV or movement confidence from that slate
+- if confirmed lineups underperform for one slate, treat it as observation only until repeated
+
+- [ ] **Step 5: Record the daily post-slate read**
+
+Append a compact section to `analytics/output/post_phase_c_weekly_check.md`:
+
+```markdown
+## YYYY-MM-DD post-slate pick review
+
+- Slate reviewed: YYYY-MM-DD
+- Tracked record: W-L; staked FIRE record: W-L; units: X; PnL: Y; ROI: Z%
+- Clean-regime context: [first clean slate | N clean graded rows | transition context only]
+- Projection read: mean residual = X, over residual = Y, under residual = Z
+- Bet-selection read: [edge/adj_ev separating | high-edge failed | low-edge failed | insufficient clean sample]
+- Close-loss shape: 0.5K losses = X; 1.5K+ losses = Y
+- Data caveat: [preview/open healthy | preview/open degraded | lineup/data_complete caveat | none]
+- Action: [no change, keep soaking | investigate source issue | queue bet-conversion review | queue projection review]
+```
+
+Expected:
+- default action after one bad clean slate is `no change, keep soaking`
+- only queue changes after repeated clean-window evidence or a confirmed data-source defect
+
+---
+
+### Task 5: Run the broad analytics health-check every 2-3 days
 
 **Files:**
 - Run: `C:/Users/TylerReid/Desktop/Claude-Work/BaseballBettingEdge/analytics/performance.py`
@@ -215,7 +301,7 @@ Append to `analytics/output/post_phase_c_weekly_check.md`:
 
 ---
 
-### Task 5: Audit TheRundown intake noise and CLV/steam readiness
+### Task 6: Audit TheRundown intake noise and CLV/steam readiness
 
 **Files:**
 - Run: `C:/Users/TylerReid/Desktop/Claude-Work/BaseballBettingEdge/analytics/diagnostics/therundown_fetch_audit.py`
@@ -260,7 +346,7 @@ Expected decision signals:
 
 ---
 
-### Task 6: Make the one-week decision
+### Task 7: Make the one-week decision
 
 **Files:**
 - Read: `C:/Users/TylerReid/Desktop/Claude-Work/BaseballBettingEdge/analytics/output/e3_projection_audit.md`
@@ -278,6 +364,7 @@ Add a dated section:
 - Clean graded rows observed: X
 - Projection read: ...
 - Bet-selection read: ...
+- Post-slate pick-review read: ...
 - TheRundown intake read: ...
 - Recommended next implementation track: ...
 ```
@@ -312,5 +399,6 @@ This cadence is successful if, after roughly a week of clean post-`2026-04-28` h
 3. Is `adj_ev` the right main ranking signal, or is `edge` still carrying more truth?
 4. Is `FIRE 2u` still justified?
 5. Can the TheRundown query be narrowed to reduce data-point burn/noise while preserving resolved pitcher coverage?
+6. Are bad slates coming from projection misses, bet-conversion/ranking, degraded source data, or ordinary close-loss variance?
 
 If those are still answered with “not enough clean data,” the right response is to extend the cadence, not to start random tuning.
