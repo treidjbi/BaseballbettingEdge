@@ -73,13 +73,14 @@ tests/              pytest test suite
 ## Pipeline Schedule (GitHub Actions)
 
 All times America/Phoenix (UTC-7, no DST):
-- **12:00 AM (midnight)** — Preview: fetch current-day opening lines → `preview_lines.json`.
+- **12:17 AM** — Preview: fetch current-day opening lines → `preview_lines.json`.
   At midnight we've just rolled into the game day, so the run uses TODAY's
   date. Later start time (vs. the prior 7 PM) gives more pitchers time to
-  be announced, which improves coverage.
-- **3:00 AM** — Grading: grade yesterday's picks + calibrate `params.json`
-- **6:00 AM** — Full run: finalize today's picks (uses midnight lines as opening baseline)
-- **8 AM–6 PM every 30 min** — Refresh: fetch fresh odds/lineups, update unlocked picks, lock T-30min
+  be announced, which improves coverage. The `:17` minute avoids GitHub's
+  top-of-hour schedule queue.
+- **3:17 AM** — Grading: grade yesterday's picks + calibrate `params.json`
+- **6:17 AM** — Full run: finalize today's picks (uses preview lines as opening baseline)
+- **8:07 AM–6:07 PM every 30 min** — Refresh: fetch fresh odds/lineups, update unlocked picks, lock T-30min
 
 ## Key Commands
 
@@ -406,6 +407,10 @@ before shipping.
 - `lineup_used`, `data_complete`, `opp_k_rate`, `swstr_delta_k9`, current odds,
   and similar fields should refresh on unlocked rows. Once `locked_at` is set,
   they freeze.
+- `tracked_picks` in `today.json` / dated archives is the dashboard-facing
+  mirror of `picks_history.json`. V2 pick counts and grading summaries should
+  prefer these tracked/locked rows over recomputing actionable picks from the
+  latest pitcher-card verdicts.
 - If a module uses `/schedule` plus a second MLB endpoint (`/people/{id}`,
   `/game/{pk}/boxscore`), that is usually because the first endpoint looked
   sufficient but omitted a load-bearing field in production.

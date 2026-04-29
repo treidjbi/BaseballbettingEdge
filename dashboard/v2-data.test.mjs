@@ -214,3 +214,61 @@ test("archive loads accept steam snapshots when archive_dates includes the slate
   assert.ok(Array.isArray(window.V2_STEAM_RAW.snapshots));
   assert.equal(window.V2_STEAM_RAW.snapshots.length, 2);
 });
+
+test("tracked picks are exposed top-level and attached to matching pitchers", async () => {
+  const todayJson = {
+    date: "2026-04-28",
+    generated_at: "2026-04-28T23:00:00Z",
+    tracked_picks: [
+      {
+        date: "2026-04-28",
+        pitcher: "Tracked Pitcher",
+        team: "SEA",
+        opp_team: "CLE",
+        side: "under",
+        display_side: "UNDER",
+        verdict: "FIRE 1u",
+        locked_verdict: "FIRE 1u",
+        display_verdict: "FIRE 1u",
+        k_line: 5.5,
+        locked_k_line: 5.5,
+        display_k_line: 5.5,
+        odds: -112,
+        locked_odds: -118,
+        display_odds: -118,
+        adj_ev: 0.08,
+        locked_adj_ev: 0.09,
+        display_adj_ev: 0.09,
+        locked_at: "2026-04-28T23:15:00Z",
+      },
+    ],
+    pitchers: [
+      {
+        pitcher: "Tracked Pitcher",
+        team: "SEA",
+        opp_team: "CLE",
+        game_time: "2026-04-28T23:10:00Z",
+        k_line: 5.5,
+        best_over_odds: -105,
+        best_under_odds: -118,
+        lambda: 4.9,
+        avg_ip: 5.8,
+        opp_k_rate: 0.24,
+        season_k9: 9.1,
+        recent_k9: 9.3,
+        career_k9: 8.9,
+        ev_over: { adj_ev: -0.02, ev: -0.01, edge: -0.02, verdict: "PASS" },
+        ev_under: { adj_ev: 0.04, ev: 0.05, edge: 0.02, verdict: "LEAN" },
+      },
+    ],
+  };
+
+  const window = await runV2DataTest({ todayJson });
+
+  assert.equal(window.V2_DATA.tracked_picks.length, 1);
+  assert.equal(window.V2_DATA.tracked_picks[0].verdict, "FIRE 1u");
+  assert.equal(window.V2_DATA.tracked_picks[0].k_line, 5.5);
+  assert.equal(window.V2_DATA.tracked_picks[0].odds, -118);
+  assert.equal(window.V2_DATA.pitchers[0].tracked_picks.length, 1);
+  assert.equal(window.V2_DATA.pitchers[0].tracked_picks[0].direction, "UNDER");
+});

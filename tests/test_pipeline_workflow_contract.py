@@ -36,14 +36,14 @@ def _load_preview_health_module():
 def test_notification_preview_branch_matches_actual_preview_cron():
     workflow_text = _read_workflow()
     notify_block = _extract_step_block(workflow_text, "Send push notifications")
-    assert '[ "$SCHEDULE" = "0 7 * * *" ]' in notify_block
+    assert '[ "$SCHEDULE" = "17 7 * * *" ]' in notify_block
     assert '[ "$SCHEDULE" = "0 2 * * *" ]' not in notify_block
 
 
 def test_pipeline_run_step_handles_preview_cron_explicitly():
     workflow_text = _read_workflow()
     run_block = _extract_step_block(workflow_text, "Run pipeline")
-    assert 'if [ "$SCHEDULE" = "0 7 * * *" ]; then' in run_block
+    assert 'if [ "$SCHEDULE" = "17 7 * * *" ]; then' in run_block
     assert "python pipeline/run_pipeline.py $TODAY --run-type preview" in run_block
 
 

@@ -379,6 +379,24 @@ body { display: flex; flex-direction: column; }
 .v2-line-value.pos { color: var(--pos); }
 .v2-line-value.neg { color: var(--neg); }
 
+.v2-tracked-row {
+  padding: 0 14px 9px;
+  display: flex; flex-wrap: wrap; gap: 5px;
+}
+.v2-tracked-pill {
+  display: inline-flex; align-items: center;
+  min-height: 22px; padding: 3px 7px; border-radius: 4px;
+  font-family: 'JetBrains Mono', monospace; font-size: 10.5px; font-weight: 700;
+  color: var(--ink-2);
+  background: color-mix(in oklab, var(--ink) 5%, transparent);
+  border: 1px solid var(--border);
+}
+.v2-tracked-pill.locked {
+  color: var(--accent);
+  border-color: color-mix(in oklab, var(--accent) 36%, var(--border));
+  background: color-mix(in oklab, var(--accent) 8%, transparent);
+}
+
 /* Projection bar — shows line vs projection visually */
 .v2-projbar {
   margin-top: 6px; height: 3px; background: var(--border);
@@ -1026,10 +1044,10 @@ body { display: flex; flex-direction: column; }
   <div id="root"></div>
   <script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
   <script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
-  <!-- v2-app.js is compiled from v2-app.jsx via `babel v2-app.jsx --presets=@babel/preset-react -o v2-app.js`. Recompile before committing JSX changes. -->
-  <script src="v2-data.js?v=2026-04-28-7"></script>
+  <!-- v2-app.js is compiled from v2-app.jsx. Recompile before committing JSX changes. -->
+  <script src="v2-data.js?v=2026-04-29-1"></script>
   <script src="v2-movement-helpers.js?v=2026-04-28-4"></script>
   <script src="v2-factor-details.js?v=2026-04-28-6"></script>
-  <script src="v2-app.js?v=2026-04-28-7" defer></script>
+  <script src="v2-app.js?v=2026-04-29-1" defer></script>
 </body>
 </html>

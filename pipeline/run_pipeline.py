@@ -655,6 +655,7 @@ def _run_lock_only(date_str: str) -> None:
             conn.close()
         if locked > 0:
             export_db_to_history()
+            _enrich_archives_with_tracked_picks()
             log.info("Lock-only: locked %d picks", locked)
         else:
             log.info("Lock-only: no picks due for locking yet")
@@ -819,6 +820,159 @@ def _enrich_archives_with_results() -> None:
         log.info("Enriched %d archive(s) with grading results", enriched)
 
 
+def _display_value(primary, fallback):
+    return primary if primary is not None else fallback
+
+
+def _tracked_pick_row(pick: dict) -> dict:
+    locked_verdict = pick.get("locked_verdict")
+    verdict = pick.get("verdict")
+    locked_at = pick.get("locked_at")
+    locked_k_line = pick.get("locked_k_line")
+    locked_odds = pick.get("locked_odds")
+    locked_adj_ev = pick.get("locked_adj_ev")
+
+    return {
+        "date": pick.get("date"),
+        "pitcher": pick.get("pitcher"),
+        "team": pick.get("team"),
+        "opp_team": pick.get("opp_team"),
+        "side": pick.get("side"),
+        "display_side": str(pick.get("side") or "").upper(),
+        "verdict": verdict,
+        "locked_verdict": locked_verdict,
+        "display_verdict": locked_verdict or verdict,
+        "k_line": pick.get("k_line"),
+        "locked_k_line": locked_k_line,
+        "display_k_line": _display_value(locked_k_line, pick.get("k_line")),
+        "odds": pick.get("odds"),
+        "locked_odds": locked_odds,
+        "display_odds": _display_value(locked_odds, pick.get("odds")),
+        "adj_ev": pick.get("adj_ev"),
+        "locked_adj_ev": locked_adj_ev,
+        "display_adj_ev": _display_value(locked_adj_ev, pick.get("adj_ev")),
+        "edge": pick.get("edge"),
+        "ev": pick.get("ev"),
+        "result": pick.get("result"),
+        "actual_ks": pick.get("actual_ks"),
+        "pnl": pick.get("pnl"),
+        "locked_at": locked_at,
+        "status": "locked" if locked_at else "tracking",
+        "game_time": pick.get("game_time"),
+        "data_complete": pick.get("data_complete"),
+    }
+
+
+def _tracked_picks_from_history(date_str: str | None = None) -> list[dict]:
+    """Return non-PASS tracked picks from picks_history.json for dashboard display."""
+    try:
+        with open(HISTORY_PATH) as f:
+            history = json.load(f)
+    except Exception:
+        return []
+
+    rows: list[dict] = []
+    for pick in history:
+        if date_str is not None and pick.get("date") != date_str:
+            continue
+        display_verdict = pick.get("locked_verdict") or pick.get("verdict") or ""
+        if display_verdict == "PASS":
+            continue
+        rows.append(_tracked_pick_row(pick))
+
+    rows.sort(key=lambda row: (
+        row.get("date") or "",
+        row.get("game_time") or "",
+        row.get("pitcher") or "",
+        row.get("side") or "",
+    ))
+    return rows
+
+
+def _tracked_picks_by_date_from_history() -> dict[str, list[dict]]:
+    by_date: dict[str, list[dict]] = {}
+    for pick in _tracked_picks_from_history():
+        date = pick.get("date")
+        if date:
+            by_date.setdefault(date, []).append(pick)
+    return by_date
+
+
+def _attach_tracked_picks(archive: dict, tracked_picks: list[dict]) -> dict:
+    """Attach tracked pick rows to the archive and matching pitcher cards."""
+    updated = {**archive, "tracked_picks": tracked_picks}
+    by_pitcher: dict[str, list[dict]] = {}
+    for pick in tracked_picks:
+        key = _normalize_name(pick.get("pitcher") or "")
+        if key:
+            by_pitcher.setdefault(key, []).append(pick)
+
+    pitchers = []
+    for pitcher in archive.get("pitchers", []):
+        row = dict(pitcher)
+        key = _normalize_name(row.get("pitcher") or "")
+        row["tracked_picks"] = by_pitcher.get(key, [])
+        pitchers.append(row)
+    updated["pitchers"] = pitchers
+    return updated
+
+
+def _enrich_archives_with_tracked_picks(date_filter: str | None = None) -> int:
+    """Inject tracked/locked pick rows into archive JSON after history export."""
+    tracked_by_date = _tracked_picks_by_date_from_history()
+    if date_filter is not None:
+        tracked_by_date = {
+            date: picks for date, picks in tracked_by_date.items()
+            if date == date_filter
+        }
+    if not tracked_by_date:
+        return 0
+
+    base_dir = OUTPUT_PATH.parent
+    candidates: list[Path] = []
+    for date_str in tracked_by_date:
+        path = base_dir / f"{date_str}.json"
+        if path.exists():
+            candidates.append(path)
+
+    try:
+        if OUTPUT_PATH.exists():
+            with open(OUTPUT_PATH) as f:
+                today = json.load(f)
+            today_date = today.get("date")
+            if today_date in tracked_by_date and OUTPUT_PATH not in candidates:
+                candidates.append(OUTPUT_PATH)
+    except Exception:
+        pass
+
+    updated_count = 0
+    for path in candidates:
+        try:
+            with open(path) as f:
+                archive = json.load(f)
+        except Exception:
+            continue
+
+        date_str = archive.get("date")
+        if date_str not in tracked_by_date:
+            continue
+
+        updated = _attach_tracked_picks(archive, tracked_by_date[date_str])
+        if updated == archive:
+            continue
+
+        try:
+            with open(path, "w") as f:
+                json.dump(updated, f, indent=2)
+            updated_count += 1
+        except Exception as e:
+            log.warning("Failed to enrich tracked picks in %s: %s", path, e)
+
+    if updated_count:
+        log.info("Enriched %d archive(s) with tracked picks", updated_count)
+    return updated_count
+
+
 def backfill_result_embeds() -> int:
     """Backfill result objects into historical archive files from picks_history.json.
 
@@ -905,6 +1059,7 @@ def _run_grading_steps() -> None:
             conn.close()
         if locked > 0:
             export_db_to_history()
+            _enrich_archives_with_tracked_picks()
             log.info("Pre-grading lock: locked %d picks", locked)
     except Exception as e:
         log.warning("lock_due_picks in grading run failed: %s", e)
@@ -917,6 +1072,10 @@ def _run_grading_steps() -> None:
         _enrich_archives_with_results()
     except Exception as e:
         log.warning("Archive enrichment failed: %s", e)
+    try:
+        _enrich_archives_with_tracked_picks()
+    except Exception as e:
+        log.warning("Tracked-pick enrichment failed: %s", e)
     try:
         calibrate_run()
     except Exception as e:
@@ -1245,6 +1404,7 @@ def run(date_str: str, run_type: str = "full") -> None:
         # safe to call unconditionally and prevents a "seeded==0 && locked==0"
         # run from leaving picks_history.json stale after a runner reset.
         export_db_to_history()
+        _enrich_archives_with_tracked_picks()
         log.info("Persisted open/locked picks to history")
     except Exception as e:
         log.warning("seed_picks failed: %s", e)
@@ -1364,6 +1524,7 @@ def _write_archive(output: dict, run_date_str: str) -> None:
     Failures are logged but do not affect today.json or crash the pipeline.
     """
     base_dir = OUTPUT_PATH.parent
+    tracked_by_date = _tracked_picks_by_date_from_history()
 
     # 1. Group pitchers by ET game date
     buckets: dict[str, list] = {}
@@ -1384,6 +1545,7 @@ def _write_archive(output: dict, run_date_str: str) -> None:
     #     skips an early write so we never have a dirty mixed-date version on disk.
     today_pitchers = buckets.get(run_date_str, [])
     today_output = {**output, "date": run_date_str, "pitchers": today_pitchers}
+    today_output = _attach_tracked_picks(today_output, tracked_by_date.get(run_date_str, []))
     try:
         with open(OUTPUT_PATH, "w") as f:
             json.dump(today_output, f, indent=2)
@@ -1396,6 +1558,7 @@ def _write_archive(output: dict, run_date_str: str) -> None:
     any_written = False
     for game_date, pitchers in buckets.items():
         dated_output = _dated_archive_output(base_dir, game_date, pitchers, output, run_date_str)
+        dated_output = _attach_tracked_picks(dated_output, tracked_by_date.get(game_date, []))
         dated_path = base_dir / f"{game_date}.json"
         try:
             with open(dated_path, "w") as f:

@@ -546,6 +546,116 @@ def test_run_fetches_opposing_lineup_for_pitcher_projection(tmp_path):
     assert requested_lineup_teams == ["Opponent Team"]
 
 
+def test_tracked_picks_from_history_prefers_locked_values(tmp_path, monkeypatch):
+    import run_pipeline
+
+    history_path = tmp_path / "picks_history.json"
+    history_path.write_text(json.dumps([
+        {
+            "date": "2026-04-28",
+            "pitcher": "Tracked Pitcher",
+            "team": "SEA",
+            "opp_team": "CLE",
+            "side": "over",
+            "verdict": "FIRE 1u",
+            "locked_verdict": "FIRE 2u",
+            "k_line": 5.5,
+            "locked_k_line": 6.5,
+            "odds": -105,
+            "locked_odds": -118,
+            "adj_ev": 0.08,
+            "locked_adj_ev": 0.17,
+            "result": "win",
+            "actual_ks": 8,
+            "pnl": 1.0,
+            "locked_at": "2026-04-28T23:15:00Z",
+        },
+        {
+            "date": "2026-04-29",
+            "pitcher": "Other Date",
+            "side": "under",
+            "verdict": "LEAN",
+        },
+    ]))
+    monkeypatch.setattr(run_pipeline, "HISTORY_PATH", history_path)
+
+    picks = run_pipeline._tracked_picks_from_history("2026-04-28")
+
+    assert picks == [
+        {
+            "date": "2026-04-28",
+            "pitcher": "Tracked Pitcher",
+            "team": "SEA",
+            "opp_team": "CLE",
+            "side": "over",
+            "display_side": "OVER",
+            "verdict": "FIRE 1u",
+            "locked_verdict": "FIRE 2u",
+            "display_verdict": "FIRE 2u",
+            "k_line": 5.5,
+            "locked_k_line": 6.5,
+            "display_k_line": 6.5,
+            "odds": -105,
+            "locked_odds": -118,
+            "display_odds": -118,
+            "adj_ev": 0.08,
+            "locked_adj_ev": 0.17,
+            "display_adj_ev": 0.17,
+            "edge": None,
+            "ev": None,
+            "result": "win",
+            "actual_ks": 8,
+            "pnl": 1.0,
+            "locked_at": "2026-04-28T23:15:00Z",
+            "status": "locked",
+            "game_time": None,
+            "data_complete": None,
+        },
+    ]
+
+
+def test_enrich_archives_with_tracked_picks_updates_existing_archives(tmp_path, monkeypatch):
+    import run_pipeline
+
+    processed_dir = tmp_path / "processed"
+    processed_dir.mkdir()
+    archive_path = processed_dir / "2026-04-28.json"
+    today_path = processed_dir / "today.json"
+    archive_path.write_text(json.dumps({
+        "date": "2026-04-28",
+        "pitchers": [{"pitcher": "Tracked Pitcher", "game_time": "2026-04-28T23:10:00Z"}],
+    }))
+    today_path.write_text(json.dumps({
+        "date": "2026-04-28",
+        "pitchers": [{"pitcher": "Tracked Pitcher", "game_time": "2026-04-28T23:10:00Z"}],
+    }))
+    history_path = tmp_path / "picks_history.json"
+    history_path.write_text(json.dumps([
+        {
+            "date": "2026-04-28",
+            "pitcher": "Tracked Pitcher",
+            "team": "SEA",
+            "opp_team": "CLE",
+            "side": "under",
+            "verdict": "FIRE 1u",
+            "locked_verdict": "FIRE 1u",
+            "locked_at": "2026-04-28T23:15:00Z",
+        },
+    ]))
+    monkeypatch.setattr(run_pipeline, "OUTPUT_PATH", today_path)
+    monkeypatch.setattr(run_pipeline, "HISTORY_PATH", history_path)
+
+    updated = run_pipeline._enrich_archives_with_tracked_picks()
+
+    assert updated == 2
+    archive = json.loads(archive_path.read_text())
+    today = json.loads(today_path.read_text())
+    assert archive["tracked_picks"][0]["pitcher"] == "Tracked Pitcher"
+    assert archive["tracked_picks"][0]["display_side"] == "UNDER"
+    assert archive["pitchers"][0]["tracked_picks"][0]["display_verdict"] == "FIRE 1u"
+    assert today["tracked_picks"][0]["display_side"] == "UNDER"
+
+
 def test_run_forwards_resolved_park_factor_to_build_pitcher_record(tmp_path):
     import run_pipeline
     run_pipeline._batter_stats_cache = None

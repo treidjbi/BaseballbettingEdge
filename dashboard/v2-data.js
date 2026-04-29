@@ -102,8 +102,56 @@
     return out;
   }
 
+  function normalizeTrackedPick(p) {
+    const side = (p.display_side || p.side || '').toUpperCase();
+    const verdict = p.display_verdict || p.locked_verdict || p.verdict || 'PASS';
+    return {
+      date: p.date,
+      pitcher: p.pitcher,
+      team: p.team,
+      opp_team: p.opp_team,
+      side: p.side,
+      direction: side,
+      display_side: side,
+      verdict,
+      locked_verdict: p.locked_verdict ?? null,
+      original_verdict: p.verdict ?? null,
+      k_line: p.display_k_line ?? p.locked_k_line ?? p.k_line,
+      odds: p.display_odds ?? p.locked_odds ?? p.odds,
+      adj_ev: p.display_adj_ev ?? p.locked_adj_ev ?? p.adj_ev ?? 0,
+      edge: p.edge ?? null,
+      ev: p.ev ?? null,
+      result: p.result ?? null,
+      actual_ks: p.actual_ks ?? null,
+      pnl: p.pnl ?? null,
+      locked_at: p.locked_at ?? null,
+      status: p.status || (p.locked_at ? 'locked' : 'tracking'),
+      game_time: p.game_time ?? null,
+      data_complete: p.data_complete ?? null,
+    };
+  }
+
+  function trackedPitcherKey(name) {
+    return String(name || '').trim().toLowerCase();
+  }
+
   function buildV2Data(today) {
     const pitchers = (today.pitchers || []).map(normalizePitcher);
+    const rawTracked = Array.isArray(today.tracked_picks)
+      ? today.tracked_picks
+      : (today.pitchers || []).flatMap(p => Array.isArray(p.tracked_picks) ? p.tracked_picks : []);
+    const tracked_picks = rawTracked.map(normalizeTrackedPick);
+    const trackedByPitcher = new Map();
+    for (const pick of tracked_picks) {
+      const key = trackedPitcherKey(pick.pitcher);
+      if (!key) continue;
+      if (!trackedByPitcher.has(key)) trackedByPitcher.set(key, []);
+      trackedByPitcher.get(key).push(pick);
+    }
+    for (const p of pitchers) {
+      p.tracked_picks = trackedByPitcher.get(trackedPitcherKey(p.pitcher)) || [];
+    }
+
     // Defensive sort by game_time ascending — the pipeline can emit pitchers out
     // of order (late-arriving lineup/odds data gets appended), which bubbles up
     // to the UI as "one 3:40 game at the bottom of the Upcoming list."
@@ -116,7 +164,7 @@
       if (t !== 0) return t;
       return (a.pitcher || '').localeCompare(b.pitcher || '');
     });
-    return { generated_at: today.generated_at, date: today.date, pitchers };
+    return { generated_at: today.generated_at, date: today.date, pitchers, tracked_picks };
   }
 
   // ── Transform: performance.json → V2_PERF shape ────────────────
@@ -319,7 +367,7 @@
       window.V2_APP_STATE = (window.V2_DATA.pitchers.length === 0) ? 'empty' : 'ready';
     } catch (err) {
       console.error('[v2-data] fetch failed:', err);
-      window.V2_DATA  = { pitchers: [] };
+      window.V2_DATA  = { pitchers: [], tracked_picks: [] };
       window.V2_PERF  = { total_picks: 0, total_units: 0, total_roi: 0, record: '0-0-0', rows: [] };
       window.V2_STEAM = { rows: [] };
       window.V2_STEAM_RAW = { snapshots: [] };

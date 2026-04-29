@@ -155,6 +155,50 @@ function bestSide(p) {
   }
   return   { ...p.ev_under, direction: "UNDER", odds: p.best_under_odds, opening: p.opening_under_odds };
 }
+function verdictStake(v) {
+  if (v === "FIRE 2u") return 2;
+  if (v === "FIRE 1u") return 1;
+  return 0;
+}
+function trackedPicksForPitcher(p) {
+  return Array.isArray(p.tracked_picks) ? p.tracked_picks : [];
+}
+function primaryTrackedPick(p) {
+  const picks = trackedPicksForPitcher(p);
+  if (!picks.length) return null;
+  return [...picks].sort((a, b) => (
+    verdictStake(b.verdict) - verdictStake(a.verdict) ||
+    (b.adj_ev ?? -99) - (a.adj_ev ?? -99)
+  ))[0];
+}
+function sideFromTrackedPick(p, pick) {
+  const isOver = pick.direction === "OVER";
+  const current = isOver ? p.ev_over : p.ev_under;
+  return {
+    ...current,
+    verdict: pick.verdict || current.verdict,
+    direction: pick.direction,
+    odds: pick.odds ?? (isOver ? p.best_over_odds : p.best_under_odds),
+    opening: isOver ? p.opening_over_odds : p.opening_under_odds,
+    adj_ev: pick.adj_ev ?? current.adj_ev,
+    edge: pick.edge ?? current.edge,
+    ev: pick.ev ?? current.ev,
+    result: pick.result ?? current.result,
+    k_line: pick.k_line ?? p.k_line,
+    status: pick.status,
+    locked_at: pick.locked_at,
+  };
+}
+function displaySide(p) {
+  const tracked = primaryTrackedPick(p);
+  return tracked ? sideFromTrackedPick(p, tracked) : bestSide(p);
+}
+function trackedMatchesFilter(p, filter) {
+  const picks = trackedPicksForPitcher(p);
+  if (filter === "FIRE") return picks.some(pick => (pick.verdict || "").startsWith("FIRE"));
+  if (filter === "LEAN") return picks.some(pick => pick.verdict === "LEAN");
+  return true;
+}
 // Slate is "past" when the user is viewing an archived YYYY-MM-DD earlier than today.
 // Enables W/L badges on cards + grading summary banner at the top of the list.
 function isPastSlate() {
@@ -352,7 +396,8 @@ function WhyPills({ p, side }) {
 
 // ── Pick card ──
 function PickCard({ p, onOpen }) {
-  const side = bestSide(p);
+  const side = displaySide(p);
+  const tracked = trackedPicksForPitcher(p);
   const cls = verdictClass(side.verdict, side.direction);
   const started = p.game_state !== "pregame";
   const directionMod =
@@ -403,13 +448,13 @@ function PickCard({ p, onOpen }) {
       <div className="v2-line">
         <div className="v2-line-cell">
           <div className="v2-line-label">Line · {side.direction}</div>
-          <div className="v2-line-value">{p.k_line}<span style={{fontSize:14,opacity:.5}}> K</span></div>
+          <div className="v2-line-value">{side.k_line ?? p.k_line}<span style={{fontSize:14,opacity:.5}}> K</span></div>
           <div className="v2-line-sub mono">{fmtOdds(side.odds)} · {side.direction === "OVER" ? (p.best_over_book || "book") : (p.best_under_book || "book")}</div>
         </div>
         <div className="v2-line-cell">
           <div className="v2-line-label">Projection</div>
           <div className="v2-line-value">{p.lambda.toFixed(2)}</div>
-          <ProjBar line={p.k_line} lambda={p.lambda} />
+          <ProjBar line={side.k_line ?? p.k_line} lambda={p.lambda} />
         </div>
         <div className="v2-line-cell">
           <div className="v2-line-label">EV ROI · Edge</div>
@@ -421,6 +466,16 @@ function PickCard({ p, onOpen }) {
           </div>
         </div>
       </div>
+
+      {tracked.length > 0 && (
+        <div className="v2-tracked-row">
+          {tracked.map((pick, idx) => (
+            <span key={`${pick.direction}-${idx}`} className={`v2-tracked-pill ${pick.status === "locked" ? "locked" : ""}`}>
+              {pick.status === "locked" ? "Locked" : "Tracked"} {pick.direction} {pick.k_line ?? p.k_line} · {pick.verdict}
+            </span>
+          ))}
+        </div>
+      )}
 
       <WhyPills p={p} side={side} />
     </article>
@@ -494,7 +549,7 @@ function PickDetail({ p, onClose }) {
   if (!p) return null;
   const sideOver = { ...p.ev_over, direction: "OVER", odds: p.best_over_odds, opening: p.opening_over_odds };
   const sideUnder = { ...p.ev_under, direction: "UNDER", odds: p.best_under_odds, opening: p.opening_under_odds };
-  const best = bestSide(p);
+  const best = displaySide(p);
   const helpers = getMovementHelpers();
   const [showFactorDetails, setShowFactorDetails] = useState(false);
   const factorGroups = useMemo(() => {
@@ -921,15 +976,26 @@ function ErrorState({ onRetry }) {
 // ── Tab: Picks ──
 // Aggregate W/L for a past slate. Mirrors v1 index.html: excludes PASS from
 // the count so the summary reflects picks we actually would have played.
-function GradingSummary({ pitchers }) {
+function GradingSummary({ pitchers, trackedPicks = [] }) {
   let w = 0, l = 0, p = 0, n = 0;
-  for (const pit of pitchers) {
-    const side = bestSide(pit);
-    if (side.verdict === "PASS" || !side.result) continue;
-    if (side.result === "win")  w++;
-    else if (side.result === "loss") l++;
-    else if (side.result === "push") p++;
-    n++;
+  if (trackedPicks.length > 0) {
+    for (const pick of trackedPicks) {
+      if (pick.verdict === "PASS" || !pick.result) continue;
+      if (pick.result === "win") w++;
+      else if (pick.result === "loss") l++;
+      else if (pick.result === "push") p++;
+      else continue;
+      n++;
+    }
+  } else {
+    for (const pit of pitchers) {
+      const side = displaySide(pit);
+      if (side.verdict === "PASS" || !side.result) continue;
+      if (side.result === "win")  w++;
+      else if (side.result === "loss") l++;
+      else if (side.result === "push") p++;
+      n++;
+    }
   }
   if (n === 0) return null;
   return (
@@ -948,18 +1014,37 @@ function PicksTab({ pitchersOverride }) {
   const { supported: notifySupported, subscribed: notifyOn, toggleNotify } = useNotifications();
   const { trigger: triggerPipeline, state: pipelineState, title: pipelineTitle } = usePipelineTrigger();
   const pitchers = pitchersOverride ?? window.V2_DATA.pitchers;
+  const trackedPicks = window.V2_DATA?.tracked_picks || [];
+  const hasTrackedPicks = trackedPicks.length > 0;
+  const pitcherByName = useMemo(() => {
+    const map = new Map();
+    for (const p of pitchers) map.set((p.pitcher || "").toLowerCase(), p);
+    return map;
+  }, [pitchers]);
   const past = isPastSlate();
   const filtered = useMemo(() => {
     if (filter === "ALL") return pitchers;
-    if (filter === "FIRE") return pitchers.filter(p => bestSide(p).verdict.startsWith("FIRE"));
-    if (filter === "LEAN") return pitchers.filter(p => bestSide(p).verdict === "LEAN");
+    if (filter === "FIRE") {
+      return hasTrackedPicks
+        ? pitchers.filter(p => trackedMatchesFilter(p, "FIRE"))
+        : pitchers.filter(p => displaySide(p).verdict.startsWith("FIRE"));
+    }
+    if (filter === "LEAN") {
+      return hasTrackedPicks
+        ? pitchers.filter(p => trackedMatchesFilter(p, "LEAN"))
+        : pitchers.filter(p => displaySide(p).verdict === "LEAN");
+    }
     if (filter === "LIVE") return pitchers.filter(p => p.game_state === "in_progress");
     return pitchers;
-  }, [filter]);
+  }, [filter, pitchers, hasTrackedPicks]);
 
   const counts = {
-    FIRE: pitchers.filter(p => bestSide(p).verdict.startsWith("FIRE")).length,
-    LEAN: pitchers.filter(p => bestSide(p).verdict === "LEAN").length,
+    FIRE: hasTrackedPicks
+      ? trackedPicks.filter(p => (p.verdict || "").startsWith("FIRE")).length
+      : pitchers.filter(p => displaySide(p).verdict.startsWith("FIRE")).length,
+    LEAN: hasTrackedPicks
+      ? trackedPicks.filter(p => p.verdict === "LEAN").length
+      : pitchers.filter(p => displaySide(p).verdict === "LEAN").length,
     LIVE: pitchers.filter(p => p.game_state === "in_progress").length,
     ALL: pitchers.length
   };
@@ -971,7 +1056,12 @@ function PicksTab({ pitchersOverride }) {
   const live = filtered.filter(p => p.game_state !== "pregame");
 
   // Best of the day
-  const fires = pitchers.filter(p => bestSide(p).verdict.startsWith("FIRE"));
+  const fires = hasTrackedPicks
+    ? trackedPicks.filter(p => (p.verdict || "").startsWith("FIRE"))
+    : pitchers
+        .filter(p => displaySide(p).verdict.startsWith("FIRE"))
+        .map(p => ({ ...displaySide(p), pitcher: p.pitcher, game_state: p.game_state }));
+  const trackedUniqueFirePitchers = new Set(fires.map(p => p.pitcher)).size;
 
   return (
     <>
@@ -1015,18 +1105,22 @@ function PicksTab({ pitchersOverride }) {
         <DateBar />
       </div>
 
-      {past && <GradingSummary pitchers={pitchers} />}
+      {past && <GradingSummary pitchers={pitchers} trackedPicks={trackedPicks} />}
 
       <div className="v2-digest">
         <div className="v2-digest-count">{fires.length}</div>
         <div className="v2-digest-body">
-          <div className="v2-digest-title">Fire picks today</div>
+          <div className="v2-digest-title">{hasTrackedPicks ? "Tracked FIRE picks" : "Fire picks today"}</div>
           <div className="v2-digest-sub">
             {fires.length > 0
               ? (() => {
-                  const avgEv = fires.reduce((s, p) => s + bestSide(p).adj_ev, 0) / fires.length * 100;
-                  const pre   = fires.filter(p => p.game_state === "pregame").length;
-                  return `${fires.length} actionable · avg EV ROI +${avgEv.toFixed(1)}% · ${pre} pregame`;
+                  const avgEv = fires.reduce((s, p) => s + (p.adj_ev ?? 0), 0) / fires.length * 100;
+                  const pre = fires.filter(p => {
+                    const card = pitcherByName.get((p.pitcher || "").toLowerCase());
+                    return (p.game_state || card?.game_state) === "pregame";
+                  }).length;
+                  const unique = hasTrackedPicks ? ` · ${trackedUniqueFirePitchers} pitchers` : "";
+                  return `${fires.length} actionable${unique} · avg EV ROI +${avgEv.toFixed(1)}% · ${pre} pregame`;
                 })()
               : "No FIRE picks in slate"}
           </div>
