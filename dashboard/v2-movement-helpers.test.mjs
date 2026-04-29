@@ -46,6 +46,48 @@ test("buildPickedSideMovement returns FanDuel picked-side odds and k-line points
   );
 });
 
+test("buildPickedSideMovement uses the selected book when it is available", () => {
+  const result = buildPickedSideMovement(
+    {
+      snapshots: [
+        {
+          t: "2026-04-28T00:00:00Z",
+          pitchers: {
+            "Luis Castillo": {
+              k_line: 5.5,
+              BetMGM: { over: -104, under: -118 },
+            },
+          },
+        },
+        {
+          t: "2026-04-28T03:00:00Z",
+          pitchers: {
+            "Luis Castillo": {
+              k_line: 5.5,
+              BetMGM: { over: -112, under: +102 },
+            },
+          },
+        },
+      ],
+    },
+    {
+      pitcher: "Luis Castillo",
+      direction: "UNDER",
+      selectedBook: "BetMGM",
+    },
+  );
+
+  assert.equal(result.ready, true);
+  assert.equal(result.book, "BetMGM");
+  assert.deepEqual(
+    result.points.map((point) => ({ odds: point.odds, kLine: point.kLine })),
+    [
+      { odds: -118, kLine: 5.5 },
+      { odds: 102, kLine: 5.5 },
+    ],
+  );
+});
+
 test("buildPickedSideMovement prepends the opening point when preview/open differs from snapshots", () => {
   const movement = buildPickedSideMovement(
     {

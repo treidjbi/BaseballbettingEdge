@@ -543,7 +543,7 @@ def _run_preview(tomorrow_str: str) -> None:
         ump_map, _ump_diag = fetch_umpires(props, tomorrow_str)
     except Exception as e:
         log.warning("Preview: fetch_umpires failed: %s — using neutral adj", e)
-        ump_map = {p["pitcher"]: 0.0 for p in model_props}
+        ump_map = {p["pitcher"]: 0.0 for p in props}
 
     batter_stats = fetch_batter_stats_cached(int(tomorrow_str[:4]))
     park_factors = _load_park_factors()

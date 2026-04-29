@@ -561,6 +561,7 @@ function PickDetail({ p, onClose }) {
     ? helpers.buildPickedSideMovement(window.V2_STEAM_RAW || { snapshots: [] }, {
         pitcher: p.pitcher,
         direction: best.direction,
+        selectedBook: best.direction === "OVER" ? p.best_over_book : p.best_under_book,
         openingLine: p.opening_line,
         openingOdds: best.direction === "OVER" ? p.opening_over_odds : p.opening_under_odds,
       })

@@ -1235,6 +1235,45 @@ def test_preview_run_does_not_touch_today_json_when_it_exists(tmp_path):
     assert data["pitchers"][0]["pitcher"] == "Today Guy", "today.json pitchers were overwritten"
 
 
+def test_preview_run_uses_neutral_ump_map_when_umpire_fetch_fails(tmp_path):
+    """Preview should degrade to neutral umpires instead of crashing."""
+    import run_pipeline
+    run_pipeline._batter_stats_cache = None
+    today_path = tmp_path / "today.json"
+    preview_path = tmp_path / "preview_lines.json"
+
+    prop = _sample_prop_for("Tomorrow Pitcher")
+    captured = {}
+
+    def fake_build_pitcher_record(odds, stats, ump_k_adj, **kwargs):
+        captured["ump_k_adj"] = ump_k_adj
+        return {
+            "pitcher": odds["pitcher"],
+            "team": stats["team"],
+            "opp_team": stats["opp_team"],
+            "game_time": odds["game_time"],
+            "k_line": odds["k_line"],
+            "lambda": 4.2,
+            "ev_over": {"verdict": "PASS"},
+            "ev_under": {"verdict": "PASS"},
+        }
+
+    with patch.object(run_pipeline, "OUTPUT_PATH", today_path), \
+         patch.object(run_pipeline, "PREVIEW_PATH", preview_path), \
+         patch("run_pipeline.fetch_odds", return_value=[prop]), \
+         patch("run_pipeline.fetch_stats", return_value=({"Tomorrow Pitcher": _sample_stats()}, {})), \
+         patch("run_pipeline.fetch_swstr", return_value={"Tomorrow Pitcher": {"swstr_pct": 0.11, "career_swstr_pct": None}}), \
+         patch("run_pipeline.fetch_umpires", side_effect=RuntimeError("ump source down")), \
+         patch("run_pipeline.fetch_lineups_for_pitcher", return_value=None), \
+         patch("run_pipeline.fetch_batter_stats_cached", return_value={}), \
+         patch("run_pipeline.build_pitcher_record", side_effect=fake_build_pitcher_record):
+        run_pipeline._run_preview("2026-04-12")
+
+    dated = tmp_path / "2026-04-12.json"
+    assert dated.exists()
+    assert captured["ump_k_adj"] == 0.0
+
+
 def test_write_archive_merges_other_date_bucket_into_existing_archive(tmp_path):
     """A run for today's slate can include a cross-midnight ET game from the
     prior date. That must update the matching prior-date row without replacing
