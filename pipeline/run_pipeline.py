@@ -30,7 +30,7 @@ from fetch_batter_stats import fetch_batter_stats
 from build_features     import build_pitcher_record
 from name_utils         import normalize as _normalize_name
 from team_codes         import TEAM_NAME_TO_CODE
-from fetch_results      import (init_db, load_history_into_db, seed_picks,
+from fetch_results      import (reset_db, init_db, load_history_into_db, seed_picks,
                                 export_db_to_history, lock_due_picks, get_db)
 from analytics.diagnostics.d_connection_health import (
     build_connection_health,
@@ -646,6 +646,7 @@ def _run_lock_only(date_str: str) -> None:
     """Lock picks within T-30min of game time. No odds/stats fetch."""
     log.info("=== Lock-only run for %s ===", date_str)
     try:
+        reset_db()
         init_db()
         load_history_into_db()
         conn = get_db()
@@ -1052,6 +1053,9 @@ def _run_grading_steps() -> None:
 
     # Lock all open picks before grading so we grade with final lines
     try:
+        reset_db()
+        init_db()
+        load_history_into_db()
         conn = get_db()
         try:
             locked = lock_due_picks(conn, datetime.now(timezone.utc), lock_all_past=True)
@@ -1387,6 +1391,7 @@ def run(date_str: str, run_type: str = "full") -> None:
     # ephemeral GitHub Actions runner — without this, open picks would be lost between runs.
     # Must init DB and load history first so export doesn't overwrite historical closed picks.
     try:
+        reset_db()
         init_db()
         load_history_into_db()
         # Lock before seeding: picks arriving within T-30min will miss this lock window

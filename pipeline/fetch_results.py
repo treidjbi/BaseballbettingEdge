@@ -34,6 +34,14 @@ def get_db() -> sqlite3.Connection:
     return conn
 
 
+def reset_db() -> None:
+    """Remove the local SQLite cache so history is the run's source of truth."""
+    try:
+        DB_PATH.unlink()
+    except FileNotFoundError:
+        pass
+
+
 def init_db() -> None:
     with get_db() as conn:
         conn.execute("""
@@ -610,6 +618,7 @@ def close_orphans() -> int:
 def run() -> None:
     """Main entry point for grading runs (evening and 3am). Does NOT seed picks —
     seeding is handled by run_pipeline.py at every run to lock in the earliest-seen line."""
+    reset_db()
     init_db()
     loaded = load_history_into_db()
     log.info("Loaded %d picks from history into DB", loaded)
