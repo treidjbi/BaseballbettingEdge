@@ -206,11 +206,15 @@ Read this before debugging any data-source issue.
 ### FanGraphs / PyBaseball batter K data (`pipeline/fetch_batter_stats.py`)
 
 - Aggregate batter K% is live.
-- True handedness splits are **not** live yet. `_fetch_splits()` is still a
-  deliberate stub that raises and falls back to aggregate K% for both `vs_R`
-  and `vs_L`.
+- True handedness splits are in **collection-only** mode. The pipeline can
+  cache Baseball-Reference platoon split samples in
+  `data/batter_splits_YYYY.json`, but projection still uses aggregate K% for
+  both `vs_R` and `vs_L` plus the league-average platoon adjustment in
+  `build_features.calc_lineup_k_rate`.
 - Current caller contract is:
   `{normalized_batter_name: {"vs_R": float, "vs_L": float}}`
+- Do not promote collected real splits into `vs_R` / `vs_L` projection inputs
+  until the soak review confirms coverage and adds Bayesian split regression.
 
 ### FanGraphs / PyBaseball SwStr (`pipeline/fetch_statcast.py`)
 

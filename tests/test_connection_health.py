@@ -46,6 +46,7 @@ def test_build_connection_health_counts_missing_stats_and_build_failures():
         "missing_stats_count": 1,
         "unresolved_after_stats_count": 1,
         "feature_build_failures_count": 1,
+        "ignored_non_starter_count": 0,
         "degraded": True,
         "sample_intake_filtered_pitchers": [
             "Missing Stats Pitcher",
@@ -53,8 +54,37 @@ def test_build_connection_health_counts_missing_stats_and_build_failures():
         "sample_feature_build_failures": [
             "Build Failed Pitcher",
         ],
+        "sample_ignored_non_starter_props": [],
         "sample_unresolved_pitchers": [
             "Missing Stats Pitcher",
             "Build Failed Pitcher",
         ],
     }
+
+
+def test_build_connection_health_separates_ignored_non_starter_noise():
+    props = [
+        {"pitcher": "Built Pitcher"},
+        {"pitcher": "Real Probable Pitcher"},
+        {"pitcher": "Hitter Noise"},
+    ]
+    stats_map = {
+        "Built Pitcher": {"team": "A"},
+    }
+    records = [
+        {"pitcher": "Built Pitcher"},
+    ]
+
+    health = build_connection_health(
+        props,
+        stats_map,
+        records,
+        ignored_non_starter_names=["Hitter Noise"],
+    )
+
+    assert health["props_seen"] == 3
+    assert health["ignored_non_starter_count"] == 1
+    assert health["sample_ignored_non_starter_props"] == ["Hitter Noise"]
+    assert health["missing_stats_count"] == 1
+    assert health["unresolved_count"] == 1
+    assert health["sample_unresolved_pitchers"] == ["Real Probable Pitcher"]

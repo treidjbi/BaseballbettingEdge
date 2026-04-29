@@ -23,6 +23,7 @@ def build_connection_health(
     stats_map: dict,
     records: list[dict],
     build_failures: list[str] | None = None,
+    ignored_non_starter_names: list[str] | None = None,
     sample_size: int = 3,
 ) -> dict:
     """Summarize props that survived intake but never became usable records."""
@@ -32,15 +33,23 @@ def build_connection_health(
         if record.get("pitcher")
     }
     build_failure_names = set(build_failures or [])
+    ignored_non_starter_set = set(ignored_non_starter_names or [])
     sample_unresolved_pitchers: list[str] = []
     sample_intake_filtered_pitchers: list[str] = []
     sample_feature_build_failures: list[str] = []
+    sample_ignored_non_starter_props: list[str] = []
     missing_stats_count = 0
     feature_build_failures_count = 0
+    ignored_non_starter_count = 0
 
     for prop in props:
         name = (prop.get("pitcher") or "").strip()
         if not name or name in record_names:
+            continue
+        if name in ignored_non_starter_set:
+            ignored_non_starter_count += 1
+            if len(sample_ignored_non_starter_props) < sample_size:
+                sample_ignored_non_starter_props.append(name)
             continue
         if name in build_failure_names:
             feature_build_failures_count += 1
@@ -69,9 +78,11 @@ def build_connection_health(
         "missing_stats_count": missing_stats_count,
         "unresolved_after_stats_count": feature_build_failures_count,
         "feature_build_failures_count": feature_build_failures_count,
+        "ignored_non_starter_count": ignored_non_starter_count,
         "degraded": unresolved_count > 0,
         "sample_intake_filtered_pitchers": sample_intake_filtered_pitchers,
         "sample_feature_build_failures": sample_feature_build_failures,
+        "sample_ignored_non_starter_props": sample_ignored_non_starter_props,
         "sample_unresolved_pitchers": sample_unresolved_pitchers,
     }
 
@@ -86,6 +97,7 @@ def format_integrity_warning(connection_health: dict) -> str | None:
         f"unresolved_props={connection_health['unresolved_count']} "
         f"missing_stats={connection_health['missing_stats_count']} "
         f"build_failures={connection_health['feature_build_failures_count']} "
+        f"ignored_non_starters={connection_health.get('ignored_non_starter_count', 0)} "
         f"sample={sample}"
     )
 

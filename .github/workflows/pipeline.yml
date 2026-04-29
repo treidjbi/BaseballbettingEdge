@@ -72,13 +72,13 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           persist-credentials: true
 
       - name: Set up Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v6
         with:
           python-version: '3.11'
           cache: 'pip'
@@ -142,6 +142,7 @@ jobs:
           test -f data/picks_history.json        && git add data/picks_history.json        || true
           test -f data/params.json               && git add data/params.json               || true
           test -f data/preview_lines.json        && git add data/preview_lines.json        || true
+          git add data/batter_splits_*.json 2>/dev/null || true
           git diff --staged --quiet || git commit -m "chore: pipeline update $(date -u +%Y-%m-%dT%H:%M:%SZ)"
           # Retry push up to 4 times with exponential backoff (2 / 4 / 8 / 16 s).
           # The concurrency group above prevents overlapping runs, but a transient

@@ -431,7 +431,8 @@ def test_run_writes_connection_health_and_warns_on_unresolved_props(tmp_path, ca
     assert any(
         msg == (
             "Slate integrity warning: unresolved_props=1 "
-            "missing_stats=1 build_failures=0 sample=Missing Stats Pitcher"
+            "missing_stats=1 build_failures=0 ignored_non_starters=0 "
+            "sample=Missing Stats Pitcher"
         )
         for msg in (record.getMessage() for record in caplog.records)
     )
@@ -794,7 +795,7 @@ def test_run_park_factor_affects_real_lambda_across_parks(tmp_path):
     ump_map = {"Rockies Pitcher": 0.25, "Mariners Pitcher": 0.25}
 
     out = {}
-    def spy_write_output(date_str, records, props_available, ump_diagnostics=None, data_warnings=None, connection_health=None, quality_gate_summary=None):
+    def spy_write_output(date_str, records, props_available, ump_diagnostics=None, data_warnings=None, connection_health=None, batter_split_collection=None, quality_gate_summary=None):
         out["records"] = records
 
     park_factors_path = tmp_path / "park_factors.json"
@@ -972,7 +973,7 @@ def test_data_complete_is_row_specific_for_mixed_slate(tmp_path):
         }
 
     captured = {}
-    def spy_write_output(date_str, records, props_available, ump_diagnostics=None, data_warnings=None, connection_health=None, quality_gate_summary=None):
+    def spy_write_output(date_str, records, props_available, ump_diagnostics=None, data_warnings=None, connection_health=None, batter_split_collection=None, quality_gate_summary=None):
         captured["date_str"] = date_str
         captured["records"] = records
         captured["props_available"] = props_available
@@ -1041,7 +1042,7 @@ def test_run_attaches_confirmed_unrated_umpire_metadata(tmp_path):
         }
 
     captured = {}
-    def spy_write_output(date_str, records, props_available, ump_diagnostics=None, data_warnings=None, connection_health=None, quality_gate_summary=None):
+    def spy_write_output(date_str, records, props_available, ump_diagnostics=None, data_warnings=None, connection_health=None, batter_split_collection=None, quality_gate_summary=None):
         captured["records"] = records
         captured["ump_diagnostics"] = ump_diagnostics
 

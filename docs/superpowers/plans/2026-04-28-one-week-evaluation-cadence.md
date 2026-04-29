@@ -60,6 +60,10 @@ This cadence deliberately avoids random tweaks while the first clean regime accu
 - Do not judge the new model from `2026-04-24` through `2026-04-27`; that window is transition-only.
 - Treat `2026-04-28+` as the only clean regime for decisions about the new model.
 - Do not change TheRundown production query parameters from one slate alone. Require at least two audit runs where the cheaper query preserves resolved pitcher coverage.
+- Real per-batter vs-LHP/vs-RHP split samples may be collected during the soak,
+  but they stay `collection_only` and must not replace the current aggregate K%
+  plus league platoon adjustment until next week's review confirms coverage,
+  sample maturity, and projection impact.
 - If a day’s pipeline is obviously degraded, record it and exclude it from interpretation before making model decisions.
 
 ---
@@ -324,10 +328,15 @@ Look for:
 - `opening_under_odds set`
 - `park_factor populated`
 - `pitcher_throws populated`
+- `batter_split_collection.projection_status == collection_only`
+- `data/batter_splits_YYYY.json` cache growth and split PA coverage
 
 Expected:
 - those should remain live
 - if any drift toward `0%`, investigate pipeline integrity before blaming the model
+- if real batter split collection is healthy for the week, queue a next-week
+  promotion plan that adds Bayesian split regression before changing projection
+  inputs
 
 - [ ] **Step 3: Record any pipeline-health caveat**
 

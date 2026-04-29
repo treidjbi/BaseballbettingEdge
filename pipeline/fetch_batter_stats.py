@@ -12,10 +12,15 @@ aggregate K% is used automatically.
 """
 import logging
 import html
+import json
+import os
 import re
+from datetime import datetime, timezone
+from pathlib import Path
 
 import pandas as pd
 import requests
+from pybaseball import get_splits, playerid_reverse_lookup
 
 from build_features import LEAGUE_AVG_K_RATE
 from name_utils import normalize as _norm
@@ -24,6 +29,8 @@ log = logging.getLogger(__name__)
 FANGRAPHS_LEADERBOARD_URL = "https://www.fangraphs.com/api/leaders/major-league/data"
 FANGRAPHS_TIMEOUT_SECONDS = 30
 FANGRAPHS_PAGE_SIZE = 5000
+BATTER_SPLIT_CACHE_DIR = Path(__file__).resolve().parents[1] / "data"
+DEFAULT_SPLIT_COLLECTION_MAX_NEW = int(os.environ.get("BATTER_SPLIT_COLLECTION_MAX_NEW", "8"))
 
 
 def _fetch_aggregate(season: int):
@@ -96,6 +103,174 @@ def _build_lookup(df, name_col: str = "Name", k_col: str = "K%") -> dict:
         if name and k is not None:
             result[_norm(str(name))] = float(k)
     return result
+
+
+def _extract_bref_platoon_split_rates(table: pd.DataFrame) -> dict:
+    """Extract K% collection fields from pybaseball/baseball-reference splits."""
+    result = {}
+    for split_name, output_key in (("vs RHP", "vs_R"), ("vs LHP", "vs_L")):
+        try:
+            row = table.loc[("Platoon Splits", split_name)]
+        except KeyError:
+            continue
+        if isinstance(row, pd.DataFrame):
+            row = row.iloc[0]
+        try:
+            pa = int(row.get("PA") or 0)
+            so = int(row.get("SO") or 0)
+        except (TypeError, ValueError):
+            continue
+        if pa <= 0:
+            continue
+        result[output_key] = {
+            "pa": pa,
+            "so": so,
+            "k_rate": round(so / pa, 4),
+        }
+    return result
+
+
+def _fetch_bref_platoon_split_rates(bbref_id: str, season: int) -> dict:
+    table = get_splits(bbref_id, season)
+    return _extract_bref_platoon_split_rates(table)
+
+
+def _load_split_cache(cache_path: Path, season: int) -> dict:
+    try:
+        payload = json.loads(cache_path.read_text())
+    except Exception:
+        payload = {}
+    if payload.get("season") != season:
+        payload = {}
+    payload.setdefault("season", season)
+    payload.setdefault("source", "baseball-reference via pybaseball.get_splits")
+    payload.setdefault("projection_status", "collection_only")
+    payload.setdefault("batters", {})
+    return payload
+
+
+def _flatten_lineup_batter_candidates(lineups: list[list[dict] | None]) -> dict[int, dict]:
+    candidates: dict[int, dict] = {}
+    for lineup in lineups:
+        if not lineup:
+            continue
+        for batter in lineup:
+            mlbam_id = batter.get("mlbam_id")
+            if mlbam_id is None:
+                continue
+            try:
+                parsed_id = int(mlbam_id)
+            except (TypeError, ValueError):
+                continue
+            candidates.setdefault(
+                parsed_id,
+                {
+                    "name": batter.get("name", ""),
+                    "bats": batter.get("bats", ""),
+                    "mlbam_id": parsed_id,
+                },
+            )
+    return candidates
+
+
+def _reverse_lookup_bbref_ids(mlbam_ids: list[int]) -> dict[int, str]:
+    if not mlbam_ids:
+        return {}
+    lookup = playerid_reverse_lookup(mlbam_ids, key_type="mlbam")
+    result: dict[int, str] = {}
+    for _, row in lookup.iterrows():
+        mlbam_id = row.get("key_mlbam")
+        bbref_id = row.get("key_bbref")
+        if pd.isna(mlbam_id) or pd.isna(bbref_id) or not bbref_id:
+            continue
+        result[int(mlbam_id)] = str(bbref_id)
+    return result
+
+
+def collect_batter_split_samples(
+    lineups: list[list[dict] | None],
+    season: int,
+    *,
+    cache_path: Path | None = None,
+    max_new: int = DEFAULT_SPLIT_COLLECTION_MAX_NEW,
+) -> dict:
+    """Collect real batter vs-RHP/vs-LHP split samples without using them in projection.
+
+    This is intentionally collection-only during the soak period. The projection
+    caller continues to consume aggregate FanGraphs K% plus league platoon deltas
+    until the collected split cache is audited and explicitly promoted.
+    """
+    cache_path = cache_path or (BATTER_SPLIT_CACHE_DIR / f"batter_splits_{season}.json")
+    cache = _load_split_cache(cache_path, season)
+    batters = cache.setdefault("batters", {})
+    candidates = _flatten_lineup_batter_candidates(lineups)
+    if not candidates:
+        return {
+            "projection_status": "collection_only",
+            "requested_batters": 0,
+            "already_cached": 0,
+            "attempted": 0,
+            "collected": 0,
+            "failed": 0,
+            "cache_size": len(batters),
+            "errors": [],
+        }
+    missing = [
+        candidate
+        for mlbam_id, candidate in candidates.items()
+        if f"mlbam:{mlbam_id}" not in batters
+    ][:max(0, max_new)]
+
+    summary = {
+        "projection_status": "collection_only",
+        "requested_batters": len(candidates),
+        "already_cached": len(candidates) - len(missing),
+        "attempted": len(missing),
+        "collected": 0,
+        "failed": 0,
+        "cache_size": len(batters),
+        "errors": [],
+    }
+
+    if missing:
+        bbref_by_mlbam = _reverse_lookup_bbref_ids([b["mlbam_id"] for b in missing])
+        for batter in missing:
+            mlbam_id = batter["mlbam_id"]
+            bbref_id = bbref_by_mlbam.get(mlbam_id)
+            if not bbref_id:
+                summary["failed"] += 1
+                if len(summary["errors"]) < 5:
+                    summary["errors"].append(f"{batter.get('name')}: no bbref id")
+                continue
+            try:
+                splits = _fetch_bref_platoon_split_rates(bbref_id, season)
+            except Exception as exc:
+                summary["failed"] += 1
+                if len(summary["errors"]) < 5:
+                    summary["errors"].append(f"{batter.get('name')}: {type(exc).__name__}: {exc}")
+                continue
+            if not splits:
+                summary["failed"] += 1
+                if len(summary["errors"]) < 5:
+                    summary["errors"].append(f"{batter.get('name')}: no platoon split rows")
+                continue
+            batters[f"mlbam:{mlbam_id}"] = {
+                "name": batter.get("name", ""),
+                "bats": batter.get("bats", ""),
+                "mlbam_id": mlbam_id,
+                "bbref_id": bbref_id,
+                "season": season,
+                **splits,
+            }
+            summary["collected"] += 1
+
+    summary["cache_size"] = len(batters)
+    summary["updated_at"] = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+    cache["updated_at"] = summary["updated_at"]
+    cache["last_run"] = summary
+    cache_path.parent.mkdir(parents=True, exist_ok=True)
+    cache_path.write_text(json.dumps(cache, indent=2))
+    return summary
 
 
 def fetch_batter_stats(season: int) -> dict:

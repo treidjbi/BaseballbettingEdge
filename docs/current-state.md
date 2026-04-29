@@ -24,6 +24,9 @@ post-Phase-C changes.
   changes during this soak unless the user explicitly decides to break cadence.
 - Prefer evidence gathering, diagnostics, verification, and note-taking over
   feature churn during this window.
+- Real per-batter vs-LHP/vs-RHP split samples may be collected during the soak,
+  but they are collection-only. Do not wire them into projection until next
+  week's review confirms coverage and a Bayesian regression plan.
 
 ## Active Evaluation Stack
 

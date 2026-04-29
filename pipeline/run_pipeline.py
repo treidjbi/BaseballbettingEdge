@@ -26,7 +26,7 @@ from fetch_statcast  import fetch_swstr, LEAGUE_AVG_SWSTR
 _SWSTR_NEUTRAL = {"swstr_pct": LEAGUE_AVG_SWSTR, "career_swstr_pct": None}
 from fetch_umpires      import fetch_umpires
 from fetch_lineups      import fetch_lineups
-from fetch_batter_stats import fetch_batter_stats
+from fetch_batter_stats import fetch_batter_stats, collect_batter_split_samples
 from build_features     import build_pitcher_record
 from quality_gates      import apply_quality_to_record, summarize_quality_gates
 from name_utils         import normalize as _normalize_name
@@ -107,6 +107,42 @@ def _lineup_has_missing_split(
         if not splits or splits.get(split_key) is None:
             return True
     return False
+
+
+def _classify_dropped_props(
+    props: list[dict],
+    stats_map: dict,
+    probables_by_team: dict,
+) -> tuple[list[str], list[str]]:
+    """Split dropped props into real probable misses vs non-starter market noise.
+
+    This affects observability only. It does not change which props are modeled.
+    If MLB probable data is unavailable, keep all dropped props in the scary
+    unresolved bucket so a true upstream failure does not look harmless.
+    """
+    probable_names = {
+        _normalize_name(name)
+        for name in (probables_by_team or {}).values()
+        if name
+    }
+    if not probable_names:
+        return [
+            prop.get("pitcher", "")
+            for prop in props
+            if prop.get("pitcher") and not stats_map.get(prop.get("pitcher"))
+        ], []
+
+    unresolved_probable_names: list[str] = []
+    ignored_non_starter_names: list[str] = []
+    for prop in props:
+        name = prop.get("pitcher", "")
+        if not name or stats_map.get(name):
+            continue
+        if _normalize_name(name) in probable_names:
+            unresolved_probable_names.append(name)
+        else:
+            ignored_non_starter_names.append(name)
+    return unresolved_probable_names, ignored_non_starter_names
 
 
 def _swstr_warning_from_meta(swstr_meta: dict[str, bool]) -> str | None:
@@ -556,6 +592,11 @@ def _run_preview(tomorrow_str: str) -> None:
         log.error("Preview: fetch_stats failed: %s — writing props-only archive", e)
         _write_dated_archive_only([], tomorrow_str, props_available=True)
         return
+    preview_unresolved_probables, preview_ignored_non_starters = _classify_dropped_props(
+        props,
+        stats_map,
+        probables_by_team,
+    )
 
     try:
         swstr_map = fetch_swstr(int(tomorrow_str[:4]), pitcher_names)
@@ -575,6 +616,7 @@ def _run_preview(tomorrow_str: str) -> None:
     park_factors = _load_park_factors()
 
     records = []
+    preview_build_failures: list[str] = []
     for odds in props:
         name  = odds["pitcher"]
         stats = stats_map.get(name)
@@ -610,10 +652,15 @@ def _run_preview(tomorrow_str: str) -> None:
                      name, record["lambda"], record["ev_over"]["verdict"])
         except Exception as e:
             log.warning("Preview: build_pitcher_record failed for %s: %s — skipping", name, e)
+            preview_build_failures.append(name)
 
     records, quality_gate_summary = _apply_quality_gates_to_records(
         records,
-        pre_record_skips={"build_exception": len(props) - len(records)},
+        pre_record_skips={
+            "unresolved_probable_starters": len(preview_unresolved_probables),
+            "ignored_non_starter_props": len(preview_ignored_non_starters),
+            "build_exception": len(preview_build_failures),
+        },
     )
 
     now_utc = datetime.now(timezone.utc)
@@ -1214,11 +1261,22 @@ def run(date_str: str, run_type: str = "full") -> None:
     )
     model_props = [prop for prop in props if stats_map.get(prop["pitcher"])]
     dropped_props = len(props) - len(model_props)
+    unresolved_probable_names, ignored_non_starter_names = _classify_dropped_props(
+        props,
+        stats_map,
+        probables_by_team,
+    )
     if dropped_props:
-        log.warning(
-            "Skipping %d props with no resolved starter stats before downstream feature fetches",
-            dropped_props,
-        )
+        if unresolved_probable_names:
+            log.warning(
+                "Skipping %d probable starter prop(s) with no resolved stats before downstream feature fetches",
+                len(unresolved_probable_names),
+            )
+        if ignored_non_starter_names:
+            log.info(
+                "Ignoring %d non-starter/player prop(s) from TheRundown market noise before modeling",
+                len(ignored_non_starter_names),
+            )
     model_pitcher_names = [prop["pitcher"] for prop in model_props]
 
     # 3. Fetch SwStr% (FanGraphs via PyBaseball — graceful fallback to neutral)
@@ -1328,6 +1386,7 @@ def run(date_str: str, run_type: str = "full") -> None:
     lineup_confirmed_count = 0
     lineup_missing_splits_count = 0
     lineup_total_count = 0
+    confirmed_lineups: list[list[dict]] = []
     stage_started = perf_counter()
     build_failures: list[str] = []
 
@@ -1351,6 +1410,7 @@ def run(date_str: str, run_type: str = "full") -> None:
             pitcher_throws = stats.get("throws", "R")
             if lineup is not None:
                 lineup_confirmed_count += 1
+                confirmed_lineups.append(lineup)
                 if _lineup_has_missing_split(lineup, batter_stats, pitcher_throws):
                     lineup_missing_splits_count += 1
             park_factor = _resolve_park_factor(
@@ -1393,6 +1453,7 @@ def run(date_str: str, run_type: str = "full") -> None:
         stats_map,
         records,
         build_failures=build_failures,
+        ignored_non_starter_names=ignored_non_starter_names,
     )
     log.info("Built %d/%d pitcher records", len(records), len(props))
     log.info(
@@ -1407,6 +1468,25 @@ def run(date_str: str, run_type: str = "full") -> None:
     integrity_warning = format_integrity_warning(connection_health)
     if integrity_warning:
         log.warning("%s", integrity_warning)
+    try:
+        batter_split_collection = collect_batter_split_samples(
+            confirmed_lineups,
+            int(date_str[:4]),
+        )
+        log.info(
+            "Batter split collection: requested=%s attempted=%s collected=%s failed=%s cache_size=%s",
+            batter_split_collection.get("requested_batters"),
+            batter_split_collection.get("attempted"),
+            batter_split_collection.get("collected"),
+            batter_split_collection.get("failed"),
+            batter_split_collection.get("cache_size"),
+        )
+    except Exception as e:
+        batter_split_collection = {
+            "projection_status": "collection_only",
+            "error": f"{type(e).__name__}: {e}",
+        }
+        log.warning("Batter split collection failed: %s", e)
     data_warnings = collect_data_warnings(
         props=model_props,
         ump_diagnostics=ump_diagnostics,
@@ -1440,7 +1520,8 @@ def run(date_str: str, run_type: str = "full") -> None:
             dropped_mismatches,
         )
     pre_record_skips = {
-        "missing_stats": dropped_props,
+        "unresolved_probable_starters": len(unresolved_probable_names),
+        "ignored_non_starter_props": len(ignored_non_starter_names),
         "build_exception": len(build_failures),
         "pregame_starter_mismatch": dropped_mismatches,
     }
@@ -1458,6 +1539,7 @@ def run(date_str: str, run_type: str = "full") -> None:
                       ump_diagnostics=ump_diagnostics,
                       data_warnings=data_warnings,
                       connection_health=connection_health,
+                      batter_split_collection=batter_split_collection,
                       quality_gate_summary=quality_gate_summary)
         _write_steam(records, date_str)
     else:
@@ -1502,6 +1584,7 @@ def _write_output(date_str: str, records: list, props_available: bool,
                   ump_diagnostics: dict | None = None,
                   data_warnings: list[str] | None = None,
                   connection_health: dict | None = None,
+                  batter_split_collection: dict | None = None,
                   quality_gate_summary: dict | None = None) -> None:
     output = {
         "generated_at":   datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
@@ -1521,6 +1604,8 @@ def _write_output(date_str: str, records: list, props_available: bool,
         output["ump_diagnostics"] = ump_diagnostics
     if connection_health is not None:
         output["connection_health"] = connection_health
+    if batter_split_collection is not None:
+        output["batter_split_collection"] = batter_split_collection
     if quality_gate_summary is not None:
         output["quality_gate_summary"] = quality_gate_summary
     OUTPUT_PATH.parent.mkdir(parents=True, exist_ok=True)

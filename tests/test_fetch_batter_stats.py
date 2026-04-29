@@ -88,3 +88,68 @@ def test_fetch_batter_stats_returns_empty_dict_on_total_failure(monkeypatch):
     monkeypatch.setattr("fetch_batter_stats._fetch_aggregate", raise_agg)
     result = fetch_batter_stats.fetch_batter_stats(2026)
     assert result == {}
+
+
+def test_extract_bref_platoon_split_rates_from_pybaseball_table():
+    table = pd.DataFrame(
+        [
+            {"Split Type": "Platoon Splits", "Split": "vs RHP", "PA": 100, "SO": 25},
+            {"Split Type": "Platoon Splits", "Split": "vs LHP", "PA": 50, "SO": 5},
+        ]
+    ).set_index(["Split Type", "Split"])
+
+    result = fetch_batter_stats._extract_bref_platoon_split_rates(table)
+
+    assert result == {
+        "vs_R": {"pa": 100, "so": 25, "k_rate": 0.25},
+        "vs_L": {"pa": 50, "so": 5, "k_rate": 0.1},
+    }
+
+
+def test_collect_batter_split_samples_writes_collection_only_cache(tmp_path, monkeypatch):
+    cache_path = tmp_path / "batter_splits_2026.json"
+    lineups = [
+        [
+            {"name": "Mookie Betts", "bats": "R", "mlbam_id": 605141},
+            {"name": "No Id Batter", "bats": "L"},
+        ]
+    ]
+
+    lookup = pd.DataFrame(
+        [
+            {
+                "key_mlbam": 605141,
+                "key_bbref": "bettsmo01",
+            }
+        ]
+    )
+
+    monkeypatch.setattr(
+        fetch_batter_stats,
+        "playerid_reverse_lookup",
+        lambda player_ids, key_type="mlbam": lookup,
+    )
+    monkeypatch.setattr(
+        fetch_batter_stats,
+        "_fetch_bref_platoon_split_rates",
+        lambda bbref_id, season: {
+            "vs_R": {"pa": 80, "so": 12, "k_rate": 0.15},
+            "vs_L": {"pa": 20, "so": 2, "k_rate": 0.10},
+        },
+    )
+
+    summary = fetch_batter_stats.collect_batter_split_samples(
+        lineups,
+        2026,
+        cache_path=cache_path,
+        max_new=5,
+    )
+
+    assert summary["projection_status"] == "collection_only"
+    assert summary["requested_batters"] == 1
+    assert summary["collected"] == 1
+
+    payload = __import__("json").loads(cache_path.read_text())
+    assert payload["projection_status"] == "collection_only"
+    assert payload["batters"]["mlbam:605141"]["name"] == "Mookie Betts"
+    assert payload["batters"]["mlbam:605141"]["vs_R"]["k_rate"] == 0.15

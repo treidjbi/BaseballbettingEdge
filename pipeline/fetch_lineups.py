@@ -69,7 +69,7 @@ def _extract_batters(boxscore: dict, side_key: str) -> list:
         person = entry.get("person") or {}
         name = person.get("fullName") or "Unknown"
         bats = ((person.get("batSide") or {}).get("code")) or "R"
-        result.append({"name": name, "bats": bats})
+        result.append({"name": name, "bats": bats, "mlbam_id": int(pid)})
     return result
 
 
