@@ -4,7 +4,7 @@ import os
 from unittest.mock import patch
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'pipeline'))
 
-from fetch_odds import american_odds_from_line, parse_k_props, _parse_line_value, _select_ref_book, _headers
+from fetch_odds import american_odds_from_line, fetch_odds, parse_k_props, _parse_line_value, _select_ref_book, _headers
 
 
 # ── Helper fixtures ────────────────────────────────────────────────────────────
@@ -247,12 +247,11 @@ class TestParseKProps:
         assert result[0]["best_over_odds"] == -115   # FanDuel (23), not best price (-105)
         assert result[0]["ref_book"] == "FanDuel"
 
-    def test_skips_pitcher_when_no_target_book_offered(self):
-        """Option B: when only an untracked book (e.g. Book25) offers the line,
-        skip the pitcher entirely rather than falling back. The user can't
-        place those picks, so surfacing them is worse than surfacing nothing."""
+    def test_accepts_kalshi_only_pitcher_line(self):
+        """Kalshi is a tracked starter-plan book, so an otherwise valid pitcher
+        line should not be dropped just because book 25 is the only source."""
         event = {
-            "event_id": "evt-no-target-book",
+            "event_id": "evt-kalshi-only",
             "event_date": "2026-04-01T23:05:00Z",
             "teams": [
                 {"name": "NYY", "is_away": True,  "is_home": False},
@@ -277,7 +276,9 @@ class TestParseKProps:
             }],
         }
         result = parse_k_props({"events": [event]})
-        assert result == []
+        assert len(result) == 1
+        assert result[0]["ref_book"] == "Kalshi"
+        assert result[0]["best_over_odds"] == -110
 
     def test_prefers_main_line_when_multiple_lines(self):
         # Pitcher has 4.5 and 5.5 lines; 5.5 is marked main
@@ -459,11 +460,15 @@ class TestSelectRefBook:
         assert book_id == "38"
         assert name == "Fanatics"
 
-    def test_returns_none_when_only_untracked_book(self):
-        """Option B: no fallback to unknown books. Book25 is not in the
-        priority list, so _select_ref_book returns (None, None) and the
-        caller skips the pitcher."""
+    def test_falls_back_to_kalshi(self):
         books = {"25": {"price": -110, "is_main": True, "delta": 0}}
+        book_id, name = _select_ref_book(books)
+        assert book_id == "25"
+        assert name == "Kalshi"
+
+    def test_returns_none_when_only_untracked_book(self):
+        """Option B: no fallback to unknown books."""
+        books = {"1": {"price": -110, "is_main": True, "delta": 0}}
         book_id, name = _select_ref_book(books)
         assert book_id is None
         assert name is None
@@ -610,8 +615,8 @@ class TestOptionBSkipLogging:
                 "participants": [{
                     "name": "Gerrit Cole",
                     "lines": [
-                        {"value": "Over 7.5",  "prices": {"25": {"price": -110, "is_main_line": True, "price_delta": 0}}},
-                        {"value": "Under 7.5", "prices": {"25": {"price": -110, "is_main_line": True, "price_delta": 0}}},
+                        {"value": "Over 7.5",  "prices": {"1": {"price": -110, "is_main_line": True, "price_delta": 0}}},
+                        {"value": "Under 7.5", "prices": {"1": {"price": -110, "is_main_line": True, "price_delta": 0}}},
                     ],
                 }],
             }],
@@ -620,3 +625,22 @@ class TestOptionBSkipLogging:
         assert result == []
         assert any("Gerrit Cole" in r.getMessage() and "skipping" in r.getMessage()
                    for r in caplog.records)
+
+
+class TestFetchOddsFailureHandling:
+    def test_raises_when_all_date_fetches_fail(self):
+        import requests
+
+        with patch("fetch_odds.throttled_get", side_effect=requests.HTTPError("401 Unauthorized")):
+            with pytest.raises(requests.HTTPError):
+                fetch_odds("2026-04-29")
+
+    def test_keeps_successful_date_when_other_date_fails(self):
+        import requests
+
+        good_payload = {"events": [_make_event("Gerrit Cole", 7.5, -112, -108)]}
+
+        with patch("fetch_odds.throttled_get", side_effect=[requests.HTTPError("temporary"), good_payload]):
+            result = fetch_odds("2026-04-29")
+
+        assert [prop["pitcher"] for prop in result] == ["Gerrit Cole"]

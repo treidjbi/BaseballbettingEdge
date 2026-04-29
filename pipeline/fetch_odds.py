@@ -30,13 +30,14 @@ BOOK_ID_MAP = {
     "23": "FanDuel",
     "22": "BetMGM",
     "19": "DraftKings",
+    "25": "Kalshi",
     "30": "BetRivers",
     "20": "Caesars",
     "38": "Fanatics",
 }
 # Priority order for picking the reference book on the card. Higher-priority
 # books come first; _select_ref_book returns the first match.
-REF_BOOK_PRIORITY = ["23", "22", "19", "30", "20", "38"]
+REF_BOOK_PRIORITY = ["23", "22", "19", "25", "30", "20", "38"]
 
 # Books tracked in steam.json snapshots (Steam Phase A). Same set as
 # BOOK_ID_MAP today; kept as a separate name so steam tracking and ref-book
@@ -45,6 +46,7 @@ TRACKED_BOOKS = {
     "23": "FanDuel",
     "22": "BetMGM",
     "19": "DraftKings",
+    "25": "Kalshi",
     "30": "BetRivers",
     "20": "Caesars",
     "38": "Fanatics",
@@ -327,6 +329,7 @@ def fetch_odds(date_str: str) -> list:
 
     seen_event_ids: set = set()
     all_props: list = []
+    failures: list[Exception] = []
 
     for fetch_date in dates_to_fetch:
         log.info("Fetching K props for UTC date %s ...", fetch_date)
@@ -341,7 +344,11 @@ def fetch_odds(date_str: str) -> list:
                     seen_event_ids.add(eid)
                 all_props.extend(_parse_event_k_props(event))
         except Exception as e:
+            failures.append(e)
             log.warning("fetch_odds failed for %s: %s", fetch_date, e)
+
+    if not all_props and failures:
+        raise failures[0]
 
     log.info("Found %d K props", len(all_props))
     return all_props

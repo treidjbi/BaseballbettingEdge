@@ -142,7 +142,7 @@ Read this before debugging any data-source issue.
 - `price_delta` means `current - opening`, so reconstructed opening odds are
   `current - price_delta`.
 - Ref-book selection is **priority-based**, not best-price-based. Current
-  priority is FanDuel -> BetMGM -> DraftKings -> BetRivers -> Caesars -> Fanatics.
+  priority is FanDuel -> BetMGM -> DraftKings -> Kalshi -> BetRivers -> Caesars -> Fanatics.
 - Option B is live: if no target book exists, the prop is skipped rather than
   falling back to an unknown book.
 - `book_odds` is the tracked per-book snapshot used for `steam.json`.
