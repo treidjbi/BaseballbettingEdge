@@ -1125,6 +1125,51 @@ def test_preview_run_does_not_touch_today_json_when_it_exists(tmp_path):
     assert data["pitchers"][0]["pitcher"] == "Today Guy", "today.json pitchers were overwritten"
 
 
+def test_write_archive_merges_other_date_bucket_into_existing_archive(tmp_path):
+    """A run for today's slate can include a cross-midnight ET game from the
+    prior date. That must update the matching prior-date row without replacing
+    the entire prior-date archive with only the late game."""
+    import run_pipeline
+
+    today_path = tmp_path / "today.json"
+    prior_archive = tmp_path / "2026-04-27.json"
+    prior_archive.write_text(json.dumps({
+        "generated_at": "old",
+        "date": "2026-04-27",
+        "props_available": True,
+        "data_warnings": ["old warning"],
+        "pitchers": [
+            {"pitcher": "Early Pitcher", "game_time": "2026-04-27T23:05:00Z", "lambda": 4.2},
+            {"pitcher": "Late Pitcher", "game_time": "2026-04-28T02:10:00Z", "lambda": 5.0},
+        ],
+        "connection_health": {"records_built": 2},
+    }))
+
+    output = {
+        "generated_at": "new",
+        "date": "2026-04-28",
+        "props_available": True,
+        "data_warnings": [],
+        "pitchers": [
+            {"pitcher": "Late Pitcher", "game_time": "2026-04-28T02:10:00Z", "lambda": 5.6},
+            {"pitcher": "Today Pitcher", "game_time": "2026-04-28T23:05:00Z", "lambda": 6.1},
+        ],
+        "connection_health": {"records_built": 2},
+    }
+
+    with patch.object(run_pipeline, "OUTPUT_PATH", today_path):
+        run_pipeline._write_archive(output, "2026-04-28")
+
+    merged = json.loads(prior_archive.read_text())
+    assert merged["generated_at"] == "old"
+    assert merged["connection_health"] == {"records_built": 2}
+    assert [p["pitcher"] for p in merged["pitchers"]] == ["Early Pitcher", "Late Pitcher"]
+    assert merged["pitchers"][1]["lambda"] == 5.6
+
+    today = json.loads(today_path.read_text())
+    assert [p["pitcher"] for p in today["pitchers"]] == ["Today Pitcher"]
+
+
 def _mock_pick(pitcher="Cole", side="over", result="win", actual_ks=8,
                verdict="FIRE 1u", locked_verdict=None,
                k_line=6.5, locked_k_line=None,

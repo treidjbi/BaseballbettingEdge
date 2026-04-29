@@ -1305,6 +1305,58 @@ def _date_results_from_history() -> dict:
     return by_date
 
 
+def _archive_pitcher_key(pitcher: dict) -> tuple[str, str]:
+    """Stable row identity for merging dated archives across later refreshes."""
+    return (
+        str(pitcher.get("pitcher") or "").strip().lower(),
+        str(pitcher.get("game_time") or "").strip(),
+    )
+
+
+def _merge_archive_pitchers(existing_pitchers: list, incoming_pitchers: list) -> list:
+    """Replace matching pitcher rows while preserving the existing slate order."""
+    incoming_by_key = {
+        _archive_pitcher_key(pitcher): pitcher
+        for pitcher in incoming_pitchers
+    }
+    merged: list = []
+    seen: set[tuple[str, str]] = set()
+    for pitcher in existing_pitchers:
+        key = _archive_pitcher_key(pitcher)
+        seen.add(key)
+        merged.append(incoming_by_key.get(key, pitcher))
+
+    for pitcher in incoming_pitchers:
+        key = _archive_pitcher_key(pitcher)
+        if key not in seen:
+            merged.append(pitcher)
+    return merged
+
+
+def _dated_archive_output(base_dir: Path, game_date: str, pitchers: list, output: dict, run_date_str: str) -> dict:
+    """Build dated archive output, preserving old full-slate archives for non-run dates."""
+    dated_output = {**output, "date": game_date, "pitchers": pitchers}
+    if game_date == run_date_str:
+        return dated_output
+
+    dated_path = base_dir / f"{game_date}.json"
+    try:
+        with open(dated_path) as f:
+            existing = json.load(f)
+    except Exception:
+        return dated_output
+
+    existing_pitchers = existing.get("pitchers")
+    if not isinstance(existing_pitchers, list):
+        return dated_output
+
+    return {
+        **existing,
+        "date": game_date,
+        "pitchers": _merge_archive_pitchers(existing_pitchers, pitchers),
+    }
+
+
 def _write_archive(output: dict, run_date_str: str) -> None:
     """
     Groups pitchers by their ET game date and writes one YYYY-MM-DD.json per
@@ -1343,7 +1395,7 @@ def _write_archive(output: dict, run_date_str: str) -> None:
     # 2. Write one archive file per game date
     any_written = False
     for game_date, pitchers in buckets.items():
-        dated_output = {**output, "date": game_date, "pitchers": pitchers}
+        dated_output = _dated_archive_output(base_dir, game_date, pitchers, output, run_date_str)
         dated_path = base_dir / f"{game_date}.json"
         try:
             with open(dated_path, "w") as f:
