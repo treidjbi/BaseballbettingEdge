@@ -272,3 +272,39 @@ test("tracked picks are exposed top-level and attached to matching pitchers", as
   assert.equal(window.V2_DATA.pitchers[0].tracked_picks.length, 1);
   assert.equal(window.V2_DATA.pitchers[0].tracked_picks[0].direction, "UNDER");
 });
+
+test("pitcher normalization preserves confirmed unrated umpire metadata", async () => {
+  const todayJson = {
+    date: "2026-04-29",
+    generated_at: "2026-04-29T18:00:00Z",
+    pitchers: [
+      {
+        pitcher: "Taj Bradley",
+        team: "Minnesota Twins",
+        opp_team: "Seattle Mariners",
+        game_time: "2026-04-29T17:40:00Z",
+        k_line: 5.5,
+        best_over_odds: -105,
+        best_under_odds: -125,
+        lambda: 5.1,
+        avg_ip: 5.8,
+        opp_k_rate: 0.24,
+        umpire: "Dexter Kelley",
+        umpire_has_rating: false,
+        ump_k_adj: 0.0,
+        season_k9: 9.1,
+        recent_k9: 9.3,
+        career_k9: 8.9,
+        ev_over: { adj_ev: -0.02, ev: -0.01, edge: -0.02, verdict: "PASS" },
+        ev_under: { adj_ev: 0.04, ev: 0.05, edge: 0.02, verdict: "LEAN" },
+      },
+    ],
+  };
+
+  const window = await runV2DataTest({ todayJson });
+  const pitcher = window.V2_DATA.pitchers[0];
+
+  assert.equal(pitcher.umpire, "Dexter Kelley");
+  assert.equal(pitcher.umpire_has_rating, false);
+  assert.equal(pitcher.ump_k_adj, 0);
+});

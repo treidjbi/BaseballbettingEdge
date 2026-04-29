@@ -45,9 +45,18 @@ logging.basicConfig(
 log = logging.getLogger(__name__)
 
 
-def _row_data_complete(*, swstr_meta: dict, swstr_row: dict | None, ump_k_adj: float) -> bool:
+def _row_data_complete(
+    *,
+    swstr_meta: dict,
+    swstr_row: dict | None,
+    ump_k_adj: float,
+    umpire_has_rating: bool | None = None,
+) -> bool:
     """Return True only when this pitcher's upstream SwStr and ump inputs are live."""
-    if ump_k_adj == 0.0:
+    if umpire_has_rating is False:
+        return False
+
+    if umpire_has_rating is None and ump_k_adj == 0.0:
         return False
 
     if not swstr_meta.get("current_usable", True):
@@ -544,6 +553,7 @@ def _run_preview(tomorrow_str: str) -> None:
     except Exception as e:
         log.warning("Preview: fetch_umpires failed: %s — using neutral adj", e)
         ump_map = {p["pitcher"]: 0.0 for p in props}
+        _ump_diag = {"umpire_by_pitcher": {}, "rated_umpire_by_pitcher": {}}
 
     batter_stats = fetch_batter_stats_cached(int(tomorrow_str[:4]))
     park_factors = _load_park_factors()
@@ -571,6 +581,11 @@ def _run_preview(tomorrow_str: str) -> None:
                 lineup=lineup,
                 batter_stats=batter_stats if lineup else None,
             )
+            record["umpire"] = _ump_diag.get("umpire_by_pitcher", {}).get(name)
+            preview_umpire_has_rating = _ump_diag.get("rated_umpire_by_pitcher", {}).get(name)
+            if preview_umpire_has_rating is None and ump_map.get(name, 0.0) != 0.0:
+                preview_umpire_has_rating = True
+            record["umpire_has_rating"] = bool(preview_umpire_has_rating)
             records.append(record)
             log.info("Preview: built record for %s: λ=%.2f verdict=%s",
                      name, record["lambda"], record["ev_over"]["verdict"])
@@ -1235,6 +1250,11 @@ def run(date_str: str, run_type: str = "full") -> None:
         ump_diagnostics = {
             "hp_count_fetched":      -1,
             "pitcher_nonzero_count": 0,
+            "pitcher_with_hp_count": 0,
+            "pitcher_rated_count":   0,
+            "umpire_by_pitcher":     {},
+            "rated_umpire_by_pitcher": {},
+            "missing_career_rate_umpires": [],
             "error":                 f"{type(e).__name__}: {e}",
         }
     # ump_ok is True only when at least one pitcher got a real (nonzero)
@@ -1264,6 +1284,10 @@ def run(date_str: str, run_type: str = "full") -> None:
     # 5. Fetch batter stats (FanGraphs — cached, graceful fallback to {})
     batter_stats = fetch_batter_stats_cached(int(date_str[:4]))
     park_factors = _load_park_factors()
+    umpire_by_pitcher = ump_diagnostics.get("umpire_by_pitcher", {}) if ump_diagnostics else {}
+    rated_umpire_by_pitcher = (
+        ump_diagnostics.get("rated_umpire_by_pitcher", {}) if ump_diagnostics else {}
+    )
     lineup_confirmed_count = 0
     lineup_missing_splits_count = 0
     lineup_total_count = 0
@@ -1283,6 +1307,10 @@ def run(date_str: str, run_type: str = "full") -> None:
             lineup = fetch_lineups_for_pitcher(date_str, stats.get("opp_team", ""))
             swstr_row = swstr_map.get(name)
             ump_k_adj = ump_map.get(name, 0.0)
+            umpire_name = umpire_by_pitcher.get(name)
+            umpire_has_rating = rated_umpire_by_pitcher.get(name)
+            if umpire_has_rating is None and ump_k_adj != 0.0:
+                umpire_has_rating = True
             pitcher_throws = stats.get("throws", "R")
             if lineup is not None:
                 lineup_confirmed_count += 1
@@ -1305,10 +1333,13 @@ def run(date_str: str, run_type: str = "full") -> None:
             # Mark whether all external data APIs returned real data.
             # Picks with data_complete=False are excluded from calibration so
             # a bad-API run doesn't skew lambda_bias / ump_scale / swstr_k9_scale.
+            record["umpire"] = umpire_name
+            record["umpire_has_rating"] = bool(umpire_has_rating)
             record["data_complete"] = _row_data_complete(
                 swstr_meta=swstr_meta,
                 swstr_row=swstr_row,
                 ump_k_adj=ump_k_adj,
+                umpire_has_rating=umpire_has_rating,
             )
             records.append(record)
             log.info("Built record for %s: λ=%.2f verdict=%s",

@@ -196,6 +196,10 @@ Read this before debugging any data-source issue.
   face the same HP umpire.
 - `career_k_rates.json` is the second half of the umpire signal. Missing ump in
   that file still resolves to `0.0`, even if officials were fetched correctly.
+- `today.json` distinguishes confirmed-but-unrated umpires from true TBA via
+  per-record `umpire` and `umpire_has_rating`. Confirmed-but-unrated umpires
+  stay neutral (`ump_k_adj=0.0`) and show up under
+  `ump_diagnostics.missing_career_rate_umpires`.
 - Team-name reverse lookup is substring-based through `ABBR_TO_NAME_SUBSTR`;
   if a team-name format changes, ump matching can silently die.
 
@@ -515,6 +519,10 @@ python scripts/seed_umpire_career_rates.py \
   if any career K/game delta shifted by **≥0.1** or if new umpires were added.
   Shifts below that threshold are below the noise floor of `ump_scale` and
   not worth a commit.
+- For new / thin-sample umpires surfaced by
+  `ump_diagnostics.missing_career_rate_umpires`, track the name immediately but
+  keep the model adjustment neutral until a wide-window seed can include enough
+  games. Do not promote short-window YTD deltas straight into production.
 - For a quick "is there a new ump in the pool" check without re-running a
   multi-hour seed, write to a side-file (e.g. `analytics/output/seeds/*.json`)
   and diff name sets only — but **don't** use a short-window file to update

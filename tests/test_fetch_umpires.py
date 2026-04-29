@@ -215,7 +215,8 @@ def test_fetch_umpires_returns_all_zeros_when_fetch_fails(caplog):
         with caplog.at_level(logging.WARNING, logger="fetch_umpires"):
             result, diagnostics = fetch_umpires.fetch_umpires(props, "2026-04-17")
     assert result == {"Max Fried": 0.0, "Walker Buehler": 0.0}
-    assert diagnostics == {"hp_count_fetched": 0, "pitcher_nonzero_count": 0}
+    assert diagnostics["hp_count_fetched"] == 0
+    assert diagnostics["pitcher_nonzero_count"] == 0
     assert any(
         "MLB schedule fetch failed" in r.getMessage() for r in caplog.records
     ), "fetch_umpires should log a WARNING when the underlying fetch fails"
@@ -228,7 +229,8 @@ def test_fetch_umpires_empty_props_returns_empty_dict():
         mock_get.return_value.json.return_value = {"dates": []}
         result, diagnostics = fetch_umpires.fetch_umpires([], "2026-04-17")
     assert result == {}
-    assert diagnostics == {"hp_count_fetched": 0, "pitcher_nonzero_count": 0}
+    assert diagnostics["hp_count_fetched"] == 0
+    assert diagnostics["pitcher_nonzero_count"] == 0
 
 
 def test_fetch_umpires_end_to_end_name_matching():
@@ -267,6 +269,32 @@ def test_fetch_umpires_end_to_end_name_matching():
     assert diagnostics["pitcher_nonzero_count"] == 2
 
 
+def test_fetch_umpires_reports_confirmed_but_unrated_umpire():
+    """A posted HP umpire missing from career rates should be named, not treated as TBA."""
+    payload = _schedule_payload([
+        _game("Seattle Mariners", "Minnesota Twins", [
+            _official("Dexter Kelley", "Home Plate"),
+        ]),
+    ])
+    props = [
+        {"pitcher": "SEA Starter", "team": "Seattle Mariners", "opp_team": "Minnesota Twins"},
+        {"pitcher": "MIN Starter", "team": "Minnesota Twins", "opp_team": "Seattle Mariners"},
+    ]
+
+    with patch("fetch_umpires.requests.get", return_value=_mock_response(payload)), \
+         patch("fetch_umpires._load_career_rates", return_value={}):
+        result, diagnostics = fetch_umpires.fetch_umpires(props, "2026-04-29")
+
+    assert result == {"SEA Starter": 0.0, "MIN Starter": 0.0}
+    assert diagnostics["umpire_by_pitcher"] == {
+        "SEA Starter": "Dexter Kelley",
+        "MIN Starter": "Dexter Kelley",
+    }
+    assert diagnostics["pitcher_with_hp_count"] == 2
+    assert diagnostics["pitcher_rated_count"] == 0
+    assert diagnostics["missing_career_rate_umpires"] == ["Dexter Kelley"]
+
+
 def test_fetch_umpires_accent_insensitive_name_match():
     """Career rates keys with/without accents must match MLB API spellings.
 
@@ -288,7 +316,8 @@ def test_fetch_umpires_accent_insensitive_name_match():
          patch("fetch_umpires._load_career_rates", return_value=fake_rates):
         result, diagnostics = fetch_umpires.fetch_umpires(props, "2026-04-17")
     assert result["Test Pitcher"] == 0.25
-    assert diagnostics == {"hp_count_fetched": 1, "pitcher_nonzero_count": 1}
+    assert diagnostics["hp_count_fetched"] == 1
+    assert diagnostics["pitcher_nonzero_count"] == 1
 
 
 # ---------------------------------------------------------------------------
@@ -322,7 +351,7 @@ def test_fetch_umpires_diagnostics_distinguish_api_empty_from_match_failure():
     with patch("fetch_umpires.requests.get",
                return_value=_mock_response(payload_empty)):
         _result, diag_a = fetch_umpires.fetch_umpires(props, "2026-04-17")
-    assert diag_a == {"hp_count_fetched": 0, "pitcher_nonzero_count": 0}, (
+    assert diag_a["hp_count_fetched"] == 0 and diag_a["pitcher_nonzero_count"] == 0, (
         "Empty officials must be distinguishable as hp_count_fetched=0"
     )
 

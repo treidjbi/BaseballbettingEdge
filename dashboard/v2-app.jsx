@@ -619,12 +619,14 @@ function PickDetail({ p, onClose }) {
   const oppDelta = oppKRate == null ? null : (oppKRate - LEAGUE_K) * 100;
   const k9Delta = recentK9 == null ? null : recentK9 - LEAGUE_K9;
   const ump = isFiniteNumber(p.ump_k_adj) ? p.ump_k_adj : 0;
+  const umpireName = p.umpire || null;
+  const umpireHasRating = p.umpire_has_rating === true || ump !== 0;
 
   // Whether each stat supports the pick direction
   const supportsUnder = best.direction === "UNDER";
   const oppSupports = oppDelta == null ? null : supportsUnder ? oppDelta < 0 : oppDelta > 0;
   const k9Supports = k9Delta == null ? null : supportsUnder ? k9Delta < 0 : k9Delta > 0;
-  const umpSupports = supportsUnder ? ump < 0 : ump > 0;
+  const umpSupports = umpireHasRating && (supportsUnder ? ump < 0 : ump > 0);
 
   // State flags
   const isLive = p.game_state === "in_progress";
@@ -774,10 +776,15 @@ function PickDetail({ p, onClose }) {
           </div>
           <div className="v2-stat-row">
             <span className="lbl">{Icon.ump} Umpire</span>
-            {ump !== 0 ? (
+            {umpireHasRating ? (
               <span className={`val ${umpSupports ? "pos" : "neg"}`}>
                 Confirmed
                 <span className="delta">{ump > 0 ? "+" : ""}{ump.toFixed(2)}</span>
+              </span>
+            ) : umpireName ? (
+              <span className="val" style={{color: "var(--ink-dim)"}}>
+                {umpireName}
+                <span className="delta">neutral</span>
               </span>
             ) : (
               <span className="val" style={{color: "var(--ink-dim)"}}>TBA</span>

@@ -206,6 +206,9 @@ def fetch_umpires(props: list, date_str: str) -> tuple[dict, dict]:
     game_ump     = _build_game_ump_map(assignments)
 
     result = {}
+    umpire_by_pitcher = {}
+    rated_umpire_by_pitcher = {}
+    missing_career_rate_umpires = set()
     for prop in props:
         pitcher  = prop["pitcher"]
         # Check both team and opp_team — either pitcher (home or away) faces the same HP ump
@@ -225,15 +228,26 @@ def fetch_umpires(props: list, date_str: str) -> tuple[dict, dict]:
             adj = career_rates[ump_key]
             log.info("Pitcher %s: ump %s → adj %+.2f", pitcher, ump_name, adj)
             result[pitcher] = adj
+            umpire_by_pitcher[pitcher] = ump_name
+            rated_umpire_by_pitcher[pitcher] = True
         else:
             if ump_name:
+                umpire_by_pitcher[pitcher] = ump_name
+                rated_umpire_by_pitcher[pitcher] = False
+                missing_career_rate_umpires.add(ump_name)
                 log.info("Umpire '%s' not in career table — using 0 for %s", ump_name, pitcher)
             else:
+                rated_umpire_by_pitcher[pitcher] = False
                 log.info("No HP assignment found for %s — using 0", pitcher)
             result[pitcher] = 0.0
 
     diagnostics = {
         "hp_count_fetched":      len(assignments),
         "pitcher_nonzero_count": sum(1 for v in result.values() if v != 0.0),
+        "pitcher_with_hp_count": len(umpire_by_pitcher),
+        "pitcher_rated_count":   sum(1 for v in rated_umpire_by_pitcher.values() if v),
+        "umpire_by_pitcher":     umpire_by_pitcher,
+        "rated_umpire_by_pitcher": rated_umpire_by_pitcher,
+        "missing_career_rate_umpires": sorted(missing_career_rate_umpires),
     }
     return result, diagnostics

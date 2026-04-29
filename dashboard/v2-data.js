@@ -74,6 +74,7 @@
         park_factor: p.park_factor ?? null,
         ump_k_adj: p.ump_k_adj ?? 0,
         umpire: p.umpire ?? null,
+        umpire_has_rating: p.umpire_has_rating ?? null,
         // Signal-confirmation flags surfaced in the sheet's "Why this pick" header.
         // lineup_used=true when the starting 9 came from MLB's boxscore (A5); false
         // while we're still falling back to the projected lineup.

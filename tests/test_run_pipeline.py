@@ -949,7 +949,73 @@ def test_data_complete_is_row_specific_for_mixed_slate(tmp_path):
     assert captured["props_available"] is True
     by_pitcher = {row["pitcher"]: row for row in captured["records"]}
     assert by_pitcher["Covered Pitcher"]["data_complete"] is True
+    assert by_pitcher["Covered Pitcher"]["umpire_has_rating"] is True
     assert by_pitcher["Missing Coverage Pitcher"]["data_complete"] is False
+
+
+def test_run_attaches_confirmed_unrated_umpire_metadata(tmp_path):
+    import run_pipeline
+    run_pipeline._batter_stats_cache = None
+
+    props = [_sample_prop_for("Unrated Ump Pitcher")]
+    stats_map = {"Unrated Ump Pitcher": _sample_stats_for("Seattle Mariners", "Minnesota Twins")}
+    swstr_map = {
+        "Unrated Ump Pitcher": {"swstr_pct": 0.110, "career_swstr_pct": 0.105},
+        "__meta__": {"current_usable": True, "career_usable": True},
+    }
+    ump_diag = {
+        "hp_count_fetched": 1,
+        "pitcher_nonzero_count": 0,
+        "pitcher_with_hp_count": 1,
+        "pitcher_rated_count": 0,
+        "umpire_by_pitcher": {"Unrated Ump Pitcher": "Dexter Kelley"},
+        "rated_umpire_by_pitcher": {"Unrated Ump Pitcher": False},
+        "missing_career_rate_umpires": ["Dexter Kelley"],
+    }
+
+    def fake_build_pitcher_record(odds, stats, ump_k_adj, *, swstr_data, lineup, batter_stats, park_factor):
+        return {
+            "pitcher": odds["pitcher"],
+            "team": stats["team"],
+            "game_time": odds["game_time"],
+            "lambda": 4.2,
+            "ev_over": {"verdict": "LEAN"},
+            "ump_k_adj": ump_k_adj,
+            "swstr_pct": swstr_data["swstr_pct"],
+            "career_swstr_pct": swstr_data["career_swstr_pct"],
+            "park_factor": park_factor,
+        }
+
+    captured = {}
+    def spy_write_output(date_str, records, props_available, ump_diagnostics=None, data_warnings=None, connection_health=None):
+        captured["records"] = records
+        captured["ump_diagnostics"] = ump_diagnostics
+
+    with patch.object(run_pipeline, "OUTPUT_PATH", tmp_path / "today.json"), \
+         patch("run_pipeline.fetch_odds", return_value=props), \
+         patch("run_pipeline.fetch_stats", return_value=(stats_map, {})), \
+         patch("run_pipeline.fetch_swstr", return_value=swstr_map), \
+         patch("run_pipeline.fetch_umpires", return_value=({"Unrated Ump Pitcher": 0.0}, ump_diag)), \
+         patch("run_pipeline.build_pitcher_record", side_effect=fake_build_pitcher_record), \
+         patch("run_pipeline._merge_with_locked_snapshots", side_effect=lambda records, date_str, now: records), \
+         patch("run_pipeline._write_output", side_effect=spy_write_output), \
+         patch("run_pipeline._write_steam"), \
+         patch("run_pipeline.fetch_lineups_for_pitcher", return_value=None), \
+         patch("run_pipeline.fetch_batter_stats_cached", return_value={}), \
+         patch("run_pipeline.reset_db"), \
+         patch("run_pipeline.init_db"), \
+         patch("run_pipeline.load_history_into_db"), \
+         patch("run_pipeline.get_db", return_value=MagicMock()), \
+         patch("run_pipeline.lock_due_picks", return_value=0), \
+         patch("run_pipeline.seed_picks", return_value=0), \
+         patch("run_pipeline.export_db_to_history"):
+        run_pipeline.run("2026-04-01")
+
+    record = captured["records"][0]
+    assert record["umpire"] == "Dexter Kelley"
+    assert record["umpire_has_rating"] is False
+    assert record["ump_k_adj"] == 0.0
+    assert captured["ump_diagnostics"]["missing_career_rate_umpires"] == ["Dexter Kelley"]
 
 
 def test_fetch_umpires_receives_props_with_team_populated_from_stats(tmp_path):
