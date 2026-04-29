@@ -232,11 +232,15 @@ Check:
 - `lineup_used` split
 - `data_complete` split
 - `ref_book` split
+- severe gate candidates: no pitcher K profile, starter mismatch, opener, missing game time, no trusted book price
+- soft cap candidates: projected lineup, unrated umpire, missing career SwStr baseline, neutral park fallback, weak opening baseline
 - obvious scratch/opener/degraded-source flags
 
 Expected:
 - if preview/open tracking is degraded, do not over-read steam/CLV or movement confidence from that slate
 - if confirmed lineups underperform for one slate, treat it as observation only until repeated
+- if a would-be `FIRE 2u` has any severe gate candidate, it should be blocked from betting in the next quality-gate implementation
+- if a would-be `FIRE 2u` has soft cap candidates, record whether it would have been capped to `FIRE 1u` or `LEAN`
 
 - [ ] **Step 5: Record the daily post-slate read**
 
@@ -250,6 +254,7 @@ Append a compact section to `analytics/output/post_phase_c_weekly_check.md`:
 - Clean-regime context: [first clean slate | N clean graded rows | transition context only]
 - Projection read: mean residual = X, over residual = Y, under residual = Z
 - Bet-selection read: [edge/adj_ev separating | high-edge failed | low-edge failed | insufficient clean sample]
+- FIRE 2u quality read: [all clean | would cap X picks | would block X picks | insufficient data]
 - Close-loss shape: 0.5K losses = X; 1.5K+ losses = Y
 - Data caveat: [preview/open healthy | preview/open degraded | lineup/data_complete caveat | none]
 - Action: [no change, keep soaking | investigate source issue | queue bet-conversion review | queue projection review]
@@ -365,6 +370,7 @@ Add a dated section:
 - Projection read: ...
 - Bet-selection read: ...
 - Post-slate pick-review read: ...
+- FIRE 2u data-quality read: ...
 - TheRundown intake read: ...
 - Recommended next implementation track: ...
 ```
@@ -400,5 +406,6 @@ This cadence is successful if, after roughly a week of clean post-`2026-04-28` h
 4. Is `FIRE 2u` still justified?
 5. Can the TheRundown query be narrowed to reduce data-point burn/noise while preserving resolved pitcher coverage?
 6. Are bad slates coming from projection misses, bet-conversion/ranking, degraded source data, or ordinary close-loss variance?
+7. Would the proposed severe gates and soft caps have blocked or capped the right `FIRE 2u` outliers without hiding clean winners?
 
 If those are still answered with “not enough clean data,” the right response is to extend the cadence, not to start random tuning.
