@@ -91,6 +91,20 @@ def _schedule_game_date_et(game: dict, fallback_date_str: str) -> str:
         return None
 
 
+def _is_playable_schedule_game(game: dict) -> bool:
+    """Return False for MLB schedule rows that should not produce betting props."""
+    status = game.get("status") or {}
+    detailed = str(status.get("detailedState") or "").strip().lower()
+    abstract = str(status.get("abstractGameState") or "").strip().lower()
+
+    non_playable_tokens = ("postponed", "cancelled", "canceled")
+    if any(token in detailed for token in non_playable_tokens):
+        return False
+    if any(token in abstract for token in non_playable_tokens):
+        return False
+    return True
+
+
 def _sort_starts_by_date_desc(starts: list) -> list:
     """Return started game-log rows newest-first when date data exists."""
     return sorted(
@@ -282,6 +296,22 @@ def fetch_stats(date_str: str, pitcher_names: list) -> tuple[dict, dict]:
         block_date_str = date_block.get("date") or date_str
         for game in date_block.get("games", []):
             if _schedule_game_date_et(game, block_date_str) != date_str:
+                continue
+            if not _is_playable_schedule_game(game):
+                status = (game.get("status") or {}).get("detailedState") or "non-playable"
+                away_name = (
+                    game.get("teams", {}).get("away", {}).get("team", {}).get("name", "")
+                )
+                home_name = (
+                    game.get("teams", {}).get("home", {}).get("team", {}).get("name", "")
+                )
+                log.info(
+                    "Skipping %s @ %s on %s: game status is %s",
+                    away_name,
+                    home_name,
+                    date_str,
+                    status,
+                )
                 continue
             game_date = _parse_split_date(block_date_str) or target_date
             for side in ("away", "home"):

@@ -10,7 +10,14 @@ from fetch_stats import fetch_stats, _parse_ip, _k9_from_splits, _normalize_name
 
 # ── Helpers ────────────────────────────────────────────────────────────────────
 
-def _make_schedule(pitcher_name, pitcher_id, pitch_hand_code="R", block_date=None, game_date=None):
+def _make_schedule(
+    pitcher_name,
+    pitcher_id,
+    pitch_hand_code="R",
+    block_date=None,
+    game_date=None,
+    status=None,
+):
     """Build a minimal MLB schedule API response with one game."""
     pitcher_obj = {
         "id": pitcher_id,
@@ -26,6 +33,7 @@ def _make_schedule(pitcher_name, pitcher_id, pitch_hand_code="R", block_date=Non
                 "games": [
                     {
                         "gameDate": game_date or f"{block_date or '2026-04-15'}T23:05:00Z",
+                        "status": status or {"detailedState": "Scheduled"},
                         "teams": {
                             "away": {
                                 "probablePitcher": pitcher_obj,
@@ -625,3 +633,28 @@ def test_fetch_stats_filters_schedule_to_target_et_date():
 
     assert "Gerrit Cole" in stats
     assert probables["New York Yankees"] == "Gerrit Cole"
+
+
+def test_fetch_stats_skips_postponed_games_before_resolving_probables():
+    pitcher_id = 543037
+    schedule = _make_schedule(
+        "Gerrit Cole",
+        pitcher_id,
+        "R",
+        status={"detailedState": "Postponed", "abstractGameState": "Preview"},
+    )
+
+    def side_effect(url, params=None, timeout=None):
+        mock_resp = MagicMock()
+        mock_resp.raise_for_status = MagicMock()
+        if "/schedule" in url:
+            mock_resp.json.return_value = schedule
+        else:
+            raise AssertionError(f"Postponed game should not fetch downstream stats: {url}")
+        return mock_resp
+
+    with patch("requests.get", side_effect=side_effect):
+        stats, probables = fetch_stats("2026-04-15", ["Gerrit Cole"])
+
+    assert stats == {}
+    assert probables == {}

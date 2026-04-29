@@ -3,8 +3,7 @@
   "date": "2026-04-29",
   "props_available": true,
   "data_warnings": [
-    "fetch_lineups: confirmed 26/30 opposing lineups (4 still projected)",
-    "fetch_batter_stats missing splits for 3/30 opposing lineups"
+    "fetch_batter_stats missing splits for 3/28 opposing lineups"
   ],
   "pitchers": [
     {
@@ -2076,311 +2075,6 @@
       ]
     },
     {
-      "pitcher": "Peter Lambert",
-      "team": "Houston Astros",
-      "opp_team": "Baltimore Orioles",
-      "pitcher_throws": "R",
-      "game_time": "2026-04-29T22:35:00Z",
-      "k_line": 4.5,
-      "opening_line": 4.5,
-      "best_over_book": "BetMGM",
-      "ref_book": "BetMGM",
-      "best_over_odds": -120,
-      "best_under_odds": -110,
-      "opening_over_odds": 100,
-      "opening_under_odds": -135,
-      "opening_odds_source": "first_seen",
-      "price_delta_over": -220,
-      "price_delta_under": 25,
-      "raw_lambda": 5.91,
-      "lambda": 5.67,
-      "avg_ip": 5.5,
-      "is_opener": false,
-      "opener_note": null,
-      "swstr_pct": 0.1774,
-      "career_swstr_pct": 0.0949,
-      "swstr_delta_k9": 0.412,
-      "days_since_last_start": 7,
-      "last_pitch_count": 96,
-      "rest_k9_delta": 0.0,
-      "opp_k_rate": 0.2416,
-      "lineup_used": false,
-      "lineup_count": 0,
-      "park_factor": 0.99,
-      "ump_k_adj": 0.0,
-      "starter_mismatch": false,
-      "recent_start_count": 2,
-      "season_k9": 13.09,
-      "recent_k9": 13.09,
-      "career_k9": 6.96,
-      "ev_over": {
-        "edge": 0.1228,
-        "ev": 0.2252,
-        "adj_ev": 0.2252,
-        "verdict": "LEAN",
-        "win_prob": 0.668,
-        "movement_conf": 1.0,
-        "raw_verdict": "FIRE 2u",
-        "raw_adj_ev": 0.2252,
-        "actionable_verdict": "LEAN",
-        "quality_gate_level": "capped",
-        "quality_gate_reasons": [
-          "thin recent start sample",
-          "projected lineup",
-          "first seen opening"
-        ]
-      },
-      "ev_under": {
-        "edge": -0.1921,
-        "ev": -0.3667,
-        "adj_ev": -0.3667,
-        "verdict": "PASS",
-        "win_prob": 0.332,
-        "movement_conf": 1.0,
-        "raw_verdict": "PASS",
-        "raw_adj_ev": -0.3667,
-        "actionable_verdict": "PASS",
-        "quality_gate_level": "capped",
-        "quality_gate_reasons": [
-          "thin recent start sample",
-          "projected lineup",
-          "first seen opening"
-        ]
-      },
-      "book_odds": {
-        "BetMGM": {
-          "over": -120,
-          "under": -110
-        },
-        "Kalshi": {
-          "over": 105,
-          "under": -126
-        }
-      },
-      "umpire": null,
-      "umpire_has_rating": false,
-      "umpire_rating_games": null,
-      "data_complete": false,
-      "game_state": "pregame",
-      "input_quality_flags": [
-        "thin_recent_start_sample",
-        "projected_lineup",
-        "first_seen_opening"
-      ],
-      "projection_safe": true,
-      "quality_gate_level": "capped",
-      "quality_gate_reasons": [
-        "thin recent start sample",
-        "projected lineup",
-        "first seen opening"
-      ],
-      "verdict_cap_reason": "3 soft input flags: thin_recent_start_sample, projected_lineup, first_seen_opening",
-      "data_maturity": {
-        "pitcher": "thin",
-        "umpire": "mature",
-        "lineup": "projected",
-        "market": "first_seen"
-      },
-      "max_actionable_verdict": "LEAN",
-      "tracked_picks": [
-        {
-          "date": "2026-04-29",
-          "pitcher": "Peter Lambert",
-          "team": "Houston Astros",
-          "opp_team": "Baltimore Orioles",
-          "side": "over",
-          "display_side": "OVER",
-          "verdict": "LEAN",
-          "locked_verdict": "LEAN",
-          "display_verdict": "LEAN",
-          "raw_verdict": "FIRE 2u",
-          "actionable_verdict": "LEAN",
-          "quality_gate_level": "capped",
-          "input_quality_flags": [
-            "thin_recent_start_sample",
-            "projected_lineup",
-            "first_seen_opening"
-          ],
-          "verdict_cap_reason": "3 soft input flags: thin_recent_start_sample, projected_lineup, first_seen_opening",
-          "data_maturity": {
-            "lineup": "projected",
-            "market": "first_seen",
-            "pitcher": "thin",
-            "umpire": "mature"
-          },
-          "k_line": 4.5,
-          "locked_k_line": 4.5,
-          "display_k_line": 4.5,
-          "odds": -120,
-          "locked_odds": -120,
-          "display_odds": -120,
-          "adj_ev": 0.2252,
-          "raw_adj_ev": 0.2252,
-          "locked_adj_ev": 0.2252,
-          "display_adj_ev": 0.2252,
-          "edge": 0.1228,
-          "ev": 0.2252,
-          "result": null,
-          "actual_ks": null,
-          "pnl": null,
-          "locked_at": "2026-04-29T22:10:25Z",
-          "status": "locked",
-          "game_time": "2026-04-29T22:35:00Z",
-          "data_complete": 0
-        }
-      ]
-    },
-    {
-      "pitcher": "Chris Bassitt",
-      "team": "Baltimore Orioles",
-      "opp_team": "Houston Astros",
-      "pitcher_throws": "R",
-      "game_time": "2026-04-29T22:35:00Z",
-      "k_line": 4.5,
-      "opening_line": 4.5,
-      "best_over_book": "BetMGM",
-      "ref_book": "BetMGM",
-      "best_over_odds": 115,
-      "best_under_odds": -155,
-      "opening_over_odds": 105,
-      "opening_under_odds": -140,
-      "opening_odds_source": "first_seen",
-      "price_delta_over": 10,
-      "price_delta_under": -15,
-      "raw_lambda": 2.68,
-      "lambda": 2.43,
-      "avg_ip": 4.27,
-      "is_opener": false,
-      "opener_note": null,
-      "swstr_pct": 0.0752,
-      "career_swstr_pct": 0.0933,
-      "swstr_delta_k9": -0.181,
-      "days_since_last_start": 7,
-      "last_pitch_count": 88,
-      "rest_k9_delta": 0.0,
-      "opp_k_rate": 0.1995,
-      "lineup_used": false,
-      "lineup_count": 0,
-      "park_factor": 0.99,
-      "ump_k_adj": 0.0,
-      "starter_mismatch": false,
-      "recent_start_count": 5,
-      "season_k9": 4.22,
-      "recent_k9": 4.22,
-      "career_k9": 8.31,
-      "ev_over": {
-        "edge": -0.3652,
-        "ev": -0.7851,
-        "adj_ev": -0.7851,
-        "verdict": "PASS",
-        "win_prob": 0.1,
-        "movement_conf": 1.0,
-        "raw_verdict": "PASS",
-        "raw_adj_ev": -0.7851,
-        "actionable_verdict": "PASS",
-        "quality_gate_level": "capped",
-        "quality_gate_reasons": [
-          "projected lineup",
-          "first seen opening"
-        ]
-      },
-      "ev_under": {
-        "edge": 0.2922,
-        "ev": 0.4807,
-        "adj_ev": 0.4807,
-        "verdict": "LEAN",
-        "win_prob": 0.9,
-        "movement_conf": 1.0,
-        "raw_verdict": "FIRE 2u",
-        "raw_adj_ev": 0.4807,
-        "actionable_verdict": "LEAN",
-        "quality_gate_level": "capped",
-        "quality_gate_reasons": [
-          "projected lineup",
-          "first seen opening"
-        ]
-      },
-      "book_odds": {
-        "BetMGM": {
-          "over": 115,
-          "under": -155
-        },
-        "Kalshi": {
-          "over": 129,
-          "under": -161
-        }
-      },
-      "umpire": null,
-      "umpire_has_rating": false,
-      "umpire_rating_games": null,
-      "data_complete": false,
-      "game_state": "pregame",
-      "input_quality_flags": [
-        "projected_lineup",
-        "first_seen_opening"
-      ],
-      "projection_safe": true,
-      "quality_gate_level": "capped",
-      "quality_gate_reasons": [
-        "projected lineup",
-        "first seen opening"
-      ],
-      "verdict_cap_reason": "2 soft input flags: projected_lineup, first_seen_opening",
-      "data_maturity": {
-        "pitcher": "mature",
-        "umpire": "mature",
-        "lineup": "projected",
-        "market": "first_seen"
-      },
-      "max_actionable_verdict": "LEAN",
-      "tracked_picks": [
-        {
-          "date": "2026-04-29",
-          "pitcher": "Chris Bassitt",
-          "team": "Baltimore Orioles",
-          "opp_team": "Houston Astros",
-          "side": "under",
-          "display_side": "UNDER",
-          "verdict": "LEAN",
-          "locked_verdict": "LEAN",
-          "display_verdict": "LEAN",
-          "raw_verdict": "FIRE 2u",
-          "actionable_verdict": "LEAN",
-          "quality_gate_level": "capped",
-          "input_quality_flags": [
-            "projected_lineup",
-            "first_seen_opening"
-          ],
-          "verdict_cap_reason": "2 soft input flags: projected_lineup, first_seen_opening",
-          "data_maturity": {
-            "lineup": "projected",
-            "market": "first_seen",
-            "pitcher": "mature",
-            "umpire": "mature"
-          },
-          "k_line": 4.5,
-          "locked_k_line": 4.5,
-          "display_k_line": 4.5,
-          "odds": -155,
-          "locked_odds": -155,
-          "display_odds": -155,
-          "adj_ev": 0.4807,
-          "raw_adj_ev": 0.4807,
-          "locked_adj_ev": 0.4807,
-          "display_adj_ev": 0.4807,
-          "edge": 0.2922,
-          "ev": 0.4807,
-          "result": null,
-          "actual_ks": null,
-          "pnl": null,
-          "locked_at": "2026-04-29T22:10:25Z",
-          "status": "locked",
-          "game_time": "2026-04-29T22:35:00Z",
-          "data_complete": 0
-        }
-      ]
-    },
-    {
       "pitcher": "Brandon Williamson",
       "team": "Cincinnati Reds",
       "opp_team": "Colorado Rockies",
@@ -4142,9 +3836,9 @@
   "connection_health": {
     "props_seen": 110,
     "stats_resolved": 30,
-    "records_built": 30,
+    "records_built": 28,
     "unresolved_count": 0,
-    "model_candidate_count": 30,
+    "model_candidate_count": 28,
     "intake_filtered_count": 0,
     "missing_stats_count": 0,
     "unresolved_after_stats_count": 0,
@@ -4178,18 +3872,17 @@
   },
   "quality_gate_summary": {
     "clean": 4,
-    "capped": 25,
+    "capped": 23,
     "blocked": 1,
     "severe_flags": {
       "no_pitcher_k_profile": 1
     },
     "soft_flags": {
       "unrated_umpire": 4,
-      "first_seen_opening": 26,
+      "first_seen_opening": 24,
       "developing_pitcher_sample": 3,
-      "thin_recent_start_sample": 3,
-      "missing_career_swstr": 2,
-      "projected_lineup": 2
+      "thin_recent_start_sample": 2,
+      "missing_career_swstr": 2
     },
     "pre_record_skips": {
       "unresolved_probable_starters": 0,
@@ -4681,95 +4374,6 @@
       "status": "locked",
       "game_time": "2026-04-29T22:10:00Z",
       "data_complete": 1
-    },
-    {
-      "date": "2026-04-29",
-      "pitcher": "Chris Bassitt",
-      "team": "Baltimore Orioles",
-      "opp_team": "Houston Astros",
-      "side": "under",
-      "display_side": "UNDER",
-      "verdict": "LEAN",
-      "locked_verdict": "LEAN",
-      "display_verdict": "LEAN",
-      "raw_verdict": "FIRE 2u",
-      "actionable_verdict": "LEAN",
-      "quality_gate_level": "capped",
-      "input_quality_flags": [
-        "projected_lineup",
-        "first_seen_opening"
-      ],
-      "verdict_cap_reason": "2 soft input flags: projected_lineup, first_seen_opening",
-      "data_maturity": {
-        "lineup": "projected",
-        "market": "first_seen",
-        "pitcher": "mature",
-        "umpire": "mature"
-      },
-      "k_line": 4.5,
-      "locked_k_line": 4.5,
-      "display_k_line": 4.5,
-      "odds": -155,
-      "locked_odds": -155,
-      "display_odds": -155,
-      "adj_ev": 0.4807,
-      "raw_adj_ev": 0.4807,
-      "locked_adj_ev": 0.4807,
-      "display_adj_ev": 0.4807,
-      "edge": 0.2922,
-      "ev": 0.4807,
-      "result": null,
-      "actual_ks": null,
-      "pnl": null,
-      "locked_at": "2026-04-29T22:10:25Z",
-      "status": "locked",
-      "game_time": "2026-04-29T22:35:00Z",
-      "data_complete": 0
-    },
-    {
-      "date": "2026-04-29",
-      "pitcher": "Peter Lambert",
-      "team": "Houston Astros",
-      "opp_team": "Baltimore Orioles",
-      "side": "over",
-      "display_side": "OVER",
-      "verdict": "LEAN",
-      "locked_verdict": "LEAN",
-      "display_verdict": "LEAN",
-      "raw_verdict": "FIRE 2u",
-      "actionable_verdict": "LEAN",
-      "quality_gate_level": "capped",
-      "input_quality_flags": [
-        "thin_recent_start_sample",
-        "projected_lineup",
-        "first_seen_opening"
-      ],
-      "verdict_cap_reason": "3 soft input flags: thin_recent_start_sample, projected_lineup, first_seen_opening",
-      "data_maturity": {
-        "lineup": "projected",
-        "market": "first_seen",
-        "pitcher": "thin",
-        "umpire": "mature"
-      },
-      "k_line": 4.5,
-      "locked_k_line": 4.5,
-      "display_k_line": 4.5,
-      "odds": -120,
-      "locked_odds": -120,
-      "display_odds": -120,
-      "adj_ev": 0.2252,
-      "raw_adj_ev": 0.2252,
-      "locked_adj_ev": 0.2252,
-      "display_adj_ev": 0.2252,
-      "edge": 0.1228,
-      "ev": 0.2252,
-      "result": null,
-      "actual_ks": null,
-      "pnl": null,
-      "locked_at": "2026-04-29T22:10:25Z",
-      "status": "locked",
-      "game_time": "2026-04-29T22:35:00Z",
-      "data_complete": 0
     },
     {
       "date": "2026-04-29",
