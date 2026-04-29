@@ -1,0 +1,155 @@
+{
+  "season": 2026,
+  "source": "baseball-reference via pybaseball.get_splits",
+  "projection_status": "collection_only",
+  "batters": {
+    "mlbam:802415": {
+      "name": "Chandler Simpson",
+      "bats": "R",
+      "mlbam_id": 802415,
+      "bbref_id": "simpsch01",
+      "season": 2026,
+      "vs_R": {
+        "pa": 87,
+        "so": 7,
+        "k_rate": 0.0805
+      },
+      "vs_L": {
+        "pa": 38,
+        "so": 3,
+        "k_rate": 0.0789
+      }
+    },
+    "mlbam:691406": {
+      "name": "Junior Caminero",
+      "bats": "R",
+      "mlbam_id": 691406,
+      "bbref_id": "caminju01",
+      "season": 2026,
+      "vs_R": {
+        "pa": 94,
+        "so": 18,
+        "k_rate": 0.1915
+      },
+      "vs_L": {
+        "pa": 33,
+        "so": 2,
+        "k_rate": 0.0606
+      }
+    },
+    "mlbam:666018": {
+      "name": "Jonathan Aranda",
+      "bats": "R",
+      "mlbam_id": 666018,
+      "bbref_id": "arandjo01",
+      "season": 2026,
+      "vs_R": {
+        "pa": 93,
+        "so": 19,
+        "k_rate": 0.2043
+      },
+      "vs_L": {
+        "pa": 35,
+        "so": 11,
+        "k_rate": 0.3143
+      }
+    },
+    "mlbam:650490": {
+      "name": "Yandy D\u00edaz",
+      "bats": "R",
+      "mlbam_id": 650490,
+      "bbref_id": "diazya01",
+      "season": 2026,
+      "vs_R": {
+        "pa": 101,
+        "so": 10,
+        "k_rate": 0.099
+      },
+      "vs_L": {
+        "pa": 28,
+        "so": 6,
+        "k_rate": 0.2143
+      }
+    },
+    "mlbam:641584": {
+      "name": "Jake Fraley",
+      "bats": "R",
+      "mlbam_id": 641584,
+      "bbref_id": "fraleja01",
+      "season": 2026,
+      "vs_R": {
+        "pa": 55,
+        "so": 12,
+        "k_rate": 0.2182
+      },
+      "vs_L": {
+        "pa": 8,
+        "so": 3,
+        "k_rate": 0.375
+      }
+    },
+    "mlbam:656775": {
+      "name": "Cedric Mullins",
+      "bats": "R",
+      "mlbam_id": 656775,
+      "bbref_id": "mullice01",
+      "season": 2026,
+      "vs_R": {
+        "pa": 78,
+        "so": 18,
+        "k_rate": 0.2308
+      },
+      "vs_L": {
+        "pa": 23,
+        "so": 4,
+        "k_rate": 0.1739
+      }
+    },
+    "mlbam:680700": {
+      "name": "Richie Palacios",
+      "bats": "R",
+      "mlbam_id": 680700,
+      "bbref_id": "palacri01",
+      "season": 2026,
+      "vs_R": {
+        "pa": 48,
+        "so": 7,
+        "k_rate": 0.1458
+      },
+      "vs_L": {
+        "pa": 7,
+        "so": 2,
+        "k_rate": 0.2857
+      }
+    },
+    "mlbam:676439": {
+      "name": "Hunter Feduccia",
+      "bats": "R",
+      "mlbam_id": 676439,
+      "bbref_id": "feduchu01",
+      "season": 2026,
+      "vs_R": {
+        "pa": 31,
+        "so": 12,
+        "k_rate": 0.3871
+      },
+      "vs_L": {
+        "pa": 4,
+        "so": 1,
+        "k_rate": 0.25
+      }
+    }
+  },
+  "updated_at": "2026-04-29T19:31:55Z",
+  "last_run": {
+    "projection_status": "collection_only",
+    "requested_batters": 207,
+    "already_cached": 199,
+    "attempted": 8,
+    "collected": 8,
+    "failed": 0,
+    "cache_size": 8,
+    "errors": [],
+    "updated_at": "2026-04-29T19:31:55Z"
+  }
+}
