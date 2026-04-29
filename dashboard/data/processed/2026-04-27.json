@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-04-28T23:30:24Z",
+  "generated_at": "2026-04-29T00:02:08Z",
   "date": "2026-04-27",
   "props_available": true,
   "data_warnings": [
@@ -74,13 +74,22 @@
     "pitcher_nonzero_count": 24
   },
   "connection_health": {
-    "props_seen": 95,
+    "props_seen": 98,
     "stats_resolved": 25,
     "records_built": 25,
-    "unresolved_count": 70,
-    "missing_stats_count": 70,
+    "unresolved_count": 73,
+    "model_candidate_count": 25,
+    "intake_filtered_count": 73,
+    "missing_stats_count": 73,
+    "unresolved_after_stats_count": 0,
     "feature_build_failures_count": 0,
     "degraded": true,
+    "sample_intake_filtered_pitchers": [
+      "Max Fried",
+      "Jake Burger",
+      "Ryan McMahon"
+    ],
+    "sample_feature_build_failures": [],
     "sample_unresolved_pitchers": [
       "Max Fried",
       "Jake Burger",
