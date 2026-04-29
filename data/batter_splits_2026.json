@@ -427,23 +427,40 @@
         "so": 4,
         "k_rate": 0.6667
       }
+    },
+    "mlbam:687263": {
+      "name": "Zach Neto",
+      "bats": "R",
+      "mlbam_id": 687263,
+      "bbref_id": "netoza01",
+      "season": 2026,
+      "vs_R": {
+        "pa": 106,
+        "so": 33,
+        "k_rate": 0.3113
+      },
+      "vs_L": {
+        "pa": 40,
+        "so": 12,
+        "k_rate": 0.3
+      }
     }
   },
-  "updated_at": "2026-04-29T22:10:25Z",
+  "updated_at": "2026-04-29T22:34:10Z",
   "last_run": {
     "projection_status": "collection_only",
     "requested_batters": 234,
-    "already_cached": 23,
+    "already_cached": 24,
     "attempted": 4,
     "collected": 1,
     "failed": 3,
-    "queued_not_attempted": 207,
-    "cache_size": 25,
+    "queued_not_attempted": 206,
+    "cache_size": 26,
     "errors": [
       "Travis Bazzana: no bbref id",
       "Munetaka Murakami: no bbref id",
       "Sam Antonacci: no bbref id"
     ],
-    "updated_at": "2026-04-29T22:10:25Z"
+    "updated_at": "2026-04-29T22:34:10Z"
   }
 }
