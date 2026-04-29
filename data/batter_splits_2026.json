@@ -206,19 +206,72 @@
         "so": 4,
         "k_rate": 0.1026
       }
+    },
+    "mlbam:700932": {
+      "name": "Kyle Manzardo",
+      "bats": "R",
+      "mlbam_id": 700932,
+      "bbref_id": "manzaky01",
+      "season": 2026,
+      "vs_R": {
+        "pa": 79,
+        "so": 28,
+        "k_rate": 0.3544
+      },
+      "vs_L": {
+        "pa": 14,
+        "so": 3,
+        "k_rate": 0.2143
+      }
+    },
+    "mlbam:682177": {
+      "name": "Daniel Schneemann",
+      "bats": "R",
+      "mlbam_id": 682177,
+      "bbref_id": "schneda04",
+      "season": 2026,
+      "vs_R": {
+        "pa": 60,
+        "so": 18,
+        "k_rate": 0.3
+      },
+      "vs_L": {
+        "pa": 23,
+        "so": 7,
+        "k_rate": 0.3043
+      }
+    },
+    "mlbam:682657": {
+      "name": "Angel Mart\u00ednez",
+      "bats": "R",
+      "mlbam_id": 682657,
+      "bbref_id": "martian02",
+      "season": 2026,
+      "vs_R": {
+        "pa": 64,
+        "so": 17,
+        "k_rate": 0.2656
+      },
+      "vs_L": {
+        "pa": 33,
+        "so": 2,
+        "k_rate": 0.0606
+      }
     }
   },
-  "updated_at": "2026-04-29T19:51:11Z",
+  "updated_at": "2026-04-29T20:02:28Z",
   "last_run": {
     "projection_status": "collection_only",
     "requested_batters": 216,
-    "already_cached": 8,
+    "already_cached": 12,
     "attempted": 4,
-    "collected": 4,
-    "failed": 0,
-    "queued_not_attempted": 204,
-    "cache_size": 12,
-    "errors": [],
-    "updated_at": "2026-04-29T19:51:11Z"
+    "collected": 3,
+    "failed": 1,
+    "queued_not_attempted": 200,
+    "cache_size": 15,
+    "errors": [
+      "Travis Bazzana: no bbref id"
+    ],
+    "updated_at": "2026-04-29T20:02:28Z"
   }
 }
