@@ -396,9 +396,9 @@ function WhyPills({ p, side }) {
 
 // ── Pick card ──
 function qualityLabel(level) {
-  if (level === "blocked") return "Blocked";
-  if (level === "capped") return "Capped";
-  return "Clean";
+  if (level === "blocked") return "Current blocked";
+  if (level === "capped") return "Current capped";
+  return "Current clean";
 }
 
 function qualityReason(p, side) {
@@ -485,7 +485,7 @@ function PickCard({ p, onOpen }) {
         <div className="v2-tracked-row">
           {tracked.map((pick, idx) => (
             <span key={`${pick.direction}-${idx}`} className={`v2-tracked-pill ${pick.status === "locked" ? "locked" : ""}`}>
-              {pick.status === "locked" ? "Locked" : "Tracked"} {pick.direction} {pick.k_line ?? p.k_line} · {pick.verdict}
+              {pick.status === "locked" ? "Locked pick" : "Tracked pick"} {pick.direction} {pick.k_line ?? p.k_line} · {pick.verdict}
             </span>
           ))}
         </div>
@@ -498,7 +498,7 @@ function PickCard({ p, onOpen }) {
           </span>
           {side.raw_verdict && side.raw_verdict !== side.verdict && (
             <span className="v2-tracked-pill">
-              Raw {side.raw_verdict}
+              Raw model {side.raw_verdict}
             </span>
           )}
         </div>
