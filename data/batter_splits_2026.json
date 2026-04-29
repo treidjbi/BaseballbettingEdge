@@ -444,23 +444,40 @@
         "so": 12,
         "k_rate": 0.3
       }
+    },
+    "mlbam:545361": {
+      "name": "Mike Trout",
+      "bats": "R",
+      "mlbam_id": 545361,
+      "bbref_id": "troutmi01",
+      "season": 2026,
+      "vs_R": {
+        "pa": 105,
+        "so": 19,
+        "k_rate": 0.181
+      },
+      "vs_L": {
+        "pa": 35,
+        "so": 8,
+        "k_rate": 0.2286
+      }
     }
   },
-  "updated_at": "2026-04-29T22:34:10Z",
+  "updated_at": "2026-04-29T23:06:33Z",
   "last_run": {
     "projection_status": "collection_only",
     "requested_batters": 234,
-    "already_cached": 24,
+    "already_cached": 25,
     "attempted": 4,
     "collected": 1,
     "failed": 3,
-    "queued_not_attempted": 206,
-    "cache_size": 26,
+    "queued_not_attempted": 205,
+    "cache_size": 27,
     "errors": [
       "Travis Bazzana: no bbref id",
       "Munetaka Murakami: no bbref id",
       "Sam Antonacci: no bbref id"
     ],
-    "updated_at": "2026-04-29T22:34:10Z"
+    "updated_at": "2026-04-29T23:06:33Z"
   }
 }
