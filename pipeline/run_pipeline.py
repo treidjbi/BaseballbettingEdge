@@ -11,7 +11,7 @@ import math
 import os
 import sys
 from time import perf_counter
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 from zoneinfo import ZoneInfo
 from pathlib import Path
 
@@ -327,6 +327,50 @@ def _record_slot_key(record: dict) -> tuple[str, str, str] | None:
     return (team, opp_team, game_time)
 
 
+def _parse_utc_datetime(value: str | None) -> datetime | None:
+    if not value:
+        return None
+    try:
+        return datetime.fromisoformat(value.replace("Z", "+00:00"))
+    except (ValueError, TypeError):
+        return None
+
+
+def _pregame_signal_downgrade_reasons(existing: dict, fresh: dict) -> list[str]:
+    """Return irreversible pregame source signals that a fresh row lost."""
+    reasons: list[str] = []
+    if existing.get("lineup_used") is True and fresh.get("lineup_used") is not True:
+        reasons.append("lineup")
+    if existing.get("umpire") and not fresh.get("umpire"):
+        reasons.append("umpire")
+    return reasons
+
+
+def _should_preserve_existing_pregame_record(
+    existing: dict,
+    fresh: dict,
+    now: datetime,
+    *,
+    lock_window: timedelta = timedelta(minutes=45),
+) -> tuple[bool, list[str]]:
+    """Keep a better near-lock snapshot when a later source response goes blank."""
+    reasons = _pregame_signal_downgrade_reasons(existing, fresh)
+    if not reasons:
+        return False, []
+
+    game_time = _parse_utc_datetime(existing.get("game_time"))
+    if game_time is None:
+        return False, []
+
+    if now >= game_time:
+        return False, []
+
+    if game_time - now > lock_window:
+        return False, []
+
+    return True, reasons
+
+
 def _merge_with_locked_snapshots(fresh_records: list, date_str: str, now: datetime) -> list:
     """
     For games that have already started, preserve the last pre-game snapshot from
@@ -381,6 +425,18 @@ def _merge_with_locked_snapshots(fresh_records: list, date_str: str, now: dateti
         if name in started_names:
             continue  # Game started — use locked snapshot (already added above)
         if name in existing_pitchers:
+            existing_record = existing_pitchers[name]
+            preserve_existing, reasons = _should_preserve_existing_pregame_record(
+                existing_record, r, now
+            )
+            if preserve_existing:
+                log.warning(
+                    "Preserving prior pregame snapshot for %s; fresh source lost %s",
+                    name,
+                    "/".join(reasons),
+                )
+                result.append(existing_record)
+                continue
             # Known pitcher, game not yet started — use fresh data
             result.append(r)
         else:

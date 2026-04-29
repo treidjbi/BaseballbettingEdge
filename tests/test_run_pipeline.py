@@ -1,6 +1,7 @@
 import sys, os
 import json
 import pytest
+from datetime import datetime, timezone
 from pathlib import Path
 from unittest.mock import patch, MagicMock
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'pipeline'))
@@ -70,6 +71,86 @@ def test_apply_quality_gates_to_records_preserves_raw_and_summarizes_flags():
     assert summary["blocked"] == 1
     assert summary["severe_flags"]["opener"] == 1
     assert summary["pre_record_skips"] == {"no_target_book": 2}
+
+
+def test_merge_preserves_near_lock_confirmed_signals_when_source_goes_blank(tmp_path):
+    import run_pipeline
+
+    out_path = tmp_path / "today.json"
+    out_path.write_text(json.dumps({
+        "date": "2026-04-29",
+        "pitchers": [
+            {
+                "pitcher": "Signal Pitcher",
+                "team": "Philadelphia Phillies",
+                "opp_team": "San Francisco Giants",
+                "game_time": "2026-04-29T22:10:00Z",
+                "lineup_used": True,
+                "lineup_count": 9,
+                "umpire": "Charlie Ramos",
+                "lambda": 5.9,
+            }
+        ],
+    }))
+    fresh_records = [
+        {
+            "pitcher": "Signal Pitcher",
+            "team": "Philadelphia Phillies",
+            "opp_team": "San Francisco Giants",
+            "game_time": "2026-04-29T22:10:00Z",
+            "lineup_used": False,
+            "lineup_count": 0,
+            "umpire": None,
+            "lambda": 6.1,
+        }
+    ]
+
+    with patch.object(run_pipeline, "OUTPUT_PATH", out_path):
+        merged = run_pipeline._merge_with_locked_snapshots(
+            fresh_records,
+            "2026-04-29",
+            datetime(2026, 4, 29, 21, 41, tzinfo=timezone.utc),
+        )
+
+    assert merged == json.loads(out_path.read_text())["pitchers"]
+
+
+def test_merge_uses_fresh_record_when_not_near_lock_window(tmp_path):
+    import run_pipeline
+
+    out_path = tmp_path / "today.json"
+    out_path.write_text(json.dumps({
+        "date": "2026-04-29",
+        "pitchers": [
+            {
+                "pitcher": "Signal Pitcher",
+                "team": "Philadelphia Phillies",
+                "opp_team": "San Francisco Giants",
+                "game_time": "2026-04-29T22:10:00Z",
+                "lineup_used": True,
+                "umpire": "Charlie Ramos",
+                "lambda": 5.9,
+            }
+        ],
+    }))
+    fresh = {
+        "pitcher": "Signal Pitcher",
+        "team": "Philadelphia Phillies",
+        "opp_team": "San Francisco Giants",
+        "game_time": "2026-04-29T22:10:00Z",
+        "lineup_used": False,
+        "umpire": None,
+        "lambda": 6.1,
+    }
+
+    with patch.object(run_pipeline, "OUTPUT_PATH", out_path):
+        merged = run_pipeline._merge_with_locked_snapshots(
+            [fresh],
+            "2026-04-29",
+            datetime(2026, 4, 29, 20, 0, tzinfo=timezone.utc),
+        )
+
+    assert merged == [fresh]
 
 
 class TestGameDateEt:
