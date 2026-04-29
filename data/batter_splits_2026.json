@@ -461,23 +461,40 @@
         "so": 8,
         "k_rate": 0.2286
       }
+    },
+    "mlbam:672724": {
+      "name": "Oswald Peraza",
+      "bats": "R",
+      "mlbam_id": 672724,
+      "bbref_id": "perazos02",
+      "season": 2026,
+      "vs_R": {
+        "pa": 55,
+        "so": 14,
+        "k_rate": 0.2545
+      },
+      "vs_L": {
+        "pa": 36,
+        "so": 10,
+        "k_rate": 0.2778
+      }
     }
   },
-  "updated_at": "2026-04-29T23:06:33Z",
+  "updated_at": "2026-04-29T23:29:56Z",
   "last_run": {
     "projection_status": "collection_only",
     "requested_batters": 234,
-    "already_cached": 25,
+    "already_cached": 26,
     "attempted": 4,
     "collected": 1,
     "failed": 3,
-    "queued_not_attempted": 205,
-    "cache_size": 27,
+    "queued_not_attempted": 204,
+    "cache_size": 28,
     "errors": [
       "Travis Bazzana: no bbref id",
       "Munetaka Murakami: no bbref id",
       "Sam Antonacci: no bbref id"
     ],
-    "updated_at": "2026-04-29T23:06:33Z"
+    "updated_at": "2026-04-29T23:29:56Z"
   }
 }
