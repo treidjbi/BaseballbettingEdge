@@ -109,7 +109,8 @@
         "adj_ev": 0.1257,
         "verdict": "FIRE 1u",
         "win_prob": 0.683,
-        "movement_conf": 1.0
+        "movement_conf": 1.0,
+        "result": "win"
       },
       "ev_under": {
         "edge": -0.1455,
@@ -130,7 +131,17 @@
         }
       },
       "data_complete": true,
-      "game_state": "final"
+      "game_state": "final",
+      "actual_ks": 6,
+      "result": {
+        "final_k": 6,
+        "side_taken": "over",
+        "line_at_bet": 3.5,
+        "odds_at_bet": -154,
+        "outcome": "win",
+        "units_won": 0.6494,
+        "units_risked": 1.0
+      }
     },
     {
       "pitcher": "Kyle Freeland",
@@ -182,7 +193,8 @@
         "adj_ev": 0.1042,
         "verdict": "FIRE 1u",
         "win_prob": 0.502,
-        "movement_conf": 1.0
+        "movement_conf": 1.0,
+        "result": "loss"
       },
       "book_odds": {
         "BetMGM": {
@@ -191,7 +203,17 @@
         }
       },
       "data_complete": true,
-      "game_state": "final"
+      "game_state": "final",
+      "actual_ks": 4,
+      "result": {
+        "final_k": 4,
+        "side_taken": "under",
+        "line_at_bet": 3.5,
+        "odds_at_bet": 120,
+        "outcome": "loss",
+        "units_won": -1.0,
+        "units_risked": 1.0
+      }
     },
     {
       "pitcher": "Shane Baz",
@@ -243,7 +265,8 @@
         "adj_ev": 0.0766,
         "verdict": "FIRE 1u",
         "win_prob": 0.518,
-        "movement_conf": 1.0
+        "movement_conf": 1.0,
+        "result": "loss"
       },
       "book_odds": {
         "FanDuel": {
@@ -256,7 +279,17 @@
         }
       },
       "data_complete": true,
-      "game_state": "final"
+      "game_state": "final",
+      "actual_ks": 6,
+      "result": {
+        "final_k": 6,
+        "side_taken": "under",
+        "line_at_bet": 4.5,
+        "odds_at_bet": 108,
+        "outcome": "loss",
+        "units_won": -1.0,
+        "units_risked": 1.0
+      }
     },
     {
       "pitcher": "Chase Burns",
@@ -308,7 +341,8 @@
         "adj_ev": 0.143,
         "verdict": "FIRE 1u",
         "win_prob": 0.544,
-        "movement_conf": 1.0
+        "movement_conf": 1.0,
+        "result": "loss"
       },
       "book_odds": {
         "BetMGM": {
@@ -317,7 +351,17 @@
         }
       },
       "data_complete": true,
-      "game_state": "final"
+      "game_state": "final",
+      "actual_ks": 9,
+      "result": {
+        "final_k": 9,
+        "side_taken": "under",
+        "line_at_bet": 6.5,
+        "odds_at_bet": 110,
+        "outcome": "loss",
+        "units_won": -1.0,
+        "units_risked": 1.0
+      }
     },
     {
       "pitcher": "Martin Perez",
@@ -369,7 +413,8 @@
         "adj_ev": 0.1553,
         "verdict": "FIRE 1u",
         "win_prob": 0.682,
-        "movement_conf": 1.0
+        "movement_conf": 1.0,
+        "result": "loss"
       },
       "book_odds": {
         "FanDuel": {
@@ -382,7 +427,17 @@
         }
       },
       "data_complete": true,
-      "game_state": "final"
+      "game_state": "final",
+      "actual_ks": 5,
+      "result": {
+        "final_k": 5,
+        "side_taken": "under",
+        "line_at_bet": 3.5,
+        "odds_at_bet": -144,
+        "outcome": "loss",
+        "units_won": -1.0,
+        "units_risked": 1.0
+      }
     },
     {
       "pitcher": "Jesus Luzardo",
@@ -434,7 +489,8 @@
         "adj_ev": 0.0104,
         "verdict": "PASS",
         "win_prob": 0.51,
-        "movement_conf": 1.0
+        "movement_conf": 1.0,
+        "result": "loss"
       },
       "book_odds": {
         "FanDuel": {
@@ -447,7 +503,17 @@
         }
       },
       "data_complete": true,
-      "game_state": "final"
+      "game_state": "final",
+      "actual_ks": 8,
+      "result": {
+        "final_k": 8,
+        "side_taken": "under",
+        "line_at_bet": 6.5,
+        "odds_at_bet": -102,
+        "outcome": "loss",
+        "units_won": -0.0,
+        "units_risked": 0.0
+      }
     },
     {
       "pitcher": "Payton Tolle",
@@ -491,7 +557,8 @@
         "adj_ev": 0.3974,
         "verdict": "FIRE 2u",
         "win_prob": 0.827,
-        "movement_conf": 1.0
+        "movement_conf": 1.0,
+        "result": "loss"
       },
       "ev_under": {
         "edge": -0.3148,
@@ -508,7 +575,17 @@
         }
       },
       "data_complete": true,
-      "game_state": "final"
+      "game_state": "final",
+      "actual_ks": 4,
+      "result": {
+        "final_k": 4,
+        "side_taken": "over",
+        "line_at_bet": 4.5,
+        "odds_at_bet": -145,
+        "outcome": "loss",
+        "units_won": -2.0,
+        "units_risked": 2.0
+      }
     },
     {
       "pitcher": "Tanner Bibee",
@@ -560,7 +637,8 @@
         "adj_ev": -0.0883,
         "verdict": "PASS",
         "win_prob": 0.525,
-        "movement_conf": 1.0
+        "movement_conf": 1.0,
+        "result": "loss"
       },
       "book_odds": {
         "FanDuel": {
@@ -573,7 +651,17 @@
         }
       },
       "data_complete": true,
-      "game_state": "final"
+      "game_state": "final",
+      "actual_ks": 6,
+      "result": {
+        "final_k": 6,
+        "side_taken": "under",
+        "line_at_bet": 4.5,
+        "odds_at_bet": -136,
+        "outcome": "loss",
+        "units_won": -1.0,
+        "units_risked": 1.0
+      }
     },
     {
       "pitcher": "Trey Yesavage",
@@ -625,7 +713,8 @@
         "adj_ev": 0.2087,
         "verdict": "FIRE 2u",
         "win_prob": 0.672,
-        "movement_conf": 1.0
+        "movement_conf": 1.0,
+        "result": "win"
       },
       "book_odds": {
         "BetMGM": {
@@ -634,7 +723,17 @@
         }
       },
       "data_complete": true,
-      "game_state": "final"
+      "game_state": "final",
+      "actual_ks": 3,
+      "result": {
+        "final_k": 3,
+        "side_taken": "under",
+        "line_at_bet": 5.5,
+        "odds_at_bet": -125,
+        "outcome": "win",
+        "units_won": 1.6,
+        "units_risked": 2.0
+      }
     },
     {
       "pitcher": "Tyler Mahle",
@@ -678,7 +777,8 @@
         "adj_ev": 0.1323,
         "verdict": "FIRE 1u",
         "win_prob": 0.622,
-        "movement_conf": 1.0
+        "movement_conf": 1.0,
+        "result": "loss"
       },
       "ev_under": {
         "edge": -0.1461,
@@ -699,7 +799,17 @@
         }
       },
       "data_complete": true,
-      "game_state": "final"
+      "game_state": "final",
+      "actual_ks": 3,
+      "result": {
+        "final_k": 3,
+        "side_taken": "over",
+        "line_at_bet": 4.5,
+        "odds_at_bet": -122,
+        "outcome": "loss",
+        "units_won": -1.0,
+        "units_risked": 1.0
+      }
     },
     {
       "pitcher": "Joe Ryan",
@@ -751,7 +861,8 @@
         "adj_ev": -0.1275,
         "verdict": "PASS",
         "win_prob": 0.457,
-        "movement_conf": 1.0
+        "movement_conf": 1.0,
+        "result": "loss"
       },
       "book_odds": {
         "BetMGM": {
@@ -760,7 +871,17 @@
         }
       },
       "data_complete": true,
-      "game_state": "final"
+      "game_state": "final",
+      "actual_ks": 6,
+      "result": {
+        "final_k": 6,
+        "side_taken": "under",
+        "line_at_bet": 5.5,
+        "odds_at_bet": -105,
+        "outcome": "loss",
+        "units_won": -0.0,
+        "units_risked": 0.0
+      }
     },
     {
       "pitcher": "Edward Cabrera",
@@ -865,7 +986,8 @@
         "adj_ev": 0.1507,
         "verdict": "FIRE 1u",
         "win_prob": 0.671,
-        "movement_conf": 1.0
+        "movement_conf": 1.0,
+        "result": "loss"
       },
       "ev_under": {
         "edge": -0.1567,
@@ -886,7 +1008,17 @@
         }
       },
       "data_complete": true,
-      "game_state": "final"
+      "game_state": "final",
+      "actual_ks": 3,
+      "result": {
+        "final_k": 3,
+        "side_taken": "over",
+        "line_at_bet": 4.5,
+        "odds_at_bet": -140,
+        "outcome": "loss",
+        "units_won": -1.0,
+        "units_risked": 1.0
+      }
     },
     {
       "pitcher": "Chad Patrick",
@@ -938,7 +1070,8 @@
         "adj_ev": 0.1656,
         "verdict": "FIRE 1u",
         "win_prob": 0.717,
-        "movement_conf": 1.0
+        "movement_conf": 1.0,
+        "result": "loss"
       },
       "book_odds": {
         "BetMGM": {
@@ -947,7 +1080,17 @@
         }
       },
       "data_complete": true,
-      "game_state": "final"
+      "game_state": "final",
+      "actual_ks": 5,
+      "result": {
+        "final_k": 5,
+        "side_taken": "under",
+        "line_at_bet": 4.5,
+        "odds_at_bet": -160,
+        "outcome": "loss",
+        "units_won": -1.0,
+        "units_risked": 1.0
+      }
     },
     {
       "pitcher": "Walker Buehler",
@@ -1052,7 +1195,8 @@
         "adj_ev": 0.2134,
         "verdict": "FIRE 2u",
         "win_prob": 0.542,
-        "movement_conf": 1.0
+        "movement_conf": 1.0,
+        "result": "loss"
       },
       "ev_under": {
         "edge": -0.1658,
@@ -1073,7 +1217,17 @@
         }
       },
       "data_complete": true,
-      "game_state": "final"
+      "game_state": "final",
+      "actual_ks": 2,
+      "result": {
+        "final_k": 2,
+        "side_taken": "over",
+        "line_at_bet": 2.5,
+        "odds_at_bet": -185,
+        "outcome": "loss",
+        "units_won": -1.0,
+        "units_risked": 1.0
+      }
     },
     {
       "pitcher": "Kyle Leahy",
@@ -1125,7 +1279,8 @@
         "adj_ev": 0.4893,
         "verdict": "FIRE 2u",
         "win_prob": 0.726,
-        "movement_conf": 1.0
+        "movement_conf": 1.0,
+        "result": "loss"
       },
       "book_odds": {
         "BetMGM": {
@@ -1134,7 +1289,17 @@
         }
       },
       "data_complete": true,
-      "game_state": "final"
+      "game_state": "final",
+      "actual_ks": 7,
+      "result": {
+        "final_k": 7,
+        "side_taken": "under",
+        "line_at_bet": 3.5,
+        "odds_at_bet": 105,
+        "outcome": "loss",
+        "units_won": -2.0,
+        "units_risked": 2.0
+      }
     },
     {
       "pitcher": "Kris Bubic",
@@ -1186,7 +1351,8 @@
         "adj_ev": -0.1369,
         "verdict": "PASS",
         "win_prob": 0.503,
-        "movement_conf": 1.0
+        "movement_conf": 1.0,
+        "result": "loss"
       },
       "book_odds": {
         "BetMGM": {
@@ -1195,7 +1361,17 @@
         }
       },
       "data_complete": true,
-      "game_state": "in_progress"
+      "game_state": "in_progress",
+      "actual_ks": 6,
+      "result": {
+        "final_k": 6,
+        "side_taken": "under",
+        "line_at_bet": 5.5,
+        "odds_at_bet": -140,
+        "outcome": "loss",
+        "units_won": -0.0,
+        "units_risked": 0.0
+      }
     },
     {
       "pitcher": "Janson Junk",
@@ -1247,7 +1423,8 @@
         "adj_ev": 0.0683,
         "verdict": "FIRE 1u",
         "win_prob": 0.623,
-        "movement_conf": 1.0
+        "movement_conf": 1.0,
+        "result": "loss"
       },
       "book_odds": {
         "FanDuel": {
@@ -1260,7 +1437,17 @@
         }
       },
       "data_complete": true,
-      "game_state": "in_progress"
+      "game_state": "in_progress",
+      "actual_ks": 4,
+      "result": {
+        "final_k": 4,
+        "side_taken": "under",
+        "line_at_bet": 3.5,
+        "odds_at_bet": -140,
+        "outcome": "loss",
+        "units_won": -1.0,
+        "units_risked": 1.0
+      }
     },
     {
       "pitcher": "Zack Littell",
@@ -1312,7 +1499,8 @@
         "adj_ev": 0.2121,
         "verdict": "FIRE 2u",
         "win_prob": 0.64,
-        "movement_conf": 1.0
+        "movement_conf": 1.0,
+        "result": "win"
       },
       "book_odds": {
         "FanDuel": {
@@ -1325,7 +1513,17 @@
         }
       },
       "data_complete": true,
-      "game_state": "final"
+      "game_state": "final",
+      "actual_ks": 1,
+      "result": {
+        "final_k": 1,
+        "side_taken": "under",
+        "line_at_bet": 3.5,
+        "odds_at_bet": -112,
+        "outcome": "win",
+        "units_won": 1.7857,
+        "units_risked": 2.0
+      }
     },
     {
       "pitcher": "Davis Martin",
@@ -1377,7 +1575,8 @@
         "adj_ev": 0.1972,
         "verdict": "FIRE 2u",
         "win_prob": 0.745,
-        "movement_conf": 1.0
+        "movement_conf": 1.0,
+        "result": "loss"
       },
       "book_odds": {
         "BetMGM": {
@@ -1386,7 +1585,17 @@
         }
       },
       "data_complete": true,
-      "game_state": "final"
+      "game_state": "final",
+      "actual_ks": 7,
+      "result": {
+        "final_k": 7,
+        "side_taken": "under",
+        "line_at_bet": 5.5,
+        "odds_at_bet": -165,
+        "outcome": "loss",
+        "units_won": -2.0,
+        "units_risked": 2.0
+      }
     },
     {
       "pitcher": "Jose Soriano",
@@ -1430,7 +1639,8 @@
         "adj_ev": -0.0455,
         "verdict": "PASS",
         "win_prob": 0.58,
-        "movement_conf": 1.0
+        "movement_conf": 1.0,
+        "result": "win"
       },
       "ev_under": {
         "edge": -0.0453,
@@ -1447,7 +1657,17 @@
         }
       },
       "data_complete": true,
-      "game_state": "final"
+      "game_state": "final",
+      "actual_ks": 6,
+      "result": {
+        "final_k": 6,
+        "side_taken": "over",
+        "line_at_bet": 5.5,
+        "odds_at_bet": -155,
+        "outcome": "win",
+        "units_won": 0.6452,
+        "units_risked": 1.0
+      }
     },
     {
       "pitcher": "Jacob deGrom",
@@ -1499,7 +1719,8 @@
         "adj_ev": 0.0967,
         "verdict": "FIRE 1u",
         "win_prob": 0.672,
-        "movement_conf": 1.0
+        "movement_conf": 1.0,
+        "result": "win"
       },
       "book_odds": {
         "FanDuel": {
@@ -1512,7 +1733,17 @@
         }
       },
       "data_complete": true,
-      "game_state": "final"
+      "game_state": "final",
+      "actual_ks": 5,
+      "result": {
+        "final_k": 5,
+        "side_taken": "under",
+        "line_at_bet": 7.5,
+        "odds_at_bet": -158,
+        "outcome": "win",
+        "units_won": 0.6329,
+        "units_risked": 1.0
+      }
     },
     {
       "pitcher": "Nick Martinez",
@@ -1564,7 +1795,8 @@
         "adj_ev": -0.0424,
         "verdict": "PASS",
         "win_prob": 0.469,
-        "movement_conf": 1.0
+        "movement_conf": 1.0,
+        "result": "loss"
       },
       "book_odds": {
         "FanDuel": {
@@ -1577,7 +1809,17 @@
         }
       },
       "data_complete": true,
-      "game_state": "final"
+      "game_state": "final",
+      "actual_ks": 4,
+      "result": {
+        "final_k": 4,
+        "side_taken": "under",
+        "line_at_bet": 3.5,
+        "odds_at_bet": 104,
+        "outcome": "loss",
+        "units_won": -0.0,
+        "units_risked": 0.0
+      }
     },
     {
       "pitcher": "Aaron Civale",
@@ -1621,7 +1863,8 @@
         "adj_ev": -0.0102,
         "verdict": "PASS",
         "win_prob": 0.569,
-        "movement_conf": 1.0
+        "movement_conf": 1.0,
+        "result": "loss"
       },
       "ev_under": {
         "edge": -0.0686,
@@ -1638,7 +1881,17 @@
         }
       },
       "data_complete": true,
-      "game_state": "in_progress"
+      "game_state": "in_progress",
+      "actual_ks": 3,
+      "result": {
+        "final_k": 3,
+        "side_taken": "over",
+        "line_at_bet": 3.5,
+        "odds_at_bet": -135,
+        "outcome": "loss",
+        "units_won": -1.0,
+        "units_risked": 1.0
+      }
     },
     {
       "pitcher": "Shohei Ohtani",
@@ -1690,7 +1943,8 @@
         "adj_ev": 0.1506,
         "verdict": "FIRE 1u",
         "win_prob": 0.632,
-        "movement_conf": 1.0
+        "movement_conf": 1.0,
+        "result": "loss"
       },
       "book_odds": {
         "FanDuel": {
@@ -1703,7 +1957,17 @@
         }
       },
       "data_complete": true,
-      "game_state": "in_progress"
+      "game_state": "in_progress",
+      "actual_ks": 9,
+      "result": {
+        "final_k": 9,
+        "side_taken": "under",
+        "line_at_bet": 6.5,
+        "odds_at_bet": -122,
+        "outcome": "loss",
+        "units_won": -1.0,
+        "units_risked": 1.0
+      }
     },
     {
       "pitcher": "Logan Gilbert",
@@ -1747,7 +2011,8 @@
         "adj_ev": -0.0055,
         "verdict": "PASS",
         "win_prob": 0.538,
-        "movement_conf": 1.0
+        "movement_conf": 1.0,
+        "result": "loss"
       },
       "ev_under": {
         "edge": -0.0621,
@@ -1755,7 +2020,8 @@
         "adj_ev": -0.1186,
         "verdict": "PASS",
         "win_prob": 0.462,
-        "movement_conf": 1.0
+        "movement_conf": 1.0,
+        "result": "win"
       },
       "book_odds": {
         "BetMGM": {
@@ -1764,7 +2030,17 @@
         }
       },
       "data_complete": true,
-      "game_state": "final"
+      "game_state": "final",
+      "actual_ks": 4,
+      "result": {
+        "final_k": 4,
+        "side_taken": "under",
+        "line_at_bet": 5.5,
+        "odds_at_bet": 105,
+        "outcome": "win",
+        "units_won": 1.05,
+        "units_risked": 1.0
+      }
     },
     {
       "pitcher": "Cam Schlittler",
@@ -1808,7 +2084,8 @@
         "adj_ev": 0.0837,
         "verdict": "FIRE 1u",
         "win_prob": 0.521,
-        "movement_conf": 1.0
+        "movement_conf": 1.0,
+        "result": "win"
       },
       "ev_under": {
         "edge": -0.1112,
@@ -1825,7 +2102,17 @@
         }
       },
       "data_complete": true,
-      "game_state": "final"
+      "game_state": "final",
+      "actual_ks": 8,
+      "result": {
+        "final_k": 8,
+        "side_taken": "over",
+        "line_at_bet": 6.5,
+        "odds_at_bet": 108,
+        "outcome": "win",
+        "units_won": 1.08,
+        "units_risked": 1.0
+      }
     },
     {
       "pitcher": "Merrill Kelly",
@@ -1877,7 +2164,8 @@
         "adj_ev": -0.1251,
         "verdict": "PASS",
         "win_prob": 0.458,
-        "movement_conf": 1.0
+        "movement_conf": 1.0,
+        "result": "win"
       },
       "book_odds": {
         "BetMGM": {
@@ -1886,7 +2174,17 @@
         }
       },
       "data_complete": true,
-      "game_state": "final"
+      "game_state": "final",
+      "actual_ks": 1,
+      "result": {
+        "final_k": 1,
+        "side_taken": "under",
+        "line_at_bet": 4.5,
+        "odds_at_bet": -120,
+        "outcome": "win",
+        "units_won": 0.8333,
+        "units_risked": 1.0
+      }
     }
   ],
   "ump_diagnostics": {
