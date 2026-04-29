@@ -308,21 +308,56 @@
         "so": 7,
         "k_rate": 0.2059
       }
+    },
+    "mlbam:810938": {
+      "name": "Ben Williamson",
+      "bats": "R",
+      "mlbam_id": 810938,
+      "bbref_id": "willibe03",
+      "season": 2026,
+      "vs_R": {
+        "pa": 55,
+        "so": 11,
+        "k_rate": 0.2
+      },
+      "vs_L": {
+        "pa": 34,
+        "so": 8,
+        "k_rate": 0.2353
+      }
+    },
+    "mlbam:678246": {
+      "name": "Miguel Vargas",
+      "bats": "R",
+      "mlbam_id": 678246,
+      "bbref_id": "vargami01",
+      "season": 2026,
+      "vs_R": {
+        "pa": 89,
+        "so": 16,
+        "k_rate": 0.1798
+      },
+      "vs_L": {
+        "pa": 40,
+        "so": 5,
+        "k_rate": 0.125
+      }
     }
   },
-  "updated_at": "2026-04-29T20:16:42Z",
+  "updated_at": "2026-04-29T20:43:41Z",
   "last_run": {
     "projection_status": "collection_only",
-    "requested_batters": 216,
-    "already_cached": 15,
+    "requested_batters": 234,
+    "already_cached": 17,
     "attempted": 4,
-    "collected": 3,
-    "failed": 1,
-    "queued_not_attempted": 197,
-    "cache_size": 18,
+    "collected": 2,
+    "failed": 2,
+    "queued_not_attempted": 213,
+    "cache_size": 20,
     "errors": [
-      "Travis Bazzana: no bbref id"
+      "Travis Bazzana: no bbref id",
+      "Munetaka Murakami: no bbref id"
     ],
-    "updated_at": "2026-04-29T20:16:42Z"
+    "updated_at": "2026-04-29T20:43:41Z"
   }
 }
