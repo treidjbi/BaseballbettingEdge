@@ -147,9 +147,58 @@ def test_collect_batter_split_samples_writes_collection_only_cache(tmp_path, mon
 
     assert summary["projection_status"] == "collection_only"
     assert summary["requested_batters"] == 1
+    assert summary["already_cached"] == 0
+    assert summary["queued_not_attempted"] == 0
     assert summary["collected"] == 1
 
     payload = __import__("json").loads(cache_path.read_text())
     assert payload["projection_status"] == "collection_only"
     assert payload["batters"]["mlbam:605141"]["name"] == "Mookie Betts"
     assert payload["batters"]["mlbam:605141"]["vs_R"]["k_rate"] == 0.15
+
+
+def test_collect_batter_split_samples_reports_queue_separately_from_cache(tmp_path, monkeypatch):
+    cache_path = tmp_path / "batter_splits_2026.json"
+    lineups = [
+        [
+            {"name": "Cached Batter", "bats": "R", "mlbam_id": 1},
+            {"name": "New Batter One", "bats": "R", "mlbam_id": 2},
+            {"name": "New Batter Two", "bats": "L", "mlbam_id": 3},
+        ]
+    ]
+    cache_path.write_text(
+        __import__("json").dumps(
+            {
+                "season": 2026,
+                "projection_status": "collection_only",
+                "batters": {"mlbam:1": {"name": "Cached Batter"}},
+            }
+        )
+    )
+
+    lookup = pd.DataFrame([{"key_mlbam": 2, "key_bbref": "newone01"}])
+    monkeypatch.setattr(
+        fetch_batter_stats,
+        "playerid_reverse_lookup",
+        lambda player_ids, key_type="mlbam": lookup,
+    )
+    monkeypatch.setattr(
+        fetch_batter_stats,
+        "_fetch_bref_platoon_split_rates",
+        lambda bbref_id, season: {
+            "vs_R": {"pa": 50, "so": 10, "k_rate": 0.20},
+            "vs_L": {"pa": 20, "so": 5, "k_rate": 0.25},
+        },
+    )
+
+    summary = fetch_batter_stats.collect_batter_split_samples(
+        lineups,
+        2026,
+        cache_path=cache_path,
+        max_new=1,
+    )
+
+    assert summary["requested_batters"] == 3
+    assert summary["already_cached"] == 1
+    assert summary["attempted"] == 1
+    assert summary["queued_not_attempted"] == 1

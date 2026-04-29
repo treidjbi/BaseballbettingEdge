@@ -17,9 +17,11 @@ import os
 import re
 from datetime import datetime, timezone
 from pathlib import Path
+import warnings
 
 import pandas as pd
 import requests
+from bs4 import MarkupResemblesLocatorWarning
 from pybaseball import get_splits, playerid_reverse_lookup
 
 from build_features import LEAGUE_AVG_K_RATE
@@ -30,7 +32,7 @@ FANGRAPHS_LEADERBOARD_URL = "https://www.fangraphs.com/api/leaders/major-league/
 FANGRAPHS_TIMEOUT_SECONDS = 30
 FANGRAPHS_PAGE_SIZE = 5000
 BATTER_SPLIT_CACHE_DIR = Path(__file__).resolve().parents[1] / "data"
-DEFAULT_SPLIT_COLLECTION_MAX_NEW = int(os.environ.get("BATTER_SPLIT_COLLECTION_MAX_NEW", "8"))
+DEFAULT_SPLIT_COLLECTION_MAX_NEW = int(os.environ.get("BATTER_SPLIT_COLLECTION_MAX_NEW", "4"))
 
 
 def _fetch_aggregate(season: int):
@@ -131,7 +133,9 @@ def _extract_bref_platoon_split_rates(table: pd.DataFrame) -> dict:
 
 
 def _fetch_bref_platoon_split_rates(bbref_id: str, season: int) -> dict:
-    table = get_splits(bbref_id, season)
+    with warnings.catch_warnings():
+        warnings.filterwarnings("ignore", category=MarkupResemblesLocatorWarning)
+        table = get_splits(bbref_id, season)
     return _extract_bref_platoon_split_rates(table)
 
 
@@ -212,22 +216,25 @@ def collect_batter_split_samples(
             "attempted": 0,
             "collected": 0,
             "failed": 0,
+            "queued_not_attempted": 0,
             "cache_size": len(batters),
             "errors": [],
         }
-    missing = [
+    uncached = [
         candidate
         for mlbam_id, candidate in candidates.items()
         if f"mlbam:{mlbam_id}" not in batters
-    ][:max(0, max_new)]
+    ]
+    missing = uncached[:max(0, max_new)]
 
     summary = {
         "projection_status": "collection_only",
         "requested_batters": len(candidates),
-        "already_cached": len(candidates) - len(missing),
+        "already_cached": len(candidates) - len(uncached),
         "attempted": len(missing),
         "collected": 0,
         "failed": 0,
+        "queued_not_attempted": max(0, len(uncached) - len(missing)),
         "cache_size": len(batters),
         "errors": [],
     }
