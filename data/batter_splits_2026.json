@@ -410,22 +410,40 @@
         "so": 1,
         "k_rate": 1.0
       }
+    },
+    "mlbam:672284": {
+      "name": "Jarred Kelenic",
+      "bats": "R",
+      "mlbam_id": 672284,
+      "bbref_id": "kelenja01",
+      "season": 2026,
+      "vs_R": {
+        "pa": 59,
+        "so": 19,
+        "k_rate": 0.322
+      },
+      "vs_L": {
+        "pa": 6,
+        "so": 4,
+        "k_rate": 0.6667
+      }
     }
   },
-  "updated_at": "2026-04-29T21:41:14Z",
+  "updated_at": "2026-04-29T22:10:25Z",
   "last_run": {
     "projection_status": "collection_only",
-    "requested_batters": 225,
-    "already_cached": 21,
+    "requested_batters": 234,
+    "already_cached": 23,
     "attempted": 4,
-    "collected": 2,
-    "failed": 2,
-    "queued_not_attempted": 200,
-    "cache_size": 24,
+    "collected": 1,
+    "failed": 3,
+    "queued_not_attempted": 207,
+    "cache_size": 25,
     "errors": [
       "Travis Bazzana: no bbref id",
-      "Munetaka Murakami: no bbref id"
+      "Munetaka Murakami: no bbref id",
+      "Sam Antonacci: no bbref id"
     ],
-    "updated_at": "2026-04-29T21:41:14Z"
+    "updated_at": "2026-04-29T22:10:25Z"
   }
 }
