@@ -37,12 +37,14 @@ This cadence deliberately avoids random tweaks while the first clean regime accu
 **Run repeatedly**
 - `C:/Users/TylerReid/Desktop/Claude-Work/BaseballBettingEdge/analytics/diagnostics/e3_projection_audit.py`
 - `C:/Users/TylerReid/Desktop/Claude-Work/BaseballBettingEdge/analytics/diagnostics/e4_bet_selection_audit.py`
+- `C:/Users/TylerReid/Desktop/Claude-Work/BaseballBettingEdge/analytics/diagnostics/e5_quality_gate_audit.py`
 - `C:/Users/TylerReid/Desktop/Claude-Work/BaseballBettingEdge/analytics/diagnostics/therundown_fetch_audit.py`
 - `C:/Users/TylerReid/Desktop/Claude-Work/BaseballBettingEdge/analytics/performance.py`
 
 **Write local-only outputs**
 - `C:/Users/TylerReid/Desktop/Claude-Work/BaseballBettingEdge/analytics/output/e3_projection_audit.md`
 - `C:/Users/TylerReid/Desktop/Claude-Work/BaseballBettingEdge/analytics/output/e4_bet_selection_audit.md`
+- `C:/Users/TylerReid/Desktop/Claude-Work/BaseballBettingEdge/analytics/output/e5_quality_gate_audit.md`
 - `C:/Users/TylerReid/Desktop/Claude-Work/BaseballBettingEdge/analytics/output/therundown_fetch_audit.md`
 - `C:/Users/TylerReid/Desktop/Claude-Work/BaseballBettingEdge/analytics/output/e5_synthesis.md`
 - `C:/Users/TylerReid/Desktop/Claude-Work/BaseballBettingEdge/analytics/output/post_phase_c_weekly_check.md`
@@ -265,6 +267,35 @@ Append a compact section to `analytics/output/post_phase_c_weekly_check.md`:
 Expected:
 - default action after one bad clean slate is `no change, keep soaking`
 - only queue changes after repeated clean-window evidence or a confirmed data-source defect
+
+---
+
+### Task 4b: Re-run the quality gate audit after grading
+
+**Files:**
+- Run: `C:/Users/TylerReid/Desktop/Claude-Work/BaseballBettingEdge/analytics/diagnostics/e5_quality_gate_audit.py`
+- Write local-only: `C:/Users/TylerReid/Desktop/Claude-Work/BaseballBettingEdge/analytics/output/e5_quality_gate_audit.md`
+
+- [ ] **Step 1: Compare raw model verdicts to actionable verdicts**
+
+Run:
+
+```bash
+python analytics/diagnostics/e5_quality_gate_audit.py --since 2026-04-28 > analytics/output/e5_quality_gate_audit.md
+```
+
+Expected:
+- raw verdict counts show what the model wanted before gates
+- actionable verdict counts show what would actually be tracked/staked
+- raw `FIRE 2u` protection counts show how many high-conviction picks were capped or blocked
+
+- [ ] **Step 2: Record whether gates helped or over-filtered**
+
+Append a bullet to `analytics/output/post_phase_c_weekly_check.md`:
+
+```markdown
+- YYYY-MM-DD quality-gate read: [protected obvious outliers | capped clean winners | no meaningful effect | insufficient sample]
+```
 
 ---
 

@@ -320,6 +320,26 @@ def test_fetch_umpires_accent_insensitive_name_match():
     assert diagnostics["pitcher_nonzero_count"] == 1
 
 
+def test_fetch_umpires_accepts_object_career_rate_entries_with_sample_size():
+    payload = _schedule_payload([
+        _game("Boston Red Sox", "New York Yankees", [
+            _official("Sample Umpire", "Home Plate"),
+        ])
+    ])
+    props = [
+        {"pitcher": "Test Pitcher", "team": "New York Yankees",
+         "opp_team": "Boston Red Sox"}
+    ]
+    fake_rates = {"sample umpire": {"delta": 0.31, "hp_games": 27}}
+    with patch("fetch_umpires.requests.get", return_value=_mock_response(payload)), \
+         patch("fetch_umpires._load_career_rates", return_value=fake_rates):
+        result, diagnostics = fetch_umpires.fetch_umpires(props, "2026-04-17")
+
+    assert result["Test Pitcher"] == 0.31
+    assert diagnostics["rated_umpire_by_pitcher"]["Test Pitcher"] is True
+    assert diagnostics["umpire_rating_games_by_pitcher"]["Test Pitcher"] == 27
+
+
 # ---------------------------------------------------------------------------
 # Abbreviation-map coverage guards: catches accidental edits that would
 # silently zero out ump signals for a team.

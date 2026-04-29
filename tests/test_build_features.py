@@ -348,17 +348,32 @@ class TestBuildPitcherRecord:
         assert rec["ev_over"]["verdict"] in ("PASS", "LEAN", "FIRE 1u", "FIRE 2u")
         assert 0 <= rec["ev_over"]["win_prob"] <= 1
 
-    def test_opener_forces_both_verdicts_to_pass(self):
+    def test_opener_marks_metadata_without_overwriting_raw_ev(self):
         from build_features import build_pitcher_record
         stats = {**self.BASE_STATS, "recent_start_ips": [1.0, 2.0, 2.0]}
         rec = build_pitcher_record(self.BASE_ODDS, stats, ump_k_adj=0.0)
         assert rec["is_opener"] is True
         assert rec["avg_ip"] == pytest.approx(1.67, rel=0.01)
         assert rec["opener_note"] == OPENER_NOTE
-        assert rec["ev_over"]["adj_ev"] == 0.0
-        assert rec["ev_under"]["adj_ev"] == 0.0
-        assert rec["ev_over"]["verdict"] == "PASS"
-        assert rec["ev_under"]["verdict"] == "PASS"
+        assert rec["ev_over"]["verdict"] in ("PASS", "LEAN", "FIRE 1u", "FIRE 2u")
+        assert rec["ev_under"]["verdict"] in ("PASS", "LEAN", "FIRE 1u", "FIRE 2u")
+        assert rec["ev_over"]["adj_ev"] != 0.0 or rec["ev_under"]["adj_ev"] != 0.0
+
+    def test_build_pitcher_record_exposes_quality_gate_metadata_inputs(self):
+        from build_features import build_pitcher_record
+        lineup = [{"name": f"Batter {i}", "bats": "R"} for i in range(1, 10)]
+        batter_stats = {f"batter {i}": {"vs_R": 0.22, "vs_L": 0.22} for i in range(1, 10)}
+
+        rec = build_pitcher_record(
+            self.BASE_ODDS,
+            {**self.BASE_STATS, "recent_start_ips": [6.0, 5.0, 6.0, 5.0, 6.0]},
+            ump_k_adj=0.0,
+            lineup=lineup,
+            batter_stats=batter_stats,
+        )
+
+        assert rec["recent_start_count"] == 5
+        assert rec["lineup_count"] == 9
 
     def test_non_opener_leaves_verdict_logic_unchanged(self):
         from build_features import build_pitcher_record, calc_verdict

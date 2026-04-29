@@ -50,6 +50,20 @@
   }
 
   // ── Transform: pitcher record → V2_DATA.pitchers[] entry ──────
+  function normalizeEvSide(side) {
+    if (!side) return side;
+    const verdict = side.verdict || side.actionable_verdict || 'PASS';
+    return {
+      ...side,
+      verdict,
+      actionable_verdict: side.actionable_verdict || verdict,
+      raw_verdict: side.raw_verdict || verdict,
+      raw_adj_ev: side.raw_adj_ev ?? side.adj_ev ?? 0,
+      quality_gate_level: side.quality_gate_level || 'clean',
+      quality_gate_reasons: Array.isArray(side.quality_gate_reasons) ? side.quality_gate_reasons : [],
+    };
+  }
+
   function normalizePitcher(p) {
     // Fallbacks for fields not in pipeline output.
     const pitcher_throws = p.pitcher_throws || 'R';
@@ -85,8 +99,8 @@
         season_k9: p.season_k9,
       recent_k9: p.recent_k9,
       career_k9: p.career_k9,
-      ev_over: p.ev_over,
-      ev_under: p.ev_under,
+      ev_over: normalizeEvSide(p.ev_over),
+      ev_under: normalizeEvSide(p.ev_under),
       game_state,
       // Pipeline provides best_over_book; no best_under_book yet — fall back.
       best_over_book: p.best_over_book || 'Best book',
@@ -95,6 +109,17 @@
       swstr_pct: p.swstr_pct,
       swstr_delta_k9: p.swstr_delta_k9,
       data_complete: p.data_complete,
+      input_quality_flags: Array.isArray(p.input_quality_flags) ? p.input_quality_flags : [],
+      projection_safe: p.projection_safe !== false,
+      quality_gate_level: p.quality_gate_level || 'clean',
+      quality_gate_reasons: Array.isArray(p.quality_gate_reasons) ? p.quality_gate_reasons : [],
+      verdict_cap_reason: p.verdict_cap_reason || '',
+      data_maturity: p.data_maturity || {
+        pitcher: 'mature',
+        umpire: 'mature',
+        lineup: p.lineup_used === true ? 'confirmed' : 'projected',
+        market: p.opening_odds_source === 'first_seen' ? 'first_seen' : 'preview_open',
+      },
     };
 
     // live block — pipeline doesn't hydrate in-game K yet. Leave undefined so the
@@ -165,7 +190,13 @@
       if (t !== 0) return t;
       return (a.pitcher || '').localeCompare(b.pitcher || '');
     });
-    return { generated_at: today.generated_at, date: today.date, pitchers, tracked_picks };
+    return {
+      generated_at: today.generated_at,
+      date: today.date,
+      pitchers,
+      tracked_picks,
+      quality_gate_summary: today.quality_gate_summary || null,
+    };
   }
 
   // ── Transform: performance.json → V2_PERF shape ────────────────

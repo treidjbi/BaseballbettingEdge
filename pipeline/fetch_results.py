@@ -27,6 +27,27 @@ TODAY_JSON   = Path(__file__).parent.parent / "dashboard" / "data" / "processed"
 HISTORY_PATH = Path(__file__).parent.parent / "data" / "picks_history.json"
 
 
+def _json_or_none(value):
+    if value is None:
+        return None
+    if isinstance(value, str):
+        return value
+    return json.dumps(value, sort_keys=True)
+
+
+def _json_load_or_none(value):
+    if value in (None, ""):
+        return None
+    try:
+        return json.loads(value)
+    except (TypeError, json.JSONDecodeError):
+        return value
+
+
+def _effective_verdict(ev_data: dict) -> str:
+    return ev_data.get("actionable_verdict") or ev_data.get("verdict") or "PASS"
+
+
 def get_db() -> sqlite3.Connection:
     DB_PATH.parent.mkdir(parents=True, exist_ok=True)
     conn = sqlite3.connect(DB_PATH)
@@ -53,9 +74,12 @@ def init_db() -> None:
                 side            TEXT NOT NULL,
                 k_line          REAL NOT NULL,
                 verdict         TEXT NOT NULL,
+                raw_verdict     TEXT,
+                actionable_verdict TEXT,
                 edge            REAL,
                 ev              REAL NOT NULL,
                 adj_ev          REAL NOT NULL,
+                raw_adj_ev      REAL,
                 raw_lambda      REAL NOT NULL,
                 applied_lambda  REAL NOT NULL,
                 odds            INTEGER NOT NULL,
@@ -93,7 +117,11 @@ def init_db() -> None:
                 result          TEXT,
                 actual_ks       INTEGER,
                 pnl             REAL,
-                fetched_at      TEXT
+                fetched_at      TEXT,
+                quality_gate_level TEXT,
+                input_quality_flags_json TEXT,
+                verdict_cap_reason TEXT,
+                data_maturity_json TEXT
             )
         """)
         conn.execute("""
@@ -114,6 +142,13 @@ def init_db() -> None:
             ("locked_adj_ev",      "REAL"),
             ("locked_verdict",     "TEXT"),
             ("edge",               "REAL"),
+            ("raw_verdict",        "TEXT"),
+            ("actionable_verdict", "TEXT"),
+            ("raw_adj_ev",         "REAL"),
+            ("quality_gate_level", "TEXT"),
+            ("input_quality_flags_json", "TEXT"),
+            ("verdict_cap_reason", "TEXT"),
+            ("data_maturity_json", "TEXT"),
             # New columns
             ("opp_team",           "TEXT"),
             ("pitcher_throws",     "TEXT"),
@@ -160,12 +195,25 @@ def seed_picks(today_json_path: Path = TODAY_JSON) -> int:
         for p in data.get("pitchers", []):
             for side in ("over", "under"):
                 ev_data = p[f"ev_{side}"]
-                if ev_data["verdict"] == "PASS":
+                verdict = _effective_verdict(ev_data)
+                if verdict == "PASS":
                     continue
                 odds = p[f"best_{side}_odds"]
+                raw_verdict = ev_data.get("raw_verdict") or ev_data.get("verdict")
+                actionable_verdict = ev_data.get("actionable_verdict") or verdict
+                raw_adj_ev = ev_data.get("raw_adj_ev", ev_data.get("adj_ev"))
+                quality_gate_level = ev_data.get("quality_gate_level") or p.get("quality_gate_level")
+                quality_gate_reasons = ev_data.get("quality_gate_reasons") or p.get("quality_gate_reasons")
+                verdict_cap_reason = p.get("verdict_cap_reason")
+                if not verdict_cap_reason and quality_gate_reasons:
+                    verdict_cap_reason = "; ".join(str(r) for r in quality_gate_reasons)
+                input_quality_flags_json = _json_or_none(p.get("input_quality_flags"))
+                data_maturity_json = _json_or_none(p.get("data_maturity"))
                 cur = conn.execute("""
                     INSERT OR IGNORE INTO picks
-                    (date, pitcher, team, side, k_line, verdict, edge, ev, adj_ev,
+                    (date, pitcher, team, side, k_line, verdict,
+                     raw_verdict, actionable_verdict,
+                     edge, ev, adj_ev, raw_adj_ev,
                      raw_lambda, applied_lambda, odds, movement_conf,
                      season_k9, recent_k9, career_k9, avg_ip, ump_k_adj, opp_k_rate,
                      swstr_delta_k9, ref_book, game_time, lineup_used,
@@ -174,13 +222,16 @@ def seed_picks(today_json_path: Path = TODAY_JSON) -> int:
                      opp_team, pitcher_throws,
                      best_over_odds, best_under_odds,
                      opening_over_odds, opening_under_odds, opening_odds_source,
-                     swstr_pct, career_swstr_pct, data_complete)
-                    VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+                     swstr_pct, career_swstr_pct, data_complete,
+                     quality_gate_level, input_quality_flags_json, verdict_cap_reason,
+                     data_maturity_json)
+                    VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
                 """, (
                     game_date, p["pitcher"], p["team"], side,
-                    p["k_line"], ev_data["verdict"],
+                    p["k_line"], verdict,
+                    raw_verdict, actionable_verdict,
                     ev_data.get("edge", ev_data["ev"]),
-                    ev_data["ev"], ev_data["adj_ev"],
+                    ev_data["ev"], ev_data["adj_ev"], raw_adj_ev,
                     p.get("raw_lambda", p["lambda"]), p["lambda"], odds, ev_data["movement_conf"],
                     p.get("season_k9"), p.get("recent_k9"), p.get("career_k9"),
                     p.get("avg_ip"), p.get("ump_k_adj"), p.get("opp_k_rate"),
@@ -205,6 +256,10 @@ def seed_picks(today_json_path: Path = TODAY_JSON) -> int:
                     p.get("career_swstr_pct"),
                     # Default True for picks from old today.json files that predate this field
                     int(bool(p.get("data_complete", True))),
+                    quality_gate_level,
+                    input_quality_flags_json,
+                    verdict_cap_reason,
+                    data_maturity_json,
                 ))
                 inserted += cur.rowcount
 
@@ -236,7 +291,8 @@ def seed_picks(today_json_path: Path = TODAY_JSON) -> int:
                     # latest state of the pick's underlying inputs.
                     conn.execute("""
                         UPDATE picks
-                        SET verdict = ?, edge = ?, ev = ?, adj_ev = ?, odds = ?,
+                        SET verdict = ?, raw_verdict = ?, actionable_verdict = ?,
+                            edge = ?, ev = ?, adj_ev = ?, raw_adj_ev = ?, odds = ?,
                             k_line = ?, applied_lambda = ?, movement_conf = ?,
                             lineup_used = ?, game_time = ?,
                             raw_lambda = ?,
@@ -249,13 +305,19 @@ def seed_picks(today_json_path: Path = TODAY_JSON) -> int:
                             best_over_odds = ?, best_under_odds = ?,
                             opening_over_odds = COALESCE(opening_over_odds, ?),
                             opening_under_odds = COALESCE(opening_under_odds, ?),
-                            data_complete = ?
+                            data_complete = ?,
+                            quality_gate_level = ?,
+                            input_quality_flags_json = ?,
+                            verdict_cap_reason = ?,
+                            data_maturity_json = ?
                         WHERE date = ? AND pitcher = ? AND side = ?
                           AND locked_at IS NULL AND result IS NULL
                     """, (
-                        ev_data["verdict"],
+                        verdict,
+                        raw_verdict,
+                        actionable_verdict,
                         ev_data.get("edge", ev_data["ev"]),
-                        ev_data["ev"], ev_data["adj_ev"], odds,
+                        ev_data["ev"], ev_data["adj_ev"], raw_adj_ev, odds,
                         p["k_line"], p["lambda"], ev_data["movement_conf"],
                         int(bool(p.get("lineup_used", False))),
                         p.get("game_time"),
@@ -272,6 +334,10 @@ def seed_picks(today_json_path: Path = TODAY_JSON) -> int:
                         p.get("best_over_odds"), p.get("best_under_odds"),
                         p.get("opening_over_odds"), p.get("opening_under_odds"),
                         int(bool(p.get("data_complete", True))),
+                        quality_gate_level,
+                        input_quality_flags_json,
+                        verdict_cap_reason,
+                        data_maturity_json,
                         game_date, p["pitcher"], side,
                     ))
                     updated += conn.execute("SELECT changes()").fetchone()[0]
@@ -341,7 +407,8 @@ def load_history_into_db(history_path: Path = None) -> int:
             cur = conn.execute("""
                 INSERT OR IGNORE INTO picks
                 (date, pitcher, team, opp_team, pitcher_throws, side, k_line,
-                 verdict, edge, ev, adj_ev, raw_lambda, applied_lambda, odds, movement_conf,
+                 verdict, raw_verdict, actionable_verdict, edge, ev, adj_ev, raw_adj_ev,
+                 raw_lambda, applied_lambda, odds, movement_conf,
                  season_k9, recent_k9, career_k9, avg_ip, ump_k_adj, opp_k_rate,
                  swstr_delta_k9, swstr_pct, career_swstr_pct, ref_book,
                  best_over_odds, best_under_odds, opening_over_odds, opening_under_odds,
@@ -349,15 +416,17 @@ def load_history_into_db(history_path: Path = None) -> int:
                  days_since_last_start, last_pitch_count, rest_k9_delta, park_factor,
                  result, actual_ks, pnl, fetched_at, game_time, lineup_used,
                  locked_at, locked_k_line, locked_odds, locked_adj_ev, locked_verdict,
-                 data_complete)
-                VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+                 data_complete, quality_gate_level, input_quality_flags_json,
+                 verdict_cap_reason, data_maturity_json)
+                VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
             """, (
                 p.get("date"), p.get("pitcher"), p.get("team"),
                 p.get("opp_team"), p.get("pitcher_throws"),
                 p.get("side"),
                 p.get("k_line"), p.get("verdict"),
+                p.get("raw_verdict"), p.get("actionable_verdict"),
                 p.get("edge", p.get("ev")),
-                p.get("ev"), p.get("adj_ev"),
+                p.get("ev"), p.get("adj_ev"), p.get("raw_adj_ev"),
                 p.get("raw_lambda"), p.get("applied_lambda"), p.get("odds"),
                 p.get("movement_conf"),
                 p.get("season_k9"), p.get("recent_k9"), p.get("career_k9"),
@@ -382,6 +451,10 @@ def load_history_into_db(history_path: Path = None) -> int:
                 p.get("locked_adj_ev"), p.get("locked_verdict"),
                 # Default True: old history entries predate this field and had real data
                 int(bool(p.get("data_complete", True))),
+                p.get("quality_gate_level"),
+                _json_or_none(p.get("input_quality_flags")),
+                p.get("verdict_cap_reason"),
+                _json_or_none(p.get("data_maturity")),
             ))
             inserted += cur.rowcount
 
@@ -398,7 +471,7 @@ def export_db_to_history(history_path: Path = None) -> int:
     with get_db() as conn:
         rows = conn.execute("""
             SELECT date, pitcher, team, opp_team, pitcher_throws, side, k_line,
-                   verdict, edge, ev, adj_ev,
+                   verdict, raw_verdict, actionable_verdict, edge, ev, adj_ev, raw_adj_ev,
                    raw_lambda, applied_lambda, odds, movement_conf,
                    season_k9, recent_k9, career_k9, avg_ip, ump_k_adj, opp_k_rate,
                    swstr_delta_k9, swstr_pct, career_swstr_pct, ref_book,
@@ -409,14 +482,15 @@ def export_db_to_history(history_path: Path = None) -> int:
                    result, actual_ks, pnl, fetched_at,
                    game_time, lineup_used,
                    locked_at, locked_k_line, locked_odds, locked_adj_ev, locked_verdict,
-                   data_complete
+                   data_complete, quality_gate_level, input_quality_flags_json,
+                   verdict_cap_reason, data_maturity_json
             FROM picks
             ORDER BY date, pitcher, side
         """).fetchall()
 
     cols = [
         "date", "pitcher", "team", "opp_team", "pitcher_throws", "side", "k_line",
-        "verdict", "edge", "ev", "adj_ev",
+        "verdict", "raw_verdict", "actionable_verdict", "edge", "ev", "adj_ev", "raw_adj_ev",
         "raw_lambda", "applied_lambda", "odds", "movement_conf",
         "season_k9", "recent_k9", "career_k9", "avg_ip", "ump_k_adj", "opp_k_rate",
         "swstr_delta_k9", "swstr_pct", "career_swstr_pct", "ref_book",
@@ -427,9 +501,13 @@ def export_db_to_history(history_path: Path = None) -> int:
         "result", "actual_ks", "pnl", "fetched_at",
         "game_time", "lineup_used",
         "locked_at", "locked_k_line", "locked_odds", "locked_adj_ev", "locked_verdict",
-        "data_complete",
+        "data_complete", "quality_gate_level", "input_quality_flags_json",
+        "verdict_cap_reason", "data_maturity_json",
     ]
     picks = [dict(zip(cols, row)) for row in rows]
+    for pick in picks:
+        pick["input_quality_flags"] = _json_load_or_none(pick.pop("input_quality_flags_json", None))
+        pick["data_maturity"] = _json_load_or_none(pick.pop("data_maturity_json", None))
 
     history_path.parent.mkdir(parents=True, exist_ok=True)
     # Write atomically: dump to a temp file in the same directory, then rename.

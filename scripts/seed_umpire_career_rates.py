@@ -33,9 +33,10 @@ USAGE:
       # small-window dry run
 
 OUTPUT FILE FORMAT:
-  { "Umpire Name": delta_K_per_game_vs_league_avg, ... }
+  { "Umpire Name": {"delta": delta_K_per_game_vs_league_avg, "hp_games": n}, ... }
   Deltas are signed, unit = K per game. e.g., -0.50 = ump suppresses Ks,
-  +0.70 = ump produces more Ks than average.
+  +0.70 = ump produces more Ks than average. fetch_umpires.py still accepts
+  the legacy numeric format for existing files.
 
 OPTIONS:
   --min-games N    only include umps with >= N games (default: 10)
@@ -156,8 +157,12 @@ def aggregate(games: list[tuple[int, str, int]]) -> dict:
 
 
 def write_output(agg: dict, min_games: int, output_path: Path) -> dict:
-    """Write {ump: delta_vs_league} JSON sorted by delta descending. Filter by min_games."""
-    kept = {ump: round(d["delta"], 3) for ump, d in agg.items() if d["n"] >= min_games}
+    """Write {ump: {delta, hp_games}} JSON sorted by name. Filter by min_games."""
+    kept = {
+        ump: {"delta": round(d["delta"], 3), "hp_games": int(d["n"])}
+        for ump, d in agg.items()
+        if d["n"] >= min_games
+    }
     # Sort alphabetically for stable diffs; JSON preserves insertion order.
     ordered = {k: kept[k] for k in sorted(kept.keys())}
     output_path.parent.mkdir(parents=True, exist_ok=True)

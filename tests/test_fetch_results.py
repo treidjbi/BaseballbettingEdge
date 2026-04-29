@@ -115,6 +115,20 @@ class TestInitDb:
         conn.close()
         assert "ref_book" in cols
 
+    def test_quality_gate_columns_exist(self, tmp_db):
+        """picks table stores raw/actionable verdict metadata."""
+        db_path, fr = tmp_db
+        conn = sqlite3.connect(db_path)
+        cols = [row[1] for row in conn.execute("PRAGMA table_info(picks)").fetchall()]
+        conn.close()
+        assert "raw_verdict" in cols
+        assert "actionable_verdict" in cols
+        assert "quality_gate_level" in cols
+        assert "input_quality_flags_json" in cols
+        assert "verdict_cap_reason" in cols
+        assert "data_maturity_json" in cols
+        assert "raw_adj_ev" in cols
+
 
 class TestSeedPicks:
     def test_only_non_pass_sides_inserted(self, tmp_db, today_json):
@@ -173,6 +187,117 @@ class TestSeedPicks:
         assert row is not None
         assert row[0] == "FanDuel"
 
+    def test_seed_uses_actionable_verdict_and_preserves_raw_quality_fields(self, tmp_db, tmp_path):
+        db_path, fr = tmp_db
+        today = {
+            "date": "2026-04-29",
+            "pitchers": [
+                {
+                    "pitcher": "Quality Pitcher",
+                    "team": "A",
+                    "opp_team": "B",
+                    "pitcher_throws": "R",
+                    "game_time": "2026-04-29T20:05:00Z",
+                    "k_line": 6.5,
+                    "raw_lambda": 7.4,
+                    "lambda": 7.4,
+                    "season_k9": 9.8,
+                    "recent_k9": 10.2,
+                    "career_k9": 9.5,
+                    "avg_ip": 5.9,
+                    "opp_k_rate": 0.24,
+                    "ump_k_adj": 0.0,
+                    "best_over_odds": -110,
+                    "best_under_odds": -110,
+                    "ref_book": "FanDuel",
+                    "opening_over_odds": -110,
+                    "opening_under_odds": -110,
+                    "opening_odds_source": "preview",
+                    "lineup_used": True,
+                    "data_complete": True,
+                    "input_quality_flags": ["unrated_umpire"],
+                    "quality_gate_level": "capped",
+                    "verdict_cap_reason": "1 soft input flag: unrated_umpire",
+                    "data_maturity": {"pitcher": "mature", "umpire": "unknown", "lineup": "confirmed", "market": "preview_open"},
+                    "ev_over": {
+                        "edge": 0.08,
+                        "ev": 0.19,
+                        "adj_ev": 0.19,
+                        "raw_adj_ev": 0.19,
+                        "raw_verdict": "FIRE 2u",
+                        "actionable_verdict": "FIRE 1u",
+                        "verdict": "FIRE 1u",
+                        "win_prob": 0.61,
+                        "movement_conf": 1.0,
+                    },
+                    "ev_under": {"edge": -0.03, "ev": -0.04, "adj_ev": -0.04, "verdict": "PASS", "win_prob": 0.39, "movement_conf": 1.0},
+                }
+            ],
+        }
+        today_path = tmp_path / "today.json"
+        today_path.write_text(json.dumps(today))
+
+        assert fr.seed_picks(today_path) == 1
+
+        conn = sqlite3.connect(db_path)
+        row = conn.execute("""
+            SELECT verdict, raw_verdict, actionable_verdict, quality_gate_level,
+                   input_quality_flags_json, verdict_cap_reason, data_maturity_json, raw_adj_ev
+            FROM picks WHERE pitcher='Quality Pitcher'
+        """).fetchone()
+        conn.close()
+
+        assert row[0] == "FIRE 1u"
+        assert row[1] == "FIRE 2u"
+        assert row[2] == "FIRE 1u"
+        assert row[3] == "capped"
+        assert json.loads(row[4]) == ["unrated_umpire"]
+        assert row[5] == "1 soft input flag: unrated_umpire"
+        assert json.loads(row[6])["umpire"] == "unknown"
+        assert row[7] == 0.19
+
+    def test_seed_skips_blocked_pass_even_when_raw_verdict_is_fire(self, tmp_db, tmp_path):
+        db_path, fr = tmp_db
+        today = {
+            "date": "2026-04-29",
+            "pitchers": [
+                {
+                    "pitcher": "Blocked Pitcher",
+                    "team": "A",
+                    "opp_team": "B",
+                    "game_time": "2026-04-29T20:05:00Z",
+                    "k_line": 6.5,
+                    "raw_lambda": 7.4,
+                    "lambda": 7.4,
+                    "best_over_odds": -110,
+                    "best_under_odds": -110,
+                    "opening_over_odds": -110,
+                    "opening_under_odds": -110,
+                    "ev_over": {
+                        "edge": 0.08,
+                        "ev": 0.19,
+                        "adj_ev": 0.0,
+                        "raw_adj_ev": 0.19,
+                        "raw_verdict": "FIRE 2u",
+                        "actionable_verdict": "PASS",
+                        "verdict": "PASS",
+                        "win_prob": 0.61,
+                        "movement_conf": 1.0,
+                    },
+                    "ev_under": {"edge": -0.03, "ev": -0.04, "adj_ev": 0.0, "raw_verdict": "PASS", "actionable_verdict": "PASS", "verdict": "PASS", "win_prob": 0.39, "movement_conf": 1.0},
+                }
+            ],
+        }
+        today_path = tmp_path / "today.json"
+        today_path.write_text(json.dumps(today))
+
+        assert fr.seed_picks(today_path) == 0
+
+        conn = sqlite3.connect(db_path)
+        count = conn.execute("SELECT COUNT(*) FROM picks").fetchone()[0]
+        conn.close()
+        assert count == 0
+
 
 class TestLoadHistoryIntoDb:
     def test_loads_closed_picks_into_db(self, tmp_db, tmp_path):
@@ -224,6 +349,53 @@ class TestLoadHistoryIntoDb:
         conn.close()
         assert count == 1
 
+    def test_loads_quality_gate_fields_from_history(self, tmp_db, tmp_path):
+        db_path, fr = tmp_db
+        history = [
+            {
+                "date": "2026-04-29",
+                "pitcher": "Quality Pitcher",
+                "team": "A",
+                "side": "over",
+                "k_line": 6.5,
+                "verdict": "FIRE 1u",
+                "raw_verdict": "FIRE 2u",
+                "actionable_verdict": "FIRE 1u",
+                "edge": 0.08,
+                "ev": 0.19,
+                "adj_ev": 0.19,
+                "raw_adj_ev": 0.19,
+                "raw_lambda": 7.4,
+                "applied_lambda": 7.4,
+                "odds": -110,
+                "movement_conf": 1.0,
+                "quality_gate_level": "capped",
+                "input_quality_flags": ["unrated_umpire"],
+                "verdict_cap_reason": "1 soft input flag: unrated_umpire",
+                "data_maturity": {"umpire": "unknown"},
+            }
+        ]
+        history_path = tmp_path / "picks_history.json"
+        history_path.write_text(json.dumps(history))
+
+        fr.load_history_into_db(history_path)
+
+        conn = sqlite3.connect(db_path)
+        row = conn.execute("""
+            SELECT raw_verdict, actionable_verdict, raw_adj_ev, quality_gate_level,
+                   input_quality_flags_json, verdict_cap_reason, data_maturity_json
+            FROM picks WHERE pitcher='Quality Pitcher'
+        """).fetchone()
+        conn.close()
+
+        assert row[0] == "FIRE 2u"
+        assert row[1] == "FIRE 1u"
+        assert row[2] == 0.19
+        assert row[3] == "capped"
+        assert json.loads(row[4]) == ["unrated_umpire"]
+        assert row[5] == "1 soft input flag: unrated_umpire"
+        assert json.loads(row[6])["umpire"] == "unknown"
+
     def test_returns_zero_if_file_missing(self, tmp_db, tmp_path):
         """load_history_into_db returns 0 when history file doesn't exist."""
         db_path, fr = tmp_db
@@ -258,6 +430,41 @@ class TestExportDbToHistory:
         assert "Dylan Cease" in pitchers  # open picks included for GHA persistence
         wheeler = next(r for r in written if r["pitcher"] == "Zack Wheeler")
         assert wheeler["edge"] == pytest.approx(0.041)
+
+    def test_exports_quality_gate_fields_to_history(self, tmp_db, tmp_path):
+        db_path, fr = tmp_db
+        with sqlite3.connect(db_path) as conn:
+            conn.execute("""
+                INSERT INTO picks (
+                  date, pitcher, team, side, k_line, verdict,
+                  raw_verdict, actionable_verdict,
+                  edge, ev, adj_ev, raw_adj_ev,
+                  raw_lambda, applied_lambda, odds, movement_conf,
+                  quality_gate_level, input_quality_flags_json,
+                  verdict_cap_reason, data_maturity_json
+                )
+                VALUES (
+                  '2026-04-29','Quality Pitcher','A','over',6.5,'FIRE 1u',
+                  'FIRE 2u','FIRE 1u',
+                  0.08,0.19,0.19,0.19,
+                  7.4,7.4,-110,1.0,
+                  'capped','["unrated_umpire"]',
+                  '1 soft input flag: unrated_umpire','{"umpire":"unknown"}'
+                )
+            """)
+        history_path = tmp_path / "picks_history.json"
+
+        fr.export_db_to_history(history_path)
+
+        written = json.loads(history_path.read_text())
+        row = written[0]
+        assert row["raw_verdict"] == "FIRE 2u"
+        assert row["actionable_verdict"] == "FIRE 1u"
+        assert row["raw_adj_ev"] == 0.19
+        assert row["quality_gate_level"] == "capped"
+        assert row["input_quality_flags"] == ["unrated_umpire"]
+        assert row["verdict_cap_reason"] == "1 soft input flag: unrated_umpire"
+        assert row["data_maturity"]["umpire"] == "unknown"
 
     def test_overwrites_existing_file(self, tmp_db, tmp_path):
         """export_db_to_history replaces existing history file."""

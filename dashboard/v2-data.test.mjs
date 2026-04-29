@@ -273,6 +273,90 @@ test("tracked picks are exposed top-level and attached to matching pitchers", as
   assert.equal(window.V2_DATA.pitchers[0].tracked_picks[0].direction, "UNDER");
 });
 
+test("old archive records default to clean quality metadata", async () => {
+  const todayJson = {
+    date: "2026-04-29",
+    generated_at: "2026-04-29T18:00:00Z",
+    pitchers: [
+      {
+        pitcher: "Legacy Pitcher",
+        team: "A",
+        opp_team: "B",
+        game_time: "2026-04-29T23:10:00Z",
+        k_line: 6.5,
+        best_over_odds: -110,
+        best_under_odds: -110,
+        lambda: 6.9,
+        avg_ip: 5.7,
+        opp_k_rate: 0.23,
+        ev_over: { adj_ev: 0.08, ev: 0.09, edge: 0.03, verdict: "FIRE 1u" },
+        ev_under: { adj_ev: -0.04, ev: -0.03, edge: -0.02, verdict: "PASS" },
+      },
+    ],
+  };
+
+  const window = await runV2DataTest({ todayJson });
+  const pitcher = window.V2_DATA.pitchers[0];
+
+  assert.equal(Array.isArray(pitcher.input_quality_flags), true);
+  assert.equal(pitcher.input_quality_flags.length, 0);
+  assert.equal(pitcher.projection_safe, true);
+  assert.equal(pitcher.quality_gate_level, "clean");
+  assert.equal(Array.isArray(pitcher.quality_gate_reasons), true);
+  assert.equal(pitcher.quality_gate_reasons.length, 0);
+  assert.equal(pitcher.verdict_cap_reason, "");
+  assert.equal(pitcher.ev_over.raw_verdict, "FIRE 1u");
+  assert.equal(pitcher.ev_over.actionable_verdict, "FIRE 1u");
+});
+
+test("quality metadata and raw actionable verdicts pass through", async () => {
+  const todayJson = {
+    date: "2026-04-29",
+    generated_at: "2026-04-29T18:00:00Z",
+    quality_gate_summary: { clean: 0, capped: 1, blocked: 0 },
+    pitchers: [
+      {
+        pitcher: "Capped Pitcher",
+        team: "A",
+        opp_team: "B",
+        game_time: "2026-04-29T23:10:00Z",
+        k_line: 6.5,
+        best_over_odds: -110,
+        best_under_odds: -110,
+        lambda: 7.2,
+        avg_ip: 5.7,
+        opp_k_rate: 0.23,
+        input_quality_flags: ["unrated_umpire"],
+        projection_safe: true,
+        quality_gate_level: "capped",
+        quality_gate_reasons: ["unrated umpire"],
+        verdict_cap_reason: "1 soft input flag: unrated_umpire",
+        data_maturity: { pitcher: "mature", umpire: "unknown", lineup: "confirmed", market: "preview_open" },
+        ev_over: {
+          adj_ev: 0.19,
+          raw_adj_ev: 0.19,
+          ev: 0.2,
+          edge: 0.08,
+          verdict: "FIRE 1u",
+          raw_verdict: "FIRE 2u",
+          actionable_verdict: "FIRE 1u",
+        },
+        ev_under: { adj_ev: -0.04, raw_adj_ev: -0.04, ev: -0.03, edge: -0.02, verdict: "PASS", raw_verdict: "PASS", actionable_verdict: "PASS" },
+      },
+    ],
+  };
+
+  const window = await runV2DataTest({ todayJson });
+  const pitcher = window.V2_DATA.pitchers[0];
+
+  assert.deepEqual(window.V2_DATA.quality_gate_summary, { clean: 0, capped: 1, blocked: 0 });
+  assert.equal(pitcher.quality_gate_level, "capped");
+  assert.deepEqual(pitcher.input_quality_flags, ["unrated_umpire"]);
+  assert.equal(pitcher.data_maturity.umpire, "unknown");
+  assert.equal(pitcher.ev_over.raw_verdict, "FIRE 2u");
+  assert.equal(pitcher.ev_over.actionable_verdict, "FIRE 1u");
+});
+
 test("pitcher normalization preserves confirmed unrated umpire metadata", async () => {
   const todayJson = {
     date: "2026-04-29",

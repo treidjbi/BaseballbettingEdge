@@ -321,12 +321,12 @@ Thresholds live in `pipeline/build_features.py` (`EDGE_PASS`, `EDGE_LEAN`, `EDGE
 - **FIRE 1u** — EV ROI 6–17% (1-unit play)
 - **FIRE 2u** — EV ROI ≥ 17% (2-unit play, truly elite edge)
 
-### Input quality gates (planned)
+### Input quality gates
 
-The queued implementation plan is
+The implementation plan is
 `docs/superpowers/plans/2026-04-29-input-quality-gates-and-data-maturity.md`.
 
-Planned contract:
+Contract:
 
 - Add per-pitcher `input_quality_flags`, `projection_safe`,
   `quality_gate_level`, `quality_gate_reasons`, `verdict_cap_reason`, and
@@ -344,6 +344,9 @@ Planned contract:
 - `FIRE 2u` should require clean major data, not just a large EV number.
 - New pitchers, umpires, lineups, and market feeds graduate through explicit
   maturity states instead of being trusted all at once.
+- The quality-gate audit lives at
+  `analytics/diagnostics/e5_quality_gate_audit.py` and should be included in
+  the weekly review.
 
 ## Calibration
 

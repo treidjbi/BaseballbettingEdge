@@ -33,13 +33,15 @@ The active local diagnostics and tests are:
 - `analytics/diagnostics/e2_storage_integrity.py`
 - `analytics/diagnostics/e3_projection_audit.py`
 - `analytics/diagnostics/e4_bet_selection_audit.py`
+- `analytics/diagnostics/e5_quality_gate_audit.py`
 - `tests/test_e1_regime_map.py`
 - `tests/test_e2_storage_integrity.py`
 - `tests/test_e3_projection_audit.py`
 - `tests/test_e4_bet_selection_audit.py`
+- `tests/test_e5_quality_gate_audit.py`
 
 These are the current tools for checking regime health, storage integrity,
-projection shape, and bet-selection quality.
+projection shape, bet-selection quality, and raw-vs-actionable quality gates.
 
 ## Next Decision Checkpoint
 

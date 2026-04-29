@@ -395,6 +395,20 @@ function WhyPills({ p, side }) {
 }
 
 // ── Pick card ──
+function qualityLabel(level) {
+  if (level === "blocked") return "Blocked";
+  if (level === "capped") return "Capped";
+  return "Clean";
+}
+
+function qualityReason(p, side) {
+  if (p.verdict_cap_reason) return p.verdict_cap_reason;
+  const reasons = side.quality_gate_reasons || p.quality_gate_reasons || [];
+  if (reasons.length) return reasons.join(", ");
+  const flags = p.input_quality_flags || [];
+  return flags.length ? flags.join(", ") : "";
+}
+
 function PickCard({ p, onOpen }) {
   const side = displaySide(p);
   const tracked = trackedPicksForPitcher(p);
@@ -474,6 +488,19 @@ function PickCard({ p, onOpen }) {
               {pick.status === "locked" ? "Locked" : "Tracked"} {pick.direction} {pick.k_line ?? p.k_line} · {pick.verdict}
             </span>
           ))}
+        </div>
+      )}
+
+      {p.quality_gate_level && p.quality_gate_level !== "clean" && (
+        <div className="v2-tracked-row">
+          <span className={`v2-tracked-pill ${p.quality_gate_level === "blocked" ? "locked" : ""}`}>
+            {qualityLabel(p.quality_gate_level)}
+          </span>
+          {side.raw_verdict && side.raw_verdict !== side.verdict && (
+            <span className="v2-tracked-pill">
+              Raw {side.raw_verdict}
+            </span>
+          )}
         </div>
       )}
 
@@ -880,8 +907,21 @@ function PickDetail({ p, onClose }) {
         <div className="v2-sheet-section">
           <div className="h">Model confidence</div>
           <div className="v2-stat-row">
-            <span className="lbl">Verdict</span>
+            <span className="lbl">Actionable verdict</span>
             <span className="val">{best.verdict}</span>
+          </div>
+          {best.raw_verdict && best.raw_verdict !== best.verdict && (
+            <div className="v2-stat-row">
+              <span className="lbl">Raw model verdict</span>
+              <span className="val">{best.raw_verdict}</span>
+            </div>
+          )}
+          <div className="v2-stat-row">
+            <span className="lbl">Input quality</span>
+            <span className={`val ${p.quality_gate_level === "clean" ? "pos" : ""}`}>
+              {qualityLabel(p.quality_gate_level)}
+              {qualityReason(p, best) && <span className="delta">{qualityReason(p, best)}</span>}
+            </span>
           </div>
           <div className="v2-stat-row">
             <span className="lbl">Movement confidence</span>

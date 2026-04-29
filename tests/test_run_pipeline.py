@@ -32,6 +32,46 @@ def test_fetch_batter_stats_cached_falls_back_to_empty_dict_on_fetch_failure():
         assert run_pipeline.fetch_batter_stats_cached(2026) == {}
 
 
+def test_apply_quality_gates_to_records_preserves_raw_and_summarizes_flags():
+    import run_pipeline
+
+    records = [
+        {
+            "pitcher": "Opener Pitcher",
+            "team": "Arizona Diamondbacks",
+            "opp_team": "Los Angeles Dodgers",
+            "game_time": "2026-04-29T20:10:00Z",
+            "season_k9": 9.0,
+            "recent_k9": 9.0,
+            "career_k9": 9.0,
+            "recent_start_count": 5,
+            "lineup_used": True,
+            "lineup_count": 9,
+            "opening_odds_source": "preview",
+            "k_line": 6.5,
+            "lambda": 7.2,
+            "best_over_odds": -110,
+            "best_under_odds": -110,
+            "is_opener": True,
+            "ev_over": {"verdict": "FIRE 2u", "adj_ev": 0.19, "ev": 0.2},
+            "ev_under": {"verdict": "PASS", "adj_ev": -0.04, "ev": -0.03},
+        }
+    ]
+
+    gated, summary = run_pipeline._apply_quality_gates_to_records(
+        records,
+        pre_record_skips={"no_target_book": 2},
+    )
+
+    assert gated[0]["quality_gate_level"] == "blocked"
+    assert gated[0]["ev_over"]["raw_verdict"] == "FIRE 2u"
+    assert gated[0]["ev_over"]["verdict"] == "PASS"
+    assert gated[0]["ev_over"]["adj_ev"] == 0.0
+    assert summary["blocked"] == 1
+    assert summary["severe_flags"]["opener"] == 1
+    assert summary["pre_record_skips"] == {"no_target_book": 2}
+
+
 class TestGameDateEt:
     def test_utc_midnight_converts_to_previous_et_date(self):
         # 00:05 UTC on Mar 26 is 20:05 ET on Mar 25 (ET = UTC-4 in summer / UTC-5 in winter)
@@ -558,12 +598,19 @@ def test_tracked_picks_from_history_prefers_locked_values(tmp_path, monkeypatch)
             "opp_team": "CLE",
             "side": "over",
             "verdict": "FIRE 1u",
+            "raw_verdict": "FIRE 2u",
+            "actionable_verdict": "FIRE 1u",
+            "quality_gate_level": "capped",
+            "input_quality_flags": ["unrated_umpire"],
+            "verdict_cap_reason": "1 soft input flag: unrated_umpire",
+            "data_maturity": {"umpire": "unknown"},
             "locked_verdict": "FIRE 2u",
             "k_line": 5.5,
             "locked_k_line": 6.5,
             "odds": -105,
             "locked_odds": -118,
             "adj_ev": 0.08,
+            "raw_adj_ev": 0.17,
             "locked_adj_ev": 0.17,
             "result": "win",
             "actual_ks": 8,
@@ -590,6 +637,12 @@ def test_tracked_picks_from_history_prefers_locked_values(tmp_path, monkeypatch)
             "side": "over",
             "display_side": "OVER",
             "verdict": "FIRE 1u",
+            "raw_verdict": "FIRE 2u",
+            "actionable_verdict": "FIRE 1u",
+            "quality_gate_level": "capped",
+            "input_quality_flags": ["unrated_umpire"],
+            "verdict_cap_reason": "1 soft input flag: unrated_umpire",
+            "data_maturity": {"umpire": "unknown"},
             "locked_verdict": "FIRE 2u",
             "display_verdict": "FIRE 2u",
             "k_line": 5.5,
@@ -599,6 +652,7 @@ def test_tracked_picks_from_history_prefers_locked_values(tmp_path, monkeypatch)
             "locked_odds": -118,
             "display_odds": -118,
             "adj_ev": 0.08,
+            "raw_adj_ev": 0.17,
             "locked_adj_ev": 0.17,
             "display_adj_ev": 0.17,
             "edge": None,
@@ -740,7 +794,7 @@ def test_run_park_factor_affects_real_lambda_across_parks(tmp_path):
     ump_map = {"Rockies Pitcher": 0.25, "Mariners Pitcher": 0.25}
 
     out = {}
-    def spy_write_output(date_str, records, props_available, ump_diagnostics=None, data_warnings=None, connection_health=None):
+    def spy_write_output(date_str, records, props_available, ump_diagnostics=None, data_warnings=None, connection_health=None, quality_gate_summary=None):
         out["records"] = records
 
     park_factors_path = tmp_path / "park_factors.json"
@@ -918,7 +972,7 @@ def test_data_complete_is_row_specific_for_mixed_slate(tmp_path):
         }
 
     captured = {}
-    def spy_write_output(date_str, records, props_available, ump_diagnostics=None, data_warnings=None, connection_health=None):
+    def spy_write_output(date_str, records, props_available, ump_diagnostics=None, data_warnings=None, connection_health=None, quality_gate_summary=None):
         captured["date_str"] = date_str
         captured["records"] = records
         captured["props_available"] = props_available
@@ -987,7 +1041,7 @@ def test_run_attaches_confirmed_unrated_umpire_metadata(tmp_path):
         }
 
     captured = {}
-    def spy_write_output(date_str, records, props_available, ump_diagnostics=None, data_warnings=None, connection_health=None):
+    def spy_write_output(date_str, records, props_available, ump_diagnostics=None, data_warnings=None, connection_health=None, quality_gate_summary=None):
         captured["records"] = records
         captured["ump_diagnostics"] = ump_diagnostics
 

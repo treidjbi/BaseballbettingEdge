@@ -81,6 +81,27 @@ def _load_career_rates() -> dict:
     return {_normalize(k): v for k, v in raw.items()}
 
 
+def _career_rate_delta(entry) -> float | None:
+    if isinstance(entry, dict):
+        entry = entry.get("delta")
+    try:
+        return float(entry)
+    except (TypeError, ValueError):
+        return None
+
+
+def _career_rate_games(entry) -> int | None:
+    if not isinstance(entry, dict):
+        return None
+    for key in ("hp_games", "games", "n"):
+        if key in entry:
+            try:
+                return int(entry[key])
+            except (TypeError, ValueError):
+                return None
+    return None
+
+
 def _abbr_for_team_name(name: str) -> str | None:
     """Reverse-lookup a 3-letter abbreviation from a full team name.
 
@@ -208,6 +229,7 @@ def fetch_umpires(props: list, date_str: str) -> tuple[dict, dict]:
     result = {}
     umpire_by_pitcher = {}
     rated_umpire_by_pitcher = {}
+    umpire_rating_games_by_pitcher = {}
     missing_career_rate_umpires = set()
     for prop in props:
         pitcher  = prop["pitcher"]
@@ -225,11 +247,17 @@ def fetch_umpires(props: list, date_str: str) -> tuple[dict, dict]:
 
         ump_key = _normalize(ump_name) if ump_name else None
         if ump_key and ump_key in career_rates:
-            adj = career_rates[ump_key]
+            entry = career_rates[ump_key]
+            adj = _career_rate_delta(entry)
+            if adj is None:
+                adj = 0.0
             log.info("Pitcher %s: ump %s → adj %+.2f", pitcher, ump_name, adj)
             result[pitcher] = adj
             umpire_by_pitcher[pitcher] = ump_name
             rated_umpire_by_pitcher[pitcher] = True
+            games = _career_rate_games(entry)
+            if games is not None:
+                umpire_rating_games_by_pitcher[pitcher] = games
         else:
             if ump_name:
                 umpire_by_pitcher[pitcher] = ump_name
@@ -248,6 +276,7 @@ def fetch_umpires(props: list, date_str: str) -> tuple[dict, dict]:
         "pitcher_rated_count":   sum(1 for v in rated_umpire_by_pitcher.values() if v),
         "umpire_by_pitcher":     umpire_by_pitcher,
         "rated_umpire_by_pitcher": rated_umpire_by_pitcher,
+        "umpire_rating_games_by_pitcher": umpire_rating_games_by_pitcher,
         "missing_career_rate_umpires": sorted(missing_career_rate_umpires),
     }
     return result, diagnostics

@@ -426,11 +426,8 @@ def build_pitcher_record(odds: dict, stats: dict, ump_k_adj: float,
                                            opening_odds_source=odds.get("opening_odds_source"))
     adj_ev_over  = ev_over  * conf_over
     adj_ev_under = ev_under * conf_under
-    if opener:
-        adj_ev_over = 0.0
-        adj_ev_under = 0.0
-    over_verdict = "PASS" if opener else calc_verdict(adj_ev_over)
-    under_verdict = "PASS" if opener else calc_verdict(adj_ev_under)
+    over_verdict = calc_verdict(adj_ev_over)
+    under_verdict = calc_verdict(adj_ev_under)
 
     return {
         "pitcher":            odds["pitcher"],
@@ -462,9 +459,11 @@ def build_pitcher_record(odds: dict, stats: dict, ump_k_adj: float,
         "rest_k9_delta":      round(rest_delta, 3),
         "opp_k_rate":         effective_opp_k_rate,
         "lineup_used":        lineup_used,
+        "lineup_count":       len(lineup) if lineup is not None else 0,
         "park_factor":        park_factor,
         "ump_k_adj":          ump_k_adj,
         "starter_mismatch":   starter_mismatch,
+        "recent_start_count": len(recent_start_ips),
         "season_k9":          round(season_k9, 2),
         "recent_k9":          round(recent_k9, 2),
         "career_k9":          round(career_k9, 2),

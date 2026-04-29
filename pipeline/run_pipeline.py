@@ -28,6 +28,7 @@ from fetch_umpires      import fetch_umpires
 from fetch_lineups      import fetch_lineups
 from fetch_batter_stats import fetch_batter_stats
 from build_features     import build_pitcher_record
+from quality_gates      import apply_quality_to_record, summarize_quality_gates
 from name_utils         import normalize as _normalize_name
 from team_codes         import TEAM_NAME_TO_CODE
 from fetch_results      import (reset_db, init_db, load_history_into_db, seed_picks,
@@ -167,6 +168,14 @@ def collect_data_warnings(
         )
 
     return warnings
+
+
+def _apply_quality_gates_to_records(
+    records: list[dict],
+    pre_record_skips: dict | None = None,
+) -> tuple[list[dict], dict]:
+    gated = [apply_quality_to_record(record) for record in records]
+    return gated, summarize_quality_gates(gated, pre_record_skips)
 
 OUTPUT_PATH    = Path(__file__).parent.parent / "dashboard" / "data" / "processed" / "today.json"
 STEAM_PATH     = Path(__file__).parent.parent / "dashboard" / "data" / "processed" / "steam.json"
@@ -456,7 +465,12 @@ def _game_date_et(game_time_str: str, fallback: str) -> str:
         return fallback
 
 
-def _write_dated_archive_only(records: list, date_str: str, props_available: bool) -> None:
+def _write_dated_archive_only(
+    records: list,
+    date_str: str,
+    props_available: bool,
+    quality_gate_summary: dict | None = None,
+) -> None:
     """Write a dated archive file for date_str without touching today.json.
     Used by the preview run so the dashboard shows tomorrow's lines before the 6am run."""
     base_dir = OUTPUT_PATH.parent
@@ -468,6 +482,8 @@ def _write_dated_archive_only(records: list, date_str: str, props_available: boo
         "data_warnings":   [],
         "pitchers":        records,
     }
+    if quality_gate_summary is not None:
+        output["quality_gate_summary"] = quality_gate_summary
     dated_path = base_dir / f"{date_str}.json"
     try:
         with open(dated_path, "w") as f:
@@ -586,15 +602,28 @@ def _run_preview(tomorrow_str: str) -> None:
             if preview_umpire_has_rating is None and ump_map.get(name, 0.0) != 0.0:
                 preview_umpire_has_rating = True
             record["umpire_has_rating"] = bool(preview_umpire_has_rating)
+            record["umpire_rating_games"] = (
+                _ump_diag.get("umpire_rating_games_by_pitcher", {}).get(name)
+            )
             records.append(record)
             log.info("Preview: built record for %s: λ=%.2f verdict=%s",
                      name, record["lambda"], record["ev_over"]["verdict"])
         except Exception as e:
             log.warning("Preview: build_pitcher_record failed for %s: %s — skipping", name, e)
 
+    records, quality_gate_summary = _apply_quality_gates_to_records(
+        records,
+        pre_record_skips={"build_exception": len(props) - len(records)},
+    )
+
     now_utc = datetime.now(timezone.utc)
     _annotate_game_states(records, now_utc)
-    _write_dated_archive_only(records, tomorrow_str, props_available=True)
+    _write_dated_archive_only(
+        records,
+        tomorrow_str,
+        props_available=True,
+        quality_gate_summary=quality_gate_summary,
+    )
     log.info("Preview: wrote %d/%d pitcher records for %s", len(records), len(props), tomorrow_str)
 
 
@@ -858,6 +887,12 @@ def _tracked_pick_row(pick: dict) -> dict:
         "verdict": verdict,
         "locked_verdict": locked_verdict,
         "display_verdict": locked_verdict or verdict,
+        "raw_verdict": pick.get("raw_verdict"),
+        "actionable_verdict": pick.get("actionable_verdict"),
+        "quality_gate_level": pick.get("quality_gate_level"),
+        "input_quality_flags": pick.get("input_quality_flags"),
+        "verdict_cap_reason": pick.get("verdict_cap_reason"),
+        "data_maturity": pick.get("data_maturity"),
         "k_line": pick.get("k_line"),
         "locked_k_line": locked_k_line,
         "display_k_line": _display_value(locked_k_line, pick.get("k_line")),
@@ -865,6 +900,7 @@ def _tracked_pick_row(pick: dict) -> dict:
         "locked_odds": locked_odds,
         "display_odds": _display_value(locked_odds, pick.get("odds")),
         "adj_ev": pick.get("adj_ev"),
+        "raw_adj_ev": pick.get("raw_adj_ev"),
         "locked_adj_ev": locked_adj_ev,
         "display_adj_ev": _display_value(locked_adj_ev, pick.get("adj_ev")),
         "edge": pick.get("edge"),
@@ -1254,6 +1290,7 @@ def run(date_str: str, run_type: str = "full") -> None:
             "pitcher_rated_count":   0,
             "umpire_by_pitcher":     {},
             "rated_umpire_by_pitcher": {},
+            "umpire_rating_games_by_pitcher": {},
             "missing_career_rate_umpires": [],
             "error":                 f"{type(e).__name__}: {e}",
         }
@@ -1335,6 +1372,9 @@ def run(date_str: str, run_type: str = "full") -> None:
             # a bad-API run doesn't skew lambda_bias / ump_scale / swstr_k9_scale.
             record["umpire"] = umpire_name
             record["umpire_has_rating"] = bool(umpire_has_rating)
+            record["umpire_rating_games"] = (
+                ump_diagnostics.get("umpire_rating_games_by_pitcher", {}).get(name)
+            )
             record["data_complete"] = _row_data_complete(
                 swstr_meta=swstr_meta,
                 swstr_row=swstr_row,
@@ -1399,6 +1439,15 @@ def run(date_str: str, run_type: str = "full") -> None:
             "Dropped %d pregame starter-mismatch record(s) before output/seeding",
             dropped_mismatches,
         )
+    pre_record_skips = {
+        "missing_stats": dropped_props,
+        "build_exception": len(build_failures),
+        "pregame_starter_mismatch": dropped_mismatches,
+    }
+    records, quality_gate_summary = _apply_quality_gates_to_records(
+        records,
+        pre_record_skips=pre_record_skips,
+    )
 
     # Guard: if the stats API failed entirely and produced 0 records, don't
     # silently wipe out a previously good today.json.  Locked snapshots from
@@ -1408,7 +1457,8 @@ def run(date_str: str, run_type: str = "full") -> None:
         _write_output(date_str, records, props_available=True,
                       ump_diagnostics=ump_diagnostics,
                       data_warnings=data_warnings,
-                      connection_health=connection_health)
+                      connection_health=connection_health,
+                      quality_gate_summary=quality_gate_summary)
         _write_steam(records, date_str)
     else:
         log.warning(
@@ -1451,7 +1501,8 @@ def run(date_str: str, run_type: str = "full") -> None:
 def _write_output(date_str: str, records: list, props_available: bool,
                   ump_diagnostics: dict | None = None,
                   data_warnings: list[str] | None = None,
-                  connection_health: dict | None = None) -> None:
+                  connection_health: dict | None = None,
+                  quality_gate_summary: dict | None = None) -> None:
     output = {
         "generated_at":   datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
         "date":           date_str,
@@ -1470,6 +1521,8 @@ def _write_output(date_str: str, records: list, props_available: bool,
         output["ump_diagnostics"] = ump_diagnostics
     if connection_health is not None:
         output["connection_health"] = connection_health
+    if quality_gate_summary is not None:
+        output["quality_gate_summary"] = quality_gate_summary
     OUTPUT_PATH.parent.mkdir(parents=True, exist_ok=True)
     # today.json is written exactly once inside _write_archive, filtered to
     # ET-today pitchers only.  Writing it here first (with all records including
