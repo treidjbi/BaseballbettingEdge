@@ -957,6 +957,18 @@ def test_run_writes_empty_output_when_no_props(tmp_path):
     assert data["pitchers"] == []
 
 
+def test_run_does_not_write_empty_output_when_odds_fetch_fails(tmp_path):
+    """A provider/auth failure is different from a clean empty market response."""
+    import run_pipeline
+    out_path = tmp_path / "today.json"
+
+    with patch.object(run_pipeline, "OUTPUT_PATH", out_path), \
+         patch("run_pipeline.fetch_odds", side_effect=RuntimeError("401 Unauthorized")):
+        run_pipeline.run("2026-04-01")
+
+    assert not out_path.exists()
+
+
 def test_run_calls_lock_due_picks(tmp_path):
     """run() should call lock_due_picks before seeding picks."""
     import run_pipeline

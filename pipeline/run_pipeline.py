@@ -964,8 +964,6 @@ def run(date_str: str, run_type: str = "full") -> None:
         sys.exit(1)
     except Exception as e:
         log.error("fetch_odds failed: %s", e)
-        if not _has_valid_output(date_str):
-            _write_output(date_str, [], props_available=False)
         return
     log.info("%s", format_stage_summary("fetch_odds", perf_counter() - stage_started, props=len(props)))
 
