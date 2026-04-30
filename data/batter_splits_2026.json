@@ -1068,22 +1068,56 @@
         "so": 3,
         "k_rate": 0.3333
       }
+    },
+    "mlbam:672275": {
+      "name": "Patrick Bailey",
+      "bats": "R",
+      "mlbam_id": 672275,
+      "bbref_id": "bailepa01",
+      "season": 2026,
+      "vs_R": {
+        "pa": 65,
+        "so": 13,
+        "k_rate": 0.2
+      },
+      "vs_L": {
+        "pa": 11,
+        "so": 4,
+        "k_rate": 0.3636
+      }
+    },
+    "mlbam:607208": {
+      "name": "Trea Turner",
+      "bats": "R",
+      "mlbam_id": 607208,
+      "bbref_id": "turnetr01",
+      "season": 2026,
+      "vs_R": {
+        "pa": 85,
+        "so": 17,
+        "k_rate": 0.2
+      },
+      "vs_L": {
+        "pa": 45,
+        "so": 7,
+        "k_rate": 0.1556
+      }
     }
   },
-  "updated_at": "2026-04-30T21:14:37Z",
+  "updated_at": "2026-04-30T21:34:46Z",
   "last_run": {
     "projection_status": "collection_only",
     "requested_batters": 162,
-    "already_cached": 22,
+    "already_cached": 24,
     "attempted": 4,
     "collected": 2,
     "failed": 2,
-    "queued_not_attempted": 136,
-    "cache_size": 63,
+    "queued_not_attempted": 134,
+    "cache_size": 65,
     "errors": [
       "Kevin McGonigle: no bbref id",
       "Hao-Yu  Lee: no bbref id"
     ],
-    "updated_at": "2026-04-30T21:14:37Z"
+    "updated_at": "2026-04-30T21:34:46Z"
   }
 }
