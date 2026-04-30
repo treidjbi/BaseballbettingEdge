@@ -1204,22 +1204,40 @@
         "so": 7,
         "k_rate": 0.2414
       }
+    },
+    "mlbam:665561": {
+      "name": "Rafael March\u00e1n",
+      "bats": "R",
+      "mlbam_id": 665561,
+      "bbref_id": "marchra01",
+      "season": 2026,
+      "vs_R": {
+        "pa": 31,
+        "so": 7,
+        "k_rate": 0.2258
+      },
+      "vs_L": {
+        "pa": 16,
+        "so": 3,
+        "k_rate": 0.1875
+      }
     }
   },
-  "updated_at": "2026-04-30T23:03:57Z",
+  "updated_at": "2026-04-30T23:29:27Z",
   "last_run": {
     "projection_status": "collection_only",
     "requested_batters": 162,
-    "already_cached": 30,
+    "already_cached": 32,
     "attempted": 4,
-    "collected": 2,
-    "failed": 2,
-    "queued_not_attempted": 128,
-    "cache_size": 71,
+    "collected": 1,
+    "failed": 3,
+    "queued_not_attempted": 126,
+    "cache_size": 72,
     "errors": [
       "Kevin McGonigle: no bbref id",
-      "Hao-Yu  Lee: no bbref id"
+      "Hao-Yu  Lee: no bbref id",
+      "Justin Crawford: no bbref id"
     ],
-    "updated_at": "2026-04-30T23:03:57Z"
+    "updated_at": "2026-04-30T23:29:27Z"
   }
 }
