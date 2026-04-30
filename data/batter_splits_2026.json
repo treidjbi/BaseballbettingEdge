@@ -546,23 +546,35 @@
         "so": 2,
         "k_rate": 0.0714
       }
+    },
+    "mlbam:665861": {
+      "name": "Sebasti\u00e1n Rivero",
+      "bats": "R",
+      "mlbam_id": 665861,
+      "bbref_id": "riverse01",
+      "season": 2026,
+      "vs_R": {
+        "pa": 4,
+        "so": 0,
+        "k_rate": 0.0
+      }
     }
   },
-  "updated_at": "2026-04-30T04:23:25Z",
+  "updated_at": "2026-04-30T04:41:57Z",
   "last_run": {
     "projection_status": "collection_only",
     "requested_batters": 234,
-    "already_cached": 30,
+    "already_cached": 31,
     "attempted": 4,
     "collected": 1,
     "failed": 3,
-    "queued_not_attempted": 200,
-    "cache_size": 32,
+    "queued_not_attempted": 199,
+    "cache_size": 33,
     "errors": [
       "Travis Bazzana: no bbref id",
       "Munetaka Murakami: no bbref id",
       "Sam Antonacci: no bbref id"
     ],
-    "updated_at": "2026-04-30T04:23:25Z"
+    "updated_at": "2026-04-30T04:41:57Z"
   }
 }
