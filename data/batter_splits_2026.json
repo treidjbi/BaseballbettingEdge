@@ -762,22 +762,56 @@
         "so": 7,
         "k_rate": 0.1556
       }
+    },
+    "mlbam:643289": {
+      "name": "Mauricio Dub\u00f3n",
+      "bats": "R",
+      "mlbam_id": 643289,
+      "bbref_id": "dubonma01",
+      "season": 2026,
+      "vs_R": {
+        "pa": 74,
+        "so": 13,
+        "k_rate": 0.1757
+      },
+      "vs_L": {
+        "pa": 39,
+        "so": 7,
+        "k_rate": 0.1795
+      }
+    },
+    "mlbam:571657": {
+      "name": "Kyle Farmer",
+      "bats": "R",
+      "mlbam_id": 571657,
+      "bbref_id": "farmeky01",
+      "season": 2026,
+      "vs_R": {
+        "pa": 4,
+        "so": 1,
+        "k_rate": 0.25
+      },
+      "vs_L": {
+        "pa": 6,
+        "so": 1,
+        "k_rate": 0.1667
+      }
     }
   },
-  "updated_at": "2026-04-30T17:03:45Z",
+  "updated_at": "2026-04-30T17:40:10Z",
   "last_run": {
     "projection_status": "collection_only",
     "requested_batters": 144,
-    "already_cached": 10,
+    "already_cached": 12,
     "attempted": 4,
     "collected": 2,
     "failed": 2,
-    "queued_not_attempted": 130,
-    "cache_size": 45,
+    "queued_not_attempted": 128,
+    "cache_size": 47,
     "errors": [
       "Kevin McGonigle: no bbref id",
       "Hao-Yu  Lee: no bbref id"
     ],
-    "updated_at": "2026-04-30T17:03:45Z"
+    "updated_at": "2026-04-30T17:40:10Z"
   }
 }
