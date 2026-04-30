@@ -830,22 +830,56 @@
         "so": 4,
         "k_rate": 0.1818
       }
+    },
+    "mlbam:573262": {
+      "name": "Mike Yastrzemski",
+      "bats": "R",
+      "mlbam_id": 573262,
+      "bbref_id": "yastrmi01",
+      "season": 2026,
+      "vs_R": {
+        "pa": 81,
+        "so": 20,
+        "k_rate": 0.2469
+      },
+      "vs_L": {
+        "pa": 17,
+        "so": 5,
+        "k_rate": 0.2941
+      }
+    },
+    "mlbam:671218": {
+      "name": "Heliot Ramos",
+      "bats": "R",
+      "mlbam_id": 671218,
+      "bbref_id": "ramoshe02",
+      "season": 2026,
+      "vs_R": {
+        "pa": 79,
+        "so": 23,
+        "k_rate": 0.2911
+      },
+      "vs_L": {
+        "pa": 28,
+        "so": 10,
+        "k_rate": 0.3571
+      }
     }
   },
-  "updated_at": "2026-04-30T17:53:48Z",
+  "updated_at": "2026-04-30T18:16:56Z",
   "last_run": {
     "projection_status": "collection_only",
     "requested_batters": 144,
-    "already_cached": 14,
+    "already_cached": 15,
     "attempted": 4,
     "collected": 2,
     "failed": 2,
-    "queued_not_attempted": 126,
-    "cache_size": 49,
+    "queued_not_attempted": 125,
+    "cache_size": 51,
     "errors": [
       "Kevin McGonigle: no bbref id",
       "Hao-Yu  Lee: no bbref id"
     ],
-    "updated_at": "2026-04-30T17:53:48Z"
+    "updated_at": "2026-04-30T18:16:56Z"
   }
 }
