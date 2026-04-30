@@ -966,22 +966,56 @@
         "so": 11,
         "k_rate": 0.2821
       }
+    },
+    "mlbam:650333": {
+      "name": "Luis Arraez",
+      "bats": "R",
+      "mlbam_id": 650333,
+      "bbref_id": "arraelu01",
+      "season": 2026,
+      "vs_R": {
+        "pa": 80,
+        "so": 2,
+        "k_rate": 0.025
+      },
+      "vs_L": {
+        "pa": 38,
+        "so": 2,
+        "k_rate": 0.0526
+      }
+    },
+    "mlbam:669477": {
+      "name": "Casey Schmitt",
+      "bats": "R",
+      "mlbam_id": 669477,
+      "bbref_id": "schmica01",
+      "season": 2026,
+      "vs_R": {
+        "pa": 64,
+        "so": 14,
+        "k_rate": 0.2188
+      },
+      "vs_L": {
+        "pa": 28,
+        "so": 5,
+        "k_rate": 0.1786
+      }
     }
   },
-  "updated_at": "2026-04-30T19:59:53Z",
+  "updated_at": "2026-04-30T20:14:36Z",
   "last_run": {
     "projection_status": "collection_only",
-    "requested_batters": 144,
-    "already_cached": 16,
+    "requested_batters": 153,
+    "already_cached": 18,
     "attempted": 4,
     "collected": 2,
     "failed": 2,
-    "queued_not_attempted": 124,
-    "cache_size": 57,
+    "queued_not_attempted": 131,
+    "cache_size": 59,
     "errors": [
       "Kevin McGonigle: no bbref id",
       "Hao-Yu  Lee: no bbref id"
     ],
-    "updated_at": "2026-04-30T19:59:53Z"
+    "updated_at": "2026-04-30T20:14:36Z"
   }
 }
