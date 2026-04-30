@@ -19,37 +19,30 @@ MARKET_ID  = 19  # pitcher_strikeouts
 THROTTLE_S = 0.55
 _last_call_time: float = 0.0
 
-# TheRundown v2 book IDs. Verify against live API response if lines are missing.
-# To discover available IDs: log list(lines_data[main_val]["over"].keys()) in _parse_event_k_props
-# Caesars (20) and Fanatics (38) are best-guess IDs — if a pitcher's ref_book
-# shows up as "Book<N>" in picks_history.json for an N not in this map, update
-# the map. Option B (Task A4 follow-up): only target books count; untracked
-# books now trigger a skip rather than a fallback, so picks only surface when
-# the user can actually place the bet.
+# TheRundown v2 affiliate IDs. Option B (Task A4 follow-up): only target books
+# count; untracked books trigger a skip rather than a fallback, so picks only
+# surface when the user can actually place the bet.
+TARGET_AFFILIATE_IDS = ("19", "22", "23", "24", "25")
 BOOK_ID_MAP = {
-    "23": "FanDuel",
-    "22": "BetMGM",
     "19": "DraftKings",
+    "22": "BetMGM",
+    "23": "FanDuel",
+    "24": "theScore Bet",
     "25": "Kalshi",
-    "30": "BetRivers",
-    "20": "Caesars",
-    "38": "Fanatics",
 }
 # Priority order for picking the reference book on the card. Higher-priority
 # books come first; _select_ref_book returns the first match.
-REF_BOOK_PRIORITY = ["23", "22", "19", "25", "30", "20", "38"]
+REF_BOOK_PRIORITY = ["23", "22", "19", "24", "25"]
 
 # Books tracked in steam.json snapshots (Steam Phase A). Same set as
 # BOOK_ID_MAP today; kept as a separate name so steam tracking and ref-book
 # selection can diverge later if needed.
 TRACKED_BOOKS = {
-    "23": "FanDuel",
-    "22": "BetMGM",
     "19": "DraftKings",
+    "22": "BetMGM",
+    "23": "FanDuel",
+    "24": "theScore Bet",
     "25": "Kalshi",
-    "30": "BetRivers",
-    "20": "Caesars",
-    "38": "Fanatics",
 }
 PITCHER_POSITION_MARKERS = {"1", "p", "sp", "rp", "pitcher", "starting pitcher", "relief pitcher"}
 MIN_REASONABLE_PITCHER_K_LINE = 1.5
@@ -95,7 +88,7 @@ def _is_obvious_non_pitcher_participant(participant: dict) -> bool:
 def _select_ref_book(available_books: dict) -> tuple:
     """
     Select reference book from available_books dict {book_id: price_info}.
-    Priority order: FanDuel → BetMGM → DraftKings → BetRivers → Caesars → Fanatics.
+    Priority order: FanDuel → BetMGM → DraftKings → theScore Bet → Kalshi.
     Returns (book_id, human_name) or (None, None) if NO priority book is
     available. This is the Option B behavior: we deliberately do NOT fall back
     to unknown books — a pick the user cannot actually place is worse than no
@@ -335,7 +328,10 @@ def fetch_odds(date_str: str) -> list:
         log.info("Fetching K props for UTC date %s ...", fetch_date)
         try:
             url  = f"{BASE_URL}/sports/{SPORT_ID}/events/{fetch_date}"
-            data = throttled_get(url, params={"market_ids": MARKET_ID})
+            data = throttled_get(url, params={
+                "market_ids": MARKET_ID,
+                "affiliate_ids": ",".join(TARGET_AFFILIATE_IDS),
+            })
             for event in data.get("events", []):
                 eid = event.get("event_id")
                 if eid and eid in seen_event_ids:

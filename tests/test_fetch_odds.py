@@ -4,7 +4,18 @@ import os
 from unittest.mock import patch
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'pipeline'))
 
-from fetch_odds import american_odds_from_line, fetch_odds, parse_k_props, _parse_line_value, _select_ref_book, _headers
+from fetch_odds import (
+    BOOK_ID_MAP,
+    REF_BOOK_PRIORITY,
+    TARGET_AFFILIATE_IDS,
+    TRACKED_BOOKS,
+    american_odds_from_line,
+    fetch_odds,
+    parse_k_props,
+    _parse_line_value,
+    _select_ref_book,
+    _headers,
+)
 
 
 # ── Helper fixtures ────────────────────────────────────────────────────────────
@@ -93,6 +104,19 @@ class TestHeaders:
         with patch.dict("os.environ", {"RUNDOWN_API_KEY": "  abc123 \n"}):
             headers = _headers()
             assert headers["X-TheRundown-Key"] == "abc123"
+
+
+class TestTargetBooks:
+    def test_target_affiliate_ids_are_user_placeable_books_only(self):
+        assert TARGET_AFFILIATE_IDS == ("19", "22", "23", "24", "25")
+        assert set(BOOK_ID_MAP) == set(TARGET_AFFILIATE_IDS)
+        assert set(TRACKED_BOOKS) == set(TARGET_AFFILIATE_IDS)
+        assert "30" not in BOOK_ID_MAP
+        assert "20" not in BOOK_ID_MAP
+        assert "38" not in BOOK_ID_MAP
+
+    def test_ref_book_priority_uses_target_books_only(self):
+        assert REF_BOOK_PRIORITY == ["23", "22", "19", "24", "25"]
 
 
 # ── Tests: _parse_line_value ──────────────────────────────────────────────────
@@ -442,29 +466,32 @@ class TestSelectRefBook:
         assert book_id == "19"
         assert name == "DraftKings"
 
-    def test_falls_back_to_betrivers(self):
-        books = {"30": {"price": -110, "is_main": True, "delta": 0}}
+    def test_falls_back_to_thescore_bet(self):
+        books = {"24": {"price": -110, "is_main": True, "delta": 0}}
         book_id, name = _select_ref_book(books)
-        assert book_id == "30"
-        assert name == "BetRivers"
-
-    def test_falls_back_to_caesars(self):
-        books = {"20": {"price": -110, "is_main": True, "delta": 0}}
-        book_id, name = _select_ref_book(books)
-        assert book_id == "20"
-        assert name == "Caesars"
-
-    def test_falls_back_to_fanatics(self):
-        books = {"38": {"price": -110, "is_main": True, "delta": 0}}
-        book_id, name = _select_ref_book(books)
-        assert book_id == "38"
-        assert name == "Fanatics"
+        assert book_id == "24"
+        assert name == "theScore Bet"
 
     def test_falls_back_to_kalshi(self):
         books = {"25": {"price": -110, "is_main": True, "delta": 0}}
         book_id, name = _select_ref_book(books)
         assert book_id == "25"
         assert name == "Kalshi"
+
+    def test_returns_none_for_old_betrivers_id(self):
+        books = {"30": {"price": -110, "is_main": True, "delta": 0}}
+        book_id, name = _select_ref_book(books)
+        assert book_id is None
+        assert name is None
+
+    def test_returns_none_for_caesars_and_fanatics(self):
+        books = {
+            "20": {"price": -110, "is_main": True, "delta": 0},
+            "38": {"price": -110, "is_main": True, "delta": 0},
+        }
+        book_id, name = _select_ref_book(books)
+        assert book_id is None
+        assert name is None
 
     def test_returns_none_when_only_untracked_book(self):
         """Option B: no fallback to unknown books."""
@@ -484,30 +511,27 @@ class TestSelectRefBook:
             "23": {"price": -110, "is_main": True, "delta": 0},
             "22": {"price": -108, "is_main": True, "delta": 0},
             "19": {"price": -105, "is_main": True, "delta": 0},
-            "30": {"price": -100, "is_main": True, "delta": 0},
-            "20": {"price": -102, "is_main": True, "delta": 0},
-            "38": {"price": -104, "is_main": True, "delta": 0},
+            "24": {"price": -100, "is_main": True, "delta": 0},
+            "25": {"price": -104, "is_main": True, "delta": 0},
         }
         book_id, name = _select_ref_book(books)
         assert book_id == "23"
         assert name == "FanDuel"
 
-    def test_caesars_beats_fanatics(self):
-        """When only Caesars and Fanatics are present, Caesars wins
-        (it's earlier in REF_BOOK_PRIORITY)."""
+    def test_thescore_beats_kalshi(self):
         books = {
-            "38": {"price": -110, "is_main": True, "delta": 0},
-            "20": {"price": -110, "is_main": True, "delta": 0},
+            "25": {"price": -110, "is_main": True, "delta": 0},
+            "24": {"price": -110, "is_main": True, "delta": 0},
         }
         book_id, name = _select_ref_book(books)
-        assert book_id == "20"
-        assert name == "Caesars"
+        assert book_id == "24"
+        assert name == "theScore Bet"
 
 
 # ── Tests: book_odds in parse output ────────────────────────────────��────────
 
 def _multi_book_event(pitcher="Gerrit Cole", line_val=7.5,
-                      books=("23", "22", "19", "30", "20", "38")):
+                      books=("23", "22", "19", "24", "25")):
     """Event with multiple tracked books, all with over and under on same line."""
     prices_over  = {b: {"price": -110, "is_main_line": True, "price_delta": 0} for b in books}
     prices_under = {b: {"price": -110, "is_main_line": True, "price_delta": 0} for b in books}
@@ -540,9 +564,11 @@ class TestBookOdds:
         assert "FanDuel"    in bo   # book 23
         assert "BetMGM"     in bo   # book 22
         assert "DraftKings" in bo   # book 19
-        assert "BetRivers"  in bo   # book 30
-        assert "Caesars"    in bo   # book 20
-        assert "Fanatics"   in bo   # book 38
+        assert "theScore Bet" in bo  # book 24
+        assert "Kalshi"      in bo   # book 25
+        assert "BetRivers"   not in bo
+        assert "Caesars"     not in bo
+        assert "Fanatics"    not in bo
 
     def test_book_odds_entry_has_over_and_under(self):
         result = parse_k_props({"events": [_multi_book_event()]})
@@ -558,15 +584,15 @@ class TestBookOdds:
         assert result == []
 
     def test_book_odds_excludes_book_missing_one_side(self):
-        # BetRivers (30) has over but no under → should not appear in book_odds
+        # theScore Bet (24) has over but no under → should not appear in book_odds
         event = _multi_book_event(books=["23", "22"])
         # Manually add a book with only over
-        event["markets"][0]["participants"][0]["lines"][0]["prices"]["30"] = {
+        event["markets"][0]["participants"][0]["lines"][0]["prices"]["24"] = {
             "price": -112, "is_main_line": True, "price_delta": 0
         }
         result = parse_k_props({"events": [event]})
         bo = result[0]["book_odds"]
-        assert "BetRivers" not in (bo or {})
+        assert "theScore Bet" not in (bo or {})
 
 
 # ── Tests: opening_odds_source (Task A2) ──────────────────────────────────────
@@ -628,6 +654,17 @@ class TestOptionBSkipLogging:
 
 
 class TestFetchOddsFailureHandling:
+    def test_fetch_odds_requests_only_target_affiliates(self):
+        good_payload = {"events": []}
+
+        with patch("fetch_odds.throttled_get", return_value=good_payload) as mock_get:
+            fetch_odds("2026-04-29")
+
+        assert mock_get.call_count == 2
+        for _args, kwargs in mock_get.call_args_list:
+            assert kwargs["params"]["market_ids"] == 19
+            assert kwargs["params"]["affiliate_ids"] == "19,22,23,24,25"
+
     def test_raises_when_all_date_fetches_fail(self):
         import requests
 
