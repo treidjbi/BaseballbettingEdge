@@ -694,22 +694,56 @@
         "so": 11,
         "k_rate": 0.2619
       }
+    },
+    "mlbam:686948": {
+      "name": "Drake Baldwin",
+      "bats": "R",
+      "mlbam_id": 686948,
+      "bbref_id": "baldwdr01",
+      "season": 2026,
+      "vs_R": {
+        "pa": 90,
+        "so": 20,
+        "k_rate": 0.2222
+      },
+      "vs_L": {
+        "pa": 52,
+        "so": 6,
+        "k_rate": 0.1154
+      }
+    },
+    "mlbam:645277": {
+      "name": "Ozzie Albies",
+      "bats": "R",
+      "mlbam_id": 645277,
+      "bbref_id": "albieoz01",
+      "season": 2026,
+      "vs_R": {
+        "pa": 82,
+        "so": 13,
+        "k_rate": 0.1585
+      },
+      "vs_L": {
+        "pa": 50,
+        "so": 3,
+        "k_rate": 0.06
+      }
     }
   },
-  "updated_at": "2026-04-30T16:39:27Z",
+  "updated_at": "2026-04-30T16:45:00Z",
   "last_run": {
     "projection_status": "collection_only",
-    "requested_batters": 126,
-    "already_cached": 6,
+    "requested_batters": 135,
+    "already_cached": 8,
     "attempted": 4,
     "collected": 2,
     "failed": 2,
-    "queued_not_attempted": 116,
-    "cache_size": 41,
+    "queued_not_attempted": 123,
+    "cache_size": 43,
     "errors": [
       "Kevin McGonigle: no bbref id",
       "Hao-Yu  Lee: no bbref id"
     ],
-    "updated_at": "2026-04-30T16:39:27Z"
+    "updated_at": "2026-04-30T16:45:00Z"
   }
 }
