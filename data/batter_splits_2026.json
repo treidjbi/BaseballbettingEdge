@@ -512,23 +512,40 @@
         "so": 6,
         "k_rate": 0.1333
       }
+    },
+    "mlbam:666139": {
+      "name": "Josh Lowe",
+      "bats": "R",
+      "mlbam_id": 666139,
+      "bbref_id": "lowejo01",
+      "season": 2026,
+      "vs_R": {
+        "pa": 67,
+        "so": 19,
+        "k_rate": 0.2836
+      },
+      "vs_L": {
+        "pa": 14,
+        "so": 3,
+        "k_rate": 0.2143
+      }
     }
   },
-  "updated_at": "2026-04-30T01:19:19Z",
+  "updated_at": "2026-04-30T04:00:57Z",
   "last_run": {
     "projection_status": "collection_only",
     "requested_batters": 234,
-    "already_cached": 28,
+    "already_cached": 29,
     "attempted": 4,
     "collected": 1,
     "failed": 3,
-    "queued_not_attempted": 202,
-    "cache_size": 30,
+    "queued_not_attempted": 201,
+    "cache_size": 31,
     "errors": [
       "Travis Bazzana: no bbref id",
       "Munetaka Murakami: no bbref id",
       "Sam Antonacci: no bbref id"
     ],
-    "updated_at": "2026-04-30T01:19:19Z"
+    "updated_at": "2026-04-30T04:00:57Z"
   }
 }
