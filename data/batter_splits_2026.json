@@ -1102,22 +1102,56 @@
         "so": 7,
         "k_rate": 0.1556
       }
+    },
+    "mlbam:656941": {
+      "name": "Kyle Schwarber",
+      "bats": "R",
+      "mlbam_id": 656941,
+      "bbref_id": "schwaky01",
+      "season": 2026,
+      "vs_R": {
+        "pa": 71,
+        "so": 22,
+        "k_rate": 0.3099
+      },
+      "vs_L": {
+        "pa": 59,
+        "so": 18,
+        "k_rate": 0.3051
+      }
+    },
+    "mlbam:547180": {
+      "name": "Bryce Harper",
+      "bats": "R",
+      "mlbam_id": 547180,
+      "bbref_id": "harpebr03",
+      "season": 2026,
+      "vs_R": {
+        "pa": 68,
+        "so": 9,
+        "k_rate": 0.1324
+      },
+      "vs_L": {
+        "pa": 55,
+        "so": 12,
+        "k_rate": 0.2182
+      }
     }
   },
-  "updated_at": "2026-04-30T21:34:46Z",
+  "updated_at": "2026-04-30T22:08:07Z",
   "last_run": {
     "projection_status": "collection_only",
     "requested_batters": 162,
-    "already_cached": 24,
+    "already_cached": 26,
     "attempted": 4,
     "collected": 2,
     "failed": 2,
-    "queued_not_attempted": 134,
-    "cache_size": 65,
+    "queued_not_attempted": 132,
+    "cache_size": 67,
     "errors": [
       "Kevin McGonigle: no bbref id",
       "Hao-Yu  Lee: no bbref id"
     ],
-    "updated_at": "2026-04-30T21:34:46Z"
+    "updated_at": "2026-04-30T22:08:07Z"
   }
 }
