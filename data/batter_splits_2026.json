@@ -1034,22 +1034,56 @@
         "so": 9,
         "k_rate": 0.2571
       }
+    },
+    "mlbam:808982": {
+      "name": "Jung Hoo Lee",
+      "bats": "R",
+      "mlbam_id": 808982,
+      "bbref_id": "leeju01",
+      "season": 2026,
+      "vs_R": {
+        "pa": 82,
+        "so": 10,
+        "k_rate": 0.122
+      },
+      "vs_L": {
+        "pa": 31,
+        "so": 5,
+        "k_rate": 0.1613
+      }
+    },
+    "mlbam:687551": {
+      "name": "Drew Gilbert",
+      "bats": "R",
+      "mlbam_id": 687551,
+      "bbref_id": "gilbedr01",
+      "season": 2026,
+      "vs_R": {
+        "pa": 31,
+        "so": 6,
+        "k_rate": 0.1935
+      },
+      "vs_L": {
+        "pa": 9,
+        "so": 3,
+        "k_rate": 0.3333
+      }
     }
   },
-  "updated_at": "2026-04-30T20:42:54Z",
+  "updated_at": "2026-04-30T21:14:37Z",
   "last_run": {
     "projection_status": "collection_only",
     "requested_batters": 162,
-    "already_cached": 20,
+    "already_cached": 22,
     "attempted": 4,
     "collected": 2,
     "failed": 2,
-    "queued_not_attempted": 138,
-    "cache_size": 61,
+    "queued_not_attempted": 136,
+    "cache_size": 63,
     "errors": [
       "Kevin McGonigle: no bbref id",
       "Hao-Yu  Lee: no bbref id"
     ],
-    "updated_at": "2026-04-30T20:42:54Z"
+    "updated_at": "2026-04-30T21:14:37Z"
   }
 }
