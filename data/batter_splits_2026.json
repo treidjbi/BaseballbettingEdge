@@ -796,22 +796,56 @@
         "so": 1,
         "k_rate": 0.1667
       }
+    },
+    "mlbam:622761": {
+      "name": "Jorge Mateo",
+      "bats": "R",
+      "mlbam_id": 622761,
+      "bbref_id": "mateojo01",
+      "season": 2026,
+      "vs_R": {
+        "pa": 20,
+        "so": 6,
+        "k_rate": 0.3
+      },
+      "vs_L": {
+        "pa": 10,
+        "so": 6,
+        "k_rate": 0.6
+      }
+    },
+    "mlbam:642201": {
+      "name": "Eli White",
+      "bats": "R",
+      "mlbam_id": 642201,
+      "bbref_id": "whiteel04",
+      "season": 2026,
+      "vs_R": {
+        "pa": 18,
+        "so": 2,
+        "k_rate": 0.1111
+      },
+      "vs_L": {
+        "pa": 22,
+        "so": 4,
+        "k_rate": 0.1818
+      }
     }
   },
-  "updated_at": "2026-04-30T17:40:10Z",
+  "updated_at": "2026-04-30T17:53:48Z",
   "last_run": {
     "projection_status": "collection_only",
     "requested_batters": 144,
-    "already_cached": 12,
+    "already_cached": 14,
     "attempted": 4,
     "collected": 2,
     "failed": 2,
-    "queued_not_attempted": 128,
-    "cache_size": 47,
+    "queued_not_attempted": 126,
+    "cache_size": 49,
     "errors": [
       "Kevin McGonigle: no bbref id",
       "Hao-Yu  Lee: no bbref id"
     ],
-    "updated_at": "2026-04-30T17:40:10Z"
+    "updated_at": "2026-04-30T17:53:48Z"
   }
 }
