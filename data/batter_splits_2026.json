@@ -478,23 +478,40 @@
         "so": 10,
         "k_rate": 0.2778
       }
+    },
+    "mlbam:669326": {
+      "name": "Bryce Teodosio",
+      "bats": "R",
+      "mlbam_id": 669326,
+      "bbref_id": "teodobr01",
+      "season": 2026,
+      "vs_R": {
+        "pa": 9,
+        "so": 3,
+        "k_rate": 0.3333
+      },
+      "vs_L": {
+        "pa": 27,
+        "so": 12,
+        "k_rate": 0.4444
+      }
     }
   },
-  "updated_at": "2026-04-29T23:29:56Z",
+  "updated_at": "2026-04-30T00:04:03Z",
   "last_run": {
     "projection_status": "collection_only",
     "requested_batters": 234,
-    "already_cached": 26,
+    "already_cached": 27,
     "attempted": 4,
     "collected": 1,
     "failed": 3,
-    "queued_not_attempted": 204,
-    "cache_size": 28,
+    "queued_not_attempted": 203,
+    "cache_size": 29,
     "errors": [
       "Travis Bazzana: no bbref id",
       "Munetaka Murakami: no bbref id",
       "Sam Antonacci: no bbref id"
     ],
-    "updated_at": "2026-04-29T23:29:56Z"
+    "updated_at": "2026-04-30T00:04:03Z"
   }
 }
