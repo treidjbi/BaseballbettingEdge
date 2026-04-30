@@ -898,9 +898,43 @@
         "so": 2,
         "k_rate": 0.125
       }
+    },
+    "mlbam:693307": {
+      "name": "Dillon Dingler",
+      "bats": "R",
+      "mlbam_id": 693307,
+      "bbref_id": "dingldi01",
+      "season": 2026,
+      "vs_R": {
+        "pa": 71,
+        "so": 12,
+        "k_rate": 0.169
+      },
+      "vs_L": {
+        "pa": 33,
+        "so": 6,
+        "k_rate": 0.1818
+      }
+    },
+    "mlbam:671739": {
+      "name": "Michael Harris II",
+      "bats": "R",
+      "mlbam_id": 671739,
+      "bbref_id": "harrimi04",
+      "season": 2026,
+      "vs_R": {
+        "pa": 77,
+        "so": 14,
+        "k_rate": 0.1818
+      },
+      "vs_L": {
+        "pa": 30,
+        "so": 4,
+        "k_rate": 0.1333
+      }
     }
   },
-  "updated_at": "2026-04-30T18:55:04Z",
+  "updated_at": "2026-04-30T19:47:26Z",
   "last_run": {
     "projection_status": "collection_only",
     "requested_batters": 144,
@@ -909,11 +943,11 @@
     "collected": 2,
     "failed": 2,
     "queued_not_attempted": 126,
-    "cache_size": 53,
+    "cache_size": 55,
     "errors": [
       "Kevin McGonigle: no bbref id",
       "Hao-Yu  Lee: no bbref id"
     ],
-    "updated_at": "2026-04-30T18:55:04Z"
+    "updated_at": "2026-04-30T19:47:26Z"
   }
 }
