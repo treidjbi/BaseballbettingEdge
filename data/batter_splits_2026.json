@@ -609,21 +609,72 @@
         "so": 9,
         "k_rate": 0.2647
       }
+    },
+    "mlbam:679529": {
+      "name": "Spencer Torkelson",
+      "bats": "R",
+      "mlbam_id": 679529,
+      "bbref_id": "torkesp01",
+      "season": 2026,
+      "vs_R": {
+        "pa": 87,
+        "so": 26,
+        "k_rate": 0.2989
+      },
+      "vs_L": {
+        "pa": 28,
+        "so": 7,
+        "k_rate": 0.25
+      }
+    },
+    "mlbam:681481": {
+      "name": "Kerry Carpenter",
+      "bats": "R",
+      "mlbam_id": 681481,
+      "bbref_id": "carpeke01",
+      "season": 2026,
+      "vs_R": {
+        "pa": 85,
+        "so": 28,
+        "k_rate": 0.3294
+      },
+      "vs_L": {
+        "pa": 10,
+        "so": 4,
+        "k_rate": 0.4
+      }
+    },
+    "mlbam:663837": {
+      "name": "Matt Vierling",
+      "bats": "R",
+      "mlbam_id": 663837,
+      "bbref_id": "vierlma01",
+      "season": 2026,
+      "vs_R": {
+        "pa": 38,
+        "so": 8,
+        "k_rate": 0.2105
+      },
+      "vs_L": {
+        "pa": 27,
+        "so": 2,
+        "k_rate": 0.0741
+      }
     }
   },
-  "updated_at": "2026-04-30T15:24:06Z",
+  "updated_at": "2026-04-30T16:28:50Z",
   "last_run": {
     "projection_status": "collection_only",
-    "requested_batters": 117,
-    "already_cached": 0,
+    "requested_batters": 135,
+    "already_cached": 3,
     "attempted": 4,
     "collected": 3,
     "failed": 1,
-    "queued_not_attempted": 113,
-    "cache_size": 36,
+    "queued_not_attempted": 128,
+    "cache_size": 39,
     "errors": [
       "Kevin McGonigle: no bbref id"
     ],
-    "updated_at": "2026-04-30T15:24:06Z"
+    "updated_at": "2026-04-30T16:28:50Z"
   }
 }
