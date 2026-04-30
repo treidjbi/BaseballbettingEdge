@@ -558,23 +558,72 @@
         "so": 0,
         "k_rate": 0.0
       }
+    },
+    "mlbam:650402": {
+      "name": "Gleyber Torres",
+      "bats": "R",
+      "mlbam_id": 650402,
+      "bbref_id": "torregl01",
+      "season": 2026,
+      "vs_R": {
+        "pa": 99,
+        "so": 15,
+        "k_rate": 0.1515
+      },
+      "vs_L": {
+        "pa": 33,
+        "so": 6,
+        "k_rate": 0.1818
+      }
+    },
+    "mlbam:690993": {
+      "name": "Colt Keith",
+      "bats": "R",
+      "mlbam_id": 690993,
+      "bbref_id": "keithco01",
+      "season": 2026,
+      "vs_R": {
+        "pa": 87,
+        "so": 18,
+        "k_rate": 0.2069
+      },
+      "vs_L": {
+        "pa": 5,
+        "so": 1,
+        "k_rate": 0.2
+      }
+    },
+    "mlbam:682985": {
+      "name": "Riley Greene",
+      "bats": "R",
+      "mlbam_id": 682985,
+      "bbref_id": "greenri03",
+      "season": 2026,
+      "vs_R": {
+        "pa": 94,
+        "so": 23,
+        "k_rate": 0.2447
+      },
+      "vs_L": {
+        "pa": 34,
+        "so": 9,
+        "k_rate": 0.2647
+      }
     }
   },
-  "updated_at": "2026-04-30T04:41:57Z",
+  "updated_at": "2026-04-30T15:24:06Z",
   "last_run": {
     "projection_status": "collection_only",
-    "requested_batters": 234,
-    "already_cached": 31,
+    "requested_batters": 117,
+    "already_cached": 0,
     "attempted": 4,
-    "collected": 1,
-    "failed": 3,
-    "queued_not_attempted": 199,
-    "cache_size": 33,
+    "collected": 3,
+    "failed": 1,
+    "queued_not_attempted": 113,
+    "cache_size": 36,
     "errors": [
-      "Travis Bazzana: no bbref id",
-      "Munetaka Murakami: no bbref id",
-      "Sam Antonacci: no bbref id"
+      "Kevin McGonigle: no bbref id"
     ],
-    "updated_at": "2026-04-30T04:41:57Z"
+    "updated_at": "2026-04-30T15:24:06Z"
   }
 }
