@@ -864,22 +864,56 @@
         "so": 10,
         "k_rate": 0.3571
       }
+    },
+    "mlbam:663330": {
+      "name": "Jahmai Jones",
+      "bats": "R",
+      "mlbam_id": 663330,
+      "bbref_id": "jonesja08",
+      "season": 2026,
+      "vs_R": {
+        "pa": 6,
+        "so": 3,
+        "k_rate": 0.5
+      },
+      "vs_L": {
+        "pa": 30,
+        "so": 9,
+        "k_rate": 0.3
+      }
+    },
+    "mlbam:672761": {
+      "name": "Wenceel P\u00e9rez",
+      "bats": "R",
+      "mlbam_id": 672761,
+      "bbref_id": "perezwe01",
+      "season": 2026,
+      "vs_R": {
+        "pa": 33,
+        "so": 3,
+        "k_rate": 0.0909
+      },
+      "vs_L": {
+        "pa": 16,
+        "so": 2,
+        "k_rate": 0.125
+      }
     }
   },
-  "updated_at": "2026-04-30T18:16:56Z",
+  "updated_at": "2026-04-30T18:55:04Z",
   "last_run": {
     "projection_status": "collection_only",
     "requested_batters": 144,
-    "already_cached": 15,
+    "already_cached": 14,
     "attempted": 4,
     "collected": 2,
     "failed": 2,
-    "queued_not_attempted": 125,
-    "cache_size": 51,
+    "queued_not_attempted": 126,
+    "cache_size": 53,
     "errors": [
       "Kevin McGonigle: no bbref id",
       "Hao-Yu  Lee: no bbref id"
     ],
-    "updated_at": "2026-04-30T18:16:56Z"
+    "updated_at": "2026-04-30T18:55:04Z"
   }
 }
