@@ -932,22 +932,56 @@
         "so": 4,
         "k_rate": 0.1333
       }
+    },
+    "mlbam:642086": {
+      "name": "Dominic Smith",
+      "bats": "R",
+      "mlbam_id": 642086,
+      "bbref_id": "smithdo02",
+      "season": 2026,
+      "vs_R": {
+        "pa": 64,
+        "so": 7,
+        "k_rate": 0.1094
+      },
+      "vs_L": {
+        "pa": 6,
+        "so": 2,
+        "k_rate": 0.3333
+      }
+    },
+    "mlbam:656305": {
+      "name": "Matt Chapman",
+      "bats": "R",
+      "mlbam_id": 656305,
+      "bbref_id": "chapmma01",
+      "season": 2026,
+      "vs_R": {
+        "pa": 83,
+        "so": 15,
+        "k_rate": 0.1807
+      },
+      "vs_L": {
+        "pa": 39,
+        "so": 11,
+        "k_rate": 0.2821
+      }
     }
   },
-  "updated_at": "2026-04-30T19:47:26Z",
+  "updated_at": "2026-04-30T19:59:53Z",
   "last_run": {
     "projection_status": "collection_only",
     "requested_batters": 144,
-    "already_cached": 14,
+    "already_cached": 16,
     "attempted": 4,
     "collected": 2,
     "failed": 2,
-    "queued_not_attempted": 126,
-    "cache_size": 55,
+    "queued_not_attempted": 124,
+    "cache_size": 57,
     "errors": [
       "Kevin McGonigle: no bbref id",
       "Hao-Yu  Lee: no bbref id"
     ],
-    "updated_at": "2026-04-30T19:47:26Z"
+    "updated_at": "2026-04-30T19:59:53Z"
   }
 }
