@@ -495,23 +495,40 @@
         "so": 12,
         "k_rate": 0.4444
       }
+    },
+    "mlbam:666176": {
+      "name": "Jo Adell",
+      "bats": "R",
+      "mlbam_id": 666176,
+      "bbref_id": "adelljo01",
+      "season": 2026,
+      "vs_R": {
+        "pa": 90,
+        "so": 21,
+        "k_rate": 0.2333
+      },
+      "vs_L": {
+        "pa": 45,
+        "so": 6,
+        "k_rate": 0.1333
+      }
     }
   },
-  "updated_at": "2026-04-30T00:04:03Z",
+  "updated_at": "2026-04-30T01:19:19Z",
   "last_run": {
     "projection_status": "collection_only",
     "requested_batters": 234,
-    "already_cached": 27,
+    "already_cached": 28,
     "attempted": 4,
     "collected": 1,
     "failed": 3,
-    "queued_not_attempted": 203,
-    "cache_size": 29,
+    "queued_not_attempted": 202,
+    "cache_size": 30,
     "errors": [
       "Travis Bazzana: no bbref id",
       "Munetaka Murakami: no bbref id",
       "Sam Antonacci: no bbref id"
     ],
-    "updated_at": "2026-04-30T00:04:03Z"
+    "updated_at": "2026-04-30T01:19:19Z"
   }
 }
