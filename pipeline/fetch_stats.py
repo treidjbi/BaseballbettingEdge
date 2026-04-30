@@ -251,13 +251,14 @@ def fetch_stats(date_str: str, pitcher_names: list) -> tuple[dict, dict]:
     which is the matched MLB fullName (used by build_features for
     `starter_mismatch`).
 
-    `probables_by_team` — `{team_name: probable_pitcher_fullName_or_None}`
+    `probables_by_team` — `{team_name: [probable_pitcher_fullName, ...]}`
     captured for **every** scheduled side regardless of whether MLB's
-    probable matched a TheRundown pitcher name. Lets run_pipeline
-    cross-check the odds pitcher against MLB's current probable on the
-    team side, which is the only way to flag phantoms — when the book
-    keeps the prop market live on a pitcher who got scratched, MLB's
-    probable for that team has already swapped but fetch_stats's name
+    probable matched a TheRundown pitcher name. A team can appear more
+    than once on a slate because of doubleheaders, so values are lists.
+    Lets run_pipeline cross-check the odds pitcher against MLB's current
+    probables on the team side, which is the only way to flag phantoms —
+    when the book keeps the prop market live on a pitcher who got scratched,
+    MLB's probable for that team has already swapped but fetch_stats's name
     filter would silently drop the mismatch. (Task A7, 2026-04-23.)
 
     Fetches schedules for date_str AND date_str+1 to match the UTC-offset
@@ -323,7 +324,10 @@ def fetch_stats(date_str: str, pitcher_names: list) -> tuple[dict, dict]:
                 # so run_pipeline can flag phantom-starter mismatches even
                 # when MLB has already swapped away from the odds pitcher.
                 if team_name:
-                    probables_by_team[team_name] = (pitcher or {}).get("fullName")
+                    probable_name = (pitcher or {}).get("fullName")
+                    team_probables = probables_by_team.setdefault(team_name, [])
+                    if probable_name and probable_name not in team_probables:
+                        team_probables.append(probable_name)
 
                 if not pitcher:
                     continue

@@ -632,7 +632,85 @@ def test_fetch_stats_filters_schedule_to_target_et_date():
         stats, probables = fetch_stats("2026-04-15", ["Gerrit Cole"])
 
     assert "Gerrit Cole" in stats
-    assert probables["New York Yankees"] == "Gerrit Cole"
+    assert probables["New York Yankees"] == ["Gerrit Cole"]
+
+
+def test_fetch_stats_preserves_multiple_probables_for_doubleheader_teams():
+    """Same-team doubleheaders must not let game two overwrite game one."""
+    pitchers = {
+        1001: "Peter Lambert",
+        1002: "Chris Bassitt",
+        1003: "Lance McCullers Jr.",
+        1004: "Brandon Young",
+    }
+    schedule = {
+        "dates": [{
+            "date": "2026-04-30",
+            "games": [
+                {
+                    "gamePk": 1,
+                    "gameDate": "2026-04-30T17:05:00Z",
+                    "status": {"detailedState": "Scheduled"},
+                    "teams": {
+                        "away": {
+                            "probablePitcher": {"id": 1001, "fullName": "Peter Lambert", "pitchHand": {"code": "R"}},
+                            "team": {"id": 117, "name": "Houston Astros"},
+                        },
+                        "home": {
+                            "probablePitcher": {"id": 1002, "fullName": "Chris Bassitt", "pitchHand": {"code": "R"}},
+                            "team": {"id": 110, "name": "Baltimore Orioles"},
+                        },
+                    },
+                },
+                {
+                    "gamePk": 2,
+                    "gameDate": "2026-04-30T22:35:00Z",
+                    "status": {"detailedState": "Scheduled"},
+                    "teams": {
+                        "away": {
+                            "probablePitcher": {"id": 1003, "fullName": "Lance McCullers Jr.", "pitchHand": {"code": "R"}},
+                            "team": {"id": 117, "name": "Houston Astros"},
+                        },
+                        "home": {
+                            "probablePitcher": {"id": 1004, "fullName": "Brandon Young", "pitchHand": {"code": "R"}},
+                            "team": {"id": 110, "name": "Baltimore Orioles"},
+                        },
+                    },
+                },
+            ],
+        }]
+    }
+    pitcher_stats = _make_pitcher_stats_response()
+    pitcher_game_log = _make_pitcher_game_log_response(["6.0", "6.0", "6.0"])
+    team_stats = _make_team_stats_response()
+
+    def side_effect(url, params=None, timeout=None):
+        mock_resp = MagicMock()
+        mock_resp.raise_for_status = MagicMock()
+        if "/schedule" in url:
+            mock_resp.json.return_value = schedule
+        elif "/people/" in url and "/stats" in url:
+            person_id = int(url.split("/people/")[1].split("/")[0])
+            assert person_id in pitchers
+            if params and params.get("stats") == "gameLog":
+                mock_resp.json.return_value = pitcher_game_log
+            else:
+                mock_resp.json.return_value = pitcher_stats
+        elif "/teams/" in url:
+            mock_resp.json.return_value = team_stats
+        else:
+            mock_resp.json.return_value = {"stats": []}
+        return mock_resp
+
+    with patch("requests.get", side_effect=side_effect):
+        stats, probables = fetch_stats(
+            "2026-04-30",
+            ["Peter Lambert", "Chris Bassitt", "Lance McCullers Jr.", "Brandon Young"],
+        )
+
+    assert set(probables["Houston Astros"]) == {"Peter Lambert", "Lance McCullers Jr."}
+    assert set(probables["Baltimore Orioles"]) == {"Chris Bassitt", "Brandon Young"}
+    assert set(stats) == {"Peter Lambert", "Chris Bassitt", "Lance McCullers Jr.", "Brandon Young"}
 
 
 def test_fetch_stats_skips_postponed_games_before_resolving_probables():

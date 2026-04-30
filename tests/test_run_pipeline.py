@@ -2075,6 +2075,41 @@ def test_restamp_starter_mismatch_stays_false_on_aligned_case():
     assert records[0]["starter_mismatch"] is False
 
 
+def test_restamp_starter_mismatch_accepts_any_doubleheader_probable():
+    """A game-one starter is valid even when the same team also has game two."""
+    import run_pipeline
+    records = [{
+        "pitcher": "Peter Lambert",
+        "team": "Houston Astros",
+        "starter_mismatch": False,
+    }]
+    probables = {"Houston Astros": ["Peter Lambert", "Lance McCullers Jr."]}
+
+    run_pipeline._restamp_starter_mismatch(records, probables)
+
+    assert records[0]["starter_mismatch"] is False
+
+
+def test_classify_dropped_props_flattens_doubleheader_probables():
+    import run_pipeline
+    props = [
+        {"pitcher": "Peter Lambert"},
+        {"pitcher": "Lance McCullers Jr."},
+        {"pitcher": "Non Starter"},
+    ]
+    stats_map = {"Peter Lambert": {"team": "Houston Astros"}}
+    probables = {"Houston Astros": ["Peter Lambert", "Lance McCullers Jr."]}
+
+    unresolved, ignored = run_pipeline._classify_dropped_props(
+        props,
+        stats_map,
+        probables,
+    )
+
+    assert unresolved == ["Lance McCullers Jr."]
+    assert ignored == ["Non Starter"]
+
+
 def test_merge_with_locked_snapshots_replaces_scratched_upcoming_pitcher(tmp_path):
     """Pregame starter replacement should evict the stale upcoming card for that
     same game instead of carrying both pitchers forward."""

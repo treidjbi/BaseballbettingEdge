@@ -158,6 +158,8 @@ Read this before debugging any data-source issue.
   `stats_map.get(odds["pitcher"])` still works after normalization.
 - `probables_by_team` exists to catch scratch / phantom cases where MLB's
   current probable no longer matches the odds pitcher (`starter_mismatch`).
+- `probables_by_team` values are lists of probable names, not a single string,
+  because doubleheaders can put the same team on the slate twice.
 - `/schedule?hydrate=probablePitcher,team` does **not** reliably include
   `pitchHand`. When it is missing, the code must fall back to `/people/{id}`.
 - `recent_start_ips` comes from pitcher `gameLog`, but it is **not** the raw

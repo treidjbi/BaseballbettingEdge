@@ -122,8 +122,8 @@ def _classify_dropped_props(
     """
     probable_names = {
         _normalize_name(name)
-        for name in (probables_by_team or {}).values()
-        if name
+        for probable_value in (probables_by_team or {}).values()
+        for name in _iter_probable_names(probable_value)
     }
     if not probable_names:
         return [
@@ -143,6 +143,15 @@ def _classify_dropped_props(
         else:
             ignored_non_starter_names.append(name)
     return unresolved_probable_names, ignored_non_starter_names
+
+
+def _iter_probable_names(probable_value) -> list[str]:
+    """Return probable pitcher names from legacy scalar or list values."""
+    if not probable_value:
+        return []
+    if isinstance(probable_value, (list, tuple, set)):
+        return [name for name in probable_value if name]
+    return [probable_value]
 
 
 def _swstr_warning_from_meta(swstr_meta: dict[str, bool]) -> str | None:
@@ -523,12 +532,16 @@ def _restamp_starter_mismatch(records: list, probables_by_team: dict) -> None:
         team = r.get("team")
         if not team or team not in probables_by_team:
             continue
-        probable = probables_by_team.get(team)
-        if not probable:
+        probable_names = _iter_probable_names(probables_by_team.get(team))
+        if not probable_names:
             # MLB hasn't posted a probable yet for this team — don't flag.
             continue
+        normalized_probables = {
+            _normalize_name(probable)
+            for probable in probable_names
+        }
         r["starter_mismatch"] = (
-            _normalize_name(probable) != _normalize_name(r.get("pitcher", ""))
+            _normalize_name(r.get("pitcher", "")) not in normalized_probables
         )
 
 
