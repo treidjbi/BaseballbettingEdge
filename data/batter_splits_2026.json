@@ -728,22 +728,56 @@
         "so": 3,
         "k_rate": 0.06
       }
+    },
+    "mlbam:621566": {
+      "name": "Matt Olson",
+      "bats": "R",
+      "mlbam_id": 621566,
+      "bbref_id": "olsonma02",
+      "season": 2026,
+      "vs_R": {
+        "pa": 85,
+        "so": 20,
+        "k_rate": 0.2353
+      },
+      "vs_L": {
+        "pa": 54,
+        "so": 13,
+        "k_rate": 0.2407
+      }
+    },
+    "mlbam:663586": {
+      "name": "Austin Riley",
+      "bats": "R",
+      "mlbam_id": 663586,
+      "bbref_id": "rileyau01",
+      "season": 2026,
+      "vs_R": {
+        "pa": 86,
+        "so": 23,
+        "k_rate": 0.2674
+      },
+      "vs_L": {
+        "pa": 45,
+        "so": 7,
+        "k_rate": 0.1556
+      }
     }
   },
-  "updated_at": "2026-04-30T16:45:00Z",
+  "updated_at": "2026-04-30T17:03:45Z",
   "last_run": {
     "projection_status": "collection_only",
-    "requested_batters": 135,
-    "already_cached": 8,
+    "requested_batters": 144,
+    "already_cached": 10,
     "attempted": 4,
     "collected": 2,
     "failed": 2,
-    "queued_not_attempted": 123,
-    "cache_size": 43,
+    "queued_not_attempted": 130,
+    "cache_size": 45,
     "errors": [
       "Kevin McGonigle: no bbref id",
       "Hao-Yu  Lee: no bbref id"
     ],
-    "updated_at": "2026-04-30T16:45:00Z"
+    "updated_at": "2026-04-30T17:03:45Z"
   }
 }
