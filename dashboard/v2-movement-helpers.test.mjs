@@ -128,6 +128,16 @@ test("buildPickedSideMovement returns empty state when there are fewer than two 
   assert.equal(result.reason, "insufficient_history");
 });
 
+test("buildPickedSideMovement labels empty history with selected book when provided", () => {
+  const result = buildPickedSideMovement(
+    { snapshots: [] },
+    { pitcher: "Freddy Peralta", direction: "OVER", selectedBook: "BetMGM" },
+  );
+
+  assert.equal(result.ready, false);
+  assert.equal(result.book, "BetMGM");
+});
+
 test("summarizeLineMovement reports line change when k-line moved", () => {
   const movement = buildPickedSideMovement(steam, {
     pitcher: "Shohei Ohtani",

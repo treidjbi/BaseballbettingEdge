@@ -247,7 +247,7 @@ function getMovementHelpers() {
 
 function MovementChart({ movement }) {
   if (!movement?.ready) {
-    return <div className="v2-move-empty">Not enough FanDuel history yet</div>;
+    return <div className="v2-move-empty">Not enough line history yet</div>;
   }
 
   const points = movement.points || [];
@@ -577,6 +577,8 @@ function PickDetail({ p, onClose }) {
   const sideOver = { ...p.ev_over, direction: "OVER", odds: p.best_over_odds, opening: p.opening_over_odds };
   const sideUnder = { ...p.ev_under, direction: "UNDER", odds: p.best_under_odds, opening: p.opening_under_odds };
   const best = displaySide(p);
+  const displayOver = best.direction === "OVER" ? best : sideOver;
+  const displayUnder = best.direction === "UNDER" ? best : sideUnder;
   const helpers = getMovementHelpers();
   const [showFactorDetails, setShowFactorDetails] = useState(false);
   const factorGroups = useMemo(() => {
@@ -620,7 +622,7 @@ function PickDetail({ p, onClose }) {
     return (
       <div className={`v2-side-card ${picked ? "picked" : ""}`}>
         {picked && <span className="badge-mini">PICK</span>}
-        <div className="dir">{s.direction} {p.k_line}</div>
+        <div className="dir">{s.direction} {s.k_line ?? p.k_line}</div>
         <div className="odds">{fmtOdds(s.odds)} · open {fmtOdds(s.opening)}</div>
         <div className={`ev ${adjEv == null ? "" : pos ? "pos" : "neg"}`}>
           {adjEv == null ? "--" : `${pos ? "+" : ""}${(adjEv * 100).toFixed(1)}%`}
@@ -764,8 +766,8 @@ function PickDetail({ p, onClose }) {
         <div className="v2-sheet-section">
           <div className="h">Sides · EV ROI comparison</div>
           <div className="v2-sides">
-            <SideCard s={sideOver} />
-            <SideCard s={sideUnder} />
+            <SideCard s={displayOver} />
+            <SideCard s={displayUnder} />
           </div>
         </div>
 
@@ -883,7 +885,7 @@ function PickDetail({ p, onClose }) {
 
         <div className="v2-sheet-section">
           <div className="h">
-            {`FanDuel · ${best.direction} · open to now`}
+            {`${movement.book || (best.direction === "OVER" ? p.best_over_book : p.best_under_book) || "Market"} · ${best.direction} · open to now`}
             {movementSummary?.lineMoved && (
               <span className="v2-line-move-badge">
                 {`line moved ${movementSummary.openingLine} -> ${movementSummary.currentLine}`}

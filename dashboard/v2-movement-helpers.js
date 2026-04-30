@@ -66,7 +66,7 @@
             t: "open",
             odds: openingOdds,
             kLine: openingLine,
-            book: bookUsed || selectedBook || "FanDuel",
+            book: bookUsed || selectedBook || "Market",
             synthetic: true,
           });
         }
@@ -76,7 +76,7 @@
         return {
           ready: false,
           reason: "insufficient_history",
-          book: bookUsed || selectedBook || "FanDuel",
+          book: bookUsed || selectedBook || "Market",
           direction,
           points,
         };
@@ -85,7 +85,7 @@
       return {
         ready: true,
         reason: null,
-        book: bookUsed || selectedBook || "FanDuel",
+        book: bookUsed || selectedBook || "Market",
         direction,
         points,
       };
