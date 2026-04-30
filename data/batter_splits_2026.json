@@ -1136,22 +1136,56 @@
         "so": 12,
         "k_rate": 0.2182
       }
+    },
+    "mlbam:666969": {
+      "name": "Adolis Garc\u00eda",
+      "bats": "R",
+      "mlbam_id": 666969,
+      "bbref_id": "garciad02",
+      "season": 2026,
+      "vs_R": {
+        "pa": 81,
+        "so": 23,
+        "k_rate": 0.284
+      },
+      "vs_L": {
+        "pa": 35,
+        "so": 9,
+        "k_rate": 0.2571
+      }
+    },
+    "mlbam:669016": {
+      "name": "Brandon Marsh",
+      "bats": "R",
+      "mlbam_id": 669016,
+      "bbref_id": "marshbr02",
+      "season": 2026,
+      "vs_R": {
+        "pa": 78,
+        "so": 12,
+        "k_rate": 0.1538
+      },
+      "vs_L": {
+        "pa": 22,
+        "so": 8,
+        "k_rate": 0.3636
+      }
     }
   },
-  "updated_at": "2026-04-30T22:08:07Z",
+  "updated_at": "2026-04-30T22:30:16Z",
   "last_run": {
     "projection_status": "collection_only",
     "requested_batters": 162,
-    "already_cached": 26,
+    "already_cached": 28,
     "attempted": 4,
     "collected": 2,
     "failed": 2,
-    "queued_not_attempted": 132,
-    "cache_size": 67,
+    "queued_not_attempted": 130,
+    "cache_size": 69,
     "errors": [
       "Kevin McGonigle: no bbref id",
       "Hao-Yu  Lee: no bbref id"
     ],
-    "updated_at": "2026-04-30T22:08:07Z"
+    "updated_at": "2026-04-30T22:30:16Z"
   }
 }
