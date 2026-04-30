@@ -1170,22 +1170,56 @@
         "so": 8,
         "k_rate": 0.3636
       }
+    },
+    "mlbam:681082": {
+      "name": "Bryson Stott",
+      "bats": "R",
+      "mlbam_id": 681082,
+      "bbref_id": "stottbr01",
+      "season": 2026,
+      "vs_R": {
+        "pa": 73,
+        "so": 16,
+        "k_rate": 0.2192
+      },
+      "vs_L": {
+        "pa": 13,
+        "so": 0,
+        "k_rate": 0.0
+      }
+    },
+    "mlbam:624641": {
+      "name": "Edmundo Sosa",
+      "bats": "R",
+      "mlbam_id": 624641,
+      "bbref_id": "sosaed01",
+      "season": 2026,
+      "vs_R": {
+        "pa": 11,
+        "so": 1,
+        "k_rate": 0.0909
+      },
+      "vs_L": {
+        "pa": 29,
+        "so": 7,
+        "k_rate": 0.2414
+      }
     }
   },
-  "updated_at": "2026-04-30T22:30:16Z",
+  "updated_at": "2026-04-30T23:03:57Z",
   "last_run": {
     "projection_status": "collection_only",
     "requested_batters": 162,
-    "already_cached": 28,
+    "already_cached": 30,
     "attempted": 4,
     "collected": 2,
     "failed": 2,
-    "queued_not_attempted": 130,
-    "cache_size": 69,
+    "queued_not_attempted": 128,
+    "cache_size": 71,
     "errors": [
       "Kevin McGonigle: no bbref id",
       "Hao-Yu  Lee: no bbref id"
     ],
-    "updated_at": "2026-04-30T22:30:16Z"
+    "updated_at": "2026-04-30T23:03:57Z"
   }
 }
