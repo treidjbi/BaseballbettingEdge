@@ -529,23 +529,40 @@
         "so": 3,
         "k_rate": 0.2143
       }
+    },
+    "mlbam:687093": {
+      "name": "Vaughn Grissom",
+      "bats": "R",
+      "mlbam_id": 687093,
+      "bbref_id": "grissva01",
+      "season": 2026,
+      "vs_R": {
+        "pa": 15,
+        "so": 1,
+        "k_rate": 0.0667
+      },
+      "vs_L": {
+        "pa": 28,
+        "so": 2,
+        "k_rate": 0.0714
+      }
     }
   },
-  "updated_at": "2026-04-30T04:00:57Z",
+  "updated_at": "2026-04-30T04:23:25Z",
   "last_run": {
     "projection_status": "collection_only",
     "requested_batters": 234,
-    "already_cached": 29,
+    "already_cached": 30,
     "attempted": 4,
     "collected": 1,
     "failed": 3,
-    "queued_not_attempted": 201,
-    "cache_size": 31,
+    "queued_not_attempted": 200,
+    "cache_size": 32,
     "errors": [
       "Travis Bazzana: no bbref id",
       "Munetaka Murakami: no bbref id",
       "Sam Antonacci: no bbref id"
     ],
-    "updated_at": "2026-04-30T04:00:57Z"
+    "updated_at": "2026-04-30T04:23:25Z"
   }
 }
