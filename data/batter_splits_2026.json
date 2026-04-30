@@ -660,21 +660,56 @@
         "so": 2,
         "k_rate": 0.0741
       }
+    },
+    "mlbam:668670": {
+      "name": "Jake Rogers",
+      "bats": "R",
+      "mlbam_id": 668670,
+      "bbref_id": "rogerja03",
+      "season": 2026,
+      "vs_R": {
+        "pa": 28,
+        "so": 8,
+        "k_rate": 0.2857
+      },
+      "vs_L": {
+        "pa": 3,
+        "so": 1,
+        "k_rate": 0.3333
+      }
+    },
+    "mlbam:660670": {
+      "name": "Ronald Acu\u00f1a Jr.",
+      "bats": "R",
+      "mlbam_id": 660670,
+      "bbref_id": "acunaro01",
+      "season": 2026,
+      "vs_R": {
+        "pa": 98,
+        "so": 18,
+        "k_rate": 0.1837
+      },
+      "vs_L": {
+        "pa": 42,
+        "so": 11,
+        "k_rate": 0.2619
+      }
     }
   },
-  "updated_at": "2026-04-30T16:28:50Z",
+  "updated_at": "2026-04-30T16:39:27Z",
   "last_run": {
     "projection_status": "collection_only",
-    "requested_batters": 135,
-    "already_cached": 3,
+    "requested_batters": 126,
+    "already_cached": 6,
     "attempted": 4,
-    "collected": 3,
-    "failed": 1,
-    "queued_not_attempted": 128,
-    "cache_size": 39,
+    "collected": 2,
+    "failed": 2,
+    "queued_not_attempted": 116,
+    "cache_size": 41,
     "errors": [
-      "Kevin McGonigle: no bbref id"
+      "Kevin McGonigle: no bbref id",
+      "Hao-Yu  Lee: no bbref id"
     ],
-    "updated_at": "2026-04-30T16:28:50Z"
+    "updated_at": "2026-04-30T16:39:27Z"
   }
 }
