@@ -1000,22 +1000,56 @@
         "so": 5,
         "k_rate": 0.1786
       }
+    },
+    "mlbam:646240": {
+      "name": "Rafael Devers",
+      "bats": "R",
+      "mlbam_id": 646240,
+      "bbref_id": "deverra01",
+      "season": 2026,
+      "vs_R": {
+        "pa": 77,
+        "so": 26,
+        "k_rate": 0.3377
+      },
+      "vs_L": {
+        "pa": 43,
+        "so": 11,
+        "k_rate": 0.2558
+      }
+    },
+    "mlbam:642715": {
+      "name": "Willy Adames",
+      "bats": "R",
+      "mlbam_id": 642715,
+      "bbref_id": "adamewi01",
+      "season": 2026,
+      "vs_R": {
+        "pa": 85,
+        "so": 28,
+        "k_rate": 0.3294
+      },
+      "vs_L": {
+        "pa": 35,
+        "so": 9,
+        "k_rate": 0.2571
+      }
     }
   },
-  "updated_at": "2026-04-30T20:14:36Z",
+  "updated_at": "2026-04-30T20:42:54Z",
   "last_run": {
     "projection_status": "collection_only",
-    "requested_batters": 153,
-    "already_cached": 18,
+    "requested_batters": 162,
+    "already_cached": 20,
     "attempted": 4,
     "collected": 2,
     "failed": 2,
-    "queued_not_attempted": 131,
-    "cache_size": 59,
+    "queued_not_attempted": 138,
+    "cache_size": 61,
     "errors": [
       "Kevin McGonigle: no bbref id",
       "Hao-Yu  Lee: no bbref id"
     ],
-    "updated_at": "2026-04-30T20:14:36Z"
+    "updated_at": "2026-04-30T20:42:54Z"
   }
 }
