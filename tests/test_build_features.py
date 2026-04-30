@@ -266,6 +266,17 @@ class TestBuildPitcherRecord:
         for key in ["pitcher", "lambda", "avg_ip", "swstr_pct", "park_factor", "ev_over", "ev_under"]:
             assert key in rec, f"Missing key: {key}"
 
+    def test_preserves_under_side_book(self):
+        from build_features import build_pitcher_record
+        odds = {
+            **self.BASE_ODDS,
+            "best_over_book": "FanDuel",
+            "best_under_book": "BetMGM",
+        }
+        rec = build_pitcher_record(odds, self.BASE_STATS, ump_k_adj=0.0)
+        assert rec["best_over_book"] == "FanDuel"
+        assert rec["best_under_book"] == "BetMGM"
+
     def test_uses_avg_ip_last5_not_constant(self):
         from build_features import build_pitcher_record, load_params
         rec = build_pitcher_record(self.BASE_ODDS, self.BASE_STATS, ump_k_adj=0.0)
