@@ -1223,21 +1223,22 @@
       }
     }
   },
-  "updated_at": "2026-04-30T23:29:27Z",
+  "updated_at": "2026-04-30T23:59:33Z",
   "last_run": {
     "projection_status": "collection_only",
     "requested_batters": 162,
-    "already_cached": 32,
+    "already_cached": 33,
     "attempted": 4,
-    "collected": 1,
-    "failed": 3,
-    "queued_not_attempted": 126,
+    "collected": 0,
+    "failed": 4,
+    "queued_not_attempted": 125,
     "cache_size": 72,
     "errors": [
       "Kevin McGonigle: no bbref id",
       "Hao-Yu  Lee: no bbref id",
-      "Justin Crawford: no bbref id"
+      "Justin Crawford: no bbref id",
+      "JJ Wetherholt: no bbref id"
     ],
-    "updated_at": "2026-04-30T23:29:27Z"
+    "updated_at": "2026-04-30T23:59:33Z"
   }
 }
