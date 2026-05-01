@@ -2003,19 +2003,87 @@
         "so": 5,
         "k_rate": 0.1613
       }
+    },
+    "mlbam:606466": {
+      "name": "Ketel Marte",
+      "bats": "R",
+      "mlbam_id": 606466,
+      "bbref_id": "marteke01",
+      "season": 2026,
+      "vs_R": {
+        "pa": 91,
+        "so": 16,
+        "k_rate": 0.1758
+      },
+      "vs_L": {
+        "pa": 35,
+        "so": 7,
+        "k_rate": 0.2
+      }
+    },
+    "mlbam:682829": {
+      "name": "Elly De La Cruz",
+      "bats": "R",
+      "mlbam_id": 682829,
+      "bbref_id": "delacel01",
+      "season": 2026,
+      "vs_R": {
+        "pa": 102,
+        "so": 29,
+        "k_rate": 0.2843
+      },
+      "vs_L": {
+        "pa": 36,
+        "so": 11,
+        "k_rate": 0.3056
+      }
+    },
+    "mlbam:701398": {
+      "name": "Sal Stewart",
+      "bats": "R",
+      "mlbam_id": 701398,
+      "bbref_id": "stewasa02",
+      "season": 2026,
+      "vs_R": {
+        "pa": 105,
+        "so": 19,
+        "k_rate": 0.181
+      },
+      "vs_L": {
+        "pa": 29,
+        "so": 5,
+        "k_rate": 0.1724
+      }
+    },
+    "mlbam:663993": {
+      "name": "Nathaniel Lowe",
+      "bats": "R",
+      "mlbam_id": 663993,
+      "bbref_id": "lowena01",
+      "season": 2026,
+      "vs_R": {
+        "pa": 49,
+        "so": 7,
+        "k_rate": 0.1429
+      },
+      "vs_L": {
+        "pa": 10,
+        "so": 1,
+        "k_rate": 0.1
+      }
     }
   },
-  "updated_at": "2026-05-01T21:06:33Z",
+  "updated_at": "2026-05-01T21:27:51Z",
   "last_run": {
     "projection_status": "collection_only",
-    "requested_batters": 207,
-    "already_cached": 76,
+    "requested_batters": 225,
+    "already_cached": 79,
     "attempted": 4,
     "collected": 4,
     "failed": 0,
-    "queued_not_attempted": 127,
-    "cache_size": 118,
+    "queued_not_attempted": 142,
+    "cache_size": 122,
     "errors": [],
-    "updated_at": "2026-05-01T21:06:33Z"
+    "updated_at": "2026-05-01T21:27:51Z"
   }
 }
