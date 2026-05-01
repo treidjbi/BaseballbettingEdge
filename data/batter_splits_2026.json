@@ -1527,19 +1527,87 @@
         "so": 6,
         "k_rate": 0.2222
       }
+    },
+    "mlbam:680776": {
+      "name": "Jarren Duran",
+      "bats": "R",
+      "mlbam_id": 680776,
+      "bbref_id": "duranja01",
+      "season": 2026,
+      "vs_R": {
+        "pa": 85,
+        "so": 24,
+        "k_rate": 0.2824
+      },
+      "vs_L": {
+        "pa": 23,
+        "so": 4,
+        "k_rate": 0.1739
+      }
+    },
+    "mlbam:575929": {
+      "name": "Willson Contreras",
+      "bats": "R",
+      "mlbam_id": 575929,
+      "bbref_id": "contrwi01",
+      "season": 2026,
+      "vs_R": {
+        "pa": 93,
+        "so": 28,
+        "k_rate": 0.3011
+      },
+      "vs_L": {
+        "pa": 35,
+        "so": 8,
+        "k_rate": 0.2286
+      }
+    },
+    "mlbam:701350": {
+      "name": "Roman Anthony",
+      "bats": "R",
+      "mlbam_id": 701350,
+      "bbref_id": "anthoro01",
+      "season": 2026,
+      "vs_R": {
+        "pa": 82,
+        "so": 24,
+        "k_rate": 0.2927
+      },
+      "vs_L": {
+        "pa": 33,
+        "so": 8,
+        "k_rate": 0.2424
+      }
+    },
+    "mlbam:677800": {
+      "name": "Wilyer Abreu",
+      "bats": "R",
+      "mlbam_id": 677800,
+      "bbref_id": "abreuwi02",
+      "season": 2026,
+      "vs_R": {
+        "pa": 90,
+        "so": 19,
+        "k_rate": 0.2111
+      },
+      "vs_L": {
+        "pa": 36,
+        "so": 3,
+        "k_rate": 0.0833
+      }
     }
   },
-  "updated_at": "2026-05-01T18:04:35Z",
+  "updated_at": "2026-05-01T18:42:20Z",
   "last_run": {
     "projection_status": "collection_only",
-    "requested_batters": 18,
-    "already_cached": 16,
-    "attempted": 2,
-    "collected": 2,
+    "requested_batters": 27,
+    "already_cached": 18,
+    "attempted": 4,
+    "collected": 4,
     "failed": 0,
-    "queued_not_attempted": 0,
-    "cache_size": 90,
+    "queued_not_attempted": 5,
+    "cache_size": 94,
     "errors": [],
-    "updated_at": "2026-05-01T18:04:35Z"
+    "updated_at": "2026-05-01T18:42:20Z"
   }
 }
