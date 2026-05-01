@@ -1289,19 +1289,87 @@
         "so": 13,
         "k_rate": 0.2826
       }
+    },
+    "mlbam:673548": {
+      "name": "Seiya Suzuki",
+      "bats": "R",
+      "mlbam_id": 673548,
+      "bbref_id": "suzukse01",
+      "season": 2026,
+      "vs_R": {
+        "pa": 52,
+        "so": 13,
+        "k_rate": 0.25
+      },
+      "vs_L": {
+        "pa": 27,
+        "so": 6,
+        "k_rate": 0.2222
+      }
+    },
+    "mlbam:683737": {
+      "name": "Michael Busch",
+      "bats": "R",
+      "mlbam_id": 683737,
+      "bbref_id": "buschmi02",
+      "season": 2026,
+      "vs_R": {
+        "pa": 86,
+        "so": 22,
+        "k_rate": 0.2558
+      },
+      "vs_L": {
+        "pa": 46,
+        "so": 8,
+        "k_rate": 0.1739
+      }
+    },
+    "mlbam:608348": {
+      "name": "Carson Kelly",
+      "bats": "R",
+      "mlbam_id": 608348,
+      "bbref_id": "kellyca02",
+      "season": 2026,
+      "vs_R": {
+        "pa": 45,
+        "so": 9,
+        "k_rate": 0.2
+      },
+      "vs_L": {
+        "pa": 43,
+        "so": 6,
+        "k_rate": 0.1395
+      }
+    },
+    "mlbam:691718": {
+      "name": "Pete Crow-Armstrong",
+      "bats": "R",
+      "mlbam_id": 691718,
+      "bbref_id": "crowape01",
+      "season": 2026,
+      "vs_R": {
+        "pa": 73,
+        "so": 21,
+        "k_rate": 0.2877
+      },
+      "vs_L": {
+        "pa": 55,
+        "so": 17,
+        "k_rate": 0.3091
+      }
     }
   },
-  "updated_at": "2026-05-01T16:07:47Z",
+  "updated_at": "2026-05-01T16:38:31Z",
   "last_run": {
     "projection_status": "collection_only",
     "requested_batters": 18,
-    "already_cached": 0,
+    "already_cached": 4,
     "attempted": 4,
     "collected": 4,
     "failed": 0,
-    "queued_not_attempted": 14,
-    "cache_size": 76,
+    "queued_not_attempted": 10,
+    "cache_size": 80,
     "errors": [],
-    "updated_at": "2026-05-01T16:07:47Z"
+    "updated_at": "2026-05-01T16:38:31Z"
   }
 }
