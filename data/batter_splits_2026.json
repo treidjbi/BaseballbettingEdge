@@ -2343,19 +2343,87 @@
         "so": 11,
         "k_rate": 0.2973
       }
+    },
+    "mlbam:666152": {
+      "name": "David Hamilton",
+      "bats": "R",
+      "mlbam_id": 666152,
+      "bbref_id": "hamilda03",
+      "season": 2026,
+      "vs_R": {
+        "pa": 69,
+        "so": 13,
+        "k_rate": 0.1884
+      },
+      "vs_L": {
+        "pa": 22,
+        "so": 3,
+        "k_rate": 0.1364
+      }
+    },
+    "mlbam:695734": {
+      "name": "Daylen Lile",
+      "bats": "R",
+      "mlbam_id": 695734,
+      "bbref_id": "lileda01",
+      "season": 2026,
+      "vs_R": {
+        "pa": 98,
+        "so": 15,
+        "k_rate": 0.1531
+      },
+      "vs_L": {
+        "pa": 42,
+        "so": 10,
+        "k_rate": 0.2381
+      }
+    },
+    "mlbam:691781": {
+      "name": "Brady House",
+      "bats": "R",
+      "mlbam_id": 691781,
+      "bbref_id": "housebr01",
+      "season": 2026,
+      "vs_R": {
+        "pa": 83,
+        "so": 28,
+        "k_rate": 0.3373
+      },
+      "vs_L": {
+        "pa": 37,
+        "so": 10,
+        "k_rate": 0.2703
+      }
+    },
+    "mlbam:678391": {
+      "name": "Jorbit Vivas",
+      "bats": "R",
+      "mlbam_id": 678391,
+      "bbref_id": "vivasjo01",
+      "season": 2026,
+      "vs_R": {
+        "pa": 67,
+        "so": 8,
+        "k_rate": 0.1194
+      },
+      "vs_L": {
+        "pa": 9,
+        "so": 0,
+        "k_rate": 0.0
+      }
     }
   },
-  "updated_at": "2026-05-01T23:01:22Z",
+  "updated_at": "2026-05-01T23:30:25Z",
   "last_run": {
     "projection_status": "collection_only",
     "requested_batters": 270,
-    "already_cached": 111,
+    "already_cached": 115,
     "attempted": 4,
     "collected": 4,
     "failed": 0,
-    "queued_not_attempted": 155,
-    "cache_size": 138,
+    "queued_not_attempted": 151,
+    "cache_size": 142,
     "errors": [],
-    "updated_at": "2026-05-01T23:01:22Z"
+    "updated_at": "2026-05-01T23:30:25Z"
   }
 }
