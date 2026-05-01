@@ -1357,19 +1357,87 @@
         "so": 17,
         "k_rate": 0.3091
       }
+    },
+    "mlbam:621020": {
+      "name": "Dansby Swanson",
+      "bats": "R",
+      "mlbam_id": 621020,
+      "bbref_id": "swansda01",
+      "season": 2026,
+      "vs_R": {
+        "pa": 78,
+        "so": 15,
+        "k_rate": 0.1923
+      },
+      "vs_L": {
+        "pa": 44,
+        "so": 13,
+        "k_rate": 0.2955
+      }
+    },
+    "mlbam:672695": {
+      "name": "Geraldo Perdomo",
+      "bats": "R",
+      "mlbam_id": 672695,
+      "bbref_id": "perdoge01",
+      "season": 2026,
+      "vs_R": {
+        "pa": 73,
+        "so": 9,
+        "k_rate": 0.1233
+      },
+      "vs_L": {
+        "pa": 38,
+        "so": 5,
+        "k_rate": 0.1316
+      }
+    },
+    "mlbam:545121": {
+      "name": "Ildemaro Vargas",
+      "bats": "R",
+      "mlbam_id": 545121,
+      "bbref_id": "vargail01",
+      "season": 2026,
+      "vs_R": {
+        "pa": 64,
+        "so": 7,
+        "k_rate": 0.1094
+      },
+      "vs_L": {
+        "pa": 31,
+        "so": 4,
+        "k_rate": 0.129
+      }
+    },
+    "mlbam:682998": {
+      "name": "Corbin Carroll",
+      "bats": "R",
+      "mlbam_id": 682998,
+      "bbref_id": "carroco02",
+      "season": 2026,
+      "vs_R": {
+        "pa": 75,
+        "so": 25,
+        "k_rate": 0.3333
+      },
+      "vs_L": {
+        "pa": 41,
+        "so": 7,
+        "k_rate": 0.1707
+      }
     }
   },
-  "updated_at": "2026-05-01T16:38:31Z",
+  "updated_at": "2026-05-01T17:06:48Z",
   "last_run": {
     "projection_status": "collection_only",
     "requested_batters": 18,
-    "already_cached": 4,
+    "already_cached": 8,
     "attempted": 4,
     "collected": 4,
     "failed": 0,
-    "queued_not_attempted": 10,
-    "cache_size": 80,
+    "queued_not_attempted": 6,
+    "cache_size": 84,
     "errors": [],
-    "updated_at": "2026-05-01T16:38:31Z"
+    "updated_at": "2026-05-01T17:06:48Z"
   }
 }
