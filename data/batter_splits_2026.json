@@ -1595,19 +1595,87 @@
         "so": 3,
         "k_rate": 0.0833
       }
+    },
+    "mlbam:807713": {
+      "name": "Matt Shaw",
+      "bats": "R",
+      "mlbam_id": 807713,
+      "bbref_id": "shawma01",
+      "season": 2026,
+      "vs_R": {
+        "pa": 39,
+        "so": 7,
+        "k_rate": 0.1795
+      },
+      "vs_L": {
+        "pa": 41,
+        "so": 7,
+        "k_rate": 0.1707
+      }
+    },
+    "mlbam:607043": {
+      "name": "Brandon Nimmo",
+      "bats": "R",
+      "mlbam_id": 607043,
+      "bbref_id": "nimmobr01",
+      "season": 2026,
+      "vs_R": {
+        "pa": 98,
+        "so": 17,
+        "k_rate": 0.1735
+      },
+      "vs_L": {
+        "pa": 42,
+        "so": 10,
+        "k_rate": 0.2381
+      }
+    },
+    "mlbam:694497": {
+      "name": "Evan Carter",
+      "bats": "R",
+      "mlbam_id": 694497,
+      "bbref_id": "carteev01",
+      "season": 2026,
+      "vs_R": {
+        "pa": 89,
+        "so": 18,
+        "k_rate": 0.2022
+      },
+      "vs_L": {
+        "pa": 21,
+        "so": 8,
+        "k_rate": 0.381
+      }
+    },
+    "mlbam:608369": {
+      "name": "Corey Seager",
+      "bats": "R",
+      "mlbam_id": 608369,
+      "bbref_id": "seageco01",
+      "season": 2026,
+      "vs_R": {
+        "pa": 91,
+        "so": 22,
+        "k_rate": 0.2418
+      },
+      "vs_L": {
+        "pa": 39,
+        "so": 12,
+        "k_rate": 0.3077
+      }
     }
   },
-  "updated_at": "2026-05-01T18:42:20Z",
+  "updated_at": "2026-05-01T18:56:30Z",
   "last_run": {
     "projection_status": "collection_only",
-    "requested_batters": 27,
-    "already_cached": 18,
+    "requested_batters": 45,
+    "already_cached": 21,
     "attempted": 4,
     "collected": 4,
     "failed": 0,
-    "queued_not_attempted": 5,
-    "cache_size": 94,
+    "queued_not_attempted": 20,
+    "cache_size": 98,
     "errors": [],
-    "updated_at": "2026-05-01T18:42:20Z"
+    "updated_at": "2026-05-01T18:56:30Z"
   }
 }
