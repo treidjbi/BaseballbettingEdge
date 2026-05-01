@@ -2411,19 +2411,87 @@
         "so": 0,
         "k_rate": 0.0
       }
+    },
+    "mlbam:669701": {
+      "name": "Josh Smith",
+      "bats": "R",
+      "mlbam_id": 669701,
+      "bbref_id": "smithjo11",
+      "season": 2026,
+      "vs_R": {
+        "pa": 85,
+        "so": 11,
+        "k_rate": 0.1294
+      },
+      "vs_L": {
+        "pa": 13,
+        "so": 7,
+        "k_rate": 0.5385
+      }
+    },
+    "mlbam:686452": {
+      "name": "Drew Millas",
+      "bats": "R",
+      "mlbam_id": 686452,
+      "bbref_id": "milladr01",
+      "season": 2026,
+      "vs_R": {
+        "pa": 51,
+        "so": 10,
+        "k_rate": 0.1961
+      },
+      "vs_L": {
+        "pa": 7,
+        "so": 6,
+        "k_rate": 0.8571
+      }
+    },
+    "mlbam:696285": {
+      "name": "Jacob Young",
+      "bats": "R",
+      "mlbam_id": 696285,
+      "bbref_id": "youngja03",
+      "season": 2026,
+      "vs_R": {
+        "pa": 73,
+        "so": 12,
+        "k_rate": 0.1644
+      },
+      "vs_L": {
+        "pa": 35,
+        "so": 7,
+        "k_rate": 0.2
+      }
+    },
+    "mlbam:502671": {
+      "name": "Paul Goldschmidt",
+      "bats": "R",
+      "mlbam_id": 502671,
+      "bbref_id": "goldspa01",
+      "season": 2026,
+      "vs_R": {
+        "pa": 10,
+        "so": 2,
+        "k_rate": 0.2
+      },
+      "vs_L": {
+        "pa": 23,
+        "so": 6,
+        "k_rate": 0.2609
+      }
     }
   },
-  "updated_at": "2026-05-01T23:30:25Z",
+  "updated_at": "2026-05-01T23:59:28Z",
   "last_run": {
     "projection_status": "collection_only",
     "requested_batters": 270,
-    "already_cached": 115,
+    "already_cached": 118,
     "attempted": 4,
     "collected": 4,
     "failed": 0,
-    "queued_not_attempted": 151,
-    "cache_size": 142,
+    "queued_not_attempted": 148,
+    "cache_size": 146,
     "errors": [],
-    "updated_at": "2026-05-01T23:30:25Z"
+    "updated_at": "2026-05-01T23:59:28Z"
   }
 }
