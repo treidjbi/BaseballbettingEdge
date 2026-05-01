@@ -1731,19 +1731,87 @@
         "so": 1,
         "k_rate": 0.3333
       }
+    },
+    "mlbam:669394": {
+      "name": "Jake Burger",
+      "bats": "R",
+      "mlbam_id": 669394,
+      "bbref_id": "burgeja01",
+      "season": 2026,
+      "vs_R": {
+        "pa": 98,
+        "so": 29,
+        "k_rate": 0.2959
+      },
+      "vs_L": {
+        "pa": 31,
+        "so": 10,
+        "k_rate": 0.3226
+      }
+    },
+    "mlbam:696030": {
+      "name": "Alejandro Osuna",
+      "bats": "R",
+      "mlbam_id": 696030,
+      "bbref_id": "osunaal02",
+      "season": 2026,
+      "vs_R": {
+        "pa": 12,
+        "so": 1,
+        "k_rate": 0.0833
+      },
+      "vs_L": {
+        "pa": 1,
+        "so": 0,
+        "k_rate": 0.0
+      }
+    },
+    "mlbam:677649": {
+      "name": "Ezequiel Duran",
+      "bats": "R",
+      "mlbam_id": 677649,
+      "bbref_id": "duranez01",
+      "season": 2026,
+      "vs_R": {
+        "pa": 46,
+        "so": 10,
+        "k_rate": 0.2174
+      },
+      "vs_L": {
+        "pa": 19,
+        "so": 3,
+        "k_rate": 0.1579
+      }
+    },
+    "mlbam:643376": {
+      "name": "Danny Jansen",
+      "bats": "R",
+      "mlbam_id": 643376,
+      "bbref_id": "janseda01",
+      "season": 2026,
+      "vs_R": {
+        "pa": 54,
+        "so": 18,
+        "k_rate": 0.3333
+      },
+      "vs_L": {
+        "pa": 20,
+        "so": 5,
+        "k_rate": 0.25
+      }
     }
   },
-  "updated_at": "2026-05-01T19:36:40Z",
+  "updated_at": "2026-05-01T19:50:27Z",
   "last_run": {
     "projection_status": "collection_only",
-    "requested_batters": 126,
-    "already_cached": 46,
+    "requested_batters": 135,
+    "already_cached": 57,
     "attempted": 4,
     "collected": 4,
     "failed": 0,
-    "queued_not_attempted": 76,
-    "cache_size": 102,
+    "queued_not_attempted": 74,
+    "cache_size": 106,
     "errors": [],
-    "updated_at": "2026-05-01T19:36:40Z"
+    "updated_at": "2026-05-01T19:50:27Z"
   }
 }
