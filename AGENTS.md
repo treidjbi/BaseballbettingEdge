@@ -82,6 +82,18 @@ All times America/Phoenix (UTC-7, no DST):
 - **6:17 AM** — Full run: finalize today's picks (uses preview lines as opening baseline)
 - **8:07 AM–6:07 PM every 30 min** — Refresh: fetch fresh odds/lineups, update unlocked picks, lock T-30min
 
+### GitHub scheduled-run delay expectations
+
+GitHub scheduled workflows often start late, sometimes by an hour or more. Treat
+that as expected platform noise, not a pipeline-health incident by itself.
+
+For health checks, focus on whether the expected run eventually completed
+successfully, committed the right artifacts, and preserved grading/output
+contracts. Escalate scheduler delay only if a run is still missing after the
+slate needs it, if artifacts are stale despite a completed run, or if the delay
+caused a real betting/product issue such as missed locks, stale picks, or
+missing grading before the morning review.
+
 ## Key Commands
 
 ```bash
@@ -506,7 +518,7 @@ remind the user we can upgrade to real per-batter handedness splits:
 Related tests: `TestCalcLineupKRate`, `TestPlatoonKDelta` in
 [tests/test_build_features.py](tests/test_build_features.py).
 
-### Umpire career_k_rates — Periodic Re-seed
+### Umpire career_k_rates - Periodic Current-Season Check
 
 **Current state (as of 2026-04-21):** `data/umpires/career_k_rates.json` holds
 per-umpire K-per-game deltas vs. league average for ~87 HP umpires (up from
@@ -520,7 +532,8 @@ These deltas drift slowly — a single season of calls adds maybe ±0.1 K/game
 to a veteran umpire's career average — but they do drift, and new umpires
 appear in-season.
 
-**Trigger to re-seed:** Whenever **any** of the following is true:
+**Trigger to run a current-season check:** Whenever **any** of the following is
+true:
 
 - The current month is **May**, **July**, or **September** (quarterly cadence
   roughly aligned with calls-per-year turnover)
@@ -529,21 +542,57 @@ appear in-season.
 - A new season has started and career_k_rates was last seeded in the prior
   season (check `data/umpires/career_k_rates.json` mtime)
 
-**How to re-seed (background, resumable):**
+**Default action: current-season side-file audit, not a full re-seed**
 
-The seeder is **replace-semantics**, not additive — it re-derives deltas from
-scratch for the given window. To pick up drift safely, you must run a wide
-multi-season window so each ump has hundreds of games.
+The 2026-04-20 A3b seed already derived the production file from the
+2024-03-28 -> 2025-10-01 regular-season window: 4,855 games, 96 unique HP
+umpires, and 87 umpires kept after the sample filter. Do **not** rerun that
+whole historical window just because the calendar hits May/July/September.
+
+Instead, first run a **2026 YTD side-file check** to identify new active HP
+umpires and obvious match-rate drift:
 
 ```bash
-# ✅ RIGHT: wide multi-season window captures 2026 games additively
-#    (when run during/after the 2026 season with a 3-year window):
+mkdir -p analytics/output/seeds
+python scripts/seed_umpire_career_rates.py \
+    --start 2026-03-26 --end $(date +%F) \
+    --min-games 1 \
+    --output analytics/output/seeds/career_k_rates_2026_ytd.json
+```
+
+Then compare name sets only:
+
+- names in `analytics/output/seeds/career_k_rates_2026_ytd.json`
+- names in `data/umpires/career_k_rates.json`
+- names surfaced by `ump_diagnostics.missing_career_rate_umpires`
+- recent live HP assignments with neutral `ump_k_adj == 0`
+
+Use `--min-games 1` here because the goal is name discovery; early in the
+season, no umpire may have reached 10 HP games yet.
+
+**Do not promote short-window YTD deltas straight into production.** YTD deltas
+are too noisy for veteran umpires and should only answer: "Are there new active
+umpires missing from the production file?"
+
+**When to do a production re-seed**
+
+The seeder is **replace-semantics**, not additive — it re-derives deltas from
+scratch for the given window. Only run a wide production re-seed if the
+current-season audit shows meaningful production impact, such as:
+
+- new active HP umpires are repeatedly missing from `career_k_rates.json`
+- the last-30-day live umpire match rate falls below ~85%
+- enough new-season data has accumulated that production drift is worth the
+  multi-hour recompute
+
+```bash
+# Production re-seed fallback: wide multi-season window only.
 python scripts/seed_umpire_career_rates.py \
     --start 2024-03-28 --end $(date +%F) --output data/umpires/career_k_rates.json
 
-# ❌ WRONG: short YTD-only window produces sample noise, not drift
-#    (validated 2026-04-21: median |shift| = 1.76 K/game on a 32-day run —
-#    pure small-sample variance, not real career drift)
+# Wrong: short YTD-only window written to production.
+# Validated 2026-04-21: median |shift| = 1.76 K/game on a 32-day run,
+# which was small-sample noise, not real career drift.
 ```
 
 - Wide windows run in hours; resumable via `analytics/output/seed_progress.json`
@@ -557,10 +606,6 @@ python scripts/seed_umpire_career_rates.py \
   `ump_diagnostics.missing_career_rate_umpires`, track the name immediately but
   keep the model adjustment neutral until a wide-window seed can include enough
   games. Do not promote short-window YTD deltas straight into production.
-- For a quick "is there a new ump in the pool" check without re-running a
-  multi-hour seed, write to a side-file (e.g. `analytics/output/seeds/*.json`)
-  and diff name sets only — but **don't** use a short-window file to update
-  career deltas.
 
 **Do NOT bump `formula_change_date`** — career_k_rates updates do not change
 the model formula; `lambda_bias` self-heals through normal calibration.
