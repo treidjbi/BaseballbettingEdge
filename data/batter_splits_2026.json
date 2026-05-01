@@ -2139,19 +2139,87 @@
         "so": 2,
         "k_rate": 0.1
       }
+    },
+    "mlbam:669003": {
+      "name": "Garrett Mitchell",
+      "bats": "R",
+      "mlbam_id": 669003,
+      "bbref_id": "mitchga01",
+      "season": 2026,
+      "vs_R": {
+        "pa": 79,
+        "so": 29,
+        "k_rate": 0.3671
+      },
+      "vs_L": {
+        "pa": 20,
+        "so": 7,
+        "k_rate": 0.35
+      }
+    },
+    "mlbam:668930": {
+      "name": "Brice Turang",
+      "bats": "R",
+      "mlbam_id": 668930,
+      "bbref_id": "turanbr02",
+      "season": 2026,
+      "vs_R": {
+        "pa": 91,
+        "so": 20,
+        "k_rate": 0.2198
+      },
+      "vs_L": {
+        "pa": 38,
+        "so": 8,
+        "k_rate": 0.2105
+      }
+    },
+    "mlbam:661388": {
+      "name": "William Contreras",
+      "bats": "R",
+      "mlbam_id": 661388,
+      "bbref_id": "contrwi02",
+      "season": 2026,
+      "vs_R": {
+        "pa": 94,
+        "so": 8,
+        "k_rate": 0.0851
+      },
+      "vs_L": {
+        "pa": 30,
+        "so": 6,
+        "k_rate": 0.2
+      }
+    },
+    "mlbam:641343": {
+      "name": "Jake Bauers",
+      "bats": "R",
+      "mlbam_id": 641343,
+      "bbref_id": "bauerja01",
+      "season": 2026,
+      "vs_R": {
+        "pa": 87,
+        "so": 17,
+        "k_rate": 0.1954
+      },
+      "vs_L": {
+        "pa": 22,
+        "so": 5,
+        "k_rate": 0.2273
+      }
     }
   },
-  "updated_at": "2026-05-01T22:03:01Z",
+  "updated_at": "2026-05-01T22:27:11Z",
   "last_run": {
     "projection_status": "collection_only",
-    "requested_batters": 261,
-    "already_cached": 99,
+    "requested_batters": 270,
+    "already_cached": 103,
     "attempted": 4,
     "collected": 4,
     "failed": 0,
-    "queued_not_attempted": 158,
-    "cache_size": 126,
+    "queued_not_attempted": 163,
+    "cache_size": 130,
     "errors": [],
-    "updated_at": "2026-05-01T22:03:01Z"
+    "updated_at": "2026-05-01T22:27:11Z"
   }
 }
