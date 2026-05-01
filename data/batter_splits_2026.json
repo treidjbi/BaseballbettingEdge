@@ -2275,19 +2275,87 @@
         "so": 2,
         "k_rate": 0.0952
       }
+    },
+    "mlbam:695578": {
+      "name": "James Wood",
+      "bats": "R",
+      "mlbam_id": 695578,
+      "bbref_id": "woodja03",
+      "season": 2026,
+      "vs_R": {
+        "pa": 100,
+        "so": 33,
+        "k_rate": 0.33
+      },
+      "vs_L": {
+        "pa": 55,
+        "so": 17,
+        "k_rate": 0.3091
+      }
+    },
+    "mlbam:671277": {
+      "name": "Luis Garc\u00eda Jr.",
+      "bats": "R",
+      "mlbam_id": 671277,
+      "bbref_id": "garcilu04",
+      "season": 2026,
+      "vs_R": {
+        "pa": 91,
+        "so": 12,
+        "k_rate": 0.1319
+      },
+      "vs_L": {
+        "pa": 13,
+        "so": 4,
+        "k_rate": 0.3077
+      }
+    },
+    "mlbam:678554": {
+      "name": "Curtis Mead",
+      "bats": "R",
+      "mlbam_id": 678554,
+      "bbref_id": "meadcu01",
+      "season": 2026,
+      "vs_R": {
+        "pa": 33,
+        "so": 5,
+        "k_rate": 0.1515
+      },
+      "vs_L": {
+        "pa": 38,
+        "so": 6,
+        "k_rate": 0.1579
+      }
+    },
+    "mlbam:682928": {
+      "name": "CJ Abrams",
+      "bats": "R",
+      "mlbam_id": 682928,
+      "bbref_id": "abramcj01",
+      "season": 2026,
+      "vs_R": {
+        "pa": 94,
+        "so": 12,
+        "k_rate": 0.1277
+      },
+      "vs_L": {
+        "pa": 37,
+        "so": 11,
+        "k_rate": 0.2973
+      }
     }
   },
-  "updated_at": "2026-05-01T22:54:43Z",
+  "updated_at": "2026-05-01T23:01:22Z",
   "last_run": {
     "projection_status": "collection_only",
     "requested_batters": 270,
-    "already_cached": 107,
+    "already_cached": 111,
     "attempted": 4,
     "collected": 4,
     "failed": 0,
-    "queued_not_attempted": 159,
-    "cache_size": 134,
+    "queued_not_attempted": 155,
+    "cache_size": 138,
     "errors": [],
-    "updated_at": "2026-05-01T22:54:43Z"
+    "updated_at": "2026-05-01T23:01:22Z"
   }
 }
