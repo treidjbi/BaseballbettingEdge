@@ -2071,19 +2071,87 @@
         "so": 1,
         "k_rate": 0.1
       }
+    },
+    "mlbam:668715": {
+      "name": "Spencer Steer",
+      "bats": "R",
+      "mlbam_id": 668715,
+      "bbref_id": "steersp01",
+      "season": 2026,
+      "vs_R": {
+        "pa": 81,
+        "so": 22,
+        "k_rate": 0.2716
+      },
+      "vs_L": {
+        "pa": 29,
+        "so": 6,
+        "k_rate": 0.2069
+      }
+    },
+    "mlbam:668709": {
+      "name": "JJ Bleday",
+      "bats": "R",
+      "mlbam_id": 668709,
+      "bbref_id": "bledajj01",
+      "season": 2026,
+      "vs_R": {
+        "pa": 8,
+        "so": 1,
+        "k_rate": 0.125
+      },
+      "vs_L": {
+        "pa": 1,
+        "so": 0,
+        "k_rate": 0.0
+      }
+    },
+    "mlbam:663886": {
+      "name": "Tyler Stephenson",
+      "bats": "R",
+      "mlbam_id": 663886,
+      "bbref_id": "stephty01",
+      "season": 2026,
+      "vs_R": {
+        "pa": 64,
+        "so": 20,
+        "k_rate": 0.3125
+      },
+      "vs_L": {
+        "pa": 22,
+        "so": 5,
+        "k_rate": 0.2273
+      }
+    },
+    "mlbam:663647": {
+      "name": "Ke'Bryan Hayes",
+      "bats": "R",
+      "mlbam_id": 663647,
+      "bbref_id": "hayeske01",
+      "season": 2026,
+      "vs_R": {
+        "pa": 63,
+        "so": 9,
+        "k_rate": 0.1429
+      },
+      "vs_L": {
+        "pa": 20,
+        "so": 2,
+        "k_rate": 0.1
+      }
     }
   },
-  "updated_at": "2026-05-01T21:27:51Z",
+  "updated_at": "2026-05-01T22:03:01Z",
   "last_run": {
     "projection_status": "collection_only",
-    "requested_batters": 225,
-    "already_cached": 79,
+    "requested_batters": 261,
+    "already_cached": 99,
     "attempted": 4,
     "collected": 4,
     "failed": 0,
-    "queued_not_attempted": 142,
-    "cache_size": 122,
+    "queued_not_attempted": 158,
+    "cache_size": 126,
     "errors": [],
-    "updated_at": "2026-05-01T21:27:51Z"
+    "updated_at": "2026-05-01T22:03:01Z"
   }
 }
