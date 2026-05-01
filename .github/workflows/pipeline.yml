@@ -55,6 +55,19 @@ on:
     # 6:07 PM Phoenix = 01:07 UTC (next day)
     - cron: '7 1 * * *'
   workflow_dispatch:        # manual trigger for testing
+    inputs:
+      mode:
+        description: "Run mode"
+        type: choice
+        required: false
+        default: pipeline
+        options:
+          - pipeline
+          - propline_probe
+      date:
+        description: "Optional YYYY-MM-DD game date for manual runs/probes"
+        required: false
+        type: string
 
 permissions:
   contents: write           # allows the bot to commit + push output files
@@ -91,9 +104,21 @@ jobs:
         env:
           RUNDOWN_API_KEY: ${{ secrets.RUNDOWN_API_KEY }}
           ODDS_API_KEY: ${{ secrets.ODDS_API_KEY }}
+          PROPLINE_API_KEY: ${{ secrets.PROPLINE_API_KEY }}
         run: |
           SCHEDULE="${{ github.event.schedule }}"
           TODAY=$(TZ=America/Phoenix date +%Y-%m-%d)
+          MODE="${{ github.event.inputs.mode }}"
+          INPUT_DATE="${{ github.event.inputs.date }}"
+
+          if [ -n "$INPUT_DATE" ]; then
+            TODAY="$INPUT_DATE"
+          fi
+
+          if [ "$MODE" = "propline_probe" ]; then
+            python scripts/probe_propline_books.py "$TODAY"
+            exit 0
+          fi
 
           if [ "$SCHEDULE" = "17 7 * * *" ]; then
             # 12:17am Phoenix — preview: fetch today's lines as opening baseline
@@ -135,6 +160,7 @@ jobs:
           fi
 
       - name: Commit pipeline output
+        if: ${{ github.event_name != 'workflow_dispatch' || github.event.inputs.mode != 'propline_probe' }}
         run: |
           git config user.name  "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
@@ -160,7 +186,7 @@ jobs:
           done
 
       - name: Send push notifications
-        if: success()
+        if: ${{ success() && (github.event_name != 'workflow_dispatch' || github.event.inputs.mode != 'propline_probe') }}
         env:
           NOTIFY_SECRET: ${{ secrets.NOTIFY_SECRET }}
           NETLIFY_SITE_URL: ${{ secrets.NETLIFY_SITE_URL }}

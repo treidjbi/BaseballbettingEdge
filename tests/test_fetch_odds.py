@@ -13,6 +13,7 @@ from fetch_odds import (
     fetch_odds,
     parse_k_props,
     _merge_the_odds_fallback_props,
+    _parse_propline_event_props,
     _parse_the_odds_event_props,
     _parse_line_value,
     _select_ref_book,
@@ -799,3 +800,92 @@ class TestTheOddsFallback:
 
         assert [prop["pitcher"] for prop in result] == ["Gerrit Cole"]
         assert result[0]["odds_source"] == "the_odds"
+
+
+class TestPropLineFallback:
+    def _propline_event(self):
+        return {
+            "id": "pl-event-1",
+            "commence_time": "2026-05-01T23:05:00Z",
+            "home_team": "Boston Red Sox",
+            "away_team": "New York Yankees",
+            "bookmakers": [
+                {
+                    "key": "draftkings",
+                    "title": "DraftKings",
+                    "markets": [{
+                        "key": "pitcher_strikeouts",
+                        "outcomes": [
+                            {"name": "Over", "description": "Gerrit Cole", "price": -120, "point": 7.5},
+                            {"name": "Under", "description": "Gerrit Cole", "price": 100, "point": 7.5},
+                        ],
+                    }],
+                },
+                {
+                    "key": "betrivers",
+                    "title": "BetRivers",
+                    "markets": [{
+                        "key": "pitcher_strikeouts",
+                        "outcomes": [
+                            {"name": "Over", "description": "Gerrit Cole", "price": -115, "point": 7.5},
+                            {"name": "Under", "description": "Gerrit Cole", "price": -105, "point": 7.5},
+                        ],
+                    }],
+                },
+                {
+                    "key": "kalshi",
+                    "title": "Kalshi",
+                    "markets": [{
+                        "key": "pitcher_strikeouts",
+                        "outcomes": [
+                            {"name": "Over", "description": "Gerrit Cole", "price": -110, "point": 7.5},
+                            {"name": "Under", "description": "Gerrit Cole", "price": -110, "point": 7.5},
+                        ],
+                    }],
+                },
+                {
+                    "key": "bovada",
+                    "title": "Bovada",
+                    "markets": [{
+                        "key": "pitcher_strikeouts",
+                        "outcomes": [
+                            {"name": "Over", "description": "Gerrit Cole", "price": -118, "point": 7.5},
+                            {"name": "Under", "description": "Gerrit Cole", "price": -102, "point": 7.5},
+                        ],
+                    }],
+                },
+            ],
+        }
+
+    def test_parse_propline_event_props_keeps_only_user_books(self):
+        props = _parse_propline_event_props(self._propline_event())
+
+        assert len(props) == 1
+        prop = props[0]
+        assert prop["pitcher"] == "Gerrit Cole"
+        assert prop["k_line"] == 7.5
+        assert prop["ref_book"] == "DraftKings"
+        assert prop["odds_source"] == "propline"
+        assert prop["propline_event_id"] == "pl-event-1"
+        assert prop["book_odds"] == {
+            "DraftKings": {"over": -120, "under": 100},
+            "BetRivers": {"over": -115, "under": -105},
+            "Kalshi": {"over": -110, "under": -110},
+        }
+        assert "Bovada" not in prop["book_odds"]
+
+    def test_fetch_odds_falls_back_to_propline_when_the_odds_errors(self):
+        import requests
+
+        rundown_payload = {"events": [_make_event("Gerrit Cole", 7.5, -112, -108)]}
+        propline = _parse_propline_event_props(self._propline_event())
+
+        with patch.dict("os.environ", {"ODDS_API_KEY": "odds-key", "PROPLINE_API_KEY": "pl-key"}):
+            with patch("fetch_odds.throttled_get", return_value=rundown_payload):
+                with patch("fetch_odds._fetch_the_odds_fallback_props", side_effect=requests.HTTPError("429")):
+                    with patch("fetch_odds._fetch_propline_fallback_props", return_value=propline) as mock_propline:
+                        result = fetch_odds("2026-05-01")
+
+        mock_propline.assert_called_once_with("2026-05-01")
+        assert result[0]["book_odds"]["BetRivers"]["over"] == -115
+        assert result[0]["odds_source"] == "therundown+propline"

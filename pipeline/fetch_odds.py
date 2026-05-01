@@ -30,6 +30,15 @@ THE_ODDS_BOOK_KEY_MAP = {
     "fanduel": "FanDuel",
     "draftkings": "DraftKings",
 }
+PROPLINE_BASE_URL = "https://api.prop-line.com/v1"
+PROPLINE_SPORT_KEY = "baseball_mlb"
+PROPLINE_MARKET_KEY = "pitcher_strikeouts"
+PROPLINE_BOOK_KEY_MAP = {
+    "fanduel": "FanDuel",
+    "draftkings": "DraftKings",
+    "betrivers": "BetRivers",
+    "kalshi": "Kalshi",
+}
 PHOENIX_TZ = ZoneInfo("America/Phoenix")
 
 # TheRundown v2 affiliate IDs. Option B (Task A4 follow-up): only target books
@@ -57,13 +66,13 @@ TRACKED_BOOKS = {
     "24": "theScore Bet",
     "25": "Kalshi",
 }
+REF_BOOK_NAME_PRIORITY = ["FanDuel", "BetMGM", "DraftKings", "theScore Bet", "BetRivers", "Kalshi"]
 PITCHER_POSITION_MARKERS = {"1", "p", "sp", "rp", "pitcher", "starting pitcher", "relief pitcher"}
 MIN_REASONABLE_PITCHER_K_LINE = 1.5
 
 
 def _select_ref_book_name(book_odds: dict) -> str | None:
-    for book_id in REF_BOOK_PRIORITY:
-        book_name = BOOK_ID_MAP[book_id]
+    for book_name in REF_BOOK_NAME_PRIORITY:
         if book_name in book_odds:
             return book_name
     return None
@@ -135,6 +144,10 @@ def _the_odds_key() -> str:
     return os.environ.get("ODDS_API_KEY", "").strip()
 
 
+def _propline_key() -> str:
+    return os.environ.get("PROPLINE_API_KEY", "").strip()
+
+
 def throttled_get(url: str, params: dict = None) -> dict:
     """GET with rate-limit throttle. Raises on non-200."""
     global _last_call_time
@@ -166,6 +179,21 @@ def the_odds_get(path: str, params: dict | None = None) -> tuple[dict | list, di
         "last": resp.headers.get("x-requests-last"),
     }
     return resp.json(), quota
+
+
+def propline_get(path: str, params: dict | None = None) -> dict | list:
+    key = _propline_key()
+    if not key:
+        raise EnvironmentError("PROPLINE_API_KEY not set")
+
+    resp = requests.get(
+        f"{PROPLINE_BASE_URL}{path}",
+        headers={"X-API-Key": key, "Accept": "application/json"},
+        params=params or {},
+        timeout=15,
+    )
+    resp.raise_for_status()
+    return resp.json()
 
 
 def american_odds_from_line(value) -> int | None:
@@ -360,15 +388,21 @@ def _the_odds_event_date_phoenix(event: dict) -> str | None:
     return dt.astimezone(PHOENIX_TZ).strftime("%Y-%m-%d")
 
 
-def _parse_the_odds_event_props(event: dict) -> list:
+def _parse_provider_event_props(
+    event: dict,
+    *,
+    book_key_map: dict,
+    source: str,
+    event_id_field: str,
+) -> list:
     grouped: dict = {}
     for bookmaker in event.get("bookmakers", []):
         book_key = bookmaker.get("key")
-        book_name = THE_ODDS_BOOK_KEY_MAP.get(book_key)
+        book_name = book_key_map.get(book_key)
         if not book_name:
             continue
         for market in bookmaker.get("markets", []):
-            if market.get("key") != THE_ODDS_MARKET_KEY:
+            if market.get("key") not in (THE_ODDS_MARKET_KEY, PROPLINE_MARKET_KEY):
                 continue
             for outcome in market.get("outcomes", []):
                 direction = str(outcome.get("name", "")).strip().lower()
@@ -406,11 +440,15 @@ def _parse_the_odds_event_props(event: dict) -> list:
 
         def line_score(item):
             _line_val, books = item
-            return (
-                1 if "FanDuel" in books else 0,
-                1 if "DraftKings" in books else 0,
-                len(books),
+            priority_score = max(
+                (
+                    len(REF_BOOK_NAME_PRIORITY) - idx
+                    for idx, book_name in enumerate(REF_BOOK_NAME_PRIORITY)
+                    if book_name in books
+                ),
+                default=0,
             )
+            return (priority_score, len(books))
 
         main_val, book_odds = max(complete_lines.items(), key=line_score)
         if main_val < MIN_REASONABLE_PITCHER_K_LINE:
@@ -435,10 +473,28 @@ def _parse_the_odds_event_props(event: dict) -> list:
             "opening_under_odds": ref_odds["under"],
             "opening_odds_source": "first_seen",
             "book_odds": book_odds,
-            "odds_source": "the_odds",
-            "the_odds_event_id": event.get("id"),
+            "odds_source": source,
+            event_id_field: event.get("id"),
         })
     return props
+
+
+def _parse_the_odds_event_props(event: dict) -> list:
+    return _parse_provider_event_props(
+        event,
+        book_key_map=THE_ODDS_BOOK_KEY_MAP,
+        source="the_odds",
+        event_id_field="the_odds_event_id",
+    )
+
+
+def _parse_propline_event_props(event: dict) -> list:
+    return _parse_provider_event_props(
+        event,
+        book_key_map=PROPLINE_BOOK_KEY_MAP,
+        source="propline",
+        event_id_field="propline_event_id",
+    )
 
 
 def _fetch_the_odds_fallback_props(date_str: str) -> list:
@@ -493,6 +549,49 @@ def _fetch_the_odds_fallback_props(date_str: str) -> list:
     return props
 
 
+def _fetch_propline_fallback_props(date_str: str) -> list:
+    log.info(
+        "PropLine fallback: fetching %s %s for %s",
+        PROPLINE_SPORT_KEY,
+        PROPLINE_MARKET_KEY,
+        date_str,
+    )
+    events = propline_get(f"/sports/{PROPLINE_SPORT_KEY}/events")
+    log.info(
+        "PropLine fallback: events returned=%d",
+        len(events) if isinstance(events, list) else 0,
+    )
+    if not isinstance(events, list):
+        return []
+
+    target_events = [
+        event for event in events
+        if _the_odds_event_date_phoenix(event) == date_str
+    ]
+    props = []
+    books_seen: set[str] = set()
+    for event in target_events:
+        event_id = event.get("id")
+        if not event_id:
+            continue
+        data = propline_get(
+            f"/sports/{PROPLINE_SPORT_KEY}/events/{event_id}/odds",
+            params={"markets": PROPLINE_MARKET_KEY},
+        )
+        if isinstance(data, dict):
+            for bookmaker in data.get("bookmakers", []):
+                books_seen.add(str(bookmaker.get("key") or bookmaker.get("title") or ""))
+            props.extend(_parse_propline_event_props(data))
+
+    log.info(
+        "PropLine fallback: fetched %d events, parsed %d pitcher props, raw_books=%s",
+        len(target_events),
+        len(props),
+        ",".join(sorted(b for b in books_seen if b)) or "none",
+    )
+    return props
+
+
 def _refresh_ref_from_book_odds(prop: dict, force: bool = False) -> None:
     book_odds = prop.get("book_odds") or {}
     ref_book = _select_ref_book_name(book_odds)
@@ -511,7 +610,7 @@ def _refresh_ref_from_book_odds(prop: dict, force: bool = False) -> None:
     prop["opening_odds_source"] = "first_seen"
 
 
-def _merge_the_odds_fallback_props(rundown_props: list, fallback_props: list) -> list:
+def _merge_fallback_props(rundown_props: list, fallback_props: list, source_label: str) -> list:
     merged = [dict(prop) for prop in rundown_props]
     by_key = {
         (normalize(prop.get("pitcher", "")), prop.get("k_line")): prop
@@ -528,7 +627,8 @@ def _merge_the_odds_fallback_props(rundown_props: list, fallback_props: list) ->
         if existing is None:
             if key[0] in existing_pitchers:
                 log.info(
-                    "The Odds fallback skipped %s: line %.1f differs from TheRundown line",
+                    "%s fallback skipped %s: line %.1f differs from TheRundown line",
+                    source_label,
                     fallback.get("pitcher", ""),
                     fallback.get("k_line"),
                 )
@@ -543,11 +643,27 @@ def _merge_the_odds_fallback_props(rundown_props: list, fallback_props: list) ->
         for book_name, odds in (fallback.get("book_odds") or {}).items():
             existing_book_odds.setdefault(book_name, odds)
         existing["book_odds"] = existing_book_odds or None
-        existing["odds_source"] = "therundown+the_odds"
-        existing["the_odds_event_id"] = fallback.get("the_odds_event_id")
+        existing_source = existing.get("odds_source") or "therundown"
+        fallback_source = fallback.get("odds_source") or source_label.lower()
+        source_parts = []
+        for part in f"{existing_source}+{fallback_source}".split("+"):
+            if part and part not in source_parts:
+                source_parts.append(part)
+        existing["odds_source"] = "+".join(source_parts)
+        for key_name in ("the_odds_event_id", "propline_event_id"):
+            if fallback.get(key_name):
+                existing[key_name] = fallback.get(key_name)
         _refresh_ref_from_book_odds(existing)
 
     return merged
+
+
+def _merge_the_odds_fallback_props(rundown_props: list, fallback_props: list) -> list:
+    return _merge_fallback_props(rundown_props, fallback_props, "The Odds")
+
+
+def _merge_propline_fallback_props(rundown_props: list, fallback_props: list) -> list:
+    return _merge_fallback_props(rundown_props, fallback_props, "PropLine")
 
 
 def _missing_fd_dk_coverage(props: list) -> bool:
@@ -557,6 +673,10 @@ def _missing_fd_dk_coverage(props: list) -> bool:
         for book_name in (prop.get("book_odds") or {})
     }
     return any(book_name not in books_seen for book_name in THE_ODDS_BOOK_KEY_MAP.values())
+
+
+def _needs_fallback_coverage(props: list) -> bool:
+    return not props or _missing_fd_dk_coverage(props)
 
 
 def parse_k_props(data: dict) -> list:
@@ -600,17 +720,25 @@ def fetch_odds(date_str: str) -> list:
             failures.append(e)
             log.warning("fetch_odds failed for %s: %s", fetch_date, e)
 
-    fallback_props: list = []
-    if _the_odds_key() and (not all_props or _missing_fd_dk_coverage(all_props)):
+    if _the_odds_key() and _needs_fallback_coverage(all_props):
         try:
             fallback_props = _fetch_the_odds_fallback_props(date_str)
+            if fallback_props:
+                all_props = _merge_the_odds_fallback_props(all_props, fallback_props)
         except Exception as e:
             log.warning("The Odds fallback failed for %s: %s", date_str, e)
-    elif not _the_odds_key() and (not all_props or _missing_fd_dk_coverage(all_props)):
+    elif not _the_odds_key() and _needs_fallback_coverage(all_props):
         log.info("The Odds fallback skipped: ODDS_API_KEY not set")
 
-    if fallback_props:
-        all_props = _merge_the_odds_fallback_props(all_props, fallback_props)
+    if _propline_key() and _needs_fallback_coverage(all_props):
+        try:
+            fallback_props = _fetch_propline_fallback_props(date_str)
+            if fallback_props:
+                all_props = _merge_propline_fallback_props(all_props, fallback_props)
+        except Exception as e:
+            log.warning("PropLine fallback failed for %s: %s", date_str, e)
+    elif not _propline_key() and _needs_fallback_coverage(all_props):
+        log.info("PropLine fallback skipped: PROPLINE_API_KEY not set")
 
     if not all_props and failures:
         raise failures[0]

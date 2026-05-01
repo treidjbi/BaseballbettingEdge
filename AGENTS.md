@@ -117,6 +117,8 @@ python -m pytest tests/test_build_features.py -v
 - `RUNDOWN_API_KEY` — TheRundown API key (required for fetch_odds)
 - `ODDS_API_KEY` — The Odds API key (fallback-only odds provider; GitHub
   secret added 2026-05-01)
+- `PROPLINE_API_KEY` — PropLine API key (weekend fallback/shadow provider;
+  GitHub secret added 2026-05-01)
 - `VAPID_PUBLIC_KEY` / `VAPID_PRIVATE_KEY` / `VAPID_SUBJECT` — Web Push keys
 - `NOTIFY_SECRET` — Push notification auth secret (Netlify function)
 - `NETLIFY_SITE_URL` — Netlify site URL for notification endpoint
@@ -177,6 +179,8 @@ Use this provider conservatively:
 - First try TheRundown.
 - Only call The Odds API when TheRundown returns no usable target-book K props,
   misses FanDuel/DraftKings coverage, or has a confirmed provider outage.
+- If The Odds API fails, rate-limits, runs out of credits, or still leaves
+  missing FanDuel/DraftKings coverage, PropLine may run as the next fallback.
 - While on the 500-credit free plan, do not broaden The Odds calls beyond the
   FD/DK fallback without an explicit decision; a full weekend can burn through
   the free quota quickly.
@@ -185,6 +189,42 @@ Use this provider conservatively:
 - Preserve source metadata if wired into pipeline output (`odds_source`,
   `bookmaker_key`, response quota headers) so TheRundown and fallback rows can
   be audited separately.
+
+## PropLine API (Weekend Fallback / Shadow Provider)
+
+PropLine is being tested over the 2026-05-01 weekend as a possible cheaper
+player-prop source. Treat this as trial infrastructure until the Monday
+2026-05-04 review compares live coverage against TheRundown and The Odds.
+
+- **Plan under test**: free tier first; do not assume paid/webhook behavior
+  until live polling coverage is validated.
+- **Secret**: `PROPLINE_API_KEY`
+- **Host**: `https://api.prop-line.com`
+- **Auth**: `X-API-Key` header
+- **MLB sport key**: `baseball_mlb`
+- **Pitcher strikeout market key**: `pitcher_strikeouts`
+- **Target books for this app**: DraftKings, FanDuel, BetRivers, Kalshi.
+  Ignore Bovada, Pinnacle, PrizePicks, Polymarket, and other non-user books
+  unless the user explicitly changes the supported-book list.
+- **Manual probe**: use GitHub Actions `workflow_dispatch` with
+  `mode=propline_probe` and an optional `date=YYYY-MM-DD`. It prints returned
+  book keys/counts only; it must never print the API key.
+- **Current fallback order**: TheRundown primary → The Odds FD/DK fallback →
+  PropLine fallback if The Odds fails/rate-limits/has no usable coverage.
+
+The response shape mirrors The Odds enough to share parser logic:
+`bookmakers[] -> markets[] -> outcomes[]`, where pitcher props use
+`outcome.name` as `Over` / `Under`, `outcome.description` as the pitcher name,
+`outcome.point` as the K line, and `outcome.price` as American odds.
+
+Weekend review checklist:
+
+- Which target books actually came back live?
+- How many listed MLB probable pitchers were covered?
+- How many records were same-line vs. line-conflict with TheRundown?
+- Did PropLine return useful Kalshi/BetRivers coverage?
+- Did the free tier stay within request/rate limits?
+- Did `odds_source` / `propline_event_id` make provider attribution auditable?
 
 ## Tech Stack
 

@@ -281,12 +281,14 @@ class TestBuildPitcherRecord:
         from build_features import build_pitcher_record
         odds = {
             **self.BASE_ODDS,
-            "odds_source": "therundown+the_odds",
+            "odds_source": "therundown+the_odds+propline",
             "the_odds_event_id": "event-123",
+            "propline_event_id": "pl-event-123",
         }
         rec = build_pitcher_record(odds, self.BASE_STATS, ump_k_adj=0.0)
-        assert rec["odds_source"] == "therundown+the_odds"
+        assert rec["odds_source"] == "therundown+the_odds+propline"
         assert rec["the_odds_event_id"] == "event-123"
+        assert rec["propline_event_id"] == "pl-event-123"
 
     def test_uses_avg_ip_last5_not_constant(self):
         from build_features import build_pitcher_record, load_params
