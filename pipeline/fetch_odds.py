@@ -130,6 +130,30 @@ def _select_ref_book(available_books: dict) -> tuple:
     return None, None
 
 
+def _select_main_line_value(lines_data: dict) -> float | None:
+    """Choose the best K line from grouped TheRundown over/under prices."""
+    for require_both_main in (True, False):
+        for book_id in REF_BOOK_PRIORITY:
+            for line_val, dirs in lines_data.items():
+                over = dirs["over"].get(book_id)
+                under = dirs["under"].get(book_id)
+                if not over or not under:
+                    continue
+                if require_both_main:
+                    if over["is_main"] and under["is_main"]:
+                        return line_val
+                elif over["is_main"] or under["is_main"]:
+                    return line_val
+
+    if not lines_data:
+        return None
+
+    return max(
+        lines_data,
+        key=lambda lv: len(lines_data[lv]["over"]) + len(lines_data[lv]["under"]),
+    )
+
+
 def _headers() -> dict:
     key = os.environ.get("RUNDOWN_API_KEY", "").strip()
     if not key:
@@ -272,22 +296,9 @@ def _parse_event_k_props(event: dict) -> list:
             if not lines_data:
                 continue
 
-            # Prefer the line value where any book marks is_main_line=True
-            main_val = None
-            for lv, dirs in lines_data.items():
-                for direction in ("over", "under"):
-                    if any(bd["is_main"] for bd in dirs[direction].values()):
-                        main_val = lv
-                        break
-                if main_val is not None:
-                    break
-
+            main_val = _select_main_line_value(lines_data)
             if main_val is None:
-                # No main flag — pick the line val with the most book coverage
-                main_val = max(
-                    lines_data,
-                    key=lambda lv: len(lines_data[lv]["over"]) + len(lines_data[lv]["under"]),
-                )
+                continue
 
             chosen = lines_data[main_val]
             if main_val < MIN_REASONABLE_PITCHER_K_LINE:

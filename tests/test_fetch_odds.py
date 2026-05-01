@@ -338,6 +338,40 @@ class TestParseKProps:
         assert len(result) == 1
         assert result[0]["k_line"] == 5.5   # main line selected
 
+    def test_prefers_complete_priority_book_main_line_over_alt_marker(self):
+        """A one-off alternate main marker should not beat a complete main
+        line from a higher-priority target book."""
+        event = {
+            "event_id": "evt-alt-main-marker",
+            "event_date": "2026-05-01T22:40:00Z",
+            "teams": [
+                {"name": "Texas Rangers", "is_away": True, "is_home": False},
+                {"name": "Detroit Tigers", "is_away": False, "is_home": True},
+            ],
+            "markets": [{
+                "market_id": 19,
+                "name": "pitcher_strikeouts",
+                "participants": [{
+                    "name": "Jack Flaherty",
+                    "lines": [
+                        {"value": "Over 3.5", "prices": {"25": {"price": -430, "is_main_line": True}}},
+                        {"value": "Under 3.5", "prices": {"25": {"price": 313, "is_main_line": False}}},
+                        {"value": "Over 5.5", "prices": {"22": {"price": 105, "is_main_line": True}}},
+                        {"value": "Under 5.5", "prices": {"22": {"price": -140, "is_main_line": True}}},
+                    ],
+                }],
+            }],
+        }
+
+        result = parse_k_props({"events": [event]})
+
+        assert len(result) == 1
+        assert result[0]["pitcher"] == "Jack Flaherty"
+        assert result[0]["k_line"] == 5.5
+        assert result[0]["ref_book"] == "BetMGM"
+        assert result[0]["best_over_odds"] == 105
+        assert result[0]["best_under_odds"] == -140
+
     def test_skips_participant_marked_as_position_player(self):
         """Obvious non-pitchers should be dropped when the payload itself tags
         them as a position player."""
