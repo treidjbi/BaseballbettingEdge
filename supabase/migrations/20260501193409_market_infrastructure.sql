@@ -80,6 +80,33 @@ create table if not exists public.propline_webhook_deliveries (
   received_at timestamptz not null default now()
 );
 
+create table if not exists public.artifact_snapshots (
+  id uuid primary key default gen_random_uuid(),
+  artifact_path text not null,
+  artifact_kind text not null check (
+    artifact_kind in (
+      'today',
+      'dated_slate',
+      'steam',
+      'picks_history',
+      'preview_lines',
+      'params',
+      'performance',
+      'other'
+    )
+  ),
+  slate_date date,
+  source_commit text,
+  content_sha256 text not null,
+  size_bytes integer not null check (size_bytes >= 0),
+  payload jsonb,
+  storage_bucket text,
+  storage_key text,
+  metadata jsonb not null default '{}'::jsonb,
+  captured_at timestamptz not null default now(),
+  unique (artifact_path, content_sha256)
+);
+
 create index if not exists idx_market_snapshots_player_market
   on public.market_snapshots (normalized_player_name, market_key, observed_at desc);
 
@@ -92,11 +119,15 @@ create index if not exists idx_market_snapshots_book
 create index if not exists idx_provider_coverage_audits_slate
   on public.provider_coverage_audits (slate_date desc, provider);
 
+create index if not exists idx_artifact_snapshots_kind_date
+  on public.artifact_snapshots (artifact_kind, slate_date desc, captured_at desc);
+
 alter table public.market_provider_runs enable row level security;
 alter table public.market_events enable row level security;
 alter table public.market_snapshots enable row level security;
 alter table public.provider_coverage_audits enable row level security;
 alter table public.propline_webhook_deliveries enable row level security;
+alter table public.artifact_snapshots enable row level security;
 
 comment on table public.market_provider_runs is
   'Observation-only market provider runs. Not read by the production pipeline.';
@@ -106,3 +137,6 @@ comment on table public.market_snapshots is
 
 comment on table public.propline_webhook_deliveries is
   'Raw PropLine webhook inbox with delivery-id dedupe and HMAC validation status.';
+
+comment on table public.artifact_snapshots is
+  'Observation-only immutable copies of JSON artifacts for audit, replay, and future analytics.';
