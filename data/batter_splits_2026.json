@@ -1663,19 +1663,87 @@
         "so": 12,
         "k_rate": 0.3077
       }
+    },
+    "mlbam:805808": {
+      "name": "Kevin McGonigle",
+      "bats": "R",
+      "mlbam_id": 805808,
+      "bbref_id": "mcgonke01",
+      "season": 2026,
+      "vs_R": {
+        "pa": 104,
+        "so": 12,
+        "k_rate": 0.1154
+      },
+      "vs_L": {
+        "pa": 32,
+        "so": 5,
+        "k_rate": 0.1562
+      }
+    },
+    "mlbam:701678": {
+      "name": "Hao-Yu  Lee",
+      "bats": "R",
+      "mlbam_id": 701678,
+      "bbref_id": "leeha02",
+      "season": 2026,
+      "vs_R": {
+        "pa": 13,
+        "so": 3,
+        "k_rate": 0.2308
+      },
+      "vs_L": {
+        "pa": 14,
+        "so": 5,
+        "k_rate": 0.3571
+      }
+    },
+    "mlbam:673962": {
+      "name": "Josh Jung",
+      "bats": "R",
+      "mlbam_id": 673962,
+      "bbref_id": "jungjo01",
+      "season": 2026,
+      "vs_R": {
+        "pa": 85,
+        "so": 15,
+        "k_rate": 0.1765
+      },
+      "vs_L": {
+        "pa": 28,
+        "so": 4,
+        "k_rate": 0.1429
+      }
+    },
+    "mlbam:592626": {
+      "name": "Joc Pederson",
+      "bats": "R",
+      "mlbam_id": 592626,
+      "bbref_id": "pederjo01",
+      "season": 2026,
+      "vs_R": {
+        "pa": 82,
+        "so": 20,
+        "k_rate": 0.2439
+      },
+      "vs_L": {
+        "pa": 3,
+        "so": 1,
+        "k_rate": 0.3333
+      }
     }
   },
-  "updated_at": "2026-05-01T18:56:30Z",
+  "updated_at": "2026-05-01T19:36:40Z",
   "last_run": {
     "projection_status": "collection_only",
-    "requested_batters": 45,
-    "already_cached": 21,
+    "requested_batters": 126,
+    "already_cached": 46,
     "attempted": 4,
     "collected": 4,
     "failed": 0,
-    "queued_not_attempted": 20,
-    "cache_size": 98,
+    "queued_not_attempted": 76,
+    "cache_size": 102,
     "errors": [],
-    "updated_at": "2026-05-01T18:56:30Z"
+    "updated_at": "2026-05-01T19:36:40Z"
   }
 }
