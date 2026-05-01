@@ -1,0 +1,102 @@
+name: Shadow Market Infrastructure
+
+on:
+  workflow_dispatch:
+    inputs:
+      date:
+        description: "Optional YYYY-MM-DD slate date; defaults to today's Phoenix date"
+        required: false
+        type: string
+      capture_propline:
+        description: "Poll PropLine and write normalized market snapshots to Supabase"
+        required: false
+        type: boolean
+        default: true
+      capture_artifacts:
+        description: "Copy selected JSON artifacts to Supabase artifact_snapshots"
+        required: false
+        type: boolean
+        default: true
+
+permissions:
+  contents: read
+
+concurrency:
+  group: shadow-market-infra-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  shadow-capture:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+          cache-dependency-path: pipeline/requirements.txt
+
+      - name: Install dependencies
+        run: pip install -r pipeline/requirements.txt
+
+      - name: Resolve slate date
+        id: slate
+        run: |
+          SLATE_DATE="${{ github.event.inputs.date }}"
+          if [ -z "$SLATE_DATE" ]; then
+            SLATE_DATE=$(TZ=America/Phoenix date +%Y-%m-%d)
+          fi
+          echo "date=$SLATE_DATE" >> "$GITHUB_OUTPUT"
+          echo "Shadow slate date: $SLATE_DATE"
+
+      - name: Validate shadow secrets
+        env:
+          CAPTURE_PROPLINE: ${{ github.event.inputs.capture_propline }}
+          CAPTURE_ARTIFACTS: ${{ github.event.inputs.capture_artifacts }}
+          PROPLINE_API_KEY: ${{ secrets.PROPLINE_API_KEY }}
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: |
+          missing=0
+          if [ "$CAPTURE_PROPLINE" = "true" ] || [ "$CAPTURE_ARTIFACTS" = "true" ]; then
+            if [ -z "$SUPABASE_URL" ]; then
+              echo "Missing SUPABASE_URL secret"
+              missing=1
+            fi
+            if [ -z "$SUPABASE_SERVICE_ROLE_KEY" ]; then
+              echo "Missing SUPABASE_SERVICE_ROLE_KEY secret"
+              missing=1
+            fi
+          fi
+          if [ "$CAPTURE_PROPLINE" = "true" ] && [ -z "$PROPLINE_API_KEY" ]; then
+            echo "Missing PROPLINE_API_KEY secret"
+            missing=1
+          fi
+          exit "$missing"
+
+      - name: Shadow PropLine to Supabase
+        if: ${{ github.event.inputs.capture_propline == 'true' }}
+        env:
+          PROPLINE_API_KEY: ${{ secrets.PROPLINE_API_KEY }}
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: python scripts/shadow_propline_to_supabase.py "${{ steps.slate.outputs.date }}"
+
+      - name: Shadow artifacts to Supabase
+        if: ${{ github.event.inputs.capture_artifacts == 'true' }}
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: |
+          python scripts/shadow_artifacts_to_supabase.py \
+            "dashboard/data/processed/today.json" \
+            "dashboard/data/processed/${{ steps.slate.outputs.date }}.json" \
+            "dashboard/data/processed/steam.json" \
+            "dashboard/data/performance.json" \
+            "data/picks_history.json" \
+            "data/preview_lines.json" \
+            "data/params.json"
