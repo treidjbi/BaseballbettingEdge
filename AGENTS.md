@@ -115,6 +115,8 @@ python -m pytest tests/test_build_features.py -v
 ## Environment Variables / Secrets
 
 - `RUNDOWN_API_KEY` — TheRundown API key (required for fetch_odds)
+- `ODDS_API_KEY` — The Odds API key (fallback-only odds provider; GitHub
+  secret added 2026-05-01)
 - `VAPID_PUBLIC_KEY` / `VAPID_PRIVATE_KEY` / `VAPID_SUBJECT` — Web Push keys
 - `NOTIFY_SECRET` — Push notification auth secret (Netlify function)
 - `NETLIFY_SITE_URL` — Netlify site URL for notification endpoint
@@ -128,6 +130,52 @@ python -m pytest tests/test_build_features.py -v
 - **Not included**: WebSocket streaming, +EV calculations
 - **Auth**: `X-TheRundown-Key` header
 - Pipeline throttles at 0.55s between calls to stay under 2 req/sec
+
+## The Odds API (Fallback Odds Provider)
+
+The Odds API is available as a fallback source when TheRundown is degraded or
+missing critical pitcher strikeout coverage. It is **not** the primary odds
+feed and should not replace TheRundown for normal scheduled runs without a
+specific decision.
+
+- **Plan**: free / limited fallback only
+- **Quota**: 500 credits/month
+- **Secret**: `ODDS_API_KEY`
+- **Host**: `https://api.the-odds-api.com`
+- **Docs**: `https://the-odds-api.com/liveapi/guides/v4/`
+- **MLB sport key**: `baseball_mlb`
+- **Pitcher strikeout market key**: `pitcher_strikeouts`
+- **Bookmaker keys tested live 2026-05-01**: `fanduel`, `draftkings`
+- **Important quota behavior**: event-level player-prop calls cost credits.
+  A 2026-05-01 probe for one MLB event, two books, and one market cost 1
+  credit. Do not loop every event on every refresh unless TheRundown is
+  actually failing.
+
+Known-good event-level probe shape:
+
+```text
+GET /v4/sports/baseball_mlb/events/{eventId}/odds
+  ?apiKey=...
+  &bookmakers=fanduel,draftkings
+  &markets=pitcher_strikeouts
+  &oddsFormat=american
+```
+
+The response shape is event-first:
+`bookmakers[] -> markets[] -> outcomes[]`, where pitcher props use
+`outcome.name` as `Over` / `Under`, `outcome.description` as the pitcher name,
+`outcome.point` as the K line, and `outcome.price` as American odds.
+
+Use this provider conservatively:
+
+- First try TheRundown.
+- Only call The Odds API when TheRundown returns no usable target-book K props,
+  misses FanDuel/DraftKings coverage, or has a confirmed provider outage.
+- Prefer one event or one slate diagnostic pass before adding it to scheduled
+  production fallback behavior.
+- Preserve source metadata if wired into pipeline output (`odds_source`,
+  `bookmaker_key`, response quota headers) so TheRundown and fallback rows can
+  be audited separately.
 
 ## Tech Stack
 
