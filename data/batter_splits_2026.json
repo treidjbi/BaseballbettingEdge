@@ -2207,19 +2207,87 @@
         "so": 5,
         "k_rate": 0.2273
       }
+    },
+    "mlbam:650859": {
+      "name": "Luis Rengifo",
+      "bats": "R",
+      "mlbam_id": 650859,
+      "bbref_id": "rengilu01",
+      "season": 2026,
+      "vs_R": {
+        "pa": 58,
+        "so": 7,
+        "k_rate": 0.1207
+      },
+      "vs_L": {
+        "pa": 37,
+        "so": 5,
+        "k_rate": 0.1351
+      }
+    },
+    "mlbam:672012": {
+      "name": "Tyler Black",
+      "bats": "R",
+      "mlbam_id": 672012,
+      "bbref_id": "blackty01",
+      "season": 2026,
+      "vs_R": {
+        "pa": 18,
+        "so": 4,
+        "k_rate": 0.2222
+      },
+      "vs_L": {
+        "pa": 1,
+        "so": 0,
+        "k_rate": 0.0
+      }
+    },
+    "mlbam:686217": {
+      "name": "Sal Frelick",
+      "bats": "R",
+      "mlbam_id": 686217,
+      "bbref_id": "frelisa01",
+      "season": 2026,
+      "vs_R": {
+        "pa": 81,
+        "so": 8,
+        "k_rate": 0.0988
+      },
+      "vs_L": {
+        "pa": 28,
+        "so": 5,
+        "k_rate": 0.1786
+      }
+    },
+    "mlbam:663368": {
+      "name": "Blake Perkins",
+      "bats": "R",
+      "mlbam_id": 663368,
+      "bbref_id": "perkibl01",
+      "season": 2026,
+      "vs_R": {
+        "pa": 27,
+        "so": 10,
+        "k_rate": 0.3704
+      },
+      "vs_L": {
+        "pa": 21,
+        "so": 2,
+        "k_rate": 0.0952
+      }
     }
   },
-  "updated_at": "2026-05-01T22:27:11Z",
+  "updated_at": "2026-05-01T22:54:43Z",
   "last_run": {
     "projection_status": "collection_only",
     "requested_batters": 270,
-    "already_cached": 103,
+    "already_cached": 107,
     "attempted": 4,
     "collected": 4,
     "failed": 0,
-    "queued_not_attempted": 163,
-    "cache_size": 130,
+    "queued_not_attempted": 159,
+    "cache_size": 134,
     "errors": [],
-    "updated_at": "2026-05-01T22:27:11Z"
+    "updated_at": "2026-05-01T22:54:43Z"
   }
 }
