@@ -2020,6 +2020,37 @@ def test_apply_preview_openings_leaves_source_first_seen_on_kline_shift():
     assert props[0]["opening_under_odds"] == -108   # unchanged
 
 
+def test_apply_preview_openings_leaves_source_first_seen_on_book_shift():
+    """If preview and current prices come from different books, do not compare
+    opening/current movement across books."""
+    import run_pipeline
+
+    props = [{
+        "pitcher": "Gerrit Cole",
+        "k_line": 7.5,
+        "best_over_book": "BetMGM",
+        "best_under_book": "BetMGM",
+        "opening_over_odds": -112,
+        "opening_under_odds": -108,
+        "opening_odds_source": "first_seen",
+    }]
+    preview_lines = {
+        "Gerrit Cole": {
+            "k_line": 7.5,
+            "over_odds": -120,
+            "under_odds": -100,
+            "best_over_book": "FanDuel",
+            "best_under_book": "FanDuel",
+        },
+    }
+
+    run_pipeline._apply_preview_openings(props, preview_lines)
+
+    assert props[0]["opening_odds_source"] == "first_seen"
+    assert props[0]["opening_over_odds"] == -112
+    assert props[0]["opening_under_odds"] == -108
+
+
 def test_apply_preview_openings_leaves_source_first_seen_when_no_preview_match():
     """If preview_lines has no entry for this pitcher, source stays first_seen
     and opening_*_odds are untouched."""

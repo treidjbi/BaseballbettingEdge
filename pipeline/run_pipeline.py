@@ -638,9 +638,12 @@ def _run_preview(tomorrow_str: str) -> None:
         "fetched_at": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
         "lines": {
             p["pitcher"]: {
-                "k_line":     p["k_line"],
-                "over_odds":  p["best_over_odds"],
-                "under_odds": p["best_under_odds"],
+                "k_line":          p["k_line"],
+                "over_odds":       p["best_over_odds"],
+                "under_odds":      p["best_under_odds"],
+                "best_over_book":  p.get("best_over_book"),
+                "best_under_book": p.get("best_under_book"),
+                "ref_book":        p.get("ref_book"),
             }
             for p in props
         },
@@ -774,6 +777,23 @@ def _apply_preview_openings(props: list, preview_lines: dict) -> None:
         if prev.get("k_line") != prop.get("k_line"):
             log.info("Line shifted for %s (preview %.1f → now %.1f) — skipping opening override",
                      name, prev.get("k_line"), prop.get("k_line"))
+            continue
+        prev_over_book = prev.get("best_over_book") or prev.get("ref_book")
+        prev_under_book = prev.get("best_under_book") or prev.get("ref_book")
+        current_over_book = prop.get("best_over_book") or prop.get("ref_book")
+        current_under_book = prop.get("best_under_book") or prop.get("ref_book")
+        if (
+            (prev_over_book and current_over_book and prev_over_book != current_over_book)
+            or (prev_under_book and current_under_book and prev_under_book != current_under_book)
+        ):
+            log.info(
+                "Book shifted for %s (preview %s/%s -> now %s/%s) - skipping opening override",
+                name,
+                prev_over_book,
+                prev_under_book,
+                current_over_book,
+                current_under_book,
+            )
             continue
         prop["opening_over_odds"]  = prev["over_odds"]
         prop["opening_under_odds"] = prev["under_odds"]
