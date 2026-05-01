@@ -1425,19 +1425,87 @@
         "so": 7,
         "k_rate": 0.1707
       }
+    },
+    "mlbam:680728": {
+      "name": "Adrian Del Castillo",
+      "bats": "R",
+      "mlbam_id": 680728,
+      "bbref_id": "delcaad01",
+      "season": 2026,
+      "vs_R": {
+        "pa": 52,
+        "so": 15,
+        "k_rate": 0.2885
+      },
+      "vs_L": {
+        "pa": 9,
+        "so": 4,
+        "k_rate": 0.4444
+      }
+    },
+    "mlbam:672515": {
+      "name": "Gabriel Moreno",
+      "bats": "R",
+      "mlbam_id": 672515,
+      "bbref_id": "morenga01",
+      "season": 2026,
+      "vs_R": {
+        "pa": 31,
+        "so": 5,
+        "k_rate": 0.1613
+      },
+      "vs_L": {
+        "pa": 14,
+        "so": 3,
+        "k_rate": 0.2143
+      }
+    },
+    "mlbam:699912": {
+      "name": "Jose Fernandez",
+      "bats": "R",
+      "mlbam_id": 699912,
+      "bbref_id": "fernajo06",
+      "season": 2026,
+      "vs_R": {
+        "pa": 63,
+        "so": 14,
+        "k_rate": 0.2222
+      },
+      "vs_L": {
+        "pa": 23,
+        "so": 5,
+        "k_rate": 0.2174
+      }
+    },
+    "mlbam:571448": {
+      "name": "Nolan Arenado",
+      "bats": "R",
+      "mlbam_id": 571448,
+      "bbref_id": "arenano01",
+      "season": 2026,
+      "vs_R": {
+        "pa": 77,
+        "so": 16,
+        "k_rate": 0.2078
+      },
+      "vs_L": {
+        "pa": 28,
+        "so": 4,
+        "k_rate": 0.1429
+      }
     }
   },
-  "updated_at": "2026-05-01T17:06:48Z",
+  "updated_at": "2026-05-01T17:36:42Z",
   "last_run": {
     "projection_status": "collection_only",
     "requested_batters": 18,
-    "already_cached": 8,
+    "already_cached": 12,
     "attempted": 4,
     "collected": 4,
     "failed": 0,
-    "queued_not_attempted": 6,
-    "cache_size": 84,
+    "queued_not_attempted": 2,
+    "cache_size": 88,
     "errors": [],
-    "updated_at": "2026-05-01T17:06:48Z"
+    "updated_at": "2026-05-01T17:36:42Z"
   }
 }
