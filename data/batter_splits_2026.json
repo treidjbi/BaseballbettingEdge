@@ -1867,19 +1867,87 @@
         "so": 6,
         "k_rate": 0.1667
       }
+    },
+    "mlbam:694374": {
+      "name": "Tim Tawa",
+      "bats": "R",
+      "mlbam_id": 694374,
+      "bbref_id": "tawati01",
+      "season": 2026,
+      "vs_R": {
+        "pa": 31,
+        "so": 7,
+        "k_rate": 0.2258
+      },
+      "vs_L": {
+        "pa": 20,
+        "so": 4,
+        "k_rate": 0.2
+      }
+    },
+    "mlbam:693304": {
+      "name": "Nick Gonzales",
+      "bats": "R",
+      "mlbam_id": 693304,
+      "bbref_id": "gonzani01",
+      "season": 2026,
+      "vs_R": {
+        "pa": 79,
+        "so": 11,
+        "k_rate": 0.1392
+      },
+      "vs_L": {
+        "pa": 33,
+        "so": 10,
+        "k_rate": 0.303
+      }
+    },
+    "mlbam:542303": {
+      "name": "Marcell Ozuna",
+      "bats": "R",
+      "mlbam_id": 542303,
+      "bbref_id": "ozunama01",
+      "season": 2026,
+      "vs_R": {
+        "pa": 77,
+        "so": 25,
+        "k_rate": 0.3247
+      },
+      "vs_L": {
+        "pa": 30,
+        "so": 4,
+        "k_rate": 0.1333
+      }
+    },
+    "mlbam:687462": {
+      "name": "Spencer Horwitz",
+      "bats": "R",
+      "mlbam_id": 687462,
+      "bbref_id": "horwisp01",
+      "season": 2026,
+      "vs_R": {
+        "pa": 88,
+        "so": 12,
+        "k_rate": 0.1364
+      },
+      "vs_L": {
+        "pa": 14,
+        "so": 3,
+        "k_rate": 0.2143
+      }
     }
   },
-  "updated_at": "2026-05-01T20:10:06Z",
+  "updated_at": "2026-05-01T20:30:51Z",
   "last_run": {
     "projection_status": "collection_only",
-    "requested_batters": 162,
-    "already_cached": 61,
+    "requested_batters": 171,
+    "already_cached": 64,
     "attempted": 4,
     "collected": 4,
     "failed": 0,
-    "queued_not_attempted": 97,
-    "cache_size": 110,
+    "queued_not_attempted": 103,
+    "cache_size": 114,
     "errors": [],
-    "updated_at": "2026-05-01T20:10:06Z"
+    "updated_at": "2026-05-01T20:30:51Z"
   }
 }
