@@ -277,6 +277,17 @@ class TestBuildPitcherRecord:
         assert rec["best_over_book"] == "FanDuel"
         assert rec["best_under_book"] == "BetMGM"
 
+    def test_preserves_odds_source_metadata(self):
+        from build_features import build_pitcher_record
+        odds = {
+            **self.BASE_ODDS,
+            "odds_source": "therundown+the_odds",
+            "the_odds_event_id": "event-123",
+        }
+        rec = build_pitcher_record(odds, self.BASE_STATS, ump_k_adj=0.0)
+        assert rec["odds_source"] == "therundown+the_odds"
+        assert rec["the_odds_event_id"] == "event-123"
+
     def test_uses_avg_ip_last5_not_constant(self):
         from build_features import build_pitcher_record, load_params
         rec = build_pitcher_record(self.BASE_ODDS, self.BASE_STATS, ump_k_adj=0.0)
