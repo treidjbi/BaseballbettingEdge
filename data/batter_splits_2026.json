@@ -1221,24 +1221,87 @@
         "so": 3,
         "k_rate": 0.1875
       }
+    },
+    "mlbam:663538": {
+      "name": "Nico Hoerner",
+      "bats": "R",
+      "mlbam_id": 663538,
+      "bbref_id": "hoernni01",
+      "season": 2026,
+      "vs_R": {
+        "pa": 96,
+        "so": 7,
+        "k_rate": 0.0729
+      },
+      "vs_L": {
+        "pa": 50,
+        "so": 7,
+        "k_rate": 0.14
+      }
+    },
+    "mlbam:694208": {
+      "name": "Mois\u00e9s Ballesteros",
+      "bats": "R",
+      "mlbam_id": 694208,
+      "bbref_id": "ballemo01",
+      "season": 2026,
+      "vs_R": {
+        "pa": 73,
+        "so": 11,
+        "k_rate": 0.1507
+      },
+      "vs_L": {
+        "pa": 6,
+        "so": 1,
+        "k_rate": 0.1667
+      }
+    },
+    "mlbam:608324": {
+      "name": "Alex Bregman",
+      "bats": "R",
+      "mlbam_id": 608324,
+      "bbref_id": "bregmal01",
+      "season": 2026,
+      "vs_R": {
+        "pa": 98,
+        "so": 12,
+        "k_rate": 0.1224
+      },
+      "vs_L": {
+        "pa": 45,
+        "so": 9,
+        "k_rate": 0.2
+      }
+    },
+    "mlbam:664023": {
+      "name": "Ian Happ",
+      "bats": "R",
+      "mlbam_id": 664023,
+      "bbref_id": "happia01",
+      "season": 2026,
+      "vs_R": {
+        "pa": 88,
+        "so": 26,
+        "k_rate": 0.2955
+      },
+      "vs_L": {
+        "pa": 46,
+        "so": 13,
+        "k_rate": 0.2826
+      }
     }
   },
-  "updated_at": "2026-05-01T04:57:45Z",
+  "updated_at": "2026-05-01T16:07:47Z",
   "last_run": {
     "projection_status": "collection_only",
-    "requested_batters": 162,
-    "already_cached": 33,
+    "requested_batters": 18,
+    "already_cached": 0,
     "attempted": 4,
-    "collected": 0,
-    "failed": 4,
-    "queued_not_attempted": 125,
-    "cache_size": 72,
-    "errors": [
-      "Kevin McGonigle: no bbref id",
-      "Hao-Yu  Lee: no bbref id",
-      "Justin Crawford: no bbref id",
-      "JJ Wetherholt: no bbref id"
-    ],
-    "updated_at": "2026-05-01T04:57:45Z"
+    "collected": 4,
+    "failed": 0,
+    "queued_not_attempted": 14,
+    "cache_size": 76,
+    "errors": [],
+    "updated_at": "2026-05-01T16:07:47Z"
   }
 }
