@@ -90,6 +90,7 @@ jobs:
       - name: Run pipeline
         env:
           RUNDOWN_API_KEY: ${{ secrets.RUNDOWN_API_KEY }}
+          ODDS_API_KEY: ${{ secrets.ODDS_API_KEY }}
         run: |
           SCHEDULE="${{ github.event.schedule }}"
           TODAY=$(TZ=America/Phoenix date +%Y-%m-%d)

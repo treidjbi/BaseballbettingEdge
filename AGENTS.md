@@ -138,6 +138,9 @@ missing critical pitcher strikeout coverage. It is **not** the primary odds
 feed and should not replace TheRundown for normal scheduled runs without a
 specific decision.
 
+- **Current trial**: free weekend fallback for FanDuel / DraftKings only,
+  starting 2026-05-01. Check the next scheduled review on **Monday 2026-05-04**
+  before deciding whether to migrate fully.
 - **Plan**: free / limited fallback only
 - **Quota**: 500 credits/month
 - **Secret**: `ODDS_API_KEY`
@@ -146,6 +149,9 @@ specific decision.
 - **MLB sport key**: `baseball_mlb`
 - **Pitcher strikeout market key**: `pitcher_strikeouts`
 - **Bookmaker keys tested live 2026-05-01**: `fanduel`, `draftkings`
+- **Possible full-switch target books**: if the weekend trial works and we
+  decide to migrate, start with only DraftKings, FanDuel, BetMGM, and Caesars
+  rather than all available US books.
 - **Important quota behavior**: event-level player-prop calls cost credits.
   A 2026-05-01 probe for one MLB event, two books, and one market cost 1
   credit. Do not loop every event on every refresh unless TheRundown is
@@ -171,6 +177,9 @@ Use this provider conservatively:
 - First try TheRundown.
 - Only call The Odds API when TheRundown returns no usable target-book K props,
   misses FanDuel/DraftKings coverage, or has a confirmed provider outage.
+- While on the 500-credit free plan, do not broaden The Odds calls beyond the
+  FD/DK fallback without an explicit decision; a full weekend can burn through
+  the free quota quickly.
 - Prefer one event or one slate diagnostic pass before adding it to scheduled
   production fallback behavior.
 - Preserve source metadata if wired into pipeline output (`odds_source`,

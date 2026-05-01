@@ -12,6 +12,8 @@ from fetch_odds import (
     american_odds_from_line,
     fetch_odds,
     parse_k_props,
+    _merge_the_odds_fallback_props,
+    _parse_the_odds_event_props,
     _parse_line_value,
     _select_ref_book,
     _headers,
@@ -681,3 +683,119 @@ class TestFetchOddsFailureHandling:
             result = fetch_odds("2026-04-29")
 
         assert [prop["pitcher"] for prop in result] == ["Gerrit Cole"]
+
+
+class TestTheOddsFallback:
+    def _the_odds_event(self):
+        return {
+            "id": "odds-event-1",
+            "commence_time": "2026-05-01T23:05:00Z",
+            "home_team": "Boston Red Sox",
+            "away_team": "New York Yankees",
+            "bookmakers": [
+                {
+                    "key": "fanduel",
+                    "title": "FanDuel",
+                    "markets": [{
+                        "key": "pitcher_strikeouts",
+                        "outcomes": [
+                            {"name": "Over", "description": "Gerrit Cole", "price": 112, "point": 7.5},
+                            {"name": "Under", "description": "Gerrit Cole", "price": -148, "point": 7.5},
+                        ],
+                    }],
+                },
+                {
+                    "key": "draftkings",
+                    "title": "DraftKings",
+                    "markets": [{
+                        "key": "pitcher_strikeouts",
+                        "outcomes": [
+                            {"name": "Over", "description": "Gerrit Cole", "price": 115, "point": 7.5},
+                            {"name": "Under", "description": "Gerrit Cole", "price": -145, "point": 7.5},
+                        ],
+                    }],
+                },
+            ],
+        }
+
+    def test_parse_the_odds_event_props_returns_pipeline_shape(self):
+        props = _parse_the_odds_event_props(self._the_odds_event())
+
+        assert len(props) == 1
+        prop = props[0]
+        assert prop["pitcher"] == "Gerrit Cole"
+        assert prop["k_line"] == 7.5
+        assert prop["ref_book"] == "FanDuel"
+        assert prop["best_over_odds"] == 112
+        assert prop["best_under_odds"] == -148
+        assert prop["opening_over_odds"] == 112
+        assert prop["opening_under_odds"] == -148
+        assert prop["opening_odds_source"] == "first_seen"
+        assert prop["odds_source"] == "the_odds"
+        assert prop["book_odds"] == {
+            "FanDuel": {"over": 112, "under": -148},
+            "DraftKings": {"over": 115, "under": -145},
+        }
+
+    def test_merge_the_odds_adds_fd_dk_and_promotes_fanduel_ref(self):
+        rundown = parse_k_props({"events": [_make_event("Gerrit Cole", 7.5, -112, -108)]})
+        fallback = _parse_the_odds_event_props(self._the_odds_event())
+
+        merged = _merge_the_odds_fallback_props(rundown, fallback)
+
+        assert len(merged) == 1
+        prop = merged[0]
+        assert prop["ref_book"] == "FanDuel"
+        assert prop["best_over_book"] == "FanDuel"
+        assert prop["best_over_odds"] == 112
+        assert prop["best_under_odds"] == -148
+        assert prop["book_odds"]["BetMGM"] == {"over": -112, "under": -108}
+        assert prop["book_odds"]["FanDuel"] == {"over": 112, "under": -148}
+        assert prop["book_odds"]["DraftKings"] == {"over": 115, "under": -145}
+        assert prop["odds_source"] == "therundown+the_odds"
+
+    def test_merge_the_odds_skips_same_pitcher_when_line_differs(self):
+        rundown = parse_k_props({"events": [_make_event("Gerrit Cole", 6.5, -112, -108)]})
+        fallback = _parse_the_odds_event_props(self._the_odds_event())
+
+        merged = _merge_the_odds_fallback_props(rundown, fallback)
+
+        assert len(merged) == 1
+        assert merged[0]["pitcher"] == "Gerrit Cole"
+        assert merged[0]["k_line"] == 6.5
+        assert merged[0]["ref_book"] == "BetMGM"
+
+    def test_fetch_odds_calls_the_odds_when_fd_dk_missing(self):
+        rundown_payload = {"events": [_make_event("Gerrit Cole", 7.5, -112, -108)]}
+        fallback = _parse_the_odds_event_props(self._the_odds_event())
+
+        with patch.dict("os.environ", {"ODDS_API_KEY": "odds-key"}):
+            with patch("fetch_odds.throttled_get", return_value=rundown_payload):
+                with patch("fetch_odds._fetch_the_odds_fallback_props", return_value=fallback) as mock_fallback:
+                    result = fetch_odds("2026-05-01")
+
+        mock_fallback.assert_called_once_with("2026-05-01")
+        assert result[0]["ref_book"] == "FanDuel"
+        assert result[0]["book_odds"]["DraftKings"]["over"] == 115
+
+    def test_fetch_odds_does_not_call_the_odds_without_key(self):
+        rundown_payload = {"events": [_make_event("Gerrit Cole", 7.5, -112, -108)]}
+
+        with patch.dict("os.environ", {}, clear=True):
+            with patch("fetch_odds.throttled_get", return_value=rundown_payload):
+                with patch("fetch_odds._fetch_the_odds_fallback_props") as mock_fallback:
+                    result = fetch_odds("2026-05-01")
+
+        mock_fallback.assert_not_called()
+        assert result[0]["ref_book"] == "BetMGM"
+
+    def test_fetch_odds_can_use_the_odds_when_rundown_has_no_props(self):
+        fallback = _parse_the_odds_event_props(self._the_odds_event())
+
+        with patch.dict("os.environ", {"ODDS_API_KEY": "odds-key"}):
+            with patch("fetch_odds.throttled_get", return_value={"events": []}):
+                with patch("fetch_odds._fetch_the_odds_fallback_props", return_value=fallback):
+                    result = fetch_odds("2026-05-01")
+
+        assert [prop["pitcher"] for prop in result] == ["Gerrit Cole"]
+        assert result[0]["odds_source"] == "the_odds"

@@ -10,6 +10,9 @@ import time
 import logging
 import requests
 from datetime import datetime, timedelta
+from zoneinfo import ZoneInfo
+
+from name_utils import normalize
 
 log = logging.getLogger(__name__)
 
@@ -18,6 +21,16 @@ SPORT_ID   = 3   # MLB
 MARKET_ID  = 19  # pitcher_strikeouts
 THROTTLE_S = 0.55
 _last_call_time: float = 0.0
+
+THE_ODDS_BASE_URL = "https://api.the-odds-api.com/v4"
+THE_ODDS_SPORT_KEY = "baseball_mlb"
+THE_ODDS_MARKET_KEY = "pitcher_strikeouts"
+THE_ODDS_FALLBACK_BOOKMAKERS = ("fanduel", "draftkings")
+THE_ODDS_BOOK_KEY_MAP = {
+    "fanduel": "FanDuel",
+    "draftkings": "DraftKings",
+}
+PHOENIX_TZ = ZoneInfo("America/Phoenix")
 
 # TheRundown v2 affiliate IDs. Option B (Task A4 follow-up): only target books
 # count; untracked books trigger a skip rather than a fallback, so picks only
@@ -46,6 +59,14 @@ TRACKED_BOOKS = {
 }
 PITCHER_POSITION_MARKERS = {"1", "p", "sp", "rp", "pitcher", "starting pitcher", "relief pitcher"}
 MIN_REASONABLE_PITCHER_K_LINE = 1.5
+
+
+def _select_ref_book_name(book_odds: dict) -> str | None:
+    for book_id in REF_BOOK_PRIORITY:
+        book_name = BOOK_ID_MAP[book_id]
+        if book_name in book_odds:
+            return book_name
+    return None
 
 
 def _normalize_position_marker(value) -> str:
@@ -110,6 +131,10 @@ def _headers() -> dict:
     return {"X-TheRundown-Key": key, "Accept": "application/json"}
 
 
+def _the_odds_key() -> str:
+    return os.environ.get("ODDS_API_KEY", "").strip()
+
+
 def throttled_get(url: str, params: dict = None) -> dict:
     """GET with rate-limit throttle. Raises on non-200."""
     global _last_call_time
@@ -120,6 +145,27 @@ def throttled_get(url: str, params: dict = None) -> dict:
     resp = requests.get(url, headers=_headers(), params=params, timeout=15)
     resp.raise_for_status()
     return resp.json()
+
+
+def the_odds_get(path: str, params: dict | None = None) -> tuple[dict | list, dict]:
+    key = _the_odds_key()
+    if not key:
+        raise EnvironmentError("ODDS_API_KEY not set")
+
+    request_params = dict(params or {})
+    request_params["apiKey"] = key
+    resp = requests.get(
+        f"{THE_ODDS_BASE_URL}{path}",
+        params=request_params,
+        timeout=15,
+    )
+    resp.raise_for_status()
+    quota = {
+        "remaining": resp.headers.get("x-requests-remaining"),
+        "used": resp.headers.get("x-requests-used"),
+        "last": resp.headers.get("x-requests-last"),
+    }
+    return resp.json(), quota
 
 
 def american_odds_from_line(value) -> int | None:
@@ -297,9 +343,220 @@ def _parse_event_k_props(event: dict) -> list:
                 # for movement_conf — see calc_movement_confidence.
                 "opening_odds_source": "first_seen",
                 "book_odds":          book_odds or None,
+                "odds_source":        "therundown",
             })
 
     return results
+
+
+def _the_odds_event_date_phoenix(event: dict) -> str | None:
+    commence_time = event.get("commence_time")
+    if not commence_time:
+        return None
+    try:
+        dt = datetime.fromisoformat(str(commence_time).replace("Z", "+00:00"))
+    except ValueError:
+        return None
+    return dt.astimezone(PHOENIX_TZ).strftime("%Y-%m-%d")
+
+
+def _parse_the_odds_event_props(event: dict) -> list:
+    grouped: dict = {}
+    for bookmaker in event.get("bookmakers", []):
+        book_key = bookmaker.get("key")
+        book_name = THE_ODDS_BOOK_KEY_MAP.get(book_key)
+        if not book_name:
+            continue
+        for market in bookmaker.get("markets", []):
+            if market.get("key") != THE_ODDS_MARKET_KEY:
+                continue
+            for outcome in market.get("outcomes", []):
+                direction = str(outcome.get("name", "")).strip().lower()
+                if direction not in ("over", "under"):
+                    continue
+                pitcher_name = outcome.get("description") or outcome.get("player")
+                if not pitcher_name:
+                    continue
+                try:
+                    line_val = float(outcome.get("point"))
+                except (TypeError, ValueError):
+                    continue
+                price = american_odds_from_line(outcome.get("price"))
+                if price is None:
+                    continue
+                pitcher_key = normalize(pitcher_name)
+                grouped.setdefault(pitcher_key, {"pitcher": pitcher_name, "lines": {}})
+                grouped[pitcher_key]["lines"].setdefault(line_val, {})
+                grouped[pitcher_key]["lines"][line_val].setdefault(book_name, {})
+                grouped[pitcher_key]["lines"][line_val][book_name][direction] = price
+
+    props = []
+    for pitcher_data in grouped.values():
+        complete_lines = {}
+        for line_val, by_book in pitcher_data["lines"].items():
+            complete_books = {
+                book_name: odds
+                for book_name, odds in by_book.items()
+                if "over" in odds and "under" in odds
+            }
+            if complete_books:
+                complete_lines[line_val] = complete_books
+        if not complete_lines:
+            continue
+
+        def line_score(item):
+            _line_val, books = item
+            return (
+                1 if "FanDuel" in books else 0,
+                1 if "DraftKings" in books else 0,
+                len(books),
+            )
+
+        main_val, book_odds = max(complete_lines.items(), key=line_score)
+        if main_val < MIN_REASONABLE_PITCHER_K_LINE:
+            continue
+        ref_book = _select_ref_book_name(book_odds)
+        if ref_book is None:
+            continue
+        ref_odds = book_odds[ref_book]
+        props.append({
+            "pitcher": pitcher_data["pitcher"],
+            "team": "",
+            "opp_team": "",
+            "game_time": event.get("commence_time", ""),
+            "k_line": main_val,
+            "opening_line": main_val,
+            "ref_book": ref_book,
+            "best_over_book": ref_book,
+            "best_under_book": ref_book,
+            "best_over_odds": ref_odds["over"],
+            "best_under_odds": ref_odds["under"],
+            "opening_over_odds": ref_odds["over"],
+            "opening_under_odds": ref_odds["under"],
+            "opening_odds_source": "first_seen",
+            "book_odds": book_odds,
+            "odds_source": "the_odds",
+            "the_odds_event_id": event.get("id"),
+        })
+    return props
+
+
+def _fetch_the_odds_fallback_props(date_str: str) -> list:
+    log.info(
+        "The Odds fallback: fetching %s %s for %s books=%s",
+        THE_ODDS_SPORT_KEY,
+        THE_ODDS_MARKET_KEY,
+        date_str,
+        ",".join(THE_ODDS_FALLBACK_BOOKMAKERS),
+    )
+    events, events_quota = the_odds_get(f"/sports/{THE_ODDS_SPORT_KEY}/events")
+    log.info(
+        "The Odds fallback: events returned=%d quota_last=%s remaining=%s",
+        len(events) if isinstance(events, list) else 0,
+        events_quota.get("last"),
+        events_quota.get("remaining"),
+    )
+    if not isinstance(events, list):
+        return []
+
+    target_events = [
+        event for event in events
+        if _the_odds_event_date_phoenix(event) == date_str
+    ]
+    props = []
+    credits_used = 0
+    for event in target_events:
+        event_id = event.get("id")
+        if not event_id:
+            continue
+        data, quota = the_odds_get(
+            f"/sports/{THE_ODDS_SPORT_KEY}/events/{event_id}/odds",
+            params={
+                "bookmakers": ",".join(THE_ODDS_FALLBACK_BOOKMAKERS),
+                "markets": THE_ODDS_MARKET_KEY,
+                "oddsFormat": "american",
+            },
+        )
+        try:
+            credits_used += int(quota.get("last") or 0)
+        except ValueError:
+            pass
+        if isinstance(data, dict):
+            props.extend(_parse_the_odds_event_props(data))
+
+    log.info(
+        "The Odds fallback: fetched %d events, parsed %d pitcher props, credits_used=%d",
+        len(target_events),
+        len(props),
+        credits_used,
+    )
+    return props
+
+
+def _refresh_ref_from_book_odds(prop: dict, force: bool = False) -> None:
+    book_odds = prop.get("book_odds") or {}
+    ref_book = _select_ref_book_name(book_odds)
+    if not ref_book:
+        return
+    if not force and prop.get("ref_book") == ref_book:
+        return
+    ref_odds = book_odds[ref_book]
+    prop["ref_book"] = ref_book
+    prop["best_over_book"] = ref_book
+    prop["best_under_book"] = ref_book
+    prop["best_over_odds"] = ref_odds["over"]
+    prop["best_under_odds"] = ref_odds["under"]
+    prop["opening_over_odds"] = ref_odds["over"]
+    prop["opening_under_odds"] = ref_odds["under"]
+    prop["opening_odds_source"] = "first_seen"
+
+
+def _merge_the_odds_fallback_props(rundown_props: list, fallback_props: list) -> list:
+    merged = [dict(prop) for prop in rundown_props]
+    by_key = {
+        (normalize(prop.get("pitcher", "")), prop.get("k_line")): prop
+        for prop in merged
+    }
+    existing_pitchers = {
+        normalize(prop.get("pitcher", ""))
+        for prop in merged
+    }
+
+    for fallback in fallback_props:
+        key = (normalize(fallback.get("pitcher", "")), fallback.get("k_line"))
+        existing = by_key.get(key)
+        if existing is None:
+            if key[0] in existing_pitchers:
+                log.info(
+                    "The Odds fallback skipped %s: line %.1f differs from TheRundown line",
+                    fallback.get("pitcher", ""),
+                    fallback.get("k_line"),
+                )
+                continue
+            copied = dict(fallback)
+            merged.append(copied)
+            by_key[key] = copied
+            existing_pitchers.add(key[0])
+            continue
+
+        existing_book_odds = dict(existing.get("book_odds") or {})
+        for book_name, odds in (fallback.get("book_odds") or {}).items():
+            existing_book_odds.setdefault(book_name, odds)
+        existing["book_odds"] = existing_book_odds or None
+        existing["odds_source"] = "therundown+the_odds"
+        existing["the_odds_event_id"] = fallback.get("the_odds_event_id")
+        _refresh_ref_from_book_odds(existing)
+
+    return merged
+
+
+def _missing_fd_dk_coverage(props: list) -> bool:
+    books_seen = {
+        book_name
+        for prop in props
+        for book_name in (prop.get("book_odds") or {})
+    }
+    return any(book_name not in books_seen for book_name in THE_ODDS_BOOK_KEY_MAP.values())
 
 
 def parse_k_props(data: dict) -> list:
@@ -342,6 +599,18 @@ def fetch_odds(date_str: str) -> list:
         except Exception as e:
             failures.append(e)
             log.warning("fetch_odds failed for %s: %s", fetch_date, e)
+
+    fallback_props: list = []
+    if _the_odds_key() and (not all_props or _missing_fd_dk_coverage(all_props)):
+        try:
+            fallback_props = _fetch_the_odds_fallback_props(date_str)
+        except Exception as e:
+            log.warning("The Odds fallback failed for %s: %s", date_str, e)
+    elif not _the_odds_key() and (not all_props or _missing_fd_dk_coverage(all_props)):
+        log.info("The Odds fallback skipped: ODDS_API_KEY not set")
+
+    if fallback_props:
+        all_props = _merge_the_odds_fallback_props(all_props, fallback_props)
 
     if not all_props and failures:
         raise failures[0]
