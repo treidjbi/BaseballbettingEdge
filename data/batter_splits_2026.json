@@ -1799,19 +1799,87 @@
         "so": 5,
         "k_rate": 0.25
       }
+    },
+    "mlbam:665833": {
+      "name": "Oneil Cruz",
+      "bats": "R",
+      "mlbam_id": 665833,
+      "bbref_id": "cruzon01",
+      "season": 2026,
+      "vs_R": {
+        "pa": 97,
+        "so": 32,
+        "k_rate": 0.3299
+      },
+      "vs_L": {
+        "pa": 40,
+        "so": 16,
+        "k_rate": 0.4
+      }
+    },
+    "mlbam:664040": {
+      "name": "Brandon Lowe",
+      "bats": "R",
+      "mlbam_id": 664040,
+      "bbref_id": "lowebr01",
+      "season": 2026,
+      "vs_R": {
+        "pa": 87,
+        "so": 16,
+        "k_rate": 0.1839
+      },
+      "vs_L": {
+        "pa": 34,
+        "so": 13,
+        "k_rate": 0.3824
+      }
+    },
+    "mlbam:668804": {
+      "name": "Bryan Reynolds",
+      "bats": "R",
+      "mlbam_id": 668804,
+      "bbref_id": "reynobr01",
+      "season": 2026,
+      "vs_R": {
+        "pa": 97,
+        "so": 26,
+        "k_rate": 0.268
+      },
+      "vs_L": {
+        "pa": 45,
+        "so": 12,
+        "k_rate": 0.2667
+      }
+    },
+    "mlbam:656811": {
+      "name": "Ryan O'Hearn",
+      "bats": "R",
+      "mlbam_id": 656811,
+      "bbref_id": "ohearry01",
+      "season": 2026,
+      "vs_R": {
+        "pa": 91,
+        "so": 17,
+        "k_rate": 0.1868
+      },
+      "vs_L": {
+        "pa": 36,
+        "so": 6,
+        "k_rate": 0.1667
+      }
     }
   },
-  "updated_at": "2026-05-01T19:50:27Z",
+  "updated_at": "2026-05-01T20:10:06Z",
   "last_run": {
     "projection_status": "collection_only",
-    "requested_batters": 135,
-    "already_cached": 57,
+    "requested_batters": 162,
+    "already_cached": 61,
     "attempted": 4,
     "collected": 4,
     "failed": 0,
-    "queued_not_attempted": 74,
-    "cache_size": 106,
+    "queued_not_attempted": 97,
+    "cache_size": 110,
     "errors": [],
-    "updated_at": "2026-05-01T19:50:27Z"
+    "updated_at": "2026-05-01T20:10:06Z"
   }
 }
