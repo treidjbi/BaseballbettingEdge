@@ -163,6 +163,12 @@ function verdictStake(v) {
 function trackedPicksForPitcher(p) {
   return Array.isArray(p.tracked_picks) ? p.tracked_picks : [];
 }
+function trackedPillsForCard(p, side) {
+  const picks = trackedPicksForPitcher(p);
+  if (!picks.length) return [];
+  const matchingSide = picks.filter((pick) => pick.direction === side.direction);
+  return matchingSide.length > 0 ? matchingSide : picks;
+}
 function primaryTrackedPick(p) {
   const picks = trackedPicksForPitcher(p);
   if (!picks.length) return null;
@@ -411,7 +417,7 @@ function qualityReason(p, side) {
 
 function PickCard({ p, onOpen }) {
   const side = displaySide(p);
-  const tracked = trackedPicksForPitcher(p);
+  const tracked = trackedPillsForCard(p, side);
   const cls = verdictClass(side.verdict, side.direction);
   const started = p.game_state !== "pregame";
   const directionMod =
