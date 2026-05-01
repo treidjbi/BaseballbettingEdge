@@ -1935,19 +1935,87 @@
         "so": 3,
         "k_rate": 0.2143
       }
+    },
+    "mlbam:804606": {
+      "name": "Konnor Griffin",
+      "bats": "R",
+      "mlbam_id": 804606,
+      "bbref_id": "griffko01",
+      "season": 2026,
+      "vs_R": {
+        "pa": 78,
+        "so": 21,
+        "k_rate": 0.2692
+      },
+      "vs_L": {
+        "pa": 22,
+        "so": 9,
+        "k_rate": 0.4091
+      }
+    },
+    "mlbam:680779": {
+      "name": "Henry Davis",
+      "bats": "R",
+      "mlbam_id": 680779,
+      "bbref_id": "davishe01",
+      "season": 2026,
+      "vs_R": {
+        "pa": 63,
+        "so": 13,
+        "k_rate": 0.2063
+      },
+      "vs_L": {
+        "pa": 11,
+        "so": 2,
+        "k_rate": 0.1818
+      }
+    },
+    "mlbam:670770": {
+      "name": "TJ Friedl",
+      "bats": "R",
+      "mlbam_id": 670770,
+      "bbref_id": "friedtj01",
+      "season": 2026,
+      "vs_R": {
+        "pa": 102,
+        "so": 25,
+        "k_rate": 0.2451
+      },
+      "vs_L": {
+        "pa": 20,
+        "so": 3,
+        "k_rate": 0.15
+      }
+    },
+    "mlbam:680574": {
+      "name": "Matt McLain",
+      "bats": "R",
+      "mlbam_id": 680574,
+      "bbref_id": "mclaima01",
+      "season": 2026,
+      "vs_R": {
+        "pa": 103,
+        "so": 29,
+        "k_rate": 0.2816
+      },
+      "vs_L": {
+        "pa": 31,
+        "so": 5,
+        "k_rate": 0.1613
+      }
     }
   },
-  "updated_at": "2026-05-01T20:30:51Z",
+  "updated_at": "2026-05-01T21:06:33Z",
   "last_run": {
     "projection_status": "collection_only",
-    "requested_batters": 171,
-    "already_cached": 64,
+    "requested_batters": 207,
+    "already_cached": 76,
     "attempted": 4,
     "collected": 4,
     "failed": 0,
-    "queued_not_attempted": 103,
-    "cache_size": 114,
+    "queued_not_attempted": 127,
+    "cache_size": 118,
     "errors": [],
-    "updated_at": "2026-05-01T20:30:51Z"
+    "updated_at": "2026-05-01T21:06:33Z"
   }
 }
