@@ -3465,19 +3465,87 @@
         "so": 0,
         "k_rate": 0.0
       }
+    },
+    "mlbam:681297": {
+      "name": "Colton Cowser",
+      "bats": "R",
+      "mlbam_id": 681297,
+      "bbref_id": "cowseco01",
+      "season": 2026,
+      "vs_R": {
+        "pa": 65,
+        "so": 20,
+        "k_rate": 0.3077
+      },
+      "vs_L": {
+        "pa": 4,
+        "so": 2,
+        "k_rate": 0.5
+      }
+    },
+    "mlbam:671732": {
+      "name": "Lawrence Butler",
+      "bats": "R",
+      "mlbam_id": 671732,
+      "bbref_id": "butlela01",
+      "season": 2026,
+      "vs_R": {
+        "pa": 80,
+        "so": 20,
+        "k_rate": 0.25
+      },
+      "vs_L": {
+        "pa": 26,
+        "so": 8,
+        "k_rate": 0.3077
+      }
+    },
+    "mlbam:687231": {
+      "name": "Darell Hernaiz",
+      "bats": "R",
+      "mlbam_id": 687231,
+      "bbref_id": "hernada04",
+      "season": 2026,
+      "vs_R": {
+        "pa": 22,
+        "so": 4,
+        "k_rate": 0.1818
+      },
+      "vs_L": {
+        "pa": 27,
+        "so": 3,
+        "k_rate": 0.1111
+      }
+    },
+    "mlbam:656555": {
+      "name": "Rhys Hoskins",
+      "bats": "R",
+      "mlbam_id": 656555,
+      "bbref_id": "hoskirh01",
+      "season": 2026,
+      "vs_R": {
+        "pa": 61,
+        "so": 19,
+        "k_rate": 0.3115
+      },
+      "vs_L": {
+        "pa": 29,
+        "so": 7,
+        "k_rate": 0.2414
+      }
     }
   },
-  "updated_at": "2026-05-02T20:08:30Z",
+  "updated_at": "2026-05-02T20:58:44Z",
   "last_run": {
     "projection_status": "collection_only",
-    "requested_batters": 207,
-    "already_cached": 137,
+    "requested_batters": 234,
+    "already_cached": 146,
     "attempted": 4,
     "collected": 4,
     "failed": 0,
-    "queued_not_attempted": 66,
-    "cache_size": 204,
+    "queued_not_attempted": 84,
+    "cache_size": 208,
     "errors": [],
-    "updated_at": "2026-05-02T20:08:30Z"
+    "updated_at": "2026-05-02T20:58:44Z"
   }
 }
