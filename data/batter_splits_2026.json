@@ -2547,19 +2547,87 @@
         "so": 10,
         "k_rate": 0.3226
       }
+    },
+    "mlbam:663968": {
+      "name": "Jake Mangum",
+      "bats": "R",
+      "mlbam_id": 663968,
+      "bbref_id": "manguja01",
+      "season": 2026,
+      "vs_R": {
+        "pa": 48,
+        "so": 12,
+        "k_rate": 0.25
+      },
+      "vs_L": {
+        "pa": 29,
+        "so": 5,
+        "k_rate": 0.1724
+      }
+    },
+    "mlbam:695257": {
+      "name": "Billy Cook",
+      "bats": "R",
+      "mlbam_id": 695257,
+      "bbref_id": "cookbi01",
+      "season": 2026,
+      "vs_R": {
+        "pa": 2,
+        "so": 1,
+        "k_rate": 0.5
+      },
+      "vs_L": {
+        "pa": 9,
+        "so": 3,
+        "k_rate": 0.3333
+      }
+    },
+    "mlbam:677956": {
+      "name": "Rece Hinds",
+      "bats": "R",
+      "mlbam_id": 677956,
+      "bbref_id": "hindsre01",
+      "season": 2026,
+      "vs_R": {
+        "pa": 25,
+        "so": 9,
+        "k_rate": 0.36
+      },
+      "vs_L": {
+        "pa": 9,
+        "so": 7,
+        "k_rate": 0.7778
+      }
+    },
+    "mlbam:687401": {
+      "name": "Joey Ortiz",
+      "bats": "R",
+      "mlbam_id": 687401,
+      "bbref_id": "ortizjo06",
+      "season": 2026,
+      "vs_R": {
+        "pa": 48,
+        "so": 11,
+        "k_rate": 0.2292
+      },
+      "vs_L": {
+        "pa": 28,
+        "so": 5,
+        "k_rate": 0.1786
+      }
     }
   },
-  "updated_at": "2026-05-02T01:14:47Z",
+  "updated_at": "2026-05-02T03:47:53Z",
   "last_run": {
     "projection_status": "collection_only",
     "requested_batters": 270,
-    "already_cached": 119,
+    "already_cached": 117,
     "attempted": 4,
     "collected": 4,
     "failed": 0,
-    "queued_not_attempted": 147,
-    "cache_size": 150,
+    "queued_not_attempted": 149,
+    "cache_size": 154,
     "errors": [],
-    "updated_at": "2026-05-02T01:14:47Z"
+    "updated_at": "2026-05-02T03:47:53Z"
   }
 }
