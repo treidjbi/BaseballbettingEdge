@@ -2785,19 +2785,87 @@
         "so": 4,
         "k_rate": 0.1818
       }
+    },
+    "mlbam:691176": {
+      "name": "Jasson Dom\u00ednguez",
+      "bats": "R",
+      "mlbam_id": 691176,
+      "bbref_id": "dominja01",
+      "season": 2026,
+      "vs_R": {
+        "pa": 9,
+        "so": 2,
+        "k_rate": 0.2222
+      },
+      "vs_L": {
+        "pa": 1,
+        "so": 0,
+        "k_rate": 0.0
+      }
+    },
+    "mlbam:641555": {
+      "name": "J.C. Escarra",
+      "bats": "R",
+      "mlbam_id": 641555,
+      "bbref_id": "escarjc01",
+      "season": 2026,
+      "vs_R": {
+        "pa": 26,
+        "so": 9,
+        "k_rate": 0.3462
+      },
+      "vs_L": {
+        "pa": 6,
+        "so": 1,
+        "k_rate": 0.1667
+      }
+    },
+    "mlbam:621439": {
+      "name": "Byron Buxton",
+      "bats": "R",
+      "mlbam_id": 621439,
+      "bbref_id": "buxtoby01",
+      "season": 2026,
+      "vs_R": {
+        "pa": 88,
+        "so": 23,
+        "k_rate": 0.2614
+      },
+      "vs_L": {
+        "pa": 51,
+        "so": 13,
+        "k_rate": 0.2549
+      }
+    },
+    "mlbam:663616": {
+      "name": "Trevor Larnach",
+      "bats": "R",
+      "mlbam_id": 663616,
+      "bbref_id": "larnatr01",
+      "season": 2026,
+      "vs_R": {
+        "pa": 70,
+        "so": 10,
+        "k_rate": 0.1429
+      },
+      "vs_L": {
+        "pa": 15,
+        "so": 5,
+        "k_rate": 0.3333
+      }
     }
   },
-  "updated_at": "2026-05-02T14:15:56Z",
+  "updated_at": "2026-05-02T15:59:05Z",
   "last_run": {
     "projection_status": "collection_only",
-    "requested_batters": 9,
-    "already_cached": 7,
-    "attempted": 2,
-    "collected": 2,
+    "requested_batters": 54,
+    "already_cached": 28,
+    "attempted": 4,
+    "collected": 4,
     "failed": 0,
-    "queued_not_attempted": 0,
-    "cache_size": 164,
+    "queued_not_attempted": 22,
+    "cache_size": 168,
     "errors": [],
-    "updated_at": "2026-05-02T14:15:56Z"
+    "updated_at": "2026-05-02T15:59:05Z"
   }
 }
