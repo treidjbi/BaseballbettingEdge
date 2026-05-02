@@ -3669,19 +3669,87 @@
         "so": 0,
         "k_rate": 0.0
       }
+    },
+    "mlbam:690984": {
+      "name": "Petey Halpin",
+      "bats": "R",
+      "mlbam_id": 690984,
+      "bbref_id": "halpipe01",
+      "season": 2026,
+      "vs_R": {
+        "pa": 7,
+        "so": 2,
+        "k_rate": 0.2857
+      },
+      "vs_L": {
+        "pa": 1,
+        "so": 0,
+        "k_rate": 0.0
+      }
+    },
+    "mlbam:678882": {
+      "name": "Ceddanne Rafaela",
+      "bats": "R",
+      "mlbam_id": 678882,
+      "bbref_id": "rafaece01",
+      "season": 2026,
+      "vs_R": {
+        "pa": 82,
+        "so": 15,
+        "k_rate": 0.1829
+      },
+      "vs_L": {
+        "pa": 26,
+        "so": 9,
+        "k_rate": 0.3462
+      }
+    },
+    "mlbam:657136": {
+      "name": "Connor Wong",
+      "bats": "R",
+      "mlbam_id": 657136,
+      "bbref_id": "wongco01",
+      "season": 2026,
+      "vs_R": {
+        "pa": 31,
+        "so": 4,
+        "k_rate": 0.129
+      },
+      "vs_L": {
+        "pa": 12,
+        "so": 2,
+        "k_rate": 0.1667
+      }
+    },
+    "mlbam:702332": {
+      "name": "Caleb Durbin",
+      "bats": "R",
+      "mlbam_id": 702332,
+      "bbref_id": "durbica01",
+      "season": 2026,
+      "vs_R": {
+        "pa": 82,
+        "so": 11,
+        "k_rate": 0.1341
+      },
+      "vs_L": {
+        "pa": 32,
+        "so": 5,
+        "k_rate": 0.1562
+      }
     }
   },
-  "updated_at": "2026-05-02T21:57:26Z",
+  "updated_at": "2026-05-02T22:09:14Z",
   "last_run": {
     "projection_status": "collection_only",
     "requested_batters": 252,
-    "already_cached": 161,
+    "already_cached": 164,
     "attempted": 4,
     "collected": 4,
     "failed": 0,
-    "queued_not_attempted": 87,
-    "cache_size": 216,
+    "queued_not_attempted": 84,
+    "cache_size": 220,
     "errors": [],
-    "updated_at": "2026-05-02T21:57:26Z"
+    "updated_at": "2026-05-02T22:09:14Z"
   }
 }
