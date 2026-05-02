@@ -2683,19 +2683,87 @@
         "so": 6,
         "k_rate": 0.4
       }
+    },
+    "mlbam:665862": {
+      "name": "Jazz Chisholm Jr.",
+      "bats": "R",
+      "mlbam_id": 665862,
+      "bbref_id": "chishja01",
+      "season": 2026,
+      "vs_R": {
+        "pa": 85,
+        "so": 25,
+        "k_rate": 0.2941
+      },
+      "vs_L": {
+        "pa": 36,
+        "so": 10,
+        "k_rate": 0.2778
+      }
+    },
+    "mlbam:676609": {
+      "name": "Jos\u00e9 Caballero",
+      "bats": "R",
+      "mlbam_id": 676609,
+      "bbref_id": "cabaljo01",
+      "season": 2026,
+      "vs_R": {
+        "pa": 75,
+        "so": 14,
+        "k_rate": 0.1867
+      },
+      "vs_L": {
+        "pa": 37,
+        "so": 11,
+        "k_rate": 0.2973
+      }
+    },
+    "mlbam:669224": {
+      "name": "Austin Wells",
+      "bats": "R",
+      "mlbam_id": 669224,
+      "bbref_id": "wellsau01",
+      "season": 2026,
+      "vs_R": {
+        "pa": 55,
+        "so": 9,
+        "k_rate": 0.1636
+      },
+      "vs_L": {
+        "pa": 32,
+        "so": 6,
+        "k_rate": 0.1875
+      }
+    },
+    "mlbam:663757": {
+      "name": "Trent Grisham",
+      "bats": "R",
+      "mlbam_id": 663757,
+      "bbref_id": "grishtr01",
+      "season": 2026,
+      "vs_R": {
+        "pa": 86,
+        "so": 14,
+        "k_rate": 0.1628
+      },
+      "vs_L": {
+        "pa": 28,
+        "so": 7,
+        "k_rate": 0.25
+      }
     }
   },
-  "updated_at": "2026-05-02T04:02:14Z",
+  "updated_at": "2026-05-02T04:27:46Z",
   "last_run": {
     "projection_status": "collection_only",
     "requested_batters": 270,
-    "already_cached": 121,
+    "already_cached": 124,
     "attempted": 4,
     "collected": 4,
     "failed": 0,
-    "queued_not_attempted": 145,
-    "cache_size": 158,
+    "queued_not_attempted": 142,
+    "cache_size": 162,
     "errors": [],
-    "updated_at": "2026-05-02T04:02:14Z"
+    "updated_at": "2026-05-02T04:27:46Z"
   }
 }
