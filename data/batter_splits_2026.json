@@ -3125,19 +3125,87 @@
         "so": 8,
         "k_rate": 0.6154
       }
+    },
+    "mlbam:543807": {
+      "name": "George Springer",
+      "bats": "R",
+      "mlbam_id": 543807,
+      "bbref_id": "springe01",
+      "season": 2026,
+      "vs_R": {
+        "pa": 54,
+        "so": 12,
+        "k_rate": 0.2222
+      },
+      "vs_L": {
+        "pa": 19,
+        "so": 3,
+        "k_rate": 0.1579
+      }
+    },
+    "mlbam:676391": {
+      "name": "Ernie Clement",
+      "bats": "R",
+      "mlbam_id": 676391,
+      "bbref_id": "clemeer01",
+      "season": 2026,
+      "vs_R": {
+        "pa": 98,
+        "so": 8,
+        "k_rate": 0.0816
+      },
+      "vs_L": {
+        "pa": 32,
+        "so": 1,
+        "k_rate": 0.0312
+      }
+    },
+    "mlbam:665489": {
+      "name": "Vladimir Guerrero Jr.",
+      "bats": "R",
+      "mlbam_id": 665489,
+      "bbref_id": "guerrvl02",
+      "season": 2026,
+      "vs_R": {
+        "pa": 106,
+        "so": 13,
+        "k_rate": 0.1226
+      },
+      "vs_L": {
+        "pa": 29,
+        "so": 2,
+        "k_rate": 0.069
+      }
+    },
+    "mlbam:672960": {
+      "name": "Kazuma Okamoto",
+      "bats": "R",
+      "mlbam_id": 672960,
+      "bbref_id": "okamoka01",
+      "season": 2026,
+      "vs_R": {
+        "pa": 99,
+        "so": 33,
+        "k_rate": 0.3333
+      },
+      "vs_L": {
+        "pa": 29,
+        "so": 5,
+        "k_rate": 0.1724
+      }
     }
   },
-  "updated_at": "2026-05-02T17:52:54Z",
+  "updated_at": "2026-05-02T18:32:22Z",
   "last_run": {
     "projection_status": "collection_only",
-    "requested_batters": 135,
-    "already_cached": 79,
+    "requested_batters": 153,
+    "already_cached": 100,
     "attempted": 4,
     "collected": 4,
     "failed": 0,
-    "queued_not_attempted": 52,
-    "cache_size": 184,
+    "queued_not_attempted": 49,
+    "cache_size": 188,
     "errors": [],
-    "updated_at": "2026-05-02T17:52:54Z"
+    "updated_at": "2026-05-02T18:32:22Z"
   }
 }
