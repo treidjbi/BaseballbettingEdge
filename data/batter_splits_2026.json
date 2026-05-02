@@ -3329,19 +3329,87 @@
         "so": 3,
         "k_rate": 0.1429
       }
+    },
+    "mlbam:687637": {
+      "name": "Dylan Beavers",
+      "bats": "R",
+      "mlbam_id": 687637,
+      "bbref_id": "beavedy01",
+      "season": 2026,
+      "vs_R": {
+        "pa": 79,
+        "so": 21,
+        "k_rate": 0.2658
+      },
+      "vs_L": {
+        "pa": 14,
+        "so": 1,
+        "k_rate": 0.0714
+      }
+    },
+    "mlbam:701762": {
+      "name": "Nick Kurtz",
+      "bats": "R",
+      "mlbam_id": 701762,
+      "bbref_id": "kurtzni01",
+      "season": 2026,
+      "vs_R": {
+        "pa": 94,
+        "so": 29,
+        "k_rate": 0.3085
+      },
+      "vs_L": {
+        "pa": 50,
+        "so": 17,
+        "k_rate": 0.34
+      }
+    },
+    "mlbam:669127": {
+      "name": "Shea Langeliers",
+      "bats": "R",
+      "mlbam_id": 669127,
+      "bbref_id": "langesh01",
+      "season": 2026,
+      "vs_R": {
+        "pa": 101,
+        "so": 22,
+        "k_rate": 0.2178
+      },
+      "vs_L": {
+        "pa": 40,
+        "so": 10,
+        "k_rate": 0.25
+      }
+    },
+    "mlbam:691016": {
+      "name": "Tyler Soderstrom",
+      "bats": "R",
+      "mlbam_id": 691016,
+      "bbref_id": "soderty01",
+      "season": 2026,
+      "vs_R": {
+        "pa": 89,
+        "so": 14,
+        "k_rate": 0.1573
+      },
+      "vs_L": {
+        "pa": 40,
+        "so": 12,
+        "k_rate": 0.3
+      }
     }
   },
-  "updated_at": "2026-05-02T19:38:26Z",
+  "updated_at": "2026-05-02T19:57:04Z",
   "last_run": {
     "projection_status": "collection_only",
-    "requested_batters": 180,
-    "already_cached": 121,
+    "requested_batters": 198,
+    "already_cached": 133,
     "attempted": 4,
     "collected": 4,
     "failed": 0,
-    "queued_not_attempted": 55,
-    "cache_size": 196,
+    "queued_not_attempted": 61,
+    "cache_size": 200,
     "errors": [],
-    "updated_at": "2026-05-02T19:38:26Z"
+    "updated_at": "2026-05-02T19:57:04Z"
   }
 }
