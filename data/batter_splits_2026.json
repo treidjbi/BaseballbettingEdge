@@ -2751,19 +2751,53 @@
         "so": 7,
         "k_rate": 0.25
       }
+    },
+    "mlbam:666971": {
+      "name": "Lourdes Gurriel Jr.",
+      "bats": "R",
+      "mlbam_id": 666971,
+      "bbref_id": "gurrilo01",
+      "season": 2026,
+      "vs_R": {
+        "pa": 28,
+        "so": 5,
+        "k_rate": 0.1786
+      },
+      "vs_L": {
+        "pa": 10,
+        "so": 1,
+        "k_rate": 0.1
+      }
+    },
+    "mlbam:543510": {
+      "name": "James McCann",
+      "bats": "R",
+      "mlbam_id": 543510,
+      "bbref_id": "mccanja02",
+      "season": 2026,
+      "vs_R": {
+        "pa": 27,
+        "so": 12,
+        "k_rate": 0.4444
+      },
+      "vs_L": {
+        "pa": 22,
+        "so": 4,
+        "k_rate": 0.1818
+      }
     }
   },
-  "updated_at": "2026-05-02T04:27:46Z",
+  "updated_at": "2026-05-02T14:15:56Z",
   "last_run": {
     "projection_status": "collection_only",
-    "requested_batters": 270,
-    "already_cached": 124,
-    "attempted": 4,
-    "collected": 4,
+    "requested_batters": 9,
+    "already_cached": 7,
+    "attempted": 2,
+    "collected": 2,
     "failed": 0,
-    "queued_not_attempted": 142,
-    "cache_size": 162,
+    "queued_not_attempted": 0,
+    "cache_size": 164,
     "errors": [],
-    "updated_at": "2026-05-02T04:27:46Z"
+    "updated_at": "2026-05-02T14:15:56Z"
   }
 }
