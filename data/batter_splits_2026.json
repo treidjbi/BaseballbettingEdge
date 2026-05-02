@@ -3261,19 +3261,87 @@
         "so": 4,
         "k_rate": 0.1379
       }
+    },
+    "mlbam:694212": {
+      "name": "Samuel Basallo",
+      "bats": "R",
+      "mlbam_id": 694212,
+      "bbref_id": "basalsa01",
+      "season": 2026,
+      "vs_R": {
+        "pa": 73,
+        "so": 19,
+        "k_rate": 0.2603
+      },
+      "vs_L": {
+        "pa": 23,
+        "so": 6,
+        "k_rate": 0.2609
+      }
+    },
+    "mlbam:676914": {
+      "name": "Davis Schneider",
+      "bats": "R",
+      "mlbam_id": 676914,
+      "bbref_id": "schneda03",
+      "season": 2026,
+      "vs_R": {
+        "pa": 32,
+        "so": 10,
+        "k_rate": 0.3125
+      },
+      "vs_L": {
+        "pa": 29,
+        "so": 8,
+        "k_rate": 0.2759
+      }
+    },
+    "mlbam:678218": {
+      "name": "Brandon Valenzuela",
+      "bats": "R",
+      "mlbam_id": 678218,
+      "bbref_id": "valenbr01",
+      "season": 2026,
+      "vs_R": {
+        "pa": 34,
+        "so": 10,
+        "k_rate": 0.2941
+      },
+      "vs_L": {
+        "pa": 8,
+        "so": 4,
+        "k_rate": 0.5
+      }
+    },
+    "mlbam:665804": {
+      "name": "Miguel Amaya",
+      "bats": "R",
+      "mlbam_id": 665804,
+      "bbref_id": "amayami01",
+      "season": 2026,
+      "vs_R": {
+        "pa": 38,
+        "so": 10,
+        "k_rate": 0.2632
+      },
+      "vs_L": {
+        "pa": 21,
+        "so": 3,
+        "k_rate": 0.1429
+      }
     }
   },
-  "updated_at": "2026-05-02T19:16:03Z",
+  "updated_at": "2026-05-02T19:38:26Z",
   "last_run": {
     "projection_status": "collection_only",
     "requested_batters": 180,
-    "already_cached": 118,
+    "already_cached": 121,
     "attempted": 4,
     "collected": 4,
     "failed": 0,
-    "queued_not_attempted": 58,
-    "cache_size": 192,
+    "queued_not_attempted": 55,
+    "cache_size": 196,
     "errors": [],
-    "updated_at": "2026-05-02T19:16:03Z"
+    "updated_at": "2026-05-02T19:38:26Z"
   }
 }
