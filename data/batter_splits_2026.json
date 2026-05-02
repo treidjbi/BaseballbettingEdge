@@ -3397,19 +3397,87 @@
         "so": 12,
         "k_rate": 0.3
       }
+    },
+    "mlbam:667670": {
+      "name": "Brent Rooker",
+      "bats": "R",
+      "mlbam_id": 667670,
+      "bbref_id": "rookebr01",
+      "season": 2026,
+      "vs_R": {
+        "pa": 52,
+        "so": 15,
+        "k_rate": 0.2885
+      },
+      "vs_L": {
+        "pa": 16,
+        "so": 7,
+        "k_rate": 0.4375
+      }
+    },
+    "mlbam:666126": {
+      "name": "Carlos Cortes",
+      "bats": "R",
+      "mlbam_id": 666126,
+      "bbref_id": "corteca01",
+      "season": 2026,
+      "vs_R": {
+        "pa": 71,
+        "so": 5,
+        "k_rate": 0.0704
+      },
+      "vs_L": {
+        "pa": 8,
+        "so": 2,
+        "k_rate": 0.25
+      }
+    },
+    "mlbam:805779": {
+      "name": "Jacob Wilson",
+      "bats": "R",
+      "mlbam_id": 805779,
+      "bbref_id": "wilsoja05",
+      "season": 2026,
+      "vs_R": {
+        "pa": 100,
+        "so": 11,
+        "k_rate": 0.11
+      },
+      "vs_L": {
+        "pa": 36,
+        "so": 4,
+        "k_rate": 0.1111
+      }
+    },
+    "mlbam:643446": {
+      "name": "Jeff McNeil",
+      "bats": "R",
+      "mlbam_id": 643446,
+      "bbref_id": "mcneije01",
+      "season": 2026,
+      "vs_R": {
+        "pa": 86,
+        "so": 12,
+        "k_rate": 0.1395
+      },
+      "vs_L": {
+        "pa": 23,
+        "so": 0,
+        "k_rate": 0.0
+      }
     }
   },
-  "updated_at": "2026-05-02T19:57:04Z",
+  "updated_at": "2026-05-02T20:08:30Z",
   "last_run": {
     "projection_status": "collection_only",
-    "requested_batters": 198,
-    "already_cached": 133,
+    "requested_batters": 207,
+    "already_cached": 137,
     "attempted": 4,
     "collected": 4,
     "failed": 0,
-    "queued_not_attempted": 61,
-    "cache_size": 200,
+    "queued_not_attempted": 66,
+    "cache_size": 204,
     "errors": [],
-    "updated_at": "2026-05-02T19:57:04Z"
+    "updated_at": "2026-05-02T20:08:30Z"
   }
 }
