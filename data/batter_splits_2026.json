@@ -3737,19 +3737,87 @@
         "so": 5,
         "k_rate": 0.1562
       }
+    },
+    "mlbam:642851": {
+      "name": "Austin Wynns",
+      "bats": "R",
+      "mlbam_id": 642851,
+      "bbref_id": "wynnsau01",
+      "season": 2026,
+      "vs_R": {
+        "pa": 15,
+        "so": 4,
+        "k_rate": 0.2667
+      },
+      "vs_L": {
+        "pa": 20,
+        "so": 2,
+        "k_rate": 0.1
+      }
+    },
+    "mlbam:695391": {
+      "name": "Brett Harris",
+      "bats": "R",
+      "mlbam_id": 695391,
+      "bbref_id": "harribr02",
+      "season": 2026,
+      "vs_R": {
+        "pa": 53,
+        "so": 12,
+        "k_rate": 0.2264
+      },
+      "vs_L": {
+        "pa": 31,
+        "so": 9,
+        "k_rate": 0.2903
+      }
+    },
+    "mlbam:669707": {
+      "name": "Jared Triolo",
+      "bats": "R",
+      "mlbam_id": 669707,
+      "bbref_id": "triolja01",
+      "season": 2026,
+      "vs_R": {
+        "pa": 18,
+        "so": 5,
+        "k_rate": 0.2778
+      },
+      "vs_L": {
+        "pa": 8,
+        "so": 0,
+        "k_rate": 0.0
+      }
+    },
+    "mlbam:643396": {
+      "name": "Isiah Kiner-Falefa",
+      "bats": "R",
+      "mlbam_id": 643396,
+      "bbref_id": "kineris01",
+      "season": 2026,
+      "vs_R": {
+        "pa": 19,
+        "so": 2,
+        "k_rate": 0.1053
+      },
+      "vs_L": {
+        "pa": 18,
+        "so": 5,
+        "k_rate": 0.2778
+      }
     }
   },
-  "updated_at": "2026-05-02T22:09:14Z",
+  "updated_at": "2026-05-02T22:57:52Z",
   "last_run": {
     "projection_status": "collection_only",
-    "requested_batters": 252,
-    "already_cached": 164,
+    "requested_batters": 261,
+    "already_cached": 165,
     "attempted": 4,
     "collected": 4,
     "failed": 0,
-    "queued_not_attempted": 84,
-    "cache_size": 220,
+    "queued_not_attempted": 92,
+    "cache_size": 224,
     "errors": [],
-    "updated_at": "2026-05-02T22:09:14Z"
+    "updated_at": "2026-05-02T22:57:52Z"
   }
 }
