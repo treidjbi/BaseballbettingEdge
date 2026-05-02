@@ -2853,19 +2853,87 @@
         "so": 5,
         "k_rate": 0.3333
       }
+    },
+    "mlbam:621493": {
+      "name": "Taylor Ward",
+      "bats": "R",
+      "mlbam_id": 621493,
+      "bbref_id": "wardta01",
+      "season": 2026,
+      "vs_R": {
+        "pa": 120,
+        "so": 22,
+        "k_rate": 0.1833
+      },
+      "vs_L": {
+        "pa": 28,
+        "so": 2,
+        "k_rate": 0.0714
+      }
+    },
+    "mlbam:683002": {
+      "name": "Gunnar Henderson",
+      "bats": "R",
+      "mlbam_id": 683002,
+      "bbref_id": "hendegu01",
+      "season": 2026,
+      "vs_R": {
+        "pa": 113,
+        "so": 35,
+        "k_rate": 0.3097
+      },
+      "vs_L": {
+        "pa": 36,
+        "so": 11,
+        "k_rate": 0.3056
+      }
+    },
+    "mlbam:668939": {
+      "name": "Adley Rutschman",
+      "bats": "R",
+      "mlbam_id": 668939,
+      "bbref_id": "rutscad01",
+      "season": 2026,
+      "vs_R": {
+        "pa": 45,
+        "so": 7,
+        "k_rate": 0.1556
+      },
+      "vs_L": {
+        "pa": 23,
+        "so": 2,
+        "k_rate": 0.087
+      }
+    },
+    "mlbam:624413": {
+      "name": "Pete Alonso",
+      "bats": "R",
+      "mlbam_id": 624413,
+      "bbref_id": "alonspe01",
+      "season": 2026,
+      "vs_R": {
+        "pa": 104,
+        "so": 24,
+        "k_rate": 0.2308
+      },
+      "vs_L": {
+        "pa": 34,
+        "so": 9,
+        "k_rate": 0.2647
+      }
     }
   },
-  "updated_at": "2026-05-02T15:59:05Z",
+  "updated_at": "2026-05-02T16:29:32Z",
   "last_run": {
     "projection_status": "collection_only",
-    "requested_batters": 54,
-    "already_cached": 28,
+    "requested_batters": 72,
+    "already_cached": 32,
     "attempted": 4,
     "collected": 4,
     "failed": 0,
-    "queued_not_attempted": 22,
-    "cache_size": 168,
+    "queued_not_attempted": 36,
+    "cache_size": 172,
     "errors": [],
-    "updated_at": "2026-05-02T15:59:05Z"
+    "updated_at": "2026-05-02T16:29:32Z"
   }
 }
