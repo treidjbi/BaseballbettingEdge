@@ -3057,19 +3057,87 @@
         "so": 3,
         "k_rate": 0.2308
       }
+    },
+    "mlbam:807712": {
+      "name": "Luke Keaschall",
+      "bats": "R",
+      "mlbam_id": 807712,
+      "bbref_id": "keasclu01",
+      "season": 2026,
+      "vs_R": {
+        "pa": 81,
+        "so": 14,
+        "k_rate": 0.1728
+      },
+      "vs_L": {
+        "pa": 54,
+        "so": 9,
+        "k_rate": 0.1667
+      }
+    },
+    "mlbam:670242": {
+      "name": "Matt Wallner",
+      "bats": "R",
+      "mlbam_id": 670242,
+      "bbref_id": "wallnma01",
+      "season": 2026,
+      "vs_R": {
+        "pa": 69,
+        "so": 26,
+        "k_rate": 0.3768
+      },
+      "vs_L": {
+        "pa": 40,
+        "so": 15,
+        "k_rate": 0.375
+      }
+    },
+    "mlbam:686797": {
+      "name": "Brooks Lee",
+      "bats": "R",
+      "mlbam_id": 686797,
+      "bbref_id": "leebr02",
+      "season": 2026,
+      "vs_R": {
+        "pa": 68,
+        "so": 14,
+        "k_rate": 0.2059
+      },
+      "vs_L": {
+        "pa": 44,
+        "so": 7,
+        "k_rate": 0.1591
+      }
+    },
+    "mlbam:656484": {
+      "name": "Tristan Gray",
+      "bats": "R",
+      "mlbam_id": 656484,
+      "bbref_id": "graytr01",
+      "season": 2026,
+      "vs_R": {
+        "pa": 45,
+        "so": 11,
+        "k_rate": 0.2444
+      },
+      "vs_L": {
+        "pa": 13,
+        "so": 8,
+        "k_rate": 0.6154
+      }
     }
   },
-  "updated_at": "2026-05-02T17:29:01Z",
+  "updated_at": "2026-05-02T17:52:54Z",
   "last_run": {
     "projection_status": "collection_only",
     "requested_batters": 135,
-    "already_cached": 75,
+    "already_cached": 79,
     "attempted": 4,
     "collected": 4,
     "failed": 0,
-    "queued_not_attempted": 56,
-    "cache_size": 180,
+    "queued_not_attempted": 52,
+    "cache_size": 184,
     "errors": [],
-    "updated_at": "2026-05-02T17:29:01Z"
+    "updated_at": "2026-05-02T17:52:54Z"
   }
 }
