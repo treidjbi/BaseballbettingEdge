@@ -3193,19 +3193,87 @@
         "so": 5,
         "k_rate": 0.1724
       }
+    },
+    "mlbam:660821": {
+      "name": "Jes\u00fas S\u00e1nchez",
+      "bats": "R",
+      "mlbam_id": 660821,
+      "bbref_id": "sanchje02",
+      "season": 2026,
+      "vs_R": {
+        "pa": 94,
+        "so": 17,
+        "k_rate": 0.1809
+      },
+      "vs_L": {
+        "pa": 12,
+        "so": 2,
+        "k_rate": 0.1667
+      }
+    },
+    "mlbam:672820": {
+      "name": "Lenyn Sosa",
+      "bats": "R",
+      "mlbam_id": 672820,
+      "bbref_id": "sosale01",
+      "season": 2026,
+      "vs_R": {
+        "pa": 41,
+        "so": 5,
+        "k_rate": 0.122
+      },
+      "vs_L": {
+        "pa": 26,
+        "so": 8,
+        "k_rate": 0.3077
+      }
+    },
+    "mlbam:662139": {
+      "name": "Daulton Varsho",
+      "bats": "R",
+      "mlbam_id": 662139,
+      "bbref_id": "varshda01",
+      "season": 2026,
+      "vs_R": {
+        "pa": 85,
+        "so": 15,
+        "k_rate": 0.1765
+      },
+      "vs_L": {
+        "pa": 29,
+        "so": 5,
+        "k_rate": 0.1724
+      }
+    },
+    "mlbam:664702": {
+      "name": "Myles Straw",
+      "bats": "R",
+      "mlbam_id": 664702,
+      "bbref_id": "strawmy01",
+      "season": 2026,
+      "vs_R": {
+        "pa": 24,
+        "so": 1,
+        "k_rate": 0.0417
+      },
+      "vs_L": {
+        "pa": 29,
+        "so": 4,
+        "k_rate": 0.1379
+      }
     }
   },
-  "updated_at": "2026-05-02T18:32:22Z",
+  "updated_at": "2026-05-02T19:16:03Z",
   "last_run": {
     "projection_status": "collection_only",
-    "requested_batters": 153,
-    "already_cached": 100,
+    "requested_batters": 180,
+    "already_cached": 118,
     "attempted": 4,
     "collected": 4,
     "failed": 0,
-    "queued_not_attempted": 49,
-    "cache_size": 188,
+    "queued_not_attempted": 58,
+    "cache_size": 192,
     "errors": [],
-    "updated_at": "2026-05-02T18:32:22Z"
+    "updated_at": "2026-05-02T19:16:03Z"
   }
 }
