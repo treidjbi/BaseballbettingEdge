@@ -2989,19 +2989,87 @@
         "so": 5,
         "k_rate": 0.4167
       }
+    },
+    "mlbam:677942": {
+      "name": "Blaze Alexander",
+      "bats": "R",
+      "mlbam_id": 677942,
+      "bbref_id": "alexabl01",
+      "season": 2026,
+      "vs_R": {
+        "pa": 52,
+        "so": 15,
+        "k_rate": 0.2885
+      },
+      "vs_L": {
+        "pa": 21,
+        "so": 6,
+        "k_rate": 0.2857
+      }
+    },
+    "mlbam:605137": {
+      "name": "Josh Bell",
+      "bats": "R",
+      "mlbam_id": 605137,
+      "bbref_id": "belljo02",
+      "season": 2026,
+      "vs_R": {
+        "pa": 76,
+        "so": 13,
+        "k_rate": 0.1711
+      },
+      "vs_L": {
+        "pa": 55,
+        "so": 11,
+        "k_rate": 0.2
+      }
+    },
+    "mlbam:680777": {
+      "name": "Ryan Jeffers",
+      "bats": "R",
+      "mlbam_id": 680777,
+      "bbref_id": "jeffery01",
+      "season": 2026,
+      "vs_R": {
+        "pa": 55,
+        "so": 14,
+        "k_rate": 0.2545
+      },
+      "vs_L": {
+        "pa": 46,
+        "so": 5,
+        "k_rate": 0.1087
+      }
+    },
+    "mlbam:665019": {
+      "name": "Kody Clemens",
+      "bats": "R",
+      "mlbam_id": 665019,
+      "bbref_id": "clemeko01",
+      "season": 2026,
+      "vs_R": {
+        "pa": 69,
+        "so": 21,
+        "k_rate": 0.3043
+      },
+      "vs_L": {
+        "pa": 13,
+        "so": 3,
+        "k_rate": 0.2308
+      }
     }
   },
-  "updated_at": "2026-05-02T17:00:45Z",
+  "updated_at": "2026-05-02T17:29:01Z",
   "last_run": {
     "projection_status": "collection_only",
-    "requested_batters": 99,
-    "already_cached": 53,
+    "requested_batters": 135,
+    "already_cached": 75,
     "attempted": 4,
     "collected": 4,
     "failed": 0,
-    "queued_not_attempted": 42,
-    "cache_size": 176,
+    "queued_not_attempted": 56,
+    "cache_size": 180,
     "errors": [],
-    "updated_at": "2026-05-02T17:00:45Z"
+    "updated_at": "2026-05-02T17:29:01Z"
   }
 }
