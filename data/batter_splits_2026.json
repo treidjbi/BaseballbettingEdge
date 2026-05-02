@@ -3533,19 +3533,87 @@
         "so": 7,
         "k_rate": 0.2414
       }
+    },
+    "mlbam:681807": {
+      "name": "David Fry",
+      "bats": "R",
+      "mlbam_id": 681807,
+      "bbref_id": "fryda01",
+      "season": 2026,
+      "vs_R": {
+        "pa": 16,
+        "so": 7,
+        "k_rate": 0.4375
+      },
+      "vs_L": {
+        "pa": 28,
+        "so": 8,
+        "k_rate": 0.2857
+      }
+    },
+    "mlbam:683953": {
+      "name": "Travis Bazzana",
+      "bats": "R",
+      "mlbam_id": 683953,
+      "bbref_id": "bazzatr01",
+      "season": 2026,
+      "vs_R": {
+        "pa": 12,
+        "so": 2,
+        "k_rate": 0.1667
+      },
+      "vs_L": {
+        "pa": 1,
+        "so": 1,
+        "k_rate": 1.0
+      }
+    },
+    "mlbam:595978": {
+      "name": "Austin Hedges",
+      "bats": "R",
+      "mlbam_id": 595978,
+      "bbref_id": "hedgeau01",
+      "season": 2026,
+      "vs_R": {
+        "pa": 19,
+        "so": 7,
+        "k_rate": 0.3684
+      },
+      "vs_L": {
+        "pa": 20,
+        "so": 1,
+        "k_rate": 0.05
+      }
+    },
+    "mlbam:666181": {
+      "name": "Will Benson",
+      "bats": "R",
+      "mlbam_id": 666181,
+      "bbref_id": "bensowi01",
+      "season": 2026,
+      "vs_R": {
+        "pa": 49,
+        "so": 14,
+        "k_rate": 0.2857
+      },
+      "vs_L": {
+        "pa": 1,
+        "so": 0,
+        "k_rate": 0.0
+      }
     }
   },
-  "updated_at": "2026-05-02T20:58:44Z",
+  "updated_at": "2026-05-02T21:11:09Z",
   "last_run": {
     "projection_status": "collection_only",
     "requested_batters": 234,
-    "already_cached": 146,
+    "already_cached": 150,
     "attempted": 4,
     "collected": 4,
     "failed": 0,
-    "queued_not_attempted": 84,
-    "cache_size": 208,
+    "queued_not_attempted": 80,
+    "cache_size": 212,
     "errors": [],
-    "updated_at": "2026-05-02T20:58:44Z"
+    "updated_at": "2026-05-02T21:11:09Z"
   }
 }
