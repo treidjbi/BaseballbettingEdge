@@ -3601,19 +3601,87 @@
         "so": 0,
         "k_rate": 0.0
       }
+    },
+    "mlbam:660688": {
+      "name": "Keibert Ruiz",
+      "bats": "R",
+      "mlbam_id": 660688,
+      "bbref_id": "ruizke01",
+      "season": 2026,
+      "vs_R": {
+        "pa": 35,
+        "so": 5,
+        "k_rate": 0.1429
+      },
+      "vs_L": {
+        "pa": 24,
+        "so": 4,
+        "k_rate": 0.1667
+      }
+    },
+    "mlbam:663604": {
+      "name": "Brandon Lockridge",
+      "bats": "R",
+      "mlbam_id": 663604,
+      "bbref_id": "lockrbr01",
+      "season": 2026,
+      "vs_R": {
+        "pa": 56,
+        "so": 14,
+        "k_rate": 0.25
+      },
+      "vs_L": {
+        "pa": 29,
+        "so": 10,
+        "k_rate": 0.3448
+      }
+    },
+    "mlbam:596115": {
+      "name": "Trevor Story",
+      "bats": "R",
+      "mlbam_id": 596115,
+      "bbref_id": "storytr01",
+      "season": 2026,
+      "vs_R": {
+        "pa": 98,
+        "so": 28,
+        "k_rate": 0.2857
+      },
+      "vs_L": {
+        "pa": 37,
+        "so": 12,
+        "k_rate": 0.3243
+      }
+    },
+    "mlbam:691785": {
+      "name": "Marcelo Mayer",
+      "bats": "R",
+      "mlbam_id": 691785,
+      "bbref_id": "mayerma01",
+      "season": 2026,
+      "vs_R": {
+        "pa": 82,
+        "so": 14,
+        "k_rate": 0.1707
+      },
+      "vs_L": {
+        "pa": 7,
+        "so": 0,
+        "k_rate": 0.0
+      }
     }
   },
-  "updated_at": "2026-05-02T21:11:09Z",
+  "updated_at": "2026-05-02T21:57:26Z",
   "last_run": {
     "projection_status": "collection_only",
-    "requested_batters": 234,
-    "already_cached": 150,
+    "requested_batters": 252,
+    "already_cached": 161,
     "attempted": 4,
     "collected": 4,
     "failed": 0,
-    "queued_not_attempted": 80,
-    "cache_size": 212,
+    "queued_not_attempted": 87,
+    "cache_size": 216,
     "errors": [],
-    "updated_at": "2026-05-02T21:11:09Z"
+    "updated_at": "2026-05-02T21:57:26Z"
   }
 }
