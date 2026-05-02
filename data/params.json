@@ -1,13 +1,16 @@
 {
   "weight_season_cap": 0.4,
-  "weight_recent": 0.172,
-  "ump_scale": 0.95,
-  "lambda_bias": -0.195,
+  "weight_recent": 0.05,
+  "ump_scale": 0.9,
+  "lambda_bias": -0.25,
   "swstr_k9_scale": 30.0,
-  "updated_at": "2026-05-01T11:35:11Z",
-  "sample_size": 50,
+  "updated_at": "2026-05-02T11:10:30Z",
+  "sample_size": 75,
   "formula_change_date": "2026-04-28",
   "calibration_notes": [
+    "[2026-05-02] Lambda bias adjusted -0.195 \u2192 -0.250 (model was systematically over-predicting Ks)",
+    "[2026-05-02] Umpire scale decreased 0.950 \u2192 0.900 (umpire adjustment not reliably predictive)",
+    "[2026-05-02] K/9 blend weights updated: season 40% \u2192 40%, recent 17% \u2192 5%",
     "[2026-05-01] Lambda bias adjusted -0.189 \u2192 -0.195 (model was systematically over-predicting Ks)",
     "[2026-04-30] Lambda bias adjusted -0.245 \u2192 -0.189 (model was systematically over-predicting Ks)",
     "[2026-04-27] EV now tracks true ROI, probability gap is stored separately as edge, and the clean post-change calibration era starts on 2026-04-28",
@@ -24,9 +27,6 @@
     "[2026-04-21] K/9 blend weights updated: season 40% \u2192 40%, recent 10% \u2192 11%",
     "[2026-04-20] Lambda bias adjusted -0.414 \u2192 -0.342 (model was systematically over-predicting Ks)",
     "[2026-04-20] K/9 blend weights updated: season 40% \u2192 40%, recent 12% \u2192 10%",
-    "[2026-04-19] Lambda bias adjusted -0.446 \u2192 -0.414 (model was systematically over-predicting Ks)",
-    "[2026-04-19] K/9 blend weights updated: season 40% \u2192 40%, recent 8% \u2192 12%",
-    "[2026-04-18] Lambda bias adjusted -0.492 \u2192 -0.446 (model was systematically over-predicting Ks)",
-    "[2026-04-18] K/9 blend weights updated: season 40% \u2192 40%, recent 14% \u2192 8%"
+    "[2026-04-19] Lambda bias adjusted -0.446 \u2192 -0.414 (model was systematically over-predicting Ks)"
   ]
 }
