@@ -3868,19 +3868,87 @@
         "so": 5,
         "k_rate": 0.1429
       }
+    },
+    "mlbam:669699": {
+      "name": "Braden Shewmake",
+      "bats": "R",
+      "mlbam_id": 669699,
+      "bbref_id": "shewmbr01",
+      "season": 2026,
+      "vs_R": {
+        "pa": 8,
+        "so": 2,
+        "k_rate": 0.25
+      },
+      "vs_L": {
+        "pa": 2,
+        "so": 1,
+        "k_rate": 0.5
+      }
+    },
+    "mlbam:514888": {
+      "name": "Jose Altuve",
+      "bats": "R",
+      "mlbam_id": 514888,
+      "bbref_id": "altuvjo01",
+      "season": 2026,
+      "vs_R": {
+        "pa": 93,
+        "so": 16,
+        "k_rate": 0.172
+      },
+      "vs_L": {
+        "pa": 40,
+        "so": 8,
+        "k_rate": 0.2
+      }
+    },
+    "mlbam:673237": {
+      "name": "Yainer Diaz",
+      "bats": "R",
+      "mlbam_id": 673237,
+      "bbref_id": "diazya02",
+      "season": 2026,
+      "vs_R": {
+        "pa": 72,
+        "so": 11,
+        "k_rate": 0.1528
+      },
+      "vs_L": {
+        "pa": 29,
+        "so": 4,
+        "k_rate": 0.1379
+      }
+    },
+    "mlbam:694728": {
+      "name": "Brice Matthews",
+      "bats": "R",
+      "mlbam_id": 694728,
+      "bbref_id": "matthbr01",
+      "season": 2026,
+      "vs_R": {
+        "pa": 41,
+        "so": 14,
+        "k_rate": 0.3415
+      },
+      "vs_L": {
+        "pa": 27,
+        "so": 13,
+        "k_rate": 0.4815
+      }
     }
   },
-  "updated_at": "2026-05-02T23:13:07Z",
+  "updated_at": "2026-05-02T23:56:46Z",
   "last_run": {
     "projection_status": "collection_only",
     "requested_batters": 261,
-    "already_cached": 168,
+    "already_cached": 171,
     "attempted": 4,
     "collected": 4,
     "failed": 0,
-    "queued_not_attempted": 89,
-    "cache_size": 228,
+    "queued_not_attempted": 86,
+    "cache_size": 232,
     "errors": [],
-    "updated_at": "2026-05-02T23:13:07Z"
+    "updated_at": "2026-05-02T23:56:46Z"
   }
 }
