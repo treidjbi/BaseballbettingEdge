@@ -3805,19 +3805,82 @@
         "so": 5,
         "k_rate": 0.2778
       }
+    },
+    "mlbam:687515": {
+      "name": "Colby Thomas",
+      "bats": "R",
+      "mlbam_id": 687515,
+      "bbref_id": "thomaco03",
+      "season": 2026,
+      "vs_L": {
+        "pa": 15,
+        "so": 5,
+        "k_rate": 0.3333
+      }
+    },
+    "mlbam:621043": {
+      "name": "Carlos Correa",
+      "bats": "R",
+      "mlbam_id": 621043,
+      "bbref_id": "correca01",
+      "season": 2026,
+      "vs_R": {
+        "pa": 88,
+        "so": 16,
+        "k_rate": 0.1818
+      },
+      "vs_L": {
+        "pa": 39,
+        "so": 5,
+        "k_rate": 0.1282
+      }
+    },
+    "mlbam:670541": {
+      "name": "Yordan Alvarez",
+      "bats": "R",
+      "mlbam_id": 670541,
+      "bbref_id": "alvaryo01",
+      "season": 2026,
+      "vs_R": {
+        "pa": 99,
+        "so": 11,
+        "k_rate": 0.1111
+      },
+      "vs_L": {
+        "pa": 49,
+        "so": 4,
+        "k_rate": 0.0816
+      }
+    },
+    "mlbam:670623": {
+      "name": "Isaac Paredes",
+      "bats": "R",
+      "mlbam_id": 670623,
+      "bbref_id": "paredis01",
+      "season": 2026,
+      "vs_R": {
+        "pa": 81,
+        "so": 13,
+        "k_rate": 0.1605
+      },
+      "vs_L": {
+        "pa": 35,
+        "so": 5,
+        "k_rate": 0.1429
+      }
     }
   },
-  "updated_at": "2026-05-02T22:57:52Z",
+  "updated_at": "2026-05-02T23:13:07Z",
   "last_run": {
     "projection_status": "collection_only",
     "requested_batters": 261,
-    "already_cached": 165,
+    "already_cached": 168,
     "attempted": 4,
     "collected": 4,
     "failed": 0,
-    "queued_not_attempted": 92,
-    "cache_size": 224,
+    "queued_not_attempted": 89,
+    "cache_size": 228,
     "errors": [],
-    "updated_at": "2026-05-02T22:57:52Z"
+    "updated_at": "2026-05-02T23:13:07Z"
   }
 }
