@@ -2921,19 +2921,87 @@
         "so": 9,
         "k_rate": 0.2647
       }
+    },
+    "mlbam:641933": {
+      "name": "Tyler O'Neill",
+      "bats": "R",
+      "mlbam_id": 641933,
+      "bbref_id": "oneilty01",
+      "season": 2026,
+      "vs_R": {
+        "pa": 33,
+        "so": 5,
+        "k_rate": 0.1515
+      },
+      "vs_L": {
+        "pa": 14,
+        "so": 6,
+        "k_rate": 0.4286
+      }
+    },
+    "mlbam:691723": {
+      "name": "Coby Mayo",
+      "bats": "R",
+      "mlbam_id": 691723,
+      "bbref_id": "mayoco01",
+      "season": 2026,
+      "vs_R": {
+        "pa": 63,
+        "so": 21,
+        "k_rate": 0.3333
+      },
+      "vs_L": {
+        "pa": 25,
+        "so": 6,
+        "k_rate": 0.24
+      }
+    },
+    "mlbam:669236": {
+      "name": "Jeremiah Jackson",
+      "bats": "R",
+      "mlbam_id": 669236,
+      "bbref_id": "jacksje02",
+      "season": 2026,
+      "vs_R": {
+        "pa": 78,
+        "so": 18,
+        "k_rate": 0.2308
+      },
+      "vs_L": {
+        "pa": 26,
+        "so": 6,
+        "k_rate": 0.2308
+      }
+    },
+    "mlbam:642215": {
+      "name": "Weston Wilson",
+      "bats": "R",
+      "mlbam_id": 642215,
+      "bbref_id": "wilsowe01",
+      "season": 2026,
+      "vs_R": {
+        "pa": 5,
+        "so": 0,
+        "k_rate": 0.0
+      },
+      "vs_L": {
+        "pa": 12,
+        "so": 5,
+        "k_rate": 0.4167
+      }
     }
   },
-  "updated_at": "2026-05-02T16:29:32Z",
+  "updated_at": "2026-05-02T17:00:45Z",
   "last_run": {
     "projection_status": "collection_only",
-    "requested_batters": 72,
-    "already_cached": 32,
+    "requested_batters": 99,
+    "already_cached": 53,
     "attempted": 4,
     "collected": 4,
     "failed": 0,
-    "queued_not_attempted": 36,
-    "cache_size": 172,
+    "queued_not_attempted": 42,
+    "cache_size": 176,
     "errors": [],
-    "updated_at": "2026-05-02T16:29:32Z"
+    "updated_at": "2026-05-02T17:00:45Z"
   }
 }
