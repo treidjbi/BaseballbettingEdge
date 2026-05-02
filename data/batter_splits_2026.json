@@ -2615,19 +2615,87 @@
         "so": 5,
         "k_rate": 0.1786
       }
+    },
+    "mlbam:677588": {
+      "name": "Jos\u00e9 Tena",
+      "bats": "R",
+      "mlbam_id": 677588,
+      "bbref_id": "tenajo01",
+      "season": 2026,
+      "vs_R": {
+        "pa": 50,
+        "so": 16,
+        "k_rate": 0.32
+      },
+      "vs_L": {
+        "pa": 5,
+        "so": 1,
+        "k_rate": 0.2
+      }
+    },
+    "mlbam:592450": {
+      "name": "Aaron Judge",
+      "bats": "R",
+      "mlbam_id": 592450,
+      "bbref_id": "judgeaa01",
+      "season": 2026,
+      "vs_R": {
+        "pa": 93,
+        "so": 26,
+        "k_rate": 0.2796
+      },
+      "vs_L": {
+        "pa": 42,
+        "so": 11,
+        "k_rate": 0.2619
+      }
+    },
+    "mlbam:641355": {
+      "name": "Cody Bellinger",
+      "bats": "R",
+      "mlbam_id": 641355,
+      "bbref_id": "bellico01",
+      "season": 2026,
+      "vs_R": {
+        "pa": 90,
+        "so": 14,
+        "k_rate": 0.1556
+      },
+      "vs_L": {
+        "pa": 38,
+        "so": 4,
+        "k_rate": 0.1053
+      }
+    },
+    "mlbam:641857": {
+      "name": "Ryan McMahon",
+      "bats": "R",
+      "mlbam_id": 641857,
+      "bbref_id": "mcmahry01",
+      "season": 2026,
+      "vs_R": {
+        "pa": 67,
+        "so": 21,
+        "k_rate": 0.3134
+      },
+      "vs_L": {
+        "pa": 15,
+        "so": 6,
+        "k_rate": 0.4
+      }
     }
   },
-  "updated_at": "2026-05-02T03:47:53Z",
+  "updated_at": "2026-05-02T04:02:14Z",
   "last_run": {
     "projection_status": "collection_only",
     "requested_batters": 270,
-    "already_cached": 117,
+    "already_cached": 121,
     "attempted": 4,
     "collected": 4,
     "failed": 0,
-    "queued_not_attempted": 149,
-    "cache_size": 154,
+    "queued_not_attempted": 145,
+    "cache_size": 158,
     "errors": [],
-    "updated_at": "2026-05-02T03:47:53Z"
+    "updated_at": "2026-05-02T04:02:14Z"
   }
 }
