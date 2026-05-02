@@ -2479,19 +2479,87 @@
         "so": 6,
         "k_rate": 0.2609
       }
+    },
+    "mlbam:664059": {
+      "name": "Sam Haggerty",
+      "bats": "R",
+      "mlbam_id": 664059,
+      "bbref_id": "haggesa01",
+      "season": 2026,
+      "vs_R": {
+        "pa": 4,
+        "so": 2,
+        "k_rate": 0.5
+      },
+      "vs_L": {
+        "pa": 22,
+        "so": 9,
+        "k_rate": 0.4091
+      }
+    },
+    "mlbam:596142": {
+      "name": "Gary S\u00e1nchez",
+      "bats": "R",
+      "mlbam_id": 596142,
+      "bbref_id": "sanchga02",
+      "season": 2026,
+      "vs_R": {
+        "pa": 53,
+        "so": 11,
+        "k_rate": 0.2075
+      },
+      "vs_L": {
+        "pa": 24,
+        "so": 5,
+        "k_rate": 0.2083
+      }
+    },
+    "mlbam:683083": {
+      "name": "Nasim Nu\u00f1ez",
+      "bats": "R",
+      "mlbam_id": 683083,
+      "bbref_id": "nunezna01",
+      "season": 2026,
+      "vs_R": {
+        "pa": 79,
+        "so": 14,
+        "k_rate": 0.1772
+      },
+      "vs_L": {
+        "pa": 32,
+        "so": 8,
+        "k_rate": 0.25
+      }
+    },
+    "mlbam:700250": {
+      "name": "Ben Rice",
+      "bats": "R",
+      "mlbam_id": 700250,
+      "bbref_id": "ricebe01",
+      "season": 2026,
+      "vs_R": {
+        "pa": 91,
+        "so": 21,
+        "k_rate": 0.2308
+      },
+      "vs_L": {
+        "pa": 31,
+        "so": 10,
+        "k_rate": 0.3226
+      }
     }
   },
-  "updated_at": "2026-05-01T23:59:28Z",
+  "updated_at": "2026-05-02T01:14:47Z",
   "last_run": {
     "projection_status": "collection_only",
     "requested_batters": 270,
-    "already_cached": 118,
+    "already_cached": 119,
     "attempted": 4,
     "collected": 4,
     "failed": 0,
-    "queued_not_attempted": 148,
-    "cache_size": 146,
+    "queued_not_attempted": 147,
+    "cache_size": 150,
     "errors": [],
-    "updated_at": "2026-05-01T23:59:28Z"
+    "updated_at": "2026-05-02T01:14:47Z"
   }
 }
