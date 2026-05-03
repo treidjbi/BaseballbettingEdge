@@ -4140,19 +4140,87 @@
         "so": 5,
         "k_rate": 0.1562
       }
+    },
+    "mlbam:691594": {
+      "name": "Javier Sanoja",
+      "bats": "R",
+      "mlbam_id": 691594,
+      "bbref_id": "sanojja01",
+      "season": 2026,
+      "vs_R": {
+        "pa": 48,
+        "so": 6,
+        "k_rate": 0.125
+      },
+      "vs_L": {
+        "pa": 24,
+        "so": 3,
+        "k_rate": 0.125
+      }
+    },
+    "mlbam:665923": {
+      "name": "Esteury Ruiz",
+      "bats": "R",
+      "mlbam_id": 665923,
+      "bbref_id": "ruizes01",
+      "season": 2026,
+      "vs_R": {
+        "pa": 4,
+        "so": 1,
+        "k_rate": 0.25
+      },
+      "vs_L": {
+        "pa": 2,
+        "so": 0,
+        "k_rate": 0.0
+      }
+    },
+    "mlbam:668723": {
+      "name": "Ryan Vilade",
+      "bats": "R",
+      "mlbam_id": 668723,
+      "bbref_id": "viladry01",
+      "season": 2026,
+      "vs_R": {
+        "pa": 10,
+        "so": 2,
+        "k_rate": 0.2
+      },
+      "vs_L": {
+        "pa": 28,
+        "so": 5,
+        "k_rate": 0.1786
+      }
+    },
+    "mlbam:676356": {
+      "name": "Jonny DeLuca",
+      "bats": "R",
+      "mlbam_id": 676356,
+      "bbref_id": "delucjo01",
+      "season": 2026,
+      "vs_R": {
+        "pa": 37,
+        "so": 5,
+        "k_rate": 0.1351
+      },
+      "vs_L": {
+        "pa": 29,
+        "so": 6,
+        "k_rate": 0.2069
+      }
     }
   },
-  "updated_at": "2026-05-03T04:08:39Z",
+  "updated_at": "2026-05-03T04:31:48Z",
   "last_run": {
     "projection_status": "collection_only",
     "requested_batters": 261,
-    "already_cached": 182,
+    "already_cached": 187,
     "attempted": 4,
     "collected": 4,
     "failed": 0,
-    "queued_not_attempted": 75,
-    "cache_size": 244,
+    "queued_not_attempted": 70,
+    "cache_size": 248,
     "errors": [],
-    "updated_at": "2026-05-03T04:08:39Z"
+    "updated_at": "2026-05-03T04:31:48Z"
   }
 }
