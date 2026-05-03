@@ -5014,19 +5014,87 @@
         "so": 3,
         "k_rate": 0.1304
       }
+    },
+    "mlbam:680474": {
+      "name": "Max Schuemann",
+      "bats": "R",
+      "mlbam_id": 680474,
+      "bbref_id": "schuema01",
+      "season": 2026,
+      "vs_R": {
+        "pa": 1,
+        "so": 0,
+        "k_rate": 0.0
+      },
+      "vs_L": {
+        "pa": 1,
+        "so": 0,
+        "k_rate": 0.0
+      }
+    },
+    "mlbam:669289": {
+      "name": "Santiago Espinal",
+      "bats": "R",
+      "mlbam_id": 669289,
+      "bbref_id": "espinsa01",
+      "season": 2026,
+      "vs_R": {
+        "pa": 9,
+        "so": 1,
+        "k_rate": 0.1111
+      },
+      "vs_L": {
+        "pa": 18,
+        "so": 3,
+        "k_rate": 0.1667
+      }
+    },
+    "mlbam:650489": {
+      "name": "Willi Castro",
+      "bats": "R",
+      "mlbam_id": 650489,
+      "bbref_id": "castrwi01",
+      "season": 2026,
+      "vs_R": {
+        "pa": 70,
+        "so": 22,
+        "k_rate": 0.3143
+      },
+      "vs_L": {
+        "pa": 23,
+        "so": 9,
+        "k_rate": 0.3913
+      }
+    },
+    "mlbam:664954": {
+      "name": "Brett Sullivan",
+      "bats": "R",
+      "mlbam_id": 664954,
+      "bbref_id": "sullibr01",
+      "season": 2026,
+      "vs_R": {
+        "pa": 34,
+        "so": 7,
+        "k_rate": 0.2059
+      },
+      "vs_L": {
+        "pa": 17,
+        "so": 2,
+        "k_rate": 0.1176
+      }
     }
   },
-  "updated_at": "2026-05-03T20:09:50Z",
+  "updated_at": "2026-05-03T21:00:05Z",
   "last_run": {
     "projection_status": "collection_only",
     "requested_batters": 243,
-    "already_cached": 189,
+    "already_cached": 191,
     "attempted": 4,
     "collected": 4,
     "failed": 0,
-    "queued_not_attempted": 50,
-    "cache_size": 296,
+    "queued_not_attempted": 48,
+    "cache_size": 300,
     "errors": [],
-    "updated_at": "2026-05-03T20:09:50Z"
+    "updated_at": "2026-05-03T21:00:05Z"
   }
 }
