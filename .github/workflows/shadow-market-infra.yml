@@ -1,6 +1,11 @@
 name: Shadow Market Infrastructure
 
 on:
+  schedule:
+    # Observation-only shadow captures, offset from the main pipeline refresh
+    # window. Times are America/Phoenix (UTC-7, no DST):
+    # 8:22 AM, 10:22 AM, 12:22 PM, 2:22 PM, 4:22 PM, 6:22 PM.
+    - cron: '22 15,17,19,21,23,1 * * *'
   workflow_dispatch:
     inputs:
       date:
@@ -53,10 +58,33 @@ jobs:
           echo "date=$SLATE_DATE" >> "$GITHUB_OUTPUT"
           echo "Shadow slate date: $SLATE_DATE"
 
+      - name: Resolve capture flags
+        id: capture
+        run: |
+          CAPTURE_PROPLINE="${{ github.event.inputs.capture_propline }}"
+          CAPTURE_ARTIFACTS="${{ github.event.inputs.capture_artifacts }}"
+
+          if [ "${{ github.event_name }}" = "schedule" ]; then
+            CAPTURE_PROPLINE="true"
+            CAPTURE_ARTIFACTS="true"
+          fi
+
+          if [ -z "$CAPTURE_PROPLINE" ]; then
+            CAPTURE_PROPLINE="true"
+          fi
+          if [ -z "$CAPTURE_ARTIFACTS" ]; then
+            CAPTURE_ARTIFACTS="true"
+          fi
+
+          echo "capture_propline=$CAPTURE_PROPLINE" >> "$GITHUB_OUTPUT"
+          echo "capture_artifacts=$CAPTURE_ARTIFACTS" >> "$GITHUB_OUTPUT"
+          echo "Capture PropLine: $CAPTURE_PROPLINE"
+          echo "Capture artifacts: $CAPTURE_ARTIFACTS"
+
       - name: Validate shadow secrets
         env:
-          CAPTURE_PROPLINE: ${{ github.event.inputs.capture_propline }}
-          CAPTURE_ARTIFACTS: ${{ github.event.inputs.capture_artifacts }}
+          CAPTURE_PROPLINE: ${{ steps.capture.outputs.capture_propline }}
+          CAPTURE_ARTIFACTS: ${{ steps.capture.outputs.capture_artifacts }}
           PROPLINE_API_KEY: ${{ secrets.PROPLINE_API_KEY }}
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
@@ -79,7 +107,7 @@ jobs:
           exit "$missing"
 
       - name: Shadow PropLine to Supabase
-        if: ${{ github.event.inputs.capture_propline == 'true' }}
+        if: ${{ steps.capture.outputs.capture_propline == 'true' }}
         env:
           PROPLINE_API_KEY: ${{ secrets.PROPLINE_API_KEY }}
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
@@ -87,7 +115,7 @@ jobs:
         run: python scripts/shadow_propline_to_supabase.py "${{ steps.slate.outputs.date }}"
 
       - name: Shadow artifacts to Supabase
-        if: ${{ github.event.inputs.capture_artifacts == 'true' }}
+        if: ${{ steps.capture.outputs.capture_artifacts == 'true' }}
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
