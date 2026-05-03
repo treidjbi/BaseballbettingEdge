@@ -13,6 +13,40 @@ For new work, read files in this order:
 `CLAUDE.md` may exist for compatibility, but `AGENTS.md` is the source of truth
 going forward.
 
+## Machine / Git Hygiene Policy
+
+This repo is worked on from more than one computer. Do not leave surprise local
+state behind.
+
+At the start of every session:
+
+1. Confirm which computer/clone is being used.
+2. Use the local clone for that computer:
+   - Mac: `/Users/tylerreid/Documents/Codex/2026-05-02/pull-my-repos/BaseballBettingEdge`
+   - Windows: use the Windows local clone opened in GitHub Desktop.
+3. Check the current branch and working tree before making edits.
+4. Pull the current branch from GitHub before starting meaningful work.
+
+During work:
+
+- Prefer a named test/feature branch for experimental local setup work.
+- Keep commits small and explain what changed.
+- Do not mix unrelated cleanup with feature/debugging changes.
+- Do not leave untracked setup files, generated artifacts, or scratch files in
+  the repo unless they are intentional and documented.
+
+Before ending a session:
+
+1. Check `git status`.
+2. Commit intentional changes.
+3. Push the current branch to GitHub.
+4. If anything cannot be committed or pushed, clearly report the exact branch,
+   untracked/modified files, and the next action needed.
+
+For today, while testing local setup through Git, use the branch
+`test/local-cloud-setup` and keep both Mac and Windows clones synced through
+GitHub rather than copying files manually.
+
 ## Current State
 
 As of 2026-04-28, the repo is in a soak and evaluation period after the recent
