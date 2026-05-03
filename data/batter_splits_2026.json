@@ -5082,19 +5082,87 @@
         "so": 2,
         "k_rate": 0.1176
       }
+    },
+    "mlbam:678662": {
+      "name": "Ezequiel Tovar",
+      "bats": "R",
+      "mlbam_id": 678662,
+      "bbref_id": "tovarez01",
+      "season": 2026,
+      "vs_R": {
+        "pa": 105,
+        "so": 27,
+        "k_rate": 0.2571
+      },
+      "vs_L": {
+        "pa": 23,
+        "so": 10,
+        "k_rate": 0.4348
+      }
+    },
+    "mlbam:664983": {
+      "name": "Jake McCarthy",
+      "bats": "R",
+      "mlbam_id": 664983,
+      "bbref_id": "mccarja02",
+      "season": 2026,
+      "vs_R": {
+        "pa": 63,
+        "so": 10,
+        "k_rate": 0.1587
+      },
+      "vs_L": {
+        "pa": 6,
+        "so": 2,
+        "k_rate": 0.3333
+      }
+    },
+    "mlbam:641680": {
+      "name": "Jonah Heim",
+      "bats": "R",
+      "mlbam_id": 641680,
+      "bbref_id": "heimjo01",
+      "season": 2026,
+      "vs_R": {
+        "pa": 15,
+        "so": 3,
+        "k_rate": 0.2
+      },
+      "vs_L": {
+        "pa": 25,
+        "so": 2,
+        "k_rate": 0.08
+      }
+    },
+    "mlbam:680869": {
+      "name": "Zack Gelof",
+      "bats": "R",
+      "mlbam_id": 680869,
+      "bbref_id": "gelofza01",
+      "season": 2026,
+      "vs_R": {
+        "pa": 22,
+        "so": 6,
+        "k_rate": 0.2727
+      },
+      "vs_L": {
+        "pa": 18,
+        "so": 4,
+        "k_rate": 0.2222
+      }
     }
   },
-  "updated_at": "2026-05-03T21:00:05Z",
+  "updated_at": "2026-05-03T21:12:08Z",
   "last_run": {
     "projection_status": "collection_only",
     "requested_batters": 243,
-    "already_cached": 191,
+    "already_cached": 196,
     "attempted": 4,
     "collected": 4,
     "failed": 0,
-    "queued_not_attempted": 48,
-    "cache_size": 300,
+    "queued_not_attempted": 43,
+    "cache_size": 304,
     "errors": [],
-    "updated_at": "2026-05-03T21:00:05Z"
+    "updated_at": "2026-05-03T21:12:08Z"
   }
 }
