@@ -4339,19 +4339,82 @@
         "so": 5,
         "k_rate": 0.3125
       }
+    },
+    "mlbam:682818": {
+      "name": "Yohendrick Pinango",
+      "bats": "R",
+      "mlbam_id": 682818,
+      "bbref_id": "pinanyo01",
+      "season": 2026,
+      "vs_R": {
+        "pa": 11,
+        "so": 0,
+        "k_rate": 0.0
+      }
+    },
+    "mlbam:665926": {
+      "name": "Andr\u00e9s Gim\u00e9nez",
+      "bats": "R",
+      "mlbam_id": 665926,
+      "bbref_id": "gimenan01",
+      "season": 2026,
+      "vs_R": {
+        "pa": 84,
+        "so": 14,
+        "k_rate": 0.1667
+      },
+      "vs_L": {
+        "pa": 31,
+        "so": 4,
+        "k_rate": 0.129
+      }
+    },
+    "mlbam:623168": {
+      "name": "Tyler Heineman",
+      "bats": "R",
+      "mlbam_id": 623168,
+      "bbref_id": "heinety01",
+      "season": 2026,
+      "vs_R": {
+        "pa": 36,
+        "so": 10,
+        "k_rate": 0.2778
+      },
+      "vs_L": {
+        "pa": 18,
+        "so": 4,
+        "k_rate": 0.2222
+      }
+    },
+    "mlbam:572233": {
+      "name": "Christian Walker",
+      "bats": "R",
+      "mlbam_id": 572233,
+      "bbref_id": "walkech02",
+      "season": 2026,
+      "vs_R": {
+        "pa": 102,
+        "so": 16,
+        "k_rate": 0.1569
+      },
+      "vs_L": {
+        "pa": 38,
+        "so": 8,
+        "k_rate": 0.2105
+      }
     }
   },
-  "updated_at": "2026-05-03T14:16:18Z",
+  "updated_at": "2026-05-03T15:59:33Z",
   "last_run": {
     "projection_status": "collection_only",
-    "requested_batters": 18,
-    "already_cached": 13,
+    "requested_batters": 126,
+    "already_cached": 99,
     "attempted": 4,
     "collected": 4,
     "failed": 0,
-    "queued_not_attempted": 1,
-    "cache_size": 256,
+    "queued_not_attempted": 23,
+    "cache_size": 260,
     "errors": [],
-    "updated_at": "2026-05-03T14:16:18Z"
+    "updated_at": "2026-05-03T15:59:33Z"
   }
 }
