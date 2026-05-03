@@ -5354,19 +5354,87 @@
         "so": 1,
         "k_rate": 0.1
       }
+    },
+    "mlbam:686527": {
+      "name": "Dominic Canzone",
+      "bats": "R",
+      "mlbam_id": 686527,
+      "bbref_id": "canzodo01",
+      "season": 2026,
+      "vs_R": {
+        "pa": 73,
+        "so": 16,
+        "k_rate": 0.2192
+      },
+      "vs_L": {
+        "pa": 6,
+        "so": 2,
+        "k_rate": 0.3333
+      }
+    },
+    "mlbam:677594": {
+      "name": "Julio Rodr\u00edguez",
+      "bats": "R",
+      "mlbam_id": 677594,
+      "bbref_id": "rodriju01",
+      "season": 2026,
+      "vs_R": {
+        "pa": 110,
+        "so": 25,
+        "k_rate": 0.2273
+      },
+      "vs_L": {
+        "pa": 38,
+        "so": 8,
+        "k_rate": 0.2105
+      }
+    },
+    "mlbam:647304": {
+      "name": "Josh Naylor",
+      "bats": "R",
+      "mlbam_id": 647304,
+      "bbref_id": "naylojo01",
+      "season": 2026,
+      "vs_R": {
+        "pa": 100,
+        "so": 15,
+        "k_rate": 0.15
+      },
+      "vs_L": {
+        "pa": 34,
+        "so": 8,
+        "k_rate": 0.2353
+      }
+    },
+    "mlbam:668227": {
+      "name": "Randy Arozarena",
+      "bats": "R",
+      "mlbam_id": 668227,
+      "bbref_id": "arozara01",
+      "season": 2026,
+      "vs_R": {
+        "pa": 107,
+        "so": 24,
+        "k_rate": 0.2243
+      },
+      "vs_L": {
+        "pa": 35,
+        "so": 9,
+        "k_rate": 0.2571
+      }
     }
   },
-  "updated_at": "2026-05-03T22:58:41Z",
+  "updated_at": "2026-05-03T23:13:25Z",
   "last_run": {
     "projection_status": "collection_only",
     "requested_batters": 243,
-    "already_cached": 208,
+    "already_cached": 212,
     "attempted": 4,
     "collected": 4,
     "failed": 0,
-    "queued_not_attempted": 31,
-    "cache_size": 316,
+    "queued_not_attempted": 27,
+    "cache_size": 320,
     "errors": [],
-    "updated_at": "2026-05-03T22:58:41Z"
+    "updated_at": "2026-05-03T23:13:25Z"
   }
 }
