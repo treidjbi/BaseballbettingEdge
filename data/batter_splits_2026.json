@@ -5150,19 +5150,87 @@
         "so": 4,
         "k_rate": 0.2222
       }
+    },
+    "mlbam:666182": {
+      "name": "Bo Bichette",
+      "bats": "R",
+      "mlbam_id": 666182,
+      "bbref_id": "bichebo01",
+      "season": 2026,
+      "vs_R": {
+        "pa": 103,
+        "so": 21,
+        "k_rate": 0.2039
+      },
+      "vs_L": {
+        "pa": 42,
+        "so": 8,
+        "k_rate": 0.1905
+      }
+    },
+    "mlbam:665742": {
+      "name": "Juan Soto",
+      "bats": "R",
+      "mlbam_id": 665742,
+      "bbref_id": "sotoju01",
+      "season": 2026,
+      "vs_R": {
+        "pa": 48,
+        "so": 5,
+        "k_rate": 0.1042
+      },
+      "vs_L": {
+        "pa": 29,
+        "so": 6,
+        "k_rate": 0.2069
+      }
+    },
+    "mlbam:596103": {
+      "name": "Austin Slater",
+      "bats": "R",
+      "mlbam_id": 596103,
+      "bbref_id": "slateau01",
+      "season": 2026,
+      "vs_R": {
+        "pa": 3,
+        "so": 0,
+        "k_rate": 0.0
+      },
+      "vs_L": {
+        "pa": 32,
+        "so": 10,
+        "k_rate": 0.3125
+      }
+    },
+    "mlbam:683146": {
+      "name": "Brett Baty",
+      "bats": "R",
+      "mlbam_id": 683146,
+      "bbref_id": "batybr01",
+      "season": 2026,
+      "vs_R": {
+        "pa": 91,
+        "so": 23,
+        "k_rate": 0.2527
+      },
+      "vs_L": {
+        "pa": 12,
+        "so": 5,
+        "k_rate": 0.4167
+      }
     }
   },
-  "updated_at": "2026-05-03T21:12:08Z",
+  "updated_at": "2026-05-03T21:58:16Z",
   "last_run": {
     "projection_status": "collection_only",
     "requested_batters": 243,
-    "already_cached": 196,
+    "already_cached": 200,
     "attempted": 4,
     "collected": 4,
     "failed": 0,
-    "queued_not_attempted": 43,
-    "cache_size": 304,
+    "queued_not_attempted": 39,
+    "cache_size": 308,
     "errors": [],
-    "updated_at": "2026-05-03T21:12:08Z"
+    "updated_at": "2026-05-03T21:58:16Z"
   }
 }
