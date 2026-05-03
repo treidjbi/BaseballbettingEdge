@@ -4271,19 +4271,87 @@
         "so": 4,
         "k_rate": 0.1111
       }
+    },
+    "mlbam:668885": {
+      "name": "Austin Martin",
+      "bats": "R",
+      "mlbam_id": 668885,
+      "bbref_id": "martiau01",
+      "season": 2026,
+      "vs_R": {
+        "pa": 34,
+        "so": 6,
+        "k_rate": 0.1765
+      },
+      "vs_L": {
+        "pa": 57,
+        "so": 7,
+        "k_rate": 0.1228
+      }
+    },
+    "mlbam:605170": {
+      "name": "Victor Caratini",
+      "bats": "R",
+      "mlbam_id": 605170,
+      "bbref_id": "caratvi01",
+      "season": 2026,
+      "vs_R": {
+        "pa": 53,
+        "so": 9,
+        "k_rate": 0.1698
+      },
+      "vs_L": {
+        "pa": 44,
+        "so": 7,
+        "k_rate": 0.1591
+      }
+    },
+    "mlbam:668904": {
+      "name": "Royce Lewis",
+      "bats": "R",
+      "mlbam_id": 668904,
+      "bbref_id": "lewisro02",
+      "season": 2026,
+      "vs_R": {
+        "pa": 55,
+        "so": 17,
+        "k_rate": 0.3091
+      },
+      "vs_L": {
+        "pa": 25,
+        "so": 6,
+        "k_rate": 0.24
+      }
+    },
+    "mlbam:666464": {
+      "name": "Jerar Encarnacion",
+      "bats": "R",
+      "mlbam_id": 666464,
+      "bbref_id": "encarje01",
+      "season": 2026,
+      "vs_R": {
+        "pa": 17,
+        "so": 3,
+        "k_rate": 0.1765
+      },
+      "vs_L": {
+        "pa": 16,
+        "so": 5,
+        "k_rate": 0.3125
+      }
     }
   },
-  "updated_at": "2026-05-03T04:50:21Z",
+  "updated_at": "2026-05-03T14:16:18Z",
   "last_run": {
     "projection_status": "collection_only",
-    "requested_batters": 261,
-    "already_cached": 191,
+    "requested_batters": 18,
+    "already_cached": 13,
     "attempted": 4,
     "collected": 4,
     "failed": 0,
-    "queued_not_attempted": 66,
-    "cache_size": 252,
+    "queued_not_attempted": 1,
+    "cache_size": 256,
     "errors": [],
-    "updated_at": "2026-05-03T04:50:21Z"
+    "updated_at": "2026-05-03T14:16:18Z"
   }
 }
