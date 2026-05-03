@@ -4538,19 +4538,87 @@
         "so": 0,
         "k_rate": 0.0
       }
+    },
+    "mlbam:606192": {
+      "name": "Teoscar Hern\u00e1ndez",
+      "bats": "R",
+      "mlbam_id": 606192,
+      "bbref_id": "hernate01",
+      "season": 2026,
+      "vs_R": {
+        "pa": 86,
+        "so": 25,
+        "k_rate": 0.2907
+      },
+      "vs_L": {
+        "pa": 31,
+        "so": 7,
+        "k_rate": 0.2258
+      }
+    },
+    "mlbam:663656": {
+      "name": "Kyle Tucker",
+      "bats": "R",
+      "mlbam_id": 663656,
+      "bbref_id": "tuckeky01",
+      "season": 2026,
+      "vs_R": {
+        "pa": 108,
+        "so": 21,
+        "k_rate": 0.1944
+      },
+      "vs_L": {
+        "pa": 33,
+        "so": 8,
+        "k_rate": 0.2424
+      }
+    },
+    "mlbam:571970": {
+      "name": "Max Muncy",
+      "bats": "R",
+      "mlbam_id": 571970,
+      "bbref_id": "muncyma01",
+      "season": 2026,
+      "vs_R": {
+        "pa": 97,
+        "so": 22,
+        "k_rate": 0.2268
+      },
+      "vs_L": {
+        "pa": 26,
+        "so": 7,
+        "k_rate": 0.2692
+      }
+    },
+    "mlbam:687221": {
+      "name": "Dalton Rushing",
+      "bats": "R",
+      "mlbam_id": 687221,
+      "bbref_id": "rushida01",
+      "season": 2026,
+      "vs_R": {
+        "pa": 38,
+        "so": 10,
+        "k_rate": 0.2632
+      },
+      "vs_L": {
+        "pa": 15,
+        "so": 4,
+        "k_rate": 0.2667
+      }
     }
   },
-  "updated_at": "2026-05-03T17:01:24Z",
+  "updated_at": "2026-05-03T17:30:41Z",
   "last_run": {
     "projection_status": "collection_only",
-    "requested_batters": 189,
-    "already_cached": 130,
+    "requested_batters": 216,
+    "already_cached": 152,
     "attempted": 4,
     "collected": 4,
     "failed": 0,
-    "queued_not_attempted": 55,
-    "cache_size": 268,
+    "queued_not_attempted": 60,
+    "cache_size": 272,
     "errors": [],
-    "updated_at": "2026-05-03T17:01:24Z"
+    "updated_at": "2026-05-03T17:30:41Z"
   }
 }
