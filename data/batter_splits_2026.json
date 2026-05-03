@@ -4402,19 +4402,87 @@
         "so": 8,
         "k_rate": 0.2105
       }
+    },
+    "mlbam:665750": {
+      "name": "Leody Taveras",
+      "bats": "R",
+      "mlbam_id": 665750,
+      "bbref_id": "taverle01",
+      "season": 2026,
+      "vs_R": {
+        "pa": 59,
+        "so": 10,
+        "k_rate": 0.1695
+      },
+      "vs_L": {
+        "pa": 23,
+        "so": 6,
+        "k_rate": 0.2609
+      }
+    },
+    "mlbam:543877": {
+      "name": "Christian V\u00e1zquez",
+      "bats": "R",
+      "mlbam_id": 543877,
+      "bbref_id": "vazquch01",
+      "season": 2026,
+      "vs_R": {
+        "pa": 41,
+        "so": 6,
+        "k_rate": 0.1463
+      },
+      "vs_L": {
+        "pa": 15,
+        "so": 2,
+        "k_rate": 0.1333
+      }
+    },
+    "mlbam:624431": {
+      "name": "Jose Trevino",
+      "bats": "R",
+      "mlbam_id": 624431,
+      "bbref_id": "trevijo01",
+      "season": 2026,
+      "vs_R": {
+        "pa": 13,
+        "so": 3,
+        "k_rate": 0.2308
+      },
+      "vs_L": {
+        "pa": 4,
+        "so": 1,
+        "k_rate": 0.25
+      }
+    },
+    "mlbam:663698": {
+      "name": "Joey Bart",
+      "bats": "R",
+      "mlbam_id": 663698,
+      "bbref_id": "bartjo01",
+      "season": 2026,
+      "vs_R": {
+        "pa": 24,
+        "so": 8,
+        "k_rate": 0.3333
+      },
+      "vs_L": {
+        "pa": 21,
+        "so": 9,
+        "k_rate": 0.4286
+      }
     }
   },
-  "updated_at": "2026-05-03T15:59:33Z",
+  "updated_at": "2026-05-03T16:28:30Z",
   "last_run": {
     "projection_status": "collection_only",
-    "requested_batters": 126,
-    "already_cached": 99,
+    "requested_batters": 162,
+    "already_cached": 127,
     "attempted": 4,
     "collected": 4,
     "failed": 0,
-    "queued_not_attempted": 23,
-    "cache_size": 260,
+    "queued_not_attempted": 31,
+    "cache_size": 264,
     "errors": [],
-    "updated_at": "2026-05-03T15:59:33Z"
+    "updated_at": "2026-05-03T16:28:30Z"
   }
 }
