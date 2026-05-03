@@ -4470,19 +4470,87 @@
         "so": 9,
         "k_rate": 0.4286
       }
+    },
+    "mlbam:666624": {
+      "name": "Christopher Morel",
+      "bats": "R",
+      "mlbam_id": 666624,
+      "bbref_id": "morelch01",
+      "season": 2026,
+      "vs_R": {
+        "pa": 7,
+        "so": 1,
+        "k_rate": 0.1429
+      },
+      "vs_L": {
+        "pa": 2,
+        "so": 2,
+        "k_rate": 1.0
+      }
+    },
+    "mlbam:677870": {
+      "name": "Leo Jim\u00e9nez",
+      "bats": "R",
+      "mlbam_id": 677870,
+      "bbref_id": "jimenle01",
+      "season": 2026,
+      "vs_R": {
+        "pa": 6,
+        "so": 0,
+        "k_rate": 0.0
+      },
+      "vs_L": {
+        "pa": 11,
+        "so": 2,
+        "k_rate": 0.1818
+      }
+    },
+    "mlbam:702222": {
+      "name": "Justin Crawford",
+      "bats": "R",
+      "mlbam_id": 702222,
+      "bbref_id": "crawfju01",
+      "season": 2026,
+      "vs_R": {
+        "pa": 84,
+        "so": 14,
+        "k_rate": 0.1667
+      },
+      "vs_L": {
+        "pa": 19,
+        "so": 5,
+        "k_rate": 0.2632
+      }
+    },
+    "mlbam:606992": {
+      "name": "Eric Haase",
+      "bats": "R",
+      "mlbam_id": 606992,
+      "bbref_id": "haaseer01",
+      "season": 2026,
+      "vs_R": {
+        "pa": 5,
+        "so": 1,
+        "k_rate": 0.2
+      },
+      "vs_L": {
+        "pa": 1,
+        "so": 0,
+        "k_rate": 0.0
+      }
     }
   },
-  "updated_at": "2026-05-03T16:28:30Z",
+  "updated_at": "2026-05-03T17:01:24Z",
   "last_run": {
     "projection_status": "collection_only",
-    "requested_batters": 162,
-    "already_cached": 127,
+    "requested_batters": 189,
+    "already_cached": 130,
     "attempted": 4,
     "collected": 4,
     "failed": 0,
-    "queued_not_attempted": 31,
-    "cache_size": 264,
+    "queued_not_attempted": 55,
+    "cache_size": 268,
     "errors": [],
-    "updated_at": "2026-05-03T16:28:30Z"
+    "updated_at": "2026-05-03T17:01:24Z"
   }
 }
