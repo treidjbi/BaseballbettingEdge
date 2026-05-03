@@ -4810,19 +4810,87 @@
         "so": 7,
         "k_rate": 0.3333
       }
+    },
+    "mlbam:681546": {
+      "name": "James Outman",
+      "bats": "R",
+      "mlbam_id": 681546,
+      "bbref_id": "outmaja01",
+      "season": 2026,
+      "vs_R": {
+        "pa": 27,
+        "so": 10,
+        "k_rate": 0.3704
+      },
+      "vs_L": {
+        "pa": 6,
+        "so": 2,
+        "k_rate": 0.3333
+      }
+    },
+    "mlbam:688363": {
+      "name": "Graham Pauley",
+      "bats": "R",
+      "mlbam_id": 688363,
+      "bbref_id": "paulegr01",
+      "season": 2026,
+      "vs_R": {
+        "pa": 67,
+        "so": 18,
+        "k_rate": 0.2687
+      },
+      "vs_L": {
+        "pa": 7,
+        "so": 1,
+        "k_rate": 0.1429
+      }
+    },
+    "mlbam:602104": {
+      "name": "Ram\u00f3n Ur\u00edas",
+      "bats": "R",
+      "mlbam_id": 602104,
+      "bbref_id": "uriasra01",
+      "season": 2026,
+      "vs_R": {
+        "pa": 47,
+        "so": 8,
+        "k_rate": 0.1702
+      },
+      "vs_L": {
+        "pa": 19,
+        "so": 4,
+        "k_rate": 0.2105
+      }
+    },
+    "mlbam:666397": {
+      "name": "Edouard Julien",
+      "bats": "R",
+      "mlbam_id": 666397,
+      "bbref_id": "julieed01",
+      "season": 2026,
+      "vs_R": {
+        "pa": 87,
+        "so": 22,
+        "k_rate": 0.2529
+      },
+      "vs_L": {
+        "pa": 9,
+        "so": 3,
+        "k_rate": 0.3333
+      }
     }
   },
-  "updated_at": "2026-05-03T19:16:08Z",
+  "updated_at": "2026-05-03T19:37:00Z",
   "last_run": {
     "projection_status": "collection_only",
-    "requested_batters": 234,
-    "already_cached": 174,
+    "requested_batters": 243,
+    "already_cached": 185,
     "attempted": 4,
     "collected": 4,
     "failed": 0,
-    "queued_not_attempted": 56,
-    "cache_size": 284,
+    "queued_not_attempted": 54,
+    "cache_size": 288,
     "errors": [],
-    "updated_at": "2026-05-03T19:16:08Z"
+    "updated_at": "2026-05-03T19:37:00Z"
   }
 }
