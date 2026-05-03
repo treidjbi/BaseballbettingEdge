@@ -3936,19 +3936,87 @@
         "so": 13,
         "k_rate": 0.4815
       }
+    },
+    "mlbam:701358": {
+      "name": "Cam Smith",
+      "bats": "R",
+      "mlbam_id": 701358,
+      "bbref_id": "smithca07",
+      "season": 2026,
+      "vs_R": {
+        "pa": 94,
+        "so": 24,
+        "k_rate": 0.2553
+      },
+      "vs_L": {
+        "pa": 34,
+        "so": 12,
+        "k_rate": 0.3529
+      }
+    },
+    "mlbam:687957": {
+      "name": "Dustin Harris",
+      "bats": "R",
+      "mlbam_id": 687957,
+      "bbref_id": "harridu01",
+      "season": 2026,
+      "vs_R": {
+        "pa": 39,
+        "so": 6,
+        "k_rate": 0.1538
+      },
+      "vs_L": {
+        "pa": 7,
+        "so": 0,
+        "k_rate": 0.0
+      }
+    },
+    "mlbam:664761": {
+      "name": "Alec Bohm",
+      "bats": "R",
+      "mlbam_id": 664761,
+      "bbref_id": "bohmal01",
+      "season": 2026,
+      "vs_R": {
+        "pa": 83,
+        "so": 14,
+        "k_rate": 0.1687
+      },
+      "vs_L": {
+        "pa": 40,
+        "so": 6,
+        "k_rate": 0.15
+      }
+    },
+    "mlbam:592663": {
+      "name": "J.T. Realmuto",
+      "bats": "R",
+      "mlbam_id": 592663,
+      "bbref_id": "realmjt01",
+      "season": 2026,
+      "vs_R": {
+        "pa": 43,
+        "so": 9,
+        "k_rate": 0.2093
+      },
+      "vs_L": {
+        "pa": 18,
+        "so": 2,
+        "k_rate": 0.1111
+      }
     }
   },
-  "updated_at": "2026-05-02T23:56:46Z",
+  "updated_at": "2026-05-03T00:12:07Z",
   "last_run": {
     "projection_status": "collection_only",
     "requested_batters": 261,
-    "already_cached": 171,
+    "already_cached": 174,
     "attempted": 4,
     "collected": 4,
     "failed": 0,
-    "queued_not_attempted": 86,
-    "cache_size": 232,
+    "queued_not_attempted": 83,
+    "cache_size": 236,
     "errors": [],
-    "updated_at": "2026-05-02T23:56:46Z"
+    "updated_at": "2026-05-03T00:12:07Z"
   }
 }
