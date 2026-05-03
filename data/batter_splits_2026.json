@@ -5286,19 +5286,87 @@
         "so": 5,
         "k_rate": 0.1852
       }
+    },
+    "mlbam:620443": {
+      "name": "Luis Torrens",
+      "bats": "R",
+      "mlbam_id": 620443,
+      "bbref_id": "torrelu01",
+      "season": 2026,
+      "vs_R": {
+        "pa": 18,
+        "so": 4,
+        "k_rate": 0.2222
+      },
+      "vs_L": {
+        "pa": 13,
+        "so": 2,
+        "k_rate": 0.1538
+      }
+    },
+    "mlbam:694384": {
+      "name": "Nolan Schanuel",
+      "bats": "R",
+      "mlbam_id": 694384,
+      "bbref_id": "schanno01",
+      "season": 2026,
+      "vs_R": {
+        "pa": 97,
+        "so": 12,
+        "k_rate": 0.1237
+      },
+      "vs_L": {
+        "pa": 37,
+        "so": 7,
+        "k_rate": 0.1892
+      }
+    },
+    "mlbam:624585": {
+      "name": "Jorge Soler",
+      "bats": "R",
+      "mlbam_id": 624585,
+      "bbref_id": "solerjo01",
+      "season": 2026,
+      "vs_R": {
+        "pa": 94,
+        "so": 31,
+        "k_rate": 0.3298
+      },
+      "vs_L": {
+        "pa": 36,
+        "so": 8,
+        "k_rate": 0.2222
+      }
+    },
+    "mlbam:518595": {
+      "name": "Travis d'Arnaud",
+      "bats": "R",
+      "mlbam_id": 518595,
+      "bbref_id": "darnatr01",
+      "season": 2026,
+      "vs_R": {
+        "pa": 25,
+        "so": 5,
+        "k_rate": 0.2
+      },
+      "vs_L": {
+        "pa": 10,
+        "so": 1,
+        "k_rate": 0.1
+      }
     }
   },
-  "updated_at": "2026-05-03T22:09:15Z",
+  "updated_at": "2026-05-03T22:58:41Z",
   "last_run": {
     "projection_status": "collection_only",
     "requested_batters": 243,
-    "already_cached": 203,
+    "already_cached": 208,
     "attempted": 4,
     "collected": 4,
     "failed": 0,
-    "queued_not_attempted": 36,
-    "cache_size": 312,
+    "queued_not_attempted": 31,
+    "cache_size": 316,
     "errors": [],
-    "updated_at": "2026-05-03T22:09:15Z"
+    "updated_at": "2026-05-03T22:58:41Z"
   }
 }
