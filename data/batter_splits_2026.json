@@ -5218,19 +5218,87 @@
         "so": 5,
         "k_rate": 0.4167
       }
+    },
+    "mlbam:543760": {
+      "name": "Marcus Semien",
+      "bats": "R",
+      "mlbam_id": 543760,
+      "bbref_id": "semiema01",
+      "season": 2026,
+      "vs_R": {
+        "pa": 99,
+        "so": 19,
+        "k_rate": 0.1919
+      },
+      "vs_L": {
+        "pa": 30,
+        "so": 6,
+        "k_rate": 0.2
+      }
+    },
+    "mlbam:701807": {
+      "name": "Carson Benge",
+      "bats": "R",
+      "mlbam_id": 701807,
+      "bbref_id": "bengeca01",
+      "season": 2026,
+      "vs_R": {
+        "pa": 88,
+        "so": 17,
+        "k_rate": 0.1932
+      },
+      "vs_L": {
+        "pa": 14,
+        "so": 7,
+        "k_rate": 0.5
+      }
+    },
+    "mlbam:668901": {
+      "name": "Mark Vientos",
+      "bats": "R",
+      "mlbam_id": 668901,
+      "bbref_id": "vientma01",
+      "season": 2026,
+      "vs_R": {
+        "pa": 57,
+        "so": 15,
+        "k_rate": 0.2632
+      },
+      "vs_L": {
+        "pa": 30,
+        "so": 6,
+        "k_rate": 0.2
+      }
+    },
+    "mlbam:621438": {
+      "name": "Tyrone Taylor",
+      "bats": "R",
+      "mlbam_id": 621438,
+      "bbref_id": "tayloty01",
+      "season": 2026,
+      "vs_R": {
+        "pa": 33,
+        "so": 5,
+        "k_rate": 0.1515
+      },
+      "vs_L": {
+        "pa": 27,
+        "so": 5,
+        "k_rate": 0.1852
+      }
     }
   },
-  "updated_at": "2026-05-03T21:58:16Z",
+  "updated_at": "2026-05-03T22:09:15Z",
   "last_run": {
     "projection_status": "collection_only",
     "requested_batters": 243,
-    "already_cached": 200,
+    "already_cached": 203,
     "attempted": 4,
     "collected": 4,
     "failed": 0,
-    "queued_not_attempted": 39,
-    "cache_size": 308,
+    "queued_not_attempted": 36,
+    "cache_size": 312,
     "errors": [],
-    "updated_at": "2026-05-03T21:58:16Z"
+    "updated_at": "2026-05-03T22:09:15Z"
   }
 }
