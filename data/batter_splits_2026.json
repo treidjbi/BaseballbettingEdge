@@ -4742,19 +4742,87 @@
         "so": 3,
         "k_rate": 0.1111
       }
+    },
+    "mlbam:683357": {
+      "name": "Owen Caissie",
+      "bats": "R",
+      "mlbam_id": 683357,
+      "bbref_id": "caissow01",
+      "season": 2026,
+      "vs_R": {
+        "pa": 83,
+        "so": 31,
+        "k_rate": 0.3735
+      },
+      "vs_L": {
+        "pa": 16,
+        "so": 11,
+        "k_rate": 0.6875
+      }
+    },
+    "mlbam:665877": {
+      "name": "Jos\u00e9 Ferm\u00edn",
+      "bats": "R",
+      "mlbam_id": 665877,
+      "bbref_id": "fermijo01",
+      "season": 2026,
+      "vs_R": {
+        "pa": 20,
+        "so": 5,
+        "k_rate": 0.25
+      },
+      "vs_L": {
+        "pa": 14,
+        "so": 2,
+        "k_rate": 0.1429
+      }
+    },
+    "mlbam:701675": {
+      "name": "Nathan Church",
+      "bats": "R",
+      "mlbam_id": 701675,
+      "bbref_id": "churcna01",
+      "season": 2026,
+      "vs_R": {
+        "pa": 84,
+        "so": 21,
+        "k_rate": 0.25
+      },
+      "vs_L": {
+        "pa": 16,
+        "so": 3,
+        "k_rate": 0.1875
+      }
+    },
+    "mlbam:686780": {
+      "name": "Pedro Pag\u00e9s",
+      "bats": "R",
+      "mlbam_id": 686780,
+      "bbref_id": "pagespe02",
+      "season": 2026,
+      "vs_R": {
+        "pa": 55,
+        "so": 11,
+        "k_rate": 0.2
+      },
+      "vs_L": {
+        "pa": 21,
+        "so": 7,
+        "k_rate": 0.3333
+      }
     }
   },
-  "updated_at": "2026-05-03T18:32:57Z",
+  "updated_at": "2026-05-03T19:16:08Z",
   "last_run": {
     "projection_status": "collection_only",
     "requested_batters": 234,
-    "already_cached": 171,
+    "already_cached": 174,
     "attempted": 4,
     "collected": 4,
     "failed": 0,
-    "queued_not_attempted": 59,
-    "cache_size": 280,
+    "queued_not_attempted": 56,
+    "cache_size": 284,
     "errors": [],
-    "updated_at": "2026-05-03T18:32:57Z"
+    "updated_at": "2026-05-03T19:16:08Z"
   }
 }
