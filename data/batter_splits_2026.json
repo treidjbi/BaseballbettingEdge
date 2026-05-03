@@ -4606,19 +4606,87 @@
         "so": 4,
         "k_rate": 0.2667
       }
+    },
+    "mlbam:681624": {
+      "name": "Andy Pages",
+      "bats": "R",
+      "mlbam_id": 681624,
+      "bbref_id": "pagesan01",
+      "season": 2026,
+      "vs_R": {
+        "pa": 104,
+        "so": 24,
+        "k_rate": 0.2308
+      },
+      "vs_L": {
+        "pa": 27,
+        "so": 7,
+        "k_rate": 0.2593
+      }
+    },
+    "mlbam:808975": {
+      "name": "Hyeseong Kim",
+      "bats": "R",
+      "mlbam_id": 808975,
+      "bbref_id": "kimhy02",
+      "season": 2026,
+      "vs_R": {
+        "pa": 58,
+        "so": 10,
+        "k_rate": 0.1724
+      },
+      "vs_L": {
+        "pa": 8,
+        "so": 3,
+        "k_rate": 0.375
+      }
+    },
+    "mlbam:690976": {
+      "name": "Alex Freeland",
+      "bats": "R",
+      "mlbam_id": 690976,
+      "bbref_id": "freelal01",
+      "season": 2026,
+      "vs_R": {
+        "pa": 78,
+        "so": 22,
+        "k_rate": 0.2821
+      },
+      "vs_L": {
+        "pa": 11,
+        "so": 4,
+        "k_rate": 0.3636
+      }
+    },
+    "mlbam:802139": {
+      "name": "JJ Wetherholt",
+      "bats": "R",
+      "mlbam_id": 802139,
+      "bbref_id": "wethejj01",
+      "season": 2026,
+      "vs_R": {
+        "pa": 102,
+        "so": 19,
+        "k_rate": 0.1863
+      },
+      "vs_L": {
+        "pa": 50,
+        "so": 9,
+        "k_rate": 0.18
+      }
     }
   },
-  "updated_at": "2026-05-03T17:30:41Z",
+  "updated_at": "2026-05-03T17:53:17Z",
   "last_run": {
     "projection_status": "collection_only",
-    "requested_batters": 216,
-    "already_cached": 152,
+    "requested_batters": 234,
+    "already_cached": 167,
     "attempted": 4,
     "collected": 4,
     "failed": 0,
-    "queued_not_attempted": 60,
-    "cache_size": 272,
+    "queued_not_attempted": 63,
+    "cache_size": 276,
     "errors": [],
-    "updated_at": "2026-05-03T17:30:41Z"
+    "updated_at": "2026-05-03T17:53:17Z"
   }
 }
