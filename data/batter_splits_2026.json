@@ -5422,19 +5422,87 @@
         "so": 9,
         "k_rate": 0.2571
       }
+    },
+    "mlbam:641487": {
+      "name": "J.P. Crawford",
+      "bats": "R",
+      "mlbam_id": 641487,
+      "bbref_id": "crawfjp01",
+      "season": 2026,
+      "vs_R": {
+        "pa": 78,
+        "so": 13,
+        "k_rate": 0.1667
+      },
+      "vs_L": {
+        "pa": 33,
+        "so": 5,
+        "k_rate": 0.1515
+      }
+    },
+    "mlbam:702284": {
+      "name": "Cole Young",
+      "bats": "R",
+      "mlbam_id": 702284,
+      "bbref_id": "youngco01",
+      "season": 2026,
+      "vs_R": {
+        "pa": 93,
+        "so": 23,
+        "k_rate": 0.2473
+      },
+      "vs_L": {
+        "pa": 41,
+        "so": 5,
+        "k_rate": 0.122
+      }
+    },
+    "mlbam:656582": {
+      "name": "Connor Joe",
+      "bats": "R",
+      "mlbam_id": 656582,
+      "bbref_id": "joeco01",
+      "season": 2026,
+      "vs_R": {
+        "pa": 8,
+        "so": 1,
+        "k_rate": 0.125
+      },
+      "vs_L": {
+        "pa": 10,
+        "so": 4,
+        "k_rate": 0.4
+      }
+    },
+    "mlbam:640902": {
+      "name": "Jhonny Pereda",
+      "bats": "R",
+      "mlbam_id": 640902,
+      "bbref_id": "peredjh01",
+      "season": 2026,
+      "vs_R": {
+        "pa": 55,
+        "so": 13,
+        "k_rate": 0.2364
+      },
+      "vs_L": {
+        "pa": 23,
+        "so": 8,
+        "k_rate": 0.3478
+      }
     }
   },
-  "updated_at": "2026-05-03T23:13:25Z",
+  "updated_at": "2026-05-03T23:59:15Z",
   "last_run": {
     "projection_status": "collection_only",
     "requested_batters": 243,
-    "already_cached": 212,
+    "already_cached": 216,
     "attempted": 4,
     "collected": 4,
     "failed": 0,
-    "queued_not_attempted": 27,
-    "cache_size": 320,
+    "queued_not_attempted": 23,
+    "cache_size": 324,
     "errors": [],
-    "updated_at": "2026-05-03T23:13:25Z"
+    "updated_at": "2026-05-03T23:59:15Z"
   }
 }
