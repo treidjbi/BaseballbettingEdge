@@ -4878,19 +4878,87 @@
         "so": 3,
         "k_rate": 0.3333
       }
+    },
+    "mlbam:669288": {
+      "name": "Daniel Johnson",
+      "bats": "R",
+      "mlbam_id": 669288,
+      "bbref_id": "johnsda07",
+      "season": 2026,
+      "vs_R": {
+        "pa": 13,
+        "so": 3,
+        "k_rate": 0.2308
+      },
+      "vs_L": {
+        "pa": 3,
+        "so": 0,
+        "k_rate": 0.0
+      }
+    },
+    "mlbam:667472": {
+      "name": "Dane Myers",
+      "bats": "R",
+      "mlbam_id": 667472,
+      "bbref_id": "myersda01",
+      "season": 2026,
+      "vs_R": {
+        "pa": 24,
+        "so": 3,
+        "k_rate": 0.125
+      },
+      "vs_L": {
+        "pa": 28,
+        "so": 6,
+        "k_rate": 0.2143
+      }
+    },
+    "mlbam:500743": {
+      "name": "Miguel Rojas",
+      "bats": "R",
+      "mlbam_id": 500743,
+      "bbref_id": "rojasmi02",
+      "season": 2026,
+      "vs_R": {
+        "pa": 25,
+        "so": 3,
+        "k_rate": 0.12
+      },
+      "vs_L": {
+        "pa": 29,
+        "so": 5,
+        "k_rate": 0.1724
+      }
+    },
+    "mlbam:666160": {
+      "name": "Mickey Moniak",
+      "bats": "R",
+      "mlbam_id": 666160,
+      "bbref_id": "moniami01",
+      "season": 2026,
+      "vs_R": {
+        "pa": 87,
+        "so": 18,
+        "k_rate": 0.2069
+      },
+      "vs_L": {
+        "pa": 15,
+        "so": 7,
+        "k_rate": 0.4667
+      }
     }
   },
-  "updated_at": "2026-05-03T19:37:00Z",
+  "updated_at": "2026-05-03T19:57:22Z",
   "last_run": {
     "projection_status": "collection_only",
     "requested_batters": 243,
-    "already_cached": 185,
+    "already_cached": 186,
     "attempted": 4,
     "collected": 4,
     "failed": 0,
-    "queued_not_attempted": 54,
-    "cache_size": 288,
+    "queued_not_attempted": 53,
+    "cache_size": 292,
     "errors": [],
-    "updated_at": "2026-05-03T19:37:00Z"
+    "updated_at": "2026-05-03T19:57:22Z"
   }
 }
