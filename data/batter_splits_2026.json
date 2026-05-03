@@ -4072,19 +4072,87 @@
         "so": 4,
         "k_rate": 0.1111
       }
+    },
+    "mlbam:669364": {
+      "name": "Xavier Edwards",
+      "bats": "R",
+      "mlbam_id": 669364,
+      "bbref_id": "edwarxa01",
+      "season": 2026,
+      "vs_R": {
+        "pa": 107,
+        "so": 10,
+        "k_rate": 0.0935
+      },
+      "vs_L": {
+        "pa": 31,
+        "so": 5,
+        "k_rate": 0.1613
+      }
+    },
+    "mlbam:689414": {
+      "name": "Liam Hicks",
+      "bats": "R",
+      "mlbam_id": 689414,
+      "bbref_id": "hicksli01",
+      "season": 2026,
+      "vs_R": {
+        "pa": 88,
+        "so": 7,
+        "k_rate": 0.0795
+      },
+      "vs_L": {
+        "pa": 20,
+        "so": 1,
+        "k_rate": 0.05
+      }
+    },
+    "mlbam:682663": {
+      "name": "Agust\u00edn Ram\u00edrez",
+      "bats": "R",
+      "mlbam_id": 682663,
+      "bbref_id": "ramirag01",
+      "season": 2026,
+      "vs_R": {
+        "pa": 87,
+        "so": 21,
+        "k_rate": 0.2414
+      },
+      "vs_L": {
+        "pa": 34,
+        "so": 6,
+        "k_rate": 0.1765
+      }
+    },
+    "mlbam:681393": {
+      "name": "Connor Norby",
+      "bats": "R",
+      "mlbam_id": 681393,
+      "bbref_id": "norbyco01",
+      "season": 2026,
+      "vs_R": {
+        "pa": 78,
+        "so": 27,
+        "k_rate": 0.3462
+      },
+      "vs_L": {
+        "pa": 32,
+        "so": 5,
+        "k_rate": 0.1562
+      }
     }
   },
-  "updated_at": "2026-05-03T01:35:02Z",
+  "updated_at": "2026-05-03T04:08:39Z",
   "last_run": {
     "projection_status": "collection_only",
     "requested_batters": 261,
-    "already_cached": 178,
+    "already_cached": 182,
     "attempted": 4,
     "collected": 4,
     "failed": 0,
-    "queued_not_attempted": 79,
-    "cache_size": 240,
+    "queued_not_attempted": 75,
+    "cache_size": 244,
     "errors": [],
-    "updated_at": "2026-05-03T01:35:02Z"
+    "updated_at": "2026-05-03T04:08:39Z"
   }
 }
