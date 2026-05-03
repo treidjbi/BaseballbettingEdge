@@ -4208,19 +4208,82 @@
         "so": 6,
         "k_rate": 0.2069
       }
+    },
+    "mlbam:663743": {
+      "name": "Nick Fortes",
+      "bats": "R",
+      "mlbam_id": 663743,
+      "bbref_id": "forteni01",
+      "season": 2026,
+      "vs_R": {
+        "pa": 45,
+        "so": 5,
+        "k_rate": 0.1111
+      },
+      "vs_L": {
+        "pa": 39,
+        "so": 6,
+        "k_rate": 0.1538
+      }
+    },
+    "mlbam:690291": {
+      "name": "Jace Jung",
+      "bats": "R",
+      "mlbam_id": 690291,
+      "bbref_id": "jungja01",
+      "season": 2026,
+      "vs_R": {
+        "pa": 2,
+        "so": 0,
+        "k_rate": 0.0
+      }
+    },
+    "mlbam:660271": {
+      "name": "Shohei Ohtani",
+      "bats": "R",
+      "mlbam_id": 660271,
+      "bbref_id": "ohtansh01",
+      "season": 2026,
+      "vs_R": {
+        "pa": 102,
+        "so": 28,
+        "k_rate": 0.2745
+      },
+      "vs_L": {
+        "pa": 42,
+        "so": 6,
+        "k_rate": 0.1429
+      }
+    },
+    "mlbam:518692": {
+      "name": "Freddie Freeman",
+      "bats": "R",
+      "mlbam_id": 518692,
+      "bbref_id": "freemfr01",
+      "season": 2026,
+      "vs_R": {
+        "pa": 96,
+        "so": 10,
+        "k_rate": 0.1042
+      },
+      "vs_L": {
+        "pa": 36,
+        "so": 4,
+        "k_rate": 0.1111
+      }
     }
   },
-  "updated_at": "2026-05-03T04:31:48Z",
+  "updated_at": "2026-05-03T04:50:21Z",
   "last_run": {
     "projection_status": "collection_only",
     "requested_batters": 261,
-    "already_cached": 187,
+    "already_cached": 191,
     "attempted": 4,
     "collected": 4,
     "failed": 0,
-    "queued_not_attempted": 70,
-    "cache_size": 248,
+    "queued_not_attempted": 66,
+    "cache_size": 252,
     "errors": [],
-    "updated_at": "2026-05-03T04:31:48Z"
+    "updated_at": "2026-05-03T04:50:21Z"
   }
 }
