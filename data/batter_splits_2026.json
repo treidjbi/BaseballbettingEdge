@@ -4946,19 +4946,87 @@
         "so": 7,
         "k_rate": 0.4667
       }
+    },
+    "mlbam:669357": {
+      "name": "Nolan Gorman",
+      "bats": "R",
+      "mlbam_id": 669357,
+      "bbref_id": "gormano01",
+      "season": 2026,
+      "vs_R": {
+        "pa": 105,
+        "so": 30,
+        "k_rate": 0.2857
+      },
+      "vs_L": {
+        "pa": 20,
+        "so": 5,
+        "k_rate": 0.25
+      }
+    },
+    "mlbam:696100": {
+      "name": "Hunter Goodman",
+      "bats": "R",
+      "mlbam_id": 696100,
+      "bbref_id": "goodmhu01",
+      "season": 2026,
+      "vs_R": {
+        "pa": 97,
+        "so": 34,
+        "k_rate": 0.3505
+      },
+      "vs_L": {
+        "pa": 32,
+        "so": 15,
+        "k_rate": 0.4688
+      }
+    },
+    "mlbam:681198": {
+      "name": "TJ Rumfield",
+      "bats": "R",
+      "mlbam_id": 681198,
+      "bbref_id": "rumfitj01",
+      "season": 2026,
+      "vs_R": {
+        "pa": 106,
+        "so": 18,
+        "k_rate": 0.1698
+      },
+      "vs_L": {
+        "pa": 29,
+        "so": 4,
+        "k_rate": 0.1379
+      }
+    },
+    "mlbam:687859": {
+      "name": "Troy Johnston",
+      "bats": "R",
+      "mlbam_id": 687859,
+      "bbref_id": "johnstr02",
+      "season": 2026,
+      "vs_R": {
+        "pa": 90,
+        "so": 20,
+        "k_rate": 0.2222
+      },
+      "vs_L": {
+        "pa": 23,
+        "so": 3,
+        "k_rate": 0.1304
+      }
     }
   },
-  "updated_at": "2026-05-03T19:57:22Z",
+  "updated_at": "2026-05-03T20:09:50Z",
   "last_run": {
     "projection_status": "collection_only",
     "requested_batters": 243,
-    "already_cached": 186,
+    "already_cached": 189,
     "attempted": 4,
     "collected": 4,
     "failed": 0,
-    "queued_not_attempted": 53,
-    "cache_size": 292,
+    "queued_not_attempted": 50,
+    "cache_size": 296,
     "errors": [],
-    "updated_at": "2026-05-03T19:57:22Z"
+    "updated_at": "2026-05-03T20:09:50Z"
   }
 }
