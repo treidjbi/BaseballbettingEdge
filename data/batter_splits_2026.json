@@ -5762,19 +5762,53 @@
         "so": 4,
         "k_rate": 0.1538
       }
+    },
+    "mlbam:669004": {
+      "name": "MJ Melendez",
+      "bats": "R",
+      "mlbam_id": 669004,
+      "bbref_id": "melenmj01",
+      "season": 2026,
+      "vs_R": {
+        "pa": 38,
+        "so": 13,
+        "k_rate": 0.3421
+      },
+      "vs_L": {
+        "pa": 1,
+        "so": 0,
+        "k_rate": 0.0
+      }
+    },
+    "mlbam:682626": {
+      "name": "Francisco Alvarez",
+      "bats": "R",
+      "mlbam_id": 682626,
+      "bbref_id": "alvarfr01",
+      "season": 2026,
+      "vs_R": {
+        "pa": 80,
+        "so": 17,
+        "k_rate": 0.2125
+      },
+      "vs_L": {
+        "pa": 27,
+        "so": 6,
+        "k_rate": 0.2222
+      }
     }
   },
-  "updated_at": "2026-05-04T04:50:34Z",
+  "updated_at": "2026-05-04T17:48:48Z",
   "last_run": {
     "projection_status": "collection_only",
-    "requested_batters": 243,
-    "already_cached": 231,
-    "attempted": 4,
-    "collected": 4,
+    "requested_batters": 9,
+    "already_cached": 7,
+    "attempted": 2,
+    "collected": 2,
     "failed": 0,
-    "queued_not_attempted": 8,
-    "cache_size": 340,
+    "queued_not_attempted": 0,
+    "cache_size": 342,
     "errors": [],
-    "updated_at": "2026-05-04T04:50:34Z"
+    "updated_at": "2026-05-04T17:48:48Z"
   }
 }
