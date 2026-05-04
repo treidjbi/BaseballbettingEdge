@@ -5626,19 +5626,87 @@
         "so": 11,
         "k_rate": 0.3438
       }
+    },
+    "mlbam:686681": {
+      "name": "Michael Massey",
+      "bats": "R",
+      "mlbam_id": 686681,
+      "bbref_id": "massemi02",
+      "season": 2026,
+      "vs_R": {
+        "pa": 54,
+        "so": 13,
+        "k_rate": 0.2407
+      },
+      "vs_L": {
+        "pa": 13,
+        "so": 5,
+        "k_rate": 0.3846
+      }
+    },
+    "mlbam:664728": {
+      "name": "Kyle Isbel",
+      "bats": "R",
+      "mlbam_id": 664728,
+      "bbref_id": "isbelky01",
+      "season": 2026,
+      "vs_R": {
+        "pa": 81,
+        "so": 18,
+        "k_rate": 0.2222
+      },
+      "vs_L": {
+        "pa": 14,
+        "so": 4,
+        "k_rate": 0.2857
+      }
+    },
+    "mlbam:803011": {
+      "name": "Sam Antonacci",
+      "bats": "R",
+      "mlbam_id": 803011,
+      "bbref_id": "antonsa01",
+      "season": 2026,
+      "vs_R": {
+        "pa": 52,
+        "so": 5,
+        "k_rate": 0.0962
+      },
+      "vs_L": {
+        "pa": 9,
+        "so": 1,
+        "k_rate": 0.1111
+      }
+    },
+    "mlbam:808959": {
+      "name": "Munetaka Murakami",
+      "bats": "R",
+      "mlbam_id": 808959,
+      "bbref_id": "murakmu01",
+      "season": 2026,
+      "vs_R": {
+        "pa": 104,
+        "so": 32,
+        "k_rate": 0.3077
+      },
+      "vs_L": {
+        "pa": 45,
+        "so": 18,
+        "k_rate": 0.4
+      }
     }
   },
-  "updated_at": "2026-05-04T04:05:33Z",
+  "updated_at": "2026-05-04T04:31:11Z",
   "last_run": {
     "projection_status": "collection_only",
     "requested_batters": 243,
-    "already_cached": 223,
+    "already_cached": 227,
     "attempted": 4,
     "collected": 4,
     "failed": 0,
-    "queued_not_attempted": 16,
-    "cache_size": 332,
+    "queued_not_attempted": 12,
+    "cache_size": 336,
     "errors": [],
-    "updated_at": "2026-05-04T04:05:33Z"
+    "updated_at": "2026-05-04T04:31:11Z"
   }
 }
