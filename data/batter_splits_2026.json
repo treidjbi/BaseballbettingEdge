@@ -5978,22 +5978,56 @@
         "so": 11,
         "k_rate": 0.4783
       }
+    },
+    "mlbam:624428": {
+      "name": "Adam Frazier",
+      "bats": "R",
+      "mlbam_id": 624428,
+      "bbref_id": "fraziad01",
+      "season": 2026,
+      "vs_R": {
+        "pa": 51,
+        "so": 16,
+        "k_rate": 0.3137
+      },
+      "vs_L": {
+        "pa": 13,
+        "so": 2,
+        "k_rate": 0.1538
+      }
+    },
+    "mlbam:643217": {
+      "name": "Andrew Benintendi",
+      "bats": "R",
+      "mlbam_id": 643217,
+      "bbref_id": "beninan01",
+      "season": 2026,
+      "vs_R": {
+        "pa": 95,
+        "so": 32,
+        "k_rate": 0.3368
+      },
+      "vs_L": {
+        "pa": 13,
+        "so": 6,
+        "k_rate": 0.4615
+      }
     }
   },
-  "updated_at": "2026-05-04T22:14:01Z",
+  "updated_at": "2026-05-04T22:35:07Z",
   "last_run": {
     "projection_status": "collection_only",
     "requested_batters": 171,
-    "already_cached": 164,
+    "already_cached": 166,
     "attempted": 4,
     "collected": 2,
     "failed": 2,
-    "queued_not_attempted": 3,
-    "cache_size": 353,
+    "queued_not_attempted": 1,
+    "cache_size": 355,
     "errors": [
       "Zack Short: no platoon split rows",
       "Joe Mack: no bbref id"
     ],
-    "updated_at": "2026-05-04T22:14:01Z"
+    "updated_at": "2026-05-04T22:35:07Z"
   }
 }
