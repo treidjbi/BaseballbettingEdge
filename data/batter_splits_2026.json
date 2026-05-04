@@ -5694,19 +5694,87 @@
         "so": 18,
         "k_rate": 0.4
       }
+    },
+    "mlbam:682668": {
+      "name": "Luisangel Acu\u00f1a",
+      "bats": "R",
+      "mlbam_id": 682668,
+      "bbref_id": "acunajo01",
+      "season": 2026,
+      "vs_R": {
+        "pa": 59,
+        "so": 11,
+        "k_rate": 0.1864
+      },
+      "vs_L": {
+        "pa": 27,
+        "so": 3,
+        "k_rate": 0.1111
+      }
+    },
+    "mlbam:691011": {
+      "name": "Drew Romo",
+      "bats": "R",
+      "mlbam_id": 691011,
+      "bbref_id": "romodr01",
+      "season": 2026,
+      "vs_R": {
+        "pa": 9,
+        "so": 1,
+        "k_rate": 0.1111
+      },
+      "vs_L": {
+        "pa": 7,
+        "so": 2,
+        "k_rate": 0.2857
+      }
+    },
+    "mlbam:657656": {
+      "name": "Ram\u00f3n Laureano",
+      "bats": "R",
+      "mlbam_id": 657656,
+      "bbref_id": "laurera01",
+      "season": 2026,
+      "vs_R": {
+        "pa": 102,
+        "so": 32,
+        "k_rate": 0.3137
+      },
+      "vs_L": {
+        "pa": 30,
+        "so": 8,
+        "k_rate": 0.2667
+      }
+    },
+    "mlbam:609280": {
+      "name": "Miguel Andujar",
+      "bats": "R",
+      "mlbam_id": 609280,
+      "bbref_id": "andujmi01",
+      "season": 2026,
+      "vs_R": {
+        "pa": 57,
+        "so": 10,
+        "k_rate": 0.1754
+      },
+      "vs_L": {
+        "pa": 26,
+        "so": 4,
+        "k_rate": 0.1538
+      }
     }
   },
-  "updated_at": "2026-05-04T04:31:11Z",
+  "updated_at": "2026-05-04T04:50:34Z",
   "last_run": {
     "projection_status": "collection_only",
     "requested_batters": 243,
-    "already_cached": 227,
+    "already_cached": 231,
     "attempted": 4,
     "collected": 4,
     "failed": 0,
-    "queued_not_attempted": 12,
-    "cache_size": 336,
+    "queued_not_attempted": 8,
+    "cache_size": 340,
     "errors": [],
-    "updated_at": "2026-05-04T04:31:11Z"
+    "updated_at": "2026-05-04T04:50:34Z"
   }
 }
