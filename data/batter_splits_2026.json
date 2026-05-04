@@ -5490,19 +5490,87 @@
         "so": 8,
         "k_rate": 0.3478
       }
+    },
+    "mlbam:660844": {
+      "name": "Leo Rivas",
+      "bats": "R",
+      "mlbam_id": 660844,
+      "bbref_id": "rivasle01",
+      "season": 2026,
+      "vs_R": {
+        "pa": 66,
+        "so": 22,
+        "k_rate": 0.3333
+      },
+      "vs_L": {
+        "pa": 30,
+        "so": 8,
+        "k_rate": 0.2667
+      }
+    },
+    "mlbam:672580": {
+      "name": "Maikel Garcia",
+      "bats": "R",
+      "mlbam_id": 672580,
+      "bbref_id": "garcima01",
+      "season": 2026,
+      "vs_R": {
+        "pa": 108,
+        "so": 20,
+        "k_rate": 0.1852
+      },
+      "vs_L": {
+        "pa": 28,
+        "so": 4,
+        "k_rate": 0.1429
+      }
+    },
+    "mlbam:677951": {
+      "name": "Bobby Witt Jr.",
+      "bats": "R",
+      "mlbam_id": 677951,
+      "bbref_id": "wittbo02",
+      "season": 2026,
+      "vs_R": {
+        "pa": 116,
+        "so": 21,
+        "k_rate": 0.181
+      },
+      "vs_L": {
+        "pa": 33,
+        "so": 4,
+        "k_rate": 0.1212
+      }
+    },
+    "mlbam:686469": {
+      "name": "Vinnie Pasquantino",
+      "bats": "R",
+      "mlbam_id": 686469,
+      "bbref_id": "pasquvi01",
+      "season": 2026,
+      "vs_R": {
+        "pa": 96,
+        "so": 16,
+        "k_rate": 0.1667
+      },
+      "vs_L": {
+        "pa": 37,
+        "so": 12,
+        "k_rate": 0.3243
+      }
     }
   },
-  "updated_at": "2026-05-03T23:59:15Z",
+  "updated_at": "2026-05-04T01:18:25Z",
   "last_run": {
     "projection_status": "collection_only",
     "requested_batters": 243,
-    "already_cached": 216,
+    "already_cached": 220,
     "attempted": 4,
     "collected": 4,
     "failed": 0,
-    "queued_not_attempted": 23,
-    "cache_size": 324,
+    "queued_not_attempted": 19,
+    "cache_size": 328,
     "errors": [],
-    "updated_at": "2026-05-03T23:59:15Z"
+    "updated_at": "2026-05-04T01:18:25Z"
   }
 }
