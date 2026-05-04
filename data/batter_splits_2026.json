@@ -5558,19 +5558,87 @@
         "so": 12,
         "k_rate": 0.3243
       }
+    },
+    "mlbam:516782": {
+      "name": "Starling Marte",
+      "bats": "R",
+      "mlbam_id": 516782,
+      "bbref_id": "martest01",
+      "season": 2026,
+      "vs_R": {
+        "pa": 12,
+        "so": 3,
+        "k_rate": 0.25
+      },
+      "vs_L": {
+        "pa": 23,
+        "so": 7,
+        "k_rate": 0.3043
+      }
+    },
+    "mlbam:695600": {
+      "name": "Carter Jensen",
+      "bats": "R",
+      "mlbam_id": 695600,
+      "bbref_id": "jenseca01",
+      "season": 2026,
+      "vs_R": {
+        "pa": 82,
+        "so": 27,
+        "k_rate": 0.3293
+      },
+      "vs_L": {
+        "pa": 29,
+        "so": 6,
+        "k_rate": 0.2069
+      }
+    },
+    "mlbam:695506": {
+      "name": "Jac Caglianone",
+      "bats": "R",
+      "mlbam_id": 695506,
+      "bbref_id": "caglija01",
+      "season": 2026,
+      "vs_R": {
+        "pa": 82,
+        "so": 24,
+        "k_rate": 0.2927
+      },
+      "vs_L": {
+        "pa": 24,
+        "so": 10,
+        "k_rate": 0.4167
+      }
+    },
+    "mlbam:686555": {
+      "name": "Isaac Collins",
+      "bats": "R",
+      "mlbam_id": 686555,
+      "bbref_id": "colliis01",
+      "season": 2026,
+      "vs_R": {
+        "pa": 69,
+        "so": 19,
+        "k_rate": 0.2754
+      },
+      "vs_L": {
+        "pa": 32,
+        "so": 11,
+        "k_rate": 0.3438
+      }
     }
   },
-  "updated_at": "2026-05-04T01:18:25Z",
+  "updated_at": "2026-05-04T04:05:33Z",
   "last_run": {
     "projection_status": "collection_only",
     "requested_batters": 243,
-    "already_cached": 220,
+    "already_cached": 223,
     "attempted": 4,
     "collected": 4,
     "failed": 0,
-    "queued_not_attempted": 19,
-    "cache_size": 328,
+    "queued_not_attempted": 16,
+    "cache_size": 332,
     "errors": [],
-    "updated_at": "2026-05-04T01:18:25Z"
+    "updated_at": "2026-05-04T04:05:33Z"
   }
 }
