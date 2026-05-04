@@ -5876,22 +5876,56 @@
         "so": 5,
         "k_rate": 0.2
       }
+    },
+    "mlbam:521692": {
+      "name": "Salvador Perez",
+      "bats": "R",
+      "mlbam_id": 521692,
+      "bbref_id": "perezsa02",
+      "season": 2026,
+      "vs_R": {
+        "pa": 102,
+        "so": 22,
+        "k_rate": 0.2157
+      },
+      "vs_L": {
+        "pa": 37,
+        "so": 7,
+        "k_rate": 0.1892
+      }
+    },
+    "mlbam:657041": {
+      "name": "Lane Thomas",
+      "bats": "R",
+      "mlbam_id": 657041,
+      "bbref_id": "thomala02",
+      "season": 2026,
+      "vs_R": {
+        "pa": 38,
+        "so": 7,
+        "k_rate": 0.1842
+      },
+      "vs_L": {
+        "pa": 37,
+        "so": 6,
+        "k_rate": 0.1622
+      }
     }
   },
-  "updated_at": "2026-05-04T20:50:44Z",
+  "updated_at": "2026-05-04T21:18:42Z",
   "last_run": {
     "projection_status": "collection_only",
-    "requested_batters": 126,
-    "already_cached": 122,
+    "requested_batters": 144,
+    "already_cached": 137,
     "attempted": 4,
     "collected": 2,
     "failed": 2,
-    "queued_not_attempted": 0,
-    "cache_size": 347,
+    "queued_not_attempted": 3,
+    "cache_size": 349,
     "errors": [
       "Zack Short: no platoon split rows",
       "Joe Mack: no bbref id"
     ],
-    "updated_at": "2026-05-04T20:50:44Z"
+    "updated_at": "2026-05-04T21:18:42Z"
   }
 }
