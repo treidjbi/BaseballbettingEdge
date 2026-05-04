@@ -187,7 +187,8 @@
         "quality_gate_reasons": [
           "developing pitcher sample",
           "first seen opening"
-        ]
+        ],
+        "result": "loss"
       },
       "book_odds": {
         "DraftKings": {
@@ -259,15 +260,25 @@
           "display_adj_ev": 0.0762,
           "edge": 0.0437,
           "ev": 0.0762,
-          "result": null,
-          "actual_ks": null,
-          "pnl": null,
+          "result": "loss",
+          "actual_ks": 5,
+          "pnl": -1.0,
           "locked_at": "2026-05-03T19:57:22Z",
           "status": "locked",
           "game_time": "2026-05-03T20:10:00Z",
           "data_complete": 1
         }
-      ]
+      ],
+      "actual_ks": 5,
+      "result": {
+        "final_k": 5,
+        "side_taken": "under",
+        "line_at_bet": 3.5,
+        "odds_at_bet": -135,
+        "outcome": "loss",
+        "units_won": -0.0,
+        "units_risked": 0.0
+      }
     },
     {
       "pitcher": "Matthew Boyd",
@@ -325,7 +336,8 @@
         "quality_gate_reasons": [
           "developing pitcher sample",
           "first seen opening"
-        ]
+        ],
+        "result": "win"
       },
       "ev_under": {
         "edge": -0.153,
@@ -413,15 +425,25 @@
           "display_adj_ev": 0.1679,
           "edge": 0.0819,
           "ev": 0.1679,
-          "result": null,
-          "actual_ks": null,
-          "pnl": null,
+          "result": "win",
+          "actual_ks": 5,
+          "pnl": 1.05,
           "locked_at": "2026-05-03T17:53:17Z",
           "status": "locked",
           "game_time": "2026-05-03T18:20:00Z",
           "data_complete": 1
         }
-      ]
+      ],
+      "actual_ks": 5,
+      "result": {
+        "final_k": 5,
+        "side_taken": "over",
+        "line_at_bet": 4.5,
+        "odds_at_bet": 105,
+        "outcome": "win",
+        "units_won": 0.0,
+        "units_risked": 0.0
+      }
     },
     {
       "pitcher": "Justin Wrobleski",
@@ -495,7 +517,8 @@
         "quality_gate_reasons": [
           "developing pitcher sample",
           "first seen opening"
-        ]
+        ],
+        "result": "win"
       },
       "book_odds": {
         "DraftKings": {
@@ -570,15 +593,25 @@
           "display_adj_ev": 0.1348,
           "edge": 0.0684,
           "ev": 0.1586,
-          "result": null,
-          "actual_ks": null,
-          "pnl": null,
+          "result": "win",
+          "actual_ks": 0,
+          "pnl": 1.32,
           "locked_at": "2026-05-03T17:53:17Z",
           "status": "locked",
           "game_time": "2026-05-03T18:15:00Z",
           "data_complete": 1
         }
-      ]
+      ],
+      "actual_ks": 0,
+      "result": {
+        "final_k": 0,
+        "side_taken": "under",
+        "line_at_bet": 3.5,
+        "odds_at_bet": 132,
+        "outcome": "win",
+        "units_won": 1.32,
+        "units_risked": 1.0
+      }
     },
     {
       "pitcher": "Joe Ryan",
@@ -646,7 +679,8 @@
         "raw_adj_ev": 0.1822,
         "actionable_verdict": "FIRE 2u",
         "quality_gate_level": "clean",
-        "quality_gate_reasons": []
+        "quality_gate_reasons": [],
+        "result": "win"
       },
       "book_odds": {
         "DraftKings": {
@@ -709,15 +743,25 @@
           "display_adj_ev": 0.1822,
           "edge": 0.1047,
           "ev": 0.1822,
-          "result": null,
-          "actual_ks": null,
-          "pnl": null,
+          "result": "win",
+          "actual_ks": 1,
+          "pnl": 0.7407407407407407,
           "locked_at": "2026-05-03T16:28:30Z",
           "status": "locked",
           "game_time": "2026-05-03T16:45:00Z",
           "data_complete": 1
         }
-      ]
+      ],
+      "actual_ks": 1,
+      "result": {
+        "final_k": 1,
+        "side_taken": "under",
+        "line_at_bet": 5.5,
+        "odds_at_bet": -135,
+        "outcome": "win",
+        "units_won": 1.4815,
+        "units_risked": 2.0
+      }
     },
     {
       "pitcher": "Jack Kochanowicz",
@@ -774,7 +818,8 @@
         "quality_gate_level": "capped",
         "quality_gate_reasons": [
           "first seen opening"
-        ]
+        ],
+        "result": "win"
       },
       "ev_under": {
         "edge": -0.0883,
@@ -858,15 +903,25 @@
           "display_adj_ev": 0.0401,
           "edge": 0.0206,
           "ev": 0.0401,
-          "result": null,
-          "actual_ks": null,
-          "pnl": null,
+          "result": "win",
+          "actual_ks": 6,
+          "pnl": 0.9523809523809523,
           "locked_at": "2026-05-03T19:37:00Z",
           "status": "locked",
           "game_time": "2026-05-03T20:07:00Z",
           "data_complete": 1
         }
-      ]
+      ],
+      "actual_ks": 6,
+      "result": {
+        "final_k": 6,
+        "side_taken": "over",
+        "line_at_bet": 3.5,
+        "odds_at_bet": -105,
+        "outcome": "win",
+        "units_won": 0.0,
+        "units_risked": 0.0
+      }
     },
     {
       "pitcher": "Jack Leiter",
@@ -938,7 +993,8 @@
         "quality_gate_level": "capped",
         "quality_gate_reasons": [
           "first seen opening"
-        ]
+        ],
+        "result": "loss"
       },
       "book_odds": {
         "DraftKings": {
@@ -1007,15 +1063,25 @@
           "display_adj_ev": 0.0494,
           "edge": 0.0288,
           "ev": 0.0494,
-          "result": null,
-          "actual_ks": null,
-          "pnl": null,
+          "result": "loss",
+          "actual_ks": 10,
+          "pnl": -1.0,
           "locked_at": "2026-05-03T22:58:41Z",
           "status": "locked",
           "game_time": "2026-05-03T23:20:00Z",
           "data_complete": 1
         }
-      ]
+      ],
+      "actual_ks": 10,
+      "result": {
+        "final_k": 10,
+        "side_taken": "under",
+        "line_at_bet": 5.5,
+        "odds_at_bet": -140,
+        "outcome": "loss",
+        "units_won": -0.0,
+        "units_risked": 0.0
+      }
     },
     {
       "pitcher": "Kyle Freeland",
@@ -1089,7 +1155,8 @@
         "quality_gate_reasons": [
           "developing pitcher sample",
           "first seen opening"
-        ]
+        ],
+        "result": "loss"
       },
       "book_odds": {
         "DraftKings": {
@@ -1166,15 +1233,25 @@
           "display_adj_ev": 0.0319,
           "edge": 0.016,
           "ev": 0.0319,
-          "result": null,
-          "actual_ks": null,
-          "pnl": null,
+          "result": "loss",
+          "actual_ks": 7,
+          "pnl": -1.0,
           "locked_at": "2026-05-03T19:16:08Z",
           "status": "locked",
           "game_time": "2026-05-03T19:10:00Z",
           "data_complete": 0
         }
-      ]
+      ],
+      "actual_ks": 7,
+      "result": {
+        "final_k": 7,
+        "side_taken": "under",
+        "line_at_bet": 3.5,
+        "odds_at_bet": 100,
+        "outcome": "loss",
+        "units_won": -0.0,
+        "units_risked": 0.0
+      }
     },
     {
       "pitcher": "Tyler Mahle",
@@ -1231,7 +1308,8 @@
         "quality_gate_level": "capped",
         "quality_gate_reasons": [
           "first seen opening"
-        ]
+        ],
+        "result": "win"
       },
       "ev_under": {
         "edge": -0.0805,
@@ -1319,15 +1397,25 @@
           "display_adj_ev": 0.0299,
           "edge": 0.0181,
           "ev": 0.0299,
-          "result": null,
-          "actual_ks": null,
-          "pnl": null,
+          "result": "win",
+          "actual_ks": 5,
+          "pnl": 0.6451612903225806,
           "locked_at": "2026-05-03T17:30:41Z",
           "status": "locked",
           "game_time": "2026-05-03T17:40:00Z",
           "data_complete": 1
         }
-      ]
+      ],
+      "actual_ks": 5,
+      "result": {
+        "final_k": 5,
+        "side_taken": "over",
+        "line_at_bet": 3.5,
+        "odds_at_bet": -155,
+        "outcome": "win",
+        "units_won": 0.0,
+        "units_risked": 0.0
+      }
     },
     {
       "pitcher": "Dustin May",
@@ -1399,7 +1487,8 @@
         "quality_gate_level": "capped",
         "quality_gate_reasons": [
           "first seen opening"
-        ]
+        ],
+        "result": "win"
       },
       "book_odds": {
         "DraftKings": {
@@ -1472,15 +1561,25 @@
           "display_adj_ev": 0.0375,
           "edge": 0.0216,
           "ev": 0.0375,
-          "result": null,
-          "actual_ks": null,
-          "pnl": null,
+          "result": "win",
+          "actual_ks": 3,
+          "pnl": 0.7407407407407407,
           "locked_at": "2026-05-03T17:53:17Z",
           "status": "locked",
           "game_time": "2026-05-03T18:15:00Z",
           "data_complete": 1
         }
-      ]
+      ],
+      "actual_ks": 3,
+      "result": {
+        "final_k": 3,
+        "side_taken": "under",
+        "line_at_bet": 4.5,
+        "odds_at_bet": -135,
+        "outcome": "win",
+        "units_won": 0.0,
+        "units_risked": 0.0
+      }
     },
     {
       "pitcher": "Parker Messick",
@@ -1537,7 +1636,8 @@
         "quality_gate_level": "capped",
         "quality_gate_reasons": [
           "first seen opening"
-        ]
+        ],
+        "result": "win"
       },
       "ev_under": {
         "edge": -0.1097,
@@ -1621,15 +1721,25 @@
           "display_adj_ev": 0.1317,
           "edge": 0.0613,
           "ev": 0.1317,
-          "result": null,
-          "actual_ks": null,
-          "pnl": null,
+          "result": "win",
+          "actual_ks": 6,
+          "pnl": 1.15,
           "locked_at": "2026-05-03T19:37:00Z",
           "status": "locked",
           "game_time": "2026-05-03T20:05:00Z",
           "data_complete": 1
         }
-      ]
+      ],
+      "actual_ks": 6,
+      "result": {
+        "final_k": 6,
+        "side_taken": "over",
+        "line_at_bet": 5.5,
+        "odds_at_bet": 115,
+        "outcome": "win",
+        "units_won": 1.15,
+        "units_risked": 1.0
+      }
     },
     {
       "pitcher": "Ranger Suarez",
@@ -1686,7 +1796,8 @@
         "quality_gate_level": "capped",
         "quality_gate_reasons": [
           "first seen opening"
-        ]
+        ],
+        "result": "loss"
       },
       "ev_under": {
         "edge": -0.0397,
@@ -1775,15 +1886,25 @@
           "display_adj_ev": 0.1114,
           "edge": 0.0607,
           "ev": 0.1114,
-          "result": null,
-          "actual_ks": null,
-          "pnl": null,
+          "result": "loss",
+          "actual_ks": 3,
+          "pnl": -1.0,
           "locked_at": "2026-05-03T17:30:41Z",
           "status": "locked",
           "game_time": "2026-05-03T17:35:00Z",
           "data_complete": 1
         }
-      ]
+      ],
+      "actual_ks": 3,
+      "result": {
+        "final_k": 3,
+        "side_taken": "over",
+        "line_at_bet": 4.5,
+        "odds_at_bet": -120,
+        "outcome": "loss",
+        "units_won": -0.0,
+        "units_risked": 0.0
+      }
     },
     {
       "pitcher": "Chase Burns",
@@ -1840,7 +1961,8 @@
         "quality_gate_level": "capped",
         "quality_gate_reasons": [
           "first seen opening"
-        ]
+        ],
+        "result": "win"
       },
       "ev_under": {
         "edge": -0.1115,
@@ -1928,15 +2050,25 @@
           "display_adj_ev": 0.0603,
           "edge": 0.0341,
           "ev": 0.0603,
-          "result": null,
-          "actual_ks": null,
-          "pnl": null,
+          "result": "win",
+          "actual_ks": 7,
+          "pnl": 0.7692307692307693,
           "locked_at": "2026-05-03T17:30:41Z",
           "status": "locked",
           "game_time": "2026-05-03T17:35:00Z",
           "data_complete": 1
         }
-      ]
+      ],
+      "actual_ks": 7,
+      "result": {
+        "final_k": 7,
+        "side_taken": "over",
+        "line_at_bet": 6.5,
+        "odds_at_bet": -130,
+        "outcome": "win",
+        "units_won": 0.7692,
+        "units_risked": 1.0
+      }
     },
     {
       "pitcher": "Luis Castillo",
@@ -2008,7 +2140,8 @@
         "quality_gate_level": "capped",
         "quality_gate_reasons": [
           "first seen opening"
-        ]
+        ],
+        "result": "loss"
       },
       "book_odds": {
         "DraftKings": {
@@ -2081,15 +2214,25 @@
           "display_adj_ev": 0.165,
           "edge": 0.0864,
           "ev": 0.165,
-          "result": null,
-          "actual_ks": null,
-          "pnl": null,
+          "result": "loss",
+          "actual_ks": 5,
+          "pnl": -1.0,
           "locked_at": "2026-05-03T19:57:22Z",
           "status": "locked",
           "game_time": "2026-05-03T20:10:00Z",
           "data_complete": 1
         }
-      ]
+      ],
+      "actual_ks": 5,
+      "result": {
+        "final_k": 5,
+        "side_taken": "under",
+        "line_at_bet": 4.5,
+        "odds_at_bet": -110,
+        "outcome": "loss",
+        "units_won": -1.0,
+        "units_risked": 1.0
+      }
     },
     {
       "pitcher": "Max Fried",
@@ -2157,7 +2300,8 @@
         "raw_adj_ev": 0.2454,
         "actionable_verdict": "FIRE 2u",
         "quality_gate_level": "clean",
-        "quality_gate_reasons": []
+        "quality_gate_reasons": [],
+        "result": "loss"
       },
       "book_odds": {
         "DraftKings": {
@@ -2228,15 +2372,25 @@
           "display_adj_ev": 0.2454,
           "edge": 0.118,
           "ev": 0.2454,
-          "result": null,
-          "actual_ks": null,
-          "pnl": null,
+          "result": "loss",
+          "actual_ks": 6,
+          "pnl": -1.0,
           "locked_at": "2026-05-03T17:30:41Z",
           "status": "locked",
           "game_time": "2026-05-03T17:35:00Z",
           "data_complete": 1
         }
-      ]
+      ],
+      "actual_ks": 6,
+      "result": {
+        "final_k": 6,
+        "side_taken": "under",
+        "line_at_bet": 5.5,
+        "odds_at_bet": 108,
+        "outcome": "loss",
+        "units_won": -2.0,
+        "units_risked": 2.0
+      }
     },
     {
       "pitcher": "Chris Paddack",
@@ -2308,7 +2462,8 @@
         "quality_gate_level": "capped",
         "quality_gate_reasons": [
           "first seen opening"
-        ]
+        ],
+        "result": "win"
       },
       "book_odds": {
         "BetMGM": {
@@ -2377,15 +2532,25 @@
           "display_adj_ev": 0.0445,
           "edge": 0.026,
           "ev": 0.0445,
-          "result": null,
-          "actual_ks": null,
-          "pnl": null,
+          "result": "win",
+          "actual_ks": 1,
+          "pnl": 0.7142857142857143,
           "locked_at": "2026-05-03T17:30:41Z",
           "status": "locked",
           "game_time": "2026-05-03T17:40:00Z",
           "data_complete": 1
         }
-      ]
+      ],
+      "actual_ks": 1,
+      "result": {
+        "final_k": 1,
+        "side_taken": "under",
+        "line_at_bet": 4.5,
+        "odds_at_bet": -140,
+        "outcome": "win",
+        "units_won": 0.0,
+        "units_risked": 0.0
+      }
     },
     {
       "pitcher": "Kris Bubic",
@@ -2457,7 +2622,8 @@
         "quality_gate_level": "capped",
         "quality_gate_reasons": [
           "first seen opening"
-        ]
+        ],
+        "result": "loss"
       },
       "book_odds": {
         "DraftKings": {
@@ -2530,15 +2696,25 @@
           "display_adj_ev": 0.1128,
           "edge": 0.0658,
           "ev": 0.1128,
-          "result": null,
-          "actual_ks": null,
-          "pnl": null,
+          "result": "loss",
+          "actual_ks": 7,
+          "pnl": -1.0,
           "locked_at": "2026-05-03T19:57:22Z",
           "status": "locked",
           "game_time": "2026-05-03T20:10:00Z",
           "data_complete": 1
         }
-      ]
+      ],
+      "actual_ks": 7,
+      "result": {
+        "final_k": 7,
+        "side_taken": "under",
+        "line_at_bet": 5.5,
+        "odds_at_bet": -140,
+        "outcome": "loss",
+        "units_won": -1.0,
+        "units_risked": 1.0
+      }
     },
     {
       "pitcher": "Merrill Kelly",
@@ -2612,7 +2788,8 @@
         "quality_gate_reasons": [
           "developing pitcher sample",
           "first seen opening"
-        ]
+        ],
+        "result": "loss"
       },
       "book_odds": {
         "DraftKings": {
@@ -2689,15 +2866,25 @@
           "display_adj_ev": 0.0456,
           "edge": 0.0212,
           "ev": 0.0456,
-          "result": null,
-          "actual_ks": null,
-          "pnl": null,
+          "result": "loss",
+          "actual_ks": 5,
+          "pnl": -1.0,
           "locked_at": "2026-05-03T17:53:17Z",
           "status": "locked",
           "game_time": "2026-05-03T18:20:00Z",
           "data_complete": 0
         }
-      ]
+      ],
+      "actual_ks": 5,
+      "result": {
+        "final_k": 5,
+        "side_taken": "under",
+        "line_at_bet": 3.5,
+        "odds_at_bet": 115,
+        "outcome": "loss",
+        "units_won": -0.0,
+        "units_risked": 0.0
+      }
     },
     {
       "pitcher": "Aaron Civale",
@@ -2769,7 +2956,8 @@
         "quality_gate_level": "capped",
         "quality_gate_reasons": [
           "first seen opening"
-        ]
+        ],
+        "result": "win"
       },
       "book_odds": {
         "BetMGM": {
@@ -2834,15 +3022,25 @@
           "display_adj_ev": 0.074,
           "edge": 0.0329,
           "ev": 0.074,
-          "result": null,
-          "actual_ks": null,
-          "pnl": null,
+          "result": "win",
+          "actual_ks": 3,
+          "pnl": 1.25,
           "locked_at": "2026-05-03T19:37:00Z",
           "status": "locked",
           "game_time": "2026-05-03T20:05:00Z",
           "data_complete": 1
         }
-      ]
+      ],
+      "actual_ks": 3,
+      "result": {
+        "final_k": 3,
+        "side_taken": "under",
+        "line_at_bet": 3.5,
+        "odds_at_bet": 125,
+        "outcome": "win",
+        "units_won": 1.25,
+        "units_risked": 1.0
+      }
     },
     {
       "pitcher": "Trey Gibson",
@@ -3027,7 +3225,8 @@
         "quality_gate_level": "capped",
         "quality_gate_reasons": [
           "first seen opening"
-        ]
+        ],
+        "result": "loss"
       },
       "book_odds": {
         "DraftKings": {
@@ -3096,15 +3295,25 @@
           "display_adj_ev": 0.0748,
           "edge": 0.0416,
           "ev": 0.0748,
-          "result": null,
-          "actual_ks": null,
-          "pnl": null,
+          "result": "loss",
+          "actual_ks": 7,
+          "pnl": -1.0,
           "locked_at": "2026-05-03T19:57:22Z",
           "status": "locked",
           "game_time": "2026-05-03T20:10:00Z",
           "data_complete": 1
         }
-      ]
+      ],
+      "actual_ks": 7,
+      "result": {
+        "final_k": 7,
+        "side_taken": "under",
+        "line_at_bet": 4.5,
+        "odds_at_bet": -125,
+        "outcome": "loss",
+        "units_won": -1.0,
+        "units_risked": 1.0
+      }
     },
     {
       "pitcher": "Logan Henderson",
@@ -3162,7 +3371,8 @@
         "quality_gate_reasons": [
           "thin recent start sample",
           "first seen opening"
-        ]
+        ],
+        "result": "win"
       },
       "ev_under": {
         "edge": -0.3531,
@@ -3250,15 +3460,25 @@
           "display_adj_ev": 0.4886,
           "edge": 0.2715,
           "ev": 0.4886,
-          "result": null,
-          "actual_ks": null,
-          "pnl": null,
+          "result": "win",
+          "actual_ks": 8,
+          "pnl": 0.8,
           "locked_at": "2026-05-03T17:30:41Z",
           "status": "locked",
           "game_time": "2026-05-03T17:35:00Z",
           "data_complete": 1
         }
-      ]
+      ],
+      "actual_ks": 8,
+      "result": {
+        "final_k": 8,
+        "side_taken": "over",
+        "line_at_bet": 4.5,
+        "odds_at_bet": -125,
+        "outcome": "win",
+        "units_won": 0.0,
+        "units_risked": 0.0
+      }
     },
     {
       "pitcher": "Clay Holmes",
@@ -3330,7 +3550,8 @@
         "quality_gate_level": "capped",
         "quality_gate_reasons": [
           "first seen opening"
-        ]
+        ],
+        "result": "loss"
       },
       "book_odds": {
         "DraftKings": {
@@ -3403,15 +3624,25 @@
           "display_adj_ev": 0.1402,
           "edge": 0.0623,
           "ev": 0.1402,
-          "result": null,
-          "actual_ks": null,
-          "pnl": null,
+          "result": "loss",
+          "actual_ks": 6,
+          "pnl": -1.0,
           "locked_at": "2026-05-03T19:37:00Z",
           "status": "locked",
           "game_time": "2026-05-03T20:07:00Z",
           "data_complete": 1
         }
-      ]
+      ],
+      "actual_ks": 6,
+      "result": {
+        "final_k": 6,
+        "side_taken": "under",
+        "line_at_bet": 4.5,
+        "odds_at_bet": 125,
+        "outcome": "loss",
+        "units_won": -1.0,
+        "units_risked": 1.0
+      }
     },
     {
       "pitcher": "Steven Matz",
@@ -3483,7 +3714,8 @@
         "quality_gate_level": "capped",
         "quality_gate_reasons": [
           "first seen opening"
-        ]
+        ],
+        "result": "win"
       },
       "book_odds": {
         "DraftKings": {
@@ -3556,15 +3788,25 @@
           "display_adj_ev": 0.1166,
           "edge": 0.0636,
           "ev": 0.1166,
-          "result": null,
-          "actual_ks": null,
-          "pnl": null,
+          "result": "win",
+          "actual_ks": 1,
+          "pnl": 0.8333333333333334,
           "locked_at": "2026-05-03T17:30:41Z",
           "status": "locked",
           "game_time": "2026-05-03T17:40:00Z",
           "data_complete": 1
         }
-      ]
+      ],
+      "actual_ks": 1,
+      "result": {
+        "final_k": 1,
+        "side_taken": "under",
+        "line_at_bet": 4.5,
+        "odds_at_bet": -120,
+        "outcome": "win",
+        "units_won": 0.8333,
+        "units_risked": 1.0
+      }
     },
     {
       "pitcher": "Jesus Luzardo",
@@ -3730,7 +3972,8 @@
         "quality_gate_level": "capped",
         "quality_gate_reasons": [
           "first seen opening"
-        ]
+        ],
+        "result": "win"
       },
       "ev_under": {
         "edge": -0.3573,
@@ -3818,15 +4061,25 @@
           "display_adj_ev": 0.5866,
           "edge": 0.2861,
           "ev": 0.5866,
-          "result": null,
-          "actual_ks": null,
-          "pnl": null,
+          "result": "win",
+          "actual_ks": 6,
+          "pnl": 1.05,
           "locked_at": "2026-05-03T19:16:08Z",
           "status": "locked",
           "game_time": "2026-05-03T19:10:00Z",
           "data_complete": 1
         }
-      ]
+      ],
+      "actual_ks": 6,
+      "result": {
+        "final_k": 6,
+        "side_taken": "over",
+        "line_at_bet": 5.5,
+        "odds_at_bet": 105,
+        "outcome": "win",
+        "units_won": 1.05,
+        "units_risked": 1.0
+      }
     },
     {
       "pitcher": "Trey Yesavage",
@@ -3900,7 +4153,8 @@
         "quality_gate_reasons": [
           "thin recent start sample",
           "first seen opening"
-        ]
+        ],
+        "result": "loss"
       },
       "book_odds": {
         "DraftKings": {
@@ -3968,15 +4222,25 @@
           "display_adj_ev": 0.3452,
           "edge": 0.1527,
           "ev": 0.3452,
-          "result": null,
-          "actual_ks": null,
-          "pnl": null,
+          "result": "loss",
+          "actual_ks": 6,
+          "pnl": -1.0,
           "locked_at": "2026-05-03T16:28:30Z",
           "status": "locked",
           "game_time": "2026-05-03T16:45:00Z",
           "data_complete": 1
         }
-      ]
+      ],
+      "actual_ks": 6,
+      "result": {
+        "final_k": 6,
+        "side_taken": "under",
+        "line_at_bet": 4.5,
+        "odds_at_bet": 126,
+        "outcome": "loss",
+        "units_won": -0.0,
+        "units_risked": 0.0
+      }
     }
   ],
   "ump_diagnostics": {
@@ -4132,9 +4396,9 @@
       "display_adj_ev": 0.1822,
       "edge": 0.1047,
       "ev": 0.1822,
-      "result": null,
-      "actual_ks": null,
-      "pnl": null,
+      "result": "win",
+      "actual_ks": 1,
+      "pnl": 0.7407407407407407,
       "locked_at": "2026-05-03T16:28:30Z",
       "status": "locked",
       "game_time": "2026-05-03T16:45:00Z",
@@ -4176,9 +4440,9 @@
       "display_adj_ev": 0.3452,
       "edge": 0.1527,
       "ev": 0.3452,
-      "result": null,
-      "actual_ks": null,
-      "pnl": null,
+      "result": "loss",
+      "actual_ks": 6,
+      "pnl": -1.0,
       "locked_at": "2026-05-03T16:28:30Z",
       "status": "locked",
       "game_time": "2026-05-03T16:45:00Z",
@@ -4219,9 +4483,9 @@
       "display_adj_ev": 0.0603,
       "edge": 0.0341,
       "ev": 0.0603,
-      "result": null,
-      "actual_ks": null,
-      "pnl": null,
+      "result": "win",
+      "actual_ks": 7,
+      "pnl": 0.7692307692307693,
       "locked_at": "2026-05-03T17:30:41Z",
       "status": "locked",
       "game_time": "2026-05-03T17:35:00Z",
@@ -4263,9 +4527,9 @@
       "display_adj_ev": 0.4886,
       "edge": 0.2715,
       "ev": 0.4886,
-      "result": null,
-      "actual_ks": null,
-      "pnl": null,
+      "result": "win",
+      "actual_ks": 8,
+      "pnl": 0.8,
       "locked_at": "2026-05-03T17:30:41Z",
       "status": "locked",
       "game_time": "2026-05-03T17:35:00Z",
@@ -4304,9 +4568,9 @@
       "display_adj_ev": 0.2454,
       "edge": 0.118,
       "ev": 0.2454,
-      "result": null,
-      "actual_ks": null,
-      "pnl": null,
+      "result": "loss",
+      "actual_ks": 6,
+      "pnl": -1.0,
       "locked_at": "2026-05-03T17:30:41Z",
       "status": "locked",
       "game_time": "2026-05-03T17:35:00Z",
@@ -4348,9 +4612,9 @@
       "display_adj_ev": 0.1114,
       "edge": 0.0607,
       "ev": 0.1114,
-      "result": null,
-      "actual_ks": null,
-      "pnl": null,
+      "result": "loss",
+      "actual_ks": 3,
+      "pnl": -1.0,
       "locked_at": "2026-05-03T17:30:41Z",
       "status": "locked",
       "game_time": "2026-05-03T17:35:00Z",
@@ -4392,9 +4656,9 @@
       "display_adj_ev": 0.345,
       "edge": 0.1807,
       "ev": 0.345,
-      "result": null,
+      "result": "void",
       "actual_ks": null,
-      "pnl": null,
+      "pnl": 0.0,
       "locked_at": "2026-05-03T17:30:41Z",
       "status": "locked",
       "game_time": "2026-05-03T17:35:00Z",
@@ -4435,9 +4699,9 @@
       "display_adj_ev": 0.0445,
       "edge": 0.026,
       "ev": 0.0445,
-      "result": null,
-      "actual_ks": null,
-      "pnl": null,
+      "result": "win",
+      "actual_ks": 1,
+      "pnl": 0.7142857142857143,
       "locked_at": "2026-05-03T17:30:41Z",
       "status": "locked",
       "game_time": "2026-05-03T17:40:00Z",
@@ -4478,9 +4742,9 @@
       "display_adj_ev": 0.1166,
       "edge": 0.0636,
       "ev": 0.1166,
-      "result": null,
-      "actual_ks": null,
-      "pnl": null,
+      "result": "win",
+      "actual_ks": 1,
+      "pnl": 0.8333333333333334,
       "locked_at": "2026-05-03T17:30:41Z",
       "status": "locked",
       "game_time": "2026-05-03T17:40:00Z",
@@ -4521,9 +4785,9 @@
       "display_adj_ev": 0.0299,
       "edge": 0.0181,
       "ev": 0.0299,
-      "result": null,
-      "actual_ks": null,
-      "pnl": null,
+      "result": "win",
+      "actual_ks": 5,
+      "pnl": 0.6451612903225806,
       "locked_at": "2026-05-03T17:30:41Z",
       "status": "locked",
       "game_time": "2026-05-03T17:40:00Z",
@@ -4564,9 +4828,9 @@
       "display_adj_ev": 0.0375,
       "edge": 0.0216,
       "ev": 0.0375,
-      "result": null,
-      "actual_ks": null,
-      "pnl": null,
+      "result": "win",
+      "actual_ks": 3,
+      "pnl": 0.7407407407407407,
       "locked_at": "2026-05-03T17:53:17Z",
       "status": "locked",
       "game_time": "2026-05-03T18:15:00Z",
@@ -4607,9 +4871,9 @@
       "display_adj_ev": 0.1348,
       "edge": 0.0684,
       "ev": 0.1586,
-      "result": null,
-      "actual_ks": null,
-      "pnl": null,
+      "result": "win",
+      "actual_ks": 0,
+      "pnl": 1.32,
       "locked_at": "2026-05-03T17:53:17Z",
       "status": "locked",
       "game_time": "2026-05-03T18:15:00Z",
@@ -4651,9 +4915,9 @@
       "display_adj_ev": 0.1679,
       "edge": 0.0819,
       "ev": 0.1679,
-      "result": null,
-      "actual_ks": null,
-      "pnl": null,
+      "result": "win",
+      "actual_ks": 5,
+      "pnl": 1.05,
       "locked_at": "2026-05-03T17:53:17Z",
       "status": "locked",
       "game_time": "2026-05-03T18:20:00Z",
@@ -4696,9 +4960,9 @@
       "display_adj_ev": 0.0456,
       "edge": 0.0212,
       "ev": 0.0456,
-      "result": null,
-      "actual_ks": null,
-      "pnl": null,
+      "result": "loss",
+      "actual_ks": 5,
+      "pnl": -1.0,
       "locked_at": "2026-05-03T17:53:17Z",
       "status": "locked",
       "game_time": "2026-05-03T18:20:00Z",
@@ -4741,9 +5005,9 @@
       "display_adj_ev": 0.0319,
       "edge": 0.016,
       "ev": 0.0319,
-      "result": null,
-      "actual_ks": null,
-      "pnl": null,
+      "result": "loss",
+      "actual_ks": 7,
+      "pnl": -1.0,
       "locked_at": "2026-05-03T19:16:08Z",
       "status": "locked",
       "game_time": "2026-05-03T19:10:00Z",
@@ -4784,9 +5048,9 @@
       "display_adj_ev": 0.5866,
       "edge": 0.2861,
       "ev": 0.5866,
-      "result": null,
-      "actual_ks": null,
-      "pnl": null,
+      "result": "win",
+      "actual_ks": 6,
+      "pnl": 1.05,
       "locked_at": "2026-05-03T19:16:08Z",
       "status": "locked",
       "game_time": "2026-05-03T19:10:00Z",
@@ -4827,9 +5091,9 @@
       "display_adj_ev": 0.074,
       "edge": 0.0329,
       "ev": 0.074,
-      "result": null,
-      "actual_ks": null,
-      "pnl": null,
+      "result": "win",
+      "actual_ks": 3,
+      "pnl": 1.25,
       "locked_at": "2026-05-03T19:37:00Z",
       "status": "locked",
       "game_time": "2026-05-03T20:05:00Z",
@@ -4870,9 +5134,9 @@
       "display_adj_ev": 0.1317,
       "edge": 0.0613,
       "ev": 0.1317,
-      "result": null,
-      "actual_ks": null,
-      "pnl": null,
+      "result": "win",
+      "actual_ks": 6,
+      "pnl": 1.15,
       "locked_at": "2026-05-03T19:37:00Z",
       "status": "locked",
       "game_time": "2026-05-03T20:05:00Z",
@@ -4913,9 +5177,9 @@
       "display_adj_ev": 0.1402,
       "edge": 0.0623,
       "ev": 0.1402,
-      "result": null,
-      "actual_ks": null,
-      "pnl": null,
+      "result": "loss",
+      "actual_ks": 6,
+      "pnl": -1.0,
       "locked_at": "2026-05-03T19:37:00Z",
       "status": "locked",
       "game_time": "2026-05-03T20:07:00Z",
@@ -4956,9 +5220,9 @@
       "display_adj_ev": 0.0401,
       "edge": 0.0206,
       "ev": 0.0401,
-      "result": null,
-      "actual_ks": null,
-      "pnl": null,
+      "result": "win",
+      "actual_ks": 6,
+      "pnl": 0.9523809523809523,
       "locked_at": "2026-05-03T19:37:00Z",
       "status": "locked",
       "game_time": "2026-05-03T20:07:00Z",
@@ -5000,9 +5264,9 @@
       "display_adj_ev": 0.0762,
       "edge": 0.0437,
       "ev": 0.0762,
-      "result": null,
-      "actual_ks": null,
-      "pnl": null,
+      "result": "loss",
+      "actual_ks": 5,
+      "pnl": -1.0,
       "locked_at": "2026-05-03T19:57:22Z",
       "status": "locked",
       "game_time": "2026-05-03T20:10:00Z",
@@ -5043,9 +5307,9 @@
       "display_adj_ev": 0.0748,
       "edge": 0.0416,
       "ev": 0.0748,
-      "result": null,
-      "actual_ks": null,
-      "pnl": null,
+      "result": "loss",
+      "actual_ks": 7,
+      "pnl": -1.0,
       "locked_at": "2026-05-03T19:57:22Z",
       "status": "locked",
       "game_time": "2026-05-03T20:10:00Z",
@@ -5086,9 +5350,9 @@
       "display_adj_ev": 0.1128,
       "edge": 0.0658,
       "ev": 0.1128,
-      "result": null,
-      "actual_ks": null,
-      "pnl": null,
+      "result": "loss",
+      "actual_ks": 7,
+      "pnl": -1.0,
       "locked_at": "2026-05-03T19:57:22Z",
       "status": "locked",
       "game_time": "2026-05-03T20:10:00Z",
@@ -5129,9 +5393,9 @@
       "display_adj_ev": 0.165,
       "edge": 0.0864,
       "ev": 0.165,
-      "result": null,
-      "actual_ks": null,
-      "pnl": null,
+      "result": "loss",
+      "actual_ks": 5,
+      "pnl": -1.0,
       "locked_at": "2026-05-03T19:57:22Z",
       "status": "locked",
       "game_time": "2026-05-03T20:10:00Z",
@@ -5172,9 +5436,9 @@
       "display_adj_ev": 0.0494,
       "edge": 0.0288,
       "ev": 0.0494,
-      "result": null,
-      "actual_ks": null,
-      "pnl": null,
+      "result": "loss",
+      "actual_ks": 10,
+      "pnl": -1.0,
       "locked_at": "2026-05-03T22:58:41Z",
       "status": "locked",
       "game_time": "2026-05-03T23:20:00Z",
