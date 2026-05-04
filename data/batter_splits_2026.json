@@ -6046,22 +6046,40 @@
         "so": 0,
         "k_rate": 0.0
       }
+    },
+    "mlbam:665487": {
+      "name": "Fernando Tatis Jr.",
+      "bats": "R",
+      "mlbam_id": 665487,
+      "bbref_id": "tatisfe02",
+      "season": 2026,
+      "vs_R": {
+        "pa": 115,
+        "so": 26,
+        "k_rate": 0.2261
+      },
+      "vs_L": {
+        "pa": 24,
+        "so": 7,
+        "k_rate": 0.2917
+      }
     }
   },
-  "updated_at": "2026-05-04T23:06:47Z",
+  "updated_at": "2026-05-04T23:29:38Z",
   "last_run": {
     "projection_status": "collection_only",
     "requested_batters": 189,
-    "already_cached": 177,
+    "already_cached": 179,
     "attempted": 4,
-    "collected": 2,
-    "failed": 2,
-    "queued_not_attempted": 8,
-    "cache_size": 357,
+    "collected": 1,
+    "failed": 3,
+    "queued_not_attempted": 6,
+    "cache_size": 358,
     "errors": [
       "Zack Short: no platoon split rows",
-      "Joe Mack: no bbref id"
+      "Joe Mack: no bbref id",
+      "Jesus Rodriguez: no bbref id"
     ],
-    "updated_at": "2026-05-04T23:06:47Z"
+    "updated_at": "2026-05-04T23:29:38Z"
   }
 }
