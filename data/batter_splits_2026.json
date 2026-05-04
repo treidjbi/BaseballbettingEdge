@@ -5842,22 +5842,56 @@
         "so": 4,
         "k_rate": 0.3636
       }
+    },
+    "mlbam:670042": {
+      "name": "Luke Raley",
+      "bats": "R",
+      "mlbam_id": 670042,
+      "bbref_id": "raleylu01",
+      "season": 2026,
+      "vs_R": {
+        "pa": 93,
+        "so": 35,
+        "k_rate": 0.3763
+      },
+      "vs_L": {
+        "pa": 3,
+        "so": 1,
+        "k_rate": 0.3333
+      }
+    },
+    "mlbam:641598": {
+      "name": "Mitch Garver",
+      "bats": "R",
+      "mlbam_id": 641598,
+      "bbref_id": "garvemi01",
+      "season": 2026,
+      "vs_R": {
+        "pa": 24,
+        "so": 10,
+        "k_rate": 0.4167
+      },
+      "vs_L": {
+        "pa": 25,
+        "so": 5,
+        "k_rate": 0.2
+      }
     }
   },
-  "updated_at": "2026-05-04T20:23:14Z",
+  "updated_at": "2026-05-04T20:50:44Z",
   "last_run": {
     "projection_status": "collection_only",
-    "requested_batters": 108,
-    "already_cached": 104,
+    "requested_batters": 126,
+    "already_cached": 122,
     "attempted": 4,
     "collected": 2,
     "failed": 2,
     "queued_not_attempted": 0,
-    "cache_size": 345,
+    "cache_size": 347,
     "errors": [
       "Zack Short: no platoon split rows",
       "Joe Mack: no bbref id"
     ],
-    "updated_at": "2026-05-04T20:23:14Z"
+    "updated_at": "2026-05-04T20:50:44Z"
   }
 }
