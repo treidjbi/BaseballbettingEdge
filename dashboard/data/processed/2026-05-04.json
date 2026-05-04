@@ -1,9 +1,9 @@
 {
-  "generated_at": "2026-05-04T18:04:51Z",
+  "generated_at": "2026-05-04T18:21:46Z",
   "date": "2026-05-04",
   "props_available": true,
   "data_warnings": [
-    "fetch_lineups: confirmed 1/21 opposing lineups (20 still projected)"
+    "fetch_lineups: confirmed 1/20 opposing lineups (19 still projected)"
   ],
   "pitchers": [
     {
@@ -84,7 +84,7 @@
           "under": -135
         },
         "Kalshi": {
-          "over": 109,
+          "over": 114,
           "under": -137
         },
         "BetRivers": {
@@ -116,172 +116,6 @@
       "tracked_picks": []
     },
     {
-      "pitcher": "Tarik Skubal",
-      "team": "Detroit Tigers",
-      "opp_team": "Boston Red Sox",
-      "pitcher_throws": "L",
-      "game_time": "2026-05-04T22:10:00Z",
-      "k_line": 7.5,
-      "opening_line": 7.5,
-      "best_over_book": "FanDuel",
-      "best_under_book": "FanDuel",
-      "ref_book": "FanDuel",
-      "best_over_odds": 118,
-      "best_under_odds": -158,
-      "opening_over_odds": 118,
-      "opening_under_odds": -158,
-      "opening_odds_source": "first_seen",
-      "odds_source": "therundown+propline",
-      "the_odds_event_id": null,
-      "propline_event_id": "14241",
-      "price_delta_over": 0,
-      "price_delta_under": 0,
-      "raw_lambda": 6.4,
-      "lambda": 6.25,
-      "avg_ip": 6.07,
-      "is_opener": false,
-      "opener_note": null,
-      "swstr_pct": 0.1372,
-      "career_swstr_pct": 0.1537,
-      "swstr_delta_k9": -0.154,
-      "days_since_last_start": 5,
-      "last_pitch_count": 91,
-      "rest_k9_delta": 0.0,
-      "opp_k_rate": 0.2189,
-      "lineup_used": false,
-      "lineup_count": 0,
-      "park_factor": 0.98,
-      "ump_k_adj": 0.0,
-      "starter_mismatch": false,
-      "recent_start_count": 5,
-      "season_k9": 9.35,
-      "recent_k9": 10.68,
-      "career_k9": 10.38,
-      "ev_over": {
-        "edge": -0.1673,
-        "ev": -0.3646,
-        "adj_ev": -0.3646,
-        "verdict": "PASS",
-        "win_prob": 0.291,
-        "movement_conf": 1.0,
-        "raw_verdict": "PASS",
-        "raw_adj_ev": -0.3646,
-        "actionable_verdict": "PASS",
-        "quality_gate_level": "capped",
-        "quality_gate_reasons": [
-          "projected lineup",
-          "first seen opening"
-        ]
-      },
-      "ev_under": {
-        "edge": 0.0961,
-        "ev": 0.157,
-        "adj_ev": 0.157,
-        "verdict": "LEAN",
-        "win_prob": 0.709,
-        "movement_conf": 1.0,
-        "raw_verdict": "FIRE 1u",
-        "raw_adj_ev": 0.157,
-        "actionable_verdict": "LEAN",
-        "quality_gate_level": "capped",
-        "quality_gate_reasons": [
-          "projected lineup",
-          "first seen opening"
-        ]
-      },
-      "book_odds": {
-        "DraftKings": {
-          "over": 112,
-          "under": -143
-        },
-        "BetMGM": {
-          "over": 115,
-          "under": -155
-        },
-        "Kalshi": {
-          "over": 124,
-          "under": -161
-        },
-        "BetRivers": {
-          "over": 120,
-          "under": -162
-        },
-        "FanDuel": {
-          "over": 118,
-          "under": -158
-        }
-      },
-      "umpire": null,
-      "umpire_has_rating": false,
-      "umpire_rating_games": null,
-      "data_complete": false,
-      "game_state": "pregame",
-      "input_quality_flags": [
-        "projected_lineup",
-        "first_seen_opening"
-      ],
-      "projection_safe": true,
-      "quality_gate_level": "capped",
-      "quality_gate_reasons": [
-        "projected lineup",
-        "first seen opening"
-      ],
-      "verdict_cap_reason": "2 soft input flags: projected_lineup, first_seen_opening",
-      "data_maturity": {
-        "pitcher": "mature",
-        "umpire": "mature",
-        "lineup": "projected",
-        "market": "first_seen"
-      },
-      "max_actionable_verdict": "LEAN",
-      "tracked_picks": [
-        {
-          "date": "2026-05-04",
-          "pitcher": "Tarik Skubal",
-          "team": "Detroit Tigers",
-          "opp_team": "Boston Red Sox",
-          "side": "under",
-          "display_side": "UNDER",
-          "verdict": "LEAN",
-          "locked_verdict": null,
-          "display_verdict": "LEAN",
-          "raw_verdict": "FIRE 1u",
-          "actionable_verdict": "LEAN",
-          "quality_gate_level": "capped",
-          "input_quality_flags": [
-            "projected_lineup",
-            "first_seen_opening"
-          ],
-          "verdict_cap_reason": "2 soft input flags: projected_lineup, first_seen_opening",
-          "data_maturity": {
-            "lineup": "projected",
-            "market": "first_seen",
-            "pitcher": "mature",
-            "umpire": "mature"
-          },
-          "k_line": 7.5,
-          "locked_k_line": null,
-          "display_k_line": 7.5,
-          "odds": -158,
-          "locked_odds": null,
-          "display_odds": -158,
-          "adj_ev": 0.157,
-          "raw_adj_ev": 0.157,
-          "locked_adj_ev": null,
-          "display_adj_ev": 0.157,
-          "edge": 0.0961,
-          "ev": 0.157,
-          "result": null,
-          "actual_ks": null,
-          "pnl": null,
-          "locked_at": null,
-          "status": "tracking",
-          "game_time": "2026-05-04T22:10:00Z",
-          "data_complete": 0
-        }
-      ]
-    },
-    {
       "pitcher": "Payton Tolle",
       "team": "Boston Red Sox",
       "opp_team": "Detroit Tigers",
@@ -302,8 +136,8 @@
       "propline_event_id": "14241",
       "price_delta_over": 6,
       "price_delta_under": -4,
-      "raw_lambda": 6.84,
-      "lambda": 6.69,
+      "raw_lambda": 6.64,
+      "lambda": 6.49,
       "avg_ip": 5.5,
       "is_opener": false,
       "opener_note": null,
@@ -317,21 +151,21 @@
       "lineup_used": false,
       "lineup_count": 0,
       "park_factor": 0.98,
-      "ump_k_adj": 0.0,
+      "ump_k_adj": -0.38,
       "starter_mismatch": false,
       "recent_start_count": 2,
       "season_k9": 12.66,
       "recent_k9": 12.66,
       "career_k9": 11.33,
       "ev_over": {
-        "edge": 0.1941,
-        "ev": 0.3218,
-        "adj_ev": 0.3218,
+        "edge": 0.1715,
+        "ev": 0.2844,
+        "adj_ev": 0.2844,
         "verdict": "LEAN",
-        "win_prob": 0.797,
+        "win_prob": 0.775,
         "movement_conf": 1.0,
         "raw_verdict": "FIRE 2u",
-        "raw_adj_ev": 0.3218,
+        "raw_adj_ev": 0.2844,
         "actionable_verdict": "LEAN",
         "quality_gate_level": "capped",
         "quality_gate_reasons": [
@@ -340,14 +174,14 @@
         ]
       },
       "ev_under": {
-        "edge": -0.2646,
-        "ev": -0.5662,
-        "adj_ev": -0.5662,
+        "edge": -0.242,
+        "ev": -0.5179,
+        "adj_ev": -0.5179,
         "verdict": "PASS",
-        "win_prob": 0.203,
+        "win_prob": 0.225,
         "movement_conf": 1.0,
         "raw_verdict": "PASS",
-        "raw_adj_ev": -0.5662,
+        "raw_adj_ev": -0.5179,
         "actionable_verdict": "PASS",
         "quality_gate_level": "capped",
         "quality_gate_reasons": [
@@ -365,7 +199,7 @@
           "under": 100
         },
         "Kalshi": {
-          "over": -148,
+          "over": -161,
           "under": 119
         },
         "BetRivers": {
@@ -377,10 +211,10 @@
           "under": 114
         }
       },
-      "umpire": null,
-      "umpire_has_rating": false,
+      "umpire": "Dan Iassogna",
+      "umpire_has_rating": true,
       "umpire_rating_games": null,
-      "data_complete": false,
+      "data_complete": true,
       "game_state": "pregame",
       "input_quality_flags": [
         "thin_recent_start_sample",
@@ -431,19 +265,19 @@
           "odds": -152,
           "locked_odds": null,
           "display_odds": -152,
-          "adj_ev": 0.3218,
-          "raw_adj_ev": 0.3218,
+          "adj_ev": 0.2844,
+          "raw_adj_ev": 0.2844,
           "locked_adj_ev": null,
-          "display_adj_ev": 0.3218,
-          "edge": 0.1941,
-          "ev": 0.3218,
+          "display_adj_ev": 0.2844,
+          "edge": 0.1715,
+          "ev": 0.2844,
           "result": null,
           "actual_ks": null,
           "pnl": null,
           "locked_at": null,
           "status": "tracking",
           "game_time": "2026-05-04T22:10:00Z",
-          "data_complete": 0
+          "data_complete": 1
         }
       ]
     },
@@ -916,16 +750,16 @@
       },
       "book_odds": {
         "DraftKings": {
-          "over": 104,
-          "under": -132
+          "over": -110,
+          "under": -116
         },
         "BetMGM": {
           "over": -105,
           "under": -125
         },
         "Kalshi": {
-          "over": -103,
-          "under": -121
+          "over": -107,
+          "under": -126
         },
         "BetRivers": {
           "over": -120,
@@ -1244,10 +1078,6 @@
         "BetMGM": {
           "over": -160,
           "under": 120
-        },
-        "Kalshi": {
-          "over": -175,
-          "under": 140
         }
       },
       "umpire": null,
@@ -1405,8 +1235,8 @@
           "under": -110
         },
         "Kalshi": {
-          "over": -107,
-          "under": -116
+          "over": -103,
+          "under": -121
         },
         "BetRivers": {
           "over": -115,
@@ -1520,6 +1350,10 @@
         "BetMGM": {
           "over": 105,
           "under": -140
+        },
+        "Kalshi": {
+          "over": 129,
+          "under": -168
         },
         "BetRivers": {
           "over": 112,
@@ -1839,6 +1673,10 @@
           "over": -140,
           "under": 105
         },
+        "Kalshi": {
+          "over": -131,
+          "under": -103
+        },
         "FanDuel": {
           "over": -138,
           "under": 104
@@ -1996,7 +1834,7 @@
         },
         "Kalshi": {
           "over": -142,
-          "under": 114
+          "under": 119
         },
         "FanDuel": {
           "under": 120,
@@ -2084,16 +1922,16 @@
       "best_over_book": "FanDuel",
       "best_under_book": "FanDuel",
       "ref_book": "FanDuel",
-      "best_over_odds": -158,
-      "best_under_odds": 118,
+      "best_over_odds": -154,
+      "best_under_odds": 116,
       "opening_over_odds": -158,
       "opening_under_odds": 118,
       "opening_odds_source": "preview",
       "odds_source": "therundown+propline",
       "the_odds_event_id": null,
       "propline_event_id": "14200",
-      "price_delta_over": 0,
-      "price_delta_under": 0,
+      "price_delta_over": 4,
+      "price_delta_under": -2,
       "raw_lambda": 6.1,
       "lambda": 5.95,
       "avg_ip": 6.33,
@@ -2116,14 +1954,14 @@
       "recent_k9": 7.39,
       "career_k9": 10.1,
       "ev_over": {
-        "edge": -0.0654,
-        "ev": -0.1068,
-        "adj_ev": -0.1068,
+        "edge": -0.0593,
+        "ev": -0.0978,
+        "adj_ev": -0.0978,
         "verdict": "PASS",
         "win_prob": 0.547,
         "movement_conf": 1.0,
         "raw_verdict": "PASS",
-        "raw_adj_ev": -0.1068,
+        "raw_adj_ev": -0.0978,
         "actionable_verdict": "PASS",
         "quality_gate_level": "capped",
         "quality_gate_reasons": [
@@ -2131,14 +1969,14 @@
         ]
       },
       "ev_under": {
-        "edge": -0.0057,
-        "ev": -0.0125,
-        "adj_ev": -0.0125,
+        "edge": -0.01,
+        "ev": -0.0216,
+        "adj_ev": -0.0216,
         "verdict": "PASS",
         "win_prob": 0.453,
         "movement_conf": 1.0,
         "raw_verdict": "PASS",
-        "raw_adj_ev": -0.0125,
+        "raw_adj_ev": -0.0216,
         "actionable_verdict": "PASS",
         "quality_gate_level": "capped",
         "quality_gate_reasons": [
@@ -2155,12 +1993,12 @@
           "under": 120
         },
         "Kalshi": {
-          "over": -142,
-          "under": 114
+          "over": -131,
+          "under": 105
         },
         "FanDuel": {
-          "over": -158,
-          "under": 118
+          "over": -154,
+          "under": 116
         }
       },
       "umpire": null,
@@ -2495,10 +2333,6 @@
           "over": -160,
           "under": 125
         },
-        "BetMGM": {
-          "over": -150,
-          "under": 110
-        },
         "Kalshi": {
           "over": -142,
           "under": 119
@@ -2660,14 +2494,6 @@
         "DraftKings": {
           "over": -131,
           "under": 103
-        },
-        "BetMGM": {
-          "over": -140,
-          "under": 105
-        },
-        "Kalshi": {
-          "over": -126,
-          "under": 101
         },
         "FanDuel": {
           "over": -136,
@@ -3021,20 +2847,186 @@
           "data_complete": 0
         }
       ]
+    },
+    {
+      "pitcher": "Tarik Skubal",
+      "team": "Detroit Tigers",
+      "opp_team": "Boston Red Sox",
+      "pitcher_throws": "L",
+      "game_time": "2026-05-04T22:10:00Z",
+      "k_line": 7.5,
+      "opening_line": 7.5,
+      "best_over_book": "FanDuel",
+      "best_under_book": "FanDuel",
+      "ref_book": "FanDuel",
+      "best_over_odds": 118,
+      "best_under_odds": -158,
+      "opening_over_odds": 118,
+      "opening_under_odds": -158,
+      "opening_odds_source": "first_seen",
+      "odds_source": "therundown+propline",
+      "the_odds_event_id": null,
+      "propline_event_id": "14241",
+      "price_delta_over": 0,
+      "price_delta_under": 0,
+      "raw_lambda": 6.4,
+      "lambda": 6.25,
+      "avg_ip": 6.07,
+      "is_opener": false,
+      "opener_note": null,
+      "swstr_pct": 0.1372,
+      "career_swstr_pct": 0.1537,
+      "swstr_delta_k9": -0.154,
+      "days_since_last_start": 5,
+      "last_pitch_count": 91,
+      "rest_k9_delta": 0.0,
+      "opp_k_rate": 0.2189,
+      "lineup_used": false,
+      "lineup_count": 0,
+      "park_factor": 0.98,
+      "ump_k_adj": 0.0,
+      "starter_mismatch": false,
+      "recent_start_count": 5,
+      "season_k9": 9.35,
+      "recent_k9": 10.68,
+      "career_k9": 10.38,
+      "ev_over": {
+        "edge": -0.1673,
+        "ev": -0.3646,
+        "adj_ev": -0.3646,
+        "verdict": "PASS",
+        "win_prob": 0.291,
+        "movement_conf": 1.0,
+        "raw_verdict": "PASS",
+        "raw_adj_ev": -0.3646,
+        "actionable_verdict": "PASS",
+        "quality_gate_level": "capped",
+        "quality_gate_reasons": [
+          "projected lineup",
+          "first seen opening"
+        ]
+      },
+      "ev_under": {
+        "edge": 0.0961,
+        "ev": 0.157,
+        "adj_ev": 0.157,
+        "verdict": "LEAN",
+        "win_prob": 0.709,
+        "movement_conf": 1.0,
+        "raw_verdict": "FIRE 1u",
+        "raw_adj_ev": 0.157,
+        "actionable_verdict": "LEAN",
+        "quality_gate_level": "capped",
+        "quality_gate_reasons": [
+          "projected lineup",
+          "first seen opening"
+        ]
+      },
+      "book_odds": {
+        "DraftKings": {
+          "over": 112,
+          "under": -143
+        },
+        "BetMGM": {
+          "over": 115,
+          "under": -155
+        },
+        "Kalshi": {
+          "over": 124,
+          "under": -161
+        },
+        "BetRivers": {
+          "over": 120,
+          "under": -162
+        },
+        "FanDuel": {
+          "over": 118,
+          "under": -158
+        }
+      },
+      "umpire": null,
+      "umpire_has_rating": false,
+      "umpire_rating_games": null,
+      "data_complete": false,
+      "game_state": "pregame",
+      "input_quality_flags": [
+        "projected_lineup",
+        "first_seen_opening"
+      ],
+      "projection_safe": true,
+      "quality_gate_level": "capped",
+      "quality_gate_reasons": [
+        "projected lineup",
+        "first seen opening"
+      ],
+      "verdict_cap_reason": "2 soft input flags: projected_lineup, first_seen_opening",
+      "data_maturity": {
+        "pitcher": "mature",
+        "umpire": "mature",
+        "lineup": "projected",
+        "market": "first_seen"
+      },
+      "max_actionable_verdict": "LEAN",
+      "tracked_picks": [
+        {
+          "date": "2026-05-04",
+          "pitcher": "Tarik Skubal",
+          "team": "Detroit Tigers",
+          "opp_team": "Boston Red Sox",
+          "side": "under",
+          "display_side": "UNDER",
+          "verdict": "LEAN",
+          "locked_verdict": null,
+          "display_verdict": "LEAN",
+          "raw_verdict": "FIRE 1u",
+          "actionable_verdict": "LEAN",
+          "quality_gate_level": "capped",
+          "input_quality_flags": [
+            "projected_lineup",
+            "first_seen_opening"
+          ],
+          "verdict_cap_reason": "2 soft input flags: projected_lineup, first_seen_opening",
+          "data_maturity": {
+            "lineup": "projected",
+            "market": "first_seen",
+            "pitcher": "mature",
+            "umpire": "mature"
+          },
+          "k_line": 7.5,
+          "locked_k_line": null,
+          "display_k_line": 7.5,
+          "odds": -158,
+          "locked_odds": null,
+          "display_odds": -158,
+          "adj_ev": 0.157,
+          "raw_adj_ev": 0.157,
+          "locked_adj_ev": null,
+          "display_adj_ev": 0.157,
+          "edge": 0.0961,
+          "ev": 0.157,
+          "result": null,
+          "actual_ks": null,
+          "pnl": null,
+          "locked_at": null,
+          "status": "tracking",
+          "game_time": "2026-05-04T22:10:00Z",
+          "data_complete": 0
+        }
+      ]
     }
   ],
   "ump_diagnostics": {
-    "hp_count_fetched": 1,
-    "pitcher_nonzero_count": 1,
-    "pitcher_with_hp_count": 1,
-    "pitcher_rated_count": 1,
+    "hp_count_fetched": 2,
+    "pitcher_nonzero_count": 2,
+    "pitcher_with_hp_count": 2,
+    "pitcher_rated_count": 2,
     "umpire_by_pitcher": {
-      "Tomoyuki Sugano": "D.J. Reyburn"
+      "Tomoyuki Sugano": "D.J. Reyburn",
+      "Payton Tolle": "Dan Iassogna"
     },
     "rated_umpire_by_pitcher": {
       "Tomoyuki Sugano": true,
-      "Tarik Skubal": false,
-      "Payton Tolle": false,
+      "Payton Tolle": true,
       "Nick Martinez": false,
       "Janson Junk": false,
       "Aaron Nola": false,
@@ -3058,16 +3050,16 @@
     "missing_career_rate_umpires": []
   },
   "connection_health": {
-    "props_seen": 71,
-    "stats_resolved": 21,
-    "records_built": 21,
+    "props_seen": 67,
+    "stats_resolved": 20,
+    "records_built": 20,
     "unresolved_count": 0,
-    "model_candidate_count": 21,
+    "model_candidate_count": 20,
     "intake_filtered_count": 0,
     "missing_stats_count": 0,
     "unresolved_after_stats_count": 0,
     "feature_build_failures_count": 0,
-    "ignored_non_starter_count": 50,
+    "ignored_non_starter_count": 47,
     "degraded": false,
     "sample_intake_filtered_pitchers": [],
     "sample_feature_build_failures": [],
@@ -3088,7 +3080,7 @@
     "queued_not_attempted": 0,
     "cache_size": 342,
     "errors": [],
-    "updated_at": "2026-05-04T18:04:51Z"
+    "updated_at": "2026-05-04T18:21:46Z"
   },
   "quality_gate_summary": {
     "clean": 1,
@@ -3096,15 +3088,15 @@
     "blocked": 0,
     "severe_flags": {},
     "soft_flags": {
+      "thin_recent_start_sample": 4,
       "projected_lineup": 20,
       "first_seen_opening": 6,
-      "thin_recent_start_sample": 4,
       "developing_pitcher_sample": 1,
       "missing_career_swstr": 1
     },
     "pre_record_skips": {
       "unresolved_probable_starters": 0,
-      "ignored_non_starter_props": 50,
+      "ignored_non_starter_props": 47,
       "build_exception": 0,
       "pregame_starter_mismatch": 0
     }
@@ -3140,19 +3132,19 @@
       "odds": -152,
       "locked_odds": null,
       "display_odds": -152,
-      "adj_ev": 0.3218,
-      "raw_adj_ev": 0.3218,
+      "adj_ev": 0.2844,
+      "raw_adj_ev": 0.2844,
       "locked_adj_ev": null,
-      "display_adj_ev": 0.3218,
-      "edge": 0.1941,
-      "ev": 0.3218,
+      "display_adj_ev": 0.2844,
+      "edge": 0.1715,
+      "ev": 0.2844,
       "result": null,
       "actual_ks": null,
       "pnl": null,
       "locked_at": null,
       "status": "tracking",
       "game_time": "2026-05-04T22:10:00Z",
-      "data_complete": 0
+      "data_complete": 1
     },
     {
       "date": "2026-05-04",
