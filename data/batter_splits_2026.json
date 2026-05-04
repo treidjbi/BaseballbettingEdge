@@ -6012,22 +6012,56 @@
         "so": 6,
         "k_rate": 0.4615
       }
+    },
+    "mlbam:669221": {
+      "name": "Sean Murphy",
+      "bats": "R",
+      "mlbam_id": 669221,
+      "bbref_id": "murphse01",
+      "season": 2026,
+      "vs_R": {
+        "pa": 221,
+        "so": 67,
+        "k_rate": 0.3032
+      },
+      "vs_L": {
+        "pa": 116,
+        "so": 38,
+        "k_rate": 0.3276
+      }
+    },
+    "mlbam:805811": {
+      "name": "Bryce Eldridge",
+      "bats": "R",
+      "mlbam_id": 805811,
+      "bbref_id": "eldribr01",
+      "season": 2026,
+      "vs_R": {
+        "pa": 35,
+        "so": 13,
+        "k_rate": 0.3714
+      },
+      "vs_L": {
+        "pa": 2,
+        "so": 0,
+        "k_rate": 0.0
+      }
     }
   },
-  "updated_at": "2026-05-04T22:35:07Z",
+  "updated_at": "2026-05-04T23:06:47Z",
   "last_run": {
     "projection_status": "collection_only",
-    "requested_batters": 171,
-    "already_cached": 166,
+    "requested_batters": 189,
+    "already_cached": 177,
     "attempted": 4,
     "collected": 2,
     "failed": 2,
-    "queued_not_attempted": 1,
-    "cache_size": 355,
+    "queued_not_attempted": 8,
+    "cache_size": 357,
     "errors": [
       "Zack Short: no platoon split rows",
       "Joe Mack: no bbref id"
     ],
-    "updated_at": "2026-05-04T22:35:07Z"
+    "updated_at": "2026-05-04T23:06:47Z"
   }
 }
