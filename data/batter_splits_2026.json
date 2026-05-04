@@ -5813,22 +5813,51 @@
         "so": 4,
         "k_rate": 0.1333
       }
+    },
+    "mlbam:596117": {
+      "name": "Garrett Stubbs",
+      "bats": "R",
+      "mlbam_id": 596117,
+      "bbref_id": "stubbga01",
+      "season": 2026,
+      "vs_R": {
+        "pa": 13,
+        "so": 1,
+        "k_rate": 0.0769
+      }
+    },
+    "mlbam:805904": {
+      "name": "Zach Cole",
+      "bats": "R",
+      "mlbam_id": 805904,
+      "bbref_id": "coleza01",
+      "season": 2026,
+      "vs_R": {
+        "pa": 41,
+        "so": 16,
+        "k_rate": 0.3902
+      },
+      "vs_L": {
+        "pa": 11,
+        "so": 4,
+        "k_rate": 0.3636
+      }
     }
   },
-  "updated_at": "2026-05-04T20:06:04Z",
+  "updated_at": "2026-05-04T20:23:14Z",
   "last_run": {
     "projection_status": "collection_only",
-    "requested_batters": 81,
-    "already_cached": 79,
-    "attempted": 2,
-    "collected": 0,
+    "requested_batters": 108,
+    "already_cached": 104,
+    "attempted": 4,
+    "collected": 2,
     "failed": 2,
     "queued_not_attempted": 0,
-    "cache_size": 343,
+    "cache_size": 345,
     "errors": [
       "Zack Short: no platoon split rows",
       "Joe Mack: no bbref id"
     ],
-    "updated_at": "2026-05-04T20:06:04Z"
+    "updated_at": "2026-05-04T20:23:14Z"
   }
 }
