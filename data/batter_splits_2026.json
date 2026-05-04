@@ -5910,22 +5910,56 @@
         "so": 6,
         "k_rate": 0.1622
       }
+    },
+    "mlbam:679845": {
+      "name": "Nick Loftin",
+      "bats": "R",
+      "mlbam_id": 679845,
+      "bbref_id": "loftini01",
+      "season": 2026,
+      "vs_R": {
+        "pa": 25,
+        "so": 2,
+        "k_rate": 0.08
+      },
+      "vs_L": {
+        "pa": 12,
+        "so": 1,
+        "k_rate": 0.0833
+      }
+    },
+    "mlbam:694192": {
+      "name": "Jackson Chourio",
+      "bats": "R",
+      "mlbam_id": 694192,
+      "bbref_id": "chourja01",
+      "season": 2026,
+      "vs_R": {
+        "pa": 440,
+        "so": 88,
+        "k_rate": 0.2
+      },
+      "vs_L": {
+        "pa": 149,
+        "so": 33,
+        "k_rate": 0.2215
+      }
     }
   },
-  "updated_at": "2026-05-04T21:18:42Z",
+  "updated_at": "2026-05-04T21:40:52Z",
   "last_run": {
     "projection_status": "collection_only",
-    "requested_batters": 144,
-    "already_cached": 137,
+    "requested_batters": 153,
+    "already_cached": 146,
     "attempted": 4,
     "collected": 2,
     "failed": 2,
     "queued_not_attempted": 3,
-    "cache_size": 349,
+    "cache_size": 351,
     "errors": [
       "Zack Short: no platoon split rows",
       "Joe Mack: no bbref id"
     ],
-    "updated_at": "2026-05-04T21:18:42Z"
+    "updated_at": "2026-05-04T21:40:52Z"
   }
 }
