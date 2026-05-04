@@ -5796,19 +5796,39 @@
         "so": 6,
         "k_rate": 0.2222
       }
+    },
+    "mlbam:687363": {
+      "name": "Victor Scott II",
+      "bats": "R",
+      "mlbam_id": 687363,
+      "bbref_id": "scottvi01",
+      "season": 2026,
+      "vs_R": {
+        "pa": 69,
+        "so": 23,
+        "k_rate": 0.3333
+      },
+      "vs_L": {
+        "pa": 30,
+        "so": 4,
+        "k_rate": 0.1333
+      }
     }
   },
-  "updated_at": "2026-05-04T18:21:46Z",
+  "updated_at": "2026-05-04T19:06:37Z",
   "last_run": {
     "projection_status": "collection_only",
-    "requested_batters": 9,
-    "already_cached": 9,
-    "attempted": 0,
-    "collected": 0,
-    "failed": 0,
+    "requested_batters": 45,
+    "already_cached": 42,
+    "attempted": 3,
+    "collected": 1,
+    "failed": 2,
     "queued_not_attempted": 0,
-    "cache_size": 342,
-    "errors": [],
-    "updated_at": "2026-05-04T18:21:46Z"
+    "cache_size": 343,
+    "errors": [
+      "Zack Short: no platoon split rows",
+      "Joe Mack: no bbref id"
+    ],
+    "updated_at": "2026-05-04T19:06:37Z"
   }
 }
