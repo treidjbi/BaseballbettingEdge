@@ -5944,22 +5944,56 @@
         "so": 33,
         "k_rate": 0.2215
       }
+    },
+    "mlbam:683734": {
+      "name": "Andrew Vaughn",
+      "bats": "R",
+      "mlbam_id": 683734,
+      "bbref_id": "vaughan01",
+      "season": 2026,
+      "vs_R": {
+        "pa": 2,
+        "so": 0,
+        "k_rate": 0.0
+      },
+      "vs_L": {
+        "pa": 2,
+        "so": 0,
+        "k_rate": 0.0
+      }
+    },
+    "mlbam:660162": {
+      "name": "Yo\u00e1n Moncada",
+      "bats": "R",
+      "mlbam_id": 660162,
+      "bbref_id": "moncayo01",
+      "season": 2026,
+      "vs_R": {
+        "pa": 82,
+        "so": 26,
+        "k_rate": 0.3171
+      },
+      "vs_L": {
+        "pa": 23,
+        "so": 11,
+        "k_rate": 0.4783
+      }
     }
   },
-  "updated_at": "2026-05-04T21:40:52Z",
+  "updated_at": "2026-05-04T22:14:01Z",
   "last_run": {
     "projection_status": "collection_only",
-    "requested_batters": 153,
-    "already_cached": 146,
+    "requested_batters": 171,
+    "already_cached": 164,
     "attempted": 4,
     "collected": 2,
     "failed": 2,
     "queued_not_attempted": 3,
-    "cache_size": 351,
+    "cache_size": 353,
     "errors": [
       "Zack Short: no platoon split rows",
       "Joe Mack: no bbref id"
     ],
-    "updated_at": "2026-05-04T21:40:52Z"
+    "updated_at": "2026-05-04T22:14:01Z"
   }
 }
