@@ -6165,22 +6165,51 @@
         "so": 10,
         "k_rate": 0.2564
       }
+    },
+    "mlbam:640492": {
+      "name": "Jos\u00e9 Azocar",
+      "bats": "R",
+      "mlbam_id": 640492,
+      "bbref_id": "azocajo01",
+      "season": 2026,
+      "vs_L": {
+        "pa": 2,
+        "so": 1,
+        "k_rate": 0.5
+      }
+    },
+    "mlbam:593428": {
+      "name": "Xander Bogaerts",
+      "bats": "R",
+      "mlbam_id": 593428,
+      "bbref_id": "bogaexa01",
+      "season": 2026,
+      "vs_R": {
+        "pa": 106,
+        "so": 20,
+        "k_rate": 0.1887
+      },
+      "vs_L": {
+        "pa": 28,
+        "so": 1,
+        "k_rate": 0.0357
+      }
     }
   },
-  "updated_at": "2026-05-05T03:58:58Z",
+  "updated_at": "2026-05-05T04:26:27Z",
   "last_run": {
     "projection_status": "collection_only",
     "requested_batters": 189,
-    "already_cached": 181,
+    "already_cached": 182,
     "attempted": 4,
     "collected": 2,
     "failed": 2,
-    "queued_not_attempted": 4,
-    "cache_size": 364,
+    "queued_not_attempted": 3,
+    "cache_size": 366,
     "errors": [
       "Zack Short: no platoon split rows",
       "Joe Mack: no bbref id"
     ],
-    "updated_at": "2026-05-05T03:58:58Z"
+    "updated_at": "2026-05-05T04:26:27Z"
   }
 }
