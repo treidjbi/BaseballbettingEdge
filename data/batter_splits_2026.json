@@ -6063,23 +6063,40 @@
         "so": 7,
         "k_rate": 0.2917
       }
+    },
+    "mlbam:701538": {
+      "name": "Jackson Merrill",
+      "bats": "R",
+      "mlbam_id": 701538,
+      "bbref_id": "merrija01",
+      "season": 2026,
+      "vs_R": {
+        "pa": 108,
+        "so": 23,
+        "k_rate": 0.213
+      },
+      "vs_L": {
+        "pa": 28,
+        "so": 9,
+        "k_rate": 0.3214
+      }
     }
   },
-  "updated_at": "2026-05-04T23:29:38Z",
+  "updated_at": "2026-05-05T00:03:16Z",
   "last_run": {
     "projection_status": "collection_only",
     "requested_batters": 189,
-    "already_cached": 179,
+    "already_cached": 180,
     "attempted": 4,
     "collected": 1,
     "failed": 3,
-    "queued_not_attempted": 6,
-    "cache_size": 358,
+    "queued_not_attempted": 5,
+    "cache_size": 359,
     "errors": [
       "Zack Short: no platoon split rows",
       "Joe Mack: no bbref id",
       "Jesus Rodriguez: no bbref id"
     ],
-    "updated_at": "2026-05-04T23:29:38Z"
+    "updated_at": "2026-05-05T00:03:16Z"
   }
 }
