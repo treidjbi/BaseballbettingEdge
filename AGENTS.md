@@ -213,8 +213,8 @@ Use this provider conservatively:
 - First try TheRundown.
 - Only call The Odds API when TheRundown returns no usable target-book K props,
   misses FanDuel/DraftKings coverage, or has a confirmed provider outage.
-- If The Odds API fails, rate-limits, runs out of credits, or still leaves
-  missing FanDuel/DraftKings coverage, PropLine may run as the next fallback.
+- Only call The Odds API after the PropLine fallback errors, rate-limits, has
+  no usable coverage, or still leaves missing FanDuel/DraftKings coverage.
 - While on the 500-credit free plan, do not broaden The Odds calls beyond the
   FD/DK fallback without an explicit decision; a full weekend can burn through
   the free quota quickly.
@@ -243,8 +243,9 @@ player-prop source. Treat this as trial infrastructure until the Monday
 - **Manual probe**: use GitHub Actions `workflow_dispatch` with
   `mode=propline_probe` and an optional `date=YYYY-MM-DD`. It prints returned
   book keys/counts only; it must never print the API key.
-- **Current fallback order**: TheRundown primary → The Odds FD/DK fallback →
-  PropLine fallback if The Odds fails/rate-limits/has no usable coverage.
+- **Current fallback order**: TheRundown primary → PropLine target-book
+  fallback → The Odds FD/DK fallback only if PropLine errors/rate-limits/has
+  no usable coverage or still leaves missing FanDuel/DraftKings coverage.
 
 The response shape mirrors The Odds enough to share parser logic:
 `bookmakers[] -> markets[] -> outcomes[]`, where pitcher props use

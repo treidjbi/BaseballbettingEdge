@@ -12,6 +12,7 @@ from fetch_odds import (
     american_odds_from_line,
     fetch_odds,
     parse_k_props,
+    _dedupe_pitcher_line_conflicts,
     _merge_the_odds_fallback_props,
     _parse_propline_event_props,
     _parse_the_odds_event_props,
@@ -837,58 +838,71 @@ class TestTheOddsFallback:
 
 
 class TestPropLineFallback:
-    def _propline_event(self):
+    def _propline_event(self, *, include_fanduel=False):
+        bookmakers = [
+            {
+                "key": "draftkings",
+                "title": "DraftKings",
+                "markets": [{
+                    "key": "pitcher_strikeouts",
+                    "outcomes": [
+                        {"name": "Over", "description": "Gerrit Cole", "price": -120, "point": 7.5},
+                        {"name": "Under", "description": "Gerrit Cole", "price": 100, "point": 7.5},
+                    ],
+                }],
+            },
+            {
+                "key": "betrivers",
+                "title": "BetRivers",
+                "markets": [{
+                    "key": "pitcher_strikeouts",
+                    "outcomes": [
+                        {"name": "Over", "description": "Gerrit Cole", "price": -115, "point": 7.5},
+                        {"name": "Under", "description": "Gerrit Cole", "price": -105, "point": 7.5},
+                    ],
+                }],
+            },
+            {
+                "key": "kalshi",
+                "title": "Kalshi",
+                "markets": [{
+                    "key": "pitcher_strikeouts",
+                    "outcomes": [
+                        {"name": "Over", "description": "Gerrit Cole", "price": -110, "point": 7.5},
+                        {"name": "Under", "description": "Gerrit Cole", "price": -110, "point": 7.5},
+                    ],
+                }],
+            },
+            {
+                "key": "bovada",
+                "title": "Bovada",
+                "markets": [{
+                    "key": "pitcher_strikeouts",
+                    "outcomes": [
+                        {"name": "Over", "description": "Gerrit Cole", "price": -118, "point": 7.5},
+                        {"name": "Under", "description": "Gerrit Cole", "price": -102, "point": 7.5},
+                    ],
+                }],
+            },
+        ]
+        if include_fanduel:
+            bookmakers.insert(0, {
+                "key": "fanduel",
+                "title": "FanDuel",
+                "markets": [{
+                    "key": "pitcher_strikeouts",
+                    "outcomes": [
+                        {"name": "Over", "description": "Gerrit Cole", "price": -125, "point": 7.5},
+                        {"name": "Under", "description": "Gerrit Cole", "price": 105, "point": 7.5},
+                    ],
+                }],
+            })
         return {
             "id": "pl-event-1",
             "commence_time": "2026-05-01T23:05:00Z",
             "home_team": "Boston Red Sox",
             "away_team": "New York Yankees",
-            "bookmakers": [
-                {
-                    "key": "draftkings",
-                    "title": "DraftKings",
-                    "markets": [{
-                        "key": "pitcher_strikeouts",
-                        "outcomes": [
-                            {"name": "Over", "description": "Gerrit Cole", "price": -120, "point": 7.5},
-                            {"name": "Under", "description": "Gerrit Cole", "price": 100, "point": 7.5},
-                        ],
-                    }],
-                },
-                {
-                    "key": "betrivers",
-                    "title": "BetRivers",
-                    "markets": [{
-                        "key": "pitcher_strikeouts",
-                        "outcomes": [
-                            {"name": "Over", "description": "Gerrit Cole", "price": -115, "point": 7.5},
-                            {"name": "Under", "description": "Gerrit Cole", "price": -105, "point": 7.5},
-                        ],
-                    }],
-                },
-                {
-                    "key": "kalshi",
-                    "title": "Kalshi",
-                    "markets": [{
-                        "key": "pitcher_strikeouts",
-                        "outcomes": [
-                            {"name": "Over", "description": "Gerrit Cole", "price": -110, "point": 7.5},
-                            {"name": "Under", "description": "Gerrit Cole", "price": -110, "point": 7.5},
-                        ],
-                    }],
-                },
-                {
-                    "key": "bovada",
-                    "title": "Bovada",
-                    "markets": [{
-                        "key": "pitcher_strikeouts",
-                        "outcomes": [
-                            {"name": "Over", "description": "Gerrit Cole", "price": -118, "point": 7.5},
-                            {"name": "Under", "description": "Gerrit Cole", "price": -102, "point": 7.5},
-                        ],
-                    }],
-                },
-            ],
+            "bookmakers": bookmakers,
         }
 
     def test_parse_propline_event_props_keeps_only_user_books(self):
@@ -908,18 +922,71 @@ class TestPropLineFallback:
         }
         assert "Bovada" not in prop["book_odds"]
 
-    def test_fetch_odds_falls_back_to_propline_when_the_odds_errors(self):
-        import requests
-
+    def test_fetch_odds_calls_propline_before_the_odds_when_fd_dk_missing(self):
         rundown_payload = {"events": [_make_event("Gerrit Cole", 7.5, -112, -108)]}
-        propline = _parse_propline_event_props(self._propline_event())
+        propline = _parse_propline_event_props(self._propline_event(include_fanduel=True))
 
         with patch.dict("os.environ", {"ODDS_API_KEY": "odds-key", "PROPLINE_API_KEY": "pl-key"}):
             with patch("fetch_odds.throttled_get", return_value=rundown_payload):
-                with patch("fetch_odds._fetch_the_odds_fallback_props", side_effect=requests.HTTPError("429")):
-                    with patch("fetch_odds._fetch_propline_fallback_props", return_value=propline) as mock_propline:
+                with patch("fetch_odds._fetch_propline_fallback_props", return_value=propline) as mock_propline:
+                    with patch("fetch_odds._fetch_the_odds_fallback_props") as mock_the_odds:
                         result = fetch_odds("2026-05-01")
 
         mock_propline.assert_called_once_with("2026-05-01")
+        mock_the_odds.assert_not_called()
         assert result[0]["book_odds"]["BetRivers"]["over"] == -115
         assert result[0]["odds_source"] == "therundown+propline"
+
+    def test_fetch_odds_calls_the_odds_after_propline_still_missing_coverage(self):
+        rundown_payload = {"events": [_make_event("Gerrit Cole", 7.5, -112, -108)]}
+        propline = _parse_propline_event_props(self._propline_event())
+        the_odds = _parse_the_odds_event_props(TestTheOddsFallback()._the_odds_event())
+
+        with patch.dict("os.environ", {"ODDS_API_KEY": "odds-key", "PROPLINE_API_KEY": "pl-key"}):
+            with patch("fetch_odds.throttled_get", return_value=rundown_payload):
+                with patch("fetch_odds._fetch_propline_fallback_props", return_value=propline) as mock_propline:
+                    with patch("fetch_odds._fetch_the_odds_fallback_props", return_value=the_odds) as mock_the_odds:
+                        result = fetch_odds("2026-05-01")
+
+        mock_propline.assert_called_once_with("2026-05-01")
+        mock_the_odds.assert_called_once_with("2026-05-01")
+        assert result[0]["ref_book"] == "FanDuel"
+        assert result[0]["book_odds"]["FanDuel"]["over"] == 112
+
+    def test_fetch_odds_falls_back_to_the_odds_when_propline_errors(self):
+        import requests
+
+        rundown_payload = {"events": [_make_event("Gerrit Cole", 7.5, -112, -108)]}
+        the_odds = _parse_the_odds_event_props(TestTheOddsFallback()._the_odds_event())
+
+        with patch.dict("os.environ", {"ODDS_API_KEY": "odds-key", "PROPLINE_API_KEY": "pl-key"}):
+            with patch("fetch_odds.throttled_get", return_value=rundown_payload):
+                with patch("fetch_odds._fetch_propline_fallback_props", side_effect=requests.HTTPError("429")) as mock_propline:
+                    with patch("fetch_odds._fetch_the_odds_fallback_props", return_value=the_odds) as mock_the_odds:
+                        result = fetch_odds("2026-05-01")
+
+        mock_propline.assert_called_once_with("2026-05-01")
+        mock_the_odds.assert_called_once_with("2026-05-01")
+        assert result[0]["book_odds"]["DraftKings"]["over"] == 115
+        assert result[0]["odds_source"] == "therundown+the_odds"
+
+
+class TestDuplicatePitcherLineConflicts:
+    def test_keeps_standalone_low_pitcher_line(self):
+        props = [{"pitcher": "Ryan Pepiot", "k_line": 1.5, "ref_book": "FanDuel"}]
+
+        result = _dedupe_pitcher_line_conflicts(props)
+
+        assert result == props
+
+    def test_prefers_starter_line_when_same_pitcher_has_low_duplicate(self, caplog):
+        props = [
+            {"pitcher": "Shohei Ohtani", "k_line": 1.5, "ref_book": "BetMGM"},
+            {"pitcher": "Shohei Ohtani", "k_line": 6.5, "ref_book": "DraftKings"},
+        ]
+
+        result = _dedupe_pitcher_line_conflicts(props)
+
+        assert len(result) == 1
+        assert result[0]["k_line"] == 6.5
+        assert any("Shohei Ohtani" in record.getMessage() for record in caplog.records)

@@ -677,6 +677,48 @@ def _merge_propline_fallback_props(rundown_props: list, fallback_props: list) ->
     return _merge_fallback_props(rundown_props, fallback_props, "PropLine")
 
 
+def _dedupe_pitcher_line_conflicts(props: list) -> list:
+    by_pitcher: dict[str, list[dict]] = {}
+    for prop in props:
+        by_pitcher.setdefault(normalize(prop.get("pitcher", "")), []).append(prop)
+
+    deduped: list[dict] = []
+    for pitcher_key, pitcher_props in by_pitcher.items():
+        if not pitcher_key or len(pitcher_props) == 1:
+            deduped.extend(pitcher_props)
+            continue
+
+        distinct_lines = {
+            prop.get("k_line")
+            for prop in pitcher_props
+        }
+        if len(distinct_lines) <= 1:
+            deduped.append(pitcher_props[0])
+            continue
+
+        kept = max(
+            pitcher_props,
+            key=lambda prop: (
+                float(prop.get("k_line") or 0),
+                len(prop.get("book_odds") or {}),
+            ),
+        )
+        dropped_lines = sorted(
+            line
+            for line in distinct_lines
+            if line is not None and line != kept.get("k_line")
+        )
+        log.warning(
+            "Dropping duplicate K-line conflict for %s: kept %.1f, dropped %s",
+            kept.get("pitcher", ""),
+            kept.get("k_line"),
+            ", ".join(f"{float(line):.1f}" for line in dropped_lines) or "unknown",
+        )
+        deduped.append(kept)
+
+    return deduped
+
+
 def _missing_fd_dk_coverage(props: list) -> bool:
     books_seen = {
         book_name
@@ -731,6 +773,16 @@ def fetch_odds(date_str: str) -> list:
             failures.append(e)
             log.warning("fetch_odds failed for %s: %s", fetch_date, e)
 
+    if _propline_key() and _needs_fallback_coverage(all_props):
+        try:
+            fallback_props = _fetch_propline_fallback_props(date_str)
+            if fallback_props:
+                all_props = _merge_propline_fallback_props(all_props, fallback_props)
+        except Exception as e:
+            log.warning("PropLine fallback failed for %s: %s", date_str, e)
+    elif not _propline_key() and _needs_fallback_coverage(all_props):
+        log.info("PropLine fallback skipped: PROPLINE_API_KEY not set")
+
     if _the_odds_key() and _needs_fallback_coverage(all_props):
         try:
             fallback_props = _fetch_the_odds_fallback_props(date_str)
@@ -741,15 +793,7 @@ def fetch_odds(date_str: str) -> list:
     elif not _the_odds_key() and _needs_fallback_coverage(all_props):
         log.info("The Odds fallback skipped: ODDS_API_KEY not set")
 
-    if _propline_key() and _needs_fallback_coverage(all_props):
-        try:
-            fallback_props = _fetch_propline_fallback_props(date_str)
-            if fallback_props:
-                all_props = _merge_propline_fallback_props(all_props, fallback_props)
-        except Exception as e:
-            log.warning("PropLine fallback failed for %s: %s", date_str, e)
-    elif not _propline_key() and _needs_fallback_coverage(all_props):
-        log.info("PropLine fallback skipped: PROPLINE_API_KEY not set")
+    all_props = _dedupe_pitcher_line_conflicts(all_props)
 
     if not all_props and failures:
         raise failures[0]
