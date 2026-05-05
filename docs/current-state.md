@@ -1,6 +1,6 @@
 # Current State
 
-Last updated: 2026-04-29
+Last updated: 2026-05-05
 
 ## Read Order
 
@@ -27,6 +27,10 @@ post-Phase-C changes.
 - Real per-batter vs-LHP/vs-RHP split samples may be collected during the soak,
   but they are collection-only. Do not wire them into projection until next
   week's review confirms coverage and a Bayesian regression plan.
+- PropLine is running as a May 2026 shadow/polling trial for MLB pitcher
+  strikeout market coverage and line-movement evidence. Do not promote it,
+  replace TheRundown, add another paid odds source, or move to paid WebSocket
+  infrastructure without a review checkpoint and explicit user approval.
 
 ## Active Evaluation Stack
 
@@ -62,6 +66,17 @@ The queued implementation plan for hard-limiting unsafe high-conviction picks is
 That plan should be used when implementing per-pitcher input quality flags,
 projection safety, raw/actionable verdict separation, and maturity thresholds
 for pitchers, umpires, lineups, and market data.
+
+The next provider decision checkpoint is **2026-06-01**:
+
+- Review the full May PropLine shadow trial against TheRundown production
+  artifacts and any PropLine webhook/support updates.
+- Summarize coverage by target book, pitcher/line completeness, line conflicts,
+  same-line overlap, movement detection, GitHub schedule jitter, Supabase
+  shadow-table health, and whether movements would have changed decisions.
+- Decide whether PropLine should remain a fallback, become a partial provider
+  for FanDuel/BetRivers, justify Streaming/WebSocket spend, or stay shadow-only.
+- Do not change production odds-provider behavior without Tyler's approval.
 
 ## Historical Context
 

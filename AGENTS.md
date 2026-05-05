@@ -224,14 +224,15 @@ Use this provider conservatively:
   `bookmaker_key`, response quota headers) so TheRundown and fallback rows can
   be audited separately.
 
-## PropLine API (Weekend Fallback / Shadow Provider)
+## PropLine API (May 2026 Shadow / Fallback Provider)
 
-PropLine is being tested over the 2026-05-01 weekend as a possible cheaper
-player-prop source. Treat this as trial infrastructure until the Monday
-2026-05-04 review compares live coverage against TheRundown and The Odds.
+PropLine is being tested through May 2026 as a possible cheaper player-prop
+source and line-movement signal. Treat this as trial infrastructure until the
+2026-06-01 provider review compares the full May shadow evidence against
+TheRundown production artifacts and any PropLine webhook/support updates.
 
-- **Plan under test**: free tier first; do not assume paid/webhook behavior
-  until live polling coverage is validated.
+- **Plan under test**: Streaming Lite / shadow polling. Webhook entitlement is
+  not confirmed until PropLine support or the API allows subscription creation.
 - **Secret**: `PROPLINE_API_KEY`
 - **Host**: `https://api.prop-line.com`
 - **Auth**: `X-API-Key` header
@@ -246,20 +247,28 @@ player-prop source. Treat this as trial infrastructure until the Monday
 - **Current fallback order**: TheRundown primary → PropLine target-book
   fallback → The Odds FD/DK fallback only if PropLine errors/rate-limits/has
   no usable coverage or still leaves missing FanDuel/DraftKings coverage.
+- **June 1, 2026 review checkpoint**: evaluate the May shadow trial before any
+  provider promotion, Streaming/WebSocket spend, polling architecture change,
+  or production odds-source behavior change. Keep TheRundown as production
+  unless Tyler explicitly approves a different path.
 
 The response shape mirrors The Odds enough to share parser logic:
 `bookmakers[] -> markets[] -> outcomes[]`, where pitcher props use
 `outcome.name` as `Over` / `Under`, `outcome.description` as the pitcher name,
 `outcome.point` as the K line, and `outcome.price` as American odds.
 
-Weekend review checklist:
+May trial review checklist:
 
 - Which target books actually came back live?
 - How many listed MLB probable pitchers were covered?
 - How many records were same-line vs. line-conflict with TheRundown?
 - Did PropLine return useful Kalshi/BetRivers coverage?
-- Did the free tier stay within request/rate limits?
+- Did 10-minute shadow polling catch useful line movement, and how much GitHub
+  schedule jitter was observed?
+- Did the paid plan stay within request/rate limits?
 - Did `odds_source` / `propline_event_id` make provider attribution auditable?
+- Would PropLine have changed any model decisions, line locks, or movement
+  confidence outcomes versus TheRundown alone?
 
 ## Tech Stack
 
