@@ -1,6 +1,7 @@
 import crypto from 'node:crypto';
 
 const jsonHeaders = { 'Content-Type': 'application/json' };
+const DEFAULT_SUPABASE_URL = 'https://htoaytcsjrdyyzcwxjfg.supabase.co';
 
 // Shadow-only PropLine webhook inbox. Keep production odds behavior unchanged.
 function json(status, body) {
@@ -81,7 +82,7 @@ export default async function proplineWebhook(req) {
   }
 
   const secret = envValue('PROPLINE_WEBHOOK_SECRET');
-  const supabaseUrl = envValue('SUPABASE_URL');
+  const supabaseUrl = envValue('SUPABASE_URL') || DEFAULT_SUPABASE_URL;
   const serviceRoleKey = envValue('SUPABASE_SERVICE_ROLE_KEY');
   if (!secret || !supabaseUrl || !serviceRoleKey) {
     return json(500, { error: 'Webhook receiver not configured' });
