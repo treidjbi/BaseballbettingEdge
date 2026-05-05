@@ -6308,22 +6308,56 @@
         "so": 8,
         "k_rate": 0.3333
       }
+    },
+    "mlbam:657757": {
+      "name": "Gavin Sheets",
+      "bats": "R",
+      "mlbam_id": 657757,
+      "bbref_id": "sheetga01",
+      "season": 2026,
+      "vs_R": {
+        "pa": 91,
+        "so": 21,
+        "k_rate": 0.2308
+      },
+      "vs_L": {
+        "pa": 8,
+        "so": 2,
+        "k_rate": 0.25
+      }
+    },
+    "mlbam:592206": {
+      "name": "Nick Castellanos",
+      "bats": "R",
+      "mlbam_id": 592206,
+      "bbref_id": "casteni01",
+      "season": 2026,
+      "vs_R": {
+        "pa": 50,
+        "so": 14,
+        "k_rate": 0.28
+      },
+      "vs_L": {
+        "pa": 15,
+        "so": 3,
+        "k_rate": 0.2
+      }
     }
   },
-  "updated_at": "2026-05-05T22:11:19Z",
+  "updated_at": "2026-05-05T22:33:44Z",
   "last_run": {
     "projection_status": "collection_only",
-    "requested_batters": 207,
-    "already_cached": 204,
-    "attempted": 3,
-    "collected": 1,
+    "requested_batters": 225,
+    "already_cached": 219,
+    "attempted": 4,
+    "collected": 2,
     "failed": 2,
-    "queued_not_attempted": 0,
-    "cache_size": 373,
+    "queued_not_attempted": 2,
+    "cache_size": 375,
     "errors": [
       "Joe Mack: no bbref id",
       "Jesus Rodriguez: no bbref id"
     ],
-    "updated_at": "2026-05-05T22:11:19Z"
+    "updated_at": "2026-05-05T22:33:44Z"
   }
 }
