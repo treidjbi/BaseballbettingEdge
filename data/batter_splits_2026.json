@@ -6262,21 +6262,50 @@
         "so": 6,
         "k_rate": 0.24
       }
+    },
+    "mlbam:693409": {
+      "name": "C\u00e9sar Prieto",
+      "bats": "R",
+      "mlbam_id": 693409,
+      "bbref_id": "prietce01",
+      "season": 2026,
+      "vs_R": {
+        "pa": 6,
+        "so": 5,
+        "k_rate": 0.8333
+      }
+    },
+    "mlbam:663728": {
+      "name": "Cal Raleigh",
+      "bats": "R",
+      "mlbam_id": 663728,
+      "bbref_id": "raleica01",
+      "season": 2026,
+      "vs_R": {
+        "pa": 106,
+        "so": 30,
+        "k_rate": 0.283
+      },
+      "vs_L": {
+        "pa": 41,
+        "so": 13,
+        "k_rate": 0.3171
+      }
     }
   },
-  "updated_at": "2026-05-05T20:44:26Z",
+  "updated_at": "2026-05-05T21:13:11Z",
   "last_run": {
     "projection_status": "collection_only",
-    "requested_batters": 144,
-    "already_cached": 141,
+    "requested_batters": 180,
+    "already_cached": 177,
     "attempted": 3,
     "collected": 2,
     "failed": 1,
     "queued_not_attempted": 0,
-    "cache_size": 370,
+    "cache_size": 372,
     "errors": [
       "Joe Mack: no bbref id"
     ],
-    "updated_at": "2026-05-05T20:44:26Z"
+    "updated_at": "2026-05-05T21:13:11Z"
   }
 }
