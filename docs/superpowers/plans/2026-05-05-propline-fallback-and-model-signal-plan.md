@@ -6,7 +6,9 @@
 
 **2026-05-05 execution note:** The provider fallback swap and same-pitcher duplicate line guard were implemented first. The broader shadow diagnostics in Tasks 2-5 remain deferred and should stay non-live until explicitly picked up.
 
-**Current status:** Task 1 is complete and shipped in commit `168cc19c`; the successful manual pipeline rerun committed output `092df39c`. Task 2 Step 1 is complete because `AGENTS.md` now reflects PropLine-first fallback. Tasks 2 Step 2 onward, Tasks 3-5, and Task 6 diagnostic-output checks remain open.
+**Current status:** Task 1 is complete and shipped in commit `168cc19c`; the successful manual pipeline rerun committed output `092df39c`. Task 2 Step 1 is complete because `AGENTS.md` now reflects PropLine-first fallback. The remaining local diagnostics in Tasks 2-5 are now implemented and verified. Supabase already stores PropLine shadow provider-run/snapshot/audit history, so the source-health diagnostic is intentionally local artifact health only.
+
+**2026-05-05 completion note:** Implemented the source fallback health, line movement, prior-model replay, and seasonal K environment shadow diagnostics. Generated local markdown outputs under `analytics/output/`. Verification: new diagnostic tests passed and full suite passed with `556 passed`.
 
 **Architecture:** Keep TheRundown as the primary source and preserve current static JSON/dashboard contracts. Invert the fallback order inside `pipeline/fetch_odds.py`, continue merging source metadata into `book_odds` and `odds_source`, and add diagnostics that answer model questions from history before touching `lambda`, thresholds, or staking. Webhooks remain a later infrastructure option, not part of this implementation.
 
@@ -236,7 +238,7 @@ and PropLine webhook adoption remains a later infrastructure decision after
 polling coverage proves reliable.
 ```
 
-- [ ] **Step 2: Create source fallback health diagnostic**
+- [x] **Step 2: Create source fallback health diagnostic**
 
 Create `analytics/diagnostics/source_fallback_health.py`:
 
@@ -319,7 +321,7 @@ if __name__ == "__main__":
     main()
 ```
 
-- [ ] **Step 3: Create tests for source fallback health**
+- [x] **Step 3: Create tests for source fallback health**
 
 Create `tests/test_source_fallback_health.py`:
 
@@ -362,7 +364,7 @@ def test_summarize_artifact_counts_sources_books_and_openings():
     assert summary["data_warnings"] == ["sample warning"]
 ```
 
-- [ ] **Step 4: Run source health tests**
+- [x] **Step 4: Run source health tests**
 
 Run:
 
@@ -376,7 +378,7 @@ Expected:
 passed
 ```
 
-- [ ] **Step 5: Generate the current source health note**
+- [x] **Step 5: Generate the current source health note**
 
 Run:
 
@@ -390,7 +392,7 @@ Expected:
 analytics/output/source_fallback_health.md exists and shows PropLine/TheRundown source mix.
 ```
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 Run:
 
@@ -410,7 +412,7 @@ git commit -m "chore: document provider fallback health"
 - Read: `data/picks_history.json`
 - Read: `dashboard/data/processed/steam.json`
 
-- [ ] **Step 1: Create movement bucket helpers**
+- [x] **Step 1: Create movement bucket helpers**
 
 Create `analytics/diagnostics/line_movement_shadow_audit.py`:
 
@@ -482,7 +484,7 @@ if __name__ == "__main__":
     main()
 ```
 
-- [ ] **Step 2: Test movement bucket behavior**
+- [x] **Step 2: Test movement bucket behavior**
 
 Create `tests/test_line_movement_shadow_audit.py`:
 
@@ -515,7 +517,7 @@ def test_summarize_rows_counts_results_by_bucket():
     assert "not_preview" not in summary
 ```
 
-- [ ] **Step 3: Run tests and generate audit**
+- [x] **Step 3: Run tests and generate audit**
 
 Run:
 
@@ -531,7 +533,7 @@ passed
 analytics/output/line_movement_shadow_audit.md exists
 ```
 
-- [ ] **Step 4: Decision rule for webhooks**
+- [x] **Step 4: Decision rule for webhooks**
 
 Use this rule in the generated note:
 
@@ -540,7 +542,7 @@ Do not build webhooks until movement audit shows that better intraday history wo
 If preview coverage is sparse or movement_conf rarely activates, webhooks may improve evidence collection but should not alter live EV yet.
 ```
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 Run:
 
@@ -559,7 +561,7 @@ git commit -m "chore: add line movement shadow audit"
 - Create: `tests/test_model_replay_shadow_audit.py`
 - Read: `data/picks_history.json`
 
-- [ ] **Step 1: Create replay helpers**
+- [x] **Step 1: Create replay helpers**
 
 Create `analytics/diagnostics/model_replay_shadow_audit.py`:
 
@@ -633,7 +635,7 @@ if __name__ == "__main__":
     main()
 ```
 
-- [ ] **Step 2: Test replay helpers**
+- [x] **Step 2: Test replay helpers**
 
 Create `tests/test_model_replay_shadow_audit.py`:
 
@@ -667,7 +669,7 @@ def test_summarize_compares_current_and_simple_clean_rows():
     assert result["simple_n"] == 1
 ```
 
-- [ ] **Step 3: Run tests and generate replay audit**
+- [x] **Step 3: Run tests and generate replay audit**
 
 Run:
 
@@ -683,7 +685,7 @@ passed
 analytics/output/model_replay_shadow_audit.md exists
 ```
 
-- [ ] **Step 4: Interpret old-model concern**
+- [x] **Step 4: Interpret old-model concern**
 
 Use this decision rule:
 
@@ -692,7 +694,7 @@ If the simple replay beats current mean absolute residual and side residuals on 
 If it only beats all-history ROI but not same-window replay, do not revert the model.
 ```
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 Run:
 
@@ -711,7 +713,7 @@ git commit -m "chore: add prior model replay audit"
 - Create: `tests/test_seasonal_k_environment_audit.py`
 - Read: `data/picks_history.json`
 
-- [ ] **Step 1: Create season bucket helpers**
+- [x] **Step 1: Create season bucket helpers**
 
 Create `analytics/diagnostics/seasonal_k_environment_audit.py`:
 
@@ -779,7 +781,7 @@ if __name__ == "__main__":
     main()
 ```
 
-- [ ] **Step 2: Test season bucket helpers**
+- [x] **Step 2: Test season bucket helpers**
 
 Create `tests/test_seasonal_k_environment_audit.py`:
 
@@ -802,7 +804,7 @@ def test_summarize_by_month_uses_graded_actual_ks():
     assert "2026-05" not in summary
 ```
 
-- [ ] **Step 3: Run tests and generate audit**
+- [x] **Step 3: Run tests and generate audit**
 
 Run:
 
@@ -818,7 +820,7 @@ passed
 analytics/output/seasonal_k_environment_audit.md exists
 ```
 
-- [ ] **Step 4: Decide what seasonal data is still missing**
+- [x] **Step 4: Decide what seasonal data is still missing**
 
 Write this note into the output if using it for a live change later:
 
@@ -826,7 +828,7 @@ Write this note into the output if using it for a live change later:
 App picks alone are selection-biased. A real seasonal K environment prior should be validated against MLB-wide starter K/start by week or month, not only our bet history.
 ```
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 Run:
 
@@ -857,7 +859,7 @@ Expected:
 passed
 ```
 
-- [ ] **Step 2: Run new diagnostics tests**
+- [x] **Step 2: Run new diagnostics tests**
 
 Run:
 
@@ -871,7 +873,7 @@ Expected:
 passed
 ```
 
-- [ ] **Step 3: Run existing evaluation diagnostics**
+- [x] **Step 3: Run existing evaluation diagnostics**
 
 Run:
 
@@ -969,7 +971,7 @@ Partly.
 - [x] The Odds still runs second if PropLine fails or leaves FanDuel/DraftKings coverage missing.
 - [x] `odds_source` continues to preserve merged provenance such as `therundown+propline`.
 - [x] No live model math changes ship in this plan.
-- New diagnostics can answer:
+- [x] New diagnostics can answer:
   - whether PropLine is actually improving book coverage,
   - whether line movement deserves stronger live weighting,
   - whether a simpler prior model beats current logic on the same clean rows,
