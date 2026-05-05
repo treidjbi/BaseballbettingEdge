@@ -10,7 +10,8 @@ def test_shadow_market_workflow_is_scheduled_manual_and_observation_only():
 
     assert "workflow_dispatch:" in text
     assert "schedule:" in text
-    assert "22 15,17,19,21,23,1 * * *" in text
+    assert "2,12,22,32,42,52 15-23,0-1 * * *" in text
+    assert "one-month" in text
     assert "contents: read" in text
     assert "contents: write" not in text
     assert "git push" not in text
@@ -34,6 +35,6 @@ def test_shadow_market_workflow_defaults_capture_flags_for_scheduled_runs():
     assert "Resolve capture flags" in text
     assert 'if [ "${{ github.event_name }}" = "schedule" ]; then' in text
     assert 'CAPTURE_PROPLINE="true"' in text
-    assert 'CAPTURE_ARTIFACTS="true"' in text
+    assert 'CAPTURE_ARTIFACTS="false"' in text
     assert "steps.capture.outputs.capture_propline == 'true'" in text
     assert "steps.capture.outputs.capture_artifacts == 'true'" in text

@@ -2,10 +2,12 @@ name: Shadow Market Infrastructure
 
 on:
   schedule:
-    # Observation-only shadow captures, offset from the main pipeline refresh
-    # window. Times are America/Phoenix (UTC-7, no DST):
-    # 8:22 AM, 10:22 AM, 12:22 PM, 2:22 PM, 4:22 PM, 6:22 PM.
-    - cron: '22 15,17,19,21,23,1 * * *'
+    # Observation-only PropLine shadow polling, independent of the production
+    # Baseball Pipeline. Times are America/Phoenix (UTC-7, no DST):
+    # every 10 minutes from 8:02 AM through 6:52 PM while the one-month
+    # Streaming Lite trial is active. This captures line-movement evidence
+    # without updating picks, dashboard artifacts, grading, or calibration.
+    - cron: '2,12,22,32,42,52 15-23,0-1 * * *'
   workflow_dispatch:
     inputs:
       date:
@@ -66,7 +68,7 @@ jobs:
 
           if [ "${{ github.event_name }}" = "schedule" ]; then
             CAPTURE_PROPLINE="true"
-            CAPTURE_ARTIFACTS="true"
+            CAPTURE_ARTIFACTS="false"
           fi
 
           if [ -z "$CAPTURE_PROPLINE" ]; then
