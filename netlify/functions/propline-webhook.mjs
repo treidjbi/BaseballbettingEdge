@@ -2,6 +2,7 @@ import crypto from 'node:crypto';
 
 const jsonHeaders = { 'Content-Type': 'application/json' };
 
+// Shadow-only PropLine webhook inbox. Keep production odds behavior unchanged.
 function json(status, body) {
   return new Response(JSON.stringify(body), { status, headers: jsonHeaders });
 }
