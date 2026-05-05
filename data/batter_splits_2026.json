@@ -6291,21 +6291,39 @@
         "so": 13,
         "k_rate": 0.3171
       }
+    },
+    "mlbam:545341": {
+      "name": "Randal Grichuk",
+      "bats": "R",
+      "mlbam_id": 545341,
+      "bbref_id": "grichra01",
+      "season": 2026,
+      "vs_R": {
+        "pa": 10,
+        "so": 2,
+        "k_rate": 0.2
+      },
+      "vs_L": {
+        "pa": 24,
+        "so": 8,
+        "k_rate": 0.3333
+      }
     }
   },
-  "updated_at": "2026-05-05T21:37:37Z",
+  "updated_at": "2026-05-05T22:11:19Z",
   "last_run": {
     "projection_status": "collection_only",
-    "requested_batters": 180,
-    "already_cached": 179,
-    "attempted": 1,
-    "collected": 0,
-    "failed": 1,
+    "requested_batters": 207,
+    "already_cached": 204,
+    "attempted": 3,
+    "collected": 1,
+    "failed": 2,
     "queued_not_attempted": 0,
-    "cache_size": 372,
+    "cache_size": 373,
     "errors": [
-      "Joe Mack: no bbref id"
+      "Joe Mack: no bbref id",
+      "Jesus Rodriguez: no bbref id"
     ],
-    "updated_at": "2026-05-05T21:37:37Z"
+    "updated_at": "2026-05-05T22:11:19Z"
   }
 }
