@@ -6097,23 +6097,56 @@
         "so": 3,
         "k_rate": 0.12
       }
+    },
+    "mlbam:624424": {
+      "name": "Michael Conforto",
+      "bats": "R",
+      "mlbam_id": 624424,
+      "bbref_id": "confomi01",
+      "season": 2026,
+      "vs_R": {
+        "pa": 37,
+        "so": 10,
+        "k_rate": 0.2703
+      },
+      "vs_L": {
+        "pa": 1,
+        "so": 0,
+        "k_rate": 0.0
+      }
+    },
+    "mlbam:694362": {
+      "name": "Blake Dunn",
+      "bats": "R",
+      "mlbam_id": 694362,
+      "bbref_id": "dunnbl01",
+      "season": 2026,
+      "vs_R": {
+        "pa": 40,
+        "so": 12,
+        "k_rate": 0.3
+      },
+      "vs_L": {
+        "pa": 35,
+        "so": 13,
+        "k_rate": 0.3714
+      }
     }
   },
-  "updated_at": "2026-05-05T01:14:20Z",
+  "updated_at": "2026-05-05T03:47:05Z",
   "last_run": {
     "projection_status": "collection_only",
     "requested_batters": 189,
-    "already_cached": 181,
+    "already_cached": 179,
     "attempted": 4,
-    "collected": 1,
-    "failed": 3,
-    "queued_not_attempted": 4,
-    "cache_size": 360,
+    "collected": 2,
+    "failed": 2,
+    "queued_not_attempted": 6,
+    "cache_size": 362,
     "errors": [
       "Zack Short: no platoon split rows",
-      "Joe Mack: no bbref id",
-      "Jesus Rodriguez: no bbref id"
+      "Joe Mack: no bbref id"
     ],
-    "updated_at": "2026-05-05T01:14:20Z"
+    "updated_at": "2026-05-05T03:47:05Z"
   }
 }
