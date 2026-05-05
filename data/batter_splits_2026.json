@@ -6194,21 +6194,55 @@
         "so": 1,
         "k_rate": 0.0357
       }
+    },
+    "mlbam:655316": {
+      "name": "Andruw Monasterio",
+      "bats": "R",
+      "mlbam_id": 655316,
+      "bbref_id": "monasan01",
+      "season": 2026,
+      "vs_R": {
+        "pa": 32,
+        "so": 5,
+        "k_rate": 0.1562
+      },
+      "vs_L": {
+        "pa": 23,
+        "so": 5,
+        "k_rate": 0.2174
+      }
+    },
+    "mlbam:457705": {
+      "name": "Andrew McCutchen",
+      "bats": "R",
+      "mlbam_id": 457705,
+      "bbref_id": "mccutan01",
+      "season": 2026,
+      "vs_R": {
+        "pa": 17,
+        "so": 11,
+        "k_rate": 0.6471
+      },
+      "vs_L": {
+        "pa": 31,
+        "so": 6,
+        "k_rate": 0.1935
+      }
     }
   },
-  "updated_at": "2026-05-05T18:56:18Z",
+  "updated_at": "2026-05-05T19:50:28Z",
   "last_run": {
     "projection_status": "collection_only",
-    "requested_batters": 36,
-    "already_cached": 35,
-    "attempted": 1,
-    "collected": 0,
+    "requested_batters": 99,
+    "already_cached": 96,
+    "attempted": 3,
+    "collected": 2,
     "failed": 1,
     "queued_not_attempted": 0,
-    "cache_size": 366,
+    "cache_size": 368,
     "errors": [
       "Joe Mack: no bbref id"
     ],
-    "updated_at": "2026-05-05T18:56:18Z"
+    "updated_at": "2026-05-05T19:50:28Z"
   }
 }
