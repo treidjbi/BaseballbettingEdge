@@ -6342,22 +6342,40 @@
         "so": 3,
         "k_rate": 0.2
       }
+    },
+    "mlbam:669134": {
+      "name": "Luis Campusano",
+      "bats": "R",
+      "mlbam_id": 669134,
+      "bbref_id": "campulu01",
+      "season": 2026,
+      "vs_R": {
+        "pa": 45,
+        "so": 11,
+        "k_rate": 0.2444
+      },
+      "vs_L": {
+        "pa": 9,
+        "so": 4,
+        "k_rate": 0.4444
+      }
     }
   },
-  "updated_at": "2026-05-05T22:33:44Z",
+  "updated_at": "2026-05-05T23:06:40Z",
   "last_run": {
     "projection_status": "collection_only",
     "requested_batters": 225,
-    "already_cached": 219,
+    "already_cached": 221,
     "attempted": 4,
-    "collected": 2,
-    "failed": 2,
-    "queued_not_attempted": 2,
-    "cache_size": 375,
+    "collected": 1,
+    "failed": 3,
+    "queued_not_attempted": 0,
+    "cache_size": 376,
     "errors": [
       "Joe Mack: no bbref id",
-      "Jesus Rodriguez: no bbref id"
+      "Jesus Rodriguez: no bbref id",
+      "Sung-Mun Song: no platoon split rows"
     ],
-    "updated_at": "2026-05-05T22:33:44Z"
+    "updated_at": "2026-05-05T23:06:40Z"
   }
 }
