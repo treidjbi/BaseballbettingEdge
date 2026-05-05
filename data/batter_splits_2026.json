@@ -6228,21 +6228,55 @@
         "so": 6,
         "k_rate": 0.1935
       }
+    },
+    "mlbam:669397": {
+      "name": "Nick Allen",
+      "bats": "R",
+      "mlbam_id": 669397,
+      "bbref_id": "allenni02",
+      "season": 2026,
+      "vs_R": {
+        "pa": 13,
+        "so": 4,
+        "k_rate": 0.3077
+      },
+      "vs_L": {
+        "pa": 9,
+        "so": 1,
+        "k_rate": 0.1111
+      }
+    },
+    "mlbam:669257": {
+      "name": "Will Smith",
+      "bats": "R",
+      "mlbam_id": 669257,
+      "bbref_id": "smithwi05",
+      "season": 2026,
+      "vs_R": {
+        "pa": 87,
+        "so": 13,
+        "k_rate": 0.1494
+      },
+      "vs_L": {
+        "pa": 25,
+        "so": 6,
+        "k_rate": 0.24
+      }
     }
   },
-  "updated_at": "2026-05-05T20:14:02Z",
+  "updated_at": "2026-05-05T20:44:26Z",
   "last_run": {
     "projection_status": "collection_only",
-    "requested_batters": 117,
-    "already_cached": 116,
-    "attempted": 1,
-    "collected": 0,
+    "requested_batters": 144,
+    "already_cached": 141,
+    "attempted": 3,
+    "collected": 2,
     "failed": 1,
     "queued_not_attempted": 0,
-    "cache_size": 368,
+    "cache_size": 370,
     "errors": [
       "Joe Mack: no bbref id"
     ],
-    "updated_at": "2026-05-05T20:14:02Z"
+    "updated_at": "2026-05-05T20:44:26Z"
   }
 }
