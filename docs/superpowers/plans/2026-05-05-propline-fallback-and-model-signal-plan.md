@@ -6,6 +6,8 @@
 
 **2026-05-05 execution note:** The provider fallback swap and same-pitcher duplicate line guard were implemented first. The broader shadow diagnostics in Tasks 2-5 remain deferred and should stay non-live until explicitly picked up.
 
+**Current status:** Task 1 is complete and shipped in commit `168cc19c`; the successful manual pipeline rerun committed output `092df39c`. Task 2 Step 1 is complete because `AGENTS.md` now reflects PropLine-first fallback. Tasks 2 Step 2 onward, Tasks 3-5, and Task 6 diagnostic-output checks remain open.
+
 **Architecture:** Keep TheRundown as the primary source and preserve current static JSON/dashboard contracts. Invert the fallback order inside `pipeline/fetch_odds.py`, continue merging source metadata into `book_odds` and `odds_source`, and add diagnostics that answer model questions from history before touching `lambda`, thresholds, or staking. Webhooks remain a later infrastructure option, not part of this implementation.
 
 **Tech Stack:** Python 3.11, pytest, GitHub Actions, TheRundown API, PropLine API, The Odds API, committed JSON artifacts under `dashboard/data/processed/`, `data/picks_history.json`, diagnostics under `analytics/diagnostics/`.
@@ -82,7 +84,7 @@ Write local-only outputs when run:
 - Modify: `pipeline/fetch_odds.py`
 - Modify: `tests/test_fetch_odds.py`
 
-- [ ] **Step 1: Add a failing test for PropLine-first fallback**
+- [x] **Step 1: Add a failing test for PropLine-first fallback**
 
 Append this test to `TestPropLineFallback` in `tests/test_fetch_odds.py`:
 
@@ -103,7 +105,7 @@ def test_fetch_odds_tries_propline_before_the_odds_when_coverage_missing(self):
     assert result[0]["odds_source"] == "therundown+propline"
 ```
 
-- [ ] **Step 2: Add a failing test for The Odds second fallback**
+- [x] **Step 2: Add a failing test for The Odds second fallback**
 
 Append this test to `TestPropLineFallback`:
 
@@ -125,7 +127,7 @@ def test_fetch_odds_tries_the_odds_after_propline_still_missing_coverage(self):
     assert result[0]["odds_source"] == "therundown+the_odds"
 ```
 
-- [ ] **Step 3: Run the focused tests and verify they fail**
+- [x] **Step 3: Run the focused tests and verify they fail**
 
 Run:
 
@@ -140,7 +142,7 @@ FAILED test_fetch_odds_tries_propline_before_the_odds_when_coverage_missing
 FAILED test_fetch_odds_tries_the_odds_after_propline_still_missing_coverage
 ```
 
-- [ ] **Step 4: Invert fallback order in `fetch_odds`**
+- [x] **Step 4: Invert fallback order in `fetch_odds`**
 
 Replace the fallback block in `pipeline/fetch_odds.py` with this implementation:
 
@@ -166,7 +168,7 @@ Replace the fallback block in `pipeline/fetch_odds.py` with this implementation:
         log.info("The Odds fallback skipped: ODDS_API_KEY not set")
 ```
 
-- [ ] **Step 5: Update the existing The Odds error test**
+- [x] **Step 5: Update the existing The Odds error test**
 
 The current test named `test_fetch_odds_falls_back_to_propline_when_the_odds_errors` describes the old order. Replace it with:
 
@@ -188,7 +190,7 @@ def test_fetch_odds_continues_to_the_odds_when_propline_errors(self):
     assert result[0]["odds_source"] == "therundown+the_odds"
 ```
 
-- [ ] **Step 6: Run focused and full odds tests**
+- [x] **Step 6: Run focused and full odds tests**
 
 Run:
 
@@ -202,7 +204,7 @@ Expected:
 passed
 ```
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 Run:
 
@@ -221,7 +223,7 @@ git commit -m "fix: prefer propline before odds fallback"
 - Create: `analytics/diagnostics/source_fallback_health.py`
 - Create: `tests/test_source_fallback_health.py`
 
-- [ ] **Step 1: Update AGENTS provider order**
+- [x] **Step 1: Update AGENTS provider order**
 
 In `AGENTS.md`, replace the current fallback order text with:
 
@@ -841,7 +843,7 @@ git commit -m "chore: add seasonal k environment audit"
 
 - Read: all modified files
 
-- [ ] **Step 1: Run focused provider tests**
+- [x] **Step 1: Run focused provider tests**
 
 Run:
 
@@ -886,7 +888,7 @@ Expected:
 Each command exits 0 and prints markdown.
 ```
 
-- [ ] **Step 4: Run a broader regression if time allows**
+- [x] **Step 4: Run a broader regression if time allows**
 
 Run:
 
@@ -963,10 +965,10 @@ Partly.
 
 ## Success Criteria
 
-- PropLine is attempted before The Odds whenever fallback coverage is needed.
-- The Odds still runs second if PropLine fails or leaves FanDuel/DraftKings coverage missing.
-- `odds_source` continues to preserve merged provenance such as `therundown+propline`.
-- No live model math changes ship in this plan.
+- [x] PropLine is attempted before The Odds whenever fallback coverage is needed.
+- [x] The Odds still runs second if PropLine fails or leaves FanDuel/DraftKings coverage missing.
+- [x] `odds_source` continues to preserve merged provenance such as `therundown+propline`.
+- [x] No live model math changes ship in this plan.
 - New diagnostics can answer:
   - whether PropLine is actually improving book coverage,
   - whether line movement deserves stronger live weighting,
