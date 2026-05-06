@@ -6359,23 +6359,40 @@
         "so": 4,
         "k_rate": 0.4444
       }
+    },
+    "mlbam:543309": {
+      "name": "Kyle Higashioka",
+      "bats": "R",
+      "mlbam_id": 543309,
+      "bbref_id": "higasky01",
+      "season": 2026,
+      "vs_R": {
+        "pa": 42,
+        "so": 11,
+        "k_rate": 0.2619
+      },
+      "vs_L": {
+        "pa": 12,
+        "so": 4,
+        "k_rate": 0.3333
+      }
     }
   },
-  "updated_at": "2026-05-05T23:58:27Z",
+  "updated_at": "2026-05-06T01:13:54Z",
   "last_run": {
     "projection_status": "collection_only",
     "requested_batters": 225,
-    "already_cached": 222,
-    "attempted": 3,
-    "collected": 0,
+    "already_cached": 221,
+    "attempted": 4,
+    "collected": 1,
     "failed": 3,
     "queued_not_attempted": 0,
-    "cache_size": 376,
+    "cache_size": 377,
     "errors": [
       "Joe Mack: no bbref id",
       "Jesus Rodriguez: no bbref id",
       "Sung-Mun Song: no platoon split rows"
     ],
-    "updated_at": "2026-05-05T23:58:27Z"
+    "updated_at": "2026-05-06T01:13:54Z"
   }
 }
