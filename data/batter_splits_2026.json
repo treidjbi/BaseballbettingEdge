@@ -6570,22 +6570,39 @@
         "so": 2,
         "k_rate": 0.1429
       }
+    },
+    "mlbam:665966": {
+      "name": "Carlos Narv\u00e1ez",
+      "bats": "R",
+      "mlbam_id": 665966,
+      "bbref_id": "narvaca01",
+      "season": 2026,
+      "vs_R": {
+        "pa": 67,
+        "so": 21,
+        "k_rate": 0.3134
+      },
+      "vs_L": {
+        "pa": 11,
+        "so": 1,
+        "k_rate": 0.0909
+      }
     }
   },
-  "updated_at": "2026-05-06T20:00:10Z",
+  "updated_at": "2026-05-06T20:11:56Z",
   "last_run": {
     "projection_status": "collection_only",
-    "requested_batters": 189,
-    "already_cached": 184,
-    "attempted": 4,
-    "collected": 2,
+    "requested_batters": 207,
+    "already_cached": 204,
+    "attempted": 3,
+    "collected": 1,
     "failed": 2,
-    "queued_not_attempted": 1,
-    "cache_size": 389,
+    "queued_not_attempted": 0,
+    "cache_size": 390,
     "errors": [
       "Jim Jarvis: no bbref id",
       "Joe Mack: no bbref id"
     ],
-    "updated_at": "2026-05-06T20:00:10Z"
+    "updated_at": "2026-05-06T20:11:56Z"
   }
 }
