@@ -72,8 +72,8 @@ def run(
         source_artifact_sha256=artifact_sha,
     )
 
-    writer.upsert_rows("live_pick_state", state_rows, on_conflict="slate_date,normalized_pitcher,side")
     writer.upsert_rows("notification_events", notification_rows, on_conflict="dedupe_key")
+    writer.upsert_rows("live_pick_state", state_rows, on_conflict="slate_date,normalized_pitcher,side")
     return {
         "state_rows": state_rows,
         "notification_rows": notification_rows,

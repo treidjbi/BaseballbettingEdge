@@ -54,3 +54,5 @@ def test_worker_writes_state_and_notification_events(tmp_path):
         result["notification_rows"],
         on_conflict="dedupe_key",
     )
+    upsert_tables = [call.args[0] for call in writer.upsert_rows.call_args_list]
+    assert upsert_tables == ["notification_events", "live_pick_state"]
