@@ -6621,22 +6621,39 @@
         "so": 0,
         "k_rate": 0.0
       }
+    },
+    "mlbam:664034": {
+      "name": "Ty France",
+      "bats": "R",
+      "mlbam_id": 664034,
+      "bbref_id": "francty01",
+      "season": 2026,
+      "vs_R": {
+        "pa": 41,
+        "so": 2,
+        "k_rate": 0.0488
+      },
+      "vs_L": {
+        "pa": 15,
+        "so": 3,
+        "k_rate": 0.2
+      }
     }
   },
-  "updated_at": "2026-05-06T20:55:10Z",
+  "updated_at": "2026-05-06T21:20:41Z",
   "last_run": {
     "projection_status": "collection_only",
     "requested_batters": 243,
-    "already_cached": 241,
-    "attempted": 2,
-    "collected": 0,
+    "already_cached": 240,
+    "attempted": 3,
+    "collected": 1,
     "failed": 2,
     "queued_not_attempted": 0,
-    "cache_size": 392,
+    "cache_size": 393,
     "errors": [
       "Jim Jarvis: no bbref id",
       "Joe Mack: no bbref id"
     ],
-    "updated_at": "2026-05-06T20:55:10Z"
+    "updated_at": "2026-05-06T21:20:41Z"
   }
 }
