@@ -39,6 +39,38 @@ def _k_line(value: Any) -> float | None:
     return line
 
 
+def _numeric(value: Any) -> float | None:
+    try:
+        return float(value)
+    except (TypeError, ValueError):
+        return None
+
+
+def _integer(value: Any) -> int | None:
+    try:
+        return int(value)
+    except (TypeError, ValueError):
+        return None
+
+
+def _parse_datetime(value: datetime | str) -> datetime:
+    if isinstance(value, datetime):
+        return value
+    return datetime.fromisoformat(str(value).replace("Z", "+00:00"))
+
+
+def _reminder_dedupe_keys(existing_reminders: Any) -> set[str]:
+    keys: set[str] = set()
+    for reminder in existing_reminders or []:
+        if isinstance(reminder, dict):
+            key = reminder.get("dedupe_key")
+            if key:
+                keys.add(str(key))
+        else:
+            keys.add(str(reminder))
+    return keys
+
+
 def _previous_row(
     previous_state: dict[Any, Any],
     *,
@@ -226,3 +258,179 @@ def build_pick_change_events(
             ))
 
     return events, state_rows
+
+
+def build_line_movement_events(
+    slate_date: str,
+    live_picks: list[dict[str, Any]],
+    previous_snapshots: list[dict[str, Any]],
+    current_snapshots: list[dict[str, Any]],
+) -> list[dict[str, Any]]:
+    actionable: dict[tuple[str, str], dict[str, Any]] = {}
+    for pick in live_picks:
+        if not _is_fire(pick.get("current_verdict")):
+            continue
+        pitcher_name = str(pick.get("pitcher") or "").strip()
+        normalized_pitcher = str(pick.get("normalized_pitcher") or normalize(pitcher_name)).strip()
+        side = str(pick.get("side") or "").strip().lower()
+        if normalized_pitcher and side in {"over", "under"}:
+            actionable[(normalized_pitcher, side)] = pick
+
+    previous_by_book_player: dict[tuple[str, str], dict[str, Any]] = {}
+    for snapshot in previous_snapshots:
+        book = str(snapshot.get("bookmaker_key") or "").strip()
+        normalized = str(snapshot.get("normalized_player_name") or "").strip()
+        if book and normalized:
+            previous_by_book_player[(book, normalized)] = snapshot
+
+    events: list[dict[str, Any]] = []
+    for snapshot in current_snapshots:
+        book = str(snapshot.get("bookmaker_key") or "").strip()
+        normalized = str(snapshot.get("normalized_player_name") or normalize(snapshot.get("player_name") or "")).strip()
+        if not book or not normalized:
+            continue
+        previous = previous_by_book_player.get((book, normalized))
+        if previous is None:
+            continue
+
+        previous_line = _numeric(previous.get("line"))
+        current_line = _numeric(snapshot.get("line"))
+        previous_odds = _integer(previous.get("american_odds"))
+        current_odds = _integer(snapshot.get("american_odds"))
+        if None in {previous_line, current_line, previous_odds, current_odds}:
+            continue
+
+        line_changed = previous_line != current_line
+        odds_delta = current_odds - previous_odds
+        if not line_changed and abs(odds_delta) < 10:
+            continue
+
+        if line_changed and previous_odds != current_odds:
+            movement_kind = "line_and_odds"
+        elif line_changed:
+            movement_kind = "line"
+        else:
+            movement_kind = "odds"
+
+        for side in ("over", "under"):
+            pick = actionable.get((normalized, side))
+            if pick is None:
+                continue
+
+            if side == "over":
+                with_model = current_line < previous_line or (not line_changed and odds_delta > 0)
+            else:
+                with_model = current_line > previous_line or (not line_changed and odds_delta > 0)
+
+            movement_direction = "with_model" if with_model else "against_model"
+            event_type = "line_moved_with_us" if with_model else "line_moved_against_us"
+            pitcher_name = str(pick.get("pitcher") or snapshot.get("player_name") or "").strip()
+            dedupe_key = (
+                f"{slate_date}:line:{book}:{normalized}:{side}:"
+                f"{previous_line:g}:{previous_odds}:{current_line:g}:{current_odds}"
+            )
+
+            events.append({
+                "slate_date": slate_date,
+                "event_type": event_type,
+                "severity": "watch" if with_model else "action",
+                "title": "Line Moved With Us" if with_model else "Line Moved Against Us",
+                "body": f"{pitcher_name} {side.upper()} moved {previous_line:g} to {current_line:g} at {book}",
+                "url": "/",
+                "dedupe_key": dedupe_key,
+                "payload": {
+                    "pitcher": pitcher_name,
+                    "side": side,
+                    "bookmaker_key": book,
+                    "previous_line": previous_line,
+                    "current_line": current_line,
+                    "previous_odds": previous_odds,
+                    "current_odds": current_odds,
+                    "movement_direction": movement_direction,
+                    "movement_kind": movement_kind,
+                    "source_snapshot_id": snapshot.get("id"),
+                },
+                "occurred_at": snapshot.get("observed_at"),
+            })
+
+    return events
+
+
+def build_reminder_events(
+    slate_date: str,
+    live_picks: list[dict[str, Any]],
+    existing_reminders: Any,
+    observed_at: datetime | str,
+) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
+    observed_at_dt = _parse_datetime(observed_at)
+    observed_at_iso = observed_at_dt.isoformat()
+    seen_reminders = _reminder_dedupe_keys(existing_reminders)
+    windows = {
+        "FIRE 2u": [("45_min", 45), ("10_min", 10)],
+        "FIRE 1u": [("25_min", 25)],
+    }
+    events: list[dict[str, Any]] = []
+    rows: list[dict[str, Any]] = []
+
+    for pick in live_picks:
+        if pick.get("is_locked") or pick.get("locked_at") or not pick.get("game_time"):
+            continue
+
+        verdict = str(pick.get("current_verdict") or "PASS").strip()
+        if verdict not in windows:
+            continue
+
+        game_time = _parse_datetime(pick["game_time"])
+        minutes_to_game = (game_time - observed_at_dt).total_seconds() / 60
+        pitcher_name = str(pick.get("pitcher") or "").strip()
+        normalized_pitcher = str(pick.get("normalized_pitcher") or normalize(pitcher_name)).strip()
+        side = str(pick.get("side") or "").strip().lower()
+        if not normalized_pitcher or side not in {"over", "under"}:
+            continue
+
+        for window_name, minutes in windows[verdict]:
+            if minutes_to_game < 0 or minutes_to_game > minutes:
+                continue
+            if minutes_to_game < max(0, minutes - 10):
+                continue
+
+            dedupe_key = f"{slate_date}:reminder:{window_name}:{normalized_pitcher}:{side}"
+            if dedupe_key in seen_reminders:
+                continue
+
+            row = {
+                "slate_date": slate_date,
+                "normalized_pitcher": normalized_pitcher,
+                "side": side,
+                "reminder_window": window_name,
+                "game_time": game_time.isoformat(),
+                "due_at": observed_at_iso,
+                "fired_at": observed_at_iso,
+                "dedupe_key": dedupe_key,
+                "metadata": {
+                    "verdict": verdict,
+                    "pitcher": pitcher_name,
+                },
+            }
+            rows.append(row)
+            events.append({
+                "slate_date": slate_date,
+                "event_type": "game_reminder_due",
+                "severity": "action",
+                "title": "Pick Starts Soon",
+                "body": f"{pitcher_name} {verdict} {side.upper()} {pick.get('k_line')} Ks",
+                "url": "/",
+                "dedupe_key": dedupe_key,
+                "payload": {
+                    "pitcher": pitcher_name,
+                    "side": side,
+                    "verdict": verdict,
+                    "k_line": pick.get("k_line"),
+                    "game_time": game_time.isoformat(),
+                    "reminder_window": window_name,
+                },
+                "occurred_at": observed_at_iso,
+            })
+            seen_reminders.add(dedupe_key)
+
+    return events, rows

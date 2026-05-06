@@ -1,6 +1,10 @@
 from datetime import datetime, timezone
 
-from market_infra.live_events import build_pick_change_events
+from market_infra.live_events import (
+    build_line_movement_events,
+    build_pick_change_events,
+    build_reminder_events,
+)
 
 
 NOW = datetime(2026, 5, 6, 18, 0, tzinfo=timezone.utc)
@@ -137,3 +141,89 @@ def test_fire_pick_missing_k_line_is_skipped():
 
     assert events == []
     assert state_rows == []
+
+
+def test_over_line_drop_is_with_model_movement():
+    events = build_line_movement_events(
+        slate_date="2026-05-06",
+        live_picks=[{
+            "pitcher": "Tarik Skubal",
+            "normalized_pitcher": "tarik skubal",
+            "side": "over",
+            "current_verdict": "FIRE 1u",
+        }],
+        previous_snapshots=[{
+            "normalized_player_name": "tarik skubal",
+            "bookmaker_key": "fanduel",
+            "line": 6.5,
+            "american_odds": -110,
+            "observed_at": "2026-05-06T17:50:00+00:00",
+        }],
+        current_snapshots=[{
+            "id": "snapshot-1",
+            "normalized_player_name": "tarik skubal",
+            "player_name": "Tarik Skubal",
+            "bookmaker_key": "fanduel",
+            "line": 5.5,
+            "american_odds": -112,
+            "observed_at": "2026-05-06T18:00:00+00:00",
+        }],
+    )
+
+    assert events[0]["event_type"] == "line_moved_with_us"
+    assert events[0]["payload"]["movement_direction"] == "with_model"
+    assert events[0]["dedupe_key"] == "2026-05-06:line:fanduel:tarik skubal:over:6.5:-110:5.5:-112"
+
+
+def test_under_line_drop_is_against_model_movement():
+    events = build_line_movement_events(
+        slate_date="2026-05-06",
+        live_picks=[{
+            "pitcher": "Tarik Skubal",
+            "normalized_pitcher": "tarik skubal",
+            "side": "under",
+            "current_verdict": "FIRE 1u",
+        }],
+        previous_snapshots=[{
+            "normalized_player_name": "tarik skubal",
+            "bookmaker_key": "fanduel",
+            "line": 6.5,
+            "american_odds": -110,
+            "observed_at": "2026-05-06T17:50:00+00:00",
+        }],
+        current_snapshots=[{
+            "id": "snapshot-1",
+            "normalized_player_name": "tarik skubal",
+            "player_name": "Tarik Skubal",
+            "bookmaker_key": "fanduel",
+            "line": 5.5,
+            "american_odds": -112,
+            "observed_at": "2026-05-06T18:00:00+00:00",
+        }],
+    )
+
+    assert events[0]["event_type"] == "line_moved_against_us"
+    assert events[0]["payload"]["movement_direction"] == "against_model"
+
+
+def test_fire_1u_gets_25_minute_reminder_only():
+    events, rows = build_reminder_events(
+        slate_date="2026-05-06",
+        live_picks=[{
+            "pitcher": "Tarik Skubal",
+            "normalized_pitcher": "tarik skubal",
+            "side": "over",
+            "current_verdict": "FIRE 1u",
+            "k_line": 6.5,
+            "game_time": "2026-05-06T18:25:00+00:00",
+            "is_locked": False,
+        }],
+        existing_reminders=set(),
+        observed_at=NOW,
+    )
+
+    assert len(events) == 1
+    assert len(rows) == 1
+    assert rows[0]["reminder_window"] == "25_min"
+    assert events[0]["event_type"] == "game_reminder_due"
+    assert events[0]["dedupe_key"] == "2026-05-06:reminder:25_min:tarik skubal:over"
