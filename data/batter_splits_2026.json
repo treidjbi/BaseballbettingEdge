@@ -6502,21 +6502,56 @@
         "so": 0,
         "k_rate": 0.0
       }
+    },
+    "mlbam:671289": {
+      "name": "Tyler Freeman",
+      "bats": "R",
+      "mlbam_id": 671289,
+      "bbref_id": "freemty01",
+      "season": 2026,
+      "vs_R": {
+        "pa": 53,
+        "so": 7,
+        "k_rate": 0.1321
+      },
+      "vs_L": {
+        "pa": 20,
+        "so": 2,
+        "k_rate": 0.1
+      }
+    },
+    "mlbam:691720": {
+      "name": "Kyle Karros",
+      "bats": "R",
+      "mlbam_id": 691720,
+      "bbref_id": "karroky01",
+      "season": 2026,
+      "vs_R": {
+        "pa": 83,
+        "so": 18,
+        "k_rate": 0.2169
+      },
+      "vs_L": {
+        "pa": 35,
+        "so": 10,
+        "k_rate": 0.2857
+      }
     }
   },
-  "updated_at": "2026-05-06T18:24:24Z",
+  "updated_at": "2026-05-06T19:12:28Z",
   "last_run": {
     "projection_status": "collection_only",
-    "requested_batters": 99,
-    "already_cached": 98,
-    "attempted": 1,
-    "collected": 0,
-    "failed": 1,
+    "requested_batters": 144,
+    "already_cached": 140,
+    "attempted": 4,
+    "collected": 2,
+    "failed": 2,
     "queued_not_attempted": 0,
-    "cache_size": 385,
+    "cache_size": 387,
     "errors": [
-      "Jim Jarvis: no bbref id"
+      "Jim Jarvis: no bbref id",
+      "Joe Mack: no bbref id"
     ],
-    "updated_at": "2026-05-06T18:24:24Z"
+    "updated_at": "2026-05-06T19:12:28Z"
   }
 }
