@@ -6536,22 +6536,56 @@
         "so": 10,
         "k_rate": 0.2857
       }
+    },
+    "mlbam:656716": {
+      "name": "Zach McKinstry",
+      "bats": "R",
+      "mlbam_id": 656716,
+      "bbref_id": "mckinza01",
+      "season": 2026,
+      "vs_R": {
+        "pa": 41,
+        "so": 9,
+        "k_rate": 0.2195
+      },
+      "vs_L": {
+        "pa": 9,
+        "so": 3,
+        "k_rate": 0.3333
+      }
+    },
+    "mlbam:807799": {
+      "name": "Masataka Yoshida",
+      "bats": "R",
+      "mlbam_id": 807799,
+      "bbref_id": "yoshima02",
+      "season": 2026,
+      "vs_R": {
+        "pa": 51,
+        "so": 5,
+        "k_rate": 0.098
+      },
+      "vs_L": {
+        "pa": 14,
+        "so": 2,
+        "k_rate": 0.1429
+      }
     }
   },
-  "updated_at": "2026-05-06T19:12:28Z",
+  "updated_at": "2026-05-06T20:00:10Z",
   "last_run": {
     "projection_status": "collection_only",
-    "requested_batters": 144,
-    "already_cached": 140,
+    "requested_batters": 189,
+    "already_cached": 184,
     "attempted": 4,
     "collected": 2,
     "failed": 2,
-    "queued_not_attempted": 0,
-    "cache_size": 387,
+    "queued_not_attempted": 1,
+    "cache_size": 389,
     "errors": [
       "Jim Jarvis: no bbref id",
       "Joe Mack: no bbref id"
     ],
-    "updated_at": "2026-05-06T19:12:28Z"
+    "updated_at": "2026-05-06T20:00:10Z"
   }
 }
