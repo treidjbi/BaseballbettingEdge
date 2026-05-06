@@ -28,3 +28,4 @@ def test_live_layer_migration_uses_required_uniques_and_view():
     assert "dedupe_key text not null unique" in sql
     assert "unique (slate_date, normalized_pitcher, side)" in sql
     assert "create or replace view public.live_activity_feed" in sql
+    assert "with (security_invoker = true)" in sql

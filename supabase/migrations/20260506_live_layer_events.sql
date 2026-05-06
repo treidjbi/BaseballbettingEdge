@@ -110,7 +110,8 @@ alter table public.line_movement_events enable row level security;
 alter table public.notification_events enable row level security;
 alter table public.game_reminder_state enable row level security;
 
-create or replace view public.live_activity_feed as
+create or replace view public.live_activity_feed
+with (security_invoker = true) as
 select
   id,
   slate_date,
