@@ -169,6 +169,72 @@ def test_worker_writes_line_movement_events_from_snapshot_history(tmp_path):
     )
 
 
+def test_worker_can_poll_propline_before_building_live_events(tmp_path):
+    today = _write_artifact(tmp_path, [_fire_pitcher()])
+    calls = []
+    table_rows = {
+        "live_pick_state": [],
+        "market_snapshots": [
+            {
+                "id": "snapshot-old",
+                "provider_event_id": "game-1",
+                "normalized_player_name": "tarik skubal",
+                "player_name": "Tarik Skubal",
+                "bookmaker_key": "fanduel",
+                "side": "over",
+                "line": 6.5,
+                "american_odds": -110,
+                "observed_at": "2026-05-06T17:50:00+00:00",
+            },
+            {
+                "id": "snapshot-new",
+                "provider_event_id": "game-1",
+                "normalized_player_name": "tarik skubal",
+                "player_name": "Tarik Skubal",
+                "bookmaker_key": "fanduel",
+                "side": "over",
+                "line": 5.5,
+                "american_odds": -112,
+                "observed_at": "2026-05-06T18:00:00+00:00",
+            },
+        ],
+        "game_reminder_state": [],
+    }
+
+    writer = Mock()
+
+    def select_rows(table, params):
+        calls.append(("select", table))
+        return table_rows.get(table, [])
+
+    writer.select_rows.side_effect = select_rows
+
+    def poll_propline(*args, **kwargs):
+        calls.append(("poll", "propline"))
+        return {"target_event_count": 1, "snapshot_count": 2}
+
+    with (
+        patch.object(build_live_events_to_supabase, "SupabaseMarketWriter", return_value=writer),
+        patch.object(
+            build_live_events_to_supabase,
+            "poll_propline_to_supabase",
+            side_effect=poll_propline,
+        ) as poll,
+    ):
+        result = build_live_events_to_supabase.run(
+            slate_date="2026-05-06",
+            artifact_path=today,
+            supabase_url="https://example.supabase.co",
+            service_role_key="secret",
+            poll_propline=True,
+        )
+
+    poll.assert_called_once()
+    assert calls.index(("poll", "propline")) < calls.index(("select", "market_snapshots"))
+    assert result["propline"]["snapshot_count"] == 2
+    assert result["line_movement_events"] == 1
+
+
 def test_worker_does_not_compare_snapshots_across_provider_events(tmp_path):
     today = _write_artifact(tmp_path, [_fire_pitcher()])
     writer = _writer_with_selects({
@@ -298,3 +364,12 @@ def test_worker_upserts_non_empty_tables_in_retry_safe_order(tmp_path):
         "game_reminder_state",
         "live_pick_state",
     ]
+
+
+def test_render_entrypoint_uses_propline_env_without_therundown_dependency():
+    script = Path(build_live_events_to_supabase.__file__).read_text(encoding="utf-8")
+
+    assert "PROPLINE_API_KEY" in script
+    assert "poll_propline_to_supabase" in script
+    assert "RUNDOWN_API_KEY" not in script
+    assert "fetch_odds(" not in script

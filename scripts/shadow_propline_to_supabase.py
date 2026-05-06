@@ -10,6 +10,7 @@ import os
 import sys
 from datetime import datetime, timezone
 from pathlib import Path
+from typing import Any
 
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
@@ -91,14 +92,14 @@ def _coverage_audit_row(
     }
 
 
-def main() -> int:
-    if len(sys.argv) != 2:
-        print("usage: python scripts/shadow_propline_to_supabase.py YYYY-MM-DD", file=sys.stderr)
-        return 2
-
-    slate_date = sys.argv[1]
-    observed_at = datetime.now(timezone.utc).isoformat()
-    writer = SupabaseMarketWriter(_env("SUPABASE_URL"), _env("SUPABASE_SERVICE_ROLE_KEY"))
+def poll_propline_to_supabase(
+    slate_date: str,
+    *,
+    writer: SupabaseMarketWriter | None = None,
+    observed_at: str | None = None,
+) -> dict[str, Any]:
+    observed_at = observed_at or datetime.now(timezone.utc).isoformat()
+    writer = writer or SupabaseMarketWriter(_env("SUPABASE_URL"), _env("SUPABASE_SERVICE_ROLE_KEY"))
 
     run_rows = writer.insert_rows("market_provider_runs", [{
         "provider": "propline",
@@ -200,10 +201,26 @@ def main() -> int:
         }], on_conflict="id")
         raise
 
+    return {
+        "run_id": run_id,
+        "target_event_count": len(target_events),
+        "snapshot_count": len(snapshots),
+        "books_seen": sorted(books_seen),
+        "request_count": request_count,
+    }
+
+
+def main() -> int:
+    if len(sys.argv) != 2:
+        print("usage: python scripts/shadow_propline_to_supabase.py YYYY-MM-DD", file=sys.stderr)
+        return 2
+
+    slate_date = sys.argv[1]
+    result = poll_propline_to_supabase(slate_date)
     print(
         f"PropLine shadow ingest date={slate_date} "
-        f"events={len(target_events)} snapshots={len(snapshots)} "
-        f"books={','.join(sorted(books_seen)) or 'none'}"
+        f"events={result['target_event_count']} snapshots={result['snapshot_count']} "
+        f"books={','.join(result['books_seen']) or 'none'}"
     )
     return 0
 

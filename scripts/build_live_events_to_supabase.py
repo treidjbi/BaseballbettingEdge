@@ -21,6 +21,7 @@ from market_infra.live_events import (  # noqa: E402
     build_reminder_events,
 )
 from market_infra.supabase_writer import SupabaseMarketWriter  # noqa: E402
+from scripts.shadow_propline_to_supabase import poll_propline_to_supabase  # noqa: E402
 
 DEFAULT_ARTIFACT = ROOT / "dashboard" / "data" / "processed" / "today.json"
 
@@ -30,6 +31,10 @@ def _env(name: str) -> str:
     if not value:
         raise EnvironmentError(f"{name} is required")
     return value
+
+
+def _optional_env(name: str) -> str:
+    return os.environ.get(name, "").strip()
 
 
 def _source_artifact_path(path: Path) -> str:
@@ -89,11 +94,20 @@ def run(
     artifact_path: Path,
     supabase_url: str,
     service_role_key: str,
+    poll_propline: bool = False,
 ) -> dict[str, Any]:
     payload, artifact_sha = _load_artifact(Path(artifact_path))
     writer = SupabaseMarketWriter(supabase_url, service_role_key)
     previous_rows = writer.select_rows("live_pick_state", {"slate_date": f"eq.{slate_date}"})
     observed_at = _now_utc()
+    propline_result: dict[str, Any] | None = None
+
+    if poll_propline:
+        propline_result = poll_propline_to_supabase(
+            slate_date,
+            writer=writer,
+            observed_at=observed_at.isoformat(),
+        )
 
     pick_notification_rows, state_rows = build_pick_change_events(
         slate_date=slate_date,
@@ -153,6 +167,7 @@ def run(
         "notification_events": len(notification_rows),
         "line_movement_events": len(line_movement_rows),
         "game_reminders": len(reminder_rows),
+        "propline": propline_result or {"skipped": True},
     }
 
 
@@ -169,11 +184,20 @@ def main() -> int:
         artifact_path=artifact,
         supabase_url=_env("SUPABASE_URL"),
         service_role_key=_env("SUPABASE_SERVICE_ROLE_KEY"),
+        poll_propline=bool(_optional_env("PROPLINE_API_KEY")),
     )
+    propline = result["propline"]
+    propline_summary = "propline=skipped"
+    if not propline.get("skipped"):
+        propline_summary = (
+            f"propline_events={propline['target_event_count']} "
+            f"propline_snapshots={propline['snapshot_count']}"
+        )
     print(
         "Live event build "
         f"date={slate_date} state_rows={result['live_pick_state']} "
-        f"notification_events={result['notification_events']}"
+        f"notification_events={result['notification_events']} "
+        f"{propline_summary}"
     )
     return 0
 
