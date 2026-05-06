@@ -6473,19 +6473,50 @@
         "so": 2,
         "k_rate": 0.2857
       }
+    },
+    "mlbam:666023": {
+      "name": "Freddy Fermin",
+      "bats": "R",
+      "mlbam_id": 666023,
+      "bbref_id": "fermifr01",
+      "season": 2026,
+      "vs_R": {
+        "pa": 55,
+        "so": 11,
+        "k_rate": 0.2
+      },
+      "vs_L": {
+        "pa": 13,
+        "so": 4,
+        "k_rate": 0.3077
+      }
+    },
+    "mlbam:823550": {
+      "name": "Sung-Mun Song",
+      "bats": "R",
+      "mlbam_id": 823550,
+      "bbref_id": "songsu01",
+      "season": 2026,
+      "vs_R": {
+        "pa": 4,
+        "so": 0,
+        "k_rate": 0.0
+      }
     }
   },
-  "updated_at": "2026-05-06T17:08:58Z",
+  "updated_at": "2026-05-06T17:49:12Z",
   "last_run": {
     "projection_status": "collection_only",
-    "requested_batters": 81,
-    "already_cached": 81,
-    "attempted": 0,
-    "collected": 0,
-    "failed": 0,
+    "requested_batters": 99,
+    "already_cached": 96,
+    "attempted": 3,
+    "collected": 2,
+    "failed": 1,
     "queued_not_attempted": 0,
-    "cache_size": 383,
-    "errors": [],
-    "updated_at": "2026-05-06T17:08:58Z"
+    "cache_size": 385,
+    "errors": [
+      "Jim Jarvis: no bbref id"
+    ],
+    "updated_at": "2026-05-06T17:49:12Z"
   }
 }
