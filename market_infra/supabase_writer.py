@@ -28,6 +28,16 @@ class SupabaseMarketWriter:
         response.raise_for_status()
         return response.json()
 
+    def select_rows(self, table: str, params: dict[str, str]) -> list[dict]:
+        response = requests.get(
+            f"{self.supabase_url}/rest/v1/{table}",
+            headers=self._headers("return=representation"),
+            params=params,
+            timeout=20,
+        )
+        response.raise_for_status()
+        return response.json()
+
     def upsert_rows(self, table: str, rows: list[dict], on_conflict: str) -> list[dict]:
         if not rows:
             return []
