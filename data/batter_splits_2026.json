@@ -6405,22 +6405,56 @@
         "so": 0,
         "k_rate": 0.0
       }
+    },
+    "mlbam:683766": {
+      "name": "Christian Koss",
+      "bats": "R",
+      "mlbam_id": 683766,
+      "bbref_id": "kossch01",
+      "season": 2026,
+      "vs_R": {
+        "pa": 9,
+        "so": 1,
+        "k_rate": 0.1111
+      },
+      "vs_L": {
+        "pa": 3,
+        "so": 0,
+        "k_rate": 0.0
+      }
+    },
+    "mlbam:669369": {
+      "name": "Bryce Johnson",
+      "bats": "R",
+      "mlbam_id": 669369,
+      "bbref_id": "johnsbr03",
+      "season": 2026,
+      "vs_R": {
+        "pa": 18,
+        "so": 7,
+        "k_rate": 0.3889
+      },
+      "vs_L": {
+        "pa": 8,
+        "so": 3,
+        "k_rate": 0.375
+      }
     }
   },
-  "updated_at": "2026-05-06T04:00:47Z",
+  "updated_at": "2026-05-06T04:24:48Z",
   "last_run": {
     "projection_status": "collection_only",
     "requested_batters": 225,
-    "already_cached": 219,
+    "already_cached": 220,
     "attempted": 4,
     "collected": 2,
     "failed": 2,
-    "queued_not_attempted": 2,
-    "cache_size": 379,
+    "queued_not_attempted": 1,
+    "cache_size": 381,
     "errors": [
       "Ryan Rolison: IndexError: single positional indexer is out-of-bounds",
       "Jesus Rodriguez: no bbref id"
     ],
-    "updated_at": "2026-05-06T04:00:47Z"
+    "updated_at": "2026-05-06T04:24:48Z"
   }
 }
