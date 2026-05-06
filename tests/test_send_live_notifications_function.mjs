@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 
 import {
   buildPushPayload,
+  buildSenderLog,
   config,
   default as sendLiveNotifications,
   envValue,
@@ -33,6 +34,23 @@ test('buildPushPayload maps live event rows to push payloads', () => {
   assert.equal(payload.tag, '2026-05-06:new_fire_pick:tarik skubal:over:FIRE 1u:6.5');
   assert.equal(payload.data.eventId, 'event-1');
   assert.equal(payload.data.eventType, 'new_fire_pick');
+});
+
+test('buildSenderLog produces inspectable non-secret telemetry', () => {
+  const line = buildSenderLog({
+    stage: 'dry_run',
+    enabled: false,
+    pending: 16,
+    subscribers: 0,
+    sent: 0,
+    failed: 0,
+  });
+
+  assert.equal(
+    line,
+    'send-live-notifications stage=dry_run enabled=false pending=16 subscribers=0 sent=0 failed=0 staleRemoved=0',
+  );
+  assert.equal(line.includes('SUPABASE_SERVICE_ROLE_KEY'), false);
 });
 
 test('fetchPendingNotificationEvents reads unsent queue through Supabase REST', async () => {
