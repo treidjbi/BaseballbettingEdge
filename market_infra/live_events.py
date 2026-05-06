@@ -31,6 +31,14 @@ def _is_locked(pitcher: dict[str, Any]) -> bool:
     return bool(pitcher.get("locked_at")) or game_state in LOCKED_GAME_STATES
 
 
+def _k_line(value: Any) -> float | None:
+    try:
+        line = float(value)
+    except (TypeError, ValueError):
+        return None
+    return line
+
+
 def _previous_row(
     previous_state: dict[Any, Any],
     *,
@@ -54,12 +62,10 @@ def _previous_row(
 def _side_rows(pitcher: dict[str, Any]) -> list[dict[str, Any]]:
     rows: list[dict[str, Any]] = []
     for side in ("over", "under"):
-        ev = pitcher.get(f"ev_{side}") or {}
+        ev = pitcher.get(f"ev_{side}")
         if not isinstance(ev, dict):
             continue
         verdict = str(ev.get("verdict") or "PASS").strip() or "PASS"
-        if VERDICT_RANK.get(verdict, 0) <= VERDICT_RANK["PASS"]:
-            continue
         rows.append({
             "side": side,
             "verdict": verdict,
@@ -76,6 +82,7 @@ def _state_row(
     pitcher: dict[str, Any],
     side_row: dict[str, Any],
     previous_verdict: str | None,
+    k_line: float,
     observed_at: str,
     source_artifact_path: str,
     source_artifact_sha256: str | None,
@@ -90,7 +97,7 @@ def _state_row(
         "side": side_row["side"],
         "current_verdict": current_verdict,
         "previous_verdict": previous_verdict,
-        "k_line": pitcher.get("k_line"),
+        "k_line": k_line,
         "current_odds": side_row["odds"],
         "current_book": side_row["book"],
         "game_time": pitcher.get("game_time"),
@@ -118,7 +125,7 @@ def _event(
     side: str,
     previous_verdict: str | None,
     verdict: str,
-    k_line: Any,
+    k_line: float,
     book: Any,
     odds: Any,
     observed_at: str,
@@ -167,6 +174,9 @@ def build_pick_change_events(
         if not pitcher_name:
             continue
         normalized_pitcher = normalize(pitcher_name)
+        k_line = _k_line(pitcher.get("k_line"))
+        if k_line is None:
+            continue
 
         for side_row in _side_rows(pitcher):
             previous = _previous_row(
@@ -181,6 +191,7 @@ def build_pick_change_events(
                 pitcher=pitcher,
                 side_row=side_row,
                 previous_verdict=previous_verdict,
+                k_line=k_line,
                 observed_at=observed_at_iso,
                 source_artifact_path=source_artifact_path,
                 source_artifact_sha256=source_artifact_sha256,
@@ -208,7 +219,7 @@ def build_pick_change_events(
                 side=side_row["side"],
                 previous_verdict=previous_verdict,
                 verdict=current_verdict,
-                k_line=pitcher.get("k_line"),
+                k_line=k_line,
                 book=side_row["book"],
                 odds=side_row["odds"],
                 observed_at=observed_at_iso,

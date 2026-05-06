@@ -97,3 +97,43 @@ def test_locked_pick_does_not_emit_upgrade_event():
     )
 
     assert events == []
+
+
+def test_pass_downgrade_replaces_previous_fire_state_without_event():
+    previous = {
+        ("2026-05-06", "tarik skubal", "over"): {
+            "current_verdict": "FIRE 1u",
+        }
+    }
+
+    events, state_rows = build_pick_change_events(
+        slate_date="2026-05-06",
+        pitchers=[_pick(verdict="PASS")],
+        previous_state=previous,
+        observed_at=NOW,
+        source_artifact_path="dashboard/data/processed/today.json",
+        source_artifact_sha256="abc",
+    )
+
+    assert events == []
+    assert len(state_rows) == 1
+    assert state_rows[0]["current_verdict"] == "PASS"
+    assert state_rows[0]["previous_verdict"] == "FIRE 1u"
+    assert state_rows[0]["is_fire"] is False
+
+
+def test_fire_pick_missing_k_line_is_skipped():
+    pick = _pick()
+    pick.pop("k_line")
+
+    events, state_rows = build_pick_change_events(
+        slate_date="2026-05-06",
+        pitchers=[pick],
+        previous_state={},
+        observed_at=NOW,
+        source_artifact_path="dashboard/data/processed/today.json",
+        source_artifact_sha256="abc",
+    )
+
+    assert events == []
+    assert state_rows == []
