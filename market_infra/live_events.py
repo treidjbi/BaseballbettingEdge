@@ -370,22 +370,24 @@ def build_line_movement_events(
         if normalized_pitcher and side in {"over", "under"}:
             actionable[(normalized_pitcher, side)] = pick
 
-    previous_by_book_player_side: dict[tuple[str, str, str], dict[str, Any]] = {}
+    previous_by_provider_book_player_side: dict[tuple[str, str, str, str], dict[str, Any]] = {}
     for snapshot in previous_snapshots:
+        provider_event_id = str(snapshot.get("provider_event_id") or "").strip()
         book = str(snapshot.get("bookmaker_key") or "").strip()
         normalized = str(snapshot.get("normalized_player_name") or "").strip()
         side = str(snapshot.get("side") or "").strip().lower()
-        if book and normalized and side in {"over", "under"}:
-            previous_by_book_player_side[(book, normalized, side)] = snapshot
+        if provider_event_id and book and normalized and side in {"over", "under"}:
+            previous_by_provider_book_player_side[(provider_event_id, book, normalized, side)] = snapshot
 
     events: list[dict[str, Any]] = []
     for snapshot in current_snapshots:
+        provider_event_id = str(snapshot.get("provider_event_id") or "").strip()
         book = str(snapshot.get("bookmaker_key") or "").strip()
         normalized = str(snapshot.get("normalized_player_name") or normalize(snapshot.get("player_name") or "")).strip()
         side = str(snapshot.get("side") or "").strip().lower()
-        if not book or not normalized or side not in {"over", "under"}:
+        if not provider_event_id or not book or not normalized or side not in {"over", "under"}:
             continue
-        previous = previous_by_book_player_side.get((book, normalized, side))
+        previous = previous_by_provider_book_player_side.get((provider_event_id, book, normalized, side))
         if previous is None:
             continue
         pick = actionable.get((normalized, side))
@@ -420,7 +422,7 @@ def build_line_movement_events(
         event_type = "line_moved_with_us" if with_model else "line_moved_against_us"
         pitcher_name = str(pick.get("pitcher") or snapshot.get("player_name") or "").strip()
         dedupe_key = (
-            f"{slate_date}:line:{book}:{normalized}:{side}:"
+            f"{slate_date}:line:{provider_event_id}:{book}:{normalized}:{side}:"
             f"{previous_line:g}:{previous_odds}:{current_line:g}:{current_odds}"
         )
 
@@ -436,6 +438,7 @@ def build_line_movement_events(
                 "pitcher": pitcher_name,
                 "normalized_pitcher": normalized,
                 "side": side,
+                "provider_event_id": provider_event_id,
                 "bookmaker_key": book,
                 "previous_line": previous_line,
                 "current_line": current_line,
@@ -475,6 +478,7 @@ def build_line_movement_rows(movement_events: list[dict[str, Any]]) -> list[dict
             "source_snapshot_id": payload.get("source_snapshot_id"),
             "metadata": {
                 "event_type": event.get("event_type"),
+                "provider_event_id": payload.get("provider_event_id"),
                 "severity": event.get("severity"),
             },
         }

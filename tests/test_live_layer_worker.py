@@ -127,6 +127,7 @@ def test_worker_writes_line_movement_events_from_snapshot_history(tmp_path):
         "market_snapshots": [
             {
                 "id": "snapshot-old",
+                "provider_event_id": "game-1",
                 "normalized_player_name": "tarik skubal",
                 "player_name": "Tarik Skubal",
                 "bookmaker_key": "fanduel",
@@ -137,6 +138,7 @@ def test_worker_writes_line_movement_events_from_snapshot_history(tmp_path):
             },
             {
                 "id": "snapshot-new",
+                "provider_event_id": "game-1",
                 "normalized_player_name": "tarik skubal",
                 "player_name": "Tarik Skubal",
                 "bookmaker_key": "fanduel",
@@ -159,11 +161,55 @@ def test_worker_writes_line_movement_events_from_snapshot_history(tmp_path):
 
     assert result["line_movement_events"] == 1
     assert result["line_movement_rows"][0]["source_snapshot_id"] == "snapshot-new"
+    assert result["line_movement_rows"][0]["metadata"]["provider_event_id"] == "game-1"
     writer.upsert_rows.assert_any_call(
         "line_movement_events",
         result["line_movement_rows"],
         on_conflict="dedupe_key",
     )
+
+
+def test_worker_does_not_compare_snapshots_across_provider_events(tmp_path):
+    today = _write_artifact(tmp_path, [_fire_pitcher()])
+    writer = _writer_with_selects({
+        "live_pick_state": [],
+        "market_snapshots": [
+            {
+                "id": "snapshot-old",
+                "provider_event_id": "old-game",
+                "normalized_player_name": "tarik skubal",
+                "player_name": "Tarik Skubal",
+                "bookmaker_key": "fanduel",
+                "side": "over",
+                "line": 6.5,
+                "american_odds": -110,
+                "observed_at": "2026-05-06T17:50:00+00:00",
+            },
+            {
+                "id": "snapshot-new",
+                "provider_event_id": "new-game",
+                "normalized_player_name": "tarik skubal",
+                "player_name": "Tarik Skubal",
+                "bookmaker_key": "fanduel",
+                "side": "over",
+                "line": 5.5,
+                "american_odds": -112,
+                "observed_at": "2026-05-06T18:00:00+00:00",
+            },
+        ],
+        "game_reminder_state": [],
+    })
+
+    with patch.object(build_live_events_to_supabase, "SupabaseMarketWriter", return_value=writer):
+        result = build_live_events_to_supabase.run(
+            slate_date="2026-05-06",
+            artifact_path=today,
+            supabase_url="https://example.supabase.co",
+            service_role_key="secret",
+        )
+
+    assert result["line_movement_events"] == 0
+    assert result["line_movement_rows"] == []
 
 
 def test_worker_writes_fire_1u_game_reminder_state(tmp_path):
@@ -206,6 +252,7 @@ def test_worker_upserts_non_empty_tables_in_retry_safe_order(tmp_path):
         "market_snapshots": [
             {
                 "id": "snapshot-old",
+                "provider_event_id": "game-1",
                 "normalized_player_name": "tarik skubal",
                 "player_name": "Tarik Skubal",
                 "bookmaker_key": "fanduel",
@@ -216,6 +263,7 @@ def test_worker_upserts_non_empty_tables_in_retry_safe_order(tmp_path):
             },
             {
                 "id": "snapshot-new",
+                "provider_event_id": "game-1",
                 "normalized_player_name": "tarik skubal",
                 "player_name": "Tarik Skubal",
                 "bookmaker_key": "fanduel",

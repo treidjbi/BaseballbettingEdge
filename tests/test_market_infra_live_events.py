@@ -231,6 +231,7 @@ def test_over_line_drop_is_with_model_movement():
             "current_verdict": "FIRE 1u",
         }],
         previous_snapshots=[{
+            "provider_event_id": "game-1",
             "normalized_player_name": "tarik skubal",
             "bookmaker_key": "fanduel",
             "side": "over",
@@ -240,6 +241,7 @@ def test_over_line_drop_is_with_model_movement():
         }],
         current_snapshots=[{
             "id": "snapshot-1",
+            "provider_event_id": "game-1",
             "normalized_player_name": "tarik skubal",
             "player_name": "Tarik Skubal",
             "bookmaker_key": "fanduel",
@@ -252,7 +254,8 @@ def test_over_line_drop_is_with_model_movement():
 
     assert events[0]["event_type"] == "line_moved_with_us"
     assert events[0]["payload"]["movement_direction"] == "with_model"
-    assert events[0]["dedupe_key"] == "2026-05-06:line:fanduel:tarik skubal:over:6.5:-110:5.5:-112"
+    assert events[0]["payload"]["provider_event_id"] == "game-1"
+    assert events[0]["dedupe_key"] == "2026-05-06:line:game-1:fanduel:tarik skubal:over:6.5:-110:5.5:-112"
 
 
 def test_under_line_drop_is_against_model_movement():
@@ -265,6 +268,7 @@ def test_under_line_drop_is_against_model_movement():
             "current_verdict": "FIRE 1u",
         }],
         previous_snapshots=[{
+            "provider_event_id": "game-1",
             "normalized_player_name": "tarik skubal",
             "bookmaker_key": "fanduel",
             "side": "under",
@@ -274,6 +278,7 @@ def test_under_line_drop_is_against_model_movement():
         }],
         current_snapshots=[{
             "id": "snapshot-1",
+            "provider_event_id": "game-1",
             "normalized_player_name": "tarik skubal",
             "player_name": "Tarik Skubal",
             "bookmaker_key": "fanduel",
@@ -298,6 +303,7 @@ def test_under_snapshot_does_not_emit_movement_for_fire_over_pick():
             "current_verdict": "FIRE 1u",
         }],
         previous_snapshots=[{
+            "provider_event_id": "game-1",
             "normalized_player_name": "tarik skubal",
             "bookmaker_key": "fanduel",
             "side": "under",
@@ -307,10 +313,45 @@ def test_under_snapshot_does_not_emit_movement_for_fire_over_pick():
         }],
         current_snapshots=[{
             "id": "snapshot-1",
+            "provider_event_id": "game-1",
             "normalized_player_name": "tarik skubal",
             "player_name": "Tarik Skubal",
             "bookmaker_key": "fanduel",
             "side": "under",
+            "line": 5.5,
+            "american_odds": -112,
+            "observed_at": "2026-05-06T18:00:00+00:00",
+        }],
+    )
+
+    assert events == []
+
+
+def test_movement_ignores_snapshots_from_different_provider_events():
+    events = build_line_movement_events(
+        slate_date="2026-05-06",
+        live_picks=[{
+            "pitcher": "Tarik Skubal",
+            "normalized_pitcher": "tarik skubal",
+            "side": "over",
+            "current_verdict": "FIRE 1u",
+        }],
+        previous_snapshots=[{
+            "provider_event_id": "old-game",
+            "normalized_player_name": "tarik skubal",
+            "bookmaker_key": "fanduel",
+            "side": "over",
+            "line": 6.5,
+            "american_odds": -110,
+            "observed_at": "2026-05-06T17:50:00+00:00",
+        }],
+        current_snapshots=[{
+            "id": "snapshot-1",
+            "provider_event_id": "new-game",
+            "normalized_player_name": "tarik skubal",
+            "player_name": "Tarik Skubal",
+            "bookmaker_key": "fanduel",
+            "side": "over",
             "line": 5.5,
             "american_odds": -112,
             "observed_at": "2026-05-06T18:00:00+00:00",
@@ -330,6 +371,7 @@ def test_line_movement_events_convert_to_audit_rows():
             "current_verdict": "FIRE 1u",
         }],
         previous_snapshots=[{
+            "provider_event_id": "game-1",
             "normalized_player_name": "tarik skubal",
             "bookmaker_key": "fanduel",
             "side": "over",
@@ -339,6 +381,7 @@ def test_line_movement_events_convert_to_audit_rows():
         }],
         current_snapshots=[{
             "id": "snapshot-1",
+            "provider_event_id": "game-1",
             "normalized_player_name": "tarik skubal",
             "player_name": "Tarik Skubal",
             "bookmaker_key": "fanduel",
@@ -364,10 +407,11 @@ def test_line_movement_events_convert_to_audit_rows():
         "movement_direction": "with_model",
         "movement_kind": "line_and_odds",
         "observed_at": "2026-05-06T18:00:00+00:00",
-        "dedupe_key": "2026-05-06:line:fanduel:tarik skubal:over:6.5:-110:5.5:-112",
+        "dedupe_key": "2026-05-06:line:game-1:fanduel:tarik skubal:over:6.5:-110:5.5:-112",
         "source_snapshot_id": "snapshot-1",
         "metadata": {
             "event_type": "line_moved_with_us",
+            "provider_event_id": "game-1",
             "severity": "watch",
         },
     }]
