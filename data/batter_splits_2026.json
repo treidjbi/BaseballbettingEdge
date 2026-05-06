@@ -6439,23 +6439,53 @@
         "so": 3,
         "k_rate": 0.375
       }
+    },
+    "mlbam:701305": {
+      "name": "Zach Dezenzo",
+      "bats": "R",
+      "mlbam_id": 701305,
+      "bbref_id": "dezenza01",
+      "season": 2026,
+      "vs_R": {
+        "pa": 98,
+        "so": 34,
+        "k_rate": 0.3469
+      },
+      "vs_L": {
+        "pa": 11,
+        "so": 3,
+        "k_rate": 0.2727
+      }
+    },
+    "mlbam:663967": {
+      "name": "C\u00e9sar Salazar",
+      "bats": "R",
+      "mlbam_id": 663967,
+      "bbref_id": "salazce01",
+      "season": 2026,
+      "vs_R": {
+        "pa": 9,
+        "so": 0,
+        "k_rate": 0.0
+      },
+      "vs_L": {
+        "pa": 7,
+        "so": 2,
+        "k_rate": 0.2857
+      }
     }
   },
-  "updated_at": "2026-05-06T04:42:00Z",
+  "updated_at": "2026-05-06T15:36:04Z",
   "last_run": {
     "projection_status": "collection_only",
-    "requested_batters": 225,
-    "already_cached": 222,
-    "attempted": 3,
-    "collected": 0,
-    "failed": 3,
+    "requested_batters": 54,
+    "already_cached": 52,
+    "attempted": 2,
+    "collected": 2,
+    "failed": 0,
     "queued_not_attempted": 0,
-    "cache_size": 381,
-    "errors": [
-      "Ryan Rolison: IndexError: single positional indexer is out-of-bounds",
-      "Jesus Rodriguez: no bbref id",
-      "Sung-Mun Song: no platoon split rows"
-    ],
-    "updated_at": "2026-05-06T04:42:00Z"
+    "cache_size": 383,
+    "errors": [],
+    "updated_at": "2026-05-06T15:36:04Z"
   }
 }
