@@ -175,7 +175,8 @@ async function sendToSubscriptions({ rows, subscriptions, vapid }) {
 }
 
 export default async function sendLiveNotifications(req) {
-  if (req.method !== 'POST') return json(405, { error: 'Method not allowed' });
+  const requiresSharedSecret = !config.schedule;
+  if (requiresSharedSecret && req.method !== 'POST') return json(405, { error: 'Method not allowed' });
 
   let body = {};
   try {
@@ -183,7 +184,6 @@ export default async function sendLiveNotifications(req) {
   } catch {}
 
   const notifySecret = envValue('NOTIFY_SECRET');
-  const requiresSharedSecret = !config.schedule;
   if (requiresSharedSecret && (!notifySecret || !safeSecretEqual(req.headers.get('x-notify-secret') || '', notifySecret))) {
     return json(401, { error: 'Unauthorized' });
   }
