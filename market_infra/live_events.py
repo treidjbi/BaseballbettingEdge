@@ -31,6 +31,11 @@ def _is_locked(pitcher: dict[str, Any]) -> bool:
     return bool(pitcher.get("locked_at")) or game_state in LOCKED_GAME_STATES
 
 
+def _is_locked_state_row(row: dict[str, Any]) -> bool:
+    game_state = str(row.get("game_state") or "").strip().lower()
+    return bool(row.get("is_locked")) or bool(row.get("locked_at")) or game_state in LOCKED_GAME_STATES
+
+
 def _k_line(value: Any) -> float | None:
     try:
         line = float(value)
@@ -163,7 +168,12 @@ def _event(
     observed_at: str,
 ) -> dict[str, Any]:
     side_label = side.upper()
-    title = "New FIRE Pick" if event_type == "new_fire_pick" else "Pick Upgraded"
+    titles = {
+        "new_fire_pick": "New FIRE Pick",
+        "pick_upgraded": "Pick Upgraded",
+        "pick_downgraded": "Pick Downgraded",
+    }
+    title = titles.get(event_type, "Pick Changed")
     body = f"{pitcher_name} {verdict} {side_label} {k_line} Ks"
     if book:
         body = f"{body} at {book}"
@@ -231,14 +241,18 @@ def build_pick_change_events(
             state_rows.append(state_row)
 
             current_verdict = side_row["verdict"]
-            if state_row["is_locked"] or not _is_fire(current_verdict):
+            if state_row["is_locked"]:
                 continue
 
             event_type = None
             if previous_verdict is None:
-                event_type = "new_fire_pick"
+                if _is_fire(current_verdict):
+                    event_type = "new_fire_pick"
             elif VERDICT_RANK.get(current_verdict, 0) > VERDICT_RANK.get(previous_verdict, 0):
-                event_type = "pick_upgraded"
+                if _is_fire(current_verdict):
+                    event_type = "pick_upgraded"
+            elif _is_fire(previous_verdict) and VERDICT_RANK.get(current_verdict, 0) < VERDICT_RANK.get(previous_verdict, 0):
+                event_type = "pick_downgraded"
 
             if event_type is None:
                 continue
@@ -254,6 +268,86 @@ def build_pick_change_events(
                 k_line=k_line,
                 book=side_row["book"],
                 odds=side_row["odds"],
+                observed_at=observed_at_iso,
+            ))
+
+    return events, state_rows
+
+
+def build_missing_pick_state_events(
+    *,
+    slate_date: str,
+    previous_rows: list[dict[str, Any]],
+    current_state_rows: list[dict[str, Any]] | None = None,
+    current_keys: set[tuple[str, str, str]] | None = None,
+    observed_at: datetime | str,
+    source_artifact_path: str,
+    source_artifact_sha256: str | None,
+) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
+    observed_at_iso = _isoformat(observed_at)
+    seen = set(current_keys or set())
+    for row in current_state_rows or []:
+        row_slate = str(row.get("slate_date") or "").strip()
+        normalized_pitcher = str(row.get("normalized_pitcher") or "").strip()
+        side = str(row.get("side") or "").strip().lower()
+        if row_slate and normalized_pitcher and side:
+            seen.add((row_slate, normalized_pitcher, side))
+
+    events: list[dict[str, Any]] = []
+    state_rows: list[dict[str, Any]] = []
+
+    for previous in previous_rows:
+        row_slate = str(previous.get("slate_date") or "").strip()
+        if row_slate != slate_date:
+            continue
+        pitcher_name = str(previous.get("pitcher") or "").strip()
+        normalized_pitcher = str(previous.get("normalized_pitcher") or normalize(pitcher_name)).strip()
+        side = str(previous.get("side") or "").strip().lower()
+        if not normalized_pitcher or side not in {"over", "under"}:
+            continue
+        if (slate_date, normalized_pitcher, side) in seen:
+            continue
+        if _is_locked_state_row(previous):
+            continue
+
+        previous_verdict = str(previous.get("current_verdict") or "PASS").strip() or "PASS"
+        k_line = _k_line(previous.get("k_line"))
+        if k_line is None:
+            continue
+
+        state_row = {
+            "slate_date": slate_date,
+            "pitcher": pitcher_name,
+            "normalized_pitcher": normalized_pitcher,
+            "side": side,
+            "current_verdict": "PASS",
+            "previous_verdict": previous_verdict,
+            "k_line": k_line,
+            "current_odds": previous.get("current_odds"),
+            "current_book": previous.get("current_book"),
+            "game_time": previous.get("game_time"),
+            "game_state": previous.get("game_state"),
+            "is_fire": False,
+            "is_locked": _is_locked_state_row(previous),
+            "source_artifact_path": source_artifact_path,
+            "source_artifact_sha256": source_artifact_sha256,
+            "last_model_seen_at": observed_at_iso,
+            "metadata": {"stale_reason": "absent_from_artifact"},
+        }
+        state_rows.append(state_row)
+
+        if _is_fire(previous_verdict):
+            events.append(_event(
+                slate_date=slate_date,
+                event_type="pick_downgraded",
+                pitcher_name=pitcher_name,
+                normalized_pitcher=normalized_pitcher,
+                side=side,
+                previous_verdict=previous_verdict,
+                verdict="PASS",
+                k_line=k_line,
+                book=previous.get("current_book"),
+                odds=previous.get("current_odds"),
                 observed_at=observed_at_iso,
             ))
 
@@ -340,6 +434,7 @@ def build_line_movement_events(
             "dedupe_key": dedupe_key,
             "payload": {
                 "pitcher": pitcher_name,
+                "normalized_pitcher": normalized,
                 "side": side,
                 "bookmaker_key": book,
                 "previous_line": previous_line,
@@ -354,6 +449,52 @@ def build_line_movement_events(
         })
 
     return events
+
+
+def build_line_movement_rows(movement_events: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    rows: list[dict[str, Any]] = []
+    for event in movement_events:
+        payload = event.get("payload")
+        if not isinstance(payload, dict):
+            continue
+
+        row = {
+            "slate_date": event.get("slate_date"),
+            "normalized_pitcher": payload.get("normalized_pitcher"),
+            "pitcher": payload.get("pitcher"),
+            "side": payload.get("side"),
+            "bookmaker_key": payload.get("bookmaker_key"),
+            "previous_line": payload.get("previous_line"),
+            "current_line": payload.get("current_line"),
+            "previous_odds": payload.get("previous_odds"),
+            "current_odds": payload.get("current_odds"),
+            "movement_direction": payload.get("movement_direction"),
+            "movement_kind": payload.get("movement_kind"),
+            "observed_at": event.get("occurred_at"),
+            "dedupe_key": event.get("dedupe_key"),
+            "source_snapshot_id": payload.get("source_snapshot_id"),
+            "metadata": {
+                "event_type": event.get("event_type"),
+                "severity": event.get("severity"),
+            },
+        }
+        required = [
+            "slate_date",
+            "normalized_pitcher",
+            "pitcher",
+            "side",
+            "bookmaker_key",
+            "current_line",
+            "current_odds",
+            "movement_direction",
+            "movement_kind",
+            "observed_at",
+            "dedupe_key",
+        ]
+        if all(row.get(key) is not None for key in required):
+            rows.append(row)
+
+    return rows
 
 
 def build_reminder_events(

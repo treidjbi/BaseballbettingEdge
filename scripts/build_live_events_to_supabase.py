@@ -13,7 +13,13 @@ ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
 sys.path.insert(0, str(ROOT / "pipeline"))
 
-from market_infra.live_events import build_pick_change_events  # noqa: E402
+from market_infra.live_events import (  # noqa: E402
+    build_line_movement_events,
+    build_line_movement_rows,
+    build_missing_pick_state_events,
+    build_pick_change_events,
+    build_reminder_events,
+)
 from market_infra.supabase_writer import SupabaseMarketWriter  # noqa: E402
 
 DEFAULT_ARTIFACT = ROOT / "dashboard" / "data" / "processed" / "today.json"
@@ -51,6 +57,31 @@ def _load_artifact(path: Path) -> tuple[dict[str, Any], str]:
     return payload, hashlib.sha256(artifact_bytes).hexdigest()
 
 
+def _now_utc() -> datetime:
+    return datetime.now(timezone.utc)
+
+
+def _snapshot_pairs(rows: list[dict[str, Any]]) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
+    by_key: dict[tuple[str, str, str], list[dict[str, Any]]] = {}
+    for row in rows:
+        book = str(row.get("bookmaker_key") or "").strip()
+        normalized = str(row.get("normalized_player_name") or "").strip()
+        side = str(row.get("side") or "").strip().lower()
+        if book and normalized and side in {"over", "under"}:
+            by_key.setdefault((book, normalized, side), []).append(row)
+
+    previous: list[dict[str, Any]] = []
+    current: list[dict[str, Any]] = []
+    for snapshots in by_key.values():
+        ordered = sorted(snapshots, key=lambda row: str(row.get("observed_at") or ""))
+        if len(ordered) < 2:
+            continue
+        previous.append(ordered[-2])
+        current.append(ordered[-1])
+
+    return previous, current
+
+
 def run(
     *,
     slate_date: str,
@@ -61,9 +92,9 @@ def run(
     payload, artifact_sha = _load_artifact(Path(artifact_path))
     writer = SupabaseMarketWriter(supabase_url, service_role_key)
     previous_rows = writer.select_rows("live_pick_state", {"slate_date": f"eq.{slate_date}"})
-    observed_at = datetime.now(timezone.utc)
+    observed_at = _now_utc()
 
-    notification_rows, state_rows = build_pick_change_events(
+    pick_notification_rows, state_rows = build_pick_change_events(
         slate_date=slate_date,
         pitchers=payload.get("pitchers") or [],
         previous_state=_previous_state(previous_rows),
@@ -71,14 +102,56 @@ def run(
         source_artifact_path=_source_artifact_path(Path(artifact_path)),
         source_artifact_sha256=artifact_sha,
     )
+    missing_notification_rows, missing_state_rows = build_missing_pick_state_events(
+        slate_date=slate_date,
+        previous_rows=previous_rows,
+        current_state_rows=state_rows,
+        observed_at=observed_at,
+        source_artifact_path=_source_artifact_path(Path(artifact_path)),
+        source_artifact_sha256=artifact_sha,
+    )
+    state_rows.extend(missing_state_rows)
 
+    snapshot_rows = writer.select_rows("market_snapshots", {
+        "order": "observed_at.desc",
+        "limit": "500",
+    })
+    previous_snapshots, current_snapshots = _snapshot_pairs(snapshot_rows)
+    movement_notification_rows = build_line_movement_events(
+        slate_date=slate_date,
+        live_picks=state_rows,
+        previous_snapshots=previous_snapshots,
+        current_snapshots=current_snapshots,
+    )
+    line_movement_rows = build_line_movement_rows(movement_notification_rows)
+
+    existing_reminders = writer.select_rows("game_reminder_state", {"slate_date": f"eq.{slate_date}"})
+    reminder_notification_rows, reminder_rows = build_reminder_events(
+        slate_date=slate_date,
+        live_picks=state_rows,
+        existing_reminders=existing_reminders,
+        observed_at=observed_at,
+    )
+
+    notification_rows = [
+        *pick_notification_rows,
+        *missing_notification_rows,
+        *movement_notification_rows,
+        *reminder_notification_rows,
+    ]
     writer.upsert_rows("notification_events", notification_rows, on_conflict="dedupe_key")
+    writer.upsert_rows("line_movement_events", line_movement_rows, on_conflict="dedupe_key")
+    writer.upsert_rows("game_reminder_state", reminder_rows, on_conflict="dedupe_key")
     writer.upsert_rows("live_pick_state", state_rows, on_conflict="slate_date,normalized_pitcher,side")
     return {
         "state_rows": state_rows,
         "notification_rows": notification_rows,
+        "line_movement_rows": line_movement_rows,
+        "reminder_rows": reminder_rows,
         "live_pick_state": len(state_rows),
         "notification_events": len(notification_rows),
+        "line_movement_events": len(line_movement_rows),
+        "game_reminders": len(reminder_rows),
     }
 
 
