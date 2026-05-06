@@ -167,6 +167,30 @@ python -m pytest tests/test_build_features.py -v
 - **Auth**: `X-TheRundown-Key` header
 - Pipeline throttles at 0.55s between calls to stay under 2 req/sec
 
+### TheRundown live-polling cost guardrail
+
+TheRundown Starter is the official book-of-record odds source for scheduled
+preview/full/refresh/grading-adjacent artifacts. Do **not** design new
+high-frequency live polling around TheRundown without an explicit cost/usage
+review.
+
+Known limit context:
+
+- Current plan allows 2,000,000 data points/month, then overage billing.
+- TheRundown's own usage estimator can exceed Starter for MLB player props
+  when polling multiple books every 15 minutes on normal slates.
+- The plan has no WebSocket streaming, so frequent polling is the expensive
+  path.
+
+For the live layer, default to:
+
+- Read TheRundown-derived picks from `today.json` as the book-of-record model
+  state.
+- Use PropLine Streaming Lite / shadow polling / webhooks for line-movement
+  events and near-real-time notifications.
+- Do not increase TheRundown polling cadence beyond the existing pipeline
+  schedule unless Tyler explicitly approves the spend/risk tradeoff.
+
 ## The Odds API (Fallback Odds Provider)
 
 The Odds API is available as a fallback source when TheRundown is degraded or
