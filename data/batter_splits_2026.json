@@ -6441,20 +6441,21 @@
       }
     }
   },
-  "updated_at": "2026-05-06T04:24:48Z",
+  "updated_at": "2026-05-06T04:42:00Z",
   "last_run": {
     "projection_status": "collection_only",
     "requested_batters": 225,
-    "already_cached": 220,
-    "attempted": 4,
-    "collected": 2,
-    "failed": 2,
-    "queued_not_attempted": 1,
+    "already_cached": 222,
+    "attempted": 3,
+    "collected": 0,
+    "failed": 3,
+    "queued_not_attempted": 0,
     "cache_size": 381,
     "errors": [
       "Ryan Rolison: IndexError: single positional indexer is out-of-bounds",
-      "Jesus Rodriguez: no bbref id"
+      "Jesus Rodriguez: no bbref id",
+      "Sung-Mun Song: no platoon split rows"
     ],
-    "updated_at": "2026-05-06T04:24:48Z"
+    "updated_at": "2026-05-06T04:42:00Z"
   }
 }
