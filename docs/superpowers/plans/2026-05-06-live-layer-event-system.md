@@ -32,8 +32,17 @@ Non-goals for v1:
 - Do not change verdict thresholds.
 - Do not change grading or calibration.
 - Do not make PropLine the primary provider.
+- Do not use TheRundown for high-frequency live polling.
 - Do not expose service-role Supabase credentials to the dashboard.
 - Do not replace the existing static dashboard data path until the live layer proves stable.
+
+Provider cost guardrail:
+
+- TheRundown Starter should remain the official book-of-record source for scheduled preview, full, refresh, grading-adjacent artifacts, and archives.
+- The live worker must not poll TheRundown every 5-10 minutes for market movement. That usage pattern can exceed the current TheRundown Starter data-point allowance on normal MLB slates.
+- PropLine Streaming Lite is the preferred live movement source because its plan is designed around frequent requests, line-movement webhooks, and resolution delivery.
+- The live layer should read TheRundown-derived picks from `today.json`, then compare those picks against PropLine snapshots/webhook events for live movement and notification decisions.
+- Any future TheRundown live polling beyond the existing pipeline cadence requires a separate cost/usage review and explicit approval.
 
 ---
 
@@ -352,6 +361,8 @@ Cadence:
 
 - Every 10 minutes during the MLB betting window.
 - Observation-only.
+- PropLine-only market polling for live movement.
+- No TheRundown high-frequency polling.
 - Writes Supabase events.
 - Does not call Netlify live notification sender automatically until event quality is reviewed.
 
@@ -393,6 +404,7 @@ Pause before any production provider change:
 
 - Keep the June 1 PropLine review checkpoint intact.
 - Do not promote PropLine based only on live-layer convenience.
+- Do not increase TheRundown polling cadence without a cost/usage review.
 
 ---
 
@@ -1926,6 +1938,7 @@ Success criteria:
 - No service-role key exposure.
 - Live worker failures do not affect main pipeline.
 - Movement events match obvious market movement in `market_snapshots`.
+- TheRundown request/data-point usage does not increase because of the live layer.
 
 - [ ] **Step 2: Choose runtime**
 

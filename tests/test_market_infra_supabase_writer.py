@@ -30,3 +30,19 @@ def test_upsert_rows_sets_conflict_target():
 
     assert post.call_args.kwargs["params"] == {"on_conflict": "dedupe_key"}
     assert post.call_args.kwargs["headers"]["Prefer"] == "resolution=merge-duplicates,return=representation"
+
+
+def test_select_rows_passes_query_params_and_service_role_auth():
+    writer = SupabaseMarketWriter("https://example.supabase.co", "secret-key")
+    response = Mock()
+    response.raise_for_status.return_value = None
+    response.json.return_value = [{"current_verdict": "FIRE 1u"}]
+
+    with patch("market_infra.supabase_writer.requests.get", return_value=response) as get:
+        result = writer.select_rows("live_pick_state", {"slate_date": "eq.2026-05-06"})
+
+    assert result == [{"current_verdict": "FIRE 1u"}]
+    assert get.call_args.args == ("https://example.supabase.co/rest/v1/live_pick_state",)
+    assert get.call_args.kwargs["params"] == {"slate_date": "eq.2026-05-06"}
+    assert get.call_args.kwargs["headers"]["Authorization"] == "Bearer secret-key"
+    assert get.call_args.kwargs["timeout"] == 20
