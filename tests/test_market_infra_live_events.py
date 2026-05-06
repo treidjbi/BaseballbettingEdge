@@ -155,6 +155,7 @@ def test_over_line_drop_is_with_model_movement():
         previous_snapshots=[{
             "normalized_player_name": "tarik skubal",
             "bookmaker_key": "fanduel",
+            "side": "over",
             "line": 6.5,
             "american_odds": -110,
             "observed_at": "2026-05-06T17:50:00+00:00",
@@ -164,6 +165,7 @@ def test_over_line_drop_is_with_model_movement():
             "normalized_player_name": "tarik skubal",
             "player_name": "Tarik Skubal",
             "bookmaker_key": "fanduel",
+            "side": "over",
             "line": 5.5,
             "american_odds": -112,
             "observed_at": "2026-05-06T18:00:00+00:00",
@@ -187,6 +189,7 @@ def test_under_line_drop_is_against_model_movement():
         previous_snapshots=[{
             "normalized_player_name": "tarik skubal",
             "bookmaker_key": "fanduel",
+            "side": "under",
             "line": 6.5,
             "american_odds": -110,
             "observed_at": "2026-05-06T17:50:00+00:00",
@@ -196,6 +199,7 @@ def test_under_line_drop_is_against_model_movement():
             "normalized_player_name": "tarik skubal",
             "player_name": "Tarik Skubal",
             "bookmaker_key": "fanduel",
+            "side": "under",
             "line": 5.5,
             "american_odds": -112,
             "observed_at": "2026-05-06T18:00:00+00:00",
@@ -204,6 +208,38 @@ def test_under_line_drop_is_against_model_movement():
 
     assert events[0]["event_type"] == "line_moved_against_us"
     assert events[0]["payload"]["movement_direction"] == "against_model"
+
+
+def test_under_snapshot_does_not_emit_movement_for_fire_over_pick():
+    events = build_line_movement_events(
+        slate_date="2026-05-06",
+        live_picks=[{
+            "pitcher": "Tarik Skubal",
+            "normalized_pitcher": "tarik skubal",
+            "side": "over",
+            "current_verdict": "FIRE 1u",
+        }],
+        previous_snapshots=[{
+            "normalized_player_name": "tarik skubal",
+            "bookmaker_key": "fanduel",
+            "side": "under",
+            "line": 6.5,
+            "american_odds": -110,
+            "observed_at": "2026-05-06T17:50:00+00:00",
+        }],
+        current_snapshots=[{
+            "id": "snapshot-1",
+            "normalized_player_name": "tarik skubal",
+            "player_name": "Tarik Skubal",
+            "bookmaker_key": "fanduel",
+            "side": "under",
+            "line": 5.5,
+            "american_odds": -112,
+            "observed_at": "2026-05-06T18:00:00+00:00",
+        }],
+    )
+
+    assert events == []
 
 
 def test_fire_1u_gets_25_minute_reminder_only():

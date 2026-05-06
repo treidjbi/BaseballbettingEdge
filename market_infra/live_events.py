@@ -276,21 +276,26 @@ def build_line_movement_events(
         if normalized_pitcher and side in {"over", "under"}:
             actionable[(normalized_pitcher, side)] = pick
 
-    previous_by_book_player: dict[tuple[str, str], dict[str, Any]] = {}
+    previous_by_book_player_side: dict[tuple[str, str, str], dict[str, Any]] = {}
     for snapshot in previous_snapshots:
         book = str(snapshot.get("bookmaker_key") or "").strip()
         normalized = str(snapshot.get("normalized_player_name") or "").strip()
-        if book and normalized:
-            previous_by_book_player[(book, normalized)] = snapshot
+        side = str(snapshot.get("side") or "").strip().lower()
+        if book and normalized and side in {"over", "under"}:
+            previous_by_book_player_side[(book, normalized, side)] = snapshot
 
     events: list[dict[str, Any]] = []
     for snapshot in current_snapshots:
         book = str(snapshot.get("bookmaker_key") or "").strip()
         normalized = str(snapshot.get("normalized_player_name") or normalize(snapshot.get("player_name") or "")).strip()
-        if not book or not normalized:
+        side = str(snapshot.get("side") or "").strip().lower()
+        if not book or not normalized or side not in {"over", "under"}:
             continue
-        previous = previous_by_book_player.get((book, normalized))
+        previous = previous_by_book_player_side.get((book, normalized, side))
         if previous is None:
+            continue
+        pick = actionable.get((normalized, side))
+        if pick is None:
             continue
 
         previous_line = _numeric(previous.get("line"))
@@ -312,46 +317,41 @@ def build_line_movement_events(
         else:
             movement_kind = "odds"
 
-        for side in ("over", "under"):
-            pick = actionable.get((normalized, side))
-            if pick is None:
-                continue
+        if side == "over":
+            with_model = current_line < previous_line or (not line_changed and odds_delta > 0)
+        else:
+            with_model = current_line > previous_line or (not line_changed and odds_delta > 0)
 
-            if side == "over":
-                with_model = current_line < previous_line or (not line_changed and odds_delta > 0)
-            else:
-                with_model = current_line > previous_line or (not line_changed and odds_delta > 0)
+        movement_direction = "with_model" if with_model else "against_model"
+        event_type = "line_moved_with_us" if with_model else "line_moved_against_us"
+        pitcher_name = str(pick.get("pitcher") or snapshot.get("player_name") or "").strip()
+        dedupe_key = (
+            f"{slate_date}:line:{book}:{normalized}:{side}:"
+            f"{previous_line:g}:{previous_odds}:{current_line:g}:{current_odds}"
+        )
 
-            movement_direction = "with_model" if with_model else "against_model"
-            event_type = "line_moved_with_us" if with_model else "line_moved_against_us"
-            pitcher_name = str(pick.get("pitcher") or snapshot.get("player_name") or "").strip()
-            dedupe_key = (
-                f"{slate_date}:line:{book}:{normalized}:{side}:"
-                f"{previous_line:g}:{previous_odds}:{current_line:g}:{current_odds}"
-            )
-
-            events.append({
-                "slate_date": slate_date,
-                "event_type": event_type,
-                "severity": "watch" if with_model else "action",
-                "title": "Line Moved With Us" if with_model else "Line Moved Against Us",
-                "body": f"{pitcher_name} {side.upper()} moved {previous_line:g} to {current_line:g} at {book}",
-                "url": "/",
-                "dedupe_key": dedupe_key,
-                "payload": {
-                    "pitcher": pitcher_name,
-                    "side": side,
-                    "bookmaker_key": book,
-                    "previous_line": previous_line,
-                    "current_line": current_line,
-                    "previous_odds": previous_odds,
-                    "current_odds": current_odds,
-                    "movement_direction": movement_direction,
-                    "movement_kind": movement_kind,
-                    "source_snapshot_id": snapshot.get("id"),
-                },
-                "occurred_at": snapshot.get("observed_at"),
-            })
+        events.append({
+            "slate_date": slate_date,
+            "event_type": event_type,
+            "severity": "watch" if with_model else "action",
+            "title": "Line Moved With Us" if with_model else "Line Moved Against Us",
+            "body": f"{pitcher_name} {side.upper()} moved {previous_line:g} to {current_line:g} at {book}",
+            "url": "/",
+            "dedupe_key": dedupe_key,
+            "payload": {
+                "pitcher": pitcher_name,
+                "side": side,
+                "bookmaker_key": book,
+                "previous_line": previous_line,
+                "current_line": current_line,
+                "previous_odds": previous_odds,
+                "current_odds": current_odds,
+                "movement_direction": movement_direction,
+                "movement_kind": movement_kind,
+                "source_snapshot_id": snapshot.get("id"),
+            },
+            "occurred_at": snapshot.get("observed_at"),
+        })
 
     return events
 
