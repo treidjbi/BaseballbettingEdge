@@ -6587,22 +6587,56 @@
         "so": 1,
         "k_rate": 0.0909
       }
+    },
+    "mlbam:694376": {
+      "name": "Shay Whitcomb",
+      "bats": "R",
+      "mlbam_id": 694376,
+      "bbref_id": "whitcsh01",
+      "season": 2026,
+      "vs_R": {
+        "pa": 9,
+        "so": 5,
+        "k_rate": 0.5556
+      },
+      "vs_L": {
+        "pa": 5,
+        "so": 3,
+        "k_rate": 0.6
+      }
+    },
+    "mlbam:553869": {
+      "name": "Elias D\u00edaz",
+      "bats": "R",
+      "mlbam_id": 553869,
+      "bbref_id": "diazel01",
+      "season": 2026,
+      "vs_R": {
+        "pa": 5,
+        "so": 1,
+        "k_rate": 0.2
+      },
+      "vs_L": {
+        "pa": 7,
+        "so": 0,
+        "k_rate": 0.0
+      }
     }
   },
-  "updated_at": "2026-05-06T20:11:56Z",
+  "updated_at": "2026-05-06T20:40:47Z",
   "last_run": {
     "projection_status": "collection_only",
-    "requested_batters": 207,
-    "already_cached": 204,
-    "attempted": 3,
-    "collected": 1,
+    "requested_batters": 243,
+    "already_cached": 239,
+    "attempted": 4,
+    "collected": 2,
     "failed": 2,
     "queued_not_attempted": 0,
-    "cache_size": 390,
+    "cache_size": 392,
     "errors": [
       "Jim Jarvis: no bbref id",
       "Joe Mack: no bbref id"
     ],
-    "updated_at": "2026-05-06T20:11:56Z"
+    "updated_at": "2026-05-06T20:40:47Z"
   }
 }
