@@ -6376,23 +6376,51 @@
         "so": 4,
         "k_rate": 0.3333
       }
+    },
+    "mlbam:679822": {
+      "name": "Justin Foscue",
+      "bats": "R",
+      "mlbam_id": 679822,
+      "bbref_id": "foscuju01",
+      "season": 2026,
+      "vs_L": {
+        "pa": 9,
+        "so": 3,
+        "k_rate": 0.3333
+      }
+    },
+    "mlbam:669743": {
+      "name": "Alex Call",
+      "bats": "R",
+      "mlbam_id": 669743,
+      "bbref_id": "callal02",
+      "season": 2026,
+      "vs_R": {
+        "pa": 26,
+        "so": 4,
+        "k_rate": 0.1538
+      },
+      "vs_L": {
+        "pa": 13,
+        "so": 0,
+        "k_rate": 0.0
+      }
     }
   },
-  "updated_at": "2026-05-06T01:13:54Z",
+  "updated_at": "2026-05-06T04:00:47Z",
   "last_run": {
     "projection_status": "collection_only",
     "requested_batters": 225,
-    "already_cached": 221,
+    "already_cached": 219,
     "attempted": 4,
-    "collected": 1,
-    "failed": 3,
-    "queued_not_attempted": 0,
-    "cache_size": 377,
+    "collected": 2,
+    "failed": 2,
+    "queued_not_attempted": 2,
+    "cache_size": 379,
     "errors": [
-      "Joe Mack: no bbref id",
-      "Jesus Rodriguez: no bbref id",
-      "Sung-Mun Song: no platoon split rows"
+      "Ryan Rolison: IndexError: single positional indexer is out-of-bounds",
+      "Jesus Rodriguez: no bbref id"
     ],
-    "updated_at": "2026-05-06T01:13:54Z"
+    "updated_at": "2026-05-06T04:00:47Z"
   }
 }
