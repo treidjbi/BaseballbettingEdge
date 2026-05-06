@@ -177,3 +177,46 @@ test('scheduled handler can dry-run without notify secret header', async () => {
     }
   }
 });
+
+test('scheduled function dry-runs without notify secret when Run now sends an empty body', async () => {
+  const originalFetch = globalThis.fetch;
+  const originalEnv = {
+    NOTIFY_SECRET: process.env.NOTIFY_SECRET,
+    SUPABASE_URL: process.env.SUPABASE_URL,
+    SUPABASE_SERVICE_ROLE_KEY: process.env.SUPABASE_SERVICE_ROLE_KEY,
+    LIVE_NOTIFICATIONS_ENABLED: process.env.LIVE_NOTIFICATIONS_ENABLED,
+  };
+  delete process.env.NOTIFY_SECRET;
+  process.env.SUPABASE_URL = 'https://example.supabase.co';
+  process.env.SUPABASE_SERVICE_ROLE_KEY = 'service-key';
+  process.env.LIVE_NOTIFICATIONS_ENABLED = 'false';
+
+  globalThis.fetch = async () => new Response(JSON.stringify([{
+    id: 'event-1',
+    event_type: 'new_fire_pick',
+    title: 'New FIRE Pick',
+    body: 'Tarik Skubal FIRE 1u OVER 6.5 Ks',
+    dedupe_key: 'event-1-key',
+  }]), {
+    status: 200,
+    headers: { 'Content-Type': 'application/json' },
+  });
+
+  try {
+    const response = await sendLiveNotifications(new Request('https://example.test/.netlify/functions/send-live-notifications', {
+      method: 'POST',
+      body: '',
+    }));
+    const payload = await response.json();
+
+    assert.equal(response.status, 200);
+    assert.equal(payload.mode, 'dry_run');
+    assert.equal(payload.pending, 1);
+  } finally {
+    globalThis.fetch = originalFetch;
+    for (const [key, value] of Object.entries(originalEnv)) {
+      if (value === undefined) delete process.env[key];
+      else process.env[key] = value;
+    }
+  }
+});

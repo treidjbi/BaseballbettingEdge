@@ -161,9 +161,9 @@ export default async function sendLiveNotifications(req) {
     body = await req.json();
   } catch {}
 
-  const isScheduledRun = typeof body?.next_run === 'string';
   const notifySecret = envValue('NOTIFY_SECRET');
-  if (!isScheduledRun && (!notifySecret || !safeSecretEqual(req.headers.get('x-notify-secret') || '', notifySecret))) {
+  const requiresSharedSecret = !config.schedule;
+  if (requiresSharedSecret && (!notifySecret || !safeSecretEqual(req.headers.get('x-notify-secret') || '', notifySecret))) {
     return json(401, { error: 'Unauthorized' });
   }
 
