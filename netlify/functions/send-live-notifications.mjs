@@ -50,6 +50,27 @@ export function buildPushPayload(row) {
   };
 }
 
+export function buildSenderLog({
+  stage,
+  enabled,
+  pending = 0,
+  subscribers = 0,
+  sent = 0,
+  failed = 0,
+  staleRemoved = 0,
+}) {
+  return [
+    'send-live-notifications',
+    `stage=${stage}`,
+    `enabled=${Boolean(enabled)}`,
+    `pending=${Number(pending) || 0}`,
+    `subscribers=${Number(subscribers) || 0}`,
+    `sent=${Number(sent) || 0}`,
+    `failed=${Number(failed) || 0}`,
+    `staleRemoved=${Number(staleRemoved) || 0}`,
+  ].join(' ');
+}
+
 export async function fetchPendingNotificationEvents({
   supabaseUrl,
   serviceRoleKey,
@@ -186,11 +207,13 @@ export default async function sendLiveNotifications(req) {
   }
 
   if (pending.length === 0) {
+    console.log(buildSenderLog({ stage: 'empty_queue', enabled: isLiveNotificationsEnabled(envValue('LIVE_NOTIFICATIONS_ENABLED')) }));
     return json(200, { sent: 0, pending: 0, message: 'No pending live notifications' });
   }
 
   const enabled = isLiveNotificationsEnabled(envValue('LIVE_NOTIFICATIONS_ENABLED'));
   if (!enabled) {
+    console.log(buildSenderLog({ stage: 'dry_run', enabled, pending: pending.length }));
     return json(200, {
       mode: 'dry_run',
       enabled: false,
@@ -223,6 +246,7 @@ export default async function sendLiveNotifications(req) {
   }
 
   if (subscriptions.length === 0) {
+    console.log(buildSenderLog({ stage: 'no_subscribers', enabled, pending: pending.length }));
     return json(200, { sent: 0, pending: pending.length, subscribers: 0, message: 'No subscribers' });
   }
 
@@ -252,6 +276,16 @@ export default async function sendLiveNotifications(req) {
   }
 
   await Promise.allSettled([...staleKeys].map((key) => subStore.delete(key)));
+
+  console.log(buildSenderLog({
+    stage: 'sent',
+    enabled,
+    pending: pending.length,
+    subscribers: subscriptions.length,
+    sent,
+    failed,
+    staleRemoved: staleKeys.size,
+  }));
 
   return json(200, {
     sent,
