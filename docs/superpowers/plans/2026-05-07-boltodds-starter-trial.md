@@ -42,6 +42,38 @@ BoltOdds public docs checked on 2026-05-07:
 
 Key implication: the trial must include an explicit discovery step before the worker subscribes, because we do not yet know the exact BoltOdds pitcher strikeout market string.
 
+## Infrastructure Recommendation
+
+Keep the app split into two systems during the trial:
+
+1. **Book-of-record pipeline:** GitHub Actions + TheRundown + static JSON artifacts stay responsible for picks, grading, calibration, `today.json`, and dashboard truth.
+2. **Live-market sidecar:** Render worker + BoltOdds WebSocket + Supabase shadow tables become the always-on live market evidence layer.
+
+Do not move the core pipeline off GitHub Actions just because BoltOdds needs a persistent worker. The first infrastructure migration should be narrow: live line movement capture and, later, notifications. Grading, historical picks, model calibration, and static artifact publishing can stay scheduled until there is a separate reason to move them.
+
+Recommended production path if the trial works:
+
+- Phase 1: BoltOdds writes shadow `market_snapshots` only.
+- Phase 2: BoltOdds writes shadow `line_movement_events` against current production picks, but sends no pushes.
+- Phase 3: BoltOdds powers live movement notifications with strict dedupe and stale-feed checks.
+- Phase 4: BoltOdds becomes a fallback odds provider only when TheRundown misses a target book or the live feed has a confirmed fresher line.
+- Phase 5: Broader production migration only after at least one full paid month proves uptime, coverage, cost, and decision impact.
+
+This avoids a large rewrite while still testing the thing BoltOdds might uniquely solve: timely line movement.
+
+## WebSocket Capability Delta
+
+BoltOdds WebSocket has different value than the current GitHub/PropLine setup:
+
+- **Lower latency:** movement can be captured in seconds instead of at the next 10-minute PropLine poll or 30-minute production refresh.
+- **Intra-window movement capture:** line or odds moves that appear and revert between scheduled runs can still be stored.
+- **Better notification timing:** the app can alert when a FIRE pick moves against us, when a better book appears, or when a target book opens a missing line.
+- **Source-health precision:** stale feed detection can be based on seconds since last message and seconds since last book update, not just whether a scheduled job eventually ran.
+- **Movement quality metrics:** we can measure move sequence, book order, volatility, odds-path strength, and whether movement was broad market steam or one-book noise.
+- **Reduced pressure on TheRundown polling:** TheRundown can remain the official scheduled source without becoming an expensive high-frequency telemetry feed.
+
+The tradeoff is operational complexity. WebSocket infrastructure needs reconnect logic, a heartbeat, retention rules, queue/dedupe behavior, and monitoring. Without that, it can fail more quietly than GitHub Actions because a process can stay up while the market subscription is stale.
+
 ## Non-Negotiable Guardrails
 
 - Do not change production provider order.
@@ -53,6 +85,35 @@ Key implication: the trial must include an explicit discovery step before the wo
 - Do not use more than one BoltOdds WebSocket connection on Starter.
 - Do not interpret missing BoltOdds data as a model problem.
 - Do not buy Pro unless Starter trial evidence proves the ROI and Tyler explicitly approves.
+- Do not move grading, calibration, historical pick storage, or static artifact generation off GitHub Actions during the Starter trial.
+- Do not use BoltOdds for live notifications until shadow `line_movement_events` have proven dedupe, freshness, and current-pick matching.
+
+## Problems Expected If We Migrate Too Quickly
+
+These are the failure modes this plan must defend against:
+
+| Change | Likely Problem | Mitigation |
+| --- | --- | --- |
+| Move from scheduled jobs to a persistent worker | The worker can disconnect, silently stop receiving subscription updates, or restart during the slate | Add reconnect/backoff, heartbeat rows, stale-feed alerts, and Render restart visibility before trial activation |
+| Write every WebSocket tick as a raw snapshot | Supabase table growth can accelerate quickly and make diagnostics noisy or expensive | Add time-based batching, dedupe, retention, and daily rollups before any paid month |
+| Promote BoltOdds directly to notifications | Duplicate pushes, stale pushes, and noise from one-book moves can erode trust fast | Start with shadow `line_movement_events`, require current-pick matching, and only notify on configured movement classes |
+| Promote BoltOdds directly to odds provider | The model may mix provider semantics, book names, event IDs, and player names incorrectly | Keep TheRundown as book-of-record, reconcile names/events first, and promote only fallback cases after review |
+| Depend on one WebSocket connection | Starter only allows one concurrent connection, so a bad subscription shape can block the whole slate | Use discovery probe first, subscribe to MLB pitcher strikeouts only, and stop if Starter cannot cover the target market |
+| Move core pipeline off GitHub Actions | Grading, calibration, artifact publishing, and history writes become entangled with live-feed uptime | Keep core pipeline scheduled; move only live market capture/notifications first |
+| Treat no WebSocket movement as no market movement | A stale subscription can look like a quiet slate | Compare against TheRundown artifacts, PropLine polling, and per-book last-seen timestamps before drawing conclusions |
+| Store provider data without operational controls | A bad feed, bad mapping, or surprise volume spike can run all day | Add kill switch, provider mode env var, and trial stop checklist |
+
+## Trial Readiness Criteria
+
+Do not start the 7-day free trial until these are true:
+
+- The implementation branch contains the shadow worker, discovery probe, Supabase migration, diagnostics, and operator runbook.
+- The worker can run locally without a BoltOdds key far enough to validate env checks, dependency imports, and no production-file writes.
+- Render is configured as a single background worker with `autoDeploy: false`.
+- Supabase accepts `provider='boltodds'` and `mode='shadow_stream'` rows.
+- The runbook includes the trial start timestamp, cancel-before-billing deadline, and stop procedure.
+- The worker includes heartbeat/stale-feed state so an apparently running process is not mistaken for a healthy feed.
+- Day 0 raw payload capture is limited and intentional so the real BoltOdds shape can become a fixture without flooding storage.
 
 ## Target Branch
 
@@ -73,7 +134,7 @@ Create:
 - `requirements-live.txt`
   - Render/live-worker dependency file. Keeps `websockets` out of the GitHub pipeline dependency set.
 - `supabase/migrations/20260507_boltodds_shadow_trial.sql`
-  - Extends existing shadow table provider/mode check constraints for `boltodds`.
+  - Extends existing shadow table provider/mode check constraints for `boltodds` and creates `market_feed_heartbeats`.
 - `market_infra/boltodds_snapshot.py`
   - Pure normalization helpers for BoltOdds `initial_state`, `game_update`, and `line_update` payloads.
 - `market_infra/boltodds_client.py`
@@ -82,8 +143,12 @@ Create:
   - Trial activation probe. Confirms sport, target books, and pitcher strikeout market before starting worker.
 - `scripts/boltodds_ws_worker.py`
   - Render worker entrypoint. Connects to BoltOdds WebSocket, subscribes, normalizes updates, writes Supabase rows, and maintains run health.
+- `market_infra/live_feed_health.py`
+  - Provider-agnostic heartbeat, stale-feed, and run-health helpers for always-on workers.
 - `analytics/diagnostics/boltodds_trial_audit.py`
   - Post-slate comparison of BoltOdds vs production artifacts and existing provider audits.
+- `analytics/diagnostics/boltodds_migration_risk_audit.py`
+  - Post-trial migration-readiness summary covering uptime, stale periods, row volume, notification candidates, and provider conflicts.
 - `docs/boltodds-starter-trial.md`
   - Operator handoff: env vars, Render setup, activation steps, trial monitoring, and stop rule.
 - `render.yaml`
@@ -94,8 +159,12 @@ Create:
   - Unit tests for market selection and subscribe message construction.
 - `tests/test_boltodds_ws_worker.py`
   - Unit tests for worker write flow, run status, and no notification side effects.
+- `tests/test_market_infra_live_feed_health.py`
+  - Unit tests for heartbeat and stale-feed helpers.
 - `tests/test_boltodds_trial_audit.py`
   - Unit tests for trial summary metrics.
+- `tests/test_boltodds_migration_risk_audit.py`
+  - Unit tests for post-trial migration risk summary.
 
 Modify:
 
@@ -103,6 +172,10 @@ Modify:
   - Keep target books shared; no provider-specific branching unless BoltOdds book names require title-to-key mapping.
 - `tests/test_market_infra_provider_audit.py`
   - Add BoltOdds snapshots to confirm the existing audit logic remains provider-agnostic.
+- `scripts/boltodds_ws_worker.py`
+  - After Task 7, add reconnect/backoff, time-based flushing, heartbeat updates, limited raw payload capture, and explicit failed-run status.
+- `docs/boltodds-starter-trial.md`
+  - Add trial-start timestamp, cancel-before-billing checklist, stop-worker procedure, and production migration checklist.
 
 Do not modify:
 
@@ -270,6 +343,15 @@ def test_boltodds_migration_extends_provider_checks():
     assert "'boltodds'" in sql
     assert "'shadow_stream'" in sql
     assert "'discovery_probe'" in sql
+
+
+def test_boltodds_migration_creates_feed_heartbeat_table():
+    sql = MIGRATION.read_text(encoding="utf-8")
+
+    assert "create table if not exists public.market_feed_heartbeats" in sql
+    assert "last_message_at" in sql
+    assert "books_seen" in sql
+    assert "run_id" in sql
 ```
 
 - [ ] **Step 2: Run test to verify it fails**
@@ -324,6 +406,25 @@ alter table public.provider_coverage_audits
 
 comment on constraint market_provider_runs_provider_check on public.market_provider_runs is
   'Allows BoltOdds shadow trial rows without making BoltOdds a production provider.';
+
+create table if not exists public.market_feed_heartbeats (
+  id uuid primary key default gen_random_uuid(),
+  created_at timestamptz not null default now(),
+  provider text not null check (provider in ('propline', 'boltodds')),
+  mode text not null check (mode in ('shadow_poll', 'webhook', 'shadow_stream')),
+  slate_date date not null,
+  run_id uuid references public.market_provider_runs(id) on delete set null,
+  observed_at timestamptz not null,
+  last_message_at timestamptz,
+  books_seen text[] not null default '{}',
+  metadata jsonb not null default '{}'::jsonb
+);
+
+create index if not exists idx_market_feed_heartbeats_provider_observed
+  on public.market_feed_heartbeats(provider, observed_at desc);
+
+comment on table public.market_feed_heartbeats is
+  'Always-on feed heartbeat rows for shadow polling, webhooks, and WebSocket workers.';
 ```
 
 - [ ] **Step 4: Run schema test**
@@ -337,7 +438,7 @@ python -m pytest tests/test_boltodds_schema.py -q
 Expected:
 
 ```text
-2 passed
+3 passed
 ```
 
 - [ ] **Step 5: Commit**
@@ -1445,6 +1546,408 @@ git commit -m "feat: add boltodds trial audit helper"
 
 ---
 
+### Task 8A: Add WebSocket Operational Hardening
+
+**Files:**
+- Create: `market_infra/live_feed_health.py`
+- Create: `tests/test_market_infra_live_feed_health.py`
+- Modify: `scripts/boltodds_ws_worker.py`
+- Modify: `tests/test_boltodds_ws_worker.py`
+
+- [ ] **Step 1: Write failing heartbeat and stale-feed tests**
+
+Create `tests/test_market_infra_live_feed_health.py`:
+
+```python
+from market_infra.live_feed_health import build_heartbeat_row, classify_feed_health
+
+
+def test_build_heartbeat_row_records_provider_and_last_message():
+    row = build_heartbeat_row(
+        provider="boltodds",
+        mode="shadow_stream",
+        slate_date="2026-05-07",
+        run_id="run-123",
+        observed_at="2026-05-07T20:15:00+00:00",
+        last_message_at="2026-05-07T20:14:55+00:00",
+        books_seen=["draftkings", "fanduel"],
+        reconnect_count=2,
+        message_count=150,
+    )
+
+    assert row["provider"] == "boltodds"
+    assert row["mode"] == "shadow_stream"
+    assert row["slate_date"] == "2026-05-07"
+    assert row["run_id"] == "run-123"
+    assert row["last_message_at"] == "2026-05-07T20:14:55+00:00"
+    assert row["books_seen"] == ["draftkings", "fanduel"]
+    assert row["metadata"]["reconnect_count"] == 2
+    assert row["metadata"]["message_count"] == 150
+
+
+def test_classify_feed_health_marks_stale_after_threshold_seconds():
+    result = classify_feed_health(
+        now_iso="2026-05-07T20:20:00+00:00",
+        last_message_iso="2026-05-07T20:14:30+00:00",
+        stale_after_seconds=300,
+    )
+
+    assert result["status"] == "stale"
+    assert result["seconds_since_last_message"] == 330
+
+
+def test_classify_feed_health_marks_live_inside_threshold_seconds():
+    result = classify_feed_health(
+        now_iso="2026-05-07T20:20:00+00:00",
+        last_message_iso="2026-05-07T20:19:15+00:00",
+        stale_after_seconds=300,
+    )
+
+    assert result["status"] == "live"
+    assert result["seconds_since_last_message"] == 45
+```
+
+- [ ] **Step 2: Run test to verify it fails**
+
+Run:
+
+```bash
+python -m pytest tests/test_market_infra_live_feed_health.py -q
+```
+
+Expected: fails because `market_infra.live_feed_health` does not exist.
+
+- [ ] **Step 3: Add heartbeat helpers**
+
+Create `market_infra/live_feed_health.py`:
+
+```python
+from __future__ import annotations
+
+from datetime import datetime
+from typing import Any
+
+
+def _parse_iso(value: str) -> datetime:
+    return datetime.fromisoformat(value.replace("Z", "+00:00"))
+
+
+def build_heartbeat_row(
+    *,
+    provider: str,
+    mode: str,
+    slate_date: str,
+    run_id: str,
+    observed_at: str,
+    last_message_at: str | None,
+    books_seen: list[str],
+    reconnect_count: int,
+    message_count: int,
+) -> dict[str, Any]:
+    return {
+        "provider": provider,
+        "mode": mode,
+        "slate_date": slate_date,
+        "run_id": run_id,
+        "observed_at": observed_at,
+        "last_message_at": last_message_at,
+        "books_seen": sorted(books_seen),
+        "metadata": {
+            "reconnect_count": reconnect_count,
+            "message_count": message_count,
+        },
+    }
+
+
+def classify_feed_health(
+    *,
+    now_iso: str,
+    last_message_iso: str | None,
+    stale_after_seconds: int,
+) -> dict[str, Any]:
+    if not last_message_iso:
+        return {
+            "status": "no_messages",
+            "seconds_since_last_message": None,
+        }
+
+    elapsed = int((_parse_iso(now_iso) - _parse_iso(last_message_iso)).total_seconds())
+    return {
+        "status": "stale" if elapsed > stale_after_seconds else "live",
+        "seconds_since_last_message": elapsed,
+    }
+```
+
+- [ ] **Step 4: Run heartbeat tests**
+
+Run:
+
+```bash
+python -m pytest tests/test_market_infra_live_feed_health.py -q
+```
+
+Expected:
+
+```text
+3 passed
+```
+
+- [ ] **Step 5: Add worker tests for failed status, time flush, and no notification side effects**
+
+Append these tests to `tests/test_boltodds_ws_worker.py`:
+
+```python
+from scripts.boltodds_ws_worker import build_run_rows, should_flush_batch
+
+
+def test_build_run_rows_can_mark_failed_with_error_message():
+    row = build_run_rows(
+        slate_date="2026-05-07",
+        status="failed",
+        request_count=2,
+        books_seen=["fanduel"],
+        metadata={"worker": "scripts/boltodds_ws_worker.py"},
+        error_message="websocket disconnected",
+    )
+
+    assert row["status"] == "failed"
+    assert row["error_message"] == "websocket disconnected"
+    assert "completed_at" in row
+
+
+def test_should_flush_batch_when_size_or_interval_threshold_hit():
+    assert should_flush_batch(
+        batch_size=100,
+        max_batch_size=100,
+        now_monotonic=50.0,
+        last_flush_monotonic=49.0,
+        max_flush_seconds=10.0,
+    )
+    assert should_flush_batch(
+        batch_size=3,
+        max_batch_size=100,
+        now_monotonic=60.0,
+        last_flush_monotonic=49.0,
+        max_flush_seconds=10.0,
+    )
+    assert not should_flush_batch(
+        batch_size=3,
+        max_batch_size=100,
+        now_monotonic=55.0,
+        last_flush_monotonic=49.0,
+        max_flush_seconds=10.0,
+    )
+```
+
+- [ ] **Step 6: Run worker tests to verify they fail**
+
+Run:
+
+```bash
+python -m pytest tests/test_boltodds_ws_worker.py -q
+```
+
+Expected: fails because `error_message` and `should_flush_batch` are not implemented yet.
+
+- [ ] **Step 7: Harden the worker**
+
+Modify `scripts/boltodds_ws_worker.py`:
+
+- `build_run_rows(...)` accepts `error_message: str | None = None` and includes it when present.
+- Add `should_flush_batch(batch_size, max_batch_size, now_monotonic, last_flush_monotonic, max_flush_seconds)`.
+- Track `last_message_at`, `message_count`, and `reconnect_count`.
+- Flush when batch size reaches `BOLTODDS_BATCH_SIZE` or when `BOLTODDS_FLUSH_SECONDS` has elapsed.
+- Insert a `market_feed_heartbeats` row at least once per flush using `build_heartbeat_row(...)`.
+- On exception, upsert `market_provider_runs.status='failed'` with `error_message`.
+- On graceful shutdown, upsert `market_provider_runs.status='completed'`.
+- Limit raw sample capture to `BOLTODDS_RAW_SAMPLE_LIMIT`, default `50`, stored in run metadata only.
+
+Minimum helper implementation:
+
+```python
+def should_flush_batch(
+    *,
+    batch_size: int,
+    max_batch_size: int,
+    now_monotonic: float,
+    last_flush_monotonic: float,
+    max_flush_seconds: float,
+) -> bool:
+    if batch_size <= 0:
+        return False
+    return batch_size >= max_batch_size or (now_monotonic - last_flush_monotonic) >= max_flush_seconds
+```
+
+- [ ] **Step 8: Run focused operational tests**
+
+Run:
+
+```bash
+python -m pytest tests/test_market_infra_live_feed_health.py tests/test_boltodds_ws_worker.py -q
+```
+
+Expected: all tests pass.
+
+- [ ] **Step 9: Commit**
+
+Run:
+
+```bash
+git add market_infra/live_feed_health.py tests/test_market_infra_live_feed_health.py scripts/boltodds_ws_worker.py tests/test_boltodds_ws_worker.py
+git commit -m "feat: harden boltodds websocket worker"
+```
+
+---
+
+### Task 8B: Add Migration Risk Audit
+
+**Files:**
+- Create: `analytics/diagnostics/boltodds_migration_risk_audit.py`
+- Create: `tests/test_boltodds_migration_risk_audit.py`
+
+- [ ] **Step 1: Write failing migration-risk summary tests**
+
+Create `tests/test_boltodds_migration_risk_audit.py`:
+
+```python
+from analytics.diagnostics.boltodds_migration_risk_audit import summarize_migration_risk
+
+
+def test_summarize_migration_risk_flags_stale_periods_and_volume():
+    summary = summarize_migration_risk(
+        provider_audits=[
+            {
+                "slate_date": "2026-05-07",
+                "complete_pitcher_line_groups": 40,
+                "same_line_overlap_count": 30,
+                "line_conflict_count": 4,
+                "missing_target_books": ["kalshi"],
+            }
+        ],
+        heartbeat_rows=[
+            {
+                "provider": "boltodds",
+                "metadata": {
+                    "feed_health": {"status": "stale", "seconds_since_last_message": 420},
+                    "reconnect_count": 3,
+                },
+            }
+        ],
+        snapshot_rows=[
+            {"bookmaker_key": "fanduel", "normalized_player_name": "gerrit cole"},
+            {"bookmaker_key": "draftkings", "normalized_player_name": "gerrit cole"},
+            {"bookmaker_key": "fanduel", "normalized_player_name": "logan webb"},
+        ],
+        shadow_notification_events=[
+            {"movement_class": "price_against_pick"},
+            {"movement_class": "duplicate_suppressed"},
+        ],
+        max_daily_snapshot_rows=2,
+    )
+
+    assert summary["audit_slates"] == 1
+    assert summary["total_line_conflicts"] == 4
+    assert summary["missing_target_books"] == ["kalshi"]
+    assert summary["stale_heartbeat_count"] == 1
+    assert summary["max_reconnect_count"] == 3
+    assert summary["snapshot_rows"] == 3
+    assert summary["row_volume_status"] == "too_high"
+    assert summary["shadow_notification_candidates"] == 2
+    assert "stale_feed" in summary["migration_blockers"]
+    assert "row_volume" in summary["migration_blockers"]
+```
+
+- [ ] **Step 2: Run test to verify it fails**
+
+Run:
+
+```bash
+python -m pytest tests/test_boltodds_migration_risk_audit.py -q
+```
+
+Expected: fails because `analytics.diagnostics.boltodds_migration_risk_audit` does not exist.
+
+- [ ] **Step 3: Implement migration-risk summary**
+
+Create `analytics/diagnostics/boltodds_migration_risk_audit.py`:
+
+```python
+from __future__ import annotations
+
+from typing import Any
+
+
+def summarize_migration_risk(
+    *,
+    provider_audits: list[dict[str, Any]],
+    heartbeat_rows: list[dict[str, Any]],
+    snapshot_rows: list[dict[str, Any]],
+    shadow_notification_events: list[dict[str, Any]],
+    max_daily_snapshot_rows: int,
+) -> dict[str, Any]:
+    missing_books = sorted({
+        book
+        for row in provider_audits
+        for book in (row.get("missing_target_books") or [])
+    })
+    stale_heartbeats = [
+        row for row in heartbeat_rows
+        if ((row.get("metadata") or {}).get("feed_health") or {}).get("status") == "stale"
+    ]
+    reconnect_counts = [
+        int((row.get("metadata") or {}).get("reconnect_count") or 0)
+        for row in heartbeat_rows
+    ]
+    blockers: list[str] = []
+    if stale_heartbeats:
+        blockers.append("stale_feed")
+    if len(snapshot_rows) > max_daily_snapshot_rows:
+        blockers.append("row_volume")
+    if any(int(row.get("line_conflict_count") or 0) > 0 for row in provider_audits):
+        blockers.append("line_conflicts")
+
+    return {
+        "audit_slates": len({row.get("slate_date") for row in provider_audits if row.get("slate_date")}),
+        "total_complete_pitcher_line_groups": sum(int(row.get("complete_pitcher_line_groups") or 0) for row in provider_audits),
+        "total_same_line_overlap": sum(int(row.get("same_line_overlap_count") or 0) for row in provider_audits),
+        "total_line_conflicts": sum(int(row.get("line_conflict_count") or 0) for row in provider_audits),
+        "missing_target_books": missing_books,
+        "stale_heartbeat_count": len(stale_heartbeats),
+        "max_reconnect_count": max(reconnect_counts or [0]),
+        "snapshot_rows": len(snapshot_rows),
+        "row_volume_status": "too_high" if len(snapshot_rows) > max_daily_snapshot_rows else "ok",
+        "distinct_books": sorted({row.get("bookmaker_key") for row in snapshot_rows if row.get("bookmaker_key")}),
+        "distinct_players": len({row.get("normalized_player_name") for row in snapshot_rows if row.get("normalized_player_name")}),
+        "shadow_notification_candidates": len(shadow_notification_events),
+        "migration_blockers": blockers,
+    }
+```
+
+- [ ] **Step 4: Run migration-risk tests**
+
+Run:
+
+```bash
+python -m pytest tests/test_boltodds_migration_risk_audit.py -q
+```
+
+Expected:
+
+```text
+1 passed
+```
+
+- [ ] **Step 5: Commit**
+
+Run:
+
+```bash
+git add analytics/diagnostics/boltodds_migration_risk_audit.py tests/test_boltodds_migration_risk_audit.py
+git commit -m "feat: add boltodds migration risk audit"
+```
+
+---
+
 ### Task 9: Add Render and Operator Handoff
 
 **Files:**
@@ -1535,6 +2038,24 @@ Expected success shape:
 
 If `starter_ready` is false, do not start Render. Capture the output and ask BoltOdds support whether Starter includes MLB pitcher strikeouts for the missing books/market.
 
+## Trial Calendar and Billing Guardrail
+
+Record the trial timestamps before starting Render. In PowerShell:
+
+```powershell
+$trialStartedUtc = (Get-Date).ToUniversalTime()
+$trialStartedPhoenix = [System.TimeZoneInfo]::ConvertTimeBySystemTimeZoneId($trialStartedUtc, 'US Mountain Standard Time')
+$cancelBeforeUtc = $trialStartedUtc.AddDays(6)
+$cancelBeforePhoenix = [System.TimeZoneInfo]::ConvertTimeBySystemTimeZoneId($cancelBeforeUtc, 'US Mountain Standard Time')
+
+"TRIAL_STARTED_AT_PHOENIX=$($trialStartedPhoenix.ToString('o'))"
+"TRIAL_STARTED_AT_UTC=$($trialStartedUtc.ToString('o'))"
+"CANCEL_BEFORE_PHOENIX=$($cancelBeforePhoenix.ToString('o'))"
+"CANCEL_BEFORE_UTC=$($cancelBeforeUtc.ToString('o'))"
+```
+
+Use a 6-day cancellation deadline rather than waiting for day 7. The trial is only worth continuing into a paid month if the Day 4-6 evidence already shows Starter-level coverage and stability.
+
 ## Render Environment Variables
 
 Set:
@@ -1546,7 +2067,12 @@ SUPABASE_SERVICE_ROLE_KEY=set in Render from the existing Supabase service role 
 BOLTODDS_TARGET_BOOKS=fanduel,draftkings,betrivers,kalshi
 BOLTODDS_MARKET_ALIASES=Pitcher Strikeouts,Pitcher Strikeouts O/U,Strikeouts
 BOLTODDS_BATCH_SIZE=100
+BOLTODDS_FLUSH_SECONDS=10
+BOLTODDS_STALE_AFTER_SECONDS=300
+BOLTODDS_RAW_SAMPLE_LIMIT=50
 ```
+
+Set `autoDeploy=false`. The worker should only be restarted intentionally during the trial.
 
 ## Trial Monitoring
 
@@ -1569,6 +2095,33 @@ order by created_at desc
 limit 20;
 ```
 
+Check freshness:
+
+```sql
+select provider, mode, slate_date, observed_at, last_message_at, books_seen, metadata
+from market_feed_heartbeats
+where provider = 'boltodds'
+order by observed_at desc
+limit 20;
+```
+
+The `market_feed_heartbeats` table is created by `supabase/migrations/20260507_boltodds_shadow_trial.sql`.
+
+
+Check row volume:
+
+```sql
+select date_trunc('hour', observed_at::timestamptz) as hour_bucket,
+       count(*) as snapshot_rows,
+       count(distinct bookmaker_key) as books,
+       count(distinct normalized_player_name) as players
+from market_snapshots
+where provider = 'boltodds'
+  and observed_at >= now() - interval '24 hours'
+group by 1
+order by 1 desc;
+```
+
 ## Seven-Day Success Criteria
 
 Starter is worth keeping only if:
@@ -1579,6 +2132,10 @@ Starter is worth keeping only if:
 - Pitcher K line conflicts are low and explainable.
 - Movement arrives earlier than PropLine polling often enough to improve alerts.
 - Render cost plus BoltOdds Starter cost is justified by better actionable timing.
+- Heartbeat stays live during active slate windows with no unexplained stale periods over 5 minutes.
+- Supabase row volume remains manageable with batching and dedupe.
+- Raw payload fixtures confirm the normalizer matches real BoltOdds data, not just docs examples.
+- Shadow notification candidates are meaningful and not mostly duplicate/noisy one-book moves.
 
 ## Stop Rule
 
@@ -1589,6 +2146,52 @@ Cancel before billing if:
 - Target books are missing or stale.
 - The feed requires Pro to do the single-market MLB pitcher K use case.
 - Normalized rows cannot be reconciled to production pitcher names/lines.
+- The worker has repeated reconnect loops or stale periods during active slate windows.
+- Snapshot volume is high enough that retention/rollups need work before a paid month.
+- Shadow notification candidates are too noisy to trust.
+
+## Stop Worker Procedure
+
+1. Stop the Render worker.
+2. Confirm no new rows arrive:
+
+```sql
+select max(observed_at) as latest_boltodds_snapshot
+from market_snapshots
+where provider = 'boltodds';
+```
+
+3. Leave Supabase rows in place for review.
+4. Do not delete raw evidence until the trial audit is complete.
+
+## Post-Production Infrastructure Roadmap
+
+If the trial passes, production should evolve in this order:
+
+1. **Live health surface:** expose provider health, last message time, stale state, and books seen.
+2. **Shadow movement events:** derive `line_movement_events` from BoltOdds snapshots against current production picks without sending pushes.
+3. **Notification queue:** add a Supabase-backed queue with dedupe keys for pick, side, book, line, price, and movement class.
+4. **Live notification worker:** let Render or Netlify send push notifications from queued events after stale-feed and duplicate checks.
+5. **Provider arbitration:** define source priority and fallback rules for TheRundown, PropLine, BoltOdds, and The Odds API.
+6. **Dashboard live overlay:** show live line movement and source freshness separately from static `today.json`.
+7. **Retention and rollups:** keep recent raw snapshots, summarize daily movement, and archive only useful comparison metrics long-term.
+
+Do not combine all seven into one release. Each step should produce a visible capability and a rollback point.
+
+## Migration Risk Checklist
+
+Before any fallback or production provider migration, answer these with evidence:
+
+- Which target books does BoltOdds cover during active slate windows?
+- How often does BoltOdds disagree with TheRundown on pitcher line value?
+- Are disagreements stale-source issues, book-specific line differences, or parser/name-mapping issues?
+- Does BoltOdds improve BetRivers coverage enough to matter?
+- Does BoltOdds include Kalshi in a usable way, or does TheRundown remain necessary for Kalshi?
+- How many notification candidates would have fired, and how many would Tyler actually care about?
+- How often does the worker reconnect, and how long are stale periods?
+- What is the daily Supabase row volume before and after dedupe/rollup?
+- Can the app stop BoltOdds without breaking picks, dashboard, grading, or notifications?
+- Is the paid month ROI justified by better timing, better coverage, or both?
 ```
 
 - [ ] **Step 3: Commit**
@@ -1612,13 +2215,13 @@ git commit -m "docs: add boltodds trial runbook and render worker"
 Run:
 
 ```bash
-python -m pytest tests/test_boltodds_schema.py tests/test_market_infra_boltodds_snapshot.py tests/test_market_infra_boltodds_client.py tests/test_probe_boltodds_markets.py tests/test_boltodds_ws_worker.py tests/test_boltodds_trial_audit.py -q
+python -m pytest tests/test_boltodds_schema.py tests/test_market_infra_boltodds_snapshot.py tests/test_market_infra_boltodds_client.py tests/test_probe_boltodds_markets.py tests/test_boltodds_ws_worker.py tests/test_market_infra_live_feed_health.py tests/test_boltodds_trial_audit.py tests/test_boltodds_migration_risk_audit.py -q
 ```
 
 Expected:
 
 ```text
-14 passed
+21 passed
 ```
 
 - [ ] **Step 2: Run existing market/live layer tests**
@@ -1809,17 +2412,71 @@ Keep Starter only if:
 
 Allow BoltOdds snapshots to create shadow `line_movement_events`, but do not send pushes.
 
+Requirements:
+
+- Match BoltOdds rows to current production picks by normalized pitcher, side, line, book, and slate date.
+- Create deterministic dedupe keys so reconnects and repeated messages do not duplicate events.
+- Classify movement as price-only, line-value, book-opened, book-removed, or stale-source correction.
+- Compare candidate events against PropLine polling and production artifact movement.
+
 ### Gate B: Live Notifications
 
 Send push notifications only for movement against current FIRE picks after dedupe is proven.
+
+Requirements:
+
+- Notify only when provider health is live.
+- Notify only when the pick is still pre-lock and pre-game.
+- Suppress duplicate movement for the same pick/book/side unless line or price crosses a new configured threshold.
+- Keep a kill switch that disables BoltOdds pushes without stopping the production pipeline.
 
 ### Gate C: Fallback Provider
 
 Use BoltOdds as fallback only when TheRundown misses a target book or PropLine is stale.
 
+Requirements:
+
+- Preserve `odds_source` attribution so BoltOdds rows can be audited separately.
+- Prefer TheRundown for book-of-record lines unless a fallback condition is explicitly met.
+- Run a post-slate conflict audit before trusting fallback rows in calibration or performance analysis.
+- Never treat BoltOdds fallback coverage as proof that TheRundown is wrong without source freshness evidence.
+
 ### Gate D: Production Provider
 
 Consider only after at least one full week of reliable Starter evidence and explicit Tyler approval.
+
+Requirements:
+
+- At least one paid-month review, not just the free trial.
+- Stable coverage for FanDuel and DraftKings, with BetRivers incrementally useful.
+- Known Kalshi answer: either supported well enough by BoltOdds or intentionally left on TheRundown.
+- Documented cost, uptime, row volume, alert value, and rollback process.
+- A clear migration plan for notification source, dashboard live overlay, provider arbitration, and retention.
+
+## Post-Production Capabilities Still Missing
+
+Even after the Starter trial implementation, the app will still not have these production capabilities:
+
+- **Unified provider arbitration:** one place that decides TheRundown vs PropLine vs BoltOdds vs The Odds API by book, market, freshness, and fallback condition.
+- **Live notification queue:** durable queue rows with dedupe, retry, notification status, and user-facing suppression rules.
+- **Provider health dashboard:** visible last-message time, stale state, reconnect count, books seen, and snapshot volume.
+- **Live dashboard overlay:** a frontend layer that shows live line movement separately from static `today.json`.
+- **Retention policy:** raw WebSocket rows should roll into daily summaries instead of growing forever.
+- **Migration audit:** a repeatable report showing coverage, conflicts, latency advantage, alert candidates, and row volume by slate.
+- **Operational controls:** environment-level switches for provider mode, notification mode, watched books, stale thresholds, and emergency stop.
+- **Rollback procedure:** a documented way to stop BoltOdds and return to TheRundown + PropLine polling without code changes.
+
+## Recommended Post-Production Implementation Order
+
+1. Add provider health visibility.
+2. Add shadow movement events.
+3. Add notification queue with no pushes.
+4. Enable pushes for a narrow movement class, such as FIRE pick line moving against us.
+5. Add dashboard live overlay for movement and source health.
+6. Add fallback provider adapter for missing target books only.
+7. Revisit broader provider migration after one paid month.
+
+Do not skip directly from trial snapshots to production provider migration. The risk is not only bad data; it is bad timing, duplicate notifications, stale-source confidence, and user trust erosion.
 
 ## Self-Review
 
@@ -1829,8 +2486,10 @@ Spec coverage:
 - Starter-only decision boundary is explicit in guardrails and trial interpretation.
 - Render worker architecture is covered by Tasks 7 and 9.
 - Supabase shadow storage is covered by Tasks 3, 7, and 8.
-- Notifications are intentionally deferred to promotion gates.
+- Notifications are intentionally deferred to promotion gates, with shadow notification and live notification requirements now explicit.
 - GitHub Actions remains production book-of-record during trial.
+- Infrastructure recommendation, WebSocket capability delta, post-production roadmap, and migration failure modes are covered before implementation tasks.
+- Operational hardening is covered by Task 8A before trial activation.
 
 Placeholder scan:
 
