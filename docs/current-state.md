@@ -14,7 +14,9 @@ For any new work in this repo:
    - `docs/superpowers/plans/2026-05-06-live-layer-event-system.md`
    - `docs/superpowers/plans/2026-05-05-propline-fallback-and-model-signal-plan.md`
    - `docs/superpowers/plans/2026-04-28-one-week-evaluation-cadence.md`
-4. Use older dated plans in `docs/superpowers/plans/` as archive context, not
+4. Read `docs/provider-cost-ledger.md` before recommending new providers,
+   upgrades, polling increases, or always-on infrastructure.
+5. Use older dated plans in `docs/superpowers/plans/` as archive context, not
    as replacements for this file.
 
 ## Current Operating Mode
@@ -145,6 +147,15 @@ Current readout from 2026-05-07:
 - Quality gates are live and useful, but not a complete ranking solution.
 
 ## Next Decision Checkpoints
+
+### Cost / Provider Spend
+
+Use `docs/provider-cost-ledger.md`.
+
+Provider and infrastructure choices should be judged by decision value, not by
+technical appeal. Before adding spend, increasing polling, upgrading a plan, or
+keeping overlapping feeds, check the cost ledger and state what decision the
+cost improves.
 
 ### Bet Conversion / Gate C
 

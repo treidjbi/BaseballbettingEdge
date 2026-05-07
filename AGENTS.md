@@ -60,6 +60,8 @@ and live-market evidence.
   plus `analytics/diagnostics/bet_conversion_shadow_audit.py`.
 - Read `docs/current-state.md` for the freshest operating state, then the
   newest dated plan that matches the task.
+- Read `docs/provider-cost-ledger.md` before recommending new providers,
+  provider upgrades, higher polling cadence, or always-on infrastructure.
 - Preserve the dated plans in `docs/superpowers/plans/` as historical context
   so future work does not repeat earlier mistakes.
 
