@@ -6742,17 +6742,19 @@
       }
     }
   },
-  "updated_at": "2026-05-07T22:36:46Z",
+  "updated_at": "2026-05-07T23:08:48Z",
   "last_run": {
     "projection_status": "collection_only",
-    "requested_batters": 162,
-    "already_cached": 162,
-    "attempted": 0,
+    "requested_batters": 171,
+    "already_cached": 170,
+    "attempted": 1,
     "collected": 0,
-    "failed": 0,
+    "failed": 1,
     "queued_not_attempted": 0,
     "cache_size": 399,
-    "errors": [],
-    "updated_at": "2026-05-07T22:36:46Z"
+    "errors": [
+      "Rodolfo Dur\u00e1n: no bbref id"
+    ],
+    "updated_at": "2026-05-07T23:08:48Z"
   }
 }
