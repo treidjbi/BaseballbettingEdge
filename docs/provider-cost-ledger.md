@@ -16,6 +16,10 @@ Use this ledger before recommending:
 - a migration away from TheRundown
 - keeping multiple overlapping live feeds
 
+Use `docs/operational-risk-register.md` beside this ledger for trial dates,
+kill/keep criteria, failure modes, source-conflict rules, retention, and
+notification quality guardrails.
+
 Prices can drift. Treat the numbers below as decision notes, not accounting
 truth. Re-check account dashboards or public pricing pages before approving a
 new recurring spend.
@@ -223,7 +227,8 @@ tooling tier that preserves momentum and context quality.
 
 ## Monthly Review Checklist
 
-Run this once a month, or before adding/upgrading a provider:
+Run this once a month, or before adding/upgrading a provider. Pair it with the
+monthly cost / complexity review in `docs/operational-risk-register.md`.
 
 - What did each paid source improve this month?
 - Did any provider change a pick, line lock, notification, or confidence read?

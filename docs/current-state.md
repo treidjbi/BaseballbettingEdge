@@ -16,7 +16,9 @@ For any new work in this repo:
    - `docs/superpowers/plans/2026-04-28-one-week-evaluation-cadence.md`
 4. Read `docs/provider-cost-ledger.md` before recommending new providers,
    upgrades, polling increases, or always-on infrastructure.
-5. Use older dated plans in `docs/superpowers/plans/` as archive context, not
+5. Read `docs/operational-risk-register.md` before changing provider behavior,
+   notification behavior, retention, live workers, or source-of-truth rules.
+6. Use older dated plans in `docs/superpowers/plans/` as archive context, not
    as replacements for this file.
 
 ## Current Operating Mode
@@ -156,6 +158,15 @@ Provider and infrastructure choices should be judged by decision value, not by
 technical appeal. Before adding spend, increasing polling, upgrading a plan, or
 keeping overlapping feeds, check the cost ledger and state what decision the
 cost improves.
+
+### Operational Risk / Source Truth
+
+Use `docs/operational-risk-register.md`.
+
+The risk register tracks trial dates, kill/keep criteria, failure modes,
+retention rules, notification guardrails, and source-of-truth hierarchy. Update
+it when a trial starts or ends, a provider changes role, or a live-layer failure
+mode is discovered.
 
 ### Bet Conversion / Gate C
 

@@ -62,6 +62,8 @@ and live-market evidence.
   newest dated plan that matches the task.
 - Read `docs/provider-cost-ledger.md` before recommending new providers,
   provider upgrades, higher polling cadence, or always-on infrastructure.
+- Read `docs/operational-risk-register.md` before changing provider behavior,
+  notification behavior, retention, live workers, or source-of-truth rules.
 - Preserve the dated plans in `docs/superpowers/plans/` as historical context
   so future work does not repeat earlier mistakes.
 
