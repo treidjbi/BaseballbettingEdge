@@ -112,6 +112,44 @@ Live notifications are useful only if they improve action. Track:
 
 If trust drops, reduce notification classes before adding more data sources.
 
+## Outcome Interpretation Guardrails
+
+Do not confuse betting results with system health. A healthy system can lose a
+slate, and a broken system can get lucky.
+
+Daily or weekly reviews should separate four reads:
+
+1. **System health**: Did the pipeline, live layer, sender, providers, and
+   artifacts run correctly?
+2. **Model health**: Were projections directionally reasonable against actual
+   strikeouts?
+3. **Bet-selection health**: Did the ranking/verdict layer choose the right
+   edges from the projections?
+4. **Betting outcome**: Did the slate win or lose money?
+
+Do not make model, provider, or staking changes from the betting outcome alone.
+First determine whether the day was a system failure, projection issue,
+selection issue, ordinary variance, or a mix.
+
+## Personal-Use Boundary
+
+This project is currently personal-use decision support. Treat it as Tyler's
+private betting dashboard and operations system.
+
+Before sharing picks publicly, selling access, adding paid users, posting
+automated recommendations, or distributing notifications beyond Tyler's own use,
+pause and review:
+
+- provider terms of service
+- sportsbook / betting advisory rules
+- state and federal compliance risk
+- data redistribution rights
+- disclaimers and user-facing risk language
+- whether the app's reliability is good enough for anyone else to depend on it
+
+Do not optimize for public distribution, multi-user scale, or monetization until
+Tyler explicitly changes this boundary.
+
 ## Failure Modes
 
 | Failure | How to detect it | User impact | First check | Recovery action | Escalation threshold |
