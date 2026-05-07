@@ -8,6 +8,7 @@ import sys
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
+from urllib.request import urlopen
 
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
@@ -24,6 +25,10 @@ from market_infra.supabase_writer import SupabaseMarketWriter  # noqa: E402
 from scripts.shadow_propline_to_supabase import poll_propline_to_supabase  # noqa: E402
 
 DEFAULT_ARTIFACT = ROOT / "dashboard" / "data" / "processed" / "today.json"
+DEFAULT_ARTIFACT_URL = (
+    "https://raw.githubusercontent.com/treidjbi/BaseballBettingEdge/"
+    "main/dashboard/data/processed/today.json"
+)
 
 
 def _env(name: str) -> str:
@@ -56,10 +61,26 @@ def _previous_state(rows: list[dict[str, Any]]) -> dict[tuple[str, str, str], di
     return previous
 
 
-def _load_artifact(path: Path) -> tuple[dict[str, Any], str]:
-    artifact_bytes = path.read_bytes()
+def _load_artifact_bytes(artifact_bytes: bytes) -> tuple[dict[str, Any], str]:
     payload = json.loads(artifact_bytes.decode("utf-8"))
     return payload, hashlib.sha256(artifact_bytes).hexdigest()
+
+
+def _load_artifact(path: Path, artifact_url: str | None = None) -> tuple[dict[str, Any], str, str]:
+    if artifact_url:
+        try:
+            with urlopen(artifact_url, timeout=20) as response:
+                payload, artifact_sha = _load_artifact_bytes(response.read())
+                return payload, artifact_sha, artifact_url
+        except Exception as error:
+            print(
+                f"Warning: remote artifact fetch failed ({error}); falling back to local {path}",
+                file=sys.stderr,
+            )
+
+    artifact_bytes = path.read_bytes()
+    payload, artifact_sha = _load_artifact_bytes(artifact_bytes)
+    return payload, artifact_sha, _source_artifact_path(path)
 
 
 def _now_utc() -> datetime:
@@ -95,8 +116,18 @@ def run(
     supabase_url: str,
     service_role_key: str,
     poll_propline: bool = False,
+    artifact_url: str | None = None,
+    artifact_payload: dict[str, Any] | None = None,
+    artifact_sha: str | None = None,
+    artifact_source: str | None = None,
 ) -> dict[str, Any]:
-    payload, artifact_sha = _load_artifact(Path(artifact_path))
+    if artifact_payload is None:
+        payload, artifact_sha, artifact_source = _load_artifact(Path(artifact_path), artifact_url=artifact_url)
+    else:
+        payload = artifact_payload
+        if not artifact_sha or not artifact_source:
+            raise ValueError("artifact_sha and artifact_source are required with artifact_payload")
+
     writer = SupabaseMarketWriter(supabase_url, service_role_key)
     previous_rows = writer.select_rows("live_pick_state", {"slate_date": f"eq.{slate_date}"})
     observed_at = _now_utc()
@@ -114,7 +145,7 @@ def run(
         pitchers=payload.get("pitchers") or [],
         previous_state=_previous_state(previous_rows),
         observed_at=observed_at,
-        source_artifact_path=_source_artifact_path(Path(artifact_path)),
+        source_artifact_path=artifact_source,
         source_artifact_sha256=artifact_sha,
     )
     missing_notification_rows, missing_state_rows = build_missing_pick_state_events(
@@ -122,7 +153,7 @@ def run(
         previous_rows=previous_rows,
         current_state_rows=state_rows,
         observed_at=observed_at,
-        source_artifact_path=_source_artifact_path(Path(artifact_path)),
+        source_artifact_path=artifact_source,
         source_artifact_sha256=artifact_sha,
     )
     state_rows.extend(missing_state_rows)
@@ -168,16 +199,23 @@ def run(
         "line_movement_events": len(line_movement_rows),
         "game_reminders": len(reminder_rows),
         "propline": propline_result or {"skipped": True},
+        "artifact_source": artifact_source,
     }
 
 
 def main() -> int:
     artifact = DEFAULT_ARTIFACT
+    artifact_url = ""
     payload = None
     slate_date = sys.argv[1] if len(sys.argv) > 1 else ""
     if not slate_date:
-        payload, _ = _load_artifact(artifact)
+        artifact_url = _optional_env("LIVE_ARTIFACT_URL") or DEFAULT_ARTIFACT_URL
+        payload, artifact_sha, artifact_source = _load_artifact(artifact, artifact_url=artifact_url)
         slate_date = str(payload["date"])
+    else:
+        payload = None
+        artifact_sha = None
+        artifact_source = _source_artifact_path(artifact)
 
     result = run(
         slate_date=slate_date,
@@ -185,6 +223,10 @@ def main() -> int:
         supabase_url=_env("SUPABASE_URL"),
         service_role_key=_env("SUPABASE_SERVICE_ROLE_KEY"),
         poll_propline=bool(_optional_env("PROPLINE_API_KEY")),
+        artifact_url=artifact_url,
+        artifact_payload=payload,
+        artifact_sha=artifact_sha,
+        artifact_source=artifact_source,
     )
     propline = result["propline"]
     propline_summary = "propline=skipped"
@@ -197,6 +239,7 @@ def main() -> int:
         "Live event build "
         f"date={slate_date} state_rows={result['live_pick_state']} "
         f"notification_events={result['notification_events']} "
+        f"artifact_source={'remote' if str(result.get('artifact_source', artifact_source)).startswith('http') else 'local'} "
         f"{propline_summary}"
     )
     return 0

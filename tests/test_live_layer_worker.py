@@ -1,4 +1,5 @@
 import json
+import sys
 from pathlib import Path
 from unittest.mock import Mock, patch
 
@@ -373,3 +374,96 @@ def test_render_entrypoint_uses_propline_env_without_therundown_dependency():
     assert "poll_propline_to_supabase" in script
     assert "RUNDOWN_API_KEY" not in script
     assert "fetch_odds(" not in script
+
+
+def test_load_artifact_prefers_remote_url(tmp_path, monkeypatch):
+    local = _write_artifact(tmp_path, [])
+    remote_bytes = json.dumps({
+        "date": "2026-05-07",
+        "pitchers": [_fire_pitcher(game_time="2026-05-07T22:10:00Z")],
+    }).encode("utf-8")
+
+    class RemoteResponse:
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *args):
+            return False
+
+        def read(self):
+            return remote_bytes
+
+    monkeypatch.setattr(
+        build_live_events_to_supabase,
+        "urlopen",
+        lambda url, timeout: RemoteResponse(),
+    )
+
+    payload, artifact_sha, source = build_live_events_to_supabase._load_artifact(
+        local,
+        artifact_url="https://example.test/today.json",
+    )
+
+    assert payload["date"] == "2026-05-07"
+    assert artifact_sha
+    assert source == "https://example.test/today.json"
+
+
+def test_load_artifact_falls_back_to_local_when_remote_url_fails(tmp_path, monkeypatch, capsys):
+    local = _write_artifact(tmp_path, [_fire_pitcher()])
+
+    def fail_remote(url, timeout):
+        raise OSError("network unavailable")
+
+    monkeypatch.setattr(build_live_events_to_supabase, "urlopen", fail_remote)
+
+    payload, artifact_sha, source = build_live_events_to_supabase._load_artifact(
+        local,
+        artifact_url="https://example.test/today.json",
+    )
+
+    assert payload["date"] == "2026-05-06"
+    assert artifact_sha
+    assert Path(source).name == "today.json"
+    assert "remote artifact fetch failed" in capsys.readouterr().err
+
+
+def test_render_entrypoint_uses_remote_today_artifact_when_no_date_argument(tmp_path, monkeypatch, capsys):
+    stale_local = _write_artifact(tmp_path, [])
+    remote_payload = {
+        "date": "2026-05-07",
+        "pitchers": [_fire_pitcher(game_time="2026-05-07T22:10:00Z")],
+    }
+    run_calls = []
+
+    monkeypatch.setattr(build_live_events_to_supabase, "DEFAULT_ARTIFACT", stale_local)
+    monkeypatch.setenv("SUPABASE_URL", "https://example.supabase.co")
+    monkeypatch.setenv("SUPABASE_SERVICE_ROLE_KEY", "secret")
+    monkeypatch.delenv("PROPLINE_API_KEY", raising=False)
+    monkeypatch.setattr(sys, "argv", ["build_live_events_to_supabase.py"])
+
+    def load_artifact(path, artifact_url=None):
+        assert path == stale_local
+        assert artifact_url == build_live_events_to_supabase.DEFAULT_ARTIFACT_URL
+        return remote_payload, "remote-sha", build_live_events_to_supabase.DEFAULT_ARTIFACT_URL
+
+    def run(**kwargs):
+        run_calls.append(kwargs)
+        return {
+            "live_pick_state": 1,
+            "notification_events": 1,
+            "line_movement_events": 0,
+            "game_reminders": 0,
+            "propline": {"skipped": True},
+        }
+
+    monkeypatch.setattr(build_live_events_to_supabase, "_load_artifact", load_artifact)
+    monkeypatch.setattr(build_live_events_to_supabase, "run", run)
+
+    assert build_live_events_to_supabase.main() == 0
+
+    assert run_calls[0]["slate_date"] == "2026-05-07"
+    assert run_calls[0]["artifact_url"] == build_live_events_to_supabase.DEFAULT_ARTIFACT_URL
+    output = capsys.readouterr().out
+    assert "date=2026-05-07" in output
+    assert "artifact_source=remote" in output
