@@ -6706,19 +6706,36 @@
         "so": 7,
         "k_rate": 0.4118
       }
+    },
+    "mlbam:681715": {
+      "name": "Heriberto Hern\u00e1ndez",
+      "bats": "R",
+      "mlbam_id": 681715,
+      "bbref_id": "hernahe01",
+      "season": 2026,
+      "vs_R": {
+        "pa": 44,
+        "so": 8,
+        "k_rate": 0.1818
+      },
+      "vs_L": {
+        "pa": 30,
+        "so": 6,
+        "k_rate": 0.2
+      }
     }
   },
-  "updated_at": "2026-05-07T19:17:52Z",
+  "updated_at": "2026-05-07T19:52:29Z",
   "last_run": {
     "projection_status": "collection_only",
-    "requested_batters": 117,
-    "already_cached": 117,
-    "attempted": 0,
-    "collected": 0,
+    "requested_batters": 135,
+    "already_cached": 134,
+    "attempted": 1,
+    "collected": 1,
     "failed": 0,
     "queued_not_attempted": 0,
-    "cache_size": 397,
+    "cache_size": 398,
     "errors": [],
-    "updated_at": "2026-05-07T19:17:52Z"
+    "updated_at": "2026-05-07T19:52:29Z"
   }
 }
