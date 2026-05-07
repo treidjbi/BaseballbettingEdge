@@ -66,7 +66,7 @@ def _parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--min-price-change-pct",
         type=float,
-        default=5.0,
+        default=2.0,
         help="Minimum price move for line_movement notifications.",
     )
     return parser.parse_args()

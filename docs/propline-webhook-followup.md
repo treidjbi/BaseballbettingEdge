@@ -1,6 +1,6 @@
 # PropLine Webhook Follow-Up
 
-Last updated: 2026-05-05
+Last updated: 2026-05-07
 
 ## Current Goal
 
@@ -119,6 +119,10 @@ key/account?
    python scripts/create_propline_webhook_subscription.py \
      --url https://baseballbettingedge.netlify.app/api/propline-webhook
    ```
+
+   The helper now defaults `min_price_change_pct` to `2.0` so the trial does
+   not accidentally filter out normal pitcher-strikeout price movement while
+   proving delivery reliability.
 
 2. Store the returned one-time secret in Netlify as:
 

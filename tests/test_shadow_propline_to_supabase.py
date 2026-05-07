@@ -4,6 +4,15 @@ from scripts.shadow_propline_to_supabase import (
     _coverage_audit_row,
     _production_artifact_for_slate,
 )
+from scripts.create_propline_webhook_subscription import _parse_args
+
+
+def test_create_propline_webhook_subscription_defaults_to_low_movement_threshold(monkeypatch):
+    monkeypatch.setattr("sys.argv", ["create_propline_webhook_subscription.py"])
+
+    args = _parse_args()
+
+    assert args.min_price_change_pct == 2.0
 
 
 def test_production_artifact_for_slate_prefers_dated_archive(tmp_path):
