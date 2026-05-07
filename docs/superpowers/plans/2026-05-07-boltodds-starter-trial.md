@@ -22,11 +22,35 @@ The trial should prove whether BoltOdds Starter can cover the exact app need:
 
 - Sport: `MLB`
 - Market: pitcher strikeouts
-- Books: FanDuel, DraftKings, BetRivers, and ideally Kalshi
+- Books, in preference order: FanDuel, DraftKings, BetMGM, BetRivers, Kalshi, theScore Bet, Caesars
 - Runtime: one persistent WebSocket connection
 - Output: normalized shadow snapshots in Supabase
 
 Do not buy Pro for this trial. Starter is the decision boundary. If Starter cannot cover MLB pitcher strikeouts cleanly, the recommendation is to pass or revisit after the season rather than jump straight to the $349/month plan.
+
+## Book Preference Policy
+
+The trial should target books in this preference order:
+
+1. FanDuel
+2. DraftKings
+3. BetMGM
+4. BetRivers
+5. Kalshi
+6. theScore Bet
+7. Caesars
+
+Kalshi is useful if BoltOdds supports it, but Kalshi should not block the trial or a broader BoltOdds evaluation. The practical goal is better line-movement tracking across enough mainstream books to improve timing and confidence. Some configured books may not exist in BoltOdds, may use different provider keys, or may not carry MLB pitcher strikeouts consistently. That is acceptable evidence, not an implementation failure.
+
+Starter is worth testing if at least FanDuel and DraftKings work, with either BetMGM or BetRivers adding incremental coverage. BetMGM, BetRivers, theScore Bet, and Caesars are valuable because more mainstream books improve movement sequencing and help distinguish real market steam from one-book noise.
+
+Use these tentative BoltOdds keys until discovery proves the exact values:
+
+```text
+fanduel,draftkings,betmgm,betrivers,kalshi,scorebet,caesars
+```
+
+If discovery returns different keys, update `BOLTODDS_TARGET_BOOKS` and the title map before starting the worker. Do not hard-fail just because Kalshi, theScore Bet, or Caesars are missing.
 
 ## External Research Notes
 
@@ -579,10 +603,13 @@ from pipeline.name_utils import normalize
 
 
 BOLTODDS_DEFAULT_TARGET_BOOKS = {
-    "draftkings": "DraftKings",
     "fanduel": "FanDuel",
+    "draftkings": "DraftKings",
+    "betmgm": "BetMGM",
     "betrivers": "BetRivers",
     "kalshi": "Kalshi",
+    "scorebet": "theScore Bet",
+    "caesars": "Caesars",
 }
 
 BOLTODDS_SUPPORTED_ACTIONS = {"initial_state", "game_update", "line_update"}
@@ -785,10 +812,13 @@ def test_target_books_from_env_defaults_to_trial_books(monkeypatch):
     monkeypatch.delenv("BOLTODDS_TARGET_BOOKS", raising=False)
 
     assert target_books_from_env() == {
-        "draftkings": "DraftKings",
         "fanduel": "FanDuel",
+        "draftkings": "DraftKings",
+        "betmgm": "BetMGM",
         "betrivers": "BetRivers",
         "kalshi": "Kalshi",
+        "scorebet": "theScore Bet",
+        "caesars": "Caesars",
     }
 ```
 
@@ -818,10 +848,13 @@ import requests
 BOLTODDS_REST_BASE = "https://spro.agency/api"
 BOLTODDS_WS_URL = "wss://spro.agency/api"
 BOLTODDS_DEFAULT_BOOKS = {
-    "draftkings": "DraftKings",
     "fanduel": "FanDuel",
+    "draftkings": "DraftKings",
+    "betmgm": "BetMGM",
     "betrivers": "BetRivers",
     "kalshi": "Kalshi",
+    "scorebet": "theScore Bet",
+    "caesars": "Caesars",
 }
 BOLTODDS_DEFAULT_MARKET_ALIASES = ["Pitcher Strikeouts", "Strikeouts", "Pitcher Strikeouts O/U"]
 
@@ -922,23 +955,59 @@ from scripts.probe_boltodds_markets import build_probe_summary
 
 
 def test_build_probe_summary_marks_starter_ready_when_market_and_books_exist():
-    info = {"sports": ["MLB"], "sportsbooks": ["fanduel", "draftkings", "betrivers"]}
+    info = {"sports": ["MLB"], "sportsbooks": ["fanduel", "draftkings", "betmgm", "betrivers"]}
     markets = {
         "fanduel": {"MLB": ["Pitcher Strikeouts"]},
         "draftkings": {"MLB": ["Pitcher Strikeouts"]},
+        "betmgm": {"MLB": ["Pitcher Strikeouts"]},
         "betrivers": {"MLB": ["Pitcher Strikeouts"]},
     }
 
     summary = build_probe_summary(
         info=info,
         markets=markets,
-        target_books={"fanduel": "FanDuel", "draftkings": "DraftKings", "betrivers": "BetRivers"},
+        target_books={
+            "fanduel": "FanDuel",
+            "draftkings": "DraftKings",
+            "betmgm": "BetMGM",
+            "betrivers": "BetRivers",
+            "kalshi": "Kalshi",
+            "scorebet": "theScore Bet",
+            "caesars": "Caesars",
+        },
         aliases=["Pitcher Strikeouts"],
     )
 
     assert summary["starter_ready"] is True
     assert summary["selected_markets"] == ["Pitcher Strikeouts"]
-    assert summary["missing_books"] == []
+    assert summary["missing_books"] == ["kalshi", "scorebet", "caesars"]
+
+
+def test_build_probe_summary_blocks_when_draftkings_missing_even_with_optional_books():
+    info = {"sports": ["MLB"], "sportsbooks": ["fanduel", "betmgm", "caesars"]}
+    markets = {
+        "fanduel": {"MLB": ["Pitcher Strikeouts"]},
+        "betmgm": {"MLB": ["Pitcher Strikeouts"]},
+        "caesars": {"MLB": ["Pitcher Strikeouts"]},
+    }
+
+    summary = build_probe_summary(
+        info=info,
+        markets=markets,
+        target_books={
+            "fanduel": "FanDuel",
+            "draftkings": "DraftKings",
+            "betmgm": "BetMGM",
+            "betrivers": "BetRivers",
+            "kalshi": "Kalshi",
+            "scorebet": "theScore Bet",
+            "caesars": "Caesars",
+        },
+        aliases=["Pitcher Strikeouts"],
+    )
+
+    assert summary["starter_ready"] is False
+    assert "FanDuel and DraftKings are required priority books" in summary["blocking_reasons"]
 
 
 def test_build_probe_summary_blocks_when_pitcher_market_missing():
@@ -991,6 +1060,10 @@ from market_infra.boltodds_client import (  # noqa: E402
 )
 
 
+REQUIRED_PRIORITY_BOOKS = {"fanduel", "draftkings"}
+REQUIRED_SECONDARY_GROUPS = ({"betmgm", "betrivers"},)
+
+
 def _env(name: str) -> str:
     value = os.environ.get(name, "").strip()
     if not value:
@@ -1008,6 +1081,8 @@ def build_probe_summary(
     sports = set(info.get("sports") or [])
     books = {str(book).lower() for book in info.get("sportsbooks") or []}
     missing_books = [book for book in target_books if book not in books]
+    available_books = [book for book in target_books if book not in missing_books]
+    available_book_set = set(available_books)
     selected_markets = select_pitcher_strikeout_markets(markets, aliases)
 
     blocking_reasons = []
@@ -1015,14 +1090,17 @@ def build_probe_summary(
         blocking_reasons.append("MLB is not listed in BoltOdds get_info sports")
     if not selected_markets:
         blocking_reasons.append("No MLB pitcher strikeout market matched configured aliases")
-    if len(target_books) - len(missing_books) < 2:
-        blocking_reasons.append("Fewer than two target books are available")
+    if not REQUIRED_PRIORITY_BOOKS.issubset(available_book_set):
+        blocking_reasons.append("FanDuel and DraftKings are required priority books")
+    for group in REQUIRED_SECONDARY_GROUPS:
+        if not available_book_set.intersection(group):
+            blocking_reasons.append("At least one of BetMGM or BetRivers must be available")
 
     return {
         "starter_ready": not blocking_reasons,
         "selected_markets": selected_markets,
         "missing_books": missing_books,
-        "available_target_books": [book for book in target_books if book not in missing_books],
+        "available_target_books": available_books,
         "blocking_reasons": blocking_reasons,
     }
 
@@ -1060,7 +1138,7 @@ python -m pytest tests/test_probe_boltodds_markets.py -q
 Expected:
 
 ```text
-2 passed
+3 passed
 ```
 
 - [ ] **Step 5: Run compile check**
@@ -1977,7 +2055,7 @@ services:
       - key: SUPABASE_SERVICE_ROLE_KEY
         sync: false
       - key: BOLTODDS_TARGET_BOOKS
-        value: "fanduel,draftkings,betrivers,kalshi"
+        value: "fanduel,draftkings,betmgm,betrivers,kalshi,scorebet,caesars"
       - key: BOLTODDS_MARKET_ALIASES
         value: "Pitcher Strikeouts,Pitcher Strikeouts O/U,Strikeouts"
       - key: BOLTODDS_BATCH_SIZE
@@ -2065,7 +2143,7 @@ Set:
 BOLTODDS_API_KEY=set in Render from the trial dashboard key
 SUPABASE_URL=https://htoaytcsjrdyyzcwxjfg.supabase.co
 SUPABASE_SERVICE_ROLE_KEY=set in Render from the existing Supabase service role secret
-BOLTODDS_TARGET_BOOKS=fanduel,draftkings,betrivers,kalshi
+BOLTODDS_TARGET_BOOKS=fanduel,draftkings,betmgm,betrivers,kalshi,scorebet,caesars
 BOLTODDS_MARKET_ALIASES=Pitcher Strikeouts,Pitcher Strikeouts O/U,Strikeouts
 BOLTODDS_BATCH_SIZE=100
 BOLTODDS_FLUSH_SECONDS=10
@@ -2129,7 +2207,8 @@ Starter is worth keeping only if:
 
 - One connection stays stable through normal slate windows.
 - FanDuel and DraftKings coverage is consistently useful.
-- BetRivers appears often enough to beat PropLine or fill TheRundown gaps.
+- At least one of BetMGM or BetRivers adds meaningful incremental coverage.
+- Additional mainstream books, especially theScore Bet or Caesars, improve movement sequencing enough to matter.
 - Pitcher K line conflicts are low and explainable.
 - Movement arrives earlier than PropLine polling often enough to improve alerts.
 - Render cost plus BoltOdds Starter cost is justified by better actionable timing.
@@ -2144,7 +2223,8 @@ Cancel before billing if:
 
 - Starter cannot subscribe to MLB pitcher strikeouts.
 - One connection cannot carry the slate.
-- Target books are missing or stale.
+- FanDuel or DraftKings are missing or stale during active slate windows.
+- Both BetMGM and BetRivers are missing or stale during active slate windows.
 - The feed requires Pro to do the single-market MLB pitcher K use case.
 - Normalized rows cannot be reconciled to production pitcher names/lines.
 - The worker has repeated reconnect loops or stale periods during active slate windows.
@@ -2258,10 +2338,10 @@ Use this staged sequence if the trial and paid-month review justify moving furth
 1. **Normalize and reconcile:** build `current_market_lines` from BoltOdds snapshots and prove it maps cleanly to MLB probables and production pitcher names.
 2. **Audit-only pipeline read:** add a pipeline mode that reads BoltOdds normalized lines and compares them to TheRundown without changing `today.json`.
 3. **Fallback mode:** let the pipeline use BoltOdds only when TheRundown is missing a target book or stale by policy.
-4. **Selected-book primary mode:** make BoltOdds primary for one or two books that show reliable coverage, likely FanDuel and BetRivers first.
+4. **Selected-book primary mode:** make BoltOdds primary for books that show reliable coverage, starting with FanDuel and DraftKings, then BetMGM or BetRivers if they prove useful.
 5. **All-supported-book primary mode:** make BoltOdds primary for every target book it proves it covers well.
 6. **TheRundown audit-only mode:** keep TheRundown as daily audit and emergency rollback.
-7. **TheRundown retirement review:** cancel or downgrade TheRundown only if BoltOdds covers every must-have book, including the Kalshi decision, for a sustained period.
+7. **TheRundown retirement review:** cancel or downgrade TheRundown only if BoltOdds covers every must-have mainstream book and the Kalshi decision is explicitly resolved for a sustained period.
 
 Do not skip from Step 1 to Step 5. That jump creates the highest risk of silent data-quality regressions.
 
@@ -2297,8 +2377,9 @@ Retire or downgrade TheRundown only when all of these are true:
 
 - BoltOdds covers MLB pitcher strikeouts on Starter or approved paid plan without needing Pro.
 - FanDuel and DraftKings are consistently present and fresh.
-- BetRivers provides enough incremental value to matter.
-- Kalshi is either supported, intentionally dropped, or covered by a separate source.
+- At least one of BetMGM or BetRivers provides enough incremental value to matter.
+- theScore Bet or Caesars improve movement tracking enough to justify keeping them in the watch list, if supported.
+- Kalshi is either supported, intentionally dropped, or covered by a separate source. Missing Kalshi alone is not a reason to fail the trial.
 - Line conflicts are rare and explainable.
 - A rollback path has been exercised.
 - One paid month shows stable worker uptime and manageable Supabase volume.
@@ -2315,7 +2396,7 @@ These problems are likely in a real migration:
 - **Calibration contamination:** historical performance can become hard to interpret if source changes are not clearly stamped.
 - **Book-specific freshness:** one book can be live while another is stale, so provider freshness must be per book, not only per provider.
 - **Name and event reconciliation:** WebSocket provider names and MLB probable names may disagree in small but damaging ways.
-- **Kalshi gap:** if BoltOdds does not cover Kalshi well, broad migration may still require TheRundown or another source.
+- **Kalshi gap:** if BoltOdds does not cover Kalshi well, broad migration may still require TheRundown or another source for Kalshi only. Missing Kalshi should not block BoltOdds for mainstream-book movement tracking.
 - **Duplicate movement:** reconnects and initial-state messages can create repeated events unless dedupe is strict.
 - **Storage growth:** raw WebSocket rows can grow faster than the rest of the app's data combined.
 - **Notification trust:** one noisy week of duplicate or stale alerts can make the feature feel worse than no alerts.
@@ -2330,8 +2411,9 @@ Before any fallback or production provider migration, answer these with evidence
 - Which target books does BoltOdds cover during active slate windows?
 - How often does BoltOdds disagree with TheRundown on pitcher line value?
 - Are disagreements stale-source issues, book-specific line differences, or parser/name-mapping issues?
-- Does BoltOdds improve BetRivers coverage enough to matter?
-- Does BoltOdds include Kalshi in a usable way, or does TheRundown remain necessary for Kalshi?
+- Does BoltOdds improve BetMGM or BetRivers coverage enough to matter?
+- Do theScore Bet or Caesars appear often enough to improve movement sequencing?
+- Does BoltOdds include Kalshi in a usable way, or can Kalshi remain on TheRundown or be intentionally excluded?
 - How many notification candidates would have fired, and how many would Tyler actually care about?
 - How often does the worker reconnect, and how long are stale periods?
 - What is the daily Supabase row volume before and after dedupe/rollup?
@@ -2366,7 +2448,7 @@ python -m pytest tests/test_boltodds_schema.py tests/test_market_infra_boltodds_
 Expected:
 
 ```text
-21 passed
+22 passed
 ```
 
 - [ ] **Step 2: Run existing market/live layer tests**
@@ -2440,9 +2522,11 @@ Acceptable with caveat:
 {
   "starter_ready": true,
   "selected_markets": ["Pitcher Strikeouts"],
-  "missing_books": ["kalshi"]
+  "missing_books": ["kalshi", "scorebet", "caesars"]
 }
 ```
+
+This is acceptable if FanDuel and DraftKings are available and at least one of BetMGM or BetRivers is available. Kalshi, theScore Bet, and Caesars are useful movement-tracking upside, not blockers.
 
 Blocking:
 
@@ -2548,7 +2632,9 @@ Keep Starter only if:
 - one connection is stable
 - MLB pitcher strikeout market is available without Pro
 - FanDuel/DraftKings are consistently useful
-- BetRivers provides enough incremental value
+- BetMGM or BetRivers provides enough incremental value
+- theScore Bet or Caesars improves movement tracking if supported
+- Kalshi is treated as optional upside, not a blocker
 - movement latency beats 10-minute polling enough to matter
 
 ## Promotion Gates After Trial
@@ -2593,8 +2679,9 @@ Consider only after at least one full week of reliable Starter evidence and expl
 Requirements:
 
 - At least one paid-month review, not just the free trial.
-- Stable coverage for FanDuel and DraftKings, with BetRivers incrementally useful.
-- Known Kalshi answer: either supported well enough by BoltOdds or intentionally left on TheRundown.
+- Stable coverage for FanDuel and DraftKings, with BetMGM or BetRivers incrementally useful.
+- theScore Bet or Caesars improve movement tracking enough to justify keeping them enabled, if supported.
+- Known Kalshi answer: supported well enough by BoltOdds, intentionally left on TheRundown, or intentionally excluded. Missing Kalshi alone is acceptable.
 - Documented cost, uptime, row volume, alert value, and rollback process.
 - A clear migration plan for notification source, dashboard live overlay, provider arbitration, and retention.
 
