@@ -6655,21 +6655,36 @@
         "so": 8,
         "k_rate": 0.25
       }
+    },
+    "mlbam:642708": {
+      "name": "Amed Rosario",
+      "bats": "R",
+      "mlbam_id": 642708,
+      "bbref_id": "rosaram01",
+      "season": 2026,
+      "vs_R": {
+        "pa": 35,
+        "so": 8,
+        "k_rate": 0.2286
+      },
+      "vs_L": {
+        "pa": 32,
+        "so": 5,
+        "k_rate": 0.1562
+      }
     }
   },
-  "updated_at": "2026-05-07T04:44:38Z",
+  "updated_at": "2026-05-07T15:38:09Z",
   "last_run": {
     "projection_status": "collection_only",
-    "requested_batters": 261,
-    "already_cached": 260,
+    "requested_batters": 63,
+    "already_cached": 62,
     "attempted": 1,
-    "collected": 0,
-    "failed": 1,
+    "collected": 1,
+    "failed": 0,
     "queued_not_attempted": 0,
-    "cache_size": 394,
-    "errors": [
-      "Didier Fuentes: IndexError: single positional indexer is out-of-bounds"
-    ],
-    "updated_at": "2026-05-07T04:44:38Z"
+    "cache_size": 395,
+    "errors": [],
+    "updated_at": "2026-05-07T15:38:09Z"
   }
 }
