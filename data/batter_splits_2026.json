@@ -6638,21 +6638,38 @@
         "so": 3,
         "k_rate": 0.2
       }
+    },
+    "mlbam:687597": {
+      "name": "Jordan Beck",
+      "bats": "R",
+      "mlbam_id": 687597,
+      "bbref_id": "beckjo01",
+      "season": 2026,
+      "vs_R": {
+        "pa": 42,
+        "so": 10,
+        "k_rate": 0.2381
+      },
+      "vs_L": {
+        "pa": 32,
+        "so": 8,
+        "k_rate": 0.25
+      }
     }
   },
-  "updated_at": "2026-05-07T04:00:43Z",
+  "updated_at": "2026-05-07T04:25:26Z",
   "last_run": {
     "projection_status": "collection_only",
     "requested_batters": 261,
-    "already_cached": 260,
-    "attempted": 1,
-    "collected": 0,
+    "already_cached": 259,
+    "attempted": 2,
+    "collected": 1,
     "failed": 1,
     "queued_not_attempted": 0,
-    "cache_size": 393,
+    "cache_size": 394,
     "errors": [
       "Didier Fuentes: IndexError: single positional indexer is out-of-bounds"
     ],
-    "updated_at": "2026-05-07T04:00:43Z"
+    "updated_at": "2026-05-07T04:25:26Z"
   }
 }
