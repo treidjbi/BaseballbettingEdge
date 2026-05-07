@@ -4,11 +4,15 @@ import assert from 'node:assert/strict';
 import {
   buildPushPayload,
   buildSenderLog,
-  config,
-  default as sendLiveNotifications,
   envValue,
   fetchPendingNotificationEvents,
   isLiveNotificationsEnabled,
+} from '../netlify/functions/_shared/live-notification-sender.mjs';
+import sendLiveNotificationsNow, {
+  config as httpConfig,
+} from '../netlify/functions/send-live-notifications-now.mjs';
+import sendLiveNotificationsScheduled, {
+  config as scheduledConfig,
 } from '../netlify/functions/send-live-notifications.mjs';
 
 test('isLiveNotificationsEnabled is false unless explicitly enabled', () => {
@@ -132,7 +136,7 @@ test('handler returns dry-run events when live notifications are disabled', asyn
   });
 
   try {
-    const response = await sendLiveNotifications(new Request('https://example.test/api/send-live-notifications', {
+    const response = await sendLiveNotificationsNow(new Request('https://example.test/api/send-live-notifications-now', {
       method: 'POST',
       headers: { 'x-notify-secret': 'notify-secret' },
       body: JSON.stringify({ limit: 3 }),
@@ -177,7 +181,7 @@ test('scheduled handler can dry-run without notify secret header', async () => {
   });
 
   try {
-    const response = await sendLiveNotifications(new Request('https://example.test/.netlify/functions/send-live-notifications', {
+    const response = await sendLiveNotificationsScheduled(new Request('https://example.test/.netlify/functions/send-live-notifications', {
       method: 'POST',
       body: JSON.stringify({ next_run: '2026-05-06T20:10:00Z' }),
     }));
@@ -186,7 +190,7 @@ test('scheduled handler can dry-run without notify secret header', async () => {
     assert.equal(response.status, 200);
     assert.equal(payload.mode, 'dry_run');
     assert.equal(payload.pending, 1);
-    assert.equal(config.schedule, '*/10 * * * *');
+    assert.equal(scheduledConfig.schedule, '*/10 * * * *');
   } finally {
     globalThis.fetch = originalFetch;
     for (const [key, value] of Object.entries(originalEnv)) {
@@ -221,7 +225,7 @@ test('scheduled function dry-runs without notify secret when Run now sends an em
   });
 
   try {
-    const response = await sendLiveNotifications(new Request('https://example.test/.netlify/functions/send-live-notifications', {
+    const response = await sendLiveNotificationsScheduled(new Request('https://example.test/.netlify/functions/send-live-notifications', {
       method: 'POST',
       body: '',
     }));
@@ -264,7 +268,7 @@ test('scheduled function dry-runs when Run now uses GET', async () => {
   });
 
   try {
-    const response = await sendLiveNotifications(new Request('https://example.test/.netlify/functions/send-live-notifications', {
+    const response = await sendLiveNotificationsScheduled(new Request('https://example.test/.netlify/functions/send-live-notifications', {
       method: 'GET',
     }));
     const payload = await response.json();
@@ -278,5 +282,27 @@ test('scheduled function dry-runs when Run now uses GET', async () => {
       if (value === undefined) delete process.env[key];
       else process.env[key] = value;
     }
+  }
+});
+
+test('http sender rejects missing notify secret', async () => {
+  const originalEnv = {
+    NOTIFY_SECRET: process.env.NOTIFY_SECRET,
+  };
+  process.env.NOTIFY_SECRET = 'notify-secret';
+
+  try {
+    const response = await sendLiveNotificationsNow(new Request('https://example.test/api/send-live-notifications-now', {
+      method: 'POST',
+      body: JSON.stringify({ limit: 1 }),
+    }));
+    const payload = await response.json();
+
+    assert.equal(response.status, 401);
+    assert.equal(payload.error, 'Unauthorized');
+    assert.equal(httpConfig.path, '/api/send-live-notifications-now');
+  } finally {
+    if (originalEnv.NOTIFY_SECRET === undefined) delete process.env.NOTIFY_SECRET;
+    else process.env.NOTIFY_SECRET = originalEnv.NOTIFY_SECRET;
   }
 });
