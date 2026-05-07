@@ -8,6 +8,13 @@
 
 **Tech Stack:** Python 3.11, pytest, requests, websockets, Render background worker, Supabase Postgres REST, existing `market_infra` helpers, BoltOdds WebSocket and discovery endpoints.
 
+**Status Note 2026-05-07:** The trial branch `codex/boltodds-starter-trial`
+has been pushed, live Supabase migrations were applied, and Render worker
+`bbe-boltodds-shadow-worker` is running shadow-only. Starter discovery saw
+FanDuel, BetMGM, BetRivers, Kalshi, and Caesars; DraftKings appeared but
+returned zero authenticated market rows; theScore was missing. TheRundown
+remains production.
+
 ---
 
 ## Why This Plan Exists

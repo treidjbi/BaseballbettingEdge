@@ -8,6 +8,12 @@
 
 **Tech Stack:** Python 3.11, pytest, committed JSON history, existing `analytics/diagnostics` patterns.
 
+**Status Note 2026-05-07:** The diagnostic exists on `main` as
+`analytics/diagnostics/bet_conversion_shadow_audit.py` with tests and current
+output in `analytics/output/bet_conversion_shadow_audit.md`. It is the active
+shadow read for the `bet-selection-first` track and does not change live
+pipeline behavior.
+
 ---
 
 ## File Plan

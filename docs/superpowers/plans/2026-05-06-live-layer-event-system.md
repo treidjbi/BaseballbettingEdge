@@ -8,6 +8,12 @@
 
 **Tech Stack:** Python 3.11, pytest, Supabase Postgres + REST, existing `market_infra` helpers, Netlify Functions, Netlify Blobs for existing subscriptions only, optional Render Cron for the live worker after the GitHub shadow proof.
 
+**Status Note 2026-05-07:** The live layer is active on Render as
+`bbe-live-layer`, using fresh GitHub raw `today.json`, PropLine polling when
+configured, Supabase live tables, and Netlify `send-live-notifications`. It is
+still separate from dashboard artifacts, grading, picks history, calibration,
+and production provider order.
+
 ---
 
 ## Product Intent

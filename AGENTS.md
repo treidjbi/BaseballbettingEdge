@@ -49,14 +49,17 @@ GitHub rather than copying files manually.
 
 ## Current State
 
-As of 2026-04-28, the repo is in a soak and evaluation period after the recent
-grading and post-Phase-C changes.
+As of 2026-05-07, the repo is still in the clean post-Phase-C evaluation regime,
+but the main question has shifted from broad projection repair to bet-conversion
+and live-market evidence.
 
 - Treat `2026-04-28+` as the clean evaluation regime.
-- Use the evaluation diagnostics in `analytics/diagnostics/e1` through `e4`
-  and the matching `tests/test_e1` through `test_e4` files.
-- Use `docs/superpowers/plans/2026-04-28-one-week-evaluation-cadence.md` as
-  the active short-term decision cadence.
+- The current model-facing track is `bet-selection-first`, using shadow
+  diagnostics before any live threshold, staking, formula, or provider change.
+- Use the evaluation diagnostics in `analytics/diagnostics/e1` through `e5`,
+  plus `analytics/diagnostics/bet_conversion_shadow_audit.py`.
+- Read `docs/current-state.md` for the freshest operating state, then the
+  newest dated plan that matches the task.
 - Preserve the dated plans in `docs/superpowers/plans/` as historical context
   so future work does not repeat earlier mistakes.
 
@@ -91,8 +94,21 @@ dashboard/          Static frontend (single index.html, deployed to Netlify)
 
 netlify/functions/  Serverless functions
   send-notifications.mjs   Push notification dispatch + game-time reminders
+  send-live-notifications.mjs  Scheduled live notification sender
+  send-live-notifications-now.mjs  Authenticated manual live sender
+  propline-webhook.mjs  Shadow PropLine webhook receiver
   save-subscription.mjs    Save push subscription endpoints
   trigger-pipeline.js      Manual pipeline trigger
+
+market_infra/       Supabase shadow/live-market helpers
+  live_events.py       Live pick state, line-movement events, reminders
+  prop_snapshot.py     PropLine snapshot normalization helpers
+  provider_audit.py    Provider overlap/coverage diagnostics
+  supabase_writer.py   Supabase REST writer
+
+scripts/            Operational scripts
+  shadow_propline_to_supabase.py  PropLine shadow polling writer
+  build_live_events_to_supabase.py  Render live-layer event builder
 
 data/               Shared data files
   params.json           Calibrated model parameters (lambda_bias, weights, etc.)
@@ -153,6 +169,9 @@ python -m pytest tests/test_build_features.py -v
   secret added 2026-05-01)
 - `PROPLINE_API_KEY` — PropLine API key (weekend fallback/shadow provider;
   GitHub secret added 2026-05-01)
+- `BOLTODDS_API_KEY` — BoltOdds Starter trial key; used only by the
+  shadow-only BoltOdds trial branch/Render worker, not by the production
+  pipeline on `main`
 - `VAPID_PUBLIC_KEY` / `VAPID_PRIVATE_KEY` / `VAPID_SUBJECT` — Web Push keys
 - `NOTIFY_SECRET` — Push notification auth secret (Netlify function)
 - `NETLIFY_SITE_URL` — Netlify site URL for notification endpoint
@@ -186,10 +205,31 @@ For the live layer, default to:
 
 - Read TheRundown-derived picks from `today.json` as the book-of-record model
   state.
-- Use PropLine Streaming Lite / shadow polling / webhooks for line-movement
-  events and near-real-time notifications.
+- Use PropLine polling or a proven shadow WebSocket sidecar for line-movement
+  evidence and near-real-time notifications.
 - Do not increase TheRundown polling cadence beyond the existing pipeline
   schedule unless Tyler explicitly approves the spend/risk tradeoff.
+
+## Live Notification Layer
+
+The live notification layer is separate from the official pipeline.
+
+- **Render cron**: `bbe-live-layer`, every 10 minutes.
+- **Source artifact**: fetches fresh GitHub raw `today.json`; do not rely on
+  the stale baked Render checkout.
+- **Market source**: polls PropLine only when `PROPLINE_API_KEY` is present.
+- **Supabase tables**: `market_snapshots`, `live_pick_state`,
+  `notification_events`, `line_movement_events`, and `game_reminder_state`.
+- **Netlify sender**: scheduled `send-live-notifications` every 10 minutes.
+- **Manual sender**: `/api/send-live-notifications-now` with `NOTIFY_SECRET`.
+
+This layer may create notification events, but it must not update dashboard
+artifacts, grading, picks history, calibration, model outputs, or production
+provider order.
+
+Current note: `NOTIFY_SECRET` rotation after screenshot exposure was completed
+on 2026-05-07. Future checks should focus on sender health, queue counts, and
+delivery outcomes.
 
 ## The Odds API (Fallback Odds Provider)
 
@@ -275,6 +315,11 @@ TheRundown production artifacts and any PropLine webhook/support updates.
   provider promotion, Streaming/WebSocket spend, polling architecture change,
   or production odds-source behavior change. Keep TheRundown as production
   unless Tyler explicitly approves a different path.
+- **Current evidence as of 2026-05-07**: polling is useful for fallback,
+  partial-provider, and live-movement evidence. Real provider webhooks are not
+  proven; the only confirmed webhook delivery was a signed synthetic test row.
+  Do not treat PropLine webhooks as live until real provider deliveries appear
+  in `propline_webhook_deliveries`.
 
 The response shape mirrors The Odds enough to share parser logic:
 `bookmakers[] -> markets[] -> outcomes[]`, where pitcher props use
@@ -293,6 +338,41 @@ May trial review checklist:
 - Did `odds_source` / `propline_event_id` make provider attribution auditable?
 - Would PropLine have changed any model decisions, line locks, or movement
   confidence outcomes versus TheRundown alone?
+
+## BoltOdds API (May 2026 Shadow WebSocket Trial)
+
+BoltOdds is being tested as a separate live-market sidecar, not as a production
+odds source.
+
+- **Branch**: `codex/boltodds-starter-trial`
+- **Render worker**: `bbe-boltodds-shadow-worker`
+- **Plan under test**: Starter trial, one persistent WebSocket connection.
+- **Secret**: `BOLTODDS_API_KEY`
+- **Host / docs endpoint family**: `https://spro.agency/api` and
+  `wss://spro.agency/api`
+- **Purpose**: capture MLB pitcher strikeout market movement into Supabase
+  shadow tables for uptime, coverage, freshness, and migration-risk evidence.
+- **Production impact**: none. Do not wire BoltOdds into `pipeline/run_pipeline.py`,
+  `today.json`, grading, picks history, calibration, or push notifications
+  without Tyler's explicit post-trial approval.
+
+Starter discovery/probe status as of 2026-05-07:
+
+- Useful target books seen: FanDuel, BetMGM, BetRivers, Kalshi, Caesars.
+- DraftKings is listed by BoltOdds but returned zero authenticated market rows
+  during checks.
+- theScore Bet was missing.
+- This is enough to run the trial because FanDuel, BetMGM, BetRivers, Kalshi,
+  and Caesars can test live movement coverage.
+
+Review BoltOdds on evidence, not promise:
+
+- heartbeat freshness and worker uptime
+- websocket message counts and reconnect behavior
+- normalized snapshot rows by target book
+- stale-feed and row-volume risk
+- whether movement would have changed timing, confidence, or notifications
+- whether Starter is enough before considering Pro spend
 
 ## Tech Stack
 
