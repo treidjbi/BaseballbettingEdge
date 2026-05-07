@@ -6672,19 +6672,53 @@
         "so": 5,
         "k_rate": 0.1562
       }
+    },
+    "mlbam:628451": {
+      "name": "Andy Ib\u00e1\u00f1ez",
+      "bats": "R",
+      "mlbam_id": 628451,
+      "bbref_id": "ibanean01",
+      "season": 2026,
+      "vs_R": {
+        "pa": 2,
+        "so": 0,
+        "k_rate": 0.0
+      },
+      "vs_L": {
+        "pa": 19,
+        "so": 3,
+        "k_rate": 0.1579
+      }
+    },
+    "mlbam:660644": {
+      "name": "Vidal Bruj\u00e1n",
+      "bats": "R",
+      "mlbam_id": 660644,
+      "bbref_id": "brujavi01",
+      "season": 2026,
+      "vs_R": {
+        "pa": 78,
+        "so": 14,
+        "k_rate": 0.1795
+      },
+      "vs_L": {
+        "pa": 17,
+        "so": 7,
+        "k_rate": 0.4118
+      }
     }
   },
-  "updated_at": "2026-05-07T15:38:09Z",
+  "updated_at": "2026-05-07T17:02:41Z",
   "last_run": {
     "projection_status": "collection_only",
-    "requested_batters": 63,
-    "already_cached": 62,
-    "attempted": 1,
-    "collected": 1,
+    "requested_batters": 90,
+    "already_cached": 88,
+    "attempted": 2,
+    "collected": 2,
     "failed": 0,
     "queued_not_attempted": 0,
-    "cache_size": 395,
+    "cache_size": 397,
     "errors": [],
-    "updated_at": "2026-05-07T15:38:09Z"
+    "updated_at": "2026-05-07T17:02:41Z"
   }
 }
