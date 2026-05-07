@@ -3,6 +3,7 @@ import { timingSafeEqual } from 'node:crypto';
 const JSON_HEADERS = { 'Content-Type': 'application/json' };
 const DEFAULT_BATCH_LIMIT = 10;
 const MAX_BATCH_LIMIT = 25;
+const DEFAULT_SUPABASE_URL = 'https://htoaytcsjrdyyzcwxjfg.supabase.co';
 
 export function json(status, body) {
   return new Response(JSON.stringify(body), { status, headers: JSON_HEADERS });
@@ -187,7 +188,7 @@ export async function sendLiveNotifications(req, { requiresSharedSecret }) {
     return json(401, { error: 'Unauthorized' });
   }
 
-  const supabaseUrl = envValue('SUPABASE_URL');
+  const supabaseUrl = envValue('SUPABASE_URL') || DEFAULT_SUPABASE_URL;
   const serviceRoleKey = envValue('SUPABASE_SERVICE_ROLE_KEY');
   if (!supabaseUrl || !serviceRoleKey) {
     return json(500, { error: 'Supabase not configured' });

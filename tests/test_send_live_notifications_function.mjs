@@ -156,6 +156,55 @@ test('handler returns dry-run events when live notifications are disabled', asyn
   }
 });
 
+test('handler falls back to known Supabase project URL when env URL is missing', async () => {
+  const calls = [];
+  const originalFetch = globalThis.fetch;
+  const originalEnv = {
+    NOTIFY_SECRET: process.env.NOTIFY_SECRET,
+    SUPABASE_URL: process.env.SUPABASE_URL,
+    SUPABASE_SERVICE_ROLE_KEY: process.env.SUPABASE_SERVICE_ROLE_KEY,
+    LIVE_NOTIFICATIONS_ENABLED: process.env.LIVE_NOTIFICATIONS_ENABLED,
+  };
+  process.env.NOTIFY_SECRET = 'notify-secret';
+  delete process.env.SUPABASE_URL;
+  process.env.SUPABASE_SERVICE_ROLE_KEY = 'service-key';
+  process.env.LIVE_NOTIFICATIONS_ENABLED = 'false';
+
+  globalThis.fetch = async (url) => {
+    calls.push(url);
+    return new Response(JSON.stringify([{
+      id: 'event-1',
+      event_type: 'new_fire_pick',
+      title: 'New FIRE Pick',
+      body: 'Tarik Skubal FIRE 1u OVER 6.5 Ks',
+      dedupe_key: 'event-1-key',
+    }]), {
+      status: 200,
+      headers: { 'Content-Type': 'application/json' },
+    });
+  };
+
+  try {
+    const response = await sendLiveNotificationsNow(new Request('https://example.test/api/send-live-notifications-now', {
+      method: 'POST',
+      headers: { 'x-notify-secret': 'notify-secret' },
+      body: JSON.stringify({ limit: 3 }),
+    }));
+    const payload = await response.json();
+
+    assert.equal(response.status, 200);
+    assert.equal(payload.mode, 'dry_run');
+    assert.equal(payload.pending, 1);
+    assert.match(calls[0], /^https:\/\/htoaytcsjrdyyzcwxjfg\.supabase\.co\/rest\/v1\/notification_events/);
+  } finally {
+    globalThis.fetch = originalFetch;
+    for (const [key, value] of Object.entries(originalEnv)) {
+      if (value === undefined) delete process.env[key];
+      else process.env[key] = value;
+    }
+  }
+});
+
 test('scheduled handler can dry-run without notify secret header', async () => {
   const originalFetch = globalThis.fetch;
   const originalEnv = {
