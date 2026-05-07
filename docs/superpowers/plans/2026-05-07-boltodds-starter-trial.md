@@ -57,7 +57,8 @@ Recommended production path if the trial works:
 - Phase 2: BoltOdds writes shadow `line_movement_events` against current production picks, but sends no pushes.
 - Phase 3: BoltOdds powers live movement notifications with strict dedupe and stale-feed checks.
 - Phase 4: BoltOdds becomes a fallback odds provider only when TheRundown misses a target book or the live feed has a confirmed fresher line.
-- Phase 5: Broader production migration only after at least one full paid month proves uptime, coverage, cost, and decision impact.
+- Phase 5: BoltOdds becomes primary for selected books only after at least one full paid month proves uptime, coverage, cost, and decision impact.
+- Phase 6: Full provider migration is considered only after selected-book primary mode proves clean rollback, Kalshi strategy, dashboard semantics, and grading/calibration safety.
 
 This avoids a large rewrite while still testing the thing BoltOdds might uniquely solve: timely line movement.
 
@@ -2178,6 +2179,150 @@ If the trial passes, production should evolve in this order:
 
 Do not combine all seven into one release. Each step should produce a visible capability and a rollback point.
 
+## Full Migration If BoltOdds Wins
+
+Full migration means BoltOdds is no longer just a shadow feed or notification source. It becomes the primary source for current MLB pitcher strikeout market state used by the model and dashboard. This should be treated as a separate migration project after the trial and at least one paid-month review.
+
+### What Would Move
+
+Move these responsibilities toward BoltOdds/Supabase:
+
+- Current target-book pitcher strikeout market state.
+- Intraday line movement and price movement history.
+- Live notification triggers.
+- Provider freshness and stale-source status.
+- Book-level coverage and conflict analytics.
+- Optional fallback rows when TheRundown misses target books.
+
+Keep these responsibilities on the existing GitHub/static pipeline at first:
+
+- Pick generation orchestration.
+- Model feature building.
+- Grading.
+- Calibration.
+- `data/picks_history.json`.
+- `dashboard/data/processed/today.json` publishing.
+- Netlify static dashboard deploy flow.
+
+Full migration does not require moving the whole app off GitHub Actions immediately. The first full-provider cutover should change where odds are read from, not where every other pipeline responsibility runs.
+
+### Target Architecture
+
+The target architecture should have one normalized market state contract:
+
+```text
+BoltOdds WebSocket
+  -> Render live worker
+  -> Supabase raw snapshots and heartbeat rows
+  -> Supabase current_market_lines view/table
+  -> Provider arbitration layer
+  -> Pipeline odds reader
+  -> today.json and dashboard
+```
+
+TheRundown should stay available during migration:
+
+```text
+TheRundown scheduled fetch
+  -> audit/fallback rows
+  -> provider conflict report
+  -> rollback source if BoltOdds is stale, missing, or conflicting
+```
+
+The important contract is `current_market_lines`, not the provider API response. The pipeline should depend on normalized fields:
+
+- `slate_date`
+- `provider`
+- `provider_event_id`
+- `game_id` or resolved MLB game key
+- `pitcher`
+- `normalized_pitcher`
+- `team`
+- `opp_team`
+- `bookmaker_key`
+- `bookmaker_title`
+- `market_key`
+- `side`
+- `line`
+- `american_odds`
+- `observed_at`
+- `book_updated_at`
+- `source_freshness_seconds`
+- `source_status`
+- `provider_confidence`
+
+### Full Migration Sequence
+
+Use this staged sequence if the trial and paid-month review justify moving further:
+
+1. **Normalize and reconcile:** build `current_market_lines` from BoltOdds snapshots and prove it maps cleanly to MLB probables and production pitcher names.
+2. **Audit-only pipeline read:** add a pipeline mode that reads BoltOdds normalized lines and compares them to TheRundown without changing `today.json`.
+3. **Fallback mode:** let the pipeline use BoltOdds only when TheRundown is missing a target book or stale by policy.
+4. **Selected-book primary mode:** make BoltOdds primary for one or two books that show reliable coverage, likely FanDuel and BetRivers first.
+5. **All-supported-book primary mode:** make BoltOdds primary for every target book it proves it covers well.
+6. **TheRundown audit-only mode:** keep TheRundown as daily audit and emergency rollback.
+7. **TheRundown retirement review:** cancel or downgrade TheRundown only if BoltOdds covers every must-have book, including the Kalshi decision, for a sustained period.
+
+Do not skip from Step 1 to Step 5. That jump creates the highest risk of silent data-quality regressions.
+
+### What Would Need To Be Built
+
+Build these pieces before selected-book primary mode:
+
+- `current_market_lines` table or materialized view in Supabase.
+- Provider arbitration module in `market_infra/` that decides source by book, market, freshness, and fallback condition.
+- Pipeline odds-reader adapter that can read normalized market rows instead of direct provider payloads.
+- Conflict audit that compares BoltOdds-selected rows against TheRundown rows before and after cutover.
+- Dashboard field semantics for `model_line`, `live_line`, `locked_line`, `live_book`, and `source_status`.
+- Notification queue with dedupe and stale-feed suppression.
+- Retention job for raw WebSocket rows and daily rollups.
+- Operator controls for provider mode: `shadow`, `fallback`, `selected_primary`, `primary`, and `disabled`.
+- Rollback procedure that restores TheRundown as primary without a code revert.
+
+### GitHub Actions Role After Full Migration
+
+Even after BoltOdds becomes primary odds source, GitHub Actions can still run:
+
+- Preview/full/refresh orchestration.
+- Grading.
+- Calibration.
+- Artifact publishing.
+- Daily audit jobs.
+
+The thing to remove from GitHub Actions is high-frequency odds telemetry, not the whole pipeline. If later the pipeline itself needs lower latency than GitHub provides, move orchestration to a worker or scheduler as a separate project.
+
+### Retiring TheRundown
+
+Retire or downgrade TheRundown only when all of these are true:
+
+- BoltOdds covers MLB pitcher strikeouts on Starter or approved paid plan without needing Pro.
+- FanDuel and DraftKings are consistently present and fresh.
+- BetRivers provides enough incremental value to matter.
+- Kalshi is either supported, intentionally dropped, or covered by a separate source.
+- Line conflicts are rare and explainable.
+- A rollback path has been exercised.
+- One paid month shows stable worker uptime and manageable Supabase volume.
+- Tyler explicitly approves the production provider change.
+
+If any of those are false, keep TheRundown as book-of-record or audit/fallback source.
+
+### Full Migration Problems To Expect
+
+These problems are likely in a real migration:
+
+- **Model/source mismatch:** model picks could be generated from one line while the dashboard displays a fresher live line.
+- **Lock semantics:** live lines may continue changing after the model line should be locked for betting history.
+- **Calibration contamination:** historical performance can become hard to interpret if source changes are not clearly stamped.
+- **Book-specific freshness:** one book can be live while another is stale, so provider freshness must be per book, not only per provider.
+- **Name and event reconciliation:** WebSocket provider names and MLB probable names may disagree in small but damaging ways.
+- **Kalshi gap:** if BoltOdds does not cover Kalshi well, broad migration may still require TheRundown or another source.
+- **Duplicate movement:** reconnects and initial-state messages can create repeated events unless dedupe is strict.
+- **Storage growth:** raw WebSocket rows can grow faster than the rest of the app's data combined.
+- **Notification trust:** one noisy week of duplicate or stale alerts can make the feature feel worse than no alerts.
+- **Rollback complexity:** if provider choice is scattered across pipeline, dashboard, and notifications, rollback becomes fragile.
+
+The mitigation is to centralize provider choice in one arbitration layer and keep source attribution visible in every output row.
+
 ## Migration Risk Checklist
 
 Before any fallback or production provider migration, answer these with evidence:
@@ -2490,6 +2635,7 @@ Spec coverage:
 - GitHub Actions remains production book-of-record during trial.
 - Infrastructure recommendation, WebSocket capability delta, post-production roadmap, and migration failure modes are covered before implementation tasks.
 - Operational hardening is covered by Task 8A before trial activation.
+- Full migration is documented separately from the trial: target architecture, source-of-truth contract, staged migration sequence, GitHub Actions role, TheRundown retirement criteria, and expected migration problems are explicit.
 
 Placeholder scan:
 
