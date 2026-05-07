@@ -6723,19 +6723,36 @@
         "so": 6,
         "k_rate": 0.2
       }
+    },
+    "mlbam:686668": {
+      "name": "Brenton Doyle",
+      "bats": "R",
+      "mlbam_id": 686668,
+      "bbref_id": "doylebr02",
+      "season": 2026,
+      "vs_R": {
+        "pa": 69,
+        "so": 26,
+        "k_rate": 0.3768
+      },
+      "vs_L": {
+        "pa": 31,
+        "so": 9,
+        "k_rate": 0.2903
+      }
     }
   },
-  "updated_at": "2026-05-07T21:32:54Z",
+  "updated_at": "2026-05-07T22:14:10Z",
   "last_run": {
     "projection_status": "collection_only",
-    "requested_batters": 153,
-    "already_cached": 153,
-    "attempted": 0,
-    "collected": 0,
+    "requested_batters": 162,
+    "already_cached": 161,
+    "attempted": 1,
+    "collected": 1,
     "failed": 0,
     "queued_not_attempted": 0,
-    "cache_size": 398,
+    "cache_size": 399,
     "errors": [],
-    "updated_at": "2026-05-07T21:32:54Z"
+    "updated_at": "2026-05-07T22:14:10Z"
   }
 }
