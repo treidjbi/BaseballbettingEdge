@@ -6774,22 +6774,40 @@
         "so": 5,
         "k_rate": 0.2381
       }
+    },
+    "mlbam:670097": {
+      "name": "Zack Short",
+      "bats": "R",
+      "mlbam_id": 670097,
+      "bbref_id": "shortza01",
+      "season": 2026,
+      "vs_R": {
+        "pa": 1,
+        "so": 0,
+        "k_rate": 0.0
+      },
+      "vs_L": {
+        "pa": 2,
+        "so": 1,
+        "k_rate": 0.5
+      }
     }
   },
-  "updated_at": "2026-05-08T21:35:36Z",
+  "updated_at": "2026-05-08T22:10:30Z",
   "last_run": {
     "projection_status": "collection_only",
-    "requested_batters": 207,
-    "already_cached": 205,
-    "attempted": 2,
-    "collected": 0,
-    "failed": 2,
-    "queued_not_attempted": 0,
-    "cache_size": 401,
+    "requested_batters": 252,
+    "already_cached": 247,
+    "attempted": 4,
+    "collected": 1,
+    "failed": 3,
+    "queued_not_attempted": 1,
+    "cache_size": 402,
     "errors": [
       "Joe Mack: no bbref id",
-      "Spencer Jones: no bbref id"
+      "Spencer Jones: no bbref id",
+      "Jim Jarvis: no bbref id"
     ],
-    "updated_at": "2026-05-08T21:35:36Z"
+    "updated_at": "2026-05-08T22:10:30Z"
   }
 }
