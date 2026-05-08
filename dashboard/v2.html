@@ -986,6 +986,214 @@ body { display: flex; flex-direction: column; }
 }
 
 /* ── Steam tab ────────────────────────────────── */
+/* History tab */
+.v2-history-hero {
+  margin: 14px 18px 0; padding: 16px 18px;
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  display: flex; align-items: center; gap: 14px;
+}
+.v2-history-hero .n {
+  font-family: 'Oswald', sans-serif; font-weight: 700;
+  font-size: 38px; line-height: 1; color: var(--accent);
+}
+.v2-history-hero .lbl {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10.5px; letter-spacing: .08em; text-transform: uppercase;
+  color: var(--ink-dim);
+}
+.v2-history-hero .ttl {
+  font-family: 'Oswald', sans-serif; font-weight: 600; font-size: 15px;
+  margin-top: 2px;
+}
+.v2-history-note {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  color: var(--warn);
+  margin-top: 4px;
+}
+.v2-history-tools { padding: 10px 18px 2px; }
+.v2-history-search,
+.v2-history-select-row select {
+  width: 100%;
+  appearance: none;
+  -webkit-appearance: none;
+  background: var(--surface);
+  background-color: var(--surface);
+  color: var(--ink);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+  min-height: 38px;
+  outline: none;
+}
+.v2-history-search { padding: 0 12px; }
+.v2-history-select-row select {
+  color-scheme: light dark;
+  background-image:
+    linear-gradient(45deg, transparent 50%, var(--ink-2) 50%),
+    linear-gradient(135deg, var(--ink-2) 50%, transparent 50%);
+  background-position:
+    calc(100% - 18px) 50%,
+    calc(100% - 12px) 50%;
+  background-size: 6px 6px, 6px 6px;
+  background-repeat: no-repeat;
+}
+.v2-history-search:focus,
+.v2-history-select-row select:focus {
+  border-color: var(--ink);
+  box-shadow: 0 0 0 2px color-mix(in oklab, var(--ink) 10%, transparent);
+}
+.v2-history-select-row {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 8px;
+}
+.v2-history-select-row select { padding: 0 8px; }
+.v2-history-filter {
+  padding-top: 8px;
+  padding-bottom: 0;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.v2-history-filter::-webkit-scrollbar { display: none; }
+.v2-history-filter.secondary { padding-top: 6px; padding-bottom: 8px; }
+.v2-history-filter .f {
+  font-family: 'Oswald', sans-serif;
+  text-transform: uppercase;
+  letter-spacing: .04em;
+  font-size: 12px;
+}
+.v2-history-list { padding: 0 18px 110px; }
+.v2-history-row {
+  margin: 0 0 10px; padding: 12px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  display: grid;
+  grid-template-columns: 48px 34px minmax(0, 1fr) auto;
+  gap: 10px;
+  align-items: center;
+  position: relative;
+  overflow: hidden;
+}
+.v2-history-row::before {
+  content: '';
+  position: absolute;
+  left: 0; top: 0; bottom: 0;
+  width: 4px;
+  background: var(--border);
+}
+.v2-history-row.fire::before { background: var(--neg); }
+.v2-history-row.fire-over::before { background: var(--accent-2); }
+.v2-history-row.lean::before { background: var(--warn); }
+.v2-history-date {
+  border: 1px solid var(--border);
+  background: var(--chip);
+  color: var(--ink-2);
+  border-radius: 6px;
+  min-height: 40px;
+  padding: 5px 4px;
+  font-family: 'JetBrains Mono', monospace;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 1px;
+}
+.v2-history-date span:first-child { font-weight: 800; font-size: 10.5px; }
+.v2-history-date span:last-child {
+  font-size: 8.5px;
+  color: var(--ink-dim);
+  text-transform: uppercase;
+  letter-spacing: .08em;
+}
+.v2-history-main { min-width: 0; }
+.v2-history-name {
+  font-family: 'Oswald', sans-serif;
+  font-size: 16px;
+  font-weight: 600;
+  line-height: 1.05;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.v2-history-meta {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10.8px;
+  color: var(--ink-dim);
+  margin-top: 2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.v2-history-tags {
+  display: flex;
+  gap: 5px;
+  flex-wrap: wrap;
+  margin-top: 6px;
+}
+.v2-history-verdict,
+.v2-history-result {
+  display: inline-flex;
+  align-items: center;
+  min-height: 20px;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  font-weight: 800;
+}
+.v2-history-verdict.fire,
+.v2-history-verdict.fire-over {
+  background: color-mix(in oklab, var(--accent) 12%, transparent);
+  color: var(--accent);
+}
+.v2-history-verdict.lean {
+  background: color-mix(in oklab, var(--warn) 14%, transparent);
+  color: var(--warn);
+}
+.v2-history-verdict.pass {
+  background: var(--chip);
+  color: var(--ink-dim);
+}
+.v2-history-result.win {
+  background: color-mix(in oklab, var(--pos) 13%, transparent);
+  color: var(--pos);
+}
+.v2-history-result.loss {
+  background: color-mix(in oklab, var(--neg) 12%, transparent);
+  color: var(--neg);
+}
+.v2-history-result.push,
+.v2-history-result.void,
+.v2-history-result.pending {
+  background: var(--chip);
+  color: var(--ink-dim);
+}
+.v2-history-result.void {
+  color: var(--warn);
+}
+.v2-history-ev {
+  text-align: right;
+  font-family: 'JetBrains Mono', monospace;
+  font-weight: 800;
+  font-size: 13px;
+}
+.v2-history-ev .pos { color: var(--pos); }
+.v2-history-ev .neg { color: var(--neg); }
+.v2-history-ev span:last-child {
+  display: block;
+  font-size: 9px;
+  color: var(--ink-dim);
+  font-weight: 600;
+  margin-top: 2px;
+}
+@media (max-width: 430px) {
+  .v2-history-row { grid-template-columns: 44px 30px minmax(0, 1fr); }
+  .v2-history-ev { grid-column: 3; text-align: left; }
+}
+
 .v2-steam-hero {
   margin: 14px 18px 0; padding: 16px 18px;
   background: var(--surface); border: 1px solid var(--border);
@@ -1054,6 +1262,6 @@ body { display: flex; flex-direction: column; }
   <script src="v2-data.js?v=2026-04-29-1"></script>
   <script src="v2-movement-helpers.js?v=2026-04-30-1"></script>
   <script src="v2-factor-details.js?v=2026-04-28-6"></script>
-  <script src="v2-app.js?v=2026-05-08-accepted-bets" defer></script>
+  <script src="v2-app.js?v=2026-05-08-history-tab" defer></script>
 </body>
 </html>

@@ -50,6 +50,7 @@ const Icon = {
   refresh:<svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M14 3v4h-4"/><path d="M13.5 7A6 6 0 1 0 14 10"/></svg>,
   picks: <svg viewBox="0 0 20 20" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="1.6"><circle cx="10" cy="10" r="7.5"/><path d="M4.5 5.8c1.6 1.7 2.6 4 2.6 6.6 0 1.2-.2 2.4-.6 3.5M15.5 5.8c-1.6 1.7-2.6 4-2.6 6.6 0 1.2.2 2.4.6 3.5"/></svg>,
   steam: <svg viewBox="0 0 20 20" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round"><path d="M5 14l4-4 3 3 4-5"/><path d="M13 8h3v3"/></svg>,
+  history: <svg viewBox="0 0 20 20" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"><path d="M4 4v4h4"/><path d="M4.4 8A6.2 6.2 0 1 0 6 4.1"/><path d="M10 6.5V10l2.4 1.6"/></svg>,
   results:<svg viewBox="0 0 20 20" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round"><rect x="3.5" y="9" width="3.5" height="7.5" rx=".6"/><rect x="8.5" y="5" width="3.5" height="11.5" rx=".6"/><rect x="13.5" y="11" width="3.5" height="5.5" rx=".6"/></svg>,
 };
 
@@ -290,6 +291,101 @@ function steamInfo(p, dir) {
   const cents = centsMove(o, c);
   if (!cents) return null;
   return { cents, steamWith: !sideCheaper(o, c) };
+}
+
+function historyDataBase() {
+  const isLocal = location.hostname === "localhost" ||
+                  location.hostname === "127.0.0.1" ||
+                  location.protocol === "file:";
+  return isLocal
+    ? "data/processed"
+    : "https://raw.githubusercontent.com/treidjbi/baseballbettingedge/main/dashboard/data/processed";
+}
+
+async function fetchHistorySlate(date) {
+  const res = await fetch(`${historyDataBase()}/${date}.json?t=${Date.now()}`);
+  if (!res.ok) throw new Error(`history_${date}_${res.status}`);
+  return res.json();
+}
+
+function normalizeHistorySide(side) {
+  return String(side || "").toUpperCase();
+}
+
+function historySideFromPitcher(p) {
+  if (!p?.ev_over || !p?.ev_under) return null;
+  const over = p.ev_over;
+  const under = p.ev_under;
+  const side = (over.adj_ev ?? -99) >= (under.adj_ev ?? -99)
+    ? { ...over, direction: "OVER", odds: p.best_over_odds, opening: p.opening_over_odds }
+    : { ...under, direction: "UNDER", odds: p.best_under_odds, opening: p.opening_under_odds };
+  return {
+    ...side,
+    verdict: side.verdict || "PASS",
+    k_line: side.k_line ?? p.k_line,
+  };
+}
+
+function historyRowsFromSlate(slate) {
+  const rows = [];
+  const pitchers = Array.isArray(slate?.pitchers) ? slate.pitchers : [];
+  const byPitcher = new Map(pitchers.map((p) => [String(p.pitcher || "").toLowerCase(), p]));
+  const tracked = Array.isArray(slate?.tracked_picks)
+    ? slate.tracked_picks
+    : pitchers.flatMap((p) => Array.isArray(p.tracked_picks) ? p.tracked_picks : []);
+
+  if (tracked.length) {
+    for (const pick of tracked) {
+      const p = byPitcher.get(String(pick.pitcher || "").toLowerCase()) || {};
+      const direction = normalizeHistorySide(pick.display_side || pick.side);
+      const sideForSteam = direction || "OVER";
+      const steam = p.pitcher ? steamInfo(p, sideForSteam) : null;
+      rows.push({
+        date: pick.date || slate.date,
+        pitcher: pick.pitcher || p.pitcher || "",
+        team: pick.team || p.team || "",
+        opp_team: pick.opp_team || p.opp_team || "",
+        direction,
+        verdict: pick.display_verdict || pick.locked_verdict || pick.verdict || "PASS",
+        k_line: pick.display_k_line ?? pick.locked_k_line ?? pick.k_line ?? p.k_line,
+        odds: pick.display_odds ?? pick.locked_odds ?? pick.odds,
+        adj_ev: pick.display_adj_ev ?? pick.locked_adj_ev ?? pick.adj_ev ?? 0,
+        edge: pick.edge ?? null,
+        result: pick.result || p.ev_over?.result || p.ev_under?.result || null,
+        actual_ks: pick.actual_ks ?? p.actual_ks ?? p.result?.final_k ?? null,
+        pnl: pick.pnl ?? p.result?.units_won ?? null,
+        game_time: pick.game_time || p.game_time || null,
+        quality_gate_level: pick.quality_gate_level || p.quality_gate_level || "clean",
+        steam,
+      });
+    }
+  } else {
+    for (const p of pitchers) {
+      const side = historySideFromPitcher(p);
+      if (!side) continue;
+      const steam = steamInfo(p, side.direction);
+      rows.push({
+        date: slate.date,
+        pitcher: p.pitcher || "",
+        team: p.team || "",
+        opp_team: p.opp_team || "",
+        direction: side.direction,
+        verdict: side.verdict,
+        k_line: side.k_line ?? p.k_line,
+        odds: side.odds,
+        adj_ev: side.adj_ev ?? 0,
+        edge: side.edge ?? side.ev ?? null,
+        result: side.result || null,
+        actual_ks: p.actual_ks ?? p.result?.final_k ?? null,
+        pnl: p.result?.units_won ?? null,
+        game_time: p.game_time || null,
+        quality_gate_level: p.quality_gate_level || "clean",
+        steam,
+      });
+    }
+  }
+
+  return rows;
 }
 
 function impliedProb(odds) {
@@ -1449,6 +1545,238 @@ function PerfTab() {
 }
 
 // ── Tab: Steam ──
+// History replaces the old standalone Steam workflow. Steam still appears as
+// pick context in rows/cards, where it is tied to model direction.
+function HistoryTab() {
+  const dateIndex = (window.V2_DATES || []).map(d => typeof d === "string" ? { date: d } : d);
+  const today = window.__v2GetAppDate ? window.__v2GetAppDate() : phxDateISO();
+  const completedDates = dateIndex.filter(d => d.date && d.date < today);
+  const [query, setQuery] = useState("");
+  const [verdictFilter, setVerdictFilter] = useState("ALL");
+  const [resultFilter, setResultFilter] = useState("ALL");
+  const [teamFilter, setTeamFilter] = useState("ALL");
+  const [dateFilter, setDateFilter] = useState("ALL");
+  const [state, setState] = useState({ status: "loading", rows: [], error: "", skipped: 0 });
+
+  React.useEffect(() => {
+    let cancelled = false;
+    const dates = completedDates.map(d => d.date).slice(0, 14);
+    async function load() {
+      if (!dates.length) {
+        setState({ status: "ready", rows: [], error: "", skipped: 0 });
+        return;
+      }
+      setState({ status: "loading", rows: [], error: "", skipped: 0 });
+      try {
+        const slateResults = await Promise.all(dates.map(async (date) => {
+          try {
+            return { date, slate: await fetchHistorySlate(date), error: false };
+          } catch {
+            return { date, slate: null, error: true };
+          }
+        }));
+        if (cancelled) return;
+        const rows = slateResults
+          .filter(result => result.slate)
+          .flatMap(result => historyRowsFromSlate(result.slate))
+          .sort((a, b) => (
+            String(b.date || "").localeCompare(String(a.date || "")) ||
+            verdictStake(b.verdict) - verdictStake(a.verdict) ||
+            (b.adj_ev ?? -99) - (a.adj_ev ?? -99)
+          ));
+        const skipped = slateResults.filter(result => result.error).length;
+        setState({ status: "ready", rows, error: "", skipped });
+      } catch (err) {
+        if (!cancelled) setState({ status: "error", rows: [], error: String(err.message || err) });
+      }
+    }
+    load();
+    return () => { cancelled = true; };
+  }, []);
+
+  const teams = useMemo(() => {
+    const names = new Set();
+    for (const row of state.rows) {
+      if (row.team) names.add(ab(row.team));
+      if (row.opp_team) names.add(ab(row.opp_team));
+    }
+    return [...names].sort();
+  }, [state.rows]);
+
+  const filtered = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    return state.rows.filter((row) => {
+      const haystack = `${row.pitcher} ${ab(row.team)} ${row.team} ${ab(row.opp_team)} ${row.opp_team}`.toLowerCase();
+      if (q && !haystack.includes(q)) return false;
+      if (dateFilter !== "ALL" && row.date !== dateFilter) return false;
+      if (teamFilter !== "ALL" && ab(row.team) !== teamFilter && ab(row.opp_team) !== teamFilter) return false;
+      if (verdictFilter === "FIRE" && !String(row.verdict || "").startsWith("FIRE")) return false;
+      if (verdictFilter === "LEAN" && row.verdict !== "LEAN") return false;
+      if (verdictFilter === "PASS" && row.verdict !== "PASS") return false;
+      if (resultFilter !== "ALL" && row.result !== resultFilter.toLowerCase()) return false;
+      return true;
+    });
+  }, [state.rows, query, verdictFilter, resultFilter, teamFilter, dateFilter]);
+
+  const gradedRows = state.rows.filter(r => r.result === "win" || r.result === "loss" || r.result === "push" || r.result === "void");
+  const wins = gradedRows.filter(r => r.result === "win").length;
+  const losses = gradedRows.filter(r => r.result === "loss").length;
+  const pushes = gradedRows.filter(r => r.result === "push").length;
+  const voids = gradedRows.filter(r => r.result === "void").length;
+  const fireCount = state.rows.filter(r => String(r.verdict || "").startsWith("FIRE")).length;
+  const cleanRows = state.rows.filter(r => r.quality_gate_level === "clean").length;
+
+  const openSlate = (date) => {
+    const today = window.__v2GetAppDate ? window.__v2GetAppDate() : phxDateISO();
+    const u = new URL(location.href);
+    if (date === today) u.searchParams.delete("date"); else u.searchParams.set("date", date);
+    u.searchParams.delete("state");
+    location.href = u.toString();
+  };
+
+  return (
+    <>
+      <div className="v2-header">
+        <div className="v2-header-row">
+          <div className="v2-brand">
+            <div className="v2-kmark">K</div>
+            <div>
+              <div className="v2-wordmark">History</div>
+              <div className="v2-subtitle">Completed slates - pitcher and team lookup</div>
+            </div>
+          </div>
+          <div className="v2-header-actions">
+            <button className="v2-icon-btn" title="Theme" onClick={() => window.__v2Theme?.toggleTheme()}>
+              {window.__v2Theme?.theme === "dark" ? Icon.sun : Icon.moon}
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div className="v2-history-hero">
+        <div>
+          <div className="n">{filtered.length}</div>
+        </div>
+        <div style={{flex:1}}>
+          <div className="lbl">Rows in view</div>
+          <div className="ttl">
+            {state.status === "loading"
+              ? "Loading recent slates"
+              : `${wins}W-${losses}L-${pushes}P${voids ? ` - ${voids} void` : ""} - ${fireCount} FIRE`}
+          </div>
+          {state.skipped > 0 && (
+            <div className="v2-history-note">{state.skipped} archived date{state.skipped === 1 ? "" : "s"} skipped</div>
+          )}
+        </div>
+      </div>
+
+      <div className="v2-history-tools">
+        <input
+          className="v2-history-search"
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          placeholder="Search pitcher or team"
+          aria-label="Search history by pitcher or team"
+        />
+        <div className="v2-history-select-row">
+          <select value={dateFilter} onChange={(e) => setDateFilter(e.target.value)} aria-label="Filter by date">
+            <option value="ALL">All dates</option>
+            {completedDates.slice(0, 14).map(d => (
+              <option key={d.date} value={d.date}>{d.date}</option>
+            ))}
+          </select>
+          <select value={teamFilter} onChange={(e) => setTeamFilter(e.target.value)} aria-label="Filter by team">
+            <option value="ALL">All teams</option>
+            {teams.map(team => <option key={team} value={team}>{team}</option>)}
+          </select>
+        </div>
+      </div>
+
+      <div className="v2-steam-filter v2-history-filter">
+        {[["ALL","All"],["FIRE","Fire"],["LEAN","Lean"]].map(([k,l]) => (
+          <button
+            key={k}
+            className={`f ${verdictFilter === k ? "active" : ""}`}
+            onClick={() => setVerdictFilter(k)}
+          >{l}</button>
+        ))}
+      </div>
+
+      <div className="v2-steam-filter v2-history-filter secondary">
+        {[["ALL","Results"],["WIN","Wins"],["LOSS","Losses"],["PUSH","Pushes"],["VOID","Voids"]].map(([k,l]) => (
+          <button
+            key={k}
+            className={`f ${resultFilter === k ? "active" : ""}`}
+            onClick={() => setResultFilter(k)}
+          >{l}</button>
+        ))}
+      </div>
+
+      <div className="v2-history-list">
+        {state.status === "loading" && (
+          <>
+            <div className="v2-skel-card"><div className="v2-skel" style={{height:18,width:"55%"}}/><div className="v2-skel" style={{height:12,width:"80%"}}/><div className="v2-skel" style={{height:34,width:"100%"}}/></div>
+            <div className="v2-skel-card"><div className="v2-skel" style={{height:18,width:"45%"}}/><div className="v2-skel" style={{height:12,width:"70%"}}/><div className="v2-skel" style={{height:34,width:"100%"}}/></div>
+          </>
+        )}
+        {state.status === "error" && (
+          <div className="v2-state">
+            <div className="ttl">History unavailable</div>
+            <div className="sub">Could not load the recent slate archive.</div>
+            <div className="err-detail">{state.error}</div>
+          </div>
+        )}
+        {state.status === "ready" && filtered.map((r, i) => {
+          const result = r.result || "pending";
+          const resultClass = result === "win" ? "win" : result === "loss" ? "loss" : result === "push" ? "push" : result === "void" ? "void" : "pending";
+          const sideClass = r.direction === "OVER" ? "up" : "down";
+          const steam = r.steam;
+          return (
+            <article key={`${r.date}-${r.pitcher}-${r.direction}-${i}`} className={`v2-history-row ${verdictClass(r.verdict, r.direction)}`}>
+              <button className="v2-history-date" type="button" onClick={() => openSlate(r.date)} title="Open slate">
+                <span>{new Date(`${r.date}T00:00:00Z`).toLocaleDateString("en-US", { month: "short", day: "numeric", timeZone: "UTC" })}</span>
+                <span>View</span>
+              </button>
+              <div className={`v2-steam-dir ${sideClass}`}>
+                {r.direction === "OVER" ? "OV" : "UN"}
+              </div>
+              <div className="v2-history-main">
+                <div className="v2-history-name">{r.pitcher}</div>
+                <div className="v2-history-meta">
+                  {ab(r.team)} vs {ab(r.opp_team)} - {r.direction} {r.k_line} K - {fmtOdds(r.odds)}
+                </div>
+                <div className="v2-history-tags">
+                  <span className={`v2-history-verdict ${verdictClass(r.verdict, r.direction)}`}>{r.verdict}</span>
+                  <span className={`v2-history-result ${resultClass}`}>
+                    {result === "pending" ? "Pending" : result.toUpperCase()}{r.actual_ks != null ? ` - ${r.actual_ks} K` : ""}
+                  </span>
+                  {steam && (
+                    <span className={`v2-steam ${steam.steamWith ? "with" : "against"}`}>
+                      {steam.steamWith ? "odds with" : "odds against"} {steam.cents}c
+                    </span>
+                  )}
+                </div>
+              </div>
+              <div className="v2-history-ev">
+                <span className={(r.adj_ev ?? 0) >= 0 ? "pos" : "neg"}>
+                  {(r.adj_ev ?? 0) >= 0 ? "+" : ""}{((r.adj_ev ?? 0) * 100).toFixed(1)}%
+                </span>
+                <span>EV ROI</span>
+              </div>
+            </article>
+          );
+        })}
+        {state.status === "ready" && filtered.length === 0 && (
+          <div className="v2-state">
+            <div className="ttl">No matching history</div>
+            <div className="sub">Try clearing a filter or searching another pitcher or team.</div>
+          </div>
+        )}
+      </div>
+    </>
+  );
+}
+
 function SteamTab() {
   const d = window.V2_STEAM;
   const [filter, setFilter] = useState("ALL");
@@ -1533,12 +1861,17 @@ function SteamTab() {
 
 // ── Root app ──
 function App() {
-  const [tab, setTab] = useState("picks");
+  const [tab, setTab] = useState(() => {
+    const t = new URLSearchParams(location.search).get("tab");
+    return ["picks", "history", "perf"].includes(t) ? t : "picks";
+  });
   const [appState, setAppState] = useState(() => {
     const u = new URLSearchParams(location.search);
     return u.get("state") || window.V2_APP_STATE || "ready";
   });
   const [theme, setTheme] = useState(() => {
+    const qTheme = new URLSearchParams(location.search).get("theme");
+    if (qTheme === "dark" || qTheme === "light") return qTheme;
     try { return localStorage.getItem("v2-theme") || "light"; } catch { return "light"; }
   });
   React.useEffect(() => {
@@ -1573,11 +1906,11 @@ function App() {
     <>
       {tab === "picks" && renderPicks()}
       {tab === "perf" && <PerfTab />}
-      {tab === "watch" && <SteamTab />}
+      {tab === "history" && <HistoryTab />}
       <nav className="v2-tabbar">
         {[
           ["picks", Icon.picks,   "Picks",   null],
-          ["watch", Icon.steam,   "Steam",   null],
+          ["history", Icon.history, "History", null],
           ["perf",  Icon.results, "Results", null]
         ].map(([k, ic, l, badge]) => (
           <button
