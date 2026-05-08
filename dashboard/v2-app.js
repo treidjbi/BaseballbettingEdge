@@ -169,6 +169,7 @@
     return 0;
   }
   const BET_LOG_SECRET_STORAGE = "bbe.betLogSecret";
+  const BET_LOG_ACCEPTED_STORAGE = "bbe.acceptedBetKeys";
   const BET_LOG_BOOK_OPTIONS = [
     "FanDuel",
     "DraftKings",
@@ -202,6 +203,31 @@
       localStorage.removeItem(BET_LOG_SECRET_STORAGE);
     } catch {
     }
+  }
+  function readLoggedBetKeys() {
+    try {
+      const parsed = JSON.parse(localStorage.getItem(BET_LOG_ACCEPTED_STORAGE) || "[]");
+      return new Set(Array.isArray(parsed) ? parsed.filter(Boolean) : []);
+    } catch {
+      return /* @__PURE__ */ new Set();
+    }
+  }
+  function writeLoggedBetKeys(keys) {
+    try {
+      localStorage.setItem(BET_LOG_ACCEPTED_STORAGE, JSON.stringify([...keys].slice(-200)));
+    } catch {
+    }
+  }
+  function acceptedBetPitcherKey(value) {
+    return String(value || "").normalize("NFKD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/[^a-z0-9]+/g, " ").trim().replace(/\s+/g, " ");
+  }
+  function acceptedBetSessionKey(p, side) {
+    return [
+      "accepted_bet",
+      slateDateForBetLog(),
+      acceptedBetPitcherKey(p.pitcher),
+      String(side.direction || "").toLowerCase()
+    ].join(":");
   }
   function canonicalBetLogBook(book) {
     const value = String(book || "").trim();
@@ -625,6 +651,7 @@
     const [betTicketOpen, setBetTicketOpen] = useState(false);
     const [betLogError, setBetLogError] = useState("");
     const [betForm, setBetForm] = useState(() => defaultAcceptedBetForm(p, best));
+    const [loggedBetKeys, setLoggedBetKeys] = useState(() => readLoggedBetKeys());
     const factorGroups = useMemo(() => {
       const buildFactorGroups = window.V2FactorDetails?.buildFactorGroups;
       return buildFactorGroups ? buildFactorGroups(p, best.direction) : [];
@@ -698,12 +725,14 @@
     const result = p.result;
     const canLogBet = !isPass && !isFinal;
     const needsBetLogSecret = !storedBetLogSecret();
+    const currentBetLogKey = acceptedBetSessionKey(p, best);
+    const betAlreadyLogged = loggedBetKeys.has(currentBetLogKey);
     function updateBetForm(field, value) {
       setBetForm((prev) => ({ ...prev, [field]: value }));
       setBetLogError("");
     }
     function openBetTicket() {
-      if (!canLogBet) return;
+      if (!canLogBet || betAlreadyLogged) return;
       setBetTicketOpen(true);
       setBetLogError("");
       if (betLogState === "saved") setBetLogState("idle");
@@ -716,7 +745,7 @@
     }
     async function handleAcceptedBetSave(e) {
       e.preventDefault();
-      if (!canLogBet || betLogState === "saving") return;
+      if (!canLogBet || betLogState === "saving" || betAlreadyLogged) return;
       const line = Number(betForm.line);
       const odds = Number(betForm.odds);
       const units = Number(betForm.units);
@@ -754,6 +783,12 @@
         }
         if (!response.ok) throw new Error(`accepted_bet_failed:${response.status}`);
         saveBetLogSecret(secret);
+        setLoggedBetKeys((prev) => {
+          const next = new Set(prev);
+          next.add(currentBetLogKey);
+          writeLoggedBetKeys(next);
+          return next;
+        });
         setBetLogState("saved");
         setBetLogError("");
         setTimeout(() => {
@@ -781,9 +816,9 @@
         {
           className: "v2-btn-primary",
           onClick: openBetTicket,
-          disabled: betLogState === "saving"
+          disabled: betLogState === "saving" || betAlreadyLogged
         },
-        betTicketOpen ? "Bet Ticket" : betLogState === "saved" ? "Logged" : "Log Bet"
+        betAlreadyLogged ? "Logged" : betTicketOpen ? "Bet Ticket" : betLogState === "saved" ? "Logged" : "Log Bet"
       ), /* @__PURE__ */ React.createElement("button", { className: "v2-btn-ghost", onClick: onClose }, "Close"))), betTicketOpen && /* @__PURE__ */ React.createElement("div", { className: "v2-bet-ticket-modal", onClick: (e) => {
         if (e.target === e.currentTarget) closeBetTicket();
       } }, /* @__PURE__ */ React.createElement(
@@ -857,7 +892,7 @@
             onClick: closeBetTicket
           },
           "Cancel"
-        ), /* @__PURE__ */ React.createElement("button", { className: "v2-btn-primary", type: "submit", disabled: betLogState === "saving" || betLogState === "saved" }, betLogState === "saving" ? "Saving..." : "Save Bet"))
+        ), /* @__PURE__ */ React.createElement("button", { className: "v2-btn-primary", type: "submit", disabled: betLogState === "saving" || betLogState === "saved" || betAlreadyLogged }, betLogState === "saving" ? "Saving..." : "Save Bet"))
       ))),
       document.body
     );
