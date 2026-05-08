@@ -6740,19 +6740,38 @@
         "so": 9,
         "k_rate": 0.2903
       }
+    },
+    "mlbam:686894": {
+      "name": "Joey Wiemer",
+      "bats": "R",
+      "mlbam_id": 686894,
+      "bbref_id": "wiemejo01",
+      "season": 2026,
+      "vs_R": {
+        "pa": 29,
+        "so": 11,
+        "k_rate": 0.3793
+      },
+      "vs_L": {
+        "pa": 37,
+        "so": 14,
+        "k_rate": 0.3784
+      }
     }
   },
-  "updated_at": "2026-05-08T18:54:41Z",
+  "updated_at": "2026-05-08T19:43:10Z",
   "last_run": {
     "projection_status": "collection_only",
-    "requested_batters": 36,
-    "already_cached": 36,
-    "attempted": 0,
-    "collected": 0,
-    "failed": 0,
+    "requested_batters": 117,
+    "already_cached": 115,
+    "attempted": 2,
+    "collected": 1,
+    "failed": 1,
     "queued_not_attempted": 0,
-    "cache_size": 399,
-    "errors": [],
-    "updated_at": "2026-05-08T18:54:41Z"
+    "cache_size": 400,
+    "errors": [
+      "Joe Mack: no bbref id"
+    ],
+    "updated_at": "2026-05-08T19:43:10Z"
   }
 }
