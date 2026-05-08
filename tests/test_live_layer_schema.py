@@ -4,18 +4,20 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 LIVE_LAYER_MIGRATION = ROOT / "supabase" / "migrations" / "20260506_live_layer_events.sql"
 MARKET_EVIDENCE_MIGRATION = ROOT / "supabase" / "migrations" / "20260508_market_pick_evidence.sql"
+SHADOW_CANDIDATE_MIGRATION = ROOT / "supabase" / "migrations" / "20260508_shadow_notification_candidates.sql"
 
 
 def _migration_sql() -> str:
     return "\n".join(
         path.read_text(encoding="utf-8")
-        for path in [LIVE_LAYER_MIGRATION, MARKET_EVIDENCE_MIGRATION]
+        for path in [LIVE_LAYER_MIGRATION, MARKET_EVIDENCE_MIGRATION, SHADOW_CANDIDATE_MIGRATION]
     )
 
 
 def test_live_layer_migration_file_exists():
     assert LIVE_LAYER_MIGRATION.exists()
     assert MARKET_EVIDENCE_MIGRATION.exists()
+    assert SHADOW_CANDIDATE_MIGRATION.exists()
 
 
 def test_live_layer_migration_defines_required_tables():
@@ -25,6 +27,7 @@ def test_live_layer_migration_defines_required_tables():
         "live_pick_state",
         "line_movement_events",
         "market_pick_evidence",
+        "shadow_notification_candidates",
         "notification_events",
         "game_reminder_state",
     ]:
@@ -38,5 +41,6 @@ def test_live_layer_migration_uses_required_uniques_and_view():
     assert "dedupe_key text not null unique" in sql
     assert "unique (slate_date, normalized_pitcher, side)" in sql
     assert "unique (slate_date, normalized_pitcher, side, provider)" in sql
+    assert "candidate_action in ('would_send_shadow', 'suppress_shadow')" in sql
     assert "create or replace view public.live_activity_feed" in sql
     assert "with (security_invoker = true)" in sql

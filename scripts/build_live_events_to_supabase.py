@@ -22,6 +22,9 @@ from market_infra.live_events import (  # noqa: E402
     build_reminder_events,
 )
 from market_infra.market_evidence import build_market_pick_evidence_rows  # noqa: E402
+from market_infra.shadow_notification_candidates import (  # noqa: E402
+    build_shadow_notification_candidate_rows,
+)
 from market_infra.supabase_writer import SupabaseMarketWriter  # noqa: E402
 from scripts.shadow_propline_to_supabase import poll_propline_to_supabase  # noqa: E402
 
@@ -189,6 +192,9 @@ def run(
         source_artifact_path=artifact_source,
         source_artifact_sha256=artifact_sha,
     )
+    shadow_notification_candidate_rows = build_shadow_notification_candidate_rows(
+        market_pick_evidence_rows
+    )
 
     existing_reminders = writer.select_rows("game_reminder_state", {"slate_date": f"eq.{slate_date}"})
     reminder_notification_rows, reminder_rows = build_reminder_events(
@@ -211,6 +217,11 @@ def run(
         market_pick_evidence_rows,
         on_conflict="slate_date,normalized_pitcher,side,provider",
     )
+    writer.upsert_rows(
+        "shadow_notification_candidates",
+        shadow_notification_candidate_rows,
+        on_conflict="dedupe_key",
+    )
     writer.upsert_rows("game_reminder_state", reminder_rows, on_conflict="dedupe_key")
     writer.upsert_rows("live_pick_state", state_rows, on_conflict="slate_date,normalized_pitcher,side")
     return {
@@ -218,11 +229,13 @@ def run(
         "notification_rows": notification_rows,
         "line_movement_rows": line_movement_rows,
         "market_pick_evidence_rows": market_pick_evidence_rows,
+        "shadow_notification_candidate_rows": shadow_notification_candidate_rows,
         "reminder_rows": reminder_rows,
         "live_pick_state": len(state_rows),
         "notification_events": len(notification_rows),
         "line_movement_events": len(line_movement_rows),
         "market_pick_evidence": len(market_pick_evidence_rows),
+        "shadow_notification_candidates": len(shadow_notification_candidate_rows),
         "game_reminders": len(reminder_rows),
         "propline": propline_result or {"skipped": True},
         "artifact_source": artifact_source,

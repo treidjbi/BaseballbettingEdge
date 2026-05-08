@@ -224,7 +224,7 @@ The live notification layer is separate from the official pipeline.
 - **Market source**: polls PropLine only when `PROPLINE_API_KEY` is present.
 - **Supabase tables**: `market_snapshots`, `live_pick_state`,
   `notification_events`, `line_movement_events`, `market_pick_evidence`,
-  and `game_reminder_state`.
+  `shadow_notification_candidates`, and `game_reminder_state`.
 - **Netlify sender**: scheduled `send-live-notifications` every 10 minutes.
 - **Manual sender**: `/api/send-live-notifications-now` with `NOTIFY_SECRET`.
 
@@ -237,6 +237,12 @@ market learning. It summarizes whether live market snapshots moved toward or
 away from the pick and whether the current number got better or worse to bet
 now. It must not drive live picks, locks, thresholds, staking, provider order,
 or notification sends without Tyler's explicit approval.
+
+`shadow_notification_candidates` is a shadow-only would-have-sent tracker. It
+records which PropLine/BoltOdds market-evidence states would qualify for future
+alerts and why they were suppressed, including single-book BetRivers noise and
+reversal/volatility flags. These rows must never be sent as push notifications
+without a separate promotion decision.
 
 Current note: `NOTIFY_SECRET` rotation after screenshot exposure was completed
 on 2026-05-07. Future checks should focus on sender health, queue counts, and

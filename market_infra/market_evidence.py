@@ -92,6 +92,28 @@ def _direction_summary(
     return _odds_market_direction(odds_delta), _odds_bet_value_direction(odds_delta)
 
 
+def _market_reversal_count(side: str, ordered: list[dict[str, Any]]) -> int:
+    directions: list[str] = []
+    for previous, current in zip(ordered, ordered[1:]):
+        market_direction, _ = _direction_summary(
+            side=side,
+            first_line=float(previous["line"]),
+            current_line=float(current["line"]),
+            first_odds=int(previous["american_odds"]),
+            current_odds=int(current["american_odds"]),
+        )
+        if market_direction != "neutral":
+            directions.append(market_direction)
+
+    if len(directions) < 2:
+        return 0
+    return sum(
+        1
+        for previous_direction, current_direction in zip(directions, directions[1:])
+        if previous_direction != current_direction
+    )
+
+
 def _consensus(
     *,
     positive_count: int,
@@ -180,6 +202,7 @@ def _book_summary(
         first_odds=first_odds,
         current_odds=current_odds,
     )
+    reversal_count = _market_reversal_count(side, ordered)
 
     return {
         "bookmaker_key": book,
@@ -196,6 +219,8 @@ def _book_summary(
         "odds_delta": current_odds - first_odds,
         "market_direction": market_direction,
         "bet_value_direction": bet_value_direction,
+        "reversal_count": reversal_count,
+        "has_reversal": reversal_count > 0,
         "touches_pick_line": any(_matches_line(float(row["line"]), pick_line) for row in ordered),
     }
 
@@ -265,6 +290,10 @@ def build_market_pick_evidence_rows(
             touching_pick_line_count = sum(
                 1 for summary in book_summaries.values() if summary["touches_pick_line"]
             )
+            reversal_book_count = sum(
+                1 for summary in book_summaries.values() if int(summary.get("reversal_count") or 0) > 0
+            )
+            volatile_book_count = reversal_book_count
             latest_snapshot_at = max(
                 str(summary["current_observed_at"]) for summary in book_summaries.values()
             )
@@ -295,6 +324,8 @@ def build_market_pick_evidence_rows(
                 "better_now_count": better_now_count,
                 "worse_now_count": worse_now_count,
                 "touching_pick_line_count": touching_pick_line_count,
+                "reversal_book_count": reversal_book_count,
+                "volatile_book_count": volatile_book_count,
                 "market_consensus": _consensus(
                     positive_count=toward_pick_count,
                     negative_count=away_from_pick_count,

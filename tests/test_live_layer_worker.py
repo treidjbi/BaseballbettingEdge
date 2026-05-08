@@ -80,6 +80,7 @@ def test_worker_writes_state_and_notification_events(tmp_path):
         "notification_events",
         "line_movement_events",
         "market_pick_evidence",
+        "shadow_notification_candidates",
         "game_reminder_state",
         "live_pick_state",
     ]
@@ -286,6 +287,62 @@ def test_worker_writes_market_pick_evidence_for_shadow_providers(tmp_path):
         result["market_pick_evidence_rows"],
         on_conflict="slate_date,normalized_pitcher,side,provider",
     )
+    writer.upsert_rows.assert_any_call(
+        "shadow_notification_candidates",
+        result["shadow_notification_candidate_rows"],
+        on_conflict="dedupe_key",
+    )
+    assert result["shadow_notification_candidates"] == 2
+
+
+def test_worker_does_not_turn_shadow_candidates_into_notifications(tmp_path):
+    today = _write_artifact(tmp_path, [_fire_pitcher(game_time="2026-05-06T18:05:00+00:00")])
+    writer = _writer_with_selects({
+        "live_pick_state": [],
+        "market_snapshots": [
+            {
+                "id": "bolt-old",
+                "provider": "boltodds",
+                "normalized_player_name": "tarik skubal",
+                "player_name": "Tarik Skubal",
+                "bookmaker_key": "fanduel",
+                "side": "over",
+                "line": 6.5,
+                "american_odds": -110,
+                "observed_at": "2026-05-06T17:50:00+00:00",
+            },
+            {
+                "id": "bolt-new",
+                "provider": "boltodds",
+                "normalized_player_name": "tarik skubal",
+                "player_name": "Tarik Skubal",
+                "bookmaker_key": "fanduel",
+                "side": "over",
+                "line": 7.5,
+                "american_odds": 120,
+                "observed_at": "2026-05-06T17:58:00+00:00",
+            },
+        ],
+        "game_reminder_state": [],
+    })
+
+    with (
+        patch.object(build_live_events_to_supabase, "SupabaseMarketWriter", return_value=writer),
+        patch.object(
+            build_live_events_to_supabase,
+            "_now_utc",
+            return_value=build_live_events_to_supabase.datetime.fromisoformat("2026-05-06T17:58:00+00:00"),
+        ),
+    ):
+        result = build_live_events_to_supabase.run(
+            slate_date="2026-05-06",
+            artifact_path=today,
+            supabase_url="https://example.supabase.co",
+            service_role_key="secret",
+        )
+
+    assert result["shadow_notification_candidates"] == 1
+    assert all(row["event_type"] != "line_moved_with_us" for row in result["notification_rows"])
 
 
 def test_worker_can_poll_propline_before_building_live_events(tmp_path):
@@ -483,6 +540,7 @@ def test_worker_upserts_non_empty_tables_in_retry_safe_order(tmp_path):
         "notification_events",
         "line_movement_events",
         "market_pick_evidence",
+        "shadow_notification_candidates",
         "game_reminder_state",
         "live_pick_state",
     ]

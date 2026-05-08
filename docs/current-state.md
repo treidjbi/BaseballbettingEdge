@@ -70,6 +70,7 @@ The live layer is now separate from the production pipeline.
   - `notification_events`
   - `line_movement_events`
   - `market_pick_evidence`
+  - `shadow_notification_candidates`
   - `game_reminder_state`
 - Netlify scheduled function: `send-live-notifications`
 - Manual endpoint: `/api/send-live-notifications-now`
@@ -83,6 +84,11 @@ and current pick state. It is meant to answer "model says this, market did
 that, outcome was this" after enough graded rows accumulate. It does not change
 live picks, line locks, thresholds, staking, provider order, or notification
 sends.
+
+`shadow_notification_candidates` is the next evidence layer. It records
+would-have-sent market alerts by provider, candidate type, suppression reason,
+time window, BetRivers-only status, broad-confirmation status, and
+reversal/volatility status. It does not send pushes.
 
 Current housekeeping:
 

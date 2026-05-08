@@ -183,6 +183,7 @@ Watch for:
 
 - table growth from `market_snapshots`
 - compact rollup health from `market_pick_evidence`
+- candidate-row volume from `shadow_notification_candidates`
 - `notification_events` retention
 - `market_feed_heartbeats` volume
 - API throughput

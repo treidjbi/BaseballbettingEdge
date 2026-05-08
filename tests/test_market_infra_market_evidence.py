@@ -128,3 +128,60 @@ def test_provider_rollup_marks_mixed_book_evidence():
     assert row["better_now_count"] == 1
     assert row["worse_now_count"] == 1
     assert row["time_window"] == "pre_120"
+
+
+def test_book_reversal_count_tracks_churn_before_current_state():
+    rows = build_market_pick_evidence_rows(
+        slate_date="2026-05-08",
+        live_picks=[{
+            "pitcher": "Kyle Bradish",
+            "normalized_pitcher": "kyle bradish",
+            "side": "under",
+            "current_verdict": "FIRE 1u",
+            "k_line": 5.5,
+            "game_time": "2026-05-08T19:00:00+00:00",
+            "game_state": "scheduled",
+            "is_fire": True,
+        }],
+        snapshot_rows=[
+            {
+                "id": "one",
+                "provider": "boltodds",
+                "normalized_player_name": "kyle bradish",
+                "bookmaker_key": "betrivers",
+                "side": "under",
+                "line": 5.5,
+                "american_odds": -110,
+                "observed_at": "2026-05-08T17:00:00+00:00",
+            },
+            {
+                "id": "two",
+                "provider": "boltodds",
+                "normalized_player_name": "kyle bradish",
+                "bookmaker_key": "betrivers",
+                "side": "under",
+                "line": 4.5,
+                "american_odds": 170,
+                "observed_at": "2026-05-08T17:05:00+00:00",
+            },
+            {
+                "id": "three",
+                "provider": "boltodds",
+                "normalized_player_name": "kyle bradish",
+                "bookmaker_key": "betrivers",
+                "side": "under",
+                "line": 5.5,
+                "american_odds": -115,
+                "observed_at": "2026-05-08T17:10:00+00:00",
+            },
+        ],
+        observed_at="2026-05-08T17:10:00+00:00",
+        source_artifact_path="https://raw.example/today.json",
+        source_artifact_sha256="abc",
+    )
+
+    assert len(rows) == 1
+    row = rows[0]
+    assert row["reversal_book_count"] == 1
+    assert row["volatile_book_count"] == 1
+    assert row["metadata"]["book_summaries"]["betrivers"]["reversal_count"] == 1
