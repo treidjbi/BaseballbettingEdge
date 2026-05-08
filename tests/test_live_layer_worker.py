@@ -79,6 +79,7 @@ def test_worker_writes_state_and_notification_events(tmp_path):
     assert upsert_tables == [
         "notification_events",
         "line_movement_events",
+        "market_pick_evidence",
         "game_reminder_state",
         "live_pick_state",
     ]
@@ -215,6 +216,76 @@ def test_worker_ignores_boltodds_shadow_snapshots_for_notifications(tmp_path):
 
     assert result["line_movement_events"] == 0
     assert result["line_movement_rows"] == []
+
+
+def test_worker_writes_market_pick_evidence_for_shadow_providers(tmp_path):
+    today = _write_artifact(tmp_path, [_fire_pitcher()])
+    writer = _writer_with_selects({
+        "live_pick_state": [],
+        "market_snapshots": [
+            {
+                "id": "propline-old",
+                "provider": "propline",
+                "normalized_player_name": "tarik skubal",
+                "player_name": "Tarik Skubal",
+                "bookmaker_key": "fanduel",
+                "side": "over",
+                "line": 6.5,
+                "american_odds": -110,
+                "observed_at": "2026-05-06T17:50:00+00:00",
+            },
+            {
+                "id": "propline-new",
+                "provider": "propline",
+                "normalized_player_name": "tarik skubal",
+                "player_name": "Tarik Skubal",
+                "bookmaker_key": "fanduel",
+                "side": "over",
+                "line": 5.5,
+                "american_odds": -112,
+                "observed_at": "2026-05-06T18:00:00+00:00",
+            },
+            {
+                "id": "bolt-old",
+                "provider": "boltodds",
+                "normalized_player_name": "tarik skubal",
+                "player_name": "Tarik Skubal",
+                "bookmaker_key": "betrivers",
+                "side": "over",
+                "line": 6.5,
+                "american_odds": -110,
+                "observed_at": "2026-05-06T17:50:00+00:00",
+            },
+            {
+                "id": "bolt-new",
+                "provider": "boltodds",
+                "normalized_player_name": "tarik skubal",
+                "player_name": "Tarik Skubal",
+                "bookmaker_key": "betrivers",
+                "side": "over",
+                "line": 5.5,
+                "american_odds": -112,
+                "observed_at": "2026-05-06T18:00:00+00:00",
+            },
+        ],
+        "game_reminder_state": [],
+    })
+
+    with patch.object(build_live_events_to_supabase, "SupabaseMarketWriter", return_value=writer):
+        result = build_live_events_to_supabase.run(
+            slate_date="2026-05-06",
+            artifact_path=today,
+            supabase_url="https://example.supabase.co",
+            service_role_key="secret",
+        )
+
+    assert result["market_pick_evidence"] == 2
+    assert {row["provider"] for row in result["market_pick_evidence_rows"]} == {"propline", "boltodds"}
+    writer.upsert_rows.assert_any_call(
+        "market_pick_evidence",
+        result["market_pick_evidence_rows"],
+        on_conflict="slate_date,normalized_pitcher,side,provider",
+    )
 
 
 def test_worker_can_poll_propline_before_building_live_events(tmp_path):
@@ -411,6 +482,7 @@ def test_worker_upserts_non_empty_tables_in_retry_safe_order(tmp_path):
     assert upsert_tables == [
         "notification_events",
         "line_movement_events",
+        "market_pick_evidence",
         "game_reminder_state",
         "live_pick_state",
     ]

@@ -182,6 +182,7 @@ Supabase is currently free and is the right home for append-only evidence.
 Watch for:
 
 - table growth from `market_snapshots`
+- compact rollup health from `market_pick_evidence`
 - `notification_events` retention
 - `market_feed_heartbeats` volume
 - API throughput

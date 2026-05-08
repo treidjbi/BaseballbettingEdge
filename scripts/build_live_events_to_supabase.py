@@ -21,6 +21,7 @@ from market_infra.live_events import (  # noqa: E402
     build_pick_change_events,
     build_reminder_events,
 )
+from market_infra.market_evidence import build_market_pick_evidence_rows  # noqa: E402
 from market_infra.supabase_writer import SupabaseMarketWriter  # noqa: E402
 from scripts.shadow_propline_to_supabase import poll_propline_to_supabase  # noqa: E402
 
@@ -168,8 +169,9 @@ def run(
     state_rows.extend(missing_state_rows)
 
     snapshot_rows = writer.select_rows("market_snapshots", {
+        "provider": "in.(propline,boltodds)",
         "order": "observed_at.desc",
-        "limit": "500",
+        "limit": "2500",
     })
     previous_snapshots, current_snapshots = _snapshot_pairs(_live_notification_snapshots(snapshot_rows))
     movement_notification_rows = build_line_movement_events(
@@ -179,6 +181,14 @@ def run(
         current_snapshots=current_snapshots,
     )
     line_movement_rows = build_line_movement_rows(movement_notification_rows)
+    market_pick_evidence_rows = build_market_pick_evidence_rows(
+        slate_date=slate_date,
+        live_picks=state_rows,
+        snapshot_rows=snapshot_rows,
+        observed_at=observed_at,
+        source_artifact_path=artifact_source,
+        source_artifact_sha256=artifact_sha,
+    )
 
     existing_reminders = writer.select_rows("game_reminder_state", {"slate_date": f"eq.{slate_date}"})
     reminder_notification_rows, reminder_rows = build_reminder_events(
@@ -196,16 +206,23 @@ def run(
     ]
     writer.upsert_rows("notification_events", notification_rows, on_conflict="dedupe_key")
     writer.upsert_rows("line_movement_events", line_movement_rows, on_conflict="dedupe_key")
+    writer.upsert_rows(
+        "market_pick_evidence",
+        market_pick_evidence_rows,
+        on_conflict="slate_date,normalized_pitcher,side,provider",
+    )
     writer.upsert_rows("game_reminder_state", reminder_rows, on_conflict="dedupe_key")
     writer.upsert_rows("live_pick_state", state_rows, on_conflict="slate_date,normalized_pitcher,side")
     return {
         "state_rows": state_rows,
         "notification_rows": notification_rows,
         "line_movement_rows": line_movement_rows,
+        "market_pick_evidence_rows": market_pick_evidence_rows,
         "reminder_rows": reminder_rows,
         "live_pick_state": len(state_rows),
         "notification_events": len(notification_rows),
         "line_movement_events": len(line_movement_rows),
+        "market_pick_evidence": len(market_pick_evidence_rows),
         "game_reminders": len(reminder_rows),
         "propline": propline_result or {"skipped": True},
         "artifact_source": artifact_source,

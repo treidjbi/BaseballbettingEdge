@@ -223,13 +223,20 @@ The live notification layer is separate from the official pipeline.
   the stale baked Render checkout.
 - **Market source**: polls PropLine only when `PROPLINE_API_KEY` is present.
 - **Supabase tables**: `market_snapshots`, `live_pick_state`,
-  `notification_events`, `line_movement_events`, and `game_reminder_state`.
+  `notification_events`, `line_movement_events`, `market_pick_evidence`,
+  and `game_reminder_state`.
 - **Netlify sender**: scheduled `send-live-notifications` every 10 minutes.
 - **Manual sender**: `/api/send-live-notifications-now` with `NOTIFY_SECRET`.
 
 This layer may create notification events, but it must not update dashboard
 artifacts, grading, picks history, calibration, model outputs, or production
 provider order.
+
+`market_pick_evidence` is a shadow-only per-pick/provider rollup for model vs.
+market learning. It summarizes whether live market snapshots moved toward or
+away from the pick and whether the current number got better or worse to bet
+now. It must not drive live picks, locks, thresholds, staking, provider order,
+or notification sends without Tyler's explicit approval.
 
 Current note: `NOTIFY_SECRET` rotation after screenshot exposure was completed
 on 2026-05-07. Future checks should focus on sender health, queue counts, and

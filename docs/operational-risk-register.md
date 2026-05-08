@@ -180,6 +180,7 @@ or cost makes retention necessary.
 | `provider_coverage_audits` | Indefinite or long-term | Small summary rows that support provider decisions |
 | `artifact_snapshots` | Keep useful dated snapshots; review monthly | Useful for reconstructing provider comparisons |
 | Raw `market_snapshots` | 14-30 days unless summarized | Can grow quickly; raw feed evidence ages fast |
+| `market_pick_evidence` | Season or long-term if compact | Per-pick/provider market evidence rollup for model-vs-market outcome analysis |
 | `line_movement_events` | Season or long-term if compact | Higher-value summarized movement evidence |
 | `notification_events` | 30-90 days | Debug delivery quality and fatigue |
 | `market_feed_heartbeats` | 7-14 days | Operational freshness only |
@@ -236,5 +237,8 @@ Questions:
   GitHub raw artifact fetch and Netlify live sender.
 - 2026-05-07: `NOTIFY_SECRET` rotated after screenshot exposure; future checks
   should focus on notification health, not rotation.
+- 2026-05-08: Added shadow-only `market_pick_evidence` rollup for model vs.
+  market learning. It does not change picks, locks, thresholds, staking,
+  provider order, or notification sends.
 - Approx. 2026-05-06: PropLine paid `$40/mo` shadow/fallback subscription active.
 - Approx. 2026-05-05: TheRundown paid production provider active.

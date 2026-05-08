@@ -69,6 +69,7 @@ The live layer is now separate from the production pipeline.
   - `live_pick_state`
   - `notification_events`
   - `line_movement_events`
+  - `market_pick_evidence`
   - `game_reminder_state`
 - Netlify scheduled function: `send-live-notifications`
 - Manual endpoint: `/api/send-live-notifications-now`
@@ -76,6 +77,12 @@ The live layer is now separate from the production pipeline.
 This layer can create live notification events, but it must not update
 dashboard artifacts, grading, picks history, calibration, model outputs, or
 production provider order.
+
+`market_pick_evidence` is a shadow-only rollup built from live market snapshots
+and current pick state. It is meant to answer "model says this, market did
+that, outcome was this" after enough graded rows accumulate. It does not change
+live picks, line locks, thresholds, staking, provider order, or notification
+sends.
 
 Current housekeeping:
 
