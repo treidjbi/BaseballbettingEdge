@@ -162,6 +162,15 @@ function verdictStake(v) {
   return 0;
 }
 const BET_LOG_SECRET_STORAGE = "bbe.betLogSecret";
+const BET_LOG_BOOK_OPTIONS = [
+  "FanDuel",
+  "DraftKings",
+  "BetMGM",
+  "BetRivers",
+  "Caesars",
+  "Kalshi",
+  "theScore Bet",
+];
 function bookForSide(p, side) {
   return side.direction === "OVER" ? p.best_over_book : p.best_under_book;
 }
@@ -177,11 +186,28 @@ function saveBetLogSecret(secret) {
 function clearBetLogSecret() {
   try { localStorage.removeItem(BET_LOG_SECRET_STORAGE); } catch {}
 }
+function canonicalBetLogBook(book) {
+  const value = String(book || "").trim();
+  const normalized = value.toLowerCase().replace(/\s+/g, "");
+  if (!normalized) return "";
+  if (normalized === "thescore" || normalized === "thescorebet") return "theScore Bet";
+  return BET_LOG_BOOK_OPTIONS.find((option) => option.toLowerCase().replace(/\s+/g, "") === normalized) || "";
+}
+function defaultBetLogBook(book) {
+  const value = String(book || "").trim();
+  const canonical = canonicalBetLogBook(value);
+  return {
+    book: canonical || (value ? "Other" : ""),
+    bookOther: canonical ? "" : value,
+  };
+}
 function defaultAcceptedBetForm(p, side) {
+  const defaultBook = defaultBetLogBook(bookForSide(p, side));
   return {
     line: String(side.k_line ?? p.k_line ?? ""),
     odds: String(side.odds ?? ""),
-    book: bookForSide(p, side) || "",
+    book: defaultBook.book,
+    bookOther: defaultBook.bookOther,
     units: String(verdictStake(side.verdict) || 1),
     secret: "",
   };
@@ -762,11 +788,15 @@ function PickDetail({ p, onClose }) {
 
   // ESC to close
   React.useEffect(() => {
-    const h = (e) => { if (e.key === "Escape") onClose(); };
+    const h = (e) => {
+      if (e.key !== "Escape") return;
+      if (betTicketOpen) closeBetTicket();
+      else onClose();
+    };
     window.addEventListener("keydown", h);
     document.body.style.overflow = "hidden";
     return () => { window.removeEventListener("keydown", h); document.body.style.overflow = ""; };
-  }, [onClose]);
+  }, [onClose, betTicketOpen, betLogState]);
 
   React.useEffect(() => {
     setBetTicketOpen(false);
@@ -847,6 +877,13 @@ function PickDetail({ p, onClose }) {
     if (betLogState === "saved") setBetLogState("idle");
   }
 
+  function closeBetTicket() {
+    if (betLogState === "saving") return;
+    setBetTicketOpen(false);
+    setBetLogError("");
+    setBetLogState("idle");
+  }
+
   async function handleAcceptedBetSave(e) {
     e.preventDefault();
     if (!canLogBet || betLogState === "saving") return;
@@ -854,7 +891,7 @@ function PickDetail({ p, onClose }) {
     const line = Number(betForm.line);
     const odds = Number(betForm.odds);
     const units = Number(betForm.units);
-    const book = String(betForm.book || "").trim();
+    const book = String(betForm.book === "Other" ? betForm.bookOther : betForm.book || "").trim();
     const secret = storedBetLogSecret() || String(betForm.secret || "").trim();
     if (!Number.isFinite(line) || !Number.isFinite(odds) || !book || !Number.isFinite(units) || units <= 0) {
       setBetLogError("Check line, odds, book, and units before saving.");
@@ -1184,12 +1221,39 @@ function PickDetail({ p, onClose }) {
           </div>
         </div>
 
-        {betTicketOpen && (
-          <form className="v2-bet-ticket" onSubmit={handleAcceptedBetSave}>
+        {/* Footer: optional manual accepted-bet log plus Close. */}
+        <div className={`v2-sheet-actions ${canLogBet ? "has-bet-log" : ""}`}>
+          {canLogBet && (
+            <button
+              className="v2-btn-primary"
+              onClick={openBetTicket}
+              disabled={betLogState === "saving"}
+            >
+              {betTicketOpen ? "Bet Ticket" : betLogState === "saved" ? "Logged" : "Log Bet"}
+            </button>
+          )}
+          <button className="v2-btn-ghost" onClick={onClose}>Close</button>
+        </div>
+      </div>
+
+      {betTicketOpen && (
+        <div className="v2-bet-ticket-modal" onClick={(e) => {
+          if (e.target === e.currentTarget) closeBetTicket();
+        }}>
+          <form
+            className="v2-bet-ticket"
+            onSubmit={handleAcceptedBetSave}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="v2-bet-ticket-title"
+            onClick={(e) => e.stopPropagation()}
+          >
             <div className="v2-bet-ticket-head">
               <div>
                 <div className="eyebrow">Bet ticket</div>
-                <div className="title">{p.pitcher} {best.direction} {best.k_line ?? p.k_line} Ks</div>
+                <div className="title" id="v2-bet-ticket-title">
+                  {p.pitcher} {best.direction} {best.k_line ?? p.k_line} Ks
+                </div>
               </div>
               <span className={`v2-bet-verdict ${verdictClass(best.verdict, best.direction)}`}>
                 {best.verdict}
@@ -1220,11 +1284,16 @@ function PickDetail({ p, onClose }) {
               </label>
               <label className="v2-bet-field">
                 <span>Book</span>
-                <input
+                <select
                   value={betForm.book}
                   onChange={(e) => updateBetForm("book", e.target.value)}
-                  autoComplete="off"
-                />
+                >
+                  <option value="" disabled>Choose book</option>
+                  {BET_LOG_BOOK_OPTIONS.map((book) => (
+                    <option key={book} value={book}>{book}</option>
+                  ))}
+                  <option value="Other">Other</option>
+                </select>
               </label>
               <label className="v2-bet-field">
                 <span>Units</span>
@@ -1235,6 +1304,16 @@ function PickDetail({ p, onClose }) {
                   autoComplete="off"
                 />
               </label>
+              {betForm.book === "Other" && (
+                <label className="v2-bet-field full">
+                  <span>Other book</span>
+                  <input
+                    value={betForm.bookOther}
+                    onChange={(e) => updateBetForm("bookOther", e.target.value)}
+                    autoComplete="off"
+                  />
+                </label>
+              )}
               {needsBetLogSecret && (
                 <label className="v2-bet-field full">
                   <span>Bet log key</span>
@@ -1253,35 +1332,17 @@ function PickDetail({ p, onClose }) {
               <button
                 type="button"
                 className="v2-btn-ghost"
-                onClick={() => {
-                  setBetTicketOpen(false);
-                  setBetLogError("");
-                  setBetLogState("idle");
-                }}
+                onClick={closeBetTicket}
               >
                 Cancel
               </button>
-              <button className="v2-btn-primary" type="submit" disabled={betLogState === "saving"}>
+              <button className="v2-btn-primary" type="submit" disabled={betLogState === "saving" || betLogState === "saved"}>
                 {betLogState === "saving" ? "Saving..." : "Save Bet"}
               </button>
             </div>
           </form>
-        )}
-
-        {/* Footer: optional manual accepted-bet log plus Close. */}
-        <div className={`v2-sheet-actions ${canLogBet ? "has-bet-log" : ""}`}>
-          {canLogBet && (
-            <button
-              className="v2-btn-primary"
-              onClick={openBetTicket}
-              disabled={betLogState === "saving"}
-            >
-              {betTicketOpen ? "Bet Ticket" : betLogState === "saved" ? "Logged" : "Log Bet"}
-            </button>
-          )}
-          <button className="v2-btn-ghost" onClick={onClose}>Close</button>
         </div>
-      </div>
+      )}
     </>,
     document.body
   );
