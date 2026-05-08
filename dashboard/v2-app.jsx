@@ -850,7 +850,7 @@ function PickDetail({ p, onClose }) {
 
     setBetLogState("saving");
     try {
-      const response = await fetch("/.netlify/functions/accepted-bets", {
+      const response = await fetch("/api/accepted-bets", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
