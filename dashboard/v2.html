@@ -914,6 +914,121 @@ body { display: flex; flex-direction: column; }
 .v2-move-legend .odds::before { background: var(--ink); }
 .v2-move-legend .line::before { background: var(--accent); }
 
+/* Accepted bet ticket */
+.v2-bet-ticket {
+  margin: 14px 18px 0;
+  padding: 14px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  background: color-mix(in oklab, var(--surface) 82%, var(--chip));
+  display: grid;
+  gap: 12px;
+}
+.v2-bet-ticket-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: flex-start;
+}
+.v2-bet-ticket-head .eyebrow {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  color: var(--ink-dim);
+}
+.v2-bet-ticket-head .title {
+  margin-top: 3px;
+  font-family: 'Oswald', sans-serif;
+  font-size: 17px;
+  font-weight: 600;
+  line-height: 1.15;
+  color: var(--ink);
+}
+.v2-bet-verdict {
+  flex-shrink: 0;
+  padding: 5px 9px;
+  border-radius: 999px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+.v2-bet-verdict.fire { background: var(--accent); color: #fff; }
+.v2-bet-verdict.fire-over { background: var(--accent-2); color: #fff; }
+.v2-bet-verdict.lean { background: color-mix(in oklab, var(--warn) 14%, transparent); color: var(--warn); }
+.v2-bet-ticket-meta {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  color: var(--ink-dim);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10.5px;
+  line-height: 1.35;
+}
+.v2-bet-fields {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+.v2-bet-field {
+  min-width: 0;
+  display: grid;
+  gap: 5px;
+}
+.v2-bet-field.full { grid-column: 1 / -1; }
+.v2-bet-field span {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  color: var(--ink-dim);
+}
+.v2-bet-field input {
+  width: 100%;
+  min-height: 42px;
+  padding: 10px 11px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 13px;
+  font-weight: 700;
+  outline: none;
+}
+.v2-bet-field input:focus {
+  border-color: color-mix(in oklab, var(--accent) 65%, var(--border));
+  box-shadow: 0 0 0 3px color-mix(in oklab, var(--accent) 12%, transparent);
+}
+.v2-bet-error,
+.v2-bet-success {
+  padding: 9px 10px;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 700;
+}
+.v2-bet-error {
+  background: color-mix(in oklab, var(--neg) 12%, transparent);
+  color: var(--neg);
+}
+.v2-bet-success {
+  background: color-mix(in oklab, var(--pos) 12%, transparent);
+  color: var(--pos);
+}
+.v2-bet-ticket-actions {
+  display: flex;
+  gap: 10px;
+}
+.v2-bet-ticket-actions .v2-btn-ghost,
+.v2-bet-ticket-actions .v2-btn-primary {
+  flex: 1;
+}
+
 /* Actions */
 .v2-sheet-actions {
   display: flex; gap: 10px; padding: 14px 18px 22px;
@@ -1265,6 +1380,6 @@ body { display: flex; flex-direction: column; }
   <script src="v2-data.js?v=2026-04-29-1"></script>
   <script src="v2-movement-helpers.js?v=2026-04-30-1"></script>
   <script src="v2-factor-details.js?v=2026-04-28-6"></script>
-  <script src="v2-app.js?v=2026-05-08-bet-log-api" defer></script>
+  <script src="v2-app.js?v=2026-05-08-bet-ticket" defer></script>
 </body>
 </html>

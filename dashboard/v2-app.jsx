@@ -168,10 +168,6 @@ function bookForSide(p, side) {
 function slateDateForBetLog() {
   return window.V2_DATA?.date || window.V2_CURRENT_DATE || phxDateISO();
 }
-function promptBetLogValue(label, fallback = "") {
-  const value = window.prompt(label, fallback == null ? "" : String(fallback));
-  return value == null ? null : String(value).trim();
-}
 function storedBetLogSecret() {
   try { return localStorage.getItem(BET_LOG_SECRET_STORAGE) || ""; } catch { return ""; }
 }
@@ -180,6 +176,15 @@ function saveBetLogSecret(secret) {
 }
 function clearBetLogSecret() {
   try { localStorage.removeItem(BET_LOG_SECRET_STORAGE); } catch {}
+}
+function defaultAcceptedBetForm(p, side) {
+  return {
+    line: String(side.k_line ?? p.k_line ?? ""),
+    odds: String(side.odds ?? ""),
+    book: bookForSide(p, side) || "",
+    units: String(verdictStake(side.verdict) || 1),
+    secret: "",
+  };
 }
 function buildAcceptedBetPayload(p, side, { line, odds, book, units }) {
   return {
@@ -734,6 +739,9 @@ function PickDetail({ p, onClose }) {
   const helpers = getMovementHelpers();
   const [showFactorDetails, setShowFactorDetails] = useState(false);
   const [betLogState, setBetLogState] = useState("idle");
+  const [betTicketOpen, setBetTicketOpen] = useState(false);
+  const [betLogError, setBetLogError] = useState("");
+  const [betForm, setBetForm] = useState(() => defaultAcceptedBetForm(p, best));
   const factorGroups = useMemo(() => {
     const buildFactorGroups = window.V2FactorDetails?.buildFactorGroups;
     return buildFactorGroups ? buildFactorGroups(p, best.direction) : [];
@@ -759,6 +767,14 @@ function PickDetail({ p, onClose }) {
     document.body.style.overflow = "hidden";
     return () => { window.removeEventListener("keydown", h); document.body.style.overflow = ""; };
   }, [onClose]);
+
+  React.useEffect(() => {
+    setBetTicketOpen(false);
+    setBetLogState("idle");
+    setBetLogError("");
+    setBetForm(defaultAcceptedBetForm(p, best));
+  }, [p.pitcher, best.direction, best.k_line, best.odds, best.verdict]);
+
   const SideCard = ({ s: rawSide }) => {
     const s = {
       ...rawSide,
@@ -817,35 +833,36 @@ function PickDetail({ p, onClose }) {
   const live = p.live;
   const result = p.result;
   const canLogBet = !isPass && !isFinal;
+  const needsBetLogSecret = !storedBetLogSecret();
 
-  async function handleAcceptedBetLog() {
+  function updateBetForm(field, value) {
+    setBetForm((prev) => ({ ...prev, [field]: value }));
+    setBetLogError("");
+  }
+
+  function openBetTicket() {
+    if (!canLogBet) return;
+    setBetTicketOpen(true);
+    setBetLogError("");
+    if (betLogState === "saved") setBetLogState("idle");
+  }
+
+  async function handleAcceptedBetSave(e) {
+    e.preventDefault();
     if (!canLogBet || betLogState === "saving") return;
-    const defaultLine = best.k_line ?? p.k_line ?? "";
-    const defaultOdds = best.odds ?? "";
-    const defaultBook = bookForSide(p, best) || "";
-    const defaultUnits = verdictStake(best.verdict) || 1;
 
-    const lineText = promptBetLogValue("Line taken", defaultLine);
-    if (lineText == null) return;
-    const oddsText = promptBetLogValue("Odds taken", defaultOdds);
-    if (oddsText == null) return;
-    const book = promptBetLogValue("Book", defaultBook);
-    if (book == null) return;
-    const unitsText = promptBetLogValue("Units", defaultUnits);
-    if (unitsText == null) return;
-
-    const line = Number(lineText);
-    const odds = Number(oddsText);
-    const units = Number(unitsText);
+    const line = Number(betForm.line);
+    const odds = Number(betForm.odds);
+    const units = Number(betForm.units);
+    const book = String(betForm.book || "").trim();
+    const secret = storedBetLogSecret() || String(betForm.secret || "").trim();
     if (!Number.isFinite(line) || !Number.isFinite(odds) || !book || !Number.isFinite(units) || units <= 0) {
-      window.alert("Could not log that bet. Check line, odds, book, and units.");
+      setBetLogError("Check line, odds, book, and units before saving.");
       return;
     }
-
-    let secret = storedBetLogSecret();
     if (!secret) {
-      secret = promptBetLogValue("Bet log key", "");
-      if (!secret) return;
+      setBetLogError("Enter the bet log key before saving.");
+      return;
     }
 
     setBetLogState("saving");
@@ -865,19 +882,22 @@ function PickDetail({ p, onClose }) {
       });
       if (response.status === 401) {
         clearBetLogSecret();
-        window.alert("Bet log key was rejected.");
+        setBetForm((prev) => ({ ...prev, secret: "" }));
+        setBetLogError("Bet log key was rejected.");
         setBetLogState("error");
-        setTimeout(() => setBetLogState("idle"), 3500);
         return;
       }
       if (!response.ok) throw new Error(`accepted_bet_failed:${response.status}`);
       saveBetLogSecret(secret);
       setBetLogState("saved");
-      setTimeout(() => setBetLogState("idle"), 3500);
+      setBetLogError("");
+      setTimeout(() => {
+        setBetTicketOpen(false);
+        setBetLogState("idle");
+      }, 1800);
     } catch {
-      window.alert("Could not log that bet. Try again in a minute.");
+      setBetLogError("Could not save the bet. Try again in a minute.");
       setBetLogState("error");
-      setTimeout(() => setBetLogState("idle"), 3500);
     }
   }
 
@@ -1164,15 +1184,99 @@ function PickDetail({ p, onClose }) {
           </div>
         </div>
 
+        {betTicketOpen && (
+          <form className="v2-bet-ticket" onSubmit={handleAcceptedBetSave}>
+            <div className="v2-bet-ticket-head">
+              <div>
+                <div className="eyebrow">Bet ticket</div>
+                <div className="title">{p.pitcher} {best.direction} {best.k_line ?? p.k_line} Ks</div>
+              </div>
+              <span className={`v2-bet-verdict ${verdictClass(best.verdict, best.direction)}`}>
+                {best.verdict}
+              </span>
+            </div>
+            <div className="v2-bet-ticket-meta">
+              Model ref: {bookForSide(p, best) || "Market"} {fmtOdds(best.odds)}
+              <span>EV {best.adj_ev > 0 ? "+" : ""}{(best.adj_ev * 100).toFixed(1)}%</span>
+            </div>
+            <div className="v2-bet-fields">
+              <label className="v2-bet-field">
+                <span>Line</span>
+                <input
+                  value={betForm.line}
+                  onChange={(e) => updateBetForm("line", e.target.value)}
+                  inputMode="decimal"
+                  autoComplete="off"
+                />
+              </label>
+              <label className="v2-bet-field">
+                <span>Odds</span>
+                <input
+                  value={betForm.odds}
+                  onChange={(e) => updateBetForm("odds", e.target.value)}
+                  inputMode="numeric"
+                  autoComplete="off"
+                />
+              </label>
+              <label className="v2-bet-field">
+                <span>Book</span>
+                <input
+                  value={betForm.book}
+                  onChange={(e) => updateBetForm("book", e.target.value)}
+                  autoComplete="off"
+                />
+              </label>
+              <label className="v2-bet-field">
+                <span>Units</span>
+                <input
+                  value={betForm.units}
+                  onChange={(e) => updateBetForm("units", e.target.value)}
+                  inputMode="decimal"
+                  autoComplete="off"
+                />
+              </label>
+              {needsBetLogSecret && (
+                <label className="v2-bet-field full">
+                  <span>Bet log key</span>
+                  <input
+                    value={betForm.secret}
+                    onChange={(e) => updateBetForm("secret", e.target.value)}
+                    type="password"
+                    autoComplete="off"
+                  />
+                </label>
+              )}
+            </div>
+            {betLogError && <div className="v2-bet-error">{betLogError}</div>}
+            {betLogState === "saved" && <div className="v2-bet-success">Bet logged</div>}
+            <div className="v2-bet-ticket-actions">
+              <button
+                type="button"
+                className="v2-btn-ghost"
+                onClick={() => {
+                  setBetTicketOpen(false);
+                  setBetLogError("");
+                  setBetLogState("idle");
+                }}
+              >
+                Cancel
+              </button>
+              <button className="v2-btn-primary" type="submit" disabled={betLogState === "saving"}>
+                {betLogState === "saving" ? "Saving..." : "Save Bet"}
+              </button>
+            </div>
+          </form>
+        )}
+
         {/* Footer: optional manual accepted-bet log plus Close. */}
         <div className={`v2-sheet-actions ${canLogBet ? "has-bet-log" : ""}`}>
           {canLogBet && (
             <button
               className="v2-btn-primary"
-              onClick={handleAcceptedBetLog}
+              onClick={openBetTicket}
               disabled={betLogState === "saving"}
             >
-              {betLogState === "saving" ? "Logging..." : betLogState === "saved" ? "Logged" : "Log Bet"}
+              {betTicketOpen ? "Bet Ticket" : betLogState === "saved" ? "Logged" : "Log Bet"}
             </button>
           )}
           <button className="v2-btn-ghost" onClick={onClose}>Close</button>

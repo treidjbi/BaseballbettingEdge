@@ -175,10 +175,6 @@
   function slateDateForBetLog() {
     return window.V2_DATA?.date || window.V2_CURRENT_DATE || phxDateISO();
   }
-  function promptBetLogValue(label, fallback = "") {
-    const value = window.prompt(label, fallback == null ? "" : String(fallback));
-    return value == null ? null : String(value).trim();
-  }
   function storedBetLogSecret() {
     try {
       return localStorage.getItem(BET_LOG_SECRET_STORAGE) || "";
@@ -197,6 +193,15 @@
       localStorage.removeItem(BET_LOG_SECRET_STORAGE);
     } catch {
     }
+  }
+  function defaultAcceptedBetForm(p, side) {
+    return {
+      line: String(side.k_line ?? p.k_line ?? ""),
+      odds: String(side.odds ?? ""),
+      book: bookForSide(p, side) || "",
+      units: String(verdictStake(side.verdict) || 1),
+      secret: ""
+    };
   }
   function buildAcceptedBetPayload(p, side, { line, odds, book, units }) {
     return {
@@ -591,6 +596,9 @@
     const helpers = getMovementHelpers();
     const [showFactorDetails, setShowFactorDetails] = useState(false);
     const [betLogState, setBetLogState] = useState("idle");
+    const [betTicketOpen, setBetTicketOpen] = useState(false);
+    const [betLogError, setBetLogError] = useState("");
+    const [betForm, setBetForm] = useState(() => defaultAcceptedBetForm(p, best));
     const factorGroups = useMemo(() => {
       const buildFactorGroups = window.V2FactorDetails?.buildFactorGroups;
       return buildFactorGroups ? buildFactorGroups(p, best.direction) : [];
@@ -615,6 +623,12 @@
         document.body.style.overflow = "";
       };
     }, [onClose]);
+    React.useEffect(() => {
+      setBetTicketOpen(false);
+      setBetLogState("idle");
+      setBetLogError("");
+      setBetForm(defaultAcceptedBetForm(p, best));
+    }, [p.pitcher, best.direction, best.k_line, best.odds, best.verdict]);
     const SideCard = ({ s: rawSide }) => {
       const s = {
         ...rawSide,
@@ -655,31 +669,32 @@
     const live = p.live;
     const result = p.result;
     const canLogBet = !isPass && !isFinal;
-    async function handleAcceptedBetLog() {
+    const needsBetLogSecret = !storedBetLogSecret();
+    function updateBetForm(field, value) {
+      setBetForm((prev) => ({ ...prev, [field]: value }));
+      setBetLogError("");
+    }
+    function openBetTicket() {
+      if (!canLogBet) return;
+      setBetTicketOpen(true);
+      setBetLogError("");
+      if (betLogState === "saved") setBetLogState("idle");
+    }
+    async function handleAcceptedBetSave(e) {
+      e.preventDefault();
       if (!canLogBet || betLogState === "saving") return;
-      const defaultLine = best.k_line ?? p.k_line ?? "";
-      const defaultOdds = best.odds ?? "";
-      const defaultBook = bookForSide(p, best) || "";
-      const defaultUnits = verdictStake(best.verdict) || 1;
-      const lineText = promptBetLogValue("Line taken", defaultLine);
-      if (lineText == null) return;
-      const oddsText = promptBetLogValue("Odds taken", defaultOdds);
-      if (oddsText == null) return;
-      const book = promptBetLogValue("Book", defaultBook);
-      if (book == null) return;
-      const unitsText = promptBetLogValue("Units", defaultUnits);
-      if (unitsText == null) return;
-      const line = Number(lineText);
-      const odds = Number(oddsText);
-      const units = Number(unitsText);
+      const line = Number(betForm.line);
+      const odds = Number(betForm.odds);
+      const units = Number(betForm.units);
+      const book = String(betForm.book || "").trim();
+      const secret = storedBetLogSecret() || String(betForm.secret || "").trim();
       if (!Number.isFinite(line) || !Number.isFinite(odds) || !book || !Number.isFinite(units) || units <= 0) {
-        window.alert("Could not log that bet. Check line, odds, book, and units.");
+        setBetLogError("Check line, odds, book, and units before saving.");
         return;
       }
-      let secret = storedBetLogSecret();
       if (!secret) {
-        secret = promptBetLogValue("Bet log key", "");
-        if (!secret) return;
+        setBetLogError("Enter the bet log key before saving.");
+        return;
       }
       setBetLogState("saving");
       try {
@@ -698,19 +713,22 @@
         });
         if (response.status === 401) {
           clearBetLogSecret();
-          window.alert("Bet log key was rejected.");
+          setBetForm((prev) => ({ ...prev, secret: "" }));
+          setBetLogError("Bet log key was rejected.");
           setBetLogState("error");
-          setTimeout(() => setBetLogState("idle"), 3500);
           return;
         }
         if (!response.ok) throw new Error(`accepted_bet_failed:${response.status}`);
         saveBetLogSecret(secret);
         setBetLogState("saved");
-        setTimeout(() => setBetLogState("idle"), 3500);
+        setBetLogError("");
+        setTimeout(() => {
+          setBetTicketOpen(false);
+          setBetLogState("idle");
+        }, 1800);
       } catch {
-        window.alert("Could not log that bet. Try again in a minute.");
+        setBetLogError("Could not save the bet. Try again in a minute.");
         setBetLogState("error");
-        setTimeout(() => setBetLogState("idle"), 3500);
       }
     }
     return ReactDOM.createPortal(
@@ -724,14 +742,65 @@
           onClick: () => setShowFactorDetails((prev) => !prev)
         },
         showFactorDetails ? "Hide factor details" : "Show factor details"
-      ), showFactorDetails && /* @__PURE__ */ React.createElement("div", { className: "v2-factor-panel", id: "v2-factor-details" }, factorGroups.map((group) => /* @__PURE__ */ React.createElement("div", { className: "v2-factor-group", key: group.key }, /* @__PURE__ */ React.createElement("div", { className: "v2-factor-group-h" }, group.label), /* @__PURE__ */ React.createElement("div", { className: "v2-factor-rows" }, group.rows.map((row) => /* @__PURE__ */ React.createElement("div", { className: "v2-factor-row", key: row.key }, /* @__PURE__ */ React.createElement("div", { className: "v2-factor-row-top" }, /* @__PURE__ */ React.createElement("span", { className: "v2-factor-label" }, row.label), /* @__PURE__ */ React.createElement("span", { className: `v2-factor-pill ${row.status}` }, row.status)), /* @__PURE__ */ React.createElement("div", { className: `v2-factor-value ${row.tone ? row.tone : ""}` }, row.value), row.note && /* @__PURE__ */ React.createElement("div", { className: "v2-factor-note" }, row.note))))))), /* @__PURE__ */ React.createElement("div", { className: "v2-stat-row" }, /* @__PURE__ */ React.createElement("span", { className: "lbl" }, Icon.users, " Opp. K-rate (bats)"), /* @__PURE__ */ React.createElement("span", { className: `val ${oppSupports == null ? "" : oppSupports ? "pos" : "neg"}` }, oppKRate == null ? "--" : `${(oppKRate * 100).toFixed(1)}%`, oppDelta != null && /* @__PURE__ */ React.createElement("span", { className: "delta" }, oppDelta >= 0 ? "+" : "", oppDelta.toFixed(1), " vs lg"))), /* @__PURE__ */ React.createElement("div", { className: "v2-stat-row" }, /* @__PURE__ */ React.createElement("span", { className: "lbl" }, Icon.ball, " Recent K/9 (L5)"), /* @__PURE__ */ React.createElement("span", { className: `val ${k9Supports == null ? "" : k9Supports ? "pos" : "neg"}` }, fmtFixedOrDash(recentK9, 1), k9Delta != null && /* @__PURE__ */ React.createElement("span", { className: "delta" }, k9Delta >= 0 ? "+" : "", k9Delta.toFixed(1), " vs lg"))), /* @__PURE__ */ React.createElement("div", { className: "v2-stat-row" }, /* @__PURE__ */ React.createElement("span", { className: "lbl" }, "Season K/9"), /* @__PURE__ */ React.createElement("span", { className: "val" }, fmtFixedOrDash(seasonK9, 1))), /* @__PURE__ */ React.createElement("div", { className: "v2-stat-row" }, /* @__PURE__ */ React.createElement("span", { className: "lbl" }, "Career K/9"), /* @__PURE__ */ React.createElement("span", { className: "val" }, fmtFixedOrDash(careerK9, 1)))), /* @__PURE__ */ React.createElement("div", { className: "v2-sheet-section" }, /* @__PURE__ */ React.createElement("div", { className: "h" }, `${movement.book || (best.direction === "OVER" ? p.best_over_book : p.best_under_book) || "Market"} \xB7 ${best.direction} \xB7 open to now`, movementSummary?.lineMoved && /* @__PURE__ */ React.createElement("span", { className: "v2-line-move-badge" }, `line moved ${movementSummary.openingLine} -> ${movementSummary.currentLine}`)), /* @__PURE__ */ React.createElement("div", { className: "v2-stat-row" }, /* @__PURE__ */ React.createElement("span", { className: "lbl" }, "Opening line"), /* @__PURE__ */ React.createElement("span", { className: "val" }, p.opening_line, " \xB7 ", fmtOdds(p.opening_over_odds), "/", fmtOdds(p.opening_under_odds))), /* @__PURE__ */ React.createElement("div", { className: "v2-stat-row" }, /* @__PURE__ */ React.createElement("span", { className: "lbl" }, "Current line"), /* @__PURE__ */ React.createElement("span", { className: "val" }, p.k_line, " \xB7 ", fmtOdds(sideOver.odds), "/", fmtOdds(sideUnder.odds))), /* @__PURE__ */ React.createElement(MovementChart, { movement }), /* @__PURE__ */ React.createElement("div", { style: { fontSize: 11, color: "var(--ink-dim)", marginTop: 6, fontFamily: "JetBrains Mono, monospace" } }, steam.cents > 0 ? `${steam.cents}\xA2 ${steam.steamWith ? "with" : "against"} the pick` : "No steam signal at the picked side price")), /* @__PURE__ */ React.createElement("div", { className: "v2-sheet-section" }, /* @__PURE__ */ React.createElement("div", { className: "h" }, "Model confidence"), /* @__PURE__ */ React.createElement("div", { className: "v2-stat-row" }, /* @__PURE__ */ React.createElement("span", { className: "lbl" }, "Actionable verdict"), /* @__PURE__ */ React.createElement("span", { className: "val" }, best.verdict)), best.raw_verdict && best.raw_verdict !== best.verdict && /* @__PURE__ */ React.createElement("div", { className: "v2-stat-row" }, /* @__PURE__ */ React.createElement("span", { className: "lbl" }, "Raw model verdict"), /* @__PURE__ */ React.createElement("span", { className: "val" }, best.raw_verdict)), /* @__PURE__ */ React.createElement("div", { className: "v2-stat-row" }, /* @__PURE__ */ React.createElement("span", { className: "lbl" }, "Input quality"), /* @__PURE__ */ React.createElement("span", { className: `val ${p.quality_gate_level === "clean" ? "pos" : ""}` }, qualityLabel(p.quality_gate_level), qualityReason(p, best) && /* @__PURE__ */ React.createElement("span", { className: "delta" }, qualityReason(p, best)))), /* @__PURE__ */ React.createElement("div", { className: "v2-stat-row" }, /* @__PURE__ */ React.createElement("span", { className: "lbl" }, "Movement confidence"), /* @__PURE__ */ React.createElement("span", { className: "val" }, (best.movement_conf * 100).toFixed(0), "%")), /* @__PURE__ */ React.createElement("div", { className: "v2-stat-row" }, /* @__PURE__ */ React.createElement("span", { className: "lbl" }, "Edge"), /* @__PURE__ */ React.createElement("span", { className: `val ${((best.edge ?? best.ev) || 0) > 0 ? "pos" : "neg"}` }, ((best.edge ?? best.ev) || 0) > 0 ? "+" : "", (((best.edge ?? best.ev) || 0) * 100).toFixed(1), "%")), /* @__PURE__ */ React.createElement("div", { className: "v2-stat-row" }, /* @__PURE__ */ React.createElement("span", { className: "lbl" }, "Raw EV ROI"), /* @__PURE__ */ React.createElement("span", { className: "val" }, best.ev > 0 ? "+" : "", (best.ev * 100).toFixed(1), "%")), /* @__PURE__ */ React.createElement("div", { className: "v2-stat-row" }, /* @__PURE__ */ React.createElement("span", { className: "lbl" }, "Adjusted EV ROI"), /* @__PURE__ */ React.createElement("span", { className: `val ${best.adj_ev > 0 ? "pos" : "neg"}` }, best.adj_ev > 0 ? "+" : "", (best.adj_ev * 100).toFixed(1), "%"))), /* @__PURE__ */ React.createElement("div", { className: `v2-sheet-actions ${canLogBet ? "has-bet-log" : ""}` }, canLogBet && /* @__PURE__ */ React.createElement(
+      ), showFactorDetails && /* @__PURE__ */ React.createElement("div", { className: "v2-factor-panel", id: "v2-factor-details" }, factorGroups.map((group) => /* @__PURE__ */ React.createElement("div", { className: "v2-factor-group", key: group.key }, /* @__PURE__ */ React.createElement("div", { className: "v2-factor-group-h" }, group.label), /* @__PURE__ */ React.createElement("div", { className: "v2-factor-rows" }, group.rows.map((row) => /* @__PURE__ */ React.createElement("div", { className: "v2-factor-row", key: row.key }, /* @__PURE__ */ React.createElement("div", { className: "v2-factor-row-top" }, /* @__PURE__ */ React.createElement("span", { className: "v2-factor-label" }, row.label), /* @__PURE__ */ React.createElement("span", { className: `v2-factor-pill ${row.status}` }, row.status)), /* @__PURE__ */ React.createElement("div", { className: `v2-factor-value ${row.tone ? row.tone : ""}` }, row.value), row.note && /* @__PURE__ */ React.createElement("div", { className: "v2-factor-note" }, row.note))))))), /* @__PURE__ */ React.createElement("div", { className: "v2-stat-row" }, /* @__PURE__ */ React.createElement("span", { className: "lbl" }, Icon.users, " Opp. K-rate (bats)"), /* @__PURE__ */ React.createElement("span", { className: `val ${oppSupports == null ? "" : oppSupports ? "pos" : "neg"}` }, oppKRate == null ? "--" : `${(oppKRate * 100).toFixed(1)}%`, oppDelta != null && /* @__PURE__ */ React.createElement("span", { className: "delta" }, oppDelta >= 0 ? "+" : "", oppDelta.toFixed(1), " vs lg"))), /* @__PURE__ */ React.createElement("div", { className: "v2-stat-row" }, /* @__PURE__ */ React.createElement("span", { className: "lbl" }, Icon.ball, " Recent K/9 (L5)"), /* @__PURE__ */ React.createElement("span", { className: `val ${k9Supports == null ? "" : k9Supports ? "pos" : "neg"}` }, fmtFixedOrDash(recentK9, 1), k9Delta != null && /* @__PURE__ */ React.createElement("span", { className: "delta" }, k9Delta >= 0 ? "+" : "", k9Delta.toFixed(1), " vs lg"))), /* @__PURE__ */ React.createElement("div", { className: "v2-stat-row" }, /* @__PURE__ */ React.createElement("span", { className: "lbl" }, "Season K/9"), /* @__PURE__ */ React.createElement("span", { className: "val" }, fmtFixedOrDash(seasonK9, 1))), /* @__PURE__ */ React.createElement("div", { className: "v2-stat-row" }, /* @__PURE__ */ React.createElement("span", { className: "lbl" }, "Career K/9"), /* @__PURE__ */ React.createElement("span", { className: "val" }, fmtFixedOrDash(careerK9, 1)))), /* @__PURE__ */ React.createElement("div", { className: "v2-sheet-section" }, /* @__PURE__ */ React.createElement("div", { className: "h" }, `${movement.book || (best.direction === "OVER" ? p.best_over_book : p.best_under_book) || "Market"} \xB7 ${best.direction} \xB7 open to now`, movementSummary?.lineMoved && /* @__PURE__ */ React.createElement("span", { className: "v2-line-move-badge" }, `line moved ${movementSummary.openingLine} -> ${movementSummary.currentLine}`)), /* @__PURE__ */ React.createElement("div", { className: "v2-stat-row" }, /* @__PURE__ */ React.createElement("span", { className: "lbl" }, "Opening line"), /* @__PURE__ */ React.createElement("span", { className: "val" }, p.opening_line, " \xB7 ", fmtOdds(p.opening_over_odds), "/", fmtOdds(p.opening_under_odds))), /* @__PURE__ */ React.createElement("div", { className: "v2-stat-row" }, /* @__PURE__ */ React.createElement("span", { className: "lbl" }, "Current line"), /* @__PURE__ */ React.createElement("span", { className: "val" }, p.k_line, " \xB7 ", fmtOdds(sideOver.odds), "/", fmtOdds(sideUnder.odds))), /* @__PURE__ */ React.createElement(MovementChart, { movement }), /* @__PURE__ */ React.createElement("div", { style: { fontSize: 11, color: "var(--ink-dim)", marginTop: 6, fontFamily: "JetBrains Mono, monospace" } }, steam.cents > 0 ? `${steam.cents}\xA2 ${steam.steamWith ? "with" : "against"} the pick` : "No steam signal at the picked side price")), /* @__PURE__ */ React.createElement("div", { className: "v2-sheet-section" }, /* @__PURE__ */ React.createElement("div", { className: "h" }, "Model confidence"), /* @__PURE__ */ React.createElement("div", { className: "v2-stat-row" }, /* @__PURE__ */ React.createElement("span", { className: "lbl" }, "Actionable verdict"), /* @__PURE__ */ React.createElement("span", { className: "val" }, best.verdict)), best.raw_verdict && best.raw_verdict !== best.verdict && /* @__PURE__ */ React.createElement("div", { className: "v2-stat-row" }, /* @__PURE__ */ React.createElement("span", { className: "lbl" }, "Raw model verdict"), /* @__PURE__ */ React.createElement("span", { className: "val" }, best.raw_verdict)), /* @__PURE__ */ React.createElement("div", { className: "v2-stat-row" }, /* @__PURE__ */ React.createElement("span", { className: "lbl" }, "Input quality"), /* @__PURE__ */ React.createElement("span", { className: `val ${p.quality_gate_level === "clean" ? "pos" : ""}` }, qualityLabel(p.quality_gate_level), qualityReason(p, best) && /* @__PURE__ */ React.createElement("span", { className: "delta" }, qualityReason(p, best)))), /* @__PURE__ */ React.createElement("div", { className: "v2-stat-row" }, /* @__PURE__ */ React.createElement("span", { className: "lbl" }, "Movement confidence"), /* @__PURE__ */ React.createElement("span", { className: "val" }, (best.movement_conf * 100).toFixed(0), "%")), /* @__PURE__ */ React.createElement("div", { className: "v2-stat-row" }, /* @__PURE__ */ React.createElement("span", { className: "lbl" }, "Edge"), /* @__PURE__ */ React.createElement("span", { className: `val ${((best.edge ?? best.ev) || 0) > 0 ? "pos" : "neg"}` }, ((best.edge ?? best.ev) || 0) > 0 ? "+" : "", (((best.edge ?? best.ev) || 0) * 100).toFixed(1), "%")), /* @__PURE__ */ React.createElement("div", { className: "v2-stat-row" }, /* @__PURE__ */ React.createElement("span", { className: "lbl" }, "Raw EV ROI"), /* @__PURE__ */ React.createElement("span", { className: "val" }, best.ev > 0 ? "+" : "", (best.ev * 100).toFixed(1), "%")), /* @__PURE__ */ React.createElement("div", { className: "v2-stat-row" }, /* @__PURE__ */ React.createElement("span", { className: "lbl" }, "Adjusted EV ROI"), /* @__PURE__ */ React.createElement("span", { className: `val ${best.adj_ev > 0 ? "pos" : "neg"}` }, best.adj_ev > 0 ? "+" : "", (best.adj_ev * 100).toFixed(1), "%"))), betTicketOpen && /* @__PURE__ */ React.createElement("form", { className: "v2-bet-ticket", onSubmit: handleAcceptedBetSave }, /* @__PURE__ */ React.createElement("div", { className: "v2-bet-ticket-head" }, /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { className: "eyebrow" }, "Bet ticket"), /* @__PURE__ */ React.createElement("div", { className: "title" }, p.pitcher, " ", best.direction, " ", best.k_line ?? p.k_line, " Ks")), /* @__PURE__ */ React.createElement("span", { className: `v2-bet-verdict ${verdictClass(best.verdict, best.direction)}` }, best.verdict)), /* @__PURE__ */ React.createElement("div", { className: "v2-bet-ticket-meta" }, "Model ref: ", bookForSide(p, best) || "Market", " ", fmtOdds(best.odds), /* @__PURE__ */ React.createElement("span", null, "EV ", best.adj_ev > 0 ? "+" : "", (best.adj_ev * 100).toFixed(1), "%")), /* @__PURE__ */ React.createElement("div", { className: "v2-bet-fields" }, /* @__PURE__ */ React.createElement("label", { className: "v2-bet-field" }, /* @__PURE__ */ React.createElement("span", null, "Line"), /* @__PURE__ */ React.createElement(
+        "input",
+        {
+          value: betForm.line,
+          onChange: (e) => updateBetForm("line", e.target.value),
+          inputMode: "decimal",
+          autoComplete: "off"
+        }
+      )), /* @__PURE__ */ React.createElement("label", { className: "v2-bet-field" }, /* @__PURE__ */ React.createElement("span", null, "Odds"), /* @__PURE__ */ React.createElement(
+        "input",
+        {
+          value: betForm.odds,
+          onChange: (e) => updateBetForm("odds", e.target.value),
+          inputMode: "numeric",
+          autoComplete: "off"
+        }
+      )), /* @__PURE__ */ React.createElement("label", { className: "v2-bet-field" }, /* @__PURE__ */ React.createElement("span", null, "Book"), /* @__PURE__ */ React.createElement(
+        "input",
+        {
+          value: betForm.book,
+          onChange: (e) => updateBetForm("book", e.target.value),
+          autoComplete: "off"
+        }
+      )), /* @__PURE__ */ React.createElement("label", { className: "v2-bet-field" }, /* @__PURE__ */ React.createElement("span", null, "Units"), /* @__PURE__ */ React.createElement(
+        "input",
+        {
+          value: betForm.units,
+          onChange: (e) => updateBetForm("units", e.target.value),
+          inputMode: "decimal",
+          autoComplete: "off"
+        }
+      )), needsBetLogSecret && /* @__PURE__ */ React.createElement("label", { className: "v2-bet-field full" }, /* @__PURE__ */ React.createElement("span", null, "Bet log key"), /* @__PURE__ */ React.createElement(
+        "input",
+        {
+          value: betForm.secret,
+          onChange: (e) => updateBetForm("secret", e.target.value),
+          type: "password",
+          autoComplete: "off"
+        }
+      ))), betLogError && /* @__PURE__ */ React.createElement("div", { className: "v2-bet-error" }, betLogError), betLogState === "saved" && /* @__PURE__ */ React.createElement("div", { className: "v2-bet-success" }, "Bet logged"), /* @__PURE__ */ React.createElement("div", { className: "v2-bet-ticket-actions" }, /* @__PURE__ */ React.createElement(
+        "button",
+        {
+          type: "button",
+          className: "v2-btn-ghost",
+          onClick: () => {
+            setBetTicketOpen(false);
+            setBetLogError("");
+            setBetLogState("idle");
+          }
+        },
+        "Cancel"
+      ), /* @__PURE__ */ React.createElement("button", { className: "v2-btn-primary", type: "submit", disabled: betLogState === "saving" }, betLogState === "saving" ? "Saving..." : "Save Bet"))), /* @__PURE__ */ React.createElement("div", { className: `v2-sheet-actions ${canLogBet ? "has-bet-log" : ""}` }, canLogBet && /* @__PURE__ */ React.createElement(
         "button",
         {
           className: "v2-btn-primary",
-          onClick: handleAcceptedBetLog,
+          onClick: openBetTicket,
           disabled: betLogState === "saving"
         },
-        betLogState === "saving" ? "Logging..." : betLogState === "saved" ? "Logged" : "Log Bet"
+        betTicketOpen ? "Bet Ticket" : betLogState === "saved" ? "Logged" : "Log Bet"
       ), /* @__PURE__ */ React.createElement("button", { className: "v2-btn-ghost", onClick: onClose }, "Close")))),
       document.body
     );
