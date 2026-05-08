@@ -916,7 +916,7 @@
             }
           }));
           if (cancelled) return;
-          const rows = slateResults.filter((result) => result.slate).flatMap((result) => historyRowsFromSlate(result.slate)).sort((a, b) => String(b.date || "").localeCompare(String(a.date || "")) || verdictStake(b.verdict) - verdictStake(a.verdict) || (b.adj_ev ?? -99) - (a.adj_ev ?? -99));
+          const rows = slateResults.filter((result) => result.slate).flatMap((result) => historyRowsFromSlate(result.slate)).filter((row) => row.result !== "push" && row.result !== "void").sort((a, b) => String(b.date || "").localeCompare(String(a.date || "")) || verdictStake(b.verdict) - verdictStake(a.verdict) || (b.adj_ev ?? -99) - (a.adj_ev ?? -99));
           const skipped = slateResults.filter((result) => result.error).length;
           setState({ status: "ready", rows, error: "", skipped });
         } catch (err) {
@@ -950,13 +950,10 @@
         return true;
       });
     }, [state.rows, query, verdictFilter, resultFilter, teamFilter, dateFilter]);
-    const gradedRows = state.rows.filter((r) => r.result === "win" || r.result === "loss" || r.result === "push" || r.result === "void");
+    const gradedRows = state.rows.filter((r) => r.result === "win" || r.result === "loss");
     const wins = gradedRows.filter((r) => r.result === "win").length;
     const losses = gradedRows.filter((r) => r.result === "loss").length;
-    const pushes = gradedRows.filter((r) => r.result === "push").length;
-    const voids = gradedRows.filter((r) => r.result === "void").length;
     const fireCount = state.rows.filter((r) => String(r.verdict || "").startsWith("FIRE")).length;
-    const cleanRows = state.rows.filter((r) => r.quality_gate_level === "clean").length;
     const openSlate = (date) => {
       const today2 = window.__v2GetAppDate ? window.__v2GetAppDate() : phxDateISO();
       const u = new URL(location.href);
@@ -965,7 +962,7 @@
       u.searchParams.delete("state");
       location.href = u.toString();
     };
-    return /* @__PURE__ */ React.createElement(React.Fragment, null, /* @__PURE__ */ React.createElement("div", { className: "v2-header" }, /* @__PURE__ */ React.createElement("div", { className: "v2-header-row" }, /* @__PURE__ */ React.createElement("div", { className: "v2-brand" }, /* @__PURE__ */ React.createElement("div", { className: "v2-kmark" }, "K"), /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { className: "v2-wordmark" }, "History"), /* @__PURE__ */ React.createElement("div", { className: "v2-subtitle" }, "Completed slates - pitcher and team lookup"))), /* @__PURE__ */ React.createElement("div", { className: "v2-header-actions" }, /* @__PURE__ */ React.createElement("button", { className: "v2-icon-btn", title: "Theme", onClick: () => window.__v2Theme?.toggleTheme() }, window.__v2Theme?.theme === "dark" ? Icon.sun : Icon.moon)))), /* @__PURE__ */ React.createElement("div", { className: "v2-history-hero" }, /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { className: "n" }, filtered.length)), /* @__PURE__ */ React.createElement("div", { style: { flex: 1 } }, /* @__PURE__ */ React.createElement("div", { className: "lbl" }, "Rows in view"), /* @__PURE__ */ React.createElement("div", { className: "ttl" }, state.status === "loading" ? "Loading recent slates" : `${wins}W-${losses}L-${pushes}P${voids ? ` - ${voids} void` : ""} - ${fireCount} FIRE`), state.skipped > 0 && /* @__PURE__ */ React.createElement("div", { className: "v2-history-note" }, state.skipped, " archived date", state.skipped === 1 ? "" : "s", " skipped"))), /* @__PURE__ */ React.createElement("div", { className: "v2-history-tools" }, /* @__PURE__ */ React.createElement(
+    return /* @__PURE__ */ React.createElement(React.Fragment, null, /* @__PURE__ */ React.createElement("div", { className: "v2-header" }, /* @__PURE__ */ React.createElement("div", { className: "v2-header-row" }, /* @__PURE__ */ React.createElement("div", { className: "v2-brand" }, /* @__PURE__ */ React.createElement("div", { className: "v2-kmark" }, "K"), /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { className: "v2-wordmark" }, "History"), /* @__PURE__ */ React.createElement("div", { className: "v2-subtitle" }, "Completed slates - pitcher and team lookup"))), /* @__PURE__ */ React.createElement("div", { className: "v2-header-actions" }, /* @__PURE__ */ React.createElement("button", { className: "v2-icon-btn", title: "Theme", onClick: () => window.__v2Theme?.toggleTheme() }, window.__v2Theme?.theme === "dark" ? Icon.sun : Icon.moon)))), /* @__PURE__ */ React.createElement("div", { className: "v2-history-hero" }, /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { className: "n" }, filtered.length)), /* @__PURE__ */ React.createElement("div", { style: { flex: 1 } }, /* @__PURE__ */ React.createElement("div", { className: "lbl" }, "Rows in view"), /* @__PURE__ */ React.createElement("div", { className: "ttl" }, state.status === "loading" ? "Loading recent slates" : `${wins}W-${losses}L - ${fireCount} FIRE`), state.skipped > 0 && /* @__PURE__ */ React.createElement("div", { className: "v2-history-note" }, state.skipped, " archived date", state.skipped === 1 ? "" : "s", " skipped"))), /* @__PURE__ */ React.createElement("div", { className: "v2-history-tools" }, /* @__PURE__ */ React.createElement(
       "input",
       {
         className: "v2-history-search",
@@ -982,7 +979,7 @@
         onClick: () => setVerdictFilter(k)
       },
       l
-    ))), /* @__PURE__ */ React.createElement("div", { className: "v2-steam-filter v2-history-filter secondary" }, [["ALL", "Results"], ["WIN", "Wins"], ["LOSS", "Losses"], ["PUSH", "Pushes"], ["VOID", "Voids"]].map(([k, l]) => /* @__PURE__ */ React.createElement(
+    ))), /* @__PURE__ */ React.createElement("div", { className: "v2-steam-filter v2-history-filter secondary" }, [["ALL", "Results"], ["WIN", "Wins"], ["LOSS", "Losses"]].map(([k, l]) => /* @__PURE__ */ React.createElement(
       "button",
       {
         key: k,

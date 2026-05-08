@@ -1579,6 +1579,7 @@ function HistoryTab() {
         const rows = slateResults
           .filter(result => result.slate)
           .flatMap(result => historyRowsFromSlate(result.slate))
+          .filter(row => row.result !== "push" && row.result !== "void")
           .sort((a, b) => (
             String(b.date || "").localeCompare(String(a.date || "")) ||
             verdictStake(b.verdict) - verdictStake(a.verdict) ||
@@ -1618,13 +1619,10 @@ function HistoryTab() {
     });
   }, [state.rows, query, verdictFilter, resultFilter, teamFilter, dateFilter]);
 
-  const gradedRows = state.rows.filter(r => r.result === "win" || r.result === "loss" || r.result === "push" || r.result === "void");
+  const gradedRows = state.rows.filter(r => r.result === "win" || r.result === "loss");
   const wins = gradedRows.filter(r => r.result === "win").length;
   const losses = gradedRows.filter(r => r.result === "loss").length;
-  const pushes = gradedRows.filter(r => r.result === "push").length;
-  const voids = gradedRows.filter(r => r.result === "void").length;
   const fireCount = state.rows.filter(r => String(r.verdict || "").startsWith("FIRE")).length;
-  const cleanRows = state.rows.filter(r => r.quality_gate_level === "clean").length;
 
   const openSlate = (date) => {
     const today = window.__v2GetAppDate ? window.__v2GetAppDate() : phxDateISO();
@@ -1662,7 +1660,7 @@ function HistoryTab() {
           <div className="ttl">
             {state.status === "loading"
               ? "Loading recent slates"
-              : `${wins}W-${losses}L-${pushes}P${voids ? ` - ${voids} void` : ""} - ${fireCount} FIRE`}
+              : `${wins}W-${losses}L - ${fireCount} FIRE`}
           </div>
           {state.skipped > 0 && (
             <div className="v2-history-note">{state.skipped} archived date{state.skipped === 1 ? "" : "s"} skipped</div>
@@ -1703,7 +1701,7 @@ function HistoryTab() {
       </div>
 
       <div className="v2-steam-filter v2-history-filter secondary">
-        {[["ALL","Results"],["WIN","Wins"],["LOSS","Losses"],["PUSH","Pushes"],["VOID","Voids"]].map(([k,l]) => (
+        {[["ALL","Results"],["WIN","Wins"],["LOSS","Losses"]].map(([k,l]) => (
           <button
             key={k}
             className={`f ${resultFilter === k ? "active" : ""}`}
