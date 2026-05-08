@@ -76,14 +76,42 @@ def _movement_body(
     previous_odds: int,
     current_odds: int,
     book: str,
+    market_direction: str,
+    bet_value_direction: str,
 ) -> str:
     side_label = side.upper()
+    market_label = "market toward pick" if market_direction == "toward_pick" else "market away from pick"
+    value_label = "better" if bet_value_direction == "better_now" else "worse"
     if movement_kind == "odds":
         return (
-            f"{pitcher_name} {side_label} {current_line:g} odds moved "
-            f"{_format_odds(previous_odds)} to {_format_odds(current_odds)} at {book}"
+            f"{pitcher_name} {side_label} {current_line:g} odds "
+            f"{_format_odds(previous_odds)}->{_format_odds(current_odds)} at {book}; "
+            f"{market_label}, price {value_label}"
         )
-    return f"{pitcher_name} {side_label} moved {previous_line:g} to {current_line:g} at {book}"
+    return (
+        f"{pitcher_name} {side_label} {previous_line:g}->{current_line:g} at {book}; "
+        f"{market_label}, current line {value_label}"
+    )
+
+
+def _line_bet_value_direction(side: str, previous_line: float, current_line: float) -> str:
+    if side == "over":
+        return "better_now" if current_line < previous_line else "worse_now"
+    return "better_now" if current_line > previous_line else "worse_now"
+
+
+def _line_market_direction(side: str, previous_line: float, current_line: float) -> str:
+    if side == "over":
+        return "toward_pick" if current_line > previous_line else "away_from_pick"
+    return "toward_pick" if current_line < previous_line else "away_from_pick"
+
+
+def _odds_bet_value_direction(odds_delta: int) -> str:
+    return "better_now" if odds_delta > 0 else "worse_now"
+
+
+def _odds_market_direction(odds_delta: int) -> str:
+    return "away_from_pick" if odds_delta > 0 else "toward_pick"
 
 
 def _parse_datetime(value: datetime | str) -> datetime:
@@ -446,13 +474,20 @@ def build_line_movement_events(
         else:
             movement_kind = "odds"
 
-        if side == "over":
-            with_model = current_line < previous_line or (not line_changed and odds_delta > 0)
+        if line_changed:
+            bet_value_direction = _line_bet_value_direction(side, previous_line, current_line)
+            market_direction = _line_market_direction(side, previous_line, current_line)
         else:
-            with_model = current_line > previous_line or (not line_changed and odds_delta > 0)
+            bet_value_direction = _odds_bet_value_direction(odds_delta)
+            market_direction = _odds_market_direction(odds_delta)
 
+        # Keep the old event_type/movement_direction names for compatibility;
+        # they describe the current bet value, not market confirmation.
+        with_model = bet_value_direction == "better_now"
         movement_direction = "with_model" if with_model else "against_model"
         event_type = "line_moved_with_us" if with_model else "line_moved_against_us"
+        title_noun = "Price" if movement_kind == "odds" else "Line"
+        title_direction = "Better" if with_model else "Worse"
         pitcher_name = str(pick.get("pitcher") or snapshot.get("player_name") or "").strip()
         dedupe_key = (
             f"{slate_date}:line:{provider_event_id}:{book}:{normalized}:{side}:"
@@ -463,7 +498,7 @@ def build_line_movement_events(
             "slate_date": slate_date,
             "event_type": event_type,
             "severity": "watch" if with_model else "action",
-            "title": "Line Moved With Us" if with_model else "Line Moved Against Us",
+            "title": f"{title_noun} {title_direction} Now",
             "body": _movement_body(
                 pitcher_name=pitcher_name,
                 side=side,
@@ -473,6 +508,8 @@ def build_line_movement_events(
                 previous_odds=previous_odds,
                 current_odds=current_odds,
                 book=book,
+                market_direction=market_direction,
+                bet_value_direction=bet_value_direction,
             ),
             "url": "/",
             "dedupe_key": dedupe_key,
@@ -487,6 +524,8 @@ def build_line_movement_events(
                 "previous_odds": previous_odds,
                 "current_odds": current_odds,
                 "movement_direction": movement_direction,
+                "market_direction": market_direction,
+                "bet_value_direction": bet_value_direction,
                 "movement_kind": movement_kind,
                 "source_snapshot_id": snapshot.get("id"),
             },
@@ -519,7 +558,9 @@ def build_line_movement_rows(movement_events: list[dict[str, Any]]) -> list[dict
             "dedupe_key": event.get("dedupe_key"),
             "source_snapshot_id": payload.get("source_snapshot_id"),
             "metadata": {
+                "bet_value_direction": payload.get("bet_value_direction"),
                 "event_type": event.get("event_type"),
+                "market_direction": payload.get("market_direction"),
                 "provider_event_id": payload.get("provider_event_id"),
                 "severity": event.get("severity"),
             },

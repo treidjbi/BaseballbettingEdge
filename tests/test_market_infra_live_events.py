@@ -253,7 +253,11 @@ def test_over_line_drop_is_with_model_movement():
     )
 
     assert events[0]["event_type"] == "line_moved_with_us"
+    assert events[0]["title"] == "Line Better Now"
+    assert events[0]["body"] == "Tarik Skubal OVER 6.5->5.5 at fanduel; market away from pick, current line better"
     assert events[0]["payload"]["movement_direction"] == "with_model"
+    assert events[0]["payload"]["market_direction"] == "away_from_pick"
+    assert events[0]["payload"]["bet_value_direction"] == "better_now"
     assert events[0]["payload"]["provider_event_id"] == "game-1"
     assert events[0]["dedupe_key"] == "2026-05-06:line:game-1:fanduel:tarik skubal:over:6.5:-110:5.5:-112"
 
@@ -290,7 +294,11 @@ def test_under_line_drop_is_against_model_movement():
     )
 
     assert events[0]["event_type"] == "line_moved_against_us"
+    assert events[0]["title"] == "Line Worse Now"
+    assert events[0]["body"] == "Tarik Skubal UNDER 6.5->5.5 at fanduel; market toward pick, current line worse"
     assert events[0]["payload"]["movement_direction"] == "against_model"
+    assert events[0]["payload"]["market_direction"] == "toward_pick"
+    assert events[0]["payload"]["bet_value_direction"] == "worse_now"
 
 
 def test_under_snapshot_does_not_emit_movement_for_fire_over_pick():
@@ -395,7 +403,10 @@ def test_odds_only_movement_body_describes_odds_change():
     )
 
     assert events[0]["payload"]["movement_kind"] == "odds"
-    assert events[0]["body"] == "Tarik Skubal UNDER 4.5 odds moved -152 to -138 at fanduel"
+    assert events[0]["title"] == "Price Better Now"
+    assert events[0]["payload"]["market_direction"] == "away_from_pick"
+    assert events[0]["payload"]["bet_value_direction"] == "better_now"
+    assert events[0]["body"] == "Tarik Skubal UNDER 4.5 odds -152->-138 at fanduel; market away from pick, price better"
 
 
 def test_movement_ignores_snapshots_from_different_provider_events():
@@ -481,7 +492,9 @@ def test_line_movement_events_convert_to_audit_rows():
         "dedupe_key": "2026-05-06:line:game-1:fanduel:tarik skubal:over:6.5:-110:5.5:-112",
         "source_snapshot_id": "snapshot-1",
         "metadata": {
+            "bet_value_direction": "better_now",
             "event_type": "line_moved_with_us",
+            "market_direction": "away_from_pick",
             "provider_event_id": "game-1",
             "severity": "watch",
         },
