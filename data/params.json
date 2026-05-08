@@ -2,12 +2,14 @@
   "weight_season_cap": 0.4,
   "weight_recent": 0.05,
   "ump_scale": 0.9,
-  "lambda_bias": -0.162,
-  "swstr_k9_scale": 22.0,
-  "updated_at": "2026-05-07T12:14:17Z",
-  "sample_size": 170,
+  "lambda_bias": -0.13,
+  "swstr_k9_scale": 20.0,
+  "updated_at": "2026-05-08T11:48:33Z",
+  "sample_size": 182,
   "formula_change_date": "2026-04-28",
   "calibration_notes": [
+    "[2026-05-08] Lambda bias adjusted -0.162 \u2192 -0.130 (model was systematically over-predicting Ks)",
+    "[2026-05-08] SwStr%% K/9 scale decreased 22.0 \u2192 20.0 (SwStr%% delta not reliably predictive of K outcomes)",
     "[2026-05-07] Lambda bias adjusted -0.135 \u2192 -0.162 (model was systematically over-predicting Ks)",
     "[2026-05-07] SwStr%% K/9 scale decreased 24.0 \u2192 22.0 (SwStr%% delta not reliably predictive of K outcomes)",
     "[2026-05-06] Lambda bias adjusted -0.153 \u2192 -0.135 (model was systematically over-predicting Ks)",
@@ -25,8 +27,6 @@
     "[2026-04-27] Live SwStr transport confirmed; preserved current params as priors and stopped learning from the dead-SwStr window",
     "[2026-04-27] Lambda bias adjusted -0.317 \u2192 -0.245 (model was systematically over-predicting Ks)",
     "[2026-04-27] K/9 blend weights updated: season 40% \u2192 40%, recent 15% \u2192 17%",
-    "[2026-04-26] Lambda bias adjusted -0.306 \u2192 -0.317 (model was systematically over-predicting Ks)",
-    "[2026-04-26] Umpire scale decreased 1.000 \u2192 0.950 (umpire adjustment not reliably predictive)",
-    "[2026-04-25] Lambda bias adjusted -0.345 \u2192 -0.306 (model was systematically over-predicting Ks)"
+    "[2026-04-26] Lambda bias adjusted -0.306 \u2192 -0.317 (model was systematically over-predicting Ks)"
   ]
 }
