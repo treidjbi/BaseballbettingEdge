@@ -931,6 +931,10 @@ body { display: flex; flex-direction: column; }
   flex: 1;
   display: inline-flex; align-items: center; justify-content: center; gap: 8px;
 }
+.v2-btn-primary:disabled {
+  cursor: default;
+  opacity: .7;
+}
 .v2-btn-primary .v2-btn-arrow {
   font-size: 15px; opacity: .7; font-weight: 400; margin-top: -1px;
 }
@@ -942,6 +946,8 @@ body { display: flex; flex-direction: column; }
    the right-side CTA). Scoped to sheet-actions so the ErrorState retry
    button, which also uses v2-btn-ghost, is unaffected. */
 .v2-sheet-actions .v2-btn-ghost { flex: 1; }
+.v2-sheet-actions.has-bet-log .v2-btn-ghost { flex: 0 0 92px; }
+.v2-sheet-actions.has-bet-log .v2-btn-primary { min-width: 0; }
 
 /* ── States: empty / loading / error ──────────── */
 .v2-state {
@@ -1048,6 +1054,6 @@ body { display: flex; flex-direction: column; }
   <script src="v2-data.js?v=2026-04-29-1"></script>
   <script src="v2-movement-helpers.js?v=2026-04-30-1"></script>
   <script src="v2-factor-details.js?v=2026-04-28-6"></script>
-  <script src="v2-app.js?v=2026-04-30-1" defer></script>
+  <script src="v2-app.js?v=2026-05-08-accepted-bets" defer></script>
 </body>
 </html>

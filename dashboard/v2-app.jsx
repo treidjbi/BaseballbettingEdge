@@ -160,6 +160,56 @@ function verdictStake(v) {
   if (v === "FIRE 1u") return 1;
   return 0;
 }
+const BET_LOG_SECRET_STORAGE = "bbe.betLogSecret";
+function bookForSide(p, side) {
+  return side.direction === "OVER" ? p.best_over_book : p.best_under_book;
+}
+function slateDateForBetLog() {
+  return window.V2_DATA?.date || window.V2_CURRENT_DATE || phxDateISO();
+}
+function promptBetLogValue(label, fallback = "") {
+  const value = window.prompt(label, fallback == null ? "" : String(fallback));
+  return value == null ? null : String(value).trim();
+}
+function storedBetLogSecret() {
+  try { return localStorage.getItem(BET_LOG_SECRET_STORAGE) || ""; } catch { return ""; }
+}
+function saveBetLogSecret(secret) {
+  try { localStorage.setItem(BET_LOG_SECRET_STORAGE, secret); } catch {}
+}
+function clearBetLogSecret() {
+  try { localStorage.removeItem(BET_LOG_SECRET_STORAGE); } catch {}
+}
+function buildAcceptedBetPayload(p, side, { line, odds, book, units }) {
+  return {
+    slate_date: slateDateForBetLog(),
+    pitcher: p.pitcher,
+    side: side.direction,
+    verdict: side.verdict,
+    k_line: line,
+    odds,
+    book,
+    units,
+    game_time: p.game_time || null,
+    source: "dashboard_manual",
+    model_snapshot: {
+      lambda: p.lambda ?? null,
+      adj_ev: side.adj_ev ?? null,
+      ev: side.ev ?? null,
+      edge: side.edge ?? null,
+      win_prob: side.win_prob ?? null,
+      movement_conf: side.movement_conf ?? null,
+      quality_gate_level: p.quality_gate_level || null,
+    },
+    metadata: {
+      team: p.team || null,
+      opp_team: p.opp_team || null,
+      game_state: p.game_state || null,
+      ref_book: bookForSide(p, side) || null,
+      generated_at: window.V2_DATA?.generated_at || null,
+    },
+  };
+}
 function trackedPicksForPitcher(p) {
   return Array.isArray(p.tracked_picks) ? p.tracked_picks : [];
 }
@@ -587,6 +637,7 @@ function PickDetail({ p, onClose }) {
   const displayUnder = best.direction === "UNDER" ? best : sideUnder;
   const helpers = getMovementHelpers();
   const [showFactorDetails, setShowFactorDetails] = useState(false);
+  const [betLogState, setBetLogState] = useState("idle");
   const factorGroups = useMemo(() => {
     const buildFactorGroups = window.V2FactorDetails?.buildFactorGroups;
     return buildFactorGroups ? buildFactorGroups(p, best.direction) : [];
@@ -669,6 +720,70 @@ function PickDetail({ p, onClose }) {
   const isPass = best.verdict === "PASS";
   const live = p.live;
   const result = p.result;
+  const canLogBet = !isPass && !isFinal;
+
+  async function handleAcceptedBetLog() {
+    if (!canLogBet || betLogState === "saving") return;
+    const defaultLine = best.k_line ?? p.k_line ?? "";
+    const defaultOdds = best.odds ?? "";
+    const defaultBook = bookForSide(p, best) || "";
+    const defaultUnits = verdictStake(best.verdict) || 1;
+
+    const lineText = promptBetLogValue("Line taken", defaultLine);
+    if (lineText == null) return;
+    const oddsText = promptBetLogValue("Odds taken", defaultOdds);
+    if (oddsText == null) return;
+    const book = promptBetLogValue("Book", defaultBook);
+    if (book == null) return;
+    const unitsText = promptBetLogValue("Units", defaultUnits);
+    if (unitsText == null) return;
+
+    const line = Number(lineText);
+    const odds = Number(oddsText);
+    const units = Number(unitsText);
+    if (!Number.isFinite(line) || !Number.isFinite(odds) || !book || !Number.isFinite(units) || units <= 0) {
+      window.alert("Could not log that bet. Check line, odds, book, and units.");
+      return;
+    }
+
+    let secret = storedBetLogSecret();
+    if (!secret) {
+      secret = promptBetLogValue("Bet log key", "");
+      if (!secret) return;
+    }
+
+    setBetLogState("saving");
+    try {
+      const response = await fetch("/.netlify/functions/accepted-bets", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-bet-log-secret": secret,
+        },
+        body: JSON.stringify(buildAcceptedBetPayload(p, best, {
+          line,
+          odds: Math.trunc(odds),
+          book,
+          units,
+        })),
+      });
+      if (response.status === 401) {
+        clearBetLogSecret();
+        window.alert("Bet log key was rejected.");
+        setBetLogState("error");
+        setTimeout(() => setBetLogState("idle"), 3500);
+        return;
+      }
+      if (!response.ok) throw new Error(`accepted_bet_failed:${response.status}`);
+      saveBetLogSecret(secret);
+      setBetLogState("saved");
+      setTimeout(() => setBetLogState("idle"), 3500);
+    } catch {
+      window.alert("Could not log that bet. Try again in a minute.");
+      setBetLogState("error");
+      setTimeout(() => setBetLogState("idle"), 3500);
+    }
+  }
 
   return ReactDOM.createPortal(
     <>
@@ -953,12 +1068,17 @@ function PickDetail({ p, onClose }) {
           </div>
         </div>
 
-        {/* Footer: single full-width Close. Previous iterations placed a
-            "Bet {side} on {book}" deeplink placeholder + status pills (Live /
-            No bet placed / No actionable edge) alongside it — all were
-            non-functional stubs and the state they echoed is already visible
-            in the sheet body (verdict badge, live block, result block). */}
-        <div className="v2-sheet-actions">
+        {/* Footer: optional manual accepted-bet log plus Close. */}
+        <div className={`v2-sheet-actions ${canLogBet ? "has-bet-log" : ""}`}>
+          {canLogBet && (
+            <button
+              className="v2-btn-primary"
+              onClick={handleAcceptedBetLog}
+              disabled={betLogState === "saving"}
+            >
+              {betLogState === "saving" ? "Logging..." : betLogState === "saved" ? "Logged" : "Log Bet"}
+            </button>
+          )}
           <button className="v2-btn-ghost" onClick={onClose}>Close</button>
         </div>
       </div>

@@ -166,6 +166,68 @@ function verdictStake(v) {
   if (v === "FIRE 1u") return 1;
   return 0;
 }
+const BET_LOG_SECRET_STORAGE = "bbe.betLogSecret";
+function bookForSide(p, side) {
+  return side.direction === "OVER" ? p.best_over_book : p.best_under_book;
+}
+function slateDateForBetLog() {
+  var _a;
+  return ((_a = window.V2_DATA) == null ? void 0 : _a.date) || window.V2_CURRENT_DATE || phxDateISO();
+}
+function promptBetLogValue(label, fallback = "") {
+  const value = window.prompt(label, fallback == null ? "" : String(fallback));
+  return value == null ? null : String(value).trim();
+}
+function storedBetLogSecret() {
+  try {
+    return localStorage.getItem(BET_LOG_SECRET_STORAGE) || "";
+  } catch {
+    return "";
+  }
+}
+function saveBetLogSecret(secret) {
+  try {
+    localStorage.setItem(BET_LOG_SECRET_STORAGE, secret);
+  } catch {
+  }
+}
+function clearBetLogSecret() {
+  try {
+    localStorage.removeItem(BET_LOG_SECRET_STORAGE);
+  } catch {
+  }
+}
+function buildAcceptedBetPayload(p, side, { line, odds, book, units }) {
+  var _a, _b, _c, _d, _e, _f, _g;
+  return {
+    slate_date: slateDateForBetLog(),
+    pitcher: p.pitcher,
+    side: side.direction,
+    verdict: side.verdict,
+    k_line: line,
+    odds,
+    book,
+    units,
+    game_time: p.game_time || null,
+    source: "dashboard_manual",
+    model_snapshot: {
+      lambda: (_a = p.lambda) != null ? _a : null,
+      adj_ev: (_b = side.adj_ev) != null ? _b : null,
+      ev: (_c = side.ev) != null ? _c : null,
+      edge: (_d = side.edge) != null ? _d : null,
+      win_prob: (_e = side.win_prob) != null ? _e : null,
+      movement_conf: (_f = side.movement_conf) != null ? _f : null,
+      quality_gate_level: p.quality_gate_level || null
+    },
+    metadata: {
+      team: p.team || null,
+      opp_team: p.opp_team || null,
+      game_state: p.game_state || null,
+      ref_book: bookForSide(p, side) || null,
+      generated_at: ((_g = window.V2_DATA) == null ? void 0 : _g.generated_at) || null
+    }
+  };
+}
 function trackedPicksForPitcher(p) {
   return Array.isArray(p.tracked_picks) ? p.tracked_picks : [];
 }
@@ -178,22 +240,26 @@ function trackedPillsForCard(p, side) {
 function primaryTrackedPick(p) {
   const picks = trackedPicksForPitcher(p);
   if (!picks.length) return null;
-  return [...picks].sort((a, b) => verdictStake(b.verdict) - verdictStake(a.verdict) || (b.adj_ev ?? -99) - (a.adj_ev ?? -99))[0];
+  return [...picks].sort((a, b) => {
+    var _a, _b;
+    return verdictStake(b.verdict) - verdictStake(a.verdict) || ((_a = b.adj_ev) != null ? _a : -99) - ((_b = a.adj_ev) != null ? _b : -99);
+  })[0];
 }
 function sideFromTrackedPick(p, pick) {
+  var _a, _b, _c, _d, _e, _f;
   const isOver = pick.direction === "OVER";
   const current = isOver ? p.ev_over : p.ev_under;
   return {
     ...current,
     verdict: pick.verdict || current.verdict,
     direction: pick.direction,
-    odds: pick.odds ?? (isOver ? p.best_over_odds : p.best_under_odds),
+    odds: (_a = pick.odds) != null ? _a : isOver ? p.best_over_odds : p.best_under_odds,
     opening: isOver ? p.opening_over_odds : p.opening_under_odds,
-    adj_ev: pick.adj_ev ?? current.adj_ev,
-    edge: pick.edge ?? current.edge,
-    ev: pick.ev ?? current.ev,
-    result: pick.result ?? current.result,
-    k_line: pick.k_line ?? p.k_line,
+    adj_ev: (_b = pick.adj_ev) != null ? _b : current.adj_ev,
+    edge: (_c = pick.edge) != null ? _c : current.edge,
+    ev: (_d = pick.ev) != null ? _d : current.ev,
+    result: (_e = pick.result) != null ? _e : current.result,
+    k_line: (_f = pick.k_line) != null ? _f : p.k_line,
     status: pick.status,
     locked_at: pick.locked_at
   };
@@ -249,7 +315,7 @@ function getMovementHelpers() {
   return window.V2MovementHelpers || {};
 }
 function MovementChart({ movement }) {
-  if (!movement?.ready) {
+  if (!(movement == null ? void 0 : movement.ready)) {
     return /* @__PURE__ */ React.createElement("div", { className: "v2-move-empty" }, "Not enough line history yet");
   }
   const points = movement.points || [];
@@ -359,6 +425,7 @@ function qualityReason(p, side) {
   return flags.length ? flags.join(", ") : "";
 }
 function PickCard({ p, onOpen }) {
+  var _a, _b, _c, _d;
   const side = displaySide(p);
   const tracked = trackedPillsForCard(p, side);
   const cls = verdictClass(side.verdict, side.direction);
@@ -379,13 +446,17 @@ function PickCard({ p, onOpen }) {
       }
     },
     /* @__PURE__ */ React.createElement("div", { className: "v2-card-top" }, /* @__PURE__ */ React.createElement("div", { className: "v2-teamblock" }, /* @__PURE__ */ React.createElement("div", { className: "v2-matchup" }, /* @__PURE__ */ React.createElement("span", null, ab(p.team)), /* @__PURE__ */ React.createElement("span", { className: "vs" }, "vs"), /* @__PURE__ */ React.createElement("span", null, ab(p.opp_team)), /* @__PURE__ */ React.createElement("span", { className: "time" }, p.game_state === "in_progress" ? /* @__PURE__ */ React.createElement("span", { style: { display: "inline-flex", gap: 5, alignItems: "center" } }, /* @__PURE__ */ React.createElement("span", { className: "v2-livedot" }), "LIVE") : fmtTime(p.game_time))), /* @__PURE__ */ React.createElement("div", { className: "v2-pitcher-name" }, p.pitcher, /* @__PURE__ */ React.createElement("span", { className: "v2-pitcher-throws" }, p.pitcher_throws, "HP"))), /* @__PURE__ */ React.createElement("div", { style: { display: "flex", alignItems: "center" } }, /* @__PURE__ */ React.createElement(VerdictBadge, { side }), showResult && /* @__PURE__ */ React.createElement(ResultPill, { result: side.result }))),
-    /* @__PURE__ */ React.createElement("div", { className: "v2-line" }, /* @__PURE__ */ React.createElement("div", { className: "v2-line-cell" }, /* @__PURE__ */ React.createElement("div", { className: "v2-line-label" }, "Line \xB7 ", side.direction), /* @__PURE__ */ React.createElement("div", { className: "v2-line-value" }, side.k_line ?? p.k_line, /* @__PURE__ */ React.createElement("span", { style: { fontSize: 14, opacity: 0.5 } }, " K")), /* @__PURE__ */ React.createElement("div", { className: "v2-line-sub mono" }, fmtOdds(side.odds), " \xB7 ", side.direction === "OVER" ? p.best_over_book || "book" : p.best_under_book || "book")), /* @__PURE__ */ React.createElement("div", { className: "v2-line-cell" }, /* @__PURE__ */ React.createElement("div", { className: "v2-line-label" }, "Projection"), /* @__PURE__ */ React.createElement("div", { className: "v2-line-value" }, p.lambda.toFixed(2)), /* @__PURE__ */ React.createElement(ProjBar, { line: side.k_line ?? p.k_line, lambda: p.lambda })), /* @__PURE__ */ React.createElement("div", { className: "v2-line-cell" }, /* @__PURE__ */ React.createElement("div", { className: "v2-line-label" }, "EV ROI \xB7 Edge"), /* @__PURE__ */ React.createElement("div", { className: `v2-line-value ${side.adj_ev > 0 ? "pos" : "neg"}` }, side.adj_ev > 0 ? "+" : "", (side.adj_ev * 100).toFixed(1), "%"), /* @__PURE__ */ React.createElement("div", { className: "v2-line-sub mono" }, "edge ", (side.edge ?? side.ev) > 0 ? "+" : "", (((side.edge ?? side.ev) || 0) * 100).toFixed(1), "% \xB7 p = ", (side.win_prob * 100).toFixed(1), "%"))),
-    tracked.length > 0 && /* @__PURE__ */ React.createElement("div", { className: "v2-tracked-row" }, tracked.map((pick, idx) => /* @__PURE__ */ React.createElement("span", { key: `${pick.direction}-${idx}`, className: `v2-tracked-pill ${pick.status === "locked" ? "locked" : ""}` }, pick.status === "locked" ? "Locked pick" : "Tracked pick", " ", pick.direction, " ", pick.k_line ?? p.k_line, " \xB7 ", pick.verdict))),
+    /* @__PURE__ */ React.createElement("div", { className: "v2-line" }, /* @__PURE__ */ React.createElement("div", { className: "v2-line-cell" }, /* @__PURE__ */ React.createElement("div", { className: "v2-line-label" }, "Line \xB7 ", side.direction), /* @__PURE__ */ React.createElement("div", { className: "v2-line-value" }, (_a = side.k_line) != null ? _a : p.k_line, /* @__PURE__ */ React.createElement("span", { style: { fontSize: 14, opacity: 0.5 } }, " K")), /* @__PURE__ */ React.createElement("div", { className: "v2-line-sub mono" }, fmtOdds(side.odds), " \xB7 ", side.direction === "OVER" ? p.best_over_book || "book" : p.best_under_book || "book")), /* @__PURE__ */ React.createElement("div", { className: "v2-line-cell" }, /* @__PURE__ */ React.createElement("div", { className: "v2-line-label" }, "Projection"), /* @__PURE__ */ React.createElement("div", { className: "v2-line-value" }, p.lambda.toFixed(2)), /* @__PURE__ */ React.createElement(ProjBar, { line: (_b = side.k_line) != null ? _b : p.k_line, lambda: p.lambda })), /* @__PURE__ */ React.createElement("div", { className: "v2-line-cell" }, /* @__PURE__ */ React.createElement("div", { className: "v2-line-label" }, "EV ROI \xB7 Edge"), /* @__PURE__ */ React.createElement("div", { className: `v2-line-value ${side.adj_ev > 0 ? "pos" : "neg"}` }, side.adj_ev > 0 ? "+" : "", (side.adj_ev * 100).toFixed(1), "%"), /* @__PURE__ */ React.createElement("div", { className: "v2-line-sub mono" }, "edge ", ((_c = side.edge) != null ? _c : side.ev) > 0 ? "+" : "", ((((_d = side.edge) != null ? _d : side.ev) || 0) * 100).toFixed(1), "% \xB7 p = ", (side.win_prob * 100).toFixed(1), "%"))),
+    tracked.length > 0 && /* @__PURE__ */ React.createElement("div", { className: "v2-tracked-row" }, tracked.map((pick, idx) => {
+      var _a2;
+      return /* @__PURE__ */ React.createElement("span", { key: `${pick.direction}-${idx}`, className: `v2-tracked-pill ${pick.status === "locked" ? "locked" : ""}` }, pick.status === "locked" ? "Locked pick" : "Tracked pick", " ", pick.direction, " ", (_a2 = pick.k_line) != null ? _a2 : p.k_line, " \xB7 ", pick.verdict);
+    })),
     p.quality_gate_level && p.quality_gate_level !== "clean" && /* @__PURE__ */ React.createElement("div", { className: "v2-tracked-row" }, /* @__PURE__ */ React.createElement("span", { className: `v2-tracked-pill ${p.quality_gate_level === "blocked" ? "locked" : ""}` }, qualityLabel(p.quality_gate_level)), side.raw_verdict && side.raw_verdict !== side.verdict && /* @__PURE__ */ React.createElement("span", { className: "v2-tracked-pill" }, "Raw model ", side.raw_verdict)),
     /* @__PURE__ */ React.createElement(WhyPills, { p, side })
   );
 }
 function DateBar() {
+  var _a, _b, _c, _d;
   const today = window.__v2GetAppDate ? window.__v2GetAppDate() : phxDateISO();
   const current = window.V2_CURRENT_DATE || today;
   const meta = window.V2_DATE_META || {};
@@ -410,8 +481,8 @@ function DateBar() {
       dow: dayNames[d.getUTCDay()],
       isToday: iso === today,
       archived: archive.has(iso),
-      wins: meta[iso]?.wins ?? 0,
-      losses: meta[iso]?.losses ?? 0
+      wins: (_b = (_a = meta[iso]) == null ? void 0 : _a.wins) != null ? _b : 0,
+      losses: (_d = (_c = meta[iso]) == null ? void 0 : _c.losses) != null ? _d : 0
     });
   }
   const navigate = (iso) => {
@@ -444,6 +515,7 @@ function DateBar() {
   }));
 }
 function PickDetail({ p, onClose }) {
+  var _a, _b, _c, _d;
   if (!p) return null;
   const sideOver = { ...p.ev_over, direction: "OVER", odds: p.best_over_odds, opening: p.opening_over_odds };
   const sideUnder = { ...p.ev_under, direction: "UNDER", odds: p.best_under_odds, opening: p.opening_under_odds };
@@ -452,8 +524,10 @@ function PickDetail({ p, onClose }) {
   const displayUnder = best.direction === "UNDER" ? best : sideUnder;
   const helpers = getMovementHelpers();
   const [showFactorDetails, setShowFactorDetails] = useState(false);
+  const [betLogState, setBetLogState] = useState("idle");
   const factorGroups = useMemo(() => {
-    const buildFactorGroups = window.V2FactorDetails?.buildFactorGroups;
+    var _a2;
+    const buildFactorGroups = (_a2 = window.V2FactorDetails) == null ? void 0 : _a2.buildFactorGroups;
     return buildFactorGroups ? buildFactorGroups(p, best.direction) : [];
   }, [p, best.direction]);
   const steam = steamInfo(p, best.direction) || { cents: 0, steamWith: false };
@@ -477,6 +551,7 @@ function PickDetail({ p, onClose }) {
     };
   }, [onClose]);
   const SideCard = ({ s: rawSide }) => {
+    var _a2, _b2, _c2, _d2, _e;
     const s = {
       ...rawSide,
       adj_ev: isFiniteNumber(rawSide.adj_ev) ? rawSide.adj_ev : 0,
@@ -487,9 +562,9 @@ function PickDetail({ p, onClose }) {
     const picked = s.direction === best.direction;
     const adjEv = isFiniteNumber(s.adj_ev) ? s.adj_ev : null;
     const winProb = isFiniteNumber(s.win_prob) ? s.win_prob : null;
-    const edgeVal = isFiniteNumber(s.edge ?? s.ev) ? s.edge ?? s.ev : null;
+    const edgeVal = isFiniteNumber((_a2 = s.edge) != null ? _a2 : s.ev) ? (_b2 = s.edge) != null ? _b2 : s.ev : null;
     const pos = adjEv != null && adjEv > 0;
-    return /* @__PURE__ */ React.createElement("div", { className: `v2-side-card ${picked ? "picked" : ""}` }, picked && /* @__PURE__ */ React.createElement("span", { className: "badge-mini" }, "PICK"), /* @__PURE__ */ React.createElement("div", { className: "dir" }, s.direction, " ", s.k_line ?? p.k_line), /* @__PURE__ */ React.createElement("div", { className: "odds" }, fmtOdds(s.odds), " \xB7 open ", fmtOdds(s.opening)), /* @__PURE__ */ React.createElement("div", { className: `ev ${adjEv == null ? "" : pos ? "pos" : "neg"}` }, adjEv == null ? "--" : `${pos ? "+" : ""}${(adjEv * 100).toFixed(1)}%`), /* @__PURE__ */ React.createElement("div", { className: "wp" }, "p = ", (s.win_prob * 100).toFixed(1), "% \xB7 edge ", ((s.edge ?? s.ev) || 0) > 0 ? "+" : "", (((s.edge ?? s.ev) || 0) * 100).toFixed(1), "%"));
+    return /* @__PURE__ */ React.createElement("div", { className: `v2-side-card ${picked ? "picked" : ""}` }, picked && /* @__PURE__ */ React.createElement("span", { className: "badge-mini" }, "PICK"), /* @__PURE__ */ React.createElement("div", { className: "dir" }, s.direction, " ", (_c2 = s.k_line) != null ? _c2 : p.k_line), /* @__PURE__ */ React.createElement("div", { className: "odds" }, fmtOdds(s.odds), " \xB7 open ", fmtOdds(s.opening)), /* @__PURE__ */ React.createElement("div", { className: `ev ${adjEv == null ? "" : pos ? "pos" : "neg"}` }, adjEv == null ? "--" : `${pos ? "+" : ""}${(adjEv * 100).toFixed(1)}%`), /* @__PURE__ */ React.createElement("div", { className: "wp" }, "p = ", (s.win_prob * 100).toFixed(1), "% \xB7 edge ", (((_d2 = s.edge) != null ? _d2 : s.ev) || 0) > 0 ? "+" : "", ((((_e = s.edge) != null ? _e : s.ev) || 0) * 100).toFixed(1), "%"));
   };
   const LEAGUE_K = 0.22;
   const LEAGUE_K9 = 8.5;
@@ -515,8 +590,68 @@ function PickDetail({ p, onClose }) {
   const isPass = best.verdict === "PASS";
   const live = p.live;
   const result = p.result;
+  const canLogBet = !isPass && !isFinal;
+  async function handleAcceptedBetLog() {
+    var _a2, _b2, _c2;
+    if (!canLogBet || betLogState === "saving") return;
+    const defaultLine = (_b2 = (_a2 = best.k_line) != null ? _a2 : p.k_line) != null ? _b2 : "";
+    const defaultOdds = (_c2 = best.odds) != null ? _c2 : "";
+    const defaultBook = bookForSide(p, best) || "";
+    const defaultUnits = verdictStake(best.verdict) || 1;
+    const lineText = promptBetLogValue("Line taken", defaultLine);
+    if (lineText == null) return;
+    const oddsText = promptBetLogValue("Odds taken", defaultOdds);
+    if (oddsText == null) return;
+    const book = promptBetLogValue("Book", defaultBook);
+    if (book == null) return;
+    const unitsText = promptBetLogValue("Units", defaultUnits);
+    if (unitsText == null) return;
+    const line = Number(lineText);
+    const odds = Number(oddsText);
+    const units = Number(unitsText);
+    if (!Number.isFinite(line) || !Number.isFinite(odds) || !book || !Number.isFinite(units) || units <= 0) {
+      window.alert("Could not log that bet. Check line, odds, book, and units.");
+      return;
+    }
+    let secret = storedBetLogSecret();
+    if (!secret) {
+      secret = promptBetLogValue("Bet log key", "");
+      if (!secret) return;
+    }
+    setBetLogState("saving");
+    try {
+      const response = await fetch("/.netlify/functions/accepted-bets", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-bet-log-secret": secret
+        },
+        body: JSON.stringify(buildAcceptedBetPayload(p, best, {
+          line,
+          odds: Math.trunc(odds),
+          book,
+          units
+        }))
+      });
+      if (response.status === 401) {
+        clearBetLogSecret();
+        window.alert("Bet log key was rejected.");
+        setBetLogState("error");
+        setTimeout(() => setBetLogState("idle"), 3500);
+        return;
+      }
+      if (!response.ok) throw new Error(`accepted_bet_failed:${response.status}`);
+      saveBetLogSecret(secret);
+      setBetLogState("saved");
+      setTimeout(() => setBetLogState("idle"), 3500);
+    } catch {
+      window.alert("Could not log that bet. Try again in a minute.");
+      setBetLogState("error");
+      setTimeout(() => setBetLogState("idle"), 3500);
+    }
+  }
   return ReactDOM.createPortal(
-    /* @__PURE__ */ React.createElement(React.Fragment, null, /* @__PURE__ */ React.createElement("div", { className: "v2-sheet-backdrop", onClick: onClose }), /* @__PURE__ */ React.createElement("div", { className: "v2-sheet", role: "dialog", "aria-modal": "true" }, /* @__PURE__ */ React.createElement("div", { className: "v2-sheet-grip" }), /* @__PURE__ */ React.createElement("div", { className: "v2-sheet-head" }, /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { className: "meta" }, ab(p.team), " vs ", ab(p.opp_team), " \xB7 ", isLive ? "LIVE" : isFinal ? "FINAL" : fmtTime(p.game_time)), /* @__PURE__ */ React.createElement("div", { className: "pitcher" }, p.pitcher, /* @__PURE__ */ React.createElement("span", { className: "throws" }, p.pitcher_throws, "HP"))), /* @__PURE__ */ React.createElement("button", { className: "v2-sheet-close", onClick: onClose, "aria-label": "Close" }, /* @__PURE__ */ React.createElement("svg", { viewBox: "0 0 16 16", width: "14", height: "14", fill: "none", stroke: "currentColor", strokeWidth: "2", strokeLinecap: "round" }, /* @__PURE__ */ React.createElement("path", { d: "M3 3l10 10M13 3L3 13" })))), isLive && live && /* @__PURE__ */ React.createElement("div", { className: "v2-sheet-state v2-sheet-live" }, /* @__PURE__ */ React.createElement("div", { className: "state-head" }, /* @__PURE__ */ React.createElement("span", { className: "pulse" }), /* @__PURE__ */ React.createElement("span", { className: "state-lbl" }, "LIVE \xB7 ", live.innings, " IP \xB7 ", live.pitches, " pitches")), /* @__PURE__ */ React.createElement("div", { className: "live-k" }, /* @__PURE__ */ React.createElement("span", { className: "live-k-num" }, live.current_k), /* @__PURE__ */ React.createElement("span", { className: "live-k-sep" }, "/"), /* @__PURE__ */ React.createElement("span", { className: "live-k-line" }, p.k_line), /* @__PURE__ */ React.createElement("span", { className: "live-k-lbl" }, "K")), /* @__PURE__ */ React.createElement("div", { className: "live-meta" }, "Projected final: ", /* @__PURE__ */ React.createElement("b", null, fmtFixedOrDash(live.proj_final_k, 1), " K"), /* @__PURE__ */ React.createElement("span", { className: `live-verdict ${isFiniteNumber(live.proj_final_k) && kLine != null && live.proj_final_k > kLine ? "over" : "under"}` }, live.proj_final_k > p.k_line ? "\u2192 OVER pace" : "\u2192 UNDER pace"))), isLive && !live && /* @__PURE__ */ React.createElement("div", { className: "v2-sheet-state v2-sheet-live" }, /* @__PURE__ */ React.createElement("div", { className: "state-head" }, /* @__PURE__ */ React.createElement("span", { className: "pulse" }), /* @__PURE__ */ React.createElement("span", { className: "state-lbl" }, "LIVE \xB7 game in progress")), /* @__PURE__ */ React.createElement("div", { className: "live-meta" }, "Live K tracking not wired yet \u2014 pipeline does not hydrate in-game stats.")), isFinal && !result && /* @__PURE__ */ React.createElement("div", { className: "v2-sheet-state v2-sheet-final outcome-pass" }, /* @__PURE__ */ React.createElement("div", { className: "state-head" }, /* @__PURE__ */ React.createElement("span", { className: "state-lbl" }, "FINAL")), /* @__PURE__ */ React.createElement("div", { className: "final-meta" }, "Grading not available in today's snapshot \u2014 check Results tab.")), isFinal && result && /* @__PURE__ */ React.createElement("div", { className: `v2-sheet-state v2-sheet-final outcome-${result.outcome}` }, /* @__PURE__ */ React.createElement("div", { className: "state-head" }, /* @__PURE__ */ React.createElement("span", { className: "state-lbl" }, "FINAL \xB7 ", result.final_k, " K")), result.outcome === "pass" ? /* @__PURE__ */ React.createElement(React.Fragment, null, /* @__PURE__ */ React.createElement("div", { className: "final-outcome" }, "NO BET"), /* @__PURE__ */ React.createElement("div", { className: "final-meta" }, "Model found no edge on either side. Line closed at ", p.k_line, ", final ", result.final_k, " K", result.final_k > p.k_line ? " \xB7 OVER hit" : result.final_k < p.k_line ? " \xB7 UNDER hit" : " \xB7 push", ".")) : /* @__PURE__ */ React.createElement(React.Fragment, null, /* @__PURE__ */ React.createElement("div", { className: "final-outcome" }, result.outcome === "win" ? "WIN" : result.outcome === "loss" ? "LOSS" : "PUSH", /* @__PURE__ */ React.createElement("span", { className: `final-units ${result.units_won >= 0 ? "pos" : "neg"}` }, result.units_won >= 0 ? "+" : "", result.units_won.toFixed(2), "u")), /* @__PURE__ */ React.createElement("div", { className: "final-meta" }, result.side_taken?.toUpperCase(), " ", result.line_at_bet, " @ ", fmtOdds(result.odds_at_bet), " \xB7 ", result.units_risked, "u risked"))), isPass && !isLive && !isFinal && /* @__PURE__ */ React.createElement("div", { className: "v2-sheet-state v2-sheet-pass" }, /* @__PURE__ */ React.createElement("div", { className: "state-head" }, /* @__PURE__ */ React.createElement("span", { className: "state-lbl" }, "NO EDGE")), /* @__PURE__ */ React.createElement("div", { className: "pass-copy" }, "Model projection (", fmtFixedOrDash(lambda, 2), " K) is too close to the line (", kLine ?? "--", ") on both sides. Skipping this one.")), /* @__PURE__ */ React.createElement("div", { className: "v2-sheet-section" }, /* @__PURE__ */ React.createElement("div", { className: "h" }, "Sides \xB7 EV ROI comparison"), /* @__PURE__ */ React.createElement("div", { className: "v2-sides" }, /* @__PURE__ */ React.createElement(SideCard, { s: displayOver }), /* @__PURE__ */ React.createElement(SideCard, { s: displayUnder }))), /* @__PURE__ */ React.createElement("div", { className: "v2-sheet-section" }, /* @__PURE__ */ React.createElement("div", { className: "h" }, "Projection"), /* @__PURE__ */ React.createElement("div", { className: "v2-stat-row" }, /* @__PURE__ */ React.createElement("span", { className: "lbl" }, "Line (K)"), /* @__PURE__ */ React.createElement("span", { className: "val" }, kLine ?? "--")), /* @__PURE__ */ React.createElement("div", { className: "v2-stat-row" }, /* @__PURE__ */ React.createElement("span", { className: "lbl" }, "Model \u03BB"), /* @__PURE__ */ React.createElement("span", { className: "val" }, fmtFixedOrDash(lambda, 2))), /* @__PURE__ */ React.createElement("div", { className: "v2-stat-row" }, /* @__PURE__ */ React.createElement("span", { className: "lbl" }, "Edge"), /* @__PURE__ */ React.createElement("span", { className: `val ${lambda == null || kLine == null ? "" : lambda > kLine ? "pos" : "neg"}` }, lambda == null || kLine == null ? "--" : `${lambda > kLine ? "+" : ""}${(lambda - kLine).toFixed(2)} K`)), /* @__PURE__ */ React.createElement("div", { className: "v2-stat-row" }, /* @__PURE__ */ React.createElement("span", { className: "lbl" }, "Expected IP"), /* @__PURE__ */ React.createElement("span", { className: "val" }, fmtFixedOrDash(avgIp, 1)))), /* @__PURE__ */ React.createElement("div", { className: "v2-sheet-section" }, /* @__PURE__ */ React.createElement("div", { className: "h" }, "Why this bet"), /* @__PURE__ */ React.createElement("div", { className: "v2-stat-row" }, /* @__PURE__ */ React.createElement("span", { className: "lbl" }, Icon.users, " Lineup"), p.lineup_used ? /* @__PURE__ */ React.createElement("span", { className: "val pos" }, "Confirmed") : /* @__PURE__ */ React.createElement("span", { className: "val", style: { color: "var(--ink-dim)" } }, "Projected")), /* @__PURE__ */ React.createElement("div", { className: "v2-stat-row" }, /* @__PURE__ */ React.createElement("span", { className: "lbl" }, Icon.ump, " Umpire"), umpireHasRating ? /* @__PURE__ */ React.createElement("span", { className: `val ${umpSupports ? "pos" : "neg"}` }, "Confirmed", /* @__PURE__ */ React.createElement("span", { className: "delta" }, ump > 0 ? "+" : "", ump.toFixed(2))) : umpireName ? /* @__PURE__ */ React.createElement("span", { className: "val", style: { color: "var(--ink-dim)" } }, umpireName, /* @__PURE__ */ React.createElement("span", { className: "delta" }, "neutral")) : /* @__PURE__ */ React.createElement("span", { className: "val", style: { color: "var(--ink-dim)" } }, "TBA")), /* @__PURE__ */ React.createElement("div", { className: "v2-stat-row" }, /* @__PURE__ */ React.createElement("span", { className: "lbl" }, "Park factor"), parkFactor != null ? /* @__PURE__ */ React.createElement("span", { className: `val ${helpers.parkFactorTone ? helpers.parkFactorTone(parkFactor, best.direction) : ""}` }, parkFactor.toFixed(2)) : /* @__PURE__ */ React.createElement("span", { className: "val", style: { color: "var(--ink-dim)" } }, "Unknown")), /* @__PURE__ */ React.createElement(
+    /* @__PURE__ */ React.createElement(React.Fragment, null, /* @__PURE__ */ React.createElement("div", { className: "v2-sheet-backdrop", onClick: onClose }), /* @__PURE__ */ React.createElement("div", { className: "v2-sheet", role: "dialog", "aria-modal": "true" }, /* @__PURE__ */ React.createElement("div", { className: "v2-sheet-grip" }), /* @__PURE__ */ React.createElement("div", { className: "v2-sheet-head" }, /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { className: "meta" }, ab(p.team), " vs ", ab(p.opp_team), " \xB7 ", isLive ? "LIVE" : isFinal ? "FINAL" : fmtTime(p.game_time)), /* @__PURE__ */ React.createElement("div", { className: "pitcher" }, p.pitcher, /* @__PURE__ */ React.createElement("span", { className: "throws" }, p.pitcher_throws, "HP"))), /* @__PURE__ */ React.createElement("button", { className: "v2-sheet-close", onClick: onClose, "aria-label": "Close" }, /* @__PURE__ */ React.createElement("svg", { viewBox: "0 0 16 16", width: "14", height: "14", fill: "none", stroke: "currentColor", strokeWidth: "2", strokeLinecap: "round" }, /* @__PURE__ */ React.createElement("path", { d: "M3 3l10 10M13 3L3 13" })))), isLive && live && /* @__PURE__ */ React.createElement("div", { className: "v2-sheet-state v2-sheet-live" }, /* @__PURE__ */ React.createElement("div", { className: "state-head" }, /* @__PURE__ */ React.createElement("span", { className: "pulse" }), /* @__PURE__ */ React.createElement("span", { className: "state-lbl" }, "LIVE \xB7 ", live.innings, " IP \xB7 ", live.pitches, " pitches")), /* @__PURE__ */ React.createElement("div", { className: "live-k" }, /* @__PURE__ */ React.createElement("span", { className: "live-k-num" }, live.current_k), /* @__PURE__ */ React.createElement("span", { className: "live-k-sep" }, "/"), /* @__PURE__ */ React.createElement("span", { className: "live-k-line" }, p.k_line), /* @__PURE__ */ React.createElement("span", { className: "live-k-lbl" }, "K")), /* @__PURE__ */ React.createElement("div", { className: "live-meta" }, "Projected final: ", /* @__PURE__ */ React.createElement("b", null, fmtFixedOrDash(live.proj_final_k, 1), " K"), /* @__PURE__ */ React.createElement("span", { className: `live-verdict ${isFiniteNumber(live.proj_final_k) && kLine != null && live.proj_final_k > kLine ? "over" : "under"}` }, live.proj_final_k > p.k_line ? "\u2192 OVER pace" : "\u2192 UNDER pace"))), isLive && !live && /* @__PURE__ */ React.createElement("div", { className: "v2-sheet-state v2-sheet-live" }, /* @__PURE__ */ React.createElement("div", { className: "state-head" }, /* @__PURE__ */ React.createElement("span", { className: "pulse" }), /* @__PURE__ */ React.createElement("span", { className: "state-lbl" }, "LIVE \xB7 game in progress")), /* @__PURE__ */ React.createElement("div", { className: "live-meta" }, "Live K tracking not wired yet \u2014 pipeline does not hydrate in-game stats.")), isFinal && !result && /* @__PURE__ */ React.createElement("div", { className: "v2-sheet-state v2-sheet-final outcome-pass" }, /* @__PURE__ */ React.createElement("div", { className: "state-head" }, /* @__PURE__ */ React.createElement("span", { className: "state-lbl" }, "FINAL")), /* @__PURE__ */ React.createElement("div", { className: "final-meta" }, "Grading not available in today's snapshot \u2014 check Results tab.")), isFinal && result && /* @__PURE__ */ React.createElement("div", { className: `v2-sheet-state v2-sheet-final outcome-${result.outcome}` }, /* @__PURE__ */ React.createElement("div", { className: "state-head" }, /* @__PURE__ */ React.createElement("span", { className: "state-lbl" }, "FINAL \xB7 ", result.final_k, " K")), result.outcome === "pass" ? /* @__PURE__ */ React.createElement(React.Fragment, null, /* @__PURE__ */ React.createElement("div", { className: "final-outcome" }, "NO BET"), /* @__PURE__ */ React.createElement("div", { className: "final-meta" }, "Model found no edge on either side. Line closed at ", p.k_line, ", final ", result.final_k, " K", result.final_k > p.k_line ? " \xB7 OVER hit" : result.final_k < p.k_line ? " \xB7 UNDER hit" : " \xB7 push", ".")) : /* @__PURE__ */ React.createElement(React.Fragment, null, /* @__PURE__ */ React.createElement("div", { className: "final-outcome" }, result.outcome === "win" ? "WIN" : result.outcome === "loss" ? "LOSS" : "PUSH", /* @__PURE__ */ React.createElement("span", { className: `final-units ${result.units_won >= 0 ? "pos" : "neg"}` }, result.units_won >= 0 ? "+" : "", result.units_won.toFixed(2), "u")), /* @__PURE__ */ React.createElement("div", { className: "final-meta" }, (_a = result.side_taken) == null ? void 0 : _a.toUpperCase(), " ", result.line_at_bet, " @ ", fmtOdds(result.odds_at_bet), " \xB7 ", result.units_risked, "u risked"))), isPass && !isLive && !isFinal && /* @__PURE__ */ React.createElement("div", { className: "v2-sheet-state v2-sheet-pass" }, /* @__PURE__ */ React.createElement("div", { className: "state-head" }, /* @__PURE__ */ React.createElement("span", { className: "state-lbl" }, "NO EDGE")), /* @__PURE__ */ React.createElement("div", { className: "pass-copy" }, "Model projection (", fmtFixedOrDash(lambda, 2), " K) is too close to the line (", kLine != null ? kLine : "--", ") on both sides. Skipping this one.")), /* @__PURE__ */ React.createElement("div", { className: "v2-sheet-section" }, /* @__PURE__ */ React.createElement("div", { className: "h" }, "Sides \xB7 EV ROI comparison"), /* @__PURE__ */ React.createElement("div", { className: "v2-sides" }, /* @__PURE__ */ React.createElement(SideCard, { s: displayOver }), /* @__PURE__ */ React.createElement(SideCard, { s: displayUnder }))), /* @__PURE__ */ React.createElement("div", { className: "v2-sheet-section" }, /* @__PURE__ */ React.createElement("div", { className: "h" }, "Projection"), /* @__PURE__ */ React.createElement("div", { className: "v2-stat-row" }, /* @__PURE__ */ React.createElement("span", { className: "lbl" }, "Line (K)"), /* @__PURE__ */ React.createElement("span", { className: "val" }, kLine != null ? kLine : "--")), /* @__PURE__ */ React.createElement("div", { className: "v2-stat-row" }, /* @__PURE__ */ React.createElement("span", { className: "lbl" }, "Model \u03BB"), /* @__PURE__ */ React.createElement("span", { className: "val" }, fmtFixedOrDash(lambda, 2))), /* @__PURE__ */ React.createElement("div", { className: "v2-stat-row" }, /* @__PURE__ */ React.createElement("span", { className: "lbl" }, "Edge"), /* @__PURE__ */ React.createElement("span", { className: `val ${lambda == null || kLine == null ? "" : lambda > kLine ? "pos" : "neg"}` }, lambda == null || kLine == null ? "--" : `${lambda > kLine ? "+" : ""}${(lambda - kLine).toFixed(2)} K`)), /* @__PURE__ */ React.createElement("div", { className: "v2-stat-row" }, /* @__PURE__ */ React.createElement("span", { className: "lbl" }, "Expected IP"), /* @__PURE__ */ React.createElement("span", { className: "val" }, fmtFixedOrDash(avgIp, 1)))), /* @__PURE__ */ React.createElement("div", { className: "v2-sheet-section" }, /* @__PURE__ */ React.createElement("div", { className: "h" }, "Why this bet"), /* @__PURE__ */ React.createElement("div", { className: "v2-stat-row" }, /* @__PURE__ */ React.createElement("span", { className: "lbl" }, Icon.users, " Lineup"), p.lineup_used ? /* @__PURE__ */ React.createElement("span", { className: "val pos" }, "Confirmed") : /* @__PURE__ */ React.createElement("span", { className: "val", style: { color: "var(--ink-dim)" } }, "Projected")), /* @__PURE__ */ React.createElement("div", { className: "v2-stat-row" }, /* @__PURE__ */ React.createElement("span", { className: "lbl" }, Icon.ump, " Umpire"), umpireHasRating ? /* @__PURE__ */ React.createElement("span", { className: `val ${umpSupports ? "pos" : "neg"}` }, "Confirmed", /* @__PURE__ */ React.createElement("span", { className: "delta" }, ump > 0 ? "+" : "", ump.toFixed(2))) : umpireName ? /* @__PURE__ */ React.createElement("span", { className: "val", style: { color: "var(--ink-dim)" } }, umpireName, /* @__PURE__ */ React.createElement("span", { className: "delta" }, "neutral")) : /* @__PURE__ */ React.createElement("span", { className: "val", style: { color: "var(--ink-dim)" } }, "TBA")), /* @__PURE__ */ React.createElement("div", { className: "v2-stat-row" }, /* @__PURE__ */ React.createElement("span", { className: "lbl" }, "Park factor"), parkFactor != null ? /* @__PURE__ */ React.createElement("span", { className: `val ${helpers.parkFactorTone ? helpers.parkFactorTone(parkFactor, best.direction) : ""}` }, parkFactor.toFixed(2)) : /* @__PURE__ */ React.createElement("span", { className: "val", style: { color: "var(--ink-dim)" } }, "Unknown")), /* @__PURE__ */ React.createElement(
       "button",
       {
         type: "button",
@@ -526,7 +661,15 @@ function PickDetail({ p, onClose }) {
         onClick: () => setShowFactorDetails((prev) => !prev)
       },
       showFactorDetails ? "Hide factor details" : "Show factor details"
-    ), showFactorDetails && /* @__PURE__ */ React.createElement("div", { className: "v2-factor-panel", id: "v2-factor-details" }, factorGroups.map((group) => /* @__PURE__ */ React.createElement("div", { className: "v2-factor-group", key: group.key }, /* @__PURE__ */ React.createElement("div", { className: "v2-factor-group-h" }, group.label), /* @__PURE__ */ React.createElement("div", { className: "v2-factor-rows" }, group.rows.map((row) => /* @__PURE__ */ React.createElement("div", { className: "v2-factor-row", key: row.key }, /* @__PURE__ */ React.createElement("div", { className: "v2-factor-row-top" }, /* @__PURE__ */ React.createElement("span", { className: "v2-factor-label" }, row.label), /* @__PURE__ */ React.createElement("span", { className: `v2-factor-pill ${row.status}` }, row.status)), /* @__PURE__ */ React.createElement("div", { className: `v2-factor-value ${row.tone ? row.tone : ""}` }, row.value), row.note && /* @__PURE__ */ React.createElement("div", { className: "v2-factor-note" }, row.note))))))), /* @__PURE__ */ React.createElement("div", { className: "v2-stat-row" }, /* @__PURE__ */ React.createElement("span", { className: "lbl" }, Icon.users, " Opp. K-rate (bats)"), /* @__PURE__ */ React.createElement("span", { className: `val ${oppSupports == null ? "" : oppSupports ? "pos" : "neg"}` }, oppKRate == null ? "--" : `${(oppKRate * 100).toFixed(1)}%`, oppDelta != null && /* @__PURE__ */ React.createElement("span", { className: "delta" }, oppDelta >= 0 ? "+" : "", oppDelta.toFixed(1), " vs lg"))), /* @__PURE__ */ React.createElement("div", { className: "v2-stat-row" }, /* @__PURE__ */ React.createElement("span", { className: "lbl" }, Icon.ball, " Recent K/9 (L5)"), /* @__PURE__ */ React.createElement("span", { className: `val ${k9Supports == null ? "" : k9Supports ? "pos" : "neg"}` }, fmtFixedOrDash(recentK9, 1), k9Delta != null && /* @__PURE__ */ React.createElement("span", { className: "delta" }, k9Delta >= 0 ? "+" : "", k9Delta.toFixed(1), " vs lg"))), /* @__PURE__ */ React.createElement("div", { className: "v2-stat-row" }, /* @__PURE__ */ React.createElement("span", { className: "lbl" }, "Season K/9"), /* @__PURE__ */ React.createElement("span", { className: "val" }, fmtFixedOrDash(seasonK9, 1))), /* @__PURE__ */ React.createElement("div", { className: "v2-stat-row" }, /* @__PURE__ */ React.createElement("span", { className: "lbl" }, "Career K/9"), /* @__PURE__ */ React.createElement("span", { className: "val" }, fmtFixedOrDash(careerK9, 1)))), /* @__PURE__ */ React.createElement("div", { className: "v2-sheet-section" }, /* @__PURE__ */ React.createElement("div", { className: "h" }, `${movement.book || (best.direction === "OVER" ? p.best_over_book : p.best_under_book) || "Market"} \xB7 ${best.direction} \xB7 open to now`, movementSummary?.lineMoved && /* @__PURE__ */ React.createElement("span", { className: "v2-line-move-badge" }, `line moved ${movementSummary.openingLine} -> ${movementSummary.currentLine}`)), /* @__PURE__ */ React.createElement("div", { className: "v2-stat-row" }, /* @__PURE__ */ React.createElement("span", { className: "lbl" }, "Opening line"), /* @__PURE__ */ React.createElement("span", { className: "val" }, p.opening_line, " \xB7 ", fmtOdds(p.opening_over_odds), "/", fmtOdds(p.opening_under_odds))), /* @__PURE__ */ React.createElement("div", { className: "v2-stat-row" }, /* @__PURE__ */ React.createElement("span", { className: "lbl" }, "Current line"), /* @__PURE__ */ React.createElement("span", { className: "val" }, p.k_line, " \xB7 ", fmtOdds(sideOver.odds), "/", fmtOdds(sideUnder.odds))), /* @__PURE__ */ React.createElement(MovementChart, { movement }), /* @__PURE__ */ React.createElement("div", { style: { fontSize: 11, color: "var(--ink-dim)", marginTop: 6, fontFamily: "JetBrains Mono, monospace" } }, steam.cents > 0 ? `${steam.cents}\xA2 ${steam.steamWith ? "with" : "against"} the pick` : "No steam signal at the picked side price")), /* @__PURE__ */ React.createElement("div", { className: "v2-sheet-section" }, /* @__PURE__ */ React.createElement("div", { className: "h" }, "Model confidence"), /* @__PURE__ */ React.createElement("div", { className: "v2-stat-row" }, /* @__PURE__ */ React.createElement("span", { className: "lbl" }, "Actionable verdict"), /* @__PURE__ */ React.createElement("span", { className: "val" }, best.verdict)), best.raw_verdict && best.raw_verdict !== best.verdict && /* @__PURE__ */ React.createElement("div", { className: "v2-stat-row" }, /* @__PURE__ */ React.createElement("span", { className: "lbl" }, "Raw model verdict"), /* @__PURE__ */ React.createElement("span", { className: "val" }, best.raw_verdict)), /* @__PURE__ */ React.createElement("div", { className: "v2-stat-row" }, /* @__PURE__ */ React.createElement("span", { className: "lbl" }, "Input quality"), /* @__PURE__ */ React.createElement("span", { className: `val ${p.quality_gate_level === "clean" ? "pos" : ""}` }, qualityLabel(p.quality_gate_level), qualityReason(p, best) && /* @__PURE__ */ React.createElement("span", { className: "delta" }, qualityReason(p, best)))), /* @__PURE__ */ React.createElement("div", { className: "v2-stat-row" }, /* @__PURE__ */ React.createElement("span", { className: "lbl" }, "Movement confidence"), /* @__PURE__ */ React.createElement("span", { className: "val" }, (best.movement_conf * 100).toFixed(0), "%")), /* @__PURE__ */ React.createElement("div", { className: "v2-stat-row" }, /* @__PURE__ */ React.createElement("span", { className: "lbl" }, "Edge"), /* @__PURE__ */ React.createElement("span", { className: `val ${((best.edge ?? best.ev) || 0) > 0 ? "pos" : "neg"}` }, ((best.edge ?? best.ev) || 0) > 0 ? "+" : "", (((best.edge ?? best.ev) || 0) * 100).toFixed(1), "%")), /* @__PURE__ */ React.createElement("div", { className: "v2-stat-row" }, /* @__PURE__ */ React.createElement("span", { className: "lbl" }, "Raw EV ROI"), /* @__PURE__ */ React.createElement("span", { className: "val" }, best.ev > 0 ? "+" : "", (best.ev * 100).toFixed(1), "%")), /* @__PURE__ */ React.createElement("div", { className: "v2-stat-row" }, /* @__PURE__ */ React.createElement("span", { className: "lbl" }, "Adjusted EV ROI"), /* @__PURE__ */ React.createElement("span", { className: `val ${best.adj_ev > 0 ? "pos" : "neg"}` }, best.adj_ev > 0 ? "+" : "", (best.adj_ev * 100).toFixed(1), "%"))), /* @__PURE__ */ React.createElement("div", { className: "v2-sheet-actions" }, /* @__PURE__ */ React.createElement("button", { className: "v2-btn-ghost", onClick: onClose }, "Close")))),
+    ), showFactorDetails && /* @__PURE__ */ React.createElement("div", { className: "v2-factor-panel", id: "v2-factor-details" }, factorGroups.map((group) => /* @__PURE__ */ React.createElement("div", { className: "v2-factor-group", key: group.key }, /* @__PURE__ */ React.createElement("div", { className: "v2-factor-group-h" }, group.label), /* @__PURE__ */ React.createElement("div", { className: "v2-factor-rows" }, group.rows.map((row) => /* @__PURE__ */ React.createElement("div", { className: "v2-factor-row", key: row.key }, /* @__PURE__ */ React.createElement("div", { className: "v2-factor-row-top" }, /* @__PURE__ */ React.createElement("span", { className: "v2-factor-label" }, row.label), /* @__PURE__ */ React.createElement("span", { className: `v2-factor-pill ${row.status}` }, row.status)), /* @__PURE__ */ React.createElement("div", { className: `v2-factor-value ${row.tone ? row.tone : ""}` }, row.value), row.note && /* @__PURE__ */ React.createElement("div", { className: "v2-factor-note" }, row.note))))))), /* @__PURE__ */ React.createElement("div", { className: "v2-stat-row" }, /* @__PURE__ */ React.createElement("span", { className: "lbl" }, Icon.users, " Opp. K-rate (bats)"), /* @__PURE__ */ React.createElement("span", { className: `val ${oppSupports == null ? "" : oppSupports ? "pos" : "neg"}` }, oppKRate == null ? "--" : `${(oppKRate * 100).toFixed(1)}%`, oppDelta != null && /* @__PURE__ */ React.createElement("span", { className: "delta" }, oppDelta >= 0 ? "+" : "", oppDelta.toFixed(1), " vs lg"))), /* @__PURE__ */ React.createElement("div", { className: "v2-stat-row" }, /* @__PURE__ */ React.createElement("span", { className: "lbl" }, Icon.ball, " Recent K/9 (L5)"), /* @__PURE__ */ React.createElement("span", { className: `val ${k9Supports == null ? "" : k9Supports ? "pos" : "neg"}` }, fmtFixedOrDash(recentK9, 1), k9Delta != null && /* @__PURE__ */ React.createElement("span", { className: "delta" }, k9Delta >= 0 ? "+" : "", k9Delta.toFixed(1), " vs lg"))), /* @__PURE__ */ React.createElement("div", { className: "v2-stat-row" }, /* @__PURE__ */ React.createElement("span", { className: "lbl" }, "Season K/9"), /* @__PURE__ */ React.createElement("span", { className: "val" }, fmtFixedOrDash(seasonK9, 1))), /* @__PURE__ */ React.createElement("div", { className: "v2-stat-row" }, /* @__PURE__ */ React.createElement("span", { className: "lbl" }, "Career K/9"), /* @__PURE__ */ React.createElement("span", { className: "val" }, fmtFixedOrDash(careerK9, 1)))), /* @__PURE__ */ React.createElement("div", { className: "v2-sheet-section" }, /* @__PURE__ */ React.createElement("div", { className: "h" }, `${movement.book || (best.direction === "OVER" ? p.best_over_book : p.best_under_book) || "Market"} \xB7 ${best.direction} \xB7 open to now`, (movementSummary == null ? void 0 : movementSummary.lineMoved) && /* @__PURE__ */ React.createElement("span", { className: "v2-line-move-badge" }, `line moved ${movementSummary.openingLine} -> ${movementSummary.currentLine}`)), /* @__PURE__ */ React.createElement("div", { className: "v2-stat-row" }, /* @__PURE__ */ React.createElement("span", { className: "lbl" }, "Opening line"), /* @__PURE__ */ React.createElement("span", { className: "val" }, p.opening_line, " \xB7 ", fmtOdds(p.opening_over_odds), "/", fmtOdds(p.opening_under_odds))), /* @__PURE__ */ React.createElement("div", { className: "v2-stat-row" }, /* @__PURE__ */ React.createElement("span", { className: "lbl" }, "Current line"), /* @__PURE__ */ React.createElement("span", { className: "val" }, p.k_line, " \xB7 ", fmtOdds(sideOver.odds), "/", fmtOdds(sideUnder.odds))), /* @__PURE__ */ React.createElement(MovementChart, { movement }), /* @__PURE__ */ React.createElement("div", { style: { fontSize: 11, color: "var(--ink-dim)", marginTop: 6, fontFamily: "JetBrains Mono, monospace" } }, steam.cents > 0 ? `${steam.cents}\xA2 ${steam.steamWith ? "with" : "against"} the pick` : "No steam signal at the picked side price")), /* @__PURE__ */ React.createElement("div", { className: "v2-sheet-section" }, /* @__PURE__ */ React.createElement("div", { className: "h" }, "Model confidence"), /* @__PURE__ */ React.createElement("div", { className: "v2-stat-row" }, /* @__PURE__ */ React.createElement("span", { className: "lbl" }, "Actionable verdict"), /* @__PURE__ */ React.createElement("span", { className: "val" }, best.verdict)), best.raw_verdict && best.raw_verdict !== best.verdict && /* @__PURE__ */ React.createElement("div", { className: "v2-stat-row" }, /* @__PURE__ */ React.createElement("span", { className: "lbl" }, "Raw model verdict"), /* @__PURE__ */ React.createElement("span", { className: "val" }, best.raw_verdict)), /* @__PURE__ */ React.createElement("div", { className: "v2-stat-row" }, /* @__PURE__ */ React.createElement("span", { className: "lbl" }, "Input quality"), /* @__PURE__ */ React.createElement("span", { className: `val ${p.quality_gate_level === "clean" ? "pos" : ""}` }, qualityLabel(p.quality_gate_level), qualityReason(p, best) && /* @__PURE__ */ React.createElement("span", { className: "delta" }, qualityReason(p, best)))), /* @__PURE__ */ React.createElement("div", { className: "v2-stat-row" }, /* @__PURE__ */ React.createElement("span", { className: "lbl" }, "Movement confidence"), /* @__PURE__ */ React.createElement("span", { className: "val" }, (best.movement_conf * 100).toFixed(0), "%")), /* @__PURE__ */ React.createElement("div", { className: "v2-stat-row" }, /* @__PURE__ */ React.createElement("span", { className: "lbl" }, "Edge"), /* @__PURE__ */ React.createElement("span", { className: `val ${(((_b = best.edge) != null ? _b : best.ev) || 0) > 0 ? "pos" : "neg"}` }, (((_c = best.edge) != null ? _c : best.ev) || 0) > 0 ? "+" : "", ((((_d = best.edge) != null ? _d : best.ev) || 0) * 100).toFixed(1), "%")), /* @__PURE__ */ React.createElement("div", { className: "v2-stat-row" }, /* @__PURE__ */ React.createElement("span", { className: "lbl" }, "Raw EV ROI"), /* @__PURE__ */ React.createElement("span", { className: "val" }, best.ev > 0 ? "+" : "", (best.ev * 100).toFixed(1), "%")), /* @__PURE__ */ React.createElement("div", { className: "v2-stat-row" }, /* @__PURE__ */ React.createElement("span", { className: "lbl" }, "Adjusted EV ROI"), /* @__PURE__ */ React.createElement("span", { className: `val ${best.adj_ev > 0 ? "pos" : "neg"}` }, best.adj_ev > 0 ? "+" : "", (best.adj_ev * 100).toFixed(1), "%"))), /* @__PURE__ */ React.createElement("div", { className: `v2-sheet-actions ${canLogBet ? "has-bet-log" : ""}` }, canLogBet && /* @__PURE__ */ React.createElement(
+      "button",
+      {
+        className: "v2-btn-primary",
+        onClick: handleAcceptedBetLog,
+        disabled: betLogState === "saving"
+      },
+      betLogState === "saving" ? "Logging..." : betLogState === "saved" ? "Logged" : "Log Bet"
+    ), /* @__PURE__ */ React.createElement("button", { className: "v2-btn-ghost", onClick: onClose }, "Close")))),
     document.body
   );
 }
@@ -571,12 +714,13 @@ function GradingSummary({ pitchers, trackedPicks = [] }) {
   return /* @__PURE__ */ React.createElement("div", { className: "v2-grading-summary" }, /* @__PURE__ */ React.createElement("span", { className: "w" }, w, "W"), /* @__PURE__ */ React.createElement("span", { className: "n" }, "\xB7"), /* @__PURE__ */ React.createElement("span", { className: "l" }, l, "L"), p > 0 && /* @__PURE__ */ React.createElement(React.Fragment, null, /* @__PURE__ */ React.createElement("span", { className: "n" }, "\xB7"), /* @__PURE__ */ React.createElement("span", { className: "p" }, p, "P")));
 }
 function PicksTab({ pitchersOverride }) {
+  var _a, _b;
   const [filter, setFilter] = useState("ALL");
   const [detail, setDetail] = useState(null);
   const { supported: notifySupported, subscribed: notifyOn, toggleNotify } = useNotifications();
   const { trigger: triggerPipeline, state: pipelineState, title: pipelineTitle } = usePipelineTrigger();
-  const pitchers = pitchersOverride ?? window.V2_DATA.pitchers;
-  const trackedPicks = window.V2_DATA?.tracked_picks || [];
+  const pitchers = pitchersOverride != null ? pitchersOverride : window.V2_DATA.pitchers;
+  const trackedPicks = ((_a = window.V2_DATA) == null ? void 0 : _a.tracked_picks) || [];
   const hasTrackedPicks = trackedPicks.length > 0;
   const pitcherByName = useMemo(() => {
     const map = /* @__PURE__ */ new Map();
@@ -612,9 +756,10 @@ function PicksTab({ pitchersOverride }) {
   const fires = hasTrackedPicks ? trackedPicks.filter((p) => (p.verdict || "").startsWith("FIRE")) : pitchers.filter((p) => displaySide(p).verdict.startsWith("FIRE")).map((p) => ({ ...displaySide(p), pitcher: p.pitcher, game_state: p.game_state }));
   const trackedUniqueFirePitchers = new Set(fires.map((p) => p.pitcher)).size;
   return /* @__PURE__ */ React.createElement(React.Fragment, null, /* @__PURE__ */ React.createElement("div", { className: "v2-header" }, /* @__PURE__ */ React.createElement("div", { className: "v2-header-row" }, /* @__PURE__ */ React.createElement("div", { className: "v2-brand" }, /* @__PURE__ */ React.createElement("div", { className: "v2-kmark" }, "K"), /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { className: "v2-wordmark" }, "Betting Edge"), /* @__PURE__ */ React.createElement("div", { className: "v2-subtitle" }, (() => {
-    const gen = window.V2_DATA?.generated_at ? new Date(window.V2_DATA.generated_at) : null;
+    var _a2, _b2, _c, _d;
+    const gen = ((_a2 = window.V2_DATA) == null ? void 0 : _a2.generated_at) ? new Date(window.V2_DATA.generated_at) : null;
     const t = gen ? gen.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" }) : "\u2014";
-    return `Updated ${t} \xB7 ${window.V2_DATA?.pitchers?.length ?? 0} props`;
+    return `Updated ${t} \xB7 ${(_d = (_c = (_b2 = window.V2_DATA) == null ? void 0 : _b2.pitchers) == null ? void 0 : _c.length) != null ? _d : 0} props`;
   })()))), /* @__PURE__ */ React.createElement("div", { className: "v2-header-actions" }, notifySupported && /* @__PURE__ */ React.createElement(
     "button",
     {
@@ -633,11 +778,17 @@ function PicksTab({ pitchersOverride }) {
       style: pipelineState === "running" ? { opacity: 0.5 } : {}
     },
     Icon.refresh
-  ), /* @__PURE__ */ React.createElement("button", { className: "v2-icon-btn", title: "Theme", onClick: () => window.__v2Theme?.toggleTheme() }, window.__v2Theme?.theme === "dark" ? Icon.sun : Icon.moon))), /* @__PURE__ */ React.createElement(DateBar, null)), past && /* @__PURE__ */ React.createElement(GradingSummary, { pitchers, trackedPicks }), /* @__PURE__ */ React.createElement("div", { className: "v2-digest" }, /* @__PURE__ */ React.createElement("div", { className: "v2-digest-count" }, fires.length), /* @__PURE__ */ React.createElement("div", { className: "v2-digest-body" }, /* @__PURE__ */ React.createElement("div", { className: "v2-digest-title" }, hasTrackedPicks ? "Tracked FIRE picks" : "Fire picks today"), /* @__PURE__ */ React.createElement("div", { className: "v2-digest-sub" }, fires.length > 0 ? (() => {
-    const avgEv = fires.reduce((s, p) => s + (p.adj_ev ?? 0), 0) / fires.length * 100;
+  ), /* @__PURE__ */ React.createElement("button", { className: "v2-icon-btn", title: "Theme", onClick: () => {
+    var _a2;
+    return (_a2 = window.__v2Theme) == null ? void 0 : _a2.toggleTheme();
+  } }, ((_b = window.__v2Theme) == null ? void 0 : _b.theme) === "dark" ? Icon.sun : Icon.moon))), /* @__PURE__ */ React.createElement(DateBar, null)), past && /* @__PURE__ */ React.createElement(GradingSummary, { pitchers, trackedPicks }), /* @__PURE__ */ React.createElement("div", { className: "v2-digest" }, /* @__PURE__ */ React.createElement("div", { className: "v2-digest-count" }, fires.length), /* @__PURE__ */ React.createElement("div", { className: "v2-digest-body" }, /* @__PURE__ */ React.createElement("div", { className: "v2-digest-title" }, hasTrackedPicks ? "Tracked FIRE picks" : "Fire picks today"), /* @__PURE__ */ React.createElement("div", { className: "v2-digest-sub" }, fires.length > 0 ? (() => {
+    const avgEv = fires.reduce((s, p) => {
+      var _a2;
+      return s + ((_a2 = p.adj_ev) != null ? _a2 : 0);
+    }, 0) / fires.length * 100;
     const pre = fires.filter((p) => {
       const card = pitcherByName.get((p.pitcher || "").toLowerCase());
-      return (p.game_state || card?.game_state) === "pregame";
+      return (p.game_state || (card == null ? void 0 : card.game_state)) === "pregame";
     }).length;
     const unique = hasTrackedPicks ? ` \xB7 ${trackedUniqueFirePitchers} pitchers` : "";
     return `${fires.length} actionable${unique} \xB7 avg EV ROI +${avgEv.toFixed(1)}% \xB7 ${pre} pregame`;
@@ -654,11 +805,12 @@ function PicksTab({ pitchersOverride }) {
   ))), /* @__PURE__ */ React.createElement("div", { className: "v2-cards" }, upcoming.length > 0 && /* @__PURE__ */ React.createElement("div", { className: "v2-section-h" }, "Upcoming"), upcoming.map((p, i) => /* @__PURE__ */ React.createElement(PickCard, { key: "u" + i, p, onOpen: setDetail })), live.length > 0 && /* @__PURE__ */ React.createElement("div", { className: "v2-section-h" }, "Live & Final"), live.map((p, i) => /* @__PURE__ */ React.createElement(PickCard, { key: "l" + i, p, onOpen: setDetail })), filtered.length === 0 && /* @__PURE__ */ React.createElement(EmptyState, { filter })), detail && /* @__PURE__ */ React.createElement(PickDetail, { p: detail, onClose: () => setDetail(null) }));
 }
 function PerfTab() {
+  var _a;
   const d = window.V2_PERF;
   const maxAbsRoi = Math.max(0, ...d.rows.map((r) => typeof r.roi === "number" ? Math.abs(r.roi) : 0));
   const [showCalib, setShowCalib] = useState(false);
   const notes = d.calibration_notes || [];
-  return /* @__PURE__ */ React.createElement(React.Fragment, null, /* @__PURE__ */ React.createElement("div", { className: "v2-header" }, /* @__PURE__ */ React.createElement("div", { className: "v2-header-row" }, /* @__PURE__ */ React.createElement("div", { className: "v2-brand" }, /* @__PURE__ */ React.createElement("div", { className: "v2-kmark" }, "K"), /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { className: "v2-wordmark" }, "Performance"), /* @__PURE__ */ React.createElement("div", { className: "v2-subtitle" }, "Season \xB7 ", d.total_picks ?? 0, " graded picks"))), /* @__PURE__ */ React.createElement("div", { className: "v2-header-actions" }, /* @__PURE__ */ React.createElement(
+  return /* @__PURE__ */ React.createElement(React.Fragment, null, /* @__PURE__ */ React.createElement("div", { className: "v2-header" }, /* @__PURE__ */ React.createElement("div", { className: "v2-header-row" }, /* @__PURE__ */ React.createElement("div", { className: "v2-brand" }, /* @__PURE__ */ React.createElement("div", { className: "v2-kmark" }, "K"), /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { className: "v2-wordmark" }, "Performance"), /* @__PURE__ */ React.createElement("div", { className: "v2-subtitle" }, "Season \xB7 ", (_a = d.total_picks) != null ? _a : 0, " graded picks"))), /* @__PURE__ */ React.createElement("div", { className: "v2-header-actions" }, /* @__PURE__ */ React.createElement(
     "button",
     {
       className: `v2-icon-btn${showCalib ? " active" : ""}`,
