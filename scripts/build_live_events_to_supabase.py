@@ -29,6 +29,7 @@ DEFAULT_ARTIFACT_URL = (
     "https://raw.githubusercontent.com/treidjbi/BaseballBettingEdge/"
     "main/dashboard/data/processed/today.json"
 )
+LIVE_NOTIFICATION_MOVEMENT_PROVIDERS = {"propline"}
 
 
 def _env(name: str) -> str:
@@ -109,6 +110,14 @@ def _snapshot_pairs(rows: list[dict[str, Any]]) -> tuple[list[dict[str, Any]], l
     return previous, current
 
 
+def _live_notification_snapshots(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    return [
+        row
+        for row in rows
+        if str(row.get("provider") or "").strip().lower() in LIVE_NOTIFICATION_MOVEMENT_PROVIDERS
+    ]
+
+
 def run(
     *,
     slate_date: str,
@@ -162,7 +171,7 @@ def run(
         "order": "observed_at.desc",
         "limit": "500",
     })
-    previous_snapshots, current_snapshots = _snapshot_pairs(snapshot_rows)
+    previous_snapshots, current_snapshots = _snapshot_pairs(_live_notification_snapshots(snapshot_rows))
     movement_notification_rows = build_line_movement_events(
         slate_date=slate_date,
         live_picks=state_rows,

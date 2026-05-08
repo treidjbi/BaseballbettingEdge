@@ -327,6 +327,77 @@ def test_under_snapshot_does_not_emit_movement_for_fire_over_pick():
     assert events == []
 
 
+def test_line_movement_ignores_off_pick_line_ladder_changes():
+    events = build_line_movement_events(
+        slate_date="2026-05-06",
+        live_picks=[{
+            "pitcher": "Tarik Skubal",
+            "normalized_pitcher": "tarik skubal",
+            "side": "over",
+            "current_verdict": "FIRE 1u",
+            "k_line": 5.5,
+        }],
+        previous_snapshots=[{
+            "provider_event_id": "game-1",
+            "normalized_player_name": "tarik skubal",
+            "bookmaker_key": "betrivers",
+            "side": "over",
+            "line": 3.5,
+            "american_odds": -240,
+            "observed_at": "2026-05-06T17:50:00+00:00",
+        }],
+        current_snapshots=[{
+            "id": "snapshot-1",
+            "provider_event_id": "game-1",
+            "normalized_player_name": "tarik skubal",
+            "player_name": "Tarik Skubal",
+            "bookmaker_key": "betrivers",
+            "side": "over",
+            "line": 4.5,
+            "american_odds": -150,
+            "observed_at": "2026-05-06T18:00:00+00:00",
+        }],
+    )
+
+    assert events == []
+
+
+def test_odds_only_movement_body_describes_odds_change():
+    events = build_line_movement_events(
+        slate_date="2026-05-06",
+        live_picks=[{
+            "pitcher": "Tarik Skubal",
+            "normalized_pitcher": "tarik skubal",
+            "side": "under",
+            "current_verdict": "FIRE 1u",
+            "k_line": 4.5,
+        }],
+        previous_snapshots=[{
+            "provider_event_id": "game-1",
+            "normalized_player_name": "tarik skubal",
+            "bookmaker_key": "fanduel",
+            "side": "under",
+            "line": 4.5,
+            "american_odds": -152,
+            "observed_at": "2026-05-06T17:50:00+00:00",
+        }],
+        current_snapshots=[{
+            "id": "snapshot-1",
+            "provider_event_id": "game-1",
+            "normalized_player_name": "tarik skubal",
+            "player_name": "Tarik Skubal",
+            "bookmaker_key": "fanduel",
+            "side": "under",
+            "line": 4.5,
+            "american_odds": -138,
+            "observed_at": "2026-05-06T18:00:00+00:00",
+        }],
+    )
+
+    assert events[0]["payload"]["movement_kind"] == "odds"
+    assert events[0]["body"] == "Tarik Skubal UNDER 4.5 odds moved -152 to -138 at fanduel"
+
+
 def test_movement_ignores_snapshots_from_different_provider_events():
     events = build_line_movement_events(
         slate_date="2026-05-06",

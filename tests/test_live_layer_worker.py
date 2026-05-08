@@ -128,6 +128,7 @@ def test_worker_writes_line_movement_events_from_snapshot_history(tmp_path):
         "market_snapshots": [
             {
                 "id": "snapshot-old",
+                "provider": "propline",
                 "provider_event_id": "game-1",
                 "normalized_player_name": "tarik skubal",
                 "player_name": "Tarik Skubal",
@@ -139,6 +140,7 @@ def test_worker_writes_line_movement_events_from_snapshot_history(tmp_path):
             },
             {
                 "id": "snapshot-new",
+                "provider": "propline",
                 "provider_event_id": "game-1",
                 "normalized_player_name": "tarik skubal",
                 "player_name": "Tarik Skubal",
@@ -170,6 +172,51 @@ def test_worker_writes_line_movement_events_from_snapshot_history(tmp_path):
     )
 
 
+def test_worker_ignores_boltodds_shadow_snapshots_for_notifications(tmp_path):
+    today = _write_artifact(tmp_path, [_fire_pitcher()])
+    writer = _writer_with_selects({
+        "live_pick_state": [],
+        "market_snapshots": [
+            {
+                "id": "bolt-snapshot-old",
+                "provider": "boltodds",
+                "provider_event_id": "game-1",
+                "normalized_player_name": "tarik skubal",
+                "player_name": "Tarik Skubal",
+                "bookmaker_key": "betrivers",
+                "side": "over",
+                "line": 6.5,
+                "american_odds": -110,
+                "observed_at": "2026-05-06T17:50:00+00:00",
+            },
+            {
+                "id": "bolt-snapshot-new",
+                "provider": "boltodds",
+                "provider_event_id": "game-1",
+                "normalized_player_name": "tarik skubal",
+                "player_name": "Tarik Skubal",
+                "bookmaker_key": "betrivers",
+                "side": "over",
+                "line": 5.5,
+                "american_odds": -112,
+                "observed_at": "2026-05-06T18:00:00+00:00",
+            },
+        ],
+        "game_reminder_state": [],
+    })
+
+    with patch.object(build_live_events_to_supabase, "SupabaseMarketWriter", return_value=writer):
+        result = build_live_events_to_supabase.run(
+            slate_date="2026-05-06",
+            artifact_path=today,
+            supabase_url="https://example.supabase.co",
+            service_role_key="secret",
+        )
+
+    assert result["line_movement_events"] == 0
+    assert result["line_movement_rows"] == []
+
+
 def test_worker_can_poll_propline_before_building_live_events(tmp_path):
     today = _write_artifact(tmp_path, [_fire_pitcher()])
     calls = []
@@ -178,6 +225,7 @@ def test_worker_can_poll_propline_before_building_live_events(tmp_path):
         "market_snapshots": [
             {
                 "id": "snapshot-old",
+                "provider": "propline",
                 "provider_event_id": "game-1",
                 "normalized_player_name": "tarik skubal",
                 "player_name": "Tarik Skubal",
@@ -189,6 +237,7 @@ def test_worker_can_poll_propline_before_building_live_events(tmp_path):
             },
             {
                 "id": "snapshot-new",
+                "provider": "propline",
                 "provider_event_id": "game-1",
                 "normalized_player_name": "tarik skubal",
                 "player_name": "Tarik Skubal",

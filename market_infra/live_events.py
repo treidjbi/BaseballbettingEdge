@@ -58,6 +58,34 @@ def _integer(value: Any) -> int | None:
         return None
 
 
+def _matches_line(value: float, target: float) -> bool:
+    return abs(value - target) < 0.001
+
+
+def _format_odds(value: int) -> str:
+    return f"{value:+d}"
+
+
+def _movement_body(
+    *,
+    pitcher_name: str,
+    side: str,
+    movement_kind: str,
+    previous_line: float,
+    current_line: float,
+    previous_odds: int,
+    current_odds: int,
+    book: str,
+) -> str:
+    side_label = side.upper()
+    if movement_kind == "odds":
+        return (
+            f"{pitcher_name} {side_label} {current_line:g} odds moved "
+            f"{_format_odds(previous_odds)} to {_format_odds(current_odds)} at {book}"
+        )
+    return f"{pitcher_name} {side_label} moved {previous_line:g} to {current_line:g} at {book}"
+
+
 def _parse_datetime(value: datetime | str) -> datetime:
     if isinstance(value, datetime):
         return value
@@ -402,6 +430,11 @@ def build_line_movement_events(
             continue
 
         line_changed = previous_line != current_line
+        pick_line = _numeric(pick.get("k_line"))
+        if line_changed and pick_line is not None:
+            if not (_matches_line(previous_line, pick_line) or _matches_line(current_line, pick_line)):
+                continue
+
         odds_delta = current_odds - previous_odds
         if not line_changed and abs(odds_delta) < 10:
             continue
@@ -431,7 +464,16 @@ def build_line_movement_events(
             "event_type": event_type,
             "severity": "watch" if with_model else "action",
             "title": "Line Moved With Us" if with_model else "Line Moved Against Us",
-            "body": f"{pitcher_name} {side.upper()} moved {previous_line:g} to {current_line:g} at {book}",
+            "body": _movement_body(
+                pitcher_name=pitcher_name,
+                side=side,
+                movement_kind=movement_kind,
+                previous_line=previous_line,
+                current_line=current_line,
+                previous_odds=previous_odds,
+                current_odds=current_odds,
+                book=book,
+            ),
             "url": "/",
             "dedupe_key": dedupe_key,
             "payload": {
