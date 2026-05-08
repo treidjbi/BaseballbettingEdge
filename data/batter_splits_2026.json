@@ -6776,19 +6776,20 @@
       }
     }
   },
-  "updated_at": "2026-05-08T20:38:16Z",
+  "updated_at": "2026-05-08T21:14:45Z",
   "last_run": {
     "projection_status": "collection_only",
-    "requested_batters": 171,
-    "already_cached": 170,
-    "attempted": 1,
+    "requested_batters": 198,
+    "already_cached": 196,
+    "attempted": 2,
     "collected": 0,
-    "failed": 1,
+    "failed": 2,
     "queued_not_attempted": 0,
     "cache_size": 401,
     "errors": [
-      "Joe Mack: no bbref id"
+      "Joe Mack: no bbref id",
+      "Spencer Jones: no bbref id"
     ],
-    "updated_at": "2026-05-08T20:38:16Z"
+    "updated_at": "2026-05-08T21:14:45Z"
   }
 }
