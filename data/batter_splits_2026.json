@@ -6757,21 +6757,38 @@
         "so": 14,
         "k_rate": 0.3784
       }
+    },
+    "mlbam:680977": {
+      "name": "Brendan Donovan",
+      "bats": "R",
+      "mlbam_id": 680977,
+      "bbref_id": "donovbr01",
+      "season": 2026,
+      "vs_R": {
+        "pa": 50,
+        "so": 7,
+        "k_rate": 0.14
+      },
+      "vs_L": {
+        "pa": 21,
+        "so": 5,
+        "k_rate": 0.2381
+      }
     }
   },
-  "updated_at": "2026-05-08T19:43:10Z",
+  "updated_at": "2026-05-08T19:57:06Z",
   "last_run": {
     "projection_status": "collection_only",
-    "requested_batters": 117,
-    "already_cached": 115,
+    "requested_batters": 135,
+    "already_cached": 133,
     "attempted": 2,
     "collected": 1,
     "failed": 1,
     "queued_not_attempted": 0,
-    "cache_size": 400,
+    "cache_size": 401,
     "errors": [
       "Joe Mack: no bbref id"
     ],
-    "updated_at": "2026-05-08T19:43:10Z"
+    "updated_at": "2026-05-08T19:57:06Z"
   }
 }
