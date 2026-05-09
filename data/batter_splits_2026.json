@@ -6825,21 +6825,38 @@
         "so": 9,
         "k_rate": 0.2432
       }
+    },
+    "mlbam:695336": {
+      "name": "Thomas Saggese",
+      "bats": "R",
+      "mlbam_id": 695336,
+      "bbref_id": "saggeth01",
+      "season": 2026,
+      "vs_R": {
+        "pa": 44,
+        "so": 15,
+        "k_rate": 0.3409
+      },
+      "vs_L": {
+        "pa": 13,
+        "so": 4,
+        "k_rate": 0.3077
+      }
     }
   },
-  "updated_at": "2026-05-09T19:59:45Z",
+  "updated_at": "2026-05-09T20:24:08Z",
   "last_run": {
     "projection_status": "collection_only",
-    "requested_batters": 144,
-    "already_cached": 143,
-    "attempted": 1,
-    "collected": 0,
+    "requested_batters": 180,
+    "already_cached": 178,
+    "attempted": 2,
+    "collected": 1,
     "failed": 1,
     "queued_not_attempted": 0,
-    "cache_size": 404,
+    "cache_size": 405,
     "errors": [
       "Ryan Waldschmidt: no bbref id"
     ],
-    "updated_at": "2026-05-09T19:59:45Z"
+    "updated_at": "2026-05-09T20:24:08Z"
   }
 }
