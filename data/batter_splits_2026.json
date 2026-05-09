@@ -6827,17 +6827,19 @@
       }
     }
   },
-  "updated_at": "2026-05-09T18:34:22Z",
+  "updated_at": "2026-05-09T19:19:19Z",
   "last_run": {
     "projection_status": "collection_only",
-    "requested_batters": 108,
-    "already_cached": 108,
-    "attempted": 0,
+    "requested_batters": 135,
+    "already_cached": 134,
+    "attempted": 1,
     "collected": 0,
-    "failed": 0,
+    "failed": 1,
     "queued_not_attempted": 0,
     "cache_size": 404,
-    "errors": [],
-    "updated_at": "2026-05-09T18:34:22Z"
+    "errors": [
+      "Ryan Waldschmidt: no bbref id"
+    ],
+    "updated_at": "2026-05-09T19:19:19Z"
   }
 }
