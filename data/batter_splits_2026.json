@@ -6827,17 +6827,19 @@
       }
     }
   },
-  "updated_at": "2026-05-09T16:33:40Z",
+  "updated_at": "2026-05-09T17:04:29Z",
   "last_run": {
     "projection_status": "collection_only",
-    "requested_batters": 45,
-    "already_cached": 43,
-    "attempted": 2,
-    "collected": 2,
-    "failed": 0,
+    "requested_batters": 63,
+    "already_cached": 62,
+    "attempted": 1,
+    "collected": 0,
+    "failed": 1,
     "queued_not_attempted": 0,
     "cache_size": 404,
-    "errors": [],
-    "updated_at": "2026-05-09T16:33:40Z"
+    "errors": [
+      "Joe Mack: no bbref id"
+    ],
+    "updated_at": "2026-05-09T17:04:29Z"
   }
 }
