@@ -6791,19 +6791,53 @@
         "so": 1,
         "k_rate": 0.5
       }
+    },
+    "mlbam:680718": {
+      "name": "Addison Barger",
+      "bats": "R",
+      "mlbam_id": 680718,
+      "bbref_id": "bargead01",
+      "season": 2026,
+      "vs_R": {
+        "pa": 21,
+        "so": 6,
+        "k_rate": 0.2857
+      },
+      "vs_L": {
+        "pa": 2,
+        "so": 0,
+        "k_rate": 0.0
+      }
+    },
+    "mlbam:681508": {
+      "name": "Mickey Gasper",
+      "bats": "R",
+      "mlbam_id": 681508,
+      "bbref_id": "gaspemi01",
+      "season": 2026,
+      "vs_R": {
+        "pa": 73,
+        "so": 11,
+        "k_rate": 0.1507
+      },
+      "vs_L": {
+        "pa": 37,
+        "so": 9,
+        "k_rate": 0.2432
+      }
     }
   },
-  "updated_at": "2026-05-09T16:05:26Z",
+  "updated_at": "2026-05-09T16:33:40Z",
   "last_run": {
     "projection_status": "collection_only",
-    "requested_batters": 18,
-    "already_cached": 18,
-    "attempted": 0,
-    "collected": 0,
+    "requested_batters": 45,
+    "already_cached": 43,
+    "attempted": 2,
+    "collected": 2,
     "failed": 0,
     "queued_not_attempted": 0,
-    "cache_size": 402,
+    "cache_size": 404,
     "errors": [],
-    "updated_at": "2026-05-09T16:05:26Z"
+    "updated_at": "2026-05-09T16:33:40Z"
   }
 }
