@@ -32,6 +32,16 @@ def test_dashboard_uses_modal_bet_ticket_not_browser_prompts():
         assert f">{label}<" in app
 
 
+def test_dashboard_bet_ticket_allows_negative_american_odds():
+    app = DASHBOARD_APP.read_text(encoding="utf-8")
+
+    assert "parseBetLogNumber" in app
+    assert 'replace(/\\u2212/g, "-")' in app
+    assert 'pattern="[+-]?[0-9]*"' in app
+    assert 'placeholder="-145"' in app
+    assert 'inputMode="text"' in app
+
+
 def test_dashboard_locks_accepted_bet_after_successful_save():
     app = DASHBOARD_APP.read_text(encoding="utf-8")
 

@@ -285,6 +285,9 @@
       }
     };
   }
+  function parseBetLogNumber(value) {
+    return Number(String(value ?? "").trim().replace(/\u2212/g, "-"));
+  }
   function trackedPicksForPitcher(p) {
     return Array.isArray(p.tracked_picks) ? p.tracked_picks : [];
   }
@@ -746,9 +749,9 @@
     async function handleAcceptedBetSave(e) {
       e.preventDefault();
       if (!canLogBet || betLogState === "saving" || betAlreadyLogged) return;
-      const line = Number(betForm.line);
-      const odds = Number(betForm.odds);
-      const units = Number(betForm.units);
+      const line = parseBetLogNumber(betForm.line);
+      const odds = parseBetLogNumber(betForm.odds);
+      const units = parseBetLogNumber(betForm.units);
       const book = String(betForm.book === "Other" ? betForm.bookOther : betForm.book || "").trim();
       const secret = storedBetLogSecret() || String(betForm.secret || "").trim();
       if (!Number.isFinite(line) || !Number.isFinite(odds) || !book || !Number.isFinite(units) || units <= 0) {
@@ -846,7 +849,9 @@
           {
             value: betForm.odds,
             onChange: (e) => updateBetForm("odds", e.target.value),
-            inputMode: "numeric",
+            inputMode: "text",
+            pattern: "[+-]?[0-9]*",
+            placeholder: "-145",
             autoComplete: "off"
           }
         )), /* @__PURE__ */ React.createElement("label", { className: "v2-bet-field" }, /* @__PURE__ */ React.createElement("span", null, "Book"), /* @__PURE__ */ React.createElement(

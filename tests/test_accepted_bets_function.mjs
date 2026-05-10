@@ -37,6 +37,21 @@ test('buildAcceptedBetRow validates and shapes manual dashboard logs', () => {
   assert.deepEqual(row.model_snapshot, { adj_ev: 0.09 });
 });
 
+test('buildAcceptedBetRow accepts unicode minus American odds', () => {
+  const row = buildAcceptedBetRow({
+    slate_date: '2026-05-08',
+    pitcher: 'Kyle Bradish',
+    side: 'UNDER',
+    k_line: '4.5',
+    odds: '\u2212145',
+    book: 'BetRivers',
+    units: '1',
+  });
+
+  assert.equal(row.odds, -145);
+  assert.match(row.dedupe_key, /:-145$/);
+});
+
 test('buildAcceptedBetRow rejects invalid inputs', () => {
   assert.throws(() => buildAcceptedBetRow({ pitcher: 'Kyle Bradish' }), /missing_slate_date/);
   assert.throws(() => buildAcceptedBetRow({

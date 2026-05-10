@@ -37,7 +37,7 @@ function requireText(payload, key) {
 }
 
 function requireNumber(payload, key) {
-  const value = Number(payload[key]);
+  const value = Number(String(payload[key] ?? '').trim().replace(/\u2212/g, '-'));
   if (!Number.isFinite(value)) throw new Error(`invalid_${key}`);
   return value;
 }
