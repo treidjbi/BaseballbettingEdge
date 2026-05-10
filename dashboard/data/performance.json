@@ -1,91 +1,93 @@
 {
-  "generated_at": "2026-05-09T11:13:43Z",
-  "total_picks": 247,
-  "last_calibrated": "2026-05-09T11:13:43Z",
-  "calibration_sample": 202,
+  "generated_at": "2026-05-10T11:16:39Z",
+  "total_picks": 269,
+  "last_calibrated": "2026-05-10T11:16:39Z",
+  "calibration_sample": 221,
   "rows": [
     {
       "verdict": "FIRE 2u",
       "side": "over",
-      "picks": 8,
-      "wins": 4,
+      "picks": 9,
+      "wins": 5,
       "losses": 4,
       "pushes": 0,
-      "win_pct": 0.5,
-      "roi": -8.05,
-      "avg_ev": 0.2566
+      "win_pct": 0.556,
+      "roi": 1.39,
+      "avg_ev": 0.2714
     },
     {
       "verdict": "FIRE 2u",
       "side": "under",
-      "picks": 31,
-      "wins": 17,
-      "losses": 14,
+      "picks": 33,
+      "wins": 18,
+      "losses": 15,
       "pushes": 0,
-      "win_pct": 0.548,
-      "roi": 2.44,
-      "avg_ev": 0.3184
+      "win_pct": 0.545,
+      "roi": 2.24,
+      "avg_ev": 0.3164
     },
     {
       "verdict": "FIRE 1u",
       "side": "over",
-      "picks": 42,
-      "wins": 22,
-      "losses": 20,
+      "picks": 52,
+      "wins": 28,
+      "losses": 24,
       "pushes": 0,
-      "win_pct": 0.524,
-      "roi": -4.24,
-      "avg_ev": 0.1558
+      "win_pct": 0.538,
+      "roi": -0.68,
+      "avg_ev": 0.1609
     },
     {
       "verdict": "FIRE 1u",
       "side": "under",
-      "picks": 77,
-      "wins": 38,
-      "losses": 39,
+      "picks": 83,
+      "wins": 39,
+      "losses": 44,
       "pushes": 0,
-      "win_pct": 0.494,
-      "roi": -6.98,
-      "avg_ev": 0.1422
+      "win_pct": 0.47,
+      "roi": -11.81,
+      "avg_ev": 0.1408
     },
     {
       "verdict": "LEAN",
       "side": "over",
-      "picks": 42,
-      "wins": 22,
+      "picks": 44,
+      "wins": 24,
       "losses": 20,
       "pushes": 0,
-      "win_pct": 0.524,
-      "roi": -1.03,
-      "avg_ev": 0.1345
+      "win_pct": 0.545,
+      "roi": 2.49,
+      "avg_ev": 0.1301
     },
     {
       "verdict": "LEAN",
       "side": "under",
-      "picks": 47,
-      "wins": 19,
+      "picks": 48,
+      "wins": 20,
       "losses": 28,
       "pushes": 0,
-      "win_pct": 0.404,
-      "roi": -28.83,
-      "avg_ev": 0.0747
+      "win_pct": 0.417,
+      "roi": -27.06,
+      "avg_ev": 0.0742
     }
   ],
   "lambda_accuracy": {
-    "avg_predicted": 4.94,
-    "avg_actual": 4.85,
-    "bias": -0.09
+    "avg_predicted": 4.97,
+    "avg_actual": 4.91,
+    "bias": -0.06
   },
   "params": {
     "weight_season_cap": 0.4,
     "weight_recent": 0.05,
     "ump_scale": 0.9,
-    "lambda_bias": -0.081,
-    "swstr_k9_scale": 18.0,
-    "updated_at": "2026-05-09T11:13:43Z",
-    "sample_size": 202,
+    "lambda_bias": -0.067,
+    "swstr_k9_scale": 16.0,
+    "updated_at": "2026-05-10T11:16:39Z",
+    "sample_size": 221,
     "formula_change_date": "2026-04-28",
     "calibration_notes": [
+      "[2026-05-10] Lambda bias adjusted -0.081 \u2192 -0.067 (model was systematically over-predicting Ks)",
+      "[2026-05-10] SwStr%% K/9 scale decreased 18.0 \u2192 16.0 (SwStr%% delta not reliably predictive of K outcomes)",
       "[2026-05-09] Lambda bias adjusted -0.130 \u2192 -0.081 (model was systematically over-predicting Ks)",
       "[2026-05-09] SwStr%% K/9 scale decreased 20.0 \u2192 18.0 (SwStr%% delta not reliably predictive of K outcomes)",
       "[2026-05-08] Lambda bias adjusted -0.162 \u2192 -0.130 (model was systematically over-predicting Ks)",
@@ -103,12 +105,12 @@
       "[2026-05-02] K/9 blend weights updated: season 40% \u2192 40%, recent 17% \u2192 5%",
       "[2026-05-01] Lambda bias adjusted -0.189 \u2192 -0.195 (model was systematically over-predicting Ks)",
       "[2026-04-30] Lambda bias adjusted -0.245 \u2192 -0.189 (model was systematically over-predicting Ks)",
-      "[2026-04-27] EV now tracks true ROI, probability gap is stored separately as edge, and the clean post-change calibration era starts on 2026-04-28",
-      "[2026-04-27] Live SwStr transport confirmed; preserved current params as priors and stopped learning from the dead-SwStr window",
-      "[2026-04-27] Lambda bias adjusted -0.317 \u2192 -0.245 (model was systematically over-predicting Ks)"
+      "[2026-04-27] EV now tracks true ROI, probability gap is stored separately as edge, and the clean post-change calibration era starts on 2026-04-28"
     ]
   },
   "calibration_notes": [
+    "[2026-05-10] Lambda bias adjusted -0.081 \u2192 -0.067 (model was systematically over-predicting Ks)",
+    "[2026-05-10] SwStr%% K/9 scale decreased 18.0 \u2192 16.0 (SwStr%% delta not reliably predictive of K outcomes)",
     "[2026-05-09] Lambda bias adjusted -0.130 \u2192 -0.081 (model was systematically over-predicting Ks)",
     "[2026-05-09] SwStr%% K/9 scale decreased 20.0 \u2192 18.0 (SwStr%% delta not reliably predictive of K outcomes)",
     "[2026-05-08] Lambda bias adjusted -0.162 \u2192 -0.130 (model was systematically over-predicting Ks)",
@@ -126,8 +128,6 @@
     "[2026-05-02] K/9 blend weights updated: season 40% \u2192 40%, recent 17% \u2192 5%",
     "[2026-05-01] Lambda bias adjusted -0.189 \u2192 -0.195 (model was systematically over-predicting Ks)",
     "[2026-04-30] Lambda bias adjusted -0.245 \u2192 -0.189 (model was systematically over-predicting Ks)",
-    "[2026-04-27] EV now tracks true ROI, probability gap is stored separately as edge, and the clean post-change calibration era starts on 2026-04-28",
-    "[2026-04-27] Live SwStr transport confirmed; preserved current params as priors and stopped learning from the dead-SwStr window",
-    "[2026-04-27] Lambda bias adjusted -0.317 \u2192 -0.245 (model was systematically over-predicting Ks)"
+    "[2026-04-27] EV now tracks true ROI, probability gap is stored separately as edge, and the clean post-change calibration era starts on 2026-04-28"
   ]
 }
