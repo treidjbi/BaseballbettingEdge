@@ -6876,22 +6876,51 @@
         "so": 0,
         "k_rate": 0.0
       }
+    },
+    "mlbam:682515": {
+      "name": "Logan Porter",
+      "bats": "R",
+      "mlbam_id": 682515,
+      "bbref_id": "portelo01",
+      "season": 2026,
+      "vs_R": {
+        "pa": 9,
+        "so": 2,
+        "k_rate": 0.2222
+      }
+    },
+    "mlbam:694377": {
+      "name": "Nick Yorke",
+      "bats": "R",
+      "mlbam_id": 694377,
+      "bbref_id": "yorkeni01",
+      "season": 2026,
+      "vs_R": {
+        "pa": 48,
+        "so": 8,
+        "k_rate": 0.1667
+      },
+      "vs_L": {
+        "pa": 32,
+        "so": 8,
+        "k_rate": 0.25
+      }
     }
   },
-  "updated_at": "2026-05-10T04:10:55Z",
+  "updated_at": "2026-05-10T04:34:57Z",
   "last_run": {
     "projection_status": "collection_only",
     "requested_batters": 234,
-    "already_cached": 228,
+    "already_cached": 230,
     "attempted": 4,
     "collected": 2,
     "failed": 2,
-    "queued_not_attempted": 2,
-    "cache_size": 407,
+    "queued_not_attempted": 0,
+    "cache_size": 409,
     "errors": [
       "Omar Martinez: no bbref id",
       "Ryan Waldschmidt: no bbref id"
     ],
-    "updated_at": "2026-05-10T04:10:55Z"
+    "updated_at": "2026-05-10T04:34:57Z"
   }
 }
