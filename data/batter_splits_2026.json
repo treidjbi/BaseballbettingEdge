@@ -6842,23 +6842,56 @@
         "so": 4,
         "k_rate": 0.3077
       }
+    },
+    "mlbam:670032": {
+      "name": "Nicky Lopez",
+      "bats": "R",
+      "mlbam_id": 670032,
+      "bbref_id": "lopezni01",
+      "season": 2026,
+      "vs_R": {
+        "pa": 2,
+        "so": 1,
+        "k_rate": 0.5
+      },
+      "vs_L": {
+        "pa": 2,
+        "so": 1,
+        "k_rate": 0.5
+      }
+    },
+    "mlbam:650968": {
+      "name": "Yohel Pozo",
+      "bats": "R",
+      "mlbam_id": 650968,
+      "bbref_id": "pozoyo01",
+      "season": 2026,
+      "vs_R": {
+        "pa": 6,
+        "so": 0,
+        "k_rate": 0.0
+      },
+      "vs_L": {
+        "pa": 11,
+        "so": 0,
+        "k_rate": 0.0
+      }
     }
   },
-  "updated_at": "2026-05-10T01:23:30Z",
+  "updated_at": "2026-05-10T04:10:55Z",
   "last_run": {
     "projection_status": "collection_only",
     "requested_batters": 234,
-    "already_cached": 231,
-    "attempted": 3,
-    "collected": 0,
-    "failed": 3,
-    "queued_not_attempted": 0,
-    "cache_size": 405,
+    "already_cached": 228,
+    "attempted": 4,
+    "collected": 2,
+    "failed": 2,
+    "queued_not_attempted": 2,
+    "cache_size": 407,
     "errors": [
       "Omar Martinez: no bbref id",
-      "Spencer Jones: no bbref id",
       "Ryan Waldschmidt: no bbref id"
     ],
-    "updated_at": "2026-05-10T01:23:30Z"
+    "updated_at": "2026-05-10T04:10:55Z"
   }
 }
