@@ -6905,21 +6905,39 @@
         "so": 8,
         "k_rate": 0.25
       }
+    },
+    "mlbam:664056": {
+      "name": "Harrison Bader",
+      "bats": "R",
+      "mlbam_id": 664056,
+      "bbref_id": "baderha01",
+      "season": 2026,
+      "vs_R": {
+        "pa": 46,
+        "so": 14,
+        "k_rate": 0.3043
+      },
+      "vs_L": {
+        "pa": 9,
+        "so": 3,
+        "k_rate": 0.3333
+      }
     }
   },
-  "updated_at": "2026-05-11T21:50:58Z",
+  "updated_at": "2026-05-11T22:17:38Z",
   "last_run": {
     "projection_status": "collection_only",
-    "requested_batters": 72,
-    "already_cached": 71,
-    "attempted": 1,
-    "collected": 0,
-    "failed": 1,
+    "requested_batters": 81,
+    "already_cached": 78,
+    "attempted": 3,
+    "collected": 1,
+    "failed": 2,
     "queued_not_attempted": 0,
-    "cache_size": 409,
+    "cache_size": 410,
     "errors": [
-      "Spencer Jones: no bbref id"
+      "Spencer Jones: no bbref id",
+      "Jesus Rodriguez: no bbref id"
     ],
-    "updated_at": "2026-05-11T21:50:58Z"
+    "updated_at": "2026-05-11T22:17:38Z"
   }
 }
