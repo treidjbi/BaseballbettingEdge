@@ -1,10 +1,8 @@
 {
-  "generated_at": "2026-05-11T22:17:38Z",
+  "generated_at": "2026-05-11T22:34:50Z",
   "date": "2026-05-11",
   "props_available": true,
-  "data_warnings": [
-    "fetch_lineups: confirmed 9/10 opposing lineups (1 still projected)"
-  ],
+  "data_warnings": [],
   "pitchers": [
     {
       "pitcher": "Joey Cantillo",
@@ -181,8 +179,8 @@
       },
       "book_odds": {
         "DraftKings": {
-          "over": -128,
-          "under": 100
+          "over": -130,
+          "under": 102
         },
         "BetMGM": {
           "over": -150,
@@ -194,7 +192,7 @@
         },
         "Kalshi": {
           "over": -126,
-          "under": 105
+          "under": 101
         }
       },
       "umpire": "Nic Lentz",
@@ -375,8 +373,8 @@
       },
       "book_odds": {
         "DraftKings": {
-          "over": 129,
-          "under": -164
+          "over": 126,
+          "under": -162
         },
         "BetMGM": {
           "over": 120,
@@ -385,10 +383,6 @@
         "FanDuel": {
           "over": 126,
           "under": -168
-        },
-        "Kalshi": {
-          "over": 124,
-          "under": -148
         }
       },
       "umpire": "Nic Lentz",
@@ -674,10 +668,6 @@
         "quality_gate_reasons": []
       },
       "book_odds": {
-        "DraftKings": {
-          "over": -166,
-          "under": 130
-        },
         "BetMGM": {
           "over": -160,
           "under": 120
@@ -1110,8 +1100,8 @@
       "propline_event_id": null,
       "price_delta_over": -10,
       "price_delta_under": 10,
-      "raw_lambda": 5.15,
-      "lambda": 5.09,
+      "raw_lambda": 5.51,
+      "lambda": 5.44,
       "avg_ip": 5.5,
       "is_opener": false,
       "opener_note": null,
@@ -1121,55 +1111,49 @@
       "days_since_last_start": 7,
       "last_pitch_count": 81,
       "rest_k9_delta": 0.0,
-      "opp_k_rate": 0.2085,
-      "lineup_used": false,
-      "lineup_count": 0,
+      "opp_k_rate": 0.21879921244444447,
+      "lineup_used": true,
+      "lineup_count": 9,
       "park_factor": 1.0,
-      "ump_k_adj": 0.109,
+      "ump_k_adj": 0.566,
       "starter_mismatch": false,
       "recent_start_count": 1,
       "season_k9": 10.29,
       "recent_k9": 10.29,
       "career_k9": 8.28,
       "ev_over": {
-        "edge": 0.1315,
-        "ev": 0.2136,
-        "adj_ev": 0.2136,
+        "edge": 0.1765,
+        "ev": 0.2868,
+        "adj_ev": 0.2868,
         "verdict": "LEAN",
-        "win_prob": 0.747,
+        "win_prob": 0.792,
         "movement_conf": 1.0,
         "raw_verdict": "FIRE 2u",
-        "raw_adj_ev": 0.2136,
+        "raw_adj_ev": 0.2868,
         "actionable_verdict": "LEAN",
         "quality_gate_level": "capped",
         "quality_gate_reasons": [
           "thin recent start sample",
-          "projected lineup",
           "first seen opening"
         ]
       },
       "ev_under": {
-        "edge": -0.2014,
-        "ev": -0.4431,
-        "adj_ev": -0.4431,
+        "edge": -0.2464,
+        "ev": -0.5421,
+        "adj_ev": -0.5421,
         "verdict": "PASS",
-        "win_prob": 0.253,
+        "win_prob": 0.208,
         "movement_conf": 1.0,
         "raw_verdict": "PASS",
-        "raw_adj_ev": -0.4431,
+        "raw_adj_ev": -0.5421,
         "actionable_verdict": "PASS",
         "quality_gate_level": "capped",
         "quality_gate_reasons": [
           "thin recent start sample",
-          "projected lineup",
           "first seen opening"
         ]
       },
       "book_odds": {
-        "DraftKings": {
-          "over": -148,
-          "under": 116
-        },
         "BetMGM": {
           "over": -160,
           "under": 120
@@ -1179,28 +1163,26 @@
           "under": 129
         }
       },
-      "umpire": "Marvin Hudson",
+      "umpire": "Ryan Blakney",
       "umpire_has_rating": true,
       "umpire_rating_games": null,
       "data_complete": true,
       "game_state": "pregame",
       "input_quality_flags": [
         "thin_recent_start_sample",
-        "projected_lineup",
         "first_seen_opening"
       ],
       "projection_safe": true,
       "quality_gate_level": "capped",
       "quality_gate_reasons": [
         "thin recent start sample",
-        "projected lineup",
         "first seen opening"
       ],
-      "verdict_cap_reason": "3 soft input flags: thin_recent_start_sample, projected_lineup, first_seen_opening",
+      "verdict_cap_reason": "2 soft input flags: thin_recent_start_sample, first_seen_opening",
       "data_maturity": {
         "pitcher": "thin",
         "umpire": "mature",
-        "lineup": "projected",
+        "lineup": "confirmed",
         "market": "first_seen"
       },
       "max_actionable_verdict": "LEAN",
@@ -1220,12 +1202,11 @@
           "quality_gate_level": "capped",
           "input_quality_flags": [
             "thin_recent_start_sample",
-            "projected_lineup",
             "first_seen_opening"
           ],
-          "verdict_cap_reason": "3 soft input flags: thin_recent_start_sample, projected_lineup, first_seen_opening",
+          "verdict_cap_reason": "2 soft input flags: thin_recent_start_sample, first_seen_opening",
           "data_maturity": {
-            "lineup": "projected",
+            "lineup": "confirmed",
             "market": "first_seen",
             "pitcher": "thin",
             "umpire": "mature"
@@ -1236,12 +1217,12 @@
           "odds": -160,
           "locked_odds": null,
           "display_odds": -160,
-          "adj_ev": 0.2136,
-          "raw_adj_ev": 0.2136,
+          "adj_ev": 0.2868,
+          "raw_adj_ev": 0.2868,
           "locked_adj_ev": null,
-          "display_adj_ev": 0.2136,
-          "edge": 0.1315,
-          "ev": 0.2136,
+          "display_adj_ev": 0.2868,
+          "edge": 0.1765,
+          "ev": 0.2868,
           "result": null,
           "actual_ks": null,
           "pnl": null,
@@ -1273,8 +1254,8 @@
       "propline_event_id": null,
       "price_delta_over": -14,
       "price_delta_under": 20,
-      "raw_lambda": 4.3,
-      "lambda": 4.24,
+      "raw_lambda": 4.53,
+      "lambda": 4.46,
       "avg_ip": 4.93,
       "is_opener": false,
       "opener_note": null,
@@ -1288,42 +1269,42 @@
       "lineup_used": true,
       "lineup_count": 9,
       "park_factor": 1.0,
-      "ump_k_adj": 0.109,
+      "ump_k_adj": 0.566,
       "starter_mismatch": false,
       "recent_start_count": 5,
       "season_k9": 8.16,
       "recent_k9": 8.03,
       "career_k9": 7.48,
       "ev_over": {
-        "edge": -0.0457,
-        "ev": -0.0986,
-        "adj_ev": -0.0986,
+        "edge": -0.0023,
+        "ev": -0.005,
+        "adj_ev": -0.005,
         "verdict": "PASS",
-        "win_prob": 0.417,
+        "win_prob": 0.461,
         "movement_conf": 1.0,
         "raw_verdict": "PASS",
-        "raw_adj_ev": -0.0986,
+        "raw_adj_ev": -0.005,
         "actionable_verdict": "PASS",
         "quality_gate_level": "clean",
         "quality_gate_reasons": []
       },
       "ev_under": {
-        "edge": -0.0236,
-        "ev": -0.0389,
-        "adj_ev": -0.0195,
+        "edge": -0.067,
+        "ev": -0.1105,
+        "adj_ev": -0.0552,
         "verdict": "PASS",
-        "win_prob": 0.583,
+        "win_prob": 0.539,
         "movement_conf": 0.5,
         "raw_verdict": "PASS",
-        "raw_adj_ev": -0.0195,
+        "raw_adj_ev": -0.0552,
         "actionable_verdict": "PASS",
         "quality_gate_level": "clean",
         "quality_gate_reasons": []
       },
       "book_odds": {
         "DraftKings": {
-          "over": 117,
-          "under": -150
+          "over": 109,
+          "under": -139
         },
         "BetMGM": {
           "over": 115,
@@ -1338,7 +1319,7 @@
           "under": -142
         }
       },
-      "umpire": "Marvin Hudson",
+      "umpire": "Ryan Blakney",
       "umpire_has_rating": true,
       "umpire_rating_games": null,
       "data_complete": true,
@@ -1372,8 +1353,8 @@
       "Michael Soroka": "Alex Tosi",
       "Peter Lambert": "Dillon Wilson",
       "George Kirby": "Dillon Wilson",
-      "Trevor McDonald": "Marvin Hudson",
-      "Roki Sasaki": "Marvin Hudson"
+      "Trevor McDonald": "Ryan Blakney",
+      "Roki Sasaki": "Ryan Blakney"
     },
     "rated_umpire_by_pitcher": {
       "Joey Cantillo": true,
@@ -1415,18 +1396,18 @@
   },
   "batter_split_collection": {
     "projection_status": "collection_only",
-    "requested_batters": 81,
-    "already_cached": 78,
+    "requested_batters": 90,
+    "already_cached": 87,
     "attempted": 3,
     "collected": 1,
     "failed": 2,
     "queued_not_attempted": 0,
-    "cache_size": 410,
+    "cache_size": 411,
     "errors": [
       "Spencer Jones: no bbref id",
       "Jesus Rodriguez: no bbref id"
     ],
-    "updated_at": "2026-05-11T22:17:38Z"
+    "updated_at": "2026-05-11T22:34:50Z"
   },
   "quality_gate_summary": {
     "clean": 6,
@@ -1437,7 +1418,6 @@
       "developing_pitcher_sample": 2,
       "unrated_umpire": 2,
       "thin_recent_start_sample": 1,
-      "projected_lineup": 1,
       "first_seen_opening": 1
     },
     "pre_record_skips": {
@@ -1717,12 +1697,11 @@
       "quality_gate_level": "capped",
       "input_quality_flags": [
         "thin_recent_start_sample",
-        "projected_lineup",
         "first_seen_opening"
       ],
-      "verdict_cap_reason": "3 soft input flags: thin_recent_start_sample, projected_lineup, first_seen_opening",
+      "verdict_cap_reason": "2 soft input flags: thin_recent_start_sample, first_seen_opening",
       "data_maturity": {
-        "lineup": "projected",
+        "lineup": "confirmed",
         "market": "first_seen",
         "pitcher": "thin",
         "umpire": "mature"
@@ -1733,12 +1712,12 @@
       "odds": -160,
       "locked_odds": null,
       "display_odds": -160,
-      "adj_ev": 0.2136,
-      "raw_adj_ev": 0.2136,
+      "adj_ev": 0.2868,
+      "raw_adj_ev": 0.2868,
       "locked_adj_ev": null,
-      "display_adj_ev": 0.2136,
-      "edge": 0.1315,
-      "ev": 0.2136,
+      "display_adj_ev": 0.2868,
+      "edge": 0.1765,
+      "ev": 0.2868,
       "result": null,
       "actual_ks": null,
       "pnl": null,
