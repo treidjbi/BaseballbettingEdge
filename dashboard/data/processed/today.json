@@ -1,9 +1,9 @@
 {
-  "generated_at": "2026-05-11T19:02:25Z",
+  "generated_at": "2026-05-11T19:17:50Z",
   "date": "2026-05-11",
   "props_available": true,
   "data_warnings": [
-    "fetch_lineups: confirmed 1/11 opposing lineups (10 still projected)"
+    "fetch_lineups: confirmed 2/11 opposing lineups (9 still projected)"
   ],
   "pitchers": [
     {
@@ -76,8 +76,8 @@
       },
       "book_odds": {
         "DraftKings": {
-          "over": -119,
-          "under": -107
+          "over": -115,
+          "under": -111
         },
         "BetMGM": {
           "over": -110,
@@ -185,8 +185,8 @@
       },
       "book_odds": {
         "DraftKings": {
-          "over": -136,
-          "under": 107
+          "over": -126,
+          "under": -101
         },
         "BetMGM": {
           "over": -150,
@@ -451,8 +451,8 @@
       "propline_event_id": null,
       "price_delta_over": 0,
       "price_delta_under": 0,
-      "raw_lambda": 4.67,
-      "lambda": 4.6,
+      "raw_lambda": 4.32,
+      "lambda": 4.25,
       "avg_ip": 5.33,
       "is_opener": false,
       "opener_note": null,
@@ -462,51 +462,43 @@
       "days_since_last_start": 6,
       "last_pitch_count": 85,
       "rest_k9_delta": 0.0,
-      "opp_k_rate": 0.1796,
-      "lineup_used": false,
-      "lineup_count": 0,
+      "opp_k_rate": 0.18049471633333333,
+      "lineup_used": true,
+      "lineup_count": 9,
       "park_factor": 1.0,
-      "ump_k_adj": 0.0,
+      "ump_k_adj": -0.673,
       "starter_mismatch": false,
       "recent_start_count": 5,
       "season_k9": 9.08,
       "recent_k9": 9.11,
       "career_k9": 8.41,
       "ev_over": {
-        "edge": -0.0461,
-        "ev": -0.0865,
-        "adj_ev": -0.0865,
+        "edge": -0.1129,
+        "ev": -0.212,
+        "adj_ev": -0.212,
         "verdict": "PASS",
-        "win_prob": 0.487,
+        "win_prob": 0.42,
         "movement_conf": 1.0,
         "raw_verdict": "PASS",
-        "raw_adj_ev": -0.0865,
+        "raw_adj_ev": -0.212,
         "actionable_verdict": "PASS",
-        "quality_gate_level": "capped",
-        "quality_gate_reasons": [
-          "projected lineup"
-        ]
+        "quality_gate_level": "clean",
+        "quality_gate_reasons": []
       },
       "ev_under": {
-        "edge": -0.0193,
-        "ev": -0.0363,
-        "adj_ev": -0.0363,
-        "verdict": "PASS",
-        "win_prob": 0.513,
+        "edge": 0.0475,
+        "ev": 0.0892,
+        "adj_ev": 0.0892,
+        "verdict": "FIRE 1u",
+        "win_prob": 0.58,
         "movement_conf": 1.0,
-        "raw_verdict": "PASS",
-        "raw_adj_ev": -0.0363,
-        "actionable_verdict": "PASS",
-        "quality_gate_level": "capped",
-        "quality_gate_reasons": [
-          "projected lineup"
-        ]
+        "raw_verdict": "FIRE 1u",
+        "raw_adj_ev": 0.0892,
+        "actionable_verdict": "FIRE 1u",
+        "quality_gate_level": "clean",
+        "quality_gate_reasons": []
       },
       "book_odds": {
-        "DraftKings": {
-          "over": -108,
-          "under": -118
-        },
         "BetMGM": {
           "over": -125,
           "under": -105
@@ -520,28 +512,66 @@
           "under": -116
         }
       },
-      "umpire": null,
-      "umpire_has_rating": false,
+      "umpire": "Brian O'Nora",
+      "umpire_has_rating": true,
       "umpire_rating_games": null,
-      "data_complete": false,
+      "data_complete": true,
       "game_state": "pregame",
-      "input_quality_flags": [
-        "projected_lineup"
-      ],
+      "input_quality_flags": [],
       "projection_safe": true,
-      "quality_gate_level": "capped",
-      "quality_gate_reasons": [
-        "projected lineup"
-      ],
-      "verdict_cap_reason": "1 soft input flag: projected_lineup",
+      "quality_gate_level": "clean",
+      "quality_gate_reasons": [],
+      "verdict_cap_reason": "",
       "data_maturity": {
         "pitcher": "mature",
         "umpire": "mature",
-        "lineup": "projected",
+        "lineup": "confirmed",
         "market": "preview_open"
       },
-      "max_actionable_verdict": "FIRE 1u",
-      "tracked_picks": []
+      "max_actionable_verdict": "FIRE 2u",
+      "tracked_picks": [
+        {
+          "date": "2026-05-11",
+          "pitcher": "Drew Rasmussen",
+          "team": "Tampa Bay Rays",
+          "opp_team": "Toronto Blue Jays",
+          "side": "under",
+          "display_side": "UNDER",
+          "verdict": "FIRE 1u",
+          "locked_verdict": null,
+          "display_verdict": "FIRE 1u",
+          "raw_verdict": "FIRE 1u",
+          "actionable_verdict": "FIRE 1u",
+          "quality_gate_level": "clean",
+          "input_quality_flags": [],
+          "verdict_cap_reason": "",
+          "data_maturity": {
+            "lineup": "confirmed",
+            "market": "preview_open",
+            "pitcher": "mature",
+            "umpire": "mature"
+          },
+          "k_line": 4.5,
+          "locked_k_line": null,
+          "display_k_line": 4.5,
+          "odds": -114,
+          "locked_odds": null,
+          "display_odds": -114,
+          "adj_ev": 0.0892,
+          "raw_adj_ev": 0.0892,
+          "locked_adj_ev": null,
+          "display_adj_ev": 0.0892,
+          "edge": 0.0475,
+          "ev": 0.0892,
+          "result": null,
+          "actual_ks": null,
+          "pnl": null,
+          "locked_at": null,
+          "status": "tracking",
+          "game_time": "2026-05-11T23:07:00Z",
+          "data_complete": 1
+        }
+      ]
     },
     {
       "pitcher": "Kevin Gausman",
@@ -564,8 +594,8 @@
       "propline_event_id": null,
       "price_delta_over": -12,
       "price_delta_under": 8,
-      "raw_lambda": 5.21,
-      "lambda": 5.14,
+      "raw_lambda": 4.81,
+      "lambda": 4.74,
       "avg_ip": 5.87,
       "is_opener": false,
       "opener_note": null,
@@ -579,21 +609,21 @@
       "lineup_used": false,
       "lineup_count": 0,
       "park_factor": 1.0,
-      "ump_k_adj": 0.0,
+      "ump_k_adj": -0.673,
       "starter_mismatch": false,
       "recent_start_count": 5,
       "season_k9": 8.29,
       "recent_k9": 5.22,
       "career_k9": 9.18,
       "ev_over": {
-        "edge": -0.0289,
-        "ev": -0.0472,
-        "adj_ev": -0.0472,
+        "edge": -0.099,
+        "ev": -0.1616,
+        "adj_ev": -0.1616,
         "verdict": "PASS",
-        "win_prob": 0.584,
+        "win_prob": 0.513,
         "movement_conf": 1.0,
         "raw_verdict": "PASS",
-        "raw_adj_ev": -0.0472,
+        "raw_adj_ev": -0.1616,
         "actionable_verdict": "PASS",
         "quality_gate_level": "capped",
         "quality_gate_reasons": [
@@ -601,25 +631,21 @@
         ]
       },
       "ev_under": {
-        "edge": -0.0422,
-        "ev": -0.092,
-        "adj_ev": -0.092,
-        "verdict": "PASS",
-        "win_prob": 0.416,
+        "edge": 0.0278,
+        "ev": 0.0607,
+        "adj_ev": 0.0607,
+        "verdict": "FIRE 1u",
+        "win_prob": 0.487,
         "movement_conf": 1.0,
-        "raw_verdict": "PASS",
-        "raw_adj_ev": -0.092,
-        "actionable_verdict": "PASS",
+        "raw_verdict": "FIRE 1u",
+        "raw_adj_ev": 0.0607,
+        "actionable_verdict": "FIRE 1u",
         "quality_gate_level": "capped",
         "quality_gate_reasons": [
           "projected lineup"
         ]
       },
       "book_odds": {
-        "DraftKings": {
-          "over": -164,
-          "under": 128
-        },
         "FanDuel": {
           "over": -158,
           "under": 118
@@ -629,10 +655,10 @@
           "under": 119
         }
       },
-      "umpire": null,
-      "umpire_has_rating": false,
+      "umpire": "Brian O'Nora",
+      "umpire_has_rating": true,
       "umpire_rating_games": null,
-      "data_complete": false,
+      "data_complete": true,
       "game_state": "pregame",
       "input_quality_flags": [
         "projected_lineup"
@@ -650,7 +676,51 @@
         "market": "preview_open"
       },
       "max_actionable_verdict": "FIRE 1u",
-      "tracked_picks": []
+      "tracked_picks": [
+        {
+          "date": "2026-05-11",
+          "pitcher": "Kevin Gausman",
+          "team": "Toronto Blue Jays",
+          "opp_team": "Tampa Bay Rays",
+          "side": "under",
+          "display_side": "UNDER",
+          "verdict": "FIRE 1u",
+          "locked_verdict": null,
+          "display_verdict": "FIRE 1u",
+          "raw_verdict": "FIRE 1u",
+          "actionable_verdict": "FIRE 1u",
+          "quality_gate_level": "capped",
+          "input_quality_flags": [
+            "projected_lineup"
+          ],
+          "verdict_cap_reason": "1 soft input flag: projected_lineup",
+          "data_maturity": {
+            "lineup": "projected",
+            "market": "preview_open",
+            "pitcher": "mature",
+            "umpire": "mature"
+          },
+          "k_line": 4.5,
+          "locked_k_line": null,
+          "display_k_line": 4.5,
+          "odds": 118,
+          "locked_odds": null,
+          "display_odds": 118,
+          "adj_ev": 0.0607,
+          "raw_adj_ev": 0.0607,
+          "locked_adj_ev": null,
+          "display_adj_ev": 0.0607,
+          "edge": 0.0278,
+          "ev": 0.0607,
+          "result": null,
+          "actual_ks": null,
+          "pnl": null,
+          "locked_at": null,
+          "status": "tracking",
+          "game_time": "2026-05-11T23:07:00Z",
+          "data_complete": 1
+        }
+      ]
     },
     {
       "pitcher": "Michael Soroka",
@@ -1425,19 +1495,21 @@
     }
   ],
   "ump_diagnostics": {
-    "hp_count_fetched": 1,
-    "pitcher_nonzero_count": 1,
-    "pitcher_with_hp_count": 1,
-    "pitcher_rated_count": 1,
+    "hp_count_fetched": 2,
+    "pitcher_nonzero_count": 3,
+    "pitcher_with_hp_count": 3,
+    "pitcher_rated_count": 3,
     "umpire_by_pitcher": {
-      "Joey Cantillo": "Jonathan Parra"
+      "Joey Cantillo": "Jonathan Parra",
+      "Drew Rasmussen": "Brian O'Nora",
+      "Kevin Gausman": "Brian O'Nora"
     },
     "rated_umpire_by_pitcher": {
       "Joey Cantillo": true,
       "Ryan Weathers": false,
       "Brandon Young": false,
-      "Drew Rasmussen": false,
-      "Kevin Gausman": false,
+      "Drew Rasmussen": true,
+      "Kevin Gausman": true,
       "Michael Soroka": false,
       "Nathan Eovaldi": false,
       "Peter Lambert": false,
@@ -1471,23 +1543,23 @@
   },
   "batter_split_collection": {
     "projection_status": "collection_only",
-    "requested_batters": 9,
-    "already_cached": 9,
+    "requested_batters": 18,
+    "already_cached": 18,
     "attempted": 0,
     "collected": 0,
     "failed": 0,
     "queued_not_attempted": 0,
     "cache_size": 409,
     "errors": [],
-    "updated_at": "2026-05-11T19:02:25Z"
+    "updated_at": "2026-05-11T19:17:50Z"
   },
   "quality_gate_summary": {
-    "clean": 1,
-    "capped": 10,
+    "clean": 2,
+    "capped": 9,
     "blocked": 0,
     "severe_flags": {},
     "soft_flags": {
-      "projected_lineup": 10,
+      "projected_lineup": 9,
       "developing_pitcher_sample": 2,
       "thin_recent_start_sample": 1
     },
@@ -1585,6 +1657,90 @@
       "status": "tracking",
       "game_time": "2026-05-11T22:35:00Z",
       "data_complete": 0
+    },
+    {
+      "date": "2026-05-11",
+      "pitcher": "Drew Rasmussen",
+      "team": "Tampa Bay Rays",
+      "opp_team": "Toronto Blue Jays",
+      "side": "under",
+      "display_side": "UNDER",
+      "verdict": "FIRE 1u",
+      "locked_verdict": null,
+      "display_verdict": "FIRE 1u",
+      "raw_verdict": "FIRE 1u",
+      "actionable_verdict": "FIRE 1u",
+      "quality_gate_level": "clean",
+      "input_quality_flags": [],
+      "verdict_cap_reason": "",
+      "data_maturity": {
+        "lineup": "confirmed",
+        "market": "preview_open",
+        "pitcher": "mature",
+        "umpire": "mature"
+      },
+      "k_line": 4.5,
+      "locked_k_line": null,
+      "display_k_line": 4.5,
+      "odds": -114,
+      "locked_odds": null,
+      "display_odds": -114,
+      "adj_ev": 0.0892,
+      "raw_adj_ev": 0.0892,
+      "locked_adj_ev": null,
+      "display_adj_ev": 0.0892,
+      "edge": 0.0475,
+      "ev": 0.0892,
+      "result": null,
+      "actual_ks": null,
+      "pnl": null,
+      "locked_at": null,
+      "status": "tracking",
+      "game_time": "2026-05-11T23:07:00Z",
+      "data_complete": 1
+    },
+    {
+      "date": "2026-05-11",
+      "pitcher": "Kevin Gausman",
+      "team": "Toronto Blue Jays",
+      "opp_team": "Tampa Bay Rays",
+      "side": "under",
+      "display_side": "UNDER",
+      "verdict": "FIRE 1u",
+      "locked_verdict": null,
+      "display_verdict": "FIRE 1u",
+      "raw_verdict": "FIRE 1u",
+      "actionable_verdict": "FIRE 1u",
+      "quality_gate_level": "capped",
+      "input_quality_flags": [
+        "projected_lineup"
+      ],
+      "verdict_cap_reason": "1 soft input flag: projected_lineup",
+      "data_maturity": {
+        "lineup": "projected",
+        "market": "preview_open",
+        "pitcher": "mature",
+        "umpire": "mature"
+      },
+      "k_line": 4.5,
+      "locked_k_line": null,
+      "display_k_line": 4.5,
+      "odds": 118,
+      "locked_odds": null,
+      "display_odds": 118,
+      "adj_ev": 0.0607,
+      "raw_adj_ev": 0.0607,
+      "locked_adj_ev": null,
+      "display_adj_ev": 0.0607,
+      "edge": 0.0278,
+      "ev": 0.0607,
+      "result": null,
+      "actual_ks": null,
+      "pnl": null,
+      "locked_at": null,
+      "status": "tracking",
+      "game_time": "2026-05-11T23:07:00Z",
+      "data_complete": 1
     },
     {
       "date": "2026-05-11",
