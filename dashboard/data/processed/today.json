@@ -1,9 +1,8 @@
 {
-  "generated_at": "2026-05-11T18:01:03Z",
+  "generated_at": "2026-05-11T18:21:38Z",
   "date": "2026-05-11",
   "props_available": true,
   "data_warnings": [
-    "fetch_umpires returned 0 entries for 6 scheduled games",
     "fetch_lineups: confirmed 0/11 opposing lineups (11 still projected)"
   ],
   "pitchers": [
@@ -28,8 +27,8 @@
       "propline_event_id": null,
       "price_delta_over": -220,
       "price_delta_under": 26,
-      "raw_lambda": 5.28,
-      "lambda": 5.21,
+      "raw_lambda": 5.39,
+      "lambda": 5.32,
       "avg_ip": 4.93,
       "is_opener": false,
       "opener_note": null,
@@ -43,21 +42,21 @@
       "lineup_used": false,
       "lineup_count": 0,
       "park_factor": 1.01,
-      "ump_k_adj": 0.0,
+      "ump_k_adj": 0.219,
       "starter_mismatch": false,
       "recent_start_count": 5,
       "season_k9": 8.47,
       "recent_k9": 6.2,
       "career_k9": 9.81,
       "ev_over": {
-        "edge": -0.1114,
-        "ev": -0.2092,
-        "adj_ev": -0.2092,
+        "edge": -0.0926,
+        "ev": -0.1738,
+        "adj_ev": -0.1738,
         "verdict": "PASS",
-        "win_prob": 0.421,
+        "win_prob": 0.44,
         "movement_conf": 1.0,
         "raw_verdict": "PASS",
-        "raw_adj_ev": -0.2092,
+        "raw_adj_ev": -0.1738,
         "actionable_verdict": "PASS",
         "quality_gate_level": "capped",
         "quality_gate_reasons": [
@@ -65,14 +64,14 @@
         ]
       },
       "ev_under": {
-        "edge": 0.046,
-        "ev": 0.0864,
-        "adj_ev": 0.0173,
+        "edge": 0.0272,
+        "ev": 0.051,
+        "adj_ev": 0.0102,
         "verdict": "PASS",
-        "win_prob": 0.579,
+        "win_prob": 0.56,
         "movement_conf": 0.2,
         "raw_verdict": "PASS",
-        "raw_adj_ev": 0.0173,
+        "raw_adj_ev": 0.0102,
         "actionable_verdict": "PASS",
         "quality_gate_level": "capped",
         "quality_gate_reasons": [
@@ -97,10 +96,10 @@
           "under": -107
         }
       },
-      "umpire": null,
-      "umpire_has_rating": false,
+      "umpire": "Jonathan Parra",
+      "umpire_has_rating": true,
       "umpire_rating_games": null,
-      "data_complete": false,
+      "data_complete": true,
       "game_state": "pregame",
       "input_quality_flags": [
         "projected_lineup"
@@ -513,8 +512,8 @@
       },
       "book_odds": {
         "DraftKings": {
-          "over": -117,
-          "under": -109
+          "over": -121,
+          "under": -105
         },
         "BetMGM": {
           "over": -125,
@@ -563,16 +562,16 @@
       "best_over_book": "FanDuel",
       "best_under_book": "FanDuel",
       "ref_book": "FanDuel",
-      "best_over_odds": -154,
-      "best_under_odds": 116,
+      "best_over_odds": -158,
+      "best_under_odds": 118,
       "opening_over_odds": -146,
       "opening_under_odds": 110,
       "opening_odds_source": "preview",
       "odds_source": "therundown",
       "the_odds_event_id": null,
       "propline_event_id": null,
-      "price_delta_over": -8,
-      "price_delta_under": 6,
+      "price_delta_over": -12,
+      "price_delta_under": 8,
       "raw_lambda": 5.21,
       "lambda": 5.14,
       "avg_ip": 5.87,
@@ -595,14 +594,14 @@
       "recent_k9": 5.22,
       "career_k9": 9.18,
       "ev_over": {
-        "edge": -0.0228,
-        "ev": -0.0376,
-        "adj_ev": -0.0376,
+        "edge": -0.0289,
+        "ev": -0.0472,
+        "adj_ev": -0.0472,
         "verdict": "PASS",
         "win_prob": 0.584,
         "movement_conf": 1.0,
         "raw_verdict": "PASS",
-        "raw_adj_ev": -0.0376,
+        "raw_adj_ev": -0.0472,
         "actionable_verdict": "PASS",
         "quality_gate_level": "capped",
         "quality_gate_reasons": [
@@ -610,14 +609,14 @@
         ]
       },
       "ev_under": {
-        "edge": -0.0465,
-        "ev": -0.1004,
-        "adj_ev": -0.1004,
+        "edge": -0.0422,
+        "ev": -0.092,
+        "adj_ev": -0.092,
         "verdict": "PASS",
         "win_prob": 0.416,
         "movement_conf": 1.0,
         "raw_verdict": "PASS",
-        "raw_adj_ev": -0.1004,
+        "raw_adj_ev": -0.092,
         "actionable_verdict": "PASS",
         "quality_gate_level": "capped",
         "quality_gate_reasons": [
@@ -630,8 +629,8 @@
           "under": 124
         },
         "FanDuel": {
-          "over": -154,
-          "under": 116
+          "over": -158,
+          "under": 118
         },
         "Kalshi": {
           "over": -142,
@@ -861,7 +860,7 @@
         },
         "Kalshi": {
           "over": 114,
-          "under": -142
+          "under": -137
         }
       },
       "umpire": null,
@@ -1132,6 +1131,10 @@
         "FanDuel": {
           "over": 102,
           "under": -136
+        },
+        "Kalshi": {
+          "over": 105,
+          "under": -131
         }
       },
       "umpire": null,
@@ -1430,13 +1433,15 @@
     }
   ],
   "ump_diagnostics": {
-    "hp_count_fetched": 0,
-    "pitcher_nonzero_count": 0,
-    "pitcher_with_hp_count": 0,
-    "pitcher_rated_count": 0,
-    "umpire_by_pitcher": {},
+    "hp_count_fetched": 1,
+    "pitcher_nonzero_count": 1,
+    "pitcher_with_hp_count": 1,
+    "pitcher_rated_count": 1,
+    "umpire_by_pitcher": {
+      "Joey Cantillo": "Jonathan Parra"
+    },
     "rated_umpire_by_pitcher": {
-      "Joey Cantillo": false,
+      "Joey Cantillo": true,
       "Ryan Weathers": false,
       "Brandon Young": false,
       "Drew Rasmussen": false,
