@@ -6907,17 +6907,19 @@
       }
     }
   },
-  "updated_at": "2026-05-11T19:17:50Z",
+  "updated_at": "2026-05-11T20:02:17Z",
   "last_run": {
     "projection_status": "collection_only",
-    "requested_batters": 18,
-    "already_cached": 18,
-    "attempted": 0,
+    "requested_batters": 45,
+    "already_cached": 44,
+    "attempted": 1,
     "collected": 0,
-    "failed": 0,
+    "failed": 1,
     "queued_not_attempted": 0,
     "cache_size": 409,
-    "errors": [],
-    "updated_at": "2026-05-11T19:17:50Z"
+    "errors": [
+      "Spencer Jones: no bbref id"
+    ],
+    "updated_at": "2026-05-11T20:02:17Z"
   }
 }
