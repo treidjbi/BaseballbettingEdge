@@ -6907,15 +6907,15 @@
       }
     }
   },
-  "updated_at": "2026-05-11T00:01:25Z",
+  "updated_at": "2026-05-11T01:26:33Z",
   "last_run": {
     "projection_status": "collection_only",
     "requested_batters": 216,
-    "already_cached": 212,
+    "already_cached": 211,
     "attempted": 4,
     "collected": 0,
     "failed": 4,
-    "queued_not_attempted": 0,
+    "queued_not_attempted": 1,
     "cache_size": 409,
     "errors": [
       "Joe Mack: no bbref id",
@@ -6923,6 +6923,6 @@
       "Jesus Rodriguez: no bbref id",
       "Raisel Iglesias: no platoon split rows"
     ],
-    "updated_at": "2026-05-11T00:01:25Z"
+    "updated_at": "2026-05-11T01:26:33Z"
   }
 }
