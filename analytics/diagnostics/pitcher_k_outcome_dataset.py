@@ -11,6 +11,7 @@ import argparse
 import json
 import sys
 from collections import Counter
+from datetime import datetime
 from pathlib import Path
 from typing import Any
 
@@ -87,9 +88,15 @@ REQUIRED_DATASET_FIELDS = {
     "line_clv_delta",
     "beat_close_price",
     "beat_close_line",
+    "clv_type",
+    "process_outcome_bucket",
+    "bet_timing_window",
     "model_market_relationship",
     "model_edge_bucket",
     "projection_margin_bucket",
+    "large_edge_skepticism_flag",
+    "large_edge_skepticism_reasons",
+    "pitcher_archetype_bucket",
     "pitcher_throws",
     "lineup_count",
     "lineup_right_batters",
@@ -305,6 +312,148 @@ def _model_market_relationship(model_side: str, market_favorite: str) -> str:
     return "model_fades_favorite"
 
 
+def _list_values(value: Any) -> list[Any]:
+    if isinstance(value, list):
+        return value
+    if isinstance(value, tuple):
+        return list(value)
+    if value in (None, "", []):
+        return []
+    return [value]
+
+
+def _clv_type(is_tracked: bool, price_clv_cents: float | int | None, line_clv_delta: float | None) -> str:
+    if not is_tracked:
+        return "not_tracked"
+    if price_clv_cents is None and line_clv_delta is None:
+        return "unknown"
+
+    price_edge = price_clv_cents is not None and price_clv_cents > 0
+    line_edge = line_clv_delta is not None and line_clv_delta > 0
+    if price_edge and line_edge:
+        return "price_and_line"
+    if price_edge:
+        return "price_only"
+    if line_edge:
+        return "line_only"
+    return "no_clv_edge"
+
+
+def _process_outcome_bucket(result: Any, clv_type: str) -> str:
+    if result not in {"win", "loss"} or clv_type in {"unknown", "not_tracked"}:
+        return "unknown"
+    good_process = clv_type in {"price_and_line", "price_only", "line_only"}
+    if good_process and result == "win":
+        return "good_process_win"
+    if good_process and result == "loss":
+        return "good_process_loss"
+    if result == "win":
+        return "weak_process_win"
+    return "weak_process_loss"
+
+
+def _parse_datetime(value: Any) -> datetime | None:
+    if not value:
+        return None
+    try:
+        text = str(value).strip()
+        if text.endswith("Z"):
+            text = f"{text[:-1]}+00:00"
+        return datetime.fromisoformat(text)
+    except ValueError:
+        return None
+
+
+def _bet_timing_window(bet_time_at: Any, game_time: Any) -> str:
+    bet_time = _parse_datetime(bet_time_at)
+    first_pitch = _parse_datetime(game_time)
+    if bet_time is None or first_pitch is None:
+        return "unknown"
+    minutes = (first_pitch - bet_time).total_seconds() / 60.0
+    if minutes < 0:
+        return "post_start"
+    if minutes <= 5:
+        return "pre_5"
+    if minutes <= 15:
+        return "pre_15"
+    if minutes <= 30:
+        return "pre_30"
+    if minutes <= 60:
+        return "pre_60"
+    if minutes <= 120:
+        return "pre_120"
+    return "early"
+
+
+def _large_edge_skepticism_reasons(
+    *,
+    side: str,
+    model_side: str,
+    verdict: Any,
+    model_edge_bucket: str,
+    model_market_relationship: str,
+    quality_gate_level: Any,
+    quality_gate_reasons: Any,
+    side_price_movement: str | None,
+    leash_risk_bucket: str,
+    opportunity_bucket: str,
+) -> list[str]:
+    if model_edge_bucket != "5%+":
+        return []
+    verdict_text = str(verdict or "").strip().upper()
+    if side != model_side and not (verdict_text.startswith("LEAN") or verdict_text.startswith("FIRE")):
+        return []
+
+    reasons: list[str] = []
+    if model_market_relationship == "model_fades_favorite":
+        reasons.append("model_fades_market_favorite")
+
+    gate = str(quality_gate_level or "").strip().lower()
+    if gate and gate not in {"clean", "none"}:
+        reasons.append(f"quality_gate_{gate}")
+
+    if _list_values(quality_gate_reasons):
+        reasons.append("lineup_or_quality_gate_reason")
+
+    if side_price_movement == "against_side":
+        reasons.append("market_moved_against_side")
+
+    if leash_risk_bucket in {"medium", "high"}:
+        reasons.append(f"leash_risk_{leash_risk_bucket}")
+
+    if opportunity_bucket == "short_leash":
+        reasons.append("short_leash_opportunity")
+
+    return reasons if len(reasons) >= 2 else []
+
+
+def _pitcher_archetype_bucket(
+    *,
+    is_opener: Any,
+    starter_mismatch: Any,
+    opportunity_bucket: str,
+    season_k9: float | None,
+    recent_k9: float | None,
+    career_k9: float | None,
+) -> str:
+    if bool(is_opener) or bool(starter_mismatch):
+        return "opener_or_mismatch"
+    if opportunity_bucket == "short_leash":
+        return "short_leash"
+
+    k9_values = [value for value in (season_k9, recent_k9, career_k9) if value is not None]
+    max_k9 = max(k9_values) if k9_values else None
+    if opportunity_bucket == "deep_starter" and max_k9 is not None and max_k9 >= 10.0:
+        return "high_k_deep_starter"
+    if opportunity_bucket == "deep_starter":
+        return "deep_starter"
+    if max_k9 is not None and max_k9 >= 10.0:
+        return "high_k_standard"
+    if max_k9 is not None and max_k9 < 7.0:
+        return "low_k_standard"
+    return "standard_starter"
+
+
 def _result_for_side(winning_side: Any, side: str) -> str | None:
     if winning_side not in {"over", "under"}:
         return None
@@ -413,6 +562,33 @@ def build_official_close_rows(markets: list[dict[str, Any]]) -> list[dict[str, A
             recent_start_count = _to_int(market.get("recent_start_count"))
             last_pitch_count = _to_int(market.get("last_pitch_count"))
             days_since_last_start = _to_int(market.get("days_since_last_start"))
+            side_price_movement = _side_price_movement(opening_odds, odds)
+            opportunity_bucket = _opportunity_bucket(avg_ip, recent_start_count)
+            leash_risk_bucket = _leash_risk_bucket(
+                is_opener=market.get("is_opener"),
+                starter_mismatch=market.get("starter_mismatch"),
+                avg_ip=avg_ip,
+                last_pitch_count=last_pitch_count,
+                days_since_last_start=days_since_last_start,
+            )
+            relationship = _model_market_relationship(model_side, favorite)
+            edge_bucket = _model_edge_bucket(model_no_vig_gap)
+            verdict = ev.get("verdict") or ev.get("raw_verdict")
+            skepticism_reasons = _large_edge_skepticism_reasons(
+                side=side,
+                model_side=model_side,
+                verdict=verdict,
+                model_edge_bucket=edge_bucket,
+                model_market_relationship=relationship,
+                quality_gate_level=market.get("quality_gate_level"),
+                quality_gate_reasons=market.get("quality_gate_reasons"),
+                side_price_movement=side_price_movement,
+                leash_risk_bucket=leash_risk_bucket,
+                opportunity_bucket=opportunity_bucket,
+            )
+            season_k9 = _to_float(market.get("season_k9"))
+            recent_k9 = _to_float(market.get("recent_k9"))
+            career_k9 = _to_float(market.get("career_k9"))
 
             row = {
                 "dataset_key": build_dataset_key(
@@ -439,21 +615,23 @@ def build_official_close_rows(markets: list[dict[str, Any]]) -> list[dict[str, A
                 "market_favorite_side": favorite,
                 "favorite_gap_no_vig": _favorite_gap(market),
                 "no_vig_side_probability": round(market_prob, 4) if market_prob is not None else None,
-                "side_price_movement": _side_price_movement(opening_odds, odds),
+                "side_price_movement": side_price_movement,
                 "line_movement": None,
                 "minus_to_plus_or_plus_to_minus": _sign_transition(opening_odds, odds),
                 "model_side": model_side,
                 "model_win_prob": round(model_win_prob, 4) if model_win_prob is not None else None,
                 "model_no_vig_gap": model_no_vig_gap,
-                "model_market_relationship": _model_market_relationship(model_side, favorite),
-                "model_edge_bucket": _model_edge_bucket(model_no_vig_gap),
+                "model_market_relationship": relationship,
+                "model_edge_bucket": edge_bucket,
                 "projected_ks": _projection(market),
                 "k_margin_to_line": margin_to_line,
                 "projection_margin_bucket": _projection_margin_bucket(margin_to_line),
+                "large_edge_skepticism_flag": bool(skepticism_reasons),
+                "large_edge_skepticism_reasons": skepticism_reasons,
                 "edge": _to_float(ev.get("edge")),
                 "ev": _to_float(ev.get("ev")),
                 "adj_ev": _to_float(ev.get("adj_ev")),
-                "verdict": ev.get("verdict") or ev.get("raw_verdict"),
+                "verdict": verdict,
                 "raw_verdict": ev.get("raw_verdict"),
                 "quality_gate_level": market.get("quality_gate_level"),
                 "quality_gate_reasons": market.get("quality_gate_reasons"),
@@ -490,18 +668,20 @@ def build_official_close_rows(markets: list[dict[str, Any]]) -> list[dict[str, A
                 "last_pitch_count": last_pitch_count,
                 "avg_ip": avg_ip,
                 "recent_start_count": recent_start_count,
-                "opportunity_bucket": _opportunity_bucket(avg_ip, recent_start_count),
-                "leash_risk_bucket": _leash_risk_bucket(
+                "opportunity_bucket": opportunity_bucket,
+                "leash_risk_bucket": leash_risk_bucket,
+                "rest_k9_delta": _to_float(market.get("rest_k9_delta")),
+                "season_k9": season_k9,
+                "recent_k9": recent_k9,
+                "career_k9": career_k9,
+                "pitcher_archetype_bucket": _pitcher_archetype_bucket(
                     is_opener=market.get("is_opener"),
                     starter_mismatch=market.get("starter_mismatch"),
-                    avg_ip=avg_ip,
-                    last_pitch_count=last_pitch_count,
-                    days_since_last_start=days_since_last_start,
+                    opportunity_bucket=opportunity_bucket,
+                    season_k9=season_k9,
+                    recent_k9=recent_k9,
+                    career_k9=career_k9,
                 ),
-                "rest_k9_delta": _to_float(market.get("rest_k9_delta")),
-                "season_k9": _to_float(market.get("season_k9")),
-                "recent_k9": _to_float(market.get("recent_k9")),
-                "career_k9": _to_float(market.get("career_k9")),
                 "current_swstr_pct": _to_float(
                     market.get("current_swstr_pct") or market.get("swstr_pct")
                 ),
@@ -533,6 +713,9 @@ def build_official_close_rows(markets: list[dict[str, Any]]) -> list[dict[str, A
                 "line_clv_delta": None,
                 "beat_close_price": None,
                 "beat_close_line": None,
+                "clv_type": "not_tracked",
+                "process_outcome_bucket": "unknown",
+                "bet_timing_window": "unknown",
                 "pick_history_pnl": None,
                 "actual_ip": _to_float(market.get("actual_ip")),
                 "actual_pitch_count": _to_int(market.get("actual_pitch_count")),
@@ -612,6 +795,10 @@ def build_summary(rows: list[dict[str, Any]]) -> dict[str, Any]:
     model_market_counts = Counter(str(row.get("model_market_relationship") or "unknown") for row in rows)
     opportunity_counts = Counter(str(row.get("opportunity_bucket") or "unknown") for row in rows)
     leash_counts = Counter(str(row.get("leash_risk_bucket") or "unknown") for row in rows)
+    clv_type_counts = Counter(str(row.get("clv_type") or "unknown") for row in rows)
+    process_counts = Counter(str(row.get("process_outcome_bucket") or "unknown") for row in rows)
+    timing_counts = Counter(str(row.get("bet_timing_window") or "unknown") for row in rows)
+    archetype_counts = Counter(str(row.get("pitcher_archetype_bucket") or "unknown") for row in rows)
     clean_rows = [row for row in rows if str(row.get("slate_date") or "") >= CLEAN_WINDOW_START]
     return {
         "total_rows": len(rows),
@@ -631,9 +818,14 @@ def build_summary(rows: list[dict[str, Any]]) -> dict[str, Any]:
         "rows_with_price_clv": sum(1 for row in rows if row.get("price_clv_cents") is not None),
         "beat_close_price_rows": sum(1 for row in rows if row.get("beat_close_price") is True),
         "beat_close_line_rows": sum(1 for row in rows if row.get("beat_close_line") is True),
+        "large_edge_skepticism_rows": sum(1 for row in rows if row.get("large_edge_skepticism_flag") is True),
         "model_market_relationship_counts": dict(sorted(model_market_counts.items())),
         "opportunity_bucket_counts": dict(sorted(opportunity_counts.items())),
         "leash_risk_bucket_counts": dict(sorted(leash_counts.items())),
+        "clv_type_counts": dict(sorted(clv_type_counts.items())),
+        "process_outcome_bucket_counts": dict(sorted(process_counts.items())),
+        "bet_timing_window_counts": dict(sorted(timing_counts.items())),
+        "pitcher_archetype_bucket_counts": dict(sorted(archetype_counts.items())),
     }
 
 
@@ -789,6 +981,9 @@ def enrich_rows_with_pick_history(
         next_row.setdefault("line_clv_delta", None)
         next_row.setdefault("beat_close_price", None)
         next_row.setdefault("beat_close_line", None)
+        next_row.setdefault("clv_type", "not_tracked")
+        next_row.setdefault("process_outcome_bucket", "unknown")
+        next_row.setdefault("bet_timing_window", "unknown")
         next_row.setdefault("pick_history_pnl", None)
         if pick is not None:
             bet_line = _to_float(pick.get("locked_k_line") or pick.get("k_line"))
@@ -816,6 +1011,17 @@ def enrich_rows_with_pick_history(
                     "pick_history_pnl": _to_float(pick.get("pnl")),
                 }
             )
+            clv_type = _clv_type(True, price_clv_cents, line_clv_delta)
+            next_row.update(
+                {
+                    "clv_type": clv_type,
+                    "process_outcome_bucket": _process_outcome_bucket(next_row.get("result"), clv_type),
+                    "bet_timing_window": _bet_timing_window(
+                        next_row.get("bet_time_at"),
+                        next_row.get("game_time") or pick.get("game_time"),
+                    ),
+                }
+            )
         enriched.append(next_row)
     return enriched
 
@@ -838,6 +1044,7 @@ def render_summary(summary: dict[str, Any]) -> str:
         f"- Rows with price CLV: `{summary.get('rows_with_price_clv', 0)}`",
         f"- Beat-close price rows: `{summary.get('beat_close_price_rows', 0)}`",
         f"- Beat-close line rows: `{summary.get('beat_close_line_rows', 0)}`",
+        f"- Large-edge skepticism rows: `{summary.get('large_edge_skepticism_rows', 0)}`",
         f"- Clean graded picks reconciled: `{summary.get('matched_pick_rows', 0)}/{summary.get('graded_pick_rows', 0)}`",
         f"- Unique side fallback reconciliations: `{summary.get('unique_side_fallback_matches', 0)}`",
         f"- Unmatched clean graded picks: `{summary.get('unmatched_pick_rows', 0)}`",
@@ -849,8 +1056,12 @@ def render_summary(summary: dict[str, Any]) -> str:
         lines.append(f"- `{context}`: `{count}`")
     for title, key in (
         ("Model Vs Market Relationship", "model_market_relationship_counts"),
+        ("CLV Types", "clv_type_counts"),
+        ("Process Outcome Buckets", "process_outcome_bucket_counts"),
+        ("Bet Timing Windows", "bet_timing_window_counts"),
         ("Opportunity Buckets", "opportunity_bucket_counts"),
         ("Leash Risk Buckets", "leash_risk_bucket_counts"),
+        ("Pitcher Archetype Buckets", "pitcher_archetype_bucket_counts"),
     ):
         lines.extend(["", f"## {title}", ""])
         for value, count in (summary.get(key) or {}).items():

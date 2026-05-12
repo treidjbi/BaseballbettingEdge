@@ -27,7 +27,7 @@ def test_build_official_close_rows_creates_one_row_per_side():
             "over_odds": -125,
             "under_odds": 104,
             "opening_over_odds": -110,
-            "opening_under_odds": -110,
+            "opening_under_odds": 104,
             "ref_book": "FanDuel",
             "model_side": "under",
             "model_win_prob": 0.57,
@@ -40,6 +40,7 @@ def test_build_official_close_rows_creates_one_row_per_side():
             "lineup_used": "confirmed",
             "lineup_count": 9,
             "quality_gate_level": "clean",
+            "quality_gate_reasons": [],
             "source_artifact_path": "dashboard/data/processed/2026-05-12.json",
             "pitcher_throws": "R",
             "avg_ip": 5.8,
@@ -65,7 +66,56 @@ def test_build_official_close_rows_creates_one_row_per_side():
     assert under["pitcher_throws"] == "R"
     assert under["opportunity_bucket"] == "normal"
     assert under["leash_risk_bucket"] == "normal"
+    assert under["large_edge_skepticism_flag"] is False
+    assert under["large_edge_skepticism_reasons"] == []
+    assert under["pitcher_archetype_bucket"] == "standard_starter"
     assert under["lineup_count"] == 9
+
+
+def test_build_official_close_rows_flags_large_edge_skepticism():
+    markets = [
+        {
+            "date": "2026-05-12",
+            "pitcher": "Short Leash",
+            "normalized_pitcher": "short leash",
+            "k_line": 5.5,
+            "actual_ks": 4,
+            "winning_side": "under",
+            "over_odds": -130,
+            "under_odds": 110,
+            "opening_over_odds": -110,
+            "opening_under_odds": 100,
+            "ref_book": "FanDuel",
+            "model_side": "under",
+            "applied_lambda": 4.4,
+            "ev_over": {"win_prob": 0.39, "edge": -0.10, "verdict": "PASS"},
+            "ev_under": {"win_prob": 0.61, "edge": 0.09, "verdict": "FIRE 2u"},
+            "team": "SEA",
+            "opp_team": "NYY",
+            "home_away": "home",
+            "lineup_used": "projected",
+            "quality_gate_level": "soft_cap",
+            "quality_gate_reasons": ["projected_lineup"],
+            "avg_ip": 4.2,
+            "recent_start_count": 3,
+            "last_pitch_count": 108,
+        }
+    ]
+
+    rows = build_official_close_rows(markets)
+    under = rows[1]
+
+    assert under["model_edge_bucket"] == "5%+"
+    assert under["large_edge_skepticism_flag"] is True
+    assert under["large_edge_skepticism_reasons"] == [
+        "model_fades_market_favorite",
+        "quality_gate_soft_cap",
+        "lineup_or_quality_gate_reason",
+        "market_moved_against_side",
+        "leash_risk_high",
+        "short_leash_opportunity",
+    ]
+    assert under["pitcher_archetype_bucket"] == "short_leash"
 
 
 def test_build_summary_tracks_coverage_and_duplicates():
@@ -83,6 +133,11 @@ def test_build_summary_tracks_coverage_and_duplicates():
             "is_tracked_pick": True,
             "price_clv_cents": 8,
             "beat_close_price": True,
+            "clv_type": "price_only",
+            "process_outcome_bucket": "good_process_win",
+            "bet_timing_window": "pre_30",
+            "large_edge_skepticism_flag": False,
+            "pitcher_archetype_bucket": "standard_starter",
             "opportunity_bucket": "normal",
             "leash_risk_bucket": "normal",
             "model_market_relationship": "model_fades_favorite",
@@ -99,6 +154,11 @@ def test_build_summary_tracks_coverage_and_duplicates():
             "is_tracked_pick": False,
             "price_clv_cents": None,
             "beat_close_price": None,
+            "clv_type": "not_tracked",
+            "process_outcome_bucket": "unknown",
+            "bet_timing_window": "unknown",
+            "large_edge_skepticism_flag": True,
+            "pitcher_archetype_bucket": "opener_or_mismatch",
             "opportunity_bucket": "unknown",
             "leash_risk_bucket": "high",
             "model_market_relationship": "unknown",
@@ -118,6 +178,10 @@ def test_build_summary_tracks_coverage_and_duplicates():
     assert summary["beat_close_price_rows"] == 1
     assert summary["model_market_relationship_counts"]["model_fades_favorite"] == 1
     assert summary["opportunity_bucket_counts"]["normal"] == 1
+    assert summary["clv_type_counts"]["price_only"] == 1
+    assert summary["process_outcome_bucket_counts"]["good_process_win"] == 1
+    assert summary["large_edge_skepticism_rows"] == 1
+    assert summary["pitcher_archetype_bucket_counts"]["opener_or_mismatch"] == 1
 
 
 def test_load_archived_markets_for_dataset_preserves_baseball_context(tmp_path):
@@ -245,6 +309,7 @@ def test_enrich_rows_with_pick_history_adds_bet_time_and_clv_fields(tmp_path):
             "locked_k_line": 5.5,
             "locked_odds": 110,
             "locked_at": "2026-05-12T22:30:00Z",
+            "game_time": "2026-05-12T23:05:00Z",
             "pnl": 1.1
           }
         ]
@@ -261,6 +326,8 @@ def test_enrich_rows_with_pick_history_adds_bet_time_and_clv_fields(tmp_path):
             "closing_line": 5.5,
             "closing_odds": 104,
             "bookmaker_key": "FanDuel",
+            "result": "win",
+            "game_time": "2026-05-12T23:05:00Z",
         }
     ]
 
@@ -275,3 +342,6 @@ def test_enrich_rows_with_pick_history_adds_bet_time_and_clv_fields(tmp_path):
     assert enriched[0]["line_clv_delta"] == 0.0
     assert enriched[0]["beat_close_line"] is False
     assert enriched[0]["pick_history_match_type"] == "exact_line"
+    assert enriched[0]["clv_type"] == "price_only"
+    assert enriched[0]["process_outcome_bucket"] == "good_process_win"
+    assert enriched[0]["bet_timing_window"] == "pre_60"

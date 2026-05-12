@@ -63,13 +63,15 @@ Required field groups:
   `broad_confirmation`
 - bet timing / CLV: `is_tracked_pick`, `bet_time_line`, `bet_time_odds`,
   `bet_time_book`, `closing_line`, `price_clv_cents`, `line_clv_delta`,
-  `beat_close_price`, `beat_close_line`
+  `beat_close_price`, `beat_close_line`, `clv_type`,
+  `process_outcome_bucket`, `bet_timing_window`
 - model/market disagreement: `model_market_relationship`,
-  `model_edge_bucket`, `projection_margin_bucket`
+  `model_edge_bucket`, `projection_margin_bucket`,
+  `large_edge_skepticism_flag`, `large_edge_skepticism_reasons`
 - lineup / handedness / opportunity: `pitcher_throws`, `lineup_count`,
   `lineup_right_batters`, `lineup_left_batters`, `lineup_switch_batters`,
   `handedness_matchup_bucket`, `avg_ip`, `recent_start_count`,
-  `opportunity_bucket`, `leash_risk_bucket`
+  `opportunity_bucket`, `leash_risk_bucket`, `pitcher_archetype_bucket`
 - post-result opportunity: `actual_ip`, `actual_pitch_count`,
   `batters_faced`
 
@@ -77,6 +79,24 @@ Some fields are intentionally `null` today because the production artifact does
 not yet store the underlying value. Keep those columns in the compact row
 contract anyway so future BoltOdds, lineup-handedness, and MLB result enrichers
 can fill them without changing the dataset shape.
+
+## Derived Research Labels
+
+The dataset should prefer derived labels over duplicate trackers when the raw
+inputs already exist:
+
+- `clv_type`: whether a tracked pick beat the close by price, line, both, or
+  neither.
+- `process_outcome_bucket`: separates good-process wins/losses from
+  weak-process wins/losses so the review does not overreact to one result.
+- `bet_timing_window`: buckets the accepted-bet timestamp against first pitch.
+- `large_edge_skepticism_flag`: marks large model edges that also have stacked
+  caution signals such as soft gates, adverse market movement, or leash risk.
+- `pitcher_archetype_bucket`: groups starters into short-leash, deep-starter,
+  high-K, low-K, opener/mismatch, and standard starter buckets.
+
+These labels are still shadow-only. They are meant to guide review questions,
+not to change model weights or live betting rules without a separate gate.
 
 ## No-Leakage Rule
 

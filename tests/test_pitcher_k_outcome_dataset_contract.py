@@ -47,9 +47,15 @@ def _complete_row(**overrides):
         "line_clv_delta": 0.0,
         "beat_close_price": True,
         "beat_close_line": False,
+        "clv_type": "price_only",
+        "process_outcome_bucket": "good_process_win",
+        "bet_timing_window": "pre_30",
         "model_market_relationship": "model_fades_favorite",
         "model_edge_bucket": "5%+",
         "projection_margin_bucket": "0.5-1.0",
+        "large_edge_skepticism_flag": False,
+        "large_edge_skepticism_reasons": [],
+        "pitcher_archetype_bucket": "standard_starter",
         "pitcher_throws": "R",
         "lineup_count": 9,
         "lineup_right_batters": None,
@@ -75,6 +81,9 @@ def test_required_dataset_fields_cover_identity_market_model_result_and_context(
     assert {"actual_ks", "result", "theoretical_pnl"} <= REQUIRED_DATASET_FIELDS
     assert {"bet_time_odds", "price_clv_cents", "beat_close_price"} <= REQUIRED_DATASET_FIELDS
     assert {"model_market_relationship", "model_edge_bucket"} <= REQUIRED_DATASET_FIELDS
+    assert {"clv_type", "process_outcome_bucket", "bet_timing_window"} <= REQUIRED_DATASET_FIELDS
+    assert {"large_edge_skepticism_flag", "large_edge_skepticism_reasons"} <= REQUIRED_DATASET_FIELDS
+    assert {"pitcher_archetype_bucket"} <= REQUIRED_DATASET_FIELDS
     assert {"pitcher_throws", "opportunity_bucket", "handedness_matchup_bucket"} <= REQUIRED_DATASET_FIELDS
 
 

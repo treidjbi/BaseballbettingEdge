@@ -212,6 +212,14 @@ Current readout from 2026-05-07:
   picks, with 51 rows beating the official-close price and 10 beating the
   official-close line. Treat this as a weekend evidence tracker for BoltOdds
   timing quality, not as a model-rule change.
+- The compact row also carries derived research labels so future work does not
+  duplicate storage for questions already answerable from existing fields:
+  `clv_type`, `process_outcome_bucket`, `bet_timing_window`,
+  `large_edge_skepticism_flag` / reasons, and `pitcher_archetype_bucket`.
+  The 2026-04-28+ local run currently shows 61 tracked rows with some CLV edge,
+  233 tracked rows with no CLV edge, and 134 model-preferred/actionable rows
+  where a large edge also had stacked caution signals. Use these labels to ask
+  better review questions, not to change live thresholds.
 - Use `docs/research/market-tracker-map.md` as the current tracker inventory
   before adding more BoltOdds/Supabase tracking. It distinguishes existing raw
   evidence tables from the compact long-term research row.

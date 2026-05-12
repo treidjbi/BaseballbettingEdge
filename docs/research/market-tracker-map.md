@@ -27,11 +27,16 @@ available:
 - official-close line and odds
 - price CLV and line CLV
 - beat-close-price and beat-close-line flags
+- CLV type: price only, line only, both, or no CLV edge
+- process-vs-result bucket: good-process wins/losses and weak-process wins/losses
+- bet timing window relative to first pitch
 - model-versus-market-favorite relationship
 - model edge and projection-margin buckets
+- large-edge skepticism flag and reasons
 - pitcher hand
 - lineup count and future handedness count placeholders
 - opportunity and leash-risk buckets
+- pitcher archetype bucket
 - future post-result opportunity placeholders: actual IP, pitch count, batters faced
 
 ## Still Needs Future Source Data
@@ -57,6 +62,15 @@ If BoltOdds becomes production this weekend, judge it by three proofs:
 Do not copy raw WebSocket tick history into long-term research storage unless a
 separate cost and retention decision says it is worth it.
 
+## Duplication Guardrail
+
+Before adding another tracker, first ask whether the compact outcome row can
+answer the question with a derived label. Add new storage only when the source
+data is truly missing, such as confirmed handedness counts, actual pitch count,
+or provider-specific bet-time consensus. This keeps the long-term research
+model comprehensive without making multiple tables disagree about the same
+pick.
+
 ## Daily Operations Brief Read
 
 The BBE Operations Brief should synthesize this map every weekday:
@@ -66,7 +80,8 @@ The BBE Operations Brief should synthesize this map every weekday:
 2. Confirm pick-time and current-state market evidence from
    `market_pick_evidence` and `live_market_display_state`.
 3. Regenerate or read `pitcher_k_outcome_dataset_summary.md` and report CLV,
-   model-versus-market, opportunity/leash, and reconciliation counts.
+   process outcome, timing window, model-versus-market, opportunity/leash,
+   pitcher archetype, large-edge skepticism, and reconciliation counts.
 4. Tie any recommendation back to cost/risk docs before suggesting more
    infrastructure or provider spend.
 5. Explicitly separate "collect more evidence" from "ready to change model or
