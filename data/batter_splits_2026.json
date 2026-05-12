@@ -6958,19 +6958,20 @@
       }
     }
   },
-  "updated_at": "2026-05-12T19:02:38Z",
+  "updated_at": "2026-05-12T19:20:38Z",
   "last_run": {
     "projection_status": "collection_only",
-    "requested_batters": 81,
-    "already_cached": 79,
+    "requested_batters": 90,
+    "already_cached": 88,
     "attempted": 2,
-    "collected": 1,
-    "failed": 1,
+    "collected": 0,
+    "failed": 2,
     "queued_not_attempted": 0,
     "cache_size": 412,
     "errors": [
+      "Omar Martinez: no bbref id",
       "A.J. Ewing: no bbref id"
     ],
-    "updated_at": "2026-05-12T19:02:38Z"
+    "updated_at": "2026-05-12T19:20:38Z"
   }
 }
