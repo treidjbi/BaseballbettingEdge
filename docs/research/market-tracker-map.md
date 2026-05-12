@@ -56,3 +56,26 @@ If BoltOdds becomes production this weekend, judge it by three proofs:
 
 Do not copy raw WebSocket tick history into long-term research storage unless a
 separate cost and retention decision says it is worth it.
+
+## Daily Operations Brief Read
+
+The BBE Operations Brief should synthesize this map every weekday:
+
+1. Confirm feed health and coverage from `market_feed_heartbeats`,
+   `market_snapshots`, and `provider_coverage_audits`.
+2. Confirm pick-time and current-state market evidence from
+   `market_pick_evidence` and `live_market_display_state`.
+3. Regenerate or read `pitcher_k_outcome_dataset_summary.md` and report CLV,
+   model-versus-market, opportunity/leash, and reconciliation counts.
+4. Tie any recommendation back to cost/risk docs before suggesting more
+   infrastructure or provider spend.
+5. Explicitly separate "collect more evidence" from "ready to change model or
+   betting behavior."
+
+The daily read should produce a compact confidence-referee note:
+
+- What made yesterday's picks look sharper?
+- What made them look stale, late, or market-faded?
+- Were misses more about price/timing, projection, opportunity/leash, or
+  variance?
+- Which tracker is still too sparse to trust?

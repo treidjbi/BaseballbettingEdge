@@ -15,6 +15,15 @@ FanDuel, BetMGM, BetRivers, Kalshi, and Caesars; DraftKings appeared but
 returned zero authenticated market rows; theScore was missing. TheRundown
 remains production.
 
+**Status Note 2026-05-12:** If BoltOdds is promoted toward production odds
+collection, judge it with the tracker stack in
+`docs/research/market-tracker-map.md`, not only by whether the worker is alive.
+The promotion read must connect feed coverage to pick-time market snapshots,
+price CLV, line CLV, model-versus-market agreement, and outcome attribution in
+`analytics/diagnostics/pitcher_k_outcome_dataset.py`. WebSocket speed only has
+business value if it improves timing, closing-line value, confidence, or
+notification decisions.
+
 ---
 
 ## Why This Plan Exists
@@ -103,6 +112,11 @@ BoltOdds WebSocket has different value than the current GitHub/PropLine setup:
 - **Source-health precision:** stale feed detection can be based on seconds since last message and seconds since last book update, not just whether a scheduled job eventually ran.
 - **Movement quality metrics:** we can measure move sequence, book order, volatility, odds-path strength, and whether movement was broad market steam or one-book noise.
 - **Reduced pressure on TheRundown polling:** TheRundown can remain the official scheduled source without becoming an expensive high-frequency telemetry feed.
+- **CLV proof:** a faster feed should increase the share of tracked picks that
+  beat the official-close price or line, not just increase snapshot volume.
+- **Disagreement proof:** when the model fades the market favorite, BoltOdds
+  should show whether the broader market later confirmed the model side or
+  rejected it.
 
 The tradeoff is operational complexity. WebSocket infrastructure needs reconnect logic, a heartbeat, retention rules, queue/dedupe behavior, and monitoring. Without that, it can fail more quietly than GitHub Actions because a process can stay up while the market subscription is stale.
 

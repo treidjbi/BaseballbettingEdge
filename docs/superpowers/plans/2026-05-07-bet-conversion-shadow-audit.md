@@ -36,6 +36,16 @@ available, it rebuilds fixed pregame checkpoints such as pre-30, pre-15,
 pre-5, and final pre-start so movement timing can be compared against actual
 win/loss outcomes. This is shadow-only market learning, not a live rule change.
 
+**Status Note 2026-05-12:** The bet-conversion read now needs to synthesize
+the compact pitcher K outcome dataset as well:
+`analytics/diagnostics/pitcher_k_outcome_dataset.py` and
+`docs/research/market-tracker-map.md`. The daily/weekly read should compare
+selection performance against price CLV, line CLV, model-versus-market-favorite
+relationship, model edge bucket, projection-margin bucket, opportunity bucket,
+leash-risk bucket, and future lineup-handedness fields. These tracker fields
+are confidence/referee evidence only. They must not become thresholds, staking,
+or formula changes without a separate Gate C/F promotion plan.
+
 ---
 
 ## File Plan
@@ -78,6 +88,31 @@ win/loss outcomes. This is shadow-only market learning, not a live rule change.
 - Do not write anything that the dashboard reads as a live contract.
 - Do not let BoltOdds/PropLine outcome evidence send notifications or alter
   live line locks without a separate promotion decision.
+- Do not promote CLV, model-versus-market, opportunity/leash, or handedness
+  tracker slices into live selection rules from one slate or one isolated
+  positive bucket.
+
+## Tracker Synthesis Read
+
+Every post-soak/Gate C read should now answer these questions before proposing
+any selection/ranking change:
+
+- Is the candidate signal still positive after splitting by over/under,
+  price bucket, and model-versus-market-favorite relationship?
+- Did the tracked picks beat the official-close price and line often enough to
+  suggest timing/market access is improving?
+- Are losses concentrated in model-fades-favorite, high model edge, short-leash,
+  high leash-risk, or weak opportunity buckets?
+- Does BoltOdds/PropLine movement confirm the model side broadly, or is the
+  move single-book, volatile, stale, or mixed?
+- Does the result look like projection error, price/timing error, opportunity
+  error, or normal variance?
+- Are lineup-handedness fields populated enough to analyze, or are they still
+  collection-only placeholders behind the post-soak gate?
+
+The recommended output is a concise "confidence referee" summary beside the
+strategy table: what signals make a model pick more trustworthy, what signals
+make it require skepticism, and what is still too thin to act on.
 
 ## Task 1: Write Tests First
 

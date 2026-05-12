@@ -87,6 +87,26 @@ the value of a compact daily research table beats the simplicity of local
 generated artifacts. If promoted later, store compact rows only; do not retain
 raw WebSocket tick history without a separate retention/cost decision.
 
+## Daily Brief Synthesis Contract
+
+The BBE Operations Brief should digest this dataset after grading and report:
+
+- row count, duplicate-key count, missing results, missing odds, and
+  `picks_history.json` reconciliation
+- tracked pick count, rows with price CLV, beat-close-price count, and
+  beat-close-line count
+- model-versus-market-favorite counts and any W/L or PnL skew if enough rows
+  are graded
+- opportunity and leash-risk bucket counts, with notable loss clusters
+- whether live-market checkpoint rows from BoltOdds/PropLine are available or
+  still absent from the compact dataset
+- whether lineup-handedness fields are populated or still collection-only
+  placeholders
+
+The daily read should explain what the trackers suggest, but explicitly avoid
+turning them into live betting rules until Gate E/F. In plain terms: this is
+the market-memory and confidence-referee layer, not an automatic model change.
+
 ## Canonical Row Grain
 
 Use one row per:
@@ -416,6 +436,13 @@ Track:
 - duplicate count
 - result reconciliation count
 - missing context count
+- tracked pick count
+- price CLV and line CLV availability
+- beat-close-price and beat-close-line counts
+- model-versus-market relationship counts
+- opportunity and leash-risk bucket counts
+- live-market checkpoint availability
+- lineup-handedness field availability
 - runtime
 - storage growth
 

@@ -215,6 +215,12 @@ Current readout from 2026-05-07:
 - Use `docs/research/market-tracker-map.md` as the current tracker inventory
   before adding more BoltOdds/Supabase tracking. It distinguishes existing raw
   evidence tables from the compact long-term research row.
+- The weekday `BBE Operations Brief` should now digest the tracker stack daily:
+  market-price audit, live-market outcome audit, pitcher K outcome dataset,
+  BoltOdds heartbeats/snapshots/coverage, price CLV, line CLV,
+  model-versus-market relationship, opportunity/leash buckets, and
+  lineup-handedness field availability. The brief should explain what changed
+  without promoting live model behavior.
 
 ## Next Decision Checkpoints
 
@@ -242,7 +248,8 @@ Use `docs/superpowers/plans/2026-05-07-bet-conversion-shadow-audit.md`.
 
 The next model-facing work should compare adjusted EV, raw edge, model margin,
 side-specific conversion, quality-gate context, opening-source context,
-market-price/favorite context, and live-market movement context in shadow. Do
+market-price/favorite context, live-market movement context, price/line CLV,
+model-versus-market relationship, and opportunity/leash context in shadow. Do
 not promote a live rule from one positive bucket or one slate.
 
 ### Pitcher K Outcome Research Dataset
