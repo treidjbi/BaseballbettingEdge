@@ -6956,22 +6956,35 @@
         "so": 9,
         "k_rate": 0.15
       }
+    },
+    "mlbam:669398": {
+      "name": "Gage Workman",
+      "bats": "R",
+      "mlbam_id": 669398,
+      "bbref_id": "workmga01",
+      "season": 2026,
+      "vs_R": {
+        "pa": 2,
+        "so": 0,
+        "k_rate": 0.0
+      }
     }
   },
-  "updated_at": "2026-05-12T19:20:38Z",
+  "updated_at": "2026-05-12T20:06:12Z",
   "last_run": {
     "projection_status": "collection_only",
-    "requested_batters": 90,
-    "already_cached": 88,
-    "attempted": 2,
-    "collected": 0,
-    "failed": 2,
+    "requested_batters": 180,
+    "already_cached": 176,
+    "attempted": 4,
+    "collected": 1,
+    "failed": 3,
     "queued_not_attempted": 0,
-    "cache_size": 412,
+    "cache_size": 413,
     "errors": [
       "Omar Martinez: no bbref id",
-      "A.J. Ewing: no bbref id"
+      "A.J. Ewing: no bbref id",
+      "Ryan Waldschmidt: no bbref id"
     ],
-    "updated_at": "2026-05-12T19:20:38Z"
+    "updated_at": "2026-05-12T20:06:12Z"
   }
 }
