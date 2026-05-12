@@ -7,6 +7,7 @@ MARKET_EVIDENCE_MIGRATION = ROOT / "supabase" / "migrations" / "20260508_market_
 SHADOW_CANDIDATE_MIGRATION = ROOT / "supabase" / "migrations" / "20260508_shadow_notification_candidates.sql"
 ACCEPTED_BETS_MIGRATION = ROOT / "supabase" / "migrations" / "20260508_accepted_bets_log.sql"
 LIVE_MARKET_DISPLAY_MIGRATION = ROOT / "supabase" / "migrations" / "20260512_live_market_display_state.sql"
+READONLY_SHADOW_POLICIES_MIGRATION = ROOT / "supabase" / "migrations" / "20260512_readonly_shadow_table_policies.sql"
 
 
 def _migration_sql() -> str:
@@ -18,6 +19,7 @@ def _migration_sql() -> str:
             SHADOW_CANDIDATE_MIGRATION,
             ACCEPTED_BETS_MIGRATION,
             LIVE_MARKET_DISPLAY_MIGRATION,
+            READONLY_SHADOW_POLICIES_MIGRATION,
         ]
     )
 
@@ -28,6 +30,7 @@ def test_live_layer_migration_file_exists():
     assert SHADOW_CANDIDATE_MIGRATION.exists()
     assert ACCEPTED_BETS_MIGRATION.exists()
     assert LIVE_MARKET_DISPLAY_MIGRATION.exists()
+    assert READONLY_SHADOW_POLICIES_MIGRATION.exists()
 
 
 def test_live_layer_migration_defines_required_tables():
@@ -59,3 +62,12 @@ def test_live_layer_migration_uses_required_uniques_and_view():
     assert "unique (slate_date, normalized_pitcher, side, book, k_line, odds)" in sql
     assert "create or replace view public.live_activity_feed" in sql
     assert "with (security_invoker = true)" in sql
+
+
+def test_shadow_tables_have_readonly_rls_policies():
+    sql = _migration_sql()
+
+    assert "grant select on public.market_pick_evidence to bbe_ops_readonly" in sql
+    assert "grant select on public.shadow_notification_candidates to bbe_ops_readonly" in sql
+    assert "bbe_ops_readonly_select_market_pick_evidence" in sql
+    assert "bbe_ops_readonly_select_shadow_notification_candidates" in sql
