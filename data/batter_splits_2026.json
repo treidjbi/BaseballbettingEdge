@@ -6939,19 +6939,38 @@
         "so": 1,
         "k_rate": 0.1667
       }
+    },
+    "mlbam:673490": {
+      "name": "Ha-Seong Kim",
+      "bats": "R",
+      "mlbam_id": 673490,
+      "bbref_id": "kimha01",
+      "season": 2026,
+      "vs_R": {
+        "pa": 131,
+        "so": 30,
+        "k_rate": 0.229
+      },
+      "vs_L": {
+        "pa": 60,
+        "so": 9,
+        "k_rate": 0.15
+      }
     }
   },
-  "updated_at": "2026-05-12T18:24:57Z",
+  "updated_at": "2026-05-12T19:02:38Z",
   "last_run": {
     "projection_status": "collection_only",
-    "requested_batters": 36,
-    "already_cached": 36,
-    "attempted": 0,
-    "collected": 0,
-    "failed": 0,
+    "requested_batters": 81,
+    "already_cached": 79,
+    "attempted": 2,
+    "collected": 1,
+    "failed": 1,
     "queued_not_attempted": 0,
-    "cache_size": 411,
-    "errors": [],
-    "updated_at": "2026-05-12T18:24:57Z"
+    "cache_size": 412,
+    "errors": [
+      "A.J. Ewing: no bbref id"
+    ],
+    "updated_at": "2026-05-12T19:02:38Z"
   }
 }
