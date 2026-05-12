@@ -10,6 +10,7 @@ For any new work in this repo:
 2. Read this file for the current operating state.
 3. Read the newest active dated plans that match the task:
    - `docs/superpowers/plans/2026-05-07-bet-conversion-shadow-audit.md`
+   - `docs/superpowers/plans/2026-05-12-pitcher-k-outcome-research-dataset.md`
    - `docs/superpowers/plans/2026-05-07-boltodds-starter-trial.md`
    - `docs/superpowers/plans/2026-05-06-live-layer-event-system.md`
    - `docs/superpowers/plans/2026-05-05-propline-fallback-and-model-signal-plan.md`
@@ -221,6 +222,17 @@ The next model-facing work should compare adjusted EV, raw edge, model margin,
 side-specific conversion, quality-gate context, opening-source context,
 market-price/favorite context, and live-market movement context in shadow. Do
 not promote a live rule from one positive bucket or one slate.
+
+### Pitcher K Outcome Research Dataset
+
+Use `docs/superpowers/plans/2026-05-12-pitcher-k-outcome-research-dataset.md`.
+
+The future dataset should be built through gates: schema approval, local
+backfill proof, compact storage proof, daily collection proof, research
+readiness, and separate promotion approval. It should track pitcher, line,
+odds, book, result, home/away, opponent, model state, quality gates,
+baseball context, and live-market movement context, but it must stay
+shadow-only until a separate model/ranking promotion plan is approved.
 
 ### BoltOdds Trial Review
 
