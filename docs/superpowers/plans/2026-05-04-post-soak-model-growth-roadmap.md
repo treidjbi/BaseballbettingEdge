@@ -59,6 +59,8 @@ Minimum to write the next implementation plan:
   - `analytics/diagnostics/e3_projection_audit.py`
   - `analytics/diagnostics/e4_bet_selection_audit.py`
   - `analytics/diagnostics/e5_quality_gate_audit.py --since 2026-04-28`
+  - `analytics/diagnostics/market_price_outcome_audit.py`
+  - `analytics/diagnostics/live_market_outcome_audit.py`
 
 If the project has fewer than `200` clean graded rows, the allowed next step is analysis, shadow instrumentation, or source cleanup, not live model changes.
 
@@ -161,6 +163,7 @@ Possible future code files, only after gates are met:
 - Run: `analytics/diagnostics/e3_projection_audit.py`
 - Run: `analytics/diagnostics/e4_bet_selection_audit.py`
 - Run: `analytics/diagnostics/e5_quality_gate_audit.py`
+- Run: `analytics/diagnostics/market_price_outcome_audit.py`
 - Write local-only: `analytics/output/post_soak_synthesis.md`
 
 - [ ] **Step 1: Run the clean-window diagnostics after each grading run**
@@ -172,7 +175,11 @@ python analytics/diagnostics/e1_regime_map.py > analytics/output/e1_regime_map.m
 python analytics/diagnostics/e3_projection_audit.py > analytics/output/e3_projection_audit.md
 python analytics/diagnostics/e4_bet_selection_audit.py > analytics/output/e4_bet_selection_audit.md
 python analytics/diagnostics/e5_quality_gate_audit.py --since 2026-04-28 > analytics/output/e5_quality_gate_audit.md
+python analytics/diagnostics/market_price_outcome_audit.py --end-date YYYY-MM-DD > analytics/output/market_price_outcome_audit.md
+python analytics/diagnostics/live_market_outcome_audit.py --market-pick-evidence PATH --live-market-display PATH --market-snapshots PATH > analytics/output/live_market_outcome_audit.md
 ```
+
+Use the latest fully graded archive date for `YYYY-MM-DD`.
 
 Expected:
 
@@ -180,6 +187,12 @@ Expected:
 - E3 residuals stay separated by clean regime.
 - E4 keeps verdict, adjusted-EV, and edge buckets separated.
 - E5 shows raw versus actionable verdict counts.
+- Market price outcome audit shows whole-market PASS/LEAN/FIRE price behavior,
+  over/under side buckets, and relative market favorite results such as
+  `-115` versus `-105`.
+- Live market outcome audit shows BoltOdds/PropLine movement contexts joined to
+  graded outcomes, including market-with-us/against-us, better/worse available
+  number, over/under side, broad confirmation, and reversal/volatility buckets.
 
 - [ ] **Step 2: Check Gate B numerically**
 
@@ -497,4 +510,3 @@ This roadmap is working when:
 - Batter handedness Path B is researched now, but promoted only after both the AGENTS trigger and coverage gates are met.
 - PropLine remains useful fallback infrastructure without becoming an accidental model variable.
 - Each future implementation plan chooses exactly one primary track.
-

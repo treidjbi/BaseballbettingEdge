@@ -57,7 +57,9 @@ and live-market evidence.
 - The current model-facing track is `bet-selection-first`, using shadow
   diagnostics before any live threshold, staking, formula, or provider change.
 - Use the evaluation diagnostics in `analytics/diagnostics/e1` through `e5`,
-  plus `analytics/diagnostics/bet_conversion_shadow_audit.py`.
+  plus `analytics/diagnostics/bet_conversion_shadow_audit.py`,
+  `analytics/diagnostics/market_price_outcome_audit.py`, and
+  `analytics/diagnostics/live_market_outcome_audit.py`.
 - Read `docs/current-state.md` for the freshest operating state, then the
   newest dated plan that matches the task.
 - Read `docs/provider-cost-ledger.md` before recommending new providers,
@@ -238,6 +240,14 @@ market learning. It summarizes whether live market snapshots moved toward or
 away from the pick and whether the current number got better or worse to bet
 now. It must not drive live picks, locks, thresholds, staking, provider order,
 or notification sends without Tyler's explicit approval.
+
+`live_market_outcome_audit.py` is the shadow-only post-slate bridge from
+BoltOdds/PropLine market evidence to graded outcomes. It can read exported
+`market_pick_evidence`, `live_market_display_state`, and raw `market_snapshots`
+rows, rebuild pregame checkpoints such as pre-30/pre-15/pre-5 from raw
+snapshots, and join them to `data/picks_history.json`. It is for learning which
+movement contexts win; it must not change live picks, thresholds, staking,
+provider order, notifications, or calibration.
 
 `shadow_notification_candidates` is a shadow-only would-have-sent tracker. It
 records which PropLine/BoltOdds market-evidence states would qualify for future

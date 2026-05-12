@@ -1,6 +1,6 @@
 # Current State
 
-Last updated: 2026-05-07
+Last updated: 2026-05-12
 
 ## Read Order
 
@@ -86,6 +86,13 @@ that, outcome was this" after enough graded rows accumulate. It does not change
 live picks, line locks, thresholds, staking, provider order, or notification
 sends.
 
+`live_market_outcome_audit.py` is the local shadow diagnostic that joins
+exported live-market evidence back to graded results in `data/picks_history.json`.
+It can read `market_pick_evidence`, `live_market_display_state`, and raw
+`market_snapshots`; when raw snapshots are available it rebuilds fixed pregame
+checkpoints such as pre-30, pre-15, pre-5, and final pre-start. Use it to learn
+which live movement contexts actually win, not to alter live behavior.
+
 `shadow_notification_candidates` is the next evidence layer. It records
 would-have-sent market alerts by provider, candidate type, suppression reason,
 time window, BetRivers-only status, broad-confirmation status, and
@@ -152,12 +159,16 @@ The active local diagnostics and tests are:
 - `analytics/diagnostics/e4_bet_selection_audit.py`
 - `analytics/diagnostics/e5_quality_gate_audit.py`
 - `analytics/diagnostics/bet_conversion_shadow_audit.py`
+- `analytics/diagnostics/market_price_outcome_audit.py`
+- `analytics/diagnostics/live_market_outcome_audit.py`
 - `tests/test_e1_regime_map.py`
 - `tests/test_e2_storage_integrity.py`
 - `tests/test_e3_projection_audit.py`
 - `tests/test_e4_bet_selection_audit.py`
 - `tests/test_e5_quality_gate_audit.py`
 - `tests/test_bet_conversion_shadow_audit.py`
+- `tests/test_market_price_outcome_audit.py`
+- `tests/test_live_market_outcome_audit.py`
 
 Current readout from 2026-05-07:
 
@@ -167,6 +178,20 @@ Current readout from 2026-05-07:
 - Bet conversion/ranking is the clearest business problem.
 - FIRE 2u sample is still too small for a staking ladder decision.
 - Quality gates are live and useful, but not a complete ranking solution.
+- Market-price context is now part of the shadow read. The whole-market archive
+  audit includes PASS-level pitcher markets and tracks price buckets, over/under
+  side outcomes, plus/minus prices, and relative favorite behavior such as
+  `-115` versus `-105`. It also tracks model-versus-market-favorite agreement,
+  K-line buckets, no-vig market probabilities, miss distance, book-specific
+  side/price buckets, and side-specific price movement contexts. Use it to
+  question price-sensitive selection patterns, not to change live rules
+  directly.
+- Live-market outcome context is now a separate shadow read. BoltOdds/PropLine
+  evidence can be joined to graded rows by slate, normalized pitcher, and side,
+  with special attention to pregame checkpoints rebuilt from raw snapshots. This
+  is the correct layer for "market moved with us/against us" outcome testing,
+  especially broad-book moves, single-book noise, reversals, over/under splits,
+  and plus/minus flips.
 
 ## Next Decision Checkpoints
 
@@ -193,8 +218,9 @@ mode is discovered.
 Use `docs/superpowers/plans/2026-05-07-bet-conversion-shadow-audit.md`.
 
 The next model-facing work should compare adjusted EV, raw edge, model margin,
-side-specific conversion, quality-gate context, and opening-source context in
-shadow. Do not promote a live rule from one positive bucket or one slate.
+side-specific conversion, quality-gate context, opening-source context,
+market-price/favorite context, and live-market movement context in shadow. Do
+not promote a live rule from one positive bucket or one slate.
 
 ### BoltOdds Trial Review
 

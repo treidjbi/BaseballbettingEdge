@@ -14,6 +14,28 @@ output in `analytics/output/bet_conversion_shadow_audit.md`. It is the active
 shadow read for the `bet-selection-first` track and does not change live
 pipeline behavior.
 
+**Status Note 2026-05-12:** A companion whole-market diagnostic now exists as
+`analytics/diagnostics/market_price_outcome_audit.py` with tests and generated
+output in `analytics/output/market_price_outcome_audit.md`. It reads archived
+daily pitcher markets, including PASS-level markets, and tracks plus/minus
+prices, price buckets, over/under side outcomes, and relative market favorite
+behavior such as `-115` versus `-105`. This is market context for Gate C
+selection/ranking work, not a live threshold, staking, or formula change.
+
+The same diagnostic has been extended to track model-versus-market-favorite
+agreement, K-line buckets, no-vig market probabilities, miss distance,
+book-specific side/price buckets, and side-specific price movement contexts.
+These are evidence layers for future selection/ranking plans, not live inputs.
+
+**Status Note 2026-05-12:** A live-market companion diagnostic now exists as
+`analytics/diagnostics/live_market_outcome_audit.py` with tests and generated
+output in `analytics/output/live_market_outcome_audit.md`. It joins exported
+BoltOdds/PropLine `market_pick_evidence`, `live_market_display_state`, and raw
+`market_snapshots` back to `data/picks_history.json`. When raw snapshots are
+available, it rebuilds fixed pregame checkpoints such as pre-30, pre-15,
+pre-5, and final pre-start so movement timing can be compared against actual
+win/loss outcomes. This is shadow-only market learning, not a live rule change.
+
 ---
 
 ## File Plan
@@ -31,6 +53,20 @@ pipeline behavior.
   - Pin report sections and strategy names.
 - Write generated output to `analytics/output/bet_conversion_shadow_audit.md`
   - Local analysis artifact only.
+- Create `analytics/diagnostics/live_market_outcome_audit.py`
+  - Load exported Supabase live-market evidence rows.
+  - Join evidence to graded outcomes by slate date, normalized pitcher, and
+    side.
+  - Rebuild pregame checkpoint rows from raw market snapshots when available.
+  - Compare movement consensus, bet-value consensus, side, provider, and
+    reversal/volatility buckets.
+- Create `tests/test_live_market_outcome_audit.py`
+  - Pin result joins.
+  - Pin consensus bucket accounting.
+  - Pin raw-snapshot checkpoint rebuilds.
+  - Pin report sections.
+- Write generated output to `analytics/output/live_market_outcome_audit.md`
+  - Local analysis artifact only.
 
 ## Guardrails
 
@@ -40,6 +76,8 @@ pipeline behavior.
 - Do not change staking.
 - Do not change provider order.
 - Do not write anything that the dashboard reads as a live contract.
+- Do not let BoltOdds/PropLine outcome evidence send notifications or alter
+  live line locks without a separate promotion decision.
 
 ## Task 1: Write Tests First
 
@@ -276,6 +314,41 @@ Expected:
 - It compares current FIRE rows against edge, adjusted EV, model-margin, and quality-gate slices.
 - It does not recommend a live change.
 
+## Task 3B: Generate The Market Price Outcome Report
+
+**Files:**
+- Read: `dashboard/data/processed/YYYY-MM-DD.json`
+- Write local-only: `analytics/output/market_price_outcome_audit.md`
+
+- [ ] **Step 1: Generate report**
+
+Run:
+
+```bash
+python analytics/diagnostics/market_price_outcome_audit.py --end-date YYYY-MM-DD > analytics/output/market_price_outcome_audit.md
+```
+
+Use the latest fully graded archive date for `YYYY-MM-DD`.
+
+- [ ] **Step 2: Read the report beside the bet-conversion audit**
+
+Run:
+
+```bash
+Get-Content analytics/output/market_price_outcome_audit.md
+```
+
+Expected:
+
+- The report includes season-to-date, post-April-8, and clean post-bump windows.
+- It includes PASS-level whole-market pitcher rows, not only LEAN/FIRE picks.
+- It separates side price buckets for over and under outcomes.
+- It distinguishes market favorite from simple plus/minus pricing, including
+  cases where both sides are negative but one side is more favored.
+- It includes model-versus-market-favorite, line bucket, no-vig, miss-distance,
+  book-specific, and price-movement context sections.
+- It does not recommend a live change.
+
 ## Task 4: Verification
 
 **Files:**
@@ -285,7 +358,7 @@ Expected:
 - [ ] **Step 1: Run focused tests**
 
 ```bash
-python -m pytest tests/test_bet_conversion_shadow_audit.py tests/test_e4_bet_selection_audit.py -q
+python -m pytest tests/test_bet_conversion_shadow_audit.py tests/test_market_price_outcome_audit.py tests/test_e4_bet_selection_audit.py -q
 ```
 
 - [ ] **Step 2: Check git diff**
@@ -298,4 +371,4 @@ git status --short
 Expected:
 
 - No whitespace errors.
-- Only the new plan, diagnostic, test, and generated analytics report are modified.
+- Only the new plan, diagnostics, tests, and generated analytics reports are modified.
