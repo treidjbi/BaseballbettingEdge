@@ -56,6 +56,30 @@ evidence.
 | Gate E | Research Readiness | At least 500 clean graded side rows, 30 graded slates, and stable core slices | Candidate selection/ranking hypotheses | Production thresholds/staking |
 | Gate F | Promotion Candidate | Holdout/backtest lift survives side, price, line, and provider slices | A separate model-selection implementation plan | Direct deployment from this dataset |
 
+## Current Implementation Status
+
+As of 2026-05-12, Gate A and the local portion of Gate B are implemented.
+
+- Contract doc: `docs/research/pitcher-k-outcome-dataset.md`
+- Contract tests: `tests/test_pitcher_k_outcome_dataset_contract.py`
+- Local diagnostic: `analytics/diagnostics/pitcher_k_outcome_dataset.py`
+- Local tests: `tests/test_pitcher_k_outcome_dataset.py`
+- Local generated outputs:
+  - `analytics/output/pitcher_k_outcome_dataset.jsonl`
+  - `analytics/output/pitcher_k_outcome_dataset_summary.md`
+
+Clean-window proof from `2026-04-28+`: 574 graded side rows, 0 missing results,
+0 duplicate dataset keys, 0 missing team/opponent, 0 missing book odds, and 2
+rows missing model-side probability fields. The same build reconciled 294/294
+clean graded `picks_history.json` rows, including 15 unique pitcher/side
+fallback matches where the archived official-close line differed from the
+locked pick-history line.
+
+Supabase is not required yet. Gate C should stay closed until we decide whether
+the value of a compact daily research table beats the simplicity of local
+generated artifacts. If promoted later, store compact rows only; do not retain
+raw WebSocket tick history without a separate retention/cost decision.
+
 ## Canonical Row Grain
 
 Use one row per:
@@ -182,7 +206,7 @@ automation.
 - Create: `tests/test_pitcher_k_outcome_dataset_contract.py`
 - Future create: `analytics/diagnostics/pitcher_k_outcome_dataset.py`
 
-- [ ] **Step 1: Write the contract doc**
+- [x] **Step 1: Write the contract doc**
 
 Document:
 
@@ -194,7 +218,7 @@ Document:
 - idempotent key
 - sample row
 
-- [ ] **Step 2: Write failing schema contract tests**
+- [x] **Step 2: Write failing schema contract tests**
 
 The tests should require:
 
@@ -204,7 +228,7 @@ The tests should require:
 - post-start snapshots are excluded from pregame research rows
 - unknown optional values are `None`, not invented neutral values
 
-- [ ] **Step 3: Gate A pass criteria**
+- [x] **Step 3: Gate A pass criteria**
 
 Gate A is open when:
 
@@ -224,7 +248,7 @@ storage.
 - Write local-only: `analytics/output/pitcher_k_outcome_dataset.jsonl`
 - Write local-only: `analytics/output/pitcher_k_outcome_dataset_summary.md`
 
-- [ ] **Step 1: Build archive loader**
+- [x] **Step 1: Build archive loader**
 
 Read:
 
@@ -234,12 +258,12 @@ Read:
 - optional exported `live_market_display_state`
 - optional exported `market_snapshots`
 
-- [ ] **Step 2: Build official-close rows**
+- [x] **Step 2: Build official-close rows**
 
 Generate `official_close` rows from archived production artifacts. Include
 PASS/LEAN/FIRE markets, not only staked picks.
 
-- [ ] **Step 3: Join graded results**
+- [x] **Step 3: Join graded results**
 
 Join by:
 
@@ -250,7 +274,7 @@ slate_date + normalized_pitcher + side + k_line
 Fallback join without `k_line` is allowed only when one side/line exists for
 that pitcher/date.
 
-- [ ] **Step 4: Build local summary report**
+- [x] **Step 4: Build local summary report**
 
 Report:
 
@@ -264,7 +288,7 @@ Report:
 - rows by context snapshot
 - duplicate dataset keys
 
-- [ ] **Step 5: Gate B pass criteria**
+- [x] **Step 5: Gate B pass criteria**
 
 Gate B opens when:
 

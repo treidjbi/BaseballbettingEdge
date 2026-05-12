@@ -1,0 +1,200 @@
+from analytics.diagnostics.pitcher_k_outcome_dataset import (
+    build_official_close_rows,
+    build_summary,
+    load_archived_markets_for_dataset,
+    reconcile_picks_history,
+    theoretical_pnl,
+)
+
+
+def test_theoretical_pnl_uses_one_unit_risk_for_american_odds():
+    assert theoretical_pnl("win", -120) == 0.83
+    assert theoretical_pnl("win", 130) == 1.3
+    assert theoretical_pnl("loss", -120) == -1.0
+    assert theoretical_pnl(None, -120) is None
+
+
+def test_build_official_close_rows_creates_one_row_per_side():
+    markets = [
+        {
+            "date": "2026-05-12",
+            "pitcher": "Bryan Woo",
+            "normalized_pitcher": "bryan woo",
+            "k_line": 5.5,
+            "actual_ks": 4,
+            "winning_side": "under",
+            "over_odds": -125,
+            "under_odds": 104,
+            "opening_over_odds": -110,
+            "opening_under_odds": -110,
+            "ref_book": "FanDuel",
+            "model_side": "under",
+            "model_win_prob": 0.57,
+            "applied_lambda": 4.9,
+            "ev_over": {"win_prob": 0.43, "edge": -0.02, "ev": -0.04, "adj_ev": -0.04, "verdict": "PASS"},
+            "ev_under": {"win_prob": 0.57, "edge": 0.04, "ev": 0.09, "adj_ev": 0.09, "verdict": "FIRE 1u"},
+            "team": "SEA",
+            "opp_team": "NYY",
+            "home_away": "home",
+            "lineup_used": "confirmed",
+            "quality_gate_level": "clean",
+            "source_artifact_path": "dashboard/data/processed/2026-05-12.json",
+        }
+    ]
+
+    rows = build_official_close_rows(markets)
+
+    assert [row["side"] for row in rows] == ["over", "under"]
+    under = rows[1]
+    assert under["dataset_key"] == "2026-05-12:official_close:bryan woo:under:5.5"
+    assert under["result"] == "win"
+    assert under["theoretical_pnl"] == 1.04
+    assert under["market_favorite_side"] == "over"
+    assert under["price_sign"] == "plus"
+    assert under["model_no_vig_gap"] is not None
+    assert under["k_margin_to_line"] == 0.6
+    assert under["provider"] is None
+
+
+def test_build_summary_tracks_coverage_and_duplicates():
+    rows = [
+        {
+            "dataset_key": "a",
+            "slate_date": "2026-05-12",
+            "result": "win",
+            "team": "SEA",
+            "opp_team": "NYY",
+            "american_odds": -110,
+            "model_win_prob": 0.55,
+            "model_side": "under",
+            "context_snapshot": "official_close",
+        },
+        {
+            "dataset_key": "a",
+            "slate_date": "2026-05-12",
+            "result": None,
+            "team": "",
+            "opp_team": "",
+            "american_odds": None,
+            "model_win_prob": None,
+            "context_snapshot": "official_close",
+        },
+    ]
+
+    summary = build_summary(rows)
+
+    assert summary["total_rows"] == 2
+    assert summary["graded_rows"] == 1
+    assert summary["duplicate_dataset_keys"] == 1
+    assert summary["missing_team_or_opponent"] == 1
+    assert summary["missing_book_odds"] == 1
+    assert summary["missing_model_fields"] == 1
+
+
+def test_load_archived_markets_for_dataset_preserves_baseball_context(tmp_path):
+    archive = tmp_path / "2026-05-12.json"
+    archive.write_text(
+        """
+        {
+          "generated_at": "2026-05-12T13:00:00Z",
+          "pitchers": [
+            {
+              "pitcher": "Bryan Woo",
+              "team": "SEA",
+              "opp_team": "NYY",
+              "k_line": 5.5,
+              "actual_ks": 4,
+              "best_over_odds": -125,
+              "best_under_odds": 104,
+              "opening_over_odds": -110,
+              "opening_under_odds": -110,
+              "ref_book": "FanDuel",
+              "ev_over": {"win_prob": 0.43, "verdict": "PASS"},
+              "ev_under": {"win_prob": 0.57, "verdict": "FIRE 1u"}
+            }
+          ]
+        }
+        """,
+        encoding="utf-8",
+    )
+
+    markets = load_archived_markets_for_dataset(
+        tmp_path,
+        start_date="2026-05-12",
+        end_date="2026-05-12",
+    )
+
+    assert len(markets) == 1
+    assert markets[0]["team"] == "SEA"
+    assert markets[0]["opp_team"] == "NYY"
+    assert markets[0]["winning_side"] == "under"
+    assert markets[0]["source_artifact_path"] == "dashboard/data/processed/2026-05-12.json"
+
+
+def test_reconcile_picks_history_matches_dataset_keys(tmp_path):
+    history = tmp_path / "picks_history.json"
+    history.write_text(
+        """
+        [
+          {
+            "date": "2026-05-12",
+            "pitcher": "Bryan Woo",
+            "side": "under",
+            "k_line": 5.5,
+            "result": "win"
+          },
+          {
+            "date": "2026-05-12",
+            "pitcher": "Other Pitcher",
+            "side": "over",
+            "k_line": 4.5,
+            "result": "loss"
+          }
+        ]
+        """,
+        encoding="utf-8",
+    )
+    rows = [
+        {
+            "dataset_key": "2026-05-12:official_close:bryan woo:under:5.5",
+        }
+    ]
+
+    result = reconcile_picks_history(rows, history_path=history, start_date="2026-05-12")
+
+    assert result["graded_pick_rows"] == 2
+    assert result["matched_pick_rows"] == 1
+    assert result["unmatched_pick_rows"] == 1
+    assert result["unmatched_examples"][0]["pitcher"] == "Other Pitcher"
+
+
+def test_reconcile_picks_history_allows_unique_pitcher_side_fallback(tmp_path):
+    history = tmp_path / "picks_history.json"
+    history.write_text(
+        """
+        [
+          {
+            "date": "2026-05-12",
+            "pitcher": "Bryan Woo",
+            "side": "under",
+            "k_line": 5.5,
+            "result": "win"
+          }
+        ]
+        """,
+        encoding="utf-8",
+    )
+    rows = [
+        {
+            "dataset_key": "2026-05-12:official_close:bryan woo:under:6.5",
+            "slate_date": "2026-05-12",
+            "normalized_pitcher": "bryan woo",
+            "side": "under",
+        }
+    ]
+
+    result = reconcile_picks_history(rows, history_path=history, start_date="2026-05-12")
+
+    assert result["graded_pick_rows"] == 1
+    assert result["matched_pick_rows"] == 1
+    assert result["unique_side_fallback_matches"] == 1

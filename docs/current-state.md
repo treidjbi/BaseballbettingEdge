@@ -162,6 +162,7 @@ The active local diagnostics and tests are:
 - `analytics/diagnostics/bet_conversion_shadow_audit.py`
 - `analytics/diagnostics/market_price_outcome_audit.py`
 - `analytics/diagnostics/live_market_outcome_audit.py`
+- `analytics/diagnostics/pitcher_k_outcome_dataset.py`
 - `tests/test_e1_regime_map.py`
 - `tests/test_e2_storage_integrity.py`
 - `tests/test_e3_projection_audit.py`
@@ -170,6 +171,8 @@ The active local diagnostics and tests are:
 - `tests/test_bet_conversion_shadow_audit.py`
 - `tests/test_market_price_outcome_audit.py`
 - `tests/test_live_market_outcome_audit.py`
+- `tests/test_pitcher_k_outcome_dataset_contract.py`
+- `tests/test_pitcher_k_outcome_dataset.py`
 
 Current readout from 2026-05-07:
 
@@ -193,6 +196,16 @@ Current readout from 2026-05-07:
   is the correct layer for "market moved with us/against us" outcome testing,
   especially broad-book moves, single-book noise, reversals, over/under splits,
   and plus/minus flips.
+- The pitcher K outcome research dataset now has Gate A/B local proof. The
+  local diagnostic writes `analytics/output/pitcher_k_outcome_dataset.jsonl`
+  and `analytics/output/pitcher_k_outcome_dataset_summary.md` from committed
+  archive rows. On the 2026-04-28+ clean window it produced 574 graded side rows
+  with zero duplicate keys, zero missing team/opponent, and zero missing odds.
+  It reconciled 294/294 clean graded `picks_history.json` rows, including 15
+  unique pitcher/side fallback matches where the archived official-close line
+  differed from the locked pick-history line. This is still local/shadow-only;
+  it does not require a Supabase upgrade unless a later Gate C decision promotes
+  compact daily storage.
 
 ## Next Decision Checkpoints
 

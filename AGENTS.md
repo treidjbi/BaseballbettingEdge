@@ -59,7 +59,8 @@ and live-market evidence.
 - Use the evaluation diagnostics in `analytics/diagnostics/e1` through `e5`,
   plus `analytics/diagnostics/bet_conversion_shadow_audit.py`,
   `analytics/diagnostics/market_price_outcome_audit.py`, and
-  `analytics/diagnostics/live_market_outcome_audit.py`.
+  `analytics/diagnostics/live_market_outcome_audit.py`, and
+  `analytics/diagnostics/pitcher_k_outcome_dataset.py`.
 - Read `docs/current-state.md` for the freshest operating state, then the
   newest dated plan that matches the task.
 - Read `docs/provider-cost-ledger.md` before recommending new providers,
