@@ -82,6 +82,14 @@ buckets. On the same clean window, all 294 tracked picks have price CLV fields;
 51 beat the official-close price and 10 beat the official-close line. These are
 shadow research facts only, not betting rules.
 
+The first projection challenger harness now exists as
+`analytics/diagnostics/k_projection_shadow_lab.py` with tests in
+`tests/test_k_projection_shadow_lab.py`. It reuses the local compact dataset to
+compare current lambda against transparent variants such as market shrink,
+high-line tempering, leash caps, and simple recent/career rate blends. Its
+output is a local `analytics/output/k_projection_shadow_lab.md` report and is
+shadow-only; it does not change live projection math.
+
 Supabase is not required yet. Gate C should stay closed until we decide whether
 the value of a compact daily research table beats the simplicity of local
 generated artifacts. If promoted later, store compact rows only; do not retain

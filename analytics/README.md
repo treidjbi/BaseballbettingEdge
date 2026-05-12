@@ -21,6 +21,9 @@ python analytics/performance.py --since 2026-04-28
 
 # Only FIRE-tier EV ROI (6%+)
 python analytics/performance.py --min-ev 0.06
+
+# Shadow projection challenger report
+python analytics/diagnostics/k_projection_shadow_lab.py --output analytics/output/k_projection_shadow_lab.md
 ```
 
 Prints summary tables to the console and saves three plots to

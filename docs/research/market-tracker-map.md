@@ -17,6 +17,7 @@ provider order, notifications, or calibration.
 | Whole-market price outcomes | `market_price_outcome_audit.py` | Includes PASS-level markets, favorite behavior, side price buckets. |
 | Live market outcome slices | `live_market_outcome_audit.py` | Joins exported live market evidence to graded results. |
 | Compact pitcher outcome row | `pitcher_k_outcome_dataset.py` | Canonical research row for market, model, context, CLV, and result. |
+| K projection challengers | `k_projection_shadow_lab.py` | Reuses compact outcome rows to compare current lambda against transparent projection variants. |
 
 ## Added To Compact Outcome Rows
 
@@ -82,9 +83,12 @@ The BBE Operations Brief should synthesize this map every weekday:
 3. Regenerate or read `pitcher_k_outcome_dataset_summary.md` and report CLV,
    process outcome, timing window, model-versus-market, opportunity/leash,
    pitcher archetype, large-edge skepticism, and reconciliation counts.
-4. Tie any recommendation back to cost/risk docs before suggesting more
+4. Regenerate or read `k_projection_shadow_lab.md` when projection quality is
+   in question; report whether a challenger improves accuracy without
+   promoting it into live lambda.
+5. Tie any recommendation back to cost/risk docs before suggesting more
    infrastructure or provider spend.
-5. Explicitly separate "collect more evidence" from "ready to change model or
+6. Explicitly separate "collect more evidence" from "ready to change model or
    betting behavior."
 
 The daily read should produce a compact confidence-referee note:

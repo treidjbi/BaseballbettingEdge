@@ -163,6 +163,7 @@ The active local diagnostics and tests are:
 - `analytics/diagnostics/market_price_outcome_audit.py`
 - `analytics/diagnostics/live_market_outcome_audit.py`
 - `analytics/diagnostics/pitcher_k_outcome_dataset.py`
+- `analytics/diagnostics/k_projection_shadow_lab.py`
 - `tests/test_e1_regime_map.py`
 - `tests/test_e2_storage_integrity.py`
 - `tests/test_e3_projection_audit.py`
@@ -173,6 +174,7 @@ The active local diagnostics and tests are:
 - `tests/test_live_market_outcome_audit.py`
 - `tests/test_pitcher_k_outcome_dataset_contract.py`
 - `tests/test_pitcher_k_outcome_dataset.py`
+- `tests/test_k_projection_shadow_lab.py`
 
 Current readout from 2026-05-07:
 
@@ -220,6 +222,12 @@ Current readout from 2026-05-07:
   233 tracked rows with no CLV edge, and 134 model-preferred/actionable rows
   where a large edge also had stacked caution signals. Use these labels to ask
   better review questions, not to change live thresholds.
+- The K projection shadow lab now reuses the compact outcome dataset to compare
+  transparent challenger projections against the current lambda. The 2026-04-28+
+  local run scored 287 official-close market rows: `market_shrink_25` improved
+  MAE/RMSE slightly versus the current model, `high_line_temper` improved side
+  accuracy slightly, and simple recent/career rate blends were worse. Treat this
+  as projection-lab evidence only, not a live model-rule change.
 - Use `docs/research/market-tracker-map.md` as the current tracker inventory
   before adding more BoltOdds/Supabase tracking. It distinguishes existing raw
   evidence tables from the compact long-term research row.
@@ -257,7 +265,8 @@ Use `docs/superpowers/plans/2026-05-07-bet-conversion-shadow-audit.md`.
 The next model-facing work should compare adjusted EV, raw edge, model margin,
 side-specific conversion, quality-gate context, opening-source context,
 market-price/favorite context, live-market movement context, price/line CLV,
-model-versus-market relationship, and opportunity/leash context in shadow. Do
+model-versus-market relationship, opportunity/leash context, and K-projection
+challenger evidence in shadow. Do
 not promote a live rule from one positive bucket or one slate.
 
 ### Pitcher K Outcome Research Dataset
