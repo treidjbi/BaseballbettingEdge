@@ -21,6 +21,7 @@ from market_infra.live_events import (  # noqa: E402
     build_pick_change_events,
     build_reminder_events,
 )
+from market_infra.live_market_display import build_live_market_display_rows  # noqa: E402
 from market_infra.market_evidence import build_market_pick_evidence_rows  # noqa: E402
 from market_infra.shadow_notification_candidates import (  # noqa: E402
     build_shadow_notification_candidate_rows,
@@ -192,6 +193,14 @@ def run(
         source_artifact_path=artifact_source,
         source_artifact_sha256=artifact_sha,
     )
+    live_market_display_rows = build_live_market_display_rows(
+        slate_date=slate_date,
+        live_picks=state_rows,
+        snapshot_rows=snapshot_rows,
+        observed_at=observed_at,
+        source_artifact_path=artifact_source,
+        source_artifact_sha256=artifact_sha,
+    )
     shadow_notification_candidate_rows = build_shadow_notification_candidate_rows(
         market_pick_evidence_rows
     )
@@ -218,6 +227,11 @@ def run(
         on_conflict="slate_date,normalized_pitcher,side,provider",
     )
     writer.upsert_rows(
+        "live_market_display_state",
+        live_market_display_rows,
+        on_conflict="slate_date,normalized_pitcher,side,provider",
+    )
+    writer.upsert_rows(
         "shadow_notification_candidates",
         shadow_notification_candidate_rows,
         on_conflict="dedupe_key",
@@ -229,12 +243,14 @@ def run(
         "notification_rows": notification_rows,
         "line_movement_rows": line_movement_rows,
         "market_pick_evidence_rows": market_pick_evidence_rows,
+        "live_market_display_rows": live_market_display_rows,
         "shadow_notification_candidate_rows": shadow_notification_candidate_rows,
         "reminder_rows": reminder_rows,
         "live_pick_state": len(state_rows),
         "notification_events": len(notification_rows),
         "line_movement_events": len(line_movement_rows),
         "market_pick_evidence": len(market_pick_evidence_rows),
+        "live_market_display_state": len(live_market_display_rows),
         "shadow_notification_candidates": len(shadow_notification_candidate_rows),
         "game_reminders": len(reminder_rows),
         "propline": propline_result or {"skipped": True},
@@ -278,6 +294,7 @@ def main() -> int:
         "Live event build "
         f"date={slate_date} state_rows={result['live_pick_state']} "
         f"notification_events={result['notification_events']} "
+        f"live_market_display={result.get('live_market_display_state', 0)} "
         f"artifact_source={'remote' if str(result.get('artifact_source', artifact_source)).startswith('http') else 'local'} "
         f"{propline_summary}"
     )

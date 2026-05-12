@@ -70,6 +70,7 @@ The live layer is now separate from the production pipeline.
   - `notification_events`
   - `line_movement_events`
   - `market_pick_evidence`
+  - `live_market_display_state`
   - `shadow_notification_candidates`
   - `game_reminder_state`
 - Netlify scheduled function: `send-live-notifications`
@@ -89,6 +90,12 @@ sends.
 would-have-sent market alerts by provider, candidate type, suppression reason,
 time window, BetRivers-only status, broad-confirmation status, and
 reversal/volatility status. It does not send pushes.
+
+`live_market_display_state` is the app-facing shadow layer for BoltOdds/PropLine
+movement display. It summarizes provider snapshots into market consensus, best
+actionable book, off-market books, movement sequence, and freshness/actionable
+state. It is intentionally not a pick, lock, threshold, staking, provider-order,
+or notification-send input.
 
 Current housekeeping:
 

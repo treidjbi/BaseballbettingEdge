@@ -181,6 +181,7 @@ or cost makes retention necessary.
 | `artifact_snapshots` | Keep useful dated snapshots; review monthly | Useful for reconstructing provider comparisons |
 | Raw `market_snapshots` | 14-30 days unless summarized | Can grow quickly; raw feed evidence ages fast |
 | `market_pick_evidence` | Season or long-term if compact | Per-pick/provider market evidence rollup for model-vs-market outcome analysis |
+| `live_market_display_state` | Season or long-term if compact | App-ready shadow summary for consensus, best book, off-market, and freshness decisions |
 | `shadow_notification_candidates` | 30-90 days unless summarized | Would-have-sent alert evidence for provider promotion and notification fatigue decisions |
 | `line_movement_events` | Season or long-term if compact | Higher-value summarized movement evidence |
 | `notification_events` | 30-90 days | Debug delivery quality and fatigue |
@@ -244,5 +245,8 @@ Questions:
 - 2026-05-08: Added shadow-only `shadow_notification_candidates` tracker for
   would-have-sent alert evidence. It logs suppression reasons and must not send
   live pushes without a separate promotion decision.
+- 2026-05-12: Added shadow-only `live_market_display_state` plan/table for
+  app-ready provider movement summaries. It is display/evaluation evidence only
+  and does not change official picks, provider order, or notification sends.
 - Approx. 2026-05-06: PropLine paid `$40/mo` shadow/fallback subscription active.
 - Approx. 2026-05-05: TheRundown paid production provider active.

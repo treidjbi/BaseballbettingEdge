@@ -51,7 +51,14 @@ def test_worker_writes_state_and_notification_events(tmp_path):
         "game_reminder_state": [],
     })
 
-    with patch.object(build_live_events_to_supabase, "SupabaseMarketWriter", return_value=writer):
+    with (
+        patch.object(build_live_events_to_supabase, "SupabaseMarketWriter", return_value=writer),
+        patch.object(
+            build_live_events_to_supabase,
+            "_now_utc",
+            return_value=build_live_events_to_supabase.datetime.fromisoformat("2026-05-06T18:00:00+00:00"),
+        ),
+    ):
         result = build_live_events_to_supabase.run(
             slate_date="2026-05-06",
             artifact_path=today,
@@ -80,6 +87,7 @@ def test_worker_writes_state_and_notification_events(tmp_path):
         "notification_events",
         "line_movement_events",
         "market_pick_evidence",
+        "live_market_display_state",
         "shadow_notification_candidates",
         "game_reminder_state",
         "live_pick_state",
@@ -107,7 +115,14 @@ def test_worker_marks_missing_previous_fire_pass_after_notifications(tmp_path):
         "game_reminder_state": [],
     })
 
-    with patch.object(build_live_events_to_supabase, "SupabaseMarketWriter", return_value=writer):
+    with (
+        patch.object(build_live_events_to_supabase, "SupabaseMarketWriter", return_value=writer),
+        patch.object(
+            build_live_events_to_supabase,
+            "_now_utc",
+            return_value=build_live_events_to_supabase.datetime.fromisoformat("2026-05-06T18:00:00+00:00"),
+        ),
+    ):
         result = build_live_events_to_supabase.run(
             slate_date="2026-05-06",
             artifact_path=today,
@@ -156,7 +171,14 @@ def test_worker_writes_line_movement_events_from_snapshot_history(tmp_path):
         "game_reminder_state": [],
     })
 
-    with patch.object(build_live_events_to_supabase, "SupabaseMarketWriter", return_value=writer):
+    with (
+        patch.object(build_live_events_to_supabase, "SupabaseMarketWriter", return_value=writer),
+        patch.object(
+            build_live_events_to_supabase,
+            "_now_utc",
+            return_value=build_live_events_to_supabase.datetime.fromisoformat("2026-05-06T18:00:00+00:00"),
+        ),
+    ):
         result = build_live_events_to_supabase.run(
             slate_date="2026-05-06",
             artifact_path=today,
@@ -207,7 +229,14 @@ def test_worker_ignores_boltodds_shadow_snapshots_for_notifications(tmp_path):
         "game_reminder_state": [],
     })
 
-    with patch.object(build_live_events_to_supabase, "SupabaseMarketWriter", return_value=writer):
+    with (
+        patch.object(build_live_events_to_supabase, "SupabaseMarketWriter", return_value=writer),
+        patch.object(
+            build_live_events_to_supabase,
+            "_now_utc",
+            return_value=build_live_events_to_supabase.datetime.fromisoformat("2026-05-06T18:00:00+00:00"),
+        ),
+    ):
         result = build_live_events_to_supabase.run(
             slate_date="2026-05-06",
             artifact_path=today,
@@ -272,7 +301,14 @@ def test_worker_writes_market_pick_evidence_for_shadow_providers(tmp_path):
         "game_reminder_state": [],
     })
 
-    with patch.object(build_live_events_to_supabase, "SupabaseMarketWriter", return_value=writer):
+    with (
+        patch.object(build_live_events_to_supabase, "SupabaseMarketWriter", return_value=writer),
+        patch.object(
+            build_live_events_to_supabase,
+            "_now_utc",
+            return_value=build_live_events_to_supabase.datetime.fromisoformat("2026-05-06T18:00:00+00:00"),
+        ),
+    ):
         result = build_live_events_to_supabase.run(
             slate_date="2026-05-06",
             artifact_path=today,
@@ -281,10 +317,18 @@ def test_worker_writes_market_pick_evidence_for_shadow_providers(tmp_path):
         )
 
     assert result["market_pick_evidence"] == 2
+    assert result["live_market_display_state"] == 2
     assert {row["provider"] for row in result["market_pick_evidence_rows"]} == {"propline", "boltodds"}
+    assert {row["provider"] for row in result["live_market_display_rows"]} == {"propline", "boltodds"}
+    assert {row["actionable_state"] for row in result["live_market_display_rows"]} == {"monitor"}
     writer.upsert_rows.assert_any_call(
         "market_pick_evidence",
         result["market_pick_evidence_rows"],
+        on_conflict="slate_date,normalized_pitcher,side,provider",
+    )
+    writer.upsert_rows.assert_any_call(
+        "live_market_display_state",
+        result["live_market_display_rows"],
         on_conflict="slate_date,normalized_pitcher,side,provider",
     )
     writer.upsert_rows.assert_any_call(
@@ -540,6 +584,7 @@ def test_worker_upserts_non_empty_tables_in_retry_safe_order(tmp_path):
         "notification_events",
         "line_movement_events",
         "market_pick_evidence",
+        "live_market_display_state",
         "shadow_notification_candidates",
         "game_reminder_state",
         "live_pick_state",
