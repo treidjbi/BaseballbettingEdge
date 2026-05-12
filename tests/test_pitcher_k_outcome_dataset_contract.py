@@ -38,6 +38,31 @@ def _complete_row(**overrides):
         "bet_value_consensus": None,
         "broad_confirmation": False,
         "source_artifact_path": "dashboard/data/processed/2026-05-12.json",
+        "is_tracked_pick": True,
+        "bet_time_line": 5.5,
+        "bet_time_odds": 110,
+        "bet_time_book": "FanDuel",
+        "closing_line": 5.5,
+        "price_clv_cents": 6,
+        "line_clv_delta": 0.0,
+        "beat_close_price": True,
+        "beat_close_line": False,
+        "model_market_relationship": "model_fades_favorite",
+        "model_edge_bucket": "5%+",
+        "projection_margin_bucket": "0.5-1.0",
+        "pitcher_throws": "R",
+        "lineup_count": 9,
+        "lineup_right_batters": None,
+        "lineup_left_batters": None,
+        "lineup_switch_batters": None,
+        "handedness_matchup_bucket": None,
+        "avg_ip": 5.8,
+        "recent_start_count": 5,
+        "opportunity_bucket": "normal",
+        "leash_risk_bucket": "normal",
+        "actual_ip": None,
+        "actual_pitch_count": None,
+        "batters_faced": None,
     }
     row.update(overrides)
     return row
@@ -48,6 +73,9 @@ def test_required_dataset_fields_cover_identity_market_model_result_and_context(
     assert {"side", "k_line", "american_odds", "market_favorite_side"} <= REQUIRED_DATASET_FIELDS
     assert {"model_side", "model_win_prob", "projected_ks", "verdict"} <= REQUIRED_DATASET_FIELDS
     assert {"actual_ks", "result", "theoretical_pnl"} <= REQUIRED_DATASET_FIELDS
+    assert {"bet_time_odds", "price_clv_cents", "beat_close_price"} <= REQUIRED_DATASET_FIELDS
+    assert {"model_market_relationship", "model_edge_bucket"} <= REQUIRED_DATASET_FIELDS
+    assert {"pitcher_throws", "opportunity_bucket", "handedness_matchup_bucket"} <= REQUIRED_DATASET_FIELDS
 
 
 def test_build_dataset_key_is_stable_for_pitcher_side_line_and_snapshot():

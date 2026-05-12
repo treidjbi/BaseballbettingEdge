@@ -206,6 +206,15 @@ Current readout from 2026-05-07:
   differed from the locked pick-history line. This is still local/shadow-only;
   it does not require a Supabase upgrade unless a later Gate C decision promotes
   compact daily storage.
+- The same dataset now carries compact bet-time/CLV, model-vs-market,
+  pitcher-handedness, lineup-shape placeholder, and opportunity/leash tracker
+  fields. The 2026-04-28+ local run populated price CLV for all 294 tracked
+  picks, with 51 rows beating the official-close price and 10 beating the
+  official-close line. Treat this as a weekend evidence tracker for BoltOdds
+  timing quality, not as a model-rule change.
+- Use `docs/research/market-tracker-map.md` as the current tracker inventory
+  before adding more BoltOdds/Supabase tracking. It distinguishes existing raw
+  evidence tables from the compact long-term research row.
 
 ## Next Decision Checkpoints
 

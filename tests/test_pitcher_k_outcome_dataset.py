@@ -1,6 +1,7 @@
 from analytics.diagnostics.pitcher_k_outcome_dataset import (
     build_official_close_rows,
     build_summary,
+    enrich_rows_with_pick_history,
     load_archived_markets_for_dataset,
     reconcile_picks_history,
     theoretical_pnl,
@@ -37,8 +38,13 @@ def test_build_official_close_rows_creates_one_row_per_side():
             "opp_team": "NYY",
             "home_away": "home",
             "lineup_used": "confirmed",
+            "lineup_count": 9,
             "quality_gate_level": "clean",
             "source_artifact_path": "dashboard/data/processed/2026-05-12.json",
+            "pitcher_throws": "R",
+            "avg_ip": 5.8,
+            "recent_start_count": 5,
+            "last_pitch_count": 92,
         }
     ]
 
@@ -54,6 +60,12 @@ def test_build_official_close_rows_creates_one_row_per_side():
     assert under["model_no_vig_gap"] is not None
     assert under["k_margin_to_line"] == 0.6
     assert under["provider"] is None
+    assert under["model_market_relationship"] == "model_fades_favorite"
+    assert under["projection_margin_bucket"] == "0.5-1.0"
+    assert under["pitcher_throws"] == "R"
+    assert under["opportunity_bucket"] == "normal"
+    assert under["leash_risk_bucket"] == "normal"
+    assert under["lineup_count"] == 9
 
 
 def test_build_summary_tracks_coverage_and_duplicates():
@@ -68,6 +80,12 @@ def test_build_summary_tracks_coverage_and_duplicates():
             "model_win_prob": 0.55,
             "model_side": "under",
             "context_snapshot": "official_close",
+            "is_tracked_pick": True,
+            "price_clv_cents": 8,
+            "beat_close_price": True,
+            "opportunity_bucket": "normal",
+            "leash_risk_bucket": "normal",
+            "model_market_relationship": "model_fades_favorite",
         },
         {
             "dataset_key": "a",
@@ -78,6 +96,12 @@ def test_build_summary_tracks_coverage_and_duplicates():
             "american_odds": None,
             "model_win_prob": None,
             "context_snapshot": "official_close",
+            "is_tracked_pick": False,
+            "price_clv_cents": None,
+            "beat_close_price": None,
+            "opportunity_bucket": "unknown",
+            "leash_risk_bucket": "high",
+            "model_market_relationship": "unknown",
         },
     ]
 
@@ -89,6 +113,11 @@ def test_build_summary_tracks_coverage_and_duplicates():
     assert summary["missing_team_or_opponent"] == 1
     assert summary["missing_book_odds"] == 1
     assert summary["missing_model_fields"] == 1
+    assert summary["tracked_pick_rows"] == 1
+    assert summary["rows_with_price_clv"] == 1
+    assert summary["beat_close_price_rows"] == 1
+    assert summary["model_market_relationship_counts"]["model_fades_favorite"] == 1
+    assert summary["opportunity_bucket_counts"]["normal"] == 1
 
 
 def test_load_archived_markets_for_dataset_preserves_baseball_context(tmp_path):
@@ -198,3 +227,51 @@ def test_reconcile_picks_history_allows_unique_pitcher_side_fallback(tmp_path):
     assert result["graded_pick_rows"] == 1
     assert result["matched_pick_rows"] == 1
     assert result["unique_side_fallback_matches"] == 1
+
+
+def test_enrich_rows_with_pick_history_adds_bet_time_and_clv_fields(tmp_path):
+    history = tmp_path / "picks_history.json"
+    history.write_text(
+        """
+        [
+          {
+            "date": "2026-05-12",
+            "pitcher": "Bryan Woo",
+            "side": "under",
+            "k_line": 5.5,
+            "result": "win",
+            "odds": 110,
+            "ref_book": "FanDuel",
+            "locked_k_line": 5.5,
+            "locked_odds": 110,
+            "locked_at": "2026-05-12T22:30:00Z",
+            "pnl": 1.1
+          }
+        ]
+        """,
+        encoding="utf-8",
+    )
+    rows = [
+        {
+            "dataset_key": "2026-05-12:official_close:bryan woo:under:5.5",
+            "slate_date": "2026-05-12",
+            "normalized_pitcher": "bryan woo",
+            "side": "under",
+            "k_line": 5.5,
+            "closing_line": 5.5,
+            "closing_odds": 104,
+            "bookmaker_key": "FanDuel",
+        }
+    ]
+
+    enriched = enrich_rows_with_pick_history(rows, history_path=history, start_date="2026-05-12")
+
+    assert enriched[0]["is_tracked_pick"] is True
+    assert enriched[0]["bet_time_line"] == 5.5
+    assert enriched[0]["bet_time_odds"] == 110
+    assert enriched[0]["bet_time_book"] == "FanDuel"
+    assert enriched[0]["price_clv_cents"] == 6
+    assert enriched[0]["beat_close_price"] is True
+    assert enriched[0]["line_clv_delta"] == 0.0
+    assert enriched[0]["beat_close_line"] is False
+    assert enriched[0]["pick_history_match_type"] == "exact_line"

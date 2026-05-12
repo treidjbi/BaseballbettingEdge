@@ -75,6 +75,13 @@ clean graded `picks_history.json` rows, including 15 unique pitcher/side
 fallback matches where the archived official-close line differed from the
 locked pick-history line.
 
+The compact row contract now also tracks bet-time/CLV fields from
+`picks_history.json`, model-versus-market relationship, edge/margin buckets,
+pitcher hand, lineup count, handedness placeholders, and opportunity/leash
+buckets. On the same clean window, all 294 tracked picks have price CLV fields;
+51 beat the official-close price and 10 beat the official-close line. These are
+shadow research facts only, not betting rules.
+
 Supabase is not required yet. Gate C should stay closed until we decide whether
 the value of a compact daily research table beats the simplicity of local
 generated artifacts. If promoted later, store compact rows only; do not retain
@@ -194,6 +201,39 @@ leakage.
 - `career_k9`
 - `current_swstr_pct`
 - `career_swstr_pct`
+
+### Bet Timing / CLV
+
+- `is_tracked_pick`
+- `pick_history_match_type`
+- `bet_time_line`
+- `bet_time_odds`
+- `bet_time_book`
+- `bet_time_at`
+- `closing_line`
+- `price_clv_cents`
+- `line_clv_delta`
+- `beat_close_price`
+- `beat_close_line`
+
+### Research Buckets
+
+- `model_market_relationship`
+- `model_edge_bucket`
+- `projection_margin_bucket`
+- `pitcher_throws`
+- `lineup_count`
+- `lineup_right_batters`
+- `lineup_left_batters`
+- `lineup_switch_batters`
+- `handedness_matchup_bucket`
+- `avg_ip`
+- `recent_start_count`
+- `opportunity_bucket`
+- `leash_risk_bucket`
+- `actual_ip`
+- `actual_pitch_count`
+- `batters_faced`
 
 ## Gate A: Schema Approval
 

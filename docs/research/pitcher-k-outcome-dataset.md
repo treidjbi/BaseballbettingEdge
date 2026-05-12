@@ -61,6 +61,22 @@ Required field groups:
 - context: `home_away`, `opp_team`, `lineup_used`, `source_artifact_path`
 - live market: `provider`, `market_consensus`, `bet_value_consensus`,
   `broad_confirmation`
+- bet timing / CLV: `is_tracked_pick`, `bet_time_line`, `bet_time_odds`,
+  `bet_time_book`, `closing_line`, `price_clv_cents`, `line_clv_delta`,
+  `beat_close_price`, `beat_close_line`
+- model/market disagreement: `model_market_relationship`,
+  `model_edge_bucket`, `projection_margin_bucket`
+- lineup / handedness / opportunity: `pitcher_throws`, `lineup_count`,
+  `lineup_right_batters`, `lineup_left_batters`, `lineup_switch_batters`,
+  `handedness_matchup_bucket`, `avg_ip`, `recent_start_count`,
+  `opportunity_bucket`, `leash_risk_bucket`
+- post-result opportunity: `actual_ip`, `actual_pitch_count`,
+  `batters_faced`
+
+Some fields are intentionally `null` today because the production artifact does
+not yet store the underlying value. Keep those columns in the compact row
+contract anyway so future BoltOdds, lineup-handedness, and MLB result enrichers
+can fill them without changing the dataset shape.
 
 ## No-Leakage Rule
 

@@ -78,6 +78,31 @@ REQUIRED_DATASET_FIELDS = {
     "bet_value_consensus",
     "broad_confirmation",
     "source_artifact_path",
+    "is_tracked_pick",
+    "bet_time_line",
+    "bet_time_odds",
+    "bet_time_book",
+    "closing_line",
+    "price_clv_cents",
+    "line_clv_delta",
+    "beat_close_price",
+    "beat_close_line",
+    "model_market_relationship",
+    "model_edge_bucket",
+    "projection_margin_bucket",
+    "pitcher_throws",
+    "lineup_count",
+    "lineup_right_batters",
+    "lineup_left_batters",
+    "lineup_switch_batters",
+    "handedness_matchup_bucket",
+    "avg_ip",
+    "recent_start_count",
+    "opportunity_bucket",
+    "leash_risk_bucket",
+    "actual_ip",
+    "actual_pitch_count",
+    "batters_faced",
 }
 
 
@@ -210,6 +235,76 @@ def _margin_to_line(market: dict[str, Any], side: str) -> float | None:
     return round(margin, 3)
 
 
+def _abs_bucket(value: float | None, buckets: tuple[tuple[float, str], ...], default: str = "unknown") -> str:
+    if value is None:
+        return default
+    absolute = abs(value)
+    for limit, label in buckets:
+        if absolute < limit:
+            return label
+    return buckets[-1][1] if buckets else default
+
+
+def _model_edge_bucket(value: float | None) -> str:
+    if value is None:
+        return "unknown"
+    absolute = abs(value)
+    if absolute < 0.02:
+        return "0-2%"
+    if absolute < 0.05:
+        return "2-5%"
+    return "5%+"
+
+
+def _projection_margin_bucket(value: float | None) -> str:
+    return _abs_bucket(
+        value,
+        (
+            (0.5, "0-0.5"),
+            (1.0, "0.5-1.0"),
+            (1.5, "1.0-1.5"),
+            (999.0, "1.5+"),
+        ),
+    )
+
+
+def _opportunity_bucket(avg_ip: float | None, recent_start_count: int | None) -> str:
+    if avg_ip is None:
+        return "unknown"
+    if avg_ip < 4.5:
+        return "short_leash"
+    if avg_ip >= 6.2 and (recent_start_count or 0) >= 3:
+        return "deep_starter"
+    return "normal"
+
+
+def _leash_risk_bucket(
+    *,
+    is_opener: Any,
+    starter_mismatch: Any,
+    avg_ip: float | None,
+    last_pitch_count: int | None,
+    days_since_last_start: int | None,
+) -> str:
+    if bool(is_opener) or bool(starter_mismatch):
+        return "high"
+    if avg_ip is not None and avg_ip < 4.5:
+        return "high"
+    if last_pitch_count is not None and last_pitch_count >= 105:
+        return "medium"
+    if days_since_last_start is not None and days_since_last_start < 4:
+        return "medium"
+    return "normal"
+
+
+def _model_market_relationship(model_side: str, market_favorite: str) -> str:
+    if model_side not in {"over", "under"} or market_favorite not in {"over", "under"}:
+        return "unknown"
+    if model_side == market_favorite:
+        return "model_agrees_with_favorite"
+    return "model_fades_favorite"
+
+
 def _result_for_side(winning_side: Any, side: str) -> str | None:
     if winning_side not in {"over", "under"}:
         return None
@@ -313,6 +408,11 @@ def build_official_close_rows(markets: list[dict[str, Any]]) -> list[dict[str, A
                 if model_win_prob is not None and market_prob is not None
                 else None
             )
+            margin_to_line = _margin_to_line(market, side)
+            avg_ip = _to_float(market.get("avg_ip"))
+            recent_start_count = _to_int(market.get("recent_start_count"))
+            last_pitch_count = _to_int(market.get("last_pitch_count"))
+            days_since_last_start = _to_int(market.get("days_since_last_start"))
 
             row = {
                 "dataset_key": build_dataset_key(
@@ -333,6 +433,7 @@ def build_official_close_rows(markets: list[dict[str, Any]]) -> list[dict[str, A
                 "american_odds": odds,
                 "opening_odds": opening_odds,
                 "closing_odds": odds,
+                "closing_line": k_line,
                 "price_sign": _research_price_sign(odds),
                 "price_bucket": price_bucket(odds),
                 "market_favorite_side": favorite,
@@ -344,8 +445,11 @@ def build_official_close_rows(markets: list[dict[str, Any]]) -> list[dict[str, A
                 "model_side": model_side,
                 "model_win_prob": round(model_win_prob, 4) if model_win_prob is not None else None,
                 "model_no_vig_gap": model_no_vig_gap,
+                "model_market_relationship": _model_market_relationship(model_side, favorite),
+                "model_edge_bucket": _model_edge_bucket(model_no_vig_gap),
                 "projected_ks": _projection(market),
-                "k_margin_to_line": _margin_to_line(market, side),
+                "k_margin_to_line": margin_to_line,
+                "projection_margin_bucket": _projection_margin_bucket(margin_to_line),
                 "edge": _to_float(ev.get("edge")),
                 "ev": _to_float(ev.get("ev")),
                 "adj_ev": _to_float(ev.get("adj_ev")),
@@ -362,6 +466,7 @@ def build_official_close_rows(markets: list[dict[str, Any]]) -> list[dict[str, A
                 "line_bucket": _line_bucket(k_line),
                 "team": market.get("team"),
                 "opp_team": market.get("opp_team"),
+                "pitcher_throws": market.get("pitcher_throws"),
                 "home_away": _home_away(market),
                 "park_team": market.get("park_team"),
                 "game_time": market.get("game_time"),
@@ -371,13 +476,28 @@ def build_official_close_rows(markets: list[dict[str, Any]]) -> list[dict[str, A
                 "is_opener": market.get("is_opener"),
                 "starter_mismatch": market.get("starter_mismatch"),
                 "lineup_used": market.get("lineup_used"),
+                "lineup_count": _to_int(market.get("lineup_count")),
+                "lineup_right_batters": _to_int(market.get("lineup_right_batters")),
+                "lineup_left_batters": _to_int(market.get("lineup_left_batters")),
+                "lineup_switch_batters": _to_int(market.get("lineup_switch_batters")),
+                "handedness_matchup_bucket": market.get("handedness_matchup_bucket"),
                 "opp_k_rate": _to_float(market.get("opp_k_rate")),
                 "umpire": market.get("umpire"),
                 "umpire_has_rating": market.get("umpire_has_rating"),
                 "ump_k_adj": _to_float(market.get("ump_k_adj")),
                 "park_factor": _to_float(market.get("park_factor")),
-                "days_since_last_start": _to_int(market.get("days_since_last_start")),
-                "last_pitch_count": _to_int(market.get("last_pitch_count")),
+                "days_since_last_start": days_since_last_start,
+                "last_pitch_count": last_pitch_count,
+                "avg_ip": avg_ip,
+                "recent_start_count": recent_start_count,
+                "opportunity_bucket": _opportunity_bucket(avg_ip, recent_start_count),
+                "leash_risk_bucket": _leash_risk_bucket(
+                    is_opener=market.get("is_opener"),
+                    starter_mismatch=market.get("starter_mismatch"),
+                    avg_ip=avg_ip,
+                    last_pitch_count=last_pitch_count,
+                    days_since_last_start=days_since_last_start,
+                ),
                 "rest_k9_delta": _to_float(market.get("rest_k9_delta")),
                 "season_k9": _to_float(market.get("season_k9")),
                 "recent_k9": _to_float(market.get("recent_k9")),
@@ -403,6 +523,20 @@ def build_official_close_rows(markets: list[dict[str, Any]]) -> list[dict[str, A
                 "best_line": None,
                 "best_odds": None,
                 "best_is_off_market": None,
+                "is_tracked_pick": False,
+                "pick_history_match_type": None,
+                "bet_time_line": None,
+                "bet_time_odds": None,
+                "bet_time_book": None,
+                "bet_time_at": None,
+                "price_clv_cents": None,
+                "line_clv_delta": None,
+                "beat_close_price": None,
+                "beat_close_line": None,
+                "pick_history_pnl": None,
+                "actual_ip": _to_float(market.get("actual_ip")),
+                "actual_pitch_count": _to_int(market.get("actual_pitch_count")),
+                "batters_faced": _to_int(market.get("batters_faced")),
                 "source_artifact_path": source_artifact_path,
             }
             rows.append(row)
@@ -475,6 +609,9 @@ def _line_bucket(k_line: float | None) -> str:
 def build_summary(rows: list[dict[str, Any]]) -> dict[str, Any]:
     key_counts = Counter(str(row.get("dataset_key")) for row in rows)
     context_counts = Counter(str(row.get("context_snapshot") or "unknown") for row in rows)
+    model_market_counts = Counter(str(row.get("model_market_relationship") or "unknown") for row in rows)
+    opportunity_counts = Counter(str(row.get("opportunity_bucket") or "unknown") for row in rows)
+    leash_counts = Counter(str(row.get("leash_risk_bucket") or "unknown") for row in rows)
     clean_rows = [row for row in rows if str(row.get("slate_date") or "") >= CLEAN_WINDOW_START]
     return {
         "total_rows": len(rows),
@@ -490,6 +627,13 @@ def build_summary(rows: list[dict[str, Any]]) -> dict[str, Any]:
         ),
         "duplicate_dataset_keys": sum(count - 1 for count in key_counts.values() if count > 1),
         "context_snapshot_counts": dict(sorted(context_counts.items())),
+        "tracked_pick_rows": sum(1 for row in rows if row.get("is_tracked_pick") is True),
+        "rows_with_price_clv": sum(1 for row in rows if row.get("price_clv_cents") is not None),
+        "beat_close_price_rows": sum(1 for row in rows if row.get("beat_close_price") is True),
+        "beat_close_line_rows": sum(1 for row in rows if row.get("beat_close_line") is True),
+        "model_market_relationship_counts": dict(sorted(model_market_counts.items())),
+        "opportunity_bucket_counts": dict(sorted(opportunity_counts.items())),
+        "leash_risk_bucket_counts": dict(sorted(leash_counts.items())),
     }
 
 
@@ -565,6 +709,117 @@ def reconcile_picks_history(
     }
 
 
+def _load_picks_history(path: Path) -> list[dict[str, Any]]:
+    try:
+        payload = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return []
+    return [row for row in payload if isinstance(row, dict)] if isinstance(payload, list) else []
+
+
+def _history_indexes(
+    history_rows: list[dict[str, Any]],
+    start_date: str,
+) -> tuple[dict[str, dict[str, Any]], dict[tuple[str, str, str], list[dict[str, Any]]]]:
+    exact: dict[str, dict[str, Any]] = {}
+    side: dict[tuple[str, str, str], list[dict[str, Any]]] = {}
+    for pick in history_rows:
+        slate_date = str(pick.get("date") or pick.get("slate_date") or "").strip()
+        pick_side = str(pick.get("side") or "").strip().lower()
+        if slate_date < start_date or pick_side not in {"over", "under"}:
+            continue
+        key = build_dataset_key(
+            slate_date=slate_date,
+            context_snapshot="official_close",
+            normalized_pitcher=_normalized(pick.get("pitcher")),
+            side=pick_side,
+            k_line=pick.get("locked_k_line") or pick.get("k_line"),
+        )
+        exact[key] = pick
+        side_key = (slate_date, _normalized(pick.get("pitcher")), pick_side)
+        side.setdefault(side_key, []).append(pick)
+    return exact, side
+
+
+def _pick_for_row(
+    row: dict[str, Any],
+    exact: dict[str, dict[str, Any]],
+    side_index: dict[tuple[str, str, str], list[dict[str, Any]]],
+) -> tuple[dict[str, Any] | None, str | None]:
+    dataset_key = str(row.get("dataset_key") or "")
+    if dataset_key in exact:
+        return exact[dataset_key], "exact_line"
+    side_key = (
+        str(row.get("slate_date") or "").strip(),
+        _normalized(row.get("normalized_pitcher") or row.get("pitcher")),
+        str(row.get("side") or "").strip().lower(),
+    )
+    candidates = side_index.get(side_key, [])
+    if len(candidates) == 1:
+        return candidates[0], "unique_pitcher_side"
+    return None, None
+
+
+def _line_clv_delta(side: str, bet_line: float | None, closing_line: float | None) -> float | None:
+    if bet_line is None or closing_line is None:
+        return None
+    raw_delta = closing_line - bet_line
+    return round(raw_delta if side == "over" else -raw_delta, 3)
+
+
+def enrich_rows_with_pick_history(
+    rows: list[dict[str, Any]],
+    *,
+    history_path: Path = PICKS_HISTORY,
+    start_date: str = CLEAN_WINDOW_START,
+) -> list[dict[str, Any]]:
+    history_rows = _load_picks_history(history_path)
+    exact, side_index = _history_indexes(history_rows, start_date)
+    enriched: list[dict[str, Any]] = []
+    for row in rows:
+        pick, match_type = _pick_for_row(row, exact, side_index)
+        next_row = dict(row)
+        next_row.setdefault("is_tracked_pick", False)
+        next_row.setdefault("pick_history_match_type", None)
+        next_row.setdefault("bet_time_line", None)
+        next_row.setdefault("bet_time_odds", None)
+        next_row.setdefault("bet_time_book", None)
+        next_row.setdefault("bet_time_at", None)
+        next_row.setdefault("price_clv_cents", None)
+        next_row.setdefault("line_clv_delta", None)
+        next_row.setdefault("beat_close_price", None)
+        next_row.setdefault("beat_close_line", None)
+        next_row.setdefault("pick_history_pnl", None)
+        if pick is not None:
+            bet_line = _to_float(pick.get("locked_k_line") or pick.get("k_line"))
+            bet_odds = _to_int(pick.get("locked_odds") or pick.get("odds"))
+            closing_odds = _to_int(next_row.get("closing_odds") or next_row.get("american_odds"))
+            closing_line = _to_float(next_row.get("closing_line") or next_row.get("k_line"))
+            line_clv_delta = _line_clv_delta(str(next_row.get("side") or ""), bet_line, closing_line)
+            price_clv_cents = (
+                bet_odds - closing_odds
+                if bet_odds is not None and closing_odds is not None
+                else None
+            )
+            next_row.update(
+                {
+                    "is_tracked_pick": True,
+                    "pick_history_match_type": match_type,
+                    "bet_time_line": bet_line,
+                    "bet_time_odds": bet_odds,
+                    "bet_time_book": pick.get("locked_book") or pick.get("ref_book") or next_row.get("bookmaker_key"),
+                    "bet_time_at": pick.get("locked_at"),
+                    "price_clv_cents": price_clv_cents,
+                    "line_clv_delta": line_clv_delta,
+                    "beat_close_price": price_clv_cents > 0 if price_clv_cents is not None else None,
+                    "beat_close_line": line_clv_delta > 0 if line_clv_delta is not None else None,
+                    "pick_history_pnl": _to_float(pick.get("pnl")),
+                }
+            )
+        enriched.append(next_row)
+    return enriched
+
+
 def render_summary(summary: dict[str, Any]) -> str:
     lines = [
         "# Pitcher K Outcome Dataset Summary",
@@ -579,6 +834,10 @@ def render_summary(summary: dict[str, Any]) -> str:
         f"- Missing team/opponent: `{summary['missing_team_or_opponent']}`",
         f"- Missing book odds: `{summary['missing_book_odds']}`",
         f"- Missing model fields: `{summary['missing_model_fields']}`",
+        f"- Tracked pick rows: `{summary.get('tracked_pick_rows', 0)}`",
+        f"- Rows with price CLV: `{summary.get('rows_with_price_clv', 0)}`",
+        f"- Beat-close price rows: `{summary.get('beat_close_price_rows', 0)}`",
+        f"- Beat-close line rows: `{summary.get('beat_close_line_rows', 0)}`",
         f"- Clean graded picks reconciled: `{summary.get('matched_pick_rows', 0)}/{summary.get('graded_pick_rows', 0)}`",
         f"- Unique side fallback reconciliations: `{summary.get('unique_side_fallback_matches', 0)}`",
         f"- Unmatched clean graded picks: `{summary.get('unmatched_pick_rows', 0)}`",
@@ -588,6 +847,14 @@ def render_summary(summary: dict[str, Any]) -> str:
     ]
     for context, count in summary["context_snapshot_counts"].items():
         lines.append(f"- `{context}`: `{count}`")
+    for title, key in (
+        ("Model Vs Market Relationship", "model_market_relationship_counts"),
+        ("Opportunity Buckets", "opportunity_bucket_counts"),
+        ("Leash Risk Buckets", "leash_risk_bucket_counts"),
+    ):
+        lines.extend(["", f"## {title}", ""])
+        for value, count in (summary.get(key) or {}).items():
+            lines.append(f"- `{value}`: `{count}`")
     unmatched = summary.get("unmatched_examples") or []
     if unmatched:
         lines.extend(["", "## Unmatched Pick Examples", ""])
@@ -621,7 +888,8 @@ def build_dataset(
         start_date=start_date,
         end_date=end_date,
     )
-    return build_official_close_rows(markets)
+    rows = build_official_close_rows(markets)
+    return enrich_rows_with_pick_history(rows, start_date=start_date)
 
 
 def _parse_args(argv: list[str] | None = None) -> argparse.Namespace:
