@@ -1,8 +1,8 @@
 {
-  "generated_at": "2026-05-11T13:20:47Z",
-  "total_picks": 288,
-  "last_calibrated": "2026-05-11T13:20:47Z",
-  "calibration_sample": 239,
+  "generated_at": "2026-05-12T12:21:26Z",
+  "total_picks": 294,
+  "last_calibrated": "2026-05-12T12:21:26Z",
+  "calibration_sample": 244,
   "rows": [
     {
       "verdict": "FIRE 2u",
@@ -29,63 +29,65 @@
     {
       "verdict": "FIRE 1u",
       "side": "over",
-      "picks": 60,
+      "picks": 61,
       "wins": 30,
-      "losses": 30,
+      "losses": 31,
       "pushes": 0,
-      "win_pct": 0.5,
-      "roi": -7.92,
-      "avg_ev": 0.1663
+      "win_pct": 0.492,
+      "roi": -9.43,
+      "avg_ev": 0.1686
     },
     {
       "verdict": "FIRE 1u",
       "side": "under",
-      "picks": 84,
+      "picks": 87,
       "wins": 39,
-      "losses": 45,
+      "losses": 48,
       "pushes": 0,
-      "win_pct": 0.464,
-      "roi": -12.86,
-      "avg_ev": 0.1403
+      "win_pct": 0.448,
+      "roi": -15.86,
+      "avg_ev": 0.1385
     },
     {
       "verdict": "LEAN",
       "side": "over",
-      "picks": 46,
-      "wins": 25,
+      "picks": 47,
+      "wins": 26,
       "losses": 21,
       "pushes": 0,
-      "win_pct": 0.543,
-      "roi": 2.15,
-      "avg_ev": 0.1257
+      "win_pct": 0.553,
+      "roi": 3.74,
+      "avg_ev": 0.1241
     },
     {
       "verdict": "LEAN",
       "side": "under",
-      "picks": 53,
+      "picks": 54,
       "wins": 23,
-      "losses": 30,
+      "losses": 31,
       "pushes": 0,
-      "win_pct": 0.434,
-      "roi": -22.71,
-      "avg_ev": 0.0706
+      "win_pct": 0.426,
+      "roi": -24.14,
+      "avg_ev": 0.07
     }
   ],
   "lambda_accuracy": {
     "avg_predicted": 5.01,
-    "avg_actual": 4.96,
-    "bias": -0.05
+    "avg_actual": 4.99,
+    "bias": -0.02
   },
   "params": {
     "weight_season_cap": 0.4,
     "weight_recent": 0.05,
     "ump_scale": 0.9,
-    "lambda_bias": -0.067,
-    "swstr_k9_scale": 14.0,
-    "updated_at": "2026-05-11T13:20:47Z",
-    "sample_size": 239,
+    "lambda_bias": -0.045,
+    "swstr_k9_scale": 12.0,
+    "updated_at": "2026-05-12T12:21:26Z",
+    "sample_size": 244,
     "formula_change_date": "2026-04-28",
     "calibration_notes": [
+      "[2026-05-12] Lambda bias adjusted -0.067 \u2192 -0.045 (model was systematically over-predicting Ks)",
+      "[2026-05-12] SwStr%% K/9 scale decreased 14.0 \u2192 12.0 (SwStr%% delta not reliably predictive of K outcomes)",
       "[2026-05-11] SwStr%% K/9 scale decreased 16.0 \u2192 14.0 (SwStr%% delta not reliably predictive of K outcomes)",
       "[2026-05-10] Lambda bias adjusted -0.081 \u2192 -0.067 (model was systematically over-predicting Ks)",
       "[2026-05-10] SwStr%% K/9 scale decreased 18.0 \u2192 16.0 (SwStr%% delta not reliably predictive of K outcomes)",
@@ -103,12 +105,12 @@
       "[2026-05-03] Lambda bias adjusted -0.250 \u2192 -0.161 (model was systematically over-predicting Ks)",
       "[2026-05-02] Lambda bias adjusted -0.195 \u2192 -0.250 (model was systematically over-predicting Ks)",
       "[2026-05-02] Umpire scale decreased 0.950 \u2192 0.900 (umpire adjustment not reliably predictive)",
-      "[2026-05-02] K/9 blend weights updated: season 40% \u2192 40%, recent 17% \u2192 5%",
-      "[2026-05-01] Lambda bias adjusted -0.189 \u2192 -0.195 (model was systematically over-predicting Ks)",
-      "[2026-04-30] Lambda bias adjusted -0.245 \u2192 -0.189 (model was systematically over-predicting Ks)"
+      "[2026-05-02] K/9 blend weights updated: season 40% \u2192 40%, recent 17% \u2192 5%"
     ]
   },
   "calibration_notes": [
+    "[2026-05-12] Lambda bias adjusted -0.067 \u2192 -0.045 (model was systematically over-predicting Ks)",
+    "[2026-05-12] SwStr%% K/9 scale decreased 14.0 \u2192 12.0 (SwStr%% delta not reliably predictive of K outcomes)",
     "[2026-05-11] SwStr%% K/9 scale decreased 16.0 \u2192 14.0 (SwStr%% delta not reliably predictive of K outcomes)",
     "[2026-05-10] Lambda bias adjusted -0.081 \u2192 -0.067 (model was systematically over-predicting Ks)",
     "[2026-05-10] SwStr%% K/9 scale decreased 18.0 \u2192 16.0 (SwStr%% delta not reliably predictive of K outcomes)",
@@ -126,8 +128,6 @@
     "[2026-05-03] Lambda bias adjusted -0.250 \u2192 -0.161 (model was systematically over-predicting Ks)",
     "[2026-05-02] Lambda bias adjusted -0.195 \u2192 -0.250 (model was systematically over-predicting Ks)",
     "[2026-05-02] Umpire scale decreased 0.950 \u2192 0.900 (umpire adjustment not reliably predictive)",
-    "[2026-05-02] K/9 blend weights updated: season 40% \u2192 40%, recent 17% \u2192 5%",
-    "[2026-05-01] Lambda bias adjusted -0.189 \u2192 -0.195 (model was systematically over-predicting Ks)",
-    "[2026-04-30] Lambda bias adjusted -0.245 \u2192 -0.189 (model was systematically over-predicting Ks)"
+    "[2026-05-02] K/9 blend weights updated: season 40% \u2192 40%, recent 17% \u2192 5%"
   ]
 }
