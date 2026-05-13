@@ -8,6 +8,16 @@ SHADOW_CANDIDATE_MIGRATION = ROOT / "supabase" / "migrations" / "20260508_shadow
 ACCEPTED_BETS_MIGRATION = ROOT / "supabase" / "migrations" / "20260508_accepted_bets_log.sql"
 LIVE_MARKET_DISPLAY_MIGRATION = ROOT / "supabase" / "migrations" / "20260512_live_market_display_state.sql"
 READONLY_SHADOW_POLICIES_MIGRATION = ROOT / "supabase" / "migrations" / "20260512_readonly_shadow_table_policies.sql"
+PROVIDER_CUTOVER_MIGRATION = ROOT / "supabase" / "migrations" / "20260513_provider_cutover_market_state.sql"
+
+PROVIDER_CUTOVER_TABLES = [
+    "current_market_lines",
+    "official_market_lines",
+    "market_opening_baselines",
+    "provider_arbitration_decisions",
+    "provider_request_usage_daily",
+    "compact_market_line_movements",
+]
 
 
 def _migration_sql() -> str:
@@ -71,3 +81,16 @@ def test_shadow_tables_have_readonly_rls_policies():
     assert "grant select on public.shadow_notification_candidates to bbe_ops_readonly" in sql
     assert "bbe_ops_readonly_select_market_pick_evidence" in sql
     assert "bbe_ops_readonly_select_shadow_notification_candidates" in sql
+
+
+def test_provider_cutover_tables_have_rls_and_readonly_policies():
+    sql = PROVIDER_CUTOVER_MIGRATION.read_text(encoding="utf-8")
+
+    for table in PROVIDER_CUTOVER_TABLES:
+        assert f"create table if not exists public.{table}" in sql
+        assert f"alter table public.{table} enable row level security" in sql
+        assert f"grant select on public.{table} to bbe_ops_readonly" in sql
+        assert f"drop policy if exists bbe_ops_readonly_select_{table} on public.{table}" in sql
+        assert f"create policy bbe_ops_readonly_select_{table} on public.{table} for select to bbe_ops_readonly using (true)" in sql
+
+    assert "if exists (select 1 from pg_roles where rolname = 'bbe_ops_readonly')" in sql
