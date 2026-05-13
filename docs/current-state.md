@@ -12,7 +12,6 @@ For any new work in this repo:
    - `docs/superpowers/plans/2026-05-13-boltodds-propline-official-provider-cutover.md`
    - `docs/superpowers/plans/2026-05-07-bet-conversion-shadow-audit.md`
    - `docs/superpowers/plans/2026-05-12-pitcher-k-outcome-research-dataset.md`
-   - `docs/superpowers/plans/2026-04-28-one-week-evaluation-cadence.md`
 4. Read `docs/provider-cost-ledger.md` before recommending new providers,
    upgrades, polling increases, or always-on infrastructure.
 5. Read `docs/operational-risk-register.md` before changing provider behavior,
@@ -77,8 +76,14 @@ Still independently active:
   diagnostics.
 - `2026-05-12-pitcher-k-outcome-research-dataset.md` for compact outcome rows,
   CLV, process-vs-result, and projection shadow research.
-- `2026-04-28-one-week-evaluation-cadence.md` for clean-window evaluation
-  discipline.
+Historical / absorbed:
+
+- `2026-04-28-one-week-evaluation-cadence.md` is stale as an active cadence.
+  It was useful for the first post-Phase-C week and it did add quality-gate
+  audit checks, but its durable rules now live here and in the newer diagnostic
+  plans: keep `2026-04-28+` as the clean evaluation boundary, avoid random
+  threshold/staking/formula changes, and use the E1-E5, bet-conversion, outcome
+  dataset, and quality-gate diagnostics for current decisions.
 
 The live-layer shadow builders on `main` now read `market_feed_heartbeats` and
 apply BoltOdds unchanged-line freshness to `live_market_display_state` and

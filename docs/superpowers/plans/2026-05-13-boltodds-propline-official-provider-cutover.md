@@ -154,7 +154,7 @@ the source-of-truth decisions here.
 | `2026-05-01-propline-supabase-market-infrastructure.md` | Historical foundation | Keep raw tracker schema/history and webhook receiver notes. New tables must follow the tracker matrix here. |
 | `2026-05-07-bet-conversion-shadow-audit.md` | Still independently active | Use for bet-selection-first evaluation. Add source attribution from this cutover when available. |
 | `2026-05-12-pitcher-k-outcome-research-dataset.md` | Still independently active | Use for compact outcome rows, CLV, and process-vs-result research. Add provider-source fields when available. |
-| `2026-04-28-one-week-evaluation-cadence.md` | Still independently active | Keep clean-window evaluation discipline and do not confuse provider cutover with model formula changes. |
+| `2026-04-28-one-week-evaluation-cadence.md` | Historical / absorbed | The one-week cadence is stale as an active operating plan. Keep only the durable guardrails: `2026-04-28+` is the clean evaluation boundary, do not confuse provider cutover with model formula changes, and use current diagnostics/gates for decisions. |
 
 Synthesis rule: if a provider, live-notification, market tracker, or
 TheRundown-removal question conflicts across dated plans, this cutover plan and
