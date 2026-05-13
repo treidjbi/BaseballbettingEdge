@@ -16,6 +16,7 @@ For any new work in this repo:
      schedule-first, mainline-selector, or retention/compaction work.
    - `docs/superpowers/plans/2026-05-07-bet-conversion-shadow-audit.md`
    - `docs/superpowers/plans/2026-05-12-pitcher-k-outcome-research-dataset.md`
+   - `docs/superpowers/plans/2026-05-13-boltodds-production-line-movement.md`
    - `docs/superpowers/plans/2026-05-07-boltodds-starter-trial.md`
    - `docs/superpowers/plans/2026-05-06-live-layer-event-system.md`
    - `docs/superpowers/plans/2026-05-05-propline-fallback-and-model-signal-plan.md`
@@ -181,6 +182,14 @@ Starter discovery confirmed enough coverage to test the trial:
 
 Let the trial collect uptime, heartbeat freshness, normalized book coverage,
 row volume, and stale-feed evidence before any provider decision.
+
+May 13 diagnosis: the persistent BoltOdds worker can heartbeat on the wrong
+slate if it starts before GitHub's delayed full run updates `today.json`; it
+currently resolves `slate_date` and the production pitcher allow-list once at
+startup. Use `docs/superpowers/plans/2026-05-13-boltodds-production-line-movement.md`
+as the production-readiness plan. Gate 0 is to rotate the worker context when
+the GitHub raw artifact advances so current-slate snapshots are not filtered
+through yesterday's pitchers.
 
 ## Active Evaluation Stack
 
