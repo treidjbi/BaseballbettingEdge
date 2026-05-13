@@ -874,6 +874,26 @@ Readiness gates:
 - PropLine request usage remains under 70% of Hobby daily budget during the
   slate.
 
+Implementation note, 2026-05-13:
+
+- `analytics/diagnostics/provider_cutover_shadow_compare.py` and tests now
+  exist.
+- The diagnostic can compare JSON artifacts or fetch TheRundown plus
+  Supabase-backed provider props directly when env vars are available.
+- It writes:
+  `analytics/output/provider_cutover_shadow_compare_YYYY-MM-DD.json` and
+  `.md`.
+- Verdict-change reporting is available when the inputs are built records with
+  `ev_over` / `ev_under`; raw prop-list comparisons still report coverage,
+  books, line conflicts, ref-book changes, odds deltas, opening baselines,
+  contract issues, and usage gates.
+
+Fresh-slate rehearsal command:
+
+```bash
+python analytics/diagnostics/provider_cutover_shadow_compare.py --date YYYY-MM-DD --provider-min-props 1
+```
+
 ### Step 6: Extend Pick History Source Attribution
 
 Modify:

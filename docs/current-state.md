@@ -60,6 +60,11 @@ Cutover branch infrastructure progress as of 2026-05-13:
   `ENABLE_BOLTODDS_PIPELINE_SOURCE=true`. Without both, TheRundown remains the
   odds source. Strict provider mode is available for later cutover rehearsal,
   but should not be enabled until the yes/no review.
+- `analytics/diagnostics/provider_cutover_shadow_compare.py` exists for the
+  fresh-slate rehearsal. Use it to compare TheRundown against provider-mode
+  rows and evaluate coverage, FD/DK availability, line conflicts, ref-book
+  changes, odds deltas, artifact contract, and usage gates before any cutover
+  decision.
 
 ## Provider Plan Precedence
 

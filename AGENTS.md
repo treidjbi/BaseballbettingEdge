@@ -112,6 +112,9 @@ The provider pipeline adapter also exists, but it is double gated:
 `ENABLE_BOLTODDS_PIPELINE_SOURCE=true`. Leave both unset/false unless Tyler is
 explicitly rehearsing or approving the cutover.
 
+Use `analytics/diagnostics/provider_cutover_shadow_compare.py` for the
+fresh-slate rehearsal before any cutover yes/no decision.
+
 The provider cutover plan synthesizes the production-facing parts of:
 
 - `docs/superpowers/plans/2026-05-13-boltodds-production-line-movement.md`

@@ -1,0 +1,184 @@
+from datetime import datetime, timezone
+
+from analytics.diagnostics.provider_cutover_shadow_compare import (
+    compare_provider_cutover,
+    format_markdown_report,
+)
+
+
+NOW = datetime(2026, 5, 13, 20, 0, tzinfo=timezone.utc)
+
+
+def _prop(
+    pitcher,
+    *,
+    line=5.5,
+    ref_book="FanDuel",
+    over=-115,
+    under=-105,
+    book_odds=None,
+    odds_source="therundown",
+    reasons=None,
+    ev_over=None,
+    ev_under=None,
+):
+    return {
+        "pitcher": pitcher,
+        "team": "",
+        "opp_team": "",
+        "game_time": "2026-05-13T23:05:00Z",
+        "k_line": line,
+        "opening_line": line,
+        "ref_book": ref_book,
+        "best_over_book": ref_book,
+        "best_under_book": ref_book,
+        "best_over_odds": over,
+        "best_under_odds": under,
+        "opening_over_odds": over,
+        "opening_under_odds": under,
+        "opening_odds_source": "first_seen",
+        "book_odds": book_odds if book_odds is not None else {
+            ref_book: {"line": line, "over": over, "under": under, "provider": odds_source},
+        },
+        "odds_source": odds_source,
+        "provider_arbitration_reasons": reasons or [],
+        "ev_over": ev_over or {"verdict": "PASS"},
+        "ev_under": ev_under or {"verdict": "PASS"},
+    }
+
+
+def test_compare_reports_pitcher_and_fd_dk_coverage():
+    report = compare_provider_cutover(
+        date_str="2026-05-13",
+        rundown_props=[
+            _prop("Jose Berrios"),
+            _prop("Gerrit Cole"),
+        ],
+        provider_props=[
+            _prop(
+                "Jose Berrios",
+                odds_source="boltodds+propline",
+                book_odds={
+                    "FanDuel": {"line": 5.5, "over": -115, "under": -105, "provider": "boltodds"},
+                    "DraftKings": {"line": 5.5, "over": -112, "under": -108, "provider": "propline"},
+                },
+            ),
+        ],
+        generated_at=NOW,
+    )
+
+    assert report["summary"]["production_pitcher_count"] == 2
+    assert report["summary"]["provider_pitcher_count"] == 1
+    assert report["summary"]["pitcher_coverage_rate"] == 0.5
+    assert report["summary"]["fd_or_dk_coverage_rate"] == 0.5
+    assert report["coverage"]["missing_provider_pitchers"] == ["gerrit cole"]
+    assert report["coverage"]["missing_draftkings_pitchers"] == []
+    assert report["readiness"]["gates"][0]["status"] == "fail"
+
+
+def test_compare_tracks_missing_draftkings_and_line_conflicts():
+    report = compare_provider_cutover(
+        date_str="2026-05-13",
+        rundown_props=[_prop("Jose Berrios")],
+        provider_props=[
+            _prop(
+                "Jose Berrios",
+                book_odds={"FanDuel": {"line": 5.5, "over": -115, "under": -105, "provider": "boltodds"}},
+                reasons=["cross_book_line_conflict"],
+            ),
+        ],
+        generated_at=NOW,
+    )
+
+    assert report["coverage"]["missing_draftkings_pitchers"] == ["jose berrios"]
+    assert report["coverage"]["line_conflict_pitchers"] == ["jose berrios"]
+    assert report["summary"]["line_conflict_rate"] == 1.0
+    assert report["readiness"]["gates"][2]["status"] == "fail"
+
+
+def test_compare_reports_ref_book_changes_and_odds_deltas():
+    report = compare_provider_cutover(
+        date_str="2026-05-13",
+        rundown_props=[
+            _prop(
+                "Jose Berrios",
+                ref_book="BetMGM",
+                over=-110,
+                under=-110,
+                book_odds={"FanDuel": {"line": 5.5, "over": -120, "under": 100}},
+            )
+        ],
+        provider_props=[
+            _prop(
+                "Jose Berrios",
+                ref_book="FanDuel",
+                over=-115,
+                under=-105,
+                book_odds={"FanDuel": {"line": 5.5, "over": -115, "under": -105, "provider": "boltodds"}},
+            )
+        ],
+        generated_at=NOW,
+    )
+
+    assert report["market_differences"]["ref_book_changes"] == [{
+        "pitcher": "Jose Berrios",
+        "rundown_ref_book": "BetMGM",
+        "provider_ref_book": "FanDuel",
+    }]
+    assert report["market_differences"]["odds_deltas_by_book"] == [{
+        "pitcher": "Jose Berrios",
+        "book": "FanDuel",
+        "same_line": True,
+        "rundown_line": 5.5,
+        "provider_line": 5.5,
+        "over_delta": 5,
+        "under_delta": -205,
+        "provider": "boltodds",
+    }]
+
+
+def test_compare_reports_verdict_changes_when_records_have_verdicts():
+    report = compare_provider_cutover(
+        date_str="2026-05-13",
+        rundown_props=[_prop("Jose Berrios", ev_over={"verdict": "PASS"})],
+        provider_props=[_prop("Jose Berrios", ev_over={"verdict": "FIRE 1u"})],
+        generated_at=NOW,
+    )
+
+    assert report["summary"]["verdict_change_count"] == 1
+    assert report["market_differences"]["verdict_changes"] == [{
+        "pitcher": "Jose Berrios",
+        "side": "over",
+        "rundown_verdict": "PASS",
+        "provider_verdict": "FIRE 1u",
+    }]
+
+
+def test_compare_contract_and_usage_gates():
+    report = compare_provider_cutover(
+        date_str="2026-05-13",
+        rundown_props=[_prop("Jose Berrios")],
+        provider_props=[{**_prop("Jose Berrios"), "book_odds": None}],
+        provider_usage={"propline_requests": 4000},
+        generated_at=NOW,
+    )
+
+    gate_statuses = {gate["name"]: gate["status"] for gate in report["readiness"]["gates"]}
+    assert gate_statuses["today_contract_valid"] == "fail"
+    assert gate_statuses["propline_usage_under_70pct_hobby"] == "fail"
+    assert report["summary"]["provider_contract_issue_count"] == 1
+
+
+def test_markdown_report_includes_gate_summary():
+    report = compare_provider_cutover(
+        date_str="2026-05-13",
+        rundown_props=[_prop("Jose Berrios")],
+        provider_props=[_prop("Jose Berrios")],
+        generated_at=NOW,
+    )
+
+    markdown = format_markdown_report(report)
+
+    assert "# Provider Cutover Shadow Compare - 2026-05-13" in markdown
+    assert "pitcher_coverage_90" in markdown
+    assert "Overall ready" in markdown
