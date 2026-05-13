@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-05-13T17:38:02Z",
+  "generated_at": "2026-05-13T18:08:19Z",
   "date": "2026-05-13",
   "props_available": true,
   "data_warnings": [
@@ -7,6 +7,111 @@
     "fetch_batter_stats missing splits for 1/30 opposing lineups"
   ],
   "pitchers": [
+    {
+      "pitcher": "Reid Detmers",
+      "team": "Los Angeles Angels",
+      "opp_team": "Cleveland Guardians",
+      "pitcher_throws": "L",
+      "game_time": "2026-05-13T17:10:00Z",
+      "k_line": 5.5,
+      "opening_line": 5.5,
+      "best_over_book": "FanDuel",
+      "best_under_book": "FanDuel",
+      "ref_book": "FanDuel",
+      "best_over_odds": -104,
+      "best_under_odds": -128,
+      "opening_over_odds": -106,
+      "opening_under_odds": -125,
+      "opening_odds_source": "preview",
+      "odds_source": "therundown",
+      "the_odds_event_id": null,
+      "propline_event_id": null,
+      "price_delta_over": 2,
+      "price_delta_under": -3,
+      "raw_lambda": 5.37,
+      "lambda": 5.34,
+      "avg_ip": 5.6,
+      "is_opener": false,
+      "opener_note": null,
+      "swstr_pct": 0.1185,
+      "career_swstr_pct": 0.1325,
+      "swstr_delta_k9": -0.047,
+      "days_since_last_start": 5,
+      "last_pitch_count": 99,
+      "rest_k9_delta": 0.0,
+      "opp_k_rate": 0.18248017933333333,
+      "lineup_used": true,
+      "lineup_count": 9,
+      "park_factor": 1.01,
+      "ump_k_adj": -0.38,
+      "starter_mismatch": false,
+      "recent_start_count": 5,
+      "season_k9": 9.69,
+      "recent_k9": 9.64,
+      "career_k9": 9.95,
+      "ev_over": {
+        "edge": -0.0659,
+        "ev": -0.1293,
+        "adj_ev": -0.1293,
+        "verdict": "PASS",
+        "win_prob": 0.444,
+        "movement_conf": 1.0,
+        "raw_verdict": "PASS",
+        "raw_adj_ev": -0.1293,
+        "actionable_verdict": "PASS",
+        "quality_gate_level": "clean",
+        "quality_gate_reasons": []
+      },
+      "ev_under": {
+        "edge": -0.0053,
+        "ev": -0.0094,
+        "adj_ev": -0.0094,
+        "verdict": "PASS",
+        "win_prob": 0.556,
+        "movement_conf": 1.0,
+        "raw_verdict": "PASS",
+        "raw_adj_ev": -0.0094,
+        "actionable_verdict": "PASS",
+        "quality_gate_level": "clean",
+        "quality_gate_reasons": []
+      },
+      "book_odds": {
+        "DraftKings": {
+          "over": -106,
+          "under": -120
+        },
+        "BetMGM": {
+          "over": -105,
+          "under": -125
+        },
+        "FanDuel": {
+          "over": -104,
+          "under": -128
+        },
+        "Kalshi": {
+          "over": 101,
+          "under": -121
+        }
+      },
+      "umpire": "Dan Iassogna",
+      "umpire_has_rating": true,
+      "umpire_rating_games": null,
+      "data_complete": true,
+      "game_state": "in_progress",
+      "input_quality_flags": [],
+      "projection_safe": true,
+      "quality_gate_level": "clean",
+      "quality_gate_reasons": [],
+      "verdict_cap_reason": "",
+      "data_maturity": {
+        "pitcher": "mature",
+        "umpire": "mature",
+        "lineup": "confirmed",
+        "market": "preview_open"
+      },
+      "max_actionable_verdict": "FIRE 2u",
+      "tracked_picks": []
+    },
     {
       "pitcher": "Parker Messick",
       "team": "Cleveland Guardians",
@@ -114,111 +219,6 @@
         "market": "preview_open"
       },
       "max_actionable_verdict": "FIRE 1u",
-      "tracked_picks": []
-    },
-    {
-      "pitcher": "Reid Detmers",
-      "team": "Los Angeles Angels",
-      "opp_team": "Cleveland Guardians",
-      "pitcher_throws": "L",
-      "game_time": "2026-05-13T17:10:00Z",
-      "k_line": 5.5,
-      "opening_line": 5.5,
-      "best_over_book": "FanDuel",
-      "best_under_book": "FanDuel",
-      "ref_book": "FanDuel",
-      "best_over_odds": -104,
-      "best_under_odds": -128,
-      "opening_over_odds": -106,
-      "opening_under_odds": -125,
-      "opening_odds_source": "preview",
-      "odds_source": "therundown",
-      "the_odds_event_id": null,
-      "propline_event_id": null,
-      "price_delta_over": 2,
-      "price_delta_under": -3,
-      "raw_lambda": 5.37,
-      "lambda": 5.34,
-      "avg_ip": 5.6,
-      "is_opener": false,
-      "opener_note": null,
-      "swstr_pct": 0.1185,
-      "career_swstr_pct": 0.1325,
-      "swstr_delta_k9": -0.047,
-      "days_since_last_start": 5,
-      "last_pitch_count": 99,
-      "rest_k9_delta": 0.0,
-      "opp_k_rate": 0.18248017933333333,
-      "lineup_used": true,
-      "lineup_count": 9,
-      "park_factor": 1.01,
-      "ump_k_adj": -0.38,
-      "starter_mismatch": false,
-      "recent_start_count": 5,
-      "season_k9": 9.69,
-      "recent_k9": 9.64,
-      "career_k9": 9.95,
-      "ev_over": {
-        "edge": -0.0659,
-        "ev": -0.1293,
-        "adj_ev": -0.1293,
-        "verdict": "PASS",
-        "win_prob": 0.444,
-        "movement_conf": 1.0,
-        "raw_verdict": "PASS",
-        "raw_adj_ev": -0.1293,
-        "actionable_verdict": "PASS",
-        "quality_gate_level": "clean",
-        "quality_gate_reasons": []
-      },
-      "ev_under": {
-        "edge": -0.0053,
-        "ev": -0.0094,
-        "adj_ev": -0.0094,
-        "verdict": "PASS",
-        "win_prob": 0.556,
-        "movement_conf": 1.0,
-        "raw_verdict": "PASS",
-        "raw_adj_ev": -0.0094,
-        "actionable_verdict": "PASS",
-        "quality_gate_level": "clean",
-        "quality_gate_reasons": []
-      },
-      "book_odds": {
-        "DraftKings": {
-          "over": -106,
-          "under": -120
-        },
-        "BetMGM": {
-          "over": -105,
-          "under": -125
-        },
-        "FanDuel": {
-          "over": -104,
-          "under": -128
-        },
-        "Kalshi": {
-          "over": 101,
-          "under": -121
-        }
-      },
-      "umpire": "Dan Iassogna",
-      "umpire_has_rating": true,
-      "umpire_rating_games": null,
-      "data_complete": true,
-      "game_state": "in_progress",
-      "input_quality_flags": [],
-      "projection_safe": true,
-      "quality_gate_level": "clean",
-      "quality_gate_reasons": [],
-      "verdict_cap_reason": "",
-      "data_maturity": {
-        "pitcher": "mature",
-        "umpire": "mature",
-        "lineup": "confirmed",
-        "market": "preview_open"
-      },
-      "max_actionable_verdict": "FIRE 2u",
       "tracked_picks": []
     },
     {
@@ -585,16 +585,16 @@
       "best_over_book": "FanDuel",
       "best_under_book": "FanDuel",
       "ref_book": "FanDuel",
-      "best_over_odds": -106,
-      "best_under_odds": -125,
+      "best_over_odds": -104,
+      "best_under_odds": -128,
       "opening_over_odds": -104,
       "opening_under_odds": -118,
       "opening_odds_source": "preview",
       "odds_source": "therundown",
       "the_odds_event_id": null,
       "propline_event_id": null,
-      "price_delta_over": -2,
-      "price_delta_under": -7,
+      "price_delta_over": 0,
+      "price_delta_under": -10,
       "raw_lambda": 3.46,
       "lambda": 3.43,
       "avg_ip": 5.13,
@@ -617,14 +617,14 @@
       "recent_k9": 4.21,
       "career_k9": 7.73,
       "ev_over": {
-        "edge": -0.0665,
-        "ev": -0.1292,
-        "adj_ev": -0.1292,
+        "edge": -0.0617,
+        "ev": -0.121,
+        "adj_ev": -0.121,
         "verdict": "PASS",
         "win_prob": 0.448,
         "movement_conf": 1.0,
         "raw_verdict": "PASS",
-        "raw_adj_ev": -0.1292,
+        "raw_adj_ev": -0.121,
         "actionable_verdict": "PASS",
         "quality_gate_level": "capped",
         "quality_gate_reasons": [
@@ -632,14 +632,14 @@
         ]
       },
       "ev_under": {
-        "edge": -0.0037,
-        "ev": -0.0066,
-        "adj_ev": -0.0066,
+        "edge": -0.0095,
+        "ev": -0.0169,
+        "adj_ev": -0.0169,
         "verdict": "PASS",
         "win_prob": 0.552,
         "movement_conf": 1.0,
         "raw_verdict": "PASS",
-        "raw_adj_ev": -0.0066,
+        "raw_adj_ev": -0.0169,
         "actionable_verdict": "PASS",
         "quality_gate_level": "capped",
         "quality_gate_reasons": [
@@ -656,8 +656,8 @@
           "under": -110
         },
         "FanDuel": {
-          "over": -106,
-          "under": -125
+          "over": -104,
+          "under": -128
         },
         "Kalshi": {
           "over": -112,
@@ -891,7 +891,7 @@
         },
         "Kalshi": {
           "over": -112,
-          "under": -112
+          "under": -107
         }
       },
       "umpire": null,
@@ -990,6 +990,10 @@
         ]
       },
       "book_odds": {
+        "DraftKings": {
+          "over": 108,
+          "under": -138
+        },
         "BetMGM": {
           "over": -110,
           "under": -120
@@ -999,8 +1003,8 @@
           "under": -118
         },
         "Kalshi": {
-          "over": 101,
-          "under": -121
+          "over": 105,
+          "under": -126
         }
       },
       "umpire": null,
@@ -1421,8 +1425,8 @@
       },
       "book_odds": {
         "DraftKings": {
-          "over": -152,
-          "under": 119
+          "over": -146,
+          "under": 114
         },
         "BetMGM": {
           "over": -185,
@@ -2183,8 +2187,8 @@
           "under": -114
         },
         "BetMGM": {
-          "over": -110,
-          "under": -120
+          "over": -105,
+          "under": -125
         },
         "FanDuel": {
           "over": 102,
@@ -2562,8 +2566,8 @@
           "under": -110
         },
         "Kalshi": {
-          "over": -116,
-          "under": -103
+          "over": -107,
+          "under": -112
         }
       },
       "umpire": null,
@@ -2863,6 +2867,10 @@
         ]
       },
       "book_odds": {
+        "DraftKings": {
+          "over": -149,
+          "under": 117
+        },
         "BetMGM": {
           "over": -155,
           "under": 115
@@ -3029,7 +3037,7 @@
           "under": -102
         },
         "Kalshi": {
-          "over": -112,
+          "over": -121,
           "under": -107
         }
       },
@@ -3297,10 +3305,6 @@
         "FanDuel": {
           "over": 122,
           "under": -150
-        },
-        "Kalshi": {
-          "over": 129,
-          "under": -161
         }
       },
       "umpire": null,
@@ -3400,8 +3404,8 @@
       },
       "book_odds": {
         "DraftKings": {
-          "over": 124,
-          "under": -159
+          "over": 129,
+          "under": -165
         },
         "BetMGM": {
           "over": 125,
@@ -3622,8 +3626,8 @@
       },
       "book_odds": {
         "DraftKings": {
-          "over": 105,
-          "under": -133
+          "over": 110,
+          "under": -140
         },
         "BetMGM": {
           "over": 100,
@@ -4053,7 +4057,7 @@
     "errors": [
       "Spencer Jones: no bbref id"
     ],
-    "updated_at": "2026-05-13T17:38:02Z"
+    "updated_at": "2026-05-13T18:08:19Z"
   },
   "quality_gate_summary": {
     "clean": 4,
