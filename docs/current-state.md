@@ -211,16 +211,20 @@ Starter discovery confirmed enough coverage to test the trial:
   rows during checks
 - Missing: theScore
 
+As of 2026-05-12, active BoltOdds capture excludes Kalshi so the remaining
+trial can prioritize mainstream-book line movement and CLV evidence while
+reducing row volume. Kalshi remains shadow-only unless Tyler explicitly
+promotes it as an actionable book with a separate source/arbitration decision.
+
 Let the trial collect uptime, heartbeat freshness, normalized book coverage,
 row volume, and stale-feed evidence before any provider decision.
 
-May 13 diagnosis: the persistent BoltOdds worker can heartbeat on the wrong
-slate if it starts before GitHub's delayed full run updates `today.json`; it
-currently resolves `slate_date` and the production pitcher allow-list once at
-startup. Use `docs/superpowers/plans/2026-05-13-boltodds-production-line-movement.md`
-as the production-readiness plan. Gate 0 is to rotate the worker context when
-the GitHub raw artifact advances so current-slate snapshots are not filtered
-through yesterday's pitchers.
+May 13 stale-slate diagnosis: the persistent worker could heartbeat on the
+wrong slate if it started before GitHub's delayed full run updated `today.json`.
+The worker now refreshes the production artifact during the WebSocket loop using
+`BOLTODDS_ARTIFACT_REFRESH_SECONDS` and rotates forward only when the artifact
+date advances, emitting a `slate_rotated` heartbeat. The provider cutover branch
+must keep that fix before any official provider-source work.
 
 ## Active Evaluation Stack
 
