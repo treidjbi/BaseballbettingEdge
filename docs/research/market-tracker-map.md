@@ -21,6 +21,38 @@ provider order, notifications, or calibration.
 | Compact pitcher outcome row | `pitcher_k_outcome_dataset.py` | Canonical research row for market, model, context, CLV, and result. |
 | K projection challengers | `k_projection_shadow_lab.py` | Reuses compact outcome rows to compare current lambda against transparent projection variants. |
 
+## Provider Cutover Tracker Ownership
+
+The BoltOdds + PropLine cutover should add an official arbitration layer on top
+of existing trackers. It should not create duplicate versions of raw movement,
+per-pick movement, display state, or would-have-alerted state.
+
+| Table / artifact | Current role | Cutover action | Writes during cutover | Long-term role |
+| --- | --- | --- | --- | --- |
+| `market_feed_heartbeats` | BoltOdds worker uptime and current-slate proof | Read for cutover freshness gates | Existing BoltOdds worker only | Operational freshness, short retention |
+| `market_provider_runs` | Provider run metadata, including `slate_date` | Read to attach raw snapshots to slate dates | Existing provider workers only | Provider audit and lineage |
+| `market_snapshots` | Raw per-book/provider odds ticks | Read as raw source for current-line builder | Existing BoltOdds/PropLine writers only | High-volume short-retention raw evidence |
+| `provider_coverage_audits` | Slate/book/pitcher coverage summaries | Read for cutover gates | Existing provider audits plus BoltOdds trial writer | Long-term provider decision evidence |
+| `market_pick_evidence` | Per-pick provider movement rollup | Leave as shadow/research | Existing live layer only | Model-vs-market learning |
+| `live_market_display_state` | App-ready per-provider market state | Leave as shadow/display until explicit UI promotion | Existing live layer only | User-facing evidence after separate display decision |
+| `shadow_notification_candidates` | Would-have-alerted rows | Continue shadow testing BoltOdds notification value | Existing live layer only | Notification promotion evidence |
+| `line_movement_events` | Durable movement events | Do not widen to BoltOdds sends until notification cutover | Existing live layer; later gated BoltOdds alerts | Notification/event audit |
+| `notification_events` | Real push queue | Do not write BoltOdds-sourced alerts until separate flag | Existing live sender only | Delivery audit and fatigue control |
+| `game_reminder_state` | Reminder dedupe/state | Unchanged | Existing live layer only | Reminder dedupe |
+| `accepted_bets` | Manual Tyler bet log | Read later for CLV and timing proof | Manual/UI flow only | Bet-timing and CLV audit |
+| `data/preview_lines.json` | Official opening baseline artifact | Preserve shape; eventually feed from provider baselines | GitHub pipeline only | Official opening source for artifacts |
+| `data/picks_history.json` | Durable graded pick history | Add source attribution fields only | GitHub pipeline grading/history only | Regime-aware performance history |
+| `current_market_lines` | New derived complete book lines | Create from raw snapshots | New current-line builder | Current provider state for official arbitration |
+| `official_market_lines` | New official provider-arbitrated market feed | Create as the only pipeline-readable market source | New arbitration builder | Official market source after cutover |
+| `market_opening_baselines` | New provider opening baselines | Create and preserve first-seen baseline rows | New current-line builder | Provider-era opening-line source |
+| `provider_arbitration_decisions` | New source-choice audit | Create for every official-line build | New arbitration builder | Explain bet/wait/skip/source decisions |
+| `provider_request_usage_daily` | New provider request/cost counter | Create for PropLine downgrade guardrails | Existing/new provider jobs | Cost and quota guardrail |
+| `compact_market_line_movements` | New compact raw-snapshot summary | Create before long-term raw snapshot retention is enforced | New compaction script | Season-long movement history without raw tick volume |
+
+Cutover rule: the GitHub pipeline should read `official_market_lines`, not raw
+`market_snapshots`. Raw snapshots remain evidence; official lines are the
+controlled product input.
+
 ## Added To Compact Outcome Rows
 
 These are now stored in the local pitcher K outcome dataset when source data is

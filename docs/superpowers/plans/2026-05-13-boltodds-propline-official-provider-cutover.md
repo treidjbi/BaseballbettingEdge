@@ -1,4 +1,22 @@
-# BoltOdds + PropLine Official Provider Cutover Plan
+# BoltOdds + PropLine Official Provider Cutover Implementation Plan
+
+> **For agentic workers:** REQUIRED SUB-SKILL: Use
+> `superpowers:subagent-driven-development` or `superpowers:executing-plans` to
+> implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for
+> tracking.
+
+**Goal:** Promote BoltOdds + PropLine into an auditable official market-source
+stack while preserving TheRundown rollback through May 2026.
+
+**Architecture:** Reuse existing Supabase raw/live trackers as inputs, add a
+small official arbitration layer on top, then switch the GitHub pipeline by
+environment flag after shadow comparison gates pass. Live notifications cut over
+through a separate flag after provider-source artifacts are stable.
+
+**Tech Stack:** Python 3.11, GitHub Actions, Supabase Postgres/REST, Render
+workers, Netlify functions, existing static dashboard artifacts.
+
+---
 
 Date: 2026-05-13
 Owner: Tyler + Codex
@@ -59,6 +77,67 @@ Important current-state findings:
   but request accounting must be measured from real run rows before downgrade.
 - TheRundown just renewed and remains available through the end of May, which
   creates a useful overlap window for audit and rollback.
+
+## Supabase Tracker Interaction Matrix
+
+This plan must reuse the current trackers instead of creating duplicate versions
+of the same evidence.
+
+| Table / artifact | Current role | Cutover action | Writes during cutover | Long-term role |
+| --- | --- | --- | --- | --- |
+| `market_feed_heartbeats` | BoltOdds worker uptime and current-slate proof | Read for cutover freshness gates | Existing BoltOdds worker only | Operational freshness, short retention |
+| `market_provider_runs` | Provider run metadata, including `slate_date` | Read to attach raw snapshots to slate dates | Existing provider workers only | Provider audit and lineage |
+| `market_snapshots` | Raw per-book/provider odds ticks | Read as raw source for current-line builder | Existing BoltOdds/PropLine writers only | High-volume short-retention raw evidence |
+| `provider_coverage_audits` | Slate/book/pitcher coverage summaries | Read for cutover gates | Existing provider audits plus BoltOdds trial writer | Long-term provider decision evidence |
+| `market_pick_evidence` | Per-pick provider movement rollup | Leave as shadow/research | Existing live layer only | Model-vs-market learning |
+| `live_market_display_state` | App-ready per-provider market state | Leave as shadow/display until explicit UI promotion | Existing live layer only | User-facing evidence after separate display decision |
+| `shadow_notification_candidates` | Would-have-alerted rows | Continue shadow testing BoltOdds notification value | Existing live layer only | Notification promotion evidence |
+| `line_movement_events` | Durable movement events | Do not widen to BoltOdds sends until notification cutover | Existing live layer; later gated BoltOdds alerts | Notification/event audit |
+| `notification_events` | Real push queue | Do not write BoltOdds-sourced alerts until separate flag | Existing live sender only | Delivery audit and fatigue control |
+| `game_reminder_state` | Reminder dedupe/state | Unchanged | Existing live layer only | Reminder dedupe |
+| `accepted_bets` | Manual Tyler bet log | Read later for CLV and timing proof | Manual/UI flow only | Bet-timing and CLV audit |
+| `data/preview_lines.json` | Official opening baseline artifact | Preserve shape; eventually feed from provider baselines | GitHub pipeline only | Official opening source for artifacts |
+| `data/picks_history.json` | Durable graded pick history | Add source attribution fields only | GitHub pipeline grading/history only | Regime-aware performance history |
+| `current_market_lines` | New derived complete book lines | Create from raw snapshots | New current-line builder | Current provider state for official arbitration |
+| `official_market_lines` | New official provider-arbitrated market feed | Create as the only pipeline-readable market source | New arbitration builder | Official market source after cutover |
+| `market_opening_baselines` | New provider opening baselines | Create and preserve first-seen baseline rows | New current-line builder | Provider-era opening-line source |
+| `provider_arbitration_decisions` | New source-choice audit | Create for every official-line build | New arbitration builder | Explain bet/wait/skip/source decisions |
+| `provider_request_usage_daily` | New provider request/cost counter | Create for PropLine downgrade guardrails | Existing/new provider jobs | Cost and quota guardrail |
+| `compact_market_line_movements` | New compact raw-snapshot summary | Create before long-term raw snapshot retention is enforced | New compaction script | Season-long movement history without raw tick volume |
+
+Rule: only `current_market_lines`, `official_market_lines`,
+`market_opening_baselines`, `provider_arbitration_decisions`,
+`provider_request_usage_daily`, and `compact_market_line_movements` are new
+cutover tables. Every other Supabase tracker remains in its current lane unless
+a later implementation step explicitly names a changed write path.
+
+## Ten Overlooked Items To Treat As Requirements
+
+1. **Supabase RLS and Data API access:** every new table must enable RLS. The
+   service-role write path can write; read policies are only granted to the
+   existing ops-readonly role when the table needs dashboard/diagnostic reads.
+2. **Retention and compaction:** raw `market_snapshots` cannot become long-term
+   storage. The implementation must include a compact summary path before
+   production cutover relies on raw BoltOdds volume.
+3. **Opening-line semantics:** provider baselines must preserve the current
+   preview/opening behavior. Do not let current-line refreshes overwrite the
+   first usable opening baseline.
+4. **Provider disagreement policy:** same player/book/provider conflicts must be
+   logged and must fail closed when no fresh complete supported-book line exists.
+5. **DraftKings dependency:** PropLine is a required DraftKings source until
+   BoltOdds proves authenticated DraftKings market rows.
+6. **Dashboard artifact contract:** `today.json`, dated archives, `steam.json`,
+   and history exports must keep the fields expected by the current dashboard.
+7. **History source attribution:** new picks must store provider/source fields
+   so May/June performance can be separated by market-source regime.
+8. **Notification dedupe:** BoltOdds notification promotion must include
+   provider/source in dedupe keys and remain behind a separate flag.
+9. **Post-TheRundown rollback:** rollback is strong during May because
+   TheRundown is available. After cancellation, rollback is PropLine-first plus
+   The Odds API emergency fallback and must be documented as weaker.
+10. **Supabase query performance:** the GitHub pipeline must read
+    `official_market_lines`, not scan raw `market_snapshots` during every
+    preview/full/refresh run.
 
 ## Architecture After Cutover
 
@@ -125,7 +204,8 @@ Reasoning:
 ## New Supabase Tables
 
 Add one migration on the main branch after integrating the BoltOdds trial
-migration.
+migration. The migration must include RLS, comments, and ops-readonly read
+policies for diagnostic tables that need to be queried from operations tools.
 
 File:
 
@@ -251,6 +331,75 @@ create table if not exists provider_request_usage_daily (
   updated_at timestamptz not null default now(),
   primary key (usage_date, provider, source)
 );
+
+create table if not exists compact_market_line_movements (
+  id bigserial primary key,
+  slate_date date not null,
+  provider text not null check (provider in ('boltodds', 'propline', 'the_odds', 'therundown')),
+  book_key text not null,
+  normalized_player_name text not null,
+  player_name text not null,
+  market_key text not null default 'pitcher_strikeouts',
+  side text not null check (side in ('over', 'under')),
+  line numeric not null,
+  first_seen_at timestamptz not null,
+  last_seen_at timestamptz not null,
+  first_odds integer,
+  last_odds integer,
+  min_odds integer,
+  max_odds integer,
+  odds_move_count integer not null default 0,
+  snapshot_count integer not null default 0,
+  source_snapshot_ids jsonb not null default '[]'::jsonb,
+  inserted_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  unique (slate_date, provider, book_key, normalized_player_name, market_key, side, line)
+);
+
+alter table current_market_lines enable row level security;
+alter table official_market_lines enable row level security;
+alter table market_opening_baselines enable row level security;
+alter table provider_arbitration_decisions enable row level security;
+alter table provider_request_usage_daily enable row level security;
+alter table compact_market_line_movements enable row level security;
+
+comment on table current_market_lines is
+  'Derived current complete book lines from raw provider snapshots. Input to official market arbitration; not a raw evidence table.';
+
+comment on table official_market_lines is
+  'Provider-arbitrated official market feed for the GitHub pipeline after cutover. Replaces direct raw provider reads, not model math.';
+
+comment on table market_opening_baselines is
+  'First usable provider baselines for preview/opening line semantics. Rows are preserved and not overwritten by later refreshes.';
+
+comment on table provider_arbitration_decisions is
+  'Audit log explaining selected, skipped, stale, missing, and conflicting provider-line decisions.';
+
+comment on table provider_request_usage_daily is
+  'Daily provider request and snapshot counts used to enforce PropLine and provider-cost guardrails.';
+
+comment on table compact_market_line_movements is
+  'Compact per-slate/provider/book/player movement summaries retained after raw snapshot history ages out.';
+
+do $$
+begin
+  execute 'grant select on current_market_lines to bbe_ops_readonly';
+  execute 'grant select on official_market_lines to bbe_ops_readonly';
+  execute 'grant select on market_opening_baselines to bbe_ops_readonly';
+  execute 'grant select on provider_arbitration_decisions to bbe_ops_readonly';
+  execute 'grant select on provider_request_usage_daily to bbe_ops_readonly';
+  execute 'grant select on compact_market_line_movements to bbe_ops_readonly';
+
+  execute 'create policy bbe_ops_readonly_select_current_market_lines on current_market_lines for select to bbe_ops_readonly using (true)';
+  execute 'create policy bbe_ops_readonly_select_official_market_lines on official_market_lines for select to bbe_ops_readonly using (true)';
+  execute 'create policy bbe_ops_readonly_select_market_opening_baselines on market_opening_baselines for select to bbe_ops_readonly using (true)';
+  execute 'create policy bbe_ops_readonly_select_provider_arbitration_decisions on provider_arbitration_decisions for select to bbe_ops_readonly using (true)';
+  execute 'create policy bbe_ops_readonly_select_provider_request_usage_daily on provider_request_usage_daily for select to bbe_ops_readonly using (true)';
+  execute 'create policy bbe_ops_readonly_select_compact_market_line_movements on compact_market_line_movements for select to bbe_ops_readonly using (true)';
+exception
+  when undefined_object then
+    null;
+end $$;
 ```
 
 Why these tables are needed:
@@ -264,6 +413,8 @@ Why these tables are needed:
   inspectable.
 - `provider_request_usage_daily` protects the PropLine Hobby downgrade and
   catches cost creep.
+- `compact_market_line_movements` preserves useful movement history without
+  keeping raw WebSocket tick volume forever.
 
 ## Provider Environment Flags
 
@@ -302,6 +453,73 @@ ENABLE_BOLTODDS_LIVE_NOTIFICATIONS=false
 ```
 
 ## Implementation Steps
+
+### Task 0: Lock Tracker Ownership And Supabase Access
+
+**Files:**
+
+- Modify: `docs/research/market-tracker-map.md`
+- Modify: `docs/operational-risk-register.md`
+- Modify: `tests/test_live_layer_schema.py`
+
+- [ ] **Step 1: Add the tracker interaction matrix to the tracker map**
+
+Add the same table ownership rules from this plan to
+`docs/research/market-tracker-map.md`, under a new section named
+`Provider Cutover Tracker Ownership`.
+
+- [ ] **Step 2: Add schema tests for RLS and read policies**
+
+Extend `tests/test_live_layer_schema.py` with assertions that the new migration
+contains these strings:
+
+```python
+def test_provider_cutover_tables_have_rls_and_readonly_policies():
+    sql = (ROOT / "supabase" / "migrations" / "20260513_provider_cutover_market_state.sql").read_text()
+
+    for table in [
+        "current_market_lines",
+        "official_market_lines",
+        "market_opening_baselines",
+        "provider_arbitration_decisions",
+        "provider_request_usage_daily",
+        "compact_market_line_movements",
+    ]:
+        assert f"alter table {table} enable row level security" in sql
+        assert f"grant select on {table} to bbe_ops_readonly" in sql
+```
+
+- [ ] **Step 3: Run the schema test and confirm it fails before the migration**
+
+Run:
+
+```powershell
+python -m pytest tests/test_live_layer_schema.py::test_provider_cutover_tables_have_rls_and_readonly_policies -v
+```
+
+Expected: FAIL because the migration file does not exist yet.
+
+- [ ] **Step 4: Implement the migration in Task 2**
+
+Use the SQL in the `New Supabase Tables` section. Keep table names and policy
+names exactly as written so the schema test stays stable.
+
+- [ ] **Step 5: Run the schema test again**
+
+Run:
+
+```powershell
+python -m pytest tests/test_live_layer_schema.py::test_provider_cutover_tables_have_rls_and_readonly_policies -v
+```
+
+Expected: PASS.
+
+- [ ] **Step 6: Commit**
+
+```powershell
+git add docs/research/market-tracker-map.md docs/operational-risk-register.md tests/test_live_layer_schema.py supabase/migrations/20260513_provider_cutover_market_state.sql
+git commit -m "Document provider cutover tracker ownership"
+```
 
 ### Step 1: Integrate The BoltOdds Trial Infrastructure Into Main
 
@@ -628,13 +846,16 @@ Rules:
 - Preserve historical rows with null source fields.
 - New source fields are for audit and provider-regime analysis only.
 
-### Step 7: Add Provider Usage Accounting
+### Step 7: Add Provider Usage Accounting And Raw Snapshot Compaction
 
 Create:
 
 ```text
 market_infra/provider_usage.py
+market_infra/market_snapshot_compaction.py
+scripts/compact_market_snapshots.py
 tests/test_provider_usage.py
+tests/test_market_snapshot_compaction.py
 ```
 
 Modify:
@@ -643,6 +864,7 @@ Modify:
 scripts/shadow_propline_to_supabase.py
 scripts/build_live_events_to_supabase.py
 scripts/build_current_market_lines_to_supabase.py
+docs/operational-risk-register.md
 ```
 
 Behavior:
@@ -651,10 +873,72 @@ Behavior:
 - Count raw snapshots by date and provider.
 - Upsert `provider_request_usage_daily`.
 - Warn when PropLine exceeds 70% of 5,000 daily requests.
+- Compact raw snapshot history into per-slate/provider/book/player/line
+  summaries before raw retention deletion is considered.
+- Preserve first seen, last seen, min/max odds, first/last odds, line changes,
+  and source snapshot counts in compact rows.
 - Fail only if a hard budget env var is enabled:
 
 ```text
 ENFORCE_PROPLINE_DAILY_BUDGET=false
+```
+
+Compaction output table:
+
+```sql
+create table if not exists compact_market_line_movements (
+  id bigserial primary key,
+  slate_date date not null,
+  provider text not null check (provider in ('boltodds', 'propline', 'the_odds', 'therundown')),
+  book_key text not null,
+  normalized_player_name text not null,
+  player_name text not null,
+  market_key text not null default 'pitcher_strikeouts',
+  side text not null check (side in ('over', 'under')),
+  line numeric not null,
+  first_seen_at timestamptz not null,
+  last_seen_at timestamptz not null,
+  first_odds integer,
+  last_odds integer,
+  min_odds integer,
+  max_odds integer,
+  odds_move_count integer not null default 0,
+  snapshot_count integer not null default 0,
+  source_snapshot_ids jsonb not null default '[]'::jsonb,
+  inserted_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  unique (slate_date, provider, book_key, normalized_player_name, market_key, side, line)
+);
+```
+
+Compaction test shape:
+
+```python
+def test_compacts_raw_snapshots_without_losing_movement_path():
+    rows = compact_snapshot_rows([
+        {"slate_date": "2026-05-13", "provider": "boltodds", "book_key": "fanduel", "player_name": "Example Pitcher", "normalized_player_name": "example pitcher", "market_key": "pitcher_strikeouts", "side": "over", "line": 5.5, "odds": -110, "observed_at": "2026-05-13T18:00:00Z", "id": 1},
+        {"slate_date": "2026-05-13", "provider": "boltodds", "book_key": "fanduel", "player_name": "Example Pitcher", "normalized_player_name": "example pitcher", "market_key": "pitcher_strikeouts", "side": "over", "line": 5.5, "odds": -125, "observed_at": "2026-05-13T18:05:00Z", "id": 2},
+    ])
+
+    assert rows == [{
+        "slate_date": "2026-05-13",
+        "provider": "boltodds",
+        "book_key": "fanduel",
+        "normalized_player_name": "example pitcher",
+        "player_name": "Example Pitcher",
+        "market_key": "pitcher_strikeouts",
+        "side": "over",
+        "line": 5.5,
+        "first_seen_at": "2026-05-13T18:00:00Z",
+        "last_seen_at": "2026-05-13T18:05:00Z",
+        "first_odds": -110,
+        "last_odds": -125,
+        "min_odds": -125,
+        "max_odds": -110,
+        "odds_move_count": 1,
+        "snapshot_count": 2,
+        "source_snapshot_ids": [1, 2],
+    }]
 ```
 
 ### Step 8: Live Notification Cutover Plan
