@@ -6985,24 +6985,40 @@
         "so": 41,
         "k_rate": 0.2384
       }
+    },
+    "mlbam:506702": {
+      "name": "Sandy Le\u00f3n",
+      "bats": "R",
+      "mlbam_id": 506702,
+      "bbref_id": "leonsa01",
+      "season": 2026,
+      "vs_R": {
+        "pa": 8,
+        "so": 3,
+        "k_rate": 0.375
+      },
+      "vs_L": {
+        "pa": 4,
+        "so": 1,
+        "k_rate": 0.25
+      }
     }
   },
-  "updated_at": "2026-05-13T19:21:02Z",
+  "updated_at": "2026-05-13T20:07:36Z",
   "last_run": {
     "projection_status": "collection_only",
-    "requested_batters": 108,
-    "already_cached": 104,
+    "requested_batters": 162,
+    "already_cached": 157,
     "attempted": 4,
-    "collected": 0,
-    "failed": 4,
-    "queued_not_attempted": 0,
-    "cache_size": 414,
+    "collected": 1,
+    "failed": 3,
+    "queued_not_attempted": 1,
+    "cache_size": 415,
     "errors": [
       "Spencer Jones: no bbref id",
       "Omar Martinez: no bbref id",
-      "A.J. Ewing: no bbref id",
-      "Ryan Waldschmidt: no bbref id"
+      "A.J. Ewing: no bbref id"
     ],
-    "updated_at": "2026-05-13T19:21:02Z"
+    "updated_at": "2026-05-13T20:07:36Z"
   }
 }
