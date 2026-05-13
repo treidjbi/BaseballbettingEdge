@@ -1,3 +1,6 @@
+alter table public.market_snapshots
+  add column if not exists game_time text;
+
 create table if not exists public.current_market_lines (
   id bigserial primary key,
   slate_date date not null,
@@ -6,6 +9,7 @@ create table if not exists public.current_market_lines (
   book_name text not null,
   event_id text,
   provider_event_id text,
+  game_time text,
   player_name text not null,
   normalized_player_name text not null,
   market_key text not null default 'pitcher_strikeouts',
@@ -38,6 +42,7 @@ create table if not exists public.official_market_lines (
   normalized_player_name text not null,
   player_name text not null,
   market_key text not null default 'pitcher_strikeouts',
+  game_time text,
   ref_book_key text,
   ref_book_name text,
   ref_line numeric,

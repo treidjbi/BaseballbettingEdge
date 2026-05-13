@@ -284,11 +284,25 @@ class TestBuildPitcherRecord:
             "odds_source": "therundown+the_odds+propline",
             "the_odds_event_id": "event-123",
             "propline_event_id": "pl-event-123",
+            "market_source_mode": "boltodds_propline",
+            "line_source_provider": "boltodds",
+            "source_snapshot_ids": [11, 12],
+            "source_current_market_line_ids": [21],
+            "official_market_line_id": 88,
+            "provider_coverage": {"fanduel": {"provider": "boltodds"}},
+            "provider_arbitration_reasons": ["fresh_complete_supported_line"],
         }
         rec = build_pitcher_record(odds, self.BASE_STATS, ump_k_adj=0.0)
         assert rec["odds_source"] == "therundown+the_odds+propline"
         assert rec["the_odds_event_id"] == "event-123"
         assert rec["propline_event_id"] == "pl-event-123"
+        assert rec["market_source_mode"] == "boltodds_propline"
+        assert rec["line_source_provider"] == "boltodds"
+        assert rec["source_snapshot_ids"] == [11, 12]
+        assert rec["source_current_market_line_ids"] == [21]
+        assert rec["official_market_line_id"] == 88
+        assert rec["provider_coverage"] == {"fanduel": {"provider": "boltodds"}}
+        assert rec["provider_arbitration_reasons"] == ["fresh_complete_supported_line"]
 
     def test_uses_avg_ip_last5_not_constant(self):
         from build_features import build_pitcher_record, load_params

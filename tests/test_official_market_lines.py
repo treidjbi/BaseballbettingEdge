@@ -20,6 +20,7 @@ def _line(
     freshness_seconds=60,
     is_complete=True,
     quality_flags=None,
+    game_time="2026-05-13T23:05:00Z",
 ):
     last_seen_at = (NOW - timedelta(seconds=freshness_seconds)).isoformat()
     return {
@@ -31,6 +32,7 @@ def _line(
         "player_name": player,
         "normalized_player_name": normalized_player,
         "market_key": "pitcher_strikeouts",
+        "game_time": game_time,
         "line": line,
         "over_odds": over_odds,
         "under_odds": under_odds,
@@ -54,6 +56,7 @@ def test_boltodds_fanduel_beats_propline_fanduel_when_fresh():
     official = official_rows[0]
     assert official["selected_provider"] == "boltodds"
     assert official["ref_book_key"] == "fanduel"
+    assert official["game_time"] == "2026-05-13T23:05:00Z"
     assert official["ref_over_odds"] == -115
     assert official["book_odds"]["FanDuel"]["provider"] == "boltodds"
     assert "boltodds_primary" in official["arbitration_reasons"]
@@ -186,6 +189,35 @@ def test_decisions_explain_selected_missing_and_stale_inputs():
     assert "missing_books:draftkings,betmgm,betrivers,caesars" in decision["reasons"]
     assert decision["stale_candidate_count"] == 1
     assert decision["source_line_ids"] == [1]
+
+
+def test_official_line_uses_non_ref_game_time_when_ref_provider_lacks_it():
+    official_rows, _ = choose_official_lines(
+        [
+            _line(1, book_key="fanduel", book_name="FanDuel", provider="boltodds", game_time=""),
+            _line(2, book_key="draftkings", book_name="DraftKings", provider="propline"),
+        ],
+        NOW,
+    )
+
+    assert official_rows[0]["ref_book_key"] == "fanduel"
+    assert official_rows[0]["game_time"] == "2026-05-13T23:05:00Z"
+
+
+def test_official_line_without_any_game_time_is_not_ready():
+    official_rows, decision_rows = choose_official_lines(
+        [
+            _line(1, book_key="fanduel", book_name="FanDuel", game_time="   "),
+            _line(2, book_key="draftkings", book_name="DraftKings", provider="propline", game_time=""),
+        ],
+        NOW,
+    )
+
+    assert len(official_rows) == 1
+    assert official_rows[0]["ready_for_pipeline"] is False
+    assert official_rows[0]["quality_flags"] == ["not_ready_for_pipeline", "missing_game_time"]
+    assert decision_rows[0]["decision"] == "skip"
+    assert decision_rows[0]["reasons"] == ["missing_game_time"]
 
 
 def test_the_odds_is_blocked_unless_emergency_mode_is_enabled():

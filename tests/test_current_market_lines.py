@@ -46,6 +46,7 @@ def _snapshot(
         "line": line,
         "american_odds": odds,
         "observed_at": observed_at,
+        "commence_time": "2026-05-13T23:05:00Z",
         "raw_payload": {"snapshot": snapshot_id},
     }
 
@@ -79,6 +80,7 @@ def test_complete_over_under_pair_builds_current_market_line():
     assert row["book_key"] == "fanduel"
     assert row["book_name"] == "FanDuel"
     assert row["provider_event_id"] == "event-1"
+    assert row["game_time"] == "2026-05-13T23:05:00Z"
     assert row["player_name"] == "Jose Berrios"
     assert row["normalized_player_name"] == "jose berrios"
     assert row["market_key"] == "pitcher_strikeouts"

@@ -7,6 +7,7 @@ from unittest.mock import patch, MagicMock
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'pipeline'))
 
 from run_pipeline import _game_date_et, _write_dated_archive_only
+from fetch_provider_market_odds import OfficialMarketSourceError
 
 
 @pytest.fixture(autouse=True)
@@ -31,6 +32,26 @@ def test_fetch_batter_stats_cached_falls_back_to_empty_dict_on_fetch_failure():
     with patch("run_pipeline.fetch_batter_stats", side_effect=RuntimeError("boom")):
         assert run_pipeline.fetch_batter_stats_cached(2026) == {}
         assert run_pipeline.fetch_batter_stats_cached(2026) == {}
+
+
+def test_run_exits_when_official_market_strict_mode_fails():
+    import run_pipeline
+
+    with patch("run_pipeline.fetch_odds", side_effect=OfficialMarketSourceError("official missing")):
+        with pytest.raises(SystemExit) as exc:
+            run_pipeline.run("2026-05-13")
+
+    assert exc.value.code == 1
+
+
+def test_preview_exits_when_official_market_strict_mode_fails():
+    import run_pipeline
+
+    with patch("run_pipeline.fetch_odds", side_effect=OfficialMarketSourceError("official missing")):
+        with pytest.raises(SystemExit) as exc:
+            run_pipeline.run("2026-05-13", run_type="preview")
+
+    assert exc.value.code == 1
 
 
 def test_apply_quality_gates_to_records_preserves_raw_and_summarizes_flags():

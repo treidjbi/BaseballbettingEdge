@@ -114,12 +114,37 @@ def choose_official_lines(
         quality_flags = _official_quality_flags(selected_by_book)
         reasons = _selection_reasons(selected_by_book, missing_books, quality_flags, ref_book_key, ref_row)
         current_line_ids = _line_ids(selected_by_book.values())
+        game_time = _selected_game_time(selected_by_book, ref_book_key)
+        if not game_time:
+            official_rows.append(_inactive_official_row(
+                slate_date=slate_date,
+                normalized_player_name=normalized_player_name,
+                player_name=player_name,
+                market_key=market_key,
+                reasons=["missing_game_time"],
+                stale_after_seconds=stale_after_seconds,
+                now_utc=observed_now,
+                current_line_ids=current_line_ids,
+            ))
+            decision_rows.append(_decision_row(
+                slate_date=slate_date,
+                normalized_player_name=normalized_player_name,
+                market_key=market_key,
+                decision="skip",
+                reasons=["missing_game_time"],
+                candidate_count=len(supported_rows),
+                stale_candidate_count=stale_count,
+                missing_book_keys=missing_books,
+                source_line_ids=current_line_ids,
+            ))
+            continue
 
         official_rows.append({
             "slate_date": slate_date,
             "normalized_player_name": normalized_player_name,
             "player_name": player_name,
             "market_key": market_key,
+            "game_time": game_time,
             "ref_book_key": ref_book_key,
             "ref_book_name": _book_name(ref_row),
             "ref_line": ref_row.get("line"),
@@ -346,6 +371,7 @@ def _inactive_official_row(
         "normalized_player_name": normalized_player_name,
         "player_name": player_name,
         "market_key": market_key,
+        "game_time": None,
         "ref_book_key": None,
         "ref_book_name": None,
         "ref_line": None,
@@ -415,6 +441,24 @@ def _book_name(row: dict[str, Any]) -> str:
 
 def _display_player_name(rows: list[dict[str, Any]]) -> str:
     return str(rows[0].get("player_name") or rows[0].get("normalized_player_name") or "").strip()
+
+
+def _game_time(row: dict[str, Any]) -> str | None:
+    value = str(row.get("game_time") or "").strip()
+    if value:
+        return value
+    return None
+
+
+def _selected_game_time(selected_by_book: dict[str, dict[str, Any]], ref_book_key: str) -> str | None:
+    ref_time = _game_time(selected_by_book[ref_book_key])
+    if ref_time:
+        return ref_time
+    for row in selected_by_book.values():
+        game_time = _game_time(row)
+        if game_time:
+            return game_time
+    return None
 
 
 def _with_observed_freshness(row: dict[str, Any], observed_now: datetime) -> dict[str, Any]:

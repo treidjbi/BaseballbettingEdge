@@ -821,6 +821,22 @@ Tests:
 - Missing official rows fall back to TheRundown in overlap mode.
 - `OFFICIAL_MARKET_SOURCE=therundown` keeps current behavior.
 
+Implementation note, 2026-05-13:
+
+- `pipeline/fetch_provider_market_odds.py` now converts
+  `official_market_lines` into the existing odds shape.
+- Default remains TheRundown. Provider mode requires both
+  `OFFICIAL_MARKET_SOURCE=boltodds_propline` and
+  `ENABLE_BOLTODDS_PIPELINE_SOURCE=true`.
+- `OFFICIAL_MARKET_MIN_PROPS` defaults to a conservative floor so one ready
+  provider row cannot accidentally publish a partial slate.
+- `OFFICIAL_MARKET_STRICT=true` blocks the run instead of falling back.
+- Provider rows without `game_time` are rejected by the adapter; the migration
+  and current/official-line builders now carry `game_time` forward when source
+  snapshots provide it.
+- Source attribution reaches built records for `today.json` / dated archive
+  audit, while pick-history persistence remains Step 6.
+
 ### Step 5: Add Shadow Official Artifact Comparison
 
 Create:

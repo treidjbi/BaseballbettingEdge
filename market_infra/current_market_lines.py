@@ -129,6 +129,7 @@ def build_current_market_lines(
             "book_name": _book_name(book_key, latest_row),
             "event_id": latest_row.get("event_id"),
             "provider_event_id": latest_row.get("provider_event_id"),
+            "game_time": _game_time(latest_row),
             "player_name": str(latest_row.get("player_name") or "").strip(),
             "normalized_player_name": normalized_player,
             "market_key": market_key,
@@ -251,6 +252,20 @@ def _raw_payload(row: dict[str, Any] | None) -> dict[str, Any] | None:
     if isinstance(payload, dict):
         return payload
     return row
+
+
+def _game_time(row: dict[str, Any]) -> str | None:
+    for field in ("game_time", "commence_time", "event_date", "start_time"):
+        value = row.get(field)
+        if value:
+            return str(value)
+    payload = _raw_payload(row)
+    if isinstance(payload, dict):
+        for field in ("game_time", "commence_time", "event_date", "start_time"):
+            value = payload.get(field)
+            if value:
+                return str(value)
+    return None
 
 
 def _american_odds(row: dict[str, Any] | None) -> int | None:

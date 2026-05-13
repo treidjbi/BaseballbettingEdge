@@ -13,6 +13,14 @@ from datetime import datetime, timedelta
 from zoneinfo import ZoneInfo
 
 from name_utils import normalize
+from fetch_provider_market_odds import (
+    MARKET_SOURCE_MODE,
+    OfficialMarketSourceError,
+    fetch_official_market_odds,
+    official_market_enabled,
+    official_market_min_props,
+    official_market_strict_mode,
+)
 
 log = logging.getLogger(__name__)
 
@@ -740,7 +748,7 @@ def parse_k_props(data: dict) -> list:
     return results
 
 
-def fetch_odds(date_str: str) -> list:
+def _fetch_therundown_odds(date_str: str) -> list:
     """
     Main entry point. Returns list of K-prop dicts for date_str (YYYY-MM-DD).
     Fetches both date_str and date_str+1 in UTC to cover ET evening games
@@ -800,3 +808,47 @@ def fetch_odds(date_str: str) -> list:
 
     log.info("Found %d K props", len(all_props))
     return all_props
+
+
+def fetch_odds(date_str: str) -> list:
+    """Fetch official odds. Defaults to TheRundown unless explicitly switched."""
+    if not official_market_enabled():
+        return _fetch_therundown_odds(date_str)
+
+    min_props = official_market_min_props()
+    strict = official_market_strict_mode()
+    try:
+        official_props = fetch_official_market_odds(date_str, min_props=min_props)
+    except Exception as exc:
+        if strict:
+            raise OfficialMarketSourceError(str(exc)) from exc
+        log.warning(
+            "Official market source %s failed for %s: %s; falling back to TheRundown",
+            MARKET_SOURCE_MODE,
+            date_str,
+            exc,
+        )
+        return _fetch_therundown_odds(date_str)
+
+    if official_props:
+        log.info(
+            "Official market source %s returned %d props for %s",
+            MARKET_SOURCE_MODE,
+            len(official_props),
+            date_str,
+        )
+        return official_props
+
+    if strict:
+        raise OfficialMarketSourceError(
+            f"Official market source {MARKET_SOURCE_MODE} returned fewer than "
+            f"{min_props} props for {date_str}"
+        )
+
+    log.warning(
+        "Official market source %s returned fewer than %d props for %s; falling back to TheRundown",
+        MARKET_SOURCE_MODE,
+        min_props,
+        date_str,
+    )
+    return _fetch_therundown_odds(date_str)

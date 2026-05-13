@@ -55,6 +55,11 @@ Cutover branch infrastructure progress as of 2026-05-13:
 - The Odds API official arbitration remains behind an explicit emergency flag;
   DraftKings remains PropLine-first until BoltOdds DraftKings coverage is
   explicitly enabled.
+- A pipeline adapter for `official_market_lines` exists behind a double opt-in:
+  `OFFICIAL_MARKET_SOURCE=boltodds_propline` and
+  `ENABLE_BOLTODDS_PIPELINE_SOURCE=true`. Without both, TheRundown remains the
+  odds source. Strict provider mode is available for later cutover rehearsal,
+  but should not be enabled until the yes/no review.
 
 ## Provider Plan Precedence
 

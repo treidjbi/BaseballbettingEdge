@@ -107,6 +107,11 @@ shadow infrastructure only. They fail closed for stale or incomplete provider
 state but are not production odds-source behavior until Tyler approves the
 cutover switch.
 
+The provider pipeline adapter also exists, but it is double gated:
+`OFFICIAL_MARKET_SOURCE=boltodds_propline` plus
+`ENABLE_BOLTODDS_PIPELINE_SOURCE=true`. Leave both unset/false unless Tyler is
+explicitly rehearsing or approving the cutover.
+
 The provider cutover plan synthesizes the production-facing parts of:
 
 - `docs/superpowers/plans/2026-05-13-boltodds-production-line-movement.md`

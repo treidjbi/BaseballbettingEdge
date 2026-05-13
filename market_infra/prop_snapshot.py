@@ -81,6 +81,7 @@ def snapshots_from_propline_event(event: dict[str, Any], observed_at: str) -> li
                 rows.append({
                     "provider": "propline",
                     "provider_event_id": provider_event_id,
+                    "game_time": event.get("commence_time"),
                     "sport_key": event.get("sport_key") or PROPLINE_SPORT_KEY,
                     "market_key": PROPLINE_MARKET_KEY,
                     "bookmaker_key": bookmaker_key,

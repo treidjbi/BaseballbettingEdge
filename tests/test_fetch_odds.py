@@ -20,6 +20,7 @@ from fetch_odds import (
     _select_ref_book,
     _headers,
 )
+from fetch_provider_market_odds import OfficialMarketSourceError
 
 
 # ── Helper fixtures ────────────────────────────────────────────────────────────
@@ -692,6 +693,18 @@ class TestOptionBSkipLogging:
 
 
 class TestFetchOddsFailureHandling:
+    def test_official_market_source_therundown_keeps_current_behavior(self):
+        good_payload = {"events": [_make_event("Gerrit Cole", 7.5, -112, -108)]}
+
+        with patch.dict("os.environ", {"OFFICIAL_MARKET_SOURCE": "therundown"}):
+            with patch("fetch_odds.throttled_get", return_value=good_payload) as mock_get:
+                with patch("fetch_odds.fetch_official_market_odds") as mock_official:
+                    result = fetch_odds("2026-04-29")
+
+        mock_official.assert_not_called()
+        assert mock_get.call_count == 2
+        assert result[0]["pitcher"] == "Gerrit Cole"
+
     def test_fetch_odds_requests_only_target_affiliates(self):
         good_payload = {"events": []}
 
@@ -719,6 +732,87 @@ class TestFetchOddsFailureHandling:
             result = fetch_odds("2026-04-29")
 
         assert [prop["pitcher"] for prop in result] == ["Gerrit Cole"]
+
+    def test_official_market_source_uses_provider_adapter_when_enabled(self):
+        official_props = [{
+            "pitcher": "Jose Berrios",
+            "k_line": 5.5,
+            "best_over_odds": -115,
+            "best_under_odds": -105,
+            "book_odds": {"FanDuel": {"over": -115, "under": -105}},
+            "odds_source": "boltodds+propline",
+            "market_source_mode": "boltodds_propline",
+        }]
+
+        with patch.dict(
+            "os.environ",
+            {"OFFICIAL_MARKET_SOURCE": "boltodds_propline", "ENABLE_BOLTODDS_PIPELINE_SOURCE": "true"},
+        ):
+            with patch("fetch_odds.fetch_official_market_odds", return_value=official_props) as mock_official:
+                with patch("fetch_odds._fetch_therundown_odds") as mock_therundown:
+                    result = fetch_odds("2026-05-13")
+
+        mock_official.assert_called_once_with("2026-05-13", min_props=12)
+        mock_therundown.assert_not_called()
+        assert result == official_props
+
+    def test_official_market_source_falls_back_to_therundown_in_overlap_mode(self):
+        fallback_props = [{"pitcher": "Gerrit Cole", "k_line": 7.5, "odds_source": "therundown"}]
+
+        with patch.dict(
+            "os.environ",
+            {"OFFICIAL_MARKET_SOURCE": "boltodds_propline", "ENABLE_BOLTODDS_PIPELINE_SOURCE": "true"},
+        ):
+            with patch("fetch_odds.fetch_official_market_odds", return_value=[]):
+                with patch("fetch_odds._fetch_therundown_odds", return_value=fallback_props) as mock_therundown:
+                    result = fetch_odds("2026-05-13")
+
+        mock_therundown.assert_called_once_with("2026-05-13")
+        assert result == fallback_props
+
+    def test_official_market_source_strict_mode_blocks_empty_official_rows(self):
+        with patch.dict(
+            "os.environ",
+            {
+                "OFFICIAL_MARKET_SOURCE": "boltodds_propline",
+                "ENABLE_BOLTODDS_PIPELINE_SOURCE": "true",
+                "OFFICIAL_MARKET_STRICT": "true",
+            },
+        ):
+            with patch("fetch_odds.fetch_official_market_odds", return_value=[]):
+                with patch("fetch_odds._fetch_therundown_odds") as mock_therundown:
+                    with pytest.raises(OfficialMarketSourceError):
+                        fetch_odds("2026-05-13")
+
+        mock_therundown.assert_not_called()
+
+    def test_official_market_source_requires_second_enable_flag(self):
+        good_payload = {"events": [_make_event("Gerrit Cole", 7.5, -112, -108)]}
+
+        with patch.dict("os.environ", {"OFFICIAL_MARKET_SOURCE": "boltodds_propline"}):
+            with patch("fetch_odds.throttled_get", return_value=good_payload):
+                with patch("fetch_odds.fetch_official_market_odds") as mock_official:
+                    result = fetch_odds("2026-05-13")
+
+        mock_official.assert_not_called()
+        assert result[0]["odds_source"] == "therundown"
+
+    def test_official_market_min_props_can_be_set_for_small_slate_testing(self):
+        official_props = [{"pitcher": "Jose Berrios", "k_line": 5.5}]
+
+        with patch.dict(
+            "os.environ",
+            {
+                "OFFICIAL_MARKET_SOURCE": "boltodds_propline",
+                "ENABLE_BOLTODDS_PIPELINE_SOURCE": "true",
+                "OFFICIAL_MARKET_MIN_PROPS": "1",
+            },
+        ):
+            with patch("fetch_odds.fetch_official_market_odds", return_value=official_props) as mock_official:
+                result = fetch_odds("2026-05-13")
+
+        mock_official.assert_called_once_with("2026-05-13", min_props=1)
+        assert result == official_props
 
 
 class TestTheOddsFallback:

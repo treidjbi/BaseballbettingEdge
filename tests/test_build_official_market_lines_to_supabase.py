@@ -37,6 +37,7 @@ def _line(line_id, *, provider="boltodds", book_key="fanduel", book_name="FanDue
         "provider": provider,
         "book_key": book_key,
         "book_name": book_name,
+        "game_time": "2026-05-13T23:05:00Z",
         "player_name": "Jose Berrios",
         "normalized_player_name": "jose berrios",
         "market_key": "pitcher_strikeouts",

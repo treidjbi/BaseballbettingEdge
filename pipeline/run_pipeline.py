@@ -21,6 +21,7 @@ sys.path.insert(0, str(ROOT_DIR))
 sys.path.insert(0, os.path.dirname(__file__))
 
 from fetch_odds      import fetch_odds
+from fetch_provider_market_odds import OfficialMarketSourceError, official_market_source_mode
 from fetch_stats     import fetch_stats
 from fetch_statcast  import fetch_swstr, LEAGUE_AVG_SWSTR
 _SWSTR_NEUTRAL = {"swstr_pct": LEAGUE_AVG_SWSTR, "career_swstr_pct": None}
@@ -624,6 +625,9 @@ def _run_preview(tomorrow_str: str) -> None:
     log.info("=== Preview run: fetching lines for %s ===", tomorrow_str)
     try:
         props = fetch_odds(tomorrow_str)
+    except OfficialMarketSourceError as e:
+        log.error("Official market source strict failure in preview run: %s", e)
+        sys.exit(1)
     except Exception as e:
         log.error("fetch_odds failed in preview run: %s", e)
         return
@@ -1307,10 +1311,15 @@ def run(date_str: str, run_type: str = "full") -> None:
     # Full run: load 7pm preview lines to use as opening baseline for movement detection
     preview_lines = _load_preview_lines(date_str)
 
-    # 1. Fetch odds (TheRundown)
+    # 1. Fetch odds (TheRundown by default; provider-market adapter only by env flag)
     stage_started = perf_counter()
+    market_source_mode = official_market_source_mode()
+    log.info("Odds market source mode: %s", market_source_mode)
     try:
         props = fetch_odds(date_str)
+    except OfficialMarketSourceError as e:
+        log.error("Official market source strict failure: %s", e)
+        sys.exit(1)
     except EnvironmentError as e:
         log.error("Environment error: %s", e)
         sys.exit(1)

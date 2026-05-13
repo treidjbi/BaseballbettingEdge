@@ -105,6 +105,12 @@ jobs:
           RUNDOWN_API_KEY: ${{ secrets.RUNDOWN_API_KEY }}
           ODDS_API_KEY: ${{ secrets.ODDS_API_KEY }}
           PROPLINE_API_KEY: ${{ secrets.PROPLINE_API_KEY }}
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          OFFICIAL_MARKET_SOURCE: ${{ vars.OFFICIAL_MARKET_SOURCE }}
+          ENABLE_BOLTODDS_PIPELINE_SOURCE: ${{ vars.ENABLE_BOLTODDS_PIPELINE_SOURCE }}
+          OFFICIAL_MARKET_STRICT: ${{ vars.OFFICIAL_MARKET_STRICT }}
+          OFFICIAL_MARKET_MIN_PROPS: ${{ vars.OFFICIAL_MARKET_MIN_PROPS }}
         run: |
           SCHEDULE="${{ github.event.schedule }}"
           TODAY=$(TZ=America/Phoenix date +%Y-%m-%d)
