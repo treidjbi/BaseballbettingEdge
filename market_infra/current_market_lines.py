@@ -16,6 +16,14 @@ SUPPORTED_BOOK_NAMES = {
 }
 SUPPORTED_BOOK_KEYS = frozenset(SUPPORTED_BOOK_NAMES)
 MARKET_KEY = "pitcher_strikeouts"
+MARKET_ALIASES = {
+    "pitcher_strikeouts": MARKET_KEY,
+    "pitcherstrikeouts": MARKET_KEY,
+    "pitcher strikeouts": MARKET_KEY,
+    "player_strikeouts": MARKET_KEY,
+    "playerstrikeouts": MARKET_KEY,
+    "player strikeouts": MARKET_KEY,
+}
 
 _BOOK_ALIASES = {
     "fd": "fanduel",
@@ -53,6 +61,12 @@ def normalize_book_key(value: Any) -> str:
     return _BOOK_ALIASES.get(text) or _BOOK_ALIASES.get(compact) or compact
 
 
+def normalize_market_key(value: Any) -> str:
+    text = str(value or "").strip().lower()
+    compact = re.sub(r"[^a-z0-9]+", "", text)
+    return MARKET_ALIASES.get(text) or MARKET_ALIASES.get(compact) or text
+
+
 def build_current_market_lines(
     snapshot_rows: list[dict[str, Any]],
     run_rows: list[dict[str, Any]],
@@ -69,7 +83,8 @@ def build_current_market_lines(
         run = run_by_id.get(run_id)
         if not run:
             continue
-        if str(snapshot.get("market_key") or "").strip() != MARKET_KEY:
+        market_key = normalize_market_key(snapshot.get("market_key"))
+        if market_key != MARKET_KEY:
             continue
 
         book_key = normalize_book_key(snapshot)
@@ -84,7 +99,7 @@ def build_current_market_lines(
         if not all([provider, slate_date, normalized_player]) or line is None:
             continue
 
-        key = (slate_date, provider, book_key, normalized_player, MARKET_KEY, line)
+        key = (slate_date, provider, book_key, normalized_player, market_key, line)
         grouped.setdefault(key, []).append(snapshot)
 
     current_rows: list[dict[str, Any]] = []
@@ -132,9 +147,63 @@ def build_current_market_lines(
                 "over": _raw_payload(over) if over else None,
                 "under": _raw_payload(under) if under else None,
             },
+            "updated_at": _isoformat(observed_now),
         })
 
+    _flag_line_conflicts(current_rows, stale_after_seconds)
     return current_rows
+
+
+def build_opening_baseline_rows(current_rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    rows: list[dict[str, Any]] = []
+    for row in current_rows:
+        if not row.get("is_complete"):
+            continue
+        if row.get("over_odds") is None or row.get("under_odds") is None:
+            continue
+        rows.append({
+            "slate_date": row["slate_date"],
+            "normalized_player_name": row["normalized_player_name"],
+            "player_name": row["player_name"],
+            "market_key": row["market_key"],
+            "book_key": row["book_key"],
+            "book_name": row["book_name"],
+            "line": row["line"],
+            "opening_over_odds": row["over_odds"],
+            "opening_under_odds": row["under_odds"],
+            "opening_provider": row["provider"],
+            "opening_source": "provider_first_seen",
+            "first_seen_at": row["first_seen_at"],
+            "source_line_id": row.get("over_snapshot_id") or row.get("under_snapshot_id"),
+        })
+    return rows
+
+
+def _flag_line_conflicts(rows: list[dict[str, Any]], stale_after_seconds: int) -> None:
+    by_book_player: dict[tuple[str, str, str, str, str], list[dict[str, Any]]] = {}
+    for row in rows:
+        if not row.get("is_complete"):
+            continue
+        if int(row.get("freshness_seconds") or 0) > stale_after_seconds:
+            continue
+        key = (
+            str(row.get("slate_date") or ""),
+            str(row.get("provider") or ""),
+            str(row.get("book_key") or ""),
+            str(row.get("normalized_player_name") or ""),
+            str(row.get("market_key") or ""),
+        )
+        by_book_player.setdefault(key, []).append(row)
+
+    for conflict_rows in by_book_player.values():
+        distinct_lines = {row.get("line") for row in conflict_rows}
+        if len(distinct_lines) <= 1:
+            continue
+        for row in conflict_rows:
+            flags = list(row.get("quality_flags") or [])
+            if "line_conflict" not in flags:
+                flags.append("line_conflict")
+                row["quality_flags"] = flags
 
 
 def _latest_side(rows: list[dict[str, Any]], side: str) -> dict[str, Any] | None:

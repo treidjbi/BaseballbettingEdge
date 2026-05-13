@@ -490,6 +490,51 @@ def test_worker_flushes_pending_snapshots_when_stream_goes_quiet(monkeypatch):
     assert snapshot_upserts[0][0]["run_id"] == writer.inserts[0][1][0]["id"]
 
 
+def test_worker_rotation_starts_new_run_before_writing_new_slate_snapshots(monkeypatch):
+    writer = FakeWriter()
+    websocket = FakeWebSocket(
+        [
+            '{"data":{"sportsbook":"fanduel","info":{"id":"event-1"}}}',
+            ("sleep", 0.03),
+            '{"data":{"sportsbook":"fanduel","info":{"id":"event-2"}}}',
+        ]
+    )
+    _configure_worker(monkeypatch, writer, websocket, max_messages="2")
+    monkeypatch.delenv("SLATE_DATE", raising=False)
+    monkeypatch.setenv("BOLTODDS_FLUSH_SECONDS", "0.01")
+    monkeypatch.setenv("BOLTODDS_BATCH_SIZE", "100")
+    monkeypatch.setenv("BOLTODDS_ARTIFACT_REFRESH_SECONDS", "0.001")
+    payloads = [
+        ({"date": "2026-05-12", "pitchers": [{"pitcher": "Old Starter"}]}, "today.json"),
+        ({"date": "2026-05-13", "pitchers": [{"pitcher": "New Starter"}]}, "today.json"),
+    ]
+
+    def fake_loader(*args, **kwargs):
+        return payloads.pop(0)
+
+    monkeypatch.setattr(boltodds_ws_worker, "_load_production_artifact", fake_loader)
+
+    result = asyncio.run(boltodds_ws_worker.run_worker())
+
+    run_rows = [
+        rows[0]
+        for table, rows in writer.inserts
+        if table == "market_provider_runs"
+    ]
+    assert [row["slate_date"] for row in run_rows] == ["2026-05-12", "2026-05-13"]
+
+    snapshot_upserts = [
+        rows
+        for table, rows, _conflict in writer.upserts
+        if table == "market_snapshots"
+    ]
+    assert len(snapshot_upserts) == 2
+    assert snapshot_upserts[0][0]["run_id"] == run_rows[0]["id"]
+    assert snapshot_upserts[1][0]["run_id"] == run_rows[1]["id"]
+    assert result["run_id"] == run_rows[1]["id"]
+    assert result["slate_date"] == "2026-05-13"
+
+
 def test_final_flush_failure_still_marks_run_failed(monkeypatch):
     writer = FakeWriter()
     websocket = FakeWebSocket(

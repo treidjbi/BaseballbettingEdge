@@ -94,3 +94,8 @@ def test_provider_cutover_tables_have_rls_and_readonly_policies():
         assert f"create policy bbe_ops_readonly_select_{table} on public.{table} for select to bbe_ops_readonly using (true)" in sql
 
     assert "if exists (select 1 from pg_roles where rolname = 'bbe_ops_readonly')" in sql
+    assert "over_snapshot_id uuid" in sql
+    assert "under_snapshot_id uuid" in sql
+    assert "source_line_id uuid" in sql
+    assert "create or replace function public.set_market_state_updated_at()" in sql
+    assert "create trigger set_current_market_lines_updated_at" in sql

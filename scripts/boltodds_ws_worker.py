@@ -443,8 +443,8 @@ async def run_worker() -> dict[str, Any]:
         300.0,
     )
 
-    def refresh_context_if_due(now_monotonic: float) -> None:
-        nonlocal context, last_artifact_refresh_monotonic
+    async def refresh_context_if_due(now_monotonic: float) -> None:
+        nonlocal context, last_artifact_refresh_monotonic, run_id
         if artifact_refresh_seconds <= 0:
             return
         if (now_monotonic - last_artifact_refresh_monotonic) < artifact_refresh_seconds:
@@ -457,7 +457,43 @@ async def run_worker() -> dict[str, Any]:
         )
         if not refreshed_context.rotated:
             return
+        await flush()
+        previous_run_id = run_id
+        finalize_run(
+            writer,
+            run_id=previous_run_id,
+            slate_date=context.slate_date,
+            status="completed",
+            request_count=request_count,
+            books_seen=books_seen,
+            metadata={
+                "worker": WORKER_PATH,
+                "message_count": message_count,
+                "target_event_count": len(event_ids),
+                "snapshot_rows": total_snapshots,
+                "production_artifact_path": context.production_path,
+                "production_artifact_date": context.slate_date,
+                "production_pitcher_count": len(context.production_pitcher_names),
+                "rotated_to_slate_date": refreshed_context.slate_date,
+            },
+        )
         context = refreshed_context
+        started_rows = writer.insert_rows("market_provider_runs", [
+            build_run_rows(
+                context.slate_date,
+                status="started",
+                request_count=request_count,
+                books_seen=books_seen,
+                metadata={
+                    "worker": WORKER_PATH,
+                    "production_artifact_path": context.production_path,
+                    "production_artifact_date": context.slate_date,
+                    "production_pitcher_count": len(context.production_pitcher_names),
+                    "previous_run_id": previous_run_id,
+                },
+            )
+        ])
+        run_id = started_rows[0]["id"]
         write_heartbeat(
             writer,
             run_id=run_id,
@@ -562,7 +598,7 @@ async def run_worker() -> dict[str, Any]:
                     )
                 except asyncio.TimeoutError:
                     now_monotonic = monotonic()
-                    refresh_context_if_due(now_monotonic)
+                    await refresh_context_if_due(now_monotonic)
                     if should_flush_batch(
                         pending_count=len(snapshots),
                         batch_size=batch_size,
@@ -592,7 +628,7 @@ async def run_worker() -> dict[str, Any]:
                         event_ids.add(event_id)
 
                     now_monotonic = monotonic()
-                    refresh_context_if_due(now_monotonic)
+                    await refresh_context_if_due(now_monotonic)
                     rows = snapshots_from_boltodds_message(
                         payload,
                         observed_at=_now_utc(),

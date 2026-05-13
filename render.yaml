@@ -3,7 +3,7 @@ services:
     name: baseball-betting-edge-boltodds-shadow
     runtime: python
     repo: https://github.com/treidjbi/BaseballbettingEdge.git
-    branch: codex/boltodds-starter-trial
+    branch: codex/boltodds-production-plan
     autoDeploy: false
     buildCommand: pip install -r requirements-live.txt
     startCommand: python scripts/boltodds_ws_worker.py

@@ -1,8 +1,10 @@
 from datetime import datetime, timezone
 
 from market_infra.current_market_lines import (
+    build_opening_baseline_rows,
     build_current_market_lines,
     normalize_book_key,
+    normalize_market_key,
 )
 
 
@@ -55,6 +57,11 @@ def test_normalize_book_key_accepts_common_book_shapes():
     assert normalize_book_key("Caesars Sportsbook") == "caesars"
 
 
+def test_normalize_market_key_accepts_boltodds_market_label():
+    assert normalize_market_key("Pitcher Strikeouts") == "pitcher_strikeouts"
+    assert normalize_market_key("player strikeouts") == "pitcher_strikeouts"
+
+
 def test_complete_over_under_pair_builds_current_market_line():
     rows = build_current_market_lines(
         [
@@ -88,6 +95,31 @@ def test_complete_over_under_pair_builds_current_market_line():
     assert row["quality_flags"] == []
     assert row["raw_payload"]["over"]["snapshot"] == 1
     assert row["raw_payload"]["under"]["snapshot"] == 2
+    assert row["updated_at"] == "2026-05-13T19:00:00+00:00"
+
+
+def test_real_boltodds_market_label_and_uuid_snapshot_ids_build_line():
+    rows = build_current_market_lines(
+        [
+            _snapshot(
+                "9dfe50e7-daf8-49f2-a771-37c231f2e143",
+                side="over",
+                market="Pitcher Strikeouts",
+            ),
+            _snapshot(
+                "99fcdcd2-e4c9-46fa-adf4-a41042cc6343",
+                side="under",
+                market="Pitcher Strikeouts",
+            ),
+        ],
+        [_run()],
+        NOW,
+    )
+
+    assert len(rows) == 1
+    assert rows[0]["market_key"] == "pitcher_strikeouts"
+    assert rows[0]["over_snapshot_id"] == "9dfe50e7-daf8-49f2-a771-37c231f2e143"
+    assert rows[0]["under_snapshot_id"] == "99fcdcd2-e4c9-46fa-adf4-a41042cc6343"
 
 
 def test_single_sided_rows_are_incomplete():
@@ -146,6 +178,7 @@ def test_same_player_different_lines_remain_separate_rows():
 
     assert [row["line"] for row in rows] == [5.5, 6.5]
     assert [row["over_odds"] for row in rows] == [-110, 120]
+    assert [row["quality_flags"] for row in rows] == [["line_conflict"], ["line_conflict"]]
 
 
 def test_latest_side_snapshot_wins_without_overwriting_first_seen():
@@ -164,3 +197,48 @@ def test_latest_side_snapshot_wins_without_overwriting_first_seen():
     assert rows[0]["under_odds"] == 115
     assert rows[0]["first_seen_at"] == "2026-05-13T18:30:00+00:00"
     assert rows[0]["last_seen_at"] == "2026-05-13T18:59:00+00:00"
+
+
+def test_opening_baseline_rows_use_complete_first_seen_lines_only():
+    current_rows = build_current_market_lines(
+        [
+            _snapshot(
+                "9dfe50e7-daf8-49f2-a771-37c231f2e143",
+                side="over",
+                odds=-115,
+                observed_at="2026-05-13T18:58:00+00:00",
+            ),
+            _snapshot(
+                "99fcdcd2-e4c9-46fa-adf4-a41042cc6343",
+                side="under",
+                odds=-105,
+                observed_at="2026-05-13T18:59:00+00:00",
+            ),
+            _snapshot(
+                "ba880a1a-98cc-43ff-a389-f96a68ebfd67",
+                book="draftkings",
+                book_name="DraftKings",
+                side="over",
+            ),
+        ],
+        [_run()],
+        NOW,
+    )
+
+    baseline_rows = build_opening_baseline_rows(current_rows)
+
+    assert baseline_rows == [{
+        "slate_date": "2026-05-13",
+        "normalized_player_name": "jose berrios",
+        "player_name": "Jose Berrios",
+        "market_key": "pitcher_strikeouts",
+        "book_key": "fanduel",
+        "book_name": "FanDuel",
+        "line": 5.5,
+        "opening_over_odds": -115,
+        "opening_under_odds": -105,
+        "opening_provider": "boltodds",
+        "opening_source": "provider_first_seen",
+        "first_seen_at": "2026-05-13T18:58:00+00:00",
+        "source_line_id": "9dfe50e7-daf8-49f2-a771-37c231f2e143",
+    }]

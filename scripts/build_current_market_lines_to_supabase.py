@@ -11,7 +11,10 @@ from typing import Any
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
 
-from market_infra.current_market_lines import build_current_market_lines  # noqa: E402
+from market_infra.current_market_lines import (  # noqa: E402
+    build_current_market_lines,
+    build_opening_baseline_rows,
+)
 from market_infra.supabase_writer import SupabaseMarketWriter  # noqa: E402
 
 
@@ -76,13 +79,20 @@ def run(
     )
     complete_rows = [row for row in current_rows if row["is_complete"]]
     stale_rows = [row for row in current_rows if "stale" in row["quality_flags"]]
+    baseline_rows = build_opening_baseline_rows(current_rows)
 
     written_rows: list[dict[str, Any]] = []
+    written_baselines: list[dict[str, Any]] = []
     if not dry_run:
         written_rows = writer.upsert_rows(
             "current_market_lines",
             current_rows,
             on_conflict="slate_date,provider,book_key,normalized_player_name,market_key,line",
+        )
+        written_baselines = writer.insert_ignore_rows(
+            "market_opening_baselines",
+            baseline_rows,
+            on_conflict="slate_date,normalized_player_name,market_key,book_key,line",
         )
 
     return {
@@ -92,7 +102,9 @@ def run(
         "current_market_lines": len(current_rows),
         "complete_rows": len(complete_rows),
         "stale_rows": len(stale_rows),
+        "opening_baselines": len(baseline_rows),
         "written_rows": len(written_rows),
+        "written_baselines": len(written_baselines),
         "dry_run": dry_run,
     }
 
@@ -128,7 +140,9 @@ def main(argv: list[str] | None = None) -> int:
         f"lines={result['current_market_lines']} "
         f"complete={result['complete_rows']} "
         f"stale={result['stale_rows']} "
+        f"opening_baselines={result['opening_baselines']} "
         f"written={result['written_rows']}"
+        f" written_baselines={result['written_baselines']}"
     )
     return 0
 

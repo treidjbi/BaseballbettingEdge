@@ -34,7 +34,7 @@ def test_upsert_rows_sets_conflict_target():
     assert post.call_args.kwargs["headers"]["Prefer"] == "resolution=merge-duplicates,return=representation"
 
 
-def test_insert_ignore_rows_ignores_duplicate_conflicts():
+def test_insert_ignore_rows_sets_conflict_target_without_merging():
     writer = SupabaseMarketWriter("https://example.supabase.co", "secret-key")
     response = Mock()
     response.raise_for_status.return_value = None
@@ -42,12 +42,14 @@ def test_insert_ignore_rows_ignores_duplicate_conflicts():
 
     with patch("market_infra.supabase_writer.requests.post", return_value=response) as post:
         writer.insert_ignore_rows(
-            "shadow_pick_lock_observations",
-            [{"dedupe_key": "abc"}],
-            on_conflict="dedupe_key",
+            "market_opening_baselines",
+            [{"slate_date": "2026-05-13"}],
+            on_conflict="slate_date,normalized_player_name,market_key,book_key,line",
         )
 
-    assert post.call_args.kwargs["params"] == {"on_conflict": "dedupe_key"}
+    assert post.call_args.kwargs["params"] == {
+        "on_conflict": "slate_date,normalized_player_name,market_key,book_key,line"
+    }
     assert post.call_args.kwargs["headers"]["Prefer"] == "resolution=ignore-duplicates,return=representation"
 
 

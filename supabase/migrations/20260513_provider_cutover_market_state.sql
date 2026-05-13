@@ -12,8 +12,8 @@ create table if not exists public.current_market_lines (
   line numeric not null,
   over_odds integer,
   under_odds integer,
-  over_snapshot_id bigint,
-  under_snapshot_id bigint,
+  over_snapshot_id uuid,
+  under_snapshot_id uuid,
   first_seen_at timestamptz,
   last_seen_at timestamptz not null,
   source_run_id uuid,
@@ -75,7 +75,7 @@ create table if not exists public.market_opening_baselines (
   opening_provider text not null check (opening_provider in ('boltodds', 'propline', 'the_odds', 'therundown')),
   opening_source text not null,
   first_seen_at timestamptz not null,
-  source_line_id bigint,
+  source_line_id uuid,
   inserted_at timestamptz not null default now(),
   unique (slate_date, normalized_player_name, market_key, book_key, line)
 );
@@ -194,3 +194,33 @@ begin
     execute 'create policy bbe_ops_readonly_select_compact_market_line_movements on public.compact_market_line_movements for select to bbe_ops_readonly using (true)';
   end if;
 end $$;
+
+create or replace function public.set_market_state_updated_at()
+returns trigger
+language plpgsql
+as $$
+begin
+  new.updated_at = now();
+  return new;
+end;
+$$;
+
+drop trigger if exists set_current_market_lines_updated_at on public.current_market_lines;
+create trigger set_current_market_lines_updated_at
+  before update on public.current_market_lines
+  for each row execute function public.set_market_state_updated_at();
+
+drop trigger if exists set_official_market_lines_updated_at on public.official_market_lines;
+create trigger set_official_market_lines_updated_at
+  before update on public.official_market_lines
+  for each row execute function public.set_market_state_updated_at();
+
+drop trigger if exists set_provider_request_usage_daily_updated_at on public.provider_request_usage_daily;
+create trigger set_provider_request_usage_daily_updated_at
+  before update on public.provider_request_usage_daily
+  for each row execute function public.set_market_state_updated_at();
+
+drop trigger if exists set_compact_market_line_movements_updated_at on public.compact_market_line_movements;
+create trigger set_compact_market_line_movements_updated_at
+  before update on public.compact_market_line_movements
+  for each row execute function public.set_market_state_updated_at();

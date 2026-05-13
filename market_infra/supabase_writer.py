@@ -98,8 +98,6 @@ class SupabaseMarketWriter:
         )
         response.raise_for_status()
         return response.json()
-
-
 def _status_code_from_error(
     error: requests.RequestException,
     response: requests.Response | None,
