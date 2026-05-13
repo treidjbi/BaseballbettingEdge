@@ -1,0 +1,496 @@
+"""Choose official provider-market lines from current supported-book lines."""
+from __future__ import annotations
+
+import json
+from datetime import datetime, timezone
+from typing import Any
+
+
+REF_BOOK_PRIORITY = ("fanduel", "draftkings", "betmgm", "betrivers", "caesars")
+DEFAULT_PROVIDER_PRIORITY = ("boltodds", "propline", "the_odds", "therundown")
+DRAFTKINGS_PROVIDER_PRIORITY = ("propline", "boltodds", "the_odds", "therundown")
+THE_ODDS_EMERGENCY_BOOKS = {"fanduel", "draftkings"}
+UNKNOWN_FRESHNESS_SECONDS = 1_000_000_000
+
+
+def choose_official_lines(
+    current_lines: list[dict[str, Any]],
+    now_utc: datetime,
+    stale_after_seconds: int = 900,
+    allow_the_odds_emergency: bool = False,
+    boltodds_draftkings_enabled: bool = False,
+) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
+    """Return official market-line rows and per-player arbitration decisions."""
+    observed_now = _ensure_utc(now_utc)
+    grouped = _group_by_player(current_lines)
+    official_rows: list[dict[str, Any]] = []
+    decision_rows: list[dict[str, Any]] = []
+
+    for player_key in sorted(grouped):
+        rows = [_with_observed_freshness(row, observed_now) for row in grouped[player_key]]
+        slate_date, normalized_player_name, market_key = player_key
+        player_name = _display_player_name(rows)
+        supported_rows = [row for row in rows if _book_key(row) in REF_BOOK_PRIORITY]
+        fresh_complete_rows = [
+            row for row in supported_rows
+            if _is_usable_current_line(row, stale_after_seconds, allow_the_odds_emergency)
+        ]
+        stale_count = sum(1 for row in supported_rows if _is_complete(row) and _freshness(row) > stale_after_seconds)
+        missing_books = [
+            book_key for book_key in REF_BOOK_PRIORITY
+            if not any(_book_key(row) == book_key for row in fresh_complete_rows)
+        ]
+
+        if not fresh_complete_rows:
+            official_rows.append(_inactive_official_row(
+                slate_date=slate_date,
+                normalized_player_name=normalized_player_name,
+                player_name=player_name,
+                market_key=market_key,
+                reasons=_skip_reasons(supported_rows, stale_after_seconds),
+                stale_after_seconds=stale_after_seconds,
+                now_utc=observed_now,
+                current_line_ids=_line_ids(supported_rows),
+            ))
+            decision_rows.append(_decision_row(
+                slate_date=slate_date,
+                normalized_player_name=normalized_player_name,
+                market_key=market_key,
+                decision="skip",
+                reasons=_skip_reasons(supported_rows, stale_after_seconds),
+                candidate_count=len(supported_rows),
+                stale_candidate_count=stale_count,
+                missing_book_keys=missing_books,
+                source_line_ids=_line_ids(supported_rows),
+            ))
+            continue
+
+        selected_by_book = {
+            book_key: selected
+            for book_key in REF_BOOK_PRIORITY
+            if (
+                selected := _select_book_line(
+                    fresh_complete_rows,
+                    book_key,
+                    boltodds_draftkings_enabled=boltodds_draftkings_enabled,
+                )
+            ) is not None
+        }
+        if not selected_by_book:
+            official_rows.append(_inactive_official_row(
+                slate_date=slate_date,
+                normalized_player_name=normalized_player_name,
+                player_name=player_name,
+                market_key=market_key,
+                reasons=["no_supported_ref_book"],
+                stale_after_seconds=stale_after_seconds,
+                now_utc=observed_now,
+                current_line_ids=_line_ids(supported_rows),
+            ))
+            decision_rows.append(_decision_row(
+                slate_date=slate_date,
+                normalized_player_name=normalized_player_name,
+                market_key=market_key,
+                decision="skip",
+                reasons=["no_supported_ref_book"],
+                candidate_count=len(supported_rows),
+                stale_candidate_count=stale_count,
+                missing_book_keys=missing_books,
+                source_line_ids=_line_ids(supported_rows),
+            ))
+            continue
+
+        ref_book_key = next(book_key for book_key in REF_BOOK_PRIORITY if book_key in selected_by_book)
+        ref_row = selected_by_book[ref_book_key]
+        book_odds = _book_odds(selected_by_book)
+        coverage = {
+            book_key: {
+                "provider": row.get("provider"),
+                "line": row.get("line"),
+                "freshness_seconds": _freshness(row),
+            }
+            for book_key, row in selected_by_book.items()
+        }
+        quality_flags = _official_quality_flags(selected_by_book)
+        reasons = _selection_reasons(selected_by_book, missing_books, quality_flags, ref_book_key, ref_row)
+        current_line_ids = _line_ids(selected_by_book.values())
+
+        official_rows.append({
+            "slate_date": slate_date,
+            "normalized_player_name": normalized_player_name,
+            "player_name": player_name,
+            "market_key": market_key,
+            "ref_book_key": ref_book_key,
+            "ref_book_name": _book_name(ref_row),
+            "ref_line": ref_row.get("line"),
+            "ref_over_odds": ref_row.get("over_odds"),
+            "ref_under_odds": ref_row.get("under_odds"),
+            "selected_provider": ref_row.get("provider"),
+            "selected_source": "provider_arbitration",
+            "book_odds": book_odds,
+            "provider_coverage": coverage,
+            "arbitration_reasons": reasons,
+            "quality_flags": quality_flags,
+            "freshness_seconds": min(_freshness(row) for row in selected_by_book.values()),
+            "stale_after_seconds": stale_after_seconds,
+            "current_market_line_ids": current_line_ids,
+            "ready_for_pipeline": True,
+            "updated_at": _isoformat(observed_now),
+        })
+        decision_rows.append(_decision_row(
+            slate_date=slate_date,
+            normalized_player_name=normalized_player_name,
+            market_key=market_key,
+            decision="use",
+            reasons=reasons,
+            candidate_count=len(supported_rows),
+            stale_candidate_count=stale_count,
+            missing_book_keys=missing_books,
+            source_line_ids=current_line_ids,
+            selected_provider=str(ref_row.get("provider") or ""),
+            selected_book_key=ref_book_key,
+            selected_line=ref_row.get("line"),
+        ))
+
+    return official_rows, decision_rows
+
+
+def retire_missing_official_lines(
+    *,
+    official_rows: list[dict[str, Any]],
+    existing_official_rows: list[dict[str, Any]],
+    now_utc: datetime,
+    stale_after_seconds: int = 900,
+) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
+    """Fail closed for previously ready official rows missing from this build."""
+    observed_now = _ensure_utc(now_utc)
+    active_keys = {_official_key(row) for row in official_rows}
+    retired_rows: list[dict[str, Any]] = []
+    decision_rows: list[dict[str, Any]] = []
+
+    for row in existing_official_rows:
+        key = _official_key(row)
+        if not all(key):
+            continue
+        if key in active_keys:
+            continue
+        if not row.get("ready_for_pipeline"):
+            continue
+
+        slate_date, normalized_player_name, market_key = key
+        source_line_ids = _json_list(row.get("current_market_line_ids"))
+        retired_rows.append(_inactive_official_row(
+            slate_date=slate_date,
+            normalized_player_name=normalized_player_name,
+            player_name=str(row.get("player_name") or normalized_player_name),
+            market_key=market_key,
+            reasons=["missing_from_current_market_lines"],
+            stale_after_seconds=stale_after_seconds,
+            now_utc=observed_now,
+            current_line_ids=source_line_ids,
+        ))
+        decision_rows.append(_decision_row(
+            slate_date=slate_date,
+            normalized_player_name=normalized_player_name,
+            market_key=market_key,
+            decision="skip",
+            reasons=["missing_from_current_market_lines"],
+            candidate_count=0,
+            stale_candidate_count=0,
+            missing_book_keys=list(REF_BOOK_PRIORITY),
+            source_line_ids=source_line_ids,
+        ))
+
+    return retired_rows, decision_rows
+
+
+def _group_by_player(rows: list[dict[str, Any]]) -> dict[tuple[str, str, str], list[dict[str, Any]]]:
+    grouped: dict[tuple[str, str, str], list[dict[str, Any]]] = {}
+    for row in rows:
+        slate_date = str(row.get("slate_date") or "").strip()
+        normalized = str(row.get("normalized_player_name") or "").strip()
+        market_key = str(row.get("market_key") or "pitcher_strikeouts").strip()
+        if not slate_date or not normalized:
+            continue
+        grouped.setdefault((slate_date, normalized, market_key), []).append(row)
+    return grouped
+
+
+def _official_key(row: dict[str, Any]) -> tuple[str, str, str]:
+    return (
+        str(row.get("slate_date") or "").strip(),
+        str(row.get("normalized_player_name") or "").strip(),
+        str(row.get("market_key") or "pitcher_strikeouts").strip(),
+    )
+
+
+def _select_book_line(
+    rows: list[dict[str, Any]],
+    book_key: str,
+    *,
+    boltodds_draftkings_enabled: bool,
+) -> dict[str, Any] | None:
+    candidates = [row for row in rows if _book_key(row) == book_key]
+    if not candidates:
+        return None
+    provider_priority = (
+        DEFAULT_PROVIDER_PRIORITY
+        if book_key != "draftkings" or boltodds_draftkings_enabled
+        else DRAFTKINGS_PROVIDER_PRIORITY
+    )
+    return min(
+        candidates,
+        key=lambda row: (
+            _provider_rank(str(row.get("provider") or ""), provider_priority),
+            _freshness(row),
+            str(row.get("id") or ""),
+        ),
+    )
+
+
+def _is_usable_current_line(
+    row: dict[str, Any],
+    stale_after_seconds: int,
+    allow_the_odds_emergency: bool,
+) -> bool:
+    flags = set(_flags(row))
+    if row.get("provider") == "the_odds":
+        if not allow_the_odds_emergency or _book_key(row) not in THE_ODDS_EMERGENCY_BOOKS:
+            return False
+    return (
+        _is_complete(row)
+        and _freshness(row) <= stale_after_seconds
+        and "stale" not in flags
+        and "line_conflict" not in flags
+    )
+
+
+def _is_complete(row: dict[str, Any]) -> bool:
+    return bool(row.get("is_complete")) and row.get("over_odds") is not None and row.get("under_odds") is not None
+
+
+def _skip_reasons(rows: list[dict[str, Any]], stale_after_seconds: int) -> list[str]:
+    if not rows:
+        return ["no_supported_rows"]
+    reasons: list[str] = []
+    if not any(_is_complete(row) for row in rows):
+        reasons.append("no_complete_line")
+    if any(_is_complete(row) and _freshness(row) > stale_after_seconds for row in rows):
+        reasons.append("stale")
+    if any("line_conflict" in _flags(row) for row in rows):
+        reasons.append("line_conflict")
+    if not reasons:
+        reasons.append("no_fresh_complete_line")
+    return reasons
+
+
+def _selection_reasons(
+    selected_by_book: dict[str, dict[str, Any]],
+    missing_books: list[str],
+    quality_flags: list[str],
+    ref_book_key: str,
+    ref_row: dict[str, Any],
+) -> list[str]:
+    reasons = [
+        "fresh_complete_supported_line",
+        f"selected_ref_book:{ref_book_key}",
+        f"selected_provider:{ref_row.get('provider')}",
+    ]
+    if selected_by_book.get("draftkings", {}).get("provider") == "propline":
+        reasons.append("propline_draftkings")
+    if any(row.get("provider") == "boltodds" for row in selected_by_book.values()):
+        reasons.append("boltodds_primary")
+    if "cross_book_line_conflict" in quality_flags:
+        reasons.append("cross_book_line_conflict")
+    if missing_books:
+        reasons.append("missing_books:" + ",".join(missing_books))
+    return reasons
+
+
+def _official_quality_flags(selected_by_book: dict[str, dict[str, Any]]) -> list[str]:
+    flags: list[str] = []
+    lines = {str(row.get("line")) for row in selected_by_book.values()}
+    if len(lines) > 1:
+        flags.append("cross_book_line_conflict")
+    return flags
+
+
+def _book_odds(selected_by_book: dict[str, dict[str, Any]]) -> dict[str, dict[str, Any]]:
+    return {
+        _book_name(row): {
+            "line": row.get("line"),
+            "over": row.get("over_odds"),
+            "under": row.get("under_odds"),
+            "provider": row.get("provider"),
+            "book_key": book_key,
+            "current_market_line_id": row.get("id"),
+            "freshness_seconds": _freshness(row),
+        }
+        for book_key, row in selected_by_book.items()
+    }
+
+
+def _inactive_official_row(
+    *,
+    slate_date: str,
+    normalized_player_name: str,
+    player_name: str,
+    market_key: str,
+    reasons: list[str],
+    stale_after_seconds: int,
+    now_utc: datetime,
+    current_line_ids: list[Any],
+) -> dict[str, Any]:
+    return {
+        "slate_date": slate_date,
+        "normalized_player_name": normalized_player_name,
+        "player_name": player_name,
+        "market_key": market_key,
+        "ref_book_key": None,
+        "ref_book_name": None,
+        "ref_line": None,
+        "ref_over_odds": None,
+        "ref_under_odds": None,
+        "selected_provider": None,
+        "selected_source": "provider_arbitration",
+        "book_odds": {},
+        "provider_coverage": {},
+        "arbitration_reasons": reasons,
+        "quality_flags": ["not_ready_for_pipeline", *reasons],
+        "freshness_seconds": None,
+        "stale_after_seconds": stale_after_seconds,
+        "current_market_line_ids": current_line_ids,
+        "ready_for_pipeline": False,
+        "updated_at": _isoformat(now_utc),
+    }
+
+
+def _decision_row(
+    *,
+    slate_date: str,
+    normalized_player_name: str,
+    market_key: str,
+    decision: str,
+    reasons: list[str],
+    candidate_count: int,
+    stale_candidate_count: int,
+    missing_book_keys: list[str],
+    source_line_ids: list[Any],
+    selected_provider: str | None = None,
+    selected_book_key: str | None = None,
+    selected_line: Any = None,
+) -> dict[str, Any]:
+    return {
+        "slate_date": slate_date,
+        "normalized_player_name": normalized_player_name,
+        "market_key": market_key,
+        "selected_provider": selected_provider,
+        "selected_book_key": selected_book_key,
+        "selected_line": selected_line,
+        "decision": decision,
+        "reasons": reasons,
+        "candidate_count": candidate_count,
+        "stale_candidate_count": stale_candidate_count,
+        "missing_book_keys": missing_book_keys,
+        "source_line_ids": source_line_ids,
+    }
+
+
+def _line_ids(rows: Any) -> list[Any]:
+    ids = []
+    for row in rows:
+        line_id = row.get("id")
+        if line_id is not None:
+            ids.append(line_id)
+    return ids
+
+
+def _book_key(row: dict[str, Any]) -> str:
+    return str(row.get("book_key") or "").strip().lower()
+
+
+def _book_name(row: dict[str, Any]) -> str:
+    return str(row.get("book_name") or row.get("book_key") or "").strip()
+
+
+def _display_player_name(rows: list[dict[str, Any]]) -> str:
+    return str(rows[0].get("player_name") or rows[0].get("normalized_player_name") or "").strip()
+
+
+def _with_observed_freshness(row: dict[str, Any], observed_now: datetime) -> dict[str, Any]:
+    enriched = dict(row)
+    last_seen_at = _parse_datetime(row.get("last_seen_at"))
+    if last_seen_at is None:
+        enriched["_computed_freshness_seconds"] = UNKNOWN_FRESHNESS_SECONDS
+        return enriched
+    enriched["_computed_freshness_seconds"] = max(int((observed_now - last_seen_at).total_seconds()), 0)
+    return enriched
+
+
+def _parse_datetime(value: Any) -> datetime | None:
+    if isinstance(value, datetime):
+        return _ensure_utc(value)
+    text = str(value or "").strip()
+    if not text:
+        return None
+    if text.endswith("Z"):
+        text = text[:-1] + "+00:00"
+    try:
+        return _ensure_utc(datetime.fromisoformat(text))
+    except ValueError:
+        return None
+
+
+def _provider_rank(provider: str, provider_priority: tuple[str, ...]) -> int:
+    try:
+        return provider_priority.index(provider)
+    except ValueError:
+        return len(provider_priority)
+
+
+def _freshness(row: dict[str, Any]) -> int:
+    try:
+        if row.get("_computed_freshness_seconds") is not None:
+            return int(row.get("_computed_freshness_seconds"))
+        if row.get("freshness_seconds") is None:
+            return UNKNOWN_FRESHNESS_SECONDS
+        return int(row.get("freshness_seconds"))
+    except (TypeError, ValueError):
+        return UNKNOWN_FRESHNESS_SECONDS
+
+
+def _flags(row: dict[str, Any]) -> list[str]:
+    flags = row.get("quality_flags") or []
+    if isinstance(flags, str):
+        try:
+            parsed = json.loads(flags)
+            if isinstance(parsed, list):
+                return [str(flag) for flag in parsed]
+        except json.JSONDecodeError:
+            return [flags]
+    if isinstance(flags, list):
+        return [str(flag) for flag in flags]
+    return []
+
+
+def _json_list(value: Any) -> list[Any]:
+    if isinstance(value, list):
+        return value
+    if isinstance(value, str):
+        try:
+            parsed = json.loads(value)
+        except json.JSONDecodeError:
+            return []
+        if isinstance(parsed, list):
+            return parsed
+    return []
+
+
+def _ensure_utc(value: datetime) -> datetime:
+    if value.tzinfo is None:
+        return value.replace(tzinfo=timezone.utc)
+    return value.astimezone(timezone.utc)
+
+
+def _isoformat(value: datetime) -> str:
+    return _ensure_utc(value).isoformat()

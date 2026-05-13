@@ -101,6 +101,12 @@ Do not wire BoltOdds + PropLine into official pipeline artifacts until the
 cutover gates pass. The official pipeline should eventually read
 `official_market_lines`, not raw `market_snapshots`.
 
+As of the 2026-05-13 cutover branch work, `current_market_lines`,
+`market_opening_baselines`, and `official_market_lines` builders exist as
+shadow infrastructure only. They fail closed for stale or incomplete provider
+state but are not production odds-source behavior until Tyler approves the
+cutover switch.
+
 The provider cutover plan synthesizes the production-facing parts of:
 
 - `docs/superpowers/plans/2026-05-13-boltodds-production-line-movement.md`

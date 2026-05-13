@@ -45,6 +45,17 @@ do we convert model signal into better betting decisions?"
   or provider order until the provider cutover plan is implemented and Tyler
   explicitly approves the switch.
 
+Cutover branch infrastructure progress as of 2026-05-13:
+
+- `current_market_lines` and `market_opening_baselines` builders exist as
+  shadow derived-market infrastructure.
+- `official_market_lines` arbitration exists behind a separate build script and
+  remains shadow-only. It fails closed for stale, unsupported, incomplete, and
+  missing-current lines and does not change production artifacts yet.
+- The Odds API official arbitration remains behind an explicit emergency flag;
+  DraftKings remains PropLine-first until BoltOdds DraftKings coverage is
+  explicitly enabled.
+
 ## Provider Plan Precedence
 
 For provider-production work, use

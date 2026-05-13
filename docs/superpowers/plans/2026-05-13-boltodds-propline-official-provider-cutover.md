@@ -740,6 +740,22 @@ Tests:
   priority.
 - Decision rows explain missing, stale, and selected providers.
 
+Implementation note, 2026-05-13:
+
+- `market_infra/official_market_lines.py`,
+  `scripts/build_official_market_lines_to_supabase.py`, and tests now exist on
+  the cutover branch.
+- The arbitration layer is still shadow infrastructure. It does not switch
+  `pipeline/fetch_odds.py` or production artifacts.
+- Skipped, stale, unsupported-only, one-sided, and missing-current players
+  upsert `ready_for_pipeline=false` rows so old ready official lines fail
+  closed.
+- Official freshness is recomputed from `last_seen_at`; missing or malformed
+  timestamps fail closed.
+- The Odds API requires explicit emergency mode and is limited to FanDuel /
+  DraftKings. DraftKings defaults to PropLine until BoltOdds DK is explicitly
+  enabled.
+
 ### Step 4: Add Pipeline Adapter Behind A Feature Flag
 
 Create:

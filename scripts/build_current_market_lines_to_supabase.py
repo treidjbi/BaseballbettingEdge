@@ -50,16 +50,33 @@ def _fetch_inputs(
     if not run_rows:
         return [], []
 
-    snapshot_rows = writer.select_rows(
-        "market_snapshots",
-        {
-            "run_id": _run_id_filter(run_rows),
-            "market_key": "eq.pitcher_strikeouts",
-            "order": "observed_at.desc",
-            "limit": "10000",
-        },
-    )
+    snapshot_rows = _fetch_snapshot_pages(writer, run_rows)
     return snapshot_rows, run_rows
+
+
+def _fetch_snapshot_pages(
+    writer: SupabaseMarketWriter,
+    run_rows: list[dict[str, Any]],
+    *,
+    page_size: int = 10000,
+    max_pages: int = 20,
+) -> list[dict[str, Any]]:
+    rows: list[dict[str, Any]] = []
+    run_filter = _run_id_filter(run_rows)
+    for page in range(max_pages):
+        page_rows = writer.select_rows(
+            "market_snapshots",
+            {
+                "run_id": run_filter,
+                "order": "observed_at.desc",
+                "limit": str(page_size),
+                "offset": str(page * page_size),
+            },
+        )
+        rows.extend(page_rows)
+        if len(page_rows) < page_size:
+            break
+    return rows
 
 
 def run(
