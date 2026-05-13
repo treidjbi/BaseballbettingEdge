@@ -139,6 +139,27 @@ a later implementation step explicitly names a changed write path.
     `official_market_lines`, not scan raw `market_snapshots` during every
     preview/full/refresh run.
 
+## Affected Plans And Synthesis
+
+This plan is now the controlling provider-production plan. Preserve older dated
+plans as history and implementation reference, but do not use them to override
+the source-of-truth decisions here.
+
+| Plan | Status after this plan | What still matters |
+| --- | --- | --- |
+| `2026-05-13-boltodds-production-line-movement.md` | Partially superseded | Keep the May 13 stale-slate diagnosis, worker context-rotation fix, and notification/display thinking. Its "TheRundown remains official" assumption is superseded by this planned cutover. |
+| `2026-05-07-boltodds-starter-trial.md` | Superseded for production promotion | Keep trial setup, worker branch context, WebSocket normalization, heartbeat/snapshot proof, and migration snippets. |
+| `2026-05-06-live-layer-event-system.md` | Foundation remains active | Keep live event tables, sender behavior, reminder logic, and dedupe patterns. Provider promotion and BoltOdds notification gating now live here. |
+| `2026-05-05-propline-fallback-and-model-signal-plan.md` | Historical/completed | Keep diagnostics and current fallback implementation history. PropLine's future role is fallback/DraftKings plus usage-gated downgrade under this plan. |
+| `2026-05-01-propline-supabase-market-infrastructure.md` | Historical foundation | Keep raw tracker schema/history and webhook receiver notes. New tables must follow the tracker matrix here. |
+| `2026-05-07-bet-conversion-shadow-audit.md` | Still independently active | Use for bet-selection-first evaluation. Add source attribution from this cutover when available. |
+| `2026-05-12-pitcher-k-outcome-research-dataset.md` | Still independently active | Use for compact outcome rows, CLV, and process-vs-result research. Add provider-source fields when available. |
+| `2026-04-28-one-week-evaluation-cadence.md` | Still independently active | Keep clean-window evaluation discipline and do not confuse provider cutover with model formula changes. |
+
+Synthesis rule: if a provider, live-notification, market tracker, or
+TheRundown-removal question conflicts across dated plans, this cutover plan and
+`docs/current-state.md` win.
+
 ## Architecture After Cutover
 
 ```mermaid

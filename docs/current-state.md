@@ -12,10 +12,6 @@ For any new work in this repo:
    - `docs/superpowers/plans/2026-05-13-boltodds-propline-official-provider-cutover.md`
    - `docs/superpowers/plans/2026-05-07-bet-conversion-shadow-audit.md`
    - `docs/superpowers/plans/2026-05-12-pitcher-k-outcome-research-dataset.md`
-   - `docs/superpowers/plans/2026-05-13-boltodds-production-line-movement.md`
-   - `docs/superpowers/plans/2026-05-07-boltodds-starter-trial.md`
-   - `docs/superpowers/plans/2026-05-06-live-layer-event-system.md`
-   - `docs/superpowers/plans/2026-05-05-propline-fallback-and-model-signal-plan.md`
    - `docs/superpowers/plans/2026-04-28-one-week-evaluation-cadence.md`
 4. Read `docs/provider-cost-ledger.md` before recommending new providers,
    upgrades, polling increases, or always-on infrastructure.
@@ -50,10 +46,39 @@ do we convert model signal into better betting decisions?"
   or provider order until the provider cutover plan is implemented and Tyler
   explicitly approves the switch.
 
-The broader BoltOdds + PropLine provider cutover build is intentionally still
-on `codex/boltodds-production-plan`. `main` only has the production-safe timing
-ledger subset from that branch. Do not treat `main` as containing the full
-provider cutover plan or official-market infrastructure yet.
+## Provider Plan Precedence
+
+For provider-production work, use
+`docs/superpowers/plans/2026-05-13-boltodds-propline-official-provider-cutover.md`
+as the controlling implementation plan.
+
+This newer plan synthesizes or supersedes production-facing parts of these older
+plans:
+
+- `2026-05-13-boltodds-production-line-movement.md`: use only for the May 13
+  stale-slate diagnosis, worker-rotation implementation detail, and historical
+  notification/display thinking. The new cutover plan controls official
+  provider source behavior.
+- `2026-05-07-boltodds-starter-trial.md`: use as trial setup/history and
+  worker-branch context. The new cutover plan controls production promotion.
+- `2026-05-06-live-layer-event-system.md`: keep as the live-layer foundation.
+  The new cutover plan controls BoltOdds/PropLine notification promotion and
+  provider-source changes.
+- `2026-05-05-propline-fallback-and-model-signal-plan.md`: historical fallback
+  and diagnostic work is complete. The new cutover plan controls PropLine's
+  future fallback/DraftKings role and downgrade gates.
+- `2026-05-01-propline-supabase-market-infrastructure.md`: historical Supabase
+  foundation. Reuse existing trackers and follow
+  `docs/research/market-tracker-map.md` before adding tables.
+
+Still independently active:
+
+- `2026-05-07-bet-conversion-shadow-audit.md` for bet-selection-first
+  diagnostics.
+- `2026-05-12-pitcher-k-outcome-research-dataset.md` for compact outcome rows,
+  CLV, process-vs-result, and projection shadow research.
+- `2026-04-28-one-week-evaluation-cadence.md` for clean-window evaluation
+  discipline.
 
 The live-layer shadow builders on `main` now read `market_feed_heartbeats` and
 apply BoltOdds unchanged-line freshness to `live_market_display_state` and
