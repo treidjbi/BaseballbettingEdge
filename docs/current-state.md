@@ -9,11 +9,7 @@ For any new work in this repo:
 1. Read `AGENTS.md` for the canonical project instructions and architecture notes.
 2. Read this file for the current operating state.
 3. Read the newest active dated plans that match the task:
-   - Provider cutover work currently lives on branch
-     `codex/boltodds-production-plan`; read
-     `docs/superpowers/plans/2026-05-13-boltodds-propline-official-provider-cutover.md`
-     from that branch before provider-production, official market-source,
-     schedule-first, mainline-selector, or retention/compaction work.
+   - `docs/superpowers/plans/2026-05-13-boltodds-propline-official-provider-cutover.md`
    - `docs/superpowers/plans/2026-05-07-bet-conversion-shadow-audit.md`
    - `docs/superpowers/plans/2026-05-12-pitcher-k-outcome-research-dataset.md`
    - `docs/superpowers/plans/2026-05-13-boltodds-production-line-movement.md`
@@ -42,12 +38,17 @@ do we convert model signal into better betting decisions?"
 - Keep candidate ranking changes shadow-only until the clean sample and Gate C
   justify a live behavior plan.
 - TheRundown remains the production book-of-record odds source for the scheduled
-  pipeline.
+  pipeline. It renewed through the end of May 2026, so May is now the planned
+  overlap window for building and shadow-comparing the BoltOdds + PropLine
+  official-provider cutover before any cancellation/removal decision.
 - PropLine remains a shadow/fallback/live-movement source. Polling is useful;
-  real provider webhooks are still unproven.
+  real provider webhooks are still unproven. The planned provider stack is
+  BoltOdds primary with PropLine fallback/DraftKings coverage, but that is not
+  official until the cutover gates and environment switch are completed.
 - BoltOdds is being tested as a separate shadow-only WebSocket live-market
   sidecar. It must not affect production picks, grading, dashboard artifacts,
-  or provider order without explicit approval.
+  or provider order until the provider cutover plan is implemented and Tyler
+  explicitly approves the switch.
 
 The broader BoltOdds + PropLine provider cutover build is intentionally still
 on `codex/boltodds-production-plan`. `main` only has the production-safe timing
