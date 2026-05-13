@@ -134,3 +134,51 @@ def test_provider_audit_counts_all_overlaps_even_when_examples_are_capped():
 
     assert audit["same_line_overlap_count"] == 30
     assert len(audit["metadata"]["same_line_overlap_examples"]) == 25
+
+
+def test_provider_audit_accepts_custom_trial_target_books():
+    production = {
+        "pitchers": [
+            {
+                "pitcher": "Gerrit Cole",
+                "k_line": 7.5,
+                "book_odds": {
+                    "BetMGM": {"over": -110, "under": -110},
+                    "Caesars": {"over": -115, "under": -105},
+                },
+            },
+        ],
+    }
+    snapshots = (
+        _complete_snapshot_group("Gerrit Cole", "betmgm", 7.5)
+        + _complete_snapshot_group("Gerrit Cole", "caesars", 7.5)
+    )
+
+    audit = build_provider_coverage_audit(
+        snapshots,
+        production,
+        target_books={
+            "fanduel": "FanDuel",
+            "betmgm": "BetMGM",
+            "betrivers": "BetRivers",
+            "kalshi": "Kalshi",
+            "caesars": "Caesars",
+        },
+    )
+
+    assert audit["target_books"] == [
+        "fanduel",
+        "betmgm",
+        "betrivers",
+        "kalshi",
+        "caesars",
+    ]
+    assert audit["missing_target_books"] == ["fanduel", "betrivers", "kalshi"]
+    assert audit["same_line_overlap_count"] == 2
+    assert audit["metadata"]["target_book_group_counts"] == {
+        "fanduel": 0,
+        "betmgm": 1,
+        "betrivers": 0,
+        "kalshi": 0,
+        "caesars": 1,
+    }

@@ -15,11 +15,22 @@ BOOK_TITLE_TO_KEY = {title.lower(): key for key, title in TARGET_BOOKS.items()}
 MAX_EXAMPLES = 25
 
 
-def _book_key(value: Any) -> str | None:
+def _book_maps(target_books: dict[str, str] | None) -> tuple[dict[str, str], dict[str, str]]:
+    books = target_books or TARGET_BOOKS
+    normalized_books = {str(key).strip().lower(): str(title) for key, title in books.items()}
+    title_to_key = {title.lower(): key for key, title in normalized_books.items()}
+    return normalized_books, title_to_key
+
+
+def _book_key(
+    value: Any,
+    target_books: dict[str, str] | None = None,
+) -> str | None:
+    books, title_to_key = _book_maps(target_books)
     text = str(value or "").strip().lower()
-    if text in TARGET_BOOKS:
+    if text in books:
         return text
-    return BOOK_TITLE_TO_KEY.get(text)
+    return title_to_key.get(text)
 
 
 def _line(value: Any) -> float | None:
@@ -29,11 +40,17 @@ def _line(value: Any) -> float | None:
         return None
 
 
-def _complete_provider_groups(snapshots: list[dict]) -> list[dict]:
+def _complete_provider_groups(
+    snapshots: list[dict],
+    target_books: dict[str, str] | None = None,
+) -> list[dict]:
     grouped: dict[tuple[str, float, str], dict] = {}
 
     for snapshot in snapshots:
-        book_key = _book_key(snapshot.get("bookmaker_key") or snapshot.get("bookmaker_title"))
+        book_key = _book_key(
+            snapshot.get("bookmaker_key") or snapshot.get("bookmaker_title"),
+            target_books,
+        )
         line = _line(snapshot.get("line"))
         player = str(snapshot.get("player_name") or "").strip()
         normalized = snapshot.get("normalized_player_name") or normalize(player)
@@ -66,7 +83,10 @@ def _complete_provider_groups(snapshots: list[dict]) -> list[dict]:
     ]
 
 
-def _production_groups(production_payload: dict | None) -> dict[tuple[str, str], dict]:
+def _production_groups(
+    production_payload: dict | None,
+    target_books: dict[str, str] | None = None,
+) -> dict[tuple[str, str], dict]:
     groups: dict[tuple[str, str], dict] = {}
     for record in (production_payload or {}).get("pitchers") or []:
         pitcher = str(record.get("pitcher") or "").strip()
@@ -76,7 +96,7 @@ def _production_groups(production_payload: dict | None) -> dict[tuple[str, str],
             continue
 
         for book_title in (record.get("book_odds") or {}):
-            book_key = _book_key(book_title)
+            book_key = _book_key(book_title, target_books)
             if not book_key:
                 continue
             groups[(normalized, book_key)] = {
@@ -101,9 +121,11 @@ def _production_pitcher_lines(production_payload: dict | None) -> set[tuple[str,
 def build_provider_coverage_audit(
     snapshots: list[dict],
     production_payload: dict | None,
+    target_books: dict[str, str] | None = None,
 ) -> dict:
-    complete_groups = _complete_provider_groups(snapshots)
-    production_groups = _production_groups(production_payload)
+    target_books = _book_maps(target_books)[0]
+    complete_groups = _complete_provider_groups(snapshots, target_books)
+    production_groups = _production_groups(production_payload, target_books)
     production_pitcher_lines = _production_pitcher_lines(production_payload)
 
     target_book_group_counts = Counter(group["bookmaker_key"] for group in complete_groups)
@@ -117,7 +139,7 @@ def build_provider_coverage_audit(
     conflict_examples = []
     same_line_overlap_count = 0
     line_conflict_count = 0
-    fillable_missing_book_counts = Counter({book: 0 for book in TARGET_BOOKS})
+    fillable_missing_book_counts = Counter({book: 0 for book in target_books})
     fillable_missing_book_examples: dict[str, list[dict]] = defaultdict(list)
 
     for group in complete_groups:
@@ -153,12 +175,12 @@ def build_provider_coverage_audit(
 
     missing_target_books = [
         book_key
-        for book_key in TARGET_BOOKS
+        for book_key in target_books
         if target_book_group_counts[book_key] == 0
     ]
 
     return {
-        "target_books": list(TARGET_BOOKS),
+        "target_books": list(target_books),
         "missing_target_books": missing_target_books,
         "parsed_pitcher_prop_count": len(provider_pitcher_lines),
         "complete_pitcher_line_groups": len(complete_groups),
@@ -169,15 +191,15 @@ def build_provider_coverage_audit(
             "production_pitcher_line_count": len(production_pitcher_lines),
             "target_book_group_counts": {
                 book_key: target_book_group_counts[book_key]
-                for book_key in TARGET_BOOKS
+                for book_key in target_books
             },
             "production_book_group_counts": {
                 book_key: production_book_group_counts[book_key]
-                for book_key in TARGET_BOOKS
+                for book_key in target_books
             },
             "fillable_missing_book_counts": {
                 book_key: fillable_missing_book_counts[book_key]
-                for book_key in TARGET_BOOKS
+                for book_key in target_books
             },
             "fillable_missing_book_examples": dict(fillable_missing_book_examples),
             "same_line_overlap_examples": overlap_examples,
