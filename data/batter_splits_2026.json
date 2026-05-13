@@ -7004,21 +7004,22 @@
       }
     }
   },
-  "updated_at": "2026-05-13T20:07:36Z",
+  "updated_at": "2026-05-13T20:21:55Z",
   "last_run": {
     "projection_status": "collection_only",
-    "requested_batters": 162,
-    "already_cached": 157,
+    "requested_batters": 180,
+    "already_cached": 176,
     "attempted": 4,
-    "collected": 1,
-    "failed": 3,
-    "queued_not_attempted": 1,
+    "collected": 0,
+    "failed": 4,
+    "queued_not_attempted": 0,
     "cache_size": 415,
     "errors": [
       "Spencer Jones: no bbref id",
       "Omar Martinez: no bbref id",
-      "A.J. Ewing: no bbref id"
+      "A.J. Ewing: no bbref id",
+      "Ryan Waldschmidt: no bbref id"
     ],
-    "updated_at": "2026-05-13T20:07:36Z"
+    "updated_at": "2026-05-13T20:21:55Z"
   }
 }
