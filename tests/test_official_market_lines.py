@@ -163,6 +163,64 @@ def test_cross_book_line_conflicts_are_preserved_with_ref_priority():
     assert "cross_book_line_conflict" in official["arbitration_reasons"]
 
 
+def test_same_book_ladder_selects_line_confirmed_by_fallback_provider():
+    official_rows, decision_rows = choose_official_lines(
+        [
+            _line(1, provider="boltodds", book_key="fanduel", book_name="FanDuel", line=5.5, quality_flags=["line_conflict"]),
+            _line(2, provider="boltodds", book_key="fanduel", book_name="FanDuel", line=6.5, quality_flags=["line_conflict"]),
+            _line(3, provider="propline", book_key="fanduel", book_name="FanDuel", line=5.5),
+        ],
+        NOW,
+    )
+
+    official = official_rows[0]
+    assert official["ready_for_pipeline"] is True
+    assert official["selected_provider"] == "boltodds"
+    assert official["ref_line"] == 5.5
+    assert official["book_odds"]["FanDuel"]["current_market_line_id"] == 1
+    assert "mainline_selected:fanduel:5.5" in official["arbitration_reasons"]
+    assert "mainline_overlap_provider:fanduel:5.5" in official["arbitration_reasons"]
+    assert decision_rows[0]["decision"] == "use"
+    assert decision_rows[0]["source_line_ids"] == [1]
+
+
+def test_same_book_ladder_selects_line_supported_by_another_book():
+    official_rows, decision_rows = choose_official_lines(
+        [
+            _line(1, provider="boltodds", book_key="fanduel", book_name="FanDuel", line=5.5, quality_flags=["line_conflict"]),
+            _line(2, provider="boltodds", book_key="fanduel", book_name="FanDuel", line=6.5, quality_flags=["line_conflict"]),
+            _line(3, provider="boltodds", book_key="betmgm", book_name="BetMGM", line=5.5),
+        ],
+        NOW,
+    )
+
+    official = official_rows[0]
+    assert official["ready_for_pipeline"] is True
+    assert official["ref_book_key"] == "fanduel"
+    assert official["ref_line"] == 5.5
+    assert official["book_odds"]["FanDuel"]["current_market_line_id"] == 1
+    assert official["book_odds"]["BetMGM"]["current_market_line_id"] == 3
+    assert "mainline_cross_book_support:fanduel:5.5" in official["arbitration_reasons"]
+    assert decision_rows[0]["source_line_ids"] == [1, 3]
+
+
+def test_same_book_ladder_without_support_fails_closed_as_ambiguous_mainline():
+    official_rows, decision_rows = choose_official_lines(
+        [
+            _line(1, provider="boltodds", book_key="fanduel", book_name="FanDuel", line=5.5, quality_flags=["line_conflict"]),
+            _line(2, provider="boltodds", book_key="fanduel", book_name="FanDuel", line=6.5, quality_flags=["line_conflict"]),
+        ],
+        NOW,
+    )
+
+    assert official_rows[0]["ready_for_pipeline"] is False
+    assert official_rows[0]["arbitration_reasons"] == ["ambiguous_mainline"]
+    assert "ambiguous_mainline" in official_rows[0]["quality_flags"]
+    assert decision_rows[0]["decision"] == "skip"
+    assert decision_rows[0]["reasons"] == ["ambiguous_mainline"]
+    assert decision_rows[0]["source_line_ids"] == [1, 2]
+
+
 def test_decisions_explain_selected_missing_and_stale_inputs():
     _, decision_rows = choose_official_lines(
         [

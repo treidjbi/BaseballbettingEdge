@@ -114,6 +114,115 @@ def test_compare_reports_schedule_first_provider_coverage():
     assert gate_statuses["schedule_provider_coverage_90"] == "fail"
 
 
+def test_compare_reports_raw_mainline_and_official_schedule_coverage():
+    report = compare_provider_cutover(
+        date_str="2026-05-13",
+        scheduled_pitchers=[
+            {"pitcher": "Jose Berrios", "team": "Blue Jays"},
+            {"pitcher": "Gerrit Cole", "team": "Yankees"},
+        ],
+        rundown_props=[
+            _prop("Jose Berrios"),
+            _prop("Gerrit Cole"),
+        ],
+        provider_props=[
+            _prop("Jose Berrios", odds_source="boltodds+propline"),
+        ],
+        provider_current_lines=[
+            {
+                "id": 1,
+                "slate_date": "2026-05-13",
+                "provider": "boltodds",
+                "book_key": "fanduel",
+                "book_name": "FanDuel",
+                "player_name": "Jose Berrios",
+                "normalized_player_name": "jose berrios",
+                "market_key": "pitcher_strikeouts",
+                "line": 5.5,
+                "over_odds": -110,
+                "under_odds": -110,
+                "last_seen_at": "2026-05-13T19:59:00+00:00",
+                "is_complete": True,
+                "quality_flags": ["line_conflict"],
+            },
+            {
+                "id": 2,
+                "slate_date": "2026-05-13",
+                "provider": "boltodds",
+                "book_key": "fanduel",
+                "book_name": "FanDuel",
+                "player_name": "Jose Berrios",
+                "normalized_player_name": "jose berrios",
+                "market_key": "pitcher_strikeouts",
+                "line": 6.5,
+                "over_odds": 140,
+                "under_odds": -180,
+                "last_seen_at": "2026-05-13T19:59:00+00:00",
+                "is_complete": True,
+                "quality_flags": ["line_conflict"],
+            },
+            {
+                "id": 3,
+                "slate_date": "2026-05-13",
+                "provider": "propline",
+                "book_key": "fanduel",
+                "book_name": "FanDuel",
+                "player_name": "Jose Berrios",
+                "normalized_player_name": "jose berrios",
+                "market_key": "pitcher_strikeouts",
+                "line": 5.5,
+                "over_odds": -112,
+                "under_odds": -108,
+                "last_seen_at": "2026-05-13T19:59:00+00:00",
+                "is_complete": True,
+                "quality_flags": [],
+            },
+            {
+                "id": 4,
+                "slate_date": "2026-05-13",
+                "provider": "boltodds",
+                "book_key": "fanduel",
+                "book_name": "FanDuel",
+                "player_name": "Gerrit Cole",
+                "normalized_player_name": "gerrit cole",
+                "market_key": "pitcher_strikeouts",
+                "line": 6.5,
+                "over_odds": -110,
+                "under_odds": -110,
+                "last_seen_at": "2026-05-13T19:59:00+00:00",
+                "is_complete": True,
+                "quality_flags": ["line_conflict"],
+            },
+            {
+                "id": 5,
+                "slate_date": "2026-05-13",
+                "provider": "boltodds",
+                "book_key": "fanduel",
+                "book_name": "FanDuel",
+                "player_name": "Gerrit Cole",
+                "normalized_player_name": "gerrit cole",
+                "market_key": "pitcher_strikeouts",
+                "line": 7.5,
+                "over_odds": 135,
+                "under_odds": -165,
+                "last_seen_at": "2026-05-13T19:59:00+00:00",
+                "is_complete": True,
+                "quality_flags": ["line_conflict"],
+            },
+        ],
+        generated_at=NOW,
+    )
+
+    schedule = report["schedule_first"]
+    assert schedule["provider_raw_covered_count"] == 2
+    assert schedule["provider_mainline_ready_count"] == 1
+    assert schedule["provider_official_ready_count"] == 1
+    assert schedule["provider_raw_coverage_rate"] == 1.0
+    assert schedule["provider_mainline_ready_rate"] == 0.5
+    assert schedule["provider_official_ready_rate"] == 0.5
+    assert report["coverage"]["ambiguous_mainline_pitchers"] == ["gerrit cole"]
+
+
 def test_compare_tracks_missing_draftkings_and_line_conflicts():
     report = compare_provider_cutover(
         date_str="2026-05-13",

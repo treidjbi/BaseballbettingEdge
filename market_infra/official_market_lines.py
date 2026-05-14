@@ -22,17 +22,25 @@ def choose_official_lines(
 ) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
     """Return official market-line rows and per-player arbitration decisions."""
     observed_now = _ensure_utc(now_utc)
-    grouped = _group_by_player(current_lines)
+    observed_rows = [_with_observed_freshness(row, observed_now) for row in current_lines]
+    grouped = _group_by_player(observed_rows)
+    mainline_rows, mainline_metadata = select_mainline_current_lines(
+        observed_rows,
+        observed_now,
+        stale_after_seconds=stale_after_seconds,
+        allow_the_odds_emergency=allow_the_odds_emergency,
+    )
+    mainline_grouped = _group_by_player(mainline_rows)
     official_rows: list[dict[str, Any]] = []
     decision_rows: list[dict[str, Any]] = []
 
     for player_key in sorted(grouped):
-        rows = [_with_observed_freshness(row, observed_now) for row in grouped[player_key]]
+        rows = grouped[player_key]
         slate_date, normalized_player_name, market_key = player_key
         player_name = _display_player_name(rows)
         supported_rows = [row for row in rows if _book_key(row) in REF_BOOK_PRIORITY]
         fresh_complete_rows = [
-            row for row in supported_rows
+            row for row in mainline_grouped.get(player_key, [])
             if _is_usable_current_line(row, stale_after_seconds, allow_the_odds_emergency)
         ]
         stale_count = sum(1 for row in supported_rows if _is_complete(row) and _freshness(row) > stale_after_seconds)
@@ -40,28 +48,40 @@ def choose_official_lines(
             book_key for book_key in REF_BOOK_PRIORITY
             if not any(_book_key(row) == book_key for row in fresh_complete_rows)
         ]
+        mainline_meta = mainline_metadata.get(player_key, {})
+        mainline_skip_reasons = (
+            ["ambiguous_mainline"]
+            if mainline_meta.get("ambiguous_line_ids") and not fresh_complete_rows
+            else []
+        )
 
         if not fresh_complete_rows:
+            skip_reasons = mainline_skip_reasons or _skip_reasons(supported_rows, stale_after_seconds)
+            source_line_ids = (
+                list(mainline_meta.get("raw_candidate_ids") or [])
+                if mainline_skip_reasons
+                else _line_ids(supported_rows)
+            )
             official_rows.append(_inactive_official_row(
                 slate_date=slate_date,
                 normalized_player_name=normalized_player_name,
                 player_name=player_name,
                 market_key=market_key,
-                reasons=_skip_reasons(supported_rows, stale_after_seconds),
+                reasons=skip_reasons,
                 stale_after_seconds=stale_after_seconds,
                 now_utc=observed_now,
-                current_line_ids=_line_ids(supported_rows),
+                current_line_ids=source_line_ids,
             ))
             decision_rows.append(_decision_row(
                 slate_date=slate_date,
                 normalized_player_name=normalized_player_name,
                 market_key=market_key,
                 decision="skip",
-                reasons=_skip_reasons(supported_rows, stale_after_seconds),
+                reasons=skip_reasons,
                 candidate_count=len(supported_rows),
                 stale_candidate_count=stale_count,
                 missing_book_keys=missing_books,
-                source_line_ids=_line_ids(supported_rows),
+                source_line_ids=source_line_ids,
             ))
             continue
 
@@ -180,6 +200,58 @@ def choose_official_lines(
     return official_rows, decision_rows
 
 
+def select_mainline_current_lines(
+    current_lines: list[dict[str, Any]],
+    now_utc: datetime,
+    stale_after_seconds: int = 900,
+    allow_the_odds_emergency: bool = False,
+) -> tuple[list[dict[str, Any]], dict[tuple[str, str, str], dict[str, Any]]]:
+    """Select conservative mainline candidates while preserving raw rows elsewhere."""
+    observed_now = _ensure_utc(now_utc)
+    observed_rows = [_with_observed_freshness(row, observed_now) for row in current_lines]
+    grouped = _group_by_player(observed_rows)
+    selected_rows: list[dict[str, Any]] = []
+    metadata: dict[tuple[str, str, str], dict[str, Any]] = {}
+
+    for player_key, rows in grouped.items():
+        supported_rows = [row for row in rows if _book_key(row) in REF_BOOK_PRIORITY]
+        eligible_rows = [
+            row for row in supported_rows
+            if _is_mainline_eligible(row, stale_after_seconds, allow_the_odds_emergency)
+        ]
+        provider_book_groups = _group_by_provider_book(eligible_rows)
+        player_selected: list[dict[str, Any]] = []
+        ambiguous_line_ids: list[Any] = []
+        reasons: list[str] = []
+
+        for group_key in sorted(provider_book_groups):
+            candidates = provider_book_groups[group_key]
+            distinct_lines = {_line_value(row) for row in candidates}
+            if len(distinct_lines) <= 1:
+                selected = min(candidates, key=lambda row: (_freshness(row), str(row.get("id") or "")))
+                player_selected.append(_with_mainline_selection(selected, []))
+                continue
+
+            selected, selected_reasons = _choose_mainline_candidate(candidates, eligible_rows)
+            if selected is None:
+                ambiguous_line_ids.extend(_line_ids(candidates))
+                reasons.append("ambiguous_mainline")
+                continue
+
+            player_selected.append(_with_mainline_selection(selected, selected_reasons))
+            reasons.extend(selected_reasons)
+
+        selected_rows.extend(player_selected)
+        metadata[player_key] = {
+            "raw_candidate_ids": _line_ids(supported_rows),
+            "mainline_line_ids": _line_ids(player_selected),
+            "ambiguous_line_ids": ambiguous_line_ids,
+            "reasons": _unique_preserving_order(reasons),
+        }
+
+    return selected_rows, metadata
+
+
 def retire_missing_official_lines(
     *,
     official_rows: list[dict[str, Any]],
@@ -229,6 +301,15 @@ def retire_missing_official_lines(
     return retired_rows, decision_rows
 
 
+def _group_by_provider_book(rows: list[dict[str, Any]]) -> dict[tuple[str, str], list[dict[str, Any]]]:
+    grouped: dict[tuple[str, str], list[dict[str, Any]]] = {}
+    for row in rows:
+        key = (str(row.get("provider") or "").strip().lower(), _book_key(row))
+        if all(key):
+            grouped.setdefault(key, []).append(row)
+    return grouped
+
+
 def _group_by_player(rows: list[dict[str, Any]]) -> dict[tuple[str, str, str], list[dict[str, Any]]]:
     grouped: dict[tuple[str, str, str], list[dict[str, Any]]] = {}
     for row in rows:
@@ -273,6 +354,17 @@ def _select_book_line(
     )
 
 
+def _is_mainline_eligible(
+    row: dict[str, Any],
+    stale_after_seconds: int,
+    allow_the_odds_emergency: bool,
+) -> bool:
+    if row.get("provider") == "the_odds":
+        if not allow_the_odds_emergency or _book_key(row) not in THE_ODDS_EMERGENCY_BOOKS:
+            return False
+    return _is_complete(row) and _freshness(row) <= stale_after_seconds and "stale" not in _flags(row)
+
+
 def _is_usable_current_line(
     row: dict[str, Any],
     stale_after_seconds: int,
@@ -288,6 +380,133 @@ def _is_usable_current_line(
         and "stale" not in flags
         and "line_conflict" not in flags
     )
+
+
+def _choose_mainline_candidate(
+    candidates: list[dict[str, Any]],
+    eligible_rows: list[dict[str, Any]],
+) -> tuple[dict[str, Any] | None, list[str]]:
+    scored = []
+    for row in candidates:
+        line = _line_value(row)
+        same_book_provider_support = [
+            other for other in eligible_rows
+            if other is not row
+            and _book_key(other) == _book_key(row)
+            and str(other.get("provider") or "").strip().lower() != str(row.get("provider") or "").strip().lower()
+            and _line_value(other) == line
+        ]
+        cross_book_support = [
+            other for other in eligible_rows
+            if other is not row
+            and _book_key(other) != _book_key(row)
+            and _line_value(other) == line
+        ]
+        scored.append({
+            "row": row,
+            "provider_overlap_count": len(same_book_provider_support),
+            "cross_book_support_count": len(cross_book_support),
+            "balance_score": _price_balance_score(row),
+            "freshness": _freshness(row),
+        })
+
+    supported = [
+        item for item in scored
+        if item["provider_overlap_count"] > 0 or item["cross_book_support_count"] > 0
+    ]
+    if supported:
+        best = min(
+            supported,
+            key=lambda item: (
+                -item["provider_overlap_count"],
+                -item["cross_book_support_count"],
+                -item["balance_score"],
+                item["freshness"],
+                str(item["row"].get("id") or ""),
+            ),
+        )
+        tied = [
+            item for item in supported
+            if (
+                item["provider_overlap_count"],
+                item["cross_book_support_count"],
+                item["balance_score"],
+            ) == (
+                best["provider_overlap_count"],
+                best["cross_book_support_count"],
+                best["balance_score"],
+            )
+        ]
+        if len(tied) > 1 and len({_line_value(item["row"]) for item in tied}) > 1:
+            return None, []
+        return best["row"], _mainline_reasons(best)
+
+    best_balance = max((item["balance_score"] for item in scored), default=0)
+    if best_balance >= 2:
+        balanced = [item for item in scored if item["balance_score"] == best_balance]
+        unbalanced = [item for item in scored if item["balance_score"] <= 0]
+        if len(balanced) == 1 and len(unbalanced) == len(scored) - 1:
+            return balanced[0]["row"], _mainline_reasons(balanced[0])
+
+    return None, []
+
+
+def _mainline_reasons(scored_item: dict[str, Any]) -> list[str]:
+    row = scored_item["row"]
+    book_key = _book_key(row)
+    line = _format_line(row.get("line"))
+    reasons = [f"mainline_selected:{book_key}:{line}"]
+    if scored_item["provider_overlap_count"]:
+        reasons.append(f"mainline_overlap_provider:{book_key}:{line}")
+    if scored_item["cross_book_support_count"]:
+        reasons.append(f"mainline_cross_book_support:{book_key}:{line}")
+    if scored_item["balance_score"] >= 2:
+        reasons.append(f"mainline_balanced_prices:{book_key}:{line}")
+    return reasons
+
+
+def _with_mainline_selection(row: dict[str, Any], reasons: list[str]) -> dict[str, Any]:
+    selected = dict(row)
+    flags = [flag for flag in _flags(row) if flag != "line_conflict"]
+    if reasons and "mainline_selected" not in flags:
+        flags.append("mainline_selected")
+    selected["quality_flags"] = flags
+    selected["_mainline_reasons"] = list(reasons)
+    return selected
+
+
+def _line_value(row: dict[str, Any]) -> float | str:
+    value = row.get("line")
+    try:
+        return float(value)
+    except (TypeError, ValueError):
+        return str(value)
+
+
+def _price_balance_score(row: dict[str, Any]) -> int:
+    odds = [row.get("over_odds"), row.get("under_odds")]
+    parsed: list[int] = []
+    for value in odds:
+        try:
+            parsed.append(int(value))
+        except (TypeError, ValueError):
+            return 0
+    max_abs = max(abs(value) for value in parsed)
+    if max_abs <= 150:
+        return 2
+    if max_abs <= 200:
+        return 1
+    return 0
+
+
+def _format_line(value: Any) -> str:
+    try:
+        parsed = float(value)
+    except (TypeError, ValueError):
+        return str(value)
+    if parsed.is_integer():
+        return str(int(parsed))
+    return str(parsed)
 
 
 def _is_complete(row: dict[str, Any]) -> bool:
@@ -325,6 +544,10 @@ def _selection_reasons(
         reasons.append("propline_draftkings")
     if any(row.get("provider") == "boltodds" for row in selected_by_book.values()):
         reasons.append("boltodds_primary")
+    for row in selected_by_book.values():
+        for reason in row.get("_mainline_reasons") or []:
+            if reason not in reasons:
+                reasons.append(str(reason))
     if "cross_book_line_conflict" in quality_flags:
         reasons.append("cross_book_line_conflict")
     if missing_books:
@@ -528,6 +751,17 @@ def _json_list(value: Any) -> list[Any]:
         if isinstance(parsed, list):
             return parsed
     return []
+
+
+def _unique_preserving_order(values: list[str]) -> list[str]:
+    seen: set[str] = set()
+    unique: list[str] = []
+    for value in values:
+        if value in seen:
+            continue
+        seen.add(value)
+        unique.append(value)
+    return unique
 
 
 def _ensure_utc(value: datetime) -> datetime:

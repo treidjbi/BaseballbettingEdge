@@ -19,9 +19,13 @@ sys.path.insert(0, str(ROOT))
 sys.path.insert(0, str(ROOT / "pipeline"))
 
 from pipeline.fetch_odds import _fetch_therundown_odds  # noqa: E402
-from pipeline.fetch_provider_market_odds import fetch_official_market_odds  # noqa: E402
+from pipeline.fetch_provider_market_odds import (  # noqa: E402
+    fetch_official_market_odds,
+    official_market_writer_from_env,
+)
 from pipeline.fetch_stats import fetch_probable_starters  # noqa: E402
 from pipeline.name_utils import normalize  # noqa: E402
+from market_infra.official_market_lines import select_mainline_current_lines  # noqa: E402
 
 
 OUTPUT_DIR = ROOT / "analytics" / "output"
@@ -238,6 +242,7 @@ def _schedule_first_coverage(
     scheduled_pitchers: list[dict[str, Any]],
     rundown_by_pitcher: dict[str, dict[str, Any]],
     provider_by_pitcher: dict[str, dict[str, Any]],
+    current_line_coverage: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     scheduled_by_pitcher = _scheduled_by_pitcher(scheduled_pitchers)
     scheduled_keys = set(scheduled_by_pitcher)
@@ -262,7 +267,7 @@ def _schedule_first_coverage(
         for key in provider_covered
     }
     scheduled_count = len(scheduled_keys)
-    return {
+    coverage = {
         "available": bool(scheduled_pitchers),
         "scheduled_pitcher_count": scheduled_count,
         "rundown_covered_count": len(rundown_covered),
@@ -283,6 +288,61 @@ def _schedule_first_coverage(
         "extra_provider_pitchers_not_scheduled": sorted(provider_keys - scheduled_keys),
         "extra_rundown_pitchers_not_scheduled": sorted(rundown_keys - scheduled_keys),
     }
+    if current_line_coverage:
+        raw_keys = set(current_line_coverage.get("raw_pitcher_keys") or [])
+        mainline_keys = set(current_line_coverage.get("mainline_pitcher_keys") or [])
+        official_keys = provider_keys
+        coverage.update({
+            "provider_raw_covered_count": len(scheduled_keys & raw_keys),
+            "provider_raw_coverage_rate": _rate(len(scheduled_keys & raw_keys), scheduled_count),
+            "provider_mainline_ready_count": len(scheduled_keys & mainline_keys),
+            "provider_mainline_ready_rate": _rate(len(scheduled_keys & mainline_keys), scheduled_count),
+            "provider_official_ready_count": len(scheduled_keys & official_keys),
+            "provider_official_ready_rate": _rate(len(scheduled_keys & official_keys), scheduled_count),
+        })
+    else:
+        coverage.update({
+            "provider_raw_covered_count": None,
+            "provider_raw_coverage_rate": None,
+            "provider_mainline_ready_count": None,
+            "provider_mainline_ready_rate": None,
+            "provider_official_ready_count": len(provider_covered),
+            "provider_official_ready_rate": _rate(len(provider_covered), scheduled_count),
+        })
+    return coverage
+
+
+def _current_line_coverage(
+    provider_current_lines: list[dict[str, Any]],
+    generated_at: datetime,
+) -> dict[str, Any]:
+    raw_pitcher_keys = {
+        str(row.get("normalized_player_name") or normalize(row.get("player_name") or "")).strip()
+        for row in provider_current_lines
+        if str(row.get("normalized_player_name") or normalize(row.get("player_name") or "")).strip()
+    }
+    mainline_rows, mainline_metadata = select_mainline_current_lines(
+        provider_current_lines,
+        generated_at,
+    )
+    mainline_pitcher_keys = {
+        str(row.get("normalized_player_name") or normalize(row.get("player_name") or "")).strip()
+        for row in mainline_rows
+        if str(row.get("normalized_player_name") or normalize(row.get("player_name") or "")).strip()
+    }
+    ambiguous_pitcher_keys = sorted(
+        key[1]
+        for key, metadata in mainline_metadata.items()
+        if metadata.get("ambiguous_line_ids")
+    )
+    return {
+        "available": True,
+        "raw_pitcher_keys": sorted(raw_pitcher_keys),
+        "mainline_pitcher_keys": sorted(mainline_pitcher_keys),
+        "ambiguous_pitcher_keys": ambiguous_pitcher_keys,
+        "raw_candidate_count": len(provider_current_lines),
+        "mainline_candidate_count": len(mainline_rows),
+    }
 
 
 def compare_provider_cutover(
@@ -291,6 +351,7 @@ def compare_provider_cutover(
     rundown_props: list[dict[str, Any]],
     provider_props: list[dict[str, Any]],
     scheduled_pitchers: list[dict[str, Any]] | None = None,
+    provider_current_lines: list[dict[str, Any]] | None = None,
     provider_usage: dict[str, Any] | None = None,
     generated_at: datetime | None = None,
 ) -> dict[str, Any]:
@@ -330,10 +391,16 @@ def compare_provider_cutover(
     coverage_rate = _rate(len(covered_keys), production_count)
     fd_dk_rate = _rate(len(fd_dk_keys), production_count)
     conflict_rate = _rate(len(line_conflict_keys), production_count)
+    current_line_coverage = (
+        _current_line_coverage(provider_current_lines, generated)
+        if provider_current_lines is not None
+        else None
+    )
     schedule_first = _schedule_first_coverage(
         scheduled_pitchers or [],
         rundown_by_pitcher,
         provider_by_pitcher,
+        current_line_coverage,
     )
     prop_line_requests = None
     prop_line_usage_rate = None
@@ -446,6 +513,11 @@ def compare_provider_cutover(
             "extra_provider_pitchers": extra_provider,
             "missing_draftkings_pitchers": missing_dk,
             "line_conflict_pitchers": line_conflict_keys,
+            "ambiguous_mainline_pitchers": (
+                current_line_coverage.get("ambiguous_pitcher_keys", [])
+                if current_line_coverage
+                else []
+            ),
             "book_counts_for_covered_pitchers": dict(sorted(book_coverage_counter.items())),
         },
         "market_differences": {
@@ -457,6 +529,7 @@ def compare_provider_cutover(
             "provider_contract_issues": provider_contract_issues,
             "fire_missing_book_odds": fire_missing_book_odds,
         },
+        "mainline_selection": current_line_coverage or {"available": False},
         "provider_usage": provider_usage or {},
     }
 
@@ -499,6 +572,13 @@ def format_markdown_report(report: dict[str, Any]) -> str:
             f"- Missing TheRundown starters: {len(schedule['missing_rundown_pitchers'])}",
             "",
         ])
+        if schedule.get("provider_raw_covered_count") is not None:
+            lines.extend([
+                f"- Raw provider coverage: {schedule['provider_raw_covered_count']} ({schedule['provider_raw_coverage_rate']:.1%})",
+                f"- Mainline-ready coverage: {schedule['provider_mainline_ready_count']} ({schedule['provider_mainline_ready_rate']:.1%})",
+                f"- Official-ready coverage: {schedule['provider_official_ready_count']} ({schedule['provider_official_ready_rate']:.1%})",
+                "",
+            ])
     else:
         lines.extend([
             "- Scheduled probable starters: unavailable",
@@ -548,6 +628,18 @@ def write_report(report: dict[str, Any], output_dir: Path = OUTPUT_DIR) -> tuple
     return json_path, markdown_path
 
 
+def _fetch_provider_current_lines(writer: Any, date_str: str) -> list[dict[str, Any]]:
+    return writer.select_rows(
+        "current_market_lines",
+        {
+            "slate_date": f"eq.{date_str}",
+            "market_key": "eq.pitcher_strikeouts",
+            "order": "updated_at.desc",
+            "limit": "10000",
+        },
+    )
+
+
 def _parse_usage(value: str | None) -> dict[str, Any] | None:
     if not value:
         return None
@@ -563,6 +655,7 @@ def _parse_args(argv: list[str]) -> argparse.Namespace:
     parser.add_argument("--date", required=True, help="Slate date in YYYY-MM-DD format.")
     parser.add_argument("--rundown-json", type=Path, help="Optional TheRundown prop/artifact JSON.")
     parser.add_argument("--provider-json", type=Path, help="Optional provider-mode prop/artifact JSON.")
+    parser.add_argument("--provider-current-lines-json", type=Path, help="Optional current_market_lines JSON.")
     parser.add_argument("--schedule-json", type=Path, help="Optional schedule-first probable-starter JSON.")
     parser.add_argument("--no-schedule-first", action="store_true", help="Skip MLB probable-starter fetch.")
     parser.add_argument("--provider-min-props", type=int, default=1, help="Minimum provider rows when fetching from Supabase.")
@@ -586,16 +679,32 @@ def main(argv: list[str] | None = None) -> int:
         if args.rundown_json
         else _fetch_therundown_odds(args.date)
     )
+    writer = None
+    if not args.provider_json or not args.provider_current_lines_json:
+        try:
+            writer = official_market_writer_from_env()
+        except Exception as e:
+            print(f"WARNING: provider Supabase writer unavailable: {type(e).__name__}: {e}")
     provider_props = (
         load_json_rows(args.provider_json)
         if args.provider_json
-        else fetch_official_market_odds(args.date, min_props=args.provider_min_props)
+        else fetch_official_market_odds(args.date, writer=writer, min_props=args.provider_min_props)
+        if writer is not None
+        else []
+    )
+    provider_current_lines = (
+        load_json_rows(args.provider_current_lines_json)
+        if args.provider_current_lines_json
+        else _fetch_provider_current_lines(writer, args.date)
+        if writer is not None
+        else None
     )
     report = compare_provider_cutover(
         date_str=args.date,
         rundown_props=rundown_props,
         provider_props=provider_props,
         scheduled_pitchers=scheduled_pitchers,
+        provider_current_lines=provider_current_lines,
         provider_usage=_parse_usage(args.provider_usage_json),
     )
     json_path, markdown_path = write_report(report, args.output_dir)
