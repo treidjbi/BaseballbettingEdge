@@ -170,6 +170,7 @@ jobs:
         run: |
           python scripts/build_current_market_lines_to_supabase.py --date "${{ steps.slate.outputs.date }}"
           python scripts/build_official_market_lines_to_supabase.py --date "${{ steps.slate.outputs.date }}"
+          python scripts/compact_market_snapshots.py --date "${{ steps.slate.outputs.date }}"
 
       - name: Provider cutover shadow compare
         if: ${{ steps.capture.outputs.run_cutover_compare == 'true' }}

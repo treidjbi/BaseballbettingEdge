@@ -15,6 +15,10 @@ from market_infra.current_market_lines import (  # noqa: E402
     build_current_market_lines,
     build_opening_baseline_rows,
 )
+from market_infra.provider_usage import (  # noqa: E402
+    build_provider_usage_rows,
+    write_provider_usage_rows,
+)
 from market_infra.supabase_writer import SupabaseMarketWriter  # noqa: E402
 from pipeline.name_utils import normalize  # noqa: E402
 
@@ -205,9 +209,15 @@ def run(
     complete_rows = [row for row in current_rows if row["is_complete"]]
     stale_rows = [row for row in current_rows if "stale" in row["quality_flags"]]
     baseline_rows = build_opening_baseline_rows(current_rows)
+    provider_usage_rows = build_provider_usage_rows(
+        run_rows=run_rows,
+        snapshot_rows=snapshot_rows,
+        usage_date=slate_date,
+    )
 
     written_rows: list[dict[str, Any]] = []
     written_baselines: list[dict[str, Any]] = []
+    written_usage_rows: list[dict[str, Any]] = []
     if not dry_run:
         written_rows = writer.upsert_rows(
             "current_market_lines",
@@ -219,6 +229,14 @@ def run(
             baseline_rows,
             on_conflict="slate_date,normalized_player_name,market_key,book_key,line",
         )
+        written_usage_rows = write_provider_usage_rows(
+            writer,
+            provider_usage_rows,
+            enforce_propline_budget=(
+                os.environ.get("ENFORCE_PROPLINE_DAILY_BUDGET", "false").strip().lower()
+                in {"1", "true", "yes", "on"}
+            ),
+        )
 
     return {
         "slate_date": slate_date,
@@ -229,6 +247,8 @@ def run(
         "stale_rows": len(stale_rows),
         "game_time_enriched": game_time_enriched,
         "opening_baselines": len(baseline_rows),
+        "provider_usage_rows": len(provider_usage_rows),
+        "provider_usage_warnings": len(written_usage_rows),
         "written_rows": len(written_rows),
         "written_baselines": len(written_baselines),
         "dry_run": dry_run,
@@ -268,6 +288,7 @@ def main(argv: list[str] | None = None) -> int:
         f"stale={result['stale_rows']} "
         f"game_time_enriched={result['game_time_enriched']} "
         f"opening_baselines={result['opening_baselines']} "
+        f"provider_usage={result['provider_usage_rows']} "
         f"written={result['written_rows']}"
         f" written_baselines={result['written_baselines']}"
     )

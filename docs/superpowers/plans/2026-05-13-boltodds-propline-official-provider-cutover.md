@@ -1022,6 +1022,12 @@ Rules:
 
 ### Step 7: Add Provider Usage Accounting And Raw Snapshot Compaction
 
+Status 2026-05-14: implemented on `codex/boltodds-production-plan` as
+shadow-only support. The scheduled shadow-market workflow now writes
+`provider_request_usage_daily` and `compact_market_line_movements` after the
+current/official market-line build. This is evidence infrastructure only; no
+raw snapshot deletion or provider promotion is approved by this step.
+
 Create:
 
 ```text

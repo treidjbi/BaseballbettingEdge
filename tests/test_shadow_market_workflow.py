@@ -25,6 +25,7 @@ def test_shadow_market_workflow_runs_only_sidecar_scripts_with_required_secrets(
     assert "scripts/shadow_artifacts_to_supabase.py" in text
     assert "scripts/build_current_market_lines_to_supabase.py" in text
     assert "scripts/build_official_market_lines_to_supabase.py" in text
+    assert "scripts/compact_market_snapshots.py" in text
     assert "analytics/diagnostics/provider_cutover_shadow_compare.py" in text
     assert "SUPABASE_URL: ${{ secrets.SUPABASE_URL }}" in text
     assert "SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}" in text

@@ -48,8 +48,8 @@ per-pick movement, display state, or would-have-alerted state.
 | `official_market_lines` | New official provider-arbitrated market feed | Create as the only pipeline-readable market source | New arbitration builder | Official market source after cutover |
 | `market_opening_baselines` | New provider opening baselines | Create and preserve first-seen baseline rows | New current-line builder | Provider-era opening-line source |
 | `provider_arbitration_decisions` | New source-choice audit | Create for every official-line build | New arbitration builder | Explain bet/wait/skip/source decisions |
-| `provider_request_usage_daily` | New provider request/cost counter | Create for PropLine downgrade guardrails | Existing/new provider jobs | Cost and quota guardrail |
-| `compact_market_line_movements` | New compact raw-snapshot summary | Create before long-term raw snapshot retention is enforced | New compaction script | Season-long movement history without raw tick volume |
+| `provider_request_usage_daily` | New provider request/cost counter | Write from shadow provider runs/snapshots | Current-line builder and compaction script | Cost and quota guardrail |
+| `compact_market_line_movements` | New compact raw-snapshot summary | Write before long-term raw snapshot retention deletion | `scripts/compact_market_snapshots.py` | Season-long movement history without raw tick volume |
 
 Cutover rule: the GitHub pipeline should read `official_market_lines`, not raw
 `market_snapshots`. Raw snapshots remain evidence; official lines are the
@@ -102,6 +102,11 @@ separate cost and retention decision says it is worth it.
 The timing-ledger rule is the same: keep `shadow_pipeline_runs` as short-lived
 operational proof and keep `shadow_pick_lock_observations` compact enough to
 explain future lock decisions without storing every live-layer tick forever.
+
+The raw-market rule is now concrete on the cutover branch: compact movement
+rows can be written, but raw `market_snapshots` should not be deleted until the
+compact rows have been reviewed for at least one slate and Tyler approves a
+retention job.
 
 ## Duplication Guardrail
 

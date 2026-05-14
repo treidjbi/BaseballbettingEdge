@@ -73,6 +73,12 @@ Cutover branch infrastructure progress as of 2026-05-14:
   `current_market_lines`/`official_market_lines` from existing snapshots; they
   do not run the production pipeline, push artifacts, or change provider order.
   The provider cutover comparison report is manual-only from that workflow.
+- Step 7 storage/cost support is implemented on the cutover branch:
+  `provider_request_usage_daily` is written from fetched provider runs/snapshots,
+  and `scripts/compact_market_snapshots.py` upserts compact
+  `compact_market_line_movements` rows after the current/official market-line
+  build. This enables storage and request-usage review, but raw snapshot
+  deletion/retention is still a separate approval step.
 - The Odds API official arbitration remains behind an explicit emergency flag;
   DraftKings remains PropLine-first until BoltOdds DraftKings coverage is
   explicitly enabled.

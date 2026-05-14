@@ -160,3 +160,56 @@ def test_run_enriches_missing_game_times_before_writing_current_lines():
         "order": "updated_at.desc",
         "limit": "1000",
     }) in writer.calls
+
+
+def test_run_writes_provider_usage_rows_from_fetched_runs_and_snapshots():
+    writer = FakeWriter()
+
+    def select_rows(table, params):
+        writer.calls.append((table, dict(params)))
+        if table == "market_provider_runs":
+            return [{
+                "id": "run-1",
+                "provider": "propline",
+                "mode": "shadow_poll",
+                "slate_date": "2026-05-14",
+                "request_count": 5,
+                "metadata": {"script": "scripts/shadow_propline_to_supabase.py"},
+            }]
+        if table == "market_feed_heartbeats":
+            return []
+        if table == "live_pick_state":
+            return []
+        if table == "market_snapshots" and params["offset"] == "0":
+            return [{
+                "id": "snap-1",
+                "run_id": "run-1",
+                "provider": "propline",
+                "bookmaker_key": "draftkings",
+                "bookmaker_title": "DraftKings",
+                "player_name": "Jose Berrios",
+                "market_key": "pitcher_strikeouts",
+                "side": "over",
+                "line": 5.5,
+                "american_odds": -115,
+                "observed_at": "2026-05-14T16:19:00+00:00",
+            }]
+        return []
+
+    writer.select_rows = select_rows
+
+    result = run(slate_date="2026-05-14", writer=writer, dry_run=False, now_utc=NOW)
+
+    assert result["provider_usage_rows"] == 1
+    usage_upsert = next(call for call in writer.upserts if call[0] == "provider_request_usage_daily")
+    assert usage_upsert == (
+        "provider_request_usage_daily",
+        [{
+            "usage_date": "2026-05-14",
+            "provider": "propline",
+            "source": "scripts/shadow_propline_to_supabase.py",
+            "request_count": 5,
+            "snapshot_count": 1,
+        }],
+        "usage_date,provider,source",
+    )
