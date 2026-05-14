@@ -32,6 +32,23 @@ def test_upsert_rows_sets_conflict_target():
     assert post.call_args.kwargs["headers"]["Prefer"] == "resolution=merge-duplicates,return=representation"
 
 
+def test_insert_ignore_rows_ignores_duplicate_conflicts():
+    writer = SupabaseMarketWriter("https://example.supabase.co", "secret-key")
+    response = Mock()
+    response.raise_for_status.return_value = None
+    response.json.return_value = []
+
+    with patch("market_infra.supabase_writer.requests.post", return_value=response) as post:
+        writer.insert_ignore_rows(
+            "shadow_pick_lock_observations",
+            [{"dedupe_key": "abc"}],
+            on_conflict="dedupe_key",
+        )
+
+    assert post.call_args.kwargs["params"] == {"on_conflict": "dedupe_key"}
+    assert post.call_args.kwargs["headers"]["Prefer"] == "resolution=ignore-duplicates,return=representation"
+
+
 def test_select_rows_passes_query_params_and_service_role_auth():
     writer = SupabaseMarketWriter("https://example.supabase.co", "secret-key")
     response = Mock()

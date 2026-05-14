@@ -50,3 +50,16 @@ class SupabaseMarketWriter:
         )
         response.raise_for_status()
         return response.json()
+
+    def insert_ignore_rows(self, table: str, rows: list[dict], on_conflict: str) -> list[dict]:
+        if not rows:
+            return []
+        response = requests.post(
+            f"{self.supabase_url}/rest/v1/{table}",
+            headers=self._headers("resolution=ignore-duplicates,return=representation"),
+            params={"on_conflict": on_conflict},
+            json=rows,
+            timeout=20,
+        )
+        response.raise_for_status()
+        return response.json()
