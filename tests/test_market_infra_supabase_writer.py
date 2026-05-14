@@ -1,5 +1,7 @@
 from unittest.mock import Mock, patch
 
+import requests
+
 from market_infra.supabase_writer import SupabaseMarketWriter
 
 
@@ -63,3 +65,24 @@ def test_select_rows_passes_query_params_and_service_role_auth():
     assert get.call_args.kwargs["params"] == {"slate_date": "eq.2026-05-06"}
     assert get.call_args.kwargs["headers"]["Authorization"] == "Bearer secret-key"
     assert get.call_args.kwargs["timeout"] == 20
+
+
+def test_select_rows_retries_transient_server_errors():
+    writer = SupabaseMarketWriter("https://example.supabase.co", "secret-key")
+    failing = Mock(status_code=500)
+    error = requests.HTTPError("500 Server Error")
+    error.response = failing
+    failing.raise_for_status.side_effect = error
+    succeeding = Mock(status_code=200)
+    succeeding.raise_for_status.return_value = None
+    succeeding.json.return_value = [{"id": "snap-1"}]
+
+    with (
+        patch("market_infra.supabase_writer.requests.get", side_effect=[failing, succeeding]) as get,
+        patch("market_infra.supabase_writer.time.sleep") as sleep,
+    ):
+        result = writer.select_rows("market_snapshots", {"limit": "2500"})
+
+    assert result == [{"id": "snap-1"}]
+    assert get.call_count == 2
+    sleep.assert_called_once()
