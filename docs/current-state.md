@@ -74,6 +74,8 @@ The live layer is now separate from the production pipeline.
   - `live_market_display_state`
   - `shadow_notification_candidates`
   - `game_reminder_state`
+  - `shadow_pipeline_runs`
+  - `shadow_pick_lock_observations`
 - Netlify scheduled function: `send-live-notifications`
 - Manual endpoint: `/api/send-live-notifications-now`
 
@@ -104,6 +106,14 @@ movement display. It summarizes provider snapshots into market consensus, best
 actionable book, off-market books, movement sequence, and freshness/actionable
 state. It is intentionally not a pick, lock, threshold, staking, provider-order,
 or notification-send input.
+
+`shadow_pipeline_runs` and `shadow_pick_lock_observations` are the Render
+live-layer timing rehearsal for getting off GitHub Actions for time-sensitive
+locks. They record compact per-run freshness/lock-window counts plus deduped
+pick/status observations such as `due_now`, `missed_lock`, and
+`started_unlocked`. They are shadow-only and must not update dashboard
+artifacts, `picks_history.json`, grading, calibration, model outputs, provider
+order, or notification sends until Tyler approves a separate promotion.
 
 Current housekeeping:
 

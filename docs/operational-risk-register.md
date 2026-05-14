@@ -36,8 +36,8 @@ Use this hierarchy when sources disagree.
    (`today.json`, dated archives, `steam.json`, `picks_history.json`,
    `params.json`) remain the official model and dashboard truth.
 2. **Live notification evidence**: Render `bbe-live-layer` can create live
-   pick-state and notification events, but those events do not redefine the
-   official pick or grading record.
+   pick-state, notification events, and shadow timing rows, but those events do
+   not redefine the official pick or grading record.
 3. **PropLine shadow/fallback evidence**: PropLine polling can support fallback,
    coverage, and movement analysis. PropLine webhooks are not considered proven
    until real provider deliveries appear in `propline_webhook_deliveries`.
@@ -165,6 +165,7 @@ Tyler explicitly changes this boundary.
 | Netlify sender not sending | Pending queue grows; sender logs errors | Users miss live alerts | Netlify function logs; `notification_events` sent/failed counts | Check env, Supabase service key, VAPID, Blobs | Pending actionable events remain unsent through game window |
 | Duplicate notifications | Same pick/move sends more than once | Trust drops fast | `notification_events.dedupe_key`; push tags | Patch dedupe logic; suppress noisy class | Any duplicate FIRE/new-pick notification |
 | Source line conflict | Providers disagree on line/price | Confusing movement or wrong confidence | Compare production artifact, PropLine, BoltOdds rows | Treat TheRundown artifact as production; mark conflict in audit | Conflict would change a bet or alert |
+| Shadow timing ledger grows too noisy | `shadow_pipeline_runs` or lock observations grow without decision value | Supabase cost/query noise and harder daily reads | Row counts, status distribution, and whether rows changed a lock decision | Retain compact status transitions only; add short retention to run rows | Ledger volume grows but does not support promotion/cut decision |
 | Supabase free tier pressure | Storage/API/egress/compute rising | Surprise cost or degraded queries | Supabase dashboard; table row counts | Add retention/aggregation; pause noisy captures | Any need to upgrade without a clear decision value |
 | Codex/automation drift | Agents miss current docs or duplicate work | More rework and context loss | `AGENTS.md`, `docs/current-state.md`, automations | Update handoff docs and automation prompts | Any repeated incorrect recommendation |
 
@@ -186,6 +187,8 @@ or cost makes retention necessary.
 | `line_movement_events` | Season or long-term if compact | Higher-value summarized movement evidence |
 | `notification_events` | 30-90 days | Debug delivery quality and fatigue |
 | `market_feed_heartbeats` | 7-14 days | Operational freshness only |
+| `shadow_pipeline_runs` | 30-90 days unless promoted | Operational timing proof; per-run rows should not become long-term research storage |
+| `shadow_pick_lock_observations` | Season or long-term if compact | Deduped pick/status timing transitions useful for future lock-ledger promotion |
 | Webhook raw deliveries | 30-90 days, longer for rare real provider proof | Useful until webhook trust is settled |
 
 ## Notification Quality Guardrails

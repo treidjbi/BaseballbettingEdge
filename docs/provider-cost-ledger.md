@@ -175,6 +175,10 @@ Render cost is easy to reason about because the architecture maps to services:
 Keep the cron if live notifications are useful. Keep the always-on worker only
 if BoltOdds is worth the provider cost plus the operational complexity.
 
+The shadow pipeline-timing ledger rides on the existing `bbe-live-layer` cron.
+Do not add another Render service just to evaluate GitHub lock timing unless
+the existing cron proves too slow or overloaded.
+
 ### Supabase
 
 Supabase is currently free and is the right home for append-only evidence.

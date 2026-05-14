@@ -14,6 +14,8 @@ provider order, notifications, or calibration.
 | Per-pick movement rollup | `market_pick_evidence` | Compact model-vs-market movement for LEAN/FIRE sides. |
 | App-ready live state | `live_market_display_state` | Consensus, best actionable book, off-market books, freshness. |
 | Would-have-alerted rows | `shadow_notification_candidates` | Alert research only; does not send pushes. |
+| Render-vs-GitHub timing summary | `shadow_pipeline_runs` | Compact per-run artifact freshness and lock-window counts. |
+| Pick lock timing observations | `shadow_pick_lock_observations` | Deduped status transitions for future lock-ledger decisions. |
 | Whole-market price outcomes | `market_price_outcome_audit.py` | Includes PASS-level markets, favorite behavior, side price buckets. |
 | Live market outcome slices | `live_market_outcome_audit.py` | Joins exported live market evidence to graded results. |
 | Compact pitcher outcome row | `pitcher_k_outcome_dataset.py` | Canonical research row for market, model, context, CLV, and result. |
@@ -62,6 +64,10 @@ If BoltOdds becomes production this weekend, judge it by three proofs:
 
 Do not copy raw WebSocket tick history into long-term research storage unless a
 separate cost and retention decision says it is worth it.
+
+The timing-ledger rule is the same: keep `shadow_pipeline_runs` as short-lived
+operational proof and keep `shadow_pick_lock_observations` compact enough to
+explain future lock decisions without storing every live-layer tick forever.
 
 ## Duplication Guardrail
 

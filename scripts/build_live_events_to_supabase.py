@@ -23,6 +23,7 @@ from market_infra.live_events import (  # noqa: E402
 )
 from market_infra.live_market_display import build_live_market_display_rows  # noqa: E402
 from market_infra.market_evidence import build_market_pick_evidence_rows  # noqa: E402
+from market_infra.shadow_pipeline_timing import build_shadow_pipeline_timing_rows  # noqa: E402
 from market_infra.shadow_notification_candidates import (  # noqa: E402
     build_shadow_notification_candidate_rows,
 )
@@ -121,6 +122,53 @@ def _live_notification_snapshots(rows: list[dict[str, Any]]) -> list[dict[str, A
         for row in rows
         if str(row.get("provider") or "").strip().lower() in LIVE_NOTIFICATION_MOVEMENT_PROVIDERS
     ]
+
+
+def _shadow_pipeline_timing_enabled() -> bool:
+    value = os.environ.get("ENABLE_SHADOW_PIPELINE_TIMING_LEDGER", "true").strip().lower()
+    return value not in {"0", "false", "no", "off"}
+
+
+def _write_shadow_pipeline_timing(
+    *,
+    writer: SupabaseMarketWriter,
+    slate_date: str,
+    payload: dict[str, Any],
+    observed_at: datetime,
+    artifact_source: str,
+    artifact_sha: str | None,
+) -> dict[str, Any]:
+    if not _shadow_pipeline_timing_enabled():
+        return {"skipped": True, "reason": "disabled"}
+
+    try:
+        run_row, observation_rows = build_shadow_pipeline_timing_rows(
+            slate_date=slate_date,
+            pitchers=payload.get("pitchers") or [],
+            observed_at=observed_at,
+            source_artifact_path=artifact_source,
+            source_artifact_sha256=artifact_sha,
+            artifact_generated_at=payload.get("generated_at"),
+        )
+        writer.upsert_rows("shadow_pipeline_runs", [run_row], on_conflict="run_key")
+        writer.insert_ignore_rows(
+            "shadow_pick_lock_observations",
+            observation_rows,
+            on_conflict="dedupe_key",
+        )
+        return {
+            "skipped": False,
+            "pipeline_runs": 1,
+            "pick_lock_observations": len(observation_rows),
+            "pipeline_run_row": run_row,
+            "pick_lock_observation_rows": observation_rows,
+        }
+    except Exception as error:
+        print(
+            f"Warning: shadow pipeline timing write failed ({error})",
+            file=sys.stderr,
+        )
+        return {"skipped": True, "error": str(error)}
 
 
 def run(
@@ -238,6 +286,14 @@ def run(
     )
     writer.upsert_rows("game_reminder_state", reminder_rows, on_conflict="dedupe_key")
     writer.upsert_rows("live_pick_state", state_rows, on_conflict="slate_date,normalized_pitcher,side")
+    shadow_pipeline_timing = _write_shadow_pipeline_timing(
+        writer=writer,
+        slate_date=slate_date,
+        payload=payload,
+        observed_at=observed_at,
+        artifact_source=artifact_source,
+        artifact_sha=artifact_sha,
+    )
     return {
         "state_rows": state_rows,
         "notification_rows": notification_rows,
@@ -255,6 +311,7 @@ def run(
         "game_reminders": len(reminder_rows),
         "propline": propline_result or {"skipped": True},
         "artifact_source": artifact_source,
+        "shadow_pipeline_timing": shadow_pipeline_timing,
     }
 
 

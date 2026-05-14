@@ -72,6 +72,8 @@ def test_worker_writes_state_and_notification_events(tmp_path):
     assert result["game_reminders"] == 0
     assert result["state_rows"][0]["source_artifact_sha256"]
     assert Path(result["state_rows"][0]["source_artifact_path"]).name == "today.json"
+    assert result["shadow_pipeline_timing"]["pipeline_runs"] == 1
+    assert result["shadow_pipeline_timing"]["pick_lock_observations"] == 1
     writer.upsert_rows.assert_any_call(
         "live_pick_state",
         result["state_rows"],
@@ -91,7 +93,51 @@ def test_worker_writes_state_and_notification_events(tmp_path):
         "shadow_notification_candidates",
         "game_reminder_state",
         "live_pick_state",
+        "shadow_pipeline_runs",
     ]
+    writer.insert_ignore_rows.assert_any_call(
+        "shadow_pick_lock_observations",
+        result["shadow_pipeline_timing"]["pick_lock_observation_rows"],
+        on_conflict="dedupe_key",
+    )
+
+
+def test_worker_keeps_shadow_timing_failures_from_breaking_live_layer(tmp_path):
+    today = _write_artifact(tmp_path, [_fire_pitcher()])
+    writer = _writer_with_selects({
+        "live_pick_state": [],
+        "market_snapshots": [],
+        "game_reminder_state": [],
+    })
+    writer.upsert_rows.side_effect = [
+        [],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [],
+        RuntimeError("shadow table missing"),
+    ]
+
+    with (
+        patch.object(build_live_events_to_supabase, "SupabaseMarketWriter", return_value=writer),
+        patch.object(
+            build_live_events_to_supabase,
+            "_now_utc",
+            return_value=build_live_events_to_supabase.datetime.fromisoformat("2026-05-06T18:00:00+00:00"),
+        ),
+    ):
+        result = build_live_events_to_supabase.run(
+            slate_date="2026-05-06",
+            artifact_path=today,
+            supabase_url="https://example.supabase.co",
+            service_role_key="secret",
+        )
+
+    assert result["live_pick_state"] == 1
+    assert result["shadow_pipeline_timing"]["skipped"] is True
+    assert "shadow table missing" in result["shadow_pipeline_timing"]["error"]
 
 
 def test_worker_marks_missing_previous_fire_pass_after_notifications(tmp_path):
@@ -588,6 +634,7 @@ def test_worker_upserts_non_empty_tables_in_retry_safe_order(tmp_path):
         "shadow_notification_candidates",
         "game_reminder_state",
         "live_pick_state",
+        "shadow_pipeline_runs",
     ]
 
 
