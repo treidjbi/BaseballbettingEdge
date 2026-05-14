@@ -60,6 +60,14 @@ Cutover branch infrastructure progress as of 2026-05-14:
 - `official_market_lines` arbitration exists behind a separate build script and
   remains shadow-only. It fails closed for stale, unsupported, incomplete, and
   missing-current lines and does not change production artifacts yet.
+- A shadow mainline selector now runs before official arbitration so
+  same-book BoltOdds alt ladders are not treated as automatic provider outages.
+  It keeps raw/current rows for audit, selects complete supported mainline
+  candidates only when PropLine/TheRundown overlap or cross-book support makes
+  the choice clear, and fails closed on ambiguous ladders. The first May 14
+  rehearsal after this change showed raw schedule-first provider coverage at
+  21/22 starters, but only 14/22 mainline-ready and 14/22 official-ready, so
+  the cutover remains not ready.
 - `.github/workflows/shadow-market-infra.yml` now has a shadow-only derived
   line build step. Scheduled runs capture PropLine and rebuild
   `current_market_lines`/`official_market_lines` from existing snapshots; they
