@@ -61892,7 +61892,7 @@
     "career_swstr_pct": 0.1465,
     "ref_book": "FanDuel",
     "best_over_odds": -130,
-    "best_under_odds": -105,
+    "best_under_odds": 106,
     "opening_over_odds": -124,
     "opening_under_odds": 102,
     "opening_odds_source": "preview",
@@ -61914,14 +61914,12 @@
     "locked_adj_ev": null,
     "locked_verdict": null,
     "data_complete": 1,
-    "quality_gate_level": "capped",
-    "verdict_cap_reason": "1 soft input flag: first_seen_opening",
-    "input_quality_flags": [
-      "first_seen_opening"
-    ],
+    "quality_gate_level": "clean",
+    "verdict_cap_reason": "",
+    "input_quality_flags": [],
     "data_maturity": {
       "lineup": "confirmed",
-      "market": "first_seen",
+      "market": "preview_open",
       "pitcher": "mature",
       "umpire": "mature"
     }
