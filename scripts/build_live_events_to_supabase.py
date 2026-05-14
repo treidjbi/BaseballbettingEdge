@@ -317,17 +317,19 @@ def run(
 
 def main() -> int:
     artifact = DEFAULT_ARTIFACT
-    artifact_url = ""
-    payload = None
-    slate_date = sys.argv[1] if len(sys.argv) > 1 else ""
-    if not slate_date:
-        artifact_url = _optional_env("LIVE_ARTIFACT_URL") or DEFAULT_ARTIFACT_URL
-        payload, artifact_sha, artifact_source = _load_artifact(artifact, artifact_url=artifact_url)
-        slate_date = str(payload["date"])
-    else:
-        payload = None
-        artifact_sha = None
-        artifact_source = _source_artifact_path(artifact)
+    artifact_url = _optional_env("LIVE_ARTIFACT_URL") or DEFAULT_ARTIFACT_URL
+    requested_date = sys.argv[1] if len(sys.argv) > 1 else ""
+    payload, artifact_sha, artifact_source = _load_artifact(artifact, artifact_url=artifact_url)
+    artifact_date = str(payload["date"])
+    if requested_date and requested_date != artifact_date:
+        print(
+            "Requested slate date "
+            f"{requested_date} does not match artifact date {artifact_date} "
+            f"from {artifact_source}",
+            file=sys.stderr,
+        )
+        return 2
+    slate_date = requested_date or artifact_date
 
     result = run(
         slate_date=slate_date,

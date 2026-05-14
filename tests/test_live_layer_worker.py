@@ -738,3 +738,65 @@ def test_render_entrypoint_uses_remote_today_artifact_when_no_date_argument(tmp_
     output = capsys.readouterr().out
     assert "date=2026-05-07" in output
     assert "artifact_source=remote" in output
+
+
+def test_render_entrypoint_uses_remote_artifact_when_date_argument_matches(tmp_path, monkeypatch, capsys):
+    stale_local = _write_artifact(tmp_path, [])
+    remote_payload = {
+        "date": "2026-05-07",
+        "pitchers": [_fire_pitcher(game_time="2026-05-07T22:10:00Z")],
+    }
+    run_calls = []
+
+    monkeypatch.setattr(build_live_events_to_supabase, "DEFAULT_ARTIFACT", stale_local)
+    monkeypatch.setenv("SUPABASE_URL", "https://example.supabase.co")
+    monkeypatch.setenv("SUPABASE_SERVICE_ROLE_KEY", "secret")
+    monkeypatch.delenv("PROPLINE_API_KEY", raising=False)
+    monkeypatch.setattr(sys, "argv", ["build_live_events_to_supabase.py", "2026-05-07"])
+
+    def load_artifact(path, artifact_url=None):
+        assert path == stale_local
+        assert artifact_url == build_live_events_to_supabase.DEFAULT_ARTIFACT_URL
+        return remote_payload, "remote-sha", build_live_events_to_supabase.DEFAULT_ARTIFACT_URL
+
+    def run(**kwargs):
+        run_calls.append(kwargs)
+        return {
+            "live_pick_state": 1,
+            "notification_events": 1,
+            "line_movement_events": 0,
+            "game_reminders": 0,
+            "propline": {"skipped": True},
+        }
+
+    monkeypatch.setattr(build_live_events_to_supabase, "_load_artifact", load_artifact)
+    monkeypatch.setattr(build_live_events_to_supabase, "run", run)
+
+    assert build_live_events_to_supabase.main() == 0
+
+    assert run_calls[0]["slate_date"] == "2026-05-07"
+    assert run_calls[0]["artifact_payload"] == remote_payload
+    assert run_calls[0]["artifact_url"] == build_live_events_to_supabase.DEFAULT_ARTIFACT_URL
+    assert "artifact_source=remote" in capsys.readouterr().out
+
+
+def test_render_entrypoint_rejects_date_argument_when_remote_artifact_date_differs(tmp_path, monkeypatch, capsys):
+    stale_local = _write_artifact(tmp_path, [])
+    remote_payload = {"date": "2026-05-07", "pitchers": []}
+
+    monkeypatch.setattr(build_live_events_to_supabase, "DEFAULT_ARTIFACT", stale_local)
+    monkeypatch.setenv("SUPABASE_URL", "https://example.supabase.co")
+    monkeypatch.setenv("SUPABASE_SERVICE_ROLE_KEY", "secret")
+    monkeypatch.setattr(sys, "argv", ["build_live_events_to_supabase.py", "2026-05-08"])
+    monkeypatch.setattr(
+        build_live_events_to_supabase,
+        "_load_artifact",
+        lambda path, artifact_url=None: (
+            remote_payload,
+            "remote-sha",
+            build_live_events_to_supabase.DEFAULT_ARTIFACT_URL,
+        ),
+    )
+
+    assert build_live_events_to_supabase.main() == 2
+    assert "does not match artifact date" in capsys.readouterr().err
