@@ -7002,24 +7002,72 @@
         "so": 1,
         "k_rate": 0.25
       }
+    },
+    "mlbam:682848": {
+      "name": "Endy Rodr\u00edguez",
+      "bats": "R",
+      "mlbam_id": 682848,
+      "bbref_id": "rodrien01",
+      "season": 2026,
+      "vs_R": {
+        "pa": 45,
+        "so": 10,
+        "k_rate": 0.2222
+      },
+      "vs_L": {
+        "pa": 12,
+        "so": 4,
+        "k_rate": 0.3333
+      }
+    },
+    "mlbam:663584": {
+      "name": "Hayden Senger",
+      "bats": "R",
+      "mlbam_id": 663584,
+      "bbref_id": "sengeha01",
+      "season": 2026,
+      "vs_R": {
+        "pa": 60,
+        "so": 14,
+        "k_rate": 0.2333
+      },
+      "vs_L": {
+        "pa": 18,
+        "so": 8,
+        "k_rate": 0.4444
+      }
+    },
+    "mlbam:668952": {
+      "name": "Ryan Kreidler",
+      "bats": "R",
+      "mlbam_id": 668952,
+      "bbref_id": "kreidry01",
+      "season": 2026,
+      "vs_R": {
+        "pa": 4,
+        "so": 1,
+        "k_rate": 0.25
+      },
+      "vs_L": {
+        "pa": 14,
+        "so": 2,
+        "k_rate": 0.1429
+      }
     }
   },
-  "updated_at": "2026-05-14T04:57:35Z",
+  "updated_at": "2026-05-14T15:33:59Z",
   "last_run": {
     "projection_status": "collection_only",
-    "requested_batters": 270,
-    "already_cached": 261,
+    "requested_batters": 99,
+    "already_cached": 95,
     "attempted": 4,
-    "collected": 0,
-    "failed": 4,
-    "queued_not_attempted": 5,
-    "cache_size": 415,
+    "collected": 3,
+    "failed": 1,
+    "queued_not_attempted": 0,
+    "cache_size": 418,
     "errors": [
-      "Spencer Jones: no bbref id",
-      "Omar Martinez: no bbref id",
-      "A.J. Ewing: no bbref id",
-      "Raisel Iglesias: no platoon split rows"
+      "A.J. Ewing: no bbref id"
     ],
-    "updated_at": "2026-05-14T04:57:35Z"
+    "updated_at": "2026-05-14T15:33:59Z"
   }
 }
