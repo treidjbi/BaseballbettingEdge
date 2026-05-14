@@ -3,6 +3,8 @@ import sys
 from pathlib import Path
 from unittest.mock import Mock, patch
 
+import requests
+
 from scripts import build_live_events_to_supabase
 
 
@@ -501,6 +503,44 @@ def test_worker_can_poll_propline_before_building_live_events(tmp_path):
     assert calls.index(("poll", "propline")) < calls.index(("select", "market_snapshots"))
     assert result["propline"]["snapshot_count"] == 2
     assert result["line_movement_events"] == 1
+
+
+def test_worker_continues_when_optional_propline_poll_times_out(tmp_path):
+    today = _write_artifact(tmp_path, [_fire_pitcher()])
+    calls = []
+    writer = Mock()
+
+    def select_rows(table, params):
+        calls.append(("select", table))
+        return {
+            "live_pick_state": [],
+            "market_snapshots": [],
+            "game_reminder_state": [],
+        }.get(table, [])
+
+    writer.select_rows.side_effect = select_rows
+
+    with (
+        patch.object(build_live_events_to_supabase, "SupabaseMarketWriter", return_value=writer),
+        patch.object(
+            build_live_events_to_supabase,
+            "poll_propline_to_supabase",
+            side_effect=requests.ReadTimeout("PropLine timed out"),
+        ),
+    ):
+        result = build_live_events_to_supabase.run(
+            slate_date="2026-05-06",
+            artifact_path=today,
+            supabase_url="https://example.supabase.co",
+            service_role_key="secret",
+            poll_propline=True,
+        )
+
+    assert result["live_pick_state"] == 1
+    assert result["propline"]["skipped"] is True
+    assert result["propline"]["reason"] == "poll_failed"
+    assert "PropLine timed out" in result["propline"]["error"]
+    assert ("select", "market_snapshots") in calls
 
 
 def test_worker_does_not_compare_snapshots_across_provider_events(tmp_path):

@@ -196,11 +196,22 @@ def run(
     propline_result: dict[str, Any] | None = None
 
     if poll_propline:
-        propline_result = poll_propline_to_supabase(
-            slate_date,
-            writer=writer,
-            observed_at=observed_at.isoformat(),
-        )
+        try:
+            propline_result = poll_propline_to_supabase(
+                slate_date,
+                writer=writer,
+                observed_at=observed_at.isoformat(),
+            )
+        except Exception as error:
+            print(
+                f"Warning: optional PropLine poll failed ({error}); continuing live build",
+                file=sys.stderr,
+            )
+            propline_result = {
+                "skipped": True,
+                "reason": "poll_failed",
+                "error": str(error)[:1000],
+            }
 
     pick_notification_rows, state_rows = build_pick_change_events(
         slate_date=slate_date,
