@@ -38,6 +38,8 @@ Use this hierarchy when sources disagree.
 2. **Live notification evidence**: Render `bbe-live-layer` can create live
    pick-state, notification events, and shadow timing rows, but those events do
    not redefine the official pick or grading record.
+   Its `shadow_pipeline_runs` and `shadow_pick_lock_observations` tables are
+   scheduler/lock-timing evidence only until a separate promotion is approved.
 3. **PropLine shadow/fallback evidence**: PropLine polling can support fallback,
    coverage, and movement analysis. PropLine webhooks are not considered proven
    until real provider deliveries appear in `propline_webhook_deliveries`.
@@ -169,6 +171,7 @@ Tyler explicitly changes this boundary.
 | Provider arbitration wrong | `official_market_lines` selects stale, incomplete, or unsupported-book rows | Picks use bad market input even if model math is unchanged | `provider_arbitration_decisions`, `current_market_lines`, freshness flags | Switch `OFFICIAL_MARKET_SOURCE=therundown`; fix arbitration before retry | Any FIRE pick uses stale/incomplete provider line |
 | Opening baseline overwritten | `market_opening_baselines` changes after first usable baseline | Steam and CLV reads become misleading | Compare baseline inserted_at/first_seen_at against preview artifact | Restore baseline from preview/archive; patch writer to preserve first-seen row | Any provider-era pick has moving opening odds |
 | GitHub pipeline scans raw market snapshots | Pipeline runtime slows or returns inconsistent current rows | Slate artifacts become slow or unstable near lock | Pipeline logs and query plan/code review | Move reads back to `official_market_lines`; keep raw scans in builder jobs | Any scheduled run misses action window |
+| Shadow timing ledger grows too noisy | `shadow_pipeline_runs` or lock observations grow without decision value | Supabase cost/query noise and harder daily reads | Row counts, status distribution, and whether rows changed a lock decision | Retain compact status transitions only; add short retention to run rows | Ledger volume grows but does not support promotion/cut decision |
 | Post-TheRundown rollback weaker than expected | TheRundown canceled and BoltOdds/PropLine degraded | No full-strength fallback source | Provider env, billing status, coverage report | Use PropLine-first + The Odds emergency fallback; document degraded mode | Any slate loses FanDuel/DraftKings coverage after cancellation |
 | Supabase free tier pressure | Storage/API/egress/compute rising | Surprise cost or degraded queries | Supabase dashboard; table row counts | Add retention/aggregation; pause noisy captures | Any need to upgrade without a clear decision value |
 | Codex/automation drift | Agents miss current docs or duplicate work | More rework and context loss | `AGENTS.md`, `docs/current-state.md`, automations | Update handoff docs and automation prompts | Any repeated incorrect recommendation |
@@ -199,6 +202,8 @@ or cost makes retention necessary.
 | `provider_arbitration_decisions` | 30-90 days unless summarized | Explains source selection and skip/fallback decisions |
 | `provider_request_usage_daily` | Season or long-term | Cost and quota guardrail evidence |
 | `compact_market_line_movements` | Season or long-term | Low-volume movement history retained after raw snapshots age out |
+| `shadow_pipeline_runs` | 30-90 days unless promoted | Operational timing proof; per-run rows should not become long-term research storage |
+| `shadow_pick_lock_observations` | Season or long-term if compact | Deduped pick/status timing transitions useful for future lock-ledger promotion |
 | Webhook raw deliveries | 30-90 days, longer for rare real provider proof | Useful until webhook trust is settled |
 
 ## Notification Quality Guardrails

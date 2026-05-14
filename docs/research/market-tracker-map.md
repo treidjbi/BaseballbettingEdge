@@ -36,6 +36,8 @@ per-pick movement, display state, or would-have-alerted state.
 | `market_pick_evidence` | Per-pick provider movement rollup | Leave as shadow/research | Existing live layer only | Model-vs-market learning |
 | `live_market_display_state` | App-ready per-provider market state | Leave as shadow/display until explicit UI promotion | Existing live layer only | User-facing evidence after separate display decision |
 | `shadow_notification_candidates` | Would-have-alerted rows | Continue shadow testing BoltOdds notification value | Existing live layer only | Notification promotion evidence |
+| `shadow_pipeline_runs` | Render-vs-GitHub timing summary | Add as existing-cron timing evidence | Existing live layer only | Short-retention scheduler reliability evidence |
+| `shadow_pick_lock_observations` | Deduped lock timing observations | Add as existing-cron timing evidence | Existing live layer only | Compact evidence for future lock-ledger promotion |
 | `line_movement_events` | Durable movement events | Do not widen to BoltOdds sends until notification cutover | Existing live layer; later gated BoltOdds alerts | Notification/event audit |
 | `notification_events` | Real push queue | Do not write BoltOdds-sourced alerts until separate flag | Existing live sender only | Delivery audit and fatigue control |
 | `game_reminder_state` | Reminder dedupe/state | Unchanged | Existing live layer only | Reminder dedupe |
