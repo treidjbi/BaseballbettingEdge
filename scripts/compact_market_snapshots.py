@@ -30,11 +30,15 @@ def _run_id_filter(run_rows: list[dict[str, Any]]) -> str:
     return f"in.({','.join(run_ids)})"
 
 
+def _run_id_filter_from_ids(run_ids: list[str]) -> str:
+    return f"in.({','.join(run_ids)})"
+
+
 def _fetch_run_rows(
     writer: SupabaseMarketWriter,
     slate_date: str,
 ) -> list[dict[str, Any]]:
-    return writer.select_rows(
+    run_rows = writer.select_rows(
         "market_provider_runs",
         {
             "slate_date": f"eq.{slate_date}",
@@ -43,6 +47,53 @@ def _fetch_run_rows(
             "limit": "500",
         },
     )
+    return _merge_heartbeat_run_rows(writer, slate_date, run_rows)
+
+
+def _merge_heartbeat_run_rows(
+    writer: SupabaseMarketWriter,
+    slate_date: str,
+    run_rows: list[dict[str, Any]],
+) -> list[dict[str, Any]]:
+    """Include persistent worker runs that are linked to the slate by heartbeat."""
+    rows_by_id = {
+        str(row.get("id")): dict(row)
+        for row in run_rows
+        if row.get("id")
+    }
+    heartbeat_rows = writer.select_rows(
+        "market_feed_heartbeats",
+        {
+            "slate_date": f"eq.{slate_date}",
+            "provider": "in.(boltodds,propline,the_odds,therundown)",
+            "order": "observed_at.desc",
+            "limit": "500",
+        },
+    )
+    heartbeat_run_ids: list[str] = []
+    for row in heartbeat_rows:
+        run_id = str(row.get("run_id") or "")
+        if run_id and run_id not in rows_by_id and run_id not in heartbeat_run_ids:
+            heartbeat_run_ids.append(run_id)
+
+    if heartbeat_run_ids:
+        extra_rows = writer.select_rows(
+            "market_provider_runs",
+            {
+                "id": _run_id_filter_from_ids(heartbeat_run_ids),
+                "order": "created_at.desc",
+                "limit": str(len(heartbeat_run_ids)),
+            },
+        )
+        for row in extra_rows:
+            run_id = str(row.get("id") or "")
+            if not run_id:
+                continue
+            normalized = dict(row)
+            normalized["slate_date"] = slate_date
+            rows_by_id[run_id] = normalized
+
+    return list(rows_by_id.values())
 
 
 def _fetch_snapshot_pages(

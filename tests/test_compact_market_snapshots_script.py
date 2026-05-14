@@ -61,3 +61,49 @@ def test_compact_script_fetches_run_snapshots_and_upserts_compact_rows():
     assert compact_upsert[0] == "compact_market_line_movements"
     assert compact_upsert[2] == "slate_date,provider,book_key,normalized_player_name,market_key,side,line"
     assert compact_upsert[1][0]["odds_move_count"] == 1
+
+
+class HeartbeatOnlyWriter(FakeWriter):
+    def select_rows(self, table, params):
+        self.selects.append((table, dict(params)))
+        if table == "market_provider_runs" and "slate_date" in params:
+            return []
+        if table == "market_feed_heartbeats":
+            return [{
+                "provider": "boltodds",
+                "slate_date": "2026-05-14",
+                "run_id": "worker-run-1",
+                "observed_at": "2026-05-14T19:00:00Z",
+            }]
+        if table == "market_provider_runs" and "id" in params:
+            return [{"id": "worker-run-1", "provider": "boltodds"}]
+        if table == "market_snapshots" and params["offset"] == "0":
+            return [{
+                "id": "snap-1",
+                "run_id": "worker-run-1",
+                "provider": "boltodds",
+                "bookmaker_key": "fanduel",
+                "player_name": "Example Pitcher",
+                "market_key": "pitcher_strikeouts",
+                "side": "over",
+                "line": 5.5,
+                "american_odds": -110,
+                "observed_at": "2026-05-14T19:00:00Z",
+            }]
+        return []
+
+
+def test_compact_script_includes_worker_runs_from_heartbeats():
+    writer = HeartbeatOnlyWriter()
+
+    result = compact_market_snapshots.run(
+        slate_date="2026-05-14",
+        writer=writer,
+        dry_run=False,
+    )
+
+    assert result["provider_runs"] == 1
+    assert result["snapshot_rows"] == 1
+    compact_upsert = writer.upserts[0]
+    assert compact_upsert[0] == "compact_market_line_movements"
+    assert compact_upsert[1][0]["provider"] == "boltodds"
