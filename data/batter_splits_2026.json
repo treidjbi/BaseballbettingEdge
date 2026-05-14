@@ -7053,22 +7053,39 @@
         "so": 2,
         "k_rate": 0.1429
       }
+    },
+    "mlbam:683021": {
+      "name": "Michael Stefanic",
+      "bats": "R",
+      "mlbam_id": 683021,
+      "bbref_id": "stefami01",
+      "season": 2026,
+      "vs_R": {
+        "pa": 2,
+        "so": 1,
+        "k_rate": 0.5
+      },
+      "vs_L": {
+        "pa": 2,
+        "so": 0,
+        "k_rate": 0.0
+      }
     }
   },
-  "updated_at": "2026-05-14T20:56:06Z",
+  "updated_at": "2026-05-14T21:21:05Z",
   "last_run": {
     "projection_status": "collection_only",
-    "requested_batters": 171,
-    "already_cached": 169,
-    "attempted": 2,
-    "collected": 0,
+    "requested_batters": 180,
+    "already_cached": 177,
+    "attempted": 3,
+    "collected": 1,
     "failed": 2,
     "queued_not_attempted": 0,
-    "cache_size": 418,
+    "cache_size": 419,
     "errors": [
       "A.J. Ewing: no bbref id",
       "Henry Bolte: no bbref id"
     ],
-    "updated_at": "2026-05-14T20:56:06Z"
+    "updated_at": "2026-05-14T21:21:05Z"
   }
 }
