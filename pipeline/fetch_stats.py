@@ -105,6 +105,65 @@ def _is_playable_schedule_game(game: dict) -> bool:
     return True
 
 
+def _probable_starter_rows_from_schedule(schedule: dict, date_str: str) -> list[dict]:
+    """Return all playable MLB probable starters for a slate date."""
+    rows: list[dict] = []
+    seen: set[tuple[int | str, str, str]] = set()
+    for date_block in schedule.get("dates", []):
+        block_date_str = date_block.get("date") or date_str
+        for game in date_block.get("games", []):
+            if _schedule_game_date_et(game, block_date_str) != date_str:
+                continue
+            if not _is_playable_schedule_game(game):
+                continue
+            game_pk = game.get("gamePk")
+            game_time = game.get("gameDate")
+            status = (game.get("status") or {}).get("detailedState") or ""
+            teams = game.get("teams", {})
+            for side in ("away", "home"):
+                team_data = teams.get(side, {})
+                pitcher = team_data.get("probablePitcher")
+                if not pitcher:
+                    continue
+                pitcher_name = str(pitcher.get("fullName") or "").strip()
+                normalized_pitcher = _normalize_name(pitcher_name)
+                if not normalized_pitcher:
+                    continue
+                opp_side = "home" if side == "away" else "away"
+                team_name = str((team_data.get("team") or {}).get("name") or "").strip()
+                opp_team_name = str(
+                    ((teams.get(opp_side) or {}).get("team") or {}).get("name") or ""
+                ).strip()
+                key = (game_pk or "", side, normalized_pitcher)
+                if key in seen:
+                    continue
+                seen.add(key)
+                rows.append({
+                    "pitcher": pitcher_name,
+                    "normalized_pitcher": normalized_pitcher,
+                    "team": team_name,
+                    "opp_team": opp_team_name,
+                    "side": side,
+                    "game_pk": game_pk,
+                    "game_time": game_time,
+                    "status": status,
+                })
+    return rows
+
+
+def fetch_probable_starters(date_str: str) -> list[dict]:
+    """Fetch all playable MLB probable starters for a slate before odds filtering."""
+    target_date = datetime.strptime(date_str, "%Y-%m-%d")
+    next_day = (target_date + timedelta(days=1)).strftime("%Y-%m-%d")
+    schedule = _get("/schedule", {
+        "sportId": 1,
+        "startDate": date_str,
+        "endDate": next_day,
+        "hydrate": "probablePitcher,team",
+    })
+    return _probable_starter_rows_from_schedule(schedule, date_str)
+
+
 def _sort_starts_by_date_desc(starts: list) -> list:
     """Return started game-log rows newest-first when date data exists."""
     return sorted(

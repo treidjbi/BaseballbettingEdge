@@ -5,7 +5,13 @@ from unittest.mock import patch, MagicMock
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'pipeline'))
 
-from fetch_stats import fetch_stats, _parse_ip, _k9_from_splits, _normalize_name
+from fetch_stats import (
+    fetch_probable_starters,
+    fetch_stats,
+    _parse_ip,
+    _k9_from_splits,
+    _normalize_name,
+)
 
 
 # ── Helpers ────────────────────────────────────────────────────────────────────
@@ -129,6 +135,33 @@ def _make_team_stats_response(pa=1500, so=360):
     }
 
 
+def _make_two_probable_schedule():
+    return {
+        "dates": [
+            {
+                "date": "2026-04-15",
+                "games": [
+                    {
+                        "gamePk": 12345,
+                        "gameDate": "2026-04-15T23:05:00Z",
+                        "status": {"detailedState": "Scheduled"},
+                        "teams": {
+                            "away": {
+                                "probablePitcher": {"id": 1, "fullName": "Away Starter"},
+                                "team": {"id": 147, "name": "New York Yankees"},
+                            },
+                            "home": {
+                                "probablePitcher": {"id": 2, "fullName": "Home Starter"},
+                                "team": {"id": 111, "name": "Boston Red Sox"},
+                            },
+                        },
+                    }
+                ],
+            }
+        ]
+    }
+
+
 def _make_requests_get_side_effect(
     pitcher_name,
     pitcher_id,
@@ -200,6 +233,39 @@ class TestK9FromSplits:
     def test_returns_none_when_no_ip(self):
         splits = [{"stat": {"strikeOuts": 5, "inningsPitched": "0.0"}}]
         assert _k9_from_splits(splits) is None
+
+
+def test_fetch_probable_starters_returns_schedule_pitchers_without_odds_filter():
+    with patch("requests.get") as get:
+        response = MagicMock()
+        response.raise_for_status = MagicMock()
+        response.json.return_value = _make_two_probable_schedule()
+        get.return_value = response
+
+        rows = fetch_probable_starters("2026-04-15")
+
+    assert rows == [
+        {
+            "pitcher": "Away Starter",
+            "normalized_pitcher": "away starter",
+            "team": "New York Yankees",
+            "opp_team": "Boston Red Sox",
+            "side": "away",
+            "game_pk": 12345,
+            "game_time": "2026-04-15T23:05:00Z",
+            "status": "Scheduled",
+        },
+        {
+            "pitcher": "Home Starter",
+            "normalized_pitcher": "home starter",
+            "team": "Boston Red Sox",
+            "opp_team": "New York Yankees",
+            "side": "home",
+            "game_pk": 12345,
+            "game_time": "2026-04-15T23:05:00Z",
+            "status": "Scheduled",
+        },
+    ]
 
 
 # ── Tests: fetch_stats (integration via mocked HTTP) ──────────────────────────

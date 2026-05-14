@@ -33,6 +33,8 @@ The cutover must be clean, reversible, and evidence-driven:
 
 - Build the market infrastructure while TheRundown is still paid and available.
 - Run BoltOdds + PropLine against TheRundown for at least 1-2 slates.
+- Measure BoltOdds + PropLine against a schedule-first MLB probable-starter
+  slate, not only against whichever pitchers each odds source returns.
 - Cut over official preview/full/refresh odds only after coverage, freshness,
   output compatibility, and rollback gates pass.
 - Cut over live notifications separately after the official market state is
@@ -138,6 +140,10 @@ a later implementation step explicitly names a changed write path.
 10. **Supabase query performance:** the GitHub pipeline must read
     `official_market_lines`, not scan raw `market_snapshots` during every
     preview/full/refresh run.
+11. **Schedule-first coverage:** the shadow cutover report must start from MLB
+    probable starters and then measure which providers/books have usable lines.
+    Do not let any odds provider define the candidate-pitcher universe for the
+    cutover decision.
 
 ## Affected Plans And Synthesis
 

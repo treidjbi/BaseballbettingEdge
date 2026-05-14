@@ -76,6 +76,44 @@ def test_compare_reports_pitcher_and_fd_dk_coverage():
     assert report["readiness"]["gates"][0]["status"] == "fail"
 
 
+def test_compare_reports_schedule_first_provider_coverage():
+    report = compare_provider_cutover(
+        date_str="2026-05-13",
+        scheduled_pitchers=[
+            {"pitcher": "Jose Berrios", "team": "Blue Jays"},
+            {"pitcher": "Gerrit Cole", "team": "Yankees"},
+            {"pitcher": "Missing Arm", "team": "Mets"},
+        ],
+        rundown_props=[
+            _prop("Jose Berrios"),
+            _prop("Gerrit Cole"),
+        ],
+        provider_props=[
+            _prop(
+                "Jose Berrios",
+                odds_source="boltodds+propline",
+                book_odds={
+                    "FanDuel": {"line": 5.5, "over": -115, "under": -105, "provider": "boltodds"},
+                    "DraftKings": {"line": 5.5, "over": -112, "under": -108, "provider": "propline"},
+                },
+            ),
+        ],
+        generated_at=NOW,
+    )
+
+    schedule = report["schedule_first"]
+    assert schedule["scheduled_pitcher_count"] == 3
+    assert schedule["rundown_covered_count"] == 2
+    assert schedule["provider_covered_count"] == 1
+    assert schedule["provider_draftkings_count"] == 1
+    assert schedule["provider_at_least_2_books_count"] == 1
+    assert schedule["missing_provider_pitchers"] == ["gerrit cole", "missing arm"]
+    assert schedule["missing_rundown_pitchers"] == ["missing arm"]
+
+    gate_statuses = {gate["name"]: gate["status"] for gate in report["readiness"]["gates"]}
+    assert gate_statuses["schedule_provider_coverage_90"] == "fail"
+
+
 def test_compare_tracks_missing_draftkings_and_line_conflicts():
     report = compare_provider_cutover(
         date_str="2026-05-13",
@@ -180,5 +218,6 @@ def test_markdown_report_includes_gate_summary():
     markdown = format_markdown_report(report)
 
     assert "# Provider Cutover Shadow Compare - 2026-05-13" in markdown
+    assert "Schedule-First Coverage" in markdown
     assert "pitcher_coverage_90" in markdown
     assert "Overall ready" in markdown

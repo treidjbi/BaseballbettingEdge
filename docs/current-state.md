@@ -78,6 +78,10 @@ Cutover branch infrastructure progress as of 2026-05-14:
   rows and evaluate coverage, FD/DK availability, line conflicts, ref-book
   changes, odds deltas, artifact contract, and usage gates before any cutover
   decision.
+- The cutover comparison now also fetches MLB probable starters first and
+  reports schedule-first provider coverage. This is shadow evidence for the
+  intended future provider architecture; the production pipeline still runs
+  odds-first until Tyler explicitly approves a promotion.
 
 ## Provider Plan Precedence
 
