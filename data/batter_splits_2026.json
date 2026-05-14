@@ -7055,19 +7055,20 @@
       }
     }
   },
-  "updated_at": "2026-05-14T15:33:59Z",
+  "updated_at": "2026-05-14T17:07:31Z",
   "last_run": {
     "projection_status": "collection_only",
-    "requested_batters": 99,
-    "already_cached": 95,
-    "attempted": 4,
-    "collected": 3,
-    "failed": 1,
+    "requested_batters": 117,
+    "already_cached": 115,
+    "attempted": 2,
+    "collected": 0,
+    "failed": 2,
     "queued_not_attempted": 0,
     "cache_size": 418,
     "errors": [
-      "A.J. Ewing: no bbref id"
+      "A.J. Ewing: no bbref id",
+      "Henry Bolte: no bbref id"
     ],
-    "updated_at": "2026-05-14T15:33:59Z"
+    "updated_at": "2026-05-14T17:07:31Z"
   }
 }
