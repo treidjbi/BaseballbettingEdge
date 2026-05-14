@@ -144,6 +144,11 @@ a later implementation step explicitly names a changed write path.
     probable starters and then measure which providers/books have usable lines.
     Do not let any odds provider define the candidate-pitcher universe for the
     cutover decision.
+12. **Mainline-vs-alt-ladder selection:** BoltOdds can return multiple
+    same-book K lines for a pitcher. Treat those as candidate ladders, not
+    automatic provider conflicts. The shadow builder must select a conservative
+    mainline candidate before official arbitration, preserve raw candidates for
+    audit, and fail closed when no clear mainline is available.
 
 ## Affected Plans And Synthesis
 
@@ -173,12 +178,13 @@ flowchart TD
   BO["BoltOdds WebSocket worker"] --> RAW["Supabase raw market_snapshots"]
   PL["PropLine polling fallback"] --> RAW
   RAW --> CUR["current_market_lines"]
-  CUR --> ARB["official_market_lines arbitration"]
+  CUR --> MAIN["mainline selection"]
+  MAIN --> ARB["official_market_lines arbitration"]
   ARB --> PIPE["GitHub Actions preview/full/refresh pipeline"]
   PIPE --> ART["today.json / archives / steam.json / picks_history.json"]
   ART --> NET["Netlify dashboard"]
   ARB --> LIVE["Live notification builder"]
-  CUR --> AUDIT["Shadow comparison vs TheRundown"]
+  MAIN --> AUDIT["Shadow comparison vs TheRundown"]
   TR["TheRundown"] --> AUDIT
   TR --> ROLL["Rollback provider mode through May"]
   ODDS["The Odds API free capped"] --> EMERG["Emergency FD/DK fallback only"]
@@ -227,6 +233,39 @@ Reasoning:
 - BetMGM, BetRivers, and Caesars are useful mainstream backups.
 - Kalshi should not quietly become the ref book for a pitcher K bet unless the
   product intentionally supports it as an actionable bet surface.
+
+## Mainline Selection For Alt-Ladder Noise
+
+BoltOdds may emit multiple same-book pitcher strikeout lines for the same
+pitcher. Those rows are useful evidence, but they can be alt ladders rather
+than the actionable main market. The cutover path must not treat every
+same-book line difference as a provider outage, and it must not quietly promote
+an alt line into the official feed.
+
+Shadow-only selection rules:
+
+- Keep every raw `market_snapshots` row and every derived
+  `current_market_lines` candidate for audit.
+- Only complete Over/Under pairs are eligible for mainline selection.
+- Score candidate lines by, in order:
+  - same-line overlap with TheRundown during the May overlap window or PropLine
+    for the same pitcher/book;
+  - same-line support across multiple books or providers;
+  - balanced two-sided prices that look like a main market rather than an
+    extreme alt line;
+  - freshness after the evidence above.
+- Prefer PropLine DraftKings when BoltOdds DraftKings is absent or not proven.
+- Store selection reasons in `provider_arbitration_decisions.reasons` and, when
+  useful, in `official_market_lines.arbitration_reasons` / `quality_flags`
+  rather than adding a new table first.
+- Fail closed when candidates are ambiguous, stale, one-sided, or only supported
+  by a single suspicious ladder price.
+- Report three separate coverage counts in the rehearsal output: raw provider
+  coverage, mainline-ready coverage, and official-ready coverage.
+
+Promotion rule: this selector is evidence infrastructure only until Tyler
+approves the provider cutover. It must not change production provider order,
+model parameters, thresholds, staking, or dashboard artifacts by itself.
 
 ## New Supabase Tables
 
@@ -592,6 +631,10 @@ Core behavior:
 - Keep only `slate_date`, `market_key=pitcher_strikeouts`, and supported books.
 - Pair Over and Under rows from the same provider/book/player/line.
 - Mark rows incomplete if either side is missing.
+- Keep each provider/book/player/line as a separate candidate row. Do not
+  collapse same-book alt ladders inside `current_market_lines`.
+- Flag likely ladder/noise cases in `quality_flags`, but leave official
+  selection to the mainline selector.
 - Compute per-book freshness from the latest side snapshot.
 - Upsert `current_market_lines`.
 - Insert or preserve first-seen rows in `market_opening_baselines`.
@@ -663,8 +706,51 @@ Tests:
 - Older book rows are stale by `freshness_seconds`.
 - Unsupported books are ignored.
 - The same player at two different K lines remains two separate current rows.
+- Same-book alt ladders stay available as separate current candidates.
 - A new fresh row updates `current_market_lines` but does not overwrite the
   opening baseline.
+
+### Step 2A: Add Shadow Mainline Selection
+
+Modify:
+
+```text
+market_infra/current_market_lines.py
+market_infra/official_market_lines.py
+analytics/diagnostics/provider_cutover_shadow_compare.py
+tests/test_current_market_lines.py
+tests/test_official_market_lines.py
+tests/test_provider_cutover_shadow_compare.py
+```
+
+Core behavior:
+
+- Group fresh complete current-line candidates by player/provider/book.
+- Choose at most one mainline candidate for each player/provider/book before
+  official arbitration sees the rows.
+- Prefer lines confirmed by PropLine or TheRundown during the May overlap
+  window.
+- Prefer lines that are shared across multiple books/providers over isolated
+  ladder lines.
+- Down-rank extreme, one-sided, stale, or incomplete ladder rows.
+- Preserve all candidate IDs and reasons in arbitration decision metadata.
+- Fail closed with `ambiguous_mainline` when no line is clearly safer than the
+  alternatives.
+- Add raw coverage, mainline-ready coverage, and official-ready coverage to the
+  schedule-first cutover comparison.
+
+Tests:
+
+- A pitcher with one complete line per book passes through unchanged.
+- A same-book ladder with one line also seen by PropLine/TheRundown selects the
+  overlapping line.
+- A same-book ladder with cross-book same-line support selects the supported
+  line.
+- A same-book ladder with no clear overlap/support fails closed as
+  `ambiguous_mainline`.
+- One-sided ladder rows never become official-ready.
+- The comparison report separates raw coverage from mainline-ready and
+  official-ready coverage.
 
 ### Step 3: Add Official Market Arbitration
 
@@ -677,7 +763,8 @@ tests/test_official_market_lines.py
 
 Core rules:
 
-- Select only complete lines unless no complete line exists for a player.
+- Read only mainline-eligible complete rows unless no complete line exists for
+  a player, in which case the player fails closed.
 - Prefer BoltOdds when fresh for a supported book.
 - Use PropLine when BoltOdds is missing DraftKings, stale for a book, or missing
   the player/line entirely.
@@ -742,8 +829,9 @@ Tests:
 - Stale BoltOdds is rejected in favor of fresh PropLine.
 - A player with only Kalshi is skipped.
 - A player with one-sided Over only is skipped.
-- Conflicting lines are preserved in `book_odds`, but the ref book follows
-  priority.
+- Same-book alt ladders are not fatal when the mainline selector finds a clear
+  winner.
+- Ambiguous ladders fail closed with reasons instead of becoming official rows.
 - Decision rows explain missing, stale, and selected providers.
 
 Implementation note, 2026-05-13:
