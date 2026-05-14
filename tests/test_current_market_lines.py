@@ -61,6 +61,7 @@ def test_normalize_book_key_accepts_common_book_shapes():
 def test_normalize_market_key_accepts_boltodds_market_label():
     assert normalize_market_key("Pitcher Strikeouts") == "pitcher_strikeouts"
     assert normalize_market_key("player strikeouts") == "pitcher_strikeouts"
+    assert normalize_market_key("Strikeouts") == "pitcher_strikeouts"
 
 
 def test_complete_over_under_pair_builds_current_market_line():

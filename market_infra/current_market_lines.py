@@ -23,6 +23,7 @@ MARKET_ALIASES = {
     "player_strikeouts": MARKET_KEY,
     "playerstrikeouts": MARKET_KEY,
     "player strikeouts": MARKET_KEY,
+    "strikeouts": MARKET_KEY,
 }
 
 _BOOK_ALIASES = {
