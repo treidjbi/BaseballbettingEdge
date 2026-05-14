@@ -1,6 +1,7 @@
 from market_infra.provider_usage import (
     build_provider_usage_rows,
     propline_budget_warnings,
+    write_provider_usage_rows,
 )
 
 
@@ -73,3 +74,52 @@ def test_propline_budget_warning_starts_at_seventy_percent():
     assert warnings == [
         "PropLine request usage 3500/5000 (70.0%) for 2026-05-14 source=scripts/shadow_propline_to_supabase.py"
     ]
+
+
+class FakeWriter:
+    def __init__(self):
+        self.selects = []
+        self.upserts = []
+
+    def select_rows(self, table, params):
+        self.selects.append((table, dict(params)))
+        if table == "provider_request_usage_daily":
+            return [{
+                "usage_date": "2026-05-14",
+                "provider": "propline",
+                "source": "scripts/shadow_propline_to_supabase.py",
+                "request_count": 287,
+                "snapshot_count": 958,
+            }]
+        return []
+
+    def upsert_rows(self, table, rows, on_conflict):
+        self.upserts.append((table, rows, on_conflict))
+        return rows
+
+
+def test_write_provider_usage_rows_keeps_existing_max_counts():
+    writer = FakeWriter()
+
+    write_provider_usage_rows(
+        writer,
+        [{
+            "usage_date": "2026-05-14",
+            "provider": "propline",
+            "source": "scripts/shadow_propline_to_supabase.py",
+            "request_count": 282,
+            "snapshot_count": 389,
+        }],
+    )
+
+    assert writer.upserts == [(
+        "provider_request_usage_daily",
+        [{
+            "usage_date": "2026-05-14",
+            "provider": "propline",
+            "source": "scripts/shadow_propline_to_supabase.py",
+            "request_count": 287,
+            "snapshot_count": 958,
+        }],
+        "usage_date,provider,source",
+    )]

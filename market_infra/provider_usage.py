@@ -115,6 +115,7 @@ def write_provider_usage_rows(
     *,
     enforce_propline_budget: bool = False,
 ) -> list[dict[str, Any]]:
+    usage_rows = _merge_existing_max_counts(writer, usage_rows)
     warnings = propline_budget_warnings(usage_rows)
     if enforce_propline_budget:
         for row in usage_rows:
@@ -126,3 +127,33 @@ def write_provider_usage_rows(
         on_conflict="usage_date,provider,source",
     )
     return [{"warning": warning} for warning in warnings]
+
+
+def _merge_existing_max_counts(writer: Any, usage_rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    if not usage_rows or not hasattr(writer, "select_rows"):
+        return usage_rows
+
+    merged_rows = []
+    for row in usage_rows:
+        merged = dict(row)
+        existing_rows = writer.select_rows(
+            "provider_request_usage_daily",
+            {
+                "usage_date": f"eq.{row['usage_date']}",
+                "provider": f"eq.{row['provider']}",
+                "source": f"eq.{row['source']}",
+                "limit": "1",
+            },
+        )
+        if existing_rows:
+            existing = existing_rows[0]
+            merged["request_count"] = max(
+                _integer(existing.get("request_count")),
+                _integer(merged.get("request_count")),
+            )
+            merged["snapshot_count"] = max(
+                _integer(existing.get("snapshot_count")),
+                _integer(merged.get("snapshot_count")),
+            )
+        merged_rows.append(merged)
+    return merged_rows
