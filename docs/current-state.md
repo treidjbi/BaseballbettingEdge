@@ -1,6 +1,6 @@
 # Current State
 
-Last updated: 2026-05-12
+Last updated: 2026-05-14
 
 ## Read Order
 
@@ -9,6 +9,11 @@ For any new work in this repo:
 1. Read `AGENTS.md` for the canonical project instructions and architecture notes.
 2. Read this file for the current operating state.
 3. Read the newest active dated plans that match the task:
+   - Provider cutover work currently lives on branch
+     `codex/boltodds-production-plan`; read
+     `docs/superpowers/plans/2026-05-13-boltodds-propline-official-provider-cutover.md`
+     from that branch before provider-production, official market-source,
+     schedule-first, mainline-selector, or retention/compaction work.
    - `docs/superpowers/plans/2026-05-07-bet-conversion-shadow-audit.md`
    - `docs/superpowers/plans/2026-05-12-pitcher-k-outcome-research-dataset.md`
    - `docs/superpowers/plans/2026-05-07-boltodds-starter-trial.md`
@@ -42,6 +47,11 @@ do we convert model signal into better betting decisions?"
 - BoltOdds is being tested as a separate shadow-only WebSocket live-market
   sidecar. It must not affect production picks, grading, dashboard artifacts,
   or provider order without explicit approval.
+
+The broader BoltOdds + PropLine provider cutover build is intentionally still
+on `codex/boltodds-production-plan`. `main` only has the production-safe timing
+ledger subset from that branch. Do not treat `main` as containing the full
+provider cutover plan or official-market infrastructure yet.
 
 ## Active Production Path
 
@@ -292,12 +302,18 @@ shadow-only until a separate model/ranking promotion plan is approved.
 
 ### BoltOdds Trial Review
 
-Use `docs/superpowers/plans/2026-05-07-boltodds-starter-trial.md`.
+Use `docs/superpowers/plans/2026-05-07-boltodds-starter-trial.md`, and for
+official-provider cutover work use the 2026-05-13 cutover plan on
+`codex/boltodds-production-plan`.
 
 Review uptime, heartbeat freshness, normalized row coverage by target book,
 stale-feed risk, row volume risk, and whether the feed would have changed
 timing or notification decisions. Do not buy Pro or promote BoltOdds without a
 post-trial decision.
+
+Before raw `market_snapshots` retention is enforced, the cutover branch still
+needs compact movement rollups and provider request-usage writes to prove the
+storage/cost path is safe.
 
 ### June 1 Provider Review
 
