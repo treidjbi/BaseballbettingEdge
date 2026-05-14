@@ -1281,16 +1281,23 @@ def test_run_does_not_write_empty_output_when_odds_fetch_fails(tmp_path):
     assert not out_path.exists()
 
 
-def test_run_calls_lock_due_picks(tmp_path):
-    """run() should call lock_due_picks before seeding picks."""
+def test_run_seeds_then_locks_due_picks(tmp_path):
+    """run() should seed first, then lock newly-created pregame picks if due."""
     import run_pipeline
     run_pipeline._batter_stats_cache = None
     out_path = tmp_path / "today.json"
     lock_calls = []
     db_events = []
+    call_events = []
 
     def mock_lock(conn, now, lock_window_minutes=30, lock_all_past=False):
         lock_calls.append({"lock_all_past": lock_all_past})
+        call_events.append("lock")
+        return 0
+
+    def mock_seed(*args, **kwargs):
+        call_events.append("seed")
+        assert kwargs.get("now") is not None
         return 0
 
     with patch.object(run_pipeline, "OUTPUT_PATH", out_path), \
@@ -1305,7 +1312,7 @@ def test_run_calls_lock_due_picks(tmp_path):
          patch("run_pipeline.init_db", side_effect=lambda: db_events.append("init")), \
          patch("run_pipeline.load_history_into_db", side_effect=lambda: db_events.append("load")), \
          patch("run_pipeline.get_db", return_value=MagicMock()), \
-         patch("run_pipeline.seed_picks", return_value=0), \
+         patch("run_pipeline.seed_picks", mock_seed), \
          patch("run_pipeline.export_db_to_history"), \
          patch("run_pipeline._write_archive"):
         run_pipeline.run("2026-04-01")
@@ -1313,6 +1320,7 @@ def test_run_calls_lock_due_picks(tmp_path):
     assert len(lock_calls) >= 1
     assert lock_calls[0]["lock_all_past"] is False
     assert db_events == ["reset", "init", "load"]
+    assert call_events == ["seed", "lock"]
 
 
 def test_grading_run_calls_lock_all_past(tmp_path):

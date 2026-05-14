@@ -44,6 +44,28 @@ def _json_load_or_none(value):
         return value
 
 
+def _ensure_utc(value: datetime) -> datetime:
+    if value.tzinfo is None:
+        return value.replace(tzinfo=UTC)
+    return value.astimezone(UTC)
+
+
+def _parse_game_time(value) -> datetime | None:
+    text = str(value or "").strip()
+    if not text:
+        return None
+    try:
+        parsed = datetime.fromisoformat(text.replace("Z", "+00:00"))
+    except ValueError:
+        return None
+    return _ensure_utc(parsed)
+
+
+def _game_has_started(game_time, now: datetime) -> bool:
+    parsed = _parse_game_time(game_time)
+    return bool(parsed and parsed <= _ensure_utc(now))
+
+
 def _effective_verdict(ev_data: dict) -> str:
     return ev_data.get("actionable_verdict") or ev_data.get("verdict") or "PASS"
 
@@ -177,7 +199,7 @@ def init_db() -> None:
                 pass  # column already exists
 
 
-def seed_picks(today_json_path: Path = TODAY_JSON) -> int:
+def seed_picks(today_json_path: Path = TODAY_JSON, now: datetime | None = None) -> int:
     """Insert non-PASS picks from today.json and refresh unlocked picks with
     latest verdict/odds/edge/EV.  Returns count of new rows inserted."""
     try:
@@ -190,9 +212,18 @@ def seed_picks(today_json_path: Path = TODAY_JSON) -> int:
     game_date = data["date"]
     inserted = 0
     updated = 0
+    now_utc = _ensure_utc(now) if now is not None else None
 
     with get_db() as conn:
         for p in data.get("pitchers", []):
+            if now_utc is not None and _game_has_started(p.get("game_time"), now_utc):
+                log.info(
+                    "seed_picks: skipping %s after game start (%s)",
+                    p.get("pitcher"),
+                    p.get("game_time"),
+                )
+                continue
+
             for side in ("over", "under"):
                 ev_data = p[f"ev_{side}"]
                 verdict = _effective_verdict(ev_data)
@@ -352,28 +383,34 @@ def lock_due_picks(conn: sqlite3.Connection, now: datetime,
                    lock_all_past: bool = False) -> int:
     """
     Lock open picks at T-{lock_window_minutes}min before game_time.
-    lock_all_past=True: lock ALL unlocked open picks (used by 3am grading run).
+    lock_all_past=True: lock only rows without a known game_time. Rows with a
+    known started game stay unlocked so missed pregame locks remain visible.
     Returns count of picks locked.
     """
-    locked_at_str = now.strftime("%Y-%m-%dT%H:%M:%SZ")
-    cutoff = now + timedelta(minutes=lock_window_minutes)
-    cutoff_str = cutoff.strftime("%Y-%m-%dT%H:%M:%SZ")
+    now_utc = _ensure_utc(now)
+    locked_at_str = now_utc.strftime("%Y-%m-%dT%H:%M:%SZ")
+    cutoff = now_utc + timedelta(minutes=lock_window_minutes)
 
     if lock_all_past:
         rows = conn.execute("""
             SELECT id, k_line, odds, adj_ev, verdict
             FROM picks
             WHERE locked_at IS NULL AND result IS NULL
+              AND game_time IS NULL
         """).fetchall()
     else:
-        rows = conn.execute("""
-            SELECT id, k_line, odds, adj_ev, verdict
+        candidates = conn.execute("""
+            SELECT id, k_line, odds, adj_ev, verdict, game_time
             FROM picks
             WHERE locked_at IS NULL
               AND result IS NULL
               AND game_time IS NOT NULL
-              AND game_time <= ?
-        """, (cutoff_str,)).fetchall()
+        """).fetchall()
+        rows = [
+            row for row in candidates
+            if (game_time := _parse_game_time(row["game_time"]))
+            and now_utc < game_time <= cutoff
+        ]
 
     count = 0
     for row in rows:

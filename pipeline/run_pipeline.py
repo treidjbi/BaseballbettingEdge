@@ -1238,7 +1238,9 @@ def _run_grading_steps() -> None:
     """Run result fetching and calibration. Called for evening and grading-only runs."""
     log.info("=== Grading steps: fetch_results + calibrate ===")
 
-    # Lock all open picks before grading so we grade with final lines
+    # Lock only open picks without known game_time before grading. Known started
+    # games stay unlocked if the pregame lock window was missed, so the history
+    # does not manufacture a valid-looking post-start lock.
     try:
         reset_db()
         init_db()
@@ -1646,14 +1648,16 @@ def run(date_str: str, run_type: str = "full") -> None:
         reset_db()
         init_db()
         load_history_into_db()
-        # Lock before seeding: picks arriving within T-30min will miss this lock window
-        # but will be caught by the grading run's lock_all_past=True pass.
+        # Seed before locking so a delayed full/refresh run can still lock
+        # newly-created pregame picks that are already inside the T-30 window.
+        # seed_picks itself skips games that have already started.
+        now_utc = datetime.now(timezone.utc)
+        seeded = seed_picks(now=now_utc)
         conn = get_db()
         try:
-            locked = lock_due_picks(conn, datetime.now(timezone.utc), lock_all_past=False)
+            locked = lock_due_picks(conn, now_utc, lock_all_past=False)
         finally:
             conn.close()
-        seeded = seed_picks()
         log.info("Seeded %d new picks, locked %d picks from today.json", seeded, locked)
         # Always export: captures newly inserted picks, intra-day odds/lineup
         # updates to unlocked picks, and freshly locked snapshots.  The git

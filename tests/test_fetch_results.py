@@ -1023,6 +1023,21 @@ def test_lock_due_picks_skips_future_game(tmp_db):
     assert count == 0
 
 
+def test_lock_due_picks_skips_already_started_game_in_normal_mode(tmp_db):
+    """A delayed refresh must not create a post-start lock snapshot."""
+    db_path, fr = tmp_db
+    now = datetime(2026, 4, 15, 17, 45, 0, tzinfo=timezone.utc)
+    game_time = "2026-04-15T17:10:00Z"
+    with fr.get_db() as conn:
+        _seed_pick_with_game_time(conn, game_time)
+    with fr.get_db() as conn:
+        count = fr.lock_due_picks(conn, now, lock_window_minutes=30)
+    assert count == 0
+    with fr.get_db() as conn:
+        row = conn.execute("SELECT locked_at FROM picks").fetchone()
+    assert row["locked_at"] is None
+
+
 def test_lock_due_picks_idempotent(tmp_db):
     """Calling lock twice should not update locked_at a second time."""
     db_path, fr = tmp_db
@@ -1041,8 +1056,8 @@ def test_lock_due_picks_idempotent(tmp_db):
     assert first_locked_at == second_locked_at
 
 
-def test_lock_due_picks_all_past_locks_everything(tmp_db):
-    """lock_all_past=True locks all open picks regardless of game_time."""
+def test_lock_due_picks_all_past_does_not_backfill_known_started_games(tmp_db):
+    """Grading fallback must not make missed pregame locks look valid later."""
     db_path, fr = tmp_db
     now = datetime(2026, 4, 16, 4, 0, 0, tzinfo=timezone.utc)  # 3am next day
     with fr.get_db() as conn:
@@ -1050,7 +1065,13 @@ def test_lock_due_picks_all_past_locks_everything(tmp_db):
         _seed_pick_with_game_time(conn, None, side="under")  # NULL game_time
     with fr.get_db() as conn:
         count = fr.lock_due_picks(conn, now, lock_all_past=True)
-    assert count == 2
+    assert count == 1
+    with fr.get_db() as conn:
+        rows = conn.execute("SELECT side, locked_at FROM picks ORDER BY side").fetchall()
+    assert rows[0]["side"] == "over"
+    assert rows[0]["locked_at"] is None
+    assert rows[1]["side"] == "under"
+    assert rows[1]["locked_at"] is not None
 
 
 def test_lock_due_picks_skips_null_game_time_without_lock_all_past(tmp_db):
@@ -1062,6 +1083,25 @@ def test_lock_due_picks_skips_null_game_time_without_lock_all_past(tmp_db):
     with fr.get_db() as conn:
         count = fr.lock_due_picks(conn, now, lock_all_past=False)
     assert count == 0
+
+
+def test_seed_picks_skips_new_rows_after_game_start(tmp_db, today_json):
+    """A delayed first run must not add a new tracked pick after first pitch."""
+    db_path, fr = tmp_db
+    today_path, data = today_json
+    data["pitchers"] = [data["pitchers"][0]]
+    data["pitchers"][0]["game_time"] = "2026-04-15T17:05:00Z"
+    today_path.write_text(json.dumps(data))
+
+    inserted = fr.seed_picks(
+        today_path,
+        now=datetime(2026, 4, 15, 17, 45, 0, tzinfo=timezone.utc),
+    )
+
+    assert inserted == 0
+    with fr.get_db() as conn:
+        rows = conn.execute("SELECT pitcher FROM picks").fetchall()
+    assert rows == []
 
 
 def test_grading_uses_locked_odds_for_pnl(tmp_db):
