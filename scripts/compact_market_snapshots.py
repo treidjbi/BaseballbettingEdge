@@ -101,7 +101,7 @@ def _fetch_snapshot_pages(
     run_rows: list[dict[str, Any]],
     *,
     slate_date: str,
-    page_size: int = 10000,
+    page_size: int = 1000,
     max_pages: int = 20,
 ) -> list[dict[str, Any]]:
     if not run_rows:

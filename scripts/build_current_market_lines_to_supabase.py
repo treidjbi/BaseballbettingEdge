@@ -114,7 +114,7 @@ def _fetch_snapshot_pages(
     writer: SupabaseMarketWriter,
     run_rows: list[dict[str, Any]],
     *,
-    page_size: int = 10000,
+    page_size: int = 1000,
     max_pages: int = 20,
 ) -> list[dict[str, Any]]:
     rows: list[dict[str, Any]] = []

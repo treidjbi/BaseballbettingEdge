@@ -3,6 +3,7 @@ from datetime import datetime, timezone
 from scripts.build_current_market_lines_to_supabase import (
     _enrich_game_times_from_live_pick_state,
     _fetch_inputs,
+    _fetch_snapshot_pages,
     run,
 )
 
@@ -57,9 +58,30 @@ def test_fetch_inputs_pages_market_snapshots_without_market_key_filter():
     snapshot_call = next(call for call in writer.calls if call[0] == "market_snapshots")
     assert snapshot_call[0] == "market_snapshots"
     assert snapshot_call[1]["run_id"] == "in.(run-1)"
-    assert snapshot_call[1]["limit"] == "10000"
+    assert snapshot_call[1]["limit"] == "1000"
     assert snapshot_call[1]["offset"] == "0"
     assert "market_key" not in snapshot_call[1]
+
+
+def test_fetch_snapshot_pages_uses_rest_api_sized_pages():
+    class PagingWriter:
+        def __init__(self):
+            self.calls = []
+
+        def select_rows(self, table, params):
+            self.calls.append((table, dict(params)))
+            if params["offset"] == "0":
+                return [{"id": f"snap-{i}"} for i in range(1000)]
+            if params["offset"] == "1000":
+                return [{"id": "snap-1000"}]
+            return []
+
+    writer = PagingWriter()
+
+    rows = _fetch_snapshot_pages(writer, [{"id": "run-1"}])
+
+    assert len(rows) == 1001
+    assert [call[1]["offset"] for call in writer.calls] == ["0", "1000"]
 
 
 def test_fetch_inputs_uses_current_slate_heartbeat_when_run_row_did_not_rotate():
