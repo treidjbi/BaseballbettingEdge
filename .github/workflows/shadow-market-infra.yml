@@ -24,6 +24,16 @@ on:
         required: false
         type: boolean
         default: true
+      build_market_lines:
+        description: "Build shadow current/official market line tables from captured snapshots"
+        required: false
+        type: boolean
+        default: true
+      run_cutover_compare:
+        description: "Run the provider cutover shadow comparison report"
+        required: false
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -65,10 +75,14 @@ jobs:
         run: |
           CAPTURE_PROPLINE="${{ github.event.inputs.capture_propline }}"
           CAPTURE_ARTIFACTS="${{ github.event.inputs.capture_artifacts }}"
+          BUILD_MARKET_LINES="${{ github.event.inputs.build_market_lines }}"
+          RUN_CUTOVER_COMPARE="${{ github.event.inputs.run_cutover_compare }}"
 
           if [ "${{ github.event_name }}" = "schedule" ]; then
             CAPTURE_PROPLINE="true"
             CAPTURE_ARTIFACTS="false"
+            BUILD_MARKET_LINES="true"
+            RUN_CUTOVER_COMPARE="false"
           fi
 
           if [ -z "$CAPTURE_PROPLINE" ]; then
@@ -77,22 +91,35 @@ jobs:
           if [ -z "$CAPTURE_ARTIFACTS" ]; then
             CAPTURE_ARTIFACTS="true"
           fi
+          if [ -z "$BUILD_MARKET_LINES" ]; then
+            BUILD_MARKET_LINES="true"
+          fi
+          if [ -z "$RUN_CUTOVER_COMPARE" ]; then
+            RUN_CUTOVER_COMPARE="false"
+          fi
 
           echo "capture_propline=$CAPTURE_PROPLINE" >> "$GITHUB_OUTPUT"
           echo "capture_artifacts=$CAPTURE_ARTIFACTS" >> "$GITHUB_OUTPUT"
+          echo "build_market_lines=$BUILD_MARKET_LINES" >> "$GITHUB_OUTPUT"
+          echo "run_cutover_compare=$RUN_CUTOVER_COMPARE" >> "$GITHUB_OUTPUT"
           echo "Capture PropLine: $CAPTURE_PROPLINE"
           echo "Capture artifacts: $CAPTURE_ARTIFACTS"
+          echo "Build market lines: $BUILD_MARKET_LINES"
+          echo "Run cutover compare: $RUN_CUTOVER_COMPARE"
 
       - name: Validate shadow secrets
         env:
           CAPTURE_PROPLINE: ${{ steps.capture.outputs.capture_propline }}
           CAPTURE_ARTIFACTS: ${{ steps.capture.outputs.capture_artifacts }}
+          BUILD_MARKET_LINES: ${{ steps.capture.outputs.build_market_lines }}
+          RUN_CUTOVER_COMPARE: ${{ steps.capture.outputs.run_cutover_compare }}
           PROPLINE_API_KEY: ${{ secrets.PROPLINE_API_KEY }}
+          RUNDOWN_API_KEY: ${{ secrets.RUNDOWN_API_KEY }}
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
         run: |
           missing=0
-          if [ "$CAPTURE_PROPLINE" = "true" ] || [ "$CAPTURE_ARTIFACTS" = "true" ]; then
+          if [ "$CAPTURE_PROPLINE" = "true" ] || [ "$CAPTURE_ARTIFACTS" = "true" ] || [ "$BUILD_MARKET_LINES" = "true" ] || [ "$RUN_CUTOVER_COMPARE" = "true" ]; then
             if [ -z "$SUPABASE_URL" ]; then
               echo "Missing SUPABASE_URL secret"
               missing=1
@@ -104,6 +131,10 @@ jobs:
           fi
           if [ "$CAPTURE_PROPLINE" = "true" ] && [ -z "$PROPLINE_API_KEY" ]; then
             echo "Missing PROPLINE_API_KEY secret"
+            missing=1
+          fi
+          if [ "$RUN_CUTOVER_COMPARE" = "true" ] && [ -z "$RUNDOWN_API_KEY" ]; then
+            echo "Missing RUNDOWN_API_KEY secret"
             missing=1
           fi
           exit "$missing"
@@ -130,3 +161,22 @@ jobs:
             "data/picks_history.json" \
             "data/preview_lines.json" \
             "data/params.json"
+
+      - name: Build shadow current and official market lines
+        if: ${{ steps.capture.outputs.build_market_lines == 'true' }}
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: |
+          python scripts/build_current_market_lines_to_supabase.py --date "${{ steps.slate.outputs.date }}"
+          python scripts/build_official_market_lines_to_supabase.py --date "${{ steps.slate.outputs.date }}"
+
+      - name: Provider cutover shadow compare
+        if: ${{ steps.capture.outputs.run_cutover_compare == 'true' }}
+        env:
+          RUNDOWN_API_KEY: ${{ secrets.RUNDOWN_API_KEY }}
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: |
+          python analytics/diagnostics/provider_cutover_shadow_compare.py --date "${{ steps.slate.outputs.date }}" --provider-min-props 1
+          cat "analytics/output/provider_cutover_shadow_compare_${{ steps.slate.outputs.date }}.md"

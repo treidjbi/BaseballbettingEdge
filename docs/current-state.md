@@ -45,13 +45,26 @@ do we convert model signal into better betting decisions?"
   or provider order until the provider cutover plan is implemented and Tyler
   explicitly approves the switch.
 
-Cutover branch infrastructure progress as of 2026-05-13:
+Cutover branch infrastructure progress as of 2026-05-14:
 
+- The Supabase cutover tables have been applied for the active project:
+  `current_market_lines`, `market_opening_baselines`,
+  `official_market_lines`, `provider_arbitration_decisions`,
+  `provider_request_usage_daily`, and `compact_market_line_movements`.
 - `current_market_lines` and `market_opening_baselines` builders exist as
-  shadow derived-market infrastructure.
+  shadow derived-market infrastructure. The current-line builder can fill
+  missing provider snapshot `game_time` values from same-slate
+  `live_pick_state` rows, with provenance recorded under
+  `raw_payload.game_time_source`, so official arbitration can still fail closed
+  when live-state timing is unavailable.
 - `official_market_lines` arbitration exists behind a separate build script and
   remains shadow-only. It fails closed for stale, unsupported, incomplete, and
   missing-current lines and does not change production artifacts yet.
+- `.github/workflows/shadow-market-infra.yml` now has a shadow-only derived
+  line build step. Scheduled runs capture PropLine and rebuild
+  `current_market_lines`/`official_market_lines` from existing snapshots; they
+  do not run the production pipeline, push artifacts, or change provider order.
+  The provider cutover comparison report is manual-only from that workflow.
 - The Odds API official arbitration remains behind an explicit emergency flag;
   DraftKings remains PropLine-first until BoltOdds DraftKings coverage is
   explicitly enabled.
