@@ -60,6 +60,12 @@ Cutover branch infrastructure progress as of 2026-05-14:
 - `official_market_lines` arbitration exists behind a separate build script and
   remains shadow-only. It fails closed for stale, unsupported, incomplete, and
   missing-current lines and does not change production artifacts yet.
+- BoltOdds official-line freshness now treats a fresh current-slate WebSocket
+  heartbeat as supporting evidence for unchanged complete BoltOdds lines. This
+  prevents normal K-prop price quietness from making otherwise usable rows fail
+  stale solely because the exact line did not re-emit. It still fails closed on
+  incomplete rows, missing game time, ambiguous mainline ladders, stale/missing
+  heartbeats, and unsupported books.
 - A shadow mainline selector now runs before official arbitration so
   same-book BoltOdds alt ladders are not treated as automatic provider outages.
   It keeps raw/current rows for audit, selects complete supported mainline

@@ -853,6 +853,11 @@ Implementation note, 2026-05-13:
   closed.
 - Official freshness is recomputed from `last_seen_at`; missing or malformed
   timestamps fail closed.
+- Update, 2026-05-15: complete BoltOdds rows can be treated as effectively
+  fresh when the same-slate BoltOdds WebSocket heartbeat and book are fresh.
+  This handles unchanged K-prop prices that do not re-emit. The hold does not
+  apply to incomplete rows, ambiguous mainline ladders, unsupported books,
+  stale/missing heartbeats, or DraftKings promotion.
 - The Odds API requires explicit emergency mode and is limited to FanDuel /
   DraftKings. DraftKings defaults to PropLine until BoltOdds DK is explicitly
   enabled.

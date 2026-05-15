@@ -103,9 +103,11 @@ cutover gates pass. The official pipeline should eventually read
 
 As of the 2026-05-13 cutover branch work, `current_market_lines`,
 `market_opening_baselines`, and `official_market_lines` builders exist as
-shadow infrastructure only. They fail closed for stale or incomplete provider
-state but are not production odds-source behavior until Tyler approves the
-cutover switch.
+shadow infrastructure only. They fail closed for incomplete provider state and
+for stale provider state when the provider heartbeat is not fresh. For BoltOdds,
+unchanged complete WebSocket lines can be heartbeat-held in shadow because K-prop
+prices often do not re-emit when they do not change. This is not production
+odds-source behavior until Tyler approves the cutover switch.
 
 The provider pipeline adapter also exists, but it is double gated:
 `OFFICIAL_MARKET_SOURCE=boltodds_propline` plus

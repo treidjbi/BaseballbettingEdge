@@ -7,9 +7,10 @@ NOW = datetime(2026, 5, 13, 19, 0, tzinfo=timezone.utc)
 
 
 class FakeWriter:
-    def __init__(self, rows, official_rows=None):
+    def __init__(self, rows, official_rows=None, heartbeat_rows=None):
         self.rows = rows
         self.official_rows = official_rows or []
+        self.heartbeat_rows = heartbeat_rows or []
         self.upserts = []
         self.inserts = []
 
@@ -19,6 +20,8 @@ class FakeWriter:
             return self.rows
         if table == "official_market_lines":
             return self.official_rows
+        if table == "market_feed_heartbeats":
+            return self.heartbeat_rows
         raise AssertionError(f"unexpected table: {table}")
 
     def upsert_rows(self, table, rows, on_conflict):
@@ -78,6 +81,32 @@ def test_upsert_writes_official_lines_and_decision_audit_rows():
     official = writer.upserts[0][1][0]
     assert official["ref_book_key"] == "fanduel"
     assert official["book_odds"]["DraftKings"]["provider"] == "propline"
+
+
+def test_fresh_provider_heartbeat_keeps_unchanged_boltodds_lines_ready():
+    stale_line = _line(1)
+    stale_line["freshness_seconds"] = 1800
+    stale_line["last_seen_at"] = "2026-05-13T18:30:00+00:00"
+    stale_line["quality_flags"] = ["stale"]
+    writer = FakeWriter(
+        [stale_line],
+        heartbeat_rows=[{
+            "provider": "boltodds",
+            "mode": "shadow_stream",
+            "slate_date": "2026-05-13",
+            "observed_at": "2026-05-13T18:59:45+00:00",
+            "last_message_at": "2026-05-13T18:59:40+00:00",
+            "books_seen": ["fanduel"],
+            "metadata": {"event": "message"},
+        }],
+    )
+
+    result = run(slate_date="2026-05-13", writer=writer, dry_run=False, now_utc=NOW)
+
+    assert result["ready_for_pipeline"] == 1
+    official = writer.upserts[0][1][0]
+    assert official["selected_provider"] == "boltodds"
+    assert "provider_heartbeat_hold:boltodds" in official["arbitration_reasons"]
 
 
 def test_missing_existing_ready_rows_are_retired():

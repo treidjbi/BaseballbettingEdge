@@ -10,6 +10,7 @@ REF_BOOK_PRIORITY = ("fanduel", "draftkings", "betmgm", "betrivers", "caesars")
 DEFAULT_PROVIDER_PRIORITY = ("boltodds", "propline", "the_odds", "therundown")
 DRAFTKINGS_PROVIDER_PRIORITY = ("propline", "boltodds", "the_odds", "therundown")
 THE_ODDS_EMERGENCY_BOOKS = {"fanduel", "draftkings"}
+WEBSOCKET_HOLD_PROVIDERS = {"boltodds"}
 UNKNOWN_FRESHNESS_SECONDS = 1_000_000_000
 
 
@@ -19,16 +20,31 @@ def choose_official_lines(
     stale_after_seconds: int = 900,
     allow_the_odds_emergency: bool = False,
     boltodds_draftkings_enabled: bool = False,
+    provider_heartbeats: list[dict[str, Any]] | None = None,
 ) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
     """Return official market-line rows and per-player arbitration decisions."""
     observed_now = _ensure_utc(now_utc)
-    observed_rows = [_with_observed_freshness(row, observed_now) for row in current_lines]
+    provider_health = _provider_heartbeat_health(
+        provider_heartbeats or [],
+        observed_now,
+        stale_after_seconds,
+    )
+    observed_rows = [
+        _with_observed_freshness(
+            row,
+            observed_now,
+            provider_health=provider_health,
+            stale_after_seconds=stale_after_seconds,
+        )
+        for row in current_lines
+    ]
     grouped = _group_by_player(observed_rows)
     mainline_rows, mainline_metadata = select_mainline_current_lines(
         observed_rows,
         observed_now,
         stale_after_seconds=stale_after_seconds,
         allow_the_odds_emergency=allow_the_odds_emergency,
+        provider_health=provider_health,
     )
     mainline_grouped = _group_by_player(mainline_rows)
     official_rows: list[dict[str, Any]] = []
@@ -43,7 +59,11 @@ def choose_official_lines(
             row for row in mainline_grouped.get(player_key, [])
             if _is_usable_current_line(row, stale_after_seconds, allow_the_odds_emergency)
         ]
-        stale_count = sum(1 for row in supported_rows if _is_complete(row) and _freshness(row) > stale_after_seconds)
+        stale_count = sum(
+            1
+            for row in supported_rows
+            if _is_complete(row) and not _is_effectively_fresh(row, stale_after_seconds)
+        )
         missing_books = [
             book_key for book_key in REF_BOOK_PRIORITY
             if not any(_book_key(row) == book_key for row in fresh_complete_rows)
@@ -127,7 +147,9 @@ def choose_official_lines(
             book_key: {
                 "provider": row.get("provider"),
                 "line": row.get("line"),
-                "freshness_seconds": _freshness(row),
+                "freshness_seconds": _effective_freshness(row),
+                "line_freshness_seconds": _freshness(row),
+                "heartbeat_hold": _heartbeat_hold(row),
             }
             for book_key, row in selected_by_book.items()
         }
@@ -176,7 +198,7 @@ def choose_official_lines(
             "provider_coverage": coverage,
             "arbitration_reasons": reasons,
             "quality_flags": quality_flags,
-            "freshness_seconds": min(_freshness(row) for row in selected_by_book.values()),
+            "freshness_seconds": min(_effective_freshness(row) for row in selected_by_book.values()),
             "stale_after_seconds": stale_after_seconds,
             "current_market_line_ids": current_line_ids,
             "ready_for_pipeline": True,
@@ -205,10 +227,27 @@ def select_mainline_current_lines(
     now_utc: datetime,
     stale_after_seconds: int = 900,
     allow_the_odds_emergency: bool = False,
+    provider_heartbeats: list[dict[str, Any]] | None = None,
+    provider_health: dict[tuple[str, str], dict[str, Any]] | None = None,
 ) -> tuple[list[dict[str, Any]], dict[tuple[str, str, str], dict[str, Any]]]:
     """Select conservative mainline candidates while preserving raw rows elsewhere."""
     observed_now = _ensure_utc(now_utc)
-    observed_rows = [_with_observed_freshness(row, observed_now) for row in current_lines]
+    heartbeat_health = provider_health
+    if heartbeat_health is None:
+        heartbeat_health = _provider_heartbeat_health(
+            provider_heartbeats or [],
+            observed_now,
+            stale_after_seconds,
+        )
+    observed_rows = [
+        _with_observed_freshness(
+            row,
+            observed_now,
+            provider_health=heartbeat_health,
+            stale_after_seconds=stale_after_seconds,
+        )
+        for row in current_lines
+    ]
     grouped = _group_by_player(observed_rows)
     selected_rows: list[dict[str, Any]] = []
     metadata: dict[tuple[str, str, str], dict[str, Any]] = {}
@@ -362,7 +401,12 @@ def _is_mainline_eligible(
     if row.get("provider") == "the_odds":
         if not allow_the_odds_emergency or _book_key(row) not in THE_ODDS_EMERGENCY_BOOKS:
             return False
-    return _is_complete(row) and _freshness(row) <= stale_after_seconds and "stale" not in _flags(row)
+    flags = set(_flags(row))
+    return (
+        _is_complete(row)
+        and _is_effectively_fresh(row, stale_after_seconds)
+        and ("stale" not in flags or _heartbeat_hold(row))
+    )
 
 
 def _is_usable_current_line(
@@ -376,8 +420,8 @@ def _is_usable_current_line(
             return False
     return (
         _is_complete(row)
-        and _freshness(row) <= stale_after_seconds
-        and "stale" not in flags
+        and _is_effectively_fresh(row, stale_after_seconds)
+        and ("stale" not in flags or _heartbeat_hold(row))
         and "line_conflict" not in flags
     )
 
@@ -519,7 +563,7 @@ def _skip_reasons(rows: list[dict[str, Any]], stale_after_seconds: int) -> list[
     reasons: list[str] = []
     if not any(_is_complete(row) for row in rows):
         reasons.append("no_complete_line")
-    if any(_is_complete(row) and _freshness(row) > stale_after_seconds for row in rows):
+    if any(_is_complete(row) and not _is_effectively_fresh(row, stale_after_seconds) for row in rows):
         reasons.append("stale")
     if any("line_conflict" in _flags(row) for row in rows):
         reasons.append("line_conflict")
@@ -544,6 +588,11 @@ def _selection_reasons(
         reasons.append("propline_draftkings")
     if any(row.get("provider") == "boltodds" for row in selected_by_book.values()):
         reasons.append("boltodds_primary")
+    for row in selected_by_book.values():
+        if _heartbeat_hold(row):
+            reason = f"provider_heartbeat_hold:{row.get('provider')}"
+            if reason not in reasons:
+                reasons.append(reason)
     for row in selected_by_book.values():
         for reason in row.get("_mainline_reasons") or []:
             if reason not in reasons:
@@ -572,7 +621,9 @@ def _book_odds(selected_by_book: dict[str, dict[str, Any]]) -> dict[str, dict[st
             "provider": row.get("provider"),
             "book_key": book_key,
             "current_market_line_id": row.get("id"),
-            "freshness_seconds": _freshness(row),
+            "freshness_seconds": _effective_freshness(row),
+            "line_freshness_seconds": _freshness(row),
+            "heartbeat_hold": _heartbeat_hold(row),
         }
         for book_key, row in selected_by_book.items()
     }
@@ -684,13 +735,67 @@ def _selected_game_time(selected_by_book: dict[str, dict[str, Any]], ref_book_ke
     return None
 
 
-def _with_observed_freshness(row: dict[str, Any], observed_now: datetime) -> dict[str, Any]:
+def _provider_heartbeat_health(
+    rows: list[dict[str, Any]],
+    observed_now: datetime,
+    stale_after_seconds: int,
+) -> dict[tuple[str, str], dict[str, Any]]:
+    health: dict[tuple[str, str], dict[str, Any]] = {}
+    for row in rows:
+        provider = str(row.get("provider") or "").strip().lower()
+        slate_date = str(row.get("slate_date") or "").strip()
+        if provider not in WEBSOCKET_HOLD_PROVIDERS or not slate_date:
+            continue
+
+        metadata = _json_object(row.get("metadata"))
+        if str(metadata.get("event") or "").strip().lower() in {"failed", "completed"}:
+            continue
+
+        observed_at = _parse_datetime(row.get("observed_at"))
+        last_message_at = _parse_datetime(row.get("last_message_at"))
+        if observed_at is None or last_message_at is None:
+            continue
+
+        observed_age = max(int((observed_now - observed_at).total_seconds()), 0)
+        message_age = max(int((observed_now - last_message_at).total_seconds()), 0)
+        freshness_seconds = max(observed_age, message_age)
+        if freshness_seconds > stale_after_seconds:
+            continue
+
+        books_seen = _heartbeat_books(row, metadata)
+        if not books_seen:
+            continue
+
+        key = (provider, slate_date)
+        existing = health.get(key)
+        if existing is None or freshness_seconds < int(existing.get("freshness_seconds") or UNKNOWN_FRESHNESS_SECONDS):
+            health[key] = {
+                "freshness_seconds": freshness_seconds,
+                "observed_age_seconds": observed_age,
+                "message_age_seconds": message_age,
+                "books_seen": books_seen,
+            }
+    return health
+
+
+def _with_observed_freshness(
+    row: dict[str, Any],
+    observed_now: datetime,
+    *,
+    provider_health: dict[tuple[str, str], dict[str, Any]] | None = None,
+    stale_after_seconds: int = 900,
+) -> dict[str, Any]:
     enriched = dict(row)
     last_seen_at = _parse_datetime(row.get("last_seen_at"))
     if last_seen_at is None:
         enriched["_computed_freshness_seconds"] = UNKNOWN_FRESHNESS_SECONDS
         return enriched
     enriched["_computed_freshness_seconds"] = max(int((observed_now - last_seen_at).total_seconds()), 0)
+    heartbeat_health = provider_health or {}
+    heartbeat_hold = _heartbeat_hold_health(enriched, heartbeat_health, stale_after_seconds)
+    if heartbeat_hold is not None:
+        enriched["_provider_heartbeat_hold"] = True
+        enriched["_provider_heartbeat_freshness_seconds"] = heartbeat_hold["freshness_seconds"]
     return enriched
 
 
@@ -726,6 +831,53 @@ def _freshness(row: dict[str, Any]) -> int:
         return UNKNOWN_FRESHNESS_SECONDS
 
 
+def _effective_freshness(row: dict[str, Any]) -> int:
+    if _heartbeat_hold(row):
+        try:
+            return int(row.get("_provider_heartbeat_freshness_seconds"))
+        except (TypeError, ValueError):
+            return _freshness(row)
+    return _freshness(row)
+
+
+def _is_effectively_fresh(row: dict[str, Any], stale_after_seconds: int) -> bool:
+    return _effective_freshness(row) <= stale_after_seconds
+
+
+def _heartbeat_hold(row: dict[str, Any]) -> bool:
+    return bool(row.get("_provider_heartbeat_hold"))
+
+
+def _heartbeat_hold_health(
+    row: dict[str, Any],
+    provider_health: dict[tuple[str, str], dict[str, Any]],
+    stale_after_seconds: int,
+) -> dict[str, Any] | None:
+    provider = str(row.get("provider") or "").strip().lower()
+    if provider not in WEBSOCKET_HOLD_PROVIDERS:
+        return None
+    if not _is_complete(row):
+        return None
+    if _freshness(row) <= stale_after_seconds and "stale" not in _flags(row):
+        return None
+
+    slate_date = str(row.get("slate_date") or "").strip()
+    health = provider_health.get((provider, slate_date))
+    if not health:
+        return None
+
+    book_key = _book_key(row)
+    books_seen = set(health.get("books_seen") or [])
+    if book_key not in books_seen:
+        return None
+    try:
+        if int(health.get("freshness_seconds")) > stale_after_seconds:
+            return None
+    except (TypeError, ValueError):
+        return None
+    return health
+
+
 def _flags(row: dict[str, Any]) -> list[str]:
     flags = row.get("quality_flags") or []
     if isinstance(flags, str):
@@ -738,6 +890,44 @@ def _flags(row: dict[str, Any]) -> list[str]:
     if isinstance(flags, list):
         return [str(flag) for flag in flags]
     return []
+
+
+def _json_object(value: Any) -> dict[str, Any]:
+    if isinstance(value, dict):
+        return value
+    if isinstance(value, str):
+        try:
+            parsed = json.loads(value)
+        except json.JSONDecodeError:
+            return {}
+        if isinstance(parsed, dict):
+            return parsed
+    return {}
+
+
+def _heartbeat_books(row: dict[str, Any], metadata: dict[str, Any]) -> set[str]:
+    raw_books = row.get("books_seen")
+    if not raw_books:
+        raw_books = metadata.get("target_books") or metadata.get("books_seen")
+    if isinstance(raw_books, str):
+        text = raw_books.strip()
+        if text.startswith("["):
+            try:
+                parsed = json.loads(text)
+            except json.JSONDecodeError:
+                parsed = []
+            raw_books = parsed
+        elif text.startswith("{") and text.endswith("}"):
+            raw_books = [item.strip() for item in text[1:-1].split(",")]
+        else:
+            raw_books = [item.strip() for item in text.split(",")]
+    if not isinstance(raw_books, list):
+        return set()
+    return {
+        str(book).strip().lower()
+        for book in raw_books
+        if str(book).strip()
+    }
 
 
 def _json_list(value: Any) -> list[Any]:

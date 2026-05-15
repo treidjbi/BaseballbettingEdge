@@ -43,6 +43,26 @@ def _line(
     }
 
 
+def _heartbeat(
+    *,
+    provider="boltodds",
+    slate_date="2026-05-13",
+    observed_seconds=30,
+    last_message_seconds=20,
+    books_seen=None,
+    event="message",
+):
+    return {
+        "provider": provider,
+        "mode": "shadow_stream",
+        "slate_date": slate_date,
+        "observed_at": (NOW - timedelta(seconds=observed_seconds)).isoformat(),
+        "last_message_at": (NOW - timedelta(seconds=last_message_seconds)).isoformat(),
+        "books_seen": books_seen if books_seen is not None else ["fanduel"],
+        "metadata": {"event": event},
+    }
+
+
 def test_boltodds_fanduel_beats_propline_fanduel_when_fresh():
     official_rows, decision_rows = choose_official_lines(
         [
@@ -99,6 +119,77 @@ def test_stale_boltodds_is_rejected_in_favor_of_fresh_propline():
     official = official_rows[0]
     assert official["selected_provider"] == "propline"
     assert official["ref_over_odds"] == -102
+    assert decision_rows[0]["stale_candidate_count"] == 1
+
+
+def test_unchanged_boltodds_line_can_be_held_by_fresh_websocket_heartbeat():
+    official_rows, decision_rows = choose_official_lines(
+        [
+            _line(1, provider="boltodds", freshness_seconds=1800, quality_flags=["stale"]),
+        ],
+        NOW,
+        stale_after_seconds=900,
+        provider_heartbeats=[_heartbeat()],
+    )
+
+    official = official_rows[0]
+    assert official["ready_for_pipeline"] is True
+    assert official["selected_provider"] == "boltodds"
+    assert official["ref_book_key"] == "fanduel"
+    assert "provider_heartbeat_hold:boltodds" in official["arbitration_reasons"]
+    assert decision_rows[0]["decision"] == "use"
+    assert decision_rows[0]["stale_candidate_count"] == 0
+
+
+def test_stale_boltodds_line_is_rejected_when_websocket_heartbeat_is_stale():
+    official_rows, decision_rows = choose_official_lines(
+        [
+            _line(1, provider="boltodds", freshness_seconds=1800, quality_flags=["stale"]),
+        ],
+        NOW,
+        stale_after_seconds=900,
+        provider_heartbeats=[_heartbeat(observed_seconds=1200, last_message_seconds=1200)],
+    )
+
+    assert official_rows[0]["ready_for_pipeline"] is False
+    assert decision_rows[0]["decision"] == "skip"
+    assert decision_rows[0]["stale_candidate_count"] == 1
+
+
+def test_fresh_websocket_heartbeat_does_not_hold_incomplete_boltodds_line():
+    official_rows, decision_rows = choose_official_lines(
+        [
+            _line(
+                1,
+                provider="boltodds",
+                freshness_seconds=1800,
+                under_odds=None,
+                is_complete=False,
+                quality_flags=["missing_under", "stale"],
+            ),
+        ],
+        NOW,
+        stale_after_seconds=900,
+        provider_heartbeats=[_heartbeat()],
+    )
+
+    assert official_rows[0]["ready_for_pipeline"] is False
+    assert decision_rows[0]["decision"] == "skip"
+    assert decision_rows[0]["reasons"] == ["no_complete_line"]
+
+
+def test_fresh_websocket_heartbeat_only_holds_books_seen_on_the_feed():
+    official_rows, decision_rows = choose_official_lines(
+        [
+            _line(1, provider="boltodds", freshness_seconds=1800, quality_flags=["stale"]),
+        ],
+        NOW,
+        stale_after_seconds=900,
+        provider_heartbeats=[_heartbeat(books_seen=["betmgm"])],
+    )
+
+    assert official_rows[0]["ready_for_pipeline"] is False
+    assert decision_rows[0]["decision"] == "skip"
     assert decision_rows[0]["stale_candidate_count"] == 1
 
 

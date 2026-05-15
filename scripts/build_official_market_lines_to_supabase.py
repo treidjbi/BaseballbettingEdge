@@ -53,6 +53,18 @@ def _fetch_existing_official_lines(writer: SupabaseMarketWriter, slate_date: str
     )
 
 
+def _fetch_provider_heartbeats(writer: SupabaseMarketWriter, slate_date: str) -> list[dict[str, Any]]:
+    return writer.select_rows(
+        "market_feed_heartbeats",
+        {
+            "slate_date": f"eq.{slate_date}",
+            "provider": "in.(boltodds)",
+            "order": "observed_at.desc",
+            "limit": "250",
+        },
+    )
+
+
 def run(
     *,
     slate_date: str,
@@ -65,12 +77,14 @@ def run(
 ) -> dict[str, Any]:
     observed_now = now_utc or _now_utc()
     current_rows = _fetch_current_lines(writer, slate_date)
+    provider_heartbeats = _fetch_provider_heartbeats(writer, slate_date)
     official_rows, decision_rows = choose_official_lines(
         current_lines=current_rows,
         now_utc=observed_now,
         stale_after_seconds=stale_after_seconds,
         allow_the_odds_emergency=allow_the_odds_emergency,
         boltodds_draftkings_enabled=boltodds_draftkings_enabled,
+        provider_heartbeats=provider_heartbeats,
     )
     existing_official_rows = _fetch_existing_official_lines(writer, slate_date)
     retired_rows, retired_decisions = retire_missing_official_lines(
@@ -97,6 +111,7 @@ def run(
     return {
         "slate_date": slate_date,
         "current_market_lines": len(current_rows),
+        "provider_heartbeats": len(provider_heartbeats),
         "official_market_lines": len(official_rows),
         "ready_for_pipeline": len(ready_rows),
         "retired_missing_rows": len(retired_rows),
