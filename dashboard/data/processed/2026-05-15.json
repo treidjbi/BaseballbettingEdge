@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-05-15T17:14:24Z",
+  "generated_at": "2026-05-15T17:49:47Z",
   "date": "2026-05-15",
   "props_available": true,
   "data_warnings": [
@@ -238,8 +238,8 @@
       },
       "book_odds": {
         "DraftKings": {
-          "over": -131,
-          "under": 103
+          "over": -109,
+          "under": -117
         },
         "BetMGM": {
           "over": -125,
@@ -760,16 +760,16 @@
       "best_over_book": "FanDuel",
       "best_under_book": "FanDuel",
       "ref_book": "FanDuel",
-      "best_over_odds": 116,
-      "best_under_odds": -154,
+      "best_over_odds": 126,
+      "best_under_odds": -168,
       "opening_over_odds": 104,
       "opening_under_odds": -128,
       "opening_odds_source": "preview",
       "odds_source": "therundown",
       "the_odds_event_id": null,
       "propline_event_id": null,
-      "price_delta_over": 12,
-      "price_delta_under": -26,
+      "price_delta_over": 22,
+      "price_delta_under": -40,
       "raw_lambda": 4.1,
       "lambda": 4.08,
       "avg_ip": 5.27,
@@ -792,14 +792,14 @@
       "recent_k9": 7.18,
       "career_k9": 8.14,
       "ev_over": {
-        "edge": -0.0757,
-        "ev": -0.1634,
-        "adj_ev": -0.1471,
+        "edge": -0.0552,
+        "ev": -0.1247,
+        "adj_ev": -0.0499,
         "verdict": "PASS",
         "win_prob": 0.387,
-        "movement_conf": 0.9,
+        "movement_conf": 0.4,
         "raw_verdict": "PASS",
-        "raw_adj_ev": -0.1471,
+        "raw_adj_ev": -0.0499,
         "actionable_verdict": "PASS",
         "quality_gate_level": "capped",
         "quality_gate_reasons": [
@@ -807,14 +807,14 @@
         ]
       },
       "ev_under": {
-        "edge": 0.0064,
-        "ev": 0.0106,
-        "adj_ev": 0.0106,
+        "edge": -0.0142,
+        "ev": -0.0226,
+        "adj_ev": -0.0226,
         "verdict": "PASS",
         "win_prob": 0.613,
         "movement_conf": 1.0,
         "raw_verdict": "PASS",
-        "raw_adj_ev": 0.0106,
+        "raw_adj_ev": -0.0226,
         "actionable_verdict": "PASS",
         "quality_gate_level": "capped",
         "quality_gate_reasons": [
@@ -831,12 +831,12 @@
           "under": -160
         },
         "FanDuel": {
-          "over": 116,
-          "under": -154
+          "over": 126,
+          "under": -168
         },
         "Kalshi": {
-          "over": 134,
-          "under": -161
+          "over": 140,
+          "under": -175
         }
       },
       "umpire": null,
@@ -1321,8 +1321,8 @@
       },
       "book_odds": {
         "DraftKings": {
-          "over": 109,
-          "under": -140
+          "over": 116,
+          "under": -148
         },
         "BetMGM": {
           "over": 100,
@@ -1483,8 +1483,8 @@
       },
       "book_odds": {
         "DraftKings": {
-          "over": 106,
-          "under": -135
+          "over": 101,
+          "under": -128
         },
         "BetMGM": {
           "over": -105,
@@ -1496,7 +1496,7 @@
         },
         "Kalshi": {
           "over": 109,
-          "under": -137
+          "under": -131
         }
       },
       "umpire": null,
@@ -1642,10 +1642,6 @@
         ]
       },
       "book_odds": {
-        "DraftKings": {
-          "over": -114,
-          "under": -112
-        },
         "BetMGM": {
           "over": -110,
           "under": -120
@@ -1800,8 +1796,8 @@
       },
       "book_odds": {
         "DraftKings": {
-          "over": -157,
-          "under": 123
+          "over": -150,
+          "under": 118
         },
         "BetMGM": {
           "over": -155,
@@ -1969,8 +1965,8 @@
           "under": -166
         },
         "Kalshi": {
-          "over": 124,
-          "under": -168
+          "over": 134,
+          "under": -161
         }
       },
       "umpire": null,
@@ -2223,8 +2219,8 @@
       },
       "book_odds": {
         "DraftKings": {
-          "over": -105,
-          "under": -121
+          "over": -102,
+          "under": -125
         },
         "BetMGM": {
           "over": -125,
@@ -2376,8 +2372,8 @@
       },
       "book_odds": {
         "DraftKings": {
-          "over": -139,
-          "under": 109
+          "over": -134,
+          "under": 105
         },
         "BetMGM": {
           "over": -150,
@@ -2969,8 +2965,8 @@
       },
       "book_odds": {
         "DraftKings": {
-          "over": 105,
-          "under": -134
+          "over": 109,
+          "under": -139
         },
         "BetMGM": {
           "over": -115,
@@ -2981,7 +2977,7 @@
           "under": -130
         },
         "Kalshi": {
-          "over": 105,
+          "over": 109,
           "under": -137
         }
       },
@@ -3495,16 +3491,16 @@
       "best_over_book": "FanDuel",
       "best_under_book": "FanDuel",
       "ref_book": "FanDuel",
-      "best_over_odds": 130,
-      "best_under_odds": -160,
+      "best_over_odds": 128,
+      "best_under_odds": -158,
       "opening_over_odds": 128,
       "opening_under_odds": -158,
       "opening_odds_source": "preview",
       "odds_source": "therundown",
       "the_odds_event_id": null,
       "propline_event_id": null,
-      "price_delta_over": 2,
-      "price_delta_under": -2,
+      "price_delta_over": 0,
+      "price_delta_under": 0,
       "raw_lambda": 4.36,
       "lambda": 4.35,
       "avg_ip": 5.2,
@@ -3527,14 +3523,14 @@
       "recent_k9": 7.27,
       "career_k9": 8.05,
       "ev_over": {
-        "edge": 0.0037,
-        "ev": 0.0084,
-        "adj_ev": 0.0084,
+        "edge": -0.0001,
+        "ev": -0.0003,
+        "adj_ev": -0.0003,
         "verdict": "PASS",
         "win_prob": 0.438,
         "movement_conf": 1.0,
         "raw_verdict": "PASS",
-        "raw_adj_ev": 0.0084,
+        "raw_adj_ev": -0.0003,
         "actionable_verdict": "PASS",
         "quality_gate_level": "capped",
         "quality_gate_reasons": [
@@ -3542,14 +3538,14 @@
         ]
       },
       "ev_under": {
-        "edge": -0.0538,
-        "ev": -0.0875,
-        "adj_ev": -0.0875,
+        "edge": -0.0509,
+        "ev": -0.083,
+        "adj_ev": -0.083,
         "verdict": "PASS",
         "win_prob": 0.562,
         "movement_conf": 1.0,
         "raw_verdict": "PASS",
-        "raw_adj_ev": -0.0875,
+        "raw_adj_ev": -0.083,
         "actionable_verdict": "PASS",
         "quality_gate_level": "capped",
         "quality_gate_reasons": [
@@ -3562,8 +3558,8 @@
           "under": -167
         },
         "FanDuel": {
-          "over": 130,
-          "under": -160
+          "over": 128,
+          "under": -158
         }
       },
       "umpire": null,
@@ -3749,16 +3745,16 @@
       "best_over_book": "FanDuel",
       "best_under_book": "FanDuel",
       "ref_book": "FanDuel",
-      "best_over_odds": -104,
-      "best_under_odds": -128,
+      "best_over_odds": -106,
+      "best_under_odds": -125,
       "opening_over_odds": -102,
       "opening_under_odds": -120,
       "opening_odds_source": "preview",
       "odds_source": "therundown",
       "the_odds_event_id": null,
       "propline_event_id": null,
-      "price_delta_over": -2,
-      "price_delta_under": -8,
+      "price_delta_over": -4,
+      "price_delta_under": -5,
       "raw_lambda": 4.59,
       "lambda": 4.57,
       "avg_ip": 5.33,
@@ -3781,14 +3777,14 @@
       "recent_k9": 7.76,
       "career_k9": 6.17,
       "ev_over": {
-        "edge": -0.0284,
-        "ev": -0.0556,
-        "adj_ev": -0.0556,
+        "edge": -0.0331,
+        "ev": -0.0644,
+        "adj_ev": -0.0644,
         "verdict": "PASS",
         "win_prob": 0.481,
         "movement_conf": 1.0,
         "raw_verdict": "PASS",
-        "raw_adj_ev": -0.0556,
+        "raw_adj_ev": -0.0644,
         "actionable_verdict": "PASS",
         "quality_gate_level": "capped",
         "quality_gate_reasons": [
@@ -3796,14 +3792,14 @@
         ]
       },
       "ev_under": {
-        "edge": -0.0428,
-        "ev": -0.0763,
-        "adj_ev": -0.0763,
+        "edge": -0.037,
+        "ev": -0.0666,
+        "adj_ev": -0.0666,
         "verdict": "PASS",
         "win_prob": 0.519,
         "movement_conf": 1.0,
         "raw_verdict": "PASS",
-        "raw_adj_ev": -0.0763,
+        "raw_adj_ev": -0.0666,
         "actionable_verdict": "PASS",
         "quality_gate_level": "capped",
         "quality_gate_reasons": [
@@ -3820,8 +3816,8 @@
           "under": -140
         },
         "FanDuel": {
-          "over": -104,
-          "under": -128
+          "over": -106,
+          "under": -125
         },
         "Kalshi": {
           "over": 101,
@@ -3925,8 +3921,8 @@
       },
       "book_odds": {
         "DraftKings": {
-          "over": 111,
-          "under": -142
+          "over": 115,
+          "under": -147
         },
         "BetMGM": {
           "over": -105,
