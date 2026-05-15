@@ -3,11 +3,17 @@ from __future__ import annotations
 from datetime import datetime, timezone
 from typing import Any
 
+from market_infra.provider_freshness import (
+    effective_book_freshness,
+    normalize_book_key,
+    provider_heartbeat_health,
+)
 from pipeline.name_utils import normalize
 
 
 MARKET_EVIDENCE_PROVIDERS = {"propline", "boltodds"}
 TRACKED_VERDICTS = {"LEAN", "FIRE 1u", "FIRE 2u"}
+DEFAULT_STALE_AFTER_SECONDS = 900
 
 
 def _numeric(value: Any) -> float | None:
@@ -34,7 +40,10 @@ def _parse_datetime(value: datetime | str | None) -> datetime | None:
     if isinstance(value, datetime):
         parsed = value
     else:
-        parsed = datetime.fromisoformat(str(value).replace("Z", "+00:00"))
+        try:
+            parsed = datetime.fromisoformat(str(value).replace("Z", "+00:00"))
+        except ValueError:
+            return None
     if parsed.tzinfo is None:
         return parsed.replace(tzinfo=timezone.utc)
     return parsed
@@ -163,7 +172,7 @@ def _group_snapshots(
             snapshot.get("normalized_player_name") or normalize(snapshot.get("player_name") or "")
         ).strip()
         side = str(snapshot.get("side") or "").strip().lower()
-        book = str(snapshot.get("bookmaker_key") or "").strip().lower()
+        book = normalize_book_key(snapshot.get("bookmaker_key") or "")
         if not normalized or side not in {"over", "under"} or not book:
             continue
         grouped.setdefault((provider, normalized, side), {}).setdefault(book, []).append(snapshot)
@@ -172,23 +181,34 @@ def _group_snapshots(
 
 def _book_summary(
     *,
+    slate_date: str,
+    provider: str,
     side: str,
     pick_line: float,
     book: str,
     snapshots: list[dict[str, Any]],
+    observed_at: datetime,
+    provider_health: dict[tuple[str, str], dict[str, Any]],
+    stale_after_seconds: int,
 ) -> dict[str, Any] | None:
     valid_snapshots: list[dict[str, Any]] = []
     for snapshot in snapshots:
         line = _numeric(snapshot.get("line"))
         odds = _integer(snapshot.get("american_odds"))
-        if line is None or odds is None or not snapshot.get("observed_at"):
+        snapshot_time = _parse_datetime(snapshot.get("observed_at"))
+        if line is None or odds is None or snapshot_time is None:
             continue
-        valid_snapshots.append({**snapshot, "line": line, "american_odds": odds})
+        valid_snapshots.append({
+            **snapshot,
+            "line": line,
+            "american_odds": odds,
+            "_observed_at_dt": snapshot_time,
+        })
 
     if not valid_snapshots:
         return None
 
-    ordered = sorted(valid_snapshots, key=lambda row: str(row.get("observed_at") or ""))
+    ordered = sorted(valid_snapshots, key=lambda row: row["_observed_at_dt"])
     first = ordered[0]
     current = ordered[-1]
     first_line = float(first["line"])
@@ -203,9 +223,18 @@ def _book_summary(
         current_odds=current_odds,
     )
     reversal_count = _market_reversal_count(side, ordered)
+    line_freshness_seconds = max(int((observed_at - current["_observed_at_dt"]).total_seconds()), 0)
+    freshness = effective_book_freshness(
+        provider=provider,
+        slate_date=slate_date,
+        book_key=book,
+        line_freshness_seconds=line_freshness_seconds,
+        provider_health=provider_health,
+        stale_after_seconds=stale_after_seconds,
+    )
 
     return {
-        "bookmaker_key": book,
+        "bookmaker_key": normalize_book_key(book),
         "snapshot_count": len(ordered),
         "first_snapshot_id": first.get("id"),
         "current_snapshot_id": current.get("id"),
@@ -222,6 +251,13 @@ def _book_summary(
         "reversal_count": reversal_count,
         "has_reversal": reversal_count > 0,
         "touches_pick_line": any(_matches_line(float(row["line"]), pick_line) for row in ordered),
+        "freshness_seconds": freshness["freshness_seconds"],
+        "line_freshness_seconds": freshness["line_freshness_seconds"],
+        "freshness_status": (
+            "fresh" if int(freshness["freshness_seconds"]) <= stale_after_seconds else "stale"
+        ),
+        "heartbeat_hold": freshness["heartbeat_hold"],
+        "heartbeat_freshness_seconds": freshness["heartbeat_freshness_seconds"],
     }
 
 
@@ -233,11 +269,18 @@ def build_market_pick_evidence_rows(
     observed_at: datetime | str,
     source_artifact_path: str,
     source_artifact_sha256: str | None,
+    stale_after_seconds: int = DEFAULT_STALE_AFTER_SECONDS,
+    provider_heartbeats: list[dict[str, Any]] | None = None,
 ) -> list[dict[str, Any]]:
     observed_at_dt = _parse_datetime(observed_at)
     if observed_at_dt is None:
         return []
     observed_at_iso = _isoformat(observed_at_dt)
+    heartbeat_health = provider_heartbeat_health(
+        provider_heartbeats or [],
+        observed_at_dt,
+        stale_after_seconds,
+    )
     grouped_snapshots = _group_snapshots(snapshot_rows)
     rows: list[dict[str, Any]] = []
 
@@ -264,10 +307,15 @@ def build_market_pick_evidence_rows(
                 for book, snapshots in sorted(book_groups.items())
                 if (
                     summary := _book_summary(
+                        slate_date=slate_date,
+                        provider=provider,
                         side=side,
                         pick_line=pick_line,
                         book=book,
                         snapshots=snapshots,
+                        observed_at=observed_at_dt,
+                        provider_health=heartbeat_health,
+                        stale_after_seconds=stale_after_seconds,
                     )
                 )
                 is not None
@@ -297,6 +345,22 @@ def build_market_pick_evidence_rows(
             latest_snapshot_at = max(
                 str(summary["current_observed_at"]) for summary in book_summaries.values()
             )
+            freshness_seconds = min(
+                int(summary["freshness_seconds"]) for summary in book_summaries.values()
+            )
+            line_freshness_seconds = min(
+                int(summary["line_freshness_seconds"]) for summary in book_summaries.values()
+            )
+            heartbeat_holds = [
+                summary
+                for summary in book_summaries.values()
+                if summary.get("heartbeat_hold")
+            ]
+            heartbeat_freshness_seconds = [
+                int(summary["heartbeat_freshness_seconds"])
+                for summary in heartbeat_holds
+                if summary.get("heartbeat_freshness_seconds") is not None
+            ]
             snapshot_count = sum(int(summary["snapshot_count"]) for summary in book_summaries.values())
             books_seen = sorted(book_summaries)
 
@@ -346,6 +410,19 @@ def build_market_pick_evidence_rows(
                 "metadata": {
                     "book_summaries": book_summaries,
                     "tracked_verdict": verdict,
+                    "stale_after_seconds": stale_after_seconds,
+                    "freshness_seconds": freshness_seconds,
+                    "line_freshness_seconds": line_freshness_seconds,
+                    "freshness_status": (
+                        "fresh" if freshness_seconds <= stale_after_seconds else "stale"
+                    ),
+                    "heartbeat_hold": bool(heartbeat_holds),
+                    "heartbeat_hold_books": sorted(
+                        summary["bookmaker_key"] for summary in heartbeat_holds
+                    ),
+                    "heartbeat_freshness_seconds": (
+                        min(heartbeat_freshness_seconds) if heartbeat_freshness_seconds else None
+                    ),
                 },
             })
 

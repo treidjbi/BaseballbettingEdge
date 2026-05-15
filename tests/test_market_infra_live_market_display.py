@@ -33,6 +33,19 @@ def _snapshot(book, odds, observed_at, line=5.5, side="under", player="Bryan Woo
     }
 
 
+def _heartbeat(**overrides):
+    row = {
+        "provider": "boltodds",
+        "slate_date": "2026-05-12",
+        "observed_at": "2026-05-12T20:10:15+00:00",
+        "last_message_at": "2026-05-12T20:10:10+00:00",
+        "books_seen": ["fanduel", "betmgm"],
+        "metadata": {"event": "flush", "target_books": ["fanduel", "betmgm"]},
+    }
+    row.update(overrides)
+    return row
+
+
 def test_builds_consensus_and_best_actionable_for_fire_pick():
     snapshots = [
         _snapshot("fanduel", 104, "2026-05-12T20:00:00+00:00"),
@@ -108,3 +121,30 @@ def test_stale_snapshots_block_actionable_state():
     assert rows[0]["freshness_status"] == "stale"
     assert rows[0]["actionable_state"] == "stale"
     assert rows[0]["best_book"] is None
+
+
+def test_fresh_boltodds_heartbeat_holds_unchanged_stale_lines():
+    rows = build_live_market_display_rows(
+        slate_date="2026-05-12",
+        live_picks=[_pick()],
+        snapshot_rows=[
+            _snapshot("fanduel", 120, "2026-05-12T19:00:00+00:00"),
+            _snapshot("betmgm", 118, "2026-05-12T19:00:00+00:00"),
+        ],
+        provider="boltodds",
+        observed_at=datetime(2026, 5, 12, 20, 10, 30, tzinfo=timezone.utc),
+        source_artifact_path="https://example.test/today.json",
+        source_artifact_sha256="sha",
+        stale_after_seconds=900,
+        provider_heartbeats=[_heartbeat()],
+    )
+
+    assert rows[0]["freshness_status"] == "fresh"
+    assert rows[0]["freshness_seconds"] == 20
+    assert rows[0]["metadata"]["heartbeat_hold"] is True
+    assert rows[0]["metadata"]["heartbeat_freshness_seconds"] == 20
+    assert {row["book"] for row in rows[0]["book_rows"] if row["heartbeat_hold"]} == {
+        "fanduel",
+        "betmgm",
+    }
+    assert rows[0]["best_book"] == "fanduel"

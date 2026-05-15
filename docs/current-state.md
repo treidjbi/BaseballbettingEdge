@@ -1,6 +1,6 @@
 # Current State
 
-Last updated: 2026-05-14
+Last updated: 2026-05-15
 
 ## Read Order
 
@@ -52,6 +52,12 @@ The broader BoltOdds + PropLine provider cutover build is intentionally still
 on `codex/boltodds-production-plan`. `main` only has the production-safe timing
 ledger subset from that branch. Do not treat `main` as containing the full
 provider cutover plan or official-market infrastructure yet.
+
+The live-layer shadow builders on `main` now read `market_feed_heartbeats` and
+apply BoltOdds unchanged-line freshness to `live_market_display_state` and
+`market_pick_evidence` metadata. `shadow_notification_candidates` suppresses
+stale market evidence unless the provider heartbeat holds it fresh. This is
+shadow-only and does not enable BoltOdds notification sends.
 
 ## Active Production Path
 
@@ -116,6 +122,12 @@ movement display. It summarizes provider snapshots into market consensus, best
 actionable book, off-market books, movement sequence, and freshness/actionable
 state. It is intentionally not a pick, lock, threshold, staking, provider-order,
 or notification-send input.
+
+As of 2026-05-15, BoltOdds rows in `live_market_display_state` and
+`market_pick_evidence` can be marked effectively fresh when the same-slate
+BoltOdds heartbeat is fresh and the book is present in `books_seen`, even when
+the exact K-prop line did not re-emit. This is a shadow freshness interpretation
+only; actual `notification_events` still do not use BoltOdds movement.
 
 `shadow_pipeline_runs` and `shadow_pick_lock_observations` are the Render
 live-layer timing rehearsal for getting off GitHub Actions for time-sensitive

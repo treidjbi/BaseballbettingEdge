@@ -387,6 +387,102 @@ def test_worker_writes_market_pick_evidence_for_shadow_providers(tmp_path):
     assert result["shadow_notification_candidates"] == 2
 
 
+def test_worker_passes_boltodds_heartbeats_to_shadow_market_builders(tmp_path):
+    today = _write_artifact(tmp_path, [_fire_pitcher()])
+    writer = _writer_with_selects({
+        "live_pick_state": [],
+        "market_feed_heartbeats": [{
+            "provider": "boltodds",
+            "slate_date": "2026-05-06",
+            "observed_at": "2026-05-06T18:10:15+00:00",
+            "last_message_at": "2026-05-06T18:10:10+00:00",
+            "books_seen": ["fanduel", "betmgm"],
+            "metadata": {"event": "flush", "target_books": ["fanduel", "betmgm"]},
+        }],
+        "market_snapshots": [
+            {
+                "id": "bolt-fd-old",
+                "provider": "boltodds",
+                "normalized_player_name": "tarik skubal",
+                "player_name": "Tarik Skubal",
+                "bookmaker_key": "fanduel",
+                "side": "over",
+                "line": 6.5,
+                "american_odds": -110,
+                "observed_at": "2026-05-06T17:00:00+00:00",
+            },
+            {
+                "id": "bolt-mgm-old",
+                "provider": "boltodds",
+                "normalized_player_name": "tarik skubal",
+                "player_name": "Tarik Skubal",
+                "bookmaker_key": "betmgm",
+                "side": "over",
+                "line": 6.5,
+                "american_odds": -105,
+                "observed_at": "2026-05-06T17:00:00+00:00",
+            },
+        ],
+        "game_reminder_state": [],
+    })
+
+    with (
+        patch.object(build_live_events_to_supabase, "SupabaseMarketWriter", return_value=writer),
+        patch.object(
+            build_live_events_to_supabase,
+            "_now_utc",
+            return_value=build_live_events_to_supabase.datetime.fromisoformat("2026-05-06T18:10:30+00:00"),
+        ),
+    ):
+        result = build_live_events_to_supabase.run(
+            slate_date="2026-05-06",
+            artifact_path=today,
+            supabase_url="https://example.supabase.co",
+            service_role_key="secret",
+        )
+
+    assert result["live_market_display_rows"][0]["freshness_status"] == "fresh"
+    assert result["live_market_display_rows"][0]["metadata"]["heartbeat_hold"] is True
+    assert result["market_pick_evidence_rows"][0]["metadata"]["freshness_status"] == "fresh"
+    assert result["market_pick_evidence_rows"][0]["metadata"]["heartbeat_hold"] is True
+    assert writer.select_rows.call_args_list[1].args[0] == "market_feed_heartbeats"
+    assert writer.select_rows.call_args_list[1].args[1]["slate_date"] == "eq.2026-05-06"
+
+
+def test_worker_keeps_heartbeat_read_failures_from_breaking_live_layer(tmp_path):
+    today = _write_artifact(tmp_path, [_fire_pitcher()])
+    writer = Mock()
+
+    def select_rows(table, params):
+        if table == "market_feed_heartbeats":
+            raise RuntimeError("heartbeat table unavailable")
+        return {
+            "live_pick_state": [],
+            "market_snapshots": [],
+            "game_reminder_state": [],
+        }.get(table, [])
+
+    writer.select_rows.side_effect = select_rows
+
+    with (
+        patch.object(build_live_events_to_supabase, "SupabaseMarketWriter", return_value=writer),
+        patch.object(
+            build_live_events_to_supabase,
+            "_now_utc",
+            return_value=build_live_events_to_supabase.datetime.fromisoformat("2026-05-06T18:10:30+00:00"),
+        ),
+    ):
+        result = build_live_events_to_supabase.run(
+            slate_date="2026-05-06",
+            artifact_path=today,
+            supabase_url="https://example.supabase.co",
+            service_role_key="secret",
+        )
+
+    assert result["live_pick_state"] == 1
+    assert result["provider_heartbeats"] == 0
+
+
 def test_worker_does_not_turn_shadow_candidates_into_notifications(tmp_path):
     today = _write_artifact(tmp_path, [_fire_pitcher(game_time="2026-05-06T18:05:00+00:00")])
     writer = _writer_with_selects({

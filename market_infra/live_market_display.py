@@ -5,6 +5,11 @@ from datetime import datetime, timezone
 from statistics import median
 from typing import Any
 
+from market_infra.provider_freshness import (
+    effective_book_freshness,
+    normalize_book_key,
+    provider_heartbeat_health,
+)
 from pipeline.name_utils import normalize
 
 
@@ -15,7 +20,7 @@ DEFAULT_STALE_AFTER_SECONDS = 900
 
 
 def _book(value: Any) -> str:
-    return str(value or "").strip().casefold().replace(" ", "").replace("-", "")
+    return normalize_book_key(value)
 
 
 def _numeric(value: Any) -> float | None:
@@ -131,10 +136,14 @@ def _line_rank(side: str, line: float) -> float:
 
 def _book_row(
     *,
+    slate_date: str,
+    provider: str,
     side: str,
     book: str,
     snapshots: list[dict[str, Any]],
     observed_at: datetime,
+    provider_health: dict[tuple[str, str], dict[str, Any]],
+    stale_after_seconds: int,
 ) -> dict[str, Any] | None:
     valid: list[dict[str, Any]] = []
     for snapshot in snapshots:
@@ -168,7 +177,15 @@ def _book_row(
         market_direction = _odds_market_direction(odds_delta)
         bet_value_direction = _odds_bet_value_direction(odds_delta)
 
-    freshness_seconds = max(int((observed_at - current["_observed_at_dt"]).total_seconds()), 0)
+    line_freshness_seconds = max(int((observed_at - current["_observed_at_dt"]).total_seconds()), 0)
+    freshness = effective_book_freshness(
+        provider=provider,
+        slate_date=slate_date,
+        book_key=book,
+        line_freshness_seconds=line_freshness_seconds,
+        provider_health=provider_health,
+        stale_after_seconds=stale_after_seconds,
+    )
     return {
         "book": book,
         "line": current["line"],
@@ -180,7 +197,10 @@ def _book_row(
         "market_direction": market_direction,
         "bet_value_direction": bet_value_direction,
         "last_seen_at": _isoformat(current["_observed_at_dt"]),
-        "freshness_seconds": freshness_seconds,
+        "freshness_seconds": freshness["freshness_seconds"],
+        "line_freshness_seconds": freshness["line_freshness_seconds"],
+        "heartbeat_hold": freshness["heartbeat_hold"],
+        "heartbeat_freshness_seconds": freshness["heartbeat_freshness_seconds"],
         "snapshot_count": len(ordered),
     }
 
@@ -354,11 +374,17 @@ def build_live_market_display_rows(
     source_artifact_sha256: str | None,
     provider: str | None = None,
     stale_after_seconds: int = DEFAULT_STALE_AFTER_SECONDS,
+    provider_heartbeats: list[dict[str, Any]] | None = None,
 ) -> list[dict[str, Any]]:
     observed_at_dt = _parse_datetime(observed_at)
     if observed_at_dt is None:
         return []
     observed_at_iso = _isoformat(observed_at_dt)
+    heartbeat_health = provider_heartbeat_health(
+        provider_heartbeats or [],
+        observed_at_dt,
+        stale_after_seconds,
+    )
     providers = [provider.strip().lower()] if provider else sorted({
         str(row.get("provider") or "").strip().lower()
         for row in snapshot_rows
@@ -384,16 +410,27 @@ def build_live_market_display_rows(
                 row
                 for book, snapshots in sorted(book_groups.items())
                 if (row := _book_row(
+                    slate_date=slate_date,
+                    provider=provider_key,
                     side=side,
                     book=book,
                     snapshots=snapshots,
                     observed_at=observed_at_dt,
+                    provider_health=heartbeat_health,
+                    stale_after_seconds=stale_after_seconds,
                 )) is not None
             ]
             if not book_rows:
                 continue
 
             latest_age = min(int(row["freshness_seconds"]) for row in book_rows)
+            line_latest_age = min(int(row["line_freshness_seconds"]) for row in book_rows)
+            heartbeat_holds = [row for row in book_rows if row.get("heartbeat_hold")]
+            heartbeat_freshness_seconds = [
+                int(row["heartbeat_freshness_seconds"])
+                for row in heartbeat_holds
+                if row.get("heartbeat_freshness_seconds") is not None
+            ]
             freshness_status = "fresh" if latest_age <= stale_after_seconds else "stale"
             main_line, main_line_books = _main_line(book_rows)
             off_market_books = _off_market_books(
@@ -483,6 +520,12 @@ def build_live_market_display_rows(
                 "metadata": {
                     "stale_after_seconds": stale_after_seconds,
                     "main_books": list(MAIN_BOOKS),
+                    "line_freshness_seconds": line_latest_age,
+                    "heartbeat_hold": bool(heartbeat_holds),
+                    "heartbeat_hold_books": sorted(row["book"] for row in heartbeat_holds),
+                    "heartbeat_freshness_seconds": (
+                        min(heartbeat_freshness_seconds) if heartbeat_freshness_seconds else None
+                    ),
                 },
                 "updated_at": observed_at_iso,
             })

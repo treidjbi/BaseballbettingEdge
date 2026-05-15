@@ -124,6 +124,22 @@ def _live_notification_snapshots(rows: list[dict[str, Any]]) -> list[dict[str, A
     ]
 
 
+def _fetch_provider_heartbeats(writer: SupabaseMarketWriter, slate_date: str) -> list[dict[str, Any]]:
+    try:
+        return writer.select_rows("market_feed_heartbeats", {
+            "provider": "eq.boltodds",
+            "slate_date": f"eq.{slate_date}",
+            "order": "observed_at.desc",
+            "limit": "25",
+        })
+    except Exception as error:
+        print(
+            f"Warning: provider heartbeat read failed ({error}); continuing live build",
+            file=sys.stderr,
+        )
+        return []
+
+
 def _shadow_pipeline_timing_enabled() -> bool:
     value = os.environ.get("ENABLE_SHADOW_PIPELINE_TIMING_LEDGER", "true").strip().lower()
     return value not in {"0", "false", "no", "off"}
@@ -231,6 +247,7 @@ def run(
     )
     state_rows.extend(missing_state_rows)
 
+    provider_heartbeats = _fetch_provider_heartbeats(writer, slate_date)
     snapshot_rows = writer.select_rows("market_snapshots", {
         "provider": "in.(propline,boltodds)",
         "order": "observed_at.desc",
@@ -251,6 +268,7 @@ def run(
         observed_at=observed_at,
         source_artifact_path=artifact_source,
         source_artifact_sha256=artifact_sha,
+        provider_heartbeats=provider_heartbeats,
     )
     live_market_display_rows = build_live_market_display_rows(
         slate_date=slate_date,
@@ -259,6 +277,7 @@ def run(
         observed_at=observed_at,
         source_artifact_path=artifact_source,
         source_artifact_sha256=artifact_sha,
+        provider_heartbeats=provider_heartbeats,
     )
     shadow_notification_candidate_rows = build_shadow_notification_candidate_rows(
         market_pick_evidence_rows
@@ -312,6 +331,7 @@ def run(
         "market_pick_evidence_rows": market_pick_evidence_rows,
         "live_market_display_rows": live_market_display_rows,
         "shadow_notification_candidate_rows": shadow_notification_candidate_rows,
+        "provider_heartbeat_rows": provider_heartbeats,
         "reminder_rows": reminder_rows,
         "live_pick_state": len(state_rows),
         "notification_events": len(notification_rows),
@@ -319,6 +339,7 @@ def run(
         "market_pick_evidence": len(market_pick_evidence_rows),
         "live_market_display_state": len(live_market_display_rows),
         "shadow_notification_candidates": len(shadow_notification_candidate_rows),
+        "provider_heartbeats": len(provider_heartbeats),
         "game_reminders": len(reminder_rows),
         "propline": propline_result or {"skipped": True},
         "artifact_source": artifact_source,

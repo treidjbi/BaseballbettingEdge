@@ -110,3 +110,24 @@ def test_market_fade_with_better_number_is_tracked_but_not_sendable():
     assert row["candidate_type"] == "better_number_market_fade"
     assert row["candidate_action"] == "suppress_shadow"
     assert "market_not_confirmed" in row["suppression_reasons"]
+
+
+def test_stale_market_evidence_suppresses_otherwise_sendable_candidate():
+    rows = build_shadow_notification_candidate_rows([
+        _evidence(
+            metadata={
+                "freshness_status": "stale",
+                "freshness_seconds": 3600,
+                "line_freshness_seconds": 3600,
+                "heartbeat_hold": False,
+                "book_summaries": {},
+            }
+        )
+    ])
+
+    assert len(rows) == 1
+    row = rows[0]
+    assert row["candidate_type"] == "market_confirmed_playable"
+    assert row["candidate_action"] == "suppress_shadow"
+    assert "stale_market_evidence" in row["suppression_reasons"]
+    assert row["metadata"]["market_evidence"]["freshness_status"] == "stale"

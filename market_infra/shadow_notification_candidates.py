@@ -12,6 +12,11 @@ def _books_seen(value: Any) -> list[str]:
     return sorted(str(book).strip().lower() for book in value if str(book).strip())
 
 
+def _metadata(row: dict[str, Any]) -> dict[str, Any]:
+    metadata = row.get("metadata")
+    return metadata if isinstance(metadata, dict) else {}
+
+
 def _candidate_type(row: dict[str, Any]) -> str:
     market_consensus = str(row.get("market_consensus") or "none")
     bet_value_consensus = str(row.get("bet_value_consensus") or "none")
@@ -64,6 +69,8 @@ def _suppression_reasons(
         reasons.append("betrivers_only")
     if volatile_or_reversed:
         reasons.append("volatile_or_reversed")
+    if str(_metadata(row).get("freshness_status") or "fresh") != "fresh":
+        reasons.append("stale_market_evidence")
     return reasons
 
 
@@ -131,7 +138,15 @@ def build_shadow_notification_candidate_rows(
                     "better_now_count": evidence.get("better_now_count"),
                     "worse_now_count": evidence.get("worse_now_count"),
                     "touching_pick_line_count": evidence.get("touching_pick_line_count"),
-                    "book_summaries": (evidence.get("metadata") or {}).get("book_summaries", {}),
+                    "freshness_status": _metadata(evidence).get("freshness_status"),
+                    "freshness_seconds": _metadata(evidence).get("freshness_seconds"),
+                    "line_freshness_seconds": _metadata(evidence).get("line_freshness_seconds"),
+                    "heartbeat_hold": _metadata(evidence).get("heartbeat_hold"),
+                    "heartbeat_hold_books": _metadata(evidence).get("heartbeat_hold_books"),
+                    "heartbeat_freshness_seconds": _metadata(evidence).get(
+                        "heartbeat_freshness_seconds"
+                    ),
+                    "book_summaries": _metadata(evidence).get("book_summaries", {}),
                 }
             },
         })
