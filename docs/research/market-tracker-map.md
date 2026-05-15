@@ -20,6 +20,7 @@ provider order, notifications, or calibration.
 | Live market outcome slices | `live_market_outcome_audit.py` | Joins exported live market evidence to graded results. |
 | Compact pitcher outcome row | `pitcher_k_outcome_dataset.py` | Canonical research row for market, model, context, CLV, and result. |
 | K projection challengers | `k_projection_shadow_lab.py` | Reuses compact outcome rows to compare current lambda against transparent projection variants. |
+| Best executable market candidates | `executable_market_shadow_audit.py` | Scores fresh supported mainline book/line/side rows against the current model projection; shadow-only input for cutover review. |
 
 ## Provider Cutover Tracker Ownership
 
@@ -131,9 +132,14 @@ The BBE Operations Brief should synthesize this map every weekday:
 4. Regenerate or read `k_projection_shadow_lab.md` when projection quality is
    in question; report whether a challenger improves accuracy without
    promoting it into live lambda.
-5. Tie any recommendation back to cost/risk docs before suggesting more
+5. For provider-cutover or line-conflict days, run/read
+   `executable_market_shadow_audit_YYYY-MM-DD.md` beside the provider cutover
+   report. Separate `single_book_outlier` conflicts from
+   `ref_vs_majority` conflicts, and treat best-executable EV as shadow evidence
+   until CLV/outcome proof exists.
+6. Tie any recommendation back to cost/risk docs before suggesting more
    infrastructure or provider spend.
-6. Explicitly separate "collect more evidence" from "ready to change model or
+7. Explicitly separate "collect more evidence" from "ready to change model or
    betting behavior."
 
 The daily read should produce a compact confidence-referee note:

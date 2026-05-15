@@ -995,6 +995,20 @@ Fresh-slate rehearsal command:
 python analytics/diagnostics/provider_cutover_shadow_compare.py --date YYYY-MM-DD --provider-min-props 1
 ```
 
+Monday best-executable shadow add-on:
+
+```bash
+python analytics/diagnostics/executable_market_shadow_audit.py --date YYYY-MM-DD --top 20
+```
+
+Use this report beside the cutover comparison when cross-book K-line conflicts
+appear. It scores the current model projection against every fresh, complete,
+supported mainline book/line/side candidate in `current_market_lines`, then
+separates `single_book_outlier` conflicts from `ref_vs_majority` conflicts.
+It is shadow evidence only. Do not promote best-executable selection, alter
+ref-book semantics, or change live thresholds/staking/provider order without a
+separate CLV/outcome-backed promotion plan.
+
 ### Step 6: Extend Pick History Source Attribution
 
 Modify:
@@ -1222,6 +1236,10 @@ Do not switch `OFFICIAL_MARKET_SOURCE=boltodds_propline` until all gates pass:
   request budget.
 - Shadow comparison against TheRundown passes for at least one full slate,
   preferably two.
+- Monday review includes the best-executable market shadow audit for any
+  cross-book line conflicts. Single-book outliers should not be treated the
+  same as ref-book-vs-majority conflicts, and best-executable candidates remain
+  shadow-only until graded CLV/outcome proof supports promotion.
 - A provider-source `today.json` dry run validates dashboard-required fields.
 - `steam.json` still builds from `book_odds`.
 - Seeded picks retain source attribution.

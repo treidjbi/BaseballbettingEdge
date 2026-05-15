@@ -92,6 +92,12 @@ Cutover branch infrastructure progress as of 2026-05-14:
   rows and evaluate coverage, FD/DK availability, line conflicts, ref-book
   changes, odds deltas, artifact contract, and usage gates before any cutover
   decision.
+- `analytics/diagnostics/executable_market_shadow_audit.py` exists for the
+  Monday cutover review. It scores the current model projection against every
+  fresh, complete, supported mainline book/line/side from `current_market_lines`
+  so cross-book disagreement can be studied as best-executable EV evidence.
+  This is shadow-only and must not change official ref-book semantics, live
+  thresholds, staking, provider order, notifications, or artifacts.
 - The cutover comparison now also fetches MLB probable starters first and
   reports schedule-first provider coverage. This is shadow evidence for the
   intended future provider architecture; the production pipeline still runs
@@ -292,6 +298,7 @@ The active local diagnostics and tests are:
 - `analytics/diagnostics/live_market_outcome_audit.py`
 - `analytics/diagnostics/pitcher_k_outcome_dataset.py`
 - `analytics/diagnostics/k_projection_shadow_lab.py`
+- `analytics/diagnostics/executable_market_shadow_audit.py`
 - `tests/test_e1_regime_map.py`
 - `tests/test_e2_storage_integrity.py`
 - `tests/test_e3_projection_audit.py`
@@ -303,6 +310,7 @@ The active local diagnostics and tests are:
 - `tests/test_pitcher_k_outcome_dataset_contract.py`
 - `tests/test_pitcher_k_outcome_dataset.py`
 - `tests/test_k_projection_shadow_lab.py`
+- `tests/test_executable_market_shadow_audit.py`
 
 Current readout from 2026-05-07:
 
@@ -356,6 +364,12 @@ Current readout from 2026-05-07:
   MAE/RMSE slightly versus the current model, `high_line_temper` improved side
   accuracy slightly, and simple recent/career rate blends were worse. Treat this
   as projection-lab evidence only, not a live model-rule change.
+- The best-executable market shadow audit scores over/under EV for each fresh
+  supported book line after provider mainline selection. Use it during the
+  Monday BoltOdds + PropLine review to separate single-book outliers from
+  ref-book-vs-majority conflicts and to see whether disagreement would have
+  created better executable candidates. It is not a promotion plan; any live
+  best-line selection needs CLV/outcome proof and separate approval.
 - Use `docs/research/market-tracker-map.md` as the current tracker inventory
   before adding more BoltOdds/Supabase tracking. It distinguishes existing raw
   evidence tables from the compact long-term research row.

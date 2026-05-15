@@ -34,6 +34,11 @@ on:
         required: false
         type: boolean
         default: false
+      run_executable_market_shadow:
+        description: "Run shadow best-executable book/line/side EV audit for Monday cutover review"
+        required: false
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -77,12 +82,14 @@ jobs:
           CAPTURE_ARTIFACTS="${{ github.event.inputs.capture_artifacts }}"
           BUILD_MARKET_LINES="${{ github.event.inputs.build_market_lines }}"
           RUN_CUTOVER_COMPARE="${{ github.event.inputs.run_cutover_compare }}"
+          RUN_EXECUTABLE_MARKET_SHADOW="${{ github.event.inputs.run_executable_market_shadow }}"
 
           if [ "${{ github.event_name }}" = "schedule" ]; then
             CAPTURE_PROPLINE="true"
             CAPTURE_ARTIFACTS="false"
             BUILD_MARKET_LINES="true"
             RUN_CUTOVER_COMPARE="false"
+            RUN_EXECUTABLE_MARKET_SHADOW="false"
           fi
 
           if [ -z "$CAPTURE_PROPLINE" ]; then
@@ -97,15 +104,20 @@ jobs:
           if [ -z "$RUN_CUTOVER_COMPARE" ]; then
             RUN_CUTOVER_COMPARE="false"
           fi
+          if [ -z "$RUN_EXECUTABLE_MARKET_SHADOW" ]; then
+            RUN_EXECUTABLE_MARKET_SHADOW="false"
+          fi
 
           echo "capture_propline=$CAPTURE_PROPLINE" >> "$GITHUB_OUTPUT"
           echo "capture_artifacts=$CAPTURE_ARTIFACTS" >> "$GITHUB_OUTPUT"
           echo "build_market_lines=$BUILD_MARKET_LINES" >> "$GITHUB_OUTPUT"
           echo "run_cutover_compare=$RUN_CUTOVER_COMPARE" >> "$GITHUB_OUTPUT"
+          echo "run_executable_market_shadow=$RUN_EXECUTABLE_MARKET_SHADOW" >> "$GITHUB_OUTPUT"
           echo "Capture PropLine: $CAPTURE_PROPLINE"
           echo "Capture artifacts: $CAPTURE_ARTIFACTS"
           echo "Build market lines: $BUILD_MARKET_LINES"
           echo "Run cutover compare: $RUN_CUTOVER_COMPARE"
+          echo "Run executable market shadow: $RUN_EXECUTABLE_MARKET_SHADOW"
 
       - name: Validate shadow secrets
         env:
@@ -113,13 +125,14 @@ jobs:
           CAPTURE_ARTIFACTS: ${{ steps.capture.outputs.capture_artifacts }}
           BUILD_MARKET_LINES: ${{ steps.capture.outputs.build_market_lines }}
           RUN_CUTOVER_COMPARE: ${{ steps.capture.outputs.run_cutover_compare }}
+          RUN_EXECUTABLE_MARKET_SHADOW: ${{ steps.capture.outputs.run_executable_market_shadow }}
           PROPLINE_API_KEY: ${{ secrets.PROPLINE_API_KEY }}
           RUNDOWN_API_KEY: ${{ secrets.RUNDOWN_API_KEY }}
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
         run: |
           missing=0
-          if [ "$CAPTURE_PROPLINE" = "true" ] || [ "$CAPTURE_ARTIFACTS" = "true" ] || [ "$BUILD_MARKET_LINES" = "true" ] || [ "$RUN_CUTOVER_COMPARE" = "true" ]; then
+          if [ "$CAPTURE_PROPLINE" = "true" ] || [ "$CAPTURE_ARTIFACTS" = "true" ] || [ "$BUILD_MARKET_LINES" = "true" ] || [ "$RUN_CUTOVER_COMPARE" = "true" ] || [ "$RUN_EXECUTABLE_MARKET_SHADOW" = "true" ]; then
             if [ -z "$SUPABASE_URL" ]; then
               echo "Missing SUPABASE_URL secret"
               missing=1
@@ -181,3 +194,19 @@ jobs:
         run: |
           python analytics/diagnostics/provider_cutover_shadow_compare.py --date "${{ steps.slate.outputs.date }}" --provider-min-props 1
           cat "analytics/output/provider_cutover_shadow_compare_${{ steps.slate.outputs.date }}.md"
+
+      - name: Best executable market shadow audit
+        if: ${{ steps.capture.outputs.run_executable_market_shadow == 'true' }}
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: |
+          MODEL_URL="https://raw.githubusercontent.com/treidjbi/BaseballbettingEdge/main/dashboard/data/processed/today.json"
+          PHOENIX_TODAY=$(TZ=America/Phoenix date +%Y-%m-%d)
+          if [ "${{ steps.slate.outputs.date }}" != "$PHOENIX_TODAY" ]; then
+            MODEL_URL="https://raw.githubusercontent.com/treidjbi/BaseballbettingEdge/main/dashboard/data/processed/${{ steps.slate.outputs.date }}.json"
+          fi
+          python analytics/diagnostics/executable_market_shadow_audit.py \
+            --date "${{ steps.slate.outputs.date }}" \
+            --model-json-url "$MODEL_URL" \
+            --top 20
