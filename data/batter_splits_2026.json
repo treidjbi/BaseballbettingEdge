@@ -7089,21 +7089,22 @@
       }
     }
   },
-  "updated_at": "2026-05-15T23:06:45Z",
+  "updated_at": "2026-05-15T23:30:14Z",
   "last_run": {
     "projection_status": "collection_only",
     "requested_batters": 243,
-    "already_cached": 238,
+    "already_cached": 239,
     "attempted": 4,
-    "collected": 1,
-    "failed": 3,
-    "queued_not_attempted": 1,
+    "collected": 0,
+    "failed": 4,
+    "queued_not_attempted": 0,
     "cache_size": 420,
     "errors": [
       "Spencer Jones: no bbref id",
       "A.J. Ewing: no bbref id",
-      "Ryan Waldschmidt: no bbref id"
+      "Ryan Waldschmidt: no bbref id",
+      "Henry Bolte: no bbref id"
     ],
-    "updated_at": "2026-05-15T23:06:45Z"
+    "updated_at": "2026-05-15T23:30:14Z"
   }
 }
