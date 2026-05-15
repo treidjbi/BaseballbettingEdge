@@ -639,6 +639,48 @@ def test_worker_continues_when_optional_propline_poll_times_out(tmp_path):
     assert ("select", "market_snapshots") in calls
 
 
+def test_worker_continues_when_market_snapshot_read_fails(tmp_path):
+    today = _write_artifact(tmp_path, [_fire_pitcher()])
+    writer = Mock()
+
+    def select_rows(table, params):
+        if table == "market_snapshots":
+            raise RuntimeError("Supabase market_snapshots read failed")
+        return {
+            "live_pick_state": [],
+            "market_feed_heartbeats": [],
+            "game_reminder_state": [],
+        }.get(table, [])
+
+    writer.select_rows.side_effect = select_rows
+
+    with (
+        patch.object(build_live_events_to_supabase, "SupabaseMarketWriter", return_value=writer),
+        patch.object(
+            build_live_events_to_supabase,
+            "_now_utc",
+            return_value=build_live_events_to_supabase.datetime.fromisoformat("2026-05-06T18:00:00+00:00"),
+        ),
+    ):
+        result = build_live_events_to_supabase.run(
+            slate_date="2026-05-06",
+            artifact_path=today,
+            supabase_url="https://example.supabase.co",
+            service_role_key="secret",
+        )
+
+    assert result["live_pick_state"] == 1
+    assert result["notification_events"] == 1
+    assert result["line_movement_events"] == 0
+    assert result["market_pick_evidence"] == 0
+    assert result["live_market_display_state"] == 0
+    writer.upsert_rows.assert_any_call(
+        "live_pick_state",
+        result["state_rows"],
+        on_conflict="slate_date,normalized_pitcher,side",
+    )
+
+
 def test_worker_does_not_compare_snapshots_across_provider_events(tmp_path):
     today = _write_artifact(tmp_path, [_fire_pitcher()])
     writer = _writer_with_selects({

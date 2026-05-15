@@ -140,6 +140,21 @@ def _fetch_provider_heartbeats(writer: SupabaseMarketWriter, slate_date: str) ->
         return []
 
 
+def _fetch_market_snapshots(writer: SupabaseMarketWriter) -> list[dict[str, Any]]:
+    try:
+        return writer.select_rows("market_snapshots", {
+            "provider": "in.(propline,boltodds)",
+            "order": "observed_at.desc",
+            "limit": "2500",
+        })
+    except Exception as error:
+        print(
+            f"Warning: market snapshot read failed ({error}); continuing without market evidence",
+            file=sys.stderr,
+        )
+        return []
+
+
 def _shadow_pipeline_timing_enabled() -> bool:
     value = os.environ.get("ENABLE_SHADOW_PIPELINE_TIMING_LEDGER", "true").strip().lower()
     return value not in {"0", "false", "no", "off"}
@@ -248,11 +263,7 @@ def run(
     state_rows.extend(missing_state_rows)
 
     provider_heartbeats = _fetch_provider_heartbeats(writer, slate_date)
-    snapshot_rows = writer.select_rows("market_snapshots", {
-        "provider": "in.(propline,boltodds)",
-        "order": "observed_at.desc",
-        "limit": "2500",
-    })
+    snapshot_rows = _fetch_market_snapshots(writer)
     previous_snapshots, current_snapshots = _snapshot_pairs(_live_notification_snapshots(snapshot_rows))
     movement_notification_rows = build_line_movement_events(
         slate_date=slate_date,
