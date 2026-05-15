@@ -7070,24 +7070,40 @@
         "so": 0,
         "k_rate": 0.0
       }
+    },
+    "mlbam:691740": {
+      "name": "Daniel Susac",
+      "bats": "R",
+      "mlbam_id": 691740,
+      "bbref_id": "susacda01",
+      "season": 2026,
+      "vs_R": {
+        "pa": 12,
+        "so": 2,
+        "k_rate": 0.1667
+      },
+      "vs_L": {
+        "pa": 12,
+        "so": 1,
+        "k_rate": 0.0833
+      }
     }
   },
-  "updated_at": "2026-05-15T22:32:16Z",
+  "updated_at": "2026-05-15T23:06:45Z",
   "last_run": {
     "projection_status": "collection_only",
-    "requested_batters": 234,
-    "already_cached": 230,
+    "requested_batters": 243,
+    "already_cached": 238,
     "attempted": 4,
-    "collected": 0,
-    "failed": 4,
-    "queued_not_attempted": 0,
-    "cache_size": 419,
+    "collected": 1,
+    "failed": 3,
+    "queued_not_attempted": 1,
+    "cache_size": 420,
     "errors": [
       "Spencer Jones: no bbref id",
       "A.J. Ewing: no bbref id",
-      "Ryan Waldschmidt: no bbref id",
-      "Henry Bolte: no bbref id"
+      "Ryan Waldschmidt: no bbref id"
     ],
-    "updated_at": "2026-05-15T22:32:16Z"
+    "updated_at": "2026-05-15T23:06:45Z"
   }
 }
