@@ -223,6 +223,56 @@ def test_compare_reports_raw_mainline_and_official_schedule_coverage():
     assert report["coverage"]["ambiguous_mainline_pitchers"] == ["gerrit cole"]
 
 
+def test_compare_mainline_coverage_uses_fresh_boltodds_heartbeat_hold():
+    report = compare_provider_cutover(
+        date_str="2026-05-13",
+        scheduled_pitchers=[
+            {"pitcher": "Jose Berrios", "team": "Blue Jays"},
+        ],
+        rundown_props=[
+            _prop("Jose Berrios"),
+        ],
+        provider_props=[
+            _prop("Jose Berrios", odds_source="boltodds+propline"),
+        ],
+        provider_current_lines=[
+            {
+                "id": 1,
+                "slate_date": "2026-05-13",
+                "provider": "boltodds",
+                "book_key": "fanduel",
+                "book_name": "FanDuel",
+                "player_name": "Jose Berrios",
+                "normalized_player_name": "jose berrios",
+                "market_key": "pitcher_strikeouts",
+                "line": 5.5,
+                "over_odds": -110,
+                "under_odds": -110,
+                "last_seen_at": "2026-05-13T19:30:00+00:00",
+                "is_complete": True,
+                "quality_flags": ["stale"],
+            },
+        ],
+        provider_heartbeats=[
+            {
+                "provider": "boltodds",
+                "mode": "shadow_stream",
+                "slate_date": "2026-05-13",
+                "observed_at": "2026-05-13T19:59:50+00:00",
+                "last_message_at": "2026-05-13T19:59:45+00:00",
+                "books_seen": ["fanduel"],
+                "metadata": {"event": "message"},
+            },
+        ],
+        generated_at=NOW,
+    )
+
+    schedule = report["schedule_first"]
+    assert schedule["provider_raw_covered_count"] == 1
+    assert schedule["provider_mainline_ready_count"] == 1
+    assert schedule["provider_official_ready_count"] == 1
+
+
 def test_compare_tracks_missing_draftkings_and_line_conflicts():
     report = compare_provider_cutover(
         date_str="2026-05-13",

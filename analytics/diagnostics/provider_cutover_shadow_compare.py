@@ -315,6 +315,7 @@ def _schedule_first_coverage(
 def _current_line_coverage(
     provider_current_lines: list[dict[str, Any]],
     generated_at: datetime,
+    provider_heartbeats: list[dict[str, Any]] | None = None,
 ) -> dict[str, Any]:
     raw_pitcher_keys = {
         str(row.get("normalized_player_name") or normalize(row.get("player_name") or "")).strip()
@@ -324,6 +325,7 @@ def _current_line_coverage(
     mainline_rows, mainline_metadata = select_mainline_current_lines(
         provider_current_lines,
         generated_at,
+        provider_heartbeats=provider_heartbeats,
     )
     mainline_pitcher_keys = {
         str(row.get("normalized_player_name") or normalize(row.get("player_name") or "")).strip()
@@ -352,6 +354,7 @@ def compare_provider_cutover(
     provider_props: list[dict[str, Any]],
     scheduled_pitchers: list[dict[str, Any]] | None = None,
     provider_current_lines: list[dict[str, Any]] | None = None,
+    provider_heartbeats: list[dict[str, Any]] | None = None,
     provider_usage: dict[str, Any] | None = None,
     generated_at: datetime | None = None,
 ) -> dict[str, Any]:
@@ -392,7 +395,7 @@ def compare_provider_cutover(
     fd_dk_rate = _rate(len(fd_dk_keys), production_count)
     conflict_rate = _rate(len(line_conflict_keys), production_count)
     current_line_coverage = (
-        _current_line_coverage(provider_current_lines, generated)
+        _current_line_coverage(provider_current_lines, generated, provider_heartbeats)
         if provider_current_lines is not None
         else None
     )
@@ -640,6 +643,18 @@ def _fetch_provider_current_lines(writer: Any, date_str: str) -> list[dict[str, 
     )
 
 
+def _fetch_provider_heartbeats(writer: Any, date_str: str) -> list[dict[str, Any]]:
+    return writer.select_rows(
+        "market_feed_heartbeats",
+        {
+            "slate_date": f"eq.{date_str}",
+            "provider": "in.(boltodds)",
+            "order": "observed_at.desc",
+            "limit": "250",
+        },
+    )
+
+
 def _parse_usage(value: str | None) -> dict[str, Any] | None:
     if not value:
         return None
@@ -699,12 +714,18 @@ def main(argv: list[str] | None = None) -> int:
         if writer is not None
         else None
     )
+    provider_heartbeats = (
+        _fetch_provider_heartbeats(writer, args.date)
+        if writer is not None
+        else None
+    )
     report = compare_provider_cutover(
         date_str=args.date,
         rundown_props=rundown_props,
         provider_props=provider_props,
         scheduled_pitchers=scheduled_pitchers,
         provider_current_lines=provider_current_lines,
+        provider_heartbeats=provider_heartbeats,
         provider_usage=_parse_usage(args.provider_usage_json),
     )
     json_path, markdown_path = write_report(report, args.output_dir)

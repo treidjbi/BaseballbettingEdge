@@ -97,7 +97,8 @@ Cutover branch infrastructure progress as of 2026-05-14:
   fresh-slate rehearsal. Use it to compare TheRundown against provider-mode
   rows and evaluate coverage, FD/DK availability, line conflicts, ref-book
   changes, odds deltas, artifact contract, and usage gates before any cutover
-  decision.
+  decision. Its current-line/mainline coverage read uses the same BoltOdds
+  heartbeat-held unchanged-line semantics as official arbitration.
 - `analytics/diagnostics/executable_market_shadow_audit.py` exists for the
   Monday cutover review. It scores the current model projection against every
   fresh, complete, supported mainline book/line/side from `current_market_lines`
