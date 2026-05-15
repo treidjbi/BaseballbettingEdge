@@ -66,6 +66,11 @@ Cutover branch infrastructure progress as of 2026-05-14:
   stale solely because the exact line did not re-emit. It still fails closed on
   incomplete rows, missing game time, ambiguous mainline ladders, stale/missing
   heartbeats, and unsupported books.
+- The live-layer shadow builders now read `market_feed_heartbeats` and apply
+  the same BoltOdds unchanged-line freshness concept to `live_market_display_state`
+  and `market_pick_evidence` metadata. `shadow_notification_candidates` now
+  suppresses stale market evidence unless the provider heartbeat holds it fresh.
+  This remains shadow-only and does not enable BoltOdds notification sends.
 - A shadow mainline selector now runs before official arbitration so
   same-book BoltOdds alt ladders are not treated as automatic provider outages.
   It keeps raw/current rows for audit, selects complete supported mainline

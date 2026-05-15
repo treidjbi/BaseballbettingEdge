@@ -858,6 +858,11 @@ Implementation note, 2026-05-13:
   This handles unchanged K-prop prices that do not re-emit. The hold does not
   apply to incomplete rows, ambiguous mainline ladders, unsupported books,
   stale/missing heartbeats, or DraftKings promotion.
+- Update, 2026-05-15: the Render live-layer shadow builders now fetch
+  `market_feed_heartbeats` and apply the same heartbeat-held unchanged-line
+  semantics to `live_market_display_state` and `market_pick_evidence` metadata.
+  `shadow_notification_candidates` suppresses stale evidence unless the
+  heartbeat holds it fresh. This does not enable BoltOdds production sends.
 - The Odds API requires explicit emergency mode and is limited to FanDuel /
   DraftKings. DraftKings defaults to PropLine until BoltOdds DK is explicitly
   enabled.
@@ -1168,6 +1173,9 @@ ENABLE_BOLTODDS_LIVE_NOTIFICATIONS=true
 Notification safeguards:
 
 - Only use fresh `official_market_lines` or fresh `current_market_lines`.
+- For shadow display/evidence, unchanged BoltOdds K-prop lines may stay fresh
+  when a same-slate heartbeat is fresh for that book; stale evidence without a
+  heartbeat hold stays suppressed.
 - Include provider/source in dedupe keys.
 - Suppress single-book noise unless it is the official ref book or a main
   supported book moving materially.
