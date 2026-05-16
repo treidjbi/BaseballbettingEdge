@@ -7087,24 +7087,40 @@
         "so": 1,
         "k_rate": 0.0833
       }
+    },
+    "mlbam:668974": {
+      "name": "Maverick Handley",
+      "bats": "R",
+      "mlbam_id": 668974,
+      "bbref_id": "handlma01",
+      "season": 2026,
+      "vs_R": {
+        "pa": 40,
+        "so": 15,
+        "k_rate": 0.375
+      },
+      "vs_L": {
+        "pa": 7,
+        "so": 3,
+        "k_rate": 0.4286
+      }
     }
   },
-  "updated_at": "2026-05-16T23:00:22Z",
+  "updated_at": "2026-05-16T23:30:39Z",
   "last_run": {
     "projection_status": "collection_only",
-    "requested_batters": 252,
-    "already_cached": 244,
+    "requested_batters": 234,
+    "already_cached": 226,
     "attempted": 4,
-    "collected": 0,
-    "failed": 4,
+    "collected": 1,
+    "failed": 3,
     "queued_not_attempted": 4,
-    "cache_size": 420,
+    "cache_size": 421,
     "errors": [
       "Ryan Waldschmidt: no bbref id",
       "Joe Mack: no bbref id",
-      "Rodolfo Dur\u00e1n: no bbref id",
       "A.J. Ewing: no bbref id"
     ],
-    "updated_at": "2026-05-16T23:00:22Z"
+    "updated_at": "2026-05-16T23:30:39Z"
   }
 }
