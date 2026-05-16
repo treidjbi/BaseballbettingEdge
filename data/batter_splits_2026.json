@@ -7089,22 +7089,17 @@
       }
     }
   },
-  "updated_at": "2026-05-16T04:37:23Z",
+  "updated_at": "2026-05-16T14:37:11Z",
   "last_run": {
     "projection_status": "collection_only",
-    "requested_batters": 243,
-    "already_cached": 237,
-    "attempted": 4,
+    "requested_batters": 9,
+    "already_cached": 9,
+    "attempted": 0,
     "collected": 0,
-    "failed": 4,
-    "queued_not_attempted": 2,
+    "failed": 0,
+    "queued_not_attempted": 0,
     "cache_size": 420,
-    "errors": [
-      "Didier Fuentes: no platoon split rows",
-      "Spencer Jones: no bbref id",
-      "A.J. Ewing: no bbref id",
-      "Sterlin Thompson: no bbref id"
-    ],
-    "updated_at": "2026-05-16T04:37:23Z"
+    "errors": [],
+    "updated_at": "2026-05-16T14:37:11Z"
   }
 }
