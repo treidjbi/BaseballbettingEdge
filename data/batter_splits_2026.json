@@ -7138,23 +7138,40 @@
         "so": 6,
         "k_rate": 0.3
       }
+    },
+    "mlbam:681351": {
+      "name": "Logan O'Hoppe",
+      "bats": "R",
+      "mlbam_id": 681351,
+      "bbref_id": "ohopplo01",
+      "season": 2026,
+      "vs_R": {
+        "pa": 65,
+        "so": 19,
+        "k_rate": 0.2923
+      },
+      "vs_L": {
+        "pa": 30,
+        "so": 4,
+        "k_rate": 0.1333
+      }
     }
   },
-  "updated_at": "2026-05-17T17:07:20Z",
+  "updated_at": "2026-05-17T17:35:57Z",
   "last_run": {
     "projection_status": "collection_only",
-    "requested_batters": 216,
-    "already_cached": 213,
-    "attempted": 3,
-    "collected": 0,
+    "requested_batters": 225,
+    "already_cached": 221,
+    "attempted": 4,
+    "collected": 1,
     "failed": 3,
     "queued_not_attempted": 0,
-    "cache_size": 423,
+    "cache_size": 424,
     "errors": [
       "Spencer Jones: no bbref id",
       "A.J. Ewing: no bbref id",
       "Ryan Waldschmidt: no bbref id"
     ],
-    "updated_at": "2026-05-17T17:07:20Z"
+    "updated_at": "2026-05-17T17:35:57Z"
   }
 }
