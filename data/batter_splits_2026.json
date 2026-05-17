@@ -7121,21 +7121,40 @@
         "so": 9,
         "k_rate": 0.2571
       }
+    },
+    "mlbam:592885": {
+      "name": "Christian Yelich",
+      "bats": "R",
+      "mlbam_id": 592885,
+      "bbref_id": "yelicch01",
+      "season": 2026,
+      "vs_R": {
+        "pa": 40,
+        "so": 10,
+        "k_rate": 0.25
+      },
+      "vs_L": {
+        "pa": 20,
+        "so": 6,
+        "k_rate": 0.3
+      }
     }
   },
-  "updated_at": "2026-05-17T14:40:28Z",
+  "updated_at": "2026-05-17T16:08:56Z",
   "last_run": {
     "projection_status": "collection_only",
-    "requested_batters": 81,
-    "already_cached": 79,
-    "attempted": 2,
+    "requested_batters": 198,
+    "already_cached": 194,
+    "attempted": 4,
     "collected": 1,
-    "failed": 1,
+    "failed": 3,
     "queued_not_attempted": 0,
-    "cache_size": 422,
+    "cache_size": 423,
     "errors": [
-      "A.J. Ewing: no bbref id"
+      "Spencer Jones: no bbref id",
+      "A.J. Ewing: no bbref id",
+      "Ryan Waldschmidt: no bbref id"
     ],
-    "updated_at": "2026-05-17T14:40:28Z"
+    "updated_at": "2026-05-17T16:08:56Z"
   }
 }
