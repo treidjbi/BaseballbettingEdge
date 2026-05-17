@@ -7157,21 +7157,22 @@
       }
     }
   },
-  "updated_at": "2026-05-17T18:02:54Z",
+  "updated_at": "2026-05-17T18:38:43Z",
   "last_run": {
     "projection_status": "collection_only",
-    "requested_batters": 234,
-    "already_cached": 231,
-    "attempted": 3,
+    "requested_batters": 243,
+    "already_cached": 239,
+    "attempted": 4,
     "collected": 0,
-    "failed": 3,
+    "failed": 4,
     "queued_not_attempted": 0,
     "cache_size": 424,
     "errors": [
+      "Joe Mack: no bbref id",
       "Spencer Jones: no bbref id",
       "A.J. Ewing: no bbref id",
       "Ryan Waldschmidt: no bbref id"
     ],
-    "updated_at": "2026-05-17T18:02:54Z"
+    "updated_at": "2026-05-17T18:38:43Z"
   }
 }
