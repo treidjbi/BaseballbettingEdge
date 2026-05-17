@@ -7104,24 +7104,38 @@
         "so": 3,
         "k_rate": 0.4286
       }
+    },
+    "mlbam:686765": {
+      "name": "Nick Sogard",
+      "bats": "R",
+      "mlbam_id": 686765,
+      "bbref_id": "sogarni01",
+      "season": 2026,
+      "vs_R": {
+        "pa": 69,
+        "so": 15,
+        "k_rate": 0.2174
+      },
+      "vs_L": {
+        "pa": 35,
+        "so": 9,
+        "k_rate": 0.2571
+      }
     }
   },
-  "updated_at": "2026-05-17T05:01:11Z",
+  "updated_at": "2026-05-17T14:40:28Z",
   "last_run": {
     "projection_status": "collection_only",
-    "requested_batters": 252,
-    "already_cached": 245,
-    "attempted": 4,
-    "collected": 0,
-    "failed": 4,
-    "queued_not_attempted": 3,
-    "cache_size": 421,
+    "requested_batters": 81,
+    "already_cached": 79,
+    "attempted": 2,
+    "collected": 1,
+    "failed": 1,
+    "queued_not_attempted": 0,
+    "cache_size": 422,
     "errors": [
-      "Ryan Waldschmidt: no bbref id",
-      "Joe Mack: no bbref id",
-      "Chad Patrick: IndexError: single positional indexer is out-of-bounds",
-      "Rodolfo Dur\u00e1n: no bbref id"
+      "A.J. Ewing: no bbref id"
     ],
-    "updated_at": "2026-05-17T05:01:11Z"
+    "updated_at": "2026-05-17T14:40:28Z"
   }
 }
