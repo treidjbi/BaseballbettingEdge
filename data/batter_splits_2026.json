@@ -7155,24 +7155,35 @@
         "so": 4,
         "k_rate": 0.1333
       }
+    },
+    "mlbam:642350": {
+      "name": "Jose Siri",
+      "bats": "R",
+      "mlbam_id": 642350,
+      "bbref_id": "sirijo01",
+      "season": 2026,
+      "vs_L": {
+        "pa": 2,
+        "so": 0,
+        "k_rate": 0.0
+      }
     }
   },
-  "updated_at": "2026-05-17T22:05:52Z",
+  "updated_at": "2026-05-17T22:27:37Z",
   "last_run": {
     "projection_status": "collection_only",
     "requested_batters": 261,
-    "already_cached": 257,
+    "already_cached": 256,
     "attempted": 4,
-    "collected": 0,
-    "failed": 4,
-    "queued_not_attempted": 0,
-    "cache_size": 424,
+    "collected": 1,
+    "failed": 3,
+    "queued_not_attempted": 1,
+    "cache_size": 425,
     "errors": [
       "Joe Mack: no bbref id",
       "A.J. Ewing: no bbref id",
-      "Ryan Waldschmidt: no bbref id",
-      "Colt Emerson: no bbref id"
+      "Ryan Waldschmidt: no bbref id"
     ],
-    "updated_at": "2026-05-17T22:05:52Z"
+    "updated_at": "2026-05-17T22:27:37Z"
   }
 }
