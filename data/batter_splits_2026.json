@@ -7167,9 +7167,26 @@
         "so": 0,
         "k_rate": 0.0
       }
+    },
+    "mlbam:675961": {
+      "name": "Alika Williams",
+      "bats": "R",
+      "mlbam_id": 675961,
+      "bbref_id": "willial04",
+      "season": 2026,
+      "vs_R": {
+        "pa": 64,
+        "so": 16,
+        "k_rate": 0.25
+      },
+      "vs_L": {
+        "pa": 32,
+        "so": 6,
+        "k_rate": 0.1875
+      }
     }
   },
-  "updated_at": "2026-05-17T22:27:37Z",
+  "updated_at": "2026-05-17T23:04:35Z",
   "last_run": {
     "projection_status": "collection_only",
     "requested_batters": 261,
@@ -7178,12 +7195,12 @@
     "collected": 1,
     "failed": 3,
     "queued_not_attempted": 1,
-    "cache_size": 425,
+    "cache_size": 426,
     "errors": [
       "Joe Mack: no bbref id",
       "A.J. Ewing: no bbref id",
       "Ryan Waldschmidt: no bbref id"
     ],
-    "updated_at": "2026-05-17T22:27:37Z"
+    "updated_at": "2026-05-17T23:04:35Z"
   }
 }
