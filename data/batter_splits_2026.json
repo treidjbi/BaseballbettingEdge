@@ -7235,23 +7235,40 @@
         "so": 2,
         "k_rate": 0.6667
       }
+    },
+    "mlbam:680737": {
+      "name": "Michael Helman",
+      "bats": "R",
+      "mlbam_id": 680737,
+      "bbref_id": "helmami01",
+      "season": 2026,
+      "vs_R": {
+        "pa": 60,
+        "so": 10,
+        "k_rate": 0.1667
+      },
+      "vs_L": {
+        "pa": 50,
+        "so": 11,
+        "k_rate": 0.22
+      }
     }
   },
-  "updated_at": "2026-05-18T23:15:45Z",
+  "updated_at": "2026-05-18T23:38:36Z",
   "last_run": {
     "projection_status": "collection_only",
     "requested_batters": 243,
-    "already_cached": 234,
+    "already_cached": 235,
     "attempted": 4,
     "collected": 1,
     "failed": 3,
-    "queued_not_attempted": 5,
-    "cache_size": 429,
+    "queued_not_attempted": 4,
+    "cache_size": 430,
     "errors": [
       "Joe Mack: no bbref id",
       "A.J. Ewing: no bbref id",
       "Sterlin Thompson: no bbref id"
     ],
-    "updated_at": "2026-05-18T23:15:45Z"
+    "updated_at": "2026-05-18T23:38:36Z"
   }
 }
