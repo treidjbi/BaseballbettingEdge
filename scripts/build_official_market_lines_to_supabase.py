@@ -16,6 +16,13 @@ from market_infra.official_market_lines import (  # noqa: E402
     retire_missing_official_lines,
 )
 from market_infra.supabase_writer import SupabaseMarketWriter  # noqa: E402
+from scripts.build_current_market_lines_to_supabase import (  # noqa: E402
+    DEFAULT_ARTIFACT_URL,
+    _enrich_game_times_from_artifact,
+    _enrich_game_times_from_live_pick_state,
+    _fetch_live_pick_state_rows,
+    _load_artifact_payload_for_game_times,
+)
 
 
 def _env(name: str) -> str:
@@ -74,9 +81,29 @@ def run(
     stale_after_seconds: int = 900,
     allow_the_odds_emergency: bool = False,
     boltodds_draftkings_enabled: bool = False,
+    artifact_payload: dict[str, Any] | None = None,
+    artifact_source: str | None = None,
+    artifact_url: str | None = None,
 ) -> dict[str, Any]:
     observed_now = now_utc or _now_utc()
     current_rows = _fetch_current_lines(writer, slate_date)
+    live_pick_state_rows = _fetch_live_pick_state_rows(writer, slate_date)
+    live_state_enriched = _enrich_game_times_from_live_pick_state(current_rows, live_pick_state_rows)
+    if artifact_payload is None:
+        env_artifact_url = (
+            artifact_url
+            or os.environ.get("MARKET_LINE_ARTIFACT_URL", "").strip()
+            or os.environ.get("LIVE_ARTIFACT_URL", "").strip()
+        )
+        artifact_payload, artifact_source = _load_artifact_payload_for_game_times(
+            slate_date,
+            artifact_url=env_artifact_url or None,
+        )
+    artifact_enriched = _enrich_game_times_from_artifact(
+        current_rows,
+        artifact_payload,
+        source_artifact_path=artifact_source,
+    )
     provider_heartbeats = _fetch_provider_heartbeats(writer, slate_date)
     official_rows, decision_rows = choose_official_lines(
         current_lines=current_rows,
@@ -112,6 +139,10 @@ def run(
         "slate_date": slate_date,
         "current_market_lines": len(current_rows),
         "provider_heartbeats": len(provider_heartbeats),
+        "game_time_enriched": live_state_enriched + artifact_enriched,
+        "game_time_live_state_enriched": live_state_enriched,
+        "game_time_artifact_enriched": artifact_enriched,
+        "game_time_artifact_source": artifact_source,
         "official_market_lines": len(official_rows),
         "ready_for_pipeline": len(ready_rows),
         "retired_missing_rows": len(retired_rows),
@@ -143,6 +174,11 @@ def _parse_args(argv: list[str]) -> argparse.Namespace:
         action="store_true",
         help="Prefer fresh BoltOdds DraftKings after authenticated DK coverage is explicitly approved.",
     )
+    parser.add_argument(
+        "--artifact-url",
+        default=os.environ.get("MARKET_LINE_ARTIFACT_URL", "").strip() or DEFAULT_ARTIFACT_URL,
+        help="Optional current today.json URL used to fill provider rows missing game_time.",
+    )
     return parser.parse_args(argv)
 
 
@@ -156,12 +192,15 @@ def main(argv: list[str] | None = None) -> int:
         stale_after_seconds=args.stale_after_seconds,
         allow_the_odds_emergency=args.allow_the_odds_emergency,
         boltodds_draftkings_enabled=args.enable_boltodds_draftkings,
+        artifact_url=args.artifact_url or None,
     )
     action = "dry_run" if args.dry_run else "upsert"
     print(
         "Official market line build "
         f"action={action} date={result['slate_date']} "
         f"current_lines={result['current_market_lines']} "
+        f"game_time_enriched={result['game_time_enriched']} "
+        f"game_time_artifact_enriched={result['game_time_artifact_enriched']} "
         f"official_lines={result['official_market_lines']} "
         f"ready={result['ready_for_pipeline']} "
         f"retired_missing={result['retired_missing_rows']} "

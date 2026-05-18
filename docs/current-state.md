@@ -1,6 +1,6 @@
 # Current State
 
-Last updated: 2026-05-15
+Last updated: 2026-05-18
 
 ## Read Order
 
@@ -58,8 +58,16 @@ Cutover branch infrastructure progress as of 2026-05-14:
   `raw_payload.game_time_source`, so official arbitration can still fail closed
   when live-state timing is unavailable.
 - `official_market_lines` arbitration exists behind a separate build script and
-  remains shadow-only. It fails closed for stale, unsupported, incomplete, and
-  missing-current lines and does not change production artifacts yet.
+  remains shadow-only. It fills missing `current_market_lines.game_time` from
+  `live_pick_state` or the production artifact before arbitration, then fails
+  closed for stale, unsupported, incomplete, legacy-contract, and
+  missing-current lines. It does not change production artifacts yet.
+- Live Supabase now has write guards on `current_market_lines`,
+  `official_market_lines`, and `provider_arbitration_decisions` to suppress
+  duplicate high-cadence shadow rewrites, preserve non-null `game_time`, fail
+  closed for legacy `["selected"]` official rows, and reduce duplicate
+  arbitration-decision inserts. These guards protect Supabase IO only; they do
+  not make BoltOdds/PropLine the production provider.
 - BoltOdds official-line freshness now treats a fresh current-slate WebSocket
   heartbeat as supporting evidence for unchanged complete BoltOdds lines. This
   prevents normal K-prop price quietness from making otherwise usable rows fail

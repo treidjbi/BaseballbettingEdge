@@ -1324,11 +1324,24 @@ Implemented hardening scope:
   for the observed Supabase pressure points: provider/observed snapshot reads,
   run/observed snapshot reads, slate/provider heartbeat reads, and
   slate/provider run reads.
+- `official_market_lines` now enriches missing current-row `game_time` from
+  `live_pick_state` or the production artifact before arbitration, so it no
+  longer depends on a perfect `current_market_lines` write to avoid a false
+  missing-time fail.
+- Live Supabase has write-guard triggers for `current_market_lines`,
+  `official_market_lines`, and `provider_arbitration_decisions`. They preserve
+  non-null game times, fail closed for legacy `["selected"]` official rows,
+  suppress duplicate legacy arbitration-decision inserts, and throttle current
+  rows whose material book/line/odds state has not changed inside the guard
+  window.
 
 Operational notes:
 
 - This is still not a production provider cutover.
 - TheRundown remains production until Tyler explicitly approves the env cutover.
+- The old high-cadence writer was producing legacy `["selected"]` decision
+  rows every ~15 seconds. Treat that as a stale shadow-writer problem to remove
+  or redeploy, not as evidence that official-provider arbitration is ready.
 - Apply the new Supabase indexes before judging another provider rehearsal.
   On the live project, prefer a low-traffic window or manual concurrent index
   creation if Supabase tooling allows it, because `market_snapshots` is already

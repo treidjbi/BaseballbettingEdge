@@ -7,10 +7,11 @@ NOW = datetime(2026, 5, 13, 19, 0, tzinfo=timezone.utc)
 
 
 class FakeWriter:
-    def __init__(self, rows, official_rows=None, heartbeat_rows=None):
+    def __init__(self, rows, official_rows=None, heartbeat_rows=None, live_rows=None):
         self.rows = rows
         self.official_rows = official_rows or []
         self.heartbeat_rows = heartbeat_rows or []
+        self.live_rows = live_rows or []
         self.upserts = []
         self.inserts = []
 
@@ -22,6 +23,8 @@ class FakeWriter:
             return self.official_rows
         if table == "market_feed_heartbeats":
             return self.heartbeat_rows
+        if table == "live_pick_state":
+            return self.live_rows
         raise AssertionError(f"unexpected table: {table}")
 
     def upsert_rows(self, table, rows, on_conflict):
@@ -81,6 +84,35 @@ def test_upsert_writes_official_lines_and_decision_audit_rows():
     official = writer.upserts[0][1][0]
     assert official["ref_book_key"] == "fanduel"
     assert official["book_odds"]["DraftKings"]["provider"] == "propline"
+
+
+def test_run_enriches_missing_game_times_before_official_arbitration():
+    line = _line(1)
+    line["game_time"] = None
+    writer = FakeWriter(
+        [line],
+        live_rows=[{
+            "slate_date": "2026-05-13",
+            "normalized_pitcher": "jose berrios",
+            "game_time": "2026-05-13T23:05:00+00:00",
+            "source_artifact_path": "https://example.test/today.json",
+            "updated_at": "2026-05-13T18:59:30+00:00",
+        }],
+    )
+
+    result = run(
+        slate_date="2026-05-13",
+        writer=writer,
+        dry_run=False,
+        now_utc=NOW,
+        artifact_payload={"date": "2026-05-13", "pitchers": []},
+    )
+
+    assert result["game_time_enriched"] == 1
+    assert result["ready_for_pipeline"] == 1
+    official = writer.upserts[0][1][0]
+    assert official["game_time"] == "2026-05-13T23:05:00+00:00"
+    assert official["ready_for_pipeline"] is True
 
 
 def test_fresh_provider_heartbeat_keeps_unchanged_boltodds_lines_ready():

@@ -9,6 +9,8 @@ ACCEPTED_BETS_MIGRATION = ROOT / "supabase" / "migrations" / "20260508_accepted_
 LIVE_MARKET_DISPLAY_MIGRATION = ROOT / "supabase" / "migrations" / "20260512_live_market_display_state.sql"
 READONLY_SHADOW_POLICIES_MIGRATION = ROOT / "supabase" / "migrations" / "20260512_readonly_shadow_table_policies.sql"
 PROVIDER_CUTOVER_MIGRATION = ROOT / "supabase" / "migrations" / "20260513_provider_cutover_market_state.sql"
+MARKET_STATE_WRITE_GUARDS_MIGRATION = ROOT / "supabase" / "migrations" / "20260518_market_state_write_guards.sql"
+MARKET_STATE_WRITE_GUARD_SEARCH_PATH_MIGRATION = ROOT / "supabase" / "migrations" / "20260518_market_state_write_guard_search_path.sql"
 
 PROVIDER_CUTOVER_TABLES = [
     "current_market_lines",
@@ -99,3 +101,33 @@ def test_provider_cutover_tables_have_rls_and_readonly_policies():
     assert "source_line_id uuid" in sql
     assert "create or replace function public.set_market_state_updated_at()" in sql
     assert "create trigger set_current_market_lines_updated_at" in sql
+
+
+def test_market_state_write_guards_prevent_duplicate_shadow_churn():
+    sql = MARKET_STATE_WRITE_GUARDS_MIGRATION.read_text(encoding="utf-8")
+
+    assert "create trigger guard_current_market_lines_before_update" in sql
+    assert "create trigger guard_official_market_lines_before_insert" in sql
+    assert "create trigger guard_official_market_lines_before_update" in sql
+    assert "new.ready_for_pipeline = false" in sql
+    assert "missing_game_time" in sql
+    assert "legacy_selected_contract" in sql
+    assert "create trigger suppress_duplicate_provider_arbitration_decision" in sql
+    assert "new.decision = 'selected'" in sql
+    assert "existing.inserted_at >= now() - interval '10 minutes'" in sql
+    assert "existing.inserted_at >= now() - interval '2 minutes'" in sql
+
+
+def test_market_state_write_guard_functions_pin_search_path():
+    sql = MARKET_STATE_WRITE_GUARD_SEARCH_PATH_MIGRATION.read_text(encoding="utf-8")
+
+    for function_name in [
+        "append_unique_jsonb_text_values(jsonb, text[])",
+        "guard_current_market_lines_before_update()",
+        "guard_official_market_lines_before_write()",
+        "suppress_duplicate_provider_arbitration_decision()",
+        "set_market_state_updated_at()",
+    ]:
+        assert f"alter function public.{function_name}" in sql
+
+    assert "set search_path = public, pg_temp" in sql
