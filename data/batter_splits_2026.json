@@ -7220,15 +7220,15 @@
       }
     }
   },
-  "updated_at": "2026-05-18T21:48:44Z",
+  "updated_at": "2026-05-18T22:12:13Z",
   "last_run": {
     "projection_status": "collection_only",
-    "requested_batters": 189,
-    "already_cached": 185,
+    "requested_batters": 216,
+    "already_cached": 211,
     "attempted": 4,
     "collected": 0,
     "failed": 4,
-    "queued_not_attempted": 0,
+    "queued_not_attempted": 1,
     "cache_size": 428,
     "errors": [
       "Joe Mack: no bbref id",
@@ -7236,6 +7236,6 @@
       "Henry Bolte: no bbref id",
       "Colt Emerson: no bbref id"
     ],
-    "updated_at": "2026-05-18T21:48:44Z"
+    "updated_at": "2026-05-18T22:12:13Z"
   }
 }
