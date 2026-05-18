@@ -7218,24 +7218,40 @@
         "so": 4,
         "k_rate": 0.4444
       }
+    },
+    "mlbam:690924": {
+      "name": "Braxton Fulford",
+      "bats": "R",
+      "mlbam_id": 690924,
+      "bbref_id": "fulfobr01",
+      "season": 2026,
+      "vs_R": {
+        "pa": 2,
+        "so": 0,
+        "k_rate": 0.0
+      },
+      "vs_L": {
+        "pa": 3,
+        "so": 2,
+        "k_rate": 0.6667
+      }
     }
   },
-  "updated_at": "2026-05-18T22:33:33Z",
+  "updated_at": "2026-05-18T23:15:45Z",
   "last_run": {
     "projection_status": "collection_only",
-    "requested_batters": 225,
-    "already_cached": 219,
+    "requested_batters": 243,
+    "already_cached": 234,
     "attempted": 4,
-    "collected": 0,
-    "failed": 4,
-    "queued_not_attempted": 2,
-    "cache_size": 428,
+    "collected": 1,
+    "failed": 3,
+    "queued_not_attempted": 5,
+    "cache_size": 429,
     "errors": [
       "Joe Mack: no bbref id",
       "A.J. Ewing: no bbref id",
-      "Henry Bolte: no bbref id",
-      "Colt Emerson: no bbref id"
+      "Sterlin Thompson: no bbref id"
     ],
-    "updated_at": "2026-05-18T22:33:33Z"
+    "updated_at": "2026-05-18T23:15:45Z"
   }
 }
