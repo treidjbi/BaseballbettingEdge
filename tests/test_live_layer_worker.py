@@ -676,6 +676,117 @@ def test_worker_can_poll_propline_before_building_live_events(tmp_path):
     assert result["line_movement_events"] == 1
 
 
+def test_worker_can_build_shadow_market_lines_after_live_state(tmp_path):
+    today = _write_artifact(tmp_path, [_fire_pitcher()])
+    calls = []
+    writer = _writer_with_selects({
+        "live_pick_state": [],
+        "market_snapshots": [],
+        "market_feed_heartbeats": [],
+        "game_reminder_state": [],
+        "official_market_lines": [],
+        "current_market_lines": [],
+        "compact_market_line_movements": [],
+    })
+
+    def record_upsert(table, *args, **kwargs):
+        calls.append(("upsert", table))
+        return []
+
+    def current_build(**kwargs):
+        calls.append(("current_lines", kwargs["artifact_source"]))
+        return {"current_market_lines": 3, "written_rows": 3}
+
+    def official_build(**kwargs):
+        calls.append(("official_lines", kwargs["artifact_source"]))
+        return {"official_market_lines": 2, "ready_for_pipeline": 2}
+
+    def compact_build(**kwargs):
+        calls.append(("compact", kwargs["slate_date"]))
+        return {"compact_rows": 4, "written_rows": 4}
+
+    writer.upsert_rows.side_effect = record_upsert
+
+    with (
+        patch.object(build_live_events_to_supabase, "SupabaseMarketWriter", return_value=writer),
+        patch.object(
+            build_live_events_to_supabase,
+            "_now_utc",
+            return_value=build_live_events_to_supabase.datetime.fromisoformat("2026-05-06T18:00:00+00:00"),
+        ),
+        patch.object(
+            build_live_events_to_supabase,
+            "build_current_market_lines_to_supabase",
+            side_effect=current_build,
+        ),
+        patch.object(
+            build_live_events_to_supabase,
+            "build_official_market_lines_to_supabase",
+            side_effect=official_build,
+        ),
+        patch.object(
+            build_live_events_to_supabase,
+            "compact_market_snapshots_to_supabase",
+            side_effect=compact_build,
+        ),
+    ):
+        result = build_live_events_to_supabase.run(
+            slate_date="2026-05-06",
+            artifact_path=today,
+            supabase_url="https://example.supabase.co",
+            service_role_key="secret",
+            build_market_lines=True,
+        )
+
+    artifact_source = result["artifact_source"]
+    assert calls.index(("upsert", "live_pick_state")) < calls.index(("current_lines", artifact_source))
+    assert calls.index(("current_lines", artifact_source)) < calls.index(("official_lines", artifact_source))
+    assert calls.index(("official_lines", artifact_source)) < calls.index(("compact", "2026-05-06"))
+    assert result["market_line_build"]["skipped"] is False
+    assert result["market_line_build"]["current"]["current_market_lines"] == 3
+    assert result["market_line_build"]["official"]["ready_for_pipeline"] == 2
+    assert result["market_line_build"]["compact"]["compact_rows"] == 4
+
+
+def test_worker_skips_shadow_market_line_build_when_official_rows_are_fresh(tmp_path):
+    today = _write_artifact(tmp_path, [_fire_pitcher()])
+    writer = _writer_with_selects({
+        "live_pick_state": [],
+        "market_snapshots": [],
+        "market_feed_heartbeats": [],
+        "game_reminder_state": [],
+        "official_market_lines": [{"updated_at": "2026-05-06T17:59:30+00:00"}],
+        "current_market_lines": [{"updated_at": "2026-05-06T17:59:30+00:00"}],
+        "compact_market_line_movements": [{"updated_at": "2026-05-06T17:45:00+00:00"}],
+    })
+
+    with (
+        patch.object(build_live_events_to_supabase, "SupabaseMarketWriter", return_value=writer),
+        patch.object(
+            build_live_events_to_supabase,
+            "_now_utc",
+            return_value=build_live_events_to_supabase.datetime.fromisoformat("2026-05-06T18:00:00+00:00"),
+        ),
+        patch.object(build_live_events_to_supabase, "build_current_market_lines_to_supabase") as current_build,
+        patch.object(build_live_events_to_supabase, "build_official_market_lines_to_supabase") as official_build,
+        patch.object(build_live_events_to_supabase, "compact_market_snapshots_to_supabase") as compact_build,
+    ):
+        result = build_live_events_to_supabase.run(
+            slate_date="2026-05-06",
+            artifact_path=today,
+            supabase_url="https://example.supabase.co",
+            service_role_key="secret",
+            build_market_lines=True,
+            market_line_min_interval_seconds=600,
+            compact_market_min_interval_seconds=1800,
+        )
+
+    current_build.assert_not_called()
+    official_build.assert_not_called()
+    compact_build.assert_not_called()
+    assert result["market_line_build"] == {"skipped": True, "reason": "fresh"}
+
+
 def test_worker_continues_when_optional_propline_poll_times_out(tmp_path):
     today = _write_artifact(tmp_path, [_fire_pitcher()])
     calls = []

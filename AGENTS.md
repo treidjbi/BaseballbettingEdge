@@ -300,6 +300,15 @@ The live notification layer is separate from the official pipeline.
   `notification_events`, `line_movement_events`, `market_pick_evidence`,
   `live_market_display_state`, `shadow_notification_candidates`, and
   `game_reminder_state`.
+- **Shadow provider-state rebuild**: the Render live-layer entrypoint can
+  refresh `current_market_lines`, `official_market_lines`,
+  `provider_arbitration_decisions`, `provider_request_usage_daily`, and
+  `compact_market_line_movements` when `LIVE_BUILD_MARKET_LINES` is enabled
+  (default on for the script entrypoint). It uses freshness guards
+  (`LIVE_MARKET_LINE_BUILD_MIN_INTERVAL_SECONDS`, default `600`, and
+  `LIVE_MARKET_COMPACTION_MIN_INTERVAL_SECONDS`, default `1800`) so a fresh
+  GitHub shadow-market build is not immediately duplicated. This is shadow
+  infrastructure only; it does not make BoltOdds/PropLine production.
 - **Netlify sender**: scheduled `send-live-notifications` every 10 minutes.
 - **Manual sender**: `/api/send-live-notifications-now` with `NOTIFY_SECRET`.
 

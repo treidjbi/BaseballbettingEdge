@@ -28,6 +28,15 @@ from market_infra.shadow_notification_candidates import (  # noqa: E402
     build_shadow_notification_candidate_rows,
 )
 from market_infra.supabase_writer import SupabaseMarketWriter  # noqa: E402
+from scripts.build_current_market_lines_to_supabase import (  # noqa: E402
+    run as build_current_market_lines_to_supabase,
+)
+from scripts.build_official_market_lines_to_supabase import (  # noqa: E402
+    run as build_official_market_lines_to_supabase,
+)
+from scripts.compact_market_snapshots import (  # noqa: E402
+    run as compact_market_snapshots_to_supabase,
+)
 from scripts.shadow_propline_to_supabase import poll_propline_to_supabase  # noqa: E402
 
 DEFAULT_ARTIFACT = ROOT / "dashboard" / "data" / "processed" / "today.json"
@@ -47,6 +56,27 @@ def _env(name: str) -> str:
 
 def _optional_env(name: str) -> str:
     return os.environ.get(name, "").strip()
+
+
+def _env_flag(name: str, *, default: bool) -> bool:
+    value = os.environ.get(name, "").strip().lower()
+    if not value:
+        return default
+    return value not in {"0", "false", "no", "off"}
+
+
+def _env_int(name: str, *, default: int) -> int:
+    value = os.environ.get(name, "").strip()
+    if not value:
+        return default
+    try:
+        return int(value)
+    except ValueError:
+        print(
+            f"Warning: invalid integer for {name}={value!r}; using {default}",
+            file=sys.stderr,
+        )
+        return default
 
 
 def _source_artifact_path(path: Path) -> str:
@@ -92,6 +122,49 @@ def _load_artifact(path: Path, artifact_url: str | None = None) -> tuple[dict[st
 
 def _now_utc() -> datetime:
     return datetime.now(timezone.utc)
+
+
+def _parse_timestamp(value: Any) -> datetime | None:
+    if not value:
+        return None
+    try:
+        parsed = datetime.fromisoformat(str(value).replace("Z", "+00:00"))
+    except ValueError:
+        return None
+    if parsed.tzinfo is None:
+        return parsed.replace(tzinfo=timezone.utc)
+    return parsed.astimezone(timezone.utc)
+
+
+def _latest_table_timestamp(
+    writer: SupabaseMarketWriter,
+    table: str,
+    slate_date: str,
+    *,
+    column: str = "updated_at",
+) -> datetime | None:
+    rows = writer.select_rows(
+        table,
+        {
+            "slate_date": f"eq.{slate_date}",
+            "select": column,
+            "order": f"{column}.desc",
+            "limit": "1",
+        },
+    )
+    if not rows:
+        return None
+    return _parse_timestamp(rows[0].get(column))
+
+
+def _build_due(
+    latest_at: datetime | None,
+    observed_at: datetime,
+    min_interval_seconds: int,
+) -> bool:
+    if latest_at is None:
+        return True
+    return (observed_at - latest_at).total_seconds() >= min_interval_seconds
 
 
 def _snapshot_pairs(rows: list[dict[str, Any]]) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
@@ -265,6 +338,92 @@ def _write_shadow_pipeline_timing(
         return {"skipped": True, "error": str(error)}
 
 
+def _build_shadow_market_state(
+    *,
+    writer: SupabaseMarketWriter,
+    slate_date: str,
+    observed_at: datetime,
+    enabled: bool,
+    compact_enabled: bool,
+    market_line_min_interval_seconds: int,
+    compact_market_min_interval_seconds: int,
+    artifact_payload: dict[str, Any],
+    artifact_source: str,
+) -> dict[str, Any]:
+    if not enabled:
+        return {"skipped": True, "reason": "disabled"}
+
+    try:
+        latest_current_at = _latest_table_timestamp(writer, "current_market_lines", slate_date)
+        latest_official_at = _latest_table_timestamp(writer, "official_market_lines", slate_date)
+        latest_compact_at = _latest_table_timestamp(
+            writer,
+            "compact_market_line_movements",
+            slate_date,
+        )
+        current_due = _build_due(
+            latest_current_at,
+            observed_at,
+            market_line_min_interval_seconds,
+        )
+        official_due = _build_due(
+            latest_official_at,
+            observed_at,
+            market_line_min_interval_seconds,
+        )
+        compact_due = compact_enabled and _build_due(
+            latest_compact_at,
+            observed_at,
+            compact_market_min_interval_seconds,
+        )
+        if not current_due and not official_due and not compact_due:
+            return {"skipped": True, "reason": "fresh"}
+
+        result: dict[str, Any] = {
+            "skipped": False,
+            "latest_current_market_lines_at": (
+                latest_current_at.isoformat() if latest_current_at else None
+            ),
+            "latest_official_market_lines_at": (
+                latest_official_at.isoformat() if latest_official_at else None
+            ),
+            "latest_compact_market_lines_at": (
+                latest_compact_at.isoformat() if latest_compact_at else None
+            ),
+        }
+        if current_due:
+            result["current"] = build_current_market_lines_to_supabase(
+                slate_date=slate_date,
+                writer=writer,
+                dry_run=False,
+                now_utc=observed_at,
+                artifact_payload=artifact_payload,
+                artifact_source=artifact_source,
+            )
+        if current_due or official_due:
+            result["official"] = build_official_market_lines_to_supabase(
+                slate_date=slate_date,
+                writer=writer,
+                dry_run=False,
+                now_utc=observed_at,
+                artifact_payload=artifact_payload,
+                artifact_source=artifact_source,
+            )
+        if compact_due:
+            result["compact"] = compact_market_snapshots_to_supabase(
+                slate_date=slate_date,
+                writer=writer,
+                dry_run=False,
+            )
+        return result
+    except Exception as error:
+        print(
+            f"Warning: shadow market-state build failed ({error}); continuing live build",
+            file=sys.stderr,
+        )
+        return {"skipped": True, "reason": "build_failed", "error": str(error)[:1000]}
+
+
 def run(
     *,
     slate_date: str,
@@ -276,6 +435,10 @@ def run(
     artifact_payload: dict[str, Any] | None = None,
     artifact_sha: str | None = None,
     artifact_source: str | None = None,
+    build_market_lines: bool = False,
+    compact_market_lines: bool = True,
+    market_line_min_interval_seconds: int = 600,
+    compact_market_min_interval_seconds: int = 1800,
 ) -> dict[str, Any]:
     if artifact_payload is None:
         payload, artifact_sha, artifact_source = _load_artifact(Path(artifact_path), artifact_url=artifact_url)
@@ -405,6 +568,17 @@ def run(
         artifact_source=artifact_source,
         artifact_sha=artifact_sha,
     )
+    market_line_build = _build_shadow_market_state(
+        writer=writer,
+        slate_date=slate_date,
+        observed_at=observed_at,
+        enabled=build_market_lines,
+        compact_enabled=compact_market_lines,
+        market_line_min_interval_seconds=market_line_min_interval_seconds,
+        compact_market_min_interval_seconds=compact_market_min_interval_seconds,
+        artifact_payload=payload,
+        artifact_source=artifact_source,
+    )
     return {
         "state_rows": state_rows,
         "notification_rows": notification_rows,
@@ -425,6 +599,7 @@ def run(
         "propline": propline_result or {"skipped": True},
         "artifact_source": artifact_source,
         "shadow_pipeline_timing": shadow_pipeline_timing,
+        "market_line_build": market_line_build,
     }
 
 
@@ -454,6 +629,16 @@ def main() -> int:
         artifact_payload=payload,
         artifact_sha=artifact_sha,
         artifact_source=artifact_source,
+        build_market_lines=_env_flag("LIVE_BUILD_MARKET_LINES", default=True),
+        compact_market_lines=_env_flag("LIVE_COMPACT_MARKET_SNAPSHOTS", default=True),
+        market_line_min_interval_seconds=_env_int(
+            "LIVE_MARKET_LINE_BUILD_MIN_INTERVAL_SECONDS",
+            default=600,
+        ),
+        compact_market_min_interval_seconds=_env_int(
+            "LIVE_MARKET_COMPACTION_MIN_INTERVAL_SECONDS",
+            default=1800,
+        ),
     )
     propline = result["propline"]
     propline_summary = "propline=skipped"
@@ -462,13 +647,25 @@ def main() -> int:
             f"propline_events={propline['target_event_count']} "
             f"propline_snapshots={propline['snapshot_count']}"
         )
+    market_line_build = result.get("market_line_build") or {"skipped": True}
+    if market_line_build.get("skipped"):
+        market_line_summary = f"market_lines=skipped:{market_line_build.get('reason', 'unknown')}"
+    else:
+        current_lines = (market_line_build.get("current") or {}).get("current_market_lines", 0)
+        official_ready = (market_line_build.get("official") or {}).get("ready_for_pipeline", 0)
+        compact_rows = (market_line_build.get("compact") or {}).get("compact_rows", 0)
+        market_line_summary = (
+            f"market_lines=current:{current_lines} "
+            f"official_ready:{official_ready} compact:{compact_rows}"
+        )
     print(
         "Live event build "
         f"date={slate_date} state_rows={result['live_pick_state']} "
         f"notification_events={result['notification_events']} "
         f"live_market_display={result.get('live_market_display_state', 0)} "
         f"artifact_source={'remote' if str(result.get('artifact_source', artifact_source)).startswith('http') else 'local'} "
-        f"{propline_summary}"
+        f"{propline_summary} "
+        f"{market_line_summary}"
     )
     return 0
 

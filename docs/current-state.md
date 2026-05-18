@@ -191,6 +191,20 @@ The live layer is now separate from the production pipeline.
 - Cadence: every 10 minutes
 - Source artifact: fresh GitHub raw `today.json`, not the baked Render checkout
 - Market source: PropLine polling when `PROPLINE_API_KEY` is present
+- Shadow provider-state rebuild: `scripts/build_live_events_to_supabase.py`
+  can refresh `current_market_lines`, `official_market_lines`,
+  `provider_arbitration_decisions`, `provider_request_usage_daily`, and
+  `compact_market_line_movements` from the live feed path. The script
+  entrypoint enables this by default with freshness guards, so the Render
+  live-layer cron can keep the production-shaped shadow tables current even
+  when GitHub scheduled shadow-market runs are delayed. Direct test/helper
+  calls to `run()` remain opt-in. This is still shadow-only and does not change
+  production provider order or pipeline artifacts.
+- Live-layer market-state guardrails:
+  - `LIVE_BUILD_MARKET_LINES=false` disables the Render-side rebuild.
+  - `LIVE_COMPACT_MARKET_SNAPSHOTS=false` skips compact movement upserts.
+  - `LIVE_MARKET_LINE_BUILD_MIN_INTERVAL_SECONDS` defaults to `600`.
+  - `LIVE_MARKET_COMPACTION_MIN_INTERVAL_SECONDS` defaults to `1800`.
 - Supabase live tables:
   - `market_snapshots`
   - `live_pick_state`
@@ -252,8 +266,9 @@ Current housekeeping:
 - `NOTIFY_SECRET` rotation after screenshot exposure was completed on
   2026-05-07. Daily checks should verify sender health and queue counts, not
   keep treating rotation as outstanding.
-- Later review whether the older GitHub shadow PropLine polling can be reduced
-  if Render live polling creates duplicate provider calls.
+- Later review whether the older GitHub shadow PropLine polling/market-state
+  build can be reduced if Render live polling and guarded market-line rebuilds
+  provide the same evidence with less scheduler delay.
 
 ## Provider Shadow State
 
