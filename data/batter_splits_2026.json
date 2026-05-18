@@ -7203,19 +7203,20 @@
       }
     }
   },
-  "updated_at": "2026-05-18T18:56:40Z",
+  "updated_at": "2026-05-18T19:14:22Z",
   "last_run": {
     "projection_status": "collection_only",
-    "requested_batters": 36,
-    "already_cached": 34,
+    "requested_batters": 63,
+    "already_cached": 61,
     "attempted": 2,
-    "collected": 1,
-    "failed": 1,
+    "collected": 0,
+    "failed": 2,
     "queued_not_attempted": 0,
     "cache_size": 427,
     "errors": [
-      "Joe Mack: no bbref id"
+      "Joe Mack: no bbref id",
+      "A.J. Ewing: no bbref id"
     ],
-    "updated_at": "2026-05-18T18:56:40Z"
+    "updated_at": "2026-05-18T19:14:22Z"
   }
 }
