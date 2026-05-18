@@ -13,7 +13,7 @@ PROVIDER_HARDENING_MIGRATION = (
     ROOT
     / "supabase"
     / "migrations"
-    / "20260518_provider_runtime_hardening.sql"
+    / "20260518213238_provider_runtime_hardening.sql"
 )
 
 

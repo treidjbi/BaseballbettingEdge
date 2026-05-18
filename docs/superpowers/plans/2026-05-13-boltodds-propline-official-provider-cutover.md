@@ -1320,7 +1320,7 @@ Implemented hardening scope:
 - BoltOdds snapshot flushing can skip coverage-audit writes between audit
   intervals, and worker heartbeat rows are throttled separately from snapshot
   flush cadence.
-- `supabase/migrations/20260518_provider_runtime_hardening.sql` adds indexes
+- `supabase/migrations/20260518213238_provider_runtime_hardening.sql` adds indexes
   for the observed Supabase pressure points: provider/observed snapshot reads,
   run/observed snapshot reads, slate/provider heartbeat reads, and
   slate/provider run reads.

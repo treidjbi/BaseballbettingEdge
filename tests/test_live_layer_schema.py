@@ -1,16 +1,29 @@
 from pathlib import Path
+import re
 
 
 ROOT = Path(__file__).resolve().parent.parent
-LIVE_LAYER_MIGRATION = ROOT / "supabase" / "migrations" / "20260506_live_layer_events.sql"
-MARKET_EVIDENCE_MIGRATION = ROOT / "supabase" / "migrations" / "20260508_market_pick_evidence.sql"
-SHADOW_CANDIDATE_MIGRATION = ROOT / "supabase" / "migrations" / "20260508_shadow_notification_candidates.sql"
-ACCEPTED_BETS_MIGRATION = ROOT / "supabase" / "migrations" / "20260508_accepted_bets_log.sql"
-LIVE_MARKET_DISPLAY_MIGRATION = ROOT / "supabase" / "migrations" / "20260512_live_market_display_state.sql"
-READONLY_SHADOW_POLICIES_MIGRATION = ROOT / "supabase" / "migrations" / "20260512_readonly_shadow_table_policies.sql"
-PROVIDER_CUTOVER_MIGRATION = ROOT / "supabase" / "migrations" / "20260513_provider_cutover_market_state.sql"
-MARKET_STATE_WRITE_GUARDS_MIGRATION = ROOT / "supabase" / "migrations" / "20260518_market_state_write_guards.sql"
-MARKET_STATE_WRITE_GUARD_SEARCH_PATH_MIGRATION = ROOT / "supabase" / "migrations" / "20260518_market_state_write_guard_search_path.sql"
+MIGRATIONS_DIR = ROOT / "supabase" / "migrations"
+LIVE_LAYER_MIGRATION = MIGRATIONS_DIR / "20260506_live_layer_events.sql"
+MARKET_EVIDENCE_MIGRATION = MIGRATIONS_DIR / "20260508_market_pick_evidence.sql"
+SHADOW_CANDIDATE_MIGRATION = MIGRATIONS_DIR / "20260508_shadow_notification_candidates.sql"
+ACCEPTED_BETS_MIGRATION = MIGRATIONS_DIR / "20260508_accepted_bets_log.sql"
+LIVE_MARKET_DISPLAY_MIGRATION = MIGRATIONS_DIR / "20260512_live_market_display_state.sql"
+READONLY_SHADOW_POLICIES_MIGRATION = MIGRATIONS_DIR / "20260512_readonly_shadow_table_policies.sql"
+PROVIDER_CUTOVER_MIGRATION = MIGRATIONS_DIR / "20260513_provider_cutover_market_state.sql"
+MARKET_STATE_WRITE_GUARDS_MIGRATIONS = [
+    MIGRATIONS_DIR / "20260518174018_market_state_write_guards.sql",
+    MIGRATIONS_DIR / "20260518174322_market_state_write_guards_tighten_churn.sql",
+    MIGRATIONS_DIR / "20260518174819_market_state_write_guards_fail_closed_legacy_selected.sql",
+    MIGRATIONS_DIR / "20260518175106_market_state_write_guard_search_path.sql",
+    MIGRATIONS_DIR / "20260518175711_market_state_write_guard_ignore_legacy_updates.sql",
+    MIGRATIONS_DIR / "20260518180629_market_state_write_guard_block_legacy_selected_marker.sql",
+    MIGRATIONS_DIR / "20260518181008_market_state_write_guard_current_throttle_10_min.sql",
+    MIGRATIONS_DIR / "20260518181547_market_state_write_guard_block_legacy_decisions.sql",
+]
+MARKET_STATE_WRITE_GUARD_SEARCH_PATH_MIGRATION = (
+    MIGRATIONS_DIR / "20260518175106_market_state_write_guard_search_path.sql"
+)
 
 PROVIDER_CUTOVER_TABLES = [
     "current_market_lines",
@@ -34,6 +47,33 @@ def _migration_sql() -> str:
             READONLY_SHADOW_POLICIES_MIGRATION,
         ]
     )
+
+
+def test_supabase_migrations_use_timestamped_versions():
+    bad_names = sorted(
+        path.name
+        for path in MIGRATIONS_DIR.glob("20260518*.sql")
+        if not re.match(r"^\d{14}_[a-z0-9_]+\.sql$", path.name)
+    )
+
+    assert bad_names == []
+
+
+def test_local_market_state_guard_migrations_match_live_versions():
+    expected_names = {
+        "20260518174018_market_state_write_guards.sql",
+        "20260518174322_market_state_write_guards_tighten_churn.sql",
+        "20260518174819_market_state_write_guards_fail_closed_legacy_selected.sql",
+        "20260518175106_market_state_write_guard_search_path.sql",
+        "20260518175711_market_state_write_guard_ignore_legacy_updates.sql",
+        "20260518180629_market_state_write_guard_block_legacy_selected_marker.sql",
+        "20260518181008_market_state_write_guard_current_throttle_10_min.sql",
+        "20260518181547_market_state_write_guard_block_legacy_decisions.sql",
+        "20260518213238_provider_runtime_hardening.sql",
+    }
+    actual_names = {path.name for path in MIGRATIONS_DIR.glob("20260518*.sql")}
+
+    assert expected_names <= actual_names
 
 
 def test_live_layer_migration_file_exists():
@@ -104,7 +144,10 @@ def test_provider_cutover_tables_have_rls_and_readonly_policies():
 
 
 def test_market_state_write_guards_prevent_duplicate_shadow_churn():
-    sql = MARKET_STATE_WRITE_GUARDS_MIGRATION.read_text(encoding="utf-8")
+    sql = "\n".join(
+        path.read_text(encoding="utf-8")
+        for path in MARKET_STATE_WRITE_GUARDS_MIGRATIONS
+    )
 
     assert "create trigger guard_current_market_lines_before_update" in sql
     assert "create trigger guard_official_market_lines_before_insert" in sql
