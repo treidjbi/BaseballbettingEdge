@@ -29,7 +29,8 @@ Supabase project:
 ## Files
 
 - `render.yaml` defines the optional Render Blueprint worker.
-- `requirements-live.txt` keeps `websockets` out of the production pipeline dependency file.
+- `requirements-live.txt` keeps the Render worker dependency set small:
+  `requests` plus `websockets`, not the full SciPy/PyBaseball pipeline stack.
 - `scripts/probe_boltodds_markets.py` checks Starter readiness before the worker runs.
 - `scripts/boltodds_ws_worker.py` connects to the WebSocket and writes Supabase shadow evidence.
 - `analytics/diagnostics/boltodds_trial_audit.py` summarizes provider coverage audits.
@@ -44,6 +45,7 @@ Set these in Render:
 BOLTODDS_API_KEY=<from BoltOdds trial>
 SUPABASE_URL=<project url>
 SUPABASE_SERVICE_ROLE_KEY=<service role key>
+PYTHON_VERSION=3.11.9
 BOLTODDS_TARGET_BOOKS=fanduel,betmgm,betrivers,caesars
 BOLTODDS_MARKET_ALIASES=pitcher_strikeouts,player_strikeouts,pitcher strikeouts,player strikeouts
 BOLTODDS_BATCH_SIZE=100
@@ -136,6 +138,10 @@ Preferred path:
 ```bash
 pip install -r requirements-live.txt
 ```
+
+If Render tries to build SciPy during this worker deploy, the service is using
+the wrong dependency file or missing `PYTHON_VERSION=3.11.9`. The BoltOdds
+worker should not install `pipeline/requirements.txt`.
 
 4. Use this start command:
 

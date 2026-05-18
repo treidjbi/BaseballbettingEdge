@@ -453,7 +453,20 @@ def test_live_requirements_pin_websockets_dependency():
         encoding="utf-8"
     )
 
-    assert "websockets==12.0" in requirements.splitlines()
+    lines = requirements.splitlines()
+    assert "requests==2.31.0" in lines
+    assert "websockets==12.0" in lines
+    assert "-r pipeline/requirements.txt" not in lines
+
+
+def test_render_worker_pins_main_branch_and_python_version():
+    render_config = (boltodds_ws_worker.ROOT / "render.yaml").read_text(
+        encoding="utf-8"
+    )
+
+    assert "branch: main" in render_config
+    assert "PYTHON_VERSION" in render_config
+    assert 'value: "3.11.9"' in render_config
 
 
 def test_load_websockets_connect_raises_clear_runtime_error(monkeypatch):
