@@ -1,7 +1,7 @@
 import json
 import sys
 from pathlib import Path
-from unittest.mock import Mock, patch
+from unittest.mock import ANY, Mock, patch
 
 import requests
 
@@ -81,14 +81,13 @@ def test_worker_writes_state_and_notification_events(tmp_path):
         result["state_rows"],
         on_conflict="slate_date,normalized_pitcher,side",
     )
-    writer.upsert_rows.assert_any_call(
+    writer.insert_ignore_rows.assert_any_call(
         "notification_events",
         result["notification_rows"],
         on_conflict="dedupe_key",
     )
     upsert_tables = [call.args[0] for call in writer.upsert_rows.call_args_list]
     assert upsert_tables == [
-        "notification_events",
         "line_movement_events",
         "market_pick_evidence",
         "live_market_display_state",
@@ -112,7 +111,6 @@ def test_worker_keeps_shadow_timing_failures_from_breaking_live_layer(tmp_path):
         "game_reminder_state": [],
     })
     writer.upsert_rows.side_effect = [
-        [],
         [],
         [],
         [],
@@ -182,8 +180,15 @@ def test_worker_marks_missing_previous_fire_pass_after_notifications(tmp_path):
     assert result["live_pick_state"] == 1
     assert result["notification_rows"][0]["event_type"] == "pick_downgraded"
     assert result["state_rows"][0]["current_verdict"] == "PASS"
-    upsert_tables = [call.args[0] for call in writer.upsert_rows.call_args_list]
-    assert upsert_tables.index("notification_events") < upsert_tables.index("live_pick_state")
+    write_order = [
+        (call[0], call.args[0])
+        for call in writer.mock_calls
+        if call[0] in {"insert_ignore_rows", "upsert_rows"}
+    ]
+    assert (
+        write_order.index(("insert_ignore_rows", "notification_events"))
+        < write_order.index(("upsert_rows", "live_pick_state"))
+    )
 
 
 def test_worker_writes_line_movement_events_from_snapshot_history(tmp_path):
@@ -875,7 +880,6 @@ def test_worker_upserts_non_empty_tables_in_retry_safe_order(tmp_path):
 
     upsert_tables = [call.args[0] for call in writer.upsert_rows.call_args_list]
     assert upsert_tables == [
-        "notification_events",
         "line_movement_events",
         "market_pick_evidence",
         "live_market_display_state",
@@ -884,6 +888,11 @@ def test_worker_upserts_non_empty_tables_in_retry_safe_order(tmp_path):
         "live_pick_state",
         "shadow_pipeline_runs",
     ]
+    writer.insert_ignore_rows.assert_any_call(
+        "notification_events",
+        ANY,
+        on_conflict="dedupe_key",
+    )
 
 
 def test_render_entrypoint_uses_propline_env_without_therundown_dependency():

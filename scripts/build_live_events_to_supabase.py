@@ -378,7 +378,7 @@ def run(
         *movement_notification_rows,
         *reminder_notification_rows,
     ]
-    writer.upsert_rows("notification_events", notification_rows, on_conflict="dedupe_key")
+    writer.insert_ignore_rows("notification_events", notification_rows, on_conflict="dedupe_key")
     writer.upsert_rows("line_movement_events", line_movement_rows, on_conflict="dedupe_key")
     writer.upsert_rows(
         "market_pick_evidence",
