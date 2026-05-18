@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-05-18T20:45:04Z",
+  "generated_at": "2026-05-18T20:55:08Z",
   "date": "2026-05-18",
   "props_available": true,
   "data_warnings": [
@@ -714,8 +714,8 @@
           "under": -144
         },
         "Kalshi": {
-          "over": 109,
-          "under": -131
+          "over": 119,
+          "under": -142
         }
       },
       "umpire": "Jordan Baker",
@@ -860,8 +860,8 @@
           "under": 125
         },
         "BetMGM": {
-          "over": -120,
-          "under": -110
+          "over": -135,
+          "under": 100
         },
         "FanDuel": {
           "over": -134,
@@ -902,8 +902,8 @@
       "best_over_book": "FanDuel",
       "best_under_book": "FanDuel",
       "ref_book": "FanDuel",
-      "best_over_odds": -102,
-      "best_under_odds": -130,
+      "best_over_odds": 102,
+      "best_under_odds": -136,
       "opening_over_odds": -114,
       "opening_under_odds": -114,
       "opening_odds_source": "preview",
@@ -917,8 +917,8 @@
       "official_market_line_id": null,
       "provider_coverage": null,
       "provider_arbitration_reasons": null,
-      "price_delta_over": 12,
-      "price_delta_under": -16,
+      "price_delta_over": 216,
+      "price_delta_under": -22,
       "raw_lambda": 5.49,
       "lambda": 5.39,
       "avg_ip": 5.5,
@@ -941,14 +941,14 @@
       "recent_k9": 7.71,
       "career_k9": 9.97,
       "ev_over": {
-        "edge": -0.0533,
-        "ev": -0.1056,
-        "adj_ev": -0.095,
+        "edge": -0.0434,
+        "ev": -0.0877,
+        "adj_ev": -0.0,
         "verdict": "PASS",
         "win_prob": 0.452,
-        "movement_conf": 0.9,
+        "movement_conf": 0.0,
         "raw_verdict": "PASS",
-        "raw_adj_ev": -0.095,
+        "raw_adj_ev": -0.0,
         "actionable_verdict": "PASS",
         "quality_gate_level": "capped",
         "quality_gate_reasons": [
@@ -956,14 +956,14 @@
         ]
       },
       "ev_under": {
-        "edge": -0.0169,
-        "ev": -0.0298,
-        "adj_ev": -0.0298,
+        "edge": -0.0279,
+        "ev": -0.0484,
+        "adj_ev": -0.0484,
         "verdict": "PASS",
         "win_prob": 0.548,
         "movement_conf": 1.0,
         "raw_verdict": "PASS",
-        "raw_adj_ev": -0.0298,
+        "raw_adj_ev": -0.0484,
         "actionable_verdict": "PASS",
         "quality_gate_level": "capped",
         "quality_gate_reasons": [
@@ -976,8 +976,8 @@
           "under": -155
         },
         "FanDuel": {
-          "over": -102,
-          "under": -130
+          "over": 102,
+          "under": -136
         },
         "Kalshi": {
           "over": 109,
@@ -1300,7 +1300,7 @@
           "under": -130
         },
         "Kalshi": {
-          "over": 101,
+          "over": -103,
           "under": -121
         }
       },
@@ -1906,8 +1906,8 @@
           "under": 132
         },
         "Kalshi": {
-          "over": -168,
-          "under": 140
+          "over": -183,
+          "under": 146
         }
       },
       "umpire": "Laz Diaz",
@@ -2372,10 +2372,6 @@
           "over": 115,
           "under": -147
         },
-        "BetMGM": {
-          "over": 110,
-          "under": -150
-        },
         "FanDuel": {
           "over": 118,
           "under": -144
@@ -2635,8 +2631,8 @@
       },
       "book_odds": {
         "DraftKings": {
-          "over": -151,
-          "under": 118
+          "over": -156,
+          "under": 122
         },
         "FanDuel": {
           "over": -168,
@@ -3412,8 +3408,8 @@
           "under": -142
         },
         "Kalshi": {
-          "over": 114,
-          "under": -137
+          "over": 109,
+          "under": -131
         }
       },
       "umpire": null,
@@ -4166,7 +4162,7 @@
       "Joe Mack: no bbref id",
       "A.J. Ewing: no bbref id"
     ],
-    "updated_at": "2026-05-18T20:45:04Z"
+    "updated_at": "2026-05-18T20:55:08Z"
   },
   "quality_gate_summary": {
     "clean": 12,
