@@ -1,6 +1,7 @@
 from datetime import datetime, timezone
 
 from scripts.build_current_market_lines_to_supabase import (
+    _enrich_game_times_from_artifact,
     _enrich_game_times_from_live_pick_state,
     _fetch_inputs,
     _fetch_snapshot_pages,
@@ -123,6 +124,35 @@ def test_enrich_game_times_from_live_pick_state_fills_missing_rows_by_pitcher():
     }
 
 
+def test_enrich_game_times_from_artifact_fills_rows_when_live_state_is_missing():
+    current_rows = [{
+        "normalized_player_name": "jose berrios",
+        "player_name": "Jose Berrios",
+        "game_time": None,
+        "raw_payload": {"over": {"id": 1}, "under": {"id": 2}},
+    }]
+    artifact_payload = {
+        "date": "2026-05-14",
+        "pitchers": [{
+            "pitcher": "Jose Berrios",
+            "game_time": "2026-05-14T23:05:00Z",
+        }],
+    }
+
+    enriched = _enrich_game_times_from_artifact(
+        current_rows,
+        artifact_payload,
+        source_artifact_path="dashboard/data/processed/2026-05-14.json",
+    )
+
+    assert enriched == 1
+    assert current_rows[0]["game_time"] == "2026-05-14T23:05:00Z"
+    assert current_rows[0]["raw_payload"]["game_time_source"] == {
+        "source": "production_artifact",
+        "source_artifact_path": "dashboard/data/processed/2026-05-14.json",
+    }
+
+
 def test_run_enriches_missing_game_times_before_writing_current_lines():
     writer = FakeWriter(live_game_times=[{
         "normalized_pitcher": "jose berrios",
@@ -182,6 +212,76 @@ def test_run_enriches_missing_game_times_before_writing_current_lines():
         "order": "updated_at.desc",
         "limit": "1000",
     }) in writer.calls
+
+
+def test_run_falls_back_to_artifact_game_times_before_writing_current_lines():
+    writer = FakeWriter()
+
+    def select_rows(table, params):
+        writer.calls.append((table, dict(params)))
+        if table == "market_provider_runs":
+            return [{"id": "run-1", "provider": "boltodds", "slate_date": "2026-05-14"}]
+        if table == "market_feed_heartbeats":
+            return []
+        if table == "live_pick_state":
+            return []
+        if table == "market_snapshots" and params["offset"] == "0":
+            return [
+                {
+                    "id": "snap-over",
+                    "run_id": "run-1",
+                    "provider": "boltodds",
+                    "bookmaker_key": "fanduel",
+                    "bookmaker_title": "FanDuel",
+                    "player_name": "Jose Berrios",
+                    "market_key": "pitcher_strikeouts",
+                    "side": "over",
+                    "line": 5.5,
+                    "american_odds": -115,
+                    "observed_at": "2026-05-14T16:19:00+00:00",
+                },
+                {
+                    "id": "snap-under",
+                    "run_id": "run-1",
+                    "provider": "boltodds",
+                    "bookmaker_key": "fanduel",
+                    "bookmaker_title": "FanDuel",
+                    "player_name": "Jose Berrios",
+                    "market_key": "pitcher_strikeouts",
+                    "side": "under",
+                    "line": 5.5,
+                    "american_odds": -105,
+                    "observed_at": "2026-05-14T16:19:10+00:00",
+                },
+            ]
+        return []
+
+    writer.select_rows = select_rows
+
+    result = run(
+        slate_date="2026-05-14",
+        writer=writer,
+        dry_run=False,
+        now_utc=NOW,
+        artifact_payload={
+            "date": "2026-05-14",
+            "pitchers": [{
+                "pitcher": "Jose Berrios",
+                "game_time": "2026-05-14T23:05:00Z",
+            }],
+        },
+        artifact_source="dashboard/data/processed/2026-05-14.json",
+    )
+
+    assert result["game_time_enriched"] == 1
+    assert result["game_time_live_state_enriched"] == 0
+    assert result["game_time_artifact_enriched"] == 1
+    written = writer.upserts[0][1][0]
+    assert written["game_time"] == "2026-05-14T23:05:00Z"
+    assert written["raw_payload"]["game_time_source"] == {
+        "source": "production_artifact",
+        "source_artifact_path": "dashboard/data/processed/2026-05-14.json",
+    }
 
 
 def test_run_writes_provider_usage_rows_from_fetched_runs_and_snapshots():

@@ -1302,6 +1302,41 @@ The first code batch should be infrastructure-only and reversible:
 This batch does not change official picks, notifications, dashboard artifacts,
 provider order, thresholds, staking, calibration, or formula math.
 
+## 2026-05-18 Runtime Hardening Batch
+
+Weekend rehearsal evidence showed the provider stack was not production-ready
+because Supabase IO pressure and missing `game_time` values made otherwise
+usable provider rows fail closed.
+
+Implemented hardening scope:
+
+- `current_market_lines` now fills missing `game_time` from the production
+  dashboard artifact when `live_pick_state` is stale, empty, or missing a
+  pitcher row. The official adapter still rejects rows that remain missing
+  `game_time`.
+- `build_live_events_to_supabase.py` now prefers recent current-slate
+  `market_provider_runs` and indexed `run_id` snapshot reads instead of the
+  broad `provider in (...) order by observed_at desc limit 2500` scan.
+- BoltOdds snapshot flushing can skip coverage-audit writes between audit
+  intervals, and worker heartbeat rows are throttled separately from snapshot
+  flush cadence.
+- `supabase/migrations/20260518_provider_runtime_hardening.sql` adds indexes
+  for the observed Supabase pressure points: provider/observed snapshot reads,
+  run/observed snapshot reads, slate/provider heartbeat reads, and
+  slate/provider run reads.
+
+Operational notes:
+
+- This is still not a production provider cutover.
+- TheRundown remains production until Tyler explicitly approves the env cutover.
+- Apply the new Supabase indexes before judging another provider rehearsal.
+  On the live project, prefer a low-traffic window or manual concurrent index
+  creation if Supabase tooling allows it, because `market_snapshots` is already
+  large enough for index creation to be noticeable.
+- Raw snapshot deletion is still not enabled. Compact rows exist, but raw
+  retention should wait until at least one compacted slate has been reviewed and
+  Tyler approves pruning.
+
 ## Validation Commands
 
 Run after each batch:

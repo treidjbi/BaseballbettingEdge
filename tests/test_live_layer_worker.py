@@ -244,6 +244,76 @@ def test_worker_writes_line_movement_events_from_snapshot_history(tmp_path):
     )
 
 
+def test_worker_fetches_market_snapshots_by_recent_run_ids_when_available(tmp_path):
+    today = _write_artifact(tmp_path, [_fire_pitcher()])
+    calls = []
+    writer = Mock()
+
+    def select_rows(table, params):
+        calls.append((table, dict(params)))
+        if table == "live_pick_state":
+            return []
+        if table == "market_feed_heartbeats":
+            return []
+        if table == "market_provider_runs":
+            return [{"id": "run-1", "provider": "propline", "slate_date": "2026-05-06"}]
+        if table == "market_snapshots":
+            return [
+                {
+                    "id": "snapshot-old",
+                    "run_id": "run-1",
+                    "provider": "propline",
+                    "provider_event_id": "game-1",
+                    "normalized_player_name": "tarik skubal",
+                    "player_name": "Tarik Skubal",
+                    "bookmaker_key": "fanduel",
+                    "side": "over",
+                    "line": 6.5,
+                    "american_odds": -110,
+                    "observed_at": "2026-05-06T17:50:00+00:00",
+                },
+                {
+                    "id": "snapshot-new",
+                    "run_id": "run-1",
+                    "provider": "propline",
+                    "provider_event_id": "game-1",
+                    "normalized_player_name": "tarik skubal",
+                    "player_name": "Tarik Skubal",
+                    "bookmaker_key": "fanduel",
+                    "side": "over",
+                    "line": 5.5,
+                    "american_odds": -112,
+                    "observed_at": "2026-05-06T18:00:00+00:00",
+                },
+            ]
+        if table == "game_reminder_state":
+            return []
+        return []
+
+    writer.select_rows.side_effect = select_rows
+
+    with (
+        patch.object(build_live_events_to_supabase, "SupabaseMarketWriter", return_value=writer),
+        patch.object(
+            build_live_events_to_supabase,
+            "_now_utc",
+            return_value=build_live_events_to_supabase.datetime.fromisoformat("2026-05-06T18:00:00+00:00"),
+        ),
+    ):
+        result = build_live_events_to_supabase.run(
+            slate_date="2026-05-06",
+            artifact_path=today,
+            supabase_url="https://example.supabase.co",
+            service_role_key="secret",
+        )
+
+    snapshot_call = next(call for call in calls if call[0] == "market_snapshots")
+    assert snapshot_call[1]["run_id"] == "in.(run-1)"
+    assert snapshot_call[1]["observed_at"].startswith("gte.")
+    assert snapshot_call[1]["limit"] == "1000"
+    assert result["line_movement_events"] == 1
+
+
 def test_worker_ignores_boltodds_shadow_snapshots_for_notifications(tmp_path):
     today = _write_artifact(tmp_path, [_fire_pitcher()])
     writer = _writer_with_selects({

@@ -5,7 +5,7 @@ import hashlib
 import json
 import os
 import sys
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any
 from urllib.request import urlopen
@@ -140,19 +140,82 @@ def _fetch_provider_heartbeats(writer: SupabaseMarketWriter, slate_date: str) ->
         return []
 
 
-def _fetch_market_snapshots(writer: SupabaseMarketWriter) -> list[dict[str, Any]]:
-    try:
-        return writer.select_rows("market_snapshots", {
+def _run_id_filter(run_rows: list[dict[str, Any]]) -> str:
+    run_ids = [str(row.get("id")) for row in run_rows if row.get("id")]
+    return f"in.({','.join(run_ids)})"
+
+
+def _fetch_recent_provider_run_rows(
+    writer: SupabaseMarketWriter,
+    slate_date: str,
+    *,
+    limit: int = 100,
+) -> list[dict[str, Any]]:
+    return writer.select_rows(
+        "market_provider_runs",
+        {
+            "slate_date": f"eq.{slate_date}",
             "provider": "in.(propline,boltodds)",
-            "order": "observed_at.desc",
-            "limit": "2500",
-        })
+            "order": "created_at.desc",
+            "limit": str(limit),
+        },
+    )
+
+
+def _fetch_live_market_snapshot_rows(
+    writer: SupabaseMarketWriter,
+    slate_date: str,
+    observed_at: datetime,
+    *,
+    lookback_minutes: int | None = None,
+    page_size: int = 1000,
+    max_pages: int = 5,
+) -> list[dict[str, Any]]:
+    """Fetch bounded current-slate market rows without scanning all snapshots."""
+    lookback = lookback_minutes
+    if lookback is None:
+        lookback = int(os.environ.get("LIVE_MARKET_SNAPSHOT_LOOKBACK_MINUTES", "720") or "720")
+    lookback_start = (observed_at - timedelta(minutes=lookback)).isoformat()
+
+    try:
+        run_rows = _fetch_recent_provider_run_rows(writer, slate_date)
     except Exception as error:
         print(
-            f"Warning: market snapshot read failed ({error}); continuing without market evidence",
+            f"Warning: market provider run read failed ({error}); falling back to bounded snapshot read",
             file=sys.stderr,
         )
-        return []
+        run_rows = []
+
+    rows: list[dict[str, Any]] = []
+    if run_rows:
+        run_rows = [row for row in run_rows if row.get("id")]
+    if run_rows:
+        run_filter = _run_id_filter(run_rows)
+        for page in range(max_pages):
+            page_rows = writer.select_rows(
+                "market_snapshots",
+                {
+                    "run_id": run_filter,
+                    "observed_at": f"gte.{lookback_start}",
+                    "order": "observed_at.desc",
+                    "limit": str(page_size),
+                    "offset": str(page * page_size),
+                },
+            )
+            rows.extend(page_rows)
+            if len(page_rows) < page_size:
+                break
+        return rows
+
+    return writer.select_rows(
+        "market_snapshots",
+        {
+            "provider": "in.(propline,boltodds)",
+            "observed_at": f"gte.{lookback_start}",
+            "order": "observed_at.desc",
+            "limit": str(page_size),
+        },
+    )
 
 
 def _shadow_pipeline_timing_enabled() -> bool:
@@ -263,7 +326,14 @@ def run(
     state_rows.extend(missing_state_rows)
 
     provider_heartbeats = _fetch_provider_heartbeats(writer, slate_date)
-    snapshot_rows = _fetch_market_snapshots(writer)
+    try:
+        snapshot_rows = _fetch_live_market_snapshot_rows(writer, slate_date, observed_at)
+    except Exception as error:
+        print(
+            f"Warning: market snapshot read failed ({error}); continuing without market evidence",
+            file=sys.stderr,
+        )
+        snapshot_rows = []
     previous_snapshots, current_snapshots = _snapshot_pairs(_live_notification_snapshots(snapshot_rows))
     movement_notification_rows = build_line_movement_events(
         slate_date=slate_date,

@@ -2,11 +2,13 @@
 from __future__ import annotations
 
 import argparse
+import json
 import os
 import sys
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
+from urllib.request import urlopen
 
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
@@ -21,6 +23,11 @@ from market_infra.provider_usage import (  # noqa: E402
 )
 from market_infra.supabase_writer import SupabaseMarketWriter  # noqa: E402
 from pipeline.name_utils import normalize  # noqa: E402
+
+DEFAULT_ARTIFACT_URL = (
+    "https://raw.githubusercontent.com/treidjbi/BaseballBettingEdge/"
+    "main/dashboard/data/processed/today.json"
+)
 
 
 def _env(name: str) -> str:
@@ -149,6 +156,39 @@ def _fetch_live_pick_state_rows(
     )
 
 
+def _load_artifact_payload_for_game_times(
+    slate_date: str,
+    *,
+    artifact_url: str | None = None,
+    root: Path = ROOT,
+) -> tuple[dict[str, Any] | None, str | None]:
+    if artifact_url:
+        try:
+            with urlopen(artifact_url, timeout=20) as response:
+                payload = json.loads(response.read().decode("utf-8"))
+            if str(payload.get("date") or "").strip() == slate_date:
+                return payload, artifact_url
+        except Exception as error:
+            print(
+                f"Warning: market-line artifact fetch failed ({error}); falling back to local artifact",
+                file=sys.stderr,
+            )
+
+    candidates = [
+        Path("dashboard") / "data" / "processed" / f"{slate_date}.json",
+        Path("dashboard") / "data" / "processed" / "today.json",
+    ]
+    for relative_path in candidates:
+        path = root / relative_path
+        if not path.exists():
+            continue
+        payload = json.loads(path.read_text(encoding="utf-8"))
+        if str(payload.get("date") or "").strip() != slate_date:
+            continue
+        return payload, relative_path.as_posix()
+    return None, None
+
+
 def _enrich_game_times_from_live_pick_state(
     current_rows: list[dict[str, Any]],
     live_pick_state_rows: list[dict[str, Any]],
@@ -189,6 +229,48 @@ def _enrich_game_times_from_live_pick_state(
     return enriched
 
 
+def _enrich_game_times_from_artifact(
+    current_rows: list[dict[str, Any]],
+    artifact_payload: dict[str, Any] | None,
+    *,
+    source_artifact_path: str | None,
+) -> int:
+    game_times_by_pitcher: dict[str, dict[str, Any]] = {}
+    for pitcher in (artifact_payload or {}).get("pitchers") or []:
+        if not isinstance(pitcher, dict):
+            continue
+        game_time = pitcher.get("game_time")
+        if not game_time:
+            continue
+        normalized_pitcher = normalize(pitcher.get("pitcher") or "")
+        if not normalized_pitcher:
+            continue
+        game_times_by_pitcher.setdefault(normalized_pitcher, {
+            "game_time": str(game_time),
+            "source_artifact_path": source_artifact_path,
+        })
+
+    enriched = 0
+    for row in current_rows:
+        if row.get("game_time"):
+            continue
+        normalized_player = str(row.get("normalized_player_name") or "").strip()
+        game_time_info = game_times_by_pitcher.get(normalized_player)
+        if not game_time_info:
+            continue
+        row["game_time"] = game_time_info["game_time"]
+        raw_payload = row.get("raw_payload")
+        if not isinstance(raw_payload, dict):
+            raw_payload = {}
+            row["raw_payload"] = raw_payload
+        raw_payload["game_time_source"] = {
+            "source": "production_artifact",
+            "source_artifact_path": game_time_info.get("source_artifact_path"),
+        }
+        enriched += 1
+    return enriched
+
+
 def run(
     *,
     slate_date: str,
@@ -196,6 +278,9 @@ def run(
     dry_run: bool,
     now_utc: datetime | None = None,
     stale_after_seconds: int = 900,
+    artifact_payload: dict[str, Any] | None = None,
+    artifact_source: str | None = None,
+    artifact_url: str | None = None,
 ) -> dict[str, Any]:
     snapshot_rows, run_rows = _fetch_inputs(writer, slate_date)
     current_rows = build_current_market_lines(
@@ -205,7 +290,23 @@ def run(
         stale_after_seconds=stale_after_seconds,
     )
     live_pick_state_rows = _fetch_live_pick_state_rows(writer, slate_date)
-    game_time_enriched = _enrich_game_times_from_live_pick_state(current_rows, live_pick_state_rows)
+    live_state_enriched = _enrich_game_times_from_live_pick_state(current_rows, live_pick_state_rows)
+    if artifact_payload is None:
+        env_artifact_url = (
+            artifact_url
+            or os.environ.get("MARKET_LINE_ARTIFACT_URL", "").strip()
+            or os.environ.get("LIVE_ARTIFACT_URL", "").strip()
+        )
+        artifact_payload, artifact_source = _load_artifact_payload_for_game_times(
+            slate_date,
+            artifact_url=env_artifact_url or None,
+        )
+    artifact_enriched = _enrich_game_times_from_artifact(
+        current_rows,
+        artifact_payload,
+        source_artifact_path=artifact_source,
+    )
+    game_time_enriched = live_state_enriched + artifact_enriched
     complete_rows = [row for row in current_rows if row["is_complete"]]
     stale_rows = [row for row in current_rows if "stale" in row["quality_flags"]]
     baseline_rows = build_opening_baseline_rows(current_rows)
@@ -246,6 +347,9 @@ def run(
         "complete_rows": len(complete_rows),
         "stale_rows": len(stale_rows),
         "game_time_enriched": game_time_enriched,
+        "game_time_live_state_enriched": live_state_enriched,
+        "game_time_artifact_enriched": artifact_enriched,
+        "game_time_artifact_source": artifact_source,
         "opening_baselines": len(baseline_rows),
         "provider_usage_rows": len(provider_usage_rows),
         "provider_usage_warnings": len(written_usage_rows),
@@ -265,6 +369,11 @@ def _parse_args(argv: list[str]) -> argparse.Namespace:
         default=900,
         help="Freshness threshold for stale quality flags.",
     )
+    parser.add_argument(
+        "--artifact-url",
+        default=os.environ.get("MARKET_LINE_ARTIFACT_URL", "").strip() or DEFAULT_ARTIFACT_URL,
+        help="Optional current today.json URL used to fill provider rows missing game_time.",
+    )
     return parser.parse_args(argv)
 
 
@@ -276,6 +385,7 @@ def main(argv: list[str] | None = None) -> int:
         writer=writer,
         dry_run=args.dry_run,
         stale_after_seconds=args.stale_after_seconds,
+        artifact_url=args.artifact_url or None,
     )
     action = "dry_run" if args.dry_run else "upsert"
     print(
@@ -287,6 +397,7 @@ def main(argv: list[str] | None = None) -> int:
         f"complete={result['complete_rows']} "
         f"stale={result['stale_rows']} "
         f"game_time_enriched={result['game_time_enriched']} "
+        f"game_time_artifact_enriched={result['game_time_artifact_enriched']} "
         f"opening_baselines={result['opening_baselines']} "
         f"provider_usage={result['provider_usage_rows']} "
         f"written={result['written_rows']}"

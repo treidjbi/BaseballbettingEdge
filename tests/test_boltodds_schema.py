@@ -9,6 +9,12 @@ RUN_ID_INDEX_MIGRATION = (
     / "migrations"
     / "20260507210435_boltodds_heartbeat_run_id_index.sql"
 )
+PROVIDER_HARDENING_MIGRATION = (
+    ROOT
+    / "supabase"
+    / "migrations"
+    / "20260518_provider_runtime_hardening.sql"
+)
 
 
 def _assert_constraint_values(sql, table, constraint, column, values):
@@ -88,3 +94,17 @@ def test_boltodds_heartbeat_run_id_index_migration_exists():
 
     assert "create index if not exists idx_market_feed_heartbeats_run_id" in sql
     assert "on public.market_feed_heartbeats(run_id)" in sql
+
+
+def test_provider_runtime_hardening_adds_market_read_indexes():
+    assert PROVIDER_HARDENING_MIGRATION.exists()
+    sql = PROVIDER_HARDENING_MIGRATION.read_text(encoding="utf-8")
+
+    assert "idx_market_snapshots_provider_observed" in sql
+    assert "on public.market_snapshots (provider, observed_at desc)" in sql
+    assert "idx_market_snapshots_run_observed" in sql
+    assert "on public.market_snapshots (run_id, observed_at desc)" in sql
+    assert "idx_market_feed_heartbeats_slate_provider_observed" in sql
+    assert "on public.market_feed_heartbeats (slate_date, provider, observed_at desc)" in sql
+    assert "idx_market_provider_runs_slate_provider_created" in sql
+    assert "on public.market_provider_runs (slate_date, provider, created_at desc)" in sql

@@ -295,26 +295,46 @@ def write_snapshot_batch(
     books_seen: set[str] | list[str],
     target_event_count: int,
     target_books: dict[str, str] | None = None,
+    write_coverage_audit: bool = True,
 ) -> dict[str, int]:
     if not snapshots:
-        return {"snapshot_count": 0}
+        return {"snapshot_count": 0, "coverage_audit_written": 0}
 
     for snapshot in snapshots:
         snapshot["run_id"] = run_id
 
     writer.upsert_rows("market_snapshots", snapshots, on_conflict="dedupe_key")
-    writer.insert_rows("provider_coverage_audits", [
-        _coverage_audit_row(
-            run_id=run_id,
-            slate_date=slate_date,
-            snapshots=snapshots,
-            production_payload=production_payload,
-            books_seen=books_seen,
-            target_event_count=target_event_count,
-            target_books=target_books,
-        )
-    ])
-    return {"snapshot_count": len(snapshots)}
+    coverage_audit_written = 0
+    if write_coverage_audit:
+        writer.insert_rows("provider_coverage_audits", [
+            _coverage_audit_row(
+                run_id=run_id,
+                slate_date=slate_date,
+                snapshots=snapshots,
+                production_payload=production_payload,
+                books_seen=books_seen,
+                target_event_count=target_event_count,
+                target_books=target_books,
+            )
+        ])
+        coverage_audit_written = 1
+    return {
+        "snapshot_count": len(snapshots),
+        "coverage_audit_written": coverage_audit_written,
+    }
+
+
+def _should_write_periodic_row(
+    *,
+    now_monotonic: float,
+    last_written_monotonic: float | None,
+    interval_seconds: float,
+) -> bool:
+    if interval_seconds <= 0:
+        return True
+    if last_written_monotonic is None:
+        return True
+    return (now_monotonic - last_written_monotonic) >= interval_seconds
 
 
 def _message_payload(raw_message: Any) -> dict[str, Any] | None:
@@ -437,6 +457,7 @@ async def run_worker() -> dict[str, Any]:
     probe_summary: dict[str, Any] | None = None
     last_flush_monotonic = monotonic()
     last_message_heartbeat_monotonic = last_flush_monotonic
+    last_coverage_audit_monotonic: float | None = None
     last_artifact_refresh_monotonic = last_flush_monotonic
     artifact_refresh_seconds = _optional_float_env(
         "BOLTODDS_ARTIFACT_REFRESH_SECONDS",
@@ -510,6 +531,13 @@ async def run_worker() -> dict[str, Any]:
 
     async def flush() -> None:
         nonlocal snapshots, total_snapshots, last_flush_monotonic
+        nonlocal last_coverage_audit_monotonic, last_message_heartbeat_monotonic
+        now_monotonic = monotonic()
+        write_audit = bool(snapshots) and _should_write_periodic_row(
+            now_monotonic=now_monotonic,
+            last_written_monotonic=last_coverage_audit_monotonic,
+            interval_seconds=coverage_audit_seconds,
+        )
         result = write_snapshot_batch(
             writer,
             run_id,
@@ -519,12 +547,19 @@ async def run_worker() -> dict[str, Any]:
             books_seen,
             len(event_ids),
             target_books,
+            write_coverage_audit=write_audit,
         )
         snapshot_count = result["snapshot_count"]
+        if result.get("coverage_audit_written"):
+            last_coverage_audit_monotonic = now_monotonic
         total_snapshots += snapshot_count
         snapshots = []
         last_flush_monotonic = monotonic()
-        if snapshot_count:
+        if snapshot_count and _should_write_periodic_row(
+            now_monotonic=last_flush_monotonic,
+            last_written_monotonic=last_message_heartbeat_monotonic,
+            interval_seconds=heartbeat_seconds,
+        ):
             write_heartbeat(
                 writer,
                 run_id=run_id,
@@ -538,6 +573,7 @@ async def run_worker() -> dict[str, Any]:
                     "total_snapshot_rows": total_snapshots,
                 },
             )
+            last_message_heartbeat_monotonic = last_flush_monotonic
 
     try:
         info = get_json("get_info", api_key=api_key)
@@ -564,6 +600,8 @@ async def run_worker() -> dict[str, Any]:
         allowed_markets = {market.casefold() for market in selected_markets}
         batch_size = _batch_size_from_env(100)
         flush_seconds = _optional_float_env("BOLTODDS_FLUSH_SECONDS", 30.0)
+        heartbeat_seconds = _optional_float_env("BOLTODDS_HEARTBEAT_SECONDS", 120.0)
+        coverage_audit_seconds = _optional_float_env("BOLTODDS_COVERAGE_AUDIT_SECONDS", 600.0)
         raw_sample_limit = _optional_int_env("BOLTODDS_RAW_SAMPLE_LIMIT", 5)
         # Render keeps this worker open; set BOLTODDS_WS_MAX_MESSAGES for manual bounded runs.
         max_messages = _optional_int_env("BOLTODDS_WS_MAX_MESSAGES", 0)
@@ -580,6 +618,8 @@ async def run_worker() -> dict[str, Any]:
                     "selected_markets": selected_markets,
                     "target_books": list(target_books),
                     "flush_seconds": flush_seconds,
+                    "heartbeat_seconds": heartbeat_seconds,
+                    "coverage_audit_seconds": coverage_audit_seconds,
                     "batch_size": batch_size,
                     "raw_sample_limit": raw_sample_limit,
                     "artifact_refresh_seconds": artifact_refresh_seconds,
@@ -637,7 +677,11 @@ async def run_worker() -> dict[str, Any]:
                         allowed_player_names=context.production_pitcher_names,
                     )
                     snapshots.extend(rows)
-                    if (now_monotonic - last_message_heartbeat_monotonic) >= flush_seconds:
+                    if _should_write_periodic_row(
+                        now_monotonic=now_monotonic,
+                        last_written_monotonic=last_message_heartbeat_monotonic,
+                        interval_seconds=heartbeat_seconds,
+                    ):
                         write_heartbeat(
                             writer,
                             run_id=run_id,

@@ -166,7 +166,7 @@ def test_write_snapshot_batch_upserts_snapshots_and_audit():
         target_event_count=4,
     )
 
-    assert result == {"snapshot_count": 2}
+    assert result == {"snapshot_count": 2, "coverage_audit_written": 1}
     assert all(snapshot["run_id"] == "run-123" for snapshot in snapshots)
     assert writer.upserts == [
         ("market_snapshots", snapshots, "dedupe_key"),
@@ -187,6 +187,29 @@ def test_write_snapshot_batch_upserts_snapshots_and_audit():
     assert audit["metadata"]["worker"] == "scripts/boltodds_ws_worker.py"
 
 
+def test_write_snapshot_batch_can_skip_coverage_audit_for_throttled_flushes():
+    writer = FakeWriter()
+    snapshots = [
+        _snapshot("Gerrit Cole", "fanduel", 7.5, "over"),
+        _snapshot("Gerrit Cole", "fanduel", 7.5, "under"),
+    ]
+
+    result = boltodds_ws_worker.write_snapshot_batch(
+        writer,
+        run_id="run-123",
+        slate_date="2026-05-07",
+        snapshots=snapshots,
+        production_payload=None,
+        books_seen={"fanduel"},
+        target_event_count=1,
+        write_coverage_audit=False,
+    )
+
+    assert result == {"snapshot_count": 2, "coverage_audit_written": 0}
+    assert writer.upserts == [("market_snapshots", snapshots, "dedupe_key")]
+    assert writer.inserts == []
+
+
 def test_write_snapshot_batch_empty_snapshots_skip_writes():
     writer = FakeWriter()
 
@@ -200,9 +223,27 @@ def test_write_snapshot_batch_empty_snapshots_skip_writes():
         target_event_count=0,
     )
 
-    assert result == {"snapshot_count": 0}
+    assert result == {"snapshot_count": 0, "coverage_audit_written": 0}
     assert writer.upserts == []
     assert writer.inserts == []
+
+
+def test_periodic_write_helpers_throttle_audit_and_heartbeat_rows():
+    assert boltodds_ws_worker._should_write_periodic_row(
+        now_monotonic=10.0,
+        last_written_monotonic=None,
+        interval_seconds=600.0,
+    )
+    assert not boltodds_ws_worker._should_write_periodic_row(
+        now_monotonic=100.0,
+        last_written_monotonic=10.0,
+        interval_seconds=600.0,
+    )
+    assert boltodds_ws_worker._should_write_periodic_row(
+        now_monotonic=700.0,
+        last_written_monotonic=10.0,
+        interval_seconds=600.0,
+    )
 
 
 def test_load_production_artifact_prefers_remote_url(tmp_path, monkeypatch):
@@ -265,7 +306,9 @@ def test_refresh_production_context_rotates_to_new_artifact_date(monkeypatch):
     ]
 
     def fake_loader(*args, **kwargs):
-        return payloads.pop(0)
+        if payloads:
+            return payloads.pop(0)
+        return ({"date": "2026-05-13", "pitchers": [{"pitcher": "New Starter"}]}, "today.json")
 
     monkeypatch.setattr(boltodds_ws_worker, "_load_production_artifact", fake_loader)
 
@@ -291,7 +334,9 @@ def test_refresh_production_context_never_rotates_backwards(monkeypatch):
     ]
 
     def fake_loader(*args, **kwargs):
-        return payloads.pop(0)
+        if payloads:
+            return payloads.pop(0)
+        return ({"date": "2026-05-13", "pitchers": [{"pitcher": "New Starter"}]}, "today.json")
 
     monkeypatch.setattr(boltodds_ws_worker, "_load_production_artifact", fake_loader)
 
