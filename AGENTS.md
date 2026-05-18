@@ -460,7 +460,7 @@ BoltOdds is being tested as a separate live-market sidecar and is now the
 planned primary provider candidate for the official market-source cutover.
 It is not official until the cutover gates and environment switch are completed.
 
-- **Branch**: `codex/boltodds-starter-trial`
+- **Branch**: `main`; `codex/boltodds-starter-trial` is historical trial context only
 - **Render worker**: `bbe-boltodds-shadow-worker`
 - **Plan under test**: Starter trial, one persistent WebSocket connection.
 - **Secret**: `BOLTODDS_API_KEY`
@@ -487,10 +487,8 @@ Starter discovery/probe status as of 2026-05-07:
 May 13, 2026 worker fix:
 
 - The persistent worker previously latched onto one `today.json` at startup.
-- The fix on `codex/boltodds-starter-trial` rotates slate context when the
-  GitHub raw artifact advances.
-- The production cutover branch must integrate that worker fix before any
-  official provider-source work.
+- The deployed worker must run from `main` so the stale-slate rotation fix and
+  provider-runtime hardening fixes are present.
 
 Review BoltOdds on evidence, not promise:
 

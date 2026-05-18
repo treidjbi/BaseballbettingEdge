@@ -2,6 +2,11 @@
 
 This runbook starts the BoltOdds trial in shadow mode only. It captures MLB pitcher strikeout market evidence into Supabase and must not change production picks, dashboard artifacts, provider order, or notifications without Tyler's approval.
 
+Current deployment note as of 2026-05-18: the Render worker should deploy from
+`main`. The original `codex/boltodds-starter-trial` branch is historical context
+only and will miss the provider-runtime hardening fixes if Render still points
+there.
+
 ## Trial Contract
 
 - Production source of truth stays GitHub Actions + TheRundown.
@@ -125,7 +130,7 @@ Do not start the Render worker if the probe returns `starter_ready=false`.
 Preferred path:
 
 1. Create one private background worker from `render.yaml`, or manually create an equivalent worker.
-2. Keep `autoDeploy` disabled during the trial.
+2. Set the service branch to `main` and keep `autoDeploy` disabled during the trial.
 3. Use this build command:
 
 ```bash

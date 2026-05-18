@@ -3,7 +3,7 @@ services:
     name: baseball-betting-edge-boltodds-shadow
     runtime: python
     repo: https://github.com/treidjbi/BaseballbettingEdge.git
-    branch: codex/boltodds-production-plan
+    branch: main
     autoDeploy: false
     buildCommand: pip install -r requirements-live.txt
     startCommand: python scripts/boltodds_ws_worker.py
@@ -22,6 +22,8 @@ services:
         value: "100"
       - key: BOLTODDS_FLUSH_SECONDS
         value: "30"
+      - key: BOLTODDS_ARTIFACT_REFRESH_SECONDS
+        value: "300"
       - key: BOLTODDS_RAW_SAMPLE_LIMIT
         value: "5"
       - key: BOLTODDS_WS_MAX_MESSAGES

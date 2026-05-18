@@ -272,9 +272,10 @@ Webhook status:
 
 ### BoltOdds
 
-The BoltOdds Starter trial is running on a separate branch and worker path.
+The BoltOdds Starter trial worker should now deploy from `main`; the old
+`codex/boltodds-starter-trial` branch is historical trial context only.
 
-- Branch: `codex/boltodds-starter-trial`
+- Branch: `main`
 - Render worker: `bbe-boltodds-shadow-worker`
 - Purpose: one persistent WebSocket connection for MLB pitcher strikeout market
   evidence.
@@ -301,8 +302,8 @@ May 13 stale-slate diagnosis: the persistent worker could heartbeat on the
 wrong slate if it started before GitHub's delayed full run updated `today.json`.
 The worker now refreshes the production artifact during the WebSocket loop using
 `BOLTODDS_ARTIFACT_REFRESH_SECONDS` and rotates forward only when the artifact
-date advances, emitting a `slate_rotated` heartbeat. The provider cutover branch
-must keep that fix before any official provider-source work.
+date advances, emitting a `slate_rotated` heartbeat. Render must point at
+`main` for this and the provider-runtime hardening fixes to deploy.
 
 ## Active Evaluation Stack
 
