@@ -112,9 +112,11 @@ def test_market_state_write_guards_prevent_duplicate_shadow_churn():
     assert "new.ready_for_pipeline = false" in sql
     assert "missing_game_time" in sql
     assert "legacy_selected_contract" in sql
+    assert "coalesce(new.arbitration_reasons, '[]'::jsonb) ? 'selected'" in sql
+    assert "if tg_op = 'UPDATE' then" in sql
     assert "create trigger suppress_duplicate_provider_arbitration_decision" in sql
     assert "new.decision = 'selected'" in sql
-    assert "existing.inserted_at >= now() - interval '10 minutes'" in sql
+    assert "old.updated_at > now() - interval '10 minutes'" in sql
     assert "existing.inserted_at >= now() - interval '2 minutes'" in sql
 
 
