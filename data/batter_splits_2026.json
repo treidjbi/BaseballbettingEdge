@@ -7184,24 +7184,38 @@
         "so": 6,
         "k_rate": 0.1875
       }
+    },
+    "mlbam:805249": {
+      "name": "Otto Kemp",
+      "bats": "R",
+      "mlbam_id": 805249,
+      "bbref_id": "kempot01",
+      "season": 2026,
+      "vs_R": {
+        "pa": 5,
+        "so": 2,
+        "k_rate": 0.4
+      },
+      "vs_L": {
+        "pa": 17,
+        "so": 7,
+        "k_rate": 0.4118
+      }
     }
   },
-  "updated_at": "2026-05-18T05:17:42Z",
+  "updated_at": "2026-05-18T18:56:40Z",
   "last_run": {
     "projection_status": "collection_only",
-    "requested_batters": 261,
-    "already_cached": 257,
-    "attempted": 4,
-    "collected": 0,
-    "failed": 4,
+    "requested_batters": 36,
+    "already_cached": 34,
+    "attempted": 2,
+    "collected": 1,
+    "failed": 1,
     "queued_not_attempted": 0,
-    "cache_size": 426,
+    "cache_size": 427,
     "errors": [
-      "Joe Mack: no bbref id",
-      "A.J. Ewing: no bbref id",
-      "Ryan Waldschmidt: no bbref id",
-      "Colt Emerson: no bbref id"
+      "Joe Mack: no bbref id"
     ],
-    "updated_at": "2026-05-18T05:17:42Z"
+    "updated_at": "2026-05-18T18:56:40Z"
   }
 }
