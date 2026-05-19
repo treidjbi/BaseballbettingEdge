@@ -1111,6 +1111,53 @@ def test_apply_external_lock_rows_is_idempotent_and_does_not_unlock(tmp_db):
     assert row["locked_verdict"] == "FIRE 1u"
 
 
+def test_apply_external_lock_rows_skips_lock_at_or_after_game_time(tmp_db):
+    db_path, fr = tmp_db
+    with fr.get_db() as conn:
+        _seed_pick_with_game_time(conn, "2026-04-15T17:10:00Z", side="over")
+
+    rows = [{
+        "slate_date": "2026-04-15",
+        "pitcher": "Test Pitcher",
+        "side": "over",
+        "locked_at": "2026-04-15T17:11:00Z",
+        "locked_k_line": 7.5,
+        "locked_odds": -120,
+        "locked_adj_ev": 0.07,
+        "locked_verdict": "FIRE 1u",
+    }]
+
+    with fr.get_db() as conn:
+        assert fr.apply_external_lock_rows(conn, rows) == 0
+
+    with fr.get_db() as conn:
+        row = conn.execute("SELECT locked_at FROM picks").fetchone()
+    assert row["locked_at"] is None
+
+
+def test_apply_external_lock_rows_skips_missing_slate_date(tmp_db):
+    db_path, fr = tmp_db
+    with fr.get_db() as conn:
+        _seed_pick_with_game_time(conn, "2026-04-15T17:10:00Z", side="over")
+
+    rows = [{
+        "pitcher": "Test Pitcher",
+        "side": "over",
+        "locked_at": "2026-04-15T16:42:00Z",
+        "locked_k_line": 7.5,
+        "locked_odds": -120,
+        "locked_adj_ev": 0.07,
+        "locked_verdict": "FIRE 1u",
+    }]
+
+    with fr.get_db() as conn:
+        assert fr.apply_external_lock_rows(conn, rows) == 0
+
+    with fr.get_db() as conn:
+        row = conn.execute("SELECT locked_at FROM picks").fetchone()
+    assert row["locked_at"] is None
+
+
 def test_lock_due_picks_idempotent(tmp_db):
     """Calling lock twice should not update locked_at a second time."""
     db_path, fr = tmp_db
