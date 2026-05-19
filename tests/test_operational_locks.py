@@ -91,7 +91,7 @@ def test_build_operational_lock_rows_captures_first_due_unlocked_pick():
     assert row["metadata"]["missed_lock_grace_minutes"] == 5
 
 
-def test_build_operational_lock_rows_keeps_t_25_inside_due_now_window():
+def test_build_operational_lock_rows_marks_exact_t_25_as_missed_lock():
     rows = build_operational_lock_rows(
         slate_date="2026-05-19",
         pitchers=[_pitcher()],
@@ -100,7 +100,7 @@ def test_build_operational_lock_rows_keeps_t_25_inside_due_now_window():
         source_artifact_sha256="sha",
     )
 
-    assert rows[0]["status_at_capture"] == "due_now"
+    assert rows[0]["status_at_capture"] == "missed_lock"
     assert rows[0]["minutes_until_start"] == 25.0
 
 

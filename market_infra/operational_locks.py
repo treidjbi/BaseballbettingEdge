@@ -76,7 +76,7 @@ def _capture_status(observed_at: datetime, game_time: datetime) -> tuple[str | N
 
     if observed_at >= game_time:
         return None, should_lock_at, minutes_until_start
-    if observed_at > grace_ends_at:
+    if observed_at >= grace_ends_at:
         return "missed_lock", should_lock_at, minutes_until_start
     if observed_at >= should_lock_at:
         return "due_now", should_lock_at, minutes_until_start
