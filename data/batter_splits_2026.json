@@ -7339,21 +7339,22 @@
       }
     }
   },
-  "updated_at": "2026-05-19T21:56:04Z",
+  "updated_at": "2026-05-19T22:23:47Z",
   "last_run": {
     "projection_status": "collection_only",
-    "requested_batters": 207,
-    "already_cached": 201,
+    "requested_batters": 234,
+    "already_cached": 226,
     "attempted": 4,
-    "collected": 1,
-    "failed": 3,
-    "queued_not_attempted": 2,
+    "collected": 0,
+    "failed": 4,
+    "queued_not_attempted": 4,
     "cache_size": 435,
     "errors": [
       "Joe Mack: no bbref id",
       "Nick Morabito: no bbref id",
-      "Spencer Jones: no bbref id"
+      "Spencer Jones: no bbref id",
+      "Henry Bolte: no bbref id"
     ],
-    "updated_at": "2026-05-19T21:56:04Z"
+    "updated_at": "2026-05-19T22:23:47Z"
   }
 }
