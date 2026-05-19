@@ -1,6 +1,6 @@
 # Provider Cost Ledger
 
-Last updated: 2026-05-07
+Last updated: 2026-05-19
 
 This doc exists so provider and infrastructure choices stay tied to ROI, not
 just engineering momentum. BaseballBettingEdge is a personal side project, so a
@@ -182,6 +182,12 @@ the existing cron proves too slow or overloaded.
 ### Supabase
 
 Supabase is currently free and is the right home for append-only evidence.
+
+As Supabase becomes the operational foundation, the cost guardrail changes from
+"can we store shadow evidence" to "can this remain the low-friction control
+plane." The first required guardrails are row-volume audit, compact movement
+summaries, and dry-run retention. A Supabase Pro upgrade is acceptable only if
+the operational value is clear and raw tick retention is bounded.
 
 Watch for:
 
