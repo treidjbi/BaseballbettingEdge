@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import os
 from datetime import datetime, timedelta, timezone
 from typing import Any
 
@@ -15,6 +16,17 @@ TRACKED_VERDICT_RANK = {
 
 LOCK_WINDOW_MINUTES = 30
 MISSED_LOCK_GRACE_MINUTES = 5
+
+
+def _configured_int(name: str, default: int) -> int:
+    value = os.environ.get(name, "").strip()
+    if not value:
+        return default
+    try:
+        parsed = int(value)
+    except ValueError:
+        return default
+    return parsed if parsed > 0 else default
 
 
 def _parse_datetime(value: Any) -> datetime | None:
@@ -69,10 +81,16 @@ def _pick_verdict(pick: dict[str, Any]) -> str:
     ).strip() or "PASS"
 
 
-def _capture_status(observed_at: datetime, game_time: datetime) -> tuple[str | None, datetime, float]:
-    should_lock_at = game_time - timedelta(minutes=LOCK_WINDOW_MINUTES)
+def _capture_status(
+    observed_at: datetime,
+    game_time: datetime,
+    *,
+    lock_window_minutes: int,
+    missed_lock_grace_minutes: int,
+) -> tuple[str | None, datetime, float]:
+    should_lock_at = game_time - timedelta(minutes=lock_window_minutes)
     minutes_until_start = round((game_time - observed_at).total_seconds() / 60.0, 2)
-    grace_ends_at = should_lock_at + timedelta(minutes=MISSED_LOCK_GRACE_MINUTES)
+    grace_ends_at = should_lock_at + timedelta(minutes=missed_lock_grace_minutes)
 
     if observed_at >= game_time:
         return None, should_lock_at, minutes_until_start
@@ -101,6 +119,11 @@ def build_operational_lock_rows(
     if observed_utc is None:
         raise ValueError("observed_at must be parseable")
 
+    lock_window_minutes = _configured_int("OPERATIONAL_LOCK_WINDOW_MINUTES", LOCK_WINDOW_MINUTES)
+    missed_lock_grace_minutes = _configured_int(
+        "OPERATIONAL_LOCK_GRACE_MINUTES",
+        MISSED_LOCK_GRACE_MINUTES,
+    )
     artifact_generated = _parse_datetime(artifact_generated_at)
     rows: list[dict[str, Any]] = []
 
@@ -125,7 +148,12 @@ def build_operational_lock_rows(
             if game_time is None:
                 continue
 
-            status, should_lock_at, minutes_until_start = _capture_status(observed_utc, game_time)
+            status, should_lock_at, minutes_until_start = _capture_status(
+                observed_utc,
+                game_time,
+                lock_window_minutes=lock_window_minutes,
+                missed_lock_grace_minutes=missed_lock_grace_minutes,
+            )
             if status is None:
                 continue
 
@@ -167,8 +195,8 @@ def build_operational_lock_rows(
                     "team": pitcher.get("team"),
                     "opp_team": pitcher.get("opp_team"),
                     "artifact_generated_at": _isoformat(artifact_generated),
-                    "lock_window_minutes": LOCK_WINDOW_MINUTES,
-                    "missed_lock_grace_minutes": MISSED_LOCK_GRACE_MINUTES,
+                    "lock_window_minutes": lock_window_minutes,
+                    "missed_lock_grace_minutes": missed_lock_grace_minutes,
                 },
             })
 

@@ -104,6 +104,21 @@ def test_build_operational_lock_rows_marks_exact_t_25_as_missed_lock():
     assert rows[0]["minutes_until_start"] == 25.0
 
 
+def test_build_operational_lock_rows_allows_configured_ten_minute_capture_grace(monkeypatch):
+    monkeypatch.setenv("OPERATIONAL_LOCK_GRACE_MINUTES", "10")
+
+    rows = build_operational_lock_rows(
+        slate_date="2026-05-19",
+        pitchers=[_pitcher()],
+        observed_at=datetime.fromisoformat("2026-05-19T19:35:00+00:00"),
+        source_artifact_path="today.json",
+        source_artifact_sha256="sha",
+    )
+
+    assert rows[0]["status_at_capture"] == "due_now"
+    assert rows[0]["metadata"]["missed_lock_grace_minutes"] == 10
+
+
 def test_build_operational_lock_rows_captures_missed_before_game_start():
     rows = build_operational_lock_rows(
         slate_date="2026-05-19",
