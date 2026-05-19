@@ -7254,22 +7254,19 @@
       }
     }
   },
-  "updated_at": "2026-05-19T05:13:22Z",
+  "updated_at": "2026-05-19T17:41:58Z",
   "last_run": {
     "projection_status": "collection_only",
-    "requested_batters": 243,
-    "already_cached": 232,
-    "attempted": 4,
+    "requested_batters": 18,
+    "already_cached": 17,
+    "attempted": 1,
     "collected": 0,
-    "failed": 4,
-    "queued_not_attempted": 7,
+    "failed": 1,
+    "queued_not_attempted": 0,
     "cache_size": 430,
     "errors": [
-      "Joe Mack: no bbref id",
-      "Jhoan Duran: IndexError: single positional indexer is out-of-bounds",
-      "A.J. Ewing: no bbref id",
-      "Sterlin Thompson: no bbref id"
+      "Joe Mack: no bbref id"
     ],
-    "updated_at": "2026-05-19T05:13:22Z"
+    "updated_at": "2026-05-19T17:41:58Z"
   }
 }
