@@ -40,7 +40,7 @@ class SupabaseMarketWriter:
 
     def count_rows(self, table: str, params: dict[str, str] | None = None) -> int:
         query = dict(params or {})
-        query.setdefault("select", "id")
+        query.setdefault("select", "*")
         query["limit"] = "1"
         response = requests.get(
             f"{self.supabase_url}/rest/v1/{table}",
@@ -56,7 +56,7 @@ class SupabaseMarketWriter:
             raise ValueError("delete params are required")
         response = requests.delete(
             f"{self.supabase_url}/rest/v1/{table}",
-            headers=self._headers("return=minimal"),
+            headers=self._headers("return=minimal,count=exact"),
             params=params,
             timeout=20,
         )

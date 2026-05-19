@@ -114,9 +114,34 @@ def test_count_rows_reads_content_range(monkeypatch):
     assert captured["url"] == "https://example.supabase.co/rest/v1/market_snapshots"
     assert captured["headers"]["Prefer"] == "count=exact"
     assert captured["params"]["provider"] == "eq.boltodds"
-    assert captured["params"]["select"] == "id"
+    assert captured["params"]["select"] == "*"
     assert captured["params"]["limit"] == "1"
     assert captured["timeout"] == 20
+
+
+def test_count_rows_uses_wildcard_select_for_no_id_tables(monkeypatch):
+    captured = {}
+
+    class Response:
+        headers = {"Content-Range": "0-0/5"}
+
+        def raise_for_status(self):
+            return None
+
+    def fake_get(url, headers, params, timeout):
+        captured["url"] = url
+        captured["headers"] = headers
+        captured["params"] = params
+        return Response()
+
+    monkeypatch.setattr("market_infra.supabase_writer.requests.get", fake_get)
+    writer = SupabaseMarketWriter("https://example.supabase.co", "secret-key")
+
+    assert writer.count_rows("provider_request_usage_daily", {}) == 5
+    assert captured["url"] == "https://example.supabase.co/rest/v1/provider_request_usage_daily"
+    assert captured["headers"]["Prefer"] == "count=exact"
+    assert captured["params"]["select"] == "*"
+    assert captured["params"]["limit"] == "1"
 
 
 def test_delete_rows_requires_params():
@@ -153,6 +178,6 @@ def test_delete_rows_calls_delete_with_supplied_params(monkeypatch):
 
     assert deleted == 3
     assert captured["url"] == "https://example.supabase.co/rest/v1/market_snapshots"
-    assert captured["headers"]["Prefer"] == "return=minimal"
+    assert captured["headers"]["Prefer"] == "return=minimal,count=exact"
     assert captured["params"] == {"observed_at": "lt.2026-05-01T00:00:00+00:00"}
     assert captured["timeout"] == 20
