@@ -7254,21 +7254,22 @@
       }
     }
   },
-  "updated_at": "2026-05-18T23:38:36Z",
+  "updated_at": "2026-05-19T00:16:22Z",
   "last_run": {
     "projection_status": "collection_only",
     "requested_batters": 243,
-    "already_cached": 235,
+    "already_cached": 236,
     "attempted": 4,
-    "collected": 1,
-    "failed": 3,
-    "queued_not_attempted": 4,
+    "collected": 0,
+    "failed": 4,
+    "queued_not_attempted": 3,
     "cache_size": 430,
     "errors": [
       "Joe Mack: no bbref id",
       "A.J. Ewing: no bbref id",
-      "Sterlin Thompson: no bbref id"
+      "Sterlin Thompson: no bbref id",
+      "Henry Bolte: no bbref id"
     ],
-    "updated_at": "2026-05-18T23:38:36Z"
+    "updated_at": "2026-05-19T00:16:22Z"
   }
 }
