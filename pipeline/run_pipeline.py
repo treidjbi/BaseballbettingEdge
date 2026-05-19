@@ -884,6 +884,10 @@ def _apply_supabase_operational_locks(date_str: str) -> int:
         return applied
     except Exception as e:
         if _supabase_lock_consumer_strict():
+            try:
+                setattr(e, "_supabase_lock_consumer_strict", True)
+            except Exception:
+                pass
             raise
         log.warning("Supabase lock consumer failed for %s: %s", date_str, e)
         return 0
@@ -914,6 +918,8 @@ def _run_lock_only(date_str: str) -> None:
         else:
             log.info("Lock-only: no picks due for locking yet")
     except Exception as e:
+        if getattr(e, "_supabase_lock_consumer_strict", False):
+            raise
         log.error("Lock-only run failed: %s", e)
 
 
@@ -1753,6 +1759,8 @@ def run(date_str: str, run_type: str = "full") -> None:
         _enrich_archives_with_tracked_picks()
         log.info("Persisted open/locked picks to history")
     except Exception as e:
+        if getattr(e, "_supabase_lock_consumer_strict", False):
+            raise
         log.warning("seed_picks failed: %s", e)
 
     log.info("=== Pipeline complete ===")
