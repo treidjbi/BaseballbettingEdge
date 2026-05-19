@@ -140,6 +140,89 @@ def test_worker_keeps_shadow_timing_failures_from_breaking_live_layer(tmp_path):
     assert "shadow table missing" in result["shadow_pipeline_timing"]["error"]
 
 
+def test_worker_skips_operational_lock_ledger_by_default(tmp_path, monkeypatch):
+    monkeypatch.delenv("ENABLE_SUPABASE_LOCK_LEDGER", raising=False)
+    pitcher = _fire_pitcher(game_time="2026-05-06T18:30:00Z")
+    pitcher["tracked_picks"] = [{
+        "pitcher": "Tarik Skubal",
+        "side": "over",
+        "display_verdict": "FIRE 1u",
+        "display_k_line": 6.5,
+        "display_odds": -110,
+        "display_adj_ev": 0.09,
+        "locked_at": None,
+        "game_time": "2026-05-06T18:30:00Z",
+    }]
+    today = _write_artifact(tmp_path, [pitcher])
+    writer = _writer_with_selects({
+        "live_pick_state": [],
+        "market_snapshots": [],
+        "market_feed_heartbeats": [],
+        "game_reminder_state": [],
+    })
+
+    with patch.object(build_live_events_to_supabase, "SupabaseMarketWriter", return_value=writer):
+        result = build_live_events_to_supabase.run(
+            slate_date="2026-05-06",
+            artifact_path=today,
+            supabase_url="https://example.supabase.co",
+            service_role_key="secret",
+        )
+
+    assert result["operational_pick_locks"] == {"skipped": True, "reason": "disabled"}
+    insert_tables = [call.args[0] for call in writer.insert_ignore_rows.call_args_list]
+    assert "operational_pick_locks" not in insert_tables
+
+
+def test_worker_writes_operational_lock_rows_when_enabled(tmp_path, monkeypatch):
+    pitcher = _fire_pitcher(game_time="2026-05-06T18:30:00Z")
+    pitcher["tracked_picks"] = [{
+        "pitcher": "Tarik Skubal",
+        "side": "over",
+        "display_verdict": "FIRE 1u",
+        "display_k_line": 6.5,
+        "display_odds": -110,
+        "display_adj_ev": 0.09,
+        "locked_at": None,
+        "game_time": "2026-05-06T18:30:00Z",
+    }]
+    today = _write_artifact(tmp_path, [pitcher])
+    writer = _writer_with_selects({
+        "live_pick_state": [],
+        "market_snapshots": [],
+        "market_feed_heartbeats": [],
+        "game_reminder_state": [],
+    })
+    monkeypatch.setenv("ENABLE_SUPABASE_LOCK_LEDGER", "true")
+
+    with (
+        patch.object(build_live_events_to_supabase, "SupabaseMarketWriter", return_value=writer),
+        patch.object(
+            build_live_events_to_supabase,
+            "_now_utc",
+            return_value=build_live_events_to_supabase.datetime.fromisoformat("2026-05-06T18:02:00+00:00"),
+        ),
+    ):
+        result = build_live_events_to_supabase.run(
+            slate_date="2026-05-06",
+            artifact_path=today,
+            supabase_url="https://example.supabase.co",
+            service_role_key="secret",
+        )
+
+    assert result["operational_pick_locks"]["skipped"] is False
+    assert result["operational_pick_locks"]["rows"] == 1
+    lock_call = next(
+        call
+        for call in writer.insert_ignore_rows.call_args_list
+        if call.args[0] == "operational_pick_locks"
+    )
+    assert lock_call.kwargs["on_conflict"] == "dedupe_key"
+    lock_rows = lock_call.args[1]
+    assert lock_rows[0]["dedupe_key"] == "2026-05-06:tarik skubal:over"
+    assert lock_rows[0]["status_at_capture"] == "due_now"
+
+
 def test_worker_marks_missing_previous_fire_pass_after_notifications(tmp_path):
     today = _write_artifact(tmp_path, [])
     previous = [{
