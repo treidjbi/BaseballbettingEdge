@@ -7269,23 +7269,40 @@
         "so": 18,
         "k_rate": 0.2278
       }
+    },
+    "mlbam:691373": {
+      "name": "Jhostynxon Garcia",
+      "bats": "R",
+      "mlbam_id": 691373,
+      "bbref_id": "garcijh01",
+      "season": 2026,
+      "vs_R": {
+        "pa": 2,
+        "so": 1,
+        "k_rate": 0.5
+      },
+      "vs_L": {
+        "pa": 7,
+        "so": 4,
+        "k_rate": 0.5714
+      }
     }
   },
-  "updated_at": "2026-05-19T20:17:50Z",
+  "updated_at": "2026-05-19T20:48:16Z",
   "last_run": {
     "projection_status": "collection_only",
-    "requested_batters": 108,
-    "already_cached": 105,
-    "attempted": 3,
-    "collected": 0,
+    "requested_batters": 135,
+    "already_cached": 131,
+    "attempted": 4,
+    "collected": 1,
     "failed": 3,
     "queued_not_attempted": 0,
-    "cache_size": 431,
+    "cache_size": 432,
     "errors": [
       "Joe Mack: no bbref id",
       "Nick Morabito: no bbref id",
       "Spencer Jones: no bbref id"
     ],
-    "updated_at": "2026-05-19T20:17:50Z"
+    "updated_at": "2026-05-19T20:48:16Z"
   }
 }
