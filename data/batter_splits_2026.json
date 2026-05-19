@@ -7320,23 +7320,40 @@
         "so": 1,
         "k_rate": 0.0769
       }
+    },
+    "mlbam:676694": {
+      "name": "Jake Meyers",
+      "bats": "R",
+      "mlbam_id": 676694,
+      "bbref_id": "meyerja02",
+      "season": 2026,
+      "vs_R": {
+        "pa": 26,
+        "so": 4,
+        "k_rate": 0.1538
+      },
+      "vs_L": {
+        "pa": 17,
+        "so": 4,
+        "k_rate": 0.2353
+      }
     }
   },
-  "updated_at": "2026-05-19T21:43:00Z",
+  "updated_at": "2026-05-19T21:56:04Z",
   "last_run": {
     "projection_status": "collection_only",
     "requested_batters": 207,
-    "already_cached": 200,
+    "already_cached": 201,
     "attempted": 4,
     "collected": 1,
     "failed": 3,
-    "queued_not_attempted": 3,
-    "cache_size": 434,
+    "queued_not_attempted": 2,
+    "cache_size": 435,
     "errors": [
       "Joe Mack: no bbref id",
       "Nick Morabito: no bbref id",
       "Spencer Jones: no bbref id"
     ],
-    "updated_at": "2026-05-19T21:43:00Z"
+    "updated_at": "2026-05-19T21:56:04Z"
   }
 }
