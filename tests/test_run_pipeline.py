@@ -54,6 +54,39 @@ def test_preview_exits_when_official_market_strict_mode_fails():
     assert exc.value.code == 1
 
 
+def test_supabase_lock_consumer_disabled_by_default(monkeypatch):
+    import run_pipeline
+
+    monkeypatch.delenv("ENABLE_SUPABASE_LOCK_CONSUMER", raising=False)
+
+    assert run_pipeline._supabase_lock_consumer_enabled() is False
+
+
+def test_fetch_supabase_operational_lock_rows_reads_expected_table(monkeypatch):
+    import run_pipeline
+
+    calls = []
+
+    class FakeWriter:
+        def select_rows(self, table, params):
+            calls.append((table, params))
+            return [{"pitcher": "Test Pitcher", "side": "over"}]
+
+    monkeypatch.setenv("SUPABASE_URL", "https://example.supabase.co")
+    monkeypatch.setenv("SUPABASE_SERVICE_ROLE_KEY", "secret")
+
+    rows = run_pipeline._fetch_supabase_operational_lock_rows(
+        "2026-05-19",
+        writer=FakeWriter(),
+    )
+
+    assert rows == [{"pitcher": "Test Pitcher", "side": "over"}]
+    assert calls[0][0] == "operational_pick_locks"
+    assert calls[0][1]["slate_date"] == "eq.2026-05-19"
+    assert calls[0][1]["order"] == "locked_at.asc"
+    assert calls[0][1]["limit"] == "1000"
+
+
 def test_apply_quality_gates_to_records_preserves_raw_and_summarizes_flags():
     import run_pipeline
 
