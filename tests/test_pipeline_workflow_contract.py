@@ -47,6 +47,16 @@ def test_pipeline_run_step_handles_preview_cron_explicitly():
     assert "python pipeline/run_pipeline.py $TODAY --run-type preview" in run_block
 
 
+def test_pipeline_workflow_exposes_manual_lock_mode():
+    workflow_text = _read_workflow()
+    run_block = _extract_step_block(workflow_text, "Run pipeline")
+
+    assert "- lock" in workflow_text
+    assert 'if [ "$MODE" = "lock" ]; then' in run_block
+    assert "python pipeline/run_pipeline.py $TODAY --run-type lock" in run_block
+    assert "exit 0" in run_block
+
+
 def test_classify_preview_health_marks_auth_failures_distinctly():
     module = _load_preview_health_module()
     result = module.classify_preview_health(

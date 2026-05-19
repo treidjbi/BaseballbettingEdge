@@ -64,6 +64,7 @@ on:
         options:
           - pipeline
           - propline_probe
+          - lock
       date:
         description: "Optional YYYY-MM-DD game date for manual runs/probes"
         required: false
@@ -123,6 +124,11 @@ jobs:
 
           if [ "$MODE" = "propline_probe" ]; then
             python scripts/probe_propline_books.py "$TODAY"
+            exit 0
+          fi
+
+          if [ "$MODE" = "lock" ]; then
+            python pipeline/run_pipeline.py $TODAY --run-type lock
             exit 0
           fi
 
