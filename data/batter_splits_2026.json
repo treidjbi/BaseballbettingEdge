@@ -7286,23 +7286,40 @@
         "so": 4,
         "k_rate": 0.5714
       }
+    },
+    "mlbam:702616": {
+      "name": "Jackson Holliday",
+      "bats": "R",
+      "mlbam_id": 702616,
+      "bbref_id": "hollija01",
+      "season": 2026,
+      "vs_R": {
+        "pa": 470,
+        "so": 97,
+        "k_rate": 0.2064
+      },
+      "vs_L": {
+        "pa": 179,
+        "so": 43,
+        "k_rate": 0.2402
+      }
     }
   },
-  "updated_at": "2026-05-19T20:48:16Z",
+  "updated_at": "2026-05-19T21:06:55Z",
   "last_run": {
     "projection_status": "collection_only",
-    "requested_batters": 135,
-    "already_cached": 131,
+    "requested_batters": 171,
+    "already_cached": 163,
     "attempted": 4,
     "collected": 1,
     "failed": 3,
-    "queued_not_attempted": 0,
-    "cache_size": 432,
+    "queued_not_attempted": 4,
+    "cache_size": 433,
     "errors": [
       "Joe Mack: no bbref id",
       "Nick Morabito: no bbref id",
       "Spencer Jones: no bbref id"
     ],
-    "updated_at": "2026-05-19T20:48:16Z"
+    "updated_at": "2026-05-19T21:06:55Z"
   }
 }
