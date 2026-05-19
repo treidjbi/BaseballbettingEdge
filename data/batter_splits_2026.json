@@ -7303,23 +7303,40 @@
         "so": 43,
         "k_rate": 0.2402
       }
+    },
+    "mlbam:665161": {
+      "name": "Jeremy Pe\u00f1a",
+      "bats": "R",
+      "mlbam_id": 665161,
+      "bbref_id": "penaje02",
+      "season": 2026,
+      "vs_R": {
+        "pa": 38,
+        "so": 5,
+        "k_rate": 0.1316
+      },
+      "vs_L": {
+        "pa": 13,
+        "so": 1,
+        "k_rate": 0.0769
+      }
     }
   },
-  "updated_at": "2026-05-19T21:06:55Z",
+  "updated_at": "2026-05-19T21:43:00Z",
   "last_run": {
     "projection_status": "collection_only",
-    "requested_batters": 171,
-    "already_cached": 163,
+    "requested_batters": 207,
+    "already_cached": 200,
     "attempted": 4,
     "collected": 1,
     "failed": 3,
-    "queued_not_attempted": 4,
-    "cache_size": 433,
+    "queued_not_attempted": 3,
+    "cache_size": 434,
     "errors": [
       "Joe Mack: no bbref id",
       "Nick Morabito: no bbref id",
       "Spencer Jones: no bbref id"
     ],
-    "updated_at": "2026-05-19T21:06:55Z"
+    "updated_at": "2026-05-19T21:43:00Z"
   }
 }
