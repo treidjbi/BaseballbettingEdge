@@ -7337,24 +7337,40 @@
         "so": 4,
         "k_rate": 0.2353
       }
+    },
+    "mlbam:644433": {
+      "name": "Chadwick Tromp",
+      "bats": "R",
+      "mlbam_id": 644433,
+      "bbref_id": "trompch01",
+      "season": 2026,
+      "vs_R": {
+        "pa": 15,
+        "so": 4,
+        "k_rate": 0.2667
+      },
+      "vs_L": {
+        "pa": 7,
+        "so": 2,
+        "k_rate": 0.2857
+      }
     }
   },
-  "updated_at": "2026-05-19T22:47:01Z",
+  "updated_at": "2026-05-19T23:17:18Z",
   "last_run": {
     "projection_status": "collection_only",
     "requested_batters": 234,
-    "already_cached": 226,
+    "already_cached": 225,
     "attempted": 4,
-    "collected": 0,
-    "failed": 4,
-    "queued_not_attempted": 4,
-    "cache_size": 435,
+    "collected": 1,
+    "failed": 3,
+    "queued_not_attempted": 5,
+    "cache_size": 436,
     "errors": [
       "Joe Mack: no bbref id",
       "Nick Morabito: no bbref id",
-      "Spencer Jones: no bbref id",
-      "Henry Bolte: no bbref id"
+      "Spencer Jones: no bbref id"
     ],
-    "updated_at": "2026-05-19T22:47:01Z"
+    "updated_at": "2026-05-19T23:17:18Z"
   }
 }
