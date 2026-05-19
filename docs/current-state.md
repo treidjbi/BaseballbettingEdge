@@ -1,6 +1,6 @@
 # Current State
 
-Last updated: 2026-05-18
+Last updated: 2026-05-19
 
 ## Read Order
 
@@ -44,6 +44,24 @@ do we convert model signal into better betting decisions?"
   sidecar. It must not affect production picks, grading, dashboard artifacts,
   or provider order until the provider cutover plan is implemented and Tyler
   explicitly approves the switch.
+
+## Supabase Operational Foundation Migration
+
+As of 2026-05-19, Tyler approved starting the migration from pure shadow
+evidence toward Supabase as the operational control plane. This does not remove
+TheRundown or GitHub artifacts yet.
+
+Phase 1 promotes only gated foundations:
+
+- `operational_pick_locks` can store first-seen lock snapshots captured by the
+  live layer before first pitch.
+- `ENABLE_SUPABASE_LOCK_LEDGER=true` lets Render write lock-intent rows.
+- `ENABLE_SUPABASE_LOCK_CONSUMER=true` lets the GitHub pipeline apply those
+  lock rows to artifacts/history.
+- Both flags default off in code until Tyler explicitly enables them.
+- BoltOdds + PropLine provider-source promotion still uses the existing
+  `OFFICIAL_MARKET_SOURCE=boltodds_propline` and
+  `ENABLE_BOLTODDS_PIPELINE_SOURCE=true` gates.
 
 Cutover branch infrastructure progress as of 2026-05-14:
 

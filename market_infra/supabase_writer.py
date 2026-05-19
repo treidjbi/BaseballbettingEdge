@@ -38,6 +38,31 @@ class SupabaseMarketWriter:
         response = self._select_response_with_retries(table, params)
         return response.json()
 
+    def count_rows(self, table: str, params: dict[str, str] | None = None) -> int:
+        query = dict(params or {})
+        query.setdefault("select", "*")
+        query["limit"] = "1"
+        response = requests.get(
+            f"{self.supabase_url}/rest/v1/{table}",
+            headers=self._headers("count=exact"),
+            params=query,
+            timeout=20,
+        )
+        response.raise_for_status()
+        return _count_from_content_range(response.headers.get("Content-Range", ""))
+
+    def delete_rows(self, table: str, params: dict[str, str]) -> int:
+        if not params:
+            raise ValueError("delete params are required")
+        response = requests.delete(
+            f"{self.supabase_url}/rest/v1/{table}",
+            headers=self._headers("return=minimal,count=exact"),
+            params=params,
+            timeout=20,
+        )
+        response.raise_for_status()
+        return _count_from_content_range(response.headers.get("Content-Range", ""))
+
     def _select_response_with_retries(
         self,
         table: str,
@@ -98,6 +123,17 @@ class SupabaseMarketWriter:
         )
         response.raise_for_status()
         return response.json()
+
+
+def _count_from_content_range(content_range: str) -> int:
+    if "/" not in content_range:
+        return 0
+    total = content_range.rsplit("/", 1)[-1]
+    if not total or total == "*":
+        return 0
+    return int(total)
+
+
 def _status_code_from_error(
     error: requests.RequestException,
     response: requests.Response | None,

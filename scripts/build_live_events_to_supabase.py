@@ -23,6 +23,7 @@ from market_infra.live_events import (  # noqa: E402
 )
 from market_infra.live_market_display import build_live_market_display_rows  # noqa: E402
 from market_infra.market_evidence import build_market_pick_evidence_rows  # noqa: E402
+from market_infra.operational_locks import build_operational_lock_rows  # noqa: E402
 from market_infra.shadow_pipeline_timing import build_shadow_pipeline_timing_rows  # noqa: E402
 from market_infra.shadow_notification_candidates import (  # noqa: E402
     build_shadow_notification_candidate_rows,
@@ -296,6 +297,41 @@ def _shadow_pipeline_timing_enabled() -> bool:
     return value not in {"0", "false", "no", "off"}
 
 
+def _operational_lock_ledger_enabled() -> bool:
+    return _env_flag("ENABLE_SUPABASE_LOCK_LEDGER", default=False)
+
+
+def _write_operational_pick_locks(
+    *,
+    writer: SupabaseMarketWriter,
+    slate_date: str,
+    payload: dict[str, Any],
+    observed_at: datetime,
+    artifact_source: str,
+    artifact_sha: str | None,
+) -> dict[str, Any]:
+    if not _operational_lock_ledger_enabled():
+        return {"skipped": True, "reason": "disabled"}
+
+    try:
+        rows = build_operational_lock_rows(
+            slate_date=slate_date,
+            pitchers=payload.get("pitchers") or [],
+            observed_at=observed_at,
+            source_artifact_path=artifact_source,
+            source_artifact_sha256=artifact_sha,
+            artifact_generated_at=payload.get("generated_at"),
+        )
+        writer.insert_ignore_rows("operational_pick_locks", rows, on_conflict="dedupe_key")
+        return {"skipped": False, "rows": len(rows)}
+    except Exception as error:
+        print(
+            f"Warning: operational lock ledger write failed ({error})",
+            file=sys.stderr,
+        )
+        return {"skipped": True, "reason": "write_failed", "error": str(error)[:1000]}
+
+
 def _write_shadow_pipeline_timing(
     *,
     writer: SupabaseMarketWriter,
@@ -560,6 +596,14 @@ def run(
     )
     writer.upsert_rows("game_reminder_state", reminder_rows, on_conflict="dedupe_key")
     writer.upsert_rows("live_pick_state", state_rows, on_conflict="slate_date,normalized_pitcher,side")
+    operational_pick_locks = _write_operational_pick_locks(
+        writer=writer,
+        slate_date=slate_date,
+        payload=payload,
+        observed_at=observed_at,
+        artifact_source=artifact_source,
+        artifact_sha=artifact_sha,
+    )
     shadow_pipeline_timing = _write_shadow_pipeline_timing(
         writer=writer,
         slate_date=slate_date,
@@ -598,6 +642,7 @@ def run(
         "game_reminders": len(reminder_rows),
         "propline": propline_result or {"skipped": True},
         "artifact_source": artifact_source,
+        "operational_pick_locks": operational_pick_locks,
         "shadow_pipeline_timing": shadow_pipeline_timing,
         "market_line_build": market_line_build,
     }

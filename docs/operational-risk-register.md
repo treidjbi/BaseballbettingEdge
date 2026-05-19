@@ -1,6 +1,6 @@
 # Operational Risk Register
 
-Last updated: 2026-05-07
+Last updated: 2026-05-19
 
 This doc tracks the operational side of BaseballBettingEdge: provider trials,
 failure modes, source-conflict rules, data retention, notification quality, and
@@ -159,6 +159,7 @@ Tyler explicitly changes this boundary.
 | GitHub pipeline did not grade | Missing grading run or `picks_history.json` not updated | Prior slate record and calibration stale | GitHub Actions `pipeline.yml`; latest commits | Re-run grading workflow if safe; inspect logs | Missing grading before morning review |
 | `today.json` stale | Generated timestamp old or dated archive missing | Dashboard and live layer use stale picks | GitHub Actions, raw GitHub artifact, dashboard fetch | Re-run full/refresh; verify raw URL | Slate already near lock or games started |
 | Refresh/lock missed | Unlocked rows past lock time or no refresh commits | Picks may move after intended lock or stay stale | `today.json` locked fields; workflow run times | Run lock/refresh if before game starts; preserve locked snapshots | Game started with unlocked or stale actionable picks |
+| Supabase lock ledger writes bad row | A pick locks at an incorrect line/side/time | Artifact lock trust drops | `operational_pick_locks`, source artifact hash, game_time, should_lock_at | Disable `ENABLE_SUPABASE_LOCK_CONSUMER`; continue GitHub lock path; inspect row lineage | Any consumed lock row disagrees with the source artifact |
 | Render live layer uses stale checkout | Supabase source artifact is local checkout, old SHA, or old generated_at | Notifications based on stale picks | `market_provider_runs` / live logs source metadata | Confirm GitHub raw artifact fetch; redeploy worker if needed | Any notification generated from stale artifact |
 | PropLine polling stops | No recent PropLine runs/snapshots | Live movement evidence stale | Render logs, GitHub shadow workflow, `market_provider_runs` | Check API key/env, provider errors, schedule health | More than one live window missed during active slate |
 | PropLine webhooks still absent | Only synthetic rows in `propline_webhook_deliveries` | Webhook feature cannot be trusted | Supabase webhook delivery table | Keep polling path; contact provider if needed | Do not promote webhooks without real deliveries |
@@ -181,6 +182,11 @@ Tyler explicitly changes this boundary.
 
 These are starting defaults, not hard policy. Add scripts only when row volume
 or cost makes retention necessary.
+
+Raw snapshot deletion requires three conditions: compact summaries exist for the
+affected window, `scripts/retire_market_snapshots.py --execute` is used, and
+`ALLOW_MARKET_SNAPSHOT_DELETE=true` is set. Dry-run output should be reviewed
+before every execute run.
 
 | Data | Suggested retention | Reason |
 | --- | --- | --- |

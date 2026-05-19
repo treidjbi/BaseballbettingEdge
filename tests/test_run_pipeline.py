@@ -54,6 +54,95 @@ def test_preview_exits_when_official_market_strict_mode_fails():
     assert exc.value.code == 1
 
 
+def test_supabase_lock_consumer_disabled_by_default(monkeypatch):
+    import run_pipeline
+
+    monkeypatch.delenv("ENABLE_SUPABASE_LOCK_CONSUMER", raising=False)
+
+    assert run_pipeline._supabase_lock_consumer_enabled() is False
+
+
+def test_fetch_supabase_operational_lock_rows_reads_expected_table(monkeypatch):
+    import run_pipeline
+
+    calls = []
+
+    class FakeWriter:
+        def select_rows(self, table, params):
+            calls.append((table, params))
+            return [{"pitcher": "Test Pitcher", "side": "over"}]
+
+    monkeypatch.setenv("SUPABASE_URL", "https://example.supabase.co")
+    monkeypatch.setenv("SUPABASE_SERVICE_ROLE_KEY", "secret")
+
+    rows = run_pipeline._fetch_supabase_operational_lock_rows(
+        "2026-05-19",
+        writer=FakeWriter(),
+    )
+
+    assert rows == [{"pitcher": "Test Pitcher", "side": "over"}]
+    assert calls[0][0] == "operational_pick_locks"
+    assert calls[0][1]["slate_date"] == "eq.2026-05-19"
+    assert calls[0][1]["order"] == "locked_at.asc"
+    assert calls[0][1]["limit"] == "1000"
+
+
+def test_apply_supabase_operational_locks_non_strict_failure_is_soft(monkeypatch):
+    import run_pipeline
+
+    monkeypatch.setenv("ENABLE_SUPABASE_LOCK_CONSUMER", "true")
+    monkeypatch.delenv("SUPABASE_LOCK_CONSUMER_STRICT", raising=False)
+
+    with patch(
+        "run_pipeline._fetch_supabase_operational_lock_rows",
+        side_effect=RuntimeError("supabase down"),
+    ):
+        assert run_pipeline._apply_supabase_operational_locks("2026-05-19") == 0
+
+
+def test_lock_only_strict_supabase_failure_propagates(monkeypatch):
+    import run_pipeline
+
+    monkeypatch.setenv("ENABLE_SUPABASE_LOCK_CONSUMER", "true")
+    monkeypatch.setenv("SUPABASE_LOCK_CONSUMER_STRICT", "true")
+
+    with patch("run_pipeline.reset_db"), \
+         patch("run_pipeline.init_db"), \
+         patch("run_pipeline.load_history_into_db"), \
+         patch(
+             "run_pipeline._fetch_supabase_operational_lock_rows",
+             side_effect=RuntimeError("supabase down"),
+         ):
+        with pytest.raises(RuntimeError, match="supabase down"):
+            run_pipeline._run_lock_only("2026-05-19")
+
+
+def test_run_strict_supabase_failure_propagates_from_seed_path(tmp_path, monkeypatch):
+    import run_pipeline
+    run_pipeline._batter_stats_cache = None
+
+    monkeypatch.setenv("ENABLE_SUPABASE_LOCK_CONSUMER", "true")
+    monkeypatch.setenv("SUPABASE_LOCK_CONSUMER_STRICT", "true")
+
+    with patch.object(run_pipeline, "OUTPUT_PATH", tmp_path / "today.json"), \
+         patch("run_pipeline.fetch_odds", return_value=[_sample_prop()]), \
+         patch("run_pipeline.fetch_stats", return_value=({"Test Pitcher": _sample_stats()}, {})), \
+         patch("run_pipeline.fetch_swstr", return_value={"Test Pitcher": {"swstr_pct": 0.110, "career_swstr_pct": None}}), \
+         patch("run_pipeline.fetch_umpires", return_value=({"Test Pitcher": 0.0}, {"hp_count_fetched": 0, "pitcher_nonzero_count": 0})), \
+         patch("run_pipeline.fetch_lineups_for_pitcher", return_value=None), \
+         patch("run_pipeline.fetch_batter_stats_cached", return_value={}), \
+         patch("run_pipeline.reset_db"), \
+         patch("run_pipeline.init_db"), \
+         patch("run_pipeline.load_history_into_db"), \
+         patch("run_pipeline.seed_picks", return_value=0), \
+         patch(
+             "run_pipeline._fetch_supabase_operational_lock_rows",
+             side_effect=RuntimeError("supabase down"),
+         ):
+        with pytest.raises(RuntimeError, match="supabase down"):
+            run_pipeline.run("2026-05-19")
+
+
 def test_apply_quality_gates_to_records_preserves_raw_and_summarizes_flags():
     import run_pipeline
 

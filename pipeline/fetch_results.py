@@ -427,6 +427,64 @@ def lock_due_picks(conn: sqlite3.Connection, now: datetime,
     return count
 
 
+def apply_external_lock_rows(conn: sqlite3.Connection, lock_rows: list[dict]) -> int:
+    """Apply pregame lock snapshots captured outside the GitHub pipeline."""
+    updated = 0
+    for row in lock_rows:
+        pitcher = str(row.get("pitcher") or "").strip()
+        side = str(row.get("side") or "").strip().lower()
+        locked_at = str(row.get("locked_at") or "").strip()
+        slate_date = str(row.get("slate_date") or "").strip()
+        locked_time = _parse_game_time(locked_at)
+        if (
+            not slate_date
+            or not pitcher
+            or side not in {"over", "under"}
+            or not locked_at
+            or locked_time is None
+        ):
+            continue
+
+        pick = conn.execute("""
+            SELECT id, game_time
+            FROM picks
+            WHERE date = ?
+              AND pitcher = ?
+              AND side = ?
+              AND locked_at IS NULL
+              AND result IS NULL
+        """, (slate_date, pitcher, side)).fetchone()
+        if not pick:
+            continue
+
+        game_time = _parse_game_time(pick["game_time"]) or _parse_game_time(row.get("game_time"))
+        if game_time is None or locked_time >= game_time:
+            continue
+
+        conn.execute("""
+            UPDATE picks
+            SET locked_at = ?,
+                locked_k_line = COALESCE(?, k_line),
+                locked_odds = COALESCE(?, odds),
+                locked_adj_ev = COALESCE(?, adj_ev),
+                locked_verdict = COALESCE(?, verdict)
+            WHERE id = ?
+              AND locked_at IS NULL
+              AND result IS NULL
+        """, (
+            locked_at,
+            row.get("locked_k_line"),
+            row.get("locked_odds"),
+            row.get("locked_adj_ev"),
+            row.get("locked_verdict"),
+            pick["id"],
+        ))
+        updated += conn.execute("SELECT changes()").fetchone()[0]
+    conn.commit()
+    log.info("apply_external_lock_rows: locked %d picks from external lock ledger", updated)
+    return updated
+
+
 def load_history_into_db(history_path: Path = None) -> int:
     """Load closed picks from picks_history.json into DB. Returns count inserted."""
     if history_path is None:

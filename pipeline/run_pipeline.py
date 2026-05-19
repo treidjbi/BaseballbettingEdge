@@ -33,7 +33,8 @@ from quality_gates      import apply_quality_to_record, summarize_quality_gates
 from name_utils         import normalize as _normalize_name
 from team_codes         import TEAM_NAME_TO_CODE
 from fetch_results      import (reset_db, init_db, load_history_into_db, seed_picks,
-                                export_db_to_history, lock_due_picks, get_db)
+                                export_db_to_history, lock_due_picks, get_db,
+                                apply_external_lock_rows)
 from analytics.diagnostics.d_connection_health import (
     build_connection_health,
     format_integrity_warning,
@@ -826,6 +827,72 @@ def calibrate_run():
     _import_calibrate_run()()
 
 
+def _supabase_lock_consumer_enabled() -> bool:
+    value = os.environ.get("ENABLE_SUPABASE_LOCK_CONSUMER", "false").strip().lower()
+    return value in {"1", "true", "yes", "on"}
+
+
+def _supabase_lock_consumer_strict() -> bool:
+    value = os.environ.get("SUPABASE_LOCK_CONSUMER_STRICT", "false").strip().lower()
+    return value in {"1", "true", "yes", "on"}
+
+
+def _fetch_supabase_operational_lock_rows(date_str: str, writer=None) -> list[dict]:
+    if writer is None:
+        supabase_url = os.environ.get("SUPABASE_URL", "").strip()
+        service_role_key = os.environ.get("SUPABASE_SERVICE_ROLE_KEY", "").strip()
+        if not supabase_url or not service_role_key:
+            raise EnvironmentError(
+                "SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY are required "
+                "for Supabase lock consumer"
+            )
+        from market_infra.supabase_writer import SupabaseMarketWriter
+        writer = SupabaseMarketWriter(supabase_url, service_role_key)
+
+    return writer.select_rows(
+        "operational_pick_locks",
+        {
+            "slate_date": f"eq.{date_str}",
+            "order": "locked_at.asc",
+            "limit": "1000",
+        },
+    )
+
+
+def _apply_supabase_operational_locks(date_str: str) -> int:
+    if not _supabase_lock_consumer_enabled():
+        return 0
+
+    try:
+        rows = _fetch_supabase_operational_lock_rows(date_str)
+        if not rows:
+            log.info("Supabase lock consumer: no external lock rows for %s", date_str)
+            return 0
+
+        conn = get_db()
+        try:
+            applied = apply_external_lock_rows(conn, rows)
+        finally:
+            conn.close()
+
+        log.info(
+            "Supabase lock consumer: applied %d/%d external lock rows for %s",
+            applied,
+            len(rows),
+            date_str,
+        )
+        return applied
+    except Exception as e:
+        if _supabase_lock_consumer_strict():
+            try:
+                setattr(e, "_supabase_lock_consumer_strict", True)
+            except Exception:
+                pass
+            raise
+        log.warning("Supabase lock consumer failed for %s: %s", date_str, e)
+        return 0
+
+
 def _run_lock_only(date_str: str) -> None:
     """Lock picks within T-30min of game time. No odds/stats fetch."""
     log.info("=== Lock-only run for %s ===", date_str)
@@ -833,18 +900,26 @@ def _run_lock_only(date_str: str) -> None:
         reset_db()
         init_db()
         load_history_into_db()
+        external_locked = _apply_supabase_operational_locks(date_str)
         conn = get_db()
         try:
             locked = lock_due_picks(conn, datetime.now(timezone.utc), lock_all_past=False)
         finally:
             conn.close()
-        if locked > 0:
+        if external_locked + locked > 0:
             export_db_to_history()
             _enrich_archives_with_tracked_picks()
-            log.info("Lock-only: locked %d picks", locked)
+            log.info(
+                "Lock-only: locked %d picks (%d external, %d pipeline)",
+                external_locked + locked,
+                external_locked,
+                locked,
+            )
         else:
             log.info("Lock-only: no picks due for locking yet")
     except Exception as e:
+        if getattr(e, "_supabase_lock_consumer_strict", False):
+            raise
         log.error("Lock-only run failed: %s", e)
 
 
@@ -1662,12 +1737,19 @@ def run(date_str: str, run_type: str = "full") -> None:
         # seed_picks itself skips games that have already started.
         now_utc = datetime.now(timezone.utc)
         seeded = seed_picks(now=now_utc)
+        external_locked = _apply_supabase_operational_locks(date_str)
         conn = get_db()
         try:
             locked = lock_due_picks(conn, now_utc, lock_all_past=False)
         finally:
             conn.close()
-        log.info("Seeded %d new picks, locked %d picks from today.json", seeded, locked)
+        log.info(
+            "Seeded %d new picks, locked %d picks (%d external, %d pipeline)",
+            seeded,
+            external_locked + locked,
+            external_locked,
+            locked,
+        )
         # Always export: captures newly inserted picks, intra-day odds/lineup
         # updates to unlocked picks, and freshly locked snapshots.  The git
         # commit step skips an empty commit when nothing changed, so this is
@@ -1677,6 +1759,8 @@ def run(date_str: str, run_type: str = "full") -> None:
         _enrich_archives_with_tracked_picks()
         log.info("Persisted open/locked picks to history")
     except Exception as e:
+        if getattr(e, "_supabase_lock_consumer_strict", False):
+            raise
         log.warning("seed_picks failed: %s", e)
 
     log.info("=== Pipeline complete ===")
