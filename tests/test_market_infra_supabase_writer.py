@@ -88,3 +88,71 @@ def test_select_rows_retries_transient_server_errors():
     assert result == [{"id": "snap-1"}]
     assert get.call_count == 2
     sleep.assert_called_once()
+
+
+def test_count_rows_reads_content_range(monkeypatch):
+    captured = {}
+
+    class Response:
+        headers = {"Content-Range": "0-0/42"}
+        status_code = 206
+
+        def raise_for_status(self):
+            return None
+
+    def fake_get(url, headers, params, timeout):
+        captured["url"] = url
+        captured["headers"] = headers
+        captured["params"] = params
+        captured["timeout"] = timeout
+        return Response()
+
+    monkeypatch.setattr("market_infra.supabase_writer.requests.get", fake_get)
+    writer = SupabaseMarketWriter("https://example.supabase.co", "secret-key")
+
+    assert writer.count_rows("market_snapshots", {"provider": "eq.boltodds"}) == 42
+    assert captured["url"] == "https://example.supabase.co/rest/v1/market_snapshots"
+    assert captured["headers"]["Prefer"] == "count=exact"
+    assert captured["params"]["provider"] == "eq.boltodds"
+    assert captured["params"]["select"] == "id"
+    assert captured["params"]["limit"] == "1"
+    assert captured["timeout"] == 20
+
+
+def test_delete_rows_requires_params():
+    writer = SupabaseMarketWriter("https://example.supabase.co", "secret-key")
+
+    try:
+        writer.delete_rows("market_snapshots", {})
+    except ValueError as error:
+        assert "delete params are required" in str(error)
+    else:
+        raise AssertionError("delete_rows should reject empty params")
+
+
+def test_delete_rows_calls_delete_with_supplied_params(monkeypatch):
+    captured = {}
+
+    class Response:
+        headers = {"Content-Range": "0-2/3"}
+
+        def raise_for_status(self):
+            return None
+
+    def fake_delete(url, headers, params, timeout):
+        captured["url"] = url
+        captured["headers"] = headers
+        captured["params"] = params
+        captured["timeout"] = timeout
+        return Response()
+
+    monkeypatch.setattr("market_infra.supabase_writer.requests.delete", fake_delete)
+    writer = SupabaseMarketWriter("https://example.supabase.co", "secret-key")
+
+    deleted = writer.delete_rows("market_snapshots", {"observed_at": "lt.2026-05-01T00:00:00+00:00"})
+
+    assert deleted == 3
+    assert captured["url"] == "https://example.supabase.co/rest/v1/market_snapshots"
+    assert captured["headers"]["Prefer"] == "return=minimal"
+    assert captured["params"] == {"observed_at": "lt.2026-05-01T00:00:00+00:00"}
+    assert captured["timeout"] == 20
