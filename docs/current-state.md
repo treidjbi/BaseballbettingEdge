@@ -63,6 +63,17 @@ Phase 1 promotes only gated foundations:
   `OFFICIAL_MARKET_SOURCE=boltodds_propline` and
   `ENABLE_BOLTODDS_PIPELINE_SOURCE=true` gates.
 
+Operational rollout note, 2026-05-19:
+
+- Hosted Supabase migration `20260519201848 operational_pick_locks` has been
+  applied and verified on the active project.
+- Render `bbe-live-layer` now has `ENABLE_SUPABASE_LOCK_LEDGER=true` for
+  observation-only lock-ledger writes.
+- `ENABLE_SUPABASE_LOCK_CONSUMER`, `SUPABASE_LOCK_CONSUMER_STRICT`,
+  `OFFICIAL_MARKET_SOURCE=boltodds_propline`, and
+  `ENABLE_BOLTODDS_PIPELINE_SOURCE` remain off/unset unless Tyler explicitly
+  approves the next canary.
+
 Cutover branch infrastructure progress as of 2026-05-14:
 
 - The Supabase cutover tables have been applied for the active project:
@@ -206,6 +217,12 @@ actual artifacts, not only unit tests.
 The live layer is now separate from the production pipeline.
 
 - Render cron service: `bbe-live-layer`
+- Render cron service ID: `crn-d7tpb19o3t8c739p3qig`
+- Render BoltOdds worker: `bbe-boltodds-shadow-worker`
+- Render BoltOdds worker ID: `srv-d7ugabe7r5hc73b36oag`
+- Local Windows Render CLI: installed under `%LOCALAPPDATA%\Render\bin`;
+  new shells should resolve `render`, while existing Codex shells may need the
+  full `render.exe` path until the parent process is restarted.
 - Cadence: every 10 minutes
 - Source artifact: fresh GitHub raw `today.json`, not the baked Render checkout
 - Market source: PropLine polling when `PROPLINE_API_KEY` is present
