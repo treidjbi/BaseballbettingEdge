@@ -112,6 +112,8 @@ jobs:
           ENABLE_BOLTODDS_PIPELINE_SOURCE: ${{ vars.ENABLE_BOLTODDS_PIPELINE_SOURCE }}
           OFFICIAL_MARKET_STRICT: ${{ vars.OFFICIAL_MARKET_STRICT }}
           OFFICIAL_MARKET_MIN_PROPS: ${{ vars.OFFICIAL_MARKET_MIN_PROPS }}
+          ENABLE_SUPABASE_LOCK_CONSUMER: ${{ vars.ENABLE_SUPABASE_LOCK_CONSUMER }}
+          SUPABASE_LOCK_CONSUMER_STRICT: ${{ vars.SUPABASE_LOCK_CONSUMER_STRICT }}
         run: |
           SCHEDULE="${{ github.event.schedule }}"
           TODAY=$(TZ=America/Phoenix date +%Y-%m-%d)

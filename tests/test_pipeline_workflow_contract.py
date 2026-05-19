@@ -57,6 +57,14 @@ def test_pipeline_workflow_exposes_manual_lock_mode():
     assert "exit 0" in run_block
 
 
+def test_pipeline_workflow_passes_supabase_lock_flags_to_runner():
+    workflow_text = _read_workflow()
+    run_block = _extract_step_block(workflow_text, "Run pipeline")
+
+    assert "ENABLE_SUPABASE_LOCK_CONSUMER: ${{ vars.ENABLE_SUPABASE_LOCK_CONSUMER }}" in run_block
+    assert "SUPABASE_LOCK_CONSUMER_STRICT: ${{ vars.SUPABASE_LOCK_CONSUMER_STRICT }}" in run_block
+
+
 def test_classify_preview_health_marks_auth_failures_distinctly():
     module = _load_preview_health_module()
     result = module.classify_preview_health(
