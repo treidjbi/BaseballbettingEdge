@@ -1,4 +1,10 @@
+import re
+from pathlib import Path
+
 from scripts import audit_supabase_row_volume
+
+ROOT = Path(__file__).resolve().parents[1]
+MIGRATIONS_DIR = ROOT / "supabase" / "migrations"
 
 
 class FakeWriter:
@@ -28,6 +34,25 @@ def test_run_counts_operational_tables_read_only():
     assert {"table": "operational_pick_locks", "rows": 3} in rows
     assert all(params == {} for _, params in writer.count_calls)
     assert writer.delete_calls == []
+
+
+def test_audit_tables_exist_in_supabase_migrations():
+    sql = "\n".join(
+        path.read_text(encoding="utf-8")
+        for path in sorted(MIGRATIONS_DIR.glob("*.sql"))
+    )
+    migrated_tables = {
+        match.group(1)
+        for match in re.finditer(
+            r"create\s+table\s+if\s+not\s+exists\s+(?:public\.)?([a-z_]+)",
+            sql,
+            flags=re.IGNORECASE,
+        )
+    }
+
+    assert "line_movement_events" in audit_supabase_row_volume.TABLES
+    assert "shadow_provider_movement_events" not in audit_supabase_row_volume.TABLES
+    assert set(audit_supabase_row_volume.TABLES).issubset(migrated_tables)
 
 
 def test_cli_prints_row_volume_lines(monkeypatch, capsys):

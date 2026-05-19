@@ -15,7 +15,7 @@ from market_infra.supabase_writer import SupabaseMarketWriter  # noqa: E402
 TABLES = [
     "market_snapshots",
     "market_feed_heartbeats",
-    "shadow_provider_movement_events",
+    "line_movement_events",
     "shadow_notification_candidates",
     "shadow_pipeline_runs",
     "shadow_pick_lock_observations",
