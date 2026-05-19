@@ -45,14 +45,14 @@ def _affected_snapshot_groups(
     writer: SupabaseMarketWriter,
     cutoff_iso: str,
 ) -> tuple[list[dict[str, str]], bool]:
-    providers_by_run_id: dict[str, set[str]] = {}
+    raw_groups_by_run_id: dict[str, set[tuple[str, str, str, str, str, str]]] = {}
     uncertain = False
     for page in range(GROUP_MAX_PAGES):
         rows = writer.select_rows(
             "market_snapshots",
             {
                 "observed_at": f"lt.{cutoff_iso}",
-                "select": "run_id,provider",
+                "select": "run_id,provider,bookmaker_key,normalized_player_name,market_key,side,line",
                 "order": "observed_at.asc",
                 "limit": str(GROUP_PAGE_SIZE),
                 "offset": str(page * GROUP_PAGE_SIZE),
@@ -60,35 +60,73 @@ def _affected_snapshot_groups(
         )
         for row in rows:
             run_id = str(row.get("run_id") or "").strip()
-            provider = str(row.get("provider") or "").strip()
-            if not run_id or not provider:
+            group = _raw_snapshot_group_key(row)
+            if not run_id or group is None:
                 uncertain = True
                 continue
-            providers_by_run_id.setdefault(run_id, set()).add(provider)
+            raw_groups_by_run_id.setdefault(run_id, set()).add(group)
         if len(rows) < GROUP_PAGE_SIZE:
             break
     else:
         uncertain = True
 
-    groups: dict[tuple[str, str], dict[str, str]] = {}
-    run_rows_by_id = _fetch_run_rows_by_id(writer, sorted(providers_by_run_id))
-    missing_run_ids = set(providers_by_run_id) - set(run_rows_by_id)
+    groups: dict[tuple[str, str, str, str, str, str, str], dict[str, str]] = {}
+    run_rows_by_id = _fetch_run_rows_by_id(writer, sorted(raw_groups_by_run_id))
+    missing_run_ids = set(raw_groups_by_run_id) - set(run_rows_by_id)
     if missing_run_ids:
         uncertain = True
 
-    for run_id, providers in providers_by_run_id.items():
+    for run_id, raw_groups in raw_groups_by_run_id.items():
         run_row = run_rows_by_id.get(run_id)
         slate_date = str((run_row or {}).get("slate_date") or "").strip()
         if not slate_date:
             uncertain = True
             continue
-        for provider in providers:
+        for raw_group in raw_groups:
+            provider, book_key, normalized_player, market_key, side, line = raw_group
             groups.setdefault(
-                (slate_date, provider),
-                {"slate_date": slate_date, "provider": provider},
+                (slate_date, provider, book_key, normalized_player, market_key, side, line),
+                {
+                    "slate_date": slate_date,
+                    "provider": provider,
+                    "book_key": book_key,
+                    "normalized_player_name": normalized_player,
+                    "market_key": market_key,
+                    "side": side,
+                    "line": line,
+                },
             )
 
-    return sorted(groups.values(), key=lambda row: (row["slate_date"], row["provider"])), uncertain
+    return sorted(
+        groups.values(),
+        key=lambda row: (
+            row["slate_date"],
+            row["provider"],
+            row["book_key"],
+            row["normalized_player_name"],
+            row["market_key"],
+            row["side"],
+            row["line"],
+        ),
+    ), uncertain
+
+
+def _raw_snapshot_group_key(row: dict[str, Any]) -> tuple[str, str, str, str, str, str] | None:
+    provider = str(row.get("provider") or "").strip().lower()
+    book_key = str(row.get("book_key") or row.get("bookmaker_key") or "").strip().lower()
+    normalized_player = str(row.get("normalized_player_name") or "").strip()
+    market_key = str(row.get("market_key") or "").strip()
+    side = str(row.get("side") or "").strip().lower()
+    line = _line_key(row.get("line"))
+    if not all([provider, book_key, normalized_player, market_key, side, line]):
+        return None
+    return provider, book_key, normalized_player, market_key, side, line
+
+
+def _line_key(value: Any) -> str:
+    if value is None:
+        return ""
+    return str(value).strip()
 
 
 def _fetch_run_rows_by_id(
@@ -118,17 +156,21 @@ def _fetch_run_rows_by_id(
 def _compact_covers_group(
     writer: SupabaseMarketWriter,
     *,
-    slate_date: str,
-    provider: str,
+    group: dict[str, str],
     cutoff_iso: str,
 ) -> bool:
     rows = writer.select_rows(
         "compact_market_line_movements",
         {
-            "slate_date": f"eq.{slate_date}",
-            "provider": f"eq.{provider}",
+            "slate_date": f"eq.{group['slate_date']}",
+            "provider": f"eq.{group['provider']}",
+            "book_key": f"eq.{group['book_key']}",
+            "normalized_player_name": f"eq.{group['normalized_player_name']}",
+            "market_key": f"eq.{group['market_key']}",
+            "side": f"eq.{group['side']}",
+            "line": f"eq.{group['line']}",
             "last_seen_at": f"lte.{cutoff_iso}",
-            "select": "slate_date,provider,last_seen_at",
+            "select": "slate_date,provider,book_key,normalized_player_name,market_key,side,line,last_seen_at",
             "limit": "1",
         },
     )
@@ -150,8 +192,7 @@ def run(*, writer: SupabaseMarketWriter, cutoff_iso: str, execute: bool) -> dict
         for group in snapshot_groups:
             if not _compact_covers_group(
                 writer,
-                slate_date=group["slate_date"],
-                provider=group["provider"],
+                group=group,
                 cutoff_iso=cutoff_iso,
             ):
                 uncovered_groups.append(group)

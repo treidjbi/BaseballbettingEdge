@@ -3,6 +3,26 @@ import pytest
 from scripts import retire_market_snapshots
 
 
+RAW_GROUP = {
+    "run_id": "run-1",
+    "provider": "boltodds",
+    "bookmaker_key": "fanduel",
+    "normalized_player_name": "tarik skubal",
+    "market_key": "pitcher_strikeouts",
+    "side": "over",
+    "line": 6.5,
+}
+COMPACT_KEY = (
+    "2026-04-30",
+    "boltodds",
+    "fanduel",
+    "tarik skubal",
+    "pitcher_strikeouts",
+    "over",
+    "6.5",
+)
+
+
 class FakeWriter:
     def __init__(
         self,
@@ -20,14 +40,14 @@ class FakeWriter:
         self.snapshot_groups = (
             snapshot_groups
             if snapshot_groups is not None
-            else [{"run_id": "run-1", "provider": "boltodds"}]
+            else [dict(RAW_GROUP)]
         )
         self.run_rows = (
             run_rows
             if run_rows is not None
             else [{"id": "run-1", "slate_date": "2026-04-30", "provider": "boltodds"}]
         )
-        self.compact_groups = compact_groups if compact_groups is not None else {("2026-04-30", "boltodds")}
+        self.compact_groups = compact_groups if compact_groups is not None else {COMPACT_KEY}
         self.count_calls = []
         self.select_calls = []
         self.delete_calls = []
@@ -50,8 +70,22 @@ class FakeWriter:
         if table == "compact_market_line_movements":
             slate_date = str(params["slate_date"]).replace("eq.", "", 1)
             provider = str(params["provider"]).replace("eq.", "", 1)
-            if (slate_date, provider) in self.compact_groups:
-                return [{"slate_date": slate_date, "provider": provider, "last_seen_at": "2026-05-01T00:00:00+00:00"}]
+            book_key = str(params["book_key"]).replace("eq.", "", 1)
+            normalized_player = str(params["normalized_player_name"]).replace("eq.", "", 1)
+            market_key = str(params["market_key"]).replace("eq.", "", 1)
+            side = str(params["side"]).replace("eq.", "", 1)
+            line = str(params["line"]).replace("eq.", "", 1)
+            if (slate_date, provider, book_key, normalized_player, market_key, side, line) in self.compact_groups:
+                return [{
+                    "slate_date": slate_date,
+                    "provider": provider,
+                    "book_key": book_key,
+                    "normalized_player_name": normalized_player,
+                    "market_key": market_key,
+                    "side": side,
+                    "line": line,
+                    "last_seen_at": "2026-05-01T00:00:00+00:00",
+                }]
             return []
         raise AssertionError(f"unexpected table {table}")
 
@@ -127,9 +161,17 @@ def test_unrelated_compact_rows_do_not_allow_snapshot_deletion(monkeypatch):
     writer = FakeWriter(
         snapshot_count=10,
         compact_count=3,
-        snapshot_groups=[{"run_id": "run-1", "provider": "boltodds"}],
+        snapshot_groups=[dict(RAW_GROUP)],
         run_rows=[{"id": "run-1", "slate_date": "2026-04-30", "provider": "boltodds"}],
-        compact_groups={("2026-04-29", "propline")},
+        compact_groups={(
+            "2026-04-30",
+            "boltodds",
+            "betmgm",
+            "tarik skubal",
+            "pitcher_strikeouts",
+            "under",
+            "7.5",
+        )},
     )
     monkeypatch.setenv("ALLOW_MARKET_SNAPSHOT_DELETE", "true")
 
@@ -140,13 +182,26 @@ def test_unrelated_compact_rows_do_not_allow_snapshot_deletion(monkeypatch):
     )
 
     assert result["eligible_to_delete"] is False
-    assert result["uncovered_snapshot_groups"] == [{"slate_date": "2026-04-30", "provider": "boltodds"}]
+    assert result["uncovered_snapshot_groups"] == [{
+        "slate_date": "2026-04-30",
+        "provider": "boltodds",
+        "book_key": "fanduel",
+        "normalized_player_name": "tarik skubal",
+        "market_key": "pitcher_strikeouts",
+        "side": "over",
+        "line": "6.5",
+    }]
     assert result["deleted_rows"] == 0
     assert writer.delete_calls == []
     assert ("compact_market_line_movements", {
         "slate_date": "eq.2026-04-30",
         "provider": "eq.boltodds",
+        "book_key": "eq.fanduel",
+        "normalized_player_name": "eq.tarik skubal",
+        "market_key": "eq.pitcher_strikeouts",
+        "side": "eq.over",
+        "line": "eq.6.5",
         "last_seen_at": "lte.2026-05-01T00:00:00+00:00",
-        "select": "slate_date,provider,last_seen_at",
+        "select": "slate_date,provider,book_key,normalized_player_name,market_key,side,line,last_seen_at",
         "limit": "1",
     }) in writer.select_calls
