@@ -7252,24 +7252,39 @@
         "so": 11,
         "k_rate": 0.22
       }
+    },
+    "mlbam:686611": {
+      "name": "Dylan Crews",
+      "bats": "R",
+      "mlbam_id": 686611,
+      "bbref_id": "crewsdy01",
+      "season": 2026,
+      "vs_R": {
+        "pa": 243,
+        "so": 58,
+        "k_rate": 0.2387
+      },
+      "vs_L": {
+        "pa": 79,
+        "so": 18,
+        "k_rate": 0.2278
+      }
     }
   },
-  "updated_at": "2026-05-19T05:13:22Z",
+  "updated_at": "2026-05-19T20:03:12Z",
   "last_run": {
     "projection_status": "collection_only",
-    "requested_batters": 243,
-    "already_cached": 232,
-    "attempted": 4,
+    "requested_batters": 99,
+    "already_cached": 97,
+    "attempted": 2,
     "collected": 0,
-    "failed": 4,
-    "queued_not_attempted": 7,
-    "cache_size": 430,
+    "failed": 2,
+    "queued_not_attempted": 0,
+    "cache_size": 431,
     "errors": [
       "Joe Mack: no bbref id",
-      "Jhoan Duran: IndexError: single positional indexer is out-of-bounds",
-      "A.J. Ewing: no bbref id",
-      "Sterlin Thompson: no bbref id"
+      "Spencer Jones: no bbref id"
     ],
-    "updated_at": "2026-05-19T05:13:22Z"
+    "updated_at": "2026-05-19T20:03:12Z"
   }
 }
