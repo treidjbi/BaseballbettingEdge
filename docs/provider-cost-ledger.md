@@ -101,7 +101,9 @@ Current evidence:
 
 - polling is useful
 - webhook receiver works technically
-- real provider webhook deliveries are not proven
+- real signed provider webhook deliveries are landing as of 2026-05-19
+- current webhook payloads lack sportsbook keys, so they are neutral
+  shadow-movement evidence rather than official market lines
 - FanDuel / BetRivers evidence appears more useful than a broad migration case
 
 Keep current tier if:

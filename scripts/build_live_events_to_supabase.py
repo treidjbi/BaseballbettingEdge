@@ -38,6 +38,9 @@ from scripts.build_official_market_lines_to_supabase import (  # noqa: E402
 from scripts.compact_market_snapshots import (  # noqa: E402
     run as compact_market_snapshots_to_supabase,
 )
+from scripts.process_propline_webhooks import (  # noqa: E402
+    run as process_propline_webhook_deliveries,
+)
 from scripts.shadow_propline_to_supabase import poll_propline_to_supabase  # noqa: E402
 
 DEFAULT_ARTIFACT = ROOT / "dashboard" / "data" / "processed" / "today.json"
@@ -475,6 +478,7 @@ def run(
     compact_market_lines: bool = True,
     market_line_min_interval_seconds: int = 600,
     compact_market_min_interval_seconds: int = 1800,
+    process_propline_webhooks: bool = False,
 ) -> dict[str, Any]:
     if artifact_payload is None:
         payload, artifact_sha, artifact_source = _load_artifact(Path(artifact_path), artifact_url=artifact_url)
@@ -487,6 +491,7 @@ def run(
     previous_rows = writer.select_rows("live_pick_state", {"slate_date": f"eq.{slate_date}"})
     observed_at = _now_utc()
     propline_result: dict[str, Any] | None = None
+    propline_webhook_result: dict[str, Any] | None = None
 
     if poll_propline:
         try:
@@ -503,6 +508,23 @@ def run(
             propline_result = {
                 "skipped": True,
                 "reason": "poll_failed",
+                "error": str(error)[:1000],
+            }
+
+    if process_propline_webhooks:
+        try:
+            propline_webhook_result = process_propline_webhook_deliveries(
+                supabase_url=supabase_url,
+                service_role_key=service_role_key,
+            )
+        except Exception as error:
+            print(
+                f"Warning: optional PropLine webhook processing failed ({error}); continuing live build",
+                file=sys.stderr,
+            )
+            propline_webhook_result = {
+                "skipped": True,
+                "reason": "webhook_processing_failed",
                 "error": str(error)[:1000],
             }
 
@@ -641,6 +663,7 @@ def run(
         "provider_heartbeats": len(provider_heartbeats),
         "game_reminders": len(reminder_rows),
         "propline": propline_result or {"skipped": True},
+        "propline_webhooks": propline_webhook_result or {"skipped": True},
         "artifact_source": artifact_source,
         "operational_pick_locks": operational_pick_locks,
         "shadow_pipeline_timing": shadow_pipeline_timing,
@@ -676,6 +699,7 @@ def main() -> int:
         artifact_source=artifact_source,
         build_market_lines=_env_flag("LIVE_BUILD_MARKET_LINES", default=True),
         compact_market_lines=_env_flag("LIVE_COMPACT_MARKET_SNAPSHOTS", default=True),
+        process_propline_webhooks=_env_flag("LIVE_PROCESS_PROPLINE_WEBHOOKS", default=False),
         market_line_min_interval_seconds=_env_int(
             "LIVE_MARKET_LINE_BUILD_MIN_INTERVAL_SECONDS",
             default=600,
@@ -691,6 +715,13 @@ def main() -> int:
         propline_summary = (
             f"propline_events={propline['target_event_count']} "
             f"propline_snapshots={propline['snapshot_count']}"
+        )
+    webhooks = result.get("propline_webhooks") or {"skipped": True}
+    webhook_summary = "propline_webhooks=skipped"
+    if not webhooks.get("skipped"):
+        webhook_summary = (
+            f"propline_webhooks=processed:{webhooks.get('processed', 0)} "
+            f"movements:{webhooks.get('line_movement_events', 0)}"
         )
     market_line_build = result.get("market_line_build") or {"skipped": True}
     if market_line_build.get("skipped"):
@@ -710,6 +741,7 @@ def main() -> int:
         f"live_market_display={result.get('live_market_display_state', 0)} "
         f"artifact_source={'remote' if str(result.get('artifact_source', artifact_source)).startswith('http') else 'local'} "
         f"{propline_summary} "
+        f"{webhook_summary} "
         f"{market_line_summary}"
     )
     return 0

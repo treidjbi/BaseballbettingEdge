@@ -759,6 +759,56 @@ def test_worker_can_poll_propline_before_building_live_events(tmp_path):
     assert result["line_movement_events"] == 1
 
 
+def test_worker_can_process_propline_webhooks_before_market_reads(tmp_path):
+    today = _write_artifact(tmp_path, [_fire_pitcher()])
+    calls = []
+    table_rows = {
+        "live_pick_state": [],
+        "market_snapshots": [],
+        "game_reminder_state": [],
+    }
+
+    writer = Mock()
+
+    def select_rows(table, params):
+        calls.append(("select", table))
+        return table_rows.get(table, [])
+
+    writer.select_rows.side_effect = select_rows
+
+    def process_webhooks(*args, **kwargs):
+        calls.append(("process", "propline_webhooks"))
+        return {
+            "deliveries": 2,
+            "processed": 2,
+            "line_movement_events": 2,
+            "unsupported": 0,
+        }
+
+    with (
+        patch.object(build_live_events_to_supabase, "SupabaseMarketWriter", return_value=writer),
+        patch.object(
+            build_live_events_to_supabase,
+            "process_propline_webhook_deliveries",
+            side_effect=process_webhooks,
+        ) as processor,
+    ):
+        result = build_live_events_to_supabase.run(
+            slate_date="2026-05-06",
+            artifact_path=today,
+            supabase_url="https://example.supabase.co",
+            service_role_key="secret",
+            process_propline_webhooks=True,
+        )
+
+    processor.assert_called_once_with(
+        supabase_url="https://example.supabase.co",
+        service_role_key="secret",
+    )
+    assert calls.index(("process", "propline_webhooks")) < calls.index(("select", "market_snapshots"))
+    assert result["propline_webhooks"]["line_movement_events"] == 2
+
+
 def test_worker_can_build_shadow_market_lines_after_live_state(tmp_path):
     today = _write_artifact(tmp_path, [_fire_pitcher()])
     calls = []

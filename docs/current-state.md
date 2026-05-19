@@ -318,10 +318,16 @@ promoted broadly from TheRundown based on current evidence.
 
 Webhook status:
 
-- The receiver path works via the signed synthetic test.
-- Real PropLine provider webhook traffic has not been proven yet.
-- Do not claim PropLine webhooks are live unless `propline_webhook_deliveries`
-  shows real provider deliveries.
+- The receiver path is active and now has real signed `line_movement`
+  deliveries in `propline_webhook_deliveries` as of 2026-05-19.
+- `scripts/process_propline_webhooks.py` can process inbox rows into neutral
+  shadow `line_movement_events` only; current real payloads do not include a
+  sportsbook key, so rows use `bookmaker_key='propline_webhook'` with
+  `metadata.bookmaker_key_missing=true`.
+- The live-layer hook is gated by `LIVE_PROCESS_PROPLINE_WEBHOOKS`; leave it
+  off until the lock-ledger observation is not at risk. Do not use webhook rows
+  for production odds, picks, notifications, or provider promotion without a
+  separate review.
 
 ### BoltOdds
 
