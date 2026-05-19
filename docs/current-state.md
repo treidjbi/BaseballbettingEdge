@@ -39,8 +39,9 @@ do we convert model signal into better betting decisions?"
   pipeline. It renewed through the end of May 2026, so May is now the planned
   overlap window for building and shadow-comparing the BoltOdds + PropLine
   official-provider cutover before any cancellation/removal decision.
-- PropLine remains a shadow/fallback/live-movement source. Polling is useful;
-  real provider webhooks are still unproven. The planned provider stack is
+- PropLine remains a shadow/fallback/live-movement source. Polling is useful,
+  and real signed provider webhooks are now landing with book-level movement
+  IDs after PropLine's 2026-05-19 payload fix. The planned provider stack is
   BoltOdds primary with PropLine fallback/DraftKings coverage, but that is not
   official until the cutover gates and environment switch are completed.
 - BoltOdds is being tested as a separate shadow-only WebSocket live-market
@@ -320,9 +321,15 @@ Webhook status:
 
 - The receiver path is active and now has real signed `line_movement`
   deliveries in `propline_webhook_deliveries` as of 2026-05-19.
-- `scripts/process_propline_webhooks.py` can process inbox rows into neutral
-  shadow `line_movement_events` only; current real payloads do not include a
-  sportsbook key, so rows use `bookmaker_key='propline_webhook'` with
+- PropLine confirmed on 2026-05-19 that new `line_movement` and `resolution`
+  deliveries include `bookmaker_key`, `bookmaker_title`, `market_id`, and
+  `outcome_id`. The IDs match `/odds`, `/odds/history`, and `/results`, so
+  webhook movement can be reconciled to polling by ID instead of fuzzy
+  player+line+book matching.
+- `scripts/process_propline_webhooks.py` can process inbox rows into shadow
+  `line_movement_events`; it writes the actual book key and stores
+  `bookmaker_title`, `market_id`, and `outcome_id` when present. Legacy rows
+  without a book still use `bookmaker_key='propline_webhook'` with
   `metadata.bookmaker_key_missing=true`.
 - The live-layer hook is gated by `LIVE_PROCESS_PROPLINE_WEBHOOKS`; leave it
   off until the lock-ledger observation is not at risk. Do not use webhook rows

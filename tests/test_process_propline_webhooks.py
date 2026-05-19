@@ -152,3 +152,30 @@ def test_processor_writes_neutral_line_movement_event_from_real_payload_shape():
         "processing_error": None,
     }]
     assert delivery_call.kwargs == {"on_conflict": "id"}
+
+
+def test_processor_preserves_propline_bookmaker_and_stable_ids():
+    payload = _line_movement_payload()
+    payload.update({
+        "bookmaker_key": "draftkings",
+        "bookmaker_title": "DraftKings",
+        "market_id": "mkt_dk_123",
+        "outcome_id": "out_dk_456",
+    })
+    writer = Mock()
+    writer.select_rows.return_value = [_delivery(payload)]
+
+    with patch.object(process_propline_webhooks, "SupabaseMarketWriter", return_value=writer):
+        result = process_propline_webhooks.run(
+            supabase_url="https://example.supabase.co",
+            service_role_key="secret",
+        )
+
+    assert result["processed"] == 1
+    movement_call = writer.upsert_rows.call_args_list[0]
+    row = movement_call.args[1][0]
+    assert row["bookmaker_key"] == "draftkings"
+    assert row["metadata"]["bookmaker_key_missing"] is False
+    assert row["metadata"]["bookmaker_title"] == "DraftKings"
+    assert row["metadata"]["market_id"] == "mkt_dk_123"
+    assert row["metadata"]["outcome_id"] == "out_dk_456"

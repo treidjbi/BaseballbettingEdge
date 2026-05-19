@@ -51,6 +51,13 @@ def _int(value: Any) -> int | None:
         return None
 
 
+def _present_value(*values: Any) -> Any:
+    for value in values:
+        if value is not None and str(value).strip() != "":
+            return value
+    return None
+
+
 def _parse_timestamp(value: Any) -> datetime | None:
     if not value:
         return None
@@ -145,18 +152,56 @@ def _line_movement_row(delivery: dict[str, Any]) -> tuple[dict[str, Any] | None,
     if not delivery_id:
         return None, "missing_delivery_id"
 
-    bookmaker_key = str(
-        payload.get("bookmaker_key")
-        or payload.get("bookmaker")
-        or payload.get("book")
-        or ""
-    ).strip().lower()
+    bookmaker_key = str(_present_value(
+        payload.get("bookmaker_key"),
+        current.get("bookmaker_key"),
+        previous.get("bookmaker_key"),
+        payload.get("bookmaker"),
+        payload.get("book"),
+    ) or "").strip().lower()
     bookmaker_key_missing = False
     if not bookmaker_key:
         bookmaker_key = "propline_webhook"
         bookmaker_key_missing = True
+    bookmaker_title = _present_value(
+        payload.get("bookmaker_title"),
+        current.get("bookmaker_title"),
+        previous.get("bookmaker_title"),
+    )
+    market_id = _present_value(
+        payload.get("market_id"),
+        current.get("market_id"),
+        previous.get("market_id"),
+    )
+    outcome_id = _present_value(
+        payload.get("outcome_id"),
+        current.get("outcome_id"),
+        previous.get("outcome_id"),
+    )
 
     provider_event_id = str(event.get("external_id") or event.get("id") or "").strip()
+    metadata = {
+        "bookmaker_key_missing": bookmaker_key_missing,
+        "event_type": event_type,
+        "market_key": payload.get("market_key"),
+        "price_change_pct": _float(payload.get("price_change_pct")),
+        "prop_line_delivery_id": delivery_id,
+        "prop_line_event_id": event.get("id"),
+        "provider_event_id": provider_event_id or None,
+        "source": "propline_webhook",
+        "sport_key": payload.get("sport_key"),
+        "teams": {
+            "away": event.get("away_team"),
+            "home": event.get("home_team"),
+        },
+    }
+    if bookmaker_title is not None:
+        metadata["bookmaker_title"] = bookmaker_title
+    if market_id is not None:
+        metadata["market_id"] = market_id
+    if outcome_id is not None:
+        metadata["outcome_id"] = outcome_id
+
     row = {
         "slate_date": slate_date,
         "normalized_pitcher": normalize(player_name),
@@ -172,21 +217,7 @@ def _line_movement_row(delivery: dict[str, Any]) -> tuple[dict[str, Any] | None,
         "observed_at": str(observed_at),
         "dedupe_key": f"{slate_date}:propline_webhook:{delivery_id}",
         "source_snapshot_id": None,
-        "metadata": {
-            "bookmaker_key_missing": bookmaker_key_missing,
-            "event_type": event_type,
-            "market_key": payload.get("market_key"),
-            "price_change_pct": _float(payload.get("price_change_pct")),
-            "prop_line_delivery_id": delivery_id,
-            "prop_line_event_id": event.get("id"),
-            "provider_event_id": provider_event_id or None,
-            "source": "propline_webhook",
-            "sport_key": payload.get("sport_key"),
-            "teams": {
-                "away": event.get("away_team"),
-                "home": event.get("home_team"),
-            },
-        },
+        "metadata": metadata,
     }
     return row, None
 

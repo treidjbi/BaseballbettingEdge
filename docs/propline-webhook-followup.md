@@ -84,10 +84,20 @@ Current implementation state:
 - Inbox: real rows are landing with `signature_valid=true`.
 - Processor: implemented as a shadow-only script and wired into the Render live
   layer behind `LIVE_PROCESS_PROPLINE_WEBHOOKS=false` by default.
-- Known payload caveat: current real line-movement payloads do not include a
-  sportsbook key, so the processor writes neutral movement rows with
-  `bookmaker_key='propline_webhook'` and metadata
-  `bookmaker_key_missing=true`. Do not treat these as official book prices.
+- Payload update: PropLine shipped `bookmaker_key`, `bookmaker_title`,
+  `market_id`, and `outcome_id` on every `line_movement` and `resolution`
+  delivery after Tyler's 2026-05-19 support thread with Andy. `market_id` and
+  `outcome_id` match the IDs returned by `/odds`, `/odds/history`, and
+  `/results`, so webhook movement can be reconciled to polled snapshots without
+  fuzzy player+line+book matching.
+- Processor behavior: if those fields are present, the processor writes the
+  actual `bookmaker_key` and stores `bookmaker_title`, `market_id`, and
+  `outcome_id` in metadata. Legacy rows without a book still use
+  `bookmaker_key='propline_webhook'` with `bookmaker_key_missing=true`.
+- Optional provider follow-up: Andy offered a future `filter_bookmaker_key`
+  subscription option for including/excluding specific books. Do not request or
+  depend on it until webhook noise/coverage evidence says book filtering would
+  materially reduce cost or alert noise.
 
 ## Verification
 
