@@ -101,7 +101,10 @@ Current evidence:
 
 - polling is useful
 - webhook receiver works technically
-- real provider webhook deliveries are not proven
+- real signed provider webhook deliveries are landing as of 2026-05-19
+- PropLine's 2026-05-19 payload fix adds `bookmaker_key`, `bookmaker_title`,
+  `market_id`, and `outcome_id`, making webhook movement reconcilable to
+  polling by stable IDs
 - FanDuel / BetRivers evidence appears more useful than a broad migration case
 
 Keep current tier if:

@@ -1,6 +1,6 @@
 # PropLine Webhook Follow-Up
 
-Last updated: 2026-05-07
+Last updated: 2026-05-19
 
 ## Current Goal
 
@@ -21,16 +21,24 @@ provider flow.
   `scripts/create_propline_webhook_subscription.py`
 - Added tests:
   `tests/test_propline_webhook_function.mjs`
+- Added shadow processor:
+  `scripts/process_propline_webhooks.py`
+- Added processor tests:
+  `tests/test_process_propline_webhooks.py`
 - Merged in PR #22:
   `https://github.com/treidjbi/BaseballBettingEdge/pull/22`
 
 ## Safety Guardrails
 
-The receiver is shadow-only.
+The receiver and processor are shadow-only.
 
-It writes only to:
+The receiver writes only to:
 
 - `public.propline_webhook_deliveries`
+
+The processor can mark inbox rows processed and write neutral movement facts to:
+
+- `public.line_movement_events`
 
 It does not change:
 
@@ -64,75 +72,36 @@ After merge:
 - Netlify deploy metadata showed the function route:
   `/api/propline-webhook`
 
-## Current Blocker
+## Current Status
 
-PropLine rejected webhook creation with:
+As of 2026-05-19, Tyler confirmed PropLine fixed the Streaming Lite entitlement
+mistake. Real signed `line_movement` deliveries are landing in
+`public.propline_webhook_deliveries`.
 
-```text
-403 {"detail":"Webhooks require the Streaming tier. Upgrade at https://prop-line.com/#pricing"}
-```
+Current implementation state:
 
-This happened when calling the webhook creation helper against:
+- Receiver: active Netlify function.
+- Inbox: real rows are landing with `signature_valid=true`.
+- Processor: implemented as a shadow-only script and wired into the Render live
+  layer behind `LIVE_PROCESS_PROPLINE_WEBHOOKS=false` by default.
+- Payload update: PropLine shipped `bookmaker_key`, `bookmaker_title`,
+  `market_id`, and `outcome_id` on every `line_movement` and `resolution`
+  delivery after Tyler's 2026-05-19 support thread with Andy. `market_id` and
+  `outcome_id` match the IDs returned by `/odds`, `/odds/history`, and
+  `/results`, so webhook movement can be reconciled to polled snapshots without
+  fuzzy player+line+book matching.
+- Processor behavior: if those fields are present, the processor writes the
+  actual `bookmaker_key` and stores `bookmaker_title`, `market_id`, and
+  `outcome_id` in metadata. Legacy rows without a book still use
+  `bookmaker_key='propline_webhook'` with `bookmaker_key_missing=true`.
+- Optional provider follow-up: Andy offered a future `filter_bookmaker_key`
+  subscription option for including/excluding specific books. Do not request or
+  depend on it until webhook noise/coverage evidence says book filtering would
+  materially reduce cost or alert noise.
 
-```text
-https://baseballbettingedge.netlify.app/api/propline-webhook
-```
+## Verification
 
-Tyler's pricing screenshot showed Streaming Lite includes:
-
-- webhook line-movement alerts
-- resolution delivered on finish
-- HMAC-signed deliveries with retry
-- up to 5 active webhooks
-
-So the likely issue is one of:
-
-- Streaming Lite entitlement has not propagated yet.
-- The API key is still tied to the old tier.
-- PropLine's backend gate only recognizes full Streaming, despite the pricing
-  page saying Streaming Lite includes webhooks.
-- Their error message is stale and uses "Streaming" generically.
-
-## Support Message To PropLine
-
-Send this:
-
-```text
-I upgraded to Streaming Lite, which the pricing page says includes webhook
-line-movement alerts, HMAC-signed deliveries with retry, and up to 5 active
-webhooks.
-
-When calling POST /v1/webhooks with my API key, I receive:
-403 {"detail":"Webhooks require the Streaming tier. Upgrade at https://prop-line.com/#pricing"}
-
-Can you confirm Streaming Lite has webhook access and enable it for my
-key/account?
-```
-
-## When PropLine Responds
-
-### If They Enable Streaming Lite Webhooks
-
-1. Re-run:
-
-   ```bash
-   python scripts/create_propline_webhook_subscription.py \
-     --url https://baseballbettingedge.netlify.app/api/propline-webhook
-   ```
-
-   The helper now defaults `min_price_change_pct` to `2.0` so the trial does
-   not accidentally filter out normal pitcher-strikeout price movement while
-   proving delivery reliability.
-
-2. Store the returned one-time secret in Netlify as:
-
-   ```text
-   PROPLINE_WEBHOOK_SECRET
-   ```
-
-3. Trigger a PropLine test delivery.
-
-4. Verify a row lands in Supabase:
+Check the inbox:
 
    ```sql
    select prop_line_event, signature_valid, processed, processing_error, received_at
@@ -141,36 +110,31 @@ key/account?
    limit 10;
    ```
 
-5. Let real deliveries accumulate before normalizing payloads into
-   `market_snapshots`.
+After processor runs, check shadow movement rows:
 
-### If They Say Full Streaming Is Required
+   ```sql
+   select slate_date, pitcher, side, bookmaker_key, previous_line, current_line,
+          previous_odds, current_odds, movement_kind, observed_at, metadata
+   from public.line_movement_events
+   where metadata->>'source' = 'propline_webhook'
+   order by observed_at desc
+   limit 20;
+   ```
 
-Do not upgrade automatically.
+## Historical Blocker
 
-Decision question:
+PropLine originally rejected webhook creation with:
 
-- Is webhook movement evidence worth an extra $40/month versus continuing
-  scheduled shadow polling?
+```text
+403 {"detail":"Webhooks require the Streaming tier. Upgrade at https://prop-line.com/#pricing"}
+```
 
-Current read:
-
-- Probably not yet.
-- Scheduled PropLine shadow polling already gives useful FanDuel/BetRivers
-  evidence.
-- Webhooks are worth testing at $39/month, but full Streaming at $79/month needs
-  stronger proof that intraday movement changes real decisions.
-
-### If They Say The Key Was Wrong Or Not Propagated
-
-Use the corrected key, then retry webhook creation.
-
-After setup succeeds, rotate any key that was shared in chat or appeared in
-tool output.
+That is no longer the active blocker. PropLine acknowledged the entitlement
+mistake and real signed deliveries are now present.
 
 ## One-Month Evaluation Criteria
 
-If webhooks become active, evaluate these before changing production behavior:
+Evaluate these before changing production behavior:
 
 - Did webhook deliveries arrive reliably?
 - Did HMAC signatures validate?
@@ -184,6 +148,7 @@ If webhooks become active, evaluate these before changing production behavior:
 
 Stay on TheRundown for production.
 
-Use PropLine webhooks only if Streaming Lite entitlement works. If PropLine
-requires the full $79 Streaming tier, pause and compare cost versus likely value
-before upgrading.
+Use PropLine webhooks as shadow movement evidence only. Enable automated
+processor runs only after the lock-ledger observation is not at risk, then
+compare webhook timing, coverage, duplicate behavior, and noise against
+PropLine polling and BoltOdds before any notification or provider-source use.

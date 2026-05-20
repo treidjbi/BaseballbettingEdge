@@ -41,8 +41,10 @@ Use this hierarchy when sources disagree.
    Its `shadow_pipeline_runs` and `shadow_pick_lock_observations` tables are
    scheduler/lock-timing evidence only until a separate promotion is approved.
 3. **PropLine shadow/fallback evidence**: PropLine polling can support fallback,
-   coverage, and movement analysis. PropLine webhooks are not considered proven
-   until real provider deliveries appear in `propline_webhook_deliveries`.
+   coverage, and movement analysis. PropLine webhooks now have real signed
+   delivery evidence and book-level movement IDs, but webhook-derived movement
+   remains shadow-only and must not drive production odds, picks, notifications,
+   or provider promotion without a separate review.
 4. **BoltOdds shadow evidence**: BoltOdds WebSocket rows are live-market
    evidence during the trial only. They do not alter production picks or
    notifications until explicitly promoted.
@@ -166,7 +168,7 @@ Tyler explicitly changes this boundary.
 | Supabase lock ledger writes bad row | A pick locks at an incorrect line/side/time | Artifact lock trust drops | `operational_pick_locks`, source artifact hash, game_time, should_lock_at | Disable `ENABLE_SUPABASE_LOCK_CONSUMER`; continue GitHub lock path; inspect row lineage | Any consumed lock row disagrees with the source artifact |
 | Render live layer uses stale checkout | Supabase source artifact is local checkout, old SHA, or old generated_at | Notifications based on stale picks | `market_provider_runs` / live logs source metadata | Confirm GitHub raw artifact fetch; redeploy worker if needed | Any notification generated from stale artifact |
 | PropLine polling stops | No recent PropLine runs/snapshots | Live movement evidence stale | Render logs, GitHub shadow workflow, `market_provider_runs` | Check API key/env, provider errors, schedule health | More than one live window missed during active slate |
-| PropLine webhooks still absent | Only synthetic rows in `propline_webhook_deliveries` | Webhook feature cannot be trusted | Supabase webhook delivery table | Keep polling path; contact provider if needed | Do not promote webhooks without real deliveries |
+| PropLine webhook processor noisy or ambiguous | Signed webhook rows create duplicate/low-value movement facts, or legacy rows lack sportsbook key | Webhook evidence pollutes shadow reads or future alert logic | `propline_webhook_deliveries`, `line_movement_events`, dedupe keys, `bookmaker_key`, `metadata.market_id`, `metadata.outcome_id`, `metadata.bookmaker_key_missing` | Keep webhook processing shadow-only; compare against polling/BoltOdds; disable `LIVE_PROCESS_PROPLINE_WEBHOOKS` if noisy | Do not promote webhook rows to notifications or provider source without book-level proof and reviewed noise evidence |
 | BoltOdds heartbeat stale | `market_feed_heartbeats` not fresh | WebSocket evidence stale or false confidence | Render worker logs and heartbeat table | Restart worker; inspect reconnect/error state | Stale during active slate or repeated overnight |
 | BoltOdds row volume too high | Rapid `market_snapshots` growth | Supabase cost/query risk | Trial audit and migration-risk audit | Reduce raw capture, add retention, aggregate summaries | Free tier pressure or slow diagnostics |
 | Netlify sender not sending | Pending queue grows; sender logs errors | Users miss live alerts | Netlify function logs; `notification_events` sent/failed counts | Check env, Supabase service key, VAPID, Blobs | Pending actionable events remain unsent through game window |

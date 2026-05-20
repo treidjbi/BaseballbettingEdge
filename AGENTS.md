@@ -442,11 +442,16 @@ the provider cutover gates and environment switch are completed.
   June 1 standalone PropLine review for production-provider decisions. Use the
   new cutover gates and request-usage accounting before downgrading PropLine,
   promoting provider behavior, or canceling TheRundown.
-- **Current evidence as of 2026-05-07**: polling is useful for fallback,
-  partial-provider, and live-movement evidence. Real provider webhooks are not
-  proven; the only confirmed webhook delivery was a signed synthetic test row.
-  Do not treat PropLine webhooks as live until real provider deliveries appear
-  in `propline_webhook_deliveries`.
+- **Current evidence as of 2026-05-19**: polling is useful for fallback,
+  partial-provider, and live-movement evidence. Real signed PropLine
+  `line_movement` webhook deliveries now appear in
+  `propline_webhook_deliveries`; they remain shadow-only. PropLine's
+  2026-05-19 payload fix adds `bookmaker_key`, `bookmaker_title`, `market_id`,
+  and `outcome_id` to `line_movement` and `resolution` deliveries. The
+  processor stores those fields when present and keeps a legacy neutral fallback
+  for rows without a sportsbook key. Do not use PropLine webhook rows for
+  production odds, picks, notifications, or provider promotion without a
+  separate review.
 
 The response shape mirrors The Odds enough to share parser logic:
 `bookmakers[] -> markets[] -> outcomes[]`, where pitcher props use
