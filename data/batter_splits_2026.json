@@ -7371,24 +7371,31 @@
         "so": 0,
         "k_rate": 0.0
       }
+    },
+    "mlbam:664731": {
+      "name": "P.J. Higgins",
+      "bats": "R",
+      "mlbam_id": 664731,
+      "bbref_id": "higgipj01",
+      "season": 2026,
+      "vs_R": {
+        "pa": 12,
+        "so": 4,
+        "k_rate": 0.3333
+      }
     }
   },
-  "updated_at": "2026-05-20T05:16:07Z",
+  "updated_at": "2026-05-20T16:34:08Z",
   "last_run": {
     "projection_status": "collection_only",
-    "requested_batters": 234,
-    "already_cached": 228,
-    "attempted": 4,
-    "collected": 0,
-    "failed": 4,
-    "queued_not_attempted": 2,
-    "cache_size": 437,
-    "errors": [
-      "Joe Mack: no bbref id",
-      "A.J. Ewing: no bbref id",
-      "Nick Morabito: no bbref id",
-      "Henry Bolte: no bbref id"
-    ],
-    "updated_at": "2026-05-20T05:16:07Z"
+    "requested_batters": 54,
+    "already_cached": 53,
+    "attempted": 1,
+    "collected": 1,
+    "failed": 0,
+    "queued_not_attempted": 0,
+    "cache_size": 438,
+    "errors": [],
+    "updated_at": "2026-05-20T16:34:08Z"
   }
 }
