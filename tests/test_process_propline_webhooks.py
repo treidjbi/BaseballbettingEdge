@@ -154,6 +154,53 @@ def test_processor_writes_neutral_line_movement_event_from_real_payload_shape():
     assert delivery_call.kwargs == {"on_conflict": "id"}
 
 
+def test_processor_canonicalizes_observed_at_to_utc_iso():
+    payload = _line_movement_payload()
+    payload["timestamp"] = "2026-05-19T13:37:42.982116-07:00"
+    writer = Mock()
+    writer.select_rows.return_value = [_delivery(payload)]
+
+    with patch.object(process_propline_webhooks, "SupabaseMarketWriter", return_value=writer):
+        result = process_propline_webhooks.run(
+            supabase_url="https://example.supabase.co",
+            service_role_key="secret",
+        )
+
+    assert result["processed"] == 1
+    movement_call = writer.upsert_rows.call_args_list[0]
+    row = movement_call.args[1][0]
+    assert row["observed_at"] == "2026-05-19T20:37:42.982116+00:00"
+
+
+def test_processor_rejects_malformed_observed_at_before_writing_movement():
+    payload = _line_movement_payload()
+    payload["timestamp"] = "not-a-postgres-timestamp"
+    writer = Mock()
+    writer.select_rows.return_value = [_delivery(payload)]
+
+    with patch.object(process_propline_webhooks, "SupabaseMarketWriter", return_value=writer):
+        result = process_propline_webhooks.run(
+            supabase_url="https://example.supabase.co",
+            service_role_key="secret",
+        )
+
+    assert result == {
+        "deliveries": 1,
+        "processed": 0,
+        "line_movement_events": 0,
+        "unsupported": 1,
+    }
+    writer.upsert_rows.assert_called_once_with(
+        "propline_webhook_deliveries",
+        [{
+            "id": "delivery-row-1",
+            "processed": True,
+            "processing_error": "unsupported_payload_shape",
+        }],
+        on_conflict="id",
+    )
+
+
 def test_processor_preserves_propline_bookmaker_and_stable_ids():
     payload = _line_movement_payload()
     payload.update({

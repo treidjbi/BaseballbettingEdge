@@ -122,9 +122,10 @@ def _line_movement_row(delivery: dict[str, Any]) -> tuple[dict[str, Any] | None,
         or delivery.get("prop_line_timestamp")
         or delivery.get("received_at")
     )
+    observed_at_dt = _parse_timestamp(observed_at)
     slate_date = _phoenix_slate_date(
         event.get("commence_time"),
-        observed_at,
+        observed_at_dt,
         delivery.get("received_at"),
     )
     if (
@@ -134,7 +135,7 @@ def _line_movement_row(delivery: dict[str, Any]) -> tuple[dict[str, Any] | None,
         or current_line is None
         or previous_odds is None
         or current_odds is None
-        or not observed_at
+        or observed_at_dt is None
         or not slate_date
     ):
         return None, "unsupported_payload_shape"
@@ -214,7 +215,7 @@ def _line_movement_row(delivery: dict[str, Any]) -> tuple[dict[str, Any] | None,
         "current_odds": current_odds,
         "movement_direction": "neutral",
         "movement_kind": movement_kind,
-        "observed_at": str(observed_at),
+        "observed_at": observed_at_dt.isoformat(),
         "dedupe_key": f"{slate_date}:propline_webhook:{delivery_id}",
         "source_snapshot_id": None,
         "metadata": metadata,
