@@ -901,6 +901,9 @@ platoon adjustment. Real per-batter `vs_R` / `vs_L` splits remain
 collection-only. Do not wire real splits into live projection math, change
 confidence-referee labels into live verdict behavior, or bump
 `formula_change_date` unless the May 12 plan's Path B and Gate F checks pass.
+Keep the daily Gate C read anchored to the 2026-04-28+ clean regime, with the
+immediate 2026-04-08 through 2026-04-27 pre-bump window used only as context
+for bucket inversions, not as permission to roll back live behavior.
 
 ### Umpire career_k_rates - Periodic Current-Season Check
 

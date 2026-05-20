@@ -490,6 +490,15 @@ Current readout from 2026-05-07:
   model-versus-market relationship, opportunity/leash buckets, and
   lineup-handedness field availability. The brief should explain what changed
   without promoting live model behavior.
+- As of the 2026-05-20 read, keep a compact Gate C bucket scoreboard in the
+  daily brief and compare it to the immediate pre-bump window only as context.
+  Use 2026-04-08 through 2026-04-27 as the fair pre-bump reference and
+  2026-04-28+ as the clean current regime. The important current finding is
+  inversion, not rollback: pre-bump FIRE 1u, unders, and high-edge rows were
+  strong, while post-bump FIRE 1u, unders, and high-edge rows are weak;
+  post-bump FIRE 2u, overs, moderate-edge, beat-close-price, and pre-30 timing
+  rows look more promising. This remains shadow-only until the May 12 plan's
+  Gate E/F standards justify a separate promotion plan.
 
 ## Next Decision Checkpoints
 
@@ -525,6 +534,8 @@ model-versus-market relationship, opportunity/leash context, and K-projection
 challenger evidence in shadow. It should also keep batter-handedness and
 lineup-shape evidence collection-only until the May 12 plan's Path B checks
 pass. Do not promote a live rule from one positive bucket or one slate.
+Preserve the rolling pre/post 2026-04-28 bucket comparison as interpretation
+context, but let the clean current regime drive Gate E/F candidate thinking.
 
 ### Pitcher K Outcome Research Dataset
 

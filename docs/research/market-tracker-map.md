@@ -129,17 +129,23 @@ The BBE Operations Brief should synthesize this map every weekday:
 3. Regenerate or read `pitcher_k_outcome_dataset_summary.md` and report CLV,
    process outcome, timing window, model-versus-market, opportunity/leash,
    pitcher archetype, large-edge skepticism, and reconciliation counts.
-4. Regenerate or read `k_projection_shadow_lab.md` when projection quality is
+4. Keep a compact Gate C bucket scoreboard for the clean 2026-04-28+ regime:
+   FIRE 1u/2u, over/under, moderate edge, high edge, CLV/no-CLV, timing window,
+   quality gate, model-versus-market favorite, opportunity/leash, and pitcher
+   archetype. Compare it to the immediate 2026-04-08 through 2026-04-27
+   pre-bump window when the contrast changes the read, but do not use the
+   older window as permission to roll back live rules.
+5. Regenerate or read `k_projection_shadow_lab.md` when projection quality is
    in question; report whether a challenger improves accuracy without
    promoting it into live lambda.
-5. For provider-cutover or line-conflict days, run/read
+6. For provider-cutover or line-conflict days, run/read
    `executable_market_shadow_audit_YYYY-MM-DD.md` beside the provider cutover
    report. Separate `single_book_outlier` conflicts from
    `ref_vs_majority` conflicts, and treat best-executable EV as shadow evidence
    until CLV/outcome proof exists.
-6. Tie any recommendation back to cost/risk docs before suggesting more
+7. Tie any recommendation back to cost/risk docs before suggesting more
    infrastructure or provider spend.
-7. Explicitly separate "collect more evidence" from "ready to change model or
+8. Explicitly separate "collect more evidence" from "ready to change model or
    betting behavior."
 
 The daily read should produce a compact confidence-referee note:

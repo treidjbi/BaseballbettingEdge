@@ -95,6 +95,32 @@ the value of a compact daily research table beats the simplicity of local
 generated artifacts. If promoted later, store compact rows only; do not retain
 raw WebSocket tick history without a separate retention/cost decision.
 
+### Rolling Evidence Update: 2026-05-20
+
+Use the 2026-04-28 formula boundary as the live clean-regime split, but keep a
+small pre/post comparison beside Gate C reads so agents do not forget how the
+signal changed.
+
+For near-term comparisons, use 2026-04-08 through 2026-04-27 as the fair
+immediate pre-bump reference window. Older pre-4/28 rows mix earlier regimes
+and should be treated as broader history, not a like-for-like baseline.
+
+The current read through graded rows on 2026-05-19:
+
+- Immediate pre-bump FIRE weighted: 347 rows, 190-157, +12.95u on 536 staked
+  units, +2.42% ROI. FIRE flat: +17.94u, +5.17% ROI.
+- Clean post-bump FIRE weighted: 321 rows, 163-158, -9.12u on 397 staked
+  units, -2.30% ROI. FIRE flat: -11.93u, -3.72% ROI.
+- The shape inverted: pre-bump FIRE 1u, unders, and high-edge rows were strong;
+  post-bump FIRE 1u, unders, and high-edge rows are weak.
+- Post-bump FIRE 2u, overs, moderate-edge rows, beat-close-price rows, and
+  pre-30 timing rows look more promising, but this is still shadow evidence.
+
+Do not use this comparison to roll back thresholds, staking, formula date, or
+provider behavior. Use it to keep Gate C honest: current-regime buckets matter
+most, and any future Gate E/F candidate must survive side, price, line, timing,
+CLV, quality, and provider slices rather than replaying a pre-bump pattern.
+
 ## Consolidated Source Of Truth
 
 This plan is the controlling handoff for the pitcher K research dataset,
@@ -131,6 +157,12 @@ The BBE Operations Brief should digest this dataset after grading and report:
   still absent from the compact dataset
 - whether lineup-handedness fields are populated or still collection-only
   placeholders
+- a compact Gate C bucket scoreboard for the clean 2026-04-28+ regime:
+  FIRE 1u/2u, over/under, moderate edge, high edge, CLV/no-CLV, timing window,
+  quality gate, model-versus-market favorite, opportunity/leash, and pitcher
+  archetype
+- the immediate pre-bump versus post-bump comparison when the comparison changes
+  the interpretation of a current bucket
 
 The daily read should explain what the trackers suggest, but explicitly avoid
 turning them into live betting rules until Gate E/F. In plain terms: this is
@@ -214,6 +246,11 @@ must survive at least these slices:
 One positive slate or one attractive bucket is not enough. Gate C may recommend
 more evidence collection, a better shadow label, or a Gate E research question.
 It cannot recommend a live threshold, staking, formula, or provider change.
+
+Gate C should preserve a short "what changed since the 2026-04-28 bump" note.
+If a bucket flipped versus the immediate pre-bump window, treat that as a
+skepticism prompt, not as proof the old regime should be restored. Current
+post-bump evidence has priority for live-candidate thinking.
 
 ## Batter Handedness / Lineup Context Plan
 
