@@ -7383,22 +7383,38 @@
         "so": 4,
         "k_rate": 0.3333
       }
+    },
+    "mlbam:621550": {
+      "name": "Patrick Wisdom",
+      "bats": "R",
+      "mlbam_id": 621550,
+      "bbref_id": "wisdopa01",
+      "season": 2026,
+      "vs_R": {
+        "pa": 1,
+        "so": 0,
+        "k_rate": 0.0
+      },
+      "vs_L": {
+        "pa": 3,
+        "so": 1,
+        "k_rate": 0.3333
+      }
     }
   },
-  "updated_at": "2026-05-20T18:05:47Z",
+  "updated_at": "2026-05-20T18:26:59Z",
   "last_run": {
     "projection_status": "collection_only",
     "requested_batters": 108,
     "already_cached": 106,
     "attempted": 2,
-    "collected": 0,
-    "failed": 2,
+    "collected": 1,
+    "failed": 1,
     "queued_not_attempted": 0,
-    "cache_size": 438,
+    "cache_size": 439,
     "errors": [
-      "Ryan Waldschmidt: no bbref id",
-      "Colt Emerson: no bbref id"
+      "Ryan Waldschmidt: no bbref id"
     ],
-    "updated_at": "2026-05-20T18:05:47Z"
+    "updated_at": "2026-05-20T18:26:59Z"
   }
 }
