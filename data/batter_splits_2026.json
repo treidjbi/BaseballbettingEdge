@@ -7417,22 +7417,39 @@
         "so": 2,
         "k_rate": 0.2222
       }
+    },
+    "mlbam:686554": {
+      "name": "Oliver Dunn",
+      "bats": "R",
+      "mlbam_id": 686554,
+      "bbref_id": "dunnol01",
+      "season": 2026,
+      "vs_R": {
+        "pa": 35,
+        "so": 10,
+        "k_rate": 0.2857
+      },
+      "vs_L": {
+        "pa": 6,
+        "so": 1,
+        "k_rate": 0.1667
+      }
     }
   },
-  "updated_at": "2026-05-20T19:17:52Z",
+  "updated_at": "2026-05-20T19:31:17Z",
   "last_run": {
     "projection_status": "collection_only",
     "requested_batters": 171,
-    "already_cached": 169,
-    "attempted": 2,
-    "collected": 0,
+    "already_cached": 168,
+    "attempted": 3,
+    "collected": 1,
     "failed": 2,
     "queued_not_attempted": 0,
-    "cache_size": 440,
+    "cache_size": 441,
     "errors": [
       "Ryan Waldschmidt: no bbref id",
       "Colt Emerson: no bbref id"
     ],
-    "updated_at": "2026-05-20T19:17:52Z"
+    "updated_at": "2026-05-20T19:31:17Z"
   }
 }
