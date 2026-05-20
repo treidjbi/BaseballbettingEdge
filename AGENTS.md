@@ -13,6 +13,32 @@ For new work, read files in this order:
 `CLAUDE.md` may exist for compatibility, but `AGENTS.md` is the source of truth
 going forward.
 
+## Operating Board Update Policy
+
+The four active lanes are tracked in `docs/current-state.md`:
+
+- pipeline / infrastructure
+- model
+- UI
+- tracking / data collection / history
+
+When work meaningfully changes a lane's stage, next decision, blocker,
+promotion status, or controlling plan, update the handoff docs before ending
+the session:
+
+1. Update the controlling dated plan first when detailed rules, gates, or
+   promotion standards changed.
+2. Update the Four-Lane Operating Board in `docs/current-state.md` with the
+   current stage and next decision/blocker.
+3. Update `AGENTS.md` only for global rules, read-order changes, or durable
+   operating policies.
+4. Update the BBE Operations Brief automation memory when the daily brief should
+   carry the change forward.
+
+Do not spread detailed rules across multiple docs. The board is a summary and
+coordination surface; controlling plans remain the source for implementation
+details. Never treat progress in one lane as approval to promote another lane.
+
 ## Machine / Git Hygiene Policy
 
 This repo is worked on from more than one computer. Do not leave surprise local

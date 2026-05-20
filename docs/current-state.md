@@ -72,6 +72,12 @@ explicitly approves the production switch. Operational reliability evidence is
 not a model-change approval, and model bucket evidence is not a provider-cutover
 approval.
 
+Board maintenance rule: when a session meaningfully changes a lane's stage,
+next decision, blocker, promotion status, or controlling plan, update the
+controlling dated plan first, this board second, and the BBE Operations Brief
+automation memory when the daily brief should carry the update forward. Keep
+the board concise; do not duplicate detailed rules from the controlling plans.
+
 ## Supabase Operational Foundation Migration
 
 As of 2026-05-19, Tyler approved starting the migration from pure shadow
