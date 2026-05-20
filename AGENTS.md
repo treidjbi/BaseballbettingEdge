@@ -75,6 +75,11 @@ PropLine if the evidence and gates pass.
 - For model-facing Gate C, confidence-referee, batter-handedness, opportunity/
   leash, or K-projection challenger work, start with
   `docs/superpowers/plans/2026-05-12-pitcher-k-outcome-research-dataset.md`.
+- For future dashboard UI work that uses BoltOdds/PropLine live-market price
+  tracking after the operational/provider production switch is approved, start
+  with
+  `docs/superpowers/plans/2026-05-20-live-market-decision-ui.md`. That plan is
+  display-only until Tyler separately approves implementation and promotion.
 - Read `docs/provider-cost-ledger.md` before recommending new providers,
   provider upgrades, higher polling cadence, or always-on infrastructure.
 - Read `docs/operational-risk-register.md` before changing provider behavior,
