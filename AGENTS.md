@@ -357,6 +357,14 @@ actionable-state fields. It is display/evaluation evidence only; it must not
 change official picks, locks, thresholds, staking, provider order, or
 notification sends without Tyler's explicit approval.
 
+After the Supabase operational/provider switch is stable, revisit the live
+notification coordinator plan:
+`docs/superpowers/plans/2026-05-20-live-notification-coordinator.md`. It covers
+deduping GitHub/live-layer pushes, grouped start-window reminders, lock batches,
+late-reminder suppression, and the eventual reduction of GitHub
+`send-notifications` to fallback/artifact-health mode. Do not change
+notification behavior until that plan is explicitly approved for implementation.
+
 Current note: `NOTIFY_SECRET` rotation after screenshot exposure was completed
 on 2026-05-07. Future checks should focus on sender health, queue counts, and
 delivery outcomes.

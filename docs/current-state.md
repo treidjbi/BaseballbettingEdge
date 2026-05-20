@@ -211,6 +211,15 @@ market decision UI plan:
 display-only and shadow-only until Tyler separately approves implementation and
 promotion.
 
+Also revisit the live notification coordinator plan:
+`docs/superpowers/plans/2026-05-20-live-notification-coordinator.md`.
+That plan captures the future notification product direction after the
+operational switch: Supabase `notification_events` should become the primary
+durable queue, start-window reminders should be grouped, lock pushes should be
+batched, late/post-start betting-action pushes should be suppressed or converted
+to system-health alerts, and GitHub `send-notifications` should eventually move
+to fallback/artifact-health mode after a clean canary.
+
 ## Active Production Path
 
 The official app still runs from the GitHub pipeline:

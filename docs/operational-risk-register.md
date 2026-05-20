@@ -245,6 +245,12 @@ Daily checks should report sent, failed, pending, unsent, and obvious duplicate
 counts. The review should also say whether any alert would have changed what
 Tyler did.
 
+Future notification behavior should follow
+`docs/superpowers/plans/2026-05-20-live-notification-coordinator.md` once the
+Supabase operational/provider switch is stable. Until then, treat duplicate,
+early, or post-start pushes as operational evidence, not permission to change
+the sender path mid-slate.
+
 ## Monthly Cost / Complexity Review
 
 Run with `docs/provider-cost-ledger.md`.
