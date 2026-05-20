@@ -59,9 +59,13 @@ silently replace production artifact values with shadow feed values.
 
 Current track: `bet-selection-first`.
 
-Gate C opens only when the shadow conversion diagnostics show a better ranking
-or selection rule across enough clean rows. Do not change thresholds, staking,
-or live verdict behavior from one slate or one positive bucket.
+Controlling plan:
+`docs/superpowers/plans/2026-05-12-pitcher-k-outcome-research-dataset.md`.
+
+Gate C opens only when the shadow confidence-referee diagnostics show a better
+ranking or selection story across enough clean rows, while separating
+runtime-safe evidence from hindsight-only explanation. Do not change thresholds,
+staking, or live verdict behavior from one slate or one positive bucket.
 
 ### PropLine June 1 Review
 

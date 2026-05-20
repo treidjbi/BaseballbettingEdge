@@ -51,7 +51,7 @@ evidence.
 | --- | --- | --- | --- | --- |
 | Gate A | Schema Approval | Canonical row contract and source hierarchy are documented | Local diagnostic/test work | Storage writes and automation |
 | Gate B | Local Backfill Proof | Backfill covers at least 95% of clean archived pitcher markets and reconciles graded results | Local generated research artifact | Supabase table writes |
-| Gate C | Compact Storage Proof | Row volume/cost is acceptable and idempotent keys are tested | Supabase compact research table or committed daily artifact | Model/ranking influence |
+| Gate C | Compact Evidence / Storage Proof | Row volume/cost is acceptable, idempotent keys are tested, and the confidence-referee report separates runtime-safe evidence from hindsight | Supabase compact research table or committed daily artifact plus shadow referee report | Model/ranking influence |
 | Gate D | Daily Collection Proof | Daily append works for 10 straight graded slates with zero duplicate keys and clean reconciliation | Routine post-grading dataset refresh | Live behavior changes |
 | Gate E | Research Readiness | At least 500 clean graded side rows, 30 graded slates, and stable core slices | Candidate selection/ranking hypotheses | Production thresholds/staking |
 | Gate F | Promotion Candidate | Holdout/backtest lift survives side, price, line, and provider slices | A separate model-selection implementation plan | Direct deployment from this dataset |
@@ -95,6 +95,27 @@ the value of a compact daily research table beats the simplicity of local
 generated artifacts. If promoted later, store compact rows only; do not retain
 raw WebSocket tick history without a separate retention/cost decision.
 
+## Consolidated Source Of Truth
+
+This plan is the controlling handoff for the pitcher K research dataset,
+Gate C confidence-referee work, batter-handedness Path A/Path B, opportunity
+and leash tracking, and K-projection challenger evidence.
+
+Use the other docs as summaries or inventories:
+
+- `AGENTS.md`: repo entrypoint and short operating reminders
+- `docs/current-state.md`: current status snapshot and next checkpoint pointers
+- `docs/research/market-tracker-map.md`: tracker inventory and duplication
+  guardrails
+- `docs/operational-risk-register.md`: risk, retention, and promotion
+  guardrails
+- `docs/superpowers/plans/2026-05-07-bet-conversion-shadow-audit.md`:
+  historical diagnostic plan for the first bet-selection-first audit
+
+When a gate changes, update this plan first, then update `AGENTS.md` and
+`docs/current-state.md` only with a short pointer or status summary. The goal
+is to keep the detailed rules here instead of repeating them in multiple files.
+
 ## Daily Brief Synthesis Contract
 
 The BBE Operations Brief should digest this dataset after grading and report:
@@ -114,6 +135,217 @@ The BBE Operations Brief should digest this dataset after grading and report:
 The daily read should explain what the trackers suggest, but explicitly avoid
 turning them into live betting rules until Gate E/F. In plain terms: this is
 the market-memory and confidence-referee layer, not an automatic model change.
+
+## Gate C / Confidence-Referee Scope
+
+Gate C should make the evidence easier to read and trust. It must not make the
+model more aggressive by itself.
+
+The referee should compare:
+
+- adjusted EV, raw edge, and model margin
+- side-specific conversion for overs and unders
+- price buckets, plus/minus sides, and no-vig market-favorite context
+- opening-source context and price/line CLV
+- model-versus-market relationship
+- quality-gate level, reasons, and data-maturity state
+- live-market movement checkpoints when available
+- opportunity, leash-risk, and pitcher-archetype buckets
+- K-projection shadow-lab challenger results
+- lineup count and batter-handedness field availability
+
+Gate C can create shadow labels such as:
+
+- `bet_now_candidate`
+- `wait_for_late_data`
+- `demand_better_price`
+- `monitor_only`
+- `do_not_upgrade_without_more_rows`
+
+Those labels are research annotations only. They may appear in reports, but
+they must not change `verdict`, `adj_ev`, stake sizing, push notifications,
+provider order, calibration, or dashboard production artifacts.
+
+### Runtime-Safe Versus Hindsight Evidence
+
+Runtime-safe fields are allowed in future candidate rules because they can be
+known before lock:
+
+- pitcher, side, K line, book, odds, and scheduled game time
+- model side, model win probability, no-vig gap, edge, EV, adjusted EV, and
+  projected Ks
+- quality-gate level, reasons, and data-maturity state
+- opening source and pregame price/line movement checkpoints
+- model-versus-market favorite relationship
+- lineup availability, lineup count, and handedness counts when actually known
+  before lock
+- rest/workload metadata, opener/starter-mismatch state, umpire state, and park
+  factor
+- opportunity/leash buckets if built only from pregame workload, role, lineup,
+  and team-context evidence
+
+Hindsight-only fields are useful for learning but cannot be used as pregame
+rule inputs:
+
+- result, actual Ks, PnL, and miss distance
+- beat-close price/line labels after the market closes
+- actual innings pitched, pitch count, batters faced, and times-through-order
+- post-start market movement
+- postgame injury, bullpen, or role explanations
+
+Every report should call out which side of this line it is using. This is the
+main leakage guardrail for the confidence-referee layer.
+
+### Gate C Proof Standard
+
+Gate C is open only when the shadow report shows a cleaner ranking or selection
+story across enough clean rows to be worth continued collection. A useful story
+must survive at least these slices:
+
+- over versus under
+- plus-money versus minus-money
+- low, medium, and high K-line buckets
+- FIRE 1u versus FIRE 2u and strong LEAN buckets
+- model with market favorite versus model fading market favorite
+- clean quality gates versus soft-capped rows
+- price CLV, line CLV, and no-CLV rows
+- opportunity/leash and pitcher-archetype buckets
+
+One positive slate or one attractive bucket is not enough. Gate C may recommend
+more evidence collection, a better shadow label, or a Gate E research question.
+It cannot recommend a live threshold, staking, formula, or provider change.
+
+## Batter Handedness / Lineup Context Plan
+
+### Current Path A
+
+Path A is the live behavior.
+
+- Aggregate batter K% is live.
+- `pipeline/fetch_batter_stats.py` returns the current caller contract:
+  `{normalized_batter_name: {"vs_R": float, "vs_L": float}}`.
+- True per-batter `vs_R` / `vs_L` splits remain collection-only.
+- The pipeline may cache Baseball-Reference platoon split samples in
+  `data/batter_splits_YYYY.json`.
+- Projection still uses aggregate K% for both `vs_R` and `vs_L`, then applies
+  the league-average platoon adjustment in
+  `build_features.calc_lineup_k_rate`.
+- Switch hitters are modeled as batting opposite the pitcher's hand.
+
+This is deliberately conservative. It captures a real handedness effect without
+letting noisy early split samples swing the projection.
+
+### Collection-Only Fields
+
+The compact dataset should keep these fields even while they are incomplete:
+
+- `pitcher_throws`
+- `lineup_count`
+- `lineup_right_batters`
+- `lineup_left_batters`
+- `lineup_switch_batters`
+- `handedness_matchup_bucket`
+- projected-to-confirmed lineup K-rate delta when available
+
+Unknown values should stay `None`, not invented neutral values. The daily brief
+should report whether these fields are populated or still placeholders.
+
+### Path B Trigger
+
+Path B becomes a candidate only when both conditions are true:
+
+- the repo has reached the old volume reminder of `params.json.sample_size >=
+  400` or the calendar is on/after 2026-05-25
+- the compact dataset shows enough confirmed-lineup and split-coverage evidence
+  to test the change without guessing
+
+The date/sample trigger is a reminder to investigate, not permission to promote.
+Any live projection change still needs Gate E/F evidence and a separate
+implementation plan.
+
+### Path B Implementation Shape
+
+When approved later, Path B should:
+
+1. Implement real split collection in `pipeline/fetch_batter_stats.py`.
+2. Return real `vs_R` / `vs_L` K% plus per-split plate-appearance sample size.
+3. Apply Bayesian regression toward league same-hand or opposite-hand averages,
+   weighted by split PA.
+4. In `pipeline/build_features.py`, use real split values when available.
+5. Remove the generic `+ platoon_k_delta(...)` adjustment only for batters with
+   trusted real splits, while keeping `PLATOON_K_DELTA` / `platoon_k_delta()`
+   as the fallback.
+6. Bump `formula_change_date` in `data/params.json` only on the actual live
+   formula-change deploy date.
+7. Verify `TestCalcLineupKRate` and `TestPlatoonKDelta` still cover fallback
+   behavior.
+
+### Path B Promotion Checks
+
+Before Path B can affect live lambda, prove:
+
+- at least 10 straight graded slates include stable lineup-handedness fields
+- split coverage is good enough for confirmed lineups, not only projected
+  lineups
+- fallback rows are explicit and do not silently look like real split rows
+- holdout accuracy improves versus Path A
+- the improvement survives RHP/LHP starters, over/under sides, and K-line
+  buckets
+- no hidden degradation appears in FIRE 2u or clean quality-gate rows
+
+If the evidence is thin, keep Path A live and continue collecting.
+
+## Opportunity / Leash Evidence Plan
+
+The compact row should keep opportunity and leash evidence because pitcher K
+misses often come from workload and role, not only strikeout skill.
+
+Already represented or planned in compact rows:
+
+- `avg_ip`
+- `recent_start_count`
+- `days_since_last_start`
+- `last_pitch_count`
+- `is_opener`
+- `starter_mismatch`
+- `opportunity_bucket`
+- `leash_risk_bucket`
+- `actual_ip`
+- `actual_pitch_count`
+- `batters_faced`
+
+Pregame opportunity/leash labels may be used for future candidate rules only if
+they are built from information known before lock. Actual IP, pitch count, and
+batters faced are postgame explanations and must remain hindsight-only.
+
+## Open Evidence Backlog
+
+Before adding a new table or tracker, first ask whether the compact outcome row
+can answer the question with a derived label. Add new storage only when the
+source data is truly missing.
+
+Still-needed source data:
+
+- confirmed lineup handedness counts by pitcher hand
+- projected-to-confirmed lineup K-rate delta
+- actual innings pitched, pitch count, batters faced, and times-through-order
+- injury/ramp-up and return-from-IL flags
+- bullpen rest and likely leash/team pull tendency
+- weather, roof, and game-total/run-environment context
+- provider-specific bet-time consensus rows once BoltOdds is promoted
+
+Already answerable from the compact row or derived labels:
+
+- price CLV and line CLV
+- CLV type
+- process-outcome bucket
+- bet timing window
+- model-versus-market relationship
+- model edge and projection-margin buckets
+- large-edge skepticism flag and reasons
+- pitcher archetype bucket
+- opportunity and leash-risk buckets
+- K-projection challenger comparison
 
 ## Canonical Row Grain
 
@@ -366,16 +598,20 @@ Gate B opens when:
 - no production files are modified
 - focused tests pass
 
-## Gate C: Compact Storage Proof
+## Gate C: Compact Evidence / Storage Proof
 
 **Purpose:** Decide whether this should live only as generated files or as a
-compact Supabase research table.
+compact Supabase research table, and prove the confidence-referee report can
+summarize the evidence without creating leakage or live behavior changes.
 
 **Files:**
 
 - Create only after approval: `supabase/migrations/YYYYMMDD_pitcher_k_outcome_research.sql`
 - Create: `analytics/diagnostics/pitcher_k_outcome_storage_audit.py`
+- Create: `analytics/diagnostics/confidence_referee_shadow_report.py`
 - Create: `tests/test_pitcher_k_outcome_storage_audit.py`
+- Create: `tests/test_confidence_referee_shadow_report.py`
+- Write local-only: `analytics/output/confidence_referee_shadow_report.md`
 
 - [ ] **Step 1: Estimate row volume**
 
@@ -403,7 +639,21 @@ Option B: compact Supabase table.
 Recommendation: Option A until Gate B is clean, then Option B only if the
 dataset becomes part of weekly review.
 
-- [ ] **Step 3: Gate C pass criteria**
+- [ ] **Step 3: Build the shadow confidence-referee report**
+
+The report should read the compact artifact and summarize:
+
+- candidate labels such as `bet_now_candidate`, `wait_for_late_data`,
+  `demand_better_price`, and `monitor_only`
+- runtime-safe evidence used by each label
+- hindsight-only evidence used for explanation, not selection
+- row counts and win/loss or PnL by side, price, K-line, quality-gate,
+  model-versus-market, CLV, opportunity/leash, pitcher-archetype, and
+  K-projection challenger slices
+- rows that look like large model edges but carry stacked caution signals
+- sparse slices that need more collection before being trusted
+
+- [ ] **Step 4: Gate C pass criteria**
 
 Gate C opens when:
 
@@ -411,6 +661,13 @@ Gate C opens when:
 - idempotent `dataset_key` behavior is tested
 - no raw snapshot flood is copied into the research table
 - the research table stores compact derived rows only
+- the shadow confidence-referee report separates runtime-safe evidence from
+  hindsight-only explanation
+- candidate labels are report-only and do not alter `verdict`, `adj_ev`,
+  staking, notifications, provider order, calibration, or dashboard artifacts
+- the report survives the core over/under, plus/minus, K-line, quality-gate,
+  model-versus-market, CLV, and opportunity/leash slices without relying on one
+  positive slate
 - `docs/operational-risk-register.md` retention rules are updated if storage is promoted
 
 ## Gate D: Daily Collection Proof
@@ -449,8 +706,11 @@ Track:
 - beat-close-price and beat-close-line counts
 - model-versus-market relationship counts
 - opportunity and leash-risk bucket counts
+- confidence-referee candidate-label counts
+- runtime-safe versus hindsight-only field availability
 - live-market checkpoint availability
 - lineup-handedness field availability
+- Path A versus Path B handedness coverage evidence
 - runtime
 - storage growth
 
@@ -498,6 +758,7 @@ Still blocked at Gate E:
 - staking changes
 - calibration changes
 - automatic pitcher-specific adjustments
+- Path B batter-handedness projection changes
 
 ## Gate F: Promotion Candidate
 
@@ -521,6 +782,8 @@ Minimum proof before live behavior:
 - positive flat ROI and better win rate than the current comparable bucket
 - no hidden degradation in FIRE 2u rows
 - written rollback plan
+- for Path B handedness, confirmed-lineup split coverage and holdout lift
+  versus Path A
 
 Promotion requires a separate implementation plan. This dataset plan must not
 be used as the approval to change the live model.

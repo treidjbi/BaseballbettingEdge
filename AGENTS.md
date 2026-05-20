@@ -72,6 +72,9 @@ PropLine if the evidence and gates pass.
   movement, Supabase market-state, or live-notification cutover work, start
   with
   `docs/superpowers/plans/2026-05-13-boltodds-propline-official-provider-cutover.md`.
+- For model-facing Gate C, confidence-referee, batter-handedness, opportunity/
+  leash, or K-projection challenger work, start with
+  `docs/superpowers/plans/2026-05-12-pitcher-k-outcome-research-dataset.md`.
 - Read `docs/provider-cost-ledger.md` before recommending new providers,
   provider upgrades, higher polling cadence, or always-on infrastructure.
 - Read `docs/operational-risk-register.md` before changing provider behavior,
@@ -609,6 +612,8 @@ Read this before debugging any data-source issue.
   `{normalized_batter_name: {"vs_R": float, "vs_L": float}}`
 - Do not promote collected real splits into `vs_R` / `vs_L` projection inputs
   until the soak review confirms coverage and adds Bayesian split regression.
+- Detailed Path A / Path B handedness rules live in
+  `docs/superpowers/plans/2026-05-12-pitcher-k-outcome-research-dataset.md`.
 
 ### FanGraphs / PyBaseball SwStr (`pipeline/fetch_statcast.py`)
 
@@ -868,34 +873,16 @@ Check these whenever you read this file and compare the trigger to current state
 (`data/params.json` `sample_size`, today's date, etc). If a trigger has been met,
 surface the reminder to the user as a suggested next step.
 
-### Batter Handedness — Upgrade from Path A to Path B
+### Batter Handedness / Confidence-Referee Gate
 
-**Current state (as of 2026-04-16):** Path A is live. `build_features.calc_lineup_k_rate`
-applies a league-average platoon K% delta per batter (`PLATOON_K_DELTA` table) based
-on the `(batter_hand, pitcher_throws)` matchup. Switch-hitters are modeled as batting
-opposite the pitcher's hand. Per-batter vs-L / vs-R splits are **not** yet wired —
-`fetch_batter_stats._fetch_splits` is still stubbed (it raises `AttributeError` and
-falls back to aggregate K%).
+The controlling plan is
+`docs/superpowers/plans/2026-05-12-pitcher-k-outcome-research-dataset.md`.
 
-**Trigger to upgrade (Path B):** When `params.json.sample_size >= 400` **OR** the
-current date is on/after **2026-05-25** (~50+ PA per split for most regulars),
-remind the user we can upgrade to real per-batter handedness splits:
-
-1. Implement `_fetch_splits()` in [pipeline/fetch_batter_stats.py](pipeline/fetch_batter_stats.py)
-   using pybaseball's `splits_leaderboards` or a direct FanGraphs splits URL to
-   return real `vs_R` / `vs_L` K% per batter.
-2. In [pipeline/build_features.py](pipeline/build_features.py), remove the
-   `+ platoon_k_delta(...)` adjustment from `calc_lineup_k_rate` (per-batter splits
-   already encode the platoon effect). Keep `PLATOON_K_DELTA` / `platoon_k_delta()`
-   around as a fallback for batters missing from the splits lookup.
-3. Apply Bayesian regression of each batter's vs-L / vs-R K% toward the
-   league-wide same-hand or opposite-hand average, weighted by per-split PA, to
-   handle thin samples.
-4. Bump `formula_change_date` in `params.json` to the deploy date so calibration
-   resets `lambda_bias` cleanly under the new formula.
-
-Related tests: `TestCalcLineupKRate`, `TestPlatoonKDelta` in
-[tests/test_build_features.py](tests/test_build_features.py).
+Summary: Path A is live and uses aggregate batter K% plus the league-average
+platoon adjustment. Real per-batter `vs_R` / `vs_L` splits remain
+collection-only. Do not wire real splits into live projection math, change
+confidence-referee labels into live verdict behavior, or bump
+`formula_change_date` unless the May 12 plan's Path B and Gate F checks pass.
 
 ### Umpire career_k_rates - Periodic Current-Season Check
 
