@@ -11,6 +11,9 @@ For any new work in this repo:
 3. Read the newest active dated plans that match the task:
    - `docs/superpowers/plans/2026-05-13-boltodds-propline-official-provider-cutover.md`
    - `docs/superpowers/plans/2026-05-12-pitcher-k-outcome-research-dataset.md`
+   - `docs/superpowers/plans/2026-05-20-live-market-decision-ui.md`
+     for future dashboard UI work that displays BoltOdds/PropLine live-market
+     evidence
    - `docs/superpowers/plans/2026-05-07-bet-conversion-shadow-audit.md`
      only as historical diagnostic context for the first bet-selection audit
 4. Read `docs/provider-cost-ledger.md` before recommending new providers,
@@ -201,6 +204,11 @@ apply BoltOdds unchanged-line freshness to `live_market_display_state` and
 `market_pick_evidence` metadata. `shadow_notification_candidates` suppresses
 stale market evidence unless the provider heartbeat holds it fresh. This is
 shadow-only and does not enable BoltOdds notification sends.
+
+For dashboard work that uses this live-market evidence, use
+`docs/superpowers/plans/2026-05-20-live-market-decision-ui.md`. That plan is
+display-only and shadow-only until Tyler separately approves implementation and
+promotion.
 
 ## Active Production Path
 
