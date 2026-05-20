@@ -80,6 +80,10 @@ PropLine if the evidence and gates pass.
   with
   `docs/superpowers/plans/2026-05-20-live-market-decision-ui.md`. That plan is
   display-only until Tyler separately approves implementation and promotion.
+- Keep the four active lanes visible in `docs/current-state.md`:
+  pipeline/infrastructure, model, UI, and tracking/data collection/history.
+  Use that operating board to keep recommendations scoped, and do not treat
+  progress in one lane as approval to promote another lane.
 - Read `docs/provider-cost-ledger.md` before recommending new providers,
   provider upgrades, higher polling cadence, or always-on infrastructure.
 - Read `docs/operational-risk-register.md` before changing provider behavior,

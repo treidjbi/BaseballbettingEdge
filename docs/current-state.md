@@ -52,6 +52,26 @@ do we convert model signal into better betting decisions?"
   or provider order until the provider cutover plan is implemented and Tyler
   explicitly approves the switch.
 
+## Four-Lane Operating Board
+
+Use this board to keep the active workstreams visible without turning every
+new idea into a separate source of truth. The BBE Operations Brief should
+summarize these lanes daily and call out only the next decision or blocker for
+each lane.
+
+| Lane | Current Source | Current Stage | Next Decision |
+| --- | --- | --- | --- |
+| Pipeline / infrastructure | `2026-05-13-boltodds-propline-official-provider-cutover.md`, `2026-05-20-live-notification-coordinator.md`, `docs/operational-risk-register.md` | Staged Supabase/BoltOdds/PropLine migration. GitHub + TheRundown remain production source of truth. Supabase lock ledger is observation-first. | Finish full lock-ledger soak, then consider non-strict lock consumer canary. Keep webhook processor observation, row-volume/retention dry-runs, and provider cutover comparison separate from production promotion. |
+| Model | `2026-05-12-pitcher-k-outcome-research-dataset.md` | Gate C confidence-referee / compact evidence proof. Gate A and local Gate B are effectively done. | Move from Gate C to Gate D only when collection/storage/reconciliation are routine. Gate E/F are required before any live ranking, threshold, staking, calibration, or formula promotion. |
+| UI | `2026-05-20-live-market-decision-ui.md`, `2026-05-20-live-notification-coordinator.md` | Future-state design only. The dashboard should eventually display best price, consensus, movement, urgency, and notification grouping from the new operational base. | Revisit after the operational/provider switch is stable. Keep display work separated from provider promotion and betting-rule changes. |
+| Tracking / data collection / history | `docs/research/market-tracker-map.md`, `docs/research/pitcher-k-outcome-dataset.md`, compact outcome outputs, live-market audits | Canonical research row plus existing market/live/provider trackers. Daily brief now keeps a compact Gate C bucket scoreboard and pre/post 2026-04-28 context. | Prefer derived labels on the compact outcome row before adding tables. Promote compact storage or retention only after row-volume/cost proof and Tyler approval. |
+
+Board rule: each lane can advance independently, but live betting behavior only
+changes after the controlling lane has passed its own promotion gate and Tyler
+explicitly approves the production switch. Operational reliability evidence is
+not a model-change approval, and model bucket evidence is not a provider-cutover
+approval.
+
 ## Supabase Operational Foundation Migration
 
 As of 2026-05-19, Tyler approved starting the migration from pure shadow
