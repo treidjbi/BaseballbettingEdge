@@ -7373,21 +7373,22 @@
       }
     }
   },
-  "updated_at": "2026-05-20T01:33:27Z",
+  "updated_at": "2026-05-20T04:24:16Z",
   "last_run": {
     "projection_status": "collection_only",
     "requested_batters": 234,
     "already_cached": 227,
     "attempted": 4,
-    "collected": 1,
-    "failed": 3,
+    "collected": 0,
+    "failed": 4,
     "queued_not_attempted": 3,
     "cache_size": 437,
     "errors": [
       "Joe Mack: no bbref id",
+      "A.J. Ewing: no bbref id",
       "Nick Morabito: no bbref id",
       "Henry Bolte: no bbref id"
     ],
-    "updated_at": "2026-05-20T01:33:27Z"
+    "updated_at": "2026-05-20T04:24:16Z"
   }
 }
