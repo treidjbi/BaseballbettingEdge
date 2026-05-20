@@ -7436,22 +7436,22 @@
       }
     }
   },
-  "updated_at": "2026-05-20T21:20:50Z",
+  "updated_at": "2026-05-20T22:03:51Z",
   "last_run": {
     "projection_status": "collection_only",
     "requested_batters": 243,
-    "already_cached": 239,
+    "already_cached": 238,
     "attempted": 4,
     "collected": 0,
     "failed": 4,
-    "queued_not_attempted": 0,
+    "queued_not_attempted": 1,
     "cache_size": 441,
     "errors": [
+      "Jacob Latz: IndexError: single positional indexer is out-of-bounds",
       "Jesus Rodriguez: no bbref id",
       "Ryan Waldschmidt: no bbref id",
-      "Colt Emerson: no bbref id",
-      "A.J. Ewing: no bbref id"
+      "Colt Emerson: no bbref id"
     ],
-    "updated_at": "2026-05-20T21:20:50Z"
+    "updated_at": "2026-05-20T22:03:51Z"
   }
 }
