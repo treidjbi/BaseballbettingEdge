@@ -10,8 +10,9 @@ For any new work in this repo:
 2. Read this file for the current operating state.
 3. Read the newest active dated plans that match the task:
    - `docs/superpowers/plans/2026-05-13-boltodds-propline-official-provider-cutover.md`
-   - `docs/superpowers/plans/2026-05-07-bet-conversion-shadow-audit.md`
    - `docs/superpowers/plans/2026-05-12-pitcher-k-outcome-research-dataset.md`
+   - `docs/superpowers/plans/2026-05-07-bet-conversion-shadow-audit.md`
+     only as historical diagnostic context for the first bet-selection audit
 4. Read `docs/provider-cost-ledger.md` before recommending new providers,
    upgrades, polling increases, or always-on infrastructure.
 5. Read `docs/operational-risk-register.md` before changing provider behavior,
@@ -30,7 +31,9 @@ do we convert model signal into better betting decisions?"
 - Do not make ad hoc model, threshold, staking, or `formula_change_date`
   changes unless Tyler explicitly decides to break cadence.
 - Current model track: `bet-selection-first`.
-- Keep candidate ranking changes shadow-only until the clean sample and Gate C
+- Keep candidate ranking changes shadow-only until the clean sample and the
+  Gate C / Gate F rules in
+  `docs/superpowers/plans/2026-05-12-pitcher-k-outcome-research-dataset.md`
   justify a live behavior plan.
 - TheRundown remains the production book-of-record odds source for the scheduled
   pipeline. It renewed through the end of May 2026, so May is now the planned
@@ -415,6 +418,12 @@ Current readout from 2026-05-07:
   differed from the locked pick-history line. This is still local/shadow-only;
   it does not require a Supabase upgrade unless a later Gate C decision promotes
   compact daily storage.
+- The detailed source of truth for this tracker stack now lives in
+  `docs/superpowers/plans/2026-05-12-pitcher-k-outcome-research-dataset.md`.
+  That plan owns Gate C confidence-referee scope, runtime-safe versus
+  hindsight-only field boundaries, batter-handedness Path A/Path B,
+  opportunity/leash evidence, K-projection challenger evidence, and promotion
+  gates. Keep this file as a status snapshot, not the detailed rulebook.
 - The same dataset now carries compact bet-time/CLV, model-vs-market,
   pitcher-handedness, lineup-shape placeholder, and opportunity/leash tracker
   fields. The 2026-04-28+ local run populated price CLV for all 294 tracked
@@ -473,25 +482,28 @@ mode is discovered.
 
 ### Bet Conversion / Gate C
 
-Use `docs/superpowers/plans/2026-05-07-bet-conversion-shadow-audit.md`.
+Use `docs/superpowers/plans/2026-05-12-pitcher-k-outcome-research-dataset.md`
+as the controlling plan. Use
+`docs/superpowers/plans/2026-05-07-bet-conversion-shadow-audit.md` only as
+historical context for the first shadow diagnostic.
 
 The next model-facing work should compare adjusted EV, raw edge, model margin,
 side-specific conversion, quality-gate context, opening-source context,
 market-price/favorite context, live-market movement context, price/line CLV,
 model-versus-market relationship, opportunity/leash context, and K-projection
-challenger evidence in shadow. Do
-not promote a live rule from one positive bucket or one slate.
+challenger evidence in shadow. It should also keep batter-handedness and
+lineup-shape evidence collection-only until the May 12 plan's Path B checks
+pass. Do not promote a live rule from one positive bucket or one slate.
 
 ### Pitcher K Outcome Research Dataset
 
 Use `docs/superpowers/plans/2026-05-12-pitcher-k-outcome-research-dataset.md`.
 
-The future dataset should be built through gates: schema approval, local
-backfill proof, compact storage proof, daily collection proof, research
-readiness, and separate promotion approval. It should track pitcher, line,
-odds, book, result, home/away, opponent, model state, quality gates,
-baseball context, and live-market movement context, but it must stay
-shadow-only until a separate model/ranking promotion plan is approved.
+The dataset plan is now the concentrated rulebook for Gate C
+confidence-referee work, compact storage, daily collection, research readiness,
+batter-handedness Path A/Path B, opportunity/leash evidence, and promotion
+boundaries. It must stay shadow-only until a separate model/ranking promotion
+plan is approved.
 
 ### BoltOdds Trial Review
 
