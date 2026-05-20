@@ -7436,20 +7436,21 @@
       }
     }
   },
-  "updated_at": "2026-05-20T19:42:50Z",
+  "updated_at": "2026-05-20T20:29:27Z",
   "last_run": {
     "projection_status": "collection_only",
-    "requested_batters": 171,
-    "already_cached": 169,
-    "attempted": 2,
+    "requested_batters": 225,
+    "already_cached": 222,
+    "attempted": 3,
     "collected": 0,
-    "failed": 2,
+    "failed": 3,
     "queued_not_attempted": 0,
     "cache_size": 441,
     "errors": [
       "Ryan Waldschmidt: no bbref id",
-      "Colt Emerson: no bbref id"
+      "Colt Emerson: no bbref id",
+      "A.J. Ewing: no bbref id"
     ],
-    "updated_at": "2026-05-20T19:42:50Z"
+    "updated_at": "2026-05-20T20:29:27Z"
   }
 }
