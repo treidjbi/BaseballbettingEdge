@@ -7354,24 +7354,40 @@
         "so": 2,
         "k_rate": 0.2857
       }
+    },
+    "mlbam:686823": {
+      "name": "Will Brennan",
+      "bats": "R",
+      "mlbam_id": 686823,
+      "bbref_id": "brennwi02",
+      "season": 2026,
+      "vs_R": {
+        "pa": 10,
+        "so": 2,
+        "k_rate": 0.2
+      },
+      "vs_L": {
+        "pa": 1,
+        "so": 0,
+        "k_rate": 0.0
+      }
     }
   },
-  "updated_at": "2026-05-20T00:16:08Z",
+  "updated_at": "2026-05-20T01:33:27Z",
   "last_run": {
     "projection_status": "collection_only",
     "requested_batters": 234,
-    "already_cached": 226,
+    "already_cached": 227,
     "attempted": 4,
-    "collected": 0,
-    "failed": 4,
-    "queued_not_attempted": 4,
-    "cache_size": 436,
+    "collected": 1,
+    "failed": 3,
+    "queued_not_attempted": 3,
+    "cache_size": 437,
     "errors": [
       "Joe Mack: no bbref id",
       "Nick Morabito: no bbref id",
-      "Spencer Jones: no bbref id",
       "Henry Bolte: no bbref id"
     ],
-    "updated_at": "2026-05-20T00:16:08Z"
+    "updated_at": "2026-05-20T01:33:27Z"
   }
 }
