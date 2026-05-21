@@ -1,6 +1,6 @@
 # Current State
 
-Last updated: 2026-05-20
+Last updated: 2026-05-21
 
 ## Read Order
 
@@ -61,7 +61,7 @@ each lane.
 
 | Lane | Current Source | Current Stage | Next Decision |
 | --- | --- | --- | --- |
-| Pipeline / infrastructure | `2026-05-13-boltodds-propline-official-provider-cutover.md`, `2026-05-20-live-notification-coordinator.md`, `docs/operational-risk-register.md` | Staged Supabase/BoltOdds/PropLine migration. GitHub + TheRundown remain production source of truth. Supabase lock ledger is observation-first. | Finish full lock-ledger soak, then consider non-strict lock consumer canary. Keep webhook processor observation, row-volume/retention dry-runs, and provider cutover comparison separate from production promotion. |
+| Pipeline / infrastructure | `2026-05-13-boltodds-propline-official-provider-cutover.md`, `2026-05-20-live-notification-coordinator.md`, `docs/operational-risk-register.md` | Staged Supabase/BoltOdds/PropLine migration. GitHub + TheRundown remain production source of truth. Supabase lock ledger has advanced from observation-only to a non-strict consumer canary. | Validate consumed lock rows against `operational_pick_locks`, source artifact hashes, and `shadow_pick_lock_observations` after the next lock windows. Keep strict mode, webhook processor observation, row-volume/retention dry-runs, and provider cutover comparison separate from production promotion. |
 | Model | `2026-05-12-pitcher-k-outcome-research-dataset.md` | Gate C confidence-referee / compact evidence proof. Gate A and local Gate B are effectively done. | Move from Gate C to Gate D only when collection/storage/reconciliation are routine. Gate E/F are required before any live ranking, threshold, staking, calibration, or formula promotion. |
 | UI | `2026-05-20-live-market-decision-ui.md`, `2026-05-20-live-notification-coordinator.md` | Future-state design only. The dashboard should eventually display best price, consensus, movement, urgency, and notification grouping from the new operational base. | Revisit after the operational/provider switch is stable. Keep display work separated from provider promotion and betting-rule changes. |
 | Tracking / data collection / history | `docs/research/market-tracker-map.md`, `docs/research/pitcher-k-outcome-dataset.md`, compact outcome outputs, live-market audits | Canonical research row plus existing market/live/provider trackers. Daily brief now keeps a compact Gate C bucket scoreboard and pre/post 2026-04-28 context. | Prefer derived labels on the compact outcome row before adding tables. Promote compact storage or retention only after row-volume/cost proof and Tyler approval. |
@@ -96,16 +96,19 @@ Phase 1 promotes only gated foundations:
   `OFFICIAL_MARKET_SOURCE=boltodds_propline` and
   `ENABLE_BOLTODDS_PIPELINE_SOURCE=true` gates.
 
-Operational rollout note, 2026-05-19:
+Operational rollout note, 2026-05-21:
 
 - Hosted Supabase migration `20260519201848 operational_pick_locks` has been
   applied and verified on the active project.
 - Render `bbe-live-layer` now has `ENABLE_SUPABASE_LOCK_LEDGER=true` for
-  observation-only lock-ledger writes.
-- `ENABLE_SUPABASE_LOCK_CONSUMER`, `SUPABASE_LOCK_CONSUMER_STRICT`,
-  `OFFICIAL_MARKET_SOURCE=boltodds_propline`, and
-  `ENABLE_BOLTODDS_PIPELINE_SOURCE` remain off/unset unless Tyler explicitly
-  approves the next canary.
+  lock-ledger writes.
+- GitHub repository variables now have `ENABLE_SUPABASE_LOCK_CONSUMER=true`
+  and `SUPABASE_LOCK_CONSUMER_STRICT=false` for a non-strict lock consumer
+  canary. If Supabase read/apply fails, the pipeline should warn and fall back
+  to the existing GitHub lock path.
+- `OFFICIAL_MARKET_SOURCE=boltodds_propline`,
+  `ENABLE_BOLTODDS_PIPELINE_SOURCE`, and live webhook processor promotion
+  remain off/unset unless Tyler explicitly approves those separate canaries.
 
 Cutover branch infrastructure progress as of 2026-05-14:
 

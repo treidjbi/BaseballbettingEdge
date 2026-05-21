@@ -1119,3 +1119,18 @@ after review:
    `OFFICIAL_MARKET_SOURCE=boltodds_propline` and
    `ENABLE_BOLTODDS_PIPELINE_SOURCE=true`.
 
+## Promotion Status Update, 2026-05-21
+
+Tyler approved the non-strict lock consumer canary after the first full
+lock-ledger soak. GitHub repository variables are now:
+
+- `ENABLE_SUPABASE_LOCK_CONSUMER=true`
+- `SUPABASE_LOCK_CONSUMER_STRICT=false`
+
+This is still a lock-layer canary only. The next validation step is to compare
+consumed GitHub artifact locks against `operational_pick_locks`, source
+artifact hashes, `shadow_pipeline_runs`, and `shadow_pick_lock_observations`
+after the current slate's lock windows. Strict lock consumption, PropLine
+webhook processing, provider-source promotion, row-retention execution, model
+changes, thresholds, staking, and dashboard behavior remain separate decisions.
+
