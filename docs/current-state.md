@@ -184,6 +184,11 @@ Cutover branch infrastructure progress as of 2026-05-14:
   `compact_market_line_movements` rows after the current/official market-line
   build. This enables storage and request-usage review, but raw snapshot
   deletion/retention is still a separate approval step.
+- Supabase upgraded to Pro on 2026-05-21 after the org exceeded the Free
+  database-size cap. Baseline CLI read after upgrade showed the linked BBE
+  database at `639 MB`; `market_snapshots` was the dominant table at about
+  `462 MB` total. Use `scripts/supabase_storage_guardrail.sql` in daily/weekly
+  ops reads and keep spend cap on unless Tyler explicitly approves overages.
 - The Odds API official arbitration remains behind an explicit emergency flag;
   DraftKings remains PropLine-first until BoltOdds DraftKings coverage is
   explicitly enabled.
@@ -611,6 +616,12 @@ post-trial decision.
 Before raw `market_snapshots` retention is enforced, the cutover branch still
 needs compact movement rollups and provider request-usage writes to prove the
 storage/cost path is safe.
+
+As of 2026-05-21, Supabase is on Pro. The first surprise-bill guardrail is to
+track total database size, top table size, and egress before adding more capture
+volume. If the database approaches `6 GB`, egress trends toward the plan
+allowance, or `market_snapshots` keeps growing without changing decisions, pause
+new capture work and run retention dry-runs before considering overages.
 
 ### June 1 Provider Review
 

@@ -1,6 +1,6 @@
 # Provider Cost Ledger
 
-Last updated: 2026-05-19
+Last updated: 2026-05-21
 
 This doc exists so provider and infrastructure choices stay tied to ROI, not
 just engineering momentum. BaseballBettingEdge is a personal side project, so a
@@ -42,14 +42,15 @@ context:
 
 | Bucket | Low / steady state | With live trials active | Notes |
 | --- | ---: | ---: | --- |
-| App runtime/data, excluding Codex | ~$95/mo | ~$201/mo | Assumes TheRundown, PropLine, Netlify, Render live layer, Supabase free; adds BoltOdds Starter + Render worker during trial |
+| App runtime/data, excluding Codex | ~$120/mo | ~$226/mo | Assumes TheRundown, PropLine, Netlify, Render live layer, Supabase Pro; adds BoltOdds Starter + Render worker during trial |
 | Operator tooling, Codex | $20-$100/mo | $20-$100/mo | Plus may be enough later; Pro makes sense during heavy build/debug periods |
-| Combined view | ~$115-$195/mo | ~$221-$301/mo | Use this as an affordability guardrail, not a precise bill |
+| Combined view | ~$140-$220/mo | ~$246-$326/mo | Use this as an affordability guardrail, not a precise bill |
 
-If Supabase needs Pro later, add about `$25/mo` before overages. If PropLine
-moves from the current tier to the next tier, add the delta. If BoltOdds Starter
-stays after trial, keep both the provider cost and always-on worker cost in the
-steady-state view.
+Supabase moved to Pro on 2026-05-21 after the org exceeded the Free database
+size quota. Keep Supabase spend caps enabled unless Tyler explicitly approves
+overages. If PropLine moves from the current tier to the next tier, add the
+delta. If BoltOdds Starter stays after trial, keep both the provider cost and
+always-on worker cost in the steady-state view.
 
 ## Current Services
 
@@ -62,7 +63,7 @@ steady-state view.
 | Netlify | Tyler account currently about ~$5/mo | Static dashboard, serverless notification functions, Netlify Blobs subscriptions | Keep | Usage credits, function calls, logs, bandwidth if traffic grows |
 | Render live cron | ~$1/mo | `bbe-live-layer` every 10 minutes | Keep while live notifications matter | Duplicate PropLine calls if older GitHub polling remains active |
 | Render BoltOdds worker | ~$7/mo | `bbe-boltodds-shadow-worker` always-on WebSocket worker | Trial only | One more always-on service to monitor |
-| Supabase | Free currently | Shadow/live market tables, notification queue, provider evidence | Keep free while it fits | Pro plan / compute / storage / egress if evidence volume grows |
+| Supabase | Pro, about $25/mo before overages | Shadow/live market tables, notification queue, provider evidence | Keep Pro with spend cap on; monitor storage and egress | Raw market snapshot growth, compute/storage overages, spend-cap interruptions |
 | GitHub Actions | Free for current public-repo usage | Scheduled pipeline, grading, artifacts, shadow jobs | Keep | Operational schedule jitter more important than cost right now |
 | Codex / ChatGPT | $20-$100/mo depending on plan | Engineering, monitoring, debugging, automation, docs | Use the lowest plan that still supports the workflow | Pro can quietly become the biggest recurring cost |
 
@@ -184,17 +185,36 @@ the existing cron proves too slow or overloaded.
 
 ### Supabase
 
-Supabase is currently free and is the right home for append-only evidence.
+Supabase is now Pro and is the right home for append-only evidence and the
+staged operational control plane.
 
 As Supabase becomes the operational foundation, the cost guardrail changes from
 "can we store shadow evidence" to "can this remain the low-friction control
-plane." The first required guardrails are row-volume audit, compact movement
-summaries, and dry-run retention. A Supabase Pro upgrade is acceptable only if
-the operational value is clear and raw tick retention is bounded.
+plane without surprise overages." The first required guardrails are row-volume
+audit, database/table-size audit, compact movement summaries, and dry-run
+retention. Pro is justified by lock-ledger reliability, live/provider evidence,
+and avoiding Free read-only restrictions, but raw tick retention must stay
+bounded.
+
+Current baseline captured 2026-05-21:
+
+- Supabase dashboard showed org database size `0.685 / 0.5 GB` on Free before
+  upgrade.
+- Linked BBE Postgres size via CLI: `639 MB`, about `7.8%` of the Pro included
+  8 GB disk allowance.
+- Largest table: `market_snapshots`, about `462 MB` total with roughly
+  `399k` estimated rows.
+
+Daily/weekly guardrail query:
+
+```powershell
+npx supabase db query --linked --file scripts\supabase_storage_guardrail.sql -o json
+```
 
 Watch for:
 
 - table growth from `market_snapshots`
+- total database size versus the included Pro 8 GB disk allowance
 - compact rollup health from `market_pick_evidence`
 - candidate-row volume from `shadow_notification_candidates`
 - `notification_events` retention
@@ -202,9 +222,9 @@ Watch for:
 - API throughput
 - egress/storage once dashboards or diagnostics read more from Supabase
 
-If Pro becomes necessary, treat it as a normal `$25/mo` infrastructure decision,
-not a blocker by itself. The bigger question is whether the evidence stored
-there is helping decisions.
+If database size approaches 6 GB or egress starts trending toward the plan
+allowance, pause new capture work and run retention dry-runs before adding
+spend or disabling spend caps.
 
 ### Codex / ChatGPT
 

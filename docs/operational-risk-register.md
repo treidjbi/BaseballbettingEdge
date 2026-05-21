@@ -1,6 +1,6 @@
 # Operational Risk Register
 
-Last updated: 2026-05-19
+Last updated: 2026-05-21
 
 This doc tracks the operational side of BaseballBettingEdge: provider trials,
 failure modes, source-conflict rules, data retention, notification quality, and
@@ -24,7 +24,7 @@ currently verified. Re-check provider dashboards before making billing decisions
 | Netlify | ~$5/mo current account state | Existing | Active | Static dashboard, functions, Blobs subscriptions | Production hosting/sender | Monthly | Function usage and logs remain stable; deploys simple | Usage credits/log limits become a real bottleneck |
 | Render live cron | ~$1/mo | 2026-05-07 | Active | `bbe-live-layer` every 10 minutes | Live notification event builder | Daily while new | Fresh GitHub raw artifact; queue/sender flow healthy; notifications useful | Duplicate PropLine polling adds cost/noise; notifications do not create value |
 | Render BoltOdds worker | ~$7/mo | 2026-05-07 | Active during BoltOdds trial | Always-on WebSocket worker | Shadow-only | Daily during trial | Worker stays fresh, writes auditable rows, no runaway volume | BoltOdds trial fails or worker needs too much babysitting |
-| Supabase | Free currently | 2026-05-01 shadow infra | Active | Shadow/live market evidence and notification queue | Evidence store | Weekly during trial | Free tier holds row volume; queries remain usable | Storage/egress/compute pressure without enough decision value |
+| Supabase | Pro, about $25/mo before overages | 2026-05-01 shadow infra; upgraded 2026-05-21 | Active | Shadow/live market evidence, notification queue, and staged lock control plane | Evidence store / operational canary | Daily during lock canary, then weekly | Storage and egress stay bounded; spend cap remains on; evidence changes locks, alerts, confidence, or provider decisions | Raw volume grows without decision value; spend-cap warnings; queries slow; storage approaches included Pro allowance |
 | GitHub Actions | Free for current public-repo usage | Existing | Active | Pipeline, grading, artifacts, shadow jobs | Production automation | Weekday health checks | Jobs eventually complete and artifacts stay fresh | Scheduler delay causes real stale picks/locks/grading issues |
 | Codex / ChatGPT | $20-$100/mo | Existing | Operator tooling | Engineering, monitoring, debugging, docs, automations | Build/ops assistant | Monthly | Pro plan saves enough time during build/trial periods | Quiet operations month where Plus can handle workload |
 
@@ -171,7 +171,7 @@ Tyler explicitly changes this boundary.
 | PropLine polling stops | No recent PropLine runs/snapshots | Live movement evidence stale | Render logs, GitHub shadow workflow, `market_provider_runs` | Check API key/env, provider errors, schedule health | More than one live window missed during active slate |
 | PropLine webhook processor noisy or ambiguous | Signed webhook rows create duplicate/low-value movement facts, or legacy rows lack sportsbook key | Webhook evidence pollutes shadow reads or future alert logic | `propline_webhook_deliveries`, `line_movement_events`, dedupe keys, `bookmaker_key`, `metadata.market_id`, `metadata.outcome_id`, `metadata.bookmaker_key_missing` | Keep webhook processing shadow-only; compare against polling/BoltOdds; disable `LIVE_PROCESS_PROPLINE_WEBHOOKS` if noisy | Do not promote webhook rows to notifications or provider source without book-level proof and reviewed noise evidence |
 | BoltOdds heartbeat stale | `market_feed_heartbeats` not fresh | WebSocket evidence stale or false confidence | Render worker logs and heartbeat table | Restart worker; inspect reconnect/error state | Stale during active slate or repeated overnight |
-| BoltOdds row volume too high | Rapid `market_snapshots` growth | Supabase cost/query risk | Trial audit and migration-risk audit | Reduce raw capture, add retention, aggregate summaries | Free tier pressure or slow diagnostics |
+| BoltOdds row volume too high | Rapid `market_snapshots` growth | Supabase cost/query risk | Trial audit, migration-risk audit, and `scripts/supabase_storage_guardrail.sql` | Reduce raw capture, add retention, aggregate summaries | Pro storage pressure, spend-cap warning, or slow diagnostics |
 | Netlify sender not sending | Pending queue grows; sender logs errors | Users miss live alerts | Netlify function logs; `notification_events` sent/failed counts | Check env, Supabase service key, VAPID, Blobs | Pending actionable events remain unsent through game window |
 | Duplicate notifications | Same pick/move sends more than once | Trust drops fast | `notification_events.dedupe_key`; push tags | Patch dedupe logic; suppress noisy class | Any duplicate FIRE/new-pick notification |
 | Source line conflict | Providers disagree on line/price | Confusing movement or wrong confidence | Compare production artifact, PropLine, BoltOdds rows | Treat TheRundown artifact as production; mark conflict in audit | Conflict would change a bet or alert |
@@ -182,13 +182,18 @@ Tyler explicitly changes this boundary.
 | GitHub pipeline scans raw market snapshots | Pipeline runtime slows or returns inconsistent current rows | Slate artifacts become slow or unstable near lock | Pipeline logs and query plan/code review | Move reads back to `official_market_lines`; keep raw scans in builder jobs | Any scheduled run misses action window |
 | Shadow timing ledger grows too noisy | `shadow_pipeline_runs` or lock observations grow without decision value | Supabase cost/query noise and harder daily reads | Row counts, status distribution, and whether rows changed a lock decision | Retain compact status transitions only; add short retention to run rows | Ledger volume grows but does not support promotion/cut decision |
 | Post-TheRundown rollback weaker than expected | TheRundown canceled and BoltOdds/PropLine degraded | No full-strength fallback source | Provider env, billing status, coverage report | Use PropLine-first + The Odds emergency fallback; document degraded mode | Any slate loses FanDuel/DraftKings coverage after cancellation |
-| Supabase free tier pressure | Storage/API/egress/compute rising | Surprise cost or degraded queries | Supabase dashboard; table row counts | Add retention/aggregation; pause noisy captures | Any need to upgrade without a clear decision value |
+| Supabase Pro cost pressure | Storage/API/egress/compute rising | Surprise cost, spend-cap interruption, or degraded queries | Supabase dashboard; `scripts/supabase_storage_guardrail.sql`; table row counts | Add retention/aggregation; pause noisy captures; keep spend cap on unless Tyler approves overages | Database approaches 6 GB, egress trends toward allowance, spend-cap warning appears, or a table grows without decision value |
 | Codex/automation drift | Agents miss current docs or duplicate work | More rework and context loss | `AGENTS.md`, `docs/current-state.md`, automations | Update handoff docs and automation prompts | Any repeated incorrect recommendation |
 
 ## Data Retention Rules
 
 These are starting defaults, not hard policy. Add scripts only when row volume
 or cost makes retention necessary.
+
+Supabase moved to Pro on 2026-05-21 after the org exceeded the Free database
+size cap. The active guardrail is now: keep spend cap on, track database/table
+size before adding capture volume, and review dry-run retention output before
+any deletion.
 
 Raw snapshot deletion requires three conditions: compact summaries exist for the
 affected window, `scripts/retire_market_snapshots.py --execute` is used, and
@@ -264,6 +269,8 @@ Questions:
 - Did any provider create more complexity than decision value?
 - Can a provider be downgraded, paused, or moved to on-demand?
 - Is live data improving action, or only creating interesting logs?
+- Is Supabase database growth still dominated by useful evidence, and is the
+  spend cap still on?
 - Is Codex Pro still earning the cost this month, or can Plus carry a quieter
   operations month?
 - Has any trial reached its renewal/cancel decision date?
@@ -277,6 +284,8 @@ Questions:
   GitHub raw artifact fetch and Netlify live sender.
 - 2026-05-07: `NOTIFY_SECRET` rotated after screenshot exposure; future checks
   should focus on notification health, not rotation.
+- 2026-05-21: Supabase upgraded to Pro after Free database-size pressure.
+  Added storage guardrail query and Pro spend-cap review language.
 - 2026-05-08: Added shadow-only `market_pick_evidence` rollup for model vs.
   market learning. It does not change picks, locks, thresholds, staking,
   provider order, or notification sends.
