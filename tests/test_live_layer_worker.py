@@ -338,6 +338,48 @@ def test_dispatch_lock_only_workflow_sends_lock_mode_without_logging_token(monke
     assert captured["timeout"] == 20
 
 
+def test_dispatch_lock_only_workflow_uses_proxy_when_github_token_missing(monkeypatch):
+    captured = {}
+
+    class Response:
+        status = 200
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, exc_type, exc, tb):
+            return False
+
+        def read(self):
+            return b'{"status":"triggered"}'
+
+    def fake_urlopen(request, timeout):
+        captured["url"] = request.full_url
+        captured["headers"] = dict(request.header_items())
+        captured["body"] = json.loads(request.data.decode("utf-8"))
+        captured["timeout"] = timeout
+        return Response()
+
+    monkeypatch.delenv("GITHUB_LOCK_DISPATCH_TOKEN", raising=False)
+    monkeypatch.delenv("GITHUB_PAT", raising=False)
+    monkeypatch.setenv(
+        "LOCK_ONLY_WORKFLOW_DISPATCH_URL",
+        "https://baseballbettingedge.netlify.app/.netlify/functions/trigger-pipeline",
+    )
+    monkeypatch.setattr(build_live_events_to_supabase, "urlopen", fake_urlopen)
+
+    result = build_live_events_to_supabase._dispatch_lock_only_workflow(
+        "2026-05-06",
+        inserted_lock_rows=2,
+    )
+
+    assert result == {"skipped": False, "status_code": 200, "via": "proxy"}
+    assert captured["url"] == "https://baseballbettingedge.netlify.app/.netlify/functions/trigger-pipeline"
+    assert captured["body"] == {"mode": "lock", "date": "2026-05-06"}
+    assert "Authorization" not in captured["headers"]
+    assert captured["timeout"] == 20
+
+
 def test_worker_marks_missing_previous_fire_pass_after_notifications(tmp_path):
     today = _write_artifact(tmp_path, [])
     previous = [{

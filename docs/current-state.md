@@ -118,8 +118,10 @@ Operational rollout note, 2026-05-21:
   - Render live layer dispatches GitHub `pipeline.yml` with `mode=lock` and the
     slate date only when `ENABLE_LOCK_ONLY_WORKFLOW_DISPATCH=true` and new lock
     rows were inserted.
-  - Required Render env for dispatch: `GITHUB_LOCK_DISPATCH_TOKEN` (or
-    `GITHUB_PAT`), plus optional `GITHUB_LOCK_DISPATCH_REPO`,
+  - Dispatch can use a direct GitHub token (`GITHUB_LOCK_DISPATCH_TOKEN` or
+    `GITHUB_PAT`) or the existing Netlify `trigger-pipeline` proxy. The default
+    proxy URL is `https://baseballbettingedge.netlify.app/.netlify/functions/trigger-pipeline`.
+  - Optional direct-dispatch env: `GITHUB_LOCK_DISPATCH_REPO`,
     `GITHUB_LOCK_DISPATCH_WORKFLOW`, and `GITHUB_LOCK_DISPATCH_REF`.
 - `OFFICIAL_MARKET_SOURCE=boltodds_propline`,
   `ENABLE_BOLTODDS_PIPELINE_SOURCE`, and live webhook processor promotion

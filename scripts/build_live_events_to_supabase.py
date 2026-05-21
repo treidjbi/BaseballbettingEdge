@@ -48,6 +48,9 @@ DEFAULT_ARTIFACT_URL = (
     "https://raw.githubusercontent.com/treidjbi/BaseballBettingEdge/"
     "main/dashboard/data/processed/today.json"
 )
+DEFAULT_LOCK_ONLY_WORKFLOW_DISPATCH_URL = (
+    "https://baseballbettingedge.netlify.app/.netlify/functions/trigger-pipeline"
+)
 LIVE_NOTIFICATION_MOVEMENT_PROVIDERS = {"propline"}
 
 
@@ -317,44 +320,61 @@ def _dispatch_lock_only_workflow(
         return {"skipped": True, "reason": "no_new_lock_rows"}
 
     token = _optional_env("GITHUB_LOCK_DISPATCH_TOKEN") or _optional_env("GITHUB_PAT")
-    if not token:
-        return {"skipped": True, "reason": "missing_token"}
+    if token:
+        repo = (
+            _optional_env("GITHUB_LOCK_DISPATCH_REPO")
+            or _optional_env("GITHUB_REPO")
+            or "treidjbi/BaseballBettingEdge"
+        )
+        workflow = (
+            _optional_env("GITHUB_LOCK_DISPATCH_WORKFLOW")
+            or _optional_env("GITHUB_WORKFLOW")
+            or "pipeline.yml"
+        )
+        ref = _optional_env("GITHUB_LOCK_DISPATCH_REF") or "main"
+        body = json.dumps({
+            "ref": ref,
+            "inputs": {
+                "mode": "lock",
+                "date": slate_date,
+            },
+        }).encode("utf-8")
+        request = Request(
+            f"https://api.github.com/repos/{repo}/actions/workflows/{workflow}/dispatches",
+            data=body,
+            method="POST",
+            headers={
+                "Authorization": f"Bearer {token}",
+                "Accept": "application/vnd.github+json",
+                "Content-Type": "application/json",
+                "User-Agent": "bbe-live-layer-lock-dispatch",
+            },
+        )
+        with urlopen(request, timeout=20) as response:
+            status_code = int(getattr(response, "status", 0) or 0)
+            if status_code != 204:
+                response.read()
+                raise RuntimeError(f"GitHub lock dispatch failed with HTTP {status_code}")
+        return {"skipped": False, "status_code": status_code}
 
-    repo = (
-        _optional_env("GITHUB_LOCK_DISPATCH_REPO")
-        or _optional_env("GITHUB_REPO")
-        or "treidjbi/BaseballBettingEdge"
-    )
-    workflow = (
-        _optional_env("GITHUB_LOCK_DISPATCH_WORKFLOW")
-        or _optional_env("GITHUB_WORKFLOW")
-        or "pipeline.yml"
-    )
-    ref = _optional_env("GITHUB_LOCK_DISPATCH_REF") or "main"
-    body = json.dumps({
-        "ref": ref,
-        "inputs": {
-            "mode": "lock",
-            "date": slate_date,
-        },
-    }).encode("utf-8")
+    proxy_url = _optional_env("LOCK_ONLY_WORKFLOW_DISPATCH_URL") or DEFAULT_LOCK_ONLY_WORKFLOW_DISPATCH_URL
+    body = json.dumps({"mode": "lock", "date": slate_date}).encode("utf-8")
     request = Request(
-        f"https://api.github.com/repos/{repo}/actions/workflows/{workflow}/dispatches",
+        proxy_url,
         data=body,
         method="POST",
         headers={
-            "Authorization": f"Bearer {token}",
-            "Accept": "application/vnd.github+json",
+            "Accept": "application/json",
             "Content-Type": "application/json",
             "User-Agent": "bbe-live-layer-lock-dispatch",
         },
     )
     with urlopen(request, timeout=20) as response:
         status_code = int(getattr(response, "status", 0) or 0)
-        if status_code != 204:
+        if status_code < 200 or status_code >= 300:
             response.read()
-            raise RuntimeError(f"GitHub lock dispatch failed with HTTP {status_code}")
-    return {"skipped": False, "status_code": status_code}
+            raise RuntimeError(f"lock dispatch proxy failed with HTTP {status_code}")
+    return {"skipped": False, "status_code": status_code, "via": "proxy"}
 
 
 def _maybe_dispatch_lock_only_workflow(

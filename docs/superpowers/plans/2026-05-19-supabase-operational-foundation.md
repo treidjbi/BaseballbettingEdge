@@ -1167,14 +1167,21 @@ The next minimal speed fix is implemented behind flags:
   - `ENABLE_SUPABASE_LOCK_LEDGER=true`
   - `ENABLE_LOCK_ONLY_WORKFLOW_DISPATCH=true`
   - the Supabase insert returned newly inserted lock rows
-  - `GITHUB_LOCK_DISPATCH_TOKEN` or `GITHUB_PAT` is available in the live-layer
-    runtime
+  - either `GITHUB_LOCK_DISPATCH_TOKEN` / `GITHUB_PAT` is available in the
+    live-layer runtime, or the existing Netlify `trigger-pipeline` proxy is
+    reachable
 
 Optional dispatch env:
 
+- `LOCK_ONLY_WORKFLOW_DISPATCH_URL` defaults to
+  `https://baseballbettingedge.netlify.app/.netlify/functions/trigger-pipeline`
 - `GITHUB_LOCK_DISPATCH_REPO` defaults to `treidjbi/BaseballBettingEdge`
 - `GITHUB_LOCK_DISPATCH_WORKFLOW` defaults to `pipeline.yml`
 - `GITHUB_LOCK_DISPATCH_REF` defaults to `main`
+
+The Netlify `trigger-pipeline` proxy now preserves the dashboard's no-body
+default dispatch while also accepting validated JSON inputs for `mode=lock` and
+`date=YYYY-MM-DD`.
 
 This is still lock-layer infrastructure only. Keep
 `SUPABASE_LOCK_CONSUMER_STRICT=false` while validating it. Do not use this as
