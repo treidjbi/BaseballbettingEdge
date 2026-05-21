@@ -223,6 +223,121 @@ def test_worker_writes_operational_lock_rows_when_enabled(tmp_path, monkeypatch)
     assert lock_rows[0]["status_at_capture"] == "due_now"
 
 
+def test_operational_lock_write_dispatches_lock_workflow_for_new_rows(monkeypatch):
+    writer = Mock()
+    writer.insert_ignore_rows.return_value = [{"dedupe_key": "2026-05-06:tarik skubal:over"}]
+    pitcher = _fire_pitcher(game_time="2026-05-06T18:30:00Z")
+    pitcher["tracked_picks"] = [{
+        "pitcher": "Tarik Skubal",
+        "side": "over",
+        "display_verdict": "FIRE 1u",
+        "display_k_line": 6.5,
+        "display_odds": -110,
+        "display_adj_ev": 0.09,
+        "locked_at": None,
+        "game_time": "2026-05-06T18:30:00Z",
+    }]
+    monkeypatch.setenv("ENABLE_SUPABASE_LOCK_LEDGER", "true")
+    monkeypatch.setenv("ENABLE_LOCK_ONLY_WORKFLOW_DISPATCH", "true")
+
+    with patch.object(
+        build_live_events_to_supabase,
+        "_dispatch_lock_only_workflow",
+        return_value={"skipped": False, "status_code": 204},
+    ) as dispatch:
+        result = build_live_events_to_supabase._write_operational_pick_locks(
+            writer=writer,
+            slate_date="2026-05-06",
+            payload={"pitchers": [pitcher]},
+            observed_at=build_live_events_to_supabase.datetime.fromisoformat("2026-05-06T18:02:00+00:00"),
+            artifact_source="https://example.com/today.json",
+            artifact_sha="abc123",
+        )
+
+    assert result["rows"] == 1
+    assert result["inserted_rows"] == 1
+    assert result["dispatch"] == {"skipped": False, "status_code": 204}
+    dispatch.assert_called_once_with("2026-05-06", inserted_lock_rows=1)
+
+
+def test_operational_lock_write_does_not_dispatch_without_new_rows(monkeypatch):
+    writer = Mock()
+    writer.insert_ignore_rows.return_value = []
+    pitcher = _fire_pitcher(game_time="2026-05-06T18:30:00Z")
+    pitcher["tracked_picks"] = [{
+        "pitcher": "Tarik Skubal",
+        "side": "over",
+        "display_verdict": "FIRE 1u",
+        "display_k_line": 6.5,
+        "display_odds": -110,
+        "display_adj_ev": 0.09,
+        "locked_at": None,
+        "game_time": "2026-05-06T18:30:00Z",
+    }]
+    monkeypatch.setenv("ENABLE_SUPABASE_LOCK_LEDGER", "true")
+    monkeypatch.setenv("ENABLE_LOCK_ONLY_WORKFLOW_DISPATCH", "true")
+
+    with patch.object(build_live_events_to_supabase, "_dispatch_lock_only_workflow") as dispatch:
+        result = build_live_events_to_supabase._write_operational_pick_locks(
+            writer=writer,
+            slate_date="2026-05-06",
+            payload={"pitchers": [pitcher]},
+            observed_at=build_live_events_to_supabase.datetime.fromisoformat("2026-05-06T18:02:00+00:00"),
+            artifact_source="https://example.com/today.json",
+            artifact_sha="abc123",
+        )
+
+    assert result["rows"] == 1
+    assert result["inserted_rows"] == 0
+    assert result["dispatch"] == {"skipped": True, "reason": "no_new_lock_rows"}
+    dispatch.assert_not_called()
+
+
+def test_dispatch_lock_only_workflow_sends_lock_mode_without_logging_token(monkeypatch):
+    captured = {}
+
+    class Response:
+        status = 204
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, exc_type, exc, tb):
+            return False
+
+        def read(self):
+            return b""
+
+    def fake_urlopen(request, timeout):
+        captured["url"] = request.full_url
+        captured["headers"] = dict(request.header_items())
+        captured["body"] = json.loads(request.data.decode("utf-8"))
+        captured["timeout"] = timeout
+        return Response()
+
+    monkeypatch.setenv("GITHUB_LOCK_DISPATCH_TOKEN", "ghp_secret")
+    monkeypatch.setenv("GITHUB_LOCK_DISPATCH_REPO", "treidjbi/BaseballBettingEdge")
+    monkeypatch.setattr(build_live_events_to_supabase, "urlopen", fake_urlopen)
+
+    result = build_live_events_to_supabase._dispatch_lock_only_workflow(
+        "2026-05-06",
+        inserted_lock_rows=2,
+    )
+
+    assert result == {"skipped": False, "status_code": 204}
+    assert captured["url"] == (
+        "https://api.github.com/repos/treidjbi/BaseballBettingEdge/"
+        "actions/workflows/pipeline.yml/dispatches"
+    )
+    assert captured["body"] == {
+        "ref": "main",
+        "inputs": {"mode": "lock", "date": "2026-05-06"},
+    }
+    assert captured["headers"]["Authorization"] == "Bearer ghp_secret"
+    assert "ghp_secret" not in repr(captured["body"])
+    assert captured["timeout"] == 20
+
+
 def test_worker_marks_missing_previous_fire_pass_after_notifications(tmp_path):
     today = _write_artifact(tmp_path, [])
     previous = [{

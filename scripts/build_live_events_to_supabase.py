@@ -8,7 +8,7 @@ import sys
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any
-from urllib.request import urlopen
+from urllib.request import Request, urlopen
 
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
@@ -304,6 +304,94 @@ def _operational_lock_ledger_enabled() -> bool:
     return _env_flag("ENABLE_SUPABASE_LOCK_LEDGER", default=False)
 
 
+def _lock_only_workflow_dispatch_enabled() -> bool:
+    return _env_flag("ENABLE_LOCK_ONLY_WORKFLOW_DISPATCH", default=False)
+
+
+def _dispatch_lock_only_workflow(
+    slate_date: str,
+    *,
+    inserted_lock_rows: int,
+) -> dict[str, Any]:
+    if inserted_lock_rows <= 0:
+        return {"skipped": True, "reason": "no_new_lock_rows"}
+
+    token = _optional_env("GITHUB_LOCK_DISPATCH_TOKEN") or _optional_env("GITHUB_PAT")
+    if not token:
+        return {"skipped": True, "reason": "missing_token"}
+
+    repo = (
+        _optional_env("GITHUB_LOCK_DISPATCH_REPO")
+        or _optional_env("GITHUB_REPO")
+        or "treidjbi/BaseballBettingEdge"
+    )
+    workflow = (
+        _optional_env("GITHUB_LOCK_DISPATCH_WORKFLOW")
+        or _optional_env("GITHUB_WORKFLOW")
+        or "pipeline.yml"
+    )
+    ref = _optional_env("GITHUB_LOCK_DISPATCH_REF") or "main"
+    body = json.dumps({
+        "ref": ref,
+        "inputs": {
+            "mode": "lock",
+            "date": slate_date,
+        },
+    }).encode("utf-8")
+    request = Request(
+        f"https://api.github.com/repos/{repo}/actions/workflows/{workflow}/dispatches",
+        data=body,
+        method="POST",
+        headers={
+            "Authorization": f"Bearer {token}",
+            "Accept": "application/vnd.github+json",
+            "Content-Type": "application/json",
+            "User-Agent": "bbe-live-layer-lock-dispatch",
+        },
+    )
+    with urlopen(request, timeout=20) as response:
+        status_code = int(getattr(response, "status", 0) or 0)
+        if status_code != 204:
+            response.read()
+            raise RuntimeError(f"GitHub lock dispatch failed with HTTP {status_code}")
+    return {"skipped": False, "status_code": status_code}
+
+
+def _maybe_dispatch_lock_only_workflow(
+    slate_date: str,
+    *,
+    inserted_lock_rows: int,
+) -> dict[str, Any]:
+    if not _lock_only_workflow_dispatch_enabled():
+        return {"skipped": True, "reason": "disabled"}
+    if inserted_lock_rows <= 0:
+        return {"skipped": True, "reason": "no_new_lock_rows"}
+    try:
+        return _dispatch_lock_only_workflow(slate_date, inserted_lock_rows=inserted_lock_rows)
+    except Exception as error:
+        print(
+            f"Warning: lock-only workflow dispatch failed ({error})",
+            file=sys.stderr,
+        )
+        return {"skipped": True, "reason": "dispatch_failed", "error": str(error)[:1000]}
+
+
+def _lock_build_summary(result: dict[str, Any]) -> str:
+    locks = result.get("operational_pick_locks") or {"skipped": True, "reason": "missing"}
+    if locks.get("skipped"):
+        return f"locks=skipped:{locks.get('reason', 'unknown')}"
+    dispatch = locks.get("dispatch") or {"skipped": True, "reason": "missing"}
+    if dispatch.get("skipped"):
+        dispatch_label = f"skipped:{dispatch.get('reason', 'unknown')}"
+    else:
+        dispatch_label = f"sent:{dispatch.get('status_code', 'unknown')}"
+    return (
+        f"locks=rows:{locks.get('rows', 0)} "
+        f"inserted:{locks.get('inserted_rows', locks.get('rows', 0))} "
+        f"dispatch:{dispatch_label}"
+    )
+
+
 def _write_operational_pick_locks(
     *,
     writer: SupabaseMarketWriter,
@@ -325,8 +413,18 @@ def _write_operational_pick_locks(
             source_artifact_sha256=artifact_sha,
             artifact_generated_at=payload.get("generated_at"),
         )
-        writer.insert_ignore_rows("operational_pick_locks", rows, on_conflict="dedupe_key")
-        return {"skipped": False, "rows": len(rows)}
+        inserted = writer.insert_ignore_rows("operational_pick_locks", rows, on_conflict="dedupe_key")
+        inserted_count = len(inserted) if isinstance(inserted, list) else len(rows)
+        dispatch = _maybe_dispatch_lock_only_workflow(
+            slate_date,
+            inserted_lock_rows=inserted_count,
+        )
+        return {
+            "skipped": False,
+            "rows": len(rows),
+            "inserted_rows": inserted_count,
+            "dispatch": dispatch,
+        }
     except Exception as error:
         print(
             f"Warning: operational lock ledger write failed ({error})",
@@ -739,6 +837,7 @@ def main() -> int:
         f"date={slate_date} state_rows={result['live_pick_state']} "
         f"notification_events={result['notification_events']} "
         f"live_market_display={result.get('live_market_display_state', 0)} "
+        f"{_lock_build_summary(result)} "
         f"artifact_source={'remote' if str(result.get('artifact_source', artifact_source)).startswith('http') else 'local'} "
         f"{propline_summary} "
         f"{webhook_summary} "

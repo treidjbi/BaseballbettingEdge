@@ -40,6 +40,7 @@ from analytics.diagnostics.d_connection_health import (
     format_integrity_warning,
     format_stage_summary,
 )
+from market_infra.supabase_writer import SupabaseMarketWriter
 
 logging.basicConfig(
     level=logging.INFO,
@@ -837,26 +838,54 @@ def _supabase_lock_consumer_strict() -> bool:
     return value in {"1", "true", "yes", "on"}
 
 
+def _now_utc() -> datetime:
+    return datetime.now(timezone.utc)
+
+
+def _supabase_lock_writer() -> SupabaseMarketWriter:
+    supabase_url = os.environ.get("SUPABASE_URL", "").strip()
+    service_role_key = os.environ.get("SUPABASE_SERVICE_ROLE_KEY", "").strip()
+    if not supabase_url or not service_role_key:
+        raise EnvironmentError(
+            "SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY are required "
+            "for Supabase lock consumer"
+        )
+    return SupabaseMarketWriter(supabase_url, service_role_key)
+
+
 def _fetch_supabase_operational_lock_rows(date_str: str, writer=None) -> list[dict]:
     if writer is None:
-        supabase_url = os.environ.get("SUPABASE_URL", "").strip()
-        service_role_key = os.environ.get("SUPABASE_SERVICE_ROLE_KEY", "").strip()
-        if not supabase_url or not service_role_key:
-            raise EnvironmentError(
-                "SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY are required "
-                "for Supabase lock consumer"
-            )
-        from market_infra.supabase_writer import SupabaseMarketWriter
-        writer = SupabaseMarketWriter(supabase_url, service_role_key)
+        writer = _supabase_lock_writer()
 
     return writer.select_rows(
         "operational_pick_locks",
         {
             "slate_date": f"eq.{date_str}",
+            "consumed_at": "is.null",
             "order": "locked_at.asc",
             "limit": "1000",
         },
     )
+
+
+def _mark_supabase_operational_locks_consumed(
+    *,
+    writer: SupabaseMarketWriter,
+    rows: list[dict],
+    consumed_at: datetime,
+) -> int:
+    consumed_at_value = consumed_at.isoformat()
+    updated = 0
+    for row in rows:
+        dedupe_key = str(row.get("dedupe_key") or "").strip()
+        if not dedupe_key:
+            continue
+        updated += writer.update_rows(
+            "operational_pick_locks",
+            {"dedupe_key": f"eq.{dedupe_key}"},
+            {"consumed_at": consumed_at_value},
+        )
+    return updated
 
 
 def _apply_supabase_operational_locks(date_str: str) -> int:
@@ -881,6 +910,27 @@ def _apply_supabase_operational_locks(date_str: str) -> int:
             len(rows),
             date_str,
         )
+        if applied and applied == len(rows):
+            writer = _supabase_lock_writer()
+            consumed = _mark_supabase_operational_locks_consumed(
+                writer=writer,
+                rows=rows,
+                consumed_at=_now_utc(),
+            )
+            log.info(
+                "Supabase lock consumer: marked %d/%d rows consumed for %s",
+                consumed,
+                len(rows),
+                date_str,
+            )
+        elif applied:
+            log.warning(
+                "Supabase lock consumer: partial apply %d/%d for %s; "
+                "leaving consumed_at unset for audit",
+                applied,
+                len(rows),
+                date_str,
+            )
         return applied
     except Exception as e:
         if _supabase_lock_consumer_strict():

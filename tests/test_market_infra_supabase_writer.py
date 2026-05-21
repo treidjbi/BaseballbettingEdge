@@ -181,3 +181,37 @@ def test_delete_rows_calls_delete_with_supplied_params(monkeypatch):
     assert captured["headers"]["Prefer"] == "return=minimal,count=exact"
     assert captured["params"] == {"observed_at": "lt.2026-05-01T00:00:00+00:00"}
     assert captured["timeout"] == 20
+
+
+def test_update_rows_calls_patch_with_supplied_params(monkeypatch):
+    captured = {}
+
+    class Response:
+        headers = {"Content-Range": "0-0/1"}
+
+        def raise_for_status(self):
+            return None
+
+    def fake_patch(url, headers, params, json, timeout):
+        captured["url"] = url
+        captured["headers"] = headers
+        captured["params"] = params
+        captured["json"] = json
+        captured["timeout"] = timeout
+        return Response()
+
+    monkeypatch.setattr("market_infra.supabase_writer.requests.patch", fake_patch)
+    writer = SupabaseMarketWriter("https://example.supabase.co", "secret-key")
+
+    updated = writer.update_rows(
+        "operational_pick_locks",
+        {"dedupe_key": "eq.2026-05-21:casey mize:under"},
+        {"consumed_at": "2026-05-21T17:00:31+00:00"},
+    )
+
+    assert updated == 1
+    assert captured["url"] == "https://example.supabase.co/rest/v1/operational_pick_locks"
+    assert captured["headers"]["Prefer"] == "return=minimal,count=exact"
+    assert captured["params"] == {"dedupe_key": "eq.2026-05-21:casey mize:under"}
+    assert captured["json"] == {"consumed_at": "2026-05-21T17:00:31+00:00"}
+    assert captured["timeout"] == 20

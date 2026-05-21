@@ -1154,3 +1154,30 @@ wrote those rows. The next implementation candidates are:
 - add a gated event-driven lock-only dispatch from the live layer or a secure
   server-side proxy when new due `operational_pick_locks` rows are written.
 
+## Event-Driven Lock Dispatch Implementation, 2026-05-21
+
+The next minimal speed fix is implemented behind flags:
+
+- `pipeline/run_pipeline.py` now reads only unconsumed
+  `operational_pick_locks` rows and marks fully applied batches with
+  `consumed_at`.
+- `scripts/build_live_events_to_supabase.py` now dispatches GitHub
+  `pipeline.yml` with `mode=lock` and the current slate date only when all of
+  these are true:
+  - `ENABLE_SUPABASE_LOCK_LEDGER=true`
+  - `ENABLE_LOCK_ONLY_WORKFLOW_DISPATCH=true`
+  - the Supabase insert returned newly inserted lock rows
+  - `GITHUB_LOCK_DISPATCH_TOKEN` or `GITHUB_PAT` is available in the live-layer
+    runtime
+
+Optional dispatch env:
+
+- `GITHUB_LOCK_DISPATCH_REPO` defaults to `treidjbi/BaseballBettingEdge`
+- `GITHUB_LOCK_DISPATCH_WORKFLOW` defaults to `pipeline.yml`
+- `GITHUB_LOCK_DISPATCH_REF` defaults to `main`
+
+This is still lock-layer infrastructure only. Keep
+`SUPABASE_LOCK_CONSUMER_STRICT=false` while validating it. Do not use this as
+approval for PropLine webhook processing, provider-source promotion, model
+changes, thresholds, staking, or dashboard behavior.
+

@@ -83,6 +83,7 @@ def test_fetch_supabase_operational_lock_rows_reads_expected_table(monkeypatch):
     assert rows == [{"pitcher": "Test Pitcher", "side": "over"}]
     assert calls[0][0] == "operational_pick_locks"
     assert calls[0][1]["slate_date"] == "eq.2026-05-19"
+    assert calls[0][1]["consumed_at"] == "is.null"
     assert calls[0][1]["order"] == "locked_at.asc"
     assert calls[0][1]["limit"] == "1000"
 
@@ -98,6 +99,73 @@ def test_apply_supabase_operational_locks_non_strict_failure_is_soft(monkeypatch
         side_effect=RuntimeError("supabase down"),
     ):
         assert run_pipeline._apply_supabase_operational_locks("2026-05-19") == 0
+
+
+def test_apply_supabase_operational_locks_marks_all_applied_rows_consumed(monkeypatch):
+    import run_pipeline
+
+    writer = MagicMock()
+    rows = [
+        {"dedupe_key": "2026-05-21:casey mize:under"},
+        {"dedupe_key": "2026-05-21:joey cantillo:under"},
+    ]
+    monkeypatch.setenv("ENABLE_SUPABASE_LOCK_CONSUMER", "true")
+
+    with patch("run_pipeline.SupabaseMarketWriter", return_value=writer, create=True), \
+         patch.dict(
+             "os.environ",
+             {
+                 "SUPABASE_URL": "https://example.supabase.co",
+                 "SUPABASE_SERVICE_ROLE_KEY": "service-role",
+             },
+             clear=False,
+         ), \
+         patch("run_pipeline._fetch_supabase_operational_lock_rows", return_value=rows), \
+         patch("run_pipeline.get_db") as get_db, \
+         patch("run_pipeline.apply_external_lock_rows", return_value=2), \
+         patch(
+             "run_pipeline._now_utc",
+             return_value=run_pipeline.datetime.fromisoformat("2026-05-21T17:00:31+00:00"),
+         ):
+        get_db.return_value.close.return_value = None
+
+        assert run_pipeline._apply_supabase_operational_locks("2026-05-21") == 2
+
+    assert writer.update_rows.call_count == 2
+    assert writer.update_rows.call_args_list[0].args == (
+        "operational_pick_locks",
+        {"dedupe_key": "eq.2026-05-21:casey mize:under"},
+        {"consumed_at": "2026-05-21T17:00:31+00:00"},
+    )
+
+
+def test_apply_supabase_operational_locks_does_not_mark_partial_apply_consumed(monkeypatch):
+    import run_pipeline
+
+    writer = MagicMock()
+    rows = [
+        {"dedupe_key": "2026-05-21:casey mize:under"},
+        {"dedupe_key": "2026-05-21:joey cantillo:under"},
+    ]
+    monkeypatch.setenv("ENABLE_SUPABASE_LOCK_CONSUMER", "true")
+
+    with patch("run_pipeline.SupabaseMarketWriter", return_value=writer, create=True), \
+         patch.dict(
+             "os.environ",
+             {
+                 "SUPABASE_URL": "https://example.supabase.co",
+                 "SUPABASE_SERVICE_ROLE_KEY": "service-role",
+             },
+             clear=False,
+         ), \
+         patch("run_pipeline._fetch_supabase_operational_lock_rows", return_value=rows), \
+         patch("run_pipeline.get_db") as get_db, \
+         patch("run_pipeline.apply_external_lock_rows", return_value=1):
+        get_db.return_value.close.return_value = None
+
+        assert run_pipeline._apply_supabase_operational_locks("2026-05-21") == 1
+
+    writer.update_rows.assert_not_called()
 
 
 def test_lock_only_strict_supabase_failure_propagates(monkeypatch):

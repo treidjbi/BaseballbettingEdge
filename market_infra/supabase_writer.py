@@ -63,6 +63,21 @@ class SupabaseMarketWriter:
         response.raise_for_status()
         return _count_from_content_range(response.headers.get("Content-Range", ""))
 
+    def update_rows(self, table: str, params: dict[str, str], values: dict) -> int:
+        if not params:
+            raise ValueError("update params are required")
+        if not values:
+            return 0
+        response = requests.patch(
+            f"{self.supabase_url}/rest/v1/{table}",
+            headers=self._headers("return=minimal,count=exact"),
+            params=params,
+            json=values,
+            timeout=20,
+        )
+        response.raise_for_status()
+        return _count_from_content_range(response.headers.get("Content-Range", ""))
+
     def _select_response_with_retries(
         self,
         table: str,

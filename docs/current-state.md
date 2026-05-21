@@ -61,7 +61,7 @@ each lane.
 
 | Lane | Current Source | Current Stage | Next Decision |
 | --- | --- | --- | --- |
-| Pipeline / infrastructure | `2026-05-13-boltodds-propline-official-provider-cutover.md`, `2026-05-20-live-notification-coordinator.md`, `docs/operational-risk-register.md` | Staged Supabase/BoltOdds/PropLine migration. GitHub + TheRundown remain production source of truth. Supabase lock ledger is in non-strict consumer canary. First manual lock-only validation applied 4/4 Supabase rows. | Add lock-consumer observability and event-driven lock-only dispatch so Render lock rows do not wait on delayed GitHub schedules. Keep strict mode, webhook processor observation, row-volume/retention dry-runs, and provider cutover comparison separate from production promotion. |
+| Pipeline / infrastructure | `2026-05-13-boltodds-propline-official-provider-cutover.md`, `2026-05-20-live-notification-coordinator.md`, `docs/operational-risk-register.md` | Staged Supabase/BoltOdds/PropLine migration. GitHub + TheRundown remain production source of truth. Supabase lock ledger is in non-strict consumer canary. GitHub can mark consumed lock rows, and the live layer can dispatch lock-only workflow runs when enabled. | Enable and validate the gated Render lock-only dispatch env. Keep strict mode, webhook processor observation, row-volume/retention dry-runs, and provider cutover comparison separate from production promotion. |
 | Model | `2026-05-12-pitcher-k-outcome-research-dataset.md` | Gate C confidence-referee / compact evidence proof. Gate A and local Gate B are effectively done. | Move from Gate C to Gate D only when collection/storage/reconciliation are routine. Gate E/F are required before any live ranking, threshold, staking, calibration, or formula promotion. |
 | UI | `2026-05-20-live-market-decision-ui.md`, `2026-05-20-live-notification-coordinator.md` | Future-state design only. The dashboard should eventually display best price, consensus, movement, urgency, and notification grouping from the new operational base. | Revisit after the operational/provider switch is stable. Keep display work separated from provider promotion and betting-rule changes. |
 | Tracking / data collection / history | `docs/research/market-tracker-map.md`, `docs/research/pitcher-k-outcome-dataset.md`, compact outcome outputs, live-market audits | Canonical research row plus existing market/live/provider trackers. Daily brief now keeps a compact Gate C bucket scoreboard and pre/post 2026-04-28 context. | Prefer derived labels on the compact outcome row before adding tables. Promote compact storage or retention only after row-volume/cost proof and Tyler approval. |
@@ -112,6 +112,15 @@ Operational rollout note, 2026-05-21:
   `picks_history.json`. This proves the consumer path, but the scheduled
   GitHub run did not arrive after Render wrote the rows, so the next speed fix
   is event-driven lock-only dispatch plus a consumed-row marker.
+- Code support now exists for that speed fix:
+  - GitHub fetches only unconsumed `operational_pick_locks` rows and marks
+    fully applied batches with `consumed_at`.
+  - Render live layer dispatches GitHub `pipeline.yml` with `mode=lock` and the
+    slate date only when `ENABLE_LOCK_ONLY_WORKFLOW_DISPATCH=true` and new lock
+    rows were inserted.
+  - Required Render env for dispatch: `GITHUB_LOCK_DISPATCH_TOKEN` (or
+    `GITHUB_PAT`), plus optional `GITHUB_LOCK_DISPATCH_REPO`,
+    `GITHUB_LOCK_DISPATCH_WORKFLOW`, and `GITHUB_LOCK_DISPATCH_REF`.
 - `OFFICIAL_MARKET_SOURCE=boltodds_propline`,
   `ENABLE_BOLTODDS_PIPELINE_SOURCE`, and live webhook processor promotion
   remain off/unset unless Tyler explicitly approves those separate canaries.
