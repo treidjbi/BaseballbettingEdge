@@ -7434,22 +7434,39 @@
         "so": 1,
         "k_rate": 0.1667
       }
+    },
+    "mlbam:677060": {
+      "name": "Chad Stevens",
+      "bats": "R",
+      "mlbam_id": 677060,
+      "bbref_id": "stevech02",
+      "season": 2026,
+      "vs_R": {
+        "pa": 11,
+        "so": 4,
+        "k_rate": 0.3636
+      },
+      "vs_L": {
+        "pa": 3,
+        "so": 3,
+        "k_rate": 1.0
+      }
     }
   },
-  "updated_at": "2026-05-21T23:13:44Z",
+  "updated_at": "2026-05-21T23:36:58Z",
   "last_run": {
     "projection_status": "collection_only",
-    "requested_batters": 99,
-    "already_cached": 97,
-    "attempted": 2,
-    "collected": 0,
+    "requested_batters": 108,
+    "already_cached": 105,
+    "attempted": 3,
+    "collected": 1,
     "failed": 2,
     "queued_not_attempted": 0,
-    "cache_size": 441,
+    "cache_size": 442,
     "errors": [
       "A.J. Ewing: no bbref id",
       "Joe Mack: no bbref id"
     ],
-    "updated_at": "2026-05-21T23:13:44Z"
+    "updated_at": "2026-05-21T23:36:58Z"
   }
 }
