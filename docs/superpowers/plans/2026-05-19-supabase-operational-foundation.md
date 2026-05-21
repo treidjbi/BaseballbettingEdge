@@ -1128,9 +1128,12 @@ lock-ledger soak. GitHub repository variables are now:
 - `SUPABASE_LOCK_CONSUMER_STRICT=false`
 
 This is still a lock-layer canary only. The next validation step is to compare
-consumed GitHub artifact locks against `operational_pick_locks`, source
-artifact hashes, `shadow_pipeline_runs`, and `shadow_pick_lock_observations`
-after the current slate's lock windows. Strict lock consumption, PropLine
-webhook processing, provider-source promotion, row-retention execution, model
-changes, thresholds, staking, and dashboard behavior remain separate decisions.
+GitHub-applied artifact locks against `operational_pick_locks`, source artifact
+hashes, `shadow_pipeline_runs`, and `shadow_pick_lock_observations` after the
+current slate's lock windows. The table has a `consumed_at` column, but the
+current consumer does not mark it yet, so validate from GitHub logs/artifacts
+until a separate observability patch writes consumed markers. Strict lock
+consumption, PropLine webhook processing, provider-source promotion,
+row-retention execution, model changes, thresholds, staking, and dashboard
+behavior remain separate decisions.
 
