@@ -1137,3 +1137,20 @@ consumption, PropLine webhook processing, provider-source promotion,
 row-retention execution, model changes, thresholds, staking, and dashboard
 behavior remain separate decisions.
 
+## Canary Validation Update, 2026-05-21
+
+Render wrote the first 2026-05-21 due lock rows between 16:40 and 16:50 UTC:
+Casey Mize under, Joey Cantillo under, Braxton Ashcraft over, and Dustin May
+under. A manual GitHub `pipeline.yml` dispatch with `mode=lock` then applied
+4/4 external Supabase lock rows and committed the locked fields to the
+production artifacts/history.
+
+This validates the non-strict consumer apply path. It does not yet solve the
+schedule-delay problem because GitHub had not run automatically after Render
+wrote those rows. The next implementation candidates are:
+
+- mark successfully applied lock rows with `consumed_at` or an equivalent
+  consumer audit marker;
+- add a gated event-driven lock-only dispatch from the live layer or a secure
+  server-side proxy when new due `operational_pick_locks` rows are written.
+
