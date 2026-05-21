@@ -123,6 +123,10 @@ Operational rollout note, 2026-05-21:
     proxy URL is `https://baseballbettingedge.netlify.app/.netlify/functions/trigger-pipeline`.
   - Optional direct-dispatch env: `GITHUB_LOCK_DISPATCH_REPO`,
     `GITHUB_LOCK_DISPATCH_WORKFLOW`, and `GITHUB_LOCK_DISPATCH_REF`.
+  - Render `bbe-live-layer` has `ENABLE_LOCK_ONLY_WORKFLOW_DISPATCH=true` set
+    as a service environment variable and has been redeployed on the dispatch
+    code. Validate the next due lock batch by checking for
+    `dispatch:sent:200` in Render logs and a matching GitHub `mode=lock` run.
 - `OFFICIAL_MARKET_SOURCE=boltodds_propline`,
   `ENABLE_BOLTODDS_PIPELINE_SOURCE`, and live webhook processor promotion
   remain off/unset unless Tyler explicitly approves those separate canaries.

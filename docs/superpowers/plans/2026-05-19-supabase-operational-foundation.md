@@ -1183,6 +1183,12 @@ The Netlify `trigger-pipeline` proxy now preserves the dashboard's no-body
 default dispatch while also accepting validated JSON inputs for `mode=lock` and
 `date=YYYY-MM-DD`.
 
+Render `bbe-live-layer` has `ENABLE_LOCK_ONLY_WORKFLOW_DISPATCH=true` set as a
+service environment variable and was redeployed on the dispatch code. The next
+live validation should wait for a fresh due lock batch, then confirm Render
+logs show `dispatch:sent:200`, GitHub records a `workflow_dispatch` lock run,
+and `operational_pick_locks.consumed_at` is filled for the applied rows.
+
 This is still lock-layer infrastructure only. Keep
 `SUPABASE_LOCK_CONSUMER_STRICT=false` while validating it. Do not use this as
 approval for PropLine webhook processing, provider-source promotion, model
