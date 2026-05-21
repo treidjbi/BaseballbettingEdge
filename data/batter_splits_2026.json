@@ -7436,17 +7436,19 @@
       }
     }
   },
-  "updated_at": "2026-05-21T16:23:47Z",
+  "updated_at": "2026-05-21T17:34:30Z",
   "last_run": {
     "projection_status": "collection_only",
-    "requested_batters": 36,
-    "already_cached": 36,
-    "attempted": 0,
+    "requested_batters": 54,
+    "already_cached": 53,
+    "attempted": 1,
     "collected": 0,
-    "failed": 0,
+    "failed": 1,
     "queued_not_attempted": 0,
     "cache_size": 441,
-    "errors": [],
-    "updated_at": "2026-05-21T16:23:47Z"
+    "errors": [
+      "A.J. Ewing: no bbref id"
+    ],
+    "updated_at": "2026-05-21T17:34:30Z"
   }
 }
