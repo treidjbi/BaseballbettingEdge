@@ -61,7 +61,7 @@ each lane.
 
 | Lane | Current Source | Current Stage | Next Decision |
 | --- | --- | --- | --- |
-| Pipeline / infrastructure | `2026-05-13-boltodds-propline-official-provider-cutover.md`, `2026-05-20-live-notification-coordinator.md`, `docs/operational-risk-register.md` | Staged Supabase/BoltOdds/PropLine migration. GitHub + TheRundown remain production source of truth. Supabase lock ledger is in non-strict consumer canary. GitHub can mark consumed lock rows, and the live layer can dispatch lock-only workflow runs when enabled. | Enable and validate the gated Render lock-only dispatch env. Keep strict mode, webhook processor observation, row-volume/retention dry-runs, and provider cutover comparison separate from production promotion. |
+| Pipeline / infrastructure | `2026-05-13-boltodds-propline-official-provider-cutover.md`, `2026-05-20-live-notification-coordinator.md`, `docs/operational-risk-register.md` | Staged Supabase/BoltOdds/PropLine migration. GitHub + TheRundown remain production source of truth. Supabase lock ledger is in non-strict consumer canary. Render live layer has now proven event-driven lock-only dispatch for a fresh due batch, and GitHub can mark represented lock rows consumed. | Continue the non-strict lock canary through the remaining slate windows. Keep strict mode, webhook processor observation, row-volume/retention execution, and provider cutover comparison separate from production promotion. |
 | Model | `2026-05-12-pitcher-k-outcome-research-dataset.md` | Gate C confidence-referee / compact evidence proof. Gate A and local Gate B are effectively done. | Move from Gate C to Gate D only when collection/storage/reconciliation are routine. Gate E/F are required before any live ranking, threshold, staking, calibration, or formula promotion. |
 | UI | `2026-05-20-live-market-decision-ui.md`, `2026-05-20-live-notification-coordinator.md` | Future-state design only. The dashboard should eventually display best price, consensus, movement, urgency, and notification grouping from the new operational base. | Revisit after the operational/provider switch is stable. Keep display work separated from provider promotion and betting-rule changes. |
 | Tracking / data collection / history | `docs/research/market-tracker-map.md`, `docs/research/pitcher-k-outcome-dataset.md`, compact outcome outputs, live-market audits | Canonical research row plus existing market/live/provider trackers. Daily brief now keeps a compact Gate C bucket scoreboard and pre/post 2026-04-28 context. | Prefer derived labels on the compact outcome row before adding tables. Promote compact storage or retention only after row-volume/cost proof and Tyler approval. |
@@ -114,7 +114,9 @@ Operational rollout note, 2026-05-21:
   is event-driven lock-only dispatch plus a consumed-row marker.
 - Code support now exists for that speed fix:
   - GitHub fetches only unconsumed `operational_pick_locks` rows and marks
-    fully applied batches with `consumed_at`.
+    represented lock rows with `consumed_at`; rows already correctly locked in
+    the artifact DB are idempotently consumable, while unmatched rows stay
+    unconsumed for audit.
   - Render live layer dispatches GitHub `pipeline.yml` with `mode=lock` and the
     slate date only when `ENABLE_LOCK_ONLY_WORKFLOW_DISPATCH=true` and new lock
     rows were inserted.
@@ -123,6 +125,14 @@ Operational rollout note, 2026-05-21:
     proxy URL is `https://baseballbettingedge.netlify.app/.netlify/functions/trigger-pipeline`.
   - Optional direct-dispatch env: `GITHUB_LOCK_DISPATCH_REPO`,
     `GITHUB_LOCK_DISPATCH_WORKFLOW`, and `GITHUB_LOCK_DISPATCH_REF`.
+- Live validation on 2026-05-21 at 19:40 UTC: Render inserted two fresh due
+  rows, Cade Cavalli over and David Peterson under, logged
+  `dispatch:sent:200`, and triggered GitHub workflow run `26248878102`. That
+  run applied 2/6 external rows and committed both locks to artifacts/history.
+  Because four earlier manual-canary rows were already locked but still
+  unconsumed, the consumer patch now treats already-represented lock rows as
+  safe to consume. Follow-up lock run `26249190878` marked all 6/6 represented
+  2026-05-21 rows consumed.
   - Render `bbe-live-layer` has `ENABLE_LOCK_ONLY_WORKFLOW_DISPATCH=true` set
     as a service environment variable and has been redeployed on the dispatch
     code. Validate the next due lock batch by checking for

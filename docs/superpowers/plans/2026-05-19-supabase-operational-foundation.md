@@ -1130,12 +1130,9 @@ lock-ledger soak. GitHub repository variables are now:
 This is still a lock-layer canary only. The next validation step is to compare
 GitHub-applied artifact locks against `operational_pick_locks`, source artifact
 hashes, `shadow_pipeline_runs`, and `shadow_pick_lock_observations` after the
-current slate's lock windows. The table has a `consumed_at` column, but the
-current consumer does not mark it yet, so validate from GitHub logs/artifacts
-until a separate observability patch writes consumed markers. Strict lock
-consumption, PropLine webhook processing, provider-source promotion,
-row-retention execution, model changes, thresholds, staking, and dashboard
-behavior remain separate decisions.
+current slate's lock windows. Strict lock consumption, PropLine webhook
+processing, provider-source promotion, row-retention execution, model changes,
+thresholds, staking, and dashboard behavior remain separate decisions.
 
 ## Canary Validation Update, 2026-05-21
 
@@ -1159,8 +1156,11 @@ wrote those rows. The next implementation candidates are:
 The next minimal speed fix is implemented behind flags:
 
 - `pipeline/run_pipeline.py` now reads only unconsumed
-  `operational_pick_locks` rows and marks fully applied batches with
-  `consumed_at`.
+  `operational_pick_locks` rows and marks represented lock rows with
+  `consumed_at`. A row is represented when the SQLite artifact DB already has
+  the matching pitcher, side, locked line, odds, and verdict; this lets
+  idempotent/replayed lock rows be consumed without hiding truly unmatched
+  ledger rows.
 - `scripts/build_live_events_to_supabase.py` now dispatches GitHub
   `pipeline.yml` with `mode=lock` and the current slate date only when all of
   these are true:
@@ -1193,4 +1193,29 @@ This is still lock-layer infrastructure only. Keep
 `SUPABASE_LOCK_CONSUMER_STRICT=false` while validating it. Do not use this as
 approval for PropLine webhook processing, provider-source promotion, model
 changes, thresholds, staking, or dashboard behavior.
+
+## Event-Driven Lock Dispatch Validation, 2026-05-21
+
+The first live event-driven batch validated the speed path:
+
+- Render run at 19:40 UTC inserted two fresh lock rows: Cade Cavalli over and
+  David Peterson under.
+- Render logged `locks=rows:2 inserted:2 dispatch:sent:200`.
+- GitHub workflow run `26248878102` was triggered by `workflow_dispatch`,
+  completed successfully, applied 2 external lock rows, and committed both
+  locks to artifacts/history.
+
+The first run also exposed an audit-marker edge case: four earlier manual
+canary rows were already locked in artifacts but still had null `consumed_at`,
+so the consumer reported a partial 2/6 apply and intentionally left markers
+unset. Commit `90fdb2ae` fixed this by marking rows consumed when they are
+already represented correctly in the locked artifact DB. Follow-up lock run
+`26249190878` completed successfully and marked all six 2026-05-21 operational
+lock rows consumed.
+
+Next posture: continue non-strict canary observation through the remaining
+lock windows. Do not enable `SUPABASE_LOCK_CONSUMER_STRICT=true` until at
+least one more clean slate shows no duplicate dispatches, wrong-date dispatches,
+unmatched consumed rows, stale source artifact hashes, or artifact/ledger
+disagreements.
 
