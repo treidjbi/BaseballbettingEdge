@@ -888,6 +888,56 @@ def _mark_supabase_operational_locks_consumed(
     return updated
 
 
+def _lock_row_matches_locked_pick(lock_row: dict, pick_row) -> bool:
+    if not pick_row or not pick_row["locked_at"]:
+        return False
+
+    expected_line = lock_row.get("locked_k_line")
+    if expected_line is not None and pick_row["locked_k_line"] is not None:
+        if not math.isclose(float(expected_line), float(pick_row["locked_k_line"]), rel_tol=0, abs_tol=0.0001):
+            return False
+
+    expected_odds = lock_row.get("locked_odds")
+    if expected_odds is not None and pick_row["locked_odds"] is not None:
+        if int(expected_odds) != int(pick_row["locked_odds"]):
+            return False
+
+    expected_verdict = str(lock_row.get("locked_verdict") or "").strip()
+    if expected_verdict:
+        actual_verdict = str(pick_row["locked_verdict"] or "").strip()
+        if expected_verdict != actual_verdict:
+            return False
+
+    return True
+
+
+def _supabase_operational_lock_rows_represented(conn, rows: list[dict]) -> list[dict]:
+    represented: list[dict] = []
+    for row in rows:
+        slate_date = str(row.get("slate_date") or "").strip()
+        pitcher = str(row.get("pitcher") or "").strip()
+        side = str(row.get("side") or "").strip().lower()
+        if not slate_date or not pitcher or side not in {"over", "under"}:
+            continue
+
+        pick = conn.execute(
+            """
+            SELECT locked_at, locked_k_line, locked_odds, locked_verdict
+            FROM picks
+            WHERE date = ?
+              AND pitcher = ?
+              AND side = ?
+              AND locked_at IS NOT NULL
+            ORDER BY locked_at DESC
+            LIMIT 1
+            """,
+            (slate_date, pitcher, side),
+        ).fetchone()
+        if _lock_row_matches_locked_pick(row, pick):
+            represented.append(row)
+    return represented
+
+
 def _apply_supabase_operational_locks(date_str: str) -> int:
     if not _supabase_lock_consumer_enabled():
         return 0
@@ -901,6 +951,11 @@ def _apply_supabase_operational_locks(date_str: str) -> int:
         conn = get_db()
         try:
             applied = apply_external_lock_rows(conn, rows)
+            represented_rows = (
+                rows
+                if applied == len(rows)
+                else _supabase_operational_lock_rows_represented(conn, rows)
+            )
         finally:
             conn.close()
 
@@ -910,19 +965,27 @@ def _apply_supabase_operational_locks(date_str: str) -> int:
             len(rows),
             date_str,
         )
-        if applied and applied == len(rows):
+        if represented_rows:
             writer = _supabase_lock_writer()
             consumed = _mark_supabase_operational_locks_consumed(
                 writer=writer,
-                rows=rows,
+                rows=represented_rows,
                 consumed_at=_now_utc(),
             )
             log.info(
-                "Supabase lock consumer: marked %d/%d rows consumed for %s",
+                "Supabase lock consumer: marked %d/%d represented rows consumed for %s",
                 consumed,
-                len(rows),
+                len(represented_rows),
                 date_str,
             )
+            if len(represented_rows) < len(rows):
+                log.warning(
+                    "Supabase lock consumer: %d/%d rows remain unrepresented for %s; "
+                    "leaving their consumed_at unset for audit",
+                    len(rows) - len(represented_rows),
+                    len(rows),
+                    date_str,
+                )
         elif applied:
             log.warning(
                 "Supabase lock consumer: partial apply %d/%d for %s; "

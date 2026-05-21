@@ -1,5 +1,6 @@
 import sys, os
 import json
+import sqlite3
 import pytest
 from datetime import datetime, timezone
 from pathlib import Path
@@ -160,12 +161,95 @@ def test_apply_supabase_operational_locks_does_not_mark_partial_apply_consumed(m
          ), \
          patch("run_pipeline._fetch_supabase_operational_lock_rows", return_value=rows), \
          patch("run_pipeline.get_db") as get_db, \
-         patch("run_pipeline.apply_external_lock_rows", return_value=1):
+         patch("run_pipeline.apply_external_lock_rows", return_value=1), \
+         patch(
+             "run_pipeline._supabase_operational_lock_rows_represented",
+             return_value=[],
+             create=True,
+         ):
         get_db.return_value.close.return_value = None
 
         assert run_pipeline._apply_supabase_operational_locks("2026-05-21") == 1
 
     writer.update_rows.assert_not_called()
+
+
+def test_apply_supabase_operational_locks_marks_already_represented_rows_consumed_after_partial_apply(monkeypatch):
+    import run_pipeline
+
+    writer = MagicMock()
+    rows = [
+        {
+            "dedupe_key": "2026-05-21:casey mize:under",
+            "slate_date": "2026-05-21",
+            "pitcher": "Casey Mize",
+            "side": "under",
+            "locked_k_line": 4.5,
+            "locked_odds": -120,
+            "locked_verdict": "FIRE 2u",
+        },
+        {
+            "dedupe_key": "2026-05-21:cade cavalli:over",
+            "slate_date": "2026-05-21",
+            "pitcher": "Cade Cavalli",
+            "side": "over",
+            "locked_k_line": 4.5,
+            "locked_odds": -144,
+            "locked_verdict": "FIRE 1u",
+        },
+    ]
+    conn = sqlite3.connect(":memory:")
+    conn.row_factory = sqlite3.Row
+    conn.execute("""
+        CREATE TABLE picks (
+            date TEXT,
+            pitcher TEXT,
+            side TEXT,
+            locked_at TEXT,
+            locked_k_line REAL,
+            locked_odds INTEGER,
+            locked_verdict TEXT
+        )
+    """)
+    conn.executemany(
+        """
+        INSERT INTO picks (
+            date, pitcher, side, locked_at, locked_k_line, locked_odds, locked_verdict
+        ) VALUES (?, ?, ?, ?, ?, ?, ?)
+        """,
+        [
+            ("2026-05-21", "Casey Mize", "under", "2026-05-21T16:40:30Z", 4.5, -120, "FIRE 2u"),
+            ("2026-05-21", "Cade Cavalli", "over", "2026-05-21T19:40:13Z", 4.5, -144, "FIRE 1u"),
+        ],
+    )
+    monkeypatch.setenv("ENABLE_SUPABASE_LOCK_CONSUMER", "true")
+
+    with patch("run_pipeline.SupabaseMarketWriter", return_value=writer, create=True), \
+         patch.dict(
+             "os.environ",
+             {
+                 "SUPABASE_URL": "https://example.supabase.co",
+                 "SUPABASE_SERVICE_ROLE_KEY": "service-role",
+             },
+             clear=False,
+         ), \
+         patch("run_pipeline._fetch_supabase_operational_lock_rows", return_value=rows), \
+         patch("run_pipeline.get_db", return_value=conn), \
+         patch("run_pipeline.apply_external_lock_rows", return_value=1), \
+         patch(
+             "run_pipeline._now_utc",
+             return_value=run_pipeline.datetime.fromisoformat("2026-05-21T19:41:00+00:00"),
+         ):
+        assert run_pipeline._apply_supabase_operational_locks("2026-05-21") == 1
+
+    updated_keys = [
+        call.args[1]["dedupe_key"]
+        for call in writer.update_rows.call_args_list
+    ]
+    assert updated_keys == [
+        "eq.2026-05-21:casey mize:under",
+        "eq.2026-05-21:cade cavalli:over",
+    ]
 
 
 def test_lock_only_strict_supabase_failure_propagates(monkeypatch):
