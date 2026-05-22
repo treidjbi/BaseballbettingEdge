@@ -7453,20 +7453,21 @@
       }
     }
   },
-  "updated_at": "2026-05-22T01:32:26Z",
+  "updated_at": "2026-05-22T04:33:51Z",
   "last_run": {
     "projection_status": "collection_only",
     "requested_batters": 108,
-    "already_cached": 106,
-    "attempted": 2,
+    "already_cached": 105,
+    "attempted": 3,
     "collected": 0,
-    "failed": 2,
+    "failed": 3,
     "queued_not_attempted": 0,
     "cache_size": 442,
     "errors": [
       "A.J. Ewing: no bbref id",
-      "Pete Fairbanks: IndexError: single positional indexer is out-of-bounds"
+      "Pete Fairbanks: IndexError: single positional indexer is out-of-bounds",
+      "Henry Bolte: no bbref id"
     ],
-    "updated_at": "2026-05-22T01:32:26Z"
+    "updated_at": "2026-05-22T04:33:51Z"
   }
 }
