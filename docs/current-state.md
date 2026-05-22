@@ -1,6 +1,6 @@
 # Current State
 
-Last updated: 2026-05-21
+Last updated: 2026-05-22
 
 ## Read Order
 
@@ -14,6 +14,9 @@ For any new work in this repo:
    - `docs/superpowers/plans/2026-05-20-live-market-decision-ui.md`
      for future dashboard UI work that displays BoltOdds/PropLine live-market
      evidence after the operational/provider production switch is approved
+   - `docs/superpowers/plans/2026-05-22-github-artifact-exit.md`
+     for the post-lock plan to move dashboard artifact serving and scheduled
+     pipeline execution off GitHub Actions after strict lock canary validation
    - `docs/superpowers/plans/2026-05-07-bet-conversion-shadow-audit.md`
      only as historical diagnostic context for the first bet-selection audit
 4. Read `docs/provider-cost-ledger.md` before recommending new providers,
@@ -61,7 +64,7 @@ each lane.
 
 | Lane | Current Source | Current Stage | Next Decision |
 | --- | --- | --- | --- |
-| Pipeline / infrastructure | `2026-05-13-boltodds-propline-official-provider-cutover.md`, `2026-05-20-live-notification-coordinator.md`, `docs/operational-risk-register.md` | Staged Supabase/BoltOdds/PropLine migration. GitHub + TheRundown remain production source of truth. Supabase lock ledger is in non-strict consumer canary. Render live layer has now proven event-driven lock-only dispatch for a fresh due batch, and GitHub can mark represented lock rows consumed. | Continue the non-strict lock canary through the remaining slate windows. Keep strict mode, webhook processor observation, row-volume/retention execution, and provider cutover comparison separate from production promotion. |
+| Pipeline / infrastructure | `2026-05-19-supabase-operational-foundation.md`, `2026-05-22-github-artifact-exit.md`, `2026-05-13-boltodds-propline-official-provider-cutover.md`, `2026-05-20-live-notification-coordinator.md`, `docs/operational-risk-register.md` | Staged Supabase/BoltOdds/PropLine migration. GitHub + TheRundown remain production source of truth. Supabase lock ledger is in non-strict consumer canary. Render live layer has now proven event-driven lock-only dispatch for fresh due batches, and GitHub can mark represented lock rows consumed. A follow-up artifact-exit plan now exists for moving dashboard artifact serving and scheduled pipeline execution off GitHub after strict lock canary validation. | Finish the current slate lock audit, then decide whether to enable `SUPABASE_LOCK_CONSUMER_STRICT=true` for one strict canary. If that is clean, start the GitHub artifact-exit plan with a Supabase artifact mirror before changing dashboard reads or Render schedules. |
 | Model | `2026-05-12-pitcher-k-outcome-research-dataset.md` | Gate C confidence-referee / compact evidence proof. Gate A and local Gate B are effectively done. | Move from Gate C to Gate D only when collection/storage/reconciliation are routine. Gate E/F are required before any live ranking, threshold, staking, calibration, or formula promotion. |
 | UI | `2026-05-20-live-market-decision-ui.md`, `2026-05-20-live-notification-coordinator.md` | Future-state design only. The dashboard should eventually display best price, consensus, movement, urgency, and notification grouping from the new operational base. | Revisit after the operational/provider switch is stable. Keep display work separated from provider promotion and betting-rule changes. |
 | Tracking / data collection / history | `docs/research/market-tracker-map.md`, `docs/research/pitcher-k-outcome-dataset.md`, compact outcome outputs, live-market audits | Canonical research row plus existing market/live/provider trackers. Daily brief now keeps a compact Gate C bucket scoreboard and pre/post 2026-04-28 context. | Prefer derived labels on the compact outcome row before adding tables. Promote compact storage or retention only after row-volume/cost proof and Tyler approval. |
@@ -284,6 +287,14 @@ durable queue, start-window reminders should be grouped, lock pushes should be
 batched, late/post-start betting-action pushes should be suppressed or converted
 to system-health alerts, and GitHub `send-notifications` should eventually move
 to fallback/artifact-health mode after a clean canary.
+
+After the lock layer is strict-canary clean, use the GitHub artifact-exit plan:
+`docs/superpowers/plans/2026-05-22-github-artifact-exit.md`.
+That plan covers the missing post-lock phase: mirror dashboard JSON artifacts
+into Supabase, serve them through a Netlify artifact API with static fallback,
+move scheduled pipeline execution to Render, and only then disable GitHub
+scheduled artifact publishing. It is future work until Tyler approves starting
+Task 1 after the current lock slate audit.
 
 ## Active Production Path
 
