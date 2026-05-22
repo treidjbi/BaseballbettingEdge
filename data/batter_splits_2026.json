@@ -7470,20 +7470,22 @@
       }
     }
   },
-  "updated_at": "2026-05-22T19:16:10Z",
+  "updated_at": "2026-05-22T20:04:17Z",
   "last_run": {
     "projection_status": "collection_only",
-    "requested_batters": 63,
-    "already_cached": 61,
-    "attempted": 2,
+    "requested_batters": 126,
+    "already_cached": 121,
+    "attempted": 4,
     "collected": 0,
-    "failed": 2,
-    "queued_not_attempted": 0,
+    "failed": 4,
+    "queued_not_attempted": 1,
     "cache_size": 443,
     "errors": [
+      "Esmerlyn Valdez: no bbref id",
       "Gabriel Gonzalez: no bbref id",
-      "Joe Mack: no bbref id"
+      "A.J. Ewing: no bbref id",
+      "Nick Morabito: no bbref id"
     ],
-    "updated_at": "2026-05-22T19:16:10Z"
+    "updated_at": "2026-05-22T20:04:17Z"
   }
 }
