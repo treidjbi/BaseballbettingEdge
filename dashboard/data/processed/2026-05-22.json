@@ -1,120 +1,12 @@
 {
-  "generated_at": "2026-05-22T18:58:16Z",
+  "generated_at": "2026-05-22T19:16:10Z",
   "date": "2026-05-22",
   "props_available": true,
   "data_warnings": [
-    "fetch_lineups: confirmed 5/26 opposing lineups (21 still projected)",
-    "fetch_batter_stats missing splits for 1/26 opposing lineups"
+    "fetch_lineups: confirmed 7/25 opposing lineups (18 still projected)",
+    "fetch_batter_stats missing splits for 1/25 opposing lineups"
   ],
   "pitchers": [
-    {
-      "pitcher": "Jameson Taillon",
-      "team": "Chicago Cubs",
-      "opp_team": "Houston Astros",
-      "pitcher_throws": "R",
-      "game_time": "2026-05-22T18:20:00Z",
-      "k_line": 4.5,
-      "opening_line": 4.5,
-      "best_over_book": "FanDuel",
-      "best_under_book": "FanDuel",
-      "ref_book": "FanDuel",
-      "best_over_odds": -102,
-      "best_under_odds": -120,
-      "opening_over_odds": 104,
-      "opening_under_odds": -128,
-      "opening_odds_source": "preview",
-      "odds_source": "therundown",
-      "the_odds_event_id": null,
-      "propline_event_id": null,
-      "market_source_mode": null,
-      "line_source_provider": null,
-      "source_snapshot_ids": null,
-      "source_current_market_line_ids": null,
-      "official_market_line_id": null,
-      "provider_coverage": null,
-      "provider_arbitration_reasons": null,
-      "price_delta_over": -206,
-      "price_delta_under": 8,
-      "raw_lambda": 4.66,
-      "lambda": 4.61,
-      "avg_ip": 5.6,
-      "is_opener": false,
-      "opener_note": null,
-      "swstr_pct": 0.106,
-      "career_swstr_pct": 0.0912,
-      "swstr_delta_k9": 0.025,
-      "days_since_last_start": 6,
-      "last_pitch_count": 90,
-      "rest_k9_delta": 0.0,
-      "opp_k_rate": 0.22207033011111113,
-      "lineup_used": true,
-      "lineup_count": 9,
-      "park_factor": 1.01,
-      "ump_k_adj": -0.158,
-      "starter_mismatch": false,
-      "recent_start_count": 5,
-      "season_k9": 7.46,
-      "recent_k9": 6.75,
-      "career_k9": 7.79,
-      "ev_over": {
-        "edge": -0.017,
-        "ev": -0.0337,
-        "adj_ev": -0.0337,
-        "verdict": "PASS",
-        "win_prob": 0.488,
-        "movement_conf": 1.0,
-        "raw_verdict": "PASS",
-        "raw_adj_ev": -0.0337,
-        "actionable_verdict": "PASS",
-        "quality_gate_level": "clean",
-        "quality_gate_reasons": []
-      },
-      "ev_under": {
-        "edge": -0.0334,
-        "ev": -0.0612,
-        "adj_ev": -0.0612,
-        "verdict": "PASS",
-        "win_prob": 0.512,
-        "movement_conf": 1.0,
-        "raw_verdict": "PASS",
-        "raw_adj_ev": -0.0612,
-        "actionable_verdict": "PASS",
-        "quality_gate_level": "clean",
-        "quality_gate_reasons": []
-      },
-      "book_odds": {
-        "DraftKings": {
-          "over": -110,
-          "under": -116
-        },
-        "BetMGM": {
-          "over": -115,
-          "under": -115
-        },
-        "FanDuel": {
-          "over": -102,
-          "under": -120
-        }
-      },
-      "umpire": "Chad Fairchild",
-      "umpire_has_rating": true,
-      "umpire_rating_games": null,
-      "data_complete": true,
-      "game_state": "in_progress",
-      "input_quality_flags": [],
-      "projection_safe": true,
-      "quality_gate_level": "clean",
-      "quality_gate_reasons": [],
-      "verdict_cap_reason": "",
-      "data_maturity": {
-        "pitcher": "mature",
-        "umpire": "mature",
-        "lineup": "confirmed",
-        "market": "preview_open"
-      },
-      "max_actionable_verdict": "FIRE 2u",
-      "tracked_picks": []
-    },
     {
       "pitcher": "Spencer Arrighetti",
       "team": "Houston Astros",
@@ -266,21 +158,21 @@
       ]
     },
     {
-      "pitcher": "Gavin Williams",
-      "team": "Cleveland Guardians",
-      "opp_team": "Philadelphia Phillies",
+      "pitcher": "Jameson Taillon",
+      "team": "Chicago Cubs",
+      "opp_team": "Houston Astros",
       "pitcher_throws": "R",
-      "game_time": "2026-05-22T22:40:00Z",
-      "k_line": 6.5,
-      "opening_line": 6.5,
-      "best_over_book": "BetMGM",
-      "best_under_book": "DraftKings",
-      "ref_book": "BetMGM",
-      "best_over_odds": 100,
-      "best_under_odds": -119,
-      "opening_over_odds": 105,
-      "opening_under_odds": -115,
-      "opening_odds_source": "first_seen",
+      "game_time": "2026-05-22T18:20:00Z",
+      "k_line": 4.5,
+      "opening_line": 4.5,
+      "best_over_book": "FanDuel",
+      "best_under_book": "FanDuel",
+      "ref_book": "FanDuel",
+      "best_over_odds": -102,
+      "best_under_odds": -120,
+      "opening_over_odds": 104,
+      "opening_under_odds": -128,
+      "opening_odds_source": "preview",
       "odds_source": "therundown",
       "the_odds_event_id": null,
       "propline_event_id": null,
@@ -291,7 +183,115 @@
       "official_market_line_id": null,
       "provider_coverage": null,
       "provider_arbitration_reasons": null,
-      "price_delta_over": -5,
+      "price_delta_over": -206,
+      "price_delta_under": 8,
+      "raw_lambda": 4.66,
+      "lambda": 4.61,
+      "avg_ip": 5.6,
+      "is_opener": false,
+      "opener_note": null,
+      "swstr_pct": 0.106,
+      "career_swstr_pct": 0.0912,
+      "swstr_delta_k9": 0.025,
+      "days_since_last_start": 6,
+      "last_pitch_count": 90,
+      "rest_k9_delta": 0.0,
+      "opp_k_rate": 0.22207033011111113,
+      "lineup_used": true,
+      "lineup_count": 9,
+      "park_factor": 1.01,
+      "ump_k_adj": -0.158,
+      "starter_mismatch": false,
+      "recent_start_count": 5,
+      "season_k9": 7.46,
+      "recent_k9": 6.75,
+      "career_k9": 7.79,
+      "ev_over": {
+        "edge": -0.017,
+        "ev": -0.0337,
+        "adj_ev": -0.0337,
+        "verdict": "PASS",
+        "win_prob": 0.488,
+        "movement_conf": 1.0,
+        "raw_verdict": "PASS",
+        "raw_adj_ev": -0.0337,
+        "actionable_verdict": "PASS",
+        "quality_gate_level": "clean",
+        "quality_gate_reasons": []
+      },
+      "ev_under": {
+        "edge": -0.0334,
+        "ev": -0.0612,
+        "adj_ev": -0.0612,
+        "verdict": "PASS",
+        "win_prob": 0.512,
+        "movement_conf": 1.0,
+        "raw_verdict": "PASS",
+        "raw_adj_ev": -0.0612,
+        "actionable_verdict": "PASS",
+        "quality_gate_level": "clean",
+        "quality_gate_reasons": []
+      },
+      "book_odds": {
+        "DraftKings": {
+          "over": -110,
+          "under": -116
+        },
+        "BetMGM": {
+          "over": -115,
+          "under": -115
+        },
+        "FanDuel": {
+          "over": -102,
+          "under": -120
+        }
+      },
+      "umpire": "Chad Fairchild",
+      "umpire_has_rating": true,
+      "umpire_rating_games": null,
+      "data_complete": true,
+      "game_state": "in_progress",
+      "input_quality_flags": [],
+      "projection_safe": true,
+      "quality_gate_level": "clean",
+      "quality_gate_reasons": [],
+      "verdict_cap_reason": "",
+      "data_maturity": {
+        "pitcher": "mature",
+        "umpire": "mature",
+        "lineup": "confirmed",
+        "market": "preview_open"
+      },
+      "max_actionable_verdict": "FIRE 2u",
+      "tracked_picks": []
+    },
+    {
+      "pitcher": "Gavin Williams",
+      "team": "Cleveland Guardians",
+      "opp_team": "Philadelphia Phillies",
+      "pitcher_throws": "R",
+      "game_time": "2026-05-22T22:40:00Z",
+      "k_line": 6.5,
+      "opening_line": 6.5,
+      "best_over_book": "FanDuel",
+      "best_under_book": "FanDuel",
+      "ref_book": "FanDuel",
+      "best_over_odds": 100,
+      "best_under_odds": -132,
+      "opening_over_odds": 104,
+      "opening_under_odds": -128,
+      "opening_odds_source": "preview",
+      "odds_source": "therundown",
+      "the_odds_event_id": null,
+      "propline_event_id": null,
+      "market_source_mode": null,
+      "line_source_provider": null,
+      "source_snapshot_ids": null,
+      "source_current_market_line_ids": null,
+      "official_market_line_id": null,
+      "provider_coverage": null,
+      "provider_arbitration_reasons": null,
+      "price_delta_over": -4,
       "price_delta_under": -4,
       "raw_lambda": 7.62,
       "lambda": 7.56,
@@ -318,36 +318,36 @@
         "edge": 0.1306,
         "ev": 0.2612,
         "adj_ev": 0.2612,
-        "verdict": "FIRE 1u",
+        "verdict": "FIRE 2u",
         "win_prob": 0.631,
         "movement_conf": 1.0,
         "raw_verdict": "FIRE 2u",
         "raw_adj_ev": 0.2612,
-        "actionable_verdict": "FIRE 1u",
-        "quality_gate_level": "capped",
-        "quality_gate_reasons": [
-          "first seen opening"
-        ]
+        "actionable_verdict": "FIRE 2u",
+        "quality_gate_level": "clean",
+        "quality_gate_reasons": []
       },
       "ev_under": {
-        "edge": -0.174,
-        "ev": -0.3202,
-        "adj_ev": -0.3202,
+        "edge": -0.1996,
+        "ev": -0.3507,
+        "adj_ev": -0.3507,
         "verdict": "PASS",
         "win_prob": 0.369,
         "movement_conf": 1.0,
         "raw_verdict": "PASS",
-        "raw_adj_ev": -0.3202,
+        "raw_adj_ev": -0.3507,
         "actionable_verdict": "PASS",
-        "quality_gate_level": "capped",
-        "quality_gate_reasons": [
-          "first seen opening"
-        ]
+        "quality_gate_level": "clean",
+        "quality_gate_reasons": []
       },
       "book_odds": {
         "DraftKings": {
           "over": -107,
           "under": -119
+        },
+        "FanDuel": {
+          "over": 100,
+          "under": -132
         },
         "Kalshi": {
           "over": -103,
@@ -359,22 +359,18 @@
       "umpire_rating_games": null,
       "data_complete": true,
       "game_state": "pregame",
-      "input_quality_flags": [
-        "first_seen_opening"
-      ],
+      "input_quality_flags": [],
       "projection_safe": true,
-      "quality_gate_level": "capped",
-      "quality_gate_reasons": [
-        "first seen opening"
-      ],
-      "verdict_cap_reason": "1 soft input flag: first_seen_opening",
+      "quality_gate_level": "clean",
+      "quality_gate_reasons": [],
+      "verdict_cap_reason": "",
       "data_maturity": {
         "pitcher": "mature",
         "umpire": "mature",
         "lineup": "confirmed",
-        "market": "first_seen"
+        "market": "preview_open"
       },
-      "max_actionable_verdict": "FIRE 1u",
+      "max_actionable_verdict": "FIRE 2u",
       "tracked_picks": [
         {
           "date": "2026-05-22",
@@ -383,19 +379,17 @@
           "opp_team": "Philadelphia Phillies",
           "side": "over",
           "display_side": "OVER",
-          "verdict": "FIRE 1u",
+          "verdict": "FIRE 2u",
           "locked_verdict": null,
-          "display_verdict": "FIRE 1u",
+          "display_verdict": "FIRE 2u",
           "raw_verdict": "FIRE 2u",
-          "actionable_verdict": "FIRE 1u",
-          "quality_gate_level": "capped",
-          "input_quality_flags": [
-            "first_seen_opening"
-          ],
-          "verdict_cap_reason": "1 soft input flag: first_seen_opening",
+          "actionable_verdict": "FIRE 2u",
+          "quality_gate_level": "clean",
+          "input_quality_flags": [],
+          "verdict_cap_reason": "",
           "data_maturity": {
             "lineup": "confirmed",
-            "market": "first_seen",
+            "market": "preview_open",
             "pitcher": "mature",
             "umpire": "mature"
           },
@@ -429,14 +423,14 @@
       "game_time": "2026-05-22T22:40:00Z",
       "k_line": 6.5,
       "opening_line": 6.5,
-      "best_over_book": "BetMGM",
-      "best_under_book": "DraftKings",
-      "ref_book": "BetMGM",
-      "best_over_odds": -135,
-      "best_under_odds": 101,
-      "opening_over_odds": -140,
-      "opening_under_odds": 108,
-      "opening_odds_source": "first_seen",
+      "best_over_book": "FanDuel",
+      "best_under_book": "FanDuel",
+      "ref_book": "FanDuel",
+      "best_over_odds": -120,
+      "best_under_odds": -102,
+      "opening_over_odds": -130,
+      "opening_under_odds": 106,
+      "opening_odds_source": "preview",
       "odds_source": "therundown",
       "the_odds_event_id": null,
       "propline_event_id": null,
@@ -447,10 +441,10 @@
       "official_market_line_id": null,
       "provider_coverage": null,
       "provider_arbitration_reasons": null,
-      "price_delta_over": 5,
-      "price_delta_under": -7,
-      "raw_lambda": 8.27,
-      "lambda": 8.21,
+      "price_delta_over": 10,
+      "price_delta_under": -208,
+      "raw_lambda": 7.96,
+      "lambda": 7.91,
       "avg_ip": 7.2,
       "is_opener": false,
       "opener_note": null,
@@ -460,9 +454,9 @@
       "days_since_last_start": 6,
       "last_pitch_count": 108,
       "rest_k9_delta": 0.0,
-      "opp_k_rate": 0.1974,
-      "lineup_used": false,
-      "lineup_count": 0,
+      "opp_k_rate": 0.18051774366666665,
+      "lineup_used": true,
+      "lineup_count": 9,
       "park_factor": 1.01,
       "ump_k_adj": 1.263,
       "starter_mismatch": false,
@@ -471,41 +465,35 @@
       "recent_k9": 10.25,
       "career_k9": 8.84,
       "ev_over": {
-        "edge": 0.137,
-        "ev": 0.2385,
-        "adj_ev": 0.2385,
-        "verdict": "LEAN",
-        "win_prob": 0.711,
+        "edge": 0.1296,
+        "ev": 0.2375,
+        "adj_ev": 0.2375,
+        "verdict": "FIRE 2u",
+        "win_prob": 0.675,
         "movement_conf": 1.0,
         "raw_verdict": "FIRE 2u",
-        "raw_adj_ev": 0.2385,
-        "actionable_verdict": "LEAN",
-        "quality_gate_level": "capped",
-        "quality_gate_reasons": [
-          "projected lineup",
-          "first seen opening"
-        ]
+        "raw_adj_ev": 0.2375,
+        "actionable_verdict": "FIRE 2u",
+        "quality_gate_level": "clean",
+        "quality_gate_reasons": []
       },
       "ev_under": {
-        "edge": -0.209,
-        "ev": -0.4201,
-        "adj_ev": -0.4201,
+        "edge": -0.18,
+        "ev": -0.3564,
+        "adj_ev": -0.3564,
         "verdict": "PASS",
-        "win_prob": 0.289,
+        "win_prob": 0.325,
         "movement_conf": 1.0,
         "raw_verdict": "PASS",
-        "raw_adj_ev": -0.4201,
+        "raw_adj_ev": -0.3564,
         "actionable_verdict": "PASS",
-        "quality_gate_level": "capped",
-        "quality_gate_reasons": [
-          "projected lineup",
-          "first seen opening"
-        ]
+        "quality_gate_level": "clean",
+        "quality_gate_reasons": []
       },
       "book_odds": {
-        "DraftKings": {
-          "over": -129,
-          "under": 101
+        "FanDuel": {
+          "over": -120,
+          "under": -102
         },
         "Kalshi": {
           "over": -116,
@@ -517,24 +505,18 @@
       "umpire_rating_games": null,
       "data_complete": true,
       "game_state": "pregame",
-      "input_quality_flags": [
-        "projected_lineup",
-        "first_seen_opening"
-      ],
+      "input_quality_flags": [],
       "projection_safe": true,
-      "quality_gate_level": "capped",
-      "quality_gate_reasons": [
-        "projected lineup",
-        "first seen opening"
-      ],
-      "verdict_cap_reason": "2 soft input flags: projected_lineup, first_seen_opening",
+      "quality_gate_level": "clean",
+      "quality_gate_reasons": [],
+      "verdict_cap_reason": "",
       "data_maturity": {
         "pitcher": "mature",
         "umpire": "mature",
-        "lineup": "projected",
-        "market": "first_seen"
+        "lineup": "confirmed",
+        "market": "preview_open"
       },
-      "max_actionable_verdict": "LEAN",
+      "max_actionable_verdict": "FIRE 2u",
       "tracked_picks": [
         {
           "date": "2026-05-22",
@@ -543,35 +525,32 @@
           "opp_team": "Cleveland Guardians",
           "side": "over",
           "display_side": "OVER",
-          "verdict": "LEAN",
+          "verdict": "FIRE 2u",
           "locked_verdict": null,
-          "display_verdict": "LEAN",
+          "display_verdict": "FIRE 2u",
           "raw_verdict": "FIRE 2u",
-          "actionable_verdict": "LEAN",
-          "quality_gate_level": "capped",
-          "input_quality_flags": [
-            "projected_lineup",
-            "first_seen_opening"
-          ],
-          "verdict_cap_reason": "2 soft input flags: projected_lineup, first_seen_opening",
+          "actionable_verdict": "FIRE 2u",
+          "quality_gate_level": "clean",
+          "input_quality_flags": [],
+          "verdict_cap_reason": "",
           "data_maturity": {
-            "lineup": "projected",
-            "market": "first_seen",
+            "lineup": "confirmed",
+            "market": "preview_open",
             "pitcher": "mature",
             "umpire": "mature"
           },
           "k_line": 6.5,
           "locked_k_line": null,
           "display_k_line": 6.5,
-          "odds": -135,
+          "odds": -120,
           "locked_odds": null,
-          "display_odds": -135,
-          "adj_ev": 0.2385,
-          "raw_adj_ev": 0.2385,
+          "display_odds": -120,
+          "adj_ev": 0.2375,
+          "raw_adj_ev": 0.2375,
           "locked_adj_ev": null,
-          "display_adj_ev": 0.2385,
-          "edge": 0.137,
-          "ev": 0.2385,
+          "display_adj_ev": 0.2375,
+          "edge": 0.1296,
+          "ev": 0.2375,
           "result": null,
           "actual_ks": null,
           "pnl": null,
@@ -1029,8 +1008,8 @@
       "best_over_book": "FanDuel",
       "best_under_book": "FanDuel",
       "ref_book": "FanDuel",
-      "best_over_odds": -106,
-      "best_under_odds": -125,
+      "best_over_odds": -104,
+      "best_under_odds": -128,
       "opening_over_odds": -102,
       "opening_under_odds": -120,
       "opening_odds_source": "preview",
@@ -1044,8 +1023,8 @@
       "official_market_line_id": null,
       "provider_coverage": null,
       "provider_arbitration_reasons": null,
-      "price_delta_over": -4,
-      "price_delta_under": -5,
+      "price_delta_over": -2,
+      "price_delta_under": -8,
       "raw_lambda": 5.5,
       "lambda": 5.45,
       "avg_ip": 5.0,
@@ -1068,14 +1047,14 @@
       "recent_k9": 10.44,
       "career_k9": 10.44,
       "ev_over": {
-        "edge": -0.0527,
-        "ev": -0.1025,
-        "adj_ev": -0.1025,
+        "edge": -0.048,
+        "ev": -0.0941,
+        "adj_ev": -0.0941,
         "verdict": "PASS",
         "win_prob": 0.462,
         "movement_conf": 1.0,
         "raw_verdict": "PASS",
-        "raw_adj_ev": -0.1025,
+        "raw_adj_ev": -0.0941,
         "actionable_verdict": "PASS",
         "quality_gate_level": "capped",
         "quality_gate_reasons": [
@@ -1083,14 +1062,14 @@
         ]
       },
       "ev_under": {
-        "edge": -0.0174,
-        "ev": -0.0313,
-        "adj_ev": -0.0313,
+        "edge": -0.0232,
+        "ev": -0.0414,
+        "adj_ev": -0.0414,
         "verdict": "PASS",
         "win_prob": 0.538,
         "movement_conf": 1.0,
         "raw_verdict": "PASS",
-        "raw_adj_ev": -0.0313,
+        "raw_adj_ev": -0.0414,
         "actionable_verdict": "PASS",
         "quality_gate_level": "capped",
         "quality_gate_reasons": [
@@ -1103,8 +1082,8 @@
           "under": -115
         },
         "FanDuel": {
-          "over": -106,
-          "under": -125
+          "over": -104,
+          "under": -128
         },
         "Kalshi": {
           "over": 114,
@@ -1211,8 +1190,8 @@
       },
       "book_odds": {
         "DraftKings": {
-          "over": -132,
-          "under": 103
+          "over": -115,
+          "under": -111
         },
         "FanDuel": {
           "over": -115,
@@ -1347,6 +1326,7 @@
         "actionable_verdict": "PASS",
         "quality_gate_level": "capped",
         "quality_gate_reasons": [
+          "unrated umpire",
           "projected lineup"
         ]
       },
@@ -1362,6 +1342,7 @@
         "actionable_verdict": "PASS",
         "quality_gate_level": "capped",
         "quality_gate_reasons": [
+          "unrated umpire",
           "projected lineup"
         ]
       },
@@ -1383,27 +1364,29 @@
           "under": 109
         }
       },
-      "umpire": null,
+      "umpire": "HP Umpire",
       "umpire_has_rating": false,
       "umpire_rating_games": null,
       "data_complete": false,
       "game_state": "pregame",
       "input_quality_flags": [
+        "unrated_umpire",
         "projected_lineup"
       ],
       "projection_safe": true,
       "quality_gate_level": "capped",
       "quality_gate_reasons": [
+        "unrated umpire",
         "projected lineup"
       ],
-      "verdict_cap_reason": "1 soft input flag: projected_lineup",
+      "verdict_cap_reason": "2 soft input flags: unrated_umpire, projected_lineup",
       "data_maturity": {
         "pitcher": "mature",
-        "umpire": "mature",
+        "umpire": "unknown",
         "lineup": "projected",
         "market": "preview_open"
       },
-      "max_actionable_verdict": "FIRE 1u",
+      "max_actionable_verdict": "LEAN",
       "tracked_picks": []
     },
     {
@@ -1434,8 +1417,8 @@
       "provider_arbitration_reasons": null,
       "price_delta_over": 239,
       "price_delta_under": -61,
-      "raw_lambda": 4.5,
-      "lambda": 4.44,
+      "raw_lambda": 4.86,
+      "lambda": 4.8,
       "avg_ip": 5.5,
       "is_opener": false,
       "opener_note": null,
@@ -1445,9 +1428,9 @@
       "days_since_last_start": 33,
       "last_pitch_count": 28,
       "rest_k9_delta": 0.0,
-      "opp_k_rate": 0.2194,
-      "lineup_used": false,
-      "lineup_count": 0,
+      "opp_k_rate": 0.2551384331111111,
+      "lineup_used": true,
+      "lineup_count": 9,
       "park_factor": 1.0,
       "ump_k_adj": 0.0,
       "starter_mismatch": false,
@@ -1456,11 +1439,11 @@
       "recent_k9": 7.14,
       "career_k9": 7.77,
       "ev_over": {
-        "edge": 0.3731,
-        "ev": 0.8357,
+        "edge": 0.4113,
+        "ev": 0.9214,
         "adj_ev": 0.0,
         "verdict": "PASS",
-        "win_prob": 0.82,
+        "win_prob": 0.858,
         "movement_conf": 0.0,
         "raw_verdict": "PASS",
         "raw_adj_ev": 0.0,
@@ -1468,23 +1451,23 @@
         "quality_gate_level": "capped",
         "quality_gate_reasons": [
           "thin recent start sample",
-          "projected lineup"
+          "unrated umpire"
         ]
       },
       "ev_under": {
-        "edge": -0.4436,
-        "ev": -0.7108,
-        "adj_ev": -0.7108,
+        "edge": -0.4818,
+        "ev": -0.7721,
+        "adj_ev": -0.7721,
         "verdict": "PASS",
-        "win_prob": 0.18,
+        "win_prob": 0.142,
         "movement_conf": 1.0,
         "raw_verdict": "PASS",
-        "raw_adj_ev": -0.7108,
+        "raw_adj_ev": -0.7721,
         "actionable_verdict": "PASS",
         "quality_gate_level": "capped",
         "quality_gate_reasons": [
           "thin recent start sample",
-          "projected lineup"
+          "unrated umpire"
         ]
       },
       "book_odds": {
@@ -1493,194 +1476,30 @@
           "under": -166
         }
       },
-      "umpire": null,
+      "umpire": "HP Umpire",
       "umpire_has_rating": false,
       "umpire_rating_games": null,
       "data_complete": false,
       "game_state": "pregame",
       "input_quality_flags": [
         "thin_recent_start_sample",
-        "projected_lineup"
+        "unrated_umpire"
       ],
       "projection_safe": true,
       "quality_gate_level": "capped",
       "quality_gate_reasons": [
         "thin recent start sample",
-        "projected lineup"
+        "unrated umpire"
       ],
-      "verdict_cap_reason": "2 soft input flags: thin_recent_start_sample, projected_lineup",
+      "verdict_cap_reason": "2 soft input flags: thin_recent_start_sample, unrated_umpire",
       "data_maturity": {
         "pitcher": "thin",
-        "umpire": "mature",
-        "lineup": "projected",
+        "umpire": "unknown",
+        "lineup": "confirmed",
         "market": "preview_open"
       },
       "max_actionable_verdict": "LEAN",
       "tracked_picks": []
-    },
-    {
-      "pitcher": "Chris Bassitt",
-      "team": "Baltimore Orioles",
-      "opp_team": "Detroit Tigers",
-      "pitcher_throws": "R",
-      "game_time": "2026-05-22T23:15:00Z",
-      "k_line": 4.5,
-      "opening_line": 4.5,
-      "best_over_book": "FanDuel",
-      "best_under_book": "FanDuel",
-      "ref_book": "FanDuel",
-      "best_over_odds": -130,
-      "best_under_odds": 106,
-      "opening_over_odds": -140,
-      "opening_under_odds": 114,
-      "opening_odds_source": "preview",
-      "odds_source": "therundown",
-      "the_odds_event_id": null,
-      "propline_event_id": null,
-      "market_source_mode": null,
-      "line_source_provider": null,
-      "source_snapshot_ids": null,
-      "source_current_market_line_ids": null,
-      "official_market_line_id": null,
-      "provider_coverage": null,
-      "provider_arbitration_reasons": null,
-      "price_delta_over": 10,
-      "price_delta_under": -8,
-      "raw_lambda": 4.27,
-      "lambda": 4.21,
-      "avg_ip": 5.2,
-      "is_opener": false,
-      "opener_note": null,
-      "swstr_pct": 0.093,
-      "career_swstr_pct": 0.0933,
-      "swstr_delta_k9": -0.001,
-      "days_since_last_start": 6,
-      "last_pitch_count": 82,
-      "rest_k9_delta": 0.0,
-      "opp_k_rate": 0.2303,
-      "lineup_used": false,
-      "lineup_count": 0,
-      "park_factor": 0.99,
-      "ump_k_adj": 0.0,
-      "starter_mismatch": false,
-      "recent_start_count": 5,
-      "season_k9": 6.28,
-      "recent_k9": 6.58,
-      "career_k9": 8.31,
-      "ev_over": {
-        "edge": -0.1527,
-        "ev": -0.2701,
-        "adj_ev": -0.2701,
-        "verdict": "PASS",
-        "win_prob": 0.413,
-        "movement_conf": 1.0,
-        "raw_verdict": "PASS",
-        "raw_adj_ev": -0.2701,
-        "actionable_verdict": "PASS",
-        "quality_gate_level": "capped",
-        "quality_gate_reasons": [
-          "projected lineup"
-        ]
-      },
-      "ev_under": {
-        "edge": 0.102,
-        "ev": 0.2102,
-        "adj_ev": 0.2102,
-        "verdict": "FIRE 1u",
-        "win_prob": 0.587,
-        "movement_conf": 1.0,
-        "raw_verdict": "FIRE 2u",
-        "raw_adj_ev": 0.2102,
-        "actionable_verdict": "FIRE 1u",
-        "quality_gate_level": "capped",
-        "quality_gate_reasons": [
-          "projected lineup"
-        ]
-      },
-      "book_odds": {
-        "DraftKings": {
-          "over": -143,
-          "under": 112
-        },
-        "BetMGM": {
-          "over": -155,
-          "under": 115
-        },
-        "FanDuel": {
-          "over": -130,
-          "under": 106
-        },
-        "Kalshi": {
-          "over": -126,
-          "under": 105
-        }
-      },
-      "umpire": null,
-      "umpire_has_rating": false,
-      "umpire_rating_games": null,
-      "data_complete": false,
-      "game_state": "pregame",
-      "input_quality_flags": [
-        "projected_lineup"
-      ],
-      "projection_safe": true,
-      "quality_gate_level": "capped",
-      "quality_gate_reasons": [
-        "projected lineup"
-      ],
-      "verdict_cap_reason": "1 soft input flag: projected_lineup",
-      "data_maturity": {
-        "pitcher": "mature",
-        "umpire": "mature",
-        "lineup": "projected",
-        "market": "preview_open"
-      },
-      "max_actionable_verdict": "FIRE 1u",
-      "tracked_picks": [
-        {
-          "date": "2026-05-22",
-          "pitcher": "Chris Bassitt",
-          "team": "Baltimore Orioles",
-          "opp_team": "Detroit Tigers",
-          "side": "under",
-          "display_side": "UNDER",
-          "verdict": "FIRE 1u",
-          "locked_verdict": null,
-          "display_verdict": "FIRE 1u",
-          "raw_verdict": "FIRE 2u",
-          "actionable_verdict": "FIRE 1u",
-          "quality_gate_level": "capped",
-          "input_quality_flags": [
-            "projected_lineup"
-          ],
-          "verdict_cap_reason": "1 soft input flag: projected_lineup",
-          "data_maturity": {
-            "lineup": "projected",
-            "market": "preview_open",
-            "pitcher": "mature",
-            "umpire": "mature"
-          },
-          "k_line": 4.5,
-          "locked_k_line": null,
-          "display_k_line": 4.5,
-          "odds": 106,
-          "locked_odds": null,
-          "display_odds": 106,
-          "adj_ev": 0.2102,
-          "raw_adj_ev": 0.2102,
-          "locked_adj_ev": null,
-          "display_adj_ev": 0.2102,
-          "edge": 0.102,
-          "ev": 0.2102,
-          "result": null,
-          "actual_ks": null,
-          "pnl": null,
-          "locked_at": null,
-          "status": "tracking",
-          "game_time": "2026-05-22T23:15:00Z",
-          "data_complete": 0
-        }
-      ]
     },
     {
       "pitcher": "Jack Flaherty",
@@ -1772,7 +1591,7 @@
         },
         "Kalshi": {
           "over": -103,
-          "under": -126
+          "under": -121
         }
       },
       "umpire": null,
@@ -1925,16 +1744,16 @@
       },
       "book_odds": {
         "DraftKings": {
-          "over": -140,
-          "under": 110
+          "over": -152,
+          "under": 119
         },
         "FanDuel": {
           "over": -154,
           "under": 116
         },
         "Kalshi": {
-          "over": -161,
-          "under": 119
+          "over": -154,
+          "under": 129
         }
       },
       "umpire": null,
@@ -2991,8 +2810,8 @@
           "under": -138
         },
         "Kalshi": {
-          "over": 109,
-          "under": -137
+          "over": 105,
+          "under": -131
         }
       },
       "umpire": null,
@@ -3107,7 +2926,7 @@
           "under": -104
         },
         "Kalshi": {
-          "over": -121,
+          "over": -116,
           "under": -103
         }
       },
@@ -3223,8 +3042,8 @@
           "under": 106
         },
         "Kalshi": {
-          "over": -142,
-          "under": 119
+          "over": -137,
+          "under": 114
         }
       },
       "umpire": null,
@@ -3465,8 +3284,8 @@
       "best_over_book": "FanDuel",
       "best_under_book": "FanDuel",
       "ref_book": "FanDuel",
-      "best_over_odds": -154,
-      "best_under_odds": 116,
+      "best_over_odds": -158,
+      "best_under_odds": 118,
       "opening_over_odds": -132,
       "opening_under_odds": 108,
       "opening_odds_source": "preview",
@@ -3480,8 +3299,8 @@
       "official_market_line_id": null,
       "provider_coverage": null,
       "provider_arbitration_reasons": null,
-      "price_delta_over": -22,
-      "price_delta_under": 8,
+      "price_delta_over": -26,
+      "price_delta_under": 10,
       "raw_lambda": 5.55,
       "lambda": 5.49,
       "avg_ip": 6.2,
@@ -3504,14 +3323,14 @@
       "recent_k9": 11.61,
       "career_k9": 7.44,
       "ev_over": {
-        "edge": 0.0344,
-        "ev": 0.0568,
-        "adj_ev": 0.0568,
+        "edge": 0.0283,
+        "ev": 0.0463,
+        "adj_ev": 0.0463,
         "verdict": "LEAN",
         "win_prob": 0.641,
         "movement_conf": 1.0,
         "raw_verdict": "LEAN",
-        "raw_adj_ev": 0.0568,
+        "raw_adj_ev": 0.0463,
         "actionable_verdict": "LEAN",
         "quality_gate_level": "capped",
         "quality_gate_reasons": [
@@ -3519,14 +3338,14 @@
         ]
       },
       "ev_under": {
-        "edge": -0.1037,
-        "ev": -0.224,
-        "adj_ev": -0.224,
+        "edge": -0.0994,
+        "ev": -0.2168,
+        "adj_ev": -0.2168,
         "verdict": "PASS",
         "win_prob": 0.359,
         "movement_conf": 1.0,
         "raw_verdict": "PASS",
-        "raw_adj_ev": -0.224,
+        "raw_adj_ev": -0.2168,
         "actionable_verdict": "PASS",
         "quality_gate_level": "capped",
         "quality_gate_reasons": [
@@ -3539,12 +3358,12 @@
           "under": 119
         },
         "FanDuel": {
-          "over": -154,
-          "under": 116
+          "over": -158,
+          "under": 118
         },
         "Kalshi": {
-          "over": -148,
-          "under": 124
+          "over": -168,
+          "under": 140
         }
       },
       "umpire": null,
@@ -3595,15 +3414,15 @@
           "k_line": 4.5,
           "locked_k_line": null,
           "display_k_line": 4.5,
-          "odds": -154,
+          "odds": -158,
           "locked_odds": null,
-          "display_odds": -154,
-          "adj_ev": 0.0568,
-          "raw_adj_ev": 0.0568,
+          "display_odds": -158,
+          "adj_ev": 0.0463,
+          "raw_adj_ev": 0.0463,
           "locked_adj_ev": null,
-          "display_adj_ev": 0.0568,
-          "edge": 0.0344,
-          "ev": 0.0568,
+          "display_adj_ev": 0.0463,
+          "edge": 0.0283,
+          "ev": 0.0463,
           "result": null,
           "actual_ks": null,
           "pnl": null,
@@ -3626,7 +3445,7 @@
       "best_under_book": "FanDuel",
       "ref_book": "FanDuel",
       "best_over_odds": -144,
-      "best_under_odds": 116,
+      "best_under_odds": 118,
       "opening_over_odds": -150,
       "opening_under_odds": 122,
       "opening_odds_source": "preview",
@@ -3641,7 +3460,7 @@
       "provider_coverage": null,
       "provider_arbitration_reasons": null,
       "price_delta_over": 6,
-      "price_delta_under": -6,
+      "price_delta_under": -4,
       "raw_lambda": 5.68,
       "lambda": 5.62,
       "avg_ip": 6.33,
@@ -3680,14 +3499,14 @@
         ]
       },
       "ev_under": {
-        "edge": -0.1237,
-        "ev": -0.2672,
-        "adj_ev": -0.2672,
+        "edge": -0.1194,
+        "ev": -0.2604,
+        "adj_ev": -0.2604,
         "verdict": "PASS",
         "win_prob": 0.339,
         "movement_conf": 1.0,
         "raw_verdict": "PASS",
-        "raw_adj_ev": -0.2672,
+        "raw_adj_ev": -0.2604,
         "actionable_verdict": "PASS",
         "quality_gate_level": "capped",
         "quality_gate_reasons": [
@@ -3706,7 +3525,7 @@
         },
         "FanDuel": {
           "over": -144,
-          "under": 116
+          "under": 118
         },
         "Kalshi": {
           "over": -142,
@@ -4105,9 +3924,9 @@
     }
   ],
   "ump_diagnostics": {
-    "hp_count_fetched": 3,
+    "hp_count_fetched": 4,
     "pitcher_nonzero_count": 6,
-    "pitcher_with_hp_count": 6,
+    "pitcher_with_hp_count": 8,
     "pitcher_rated_count": 6,
     "umpire_by_pitcher": {
       "Jameson Taillon": "Chad Fairchild",
@@ -4115,7 +3934,9 @@
       "Gavin Williams": "Junior Valentine",
       "Cristopher Sanchez": "Junior Valentine",
       "Connor Prielipp": "Ryan Wills",
-      "Payton Tolle": "Ryan Wills"
+      "Payton Tolle": "Ryan Wills",
+      "Eury Perez": "HP Umpire",
+      "Tobias Myers": "HP Umpire"
     },
     "rated_umpire_by_pitcher": {
       "Jameson Taillon": true,
@@ -4129,7 +3950,6 @@
       "Payton Tolle": true,
       "Eury Perez": false,
       "Tobias Myers": false,
-      "Chris Bassitt": false,
       "Jack Flaherty": false,
       "Miles Mikolas": false,
       "Noah Cameron": false,
@@ -4146,19 +3966,21 @@
       "Trevor McDonald": false
     },
     "umpire_rating_games_by_pitcher": {},
-    "missing_career_rate_umpires": []
+    "missing_career_rate_umpires": [
+      "HP Umpire"
+    ]
   },
   "connection_health": {
     "props_seen": 33,
-    "stats_resolved": 26,
-    "records_built": 26,
+    "stats_resolved": 25,
+    "records_built": 25,
     "unresolved_count": 0,
-    "model_candidate_count": 26,
+    "model_candidate_count": 25,
     "intake_filtered_count": 0,
     "missing_stats_count": 0,
     "unresolved_after_stats_count": 0,
     "feature_build_failures_count": 0,
-    "ignored_non_starter_count": 7,
+    "ignored_non_starter_count": 8,
     "degraded": false,
     "sample_intake_filtered_pitchers": [],
     "sample_feature_build_failures": [],
@@ -4171,35 +3993,37 @@
   },
   "batter_split_collection": {
     "projection_status": "collection_only",
-    "requested_batters": 45,
-    "already_cached": 43,
+    "requested_batters": 63,
+    "already_cached": 61,
     "attempted": 2,
-    "collected": 1,
-    "failed": 1,
+    "collected": 0,
+    "failed": 2,
     "queued_not_attempted": 0,
     "cache_size": 443,
     "errors": [
-      "Gabriel Gonzalez: no bbref id"
+      "Gabriel Gonzalez: no bbref id",
+      "Joe Mack: no bbref id"
     ],
-    "updated_at": "2026-05-22T18:58:16Z"
+    "updated_at": "2026-05-22T19:16:10Z"
   },
   "quality_gate_summary": {
-    "clean": 2,
-    "capped": 26,
+    "clean": 4,
+    "capped": 23,
     "blocked": 0,
     "severe_flags": {},
     "soft_flags": {
-      "first_seen_opening": 5,
-      "projected_lineup": 23,
+      "first_seen_opening": 3,
+      "projected_lineup": 20,
       "missing_career_swstr": 1,
+      "unrated_umpire": 2,
       "thin_recent_start_sample": 2,
       "developing_pitcher_sample": 2
     },
     "pre_record_skips": {
       "unresolved_probable_starters": 0,
-      "ignored_non_starter_props": 7,
+      "ignored_non_starter_props": 8,
       "build_exception": 0,
-      "pregame_starter_mismatch": 0
+      "pregame_starter_mismatch": 1
     }
   },
   "tracked_picks": [
@@ -4294,35 +4118,32 @@
       "opp_team": "Cleveland Guardians",
       "side": "over",
       "display_side": "OVER",
-      "verdict": "LEAN",
+      "verdict": "FIRE 2u",
       "locked_verdict": null,
-      "display_verdict": "LEAN",
+      "display_verdict": "FIRE 2u",
       "raw_verdict": "FIRE 2u",
-      "actionable_verdict": "LEAN",
-      "quality_gate_level": "capped",
-      "input_quality_flags": [
-        "projected_lineup",
-        "first_seen_opening"
-      ],
-      "verdict_cap_reason": "2 soft input flags: projected_lineup, first_seen_opening",
+      "actionable_verdict": "FIRE 2u",
+      "quality_gate_level": "clean",
+      "input_quality_flags": [],
+      "verdict_cap_reason": "",
       "data_maturity": {
-        "lineup": "projected",
-        "market": "first_seen",
+        "lineup": "confirmed",
+        "market": "preview_open",
         "pitcher": "mature",
         "umpire": "mature"
       },
       "k_line": 6.5,
       "locked_k_line": null,
       "display_k_line": 6.5,
-      "odds": -135,
+      "odds": -120,
       "locked_odds": null,
-      "display_odds": -135,
-      "adj_ev": 0.2385,
-      "raw_adj_ev": 0.2385,
+      "display_odds": -120,
+      "adj_ev": 0.2375,
+      "raw_adj_ev": 0.2375,
       "locked_adj_ev": null,
-      "display_adj_ev": 0.2385,
-      "edge": 0.137,
-      "ev": 0.2385,
+      "display_adj_ev": 0.2375,
+      "edge": 0.1296,
+      "ev": 0.2375,
       "result": null,
       "actual_ks": null,
       "pnl": null,
@@ -4338,19 +4159,17 @@
       "opp_team": "Philadelphia Phillies",
       "side": "over",
       "display_side": "OVER",
-      "verdict": "FIRE 1u",
+      "verdict": "FIRE 2u",
       "locked_verdict": null,
-      "display_verdict": "FIRE 1u",
+      "display_verdict": "FIRE 2u",
       "raw_verdict": "FIRE 2u",
-      "actionable_verdict": "FIRE 1u",
-      "quality_gate_level": "capped",
-      "input_quality_flags": [
-        "first_seen_opening"
-      ],
-      "verdict_cap_reason": "1 soft input flag: first_seen_opening",
+      "actionable_verdict": "FIRE 2u",
+      "quality_gate_level": "clean",
+      "input_quality_flags": [],
+      "verdict_cap_reason": "",
       "data_maturity": {
         "lineup": "confirmed",
-        "market": "first_seen",
+        "market": "preview_open",
         "pitcher": "mature",
         "umpire": "mature"
       },
@@ -4963,15 +4782,15 @@
       "k_line": 4.5,
       "locked_k_line": null,
       "display_k_line": 4.5,
-      "odds": -154,
+      "odds": -158,
       "locked_odds": null,
-      "display_odds": -154,
-      "adj_ev": 0.0568,
-      "raw_adj_ev": 0.0568,
+      "display_odds": -158,
+      "adj_ev": 0.0463,
+      "raw_adj_ev": 0.0463,
       "locked_adj_ev": null,
-      "display_adj_ev": 0.0568,
-      "edge": 0.0344,
-      "ev": 0.0568,
+      "display_adj_ev": 0.0463,
+      "edge": 0.0283,
+      "ev": 0.0463,
       "result": null,
       "actual_ks": null,
       "pnl": null,
