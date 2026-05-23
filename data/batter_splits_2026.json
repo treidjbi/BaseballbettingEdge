@@ -7485,24 +7485,40 @@
         "so": 9,
         "k_rate": 0.4091
       }
+    },
+    "mlbam:682634": {
+      "name": "Kevin Alc\u00e1ntara",
+      "bats": "R",
+      "mlbam_id": 682634,
+      "bbref_id": "alcanke01",
+      "season": 2026,
+      "vs_R": {
+        "pa": 5,
+        "so": 3,
+        "k_rate": 0.6
+      },
+      "vs_L": {
+        "pa": 7,
+        "so": 1,
+        "k_rate": 0.1429
+      }
     }
   },
-  "updated_at": "2026-05-23T19:46:43Z",
+  "updated_at": "2026-05-23T20:09:42Z",
   "last_run": {
     "projection_status": "collection_only",
-    "requested_batters": 144,
-    "already_cached": 139,
+    "requested_batters": 162,
+    "already_cached": 156,
     "attempted": 4,
-    "collected": 0,
-    "failed": 4,
-    "queued_not_attempted": 1,
-    "cache_size": 444,
+    "collected": 1,
+    "failed": 3,
+    "queued_not_attempted": 2,
+    "cache_size": 445,
     "errors": [
       "Bryan Torres: no bbref id",
       "Esmerlyn Valdez: no bbref id",
-      "A.J. Ewing: no bbref id",
-      "Joe Mack: no bbref id"
+      "A.J. Ewing: no bbref id"
     ],
-    "updated_at": "2026-05-23T19:46:43Z"
+    "updated_at": "2026-05-23T20:09:42Z"
   }
 }
