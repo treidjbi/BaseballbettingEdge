@@ -7468,24 +7468,36 @@
         "so": 10,
         "k_rate": 0.3125
       }
+    },
+    "mlbam:553993": {
+      "name": "Eugenio Su\u00e1rez",
+      "bats": "R",
+      "mlbam_id": 553993,
+      "bbref_id": "suareeu01",
+      "season": 2026,
+      "vs_R": {
+        "pa": 78,
+        "so": 21,
+        "k_rate": 0.2692
+      },
+      "vs_L": {
+        "pa": 22,
+        "so": 9,
+        "k_rate": 0.4091
+      }
     }
   },
-  "updated_at": "2026-05-23T04:52:17Z",
+  "updated_at": "2026-05-23T14:44:13Z",
   "last_run": {
     "projection_status": "collection_only",
-    "requested_batters": 234,
-    "already_cached": 222,
-    "attempted": 4,
-    "collected": 0,
-    "failed": 4,
-    "queued_not_attempted": 8,
-    "cache_size": 443,
-    "errors": [
-      "Esmerlyn Valdez: no bbref id",
-      "Nick Morabito: no bbref id",
-      "Joe Mack: no bbref id",
-      "Paxton Schultz: IndexError: single positional indexer is out-of-bounds"
-    ],
-    "updated_at": "2026-05-23T04:52:17Z"
+    "requested_batters": 9,
+    "already_cached": 8,
+    "attempted": 1,
+    "collected": 1,
+    "failed": 0,
+    "queued_not_attempted": 0,
+    "cache_size": 444,
+    "errors": [],
+    "updated_at": "2026-05-23T14:44:13Z"
   }
 }
