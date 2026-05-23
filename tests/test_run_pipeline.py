@@ -63,6 +63,22 @@ def test_supabase_lock_consumer_disabled_by_default(monkeypatch):
     assert run_pipeline._supabase_lock_consumer_enabled() is False
 
 
+def test_github_fallback_locking_enabled_by_default(monkeypatch):
+    import run_pipeline
+
+    monkeypatch.delenv("ENABLE_GITHUB_FALLBACK_LOCKING", raising=False)
+
+    assert run_pipeline._github_fallback_locking_enabled() is True
+
+
+def test_github_fallback_locking_can_be_disabled(monkeypatch):
+    import run_pipeline
+
+    monkeypatch.setenv("ENABLE_GITHUB_FALLBACK_LOCKING", "false")
+
+    assert run_pipeline._github_fallback_locking_enabled() is False
+
+
 def test_fetch_supabase_operational_lock_rows_reads_expected_table(monkeypatch):
     import run_pipeline
 
@@ -252,6 +268,72 @@ def test_apply_supabase_operational_locks_marks_already_represented_rows_consume
     ]
 
 
+def test_apply_supabase_operational_locks_marks_drifted_already_locked_rows_for_audit(monkeypatch):
+    import run_pipeline
+
+    writer = MagicMock()
+    rows = [
+        {
+            "dedupe_key": "2026-05-21:carlos rodon:over",
+            "slate_date": "2026-05-21",
+            "pitcher": "Carlos Rodon",
+            "side": "over",
+            "locked_k_line": 5.5,
+            "locked_odds": 118,
+            "locked_verdict": "FIRE 1u",
+            "metadata": {"artifact_generated_at": "2026-05-21T22:00:21+00:00"},
+        },
+    ]
+    conn = sqlite3.connect(":memory:")
+    conn.row_factory = sqlite3.Row
+    conn.execute("""
+        CREATE TABLE picks (
+            date TEXT,
+            pitcher TEXT,
+            side TEXT,
+            locked_at TEXT,
+            locked_k_line REAL,
+            locked_odds INTEGER,
+            locked_verdict TEXT
+        )
+    """)
+    conn.execute(
+        """
+        INSERT INTO picks (
+            date, pitcher, side, locked_at, locked_k_line, locked_odds, locked_verdict
+        ) VALUES (?, ?, ?, ?, ?, ?, ?)
+        """,
+        ("2026-05-21", "Carlos Rodon", "over", "2026-05-21T22:39:34Z", 5.5, 120, "FIRE 1u"),
+    )
+    monkeypatch.setenv("ENABLE_SUPABASE_LOCK_CONSUMER", "true")
+
+    with patch("run_pipeline.SupabaseMarketWriter", return_value=writer, create=True), \
+         patch.dict(
+             "os.environ",
+             {
+                 "SUPABASE_URL": "https://example.supabase.co",
+                 "SUPABASE_SERVICE_ROLE_KEY": "service-role",
+             },
+             clear=False,
+         ), \
+         patch("run_pipeline._fetch_supabase_operational_lock_rows", return_value=rows), \
+         patch("run_pipeline.get_db", return_value=conn), \
+         patch("run_pipeline.apply_external_lock_rows", return_value=0), \
+         patch(
+             "run_pipeline._now_utc",
+             return_value=run_pipeline.datetime.fromisoformat("2026-05-21T22:41:00+00:00"),
+         ):
+        assert run_pipeline._apply_supabase_operational_locks("2026-05-21") == 0
+
+    writer.update_rows.assert_called_once()
+    table, params, values = writer.update_rows.call_args.args
+    assert table == "operational_pick_locks"
+    assert params == {"dedupe_key": "eq.2026-05-21:carlos rodon:over"}
+    assert values["metadata"]["consumer_status"] == "artifact_already_locked_drift"
+    assert values["metadata"]["consumer_status_at"] == "2026-05-21T22:41:00+00:00"
+    assert values["metadata"]["artifact_generated_at"] == "2026-05-21T22:00:21+00:00"
+
+
 def test_lock_only_strict_supabase_failure_propagates(monkeypatch):
     import run_pipeline
 
@@ -267,6 +349,23 @@ def test_lock_only_strict_supabase_failure_propagates(monkeypatch):
          ):
         with pytest.raises(RuntimeError, match="supabase down"):
             run_pipeline._run_lock_only("2026-05-19")
+
+
+def test_lock_only_can_disable_pipeline_fallback_locking(monkeypatch):
+    import run_pipeline
+
+    monkeypatch.setenv("ENABLE_GITHUB_FALLBACK_LOCKING", "false")
+
+    with patch("run_pipeline.reset_db"), \
+         patch("run_pipeline.init_db"), \
+         patch("run_pipeline.load_history_into_db"), \
+         patch("run_pipeline._apply_supabase_operational_locks", return_value=0), \
+         patch("run_pipeline.lock_due_picks") as lock_due, \
+         patch("run_pipeline.export_db_to_history"), \
+         patch("run_pipeline._enrich_archives_with_tracked_picks"):
+        run_pipeline._run_lock_only("2026-05-19")
+
+    lock_due.assert_not_called()
 
 
 def test_run_strict_supabase_failure_propagates_from_seed_path(tmp_path, monkeypatch):
@@ -1583,6 +1682,42 @@ def test_run_seeds_then_locks_due_picks(tmp_path):
     assert lock_calls[0]["lock_all_past"] is False
     assert db_events == ["reset", "init", "load"]
     assert call_events == ["seed", "lock"]
+
+
+def test_run_can_disable_pipeline_fallback_locking(tmp_path, monkeypatch):
+    """run() should still seed/apply Supabase rows but skip GitHub due-lock fallback."""
+    import run_pipeline
+    run_pipeline._batter_stats_cache = None
+    out_path = tmp_path / "today.json"
+    call_events = []
+
+    monkeypatch.setenv("ENABLE_GITHUB_FALLBACK_LOCKING", "false")
+
+    def mock_seed(*args, **kwargs):
+        call_events.append("seed")
+        return 0
+
+    with patch.object(run_pipeline, "OUTPUT_PATH", out_path), \
+         patch("run_pipeline.fetch_odds", return_value=[_sample_prop()]), \
+         patch("run_pipeline.fetch_stats", return_value=({"Test Pitcher": _sample_stats()}, {})), \
+         patch("run_pipeline.fetch_swstr", return_value={"Test Pitcher": {"swstr_pct": 0.110, "career_swstr_pct": None}}), \
+         patch("run_pipeline.fetch_umpires", return_value=({"Test Pitcher": 0.0}, {"hp_count_fetched": 0, "pitcher_nonzero_count": 0})), \
+         patch("run_pipeline.fetch_lineups_for_pitcher", return_value=None), \
+         patch("run_pipeline.fetch_batter_stats_cached", return_value={}), \
+         patch("run_pipeline.lock_due_picks") as lock_due, \
+         patch("run_pipeline.reset_db"), \
+         patch("run_pipeline.init_db"), \
+         patch("run_pipeline.load_history_into_db"), \
+         patch("run_pipeline.get_db", return_value=MagicMock()), \
+         patch("run_pipeline.seed_picks", mock_seed), \
+         patch("run_pipeline._apply_supabase_operational_locks", return_value=1) as apply_external, \
+         patch("run_pipeline.export_db_to_history"), \
+         patch("run_pipeline._write_archive"):
+        run_pipeline.run("2026-04-01")
+
+    assert call_events == ["seed"]
+    apply_external.assert_called_once_with("2026-04-01")
+    lock_due.assert_not_called()
 
 
 def test_grading_run_calls_lock_all_past(tmp_path):

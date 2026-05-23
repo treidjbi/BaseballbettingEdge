@@ -838,6 +838,11 @@ def _supabase_lock_consumer_strict() -> bool:
     return value in {"1", "true", "yes", "on"}
 
 
+def _github_fallback_locking_enabled() -> bool:
+    value = os.environ.get("ENABLE_GITHUB_FALLBACK_LOCKING", "true").strip().lower()
+    return value not in {"0", "false", "no", "off"}
+
+
 def _now_utc() -> datetime:
     return datetime.now(timezone.utc)
 
@@ -911,31 +916,84 @@ def _lock_row_matches_locked_pick(lock_row: dict, pick_row) -> bool:
     return True
 
 
+def _metadata_dict(row: dict) -> dict:
+    metadata = row.get("metadata")
+    if isinstance(metadata, dict):
+        return dict(metadata)
+    if isinstance(metadata, str) and metadata.strip():
+        try:
+            parsed = json.loads(metadata)
+            if isinstance(parsed, dict):
+                return parsed
+        except json.JSONDecodeError:
+            return {}
+    return {}
+
+
+def _locked_pick_for_operational_lock_row(conn, row: dict):
+    slate_date = str(row.get("slate_date") or "").strip()
+    pitcher = str(row.get("pitcher") or "").strip()
+    side = str(row.get("side") or "").strip().lower()
+    if not slate_date or not pitcher or side not in {"over", "under"}:
+        return None
+
+    return conn.execute(
+        """
+        SELECT locked_at, locked_k_line, locked_odds, locked_verdict
+        FROM picks
+        WHERE date = ?
+          AND pitcher = ?
+          AND side = ?
+          AND locked_at IS NOT NULL
+        ORDER BY locked_at DESC
+        LIMIT 1
+        """,
+        (slate_date, pitcher, side),
+    ).fetchone()
+
+
 def _supabase_operational_lock_rows_represented(conn, rows: list[dict]) -> list[dict]:
     represented: list[dict] = []
     for row in rows:
-        slate_date = str(row.get("slate_date") or "").strip()
-        pitcher = str(row.get("pitcher") or "").strip()
-        side = str(row.get("side") or "").strip().lower()
-        if not slate_date or not pitcher or side not in {"over", "under"}:
-            continue
-
-        pick = conn.execute(
-            """
-            SELECT locked_at, locked_k_line, locked_odds, locked_verdict
-            FROM picks
-            WHERE date = ?
-              AND pitcher = ?
-              AND side = ?
-              AND locked_at IS NOT NULL
-            ORDER BY locked_at DESC
-            LIMIT 1
-            """,
-            (slate_date, pitcher, side),
-        ).fetchone()
+        pick = _locked_pick_for_operational_lock_row(conn, row)
         if _lock_row_matches_locked_pick(row, pick):
             represented.append(row)
     return represented
+
+
+def _supabase_operational_lock_rows_with_artifact_drift(conn, rows: list[dict]) -> list[dict]:
+    drifted: list[dict] = []
+    for row in rows:
+        pick = _locked_pick_for_operational_lock_row(conn, row)
+        if pick and not _lock_row_matches_locked_pick(row, pick):
+            drifted.append(row)
+    return drifted
+
+
+def _mark_supabase_operational_locks_audited(
+    *,
+    writer: SupabaseMarketWriter,
+    rows: list[dict],
+    status: str,
+    reason: str,
+    status_at: datetime,
+) -> int:
+    status_at_value = status_at.isoformat()
+    updated = 0
+    for row in rows:
+        dedupe_key = str(row.get("dedupe_key") or "").strip()
+        if not dedupe_key:
+            continue
+        metadata = _metadata_dict(row)
+        metadata["consumer_status"] = status
+        metadata["consumer_status_reason"] = reason
+        metadata["consumer_status_at"] = status_at_value
+        updated += writer.update_rows(
+            "operational_pick_locks",
+            {"dedupe_key": f"eq.{dedupe_key}"},
+            {"metadata": metadata},
+        )
+    return updated
 
 
 def _apply_supabase_operational_locks(date_str: str) -> int:
@@ -951,11 +1009,25 @@ def _apply_supabase_operational_locks(date_str: str) -> int:
         conn = get_db()
         try:
             applied = apply_external_lock_rows(conn, rows)
-            represented_rows = (
-                rows
-                if applied == len(rows)
-                else _supabase_operational_lock_rows_represented(conn, rows)
-            )
+            if applied == len(rows):
+                represented_rows = rows
+                drifted_rows = []
+            else:
+                represented_rows = _supabase_operational_lock_rows_represented(conn, rows)
+                represented_keys = {
+                    str(row.get("dedupe_key") or "").strip()
+                    for row in represented_rows
+                    if row.get("dedupe_key")
+                }
+                unrepresented_rows = [
+                    row
+                    for row in rows
+                    if str(row.get("dedupe_key") or "").strip() not in represented_keys
+                ]
+                drifted_rows = _supabase_operational_lock_rows_with_artifact_drift(
+                    conn,
+                    unrepresented_rows,
+                )
         finally:
             conn.close()
 
@@ -965,12 +1037,14 @@ def _apply_supabase_operational_locks(date_str: str) -> int:
             len(rows),
             date_str,
         )
+        consumer_checked_at = _now_utc()
+        writer = None
         if represented_rows:
             writer = _supabase_lock_writer()
             consumed = _mark_supabase_operational_locks_consumed(
                 writer=writer,
                 rows=represented_rows,
-                consumed_at=_now_utc(),
+                consumed_at=consumer_checked_at,
             )
             log.info(
                 "Supabase lock consumer: marked %d/%d represented rows consumed for %s",
@@ -986,6 +1060,22 @@ def _apply_supabase_operational_locks(date_str: str) -> int:
                     len(rows),
                     date_str,
                 )
+        if drifted_rows:
+            if writer is None:
+                writer = _supabase_lock_writer()
+            audited = _mark_supabase_operational_locks_audited(
+                writer=writer,
+                rows=drifted_rows,
+                status="artifact_already_locked_drift",
+                reason="existing artifact lock differs from operational lock row",
+                status_at=consumer_checked_at,
+            )
+            log.warning(
+                "Supabase lock consumer: marked %d/%d unrepresented rows as artifact drift for %s",
+                audited,
+                len(drifted_rows),
+                date_str,
+            )
         elif applied:
             log.warning(
                 "Supabase lock consumer: partial apply %d/%d for %s; "
@@ -1016,7 +1106,13 @@ def _run_lock_only(date_str: str) -> None:
         external_locked = _apply_supabase_operational_locks(date_str)
         conn = get_db()
         try:
-            locked = lock_due_picks(conn, datetime.now(timezone.utc), lock_all_past=False)
+            if _github_fallback_locking_enabled():
+                locked = lock_due_picks(conn, datetime.now(timezone.utc), lock_all_past=False)
+            else:
+                locked = 0
+                log.info(
+                    "Lock-only: GitHub fallback locking disabled; relying on external lock rows"
+                )
         finally:
             conn.close()
         if external_locked + locked > 0:
@@ -1853,7 +1949,13 @@ def run(date_str: str, run_type: str = "full") -> None:
         external_locked = _apply_supabase_operational_locks(date_str)
         conn = get_db()
         try:
-            locked = lock_due_picks(conn, now_utc, lock_all_past=False)
+            if _github_fallback_locking_enabled():
+                locked = lock_due_picks(conn, now_utc, lock_all_past=False)
+            else:
+                locked = 0
+                log.info(
+                    "GitHub fallback locking disabled; relying on external lock rows"
+                )
         finally:
             conn.close()
         log.info(

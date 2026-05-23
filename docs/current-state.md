@@ -64,7 +64,7 @@ each lane.
 
 | Lane | Current Source | Current Stage | Next Decision |
 | --- | --- | --- | --- |
-| Pipeline / infrastructure | `2026-05-19-supabase-operational-foundation.md`, `2026-05-22-github-artifact-exit.md`, `2026-05-13-boltodds-propline-official-provider-cutover.md`, `2026-05-20-live-notification-coordinator.md`, `docs/operational-risk-register.md` | Staged Supabase/BoltOdds/PropLine migration. GitHub + TheRundown remain production source of truth. Supabase lock ledger is in non-strict consumer canary. Render live layer has now proven event-driven lock-only dispatch for fresh due batches, and GitHub can mark represented lock rows consumed. A follow-up artifact-exit plan now exists for moving dashboard artifact serving and scheduled pipeline execution off GitHub after strict lock canary validation. | Finish the current slate lock audit, then decide whether to enable `SUPABASE_LOCK_CONSUMER_STRICT=true` for one strict canary. If that is clean, start the GitHub artifact-exit plan with a Supabase artifact mirror before changing dashboard reads or Render schedules. |
+| Pipeline / infrastructure | `2026-05-19-supabase-operational-foundation.md`, `2026-05-22-github-artifact-exit.md`, `2026-05-13-boltodds-propline-official-provider-cutover.md`, `2026-05-20-live-notification-coordinator.md`, `docs/operational-risk-register.md` | Staged Supabase/BoltOdds/PropLine migration. GitHub + TheRundown remain production source of truth. Supabase lock ledger is in strict/single-writer canary code: GitHub can consume Supabase lock rows while `ENABLE_GITHUB_FALLBACK_LOCKING=false` suppresses its own due-lock fallback, avoiding the dual-writer race. Drifted already-locked ledger rows are now classified in `operational_pick_locks.metadata.consumer_status`. | Audit the strict/single-writer canary for the next lock windows. If clean, proceed toward Supabase artifact mirror; if any lock row is missing or unclassified, fix lock infrastructure before artifact-exit work. |
 | Model | `2026-05-12-pitcher-k-outcome-research-dataset.md` | Gate C confidence-referee / compact evidence proof. Gate A and local Gate B are effectively done. | Move from Gate C to Gate D only when collection/storage/reconciliation are routine. Gate E/F are required before any live ranking, threshold, staking, calibration, or formula promotion. |
 | UI | `2026-05-20-live-market-decision-ui.md`, `2026-05-20-live-notification-coordinator.md` | Future-state design only. The dashboard should eventually display best price, consensus, movement, urgency, and notification grouping from the new operational base. | Revisit after the operational/provider switch is stable. Keep display work separated from provider promotion and betting-rule changes. |
 | Tracking / data collection / history | `docs/research/market-tracker-map.md`, `docs/research/pitcher-k-outcome-dataset.md`, compact outcome outputs, live-market audits | Canonical research row plus existing market/live/provider trackers. Daily brief now keeps a compact Gate C bucket scoreboard and pre/post 2026-04-28 context. | Prefer derived labels on the compact outcome row before adding tables. Promote compact storage or retention only after row-volume/cost proof and Tyler approval. |
@@ -109,6 +109,14 @@ Operational rollout note, 2026-05-21:
   and `SUPABASE_LOCK_CONSUMER_STRICT=false` for a non-strict lock consumer
   canary. If Supabase read/apply fails, the pipeline should warn and fall back
   to the existing GitHub lock path.
+- As of 2026-05-23, code support exists for a stricter single-writer lock
+  canary: `ENABLE_GITHUB_FALLBACK_LOCKING=false` keeps GitHub publishing and
+  grading artifacts but suppresses its own T-30 due-lock fallback in normal and
+  lock-only runs. In that posture, due locks must come from
+  `operational_pick_locks`; `SUPABASE_LOCK_CONSUMER_STRICT=true` makes
+  Supabase consumer failures fail the GitHub run visibly instead of silently
+  falling back. This is still not a provider, model, threshold, staking, or
+  dashboard-source change.
 - First validation on 2026-05-21 used a manual GitHub `mode=lock` dispatch
   after Render wrote four due lock rows. The run applied 4/4 external lock rows
   and committed the locked fields to `today.json`, the dated archive, and

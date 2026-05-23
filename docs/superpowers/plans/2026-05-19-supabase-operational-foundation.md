@@ -75,6 +75,10 @@ Supabase control-plane pieces real and gated.
 - GitHub pipeline can consume Supabase lock rows when
   `ENABLE_SUPABASE_LOCK_CONSUMER=true`.
 - Both flags default to off in code.
+- GitHub due-lock fallback can be suppressed with
+  `ENABLE_GITHUB_FALLBACK_LOCKING=false` after the live layer is expected to be
+  the single lock-intent writer. This keeps GitHub artifact publishing and
+  grading intact while removing the dual-writer lock race.
 - Manual GitHub `mode=lock` dispatch works and commits only lock-related
   artifact changes.
 - Row-volume audit is read-only.
@@ -83,6 +87,26 @@ Supabase control-plane pieces real and gated.
   `ALLOW_MARKET_SNAPSHOT_DELETE=true` is set.
 - Provider cutover remains separate: existing `OFFICIAL_MARKET_SOURCE` and
   `ENABLE_BOLTODDS_PIPELINE_SOURCE` flags are not changed by this plan.
+
+### Single-Writer Lock Canary Update, 2026-05-23
+
+The 2026-05-21 and 2026-05-22 lock audits showed a dual-writer race: GitHub's
+scheduled lock path could lock a pick before or alongside the Render/Supabase
+ledger row, leaving unconsumed rows when prices drifted between the artifact
+and the operational row.
+
+- `ENABLE_GITHUB_FALLBACK_LOCKING=false` disables GitHub's built-in
+  `lock_due_picks(..., lock_all_past=False)` fallback in normal and lock-only
+  runs.
+- GitHub still seeds, consumes external Supabase rows, exports artifacts,
+  grades, and calibrates.
+- `SUPABASE_LOCK_CONSUMER_STRICT=true` should be paired with that single-writer
+  canary when Tyler wants Supabase consumer failures to fail loudly instead of
+  allowing a silent no-lock run.
+- Drifted already-locked rows are classified by writing
+  `metadata.consumer_status = artifact_already_locked_drift` on
+  `operational_pick_locks`; they remain unconsumed so the disagreement is still
+  visible during audits.
 
 ## Task 1: Operational Lock Ledger Schema And Builder
 

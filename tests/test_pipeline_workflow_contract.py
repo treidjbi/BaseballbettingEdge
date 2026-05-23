@@ -63,6 +63,7 @@ def test_pipeline_workflow_passes_supabase_lock_flags_to_runner():
 
     assert "ENABLE_SUPABASE_LOCK_CONSUMER: ${{ vars.ENABLE_SUPABASE_LOCK_CONSUMER }}" in run_block
     assert "SUPABASE_LOCK_CONSUMER_STRICT: ${{ vars.SUPABASE_LOCK_CONSUMER_STRICT }}" in run_block
+    assert "ENABLE_GITHUB_FALLBACK_LOCKING: ${{ vars.ENABLE_GITHUB_FALLBACK_LOCKING }}" in run_block
 
 
 def test_classify_preview_health_marks_auth_failures_distinctly():

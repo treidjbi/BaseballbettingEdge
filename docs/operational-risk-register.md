@@ -49,7 +49,9 @@ Use this hierarchy when sources disagree.
    evidence during the trial only. They do not alter production picks or
    notifications until explicitly promoted.
 5. **Supabase**: Supabase stores evidence and queues; it is not the official
-   source of model truth.
+   source of model truth. During the single-writer lock canary, Supabase
+   `operational_pick_locks` may be the authoritative pregame lock-intent source
+   while GitHub still publishes the official artifacts/history.
 
 When feeds conflict, first check freshness, target-book identity, line value,
 odds price, and whether the source is production, fallback, or shadow. Do not
@@ -119,6 +121,14 @@ Live notifications are useful only if they improve action. Track:
 - too many alerts in one slate
 
 If trust drops, reduce notification classes before adding more data sources.
+
+### Supabase Lock Single-Writer Canary
+
+| Risk | Impact | Detection | Mitigation | Escalate if |
+| --- | --- | --- | --- | --- |
+| GitHub fallback locking disabled but Render/Supabase misses a due row | A pick can start unlocked because the old GitHub T-30 fallback is intentionally suppressed | `operational_pick_locks`, `shadow_pick_lock_observations`, GitHub lock-only runs, started-unlocked rows | Re-enable `ENABLE_GITHUB_FALLBACK_LOCKING=true`; inspect Render source artifact freshness and dispatch logs | Any due pick lacks an operational lock row before first pitch |
+| Artifact already locked before Supabase row with a different price | Ledger rows remain unconsumed and audits look like lock failures | `operational_pick_locks.metadata.consumer_status = artifact_already_locked_drift` | Keep row unconsumed for audit; use single-writer canary to remove the race | Drift continues after GitHub fallback locking is disabled |
+| Supabase consumer fails during strict canary | GitHub lock/full run fails loudly instead of silently falling back | GitHub Actions failure, strict exception logs | Treat as canary failure; re-enable non-strict/fallback if it affects a live slate | More than one transient failure or any missed lock |
 
 ## Outcome Interpretation Guardrails
 
