@@ -90,6 +90,15 @@ high-line tempering, leash caps, and simple recent/career rate blends. Its
 output is a local `analytics/output/k_projection_shadow_lab.md` report and is
 shadow-only; it does not change live projection math.
 
+As of 2026-05-23, the first local confidence-referee diagnostic exists as
+`analytics/diagnostics/confidence_referee_shadow_report.py` with tests in
+`tests/test_confidence_referee_shadow_report.py`. It reads the compact outcome
+dataset, writes `analytics/output/confidence_referee_shadow_report.md`, and
+separates runtime-safe label inputs from hindsight validation fields. The
+report is Gate C shadow evidence only; it must not change live verdicts,
+thresholds, staking, notifications, provider order, projection math, or
+calibration without a separate promotion plan.
+
 Supabase is not required yet. Gate C should stay closed until we decide whether
 the value of a compact daily research table beats the simplicity of local
 generated artifacts. If promoted later, store compact rows only; do not retain
