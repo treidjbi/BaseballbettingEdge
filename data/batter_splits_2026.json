@@ -7487,17 +7487,20 @@
       }
     }
   },
-  "updated_at": "2026-05-23T14:44:13Z",
+  "updated_at": "2026-05-23T16:11:37Z",
   "last_run": {
     "projection_status": "collection_only",
-    "requested_batters": 9,
-    "already_cached": 8,
-    "attempted": 1,
-    "collected": 1,
-    "failed": 0,
+    "requested_batters": 72,
+    "already_cached": 70,
+    "attempted": 2,
+    "collected": 0,
+    "failed": 2,
     "queued_not_attempted": 0,
     "cache_size": 444,
-    "errors": [],
-    "updated_at": "2026-05-23T14:44:13Z"
+    "errors": [
+      "Bryan Torres: no bbref id",
+      "Esmerlyn Valdez: no bbref id"
+    ],
+    "updated_at": "2026-05-23T16:11:37Z"
   }
 }
