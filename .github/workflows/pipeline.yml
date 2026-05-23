@@ -205,7 +205,13 @@ jobs:
         env:
           NOTIFY_SECRET: ${{ secrets.NOTIFY_SECRET }}
           NETLIFY_SITE_URL: ${{ secrets.NETLIFY_SITE_URL }}
+          ENABLE_GITHUB_LEGACY_NOTIFICATIONS: ${{ vars.ENABLE_GITHUB_LEGACY_NOTIFICATIONS }}
         run: |
+          LEGACY_NOTIFICATIONS="$(printf '%s' "${ENABLE_GITHUB_LEGACY_NOTIFICATIONS:-true}" | tr '[:upper:]' '[:lower:]')"
+          if [ "$LEGACY_NOTIFICATIONS" = "false" ] || [ "$LEGACY_NOTIFICATIONS" = "0" ] || [ "$LEGACY_NOTIFICATIONS" = "no" ] || [ "$LEGACY_NOTIFICATIONS" = "off" ]; then
+            echo "GitHub legacy notifications disabled — live notification layer is primary"
+            exit 0
+          fi
           # Skip if secrets not configured yet
           if [ -z "$NOTIFY_SECRET" ] || [ -z "$NETLIFY_SITE_URL" ]; then
             echo "Push notifications not configured — skipping (set NOTIFY_SECRET and NETLIFY_SITE_URL secrets to enable)"

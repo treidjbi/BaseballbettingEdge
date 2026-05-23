@@ -40,6 +40,15 @@ def test_notification_preview_branch_matches_actual_preview_cron():
     assert '[ "$SCHEDULE" = "0 2 * * *" ]' not in notify_block
 
 
+def test_legacy_github_notifications_can_be_disabled_by_variable():
+    workflow_text = _read_workflow()
+    notify_block = _extract_step_block(workflow_text, "Send push notifications")
+
+    assert "ENABLE_GITHUB_LEGACY_NOTIFICATIONS" in notify_block
+    assert "GitHub legacy notifications disabled" in notify_block
+    assert 'exit 0' in notify_block
+
+
 def test_pipeline_run_step_handles_preview_cron_explicitly():
     workflow_text = _read_workflow()
     run_block = _extract_step_block(workflow_text, "Run pipeline")

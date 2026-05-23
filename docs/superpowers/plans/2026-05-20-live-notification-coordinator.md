@@ -11,6 +11,14 @@ lock-consumer canary and production-source switch are reviewed. GitHub
 `send-notifications` remains allowed as the current production fallback until
 Supabase notification delivery is proven stable.
 
+**2026-05-23 canary exception:** Tyler approved a single-sender notification
+canary during the Supabase lock migration because duplicate pushes were already
+hurting trust. `ENABLE_GITHUB_LEGACY_NOTIFICATIONS=false` disables the GitHub
+artifact-diff sender while keeping GitHub artifact publishing and grading
+intact. Supabase `notification_events` plus Netlify `send-live-notifications`
+is the only user-facing sender during this canary. Roll back by setting
+`ENABLE_GITHUB_LEGACY_NOTIFICATIONS=true`.
+
 ## Problem
 
 Today there are two notification paths:
@@ -201,8 +209,9 @@ failure modes.
    - Start-window digest first.
    - Lock batch second.
    - Urgent market movement third.
-6. After one clean slate, reduce GitHub `send-notifications` to fallback or
-   artifact-health mode.
+6. During the 2026-05-23 canary, GitHub `send-notifications` is fully disabled
+   for user-facing pushes; after review, either keep it as fallback/artifact
+   health only or roll it back temporarily if the live queue fails.
 7. After several clean slates, decide whether old per-pitcher reminder behavior
    can be removed entirely.
 

@@ -296,6 +296,20 @@ batched, late/post-start betting-action pushes should be suppressed or converted
 to system-health alerts, and GitHub `send-notifications` should eventually move
 to fallback/artifact-health mode after a clean canary.
 
+Notification rollout note, 2026-05-23:
+
+- Tyler approved moving user-facing pushes to a single sender while the
+  Supabase lock canary is active.
+- GitHub `send-notifications` now has a repo-variable kill switch:
+  `ENABLE_GITHUB_LEGACY_NOTIFICATIONS=false`. When disabled, GitHub still
+  publishes artifacts and grades, but it does not call the old Netlify
+  artifact-diff sender.
+- The live path is Supabase `notification_events` plus Netlify
+  `send-live-notifications`; this should be the only user-facing sender during
+  the canary.
+- Rollback is `ENABLE_GITHUB_LEGACY_NOTIFICATIONS=true`; leave model, provider,
+  artifact, grading, and lock behavior untouched.
+
 After the lock layer is strict-canary clean, use the GitHub artifact-exit plan:
 `docs/superpowers/plans/2026-05-22-github-artifact-exit.md`.
 That plan covers the missing post-lock phase: mirror dashboard JSON artifacts

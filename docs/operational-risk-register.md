@@ -122,6 +122,13 @@ Live notifications are useful only if they improve action. Track:
 
 If trust drops, reduce notification classes before adding more data sources.
 
+As of 2026-05-23, user-facing pushes are in a single-sender canary:
+GitHub `send-notifications` is disabled with
+`ENABLE_GITHUB_LEGACY_NOTIFICATIONS=false`, and Supabase
+`notification_events` plus Netlify `send-live-notifications` is the primary
+sender. Restore `ENABLE_GITHUB_LEGACY_NOTIFICATIONS=true` only if the live queue
+or Netlify live sender fails during an active slate.
+
 ### Supabase Lock Single-Writer Canary
 
 | Risk | Impact | Detection | Mitigation | Escalate if |
@@ -184,6 +191,7 @@ Tyler explicitly changes this boundary.
 | BoltOdds row volume too high | Rapid `market_snapshots` growth | Supabase cost/query risk | Trial audit, migration-risk audit, and `scripts/supabase_storage_guardrail.sql` | Reduce raw capture, add retention, aggregate summaries | Pro storage pressure, spend-cap warning, or slow diagnostics |
 | Netlify sender not sending | Pending queue grows; sender logs errors | Users miss live alerts | Netlify function logs; `notification_events` sent/failed counts | Check env, Supabase service key, VAPID, Blobs | Pending actionable events remain unsent through game window |
 | Duplicate notifications | Same pick/move sends more than once | Trust drops fast | `notification_events.dedupe_key`; push tags | Patch dedupe logic; suppress noisy class | Any duplicate FIRE/new-pick notification |
+| GitHub legacy notifications accidentally re-enabled | Duplicate artifact-diff pushes return while live sender is active | Duplicate lock/reminder/new-pick alerts | GitHub variables, workflow logs, received push tags | Set `ENABLE_GITHUB_LEGACY_NOTIFICATIONS=false`; keep live sender primary | Any duplicate from both `send-notifications` and `send-live-notifications` |
 | Source line conflict | Providers disagree on line/price | Confusing movement or wrong confidence | Compare production artifact, PropLine, BoltOdds rows | Treat TheRundown artifact as production; mark conflict in audit | Conflict would change a bet or alert |
 | Shadow timing ledger grows too noisy | `shadow_pipeline_runs` or lock observations grow without decision value | Supabase cost/query noise and harder daily reads | Row counts, status distribution, and whether rows changed a lock decision | Retain compact status transitions only; add short retention to run rows | Ledger volume grows but does not support promotion/cut decision |
 | Provider arbitration wrong | `official_market_lines` selects stale, incomplete, or unsupported-book rows | Picks use bad market input even if model math is unchanged | `provider_arbitration_decisions`, `current_market_lines`, freshness flags | Switch `OFFICIAL_MARKET_SOURCE=therundown`; fix arbitration before retry | Any FIRE pick uses stale/incomplete provider line |
