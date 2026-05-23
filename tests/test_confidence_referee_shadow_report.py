@@ -1,6 +1,7 @@
 from analytics.diagnostics.confidence_referee_shadow_report import (
     build_report,
     referee_bucket,
+    summarize_slice,
     summarize_buckets,
 )
 
@@ -19,6 +20,9 @@ def _row(
     opportunity="normal",
     beat_close_price=False,
     beat_close_line=False,
+    price_sign="minus",
+    line_bucket="5.5",
+    quality_gate_level="clean",
 ):
     return {
         "slate_date": "2026-05-22",
@@ -44,9 +48,9 @@ def _row(
         else "weak_process_win",
         "model_edge_bucket": "5%+",
         "projection_margin_bucket": "1.0-1.5",
-        "price_sign": "minus",
-        "line_bucket": "5.5-6.5",
-        "quality_gate_level": "clean",
+        "price_sign": price_sign,
+        "line_bucket": line_bucket,
+        "quality_gate_level": quality_gate_level,
     }
 
 
@@ -94,3 +98,42 @@ def test_build_report_names_runtime_and_hindsight_boundaries():
     assert "Hindsight validation fields" in report
     assert "`bet_late_if_still_available`" in report
     assert "shadow-only" in report
+
+
+def test_summarize_slice_scores_runtime_safe_dimensions():
+    rows = [
+        _row(side="over", result="win", pnl=0.91, price_sign="minus"),
+        _row(side="over", result="loss", pnl=-1.0, price_sign="plus"),
+        _row(side="under", result="loss", pnl=-1.0, price_sign="plus"),
+    ]
+
+    summary = summarize_slice(rows, ["side", "price_sign"])
+
+    assert summary[("over", "minus")]["rows"] == 1
+    assert summary[("over", "minus")]["wins"] == 1
+    assert summary[("over", "minus")]["roi"] == 0.91
+    assert summary[("under", "plus")]["losses"] == 1
+
+
+def test_build_report_includes_gate_c_cross_slice_scoreboards():
+    report = build_report(
+        [
+            _row(side="over", result="win", pnl=0.91, timing="pre_5"),
+            _row(
+                side="under",
+                result="loss",
+                pnl=-1.0,
+                timing="pre_30",
+                price_sign="plus",
+                line_bucket="4.5",
+                quality_gate_level="capped",
+            ),
+        ]
+    )
+
+    assert "## Gate C Cross-Slice Scoreboards" in report
+    assert "### Referee Bucket By Side" in report
+    assert "### Side By Price Sign" in report
+    assert "### Side By K-Line Bucket" in report
+    assert "| `under` | `plus` |" in report
+    assert "| `under` | `4.5` |" in report

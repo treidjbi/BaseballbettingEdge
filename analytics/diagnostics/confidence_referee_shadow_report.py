@@ -26,6 +26,17 @@ BUCKET_ORDER = [
     "skip_or_demand_better_price",
     "monitor_only",
 ]
+SLICE_TABLES = [
+    ("Referee Bucket By Side", ("referee_bucket", "side")),
+    ("Side By Price Sign", ("side", "price_sign")),
+    ("Side By K-Line Bucket", ("side", "line_bucket")),
+    ("Side By Model/Market Relationship", ("side", "model_market_relationship")),
+    ("Side By Timing Window", ("side", "bet_timing_window")),
+    ("Side By Quality Gate", ("side", "quality_gate_level")),
+    ("Side By Opportunity Bucket", ("side", "opportunity_bucket")),
+    ("Side By Leash Risk", ("side", "leash_risk_bucket")),
+    ("Side By Pitcher Archetype", ("side", "pitcher_archetype_bucket")),
+]
 
 
 def load_jsonl(path: Path = DATASET_PATH) -> list[dict[str, Any]]:
@@ -163,6 +174,50 @@ def summarize_buckets(rows: list[dict[str, Any]]) -> dict[str, dict[str, Any]]:
     return summary
 
 
+def _slice_value(row: dict[str, Any], field: str) -> str:
+    if field == "referee_bucket":
+        return referee_bucket(row)
+    value = row.get(field)
+    if value is None or value == "":
+        return "unknown"
+    return str(value)
+
+
+def summarize_slice(
+    rows: list[dict[str, Any]],
+    fields: list[str] | tuple[str, ...],
+) -> dict[tuple[str, ...], dict[str, Any]]:
+    summary: dict[tuple[str, ...], dict[str, Any]] = {}
+
+    for row in rows:
+        if row.get("result") not in WIN_LOSS_RESULTS:
+            continue
+
+        key = tuple(_slice_value(row, field) for field in fields)
+        item = summary.setdefault(key, _blank_summary())
+        item["rows"] += 1
+        if row.get("result") == "win":
+            item["wins"] += 1
+        else:
+            item["losses"] += 1
+        item["pnl"] += _pnl(row)
+        if _has_clv_edge(row):
+            item["clv_edge_rows"] += 1
+
+        process_bucket = str(row.get("process_outcome_bucket") or "")
+        if process_bucket.startswith("good_process"):
+            item["good_process"] += 1
+        elif process_bucket.startswith("weak_process"):
+            item["weak_process"] += 1
+
+    for item in summary.values():
+        item["pnl"] = round(item["pnl"], 2)
+        if item["rows"]:
+            item["roi"] = round(item["pnl"] / item["rows"], 4)
+
+    return summary
+
+
 def _counter_line(title: str, counter: Counter) -> str:
     parts = [f"`{key}` {value}" for key, value in counter.most_common()]
     return f"- {title}: " + (", ".join(parts) if parts else "none")
@@ -178,6 +233,66 @@ def _format_bucket_row(bucket: str, item: dict[str, Any]) -> str:
         f"{item['pnl']:+.2f} | {_format_roi(item['roi'])} | "
         f"{item['clv_edge_rows']} | {item['good_process']} | {item['weak_process']} |"
     )
+
+
+def _format_field_label(field: str) -> str:
+    labels = {
+        "referee_bucket": "Referee Bucket",
+        "side": "Side",
+        "price_sign": "Price Sign",
+        "line_bucket": "K-Line Bucket",
+        "model_market_relationship": "Model/Market",
+        "bet_timing_window": "Timing Window",
+        "quality_gate_level": "Quality Gate",
+        "opportunity_bucket": "Opportunity",
+        "leash_risk_bucket": "Leash Risk",
+        "pitcher_archetype_bucket": "Pitcher Archetype",
+    }
+    return labels.get(field, field.replace("_", " ").title())
+
+
+def _slice_sort_key(item: tuple[tuple[str, ...], dict[str, Any]]) -> tuple:
+    key, summary = item
+    return (-summary["rows"], key)
+
+
+def _format_slice_row(key: tuple[str, ...], item: dict[str, Any]) -> str:
+    labels = " | ".join(f"`{part}`" for part in key)
+    return (
+        f"| {labels} | {item['rows']} | {item['wins']}-{item['losses']} | "
+        f"{item['pnl']:+.2f} | {_format_roi(item['roi'])} | "
+        f"{item['clv_edge_rows']} | {item['good_process']} | {item['weak_process']} |"
+    )
+
+
+def _render_slice_table(
+    title: str,
+    rows: list[dict[str, Any]],
+    fields: tuple[str, ...],
+    *,
+    max_rows: int = 20,
+) -> list[str]:
+    summary = summarize_slice(rows, fields)
+    header = " | ".join(_format_field_label(field) for field in fields)
+    align = " | ".join("---" for _ in fields)
+    lines = [
+        f"### {title}",
+        "",
+        f"| {header} | Rows | W-L | PnL | ROI | CLV Edge Rows | Good Process | Weak Process |",
+        f"| {align} | ---: | ---: | ---: | ---: | ---: | ---: | ---: |",
+    ]
+    if not summary:
+        lines.append(
+            "| "
+            + " | ".join("--" for _ in fields)
+            + " | 0 | 0-0 | +0.00 | -- | 0 | 0 | 0 |"
+        )
+    else:
+        lines.extend(
+            _format_slice_row(key, item)
+            for key, item in sorted(summary.items(), key=_slice_sort_key)[:max_rows]
+        )
+    return lines
 
 
 def build_report(rows: list[dict[str, Any]]) -> str:
@@ -251,6 +366,18 @@ def build_report(rows: list[dict[str, Any]]) -> str:
         "| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |",
     ]
     lines.extend(_format_bucket_row(bucket, bucket_summary[bucket]) for bucket in BUCKET_ORDER)
+
+    lines.extend(
+        [
+            "",
+            "## Gate C Cross-Slice Scoreboards",
+            "",
+            "These tables stay shadow-only and use runtime-safe grouping fields with hindsight outcomes for validation.",
+        ]
+    )
+    for title, fields in SLICE_TABLES:
+        lines.append("")
+        lines.extend(_render_slice_table(title, tracked, fields))
 
     process_counts = Counter(row.get("process_outcome_bucket") or "unknown" for row in tracked)
     lines.extend(

@@ -99,6 +99,14 @@ report is Gate C shadow evidence only; it must not change live verdicts,
 thresholds, staking, notifications, provider order, projection math, or
 calibration without a separate promotion plan.
 
+Later on 2026-05-23, the same report was expanded from top-level referee
+buckets into Gate C cross-slice scoreboards for side, price sign, K-line bucket,
+model-versus-market relationship, timing window, quality gate,
+opportunity/leash, and pitcher archetype. These scoreboards are for diagnosis
+and briefing only; they are not a new gate and must not become dynamic
+notifications, threshold changes, staking changes, or lambda changes without
+Gate E/F evidence and Tyler approval.
+
 Supabase is not required yet. Gate C should stay closed until we decide whether
 the value of a compact daily research table beats the simplicity of local
 generated artifacts. If promoted later, store compact rows only; do not retain
