@@ -63,6 +63,7 @@ def run(
     source_commit_sha: str | None,
     execute: bool,
 ) -> dict[str, Any]:
+    started_at = datetime.now(timezone.utc).isoformat()
     rows = collect_artifact_rows(
         root=root,
         slate_date=slate_date,
@@ -78,6 +79,7 @@ def run(
         "slate_date": slate_date,
         "status": "completed",
         "artifact_count": len(rows),
+        "started_at": started_at,
         "completed_at": completed_at,
         "metadata": {"source_commit_sha": source_commit_sha},
     }

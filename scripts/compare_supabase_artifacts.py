@@ -6,7 +6,10 @@ any dashboard source or scheduler canary.
 from __future__ import annotations
 
 import argparse
+import json
 import os
+import shutil
+import subprocess
 import sys
 from pathlib import Path
 from typing import Any
@@ -45,22 +48,47 @@ def _fetch_remote_row(writer: Any, artifact_key: str) -> dict[str, Any] | None:
     return rows[0] if rows else None
 
 
-def run(
-    *,
-    root: Path,
-    writer: Any,
-    slate_date: str,
-) -> list[dict[str, Any]]:
-    local_rows = collect_artifact_rows(
-        root=root,
-        slate_date=slate_date,
-        source="manual_backfill",
-        source_run_id=None,
-        source_commit_sha=None,
+def parse_supabase_cli_rows(output: str) -> list[dict[str, Any]]:
+    payload = json.loads(output)
+    rows = payload.get("rows", [])
+    if not isinstance(rows, list):
+        raise ValueError("Supabase CLI output did not include a rows array")
+    return rows
+
+
+def _sql_literal(value: str) -> str:
+    return "'" + value.replace("'", "''") + "'"
+
+
+def resolve_npx_command() -> str:
+    return shutil.which("npx") or shutil.which("npx.cmd") or "npx"
+
+
+def _fetch_remote_rows_with_cli(artifact_keys: list[str]) -> list[dict[str, Any]]:
+    key_list = ", ".join(_sql_literal(key) for key in artifact_keys)
+    sql = (
+        "select artifact_key, payload_sha256, published_at "
+        "from public.published_pipeline_artifacts "
+        f"where artifact_key in ({key_list}) "
+        "order by artifact_key;"
     )
+    result = subprocess.run(
+        [resolve_npx_command(), "supabase", "db", "query", "--linked", "-o", "json", sql],
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+    return parse_supabase_cli_rows(result.stdout)
+
+
+def _compare_local_rows(
+    local_rows: list[dict[str, Any]],
+    remote_rows: list[dict[str, Any]],
+) -> list[dict[str, Any]]:
+    remote_by_key = {row["artifact_key"]: row for row in remote_rows}
     comparisons = []
     for local in local_rows:
-        remote = _fetch_remote_row(writer, local["artifact_key"])
+        remote = remote_by_key.get(local["artifact_key"])
         comparison = compare_hashes(
             local_sha=local["payload_sha256"],
             remote_sha=(remote or {}).get("payload_sha256"),
@@ -75,6 +103,39 @@ def run(
     return comparisons
 
 
+def run(
+    *,
+    root: Path,
+    writer: Any,
+    slate_date: str,
+) -> list[dict[str, Any]]:
+    local_rows = collect_artifact_rows(
+        root=root,
+        slate_date=slate_date,
+        source="manual_backfill",
+        source_run_id=None,
+        source_commit_sha=None,
+    )
+    remote_rows = [
+        row
+        for row in (_fetch_remote_row(writer, local["artifact_key"]) for local in local_rows)
+        if row is not None
+    ]
+    return _compare_local_rows(local_rows, remote_rows)
+
+
+def run_with_linked_cli(*, root: Path, slate_date: str) -> list[dict[str, Any]]:
+    local_rows = collect_artifact_rows(
+        root=root,
+        slate_date=slate_date,
+        source="manual_backfill",
+        source_run_id=None,
+        source_commit_sha=None,
+    )
+    remote_rows = _fetch_remote_rows_with_cli([row["artifact_key"] for row in local_rows])
+    return _compare_local_rows(local_rows, remote_rows)
+
+
 def _parse_args(argv: list[str]) -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--date", required=True)
@@ -84,8 +145,11 @@ def _parse_args(argv: list[str]) -> argparse.Namespace:
 
 def main(argv: list[str] | None = None) -> int:
     args = _parse_args(argv or sys.argv[1:])
-    writer = SupabaseMarketWriter(_env("SUPABASE_URL"), _env("SUPABASE_SERVICE_ROLE_KEY"))
-    comparisons = run(root=ROOT, writer=writer, slate_date=args.date)
+    if os.environ.get("SUPABASE_URL", "").strip() and os.environ.get("SUPABASE_SERVICE_ROLE_KEY", "").strip():
+        writer = SupabaseMarketWriter(_env("SUPABASE_URL"), _env("SUPABASE_SERVICE_ROLE_KEY"))
+        comparisons = run(root=ROOT, writer=writer, slate_date=args.date)
+    else:
+        comparisons = run_with_linked_cli(root=ROOT, slate_date=args.date)
     ok = True
     for row in comparisons:
         if row["status"] != "match":
