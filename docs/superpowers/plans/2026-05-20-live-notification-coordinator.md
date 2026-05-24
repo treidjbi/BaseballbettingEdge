@@ -19,6 +19,15 @@ intact. Supabase `notification_events` plus Netlify `send-live-notifications`
 is the only user-facing sender during this canary. Roll back by setting
 `ENABLE_GITHUB_LEGACY_NOTIFICATIONS=true`.
 
+**2026-05-24 stale-queue guard:** After a Netlify function dependency deploy
+left live notification events queued but unsent during the active slate,
+`send-live-notifications` now suppresses stale queued rows instead of sending
+late betting-action pushes. The default TTL is 20 minutes, overrideable with
+`LIVE_NOTIFICATION_MAX_EVENT_AGE_MINUTES`; suppressed rows are retained in
+`notification_events` with `send_attempts=3` and a stale-suppression
+`last_send_error`. The authenticated manual endpoint supports `smoke_check`
+mode for post-deploy queue/subscriber checks without sending pushes.
+
 ## Problem
 
 Today there are two notification paths:

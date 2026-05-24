@@ -310,6 +310,23 @@ Notification rollout note, 2026-05-23:
 - Rollback is `ENABLE_GITHUB_LEGACY_NOTIFICATIONS=true`; leave model, provider,
   artifact, grading, and lock behavior untouched.
 
+Notification sender hardening note, 2026-05-24:
+
+- Netlify live sender dependency packaging was repaired with
+  `netlify/functions/package-lock.json`; production deploy
+  `6a1380ee17600ff413555a06` rebuilt functions with the cache skipped and
+  verified `send-live-notifications` against Supabase.
+- `send-live-notifications` now suppresses stale queued events instead of
+  sending late betting-action pushes. Default stale TTL is 20 minutes and can
+  be adjusted with `LIVE_NOTIFICATION_MAX_EVENT_AGE_MINUTES`.
+- Suppressed stale rows stay in `notification_events` for audit with
+  `send_attempts=3` and a stale-suppression `last_send_error`; normal fresh
+  sends continue to mark `sent_at`.
+- `/api/send-live-notifications-now` supports authenticated `smoke_check`
+  mode, and `scripts/smoke_live_notifications_sender.mjs` can verify the
+  deployed sender can read the queue and load Netlify Blobs/subscribers without
+  sending pushes when a real `NOTIFY_SECRET` is available.
+
 After the lock layer is strict-canary clean, use the GitHub artifact-exit plan:
 `docs/superpowers/plans/2026-05-22-github-artifact-exit.md`.
 That plan covers the missing post-lock phase: mirror dashboard JSON artifacts

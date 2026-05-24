@@ -129,6 +129,14 @@ GitHub `send-notifications` is disabled with
 sender. Restore `ENABLE_GITHUB_LEGACY_NOTIFICATIONS=true` only if the live queue
 or Netlify live sender fails during an active slate.
 
+As of 2026-05-24, `send-live-notifications` has a stale-queue guard. Queued
+events older than `LIVE_NOTIFICATION_MAX_EVENT_AGE_MINUTES` default 20 are
+marked with `send_attempts=3` and a stale-suppression `last_send_error` instead
+of being sent late. Use the authenticated smoke check on
+`/api/send-live-notifications-now` or `scripts/smoke_live_notifications_sender.mjs`
+after Netlify function deploys to prove the function can read Supabase and load
+Netlify Blobs before relying on the next active slate.
+
 ### Supabase Lock Single-Writer Canary
 
 | Risk | Impact | Detection | Mitigation | Escalate if |
@@ -193,7 +201,7 @@ Tyler explicitly changes this boundary.
 | PropLine webhook processor noisy or ambiguous | Signed webhook rows create duplicate/low-value movement facts, or legacy rows lack sportsbook key | Webhook evidence pollutes shadow reads or future alert logic | `propline_webhook_deliveries`, `line_movement_events`, dedupe keys, `bookmaker_key`, `metadata.market_id`, `metadata.outcome_id`, `metadata.bookmaker_key_missing` | Keep webhook processing shadow-only; compare against polling/BoltOdds; disable `LIVE_PROCESS_PROPLINE_WEBHOOKS` if noisy | Do not promote webhook rows to notifications or provider source without book-level proof and reviewed noise evidence |
 | BoltOdds heartbeat stale | `market_feed_heartbeats` not fresh | WebSocket evidence stale or false confidence | Render worker logs and heartbeat table | Restart worker; inspect reconnect/error state | Stale during active slate or repeated overnight |
 | BoltOdds row volume too high | Rapid `market_snapshots` growth | Supabase cost/query risk | Trial audit, migration-risk audit, and `scripts/supabase_storage_guardrail.sql` | Reduce raw capture, add retention, aggregate summaries | Pro storage pressure, spend-cap warning, or slow diagnostics |
-| Netlify sender not sending | Pending queue grows; sender logs errors | Users miss live alerts | Netlify function logs; `notification_events` sent/failed counts | Check env, Supabase service key, VAPID, Blobs | Pending actionable events remain unsent through game window |
+| Netlify sender not sending | Pending queue grows; sender logs errors | Users miss live alerts; stale-queue guard suppresses old events instead of sending them late | Netlify function logs; `notification_events` sent/failed counts; authenticated sender smoke check | Check env, Supabase service key, VAPID, Blobs, packaged function dependencies; deploy with function cache skipped if imports fail | Pending actionable events remain unsent through game window or stale-suppression count climbs during an active slate |
 | Duplicate notifications | Same pick/move sends more than once | Trust drops fast | `notification_events.dedupe_key`; push tags | Patch dedupe logic; suppress noisy class | Any duplicate FIRE/new-pick notification |
 | GitHub legacy notifications accidentally re-enabled | Duplicate artifact-diff pushes return while live sender is active | Duplicate lock/reminder/new-pick alerts | GitHub variables, workflow logs, received push tags | Set `ENABLE_GITHUB_LEGACY_NOTIFICATIONS=false`; keep live sender primary | Any duplicate from both `send-notifications` and `send-live-notifications` |
 | Source line conflict | Providers disagree on line/price | Confusing movement or wrong confidence | Compare production artifact, PropLine, BoltOdds rows | Treat TheRundown artifact as production; mark conflict in audit | Conflict would change a bet or alert |
