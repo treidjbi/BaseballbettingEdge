@@ -6,7 +6,9 @@ import {
   buildSenderLog,
   envValue,
   fetchPendingNotificationEvents,
+  isNotificationEventStale,
   isLiveNotificationsEnabled,
+  notificationMaxAgeMinutes,
 } from '../netlify/functions/_shared/live-notification-sender.mjs';
 import sendLiveNotificationsNow, {
   config as httpConfig,
@@ -52,9 +54,37 @@ test('buildSenderLog produces inspectable non-secret telemetry', () => {
 
   assert.equal(
     line,
-    'send-live-notifications stage=dry_run enabled=false pending=16 subscribers=0 sent=0 failed=0 staleRemoved=0',
+    'send-live-notifications stage=dry_run enabled=false pending=16 subscribers=0 sent=0 failed=0 staleRemoved=0 staleSuppressed=0',
   );
   assert.equal(line.includes('SUPABASE_SERVICE_ROLE_KEY'), false);
+});
+
+test('notification age guard uses a bounded positive TTL', () => {
+  assert.equal(notificationMaxAgeMinutes(''), 20);
+  assert.equal(notificationMaxAgeMinutes('-5'), 20);
+  assert.equal(notificationMaxAgeMinutes('7'), 7);
+  assert.equal(notificationMaxAgeMinutes('9999'), 240);
+});
+
+test('isNotificationEventStale compares occurred_at against max age', () => {
+  const now = new Date('2026-05-24T22:40:00Z');
+
+  assert.equal(
+    isNotificationEventStale(
+      { occurred_at: '2026-05-24T22:19:59Z' },
+      { now, maxAgeMinutes: 20 },
+    ),
+    true,
+  );
+  assert.equal(
+    isNotificationEventStale(
+      { occurred_at: '2026-05-24T22:20:01Z' },
+      { now, maxAgeMinutes: 20 },
+    ),
+    false,
+  );
+  assert.equal(isNotificationEventStale({ occurred_at: 'not-a-date' }, { now }), false);
+  assert.equal(isNotificationEventStale({}, { now }), false);
 });
 
 test('fetchPendingNotificationEvents reads unsent queue through Supabase REST', async () => {
@@ -334,6 +364,29 @@ test('scheduled function dry-runs when Run now uses GET', async () => {
   }
 });
 
+test('scheduled public sender rejects smoke checks', async () => {
+  const originalFetch = globalThis.fetch;
+  let fetchCalled = false;
+  globalThis.fetch = async () => {
+    fetchCalled = true;
+    return new Response('[]', { status: 200 });
+  };
+
+  try {
+    const response = await sendLiveNotificationsScheduled(new Request('https://example.test/.netlify/functions/send-live-notifications', {
+      method: 'POST',
+      body: JSON.stringify({ smoke_check: true }),
+    }));
+    const payload = await response.json();
+
+    assert.equal(response.status, 401);
+    assert.equal(payload.error, 'Unauthorized');
+    assert.equal(fetchCalled, false);
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
 test('http sender rejects missing notify secret', async () => {
   const originalEnv = {
     NOTIFY_SECRET: process.env.NOTIFY_SECRET,
@@ -353,5 +406,70 @@ test('http sender rejects missing notify secret', async () => {
   } finally {
     if (originalEnv.NOTIFY_SECRET === undefined) delete process.env.NOTIFY_SECRET;
     else process.env.NOTIFY_SECRET = originalEnv.NOTIFY_SECRET;
+  }
+});
+
+test('enabled sender suppresses stale queue rows instead of sending late alerts', async () => {
+  const calls = [];
+  const originalFetch = globalThis.fetch;
+  const originalEnv = {
+    NOTIFY_SECRET: process.env.NOTIFY_SECRET,
+    SUPABASE_URL: process.env.SUPABASE_URL,
+    SUPABASE_SERVICE_ROLE_KEY: process.env.SUPABASE_SERVICE_ROLE_KEY,
+    LIVE_NOTIFICATIONS_ENABLED: process.env.LIVE_NOTIFICATIONS_ENABLED,
+    LIVE_NOTIFICATION_MAX_EVENT_AGE_MINUTES: process.env.LIVE_NOTIFICATION_MAX_EVENT_AGE_MINUTES,
+  };
+  process.env.NOTIFY_SECRET = 'notify-secret';
+  process.env.SUPABASE_URL = 'https://example.supabase.co';
+  process.env.SUPABASE_SERVICE_ROLE_KEY = 'service-key';
+  process.env.LIVE_NOTIFICATIONS_ENABLED = 'true';
+  process.env.LIVE_NOTIFICATION_MAX_EVENT_AGE_MINUTES = '20';
+
+  globalThis.fetch = async (url, options = {}) => {
+    calls.push({ url, options });
+    if (!options.method || options.method === 'GET') {
+      return new Response(JSON.stringify([{
+        id: 'event-stale',
+        slate_date: '2026-05-24',
+        event_type: 'game_reminder_due',
+        severity: 'action',
+        title: 'Pick Starts Soon',
+        body: 'Old reminder',
+        dedupe_key: 'event-stale-key',
+        occurred_at: '2026-05-24T18:00:00Z',
+        send_attempts: 0,
+      }]), {
+        status: 200,
+        headers: { 'Content-Type': 'application/json' },
+      });
+    }
+    return new Response('', { status: 200 });
+  };
+
+  try {
+    const response = await sendLiveNotificationsNow(new Request('https://example.test/api/send-live-notifications-now', {
+      method: 'POST',
+      headers: { 'x-notify-secret': 'notify-secret' },
+      body: JSON.stringify({ limit: 1 }),
+    }));
+    const payload = await response.json();
+    const patchCall = calls.find((call) => call.options.method === 'PATCH');
+
+    assert.equal(response.status, 200);
+    assert.equal(payload.sent, 0);
+    assert.equal(payload.staleSuppressed, 1);
+    assert.equal(payload.message, 'No fresh live notifications');
+    assert.ok(patchCall);
+    assert.match(patchCall.url, /\/rest\/v1\/notification_events\?id=eq\.event-stale/);
+    assert.deepEqual(JSON.parse(patchCall.options.body), {
+      send_attempts: 3,
+      last_send_error: 'suppressed_stale_live_notification:max_age_minutes=20',
+    });
+  } finally {
+    globalThis.fetch = originalFetch;
+    for (const [key, value] of Object.entries(originalEnv)) {
+      if (value === undefined) delete process.env[key];
+      else process.env[key] = value;
+    }
   }
 });

@@ -3,6 +3,7 @@ import { timingSafeEqual } from 'node:crypto';
 const JSON_HEADERS = { 'Content-Type': 'application/json' };
 const DEFAULT_BATCH_LIMIT = 10;
 const MAX_BATCH_LIMIT = 25;
+const DEFAULT_MAX_EVENT_AGE_MINUTES = 20;
 const DEFAULT_SUPABASE_URL = 'https://htoaytcsjrdyyzcwxjfg.supabase.co';
 
 export function json(status, body) {
@@ -24,6 +25,23 @@ function safeSecretEqual(a, b) {
 export function isLiveNotificationsEnabled(value) {
   const normalized = String(value || '').trim().toLowerCase();
   return normalized === 'true' || normalized === '1' || normalized === 'yes';
+}
+
+export function notificationMaxAgeMinutes(value) {
+  const parsed = Number(value);
+  if (!Number.isFinite(parsed) || parsed <= 0) return DEFAULT_MAX_EVENT_AGE_MINUTES;
+  return Math.max(1, Math.min(parsed, 240));
+}
+
+export function isNotificationEventStale(row, {
+  now = new Date(),
+  maxAgeMinutes = DEFAULT_MAX_EVENT_AGE_MINUTES,
+} = {}) {
+  if (!row?.occurred_at) return false;
+  const occurredAt = new Date(row.occurred_at);
+  const nowDate = now instanceof Date ? now : new Date(now);
+  if (Number.isNaN(occurredAt.getTime()) || Number.isNaN(nowDate.getTime())) return false;
+  return nowDate.getTime() - occurredAt.getTime() > maxAgeMinutes * 60 * 1000;
 }
 
 function supabaseHeaders(serviceRoleKey, prefer = 'return=representation') {
@@ -59,6 +77,7 @@ export function buildSenderLog({
   sent = 0,
   failed = 0,
   staleRemoved = 0,
+  staleSuppressed = 0,
 }) {
   return [
     'send-live-notifications',
@@ -69,6 +88,7 @@ export function buildSenderLog({
     `sent=${Number(sent) || 0}`,
     `failed=${Number(failed) || 0}`,
     `staleRemoved=${Number(staleRemoved) || 0}`,
+    `staleSuppressed=${Number(staleSuppressed) || 0}`,
   ].join(' ');
 }
 
@@ -137,6 +157,18 @@ async function markFailed({ supabaseUrl, serviceRoleKey, row, error }) {
   });
 }
 
+async function markStale({ supabaseUrl, serviceRoleKey, row, maxAgeMinutes }) {
+  await patchNotificationEvent({
+    supabaseUrl,
+    serviceRoleKey,
+    id: row.id,
+    patch: {
+      send_attempts: 3,
+      last_send_error: `suppressed_stale_live_notification:max_age_minutes=${maxAgeMinutes}`,
+    },
+  });
+}
+
 async function loadSubscriptions() {
   const { getStore } = await import('@netlify/blobs');
   const subStore = getStore({ name: 'push-subscriptions', consistency: 'strong' });
@@ -183,6 +215,10 @@ export async function sendLiveNotifications(req, { requiresSharedSecret }) {
     body = await req.json();
   } catch {}
 
+  if (body?.smoke_check === true && !requiresSharedSecret) {
+    return json(401, { error: 'Unauthorized' });
+  }
+
   const notifySecret = envValue('NOTIFY_SECRET');
   if (requiresSharedSecret && (!notifySecret || !safeSecretEqual(req.headers.get('x-notify-secret') || '', notifySecret))) {
     return json(401, { error: 'Unauthorized' });
@@ -206,13 +242,42 @@ export async function sendLiveNotifications(req, { requiresSharedSecret }) {
     return json(500, { error: 'Could not read notification queue' });
   }
 
+  const enabled = isLiveNotificationsEnabled(envValue('LIVE_NOTIFICATIONS_ENABLED'));
+  const maxAgeMinutes = notificationMaxAgeMinutes(envValue('LIVE_NOTIFICATION_MAX_EVENT_AGE_MINUTES'));
+  const now = new Date();
+  const staleRows = pending.filter((row) => isNotificationEventStale(row, { now, maxAgeMinutes }));
+  const freshRows = pending.filter((row) => !isNotificationEventStale(row, { now, maxAgeMinutes }));
+
+  if (body?.smoke_check === true) {
+    let subscriptions;
+    try {
+      ({ subscriptions } = await loadSubscriptions());
+    } catch (error) {
+      console.error('send-live-notifications: smoke check failed to load subscriptions', error.message);
+      return json(500, { error: 'Could not load subscriptions during smoke check' });
+    }
+    console.log(buildSenderLog({
+      stage: 'smoke_check',
+      enabled,
+      pending: pending.length,
+      subscribers: subscriptions.length,
+      staleSuppressed: staleRows.length,
+    }));
+    return json(200, {
+      mode: 'smoke_check',
+      enabled,
+      pending: pending.length,
+      stale: staleRows.length,
+      subscribers: subscriptions.length,
+      sends: 0,
+    });
+  }
+
   if (pending.length === 0) {
-    const enabled = isLiveNotificationsEnabled(envValue('LIVE_NOTIFICATIONS_ENABLED'));
     console.log(buildSenderLog({ stage: 'empty_queue', enabled }));
     return json(200, { enabled, sent: 0, pending: 0, message: 'No pending live notifications' });
   }
 
-  const enabled = isLiveNotificationsEnabled(envValue('LIVE_NOTIFICATIONS_ENABLED'));
   if (!enabled) {
     console.log(buildSenderLog({ stage: 'dry_run', enabled, pending: pending.length }));
     return json(200, {
@@ -225,6 +290,26 @@ export async function sendLiveNotifications(req, { requiresSharedSecret }) {
         title: row.title,
         body: row.body,
       })),
+    });
+  }
+
+  for (const row of staleRows) {
+    await markStale({ supabaseUrl, serviceRoleKey, row, maxAgeMinutes });
+  }
+
+  if (freshRows.length === 0) {
+    console.log(buildSenderLog({
+      stage: 'stale_queue',
+      enabled,
+      pending: 0,
+      staleSuppressed: staleRows.length,
+    }));
+    return json(200, {
+      enabled,
+      sent: 0,
+      pending: 0,
+      staleSuppressed: staleRows.length,
+      message: 'No fresh live notifications',
     });
   }
 
@@ -247,12 +332,24 @@ export async function sendLiveNotifications(req, { requiresSharedSecret }) {
   }
 
   if (subscriptions.length === 0) {
-    console.log(buildSenderLog({ stage: 'no_subscribers', enabled, pending: pending.length }));
-    return json(200, { enabled, sent: 0, pending: pending.length, subscribers: 0, message: 'No subscribers' });
+    console.log(buildSenderLog({
+      stage: 'no_subscribers',
+      enabled,
+      pending: freshRows.length,
+      staleSuppressed: staleRows.length,
+    }));
+    return json(200, {
+      enabled,
+      sent: 0,
+      pending: freshRows.length,
+      staleSuppressed: staleRows.length,
+      subscribers: 0,
+      message: 'No subscribers',
+    });
   }
 
   const { staleKeys, sentByEventId, errorsByEventId } = await sendToSubscriptions({
-    rows: pending,
+    rows: freshRows,
     subscriptions,
     vapid,
   });
@@ -260,7 +357,7 @@ export async function sendLiveNotifications(req, { requiresSharedSecret }) {
   const sentAt = new Date().toISOString();
   let sent = 0;
   let failed = 0;
-  for (const row of pending) {
+  for (const row of freshRows) {
     const eventSent = sentByEventId.get(row.id) || 0;
     if (eventSent > 0) {
       await markSent({ supabaseUrl, serviceRoleKey, row, sentAt });
@@ -281,18 +378,20 @@ export async function sendLiveNotifications(req, { requiresSharedSecret }) {
   console.log(buildSenderLog({
     stage: 'sent',
     enabled,
-    pending: pending.length,
+    pending: freshRows.length,
     subscribers: subscriptions.length,
     sent,
     failed,
     staleRemoved: staleKeys.size,
+    staleSuppressed: staleRows.length,
   }));
 
   return json(200, {
     enabled,
     sent,
     failed,
-    notifications: pending.length,
+    notifications: freshRows.length,
+    staleSuppressed: staleRows.length,
     subscribers: subscriptions.length,
     staleRemoved: staleKeys.size,
   });
