@@ -1,6 +1,6 @@
 # Operational Risk Register
 
-Last updated: 2026-05-21
+Last updated: 2026-05-24
 
 This doc tracks the operational side of BaseballBettingEdge: provider trials,
 failure modes, source-conflict rules, data retention, notification quality, and
@@ -181,6 +181,10 @@ Tyler explicitly changes this boundary.
 | --- | --- | --- | --- | --- | --- |
 | GitHub pipeline did not grade | Missing grading run or `picks_history.json` not updated | Prior slate record and calibration stale | GitHub Actions `pipeline.yml`; latest commits | Re-run grading workflow if safe; inspect logs | Missing grading before morning review |
 | `today.json` stale | Generated timestamp old or dated archive missing | Dashboard and live layer use stale picks | GitHub Actions, raw GitHub artifact, dashboard fetch | Re-run full/refresh; verify raw URL | Slate already near lock or games started |
+| Supabase artifact API stale | Netlify `get-artifact` returns an older `published_at` or hash than GitHub/static JSON | Dashboard API canary could show stale picks even while static artifacts are fresh | `scripts/compare_supabase_artifacts.py --date YYYY-MM-DD --strict`, Netlify response headers | Keep dashboard artifact source on `static`; disable `ENABLE_SUPABASE_ARTIFACT_PUBLISH`; inspect publisher run rows | Any API-served current slate artifact lags GitHub/static during a betting window |
+| Render pipeline runner fails | Render shadow run exits non-zero or does not publish expected artifact rows | Render cannot replace GitHub schedules yet | Render run logs, `pipeline_artifact_publication_runs`, parity checker | Keep GitHub scheduled workflows official; disable Render schedules; use manual GitHub workflow if needed | Any preview/full/refresh/grading shadow run misses its expected artifact set |
+| Render/GitHub artifact parity mismatch | Supabase artifact hash from Render differs from GitHub committed artifact hash | Scheduler promotion would change dashboard truth | `scripts/compare_supabase_artifacts.py`, `payload_sha256`, source run metadata | Keep Render shadow-only; diff local artifacts and source run logs before retry | Any mismatch in `today`, dated archive, `steam`, `performance`, `params`, `preview_lines`, or `picks_history` |
+| Dashboard artifact API fallback hides stale Supabase data | App appears healthy because static fallback loads after API failure | Canary can look clean while Supabase artifact API is broken | Browser console warnings, Netlify `get-artifact` logs, parity checker | Treat fallback warning as canary failure; keep source on `static`; fix API/publisher before retry | Any fallback warning during Tyler-only API canary |
 | Refresh/lock missed | Unlocked rows past lock time or no refresh commits | Picks may move after intended lock or stay stale | `today.json` locked fields; workflow run times | Run lock/refresh if before game starts; preserve locked snapshots | Game started with unlocked or stale actionable picks |
 | Supabase lock ledger writes bad row | A pick locks at an incorrect line/side/time | Artifact lock trust drops | `operational_pick_locks`, source artifact hash, game_time, should_lock_at | Disable `ENABLE_SUPABASE_LOCK_CONSUMER`; continue GitHub lock path; inspect row lineage | Any consumed lock row disagrees with the source artifact |
 | Lock-only dispatch loops or misfires | Too many workflow_dispatch lock runs, or runs with the wrong slate date | GitHub queue noise and artifact churn | GitHub Actions run list, live-layer logs, `operational_pick_locks.inserted_at`, `consumed_at` | Disable `ENABLE_LOCK_ONLY_WORKFLOW_DISPATCH`; keep lock ledger writes and non-strict consumer for manual validation | More than one redundant lock dispatch per live-layer interval or any wrong-date lock dispatch |

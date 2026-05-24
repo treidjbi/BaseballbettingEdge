@@ -27,6 +27,13 @@
   const STEAM_URL = IS_LOCAL
     ? 'data/processed/steam.json'
     : 'https://raw.githubusercontent.com/treidjbi/baseballbettingedge/main/dashboard/data/processed/steam.json';
+  const ARTIFACT_SOURCE = (() => {
+    try {
+      return localStorage.getItem('bbe_artifact_source') || 'static';
+    } catch {
+      return 'static';
+    }
+  })();
 
   // Stakes-per-pick mapping — mirrors CLAUDE.md thresholds.
   const STAKE = { 'FIRE 2u': 2, 'FIRE 1u': 1, 'LEAN': 0, 'PASS': 0 };
@@ -44,9 +51,27 @@
   }
 
   async function fetchJSON(url) {
-    const res = await fetch(`${url}?t=${Date.now()}`);
+    const sep = String(url).includes('?') ? '&' : '?';
+    const res = await fetch(`${url}${sep}t=${Date.now()}`);
     if (!res.ok) throw new Error(`${url} → HTTP ${res.status}`);
     return res.json();
+  }
+
+  function artifactApiUrl(type, date) {
+    const params = new URLSearchParams({ type });
+    if (date) params.set('date', date);
+    return `/.netlify/functions/get-artifact?${params.toString()}`;
+  }
+
+  async function fetchArtifactJson({ type, date, staticUrl, artifactSource = ARTIFACT_SOURCE }) {
+    if (artifactSource === 'supabase') {
+      try {
+        return await fetchJSON(artifactApiUrl(type, date));
+      } catch (error) {
+        console.warn(`artifact api failed for ${type}; falling back to static`, error);
+      }
+    }
+    return fetchJSON(staticUrl);
   }
 
   // ── Transform: pitcher record → V2_DATA.pitchers[] entry ──────
@@ -360,7 +385,10 @@
   // ── Fetch archived dates for the DateBar ───────────────────────
   async function fetchDateIndex() {
     try {
-      const idx = await fetchJSON(`${RAW_BASE}/index.json`);
+      const idx = await fetchArtifactJson({
+        type: 'index',
+        staticUrl: `${RAW_BASE}/index.json`,
+      });
       if (!Array.isArray(idx.dates)) return [];
       // Handle both old shape (strings) and new shape ({date, wins, losses})
       return idx.dates.map(d => typeof d === 'string' ? { date: d, wins: 0, losses: 0 } : d);
@@ -381,11 +409,27 @@
 
     try {
       const [todayJson, perfJson, paramsJson, dateIndex, steamJson] = await Promise.all([
-        fetchJSON(dataUrl).catch(() => fetchJSON(`${RAW_BASE}/today.json`)),
-        fetchJSON(PERF_URL).catch(() => ({ rows: [], total_picks: 0 })),
-        fetchJSON(PARAMS_URL).catch(() => ({})),
+        fetchArtifactJson({
+          type: 'dated_slate',
+          date: dateToLoad,
+          staticUrl: dataUrl,
+        }).catch(() => fetchArtifactJson({
+          type: 'today',
+          staticUrl: `${RAW_BASE}/today.json`,
+        })),
+        fetchArtifactJson({
+          type: 'performance',
+          staticUrl: PERF_URL,
+        }).catch(() => ({ rows: [], total_picks: 0 })),
+        fetchArtifactJson({
+          type: 'params',
+          staticUrl: PARAMS_URL,
+        }).catch(() => ({})),
         fetchDateIndex(),
-        fetchJSON(STEAM_URL).catch(() => null),
+        fetchArtifactJson({
+          type: 'steam',
+          staticUrl: STEAM_URL,
+        }).catch(() => null),
       ]);
       const datedSteam = steamJsonForDate(steamJson, todayJson.date);
       const perfWithNotes = { ...perfJson, calibration_notes: paramsJson.calibration_notes || perfJson.calibration_notes || [] };

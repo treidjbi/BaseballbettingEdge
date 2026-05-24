@@ -722,7 +722,7 @@ git commit -m "feat: publish pipeline artifacts to supabase"
 - Modify: `.github/workflows/pipeline.yml`
 - Modify: `tests/test_pipeline_workflow_contract.py`
 
-- [ ] **Step 1: Add workflow contract test**
+- [x] **Step 1: Add workflow contract test**
 
 Add a test asserting the workflow publishes artifacts after successful pipeline
 runs when `ENABLE_SUPABASE_ARTIFACT_PUBLISH=true`:
@@ -737,7 +737,7 @@ def test_pipeline_workflow_can_shadow_publish_artifacts_to_supabase():
     assert "--execute" in workflow
 ```
 
-- [ ] **Step 2: Run test to verify failure**
+- [x] **Step 2: Run test to verify failure**
 
 ```powershell
 python -m pytest tests/test_pipeline_workflow_contract.py::test_pipeline_workflow_can_shadow_publish_artifacts_to_supabase -q
@@ -745,7 +745,7 @@ python -m pytest tests/test_pipeline_workflow_contract.py::test_pipeline_workflo
 
 Expected: fail because the workflow has no artifact publisher step.
 
-- [ ] **Step 3: Add gated workflow step**
+- [x] **Step 3: Add gated workflow step**
 
 Add this step after the current pipeline output commit step:
 
@@ -765,7 +765,7 @@ Add this step after the current pipeline output commit step:
             --execute
 ```
 
-- [ ] **Step 4: Verify workflow tests**
+- [x] **Step 4: Verify workflow tests**
 
 ```powershell
 python -m pytest tests/test_pipeline_workflow_contract.py -q
@@ -773,7 +773,7 @@ python -m pytest tests/test_pipeline_workflow_contract.py -q
 
 Expected: pass.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```powershell
 git add .github/workflows/pipeline.yml tests/test_pipeline_workflow_contract.py
@@ -786,7 +786,7 @@ git commit -m "feat: shadow publish artifacts from pipeline"
 - Create: `netlify/functions/get-artifact.mjs`
 - Create: `tests/test_get_artifact_function.mjs`
 
-- [ ] **Step 1: Write function tests**
+- [x] **Step 1: Write function tests**
 
 Create `tests/test_get_artifact_function.mjs`:
 
@@ -832,7 +832,7 @@ test('get-artifact returns latest artifact payload', async () => {
 });
 ```
 
-- [ ] **Step 2: Run tests to verify failure**
+- [x] **Step 2: Run tests to verify failure**
 
 ```powershell
 node --test tests/test_get_artifact_function.mjs
@@ -840,7 +840,7 @@ node --test tests/test_get_artifact_function.mjs
 
 Expected: fail because the function does not exist.
 
-- [ ] **Step 3: Implement function**
+- [x] **Step 3: Implement function**
 
 Create `netlify/functions/get-artifact.mjs`:
 
@@ -928,7 +928,7 @@ export async function handler(event) {
 }
 ```
 
-- [ ] **Step 4: Verify function tests**
+- [x] **Step 4: Verify function tests**
 
 ```powershell
 node --test tests/test_get_artifact_function.mjs
@@ -936,7 +936,7 @@ node --test tests/test_get_artifact_function.mjs
 
 Expected: pass.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```powershell
 git add netlify/functions/get-artifact.mjs tests/test_get_artifact_function.mjs
@@ -950,7 +950,7 @@ git commit -m "feat: serve published artifacts from netlify"
 - Modify: `dashboard/v2-data.test.mjs`
 - Modify: `dashboard/index.html`
 
-- [ ] **Step 1: Add v2 adapter tests**
+- [x] **Step 1: Add v2 adapter tests**
 
 Add tests that prove the dashboard can read from Netlify artifact API and fall
 back to static files:
@@ -997,7 +997,7 @@ test('falls back to static today when artifact api fails', async () => {
 });
 ```
 
-- [ ] **Step 2: Run tests to verify failure**
+- [x] **Step 2: Run tests to verify failure**
 
 ```powershell
 node --test dashboard/v2-data.test.mjs
@@ -1005,7 +1005,7 @@ node --test dashboard/v2-data.test.mjs
 
 Expected: fail because `loadV2Data` does not accept `artifactSource`.
 
-- [ ] **Step 3: Add artifact fetch helper**
+- [x] **Step 3: Add artifact fetch helper**
 
 In `dashboard/v2-data.js`, add a small helper that keeps static files as
 fallback:
@@ -1032,7 +1032,7 @@ async function fetchArtifactJson({ type, date, staticUrl, artifactSource = 'stat
 
 Use it for `today`, dated slate files, `index`, `steam`, and `performance`.
 
-- [ ] **Step 4: Add legacy dashboard adapter**
+- [x] **Step 4: Add legacy dashboard adapter**
 
 In `dashboard/index.html`, add the same behavior around the existing fetch
 locations. Keep the default source `static` until the canary is explicitly
@@ -1063,7 +1063,7 @@ async function fetchArtifactJson(type, staticUrl, date) {
 }
 ```
 
-- [ ] **Step 5: Verify dashboard tests**
+- [x] **Step 5: Verify dashboard tests**
 
 ```powershell
 node --test dashboard/v2-data.test.mjs
@@ -1071,7 +1071,7 @@ node --test dashboard/v2-data.test.mjs
 
 Expected: pass.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```powershell
 git add dashboard/v2-data.js dashboard/v2-data.test.mjs dashboard/index.html
@@ -1084,7 +1084,7 @@ git commit -m "feat: add supabase artifact dashboard source"
 - Create: `scripts/compare_supabase_artifacts.py`
 - Create: `tests/test_compare_supabase_artifacts.py`
 
-- [ ] **Step 1: Write parity tests**
+- [x] **Step 1: Write parity tests**
 
 Create `tests/test_compare_supabase_artifacts.py`:
 
@@ -1108,7 +1108,7 @@ def test_compare_hashes_reports_mismatch():
     }
 ```
 
-- [ ] **Step 2: Run tests to verify failure**
+- [x] **Step 2: Run tests to verify failure**
 
 ```powershell
 python -m pytest tests/test_compare_supabase_artifacts.py -q
@@ -1116,7 +1116,7 @@ python -m pytest tests/test_compare_supabase_artifacts.py -q
 
 Expected: fail because the script does not exist.
 
-- [ ] **Step 3: Implement checker**
+- [x] **Step 3: Implement checker**
 
 Create `scripts/compare_supabase_artifacts.py` with a read-only CLI that:
 
@@ -1138,7 +1138,7 @@ def compare_hashes(*, local_sha: str, remote_sha: str | None) -> dict[str, objec
     }
 ```
 
-- [ ] **Step 4: Verify tests pass**
+- [x] **Step 4: Verify tests pass**
 
 ```powershell
 python -m pytest tests/test_compare_supabase_artifacts.py -q
@@ -1146,7 +1146,7 @@ python -m pytest tests/test_compare_supabase_artifacts.py -q
 
 Expected: pass.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```powershell
 git add scripts/compare_supabase_artifacts.py tests/test_compare_supabase_artifacts.py
@@ -1159,7 +1159,7 @@ git commit -m "feat: compare supabase artifact parity"
 - Create: `render/pipeline-runner.md`
 - Modify: `docs/operational-risk-register.md`
 
-- [ ] **Step 1: Create Render runner handoff**
+- [x] **Step 1: Create Render runner handoff**
 
 Create `render/pipeline-runner.md`:
 
@@ -1204,7 +1204,7 @@ Disable Render schedules and set dashboard artifact source back to static.
 Manual GitHub `workflow_dispatch` remains available.
 ```
 
-- [ ] **Step 2: Add risk register failure modes**
+- [x] **Step 2: Add risk register failure modes**
 
 In `docs/operational-risk-register.md`, add rows for:
 
@@ -1215,7 +1215,7 @@ In `docs/operational-risk-register.md`, add rows for:
 
 Each row should name the first check and rollback action.
 
-- [ ] **Step 3: Commit**
+- [x] **Step 3: Commit**
 
 ```powershell
 git add render/pipeline-runner.md docs/operational-risk-register.md

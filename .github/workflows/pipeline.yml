@@ -200,6 +200,36 @@ jobs:
             sleep $((2 ** attempt))
           done
 
+      - name: Publish artifacts to Supabase
+        if: ${{ vars.ENABLE_SUPABASE_ARTIFACT_PUBLISH == 'true' && (github.event_name != 'workflow_dispatch' || github.event.inputs.mode != 'propline_probe') }}
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: |
+          SCHEDULE="${{ github.event.schedule }}"
+          MODE="${{ github.event.inputs.mode }}"
+          TODAY=$(TZ=America/Phoenix date +%Y-%m-%d)
+          INPUT_DATE="${{ github.event.inputs.date }}"
+          if [ -n "$INPUT_DATE" ]; then
+            TODAY="$INPUT_DATE"
+          fi
+          RUN_TYPE="full"
+          if [ "$MODE" = "lock" ]; then
+            RUN_TYPE="lock"
+          elif [ "$SCHEDULE" = "17 7 * * *" ]; then
+            RUN_TYPE="preview"
+          elif [ "$SCHEDULE" = "17 10 * * *" ]; then
+            RUN_TYPE="grading"
+          fi
+          export PIPELINE_RUN_TYPE="$RUN_TYPE"
+
+          python scripts/publish_pipeline_artifacts_to_supabase.py \
+            --date "$TODAY" \
+            --source github_actions \
+            --source-run-id "${{ github.run_id }}" \
+            --source-commit-sha "${{ github.sha }}" \
+            --execute
+
       - name: Send push notifications
         if: ${{ success() && (github.event_name != 'workflow_dispatch' || github.event.inputs.mode != 'propline_probe') }}
         env:

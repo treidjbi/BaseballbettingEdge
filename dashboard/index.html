@@ -710,6 +710,35 @@
   const PERF_URL = IS_LOCAL
     ? '../data/performance.json'
     : 'https://raw.githubusercontent.com/treidjbi/baseballbettingedge/main/dashboard/data/performance.json';
+  const ARTIFACT_SOURCE = (() => {
+    try {
+      return localStorage.getItem('bbe_artifact_source') || 'static';
+    } catch (e) {
+      return 'static';
+    }
+  })();
+
+  function artifactApiUrl(type, date) {
+    const params = new URLSearchParams({ type });
+    if (date) params.set('date', date);
+    return `/.netlify/functions/get-artifact?${params.toString()}`;
+  }
+
+  async function fetchArtifactJson(type, staticUrl, date) {
+    if (ARTIFACT_SOURCE === 'supabase') {
+      try {
+        const res = await fetch(`${artifactApiUrl(type, date)}&t=${Date.now()}`);
+        if (!res.ok) throw new Error(`artifact api ${res.status}`);
+        return await res.json();
+      } catch (error) {
+        console.warn(`artifact api failed for ${type}; falling back to static`, error);
+      }
+    }
+    const sep = staticUrl.includes('?') ? '&' : '?';
+    const res = await fetch(`${staticUrl}${sep}t=${Date.now()}`);
+    if (!res.ok) throw new Error(`static artifact ${res.status}`);
+    return await res.json();
+  }
 
   // ── App date (Phoenix-aware) ──────────────────────────────
   /** Returns the current slate date in Phoenix time (UTC-7, no DST).
@@ -732,9 +761,7 @@
     // Always default the date picker to today
     document.getElementById('date-select').value = today;
     try {
-      const res = await fetch(INDEX_URL + '?t=' + Date.now());
-      if (!res.ok) throw new Error('no index');
-      const index = await res.json();
+      const index = await fetchArtifactJson('index', INDEX_URL);
       const dates = Array.isArray(index.dates) ? index.dates : [];
       populateDateSelector(dates);
     } catch (e) {
@@ -772,9 +799,7 @@
     const url = dateStr ? `${RAW_BASE}/${dateStr}.json` : TODAY_URL;
 
     try {
-      const res  = await fetch(url + '?t=' + Date.now());
-      if (!res.ok) throw new Error('HTTP ' + res.status);
-      const data = await res.json();
+      const data = await fetchArtifactJson(dateStr ? 'dated_slate' : 'today', url, dateStr || null);
       renderAll(data, isPast);
     } catch (e) {
       let msg, emptyMsg;
@@ -1229,9 +1254,7 @@
   async function loadPerformance() {
     const el = document.getElementById('panel-perf');
     try {
-      const resp = await fetch(PERF_URL + '?t=' + Date.now());
-      if (!resp.ok) throw new Error('not found');
-      const data = await resp.json();
+      const data = await fetchArtifactJson('performance', PERF_URL);
       renderPerformance(data, el);
     } catch {
       el.innerHTML = '<p class="perf-empty">Performance data not yet available.</p>';

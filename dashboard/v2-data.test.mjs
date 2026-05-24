@@ -19,6 +19,8 @@ function jsonResponse(payload) {
 async function runV2DataTest({
   locationSearch = "",
   now = null,
+  artifactSource = "static",
+  artifactApiMode = "ok",
   todayJson,
   perfJson = { rows: [], total_picks: 0 },
   paramsJson = {},
@@ -26,6 +28,7 @@ async function runV2DataTest({
   steamJson = null,
 }) {
   const window = {};
+  const fetchUrls = [];
   const TestDate = now == null ? Date : class extends Date {
     constructor(...args) {
       super(...(args.length ? args : [now]));
@@ -35,7 +38,21 @@ async function runV2DataTest({
     }
   };
   const fetch = async (url) => {
-    const bareUrl = String(url).split("?t=")[0];
+    const rawUrl = String(url);
+    fetchUrls.push(rawUrl);
+    const bareUrl = rawUrl.replace(/[?&]t=\d+$/, "");
+    if (bareUrl.startsWith("/.netlify/functions/get-artifact")) {
+      if (artifactApiMode === "error") {
+        return { ok: false, status: 502, async text() { return "bad gateway"; } };
+      }
+      const parsed = new URL(bareUrl, "https://example.com");
+      const type = parsed.searchParams.get("type") || "today";
+      if (type === "performance") return jsonResponse(perfJson);
+      if (type === "params") return jsonResponse(paramsJson);
+      if (type === "index") return jsonResponse({ dates: dateIndex });
+      if (type === "steam") return jsonResponse(steamJson);
+      if (type === "today" || type === "dated_slate") return jsonResponse(todayJson);
+    }
     if (/\/\d{4}-\d{2}-\d{2}\.json$/.test(bareUrl)) return jsonResponse(todayJson);
     if (bareUrl.endsWith("/2026-04-27.json")) return jsonResponse(todayJson);
     if (bareUrl.endsWith("/today.json")) return jsonResponse(todayJson);
@@ -57,6 +74,12 @@ async function runV2DataTest({
     console,
     Date: TestDate,
     URLSearchParams,
+    URL,
+    localStorage: {
+      getItem(key) {
+        return key === "bbe_artifact_source" ? artifactSource : null;
+      },
+    },
     setTimeout,
     clearTimeout,
   };
@@ -64,8 +87,43 @@ async function runV2DataTest({
 
   vm.runInNewContext(scriptSource, context, { filename: scriptPath });
   await window.__v2DataPromise;
+  window.__fetchUrls = fetchUrls;
   return window;
 }
+
+test("loads artifacts from api when enabled", async () => {
+  const todayJson = { date: "2026-04-28", generated_at: "2026-04-28T15:00:00Z", pitchers: [] };
+  const window = await runV2DataTest({
+    artifactSource: "supabase",
+    todayJson,
+    perfJson: { rows: [], total_picks: 4 },
+    dateIndex: [{ date: "2026-04-28", wins: 0, losses: 0 }],
+    steamJson: { date: "2026-04-28", snapshots: [] },
+  });
+
+  assert.equal(window.V2_DATA.date, "2026-04-28");
+  assert.equal(window.V2_PERF.total_picks, 4);
+  assert.equal(window.V2_DATES.length, 1);
+  assert.ok(window.__fetchUrls.some(url => String(url).startsWith("/.netlify/functions/get-artifact")));
+});
+
+test("falls back to static artifacts when api fails", async () => {
+  const todayJson = { date: "2026-04-28", generated_at: "2026-04-28T15:00:00Z", pitchers: [] };
+  const window = await runV2DataTest({
+    artifactSource: "supabase",
+    artifactApiMode: "error",
+    todayJson,
+    perfJson: { rows: [], total_picks: 3 },
+    dateIndex: [{ date: "2026-04-28", wins: 0, losses: 0 }],
+    steamJson: { date: "2026-04-28", snapshots: [] },
+  });
+
+  assert.equal(window.V2_DATA.date, "2026-04-28");
+  assert.equal(window.V2_PERF.total_picks, 3);
+  assert.equal(window.V2_DATES.length, 1);
+  assert.ok(window.__fetchUrls.some(url => String(url).startsWith("/.netlify/functions/get-artifact")));
+  assert.ok(window.__fetchUrls.some(url => String(url).includes("/today.json") || /\d{4}-\d{2}-\d{2}\.json/.test(String(url))));
+});
 
 test("getAppDate stays on current Phoenix date after 9pm", async () => {
   const todayJson = { date: "2026-04-28", generated_at: "2026-04-28T04:30:00Z", pitchers: [] };

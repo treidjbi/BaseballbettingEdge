@@ -75,6 +75,22 @@ def test_pipeline_workflow_passes_supabase_lock_flags_to_runner():
     assert "ENABLE_GITHUB_FALLBACK_LOCKING: ${{ vars.ENABLE_GITHUB_FALLBACK_LOCKING }}" in run_block
 
 
+def test_pipeline_workflow_can_shadow_publish_artifacts_to_supabase():
+    workflow_text = _read_workflow()
+    publish_block = _extract_step_block(workflow_text, "Publish artifacts to Supabase")
+
+    assert "ENABLE_SUPABASE_ARTIFACT_PUBLISH" in publish_block
+    assert "publish_pipeline_artifacts_to_supabase.py" in publish_block
+    assert "--source github_actions" in publish_block
+    assert "--execute" in publish_block
+    assert "TODAY=$(TZ=America/Phoenix date +%Y-%m-%d)" in publish_block
+    assert 'INPUT_DATE="${{ github.event.inputs.date }}"' in publish_block
+    assert 'if [ "$MODE" = "lock" ]; then' in publish_block
+    assert 'RUN_TYPE="preview"' in publish_block
+    assert 'RUN_TYPE="grading"' in publish_block
+    assert 'PIPELINE_RUN_TYPE="$RUN_TYPE"' in publish_block
+
+
 def test_classify_preview_health_marks_auth_failures_distinctly():
     module = _load_preview_health_module()
     result = module.classify_preview_health(
