@@ -95,3 +95,23 @@ def test_run_execute_sets_started_before_completed(tmp_path):
     run_row = writer.inserts[0][1][0]
     assert "started_at" in run_row
     assert datetime.fromisoformat(run_row["started_at"]) <= datetime.fromisoformat(run_row["completed_at"])
+
+
+def test_run_execute_stamps_artifact_published_at_for_upserts(tmp_path):
+    processed = tmp_path / "dashboard" / "data" / "processed"
+    processed.mkdir(parents=True)
+    (processed / "today.json").write_text('{"date":"2026-05-22","pitchers":[]}', encoding="utf-8")
+    writer = FakeWriter()
+
+    run(
+        root=tmp_path,
+        writer=writer,
+        slate_date="2026-05-22",
+        source="github_actions",
+        source_run_id="run-1",
+        source_commit_sha="sha",
+        execute=True,
+    )
+
+    upsert_rows = writer.upserts[0][1]
+    assert upsert_rows[0]["published_at"]

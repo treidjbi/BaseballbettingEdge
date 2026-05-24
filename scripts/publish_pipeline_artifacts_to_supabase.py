@@ -71,20 +71,22 @@ def run(
         source_run_id=source_run_id,
         source_commit_sha=source_commit_sha,
     )
-    completed_at = datetime.now(timezone.utc).isoformat()
-    run_row = {
-        "run_id": source_run_id or f"{source}:{slate_date}:{completed_at}",
-        "source": source,
-        "run_type": os.environ.get("PIPELINE_RUN_TYPE", "full"),
-        "slate_date": slate_date,
-        "status": "completed",
-        "artifact_count": len(rows),
-        "started_at": started_at,
-        "completed_at": completed_at,
-        "metadata": {"source_commit_sha": source_commit_sha},
-    }
     if execute:
-        writer.upsert_rows("published_pipeline_artifacts", rows, on_conflict="artifact_key")
+        published_at = datetime.now(timezone.utc).isoformat()
+        rows_to_publish = [{**row, "published_at": published_at} for row in rows]
+        writer.upsert_rows("published_pipeline_artifacts", rows_to_publish, on_conflict="artifact_key")
+        completed_at = datetime.now(timezone.utc).isoformat()
+        run_row = {
+            "run_id": source_run_id or f"{source}:{slate_date}:{completed_at}",
+            "source": source,
+            "run_type": os.environ.get("PIPELINE_RUN_TYPE", "full"),
+            "slate_date": slate_date,
+            "status": "completed",
+            "artifact_count": len(rows),
+            "started_at": started_at,
+            "completed_at": completed_at,
+            "metadata": {"source_commit_sha": source_commit_sha},
+        }
         writer.insert_rows("pipeline_artifact_publication_runs", [run_row])
     return {"artifact_count": len(rows), "execute": execute}
 

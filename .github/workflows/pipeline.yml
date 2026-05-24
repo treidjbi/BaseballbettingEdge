@@ -222,12 +222,13 @@ jobs:
             RUN_TYPE="grading"
           fi
           export PIPELINE_RUN_TYPE="$RUN_TYPE"
+          ARTIFACT_COMMIT_SHA=$(git rev-parse HEAD)
 
           python scripts/publish_pipeline_artifacts_to_supabase.py \
             --date "$TODAY" \
             --source github_actions \
             --source-run-id "${{ github.run_id }}" \
-            --source-commit-sha "${{ github.sha }}" \
+            --source-commit-sha "$ARTIFACT_COMMIT_SHA" \
             --execute
 
       - name: Send push notifications

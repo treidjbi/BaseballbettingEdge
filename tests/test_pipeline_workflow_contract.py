@@ -89,6 +89,8 @@ def test_pipeline_workflow_can_shadow_publish_artifacts_to_supabase():
     assert 'RUN_TYPE="preview"' in publish_block
     assert 'RUN_TYPE="grading"' in publish_block
     assert 'PIPELINE_RUN_TYPE="$RUN_TYPE"' in publish_block
+    assert "ARTIFACT_COMMIT_SHA=$(git rev-parse HEAD)" in publish_block
+    assert '--source-commit-sha "$ARTIFACT_COMMIT_SHA"' in publish_block
 
 
 def test_classify_preview_health_marks_auth_failures_distinctly():
