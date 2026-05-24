@@ -93,6 +93,15 @@ Current implementation state:
   deliveries from 2026-05-05 through 2026-05-24, but zero current
   `line_movement_events` with `metadata->>'source'='propline_webhook'`. The
   canary intentionally avoids draining the historic backlog.
+- Proof runs on 2026-05-24 processed the current recent slice: 95
+  webhook-sourced `line_movement_events`, 26 processed
+  `unsupported_payload_shape` deliveries, zero unprocessed rows inside the
+  current 3-hour window, and zero `notification_events` created by the proof
+  window. Older backlog rows remain unprocessed by design.
+- `shadow_movement_source_comparisons` already has PropLine webhook versus
+  BoltOdds snapshot rows, but they are stale as of 2026-05-16. Use the new
+  webhook movement rows to refresh that comparison before making any provider
+  timing claim.
 - Payload update: PropLine shipped `bookmaker_key`, `bookmaker_title`,
   `market_id`, and `outcome_id` on every `line_movement` and `resolution`
   delivery after Tyler's 2026-05-19 support thread with Andy. `market_id` and

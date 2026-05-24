@@ -543,6 +543,15 @@ Webhook status:
   deliveries and no current webhook-sourced `line_movement_events`; old
   comparison rows exist but are stale. Keep the canary recent-windowed until
   the current slate proves clean.
+- The 2026-05-24 GitHub live-layer proof passes processed the current recent
+  slice into 95 webhook-sourced movement rows and 26 unsupported-shape rows,
+  with zero unprocessed rows left inside the current 3-hour window and zero
+  `notification_events` created by the proof window. Older backlog rows remain
+  unprocessed by design.
+- Existing PropLine webhook versus BoltOdds snapshot comparison rows in
+  `shadow_movement_source_comparisons` are stale as of 2026-05-16; refresh that
+  comparison from the new webhook movement rows before using it for timing
+  claims.
 - Do not use webhook rows for production odds, picks, notifications, or
   provider promotion without a separate review.
 
