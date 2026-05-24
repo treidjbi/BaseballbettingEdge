@@ -1228,7 +1228,7 @@ git commit -m "docs: plan render pipeline runner risk controls"
 - Modify: `docs/current-state.md`
 - No code change if Render service is configured through the dashboard/CLI.
 
-- [ ] **Step 1: Run one manual Render pipeline command**
+- [x] **Step 1: Run one manual Render pipeline command**
 
 Use a non-lock active slate command first:
 
@@ -1244,6 +1244,26 @@ Expected:
 - Supabase artifacts publish;
 - parity checker passes against local committed artifacts;
 - no dashboard source switch yet.
+
+Result, 2026-05-24:
+
+- A controlled one-off preview command succeeded on
+  `bbe-pipeline-shadow-runner-hosted` (`crn-d89jpvdckfvc738nfla0`), job
+  `job-d89jqolckfvc738ngg6g`.
+- The job explicitly set `ENABLE_SUPABASE_LOCK_CONSUMER=false`,
+  `SUPABASE_LOCK_CONSUMER_STRICT=false`,
+  `OFFICIAL_MARKET_SOURCE=therundown`, and
+  `ENABLE_BOLTODDS_PIPELINE_SOURCE=false`.
+- Publication run `render-preview-shadow-20260524T180310Z` wrote 8
+  `render_pipeline` artifacts at `2026-05-24T18:04:57Z`, with source commit
+  `d8686401` and timestamp ordering valid.
+- Because GitHub kept refreshing the official artifact stream during the
+  Render test, the Render mirror rows did not match the latest GitHub commit
+  `f124a44b`. The current mirror was restored with
+  `manual-github-artifact-restore-after-render-canary-20260524T181000Z`, and
+  a REST-backed strict parity check passed with 8/8 matches.
+- No dashboard source switch, active Render schedule, provider source, model,
+  threshold, staking, notification, or retention behavior changed.
 
 - [ ] **Step 2: Configure Render shadow schedule**
 
@@ -1457,6 +1477,18 @@ artifact commit `599f275f`, and
 8/8 matches. First scheduled `main` run `26367602689` then published 8 shadow
 artifacts, and follow-up manual run `26367707782` refreshed all 8 rows at
 `2026-05-24T17:18:04Z`, recorded artifact commit `c37896ea`, and passed strict
-parity with 8/8 matches. Continue Stage 1 observation through normal scheduled
-runs. Stop before Task 9's Render shadow/canary until Tyler is ready for a
-soak-style operational run.
+parity with 8/8 matches.
+
+Task 9 Step 1 has now been exercised as a one-off Render preview canary.
+The successful hosted runner is `bbe-pipeline-shadow-runner-hosted`
+(`crn-d89jpvdckfvc738nfla0`), with annual idle schedule and auto-deploy off.
+Render job `job-d89jqolckfvc738ngg6g` completed and wrote 8 artifacts through
+publication run `render-preview-shadow-20260524T180310Z`. Because GitHub
+continued refreshing official artifacts during the canary, the Render rows were
+not treated as the current source; restore run
+`manual-github-artifact-restore-after-render-canary-20260524T181000Z` restored
+the mirror to GitHub commit `f124a44b`, and
+strict parity passed 8/8 again. Continue Stage 1 observation. The next safe
+move is either a Tyler-only dashboard artifact API canary or one more matched
+Render/GitHub shadow run; do not promote Render schedules or dashboard reads
+without the next explicit approval.
