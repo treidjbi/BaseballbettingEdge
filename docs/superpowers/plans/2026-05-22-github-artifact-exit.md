@@ -1299,7 +1299,7 @@ git commit -m "docs: record render artifact parity canary"
 - Modify: `docs/current-state.md`
 - No code change if Task 6 added the adapter.
 
-- [ ] **Step 1: Enable canary for Tyler only**
+- [x] **Step 1: Enable canary for Tyler only**
 
 In the browser console on the deployed dashboard, set:
 
@@ -1309,7 +1309,7 @@ localStorage.setItem('bbe_artifact_source', 'supabase')
 
 Reload the dashboard.
 
-- [ ] **Step 2: Verify dashboard state**
+- [x] **Step 2: Verify dashboard state**
 
 Check:
 
@@ -1321,22 +1321,48 @@ Check:
 - date browser loads prior dated archive;
 - no console errors from `get-artifact`.
 
-- [ ] **Step 3: Keep static fallback active**
+- [x] **Step 3: Keep static fallback active**
 
 Do not remove static fallback during this canary. If Supabase API fails, the app
 should continue loading static JSON and log a warning.
 
-- [ ] **Step 4: Update current state**
+- [x] **Step 4: Update current state**
 
 If clean, update `docs/current-state.md` to say dashboard artifact API is in
 Tyler-only canary.
 
-- [ ] **Step 5: Commit docs**
+- [x] **Step 5: Commit docs**
 
 ```powershell
 git add docs/current-state.md
 git commit -m "docs: record dashboard artifact api canary"
 ```
+
+Result, 2026-05-24:
+
+- Netlify `get-artifact` was initially unconfigured. The production site now
+  has `SUPABASE_URL` plus the hosted Supabase service-role secret available to
+  the function after deploy `6a13455bb5613060d352d0ba`.
+- The Tyler-only browser canary used
+  `localStorage.bbe_artifact_source=supabase`; dashboard defaults remain static.
+- API parity passed for the current 2026-05-24 artifact set, and direct API
+  checks for `today`, current dated slate, `performance`, and `index` matched
+  static JSON. After the 18:43 UTC GitHub artifact commit, strict parity passed
+  8/8 for 2026-05-24.
+- The first prior-date click exposed missing historical dated archive rows
+  (`dated_slate:2026-05-23` returned 404 and fell back to static). Backfilled
+  2026-05-21, 2026-05-22, and 2026-05-23 dated-slate rows as
+  `manual_backfill`; API responses now match static JSON and
+  `scripts/compare_supabase_artifacts.py --date 2026-05-23 --strict` passes
+  8/8.
+- Playwright canary after backfill loaded the current slate and
+  `?date=2026-05-23` through Netlify `get-artifact` with 200s for
+  `dated_slate`, `performance`, `params`, `index`, and `steam`. No
+  `get-artifact` console errors remained; the only observed browser noise was
+  the existing favicon 404 and React DevTools info.
+- No Render scheduler promotion, provider switch, model change, threshold
+  change, staking change, retention deletion, or global dashboard-source switch
+  was made.
 
 ## Task 11: Promote Render As Primary Scheduler
 
