@@ -47,9 +47,13 @@ state behind.
 At the start of every session:
 
 1. Confirm which computer/clone is being used.
-2. Use the local clone for that computer:
-   - Mac: `/Users/tylerreid/Documents/Codex/2026-05-02/pull-my-repos/BaseballBettingEdge`
-   - Windows: use the Windows local clone opened in GitHub Desktop.
+2. Use the local clone for that computer. Trust `git rev-parse --show-toplevel`
+   and `git remote -v` over sidebar labels or path casing:
+   - Tyler's MacBook Air:
+     `/Users/tyler/Documents/Codex/2026-05-02/pull-my-repos/BaseballbettingEdge`
+   - Windows: use the Windows local clone opened in GitHub Desktop, then
+     verify the repo root and remote before editing.
+   - Expected `origin`: `https://github.com/treidjbi/BaseballbettingEdge.git`
 3. Check the current branch and working tree before making edits.
 4. Pull the current branch from GitHub before starting meaningful work.
 
@@ -69,7 +73,7 @@ Before ending a session:
 4. If anything cannot be committed or pushed, clearly report the exact branch,
    untracked/modified files, and the next action needed.
 
-For today, while testing local setup through Git, use the branch
+For 2026-05-24 local setup testing through Git, use the branch
 `test/local-cloud-setup` and keep both Mac and Windows clones synced through
 GitHub rather than copying files manually.
 
