@@ -135,7 +135,7 @@ Promotion rule: do not advance more than one stage in a single slate.
 - Create: `supabase/migrations/20260522_published_pipeline_artifacts.sql`
 - Create: `tests/test_published_artifacts_schema.py`
 
-- [ ] **Step 1: Write schema contract tests**
+- [x] **Step 1: Write schema contract tests**
 
 Create `tests/test_published_artifacts_schema.py`:
 
@@ -184,7 +184,7 @@ def test_published_artifact_tables_are_rls_guarded():
     assert "grant select on public.pipeline_artifact_publication_runs to bbe_ops_readonly" in sql
 ```
 
-- [ ] **Step 2: Run tests to verify failure**
+- [x] **Step 2: Run tests to verify failure**
 
 Run:
 
@@ -194,7 +194,7 @@ python -m pytest tests/test_published_artifacts_schema.py -q
 
 Expected: fail because the migration file does not exist.
 
-- [ ] **Step 3: Add migration**
+- [x] **Step 3: Add migration**
 
 Create `supabase/migrations/20260522_published_pipeline_artifacts.sql`:
 
@@ -274,7 +274,7 @@ begin
 end $$;
 ```
 
-- [ ] **Step 4: Verify schema tests pass**
+- [x] **Step 4: Verify schema tests pass**
 
 Run:
 
@@ -284,7 +284,7 @@ python -m pytest tests/test_published_artifacts_schema.py -q
 
 Expected: pass.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```powershell
 git add supabase/migrations/20260522_published_pipeline_artifacts.sql tests/test_published_artifacts_schema.py
@@ -297,7 +297,7 @@ git commit -m "feat: add published artifact schema"
 - Create: `market_infra/published_artifacts.py`
 - Create: `tests/test_published_artifacts.py`
 
-- [ ] **Step 1: Write pure helper tests**
+- [x] **Step 1: Write pure helper tests**
 
 Create `tests/test_published_artifacts.py`:
 
@@ -360,7 +360,7 @@ def test_build_artifact_row_extracts_date_and_generated_at(tmp_path):
     assert row["metadata"]["artifact_path"].endswith("dashboard/data/processed/2026-05-22.json")
 ```
 
-- [ ] **Step 2: Run tests to verify failure**
+- [x] **Step 2: Run tests to verify failure**
 
 ```powershell
 python -m pytest tests/test_published_artifacts.py -q
@@ -368,7 +368,7 @@ python -m pytest tests/test_published_artifacts.py -q
 
 Expected: fail because `market_infra.published_artifacts` does not exist.
 
-- [ ] **Step 3: Implement pure helpers**
+- [x] **Step 3: Implement pure helpers**
 
 Create `market_infra/published_artifacts.py` with:
 
@@ -470,7 +470,7 @@ def build_artifact_row(
     }
 ```
 
-- [ ] **Step 4: Verify tests pass**
+- [x] **Step 4: Verify tests pass**
 
 ```powershell
 python -m pytest tests/test_published_artifacts.py -q
@@ -478,7 +478,7 @@ python -m pytest tests/test_published_artifacts.py -q
 
 Expected: pass.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```powershell
 git add market_infra/published_artifacts.py tests/test_published_artifacts.py

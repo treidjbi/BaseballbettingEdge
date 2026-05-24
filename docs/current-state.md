@@ -64,7 +64,7 @@ each lane.
 
 | Lane | Current Source | Current Stage | Next Decision |
 | --- | --- | --- | --- |
-| Pipeline / infrastructure | `2026-05-19-supabase-operational-foundation.md`, `2026-05-22-github-artifact-exit.md`, `2026-05-13-boltodds-propline-official-provider-cutover.md`, `2026-05-20-live-notification-coordinator.md`, `docs/operational-risk-register.md` | Staged Supabase/BoltOdds/PropLine migration. GitHub + TheRundown remain production source of truth. Supabase lock ledger is in strict/single-writer canary code: GitHub can consume Supabase lock rows while `ENABLE_GITHUB_FALLBACK_LOCKING=false` suppresses its own due-lock fallback, avoiding the dual-writer race. Drifted already-locked ledger rows are now classified in `operational_pick_locks.metadata.consumer_status`. | Audit the strict/single-writer canary for the next lock windows. If clean, proceed toward Supabase artifact mirror; if any lock row is missing or unclassified, fix lock infrastructure before artifact-exit work. |
+| Pipeline / infrastructure | `2026-05-19-supabase-operational-foundation.md`, `2026-05-22-github-artifact-exit.md`, `2026-05-13-boltodds-propline-official-provider-cutover.md`, `2026-05-20-live-notification-coordinator.md`, `docs/operational-risk-register.md` | Staged Supabase/BoltOdds/PropLine migration. GitHub + TheRundown remain production source of truth. Supabase lock ledger passed its strict/single-writer canary posture; GitHub can consume Supabase lock rows while `ENABLE_GITHUB_FALLBACK_LOCKING=false` suppresses its own due-lock fallback. Artifact-exit Stage 1 is starting with Supabase mirror schema and pure artifact-row helpers only. | Continue artifact-exit Stage 1: add the dry-run-first Supabase artifact publisher and parity checker. Do not switch dashboard reads, Render schedules, provider source, model, staking, thresholds, or retention deletion yet. |
 | Model | `2026-05-12-pitcher-k-outcome-research-dataset.md` | Gate C confidence-referee / compact evidence proof. Gate A and local Gate B are effectively done. | Move from Gate C to Gate D only when collection/storage/reconciliation are routine. Gate E/F are required before any live ranking, threshold, staking, calibration, or formula promotion. |
 | UI | `2026-05-20-live-market-decision-ui.md`, `2026-05-20-live-notification-coordinator.md` | Future-state design only. The dashboard should eventually display best price, consensus, movement, urgency, and notification grouping from the new operational base. | Revisit after the operational/provider switch is stable. Keep display work separated from provider promotion and betting-rule changes. |
 | Tracking / data collection / history | `docs/research/market-tracker-map.md`, `docs/research/pitcher-k-outcome-dataset.md`, compact outcome outputs, live-market audits | Canonical research row plus existing market/live/provider trackers. Daily brief now keeps a compact Gate C bucket scoreboard and pre/post 2026-04-28 context. | Prefer derived labels on the compact outcome row before adding tables. Promote compact storage or retention only after row-volume/cost proof and Tyler approval. |
@@ -315,8 +315,18 @@ After the lock layer is strict-canary clean, use the GitHub artifact-exit plan:
 That plan covers the missing post-lock phase: mirror dashboard JSON artifacts
 into Supabase, serve them through a Netlify artifact API with static fallback,
 move scheduled pipeline execution to Render, and only then disable GitHub
-scheduled artifact publishing. It is future work until Tyler approves starting
-Task 1 after the current lock slate audit.
+scheduled artifact publishing. Tyler approved starting the first shadow-mirror
+slice after the strict lock canary; later source/scheduler stages still require
+their own parity evidence and approval.
+
+Artifact-exit rollout note, 2026-05-24:
+
+- Tyler approved starting Stage 1 after the strict/single-writer lock canary.
+- Task 1 and Task 2 add only the Supabase artifact mirror schema and pure
+  artifact-row helpers. They do not publish rows, change dashboard reads, move
+  schedules to Render, or alter provider/model/betting behavior.
+- Next step is Task 3: add the dry-run-first artifact publisher, followed by a
+  read-only parity checker before any dashboard API canary.
 
 ## Active Production Path
 
