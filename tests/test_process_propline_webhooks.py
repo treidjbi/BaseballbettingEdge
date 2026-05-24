@@ -60,14 +60,13 @@ def test_processor_skips_invalid_signature_rows():
         "unsupported": 1,
         "received_after": None,
     }
-    writer.upsert_rows.assert_called_once_with(
+    writer.update_rows.assert_called_once_with(
         "propline_webhook_deliveries",
-        [{
-            "id": "delivery-row-1",
+        {"id": "eq.delivery-row-1"},
+        {
             "processed": True,
             "processing_error": "invalid_signature",
-        }],
-        on_conflict="id",
+        },
     )
 
 
@@ -84,14 +83,13 @@ def test_processor_marks_unknown_payload_shape():
     assert result["processed"] == 0
     assert result["line_movement_events"] == 0
     assert result["unsupported"] == 1
-    writer.upsert_rows.assert_called_once_with(
+    writer.update_rows.assert_called_once_with(
         "propline_webhook_deliveries",
-        [{
-            "id": "delivery-row-1",
+        {"id": "eq.delivery-row-1"},
+        {
             "processed": True,
             "processing_error": "unsupported_payload_shape",
-        }],
-        on_conflict="id",
+        },
     )
 
 
@@ -147,14 +145,15 @@ def test_processor_writes_neutral_line_movement_event_from_real_payload_shape():
         },
     }]
 
-    delivery_call = writer.upsert_rows.call_args_list[1]
-    assert delivery_call.args[0] == "propline_webhook_deliveries"
-    assert delivery_call.args[1] == [{
-        "id": "delivery-row-1",
-        "processed": True,
-        "processing_error": None,
-    }]
-    assert delivery_call.kwargs == {"on_conflict": "id"}
+    writer.update_rows.assert_called_once_with(
+        "propline_webhook_deliveries",
+        {"id": "eq.delivery-row-1"},
+        {
+            "processed": True,
+            "processing_error": None,
+        },
+    )
+    assert len(writer.upsert_rows.call_args_list) == 1
 
 
 def test_processor_canonicalizes_observed_at_to_utc_iso():
@@ -194,14 +193,13 @@ def test_processor_rejects_malformed_observed_at_before_writing_movement():
         "unsupported": 1,
         "received_after": None,
     }
-    writer.upsert_rows.assert_called_once_with(
+    writer.update_rows.assert_called_once_with(
         "propline_webhook_deliveries",
-        [{
-            "id": "delivery-row-1",
+        {"id": "eq.delivery-row-1"},
+        {
             "processed": True,
             "processing_error": "unsupported_payload_shape",
-        }],
-        on_conflict="id",
+        },
     )
 
 

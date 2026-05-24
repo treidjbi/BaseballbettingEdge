@@ -297,7 +297,13 @@ def run(
     if movement_rows:
         writer.upsert_rows("line_movement_events", movement_rows, on_conflict="dedupe_key")
     if updates:
-        writer.upsert_rows("propline_webhook_deliveries", updates, on_conflict="id")
+        for update in updates:
+            delivery_id = update.pop("id")
+            writer.update_rows(
+                "propline_webhook_deliveries",
+                {"id": f"eq.{delivery_id}"},
+                update,
+            )
 
     return {
         "deliveries": len(deliveries),
