@@ -64,7 +64,7 @@ each lane.
 
 | Lane | Current Source | Current Stage | Next Decision |
 | --- | --- | --- | --- |
-| Pipeline / infrastructure | `2026-05-19-supabase-operational-foundation.md`, `2026-05-22-github-artifact-exit.md`, `2026-05-13-boltodds-propline-official-provider-cutover.md`, `2026-05-20-live-notification-coordinator.md`, `docs/operational-risk-register.md` | Staged Supabase/BoltOdds/PropLine migration. GitHub + TheRundown remain production source of truth. Supabase lock ledger passed its strict/single-writer canary posture; GitHub can consume Supabase lock rows while `ENABLE_GITHUB_FALLBACK_LOCKING=false` suppresses its own due-lock fallback. Artifact-exit Stage 1 now has mirror schema/helpers, a dry-run publisher, gated GitHub shadow publishing, a Netlify artifact API, default-static dashboard adapters, a parity checker, and Render runner risk docs. | Stop before Task 9's actual Render shadow run/canary. Next decision is whether to apply the Supabase artifact migration and enable `ENABLE_SUPABASE_ARTIFACT_PUBLISH=true` for shadow rows, then run parity checks. Do not switch dashboard reads, Render schedules, provider source, model, staking, thresholds, or retention deletion yet. |
+| Pipeline / infrastructure | `2026-05-19-supabase-operational-foundation.md`, `2026-05-22-github-artifact-exit.md`, `2026-05-13-boltodds-propline-official-provider-cutover.md`, `2026-05-20-live-notification-coordinator.md`, `docs/operational-risk-register.md` | Staged Supabase/BoltOdds/PropLine migration. GitHub + TheRundown remain production source of truth. Supabase lock ledger passed its strict/single-writer canary posture; GitHub can consume Supabase lock rows while `ENABLE_GITHUB_FALLBACK_LOCKING=false` suppresses its own due-lock fallback. Artifact-exit Stage 1 now has hosted mirror tables, helper/publisher code, `ENABLE_SUPABASE_ARTIFACT_PUBLISH=true`, a Netlify artifact API, default-static dashboard adapters, a parity checker, and Render runner risk docs. | Stop before Task 9's actual Render shadow run/canary. Next check is the first GitHub run on code containing the shadow publisher: verify Supabase artifact rows publish and `scripts/compare_supabase_artifacts.py --date YYYY-MM-DD --strict` passes. Do not switch dashboard reads, Render schedules, provider source, model, staking, thresholds, or retention deletion yet. |
 | Model | `2026-05-12-pitcher-k-outcome-research-dataset.md` | Gate C confidence-referee / compact evidence proof. Gate A and local Gate B are effectively done. | Move from Gate C to Gate D only when collection/storage/reconciliation are routine. Gate E/F are required before any live ranking, threshold, staking, calibration, or formula promotion. |
 | UI | `2026-05-20-live-market-decision-ui.md`, `2026-05-20-live-notification-coordinator.md` | Future-state design only. The dashboard should eventually display best price, consensus, movement, urgency, and notification grouping from the new operational base. | Revisit after the operational/provider switch is stable. Keep display work separated from provider promotion and betting-rule changes. |
 | Tracking / data collection / history | `docs/research/market-tracker-map.md`, `docs/research/pitcher-k-outcome-dataset.md`, compact outcome outputs, live-market audits | Canonical research row plus existing market/live/provider trackers. Daily brief now keeps a compact Gate C bucket scoreboard and pre/post 2026-04-28 context. | Prefer derived labels on the compact outcome row before adding tables. Promote compact storage or retention only after row-volume/cost proof and Tyler approval. |
@@ -329,9 +329,13 @@ Artifact-exit rollout note, 2026-05-24:
   default-static dashboard adapters, a read-only parity checker, and Render
   runner/risk docs. These remain pre-candidate infrastructure; no dashboard
   source or scheduler switch has been made.
+- The hosted `published_pipeline_artifacts` and
+  `pipeline_artifact_publication_runs` tables now exist, and repo variable
+  `ENABLE_SUPABASE_ARTIFACT_PUBLISH=true` is enabled for shadow rows.
 - Stop before Task 9's actual Render shadow run/canary. The next operational
-  decision is whether to apply the artifact mirror migration and enable gated
-  GitHub shadow artifact publishing for parity evidence.
+  check is the first GitHub run on code containing the shadow publisher:
+  confirm Supabase rows are written, then run
+  `scripts/compare_supabase_artifacts.py --date YYYY-MM-DD --strict`.
 
 ## Active Production Path
 

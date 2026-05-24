@@ -1443,7 +1443,15 @@ Rollback must stay boring:
 
 ## Current Recommendation
 
-Do not start Task 1 until the May 22 lock slate is audited. If May 22 is clean,
-turn on strict lock consumption for one slate first. After that, start this
-plan with Task 1 and Task 2 as pure schema/helper work; they are low risk and do
-not change production behavior.
+As of 2026-05-24, the strict/single-writer lock canary is treated as clean
+enough to start artifact-exit Stage 1. Tasks 1-8 are implemented and pushed on
+`codex/artifact-exit-shadow-mirror`, the hosted artifact mirror tables exist,
+and `ENABLE_SUPABASE_ARTIFACT_PUBLISH=true` is enabled for shadow artifact
+publication. Dashboard reads still default to static JSON, GitHub remains the
+official artifact writer, and no Render schedule has been promoted.
+
+Next check: after the first GitHub run that includes the shadow publisher,
+confirm rows exist in `published_pipeline_artifacts` and run
+`scripts/compare_supabase_artifacts.py --date YYYY-MM-DD --strict`. Stop before
+Task 9's Render shadow/canary until Tyler is ready for a soak-style operational
+run.
