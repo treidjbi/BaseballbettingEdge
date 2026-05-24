@@ -102,6 +102,12 @@ Current implementation state:
   BoltOdds snapshot rows, but they are stale as of 2026-05-16. Use the new
   webhook movement rows to refresh that comparison before making any provider
   timing claim.
+- Comparison refreshed on 2026-05-24. The refresh materialized the new webhook
+  rows into `shadow_provider_movement_events`, matched them to nearest
+  BoltOdds snapshots within 90 minutes using normalized pitcher + side and the
+  `pitcher_strikeouts` / `Strikeouts` market-key alias, and upserted 95 current
+  comparison rows: 42 `propline_webhook_first`, 21 `boltodds_first`, and 32
+  `no_boltodds_match`.
 - Payload update: PropLine shipped `bookmaker_key`, `bookmaker_title`,
   `market_id`, and `outcome_id` on every `line_movement` and `resolution`
   delivery after Tyler's 2026-05-19 support thread with Andy. `market_id` and

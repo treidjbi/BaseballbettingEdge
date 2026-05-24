@@ -552,6 +552,13 @@ Webhook status:
   `shadow_movement_source_comparisons` are stale as of 2026-05-16; refresh that
   comparison from the new webhook movement rows before using it for timing
   claims.
+- Refreshed on 2026-05-24 after the webhook canary. Current webhook movement
+  rows were materialized into `shadow_provider_movement_events`, matched to the
+  nearest BoltOdds snapshot within 90 minutes using normalized pitcher + side
+  and the `pitcher_strikeouts` / `Strikeouts` market-key alias, then upserted
+  into `shadow_movement_source_comparisons`. The 95 current rows split:
+  42 `propline_webhook_first`, 21 `boltodds_first`, and 32
+  `no_boltodds_match`. Treat this as shadow timing evidence only.
 - Do not use webhook rows for production odds, picks, notifications, or
   provider promotion without a separate review.
 
