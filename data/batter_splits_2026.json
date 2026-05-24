@@ -7502,21 +7502,40 @@
         "so": 1,
         "k_rate": 0.1429
       }
+    },
+    "mlbam:606115": {
+      "name": "Orlando Arcia",
+      "bats": "R",
+      "mlbam_id": 606115,
+      "bbref_id": "arciaor01",
+      "season": 2026,
+      "vs_R": {
+        "pa": 4,
+        "so": 0,
+        "k_rate": 0.0
+      },
+      "vs_L": {
+        "pa": 2,
+        "so": 1,
+        "k_rate": 0.5
+      }
     }
   },
-  "updated_at": "2026-05-24T14:44:08Z",
+  "updated_at": "2026-05-24T16:12:32Z",
   "last_run": {
     "projection_status": "collection_only",
-    "requested_batters": 90,
-    "already_cached": 89,
-    "attempted": 1,
-    "collected": 0,
-    "failed": 1,
-    "queued_not_attempted": 0,
-    "cache_size": 445,
+    "requested_batters": 171,
+    "already_cached": 166,
+    "attempted": 4,
+    "collected": 1,
+    "failed": 3,
+    "queued_not_attempted": 1,
+    "cache_size": 446,
     "errors": [
-      "Esmerlyn Valdez: no bbref id"
+      "Esmerlyn Valdez: no bbref id",
+      "Bryan Torres: no bbref id",
+      "Colt Emerson: no bbref id"
     ],
-    "updated_at": "2026-05-24T14:44:08Z"
+    "updated_at": "2026-05-24T16:12:32Z"
   }
 }
