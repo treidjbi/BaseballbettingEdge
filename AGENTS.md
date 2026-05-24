@@ -119,6 +119,12 @@ PropLine if the evidence and gates pass.
   reused instead of duplicated.
 - Preserve the dated plans in `docs/superpowers/plans/` as historical context
   so future work does not repeat earlier mistakes.
+- Artifact-exit posture as of 2026-05-24: strict locks, GitHub shadow artifact
+  publishing, Netlify `get-artifact`, and the Tyler-only dashboard API canary
+  have all worked, but Render is not approved as the primary scheduler. Let the
+  rest of the 2026-05-24 slate run as a soak with GitHub schedules official and
+  static JSON default, then make Task 11 a separate go/no-go decision after the
+  full-slate evidence is reviewed.
 
 ### May 2026 provider cutover posture
 

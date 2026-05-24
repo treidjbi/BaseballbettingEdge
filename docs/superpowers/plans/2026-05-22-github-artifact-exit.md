@@ -1518,3 +1518,17 @@ strict parity passed 8/8 again. Continue Stage 1 observation. The next safe
 move is either a Tyler-only dashboard artifact API canary or one more matched
 Render/GitHub shadow run; do not promote Render schedules or dashboard reads
 without the next explicit approval.
+
+Task 10 is now exercised as a Tyler-only dashboard artifact API canary. Netlify
+`get-artifact` is configured, current 2026-05-24 artifacts and the tested prior
+dated archives match static JSON, and the session-only dashboard source
+`localStorage.bbe_artifact_source=supabase` loaded without `get-artifact`
+errors after the dated-archive backfill.
+
+The current recommendation is to let the rest of the 2026-05-24 slate run as a
+soak, not to promote Task 11 today. Keep GitHub scheduled runs official,
+dashboard static JSON as default, and static fallback active while observing
+strict locks, 8-row artifact publication, strict parity after each artifact
+commit, and current/prior-date dashboard API behavior. Task 11 remains a
+separate Render primary scheduler go/no-go after full-slate evidence is
+reviewed.
