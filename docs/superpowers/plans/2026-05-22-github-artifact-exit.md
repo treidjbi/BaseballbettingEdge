@@ -1454,6 +1454,9 @@ Manual `main` run `26367454166` proved the Stage 1 path: it published 8
 Supabase artifact rows for 2026-05-24, refreshed `published_at`, recorded
 artifact commit `599f275f`, and
 `scripts/compare_supabase_artifacts.py --date 2026-05-24 --strict` passed with
-8/8 matches. Next check the first scheduled GitHub run on `main` with the
-shadow publisher. Stop before Task 9's Render shadow/canary until Tyler is
-ready for a soak-style operational run.
+8/8 matches. First scheduled `main` run `26367602689` then published 8 shadow
+artifacts, and follow-up manual run `26367707782` refreshed all 8 rows at
+`2026-05-24T17:18:04Z`, recorded artifact commit `c37896ea`, and passed strict
+parity with 8/8 matches. Continue Stage 1 observation through normal scheduled
+runs. Stop before Task 9's Render shadow/canary until Tyler is ready for a
+soak-style operational run.
