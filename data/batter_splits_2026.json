@@ -7519,24 +7519,40 @@
         "so": 1,
         "k_rate": 0.5
       }
+    },
+    "mlbam:686475": {
+      "name": "Tyler Tolbert",
+      "bats": "R",
+      "mlbam_id": 686475,
+      "bbref_id": "tolbety01",
+      "season": 2026,
+      "vs_R": {
+        "pa": 3,
+        "so": 1,
+        "k_rate": 0.3333
+      },
+      "vs_L": {
+        "pa": 2,
+        "so": 0,
+        "k_rate": 0.0
+      }
     }
   },
-  "updated_at": "2026-05-24T20:12:29Z",
+  "updated_at": "2026-05-24T20:33:29Z",
   "last_run": {
     "projection_status": "collection_only",
     "requested_batters": 225,
-    "already_cached": 216,
+    "already_cached": 215,
     "attempted": 4,
-    "collected": 0,
-    "failed": 4,
-    "queued_not_attempted": 5,
-    "cache_size": 446,
+    "collected": 1,
+    "failed": 3,
+    "queued_not_attempted": 6,
+    "cache_size": 447,
     "errors": [
       "Colt Emerson: no bbref id",
       "Pedro Ram\u00edrez: no bbref id",
-      "Jesus Rodriguez: no bbref id",
-      "Victor Bericoto: no bbref id"
+      "Jesus Rodriguez: no bbref id"
     ],
-    "updated_at": "2026-05-24T20:12:29Z"
+    "updated_at": "2026-05-24T20:33:29Z"
   }
 }
