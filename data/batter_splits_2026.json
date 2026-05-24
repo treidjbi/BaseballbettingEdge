@@ -7538,21 +7538,22 @@
       }
     }
   },
-  "updated_at": "2026-05-24T20:33:29Z",
+  "updated_at": "2026-05-24T21:09:50Z",
   "last_run": {
     "projection_status": "collection_only",
-    "requested_batters": 225,
-    "already_cached": 215,
+    "requested_batters": 234,
+    "already_cached": 225,
     "attempted": 4,
-    "collected": 1,
-    "failed": 3,
-    "queued_not_attempted": 6,
+    "collected": 0,
+    "failed": 4,
+    "queued_not_attempted": 5,
     "cache_size": 447,
     "errors": [
       "Colt Emerson: no bbref id",
       "Pedro Ram\u00edrez: no bbref id",
-      "Jesus Rodriguez: no bbref id"
+      "Jesus Rodriguez: no bbref id",
+      "Victor Bericoto: no bbref id"
     ],
-    "updated_at": "2026-05-24T20:33:29Z"
+    "updated_at": "2026-05-24T21:09:50Z"
   }
 }
