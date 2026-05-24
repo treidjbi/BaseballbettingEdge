@@ -491,7 +491,7 @@ git commit -m "feat: build published artifact rows"
 - Create: `scripts/publish_pipeline_artifacts_to_supabase.py`
 - Create: `tests/test_publish_pipeline_artifacts.py`
 
-- [ ] **Step 1: Write publisher tests**
+- [x] **Step 1: Write publisher tests**
 
 Create `tests/test_publish_pipeline_artifacts.py`:
 
@@ -574,7 +574,7 @@ def test_run_execute_upserts_artifacts_and_run_row(tmp_path):
     assert writer.inserts[0][0] == "pipeline_artifact_publication_runs"
 ```
 
-- [ ] **Step 2: Run tests to verify failure**
+- [x] **Step 2: Run tests to verify failure**
 
 ```powershell
 python -m pytest tests/test_publish_pipeline_artifacts.py -q
@@ -582,7 +582,7 @@ python -m pytest tests/test_publish_pipeline_artifacts.py -q
 
 Expected: fail because the script does not exist.
 
-- [ ] **Step 3: Implement publisher**
+- [x] **Step 3: Implement publisher**
 
 Create `scripts/publish_pipeline_artifacts_to_supabase.py` with:
 
@@ -701,7 +701,7 @@ if __name__ == "__main__":
     raise SystemExit(main())
 ```
 
-- [ ] **Step 4: Verify tests pass**
+- [x] **Step 4: Verify tests pass**
 
 ```powershell
 python -m pytest tests/test_publish_pipeline_artifacts.py -q
@@ -709,7 +709,7 @@ python -m pytest tests/test_publish_pipeline_artifacts.py -q
 
 Expected: pass.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```powershell
 git add scripts/publish_pipeline_artifacts_to_supabase.py tests/test_publish_pipeline_artifacts.py

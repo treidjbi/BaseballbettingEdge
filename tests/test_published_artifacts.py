@@ -54,3 +54,22 @@ def test_build_artifact_row_extracts_date_and_generated_at(tmp_path):
     assert row["source_run_id"] == "26297280674"
     assert row["source_commit_sha"] == "9cd8a02b"
     assert row["metadata"]["artifact_path"].endswith("dashboard/data/processed/2026-05-22.json")
+
+
+def test_build_artifact_row_accepts_list_payloads(tmp_path):
+    path = tmp_path / "data" / "picks_history.json"
+    path.parent.mkdir(parents=True)
+    path.write_text('[{"date":"2026-05-22","pitcher":"Example Pitcher"}]', encoding="utf-8")
+
+    row = build_artifact_row(
+        root=tmp_path,
+        path=path,
+        source="github_actions",
+        source_run_id="run-1",
+        source_commit_sha="sha",
+    )
+
+    assert row["artifact_key"] == "picks_history"
+    assert row["artifact_type"] == "picks_history"
+    assert row["slate_date"] is None
+    assert row["generated_at"] is None

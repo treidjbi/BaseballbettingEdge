@@ -57,16 +57,25 @@ def canonical_payload_sha256(payload: Any) -> str:
     return hashlib.sha256(encoded).hexdigest()
 
 
-def _slate_date_from_path_or_payload(path: Path, payload: dict[str, Any]) -> str | None:
+def _payload_value(payload: Any, key: str) -> str | None:
+    if not isinstance(payload, dict):
+        return None
+    value = payload.get(key)
+    return str(value) if value else None
+
+
+def _slate_date_from_path_or_payload(path: Path, payload: Any) -> str | None:
     if artifact_type_from_path(path) == "dated_slate":
         return path.stem
-    value = payload.get("date")
-    return str(value) if value else None
+    return _payload_value(payload, "date")
 
 
-def _generated_at(payload: dict[str, Any]) -> str | None:
-    value = payload.get("generated_at") or payload.get("fetched_at") or payload.get("updated_at")
-    return str(value) if value else None
+def _generated_at(payload: Any) -> str | None:
+    return (
+        _payload_value(payload, "generated_at")
+        or _payload_value(payload, "fetched_at")
+        or _payload_value(payload, "updated_at")
+    )
 
 
 def build_artifact_row(
