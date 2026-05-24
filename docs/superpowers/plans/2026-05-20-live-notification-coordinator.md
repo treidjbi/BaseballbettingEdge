@@ -28,6 +28,12 @@ late betting-action pushes. The default TTL is 20 minutes, overrideable with
 `last_send_error`. The authenticated manual endpoint supports `smoke_check`
 mode for post-deploy queue/subscriber checks without sending pushes.
 
+**2026-05-24 PropLine webhook canary:** The live layer may process recent
+PropLine webhook inbox rows into shadow `line_movement_events` using
+`LIVE_PROCESS_PROPLINE_WEBHOOKS`. This is comparison evidence only and must not
+write user-facing `notification_events` or change notification eligibility
+without the provider notification gates in this plan.
+
 ## Problem
 
 Today there are two notification paths:

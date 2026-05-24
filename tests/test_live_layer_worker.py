@@ -961,7 +961,11 @@ def test_worker_can_process_propline_webhooks_before_market_reads(tmp_path):
     processor.assert_called_once_with(
         supabase_url="https://example.supabase.co",
         service_role_key="secret",
+        limit=100,
+        received_after=ANY,
     )
+    received_after = processor.call_args.kwargs["received_after"]
+    assert received_after is not None
     assert calls.index(("process", "propline_webhooks")) < calls.index(("select", "market_snapshots"))
     assert result["propline_webhooks"]["line_movement_events"] == 2
 

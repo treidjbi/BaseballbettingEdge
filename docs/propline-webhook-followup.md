@@ -1,6 +1,6 @@
 # PropLine Webhook Follow-Up
 
-Last updated: 2026-05-19
+Last updated: 2026-05-24
 
 ## Current Goal
 
@@ -74,16 +74,25 @@ After merge:
 
 ## Current Status
 
-As of 2026-05-19, Tyler confirmed PropLine fixed the Streaming Lite entitlement
-mistake. Real signed `line_movement` deliveries are landing in
-`public.propline_webhook_deliveries`.
+As of 2026-05-24, Tyler approved starting shadow-only webhook consumption. Real
+signed `line_movement` deliveries are landing in
+`public.propline_webhook_deliveries`, and the live-layer worker now processes a
+bounded recent canary slice into `public.line_movement_events`.
 
 Current implementation state:
 
 - Receiver: active Netlify function.
 - Inbox: real rows are landing with `signature_valid=true`.
-- Processor: implemented as a shadow-only script and wired into the Render live
-  layer behind `LIVE_PROCESS_PROPLINE_WEBHOOKS=false` by default.
+- Processor: implemented as a shadow-only script and wired into the live layer
+  with `LIVE_PROCESS_PROPLINE_WEBHOOKS=true` by default. Roll back by setting it
+  to `false`.
+- Canary bounds: `LIVE_PROCESS_PROPLINE_WEBHOOK_LIMIT` defaults to `100` rows
+  per run, and `LIVE_PROCESS_PROPLINE_WEBHOOK_MAX_AGE_MINUTES` defaults to
+  `180`. Set max age to `0` only for an explicit backlog drain.
+- Direct Supabase check before enabling showed 2,638 valid unprocessed
+  deliveries from 2026-05-05 through 2026-05-24, but zero current
+  `line_movement_events` with `metadata->>'source'='propline_webhook'`. The
+  canary intentionally avoids draining the historic backlog.
 - Payload update: PropLine shipped `bookmaker_key`, `bookmaker_title`,
   `market_id`, and `outcome_id` on every `line_movement` and `resolution`
   delivery after Tyler's 2026-05-19 support thread with Andy. `market_id` and
@@ -121,6 +130,15 @@ After processor runs, check shadow movement rows:
    limit 20;
    ```
 
+Check canary backlog behavior:
+
+   ```sql
+   select processed, count(*), min(received_at), max(received_at)
+   from public.propline_webhook_deliveries
+   group by processed
+   order by processed;
+   ```
+
 ## Historical Blocker
 
 PropLine originally rejected webhook creation with:
@@ -148,7 +166,10 @@ Evaluate these before changing production behavior:
 
 Stay on TheRundown for production.
 
-Use PropLine webhooks as shadow movement evidence only. Enable automated
-processor runs only after the lock-ledger observation is not at risk, then
-compare webhook timing, coverage, duplicate behavior, and noise against
-PropLine polling and BoltOdds before any notification or provider-source use.
+Use webhook rows only as shadow comparison evidence against PropLine polling and
+BoltOdds snapshots. Do not use webhook rows for official odds, picks, provider
+promotion, or user-facing notification sends without a separate reviewed gate.
+
+Use the bounded automated processor run to compare webhook timing, coverage,
+duplicate behavior, and noise against PropLine polling and BoltOdds before any
+notification or provider-source use.

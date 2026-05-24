@@ -14,6 +14,13 @@ configured, Supabase live tables, and Netlify `send-live-notifications`. It is
 still separate from dashboard artifacts, grading, picks history, calibration,
 and production provider order.
 
+**Status Note 2026-05-24:** PropLine webhook consumption has started as a
+bounded shadow canary. `LIVE_PROCESS_PROPLINE_WEBHOOKS` defaults on for the
+live-layer entrypoint, with `LIVE_PROCESS_PROPLINE_WEBHOOK_LIMIT=100` and
+`LIVE_PROCESS_PROPLINE_WEBHOOK_MAX_AGE_MINUTES=180`. The processor writes only
+shadow `line_movement_events` and must not create notification sends or
+provider-source changes without a separate gate.
+
 ---
 
 ## Product Intent

@@ -52,6 +52,8 @@ DEFAULT_LOCK_ONLY_WORKFLOW_DISPATCH_URL = (
     "https://baseballbettingedge.netlify.app/.netlify/functions/trigger-pipeline"
 )
 LIVE_NOTIFICATION_MOVEMENT_PROVIDERS = {"propline"}
+DEFAULT_PROPLINE_WEBHOOK_LIMIT = 100
+DEFAULT_PROPLINE_WEBHOOK_MAX_AGE_MINUTES = 180
 
 
 def _env(name: str) -> str:
@@ -597,6 +599,8 @@ def run(
     market_line_min_interval_seconds: int = 600,
     compact_market_min_interval_seconds: int = 1800,
     process_propline_webhooks: bool = False,
+    propline_webhook_limit: int = DEFAULT_PROPLINE_WEBHOOK_LIMIT,
+    propline_webhook_max_age_minutes: int = DEFAULT_PROPLINE_WEBHOOK_MAX_AGE_MINUTES,
 ) -> dict[str, Any]:
     if artifact_payload is None:
         payload, artifact_sha, artifact_source = _load_artifact(Path(artifact_path), artifact_url=artifact_url)
@@ -631,9 +635,14 @@ def run(
 
     if process_propline_webhooks:
         try:
+            received_after = None
+            if propline_webhook_max_age_minutes > 0:
+                received_after = observed_at - timedelta(minutes=propline_webhook_max_age_minutes)
             propline_webhook_result = process_propline_webhook_deliveries(
                 supabase_url=supabase_url,
                 service_role_key=service_role_key,
+                limit=max(1, propline_webhook_limit),
+                received_after=received_after,
             )
         except Exception as error:
             print(
@@ -817,7 +826,15 @@ def main() -> int:
         artifact_source=artifact_source,
         build_market_lines=_env_flag("LIVE_BUILD_MARKET_LINES", default=True),
         compact_market_lines=_env_flag("LIVE_COMPACT_MARKET_SNAPSHOTS", default=True),
-        process_propline_webhooks=_env_flag("LIVE_PROCESS_PROPLINE_WEBHOOKS", default=False),
+        process_propline_webhooks=_env_flag("LIVE_PROCESS_PROPLINE_WEBHOOKS", default=True),
+        propline_webhook_limit=_env_int(
+            "LIVE_PROCESS_PROPLINE_WEBHOOK_LIMIT",
+            default=DEFAULT_PROPLINE_WEBHOOK_LIMIT,
+        ),
+        propline_webhook_max_age_minutes=_env_int(
+            "LIVE_PROCESS_PROPLINE_WEBHOOK_MAX_AGE_MINUTES",
+            default=DEFAULT_PROPLINE_WEBHOOK_MAX_AGE_MINUTES,
+        ),
         market_line_min_interval_seconds=_env_int(
             "LIVE_MARKET_LINE_BUILD_MIN_INTERVAL_SECONDS",
             default=600,

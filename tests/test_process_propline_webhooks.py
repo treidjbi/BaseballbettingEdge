@@ -1,3 +1,4 @@
+from datetime import datetime, timezone
 from unittest.mock import Mock, patch
 
 from scripts import process_propline_webhooks
@@ -57,6 +58,7 @@ def test_processor_skips_invalid_signature_rows():
         "processed": 0,
         "line_movement_events": 0,
         "unsupported": 1,
+        "received_after": None,
     }
     writer.upsert_rows.assert_called_once_with(
         "propline_webhook_deliveries",
@@ -108,6 +110,7 @@ def test_processor_writes_neutral_line_movement_event_from_real_payload_shape():
         "processed": 1,
         "line_movement_events": 1,
         "unsupported": 0,
+        "received_after": None,
     }
     movement_call = writer.upsert_rows.call_args_list[0]
     assert movement_call.args[0] == "line_movement_events"
@@ -189,6 +192,7 @@ def test_processor_rejects_malformed_observed_at_before_writing_movement():
         "processed": 0,
         "line_movement_events": 0,
         "unsupported": 1,
+        "received_after": None,
     }
     writer.upsert_rows.assert_called_once_with(
         "propline_webhook_deliveries",
@@ -226,3 +230,34 @@ def test_processor_preserves_propline_bookmaker_and_stable_ids():
     assert row["metadata"]["bookmaker_title"] == "DraftKings"
     assert row["metadata"]["market_id"] == "mkt_dk_123"
     assert row["metadata"]["outcome_id"] == "out_dk_456"
+
+
+def test_processor_can_filter_to_recent_webhook_deliveries():
+    writer = Mock()
+    writer.select_rows.return_value = []
+    cutoff = datetime(2026, 5, 24, 20, 30, tzinfo=timezone.utc)
+
+    with patch.object(process_propline_webhooks, "SupabaseMarketWriter", return_value=writer):
+        result = process_propline_webhooks.run(
+            supabase_url="https://example.supabase.co",
+            service_role_key="secret",
+            limit=25,
+            received_after=cutoff,
+        )
+
+    writer.select_rows.assert_called_once_with(
+        "propline_webhook_deliveries",
+        {
+            "processed": "eq.false",
+            "order": "received_at.asc",
+            "limit": "25",
+            "received_at": "gte.2026-05-24T20:30:00+00:00",
+        },
+    )
+    assert result == {
+        "deliveries": 0,
+        "processed": 0,
+        "line_movement_events": 0,
+        "unsupported": 0,
+        "received_after": "2026-05-24T20:30:00+00:00",
+    }

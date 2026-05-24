@@ -106,6 +106,9 @@ Current evidence:
 - PropLine's 2026-05-19 payload fix adds `bookmaker_key`, `bookmaker_title`,
   `market_id`, and `outcome_id`, making webhook movement reconcilable to
   polling by stable IDs
+- as of 2026-05-24, webhook consumption is enabled only as a bounded
+  shadow canary into `line_movement_events` with a 100-row / 180-minute default
+  window; historical backlog drains require an explicit max-age override
 - FanDuel / BetRivers evidence appears more useful than a broad migration case
 
 Keep current tier if:

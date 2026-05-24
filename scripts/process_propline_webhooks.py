@@ -21,6 +21,7 @@ from pipeline.name_utils import normalize  # noqa: E402
 
 PHOENIX_TZ = timezone(timedelta(hours=-7), "America/Phoenix")
 DEFAULT_LIMIT = 100
+DEFAULT_MAX_AGE_MINUTES = 180
 
 
 def _env(name: str) -> str:
@@ -28,6 +29,16 @@ def _env(name: str) -> str:
     if not value:
         raise EnvironmentError(f"{name} is required")
     return value
+
+
+def _env_int(name: str, *, default: int) -> int:
+    value = os.environ.get(name, "").strip()
+    if not value:
+        return default
+    try:
+        return int(value)
+    except ValueError as exc:
+        raise EnvironmentError(f"{name} must be an integer") from exc
 
 
 def _side(value: Any) -> str | None:
@@ -228,15 +239,20 @@ def run(
     supabase_url: str,
     service_role_key: str,
     limit: int = DEFAULT_LIMIT,
-) -> dict[str, int]:
+    received_after: datetime | None = None,
+) -> dict[str, Any]:
     writer = SupabaseMarketWriter(supabase_url, service_role_key)
+    query = {
+        "processed": "eq.false",
+        "order": "received_at.asc",
+        "limit": str(max(1, limit)),
+    }
+    if received_after is not None:
+        cutoff = received_after.astimezone(timezone.utc)
+        query["received_at"] = f"gte.{cutoff.isoformat()}"
     deliveries = writer.select_rows(
         "propline_webhook_deliveries",
-        {
-            "processed": "eq.false",
-            "order": "received_at.asc",
-            "limit": str(limit),
-        },
+        query,
     )
 
     movement_rows: list[dict[str, Any]] = []
@@ -288,13 +304,27 @@ def run(
         "processed": processed,
         "line_movement_events": len(movement_rows),
         "unsupported": unsupported,
+        "received_after": (
+            received_after.astimezone(timezone.utc).isoformat()
+            if received_after is not None
+            else None
+        ),
     }
 
 
 def main() -> int:
+    max_age_minutes = _env_int(
+        "LIVE_PROCESS_PROPLINE_WEBHOOK_MAX_AGE_MINUTES",
+        default=DEFAULT_MAX_AGE_MINUTES,
+    )
+    received_after = None
+    if max_age_minutes > 0:
+        received_after = datetime.now(timezone.utc) - timedelta(minutes=max_age_minutes)
     result = run(
         supabase_url=_env("SUPABASE_URL"),
         service_role_key=_env("SUPABASE_SERVICE_ROLE_KEY"),
+        limit=_env_int("LIVE_PROCESS_PROPLINE_WEBHOOK_LIMIT", default=DEFAULT_LIMIT),
+        received_after=received_after,
     )
     print(
         "PropLine webhook processing "

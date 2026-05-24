@@ -70,6 +70,12 @@ Important current-state findings:
 - `scripts/build_live_events_to_supabase.py` reads BoltOdds for shadow
   evidence/display, but production movement notifications currently only use
   `propline` as a movement provider.
+- `scripts/process_propline_webhooks.py` now consumes recent PropLine webhook
+  rows into shadow `line_movement_events` during live-layer runs. This is
+  bounded canary evidence only: `LIVE_PROCESS_PROPLINE_WEBHOOKS=true` by
+  default, `LIVE_PROCESS_PROPLINE_WEBHOOK_LIMIT=100`, and
+  `LIVE_PROCESS_PROPLINE_WEBHOOK_MAX_AGE_MINUTES=180`. It does not change
+  official odds, picks, artifacts, provider order, or notification sends.
 - `market_infra/live_market_display.py` and `market_infra/market_evidence.py`
   understand `boltodds`, but they produce per-provider shadow reads, not an
   official consensus line.
@@ -94,9 +100,10 @@ of the same evidence.
 | `market_pick_evidence` | Per-pick provider movement rollup | Leave as shadow/research | Existing live layer only | Model-vs-market learning |
 | `live_market_display_state` | App-ready per-provider market state | Leave as shadow/display until explicit UI promotion | Existing live layer only | User-facing evidence after separate display decision |
 | `shadow_notification_candidates` | Would-have-alerted rows | Continue shadow testing BoltOdds notification value | Existing live layer only | Notification promotion evidence |
+| `propline_webhook_deliveries` | Raw signed PropLine webhook inbox | Process recent rows for shadow comparison only | Netlify receiver plus bounded live-layer processor | Webhook reliability, dedupe, and timing audit |
 | `shadow_pipeline_runs` | Render-vs-GitHub timing summary | Add as existing-cron timing evidence | Existing live layer only | Short-retention scheduler reliability evidence |
 | `shadow_pick_lock_observations` | Deduped lock timing observations | Add as existing-cron timing evidence | Existing live layer only | Compact evidence for future lock-ledger promotion |
-| `line_movement_events` | Durable movement events | Do not widen to BoltOdds sends until notification cutover | Existing live layer; later gated BoltOdds alerts | Notification/event audit |
+| `line_movement_events` | Durable movement events | Webhook rows may be added as shadow evidence only; do not widen to BoltOdds sends until notification cutover | Existing live layer; bounded PropLine webhook processor; later gated BoltOdds alerts | Notification/event audit |
 | `notification_events` | Real push queue | Do not write BoltOdds-sourced alerts until separate flag | Existing live sender only | Delivery audit and fatigue control |
 | `game_reminder_state` | Reminder dedupe/state | Unchanged | Existing live layer only | Reminder dedupe |
 | `accepted_bets` | Manual Tyler bet log | Read later for CLV and timing proof | Manual/UI flow only | Bet-timing and CLV audit |

@@ -533,10 +533,18 @@ Webhook status:
   `bookmaker_title`, `market_id`, and `outcome_id` when present. Legacy rows
   without a book still use `bookmaker_key='propline_webhook'` with
   `metadata.bookmaker_key_missing=true`.
-- The live-layer hook is gated by `LIVE_PROCESS_PROPLINE_WEBHOOKS`; leave it
-  off until the lock-ledger observation is not at risk. Do not use webhook rows
-  for production odds, picks, notifications, or provider promotion without a
-  separate review.
+- As of 2026-05-24, webhook consumption is approved for shadow-only canary
+  processing. The live-layer entrypoint defaults
+  `LIVE_PROCESS_PROPLINE_WEBHOOKS=true`, bounded by
+  `LIVE_PROCESS_PROPLINE_WEBHOOK_LIMIT=100` and
+  `LIVE_PROCESS_PROPLINE_WEBHOOK_MAX_AGE_MINUTES=180`. Roll back by setting
+  `LIVE_PROCESS_PROPLINE_WEBHOOKS=false`.
+- Direct Supabase verification before the canary found 2,638 valid unprocessed
+  deliveries and no current webhook-sourced `line_movement_events`; old
+  comparison rows exist but are stale. Keep the canary recent-windowed until
+  the current slate proves clean.
+- Do not use webhook rows for production odds, picks, notifications, or
+  provider promotion without a separate review.
 
 ### BoltOdds
 
