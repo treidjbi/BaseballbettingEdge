@@ -578,6 +578,14 @@ Webhook status:
   from "Render is continuously consuming the inbox." Next webhook action is to
   redeploy/verify `bbe-live-layer` on this code path or run a bounded proof
   dispatch and confirm `processed` advances on new rows.
+- Two bounded `live-layer-proof` dispatches on commit `9cee9c6` then processed
+  the current 3-hour webhook window: first pass read 100 deliveries and wrote 53
+  webhook-sourced movement events, second pass read the remaining 47 and wrote
+  35 movement events. Recent pending valid rows were 0 afterward, and
+  `shadow_pipeline_runs.metadata.propline_webhooks` records both proof results.
+  This proves the processor still works on the new code, but Render continuous
+  consumption still needs one scheduled `bbe-live-layer` run observed with the
+  same metadata.
 - Do not use webhook rows for production odds, picks, notifications, or
   provider promotion without a separate review.
 
