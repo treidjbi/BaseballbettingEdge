@@ -92,6 +92,25 @@ GitHub `send-notifications` should move from "parallel sender" to
 "fallback/artifact-health sender" only after the queue has proven reliable. The
 main user-facing sender should be `send-live-notifications`.
 
+## Dynamic When-To-Bet Signals
+
+The coordinator should not depend on a full artifact publish every time the
+market moves. Its first-class input should be the live market/control loop:
+
+- `live_market_display_state` for current best book, best line, best odds,
+  freshness, market consensus, and actionable-state labels.
+- `market_pick_evidence` for compact directionality such as better-now,
+  worse-now, toward-pick, away-from-pick, reversal, and volatility context.
+- `official_market_lines` or fresh `current_market_lines` only after the provider
+  cutover gates approve those rows as production-grade inputs.
+- `shadow_notification_candidates` as the would-have-sent audit layer before a
+  new provider-driven alert class writes user-facing `notification_events`.
+
+The goal is to answer "should I act now, shop, wait, or ignore this move?" while
+keeping model math, thresholds, staking, and provider order unchanged. A
+10-minute live-layer cadence can support this timing without requiring every
+pipeline artifact to refresh every 10 minutes.
+
 ## Notification Classes
 
 ### 1. Start Window Digest

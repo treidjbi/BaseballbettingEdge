@@ -39,6 +39,9 @@ The cutover must be clean, reversible, and evidence-driven:
   output compatibility, and rollback gates pass.
 - Cut over live notifications separately after the official market state is
   trustworthy.
+- Keep provider ingestion, artifact publishing, and dynamic notification timing
+  as separate loops. BoltOdds/PropLine can support a 10-minute live market
+  control loop without requiring every pipeline mode to run every 10 minutes.
 - Preserve the existing model math, thresholds, staking, calibration, and
   formula regime.
 
@@ -1264,6 +1267,37 @@ Do not switch `OFFICIAL_MARKET_SOURCE=boltodds_propline` until all gates pass:
 - `steam.json` still builds from `book_odds`.
 - Seeded picks retain source attribution.
 - Rollback env switch has been tested on a non-critical run or dry run.
+
+## Post-Cutover Execution Model
+
+After `OFFICIAL_MARKET_SOURCE=boltodds_propline` and
+`ENABLE_BOLTODDS_PIPELINE_SOURCE=true` are approved, the official pipeline should
+read curated provider state from `official_market_lines`. It should not scan raw
+`market_snapshots` during scheduled artifact runs.
+
+The expected loop split is:
+
+- BoltOdds remains the primary fast movement source through the always-on worker.
+- PropLine remains fallback/DraftKings coverage plus webhook/polling comparison
+  evidence.
+- `bbe-live-layer` keeps the production-shaped market state fresh on a
+  10-minute cadence by rebuilding guarded current/official market rows,
+  notification evidence, compact evidence, and lock timing state.
+- Render artifact runs consume that curated state for preview/full/refresh/lock
+  artifacts after the Render primary-scheduler gates pass.
+- A tighter artifact refresh cadence, including a possible 10-minute refresh
+  window during active slates, is a later scheduler decision. It requires runtime,
+  Supabase IO, provider freshness, artifact parity, and cost evidence. It is not
+  part of the provider-source flag by itself.
+
+Dynamic "when to bet" behavior should be built from the same provider-state
+layers:
+
+- `live_market_display_state` for app-facing best price, freshness, consensus,
+  and actionable-state labels.
+- `market_pick_evidence` for compact model-vs-market movement context.
+- `shadow_notification_candidates` before any production movement sends.
+- `notification_events` only after the notification-specific gates pass.
 
 ## Recommended Timeline
 

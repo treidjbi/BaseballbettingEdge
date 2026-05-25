@@ -428,6 +428,29 @@ Artifact-exit rollout note, 2026-05-24:
   from delayed GitHub schedules, but Task 11 should still be a controlled Render
   primary-scheduler rehearsal/go-no-go with manual GitHub rollback verified.
 
+Post-cutover cadence planning note, 2026-05-25:
+
+- The intended migration shape is four loops, not one monolithic
+  every-10-minute pipeline.
+- The live market/control loop is `bbe-live-layer`: keep the 10-minute cadence
+  for live provider reads, market-state rebuilds, lock ledger writes,
+  notification candidates/events, and compact evidence. This loop must not
+  grade, calibrate, rewrite model outputs, or publish dashboard artifacts unless
+  a later plan explicitly promotes that behavior.
+- The artifact pipeline loop moves to Render only after Task 11 gates pass.
+  Preview, grading, full, refresh, and lock modes should keep their distinct
+  responsibilities. A 10-minute refresh cadence can be considered after Render
+  parity, provider cutover, runtime, Supabase IO, and notification-value evidence
+  prove it is useful; do not treat Render promotion as approval to run every
+  pipeline mode every 10 minutes.
+- The provider-source loop should feed `official_market_lines` through BoltOdds
+  plus PropLine arbitration. The pipeline should consume those curated rows, not
+  scan raw `market_snapshots`, when `OFFICIAL_MARKET_SOURCE=boltodds_propline`
+  and `ENABLE_BOLTODDS_PIPELINE_SOURCE=true` are eventually approved.
+- The notification/product loop should use the live market/control loop for
+  dynamic "when to bet" signals, then promote notification classes one at a time
+  through the live notification coordinator plan.
+
 ## Active Production Path
 
 The official app still runs from the GitHub pipeline:

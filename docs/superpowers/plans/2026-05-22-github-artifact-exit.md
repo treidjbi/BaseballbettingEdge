@@ -95,6 +95,32 @@ Netlify should do these jobs:
 
 Promotion rule: do not advance more than one stage in a single slate.
 
+## Post-Cutover Cadence Model
+
+Render primary scheduler does not mean every pipeline responsibility runs every
+10 minutes. The target architecture has separate loops:
+
+| Loop | Cadence target | Writes | Must not do |
+| --- | --- | --- | --- |
+| Live market/control loop (`bbe-live-layer`) | Every 10 minutes by default | Supabase live market state, operational locks, notification candidates/events, compact evidence | Publish dashboard artifacts, grade results, calibrate, change model outputs |
+| Provider feed loop | BoltOdds WebSocket continuously; PropLine polling/webhooks through the live layer | Raw/derived provider evidence, `current_market_lines`, `official_market_lines` | Drive production picks before provider cutover gates pass |
+| Artifact pipeline loop | Preview, grading, full, refresh, and lock modes on Render after Task 11; start from existing production cadence | Supabase-published artifacts and optional GitHub backup artifacts | Treat every mode as eligible for 10-minute execution |
+| Notification/product loop | Netlify sender cadence plus event freshness TTL | Push delivery status and audit rows | Send stale, duplicate, or unapproved provider-movement alerts |
+
+Steady-state artifact refresh can be tightened later, but only as a separate
+cadence decision after:
+
+- Render full/refresh/lock runtime is consistently below the action window;
+- Supabase artifact publication and parity remain clean at the higher cadence;
+- provider-mode dry runs read `official_market_lines` instead of raw snapshots;
+- cost/row-volume guardrails remain acceptable;
+- the higher cadence changes a real betting or notification decision.
+
+Do not run grading/calibration or other end-of-slate paths every 10 minutes.
+Lock-only runs should stay event/window driven, and live market movement should
+flow through the live market/control loop rather than forcing a full artifact
+publish on every provider tick.
+
 ## File Map
 
 - Create `supabase/migrations/20260522_published_pipeline_artifacts.sql`
