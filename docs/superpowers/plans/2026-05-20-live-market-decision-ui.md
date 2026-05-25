@@ -200,6 +200,40 @@ provider comparison block:
 
 This is a later phase. Do not block MVP on it.
 
+### Bet Ticket Integration
+
+The existing dashboard already has manual accepted-bet logging through
+`/api/accepted-bets`. The live market panel should improve that flow rather than
+creating a second bet logger:
+
+- When the market panel shows `Playable` or `Shop price`, the `Log Bet` ticket
+  should be able to prefill from the selected live row: best supported book,
+  line, odds, side, units, and model snapshot.
+- If Tyler opens the app from a push deep link, preserve
+  `notification_event_id` or `shadow_candidate_id` and write it into the
+  accepted-bet payload.
+- Keep manual edits available because books can move between alert, app open,
+  and bet placement.
+- Clearly show whether the ticket is using artifact price, live best price, or
+  manually edited price.
+- Do not auto-place bets, change stake size, or override FIRE/LEAN/PASS.
+
+### Accepted-Bet Review And Corrections
+
+Before building complex editing, add a read-only same-day accepted-bet view or
+debug panel so Tyler can verify what was logged. The minimum useful surface is:
+
+- slate date, pitcher, side, book, line, odds, units, accepted time, and source;
+- linked notification/candidate ID when present;
+- model snapshot summary and generated artifact timestamp;
+- duplicate/same-side warning when a second bet on the same pitcher/side is
+  attempted.
+
+Current browser-side duplicate suppression is intentionally simple. Future UI
+work should distinguish "already logged this side" from a legitimate second
+entry at a different book, line, odds, or unit size. Corrections should be
+append-only or audit-preserving; do not silently mutate historical bet rows.
+
 ## Display Semantics
 
 Use betting language, but keep it clearly informational:
@@ -317,9 +351,13 @@ Promotion gates:
 7. Add CSS to `dashboard/v2.html`, keeping mobile dimensions stable.
 8. Add the Netlify read endpoint only after the fixture path is proven.
 9. Add endpoint tests and fail-soft browser tests.
-10. Verify with local static dashboard, Playwright mobile screenshots, and
+10. Add accepted-bet ticket integration for live best-book rows and preserve
+    `notification_event_id` / `shadow_candidate_id` when opened from a push or
+    shadow-candidate review link.
+11. Add a read-only accepted-bet review surface before any edit/correction UI.
+12. Verify with local static dashboard, Playwright mobile screenshots, and
     existing v2 tests.
-11. Keep the feature hidden behind query flag until Tyler reviews it.
+13. Keep the feature hidden behind query flag until Tyler reviews it.
 
 ## Suggested Data Contract For UI
 
@@ -382,6 +420,10 @@ These labels are UI summaries, not model/pipeline rules.
 
 Material shop margin should start display-only at 5-10 cents and must not alter
 notifications or staking without a later approval.
+
+When these labels prefill the bet ticket, the payload must preserve whether the
+price came from artifact state, live display state, notification context, or
+manual edit.
 
 ## Verification
 

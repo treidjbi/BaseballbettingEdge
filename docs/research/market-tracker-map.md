@@ -43,7 +43,7 @@ per-pick movement, display state, or would-have-alerted state.
 | `line_movement_events` | Durable movement events | Webhook rows may be added as shadow evidence only; do not widen to BoltOdds sends until notification cutover | Existing live layer; bounded PropLine webhook processor; later gated BoltOdds alerts | Notification/event audit |
 | `notification_events` | Real push queue | Do not write BoltOdds-sourced alerts until separate flag | Existing live sender only | Delivery audit and fatigue control |
 | `game_reminder_state` | Reminder dedupe/state | Unchanged | Existing live layer only | Reminder dedupe |
-| `accepted_bets` | Manual Tyler bet log | Read later for CLV and timing proof | Manual/UI flow only | Bet-timing and CLV audit |
+| `accepted_bets` | Manual Tyler bet log | Read for CLV, timing proof, and notification-to-bet attribution after the IDs are wired through the app | Manual/UI flow only, later notification-originated logs with explicit source attribution | Bet-timing, CLV, and alert-value audit |
 | `data/preview_lines.json` | Official opening baseline artifact | Preserve shape; eventually feed from provider baselines | GitHub pipeline only | Official opening source for artifacts |
 | `data/picks_history.json` | Durable graded pick history | Add source attribution fields only | GitHub pipeline grading/history only | Regime-aware performance history |
 | `current_market_lines` | New derived complete book lines | Create from raw snapshots | New current-line builder | Current provider state for official arbitration |
@@ -69,6 +69,7 @@ available:
 - CLV type: price only, line only, both, or no CLV edge
 - process-vs-result bucket: good-process wins/losses and weak-process wins/losses
 - bet timing window relative to first pitch
+- accepted-bet source and notification/candidate attribution when available
 - model-versus-market-favorite relationship
 - model edge and projection-margin buckets
 - large-edge skepticism flag and reasons

@@ -450,6 +450,11 @@ Post-cutover cadence planning note, 2026-05-25:
 - The notification/product loop should use the live market/control loop for
   dynamic "when to bet" signals, then promote notification classes one at a time
   through the live notification coordinator plan.
+- Follow-up planning now tracks six integration gaps before dynamic alerts
+  become production behavior: explicit decision-policy thresholds,
+  notification-to-bet attribution, accepted-bet analytics ingestion, same-day
+  accepted-bet review/correction, live-market bet-ticket prefill, and
+  shadow-to-production alert review.
 
 ## Active Production Path
 

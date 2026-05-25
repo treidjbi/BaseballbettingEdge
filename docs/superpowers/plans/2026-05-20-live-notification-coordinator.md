@@ -111,6 +111,49 @@ keeping model math, thresholds, staking, and provider order unchanged. A
 10-minute live-layer cadence can support this timing without requiring every
 pipeline artifact to refresh every 10 minutes.
 
+## First-Pass Decision Policy
+
+Before any new provider-driven alert class sends to Tyler, implement these as
+shadow-only decision labels and review at least one slate of would-have-sent
+rows:
+
+- `bet_now`: fresh provider state, before lock/start, current or best supported
+  book still clears model fair price, and either the official ref book or broad
+  supported-book confirmation backs the read.
+- `shop_price`: selected/current artifact book is worse than the best supported
+  live book by a material margin, initially 5-10 cents, and the best price still
+  clears model fair price.
+- `wait`: no supported book clears model fair price, or provider agreement is
+  incomplete but not stale enough to call a technical issue.
+- `monitor`: evidence is fresh but mixed, single-provider only, or volatile.
+- `ignore_stale`: provider rows are stale, heartbeat support is missing, or the
+  event would arrive after the betting window.
+- `system_issue`: the problem is operational, such as stale official artifacts,
+  stuck notification queue, missing lock consumption, or sender failure.
+
+These labels must remain informational until a later promotion review approves a
+specific send class. Do not use them to change model verdicts, thresholds,
+stakes, provider order, or automatic bet placement.
+
+## Notification-To-Bet Attribution
+
+`accepted_bets` already supports `notification_event_id` and
+`shadow_candidate_id`. The missing product contract is to carry those IDs from
+alert source to dashboard bet ticket:
+
+- Push deep links should include enough non-secret context for the app to know
+  which `notification_events` row or `shadow_notification_candidates` row opened
+  the ticket.
+- The live market panel and bet ticket should preserve that context when Tyler
+  logs a bet.
+- Manual dashboard logs without notification context should continue to use
+  `source=dashboard_manual`.
+- Notification-originated logs should use `source=notification`; shadow review
+  flows can use `source=shadow_candidate`.
+
+Without this bridge, the system can count sent pushes and logged bets, but it
+cannot prove whether a notification changed Tyler's action.
+
 ## Notification Classes
 
 ### 1. Start Window Digest
@@ -190,6 +233,22 @@ These should be separate from betting-action alerts so Tyler can tell
 Optional later class. This should stay out of the real-time path until the core
 push experience is clean.
 
+## Shadow-To-Production Alert Review
+
+Before moving any new alert class from `shadow_notification_candidates` to real
+`notification_events`, daily review should join:
+
+- would-have-sent candidate rows and suppression reasons;
+- actual notification rows and send status;
+- accepted bets logged after an alert or candidate, when attribution exists;
+- market state at alert time and at accepted-bet time;
+- CLV and final outcome after grading.
+
+The first production movement-alert class should be the narrowest class that
+shows decision value without noise, likely `shop_price` or `bet_now` for active
+FIRE picks only. Do not promote broad movement summaries, single-book moves, or
+volatile reversals before this review proves they help.
+
 ## Dedupe Model
 
 Add a semantic notification identity that is shared across producers:
@@ -262,6 +321,10 @@ Daily operations should report:
 - Post-start lock alerts suppressed or marked system-health.
 - Failed and pending queue rows.
 - Whether any notification likely changed Tyler's action.
+- Accepted bets by source: `dashboard_manual`, `notification`,
+  `shadow_candidate`, and `other`.
+- Attributed alert-to-bet rows once `notification_event_id` and
+  `shadow_candidate_id` are wired through the app.
 
 ## Acceptance Gates
 

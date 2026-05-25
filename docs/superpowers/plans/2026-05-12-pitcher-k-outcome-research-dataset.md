@@ -529,6 +529,17 @@ leakage.
 - `line_clv_delta`
 - `beat_close_price`
 - `beat_close_line`
+- `accepted_bet_source`
+- `notification_event_id`
+- `shadow_candidate_id`
+
+The current local enrichment primarily reads tracked-pick history fields such as
+locked line, locked odds, and `locked_at`. Future accepted-bet enrichment should
+optionally read Supabase `accepted_bets` and prefer actual Tyler bet rows for
+bet-time fields when a row can be matched safely by slate, normalized pitcher,
+side, book, line, odds, and accepted time. If no accepted-bet row exists, keep
+the current pick-history fallback so historical artifact research remains
+available.
 
 ### Research Buckets
 
@@ -765,6 +776,9 @@ Track:
 - live-market checkpoint availability
 - lineup-handedness field availability
 - Path A versus Path B handedness coverage evidence
+- accepted-bet match count and unmatched accepted-bet rows
+- notification-attributed accepted bets once `notification_event_id` and
+  `shadow_candidate_id` are wired through the dashboard
 - runtime
 - storage growth
 
