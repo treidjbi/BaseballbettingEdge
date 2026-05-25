@@ -126,6 +126,7 @@ def build_shadow_pipeline_timing_rows(
     source_artifact_path: str,
     source_artifact_sha256: str | None,
     artifact_generated_at: str | datetime | None = None,
+    metadata_extra: dict[str, Any] | None = None,
 ) -> tuple[dict[str, Any], list[dict[str, Any]]]:
     """Build compact shadow timing rows for Render-vs-GitHub lock evaluation.
 
@@ -228,6 +229,16 @@ def build_shadow_pipeline_timing_rows(
                 },
             })
 
+    metadata = {
+        "artifact_staleness_seconds": None
+        if artifact_generated is None
+        else int((observed_utc - artifact_generated).total_seconds()),
+        "lock_window_minutes": LOCK_WINDOW_MINUTES,
+        "missed_lock_grace_minutes": MISSED_LOCK_GRACE_MINUTES,
+    }
+    if metadata_extra:
+        metadata.update(metadata_extra)
+
     run_row = {
         "run_key": run_key,
         "slate_date": slate_date,
@@ -238,12 +249,6 @@ def build_shadow_pipeline_timing_rows(
         "source_artifact_sha256": source_artifact_sha256,
         "artifact_pitcher_count": len(pitchers),
         **counts,
-        "metadata": {
-            "artifact_staleness_seconds": None
-            if artifact_generated is None
-            else int((observed_utc - artifact_generated).total_seconds()),
-            "lock_window_minutes": LOCK_WINDOW_MINUTES,
-            "missed_lock_grace_minutes": MISSED_LOCK_GRACE_MINUTES,
-        },
+        "metadata": metadata,
     }
     return run_row, observation_rows

@@ -98,3 +98,25 @@ def test_shadow_timing_skips_pass_rows_to_match_seeded_pick_scope():
 
     assert run_row["tracked_pick_count"] == 0
     assert observation_rows == []
+
+
+def test_shadow_timing_persists_extra_metadata_for_operational_probes():
+    run_row, _ = build_shadow_pipeline_timing_rows(
+        slate_date="2026-05-14",
+        pitchers=[_pitcher()],
+        observed_at=datetime.fromisoformat("2026-05-14T18:32:00+00:00"),
+        source_artifact_path="today.json",
+        source_artifact_sha256="sha",
+        metadata_extra={
+            "propline_webhooks": {
+                "processed": 12,
+                "errors": 0,
+            }
+        },
+    )
+
+    assert run_row["metadata"]["propline_webhooks"] == {
+        "processed": 12,
+        "errors": 0,
+    }
+    assert run_row["metadata"]["lock_window_minutes"] == 30

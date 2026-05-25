@@ -1150,7 +1150,102 @@ def test_enrich_archives_with_tracked_picks_updates_existing_archives(tmp_path, 
     assert archive["tracked_picks"][0]["pitcher"] == "Tracked Pitcher"
     assert archive["tracked_picks"][0]["display_side"] == "UNDER"
     assert archive["pitchers"][0]["tracked_picks"][0]["display_verdict"] == "FIRE 1u"
+    assert archive["inactive_tracked_picks"] == []
     assert today["tracked_picks"][0]["display_side"] == "UNDER"
+    assert today["inactive_tracked_picks"] == []
+
+
+def test_attach_tracked_picks_marks_unlocked_replaced_starter_inactive():
+    import run_pipeline
+
+    archive = {
+        "date": "2026-05-24",
+        "pitchers": [
+            {
+                "pitcher": "Brycen Mautz",
+                "team": "St. Louis Cardinals",
+                "opp_team": "Cincinnati Reds",
+                "game_time": "2026-05-24T17:40:00Z",
+            },
+            {
+                "pitcher": "Brady Singer",
+                "team": "Cincinnati Reds",
+                "opp_team": "St. Louis Cardinals",
+                "game_time": "2026-05-24T17:40:00Z",
+            },
+        ],
+    }
+    tracked_picks = [
+        {
+            "date": "2026-05-24",
+            "pitcher": "Matthew Liberatore",
+            "team": "St. Louis Cardinals",
+            "opp_team": "Cincinnati Reds",
+            "side": "under",
+            "display_verdict": "FIRE 2u",
+            "locked_at": None,
+            "game_time": "2026-05-24T17:40:00Z",
+            "status": "tracking",
+        },
+        {
+            "date": "2026-05-24",
+            "pitcher": "Brady Singer",
+            "team": "Cincinnati Reds",
+            "opp_team": "St. Louis Cardinals",
+            "side": "under",
+            "display_verdict": "FIRE 1u",
+            "locked_at": "2026-05-24T17:10:16Z",
+            "game_time": "2026-05-24T17:40:00Z",
+            "status": "locked",
+        },
+    ]
+
+    updated = run_pipeline._attach_tracked_picks(archive, tracked_picks)
+
+    assert [row["pitcher"] for row in updated["tracked_picks"]] == ["Brady Singer"]
+    assert updated["pitchers"][0]["tracked_picks"] == []
+    assert updated["pitchers"][1]["tracked_picks"][0]["pitcher"] == "Brady Singer"
+    assert updated["inactive_tracked_picks"] == [
+        {
+            **tracked_picks[0],
+            "status": "inactive",
+            "inactive_reason": "starter_replaced",
+            "replacement_pitcher": "Brycen Mautz",
+        }
+    ]
+
+
+def test_attach_tracked_picks_keeps_locked_unmatched_pick_active():
+    import run_pipeline
+
+    archive = {
+        "date": "2026-05-24",
+        "pitchers": [
+            {
+                "pitcher": "Replacement Starter",
+                "team": "SEA",
+                "opp_team": "CLE",
+                "game_time": "2026-05-24T20:00:00Z",
+            },
+        ],
+    }
+    tracked_pick = {
+        "date": "2026-05-24",
+        "pitcher": "Original Starter",
+        "team": "SEA",
+        "opp_team": "CLE",
+        "side": "over",
+        "display_verdict": "FIRE 1u",
+        "locked_at": "2026-05-24T19:30:00Z",
+        "game_time": "2026-05-24T20:00:00Z",
+        "status": "locked",
+    }
+
+    updated = run_pipeline._attach_tracked_picks(archive, [tracked_pick])
+
+    assert updated["tracked_picks"] == [tracked_pick]
+    assert updated["inactive_tracked_picks"] == []
+    assert updated["pitchers"][0]["tracked_picks"] == []
 
 
 def test_run_forwards_resolved_park_factor_to_build_pitcher_record(tmp_path):

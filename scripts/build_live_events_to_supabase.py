@@ -463,6 +463,7 @@ def _write_shadow_pipeline_timing(
     observed_at: datetime,
     artifact_source: str,
     artifact_sha: str | None,
+    metadata_extra: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     if not _shadow_pipeline_timing_enabled():
         return {"skipped": True, "reason": "disabled"}
@@ -475,6 +476,7 @@ def _write_shadow_pipeline_timing(
             source_artifact_path=artifact_source,
             source_artifact_sha256=artifact_sha,
             artifact_generated_at=payload.get("generated_at"),
+            metadata_extra=metadata_extra,
         )
         writer.upsert_rows("shadow_pipeline_runs", [run_row], on_conflict="run_key")
         writer.insert_ignore_rows(
@@ -760,6 +762,9 @@ def run(
         observed_at=observed_at,
         artifact_source=artifact_source,
         artifact_sha=artifact_sha,
+        metadata_extra={
+            "propline_webhooks": propline_webhook_result or {"skipped": True},
+        },
     )
     market_line_build = _build_shadow_market_state(
         writer=writer,

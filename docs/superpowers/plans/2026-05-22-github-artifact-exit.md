@@ -1532,3 +1532,16 @@ strict locks, 8-row artifact publication, strict parity after each artifact
 commit, and current/prior-date dashboard API behavior. Task 11 remains a
 separate Render primary scheduler go/no-go after full-slate evidence is
 reviewed.
+
+Post-slate update, 2026-05-25: the lock/artifact soak found one real contract
+gap before Task 11. The final 2026-05-24 artifact had 25 top-level
+`tracked_picks` but only 24 lockable pitcher-card picks because Matthew
+Liberatore stayed in `picks_history` after the St. Louis probable changed to
+Brycen Mautz. This should not be locked as an active bet, but it also should not
+remain in the active tracked-pick count. The artifact enrichment layer now keeps
+only matched, locked, or graded rows in active `tracked_picks`; unmatched
+still-unlocked rows move to `inactive_tracked_picks` with
+`inactive_reason=starter_replaced` when the same matchup has a replacement
+pitcher, or `inactive_reason=missing_pitcher_card` otherwise. Require one more
+clean slate where active tracked picks, Supabase lock rows, and shadow timing
+counts align before treating strict locks as Task 11-ready.

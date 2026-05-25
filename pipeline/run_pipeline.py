@@ -1374,17 +1374,77 @@ def _tracked_picks_by_date_from_history() -> dict[str, list[dict]]:
     return by_date
 
 
+def _tracked_pick_matchup_key(row: dict) -> tuple[str, str, str] | None:
+    team = _normalize_name(row.get("team") or "")
+    opp_team = _normalize_name(row.get("opp_team") or "")
+    game_time = str(row.get("game_time") or "").strip()
+    if not team or not opp_team or not game_time:
+        return None
+    return (team, opp_team, game_time)
+
+
+def _inactive_tracked_pick_row(
+    pick: dict,
+    *,
+    reason: str,
+    replacement_pitcher: str | None = None,
+) -> dict:
+    row = dict(pick)
+    row["status"] = "inactive"
+    row["inactive_reason"] = reason
+    if replacement_pitcher:
+        row["replacement_pitcher"] = replacement_pitcher
+    return row
+
+
 def _attach_tracked_picks(archive: dict, tracked_picks: list[dict]) -> dict:
-    """Attach tracked pick rows to the archive and matching pitcher cards."""
-    updated = {**archive, "tracked_picks": tracked_picks}
+    """Attach active tracked pick rows to the archive and matching pitcher cards."""
+    pitcher_rows = [dict(pitcher) for pitcher in archive.get("pitchers", [])]
+    active_pitcher_keys = {
+        key
+        for key in (_normalize_name(row.get("pitcher") or "") for row in pitcher_rows)
+        if key
+    }
+    replacement_by_matchup: dict[tuple[str, str, str], str] = {}
+    for row in pitcher_rows:
+        matchup_key = _tracked_pick_matchup_key(row)
+        pitcher_name = str(row.get("pitcher") or "").strip()
+        if matchup_key and pitcher_name:
+            replacement_by_matchup.setdefault(matchup_key, pitcher_name)
+
+    active_tracked_picks: list[dict] = []
+    inactive_tracked_picks: list[dict] = []
     by_pitcher: dict[str, list[dict]] = {}
     for pick in tracked_picks:
         key = _normalize_name(pick.get("pitcher") or "")
-        if key:
-            by_pitcher.setdefault(key, []).append(pick)
+        if key in active_pitcher_keys or pick.get("locked_at") or pick.get("result"):
+            active_tracked_picks.append(pick)
+            if key:
+                by_pitcher.setdefault(key, []).append(pick)
+            continue
+
+        replacement_pitcher = None
+        reason = "missing_pitcher_card"
+        matchup_key = _tracked_pick_matchup_key(pick)
+        if matchup_key and matchup_key in replacement_by_matchup:
+            replacement_pitcher = replacement_by_matchup[matchup_key]
+            reason = "starter_replaced"
+        inactive_tracked_picks.append(
+            _inactive_tracked_pick_row(
+                pick,
+                reason=reason,
+                replacement_pitcher=replacement_pitcher,
+            )
+        )
+
+    updated = {
+        **archive,
+        "tracked_picks": active_tracked_picks,
+        "inactive_tracked_picks": inactive_tracked_picks,
+    }
 
     pitchers = []
-    for pitcher in archive.get("pitchers", []):
+    for pitcher in pitcher_rows:
         row = dict(pitcher)
         key = _normalize_name(row.get("pitcher") or "")
         row["tracked_picks"] = by_pitcher.get(key, [])

@@ -403,6 +403,16 @@ Artifact-exit rollout note, 2026-05-24:
   session-only dashboard API canary showed no current/prior-date
   `get-artifact` errors. Only after that review should Task 11 be discussed as
   a separate Render primary scheduler go/no-go.
+- Post-slate review on 2026-05-25 found one canary caveat: `Matthew Liberatore`
+  remained in top-level `tracked_picks` after the St. Louis probable changed to
+  `Brycen Mautz`, so the final artifact showed 25 active tracked picks but only
+  24 lockable pitcher-card picks. Code now splits unmatched, still-unlocked
+  tracked history rows into `inactive_tracked_picks` with
+  `inactive_reason=starter_replaced` or `missing_pitcher_card`, keeping active
+  `tracked_picks` aligned with the lockable pitcher-card set. Treat the
+  2026-05-24 canary as good-but-not-perfect evidence; Task 11 should wait for
+  one clean slate with active tracked picks, Supabase lock rows, and shadow
+  timing counts aligned.
 
 ## Active Production Path
 
@@ -559,6 +569,15 @@ Webhook status:
   into `shadow_movement_source_comparisons`. The 95 current rows split:
   42 `propline_webhook_first`, 21 `boltodds_first`, and 32
   `no_boltodds_match`. Treat this as shadow timing evidence only.
+- Follow-up on 2026-05-25: the receiver is still accepting signed
+  `line_movement` deliveries, but direct Supabase verification showed continuous
+  live-layer consumption was not yet proven after the manual proof window:
+  latest processed delivery was `2026-05-24T23:24Z`, while newer valid rows were
+  pending. The live-layer timing row now records `metadata.propline_webhooks`
+  from each run so future checks can distinguish "receiver is filling the inbox"
+  from "Render is continuously consuming the inbox." Next webhook action is to
+  redeploy/verify `bbe-live-layer` on this code path or run a bounded proof
+  dispatch and confirm `processed` advances on new rows.
 - Do not use webhook rows for production odds, picks, notifications, or
   provider promotion without a separate review.
 
