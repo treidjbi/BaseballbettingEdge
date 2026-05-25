@@ -218,6 +218,36 @@ creating a second bet logger:
   manually edited price.
 - Do not auto-place bets, change stake size, or override FIRE/LEAN/PASS.
 
+The ticket should accept an optional alert context object from push deep links or
+shadow review links:
+
+```json
+{
+  "slate_date": "2026-05-25",
+  "pitcher": "Example Pitcher",
+  "normalized_pitcher": "example pitcher",
+  "side": "under",
+  "source": "notification",
+  "notification_event_id": "uuid-if-real-alert",
+  "shadow_candidate_id": null,
+  "decision_label": "shop_price",
+  "selected_book": "FanDuel",
+  "selected_line": 5.5,
+  "selected_odds": -135,
+  "best_book": "DraftKings",
+  "best_line": 5.5,
+  "best_odds": -122,
+  "model_fair_odds": -130,
+  "observed_at": "2026-05-25T20:15:00Z",
+  "source_artifact_sha256": "..."
+}
+```
+
+Persist only stable audit fields in `accepted_bets`: source,
+`notification_event_id`, `shadow_candidate_id`, model snapshot, metadata, and
+the final manually confirmed book/line/odds/units. Store the price origin in
+metadata as `price_source=artifact|live_best|notification_context|manual_edit`.
+
 ### Accepted-Bet Review And Corrections
 
 Before building complex editing, add a read-only same-day accepted-bet view or
@@ -424,6 +454,18 @@ notifications or staking without a later approval.
 When these labels prefill the bet ticket, the payload must preserve whether the
 price came from artifact state, live display state, notification context, or
 manual edit.
+
+The UI should use the same `decision_label` vocabulary as the notification
+coordinator, while display labels may stay friendlier:
+
+| UI label | Coordinator label |
+| --- | --- |
+| `Playable` | `bet_now` or `monitor`, depending on confirmation |
+| `Shop price` | `shop_price` |
+| `Wait` | `wait` |
+| `Market fade` | `wait` or `monitor` with adverse reason codes |
+| `Stale` | `ignore_stale` |
+| `Monitor` | `monitor` |
 
 ## Verification
 

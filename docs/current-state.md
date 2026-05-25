@@ -455,6 +455,9 @@ Post-cutover cadence planning note, 2026-05-25:
   notification-to-bet attribution, accepted-bet analytics ingestion, same-day
   accepted-bet review/correction, live-market bet-ticket prefill, and
   shadow-to-production alert review.
+- Implementation contracts are now expected for the first dynamic-alert build:
+  alert/deep-link context, attribution match precedence, decision-label v0
+  thresholds, and the daily alert-to-bet review output.
 
 ## Active Production Path
 

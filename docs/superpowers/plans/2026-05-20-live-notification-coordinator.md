@@ -135,6 +135,45 @@ These labels must remain informational until a later promotion review approves a
 specific send class. Do not use them to change model verdicts, thresholds,
 stakes, provider order, or automatic bet placement.
 
+### Decision Label v0 Inputs
+
+Use explicit fields so the same label can be reproduced in the live layer,
+dashboard, and daily review:
+
+- `decision_label`: one of `bet_now`, `shop_price`, `wait`, `monitor`,
+  `ignore_stale`, or `system_issue`.
+- `decision_reason_codes`: compact list such as `fresh`, `pre_lock`,
+  `best_price_playable`, `selected_book_worse`, `broad_confirmation`,
+  `single_provider`, `volatile`, `stale`, or `post_window`.
+- `model_fair_odds`: model fair American odds for the pick side.
+- `selected_book`, `selected_line`, `selected_odds`: the current artifact or
+  official ref-book price being compared.
+- `best_book`, `best_line`, `best_odds`: the best supported live price when
+  available.
+- `shop_delta_cents`: best supported odds minus selected/current odds, positive
+  when the best book is better for Tyler.
+- `freshness_status`, `observed_at`, and `provider_heartbeat_held`: enough
+  context to explain why a row was trusted or suppressed.
+- `window_status`: `pre_lock`, `lock_window`, `post_lock_pre_start`,
+  `post_start`, or `unknown`.
+- `confirmation_status`: `official_ref_book`, `broad_confirmation`,
+  `single_provider`, `mixed`, or `stale`.
+
+Initial shadow thresholds:
+
+- `shop_price` requires `shop_delta_cents >= 5` and best live price still
+  playable. Treat 5-10 cents as the review band before locking a production
+  threshold.
+- `bet_now` requires fresh state, `window_status` before `post_lock_pre_start`,
+  playable selected or best price, and `confirmation_status` of
+  `official_ref_book` or `broad_confirmation`.
+- `monitor` is the default for fresh but mixed, single-provider, or volatile
+  rows.
+- `ignore_stale` wins over betting labels when freshness or timing is not
+  trustworthy.
+- `system_issue` is reserved for operational failures and should not be mixed
+  with betting-action copy.
+
 ## Notification-To-Bet Attribution
 
 `accepted_bets` already supports `notification_event_id` and
@@ -153,6 +192,57 @@ alert source to dashboard bet ticket:
 
 Without this bridge, the system can count sent pushes and logged bets, but it
 cannot prove whether a notification changed Tyler's action.
+
+### Alert Context / Deep-Link Contract
+
+Any real push, shadow review link, or dashboard candidate-link should carry a
+small non-secret context object. Query parameters are acceptable for the first
+implementation; avoid provider raw payloads and service-role data.
+
+Required context:
+
+- `slate_date`
+- `pitcher`
+- `normalized_pitcher`
+- `side`
+- `decision_label`
+- `source`: `notification`, `shadow_candidate`, or `dashboard_manual`
+
+One of:
+
+- `notification_event_id`
+- `shadow_candidate_id`
+
+Recommended context when available:
+
+- `dedupe_key`
+- `game_time`
+- `selected_book`, `selected_line`, `selected_odds`
+- `best_book`, `best_line`, `best_odds`
+- `model_fair_odds`
+- `observed_at`
+- `source_artifact_sha256`
+
+The dashboard should store this context only long enough to prefill the market
+panel and bet ticket. The accepted-bet payload should persist the stable IDs,
+`source`, price source, and model snapshot, not the full alert payload.
+
+### Attribution Match Rules
+
+When joining accepted bets back to notifications or candidates, use this
+precedence:
+
+1. Exact `notification_event_id` match.
+2. Exact `shadow_candidate_id` match.
+3. Same `slate_date`, `normalized_pitcher`, and `side`, with `accepted_at` after
+   alert/candidate creation and before game start.
+4. Same slate/pitcher/side within a configurable review window, initially 30
+   minutes after alert/candidate creation, marked as `time_window_match`.
+5. Otherwise classify as `dashboard_manual_unattributed`.
+
+If multiple candidates match by time window, prefer the most recent actionable
+candidate before `accepted_at`. If ambiguity remains, leave the bet unmatched and
+report it for manual review rather than overstating attribution.
 
 ## Notification Classes
 
@@ -248,6 +338,36 @@ The first production movement-alert class should be the narrowest class that
 shows decision value without noise, likely `shop_price` or `bet_now` for active
 FIRE picks only. Do not promote broad movement summaries, single-book moves, or
 volatile reversals before this review proves they help.
+
+### Daily Review Output v0
+
+The first review artifact can be a Markdown table plus JSON export. It should
+include one row per candidate or notification:
+
+- `slate_date`
+- `event_source`: `shadow_candidate` or `notification_event`
+- `event_id`
+- `dedupe_key`
+- `decision_label`
+- `suppression_reason`
+- `pitcher`
+- `side`
+- `verdict`
+- `window_status`
+- `confirmation_status`
+- `selected_book`, `selected_line`, `selected_odds`
+- `best_book`, `best_line`, `best_odds`
+- `shop_delta_cents`
+- `accepted_bet_id`
+- `accepted_bet_source`
+- `accepted_at`
+- `accepted_book`, `accepted_line`, `accepted_odds`, `accepted_units`
+- `attribution_match_type`
+- `price_clv_cents`, `line_clv_delta`, `result`, and `pnl` when graded
+
+The review should summarize counts by `decision_label`, suppression reason,
+alert class, accepted-bet source, attribution match type, and eventual
+CLV/result once available.
 
 ## Dedupe Model
 

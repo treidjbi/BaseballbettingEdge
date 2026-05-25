@@ -70,6 +70,7 @@ available:
 - process-vs-result bucket: good-process wins/losses and weak-process wins/losses
 - bet timing window relative to first pitch
 - accepted-bet source and notification/candidate attribution when available
+- accepted-bet match type and price source when available
 - model-versus-market-favorite relationship
 - model edge and projection-margin buckets
 - large-edge skepticism flag and reasons

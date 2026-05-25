@@ -541,6 +541,22 @@ side, book, line, odds, and accepted time. If no accepted-bet row exists, keep
 the current pick-history fallback so historical artifact research remains
 available.
 
+Accepted-bet matching should record `accepted_bet_match_type`:
+
+- `notification_event_id`: exact alert ID match.
+- `shadow_candidate_id`: exact shadow-candidate ID match.
+- `same_side_pre_start`: same slate, normalized pitcher, side, and accepted
+  before first pitch.
+- `time_window_match`: same slate/pitcher/side within the configured
+  post-alert/candidate review window, initially 30 minutes.
+- `pick_history_fallback`: no accepted-bet row, using existing locked pick
+  history.
+- `unmatched`: accepted-bet or outcome row could not be matched safely.
+
+The dataset should preserve both actual accepted-bet fields and pick-history
+fallback fields when they differ, so future reviews can tell "model locked this"
+from "Tyler actually bet this."
+
 ### Research Buckets
 
 - `model_market_relationship`
