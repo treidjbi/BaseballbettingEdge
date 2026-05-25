@@ -7536,24 +7536,39 @@
         "so": 0,
         "k_rate": 0.0
       }
+    },
+    "mlbam:683748": {
+      "name": "Victor Mesa Jr.",
+      "bats": "R",
+      "mlbam_id": 683748,
+      "bbref_id": "mesavi01",
+      "season": 2026,
+      "vs_R": {
+        "pa": 26,
+        "so": 4,
+        "k_rate": 0.1538
+      },
+      "vs_L": {
+        "pa": 12,
+        "so": 1,
+        "k_rate": 0.0833
+      }
     }
   },
-  "updated_at": "2026-05-25T05:48:58Z",
+  "updated_at": "2026-05-25T15:23:50Z",
   "last_run": {
     "projection_status": "collection_only",
-    "requested_batters": 234,
-    "already_cached": 226,
-    "attempted": 4,
-    "collected": 0,
-    "failed": 4,
-    "queued_not_attempted": 4,
-    "cache_size": 447,
+    "requested_batters": 45,
+    "already_cached": 42,
+    "attempted": 3,
+    "collected": 1,
+    "failed": 2,
+    "queued_not_attempted": 0,
+    "cache_size": 448,
     "errors": [
-      "Colt Emerson: no bbref id",
       "Pedro Ram\u00edrez: no bbref id",
-      "Henry Bolte: no bbref id",
-      "Ryan Waldschmidt: no bbref id"
+      "Rikuu Nishida: no bbref id"
     ],
-    "updated_at": "2026-05-25T05:48:58Z"
+    "updated_at": "2026-05-25T15:23:50Z"
   }
 }
