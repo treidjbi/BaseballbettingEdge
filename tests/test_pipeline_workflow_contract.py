@@ -91,6 +91,33 @@ def test_pipeline_workflow_can_shadow_publish_artifacts_to_supabase():
     assert 'PIPELINE_RUN_TYPE="$RUN_TYPE"' in publish_block
     assert "ARTIFACT_COMMIT_SHA=$(git rev-parse HEAD)" in publish_block
     assert '--source-commit-sha "$ARTIFACT_COMMIT_SHA"' in publish_block
+    assert '--scope "$ARTIFACT_SCOPE"' in publish_block
+
+
+def test_grading_commit_stages_only_grading_safe_artifacts():
+    workflow_text = _read_workflow()
+    commit_block = _extract_step_block(workflow_text, "Commit pipeline output")
+
+    assert 'if [ "$SCHEDULE" = "17 10 * * *" ]; then' in commit_block
+    assert 'RUN_TYPE="grading"' in commit_block
+    assert 'if [ "$RUN_TYPE" = "grading" ]; then' in commit_block
+    assert "dashboard/data/processed/[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9].json" in commit_block
+    grading_branch = commit_block.split('if [ "$RUN_TYPE" = "grading" ]; then', 1)[1].split("else", 1)[0]
+    grading_lines = [line.strip() for line in grading_branch.splitlines()]
+    assert "git add dashboard/data/processed/" not in grading_lines
+    assert "dashboard/data/processed/today.json" not in grading_branch
+
+
+def test_grading_artifact_publish_uses_previous_slate_and_grading_scope():
+    workflow_text = _read_workflow()
+    publish_block = _extract_step_block(workflow_text, "Publish artifacts to Supabase")
+
+    assert 'PUBLISH_DATE="$TODAY"' in publish_block
+    assert 'ARTIFACT_SCOPE="all"' in publish_block
+    assert 'if [ "$RUN_TYPE" = "grading" ]; then' in publish_block
+    assert 'PUBLISH_DATE=$(TZ=America/Phoenix date -d "$TODAY -1 day" +%Y-%m-%d)' in publish_block
+    assert 'ARTIFACT_SCOPE="grading"' in publish_block
+    assert '--date "$PUBLISH_DATE"' in publish_block
 
 
 def test_classify_preview_health_marks_auth_failures_distinctly():

@@ -1453,7 +1453,11 @@ def _attach_tracked_picks(archive: dict, tracked_picks: list[dict]) -> dict:
     return updated
 
 
-def _enrich_archives_with_tracked_picks(date_filter: str | None = None) -> int:
+def _enrich_archives_with_tracked_picks(
+    date_filter: str | None = None,
+    *,
+    include_today: bool = True,
+) -> int:
     """Inject tracked/locked pick rows into archive JSON after history export."""
     tracked_by_date = _tracked_picks_by_date_from_history()
     if date_filter is not None:
@@ -1471,15 +1475,16 @@ def _enrich_archives_with_tracked_picks(date_filter: str | None = None) -> int:
         if path.exists():
             candidates.append(path)
 
-    try:
-        if OUTPUT_PATH.exists():
-            with open(OUTPUT_PATH) as f:
-                today = json.load(f)
-            today_date = today.get("date")
-            if today_date in tracked_by_date and OUTPUT_PATH not in candidates:
-                candidates.append(OUTPUT_PATH)
-    except Exception:
-        pass
+    if include_today:
+        try:
+            if OUTPUT_PATH.exists():
+                with open(OUTPUT_PATH) as f:
+                    today = json.load(f)
+                today_date = today.get("date")
+                if today_date in tracked_by_date and OUTPUT_PATH not in candidates:
+                    candidates.append(OUTPUT_PATH)
+        except Exception:
+            pass
 
     updated_count = 0
     for path in candidates:
@@ -1600,7 +1605,7 @@ def _run_grading_steps() -> None:
             conn.close()
         if locked > 0:
             export_db_to_history()
-            _enrich_archives_with_tracked_picks()
+            _enrich_archives_with_tracked_picks(include_today=False)
             log.info("Pre-grading lock: locked %d picks", locked)
     except Exception as e:
         log.warning("lock_due_picks in grading run failed: %s", e)
@@ -1614,7 +1619,7 @@ def _run_grading_steps() -> None:
     except Exception as e:
         log.warning("Archive enrichment failed: %s", e)
     try:
-        _enrich_archives_with_tracked_picks()
+        _enrich_archives_with_tracked_picks(include_today=False)
     except Exception as e:
         log.warning("Tracked-pick enrichment failed: %s", e)
     try:

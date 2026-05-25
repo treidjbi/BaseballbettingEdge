@@ -18,6 +18,12 @@ sys.path.insert(0, str(ROOT))
 from market_infra.published_artifacts import ARTIFACT_PATHS, build_artifact_row  # noqa: E402
 from market_infra.supabase_writer import SupabaseMarketWriter  # noqa: E402
 
+GRADING_ARTIFACT_PATHS = [
+    Path("dashboard/data/performance.json"),
+    Path("data/params.json"),
+    Path("data/picks_history.json"),
+]
+
 
 def _env(name: str) -> str:
     value = os.environ.get(name, "").strip()
@@ -33,8 +39,14 @@ def collect_artifact_rows(
     source: str,
     source_run_id: str | None,
     source_commit_sha: str | None,
+    scope: str = "all",
 ) -> list[dict[str, Any]]:
-    paths = list(ARTIFACT_PATHS)
+    if scope == "all":
+        paths = list(ARTIFACT_PATHS)
+    elif scope == "grading":
+        paths = list(GRADING_ARTIFACT_PATHS)
+    else:
+        raise ValueError(f"Unsupported artifact publish scope: {scope}")
     paths.append(Path("dashboard/data/processed") / f"{slate_date}.json")
     rows: list[dict[str, Any]] = []
     for relative in paths:
@@ -62,6 +74,7 @@ def run(
     source_run_id: str | None,
     source_commit_sha: str | None,
     execute: bool,
+    scope: str = "all",
 ) -> dict[str, Any]:
     started_at = datetime.now(timezone.utc).isoformat()
     rows = collect_artifact_rows(
@@ -70,8 +83,11 @@ def run(
         source=source,
         source_run_id=source_run_id,
         source_commit_sha=source_commit_sha,
+        scope=scope,
     )
     if execute:
+        if writer is None:
+            raise EnvironmentError("Supabase writer is required when --execute is set")
         published_at = datetime.now(timezone.utc).isoformat()
         rows_to_publish = [{**row, "published_at": published_at} for row in rows]
         writer.upsert_rows("published_pipeline_artifacts", rows_to_publish, on_conflict="artifact_key")
@@ -97,13 +113,16 @@ def _parse_args(argv: list[str]) -> argparse.Namespace:
     parser.add_argument("--source", default="github_actions")
     parser.add_argument("--source-run-id")
     parser.add_argument("--source-commit-sha")
+    parser.add_argument("--scope", choices=("all", "grading"), default="all")
     parser.add_argument("--execute", action="store_true")
     return parser.parse_args(argv)
 
 
 def main(argv: list[str] | None = None) -> int:
     args = _parse_args(argv or sys.argv[1:])
-    writer = SupabaseMarketWriter(_env("SUPABASE_URL"), _env("SUPABASE_SERVICE_ROLE_KEY"))
+    writer = None
+    if args.execute:
+        writer = SupabaseMarketWriter(_env("SUPABASE_URL"), _env("SUPABASE_SERVICE_ROLE_KEY"))
     result = run(
         root=ROOT,
         writer=writer,
@@ -112,6 +131,7 @@ def main(argv: list[str] | None = None) -> int:
         source_run_id=args.source_run_id,
         source_commit_sha=args.source_commit_sha,
         execute=args.execute,
+        scope=args.scope,
     )
     mode = "execute" if args.execute else "dry_run"
     print(f"artifact_publish mode={mode} date={args.date} artifacts={result['artifact_count']}")

@@ -179,12 +179,30 @@ jobs:
         run: |
           git config user.name  "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add dashboard/data/processed/
-          test -f dashboard/data/performance.json && git add dashboard/data/performance.json || true
-          test -f data/picks_history.json        && git add data/picks_history.json        || true
-          test -f data/params.json               && git add data/params.json               || true
-          test -f data/preview_lines.json        && git add data/preview_lines.json        || true
-          git add data/batter_splits_*.json 2>/dev/null || true
+          SCHEDULE="${{ github.event.schedule }}"
+          MODE="${{ github.event.inputs.mode }}"
+          RUN_TYPE="full"
+          if [ "$MODE" = "lock" ]; then
+            RUN_TYPE="lock"
+          elif [ "$SCHEDULE" = "17 7 * * *" ]; then
+            RUN_TYPE="preview"
+          elif [ "$SCHEDULE" = "17 10 * * *" ]; then
+            RUN_TYPE="grading"
+          fi
+
+          if [ "$RUN_TYPE" = "grading" ]; then
+            git add dashboard/data/processed/[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9].json 2>/dev/null || true
+            test -f dashboard/data/performance.json && git add dashboard/data/performance.json || true
+            test -f data/picks_history.json        && git add data/picks_history.json        || true
+            test -f data/params.json               && git add data/params.json               || true
+          else
+            git add dashboard/data/processed/
+            test -f dashboard/data/performance.json && git add dashboard/data/performance.json || true
+            test -f data/picks_history.json        && git add data/picks_history.json        || true
+            test -f data/params.json               && git add data/params.json               || true
+            test -f data/preview_lines.json        && git add data/preview_lines.json        || true
+            git add data/batter_splits_*.json 2>/dev/null || true
+          fi
           git diff --staged --quiet || git commit -m "chore: pipeline update $(date -u +%Y-%m-%dT%H:%M:%SZ)"
           # Retry push up to 4 times with exponential backoff (2 / 4 / 8 / 16 s).
           # The concurrency group above prevents overlapping runs, but a transient
@@ -222,13 +240,20 @@ jobs:
             RUN_TYPE="grading"
           fi
           export PIPELINE_RUN_TYPE="$RUN_TYPE"
+          PUBLISH_DATE="$TODAY"
+          ARTIFACT_SCOPE="all"
+          if [ "$RUN_TYPE" = "grading" ]; then
+            PUBLISH_DATE=$(TZ=America/Phoenix date -d "$TODAY -1 day" +%Y-%m-%d)
+            ARTIFACT_SCOPE="grading"
+          fi
           ARTIFACT_COMMIT_SHA=$(git rev-parse HEAD)
 
           python scripts/publish_pipeline_artifacts_to_supabase.py \
-            --date "$TODAY" \
+            --date "$PUBLISH_DATE" \
             --source github_actions \
             --source-run-id "${{ github.run_id }}" \
             --source-commit-sha "$ARTIFACT_COMMIT_SHA" \
+            --scope "$ARTIFACT_SCOPE" \
             --execute
 
       - name: Send push notifications

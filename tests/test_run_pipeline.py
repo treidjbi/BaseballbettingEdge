@@ -1155,6 +1155,42 @@ def test_enrich_archives_with_tracked_picks_updates_existing_archives(tmp_path, 
     assert today["inactive_tracked_picks"] == []
 
 
+def test_enrich_archives_with_tracked_picks_can_skip_today_json(tmp_path, monkeypatch):
+    import run_pipeline
+
+    processed_dir = tmp_path / "processed"
+    processed_dir.mkdir()
+    archive_path = processed_dir / "2026-04-28.json"
+    today_path = processed_dir / "today.json"
+    base_payload = {
+        "date": "2026-04-28",
+        "pitchers": [{"pitcher": "Tracked Pitcher", "game_time": "2026-04-28T23:10:00Z"}],
+    }
+    archive_path.write_text(json.dumps(base_payload), encoding="utf-8")
+    today_path.write_text(json.dumps(base_payload), encoding="utf-8")
+    history_path = tmp_path / "picks_history.json"
+    history_path.write_text(json.dumps([
+        {
+            "date": "2026-04-28",
+            "pitcher": "Tracked Pitcher",
+            "team": "SEA",
+            "opp_team": "CLE",
+            "side": "under",
+            "verdict": "FIRE 1u",
+            "locked_verdict": "FIRE 1u",
+            "locked_at": "2026-04-28T23:15:00Z",
+        },
+    ]), encoding="utf-8")
+    monkeypatch.setattr(run_pipeline, "OUTPUT_PATH", today_path)
+    monkeypatch.setattr(run_pipeline, "HISTORY_PATH", history_path)
+
+    updated = run_pipeline._enrich_archives_with_tracked_picks(include_today=False)
+
+    assert updated == 1
+    assert "tracked_picks" in json.loads(archive_path.read_text())
+    assert "tracked_picks" not in json.loads(today_path.read_text())
+
+
 def test_attach_tracked_picks_marks_unlocked_replaced_starter_inactive():
     import run_pipeline
 
