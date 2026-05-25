@@ -1545,3 +1545,18 @@ still-unlocked rows move to `inactive_tracked_picks` with
 pitcher, or `inactive_reason=missing_pitcher_card` otherwise. Require one more
 clean slate where active tracked picks, Supabase lock rows, and shadow timing
 counts align before treating strict locks as Task 11-ready.
+
+Same-day artifact follow-up, 2026-05-25: the stale current-slate artifact
+incident was caused by GitHub delayed grading committing/publishing stale
+current-slate artifacts while Render/live-layer still depended on GitHub raw
+`today.json` as the source artifact. It was not a Render lock failure. Commit
+`213de1fb` patches the contract: grading runs skip `today.json` enrichment,
+stage only dated archives plus grading-safe performance/history/params files,
+and publish Supabase artifacts with `--scope grading` for the prior slate date.
+The 2026-05-24 `dated_slate` Supabase mismatch was repaired with
+`source=manual_backfill`, and strict parity for 2026-05-24 now passes 8/8.
+
+Current Task 11 posture: use 2026-05-25 as an observation day after the hotfix.
+The next useful move is a controlled Render primary-scheduler rehearsal/go-no-go
+with manual GitHub rollback verified, not another lock-layer proof and not an
+immediate provider/dashboard/model/staking/retention promotion.

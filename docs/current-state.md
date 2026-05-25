@@ -64,7 +64,7 @@ each lane.
 
 | Lane | Current Source | Current Stage | Next Decision |
 | --- | --- | --- | --- |
-| Pipeline / infrastructure | `2026-05-19-supabase-operational-foundation.md`, `2026-05-22-github-artifact-exit.md`, `2026-05-13-boltodds-propline-official-provider-cutover.md`, `2026-05-20-live-notification-coordinator.md`, `docs/operational-risk-register.md` | Staged Supabase/BoltOdds/PropLine migration. GitHub + TheRundown remain production source of truth. Supabase lock ledger passed its strict/single-writer canary posture; GitHub can consume Supabase lock rows while `ENABLE_GITHUB_FALLBACK_LOCKING=false` suppresses its own due-lock fallback. Artifact-exit Stage 1 is on `main`: hosted mirror tables, GitHub shadow publisher, `ENABLE_SUPABASE_ARTIFACT_PUBLISH=true`, Netlify artifact API, default-static dashboard adapters, parity checker, and Render runner risk docs. GitHub manual/scheduled publishing has repeatedly written 8 shadow rows and passed parity. A one-off Render preview canary on `bbe-pipeline-shadow-runner-hosted` also completed and wrote 8 rows, proving Render can run the pipeline and publish to Supabase when pointed at hosted Supabase env. Tyler-only dashboard API canary now loads current and tested prior dated artifacts through Netlify `get-artifact` with static fallback still active. | Let the rest of 2026-05-24 run as a soak. Keep dashboard reads static by default and GitHub schedules official while watching strict locks, 8-row artifact publishing, parity after each artifact commit, and dashboard API errors. Task 11 Render primary scheduler is a later explicit go/no-go; do not promote Render schedules, provider source, model, staking, thresholds, or retention deletion today. Clean up the two inert misconfigured Render runner clones when convenient. |
+| Pipeline / infrastructure | `2026-05-19-supabase-operational-foundation.md`, `2026-05-22-github-artifact-exit.md`, `2026-05-13-boltodds-propline-official-provider-cutover.md`, `2026-05-20-live-notification-coordinator.md`, `docs/operational-risk-register.md` | Staged Supabase/BoltOdds/PropLine migration. GitHub + TheRundown remain production source of truth. Supabase lock ledger passed its strict/single-writer canary posture; GitHub can consume Supabase lock rows while `ENABLE_GITHUB_FALLBACK_LOCKING=false` suppresses its own due-lock fallback. Artifact-exit Stage 1 is on `main`: hosted mirror tables, GitHub shadow publisher, `ENABLE_SUPABASE_ARTIFACT_PUBLISH=true`, Netlify artifact API, default-static dashboard adapters, parity checker, and Render runner risk docs. GitHub manual/scheduled publishing has repeatedly written shadow rows and passed parity after the 2026-05-25 grading artifact hotfix. A one-off Render preview canary on `bbe-pipeline-shadow-runner-hosted` also completed and wrote 8 rows, proving Render can run the pipeline and publish to Supabase when pointed at hosted Supabase env. Tyler-only dashboard API canary now loads current and tested prior dated artifacts through Netlify `get-artifact` with static fallback still active. | Give 2026-05-25 as an observation day after commit `213de1fb` fixed delayed-grading stale artifact publishing and the 2026-05-24 dated mirror was repaired. Keep dashboard reads static by default and GitHub schedules official while watching post-hotfix artifact lifecycle/parity, live notification sender health, PropLine webhook continuous-processing evidence, and Render fresh-source reads. Task 11 Render primary scheduler is next a controlled rehearsal/go-no-go, not more lock-layer proof; do not promote Render schedules, provider source, model, staking, thresholds, dashboard source, or retention deletion today. Clean up the two inert misconfigured Render runner clones when convenient. |
 | Model | `2026-05-12-pitcher-k-outcome-research-dataset.md` | Gate C confidence-referee / compact evidence proof. Gate A and local Gate B are effectively done. | Move from Gate C to Gate D only when collection/storage/reconciliation are routine. Gate E/F are required before any live ranking, threshold, staking, calibration, or formula promotion. |
 | UI | `2026-05-20-live-market-decision-ui.md`, `2026-05-20-live-notification-coordinator.md` | Future-state design only. The dashboard should eventually display best price, consensus, movement, urgency, and notification grouping from the new operational base. | Revisit after the operational/provider switch is stable. Keep display work separated from provider promotion and betting-rule changes. |
 | Tracking / data collection / history | `docs/research/market-tracker-map.md`, `docs/research/pitcher-k-outcome-dataset.md`, compact outcome outputs, live-market audits | Canonical research row plus existing market/live/provider trackers. Daily brief now keeps a compact Gate C bucket scoreboard and pre/post 2026-04-28 context. | Prefer derived labels on the compact outcome row before adding tables. Promote compact storage or retention only after row-volume/cost proof and Tyler approval. |
@@ -394,9 +394,10 @@ Artifact-exit rollout note, 2026-05-24:
   (`crn-d89jjq3bc2fs73fa0qr0`), were left with annual idle schedules and
   auto-deploy off after env diagnostics. They should be removed or ignored as a
   cost/clutter cleanup item; they are not active schedulers.
-- Current recommendation: let the rest of the 2026-05-24 slate run as a soak.
-  Dashboard reads remain static by default, GitHub schedules remain official,
-  and Render has not been promoted beyond a one-off shadow canary.
+- Current recommendation after the 2026-05-25 follow-up: use 2026-05-25 as an
+  observation day, not a migration day. Dashboard reads remain static by
+  default, GitHub schedules remain official, and Render has not been promoted
+  beyond a one-off shadow canary.
 - The next BBE Operations Brief should verify that the remaining refresh/lock
   windows kept strict locks clean, every GitHub artifact commit still published
   the expected 8 Supabase rows, strict parity stayed clean, and the
@@ -413,6 +414,18 @@ Artifact-exit rollout note, 2026-05-24:
   2026-05-24 canary as good-but-not-perfect evidence; Task 11 should wait for
   one clean slate with active tracked picks, Supabase lock rows, and shadow
   timing counts aligned.
+- Same-day artifact follow-up on 2026-05-25 found that the stale current-slate
+  artifact incident was a GitHub delayed-grading/source dependency issue, not a
+  Render lock failure. Commit `213de1fb` prevents grading runs from enriching,
+  staging, or publishing current-slate `today.json`; grading now stages only
+  dated archives, `performance.json`, `picks_history.json`, and `params.json`,
+  and publishes Supabase artifacts with grading scope against the prior slate.
+- The 2026-05-24 Supabase mirror mismatch was repaired with
+  `source=manual_backfill`; strict artifact parity for 2026-05-24 now passes
+  8/8 including `dated_slate:2026-05-24`.
+- This strengthens the case for moving the scheduler/source-of-truth path away
+  from delayed GitHub schedules, but Task 11 should still be a controlled Render
+  primary-scheduler rehearsal/go-no-go with manual GitHub rollback verified.
 
 ## Active Production Path
 
