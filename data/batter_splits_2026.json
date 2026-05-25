@@ -7555,20 +7555,21 @@
       }
     }
   },
-  "updated_at": "2026-05-25T15:23:50Z",
+  "updated_at": "2026-05-25T16:03:55Z",
   "last_run": {
     "projection_status": "collection_only",
-    "requested_batters": 45,
-    "already_cached": 42,
+    "requested_batters": 81,
+    "already_cached": 78,
     "attempted": 3,
-    "collected": 1,
-    "failed": 2,
+    "collected": 0,
+    "failed": 3,
     "queued_not_attempted": 0,
     "cache_size": 448,
     "errors": [
       "Pedro Ram\u00edrez: no bbref id",
-      "Rikuu Nishida: no bbref id"
+      "Rikuu Nishida: no bbref id",
+      "Bryan Torres: no bbref id"
     ],
-    "updated_at": "2026-05-25T15:23:50Z"
+    "updated_at": "2026-05-25T16:03:55Z"
   }
 }
