@@ -1560,3 +1560,10 @@ Current Task 11 posture: use 2026-05-25 as an observation day after the hotfix.
 The next useful move is a controlled Render primary-scheduler rehearsal/go-no-go
 with manual GitHub rollback verified, not another lock-layer proof and not an
 immediate provider/dashboard/model/staking/retention promotion.
+
+Render cleanup, 2026-05-25: the two inert misconfigured runner clones
+`bbe-pipeline-shadow-runner` (`crn-d89jdge7r5hc73dj8300`) and
+`bbe-pipeline-shadow-runner-v2` (`crn-d89jjq3bc2fs73fa0qr0`) were deleted after
+confirming their service names/IDs through the Render API. The known-good hosted
+runner canary `bbe-pipeline-shadow-runner-hosted`
+(`crn-d89jpvdckfvc738nfla0`) remains for the next scheduler rehearsal.
