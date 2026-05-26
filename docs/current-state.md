@@ -65,7 +65,7 @@ each lane.
 | Lane | Current Source | Current Stage | Next Decision |
 | --- | --- | --- | --- |
 | Pipeline / infrastructure | `2026-05-19-supabase-operational-foundation.md`, `2026-05-22-github-artifact-exit.md`, `2026-05-13-boltodds-propline-official-provider-cutover.md`, `2026-05-20-live-notification-coordinator.md`, `docs/operational-risk-register.md` | Staged Supabase/BoltOdds/PropLine migration. GitHub + TheRundown remain production source of truth. Supabase lock ledger passed its strict/single-writer canary posture; GitHub can consume Supabase lock rows while `ENABLE_GITHUB_FALLBACK_LOCKING=false` suppresses its own due-lock fallback. Artifact-exit Stage 1 is on `main`: hosted mirror tables, GitHub shadow publisher, `ENABLE_SUPABASE_ARTIFACT_PUBLISH=true`, Netlify artifact API, default-static dashboard adapters, parity checker, and Render runner risk docs. GitHub manual/scheduled publishing has repeatedly written shadow rows and passed parity after the 2026-05-25 grading artifact hotfix. A one-off Render preview canary on `bbe-pipeline-shadow-runner-hosted` also completed and wrote 8 rows, proving Render can run the pipeline and publish to Supabase when pointed at hosted Supabase env. Tyler-only dashboard API canary now loads current and tested prior dated artifacts through Netlify `get-artifact` with static fallback still active. | The 2026-05-26 stale current-slate repair strengthens the case to advance scheduler migration. Move forward by rehearsing Render pipeline schedules with shadow-prefixed artifact keys, not by disabling GitHub schedules yet. Keep dashboard reads static by default and GitHub schedules official until Render preview/grading/full/refresh rows under `render_shadow:<date>:` match GitHub artifacts for a full slate and manual GitHub rollback stays available. Do not bundle provider source, model, staking, thresholds, notification behavior, dashboard default source, or retention deletion into this scheduler rehearsal. |
-| Model | `2026-05-12-pitcher-k-outcome-research-dataset.md` | Gate C confidence-referee / compact evidence proof, plus 2026-05-26 pre/post 4/28 hard review. Current evidence says broad projection quality did not degrade post-bump; betting outcome worsened through selection/regime inversion, especially unders and FIRE 1u. Path B batter-handedness has met the date/sample reminder, but row-level handedness counts are not populated yet. | Keep Gate C shadow-only. The next model decision is a narrow Gate E research plan around side/price/timing/market-agreement skepticism, not a broad lambda rollback or live threshold/staking change. Path B needs collection and holdout proof before any projection promotion. |
+| Model | `2026-05-12-pitcher-k-outcome-research-dataset.md` | Gate C confidence-referee / compact evidence proof, plus 2026-05-26 pre/post 4/28 hard review and reconstructed historical lineup-handedness backfill. Current evidence says broad projection quality did not degrade post-bump; betting outcome worsened through selection/regime inversion, especially unders and FIRE 1u. Path B batter-handedness now has 1,174/1,174 reconstructed row-level hand-count coverage, but this is historical MLB boxscore evidence, not runtime proof. | Keep Gate C shadow-only. The next model decision is a narrow Gate E research plan around side/price/timing/market-agreement skepticism and a Path B holdout comparison, not a broad lambda rollback or live threshold/staking change. Path B needs holdout lift and future runtime-captured evidence before any projection promotion. |
 | UI | `2026-05-20-live-market-decision-ui.md`, `2026-05-20-live-notification-coordinator.md` | Future-state design only. The dashboard should eventually display best price, consensus, movement, urgency, and notification grouping from the new operational base. | Revisit after the operational/provider switch is stable. Keep display work separated from provider promotion and betting-rule changes. |
 | Tracking / data collection / history | `docs/research/market-tracker-map.md`, `docs/research/pitcher-k-outcome-dataset.md`, compact outcome outputs, live-market audits | Canonical research row plus existing market/live/provider trackers. Daily brief now keeps a compact Gate C bucket scoreboard and pre/post 2026-04-28 context. | Prefer derived labels on the compact outcome row before adding tables. Promote compact storage or retention only after row-volume/cost proof and Tyler approval. |
 
@@ -725,6 +725,7 @@ The active local diagnostics and tests are:
 - `analytics/diagnostics/pitcher_k_outcome_dataset.py`
 - `analytics/diagnostics/k_projection_shadow_lab.py`
 - `analytics/diagnostics/batter_handedness_shadow_audit.py`
+- `analytics/diagnostics/historical_lineup_handedness_backfill.py`
 - `analytics/diagnostics/pre_post_428_model_review.py`
 - `analytics/diagnostics/executable_market_shadow_audit.py`
 - `tests/test_e1_regime_map.py`
@@ -739,6 +740,7 @@ The active local diagnostics and tests are:
 - `tests/test_pitcher_k_outcome_dataset.py`
 - `tests/test_k_projection_shadow_lab.py`
 - `tests/test_batter_handedness_shadow_audit.py`
+- `tests/test_historical_lineup_handedness_backfill.py`
 - `tests/test_pre_post_428_model_review.py`
 - `tests/test_executable_market_shadow_audit.py`
 
@@ -844,12 +846,19 @@ Current readout from 2026-05-07:
   not as a live rule: `wait_for_late_data` was positive, while
   `bet_late_if_still_available` was poor and should be treated as a warning
   label until rewritten and retested.
-- Path B batter-handedness should move only to active shadow collection/audit.
-  The sample/date reminder is met, and the split cache has useful raw material,
-  but the compact rows still have 0/1,174 row-level right/left/switch lineup
-  hand counts and 0/1,174 handedness matchup buckets. Do not promote Path B into
-  live lambda until those fields are populated across consecutive slates and a
-  holdout comparison beats Path A.
+- Path B batter-handedness moved from "missing compact fields" to "ready for a
+  deeper shadow audit" after
+  `analytics/diagnostics/historical_lineup_handedness_backfill.py` rebuilt
+  opponent lineup hand counts from MLB boxscores. The 2026-05-26 run checked
+  1,174 compact rows, 587 unique lineup keys, reconstructed 587/587 lineups,
+  and had 0 unmatched lineups and 0 existing lineup-count mismatches. The
+  compact dataset now has 1,174/1,174 R/L/S hand-count rows and 1,174/1,174
+  matchup buckets, all marked `mlb_boxscore_reconstructed` and not runtime-safe.
+  Early tracked-outcome read: same-hand-heavy rows were 440, 229-211, -5.05u,
+  -1.1% ROI; opposite-hand-heavy rows were 163, 81-82, -10.63u, -6.5% ROI.
+  Handedness context is useful enough for a Path B holdout comparison, but it
+  does not by itself solve the post-bump under problem or justify live lambda
+  changes.
 
 ## Next Decision Checkpoints
 

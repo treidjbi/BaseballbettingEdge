@@ -73,6 +73,15 @@ def _has_lineup_hand_counts(row: dict[str, Any]) -> bool:
     )
 
 
+def _to_float(value: Any) -> float | None:
+    try:
+        if value is None or isinstance(value, bool):
+            return None
+        return float(value)
+    except (TypeError, ValueError):
+        return None
+
+
 def _split_pa(split: Any) -> int:
     if not isinstance(split, dict):
         return 0
@@ -116,6 +125,26 @@ def _cache_summary(cache: dict[str, Any], *, min_split_pa: int = 30) -> dict[str
     }
 
 
+def _tracked_outcome_summary(rows: list[dict[str, Any]], group_key: str) -> dict[str, dict[str, Any]]:
+    grouped: dict[str, dict[str, Any]] = {}
+    for row in rows:
+        if not _is_true(row.get("is_tracked_pick")):
+            continue
+        value = str(row.get(group_key) or "unknown")
+        bucket = grouped.setdefault(value, {"rows": 0, "wins": 0, "losses": 0, "pnl": 0.0, "roi": None})
+        bucket["rows"] += 1
+        if row.get("result") == "win":
+            bucket["wins"] += 1
+        elif row.get("result") == "loss":
+            bucket["losses"] += 1
+        bucket["pnl"] += _to_float(row.get("pick_history_pnl")) or _to_float(row.get("theoretical_pnl")) or 0.0
+
+    for bucket in grouped.values():
+        bucket["pnl"] = round(bucket["pnl"], 2)
+        bucket["roi"] = round(bucket["pnl"] / bucket["rows"], 4) if bucket["rows"] else None
+    return dict(sorted(grouped.items()))
+
+
 def summarize_path_b_readiness(
     rows: list[dict[str, Any]],
     cache: dict[str, Any],
@@ -139,6 +168,15 @@ def summarize_path_b_readiness(
     tracked_rows = [row for row in official_rows if _is_true(row.get("is_tracked_pick"))]
     clean_rows = official_rows or rows
     slate_count = len({str(row.get("slate_date") or "") for row in clean_rows if row.get("slate_date")})
+    handedness_bucket_counts = Counter(
+        str(row.get("handedness_matchup_bucket"))
+        for row in clean_rows
+        if _has_value(row.get("handedness_matchup_bucket"))
+    )
+    handedness_source_counts = Counter(
+        str(row.get("lineup_handedness_source") or "missing")
+        for row in clean_rows
+    )
     hand_count_slates = len(
         {
             str(row.get("slate_date") or "")
@@ -159,6 +197,9 @@ def summarize_path_b_readiness(
         "lineup_count_rows": sum(1 for row in clean_rows if (_to_int(row.get("lineup_count")) or 0) > 0),
         "lineup_hand_count_rows": sum(1 for row in clean_rows if _has_lineup_hand_counts(row)),
         "handedness_bucket_rows": sum(1 for row in clean_rows if _has_value(row.get("handedness_matchup_bucket"))),
+        "handedness_matchup_bucket_counts": dict(sorted(handedness_bucket_counts.items())),
+        "lineup_handedness_source_counts": dict(sorted(handedness_source_counts.items())),
+        "tracked_outcome_by_bucket": _tracked_outcome_summary(clean_rows, "handedness_matchup_bucket"),
     }
     summary.update(_cache_summary(cache, min_split_pa=min_split_pa))
 
@@ -204,6 +245,21 @@ def _fmt(value: Any) -> str:
     return "none" if value is None else str(value)
 
 
+def _fmt_roi(value: Any) -> str:
+    if value is None:
+        return "--"
+    return f"{float(value):+.1%}"
+
+
+def _outcome_table(grouped: dict[str, dict[str, Any]]) -> list[str]:
+    lines = ["| Bucket | Rows | W-L | PnL | ROI |", "| --- | ---: | ---: | ---: | ---: |"]
+    for value, item in sorted(grouped.items(), key=lambda kv: (-kv[1]["rows"], kv[0])):
+        lines.append(
+            f"| `{value}` | {item['rows']} | {item['wins']}-{item['losses']} | {item['pnl']:+.2f} | {_fmt_roi(item['roi'])} |"
+        )
+    return lines
+
+
 def build_report(
     rows: list[dict[str, Any]],
     cache: dict[str, Any],
@@ -246,22 +302,37 @@ def build_report(
         f"- R/L/S lineup hand-count coverage: `{summary['lineup_hand_count_rows']}/{summary['total_rows']}` ({_pct(summary['lineup_hand_count_rows'], summary['total_rows'])})",
         f"- Handedness matchup bucket coverage: `{summary['handedness_bucket_rows']}/{summary['total_rows']}` ({_pct(summary['handedness_bucket_rows'], summary['total_rows'])})",
         "",
-        "## Split Cache",
-        "",
-        f"- Cached batters: `{summary['cache_batters']}`",
-        f"- Batters with both split samples: `{summary['cache_batters_with_both_splits']}`",
-        f"- Batters with both split samples and >=30 PA each side: `{summary['cache_batters_with_both_splits_min_pa']}`",
-        f"- Batters with one split only: `{summary['cache_batters_with_one_split_only']}`",
-        f"- Last collection requested batters: `{_fmt(summary['last_collection_requested_batters'])}`",
-        f"- Last collection already cached: `{_fmt(summary['last_collection_already_cached'])}`",
-        f"- Last collection attempted: `{_fmt(summary['last_collection_attempted'])}`",
-        f"- Last collection collected: `{_fmt(summary['last_collection_collected'])}`",
-        f"- Last collection failed: `{_fmt(summary['last_collection_failed'])}`",
-        f"- Last collection queued not attempted: `{_fmt(summary['last_collection_queued_not_attempted'])}`",
-        "",
-        "## Blockers",
+        "## Reconstructed Field Distribution",
         "",
     ]
+    for value, count in (summary.get("lineup_handedness_source_counts") or {}).items():
+        lines.append(f"- Source `{value}`: `{count}`")
+    for value, count in (summary.get("handedness_matchup_bucket_counts") or {}).items():
+        lines.append(f"- Matchup bucket `{value}`: `{count}`")
+
+    lines.extend(["", "## Tracked Outcome By Matchup Bucket", ""])
+    lines.extend(_outcome_table(summary.get("tracked_outcome_by_bucket") or {}))
+
+    lines.extend(
+        [
+            "",
+            "## Split Cache",
+            "",
+            f"- Cached batters: `{summary['cache_batters']}`",
+            f"- Batters with both split samples: `{summary['cache_batters_with_both_splits']}`",
+            f"- Batters with both split samples and >=30 PA each side: `{summary['cache_batters_with_both_splits_min_pa']}`",
+            f"- Batters with one split only: `{summary['cache_batters_with_one_split_only']}`",
+            f"- Last collection requested batters: `{_fmt(summary['last_collection_requested_batters'])}`",
+            f"- Last collection already cached: `{_fmt(summary['last_collection_already_cached'])}`",
+            f"- Last collection attempted: `{_fmt(summary['last_collection_attempted'])}`",
+            f"- Last collection collected: `{_fmt(summary['last_collection_collected'])}`",
+            f"- Last collection failed: `{_fmt(summary['last_collection_failed'])}`",
+            f"- Last collection queued not attempted: `{_fmt(summary['last_collection_queued_not_attempted'])}`",
+            "",
+            "## Blockers",
+            "",
+        ]
+    )
 
     if summary["blockers"]:
         lines.extend(f"- {blocker}" for blocker in summary["blockers"])
@@ -275,7 +346,11 @@ def build_report(
             "",
             "- Promote now: active shadow collection/audit for Path B coverage and simulated lift.",
             "- Do not promote now: live projection math, thresholds, staking, verdicts, or calibration.",
-            "- Next useful implementation: populate compact row R/L/S lineup counts and matchup buckets, then run a holdout comparison of Path B versus Path A.",
+            (
+                "- Next useful implementation: run a holdout comparison of Path B versus Path A."
+                if summary["path_b_shadow_audit_ready"]
+                else "- Next useful implementation: populate compact row R/L/S lineup counts and matchup buckets, then run a holdout comparison of Path B versus Path A."
+            ),
         ]
     )
     return "\n".join(lines)

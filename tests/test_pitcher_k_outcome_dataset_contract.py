@@ -62,6 +62,10 @@ def _complete_row(**overrides):
         "lineup_left_batters": None,
         "lineup_switch_batters": None,
         "handedness_matchup_bucket": None,
+        "lineup_handedness_source": None,
+        "lineup_handedness_runtime_safe": None,
+        "lineup_handedness_game_pk": None,
+        "lineup_handedness_count_matches_existing": None,
         "avg_ip": 5.8,
         "recent_start_count": 5,
         "opportunity_bucket": "normal",
@@ -85,6 +89,7 @@ def test_required_dataset_fields_cover_identity_market_model_result_and_context(
     assert {"large_edge_skepticism_flag", "large_edge_skepticism_reasons"} <= REQUIRED_DATASET_FIELDS
     assert {"pitcher_archetype_bucket"} <= REQUIRED_DATASET_FIELDS
     assert {"pitcher_throws", "opportunity_bucket", "handedness_matchup_bucket"} <= REQUIRED_DATASET_FIELDS
+    assert {"lineup_handedness_source", "lineup_handedness_runtime_safe"} <= REQUIRED_DATASET_FIELDS
 
 
 def test_build_dataset_key_is_stable_for_pitcher_side_line_and_snapshot():

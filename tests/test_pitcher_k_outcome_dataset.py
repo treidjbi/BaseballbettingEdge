@@ -2,6 +2,8 @@ from analytics.diagnostics.pitcher_k_outcome_dataset import (
     build_official_close_rows,
     build_summary,
     enrich_rows_with_pick_history,
+    enrich_rows_with_lineup_handedness,
+    lineup_handedness_lookup_key,
     load_archived_markets_for_dataset,
     reconcile_picks_history,
     theoretical_pnl,
@@ -70,6 +72,8 @@ def test_build_official_close_rows_creates_one_row_per_side():
     assert under["large_edge_skepticism_reasons"] == []
     assert under["pitcher_archetype_bucket"] == "standard_starter"
     assert under["lineup_count"] == 9
+    assert under["lineup_handedness_source"] is None
+    assert under["lineup_handedness_runtime_safe"] is None
 
 
 def test_build_official_close_rows_flags_large_edge_skepticism():
@@ -141,6 +145,10 @@ def test_build_summary_tracks_coverage_and_duplicates():
             "opportunity_bucket": "normal",
             "leash_risk_bucket": "normal",
             "model_market_relationship": "model_fades_favorite",
+            "lineup_right_batters": 5,
+            "lineup_left_batters": 3,
+            "lineup_switch_batters": 1,
+            "lineup_handedness_source": "mlb_boxscore_reconstructed",
         },
         {
             "dataset_key": "a",
@@ -162,6 +170,10 @@ def test_build_summary_tracks_coverage_and_duplicates():
             "opportunity_bucket": "unknown",
             "leash_risk_bucket": "high",
             "model_market_relationship": "unknown",
+            "lineup_right_batters": None,
+            "lineup_left_batters": None,
+            "lineup_switch_batters": None,
+            "lineup_handedness_source": None,
         },
     ]
 
@@ -182,6 +194,8 @@ def test_build_summary_tracks_coverage_and_duplicates():
     assert summary["process_outcome_bucket_counts"]["good_process_win"] == 1
     assert summary["large_edge_skepticism_rows"] == 1
     assert summary["pitcher_archetype_bucket_counts"]["opener_or_mismatch"] == 1
+    assert summary["lineup_hand_count_rows"] == 1
+    assert summary["lineup_handedness_source_counts"]["mlb_boxscore_reconstructed"] == 1
 
 
 def test_load_archived_markets_for_dataset_preserves_baseball_context(tmp_path):
@@ -259,6 +273,59 @@ def test_reconcile_picks_history_matches_dataset_keys(tmp_path):
     assert result["matched_pick_rows"] == 1
     assert result["unmatched_pick_rows"] == 1
     assert result["unmatched_examples"][0]["pitcher"] == "Other Pitcher"
+
+
+def test_enrich_rows_with_lineup_handedness_marks_reconstructed_context(tmp_path):
+    key = lineup_handedness_lookup_key(
+        "2026-05-12",
+        "Seattle Mariners",
+        "New York Yankees",
+        "2026-05-12T22:40:00Z",
+    )
+    artifact = tmp_path / "lineup_handedness_backfill.json"
+    artifact.write_text(
+        """
+        {
+          "lineups": {
+            "2026-05-12|seattle mariners|new york yankees|2026-05-12T22:40:00Z": {
+              "game_pk": 101,
+              "lineup_count": 9,
+              "lineup_right_batters": 5,
+              "lineup_left_batters": 3,
+              "lineup_switch_batters": 1,
+              "lineup_handedness_source": "mlb_boxscore_reconstructed",
+              "lineup_handedness_runtime_safe": false
+            }
+          }
+        }
+        """,
+        encoding="utf-8",
+    )
+    rows = [
+        {
+            "slate_date": "2026-05-12",
+            "team": "Seattle Mariners",
+            "opp_team": "New York Yankees",
+            "game_time": "2026-05-12T22:40:00Z",
+            "pitcher_throws": "R",
+            "lineup_count": 9,
+            "lineup_right_batters": None,
+            "lineup_left_batters": None,
+            "lineup_switch_batters": None,
+            "handedness_matchup_bucket": None,
+        }
+    ]
+
+    enriched = enrich_rows_with_lineup_handedness(rows, backfill_path=artifact)
+
+    assert key in artifact.read_text(encoding="utf-8")
+    assert enriched[0]["lineup_right_batters"] == 5
+    assert enriched[0]["lineup_left_batters"] == 3
+    assert enriched[0]["lineup_switch_batters"] == 1
+    assert enriched[0]["handedness_matchup_bucket"] == "balanced"
+    assert enriched[0]["lineup_handedness_source"] == "mlb_boxscore_reconstructed"
+    assert enriched[0]["lineup_handedness_runtime_safe"] is False
+    assert enriched[0]["lineup_handedness_count_matches_existing"] is True
 
 
 def test_reconcile_picks_history_allows_unique_pitcher_side_fallback(tmp_path):

@@ -35,6 +35,7 @@ ARCHIVE_DIR = ROOT / "dashboard" / "data" / "processed"
 PICKS_HISTORY = ROOT / "data" / "picks_history.json"
 OUTPUT_JSONL = ROOT / "analytics" / "output" / "pitcher_k_outcome_dataset.jsonl"
 OUTPUT_SUMMARY = ROOT / "analytics" / "output" / "pitcher_k_outcome_dataset_summary.md"
+LINEUP_HANDEDNESS_BACKFILL = ROOT / "analytics" / "output" / "lineup_handedness_backfill.json"
 CLEAN_WINDOW_START = "2026-04-28"
 
 APPROVED_CONTEXT_SNAPSHOTS = {
@@ -103,6 +104,10 @@ REQUIRED_DATASET_FIELDS = {
     "lineup_left_batters",
     "lineup_switch_batters",
     "handedness_matchup_bucket",
+    "lineup_handedness_source",
+    "lineup_handedness_runtime_safe",
+    "lineup_handedness_game_pk",
+    "lineup_handedness_count_matches_existing",
     "avg_ip",
     "recent_start_count",
     "opportunity_bucket",
@@ -133,6 +138,56 @@ def _to_int(value: Any) -> int | None:
 
 def _normalized(value: Any) -> str:
     return normalize(str(value or "")).strip()
+
+
+def lineup_handedness_lookup_key(
+    slate_date: Any,
+    team: Any,
+    opp_team: Any,
+    game_time: Any,
+) -> str:
+    return "|".join(
+        [
+            str(slate_date or "").strip(),
+            _normalized(team),
+            _normalized(opp_team),
+            str(game_time or "").strip(),
+        ]
+    )
+
+
+def handedness_matchup_bucket(
+    *,
+    pitcher_throws: Any,
+    right_batters: Any,
+    left_batters: Any,
+    switch_batters: Any,
+) -> str | None:
+    pitcher_hand = str(pitcher_throws or "").strip().upper()
+    right = _to_int(right_batters)
+    left = _to_int(left_batters)
+    switch = _to_int(switch_batters)
+    if pitcher_hand not in {"R", "L"} or right is None or left is None or switch is None:
+        return None
+
+    if pitcher_hand == "R":
+        same_hand = right
+        opposite_hand = left + switch
+    else:
+        same_hand = left
+        opposite_hand = right + switch
+
+    if switch >= 3:
+        return "switch_heavy"
+    if same_hand >= 6:
+        return "same_hand_heavy"
+    if opposite_hand >= 6:
+        return "opposite_hand_heavy"
+    if same_hand - opposite_hand >= 2:
+        return "same_hand_lean"
+    if opposite_hand - same_hand >= 2:
+        return "opposite_hand_lean"
+    return "balanced"
 
 
 def _line_text(value: Any) -> str:
@@ -659,6 +714,10 @@ def build_official_close_rows(markets: list[dict[str, Any]]) -> list[dict[str, A
                 "lineup_left_batters": _to_int(market.get("lineup_left_batters")),
                 "lineup_switch_batters": _to_int(market.get("lineup_switch_batters")),
                 "handedness_matchup_bucket": market.get("handedness_matchup_bucket"),
+                "lineup_handedness_source": None,
+                "lineup_handedness_runtime_safe": None,
+                "lineup_handedness_game_pk": None,
+                "lineup_handedness_count_matches_existing": None,
                 "opp_k_rate": _to_float(market.get("opp_k_rate")),
                 "umpire": market.get("umpire"),
                 "umpire_has_rating": market.get("umpire_has_rating"),
@@ -799,6 +858,9 @@ def build_summary(rows: list[dict[str, Any]]) -> dict[str, Any]:
     process_counts = Counter(str(row.get("process_outcome_bucket") or "unknown") for row in rows)
     timing_counts = Counter(str(row.get("bet_timing_window") or "unknown") for row in rows)
     archetype_counts = Counter(str(row.get("pitcher_archetype_bucket") or "unknown") for row in rows)
+    lineup_handedness_source_counts = Counter(
+        str(row.get("lineup_handedness_source") or "missing") for row in rows
+    )
     clean_rows = [row for row in rows if str(row.get("slate_date") or "") >= CLEAN_WINDOW_START]
     return {
         "total_rows": len(rows),
@@ -818,6 +880,14 @@ def build_summary(rows: list[dict[str, Any]]) -> dict[str, Any]:
         "rows_with_price_clv": sum(1 for row in rows if row.get("price_clv_cents") is not None),
         "beat_close_price_rows": sum(1 for row in rows if row.get("beat_close_price") is True),
         "beat_close_line_rows": sum(1 for row in rows if row.get("beat_close_line") is True),
+        "lineup_hand_count_rows": sum(
+            1
+            for row in rows
+            if row.get("lineup_right_batters") is not None
+            and row.get("lineup_left_batters") is not None
+            and row.get("lineup_switch_batters") is not None
+        ),
+        "lineup_handedness_source_counts": dict(sorted(lineup_handedness_source_counts.items())),
         "large_edge_skepticism_rows": sum(1 for row in rows if row.get("large_edge_skepticism_flag") is True),
         "model_market_relationship_counts": dict(sorted(model_market_counts.items())),
         "opportunity_bucket_counts": dict(sorted(opportunity_counts.items())),
@@ -1026,6 +1096,71 @@ def enrich_rows_with_pick_history(
     return enriched
 
 
+def _load_lineup_handedness_backfill(path: Path) -> dict[str, dict[str, Any]]:
+    if not path.exists():
+        return {}
+    try:
+        payload = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return {}
+    lineups = payload.get("lineups") if isinstance(payload, dict) else None
+    return {str(key): value for key, value in lineups.items() if isinstance(value, dict)} if isinstance(lineups, dict) else {}
+
+
+def enrich_rows_with_lineup_handedness(
+    rows: list[dict[str, Any]],
+    *,
+    backfill_path: Path = LINEUP_HANDEDNESS_BACKFILL,
+) -> list[dict[str, Any]]:
+    lineups = _load_lineup_handedness_backfill(backfill_path)
+    enriched: list[dict[str, Any]] = []
+    for row in rows:
+        next_row = dict(row)
+        next_row.setdefault("lineup_handedness_source", None)
+        next_row.setdefault("lineup_handedness_runtime_safe", None)
+        next_row.setdefault("lineup_handedness_game_pk", None)
+        next_row.setdefault("lineup_handedness_count_matches_existing", None)
+
+        key = lineup_handedness_lookup_key(
+            next_row.get("slate_date"),
+            next_row.get("team"),
+            next_row.get("opp_team"),
+            next_row.get("game_time"),
+        )
+        lineup = lineups.get(key)
+        if lineup:
+            right = _to_int(lineup.get("lineup_right_batters"))
+            left = _to_int(lineup.get("lineup_left_batters"))
+            switch = _to_int(lineup.get("lineup_switch_batters"))
+            reconstructed_count = _to_int(lineup.get("lineup_count"))
+            existing_count = _to_int(next_row.get("lineup_count"))
+            next_row.update(
+                {
+                    "lineup_right_batters": right,
+                    "lineup_left_batters": left,
+                    "lineup_switch_batters": switch,
+                    "lineup_handedness_source": lineup.get("lineup_handedness_source"),
+                    "lineup_handedness_runtime_safe": lineup.get("lineup_handedness_runtime_safe"),
+                    "lineup_handedness_game_pk": lineup.get("game_pk"),
+                    "lineup_handedness_count_matches_existing": (
+                        existing_count == reconstructed_count
+                        if existing_count is not None and reconstructed_count is not None
+                        else None
+                    ),
+                }
+            )
+            if reconstructed_count is not None and existing_count is None:
+                next_row["lineup_count"] = reconstructed_count
+            next_row["handedness_matchup_bucket"] = handedness_matchup_bucket(
+                pitcher_throws=next_row.get("pitcher_throws"),
+                right_batters=right,
+                left_batters=left,
+                switch_batters=switch,
+            )
+        enriched.append(next_row)
+    return enriched
+
+
 def render_summary(summary: dict[str, Any]) -> str:
     lines = [
         "# Pitcher K Outcome Dataset Summary",
@@ -1044,6 +1179,7 @@ def render_summary(summary: dict[str, Any]) -> str:
         f"- Rows with price CLV: `{summary.get('rows_with_price_clv', 0)}`",
         f"- Beat-close price rows: `{summary.get('beat_close_price_rows', 0)}`",
         f"- Beat-close line rows: `{summary.get('beat_close_line_rows', 0)}`",
+        f"- Rows with lineup hand counts: `{summary.get('lineup_hand_count_rows', 0)}`",
         f"- Large-edge skepticism rows: `{summary.get('large_edge_skepticism_rows', 0)}`",
         f"- Clean graded picks reconciled: `{summary.get('matched_pick_rows', 0)}/{summary.get('graded_pick_rows', 0)}`",
         f"- Unique side fallback reconciliations: `{summary.get('unique_side_fallback_matches', 0)}`",
@@ -1062,6 +1198,7 @@ def render_summary(summary: dict[str, Any]) -> str:
         ("Opportunity Buckets", "opportunity_bucket_counts"),
         ("Leash Risk Buckets", "leash_risk_bucket_counts"),
         ("Pitcher Archetype Buckets", "pitcher_archetype_bucket_counts"),
+        ("Lineup Handedness Sources", "lineup_handedness_source_counts"),
     ):
         lines.extend(["", f"## {title}", ""])
         for value, count in (summary.get(key) or {}).items():
@@ -1093,6 +1230,7 @@ def build_dataset(
     archive_dir: Path = ARCHIVE_DIR,
     start_date: str = CLEAN_WINDOW_START,
     end_date: str | None = None,
+    lineup_handedness_backfill_path: Path = LINEUP_HANDEDNESS_BACKFILL,
 ) -> list[dict[str, Any]]:
     markets = load_archived_markets_for_dataset(
         archive_dir,
@@ -1100,6 +1238,10 @@ def build_dataset(
         end_date=end_date,
     )
     rows = build_official_close_rows(markets)
+    rows = enrich_rows_with_lineup_handedness(
+        rows,
+        backfill_path=lineup_handedness_backfill_path,
+    )
     return enrich_rows_with_pick_history(rows, start_date=start_date)
 
 
@@ -1109,12 +1251,17 @@ def _parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--end-date")
     parser.add_argument("--jsonl-output", type=Path, default=OUTPUT_JSONL)
     parser.add_argument("--summary-output", type=Path, default=OUTPUT_SUMMARY)
+    parser.add_argument("--lineup-handedness-backfill", type=Path, default=LINEUP_HANDEDNESS_BACKFILL)
     return parser.parse_args(argv)
 
 
 def main(argv: list[str] | None = None) -> None:
     args = _parse_args(argv)
-    rows = build_dataset(start_date=args.start_date, end_date=args.end_date)
+    rows = build_dataset(
+        start_date=args.start_date,
+        end_date=args.end_date,
+        lineup_handedness_backfill_path=args.lineup_handedness_backfill,
+    )
     validation_errors = [
         (row.get("dataset_key"), errors)
         for row in rows

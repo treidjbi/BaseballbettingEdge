@@ -116,6 +116,17 @@ handedness Path B is ready for more than collection. Both are Gate C evidence
 only and must not change live lambda, thresholds, staking, verdicts, provider
 order, notifications, calibration, or dashboard artifacts.
 
+Later on 2026-05-26,
+`analytics/diagnostics/historical_lineup_handedness_backfill.py` was added with
+tests in `tests/test_historical_lineup_handedness_backfill.py`. It reconstructs
+opponent lineup R/L/S hand counts from MLB schedule + direct boxscore data and
+writes only local shadow artifacts under `analytics/output/`. The compact
+dataset can consume that artifact, but rows are explicitly marked
+`lineup_handedness_source=mlb_boxscore_reconstructed` and
+`lineup_handedness_runtime_safe=false`. This evidence is valid for research and
+holdout testing; it is not proof that the same lineup fields were available at
+bet time.
+
 Supabase is not required yet. Gate C should stay closed until we decide whether
 the value of a compact daily research table beats the simplicity of local
 generated artifacts. If promoted later, store compact rows only; do not retain
@@ -149,9 +160,14 @@ The current hard read through the 2026-05-26 refresh:
   materially poor and should be treated as a warning label until rewritten and
   retested.
 - Path B batter-handedness has met the old date/sample reminder, but it is not
-  promotion-ready. Compact rows have 0/1,174 row-level right/left/switch lineup
-  hand counts and 0/1,174 handedness matchup buckets. Promote active collection
-  and audit only, not live projection math.
+  promotion-ready. After the historical MLB boxscore reconstruction, compact
+  rows have 1,174/1,174 row-level right/left/switch lineup hand counts and
+  1,174/1,174 handedness matchup buckets. The backfill covered 587/587 unique
+  lineup keys with 0 unmatched lineups and 0 existing lineup-count mismatches.
+  The first tracked-outcome slice was not a promotion case by itself:
+  same-hand-heavy rows were 440, 229-211, -5.05u, -1.1% ROI, while
+  opposite-hand-heavy rows were 163, 81-82, -10.63u, -6.5% ROI. Promote a
+  holdout comparison only, not live projection math.
 
 Do not use this comparison to roll back thresholds, staking, formula date, or
 provider behavior. Use it to keep Gate C honest: current-regime buckets matter

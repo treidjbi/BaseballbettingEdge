@@ -70,8 +70,11 @@ Required field groups:
   `large_edge_skepticism_flag`, `large_edge_skepticism_reasons`
 - lineup / handedness / opportunity: `pitcher_throws`, `lineup_count`,
   `lineup_right_batters`, `lineup_left_batters`, `lineup_switch_batters`,
-  `handedness_matchup_bucket`, `avg_ip`, `recent_start_count`,
-  `opportunity_bucket`, `leash_risk_bucket`, `pitcher_archetype_bucket`
+  `handedness_matchup_bucket`, `lineup_handedness_source`,
+  `lineup_handedness_runtime_safe`, `lineup_handedness_game_pk`,
+  `lineup_handedness_count_matches_existing`, `avg_ip`,
+  `recent_start_count`, `opportunity_bucket`, `leash_risk_bucket`,
+  `pitcher_archetype_bucket`
 - post-result opportunity: `actual_ip`, `actual_pitch_count`,
   `batters_faced`
 
@@ -79,6 +82,11 @@ Some fields are intentionally `null` today because the production artifact does
 not yet store the underlying value. Keep those columns in the compact row
 contract anyway so future BoltOdds, lineup-handedness, and MLB result enrichers
 can fill them without changing the dataset shape.
+
+As of 2026-05-26, lineup hand-count fields can also be populated from the local
+historical MLB boxscore reconstruction artifact. Those rows are research-only:
+`lineup_handedness_runtime_safe=false` means they must not be used as proof that
+the same context was available when a bet locked.
 
 ## Derived Research Labels
 
