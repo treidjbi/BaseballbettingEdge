@@ -19,14 +19,18 @@ on the normal `today`, `dated_slate:YYYY-MM-DD`, `steam`, and related keys.
 
 ## Active Shadow Rehearsal Services
 
-Created 2026-05-26 on `main` commit `4c6d0edc` after the May 26 stale-artifact
-repair showed GitHub scheduler timing as the weak point:
+Created 2026-05-26 on `main` commit `4c6d0edc`, then redeployed on guarded
+commit `228d67fd` after the May 26 stale-artifact repair showed GitHub
+scheduler timing as the weak point:
 
 | Service | Render ID | Schedule | Status |
 | --- | --- | --- | --- |
 | `bbe-pipeline-preview-shadow` | `crn-d8as4l1akrks738ngep0` | `17 7 * * *` | shadow-only active |
 | `bbe-pipeline-grading-shadow` | `crn-d8as4pdckfvc73dgpme0` | `17 10 * * *` | shadow-only active |
 | `bbe-pipeline-full-shadow` | `crn-d8as4r8g4nts73b5f510` | `17 13 * * *` | shadow-only active |
+| `bbe-pipeline-refresh-shadow-day` | `crn-d8asbonavr4c73drnrhg` | `7,37 15-23 * * *` | shadow-only active |
+| `bbe-pipeline-refresh-shadow-evening` | `crn-d8asbrel51nc73ahmh60` | `7,37 0 * * *` | shadow-only active |
+| `bbe-pipeline-refresh-shadow-final` | `crn-d8asbv0jo6nc7381gma0` | `7 1 * * *` | shadow-only active |
 
 These services do not replace GitHub schedules. They publish to
 `render_shadow:<publish-date>:` keys only, so the normal Netlify artifact API
@@ -36,6 +40,12 @@ The wrapper also forces `ENABLE_SUPABASE_LOCK_CONSUMER=false`,
 `ENABLE_BOLTODDS_PIPELINE_SOURCE=false` during shadow-prefixed runs. That keeps
 shadow scheduler rehearsal from consuming official lock rows or testing the
 provider cutover path by accident.
+
+Latest proof run: Render job `job-d8ascuj7uimc73ckb640` succeeded for
+`2026-05-26` full mode on commit `228d67fd`, writing 8 prefixed artifacts
+through publication run
+`manual-render-pipeline-2026-05-26-20260526T161330Z`. The normal live artifact
+keys still passed strict parity 8/8 afterward.
 
 ## Required Environment
 

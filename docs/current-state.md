@@ -448,6 +448,26 @@ Artifact-exit rollout note, 2026-05-24:
   `OFFICIAL_MARKET_SOURCE=therundown`, so they cannot consume official lock
   rows or accidentally test the BoltOdds/PropLine provider cutover. They must
   be evaluated as shadow evidence only.
+- Scheduler-only follow-up later on 2026-05-26: commit `228d67fd` hardened the
+  shadow wrapper so all `--shadow-prefix` runs force
+  `ENABLE_SUPABASE_LOCK_CONSUMER=false`, `SUPABASE_LOCK_CONSUMER_STRICT=false`,
+  `OFFICIAL_MARKET_SOURCE=therundown`, and
+  `ENABLE_BOLTODDS_PIPELINE_SOURCE=false` while preserving those settings for
+  non-shadow/live-key runs. All existing Render shadow services were redeployed
+  on that guarded commit. Three refresh-window shadow cron services were also
+  created while GitHub remains official:
+  `bbe-pipeline-refresh-shadow-day` (`crn-d8asbonavr4c73drnrhg`,
+  `7,37 15-23 * * *`), `bbe-pipeline-refresh-shadow-evening`
+  (`crn-d8asbrel51nc73ahmh60`, `7,37 0 * * *`), and
+  `bbe-pipeline-refresh-shadow-final` (`crn-d8asbv0jo6nc7381gma0`,
+  `7 1 * * *`). One guarded one-off Render job
+  `job-d8ascuj7uimc73ckb640` succeeded for May 26 full mode, wrote 8 prefixed
+  rows through publication run
+  `manual-render-pipeline-2026-05-26-20260526T161330Z`, and left the normal
+  live artifact keys on GitHub/static-compatible rows with strict parity 8/8.
+  Next evidence needed: today's refresh-shadow windows, then tomorrow's
+  preview/grading/full shadow windows, must write expected prefixed rows without
+  duplicate/wrong-date artifacts before any Task 11 promotion discussion.
 
 Post-cutover cadence planning note, 2026-05-25:
 

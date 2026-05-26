@@ -1322,6 +1322,21 @@ Result, 2026-05-26:
     `17 10 * * *`.
   - `bbe-pipeline-full-shadow` (`crn-d8as4r8g4nts73b5f510`), schedule
     `17 13 * * *`.
+- Follow-up commit `228d67fd` hardened the shadow wrapper so `--shadow-prefix`
+  runs force the Supabase lock consumer off and keep the provider source on
+  TheRundown. Existing shadow services were redeployed on that guarded commit.
+- Added refresh-window Render shadow cron services, also on `main` with
+  auto-deploy off:
+  - `bbe-pipeline-refresh-shadow-day` (`crn-d8asbonavr4c73drnrhg`), schedule
+    `7,37 15-23 * * *`.
+  - `bbe-pipeline-refresh-shadow-evening` (`crn-d8asbrel51nc73ahmh60`),
+    schedule `7,37 0 * * *`.
+  - `bbe-pipeline-refresh-shadow-final` (`crn-d8asbv0jo6nc7381gma0`),
+    schedule `7 1 * * *`.
+- Guarded one-off Render job `job-d8ascuj7uimc73ckb640` succeeded for
+  `2026-05-26` full mode, wrote 8 prefixed rows through publication run
+  `manual-render-pipeline-2026-05-26-20260526T161330Z`, and left the normal
+  live artifact keys on GitHub/static-compatible rows with strict parity 8/8.
 - GitHub scheduled workflows remain official; dashboard reads remain static by
   default; this does not enable provider, model, threshold, staking,
   notification, retention, or dashboard-source changes.
@@ -1644,3 +1659,10 @@ python scripts/compare_supabase_artifacts.py --date YYYY-MM-DD --remote-key-pref
 
 Only after one clean full-slate Render/GitHub hash match should Task 11 proceed
 to disabling GitHub scheduled triggers.
+
+Scheduler-only follow-up later on 2026-05-26: the shadow schedule now covers
+preview, grading, full, and refresh windows. This is still Task 9 rehearsal
+evidence, not Task 11 promotion. The next checks are whether today's
+refresh-shadow jobs and tomorrow's preview/grading/full shadow jobs write the
+expected `render_shadow:<date>:` rows without consuming lock rows, dispatching
+wrong-date artifacts, or touching provider/model/dashboard production behavior.
