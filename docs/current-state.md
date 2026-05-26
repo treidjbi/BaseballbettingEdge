@@ -65,7 +65,7 @@ each lane.
 | Lane | Current Source | Current Stage | Next Decision |
 | --- | --- | --- | --- |
 | Pipeline / infrastructure | `2026-05-19-supabase-operational-foundation.md`, `2026-05-22-github-artifact-exit.md`, `2026-05-13-boltodds-propline-official-provider-cutover.md`, `2026-05-20-live-notification-coordinator.md`, `docs/operational-risk-register.md` | Staged Supabase/BoltOdds/PropLine migration. GitHub + TheRundown remain production source of truth. Supabase lock ledger passed its strict/single-writer canary posture; GitHub can consume Supabase lock rows while `ENABLE_GITHUB_FALLBACK_LOCKING=false` suppresses its own due-lock fallback. Artifact-exit Stage 1 is on `main`: hosted mirror tables, GitHub shadow publisher, `ENABLE_SUPABASE_ARTIFACT_PUBLISH=true`, Netlify artifact API, default-static dashboard adapters, parity checker, and Render runner risk docs. GitHub manual/scheduled publishing has repeatedly written shadow rows and passed parity after the 2026-05-25 grading artifact hotfix. A one-off Render preview canary on `bbe-pipeline-shadow-runner-hosted` also completed and wrote 8 rows, proving Render can run the pipeline and publish to Supabase when pointed at hosted Supabase env. Tyler-only dashboard API canary now loads current and tested prior dated artifacts through Netlify `get-artifact` with static fallback still active. | The 2026-05-26 stale current-slate repair strengthens the case to advance scheduler migration. Move forward by rehearsing Render pipeline schedules with shadow-prefixed artifact keys, not by disabling GitHub schedules yet. Keep dashboard reads static by default and GitHub schedules official until Render preview/grading/full/refresh rows under `render_shadow:<date>:` match GitHub artifacts for a full slate and manual GitHub rollback stays available. Do not bundle provider source, model, staking, thresholds, notification behavior, dashboard default source, or retention deletion into this scheduler rehearsal. |
-| Model | `2026-05-12-pitcher-k-outcome-research-dataset.md` | Gate C confidence-referee / compact evidence proof, plus 2026-05-26 pre/post 4/28 hard review and reconstructed historical lineup-handedness backfill. Current evidence says broad projection quality did not degrade post-bump; betting outcome worsened through selection/regime inversion, especially unders and FIRE 1u. Path B batter-handedness now has 1,174/1,174 reconstructed row-level hand-count coverage, but this is historical MLB boxscore evidence, not runtime proof. | Keep Gate C shadow-only. The next model decision is a narrow Gate E research plan around side/price/timing/market-agreement skepticism and a Path B holdout comparison, not a broad lambda rollback or live threshold/staking change. Path B needs holdout lift and future runtime-captured evidence before any projection promotion. |
+| Model | `2026-05-12-pitcher-k-outcome-research-dataset.md` | Gate C confidence-referee / compact evidence proof, plus 2026-05-26 pre/post 4/28 hard review, reconstructed historical lineup-handedness backfill, and a first train/validation holdout lab. Current evidence says broad projection quality did not degrade post-bump; betting outcome worsened through selection/regime inversion, especially unders and FIRE 1u. Simple over-only and market-favorite-only baselines did not beat lambda on the 2026-05-17 through 2026-05-25 validation side-accuracy read. | Keep Gate C shadow-only. Do not discard lambda or promote Path B live from this read. The next model decision is a narrow Gate E/F research plan around market-shrink, high-line tempering, side/price/timing/market-agreement skepticism, and future runtime-captured handedness, not a broad rollback or live threshold/staking change. |
 | UI | `2026-05-20-live-market-decision-ui.md`, `2026-05-20-live-notification-coordinator.md` | Future-state design only. The dashboard should eventually display best price, consensus, movement, urgency, and notification grouping from the new operational base. | Revisit after the operational/provider switch is stable. Keep display work separated from provider promotion and betting-rule changes. |
 | Tracking / data collection / history | `docs/research/market-tracker-map.md`, `docs/research/pitcher-k-outcome-dataset.md`, compact outcome outputs, live-market audits | Canonical research row plus existing market/live/provider trackers. Daily brief now keeps a compact Gate C bucket scoreboard and pre/post 2026-04-28 context. | Prefer derived labels on the compact outcome row before adding tables. Promote compact storage or retention only after row-volume/cost proof and Tyler approval. |
 
@@ -746,6 +746,7 @@ The active local diagnostics and tests are:
 - `analytics/diagnostics/live_market_outcome_audit.py`
 - `analytics/diagnostics/pitcher_k_outcome_dataset.py`
 - `analytics/diagnostics/k_projection_shadow_lab.py`
+- `analytics/diagnostics/gate_c_holdout_shadow_lab.py`
 - `analytics/diagnostics/batter_handedness_shadow_audit.py`
 - `analytics/diagnostics/historical_lineup_handedness_backfill.py`
 - `analytics/diagnostics/pre_post_428_model_review.py`
@@ -761,6 +762,7 @@ The active local diagnostics and tests are:
 - `tests/test_pitcher_k_outcome_dataset_contract.py`
 - `tests/test_pitcher_k_outcome_dataset.py`
 - `tests/test_k_projection_shadow_lab.py`
+- `tests/test_gate_c_holdout_shadow_lab.py`
 - `tests/test_batter_handedness_shadow_audit.py`
 - `tests/test_historical_lineup_handedness_backfill.py`
 - `tests/test_pre_post_428_model_review.py`
@@ -881,6 +883,15 @@ Current readout from 2026-05-07:
   Handedness context is useful enough for a Path B holdout comparison, but it
   does not by itself solve the post-bump under problem or justify live lambda
   changes.
+- `analytics/diagnostics/gate_c_holdout_shadow_lab.py` now runs the first
+  train/validation Gate C holdout. On 587 official-close markets it trained on
+  2026-04-28 through 2026-05-16 and validated on 2026-05-17 through
+  2026-05-25. Validation did not support discarding lambda: `current_model`
+  side accuracy was 110-80 / 57.9%, while `over_only` was 98-92 / 51.6% and
+  `market_favorite_only` was 97-88 / 52.4%. `market_shrink_25` slightly
+  improved validation MAE (1.801 vs 1.820), while `high_line_temper` and
+  `handedness_bucket_adjust` slightly improved side accuracy (111-79 / 58.4%).
+  Treat those as Gate F candidates to study, not live model changes.
 
 ## Next Decision Checkpoints
 

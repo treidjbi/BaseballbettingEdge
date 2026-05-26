@@ -127,6 +127,16 @@ dataset can consume that artifact, but rows are explicitly marked
 holdout testing; it is not proof that the same lineup fields were available at
 bet time.
 
+Later on 2026-05-26, the first train/validation holdout lab was added as
+`analytics/diagnostics/gate_c_holdout_shadow_lab.py` with tests in
+`tests/test_gate_c_holdout_shadow_lab.py`. It compares current lambda,
+`market_shrink_25`, `high_line_temper`, a train-only handedness residual
+adjustment, `market_favorite_only`, `over_only`, and `under_only`. The lab is
+explicitly shadow-only and writes
+`analytics/output/gate_c_holdout_shadow_lab.md`; it must not change live
+lambda, thresholds, staking, verdicts, provider order, notifications,
+calibration, or dashboard artifacts.
+
 Supabase is not required yet. Gate C should stay closed until we decide whether
 the value of a compact daily research table beats the simplicity of local
 generated artifacts. If promoted later, store compact rows only; do not retain
@@ -168,6 +178,19 @@ The current hard read through the 2026-05-26 refresh:
   same-hand-heavy rows were 440, 229-211, -5.05u, -1.1% ROI, while
   opposite-hand-heavy rows were 163, 81-82, -10.63u, -6.5% ROI. Promote a
   holdout comparison only, not live projection math.
+- The first holdout comparison trained on 397 official-close markets from
+  2026-04-28 through 2026-05-16 and validated on 190 markets from
+  2026-05-17 through 2026-05-25. The validation read argues against discarding
+  lambda: `current_model` side accuracy was 110-80 / 57.9%, while `over_only`
+  was 98-92 / 51.6%, `under_only` was 92-98 / 48.4%, and
+  `market_favorite_only` was 97-88 / 52.4%. `market_shrink_25` had the best
+  validation MAE among projection candidates (1.801 vs current 1.820);
+  `high_line_temper` and `handedness_bucket_adjust` led validation side
+  accuracy at 111-79 / 58.4%. Validation tracked-pick alignment was strongest
+  for `handedness_bucket_adjust` (+14.42u / +9.2%) and `high_line_temper`
+  (+14.33u / +9.4%), but handedness remains hindsight-only until runtime
+  capture proves it can be known before lock. Treat these as Gate F candidate
+  questions, not production rules.
 
 Do not use this comparison to roll back thresholds, staking, formula date, or
 provider behavior. Use it to keep Gate C honest: current-regime buckets matter
@@ -214,6 +237,9 @@ The BBE Operations Brief should digest this dataset after grading and report:
   FIRE 1u/2u, over/under, moderate edge, high edge, CLV/no-CLV, timing window,
   quality gate, model-versus-market favorite, opportunity/leash, and pitcher
   archetype
+- the latest holdout-lab read for current lambda versus market-shrink,
+  high-line tempering, handedness-adjusted, market-favorite-only, over-only,
+  and under-only candidates when the generated report is present
 - the immediate pre-bump versus post-bump comparison when the comparison changes
   the interpretation of a current bucket
 
