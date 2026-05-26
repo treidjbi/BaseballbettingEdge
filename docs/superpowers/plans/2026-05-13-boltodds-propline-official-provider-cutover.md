@@ -958,6 +958,22 @@ Implementation note, 2026-05-13:
 - Source attribution reaches built records for `today.json` / dated archive
   audit, while pick-history persistence remains Step 6.
 
+Implementation note, 2026-05-26:
+
+- `scripts/run_render_pipeline_mode.py --provider-rehearsal` now lets Render
+  run the existing preview/full/refresh wrapper against the BoltOdds/PropLine
+  provider adapter while still publishing only to shadow artifact keys.
+- The flag is valid only with `--shadow-prefix` or an explicit artifact key
+  prefix. It keeps `ENABLE_SUPABASE_LOCK_CONSUMER=false` and
+  `SUPABASE_LOCK_CONSUMER_STRICT=false`, then sets
+  `OFFICIAL_MARKET_SOURCE=boltodds_propline`,
+  `ENABLE_BOLTODDS_PIPELINE_SOURCE=true`, and `OFFICIAL_MARKET_STRICT=true`.
+- First scheduled proof on `bbe-pipeline-refresh-shadow-day` succeeded at
+  18:07 UTC on 2026-05-26: the pipeline read 28 ready official provider props
+  from Supabase, wrote 8 `render_shadow:2026-05-26:` artifact rows, and did
+  not overwrite normal GitHub-backed artifact keys. This is still shadow-only
+  provider adapter evidence, not approval to switch production source.
+
 ### Step 5: Add Shadow Official Artifact Comparison
 
 Create:

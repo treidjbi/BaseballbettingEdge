@@ -1666,3 +1666,24 @@ evidence, not Task 11 promotion. The next checks are whether today's
 refresh-shadow jobs and tomorrow's preview/grading/full shadow jobs write the
 expected `render_shadow:<date>:` rows without consuming lock rows, dispatching
 wrong-date artifacts, or touching provider/model/dashboard production behavior.
+
+Provider-rehearsal follow-up later on 2026-05-26: after the first
+`bbe-pipeline-refresh-shadow-day` failures exposed missing Render runtime env,
+Tyler redirected the refresh rehearsal toward BoltOdds/PropLine provider proof
+rather than TheRundown scheduler parity. Commit `2b3fb2b6` added
+`scripts/run_render_pipeline_mode.py --provider-rehearsal`, which is valid only
+with shadow artifact keys. In that mode the wrapper still disables Supabase lock
+consumption, but enables strict provider-source reads from
+`official_market_lines` with `OFFICIAL_MARKET_SOURCE=boltodds_propline`,
+`ENABLE_BOLTODDS_PIPELINE_SOURCE=true`, and `OFFICIAL_MARKET_STRICT=true`.
+The preview/full/refresh shadow cron commands now use this flag, and the shadow
+cron services have the hosted Supabase env needed for provider reads and shadow
+artifact publishing.
+
+The first scheduled proof passed: `bbe-pipeline-refresh-shadow-day` ran at
+18:07 UTC, read 28 ready BoltOdds/PropLine official props, and wrote all 8
+`render_shadow:2026-05-26:` artifact rows while normal live keys remained on
+GitHub Actions source `26466152086`. Treat provider-rehearsal artifacts as
+provider adapter evidence, not TheRundown/GitHub byte-parity evidence; the
+checks are complete prefixed writes, no normal-key overwrite, provider coverage
+and freshness, and provider comparison diagnostics before any source switch.

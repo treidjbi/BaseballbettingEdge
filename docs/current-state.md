@@ -468,6 +468,28 @@ Artifact-exit rollout note, 2026-05-24:
   Next evidence needed: today's refresh-shadow windows, then tomorrow's
   preview/grading/full shadow windows, must write expected prefixed rows without
   duplicate/wrong-date artifacts before any Task 11 promotion discussion.
+- Provider-rehearsal follow-up later on 2026-05-26: the first refresh-shadow
+  cron failure showed the newly created Render cron services were missing both
+  TheRundown and Supabase runtime env, so they could not test either scheduler
+  parity or the provider adapter. Tyler redirected the same shadow services
+  toward the higher-value BoltOdds/PropLine rehearsal instead of TheRundown
+  parity. Commit `2b3fb2b6` added an explicit
+  `--provider-rehearsal` flag to the Render wrapper. Shadow provider-rehearsal
+  runs still force the Supabase lock consumer off, but set
+  `OFFICIAL_MARKET_SOURCE=boltodds_propline`,
+  `ENABLE_BOLTODDS_PIPELINE_SOURCE=true`, and `OFFICIAL_MARKET_STRICT=true`
+  while publishing only under `render_shadow:<date>:` artifact keys. The
+  preview/full/refresh shadow cron commands now include that flag, and the
+  shadow cron services have the hosted Supabase env needed to read
+  `official_market_lines` and publish artifact rows. `bbe-pipeline-refresh-shadow-day`
+  then succeeded on its scheduled 18:07 UTC run, read 28 ready
+  BoltOdds/PropLine official props, wrote all 8 `render_shadow:2026-05-26:`
+  artifact rows, and left normal live artifact keys on GitHub source
+  `26466152086`. This is a provider/scheduler rehearsal success, not a
+  production source switch. Do not judge these provider-rehearsal rows by
+  byte-for-byte parity against TheRundown GitHub artifacts; judge them by
+  complete prefixed artifact writes, provider coverage/readiness, no normal-key
+  overwrite, and later provider comparison diagnostics.
 
 Post-cutover cadence planning note, 2026-05-25:
 
