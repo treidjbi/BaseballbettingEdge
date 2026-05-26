@@ -65,7 +65,7 @@ each lane.
 | Lane | Current Source | Current Stage | Next Decision |
 | --- | --- | --- | --- |
 | Pipeline / infrastructure | `2026-05-19-supabase-operational-foundation.md`, `2026-05-22-github-artifact-exit.md`, `2026-05-13-boltodds-propline-official-provider-cutover.md`, `2026-05-20-live-notification-coordinator.md`, `docs/operational-risk-register.md` | Staged Supabase/BoltOdds/PropLine migration. GitHub + TheRundown remain production source of truth. Supabase lock ledger passed its strict/single-writer canary posture; GitHub can consume Supabase lock rows while `ENABLE_GITHUB_FALLBACK_LOCKING=false` suppresses its own due-lock fallback. Artifact-exit Stage 1 is on `main`: hosted mirror tables, GitHub shadow publisher, `ENABLE_SUPABASE_ARTIFACT_PUBLISH=true`, Netlify artifact API, default-static dashboard adapters, parity checker, and Render runner risk docs. GitHub manual/scheduled publishing has repeatedly written shadow rows and passed parity after the 2026-05-25 grading artifact hotfix. A one-off Render preview canary on `bbe-pipeline-shadow-runner-hosted` also completed and wrote 8 rows, proving Render can run the pipeline and publish to Supabase when pointed at hosted Supabase env. Tyler-only dashboard API canary now loads current and tested prior dated artifacts through Netlify `get-artifact` with static fallback still active. | The 2026-05-26 stale current-slate repair strengthens the case to advance scheduler migration. Move forward by rehearsing Render pipeline schedules with shadow-prefixed artifact keys, not by disabling GitHub schedules yet. Keep dashboard reads static by default and GitHub schedules official until Render preview/grading/full/refresh rows under `render_shadow:<date>:` match GitHub artifacts for a full slate and manual GitHub rollback stays available. Do not bundle provider source, model, staking, thresholds, notification behavior, dashboard default source, or retention deletion into this scheduler rehearsal. |
-| Model | `2026-05-12-pitcher-k-outcome-research-dataset.md` | Gate C confidence-referee / compact evidence proof. Gate A and local Gate B are effectively done. | Move from Gate C to Gate D only when collection/storage/reconciliation are routine. Gate E/F are required before any live ranking, threshold, staking, calibration, or formula promotion. |
+| Model | `2026-05-12-pitcher-k-outcome-research-dataset.md` | Gate C confidence-referee / compact evidence proof, plus 2026-05-26 pre/post 4/28 hard review. Current evidence says broad projection quality did not degrade post-bump; betting outcome worsened through selection/regime inversion, especially unders and FIRE 1u. Path B batter-handedness has met the date/sample reminder, but row-level handedness counts are not populated yet. | Keep Gate C shadow-only. The next model decision is a narrow Gate E research plan around side/price/timing/market-agreement skepticism, not a broad lambda rollback or live threshold/staking change. Path B needs collection and holdout proof before any projection promotion. |
 | UI | `2026-05-20-live-market-decision-ui.md`, `2026-05-20-live-notification-coordinator.md` | Future-state design only. The dashboard should eventually display best price, consensus, movement, urgency, and notification grouping from the new operational base. | Revisit after the operational/provider switch is stable. Keep display work separated from provider promotion and betting-rule changes. |
 | Tracking / data collection / history | `docs/research/market-tracker-map.md`, `docs/research/pitcher-k-outcome-dataset.md`, compact outcome outputs, live-market audits | Canonical research row plus existing market/live/provider trackers. Daily brief now keeps a compact Gate C bucket scoreboard and pre/post 2026-04-28 context. | Prefer derived labels on the compact outcome row before adding tables. Promote compact storage or retention only after row-volume/cost proof and Tyler approval. |
 
@@ -724,6 +724,8 @@ The active local diagnostics and tests are:
 - `analytics/diagnostics/live_market_outcome_audit.py`
 - `analytics/diagnostics/pitcher_k_outcome_dataset.py`
 - `analytics/diagnostics/k_projection_shadow_lab.py`
+- `analytics/diagnostics/batter_handedness_shadow_audit.py`
+- `analytics/diagnostics/pre_post_428_model_review.py`
 - `analytics/diagnostics/executable_market_shadow_audit.py`
 - `tests/test_e1_regime_map.py`
 - `tests/test_e2_storage_integrity.py`
@@ -736,6 +738,8 @@ The active local diagnostics and tests are:
 - `tests/test_pitcher_k_outcome_dataset_contract.py`
 - `tests/test_pitcher_k_outcome_dataset.py`
 - `tests/test_k_projection_shadow_lab.py`
+- `tests/test_batter_handedness_shadow_audit.py`
+- `tests/test_pre_post_428_model_review.py`
 - `tests/test_executable_market_shadow_audit.py`
 
 Current readout from 2026-05-07:
@@ -820,6 +824,32 @@ Current readout from 2026-05-07:
   post-bump FIRE 2u, overs, moderate-edge, beat-close-price, and pre-30 timing
   rows look more promising. This remains shadow-only until the May 12 plan's
   Gate E/F standards justify a separate promotion plan.
+- The 2026-05-26 hard review added
+  `analytics/diagnostics/pre_post_428_model_review.py` and
+  `analytics/diagnostics/batter_handedness_shadow_audit.py`. The fair immediate
+  pre-bump window had 428 tracked picks across 20 slates, 21.40 picks/slate,
+  +12.63u / +2.9% flat ROI, and +7.64u / +1.2% staked ROI. The 2026-04-28+
+  window had 603 tracked picks across 28 slates, 21.54 picks/slate, -15.68u /
+  -2.6% flat ROI, and -17.30u / -2.5% staked ROI. Whole-market
+  projection quality did not get worse: MAE improved from 1.862 to 1.804,
+  RMSE improved from 2.394 to 2.287, and side accuracy stayed roughly flat
+  at 54.6% to 54.2%. The issue is selection/regime inversion, not a broad
+  projection collapse: unders flipped from +9.2% ROI pre-bump to -9.2%
+  post-bump, overs flipped from -8.9% to +6.0%, and FIRE 1u flipped from
+  +14.5% to -5.1%.
+- The same 2026-05-26 refresh expanded the compact outcome proof to 1,174
+  clean graded rows and 603 tracked picks with zero duplicate dataset keys,
+  zero missing results, zero missing team/opponent, and zero missing book odds.
+  The confidence-referee report is useful as a Gate C diagnosis surface, but
+  not as a live rule: `wait_for_late_data` was positive, while
+  `bet_late_if_still_available` was poor and should be treated as a warning
+  label until rewritten and retested.
+- Path B batter-handedness should move only to active shadow collection/audit.
+  The sample/date reminder is met, and the split cache has useful raw material,
+  but the compact rows still have 0/1,174 row-level right/left/switch lineup
+  hand counts and 0/1,174 handedness matchup buckets. Do not promote Path B into
+  live lambda until those fields are populated across consecutive slates and a
+  holdout comparison beats Path A.
 
 ## Next Decision Checkpoints
 

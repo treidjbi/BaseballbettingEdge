@@ -68,18 +68,17 @@ As of 2026-05-12, Gate A and the local portion of Gate B are implemented.
   - `analytics/output/pitcher_k_outcome_dataset.jsonl`
   - `analytics/output/pitcher_k_outcome_dataset_summary.md`
 
-Clean-window proof from `2026-04-28+`: 574 graded side rows, 0 missing results,
-0 duplicate dataset keys, 0 missing team/opponent, 0 missing book odds, and 2
-rows missing model-side probability fields. The same build reconciled 294/294
-clean graded `picks_history.json` rows, including 15 unique pitcher/side
-fallback matches where the archived official-close line differed from the
-locked pick-history line.
+Clean-window proof from `2026-04-28+` as of the 2026-05-26 refresh: 1,174
+graded side rows, 0 missing results, 0 duplicate dataset keys, 0 missing
+team/opponent, 0 missing book odds, and 2 rows missing model-side probability
+fields. The same build reconciled 603/603 clean graded `picks_history.json`
+rows.
 
 The compact row contract now also tracks bet-time/CLV fields from
 `picks_history.json`, model-versus-market relationship, edge/margin buckets,
 pitcher hand, lineup count, handedness placeholders, and opportunity/leash
-buckets. On the same clean window, all 294 tracked picks have price CLV fields;
-51 beat the official-close price and 10 beat the official-close line. These are
+buckets. On the same clean window, all 603 tracked picks have price CLV fields;
+92 beat the official-close price and 14 beat the official-close line. These are
 shadow research facts only, not betting rules.
 
 The first projection challenger harness now exists as
@@ -107,12 +106,22 @@ and briefing only; they are not a new gate and must not become dynamic
 notifications, threshold changes, staking changes, or lambda changes without
 Gate E/F evidence and Tyler approval.
 
+As of 2026-05-26, two more shadow diagnostics exist:
+`analytics/diagnostics/pre_post_428_model_review.py` with tests in
+`tests/test_pre_post_428_model_review.py`, and
+`analytics/diagnostics/batter_handedness_shadow_audit.py` with tests in
+`tests/test_batter_handedness_shadow_audit.py`. The first is the hard pre/post
+4/28 grading and projection review. The second decides whether batter
+handedness Path B is ready for more than collection. Both are Gate C evidence
+only and must not change live lambda, thresholds, staking, verdicts, provider
+order, notifications, calibration, or dashboard artifacts.
+
 Supabase is not required yet. Gate C should stay closed until we decide whether
 the value of a compact daily research table beats the simplicity of local
 generated artifacts. If promoted later, store compact rows only; do not retain
 raw WebSocket tick history without a separate retention/cost decision.
 
-### Rolling Evidence Update: 2026-05-20
+### Rolling Evidence Update: 2026-05-26
 
 Use the 2026-04-28 formula boundary as the live clean-regime split, but keep a
 small pre/post comparison beside Gate C reads so agents do not forget how the
@@ -122,16 +131,27 @@ For near-term comparisons, use 2026-04-08 through 2026-04-27 as the fair
 immediate pre-bump reference window. Older pre-4/28 rows mix earlier regimes
 and should be treated as broader history, not a like-for-like baseline.
 
-The current read through graded rows on 2026-05-19:
+The current hard read through the 2026-05-26 refresh:
 
-- Immediate pre-bump FIRE weighted: 347 rows, 190-157, +12.95u on 536 staked
-  units, +2.42% ROI. FIRE flat: +17.94u, +5.17% ROI.
-- Clean post-bump FIRE weighted: 321 rows, 163-158, -9.12u on 397 staked
-  units, -2.30% ROI. FIRE flat: -11.93u, -3.72% ROI.
-- The shape inverted: pre-bump FIRE 1u, unders, and high-edge rows were strong;
-  post-bump FIRE 1u, unders, and high-edge rows are weak.
-- Post-bump FIRE 2u, overs, moderate-edge rows, beat-close-price rows, and
-  pre-30 timing rows look more promising, but this is still shadow evidence.
+- Immediate pre-bump tracked picks: 428 rows across 20 slates, 21.40 picks/slate,
+  231-197, +12.63u / +2.9% flat ROI, and +7.64u / +1.2% staked ROI.
+- Clean post-bump tracked picks: 603 rows across 28 slates, 21.54 picks/slate,
+  312-291, -15.68u / -2.6% flat ROI, and -17.30u / -2.5% staked ROI.
+- Projection quality did not broadly degrade. Whole-market MAE improved from
+  1.862 to 1.804, RMSE improved from 2.394 to 2.287, and side accuracy was
+  roughly flat at 54.6% to 54.2%. Tracked-pick MAE also improved from 1.885 to
+  1.814, with side accuracy moving from 53.0% to 54.3%.
+- The betting problem is selection/regime inversion, not a broad projection
+  collapse. Unders flipped from +9.2% ROI pre-bump to -9.2% post-bump, overs
+  flipped from -8.9% to +6.0%, and FIRE 1u flipped from +14.5% to -5.1%.
+- The confidence-referee report is useful for narrowing research questions:
+  `wait_for_late_data` was positive, while `bet_late_if_still_available` was
+  materially poor and should be treated as a warning label until rewritten and
+  retested.
+- Path B batter-handedness has met the old date/sample reminder, but it is not
+  promotion-ready. Compact rows have 0/1,174 row-level right/left/switch lineup
+  hand counts and 0/1,174 handedness matchup buckets. Promote active collection
+  and audit only, not live projection math.
 
 Do not use this comparison to roll back thresholds, staking, formula date, or
 provider behavior. Use it to keep Gate C honest: current-regime buckets matter

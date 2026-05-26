@@ -20,6 +20,8 @@ provider order, notifications, or calibration.
 | Live market outcome slices | `live_market_outcome_audit.py` | Joins exported live market evidence to graded results. |
 | Compact pitcher outcome row | `pitcher_k_outcome_dataset.py` | Canonical research row for market, model, context, CLV, and result. |
 | K projection challengers | `k_projection_shadow_lab.py` | Reuses compact outcome rows to compare current lambda against transparent projection variants. |
+| Pre/post 4/28 hard review | `pre_post_428_model_review.py` | Compares immediate pre-bump and clean post-bump grading, selection, and projection quality. |
+| Batter-handedness Path B readiness | `batter_handedness_shadow_audit.py` | Checks whether lineup hand counts, matchup buckets, and split cache coverage justify anything beyond shadow collection. |
 | Best executable market candidates | `executable_market_shadow_audit.py` | Scores fresh supported mainline book/line/side rows against the current model projection; shadow-only input for cutover review. |
 
 ## Provider Cutover Tracker Ownership
