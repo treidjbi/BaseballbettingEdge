@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-05-26T18:07:24Z",
+  "generated_at": "2026-05-26T18:12:02Z",
   "date": "2026-05-26",
   "props_available": true,
   "data_warnings": [
@@ -583,8 +583,8 @@
       },
       "book_odds": {
         "DraftKings": {
-          "over": -123,
-          "under": -103
+          "over": -119,
+          "under": -107
         },
         "BetMGM": {
           "over": -135,
@@ -707,8 +707,8 @@
       },
       "book_odds": {
         "DraftKings": {
-          "over": -151,
-          "under": 118
+          "over": -161,
+          "under": 126
         },
         "BetMGM": {
           "over": -155,
@@ -876,8 +876,8 @@
       },
       "book_odds": {
         "DraftKings": {
-          "over": -126,
-          "under": -101
+          "over": -140,
+          "under": 110
         },
         "BetMGM": {
           "over": -120,
@@ -2434,10 +2434,6 @@
         "FanDuel": {
           "over": -122,
           "under": -108
-        },
-        "Kalshi": {
-          "over": -121,
-          "under": 101
         }
       },
       "umpire": null,
@@ -3348,10 +3344,6 @@
           "over": 103,
           "under": -131
         },
-        "BetMGM": {
-          "over": 105,
-          "under": -140
-        },
         "FanDuel": {
           "over": 112,
           "under": -138
@@ -3444,8 +3436,8 @@
       "ref_book": "FanDuel",
       "best_over_odds": -110,
       "best_under_odds": -120,
-      "opening_over_odds": -108,
-      "opening_under_odds": -118,
+      "opening_over_odds": -110,
+      "opening_under_odds": -120,
       "opening_odds_source": "first_seen",
       "odds_source": "therundown",
       "the_odds_event_id": null,
@@ -3457,8 +3449,8 @@
       "official_market_line_id": null,
       "provider_coverage": null,
       "provider_arbitration_reasons": null,
-      "price_delta_over": -2,
-      "price_delta_under": -2,
+      "price_delta_over": 0,
+      "price_delta_under": 0,
       "raw_lambda": 5.34,
       "lambda": 5.3,
       "avg_ip": 6.0,
@@ -3517,13 +3509,13 @@
           "over": -111,
           "under": -115
         },
-        "BetMGM": {
-          "over": -115,
-          "under": -115
-        },
         "FanDuel": {
           "over": -110,
           "under": -120
+        },
+        "Kalshi": {
+          "over": 105,
+          "under": -126
         }
       },
       "umpire": null,
@@ -4329,7 +4321,7 @@
     "queued_not_attempted": 0,
     "cache_size": 448,
     "errors": [],
-    "updated_at": "2026-05-26T18:07:24Z"
+    "updated_at": "2026-05-26T18:12:02Z"
   },
   "quality_gate_summary": {
     "clean": 0,
