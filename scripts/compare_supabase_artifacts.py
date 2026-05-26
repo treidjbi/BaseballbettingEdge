@@ -81,14 +81,17 @@ def _fetch_remote_rows_with_cli(artifact_keys: list[str]) -> list[dict[str, Any]
     return parse_supabase_cli_rows(result.stdout)
 
 
-def _compare_local_rows(
+def compare_local_to_remote_rows(
     local_rows: list[dict[str, Any]],
     remote_rows: list[dict[str, Any]],
+    *,
+    remote_key_prefix: str = "",
 ) -> list[dict[str, Any]]:
     remote_by_key = {row["artifact_key"]: row for row in remote_rows}
     comparisons = []
     for local in local_rows:
-        remote = remote_by_key.get(local["artifact_key"])
+        remote_key = f"{remote_key_prefix}{local['artifact_key']}"
+        remote = remote_by_key.get(remote_key)
         comparison = compare_hashes(
             local_sha=local["payload_sha256"],
             remote_sha=(remote or {}).get("payload_sha256"),
@@ -96,6 +99,7 @@ def _compare_local_rows(
         status = "match" if comparison["matches"] else ("missing" if remote is None else "mismatch")
         comparisons.append({
             "artifact_key": local["artifact_key"],
+            "remote_artifact_key": remote_key,
             "status": status,
             "published_at": (remote or {}).get("published_at"),
             **comparison,
@@ -108,6 +112,7 @@ def run(
     root: Path,
     writer: Any,
     slate_date: str,
+    remote_key_prefix: str = "",
 ) -> list[dict[str, Any]]:
     local_rows = collect_artifact_rows(
         root=root,
@@ -118,13 +123,13 @@ def run(
     )
     remote_rows = [
         row
-        for row in (_fetch_remote_row(writer, local["artifact_key"]) for local in local_rows)
+        for row in (_fetch_remote_row(writer, f"{remote_key_prefix}{local['artifact_key']}") for local in local_rows)
         if row is not None
     ]
-    return _compare_local_rows(local_rows, remote_rows)
+    return compare_local_to_remote_rows(local_rows, remote_rows, remote_key_prefix=remote_key_prefix)
 
 
-def run_with_linked_cli(*, root: Path, slate_date: str) -> list[dict[str, Any]]:
+def run_with_linked_cli(*, root: Path, slate_date: str, remote_key_prefix: str = "") -> list[dict[str, Any]]:
     local_rows = collect_artifact_rows(
         root=root,
         slate_date=slate_date,
@@ -132,13 +137,18 @@ def run_with_linked_cli(*, root: Path, slate_date: str) -> list[dict[str, Any]]:
         source_run_id=None,
         source_commit_sha=None,
     )
-    remote_rows = _fetch_remote_rows_with_cli([row["artifact_key"] for row in local_rows])
-    return _compare_local_rows(local_rows, remote_rows)
+    remote_rows = _fetch_remote_rows_with_cli([f"{remote_key_prefix}{row['artifact_key']}" for row in local_rows])
+    return compare_local_to_remote_rows(local_rows, remote_rows, remote_key_prefix=remote_key_prefix)
 
 
 def _parse_args(argv: list[str]) -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--date", required=True)
+    parser.add_argument(
+        "--remote-key-prefix",
+        default="",
+        help="Optional prefix used by shadow/candidate rows in Supabase.",
+    )
     parser.add_argument("--strict", action="store_true")
     return parser.parse_args(argv)
 
@@ -147,9 +157,9 @@ def main(argv: list[str] | None = None) -> int:
     args = _parse_args(argv or sys.argv[1:])
     if os.environ.get("SUPABASE_URL", "").strip() and os.environ.get("SUPABASE_SERVICE_ROLE_KEY", "").strip():
         writer = SupabaseMarketWriter(_env("SUPABASE_URL"), _env("SUPABASE_SERVICE_ROLE_KEY"))
-        comparisons = run(root=ROOT, writer=writer, slate_date=args.date)
+        comparisons = run(root=ROOT, writer=writer, slate_date=args.date, remote_key_prefix=args.remote_key_prefix)
     else:
-        comparisons = run_with_linked_cli(root=ROOT, slate_date=args.date)
+        comparisons = run_with_linked_cli(root=ROOT, slate_date=args.date, remote_key_prefix=args.remote_key_prefix)
     ok = True
     for row in comparisons:
         if row["status"] != "match":
@@ -157,6 +167,7 @@ def main(argv: list[str] | None = None) -> int:
         print(
             "artifact_parity "
             f"status={row['status']} key={row['artifact_key']} "
+            f"remote_key={row['remote_artifact_key']} "
             f"local_sha={row['local_sha']} remote_sha={row['remote_sha']} "
             f"published_at={row['published_at']}"
         )

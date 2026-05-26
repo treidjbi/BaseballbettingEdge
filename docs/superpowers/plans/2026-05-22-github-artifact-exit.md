@@ -1199,10 +1199,10 @@ and dashboard API canaries pass.
 
 | Service | Command | Schedule |
 | --- | --- | --- |
-| `bbe-pipeline-preview` | `python pipeline/run_pipeline.py $SLATE_DATE --run-type preview && python scripts/publish_pipeline_artifacts_to_supabase.py --date $SLATE_DATE --source render_pipeline --source-run-id $RENDER_RUN_ID --execute` | 12:17 AM Phoenix |
-| `bbe-pipeline-grading` | `python pipeline/run_pipeline.py $SLATE_DATE --run-type grading && python scripts/publish_pipeline_artifacts_to_supabase.py --date $SLATE_DATE --source render_pipeline --source-run-id $RENDER_RUN_ID --execute` | 3:17 AM Phoenix |
-| `bbe-pipeline-full-refresh` | `python pipeline/run_pipeline.py $SLATE_DATE && python scripts/publish_pipeline_artifacts_to_supabase.py --date $SLATE_DATE --source render_pipeline --source-run-id $RENDER_RUN_ID --execute` | 6:17 AM, then 8:07 AM-6:07 PM Phoenix |
-| `bbe-pipeline-lock` | `python pipeline/run_pipeline.py $SLATE_DATE --run-type lock && python scripts/publish_pipeline_artifacts_to_supabase.py --date $SLATE_DATE --source render_pipeline --source-run-id $RENDER_RUN_ID --execute` | Triggered by live layer, not cron |
+| `bbe-pipeline-preview` | `python scripts/run_render_pipeline_mode.py --mode preview --shadow-prefix --execute` | 12:17 AM Phoenix |
+| `bbe-pipeline-grading` | `python scripts/run_render_pipeline_mode.py --mode grading --shadow-prefix --execute` | 3:17 AM Phoenix |
+| `bbe-pipeline-full-refresh` | `python scripts/run_render_pipeline_mode.py --mode pipeline --shadow-prefix --execute` | 6:17 AM, then 8:07 AM-6:07 PM Phoenix |
+| `bbe-pipeline-lock` | `python scripts/run_render_pipeline_mode.py --mode lock --shadow-prefix --execute` | Triggered by live layer, not cron |
 
 ## Required Environment
 
@@ -1218,11 +1218,12 @@ and dashboard API canaries pass.
 
 ## Promotion Gate
 
-Run Render in shadow for one slate while GitHub remains official. Promote only
-when Render-generated Supabase artifact hashes match GitHub committed artifacts
-for `today`, dated archive, `steam`, `performance`, `params`,
-`preview_lines`, and `picks_history` where those files are expected for the
-run type.
+Run Render in shadow for one slate while GitHub remains official. During
+rehearsal, publish Render outputs under `render_shadow:<publish-date>:` keys so
+they cannot overwrite the live Netlify artifact API mirror. Promote only when
+Render-generated Supabase artifact hashes match GitHub committed artifacts for
+`today`, dated archive, `steam`, `performance`, `params`, `preview_lines`, and
+`picks_history` where those files are expected for the run type.
 
 ## Rollback
 
@@ -1294,7 +1295,9 @@ Result, 2026-05-24:
 - [ ] **Step 2: Configure Render shadow schedule**
 
 Create Render cron services from `render/pipeline-runner.md`, but keep GitHub
-scheduled workflows official for one slate.
+scheduled workflows official for one slate. Use the `--shadow-prefix` runner so
+Render rows are written to prefixed artifact keys such as
+`render_shadow:2026-05-26:today` instead of the live `today` key.
 
 - [ ] **Step 3: Compare GitHub and Render outputs**
 
@@ -1306,6 +1309,12 @@ For each expected run type, record:
 - publication row;
 - dashboard API result;
 - any mismatch.
+
+Use:
+
+```powershell
+python scripts/compare_supabase_artifacts.py --date YYYY-MM-DD --remote-key-prefix "render_shadow:YYYY-MM-DD:" --strict
+```
 
 - [ ] **Step 4: Update current state**
 
@@ -1593,3 +1602,18 @@ Render cleanup, 2026-05-25: the two inert misconfigured runner clones
 confirming their service names/IDs through the Render API. The known-good hosted
 runner canary `bbe-pipeline-shadow-runner-hosted`
 (`crn-d89jpvdckfvc738nfla0`) remains for the next scheduler rehearsal.
+
+Scheduler follow-up, 2026-05-26: another stale current-slate artifact by the
+morning brief strengthened the case for advancing Task 9 Step 2 / Task 11
+rehearsal. Do not disable GitHub scheduled triggers yet because Render has not
+matched a full slate. The next move is a Render scheduler rehearsal that uses
+`scripts/run_render_pipeline_mode.py --shadow-prefix --execute`, so Render
+publishes to `render_shadow:<publish-date>:` artifact keys and cannot overwrite
+the live Netlify artifact API mirror. Compare those candidate rows with:
+
+```powershell
+python scripts/compare_supabase_artifacts.py --date YYYY-MM-DD --remote-key-prefix "render_shadow:YYYY-MM-DD:" --strict
+```
+
+Only after one clean full-slate Render/GitHub hash match should Task 11 proceed
+to disabling GitHub scheduled triggers.

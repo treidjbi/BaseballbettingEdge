@@ -1,0 +1,28 @@
+from scripts import run_render_pipeline_mode as entrypoint
+
+
+def test_publish_contract_for_grading_uses_prior_slate_and_grading_scope():
+    contract = entrypoint.build_publish_contract("grading", "2026-05-26")
+
+    assert contract.pipeline_args[-3:] == ["2026-05-26", "--run-type", "grading"]
+    assert contract.publish_date == "2026-05-25"
+    assert contract.publish_scope == "grading"
+    assert contract.pipeline_run_type == "grading"
+
+
+def test_publish_contract_for_pipeline_uses_current_slate_and_all_artifacts():
+    contract = entrypoint.build_publish_contract("pipeline", "2026-05-26")
+
+    assert contract.pipeline_args[-1] == "2026-05-26"
+    assert "--run-type" not in contract.pipeline_args
+    assert contract.publish_date == "2026-05-26"
+    assert contract.publish_scope == "all"
+    assert contract.pipeline_run_type == "full"
+
+
+def test_shadow_prefix_uses_publish_date_not_run_date():
+    contract = entrypoint.build_publish_contract("grading", "2026-05-26")
+
+    assert entrypoint.resolve_artifact_key_prefix(contract, shadow_prefix=True, explicit_prefix="") == (
+        "render_shadow:2026-05-25:"
+    )

@@ -40,6 +40,7 @@ def collect_artifact_rows(
     source_run_id: str | None,
     source_commit_sha: str | None,
     scope: str = "all",
+    artifact_key_prefix: str = "",
 ) -> list[dict[str, Any]]:
     if scope == "all":
         paths = list(ARTIFACT_PATHS)
@@ -53,15 +54,25 @@ def collect_artifact_rows(
         path = root / relative
         if not path.exists():
             continue
-        rows.append(
-            build_artifact_row(
-                root=root,
-                path=path,
-                source=source,
-                source_run_id=source_run_id,
-                source_commit_sha=source_commit_sha,
-            )
+        row = build_artifact_row(
+            root=root,
+            path=path,
+            source=source,
+            source_run_id=source_run_id,
+            source_commit_sha=source_commit_sha,
         )
+        if artifact_key_prefix:
+            base_artifact_key = row["artifact_key"]
+            row = {
+                **row,
+                "artifact_key": f"{artifact_key_prefix}{base_artifact_key}",
+                "metadata": {
+                    **row.get("metadata", {}),
+                    "base_artifact_key": base_artifact_key,
+                    "artifact_key_prefix": artifact_key_prefix,
+                },
+            }
+        rows.append(row)
     return rows
 
 
@@ -75,6 +86,7 @@ def run(
     source_commit_sha: str | None,
     execute: bool,
     scope: str = "all",
+    artifact_key_prefix: str = "",
 ) -> dict[str, Any]:
     started_at = datetime.now(timezone.utc).isoformat()
     rows = collect_artifact_rows(
@@ -84,6 +96,7 @@ def run(
         source_run_id=source_run_id,
         source_commit_sha=source_commit_sha,
         scope=scope,
+        artifact_key_prefix=artifact_key_prefix,
     )
     if execute:
         if writer is None:
@@ -101,7 +114,10 @@ def run(
             "artifact_count": len(rows),
             "started_at": started_at,
             "completed_at": completed_at,
-            "metadata": {"source_commit_sha": source_commit_sha},
+            "metadata": {
+                "source_commit_sha": source_commit_sha,
+                "artifact_key_prefix": artifact_key_prefix or None,
+            },
         }
         writer.insert_rows("pipeline_artifact_publication_runs", [run_row])
     return {"artifact_count": len(rows), "execute": execute}
@@ -114,6 +130,11 @@ def _parse_args(argv: list[str]) -> argparse.Namespace:
     parser.add_argument("--source-run-id")
     parser.add_argument("--source-commit-sha")
     parser.add_argument("--scope", choices=("all", "grading"), default="all")
+    parser.add_argument(
+        "--artifact-key-prefix",
+        default="",
+        help="Optional prefix for shadow/candidate artifact keys.",
+    )
     parser.add_argument("--execute", action="store_true")
     return parser.parse_args(argv)
 
@@ -132,6 +153,7 @@ def main(argv: list[str] | None = None) -> int:
         source_commit_sha=args.source_commit_sha,
         execute=args.execute,
         scope=args.scope,
+        artifact_key_prefix=args.artifact_key_prefix,
     )
     mode = "execute" if args.execute else "dry_run"
     print(f"artifact_publish mode={mode} date={args.date} artifacts={result['artifact_count']}")

@@ -63,6 +63,8 @@ on:
         default: pipeline
         options:
           - pipeline
+          - preview
+          - grading
           - propline_probe
           - lock
       date:
@@ -130,6 +132,16 @@ jobs:
             exit 0
           fi
 
+          if [ "$MODE" = "preview" ]; then
+            python pipeline/run_pipeline.py $TODAY --run-type preview
+            exit 0
+          fi
+
+          if [ "$MODE" = "grading" ]; then
+            python pipeline/run_pipeline.py $TODAY --run-type grading
+            exit 0
+          fi
+
           if [ "$MODE" = "lock" ]; then
             python pipeline/run_pipeline.py $TODAY --run-type lock
             exit 0
@@ -184,6 +196,10 @@ jobs:
           RUN_TYPE="full"
           if [ "$MODE" = "lock" ]; then
             RUN_TYPE="lock"
+          elif [ "$MODE" = "preview" ]; then
+            RUN_TYPE="preview"
+          elif [ "$MODE" = "grading" ]; then
+            RUN_TYPE="grading"
           elif [ "$SCHEDULE" = "17 7 * * *" ]; then
             RUN_TYPE="preview"
           elif [ "$SCHEDULE" = "17 10 * * *" ]; then
@@ -234,6 +250,10 @@ jobs:
           RUN_TYPE="full"
           if [ "$MODE" = "lock" ]; then
             RUN_TYPE="lock"
+          elif [ "$MODE" = "preview" ]; then
+            RUN_TYPE="preview"
+          elif [ "$MODE" = "grading" ]; then
+            RUN_TYPE="grading"
           elif [ "$SCHEDULE" = "17 7 * * *" ]; then
             RUN_TYPE="preview"
           elif [ "$SCHEDULE" = "17 10 * * *" ]; then
@@ -274,9 +294,10 @@ jobs:
             exit 0
           fi
           SCHEDULE="${{ github.event.schedule }}"
-          if [ "$SCHEDULE" = "17 10 * * *" ]; then
+          MODE="${{ github.event.inputs.mode }}"
+          if [ "$MODE" = "grading" ] || [ "$SCHEDULE" = "17 10 * * *" ]; then
             RUN_TYPE="grading"
-          elif [ "$SCHEDULE" = "17 7 * * *" ]; then
+          elif [ "$MODE" = "preview" ] || [ "$SCHEDULE" = "17 7 * * *" ]; then
             RUN_TYPE="preview"
           else
             RUN_TYPE="full"

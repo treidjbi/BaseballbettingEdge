@@ -66,6 +66,18 @@ def test_pipeline_workflow_exposes_manual_lock_mode():
     assert "exit 0" in run_block
 
 
+def test_pipeline_workflow_exposes_manual_preview_and_grading_modes():
+    workflow_text = _read_workflow()
+    run_block = _extract_step_block(workflow_text, "Run pipeline")
+
+    assert "- preview" in workflow_text
+    assert "- grading" in workflow_text
+    assert 'if [ "$MODE" = "preview" ]; then' in run_block
+    assert "python pipeline/run_pipeline.py $TODAY --run-type preview" in run_block
+    assert 'if [ "$MODE" = "grading" ]; then' in run_block
+    assert "python pipeline/run_pipeline.py $TODAY --run-type grading" in run_block
+
+
 def test_pipeline_workflow_passes_supabase_lock_flags_to_runner():
     workflow_text = _read_workflow()
     run_block = _extract_step_block(workflow_text, "Run pipeline")
