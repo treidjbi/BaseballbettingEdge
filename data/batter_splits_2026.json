@@ -7555,22 +7555,17 @@
       }
     }
   },
-  "updated_at": "2026-05-26T05:14:08Z",
+  "updated_at": "2026-05-26T18:07:24Z",
   "last_run": {
     "projection_status": "collection_only",
-    "requested_batters": 225,
-    "already_cached": 213,
-    "attempted": 4,
+    "requested_batters": 9,
+    "already_cached": 9,
+    "attempted": 0,
     "collected": 0,
-    "failed": 4,
-    "queued_not_attempted": 8,
+    "failed": 0,
+    "queued_not_attempted": 0,
     "cache_size": 448,
-    "errors": [
-      "Rikuu Nishida: no bbref id",
-      "Bryan Torres: no bbref id",
-      "Lucas Erceg: no platoon split rows",
-      "A.J. Ewing: no bbref id"
-    ],
-    "updated_at": "2026-05-26T05:14:08Z"
+    "errors": [],
+    "updated_at": "2026-05-26T18:07:24Z"
   }
 }
