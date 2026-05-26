@@ -37,5 +37,18 @@ def test_shadow_runtime_overrides_disable_official_mutation_paths():
     assert overrides["ENABLE_BOLTODDS_PIPELINE_SOURCE"] == "false"
 
 
+def test_shadow_provider_rehearsal_enables_provider_adapter_but_not_lock_consumer():
+    overrides = entrypoint.shadow_runtime_env_overrides(
+        "render_shadow:2026-05-26:",
+        provider_rehearsal=True,
+    )
+
+    assert overrides["ENABLE_SUPABASE_LOCK_CONSUMER"] == "false"
+    assert overrides["SUPABASE_LOCK_CONSUMER_STRICT"] == "false"
+    assert overrides["OFFICIAL_MARKET_SOURCE"] == "boltodds_propline"
+    assert overrides["ENABLE_BOLTODDS_PIPELINE_SOURCE"] == "true"
+    assert overrides["OFFICIAL_MARKET_STRICT"] == "true"
+
+
 def test_shadow_runtime_overrides_are_empty_for_live_key_publish():
     assert entrypoint.shadow_runtime_env_overrides("") == {}

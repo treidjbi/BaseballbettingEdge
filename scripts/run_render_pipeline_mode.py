@@ -80,15 +80,33 @@ def resolve_artifact_key_prefix(
     return ""
 
 
-def shadow_runtime_env_overrides(artifact_key_prefix: str) -> dict[str, str]:
+def shadow_runtime_env_overrides(
+    artifact_key_prefix: str,
+    *,
+    provider_rehearsal: bool = False,
+) -> dict[str, str]:
     if not artifact_key_prefix:
         return {}
-    return {
+    overrides = {
         "ENABLE_SUPABASE_LOCK_CONSUMER": "false",
         "SUPABASE_LOCK_CONSUMER_STRICT": "false",
-        "OFFICIAL_MARKET_SOURCE": "therundown",
-        "ENABLE_BOLTODDS_PIPELINE_SOURCE": "false",
     }
+    if provider_rehearsal:
+        overrides.update(
+            {
+                "OFFICIAL_MARKET_SOURCE": "boltodds_propline",
+                "ENABLE_BOLTODDS_PIPELINE_SOURCE": "true",
+                "OFFICIAL_MARKET_STRICT": "true",
+            }
+        )
+    else:
+        overrides.update(
+            {
+                "OFFICIAL_MARKET_SOURCE": "therundown",
+                "ENABLE_BOLTODDS_PIPELINE_SOURCE": "false",
+            }
+        )
+    return overrides
 
 
 def _apply_env_overrides(overrides: dict[str, str]) -> dict[str, str | None]:
@@ -153,6 +171,14 @@ def _parse_args(argv: list[str]) -> argparse.Namespace:
         default="",
         help="Explicit artifact key prefix. Overrides --shadow-prefix.",
     )
+    parser.add_argument(
+        "--provider-rehearsal",
+        action="store_true",
+        help=(
+            "With shadow artifact keys, run the pipeline against the "
+            "BoltOdds/PropLine official-market adapter in strict mode."
+        ),
+    )
     return parser.parse_args(argv)
 
 
@@ -165,7 +191,14 @@ def main(argv: list[str] | None = None) -> int:
         shadow_prefix=args.shadow_prefix,
         explicit_prefix=args.artifact_key_prefix,
     )
-    runtime_previous = _apply_env_overrides(shadow_runtime_env_overrides(artifact_key_prefix))
+    if args.provider_rehearsal and not artifact_key_prefix:
+        raise ValueError("--provider-rehearsal requires --shadow-prefix or --artifact-key-prefix")
+    runtime_previous = _apply_env_overrides(
+        shadow_runtime_env_overrides(
+            artifact_key_prefix,
+            provider_rehearsal=args.provider_rehearsal,
+        )
+    )
 
     try:
         subprocess.run(contract.pipeline_args, cwd=ROOT, check=True)
@@ -201,7 +234,8 @@ def main(argv: list[str] | None = None) -> int:
         "render_pipeline_mode "
         f"mode={args.mode} slate_date={slate_date} publish_date={contract.publish_date} "
         f"scope={contract.publish_scope} publish_mode={mode} artifacts={result['artifact_count']} "
-        f"artifact_key_prefix={artifact_key_prefix or '<none>'}"
+        f"artifact_key_prefix={artifact_key_prefix or '<none>'} "
+        f"provider_rehearsal={str(args.provider_rehearsal).lower()}"
     )
     return 0
 
