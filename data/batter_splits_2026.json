@@ -7587,22 +7587,34 @@
         "so": 0,
         "k_rate": 0.0
       }
+    },
+    "mlbam:676724": {
+      "name": "Jared Young",
+      "bats": "R",
+      "mlbam_id": 676724,
+      "bbref_id": "youngja02",
+      "season": 2026,
+      "vs_R": {
+        "pa": 23,
+        "so": 3,
+        "k_rate": 0.1304
+      }
     }
   },
-  "updated_at": "2026-05-26T19:24:31Z",
+  "updated_at": "2026-05-26T19:34:58Z",
   "last_run": {
     "projection_status": "collection_only",
-    "requested_batters": 81,
-    "already_cached": 76,
-    "attempted": 4,
-    "collected": 2,
+    "requested_batters": 99,
+    "already_cached": 96,
+    "attempted": 3,
+    "collected": 1,
     "failed": 2,
-    "queued_not_attempted": 1,
-    "cache_size": 450,
+    "queued_not_attempted": 0,
+    "cache_size": 451,
     "errors": [
       "Esmerlyn Valdez: no bbref id",
       "A.J. Ewing: no bbref id"
     ],
-    "updated_at": "2026-05-26T19:24:31Z"
+    "updated_at": "2026-05-26T19:34:58Z"
   }
 }
