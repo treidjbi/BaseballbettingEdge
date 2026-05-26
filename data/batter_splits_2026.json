@@ -7553,19 +7553,56 @@
         "so": 1,
         "k_rate": 0.0833
       }
+    },
+    "mlbam:685133": {
+      "name": "Wade Meckler",
+      "bats": "R",
+      "mlbam_id": 685133,
+      "bbref_id": "mecklwa01",
+      "season": 2026,
+      "vs_R": {
+        "pa": 7,
+        "so": 1,
+        "k_rate": 0.1429
+      },
+      "vs_L": {
+        "pa": 1,
+        "so": 0,
+        "k_rate": 0.0
+      }
+    },
+    "mlbam:622268": {
+      "name": "Donovan Walton",
+      "bats": "R",
+      "mlbam_id": 622268,
+      "bbref_id": "waltodo01",
+      "season": 2026,
+      "vs_R": {
+        "pa": 6,
+        "so": 2,
+        "k_rate": 0.3333
+      },
+      "vs_L": {
+        "pa": 2,
+        "so": 0,
+        "k_rate": 0.0
+      }
     }
   },
-  "updated_at": "2026-05-26T19:04:14Z",
+  "updated_at": "2026-05-26T19:24:31Z",
   "last_run": {
     "projection_status": "collection_only",
-    "requested_batters": 45,
-    "already_cached": 45,
-    "attempted": 0,
-    "collected": 0,
-    "failed": 0,
-    "queued_not_attempted": 0,
-    "cache_size": 448,
-    "errors": [],
-    "updated_at": "2026-05-26T19:04:14Z"
+    "requested_batters": 81,
+    "already_cached": 76,
+    "attempted": 4,
+    "collected": 2,
+    "failed": 2,
+    "queued_not_attempted": 1,
+    "cache_size": 450,
+    "errors": [
+      "Esmerlyn Valdez: no bbref id",
+      "A.J. Ewing: no bbref id"
+    ],
+    "updated_at": "2026-05-26T19:24:31Z"
   }
 }
