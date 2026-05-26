@@ -31,6 +31,11 @@ repair showed GitHub scheduler timing as the weak point:
 These services do not replace GitHub schedules. They publish to
 `render_shadow:<publish-date>:` keys only, so the normal Netlify artifact API
 mirror stays on GitHub/static-compatible keys until promotion is explicit.
+The wrapper also forces `ENABLE_SUPABASE_LOCK_CONSUMER=false`,
+`SUPABASE_LOCK_CONSUMER_STRICT=false`, `OFFICIAL_MARKET_SOURCE=therundown`, and
+`ENABLE_BOLTODDS_PIPELINE_SOURCE=false` during shadow-prefixed runs. That keeps
+shadow scheduler rehearsal from consuming official lock rows or testing the
+provider cutover path by accident.
 
 ## Required Environment
 

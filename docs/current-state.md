@@ -444,7 +444,10 @@ Artifact-exit rollout note, 2026-05-24:
   `bbe-pipeline-preview-shadow` (`crn-d8as4l1akrks738ngep0`, `17 7 * * *`),
   `bbe-pipeline-grading-shadow` (`crn-d8as4pdckfvc73dgpme0`, `17 10 * * *`),
   and `bbe-pipeline-full-shadow` (`crn-d8as4r8g4nts73b5f510`, `17 13 * * *`).
-  They must be evaluated as shadow evidence only.
+  Shadow-prefixed runs force the Supabase lock consumer off and keep
+  `OFFICIAL_MARKET_SOURCE=therundown`, so they cannot consume official lock
+  rows or accidentally test the BoltOdds/PropLine provider cutover. They must
+  be evaluated as shadow evidence only.
 
 Post-cutover cadence planning note, 2026-05-25:
 

@@ -26,3 +26,16 @@ def test_shadow_prefix_uses_publish_date_not_run_date():
     assert entrypoint.resolve_artifact_key_prefix(contract, shadow_prefix=True, explicit_prefix="") == (
         "render_shadow:2026-05-25:"
     )
+
+
+def test_shadow_runtime_overrides_disable_official_mutation_paths():
+    overrides = entrypoint.shadow_runtime_env_overrides("render_shadow:2026-05-26:")
+
+    assert overrides["ENABLE_SUPABASE_LOCK_CONSUMER"] == "false"
+    assert overrides["SUPABASE_LOCK_CONSUMER_STRICT"] == "false"
+    assert overrides["OFFICIAL_MARKET_SOURCE"] == "therundown"
+    assert overrides["ENABLE_BOLTODDS_PIPELINE_SOURCE"] == "false"
+
+
+def test_shadow_runtime_overrides_are_empty_for_live_key_publish():
+    assert entrypoint.shadow_runtime_env_overrides("") == {}

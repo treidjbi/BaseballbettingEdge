@@ -1309,6 +1309,11 @@ Result, 2026-05-26:
   `manual-render-pipeline-2026-05-26-20260526T155239Z`.
 - Normal live artifact keys still matched GitHub/static 8/8 after the one-off
   run, proving the prefix prevented mirror overwrite.
+- Shadow-prefixed runs now force `ENABLE_SUPABASE_LOCK_CONSUMER=false`,
+  `SUPABASE_LOCK_CONSUMER_STRICT=false`, `OFFICIAL_MARKET_SOURCE=therundown`,
+  and `ENABLE_BOLTODDS_PIPELINE_SOURCE=false` while they run. This prevents the
+  rehearsal from consuming official Supabase lock rows or quietly testing a
+  provider-source change.
 - Created morning-only Render shadow cron services, all on `main` at
   `4c6d0edc`, auto-deploy off:
   - `bbe-pipeline-preview-shadow` (`crn-d8as4l1akrks738ngep0`), schedule

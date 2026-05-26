@@ -80,6 +80,32 @@ def resolve_artifact_key_prefix(
     return ""
 
 
+def shadow_runtime_env_overrides(artifact_key_prefix: str) -> dict[str, str]:
+    if not artifact_key_prefix:
+        return {}
+    return {
+        "ENABLE_SUPABASE_LOCK_CONSUMER": "false",
+        "SUPABASE_LOCK_CONSUMER_STRICT": "false",
+        "OFFICIAL_MARKET_SOURCE": "therundown",
+        "ENABLE_BOLTODDS_PIPELINE_SOURCE": "false",
+    }
+
+
+def _apply_env_overrides(overrides: dict[str, str]) -> dict[str, str | None]:
+    previous = {key: os.environ.get(key) for key in overrides}
+    for key, value in overrides.items():
+        os.environ[key] = value
+    return previous
+
+
+def _restore_env(previous: dict[str, str | None]) -> None:
+    for key, value in previous.items():
+        if value is None:
+            os.environ.pop(key, None)
+        else:
+            os.environ[key] = value
+
+
 def resolve_source_run_id(mode: str, publish_date: str) -> str:
     render_run_id = os.environ.get("RENDER_RUN_ID", "").strip()
     if render_run_id:
@@ -139,32 +165,36 @@ def main(argv: list[str] | None = None) -> int:
         shadow_prefix=args.shadow_prefix,
         explicit_prefix=args.artifact_key_prefix,
     )
+    runtime_previous = _apply_env_overrides(shadow_runtime_env_overrides(artifact_key_prefix))
 
-    subprocess.run(contract.pipeline_args, cwd=ROOT, check=True)
-
-    writer = None
-    if args.execute:
-        writer = SupabaseMarketWriter(_env("SUPABASE_URL"), _env("SUPABASE_SERVICE_ROLE_KEY"))
-
-    previous_run_type = os.environ.get("PIPELINE_RUN_TYPE")
-    os.environ["PIPELINE_RUN_TYPE"] = contract.pipeline_run_type
     try:
-        result = publish_artifacts(
-            root=ROOT,
-            writer=writer,
-            slate_date=contract.publish_date,
-            source="render_pipeline",
-            source_run_id=resolve_source_run_id(args.mode, contract.publish_date),
-            source_commit_sha=resolve_source_commit_sha(),
-            execute=args.execute,
-            scope=contract.publish_scope,
-            artifact_key_prefix=artifact_key_prefix,
-        )
+        subprocess.run(contract.pipeline_args, cwd=ROOT, check=True)
+
+        writer = None
+        if args.execute:
+            writer = SupabaseMarketWriter(_env("SUPABASE_URL"), _env("SUPABASE_SERVICE_ROLE_KEY"))
+
+        previous_run_type = os.environ.get("PIPELINE_RUN_TYPE")
+        os.environ["PIPELINE_RUN_TYPE"] = contract.pipeline_run_type
+        try:
+            result = publish_artifacts(
+                root=ROOT,
+                writer=writer,
+                slate_date=contract.publish_date,
+                source="render_pipeline",
+                source_run_id=resolve_source_run_id(args.mode, contract.publish_date),
+                source_commit_sha=resolve_source_commit_sha(),
+                execute=args.execute,
+                scope=contract.publish_scope,
+                artifact_key_prefix=artifact_key_prefix,
+            )
+        finally:
+            if previous_run_type is None:
+                os.environ.pop("PIPELINE_RUN_TYPE", None)
+            else:
+                os.environ["PIPELINE_RUN_TYPE"] = previous_run_type
     finally:
-        if previous_run_type is None:
-            os.environ.pop("PIPELINE_RUN_TYPE", None)
-        else:
-            os.environ["PIPELINE_RUN_TYPE"] = previous_run_type
+        _restore_env(runtime_previous)
 
     mode = "execute" if args.execute else "dry_run"
     print(
