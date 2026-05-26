@@ -434,6 +434,17 @@ Artifact-exit rollout note, 2026-05-24:
   `scripts/run_render_pipeline_mode.py --shadow-prefix --execute`; those rows
   publish under `render_shadow:<publish-date>:` keys so the rehearsal cannot
   overwrite the live Supabase artifact mirror or Tyler-only API canary.
+- Same-day scheduler-rehearsal setup on 2026-05-26: commit `4c6d0edc` added the
+  Render wrapper and shadow-key parity support, then `bbe-pipeline-shadow-runner-hosted`
+  was redeployed on that commit. One-off Render job `job-d8as33j7uimc73ck10og`
+  succeeded for May 26 full mode and wrote 8 prefixed rows under
+  `render_shadow:2026-05-26:`. Normal live artifact keys still matched
+  GitHub/static 8/8 afterward. Three morning-only Render shadow cron services
+  are now active for the next slate while GitHub remains official:
+  `bbe-pipeline-preview-shadow` (`crn-d8as4l1akrks738ngep0`, `17 7 * * *`),
+  `bbe-pipeline-grading-shadow` (`crn-d8as4pdckfvc73dgpme0`, `17 10 * * *`),
+  and `bbe-pipeline-full-shadow` (`crn-d8as4r8g4nts73b5f510`, `17 13 * * *`).
+  They must be evaluated as shadow evidence only.
 
 Post-cutover cadence planning note, 2026-05-25:
 

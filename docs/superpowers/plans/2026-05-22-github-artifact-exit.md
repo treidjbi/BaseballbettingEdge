@@ -1292,12 +1292,34 @@ Result, 2026-05-24:
 - No dashboard source switch, active Render schedule, provider source, model,
   threshold, staking, notification, or retention behavior changed.
 
-- [ ] **Step 2: Configure Render shadow schedule**
+- [x] **Step 2: Configure Render shadow schedule**
 
 Create Render cron services from `render/pipeline-runner.md`, but keep GitHub
 scheduled workflows official for one slate. Use the `--shadow-prefix` runner so
 Render rows are written to prefixed artifact keys such as
 `render_shadow:2026-05-26:today` instead of the live `today` key.
+
+Result, 2026-05-26:
+
+- Added `scripts/run_render_pipeline_mode.py` so Render uses the same
+  preview/grading/full/lock publish contract as GitHub while writing rehearsal
+  artifacts under `render_shadow:<publish-date>:` keys.
+- One-off Render job `job-d8as33j7uimc73ck10og` succeeded for
+  `2026-05-26` full mode and wrote 8 prefixed rows through publication run
+  `manual-render-pipeline-2026-05-26-20260526T155239Z`.
+- Normal live artifact keys still matched GitHub/static 8/8 after the one-off
+  run, proving the prefix prevented mirror overwrite.
+- Created morning-only Render shadow cron services, all on `main` at
+  `4c6d0edc`, auto-deploy off:
+  - `bbe-pipeline-preview-shadow` (`crn-d8as4l1akrks738ngep0`), schedule
+    `17 7 * * *`.
+  - `bbe-pipeline-grading-shadow` (`crn-d8as4pdckfvc73dgpme0`), schedule
+    `17 10 * * *`.
+  - `bbe-pipeline-full-shadow` (`crn-d8as4r8g4nts73b5f510`), schedule
+    `17 13 * * *`.
+- GitHub scheduled workflows remain official; dashboard reads remain static by
+  default; this does not enable provider, model, threshold, staking,
+  notification, retention, or dashboard-source changes.
 
 - [ ] **Step 3: Compare GitHub and Render outputs**
 

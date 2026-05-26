@@ -17,6 +17,21 @@ on the normal `today`, `dated_slate:YYYY-MM-DD`, `steam`, and related keys.
 | `bbe-pipeline-full-refresh` | `python scripts/run_render_pipeline_mode.py --mode pipeline --shadow-prefix --execute` | 6:17 AM, then 8:07 AM-6:07 PM Phoenix |
 | `bbe-pipeline-lock` | `python scripts/run_render_pipeline_mode.py --mode lock --shadow-prefix --execute` | Triggered by live layer, not cron |
 
+## Active Shadow Rehearsal Services
+
+Created 2026-05-26 on `main` commit `4c6d0edc` after the May 26 stale-artifact
+repair showed GitHub scheduler timing as the weak point:
+
+| Service | Render ID | Schedule | Status |
+| --- | --- | --- | --- |
+| `bbe-pipeline-preview-shadow` | `crn-d8as4l1akrks738ngep0` | `17 7 * * *` | shadow-only active |
+| `bbe-pipeline-grading-shadow` | `crn-d8as4pdckfvc73dgpme0` | `17 10 * * *` | shadow-only active |
+| `bbe-pipeline-full-shadow` | `crn-d8as4r8g4nts73b5f510` | `17 13 * * *` | shadow-only active |
+
+These services do not replace GitHub schedules. They publish to
+`render_shadow:<publish-date>:` keys only, so the normal Netlify artifact API
+mirror stays on GitHub/static-compatible keys until promotion is explicit.
+
 ## Required Environment
 
 - `RUNDOWN_API_KEY`
