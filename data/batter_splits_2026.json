@@ -7601,20 +7601,22 @@
       }
     }
   },
-  "updated_at": "2026-05-26T19:34:58Z",
+  "updated_at": "2026-05-26T20:25:30Z",
   "last_run": {
     "projection_status": "collection_only",
-    "requested_batters": 99,
-    "already_cached": 96,
-    "attempted": 3,
-    "collected": 1,
-    "failed": 2,
-    "queued_not_attempted": 0,
+    "requested_batters": 153,
+    "already_cached": 148,
+    "attempted": 4,
+    "collected": 0,
+    "failed": 4,
+    "queued_not_attempted": 1,
     "cache_size": 451,
     "errors": [
       "Esmerlyn Valdez: no bbref id",
-      "A.J. Ewing: no bbref id"
+      "A.J. Ewing: no bbref id",
+      "Rikuu Nishida: no bbref id",
+      "Ryan Waldschmidt: no bbref id"
     ],
-    "updated_at": "2026-05-26T19:34:58Z"
+    "updated_at": "2026-05-26T20:25:30Z"
   }
 }
