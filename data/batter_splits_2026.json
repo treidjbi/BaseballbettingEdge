@@ -7599,24 +7599,40 @@
         "so": 3,
         "k_rate": 0.1304
       }
+    },
+    "mlbam:676572": {
+      "name": "Eric Wagaman",
+      "bats": "R",
+      "mlbam_id": 676572,
+      "bbref_id": "wagamer01",
+      "season": 2026,
+      "vs_R": {
+        "pa": 330,
+        "so": 64,
+        "k_rate": 0.1939
+      },
+      "vs_L": {
+        "pa": 184,
+        "so": 36,
+        "k_rate": 0.1957
+      }
     }
   },
-  "updated_at": "2026-05-27T00:16:45Z",
+  "updated_at": "2026-05-27T01:36:28Z",
   "last_run": {
     "projection_status": "collection_only",
     "requested_batters": 252,
-    "already_cached": 240,
+    "already_cached": 238,
     "attempted": 4,
-    "collected": 0,
-    "failed": 4,
-    "queued_not_attempted": 8,
-    "cache_size": 451,
+    "collected": 1,
+    "failed": 3,
+    "queued_not_attempted": 10,
+    "cache_size": 452,
     "errors": [
       "Esmerlyn Valdez: no bbref id",
-      "A.J. Ewing: no bbref id",
-      "Rikuu Nishida: no bbref id",
-      "Bryan Torres: no bbref id"
+      "Pedro Ram\u00edrez: no bbref id",
+      "A.J. Ewing: no bbref id"
     ],
-    "updated_at": "2026-05-27T00:16:45Z"
+    "updated_at": "2026-05-27T01:36:28Z"
   }
 }
