@@ -35,6 +35,7 @@ def test_shadow_runtime_overrides_disable_official_mutation_paths():
     assert overrides["SUPABASE_LOCK_CONSUMER_STRICT"] == "false"
     assert overrides["OFFICIAL_MARKET_SOURCE"] == "therundown"
     assert overrides["ENABLE_BOLTODDS_PIPELINE_SOURCE"] == "false"
+    assert overrides["BATTER_SPLIT_COLLECTION_MAX_NEW"] == "0"
 
 
 def test_shadow_provider_rehearsal_enables_provider_adapter_but_not_lock_consumer():
@@ -48,6 +49,7 @@ def test_shadow_provider_rehearsal_enables_provider_adapter_but_not_lock_consume
     assert overrides["OFFICIAL_MARKET_SOURCE"] == "boltodds_propline"
     assert overrides["ENABLE_BOLTODDS_PIPELINE_SOURCE"] == "true"
     assert overrides["OFFICIAL_MARKET_STRICT"] == "true"
+    assert overrides["BATTER_SPLIT_COLLECTION_MAX_NEW"] == "0"
 
 
 def test_shadow_runtime_overrides_are_empty_for_live_key_publish():

@@ -203,6 +203,44 @@ def test_processor_rejects_malformed_observed_at_before_writing_movement():
     )
 
 
+def test_processor_classifies_alt_strikeout_ladders_without_writing_movement():
+    payload = _line_movement_payload()
+    payload.update({
+        "outcome_name": "9+ Strikeouts",
+        "player_name": "Cam Schlittler Strikeouts Thrown",
+        "bookmaker_key": "draftkings",
+        "market_id": 39762105,
+        "outcome_id": 140783473,
+    })
+    payload["current"] = {"point": None, "price_american": 494}
+    payload["previous"] = {"point": None, "price_american": 534}
+    writer = Mock()
+    writer.select_rows.return_value = [_delivery(payload)]
+
+    with patch.object(process_propline_webhooks, "SupabaseMarketWriter", return_value=writer):
+        result = process_propline_webhooks.run(
+            supabase_url="https://example.supabase.co",
+            service_role_key="secret",
+        )
+
+    assert result == {
+        "deliveries": 1,
+        "processed": 0,
+        "line_movement_events": 0,
+        "unsupported": 1,
+        "received_after": None,
+    }
+    writer.upsert_rows.assert_not_called()
+    writer.update_rows.assert_called_once_with(
+        "propline_webhook_deliveries",
+        {"id": "eq.delivery-row-1"},
+        {
+            "processed": True,
+            "processing_error": "unsupported_alt_strikeout_ladder",
+        },
+    )
+
+
 def test_processor_preserves_propline_bookmaker_and_stable_ids():
     payload = _line_movement_payload()
     payload.update({

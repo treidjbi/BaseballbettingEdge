@@ -118,6 +118,12 @@ Current implementation state:
   actual `bookmaker_key` and stores `bookmaker_title`, `market_id`, and
   `outcome_id` in metadata. Legacy rows without a book still use
   `bookmaker_key='propline_webhook'` with `bookmaker_key_missing=true`.
+- Follow-up on 2026-05-26: after `bbe-live-layer` was redeployed to current
+  `main`, the normal 23:50 UTC scheduled run processed 8 webhook deliveries
+  into 8 movement rows. Recent unsupported rows were alternate strikeout ladder
+  outcomes such as `9+ Strikeouts` with `point=null`; those are not standard
+  over/under K-line movements, so the processor classifies them separately as
+  unsupported ladder outcomes instead of writing movement events.
 - Optional provider follow-up: Andy offered a future `filter_bookmaker_key`
   subscription option for including/excluding specific books. Do not request or
   depend on it until webhook noise/coverage evidence says book filtering would

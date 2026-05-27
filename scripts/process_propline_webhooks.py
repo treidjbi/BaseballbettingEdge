@@ -69,6 +69,18 @@ def _present_value(*values: Any) -> Any:
     return None
 
 
+def _is_alt_strikeout_ladder(payload: dict[str, Any], current: dict[str, Any], previous: dict[str, Any]) -> bool:
+    market_key = str(payload.get("market_key") or "").strip().lower()
+    outcome_name = str(payload.get("outcome_name") or "").strip().lower()
+    point_missing = current.get("point") is None and previous.get("point") is None
+    return (
+        market_key == "pitcher_strikeouts"
+        and point_missing
+        and "+" in outcome_name
+        and "strikeout" in outcome_name
+    )
+
+
 def _parse_timestamp(value: Any) -> datetime | None:
     if not value:
         return None
@@ -121,6 +133,8 @@ def _line_movement_row(delivery: dict[str, Any]) -> tuple[dict[str, Any] | None,
     previous = payload.get("previous")
     if not isinstance(event, dict) or not isinstance(current, dict) or not isinstance(previous, dict):
         return None, "unsupported_payload_shape"
+    if _is_alt_strikeout_ladder(payload, current, previous):
+        return None, "unsupported_alt_strikeout_ladder"
 
     player_name = str(payload.get("player_name") or "").strip()
     side = _side(payload.get("outcome_name"))

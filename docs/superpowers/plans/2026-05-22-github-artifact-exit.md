@@ -1687,3 +1687,13 @@ GitHub Actions source `26466152086`. Treat provider-rehearsal artifacts as
 provider adapter evidence, not TheRundown/GitHub byte-parity evidence; the
 checks are complete prefixed writes, no normal-key overwrite, provider coverage
 and freshness, and provider comparison diagnostics before any source switch.
+
+Refresh-shadow stability follow-up later on 2026-05-26: Render alert emails for
+`bbe-pipeline-refresh-shadow-day` and `bbe-pipeline-refresh-shadow-evening`
+were 512 MiB out-of-memory failures in the provider-rehearsal cron path, not
+production GitHub/artifact/lock failures. Both logs died after pitcher records
+were built and before shadow artifact publishing, pointing at collection-only
+batter split backfill as the memory spike. Shadow-prefixed Render pipeline
+runs now force `BATTER_SPLIT_COLLECTION_MAX_NEW=0`; this keeps the rehearsal
+focused on scheduler/provider artifact evidence and avoids memory-heavy
+research backfill on the starter cron plan.

@@ -88,6 +88,7 @@ def shadow_runtime_env_overrides(
     if not artifact_key_prefix:
         return {}
     overrides = {
+        "BATTER_SPLIT_COLLECTION_MAX_NEW": "0",
         "ENABLE_SUPABASE_LOCK_CONSUMER": "false",
         "SUPABASE_LOCK_CONSUMER_STRICT": "false",
     }

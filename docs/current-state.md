@@ -490,6 +490,16 @@ Artifact-exit rollout note, 2026-05-24:
   byte-for-byte parity against TheRundown GitHub artifacts; judge them by
   complete prefixed artifact writes, provider coverage/readiness, no normal-key
   overwrite, and later provider comparison diagnostics.
+- Same-day refresh-shadow stability fix on 2026-05-26: Render alert emails for
+  `bbe-pipeline-refresh-shadow-day` and `bbe-pipeline-refresh-shadow-evening`
+  were 512 MiB out-of-memory failures in the shadow provider-rehearsal cron,
+  not production pipeline or live-lock failures. Logs showed both runs died
+  after pitcher records were built and before shadow artifact publishing,
+  consistent with collection-only batter-split backfill pushing the starter
+  cron over memory. Shadow-prefixed Render pipeline runs now force
+  `BATTER_SPLIT_COLLECTION_MAX_NEW=0`; this preserves provider/scheduler
+  rehearsal value while avoiding memory-heavy research backfill on the small
+  cron plan.
 
 Post-cutover cadence planning note, 2026-05-25:
 
@@ -694,6 +704,13 @@ Webhook status:
   This proves the processor still works on the new code, but Render continuous
   consumption still needs one scheduled `bbe-live-layer` run observed with the
   same metadata.
+- Follow-up on 2026-05-26: `bbe-live-layer` was redeployed to current `main`
+  after scheduled rows showed `propline_webhooks=skipped`; the next normal
+  23:50 UTC cron processed 8 webhook deliveries into 8 movement rows. Recent
+  unsupported webhook rows were not malformed standard lines: they were
+  alternate strikeout ladder outcomes such as `9+ Strikeouts` with no
+  over/under point. The processor classifies those separately as unsupported
+  ladder outcomes and still does not write them as standard movement events.
 - Do not use webhook rows for production odds, picks, notifications, or
   provider promotion without a separate review.
 
