@@ -81825,12 +81825,12 @@
     "verdict": "LEAN",
     "raw_verdict": "FIRE 1u",
     "actionable_verdict": "LEAN",
-    "edge": 0.0311,
-    "ev": 0.074,
-    "adj_ev": 0.074,
-    "raw_adj_ev": 0.074,
-    "raw_lambda": 3.95,
-    "applied_lambda": 3.91,
+    "edge": 0.0364,
+    "ev": 0.0866,
+    "adj_ev": 0.0866,
+    "raw_adj_ev": 0.0866,
+    "raw_lambda": 3.93,
+    "applied_lambda": 3.88,
     "odds": 138,
     "movement_conf": 1.0,
     "season_k9": 6.46,
@@ -81838,7 +81838,7 @@
     "career_k9": 8.31,
     "avg_ip": 5.2,
     "ump_k_adj": 0.0,
-    "opp_k_rate": 0.1944,
+    "opp_k_rate": 0.19173895966666665,
     "swstr_delta_k9": -0.005,
     "swstr_pct": 0.0902,
     "career_swstr_pct": 0.0933,
@@ -81859,7 +81859,7 @@
     "pnl": null,
     "fetched_at": null,
     "game_time": "2026-05-28T22:35:00Z",
-    "lineup_used": 0,
+    "lineup_used": 1,
     "locked_at": null,
     "locked_k_line": null,
     "locked_odds": null,
@@ -81867,16 +81867,16 @@
     "locked_verdict": null,
     "data_complete": 0,
     "quality_gate_level": "capped",
-    "verdict_cap_reason": "2 soft input flags: projected_lineup, first_seen_opening",
+    "verdict_cap_reason": "2 soft input flags: unrated_umpire, first_seen_opening",
     "input_quality_flags": [
-      "projected_lineup",
+      "unrated_umpire",
       "first_seen_opening"
     ],
     "data_maturity": {
-      "lineup": "projected",
+      "lineup": "confirmed",
       "market": "first_seen",
       "pitcher": "mature",
-      "umpire": "mature"
+      "umpire": "unknown"
     }
   },
   {
