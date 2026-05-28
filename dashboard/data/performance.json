@@ -1,19 +1,19 @@
 {
-  "generated_at": "2026-05-27T13:52:26Z",
-  "total_picks": 627,
-  "last_calibrated": "2026-05-27T13:52:26Z",
-  "calibration_sample": 518,
+  "generated_at": "2026-05-28T14:07:52Z",
+  "total_picks": 643,
+  "last_calibrated": "2026-05-28T14:07:52Z",
+  "calibration_sample": 532,
   "rows": [
     {
       "verdict": "FIRE 2u",
       "side": "over",
-      "picks": 30,
+      "picks": 31,
       "wins": 14,
-      "losses": 16,
+      "losses": 17,
       "pushes": 0,
-      "win_pct": 0.467,
-      "roi": -9.34,
-      "avg_ev": 0.2628
+      "win_pct": 0.452,
+      "roi": -12.27,
+      "avg_ev": 0.26
     },
     {
       "verdict": "FIRE 2u",
@@ -29,24 +29,24 @@
     {
       "verdict": "FIRE 1u",
       "side": "over",
-      "picks": 152,
-      "wins": 86,
-      "losses": 66,
+      "picks": 160,
+      "wins": 91,
+      "losses": 69,
       "pushes": 0,
-      "win_pct": 0.566,
-      "roi": 6.51,
-      "avg_ev": 0.1528
+      "win_pct": 0.569,
+      "roi": 7.13,
+      "avg_ev": 0.1525
     },
     {
       "verdict": "FIRE 1u",
       "side": "under",
-      "picks": 168,
-      "wins": 76,
-      "losses": 92,
+      "picks": 171,
+      "wins": 77,
+      "losses": 94,
       "pushes": 0,
-      "win_pct": 0.452,
-      "roi": -14.61,
-      "avg_ev": 0.1462
+      "win_pct": 0.45,
+      "roi": -14.99,
+      "avg_ev": 0.1456
     },
     {
       "verdict": "LEAN",
@@ -62,28 +62,28 @@
     {
       "verdict": "LEAN",
       "side": "under",
-      "picks": 115,
-      "wins": 60,
+      "picks": 119,
+      "wins": 64,
       "losses": 55,
       "pushes": 0,
-      "win_pct": 0.522,
-      "roi": -5.55,
-      "avg_ev": 0.0623
+      "win_pct": 0.538,
+      "roi": -2.29,
+      "avg_ev": 0.0625
     }
   ],
   "lambda_accuracy": {
     "avg_predicted": 5.06,
     "avg_actual": 5.02,
-    "bias": -0.04
+    "bias": -0.05
   },
   "params": {
     "weight_season_cap": 0.4,
     "weight_recent": 0.05,
     "ump_scale": 0.6,
-    "lambda_bias": -0.039,
+    "lambda_bias": -0.043,
     "swstr_k9_scale": 5.0,
-    "updated_at": "2026-05-27T13:52:26Z",
-    "sample_size": 518,
+    "updated_at": "2026-05-28T14:07:52Z",
+    "sample_size": 532,
     "formula_change_date": "2026-04-28",
     "calibration_notes": [
       "[2026-05-26] Lambda bias adjusted -0.045 \u2192 -0.039 (model was systematically over-predicting Ks)",
