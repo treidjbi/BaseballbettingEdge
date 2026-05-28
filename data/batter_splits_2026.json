@@ -7652,19 +7652,17 @@
       }
     }
   },
-  "updated_at": "2026-05-28T19:39:52Z",
+  "updated_at": "2026-05-28T19:55:17Z",
   "last_run": {
     "projection_status": "collection_only",
     "requested_batters": 54,
-    "already_cached": 53,
-    "attempted": 1,
+    "already_cached": 54,
+    "attempted": 0,
     "collected": 0,
-    "failed": 1,
+    "failed": 0,
     "queued_not_attempted": 0,
     "cache_size": 454,
-    "errors": [
-      "Ricky Vanasco: IndexError: single positional indexer is out-of-bounds"
-    ],
-    "updated_at": "2026-05-28T19:39:52Z"
+    "errors": [],
+    "updated_at": "2026-05-28T19:55:17Z"
   }
 }
