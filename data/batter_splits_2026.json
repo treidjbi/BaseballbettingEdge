@@ -7650,19 +7650,36 @@
         "so": 4,
         "k_rate": 0.25
       }
+    },
+    "mlbam:666211": {
+      "name": "Taylor Trammell",
+      "bats": "R",
+      "mlbam_id": 666211,
+      "bbref_id": "trammta01",
+      "season": 2026,
+      "vs_R": {
+        "pa": 33,
+        "so": 10,
+        "k_rate": 0.303
+      },
+      "vs_L": {
+        "pa": 7,
+        "so": 1,
+        "k_rate": 0.1429
+      }
     }
   },
-  "updated_at": "2026-05-28T21:13:02Z",
+  "updated_at": "2026-05-28T21:34:11Z",
   "last_run": {
     "projection_status": "collection_only",
-    "requested_batters": 81,
-    "already_cached": 81,
-    "attempted": 0,
-    "collected": 0,
+    "requested_batters": 90,
+    "already_cached": 89,
+    "attempted": 1,
+    "collected": 1,
     "failed": 0,
     "queued_not_attempted": 0,
-    "cache_size": 454,
+    "cache_size": 455,
     "errors": [],
-    "updated_at": "2026-05-28T21:13:02Z"
+    "updated_at": "2026-05-28T21:34:11Z"
   }
 }
