@@ -7652,22 +7652,17 @@
       }
     }
   },
-  "updated_at": "2026-05-28T05:20:38Z",
+  "updated_at": "2026-05-28T17:03:05Z",
   "last_run": {
     "projection_status": "collection_only",
-    "requested_batters": 252,
-    "already_cached": 240,
-    "attempted": 4,
+    "requested_batters": 45,
+    "already_cached": 45,
+    "attempted": 0,
     "collected": 0,
-    "failed": 4,
-    "queued_not_attempted": 8,
+    "failed": 0,
+    "queued_not_attempted": 0,
     "cache_size": 454,
-    "errors": [
-      "Bryan Torres: no bbref id",
-      "Henry Bolte: no bbref id",
-      "Colt Emerson: no bbref id",
-      "Victor Bericoto: no bbref id"
-    ],
-    "updated_at": "2026-05-28T05:20:38Z"
+    "errors": [],
+    "updated_at": "2026-05-28T17:03:05Z"
   }
 }
