@@ -158,6 +158,7 @@ jobs:
           PROPLINE_API_KEY: ${{ secrets.PROPLINE_API_KEY }}
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          PROPLINE_SHADOW_FAIL_ON_ERROR: "false"
         run: python scripts/shadow_propline_to_supabase.py "${{ steps.slate.outputs.date }}"
 
       - name: Shadow artifacts to Supabase

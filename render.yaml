@@ -30,3 +30,5 @@ services:
         value: "5"
       - key: BOLTODDS_WS_MAX_MESSAGES
         value: "0"
+      - key: BOLTODDS_WORKER_RETRY_SECONDS
+        value: "300"

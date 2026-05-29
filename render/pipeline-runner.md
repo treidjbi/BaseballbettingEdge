@@ -41,6 +41,12 @@ The wrapper also forces `ENABLE_SUPABASE_LOCK_CONSUMER=false`,
 shadow scheduler rehearsal from consuming official lock rows or testing the
 provider cutover path by accident.
 
+May 29 correction: these active scheduler-shadow services are back on the
+TheRundown-equivalent wrapper command without `--provider-rehearsal`. The
+provider-rehearsal flag is useful for a separate BoltOdds/PropLine source
+trial, but it intentionally fails strict when `official_market_lines` coverage
+is incomplete and therefore is not clean Task 11 scheduler proof.
+
 Latest proof run: Render job `job-d8ascuj7uimc73ckb640` succeeded for
 `2026-05-26` full mode on commit `228d67fd`, writing 8 prefixed artifacts
 through publication run

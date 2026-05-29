@@ -81,6 +81,19 @@ def _batch_size_from_env(default: int = 100) -> int:
     return _optional_int_env("BOLTODDS_WS_BATCH_SIZE", default)
 
 
+def _worker_max_attempts() -> int:
+    value = _optional_env("BOLTODDS_WORKER_MAX_ATTEMPTS")
+    if value:
+        return int(value)
+    if _optional_int_env("BOLTODDS_WS_MAX_MESSAGES", 0) > 0:
+        return 1
+    return 0
+
+
+def _is_required_env_error(error: Exception) -> bool:
+    return isinstance(error, OSError) and " is required" in str(error)
+
+
 def _now_utc() -> str:
     return datetime.now(timezone.utc).isoformat()
 
@@ -766,8 +779,41 @@ async def run_worker() -> dict[str, Any]:
 
 
 def main() -> int:
-    asyncio.run(run_worker())
+    asyncio.run(run_worker_forever())
     return 0
+
+
+async def run_worker_forever() -> dict[str, Any]:
+    attempts = 0
+    last_result: dict[str, Any] | None = None
+    last_error = ""
+
+    while True:
+        attempts += 1
+        try:
+            last_result = await run_worker()
+            last_error = ""
+        except Exception as error:
+            if _is_required_env_error(error):
+                raise
+            last_error = str(error)[:1000]
+            print(
+                "Warning: BoltOdds shadow worker attempt failed "
+                f"({last_error}); retrying",
+                file=sys.stderr,
+            )
+
+        max_attempts = _worker_max_attempts()
+        if max_attempts and attempts >= max_attempts:
+            return {
+                "attempts": attempts,
+                "last_result": last_result,
+                "last_error": last_error,
+            }
+
+        retry_seconds = _optional_float_env("BOLTODDS_WORKER_RETRY_SECONDS", 300.0)
+        if retry_seconds > 0:
+            await asyncio.sleep(retry_seconds)
 
 
 if __name__ == "__main__":

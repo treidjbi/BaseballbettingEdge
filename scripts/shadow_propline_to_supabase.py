@@ -97,6 +97,7 @@ def poll_propline_to_supabase(
     *,
     writer: SupabaseMarketWriter | None = None,
     observed_at: str | None = None,
+    raise_on_error: bool = True,
 ) -> dict[str, Any]:
     observed_at = observed_at or datetime.now(timezone.utc).isoformat()
     writer = writer or SupabaseMarketWriter(_env("SUPABASE_URL"), _env("SUPABASE_SERVICE_ROLE_KEY"))
@@ -184,6 +185,7 @@ def poll_propline_to_supabase(
             "books_seen": sorted(books_seen),
         }], on_conflict="id")
     except Exception as exc:
+        error_message = str(exc)[:1000]
         writer.upsert_rows("market_provider_runs", [{
             "id": run_id,
             "provider": "propline",
@@ -197,9 +199,19 @@ def poll_propline_to_supabase(
                 (s["normalized_player_name"], s["line"]) for s in snapshots
             }),
             "books_seen": sorted(books_seen),
-            "error_message": str(exc)[:1000],
+            "error_message": error_message,
         }], on_conflict="id")
-        raise
+        if raise_on_error:
+            raise
+        return {
+            "run_id": run_id,
+            "status": "failed",
+            "target_event_count": len(target_events),
+            "snapshot_count": len(snapshots),
+            "books_seen": sorted(books_seen),
+            "request_count": request_count,
+            "error": error_message,
+        }
 
     return {
         "run_id": run_id,
@@ -210,13 +222,30 @@ def poll_propline_to_supabase(
     }
 
 
+def _env_flag(name: str, default: bool = False) -> bool:
+    value = os.environ.get(name)
+    if value is None:
+        return default
+    return value.strip().lower() in {"1", "true", "yes", "on"}
+
+
 def main() -> int:
     if len(sys.argv) != 2:
         print("usage: python scripts/shadow_propline_to_supabase.py YYYY-MM-DD", file=sys.stderr)
         return 2
 
     slate_date = sys.argv[1]
-    result = poll_propline_to_supabase(slate_date)
+    result = poll_propline_to_supabase(
+        slate_date,
+        raise_on_error=_env_flag("PROPLINE_SHADOW_FAIL_ON_ERROR", False),
+    )
+    if result.get("status") == "failed":
+        print(
+            f"PropLine shadow ingest degraded date={slate_date} "
+            f"error={result.get('error', 'unknown')}",
+            file=sys.stderr,
+        )
+        return 0
     print(
         f"PropLine shadow ingest date={slate_date} "
         f"events={result['target_event_count']} snapshots={result['snapshot_count']} "

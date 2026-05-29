@@ -1,6 +1,6 @@
 # Current State
 
-Last updated: 2026-05-26
+Last updated: 2026-05-29
 
 ## Read Order
 
@@ -500,6 +500,17 @@ Artifact-exit rollout note, 2026-05-24:
   `BATTER_SPLIT_COLLECTION_MAX_NEW=0`; this preserves provider/scheduler
   rehearsal value while avoiding memory-heavy research backfill on the small
   cron plan.
+- Render separation follow-up on 2026-05-29: after the missed May 28 lock was
+  traced to delayed GitHub artifacts, Tyler approved waiting another slate but
+  cleaning up Render. The active Task 11 scheduler-shadow services now run
+  the TheRundown-equivalent command
+  `scripts/run_render_pipeline_mode.py --shadow-prefix --execute` without
+  `--provider-rehearsal`; provider-rehearsal remains shadow-only but must be
+  evaluated separately because strict BoltOdds/PropLine coverage failures do
+  not prove scheduler unreliability. Shadow PropLine scheduled polling now
+  records provider failures without failing the whole GitHub shadow-market
+  workflow, and the BoltOdds shadow worker should retry provider/websocket
+  failures inside the worker instead of relying on Render crash restarts.
 
 Post-cutover cadence planning note, 2026-05-25:
 

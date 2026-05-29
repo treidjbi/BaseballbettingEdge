@@ -3,8 +3,31 @@ import json
 from scripts.shadow_propline_to_supabase import (
     _coverage_audit_row,
     _production_artifact_for_slate,
+    poll_propline_to_supabase,
 )
 from scripts.create_propline_webhook_subscription import _parse_args
+
+
+class FakeWriter:
+    def __init__(self):
+        self.inserts = []
+        self.upserts = []
+
+    def insert_rows(self, table, rows):
+        if table == "market_provider_runs":
+            rows = [
+                {
+                    **row,
+                    "id": row.get("id") or f"run-{len(self.inserts) + index + 1}",
+                }
+                for index, row in enumerate(rows)
+            ]
+        self.inserts.append((table, rows))
+        return rows
+
+    def upsert_rows(self, table, rows, on_conflict):
+        self.upserts.append((table, rows, on_conflict))
+        return rows
 
 
 def test_create_propline_webhook_subscription_defaults_to_low_movement_threshold(monkeypatch):
@@ -76,3 +99,33 @@ def test_coverage_audit_row_includes_comparison_metrics():
     assert row["metadata"]["non_target_books_seen"] == ["bovada"]
     assert row["metadata"]["production_artifact_path"] == "dashboard/data/processed/2026-05-04.json"
     assert row["metadata"]["fillable_missing_book_counts"]["fanduel"] == 1
+
+
+def test_poll_propline_can_record_shadow_failure_without_raising(monkeypatch):
+    writer = FakeWriter()
+
+    def fail_propline_get(*args, **kwargs):
+        raise TimeoutError("PropLine read timed out")
+
+    monkeypatch.setattr(
+        "scripts.shadow_propline_to_supabase.propline_get",
+        fail_propline_get,
+    )
+    monkeypatch.setattr(
+        "scripts.shadow_propline_to_supabase._production_artifact_for_slate",
+        lambda slate_date: (None, None),
+    )
+
+    result = poll_propline_to_supabase(
+        "2026-05-29",
+        writer=writer,
+        raise_on_error=False,
+    )
+
+    assert result["status"] == "failed"
+    assert result["error"] == "PropLine read timed out"
+    assert writer.inserts[0][0] == "market_provider_runs"
+    assert writer.inserts[0][1][0]["status"] == "started"
+    failed = writer.upserts[-1][1][0]
+    assert failed["status"] == "failed"
+    assert failed["error_message"] == "PropLine read timed out"

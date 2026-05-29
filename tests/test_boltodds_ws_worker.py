@@ -616,3 +616,33 @@ def test_final_flush_failure_still_marks_run_failed(monkeypatch):
     failed = writer.upserts[-1][1][0]
     assert failed["status"] == "failed"
     assert failed["error_message"] == "snapshot write failed"
+
+
+def test_worker_supervisor_retries_shadow_failures_without_raising(monkeypatch):
+    attempts = []
+
+    async def fake_run_worker():
+        attempts.append("attempt")
+        raise RuntimeError("BoltOdds starter probe is not ready")
+
+    monkeypatch.setattr(boltodds_ws_worker, "run_worker", fake_run_worker)
+    monkeypatch.setenv("BOLTODDS_WORKER_MAX_ATTEMPTS", "1")
+    monkeypatch.setenv("BOLTODDS_WORKER_RETRY_SECONDS", "0")
+
+    result = asyncio.run(boltodds_ws_worker.run_worker_forever())
+
+    assert attempts == ["attempt"]
+    assert result["attempts"] == 1
+    assert result["last_error"] == "BoltOdds starter probe is not ready"
+
+
+def test_worker_supervisor_keeps_missing_required_env_fatal(monkeypatch):
+    async def fake_run_worker():
+        raise EnvironmentError("BOLTODDS_API_KEY is required")
+
+    monkeypatch.setattr(boltodds_ws_worker, "run_worker", fake_run_worker)
+    monkeypatch.setenv("BOLTODDS_WORKER_MAX_ATTEMPTS", "1")
+    monkeypatch.setenv("BOLTODDS_WORKER_RETRY_SECONDS", "0")
+
+    with pytest.raises(EnvironmentError, match="BOLTODDS_API_KEY is required"):
+        asyncio.run(boltodds_ws_worker.run_worker_forever())

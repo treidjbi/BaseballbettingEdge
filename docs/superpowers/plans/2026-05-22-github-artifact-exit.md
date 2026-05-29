@@ -1697,3 +1697,11 @@ batter split backfill as the memory spike. Shadow-prefixed Render pipeline
 runs now force `BATTER_SPLIT_COLLECTION_MAX_NEW=0`; this keeps the rehearsal
 focused on scheduler/provider artifact evidence and avoids memory-heavy
 research backfill on the starter cron plan.
+
+Scheduler/provider separation follow-up on 2026-05-29: the May 28 missed lock
+was traced to delayed GitHub artifacts, so Task 11 still needs clean
+Render-scheduler proof. Active scheduler-shadow services now run the
+TheRundown-equivalent wrapper command without `--provider-rehearsal`; strict
+BoltOdds/PropLine provider-rehearsal failures are useful cutover evidence but
+should not be counted as scheduler canary failures. Keep GitHub/static JSON and
+TheRundown official until a full-slate Render shadow parity read passes.
