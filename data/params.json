@@ -4,8 +4,8 @@
   "ump_scale": 0.6,
   "lambda_bias": -0.043,
   "swstr_k9_scale": 5.0,
-  "updated_at": "2026-05-28T14:07:52Z",
-  "sample_size": 532,
+  "updated_at": "2026-05-29T13:38:31Z",
+  "sample_size": 535,
   "formula_change_date": "2026-04-28",
   "calibration_notes": [
     "[2026-05-26] Lambda bias adjusted -0.045 \u2192 -0.039 (model was systematically over-predicting Ks)",
@@ -25,8 +25,6 @@
     "[2026-05-16] Lambda bias adjusted -0.018 \u2192 -0.079 (model was systematically over-predicting Ks)",
     "[2026-05-16] SwStr%% K/9 scale decreased 6.0 \u2192 5.0 (SwStr%% delta not reliably predictive of K outcomes)",
     "[2026-05-15] Umpire scale decreased 0.900 \u2192 0.850 (umpire adjustment not reliably predictive)",
-    "[2026-05-15] SwStr%% K/9 scale decreased 8.0 \u2192 6.0 (SwStr%% delta not reliably predictive of K outcomes)",
-    "[2026-05-14] Lambda bias adjusted -0.029 \u2192 -0.014 (model was systematically over-predicting Ks)",
-    "[2026-05-14] SwStr%% K/9 scale decreased 10.0 \u2192 8.0 (SwStr%% delta not reliably predictive of K outcomes)"
+    "[2026-05-15] SwStr%% K/9 scale decreased 8.0 \u2192 6.0 (SwStr%% delta not reliably predictive of K outcomes)"
   ]
 }
