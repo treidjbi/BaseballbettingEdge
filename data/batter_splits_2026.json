@@ -7679,19 +7679,36 @@
         "so": 1,
         "k_rate": 0.1667
       }
+    },
+    "mlbam:676369": {
+      "name": "Nelson Vel\u00e1zquez",
+      "bats": "R",
+      "mlbam_id": 676369,
+      "bbref_id": "velazne01",
+      "season": 2026,
+      "vs_R": {
+        "pa": 160,
+        "so": 42,
+        "k_rate": 0.2625
+      },
+      "vs_L": {
+        "pa": 70,
+        "so": 19,
+        "k_rate": 0.2714
+      }
     }
   },
-  "updated_at": "2026-05-29T18:39:38Z",
+  "updated_at": "2026-05-29T19:14:32Z",
   "last_run": {
     "projection_status": "collection_only",
-    "requested_batters": 9,
-    "already_cached": 9,
-    "attempted": 0,
-    "collected": 0,
+    "requested_batters": 45,
+    "already_cached": 44,
+    "attempted": 1,
+    "collected": 1,
     "failed": 0,
     "queued_not_attempted": 0,
-    "cache_size": 456,
+    "cache_size": 457,
     "errors": [],
-    "updated_at": "2026-05-29T18:39:38Z"
+    "updated_at": "2026-05-29T19:14:32Z"
   }
 }
