@@ -7696,19 +7696,39 @@
         "so": 19,
         "k_rate": 0.2714
       }
+    },
+    "mlbam:663611": {
+      "name": "Nick Madrigal",
+      "bats": "R",
+      "mlbam_id": 663611,
+      "bbref_id": "madrini01",
+      "season": 2026,
+      "vs_R": {
+        "pa": 61,
+        "so": 6,
+        "k_rate": 0.0984
+      },
+      "vs_L": {
+        "pa": 33,
+        "so": 4,
+        "k_rate": 0.1212
+      }
     }
   },
-  "updated_at": "2026-05-29T19:14:32Z",
+  "updated_at": "2026-05-29T19:36:21Z",
   "last_run": {
     "projection_status": "collection_only",
-    "requested_batters": 45,
-    "already_cached": 44,
-    "attempted": 1,
+    "requested_batters": 90,
+    "already_cached": 87,
+    "attempted": 3,
     "collected": 1,
-    "failed": 0,
+    "failed": 2,
     "queued_not_attempted": 0,
-    "cache_size": 457,
-    "errors": [],
-    "updated_at": "2026-05-29T19:14:32Z"
+    "cache_size": 458,
+    "errors": [
+      "A.J. Ewing: no bbref id",
+      "Rikuu Nishida: no bbref id"
+    ],
+    "updated_at": "2026-05-29T19:36:21Z"
   }
 }
