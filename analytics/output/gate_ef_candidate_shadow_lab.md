@@ -23,8 +23,62 @@
 | fire_clean_quality | 200 | 104-96 | -2.96 | -1.5% | 90 | 44 |
 | fire_combined_skeptic | 64 | 38-26 | +11.73 | +18.3% | 115 | 0 |
 
+## fire_combined_skeptic Slice Checks
+
+### side
+
+| Bucket | Rows | W-L | Flat PnL | Flat ROI | Sample |
+| --- | ---: | ---: | ---: | ---: | --- |
+| over | 47 | 29-18 | +9.40 | +20.0% | small_sample |
+| under | 17 | 9-8 | +2.33 | +13.7% | small_sample |
+
+### price_sign
+
+| Bucket | Rows | W-L | Flat PnL | Flat ROI | Sample |
+| --- | ---: | ---: | ---: | ---: | --- |
+| minus | 25 | 18-7 | +7.97 | +31.9% | small_sample |
+| plus | 39 | 20-19 | +3.76 | +9.6% | small_sample |
+
+### line_bucket
+
+| Bucket | Rows | W-L | Flat PnL | Flat ROI | Sample |
+| --- | ---: | ---: | ---: | ---: | --- |
+| 2.5-3.5 | 16 | 8-8 | +0.45 | +2.8% | small_sample |
+| 4.5 | 22 | 11-11 | -0.65 | -2.9% | small_sample |
+| 5.5 | 19 | 14-5 | +9.26 | +48.7% | small_sample |
+| 6.5 | 5 | 4-1 | +2.69 | +53.8% | small_sample |
+| 7.5+ | 2 | 1-1 | -0.02 | -1.0% | small_sample |
+
+### bet_timing_window
+
+| Bucket | Rows | W-L | Flat PnL | Flat ROI | Sample |
+| --- | ---: | ---: | ---: | ---: | --- |
+| post_start | 2 | 2-0 | +1.83 | +91.5% | small_sample |
+| pre_120 | 1 | 1-0 | +0.91 | +91.0% | small_sample |
+| pre_15 | 11 | 6-5 | +1.00 | +9.1% | small_sample |
+| pre_30 | 43 | 25-18 | +6.82 | +15.9% | small_sample |
+| pre_5 | 5 | 2-3 | -1.15 | -23.0% | small_sample |
+| unknown | 2 | 2-0 | +2.32 | +116.0% | small_sample |
+
+### quality_gate_level
+
+| Bucket | Rows | W-L | Flat PnL | Flat ROI | Sample |
+| --- | ---: | ---: | ---: | ---: | --- |
+| capped | 21 | 13-8 | +4.72 | +22.5% | small_sample |
+| clean | 42 | 24-18 | +5.93 | +14.1% | small_sample |
+| unknown | 1 | 1-0 | +1.08 | +108.0% | small_sample |
+
+### model_market_relationship
+
+| Bucket | Rows | W-L | Flat PnL | Flat ROI | Sample |
+| --- | ---: | ---: | ---: | ---: | --- |
+| model_agrees_with_favorite | 18 | 12-6 | +3.39 | +18.8% | small_sample |
+| model_fades_favorite | 45 | 25-20 | +7.43 | +16.5% | small_sample |
+| unknown | 1 | 1-0 | +0.91 | +91.0% | small_sample |
+
 ## Promotion Discussion Check
 
+- Promising but not promotion-ready: fire_combined_skeptic selected 64 rows and retained 0 FIRE 2u wins; this is below the plan's validation/current-FIRE sample and retention standards.
 - These rows are not production approval.
 - A later Tyler-approved production plan is required before any candidate can affect live picks, thresholds, staking, notifications, provider behavior, or dashboard source-of-truth artifacts.
 - Promotion discussion should compare this shadow evidence against the current live lambda baseline and the broader Gate E/F evidence package.

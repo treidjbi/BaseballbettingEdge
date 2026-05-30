@@ -278,6 +278,36 @@ def test_summarize_candidate_does_not_collapse_rows_missing_dataset_key():
     assert summary["current_fire_2u_wins_retained"] == 1
 
 
+def test_slice_summary_marks_small_samples():
+    rows = [
+        {
+            "side": "under",
+            "line_bucket": "4.5",
+            "price_sign": "plus",
+            "model_market_relationship": "model_fades_favorite",
+            "bet_timing_window": "pre_30",
+            "quality_gate_level": "clean",
+            "pitcher_archetype_bucket": "standard_starter",
+            "opportunity_bucket": "normal",
+            "verdict": "FIRE 1u",
+            "edge": 0.05,
+            "adj_ev": 0.11,
+            "projected_ks": 3.9,
+            "k_line": 4.5,
+            "result": "loss",
+            "pick_history_pnl": -1.0,
+            "is_tracked_pick": True,
+            "slate_date": "2026-05-01",
+        },
+    ]
+
+    summary = lab.summarize_slices("current_fire_flat", rows, "side", min_rows=50)
+
+    assert summary[0]["bucket"] == "under"
+    assert summary[0]["rows"] == 1
+    assert summary[0]["sample_status"] == "small_sample"
+
+
 def test_build_report_includes_shadow_warning_and_candidate_rows():
     rows = [
         {
@@ -307,6 +337,37 @@ def test_build_report_includes_shadow_warning_and_candidate_rows():
     assert "current_fire_flat" in report
     assert "fire_without_under_skeptic_2plus" in report
     assert "Promotion Discussion Check" in report
+
+
+def test_build_report_marks_small_retention_candidate_not_promotion_ready():
+    rows = [
+        {
+            "side": "over",
+            "line_bucket": "4.5",
+            "price_sign": "plus",
+            "model_market_relationship": "model_fades_favorite",
+            "bet_timing_window": "pre_30",
+            "quality_gate_level": "clean",
+            "pitcher_archetype_bucket": "standard_starter",
+            "opportunity_bucket": "normal",
+            "verdict": "FIRE 1u",
+            "edge": 0.05,
+            "adj_ev": 0.11,
+            "projected_ks": 5.2,
+            "k_line": 4.5,
+            "result": "win",
+            "pick_history_pnl": 0.9,
+            "is_tracked_pick": True,
+            "slate_date": "2026-05-01",
+        },
+    ]
+
+    report = lab.build_report(rows)
+
+    assert "Promising but not promotion-ready" in report
+    assert "fire_combined_skeptic selected 1 rows" in report
+    assert "retained 0 FIRE 2u wins" in report
+    assert "below the plan's validation/current-FIRE sample and retention standards" in report
 
 
 def test_build_report_includes_input_warning_for_missing_dataset():

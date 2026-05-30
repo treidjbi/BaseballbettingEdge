@@ -30,6 +30,14 @@ CANDIDATE_NAMES = (
     "fire_clean_quality",
     "fire_combined_skeptic",
 )
+SLICE_FIELDS = (
+    "side",
+    "price_sign",
+    "line_bucket",
+    "bet_timing_window",
+    "quality_gate_level",
+    "model_market_relationship",
+)
 RUNTIME_SAFE_FIELDS = {
     "side",
     "line_bucket",
@@ -247,6 +255,45 @@ def summarize_candidate(name: str, rows: list[dict[str, Any]]) -> dict[str, Any]
     }
 
 
+def summarize_slices(
+    candidate_name: str,
+    rows: list[dict[str, Any]],
+    field: str,
+    *,
+    min_rows: int = 50,
+) -> list[dict[str, Any]]:
+    buckets: dict[str, list[dict[str, Any]]] = {}
+    for row in clean_tracked_rows(rows):
+        if not candidate_flags(row).get(candidate_name, False):
+            continue
+        bucket = str(row.get(field) or "unknown")
+        buckets.setdefault(bucket, []).append(row)
+
+    summaries: list[dict[str, Any]] = []
+    for bucket in sorted(buckets):
+        bucket_rows = buckets[bucket]
+        wins = sum(1 for row in bucket_rows if row.get("result") == "win")
+        losses = sum(1 for row in bucket_rows if row.get("result") == "loss")
+        flat_pnl = round(sum(_row_pnl(row) for row in bucket_rows), 2)
+        flat_roi = round(flat_pnl / len(bucket_rows), 4) if bucket_rows else None
+        summaries.append(
+            {
+                "bucket": bucket,
+                "rows": len(bucket_rows),
+                "wins": wins,
+                "losses": losses,
+                "flat_pnl": flat_pnl,
+                "flat_roi": flat_roi,
+                "sample_status": (
+                    "enough_sample"
+                    if len(bucket_rows) >= min_rows
+                    else "small_sample"
+                ),
+            }
+        )
+    return summaries
+
+
 def _format_roi(value: float | None) -> str:
     if value is None:
         return "--"
@@ -265,6 +312,39 @@ def _candidate_row(summary: dict[str, Any]) -> str:
     )
 
 
+def _slice_row(summary: dict[str, Any]) -> str:
+    return (
+        f"| {summary['bucket']} "
+        f"| {summary['rows']} "
+        f"| {summary['wins']}-{summary['losses']} "
+        f"| {summary['flat_pnl']:+.2f} "
+        f"| {_format_roi(summary['flat_roi'])} "
+        f"| {summary['sample_status']} |"
+    )
+
+
+def _slice_section(candidate_name: str, field: str, rows: list[dict[str, Any]]) -> list[str]:
+    slice_rows = summarize_slices(candidate_name, rows, field)
+    table_rows = [_slice_row(summary) for summary in slice_rows]
+    return [
+        f"### {field}",
+        "",
+        "| Bucket | Rows | W-L | Flat PnL | Flat ROI | Sample |",
+        "| --- | ---: | ---: | ---: | ---: | --- |",
+        *table_rows,
+        "",
+    ]
+
+
+def _promotion_readiness_note(summary: dict[str, Any]) -> str:
+    return (
+        "Promising but not promotion-ready: "
+        f"{summary['name']} selected {summary['selected']} rows and retained "
+        f"{summary['current_fire_2u_wins_retained']} FIRE 2u wins; this is below "
+        "the plan's validation/current-FIRE sample and retention standards."
+    )
+
+
 def build_report(
     rows: list[dict[str, Any]],
     input_warning: str | None = None,
@@ -280,6 +360,12 @@ def build_report(
             f"**{input_warning}**",
             "",
         ]
+    slice_sections: list[str] = [
+        "## fire_combined_skeptic Slice Checks",
+        "",
+    ]
+    for field in SLICE_FIELDS:
+        slice_sections.extend(_slice_section("fire_combined_skeptic", field, rows))
 
     return "\n".join(
         [
@@ -300,8 +386,10 @@ def build_report(
             "| --- | ---: | ---: | ---: | ---: | ---: | ---: |",
             table_rows,
             "",
+            *slice_sections,
             "## Promotion Discussion Check",
             "",
+            f"- {_promotion_readiness_note(summaries[-1])}",
             "- These rows are not production approval.",
             "- A later Tyler-approved production plan is required before any candidate can affect live picks, thresholds, staking, notifications, provider behavior, or dashboard source-of-truth artifacts.",
             "- Promotion discussion should compare this shadow evidence against the current live lambda baseline and the broader Gate E/F evidence package.",
