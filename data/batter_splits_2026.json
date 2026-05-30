@@ -7715,22 +7715,17 @@
       }
     }
   },
-  "updated_at": "2026-05-30T05:00:38Z",
+  "updated_at": "2026-05-30T16:13:47Z",
   "last_run": {
     "projection_status": "collection_only",
-    "requested_batters": 243,
-    "already_cached": 235,
-    "attempted": 4,
+    "requested_batters": 45,
+    "already_cached": 45,
+    "attempted": 0,
     "collected": 0,
-    "failed": 4,
-    "queued_not_attempted": 4,
+    "failed": 0,
+    "queued_not_attempted": 0,
     "cache_size": 458,
-    "errors": [
-      "A.J. Ewing: no bbref id",
-      "Joe Mack: no bbref id",
-      "Rikuu Nishida: no bbref id",
-      "Henry Bolte: no bbref id"
-    ],
-    "updated_at": "2026-05-30T05:00:38Z"
+    "errors": [],
+    "updated_at": "2026-05-30T16:13:47Z"
   }
 }
