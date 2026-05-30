@@ -712,9 +712,9 @@
     : 'https://raw.githubusercontent.com/treidjbi/baseballbettingedge/main/dashboard/data/performance.json';
   const ARTIFACT_SOURCE = (() => {
     try {
-      return localStorage.getItem('bbe_artifact_source') || 'static';
+      return localStorage.getItem('bbe_artifact_source') || 'supabase';
     } catch (e) {
-      return 'static';
+      return 'supabase';
     }
   })();
 

@@ -1448,9 +1448,9 @@ Result, 2026-05-24:
 - Modify: `docs/current-state.md`
 - Modify: `AGENTS.md`
 
-- [ ] **Step 1: Confirm promotion gates**
+- [x] **Step 1: Confirm promotion gates**
 
-Do not promote unless all are true:
+Original gate target before the 2026-05-30 incident-response decision:
 
 - strict Supabase lock consumer completed one clean slate;
 - GitHub and Render artifact hashes matched for one full slate;
@@ -1458,7 +1458,15 @@ Do not promote unless all are true:
 - manual GitHub workflow rollback was tested during the same week;
 - Tyler explicitly approved Render as primary scheduler.
 
-- [ ] **Step 2: Disable GitHub scheduled triggers**
+2026-05-30 cutover decision: Tyler explicitly approved taking the
+scheduler/artifact migration live after GitHub scheduler delay caused real lock
+SLA risk. The promotion is intentionally narrower than provider/model
+promotion: TheRundown remains the production odds source, BoltOdds/PropLine
+remain shadow/fallback evidence, `SUPABASE_LOCK_CONSUMER_STRICT=false` remains
+off for the first primary soak, and manual GitHub `workflow_dispatch` remains
+rollback.
+
+- [x] **Step 2: Disable GitHub scheduled triggers**
 
 In `.github/workflows/pipeline.yml`, remove or comment scheduled `cron` entries
 and leave `workflow_dispatch`.
@@ -1471,7 +1479,7 @@ Keep manual dispatch inputs for:
 - `mode=lock`
 - `mode=propline_probe`
 
-- [ ] **Step 3: Update docs**
+- [x] **Step 3: Update docs**
 
 Update:
 
@@ -1480,7 +1488,7 @@ Update:
 - `docs/operational-risk-register.md`: GitHub scheduled-run delay is no longer
   the primary lock risk; Render schedule/run health is.
 
-- [ ] **Step 4: Run checks**
+- [x] **Step 4: Run checks**
 
 ```powershell
 python -m pytest tests/test_pipeline_workflow_contract.py -q
@@ -1489,7 +1497,7 @@ git diff --check
 
 Expected: pass.
 
-- [ ] **Step 5: Commit and push**
+- [x] **Step 5: Commit and push**
 
 ```powershell
 git add .github/workflows/pipeline.yml docs/current-state.md AGENTS.md docs/operational-risk-register.md

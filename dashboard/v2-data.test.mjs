@@ -19,7 +19,7 @@ function jsonResponse(payload) {
 async function runV2DataTest({
   locationSearch = "",
   now = null,
-  artifactSource = "static",
+  artifactSource = null,
   artifactApiMode = "ok",
   todayJson,
   perfJson = { rows: [], total_picks: 0 },
@@ -104,6 +104,20 @@ test("loads artifacts from api when enabled", async () => {
   assert.equal(window.V2_DATA.date, "2026-04-28");
   assert.equal(window.V2_PERF.total_picks, 4);
   assert.equal(window.V2_DATES.length, 1);
+  assert.ok(window.__fetchUrls.some(url => String(url).startsWith("/.netlify/functions/get-artifact")));
+});
+
+test("loads artifacts from api by default", async () => {
+  const todayJson = { date: "2026-04-28", generated_at: "2026-04-28T15:00:00Z", pitchers: [] };
+  const window = await runV2DataTest({
+    todayJson,
+    perfJson: { rows: [], total_picks: 5 },
+    dateIndex: [{ date: "2026-04-28", wins: 0, losses: 0 }],
+    steamJson: { date: "2026-04-28", snapshots: [] },
+  });
+
+  assert.equal(window.V2_DATA.date, "2026-04-28");
+  assert.equal(window.V2_PERF.total_picks, 5);
   assert.ok(window.__fetchUrls.some(url => String(url).startsWith("/.netlify/functions/get-artifact")));
 });
 

@@ -1,57 +1,54 @@
 # BBE Render Pipeline Runner
 
-This service replaces GitHub scheduled pipeline execution only after artifact
-parity and dashboard API canaries pass.
+These services replace GitHub scheduled pipeline execution. GitHub Actions
+remains available for manual rollback through `workflow_dispatch`.
 
-During the rehearsal stage, Render should publish under shadow artifact keys
-with `--shadow-prefix`. That writes rows such as
-`render_shadow:2026-05-26:today` and keeps the live Netlify artifact API mirror
-on the normal `today`, `dated_slate:YYYY-MM-DD`, `steam`, and related keys.
+Render publishes to the live Supabase artifact keys used by the Netlify
+`get-artifact` API. Shadow-key rehearsals remain available by adding
+`--shadow-prefix` to a one-off job, but the scheduled services should not use
+that flag after the 2026-05-30 cutover.
 
 ## Proposed Services
 
 | Service | Command | Schedule |
 | --- | --- | --- |
-| `bbe-pipeline-preview` | `python scripts/run_render_pipeline_mode.py --mode preview --shadow-prefix --execute` | 12:17 AM Phoenix |
-| `bbe-pipeline-grading` | `python scripts/run_render_pipeline_mode.py --mode grading --shadow-prefix --execute` | 3:17 AM Phoenix |
-| `bbe-pipeline-full-refresh` | `python scripts/run_render_pipeline_mode.py --mode pipeline --shadow-prefix --execute` | 6:17 AM, then 8:07 AM-6:07 PM Phoenix |
-| `bbe-pipeline-lock` | `python scripts/run_render_pipeline_mode.py --mode lock --shadow-prefix --execute` | Triggered by live layer, not cron |
+| `bbe-pipeline-preview` | `python scripts/run_render_pipeline_mode.py --mode preview --execute` | 12:17 AM Phoenix |
+| `bbe-pipeline-grading` | `python scripts/run_render_pipeline_mode.py --mode grading --execute` | 3:17 AM Phoenix |
+| `bbe-pipeline-full` | `python scripts/run_render_pipeline_mode.py --mode pipeline --execute` | 6:17 AM Phoenix |
+| `bbe-pipeline-refresh-*` | `python scripts/run_render_pipeline_mode.py --mode pipeline --execute` | 8:07 AM-6:07 PM Phoenix |
+| `bbe-pipeline-lock` | `python scripts/run_render_pipeline_mode.py --mode lock --execute` | Every 10 minutes, offset behind live-layer lock writes |
 
-## Active Shadow Rehearsal Services
+## Active Primary Services
 
-Created 2026-05-26 on `main` commit `4c6d0edc`, then redeployed on guarded
-commit `228d67fd` after the May 26 stale-artifact repair showed GitHub
-scheduler timing as the weak point:
+Promoted on 2026-05-30 after GitHub schedule delay caused stale artifact risk
+and Render scheduler canaries ran successfully on current commits:
 
 | Service | Render ID | Schedule | Status |
 | --- | --- | --- | --- |
-| `bbe-pipeline-preview-shadow` | `crn-d8as4l1akrks738ngep0` | `17 7 * * *` | shadow-only active |
-| `bbe-pipeline-grading-shadow` | `crn-d8as4pdckfvc73dgpme0` | `17 10 * * *` | shadow-only active |
-| `bbe-pipeline-full-shadow` | `crn-d8as4r8g4nts73b5f510` | `17 13 * * *` | shadow-only active |
-| `bbe-pipeline-refresh-shadow-day` | `crn-d8asbonavr4c73drnrhg` | `7,37 15-23 * * *` | shadow-only active |
-| `bbe-pipeline-refresh-shadow-evening` | `crn-d8asbrel51nc73ahmh60` | `7,37 0 * * *` | shadow-only active |
-| `bbe-pipeline-refresh-shadow-final` | `crn-d8asbv0jo6nc7381gma0` | `7 1 * * *` | shadow-only active |
+| `bbe-pipeline-preview` | `crn-d8as4l1akrks738ngep0` | `17 7 * * *` | primary |
+| `bbe-pipeline-grading` | `crn-d8as4pdckfvc73dgpme0` | `17 10 * * *` | primary |
+| `bbe-pipeline-full` | `crn-d8as4r8g4nts73b5f510` | `17 13 * * *` | primary |
+| `bbe-pipeline-refresh-day` | `crn-d8asbonavr4c73drnrhg` | `7,37 15-23 * * *` | primary |
+| `bbe-pipeline-refresh-evening` | `crn-d8asbrel51nc73ahmh60` | `7,37 0 * * *` | primary |
+| `bbe-pipeline-refresh-final` | `crn-d8asbv0jo6nc7381gma0` | `7 1 * * *` | primary |
+| `bbe-pipeline-lock` | `crn-d8dgp6q8qa3s739n80s0` | `2,12,22,32,42,52 * * * *` | primary |
 
-These services do not replace GitHub schedules. They publish to
-`render_shadow:<publish-date>:` keys only, so the normal Netlify artifact API
-mirror stays on GitHub/static-compatible keys until promotion is explicit.
-The wrapper also forces `ENABLE_SUPABASE_LOCK_CONSUMER=false`,
-`SUPABASE_LOCK_CONSUMER_STRICT=false`, `OFFICIAL_MARKET_SOURCE=therundown`, and
-`ENABLE_BOLTODDS_PIPELINE_SOURCE=false` during shadow-prefixed runs. That keeps
-shadow scheduler rehearsal from consuming official lock rows or testing the
-provider cutover path by accident.
+The primary services publish normal live artifact keys. Render env explicitly
+keeps `OFFICIAL_MARKET_SOURCE=therundown` and
+`ENABLE_BOLTODDS_PIPELINE_SOURCE=false`; this is a scheduler/artifact cutover,
+not a provider cutover.
 
-May 29 correction: these active scheduler-shadow services are back on the
-TheRundown-equivalent wrapper command without `--provider-rehearsal`. The
-provider-rehearsal flag is useful for a separate BoltOdds/PropLine source
-trial, but it intentionally fails strict when `official_market_lines` coverage
-is incomplete and therefore is not clean Task 11 scheduler proof.
+May 29 correction: the scheduler-shadow services were returned to the
+TheRundown-equivalent wrapper command without `--provider-rehearsal`. That
+corrected the provider/scheduler evidence split before the May 30 promotion.
+After promotion, scheduled services publish live keys; use `--shadow-prefix`
+only for deliberate future rehearsals.
 
-Latest proof run: Render job `job-d8ascuj7uimc73ckb640` succeeded for
-`2026-05-26` full mode on commit `228d67fd`, writing 8 prefixed artifacts
-through publication run
-`manual-render-pipeline-2026-05-26-20260526T161330Z`. The normal live artifact
-keys still passed strict parity 8/8 afterward.
+Cutover proof: on 2026-05-30, the refresh-day service was redeployed to current
+commit `643b262f`, normal mode ran successfully, and lock mode published live
+artifact keys through
+`manual-render-lock-2026-05-30-20260530T162508Z`. The first primary soak should
+watch the next scheduled preview/grading/full/refresh/lock windows closely.
 
 ## Required Environment
 
@@ -61,25 +58,21 @@ keys still passed strict parity 8/8 afterward.
 - `SUPABASE_URL`
 - `SUPABASE_SERVICE_ROLE_KEY`
 - `ENABLE_SUPABASE_LOCK_CONSUMER=true`
-- `SUPABASE_LOCK_CONSUMER_STRICT=true`
+- `SUPABASE_LOCK_CONSUMER_STRICT=false` during the first primary-scheduler soak
+- `ENABLE_GITHUB_FALLBACK_LOCKING=false`
 - `OFFICIAL_MARKET_SOURCE` unset or `therundown`
 - `ENABLE_BOLTODDS_PIPELINE_SOURCE=false`
+- `BATTER_SPLIT_COLLECTION_MAX_NEW=0` on starter cron services to avoid
+  memory-heavy research backfill during live pipeline windows
 
 ## Promotion Gate
 
-Run Render in shadow for one slate while GitHub remains official. Promote only
-when Render-generated Supabase artifact hashes under
-`render_shadow:<date>:` match GitHub committed artifacts for `today`, dated
-archive, `steam`, `performance`, `params`, `preview_lines`, and
-`picks_history` where those files are expected for the run type.
-
-Use the parity checker with the same prefix:
-
-```powershell
-python scripts/compare_supabase_artifacts.py --date YYYY-MM-DD --remote-key-prefix "render_shadow:YYYY-MM-DD:" --strict
-```
+During the first primary-scheduler soak, check Render run success,
+`pipeline_artifact_publication_runs`, live artifact freshness, dashboard API
+response, lock cron consumption, and manual GitHub rollback availability.
 
 ## Rollback
 
-Disable Render schedules and set dashboard artifact source back to static.
-Manual GitHub `workflow_dispatch` remains available.
+Disable Render schedules or restore `--shadow-prefix`, set dashboard artifact
+source back to static, and manually run GitHub `workflow_dispatch`. Manual
+GitHub dispatch remains available.

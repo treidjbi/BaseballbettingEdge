@@ -1,59 +1,6 @@
 name: Baseball Pipeline
 
 on:
-  schedule:
-    # All times are America/Phoenix (UTC-7, no DST — crons never change).
-    #
-    # 12:17 AM Phoenix = 07:17 UTC  — preview run: fetch today's lines as opening baseline
-    - cron: '17 7 * * *'
-    # 3:17 AM Phoenix = 10:17 UTC  — grading run: grade previous day + calibrate
-    - cron: '17 10 * * *'
-    # 6:17 AM Phoenix = 13:17 UTC  — full run: finalize picks (uses preview lines as opening)
-    - cron: '17 13 * * *'
-    # Refresh + lock runs: fetch fresh odds/lineups, update unlocked picks, lock T-30min.
-    # Runs every 30 minutes 8:07am–6:07pm Phoenix for tighter line tracking and lock windows.
-    # 8:07 AM Phoenix = 15:07 UTC
-    - cron: '7 15 * * *'
-    # 8:37 AM Phoenix = 15:37 UTC
-    - cron: '37 15 * * *'
-    # 9:07 AM Phoenix = 16:07 UTC
-    - cron: '7 16 * * *'
-    # 9:37 AM Phoenix = 16:37 UTC
-    - cron: '37 16 * * *'
-    # 10:07 AM Phoenix = 17:07 UTC
-    - cron: '7 17 * * *'
-    # 10:37 AM Phoenix = 17:37 UTC
-    - cron: '37 17 * * *'
-    # 11:07 AM Phoenix = 18:07 UTC
-    - cron: '7 18 * * *'
-    # 11:37 AM Phoenix = 18:37 UTC
-    - cron: '37 18 * * *'
-    # 12:07 PM Phoenix = 19:07 UTC
-    - cron: '7 19 * * *'
-    # 12:37 PM Phoenix = 19:37 UTC
-    - cron: '37 19 * * *'
-    # 1:07 PM Phoenix = 20:07 UTC
-    - cron: '7 20 * * *'
-    # 1:37 PM Phoenix = 20:37 UTC
-    - cron: '37 20 * * *'
-    # 2:07 PM Phoenix = 21:07 UTC
-    - cron: '7 21 * * *'
-    # 2:37 PM Phoenix = 21:37 UTC
-    - cron: '37 21 * * *'
-    # 3:07 PM Phoenix = 22:07 UTC
-    - cron: '7 22 * * *'
-    # 3:37 PM Phoenix = 22:37 UTC
-    - cron: '37 22 * * *'
-    # 4:07 PM Phoenix = 23:07 UTC
-    - cron: '7 23 * * *'
-    # 4:37 PM Phoenix = 23:37 UTC
-    - cron: '37 23 * * *'
-    # 5:07 PM Phoenix = 00:07 UTC (next day)
-    - cron: '7 0 * * *'
-    # 5:37 PM Phoenix = 00:37 UTC (next day)
-    - cron: '37 0 * * *'
-    # 6:07 PM Phoenix = 01:07 UTC (next day)
-    - cron: '7 1 * * *'
   workflow_dispatch:        # manual trigger for testing
     inputs:
       mode:

@@ -123,12 +123,14 @@ PropLine if the evidence and gates pass.
   reused instead of duplicated.
 - Preserve the dated plans in `docs/superpowers/plans/` as historical context
   so future work does not repeat earlier mistakes.
-- Artifact-exit posture as of 2026-05-24: strict locks, GitHub shadow artifact
-  publishing, Netlify `get-artifact`, and the Tyler-only dashboard API canary
-  have all worked, but Render is not approved as the primary scheduler. Let the
-  rest of the 2026-05-24 slate run as a soak with GitHub schedules official and
-  static JSON default, then make Task 11 a separate go/no-go decision after the
-  full-slate evidence is reviewed.
+- Artifact-exit posture as of 2026-05-30: Tyler approved the scheduler/artifact
+  cutover. Render cron services now run preview, grading, full, refresh, and
+  lock modes and publish live Supabase artifact keys consumed by Netlify
+  `get-artifact`. GitHub Actions `pipeline.yml` keeps manual
+  `workflow_dispatch` rollback only; scheduled triggers are disabled. This is
+  not a provider cutover: TheRundown remains the production odds source and
+  BoltOdds/PropLine remain shadow/fallback evidence unless Tyler separately
+  approves the provider switch.
 
 ### May 2026 provider cutover posture
 
@@ -186,7 +188,7 @@ Results are displayed on a static dashboard hosted on Netlify with push notifica
 ## Architecture
 
 ```
-pipeline/           Python data pipeline (runs on GitHub Actions)
+pipeline/           Python data pipeline (runs on Render cron; GitHub manual rollback)
   run_pipeline.py     Orchestrator — entry point, run types: full | grading | preview | lock
   fetch_odds.py       TheRundown API v2 — K prop lines (market_id=19)
   fetch_stats.py      MLB Stats API — pitcher season/recent/career K/9, avg IP, team data
@@ -234,7 +236,7 @@ data/               Shared data files
 tests/              pytest test suite
 ```
 
-## Pipeline Schedule (GitHub Actions)
+## Pipeline Schedule (Render Cron)
 
 All times America/Phoenix (UTC-7, no DST):
 - **12:17 AM** — Preview: fetch current-day opening lines → `preview_lines.json`.
@@ -246,17 +248,20 @@ All times America/Phoenix (UTC-7, no DST):
 - **6:17 AM** — Full run: finalize today's picks (uses preview lines as opening baseline)
 - **8:07 AM–6:07 PM every 30 min** — Refresh: fetch fresh odds/lineups, update unlocked picks, lock T-30min
 
-### GitHub scheduled-run delay expectations
+- **Every 10 minutes at :02/:12/:22/:32/:42/:52** - Lock mode consumes
+  Supabase operational lock rows after the live layer has had a chance to write
+  them.
 
-GitHub scheduled workflows often start late, sometimes by an hour or more. Treat
-that as expected platform noise, not a pipeline-health incident by itself.
+### GitHub manual rollback expectations
 
-For health checks, focus on whether the expected run eventually completed
-successfully, committed the right artifacts, and preserved grading/output
-contracts. Escalate scheduler delay only if a run is still missing after the
-slate needs it, if artifacts are stale despite a completed run, or if the delay
-caused a real betting/product issue such as missed locks, stale picks, or
-missing grading before the morning review.
+GitHub scheduled workflows are disabled after the 2026-05-30 Render scheduler
+cutover. Manual `workflow_dispatch` remains available for preview, grading,
+full/refresh, lock, and PropLine probe modes.
+
+For health checks, focus first on Render run completion, Supabase
+`published_pipeline_artifacts`, Netlify `get-artifact`, and lock cron
+consumption. Use manual GitHub dispatch only as rollback or stale-artifact
+repair, then verify the repaired artifact path before trusting it.
 
 ## Key Commands
 
@@ -341,8 +346,8 @@ For the live layer, default to:
 The live notification layer is separate from the official pipeline.
 
 - **Render cron**: `bbe-live-layer`, every 10 minutes.
-- **Source artifact**: fetches fresh GitHub raw `today.json`; do not rely on
-  the stale baked Render checkout.
+- **Source artifact**: fetches the fresh Netlify/Supabase dashboard artifact;
+  do not rely on stale baked Render checkout files.
 - **Market source**: polls PropLine only when `PROPLINE_API_KEY` is present.
 - **Supabase tables**: `market_snapshots`, `live_pick_state`,
   `notification_events`, `line_movement_events`, `market_pick_evidence`,
@@ -574,7 +579,8 @@ Review BoltOdds on evidence, not promise:
 - **Python 3.11** — pipeline
 - **Libraries**: requests, beautifulsoup4, scipy (Poisson), pybaseball, pytz, numpy
 - **SQLite** — ephemeral results DB (`data/results.db`, gitignored), rebuilt each run from `picks_history.json`
-- **GitHub Actions** — scheduled pipeline runs (pip cached for fast installs)
+- **Render cron** - scheduled pipeline runs
+- **GitHub Actions** - manual pipeline rollback and probes
 - **Netlify** — static dashboard hosting + serverless functions
 - **Single-file HTML dashboard** — vanilla JS, no build step, IBM Plex Mono + Oswald fonts
 

@@ -40,6 +40,15 @@ def test_notification_preview_branch_matches_actual_preview_cron():
     assert '[ "$SCHEDULE" = "0 2 * * *" ]' not in notify_block
 
 
+def test_pipeline_workflow_keeps_manual_dispatch_but_no_scheduled_crons():
+    workflow_text = _read_workflow()
+    on_block = workflow_text.split("permissions:", 1)[0]
+
+    assert "workflow_dispatch:" in on_block
+    assert "schedule:" not in on_block
+    assert "cron:" not in on_block
+
+
 def test_legacy_github_notifications_can_be_disabled_by_variable():
     workflow_text = _read_workflow()
     notify_block = _extract_step_block(workflow_text, "Send push notifications")

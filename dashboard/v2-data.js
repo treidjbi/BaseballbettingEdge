@@ -29,9 +29,9 @@
     : 'https://raw.githubusercontent.com/treidjbi/baseballbettingedge/main/dashboard/data/processed/steam.json';
   const ARTIFACT_SOURCE = (() => {
     try {
-      return localStorage.getItem('bbe_artifact_source') || 'static';
+      return localStorage.getItem('bbe_artifact_source') || 'supabase';
     } catch {
-      return 'static';
+      return 'supabase';
     }
   })();
 

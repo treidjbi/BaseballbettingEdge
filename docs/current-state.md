@@ -64,7 +64,7 @@ each lane.
 
 | Lane | Current Source | Current Stage | Next Decision |
 | --- | --- | --- | --- |
-| Pipeline / infrastructure | `2026-05-19-supabase-operational-foundation.md`, `2026-05-22-github-artifact-exit.md`, `2026-05-13-boltodds-propline-official-provider-cutover.md`, `2026-05-20-live-notification-coordinator.md`, `docs/operational-risk-register.md` | Staged Supabase/BoltOdds/PropLine migration. GitHub + TheRundown remain production source of truth. Supabase lock ledger passed its strict/single-writer canary posture; GitHub can consume Supabase lock rows while `ENABLE_GITHUB_FALLBACK_LOCKING=false` suppresses its own due-lock fallback. Artifact-exit Stage 1 is on `main`: hosted mirror tables, GitHub shadow publisher, `ENABLE_SUPABASE_ARTIFACT_PUBLISH=true`, Netlify artifact API, default-static dashboard adapters, parity checker, and Render runner risk docs. GitHub manual/scheduled publishing has repeatedly written shadow rows and passed parity after the 2026-05-25 grading artifact hotfix. A one-off Render preview canary on `bbe-pipeline-shadow-runner-hosted` also completed and wrote 8 rows, proving Render can run the pipeline and publish to Supabase when pointed at hosted Supabase env. Tyler-only dashboard API canary now loads current and tested prior dated artifacts through Netlify `get-artifact` with static fallback still active. | The 2026-05-26 stale current-slate repair strengthens the case to advance scheduler migration. Move forward by rehearsing Render pipeline schedules with shadow-prefixed artifact keys, not by disabling GitHub schedules yet. Keep dashboard reads static by default and GitHub schedules official until Render preview/grading/full/refresh rows under `render_shadow:<date>:` match GitHub artifacts for a full slate and manual GitHub rollback stays available. Do not bundle provider source, model, staking, thresholds, notification behavior, dashboard default source, or retention deletion into this scheduler rehearsal. |
+| Pipeline / infrastructure | `2026-05-19-supabase-operational-foundation.md`, `2026-05-22-github-artifact-exit.md`, `2026-05-13-boltodds-propline-official-provider-cutover.md`, `2026-05-20-live-notification-coordinator.md`, `docs/operational-risk-register.md` | Render + Supabase artifact API are the primary scheduler/artifact path as of 2026-05-30. GitHub scheduled triggers are disabled, but manual `workflow_dispatch` remains the rollback path. TheRundown remains the production odds source. Render preview/grading/full/refresh jobs publish live Supabase artifact keys through `scripts/run_render_pipeline_mode.py --execute`; `bbe-pipeline-lock` runs every 10 minutes offset behind the live-layer lock ledger and consumes Supabase lock rows with strict mode off. Dashboard artifact adapters default to Netlify `get-artifact` with static fallback. | Observe the first migrated slate closely: Render run health, Supabase artifact freshness, Netlify `get-artifact`, lock cron consumption, and manual GitHub rollback availability. Do not bundle provider source, model, staking, thresholds, notification behavior, or retention deletion into this scheduler migration. |
 | Model | `2026-05-12-pitcher-k-outcome-research-dataset.md`, `2026-05-29-gate-ef-under-fire-conversion-shadow-plan.md` | Gate C confidence-referee / compact evidence proof, plus pre/post 4/28 review, reconstructed historical lineup-handedness backfill, holdout labs, and the implemented Gate E/F under-skepticism / FIRE-conversion shadow lab. The regenerated report at `analytics/output/gate_ef_candidate_shadow_lab.md` is promising but not promotion-ready: validation slices remain small-sample and the current selected candidate retained zero FIRE 2u wins. | Keep Gate C and Gate E/F shadow-only. Continue soaking and regenerate the Gate E/F lab after grading before any decision. Do not promote lambda, thresholds, staking, verdicts, provider order, notifications, dashboard behavior, or Path B handedness without a separate Tyler-approved promotion plan. |
 | UI | `2026-05-20-live-market-decision-ui.md`, `2026-05-20-live-notification-coordinator.md` | Future-state design only. The dashboard should eventually display best price, consensus, movement, urgency, and notification grouping from the new operational base. | Revisit after the operational/provider switch is stable. Keep display work separated from provider promotion and betting-rule changes. |
 | Tracking / data collection / history | `docs/research/market-tracker-map.md`, `docs/research/pitcher-k-outcome-dataset.md`, compact outcome outputs, live-market audits | Canonical research row plus existing market/live/provider trackers. Daily brief now keeps a compact Gate C bucket scoreboard and pre/post 2026-04-28 context. | Prefer derived labels on the compact outcome row before adding tables. Promote compact storage or retention only after row-volume/cost proof and Tyler approval. |
@@ -511,6 +511,23 @@ Artifact-exit rollout note, 2026-05-24:
   records provider failures without failing the whole GitHub shadow-market
   workflow, and the BoltOdds shadow worker should retry provider/websocket
   failures inside the worker instead of relying on Render crash restarts.
+- Render primary-scheduler cutover on 2026-05-30: Tyler approved taking the
+  scheduler migration live while keeping the provider source on TheRundown.
+  The Render scheduler env gap was fixed, all preview/grading/full/refresh
+  services were redeployed on current artifact commit `643b262f`, and a
+  normal-mode lock run published live Supabase artifact keys. The old shadow
+  services were renamed/repointed to live-key commands without
+  `--shadow-prefix`, and new
+  `bbe-pipeline-lock` (`crn-d8dgp6q8qa3s739n80s0`) runs lock mode every 10
+  minutes at `2,12,22,32,42,52 * * * *`. Render pipeline services explicitly
+  set `OFFICIAL_MARKET_SOURCE=therundown`,
+  `ENABLE_BOLTODDS_PIPELINE_SOURCE=false`,
+  `ENABLE_SUPABASE_LOCK_CONSUMER=true`,
+  `SUPABASE_LOCK_CONSUMER_STRICT=false`, and
+  `ENABLE_GITHUB_FALLBACK_LOCKING=false`. The live layer now has
+  `ENABLE_LOCK_ONLY_WORKFLOW_DISPATCH=false` so new lock rows are consumed by
+  Render lock cron instead of GitHub lock-only dispatches. GitHub `pipeline.yml`
+  keeps manual dispatch only.
 
 Post-cutover cadence planning note, 2026-05-25:
 
@@ -521,7 +538,9 @@ Post-cutover cadence planning note, 2026-05-25:
   notification candidates/events, and compact evidence. This loop must not
   grade, calibrate, rewrite model outputs, or publish dashboard artifacts unless
   a later plan explicitly promotes that behavior.
-- The artifact pipeline loop moves to Render only after Task 11 gates pass.
+- The artifact pipeline loop moved to Render on 2026-05-30 after Tyler's Task
+  11 approval. Keep the loops separate and use manual GitHub workflow dispatch
+  only as rollback/repair.
   Preview, grading, full, refresh, and lock modes should keep their distinct
   responsibilities. A 10-minute refresh cadence can be considered after Render
   parity, provider cutover, runtime, Supabase IO, and notification-value evidence
@@ -545,12 +564,17 @@ Post-cutover cadence planning note, 2026-05-25:
 
 ## Active Production Path
 
-The official app still runs from the GitHub pipeline:
+The official app now runs from Render-published Supabase artifacts:
 
-- GitHub Actions preview/full/refresh/grading jobs write `today.json`, dated
-  archives, `steam.json`, `performance.json`, `params.json`,
-  `preview_lines.json`, and `data/picks_history.json`.
-- Netlify serves the static dashboard and notification functions.
+- Render preview/full/refresh/grading/lock cron services write `today.json`,
+  dated archives, `steam.json`, `performance.json`, `params.json`,
+  `preview_lines.json`, and `data/picks_history.json` into Supabase
+  `published_pipeline_artifacts` live keys.
+- Netlify serves the static dashboard shell and `get-artifact` function.
+  Dashboard adapters default to the artifact API and fall back to static JSON
+  if the API errors.
+- GitHub Actions `pipeline.yml` is manual rollback only; scheduled triggers are
+  disabled.
 - `data/picks_history.json` remains the durable grading/history source.
 - `data/results.db` remains ephemeral.
 
@@ -569,7 +593,9 @@ The live layer is now separate from the production pipeline.
   new shells should resolve `render`, while existing Codex shells may need the
   full `render.exe` path until the parent process is restarted.
 - Cadence: every 10 minutes
-- Source artifact: fresh GitHub raw `today.json`, not the baked Render checkout
+- Source artifact: fresh dashboard artifact state; during migration, verify the
+  live layer reads the current Supabase/Netlify artifact path rather than a
+  stale baked Render checkout or stale GitHub raw artifact.
 - Market source: PropLine polling when `PROPLINE_API_KEY` is present
 - Shadow provider-state rebuild: `scripts/build_live_events_to_supabase.py`
   can refresh `current_market_lines`, `official_market_lines`,
