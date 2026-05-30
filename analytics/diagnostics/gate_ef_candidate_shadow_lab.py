@@ -158,3 +158,67 @@ def candidate_flags(row: dict[str, Any]) -> dict[str, bool]:
             and edge < 0.06
         ),
     }
+
+
+def _row_pnl(row: dict[str, Any]) -> float:
+    for key in ("pick_history_pnl", "theoretical_pnl", "pnl"):
+        value = to_float(row.get(key))
+        if value is not None:
+            return value
+    return 0.0
+
+
+def clean_tracked_rows(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    return [
+        row
+        for row in rows
+        if str(row.get("slate_date") or "") >= CLEAN_WINDOW_START
+        and row.get("result") in WIN_LOSS_RESULTS
+        and row.get("is_tracked_pick") is True
+    ]
+
+
+def summarize_candidate(name: str, rows: list[dict[str, Any]]) -> dict[str, Any]:
+    clean_rows = clean_tracked_rows(rows)
+    current_fire_rows = [
+        (index, row)
+        for index, row in enumerate(clean_rows)
+        if candidate_flags(row)["current_fire_flat"]
+    ]
+    selected = [
+        (index, row)
+        for index, row in enumerate(clean_rows)
+        if candidate_flags(row).get(name, False)
+    ]
+    selected_indices = {index for index, _row in selected}
+    avoided = [
+        row
+        for index, row in current_fire_rows
+        if index not in selected_indices
+    ]
+    selected_rows = [row for _index, row in selected]
+
+    wins = sum(1 for row in selected_rows if row.get("result") == "win")
+    losses = sum(1 for row in selected_rows if row.get("result") == "loss")
+    flat_pnl = round(sum(_row_pnl(row) for row in selected_rows), 2)
+    flat_roi = round(flat_pnl / len(selected_rows), 4) if selected_rows else None
+
+    return {
+        "name": name,
+        "selected": len(selected_rows),
+        "wins": wins,
+        "losses": losses,
+        "flat_pnl": flat_pnl,
+        "flat_roi": flat_roi,
+        "current_fire_rows": len(current_fire_rows),
+        "current_fire_1u_losses_avoided": sum(
+            1
+            for row in avoided
+            if current_verdict(row) == "FIRE 1u" and row.get("result") == "loss"
+        ),
+        "current_fire_2u_wins_retained": sum(
+            1
+            for row in selected_rows
+            if current_verdict(row) == "FIRE 2u" and row.get("result") == "win"
+        ),
+    }

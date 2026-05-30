@@ -139,3 +139,140 @@ def test_fire_combined_skeptic_excludes_high_adj_ev_and_high_edge():
 
     high_edge = {**base_row, "edge": 0.08}
     assert lab.candidate_flags(high_edge)["fire_combined_skeptic"] is False
+
+
+def test_candidate_flags_fail_closed_for_missing_edge_and_adj_ev():
+    row = {
+        "side": "over",
+        "line_bucket": "4.5",
+        "price_sign": "plus",
+        "model_market_relationship": "model_fades_favorite",
+        "bet_timing_window": "pre_30",
+        "quality_gate_level": "clean",
+        "pitcher_archetype_bucket": "standard_starter",
+        "opportunity_bucket": "normal",
+        "verdict": "FIRE 1u",
+        "projected_ks": 5.2,
+        "k_line": 4.5,
+    }
+
+    flags = lab.candidate_flags(row)
+
+    assert flags["fire_mid_edge"] is False
+    assert flags["fire_not_high_adj_ev"] is False
+    assert flags["fire_combined_skeptic"] is False
+
+
+def test_under_skeptic_reasons_treat_unexpected_timing_bucket_as_unknown():
+    row = {
+        "side": "under",
+        "line_bucket": "4.5",
+        "bet_timing_window": "pre_45",
+        "quality_gate_level": "clean",
+    }
+
+    assert lab.under_skeptic_reasons(row) == ["under_late_or_unknown_timing"]
+
+
+def test_summarize_candidate_reports_retention_and_avoided_losses():
+    rows = [
+        {
+            "side": "under",
+            "line_bucket": "6.5",
+            "price_sign": "minus",
+            "model_market_relationship": "model_agrees_with_favorite",
+            "bet_timing_window": "pre_15",
+            "quality_gate_level": "capped",
+            "pitcher_archetype_bucket": "high_k_standard",
+            "opportunity_bucket": "normal",
+            "verdict": "FIRE 1u",
+            "edge": 0.08,
+            "adj_ev": 0.2,
+            "projected_ks": 5.7,
+            "k_line": 6.5,
+            "result": "loss",
+            "pick_history_pnl": -1.0,
+            "is_tracked_pick": True,
+            "slate_date": "2026-05-01",
+            "dataset_key": "row-a",
+        },
+        {
+            "side": "over",
+            "line_bucket": "4.5",
+            "price_sign": "minus",
+            "model_market_relationship": "model_agrees_with_favorite",
+            "bet_timing_window": "pre_30",
+            "quality_gate_level": "clean",
+            "pitcher_archetype_bucket": "standard_starter",
+            "opportunity_bucket": "normal",
+            "verdict": "FIRE 2u",
+            "edge": 0.05,
+            "adj_ev": 0.11,
+            "projected_ks": 5.2,
+            "k_line": 4.5,
+            "result": "win",
+            "pick_history_pnl": 1.8,
+            "is_tracked_pick": True,
+            "slate_date": "2026-05-01",
+            "dataset_key": "row-b",
+        },
+    ]
+
+    summary = lab.summarize_candidate("fire_without_under_skeptic_2plus", rows)
+
+    assert summary["selected"] == 1
+    assert summary["wins"] == 1
+    assert summary["losses"] == 0
+    assert summary["flat_pnl"] == 1.8
+    assert summary["current_fire_rows"] == 2
+    assert summary["current_fire_1u_losses_avoided"] == 1
+    assert summary["current_fire_2u_wins_retained"] == 1
+
+
+def test_summarize_candidate_does_not_collapse_rows_missing_dataset_key():
+    rows = [
+        {
+            "side": "under",
+            "line_bucket": "6.5",
+            "price_sign": "minus",
+            "model_market_relationship": "model_agrees_with_favorite",
+            "bet_timing_window": "pre_15",
+            "quality_gate_level": "capped",
+            "pitcher_archetype_bucket": "high_k_standard",
+            "opportunity_bucket": "normal",
+            "verdict": "FIRE 1u",
+            "edge": 0.08,
+            "adj_ev": 0.2,
+            "projected_ks": 5.7,
+            "k_line": 6.5,
+            "result": "loss",
+            "pick_history_pnl": -1.0,
+            "is_tracked_pick": True,
+            "slate_date": "2026-05-01",
+        },
+        {
+            "side": "over",
+            "line_bucket": "4.5",
+            "price_sign": "minus",
+            "model_market_relationship": "model_agrees_with_favorite",
+            "bet_timing_window": "pre_30",
+            "quality_gate_level": "clean",
+            "pitcher_archetype_bucket": "standard_starter",
+            "opportunity_bucket": "normal",
+            "verdict": "FIRE 2u",
+            "edge": 0.05,
+            "adj_ev": 0.11,
+            "projected_ks": 5.2,
+            "k_line": 4.5,
+            "result": "win",
+            "pick_history_pnl": 1.8,
+            "is_tracked_pick": True,
+            "slate_date": "2026-05-01",
+        },
+    ]
+
+    summary = lab.summarize_candidate("fire_without_under_skeptic_2plus", rows)
+
+    assert summary["selected"] == 1
+    assert summary["current_fire_1u_losses_avoided"] == 1
+    assert summary["current_fire_2u_wins_retained"] == 1
