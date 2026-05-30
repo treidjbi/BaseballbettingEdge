@@ -256,6 +256,8 @@ Gate E/F under-skepticism and FIRE-conversion candidate testing is controlled
 by `docs/superpowers/plans/2026-05-29-gate-ef-under-fire-conversion-shadow-plan.md`;
 it remains shadow-only and cannot change live picks without a separate
 Tyler-approved promotion plan.
+The implemented report lives at `analytics/output/gate_ef_candidate_shadow_lab.md`
+and should be regenerated after grading before any promotion discussion.
 
 The referee should compare:
 
