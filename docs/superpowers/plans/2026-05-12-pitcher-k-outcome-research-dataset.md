@@ -252,6 +252,11 @@ the market-memory and confidence-referee layer, not an automatic model change.
 Gate C should make the evidence easier to read and trust. It must not make the
 model more aggressive by itself.
 
+Gate E/F under-skepticism and FIRE-conversion candidate testing is controlled
+by `docs/superpowers/plans/2026-05-29-gate-ef-under-fire-conversion-shadow-plan.md`;
+it remains shadow-only and cannot change live picks without a separate
+Tyler-approved promotion plan.
+
 The referee should compare:
 
 - adjusted EV, raw edge, and model margin
