@@ -7,6 +7,7 @@ notification behavior, or params.
 
 from __future__ import annotations
 
+import json
 from pathlib import Path
 from typing import Any
 
@@ -17,6 +18,18 @@ OUTPUT_PATH = ROOT / "analytics" / "output" / "gate_ef_candidate_shadow_lab.md"
 CLEAN_WINDOW_START = "2026-04-28"
 WIN_LOSS_RESULTS = {"win", "loss"}
 FIRE_VERDICTS = {"FIRE 1u", "FIRE 2u"}
+CANDIDATE_NAMES = (
+    "current_fire_flat",
+    "current_fire_over",
+    "current_fire_under",
+    "fire_without_under_skeptic_2plus",
+    "fire_without_under_skeptic_3plus",
+    "fire_mid_edge",
+    "fire_not_high_adj_ev",
+    "fire_model_margin_under_1_5",
+    "fire_clean_quality",
+    "fire_combined_skeptic",
+)
 RUNTIME_SAFE_FIELDS = {
     "side",
     "line_bucket",
@@ -51,6 +64,16 @@ def to_float(value: Any) -> float | None:
         return float(value)
     except (TypeError, ValueError):
         return None
+
+
+def load_jsonl(path: Path = DATASET_PATH) -> list[dict[str, Any]]:
+    if not path.exists():
+        return []
+    rows: list[dict[str, Any]] = []
+    for line in path.read_text(encoding="utf-8").splitlines():
+        if line.strip():
+            rows.append(json.loads(line))
+    return rows
 
 
 def current_verdict(row: dict[str, Any]) -> str:
@@ -222,3 +245,83 @@ def summarize_candidate(name: str, rows: list[dict[str, Any]]) -> dict[str, Any]
             if current_verdict(row) == "FIRE 2u" and row.get("result") == "win"
         ),
     }
+
+
+def _format_roi(value: float | None) -> str:
+    if value is None:
+        return "--"
+    return f"{value * 100:+.1f}%"
+
+
+def _candidate_row(summary: dict[str, Any]) -> str:
+    return (
+        f"| {summary['name']} "
+        f"| {summary['selected']} "
+        f"| {summary['wins']}-{summary['losses']} "
+        f"| {summary['flat_pnl']:+.2f} "
+        f"| {_format_roi(summary['flat_roi'])} "
+        f"| {summary['current_fire_1u_losses_avoided']} "
+        f"| {summary['current_fire_2u_wins_retained']} |"
+    )
+
+
+def build_report(
+    rows: list[dict[str, Any]],
+    input_warning: str | None = None,
+) -> str:
+    clean_rows = clean_tracked_rows(rows)
+    summaries = [summarize_candidate(name, rows) for name in CANDIDATE_NAMES]
+    table_rows = "\n".join(_candidate_row(summary) for summary in summaries)
+    warning_section = []
+    if input_warning:
+        warning_section = [
+            "## Input Warning",
+            "",
+            f"**{input_warning}**",
+            "",
+        ]
+
+    return "\n".join(
+        [
+            "# Gate E/F Candidate Shadow Lab",
+            "",
+            "**Shadow-only warning:** This report is analysis-only. It must not change live model behavior, production thresholds, staking, provider order, dashboard artifacts consumed by the app, notifications, or source-of-truth behavior.",
+            "",
+            *warning_section,
+            "## Scope",
+            "",
+            f"- Clean evaluation window starts at `{CLEAN_WINDOW_START}`.",
+            f"- Clean tracked rows included: `{len(clean_rows)}`.",
+            "- Candidate labels use runtime-safe fields for shadow diagnostics only.",
+            "",
+            "## Candidate Scoreboard",
+            "",
+            "| Candidate | Selected | W-L | Flat PnL | ROI | FIRE 1u losses avoided | FIRE 2u wins retained |",
+            "| --- | ---: | ---: | ---: | ---: | ---: | ---: |",
+            table_rows,
+            "",
+            "## Promotion Discussion Check",
+            "",
+            "- These rows are not production approval.",
+            "- A later Tyler-approved production plan is required before any candidate can affect live picks, thresholds, staking, notifications, provider behavior, or dashboard source-of-truth artifacts.",
+            "- Promotion discussion should compare this shadow evidence against the current live lambda baseline and the broader Gate E/F evidence package.",
+        ]
+    )
+
+
+def main() -> None:
+    input_warning = None
+    if not DATASET_PATH.exists():
+        input_warning = (
+            f"Input dataset is missing at `{DATASET_PATH}`. "
+            "zero-row output is not decision evidence."
+        )
+    rows = load_jsonl(DATASET_PATH)
+    report = build_report(rows, input_warning=input_warning)
+    OUTPUT_PATH.parent.mkdir(parents=True, exist_ok=True)
+    OUTPUT_PATH.write_text(f"{report}\n", encoding="utf-8")
+    print(report)
+
+
+if __name__ == "__main__":
+    main()
