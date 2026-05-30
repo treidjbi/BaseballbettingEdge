@@ -6,13 +6,17 @@ allowing Render rehearsal rows to publish under a shadow key prefix.
 from __future__ import annotations
 
 import argparse
+import json
 import os
 import subprocess
 import sys
 from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
+from urllib.parse import urlencode
 from zoneinfo import ZoneInfo
+
+import requests
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
@@ -21,6 +25,7 @@ from market_infra.supabase_writer import SupabaseMarketWriter  # noqa: E402
 from scripts.publish_pipeline_artifacts_to_supabase import run as publish_artifacts  # noqa: E402
 
 PHOENIX = ZoneInfo("America/Phoenix")
+DEFAULT_ARTIFACT_API_URL = "https://baseballbettingedge.netlify.app/.netlify/functions/get-artifact"
 
 
 @dataclass(frozen=True)
@@ -29,6 +34,14 @@ class PublishContract:
     pipeline_run_type: str
     publish_date: str
     publish_scope: str
+
+
+@dataclass(frozen=True)
+class HydrationArtifact:
+    artifact_type: str
+    path: Path
+    date: str | None = None
+    required: bool = True
 
 
 def _parse_date(date_text: str) -> datetime:
@@ -108,6 +121,55 @@ def shadow_runtime_env_overrides(
             }
         )
     return overrides
+
+
+def live_artifact_hydration_enabled(mode: str, artifact_key_prefix: str) -> bool:
+    if artifact_key_prefix:
+        return False
+    value = os.environ.get("RENDER_PIPELINE_HYDRATE_ARTIFACTS", "true").strip().lower()
+    if value in {"0", "false", "no", "off"}:
+        return False
+    return mode == "lock"
+
+
+def artifact_api_url(artifact_type: str, date: str | None = None) -> str:
+    base = os.environ.get("RENDER_PIPELINE_ARTIFACT_API_URL", "").strip() or DEFAULT_ARTIFACT_API_URL
+    params = {"type": artifact_type}
+    if date:
+        params["date"] = date
+    separator = "&" if "?" in base else "?"
+    return f"{base}{separator}{urlencode(params)}"
+
+
+def hydration_artifacts(slate_date: str) -> list[HydrationArtifact]:
+    return [
+        HydrationArtifact("today", Path("dashboard/data/processed/today.json")),
+        HydrationArtifact("dated_slate", Path("dashboard/data/processed") / f"{slate_date}.json", date=slate_date),
+        HydrationArtifact("index", Path("dashboard/data/processed/index.json")),
+        HydrationArtifact("steam", Path("dashboard/data/processed/steam.json")),
+        HydrationArtifact("performance", Path("dashboard/data/performance.json")),
+        HydrationArtifact("params", Path("data/params.json")),
+        HydrationArtifact("preview_lines", Path("data/preview_lines.json")),
+        HydrationArtifact("picks_history", Path("data/picks_history.json")),
+    ]
+
+
+def hydrate_live_artifacts_from_api(*, root: Path, slate_date: str) -> int:
+    hydrated = 0
+    for artifact in hydration_artifacts(slate_date):
+        response = requests.get(
+            artifact_api_url(artifact.artifact_type, artifact.date),
+            timeout=20,
+        )
+        if response.status_code == 404 and not artifact.required:
+            continue
+        response.raise_for_status()
+        target = root / artifact.path
+        target.parent.mkdir(parents=True, exist_ok=True)
+        with target.open("w", encoding="utf-8") as handle:
+            json.dump(response.json(), handle, indent=2)
+        hydrated += 1
+    return hydrated
 
 
 def _apply_env_overrides(overrides: dict[str, str]) -> dict[str, str | None]:
@@ -202,6 +264,13 @@ def main(argv: list[str] | None = None) -> int:
     )
 
     try:
+        hydrated_artifacts = 0
+        if live_artifact_hydration_enabled(args.mode, artifact_key_prefix):
+            hydrated_artifacts = hydrate_live_artifacts_from_api(root=ROOT, slate_date=slate_date)
+            print(
+                "render_pipeline_mode_hydration "
+                f"mode={args.mode} slate_date={slate_date} artifacts={hydrated_artifacts}"
+            )
         subprocess.run(contract.pipeline_args, cwd=ROOT, check=True)
 
         writer = None
@@ -236,7 +305,8 @@ def main(argv: list[str] | None = None) -> int:
         f"mode={args.mode} slate_date={slate_date} publish_date={contract.publish_date} "
         f"scope={contract.publish_scope} publish_mode={mode} artifacts={result['artifact_count']} "
         f"artifact_key_prefix={artifact_key_prefix or '<none>'} "
-        f"provider_rehearsal={str(args.provider_rehearsal).lower()}"
+        f"provider_rehearsal={str(args.provider_rehearsal).lower()} "
+        f"hydrated_artifacts={hydrated_artifacts}"
     )
     return 0
 

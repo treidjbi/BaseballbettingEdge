@@ -38,6 +38,11 @@ keeps `OFFICIAL_MARKET_SOURCE=therundown` and
 `ENABLE_BOLTODDS_PIPELINE_SOURCE=false`; this is a scheduler/artifact cutover,
 not a provider cutover.
 
+Lock mode hydrates the local checkout from Netlify `get-artifact` before
+running. Render cron instances are stateless, so lock jobs must not republish
+the stale JSON bundled in the deployed Git commit after a fresher refresh has
+already published to Supabase.
+
 May 29 correction: the scheduler-shadow services were returned to the
 TheRundown-equivalent wrapper command without `--provider-rehearsal`. That
 corrected the provider/scheduler evidence split before the May 30 promotion.

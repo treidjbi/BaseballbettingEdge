@@ -54,3 +54,56 @@ def test_shadow_provider_rehearsal_enables_provider_adapter_but_not_lock_consume
 
 def test_shadow_runtime_overrides_are_empty_for_live_key_publish():
     assert entrypoint.shadow_runtime_env_overrides("") == {}
+
+
+def test_live_artifact_hydration_only_runs_for_live_lock_mode(monkeypatch):
+    monkeypatch.delenv("RENDER_PIPELINE_HYDRATE_ARTIFACTS", raising=False)
+
+    assert entrypoint.live_artifact_hydration_enabled("lock", "") is True
+    assert entrypoint.live_artifact_hydration_enabled("pipeline", "") is False
+    assert entrypoint.live_artifact_hydration_enabled("lock", "render_shadow:2026-05-30:") is False
+
+    monkeypatch.setenv("RENDER_PIPELINE_HYDRATE_ARTIFACTS", "false")
+    assert entrypoint.live_artifact_hydration_enabled("lock", "") is False
+
+
+def test_hydration_artifacts_include_today_dated_and_history():
+    artifacts = entrypoint.hydration_artifacts("2026-05-30")
+    by_type = {artifact.artifact_type: artifact for artifact in artifacts}
+
+    assert by_type["today"].path.as_posix() == "dashboard/data/processed/today.json"
+    assert by_type["dated_slate"].path.as_posix() == "dashboard/data/processed/2026-05-30.json"
+    assert by_type["dated_slate"].date == "2026-05-30"
+    assert by_type["picks_history"].path.as_posix() == "data/picks_history.json"
+
+
+def test_hydrate_live_artifacts_from_api_writes_current_payloads(tmp_path, monkeypatch):
+    seen_urls = []
+
+    class Response:
+        status_code = 200
+
+        def __init__(self, url):
+            self.url = url
+
+        def raise_for_status(self):
+            return None
+
+        def json(self):
+            return {"source_url": self.url}
+
+    def fake_get(url, timeout):
+        seen_urls.append((url, timeout))
+        return Response(url)
+
+    monkeypatch.setattr(entrypoint.requests, "get", fake_get)
+    monkeypatch.setenv("RENDER_PIPELINE_ARTIFACT_API_URL", "https://example.test/artifact")
+
+    count = entrypoint.hydrate_live_artifacts_from_api(root=tmp_path, slate_date="2026-05-30")
+
+    assert count == len(entrypoint.hydration_artifacts("2026-05-30"))
+    assert (tmp_path / "dashboard/data/processed/today.json").exists()
+    assert (tmp_path / "dashboard/data/processed/2026-05-30.json").exists()
+    assert (tmp_path / "data/picks_history.json").exists()
+    assert any("type=dated_slate&date=2026-05-30" in url for url, _ in seen_urls)
+    assert all(timeout == 20 for _, timeout in seen_urls)
