@@ -43,6 +43,11 @@ running. Render cron instances are stateless, so lock jobs must not republish
 the stale JSON bundled in the deployed Git commit after a fresher refresh has
 already published to Supabase.
 
+Lock mode also fetches replayable same-slate `operational_pick_locks`,
+including rows that already have `consumed_at`, so an artifact that fell behind
+the lock ledger can be repaired idempotently. Existing consumed markers are not
+overwritten; only newly represented rows receive a fresh marker.
+
 May 29 correction: the scheduler-shadow services were returned to the
 TheRundown-equivalent wrapper command without `--provider-rehearsal`. That
 corrected the provider/scheduler evidence split before the May 30 promotion.

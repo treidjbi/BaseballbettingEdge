@@ -866,7 +866,6 @@ def _fetch_supabase_operational_lock_rows(date_str: str, writer=None) -> list[di
         "operational_pick_locks",
         {
             "slate_date": f"eq.{date_str}",
-            "consumed_at": "is.null",
             "order": "locked_at.asc",
             "limit": "1000",
         },
@@ -891,6 +890,14 @@ def _mark_supabase_operational_locks_consumed(
             {"consumed_at": consumed_at_value},
         )
     return updated
+
+
+def _supabase_rows_without_consumed_at(rows: list[dict]) -> list[dict]:
+    return [
+        row
+        for row in rows
+        if not str(row.get("consumed_at") or "").strip()
+    ]
 
 
 def _lock_row_matches_locked_pick(lock_row: dict, pick_row) -> bool:
@@ -1040,18 +1047,20 @@ def _apply_supabase_operational_locks(date_str: str) -> int:
         consumer_checked_at = _now_utc()
         writer = None
         if represented_rows:
-            writer = _supabase_lock_writer()
-            consumed = _mark_supabase_operational_locks_consumed(
-                writer=writer,
-                rows=represented_rows,
-                consumed_at=consumer_checked_at,
-            )
-            log.info(
-                "Supabase lock consumer: marked %d/%d represented rows consumed for %s",
-                consumed,
-                len(represented_rows),
-                date_str,
-            )
+            unconsumed_represented_rows = _supabase_rows_without_consumed_at(represented_rows)
+            if unconsumed_represented_rows:
+                writer = _supabase_lock_writer()
+                consumed = _mark_supabase_operational_locks_consumed(
+                    writer=writer,
+                    rows=unconsumed_represented_rows,
+                    consumed_at=consumer_checked_at,
+                )
+                log.info(
+                    "Supabase lock consumer: marked %d/%d newly represented rows consumed for %s",
+                    consumed,
+                    len(unconsumed_represented_rows),
+                    date_str,
+                )
             if len(represented_rows) < len(rows):
                 log.warning(
                     "Supabase lock consumer: %d/%d rows remain unrepresented for %s; "
@@ -1076,7 +1085,7 @@ def _apply_supabase_operational_locks(date_str: str) -> int:
                 len(drifted_rows),
                 date_str,
             )
-        elif applied:
+        elif 0 < applied < len(rows):
             log.warning(
                 "Supabase lock consumer: partial apply %d/%d for %s; "
                 "leaving consumed_at unset for audit",

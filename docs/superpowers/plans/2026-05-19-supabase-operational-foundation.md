@@ -108,6 +108,22 @@ and the operational row.
   `operational_pick_locks`; they remain unconsumed so the disagreement is still
   visible during audits.
 
+### Render Artifact-Replay Update, 2026-05-30
+
+After the Render scheduler/artifact cutover, a stale manual GitHub
+`workflow_dispatch` lock run briefly republished old checkout artifacts while
+also marking live-layer lock rows consumed. The repair rule is:
+
+- The lock consumer fetches all same-slate `operational_pick_locks`, not only
+  `consumed_at is null` rows.
+- Already-consumed rows may be replayed idempotently into artifacts/history when
+  the artifact is missing their locked fields.
+- Existing `consumed_at` values are preserved; only newly represented rows get a
+  fresh consumed marker.
+- This is artifact reconciliation only. It does not enable strict mode, GitHub
+  lock dispatch, provider changes, model changes, staking changes, or dashboard
+  display changes.
+
 ## Task 1: Operational Lock Ledger Schema And Builder
 
 **Files:**

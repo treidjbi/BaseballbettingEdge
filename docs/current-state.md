@@ -1,6 +1,6 @@
 # Current State
 
-Last updated: 2026-05-29
+Last updated: 2026-05-30
 
 ## Read Order
 
@@ -64,7 +64,7 @@ each lane.
 
 | Lane | Current Source | Current Stage | Next Decision |
 | --- | --- | --- | --- |
-| Pipeline / infrastructure | `2026-05-19-supabase-operational-foundation.md`, `2026-05-22-github-artifact-exit.md`, `2026-05-13-boltodds-propline-official-provider-cutover.md`, `2026-05-20-live-notification-coordinator.md`, `docs/operational-risk-register.md` | Render + Supabase artifact API are the primary scheduler/artifact path as of 2026-05-30. GitHub scheduled triggers are disabled, but manual `workflow_dispatch` remains the rollback path. TheRundown remains the production odds source. Render preview/grading/full/refresh jobs publish live Supabase artifact keys through `scripts/run_render_pipeline_mode.py --execute`; `bbe-pipeline-lock` runs every 10 minutes offset behind the live-layer lock ledger and consumes Supabase lock rows with strict mode off. Dashboard artifact adapters default to Netlify `get-artifact` with static fallback. | Observe the first migrated slate closely: Render run health, Supabase artifact freshness, Netlify `get-artifact`, lock cron consumption, and manual GitHub rollback availability. Do not bundle provider source, model, staking, thresholds, notification behavior, or retention deletion into this scheduler migration. |
+| Pipeline / infrastructure | `2026-05-19-supabase-operational-foundation.md`, `2026-05-22-github-artifact-exit.md`, `2026-05-13-boltodds-propline-official-provider-cutover.md`, `2026-05-20-live-notification-coordinator.md`, `docs/operational-risk-register.md` | Render + Supabase artifact API are the primary scheduler/artifact path as of 2026-05-30. GitHub scheduled triggers are disabled, but manual `workflow_dispatch` remains the rollback path. TheRundown remains the production odds source. Render preview/grading/full/refresh jobs publish live Supabase artifact keys through `scripts/run_render_pipeline_mode.py --execute`; `bbe-pipeline-lock` runs every 10 minutes offset behind the live-layer lock ledger, hydrates from Netlify `get-artifact`, and can replay already-consumed Supabase lock rows if a prior stale artifact publish left the dashboard behind. Strict mode remains off. Dashboard artifact adapters default to Netlify `get-artifact` with static fallback. | Observe the first migrated slate closely: Render run health, Supabase artifact freshness, Netlify `get-artifact`, lock cron consumption/replay, and manual GitHub rollback availability. Do not bundle provider source, model, staking, thresholds, notification behavior, or retention deletion into this scheduler migration. |
 | Model | `2026-05-12-pitcher-k-outcome-research-dataset.md`, `2026-05-29-gate-ef-under-fire-conversion-shadow-plan.md` | Gate C confidence-referee / compact evidence proof, plus pre/post 4/28 review, reconstructed historical lineup-handedness backfill, holdout labs, and the implemented Gate E/F under-skepticism / FIRE-conversion shadow lab. The regenerated report at `analytics/output/gate_ef_candidate_shadow_lab.md` is promising but not promotion-ready: validation slices remain small-sample and the current selected candidate retained zero FIRE 2u wins. | Keep Gate C and Gate E/F shadow-only. Continue soaking and regenerate the Gate E/F lab after grading before any decision. Do not promote lambda, thresholds, staking, verdicts, provider order, notifications, dashboard behavior, or Path B handedness without a separate Tyler-approved promotion plan. |
 | UI | `2026-05-20-live-market-decision-ui.md`, `2026-05-20-live-notification-coordinator.md` | Future-state design only. The dashboard should eventually display best price, consensus, movement, urgency, and notification grouping from the new operational base. | Revisit after the operational/provider switch is stable. Keep display work separated from provider promotion and betting-rule changes. |
 | Tracking / data collection / history | `docs/research/market-tracker-map.md`, `docs/research/pitcher-k-outcome-dataset.md`, compact outcome outputs, live-market audits | Canonical research row plus existing market/live/provider trackers. Daily brief now keeps a compact Gate C bucket scoreboard and pre/post 2026-04-28 context. | Prefer derived labels on the compact outcome row before adding tables. Promote compact storage or retention only after row-volume/cost proof and Tyler approval. |
@@ -148,6 +148,13 @@ Operational rollout note, 2026-05-21:
     as a service environment variable and has been redeployed on the dispatch
     code. Validate the next due lock batch by checking for
     `dispatch:sent:200` in Render logs and a matching GitHub `mode=lock` run.
+- Render primary-scheduler update, 2026-05-30: after GitHub scheduled triggers
+  were disabled and Render became the artifact publisher, `bbe-pipeline-lock`
+  now hydrates from Netlify `get-artifact` before lock mode and fetches all
+  same-slate `operational_pick_locks`, including rows that already have
+  `consumed_at`. This lets lock mode repair an artifact that fell behind a
+  consumed lock ledger row without overwriting the original `consumed_at`
+  marker. The live layer's automatic GitHub lock dispatch should remain off.
 - `OFFICIAL_MARKET_SOURCE=boltodds_propline`,
   `ENABLE_BOLTODDS_PIPELINE_SOURCE`, and live webhook processor promotion
   remain off/unset unless Tyler explicitly approves those separate canaries.

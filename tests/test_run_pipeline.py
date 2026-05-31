@@ -79,7 +79,7 @@ def test_github_fallback_locking_can_be_disabled(monkeypatch):
     assert run_pipeline._github_fallback_locking_enabled() is False
 
 
-def test_fetch_supabase_operational_lock_rows_reads_expected_table(monkeypatch):
+def test_fetch_supabase_operational_lock_rows_reads_replayable_table(monkeypatch):
     import run_pipeline
 
     calls = []
@@ -100,7 +100,7 @@ def test_fetch_supabase_operational_lock_rows_reads_expected_table(monkeypatch):
     assert rows == [{"pitcher": "Test Pitcher", "side": "over"}]
     assert calls[0][0] == "operational_pick_locks"
     assert calls[0][1]["slate_date"] == "eq.2026-05-19"
-    assert calls[0][1]["consumed_at"] == "is.null"
+    assert "consumed_at" not in calls[0][1]
     assert calls[0][1]["order"] == "locked_at.asc"
     assert calls[0][1]["limit"] == "1000"
 
@@ -152,6 +152,49 @@ def test_apply_supabase_operational_locks_marks_all_applied_rows_consumed(monkey
     assert writer.update_rows.call_args_list[0].args == (
         "operational_pick_locks",
         {"dedupe_key": "eq.2026-05-21:casey mize:under"},
+        {"consumed_at": "2026-05-21T17:00:31+00:00"},
+    )
+
+
+def test_apply_supabase_operational_locks_preserves_existing_consumed_markers(monkeypatch):
+    import run_pipeline
+
+    writer = MagicMock()
+    rows = [
+        {
+            "dedupe_key": "2026-05-21:casey mize:under",
+            "consumed_at": "2026-05-21T16:41:03+00:00",
+        },
+        {
+            "dedupe_key": "2026-05-21:joey cantillo:under",
+            "consumed_at": None,
+        },
+    ]
+    monkeypatch.setenv("ENABLE_SUPABASE_LOCK_CONSUMER", "true")
+
+    with patch("run_pipeline.SupabaseMarketWriter", return_value=writer, create=True), \
+         patch.dict(
+             "os.environ",
+             {
+                 "SUPABASE_URL": "https://example.supabase.co",
+                 "SUPABASE_SERVICE_ROLE_KEY": "service-role",
+             },
+             clear=False,
+         ), \
+         patch("run_pipeline._fetch_supabase_operational_lock_rows", return_value=rows), \
+         patch("run_pipeline.get_db") as get_db, \
+         patch("run_pipeline.apply_external_lock_rows", return_value=2), \
+         patch(
+             "run_pipeline._now_utc",
+             return_value=run_pipeline.datetime.fromisoformat("2026-05-21T17:00:31+00:00"),
+         ):
+        get_db.return_value.close.return_value = None
+
+        assert run_pipeline._apply_supabase_operational_locks("2026-05-21") == 2
+
+    writer.update_rows.assert_called_once_with(
+        "operational_pick_locks",
+        {"dedupe_key": "eq.2026-05-21:joey cantillo:under"},
         {"consumed_at": "2026-05-21T17:00:31+00:00"},
     )
 
