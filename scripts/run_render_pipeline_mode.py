@@ -62,7 +62,7 @@ def build_publish_contract(mode: str, slate_date: str) -> PublishContract:
     pipeline_args = [sys.executable, "pipeline/run_pipeline.py", slate_date]
     pipeline_run_type = "full"
     publish_date = slate_date
-    publish_scope = "all"
+    publish_scope = "pipeline"
 
     if mode != "pipeline":
         pipeline_args.extend(["--run-type", mode])

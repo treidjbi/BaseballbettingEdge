@@ -24,6 +24,13 @@ GRADING_ARTIFACT_PATHS = [
     Path("data/picks_history.json"),
 ]
 
+PIPELINE_ARTIFACT_PATHS = [
+    Path("dashboard/data/processed/today.json"),
+    Path("dashboard/data/processed/index.json"),
+    Path("dashboard/data/processed/steam.json"),
+    Path("data/picks_history.json"),
+]
+
 PREVIEW_ARTIFACT_PATHS = [
     Path("dashboard/data/processed/index.json"),
     Path("data/preview_lines.json"),
@@ -54,6 +61,8 @@ def collect_artifact_rows(
 ) -> list[dict[str, Any]]:
     if scope == "all":
         paths = list(ARTIFACT_PATHS)
+    elif scope == "pipeline":
+        paths = list(PIPELINE_ARTIFACT_PATHS)
     elif scope == "grading":
         paths = list(GRADING_ARTIFACT_PATHS)
     elif scope == "preview":
@@ -143,7 +152,7 @@ def _parse_args(argv: list[str]) -> argparse.Namespace:
     parser.add_argument("--source", default="github_actions")
     parser.add_argument("--source-run-id")
     parser.add_argument("--source-commit-sha")
-    parser.add_argument("--scope", choices=("all", "grading", "preview", "lock"), default="all")
+    parser.add_argument("--scope", choices=("all", "pipeline", "grading", "preview", "lock"), default="all")
     parser.add_argument(
         "--artifact-key-prefix",
         default="",

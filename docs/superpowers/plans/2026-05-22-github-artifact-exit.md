@@ -1721,11 +1721,13 @@ disabled. `scripts/run_render_pipeline_mode.py` hydrated live artifacts only for
 pipeline modes could publish stale checkout copies of `preview_lines`,
 `performance`, `params`, or `picks_history`. The repair keeps the scope narrow:
 `preview` now publishes only preview-generated artifacts (`index`,
-`preview_lines`, and the dated preview archive), `lock` now publishes only
-lock-affected artifacts (`today`, `picks_history`, and the dated slate
-archive), and live-key `grading`, `pipeline`, and `lock` modes hydrate from
-Netlify `get-artifact` before running. This is an artifact contract fix only;
-it does not change provider order, model formula, thresholds, staking,
-notifications, retention, or dashboard source-of-truth rules. Next proof is a
-deployed Render run showing `hydrated_artifacts > 0` for grading/full/lock and
-no stale ancillary artifact overwrite.
+`preview_lines`, and the dated preview archive), `pipeline` now publishes only
+full/refresh-generated artifacts (`today`, `index`, `steam`, `picks_history`,
+and the dated slate archive), and `lock` now publishes only lock-affected
+artifacts (`today`, `picks_history`, and the dated slate archive). Live-key
+`grading`, `pipeline`, and `lock` modes hydrate from Netlify `get-artifact`
+before running. This is an artifact contract fix only; it does not change
+provider order, model formula, thresholds, staking, notifications, retention,
+or dashboard source-of-truth rules. Next proof is a deployed Render run showing
+`hydrated_artifacts > 0` for grading/full/lock and no stale ancillary artifact
+overwrite.
