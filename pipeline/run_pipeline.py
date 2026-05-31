@@ -1085,7 +1085,7 @@ def _apply_supabase_operational_locks(date_str: str) -> int:
                 len(drifted_rows),
                 date_str,
             )
-        elif 0 < applied < len(rows):
+        elif 0 < applied < len(rows) and len(represented_rows) < len(rows):
             log.warning(
                 "Supabase lock consumer: partial apply %d/%d for %s; "
                 "leaving consumed_at unset for audit",
@@ -1093,7 +1093,7 @@ def _apply_supabase_operational_locks(date_str: str) -> int:
                 len(rows),
                 date_str,
             )
-        return applied
+        return max(applied, len(represented_rows))
     except Exception as e:
         if _supabase_lock_consumer_strict():
             try:

@@ -199,6 +199,33 @@ def test_apply_supabase_operational_locks_preserves_existing_consumed_markers(mo
     )
 
 
+def test_apply_supabase_operational_locks_returns_represented_rows_for_artifact_replay(monkeypatch):
+    import run_pipeline
+
+    rows = [
+        {
+            "dedupe_key": "2026-05-21:casey mize:under",
+            "consumed_at": "2026-05-21T16:41:03+00:00",
+        },
+        {
+            "dedupe_key": "2026-05-21:joey cantillo:under",
+            "consumed_at": "2026-05-21T16:41:03+00:00",
+        },
+    ]
+    monkeypatch.setenv("ENABLE_SUPABASE_LOCK_CONSUMER", "true")
+
+    with patch("run_pipeline._fetch_supabase_operational_lock_rows", return_value=rows), \
+         patch("run_pipeline.get_db") as get_db, \
+         patch("run_pipeline.apply_external_lock_rows", return_value=0), \
+         patch(
+             "run_pipeline._supabase_operational_lock_rows_represented",
+             return_value=rows,
+         ):
+        get_db.return_value.close.return_value = None
+
+        assert run_pipeline._apply_supabase_operational_locks("2026-05-21") == 2
+
+
 def test_apply_supabase_operational_locks_does_not_mark_partial_apply_consumed(monkeypatch):
     import run_pipeline
 
@@ -299,7 +326,7 @@ def test_apply_supabase_operational_locks_marks_already_represented_rows_consume
              "run_pipeline._now_utc",
              return_value=run_pipeline.datetime.fromisoformat("2026-05-21T19:41:00+00:00"),
          ):
-        assert run_pipeline._apply_supabase_operational_locks("2026-05-21") == 1
+        assert run_pipeline._apply_supabase_operational_locks("2026-05-21") == 2
 
     updated_keys = [
         call.args[1]["dedupe_key"]
