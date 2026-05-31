@@ -71,6 +71,9 @@ def build_publish_contract(mode: str, slate_date: str) -> PublishContract:
     if mode == "preview":
         publish_scope = "preview"
 
+    if mode == "lock":
+        publish_scope = "lock"
+
     if mode == "grading":
         publish_date = (_parse_date(slate_date) - timedelta(days=1)).strftime("%Y-%m-%d")
         publish_scope = "grading"

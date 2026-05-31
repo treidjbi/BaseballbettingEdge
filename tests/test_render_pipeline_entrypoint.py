@@ -29,6 +29,15 @@ def test_publish_contract_for_preview_uses_current_slate_and_preview_scope():
     assert contract.pipeline_run_type == "preview"
 
 
+def test_publish_contract_for_lock_uses_current_slate_and_lock_scope():
+    contract = entrypoint.build_publish_contract("lock", "2026-05-26")
+
+    assert contract.pipeline_args[-3:] == ["2026-05-26", "--run-type", "lock"]
+    assert contract.publish_date == "2026-05-26"
+    assert contract.publish_scope == "lock"
+    assert contract.pipeline_run_type == "lock"
+
+
 def test_shadow_prefix_uses_publish_date_not_run_date():
     contract = entrypoint.build_publish_contract("grading", "2026-05-26")
 

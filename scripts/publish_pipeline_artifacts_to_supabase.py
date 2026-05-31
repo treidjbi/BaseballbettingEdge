@@ -29,6 +29,11 @@ PREVIEW_ARTIFACT_PATHS = [
     Path("data/preview_lines.json"),
 ]
 
+LOCK_ARTIFACT_PATHS = [
+    Path("dashboard/data/processed/today.json"),
+    Path("data/picks_history.json"),
+]
+
 
 def _env(name: str) -> str:
     value = os.environ.get(name, "").strip()
@@ -53,6 +58,8 @@ def collect_artifact_rows(
         paths = list(GRADING_ARTIFACT_PATHS)
     elif scope == "preview":
         paths = list(PREVIEW_ARTIFACT_PATHS)
+    elif scope == "lock":
+        paths = list(LOCK_ARTIFACT_PATHS)
     else:
         raise ValueError(f"Unsupported artifact publish scope: {scope}")
     paths.append(Path("dashboard/data/processed") / f"{slate_date}.json")
@@ -136,7 +143,7 @@ def _parse_args(argv: list[str]) -> argparse.Namespace:
     parser.add_argument("--source", default="github_actions")
     parser.add_argument("--source-run-id")
     parser.add_argument("--source-commit-sha")
-    parser.add_argument("--scope", choices=("all", "grading", "preview"), default="all")
+    parser.add_argument("--scope", choices=("all", "grading", "preview", "lock"), default="all")
     parser.add_argument(
         "--artifact-key-prefix",
         default="",
