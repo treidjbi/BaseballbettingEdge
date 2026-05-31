@@ -88,6 +88,36 @@ def test_collect_artifact_rows_grading_scope_excludes_current_slate_artifacts(tm
     ]
 
 
+def test_collect_artifact_rows_preview_scope_excludes_stale_non_preview_artifacts(tmp_path):
+    processed = tmp_path / "dashboard" / "data" / "processed"
+    processed.mkdir(parents=True)
+    (processed / "today.json").write_text('{"date":"2026-05-23","pitchers":[]}', encoding="utf-8")
+    (processed / "index.json").write_text('{"dates":[{"date":"2026-05-24"}]}', encoding="utf-8")
+    (processed / "steam.json").write_text('{"date":"2026-05-23","steam":[]}', encoding="utf-8")
+    (processed / "2026-05-24.json").write_text('{"date":"2026-05-24","pitchers":[]}', encoding="utf-8")
+    (tmp_path / "dashboard" / "data").mkdir(exist_ok=True)
+    (tmp_path / "dashboard" / "data" / "performance.json").write_text('{"updated_at":"stale"}', encoding="utf-8")
+    (tmp_path / "data").mkdir()
+    (tmp_path / "data" / "params.json").write_text('{"updated_at":"stale"}', encoding="utf-8")
+    (tmp_path / "data" / "picks_history.json").write_text("[]", encoding="utf-8")
+    (tmp_path / "data" / "preview_lines.json").write_text('{"date":"2026-05-24"}', encoding="utf-8")
+
+    rows = collect_artifact_rows(
+        root=tmp_path,
+        slate_date="2026-05-24",
+        source="render_pipeline",
+        source_run_id="run-1",
+        source_commit_sha="sha",
+        scope="preview",
+    )
+
+    assert [row["artifact_key"] for row in rows] == [
+        "index",
+        "preview_lines",
+        "dated_slate:2026-05-24",
+    ]
+
+
 def test_run_dry_run_does_not_write(tmp_path):
     processed = tmp_path / "dashboard" / "data" / "processed"
     processed.mkdir(parents=True)

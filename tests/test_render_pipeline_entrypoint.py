@@ -20,6 +20,15 @@ def test_publish_contract_for_pipeline_uses_current_slate_and_all_artifacts():
     assert contract.pipeline_run_type == "full"
 
 
+def test_publish_contract_for_preview_uses_current_slate_and_preview_scope():
+    contract = entrypoint.build_publish_contract("preview", "2026-05-26")
+
+    assert contract.pipeline_args[-3:] == ["2026-05-26", "--run-type", "preview"]
+    assert contract.publish_date == "2026-05-26"
+    assert contract.publish_scope == "preview"
+    assert contract.pipeline_run_type == "preview"
+
+
 def test_shadow_prefix_uses_publish_date_not_run_date():
     contract = entrypoint.build_publish_contract("grading", "2026-05-26")
 
@@ -56,11 +65,13 @@ def test_shadow_runtime_overrides_are_empty_for_live_key_publish():
     assert entrypoint.shadow_runtime_env_overrides("") == {}
 
 
-def test_live_artifact_hydration_only_runs_for_live_lock_mode(monkeypatch):
+def test_live_artifact_hydration_runs_for_modes_that_consume_live_artifacts(monkeypatch):
     monkeypatch.delenv("RENDER_PIPELINE_HYDRATE_ARTIFACTS", raising=False)
 
     assert entrypoint.live_artifact_hydration_enabled("lock", "") is True
-    assert entrypoint.live_artifact_hydration_enabled("pipeline", "") is False
+    assert entrypoint.live_artifact_hydration_enabled("pipeline", "") is True
+    assert entrypoint.live_artifact_hydration_enabled("grading", "") is True
+    assert entrypoint.live_artifact_hydration_enabled("preview", "") is False
     assert entrypoint.live_artifact_hydration_enabled("lock", "render_shadow:2026-05-30:") is False
 
     monkeypatch.setenv("RENDER_PIPELINE_HYDRATE_ARTIFACTS", "false")
@@ -107,3 +118,31 @@ def test_hydrate_live_artifacts_from_api_writes_current_payloads(tmp_path, monke
     assert (tmp_path / "data/picks_history.json").exists()
     assert any("type=dated_slate&date=2026-05-30" in url for url, _ in seen_urls)
     assert all(timeout == 20 for _, timeout in seen_urls)
+
+
+def test_main_hydrates_before_live_pipeline_run(monkeypatch):
+    calls = []
+
+    def fake_hydrate(*, root, slate_date):
+        calls.append(("hydrate", slate_date))
+        return 8
+
+    def fake_pipeline_run(*args, **kwargs):
+        calls.append(("pipeline", args[0]))
+
+    def fake_publish_artifacts(**kwargs):
+        calls.append(("publish", kwargs["scope"]))
+        return {"artifact_count": 8}
+
+    monkeypatch.setattr(entrypoint, "hydrate_live_artifacts_from_api", fake_hydrate)
+    monkeypatch.setattr(entrypoint.subprocess, "run", fake_pipeline_run)
+    monkeypatch.setattr(entrypoint, "publish_artifacts", fake_publish_artifacts)
+    monkeypatch.setattr(entrypoint, "resolve_source_commit_sha", lambda: "sha")
+
+    assert entrypoint.main(["--mode", "pipeline", "--date", "2026-05-30"]) == 0
+
+    assert calls == [
+        ("hydrate", "2026-05-30"),
+        ("pipeline", entrypoint.build_publish_contract("pipeline", "2026-05-30").pipeline_args),
+        ("publish", "all"),
+    ]

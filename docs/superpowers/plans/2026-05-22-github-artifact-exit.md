@@ -1713,3 +1713,18 @@ TheRundown-equivalent wrapper command without `--provider-rehearsal`; strict
 BoltOdds/PropLine provider-rehearsal failures are useful cutover evidence but
 should not be counted as scheduler canary failures. Keep GitHub/static JSON and
 TheRundown official until a full-slate Render shadow parity read passes.
+
+Artifact hydration repair on 2026-05-31: the first Render-primary scheduler
+brief found a live-key publication contract bug after GitHub schedules were
+disabled. `scripts/run_render_pipeline_mode.py` hydrated live artifacts only for
+`lock` mode, while `preview` still published all artifact keys and non-lock
+pipeline modes could publish stale checkout copies of `preview_lines`,
+`performance`, `params`, or `picks_history`. The repair keeps the scope narrow:
+`preview` now publishes only preview-generated artifacts (`index`,
+`preview_lines`, and the dated preview archive), and live-key `grading`,
+`pipeline`, and `lock` modes hydrate from Netlify `get-artifact` before running.
+This is an artifact contract fix only; it does not change provider order,
+model formula, thresholds, staking, notifications, retention, or dashboard
+source-of-truth rules. Next proof is a deployed Render run showing
+`hydrated_artifacts > 0` for grading/full/lock and no stale ancillary artifact
+overwrite.

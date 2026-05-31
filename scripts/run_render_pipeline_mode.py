@@ -68,6 +68,9 @@ def build_publish_contract(mode: str, slate_date: str) -> PublishContract:
         pipeline_args.extend(["--run-type", mode])
         pipeline_run_type = mode
 
+    if mode == "preview":
+        publish_scope = "preview"
+
     if mode == "grading":
         publish_date = (_parse_date(slate_date) - timedelta(days=1)).strftime("%Y-%m-%d")
         publish_scope = "grading"
@@ -129,7 +132,7 @@ def live_artifact_hydration_enabled(mode: str, artifact_key_prefix: str) -> bool
     value = os.environ.get("RENDER_PIPELINE_HYDRATE_ARTIFACTS", "true").strip().lower()
     if value in {"0", "false", "no", "off"}:
         return False
-    return mode == "lock"
+    return mode in {"grading", "pipeline", "lock"}
 
 
 def artifact_api_url(artifact_type: str, date: str | None = None) -> str:

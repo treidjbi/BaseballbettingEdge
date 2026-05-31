@@ -10,18 +10,12 @@ def _workflow_text() -> str:
     return WORKFLOW.read_text()
 
 
-def test_pipeline_crons_are_offset_from_top_of_hour():
+def test_pipeline_scheduled_triggers_remain_disabled_for_render_cutover():
     text = _workflow_text()
     crons = re.findall(r"cron: '([^']+)'", text)
 
-    assert "17 7 * * *" in crons
-    assert "17 10 * * *" in crons
-    assert "17 13 * * *" in crons
-    assert "7 15 * * *" in crons
-    assert "37 15 * * *" in crons
-    assert "7 1 * * *" in crons
-    assert len(crons) == 24
-    assert all(not cron.startswith(("0 ", "30 ")) for cron in crons)
+    assert "workflow_dispatch:" in text
+    assert crons == []
 
 
 def test_pipeline_run_type_mapping_uses_offset_crons():
