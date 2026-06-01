@@ -283,6 +283,31 @@ def test_load_production_artifact_prefers_remote_url(tmp_path, monkeypatch):
     assert source == "https://example.test/today.json"
 
 
+def test_default_production_artifact_url_reads_netlify_artifact_api():
+    assert "baseballbettingedge.netlify.app/.netlify/functions/get-artifact" in (
+        boltodds_ws_worker.DEFAULT_PRODUCTION_ARTIFACT_URL
+    )
+    assert "type=today" in boltodds_ws_worker.DEFAULT_PRODUCTION_ARTIFACT_URL
+    assert "raw.githubusercontent.com" not in boltodds_ws_worker.DEFAULT_PRODUCTION_ARTIFACT_URL
+
+
+def test_production_artifact_url_env_resolution_keeps_manual_slate_local(monkeypatch):
+    monkeypatch.delenv("BOLTODDS_ARTIFACT_URL", raising=False)
+    monkeypatch.delenv("LIVE_ARTIFACT_URL", raising=False)
+
+    assert (
+        boltodds_ws_worker._production_artifact_url_from_env(None)
+        == boltodds_ws_worker.DEFAULT_PRODUCTION_ARTIFACT_URL
+    )
+    assert boltodds_ws_worker._production_artifact_url_from_env("2026-05-07") == ""
+
+    monkeypatch.setenv("LIVE_ARTIFACT_URL", "https://example.test/live.json")
+    assert (
+        boltodds_ws_worker._production_artifact_url_from_env("2026-05-07")
+        == "https://example.test/live.json"
+    )
+
+
 def test_production_pitcher_names_normalizes_current_artifact_pitchers():
     payload = {
         "pitchers": [

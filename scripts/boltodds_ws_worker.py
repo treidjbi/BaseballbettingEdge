@@ -41,8 +41,7 @@ from scripts.probe_boltodds_markets import build_probe_summary  # noqa: E402
 
 WORKER_PATH = "scripts/boltodds_ws_worker.py"
 DEFAULT_PRODUCTION_ARTIFACT_URL = (
-    "https://raw.githubusercontent.com/treidjbi/BaseballBettingEdge/"
-    "main/dashboard/data/processed/today.json"
+    "https://baseballbettingedge.netlify.app/.netlify/functions/get-artifact?type=today"
 )
 
 
@@ -88,6 +87,14 @@ def _worker_max_attempts() -> int:
     if _optional_int_env("BOLTODDS_WS_MAX_MESSAGES", 0) > 0:
         return 1
     return 0
+
+
+def _production_artifact_url_from_env(slate_date_override: str | None) -> str:
+    return (
+        _optional_env("BOLTODDS_ARTIFACT_URL")
+        or _optional_env("LIVE_ARTIFACT_URL")
+        or ("" if slate_date_override else DEFAULT_PRODUCTION_ARTIFACT_URL)
+    )
 
 
 def _is_required_env_error(error: Exception) -> bool:
@@ -416,11 +423,7 @@ async def run_worker() -> dict[str, Any]:
     writer = SupabaseMarketWriter(supabase_url, service_role_key)
 
     slate_date_override = _optional_env("SLATE_DATE") or None
-    artifact_url = (
-        _optional_env("BOLTODDS_ARTIFACT_URL")
-        or _optional_env("LIVE_ARTIFACT_URL")
-        or ("" if slate_date_override else DEFAULT_PRODUCTION_ARTIFACT_URL)
-    )
+    artifact_url = _production_artifact_url_from_env(slate_date_override)
     context = load_production_context(
         slate_date_override=slate_date_override,
         artifact_url=artifact_url or None,

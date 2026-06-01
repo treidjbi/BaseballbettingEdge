@@ -8,6 +8,7 @@ from analytics.diagnostics.pitcher_k_outcome_dataset import (
     reconcile_picks_history,
     theoretical_pnl,
 )
+from analytics.diagnostics import pitcher_k_outcome_dataset as dataset
 
 
 def test_theoretical_pnl_uses_one_unit_risk_for_american_odds():
@@ -238,6 +239,112 @@ def test_load_archived_markets_for_dataset_preserves_baseball_context(tmp_path):
     assert markets[0]["source_artifact_path"] == "dashboard/data/processed/2026-05-12.json"
 
 
+def test_load_archived_markets_can_read_production_artifact_api(monkeypatch):
+    seen_urls = []
+
+    class Response:
+        def __init__(self, payload):
+            self.payload = payload
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *args):
+            return False
+
+        def read(self):
+            import json
+
+            return json.dumps(self.payload).encode("utf-8")
+
+    def fake_urlopen(url, timeout=20):
+        seen_urls.append(url)
+        if "type=index" in url:
+            return Response(
+                {
+                    "dates": [
+                        {"date": "2026-05-13"},
+                        {"date": "2026-05-12"},
+                        {"date": "2026-04-27"},
+                    ]
+                }
+            )
+        assert "type=dated_slate" in url
+        assert "date=2026-05-12" in url
+        return Response(
+            {
+                "generated_at": "2026-05-12T13:00:00Z",
+                "pitchers": [
+                    {
+                        "pitcher": "Bryan Woo",
+                        "team": "SEA",
+                        "opp_team": "NYY",
+                        "k_line": 5.5,
+                        "actual_ks": 4,
+                        "best_over_odds": -125,
+                        "best_under_odds": 104,
+                        "opening_over_odds": -110,
+                        "opening_under_odds": -110,
+                        "ref_book": "FanDuel",
+                        "ev_over": {"win_prob": 0.43, "verdict": "PASS"},
+                        "ev_under": {"win_prob": 0.57, "verdict": "FIRE 1u"},
+                    }
+                ],
+            }
+        )
+
+    monkeypatch.setattr(dataset, "urlopen", fake_urlopen)
+
+    markets = load_archived_markets_for_dataset(
+        start_date="2026-05-12",
+        end_date="2026-05-12",
+        artifact_api_url="https://example.test/.netlify/functions/get-artifact",
+    )
+
+    assert len(markets) == 1
+    assert markets[0]["source_artifact_path"].startswith(
+        "https://example.test/.netlify/functions/get-artifact?"
+    )
+    assert any("type=index" in url for url in seen_urls)
+    assert any("type=dated_slate" in url and "date=2026-05-12" in url for url in seen_urls)
+
+
+def test_load_archived_markets_skips_missing_production_dated_archives(monkeypatch, capsys):
+    from urllib.error import HTTPError
+
+    class Response:
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *args):
+            return False
+
+        def read(self):
+            import json
+
+            return json.dumps(
+                {"dates": [{"date": "2026-05-21"}, {"date": "2026-05-20"}]}
+            ).encode("utf-8")
+
+    def fake_urlopen(url, timeout=20):
+        if "type=index" in url:
+            return Response()
+        if "date=2026-05-20" in url:
+            raise HTTPError(url, 404, "Not Found", hdrs=None, fp=None)
+        return Response()
+
+    monkeypatch.setattr(dataset, "urlopen", fake_urlopen)
+
+    markets = load_archived_markets_for_dataset(
+        start_date="2026-05-20",
+        end_date="2026-05-21",
+        artifact_api_url="https://example.test/.netlify/functions/get-artifact",
+    )
+
+    assert markets == []
+    assert "skipped missing production dated_slate artifacts: 2026-05-20" in capsys.readouterr().err
+
+
 def test_reconcile_picks_history_matches_dataset_keys(tmp_path):
     history = tmp_path / "picks_history.json"
     history.write_text(
@@ -273,6 +380,56 @@ def test_reconcile_picks_history_matches_dataset_keys(tmp_path):
     assert result["matched_pick_rows"] == 1
     assert result["unmatched_pick_rows"] == 1
     assert result["unmatched_examples"][0]["pitcher"] == "Other Pitcher"
+
+
+def test_reconcile_picks_history_can_read_production_artifact_api(monkeypatch):
+    seen_urls = []
+
+    class Response:
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *args):
+            return False
+
+        def read(self):
+            import json
+
+            return json.dumps(
+                [
+                    {
+                        "date": "2026-05-12",
+                        "pitcher": "Bryan Woo",
+                        "side": "under",
+                        "k_line": 5.5,
+                        "result": "win",
+                    }
+                ]
+            ).encode("utf-8")
+
+    def fake_urlopen(url, timeout=20):
+        seen_urls.append(url)
+        assert "type=picks_history" in url
+        return Response()
+
+    monkeypatch.setattr(dataset, "urlopen", fake_urlopen)
+    rows = [
+        {
+            "dataset_key": "2026-05-12:official_close:bryan woo:under:5.5",
+        }
+    ]
+
+    result = reconcile_picks_history(
+        rows,
+        start_date="2026-05-12",
+        artifact_api_url="https://example.test/.netlify/functions/get-artifact",
+    )
+
+    assert result["graded_pick_rows"] == 1
+    assert result["matched_pick_rows"] == 1
+    assert seen_urls == [
+        "https://example.test/.netlify/functions/get-artifact?type=picks_history"
+    ]
 
 
 def test_enrich_rows_with_lineup_handedness_marks_reconstructed_context(tmp_path):
@@ -358,6 +515,50 @@ def test_reconcile_picks_history_allows_unique_pitcher_side_fallback(tmp_path):
     assert result["graded_pick_rows"] == 1
     assert result["matched_pick_rows"] == 1
     assert result["unique_side_fallback_matches"] == 1
+
+
+def test_reconcile_picks_history_can_limit_to_loaded_slate_dates(tmp_path):
+    history = tmp_path / "picks_history.json"
+    history.write_text(
+        """
+        [
+          {
+            "date": "2026-05-12",
+            "pitcher": "Bryan Woo",
+            "side": "under",
+            "k_line": 5.5,
+            "result": "win"
+          },
+          {
+            "date": "2026-05-13",
+            "pitcher": "Other Pitcher",
+            "side": "over",
+            "k_line": 4.5,
+            "result": "loss"
+          }
+        ]
+        """,
+        encoding="utf-8",
+    )
+    rows = [
+        {
+            "dataset_key": "2026-05-12:official_close:bryan woo:under:5.5",
+            "slate_date": "2026-05-12",
+            "normalized_pitcher": "bryan woo",
+            "side": "under",
+        }
+    ]
+
+    result = reconcile_picks_history(
+        rows,
+        history_path=history,
+        start_date="2026-05-12",
+        included_slate_dates={"2026-05-12"},
+    )
+
+    assert result["graded_pick_rows"] == 1
+    assert result["matched_pick_rows"] == 1
+    assert result["unmatched_pick_rows"] == 0
 
 
 def test_enrich_rows_with_pick_history_adds_bet_time_and_clv_fields(tmp_path):

@@ -9,11 +9,15 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import sys
 from collections import Counter
 from datetime import datetime
 from pathlib import Path
 from typing import Any
+from urllib.error import HTTPError
+from urllib.parse import urlencode
+from urllib.request import urlopen
 
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -37,6 +41,7 @@ OUTPUT_JSONL = ROOT / "analytics" / "output" / "pitcher_k_outcome_dataset.jsonl"
 OUTPUT_SUMMARY = ROOT / "analytics" / "output" / "pitcher_k_outcome_dataset_summary.md"
 LINEUP_HANDEDNESS_BACKFILL = ROOT / "analytics" / "output" / "lineup_handedness_backfill.json"
 CLEAN_WINDOW_START = "2026-04-28"
+DEFAULT_ARTIFACT_API_URL = "https://baseballbettingedge.netlify.app/.netlify/functions/get-artifact"
 
 APPROVED_CONTEXT_SNAPSHOTS = {
     "official_close",
@@ -529,12 +534,134 @@ def _source_path(market: dict[str, Any]) -> str:
     )
 
 
+def artifact_api_url(base_url: str, artifact_type: str, date: str | None = None) -> str:
+    params = {"type": artifact_type}
+    if date:
+        params["date"] = date
+    separator = "&" if "?" in base_url else "?"
+    return f"{base_url}{separator}{urlencode(params)}"
+
+
+def _load_remote_json(url: str) -> Any:
+    with urlopen(url, timeout=20) as response:
+        return json.loads(response.read().decode("utf-8"))
+
+
+def _artifact_dates_from_index(
+    payload: Any,
+    *,
+    start_date: str,
+    end_date: str | None,
+) -> list[str]:
+    end = end_date or "9999-12-31"
+    dates: set[str] = set()
+    rows = payload.get("dates") if isinstance(payload, dict) else []
+    for row in rows if isinstance(rows, list) else []:
+        if not isinstance(row, dict):
+            continue
+        date = str(row.get("date") or "").strip()
+        if date and start_date <= date <= end:
+            dates.add(date)
+    return sorted(dates)
+
+
+def _markets_from_archive_payload(
+    payload: dict[str, Any],
+    *,
+    date: str,
+    source_artifact_path: str,
+) -> list[dict[str, Any]]:
+    markets: list[dict[str, Any]] = []
+    for record in payload.get("pitchers") or []:
+        if not isinstance(record, dict):
+            continue
+
+        k_line = _to_float(record.get("k_line"))
+        actual = _to_float(record.get("actual_ks"))
+        over_odds = _to_int(record.get("best_over_odds") or record.get("over_odds"))
+        under_odds = _to_int(record.get("best_under_odds") or record.get("under_odds"))
+        winner = winning_side(actual, k_line)
+        if k_line is None or actual is None or winner not in {"over", "under"}:
+            continue
+        if over_odds is None or under_odds is None:
+            continue
+
+        market = dict(record)
+        market.update(
+            {
+                "date": date,
+                "normalized_pitcher": _normalized(record.get("pitcher")),
+                "actual_ks": actual,
+                "k_line": k_line,
+                "winning_side": winner,
+                "over_odds": over_odds,
+                "under_odds": under_odds,
+                "opening_over_odds": _to_int(record.get("opening_over_odds")),
+                "opening_under_odds": _to_int(record.get("opening_under_odds")),
+                "source_artifact_path": source_artifact_path,
+                "generated_at": payload.get("generated_at"),
+            }
+        )
+        markets.append(market)
+    return markets
+
+
+def _load_remote_archived_markets_for_dataset(
+    *,
+    artifact_api_url_base: str,
+    start_date: str,
+    end_date: str | None,
+) -> list[dict[str, Any]]:
+    index_payload = _load_remote_json(artifact_api_url(artifact_api_url_base, "index"))
+    dates = _artifact_dates_from_index(
+        index_payload,
+        start_date=start_date,
+        end_date=end_date,
+    )
+    markets: list[dict[str, Any]] = []
+    skipped_missing: list[str] = []
+    for date in dates:
+        url = artifact_api_url(artifact_api_url_base, "dated_slate", date)
+        try:
+            payload = _load_remote_json(url)
+        except HTTPError as error:
+            if error.code == 404:
+                skipped_missing.append(date)
+                continue
+            raise
+        if not isinstance(payload, dict):
+            continue
+        markets.extend(
+            _markets_from_archive_payload(
+                payload,
+                date=date,
+                source_artifact_path=url,
+            )
+        )
+    if skipped_missing:
+        preview = ", ".join(skipped_missing[:5])
+        suffix = "" if len(skipped_missing) <= 5 else f", ... ({len(skipped_missing)} total)"
+        print(
+            f"Warning: skipped missing production dated_slate artifacts: {preview}{suffix}",
+            file=sys.stderr,
+        )
+    return markets
+
+
 def load_archived_markets_for_dataset(
     archive_dir: Path = ARCHIVE_DIR,
     *,
     start_date: str = CLEAN_WINDOW_START,
     end_date: str | None = None,
+    artifact_api_url: str | None = None,
 ) -> list[dict[str, Any]]:
+    if artifact_api_url:
+        return _load_remote_archived_markets_for_dataset(
+            artifact_api_url_base=artifact_api_url,
+            start_date=start_date,
+            end_date=end_date,
+        )
+
     markets: list[dict[str, Any]] = []
     end = end_date or "9999-12-31"
     for path in sorted(archive_dir.glob("*.json")):
@@ -547,37 +674,13 @@ def load_archived_markets_for_dataset(
         except (OSError, json.JSONDecodeError):
             continue
 
-        for record in payload.get("pitchers") or []:
-            if not isinstance(record, dict):
-                continue
-
-            k_line = _to_float(record.get("k_line"))
-            actual = _to_float(record.get("actual_ks"))
-            over_odds = _to_int(record.get("best_over_odds") or record.get("over_odds"))
-            under_odds = _to_int(record.get("best_under_odds") or record.get("under_odds"))
-            winner = winning_side(actual, k_line)
-            if k_line is None or actual is None or winner not in {"over", "under"}:
-                continue
-            if over_odds is None or under_odds is None:
-                continue
-
-            market = dict(record)
-            market.update(
-                {
-                    "date": date,
-                    "normalized_pitcher": _normalized(record.get("pitcher")),
-                    "actual_ks": actual,
-                    "k_line": k_line,
-                    "winning_side": winner,
-                    "over_odds": over_odds,
-                    "under_odds": under_odds,
-                    "opening_over_odds": _to_int(record.get("opening_over_odds")),
-                    "opening_under_odds": _to_int(record.get("opening_under_odds")),
-                    "source_artifact_path": f"dashboard/data/processed/{date}.json",
-                    "generated_at": payload.get("generated_at"),
-                }
+        markets.extend(
+            _markets_from_archive_payload(
+                payload,
+                date=date,
+                source_artifact_path=f"dashboard/data/processed/{date}.json",
             )
-            markets.append(market)
+        )
     return markets
 
 
@@ -904,6 +1007,8 @@ def reconcile_picks_history(
     *,
     history_path: Path = PICKS_HISTORY,
     start_date: str = CLEAN_WINDOW_START,
+    artifact_api_url: str | None = None,
+    included_slate_dates: set[str] | None = None,
 ) -> dict[str, Any]:
     row_keys = {str(row.get("dataset_key") or "") for row in rows}
     side_index: dict[tuple[str, str, str], list[str]] = {}
@@ -914,10 +1019,10 @@ def reconcile_picks_history(
             str(row.get("side") or "").strip().lower(),
         )
         side_index.setdefault(side_key, []).append(str(row.get("dataset_key") or ""))
-    try:
-        payload = json.loads(history_path.read_text(encoding="utf-8"))
-    except (OSError, json.JSONDecodeError):
-        payload = []
+    payload = _load_picks_history_payload(
+        history_path=history_path,
+        artifact_api_url_base=artifact_api_url,
+    )
 
     graded_pick_rows = 0
     matched_pick_rows = 0
@@ -930,6 +1035,8 @@ def reconcile_picks_history(
         side = str(pick.get("side") or "").strip().lower()
         result = str(pick.get("result") or "").strip().lower()
         if slate_date < start_date or side not in {"over", "under"} or result not in {"win", "loss"}:
+            continue
+        if included_slate_dates is not None and slate_date not in included_slate_dates:
             continue
 
         graded_pick_rows += 1
@@ -971,11 +1078,24 @@ def reconcile_picks_history(
     }
 
 
-def _load_picks_history(path: Path) -> list[dict[str, Any]]:
+def _load_picks_history_payload(
+    *,
+    history_path: Path,
+    artifact_api_url_base: str | None = None,
+) -> Any:
+    if artifact_api_url_base:
+        return _load_remote_json(artifact_api_url(artifact_api_url_base, "picks_history"))
     try:
-        payload = json.loads(path.read_text(encoding="utf-8"))
+        return json.loads(history_path.read_text(encoding="utf-8"))
     except (OSError, json.JSONDecodeError):
         return []
+
+
+def _load_picks_history(path: Path, artifact_api_url_base: str | None = None) -> list[dict[str, Any]]:
+    payload = _load_picks_history_payload(
+        history_path=path,
+        artifact_api_url_base=artifact_api_url_base,
+    )
     return [row for row in payload if isinstance(row, dict)] if isinstance(payload, list) else []
 
 
@@ -1034,8 +1154,9 @@ def enrich_rows_with_pick_history(
     *,
     history_path: Path = PICKS_HISTORY,
     start_date: str = CLEAN_WINDOW_START,
+    artifact_api_url: str | None = None,
 ) -> list[dict[str, Any]]:
-    history_rows = _load_picks_history(history_path)
+    history_rows = _load_picks_history(history_path, artifact_api_url)
     exact, side_index = _history_indexes(history_rows, start_date)
     enriched: list[dict[str, Any]] = []
     for row in rows:
@@ -1231,18 +1352,24 @@ def build_dataset(
     start_date: str = CLEAN_WINDOW_START,
     end_date: str | None = None,
     lineup_handedness_backfill_path: Path = LINEUP_HANDEDNESS_BACKFILL,
+    artifact_api_url: str | None = None,
 ) -> list[dict[str, Any]]:
     markets = load_archived_markets_for_dataset(
         archive_dir,
         start_date=start_date,
         end_date=end_date,
+        artifact_api_url=artifact_api_url,
     )
     rows = build_official_close_rows(markets)
     rows = enrich_rows_with_lineup_handedness(
         rows,
         backfill_path=lineup_handedness_backfill_path,
     )
-    return enrich_rows_with_pick_history(rows, start_date=start_date)
+    return enrich_rows_with_pick_history(
+        rows,
+        start_date=start_date,
+        artifact_api_url=artifact_api_url,
+    )
 
 
 def _parse_args(argv: list[str] | None = None) -> argparse.Namespace:
@@ -1252,15 +1379,28 @@ def _parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--jsonl-output", type=Path, default=OUTPUT_JSONL)
     parser.add_argument("--summary-output", type=Path, default=OUTPUT_SUMMARY)
     parser.add_argument("--lineup-handedness-backfill", type=Path, default=LINEUP_HANDEDNESS_BACKFILL)
+    parser.add_argument(
+        "--artifact-source",
+        choices=("local", "production"),
+        default="local",
+        help="Use committed local artifacts or the production Netlify artifact API.",
+    )
+    parser.add_argument(
+        "--artifact-api-url",
+        default=os.environ.get("BBE_ARTIFACT_API_URL", "").strip() or DEFAULT_ARTIFACT_API_URL,
+        help="Base get-artifact URL used when --artifact-source=production.",
+    )
     return parser.parse_args(argv)
 
 
 def main(argv: list[str] | None = None) -> None:
     args = _parse_args(argv)
+    artifact_api_url_base = args.artifact_api_url if args.artifact_source == "production" else None
     rows = build_dataset(
         start_date=args.start_date,
         end_date=args.end_date,
         lineup_handedness_backfill_path=args.lineup_handedness_backfill,
+        artifact_api_url=artifact_api_url_base,
     )
     validation_errors = [
         (row.get("dataset_key"), errors)
@@ -1272,7 +1412,18 @@ def main(argv: list[str] | None = None) -> None:
         raise SystemExit(f"Dataset validation failed: {preview}")
 
     summary = build_summary(rows)
-    summary.update(reconcile_picks_history(rows, start_date=args.start_date))
+    summary.update(
+        reconcile_picks_history(
+            rows,
+            start_date=args.start_date,
+            artifact_api_url=artifact_api_url_base,
+            included_slate_dates=(
+                {str(row.get("slate_date") or "").strip() for row in rows if row.get("slate_date")}
+                if artifact_api_url_base
+                else None
+            ),
+        )
+    )
     write_jsonl(rows, args.jsonl_output)
     args.summary_output.parent.mkdir(parents=True, exist_ok=True)
     args.summary_output.write_text(render_summary(summary), encoding="utf-8")
