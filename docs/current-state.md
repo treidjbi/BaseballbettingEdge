@@ -793,6 +793,18 @@ The worker now refreshes the production artifact during the WebSocket loop using
 date advances, emitting a `slate_rotated` heartbeat. Render must point at
 `main` for this and the provider-runtime hardening fixes to deploy.
 
+2026-06-01 follow-up: after the Render/Supabase artifact cutover, the BoltOdds
+worker was still defaulting to raw GitHub `today.json` and a stale 2026-05-30
+slate. Commit `eea0e51f` changes the normal worker default to the Netlify
+`get-artifact?type=today` API while keeping manual `SLATE_DATE` replay local
+unless an artifact URL env var is explicitly supplied. Render deploy
+`dep-d8evpud9j78s73flambg` started on commit `eea0e51f`; the first attempt hit
+BoltOdds Starter's one-connection policy while the old stale socket drained,
+then retry run `24327701-59a9-4f6d-a2bf-3331eaeab456` started/ready on
+2026-06-01 with the Netlify artifact path and no error as of 21:53Z. Next brief
+should confirm fresh books_seen/message/snapshot rows and no revived
+2026-05-30 heartbeats before using BoltOdds evidence in any provider review.
+
 ## Active Evaluation Stack
 
 The active local diagnostics and tests are:
@@ -1000,6 +1012,20 @@ confidence-referee work, compact storage, daily collection, research readiness,
 batter-handedness Path A/Path B, opportunity/leash evidence, and promotion
 boundaries. It must stay shadow-only until a separate model/ranking promotion
 plan is approved.
+
+2026-06-01 follow-up: `analytics/diagnostics/pitcher_k_outcome_dataset.py` now
+has an explicit `--artifact-source production` mode that reads Netlify
+`get-artifact` `index`, `dated_slate`, and `picks_history` artifacts instead of
+stale committed local files. Current production dated-slate coverage starts at
+2026-05-21; older clean-window dates listed in `index` return 404 and are
+skipped with a warning. A fresh production-backed run produced 372
+official-close side rows and 188 tracked rows, with 0 duplicate keys, 0 missing
+results/team/opponent/odds/model fields, and 188/188 tracked rows reconciled
+for loaded dates. Treat this as a fresh partial production read; full
+2026-04-28+ clean-window reporting still needs historical dated-slate backfill
+or a clearly-labeled hybrid local-plus-production analysis. This remains
+shadow-only and does not change live lambda, thresholds, staking, verdicts,
+provider order, notifications, or dashboard behavior.
 
 ### BoltOdds Trial Review
 
