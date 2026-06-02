@@ -804,6 +804,11 @@ then retry run `24327701-59a9-4f6d-a2bf-3331eaeab456` started/ready on
 2026-06-01 with the Netlify artifact path and no error as of 21:53Z. Next brief
 should confirm fresh books_seen/message/snapshot rows and no revived
 2026-05-30 heartbeats before using BoltOdds evidence in any provider review.
+Same-day follow-up at 2026-06-02 00:33Z confirmed that retry run was active on
+slate_date 2026-06-01, had fresh heartbeats with FanDuel, BetMGM, BetRivers,
+and Caesars, had 4,339 messages by the latest heartbeat, and had written 3,318
+snapshot rows through 2026-06-02 00:32:59Z. Keep BoltOdds shadow-only, but the
+stale-slate artifact-source issue is no longer the active blocker.
 
 ## Active Evaluation Stack
 
