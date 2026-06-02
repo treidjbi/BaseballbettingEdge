@@ -1067,6 +1067,29 @@ The next broad provider decision checkpoint is **2026-06-01**:
   for specific books, justifies more live infrastructure, or stays shadow-only.
 - Do not change production odds-provider behavior without Tyler's approval.
 
+2026-06-02 provider rehearsal follow-up:
+
+- GitHub shadow-market run `26833112223` succeeded after the cutover comparison
+  diagnostic was updated to read `provider_request_usage_daily` automatically.
+  PropLine usage gate passed at 336 requests, about 6.7% of the 5,000/day Hobby
+  budget. Schedule-first coverage passed: 28/29 probable starters covered,
+  28/29 with FanDuel or DraftKings, 25/29 with DraftKings, and 28/29
+  official-ready. The older raw TheRundown-prop denominator still reported
+  27/32 covered and should be treated as overlap evidence, not the sole
+  official-starter gate.
+- Render provider-mode shadow artifact rehearsal
+  `job-d8fg8ql53gjs73a586ng` succeeded on the idle shadow-runner after deploy
+  `dep-d8fg7tmrnols73b5ktu0`. It wrote only
+  `render_shadow:2026-06-02:` artifact keys. Shadow `today` had 28 pitcher rows,
+  16 tracked picks, all `odds_source=boltodds+propline`, all with
+  `official_market_line_id`, and all with `book_odds`.
+- Do not promote provider source yet. The shadow artifact was not a no-op
+  replacement for production: it matched 15 tracked picks exactly, dropped live
+  LEANs for Connor Prielipp and Nathan Eovaldi, and added a provider-only LEAN
+  for Kyle Harrison. The next decision is whether Tyler wants a controlled
+  morning provider-source canary that accepts pick-set differences, or another
+  shadow slate to understand why those differences occurred.
+
 ## Historical Context
 
 The dated plan archive is intentionally preserved so future agents can see what
