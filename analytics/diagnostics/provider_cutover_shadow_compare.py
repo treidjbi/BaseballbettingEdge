@@ -655,6 +655,31 @@ def _fetch_provider_heartbeats(writer: Any, date_str: str) -> list[dict[str, Any
     )
 
 
+def _fetch_provider_usage(writer: Any, date_str: str) -> dict[str, Any] | None:
+    rows = writer.select_rows(
+        "provider_request_usage_daily",
+        {
+            "usage_date": f"eq.{date_str}",
+            "select": "provider,request_count,snapshot_count,source,updated_at",
+            "limit": "50",
+        },
+    )
+    return _provider_usage_from_rows(rows)
+
+
+def _provider_usage_from_rows(rows: list[dict[str, Any]]) -> dict[str, Any] | None:
+    if not rows:
+        return None
+    usage: dict[str, Any] = {"rows": rows}
+    for row in rows:
+        provider = str(row.get("provider") or "").strip().lower()
+        if not provider:
+            continue
+        usage[f"{provider}_requests"] = usage.get(f"{provider}_requests", 0) + _to_int(row.get("request_count"))
+        usage[f"{provider}_snapshots"] = usage.get(f"{provider}_snapshots", 0) + _to_int(row.get("snapshot_count"))
+    return usage
+
+
 def _parse_usage(value: str | None) -> dict[str, Any] | None:
     if not value:
         return None
@@ -719,6 +744,9 @@ def main(argv: list[str] | None = None) -> int:
         if writer is not None
         else None
     )
+    provider_usage = _parse_usage(args.provider_usage_json)
+    if provider_usage is None and writer is not None:
+        provider_usage = _fetch_provider_usage(writer, args.date)
     report = compare_provider_cutover(
         date_str=args.date,
         rundown_props=rundown_props,
@@ -726,7 +754,7 @@ def main(argv: list[str] | None = None) -> int:
         scheduled_pitchers=scheduled_pitchers,
         provider_current_lines=provider_current_lines,
         provider_heartbeats=provider_heartbeats,
-        provider_usage=_parse_usage(args.provider_usage_json),
+        provider_usage=provider_usage,
     )
     json_path, markdown_path = write_report(report, args.output_dir)
     print(f"Wrote {json_path}")

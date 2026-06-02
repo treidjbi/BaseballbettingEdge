@@ -1,6 +1,7 @@
 from datetime import datetime, timezone
 
 from analytics.diagnostics.provider_cutover_shadow_compare import (
+    _provider_usage_from_rows,
     compare_provider_cutover,
     format_markdown_report,
 )
@@ -364,6 +365,38 @@ def test_compare_contract_and_usage_gates():
     assert gate_statuses["today_contract_valid"] == "fail"
     assert gate_statuses["propline_usage_under_70pct_hobby"] == "fail"
     assert report["summary"]["provider_contract_issue_count"] == 1
+
+
+def test_provider_usage_rows_feed_hobby_budget_gate():
+    usage = _provider_usage_from_rows([
+        {
+            "provider": "propline",
+            "request_count": 304,
+            "snapshot_count": 2622,
+            "source": "scripts/shadow_propline_to_supabase.py",
+        },
+        {
+            "provider": "boltodds",
+            "request_count": 4,
+            "snapshot_count": 1477,
+            "source": "scripts/boltodds_ws_worker.py",
+        },
+    ])
+
+    report = compare_provider_cutover(
+        date_str="2026-05-13",
+        rundown_props=[_prop("Jose Berrios")],
+        provider_props=[_prop("Jose Berrios")],
+        provider_usage=usage,
+        generated_at=NOW,
+    )
+
+    gate_statuses = {gate["name"]: gate for gate in report["readiness"]["gates"]}
+    assert usage["propline_requests"] == 304
+    assert usage["propline_snapshots"] == 2622
+    assert usage["boltodds_requests"] == 4
+    assert gate_statuses["propline_usage_under_70pct_hobby"]["status"] == "pass"
+    assert gate_statuses["propline_usage_under_70pct_hobby"]["value"] == 0.0608
 
 
 def test_markdown_report_includes_gate_summary():
