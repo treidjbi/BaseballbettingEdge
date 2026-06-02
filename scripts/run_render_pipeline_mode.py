@@ -129,6 +129,31 @@ def shadow_runtime_env_overrides(
     return overrides
 
 
+def live_provider_canary_env_overrides(mode: str, artifact_key_prefix: str) -> dict[str, str]:
+    """Enable the approved provider-source canary for live preview/full refreshes."""
+    if artifact_key_prefix or mode not in {"preview", "pipeline"}:
+        return {}
+    return {
+        "OFFICIAL_MARKET_SOURCE": "boltodds_propline",
+        "ENABLE_BOLTODDS_PIPELINE_SOURCE": "true",
+        "OFFICIAL_MARKET_STRICT": "false",
+    }
+
+
+def runtime_env_overrides(
+    mode: str,
+    artifact_key_prefix: str,
+    *,
+    provider_rehearsal: bool = False,
+) -> dict[str, str]:
+    overrides = shadow_runtime_env_overrides(
+        artifact_key_prefix,
+        provider_rehearsal=provider_rehearsal,
+    )
+    overrides.update(live_provider_canary_env_overrides(mode, artifact_key_prefix))
+    return overrides
+
+
 def live_artifact_hydration_enabled(mode: str, artifact_key_prefix: str) -> bool:
     if artifact_key_prefix:
         return False
@@ -263,7 +288,8 @@ def main(argv: list[str] | None = None) -> int:
     if args.provider_rehearsal and not artifact_key_prefix:
         raise ValueError("--provider-rehearsal requires --shadow-prefix or --artifact-key-prefix")
     runtime_previous = _apply_env_overrides(
-        shadow_runtime_env_overrides(
+        runtime_env_overrides(
+            args.mode,
             artifact_key_prefix,
             provider_rehearsal=args.provider_rehearsal,
         )

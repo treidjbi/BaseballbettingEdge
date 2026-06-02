@@ -1,6 +1,6 @@
 # Current State
 
-Last updated: 2026-05-30
+Last updated: 2026-06-02
 
 ## Read Order
 
@@ -41,10 +41,11 @@ do we convert model signal into better betting decisions?"
   Gate C / Gate F rules in
   `docs/superpowers/plans/2026-05-12-pitcher-k-outcome-research-dataset.md`
   justify a live behavior plan.
-- TheRundown remains the production book-of-record odds source for the scheduled
-  pipeline. It renewed through the end of May 2026, so May is now the planned
-  overlap window for building and shadow-comparing the BoltOdds + PropLine
-  official-provider cutover before any cancellation/removal decision.
+- Render preview/full/refresh now run a non-strict BoltOdds + PropLine
+  provider-source canary for scheduled artifact rows. TheRundown remains the
+  fallback/rollback source because `OFFICIAL_MARKET_STRICT=false`; GitHub
+  manual `workflow_dispatch` also remains a TheRundown rollback path unless
+  separately changed.
 - PropLine remains a shadow/fallback/live-movement source. Polling is useful,
   and real signed provider webhooks are now landing with book-level movement
   IDs after PropLine's 2026-05-19 payload fix. The planned provider stack is
@@ -64,7 +65,7 @@ each lane.
 
 | Lane | Current Source | Current Stage | Next Decision |
 | --- | --- | --- | --- |
-| Pipeline / infrastructure | `2026-05-19-supabase-operational-foundation.md`, `2026-05-22-github-artifact-exit.md`, `2026-05-13-boltodds-propline-official-provider-cutover.md`, `2026-05-20-live-notification-coordinator.md`, `docs/operational-risk-register.md` | Render + Supabase artifact API are the primary scheduler/artifact path as of 2026-05-30. GitHub scheduled triggers are disabled, but manual `workflow_dispatch` remains the rollback path. TheRundown remains the production odds source. Render preview, pipeline/full/refresh, and lock modes publish only the artifact keys each mode can actually regenerate; Render grading/full/refresh/lock hydrate from Netlify `get-artifact` before running so stale checkout copies of history, params, performance, or preview lines are not republished. `bbe-pipeline-lock` runs every 10 minutes offset behind the live-layer lock ledger and can replay already-consumed Supabase lock rows if a prior stale artifact publish left the dashboard behind. Strict mode remains off. Dashboard artifact adapters default to Netlify `get-artifact` with static fallback. | Deploy and observe the 2026-05-31 artifact-hydration repair: Render run health, `hydrated_artifacts > 0` on grading/full/lock, Supabase artifact freshness, Netlify `get-artifact`, lock cron consumption/replay, and manual GitHub rollback availability. Do not bundle provider source, model, staking, thresholds, notification behavior, or retention deletion into this scheduler migration. |
+| Pipeline / infrastructure | `2026-05-19-supabase-operational-foundation.md`, `2026-05-22-github-artifact-exit.md`, `2026-05-13-boltodds-propline-official-provider-cutover.md`, `2026-05-20-live-notification-coordinator.md`, `docs/operational-risk-register.md` | Render + Supabase artifact API are the primary scheduler/artifact path as of 2026-05-30. GitHub scheduled triggers are disabled, but manual `workflow_dispatch` remains the rollback path. As of 2026-06-02, Render preview/full/refresh run a non-strict BoltOdds + PropLine provider-source canary through `official_market_lines`; TheRundown remains fallback/rollback and strict mode remains off. Render lock and grading commands stay unchanged. Render preview, pipeline/full/refresh, and lock modes publish only the artifact keys each mode can actually regenerate; Render grading/full/refresh/lock hydrate from Netlify `get-artifact` before running so stale checkout copies of history, params, performance, or preview lines are not republished. `bbe-pipeline-lock` runs every 10 minutes offset behind the live-layer lock ledger and can replay already-consumed Supabase lock rows if a prior stale artifact publish left the dashboard behind. Dashboard artifact adapters default to Netlify `get-artifact` with static fallback. | Observe at least today's remaining refresh/lock windows and tomorrow's preview/full on provider canary: provider attribution in `today.json`/dated archive/steam, no stale artifacts, no lock regressions, no duplicate/wrong-date publishes, and TheRundown fallback/manual GitHub rollback still available. Keep model, staking, thresholds, notification sends, retention deletion, and strict provider mode separate. |
 | Model | `2026-05-12-pitcher-k-outcome-research-dataset.md`, `2026-05-29-gate-ef-under-fire-conversion-shadow-plan.md` | Gate C confidence-referee / compact evidence proof, plus pre/post 4/28 review, reconstructed historical lineup-handedness backfill, holdout labs, and the implemented Gate E/F under-skepticism / FIRE-conversion shadow lab. The regenerated report at `analytics/output/gate_ef_candidate_shadow_lab.md` is promising but not promotion-ready: validation slices remain small-sample and the current selected candidate retained zero FIRE 2u wins. | Keep Gate C and Gate E/F shadow-only. Continue soaking and regenerate the Gate E/F lab after grading before any decision. Do not promote lambda, thresholds, staking, verdicts, provider order, notifications, dashboard behavior, or Path B handedness without a separate Tyler-approved promotion plan. |
 | UI | `2026-05-20-live-market-decision-ui.md`, `2026-05-20-live-notification-coordinator.md` | Future-state design only. The dashboard should eventually display best price, consensus, movement, urgency, and notification grouping from the new operational base. | Revisit after the operational/provider switch is stable. Keep display work separated from provider promotion and betting-rule changes. |
 | Tracking / data collection / history | `docs/research/market-tracker-map.md`, `docs/research/pitcher-k-outcome-dataset.md`, compact outcome outputs, live-market audits | Canonical research row plus existing market/live/provider trackers. Daily brief now keeps a compact Gate C bucket scoreboard and pre/post 2026-04-28 context. | Prefer derived labels on the compact outcome row before adding tables. Promote compact storage or retention only after row-volume/cost proof and Tyler approval. |
@@ -222,9 +223,10 @@ Cutover branch infrastructure progress as of 2026-05-14:
   explicitly enabled.
 - A pipeline adapter for `official_market_lines` exists behind a double opt-in:
   `OFFICIAL_MARKET_SOURCE=boltodds_propline` and
-  `ENABLE_BOLTODDS_PIPELINE_SOURCE=true`. Without both, TheRundown remains the
-  odds source. Strict provider mode is available for later cutover rehearsal,
-  but should not be enabled until the yes/no review.
+  `ENABLE_BOLTODDS_PIPELINE_SOURCE=true`. On 2026-06-02 Tyler approved using
+  that adapter in non-strict Render preview/full/refresh canary mode. If the
+  provider rows fail, the pipeline falls back to TheRundown. Strict provider
+  mode remains off until a separate yes/no review.
 - `analytics/diagnostics/provider_cutover_shadow_compare.py` exists for the
   fresh-slate rehearsal. Use it to compare TheRundown against provider-mode
   rows and evaluate coverage, FD/DK availability, line conflicts, ref-book

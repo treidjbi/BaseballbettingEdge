@@ -1264,7 +1264,15 @@ Required updates:
 
 ## Cutover Gates
 
-Do not switch `OFFICIAL_MARKET_SOURCE=boltodds_propline` until all gates pass:
+Strict provider cutover remains gated. As of 2026-06-02 Tyler approved a
+non-strict Render preview/full/refresh provider-source canary that sets
+`OFFICIAL_MARKET_SOURCE=boltodds_propline`,
+`ENABLE_BOLTODDS_PIPELINE_SOURCE=true`, and `OFFICIAL_MARKET_STRICT=false`
+inside the Render wrapper. This canary may publish live artifact keys, but it
+must preserve TheRundown fallback/rollback and must not change model math,
+thresholds, staking, notification sends, retention deletion, or dashboard
+behavior. Do not enable strict mode, remove TheRundown fallback, or cancel the
+rollback path until all gates pass:
 
 - BoltOdds worker has current-slate heartbeats and snapshots after the latest
   GitHub full run.

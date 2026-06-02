@@ -74,6 +74,37 @@ def test_shadow_runtime_overrides_are_empty_for_live_key_publish():
     assert entrypoint.shadow_runtime_env_overrides("") == {}
 
 
+def test_live_provider_canary_enables_provider_for_live_preview_and_pipeline():
+    for mode in ("preview", "pipeline"):
+        overrides = entrypoint.runtime_env_overrides(mode, "")
+
+        assert overrides["OFFICIAL_MARKET_SOURCE"] == "boltodds_propline"
+        assert overrides["ENABLE_BOLTODDS_PIPELINE_SOURCE"] == "true"
+        assert overrides["OFFICIAL_MARKET_STRICT"] == "false"
+
+
+def test_live_provider_canary_does_not_touch_grading_lock_or_shadow_runs():
+    assert entrypoint.runtime_env_overrides("grading", "") == {}
+    assert entrypoint.runtime_env_overrides("lock", "") == {}
+
+    shadow_overrides = entrypoint.runtime_env_overrides("pipeline", "render_shadow:2026-05-26:")
+    assert shadow_overrides["OFFICIAL_MARKET_SOURCE"] == "therundown"
+    assert shadow_overrides["ENABLE_BOLTODDS_PIPELINE_SOURCE"] == "false"
+
+
+def test_shadow_provider_rehearsal_stays_strict_and_shadow_only():
+    overrides = entrypoint.runtime_env_overrides(
+        "pipeline",
+        "render_shadow:2026-05-26:",
+        provider_rehearsal=True,
+    )
+
+    assert overrides["OFFICIAL_MARKET_SOURCE"] == "boltodds_propline"
+    assert overrides["ENABLE_BOLTODDS_PIPELINE_SOURCE"] == "true"
+    assert overrides["OFFICIAL_MARKET_STRICT"] == "true"
+    assert overrides["ENABLE_SUPABASE_LOCK_CONSUMER"] == "false"
+
+
 def test_live_artifact_hydration_runs_for_modes_that_consume_live_artifacts(monkeypatch):
     monkeypatch.delenv("RENDER_PIPELINE_HYDRATE_ARTIFACTS", raising=False)
 
