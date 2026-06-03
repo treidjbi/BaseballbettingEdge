@@ -12,7 +12,7 @@ import json
 import os
 import sys
 from collections import Counter
-from datetime import datetime
+from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Any
 from urllib.error import HTTPError
@@ -565,6 +565,24 @@ def _artifact_dates_from_index(
     return sorted(dates)
 
 
+def _requested_date_range(start_date: str, end_date: str | None) -> list[str]:
+    if not end_date:
+        return []
+    try:
+        start = datetime.fromisoformat(start_date).date()
+        end = datetime.fromisoformat(end_date).date()
+    except ValueError:
+        return []
+    if end < start:
+        return []
+    dates: list[str] = []
+    current = start
+    while current <= end:
+        dates.append(current.isoformat())
+        current += timedelta(days=1)
+    return dates
+
+
 def _markets_from_archive_payload(
     payload: dict[str, Any],
     *,
@@ -618,6 +636,7 @@ def _load_remote_archived_markets_for_dataset(
         start_date=start_date,
         end_date=end_date,
     )
+    dates = sorted(set(dates) | set(_requested_date_range(start_date, end_date)))
     markets: list[dict[str, Any]] = []
     skipped_missing: list[str] = []
     for date in dates:

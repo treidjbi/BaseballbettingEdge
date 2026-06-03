@@ -309,6 +309,63 @@ def test_load_archived_markets_can_read_production_artifact_api(monkeypatch):
     assert any("type=dated_slate" in url and "date=2026-05-12" in url for url in seen_urls)
 
 
+def test_load_archived_markets_fetches_requested_remote_date_range_when_index_is_incomplete(monkeypatch):
+    seen_urls = []
+
+    class Response:
+        def __init__(self, payload):
+            self.payload = payload
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *args):
+            return False
+
+        def read(self):
+            import json
+
+            return json.dumps(self.payload).encode("utf-8")
+
+    def fake_urlopen(url, timeout=20):
+        seen_urls.append(url)
+        if "type=index" in url:
+            return Response({"dates": [{"date": "2026-05-30"}]})
+        assert "type=dated_slate" in url
+        assert "date=2026-06-01" in url
+        return Response(
+            {
+                "generated_at": "2026-06-02T01:08:52Z",
+                "pitchers": [
+                    {
+                        "pitcher": "Example Starter",
+                        "team": "SEA",
+                        "opp_team": "NYY",
+                        "k_line": 4.5,
+                        "actual_ks": 6,
+                        "best_over_odds": -110,
+                        "best_under_odds": -110,
+                        "ev_over": {"win_prob": 0.55, "verdict": "LEAN"},
+                        "ev_under": {"win_prob": 0.45, "verdict": "PASS"},
+                    }
+                ],
+            }
+        )
+
+    monkeypatch.setattr(dataset, "urlopen", fake_urlopen)
+
+    markets = load_archived_markets_for_dataset(
+        start_date="2026-06-01",
+        end_date="2026-06-01",
+        artifact_api_url="https://example.test/.netlify/functions/get-artifact",
+    )
+
+    assert len(markets) == 1
+    assert markets[0]["date"] == "2026-06-01"
+    assert any("type=index" in url for url in seen_urls)
+    assert any("type=dated_slate" in url and "date=2026-06-01" in url for url in seen_urls)
+
+
 def test_load_archived_markets_skips_missing_production_dated_archives(monkeypatch, capsys):
     from urllib.error import HTTPError
 
