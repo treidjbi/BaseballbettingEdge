@@ -186,3 +186,31 @@ def test_main_hydrates_before_live_pipeline_run(monkeypatch):
         ("pipeline", entrypoint.build_publish_contract("pipeline", "2026-05-30").pipeline_args),
         ("publish", "pipeline"),
     ]
+
+
+def test_main_hydrates_publish_date_before_grading_run(monkeypatch):
+    calls = []
+
+    def fake_hydrate(*, root, slate_date):
+        calls.append(("hydrate", slate_date))
+        return 8
+
+    def fake_pipeline_run(*args, **kwargs):
+        calls.append(("pipeline", args[0]))
+
+    def fake_publish_artifacts(**kwargs):
+        calls.append(("publish", kwargs["slate_date"], kwargs["scope"]))
+        return {"artifact_count": 4}
+
+    monkeypatch.setattr(entrypoint, "hydrate_live_artifacts_from_api", fake_hydrate)
+    monkeypatch.setattr(entrypoint.subprocess, "run", fake_pipeline_run)
+    monkeypatch.setattr(entrypoint, "publish_artifacts", fake_publish_artifacts)
+    monkeypatch.setattr(entrypoint, "resolve_source_commit_sha", lambda: "sha")
+
+    assert entrypoint.main(["--mode", "grading", "--date", "2026-06-03"]) == 0
+
+    assert calls == [
+        ("hydrate", "2026-06-02"),
+        ("pipeline", entrypoint.build_publish_contract("grading", "2026-06-03").pipeline_args),
+        ("publish", "2026-06-02", "grading"),
+    ]

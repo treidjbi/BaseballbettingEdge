@@ -573,6 +573,51 @@ def _game_date_et(game_time_str: str, fallback: str) -> str:
         return fallback
 
 
+def _existing_index_entries(index_path: Path) -> dict[str, dict]:
+    try:
+        payload = json.loads(index_path.read_text(encoding="utf-8"))
+    except Exception:
+        return {}
+
+    rows = payload.get("dates") if isinstance(payload, dict) else None
+    entries: dict[str, dict] = {}
+    for row in rows if isinstance(rows, list) else []:
+        if isinstance(row, str):
+            date = row.strip()
+            entry = {"date": date}
+        elif isinstance(row, dict):
+            date = str(row.get("date") or "").strip()
+            entry = dict(row)
+        else:
+            continue
+        if len(date) == 10 and date[4] == "-" and date[7] == "-":
+            entries[date] = entry
+    return entries
+
+
+def _date_entries_for_index(base_dir: Path, limit: int = 60) -> list[dict]:
+    index_path = base_dir / "index.json"
+    existing_entries = _existing_index_entries(index_path)
+    local_dates = {
+        p.stem
+        for p in base_dir.glob("[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9].json")
+    }
+    all_dates = sorted(local_dates | set(existing_entries), reverse=True)[:limit]
+    results_by_date = _date_results_from_history()
+    entries: list[dict] = []
+    for date in all_dates:
+        if date in results_by_date:
+            entries.append({"date": date, **results_by_date[date]})
+            continue
+        existing = existing_entries.get(date) or {}
+        entries.append({
+            "date": date,
+            "wins": existing.get("wins", 0),
+            "losses": existing.get("losses", 0),
+        })
+    return entries
+
+
 def _write_dated_archive_only(
     records: list,
     date_str: str,
@@ -602,13 +647,9 @@ def _write_dated_archive_only(
         return
 
     # Rebuild index so the date shows up in the dashboard's date selector
+    # while preserving Supabase-hydrated dates absent from the checkout.
     index_path = base_dir / "index.json"
-    all_dates = sorted(
-        {p.stem for p in base_dir.glob("[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9].json")},
-        reverse=True,
-    )[:60]
-    results_by_date = _date_results_from_history()
-    date_entries = [{"date": d, **results_by_date.get(d, {"wins": 0, "losses": 0})} for d in all_dates]
+    date_entries = _date_entries_for_index(base_dir)
     try:
         with open(index_path, "w") as f:
             json.dump({"dates": date_entries}, f, indent=2)
@@ -2220,14 +2261,9 @@ def _write_archive(output: dict, run_date_str: str) -> None:
     if not any_written:
         return
 
-    # 3. Rebuild index.json from all dated files (glob for YYYY-MM-DD.json)
+    # 3. Rebuild index.json from dated files plus hydrated index dates.
     index_path = base_dir / "index.json"
-    all_dates = sorted(
-        {p.stem for p in base_dir.glob("[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9].json")},
-        reverse=True
-    )[:60]
-    results_by_date = _date_results_from_history()
-    date_entries = [{"date": d, **results_by_date.get(d, {"wins": 0, "losses": 0})} for d in all_dates]
+    date_entries = _date_entries_for_index(base_dir)
     try:
         with open(index_path, "w") as f:
             json.dump({"dates": date_entries}, f, indent=2)

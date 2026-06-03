@@ -187,6 +187,48 @@ def test_write_snapshot_batch_upserts_snapshots_and_audit():
     assert audit["metadata"]["worker"] == "scripts/boltodds_ws_worker.py"
 
 
+def test_write_snapshot_batch_can_audit_accumulated_snapshots_without_reupserting():
+    writer = FakeWriter()
+    production = {
+        "pitchers": [
+            {
+                "pitcher": "Gerrit Cole",
+                "k_line": 7.5,
+                "book_odds": {"FanDuel": {"over": -110, "under": -110}},
+            }
+        ]
+    }
+    coverage_cache = {}
+    first_flush = [_snapshot("Gerrit Cole", "fanduel", 7.5, "over")]
+    second_flush = [_snapshot("Gerrit Cole", "fanduel", 7.5, "under")]
+    boltodds_ws_worker._update_coverage_snapshot_cache(coverage_cache, first_flush)
+    coverage_snapshots = boltodds_ws_worker._update_coverage_snapshot_cache(
+        coverage_cache,
+        second_flush,
+    )
+
+    result = boltodds_ws_worker.write_snapshot_batch(
+        writer,
+        run_id="run-123",
+        slate_date="2026-05-07",
+        snapshots=second_flush,
+        coverage_snapshots=coverage_snapshots,
+        production_payload=production,
+        books_seen={"fanduel"},
+        target_event_count=1,
+    )
+
+    assert result == {"snapshot_count": 1, "coverage_audit_written": 1}
+    assert writer.upserts == [
+        ("market_snapshots", second_flush, "dedupe_key"),
+    ]
+    audit = writer.inserts[0][1][0]
+    assert audit["parsed_pitcher_prop_count"] == 1
+    assert audit["complete_pitcher_line_groups"] == 1
+    assert audit["same_line_overlap_count"] == 1
+    assert audit["metadata"]["snapshot_rows"] == 2
+
+
 def test_write_snapshot_batch_can_skip_coverage_audit_for_throttled_flushes():
     writer = FakeWriter()
     snapshots = [

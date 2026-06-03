@@ -298,10 +298,10 @@ def main(argv: list[str] | None = None) -> int:
     try:
         hydrated_artifacts = 0
         if live_artifact_hydration_enabled(args.mode, artifact_key_prefix):
-            hydrated_artifacts = hydrate_live_artifacts_from_api(root=ROOT, slate_date=slate_date)
+            hydrated_artifacts = hydrate_live_artifacts_from_api(root=ROOT, slate_date=contract.publish_date)
             print(
                 "render_pipeline_mode_hydration "
-                f"mode={args.mode} slate_date={slate_date} artifacts={hydrated_artifacts}"
+                f"mode={args.mode} slate_date={contract.publish_date} artifacts={hydrated_artifacts}"
             )
         subprocess.run(contract.pipeline_args, cwd=ROOT, check=True)
 

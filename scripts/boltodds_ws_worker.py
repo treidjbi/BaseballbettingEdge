@@ -306,6 +306,30 @@ def _coverage_audit_row(
     }
 
 
+def _coverage_snapshot_key(snapshot: dict[str, Any]) -> str:
+    dedupe_key = str(snapshot.get("dedupe_key") or "").strip()
+    if dedupe_key:
+        return dedupe_key
+    parts = [
+        snapshot.get("normalized_player_name") or normalize(str(snapshot.get("player_name") or "")),
+        snapshot.get("bookmaker_key") or snapshot.get("bookmaker_title") or "",
+        snapshot.get("line") or "",
+        snapshot.get("side") or "",
+    ]
+    return "|".join(str(part).strip().lower() for part in parts)
+
+
+def _update_coverage_snapshot_cache(
+    cache: dict[str, dict[str, Any]],
+    snapshots: list[dict[str, Any]],
+) -> list[dict[str, Any]]:
+    for snapshot in snapshots:
+        key = _coverage_snapshot_key(snapshot)
+        if key:
+            cache[key] = dict(snapshot)
+    return list(cache.values())
+
+
 def write_snapshot_batch(
     writer: SupabaseMarketWriter,
     run_id: str,
@@ -316,6 +340,7 @@ def write_snapshot_batch(
     target_event_count: int,
     target_books: dict[str, str] | None = None,
     write_coverage_audit: bool = True,
+    coverage_snapshots: list[dict[str, Any]] | None = None,
 ) -> dict[str, int]:
     if not snapshots:
         return {"snapshot_count": 0, "coverage_audit_written": 0}
@@ -330,7 +355,7 @@ def write_snapshot_batch(
             _coverage_audit_row(
                 run_id=run_id,
                 slate_date=slate_date,
-                snapshots=snapshots,
+                snapshots=coverage_snapshots or snapshots,
                 production_payload=production_payload,
                 books_seen=books_seen,
                 target_event_count=target_event_count,
@@ -464,6 +489,7 @@ async def run_worker() -> dict[str, Any]:
     books_seen: set[str] = set()
     event_ids: set[str] = set()
     snapshots: list[dict[str, Any]] = []
+    coverage_snapshot_cache: dict[str, dict[str, Any]] = {}
     raw_payload_samples: list[Any] = []
     total_snapshots = 0
     message_count = 0
@@ -481,7 +507,7 @@ async def run_worker() -> dict[str, Any]:
     )
 
     async def refresh_context_if_due(now_monotonic: float) -> None:
-        nonlocal context, last_artifact_refresh_monotonic, run_id
+        nonlocal context, coverage_snapshot_cache, last_artifact_refresh_monotonic, run_id
         if artifact_refresh_seconds <= 0:
             return
         if (now_monotonic - last_artifact_refresh_monotonic) < artifact_refresh_seconds:
@@ -515,6 +541,7 @@ async def run_worker() -> dict[str, Any]:
             },
         )
         context = refreshed_context
+        coverage_snapshot_cache = {}
         started_rows = writer.insert_rows("market_provider_runs", [
             build_run_rows(
                 context.slate_date,
@@ -548,7 +575,12 @@ async def run_worker() -> dict[str, Any]:
     async def flush() -> None:
         nonlocal snapshots, total_snapshots, last_flush_monotonic
         nonlocal last_coverage_audit_monotonic, last_message_heartbeat_monotonic
+        nonlocal coverage_snapshot_cache
         now_monotonic = monotonic()
+        coverage_snapshots = _update_coverage_snapshot_cache(
+            coverage_snapshot_cache,
+            snapshots,
+        )
         write_audit = bool(snapshots) and _should_write_periodic_row(
             now_monotonic=now_monotonic,
             last_written_monotonic=last_coverage_audit_monotonic,
@@ -564,6 +596,7 @@ async def run_worker() -> dict[str, Any]:
             len(event_ids),
             target_books,
             write_coverage_audit=write_audit,
+            coverage_snapshots=coverage_snapshots,
         )
         snapshot_count = result["snapshot_count"]
         if result.get("coverage_audit_written"):

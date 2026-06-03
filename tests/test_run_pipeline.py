@@ -1974,6 +1974,25 @@ def test_write_dated_archive_only_creates_dated_file(tmp_path):
     assert any(entry["date"] == "2026-04-12" for entry in entries)
 
 
+def test_write_dated_archive_only_preserves_existing_index_dates_not_in_checkout(tmp_path):
+    """Render hydrates index.json from Supabase, but may not have every recent
+    dated archive file in its checkout. Preview must not drop those dates."""
+    import run_pipeline
+
+    (tmp_path / "index.json").write_text(
+        json.dumps({"dates": [{"date": "2026-06-02", "wins": 13, "losses": 12}]}),
+        encoding="utf-8",
+    )
+
+    with patch.object(run_pipeline, "OUTPUT_PATH", tmp_path / "today.json"):
+        _write_dated_archive_only([], "2026-06-03", props_available=False)
+
+    entries = json.loads((tmp_path / "index.json").read_text())["dates"]
+    assert [entry["date"] for entry in entries[:2]] == ["2026-06-03", "2026-06-02"]
+    assert entries[1]["wins"] == 13
+    assert entries[1]["losses"] == 12
+
+
 def test_write_dated_archive_only_does_not_touch_today_json(tmp_path):
     """_write_dated_archive_only must not create or overwrite today.json."""
     import run_pipeline
@@ -2133,6 +2152,36 @@ def test_write_archive_merges_other_date_bucket_into_existing_archive(tmp_path):
 
     today = json.loads(today_path.read_text())
     assert [p["pitcher"] for p in today["pitchers"]] == ["Today Pitcher"]
+
+
+def test_write_archive_preserves_existing_index_dates_not_in_checkout(tmp_path):
+    """Full/refresh runs should keep Supabase-hydrated index dates even when
+    the dated archive file is absent from the Render checkout."""
+    import run_pipeline
+
+    today_path = tmp_path / "today.json"
+    (tmp_path / "index.json").write_text(
+        json.dumps({"dates": [{"date": "2026-06-02", "wins": 13, "losses": 12}]}),
+        encoding="utf-8",
+    )
+    output = {
+        "generated_at": "new",
+        "date": "2026-06-03",
+        "props_available": True,
+        "data_warnings": [],
+        "pitchers": [
+            {"pitcher": "Today Pitcher", "game_time": "2026-06-03T23:05:00Z", "lambda": 6.1},
+        ],
+        "connection_health": {"records_built": 1},
+    }
+
+    with patch.object(run_pipeline, "OUTPUT_PATH", today_path):
+        run_pipeline._write_archive(output, "2026-06-03")
+
+    entries = json.loads((tmp_path / "index.json").read_text())["dates"]
+    assert [entry["date"] for entry in entries[:2]] == ["2026-06-03", "2026-06-02"]
+    assert entries[1]["wins"] == 13
+    assert entries[1]["losses"] == 12
 
 
 def _mock_pick(pitcher="Cole", side="over", result="win", actual_ks=8,
