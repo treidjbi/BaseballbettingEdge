@@ -15,6 +15,24 @@
 This is a child plan of
 `docs/superpowers/plans/2026-05-12-pitcher-k-outcome-research-dataset.md`.
 
+## Execution Status
+
+Implemented on branch `codex/gate-c-f-shadow-labs` on 2026-06-03.
+
+- Diagnostic: `analytics/diagnostics/market_favorite_confidence_referee_shadow_lab.py`
+- Tests: `tests/test_market_favorite_confidence_referee_shadow_lab.py`
+- Report: `analytics/output/market_favorite_confidence_referee_shadow_lab.md`
+
+Current read from the durable Gate C artifact:
+
+- validation tracked rows: `220`, below the `250` promotion-plan threshold
+- `market_favorite_referee_candidate`: `107` rows, `67-40`, `+10.26` flat
+  units, `+9.6%` ROI
+- status: `not_ready`, because validation sample size is still short
+
+Keep running this after grading. It is close enough to keep watching, but it
+does not yet deserve a live production implementation plan.
+
 The 2026-06-03 durable Gate C artifact restored the full current-regime sample:
 
 - official-close side rows: `1470`

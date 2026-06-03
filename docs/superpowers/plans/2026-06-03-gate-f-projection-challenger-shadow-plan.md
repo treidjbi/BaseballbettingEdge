@@ -15,6 +15,36 @@
 This is a child plan of
 `docs/superpowers/plans/2026-05-12-pitcher-k-outcome-research-dataset.md`.
 
+## Execution Status
+
+Implemented on branch `codex/gate-c-f-shadow-labs` on 2026-06-03.
+
+- Extended diagnostic: `analytics/diagnostics/k_projection_shadow_lab.py`
+- Extended diagnostic: `analytics/diagnostics/gate_c_holdout_shadow_lab.py`
+- Decision report: `analytics/diagnostics/gate_f_projection_challenger_shadow_report.py`
+- Tests:
+  - `tests/test_k_projection_shadow_lab.py`
+  - `tests/test_gate_c_holdout_shadow_lab.py`
+  - `tests/test_gate_f_projection_challenger_shadow_report.py`
+- Reports:
+  - `analytics/output/k_projection_shadow_lab.md`
+  - `analytics/output/gate_c_holdout_shadow_lab.md`
+  - `analytics/output/gate_f_projection_challenger_shadow_report.md`
+
+Current Gate F decision report blocks all projection challengers from
+production-plan status:
+
+- `market_shrink_15`, `market_shrink_25`, and `market_shrink_35`: blocked
+  because holdout MAE lift is below the `0.025` threshold, despite
+  `market_shrink_25` and `market_shrink_35` improving MAE directionally.
+- `high_line_temper` and `leash_cap`: blocked because aggregate lift is too
+  small and rolling/slice evidence is not strong enough.
+- `handedness_bucket_adjust`: blocked as hindsight-only until runtime-safe
+  lineup-handedness capture is proven.
+
+Keep this as a shadow validation package. No challenger deserves a live lambda
+promotion plan yet.
+
 Current 2026-06-03 evidence:
 
 - K projection lab official-close rows: `735`.

@@ -299,6 +299,13 @@ It tests `market_shrink_25`, `high_line_temper`, and related challengers as
 shadow-only candidates and cannot change live lambda without a later
 Tyler-approved production plan.
 
+As of the 2026-06-03 execution, both child plans have working diagnostics and
+reports. Market-favorite is close but not promotion-ready because validation
+tracked rows are still `220 < 250`. Gate F projection challengers are not
+promotion-ready: shrink variants are directionally useful but below the MAE-lift
+threshold, `high_line_temper` / `leash_cap` do not clear the aggregate and
+rolling evidence bars, and handedness remains hindsight-only.
+
 The referee should compare:
 
 - adjusted EV, raw edge, and model margin
