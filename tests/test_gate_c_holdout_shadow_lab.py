@@ -2,6 +2,7 @@ from analytics.diagnostics.gate_c_holdout_shadow_lab import (
     build_report,
     candidate_side,
     fit_handedness_adjustments,
+    rolling_validation_windows,
     split_holdout_rows,
     summarize_candidate,
 )
@@ -108,3 +109,23 @@ def test_build_report_includes_holdout_and_lambda_guardrails():
     assert "`market_favorite_only`" in report
     assert "`handedness_bucket_adjust`" in report
     assert "## Validation Holdout" in report
+
+
+def test_rolling_validation_windows_keep_chronological_train_then_validate():
+    rows = [
+        {"slate_date": f"2026-05-{day:02d}", "context_snapshot": "official_close"}
+        for day in range(1, 13)
+    ]
+
+    windows = rolling_validation_windows(rows, train_dates=6, validate_dates=3, step_dates=3)
+
+    assert windows[0]["train_dates"] == [
+        "2026-05-01",
+        "2026-05-02",
+        "2026-05-03",
+        "2026-05-04",
+        "2026-05-05",
+        "2026-05-06",
+    ]
+    assert windows[0]["validate_dates"] == ["2026-05-07", "2026-05-08", "2026-05-09"]
+    assert windows[1]["validate_dates"] == ["2026-05-10", "2026-05-11", "2026-05-12"]

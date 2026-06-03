@@ -166,6 +166,33 @@ def split_holdout_rows(
     }
 
 
+def rolling_validation_windows(
+    rows: list[dict[str, Any]],
+    *,
+    train_dates: int = 20,
+    validate_dates: int = 5,
+    step_dates: int = 5,
+) -> list[dict[str, Any]]:
+    dates = sorted({str(row.get("slate_date") or "") for row in rows if row.get("slate_date")})
+    windows = []
+    start = 0
+    while start + train_dates + validate_dates <= len(dates):
+        train = dates[start : start + train_dates]
+        validate = dates[start + train_dates : start + train_dates + validate_dates]
+        train_set = set(train)
+        validate_set = set(validate)
+        windows.append(
+            {
+                "train_dates": train,
+                "validate_dates": validate,
+                "train_rows": [row for row in rows if str(row.get("slate_date") or "") in train_set],
+                "validate_rows": [row for row in rows if str(row.get("slate_date") or "") in validate_set],
+            }
+        )
+        start += step_dates
+    return windows
+
+
 def fit_handedness_adjustments(
     rows: list[dict[str, Any]],
     *,
@@ -357,6 +384,19 @@ def _tracked_row(summary: dict[str, Any]) -> str:
     )
 
 
+def _rolling_row(index: int, candidate: str, window: dict[str, Any]) -> str:
+    summary = summarize_candidate(candidate, window["validate_rows"])
+    train_dates = window["train_dates"]
+    validate_dates = window["validate_dates"]
+    train_range = f"{train_dates[0]} to {train_dates[-1]}" if train_dates else "none"
+    validate_range = f"{validate_dates[0]} to {validate_dates[-1]}" if validate_dates else "none"
+    return (
+        f"| {index} | `{candidate}` | `{train_range}` | `{validate_range}` | "
+        f"{summary['rows']} | {_fmt(summary['mae'])} | {_fmt(summary['rmse'])} | "
+        f"{summary['side_wins']}-{summary['side_losses']} | {_pct(summary['side_accuracy'])} |"
+    )
+
+
 def _adjustment_rows(adjustments: dict[str, dict[str, Any]]) -> list[str]:
     if not adjustments:
         return ["| none | 0 | -- | -- |"]
@@ -424,6 +464,7 @@ def build_report(rows: list[dict[str, Any]]) -> str:
         summarize_tracked_alignment(candidate, tracked_split["validate_rows"], adjustments=adjustments)
         for candidate in CANDIDATES
     ]
+    rolling_windows = rolling_validation_windows(markets)
 
     lines = [
         "# Gate C Holdout Shadow Lab",
@@ -482,6 +523,23 @@ def build_report(rows: list[dict[str, Any]]) -> str:
         ]
     )
     lines.extend(_tracked_row(summary) for summary in tracked_validation_summaries)
+
+    lines.extend(
+        [
+            "",
+            "## Rolling Validation Windows",
+            "",
+            "Rolling windows reduce dependence on one train/validation split. They are still shadow-only.",
+            "",
+            "| Window | Candidate | Training Dates | Validation Dates | Rows | MAE | RMSE | Side W-L | Side Accuracy |",
+            "| ---: | --- | --- | --- | ---: | ---: | ---: | ---: | ---: |",
+        ]
+    )
+    if not rolling_windows:
+        lines.append("| 0 | none | none | none | 0 | -- | -- | 0-0 | -- |")
+    for index, window in enumerate(rolling_windows, start=1):
+        for candidate in ("current_model", "market_shrink_25", "high_line_temper"):
+            lines.append(_rolling_row(index, candidate, window))
 
     lines.extend(["", "## Read Rule", ""])
     lines.extend(_takeaway(validation_summaries))
