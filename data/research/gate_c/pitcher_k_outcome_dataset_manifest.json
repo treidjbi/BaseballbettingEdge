@@ -1,0 +1,148 @@
+{
+  "artifact": "gate_c_pitcher_k_outcome_dataset",
+  "duplicate_dataset_keys": 0,
+  "files": {
+    "jsonl": "data/research/gate_c/pitcher_k_outcome_dataset.jsonl",
+    "summary": "data/research/gate_c/pitcher_k_outcome_dataset_summary.md"
+  },
+  "generated_at": "2026-06-03T17:25:21.531761+00:00",
+  "guardrails": [
+    "does_not_change_live_picks",
+    "does_not_change_locks",
+    "does_not_change_thresholds",
+    "does_not_change_staking",
+    "does_not_change_provider_order",
+    "does_not_change_notifications",
+    "does_not_change_calibration",
+    "does_not_change_dashboard_behavior"
+  ],
+  "jsonl_sha256": "c11de5f5e8eedf0449ecb3f3c974e6e84def8e425741259a505d61c394780bb8",
+  "loaded_slate_dates": [
+    "2026-04-28",
+    "2026-04-29",
+    "2026-04-30",
+    "2026-05-01",
+    "2026-05-02",
+    "2026-05-03",
+    "2026-05-04",
+    "2026-05-05",
+    "2026-05-06",
+    "2026-05-07",
+    "2026-05-08",
+    "2026-05-09",
+    "2026-05-10",
+    "2026-05-11",
+    "2026-05-12",
+    "2026-05-13",
+    "2026-05-14",
+    "2026-05-15",
+    "2026-05-16",
+    "2026-05-17",
+    "2026-05-18",
+    "2026-05-19",
+    "2026-05-20",
+    "2026-05-21",
+    "2026-05-22",
+    "2026-05-23",
+    "2026-05-24",
+    "2026-05-25",
+    "2026-05-26",
+    "2026-05-27",
+    "2026-05-28",
+    "2026-05-29",
+    "2026-05-30",
+    "2026-05-31",
+    "2026-06-01",
+    "2026-06-02"
+  ],
+  "reconciliation": {
+    "graded_pick_rows": 757,
+    "matched_pick_rows": 757,
+    "unique_side_fallback_matches": 27,
+    "unmatched_examples": [],
+    "unmatched_pick_rows": 0
+  },
+  "row_count": 1470,
+  "shadow_only": true,
+  "source": {
+    "artifact_api_url": "https://baseballbettingedge.netlify.app/.netlify/functions/get-artifact",
+    "artifact_source": "hybrid",
+    "end_date": null,
+    "production_fill_dates": [
+      "2026-05-30",
+      "2026-05-31",
+      "2026-06-01",
+      "2026-06-02"
+    ],
+    "start_date": "2026-04-28"
+  },
+  "summary_counts": {
+    "beat_close_line_rows": 16,
+    "beat_close_price_rows": 114,
+    "bet_timing_window_counts": {
+      "post_start": 46,
+      "pre_120": 5,
+      "pre_15": 165,
+      "pre_30": 475,
+      "pre_5": 49,
+      "unknown": 730
+    },
+    "clean_window_rows": 1470,
+    "clv_type_counts": {
+      "line_only": 16,
+      "no_clv_edge": 627,
+      "not_tracked": 713,
+      "price_only": 114
+    },
+    "context_snapshot_counts": {
+      "official_close": 1470
+    },
+    "duplicate_dataset_keys": 0,
+    "graded_rows": 1470,
+    "large_edge_skepticism_rows": 337,
+    "leash_risk_bucket_counts": {
+      "high": 112,
+      "medium": 56,
+      "normal": 1302
+    },
+    "lineup_hand_count_rows": 1174,
+    "lineup_handedness_source_counts": {
+      "missing": 296,
+      "mlb_boxscore_reconstructed": 1174
+    },
+    "missing_book_odds": 0,
+    "missing_model_fields": 2,
+    "missing_team_or_opponent": 0,
+    "model_market_relationship_counts": {
+      "model_agrees_with_favorite": 708,
+      "model_fades_favorite": 710,
+      "unknown": 52
+    },
+    "opportunity_bucket_counts": {
+      "deep_starter": 154,
+      "normal": 1204,
+      "short_leash": 112
+    },
+    "pitcher_archetype_bucket_counts": {
+      "deep_starter": 100,
+      "high_k_deep_starter": 54,
+      "high_k_standard": 364,
+      "low_k_standard": 84,
+      "short_leash": 112,
+      "standard_starter": 756
+    },
+    "process_outcome_bucket_counts": {
+      "good_process_loss": 52,
+      "good_process_win": 78,
+      "unknown": 713,
+      "weak_process_loss": 313,
+      "weak_process_win": 314
+    },
+    "rows_missing_result": 0,
+    "rows_with_price_clv": 757,
+    "total_rows": 1470,
+    "tracked_pick_rows": 757
+  },
+  "summary_sha256": "258652325572e4ef21769c0dbd4ed507da5307faff0ff5bbfa3d75bb1c9e26cb",
+  "tracked_pick_rows": 757
+}

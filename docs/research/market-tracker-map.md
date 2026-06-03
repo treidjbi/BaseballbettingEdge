@@ -18,7 +18,7 @@ provider order, notifications, or calibration.
 | Pick lock timing observations | `shadow_pick_lock_observations` | Deduped status transitions for future lock-ledger decisions. |
 | Whole-market price outcomes | `market_price_outcome_audit.py` | Includes PASS-level markets, favorite behavior, side price buckets. |
 | Live market outcome slices | `live_market_outcome_audit.py` | Joins exported live market evidence to graded results. |
-| Compact pitcher outcome row | `pitcher_k_outcome_dataset.py` | Canonical research row for market, model, context, CLV, and result. |
+| Compact pitcher outcome row | `pitcher_k_outcome_dataset.py`; durable artifact in `data/research/gate_c/` | Canonical research row for market, model, context, CLV, and result. |
 | K projection challengers | `k_projection_shadow_lab.py` | Reuses compact outcome rows to compare current lambda against transparent projection variants. |
 | Pre/post 4/28 hard review | `pre_post_428_model_review.py` | Compares immediate pre-bump and clean post-bump grading, selection, and projection quality. |
 | Historical lineup handedness backfill | `historical_lineup_handedness_backfill.py` | Reconstructs opponent lineup R/L/S counts from MLB boxscores into local shadow artifacts; not runtime proof. |
@@ -83,6 +83,13 @@ available:
 - pitcher archetype bucket
 - future post-result opportunity placeholders: actual IP, pitch count, batters faced
 
+As of 2026-06-03, the full-corpus Gate C read should use the committed hybrid
+artifact under `data/research/gate_c/`. Regenerate it with
+`python scripts/build_pitcher_k_outcome_dataset.py --artifact-source hybrid --output-dir data/research/gate_c`.
+Use production `get-artifact` directly for freshness checks, but not as the
+only historical Gate C source when the production index or artifact mirror is
+partial.
+
 ## Still Needs Future Source Data
 
 These should be collected before being used for model or selection rules:
@@ -132,7 +139,8 @@ The BBE Operations Brief should synthesize this map every weekday:
    `market_snapshots`, and `provider_coverage_audits`.
 2. Confirm pick-time and current-state market evidence from
    `market_pick_evidence` and `live_market_display_state`.
-3. Regenerate or read `pitcher_k_outcome_dataset_summary.md` and report CLV,
+3. Regenerate or read
+   `data/research/gate_c/pitcher_k_outcome_dataset_summary.md` and report CLV,
    process outcome, timing window, model-versus-market, opportunity/leash,
    pitcher archetype, large-edge skepticism, and reconciliation counts.
 4. Keep a compact Gate C bucket scoreboard for the clean 2026-04-28+ regime:

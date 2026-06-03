@@ -142,6 +142,32 @@ the value of a compact daily research table beats the simplicity of local
 generated artifacts. If promoted later, store compact rows only; do not retain
 raw WebSocket tick history without a separate retention/cost decision.
 
+As of 2026-06-03, the project chose the low-cost Gate C storage mode first:
+a committed daily research artifact, not a Supabase table. The build script is
+`scripts/build_pitcher_k_outcome_dataset.py`; it writes:
+
+- `data/research/gate_c/pitcher_k_outcome_dataset.jsonl`
+- `data/research/gate_c/pitcher_k_outcome_dataset_summary.md`
+- `data/research/gate_c/pitcher_k_outcome_dataset_manifest.json`
+
+The default `hybrid` source mode uses local committed dated archives as the
+historical base and fills graded dates that are missing or incomplete locally
+from production Netlify `get-artifact` dated slates and `picks_history`. This
+prevents Gate C counts from shrinking only because the production artifact
+index or Supabase mirror is partial. The 2026-06-03 artifact covers
+2026-04-28 through 2026-06-02 with 1,470 official-close side rows, 757 tracked
+rows, 0 duplicate dataset keys, and 757/757 tracked rows reconciled.
+
+Regenerate it with:
+
+```bash
+python scripts/build_pitcher_k_outcome_dataset.py --artifact-source hybrid --output-dir data/research/gate_c
+```
+
+This remains shadow-only. It must not change live lambda, thresholds, staking,
+verdicts, provider order, notification sends, calibration, dashboard behavior,
+or source-of-truth rules.
+
 ### Rolling Evidence Update: 2026-05-26
 
 Use the 2026-04-28 formula boundary as the live clean-regime split, but keep a

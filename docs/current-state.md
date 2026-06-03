@@ -1,6 +1,6 @@
 # Current State
 
-Last updated: 2026-06-02
+Last updated: 2026-06-03
 
 ## Read Order
 
@@ -1033,6 +1033,19 @@ for loaded dates. Treat this as a fresh partial production read; full
 or a clearly-labeled hybrid local-plus-production analysis. This remains
 shadow-only and does not change live lambda, thresholds, staking, verdicts,
 provider order, notifications, or dashboard behavior.
+
+2026-06-03 follow-up: Gate C now has a committed durable research artifact
+under `data/research/gate_c/`, built by
+`scripts/build_pitcher_k_outcome_dataset.py` in `hybrid` mode. Hybrid mode uses
+local committed archive rows as the broad historical base and fills graded
+dates that are missing or incomplete locally from production `get-artifact`
+dated slates and `picks_history`. The current artifact covers 2026-04-28
+through 2026-06-02 with 1,470 official-close side rows, 757 tracked rows, 0
+duplicate dataset keys, 0 missing results/team/opponent/odds, and 757/757
+tracked rows reconciled. This is the preferred full-corpus Gate C read for
+briefing and research; production `get-artifact` alone remains useful for
+freshness checks but can be partial when the published index or historical
+mirror is incomplete.
 
 ### BoltOdds Trial Review
 
