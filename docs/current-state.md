@@ -11,6 +11,10 @@ For any new work in this repo:
 3. Read the newest active dated plans that match the task:
    - `docs/superpowers/plans/2026-05-13-boltodds-propline-official-provider-cutover.md`
    - `docs/superpowers/plans/2026-05-12-pitcher-k-outcome-research-dataset.md`
+   - `docs/superpowers/plans/2026-06-03-market-favorite-confidence-referee-shadow-plan.md`
+     for active market-favorite confidence-referee shadow work
+   - `docs/superpowers/plans/2026-06-03-gate-f-projection-challenger-shadow-plan.md`
+     for active Gate F projection-challenger shadow work
    - `docs/superpowers/plans/2026-05-20-live-market-decision-ui.md`
      for future dashboard UI work that displays BoltOdds/PropLine live-market
      evidence after the operational/provider production switch is approved
@@ -41,6 +45,11 @@ do we convert model signal into better betting decisions?"
   Gate C / Gate F rules in
   `docs/superpowers/plans/2026-05-12-pitcher-k-outcome-research-dataset.md`
   justify a live behavior plan.
+- Active model-facing child plans as of 2026-06-03 are the market-favorite
+  confidence-referee shadow plan and the Gate F projection-challenger shadow
+  plan. They can recommend a later production promotion plan, but they do not
+  approve live lambda, threshold, staking, verdict, provider, notification, or
+  dashboard changes.
 - Render preview/full/refresh now run a non-strict BoltOdds + PropLine
   provider-source canary for scheduled artifact rows. TheRundown remains the
   fallback/rollback source because `OFFICIAL_MARKET_STRICT=false`; GitHub
@@ -66,7 +75,7 @@ each lane.
 | Lane | Current Source | Current Stage | Next Decision |
 | --- | --- | --- | --- |
 | Pipeline / infrastructure | `2026-05-19-supabase-operational-foundation.md`, `2026-05-22-github-artifact-exit.md`, `2026-05-13-boltodds-propline-official-provider-cutover.md`, `2026-05-20-live-notification-coordinator.md`, `docs/operational-risk-register.md` | Render + Supabase artifact API are the primary scheduler/artifact path as of 2026-05-30. GitHub scheduled triggers are disabled, but manual `workflow_dispatch` remains the rollback path. As of 2026-06-02, Render preview/full/refresh run a non-strict BoltOdds + PropLine provider-source canary through `official_market_lines`; TheRundown remains fallback/rollback and strict mode remains off. Render lock and grading commands stay unchanged. Render preview, pipeline/full/refresh, and lock modes publish only the artifact keys each mode can actually regenerate; Render grading/full/refresh/lock hydrate from Netlify `get-artifact` before running so stale checkout copies of history, params, performance, or preview lines are not republished. `bbe-pipeline-lock` runs every 10 minutes offset behind the live-layer lock ledger and can replay already-consumed Supabase lock rows if a prior stale artifact publish left the dashboard behind. Dashboard artifact adapters default to Netlify `get-artifact` with static fallback. | Observe at least today's remaining refresh/lock windows and tomorrow's preview/full on provider canary: provider attribution in `today.json`/dated archive/steam, no stale artifacts, no lock regressions, no duplicate/wrong-date publishes, and TheRundown fallback/manual GitHub rollback still available. Keep model, staking, thresholds, notification sends, retention deletion, and strict provider mode separate. |
-| Model | `2026-05-12-pitcher-k-outcome-research-dataset.md`, `2026-05-29-gate-ef-under-fire-conversion-shadow-plan.md` | Gate C confidence-referee / compact evidence proof, plus pre/post 4/28 review, reconstructed historical lineup-handedness backfill, holdout labs, and the implemented Gate E/F under-skepticism / FIRE-conversion shadow lab. The regenerated report at `analytics/output/gate_ef_candidate_shadow_lab.md` is promising but not promotion-ready: validation slices remain small-sample and the current selected candidate retained zero FIRE 2u wins. | Keep Gate C and Gate E/F shadow-only. Continue soaking and regenerate the Gate E/F lab after grading before any decision. Do not promote lambda, thresholds, staking, verdicts, provider order, notifications, dashboard behavior, or Path B handedness without a separate Tyler-approved promotion plan. |
+| Model | `2026-05-12-pitcher-k-outcome-research-dataset.md`, `2026-05-29-gate-ef-under-fire-conversion-shadow-plan.md`, `2026-06-03-market-favorite-confidence-referee-shadow-plan.md`, `2026-06-03-gate-f-projection-challenger-shadow-plan.md` | Gate C durable artifact is now the preferred full-corpus research input. Market-favorite alignment deserves a focused confidence-referee shadow plan; `market_shrink_25` and `high_line_temper` deserve a stricter Gate F projection-challenger validation plan. The regenerated Gate E/F under-skepticism report remains promising but not promotion-ready because the current selected candidate retained zero FIRE 2u wins. | Execute the market-favorite confidence-referee plan first, then the Gate F projection-challenger package. Keep all model-facing work shadow-only until a candidate survives validation slices and Tyler separately approves a production implementation plan. Do not promote lambda, thresholds, staking, verdicts, provider order, notifications, dashboard behavior, or Path B handedness from these plans. |
 | UI | `2026-05-20-live-market-decision-ui.md`, `2026-05-20-live-notification-coordinator.md` | Future-state design only. The dashboard should eventually display best price, consensus, movement, urgency, and notification grouping from the new operational base. | Revisit after the operational/provider switch is stable. Keep display work separated from provider promotion and betting-rule changes. |
 | Tracking / data collection / history | `docs/research/market-tracker-map.md`, `docs/research/pitcher-k-outcome-dataset.md`, compact outcome outputs, live-market audits | Canonical research row plus existing market/live/provider trackers. Daily brief now keeps a compact Gate C bucket scoreboard and pre/post 2026-04-28 context. | Prefer derived labels on the compact outcome row before adding tables. Promote compact storage or retention only after row-volume/cost proof and Tyler approval. |
 

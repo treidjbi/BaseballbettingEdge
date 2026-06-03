@@ -285,6 +285,20 @@ Tyler-approved promotion plan.
 The implemented report lives at `analytics/output/gate_ef_candidate_shadow_lab.md`
 and should be regenerated after grading before any promotion discussion.
 
+Market-favorite confidence-referee testing is controlled by
+`docs/superpowers/plans/2026-06-03-market-favorite-confidence-referee-shadow-plan.md`.
+It remains shadow-only and can only recommend a later Tyler-approved production
+promotion plan. The 2026-06-03 evidence makes this the first active
+confidence-referee child plan because `market_favorite_only` materially beat
+current model side accuracy and tracked-pick alignment in the validation
+holdout.
+
+Gate F projection-challenger validation is controlled by
+`docs/superpowers/plans/2026-06-03-gate-f-projection-challenger-shadow-plan.md`.
+It tests `market_shrink_25`, `high_line_temper`, and related challengers as
+shadow-only candidates and cannot change live lambda without a later
+Tyler-approved production plan.
+
 The referee should compare:
 
 - adjusted EV, raw edge, and model margin
@@ -942,6 +956,11 @@ Still blocked at Gate E:
 ## Gate F: Promotion Candidate
 
 **Purpose:** Require proof before any dataset-derived signal affects the model.
+
+The active Gate F projection child plan is
+`docs/superpowers/plans/2026-06-03-gate-f-projection-challenger-shadow-plan.md`.
+Use it to validate projection challengers. Do not treat this section or that
+child plan as approval to change live lambda.
 
 Gate F opens only when a candidate rule:
 
