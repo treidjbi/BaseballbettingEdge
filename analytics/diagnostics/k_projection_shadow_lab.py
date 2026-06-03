@@ -22,7 +22,9 @@ CLEAN_WINDOW_START = "2026-04-28"
 WIN_LOSS_RESULTS = {"win", "loss"}
 CHALLENGERS = [
     "current_model",
+    "market_shrink_15",
     "market_shrink_25",
+    "market_shrink_35",
     "high_line_temper",
     "leash_cap",
     "recent_rate_blend",
@@ -131,6 +133,12 @@ def _rate_projection(row: dict[str, Any], weights: dict[str, float]) -> float | 
     return round(max(0.0, rate_projection + ump_adj), 3)
 
 
+def _market_shrink_projection(current: float, line: float | None, weight: float) -> float:
+    if line is None:
+        return round(current, 3)
+    return round(current + ((line - current) * weight), 3)
+
+
 def challenger_projection(row: dict[str, Any], challenger: str) -> float | None:
     current = current_projection(row)
     line = to_float(row.get("k_line"))
@@ -140,10 +148,14 @@ def challenger_projection(row: dict[str, Any], challenger: str) -> float | None:
     if challenger == "current_model":
         return round(current, 3)
 
+    if challenger == "market_shrink_15":
+        return _market_shrink_projection(current, line, 0.15)
+
     if challenger == "market_shrink_25":
-        if line is None:
-            return round(current, 3)
-        return round(current + ((line - current) * 0.25), 3)
+        return _market_shrink_projection(current, line, 0.25)
+
+    if challenger == "market_shrink_35":
+        return _market_shrink_projection(current, line, 0.35)
 
     if challenger == "high_line_temper":
         if line is not None and line >= 7.5 and current > line:
@@ -266,6 +278,26 @@ def summarize_by_bucket(
     return summaries
 
 
+def summarize_challenger_slices(
+    challenger: str,
+    rows: list[dict[str, Any]],
+    field: str,
+    *,
+    min_rows: int = 25,
+) -> list[dict[str, Any]]:
+    grouped: dict[str, list[dict[str, Any]]] = defaultdict(list)
+    for row in rows:
+        grouped[str(row.get(field) or "unknown")].append(row)
+
+    output = []
+    for bucket, bucket_rows in sorted(grouped.items()):
+        summary = summarize_projection(challenger, bucket_rows)
+        summary["bucket"] = bucket
+        summary["sample_status"] = "enough_sample" if summary["rows"] >= min_rows else "small_sample"
+        output.append(summary)
+    return output
+
+
 def summarize_tracked_pick_alignment(
     challenger: str,
     rows: list[dict[str, Any]],
@@ -337,6 +369,17 @@ def _bucket_row(summary: dict[str, Any]) -> str:
     )
 
 
+def _slice_row(summary: dict[str, Any]) -> str:
+    return (
+        f"| `{summary['bucket']}` | {summary['rows']} | "
+        f"{_format_number(summary['mae'])} | "
+        f"{_format_number(summary['rmse'])} | "
+        f"{summary['side_wins']}-{summary['side_losses']} | "
+        f"{_format_percent(summary['side_accuracy'])} | "
+        f"`{summary['sample_status']}` |"
+    )
+
+
 def build_report(rows: list[dict[str, Any]]) -> str:
     markets = market_projection_rows(rows)
     projection_summaries = [
@@ -380,6 +423,30 @@ def build_report(rows: list[dict[str, Any]]) -> str:
         ]
     )
     lines.extend(_tracked_row(summary) for summary in tracked_summaries)
+
+    lines.extend(["", "## Challenger Slice Checks"])
+    for challenger in ("market_shrink_25", "high_line_temper"):
+        for field in (
+            "side",
+            "price_sign",
+            "line_bucket",
+            "quality_gate_level",
+            "model_market_relationship",
+            "bet_timing_window",
+            "opportunity_bucket",
+            "leash_risk_bucket",
+            "pitcher_archetype_bucket",
+        ):
+            lines.extend(
+                [
+                    "",
+                    f"### {challenger} By {field}",
+                    "",
+                    "| Bucket | Rows | MAE | RMSE | Side W-L | Side Accuracy | Sample |",
+                    "| --- | ---: | ---: | ---: | ---: | ---: | --- |",
+                ]
+            )
+            lines.extend(_slice_row(summary) for summary in summarize_challenger_slices(challenger, markets, field))
 
     current_bucket_rows = summarize_by_bucket("current_model", markets, "line_bucket")
     lines.extend(

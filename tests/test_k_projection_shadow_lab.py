@@ -2,6 +2,7 @@ from analytics.diagnostics.k_projection_shadow_lab import (
     build_report,
     challenger_projection,
     market_projection_rows,
+    summarize_challenger_slices,
     summarize_projection,
 )
 
@@ -87,6 +88,27 @@ def test_challenger_projection_applies_transparent_adjustments():
     assert round(rate_blend, 3) == 7.592
 
 
+def test_market_shrink_family_moves_projection_toward_line():
+    row = {
+        "projected_ks": 7.0,
+        "k_line": 5.0,
+    }
+
+    assert challenger_projection(row, "market_shrink_15") == 6.7
+    assert challenger_projection(row, "market_shrink_25") == 6.5
+    assert challenger_projection(row, "market_shrink_35") == 6.3
+
+
+def test_market_shrink_family_handles_missing_line_without_change():
+    row = {
+        "projected_ks": 7.0,
+        "k_line": None,
+    }
+
+    assert challenger_projection(row, "market_shrink_15") == 7.0
+    assert challenger_projection(row, "market_shrink_35") == 7.0
+
+
 def test_summarize_projection_scores_accuracy_and_side_calls():
     rows = [
         _side_row(side="over", result="win", projected_ks=5.8, actual_ks=6, k_line=5.5),
@@ -102,6 +124,29 @@ def test_summarize_projection_scores_accuracy_and_side_calls():
     assert summary["side_wins"] == 1
     assert summary["side_losses"] == 1
     assert summary["side_accuracy"] == 0.5
+
+
+def test_summarize_challenger_slices_marks_sample_status():
+    rows = [
+        {
+            "slate_date": "2026-06-01",
+            "context_snapshot": "official_close",
+            "result": "win",
+            "actual_ks": 6,
+            "projected_ks": 5.8,
+            "k_line": 5.5,
+            "line_bucket": "5.5",
+            "side": "over",
+            "winning_side": "over",
+            "price_sign": "minus",
+        }
+    ]
+
+    slices = summarize_challenger_slices("current_model", rows, "line_bucket", min_rows=10)
+
+    assert slices[0]["bucket"] == "5.5"
+    assert slices[0]["rows"] == 1
+    assert slices[0]["sample_status"] == "small_sample"
 
 
 def test_build_report_includes_shadow_guardrail_and_challenger_table():
