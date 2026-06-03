@@ -152,3 +152,178 @@ def split_holdout_rows(
         "train_rows": [row for row in rows if str(row.get("slate_date") or "") in train_set],
         "validate_rows": [row for row in rows if str(row.get("slate_date") or "") in validate_set],
     }
+
+
+CANDIDATES = [
+    "current_model_tracked",
+    "model_agrees_market_favorite",
+    "model_fades_market_favorite",
+    "over_agrees_market_favorite",
+    "under_agrees_market_favorite",
+    "market_favorite_referee_candidate",
+    "market_fade_warning_candidate",
+]
+
+
+def _fmt_roi(value: float | None) -> str:
+    return "--" if value is None else f"{value:+.1%}"
+
+
+def _summary_row(summary: dict[str, Any]) -> str:
+    return (
+        f"| `{summary['name']}` | {summary['rows']} | "
+        f"{summary['wins']}-{summary['losses']} | "
+        f"{summary['flat_pnl']:+.2f} | {_fmt_roi(summary['flat_roi'])} |"
+    )
+
+
+def summarize_slices(
+    candidate_name: str,
+    rows: list[dict[str, Any]],
+    field: str,
+    *,
+    min_rows: int = 50,
+) -> list[dict[str, Any]]:
+    grouped: dict[str, list[dict[str, Any]]] = {}
+    for row in tracked_rows(rows):
+        if not candidate_flags(row).get(candidate_name, False):
+            continue
+        grouped.setdefault(str(row.get(field) or "unknown"), []).append(row)
+
+    summaries = []
+    for bucket, bucket_rows in sorted(grouped.items()):
+        wins = sum(1 for row in bucket_rows if row.get("result") == "win")
+        losses = sum(1 for row in bucket_rows if row.get("result") == "loss")
+        pnl = round(sum(_pnl(row) for row in bucket_rows), 2)
+        summaries.append(
+            {
+                "bucket": bucket,
+                "rows": len(bucket_rows),
+                "wins": wins,
+                "losses": losses,
+                "flat_pnl": pnl,
+                "flat_roi": round(pnl / len(bucket_rows), 3) if bucket_rows else None,
+                "sample_status": "enough_sample" if len(bucket_rows) >= min_rows else "small_sample",
+            }
+        )
+    return summaries
+
+
+def _promotion_gate_status(
+    *,
+    tracked_count: int,
+    validate_dates: list[str],
+    current: dict[str, Any],
+    candidate: dict[str, Any],
+) -> tuple[str, list[str]]:
+    blockers: list[str] = []
+    if tracked_count < 250:
+        blockers.append(f"validation tracked rows {tracked_count} < 250")
+    if len(validate_dates) < 10:
+        blockers.append(f"validation slates {len(validate_dates)} < 10")
+    if candidate["rows"] < 100:
+        blockers.append(f"candidate rows {candidate['rows']} < 100")
+
+    current_win_rate = current["wins"] / current["rows"] if current["rows"] else 0.0
+    candidate_win_rate = candidate["wins"] / candidate["rows"] if candidate["rows"] else 0.0
+    if candidate_win_rate - current_win_rate < 0.03:
+        blockers.append("side accuracy lift < 3.0 percentage points")
+    if candidate["flat_pnl"] <= 0:
+        blockers.append("candidate flat PnL is not positive")
+    if candidate["flat_pnl"] - current["flat_pnl"] < 5.0:
+        blockers.append("candidate flat PnL lift < 5.0 units")
+
+    if blockers:
+        return "not_ready", blockers
+    return "promotion_plan_candidate", []
+
+
+def build_report(rows: list[dict[str, Any]]) -> str:
+    tracked = tracked_rows(rows)
+    split = split_holdout_rows(tracked)
+    validation = split["validate_rows"] or tracked
+    current_summary = summarize_candidate("current_model_tracked", validation)
+    candidate_summary = summarize_candidate("market_favorite_referee_candidate", validation)
+    gate_status, blockers = _promotion_gate_status(
+        tracked_count=len(tracked_rows(validation)),
+        validate_dates=split["validate_dates"],
+        current=current_summary,
+        candidate=candidate_summary,
+    )
+
+    lines = [
+        "# Market Favorite Confidence Referee Shadow Lab",
+        "",
+        "Shadow-only: this report does not change live lambda, verdicts, thresholds, staking, provider order, notifications, calibration, locks, or dashboard artifacts.",
+        "",
+        "## Scope",
+        "",
+        f"- Clean window start: `{CLEAN_WINDOW_START}`",
+        f"- Tracked rows: `{len(tracked)}`",
+        f"- Training slates: `{len(split['train_dates'])}`",
+        f"- Validation slates: `{len(split['validate_dates'])}`",
+        "",
+        "## Validation Candidate Scoreboard",
+        "",
+        "| Candidate | Rows | W-L | Flat PnL | Flat ROI |",
+        "| --- | ---: | ---: | ---: | ---: |",
+    ]
+    lines.extend(_summary_row(summarize_candidate(candidate, validation)) for candidate in CANDIDATES)
+
+    for field in (
+        "side",
+        "price_sign",
+        "line_bucket",
+        "quality_gate_level",
+        "bet_timing_window",
+        "opportunity_bucket",
+        "leash_risk_bucket",
+        "pitcher_archetype_bucket",
+    ):
+        lines.extend(
+            [
+                "",
+                f"### market_favorite_referee_candidate By {field}",
+                "",
+                "| Bucket | Rows | W-L | Flat PnL | Flat ROI | Sample |",
+                "| --- | ---: | ---: | ---: | ---: | --- |",
+            ]
+        )
+        slice_rows = summarize_slices("market_favorite_referee_candidate", validation, field)
+        if not slice_rows:
+            lines.append("| none | 0 | 0-0 | +0.00 | -- | `small_sample` |")
+        for item in slice_rows:
+            lines.append(
+                f"| `{item['bucket']}` | {item['rows']} | {item['wins']}-{item['losses']} | "
+                f"{item['flat_pnl']:+.2f} | {_fmt_roi(item['flat_roi'])} | `{item['sample_status']}` |"
+            )
+
+    lines.extend(
+        [
+            "",
+            "## Promotion Discussion Gate",
+            "",
+            f"- Status: `{gate_status}`",
+        ]
+    )
+    if blockers:
+        lines.append(f"- Blockers: `{'; '.join(blockers)}`")
+    lines.extend(
+        [
+            "- This report can only recommend drafting a later production plan.",
+            "- A candidate must survive over/under, plus/minus, K-line, quality, timing, opportunity/leash, and pitcher-archetype slices.",
+            "- Market-favorite evidence is a referee/selection warning candidate, not a replacement for the model.",
+        ]
+    )
+    return "\n".join(lines)
+
+
+def main() -> None:
+    report = build_report(load_jsonl())
+    OUTPUT_PATH.parent.mkdir(parents=True, exist_ok=True)
+    OUTPUT_PATH.write_text(report + "\n", encoding="utf-8")
+    print(report)
+
+
+if __name__ == "__main__":
+    main()

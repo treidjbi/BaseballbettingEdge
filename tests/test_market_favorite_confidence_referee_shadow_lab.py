@@ -94,3 +94,22 @@ def test_split_holdout_keeps_late_dates_for_validation():
 
     assert split["train_dates"][-1] == "2026-05-07"
     assert split["validate_dates"] == ["2026-05-08", "2026-05-09", "2026-05-10"]
+
+
+def test_build_report_includes_shadow_scope_and_decision_gate():
+    report = lab.build_report([_row()])
+
+    assert "Shadow-only" in report
+    assert "Validation Candidate Scoreboard" in report
+    assert "model_agrees_market_favorite" in report
+    assert "Promotion Discussion Gate" in report
+
+
+def test_summarize_slices_marks_small_samples():
+    rows = [_row(dataset_key="a")]
+
+    slices = lab.summarize_slices("market_favorite_referee_candidate", rows, "side", min_rows=50)
+
+    assert slices[0]["bucket"] == "over"
+    assert slices[0]["rows"] == 1
+    assert slices[0]["sample_status"] == "small_sample"
