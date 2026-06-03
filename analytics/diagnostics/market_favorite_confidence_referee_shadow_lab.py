@@ -94,3 +94,61 @@ def candidate_flags(row: dict[str, Any]) -> dict[str, bool]:
         and row.get("bet_timing_window") not in {"post_start", "unknown"},
         "market_fade_warning_candidate": _tracked(row) and fades and _caution_count(row) >= 1,
     }
+
+
+def _pnl(row: dict[str, Any]) -> float:
+    for key in ("pick_history_pnl", "theoretical_pnl", "pnl"):
+        value = row.get(key)
+        if value is None:
+            continue
+        try:
+            return float(value)
+        except (TypeError, ValueError):
+            continue
+    return 0.0
+
+
+def tracked_rows(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    return [row for row in rows if _tracked(row)]
+
+
+def summarize_candidate(name: str, rows: list[dict[str, Any]]) -> dict[str, Any]:
+    selected = [row for row in tracked_rows(rows) if candidate_flags(row).get(name, False)]
+    wins = sum(1 for row in selected if row.get("result") == "win")
+    losses = sum(1 for row in selected if row.get("result") == "loss")
+    pnl = round(sum(_pnl(row) for row in selected), 2)
+    return {
+        "name": name,
+        "rows": len(selected),
+        "wins": wins,
+        "losses": losses,
+        "flat_pnl": pnl,
+        "flat_roi": round(pnl / len(selected), 3) if selected else None,
+    }
+
+
+def split_holdout_rows(
+    rows: list[dict[str, Any]],
+    *,
+    train_fraction: float = 0.7,
+    min_validate_dates: int = 5,
+) -> dict[str, Any]:
+    dates = sorted({str(row.get("slate_date") or "") for row in rows if row.get("slate_date")})
+    if len(dates) <= 1:
+        return {"train_dates": dates, "validate_dates": [], "train_rows": list(rows), "validate_rows": []}
+
+    cut_index = int(len(dates) * train_fraction)
+    cut_index = max(1, min(cut_index, len(dates) - 1))
+    if len(dates) > min_validate_dates:
+        cut_index = min(cut_index, len(dates) - min_validate_dates)
+
+    train_dates = dates[:cut_index]
+    validate_dates = dates[cut_index:]
+    train_set = set(train_dates)
+    validate_set = set(validate_dates)
+    return {
+        "train_dates": train_dates,
+        "validate_dates": validate_dates,
+        "train_rows": [row for row in rows if str(row.get("slate_date") or "") in train_set],
+        "validate_rows": [row for row in rows if str(row.get("slate_date") or "") in validate_set],
+    }

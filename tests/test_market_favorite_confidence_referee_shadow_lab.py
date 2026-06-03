@@ -64,3 +64,33 @@ def test_candidate_flags_identify_fade_warning():
 
     assert flags["model_fades_market_favorite"] is True
     assert flags["market_fade_warning_candidate"] is True
+
+
+def test_summarize_candidate_counts_wins_pnl_and_roi():
+    rows = [
+        _row(dataset_key="a", result="win", pick_history_pnl=0.91),
+        _row(
+            dataset_key="b",
+            result="loss",
+            pick_history_pnl=-1.0,
+            model_side="under",
+            market_favorite_side="over",
+        ),
+    ]
+
+    summary = lab.summarize_candidate("model_agrees_market_favorite", rows)
+
+    assert summary["rows"] == 1
+    assert summary["wins"] == 1
+    assert summary["losses"] == 0
+    assert summary["flat_pnl"] == 0.91
+    assert summary["flat_roi"] == 0.91
+
+
+def test_split_holdout_keeps_late_dates_for_validation():
+    rows = [_row(dataset_key=str(day), slate_date=f"2026-05-{day:02d}") for day in range(1, 11)]
+
+    split = lab.split_holdout_rows(rows, train_fraction=0.7, min_validate_dates=3)
+
+    assert split["train_dates"][-1] == "2026-05-07"
+    assert split["validate_dates"] == ["2026-05-08", "2026-05-09", "2026-05-10"]
