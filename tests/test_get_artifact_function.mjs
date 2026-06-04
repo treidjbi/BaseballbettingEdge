@@ -37,3 +37,31 @@ test('get-artifact returns latest artifact payload', async () => {
     delete process.env.SUPABASE_SERVICE_ROLE_KEY;
   }
 });
+
+test('get-artifact supports fangraphs cache artifact', async () => {
+  const oldFetch = global.fetch;
+  global.fetch = async (url) => {
+    assert.match(String(url), /artifact_key=eq\.fangraphs_cache/);
+    return {
+      ok: true,
+      json: async () => [{
+        artifact_key: 'fangraphs_cache',
+        payload_sha256: 'sha-cache',
+        published_at: '2026-06-04T23:07:53Z',
+        payload: { version: 1, entries: {} },
+      }],
+    };
+  };
+  process.env.SUPABASE_URL = 'https://example.supabase.co';
+  process.env.SUPABASE_SERVICE_ROLE_KEY = 'service-role';
+
+  try {
+    const response = await handler({ queryStringParameters: { type: 'fangraphs_cache' } });
+    assert.equal(response.statusCode, 200);
+    assert.equal(JSON.parse(response.body).version, 1);
+  } finally {
+    global.fetch = oldFetch;
+    delete process.env.SUPABASE_URL;
+    delete process.env.SUPABASE_SERVICE_ROLE_KEY;
+  }
+});

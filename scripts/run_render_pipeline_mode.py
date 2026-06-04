@@ -182,6 +182,7 @@ def hydration_artifacts(slate_date: str) -> list[HydrationArtifact]:
         HydrationArtifact("params", Path("data/params.json")),
         HydrationArtifact("preview_lines", Path("data/preview_lines.json")),
         HydrationArtifact("picks_history", Path("data/picks_history.json")),
+        HydrationArtifact("fangraphs_cache", Path("data/fangraphs_cache.json"), required=False),
     ]
 
 

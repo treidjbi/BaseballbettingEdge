@@ -17,6 +17,7 @@ import re
 
 import requests
 
+import fangraphs_cache
 from name_utils import normalize as _norm
 
 log = logging.getLogger(__name__)
@@ -26,6 +27,10 @@ FANGRAPHS_LEADERBOARD_URL = "https://www.fangraphs.com/api/leaders/major-league/
 FANGRAPHS_TIMEOUT_SECONDS = 30
 FANGRAPHS_PAGE_SIZE = 5000
 FANGRAPHS_MAX_RETRIES = 3
+
+
+def _swstr_cache_key(start_season: int, end_season: int) -> str:
+    return f"pitcher_swstr_lookup:{start_season}:{end_season}"
 
 
 def _parse_swstr(value) -> float:
@@ -194,12 +199,33 @@ def _fetch_swstr_page(start_season: int, end_season: int, page_num: int) -> tupl
 
 def _fetch_swstr_lookup_result_for_window(start_season: int, end_season: int) -> tuple[dict, bool]:
     """Fetch one FanGraphs window and return ({normalized_name: swstr_pct}, usable)."""
+    def cached_result(reason: str) -> tuple[dict, bool]:
+        cached = fangraphs_cache.get_cached_payload(_swstr_cache_key(start_season, end_season))
+        if not isinstance(cached, dict):
+            return {}, False
+        try:
+            lookup = {str(name): float(swstr) for name, swstr in cached.items()}
+        except (TypeError, ValueError):
+            return {}, False
+        log.warning(
+            "fetch_swstr: using cached FanGraphs window for %s-%s after %s",
+            start_season,
+            end_season,
+            reason,
+        )
+        return lookup, True
+
     first_page = _fetch_swstr_page(start_season, end_season, page_num=1)
     if first_page is None:
-        return {}, False
+        return cached_result("request failure")
 
     rows, total_count = first_page
     if not rows:
+        fangraphs_cache.set_cached_payload(
+            _swstr_cache_key(start_season, end_season),
+            {},
+            metadata={"source": "fangraphs", "rows": 0},
+        )
         return {}, True
 
     all_rows = list(rows)
@@ -213,7 +239,7 @@ def _fetch_swstr_lookup_result_for_window(start_season: int, end_season: int) ->
                 end_season,
                 next_page_num,
             )
-            return {}, False
+            return cached_result("pagination failure")
 
         page_rows, page_total_count = page_result
         if page_total_count != total_count:
@@ -224,7 +250,7 @@ def _fetch_swstr_lookup_result_for_window(start_season: int, end_season: int) ->
                 total_count,
                 page_total_count,
             )
-            return {}, False
+            return cached_result("pagination totalCount drift")
         if not page_rows:
             log.info(
                 "fetch_swstr: FanGraphs pagination truncated for %s-%s at page %s (%s/%s rows)",
@@ -234,12 +260,18 @@ def _fetch_swstr_lookup_result_for_window(start_season: int, end_season: int) ->
                 len(all_rows),
                 total_count,
             )
-            return {}, False
+            return cached_result("pagination truncation")
 
         all_rows.extend(page_rows)
         next_page_num += 1
 
-    return _build_swstr_lookup(all_rows), True
+    lookup = _build_swstr_lookup(all_rows)
+    fangraphs_cache.set_cached_payload(
+        _swstr_cache_key(start_season, end_season),
+        lookup,
+        metadata={"source": "fangraphs", "rows": len(lookup)},
+    )
+    return lookup, True
 
 
 def _fetch_swstr_lookup_for_window(start_season: int, end_season: int) -> dict:

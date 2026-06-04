@@ -7,6 +7,7 @@ const ALLOWED_TYPES = new Set([
   'params',
   'preview_lines',
   'picks_history',
+  'fangraphs_cache',
 ]);
 
 function jsonResponse(statusCode, body, headers = {}) {

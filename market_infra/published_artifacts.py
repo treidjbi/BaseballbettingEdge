@@ -14,6 +14,7 @@ ARTIFACT_PATHS = [
     Path("data/params.json"),
     Path("data/preview_lines.json"),
     Path("data/picks_history.json"),
+    Path("data/fangraphs_cache.json"),
 ]
 
 
@@ -34,6 +35,8 @@ def artifact_type_from_path(path: Path) -> str:
         return "preview_lines"
     if text.endswith("data/picks_history.json"):
         return "picks_history"
+    if text.endswith("data/fangraphs_cache.json"):
+        return "fangraphs_cache"
     if text.startswith("dashboard/data/processed/") and name.endswith(".json"):
         return "dated_slate"
     raise ValueError(f"Unsupported artifact path: {path}")

@@ -24,6 +24,7 @@ import requests
 from bs4 import MarkupResemblesLocatorWarning
 from pybaseball import get_splits, playerid_reverse_lookup
 
+import fangraphs_cache
 from build_features import LEAGUE_AVG_K_RATE
 from name_utils import normalize as _norm
 
@@ -35,28 +36,48 @@ BATTER_SPLIT_CACHE_DIR = Path(__file__).resolve().parents[1] / "data"
 DEFAULT_SPLIT_COLLECTION_MAX_NEW = int(os.environ.get("BATTER_SPLIT_COLLECTION_MAX_NEW", "4"))
 
 
+def _batter_aggregate_cache_key(season: int) -> str:
+    return f"batter_aggregate_lookup:{season}"
+
+
+def _aggregate_dataframe(rows: list[dict]) -> pd.DataFrame:
+    return pd.DataFrame(rows, columns=["Name", "K%"])
+
+
 def _fetch_aggregate(season: int):
     """Fetch aggregate batter stats from FanGraphs JSON. Returns DataFrame."""
-    response = requests.get(
-        FANGRAPHS_LEADERBOARD_URL,
-        params={
-            "pos": "all",
-            "stats": "bat",
-            "lg": "all",
-            "qual": "0",
-            "type": "8",
-            "season": str(season),
-            "season1": str(season),
-            "ind": "0",
-            "month": "0",
-            "pageitems": str(FANGRAPHS_PAGE_SIZE),
-            "startdate": "",
-            "enddate": "",
-        },
-        timeout=FANGRAPHS_TIMEOUT_SECONDS,
-    )
-    response.raise_for_status()
-    payload = response.json()
+    try:
+        response = requests.get(
+            FANGRAPHS_LEADERBOARD_URL,
+            params={
+                "pos": "all",
+                "stats": "bat",
+                "lg": "all",
+                "qual": "0",
+                "type": "8",
+                "season": str(season),
+                "season1": str(season),
+                "ind": "0",
+                "month": "0",
+                "pageitems": str(FANGRAPHS_PAGE_SIZE),
+                "startdate": "",
+                "enddate": "",
+            },
+            timeout=FANGRAPHS_TIMEOUT_SECONDS,
+        )
+        response.raise_for_status()
+        payload = response.json()
+    except Exception as exc:
+        cached = fangraphs_cache.get_cached_payload(_batter_aggregate_cache_key(season))
+        if isinstance(cached, list):
+            log.warning(
+                "fetch_batter_stats: using cached FanGraphs aggregate for %s after %s",
+                season,
+                exc,
+            )
+            return _aggregate_dataframe(cached)
+        raise
+
     rows = payload.get("data", []) if isinstance(payload, dict) else []
 
     normalized_rows = []
@@ -69,7 +90,12 @@ def _fetch_aggregate(season: int):
             continue
         normalized_rows.append({"Name": str(name).strip(), "K%": float(k_rate)})
 
-    return pd.DataFrame(normalized_rows, columns=["Name", "K%"])
+    fangraphs_cache.set_cached_payload(
+        _batter_aggregate_cache_key(season),
+        normalized_rows,
+        metadata={"source": "fangraphs", "rows": len(normalized_rows)},
+    )
+    return _aggregate_dataframe(normalized_rows)
 
 
 def _fetch_splits(season: int):

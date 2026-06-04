@@ -29,11 +29,13 @@ PIPELINE_ARTIFACT_PATHS = [
     Path("dashboard/data/processed/index.json"),
     Path("dashboard/data/processed/steam.json"),
     Path("data/picks_history.json"),
+    Path("data/fangraphs_cache.json"),
 ]
 
 PREVIEW_ARTIFACT_PATHS = [
     Path("dashboard/data/processed/index.json"),
     Path("data/preview_lines.json"),
+    Path("data/fangraphs_cache.json"),
 ]
 
 LOCK_ARTIFACT_PATHS = [

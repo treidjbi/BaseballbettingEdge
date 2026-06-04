@@ -1,4 +1,5 @@
 import importlib.util
+import json
 import os
 from pathlib import Path
 from unittest.mock import Mock, patch
@@ -12,6 +13,11 @@ fetch_statcast = importlib.util.module_from_spec(SPEC)
 assert SPEC is not None and SPEC.loader is not None
 os.sys.path.insert(0, str(PIPELINE_DIR))
 SPEC.loader.exec_module(fetch_statcast)
+
+
+@pytest.fixture(autouse=True)
+def isolated_fangraphs_cache(tmp_path, monkeypatch):
+    monkeypatch.setenv("FANGRAPHS_CACHE_PATH", str(tmp_path / "fangraphs_cache.json"))
 
 
 def _response_with_rows(rows):
@@ -180,6 +186,36 @@ def test_fetch_swstr_retries_transient_current_season_request_failures():
 
     assert current_attempts["count"] == 2
     assert result["Pitcher A"]["swstr_pct"] == pytest.approx(0.123)
+
+
+def test_fetch_swstr_reuses_fresh_cache_when_fangraphs_later_forbidden(tmp_path, monkeypatch):
+    cache_path = tmp_path / "fangraphs_cache.json"
+    monkeypatch.setenv("FANGRAPHS_CACHE_PATH", str(cache_path))
+    responses_by_season = {
+        2026: _response_with_rows([{"PlayerName": "Zack Wheeler", "SwStr%": 0.145}]),
+        2023: _response_with_rows([{"PlayerName": "Zack Wheeler", "SwStr%": 0.110}]),
+        2024: _response_with_rows([{"PlayerName": "Zack Wheeler", "SwStr%": 0.120}]),
+        2025: _response_with_rows([{"PlayerName": "Zack Wheeler", "SwStr%": 0.130}]),
+    }
+
+    def successful_get(url, params=None, timeout=None):
+        return responses_by_season[int(params["season"])]
+
+    with patch.object(fetch_statcast.requests, "get", side_effect=successful_get):
+        first_result = fetch_statcast.fetch_swstr(2026, ["Zack Wheeler"])
+
+    assert first_result["Zack Wheeler"]["swstr_pct"] == pytest.approx(0.145)
+    assert json.loads(cache_path.read_text())["version"] == 1
+
+    def forbidden_get(url, params=None, timeout=None):
+        raise fetch_statcast.requests.HTTPError("403 Client Error: Forbidden")
+
+    with patch.object(fetch_statcast.requests, "get", side_effect=forbidden_get):
+        cached_result = fetch_statcast.fetch_swstr(2026, ["Zack Wheeler"])
+
+    assert cached_result["Zack Wheeler"]["swstr_pct"] == pytest.approx(0.145)
+    assert cached_result["Zack Wheeler"]["career_swstr_pct"] == pytest.approx((0.110 + 0.120 + 0.130) / 3)
+    assert cached_result["__meta__"] == {"current_usable": True, "career_usable": True}
 
 
 def test_fetch_swstr_returns_league_average_for_all_when_current_season_fetch_is_unavailable():

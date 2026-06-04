@@ -1,10 +1,17 @@
+import json
 import sys, os
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'pipeline'))
 
 from unittest.mock import patch, MagicMock
 import pandas as pd
+import pytest
 import fetch_batter_stats
 from build_features import LEAGUE_AVG_K_RATE
+
+
+@pytest.fixture(autouse=True)
+def isolated_fangraphs_cache(tmp_path, monkeypatch):
+    monkeypatch.setenv("FANGRAPHS_CACHE_PATH", str(tmp_path / "fangraphs_cache.json"))
 
 
 SAMPLE_AGGREGATE = pd.DataFrame([
@@ -42,6 +49,36 @@ def test_fetch_aggregate_uses_fangraphs_json_payload(monkeypatch):
     assert list(df["Name"]) == ["Mookie Betts", "Freddie Freeman"]
     assert list(df["K%"]) == [0.135, 0.098]
     assert fake_get.call_args.kwargs["params"]["stats"] == "bat"
+
+
+def test_fetch_aggregate_reuses_fresh_cache_when_fangraphs_later_forbidden(tmp_path, monkeypatch):
+    cache_path = tmp_path / "fangraphs_cache.json"
+    monkeypatch.setenv("FANGRAPHS_CACHE_PATH", str(cache_path))
+    payload = {
+        "data": [
+            {"PlayerName": "Mookie Betts", "K%": 0.135},
+            {"Name": "<a>Freddie Freeman</a>", "K%": 0.098},
+        ]
+    }
+
+    response = MagicMock()
+    response.raise_for_status.return_value = None
+    response.json.return_value = payload
+    monkeypatch.setattr(fetch_batter_stats.requests, "get", MagicMock(return_value=response))
+
+    first_df = fetch_batter_stats._fetch_aggregate(2026)
+
+    assert list(first_df["Name"]) == ["Mookie Betts", "Freddie Freeman"]
+    assert json.loads(cache_path.read_text())["version"] == 1
+
+    def forbidden_get(*args, **kwargs):
+        raise fetch_batter_stats.requests.HTTPError("403 Client Error: Forbidden")
+
+    monkeypatch.setattr(fetch_batter_stats.requests, "get", forbidden_get)
+    cached_df = fetch_batter_stats._fetch_aggregate(2026)
+
+    assert list(cached_df["Name"]) == ["Mookie Betts", "Freddie Freeman"]
+    assert list(cached_df["K%"]) == [0.135, 0.098]
 
 
 def test_fetch_batter_stats_returns_splits(monkeypatch):

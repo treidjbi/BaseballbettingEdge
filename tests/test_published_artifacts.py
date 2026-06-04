@@ -17,11 +17,13 @@ def test_artifact_type_from_path_maps_known_outputs():
     assert artifact_type_from_path(Path("data/params.json")) == "params"
     assert artifact_type_from_path(Path("data/preview_lines.json")) == "preview_lines"
     assert artifact_type_from_path(Path("data/picks_history.json")) == "picks_history"
+    assert artifact_type_from_path(Path("data/fangraphs_cache.json")) == "fangraphs_cache"
 
 
 def test_artifact_key_is_stable():
     assert artifact_key("today", None) == "today"
     assert artifact_key("dated_slate", "2026-05-22") == "dated_slate:2026-05-22"
+    assert artifact_key("fangraphs_cache", None) == "fangraphs_cache"
 
 
 def test_canonical_payload_sha256_ignores_json_key_order():
