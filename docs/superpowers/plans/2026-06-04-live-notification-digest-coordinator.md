@@ -12,17 +12,28 @@
 
 Date: 2026-06-04
 Owner: Tyler + Codex
-Status: Implemented on branch `codex/live-notification-digest-coordinator`;
-default production behavior remains off/unchanged until Tyler explicitly enables
-the coordinator flags and applies the notification event-type migration.
+Status: Implemented, merged to `main`, deployed to Render `bbe-live-layer`, and
+running in shadow mode. Grouped production sends remain off until Tyler
+explicitly enables grouped mode and applies the notification event-type
+migration.
 
 ## 2026-06-04 Implementation Checkpoint
 
-Branch `codex/live-notification-digest-coordinator` adds the pure coordinator,
-live-layer wiring, shadow movement-strength labels, audit label counts, and a
-Supabase migration that allows digest event types. The live-layer default is
-still `LIVE_NOTIFICATION_COORDINATOR_MODE=off`, and class flags default false,
-so current notification sends remain individual until a separate promotion step.
+Commit `046cc525` adds the pure coordinator, live-layer wiring, shadow
+movement-strength labels, audit label counts, and a Supabase migration that
+allows digest event types. On 2026-06-04, Render `bbe-live-layer` was deployed
+on that commit and configured with:
+
+- `LIVE_NOTIFICATION_COORDINATOR_MODE=shadow`
+- `LIVE_NOTIFICATION_GROUP_START_WINDOWS=true`
+- `LIVE_NOTIFICATION_GROUP_PICK_CHANGES=true`
+
+The 2026-06-04 18:31 UTC live-layer run wrote
+`shadow_pipeline_runs.metadata.notification_coordinator` with `mode=shadow` and
+both grouping flags true. That pass had `input_count=0` / `grouped_count=0`, so
+it proved runtime wiring but did not yet prove a real digest opportunity.
+Current user-facing notification sends remain individual until a separate
+promotion step.
 
 ## Operating Decision
 
