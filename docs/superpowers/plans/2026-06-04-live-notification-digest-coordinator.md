@@ -12,10 +12,9 @@
 
 Date: 2026-06-04
 Owner: Tyler + Codex
-Status: Implemented, merged to `main`, deployed to Render `bbe-live-layer`, and
-running in shadow mode. Grouped production sends remain off until Tyler
-explicitly enables grouped mode and applies the notification event-type
-migration.
+Status: Implemented, merged to `main`, deployed to Render `bbe-live-layer`,
+running in shadow mode, and Supabase digest event types are allowed. Grouped
+production sends remain off until Tyler explicitly enables grouped mode.
 
 ## 2026-06-04 Implementation Checkpoint
 
@@ -34,6 +33,20 @@ both grouping flags true. That pass had `input_count=0` / `grouped_count=0`, so
 it proved runtime wiring but did not yet prove a real digest opportunity.
 Current user-facing notification sends remain individual until a separate
 promotion step.
+
+## 2026-06-04 Schema Prep Checkpoint
+
+Tyler approved applying the digest-event schema prep while keeping grouped sends
+disabled. The local migration
+`supabase/migrations/20260604172500_notification_digest_event_types.sql` was
+applied directly to the linked Supabase database because `supabase db push`
+would have encountered unrelated older local/remote migration-history drift.
+The migration history was repaired for version `20260604172500` only.
+
+Functional verification used a transaction that inserted a
+`start_window_digest` notification row and immediately rolled it back; the query
+returned `digest_event_type_insert_rollback_ok=true`. No production notification
+row was left behind. `LIVE_NOTIFICATION_COORDINATOR_MODE` remains `shadow`.
 
 ## Operating Decision
 
