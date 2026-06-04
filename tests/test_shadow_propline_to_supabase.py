@@ -1,5 +1,6 @@
 import json
 
+from scripts import shadow_propline_to_supabase
 from scripts.shadow_propline_to_supabase import (
     _coverage_audit_row,
     _production_artifact_for_slate,
@@ -49,6 +50,52 @@ def test_production_artifact_for_slate_prefers_dated_archive(tmp_path):
 
     assert artifact_path == "dashboard/data/processed/2026-05-04.json"
     assert payload["pitchers"][0]["pitcher"] == "Dated"
+
+
+def test_production_artifact_for_slate_prefers_remote_over_stale_committed_today(
+    tmp_path,
+    monkeypatch,
+):
+    today = tmp_path / "dashboard" / "data" / "processed" / "today.json"
+    today.parent.mkdir(parents=True)
+    today.write_text(
+        json.dumps({
+            "date": "2026-05-30",
+            "pitchers": [{"pitcher": f"Stale {index}"} for index in range(29)],
+        })
+    )
+    remote_payload = {
+        "date": "2026-06-04",
+        "pitchers": [{"pitcher": f"Current {index}"} for index in range(16)],
+    }
+    artifact_url = "https://example.test/.netlify/functions/get-artifact?type=today"
+
+    class FakeResponse:
+        def __enter__(self):
+            return self
+
+        def __exit__(self, exc_type, exc, tb):
+            return False
+
+        def read(self):
+            return json.dumps(remote_payload).encode("utf-8")
+
+    def fake_urlopen(url, timeout):
+        assert url == artifact_url
+        assert timeout == 20
+        return FakeResponse()
+
+    monkeypatch.setattr(shadow_propline_to_supabase, "urlopen", fake_urlopen)
+
+    payload, artifact_path = _production_artifact_for_slate(
+        "2026-06-04",
+        root=tmp_path,
+        artifact_url=artifact_url,
+    )
+
+    assert artifact_path == artifact_url
+    assert payload["date"] == "2026-06-04"
+    assert len(payload["pitchers"]) == 16
 
 
 def test_coverage_audit_row_includes_comparison_metrics():
@@ -101,6 +148,46 @@ def test_coverage_audit_row_includes_comparison_metrics():
     assert row["metadata"]["fillable_missing_book_counts"]["fanduel"] == 1
 
 
+def test_poll_propline_uses_default_netlify_production_artifact(monkeypatch):
+    writer = FakeWriter()
+    artifact_urls = []
+
+    def fake_propline_get(*args, **kwargs):
+        return []
+
+    def fake_production_artifact(slate_date, **kwargs):
+        artifact_urls.append(kwargs.get("artifact_url"))
+        return {"date": slate_date, "pitchers": []}, kwargs.get("artifact_url")
+
+    monkeypatch.setattr(
+        "scripts.shadow_propline_to_supabase.propline_get",
+        fake_propline_get,
+    )
+    monkeypatch.setattr(
+        "scripts.shadow_propline_to_supabase._production_artifact_for_slate",
+        fake_production_artifact,
+    )
+
+    poll_propline_to_supabase(
+        "2026-06-04",
+        writer=writer,
+        observed_at="2026-06-04T15:00:00+00:00",
+    )
+
+    assert artifact_urls == [
+        shadow_propline_to_supabase.DEFAULT_PRODUCTION_ARTIFACT_URL,
+    ]
+    coverage_insert = [
+        rows[0]
+        for table, rows in writer.inserts
+        if table == "provider_coverage_audits"
+    ][0]
+    assert (
+        coverage_insert["metadata"]["production_artifact_path"]
+        == shadow_propline_to_supabase.DEFAULT_PRODUCTION_ARTIFACT_URL
+    )
+
+
 def test_poll_propline_can_record_shadow_failure_without_raising(monkeypatch):
     writer = FakeWriter()
 
@@ -113,7 +200,7 @@ def test_poll_propline_can_record_shadow_failure_without_raising(monkeypatch):
     )
     monkeypatch.setattr(
         "scripts.shadow_propline_to_supabase._production_artifact_for_slate",
-        lambda slate_date: (None, None),
+        lambda slate_date, **kwargs: (None, None),
     )
 
     result = poll_propline_to_supabase(

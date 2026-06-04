@@ -11,6 +11,7 @@ import sys
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
+from urllib.request import urlopen
 
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
@@ -29,6 +30,10 @@ from market_infra.provider_audit import (  # noqa: E402
 from market_infra.prop_snapshot import snapshots_from_propline_event  # noqa: E402
 from market_infra.supabase_writer import SupabaseMarketWriter  # noqa: E402
 
+DEFAULT_PRODUCTION_ARTIFACT_URL = (
+    "https://baseballbettingedge.netlify.app/.netlify/functions/get-artifact?type=today"
+)
+
 
 def _env(name: str) -> str:
     value = os.environ.get(name, "").strip()
@@ -37,7 +42,55 @@ def _env(name: str) -> str:
     return value
 
 
-def _production_artifact_for_slate(slate_date: str, root: Path = ROOT) -> tuple[dict | None, str | None]:
+def _optional_env(name: str) -> str:
+    return os.environ.get(name, "").strip()
+
+
+def _production_artifact_url_from_env() -> str:
+    return (
+        _optional_env("PROPLINE_ARTIFACT_URL")
+        or _optional_env("PROPLINE_PRODUCTION_ARTIFACT_URL")
+        or _optional_env("LIVE_ARTIFACT_URL")
+        or DEFAULT_PRODUCTION_ARTIFACT_URL
+    )
+
+
+def _payload_slate_date(payload: dict | None) -> str:
+    if not payload:
+        return ""
+    return str(payload.get("date") or payload.get("slate_date") or "").strip()
+
+
+def _artifact_matches_slate(payload: dict | None, slate_date: str, source: str) -> bool:
+    payload_date = _payload_slate_date(payload)
+    if not payload_date or payload_date == slate_date:
+        return True
+    print(
+        f"Warning: production artifact {source} has date={payload_date}; "
+        f"expected slate_date={slate_date}; ignoring it",
+        file=sys.stderr,
+    )
+    return False
+
+
+def _production_artifact_for_slate(
+    slate_date: str,
+    root: Path = ROOT,
+    artifact_url: str | None = None,
+) -> tuple[dict | None, str | None]:
+    if artifact_url:
+        try:
+            with urlopen(artifact_url, timeout=20) as response:
+                payload = json.loads(response.read().decode("utf-8"))
+            if _artifact_matches_slate(payload, slate_date, artifact_url):
+                return payload, artifact_url
+        except Exception as error:
+            print(
+                f"Warning: remote production artifact fetch failed ({error}); "
+                "falling back to local artifact",
+                file=sys.stderr,
+            )
+
     candidates = [
         Path("dashboard") / "data" / "processed" / f"{slate_date}.json",
         Path("dashboard") / "data" / "processed" / "today.json",
@@ -46,7 +99,10 @@ def _production_artifact_for_slate(slate_date: str, root: Path = ROOT) -> tuple[
         path = root / relative_path
         if not path.exists():
             continue
-        return json.loads(path.read_text(encoding="utf-8")), relative_path.as_posix()
+        payload = json.loads(path.read_text(encoding="utf-8"))
+        source = relative_path.as_posix()
+        if _artifact_matches_slate(payload, slate_date, source):
+            return payload, source
     return None, None
 
 
@@ -116,7 +172,10 @@ def poll_propline_to_supabase(
     event_rows: list[dict] = []
     snapshots: list[dict] = []
     target_events = []
-    production_payload, production_artifact_path = _production_artifact_for_slate(slate_date)
+    production_payload, production_artifact_path = _production_artifact_for_slate(
+        slate_date,
+        artifact_url=_production_artifact_url_from_env(),
+    )
 
     try:
         events = propline_get(f"/sports/{PROPLINE_SPORT_KEY}/events")
