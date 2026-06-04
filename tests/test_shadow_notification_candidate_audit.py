@@ -9,6 +9,7 @@ def test_summarize_candidates_counts_candidate_actions_and_noise():
             "candidate_action": "would_send_shadow",
             "betrivers_only": False,
             "suppression_reasons": [],
+            "metadata": {"movement_strength_labels": ["broad_confirmation", "boltodds_confirmed"]},
         },
         {
             "provider": "boltodds",
@@ -16,6 +17,7 @@ def test_summarize_candidates_counts_candidate_actions_and_noise():
             "candidate_action": "suppress_shadow",
             "betrivers_only": True,
             "suppression_reasons": ["betrivers_only", "volatile_or_reversed"],
+            "metadata": {"movement_strength_labels": ["single_book", "volatile_or_reversed"]},
         },
         {
             "provider": "propline",
@@ -23,6 +25,7 @@ def test_summarize_candidates_counts_candidate_actions_and_noise():
             "candidate_action": "suppress_shadow",
             "betrivers_only": False,
             "suppression_reasons": ["number_worse"],
+            "metadata": {"movement_strength_labels": ["propline_polling_confirmed"]},
         },
     ]
 
@@ -35,8 +38,17 @@ def test_summarize_candidates_counts_candidate_actions_and_noise():
         "betrivers_only": 1,
         "volatile_or_reversed": 1,
         "number_worse": 0,
+        "movement_strength_labels": {
+            "boltodds_confirmed": 1,
+            "broad_confirmation": 1,
+            "single_book": 1,
+            "volatile_or_reversed": 1,
+        },
     }
     assert summary[("propline", "market_confirmed_worse_number")]["number_worse"] == 1
+    assert summary[("propline", "market_confirmed_worse_number")]["movement_strength_labels"] == {
+        "propline_polling_confirmed": 1
+    }
 
 
 def test_build_report_keeps_candidates_shadow_only():
@@ -47,6 +59,7 @@ def test_build_report_keeps_candidates_shadow_only():
             "candidate_action": "would_send_shadow",
             "betrivers_only": False,
             "suppression_reasons": [],
+            "metadata": {"movement_strength_labels": ["broad_confirmation", "boltodds_confirmed"]},
         }
     ])
 
@@ -54,3 +67,5 @@ def test_build_report_keeps_candidates_shadow_only():
     assert "shadow-only" in report
     assert "does not send notifications" in report
     assert "| `boltodds` | `market_confirmed_playable` |" in report
+    assert "## Movement Strength Labels" in report
+    assert "| `boltodds_confirmed` | 1 |" in report

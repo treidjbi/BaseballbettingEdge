@@ -11,6 +11,7 @@ ACCEPTED_BETS_MIGRATION = MIGRATIONS_DIR / "20260508_accepted_bets_log.sql"
 LIVE_MARKET_DISPLAY_MIGRATION = MIGRATIONS_DIR / "20260512_live_market_display_state.sql"
 READONLY_SHADOW_POLICIES_MIGRATION = MIGRATIONS_DIR / "20260512_readonly_shadow_table_policies.sql"
 PROVIDER_CUTOVER_MIGRATION = MIGRATIONS_DIR / "20260513_provider_cutover_market_state.sql"
+NOTIFICATION_DIGEST_MIGRATION = MIGRATIONS_DIR / "20260604172500_notification_digest_event_types.sql"
 MARKET_STATE_WRITE_GUARDS_MIGRATIONS = [
     MIGRATIONS_DIR / "20260518174018_market_state_write_guards.sql",
     MIGRATIONS_DIR / "20260518174322_market_state_write_guards_tighten_churn.sql",
@@ -83,6 +84,7 @@ def test_live_layer_migration_file_exists():
     assert ACCEPTED_BETS_MIGRATION.exists()
     assert LIVE_MARKET_DISPLAY_MIGRATION.exists()
     assert READONLY_SHADOW_POLICIES_MIGRATION.exists()
+    assert NOTIFICATION_DIGEST_MIGRATION.exists()
 
 
 def test_live_layer_migration_defines_required_tables():
@@ -114,6 +116,21 @@ def test_live_layer_migration_uses_required_uniques_and_view():
     assert "unique (slate_date, normalized_pitcher, side, book, k_line, odds)" in sql
     assert "create or replace view public.live_activity_feed" in sql
     assert "with (security_invoker = true)" in sql
+
+
+def test_notification_digest_migration_allows_grouped_event_types():
+    sql = NOTIFICATION_DIGEST_MIGRATION.read_text(encoding="utf-8")
+
+    for event_type in [
+        "start_window_digest",
+        "new_fire_pick_digest",
+        "pick_upgraded_digest",
+        "pick_downgraded_digest",
+    ]:
+        assert event_type in sql
+
+    assert "drop constraint if exists notification_events_event_type_check" in sql
+    assert "add constraint notification_events_event_type_check" in sql
 
 
 def test_shadow_tables_have_readonly_rls_policies():

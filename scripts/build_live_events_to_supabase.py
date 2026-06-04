@@ -23,6 +23,7 @@ from market_infra.live_events import (  # noqa: E402
 )
 from market_infra.live_market_display import build_live_market_display_rows  # noqa: E402
 from market_infra.market_evidence import build_market_pick_evidence_rows  # noqa: E402
+from market_infra.notification_coordinator import coordinate_notification_rows  # noqa: E402
 from market_infra.operational_locks import build_operational_lock_rows  # noqa: E402
 from market_infra.shadow_pipeline_timing import build_shadow_pipeline_timing_rows  # noqa: E402
 from market_infra.shadow_notification_candidates import (  # noqa: E402
@@ -86,6 +87,18 @@ def _env_int(name: str, *, default: int) -> int:
             file=sys.stderr,
         )
         return default
+
+
+def _notification_coordinator_mode() -> str:
+    mode = _optional_env("LIVE_NOTIFICATION_COORDINATOR_MODE").lower()
+    if mode in {"off", "shadow", "grouped"}:
+        return mode
+    if mode:
+        print(
+            f"Warning: invalid LIVE_NOTIFICATION_COORDINATOR_MODE={mode!r}; using off",
+            file=sys.stderr,
+        )
+    return "off"
 
 
 def _source_artifact_path(path: Path) -> str:
@@ -728,7 +741,19 @@ def run(
         *movement_notification_rows,
         *reminder_notification_rows,
     ]
-    writer.insert_ignore_rows("notification_events", notification_rows, on_conflict="dedupe_key")
+    notification_coordination = coordinate_notification_rows(
+        notification_rows,
+        mode=_notification_coordinator_mode(),
+        observed_at=observed_at,
+        group_start_windows=_env_flag("LIVE_NOTIFICATION_GROUP_START_WINDOWS", default=False),
+        group_pick_changes=_env_flag("LIVE_NOTIFICATION_GROUP_PICK_CHANGES", default=False),
+    )
+    coordinated_notification_rows = notification_coordination.rows
+    writer.insert_ignore_rows(
+        "notification_events",
+        coordinated_notification_rows,
+        on_conflict="dedupe_key",
+    )
     writer.upsert_rows("line_movement_events", line_movement_rows, on_conflict="dedupe_key")
     writer.upsert_rows(
         "market_pick_evidence",
@@ -764,6 +789,7 @@ def run(
         artifact_sha=artifact_sha,
         metadata_extra={
             "propline_webhooks": propline_webhook_result or {"skipped": True},
+            "notification_coordinator": notification_coordination.summary,
         },
     )
     market_line_build = _build_shadow_market_state(
@@ -779,7 +805,10 @@ def run(
     )
     return {
         "state_rows": state_rows,
-        "notification_rows": notification_rows,
+        "notification_rows": coordinated_notification_rows,
+        "notification_source_rows": notification_rows,
+        "notification_coordinator_shadow_rows": notification_coordination.shadow_rows,
+        "notification_coordinator": notification_coordination.summary,
         "line_movement_rows": line_movement_rows,
         "market_pick_evidence_rows": market_pick_evidence_rows,
         "live_market_display_rows": live_market_display_rows,
@@ -787,7 +816,7 @@ def run(
         "provider_heartbeat_rows": provider_heartbeats,
         "reminder_rows": reminder_rows,
         "live_pick_state": len(state_rows),
-        "notification_events": len(notification_rows),
+        "notification_events": len(coordinated_notification_rows),
         "line_movement_events": len(line_movement_rows),
         "market_pick_evidence": len(market_pick_evidence_rows),
         "live_market_display_state": len(live_market_display_rows),

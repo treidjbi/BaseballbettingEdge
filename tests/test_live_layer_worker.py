@@ -30,9 +30,9 @@ def _write_artifact(tmp_path, pitchers):
     return today
 
 
-def _fire_pitcher(game_time="2026-05-06T22:10:00Z"):
+def _fire_pitcher(game_time="2026-05-06T22:10:00Z", pitcher="Tarik Skubal"):
     return {
-        "pitcher": "Tarik Skubal",
+        "pitcher": pitcher,
         "team": "DET",
         "opp_team": "BOS",
         "k_line": 6.5,
@@ -41,6 +41,28 @@ def _fire_pitcher(game_time="2026-05-06T22:10:00Z"):
         "best_over_odds": -110,
         "best_over_book": "FanDuel",
         "ev_over": {"verdict": "FIRE 1u", "adj_ev": 0.09, "edge": 0.05},
+    }
+
+
+def _previous_fire_state(pitcher, *, game_time):
+    return {
+        "slate_date": "2026-05-06",
+        "pitcher": pitcher,
+        "normalized_pitcher": pitcher.lower(),
+        "side": "over",
+        "current_verdict": "FIRE 1u",
+        "previous_verdict": "FIRE 1u",
+        "k_line": 6.5,
+        "current_odds": -110,
+        "current_book": "FanDuel",
+        "game_time": game_time,
+        "game_state": "scheduled",
+        "is_fire": True,
+        "is_locked": False,
+        "source_artifact_path": "test",
+        "source_artifact_sha256": "sha",
+        "last_model_seen_at": "2026-05-06T17:50:00+00:00",
+        "metadata": {},
     }
 
 
@@ -99,6 +121,144 @@ def test_worker_writes_state_and_notification_events(tmp_path):
     writer.insert_ignore_rows.assert_any_call(
         "shadow_pick_lock_observations",
         result["shadow_pipeline_timing"]["pick_lock_observation_rows"],
+        on_conflict="dedupe_key",
+    )
+
+
+def test_env_int_invalid_value_falls_back(monkeypatch):
+    monkeypatch.setenv("LIVE_TEST_INVALID_INT", "bad")
+
+    assert build_live_events_to_supabase._env_int("LIVE_TEST_INVALID_INT", default=7) == 7
+
+
+def test_notification_coordinator_default_is_noop_for_reminders(tmp_path, monkeypatch):
+    monkeypatch.delenv("LIVE_NOTIFICATION_COORDINATOR_MODE", raising=False)
+    monkeypatch.delenv("LIVE_NOTIFICATION_GROUP_START_WINDOWS", raising=False)
+    today = _write_artifact(tmp_path, [
+        _fire_pitcher(game_time="2026-05-06T18:20:00Z", pitcher="Sandy Alcantara"),
+        _fire_pitcher(game_time="2026-05-06T18:24:00Z", pitcher="Spencer Strider"),
+    ])
+    writer = _writer_with_selects({
+        "live_pick_state": [
+            _previous_fire_state("Sandy Alcantara", game_time="2026-05-06T18:20:00Z"),
+            _previous_fire_state("Spencer Strider", game_time="2026-05-06T18:24:00Z"),
+        ],
+        "market_snapshots": [],
+        "game_reminder_state": [],
+    })
+
+    with (
+        patch.object(build_live_events_to_supabase, "SupabaseMarketWriter", return_value=writer),
+        patch.object(
+            build_live_events_to_supabase,
+            "_now_utc",
+            return_value=build_live_events_to_supabase.datetime.fromisoformat("2026-05-06T18:00:00+00:00"),
+        ),
+    ):
+        result = build_live_events_to_supabase.run(
+            slate_date="2026-05-06",
+            artifact_path=today,
+            supabase_url="https://example.supabase.co",
+            service_role_key="secret",
+        )
+
+    assert [row["event_type"] for row in result["notification_rows"]] == [
+        "game_reminder_due",
+        "game_reminder_due",
+    ]
+    assert result["notification_events"] == 2
+    assert result["notification_coordinator"]["mode"] == "off"
+    writer.insert_ignore_rows.assert_any_call(
+        "notification_events",
+        result["notification_rows"],
+        on_conflict="dedupe_key",
+    )
+
+
+def test_notification_coordinator_shadow_records_summary_only(tmp_path, monkeypatch):
+    monkeypatch.setenv("LIVE_NOTIFICATION_COORDINATOR_MODE", "shadow")
+    monkeypatch.setenv("LIVE_NOTIFICATION_GROUP_START_WINDOWS", "true")
+    today = _write_artifact(tmp_path, [
+        _fire_pitcher(game_time="2026-05-06T18:20:00Z", pitcher="Sandy Alcantara"),
+        _fire_pitcher(game_time="2026-05-06T18:24:00Z", pitcher="Spencer Strider"),
+    ])
+    writer = _writer_with_selects({
+        "live_pick_state": [
+            _previous_fire_state("Sandy Alcantara", game_time="2026-05-06T18:20:00Z"),
+            _previous_fire_state("Spencer Strider", game_time="2026-05-06T18:24:00Z"),
+        ],
+        "market_snapshots": [],
+        "game_reminder_state": [],
+    })
+
+    with (
+        patch.object(build_live_events_to_supabase, "SupabaseMarketWriter", return_value=writer),
+        patch.object(
+            build_live_events_to_supabase,
+            "_now_utc",
+            return_value=build_live_events_to_supabase.datetime.fromisoformat("2026-05-06T18:00:00+00:00"),
+        ),
+    ):
+        result = build_live_events_to_supabase.run(
+            slate_date="2026-05-06",
+            artifact_path=today,
+            supabase_url="https://example.supabase.co",
+            service_role_key="secret",
+        )
+
+    assert [row["event_type"] for row in result["notification_rows"]] == [
+        "game_reminder_due",
+        "game_reminder_due",
+    ]
+    assert [row["event_type"] for row in result["notification_coordinator_shadow_rows"]] == [
+        "start_window_digest"
+    ]
+    assert result["notification_coordinator"]["input_count"] == 2
+    assert result["notification_coordinator"]["grouped_count"] == 1
+    assert (
+        result["shadow_pipeline_timing"]["pipeline_run_row"]["metadata"]["notification_coordinator"]["mode"]
+        == "shadow"
+    )
+
+
+def test_notification_coordinator_grouped_inserts_digest(tmp_path, monkeypatch):
+    monkeypatch.setenv("LIVE_NOTIFICATION_COORDINATOR_MODE", "grouped")
+    monkeypatch.setenv("LIVE_NOTIFICATION_GROUP_START_WINDOWS", "true")
+    today = _write_artifact(tmp_path, [
+        _fire_pitcher(game_time="2026-05-06T18:20:00Z", pitcher="Sandy Alcantara"),
+        _fire_pitcher(game_time="2026-05-06T18:24:00Z", pitcher="Spencer Strider"),
+    ])
+    writer = _writer_with_selects({
+        "live_pick_state": [
+            _previous_fire_state("Sandy Alcantara", game_time="2026-05-06T18:20:00Z"),
+            _previous_fire_state("Spencer Strider", game_time="2026-05-06T18:24:00Z"),
+        ],
+        "market_snapshots": [],
+        "game_reminder_state": [],
+    })
+
+    with (
+        patch.object(build_live_events_to_supabase, "SupabaseMarketWriter", return_value=writer),
+        patch.object(
+            build_live_events_to_supabase,
+            "_now_utc",
+            return_value=build_live_events_to_supabase.datetime.fromisoformat("2026-05-06T18:00:00+00:00"),
+        ),
+    ):
+        result = build_live_events_to_supabase.run(
+            slate_date="2026-05-06",
+            artifact_path=today,
+            supabase_url="https://example.supabase.co",
+            service_role_key="secret",
+        )
+
+    assert [row["event_type"] for row in result["notification_rows"]] == [
+        "start_window_digest"
+    ]
+    assert result["notification_events"] == 1
+    writer.insert_ignore_rows.assert_any_call(
+        "notification_events",
+        result["notification_rows"],
         on_conflict="dedupe_key",
     )
 

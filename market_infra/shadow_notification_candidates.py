@@ -74,6 +74,44 @@ def _suppression_reasons(
     return reasons
 
 
+def _movement_strength_labels(
+    *,
+    row: dict[str, Any],
+    broad_confirmation: bool,
+    single_book: bool,
+    volatile_or_reversed: bool,
+) -> list[str]:
+    metadata = _metadata(row)
+    provider = str(row.get("provider") or "").strip().lower()
+    labels: list[str] = []
+
+    if single_book:
+        labels.append("single_book")
+    if broad_confirmation:
+        labels.append("broad_confirmation")
+    if provider == "propline":
+        labels.append("propline_polling_confirmed")
+    if metadata.get("propline_webhook_confirmed") or int(metadata.get("propline_webhook_count") or 0) > 0:
+        labels.append("propline_webhook_confirmed")
+    if provider == "boltodds":
+        labels.append("boltodds_confirmed")
+    if (
+        str(row.get("market_consensus") or "") == "mixed"
+        or str(row.get("bet_value_consensus") or "") == "mixed"
+        or (
+            int(row.get("toward_pick_count") or 0) > 0
+            and int(row.get("away_from_pick_count") or 0) > 0
+        )
+    ):
+        labels.append("provider_conflict")
+    if volatile_or_reversed:
+        labels.append("volatile_or_reversed")
+    if str(metadata.get("freshness_status") or "fresh") != "fresh":
+        labels.append("stale_or_heartbeat_missing")
+
+    return labels
+
+
 def build_shadow_notification_candidate_rows(
     market_evidence_rows: list[dict[str, Any]],
 ) -> list[dict[str, Any]]:
@@ -96,6 +134,12 @@ def build_shadow_notification_candidate_rows(
             candidate_type=candidate_type,
             broad_confirmation=broad_confirmation,
             betrivers_only=betrivers_only,
+            volatile_or_reversed=volatile_or_reversed,
+        )
+        movement_strength_labels = _movement_strength_labels(
+            row=evidence,
+            broad_confirmation=broad_confirmation,
+            single_book=single_book,
             volatile_or_reversed=volatile_or_reversed,
         )
         candidate_action = "suppress_shadow" if suppression_reasons else "would_send_shadow"
@@ -132,6 +176,7 @@ def build_shadow_notification_candidate_rows(
                 f"{candidate_type}:{observed_at}"
             ),
             "metadata": {
+                "movement_strength_labels": movement_strength_labels,
                 "market_evidence": {
                     "toward_pick_count": evidence.get("toward_pick_count"),
                     "away_from_pick_count": evidence.get("away_from_pick_count"),

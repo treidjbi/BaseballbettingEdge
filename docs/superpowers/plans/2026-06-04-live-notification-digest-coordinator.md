@@ -12,7 +12,17 @@
 
 Date: 2026-06-04
 Owner: Tyler + Codex
-Status: Active implementation plan, documentation only so far
+Status: Implemented on branch `codex/live-notification-digest-coordinator`;
+default production behavior remains off/unchanged until Tyler explicitly enables
+the coordinator flags and applies the notification event-type migration.
+
+## 2026-06-04 Implementation Checkpoint
+
+Branch `codex/live-notification-digest-coordinator` adds the pure coordinator,
+live-layer wiring, shadow movement-strength labels, audit label counts, and a
+Supabase migration that allows digest event types. The live-layer default is
+still `LIVE_NOTIFICATION_COORDINATOR_MODE=off`, and class flags default false,
+so current notification sends remain individual until a separate promotion step.
 
 ## Operating Decision
 

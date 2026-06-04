@@ -8,7 +8,7 @@ from __future__ import annotations
 
 import argparse
 import json
-from collections import defaultdict
+from collections import Counter, defaultdict
 from pathlib import Path
 from typing import Any
 
@@ -24,6 +24,16 @@ def _reasons(row: dict[str, Any]) -> set[str]:
     return {str(reason) for reason in value}
 
 
+def _movement_strength_labels(row: dict[str, Any]) -> list[str]:
+    metadata = row.get("metadata")
+    if not isinstance(metadata, dict):
+        return []
+    value = metadata.get("movement_strength_labels")
+    if not isinstance(value, list):
+        return []
+    return sorted(str(label) for label in value if str(label).strip())
+
+
 def summarize_candidates(rows: list[dict[str, Any]]) -> dict[tuple[str, str], dict[str, int]]:
     buckets: dict[tuple[str, str], dict[str, int]] = defaultdict(
         lambda: {
@@ -33,6 +43,7 @@ def summarize_candidates(rows: list[dict[str, Any]]) -> dict[tuple[str, str], di
             "betrivers_only": 0,
             "volatile_or_reversed": 0,
             "number_worse": 0,
+            "movement_strength_labels": Counter(),
         }
     )
     for row in rows:
@@ -52,7 +63,16 @@ def summarize_candidates(rows: list[dict[str, Any]]) -> dict[tuple[str, str], di
             bucket["volatile_or_reversed"] += 1
         if "number_worse" in reasons:
             bucket["number_worse"] += 1
-    return dict(sorted(buckets.items()))
+        for label in _movement_strength_labels(row):
+            bucket["movement_strength_labels"][label] += 1
+
+    normalized = {}
+    for key, bucket in sorted(buckets.items()):
+        normalized[key] = {
+            **bucket,
+            "movement_strength_labels": dict(sorted(bucket["movement_strength_labels"].items())),
+        }
+    return normalized
 
 
 def build_report(rows: list[dict[str, Any]]) -> str:
@@ -75,6 +95,21 @@ def build_report(rows: list[dict[str, Any]]) -> str:
                 f"{bucket['betrivers_only']} | {bucket['volatile_or_reversed']} | "
                 f"{bucket['number_worse']} |"
             )
+    label_counts: Counter[str] = Counter()
+    for bucket in summary.values():
+        label_counts.update(bucket.get("movement_strength_labels") or {})
+    lines.extend([
+        "",
+        "## Movement Strength Labels",
+        "",
+        "| Label | Rows |",
+        "| --- | ---: |",
+    ])
+    if not label_counts:
+        lines.append("| -- | 0 |")
+    else:
+        for label, count in sorted(label_counts.items()):
+            lines.append(f"| `{label}` | {count} |")
     lines.extend([
         "",
         "## Promotion Rule",

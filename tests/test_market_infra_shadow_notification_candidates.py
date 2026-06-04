@@ -131,3 +131,50 @@ def test_stale_market_evidence_suppresses_otherwise_sendable_candidate():
     assert row["candidate_action"] == "suppress_shadow"
     assert "stale_market_evidence" in row["suppression_reasons"]
     assert row["metadata"]["market_evidence"]["freshness_status"] == "stale"
+
+
+def test_movement_strength_labels_describe_boltodds_broad_confirmation():
+    rows = build_shadow_notification_candidate_rows([_evidence(provider="boltodds")])
+
+    labels = rows[0]["metadata"]["movement_strength_labels"]
+
+    assert "broad_confirmation" in labels
+    assert "boltodds_confirmed" in labels
+    assert "single_book" not in labels
+    assert "stale_or_heartbeat_missing" not in labels
+
+
+def test_movement_strength_labels_describe_propline_noise_and_webhook_confirmation():
+    rows = build_shadow_notification_candidate_rows([
+        _evidence(
+            provider="propline",
+            book_count=1,
+            books_seen=["betrivers"],
+            toward_pick_count=1,
+            metadata={
+                "freshness_status": "stale",
+                "propline_webhook_confirmed": True,
+                "book_summaries": {},
+            },
+        )
+    ])
+
+    labels = rows[0]["metadata"]["movement_strength_labels"]
+
+    assert "single_book" in labels
+    assert "propline_polling_confirmed" in labels
+    assert "propline_webhook_confirmed" in labels
+    assert "stale_or_heartbeat_missing" in labels
+
+
+def test_movement_strength_labels_include_provider_conflict_for_mixed_market():
+    rows = build_shadow_notification_candidate_rows([
+        _evidence(
+            market_consensus="mixed",
+            bet_value_consensus="mixed",
+            toward_pick_count=1,
+            away_from_pick_count=1,
+        )
+    ])
+
+    assert "provider_conflict" in rows[0]["metadata"]["movement_strength_labels"]
