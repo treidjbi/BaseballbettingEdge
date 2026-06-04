@@ -6,6 +6,12 @@
 > thresholds, staking, lock behavior, notification sends, retention, secrets, or
 > source-of-truth rules. TheRundown-derived GitHub artifacts remain production
 > truth until the provider cutover gates pass and Tyler approves the switch.
+>
+> **2026-06-04 update:** The active notification implementation child plan is
+> `docs/superpowers/plans/2026-06-04-live-notification-digest-coordinator.md`.
+> Build notification grouping and movement-strength labels first. This UI plan
+> should consume the same decision labels and deep-link context rather than
+> defining a separate market-action vocabulary.
 
 ## Goal
 
@@ -466,6 +472,16 @@ coordinator, while display labels may stay friendlier:
 | `Market fade` | `wait` or `monitor` with adverse reason codes |
 | `Stale` | `ignore_stale` |
 | `Monitor` | `monitor` |
+
+The notification digest coordinator is now the source for grouped alert context:
+
+- start-window digest context should open the slate with the relevant start
+  cluster highlighted;
+- pick-change digest context should open the filtered set of upgraded,
+  downgraded, or new FIRE rows;
+- individual movement context should open the specific pitcher market panel;
+- accepted-bet logging should preserve `notification_event_id` or
+  `shadow_candidate_id` when a push or shadow-review link opened the app.
 
 ## Verification
 

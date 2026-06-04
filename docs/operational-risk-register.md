@@ -118,11 +118,27 @@ Live notifications are useful only if they improve action. Track:
 - duplicates
 - stale alerts
 - late game reminders
+- same-category notification piles that should have been grouped
 - alerts that reverse quickly
 - alerts that did not matter
 - too many alerts in one slate
 
 If trust drops, reduce notification classes before adding more data sources.
+
+As of 2026-06-04, the active product goal is to group high-volume same-category
+notifications before adding new alert classes:
+
+- start-window reminders should become one digest for pitchers starting in the
+  same 30-minute window;
+- new FIRE, upgraded, and downgraded picks should group by category inside the
+  same 10-minute Render live-layer run;
+- line/price movement should usually remain individual, but broader production
+  sends require stronger evidence labels from PropLine polling/webhooks,
+  BoltOdds snapshots/heartbeats, broad confirmation, volatility, and single-book
+  noise review.
+
+The controlling implementation plan is
+`docs/superpowers/plans/2026-06-04-live-notification-digest-coordinator.md`.
 
 As of 2026-05-23, user-facing pushes are in a single-sender canary:
 GitHub `send-notifications` is disabled with

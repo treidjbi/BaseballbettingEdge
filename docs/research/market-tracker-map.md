@@ -14,6 +14,7 @@ provider order, notifications, or calibration.
 | Per-pick movement rollup | `market_pick_evidence` | Compact model-vs-market movement for LEAN/FIRE sides. |
 | App-ready live state | `live_market_display_state` | Consensus, best actionable book, off-market books, freshness. |
 | Would-have-alerted rows | `shadow_notification_candidates` | Alert research only; does not send pushes. |
+| Notification digest opportunities | `notification_events`, future coordinator summary metadata | Tracks same-category notification piles that should become grouped start-window or pick-change digests. |
 | Render-vs-GitHub timing summary | `shadow_pipeline_runs` | Compact per-run artifact freshness and lock-window counts. |
 | Pick lock timing observations | `shadow_pick_lock_observations` | Deduped status transitions for future lock-ledger decisions. |
 | Whole-market price outcomes | `market_price_outcome_audit.py` | Includes PASS-level markets, favorite behavior, side price buckets. |
@@ -157,9 +158,13 @@ The BBE Operations Brief should synthesize this map every weekday:
    report. Separate `single_book_outlier` conflicts from
    `ref_vs_majority` conflicts, and treat best-executable EV as shadow evidence
    until CLV/outcome proof exists.
-7. Tie any recommendation back to cost/risk docs before suggesting more
+7. For notification work, report grouped start-window opportunities, grouped
+   pick-change opportunities, stale/duplicate/post-start suppressions, and
+   movement candidates by provider-strength label before recommending any new
+   production send class.
+8. Tie any recommendation back to cost/risk docs before suggesting more
    infrastructure or provider spend.
-8. Explicitly separate "collect more evidence" from "ready to change model or
+9. Explicitly separate "collect more evidence" from "ready to change model or
    betting behavior."
 
 The daily read should produce a compact confidence-referee note:

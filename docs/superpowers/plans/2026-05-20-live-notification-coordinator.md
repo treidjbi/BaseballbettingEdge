@@ -4,7 +4,10 @@
 duplicated push behavior with one coordinated notification system that sends
 fewer, better-timed, more useful alerts.
 
-**Status:** Future-state plan only. No current notification behavior changes.
+**Status:** Broad notification product plan. The active near-term implementation
+child plan is
+`docs/superpowers/plans/2026-06-04-live-notification-digest-coordinator.md`.
+No current notification behavior changes are approved by this document alone.
 
 **Controlling posture:** Do not change live notification behavior until the
 lock-consumer canary and production-source switch are reviewed. GitHub
@@ -33,6 +36,17 @@ PropLine webhook inbox rows into shadow `line_movement_events` using
 `LIVE_PROCESS_PROPLINE_WEBHOOKS`. This is comparison evidence only and must not
 write user-facing `notification_events` or change notification eligibility
 without the provider notification gates in this plan.
+
+**2026-06-04 grouped-notification goal:** Tyler wants the Render 10-minute live
+loop to keep creating timely notifications, but not as one push per pitcher
+when several rows share the same category. Start-window reminders should group
+pitchers whose game times fall in the same 30-minute window. Pick upgrades,
+downgrades, and new FIRE rows should group by category within the same live-layer
+run. Line/price movement should usually remain individual because the action is
+pitcher/book/side-specific, but those movement alerts should become stronger by
+using PropLine polling/webhooks, BoltOdds snapshots/heartbeats, broad
+confirmation, volatility, and single-book-noise labels before broader
+production promotion.
 
 ## Problem
 
@@ -248,8 +262,10 @@ report it for manual review rather than overstating attribution.
 
 ### 1. Start Window Digest
 
-Send one grouped push for a tight start cluster instead of one reminder per
-pitcher.
+Send one grouped push for a start cluster instead of one reminder per pitcher.
+The near-term grouping window is 30 minutes, because the current Render cadence
+already batches observations every 10 minutes and the product pain is "six
+pitchers starting together created six pushes."
 
 Example:
 
@@ -261,14 +277,35 @@ Example:
 Default behavior:
 
 - Group by slate date and start window.
-- Use a 10-15 minute reminder window before the first game in the cluster.
+- Use a 30-minute start-window bucket and send in the normal reminder window
+  before the first game in the cluster.
 - Include only active tracked picks and high-value watch items.
 - Keep individual pitcher detail in the app, not in the push body.
 
 This replaces the current "bulk push pile as reminder" behavior with a
 purpose-built digest.
 
-### 2. Lock Batch
+### 2. Pick Change Digest
+
+Group same-category pick changes emitted by the same Render live-layer run.
+
+Classes:
+
+- `new_fire_pick`
+- `pick_upgraded`
+- `pick_downgraded`
+
+Rules:
+
+- Do not group upgrades with downgrades.
+- Do not group movement alerts with pick-change alerts.
+- If only one row exists in the category, preserving the existing individual
+  body is acceptable.
+- The digest payload must preserve original source-event dedupe keys, pitchers,
+  sides, verdicts, and artifact hash/source context so accepted-bet attribution
+  and UI deep links can be added later.
+
+### 3. Lock Batch
 
 Send one lock-cluster push when multiple picks lock in the same operational
 window.
@@ -288,7 +325,7 @@ Rules:
 - Use shared semantic keys so GitHub and Supabase cannot both send the same lock
   transition.
 
-### 3. Urgent Market Movement
+### 4. Urgent Market Movement
 
 Keep individual pushes for market movement only when the alert is actionable.
 
@@ -306,7 +343,18 @@ Suppress:
 - Reversal/volatility unless summarized later.
 - Stale provider rows.
 
-### 4. System Health
+Movement-strength labels should be computed in shadow before promotion:
+
+- `single_book`
+- `broad_confirmation`
+- `propline_polling_confirmed`
+- `propline_webhook_confirmed`
+- `boltodds_confirmed`
+- `provider_conflict`
+- `volatile_or_reversed`
+- `stale_or_heartbeat_missing`
+
+### 5. System Health
 
 Send sparingly, but do send when action is needed:
 
@@ -318,7 +366,7 @@ Send sparingly, but do send when action is needed:
 These should be separate from betting-action alerts so Tyler can tell
 "technical issue" from "betting decision."
 
-### 5. Daily / Post-Slate Summary
+### 6. Daily / Post-Slate Summary
 
 Optional later class. This should stay out of the real-time path until the core
 push experience is clean.
@@ -414,14 +462,16 @@ failure modes.
    canary.
 2. Confirm `notification_events` queue health: pending, sent, failed, duplicate
    count, and stale event count.
-3. Add shadow-only coordinator rows or metadata for start-window digests and
-   lock batches. Do not send them yet.
+3. Add the June 4 digest coordinator in `shadow` mode for start-window digests,
+   same-category pick-change digests, and movement-strength labels. Do not send
+   grouped rows yet.
 4. Compare would-have-sent coordinator output to actual received pushes for at
    least one clean slate.
 5. Enable coordinator sends for one class at a time:
    - Start-window digest first.
-   - Lock batch second.
-   - Urgent market movement third.
+   - Pick-change digest second.
+   - Lock batch third.
+   - Urgent market movement fourth.
 6. During the 2026-05-23 canary, GitHub `send-notifications` is fully disabled
    for user-facing pushes; after review, either keep it as fallback/artifact
    health only or roll it back temporarily if the live queue fails.
