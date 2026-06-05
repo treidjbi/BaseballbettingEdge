@@ -1181,6 +1181,32 @@ def test_tracked_picks_from_history_prefers_locked_values(tmp_path, monkeypatch)
     ]
 
 
+def test_tracked_pick_row_exposes_confidence_referee_metadata():
+    import run_pipeline
+
+    row = run_pipeline._tracked_pick_row(
+        {
+            "date": "2026-06-05",
+            "pitcher": "Example Starter",
+            "team": "ARI",
+            "opp_team": "LAD",
+            "side": "under",
+            "verdict": "LEAN",
+            "raw_verdict": "FIRE 2u",
+            "actionable_verdict": "LEAN",
+            "confidence_referee": {
+                "mode": "enforce",
+                "relationship": "model_fades_favorite",
+                "would_cap_to": "LEAN",
+                "applied": True,
+            },
+        }
+    )
+
+    assert row["confidence_referee"]["mode"] == "enforce"
+    assert row["confidence_referee"]["applied"] is True
+
+
 def test_enrich_archives_with_tracked_picks_updates_existing_archives(tmp_path, monkeypatch):
     import run_pipeline
 

@@ -183,3 +183,67 @@ def test_summarize_quality_gates_counts_levels_and_flag_frequencies():
     assert summary["soft_flags"]["projected_lineup"] == 1
     assert summary["severe_flags"]["opener"] == 1
     assert summary["pre_record_skips"] == {"no_target_book": 2}
+
+
+def test_confidence_referee_default_off_is_behavior_identical(monkeypatch):
+    monkeypatch.delenv("MARKET_FAVORITE_REFEREE_MODE", raising=False)
+    record = clean_fire_record()
+    record["lambda"] = 5.1
+    record["best_over_odds"] = -130
+    record["best_under_odds"] = 120
+    record["ev_under"] = {
+        "verdict": "FIRE 2u",
+        "adj_ev": 0.18,
+        "ev": 0.19,
+        "edge": 0.025,
+    }
+
+    gated = apply_quality_to_record(record)
+
+    assert gated["ev_under"]["verdict"] == "FIRE 2u"
+    assert "confidence_referee" not in gated["ev_under"]
+
+
+def test_confidence_referee_shadow_does_not_change_verdict(monkeypatch):
+    monkeypatch.setenv("MARKET_FAVORITE_REFEREE_MODE", "shadow")
+    record = clean_fire_record()
+    record["lambda"] = 5.1
+    record["best_over_odds"] = -130
+    record["best_under_odds"] = 120
+    record["ev_under"] = {
+        "verdict": "FIRE 2u",
+        "adj_ev": 0.18,
+        "ev": 0.19,
+        "edge": 0.025,
+    }
+
+    gated = apply_quality_to_record(record)
+
+    assert gated["ev_under"]["verdict"] == "FIRE 2u"
+    assert gated["ev_under"]["actionable_verdict"] == "FIRE 2u"
+    assert gated["ev_under"]["quality_actionable_verdict"] == "FIRE 2u"
+    assert gated["ev_under"]["confidence_referee"]["mode"] == "shadow"
+    assert gated["ev_under"]["confidence_referee"]["would_cap_to"] == "LEAN"
+    assert gated["ev_under"]["confidence_referee"]["applied"] is False
+
+
+def test_confidence_referee_enforce_caps_after_quality_gate(monkeypatch):
+    monkeypatch.setenv("MARKET_FAVORITE_REFEREE_MODE", "enforce")
+    record = clean_fire_record()
+    record["lambda"] = 5.1
+    record["best_over_odds"] = -130
+    record["best_under_odds"] = 120
+    record["ev_under"] = {
+        "verdict": "FIRE 2u",
+        "adj_ev": 0.18,
+        "ev": 0.19,
+        "edge": 0.025,
+    }
+
+    gated = apply_quality_to_record(record)
+
+    assert gated["ev_under"]["raw_verdict"] == "FIRE 2u"
+    assert gated["ev_under"]["quality_actionable_verdict"] == "FIRE 2u"
+    assert gated["ev_under"]["verdict"] == "LEAN"
+    assert gated["ev_under"]["actionable_verdict"] == "LEAN"
+    assert gated["ev_under"]["confidence_referee"]["applied"] is True

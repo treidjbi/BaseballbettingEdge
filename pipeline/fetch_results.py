@@ -143,7 +143,8 @@ def init_db() -> None:
                 quality_gate_level TEXT,
                 input_quality_flags_json TEXT,
                 verdict_cap_reason TEXT,
-                data_maturity_json TEXT
+                data_maturity_json TEXT,
+                confidence_referee_json TEXT
             )
         """)
         conn.execute("""
@@ -171,6 +172,7 @@ def init_db() -> None:
             ("input_quality_flags_json", "TEXT"),
             ("verdict_cap_reason", "TEXT"),
             ("data_maturity_json", "TEXT"),
+            ("confidence_referee_json", "TEXT"),
             # New columns
             ("opp_team",           "TEXT"),
             ("pitcher_throws",     "TEXT"),
@@ -240,6 +242,7 @@ def seed_picks(today_json_path: Path = TODAY_JSON, now: datetime | None = None) 
                     verdict_cap_reason = "; ".join(str(r) for r in quality_gate_reasons)
                 input_quality_flags_json = _json_or_none(p.get("input_quality_flags"))
                 data_maturity_json = _json_or_none(p.get("data_maturity"))
+                confidence_referee_json = _json_or_none(ev_data.get("confidence_referee"))
                 cur = conn.execute("""
                     INSERT OR IGNORE INTO picks
                     (date, pitcher, team, side, k_line, verdict,
@@ -255,8 +258,8 @@ def seed_picks(today_json_path: Path = TODAY_JSON, now: datetime | None = None) 
                      opening_over_odds, opening_under_odds, opening_odds_source,
                      swstr_pct, career_swstr_pct, data_complete,
                      quality_gate_level, input_quality_flags_json, verdict_cap_reason,
-                     data_maturity_json)
-                    VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+                     data_maturity_json, confidence_referee_json)
+                    VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
                 """, (
                     game_date, p["pitcher"], p["team"], side,
                     p["k_line"], verdict,
@@ -291,6 +294,7 @@ def seed_picks(today_json_path: Path = TODAY_JSON, now: datetime | None = None) 
                     input_quality_flags_json,
                     verdict_cap_reason,
                     data_maturity_json,
+                    confidence_referee_json,
                 ))
                 inserted += cur.rowcount
 
@@ -340,7 +344,8 @@ def seed_picks(today_json_path: Path = TODAY_JSON, now: datetime | None = None) 
                             quality_gate_level = ?,
                             input_quality_flags_json = ?,
                             verdict_cap_reason = ?,
-                            data_maturity_json = ?
+                            data_maturity_json = ?,
+                            confidence_referee_json = ?
                         WHERE date = ? AND pitcher = ? AND side = ?
                           AND locked_at IS NULL AND result IS NULL
                     """, (
@@ -369,6 +374,7 @@ def seed_picks(today_json_path: Path = TODAY_JSON, now: datetime | None = None) 
                         input_quality_flags_json,
                         verdict_cap_reason,
                         data_maturity_json,
+                        confidence_referee_json,
                         game_date, p["pitcher"], side,
                     ))
                     updated += conn.execute("SELECT changes()").fetchone()[0]
@@ -512,8 +518,8 @@ def load_history_into_db(history_path: Path = None) -> int:
                  result, actual_ks, pnl, fetched_at, game_time, lineup_used,
                  locked_at, locked_k_line, locked_odds, locked_adj_ev, locked_verdict,
                  data_complete, quality_gate_level, input_quality_flags_json,
-                 verdict_cap_reason, data_maturity_json)
-                VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+                 verdict_cap_reason, data_maturity_json, confidence_referee_json)
+                VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
             """, (
                 p.get("date"), p.get("pitcher"), p.get("team"),
                 p.get("opp_team"), p.get("pitcher_throws"),
@@ -550,6 +556,7 @@ def load_history_into_db(history_path: Path = None) -> int:
                 _json_or_none(p.get("input_quality_flags")),
                 p.get("verdict_cap_reason"),
                 _json_or_none(p.get("data_maturity")),
+                _json_or_none(p.get("confidence_referee")),
             ))
             inserted += cur.rowcount
 
@@ -578,7 +585,7 @@ def export_db_to_history(history_path: Path = None) -> int:
                    game_time, lineup_used,
                    locked_at, locked_k_line, locked_odds, locked_adj_ev, locked_verdict,
                    data_complete, quality_gate_level, input_quality_flags_json,
-                   verdict_cap_reason, data_maturity_json
+                   verdict_cap_reason, data_maturity_json, confidence_referee_json
             FROM picks
             ORDER BY date, pitcher, side
         """).fetchall()
@@ -597,12 +604,13 @@ def export_db_to_history(history_path: Path = None) -> int:
         "game_time", "lineup_used",
         "locked_at", "locked_k_line", "locked_odds", "locked_adj_ev", "locked_verdict",
         "data_complete", "quality_gate_level", "input_quality_flags_json",
-        "verdict_cap_reason", "data_maturity_json",
+        "verdict_cap_reason", "data_maturity_json", "confidence_referee_json",
     ]
     picks = [dict(zip(cols, row)) for row in rows]
     for pick in picks:
         pick["input_quality_flags"] = _json_load_or_none(pick.pop("input_quality_flags_json", None))
         pick["data_maturity"] = _json_load_or_none(pick.pop("data_maturity_json", None))
+        pick["confidence_referee"] = _json_load_or_none(pick.pop("confidence_referee_json", None))
 
     history_path.parent.mkdir(parents=True, exist_ok=True)
     # Write atomically: dump to a temp file in the same directory, then rename.

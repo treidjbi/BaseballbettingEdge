@@ -7,6 +7,8 @@ import math
 from collections import Counter
 from typing import Any
 
+from confidence_referee import apply_referee_to_side
+
 
 VERDICT_ORDER = {
     "PASS": 0,
@@ -264,7 +266,12 @@ def cap_verdict(raw_verdict: str, max_actionable_verdict: str) -> str:
     return "PASS"
 
 
-def _apply_quality_to_side(side: dict, quality: dict) -> dict:
+def _apply_quality_to_side(
+    record: dict,
+    side_key: str,
+    side: dict,
+    quality: dict,
+) -> dict:
     updated = copy.deepcopy(side)
     raw_verdict = updated.get("raw_verdict", updated.get("verdict", "PASS"))
     raw_adj_ev = updated.get("raw_adj_ev", updated.get("adj_ev", 0.0))
@@ -272,13 +279,16 @@ def _apply_quality_to_side(side: dict, quality: dict) -> dict:
 
     updated["raw_verdict"] = raw_verdict
     updated["raw_adj_ev"] = raw_adj_ev
+    updated["quality_actionable_verdict"] = actionable_verdict
     updated["actionable_verdict"] = actionable_verdict
     updated["verdict"] = actionable_verdict
     updated["quality_gate_level"] = quality["quality_gate_level"]
     updated["quality_gate_reasons"] = list(quality["quality_gate_reasons"])
     if quality["quality_gate_level"] == "blocked":
         updated["adj_ev"] = 0.0
-    return updated
+
+    side_name = "over" if side_key == "ev_over" else "under"
+    return apply_referee_to_side(record, side_name, updated)
 
 
 def apply_quality_to_record(record: dict) -> dict:
@@ -290,7 +300,7 @@ def apply_quality_to_record(record: dict) -> dict:
     for side_key in ("ev_over", "ev_under"):
         side = updated.get(side_key)
         if isinstance(side, dict):
-            updated[side_key] = _apply_quality_to_side(side, quality)
+            updated[side_key] = _apply_quality_to_side(updated, side_key, side, quality)
     return updated
 
 

@@ -127,6 +127,7 @@ class TestInitDb:
         assert "input_quality_flags_json" in cols
         assert "verdict_cap_reason" in cols
         assert "data_maturity_json" in cols
+        assert "confidence_referee_json" in cols
         assert "raw_adj_ev" in cols
 
 
@@ -227,6 +228,12 @@ class TestSeedPicks:
                         "raw_verdict": "FIRE 2u",
                         "actionable_verdict": "FIRE 1u",
                         "verdict": "FIRE 1u",
+                        "confidence_referee": {
+                            "mode": "shadow",
+                            "relationship": "model_fades_favorite",
+                            "would_cap_to": "LEAN",
+                            "applied": False,
+                        },
                         "win_prob": 0.61,
                         "movement_conf": 1.0,
                     },
@@ -242,7 +249,8 @@ class TestSeedPicks:
         conn = sqlite3.connect(db_path)
         row = conn.execute("""
             SELECT verdict, raw_verdict, actionable_verdict, quality_gate_level,
-                   input_quality_flags_json, verdict_cap_reason, data_maturity_json, raw_adj_ev
+                   input_quality_flags_json, verdict_cap_reason, data_maturity_json,
+                   raw_adj_ev, confidence_referee_json
             FROM picks WHERE pitcher='Quality Pitcher'
         """).fetchone()
         conn.close()
@@ -255,6 +263,7 @@ class TestSeedPicks:
         assert row[5] == "1 soft input flag: unrated_umpire"
         assert json.loads(row[6])["umpire"] == "unknown"
         assert row[7] == 0.19
+        assert json.loads(row[8])["relationship"] == "model_fades_favorite"
 
     def test_seed_skips_blocked_pass_even_when_raw_verdict_is_fire(self, tmp_db, tmp_path):
         db_path, fr = tmp_db
@@ -373,6 +382,12 @@ class TestLoadHistoryIntoDb:
                 "input_quality_flags": ["unrated_umpire"],
                 "verdict_cap_reason": "1 soft input flag: unrated_umpire",
                 "data_maturity": {"umpire": "unknown"},
+                "confidence_referee": {
+                    "mode": "enforce",
+                    "relationship": "model_fades_favorite",
+                    "would_cap_to": "LEAN",
+                    "applied": True,
+                },
             }
         ]
         history_path = tmp_path / "picks_history.json"
@@ -383,7 +398,8 @@ class TestLoadHistoryIntoDb:
         conn = sqlite3.connect(db_path)
         row = conn.execute("""
             SELECT raw_verdict, actionable_verdict, raw_adj_ev, quality_gate_level,
-                   input_quality_flags_json, verdict_cap_reason, data_maturity_json
+                   input_quality_flags_json, verdict_cap_reason, data_maturity_json,
+                   confidence_referee_json
             FROM picks WHERE pitcher='Quality Pitcher'
         """).fetchone()
         conn.close()
@@ -395,6 +411,7 @@ class TestLoadHistoryIntoDb:
         assert json.loads(row[4]) == ["unrated_umpire"]
         assert row[5] == "1 soft input flag: unrated_umpire"
         assert json.loads(row[6])["umpire"] == "unknown"
+        assert json.loads(row[7])["applied"] is True
 
     def test_returns_zero_if_file_missing(self, tmp_db, tmp_path):
         """load_history_into_db returns 0 when history file doesn't exist."""
@@ -441,7 +458,7 @@ class TestExportDbToHistory:
                   edge, ev, adj_ev, raw_adj_ev,
                   raw_lambda, applied_lambda, odds, movement_conf,
                   quality_gate_level, input_quality_flags_json,
-                  verdict_cap_reason, data_maturity_json
+                  verdict_cap_reason, data_maturity_json, confidence_referee_json
                 )
                 VALUES (
                   '2026-04-29','Quality Pitcher','A','over',6.5,'FIRE 1u',
@@ -449,7 +466,8 @@ class TestExportDbToHistory:
                   0.08,0.19,0.19,0.19,
                   7.4,7.4,-110,1.0,
                   'capped','["unrated_umpire"]',
-                  '1 soft input flag: unrated_umpire','{"umpire":"unknown"}'
+                  '1 soft input flag: unrated_umpire','{"umpire":"unknown"}',
+                  '{"mode":"enforce","relationship":"model_fades_favorite","applied":true}'
                 )
             """)
         history_path = tmp_path / "picks_history.json"
@@ -465,6 +483,7 @@ class TestExportDbToHistory:
         assert row["input_quality_flags"] == ["unrated_umpire"]
         assert row["verdict_cap_reason"] == "1 soft input flag: unrated_umpire"
         assert row["data_maturity"]["umpire"] == "unknown"
+        assert row["confidence_referee"]["mode"] == "enforce"
 
     def test_overwrites_existing_file(self, tmp_db, tmp_path):
         """export_db_to_history replaces existing history file."""
@@ -1338,6 +1357,7 @@ class TestNewColumns:
         "is_opener", "opener_note",
         "days_since_last_start", "last_pitch_count",
         "rest_k9_delta", "park_factor",
+        "confidence_referee_json",
     ]
 
     def test_new_columns_exist_after_init(self, tmp_db):

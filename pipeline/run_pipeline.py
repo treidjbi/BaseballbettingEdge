@@ -1351,7 +1351,7 @@ def _tracked_pick_row(pick: dict) -> dict:
     locked_odds = pick.get("locked_odds")
     locked_adj_ev = pick.get("locked_adj_ev")
 
-    return {
+    row = {
         "date": pick.get("date"),
         "pitcher": pick.get("pitcher"),
         "team": pick.get("team"),
@@ -1387,6 +1387,9 @@ def _tracked_pick_row(pick: dict) -> dict:
         "game_time": pick.get("game_time"),
         "data_complete": pick.get("data_complete"),
     }
+    if pick.get("confidence_referee") is not None:
+        row["confidence_referee"] = pick.get("confidence_referee")
+    return row
 
 
 def _tracked_picks_from_history(date_str: str | None = None) -> list[dict]:
