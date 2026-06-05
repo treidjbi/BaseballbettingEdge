@@ -39,18 +39,20 @@ become FIRE. It should not replace the model with the market favorite.
 
 ## Implementation Status
 
-2026-06-05 phase-one implementation is code-ready behind the default-off
-`MARKET_FAVORITE_REFEREE_MODE` flag. The implemented slice includes the pure
+2026-06-05 phase-one implementation is deployed to Render pipeline crons.
+Tyler approved `MARKET_FAVORITE_REFEREE_MODE=shadow` after the first
+2026-06-05 lock batch verified clean. The implemented slice includes the pure
 runtime referee module, post-quality-gate integration, SQLite/history/tracked
-pick metadata persistence, and a compact canary audit. Local verification
-passed the full Python suite and the Netlify function Node tests with the flag
-unset, so production behavior remains unchanged until a separate deployment and
-environment-mode decision.
+pick metadata persistence, and a compact canary audit.
 
-Next live sequence: merge/deploy code with `MARKET_FAVORITE_REFEREE_MODE=off`,
-then run at least one full slate in `shadow`, then review the canary audit
-before any `enforce` decision. This status does not approve lambda, threshold,
-staking, provider, notification, lock, retention, or dashboard-source changes.
+The first post-shadow refresh at `2026-06-05T18:08Z` published fresh `today`,
+dated, and history artifacts with `18` tracked rows carrying
+`confidence_referee.mode=shadow`, `0` applied caps, and `0` live verdict
+changes. Because shadow was enabled after the first lock, 2026-06-05 counts
+only as a partial same-day smoke. The next full slate after the environment
+flip is the first clean shadow-slate evidence for any `enforce` discussion.
+This status does not approve lambda, threshold, staking, provider,
+notification, lock, retention, or dashboard-source changes.
 
 ## Non-Goals
 
