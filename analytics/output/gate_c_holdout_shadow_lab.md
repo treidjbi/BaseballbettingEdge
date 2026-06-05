@@ -2,12 +2,12 @@
 
 This report is shadow-only. It does not change live lambda, verdicts, thresholds, staking, provider order, notifications, calibration, or dashboard artifacts.
 
-- Generated at: `2026-06-03T18:39:16Z`
+- Generated at: `2026-06-05T15:24:39Z`
 - Clean window start: `2026-04-28`
-- Official-close market rows: `735`
-- Tracked pick side rows: `757`
+- Official-close market rows: `749`
+- Tracked pick side rows: `771`
 - Training slates: `25` (2026-04-28 to 2026-05-22)
-- Validation slates: `11` (2026-05-23 to 2026-06-02)
+- Validation slates: `12` (2026-05-23 to 2026-06-04)
 
 ## Training Fit
 
@@ -36,13 +36,13 @@ Error is `actual Ks - projected Ks`; negative means the projection was too high.
 
 | Candidate | Rows | Mean Error | MAE | RMSE | Side W-L | Side Accuracy |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: |
-| `current_model` | 213 | -0.221 | 1.822 | 2.249 | 112-99 | 53.1% |
-| `market_shrink_25` | 213 | -0.174 | 1.805 | 2.227 | 112-99 | 53.1% |
-| `high_line_temper` | 213 | -0.213 | 1.819 | 2.251 | 111-99 | 52.9% |
-| `handedness_bucket_adjust` | 213 | -0.217 | 1.823 | 2.251 | 112-99 | 53.1% |
-| `market_favorite_only` | 213 | -- | -- | -- | 123-84 | 59.4% |
-| `over_only` | 213 | -- | -- | -- | 100-113 | 46.9% |
-| `under_only` | 213 | -- | -- | -- | 113-100 | 53.1% |
+| `current_model` | 227 | -0.229 | 1.798 | 2.223 | 121-103 | 54.0% |
+| `market_shrink_25` | 227 | -0.186 | 1.783 | 2.202 | 121-103 | 54.0% |
+| `high_line_temper` | 227 | -0.219 | 1.793 | 2.223 | 121-102 | 54.3% |
+| `handedness_bucket_adjust` | 227 | -0.226 | 1.799 | 2.224 | 121-103 | 54.0% |
+| `market_favorite_only` | 227 | -- | -- | -- | 134-87 | 60.6% |
+| `over_only` | 227 | -- | -- | -- | 106-121 | 46.7% |
+| `under_only` | 227 | -- | -- | -- | 121-106 | 53.3% |
 
 ## Validation Tracked-Pick Alignment
 
@@ -50,13 +50,13 @@ This checks whether a candidate would still point to the side Tyler actually tra
 
 | Candidate | Tracked Rows | Aligned Rows | W-L | Flat PnL | Flat ROI |
 | --- | ---: | ---: | ---: | ---: | ---: |
-| `current_model` | 220 | 183 | 101-82 | +2.46 | 1.3% |
-| `market_shrink_25` | 220 | 183 | 101-82 | +2.46 | 1.3% |
-| `high_line_temper` | 220 | 181 | 100-81 | +2.48 | 1.4% |
-| `handedness_bucket_adjust` | 220 | 183 | 101-82 | +2.46 | 1.3% |
-| `market_favorite_only` | 220 | 105 | 68-37 | +13.17 | 12.5% |
-| `over_only` | 220 | 105 | 54-51 | -3.58 | -3.4% |
-| `under_only` | 220 | 115 | 65-50 | +8.01 | 7.0% |
+| `current_model` | 234 | 194 | 108-86 | +4.42 | 2.3% |
+| `market_shrink_25` | 234 | 194 | 108-86 | +4.42 | 2.3% |
+| `high_line_temper` | 234 | 191 | 107-84 | +5.44 | 2.8% |
+| `handedness_bucket_adjust` | 234 | 194 | 108-86 | +4.42 | 2.3% |
+| `market_favorite_only` | 234 | 111 | 73-38 | +15.71 | 14.2% |
+| `over_only` | 234 | 110 | 56-54 | -4.61 | -4.2% |
+| `under_only` | 234 | 124 | 70-54 | +7.99 | 6.4% |
 
 ## Rolling Validation Windows
 
@@ -77,6 +77,6 @@ Rolling windows reduce dependence on one train/validation split. They are still 
 ## Read Rule
 
 - Do not discard lambda from this report alone; side baselines have no projection-error metric and can be regime-chasing.
-- `market_shrink_25` beat current lambda on validation MAE (1.805 vs 1.822), so it is a Gate F candidate, not a live change.
-- `market_favorite_only` had the best validation side accuracy (59.4% vs current 53.1%); treat that as a referee/selection warning.
+- `market_shrink_25` beat current lambda on validation MAE (1.783 vs 1.798), so it is a Gate F candidate, not a live change.
+- `market_favorite_only` had the best validation side accuracy (60.6% vs current 54.0%); treat that as a referee/selection warning.
 - Any live model change still needs Gate E/F proof across side, price, K-line, quality, and provider slices.
