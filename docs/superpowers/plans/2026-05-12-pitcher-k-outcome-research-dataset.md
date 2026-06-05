@@ -293,18 +293,28 @@ confidence-referee child plan because `market_favorite_only` materially beat
 current model side accuracy and tracked-pick alignment in the validation
 holdout.
 
+The Tyler-approved production canary plan is
+`docs/superpowers/plans/2026-06-05-market-favorite-confidence-referee-production-canary.md`.
+It is the only current plan allowed to move the market-favorite referee toward
+live verdict conversion, and only behind `MARKET_FAVORITE_REFEREE_MODE=off|shadow|enforce`.
+It must not change lambda, global thresholds, staking, provider order,
+notifications, locks, retention, or dashboard source-of-truth behavior.
+
 Gate F projection-challenger validation is controlled by
 `docs/superpowers/plans/2026-06-03-gate-f-projection-challenger-shadow-plan.md`.
 It tests `market_shrink_25`, `high_line_temper`, and related challengers as
 shadow-only candidates and cannot change live lambda without a later
 Tyler-approved production plan.
 
-As of the 2026-06-03 execution, both child plans have working diagnostics and
-reports. Market-favorite is close but not promotion-ready because validation
-tracked rows are still `220 < 250`. Gate F projection challengers are not
-promotion-ready: shrink variants are directionally useful but below the MAE-lift
-threshold, `high_line_temper` / `leash_cap` do not clear the aggregate and
-rolling evidence bars, and handedness remains hindsight-only.
+As of the 2026-06-05 refresh, the market-favorite shadow report had `234 / 250`
+validation tracked rows, `market_favorite_referee_candidate` at `114` rows,
+`72-42`, `+11.80`, `+10.4%`, and `model_fades_market_favorite` at `113` rows,
+`51-62`, `-7.07`, `-6.3%`. Tyler explicitly waived the remaining `16` validation
+rows and approved drafting the feature-flagged production canary plan. Gate F
+projection challengers are still not promotion-ready: shrink variants are
+directionally useful but below the MAE-lift threshold, `high_line_temper` /
+`leash_cap` do not clear the aggregate and rolling evidence bars, and handedness
+remains hindsight-only.
 
 The referee should compare:
 
