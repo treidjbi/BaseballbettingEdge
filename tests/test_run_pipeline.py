@@ -1982,9 +1982,12 @@ def _sample_prop_for(pitcher_name="Test Pitcher", game_time="2026-04-12T23:05:00
 
 # ── Tests: _write_dated_archive_only ──────────────────────────────────────────
 
-def test_write_dated_archive_only_creates_dated_file(tmp_path):
+def test_write_dated_archive_only_creates_dated_file(tmp_path, caplog):
     """_write_dated_archive_only should write a dated JSON and update index."""
     import run_pipeline
+
+    caplog.set_level("WARNING")
+
     with patch.object(run_pipeline, "OUTPUT_PATH", tmp_path / "today.json"):
         _write_dated_archive_only([], "2026-04-12", props_available=False)
 
@@ -1998,6 +2001,7 @@ def test_write_dated_archive_only_creates_dated_file(tmp_path):
     assert index.exists()
     entries = json.loads(index.read_text())["dates"]
     assert any(entry["date"] == "2026-04-12" for entry in entries)
+    assert "Failed to write index.json" not in caplog.text
 
 
 def test_write_dated_archive_only_preserves_existing_index_dates_not_in_checkout(tmp_path):
@@ -2180,10 +2184,12 @@ def test_write_archive_merges_other_date_bucket_into_existing_archive(tmp_path):
     assert [p["pitcher"] for p in today["pitchers"]] == ["Today Pitcher"]
 
 
-def test_write_archive_preserves_existing_index_dates_not_in_checkout(tmp_path):
+def test_write_archive_preserves_existing_index_dates_not_in_checkout(tmp_path, caplog):
     """Full/refresh runs should keep Supabase-hydrated index dates even when
     the dated archive file is absent from the Render checkout."""
     import run_pipeline
+
+    caplog.set_level("WARNING")
 
     today_path = tmp_path / "today.json"
     (tmp_path / "index.json").write_text(
@@ -2208,6 +2214,7 @@ def test_write_archive_preserves_existing_index_dates_not_in_checkout(tmp_path):
     assert [entry["date"] for entry in entries[:2]] == ["2026-06-03", "2026-06-02"]
     assert entries[1]["wins"] == 13
     assert entries[1]["losses"] == 12
+    assert "Failed to write index.json" not in caplog.text
 
 
 def _mock_pick(pitcher="Cole", side="over", result="win", actual_ks=8,

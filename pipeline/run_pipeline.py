@@ -653,7 +653,7 @@ def _write_dated_archive_only(
     try:
         with open(index_path, "w") as f:
             json.dump({"dates": date_entries}, f, indent=2)
-        log.info("Updated index.json for preview (%d entries)", len(all_dates))
+        log.info("Updated index.json for preview (%d entries)", len(date_entries))
     except Exception as e:
         log.warning("Failed to write index.json: %s", e)
 
@@ -2270,7 +2270,7 @@ def _write_archive(output: dict, run_date_str: str) -> None:
     try:
         with open(index_path, "w") as f:
             json.dump({"dates": date_entries}, f, indent=2)
-        log.info("Updated index.json (%d entries)", len(all_dates))
+        log.info("Updated index.json (%d entries)", len(date_entries))
     except Exception as e:
         log.warning("Failed to write index.json: %s", e)
 
