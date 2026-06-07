@@ -230,6 +230,40 @@
       String(side.direction || "").toLowerCase()
     ].join(":");
   }
+  function queryParamValue(params, names) {
+    for (const name of names) {
+      const value = String(params.get(name) || "").trim();
+      if (value) return value;
+    }
+    return "";
+  }
+  function acceptedBetAlertContextForPick(p, side) {
+    let params;
+    try {
+      params = new URLSearchParams(window.location.search || "");
+    } catch {
+      return null;
+    }
+    const notificationEventId = queryParamValue(params, ["notification_event_id", "notificationEventId", "event_id"]);
+    const shadowCandidateId = queryParamValue(params, ["shadow_candidate_id", "shadowCandidateId", "candidate_id"]);
+    if (!notificationEventId && !shadowCandidateId) return null;
+    const slateDate = queryParamValue(params, ["slate_date", "date"]);
+    if (slateDate && slateDate !== slateDateForBetLog()) return null;
+    const linkedPitcher = queryParamValue(params, ["normalized_pitcher", "pitcher", "player", "name"]);
+    if (!linkedPitcher || acceptedBetPitcherKey(linkedPitcher) !== acceptedBetPitcherKey(p.pitcher)) return null;
+    const linkedSide = queryParamValue(params, ["side", "direction", "pick_side"]);
+    if (!linkedSide || linkedSide.toUpperCase() !== String(side.direction || "").toUpperCase()) return null;
+    const requestedSource = queryParamValue(params, ["source"]).toLowerCase();
+    const source = requestedSource === "shadow_candidate" || !notificationEventId && shadowCandidateId ? "shadow_candidate" : "notification";
+    return {
+      source,
+      notification_event_id: notificationEventId || null,
+      shadow_candidate_id: shadowCandidateId || null,
+      decision_label: queryParamValue(params, ["decision_label", "decision"]),
+      observed_at: queryParamValue(params, ["observed_at"]),
+      source_artifact_sha256: queryParamValue(params, ["source_artifact_sha256", "artifact_sha256"])
+    };
+  }
   function canonicalBetLogBook(book) {
     const value = String(book || "").trim();
     const normalized = value.toLowerCase().replace(/\s+/g, "");
@@ -299,7 +333,7 @@
     };
     return labels[value] || "Manual edit";
   }
-  function buildAcceptedBetPayload(p, side, { line, odds, book, units, priceSource = "artifact", marketRow = null }) {
+  function buildAcceptedBetPayload(p, side, { line, odds, book, units, priceSource = "artifact", marketRow = null, alertContext = null }) {
     return {
       slate_date: slateDateForBetLog(),
       pitcher: p.pitcher,
@@ -310,7 +344,9 @@
       book,
       units,
       game_time: p.game_time || null,
-      source: "dashboard_manual",
+      source: alertContext?.source || "dashboard_manual",
+      notification_event_id: alertContext?.notification_event_id || null,
+      shadow_candidate_id: alertContext?.shadow_candidate_id || null,
       model_snapshot: {
         lambda: p.lambda ?? null,
         adj_ev: side.adj_ev ?? null,
@@ -332,6 +368,12 @@
         selected_live_market_consensus: priceSource === "live_best" ? marketRow?.market_consensus || null : null,
         selected_live_bet_value_consensus: priceSource === "live_best" ? marketRow?.bet_value_consensus || null : null,
         selected_live_source_artifact_sha256: priceSource === "live_best" ? marketRow?.source_artifact_sha256 || null : null,
+        deep_link_context: alertContext ? {
+          source: alertContext.source,
+          decision_label: alertContext.decision_label || null,
+          observed_at: alertContext.observed_at || null,
+          source_artifact_sha256: alertContext.source_artifact_sha256 || null
+        } : null,
         generated_at: window.V2_DATA?.generated_at || null
       }
     };
@@ -801,6 +843,7 @@
     const sideUnder = { ...p.ev_under, direction: "UNDER", odds: p.best_under_odds, opening: p.opening_under_odds };
     const best = displaySide(p);
     const marketBetRow = selectedMarketBetRow(p, best);
+    const betAlertContext = acceptedBetAlertContextForPick(p, best);
     const displayOver = best.direction === "OVER" ? best : sideOver;
     const displayUnder = best.direction === "UNDER" ? best : sideUnder;
     const helpers = getMovementHelpers();
@@ -952,7 +995,8 @@
             book,
             units,
             priceSource: betForm.priceSource || "artifact",
-            marketRow: marketBetRow
+            marketRow: marketBetRow,
+            alertContext: betAlertContext
           }))
         });
         if (response.status === 401) {
@@ -1021,6 +1065,7 @@
         /* @__PURE__ */ React.createElement("div", { className: "v2-bet-ticket-head" }, /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { className: "eyebrow" }, "Bet ticket"), /* @__PURE__ */ React.createElement("div", { className: "title", id: "v2-bet-ticket-title" }, p.pitcher, " ", best.direction, " ", best.k_line ?? p.k_line, " Ks")), /* @__PURE__ */ React.createElement("span", { className: `v2-bet-verdict ${verdictClass(best.verdict, best.direction)}` }, best.verdict)),
         /* @__PURE__ */ React.createElement("div", { className: "v2-bet-ticket-meta" }, "Model ref: ", bookForSide(p, best) || "Market", " ", fmtOdds(best.odds), /* @__PURE__ */ React.createElement("span", null, "EV ", best.adj_ev > 0 ? "+" : "", (best.adj_ev * 100).toFixed(1), "%")),
         /* @__PURE__ */ React.createElement("div", { className: `v2-bet-price-source ${betForm.priceSource}` }, /* @__PURE__ */ React.createElement("span", null, betPriceSourceLabel(betForm.priceSource)), betForm.priceSource === "live_best" && marketBetRow ? /* @__PURE__ */ React.createElement("b", null, marketBetRow.provider || "live", " \xB7 ", marketBetRow.best_book, " ", marketBetRow.best_line, "K ", fmtOdds(marketBetRow.best_odds)) : /* @__PURE__ */ React.createElement("b", null, bookForSide(p, best) || "Market", " ", best.k_line ?? p.k_line, "K ", fmtOdds(best.odds))),
+        betAlertContext && /* @__PURE__ */ React.createElement("div", { className: "v2-bet-alert-context" }, /* @__PURE__ */ React.createElement("span", null, "Linked alert"), /* @__PURE__ */ React.createElement("b", null, betAlertContext.source === "shadow_candidate" ? "Shadow candidate" : "Notification", " - ", betAlertContext.notification_event_id || betAlertContext.shadow_candidate_id)),
         /* @__PURE__ */ React.createElement("div", { className: "v2-bet-fields" }, /* @__PURE__ */ React.createElement("label", { className: "v2-bet-field" }, /* @__PURE__ */ React.createElement("span", null, "Line"), /* @__PURE__ */ React.createElement(
           "input",
           {
