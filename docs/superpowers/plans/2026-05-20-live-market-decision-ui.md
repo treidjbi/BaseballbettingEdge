@@ -1,7 +1,7 @@
 # Live Market Decision UI Plan
 
-> **Status:** Phase 1 hidden MVP implemented 2026-06-07. Keep display-only and
-> shadow-only; do not make default-on or add live reads without Tyler approval.
+> **Status:** Phase 2 hidden live-read MVP implemented 2026-06-07. Keep
+> display-only and shadow-only; do not make default-on without Tyler approval.
 >
 > **Guardrail:** This plan must not change production provider order, model math,
 > thresholds, staking, lock behavior, notification sends, retention, secrets, or
@@ -22,6 +22,16 @@
 > browser read, Netlify endpoint, provider/source-of-truth promotion,
 > notification behavior, model math, thresholds, staking, lock behavior,
 > retention, or dashboard default-on behavior changed.
+>
+> **2026-06-07 Phase 2 update:** `netlify/functions/live-market-display.mjs`
+> now exposes a same-origin, server-side Supabase REST proxy for sanitized
+> `live_market_display_state` rows. `dashboard/v2-data.js` fetches it only
+> when `?marketSheet=1` is present, merges it with any preloaded fixture rows,
+> and fails soft into normal dashboard rendering. The endpoint returns only an
+> app-safe allow-list plus sanitized `book_rows` / `movement_events`; it does
+> not expose raw provider payloads, service-role responses, secrets, unbounded
+> snapshots, or production source-of-truth behavior. The market sheet remains
+> hidden and display-only.
 
 ## Goal
 
@@ -336,6 +346,23 @@ This phase can be implemented before any operational cutover because it does
 not read live Supabase from the browser.
 
 ### Phase 2 - Safe Live Read
+
+Implemented 2026-06-07 on branch `codex/live-market-display-endpoint`:
+
+- `netlify/functions/live-market-display.mjs` reads
+  `live_market_display_state` with server-side Supabase credentials and returns
+  `generated_at`, `slate_date`, `source`, and sanitized rows only.
+- Supported providers are limited to BoltOdds and PropLine. Supported books are
+  filtered to the app's target set before `book_rows`, `books_seen`, and
+  `best_book` reach the browser.
+- Missing Supabase configuration, invalid dates, and Supabase read failures
+  fail closed with `rows: []` and a non-secret `error` value.
+- `dashboard/v2-data.js` calls the endpoint only behind `?marketSheet=1`, after
+  the slate artifact is loaded, and keeps the dashboard usable if the endpoint
+  is unavailable.
+- Verified with endpoint tests, hidden-flag adapter tests, adjacent v2 data /
+  movement / factor-detail tests, Netlify notification and accepted-bet tests,
+  syntax checks, and `git diff --check`.
 
 Add a Netlify read endpoint for sanitized current-slate market display rows.
 
