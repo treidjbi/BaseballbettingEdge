@@ -18,8 +18,15 @@ model-input canary, not a threshold/staking/provider/notification change.
 ## Implementation Status
 
 Implemented and pushed to `main` on 2026-06-07 at commit `33e9d180`.
-Render cron deployment and the `BATTER_HANDEDNESS_MODE=path_b` environment
-flip are still pending because the local Render CLI token is expired.
+Activated on the seven Render pipeline cron services after Render CLI
+re-authentication; all seven deploys are live on commit `3b527830` with
+`BATTER_HANDEDNESS_MODE=path_b`.
+
+First same-day verification was partial because activation happened after some
+games had started. The public `today` artifact generated at
+`2026-06-07T18:08:02Z` had `17/28` pitcher rows with
+`batter_handedness_mode=path_b`; the `11` rows without the new fields were all
+already in-progress games preserved from the pre-activation artifact.
 
 - `BATTER_HANDEDNESS_MODE=path_a|path_b`, default `path_a`
 - `path_b` overlays live-collected `data/batter_splits_YYYY.json` samples onto
@@ -71,5 +78,5 @@ flip are still pending because the local Render CLI token is expired.
 - [x] Update current-state/Gate C docs and automation memory.
 - [x] Run focused tests and full test suite.
 - [x] Commit and push.
-- [ ] Deploy Render pipeline crons and set `BATTER_HANDEDNESS_MODE=path_b` only
+- [x] Deploy Render pipeline crons and set `BATTER_HANDEDNESS_MODE=path_b` only
       after code is live.
