@@ -379,10 +379,10 @@
   function marketRowScore(row) {
     return [
       marketFreshnessRank(row),
+      marketObservedAtMs(row),
       marketActionRank(row),
       row?.broad_confirmation === true ? 1 : 0,
       numericOrNull(row?.book_count) || 0,
-      marketObservedAtMs(row),
       marketProviderRank(row),
     ];
   }

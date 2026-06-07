@@ -61,6 +61,13 @@
 > pre-fills the ticket from the saved row, saves a new `dashboard_correction`
 > accepted-bet entry, and stores the corrected-from row details in metadata. It
 > does not silently mutate or delete the original row.
+>
+> **2026-06-07 review-fix update:** automated review follow-up tightened this
+> hidden surface: correction rows now get unique dedupe identities, matching
+> correction rows are not hidden behind the first-five review display limit, a
+> manually typed bet-log key can load review rows before save, fresh live-market
+> row recency wins before older action labels, playable-price labels require the
+> model K line, and default push click URLs carry alert attribution context.
 
 ## Goal
 

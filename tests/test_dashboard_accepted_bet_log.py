@@ -71,8 +71,10 @@ def test_dashboard_prefills_bet_ticket_from_live_market_row():
 def test_dashboard_uses_price_cushion_for_live_market_prefill_decision():
     app = DASHBOARD_APP.read_text(encoding="utf-8")
 
-    assert "marketEffectiveActionLabel(row, side)" in app
+    assert "marketEffectiveActionLabel(row, side, p)" in app
     assert "marketPriceCushionForSide(row, side)" in app
+    assert "marketModelLine(row, side, p" in app
+    assert "side?.k_line ?? p?.k_line" in app
     assert "playable_price" in app
     assert "Playable price" in app
     assert "isLiveMarketBetPrefill(row, side" in app
@@ -111,14 +113,25 @@ def test_dashboard_supports_audit_preserving_accepted_bet_corrections():
     assert "correctionRow" in app
     assert "dashboard_correction" in app
     assert "correction_of_accepted_bet_id" in app
+    assert "correction_client_id" in app
     assert "correction_previous_book" in app
     assert "Correction mode" in app
     assert "Correct" in app
+    assert "acceptedBetReviewRowsForPick" in app
+    assert "acceptedBetReview.rows.slice(0, 5)" not in app
     assert 'disabled={betLogState === "saving"}' in app
     assert 'disabled={betLogState === "saving" || betLogState === "saved" || (betAlreadyLogged && !correctionRow)}' in app
+
+
+def test_dashboard_can_load_review_after_manual_key_entry():
+    app = DASHBOARD_APP.read_text(encoding="utf-8")
+
+    assert "handleBetSecretBlur" in app
+    assert "loadAcceptedBetReview(String(betForm.secret || \"\").trim())" in app
+    assert "Load review" in app
 
 
 def test_dashboard_busts_v2_app_cache_for_accepted_bet_ui():
     html = DASHBOARD_HTML.read_text(encoding="utf-8")
 
-    assert "v2-app.js?v=2026-06-07-bet-correction-flow" in html
+    assert "v2-app.js?v=2026-06-07-review-fixes" in html

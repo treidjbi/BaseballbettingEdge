@@ -274,34 +274,39 @@ function isFreshMarketRow(row) {
   const freshness = String(row?.freshness_status || "").toLowerCase();
   return !freshness || ["fresh", "held_fresh", "heartbeat_held"].includes(freshness);
 }
-function sameMarketLine(row, side) {
-  if (!isFiniteNumber(row?.best_line) || !isFiniteNumber(side?.k_line)) return true;
-  return Math.abs(row.best_line - side.k_line) < 0.001;
+function marketModelLine(row, side, p = null) {
+  const value = side?.k_line ?? p?.k_line ?? side?.display_k_line ?? side?.locked_k_line ?? p?.display_k_line ?? p?.locked_k_line ?? row?.main_line;
+  return isFiniteNumber(value) ? Number(value) : null;
+}
+function sameMarketLine(row, side, p = null) {
+  const modelLine = marketModelLine(row, side, p);
+  if (!isFiniteNumber(row?.best_line) || !isFiniteNumber(modelLine)) return false;
+  return Math.abs(row.best_line - modelLine) < 0.001;
 }
 function marketPriceCushionForSide(row, side) {
   return priceCushion(row?.best_odds, fairOddsFromProbability(side?.win_prob));
 }
-function marketEffectiveActionLabel(row, side) {
+function marketEffectiveActionLabel(row, side, p = null) {
   if (!row) return null;
   const label = row.action_label || "monitor";
   const actionable = String(row.actionable_state || "").toLowerCase();
   if (label === "monitor" && actionable.includes("off_market")) return "shop_price";
   const cushion = marketPriceCushionForSide(row, side);
-  if (label === "monitor" && isFreshMarketRow(row) && sameMarketLine(row, side) && isFiniteNumber(cushion) && cushion >= 0) {
+  if (label === "monitor" && isFreshMarketRow(row) && sameMarketLine(row, side, p) && isFiniteNumber(cushion) && cushion >= 0) {
     return "playable_price";
   }
   return label;
 }
-function isLiveMarketBetPrefill(row, side = null) {
+function isLiveMarketBetPrefill(row, side = null, p = null) {
   if (!row || row.freshness_status === "stale") return false;
   if (!isFiniteNumber(row.best_line) || !isFiniteNumber(row.best_odds) || !row.best_book) return false;
-  const label = marketEffectiveActionLabel(row, side);
+  const label = marketEffectiveActionLabel(row, side, p);
   return ["playable", "playable_price", "shop_price", "market_agrees"].includes(label) ||
     ["playable_now", "off_market"].includes(row.actionable_state);
 }
 function selectedMarketBetRow(p, side) {
   const row = marketDisplayForSide(p, side);
-  return isLiveMarketBetPrefill(row, side) ? row : null;
+  return isLiveMarketBetPrefill(row, side, p) ? row : null;
 }
 function defaultAcceptedBetForm(p, side, liveRow = selectedMarketBetRow(p, side)) {
   const priceSource = liveRow ? "live_best" : "artifact";
@@ -384,6 +389,7 @@ function buildAcceptedBetPayload(p, side, { line, odds, book, units, priceSource
       correction_previous_odds: correctionRow?.odds ?? null,
       correction_previous_units: correctionRow?.units ?? null,
       correction_reason: correctionRow ? "manual_same_day_correction" : null,
+      correction_client_id: correctionRow ? `${correctionRow.id || "accepted-bet"}:${Date.now().toString(36)}` : null,
       generated_at: window.V2_DATA?.generated_at || null,
     },
   };
@@ -400,6 +406,13 @@ function acceptedBetReviewModelSummary(row) {
   const ev = isFiniteNumber(snapshot.adj_ev) ? `${snapshot.adj_ev > 0 ? "+" : ""}${(snapshot.adj_ev * 100).toFixed(1)}% EV` : "model snap";
   const generated = row?.metadata?.generated_at ? ` · ${fmtTime(row.metadata.generated_at)}` : "";
   return `${ev}${generated}`;
+}
+function acceptedBetReviewRowsForPick(rows, p, side, limit = 5) {
+  const allRows = Array.isArray(rows) ? rows : [];
+  const duplicateRows = allRows.filter((row) => acceptedBetReviewDuplicate(row, p, side));
+  const duplicateIds = new Set(duplicateRows.map((row) => row.id || `${row.pitcher}-${row.side}-${row.accepted_at}`));
+  const otherRows = allRows.filter((row) => !duplicateIds.has(row.id || `${row.pitcher}-${row.side}-${row.accepted_at}`));
+  return [...duplicateRows, ...otherRows].slice(0, Math.max(limit, duplicateRows.length));
 }
 async function fetchAcceptedBetReview(secret) {
   const url = `/api/accepted-bets?slate_date=${encodeURIComponent(slateDateForBetLog())}`;
@@ -760,17 +773,17 @@ function marketDisplayForSide(p, side) {
   return p.market_display[side.direction] || null;
 }
 
-function marketActionTone(row, side = null) {
+function marketActionTone(row, side = null, p = null) {
   if (!row) return "neutral";
-  const label = marketEffectiveActionLabel(row, side);
+  const label = marketEffectiveActionLabel(row, side, p);
   if (label === "stale" || label === "monitor") return "warn";
   if (label === "market_disagrees") return "neg";
   return "pos";
 }
 
-function marketActionText(row, side = null) {
+function marketActionText(row, side = null, p = null) {
   if (!row) return "Market pending";
-  const label = marketEffectiveActionLabel(row, side);
+  const label = marketEffectiveActionLabel(row, side, p);
   const labels = {
     shop_price: "Shop price",
     playable: "Playable",
@@ -827,11 +840,11 @@ function formatCents(value) {
 function MarketCardStrip({ p, side }) {
   if (!marketDisplayEnabled() || side.verdict === "PASS") return null;
   const row = marketDisplayForSide(p, side);
-  const tone = marketActionTone(row, side);
+  const tone = marketActionTone(row, side, p);
   return (
     <div className={`v2-market-strip ${tone}`}>
       <span className="v2-market-strip-k">Market</span>
-      <span className="v2-market-strip-main">{marketActionText(row, side)}</span>
+      <span className="v2-market-strip-main">{marketActionText(row, side, p)}</span>
       <span className="v2-market-strip-sub">{bestMarketText(row)}</span>
     </div>
   );
@@ -853,10 +866,10 @@ function MarketDecisionPanel({ p, side }) {
         <div className="v2-market-empty">No live market row is attached for this pick yet.</div>
       ) : (
         <>
-          <div className={`v2-market-decision ${marketActionTone(row, side)}`}>
+          <div className={`v2-market-decision ${marketActionTone(row, side, p)}`}>
             <div>
               <div className="v2-market-eyebrow">Decision read</div>
-              <div className="v2-market-decision-title">{marketActionText(row, side)}</div>
+              <div className="v2-market-decision-title">{marketActionText(row, side, p)}</div>
             </div>
             <div className="v2-market-decision-price">
               <span>{row.best_book || "Best book"}</span>
@@ -1203,6 +1216,7 @@ function PickDetail({ p, onClose }) {
   const currentBetLogKey = acceptedBetSessionKey(p, best);
   const betAlreadyLogged = loggedBetKeys.has(currentBetLogKey);
   const reviewDuplicateRows = acceptedBetReview.rows.filter((row) => acceptedBetReviewDuplicate(row, p, best));
+  const acceptedBetReviewRows = acceptedBetReviewRowsForPick(acceptedBetReview.rows, p, best);
 
   function loadAcceptedBetReview(secret = storedBetLogSecret()) {
     if (!secret) {
@@ -1227,6 +1241,12 @@ function PickDetail({ p, onClose }) {
       };
     });
     setBetLogError("");
+  }
+
+  function handleBetSecretBlur() {
+    const secret = String(betForm.secret || "").trim();
+    if (!secret || storedBetLogSecret() || acceptedBetReview.state === "loading") return;
+    loadAcceptedBetReview(secret);
   }
 
   function startAcceptedBetCorrection(row) {
@@ -1736,10 +1756,20 @@ function PickDetail({ p, onClose }) {
                   <input
                     value={betForm.secret}
                     onChange={(e) => updateBetForm("secret", e.target.value)}
+                    onBlur={handleBetSecretBlur}
                     type="password"
                     autoComplete="off"
                   />
                 </label>
+              )}
+              {needsBetLogSecret && String(betForm.secret || "").trim() && acceptedBetReview.state !== "loading" && acceptedBetReview.state !== "ready" && (
+                <button
+                  type="button"
+                  className="v2-btn-ghost"
+                  onClick={() => loadAcceptedBetReview(String(betForm.secret || "").trim())}
+                >
+                  Load review
+                </button>
               )}
             </div>
             {betLogError && <div className="v2-bet-error">{betLogError}</div>}
@@ -1763,7 +1793,7 @@ function PickDetail({ p, onClose }) {
               {acceptedBetReview.state === "ready" && acceptedBetReview.rows.length === 0 && (
                 <div className="v2-accepted-bet-muted">No accepted bets logged for this slate yet.</div>
               )}
-              {acceptedBetReview.state === "ready" && acceptedBetReview.rows.slice(0, 5).map((row) => (
+              {acceptedBetReview.state === "ready" && acceptedBetReviewRows.map((row) => (
                 <div className={`v2-accepted-bet-row ${acceptedBetReviewDuplicate(row, p, best) ? "duplicate" : ""}`} key={row.id || `${row.pitcher}-${row.side}-${row.accepted_at}`}>
                   <span>
                     {row.pitcher} {String(row.side || "").toUpperCase()} {row.k_line}K {fmtOdds(row.odds)}

@@ -69,13 +69,17 @@ test('buildAcceptedBetRow accepts audit-preserving correction rows', () => {
       correction_previous_odds: -130,
       correction_previous_units: 1,
       correction_reason: 'manual_same_day_correction',
+      correction_client_id: 'correction-client-1',
     },
   });
 
   assert.equal(row.source, 'dashboard_correction');
   assert.equal(row.metadata.correction_of_accepted_bet_id, 'accepted-bet-1');
   assert.equal(row.metadata.correction_reason, 'manual_same_day_correction');
-  assert.match(row.dedupe_key, /jameson taillon:under:betrivers:4\.5:-132$/);
+  assert.equal(
+    row.dedupe_key,
+    'accepted_bet:2026-06-07:jameson taillon:under:betrivers:4.5:-132:correction:accepted-bet-1:correction-client-1',
+  );
 });
 
 test('buildAcceptedBetRow rejects invalid inputs', () => {

@@ -88,7 +88,9 @@ export function buildAcceptedBetRow(payload) {
   const source = String(payload.source || 'dashboard_manual').trim();
   if (!VALID_SOURCES.has(source)) throw new Error('invalid_source');
 
-  const dedupeKey = [
+  const metadata = optionalObject(payload.metadata);
+  const acceptedAt = new Date().toISOString();
+  const dedupeKeyParts = [
     'accepted_bet',
     slateDate,
     normalizedPitcher,
@@ -96,7 +98,15 @@ export function buildAcceptedBetRow(payload) {
     book.toLowerCase(),
     String(kLine),
     String(odds),
-  ].join(':');
+  ];
+  if (source === 'dashboard_correction') {
+    dedupeKeyParts.push(
+      'correction',
+      String(metadata.correction_of_accepted_bet_id || 'unknown'),
+      String(metadata.correction_client_id || acceptedAt),
+    );
+  }
+  const dedupeKey = dedupeKeyParts.join(':');
 
   return {
     slate_date: slateDate,
@@ -113,9 +123,9 @@ export function buildAcceptedBetRow(payload) {
     notification_event_id: payload.notification_event_id || null,
     shadow_candidate_id: payload.shadow_candidate_id || null,
     model_snapshot: optionalObject(payload.model_snapshot),
-    metadata: optionalObject(payload.metadata),
+    metadata,
     dedupe_key: dedupeKey,
-    accepted_at: new Date().toISOString(),
+    accepted_at: acceptedAt,
   };
 }
 
