@@ -27,6 +27,8 @@ async function runV2DataTest({
   dateIndex = [],
   steamJson = null,
   liveMarketDisplay = undefined,
+  liveMarketApiMode = "ok",
+  liveMarketApiPayload = { generated_at: null, rows: [] },
 }) {
   const window = {};
   if (liveMarketDisplay !== undefined) {
@@ -45,6 +47,12 @@ async function runV2DataTest({
     const rawUrl = String(url);
     fetchUrls.push(rawUrl);
     const bareUrl = rawUrl.replace(/[?&]t=\d+$/, "");
+    if (bareUrl.startsWith("/.netlify/functions/live-market-display")) {
+      if (liveMarketApiMode === "error") {
+        return { ok: false, status: 502, async text() { return "bad gateway"; } };
+      }
+      return jsonResponse(liveMarketApiPayload);
+    }
     if (bareUrl.startsWith("/.netlify/functions/get-artifact")) {
       if (artifactApiMode === "error") {
         return { ok: false, status: 502, async text() { return "bad gateway"; } };
@@ -395,6 +403,79 @@ test("live market display stays disabled without the hidden query flag", async (
   assert.equal(Array.isArray(window.V2_MARKET_DISPLAY.rows), true);
   assert.equal(window.V2_MARKET_DISPLAY.rows.length, 0);
   assert.equal(window.V2_DATA.pitchers[0].market_display, undefined);
+  assert.equal(window.__fetchUrls.some(url => String(url).startsWith("/.netlify/functions/live-market-display")), false);
+});
+
+test("live market display fetches sanitized endpoint rows only behind the hidden flag", async () => {
+  const todayJson = {
+    date: "2026-04-28",
+    generated_at: "2026-04-28T23:00:00Z",
+    pitchers: [
+      {
+        pitcher: "Endpoint Pitcher",
+        team: "SEA",
+        opp_team: "CLE",
+        game_time: "2026-04-28T23:10:00Z",
+        k_line: 5.5,
+        best_over_odds: -105,
+        best_under_odds: -118,
+        lambda: 4.9,
+        avg_ip: 5.8,
+        opp_k_rate: 0.24,
+        season_k9: 9.1,
+        recent_k9: 9.3,
+        career_k9: 8.9,
+        ev_over: { adj_ev: -0.02, ev: -0.01, edge: -0.02, verdict: "PASS", win_prob: 0.46 },
+        ev_under: { adj_ev: 0.04, ev: 0.05, edge: 0.02, verdict: "LEAN", win_prob: 0.54 },
+      },
+    ],
+  };
+
+  const window = await runV2DataTest({
+    locationSearch: "?marketSheet=1",
+    todayJson,
+    liveMarketApiPayload: {
+      generated_at: "2026-04-28T22:57:00Z",
+      slate_date: "2026-04-28",
+      source: "live_market_display_state",
+      rows: [
+        {
+          slate_date: "2026-04-28",
+          normalized_pitcher: "endpoint pitcher",
+          pitcher: "Endpoint Pitcher",
+          side: "under",
+          provider: "boltodds",
+          observed_at: "2026-04-28T22:57:00Z",
+          freshness_status: "fresh",
+          market_status: "market_confirmed_playable",
+          actionable_state: "playable_now",
+          market_consensus: "toward_pick",
+          bet_value_consensus: "worse_now",
+          main_line: 5.5,
+          best_book: "DraftKings",
+          best_line: 5.5,
+          best_odds: -112,
+          book_count: 3,
+          books_seen: ["DraftKings", "FanDuel", "BetMGM"],
+          broad_confirmation: true,
+          book_rows: [
+            { bookmaker_key: "draftkings", bookmaker_title: "DraftKings", line: 5.5, odds: -112 },
+          ],
+        },
+      ],
+    },
+  });
+
+  const marketFetch = window.__fetchUrls.find(url => String(url).startsWith("/.netlify/functions/live-market-display"));
+  const pitcher = window.V2_DATA.pitchers[0];
+  assert.ok(marketFetch);
+  assert.match(marketFetch, /date=2026-04-28/);
+  assert.equal(window.V2_MARKET_DISPLAY.enabled, true);
+  assert.equal(window.V2_MARKET_DISPLAY.generated_at, "2026-04-28T22:57:00Z");
+  assert.equal(window.V2_MARKET_DISPLAY.rows.length, 1);
+  assert.equal(pitcher.market_display.UNDER.action_label, "playable");
+  assert.equal(pitcher.market_display.UNDER.best_book, "DraftKings");
+  assert.equal(pitcher.market_display.UNDER.best_odds, -112);
 });
 
 test("live market display rows normalize and attach to matching pitcher sides behind the hidden flag", async () => {
@@ -500,7 +581,8 @@ test("live market display ignores wrong-date and malformed rows", async () => {
   });
 
   assert.equal(window.V2_MARKET_DISPLAY.enabled, true);
-  assert.deepEqual(window.V2_MARKET_DISPLAY.rows, []);
+  assert.equal(Array.isArray(window.V2_MARKET_DISPLAY.rows), true);
+  assert.equal(window.V2_MARKET_DISPLAY.rows.length, 0);
   assert.equal(window.V2_DATA.pitchers[0].market_display, undefined);
 });
 

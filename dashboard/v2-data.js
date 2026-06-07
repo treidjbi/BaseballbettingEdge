@@ -63,6 +63,12 @@
     return `/.netlify/functions/get-artifact?${params.toString()}`;
   }
 
+  function liveMarketDisplayApiUrl(date) {
+    const params = new URLSearchParams();
+    if (date) params.set('date', date);
+    return `/.netlify/functions/live-market-display?${params.toString()}`;
+  }
+
   async function fetchArtifactJson({ type, date, staticUrl, artifactSource = ARTIFACT_SOURCE }) {
     if (artifactSource === 'supabase') {
       try {
@@ -221,16 +227,34 @@
     return Number.isFinite(n) ? n : null;
   }
 
-  function marketDisplaySource() {
-    const source = window.V2_LIVE_MARKET_DISPLAY;
+  function marketDisplaySource(source = window.V2_LIVE_MARKET_DISPLAY) {
     if (Array.isArray(source)) return { generated_at: null, rows: source };
     if (source && typeof source === 'object') {
       return {
         generated_at: source.generated_at || source.updated_at || null,
         rows: Array.isArray(source.rows) ? source.rows : [],
+        source: source.source || null,
+        error: source.error || null,
       };
     }
     return { generated_at: null, rows: [] };
+  }
+
+  async function fetchLiveMarketDisplay(slateDate) {
+    const preloaded = marketDisplaySource();
+    if (!marketSheetEnabled()) return preloaded;
+    try {
+      const endpoint = marketDisplaySource(await fetchJSON(liveMarketDisplayApiUrl(slateDate)));
+      return {
+        generated_at: endpoint.generated_at || preloaded.generated_at || null,
+        rows: [...preloaded.rows, ...endpoint.rows],
+        source: endpoint.source || preloaded.source || null,
+        error: endpoint.error || preloaded.error || null,
+      };
+    } catch (error) {
+      console.warn('live market display api failed; using preloaded rows', error);
+      return preloaded;
+    }
   }
 
   function normalizeBookRows(rows) {
@@ -294,9 +318,9 @@
     };
   }
 
-  function buildMarketDisplay(today) {
+  function buildMarketDisplay(today, sourceOverride = null) {
     const enabled = marketSheetEnabled();
-    const source = marketDisplaySource();
+    const source = sourceOverride ? marketDisplaySource(sourceOverride) : marketDisplaySource();
     if (!enabled) {
       return {
         enabled: false,
@@ -313,6 +337,8 @@
       generated_at: source.generated_at,
       slate_date: today.date || null,
       rows,
+      source: source.source || null,
+      error: source.error || null,
     };
   }
 
@@ -577,7 +603,8 @@
       ]);
       const datedSteam = steamJsonForDate(steamJson, todayJson.date);
       const perfWithNotes = { ...perfJson, calibration_notes: paramsJson.calibration_notes || perfJson.calibration_notes || [] };
-      const marketDisplay = buildMarketDisplay(todayJson);
+      const liveMarketDisplaySource = await fetchLiveMarketDisplay(todayJson.date);
+      const marketDisplay = buildMarketDisplay(todayJson, liveMarketDisplaySource);
       window.V2_MARKET_DISPLAY = marketDisplay;
       window.V2_DATA  = buildV2Data(todayJson, marketDisplay);
       window.V2_PERF  = buildV2Perf(perfWithNotes);
