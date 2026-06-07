@@ -26,8 +26,12 @@ async function runV2DataTest({
   paramsJson = {},
   dateIndex = [],
   steamJson = null,
+  liveMarketDisplay = undefined,
 }) {
   const window = {};
+  if (liveMarketDisplay !== undefined) {
+    window.V2_LIVE_MARKET_DISPLAY = liveMarketDisplay;
+  }
   const fetchUrls = [];
   const TestDate = now == null ? Date : class extends Date {
     constructor(...args) {
@@ -343,6 +347,213 @@ test("tracked picks are exposed top-level and attached to matching pitchers", as
   assert.equal(window.V2_DATA.tracked_picks[0].odds, -118);
   assert.equal(window.V2_DATA.pitchers[0].tracked_picks.length, 1);
   assert.equal(window.V2_DATA.pitchers[0].tracked_picks[0].direction, "UNDER");
+});
+
+test("live market display stays disabled without the hidden query flag", async () => {
+  const todayJson = {
+    date: "2026-04-28",
+    generated_at: "2026-04-28T23:00:00Z",
+    pitchers: [
+      {
+        pitcher: "Market Pitcher",
+        team: "SEA",
+        opp_team: "CLE",
+        game_time: "2026-04-28T23:10:00Z",
+        k_line: 5.5,
+        best_over_odds: -105,
+        best_under_odds: -118,
+        lambda: 4.9,
+        avg_ip: 5.8,
+        opp_k_rate: 0.24,
+        season_k9: 9.1,
+        recent_k9: 9.3,
+        career_k9: 8.9,
+        ev_over: { adj_ev: -0.02, ev: -0.01, edge: -0.02, verdict: "PASS" },
+        ev_under: { adj_ev: 0.04, ev: 0.05, edge: 0.02, verdict: "LEAN", win_prob: 0.54 },
+      },
+    ],
+  };
+
+  const window = await runV2DataTest({
+    todayJson,
+    liveMarketDisplay: [
+      {
+        slate_date: "2026-04-28",
+        normalized_pitcher: "market pitcher",
+        side: "under",
+        actionable_state: "shop_price",
+        freshness_status: "fresh",
+        best_book: "DraftKings",
+        best_line: 5.5,
+        best_odds: -112,
+        book_count: 3,
+      },
+    ],
+  });
+
+  assert.equal(window.V2_MARKET_DISPLAY.enabled, false);
+  assert.equal(Array.isArray(window.V2_MARKET_DISPLAY.rows), true);
+  assert.equal(window.V2_MARKET_DISPLAY.rows.length, 0);
+  assert.equal(window.V2_DATA.pitchers[0].market_display, undefined);
+});
+
+test("live market display rows normalize and attach to matching pitcher sides behind the hidden flag", async () => {
+  const todayJson = {
+    date: "2026-04-28",
+    generated_at: "2026-04-28T23:00:00Z",
+    pitchers: [
+      {
+        pitcher: "Market Pitcher",
+        team: "SEA",
+        opp_team: "CLE",
+        game_time: "2026-04-28T23:10:00Z",
+        k_line: 5.5,
+        best_over_odds: -105,
+        best_under_odds: -118,
+        lambda: 4.9,
+        avg_ip: 5.8,
+        opp_k_rate: 0.24,
+        season_k9: 9.1,
+        recent_k9: 9.3,
+        career_k9: 8.9,
+        ev_over: { adj_ev: -0.02, ev: -0.01, edge: -0.02, verdict: "PASS", win_prob: 0.46 },
+        ev_under: { adj_ev: 0.04, ev: 0.05, edge: 0.02, verdict: "LEAN", win_prob: 0.54 },
+      },
+    ],
+  };
+
+  const window = await runV2DataTest({
+    locationSearch: "?marketSheet=1",
+    todayJson,
+    liveMarketDisplay: {
+      generated_at: "2026-04-28T22:55:00Z",
+      rows: [
+        {
+          slate_date: "2026-04-28",
+          normalized_pitcher: "market pitcher",
+          pitcher: "Market Pitcher",
+          side: "under",
+          provider: "boltodds",
+          observed_at: "2026-04-28T22:55:00Z",
+          freshness_status: "fresh",
+          market_status: "market_confirmed_playable",
+          actionable_state: "shop_price",
+          market_consensus: "toward_pick",
+          bet_value_consensus: "worse_now",
+          main_line: 5.5,
+          best_book: "DraftKings",
+          best_line: 5.5,
+          best_odds: -112,
+          book_count: 3,
+          books_seen: ["DraftKings", "FanDuel", "BetMGM"],
+          broad_confirmation: true,
+          book_rows: [
+            { bookmaker_key: "draftkings", bookmaker_title: "DraftKings", line: 5.5, odds: -112 },
+            { bookmaker_key: "fanduel", bookmaker_title: "FanDuel", line: 5.5, odds: -118 },
+          ],
+        },
+      ],
+    },
+  });
+
+  const pitcher = window.V2_DATA.pitchers[0];
+  assert.equal(window.V2_MARKET_DISPLAY.enabled, true);
+  assert.equal(window.V2_MARKET_DISPLAY.rows.length, 1);
+  assert.equal(pitcher.market_display.UNDER.action_label, "shop_price");
+  assert.equal(pitcher.market_display.UNDER.best_book, "DraftKings");
+  assert.equal(pitcher.market_display.UNDER.best_odds, -112);
+  assert.equal(pitcher.market_display.UNDER.book_rows.length, 2);
+  assert.equal(pitcher.market_display.OVER, undefined);
+});
+
+test("live market display ignores wrong-date and malformed rows", async () => {
+  const todayJson = {
+    date: "2026-04-28",
+    generated_at: "2026-04-28T23:00:00Z",
+    pitchers: [
+      {
+        pitcher: "Market Pitcher",
+        team: "SEA",
+        opp_team: "CLE",
+        game_time: "2026-04-28T23:10:00Z",
+        k_line: 5.5,
+        best_over_odds: -105,
+        best_under_odds: -118,
+        lambda: 4.9,
+        avg_ip: 5.8,
+        opp_k_rate: 0.24,
+        ev_over: { adj_ev: -0.02, ev: -0.01, edge: -0.02, verdict: "PASS" },
+        ev_under: { adj_ev: 0.04, ev: 0.05, edge: 0.02, verdict: "LEAN" },
+      },
+    ],
+  };
+
+  const window = await runV2DataTest({
+    locationSearch: "?marketSheet=1",
+    todayJson,
+    liveMarketDisplay: [
+      { slate_date: "2026-04-27", normalized_pitcher: "market pitcher", side: "under", best_odds: -112 },
+      { slate_date: "2026-04-28", normalized_pitcher: "market pitcher", best_odds: -112 },
+      { slate_date: "2026-04-28", side: "under", best_odds: -112 },
+      { slate_date: "2026-04-28", normalized_pitcher: "market pitcher", side: "under", provider: "unsupported_provider", best_odds: -112 },
+    ],
+  });
+
+  assert.equal(window.V2_MARKET_DISPLAY.enabled, true);
+  assert.deepEqual(window.V2_MARKET_DISPLAY.rows, []);
+  assert.equal(window.V2_DATA.pitchers[0].market_display, undefined);
+});
+
+test("live market display labels stale rows and cleans malformed book rows", async () => {
+  const todayJson = {
+    date: "2026-04-28",
+    generated_at: "2026-04-28T23:00:00Z",
+    pitchers: [
+      {
+        pitcher: "Market Pitcher",
+        team: "SEA",
+        opp_team: "CLE",
+        game_time: "2026-04-28T23:10:00Z",
+        k_line: 5.5,
+        best_over_odds: -105,
+        best_under_odds: -118,
+        lambda: 4.9,
+        avg_ip: 5.8,
+        opp_k_rate: 0.24,
+        ev_over: { adj_ev: -0.02, ev: -0.01, edge: -0.02, verdict: "PASS" },
+        ev_under: { adj_ev: 0.04, ev: 0.05, edge: 0.02, verdict: "LEAN" },
+      },
+    ],
+  };
+
+  const window = await runV2DataTest({
+    locationSearch: "?marketSheet=1",
+    todayJson,
+    liveMarketDisplay: [
+      {
+        slate_date: "2026-04-28",
+        normalized_pitcher: "market pitcher",
+        side: "under",
+        provider: "propline",
+        freshness_status: "stale",
+        actionable_state: "shop_price",
+        best_book: "DraftKings",
+        best_line: "5.5",
+        best_odds: "-112",
+        book_rows: [
+          {},
+          { bookmaker_title: "DraftKings", line: "5.5", odds: "-112" },
+        ],
+      },
+    ],
+  });
+
+  const row = window.V2_DATA.pitchers[0].market_display.UNDER;
+  assert.equal(row.action_label, "stale");
+  assert.equal(row.best_line, 5.5);
+  assert.equal(row.best_odds, -112);
+  assert.equal(row.book_rows.length, 1);
+  assert.equal(row.book_rows[0].bookmaker_title, "DraftKings");
 });
 
 test("old archive records default to clean quality metadata", async () => {

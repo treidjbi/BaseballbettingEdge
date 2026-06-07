@@ -1,6 +1,7 @@
 # Live Market Decision UI Plan
 
-> **Status:** Proposal / shadow-only UI plan. Do not implement or promote without Tyler approval.
+> **Status:** Phase 1 hidden MVP implemented 2026-06-07. Keep display-only and
+> shadow-only; do not make default-on or add live reads without Tyler approval.
 >
 > **Guardrail:** This plan must not change production provider order, model math,
 > thresholds, staking, lock behavior, notification sends, retention, secrets, or
@@ -12,6 +13,15 @@
 > Build notification grouping and movement-strength labels first. This UI plan
 > should consume the same decision labels and deep-link context rather than
 > defining a separate market-action vocabulary.
+>
+> **2026-06-07 update:** Phase 1 is implemented behind `?marketSheet=1`.
+> `dashboard/v2-data.js` accepts sanitized preloaded
+> `window.V2_LIVE_MARKET_DISPLAY` rows and attaches them by slate date,
+> normalized pitcher, and side. `dashboard/v2-app.jsx` adds a hidden
+> actionable-card market strip and detail-sheet market panel. No live Supabase
+> browser read, Netlify endpoint, provider/source-of-truth promotion,
+> notification behavior, model math, thresholds, staking, lock behavior,
+> retention, or dashboard default-on behavior changed.
 
 ## Goal
 
@@ -295,6 +305,23 @@ Avoid language that implies a new live rule:
 
 Build a sanitized market-display payload and UI adapter without live production
 dependency.
+
+Implemented 2026-06-07 on branch `codex/live-market-decision-ui`:
+
+- `dashboard/v2-data.js` builds `window.V2_MARKET_DISPLAY` and attaches
+  normalized rows to `pitcher.market_display[OVER|UNDER]` only when
+  `?marketSheet=1` is present.
+- `dashboard/v2-data.test.mjs` covers disabled-by-default behavior, matching
+  row attachment, wrong-date/malformed row fail-soft handling, unsupported
+  provider suppression, stale labels, and malformed book-row cleanup.
+- `dashboard/v2-app.jsx` / `dashboard/v2-app.js` render a compact market strip
+  on actionable cards and a detail-sheet market decision panel with best live
+  price, model ref, fair odds/cushion, market pulse, value, freshness, and book
+  rows.
+- `dashboard/v2.html` adds the scoped card/panel styles.
+- Verified with `node --test dashboard/v2-data.test.mjs`,
+  `node --check dashboard/v2-app.js`, and Playwright screenshots against a
+  temporary local fixture server.
 
 Preferred path:
 
