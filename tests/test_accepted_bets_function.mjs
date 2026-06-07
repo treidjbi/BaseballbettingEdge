@@ -52,6 +52,32 @@ test('buildAcceptedBetRow accepts unicode minus American odds', () => {
   assert.match(row.dedupe_key, /:-145$/);
 });
 
+test('buildAcceptedBetRow accepts audit-preserving correction rows', () => {
+  const row = buildAcceptedBetRow({
+    slate_date: '2026-06-07',
+    pitcher: 'Jameson Taillon',
+    side: 'UNDER',
+    k_line: '4.5',
+    odds: '-132',
+    book: 'BetRivers',
+    units: '1',
+    source: 'dashboard_correction',
+    metadata: {
+      correction_of_accepted_bet_id: 'accepted-bet-1',
+      correction_previous_book: 'FanDuel',
+      correction_previous_k_line: 4.5,
+      correction_previous_odds: -130,
+      correction_previous_units: 1,
+      correction_reason: 'manual_same_day_correction',
+    },
+  });
+
+  assert.equal(row.source, 'dashboard_correction');
+  assert.equal(row.metadata.correction_of_accepted_bet_id, 'accepted-bet-1');
+  assert.equal(row.metadata.correction_reason, 'manual_same_day_correction');
+  assert.match(row.dedupe_key, /jameson taillon:under:betrivers:4\.5:-132$/);
+});
+
 test('buildAcceptedBetRow rejects invalid inputs', () => {
   assert.throws(() => buildAcceptedBetRow({ pitcher: 'Kyle Bradish' }), /missing_slate_date/);
   assert.throws(() => buildAcceptedBetRow({

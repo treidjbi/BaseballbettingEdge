@@ -55,6 +55,12 @@
 > confirmed `accepted_bets` payload. The URL context must match slate date,
 > pitcher, and side before it is attached; it does not override ticket line,
 > odds, book, units, or source-of-truth behavior.
+>
+> **2026-06-07 correction-flow update:** same-day accepted-bet review now has a
+> minimal append-only correction path. For a matching pitcher/side row, `Correct`
+> pre-fills the ticket from the saved row, saves a new `dashboard_correction`
+> accepted-bet entry, and stores the corrected-from row details in metadata. It
+> does not silently mutate or delete the original row.
 
 ## Goal
 
@@ -267,8 +273,8 @@ Implemented 2026-06-07 on branch `codex/live-market-bet-ticket-prefill`:
 - `/api/accepted-bets?slate_date=YYYY-MM-DD` returns only sanitized same-day
   accepted-bet rows after the normal bet-log secret check; it does not expose
   dedupe keys, secrets, or raw service-role response bodies.
-- The modal shows a read-only same-day accepted-bet review and duplicate
-  same-side warning before save. Corrections/edit flows remain out of scope.
+- The modal shows a same-day accepted-bet review, duplicate same-side warning,
+  and minimal append-only correction action for matching pitcher/side rows.
 - Verified with accepted-bet function tests, dashboard accepted-bet static
   tests, adjacent live-market / notification tests, syntax checks, and
   `git diff --check`.
@@ -326,10 +332,13 @@ debug panel so Tyler can verify what was logged. The minimum useful surface is:
 - duplicate/same-side warning when a second bet on the same pitcher/side is
   attempted.
 
-Current browser-side duplicate suppression is intentionally simple. Future UI
-work should distinguish "already logged this side" from a legitimate second
-entry at a different book, line, odds, or unit size. Corrections should be
-append-only or audit-preserving; do not silently mutate historical bet rows.
+The current correction flow is intentionally minimal. It lets Tyler reopen a
+logged same-side ticket for review, pick `Correct` on a matching row, edit the
+manual ticket fields, and save a new `dashboard_correction` row with
+`correction_of_accepted_bet_id`, previous book/line/odds/units, and
+`correction_reason=manual_same_day_correction` in metadata. It does not mutate
+or delete historical bet rows. Broader edit/delete workflows remain out of
+scope without a separate audit and retention decision.
 
 ## Display Semantics
 

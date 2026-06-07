@@ -316,6 +316,18 @@ function defaultAcceptedBetForm(p, side, liveRow = selectedMarketBetRow(p, side)
     secret: "",
   };
 }
+function acceptedBetCorrectionForm(row, currentSecret = "") {
+  const defaultBook = defaultBetLogBook(row?.book || "");
+  return {
+    line: String(row?.k_line ?? ""),
+    odds: String(row?.odds ?? ""),
+    book: defaultBook.book,
+    bookOther: defaultBook.bookOther,
+    units: String(row?.units ?? 1),
+    priceSource: "manual_edit",
+    secret: currentSecret,
+  };
+}
 function betPriceSourceLabel(value) {
   const labels = {
     live_best: "Live best",
@@ -325,7 +337,7 @@ function betPriceSourceLabel(value) {
   };
   return labels[value] || "Manual edit";
 }
-function buildAcceptedBetPayload(p, side, { line, odds, book, units, priceSource = "artifact", marketRow = null, alertContext = null }) {
+function buildAcceptedBetPayload(p, side, { line, odds, book, units, priceSource = "artifact", marketRow = null, alertContext = null, correctionRow = null }) {
   return {
     slate_date: slateDateForBetLog(),
     pitcher: p.pitcher,
@@ -336,7 +348,7 @@ function buildAcceptedBetPayload(p, side, { line, odds, book, units, priceSource
     book,
     units,
     game_time: p.game_time || null,
-    source: alertContext?.source || "dashboard_manual",
+    source: correctionRow ? "dashboard_correction" : alertContext?.source || "dashboard_manual",
     notification_event_id: alertContext?.notification_event_id || null,
     shadow_candidate_id: alertContext?.shadow_candidate_id || null,
     model_snapshot: {
@@ -366,6 +378,12 @@ function buildAcceptedBetPayload(p, side, { line, odds, book, units, priceSource
         observed_at: alertContext.observed_at || null,
         source_artifact_sha256: alertContext.source_artifact_sha256 || null,
       } : null,
+      correction_of_accepted_bet_id: correctionRow?.id || null,
+      correction_previous_book: correctionRow?.book || null,
+      correction_previous_k_line: correctionRow?.k_line ?? null,
+      correction_previous_odds: correctionRow?.odds ?? null,
+      correction_previous_units: correctionRow?.units ?? null,
+      correction_reason: correctionRow ? "manual_same_day_correction" : null,
       generated_at: window.V2_DATA?.generated_at || null,
     },
   };
@@ -1081,6 +1099,7 @@ function PickDetail({ p, onClose }) {
   const [betTicketOpen, setBetTicketOpen] = useState(false);
   const [betLogError, setBetLogError] = useState("");
   const [betForm, setBetForm] = useState(() => defaultAcceptedBetForm(p, best, marketBetRow));
+  const [correctionRow, setCorrectionRow] = useState(null);
   const [loggedBetKeys, setLoggedBetKeys] = useState(() => readLoggedBetKeys());
   const [acceptedBetReview, setAcceptedBetReview] = useState({ state: "idle", rows: [], error: "" });
   const factorGroups = useMemo(() => {
@@ -1118,6 +1137,7 @@ function PickDetail({ p, onClose }) {
     setBetLogState("idle");
     setBetLogError("");
     setBetForm(defaultAcceptedBetForm(p, best, marketBetRow));
+    setCorrectionRow(null);
     setAcceptedBetReview({ state: "idle", rows: [], error: "" });
   }, [p.pitcher, best.direction, best.k_line, best.odds, best.verdict, marketBetRow?.best_book, marketBetRow?.best_line, marketBetRow?.best_odds]);
 
@@ -1209,8 +1229,16 @@ function PickDetail({ p, onClose }) {
     setBetLogError("");
   }
 
+  function startAcceptedBetCorrection(row) {
+    if (!acceptedBetReviewDuplicate(row, p, best)) return;
+    setCorrectionRow(row);
+    setBetForm((prev) => acceptedBetCorrectionForm(row, prev.secret));
+    setBetLogState("idle");
+    setBetLogError("");
+  }
+
   function openBetTicket() {
-    if (!canLogBet || betAlreadyLogged) return;
+    if (!canLogBet) return;
     setBetTicketOpen(true);
     setBetLogError("");
     if (betLogState === "saved") setBetLogState("idle");
@@ -1222,11 +1250,12 @@ function PickDetail({ p, onClose }) {
     setBetTicketOpen(false);
     setBetLogError("");
     setBetLogState("idle");
+    setCorrectionRow(null);
   }
 
   async function handleAcceptedBetSave(e) {
     e.preventDefault();
-    if (!canLogBet || betLogState === "saving" || betAlreadyLogged) return;
+    if (!canLogBet || betLogState === "saving" || (betAlreadyLogged && !correctionRow)) return;
 
     const line = parseBetLogNumber(betForm.line);
     const odds = parseBetLogNumber(betForm.odds);
@@ -1258,6 +1287,7 @@ function PickDetail({ p, onClose }) {
           priceSource: betForm.priceSource || "artifact",
           marketRow: marketBetRow,
           alertContext: betAlertContext,
+          correctionRow,
         })),
       });
       if (response.status === 401) {
@@ -1286,6 +1316,7 @@ function PickDetail({ p, onClose }) {
       setTimeout(() => {
         setBetTicketOpen(false);
         setBetLogState("idle");
+        setCorrectionRow(null);
       }, 1800);
     } catch {
       setBetLogError("Could not save the bet. Try again in a minute.");
@@ -1584,9 +1615,9 @@ function PickDetail({ p, onClose }) {
             <button
               className="v2-btn-primary"
               onClick={openBetTicket}
-              disabled={betLogState === "saving" || betAlreadyLogged}
+              disabled={betLogState === "saving"}
             >
-              {betAlreadyLogged ? "Logged" : betTicketOpen ? "Bet Ticket" : betLogState === "saved" ? "Logged" : "Log Bet"}
+              {betAlreadyLogged ? "Review Bet" : betTicketOpen ? "Bet Ticket" : betLogState === "saved" ? "Logged" : "Log Bet"}
             </button>
           )}
           <button className="v2-btn-ghost" onClick={onClose}>Close</button>
@@ -1635,6 +1666,14 @@ function PickDetail({ p, onClose }) {
                   {betAlertContext.source === "shadow_candidate" ? "Shadow candidate" : "Notification"}
                   {" - "}
                   {betAlertContext.notification_event_id || betAlertContext.shadow_candidate_id}
+                </b>
+              </div>
+            )}
+            {correctionRow && (
+              <div className="v2-bet-correction-context">
+                <span>Correction mode</span>
+                <b>
+                  Correction of {correctionRow.book} {correctionRow.k_line}K {fmtOdds(correctionRow.odds)} - {correctionRow.units}u
                 </b>
               </div>
             )}
@@ -1731,7 +1770,19 @@ function PickDetail({ p, onClose }) {
                     {(row.notification_event_id || row.shadow_candidate_id) && <em> · linked alert</em>}
                   </span>
                   <b>{row.book} · {row.units}u · {row.source || "manual"}</b>
-                  <small>{acceptedBetReviewModelSummary(row)}</small>
+                  <small>
+                    {acceptedBetReviewModelSummary(row)}
+                    {row.metadata?.correction_of_accepted_bet_id && " - correction"}
+                  </small>
+                  {acceptedBetReviewDuplicate(row, p, best) && (
+                    <button
+                      type="button"
+                      className="v2-accepted-bet-correct"
+                      onClick={() => startAcceptedBetCorrection(row)}
+                    >
+                      Correct
+                    </button>
+                  )}
                 </div>
               ))}
             </div>
@@ -1743,8 +1794,8 @@ function PickDetail({ p, onClose }) {
               >
                 Cancel
               </button>
-              <button className="v2-btn-primary" type="submit" disabled={betLogState === "saving" || betLogState === "saved" || betAlreadyLogged}>
-                {betLogState === "saving" ? "Saving..." : "Save Bet"}
+              <button className="v2-btn-primary" type="submit" disabled={betLogState === "saving" || betLogState === "saved" || (betAlreadyLogged && !correctionRow)}>
+                {betLogState === "saving" ? "Saving..." : correctionRow ? "Save Correction" : "Save Bet"}
               </button>
             </div>
           </form>
