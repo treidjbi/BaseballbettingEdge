@@ -627,6 +627,63 @@ test("live market display rows normalize and attach to matching pitcher sides be
   assert.equal(pitcher.market_display.OVER, undefined);
 });
 
+test("live market display treats off-market rows as shop-price actions", async () => {
+  const todayJson = {
+    date: "2026-04-28",
+    generated_at: "2026-04-28T23:00:00Z",
+    pitchers: [
+      {
+        pitcher: "Off Market Pitcher",
+        team: "SEA",
+        opp_team: "CLE",
+        game_time: "2026-04-28T23:10:00Z",
+        k_line: 5.5,
+        best_over_odds: -105,
+        best_under_odds: -118,
+        lambda: 4.9,
+        avg_ip: 5.8,
+        opp_k_rate: 0.24,
+        season_k9: 9.1,
+        recent_k9: 9.3,
+        career_k9: 8.9,
+        ev_over: { adj_ev: -0.02, ev: -0.01, edge: -0.02, verdict: "PASS", win_prob: 0.46 },
+        ev_under: { adj_ev: 0.04, ev: 0.05, edge: 0.02, verdict: "LEAN", win_prob: 0.54 },
+      },
+    ],
+  };
+
+  const window = await runV2DataTest({
+    locationSearch: "?marketSheet=1",
+    todayJson,
+    liveMarketDisplay: {
+      generated_at: "2026-04-28T22:55:00Z",
+      rows: [
+        {
+          slate_date: "2026-04-28",
+          normalized_pitcher: "off market pitcher",
+          pitcher: "Off Market Pitcher",
+          side: "under",
+          provider: "boltodds",
+          observed_at: "2026-04-28T22:55:00Z",
+          freshness_status: "fresh",
+          market_status: "no_clear_signal",
+          actionable_state: "off_market",
+          market_consensus: "none",
+          bet_value_consensus: "none",
+          main_line: 5.5,
+          best_book: "BetMGM",
+          best_line: 5.5,
+          best_odds: -105,
+          book_count: 4,
+        },
+      ],
+    },
+  });
+
+  const row = window.V2_DATA.pitchers[0].market_display.UNDER;
+  assert.equal(row.action_label, "shop_price");
+});
+
 test("live market display ignores wrong-date and malformed rows", async () => {
   const todayJson = {
     date: "2026-04-28",

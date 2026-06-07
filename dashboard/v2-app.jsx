@@ -230,15 +230,38 @@ function defaultBetLogBook(book) {
     bookOther: canonical ? "" : value,
   };
 }
-function isLiveMarketBetPrefill(row) {
+function isFreshMarketRow(row) {
+  const freshness = String(row?.freshness_status || "").toLowerCase();
+  return !freshness || ["fresh", "held_fresh", "heartbeat_held"].includes(freshness);
+}
+function sameMarketLine(row, side) {
+  if (!isFiniteNumber(row?.best_line) || !isFiniteNumber(side?.k_line)) return true;
+  return Math.abs(row.best_line - side.k_line) < 0.001;
+}
+function marketPriceCushionForSide(row, side) {
+  return priceCushion(row?.best_odds, fairOddsFromProbability(side?.win_prob));
+}
+function marketEffectiveActionLabel(row, side) {
+  if (!row) return null;
+  const label = row.action_label || "monitor";
+  const actionable = String(row.actionable_state || "").toLowerCase();
+  if (label === "monitor" && actionable.includes("off_market")) return "shop_price";
+  const cushion = marketPriceCushionForSide(row, side);
+  if (label === "monitor" && isFreshMarketRow(row) && sameMarketLine(row, side) && isFiniteNumber(cushion) && cushion >= 0) {
+    return "playable_price";
+  }
+  return label;
+}
+function isLiveMarketBetPrefill(row, side = null) {
   if (!row || row.freshness_status === "stale") return false;
   if (!isFiniteNumber(row.best_line) || !isFiniteNumber(row.best_odds) || !row.best_book) return false;
-  return ["playable", "shop_price", "market_agrees"].includes(row.action_label) ||
+  const label = marketEffectiveActionLabel(row, side);
+  return ["playable", "playable_price", "shop_price", "market_agrees"].includes(label) ||
     ["playable_now", "off_market"].includes(row.actionable_state);
 }
 function selectedMarketBetRow(p, side) {
   const row = marketDisplayForSide(p, side);
-  return isLiveMarketBetPrefill(row) ? row : null;
+  return isLiveMarketBetPrefill(row, side) ? row : null;
 }
 function defaultAcceptedBetForm(p, side, liveRow = selectedMarketBetRow(p, side)) {
   const priceSource = liveRow ? "live_best" : "artifact";
@@ -671,24 +694,27 @@ function marketDisplayForSide(p, side) {
   return p.market_display[side.direction] || null;
 }
 
-function marketActionTone(row) {
+function marketActionTone(row, side = null) {
   if (!row) return "neutral";
-  if (row.action_label === "stale" || row.action_label === "monitor") return "warn";
-  if (row.action_label === "market_disagrees") return "neg";
+  const label = marketEffectiveActionLabel(row, side);
+  if (label === "stale" || label === "monitor") return "warn";
+  if (label === "market_disagrees") return "neg";
   return "pos";
 }
 
-function marketActionText(row) {
+function marketActionText(row, side = null) {
   if (!row) return "Market pending";
+  const label = marketEffectiveActionLabel(row, side);
   const labels = {
     shop_price: "Shop price",
     playable: "Playable",
+    playable_price: "Playable price",
     market_agrees: "Market with us",
     market_disagrees: "Market against",
     stale: "Market stale",
     monitor: "Monitor",
   };
-  return labels[row.action_label] || "Monitor";
+  return labels[label] || "Monitor";
 }
 
 function marketConsensusText(value) {
@@ -735,11 +761,11 @@ function formatCents(value) {
 function MarketCardStrip({ p, side }) {
   if (!marketDisplayEnabled() || side.verdict === "PASS") return null;
   const row = marketDisplayForSide(p, side);
-  const tone = marketActionTone(row);
+  const tone = marketActionTone(row, side);
   return (
     <div className={`v2-market-strip ${tone}`}>
       <span className="v2-market-strip-k">Market</span>
-      <span className="v2-market-strip-main">{marketActionText(row)}</span>
+      <span className="v2-market-strip-main">{marketActionText(row, side)}</span>
       <span className="v2-market-strip-sub">{bestMarketText(row)}</span>
     </div>
   );
@@ -761,10 +787,10 @@ function MarketDecisionPanel({ p, side }) {
         <div className="v2-market-empty">No live market row is attached for this pick yet.</div>
       ) : (
         <>
-          <div className={`v2-market-decision ${marketActionTone(row)}`}>
+          <div className={`v2-market-decision ${marketActionTone(row, side)}`}>
             <div>
               <div className="v2-market-eyebrow">Decision read</div>
-              <div className="v2-market-decision-title">{marketActionText(row)}</div>
+              <div className="v2-market-decision-title">{marketActionText(row, side)}</div>
             </div>
             <div className="v2-market-decision-price">
               <span>{row.best_book || "Best book"}</span>

@@ -277,6 +277,7 @@
     const consensus = String(row.market_consensus || '').toLowerCase();
     if (freshness && !['fresh', 'held_fresh', 'heartbeat_held'].includes(freshness)) return 'stale';
     if (actionable.includes('shop')) return 'shop_price';
+    if (actionable.includes('off_market')) return 'shop_price';
     if (actionable.includes('play') || actionable.includes('bet')) return 'playable';
     if (status.includes('playable') || status.includes('confirmed')) return 'playable';
     if (consensus.includes('away') || consensus.includes('against')) return 'market_disagrees';
