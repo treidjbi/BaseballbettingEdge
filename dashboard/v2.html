@@ -1151,13 +1151,15 @@ body { display: flex; flex-direction: column; }
   line-height: 1.35;
 }
 .v2-bet-price-source,
+.v2-bet-alert-context,
 .v2-accepted-bet-review {
   padding: 10px;
   border: 1px solid var(--border);
   border-radius: 8px;
   background: var(--panel);
 }
-.v2-bet-price-source {
+.v2-bet-price-source,
+.v2-bet-alert-context {
   display: grid;
   gap: 4px;
   font-family: 'JetBrains Mono', monospace;
@@ -1165,11 +1167,17 @@ body { display: flex; flex-direction: column; }
   line-height: 1.35;
   color: var(--ink-dim);
 }
-.v2-bet-price-source b {
+.v2-bet-alert-context {
+  border-color: color-mix(in oklab, var(--accent) 34%, var(--border));
+  background: color-mix(in oklab, var(--accent) 8%, var(--panel));
+}
+.v2-bet-price-source b,
+.v2-bet-alert-context b {
   color: var(--ink);
   font-size: 11px;
 }
 .v2-bet-price-source span,
+.v2-bet-alert-context span,
 .v2-accepted-bet-review-head span,
 .v2-accepted-bet-row small,
 .v2-accepted-bet-muted {
@@ -1643,6 +1651,6 @@ body { display: flex; flex-direction: column; }
   <script src="v2-data.js?v=2026-06-07-market-sheet"></script>
   <script src="v2-movement-helpers.js?v=2026-04-30-1"></script>
   <script src="v2-factor-details.js?v=2026-04-28-6"></script>
-  <script src="v2-app.js?v=2026-06-07-live-price-label" defer></script>
+  <script src="v2-app.js?v=2026-06-07-bet-alert-context" defer></script>
 </body>
 </html>

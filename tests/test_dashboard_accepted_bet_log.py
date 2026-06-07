@@ -91,7 +91,19 @@ def test_dashboard_fetches_read_only_same_day_accepted_bet_review():
     assert "Duplicate side" in app
 
 
+def test_dashboard_preserves_deep_link_alert_context_in_bet_payload():
+    app = DASHBOARD_APP.read_text(encoding="utf-8")
+
+    assert "acceptedBetAlertContextForPick(p, best)" in app
+    assert "alertContext = null" in app
+    assert 'source: alertContext?.source || "dashboard_manual"' in app
+    assert "notification_event_id: alertContext?.notification_event_id || null" in app
+    assert "shadow_candidate_id: alertContext?.shadow_candidate_id || null" in app
+    assert "deep_link_context" in app
+    assert "Linked alert" in app
+
+
 def test_dashboard_busts_v2_app_cache_for_accepted_bet_ui():
     html = DASHBOARD_HTML.read_text(encoding="utf-8")
 
-    assert "v2-app.js?v=2026-06-07-live-price-label" in html
+    assert "v2-app.js?v=2026-06-07-bet-alert-context" in html

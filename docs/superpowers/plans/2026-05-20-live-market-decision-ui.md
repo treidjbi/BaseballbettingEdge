@@ -49,6 +49,12 @@
 > `Shop price` instead of generic `Monitor`, and fresh same-line live rows with
 > a non-negative model fair-price cushion now display `Playable price` and can
 > prefill the existing bet ticket. This remains a hidden UI/readout change only.
+>
+> **2026-06-07 alert-context update:** matched push/shadow-review deep links can
+> now preserve `notification_event_id` / `shadow_candidate_id` into the manually
+> confirmed `accepted_bets` payload. The URL context must match slate date,
+> pitcher, and side before it is attached; it does not override ticket line,
+> odds, book, units, or source-of-truth behavior.
 
 ## Goal
 
