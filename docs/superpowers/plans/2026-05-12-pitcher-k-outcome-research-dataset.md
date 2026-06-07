@@ -257,6 +257,11 @@ The BBE Operations Brief should digest this dataset after grading and report:
 - opportunity and leash-risk bucket counts, with notable loss clusters
 - whether live-market checkpoint rows from BoltOdds/PropLine are available or
   still absent from the compact dataset
+- the market agreement tracker read from
+  `analytics/output/market_agreement_tracker.md` when exported live evidence
+  is available: LEANs with broad market support, referee caps later confirmed
+  or rejected by movement, FIRE rows that became market-faded, and movement
+  magnitude buckets
 - whether lineup-handedness fields are populated or still collection-only
   placeholders
 - a compact Gate C bucket scoreboard for the clean 2026-04-28+ regime:
@@ -305,6 +310,15 @@ Gate F projection-challenger validation is controlled by
 It tests `market_shrink_25`, `high_line_temper`, and related challengers as
 shadow-only candidates and cannot change live lambda without a later
 Tyler-approved production plan.
+
+Live market agreement tracking is controlled by
+`docs/superpowers/plans/2026-06-07-market-agreement-tracker.md`.
+It derives LEAN/FIRE/referee-cap buckets from existing
+`market_pick_evidence`, `live_market_display_state`, and optional raw snapshot
+exports. It should help answer whether later PropLine/BoltOdds movement
+confirmed or rejected the model side, but it cannot promote LEANs, override the
+confidence referee, change notifications, change provider order, or alter any
+model/staking/threshold behavior without a separate Tyler-approved plan.
 
 As of the 2026-06-05 refresh, the market-favorite shadow report had `234 / 250`
 validation tracked rows, `market_favorite_referee_candidate` at `114` rows,

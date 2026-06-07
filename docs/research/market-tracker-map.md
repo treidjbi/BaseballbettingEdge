@@ -19,6 +19,7 @@ provider order, notifications, or calibration.
 | Pick lock timing observations | `shadow_pick_lock_observations` | Deduped status transitions for future lock-ledger decisions. |
 | Whole-market price outcomes | `market_price_outcome_audit.py` | Includes PASS-level markets, favorite behavior, side price buckets. |
 | Live market outcome slices | `live_market_outcome_audit.py` | Joins exported live market evidence to graded results. |
+| Market agreement tracker | `market_agreement_tracker.py` | Derived LEAN/FIRE/referee-cap buckets for market movement with or against the model; no new storage. |
 | Compact pitcher outcome row | `pitcher_k_outcome_dataset.py`; durable artifact in `data/research/gate_c/` | Canonical research row for market, model, context, CLV, and result. |
 | K projection challengers | `k_projection_shadow_lab.py` | Reuses compact outcome rows to compare current lambda against transparent projection variants. |
 | Pre/post 4/28 hard review | `pre_post_428_model_review.py` | Compares immediate pre-bump and clean post-bump grading, selection, and projection quality. |
@@ -140,31 +141,36 @@ The BBE Operations Brief should synthesize this map every weekday:
    `market_snapshots`, and `provider_coverage_audits`.
 2. Confirm pick-time and current-state market evidence from
    `market_pick_evidence` and `live_market_display_state`.
-3. Regenerate or read
+3. Regenerate or read `analytics/output/market_agreement_tracker.md` when live
+   market evidence exports are available. Use it to summarize LEANs with broad
+   market support, referee caps later confirmed or rejected by movement, and
+   FIRE rows that became market-faded. Treat these as shadow Gate C review
+   buckets only.
+4. Regenerate or read
    `data/research/gate_c/pitcher_k_outcome_dataset_summary.md` and report CLV,
    process outcome, timing window, model-versus-market, opportunity/leash,
    pitcher archetype, large-edge skepticism, and reconciliation counts.
-4. Keep a compact Gate C bucket scoreboard for the clean 2026-04-28+ regime:
+5. Keep a compact Gate C bucket scoreboard for the clean 2026-04-28+ regime:
    FIRE 1u/2u, over/under, moderate edge, high edge, CLV/no-CLV, timing window,
    quality gate, model-versus-market favorite, opportunity/leash, and pitcher
    archetype. Compare it to the immediate 2026-04-08 through 2026-04-27
    pre-bump window when the contrast changes the read, but do not use the
    older window as permission to roll back live rules.
-5. Regenerate or read `k_projection_shadow_lab.md` when projection quality is
+6. Regenerate or read `k_projection_shadow_lab.md` when projection quality is
    in question; report whether a challenger improves accuracy without
    promoting it into live lambda.
-6. For provider-cutover or line-conflict days, run/read
+7. For provider-cutover or line-conflict days, run/read
    `executable_market_shadow_audit_YYYY-MM-DD.md` beside the provider cutover
    report. Separate `single_book_outlier` conflicts from
    `ref_vs_majority` conflicts, and treat best-executable EV as shadow evidence
    until CLV/outcome proof exists.
-7. For notification work, report grouped start-window opportunities, grouped
+8. For notification work, report grouped start-window opportunities, grouped
    pick-change opportunities, stale/duplicate/post-start suppressions, and
    movement candidates by provider-strength label before recommending any new
    production send class.
-8. Tie any recommendation back to cost/risk docs before suggesting more
+9. Tie any recommendation back to cost/risk docs before suggesting more
    infrastructure or provider spend.
-9. Explicitly separate "collect more evidence" from "ready to change model or
+10. Explicitly separate "collect more evidence" from "ready to change model or
    betting behavior."
 
 The daily read should produce a compact confidence-referee note:
