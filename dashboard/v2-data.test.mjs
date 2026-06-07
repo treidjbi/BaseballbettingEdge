@@ -478,6 +478,86 @@ test("live market display fetches sanitized endpoint rows only behind the hidden
   assert.equal(pitcher.market_display.UNDER.best_odds, -112);
 });
 
+test("live market display prefers fresh provider rows over stale rows for the same pitcher side", async () => {
+  const todayJson = {
+    date: "2026-04-28",
+    generated_at: "2026-04-28T23:00:00Z",
+    pitchers: [
+      {
+        pitcher: "Provider Pitcher",
+        team: "SEA",
+        opp_team: "CLE",
+        game_time: "2026-04-28T23:10:00Z",
+        k_line: 5.5,
+        best_over_odds: -105,
+        best_under_odds: -118,
+        lambda: 4.9,
+        avg_ip: 5.8,
+        opp_k_rate: 0.24,
+        season_k9: 9.1,
+        recent_k9: 9.3,
+        career_k9: 8.9,
+        ev_over: { adj_ev: -0.02, ev: -0.01, edge: -0.02, verdict: "PASS", win_prob: 0.46 },
+        ev_under: { adj_ev: 0.04, ev: 0.05, edge: 0.02, verdict: "LEAN", win_prob: 0.54 },
+      },
+    ],
+  };
+
+  const window = await runV2DataTest({
+    locationSearch: "?marketSheet=1",
+    todayJson,
+    liveMarketDisplay: {
+      generated_at: "2026-04-28T22:57:00Z",
+      rows: [
+        {
+          slate_date: "2026-04-28",
+          normalized_pitcher: "provider pitcher",
+          pitcher: "Provider Pitcher",
+          side: "under",
+          provider: "boltodds",
+          observed_at: "2026-04-28T22:57:00Z",
+          freshness_status: "fresh",
+          market_status: "market_confirmed_playable",
+          actionable_state: "playable_now",
+          market_consensus: "toward_pick",
+          bet_value_consensus: "worse_now",
+          main_line: 5.5,
+          best_book: "DraftKings",
+          best_line: 5.5,
+          best_odds: -112,
+          book_count: 3,
+          books_seen: ["DraftKings", "FanDuel", "BetMGM"],
+        },
+        {
+          slate_date: "2026-04-28",
+          normalized_pitcher: "provider pitcher",
+          pitcher: "Provider Pitcher",
+          side: "under",
+          provider: "propline",
+          observed_at: "2026-04-28T22:58:00Z",
+          freshness_status: "stale",
+          market_status: "no_clear_signal",
+          actionable_state: "stale",
+          market_consensus: "none",
+          bet_value_consensus: "none",
+          main_line: 5.5,
+          best_book: null,
+          best_line: null,
+          best_odds: null,
+          book_count: 3,
+          books_seen: ["DraftKings", "FanDuel", "BetRivers"],
+        },
+      ],
+    },
+  });
+
+  const row = window.V2_DATA.pitchers[0].market_display.UNDER;
+  assert.equal(row.provider, "boltodds");
+  assert.equal(row.freshness_status, "fresh");
+  assert.equal(row.best_book, "DraftKings");
+  assert.equal(row.best_odds, -112);
+});
+
 test("live market display rows normalize and attach to matching pitcher sides behind the hidden flag", async () => {
   const todayJson = {
     date: "2026-04-28",

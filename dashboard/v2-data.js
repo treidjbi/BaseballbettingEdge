@@ -342,12 +342,68 @@
     };
   }
 
+  function marketFreshnessRank(row) {
+    const value = String(row?.freshness_status || '').toLowerCase();
+    if (['fresh', 'held_fresh', 'heartbeat_held'].includes(value)) return 3;
+    if (value === 'stale') return 0;
+    return 1;
+  }
+
+  function marketActionRank(row) {
+    const value = String(row?.actionable_state || '').toLowerCase();
+    const ranks = {
+      playable_now: 7,
+      off_market: 6,
+      market_fade: 6,
+      mixed: 5,
+      number_worse: 4,
+      monitor: 2,
+      stale: 0,
+    };
+    return ranks[value] ?? 1;
+  }
+
+  function marketObservedAtMs(row) {
+    const ms = Date.parse(row?.observed_at || '');
+    return Number.isFinite(ms) ? ms : 0;
+  }
+
+  function marketProviderRank(row) {
+    const value = String(row?.provider || '').toLowerCase();
+    if (value === 'boltodds') return 2;
+    if (value === 'propline') return 1;
+    return 0;
+  }
+
+  function marketRowScore(row) {
+    return [
+      marketFreshnessRank(row),
+      marketActionRank(row),
+      row?.broad_confirmation === true ? 1 : 0,
+      numericOrNull(row?.book_count) || 0,
+      marketObservedAtMs(row),
+      marketProviderRank(row),
+    ];
+  }
+
+  function preferredMarketRow(candidate, current) {
+    if (!current) return candidate;
+    const candidateScore = marketRowScore(candidate);
+    const currentScore = marketRowScore(current);
+    for (let i = 0; i < candidateScore.length; i += 1) {
+      if (candidateScore[i] > currentScore[i]) return candidate;
+      if (candidateScore[i] < currentScore[i]) return current;
+    }
+    return current;
+  }
+
   function attachMarketDisplay(pitchers, marketDisplay) {
     if (!marketDisplay?.enabled || !marketDisplay.rows.length) return;
     const byPitcher = new Map();
     for (const row of marketDisplay.rows) {
       if (!byPitcher.has(row.normalized_pitcher)) byPitcher.set(row.normalized_pitcher, {});
-      byPitcher.get(row.normalized_pitcher)[row.side] = row;
+      const sideRows = byPitcher.get(row.normalized_pitcher);
+      sideRows[row.side] = preferredMarketRow(row, sideRows[row.side]);
     }
     for (const p of pitchers) {
       const rows = byPitcher.get(marketPitcherKey(p.pitcher));

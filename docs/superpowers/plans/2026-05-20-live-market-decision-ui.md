@@ -360,6 +360,12 @@ Implemented 2026-06-07 on branch `codex/live-market-display-endpoint`:
 - `dashboard/v2-data.js` calls the endpoint only behind `?marketSheet=1`, after
   the slate artifact is loaded, and keeps the dashboard usable if the endpoint
   is unavailable.
+- Follow-up live validation found multiple provider rows per pitcher/side. The
+  adapter now chooses the displayed row deterministically instead of relying on
+  payload order: fresh rows beat stale rows, then more informative action
+  states, broad confirmation, supported-book count, observed time, and provider
+  tie-breakers decide the single card/sheet row. Provider-comparison display is
+  still a later phase.
 - Verified with endpoint tests, hidden-flag adapter tests, adjacent v2 data /
   movement / factor-detail tests, Netlify notification and accepted-bet tests,
   syntax checks, and `git diff --check`.
