@@ -610,6 +610,157 @@ function WhyPills({ p, side }) {
 }
 
 // ── Pick card ──
+function marketDisplayEnabled() {
+  return window.V2_MARKET_DISPLAY?.enabled === true;
+}
+
+function marketDisplayForSide(p, side) {
+  if (!marketDisplayEnabled() || !p?.market_display || !side?.direction) return null;
+  return p.market_display[side.direction] || null;
+}
+
+function marketActionTone(row) {
+  if (!row) return "neutral";
+  if (row.action_label === "stale" || row.action_label === "monitor") return "warn";
+  if (row.action_label === "market_disagrees") return "neg";
+  return "pos";
+}
+
+function marketActionText(row) {
+  if (!row) return "Market pending";
+  const labels = {
+    shop_price: "Shop price",
+    playable: "Playable",
+    market_agrees: "Market with us",
+    market_disagrees: "Market against",
+    stale: "Market stale",
+    monitor: "Monitor",
+  };
+  return labels[row.action_label] || "Monitor";
+}
+
+function marketConsensusText(value) {
+  const key = String(value || "").toLowerCase();
+  if (key.includes("toward") || key.includes("with")) return "with pick";
+  if (key.includes("away") || key.includes("against")) return "against pick";
+  if (key) return key.replace(/_/g, " ");
+  return "no consensus";
+}
+
+function marketValueText(value) {
+  const key = String(value || "").toLowerCase();
+  if (key.includes("better")) return "better now";
+  if (key.includes("worse")) return "worse now";
+  if (key.includes("same") || key.includes("flat")) return "flat";
+  if (key) return key.replace(/_/g, " ");
+  return "unknown";
+}
+
+function bestMarketText(row) {
+  if (!row) return "No live row yet";
+  const book = row.best_book || "Best book";
+  const line = row.best_line ?? row.main_line;
+  const lineText = line == null ? "" : ` ${line}K`;
+  return `${book}${lineText} ${fmtOdds(row.best_odds)}`;
+}
+
+function fairOddsFromProbability(prob) {
+  if (!isFiniteNumber(prob) || prob <= 0 || prob >= 1) return null;
+  if (prob >= 0.5) return Math.round(-100 * prob / (1 - prob));
+  return Math.round(100 * (1 - prob) / prob);
+}
+
+function priceCushion(liveOdds, fairOdds) {
+  if (!isFiniteNumber(liveOdds) || !isFiniteNumber(fairOdds)) return null;
+  return Math.round(liveOdds - fairOdds);
+}
+
+function formatCents(value) {
+  if (!isFiniteNumber(value)) return "--";
+  return `${value > 0 ? "+" : ""}${value}c`;
+}
+
+function MarketCardStrip({ p, side }) {
+  if (!marketDisplayEnabled() || side.verdict === "PASS") return null;
+  const row = marketDisplayForSide(p, side);
+  const tone = marketActionTone(row);
+  return (
+    <div className={`v2-market-strip ${tone}`}>
+      <span className="v2-market-strip-k">Market</span>
+      <span className="v2-market-strip-main">{marketActionText(row)}</span>
+      <span className="v2-market-strip-sub">{bestMarketText(row)}</span>
+    </div>
+  );
+}
+
+function MarketDecisionPanel({ p, side }) {
+  if (!marketDisplayEnabled() || side.verdict === "PASS") return null;
+  const row = marketDisplayForSide(p, side);
+  const refBook = bookForSide(p, side) || "Model ref";
+  const fairOdds = fairOddsFromProbability(side.win_prob);
+  const cushion = row ? priceCushion(row.best_odds, fairOdds) : null;
+  const observed = row?.observed_at ? fmtTime(row.observed_at) : "--";
+  const books = row?.book_count ?? row?.books_seen?.length ?? row?.book_rows?.length ?? null;
+
+  return (
+    <div className="v2-sheet-section">
+      <div className="h">Live market decision</div>
+      {!row ? (
+        <div className="v2-market-empty">No live market row is attached for this pick yet.</div>
+      ) : (
+        <>
+          <div className={`v2-market-decision ${marketActionTone(row)}`}>
+            <div>
+              <div className="v2-market-eyebrow">Decision read</div>
+              <div className="v2-market-decision-title">{marketActionText(row)}</div>
+            </div>
+            <div className="v2-market-decision-price">
+              <span>{row.best_book || "Best book"}</span>
+              <b>{row.best_line ?? row.main_line ?? "--"}K {fmtOdds(row.best_odds)}</b>
+            </div>
+          </div>
+          <div className="v2-market-grid">
+            <div className="v2-market-cell">
+              <span>Model ref</span>
+              <b>{refBook} {side.k_line ?? p.k_line}K {fmtOdds(side.odds)}</b>
+            </div>
+            <div className="v2-market-cell">
+              <span>Model fair</span>
+              <b>{fmtOdds(fairOdds)} {cushion != null && <em>{formatCents(cushion)}</em>}</b>
+            </div>
+            <div className="v2-market-cell">
+              <span>Market pulse</span>
+              <b>{marketConsensusText(row.market_consensus)}</b>
+            </div>
+            <div className="v2-market-cell">
+              <span>Bet value</span>
+              <b>{marketValueText(row.bet_value_consensus)}</b>
+            </div>
+            <div className="v2-market-cell">
+              <span>Freshness</span>
+              <b>{row.freshness_status || "unknown"} <em>{observed}</em></b>
+            </div>
+            <div className="v2-market-cell">
+              <span>Books</span>
+              <b>{books == null ? "--" : books}{row.broad_confirmation ? " broad" : ""}</b>
+            </div>
+          </div>
+          {row.book_rows?.length > 0 && (
+            <div className="v2-market-books">
+              {row.book_rows.slice(0, 4).map((book, idx) => (
+                <div className="v2-market-book-row" key={`${book.bookmaker_key || book.bookmaker_title}-${idx}`}>
+                  <span>{book.bookmaker_title || book.bookmaker_key || "Book"}</span>
+                  <b>{book.line ?? "--"}K {fmtOdds(book.odds)}</b>
+                </div>
+              ))}
+            </div>
+          )}
+        </>
+      )}
+    </div>
+  );
+}
+
 function qualityLabel(level) {
   if (level === "blocked") return "Current blocked";
   if (level === "capped") return "Current capped";
@@ -695,6 +846,8 @@ function PickCard({ p, onOpen }) {
           </div>
         </div>
       </div>
+
+      <MarketCardStrip p={p} side={side} />
 
       {tracked.length > 0 && (
         <div className="v2-tracked-row">
@@ -1085,6 +1238,8 @@ function PickDetail({ p, onClose }) {
             <SideCard s={displayUnder} />
           </div>
         </div>
+
+        <MarketDecisionPanel p={p} side={best} />
 
         <div className="v2-sheet-section">
           <div className="h">Projection</div>

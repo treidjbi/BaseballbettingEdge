@@ -398,6 +398,52 @@ body { display: flex; flex-direction: column; }
 }
 
 /* Projection bar — shows line vs projection visually */
+.v2-market-strip {
+  margin: 0 14px 10px;
+  min-height: 30px;
+  padding: 7px 9px;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: color-mix(in oklab, var(--ink) 4%, transparent);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10.5px;
+  line-height: 1.25;
+}
+.v2-market-strip.pos {
+  border-color: color-mix(in oklab, var(--pos) 34%, var(--border));
+  background: color-mix(in oklab, var(--pos) 8%, transparent);
+}
+.v2-market-strip.neg {
+  border-color: color-mix(in oklab, var(--neg) 34%, var(--border));
+  background: color-mix(in oklab, var(--neg) 8%, transparent);
+}
+.v2-market-strip.warn {
+  border-color: color-mix(in oklab, var(--warn) 34%, var(--border));
+  background: color-mix(in oklab, var(--warn) 8%, transparent);
+}
+.v2-market-strip-k {
+  flex-shrink: 0;
+  color: var(--ink-dim);
+  font-weight: 800;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+}
+.v2-market-strip-main {
+  flex-shrink: 0;
+  font-weight: 800;
+  color: var(--ink);
+}
+.v2-market-strip-sub {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--ink-dim);
+}
+
 .v2-projbar {
   margin-top: 6px; height: 3px; background: var(--border);
   border-radius: 2px; position: relative;
@@ -772,6 +818,124 @@ body { display: flex; flex-direction: column; }
   font-family: 'Oswald', sans-serif; font-size: 10.5px; font-weight: 700;
   padding: 3px 7px; border-radius: 3px; letter-spacing: .06em;
   background: var(--chip); color: var(--ink-2);
+}
+
+.v2-market-empty {
+  padding: 12px;
+  border: 1px dashed var(--border);
+  border-radius: var(--radius-lg);
+  background: color-mix(in oklab, var(--ink) 3%, transparent);
+  color: var(--ink-dim);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  line-height: 1.45;
+}
+.v2-market-decision {
+  padding: 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  background: var(--surface);
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+}
+.v2-market-decision.pos { border-color: color-mix(in oklab, var(--pos) 36%, var(--border)); }
+.v2-market-decision.neg { border-color: color-mix(in oklab, var(--neg) 36%, var(--border)); }
+.v2-market-decision.warn { border-color: color-mix(in oklab, var(--warn) 36%, var(--border)); }
+.v2-market-eyebrow {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 9.5px;
+  font-weight: 800;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  color: var(--ink-dim);
+}
+.v2-market-decision-title {
+  margin-top: 3px;
+  font-family: 'Oswald', sans-serif;
+  font-size: 20px;
+  line-height: 1;
+  font-weight: 700;
+  color: var(--ink);
+}
+.v2-market-decision-price {
+  min-width: 112px;
+  text-align: right;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10.5px;
+  color: var(--ink-dim);
+}
+.v2-market-decision-price b {
+  display: block;
+  margin-top: 3px;
+  color: var(--ink);
+  font-size: 13px;
+}
+.v2-market-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  margin-top: 10px;
+}
+.v2-market-cell {
+  min-width: 0;
+  padding: 9px 10px;
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  background: var(--surface);
+}
+.v2-market-cell span {
+  display: block;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 9.5px;
+  font-weight: 800;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  color: var(--ink-dim);
+  margin-bottom: 4px;
+}
+.v2-market-cell b {
+  display: block;
+  min-width: 0;
+  overflow-wrap: anywhere;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11.5px;
+  line-height: 1.25;
+  color: var(--ink);
+}
+.v2-market-cell em {
+  font-style: normal;
+  color: var(--ink-dim);
+  font-weight: 700;
+}
+.v2-market-books {
+  margin-top: 10px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  background: var(--surface);
+}
+.v2-market-book-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 8px 10px;
+  border-bottom: 1px dashed var(--border);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+}
+.v2-market-book-row:last-child { border-bottom: 0; }
+.v2-market-book-row span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--ink-dim);
+}
+.v2-market-book-row b {
+  flex-shrink: 0;
+  color: var(--ink);
 }
 
 /* Stats breakdown */
@@ -1399,9 +1563,9 @@ body { display: flex; flex-direction: column; }
   <script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
   <script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
   <!-- v2-app.js is compiled from v2-app.jsx. Recompile before committing JSX changes. -->
-  <script src="v2-data.js?v=2026-04-29-1"></script>
+  <script src="v2-data.js?v=2026-06-07-market-sheet"></script>
   <script src="v2-movement-helpers.js?v=2026-04-30-1"></script>
   <script src="v2-factor-details.js?v=2026-04-28-6"></script>
-  <script src="v2-app.js?v=2026-05-08-bet-ticket-lock" defer></script>
+  <script src="v2-app.js?v=2026-06-07-market-sheet" defer></script>
 </body>
 </html>

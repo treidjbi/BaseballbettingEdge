@@ -186,7 +186,150 @@
     return String(name || '').trim().toLowerCase();
   }
 
-  function buildV2Data(today) {
+  function marketSheetEnabled() {
+    const params = new URLSearchParams(location.search || '');
+    if (!params.has('marketSheet')) return false;
+    const value = String(params.get('marketSheet') || '').toLowerCase();
+    return value === '' || value === '1' || value === 'true' || value === 'yes';
+  }
+
+  function marketPitcherKey(name) {
+    return String(name || '')
+      .normalize('NFKD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, ' ')
+      .trim()
+      .replace(/\s+/g, ' ');
+  }
+
+  function normalizeMarketSide(side) {
+    const value = String(side || '').trim().toUpperCase();
+    if (value === 'OVER' || value === 'UNDER') return value;
+    return '';
+  }
+
+  function supportedMarketProvider(provider) {
+    const value = String(provider || '').trim().toLowerCase();
+    if (!value) return true;
+    return ['boltodds', 'propline', 'prop_line', 'propline_polling', 'propline_webhook'].includes(value);
+  }
+
+  function numericOrNull(value) {
+    if (value == null || String(value).trim() === '') return null;
+    const n = Number(value);
+    return Number.isFinite(n) ? n : null;
+  }
+
+  function marketDisplaySource() {
+    const source = window.V2_LIVE_MARKET_DISPLAY;
+    if (Array.isArray(source)) return { generated_at: null, rows: source };
+    if (source && typeof source === 'object') {
+      return {
+        generated_at: source.generated_at || source.updated_at || null,
+        rows: Array.isArray(source.rows) ? source.rows : [],
+      };
+    }
+    return { generated_at: null, rows: [] };
+  }
+
+  function normalizeBookRows(rows) {
+    if (!Array.isArray(rows)) return [];
+    return rows
+      .map(row => ({
+        bookmaker_key: String(row.bookmaker_key || row.book || row.key || '').trim(),
+        bookmaker_title: String(row.bookmaker_title || row.book_title || row.title || row.book || row.bookmaker_key || '').trim(),
+        line: numericOrNull(row.line ?? row.k_line ?? row.point),
+        odds: numericOrNull(row.odds ?? row.price),
+        observed_at: row.observed_at || row.last_seen_at || null,
+      }))
+      .filter(row => row.bookmaker_key || row.bookmaker_title || row.line != null || row.odds != null);
+  }
+
+  function marketActionLabel(row) {
+    const freshness = String(row.freshness_status || '').toLowerCase();
+    const actionable = String(row.actionable_state || '').toLowerCase();
+    const status = String(row.market_status || '').toLowerCase();
+    const consensus = String(row.market_consensus || '').toLowerCase();
+    if (freshness && !['fresh', 'held_fresh', 'heartbeat_held'].includes(freshness)) return 'stale';
+    if (actionable.includes('shop')) return 'shop_price';
+    if (actionable.includes('play') || actionable.includes('bet')) return 'playable';
+    if (status.includes('playable') || status.includes('confirmed')) return 'playable';
+    if (consensus.includes('away') || consensus.includes('against')) return 'market_disagrees';
+    if (consensus.includes('toward') || consensus.includes('with')) return 'market_agrees';
+    return 'monitor';
+  }
+
+  function normalizeMarketDisplayRow(row, slateDate) {
+    if (!row || typeof row !== 'object') return null;
+    const rowDate = row.slate_date || row.date || '';
+    if (rowDate && rowDate !== slateDate) return null;
+    const side = normalizeMarketSide(row.side || row.direction || row.pick_side);
+    const pitcherKey = marketPitcherKey(row.normalized_pitcher || row.pitcher);
+    if (!side || !pitcherKey) return null;
+    if (!supportedMarketProvider(row.provider || row.source_provider)) return null;
+
+    return {
+      slate_date: slateDate,
+      pitcher: row.pitcher || row.normalized_pitcher || '',
+      normalized_pitcher: pitcherKey,
+      side,
+      provider: row.provider || row.source_provider || null,
+      observed_at: row.observed_at || row.updated_at || row.last_seen_at || null,
+      freshness_status: row.freshness_status || null,
+      market_status: row.market_status || null,
+      actionable_state: row.actionable_state || null,
+      action_label: marketActionLabel(row),
+      market_consensus: row.market_consensus || null,
+      bet_value_consensus: row.bet_value_consensus || null,
+      main_line: numericOrNull(row.main_line ?? row.k_line ?? row.line),
+      best_book: row.best_book || row.best_bookmaker || row.best_bookmaker_title || null,
+      best_line: numericOrNull(row.best_line ?? row.best_k_line),
+      best_odds: numericOrNull(row.best_odds ?? row.best_price),
+      book_count: numericOrNull(row.book_count ?? row.books_count),
+      books_seen: Array.isArray(row.books_seen) ? row.books_seen.filter(Boolean).map(String) : [],
+      broad_confirmation: row.broad_confirmation === true,
+      movement_events: Array.isArray(row.movement_events) ? row.movement_events : [],
+      book_rows: normalizeBookRows(row.book_rows || row.books || []),
+    };
+  }
+
+  function buildMarketDisplay(today) {
+    const enabled = marketSheetEnabled();
+    const source = marketDisplaySource();
+    if (!enabled) {
+      return {
+        enabled: false,
+        generated_at: source.generated_at,
+        slate_date: today.date || null,
+        rows: [],
+      };
+    }
+    const rows = source.rows
+      .map(row => normalizeMarketDisplayRow(row, today.date))
+      .filter(Boolean);
+    return {
+      enabled: true,
+      generated_at: source.generated_at,
+      slate_date: today.date || null,
+      rows,
+    };
+  }
+
+  function attachMarketDisplay(pitchers, marketDisplay) {
+    if (!marketDisplay?.enabled || !marketDisplay.rows.length) return;
+    const byPitcher = new Map();
+    for (const row of marketDisplay.rows) {
+      if (!byPitcher.has(row.normalized_pitcher)) byPitcher.set(row.normalized_pitcher, {});
+      byPitcher.get(row.normalized_pitcher)[row.side] = row;
+    }
+    for (const p of pitchers) {
+      const rows = byPitcher.get(marketPitcherKey(p.pitcher));
+      if (rows && (rows.OVER || rows.UNDER)) p.market_display = rows;
+    }
+  }
+
+  function buildV2Data(today, marketDisplay = null) {
     const pitchers = (today.pitchers || []).map(normalizePitcher);
     const rawTracked = Array.isArray(today.tracked_picks)
       ? today.tracked_picks
@@ -202,6 +345,7 @@
     for (const p of pitchers) {
       p.tracked_picks = trackedByPitcher.get(trackedPitcherKey(p.pitcher)) || [];
     }
+    attachMarketDisplay(pitchers, marketDisplay);
 
     // Defensive sort by game_time ascending — the pipeline can emit pitchers out
     // of order (late-arriving lineup/odds data gets appended), which bubbles up
@@ -433,7 +577,9 @@
       ]);
       const datedSteam = steamJsonForDate(steamJson, todayJson.date);
       const perfWithNotes = { ...perfJson, calibration_notes: paramsJson.calibration_notes || perfJson.calibration_notes || [] };
-      window.V2_DATA  = buildV2Data(todayJson);
+      const marketDisplay = buildMarketDisplay(todayJson);
+      window.V2_MARKET_DISPLAY = marketDisplay;
+      window.V2_DATA  = buildV2Data(todayJson, marketDisplay);
       window.V2_PERF  = buildV2Perf(perfWithNotes);
       window.V2_STEAM = buildV2SteamFromFile(datedSteam, todayJson);
       window.V2_STEAM_RAW = datedSteam || { snapshots: [] };
@@ -447,6 +593,7 @@
       window.V2_PERF  = { total_picks: 0, total_units: 0, total_roi: 0, record: '0-0-0', rows: [] };
       window.V2_STEAM = { rows: [] };
       window.V2_STEAM_RAW = { snapshots: [] };
+      window.V2_MARKET_DISPLAY = { enabled: false, generated_at: null, slate_date: null, rows: [] };
       window.V2_DATES     = [];
       window.V2_DATE_META = {};
       window.V2_CURRENT_DATE = getAppDate();
