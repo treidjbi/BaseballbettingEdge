@@ -58,13 +58,23 @@ def test_dashboard_prefills_bet_ticket_from_live_market_row():
 
     assert "defaultAcceptedBetForm(p, best, marketBetRow" in app
     assert "selectedMarketBetRow(p, best)" in app
-    assert "isLiveMarketBetPrefill(row)" in app
+    assert "isLiveMarketBetPrefill(row, side" in app
     assert 'liveRow ? "live_best" : "artifact"' in app
     assert "selected_live_provider" in app
     assert "selected_live_observed_at" in app
     assert "price_source: priceSource" in app
     assert "Live best" in app
     assert "Artifact price" in app
+
+
+def test_dashboard_uses_price_cushion_for_live_market_prefill_decision():
+    app = DASHBOARD_APP.read_text(encoding="utf-8")
+
+    assert "marketEffectiveActionLabel(row, side)" in app
+    assert "marketPriceCushionForSide(row, side)" in app
+    assert "playable_price" in app
+    assert "Playable price" in app
+    assert "isLiveMarketBetPrefill(row, side" in app
 
 
 def test_dashboard_fetches_read_only_same_day_accepted_bet_review():
@@ -84,4 +94,4 @@ def test_dashboard_fetches_read_only_same_day_accepted_bet_review():
 def test_dashboard_busts_v2_app_cache_for_accepted_bet_ui():
     html = DASHBOARD_HTML.read_text(encoding="utf-8")
 
-    assert "v2-app.js?v=2026-06-07-bet-ticket-live-prefill" in html
+    assert "v2-app.js?v=2026-06-07-live-price-label" in html

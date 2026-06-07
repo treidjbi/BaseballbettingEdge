@@ -43,6 +43,12 @@
 > modal can show a read-only accepted-bet review and duplicate same-side warning.
 > This is an audit/UI improvement only; it does not place bets or change stakes,
 > picks, thresholds, provider order, notifications, locks, or source of truth.
+>
+> **2026-06-07 live-row review update:** real same-day rows showed two label
+> consistency issues. `off_market` provider rows are now displayed as
+> `Shop price` instead of generic `Monitor`, and fresh same-line live rows with
+> a non-negative model fair-price cushion now display `Playable price` and can
+> prefill the existing bet ticket. This remains a hidden UI/readout change only.
 
 ## Goal
 

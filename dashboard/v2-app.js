@@ -245,14 +245,37 @@
       bookOther: canonical ? "" : value
     };
   }
-  function isLiveMarketBetPrefill(row) {
+  function isFreshMarketRow(row) {
+    const freshness = String(row?.freshness_status || "").toLowerCase();
+    return !freshness || ["fresh", "held_fresh", "heartbeat_held"].includes(freshness);
+  }
+  function sameMarketLine(row, side) {
+    if (!isFiniteNumber(row?.best_line) || !isFiniteNumber(side?.k_line)) return true;
+    return Math.abs(row.best_line - side.k_line) < 1e-3;
+  }
+  function marketPriceCushionForSide(row, side) {
+    return priceCushion(row?.best_odds, fairOddsFromProbability(side?.win_prob));
+  }
+  function marketEffectiveActionLabel(row, side) {
+    if (!row) return null;
+    const label = row.action_label || "monitor";
+    const actionable = String(row.actionable_state || "").toLowerCase();
+    if (label === "monitor" && actionable.includes("off_market")) return "shop_price";
+    const cushion = marketPriceCushionForSide(row, side);
+    if (label === "monitor" && isFreshMarketRow(row) && sameMarketLine(row, side) && isFiniteNumber(cushion) && cushion >= 0) {
+      return "playable_price";
+    }
+    return label;
+  }
+  function isLiveMarketBetPrefill(row, side = null) {
     if (!row || row.freshness_status === "stale") return false;
     if (!isFiniteNumber(row.best_line) || !isFiniteNumber(row.best_odds) || !row.best_book) return false;
-    return ["playable", "shop_price", "market_agrees"].includes(row.action_label) || ["playable_now", "off_market"].includes(row.actionable_state);
+    const label = marketEffectiveActionLabel(row, side);
+    return ["playable", "playable_price", "shop_price", "market_agrees"].includes(label) || ["playable_now", "off_market"].includes(row.actionable_state);
   }
   function selectedMarketBetRow(p, side) {
     const row = marketDisplayForSide(p, side);
-    return isLiveMarketBetPrefill(row) ? row : null;
+    return isLiveMarketBetPrefill(row, side) ? row : null;
   }
   function defaultAcceptedBetForm(p, side, liveRow = selectedMarketBetRow(p, side)) {
     const priceSource = liveRow ? "live_best" : "artifact";
@@ -602,23 +625,26 @@
     if (!marketDisplayEnabled() || !p?.market_display || !side?.direction) return null;
     return p.market_display[side.direction] || null;
   }
-  function marketActionTone(row) {
+  function marketActionTone(row, side = null) {
     if (!row) return "neutral";
-    if (row.action_label === "stale" || row.action_label === "monitor") return "warn";
-    if (row.action_label === "market_disagrees") return "neg";
+    const label = marketEffectiveActionLabel(row, side);
+    if (label === "stale" || label === "monitor") return "warn";
+    if (label === "market_disagrees") return "neg";
     return "pos";
   }
-  function marketActionText(row) {
+  function marketActionText(row, side = null) {
     if (!row) return "Market pending";
+    const label = marketEffectiveActionLabel(row, side);
     const labels = {
       shop_price: "Shop price",
       playable: "Playable",
+      playable_price: "Playable price",
       market_agrees: "Market with us",
       market_disagrees: "Market against",
       stale: "Market stale",
       monitor: "Monitor"
     };
-    return labels[row.action_label] || "Monitor";
+    return labels[label] || "Monitor";
   }
   function marketConsensusText(value) {
     const key = String(value || "").toLowerCase();
@@ -658,8 +684,8 @@
   function MarketCardStrip({ p, side }) {
     if (!marketDisplayEnabled() || side.verdict === "PASS") return null;
     const row = marketDisplayForSide(p, side);
-    const tone = marketActionTone(row);
-    return /* @__PURE__ */ React.createElement("div", { className: `v2-market-strip ${tone}` }, /* @__PURE__ */ React.createElement("span", { className: "v2-market-strip-k" }, "Market"), /* @__PURE__ */ React.createElement("span", { className: "v2-market-strip-main" }, marketActionText(row)), /* @__PURE__ */ React.createElement("span", { className: "v2-market-strip-sub" }, bestMarketText(row)));
+    const tone = marketActionTone(row, side);
+    return /* @__PURE__ */ React.createElement("div", { className: `v2-market-strip ${tone}` }, /* @__PURE__ */ React.createElement("span", { className: "v2-market-strip-k" }, "Market"), /* @__PURE__ */ React.createElement("span", { className: "v2-market-strip-main" }, marketActionText(row, side)), /* @__PURE__ */ React.createElement("span", { className: "v2-market-strip-sub" }, bestMarketText(row)));
   }
   function MarketDecisionPanel({ p, side }) {
     if (!marketDisplayEnabled() || side.verdict === "PASS") return null;
@@ -669,7 +695,7 @@
     const cushion = row ? priceCushion(row.best_odds, fairOdds) : null;
     const observed = row?.observed_at ? fmtTime(row.observed_at) : "--";
     const books = row?.book_count ?? row?.books_seen?.length ?? row?.book_rows?.length ?? null;
-    return /* @__PURE__ */ React.createElement("div", { className: "v2-sheet-section" }, /* @__PURE__ */ React.createElement("div", { className: "h" }, "Live market decision"), !row ? /* @__PURE__ */ React.createElement("div", { className: "v2-market-empty" }, "No live market row is attached for this pick yet.") : /* @__PURE__ */ React.createElement(React.Fragment, null, /* @__PURE__ */ React.createElement("div", { className: `v2-market-decision ${marketActionTone(row)}` }, /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { className: "v2-market-eyebrow" }, "Decision read"), /* @__PURE__ */ React.createElement("div", { className: "v2-market-decision-title" }, marketActionText(row))), /* @__PURE__ */ React.createElement("div", { className: "v2-market-decision-price" }, /* @__PURE__ */ React.createElement("span", null, row.best_book || "Best book"), /* @__PURE__ */ React.createElement("b", null, row.best_line ?? row.main_line ?? "--", "K ", fmtOdds(row.best_odds)))), /* @__PURE__ */ React.createElement("div", { className: "v2-market-grid" }, /* @__PURE__ */ React.createElement("div", { className: "v2-market-cell" }, /* @__PURE__ */ React.createElement("span", null, "Model ref"), /* @__PURE__ */ React.createElement("b", null, refBook, " ", side.k_line ?? p.k_line, "K ", fmtOdds(side.odds))), /* @__PURE__ */ React.createElement("div", { className: "v2-market-cell" }, /* @__PURE__ */ React.createElement("span", null, "Model fair"), /* @__PURE__ */ React.createElement("b", null, fmtOdds(fairOdds), " ", cushion != null && /* @__PURE__ */ React.createElement("em", null, formatCents(cushion)))), /* @__PURE__ */ React.createElement("div", { className: "v2-market-cell" }, /* @__PURE__ */ React.createElement("span", null, "Market pulse"), /* @__PURE__ */ React.createElement("b", null, marketConsensusText(row.market_consensus))), /* @__PURE__ */ React.createElement("div", { className: "v2-market-cell" }, /* @__PURE__ */ React.createElement("span", null, "Bet value"), /* @__PURE__ */ React.createElement("b", null, marketValueText(row.bet_value_consensus))), /* @__PURE__ */ React.createElement("div", { className: "v2-market-cell" }, /* @__PURE__ */ React.createElement("span", null, "Freshness"), /* @__PURE__ */ React.createElement("b", null, row.freshness_status || "unknown", " ", /* @__PURE__ */ React.createElement("em", null, observed))), /* @__PURE__ */ React.createElement("div", { className: "v2-market-cell" }, /* @__PURE__ */ React.createElement("span", null, "Books"), /* @__PURE__ */ React.createElement("b", null, books == null ? "--" : books, row.broad_confirmation ? " broad" : ""))), row.book_rows?.length > 0 && /* @__PURE__ */ React.createElement("div", { className: "v2-market-books" }, row.book_rows.slice(0, 4).map((book, idx) => /* @__PURE__ */ React.createElement("div", { className: "v2-market-book-row", key: `${book.bookmaker_key || book.bookmaker_title}-${idx}` }, /* @__PURE__ */ React.createElement("span", null, book.bookmaker_title || book.bookmaker_key || "Book"), /* @__PURE__ */ React.createElement("b", null, book.line ?? "--", "K ", fmtOdds(book.odds)))))));
+    return /* @__PURE__ */ React.createElement("div", { className: "v2-sheet-section" }, /* @__PURE__ */ React.createElement("div", { className: "h" }, "Live market decision"), !row ? /* @__PURE__ */ React.createElement("div", { className: "v2-market-empty" }, "No live market row is attached for this pick yet.") : /* @__PURE__ */ React.createElement(React.Fragment, null, /* @__PURE__ */ React.createElement("div", { className: `v2-market-decision ${marketActionTone(row, side)}` }, /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { className: "v2-market-eyebrow" }, "Decision read"), /* @__PURE__ */ React.createElement("div", { className: "v2-market-decision-title" }, marketActionText(row, side))), /* @__PURE__ */ React.createElement("div", { className: "v2-market-decision-price" }, /* @__PURE__ */ React.createElement("span", null, row.best_book || "Best book"), /* @__PURE__ */ React.createElement("b", null, row.best_line ?? row.main_line ?? "--", "K ", fmtOdds(row.best_odds)))), /* @__PURE__ */ React.createElement("div", { className: "v2-market-grid" }, /* @__PURE__ */ React.createElement("div", { className: "v2-market-cell" }, /* @__PURE__ */ React.createElement("span", null, "Model ref"), /* @__PURE__ */ React.createElement("b", null, refBook, " ", side.k_line ?? p.k_line, "K ", fmtOdds(side.odds))), /* @__PURE__ */ React.createElement("div", { className: "v2-market-cell" }, /* @__PURE__ */ React.createElement("span", null, "Model fair"), /* @__PURE__ */ React.createElement("b", null, fmtOdds(fairOdds), " ", cushion != null && /* @__PURE__ */ React.createElement("em", null, formatCents(cushion)))), /* @__PURE__ */ React.createElement("div", { className: "v2-market-cell" }, /* @__PURE__ */ React.createElement("span", null, "Market pulse"), /* @__PURE__ */ React.createElement("b", null, marketConsensusText(row.market_consensus))), /* @__PURE__ */ React.createElement("div", { className: "v2-market-cell" }, /* @__PURE__ */ React.createElement("span", null, "Bet value"), /* @__PURE__ */ React.createElement("b", null, marketValueText(row.bet_value_consensus))), /* @__PURE__ */ React.createElement("div", { className: "v2-market-cell" }, /* @__PURE__ */ React.createElement("span", null, "Freshness"), /* @__PURE__ */ React.createElement("b", null, row.freshness_status || "unknown", " ", /* @__PURE__ */ React.createElement("em", null, observed))), /* @__PURE__ */ React.createElement("div", { className: "v2-market-cell" }, /* @__PURE__ */ React.createElement("span", null, "Books"), /* @__PURE__ */ React.createElement("b", null, books == null ? "--" : books, row.broad_confirmation ? " broad" : ""))), row.book_rows?.length > 0 && /* @__PURE__ */ React.createElement("div", { className: "v2-market-books" }, row.book_rows.slice(0, 4).map((book, idx) => /* @__PURE__ */ React.createElement("div", { className: "v2-market-book-row", key: `${book.bookmaker_key || book.bookmaker_title}-${idx}` }, /* @__PURE__ */ React.createElement("span", null, book.bookmaker_title || book.bookmaker_key || "Book"), /* @__PURE__ */ React.createElement("b", null, book.line ?? "--", "K ", fmtOdds(book.odds)))))));
   }
   function qualityLabel(level) {
     if (level === "blocked") return "Current blocked";
