@@ -1,7 +1,8 @@
 # Live Market Decision UI Plan
 
-> **Status:** Phase 2 hidden live-read MVP implemented 2026-06-07. Keep
-> display-only and shadow-only; do not make default-on without Tyler approval.
+> **Status:** Phase 2 hidden live-read MVP plus existing Log Bet integration
+> implemented 2026-06-07. Keep display-only and shadow-only; do not make
+> default-on without Tyler approval.
 >
 > **Guardrail:** This plan must not change production provider order, model math,
 > thresholds, staking, lock behavior, notification sends, retention, secrets, or
@@ -32,6 +33,16 @@
 > not expose raw provider payloads, service-role responses, secrets, unbounded
 > snapshots, or production source-of-truth behavior. The market sheet remains
 > hidden and display-only.
+>
+> **2026-06-07 bet-ticket update:** the existing `Log Bet` modal now pre-fills
+> from a fresh live best-book row when the hidden market sheet has a playable /
+> shop-price style row. The confirmed `accepted_bets` payload records
+> `metadata.price_source` plus selected live provider/observed-at/action fields.
+> Manual edits remain available and flip the price source to `manual_edit`.
+> `/api/accepted-bets` also supports a secret-protected same-day read so the
+> modal can show a read-only accepted-bet review and duplicate same-side warning.
+> This is an audit/UI improvement only; it does not place bets or change stakes,
+> picks, thresholds, provider order, notifications, locks, or source of truth.
 
 ## Goal
 
@@ -231,6 +242,24 @@ This is a later phase. Do not block MVP on it.
 The existing dashboard already has manual accepted-bet logging through
 `/api/accepted-bets`. The live market panel should improve that flow rather than
 creating a second bet logger:
+
+Implemented 2026-06-07 on branch `codex/live-market-bet-ticket-prefill`:
+
+- `dashboard/v2-app.jsx` / `dashboard/v2-app.js` select a fresh live market row
+  for the currently displayed side only when it is suitable for prefill, then
+  seed the existing `Log Bet` modal with best supported book, line, and odds.
+- The modal labels whether the ticket is using `Live best`, `Artifact price`,
+  or `Manual edit`.
+- `buildAcceptedBetPayload` preserves selected live provider metadata and
+  `price_source` in the existing `accepted_bets.metadata` object.
+- `/api/accepted-bets?slate_date=YYYY-MM-DD` returns only sanitized same-day
+  accepted-bet rows after the normal bet-log secret check; it does not expose
+  dedupe keys, secrets, or raw service-role response bodies.
+- The modal shows a read-only same-day accepted-bet review and duplicate
+  same-side warning before save. Corrections/edit flows remain out of scope.
+- Verified with accepted-bet function tests, dashboard accepted-bet static
+  tests, adjacent live-market / notification tests, syntax checks, and
+  `git diff --check`.
 
 - When the market panel shows `Playable` or `Shop price`, the `Log Bet` ticket
   should be able to prefill from the selected live row: best supported book,
@@ -447,10 +476,10 @@ Promotion gates:
 7. Add CSS to `dashboard/v2.html`, keeping mobile dimensions stable.
 8. Add the Netlify read endpoint only after the fixture path is proven.
 9. Add endpoint tests and fail-soft browser tests.
-10. Add accepted-bet ticket integration for live best-book rows and preserve
+10. DONE 2026-06-07 - Add accepted-bet ticket integration for live best-book rows and preserve
     `notification_event_id` / `shadow_candidate_id` when opened from a push or
     shadow-candidate review link.
-11. Add a read-only accepted-bet review surface before any edit/correction UI.
+11. DONE 2026-06-07 - Add a read-only accepted-bet review surface before any edit/correction UI.
 12. Verify with local static dashboard, Playwright mobile screenshots, and
     existing v2 tests.
 13. Keep the feature hidden behind query flag until Tyler reviews it.

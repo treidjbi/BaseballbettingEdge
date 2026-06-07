@@ -53,7 +53,35 @@ def test_dashboard_locks_accepted_bet_after_successful_save():
     assert 'disabled={betLogState === "saving" || betLogState === "saved" || betAlreadyLogged}' in app
 
 
+def test_dashboard_prefills_bet_ticket_from_live_market_row():
+    app = DASHBOARD_APP.read_text(encoding="utf-8")
+
+    assert "defaultAcceptedBetForm(p, best, marketBetRow" in app
+    assert "selectedMarketBetRow(p, best)" in app
+    assert "isLiveMarketBetPrefill(row)" in app
+    assert 'liveRow ? "live_best" : "artifact"' in app
+    assert "selected_live_provider" in app
+    assert "selected_live_observed_at" in app
+    assert "price_source: priceSource" in app
+    assert "Live best" in app
+    assert "Artifact price" in app
+
+
+def test_dashboard_fetches_read_only_same_day_accepted_bet_review():
+    app = DASHBOARD_APP.read_text(encoding="utf-8")
+
+    assert "fetchAcceptedBetReview" in app
+    assert '/api/accepted-bets?slate_date=' in app
+    assert 'method: "GET"' in app
+    assert "acceptedBetReview" in app
+    assert "Same-day accepted bets" in app
+    assert "v2-accepted-bet-review" in app
+    assert "notification_event_id" in app
+    assert "shadow_candidate_id" in app
+    assert "Duplicate side" in app
+
+
 def test_dashboard_busts_v2_app_cache_for_accepted_bet_ui():
     html = DASHBOARD_HTML.read_text(encoding="utf-8")
 
-    assert "v2-app.js?v=2026-05-08-bet-ticket-lock" in html
+    assert "v2-app.js?v=2026-06-07-bet-ticket-live-prefill" in html

@@ -1150,6 +1150,31 @@ body { display: flex; flex-direction: column; }
   font-size: 10.5px;
   line-height: 1.35;
 }
+.v2-bet-price-source,
+.v2-accepted-bet-review {
+  padding: 10px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--panel);
+}
+.v2-bet-price-source {
+  display: grid;
+  gap: 4px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10.5px;
+  line-height: 1.35;
+  color: var(--ink-dim);
+}
+.v2-bet-price-source b {
+  color: var(--ink);
+  font-size: 11px;
+}
+.v2-bet-price-source span,
+.v2-accepted-bet-review-head span,
+.v2-accepted-bet-row small,
+.v2-accepted-bet-muted {
+  overflow-wrap: anywhere;
+}
 .v2-bet-fields {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -1205,6 +1230,58 @@ body { display: flex; flex-direction: column; }
 .v2-bet-success {
   background: color-mix(in oklab, var(--pos) 12%, transparent);
   color: var(--pos);
+}
+.v2-accepted-bet-review {
+  display: grid;
+  gap: 8px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10.5px;
+  line-height: 1.35;
+}
+.v2-accepted-bet-review-head,
+.v2-accepted-bet-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+}
+.v2-accepted-bet-review-head span,
+.v2-accepted-bet-row span {
+  color: var(--ink);
+  font-weight: 800;
+}
+.v2-accepted-bet-review-head b,
+.v2-accepted-bet-row b {
+  color: var(--ink-dim);
+  font-weight: 700;
+}
+.v2-accepted-bet-row {
+  flex-wrap: wrap;
+  padding-top: 8px;
+  border-top: 1px solid var(--border);
+}
+.v2-accepted-bet-row span {
+  flex: 1 1 170px;
+}
+.v2-accepted-bet-row b {
+  flex: 0 0 auto;
+  text-align: right;
+}
+.v2-accepted-bet-row small {
+  flex: 0 0 100%;
+}
+.v2-accepted-bet-row.duplicate {
+  border-top-color: color-mix(in oklab, var(--warn) 42%, var(--border));
+}
+.v2-accepted-bet-row small,
+.v2-accepted-bet-muted {
+  color: var(--ink-dim);
+}
+.v2-accepted-bet-duplicate {
+  padding: 8px 9px;
+  border-radius: 8px;
+  background: color-mix(in oklab, var(--warn) 12%, transparent);
+  color: var(--warn);
+  font-weight: 800;
 }
 .v2-bet-ticket-actions {
   display: flex;
@@ -1566,6 +1643,6 @@ body { display: flex; flex-direction: column; }
   <script src="v2-data.js?v=2026-06-07-market-sheet"></script>
   <script src="v2-movement-helpers.js?v=2026-04-30-1"></script>
   <script src="v2-factor-details.js?v=2026-04-28-6"></script>
-  <script src="v2-app.js?v=2026-06-07-market-sheet" defer></script>
+  <script src="v2-app.js?v=2026-06-07-bet-ticket-live-prefill" defer></script>
 </body>
 </html>
