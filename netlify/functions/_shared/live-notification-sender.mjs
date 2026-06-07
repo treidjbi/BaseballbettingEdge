@@ -44,6 +44,24 @@ export function isNotificationEventStale(row, {
   return nowDate.getTime() - occurredAt.getTime() > maxAgeMinutes * 60 * 1000;
 }
 
+export function buildNotificationClickUrl(row) {
+  const baseUrl = String(row?.url || '/').trim() || '/';
+  if (baseUrl !== '/' && baseUrl !== '/v2.html') return baseUrl;
+
+  const payload = row?.payload && typeof row.payload === 'object' ? row.payload : {};
+  const params = new URLSearchParams();
+  params.set('marketSheet', '1');
+  if (row?.id) params.set('notification_event_id', row.id);
+  if (row?.slate_date) params.set('slate_date', row.slate_date);
+  if (payload.pitcher) params.set('pitcher', String(payload.pitcher));
+  if (payload.side) params.set('side', String(payload.side).toUpperCase());
+  if (payload.decision_label) params.set('decision_label', String(payload.decision_label));
+  if (payload.observed_at) params.set('observed_at', String(payload.observed_at));
+  if (payload.source_artifact_sha256) params.set('source_artifact_sha256', String(payload.source_artifact_sha256));
+  params.set('source', 'notification');
+  return `/v2.html?${params.toString()}`;
+}
+
 function supabaseHeaders(serviceRoleKey, prefer = 'return=representation') {
   return {
     apikey: serviceRoleKey,
@@ -58,7 +76,7 @@ export function buildPushPayload(row) {
     title: row.title,
     body: row.body,
     tag: row.dedupe_key || row.id,
-    url: row.url || '/',
+    url: buildNotificationClickUrl(row),
     data: {
       eventId: row.id,
       eventType: row.event_type,

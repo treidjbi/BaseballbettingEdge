@@ -558,6 +558,77 @@ test("live market display prefers fresh provider rows over stale rows for the sa
   assert.equal(row.best_odds, -112);
 });
 
+test("live market display prefers newer fresh rows before older action labels", async () => {
+  const todayJson = {
+    date: "2026-04-28",
+    generated_at: "2026-04-28T23:00:00Z",
+    pitchers: [
+      {
+        pitcher: "Recency Pitcher",
+        team: "SEA",
+        opp_team: "CLE",
+        game_time: "2026-04-28T23:10:00Z",
+        k_line: 5.5,
+        best_over_odds: -105,
+        best_under_odds: -118,
+        lambda: 4.9,
+        avg_ip: 5.8,
+        opp_k_rate: 0.24,
+        season_k9: 9.1,
+        recent_k9: 9.3,
+        career_k9: 8.9,
+        ev_over: { adj_ev: -0.02, ev: -0.01, edge: -0.02, verdict: "PASS", win_prob: 0.46 },
+        ev_under: { adj_ev: 0.04, ev: 0.05, edge: 0.02, verdict: "LEAN", win_prob: 0.54 },
+      },
+    ],
+  };
+
+  const window = await runV2DataTest({
+    locationSearch: "?marketSheet=1",
+    todayJson,
+    liveMarketDisplay: {
+      generated_at: "2026-04-28T22:58:00Z",
+      rows: [
+        {
+          slate_date: "2026-04-28",
+          normalized_pitcher: "recency pitcher",
+          pitcher: "Recency Pitcher",
+          side: "under",
+          provider: "boltodds",
+          observed_at: "2026-04-28T22:55:00Z",
+          freshness_status: "fresh",
+          actionable_state: "playable_now",
+          best_book: "DraftKings",
+          best_line: 5.5,
+          best_odds: -112,
+          book_count: 4,
+          broad_confirmation: true,
+        },
+        {
+          slate_date: "2026-04-28",
+          normalized_pitcher: "recency pitcher",
+          pitcher: "Recency Pitcher",
+          side: "under",
+          provider: "propline",
+          observed_at: "2026-04-28T22:58:00Z",
+          freshness_status: "fresh",
+          actionable_state: "monitor",
+          best_book: "FanDuel",
+          best_line: 5.5,
+          best_odds: -125,
+          book_count: 2,
+          broad_confirmation: false,
+        },
+      ],
+    },
+  });
+
+  const row = window.V2_DATA.pitchers[0].market_display.UNDER;
+  assert.equal(row.provider, "propline");
+  assert.equal(row.observed_at, "2026-04-28T22:58:00Z");
+  assert.equal(row.actionable_state, "monitor");
+});
+
 test("live market display rows normalize and attach to matching pitcher sides behind the hidden flag", async () => {
   const todayJson = {
     date: "2026-04-28",

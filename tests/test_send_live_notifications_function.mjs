@@ -42,6 +42,34 @@ test('buildPushPayload maps live event rows to push payloads', () => {
   assert.equal(payload.data.eventType, 'new_fire_pick');
 });
 
+test('buildPushPayload adds alert attribution context to default click urls', () => {
+  const payload = buildPushPayload({
+    id: 'event-2',
+    title: 'Playable price',
+    body: 'Jameson Taillon UNDER 4.5 Ks',
+    url: '/',
+    event_type: 'line_movement',
+    slate_date: '2026-06-07',
+    payload: {
+      pitcher: 'Jameson Taillon',
+      side: 'UNDER',
+      decision_label: 'playable_price',
+      observed_at: '2026-06-07T21:30:00Z',
+      source_artifact_sha256: 'sha-1',
+    },
+  });
+
+  const url = new URL(payload.url, 'https://example.test');
+  assert.equal(url.pathname, '/v2.html');
+  assert.equal(url.searchParams.get('marketSheet'), '1');
+  assert.equal(url.searchParams.get('notification_event_id'), 'event-2');
+  assert.equal(url.searchParams.get('slate_date'), '2026-06-07');
+  assert.equal(url.searchParams.get('pitcher'), 'Jameson Taillon');
+  assert.equal(url.searchParams.get('side'), 'UNDER');
+  assert.equal(url.searchParams.get('decision_label'), 'playable_price');
+  assert.equal(url.searchParams.get('source'), 'notification');
+});
+
 test('buildSenderLog produces inspectable non-secret telemetry', () => {
   const line = buildSenderLog({
     stage: 'dry_run',
