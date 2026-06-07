@@ -13,8 +13,25 @@
 Date: 2026-06-04
 Owner: Tyler + Codex
 Status: Implemented, merged to `main`, deployed to Render `bbe-live-layer`,
-running in shadow mode, and Supabase digest event types are allowed. Grouped
-production sends remain off until Tyler explicitly enables grouped mode.
+and promoted to grouped mode on 2026-06-07 after Tyler approval. Supabase digest
+event types are allowed. Grouped production sends are enabled only for
+start-window reminders and same-run pick-change classes; line/price movement
+alerts remain individual.
+
+## 2026-06-07 Grouped Promotion Checkpoint
+
+Tyler approved promoting the notification grouping change on 2026-06-07.
+Render `bbe-live-layer` was updated to:
+
+- `LIVE_NOTIFICATION_COORDINATOR_MODE=grouped`
+- `LIVE_NOTIFICATION_GROUP_START_WINDOWS=true`
+- `LIVE_NOTIFICATION_GROUP_PICK_CHANGES=true`
+
+This promotion changes only the notification queue rows for approved grouped
+classes. It does not change model math, thresholds, staking, provider order,
+locks, grading, artifacts, retention, or dashboard source-of-truth behavior.
+Rollback is one environment-variable change:
+`LIVE_NOTIFICATION_COORDINATOR_MODE=off`, followed by a live-layer redeploy.
 
 ## 2026-06-04 Implementation Checkpoint
 

@@ -54,6 +54,22 @@ flip is the first clean shadow-slate evidence for any `enforce` discussion.
 This status does not approve lambda, threshold, staking, provider,
 notification, lock, retention, or dashboard-source changes.
 
+On 2026-06-07, Tyler approved promoting the canary from `shadow` to `enforce`.
+All seven Render pipeline cron services were updated to:
+
+```text
+MARKET_FAVORITE_REFEREE_MODE=enforce
+```
+
+Because the June 7 full run had already published before this promotion, June 7
+should be treated as a partial enforce slate. The first clean full-slate enforce
+read is the next slate whose preview/full/refresh path all run after the env
+flip. The promotion remains verdict-conversion only: it may lower FIRE 2u to
+FIRE 1u or FIRE/LEAN confidence on runtime-safe market-fade rows, while
+preserving raw verdict metadata. It does not approve lambda, global thresholds,
+staking, provider order, notifications, locks, retention, dashboard
+source-of-truth, or Path B handedness changes.
+
 ## Non-Goals
 
 - Do not change `calc_lambda`, `lambda_bias`, `formula_change_date`, SwStr
