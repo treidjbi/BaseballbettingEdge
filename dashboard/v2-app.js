@@ -324,6 +324,18 @@
       secret: ""
     };
   }
+  function acceptedBetCorrectionForm(row, currentSecret = "") {
+    const defaultBook = defaultBetLogBook(row?.book || "");
+    return {
+      line: String(row?.k_line ?? ""),
+      odds: String(row?.odds ?? ""),
+      book: defaultBook.book,
+      bookOther: defaultBook.bookOther,
+      units: String(row?.units ?? 1),
+      priceSource: "manual_edit",
+      secret: currentSecret
+    };
+  }
   function betPriceSourceLabel(value) {
     const labels = {
       live_best: "Live best",
@@ -333,7 +345,7 @@
     };
     return labels[value] || "Manual edit";
   }
-  function buildAcceptedBetPayload(p, side, { line, odds, book, units, priceSource = "artifact", marketRow = null, alertContext = null }) {
+  function buildAcceptedBetPayload(p, side, { line, odds, book, units, priceSource = "artifact", marketRow = null, alertContext = null, correctionRow = null }) {
     return {
       slate_date: slateDateForBetLog(),
       pitcher: p.pitcher,
@@ -344,7 +356,7 @@
       book,
       units,
       game_time: p.game_time || null,
-      source: alertContext?.source || "dashboard_manual",
+      source: correctionRow ? "dashboard_correction" : alertContext?.source || "dashboard_manual",
       notification_event_id: alertContext?.notification_event_id || null,
       shadow_candidate_id: alertContext?.shadow_candidate_id || null,
       model_snapshot: {
@@ -374,6 +386,12 @@
           observed_at: alertContext.observed_at || null,
           source_artifact_sha256: alertContext.source_artifact_sha256 || null
         } : null,
+        correction_of_accepted_bet_id: correctionRow?.id || null,
+        correction_previous_book: correctionRow?.book || null,
+        correction_previous_k_line: correctionRow?.k_line ?? null,
+        correction_previous_odds: correctionRow?.odds ?? null,
+        correction_previous_units: correctionRow?.units ?? null,
+        correction_reason: correctionRow ? "manual_same_day_correction" : null,
         generated_at: window.V2_DATA?.generated_at || null
       }
     };
@@ -852,6 +870,7 @@
     const [betTicketOpen, setBetTicketOpen] = useState(false);
     const [betLogError, setBetLogError] = useState("");
     const [betForm, setBetForm] = useState(() => defaultAcceptedBetForm(p, best, marketBetRow));
+    const [correctionRow, setCorrectionRow] = useState(null);
     const [loggedBetKeys, setLoggedBetKeys] = useState(() => readLoggedBetKeys());
     const [acceptedBetReview, setAcceptedBetReview] = useState({ state: "idle", rows: [], error: "" });
     const factorGroups = useMemo(() => {
@@ -885,6 +904,7 @@
       setBetLogState("idle");
       setBetLogError("");
       setBetForm(defaultAcceptedBetForm(p, best, marketBetRow));
+      setCorrectionRow(null);
       setAcceptedBetReview({ state: "idle", rows: [], error: "" });
     }, [p.pitcher, best.direction, best.k_line, best.odds, best.verdict, marketBetRow?.best_book, marketBetRow?.best_line, marketBetRow?.best_odds]);
     const SideCard = ({ s: rawSide }) => {
@@ -952,8 +972,15 @@
       });
       setBetLogError("");
     }
+    function startAcceptedBetCorrection(row) {
+      if (!acceptedBetReviewDuplicate(row, p, best)) return;
+      setCorrectionRow(row);
+      setBetForm((prev) => acceptedBetCorrectionForm(row, prev.secret));
+      setBetLogState("idle");
+      setBetLogError("");
+    }
     function openBetTicket() {
-      if (!canLogBet || betAlreadyLogged) return;
+      if (!canLogBet) return;
       setBetTicketOpen(true);
       setBetLogError("");
       if (betLogState === "saved") setBetLogState("idle");
@@ -964,10 +991,11 @@
       setBetTicketOpen(false);
       setBetLogError("");
       setBetLogState("idle");
+      setCorrectionRow(null);
     }
     async function handleAcceptedBetSave(e) {
       e.preventDefault();
-      if (!canLogBet || betLogState === "saving" || betAlreadyLogged) return;
+      if (!canLogBet || betLogState === "saving" || betAlreadyLogged && !correctionRow) return;
       const line = parseBetLogNumber(betForm.line);
       const odds = parseBetLogNumber(betForm.odds);
       const units = parseBetLogNumber(betForm.units);
@@ -996,7 +1024,8 @@
             units,
             priceSource: betForm.priceSource || "artifact",
             marketRow: marketBetRow,
-            alertContext: betAlertContext
+            alertContext: betAlertContext,
+            correctionRow
           }))
         });
         if (response.status === 401) {
@@ -1025,6 +1054,7 @@
         setTimeout(() => {
           setBetTicketOpen(false);
           setBetLogState("idle");
+          setCorrectionRow(null);
         }, 1800);
       } catch {
         setBetLogError("Could not save the bet. Try again in a minute.");
@@ -1047,9 +1077,9 @@
         {
           className: "v2-btn-primary",
           onClick: openBetTicket,
-          disabled: betLogState === "saving" || betAlreadyLogged
+          disabled: betLogState === "saving"
         },
-        betAlreadyLogged ? "Logged" : betTicketOpen ? "Bet Ticket" : betLogState === "saved" ? "Logged" : "Log Bet"
+        betAlreadyLogged ? "Review Bet" : betTicketOpen ? "Bet Ticket" : betLogState === "saved" ? "Logged" : "Log Bet"
       ), /* @__PURE__ */ React.createElement("button", { className: "v2-btn-ghost", onClick: onClose }, "Close"))), betTicketOpen && /* @__PURE__ */ React.createElement("div", { className: "v2-bet-ticket-modal", onClick: (e) => {
         if (e.target === e.currentTarget) closeBetTicket();
       } }, /* @__PURE__ */ React.createElement(
@@ -1066,6 +1096,7 @@
         /* @__PURE__ */ React.createElement("div", { className: "v2-bet-ticket-meta" }, "Model ref: ", bookForSide(p, best) || "Market", " ", fmtOdds(best.odds), /* @__PURE__ */ React.createElement("span", null, "EV ", best.adj_ev > 0 ? "+" : "", (best.adj_ev * 100).toFixed(1), "%")),
         /* @__PURE__ */ React.createElement("div", { className: `v2-bet-price-source ${betForm.priceSource}` }, /* @__PURE__ */ React.createElement("span", null, betPriceSourceLabel(betForm.priceSource)), betForm.priceSource === "live_best" && marketBetRow ? /* @__PURE__ */ React.createElement("b", null, marketBetRow.provider || "live", " \xB7 ", marketBetRow.best_book, " ", marketBetRow.best_line, "K ", fmtOdds(marketBetRow.best_odds)) : /* @__PURE__ */ React.createElement("b", null, bookForSide(p, best) || "Market", " ", best.k_line ?? p.k_line, "K ", fmtOdds(best.odds))),
         betAlertContext && /* @__PURE__ */ React.createElement("div", { className: "v2-bet-alert-context" }, /* @__PURE__ */ React.createElement("span", null, "Linked alert"), /* @__PURE__ */ React.createElement("b", null, betAlertContext.source === "shadow_candidate" ? "Shadow candidate" : "Notification", " - ", betAlertContext.notification_event_id || betAlertContext.shadow_candidate_id)),
+        correctionRow && /* @__PURE__ */ React.createElement("div", { className: "v2-bet-correction-context" }, /* @__PURE__ */ React.createElement("span", null, "Correction mode"), /* @__PURE__ */ React.createElement("b", null, "Correction of ", correctionRow.book, " ", correctionRow.k_line, "K ", fmtOdds(correctionRow.odds), " - ", correctionRow.units, "u")),
         /* @__PURE__ */ React.createElement("div", { className: "v2-bet-fields" }, /* @__PURE__ */ React.createElement("label", { className: "v2-bet-field" }, /* @__PURE__ */ React.createElement("span", null, "Line"), /* @__PURE__ */ React.createElement(
           "input",
           {
@@ -1119,7 +1150,15 @@
         ))),
         betLogError && /* @__PURE__ */ React.createElement("div", { className: "v2-bet-error" }, betLogError),
         betLogState === "saved" && /* @__PURE__ */ React.createElement("div", { className: "v2-bet-success" }, "Bet logged"),
-        /* @__PURE__ */ React.createElement("div", { className: "v2-accepted-bet-review" }, /* @__PURE__ */ React.createElement("div", { className: "v2-accepted-bet-review-head" }, /* @__PURE__ */ React.createElement("span", null, "Same-day accepted bets"), /* @__PURE__ */ React.createElement("b", null, acceptedBetReview.state === "ready" ? acceptedBetReview.rows.length : acceptedBetReview.state === "loading" ? "loading" : acceptedBetReview.state === "needs_key" ? "key needed" : "not loaded")), reviewDuplicateRows.length > 0 && /* @__PURE__ */ React.createElement("div", { className: "v2-accepted-bet-duplicate" }, "Duplicate side: ", reviewDuplicateRows[0].book, " ", reviewDuplicateRows[0].k_line, "K ", fmtOdds(reviewDuplicateRows[0].odds)), acceptedBetReview.state === "error" && /* @__PURE__ */ React.createElement("div", { className: "v2-accepted-bet-muted" }, acceptedBetReview.error), acceptedBetReview.state === "needs_key" && /* @__PURE__ */ React.createElement("div", { className: "v2-accepted-bet-muted" }, "Enter the bet log key to load today's saved bets."), acceptedBetReview.state === "ready" && acceptedBetReview.rows.length === 0 && /* @__PURE__ */ React.createElement("div", { className: "v2-accepted-bet-muted" }, "No accepted bets logged for this slate yet."), acceptedBetReview.state === "ready" && acceptedBetReview.rows.slice(0, 5).map((row) => /* @__PURE__ */ React.createElement("div", { className: `v2-accepted-bet-row ${acceptedBetReviewDuplicate(row, p, best) ? "duplicate" : ""}`, key: row.id || `${row.pitcher}-${row.side}-${row.accepted_at}` }, /* @__PURE__ */ React.createElement("span", null, row.pitcher, " ", String(row.side || "").toUpperCase(), " ", row.k_line, "K ", fmtOdds(row.odds), (row.notification_event_id || row.shadow_candidate_id) && /* @__PURE__ */ React.createElement("em", null, " \xB7 linked alert")), /* @__PURE__ */ React.createElement("b", null, row.book, " \xB7 ", row.units, "u \xB7 ", row.source || "manual"), /* @__PURE__ */ React.createElement("small", null, acceptedBetReviewModelSummary(row))))),
+        /* @__PURE__ */ React.createElement("div", { className: "v2-accepted-bet-review" }, /* @__PURE__ */ React.createElement("div", { className: "v2-accepted-bet-review-head" }, /* @__PURE__ */ React.createElement("span", null, "Same-day accepted bets"), /* @__PURE__ */ React.createElement("b", null, acceptedBetReview.state === "ready" ? acceptedBetReview.rows.length : acceptedBetReview.state === "loading" ? "loading" : acceptedBetReview.state === "needs_key" ? "key needed" : "not loaded")), reviewDuplicateRows.length > 0 && /* @__PURE__ */ React.createElement("div", { className: "v2-accepted-bet-duplicate" }, "Duplicate side: ", reviewDuplicateRows[0].book, " ", reviewDuplicateRows[0].k_line, "K ", fmtOdds(reviewDuplicateRows[0].odds)), acceptedBetReview.state === "error" && /* @__PURE__ */ React.createElement("div", { className: "v2-accepted-bet-muted" }, acceptedBetReview.error), acceptedBetReview.state === "needs_key" && /* @__PURE__ */ React.createElement("div", { className: "v2-accepted-bet-muted" }, "Enter the bet log key to load today's saved bets."), acceptedBetReview.state === "ready" && acceptedBetReview.rows.length === 0 && /* @__PURE__ */ React.createElement("div", { className: "v2-accepted-bet-muted" }, "No accepted bets logged for this slate yet."), acceptedBetReview.state === "ready" && acceptedBetReview.rows.slice(0, 5).map((row) => /* @__PURE__ */ React.createElement("div", { className: `v2-accepted-bet-row ${acceptedBetReviewDuplicate(row, p, best) ? "duplicate" : ""}`, key: row.id || `${row.pitcher}-${row.side}-${row.accepted_at}` }, /* @__PURE__ */ React.createElement("span", null, row.pitcher, " ", String(row.side || "").toUpperCase(), " ", row.k_line, "K ", fmtOdds(row.odds), (row.notification_event_id || row.shadow_candidate_id) && /* @__PURE__ */ React.createElement("em", null, " \xB7 linked alert")), /* @__PURE__ */ React.createElement("b", null, row.book, " \xB7 ", row.units, "u \xB7 ", row.source || "manual"), /* @__PURE__ */ React.createElement("small", null, acceptedBetReviewModelSummary(row), row.metadata?.correction_of_accepted_bet_id && " - correction"), acceptedBetReviewDuplicate(row, p, best) && /* @__PURE__ */ React.createElement(
+          "button",
+          {
+            type: "button",
+            className: "v2-accepted-bet-correct",
+            onClick: () => startAcceptedBetCorrection(row)
+          },
+          "Correct"
+        )))),
         /* @__PURE__ */ React.createElement("div", { className: "v2-bet-ticket-actions" }, /* @__PURE__ */ React.createElement(
           "button",
           {
@@ -1128,7 +1167,7 @@
             onClick: closeBetTicket
           },
           "Cancel"
-        ), /* @__PURE__ */ React.createElement("button", { className: "v2-btn-primary", type: "submit", disabled: betLogState === "saving" || betLogState === "saved" || betAlreadyLogged }, betLogState === "saving" ? "Saving..." : "Save Bet"))
+        ), /* @__PURE__ */ React.createElement("button", { className: "v2-btn-primary", type: "submit", disabled: betLogState === "saving" || betLogState === "saved" || betAlreadyLogged && !correctionRow }, betLogState === "saving" ? "Saving..." : correctionRow ? "Save Correction" : "Save Bet"))
       ))),
       document.body
     );

@@ -2,7 +2,7 @@ import { timingSafeEqual } from 'node:crypto';
 
 const JSON_HEADERS = { 'Content-Type': 'application/json' };
 const DEFAULT_SUPABASE_URL = 'https://htoaytcsjrdyyzcwxjfg.supabase.co';
-const VALID_SOURCES = new Set(['dashboard_manual', 'notification', 'shadow_candidate', 'other']);
+const VALID_SOURCES = new Set(['dashboard_manual', 'dashboard_correction', 'notification', 'shadow_candidate', 'other']);
 const ACCEPTED_BET_SELECT = [
   'id',
   'slate_date',

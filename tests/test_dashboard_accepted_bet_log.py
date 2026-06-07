@@ -49,8 +49,9 @@ def test_dashboard_locks_accepted_bet_after_successful_save():
     assert "acceptedBetSessionKey" in app
     assert "setLoggedBetKeys" in app
     assert "betAlreadyLogged" in app
-    assert 'disabled={betLogState === "saving" || betAlreadyLogged}' in app
-    assert 'disabled={betLogState === "saving" || betLogState === "saved" || betAlreadyLogged}' in app
+    assert 'disabled={betLogState === "saving"}' in app
+    assert "Review Bet" in app
+    assert 'disabled={betLogState === "saving" || betLogState === "saved" || (betAlreadyLogged && !correctionRow)}' in app
 
 
 def test_dashboard_prefills_bet_ticket_from_live_market_row():
@@ -96,14 +97,28 @@ def test_dashboard_preserves_deep_link_alert_context_in_bet_payload():
 
     assert "acceptedBetAlertContextForPick(p, best)" in app
     assert "alertContext = null" in app
-    assert 'source: alertContext?.source || "dashboard_manual"' in app
+    assert 'source: correctionRow ? "dashboard_correction" : alertContext?.source || "dashboard_manual"' in app
     assert "notification_event_id: alertContext?.notification_event_id || null" in app
     assert "shadow_candidate_id: alertContext?.shadow_candidate_id || null" in app
     assert "deep_link_context" in app
     assert "Linked alert" in app
 
 
+def test_dashboard_supports_audit_preserving_accepted_bet_corrections():
+    app = DASHBOARD_APP.read_text(encoding="utf-8")
+
+    assert "startAcceptedBetCorrection" in app
+    assert "correctionRow" in app
+    assert "dashboard_correction" in app
+    assert "correction_of_accepted_bet_id" in app
+    assert "correction_previous_book" in app
+    assert "Correction mode" in app
+    assert "Correct" in app
+    assert 'disabled={betLogState === "saving"}' in app
+    assert 'disabled={betLogState === "saving" || betLogState === "saved" || (betAlreadyLogged && !correctionRow)}' in app
+
+
 def test_dashboard_busts_v2_app_cache_for_accepted_bet_ui():
     html = DASHBOARD_HTML.read_text(encoding="utf-8")
 
-    assert "v2-app.js?v=2026-06-07-bet-alert-context" in html
+    assert "v2-app.js?v=2026-06-07-bet-correction-flow" in html
