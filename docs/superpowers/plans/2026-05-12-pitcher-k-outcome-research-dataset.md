@@ -218,6 +218,16 @@ The current hard read through the 2026-05-26 refresh:
   capture proves it can be known before lock. Treat these as Gate F candidate
   questions, not production rules.
 
+2026-06-07 Tyler approved a smaller personal-use Path B live canary despite the
+normal Path B promotion checks not being fully complete. The implementation is
+controlled by
+`docs/superpowers/plans/2026-06-07-batter-handedness-path-b-canary.md` and must
+stay feature-flagged behind `BATTER_HANDEDNESS_MODE=path_a|path_b`. This is not
+permission to use historical backfill rows in live projection. The canary may
+only use live-collected, PA-backed batter split samples from
+`data/batter_splits_YYYY.json`; every missing or untrusted split must fall back
+to Path A.
+
 Do not use this comparison to roll back thresholds, staking, formula date, or
 provider behavior. Use it to keep Gate C honest: current-regime buckets matter
 most, and any future Gate E/F candidate must survive side, price, line, timing,
@@ -486,6 +496,11 @@ Before Path B can affect live lambda, prove:
 - the improvement survives RHP/LHP starters, over/under sides, and K-line
   buckets
 - no hidden degradation appears in FIRE 2u or clean quality-gate rows
+
+Tyler's 2026-06-07 personal-use canary waiver allows a smaller reversible
+`path_b` run before all of those checks are complete, but the canary must remain
+auditable, fallback-safe, and rollbackable by setting
+`BATTER_HANDEDNESS_MODE=path_a`.
 
 If the evidence is thin, keep Path A live and continue collecting.
 

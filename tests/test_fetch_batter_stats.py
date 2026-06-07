@@ -239,3 +239,60 @@ def test_collect_batter_split_samples_reports_queue_separately_from_cache(tmp_pa
     assert summary["already_cached"] == 1
     assert summary["attempted"] == 1
     assert summary["queued_not_attempted"] == 1
+
+
+def test_overlay_batter_split_cache_adds_mlbam_split_rows(tmp_path):
+    cache_path = tmp_path / "batter_splits_2026.json"
+    cache_path.write_text(
+        json.dumps(
+            {
+                "season": 2026,
+                "projection_status": "collection_only",
+                "batters": {
+                    "mlbam:605141": {
+                        "name": "Mookie Betts",
+                        "bats": "R",
+                        "mlbam_id": 605141,
+                        "vs_R": {"pa": 80, "so": 12, "k_rate": 0.15},
+                        "vs_L": {"pa": 20, "so": 2, "k_rate": 0.10},
+                    }
+                },
+            }
+        )
+    )
+
+    result = fetch_batter_stats.overlay_batter_split_cache(
+        {"mookie betts": {"vs_R": 0.135, "vs_L": 0.135}},
+        2026,
+        cache_path=cache_path,
+    )
+
+    assert result["mookie betts"] == {"vs_R": 0.135, "vs_L": 0.135}
+    assert result["mlbam:605141"]["split_source"] == "batter_splits_cache"
+    assert result["mlbam:605141"]["vs_R"]["k_rate"] == 0.15
+
+
+def test_overlay_batter_split_cache_ignores_wrong_season(tmp_path):
+    cache_path = tmp_path / "batter_splits_2025.json"
+    cache_path.write_text(
+        json.dumps(
+            {
+                "season": 2025,
+                "batters": {
+                    "mlbam:605141": {
+                        "name": "Mookie Betts",
+                        "mlbam_id": 605141,
+                        "vs_R": {"pa": 80, "so": 12, "k_rate": 0.15},
+                    }
+                },
+            }
+        )
+    )
+
+    result = fetch_batter_stats.overlay_batter_split_cache(
+        {"mookie betts": {"vs_R": 0.135, "vs_L": 0.135}},
+        2026,
+        cache_path=cache_path,
+    )
+
+    assert result == {"mookie betts": {"vs_R": 0.135, "vs_L": 0.135}}

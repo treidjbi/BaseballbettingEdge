@@ -48,6 +48,15 @@ evidence and optional current artifact tracked picks to label movement with or
 against the model, but it does not write Supabase rows or change production
 behavior.
 
+The sample gate was added on 2026-06-07:
+
+- overall tracker read stays `watch_only` until at least `75` graded rows have
+  movement-backed evidence
+- each candidate bucket stays `watch_only` until it has at least `50` graded
+  rows
+- buckets below the threshold may be reported, but not used for promotion
+  discussion
+
 ## Non-Goals
 
 - Do not change production picks, verdicts, locks, thresholds, staking, model

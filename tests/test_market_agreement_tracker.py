@@ -133,3 +133,72 @@ def test_build_report_keeps_market_agreement_shadow_only():
     assert "does not change picks, locks, thresholds, staking, provider order, notifications, or calibration" in report
     assert "## Referee Cap Buckets" in report
     assert "`lean_market_with_us`" in report
+
+
+def test_sample_gate_is_watch_only_below_overall_threshold():
+    rows = [
+        tracker.annotate_row(
+            _movement_row(
+                current_verdict="LEAN",
+                result="win",
+                pnl=0.91,
+            )
+        )
+        for _ in range(74)
+    ]
+
+    gate = tracker.sample_gate(rows)
+
+    assert gate["overall_status"] == "watch_only"
+    assert gate["graded_rows"] == 74
+    assert gate["overall_min_rows"] == 75
+    assert gate["bucket_min_rows"] == 50
+
+
+def test_sample_gate_allows_review_only_when_overall_and_bucket_thresholds_pass():
+    rows = [
+        tracker.annotate_row(
+            _movement_row(
+                current_verdict="LEAN",
+                result="win",
+                pnl=0.91,
+            )
+        )
+        for _ in range(50)
+    ]
+    rows.extend(
+        tracker.annotate_row(
+            _movement_row(
+                current_verdict="FIRE 1u",
+                market_consensus="away_from_pick",
+                toward_pick_count=0,
+                away_from_pick_count=2,
+                result="loss",
+                pnl=-1.0,
+            )
+        )
+        for _ in range(25)
+    )
+
+    gate = tracker.sample_gate(rows)
+
+    assert gate["overall_status"] == "review_ready"
+    assert gate["bucket_statuses"]["lean_market_with_us"]["status"] == "review_ready"
+    assert gate["bucket_statuses"]["fire_market_against_us"]["status"] == "watch_only"
+
+
+def test_build_report_includes_sample_gate_section():
+    report = tracker.build_report([
+        tracker.annotate_row(
+            _movement_row(
+                current_verdict="LEAN",
+                result="win",
+                pnl=0.91,
+            )
+        )
+    ])
+
+    assert "## Sample Gate" in report
+    assert "Overall status: `watch_only`" in report
+    assert "Minimum overall graded rows: `75`" in report
+    assert "Minimum bucket graded rows: `50`" in report

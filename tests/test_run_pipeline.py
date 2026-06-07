@@ -35,6 +35,37 @@ def test_fetch_batter_stats_cached_falls_back_to_empty_dict_on_fetch_failure():
         assert run_pipeline.fetch_batter_stats_cached(2026) == {}
 
 
+def test_batter_stats_for_projection_overlays_split_cache_only_in_path_b(monkeypatch):
+    import run_pipeline
+
+    run_pipeline._batter_stats_cache = None
+    base_stats = {"mookie betts": {"vs_R": 0.135, "vs_L": 0.135}}
+    overlay_stats = {
+        **base_stats,
+        "mlbam:605141": {
+            "split_source": "batter_splits_cache",
+            "vs_R": {"pa": 80, "so": 12, "k_rate": 0.15},
+        },
+    }
+
+    monkeypatch.setattr(run_pipeline, "fetch_batter_stats_cached", lambda season: base_stats)
+    overlay_calls = []
+
+    def fake_overlay(stats, season):
+        overlay_calls.append((stats, season))
+        return overlay_stats
+
+    monkeypatch.setattr(run_pipeline, "overlay_batter_split_cache", fake_overlay)
+
+    monkeypatch.setenv("BATTER_HANDEDNESS_MODE", "path_a")
+    assert run_pipeline.batter_stats_for_projection(2026) == base_stats
+    assert overlay_calls == []
+
+    monkeypatch.setenv("BATTER_HANDEDNESS_MODE", "path_b")
+    assert run_pipeline.batter_stats_for_projection(2026) == overlay_stats
+    assert overlay_calls == [(base_stats, 2026)]
+
+
 def test_run_exits_when_official_market_strict_mode_fails():
     import run_pipeline
 

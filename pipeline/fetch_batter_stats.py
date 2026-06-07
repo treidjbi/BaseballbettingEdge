@@ -179,6 +179,61 @@ def _load_split_cache(cache_path: Path, season: int) -> dict:
     return payload
 
 
+def overlay_batter_split_cache(
+    batter_stats: dict,
+    season: int,
+    *,
+    cache_path: Path | None = None,
+) -> dict:
+    """Overlay live-collected PA-backed batter split samples for Path B.
+
+    The existing aggregate lookup is preserved by normalized batter name. Split
+    samples are added under `mlbam:{id}` keys so `build_features` can use them
+    only when the live lineup row carries the matching MLBAM id.
+    """
+    result = dict(batter_stats or {})
+    cache_path = cache_path or (BATTER_SPLIT_CACHE_DIR / f"batter_splits_{season}.json")
+    try:
+        payload = json.loads(cache_path.read_text(encoding="utf-8"))
+    except Exception:
+        return result
+
+    if payload.get("season") != season:
+        return result
+
+    batters = payload.get("batters")
+    if not isinstance(batters, dict):
+        return result
+
+    for key, entry in batters.items():
+        if not isinstance(entry, dict):
+            continue
+        mlbam_id = entry.get("mlbam_id")
+        split_key = str(key or "").strip()
+        if mlbam_id is not None:
+            try:
+                split_key = f"mlbam:{int(mlbam_id)}"
+            except (TypeError, ValueError):
+                pass
+        if not split_key.startswith("mlbam:"):
+            continue
+
+        row = {
+            "name": entry.get("name"),
+            "bats": entry.get("bats"),
+            "mlbam_id": entry.get("mlbam_id"),
+            "split_source": "batter_splits_cache",
+        }
+        for side in ("vs_R", "vs_L"):
+            split = entry.get(side)
+            if isinstance(split, dict):
+                row[side] = split
+        if "vs_R" in row or "vs_L" in row:
+            result[split_key] = row
+
+    return result
+
+
 def _flatten_lineup_batter_candidates(lineups: list[list[dict] | None]) -> dict[int, dict]:
     candidates: dict[int, dict] = {}
     for lineup in lineups:

@@ -27,8 +27,12 @@ from fetch_statcast  import fetch_swstr, LEAGUE_AVG_SWSTR
 _SWSTR_NEUTRAL = {"swstr_pct": LEAGUE_AVG_SWSTR, "career_swstr_pct": None}
 from fetch_umpires      import fetch_umpires
 from fetch_lineups      import fetch_lineups
-from fetch_batter_stats import fetch_batter_stats, collect_batter_split_samples
-from build_features     import build_pitcher_record
+from fetch_batter_stats import (
+    fetch_batter_stats,
+    collect_batter_split_samples,
+    overlay_batter_split_cache,
+)
+from build_features     import build_pitcher_record, batter_handedness_mode
 from quality_gates      import apply_quality_to_record, summarize_quality_gates
 from name_utils         import normalize as _normalize_name
 from team_codes         import TEAM_NAME_TO_CODE
@@ -241,6 +245,13 @@ def fetch_batter_stats_cached(season: int) -> dict:
             log.warning("fetch_batter_stats failed: %s — using empty dict", e)
             _batter_stats_cache = {}
     return _batter_stats_cache
+
+
+def batter_stats_for_projection(season: int) -> dict:
+    batter_stats = fetch_batter_stats_cached(season)
+    if batter_handedness_mode() != "path_b":
+        return batter_stats
+    return overlay_batter_split_cache(batter_stats, season)
 
 
 def fetch_lineups_for_pitcher(date_str: str, team: str) -> list[dict] | None:
@@ -731,7 +742,7 @@ def _run_preview(tomorrow_str: str) -> None:
         ump_map = {p["pitcher"]: 0.0 for p in props}
         _ump_diag = {"umpire_by_pitcher": {}, "rated_umpire_by_pitcher": {}}
 
-    batter_stats = fetch_batter_stats_cached(int(tomorrow_str[:4]))
+    batter_stats = batter_stats_for_projection(int(tomorrow_str[:4]))
     park_factors = _load_park_factors()
 
     records = []
@@ -1879,7 +1890,7 @@ def run(date_str: str, run_type: str = "full") -> None:
     )
 
     # 5. Fetch batter stats (FanGraphs — cached, graceful fallback to {})
-    batter_stats = fetch_batter_stats_cached(int(date_str[:4]))
+    batter_stats = batter_stats_for_projection(int(date_str[:4]))
     park_factors = _load_park_factors()
     umpire_by_pitcher = ump_diagnostics.get("umpire_by_pitcher", {}) if ump_diagnostics else {}
     rated_umpire_by_pitcher = (

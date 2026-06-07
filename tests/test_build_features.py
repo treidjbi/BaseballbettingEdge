@@ -17,6 +17,7 @@ from build_features import (
     calc_rest_k9_delta,
     calc_swstr_delta_k9,
     calc_lineup_k_rate,
+    calc_lineup_k_rate_details,
     calc_movement_confidence,
     bayesian_opp_k,
     is_opener,
@@ -893,6 +894,65 @@ class TestCalcLineupKRate:
         result = calc_lineup_k_rate(lineup, SAMPLE_BATTER_STATS, "R")
         # Neutral delta = raw split, no platoon adjustment.
         assert abs(result - 0.280) < 0.001
+
+    def test_path_b_uses_real_mlbam_split_without_extra_platoon_delta(self):
+        lineup = [{"name": "Mookie Betts", "bats": "R", "mlbam_id": 605141}]
+        batter_stats = {
+            "mookie betts": {"vs_R": 0.135, "vs_L": 0.135},
+            "mlbam:605141": {
+                "split_source": "batter_splits_cache",
+                "vs_R": {"pa": 80, "so": 12, "k_rate": 0.15},
+                "vs_L": {"pa": 20, "so": 2, "k_rate": 0.10},
+            },
+        }
+
+        details = calc_lineup_k_rate_details(lineup, batter_stats, "R", handedness_mode="path_b")
+
+        assert details["rate"] == pytest.approx(0.15)
+        assert details["real_split_count"] == 1
+        assert details["path_a_fallback_count"] == 0
+        assert details["split_source"] == "real_split_cache"
+
+    def test_path_b_falls_back_to_path_a_when_needed_split_missing(self):
+        lineup = [{"name": "Mookie Betts", "bats": "R", "mlbam_id": 605141}]
+        batter_stats = {
+            "mookie betts": {"vs_R": 0.135, "vs_L": 0.135},
+            "mlbam:605141": {
+                "split_source": "batter_splits_cache",
+                "vs_L": {"pa": 20, "so": 2, "k_rate": 0.10},
+            },
+        }
+
+        details = calc_lineup_k_rate_details(lineup, batter_stats, "R", handedness_mode="path_b")
+
+        assert details["rate"] == pytest.approx(0.135 + PLATOON_K_DELTA[("R", "R")])
+        assert details["real_split_count"] == 0
+        assert details["path_a_fallback_count"] == 1
+        assert details["split_source"] == "path_a"
+
+    def test_build_pitcher_record_surfaces_handedness_canary_metadata(self, monkeypatch):
+        monkeypatch.setenv("BATTER_HANDEDNESS_MODE", "path_b")
+        lineup = [{"name": "Mookie Betts", "bats": "R", "mlbam_id": 605141}]
+        batter_stats = {
+            "mookie betts": {"vs_R": 0.135, "vs_L": 0.135},
+            "mlbam:605141": {
+                "split_source": "batter_splits_cache",
+                "vs_R": {"pa": 80, "so": 12, "k_rate": 0.15},
+            },
+        }
+
+        record = build_pitcher_record(
+            SAMPLE_ODDS,
+            {**SAMPLE_STATS, "throws": "R"},
+            0.0,
+            lineup=lineup,
+            batter_stats=batter_stats,
+        )
+
+        assert record["batter_handedness_mode"] == "path_b"
+        assert record["lineup_split_source"] == "real_split_cache"
+        assert record["lineup_real_split_count"] == 1
+        assert record["lineup_path_a_fallback_count"] == 0
 
 
 class TestPlatoonKDelta:

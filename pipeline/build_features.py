@@ -6,6 +6,7 @@ All other functions are pure (no I/O) for testability.
 """
 import math
 import json
+import os
 from pathlib import Path
 from scipy.stats import poisson
 from name_utils import normalize as _norm
@@ -66,6 +67,13 @@ PLATOON_K_DELTA = {
     ("L", "R"): -0.015,  # LHB vs RHP: strong platoon advantage
     ("L", "L"): 0.020,   # LHB vs LHP: reverse platoon (rare PA, stark split)
 }
+
+VALID_BATTER_HANDEDNESS_MODES = {"path_a", "path_b"}
+
+
+def batter_handedness_mode(value: str | None = None) -> str:
+    mode = (value if value is not None else os.getenv("BATTER_HANDEDNESS_MODE", "path_a")).strip().lower()
+    return mode if mode in VALID_BATTER_HANDEDNESS_MODES else "path_a"
 
 
 def platoon_k_delta(batter_hand: str, pitcher_throws: str) -> float:
@@ -161,6 +169,7 @@ def calc_lineup_k_rate(
     lineup: list[dict] | None,
     batter_stats: dict,
     pitcher_throws: str,
+    handedness_mode: str | None = None,
 ) -> float | None:
     """
     Compute the mean K rate for a batting lineup against a given pitcher handedness.
@@ -179,17 +188,96 @@ def calc_lineup_k_rate(
     batter_stats:   {name: {"vs_R": float, "vs_L": float}} from fetch_batter_stats
     pitcher_throws: "R" or "L"
     """
-    if not lineup:
+    return calc_lineup_k_rate_details(
+        lineup,
+        batter_stats,
+        pitcher_throws,
+        handedness_mode=handedness_mode,
+    )["rate"]
+
+
+def _trusted_real_split_rate(split: object) -> float | None:
+    if not isinstance(split, dict):
         return None
+    try:
+        pa = int(split.get("pa") or 0)
+        rate = float(split.get("k_rate"))
+    except (TypeError, ValueError):
+        return None
+    if pa <= 0:
+        return None
+    return rate
+
+
+def _mlbam_split_row(batter: dict, batter_stats: dict) -> dict | None:
+    mlbam_id = batter.get("mlbam_id")
+    if mlbam_id is None:
+        return None
+    try:
+        row = batter_stats.get(f"mlbam:{int(mlbam_id)}")
+    except (TypeError, ValueError):
+        return None
+    return row if isinstance(row, dict) else None
+
+
+def _aggregate_split_row(batter: dict, batter_stats: dict) -> dict | None:
+    row = batter_stats.get(_norm(batter.get("name", "")))
+    return row if isinstance(row, dict) else None
+
+
+def _path_a_batter_rate(
+    batter: dict,
+    batter_stats: dict,
+    pitcher_throws: str,
+    split_key: str,
+) -> float:
+    batter_hand = batter.get("bats", "")
+    splits = _aggregate_split_row(batter, batter_stats)
+    raw_base = splits.get(split_key) if splits else None
+    base_k = raw_base if isinstance(raw_base, (int, float)) else LEAGUE_AVG_K_RATE
+    return float(base_k) + platoon_k_delta(batter_hand, pitcher_throws)
+
+
+def calc_lineup_k_rate_details(
+    lineup: list[dict] | None,
+    batter_stats: dict,
+    pitcher_throws: str,
+    handedness_mode: str | None = None,
+) -> dict:
+    if not lineup:
+        return {
+            "rate": None,
+            "split_source": "none",
+            "real_split_count": 0,
+            "path_a_fallback_count": 0,
+        }
     split_key = "vs_R" if pitcher_throws == "R" else "vs_L"
+    mode = batter_handedness_mode(handedness_mode)
     rates = []
+    real_split_count = 0
+    fallback_count = 0
     for batter in lineup:
-        name = batter.get("name", "")
-        batter_hand = batter.get("bats", "")
-        splits = batter_stats.get(_norm(name))
-        base_k = splits[split_key] if splits else LEAGUE_AVG_K_RATE
-        rates.append(base_k + platoon_k_delta(batter_hand, pitcher_throws))
-    return sum(rates) / len(rates)
+        if mode == "path_b":
+            split_row = _mlbam_split_row(batter, batter_stats)
+            split_rate = _trusted_real_split_rate(split_row.get(split_key) if split_row else None)
+            if split_rate is not None:
+                rates.append(split_rate)
+                real_split_count += 1
+                continue
+
+        rates.append(_path_a_batter_rate(batter, batter_stats, pitcher_throws, split_key))
+        fallback_count += 1
+
+    split_source = "real_split_cache" if real_split_count else "path_a"
+    if real_split_count and fallback_count:
+        split_source = "mixed_real_split_cache"
+
+    return {
+        "rate": sum(rates) / len(rates),
+        "split_source": split_source,
+        "real_split_count": real_split_count,
+        "path_a_fallback_count": fallback_count,
+    }
 
 
 def bayesian_opp_k(obs_k_rate: float, opp_games_played: int,
@@ -369,8 +457,19 @@ def build_pitcher_record(odds: dict, stats: dict, ump_k_adj: float,
     )
 
     lineup_rate = None
+    lineup_rate_details = {
+        "rate": None,
+        "split_source": "none",
+        "real_split_count": 0,
+        "path_a_fallback_count": 0,
+    }
     if lineup is not None and batter_stats is not None:
-        lineup_rate = calc_lineup_k_rate(lineup, batter_stats, stats.get("throws", "R"))
+        lineup_rate_details = calc_lineup_k_rate_details(
+            lineup,
+            batter_stats,
+            stats.get("throws", "R"),
+        )
+        lineup_rate = lineup_rate_details["rate"]
     effective_opp_k_rate = lineup_rate if lineup_rate is not None else stats["opp_k_rate"]
     lineup_used = lineup_rate is not None
 
@@ -471,6 +570,10 @@ def build_pitcher_record(odds: dict, stats: dict, ump_k_adj: float,
         "opp_k_rate":         effective_opp_k_rate,
         "lineup_used":        lineup_used,
         "lineup_count":       len(lineup) if lineup is not None else 0,
+        "batter_handedness_mode": batter_handedness_mode(),
+        "lineup_split_source": lineup_rate_details["split_source"],
+        "lineup_real_split_count": lineup_rate_details["real_split_count"],
+        "lineup_path_a_fallback_count": lineup_rate_details["path_a_fallback_count"],
         "park_factor":        park_factor,
         "ump_k_adj":          ump_k_adj,
         "starter_mismatch":   starter_mismatch,

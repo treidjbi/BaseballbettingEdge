@@ -28,6 +28,8 @@ from pipeline.name_utils import normalize  # noqa: E402
 HISTORY_PATH = ROOT / "data" / "picks_history.json"
 OUTPUT_MD_PATH = ROOT / "analytics" / "output" / "market_agreement_tracker.md"
 OUTPUT_JSONL_PATH = ROOT / "analytics" / "output" / "market_agreement_tracker.jsonl"
+OVERALL_GRADED_MIN_ROWS = 75
+BUCKET_GRADED_MIN_ROWS = 50
 
 
 def _to_float(value: Any) -> float | None:
@@ -369,6 +371,31 @@ def summarize_buckets(
     return dict(sorted(buckets.items()))
 
 
+def sample_gate(rows: list[dict[str, Any]]) -> dict[str, Any]:
+    graded_rows = [row for row in rows if row.get("result") in {"win", "loss"}]
+    bucket_counts: dict[str, int] = defaultdict(int)
+    for row in graded_rows:
+        bucket_counts[str(row.get("tracker_bucket") or "unknown")] += 1
+
+    bucket_statuses = {
+        bucket: {
+            "graded_rows": count,
+            "status": "review_ready" if count >= BUCKET_GRADED_MIN_ROWS else "watch_only",
+        }
+        for bucket, count in sorted(bucket_counts.items())
+    }
+
+    return {
+        "graded_rows": len(graded_rows),
+        "overall_min_rows": OVERALL_GRADED_MIN_ROWS,
+        "bucket_min_rows": BUCKET_GRADED_MIN_ROWS,
+        "overall_status": "review_ready"
+        if len(graded_rows) >= OVERALL_GRADED_MIN_ROWS
+        else "watch_only",
+        "bucket_statuses": bucket_statuses,
+    }
+
+
 def _format_roi(value: float | None) -> str:
     return "--" if value is None else f"{value:+.1%}"
 
@@ -417,6 +444,7 @@ def _render_table(
 
 def build_report(rows: list[dict[str, Any]], title: str = "Market Agreement Tracker") -> str:
     annotated_rows = [annotate_row(row) for row in rows]
+    gate = sample_gate(annotated_rows)
     graded = sum(1 for row in annotated_rows if row.get("result") in {"win", "loss"})
     fire_rows = sum(1 for row in annotated_rows if row.get("is_fire") is True)
     lean_rows = sum(1 for row in annotated_rows if row.get("is_lean") is True)
@@ -457,6 +485,14 @@ def build_report(rows: list[dict[str, Any]], title: str = "Market Agreement Trac
         f"- LEAN rows: `{lean_rows}`",
         f"- Confidence-referee applied caps: `{referee_caps}`",
         f"- Graded rows: `{graded}`",
+        "",
+        "## Sample Gate",
+        "",
+        f"- Overall status: `{gate['overall_status']}`",
+        f"- Movement-backed graded rows: `{gate['graded_rows']}`",
+        f"- Minimum overall graded rows: `{gate['overall_min_rows']}`",
+        f"- Minimum bucket graded rows: `{gate['bucket_min_rows']}`",
+        "- Buckets below the minimum are watch-only even when their PnL looks attractive.",
         "",
         "## Agreement Buckets",
         "",
