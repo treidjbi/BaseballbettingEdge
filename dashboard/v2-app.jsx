@@ -230,18 +230,39 @@ function defaultBetLogBook(book) {
     bookOther: canonical ? "" : value,
   };
 }
-function defaultAcceptedBetForm(p, side) {
-  const defaultBook = defaultBetLogBook(bookForSide(p, side));
+function isLiveMarketBetPrefill(row) {
+  if (!row || row.freshness_status === "stale") return false;
+  if (!isFiniteNumber(row.best_line) || !isFiniteNumber(row.best_odds) || !row.best_book) return false;
+  return ["playable", "shop_price", "market_agrees"].includes(row.action_label) ||
+    ["playable_now", "off_market"].includes(row.actionable_state);
+}
+function selectedMarketBetRow(p, side) {
+  const row = marketDisplayForSide(p, side);
+  return isLiveMarketBetPrefill(row) ? row : null;
+}
+function defaultAcceptedBetForm(p, side, liveRow = selectedMarketBetRow(p, side)) {
+  const priceSource = liveRow ? "live_best" : "artifact";
+  const defaultBook = defaultBetLogBook(liveRow?.best_book || bookForSide(p, side));
   return {
-    line: String(side.k_line ?? p.k_line ?? ""),
-    odds: String(side.odds ?? ""),
+    line: String(liveRow?.best_line ?? side.k_line ?? p.k_line ?? ""),
+    odds: String(liveRow?.best_odds ?? side.odds ?? ""),
     book: defaultBook.book,
     bookOther: defaultBook.bookOther,
     units: String(verdictStake(side.verdict) || 1),
+    priceSource,
     secret: "",
   };
 }
-function buildAcceptedBetPayload(p, side, { line, odds, book, units }) {
+function betPriceSourceLabel(value) {
+  const labels = {
+    live_best: "Live best",
+    artifact: "Artifact price",
+    manual_edit: "Manual edit",
+    notification_context: "Notification context",
+  };
+  return labels[value] || "Manual edit";
+}
+function buildAcceptedBetPayload(p, side, { line, odds, book, units, priceSource = "artifact", marketRow = null }) {
   return {
     slate_date: slateDateForBetLog(),
     pitcher: p.pitcher,
@@ -267,12 +288,43 @@ function buildAcceptedBetPayload(p, side, { line, odds, book, units }) {
       opp_team: p.opp_team || null,
       game_state: p.game_state || null,
       ref_book: bookForSide(p, side) || null,
+      price_source: priceSource,
+      selected_live_provider: priceSource === "live_best" ? marketRow?.provider || null : null,
+      selected_live_observed_at: priceSource === "live_best" ? marketRow?.observed_at || null : null,
+      selected_live_action: priceSource === "live_best" ? marketRow?.action_label || marketRow?.actionable_state || null : null,
+      selected_live_market_consensus: priceSource === "live_best" ? marketRow?.market_consensus || null : null,
+      selected_live_bet_value_consensus: priceSource === "live_best" ? marketRow?.bet_value_consensus || null : null,
+      selected_live_source_artifact_sha256: priceSource === "live_best" ? marketRow?.source_artifact_sha256 || null : null,
       generated_at: window.V2_DATA?.generated_at || null,
     },
   };
 }
 function parseBetLogNumber(value) {
   return Number(String(value ?? "").trim().replace(/\u2212/g, "-"));
+}
+function acceptedBetReviewDuplicate(row, p, side) {
+  return row?.normalized_pitcher === acceptedBetPitcherKey(p.pitcher) &&
+    String(row?.side || "").toUpperCase() === side.direction;
+}
+function acceptedBetReviewModelSummary(row) {
+  const snapshot = row?.model_snapshot || {};
+  const ev = isFiniteNumber(snapshot.adj_ev) ? `${snapshot.adj_ev > 0 ? "+" : ""}${(snapshot.adj_ev * 100).toFixed(1)}% EV` : "model snap";
+  const generated = row?.metadata?.generated_at ? ` · ${fmtTime(row.metadata.generated_at)}` : "";
+  return `${ev}${generated}`;
+}
+async function fetchAcceptedBetReview(secret) {
+  const url = `/api/accepted-bets?slate_date=${encodeURIComponent(slateDateForBetLog())}`;
+  const response = await fetch(url, {
+    method: "GET",
+    headers: { "x-bet-log-secret": secret },
+  });
+  if (response.status === 401) {
+    clearBetLogSecret();
+    throw new Error("unauthorized");
+  }
+  if (!response.ok) throw new Error(`accepted_bets_read_failed:${response.status}`);
+  const payload = await response.json();
+  return Array.isArray(payload.accepted_bets) ? payload.accepted_bets : [];
 }
 function trackedPicksForPitcher(p) {
   return Array.isArray(p.tracked_picks) ? p.tracked_picks : [];
@@ -945,6 +997,7 @@ function PickDetail({ p, onClose }) {
   const sideOver = { ...p.ev_over, direction: "OVER", odds: p.best_over_odds, opening: p.opening_over_odds };
   const sideUnder = { ...p.ev_under, direction: "UNDER", odds: p.best_under_odds, opening: p.opening_under_odds };
   const best = displaySide(p);
+  const marketBetRow = selectedMarketBetRow(p, best);
   const displayOver = best.direction === "OVER" ? best : sideOver;
   const displayUnder = best.direction === "UNDER" ? best : sideUnder;
   const helpers = getMovementHelpers();
@@ -952,8 +1005,9 @@ function PickDetail({ p, onClose }) {
   const [betLogState, setBetLogState] = useState("idle");
   const [betTicketOpen, setBetTicketOpen] = useState(false);
   const [betLogError, setBetLogError] = useState("");
-  const [betForm, setBetForm] = useState(() => defaultAcceptedBetForm(p, best));
+  const [betForm, setBetForm] = useState(() => defaultAcceptedBetForm(p, best, marketBetRow));
   const [loggedBetKeys, setLoggedBetKeys] = useState(() => readLoggedBetKeys());
+  const [acceptedBetReview, setAcceptedBetReview] = useState({ state: "idle", rows: [], error: "" });
   const factorGroups = useMemo(() => {
     const buildFactorGroups = window.V2FactorDetails?.buildFactorGroups;
     return buildFactorGroups ? buildFactorGroups(p, best.direction) : [];
@@ -988,8 +1042,9 @@ function PickDetail({ p, onClose }) {
     setBetTicketOpen(false);
     setBetLogState("idle");
     setBetLogError("");
-    setBetForm(defaultAcceptedBetForm(p, best));
-  }, [p.pitcher, best.direction, best.k_line, best.odds, best.verdict]);
+    setBetForm(defaultAcceptedBetForm(p, best, marketBetRow));
+    setAcceptedBetReview({ state: "idle", rows: [], error: "" });
+  }, [p.pitcher, best.direction, best.k_line, best.odds, best.verdict, marketBetRow?.best_book, marketBetRow?.best_line, marketBetRow?.best_odds]);
 
   const SideCard = ({ s: rawSide }) => {
     const s = {
@@ -1052,9 +1107,30 @@ function PickDetail({ p, onClose }) {
   const needsBetLogSecret = !storedBetLogSecret();
   const currentBetLogKey = acceptedBetSessionKey(p, best);
   const betAlreadyLogged = loggedBetKeys.has(currentBetLogKey);
+  const reviewDuplicateRows = acceptedBetReview.rows.filter((row) => acceptedBetReviewDuplicate(row, p, best));
+
+  function loadAcceptedBetReview(secret = storedBetLogSecret()) {
+    if (!secret) {
+      setAcceptedBetReview({ state: "needs_key", rows: [], error: "" });
+      return;
+    }
+    setAcceptedBetReview((prev) => ({ ...prev, state: "loading", error: "" }));
+    fetchAcceptedBetReview(secret)
+      .then((rows) => setAcceptedBetReview({ state: "ready", rows, error: "" }))
+      .catch((error) => {
+        setAcceptedBetReview({ state: "error", rows: [], error: error.message === "unauthorized" ? "Bet log key was rejected." : "Could not load accepted bets." });
+      });
+  }
 
   function updateBetForm(field, value) {
-    setBetForm((prev) => ({ ...prev, [field]: value }));
+    setBetForm((prev) => {
+      const priceFields = ["line", "odds", "book", "bookOther"];
+      return {
+        ...prev,
+        [field]: value,
+        priceSource: priceFields.includes(field) ? "manual_edit" : prev.priceSource,
+      };
+    });
     setBetLogError("");
   }
 
@@ -1063,6 +1139,7 @@ function PickDetail({ p, onClose }) {
     setBetTicketOpen(true);
     setBetLogError("");
     if (betLogState === "saved") setBetLogState("idle");
+    loadAcceptedBetReview();
   }
 
   function closeBetTicket() {
@@ -1103,6 +1180,8 @@ function PickDetail({ p, onClose }) {
           odds: Math.trunc(odds),
           book,
           units,
+          priceSource: betForm.priceSource || "artifact",
+          marketRow: marketBetRow,
         })),
       });
       if (response.status === 401) {
@@ -1113,7 +1192,13 @@ function PickDetail({ p, onClose }) {
         return;
       }
       if (!response.ok) throw new Error(`accepted_bet_failed:${response.status}`);
+      const payload = await response.json();
       saveBetLogSecret(secret);
+      setAcceptedBetReview((prev) => ({
+        state: "ready",
+        rows: payload.accepted_bet ? [payload.accepted_bet, ...prev.rows.filter((row) => row.id !== payload.accepted_bet.id)] : prev.rows,
+        error: "",
+      }));
       setLoggedBetKeys((prev) => {
         const next = new Set(prev);
         next.add(currentBetLogKey);
@@ -1459,6 +1544,14 @@ function PickDetail({ p, onClose }) {
               Model ref: {bookForSide(p, best) || "Market"} {fmtOdds(best.odds)}
               <span>EV {best.adj_ev > 0 ? "+" : ""}{(best.adj_ev * 100).toFixed(1)}%</span>
             </div>
+            <div className={`v2-bet-price-source ${betForm.priceSource}`}>
+              <span>{betPriceSourceLabel(betForm.priceSource)}</span>
+              {betForm.priceSource === "live_best" && marketBetRow ? (
+                <b>{marketBetRow.provider || "live"} · {marketBetRow.best_book} {marketBetRow.best_line}K {fmtOdds(marketBetRow.best_odds)}</b>
+              ) : (
+                <b>{bookForSide(p, best) || "Market"} {best.k_line ?? p.k_line}K {fmtOdds(best.odds)}</b>
+              )}
+            </div>
             <div className="v2-bet-fields">
               <label className="v2-bet-field">
                 <span>Line</span>
@@ -1526,6 +1619,36 @@ function PickDetail({ p, onClose }) {
             </div>
             {betLogError && <div className="v2-bet-error">{betLogError}</div>}
             {betLogState === "saved" && <div className="v2-bet-success">Bet logged</div>}
+            <div className="v2-accepted-bet-review">
+              <div className="v2-accepted-bet-review-head">
+                <span>Same-day accepted bets</span>
+                <b>{acceptedBetReview.state === "ready" ? acceptedBetReview.rows.length : acceptedBetReview.state === "loading" ? "loading" : acceptedBetReview.state === "needs_key" ? "key needed" : "not loaded"}</b>
+              </div>
+              {reviewDuplicateRows.length > 0 && (
+                <div className="v2-accepted-bet-duplicate">
+                  Duplicate side: {reviewDuplicateRows[0].book} {reviewDuplicateRows[0].k_line}K {fmtOdds(reviewDuplicateRows[0].odds)}
+                </div>
+              )}
+              {acceptedBetReview.state === "error" && (
+                <div className="v2-accepted-bet-muted">{acceptedBetReview.error}</div>
+              )}
+              {acceptedBetReview.state === "needs_key" && (
+                <div className="v2-accepted-bet-muted">Enter the bet log key to load today's saved bets.</div>
+              )}
+              {acceptedBetReview.state === "ready" && acceptedBetReview.rows.length === 0 && (
+                <div className="v2-accepted-bet-muted">No accepted bets logged for this slate yet.</div>
+              )}
+              {acceptedBetReview.state === "ready" && acceptedBetReview.rows.slice(0, 5).map((row) => (
+                <div className={`v2-accepted-bet-row ${acceptedBetReviewDuplicate(row, p, best) ? "duplicate" : ""}`} key={row.id || `${row.pitcher}-${row.side}-${row.accepted_at}`}>
+                  <span>
+                    {row.pitcher} {String(row.side || "").toUpperCase()} {row.k_line}K {fmtOdds(row.odds)}
+                    {(row.notification_event_id || row.shadow_candidate_id) && <em> · linked alert</em>}
+                  </span>
+                  <b>{row.book} · {row.units}u · {row.source || "manual"}</b>
+                  <small>{acceptedBetReviewModelSummary(row)}</small>
+                </div>
+              ))}
+            </div>
             <div className="v2-bet-ticket-actions">
               <button
                 type="button"

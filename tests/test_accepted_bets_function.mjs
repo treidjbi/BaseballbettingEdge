@@ -145,3 +145,80 @@ test('acceptedBets writes accepted bet through Supabase REST with secret fallbac
     }
   }
 });
+
+test('acceptedBets reads same-day accepted bets through Supabase REST without exposing secrets', async () => {
+  const calls = [];
+  const originalFetch = globalThis.fetch;
+  const originalEnv = {
+    BET_LOG_SECRET: process.env.BET_LOG_SECRET,
+    NOTIFY_SECRET: process.env.NOTIFY_SECRET,
+    SUPABASE_URL: process.env.SUPABASE_URL,
+    SUPABASE_SERVICE_ROLE_KEY: process.env.SUPABASE_SERVICE_ROLE_KEY,
+  };
+  process.env.BET_LOG_SECRET = 'bet-secret';
+  delete process.env.NOTIFY_SECRET;
+  process.env.SUPABASE_URL = 'https://example.supabase.co';
+  process.env.SUPABASE_SERVICE_ROLE_KEY = 'service-key';
+
+  globalThis.fetch = async (url, options) => {
+    calls.push({ url: String(url), options });
+    return new Response(JSON.stringify([
+      {
+        id: 'bet-1',
+        slate_date: '2026-06-07',
+        pitcher: 'Kyle Bradish',
+        normalized_pitcher: 'kyle bradish',
+        side: 'under',
+        verdict: 'FIRE 1u',
+        k_line: 4.5,
+        odds: -125,
+        book: 'BetRivers',
+        units: 1,
+        source: 'dashboard_manual',
+        notification_event_id: null,
+        shadow_candidate_id: null,
+        model_snapshot: { adj_ev: 0.09 },
+        metadata: {
+          price_source: 'live_best',
+          selected_live_provider: 'boltodds',
+          selected_live_observed_at: '2026-06-07T18:40:00Z',
+          generated_at: '2026-06-07T18:35:00Z',
+        },
+        accepted_at: '2026-06-07T18:41:00Z',
+        dedupe_key: 'accepted_bet:2026-06-07:kyle bradish:under:betrivers:4.5:-125',
+        service_role_key: 'service-key',
+      },
+    ]), {
+      status: 200,
+      headers: { 'Content-Type': 'application/json' },
+    });
+  };
+
+  try {
+    const response = await acceptedBets(new Request('https://example.test/api/accepted-bets?slate_date=2026-06-07', {
+      method: 'GET',
+      headers: { 'x-bet-log-secret': 'bet-secret' },
+    }));
+    const payload = await response.json();
+
+    assert.equal(response.status, 200);
+    assert.equal(payload.ok, true);
+    assert.equal(payload.slate_date, '2026-06-07');
+    assert.equal(payload.accepted_bets.length, 1);
+    assert.equal(payload.accepted_bets[0].pitcher, 'Kyle Bradish');
+    assert.equal(payload.accepted_bets[0].metadata.price_source, 'live_best');
+    assert.equal(payload.accepted_bets[0].dedupe_key, undefined);
+    assert.equal(JSON.stringify(payload).includes('service-key'), false);
+    assert.equal(calls.length, 1);
+    assert.match(calls[0].url, /^https:\/\/example\.supabase\.co\/rest\/v1\/accepted_bets\?/);
+    assert.match(calls[0].url, /slate_date=eq\.2026-06-07/);
+    assert.match(calls[0].url, /order=accepted_at\.desc/);
+    assert.equal(calls[0].options.headers.Authorization, 'Bearer service-key');
+  } finally {
+    globalThis.fetch = originalFetch;
+    for (const [key, value] of Object.entries(originalEnv)) {
+      if (value === undefined) delete process.env[key];
+      else process.env[key] = value;
+    }
+  }
+});
