@@ -194,9 +194,10 @@
 
   function marketSheetEnabled() {
     const params = new URLSearchParams(location.search || '');
-    if (!params.has('marketSheet')) return false;
+    if (!params.has('marketSheet')) return true;
     const value = String(params.get('marketSheet') || '').toLowerCase();
-    return value === '' || value === '1' || value === 'true' || value === 'yes';
+    if (['0', 'false', 'no', 'off'].includes(value)) return false;
+    return true;
   }
 
   function marketPitcherKey(name) {
