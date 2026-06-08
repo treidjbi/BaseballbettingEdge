@@ -1,8 +1,8 @@
 # Live Market Decision UI Plan
 
-> **Status:** Phase 2 hidden live-read MVP plus existing Log Bet integration
-> implemented 2026-06-07. Keep display-only and shadow-only; do not make
-> default-on without Tyler approval.
+> **Status:** Default-on live-read UI plus existing Log Bet integration
+> approved and implemented 2026-06-08. Keep display-only and shadow-only;
+> use `?marketSheet=0` as the rollback/opt-out parameter.
 >
 > **Guardrail:** This plan must not change production provider order, model math,
 > thresholds, staking, lock behavior, notification sends, retention, secrets, or
@@ -73,9 +73,18 @@
 > a compact book board with Best, Model ref, Same line / Different line, and
 > model-fair cushion tags. The Log Bet modal also exposes those same live
 > book rows as selectable buttons that fill the existing line, odds, and book
-> fields. This remains behind `?marketSheet=1`; it does not place bets,
-> change stake sizes, provider order, model math, thresholds, locks,
+> fields. This initially remained behind `?marketSheet=1` and did not place
+> bets, change stake sizes, provider order, model math, thresholds, locks,
 > notifications, retention, or dashboard source-of-truth behavior.
+>
+> **2026-06-08 default-on update:** Tyler approved promoting the market sheet
+> out of the hidden query flag. `dashboard/v2-data.js` now fetches and attaches
+> sanitized live-market rows by default, while `?marketSheet=0` disables the
+> readout as a rollback/opt-out path. PASS cards remain quiet because the React
+> surface only renders market strips/panels for actionable sides. This is still
+> a UI readout only: it does not place bets, change stakes, provider order,
+> model math, thresholds, locks, notifications, retention, source-of-truth, or
+> accepted-bet API behavior.
 
 ## Goal
 
@@ -472,20 +481,13 @@ extend the endpoint to include a compact provider-comparison block:
 This should be read-only. It should help decide whether BoltOdds and PropLine
 agree, not choose production truth.
 
-### Phase 4 - Promotion Review
+### Phase 4 - Default-On UI Promotion
 
-Only after the operational base and provider cutover are approved, decide
-whether the UI becomes default-on.
-
-Promotion gates:
-
-- Supabase lock ledger soak is clean.
-- If enabled, lock consumer canary is clean.
-- PropLine webhook processor observation is clean.
-- Row-volume/retention dry-run is acceptable.
-- Provider cutover comparison says the new provider stack is ready, or the UI
-  is explicitly scoped as shadow display only.
-- Tyler approves making the market panel visible without a query flag.
+Completed 2026-06-08 after Tyler approved making the market panel visible
+without a query flag. This promotion is display-only: it makes the sanitized
+live-market readout default-on for actionable cards and keeps `?marketSheet=0`
+as rollback/opt-out. It does not approve provider, model, staking, threshold,
+lock, notification, retention, source-of-truth, or accepted-bet API changes.
 
 ## Implementation Sequence
 
@@ -518,7 +520,8 @@ Promotion gates:
 11. DONE 2026-06-07 - Add a read-only accepted-bet review surface before any edit/correction UI.
 12. Verify with local static dashboard, Playwright mobile screenshots, and
     existing v2 tests.
-13. Keep the feature hidden behind query flag until Tyler reviews it.
+13. DONE 2026-06-08 - Tyler reviewed and approved default-on display; keep
+    `?marketSheet=0` as rollback/opt-out.
 
 ## Suggested Data Contract For UI
 

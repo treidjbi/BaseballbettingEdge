@@ -357,7 +357,7 @@ test("tracked picks are exposed top-level and attached to matching pitchers", as
   assert.equal(window.V2_DATA.pitchers[0].tracked_picks[0].direction, "UNDER");
 });
 
-test("live market display stays disabled without the hidden query flag", async () => {
+test("live market display is enabled by default without the query flag", async () => {
   const todayJson = {
     date: "2026-04-28",
     generated_at: "2026-04-28T23:00:00Z",
@@ -399,14 +399,76 @@ test("live market display stays disabled without the hidden query flag", async (
     ],
   });
 
-  assert.equal(window.V2_MARKET_DISPLAY.enabled, false);
+  assert.equal(window.V2_MARKET_DISPLAY.enabled, true);
   assert.equal(Array.isArray(window.V2_MARKET_DISPLAY.rows), true);
+  assert.equal(window.V2_MARKET_DISPLAY.rows.length, 1);
+  assert.equal(window.V2_DATA.pitchers[0].market_display.UNDER.best_book, "DraftKings");
+  assert.equal(window.__fetchUrls.some(url => String(url).startsWith("/.netlify/functions/live-market-display")), true);
+});
+
+test("live market display can be disabled with marketSheet opt-out", async () => {
+  const todayJson = {
+    date: "2026-04-28",
+    generated_at: "2026-04-28T23:00:00Z",
+    pitchers: [
+      {
+        pitcher: "Market Pitcher",
+        team: "SEA",
+        opp_team: "CLE",
+        game_time: "2026-04-28T23:10:00Z",
+        k_line: 5.5,
+        best_over_odds: -105,
+        best_under_odds: -118,
+        lambda: 4.9,
+        avg_ip: 5.8,
+        opp_k_rate: 0.24,
+        ev_over: { adj_ev: -0.02, ev: -0.01, edge: -0.02, verdict: "PASS" },
+        ev_under: { adj_ev: 0.04, ev: 0.05, edge: 0.02, verdict: "LEAN", win_prob: 0.54 },
+      },
+    ],
+  };
+
+  const window = await runV2DataTest({
+    locationSearch: "?marketSheet=0",
+    todayJson,
+    liveMarketDisplay: [
+      {
+        slate_date: "2026-04-28",
+        normalized_pitcher: "market pitcher",
+        side: "under",
+        provider: "boltodds",
+        actionable_state: "playable_now",
+        best_book: "DraftKings",
+        best_line: 5.5,
+        best_odds: -112,
+      },
+    ],
+    liveMarketApiPayload: {
+      generated_at: "2026-04-28T22:57:00Z",
+      slate_date: "2026-04-28",
+      source: "live_market_display_state",
+      rows: [
+        {
+          slate_date: "2026-04-28",
+          normalized_pitcher: "market pitcher",
+          side: "under",
+          provider: "boltodds",
+          actionable_state: "playable_now",
+          best_book: "FanDuel",
+          best_line: 5.5,
+          best_odds: -110,
+        },
+      ],
+    },
+  });
+
+  assert.equal(window.V2_MARKET_DISPLAY.enabled, false);
   assert.equal(window.V2_MARKET_DISPLAY.rows.length, 0);
   assert.equal(window.V2_DATA.pitchers[0].market_display, undefined);
   assert.equal(window.__fetchUrls.some(url => String(url).startsWith("/.netlify/functions/live-market-display")), false);
 });
 
-test("live market display fetches sanitized endpoint rows only behind the hidden flag", async () => {
+test("live market display fetches sanitized endpoint rows by default", async () => {
   const todayJson = {
     date: "2026-04-28",
     generated_at: "2026-04-28T23:00:00Z",
@@ -629,7 +691,7 @@ test("live market display prefers newer fresh rows before older action labels", 
   assert.equal(row.actionable_state, "monitor");
 });
 
-test("live market display rows normalize and attach to matching pitcher sides behind the hidden flag", async () => {
+test("live market display rows normalize and attach to matching pitcher sides", async () => {
   const todayJson = {
     date: "2026-04-28",
     generated_at: "2026-04-28T23:00:00Z",

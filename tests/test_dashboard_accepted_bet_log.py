@@ -153,3 +153,4 @@ def test_dashboard_busts_v2_app_cache_for_accepted_bet_ui():
     html = DASHBOARD_HTML.read_text(encoding="utf-8")
 
     assert "v2-app.js?v=2026-06-08-book-selector-polish" in html
+    assert "v2-data.js?v=2026-06-08-market-default-on" in html
