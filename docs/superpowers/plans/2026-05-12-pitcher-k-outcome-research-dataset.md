@@ -247,6 +247,15 @@ around key K lines. Full batter-by-batter simulation, pitch-mix/stuff models,
 and new provider inputs remain deferred until Gate E/F evidence says they are
 worth the source and operational complexity.
 
+The first standalone workload/no-vig audit is implemented at
+`analytics/diagnostics/workload_no_vig_ev_audit.py` with report output at
+`analytics/output/workload_no_vig_ev_audit.md`. Treat it as a shadow readiness
+and explanation artifact only. The first generated report shows the current
+committed Gate C dataset does not yet include the new Path B or confidence-
+referee cap fields needed for those slices, so no live model, threshold,
+staking, provider, notification, lock, retention, or dashboard-source decision
+can come from this report alone.
+
 Do not use this comparison to roll back thresholds, staking, formula date, or
 provider behavior. Use it to keep Gate C honest: current-regime buckets matter
 most, and any future Gate E/F candidate must survive side, price, line, timing,

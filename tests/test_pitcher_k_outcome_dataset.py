@@ -42,6 +42,10 @@ def test_build_official_close_rows_creates_one_row_per_side():
             "home_away": "home",
             "lineup_used": "confirmed",
             "lineup_count": 9,
+            "batter_handedness_mode": "path_b",
+            "lineup_split_source": "real_split_cache",
+            "lineup_real_split_count": 7,
+            "lineup_path_a_fallback_count": 2,
             "quality_gate_level": "clean",
             "quality_gate_reasons": [],
             "source_artifact_path": "dashboard/data/processed/2026-05-12.json",
@@ -73,6 +77,10 @@ def test_build_official_close_rows_creates_one_row_per_side():
     assert under["large_edge_skepticism_reasons"] == []
     assert under["pitcher_archetype_bucket"] == "standard_starter"
     assert under["lineup_count"] == 9
+    assert under["batter_handedness_mode"] == "path_b"
+    assert under["lineup_split_source"] == "real_split_cache"
+    assert under["lineup_real_split_count"] == 7
+    assert under["lineup_path_a_fallback_count"] == 2
     assert under["lineup_handedness_source"] is None
     assert under["lineup_handedness_runtime_safe"] is None
 
@@ -633,6 +641,18 @@ def test_enrich_rows_with_pick_history_adds_bet_time_and_clv_fields(tmp_path):
             "ref_book": "FanDuel",
             "locked_k_line": 5.5,
             "locked_odds": 110,
+            "locked_verdict": "LEAN",
+            "display_verdict": "LEAN",
+            "actionable_verdict": "LEAN",
+            "raw_verdict": "FIRE 1u",
+            "locked_adj_ev": 0.12,
+            "verdict_cap_reason": "confidence referee: market fade",
+            "confidence_referee": {
+              "mode": "enforce",
+              "applied": true,
+              "would_cap_to": "LEAN",
+              "reasons": ["price_driven_market_fade"]
+            },
             "locked_at": "2026-05-12T22:30:00Z",
             "game_time": "2026-05-12T23:05:00Z",
             "pnl": 1.1
@@ -670,3 +690,10 @@ def test_enrich_rows_with_pick_history_adds_bet_time_and_clv_fields(tmp_path):
     assert enriched[0]["clv_type"] == "price_only"
     assert enriched[0]["process_outcome_bucket"] == "good_process_win"
     assert enriched[0]["bet_timing_window"] == "pre_60"
+    assert enriched[0]["locked_verdict"] == "LEAN"
+    assert enriched[0]["display_verdict"] == "LEAN"
+    assert enriched[0]["actionable_verdict"] == "LEAN"
+    assert enriched[0]["raw_verdict"] == "FIRE 1u"
+    assert enriched[0]["locked_adj_ev"] == 0.12
+    assert enriched[0]["verdict_cap_reason"] == "confidence referee: market fade"
+    assert enriched[0]["confidence_referee"]["applied"] is True

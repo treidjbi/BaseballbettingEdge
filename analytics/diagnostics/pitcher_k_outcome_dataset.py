@@ -113,6 +113,16 @@ REQUIRED_DATASET_FIELDS = {
     "lineup_handedness_runtime_safe",
     "lineup_handedness_game_pk",
     "lineup_handedness_count_matches_existing",
+    "batter_handedness_mode",
+    "lineup_split_source",
+    "lineup_real_split_count",
+    "lineup_path_a_fallback_count",
+    "confidence_referee",
+    "locked_verdict",
+    "display_verdict",
+    "actionable_verdict",
+    "locked_adj_ev",
+    "verdict_cap_reason",
     "avg_ip",
     "recent_start_count",
     "opportunity_bucket",
@@ -832,6 +842,12 @@ def build_official_close_rows(markets: list[dict[str, Any]]) -> list[dict[str, A
                 "starter_mismatch": market.get("starter_mismatch"),
                 "lineup_used": market.get("lineup_used"),
                 "lineup_count": _to_int(market.get("lineup_count")),
+                "batter_handedness_mode": market.get("batter_handedness_mode"),
+                "lineup_split_source": market.get("lineup_split_source"),
+                "lineup_real_split_count": _to_int(market.get("lineup_real_split_count")),
+                "lineup_path_a_fallback_count": _to_int(
+                    market.get("lineup_path_a_fallback_count")
+                ),
                 "lineup_right_batters": _to_int(market.get("lineup_right_batters")),
                 "lineup_left_batters": _to_int(market.get("lineup_left_batters")),
                 "lineup_switch_batters": _to_int(market.get("lineup_switch_batters")),
@@ -886,6 +902,12 @@ def build_official_close_rows(markets: list[dict[str, Any]]) -> list[dict[str, A
                 "best_is_off_market": None,
                 "is_tracked_pick": False,
                 "pick_history_match_type": None,
+                "confidence_referee": ev.get("confidence_referee") or market.get("confidence_referee"),
+                "locked_verdict": ev.get("locked_verdict") or market.get("locked_verdict"),
+                "display_verdict": ev.get("display_verdict") or market.get("display_verdict"),
+                "actionable_verdict": ev.get("actionable_verdict") or market.get("actionable_verdict"),
+                "locked_adj_ev": _to_float(ev.get("locked_adj_ev") or market.get("locked_adj_ev")),
+                "verdict_cap_reason": ev.get("verdict_cap_reason") or market.get("verdict_cap_reason"),
                 "bet_time_line": None,
                 "bet_time_odds": None,
                 "bet_time_book": None,
@@ -1183,6 +1205,12 @@ def enrich_rows_with_pick_history(
         next_row = dict(row)
         next_row.setdefault("is_tracked_pick", False)
         next_row.setdefault("pick_history_match_type", None)
+        next_row.setdefault("confidence_referee", None)
+        next_row.setdefault("locked_verdict", None)
+        next_row.setdefault("display_verdict", None)
+        next_row.setdefault("actionable_verdict", None)
+        next_row.setdefault("locked_adj_ev", None)
+        next_row.setdefault("verdict_cap_reason", None)
         next_row.setdefault("bet_time_line", None)
         next_row.setdefault("bet_time_odds", None)
         next_row.setdefault("bet_time_book", None)
@@ -1210,6 +1238,31 @@ def enrich_rows_with_pick_history(
                 {
                     "is_tracked_pick": True,
                     "pick_history_match_type": match_type,
+                    "confidence_referee": pick.get("confidence_referee")
+                    if pick.get("confidence_referee") is not None
+                    else next_row.get("confidence_referee"),
+                    "locked_verdict": pick.get("locked_verdict")
+                    if pick.get("locked_verdict") is not None
+                    else next_row.get("locked_verdict"),
+                    "display_verdict": pick.get("display_verdict")
+                    if pick.get("display_verdict") is not None
+                    else (
+                        pick.get("locked_verdict")
+                        or pick.get("verdict")
+                        or next_row.get("display_verdict")
+                    ),
+                    "actionable_verdict": pick.get("actionable_verdict")
+                    if pick.get("actionable_verdict") is not None
+                    else next_row.get("actionable_verdict"),
+                    "raw_verdict": pick.get("raw_verdict")
+                    if pick.get("raw_verdict") is not None
+                    else next_row.get("raw_verdict"),
+                    "locked_adj_ev": _to_float(pick.get("locked_adj_ev"))
+                    if pick.get("locked_adj_ev") is not None
+                    else next_row.get("locked_adj_ev"),
+                    "verdict_cap_reason": pick.get("verdict_cap_reason")
+                    if pick.get("verdict_cap_reason") is not None
+                    else next_row.get("verdict_cap_reason"),
                     "bet_time_line": bet_line,
                     "bet_time_odds": bet_odds,
                     "bet_time_book": pick.get("locked_book") or pick.get("ref_book") or next_row.get("bookmaker_key"),

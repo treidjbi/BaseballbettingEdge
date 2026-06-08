@@ -167,13 +167,25 @@ If a referee v2 candidate emerges, it still needs Gate E/F and a separate produc
 - Modify: BBE Operations Brief automation memory
   - Carry the new daily read focus forward.
 
+## Implementation Status
+
+As of 2026-06-08, Tasks 1-4 are implemented:
+
+- `analytics/diagnostics/workload_no_vig_ev_audit.py` reads the Gate C JSONL and derives no-vig, workload, Path B coverage, and referee-interaction labels.
+- `tests/test_workload_no_vig_ev_audit.py` covers the helper labels, report summary, and shadow-boundary language.
+- `analytics/output/workload_no_vig_ev_audit.md` is the first generated shadow report from the current Gate C dataset.
+
+The first report analyzes `771` clean tracked win/loss rows from `1,498` source rows. It is not promotion evidence. The committed Gate C dataset does not yet carry Path B `batter_handedness_mode` / `lineup_real_split_count` fields or confidence-referee cap fields, so those sections currently act as readiness checks rather than production-candidate slices.
+
+Task 5 remains optional and unimplemented. Do not wire this audit into the Gate C refresh path until the standalone report proves useful enough to run routinely.
+
 ## Task 1: Add Workload/No-Vig Audit Helpers
 
 **Files:**
 - Create: `analytics/diagnostics/workload_no_vig_ev_audit.py`
 - Create: `tests/test_workload_no_vig_ev_audit.py`
 
-- [ ] **Step 1: Write failing tests for no-vig labels**
+- [x] **Step 1: Write failing tests for no-vig labels**
 
 Add this test file:
 
@@ -192,7 +204,7 @@ def test_no_vig_missing_values_stay_unknown():
     assert audit.no_vig_edge_label({"model_no_vig_gap": None, "ev": 0.08}) == "unknown"
 ```
 
-- [ ] **Step 2: Run the failing tests**
+- [x] **Step 2: Run the failing tests**
 
 Run:
 
@@ -202,7 +214,7 @@ python -m pytest tests/test_workload_no_vig_ev_audit.py -q
 
 Expected: fail because `analytics.diagnostics.workload_no_vig_ev_audit` does not exist.
 
-- [ ] **Step 3: Create the minimal helper module**
+- [x] **Step 3: Create the minimal helper module**
 
 Create `analytics/diagnostics/workload_no_vig_ev_audit.py`:
 
@@ -236,7 +248,7 @@ def no_vig_edge_label(row: dict[str, Any]) -> str:
     return "no_vig_no_edge"
 ```
 
-- [ ] **Step 4: Verify the helper tests pass**
+- [x] **Step 4: Verify the helper tests pass**
 
 Run:
 
@@ -252,7 +264,7 @@ Expected: all tests pass.
 - Modify: `analytics/diagnostics/workload_no_vig_ev_audit.py`
 - Modify: `tests/test_workload_no_vig_ev_audit.py`
 
-- [ ] **Step 1: Add failing tests for sensitivity labels**
+- [x] **Step 1: Add failing tests for sensitivity labels**
 
 Append:
 
@@ -271,7 +283,7 @@ def test_workload_risk_label_uses_existing_opportunity_fields():
     assert audit.workload_risk_label(row) == "workload_stable"
 ```
 
-- [ ] **Step 2: Run tests to verify failure**
+- [x] **Step 2: Run tests to verify failure**
 
 Run:
 
@@ -281,7 +293,7 @@ python -m pytest tests/test_workload_no_vig_ev_audit.py -q
 
 Expected: fail because the workload helper functions do not exist.
 
-- [ ] **Step 3: Implement workload labels**
+- [x] **Step 3: Implement workload labels**
 
 Append to `analytics/diagnostics/workload_no_vig_ev_audit.py`:
 
@@ -312,7 +324,7 @@ def workload_risk_label(row: dict[str, Any]) -> str:
     return "workload_stable"
 ```
 
-- [ ] **Step 4: Run tests**
+- [x] **Step 4: Run tests**
 
 Run:
 
@@ -328,7 +340,7 @@ Expected: all tests pass.
 - Modify: `analytics/diagnostics/workload_no_vig_ev_audit.py`
 - Modify: `tests/test_workload_no_vig_ev_audit.py`
 
-- [ ] **Step 1: Add failing tests**
+- [x] **Step 1: Add failing tests**
 
 Append:
 
@@ -351,7 +363,7 @@ def test_referee_interaction_label_compares_cap_to_no_vig_and_workload():
     assert audit.referee_interaction_label(uncapped) == "uncapped_row_with_shadow_warning"
 ```
 
-- [ ] **Step 2: Run tests to verify failure**
+- [x] **Step 2: Run tests to verify failure**
 
 Run:
 
@@ -361,7 +373,7 @@ python -m pytest tests/test_workload_no_vig_ev_audit.py -q
 
 Expected: fail because the helper functions do not exist.
 
-- [ ] **Step 3: Implement interaction labels**
+- [x] **Step 3: Implement interaction labels**
 
 Append:
 
@@ -397,7 +409,7 @@ def referee_interaction_label(row: dict[str, Any]) -> str:
     return "referee_neutral"
 ```
 
-- [ ] **Step 4: Run tests**
+- [x] **Step 4: Run tests**
 
 Run:
 
@@ -414,7 +426,7 @@ Expected: all tests pass.
 - Modify: `tests/test_workload_no_vig_ev_audit.py`
 - Create: `analytics/output/workload_no_vig_ev_audit.md`
 
-- [ ] **Step 1: Add report-rendering tests**
+- [x] **Step 1: Add report-rendering tests**
 
 Append:
 
@@ -445,7 +457,7 @@ def test_render_report_keeps_shadow_warning_and_gate_e_f_language():
     assert "Gate F" in report
 ```
 
-- [ ] **Step 2: Implement summary/render helpers**
+- [x] **Step 2: Implement summary/render helpers**
 
 Append:
 
@@ -522,7 +534,7 @@ def render_report(summary: dict[str, Any]) -> str:
     return "\n".join(lines).rstrip() + "\n"
 ```
 
-- [ ] **Step 3: Add CLI entrypoint**
+- [x] **Step 3: Add CLI entrypoint**
 
 Append:
 
@@ -565,7 +577,7 @@ if __name__ == "__main__":
     raise SystemExit(main())
 ```
 
-- [ ] **Step 4: Run tests and generate report**
+- [x] **Step 4: Run tests and generate report**
 
 Run:
 
