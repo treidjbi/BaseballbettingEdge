@@ -53,8 +53,16 @@ evidence.
 | Gate B | Local Backfill Proof | Backfill covers at least 95% of clean archived pitcher markets and reconciles graded results | Local generated research artifact | Supabase table writes |
 | Gate C | Compact Evidence / Storage Proof | Row volume/cost is acceptable, idempotent keys are tested, and the confidence-referee report separates runtime-safe evidence from hindsight | Supabase compact research table or committed daily artifact plus shadow referee report | Model/ranking influence |
 | Gate D | Daily Collection Proof | Daily append works for 10 straight graded slates with zero duplicate keys and clean reconciliation | Routine post-grading dataset refresh | Live behavior changes |
-| Gate E | Research Readiness | At least 500 clean graded side rows, 30 graded slates, and stable core slices | Candidate selection/ranking hypotheses | Production thresholds/staking |
-| Gate F | Promotion Candidate | Holdout/backtest lift survives side, price, line, and provider slices | A separate model-selection implementation plan | Direct deployment from this dataset |
+| Gate E | Research Readiness | At least 500 clean graded side rows, 30 graded slates, and stable core slices for a candidate family | Candidate selection/ranking hypotheses across workload, no-vig EV, referee, Path B, and projection candidates | Production thresholds/staking |
+| Gate F | Promotion Candidate | Holdout/backtest lift survives side, price, line, provider, quality, timing, workload, and runtime-safety slices | A separate model-selection implementation plan | Direct deployment from this dataset |
+
+Gate E and Gate F remain relevant after the confidence-referee and Path B
+canaries. They are not narrow projection-only gates. Use them as the shared
+promotion discipline for every model-facing candidate family: workload and
+opportunity labels, no-vig EV gates, confidence-referee v2 rules, Path B
+handedness inputs, projection challengers, and future simulator/pitch-mix work.
+Do not add another gate just because a candidate comes from a different
+research angle.
 
 ## Current Implementation Status
 
@@ -228,6 +236,17 @@ only use live-collected, PA-backed batter split samples from
 `data/batter_splits_YYYY.json`; every missing or untrusted split must fall back
 to Path A.
 
+As of 2026-06-08, the K-projection deep-dive synthesis is captured in
+`docs/superpowers/plans/2026-06-08-workload-no-vig-k-projection-ev-synthesis.md`.
+It keeps the current live K/9-to-Poisson lambda in place and adds a
+shadow-only plan to evaluate workload/opportunity proxies, no-vig EV labels,
+Path B coverage buckets, and confidence-referee interaction labels. The useful
+parts of the outside workflow should be tested cheaply first: workload-first
+framing, no-vig market comparison, lineup/Path B coverage, and sensitivity
+around key K lines. Full batter-by-batter simulation, pitch-mix/stuff models,
+and new provider inputs remain deferred until Gate E/F evidence says they are
+worth the source and operational complexity.
+
 Do not use this comparison to roll back thresholds, staking, formula date, or
 provider behavior. Use it to keep Gate C honest: current-regime buckets matter
 most, and any future Gate E/F candidate must survive side, price, line, timing,
@@ -320,6 +339,15 @@ Gate F projection-challenger validation is controlled by
 It tests `market_shrink_25`, `high_line_temper`, and related challengers as
 shadow-only candidates and cannot change live lambda without a later
 Tyler-approved production plan.
+
+Workload/no-vig/referee/Path B synthesis is controlled by
+`docs/superpowers/plans/2026-06-08-workload-no-vig-k-projection-ev-synthesis.md`.
+It should be read beside the Gate F projection challenger report because it
+tests a different question: not only "is lambda better?" but also "is this
+edge still real after workload risk, no-vig market probability, Path B split
+coverage, and confidence-referee caps are considered?" It cannot change live
+lambda, EV thresholds, staking, provider order, notifications, locks,
+retention, calibration, or dashboard source-of-truth.
 
 Live market agreement tracking is controlled by
 `docs/superpowers/plans/2026-06-07-market-agreement-tracker.md`.
