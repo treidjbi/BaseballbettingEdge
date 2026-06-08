@@ -66,6 +66,16 @@ def _complete_row(**overrides):
         "lineup_handedness_runtime_safe": None,
         "lineup_handedness_game_pk": None,
         "lineup_handedness_count_matches_existing": None,
+        "batter_handedness_mode": None,
+        "lineup_split_source": None,
+        "lineup_real_split_count": None,
+        "lineup_path_a_fallback_count": None,
+        "confidence_referee": None,
+        "locked_verdict": None,
+        "display_verdict": None,
+        "actionable_verdict": None,
+        "locked_adj_ev": None,
+        "verdict_cap_reason": None,
         "avg_ip": 5.8,
         "recent_start_count": 5,
         "opportunity_bucket": "normal",
@@ -90,6 +100,10 @@ def test_required_dataset_fields_cover_identity_market_model_result_and_context(
     assert {"pitcher_archetype_bucket"} <= REQUIRED_DATASET_FIELDS
     assert {"pitcher_throws", "opportunity_bucket", "handedness_matchup_bucket"} <= REQUIRED_DATASET_FIELDS
     assert {"lineup_handedness_source", "lineup_handedness_runtime_safe"} <= REQUIRED_DATASET_FIELDS
+    assert {"batter_handedness_mode", "lineup_split_source"} <= REQUIRED_DATASET_FIELDS
+    assert {"lineup_real_split_count", "lineup_path_a_fallback_count"} <= REQUIRED_DATASET_FIELDS
+    assert {"confidence_referee", "locked_verdict", "display_verdict"} <= REQUIRED_DATASET_FIELDS
+    assert {"actionable_verdict", "locked_adj_ev", "verdict_cap_reason"} <= REQUIRED_DATASET_FIELDS
 
 
 def test_build_dataset_key_is_stable_for_pitcher_side_line_and_snapshot():
