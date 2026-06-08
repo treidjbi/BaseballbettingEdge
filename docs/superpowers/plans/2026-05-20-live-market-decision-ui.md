@@ -68,6 +68,14 @@
 > manually typed bet-log key can load review rows before save, fresh live-market
 > row recency wins before older action labels, playable-price labels require the
 > model K line, and default push click URLs carry alert attribution context.
+>
+> **2026-06-08 book-selector polish update:** the hidden market sheet now shows
+> a compact book board with Best, Model ref, Same line / Different line, and
+> model-fair cushion tags. The Log Bet modal also exposes those same live
+> book rows as selectable buttons that fill the existing line, odds, and book
+> fields. This remains behind `?marketSheet=1`; it does not place bets,
+> change stake sizes, provider order, model math, thresholds, locks,
+> notifications, retention, or dashboard source-of-truth behavior.
 
 ## Goal
 
