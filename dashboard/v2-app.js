@@ -343,7 +343,7 @@
   }
   function betPriceSourceLabel(value) {
     const labels = {
-      live_best: "Live best",
+      live_best: "Live price",
       artifact: "Artifact price",
       manual_edit: "Manual edit",
       notification_context: "Notification context"
@@ -754,6 +754,60 @@
     if (!isFiniteNumber(value)) return "--";
     return `${value > 0 ? "+" : ""}${value}c`;
   }
+  function bookComparable(value) {
+    return String(value || "").toLowerCase().replace(/[^a-z0-9]/g, "");
+  }
+  function bookRowName(book) {
+    const title = book?.bookmaker_title || book?.book || "";
+    const key = book?.bookmaker_key || "";
+    return String(title || canonicalBetLogBook(key) || key || "Book").trim();
+  }
+  function formatKLine(value) {
+    return isFiniteNumber(value) ? `${Number(value)}K` : "--";
+  }
+  function marketBookRowsForDisplay(row, side, p = null) {
+    const rows = Array.isArray(row?.book_rows) ? row.book_rows : [];
+    const modelLine = marketModelLine(row, side, p);
+    const fairOdds = fairOddsFromProbability(side?.win_prob);
+    const bestBookKey = bookComparable(row?.best_book);
+    const refBookKey = bookComparable(bookForSide(p, side));
+    return rows.map((book, index) => {
+      const line = Number(book?.line);
+      const odds = Number(book?.odds);
+      const bookName = bookRowName(book);
+      if (!bookName || !isFiniteNumber(line) || !isFiniteNumber(odds)) return null;
+      const rowBookKey = bookComparable(bookName || book?.bookmaker_key);
+      const sameLine = isFiniteNumber(modelLine) && Math.abs(line - modelLine) < 1e-3;
+      const isBest = bestBookKey && rowBookKey === bestBookKey;
+      const isModelRef = refBookKey && rowBookKey === refBookKey;
+      return {
+        ...book,
+        bookName,
+        line,
+        odds: Math.trunc(odds),
+        sameLine,
+        isBest,
+        isModelRef,
+        cushion: sameLine ? priceCushion(odds, fairOdds) : null,
+        originalIndex: index
+      };
+    }).filter(Boolean).sort((a, b) => {
+      if (a.isBest !== b.isBest) return a.isBest ? -1 : 1;
+      if (a.sameLine !== b.sameLine) return a.sameLine ? -1 : 1;
+      const aCushion = isFiniteNumber(a.cushion) ? a.cushion : -9999;
+      const bCushion = isFiniteNumber(b.cushion) ? b.cushion : -9999;
+      if (aCushion !== bCushion) return bCushion - aCushion;
+      return a.originalIndex - b.originalIndex;
+    });
+  }
+  function bookRowBadges(bookRow) {
+    const badges = [];
+    if (bookRow.isBest) badges.push("Best");
+    if (bookRow.isModelRef) badges.push("Model ref");
+    badges.push(bookRow.sameLine ? "Same line" : "Different line");
+    if (isFiniteNumber(bookRow.cushion)) badges.push(formatCents(bookRow.cushion));
+    return badges;
+  }
   function MarketCardStrip({ p, side }) {
     if (!marketDisplayEnabled() || side.verdict === "PASS") return null;
     const row = marketDisplayForSide(p, side);
@@ -768,7 +822,8 @@
     const cushion = row ? priceCushion(row.best_odds, fairOdds) : null;
     const observed = row?.observed_at ? fmtTime(row.observed_at) : "--";
     const books = row?.book_count ?? row?.books_seen?.length ?? row?.book_rows?.length ?? null;
-    return /* @__PURE__ */ React.createElement("div", { className: "v2-sheet-section" }, /* @__PURE__ */ React.createElement("div", { className: "h" }, "Live market decision"), !row ? /* @__PURE__ */ React.createElement("div", { className: "v2-market-empty" }, "No live market row is attached for this pick yet.") : /* @__PURE__ */ React.createElement(React.Fragment, null, /* @__PURE__ */ React.createElement("div", { className: `v2-market-decision ${marketActionTone(row, side, p)}` }, /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { className: "v2-market-eyebrow" }, "Decision read"), /* @__PURE__ */ React.createElement("div", { className: "v2-market-decision-title" }, marketActionText(row, side, p))), /* @__PURE__ */ React.createElement("div", { className: "v2-market-decision-price" }, /* @__PURE__ */ React.createElement("span", null, row.best_book || "Best book"), /* @__PURE__ */ React.createElement("b", null, row.best_line ?? row.main_line ?? "--", "K ", fmtOdds(row.best_odds)))), /* @__PURE__ */ React.createElement("div", { className: "v2-market-grid" }, /* @__PURE__ */ React.createElement("div", { className: "v2-market-cell" }, /* @__PURE__ */ React.createElement("span", null, "Model ref"), /* @__PURE__ */ React.createElement("b", null, refBook, " ", side.k_line ?? p.k_line, "K ", fmtOdds(side.odds))), /* @__PURE__ */ React.createElement("div", { className: "v2-market-cell" }, /* @__PURE__ */ React.createElement("span", null, "Model fair"), /* @__PURE__ */ React.createElement("b", null, fmtOdds(fairOdds), " ", cushion != null && /* @__PURE__ */ React.createElement("em", null, formatCents(cushion)))), /* @__PURE__ */ React.createElement("div", { className: "v2-market-cell" }, /* @__PURE__ */ React.createElement("span", null, "Market pulse"), /* @__PURE__ */ React.createElement("b", null, marketConsensusText(row.market_consensus))), /* @__PURE__ */ React.createElement("div", { className: "v2-market-cell" }, /* @__PURE__ */ React.createElement("span", null, "Bet value"), /* @__PURE__ */ React.createElement("b", null, marketValueText(row.bet_value_consensus))), /* @__PURE__ */ React.createElement("div", { className: "v2-market-cell" }, /* @__PURE__ */ React.createElement("span", null, "Freshness"), /* @__PURE__ */ React.createElement("b", null, row.freshness_status || "unknown", " ", /* @__PURE__ */ React.createElement("em", null, observed))), /* @__PURE__ */ React.createElement("div", { className: "v2-market-cell" }, /* @__PURE__ */ React.createElement("span", null, "Books"), /* @__PURE__ */ React.createElement("b", null, books == null ? "--" : books, row.broad_confirmation ? " broad" : ""))), row.book_rows?.length > 0 && /* @__PURE__ */ React.createElement("div", { className: "v2-market-books" }, row.book_rows.slice(0, 4).map((book, idx) => /* @__PURE__ */ React.createElement("div", { className: "v2-market-book-row", key: `${book.bookmaker_key || book.bookmaker_title}-${idx}` }, /* @__PURE__ */ React.createElement("span", null, book.bookmaker_title || book.bookmaker_key || "Book"), /* @__PURE__ */ React.createElement("b", null, book.line ?? "--", "K ", fmtOdds(book.odds)))))));
+    const bookRows = marketBookRowsForDisplay(row, side, p);
+    return /* @__PURE__ */ React.createElement("div", { className: "v2-sheet-section" }, /* @__PURE__ */ React.createElement("div", { className: "h" }, "Live market decision"), !row ? /* @__PURE__ */ React.createElement("div", { className: "v2-market-empty" }, "No live market row is attached for this pick yet.") : /* @__PURE__ */ React.createElement(React.Fragment, null, /* @__PURE__ */ React.createElement("div", { className: `v2-market-decision ${marketActionTone(row, side, p)}` }, /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { className: "v2-market-eyebrow" }, "Decision read"), /* @__PURE__ */ React.createElement("div", { className: "v2-market-decision-title" }, marketActionText(row, side, p))), /* @__PURE__ */ React.createElement("div", { className: "v2-market-decision-price" }, /* @__PURE__ */ React.createElement("span", null, row.best_book || "Best book"), /* @__PURE__ */ React.createElement("b", null, row.best_line ?? row.main_line ?? "--", "K ", fmtOdds(row.best_odds)))), /* @__PURE__ */ React.createElement("div", { className: "v2-market-grid" }, /* @__PURE__ */ React.createElement("div", { className: "v2-market-cell" }, /* @__PURE__ */ React.createElement("span", null, "Model ref"), /* @__PURE__ */ React.createElement("b", null, refBook, " ", side.k_line ?? p.k_line, "K ", fmtOdds(side.odds))), /* @__PURE__ */ React.createElement("div", { className: "v2-market-cell" }, /* @__PURE__ */ React.createElement("span", null, "Model fair"), /* @__PURE__ */ React.createElement("b", null, fmtOdds(fairOdds), " ", cushion != null && /* @__PURE__ */ React.createElement("em", null, formatCents(cushion)))), /* @__PURE__ */ React.createElement("div", { className: "v2-market-cell" }, /* @__PURE__ */ React.createElement("span", null, "Market pulse"), /* @__PURE__ */ React.createElement("b", null, marketConsensusText(row.market_consensus))), /* @__PURE__ */ React.createElement("div", { className: "v2-market-cell" }, /* @__PURE__ */ React.createElement("span", null, "Bet value"), /* @__PURE__ */ React.createElement("b", null, marketValueText(row.bet_value_consensus))), /* @__PURE__ */ React.createElement("div", { className: "v2-market-cell" }, /* @__PURE__ */ React.createElement("span", null, "Freshness"), /* @__PURE__ */ React.createElement("b", null, row.freshness_status || "unknown", " ", /* @__PURE__ */ React.createElement("em", null, observed))), /* @__PURE__ */ React.createElement("div", { className: "v2-market-cell" }, /* @__PURE__ */ React.createElement("span", null, "Books"), /* @__PURE__ */ React.createElement("b", null, books == null ? "--" : books, row.broad_confirmation ? " broad" : ""))), bookRows.length > 0 && /* @__PURE__ */ React.createElement("div", { className: "v2-market-books" }, /* @__PURE__ */ React.createElement("div", { className: "v2-market-books-head" }, /* @__PURE__ */ React.createElement("span", null, "Book board"), /* @__PURE__ */ React.createElement("b", null, bookRows.length, " live")), bookRows.slice(0, 7).map((book, idx) => /* @__PURE__ */ React.createElement("div", { className: `v2-market-book-row ${book.isBest ? "best" : ""}`, key: `${book.bookmaker_key || book.bookName}-${idx}` }, /* @__PURE__ */ React.createElement("div", { className: "v2-market-book-copy" }, /* @__PURE__ */ React.createElement("span", { className: "v2-market-book-name" }, book.bookName), /* @__PURE__ */ React.createElement("span", { className: "v2-market-book-tags" }, bookRowBadges(book).map((badge) => /* @__PURE__ */ React.createElement("em", { key: badge }, badge)))), /* @__PURE__ */ React.createElement("b", { className: "v2-market-book-price" }, formatKLine(book.line), " ", fmtOdds(book.odds)))))));
   }
   function qualityLabel(level) {
     if (level === "blocked") return "Current blocked";
@@ -965,6 +1020,11 @@
     const betAlreadyLogged = loggedBetKeys.has(currentBetLogKey);
     const reviewDuplicateRows = acceptedBetReview.rows.filter((row) => acceptedBetReviewDuplicate(row, p, best));
     const acceptedBetReviewRows = acceptedBetReviewRowsForPick(acceptedBetReview.rows, p, best);
+    const marketBetBookRows = marketBookRowsForDisplay(marketBetRow, best, p);
+    const selectedLiveBetBook = String(betForm.book === "Other" ? betForm.bookOther : betForm.book || "").trim();
+    const selectedLiveBetLine = String(betForm.line || "").trim() ? parseBetLogNumber(betForm.line) : null;
+    const selectedLiveBetOdds = String(betForm.odds || "").trim() ? parseBetLogNumber(betForm.odds) : null;
+    const liveBetSourceText = marketBetRow ? `${marketBetRow.provider || "live"} - ${selectedLiveBetBook || marketBetRow.best_book || "Live book"} ${formatKLine(isFiniteNumber(selectedLiveBetLine) ? selectedLiveBetLine : marketBetRow.best_line)} ${fmtOdds(isFiniteNumber(selectedLiveBetOdds) ? selectedLiveBetOdds : marketBetRow.best_odds)}` : "";
     function loadAcceptedBetReview(secret = storedBetLogSecret()) {
       if (!secret) {
         setAcceptedBetReview({ state: "needs_key", rows: [], error: "" });
@@ -985,6 +1045,27 @@
         };
       });
       setBetLogError("");
+    }
+    function selectBetTicketBookRow(bookRow) {
+      if (!bookRow) return;
+      const defaultBook = defaultBetLogBook(bookRow.bookName);
+      setBetForm((prev) => ({
+        ...prev,
+        line: String(bookRow.line),
+        odds: String(bookRow.odds),
+        book: defaultBook.book,
+        bookOther: defaultBook.bookOther,
+        priceSource: "live_best"
+      }));
+      setBetLogError("");
+      if (betLogState === "saved") setBetLogState("idle");
+    }
+    function isSelectedBetTicketBookRow(bookRow) {
+      if (!bookRow || betForm.priceSource !== "live_best") return false;
+      const bookMatches = selectedLiveBetBook && bookComparable(selectedLiveBetBook) === bookComparable(bookRow.bookName);
+      const lineMatches = isFiniteNumber(selectedLiveBetLine) && Math.abs(selectedLiveBetLine - bookRow.line) < 1e-3;
+      const oddsMatches = isFiniteNumber(selectedLiveBetOdds) && Math.trunc(selectedLiveBetOdds) === Math.trunc(bookRow.odds);
+      return Boolean(bookMatches && lineMatches && oddsMatches);
     }
     function handleBetSecretBlur() {
       const secret = String(betForm.secret || "").trim();
@@ -1113,7 +1194,19 @@
         },
         /* @__PURE__ */ React.createElement("div", { className: "v2-bet-ticket-head" }, /* @__PURE__ */ React.createElement("div", null, /* @__PURE__ */ React.createElement("div", { className: "eyebrow" }, "Bet ticket"), /* @__PURE__ */ React.createElement("div", { className: "title", id: "v2-bet-ticket-title" }, p.pitcher, " ", best.direction, " ", best.k_line ?? p.k_line, " Ks")), /* @__PURE__ */ React.createElement("span", { className: `v2-bet-verdict ${verdictClass(best.verdict, best.direction)}` }, best.verdict)),
         /* @__PURE__ */ React.createElement("div", { className: "v2-bet-ticket-meta" }, "Model ref: ", bookForSide(p, best) || "Market", " ", fmtOdds(best.odds), /* @__PURE__ */ React.createElement("span", null, "EV ", best.adj_ev > 0 ? "+" : "", (best.adj_ev * 100).toFixed(1), "%")),
-        /* @__PURE__ */ React.createElement("div", { className: `v2-bet-price-source ${betForm.priceSource}` }, /* @__PURE__ */ React.createElement("span", null, betPriceSourceLabel(betForm.priceSource)), betForm.priceSource === "live_best" && marketBetRow ? /* @__PURE__ */ React.createElement("b", null, marketBetRow.provider || "live", " \xB7 ", marketBetRow.best_book, " ", marketBetRow.best_line, "K ", fmtOdds(marketBetRow.best_odds)) : /* @__PURE__ */ React.createElement("b", null, bookForSide(p, best) || "Market", " ", best.k_line ?? p.k_line, "K ", fmtOdds(best.odds))),
+        /* @__PURE__ */ React.createElement("div", { className: `v2-bet-price-source ${betForm.priceSource}` }, /* @__PURE__ */ React.createElement("span", null, betPriceSourceLabel(betForm.priceSource)), betForm.priceSource === "live_best" && marketBetRow ? /* @__PURE__ */ React.createElement("b", null, liveBetSourceText) : /* @__PURE__ */ React.createElement("b", null, bookForSide(p, best) || "Market", " ", best.k_line ?? p.k_line, "K ", fmtOdds(best.odds))),
+        marketBetBookRows.length > 0 && /* @__PURE__ */ React.createElement("div", { className: "v2-bet-book-selector" }, /* @__PURE__ */ React.createElement("div", { className: "v2-bet-book-selector-head" }, /* @__PURE__ */ React.createElement("span", null, "Available books"), /* @__PURE__ */ React.createElement("b", null, marketBetBookRows.length, " live")), /* @__PURE__ */ React.createElement("div", { className: "v2-bet-book-options" }, marketBetBookRows.slice(0, 7).map((book, idx) => /* @__PURE__ */ React.createElement(
+          "button",
+          {
+            key: `${book.bookmaker_key || book.bookName}-${idx}`,
+            type: "button",
+            className: `v2-bet-book-option ${isSelectedBetTicketBookRow(book) ? "selected" : ""}`,
+            onClick: () => selectBetTicketBookRow(book)
+          },
+          /* @__PURE__ */ React.createElement("span", null, book.bookName),
+          /* @__PURE__ */ React.createElement("b", null, formatKLine(book.line), " ", fmtOdds(book.odds)),
+          /* @__PURE__ */ React.createElement("em", null, bookRowBadges(book).join(" / "))
+        )))),
         betAlertContext && /* @__PURE__ */ React.createElement("div", { className: "v2-bet-alert-context" }, /* @__PURE__ */ React.createElement("span", null, "Linked alert"), /* @__PURE__ */ React.createElement("b", null, betAlertContext.source === "shadow_candidate" ? "Shadow candidate" : "Notification", " - ", betAlertContext.notification_event_id || betAlertContext.shadow_candidate_id)),
         correctionRow && /* @__PURE__ */ React.createElement("div", { className: "v2-bet-correction-context" }, /* @__PURE__ */ React.createElement("span", null, "Correction mode"), /* @__PURE__ */ React.createElement("b", null, "Correction of ", correctionRow.book, " ", correctionRow.k_line, "K ", fmtOdds(correctionRow.odds), " - ", correctionRow.units, "u")),
         /* @__PURE__ */ React.createElement("div", { className: "v2-bet-fields" }, /* @__PURE__ */ React.createElement("label", { className: "v2-bet-field" }, /* @__PURE__ */ React.createElement("span", null, "Line"), /* @__PURE__ */ React.createElement(

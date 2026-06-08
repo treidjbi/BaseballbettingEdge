@@ -64,7 +64,7 @@ def test_dashboard_prefills_bet_ticket_from_live_market_row():
     assert "selected_live_provider" in app
     assert "selected_live_observed_at" in app
     assert "price_source: priceSource" in app
-    assert "Live best" in app
+    assert "Live price" in app
     assert "Artifact price" in app
 
 
@@ -123,6 +123,24 @@ def test_dashboard_supports_audit_preserving_accepted_bet_corrections():
     assert 'disabled={betLogState === "saving" || betLogState === "saved" || (betAlreadyLogged && !correctionRow)}' in app
 
 
+def test_dashboard_shows_hidden_market_book_board_and_bet_ticket_selector():
+    app = DASHBOARD_APP.read_text(encoding="utf-8")
+    html = DASHBOARD_HTML.read_text(encoding="utf-8")
+
+    assert "marketBookRowsForDisplay" in app
+    assert "bookRowBadges" in app
+    assert "Book board" in app
+    assert "Same line" in app
+    assert "Different line" in app
+    assert "Model ref" in app
+    assert "Available books" in app
+    assert "selectBetTicketBookRow" in app
+    assert "v2-bet-book-selector" in app
+    assert "v2-bet-book-option" in app
+    assert 'priceSource: "live_best"' in app
+    assert "v2-bet-book-selector" in html
+
+
 def test_dashboard_can_load_review_after_manual_key_entry():
     app = DASHBOARD_APP.read_text(encoding="utf-8")
 
@@ -134,4 +152,4 @@ def test_dashboard_can_load_review_after_manual_key_entry():
 def test_dashboard_busts_v2_app_cache_for_accepted_bet_ui():
     html = DASHBOARD_HTML.read_text(encoding="utf-8")
 
-    assert "v2-app.js?v=2026-06-07-review-fixes" in html
+    assert "v2-app.js?v=2026-06-08-book-selector-polish" in html

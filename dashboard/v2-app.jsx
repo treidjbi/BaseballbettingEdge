@@ -335,7 +335,7 @@ function acceptedBetCorrectionForm(row, currentSecret = "") {
 }
 function betPriceSourceLabel(value) {
   const labels = {
-    live_best: "Live best",
+    live_best: "Live price",
     artifact: "Artifact price",
     manual_edit: "Manual edit",
     notification_context: "Notification context",
@@ -837,6 +837,69 @@ function formatCents(value) {
   return `${value > 0 ? "+" : ""}${value}c`;
 }
 
+function bookComparable(value) {
+  return String(value || "").toLowerCase().replace(/[^a-z0-9]/g, "");
+}
+
+function bookRowName(book) {
+  const title = book?.bookmaker_title || book?.book || "";
+  const key = book?.bookmaker_key || "";
+  return String(title || canonicalBetLogBook(key) || key || "Book").trim();
+}
+
+function formatKLine(value) {
+  return isFiniteNumber(value) ? `${Number(value)}K` : "--";
+}
+
+function marketBookRowsForDisplay(row, side, p = null) {
+  const rows = Array.isArray(row?.book_rows) ? row.book_rows : [];
+  const modelLine = marketModelLine(row, side, p);
+  const fairOdds = fairOddsFromProbability(side?.win_prob);
+  const bestBookKey = bookComparable(row?.best_book);
+  const refBookKey = bookComparable(bookForSide(p, side));
+
+  return rows
+    .map((book, index) => {
+      const line = Number(book?.line);
+      const odds = Number(book?.odds);
+      const bookName = bookRowName(book);
+      if (!bookName || !isFiniteNumber(line) || !isFiniteNumber(odds)) return null;
+      const rowBookKey = bookComparable(bookName || book?.bookmaker_key);
+      const sameLine = isFiniteNumber(modelLine) && Math.abs(line - modelLine) < 0.001;
+      const isBest = bestBookKey && rowBookKey === bestBookKey;
+      const isModelRef = refBookKey && rowBookKey === refBookKey;
+      return {
+        ...book,
+        bookName,
+        line,
+        odds: Math.trunc(odds),
+        sameLine,
+        isBest,
+        isModelRef,
+        cushion: sameLine ? priceCushion(odds, fairOdds) : null,
+        originalIndex: index,
+      };
+    })
+    .filter(Boolean)
+    .sort((a, b) => {
+      if (a.isBest !== b.isBest) return a.isBest ? -1 : 1;
+      if (a.sameLine !== b.sameLine) return a.sameLine ? -1 : 1;
+      const aCushion = isFiniteNumber(a.cushion) ? a.cushion : -9999;
+      const bCushion = isFiniteNumber(b.cushion) ? b.cushion : -9999;
+      if (aCushion !== bCushion) return bCushion - aCushion;
+      return a.originalIndex - b.originalIndex;
+    });
+}
+
+function bookRowBadges(bookRow) {
+  const badges = [];
+  if (bookRow.isBest) badges.push("Best");
+  if (bookRow.isModelRef) badges.push("Model ref");
+  badges.push(bookRow.sameLine ? "Same line" : "Different line");
+  if (isFiniteNumber(bookRow.cushion)) badges.push(formatCents(bookRow.cushion));
+  return badges;
+}
+
 function MarketCardStrip({ p, side }) {
   if (!marketDisplayEnabled() || side.verdict === "PASS") return null;
   const row = marketDisplayForSide(p, side);
@@ -858,6 +921,7 @@ function MarketDecisionPanel({ p, side }) {
   const cushion = row ? priceCushion(row.best_odds, fairOdds) : null;
   const observed = row?.observed_at ? fmtTime(row.observed_at) : "--";
   const books = row?.book_count ?? row?.books_seen?.length ?? row?.book_rows?.length ?? null;
+  const bookRows = marketBookRowsForDisplay(row, side, p);
 
   return (
     <div className="v2-sheet-section">
@@ -902,12 +966,21 @@ function MarketDecisionPanel({ p, side }) {
               <b>{books == null ? "--" : books}{row.broad_confirmation ? " broad" : ""}</b>
             </div>
           </div>
-          {row.book_rows?.length > 0 && (
+          {bookRows.length > 0 && (
             <div className="v2-market-books">
-              {row.book_rows.slice(0, 4).map((book, idx) => (
-                <div className="v2-market-book-row" key={`${book.bookmaker_key || book.bookmaker_title}-${idx}`}>
-                  <span>{book.bookmaker_title || book.bookmaker_key || "Book"}</span>
-                  <b>{book.line ?? "--"}K {fmtOdds(book.odds)}</b>
+              <div className="v2-market-books-head">
+                <span>Book board</span>
+                <b>{bookRows.length} live</b>
+              </div>
+              {bookRows.slice(0, 7).map((book, idx) => (
+                <div className={`v2-market-book-row ${book.isBest ? "best" : ""}`} key={`${book.bookmaker_key || book.bookName}-${idx}`}>
+                  <div className="v2-market-book-copy">
+                    <span className="v2-market-book-name">{book.bookName}</span>
+                    <span className="v2-market-book-tags">
+                      {bookRowBadges(book).map((badge) => <em key={badge}>{badge}</em>)}
+                    </span>
+                  </div>
+                  <b className="v2-market-book-price">{formatKLine(book.line)} {fmtOdds(book.odds)}</b>
                 </div>
               ))}
             </div>
@@ -1217,6 +1290,13 @@ function PickDetail({ p, onClose }) {
   const betAlreadyLogged = loggedBetKeys.has(currentBetLogKey);
   const reviewDuplicateRows = acceptedBetReview.rows.filter((row) => acceptedBetReviewDuplicate(row, p, best));
   const acceptedBetReviewRows = acceptedBetReviewRowsForPick(acceptedBetReview.rows, p, best);
+  const marketBetBookRows = marketBookRowsForDisplay(marketBetRow, best, p);
+  const selectedLiveBetBook = String(betForm.book === "Other" ? betForm.bookOther : betForm.book || "").trim();
+  const selectedLiveBetLine = String(betForm.line || "").trim() ? parseBetLogNumber(betForm.line) : null;
+  const selectedLiveBetOdds = String(betForm.odds || "").trim() ? parseBetLogNumber(betForm.odds) : null;
+  const liveBetSourceText = marketBetRow
+    ? `${marketBetRow.provider || "live"} - ${selectedLiveBetBook || marketBetRow.best_book || "Live book"} ${formatKLine(isFiniteNumber(selectedLiveBetLine) ? selectedLiveBetLine : marketBetRow.best_line)} ${fmtOdds(isFiniteNumber(selectedLiveBetOdds) ? selectedLiveBetOdds : marketBetRow.best_odds)}`
+    : "";
 
   function loadAcceptedBetReview(secret = storedBetLogSecret()) {
     if (!secret) {
@@ -1241,6 +1321,29 @@ function PickDetail({ p, onClose }) {
       };
     });
     setBetLogError("");
+  }
+
+  function selectBetTicketBookRow(bookRow) {
+    if (!bookRow) return;
+    const defaultBook = defaultBetLogBook(bookRow.bookName);
+    setBetForm((prev) => ({
+      ...prev,
+      line: String(bookRow.line),
+      odds: String(bookRow.odds),
+      book: defaultBook.book,
+      bookOther: defaultBook.bookOther,
+      priceSource: "live_best",
+    }));
+    setBetLogError("");
+    if (betLogState === "saved") setBetLogState("idle");
+  }
+
+  function isSelectedBetTicketBookRow(bookRow) {
+    if (!bookRow || betForm.priceSource !== "live_best") return false;
+    const bookMatches = selectedLiveBetBook && bookComparable(selectedLiveBetBook) === bookComparable(bookRow.bookName);
+    const lineMatches = isFiniteNumber(selectedLiveBetLine) && Math.abs(selectedLiveBetLine - bookRow.line) < 0.001;
+    const oddsMatches = isFiniteNumber(selectedLiveBetOdds) && Math.trunc(selectedLiveBetOdds) === Math.trunc(bookRow.odds);
+    return Boolean(bookMatches && lineMatches && oddsMatches);
   }
 
   function handleBetSecretBlur() {
@@ -1674,11 +1777,33 @@ function PickDetail({ p, onClose }) {
             <div className={`v2-bet-price-source ${betForm.priceSource}`}>
               <span>{betPriceSourceLabel(betForm.priceSource)}</span>
               {betForm.priceSource === "live_best" && marketBetRow ? (
-                <b>{marketBetRow.provider || "live"} · {marketBetRow.best_book} {marketBetRow.best_line}K {fmtOdds(marketBetRow.best_odds)}</b>
+                <b>{liveBetSourceText}</b>
               ) : (
                 <b>{bookForSide(p, best) || "Market"} {best.k_line ?? p.k_line}K {fmtOdds(best.odds)}</b>
               )}
             </div>
+            {marketBetBookRows.length > 0 && (
+              <div className="v2-bet-book-selector">
+                <div className="v2-bet-book-selector-head">
+                  <span>Available books</span>
+                  <b>{marketBetBookRows.length} live</b>
+                </div>
+                <div className="v2-bet-book-options">
+                  {marketBetBookRows.slice(0, 7).map((book, idx) => (
+                    <button
+                      key={`${book.bookmaker_key || book.bookName}-${idx}`}
+                      type="button"
+                      className={`v2-bet-book-option ${isSelectedBetTicketBookRow(book) ? "selected" : ""}`}
+                      onClick={() => selectBetTicketBookRow(book)}
+                    >
+                      <span>{book.bookName}</span>
+                      <b>{formatKLine(book.line)} {fmtOdds(book.odds)}</b>
+                      <em>{bookRowBadges(book).join(" / ")}</em>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
             {betAlertContext && (
               <div className="v2-bet-alert-context">
                 <span>Linked alert</span>
