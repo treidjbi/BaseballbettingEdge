@@ -169,15 +169,16 @@ If a referee v2 candidate emerges, it still needs Gate E/F and a separate produc
 
 ## Implementation Status
 
-As of 2026-06-08, Tasks 1-4 are implemented:
+As of 2026-06-09, Tasks 1-5 are implemented:
 
 - `analytics/diagnostics/workload_no_vig_ev_audit.py` reads the Gate C JSONL and derives no-vig, workload, Path B coverage, and referee-interaction labels.
 - `tests/test_workload_no_vig_ev_audit.py` covers the helper labels, report summary, and shadow-boundary language.
-- `analytics/output/workload_no_vig_ev_audit.md` is the first generated shadow report from the current Gate C dataset.
+- `analytics/output/workload_no_vig_ev_audit.md` is regenerated from the refreshed Gate C dataset when `--run-workload-no-vig-audit` is passed.
+- `scripts/build_pitcher_k_outcome_dataset.py --run-workload-no-vig-audit` rebuilds the Gate C JSONL first, then runs the workload/no-vig audit against the freshly written rows.
 
-The first report analyzes `771` clean tracked win/loss rows from `1,498` source rows. It is not promotion evidence. The committed Gate C dataset does not yet carry Path B `batter_handedness_mode` / `lineup_real_split_count` fields or confidence-referee cap fields, so those sections currently act as readiness checks rather than production-candidate slices.
+The 2026-06-09 refresh analyzes `854` clean tracked win/loss rows from `1,662` source rows and reconciles `855/855` clean graded picks. Path B and confidence-referee fields now populate the cross-slices, but the Path B real-split sample remains small and the report is still not promotion evidence. Keep this as shadow explanation/readiness evidence until Gate E/F slices prove a candidate family over side, price sign, K-line, FIRE 1u/FIRE 2u, quality, timing, model/market, Path B, workload, CLV, provider, and rolling-window cuts.
 
-Task 5 remains optional and unimplemented. Do not wire this audit into the Gate C refresh path until the standalone report proves useful enough to run routinely.
+Task 5 remains optional in operations: normal Gate C builds stay unchanged unless `--run-workload-no-vig-audit` is passed.
 
 ## Task 1: Add Workload/No-Vig Audit Helpers
 
@@ -594,7 +595,7 @@ Expected: tests pass and `analytics/output/workload_no_vig_ev_audit.md` is writt
 - Modify: `scripts/build_pitcher_k_outcome_dataset.py`
 - Modify: `tests/test_build_pitcher_k_outcome_dataset.py`
 
-- [ ] **Step 1: Add CLI flag test**
+- [x] **Step 1: Add CLI flag test**
 
 Add a test that invokes the script argument parser with:
 
@@ -604,7 +605,7 @@ python scripts/build_pitcher_k_outcome_dataset.py --artifact-source hybrid --out
 
 Expected behavior: the dataset still builds first, then the workload/no-vig audit runs against the freshly written dataset.
 
-- [ ] **Step 2: Implement `--run-workload-no-vig-audit`**
+- [x] **Step 2: Implement `--run-workload-no-vig-audit`**
 
 Import the audit module only inside the flag path so normal Gate C builds stay unchanged:
 
@@ -620,7 +621,7 @@ if args.run_workload_no_vig_audit:
     ])
 ```
 
-- [ ] **Step 3: Verify normal and audit builds**
+- [x] **Step 3: Verify normal and audit builds**
 
 Run:
 

@@ -24,6 +24,7 @@ from analytics.diagnostics import pitcher_k_outcome_dataset as dataset  # noqa: 
 
 DEFAULT_OUTPUT_DIR = ROOT / "data" / "research" / "gate_c"
 DEFAULT_ARTIFACT_API_URL = dataset.DEFAULT_ARTIFACT_API_URL
+DEFAULT_WORKLOAD_NO_VIG_AUDIT_OUTPUT = ROOT / "analytics" / "output" / "workload_no_vig_ev_audit.md"
 
 
 def _sha256(path: Path) -> str:
@@ -291,6 +292,11 @@ def _parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         type=Path,
         default=dataset.LINEUP_HANDEDNESS_BACKFILL,
     )
+    parser.add_argument(
+        "--run-workload-no-vig-audit",
+        action="store_true",
+        help="After writing the Gate C dataset, rebuild the shadow workload/no-vig audit report.",
+    )
     return parser.parse_args(argv)
 
 
@@ -304,6 +310,15 @@ def main(argv: list[str] | None = None) -> None:
         end_date=args.end_date,
         lineup_handedness_backfill_path=args.lineup_handedness_backfill,
     )
+    if args.run_workload_no_vig_audit:
+        from analytics.diagnostics import workload_no_vig_ev_audit  # noqa: WPS433
+
+        workload_no_vig_ev_audit.main([
+            "--input",
+            str(args.output_dir / "pitcher_k_outcome_dataset.jsonl"),
+            "--output",
+            str(DEFAULT_WORKLOAD_NO_VIG_AUDIT_OUTPUT),
+        ])
     manifest = result["manifest"]
     print(
         "Gate C research artifact written: "

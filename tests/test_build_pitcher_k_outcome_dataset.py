@@ -1,5 +1,6 @@
 import json
 
+from analytics.diagnostics import workload_no_vig_ev_audit
 from scripts import build_pitcher_k_outcome_dataset as builder
 
 
@@ -140,3 +141,61 @@ def test_hybrid_source_adds_production_only_graded_dates(tmp_path, monkeypatch):
     assert calls[1]["artifact_api_url"] == "https://example.test/.netlify/functions/get-artifact"
     assert calls[1]["start_date"] == "2026-06-01"
     assert calls[1]["end_date"] == "2026-06-01"
+
+
+def test_main_can_run_workload_no_vig_audit_after_fresh_dataset(tmp_path, monkeypatch):
+    calls = []
+    monkeypatch.delenv("BBE_ARTIFACT_API_URL", raising=False)
+
+    def fake_build_research_artifact(**kwargs):
+        calls.append(("build", kwargs))
+        return {
+            "manifest": {
+                "row_count": 2,
+                "tracked_pick_rows": 1,
+                "duplicate_dataset_keys": 0,
+                "reconciliation": {
+                    "graded_pick_rows": 1,
+                    "matched_pick_rows": 1,
+                },
+            },
+            "manifest_path": tmp_path / "pitcher_k_outcome_dataset_manifest.json",
+        }
+
+    def fake_audit_main(argv):
+        calls.append(("audit", argv))
+        return 0
+
+    monkeypatch.setattr(builder, "build_research_artifact", fake_build_research_artifact)
+    monkeypatch.setattr(workload_no_vig_ev_audit, "main", fake_audit_main)
+
+    builder.main([
+        "--artifact-source",
+        "hybrid",
+        "--output-dir",
+        str(tmp_path),
+        "--run-workload-no-vig-audit",
+    ])
+
+    assert calls == [
+        (
+            "build",
+            {
+                "output_dir": tmp_path,
+                "artifact_source": "hybrid",
+                "artifact_api_url": builder.DEFAULT_ARTIFACT_API_URL,
+                "start_date": builder.dataset.CLEAN_WINDOW_START,
+                "end_date": None,
+                "lineup_handedness_backfill_path": builder.dataset.LINEUP_HANDEDNESS_BACKFILL,
+            },
+        ),
+        (
+            "audit",
+            [
+                "--input",
+                str(tmp_path / "pitcher_k_outcome_dataset.jsonl"),
+                "--output",
+                str(builder.DEFAULT_WORKLOAD_NO_VIG_AUDIT_OUTPUT),
+            ],
+        ),
+    ]

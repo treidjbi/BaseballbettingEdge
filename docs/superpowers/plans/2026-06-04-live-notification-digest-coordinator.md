@@ -592,7 +592,7 @@ Expected: pass.
 - Modify: `market_infra/shadow_notification_candidates.py`
 - Modify: `tests/test_market_infra_shadow_notification_candidates.py`
 
-- [ ] **Step 1: Add tests**
+- [x] **Step 1: Add tests**
 
 Add tests for these labels:
 
@@ -603,11 +603,11 @@ Add tests for these labels:
 - `propline_polling_confirmed`
 - `boltodds_confirmed`
 
-- [ ] **Step 2: Implement labels in metadata**
+- [x] **Step 2: Implement labels in metadata**
 
 Add `movement_strength_labels` to each shadow candidate metadata object.
 
-- [ ] **Step 3: Run tests**
+- [x] **Step 3: Run tests**
 
 Run:
 

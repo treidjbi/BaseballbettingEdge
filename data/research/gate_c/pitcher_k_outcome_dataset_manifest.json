@@ -5,7 +5,7 @@
     "jsonl": "data/research/gate_c/pitcher_k_outcome_dataset.jsonl",
     "summary": "data/research/gate_c/pitcher_k_outcome_dataset_summary.md"
   },
-  "generated_at": "2026-06-05T15:23:45.252324+00:00",
+  "generated_at": "2026-06-09T17:29:45.158510+00:00",
   "guardrails": [
     "does_not_change_live_picks",
     "does_not_change_locks",
@@ -16,7 +16,7 @@
     "does_not_change_calibration",
     "does_not_change_dashboard_behavior"
   ],
-  "jsonl_sha256": "063f282e0a0a2b27f9db32c3770e785beaf3489240948dcc05db34c82dc9ed7e",
+  "jsonl_sha256": "d0e7a815ac0d8b23e8f8f6d8ca5fe4560e5b7c67bff293b87ce815a22b37443e",
   "loaded_slate_dates": [
     "2026-04-28",
     "2026-04-29",
@@ -54,16 +54,20 @@
     "2026-05-31",
     "2026-06-01",
     "2026-06-02",
-    "2026-06-04"
+    "2026-06-04",
+    "2026-06-05",
+    "2026-06-06",
+    "2026-06-07",
+    "2026-06-08"
   ],
   "reconciliation": {
-    "graded_pick_rows": 771,
-    "matched_pick_rows": 771,
-    "unique_side_fallback_matches": 27,
+    "graded_pick_rows": 855,
+    "matched_pick_rows": 855,
+    "unique_side_fallback_matches": 28,
     "unmatched_examples": [],
     "unmatched_pick_rows": 0
   },
-  "row_count": 1498,
+  "row_count": 1662,
   "shadow_only": true,
   "source": {
     "artifact_api_url": "https://baseballbettingedge.netlify.app/.netlify/functions/get-artifact",
@@ -75,77 +79,81 @@
       "2026-06-01",
       "2026-06-02",
       "2026-06-03",
-      "2026-06-04"
+      "2026-06-04",
+      "2026-06-05",
+      "2026-06-06",
+      "2026-06-07",
+      "2026-06-08"
     ],
     "start_date": "2026-04-28"
   },
   "summary_counts": {
     "beat_close_line_rows": 16,
-    "beat_close_price_rows": 115,
+    "beat_close_price_rows": 131,
     "bet_timing_window_counts": {
       "post_start": 46,
       "pre_120": 5,
       "pre_15": 165,
-      "pre_30": 489,
+      "pre_30": 571,
       "pre_5": 49,
-      "unknown": 744
+      "unknown": 826
     },
-    "clean_window_rows": 1498,
+    "clean_window_rows": 1662,
     "clv_type_counts": {
       "line_only": 16,
-      "no_clv_edge": 640,
-      "not_tracked": 727,
-      "price_only": 115
+      "no_clv_edge": 707,
+      "not_tracked": 808,
+      "price_only": 131
     },
     "context_snapshot_counts": {
-      "official_close": 1498
+      "official_close": 1662
     },
     "duplicate_dataset_keys": 0,
-    "graded_rows": 1498,
-    "large_edge_skepticism_rows": 348,
+    "graded_rows": 1662,
+    "large_edge_skepticism_rows": 379,
     "leash_risk_bucket_counts": {
-      "high": 118,
-      "medium": 56,
-      "normal": 1324
+      "high": 132,
+      "medium": 62,
+      "normal": 1468
     },
     "lineup_hand_count_rows": 1174,
     "lineup_handedness_source_counts": {
-      "missing": 324,
+      "missing": 488,
       "mlb_boxscore_reconstructed": 1174
     },
     "missing_book_odds": 0,
     "missing_model_fields": 2,
     "missing_team_or_opponent": 0,
     "model_market_relationship_counts": {
-      "model_agrees_with_favorite": 722,
-      "model_fades_favorite": 724,
-      "unknown": 52
+      "model_agrees_with_favorite": 774,
+      "model_fades_favorite": 828,
+      "unknown": 60
     },
     "opportunity_bucket_counts": {
-      "deep_starter": 160,
-      "normal": 1220,
-      "short_leash": 118
+      "deep_starter": 180,
+      "normal": 1350,
+      "short_leash": 132
     },
     "pitcher_archetype_bucket_counts": {
-      "deep_starter": 104,
-      "high_k_deep_starter": 56,
-      "high_k_standard": 366,
-      "low_k_standard": 88,
-      "short_leash": 118,
-      "standard_starter": 766
+      "deep_starter": 114,
+      "high_k_deep_starter": 66,
+      "high_k_standard": 404,
+      "low_k_standard": 96,
+      "short_leash": 132,
+      "standard_starter": 850
     },
     "process_outcome_bucket_counts": {
-      "good_process_loss": 53,
-      "good_process_win": 78,
-      "unknown": 727,
-      "weak_process_loss": 319,
-      "weak_process_win": 321
+      "good_process_loss": 63,
+      "good_process_win": 84,
+      "unknown": 808,
+      "weak_process_loss": 359,
+      "weak_process_win": 348
     },
     "rows_missing_result": 0,
-    "rows_with_price_clv": 771,
-    "total_rows": 1498,
-    "tracked_pick_rows": 771
+    "rows_with_price_clv": 854,
+    "total_rows": 1662,
+    "tracked_pick_rows": 854
   },
-  "summary_sha256": "5ee7f32659eea6cc361d4fe27751e7cf7581369b9d67b1ed0ef0ea26ce3cf831",
-  "tracked_pick_rows": 771
+  "summary_sha256": "8f3e4ca9b4046196337cf587cfab92f5b60a62f826e7222bf9b724fa6782d2ca",
+  "tracked_pick_rows": 854
 }
