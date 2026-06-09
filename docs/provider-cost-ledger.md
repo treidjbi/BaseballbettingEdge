@@ -220,12 +220,14 @@ Retention-readiness query:
 npx supabase db query --linked --file scripts\supabase_retention_readiness.sql -o json
 ```
 
-2026-06-09 read: database `1127 MB` (`13.76%` of 8 GB Pro allowance);
-`market_snapshots` about `785 MB`. The 14-day raw window had `463,345` rows
-estimated at `516 MB`; the 30-day raw window had `169,323` rows estimated at
-`189 MB`. Bounded compact-coverage samples still showed uncovered groups, so
-retention execution remains closed. Next cost action is compact/backfill
-coverage for older May raw windows, not deletion.
+2026-06-09 read after compact backfill: database `1150 MB` (`14.04%` of 8 GB
+Pro allowance); `market_snapshots` about `785 MB`. The May 1-26 linked-CLI
+compact backfill upserted `19,227` compact rows from `496,436` raw rows. The
+14-day raw window had `463,997` rows estimated at `517 MB`; the 30-day raw
+window had `175,070` rows estimated at `195 MB`. Bounded compact-coverage
+samples had `0` uncovered groups in both windows, but retention execution
+remains closed because the report is sampled, not exact, and Tyler has not
+approved deletion.
 
 Watch for:
 

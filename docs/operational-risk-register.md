@@ -258,11 +258,13 @@ Use the linked-CLI readiness report before discussing any execute step:
 npx supabase db query --linked --file scripts\supabase_retention_readiness.sql -o json
 ```
 
-As of 2026-06-09, the report shows storage is not urgent but compact coverage is
-not complete enough for raw retention execution: 14-day raw rows `463,345`
-estimated at `516 MB`; 30-day raw rows `169,323` estimated at `189 MB`; bounded
-coverage samples still have uncovered groups. Keep retention execution closed
-until older raw windows are compact-covered and Tyler separately approves.
+As of 2026-06-09 after compact backfill, storage is not urgent and bounded
+compact-coverage samples are clear, but raw retention execution still needs a
+separate approval: May 1-26 compact backfill upserted `19,227` compact rows from
+`496,436` raw rows; 14-day raw rows `463,997` estimated at `517 MB`; 30-day raw
+rows `175,070` estimated at `195 MB`; both bounded samples had `0` uncovered
+groups. Keep retention execution closed until Tyler separately approves and/or
+an exact coverage proof is added.
 
 | Data | Suggested retention | Reason |
 | --- | --- | --- |

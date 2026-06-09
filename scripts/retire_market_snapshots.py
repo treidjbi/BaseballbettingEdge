@@ -169,8 +169,8 @@ def _compact_covers_group(
             "market_key": f"eq.{group['market_key']}",
             "side": f"eq.{group['side']}",
             "line": f"eq.{group['line']}",
-            "last_seen_at": f"lte.{cutoff_iso}",
-            "select": "slate_date,provider,book_key,normalized_player_name,market_key,side,line,last_seen_at",
+            "first_seen_at": f"lte.{cutoff_iso}",
+            "select": "slate_date,provider,book_key,normalized_player_name,market_key,side,line,first_seen_at,last_seen_at",
             "limit": "1",
         },
     )

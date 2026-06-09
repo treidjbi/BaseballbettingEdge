@@ -84,7 +84,8 @@ class FakeWriter:
                     "market_key": market_key,
                     "side": side,
                     "line": line,
-                    "last_seen_at": "2026-05-01T00:00:00+00:00",
+                    "first_seen_at": "2026-04-30T00:00:00+00:00",
+                    "last_seen_at": "2026-05-02T00:00:00+00:00",
                 }]
             return []
         raise AssertionError(f"unexpected table {table}")
@@ -201,7 +202,7 @@ def test_unrelated_compact_rows_do_not_allow_snapshot_deletion(monkeypatch):
         "market_key": "eq.pitcher_strikeouts",
         "side": "eq.over",
         "line": "eq.6.5",
-        "last_seen_at": "lte.2026-05-01T00:00:00+00:00",
-        "select": "slate_date,provider,book_key,normalized_player_name,market_key,side,line,last_seen_at",
+        "first_seen_at": "lte.2026-05-01T00:00:00+00:00",
+        "select": "slate_date,provider,book_key,normalized_player_name,market_key,side,line,first_seen_at,last_seen_at",
         "limit": "1",
     }) in writer.select_calls

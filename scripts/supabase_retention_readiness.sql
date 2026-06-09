@@ -159,7 +159,7 @@ coverage as (
    and compact_market_line_movements.market_key = sampled_groups.market_key
    and compact_market_line_movements.side = sampled_groups.side
    and compact_market_line_movements.line = sampled_groups.line
-   and compact_market_line_movements.last_seen_at <= sampled_groups.cutoff_at
+   and compact_market_line_movements.first_seen_at <= sampled_groups.cutoff_at
   group by
     sampled_groups.older_than_days,
     sampled_groups.cutoff_at,

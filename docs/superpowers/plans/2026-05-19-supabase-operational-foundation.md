@@ -1181,7 +1181,7 @@ raw age/size counts and a bounded provider-indexed compact-coverage sample,
 then hard-codes `eligible_for_execute=false` because exact compact coverage is
 not proven by this lightweight read.
 
-Latest run:
+Initial readiness run:
 
 - Database: `1127 MB`, `13.76%` of the 8 GB Pro allowance.
 - `market_snapshots`: about `785 MB`.
@@ -1191,10 +1191,26 @@ Latest run:
   `10,000` rows / `733` groups, with `0` compact-covered groups because the
   older raw rows predate current compact coverage.
 
-Next step is compact/backfill coverage for older May raw windows, then rerun
-the report. Do not run `scripts/retire_market_snapshots.py --execute`, set
+Follow-up backfill and readiness run:
+
+- Added `scripts/backfill_compact_market_movements_via_cli.py` for linked-CLI
+  compact backfills without local service-role env vars. It defaults to dry-run
+  and never deletes raw rows.
+- May 1-10 dry-run/execution covered `198,514` raw rows -> `5,603` compact
+  rows.
+- May 11-26 dry-run/execution covered `297,922` raw rows -> `13,624` compact
+  rows.
+- Post-backfill readiness report: database `1150 MB`, `14.04%` of the 8 GB Pro
+  allowance; `market_snapshots` about `785 MB`; 14-day raw window `463,997`
+  rows estimated at `517 MB`; 30-day raw window `175,070` rows estimated at
+  `195 MB`.
+- Bounded compact-coverage samples were clear in both windows:
+  `uncovered_snapshot_groups=0`.
+
+Do not run `scripts/retire_market_snapshots.py --execute`, set
 `ALLOW_MARKET_SNAPSHOT_DELETE=true`, or change retention behavior without
-separate Tyler approval.
+separate Tyler approval. The next retention decision is whether to add exact
+coverage proof or ask for a separate execute-retention approval.
 
 This is still a lock-layer canary only. The next validation step is to compare
 GitHub-applied artifact locks against `operational_pick_locks`, source artifact

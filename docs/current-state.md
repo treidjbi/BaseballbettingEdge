@@ -1138,14 +1138,19 @@ raw `market_snapshots` age/size and bounded compact-coverage sampling:
 npx supabase db query --linked --file scripts\supabase_retention_readiness.sql -o json
 ```
 
-Latest run: database `1127 MB` (`13.76%` of 8 GB Pro allowance);
-`market_snapshots` about `785 MB`; 14-day raw rows `463,345` / estimated
-`516 MB`; 30-day raw rows `169,323` / estimated `189 MB`. The report samples
-provider-indexed raw groups because the table has `(provider, observed_at desc)`
-indexes, not a plain `observed_at` index. The sample found uncovered compact
-groups in both windows, and `eligible_for_execute=false`; retention execution
-remains closed until older raw windows are compact-covered and Tyler separately
-approves an execute step.
+Added `scripts/backfill_compact_market_movements_via_cli.py` for linked-CLI
+compact backfills without local service-role env vars. It defaults to dry-run
+and never deletes raw rows. The 2026-06-09 May 1-26 compact backfill upserted
+`19,227` compact rows from `496,436` raw rows.
+
+Latest post-backfill readiness run: database `1150 MB` (`14.04%` of 8 GB Pro
+allowance); `market_snapshots` about `785 MB`; 14-day raw rows `463,997` /
+estimated `517 MB`; 30-day raw rows `175,070` / estimated `195 MB`. The bounded
+provider-indexed compact-coverage samples were clear in both windows
+(`uncovered_snapshot_groups=0`). `coverage_exact=false` and
+`eligible_for_execute=false` remain by design; retention execution remains
+closed until Tyler separately approves an execute step or we add an exact
+coverage proof.
 
 ### June 1 Provider Review
 
