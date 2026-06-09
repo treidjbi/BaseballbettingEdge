@@ -141,6 +141,16 @@ def test_dashboard_shows_hidden_market_book_board_and_bet_ticket_selector():
     assert "v2-bet-book-selector" in html
 
 
+def test_dashboard_live_book_selector_preserves_missing_prices():
+    app = DASHBOARD_APP.read_text(encoding="utf-8")
+
+    assert "parseLiveBookNumber" in app
+    assert "const line = parseLiveBookNumber(book?.line)" in app
+    assert "const odds = parseLiveBookNumber(book?.odds)" in app
+    assert "const line = Number(book?.line)" not in app
+    assert "const odds = Number(book?.odds)" not in app
+
+
 def test_dashboard_can_load_review_after_manual_key_entry():
     app = DASHBOARD_APP.read_text(encoding="utf-8")
 

@@ -765,6 +765,12 @@
   function formatKLine(value) {
     return isFiniteNumber(value) ? `${Number(value)}K` : "--";
   }
+  function parseLiveBookNumber(value) {
+    if (value === null || value === void 0) return null;
+    if (typeof value === "string" && !value.trim()) return null;
+    const numberValue = Number(String(value).trim().replace(/\u2212/g, "-"));
+    return isFiniteNumber(numberValue) ? numberValue : null;
+  }
   function marketBookRowsForDisplay(row, side, p = null) {
     const rows = Array.isArray(row?.book_rows) ? row.book_rows : [];
     const modelLine = marketModelLine(row, side, p);
@@ -772,8 +778,8 @@
     const bestBookKey = bookComparable(row?.best_book);
     const refBookKey = bookComparable(bookForSide(p, side));
     return rows.map((book, index) => {
-      const line = Number(book?.line);
-      const odds = Number(book?.odds);
+      const line = parseLiveBookNumber(book?.line);
+      const odds = parseLiveBookNumber(book?.odds);
       const bookName = bookRowName(book);
       if (!bookName || !isFiniteNumber(line) || !isFiniteNumber(odds)) return null;
       const rowBookKey = bookComparable(bookName || book?.bookmaker_key);
