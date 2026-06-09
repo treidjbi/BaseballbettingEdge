@@ -11,6 +11,9 @@ PICK_CHANGE_EVENT_TYPES = {
     "pick_downgraded": "pick_downgraded_digest",
 }
 
+# Phoenix does not observe DST, so a fixed UTC-7 offset keeps notification copy stable.
+PHOENIX_TZ = timezone(timedelta(hours=-7))
+
 
 @dataclass(frozen=True)
 class CoordinationResult:
@@ -48,7 +51,9 @@ def _bucket_end_label(bucket: str, *, minutes: int) -> str:
     parsed = _parse_datetime(bucket)
     if parsed is None:
         return bucket
-    return (parsed + timedelta(minutes=minutes)).strftime("%H:%M")
+    bucket_end = parsed + timedelta(minutes=minutes)
+    phoenix_label = bucket_end.astimezone(PHOENIX_TZ).strftime("%I:%M %p").lstrip("0")
+    return f"{phoenix_label} Phoenix"
 
 
 def _payload(row: Mapping[str, Any]) -> dict[str, Any]:

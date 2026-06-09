@@ -127,7 +127,7 @@ Start-window digest:
 - Inputs: current `game_reminder_due` rows.
 - Group key: `slate_date`, 30-minute game-time bucket, reminder family.
 - Send shape: one push per bucket.
-- Example title: `6 tracked pitchers start by 10:30`.
+- Example title: `6 tracked pitchers start by 4:00 PM Phoenix`.
 - Example body: `3 FIRE, 2 LEAN, 1 watch. Open app for final prices.`
 
 Pick-change digest:

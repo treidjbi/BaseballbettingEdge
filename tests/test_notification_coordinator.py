@@ -77,7 +77,26 @@ def test_start_window_digest_groups_same_30_minute_bucket():
     assert digest["payload"]["fire_count"] == 1
     assert digest["payload"]["lean_count"] == 1
     assert digest["payload"]["start_window_bucket"] == "2026-06-04T17:30:00+00:00"
+    assert digest["title"] == "2 tracked pitchers start by 11:00 AM Phoenix"
     assert result.summary["grouped_count"] == 1
+
+
+def test_start_window_digest_title_formats_utc_bucket_as_phoenix_time():
+    rows = [
+        _event("game_reminder_due", "Sandy Alcantara", game_time="2026-06-09T22:30:00+00:00"),
+        _event("game_reminder_due", "Spencer Strider", game_time="2026-06-09T22:45:00+00:00"),
+    ]
+
+    result = coordinate_notification_rows(
+        rows,
+        mode="grouped",
+        observed_at="2026-06-09T22:00:00+00:00",
+        group_start_windows=True,
+    )
+
+    digest = result.rows[0]
+    assert digest["payload"]["start_window_bucket"] == "2026-06-09T22:30:00+00:00"
+    assert digest["title"] == "2 tracked pitchers start by 4:00 PM Phoenix"
 
 
 def test_shadow_mode_keeps_insert_rows_unchanged_but_reports_digest():
