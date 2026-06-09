@@ -1,6 +1,6 @@
 # Current State
 
-Last updated: 2026-06-08
+Last updated: 2026-06-09
 
 ## Read Order
 
@@ -8,7 +8,10 @@ For any new work in this repo:
 
 1. Read `AGENTS.md` for the canonical project instructions and architecture notes.
 2. Read this file for the current operating state.
-3. Read the newest active dated plans that match the task:
+3. Read `docs/superpowers/plans/2026-06-09-active-gates-and-soak-synthesis.md`
+   for the active gate index and to separate operational/display surfaces from
+   still-closed production promotion gates.
+4. Read the newest active dated plans that match the task:
    - `docs/superpowers/plans/2026-05-13-boltodds-propline-official-provider-cutover.md`
    - `docs/superpowers/plans/2026-05-12-pitcher-k-outcome-research-dataset.md`
    - `docs/superpowers/plans/2026-06-05-market-favorite-confidence-referee-production-canary.md`
@@ -28,21 +31,21 @@ For any new work in this repo:
    - `docs/superpowers/plans/2026-06-07-batter-handedness-path-b-canary.md`
      for the Tyler-approved, feature-flagged batter-handedness Path B canary
    - `docs/superpowers/plans/2026-05-20-live-market-decision-ui.md`
-     for future dashboard UI work that displays BoltOdds/PropLine live-market
-     evidence after the operational/provider production switch is approved
+     for the default-on, display-only live-market decision UI and accepted-bet
+     live-book selector flow
    - `docs/superpowers/plans/2026-06-04-live-notification-digest-coordinator.md`
      for the active notification grouping and movement-strength implementation
      path
    - `docs/superpowers/plans/2026-05-22-github-artifact-exit.md`
-     for the post-lock plan to move dashboard artifact serving and scheduled
-     pipeline execution off GitHub Actions after strict lock canary validation
+     for the Render/Supabase artifact path, Netlify `get-artifact`, and GitHub
+     manual rollback posture
    - `docs/superpowers/plans/2026-05-07-bet-conversion-shadow-audit.md`
      only as historical diagnostic context for the first bet-selection audit
-4. Read `docs/provider-cost-ledger.md` before recommending new providers,
+5. Read `docs/provider-cost-ledger.md` before recommending new providers,
    upgrades, polling increases, or always-on infrastructure.
-5. Read `docs/operational-risk-register.md` before changing provider behavior,
+6. Read `docs/operational-risk-register.md` before changing provider behavior,
    notification behavior, retention, live workers, or source-of-truth rules.
-6. Use older dated plans in `docs/superpowers/plans/` as archive context, not
+7. Use older dated plans in `docs/superpowers/plans/` as archive context, not
    as replacements for this file.
 
 ## Current Operating Mode
@@ -99,6 +102,12 @@ do we convert model signal into better betting decisions?"
   sidecar. It must not affect production picks, grading, dashboard artifacts,
   or provider order until the provider cutover plan is implemented and Tyler
   explicitly approves the switch.
+- As of 2026-06-09, active soaks and promotion gates are formalized in
+  `docs/superpowers/plans/2026-06-09-active-gates-and-soak-synthesis.md`.
+  Treat BoltOdds/PropLine dashboard display as operational evidence, but keep
+  official provider source, strict provider mode, new movement notification
+  classes, model/lambda/threshold/staking changes, and retention deletion as
+  separate closed gates until their pass criteria are met and Tyler approves.
 
 ## Four-Lane Operating Board
 
@@ -119,6 +128,12 @@ changes after the controlling lane has passed its own promotion gate and Tyler
 explicitly approves the production switch. Operational reliability evidence is
 not a model-change approval, and model bucket evidence is not a provider-cutover
 approval.
+
+Gate-index rule: when the question is "are we soaking, operational, or ready to
+promote?", start with
+`docs/superpowers/plans/2026-06-09-active-gates-and-soak-synthesis.md`. Update
+that synthesis when a gate opens, closes, or changes pass/fail criteria; keep
+the detailed implementation rules in the controlling child plan.
 
 Board maintenance rule: when a session meaningfully changes a lane's stage,
 next decision, blocker, promotion status, or controlling plan, update the
