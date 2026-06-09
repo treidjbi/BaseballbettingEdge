@@ -1130,6 +1130,23 @@ volume. If the database approaches `6 GB`, egress trends toward the plan
 allowance, or `market_snapshots` keeps growing without changing decisions, pause
 new capture work and run retention dry-runs before considering overages.
 
+2026-06-09 retention-readiness update: added
+`scripts/supabase_retention_readiness.sql` as a read-only linked-CLI report for
+raw `market_snapshots` age/size and bounded compact-coverage sampling:
+
+```powershell
+npx supabase db query --linked --file scripts\supabase_retention_readiness.sql -o json
+```
+
+Latest run: database `1127 MB` (`13.76%` of 8 GB Pro allowance);
+`market_snapshots` about `785 MB`; 14-day raw rows `463,345` / estimated
+`516 MB`; 30-day raw rows `169,323` / estimated `189 MB`. The report samples
+provider-indexed raw groups because the table has `(provider, observed_at desc)`
+indexes, not a plain `observed_at` index. The sample found uncovered compact
+groups in both windows, and `eligible_for_execute=false`; retention execution
+remains closed until older raw windows are compact-covered and Tyler separately
+approves an execute step.
+
 ### June 1 Provider Review
 
 The next broad provider decision checkpoint is **2026-06-01**:

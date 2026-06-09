@@ -252,6 +252,18 @@ affected window, `scripts/retire_market_snapshots.py --execute` is used, and
 `ALLOW_MARKET_SNAPSHOT_DELETE=true` is set. Dry-run output should be reviewed
 before every execute run.
 
+Use the linked-CLI readiness report before discussing any execute step:
+
+```powershell
+npx supabase db query --linked --file scripts\supabase_retention_readiness.sql -o json
+```
+
+As of 2026-06-09, the report shows storage is not urgent but compact coverage is
+not complete enough for raw retention execution: 14-day raw rows `463,345`
+estimated at `516 MB`; 30-day raw rows `169,323` estimated at `189 MB`; bounded
+coverage samples still have uncovered groups. Keep retention execution closed
+until older raw windows are compact-covered and Tyler separately approves.
+
 | Data | Suggested retention | Reason |
 | --- | --- | --- |
 | `data/picks_history.json` | Indefinite | Durable model and grading history |

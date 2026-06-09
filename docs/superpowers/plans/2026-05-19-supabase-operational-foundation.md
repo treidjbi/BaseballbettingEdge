@@ -1167,6 +1167,35 @@ lock-ledger soak. GitHub repository variables are now:
 - `ENABLE_SUPABASE_LOCK_CONSUMER=true`
 - `SUPABASE_LOCK_CONSUMER_STRICT=false`
 
+## Retention Readiness Update, 2026-06-09
+
+Added `scripts/supabase_retention_readiness.sql` as a read-only linked-CLI
+report:
+
+```powershell
+npx supabase db query --linked --file scripts\supabase_retention_readiness.sql -o json
+```
+
+The report is designed for retention readiness, not execution. It returns exact
+raw age/size counts and a bounded provider-indexed compact-coverage sample,
+then hard-codes `eligible_for_execute=false` because exact compact coverage is
+not proven by this lightweight read.
+
+Latest run:
+
+- Database: `1127 MB`, `13.76%` of the 8 GB Pro allowance.
+- `market_snapshots`: about `785 MB`.
+- 14-day raw window: `463,345` rows, estimated `516 MB`; bounded sample
+  checked `10,000` rows / `1,043` groups, with `553` uncovered groups.
+- 30-day raw window: `169,323` rows, estimated `189 MB`; bounded sample checked
+  `10,000` rows / `733` groups, with `0` compact-covered groups because the
+  older raw rows predate current compact coverage.
+
+Next step is compact/backfill coverage for older May raw windows, then rerun
+the report. Do not run `scripts/retire_market_snapshots.py --execute`, set
+`ALLOW_MARKET_SNAPSHOT_DELETE=true`, or change retention behavior without
+separate Tyler approval.
+
 This is still a lock-layer canary only. The next validation step is to compare
 GitHub-applied artifact locks against `operational_pick_locks`, source artifact
 hashes, `shadow_pipeline_runs`, and `shadow_pick_lock_observations` after the

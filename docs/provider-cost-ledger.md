@@ -214,6 +214,19 @@ Daily/weekly guardrail query:
 npx supabase db query --linked --file scripts\supabase_storage_guardrail.sql -o json
 ```
 
+Retention-readiness query:
+
+```powershell
+npx supabase db query --linked --file scripts\supabase_retention_readiness.sql -o json
+```
+
+2026-06-09 read: database `1127 MB` (`13.76%` of 8 GB Pro allowance);
+`market_snapshots` about `785 MB`. The 14-day raw window had `463,345` rows
+estimated at `516 MB`; the 30-day raw window had `169,323` rows estimated at
+`189 MB`. Bounded compact-coverage samples still showed uncovered groups, so
+retention execution remains closed. Next cost action is compact/backfill
+coverage for older May raw windows, not deletion.
+
 Watch for:
 
 - table growth from `market_snapshots`

@@ -407,6 +407,24 @@ Still closed:
 - any `--execute` retention deletion
 - Supabase spend-cap changes
 
+2026-06-09 retention-readiness update:
+
+- Added a read-only linked-CLI report:
+  `npx supabase db query --linked --file scripts\supabase_retention_readiness.sql -o json`.
+- Latest report: database `1127 MB` (`13.76%` of 8 GB Pro allowance);
+  `market_snapshots` about `785 MB`.
+- 14-day window: `463,345` raw rows, estimated `516 MB`; bounded provider-
+  indexed sample checked `10,000` rows / `1,043` groups, with `490` compact-
+  covered groups and `553` uncovered groups.
+- 30-day window: `169,323` raw rows, estimated `189 MB`; bounded sample checked
+  `10,000` rows / `733` groups, with `0` compact-covered groups because older
+  raw rows predate current compact coverage.
+- `coverage_exact=false` and `eligible_for_execute=false` by design. This
+  report is retention-readiness evidence only, not permission to run retention.
+
+Next retention work is compact/backfill coverage for older May raw windows, then
+rerun the readiness report. Execution remains a separate Tyler approval.
+
 ## What Counts As Soak
 
 Soak is not waiting indefinitely. A soak has to name what is being observed and
@@ -424,15 +442,12 @@ Use this rule:
 
 Recommended order:
 
-1. Finish the accepted-bet live-book selector hotfix already present in the
-   local dirty worktree.
-2. Implement Gate 7: refresh/backfill Gate C rows with Path B, confidence
-   referee, no-vig, workload, and market-agreement labels.
-3. Implement Gate 8: wire workload/no-vig Task 5 into the Gate C refresh path
-   after the refreshed rows exist.
-4. Implement Gate 5: add movement-strength labels in shadow for dynamic
-   provider-backed notifications.
-5. Keep the provider-source strict cutover, new notification send classes,
+1. Keep Gate 7/Gate 8/Gate 5 in observation after the 2026-06-09 implementation
+   push; do not promote model, provider, or notification behavior from one
+   refreshed report.
+2. For Gate 13, compact/backfill coverage for older May raw market windows, then
+   rerun `scripts\supabase_retention_readiness.sql`.
+3. Keep the provider-source strict cutover, new notification send classes,
    model changes, and retention deletion in soak until their specific gates
    pass.
 
