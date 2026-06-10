@@ -16,9 +16,8 @@ const bundlePath = process.argv[1];
 const perfPayload = JSON.parse(process.argv[2]);
 let source = fs.readFileSync(bundlePath, "utf8");
 source = source.replace(
-  'const root = ReactDOM.createRoot(document.getElementById("root"));',
-  'globalThis.__PerfTab = PerfTab;\\n'
-    + 'const root = ReactDOM.createRoot(document.getElementById("root"));'
+  /(const|var) root = ReactDOM\\.createRoot\\(document\\.getElementById\\("root"\\)\\);/,
+  'globalThis.__PerfTab = PerfTab;\\n$&'
 );
 
 function collectText(node, out = []) {
