@@ -39,6 +39,9 @@ Do not add a new Gate G. If a candidate cannot satisfy Gate E/F, it stays shadow
 
 Adopt now, in shadow:
 
+- Bill James component-first framing: evaluate pitcher skill and opportunity
+  from elemental pieces such as strikeouts, walks, innings/workload, role, and
+  health context rather than summary stats like ERA or wins/losses.
 - Workload-first framing: separate K opportunity from K skill.
 - No-vig market comparison: compare model probability to two-sided market probability, not only the selected side's offered odds.
 - Sensitivity labels: identify rows where a small workload shift changes the verdict/side.
@@ -50,6 +53,8 @@ Defer until cheaper evidence justifies it:
 - Full batter-by-batter simulation.
 - Pitch-level pitch-mix/arsenal whiff matching.
 - Stuff+/PitchingBot-style external inputs.
+- Bill James/SIS projection files or Handbook data, unless a separate
+  data-rights and terms review approves that source.
 - Bullpen/rest/game-script modeling from new data providers.
 - Any live EV threshold, staking, or lambda change.
 
@@ -71,6 +76,11 @@ Use only fields already present or cheaply derivable:
 - `lineup_used`
 - `batter_handedness_mode`
 - `lineup_split_source`
+
+Use post-result `actual_ip`, `actual_pitch_count`, and `batters_faced` only to
+explain whether a miss was opportunity/leash driven after the game. These are
+Bill James-style component diagnostics, but they are hindsight fields and must
+not become pre-lock inputs.
 
 First candidate labels:
 
@@ -173,10 +183,21 @@ As of 2026-06-09, Tasks 1-5 are implemented:
 
 - `analytics/diagnostics/workload_no_vig_ev_audit.py` reads the Gate C JSONL and derives no-vig, workload, Path B coverage, and referee-interaction labels.
 - `tests/test_workload_no_vig_ev_audit.py` covers the helper labels, report summary, and shadow-boundary language.
+- `analytics/diagnostics/actual_opportunity_backfill.py` reconstructs postgame actual IP, pitch count, and batters faced from MLB boxscores for Gate C explanation slices. It writes local shadow artifacts only.
 - `analytics/output/workload_no_vig_ev_audit.md` is regenerated from the refreshed Gate C dataset when `--run-workload-no-vig-audit` is passed.
 - `scripts/build_pitcher_k_outcome_dataset.py --run-workload-no-vig-audit` rebuilds the Gate C JSONL first, then runs the workload/no-vig audit against the freshly written rows.
 
-The 2026-06-09 refresh analyzes `854` clean tracked win/loss rows from `1,662` source rows and reconciles `855/855` clean graded picks. Path B and confidence-referee fields now populate the cross-slices, but the Path B real-split sample remains small and the report is still not promotion evidence. Keep this as shadow explanation/readiness evidence until Gate E/F slices prove a candidate family over side, price sign, K-line, FIRE 1u/FIRE 2u, quality, timing, model/market, Path B, workload, CLV, provider, and rolling-window cuts.
+The 2026-06-09 Phoenix refresh analyzes `854` clean tracked win/loss rows from
+`1,662` source rows and reconciles `855/855` clean graded picks. The actual
+opportunity backfill reconstructed `831/831` unique pitcher-game opportunity
+keys and filled actual IP, pitch count, and batters faced on all `1,662` side
+rows with `actual_opportunity_runtime_safe=false`. Path B and confidence-
+referee fields still populate the cross-slices, but the Path B real-split
+sample remains small and the report is still not promotion evidence. Keep this
+as shadow explanation/readiness evidence until Gate E/F slices prove a
+candidate family over side, price sign, K-line, FIRE 1u/FIRE 2u, quality,
+timing, model/market, Path B, workload, CLV, provider, actual opportunity
+explanations, and rolling-window cuts.
 
 Task 5 remains optional in operations: normal Gate C builds stay unchanged unless `--run-workload-no-vig-audit` is passed.
 

@@ -1,6 +1,6 @@
 # Workload And No-Vig EV Audit
 
-Generated at: `2026-06-09T17:29:45.240827+00:00`
+Generated at: `2026-06-10T03:35:19.828555+00:00`
 
 Shadow-only: this report does not change live lambda, verdicts, thresholds, staking, provider order, notifications, locks, retention, calibration, or dashboard source-of-truth.
 

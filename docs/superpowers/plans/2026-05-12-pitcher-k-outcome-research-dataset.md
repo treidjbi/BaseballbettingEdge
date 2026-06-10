@@ -135,6 +135,18 @@ dataset can consume that artifact, but rows are explicitly marked
 holdout testing; it is not proof that the same lineup fields were available at
 bet time.
 
+As of 2026-06-09,
+`analytics/diagnostics/actual_opportunity_backfill.py` was added with tests in
+`tests/test_actual_opportunity_backfill.py`. It reconstructs postgame pitcher
+opportunity from MLB schedule + boxscore data and writes only local shadow
+artifacts under `analytics/output/`. The compact dataset can consume that
+artifact to populate `actual_ip`, `actual_pitch_count`, and `batters_faced`
+with `actual_opportunity_source=mlb_boxscore_reconstructed` and
+`actual_opportunity_runtime_safe=false`. This is useful Bill James-style
+component evidence for explaining workload/leash misses after grading. It is
+not proof that those fields were available before lock and must not become a
+live model input.
+
 Later on 2026-05-26, the first train/validation holdout lab was added as
 `analytics/diagnostics/gate_c_holdout_shadow_lab.py` with tests in
 `tests/test_gate_c_holdout_shadow_lab.py`. It compares current lambda,
@@ -170,6 +182,16 @@ Regenerate it with:
 
 ```bash
 python scripts/build_pitcher_k_outcome_dataset.py --artifact-source hybrid --output-dir data/research/gate_c
+```
+
+To refresh postgame actual-opportunity fields, run the durable build once,
+rebuild the ignored local MLB boxscore backfill artifact from that corpus, then
+consume it into the committed Gate C artifact:
+
+```bash
+python scripts/build_pitcher_k_outcome_dataset.py --artifact-source hybrid --output-dir data/research/gate_c
+python analytics/diagnostics/actual_opportunity_backfill.py --dataset data/research/gate_c/pitcher_k_outcome_dataset.jsonl
+python scripts/build_pitcher_k_outcome_dataset.py --artifact-source hybrid --output-dir data/research/gate_c --actual-opportunity-backfill analytics/output/actual_opportunity_backfill.json --run-workload-no-vig-audit
 ```
 
 This remains shadow-only. It must not change live lambda, thresholds, staking,
@@ -241,11 +263,13 @@ As of 2026-06-08, the K-projection deep-dive synthesis is captured in
 It keeps the current live K/9-to-Poisson lambda in place and adds a
 shadow-only plan to evaluate workload/opportunity proxies, no-vig EV labels,
 Path B coverage buckets, and confidence-referee interaction labels. The useful
-parts of the outside workflow should be tested cheaply first: workload-first
-framing, no-vig market comparison, lineup/Path B coverage, and sensitivity
-around key K lines. Full batter-by-batter simulation, pitch-mix/stuff models,
-and new provider inputs remain deferred until Gate E/F evidence says they are
-worth the source and operational complexity.
+parts of the outside workflow should be tested cheaply first: Bill James-style
+component evaluation, workload-first framing, no-vig market comparison,
+lineup/Path B coverage, and sensitivity around key K lines. Full
+batter-by-batter simulation, pitch-mix/stuff models, Bill James/SIS projection
+files, and new provider inputs remain deferred until Gate E/F evidence plus any
+required data-rights review says they are worth the source and operational
+complexity.
 
 The workload/no-vig audit is implemented at
 `analytics/diagnostics/workload_no_vig_ev_audit.py` with report output at
@@ -257,6 +281,13 @@ from `1,662` source rows and now includes Path B coverage and confidence-
 referee interaction slices. Treat it as a shadow readiness and explanation
 artifact only; no live model, threshold, staking, provider, notification, lock,
 retention, or dashboard-source decision can come from this report alone.
+
+The 2026-06-09 Phoenix actual-opportunity backfill reconstructed `831/831`
+unique pitcher-game opportunity keys and filled actual IP, pitch count, and
+batters faced on all `1,662` side rows. Those fields explain whether a miss was
+opportunity/leash driven after the slate is graded. They remain marked
+`actual_opportunity_runtime_safe=false` and do not open a model, threshold,
+staking, or provider gate.
 
 Do not use this comparison to roll back thresholds, staking, formula date, or
 provider behavior. Use it to keep Gate C honest: current-regime buckets matter
@@ -561,6 +592,10 @@ Already represented or planned in compact rows:
 - `actual_ip`
 - `actual_pitch_count`
 - `batters_faced`
+- `actual_opportunity_source`
+- `actual_opportunity_runtime_safe`
+- `actual_opportunity_game_pk`
+- `actual_opportunity_pitcher_match_type`
 
 Pregame opportunity/leash labels may be used for future candidate rules only if
 they are built from information known before lock. Actual IP, pitch count, and
@@ -574,9 +609,9 @@ source data is truly missing.
 
 Still-needed source data:
 
-- confirmed lineup handedness counts by pitcher hand
+- runtime-confirmed lineup handedness counts by pitcher hand
 - projected-to-confirmed lineup K-rate delta
-- actual innings pitched, pitch count, batters faced, and times-through-order
+- times-through-order and in-game removal reason
 - injury/ramp-up and return-from-IL flags
 - bullpen rest and likely leash/team pull tendency
 - weather, roof, and game-total/run-environment context
@@ -593,6 +628,7 @@ Already answerable from the compact row or derived labels:
 - large-edge skepticism flag and reasons
 - pitcher archetype bucket
 - opportunity and leash-risk buckets
+- actual postgame opportunity fields
 - K-projection challenger comparison
 
 ## Canonical Row Grain
@@ -769,6 +805,10 @@ from "Tyler actually bet this."
 - `actual_ip`
 - `actual_pitch_count`
 - `batters_faced`
+- `actual_opportunity_source`
+- `actual_opportunity_runtime_safe`
+- `actual_opportunity_game_pk`
+- `actual_opportunity_pitcher_match_type`
 
 ## Gate A: Schema Approval
 

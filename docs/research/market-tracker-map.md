@@ -24,6 +24,7 @@ provider order, notifications, or calibration.
 | K projection challengers | `k_projection_shadow_lab.py` | Reuses compact outcome rows to compare current lambda against transparent projection variants. |
 | Pre/post 4/28 hard review | `pre_post_428_model_review.py` | Compares immediate pre-bump and clean post-bump grading, selection, and projection quality. |
 | Historical lineup handedness backfill | `historical_lineup_handedness_backfill.py` | Reconstructs opponent lineup R/L/S counts from MLB boxscores into local shadow artifacts; not runtime proof. |
+| Actual opportunity backfill | `actual_opportunity_backfill.py` | Reconstructs postgame IP, pitch count, and batters faced from MLB boxscores into local shadow artifacts; not runtime proof. |
 | Batter-handedness Path B readiness | `batter_handedness_shadow_audit.py` | Checks whether lineup hand counts, matchup buckets, and split cache coverage justify anything beyond shadow collection. |
 | Best executable market candidates | `executable_market_shadow_audit.py` | Scores fresh supported mainline book/line/side rows against the current model projection; shadow-only input for cutover review. |
 
@@ -83,7 +84,7 @@ available:
 - lineup count and future handedness count placeholders
 - opportunity and leash-risk buckets
 - pitcher archetype bucket
-- future post-result opportunity placeholders: actual IP, pitch count, batters faced
+- post-result opportunity fields: actual IP, pitch count, batters faced, source, runtime-safety, game PK, and pitcher-match type
 
 As of 2026-06-03, the full-corpus Gate C read should use the committed hybrid
 artifact under `data/research/gate_c/`. Regenerate it with
@@ -96,9 +97,9 @@ partial.
 
 These should be collected before being used for model or selection rules:
 
-- confirmed lineup handedness counts: R/L/S batters by pitcher hand
+- runtime-confirmed lineup handedness counts: R/L/S batters by pitcher hand
 - projected-to-confirmed lineup K-rate delta
-- actual innings pitched, pitch count, batters faced, and times-through-order
+- times-through-order and in-game removal reason
 - injury/ramp-up and return-from-IL flags
 - bullpen rest and likely leash/team pull tendency
 - weather, roof, and game-total/run-environment context
@@ -128,10 +129,10 @@ retention job.
 
 Before adding another tracker, first ask whether the compact outcome row can
 answer the question with a derived label. Add new storage only when the source
-data is truly missing, such as confirmed handedness counts, actual pitch count,
-or provider-specific bet-time consensus. This keeps the long-term research
-model comprehensive without making multiple tables disagree about the same
-pick.
+data is truly missing, such as runtime-confirmed handedness counts,
+times-through-order/removal context, or provider-specific bet-time consensus.
+This keeps the long-term research model comprehensive without making multiple
+tables disagree about the same pick.
 
 ## Daily Operations Brief Read
 

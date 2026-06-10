@@ -1,6 +1,8 @@
 from analytics.diagnostics.pitcher_k_outcome_dataset import (
+    actual_opportunity_lookup_key,
     build_official_close_rows,
     build_summary,
+    enrich_rows_with_actual_opportunity,
     enrich_rows_with_pick_history,
     enrich_rows_with_lineup_handedness,
     lineup_handedness_lookup_key,
@@ -158,6 +160,10 @@ def test_build_summary_tracks_coverage_and_duplicates():
             "lineup_left_batters": 3,
             "lineup_switch_batters": 1,
             "lineup_handedness_source": "mlb_boxscore_reconstructed",
+            "actual_ip": 5.667,
+            "actual_pitch_count": 91,
+            "batters_faced": 22,
+            "actual_opportunity_source": "mlb_boxscore_reconstructed",
         },
         {
             "dataset_key": "a",
@@ -183,6 +189,10 @@ def test_build_summary_tracks_coverage_and_duplicates():
             "lineup_left_batters": None,
             "lineup_switch_batters": None,
             "lineup_handedness_source": None,
+            "actual_ip": None,
+            "actual_pitch_count": None,
+            "batters_faced": None,
+            "actual_opportunity_source": None,
         },
     ]
 
@@ -205,6 +215,10 @@ def test_build_summary_tracks_coverage_and_duplicates():
     assert summary["pitcher_archetype_bucket_counts"]["opener_or_mismatch"] == 1
     assert summary["lineup_hand_count_rows"] == 1
     assert summary["lineup_handedness_source_counts"]["mlb_boxscore_reconstructed"] == 1
+    assert summary["actual_opportunity_rows"] == 1
+    assert summary["actual_pitch_count_rows"] == 1
+    assert summary["batters_faced_rows"] == 1
+    assert summary["actual_opportunity_source_counts"]["mlb_boxscore_reconstructed"] == 1
 
 
 def test_load_archived_markets_for_dataset_preserves_baseball_context(tmp_path):
@@ -548,6 +562,64 @@ def test_enrich_rows_with_lineup_handedness_marks_reconstructed_context(tmp_path
     assert enriched[0]["lineup_handedness_source"] == "mlb_boxscore_reconstructed"
     assert enriched[0]["lineup_handedness_runtime_safe"] is False
     assert enriched[0]["lineup_handedness_count_matches_existing"] is True
+
+
+def test_enrich_rows_with_actual_opportunity_marks_reconstructed_context(tmp_path):
+    key = actual_opportunity_lookup_key(
+        "2026-05-12",
+        "Seattle Mariners",
+        "New York Yankees",
+        "2026-05-12T22:40:00Z",
+        "Bryan Woo",
+    )
+    artifact = tmp_path / "actual_opportunity_backfill.json"
+    artifact.write_text(
+        """
+        {
+          "opportunities": {
+            "2026-05-12|seattle mariners|new york yankees|2026-05-12T22:40:00Z|bryan woo": {
+              "game_pk": 101,
+              "actual_ip": 5.6666666667,
+              "actual_pitch_count": 91,
+              "batters_faced": 22,
+              "actual_opportunity_source": "mlb_boxscore_reconstructed",
+              "actual_opportunity_runtime_safe": false,
+              "pitcher_match_type": "normalized_name"
+            }
+          }
+        }
+        """,
+        encoding="utf-8",
+    )
+    rows = [
+        {
+            "slate_date": "2026-05-12",
+            "team": "Seattle Mariners",
+            "opp_team": "New York Yankees",
+            "game_time": "2026-05-12T22:40:00Z",
+            "pitcher": "Bryan Woo",
+            "side": "over",
+        },
+        {
+            "slate_date": "2026-05-12",
+            "team": "Seattle Mariners",
+            "opp_team": "New York Yankees",
+            "game_time": "2026-05-12T22:40:00Z",
+            "pitcher": "Bryan Woo",
+            "side": "under",
+        },
+    ]
+
+    enriched = enrich_rows_with_actual_opportunity(rows, backfill_path=artifact)
+
+    assert key in artifact.read_text(encoding="utf-8")
+    assert [row["actual_pitch_count"] for row in enriched] == [91, 91]
+    assert [row["batters_faced"] for row in enriched] == [22, 22]
+    assert round(enriched[0]["actual_ip"], 3) == 5.667
+    assert enriched[0]["actual_opportunity_source"] == "mlb_boxscore_reconstructed"
+    assert enriched[0]["actual_opportunity_runtime_safe"] is False
+    assert enriched[0]["actual_opportunity_game_pk"] == 101
+    assert enriched[0]["actual_opportunity_pitcher_match_type"] == "normalized_name"
 
 
 def test_reconcile_picks_history_allows_unique_pitcher_side_fallback(tmp_path):

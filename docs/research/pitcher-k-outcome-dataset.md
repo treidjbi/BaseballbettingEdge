@@ -76,7 +76,9 @@ Required field groups:
   `recent_start_count`, `opportunity_bucket`, `leash_risk_bucket`,
   `pitcher_archetype_bucket`
 - post-result opportunity: `actual_ip`, `actual_pitch_count`,
-  `batters_faced`
+  `batters_faced`, `actual_opportunity_source`,
+  `actual_opportunity_runtime_safe`, `actual_opportunity_game_pk`,
+  `actual_opportunity_pitcher_match_type`
 
 Some fields are intentionally `null` today because the production artifact does
 not yet store the underlying value. Keep those columns in the compact row
@@ -87,6 +89,12 @@ As of 2026-05-26, lineup hand-count fields can also be populated from the local
 historical MLB boxscore reconstruction artifact. Those rows are research-only:
 `lineup_handedness_runtime_safe=false` means they must not be used as proof that
 the same context was available when a bet locked.
+
+As of 2026-06-09, post-result opportunity fields can also be populated from the
+local MLB boxscore reconstruction artifact. Those rows are research-only:
+`actual_opportunity_runtime_safe=false` means actual innings, pitch count, and
+batters faced are explanatory labels only. They can diagnose workload/leash
+misses, but they must not be used as pre-lock model inputs.
 
 ## Derived Research Labels
 

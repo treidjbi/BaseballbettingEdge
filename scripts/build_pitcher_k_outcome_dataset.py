@@ -105,6 +105,7 @@ def _build_rows(
     start_date: str,
     end_date: str | None,
     lineup_handedness_backfill_path: Path,
+    actual_opportunity_backfill_path: Path,
 ) -> tuple[list[dict[str, Any]], list[str]]:
     if artifact_source in {"local", "production"}:
         source_kwargs = _source_kwargs(
@@ -116,6 +117,7 @@ def _build_rows(
                 start_date=start_date,
                 end_date=end_date,
                 lineup_handedness_backfill_path=lineup_handedness_backfill_path,
+                actual_opportunity_backfill_path=actual_opportunity_backfill_path,
                 **source_kwargs,
             ),
             [],
@@ -125,6 +127,7 @@ def _build_rows(
         start_date=start_date,
         end_date=end_date,
         lineup_handedness_backfill_path=lineup_handedness_backfill_path,
+        actual_opportunity_backfill_path=actual_opportunity_backfill_path,
         artifact_api_url=None,
     )
     local_dates = _loaded_slate_dates(local_rows)
@@ -144,6 +147,7 @@ def _build_rows(
                 start_date=date,
                 end_date=date,
                 lineup_handedness_backfill_path=lineup_handedness_backfill_path,
+                actual_opportunity_backfill_path=actual_opportunity_backfill_path,
                 artifact_api_url=artifact_api_url or DEFAULT_ARTIFACT_API_URL,
             )
         )
@@ -207,6 +211,7 @@ def build_research_artifact(
     start_date: str = dataset.CLEAN_WINDOW_START,
     end_date: str | None = None,
     lineup_handedness_backfill_path: Path = dataset.LINEUP_HANDEDNESS_BACKFILL,
+    actual_opportunity_backfill_path: Path = dataset.ACTUAL_OPPORTUNITY_BACKFILL,
 ) -> dict[str, Any]:
     if artifact_source not in {"hybrid", "local", "production"}:
         raise ValueError("artifact_source must be hybrid, local, or production")
@@ -221,6 +226,7 @@ def build_research_artifact(
         start_date=start_date,
         end_date=end_date,
         lineup_handedness_backfill_path=lineup_handedness_backfill_path,
+        actual_opportunity_backfill_path=actual_opportunity_backfill_path,
     )
     validation_errors = [
         (row.get("dataset_key"), errors)
@@ -293,6 +299,11 @@ def _parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         default=dataset.LINEUP_HANDEDNESS_BACKFILL,
     )
     parser.add_argument(
+        "--actual-opportunity-backfill",
+        type=Path,
+        default=dataset.ACTUAL_OPPORTUNITY_BACKFILL,
+    )
+    parser.add_argument(
         "--run-workload-no-vig-audit",
         action="store_true",
         help="After writing the Gate C dataset, rebuild the shadow workload/no-vig audit report.",
@@ -309,6 +320,7 @@ def main(argv: list[str] | None = None) -> None:
         start_date=args.start_date,
         end_date=args.end_date,
         lineup_handedness_backfill_path=args.lineup_handedness_backfill,
+        actual_opportunity_backfill_path=args.actual_opportunity_backfill,
     )
     if args.run_workload_no_vig_audit:
         from analytics.diagnostics import workload_no_vig_ev_audit  # noqa: WPS433

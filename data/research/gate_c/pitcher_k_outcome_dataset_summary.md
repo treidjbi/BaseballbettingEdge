@@ -15,6 +15,9 @@ Shadow-only: this dataset does not change live picks, locks, thresholds, staking
 - Beat-close price rows: `131`
 - Beat-close line rows: `16`
 - Rows with lineup hand counts: `1174`
+- Rows with actual IP: `1662`
+- Rows with actual pitch count: `1662`
+- Rows with batters faced: `1662`
 - Large-edge skepticism rows: `379`
 - Clean graded picks reconciled: `855/855`
 - Unique side fallback reconciliations: `28`
@@ -79,3 +82,7 @@ Shadow-only: this dataset does not change live picks, locks, thresholds, staking
 
 - `missing`: `488`
 - `mlb_boxscore_reconstructed`: `1174`
+
+## Actual Opportunity Sources
+
+- `mlb_boxscore_reconstructed`: `1662`

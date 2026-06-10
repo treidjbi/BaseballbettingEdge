@@ -187,6 +187,7 @@ def test_main_can_run_workload_no_vig_audit_after_fresh_dataset(tmp_path, monkey
                 "start_date": builder.dataset.CLEAN_WINDOW_START,
                 "end_date": None,
                 "lineup_handedness_backfill_path": builder.dataset.LINEUP_HANDEDNESS_BACKFILL,
+                "actual_opportunity_backfill_path": builder.dataset.ACTUAL_OPPORTUNITY_BACKFILL,
             },
         ),
         (

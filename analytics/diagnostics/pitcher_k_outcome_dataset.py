@@ -40,6 +40,7 @@ PICKS_HISTORY = ROOT / "data" / "picks_history.json"
 OUTPUT_JSONL = ROOT / "analytics" / "output" / "pitcher_k_outcome_dataset.jsonl"
 OUTPUT_SUMMARY = ROOT / "analytics" / "output" / "pitcher_k_outcome_dataset_summary.md"
 LINEUP_HANDEDNESS_BACKFILL = ROOT / "analytics" / "output" / "lineup_handedness_backfill.json"
+ACTUAL_OPPORTUNITY_BACKFILL = ROOT / "analytics" / "output" / "actual_opportunity_backfill.json"
 CLEAN_WINDOW_START = "2026-04-28"
 DEFAULT_ARTIFACT_API_URL = "https://baseballbettingedge.netlify.app/.netlify/functions/get-artifact"
 
@@ -130,6 +131,10 @@ REQUIRED_DATASET_FIELDS = {
     "actual_ip",
     "actual_pitch_count",
     "batters_faced",
+    "actual_opportunity_source",
+    "actual_opportunity_runtime_safe",
+    "actual_opportunity_game_pk",
+    "actual_opportunity_pitcher_match_type",
 }
 
 
@@ -167,6 +172,24 @@ def lineup_handedness_lookup_key(
             _normalized(team),
             _normalized(opp_team),
             str(game_time or "").strip(),
+        ]
+    )
+
+
+def actual_opportunity_lookup_key(
+    slate_date: Any,
+    team: Any,
+    opp_team: Any,
+    game_time: Any,
+    pitcher: Any,
+) -> str:
+    return "|".join(
+        [
+            str(slate_date or "").strip(),
+            _normalized(team),
+            _normalized(opp_team),
+            str(game_time or "").strip(),
+            _normalized(pitcher),
         ]
     )
 
@@ -923,6 +946,10 @@ def build_official_close_rows(markets: list[dict[str, Any]]) -> list[dict[str, A
                 "actual_ip": _to_float(market.get("actual_ip")),
                 "actual_pitch_count": _to_int(market.get("actual_pitch_count")),
                 "batters_faced": _to_int(market.get("batters_faced")),
+                "actual_opportunity_source": None,
+                "actual_opportunity_runtime_safe": None,
+                "actual_opportunity_game_pk": None,
+                "actual_opportunity_pitcher_match_type": None,
                 "source_artifact_path": source_artifact_path,
             }
             rows.append(row)
@@ -1005,6 +1032,9 @@ def build_summary(rows: list[dict[str, Any]]) -> dict[str, Any]:
     lineup_handedness_source_counts = Counter(
         str(row.get("lineup_handedness_source") or "missing") for row in rows
     )
+    actual_opportunity_source_counts = Counter(
+        str(row.get("actual_opportunity_source") or "missing") for row in rows
+    )
     clean_rows = [row for row in rows if str(row.get("slate_date") or "") >= CLEAN_WINDOW_START]
     return {
         "total_rows": len(rows),
@@ -1032,6 +1062,12 @@ def build_summary(rows: list[dict[str, Any]]) -> dict[str, Any]:
             and row.get("lineup_switch_batters") is not None
         ),
         "lineup_handedness_source_counts": dict(sorted(lineup_handedness_source_counts.items())),
+        "actual_opportunity_rows": sum(1 for row in rows if row.get("actual_ip") is not None),
+        "actual_pitch_count_rows": sum(
+            1 for row in rows if row.get("actual_pitch_count") is not None
+        ),
+        "batters_faced_rows": sum(1 for row in rows if row.get("batters_faced") is not None),
+        "actual_opportunity_source_counts": dict(sorted(actual_opportunity_source_counts.items())),
         "large_edge_skepticism_rows": sum(1 for row in rows if row.get("large_edge_skepticism_flag") is True),
         "model_market_relationship_counts": dict(sorted(model_market_counts.items())),
         "opportunity_bucket_counts": dict(sorted(opportunity_counts.items())),
@@ -1300,6 +1336,21 @@ def _load_lineup_handedness_backfill(path: Path) -> dict[str, dict[str, Any]]:
     return {str(key): value for key, value in lineups.items() if isinstance(value, dict)} if isinstance(lineups, dict) else {}
 
 
+def _load_actual_opportunity_backfill(path: Path) -> dict[str, dict[str, Any]]:
+    if not path.exists():
+        return {}
+    try:
+        payload = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return {}
+    opportunities = payload.get("opportunities") if isinstance(payload, dict) else None
+    return (
+        {str(key): value for key, value in opportunities.items() if isinstance(value, dict)}
+        if isinstance(opportunities, dict)
+        else {}
+    )
+
+
 def enrich_rows_with_lineup_handedness(
     rows: list[dict[str, Any]],
     *,
@@ -1354,6 +1405,51 @@ def enrich_rows_with_lineup_handedness(
     return enriched
 
 
+def enrich_rows_with_actual_opportunity(
+    rows: list[dict[str, Any]],
+    *,
+    backfill_path: Path = ACTUAL_OPPORTUNITY_BACKFILL,
+) -> list[dict[str, Any]]:
+    opportunities = _load_actual_opportunity_backfill(backfill_path)
+    enriched: list[dict[str, Any]] = []
+    for row in rows:
+        next_row = dict(row)
+        next_row.setdefault("actual_ip", None)
+        next_row.setdefault("actual_pitch_count", None)
+        next_row.setdefault("batters_faced", None)
+        next_row.setdefault("actual_opportunity_source", None)
+        next_row.setdefault("actual_opportunity_runtime_safe", None)
+        next_row.setdefault("actual_opportunity_game_pk", None)
+        next_row.setdefault("actual_opportunity_pitcher_match_type", None)
+
+        key = actual_opportunity_lookup_key(
+            next_row.get("slate_date"),
+            next_row.get("team"),
+            next_row.get("opp_team"),
+            next_row.get("game_time"),
+            next_row.get("pitcher") or next_row.get("normalized_pitcher"),
+        )
+        opportunity = opportunities.get(key)
+        if opportunity:
+            next_row.update(
+                {
+                    "actual_ip": _to_float(opportunity.get("actual_ip")),
+                    "actual_pitch_count": _to_int(opportunity.get("actual_pitch_count")),
+                    "batters_faced": _to_int(opportunity.get("batters_faced")),
+                    "actual_opportunity_source": opportunity.get("actual_opportunity_source"),
+                    "actual_opportunity_runtime_safe": opportunity.get(
+                        "actual_opportunity_runtime_safe"
+                    ),
+                    "actual_opportunity_game_pk": opportunity.get("game_pk"),
+                    "actual_opportunity_pitcher_match_type": opportunity.get(
+                        "pitcher_match_type"
+                    ),
+                }
+            )
+        enriched.append(next_row)
+    return enriched
+
+
 def render_summary(summary: dict[str, Any]) -> str:
     lines = [
         "# Pitcher K Outcome Dataset Summary",
@@ -1373,6 +1469,9 @@ def render_summary(summary: dict[str, Any]) -> str:
         f"- Beat-close price rows: `{summary.get('beat_close_price_rows', 0)}`",
         f"- Beat-close line rows: `{summary.get('beat_close_line_rows', 0)}`",
         f"- Rows with lineup hand counts: `{summary.get('lineup_hand_count_rows', 0)}`",
+        f"- Rows with actual IP: `{summary.get('actual_opportunity_rows', 0)}`",
+        f"- Rows with actual pitch count: `{summary.get('actual_pitch_count_rows', 0)}`",
+        f"- Rows with batters faced: `{summary.get('batters_faced_rows', 0)}`",
         f"- Large-edge skepticism rows: `{summary.get('large_edge_skepticism_rows', 0)}`",
         f"- Clean graded picks reconciled: `{summary.get('matched_pick_rows', 0)}/{summary.get('graded_pick_rows', 0)}`",
         f"- Unique side fallback reconciliations: `{summary.get('unique_side_fallback_matches', 0)}`",
@@ -1392,6 +1491,7 @@ def render_summary(summary: dict[str, Any]) -> str:
         ("Leash Risk Buckets", "leash_risk_bucket_counts"),
         ("Pitcher Archetype Buckets", "pitcher_archetype_bucket_counts"),
         ("Lineup Handedness Sources", "lineup_handedness_source_counts"),
+        ("Actual Opportunity Sources", "actual_opportunity_source_counts"),
     ):
         lines.extend(["", f"## {title}", ""])
         for value, count in (summary.get(key) or {}).items():
@@ -1424,6 +1524,7 @@ def build_dataset(
     start_date: str = CLEAN_WINDOW_START,
     end_date: str | None = None,
     lineup_handedness_backfill_path: Path = LINEUP_HANDEDNESS_BACKFILL,
+    actual_opportunity_backfill_path: Path = ACTUAL_OPPORTUNITY_BACKFILL,
     artifact_api_url: str | None = None,
 ) -> list[dict[str, Any]]:
     markets = load_archived_markets_for_dataset(
@@ -1436,6 +1537,10 @@ def build_dataset(
     rows = enrich_rows_with_lineup_handedness(
         rows,
         backfill_path=lineup_handedness_backfill_path,
+    )
+    rows = enrich_rows_with_actual_opportunity(
+        rows,
+        backfill_path=actual_opportunity_backfill_path,
     )
     return enrich_rows_with_pick_history(
         rows,
@@ -1451,6 +1556,7 @@ def _parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--jsonl-output", type=Path, default=OUTPUT_JSONL)
     parser.add_argument("--summary-output", type=Path, default=OUTPUT_SUMMARY)
     parser.add_argument("--lineup-handedness-backfill", type=Path, default=LINEUP_HANDEDNESS_BACKFILL)
+    parser.add_argument("--actual-opportunity-backfill", type=Path, default=ACTUAL_OPPORTUNITY_BACKFILL)
     parser.add_argument(
         "--artifact-source",
         choices=("local", "production"),
@@ -1472,6 +1578,7 @@ def main(argv: list[str] | None = None) -> None:
         start_date=args.start_date,
         end_date=args.end_date,
         lineup_handedness_backfill_path=args.lineup_handedness_backfill,
+        actual_opportunity_backfill_path=args.actual_opportunity_backfill,
         artifact_api_url=artifact_api_url_base,
     )
     validation_errors = [

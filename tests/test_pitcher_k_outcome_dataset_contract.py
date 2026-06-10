@@ -83,6 +83,10 @@ def _complete_row(**overrides):
         "actual_ip": None,
         "actual_pitch_count": None,
         "batters_faced": None,
+        "actual_opportunity_source": None,
+        "actual_opportunity_runtime_safe": None,
+        "actual_opportunity_game_pk": None,
+        "actual_opportunity_pitcher_match_type": None,
     }
     row.update(overrides)
     return row
@@ -104,6 +108,8 @@ def test_required_dataset_fields_cover_identity_market_model_result_and_context(
     assert {"lineup_real_split_count", "lineup_path_a_fallback_count"} <= REQUIRED_DATASET_FIELDS
     assert {"confidence_referee", "locked_verdict", "display_verdict"} <= REQUIRED_DATASET_FIELDS
     assert {"actionable_verdict", "locked_adj_ev", "verdict_cap_reason"} <= REQUIRED_DATASET_FIELDS
+    assert {"actual_ip", "actual_pitch_count", "batters_faced"} <= REQUIRED_DATASET_FIELDS
+    assert {"actual_opportunity_source", "actual_opportunity_runtime_safe"} <= REQUIRED_DATASET_FIELDS
 
 
 def test_build_dataset_key_is_stable_for_pitcher_side_line_and_snapshot():

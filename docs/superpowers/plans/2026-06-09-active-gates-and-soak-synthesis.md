@@ -246,24 +246,22 @@ Open follow-up:
 
 ### Gate 7: Gate C Research Dataset
 
-**State:** Open for baseline durable evidence; needs refresh/backfill for new
-runtime labels.
+**State:** Open for baseline durable evidence; refreshed/backfilled for current
+research reads.
 
-The durable Gate C artifact is the preferred full-corpus research input, but
-the current committed rows do not yet carry all live canary labels needed for
-the newest reads.
+The durable Gate C artifact is the preferred full-corpus research input.
+Runtime canary fields for Path B and the confidence referee are present in the
+current rows, while no-vig, workload, and market-agreement reads remain derived
+shadow labels from the existing row fields.
 
-Next implementation gate:
+2026-06-09 Phoenix update:
 
-- Backfill or refresh Gate C rows with:
-  - `batter_handedness_mode`
-  - `lineup_split_source`
-  - `lineup_real_split_count`
-  - `lineup_path_a_fallback_count`
-  - confidence-referee mode, relationship, would-cap, and applied-cap fields
-  - no-vig EV labels
-  - workload sensitivity labels
-  - market-agreement labels when exported evidence exists
+- The actual opportunity backfill reconstructed `831/831` unique pitcher-game
+  opportunity keys from MLB boxscores.
+- Actual IP, pitch count, and batters faced now populate all `1,662` Gate C
+  side rows.
+- These fields are marked `actual_opportunity_runtime_safe=false`; they are
+  postgame explanation labels, not pre-lock model inputs.
 
 Pass criteria:
 
@@ -274,10 +272,8 @@ Pass criteria:
 
 ### Gate 8: Workload/No-Vig Task 5
 
-**State:** Next docs-approved implementation after Gate C refresh/backfill.
-
-Task 5 from `2026-06-08-workload-no-vig-k-projection-ev-synthesis.md` should
-be done after the Gate C row refresh carries the fields listed in Gate 7.
+**State:** Implemented as an optional Gate C refresh hook; soaking as
+shadow-only explanation evidence.
 
 Scope:
 
@@ -294,6 +290,14 @@ Pass criteria:
   readiness placeholders.
 - Output states Gate E/F status for workload, no-vig, referee v2, Path B, and
   projection-challenger families.
+
+Current read:
+
+- The refreshed report analyzes `854` clean tracked win/loss rows from `1,662`
+  source rows and reconciles `855/855` clean graded picks.
+- The actual opportunity backfill improves miss classification after the fact,
+  but it does not change the workload/no-vig gate because those labels remain
+  pregame-derived unless a separate Gate E/F plan proves a runtime-safe input.
 
 ### Gate 9: Confidence Referee
 

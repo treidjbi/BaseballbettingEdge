@@ -5,7 +5,7 @@
     "jsonl": "data/research/gate_c/pitcher_k_outcome_dataset.jsonl",
     "summary": "data/research/gate_c/pitcher_k_outcome_dataset_summary.md"
   },
-  "generated_at": "2026-06-09T17:29:45.158510+00:00",
+  "generated_at": "2026-06-10T03:35:19.752923+00:00",
   "guardrails": [
     "does_not_change_live_picks",
     "does_not_change_locks",
@@ -16,7 +16,7 @@
     "does_not_change_calibration",
     "does_not_change_dashboard_behavior"
   ],
-  "jsonl_sha256": "d0e7a815ac0d8b23e8f8f6d8ca5fe4560e5b7c67bff293b87ce815a22b37443e",
+  "jsonl_sha256": "09433dbad83810ba3960bb2a6316bef75c70744ae7387105b1182def3f174e99",
   "loaded_slate_dates": [
     "2026-04-28",
     "2026-04-29",
@@ -88,6 +88,12 @@
     "start_date": "2026-04-28"
   },
   "summary_counts": {
+    "actual_opportunity_rows": 1662,
+    "actual_opportunity_source_counts": {
+      "mlb_boxscore_reconstructed": 1662
+    },
+    "actual_pitch_count_rows": 1662,
+    "batters_faced_rows": 1662,
     "beat_close_line_rows": 16,
     "beat_close_price_rows": 131,
     "bet_timing_window_counts": {
@@ -154,6 +160,6 @@
     "total_rows": 1662,
     "tracked_pick_rows": 854
   },
-  "summary_sha256": "8f3e4ca9b4046196337cf587cfab92f5b60a62f826e7222bf9b724fa6782d2ca",
+  "summary_sha256": "ea7bcee25f7f78a8c5ec4a205b7d0d3331197404cfbf97969782f5ac680aa52d",
   "tracked_pick_rows": 854
 }
