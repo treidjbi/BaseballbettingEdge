@@ -395,6 +395,27 @@ Sample gates:
 - Overall tracker read stays `watch_only` until at least 75 graded rows have
   movement-backed evidence.
 - Candidate buckets stay `watch_only` until at least 50 graded rows exist.
+- Candidate buckets become `promotion-plan eligible` only when the candidate
+  also passes the Gate 12A universal promotion floor below.
+
+Bucket-specific reads:
+
+- `lean_market_with_us`: eligible only as a future "review/playable LEAN"
+  candidate when the bucket has at least `50` graded rows, positive ROI,
+  non-negative CLV, and survives over/under, K-line, no-vig, workload, Path B,
+  provider, and rolling-window slices. It cannot auto-promote LEANs.
+- `fire_market_against_us`: eligible only as a future de-risk/referee-v2
+  candidate when the bucket has at least `50` graded rows, negative ROI or
+  meaningfully worse CLV, and the weakness survives FIRE 1u/FIRE 2u, side,
+  K-line, provider, timing, workload, Path B, and rolling-window slices. It
+  cannot auto-downgrade FIRE rows without a separate plan.
+- `referee_cap_*`: review-ready at `50` total graded cap rows, but individual
+  cap sub-buckets remain watch-only until they have at least `20` graded rows
+  each. These buckets can only audit whether the referee is too strict or too
+  loose; they cannot raise verdicts or override caps automatically.
+- `mixed_or_reversed`, `single_book_*`, and `line_half_plus` buckets must be
+  treated as volatility/timing labels until they survive provider and stale-row
+  checks. A single-book or reversed move is not enough to define behavior.
 
 2026-06-09 evidence update:
 
@@ -411,6 +432,70 @@ Still closed:
 - auto-promoting LEANs
 - overriding confidence-referee caps
 - changing model, staking, provider, notification, or dashboard behavior
+
+### Gate 12A: Bet-Selection And Edge Candidate Gates
+
+**State:** Open as Gate E research evidence; production behavior closed.
+
+The bet-selection/edge synthesis report turns the durable Gate C row into
+candidate labels for selection quality. It is the place to test whether edge,
+adjusted EV, no-vig probability, CLV, model-market relationship, workload, and
+postgame opportunity explanations agree or conflict.
+
+Universal floors before any candidate can move beyond watch-only:
+
+- Source rows come from the durable Gate C dataset for the clean `2026-04-28+`
+  regime.
+- The overall report has at least `500` clean tracked win/loss rows and clean
+  reconciliation.
+- A candidate bucket has at least `75` graded rows for a narrow single-purpose
+  review, or `150` graded rows before it can justify a production-plan draft.
+- The candidate is not explained by one slate, one pitcher, one provider, one
+  book, or one K-line cluster.
+- Required fields are present on at least `90%` of candidate rows:
+  `edge`, `adj_ev` or `locked_adj_ev`, `model_no_vig_gap`, CLV fields,
+  side, verdict, K line, quality gate, model-market relationship, workload
+  labels, and provider/source attribution when available.
+- The candidate survives side, over/under, FIRE 1u/FIRE 2u/LEAN, plus/minus
+  price, K-line, quality, timing, model-market, no-vig, CLV, workload,
+  Path B, provider, market-agreement, and rolling-window slices.
+- Hindsight-only fields, including `actual_ip`, `actual_pitch_count`,
+  `batters_faced`, result, and PnL, are explanation fields only. They cannot
+  define a runtime selector.
+- A promotion-plan draft must name the exact runtime-safe input fields, the
+  intended behavior change, the feature flag or rollback switch, and the first
+  slate/scope of the canary.
+
+Candidate-specific gates:
+
+| Candidate label | Possible future use | Research-ready floor | Promotion-plan floor |
+| --- | --- | --- | --- |
+| `clv_supported` | Positive-process label; possible LEAN review cue | `75` graded rows, positive ROI, beat-close-price or beat-close-line on most rows, and no negative side/verdict split | `150` graded rows, positive ROI after removing one slate, CLV support survives side, verdict, timing, provider, no-vig, workload, Path B, and market-agreement slices |
+| `high_edge_skeptic` | De-risk high raw-edge rows when market/no-vig/workload disagree | `75` graded rows, negative ROI or worse CLV, and weakness not isolated to one slate/provider/K-line | `150` graded rows, negative ROI survives side, FIRE 1u/FIRE 2u, plus/minus price, no-vig, workload, Path B, CLV, market-agreement, and rolling-window slices |
+| `fire_under_watch` | Narrow FIRE-under downgrade/referee-v2 candidate | `50` graded rows, negative ROI, and weakness is tied to runtime-safe market/workload/no-vig labels, not postgame opportunity | `100` graded rows, no FIRE 2u degradation risk, negative ROI survives K-line, price, timing, provider, CLV, workload, Path B, and rolling-window slices |
+| `moderate_edge_clean_context` | Possible keep/upgrade cue for clean moderate edges | `50` graded rows, positive ROI, confirmed no-vig edge, and non-negative CLV | `100` graded rows, positive ROI survives over/under, LEAN/FIRE, K-line, timing, provider, workload, Path B, and market-agreement slices |
+| `baseline_watch` | Control bucket only | Always report as context | Never promotion-eligible by itself |
+
+Current read from `analytics/output/bet_selection_edge_synthesis.md`:
+
+- Overall sample is research-ready: `854` clean tracked win/loss rows.
+- `clv_supported` is promising but still needs slice survival:
+  `101` rows, `56-45`, `+7.44`, `+7.4% ROI`.
+- `high_edge_skeptic` is a de-risk candidate but must survive slices:
+  `326` rows, `160-166`, `-20.18`, `-6.2% ROI`.
+- `fire_under_watch` is the clearest watch item but remains below the
+  production-plan floor: `58` rows, `22-36`, `-10.69`, `-18.4% ROI`.
+- `moderate_edge_clean_context` is watch-only: `25` rows and below the
+  research-ready floor.
+
+Still closed:
+
+- any automatic LEAN promotion
+- any automatic FIRE downgrade
+- any global threshold, staking, EV, lambda, or formula change
+- any runtime use of postgame opportunity fields
+- any provider, notification, lock, retention, or dashboard source-of-truth
+  change
 
 ### Gate 13: Storage And Retention
 
@@ -474,7 +559,7 @@ Use this rule:
 
 Recommended order:
 
-1. Keep Gate 7/Gate 8/Gate 9/Gate 12/Gate 5 in observation after the
+1. Keep Gate 7/Gate 8/Gate 9/Gate 12/Gate 12A/Gate 5 in observation after the
    2026-06-09 implementation push; do not promote model, provider,
    confidence-referee v2, market-agreement, bet-selection, or notification
    behavior from one refreshed report.

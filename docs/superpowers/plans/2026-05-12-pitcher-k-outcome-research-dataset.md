@@ -291,6 +291,24 @@ Gate E research evidence only; it must not change live lambda, EV thresholds,
 staking, provider order, notifications, locks, retention, calibration, or
 dashboard source-of-truth.
 
+Candidate gates for this report are controlled by Gate 12A in
+`docs/superpowers/plans/2026-06-09-active-gates-and-soak-synthesis.md`.
+The short version:
+
+- `clv_supported` can become a positive-process / LEAN-review candidate only
+  after it survives side, verdict, timing, provider, no-vig, workload, Path B,
+  market-agreement, and rolling-window slices.
+- `high_edge_skeptic` can become a de-risk candidate only if its negative ROI
+  or poor CLV survives FIRE 1u/FIRE 2u, side, K-line, price, provider,
+  workload, Path B, market-agreement, and rolling-window slices.
+- `fire_under_watch` can become a narrow downgrade/referee-v2 candidate only
+  if the weakness is defined by runtime-safe market/workload/no-vig labels, not
+  by postgame actual-opportunity fields.
+- `moderate_edge_clean_context` needs more sample before it can be more than a
+  watch bucket.
+- `baseline_watch` is a control bucket and is never promotion-eligible by
+  itself.
+
 The 2026-06-09 Phoenix actual-opportunity backfill reconstructed `831/831`
 unique pitcher-game opportunity keys and filled actual IP, pitch count, and
 batters faced on all `1,662` side rows. Those fields explain whether a miss was
@@ -342,6 +360,10 @@ The BBE Operations Brief should digest this dataset after grading and report:
   is available: LEANs with broad market support, referee caps later confirmed
   or rejected by movement, FIRE rows that became market-faded, and movement
   magnitude buckets
+- the bet-selection/edge synthesis read from
+  `analytics/output/bet_selection_edge_synthesis.md`: `clv_supported`,
+  `high_edge_skeptic`, `fire_under_watch`, `moderate_edge_clean_context`, and
+  whether any bucket has enough sample to move beyond watch-only under Gate 12A
 - whether lineup-handedness fields are populated or still collection-only
   placeholders
 - a compact Gate C bucket scoreboard for the clean 2026-04-28+ regime:

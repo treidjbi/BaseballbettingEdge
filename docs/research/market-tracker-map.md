@@ -164,7 +164,10 @@ The BBE Operations Brief should synthesize this map every weekday:
    the question is bet-selection quality rather than projection accuracy. This
    report uses the durable Gate C row to separate side/verdict, edge, adjusted
    EV, no-vig, CLV, model-market, and opportunity/outcome slices. It is
-   research evidence only and does not define a live betting rule.
+   research evidence only and does not define a live betting rule. Use Gate
+   12A in `docs/superpowers/plans/2026-06-09-active-gates-and-soak-synthesis.md`
+   to label each candidate bucket as watch-only, research-ready, or
+   promotion-plan eligible.
 7. Regenerate or read `k_projection_shadow_lab.md` when projection quality is
    in question; report whether a challenger improves accuracy without
    promoting it into live lambda.
