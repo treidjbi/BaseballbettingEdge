@@ -599,6 +599,50 @@ Still closed:
 - any provider, notification, lock, retention, or dashboard source-of-truth
   change
 
+### Gate 12D: Pre-Close CLV Proxy Lab
+
+**State:** Shadow measurement active; no CLV-proxy production behavior
+approved.
+
+The 2026-06-10 pre-close CLV proxy lab keeps CLV as the validation target, not
+as a live selector. It tests whether fields available before lock can identify
+rows that later beat closing price or line.
+
+Current read from `analytics/output/gate_f_preclose_clv_proxy_lab.md`:
+
+- Clean tracked win/loss rows analyzed: `854`.
+- Positive CLV target rows: `147`.
+- Strong pre-close proxy rows: `291`, with `93` positive-CLV rows (`32.0%`),
+  `164-127`, `+9.05u`, and `+3.1% ROI`.
+- Strong proxy source-FIRE rows: `113`; `39` would remain FIRE under the
+  profit-rescue policy and `74` would be capped to LEAN.
+- Readiness: `watch_more`, not ready for a production plan.
+- Main blockers: recent PnL is `-8.55u`, and there are `12` negative slice
+  risks including model-fades-favorite, plus price, low K-line, capped quality,
+  pre-5 timing, unchanged movement, and thin no-vig slices.
+- Richer runtime market fields are mostly missing from current Gate C rows:
+  `toward_pick_count`, `away_from_pick_count`, `better_now_count`,
+  `worse_now_count`, `book_count`, `best_is_off_market`,
+  `reversal_book_count`, `volatile_book_count`, provider, and
+  `market_agreement_label` currently have `0.0%` coverage in the clean tracked
+  rows. `broad_confirmation` is present but currently false on all rows.
+
+Next decision:
+
+- Keep CLV as the target label and rerun after the live-market/market-agreement
+  fields are populated into Gate C rows.
+- Watch whether `strong_preclose_clv_proxy` keeps positive ROI and improves
+  recent/slice performance before drafting any FIRE re-entry canary.
+- Do not promote from CLV alone and do not use CLV fields in live selectors.
+
+Still closed:
+
+- any CLV-proxy FIRE re-entry promotion
+- any LEAN promotion
+- any model/lambda/threshold/staking change
+- any provider, notification, lock, retention, or dashboard source-of-truth
+  change
+
 ### Gate 13: Storage And Retention
 
 **State:** Closed for deletion; open for dry-run evidence.

@@ -160,6 +160,16 @@ Runtime-safe watch candidates are `moderate_edge_quality_reentry` (`68` rows,
 `+15.88u`, `+19.1% ROI`) but not a live selector because CLV is post-close
 evidence.
 
+Gate F CLV-proxy overlay, 2026-06-10: `analytics/output/gate_f_preclose_clv_proxy_lab.md`
+keeps CLV as the validation target and tests whether pre-lock fields can
+predict it. The current strong pre-close proxy is a watch candidate, not ready
+for a production plan: `291` rows, `164-127`, `+9.05u`, `+3.1% ROI`, `93`
+positive-CLV rows (`32.0%`), and `113` source-FIRE rows. It also has `-8.55u`
+recent PnL and `12` negative slices, so do not re-enter FIRE from it yet. Rich
+market fields such as `toward_pick_count`, `book_count`, provider, volatility,
+and market-agreement labels are still mostly absent from current Gate C rows,
+so the next improvement is data coverage plus another graded rerun.
+
 Board rule: each lane can advance independently, but live betting behavior only
 changes after the controlling lane has passed its own promotion gate and Tyler
 explicitly approves the production switch. Operational reliability evidence is
