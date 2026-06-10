@@ -282,6 +282,15 @@ referee interaction slices. Treat it as a shadow readiness and explanation
 artifact only; no live model, threshold, staking, provider, notification, lock,
 retention, or dashboard-source decision can come from this report alone.
 
+The bet-selection/edge synthesis report is implemented at
+`analytics/diagnostics/bet_selection_edge_synthesis.py` with report output at
+`analytics/output/bet_selection_edge_synthesis.md`. It reads the durable Gate C
+dataset and separates side/verdict, raw edge, adjusted EV, no-vig, CLV,
+model-market relationship, and postgame opportunity/outcome buckets. It is
+Gate E research evidence only; it must not change live lambda, EV thresholds,
+staking, provider order, notifications, locks, retention, calibration, or
+dashboard source-of-truth.
+
 The 2026-06-09 Phoenix actual-opportunity backfill reconstructed `831/831`
 unique pitcher-game opportunity keys and filled actual IP, pitch count, and
 batters faced on all `1,662` side rows. Those fields explain whether a miss was

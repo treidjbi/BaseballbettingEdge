@@ -323,6 +323,17 @@ Still closed:
 - changing lambda, thresholds, or staking
 - using post-start or result fields as runtime inputs
 
+2026-06-09 evidence update:
+
+- `analytics/diagnostics/confidence_referee_canary_audit.py` now reads the
+  durable Gate C dataset instead of the stale `picks_history` metadata path.
+- Current report read: `1,662` source rows, `164` rows with referee metadata,
+  and `14` applied caps (`6` FIRE 1u -> LEAN, `1` FIRE 2u -> FIRE 1u, `7`
+  FIRE 2u -> LEAN).
+- This fixes the audit surface only; it does not change the live referee,
+  threshold, staking, model, provider, lock, notification, retention, or
+  dashboard behavior.
+
 ### Gate 10: Path B Handedness
 
 **State:** Open as a live input canary; promotion to normal behavior still
@@ -373,7 +384,8 @@ Still closed:
 
 ### Gate 12: Market Agreement Tracker
 
-**State:** Open as shadow tracking; promotion behavior closed.
+**State:** Open as shadow tracking; promotion behavior closed. The overall
+sample is now review-ready, but candidate behavior remains closed.
 
 The market agreement tracker is implemented and should help interpret whether
 live market movement confirmed or contradicted the model side.
@@ -383,6 +395,16 @@ Sample gates:
 - Overall tracker read stays `watch_only` until at least 75 graded rows have
   movement-backed evidence.
 - Candidate buckets stay `watch_only` until at least 50 graded rows exist.
+
+2026-06-09 evidence update:
+
+- Compact Supabase backfill used `market_pick_evidence` and
+  `live_market_display_state`, plus Gate C metadata/result overlay.
+- Current report read: `2,482` evidence rows, `2,171` graded rows, and `56`
+  graded confidence-referee cap rows.
+- The tracker can now support Gate E review of movement agreement buckets, but
+  it still cannot promote LEANs, override caps, change notifications, or change
+  model/provider behavior.
 
 Still closed:
 
@@ -452,9 +474,10 @@ Use this rule:
 
 Recommended order:
 
-1. Keep Gate 7/Gate 8/Gate 5 in observation after the 2026-06-09 implementation
-   push; do not promote model, provider, or notification behavior from one
-   refreshed report.
+1. Keep Gate 7/Gate 8/Gate 9/Gate 12/Gate 5 in observation after the
+   2026-06-09 implementation push; do not promote model, provider,
+   confidence-referee v2, market-agreement, bet-selection, or notification
+   behavior from one refreshed report.
 2. For Gate 13, keep deletion closed; the bounded compact-coverage sample is
    clear after the May 1-26 backfill, but execution needs exact proof or a
    separate Tyler approval.

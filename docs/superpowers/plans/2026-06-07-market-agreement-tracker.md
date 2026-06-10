@@ -12,8 +12,10 @@ confidence-referee capped rows.
 **Architecture:** Reuse existing live-market evidence and the live market
 outcome audit. Add a diagnostic that derives agreement, value, strength,
 magnitude, and referee/LEAN/FIRE buckets. Join to `picks_history.json` when
-graded rows exist. Optionally overlay tracked-pick metadata from a current
-artifact so same-day referee caps can be evaluated before grading.
+graded rows exist, and use the durable Gate C dataset as the historical
+metadata/result overlay when local history is behind production grading.
+Optionally overlay tracked-pick metadata from a current artifact so same-day
+referee caps can be evaluated before grading.
 
 **Tech Stack:** Python 3.11, pytest, existing `analytics/diagnostics/`
 patterns, Markdown/JSONL output under `analytics/output/`.
@@ -47,6 +49,15 @@ This version is derived reporting only. It can read exported live market
 evidence and optional current artifact tracked picks to label movement with or
 against the model, but it does not write Supabase rows or change production
 behavior.
+
+2026-06-09 update: the CLI now defaults `--gate-c-dataset` to
+`data/research/gate_c/pitcher_k_outcome_dataset.jsonl`. That row is used only
+as a historical metadata/result overlay so referee caps and recent graded rows
+do not disappear when local `picks_history.json` is stale. A compact Supabase
+backfill from `market_pick_evidence` and `live_market_display_state` produced
+`2,482` evidence rows, `2,171` graded rows, and `56` graded
+confidence-referee cap rows in the local report. This remains shadow-only
+review evidence.
 
 The sample gate was added on 2026-06-07:
 
@@ -102,6 +113,8 @@ The sample gate was added on 2026-06-07:
       `locked_verdict`.
 - [x] Normalize confidence-referee metadata from either movement rows or
       tracked-pick artifact rows.
+- [x] Normalize Gate C JSONL metadata and `pick_history_pnl` /
+      `theoretical_pnl` as a historical overlay for backfilled reports.
 - [x] Add agreement/value/strength/magnitude labels.
 - [x] Add tracker buckets for LEAN, FIRE, and referee caps.
 - [x] Add `main()` with input paths and output paths.

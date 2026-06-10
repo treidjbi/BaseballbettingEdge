@@ -117,6 +117,40 @@ def test_build_tracker_rows_overlays_current_artifact_referee_metadata():
     assert rows[0]["tracker_bucket"] == "referee_cap_market_with_us"
 
 
+def test_build_tracker_rows_uses_gate_c_history_pnl_fields():
+    rows = tracker.build_tracker_rows(
+        market_pick_evidence_rows=[_movement_row()],
+        live_market_display_rows=[],
+        market_snapshot_rows=[],
+        history_rows=[
+            {
+                "slate_date": "2026-06-07",
+                "pitcher": "Example Starter",
+                "side": "over",
+                "result": "win",
+                "pick_history_pnl": 0.91,
+            }
+        ],
+    )
+
+    assert rows[0]["result"] == "win"
+    assert rows[0]["pnl"] == 0.91
+
+
+def test_load_pick_metadata_rows_accepts_gate_c_jsonl(tmp_path):
+    path = tmp_path / "pitcher_k_outcome_dataset.jsonl"
+    path.write_text(
+        '{"slate_date":"2026-06-07","pitcher":"Example Starter","side":"over","confidence_referee":{"applied":true}}\n',
+        encoding="utf-8",
+    )
+
+    rows = tracker.load_pick_metadata_rows(path)
+
+    assert len(rows) == 1
+    assert rows[0]["pitcher"] == "Example Starter"
+    assert rows[0]["confidence_referee"] == {"applied": True}
+
+
 def test_build_report_keeps_market_agreement_shadow_only():
     report = tracker.build_report([
         tracker.annotate_row(

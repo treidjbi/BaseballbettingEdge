@@ -1,7 +1,13 @@
-"""Audit confidence-referee metadata persisted to picks history."""
+"""Audit confidence-referee metadata persisted to Gate C research rows.
+
+This diagnostic is analysis-only. It does not change live picks, locks,
+thresholds, staking, provider order, notifications, calibration, or dashboard
+source-of-truth.
+"""
 
 from __future__ import annotations
 
+import argparse
 import json
 from collections import Counter
 from pathlib import Path
@@ -9,24 +15,67 @@ from typing import Any
 
 
 ROOT = Path(__file__).resolve().parents[2]
-HISTORY_PATH = ROOT / "data" / "picks_history.json"
+DEFAULT_INPUT_PATH = ROOT / "data" / "research" / "gate_c" / "pitcher_k_outcome_dataset.jsonl"
+LEGACY_HISTORY_PATH = ROOT / "data" / "picks_history.json"
 OUTPUT_PATH = ROOT / "analytics" / "output" / "confidence_referee_canary_audit.md"
 
 
-def load_history(path: Path = HISTORY_PATH) -> list[dict[str, Any]]:
+def load_rows(path: Path = DEFAULT_INPUT_PATH) -> list[dict[str, Any]]:
     if not path.exists():
         return []
 
-    rows = json.loads(path.read_text(encoding="utf-8"))
-    if not isinstance(rows, list):
-        return []
-    return [row for row in rows if isinstance(row, dict)]
+    text = path.read_text(encoding="utf-8")
+    if path.suffix.lower() == ".jsonl":
+        rows: list[dict[str, Any]] = []
+        for line in text.splitlines():
+            if not line.strip():
+                continue
+            parsed = json.loads(line)
+            if isinstance(parsed, dict):
+                rows.append(parsed)
+        return rows
+
+    payload = json.loads(text)
+    if isinstance(payload, list):
+        return [row for row in payload if isinstance(row, dict)]
+    if isinstance(payload, dict):
+        for key in ("rows", "data", "items", "result"):
+            value = payload.get(key)
+            if isinstance(value, list):
+                return [row for row in value if isinstance(row, dict)]
+    return []
+
+
+def load_history(path: Path = LEGACY_HISTORY_PATH) -> list[dict[str, Any]]:
+    return load_rows(path)
 
 
 def _label(value: Any) -> str:
     if value is None or value == "":
         return "unknown"
     return str(value)
+
+
+def _json_object(value: Any) -> dict[str, Any]:
+    if isinstance(value, dict):
+        return value
+    if isinstance(value, str) and value.strip():
+        try:
+            parsed = json.loads(value)
+        except json.JSONDecodeError:
+            return {}
+        return parsed if isinstance(parsed, dict) else {}
+    return {}
+
+
+def _final_verdict(row: dict[str, Any]) -> str:
+    return _label(
+        row.get("display_verdict")
+        or row.get("locked_verdict")
+        or row.get("actionable_verdict")
+        or row.get("current_verdict")
+        or row.get("verdict")
+    )
 
 
 def summarize(rows: list[dict[str, Any]]) -> dict[str, Any]:
@@ -37,8 +86,8 @@ def summarize(rows: list[dict[str, Any]]) -> dict[str, Any]:
     applied_caps = 0
 
     for row in rows:
-        meta = row.get("confidence_referee")
-        if not isinstance(meta, dict):
+        meta = _json_object(row.get("confidence_referee"))
+        if not meta:
             continue
 
         rows_with_referee_metadata += 1
@@ -48,7 +97,7 @@ def summarize(rows: list[dict[str, Any]]) -> dict[str, Any]:
         if meta.get("applied") is True:
             applied_caps += 1
             raw_verdict = _label(row.get("raw_verdict"))
-            final_verdict = _label(row.get("verdict"))
+            final_verdict = _final_verdict(row)
             cap_transition_counts[f"{raw_verdict} -> {final_verdict}"] += 1
 
     return {
@@ -73,7 +122,9 @@ def build_report(rows: list[dict[str, Any]]) -> str:
     lines = [
         "# Confidence Referee Canary Audit",
         "",
-        "This is feature-flag audit evidence for confidence_referee metadata in picks_history rows.",
+        "This is feature-flag audit evidence for `confidence_referee` metadata in the Gate C pitcher outcome dataset. The legacy picks_history-only read is retired because it does not carry current referee metadata.",
+        "",
+        "Shadow-only: this report does not change live picks, locks, thresholds, staking, provider order, notifications, calibration, or dashboard source-of-truth.",
         "",
         "## Summary",
         "",
@@ -88,10 +139,21 @@ def build_report(rows: list[dict[str, Any]]) -> str:
     return "\n".join(lines).rstrip() + "\n"
 
 
-def main() -> None:
-    OUTPUT_PATH.parent.mkdir(parents=True, exist_ok=True)
-    OUTPUT_PATH.write_text(build_report(load_history()), encoding="utf-8")
+def _parse_args(argv: list[str] | None = None) -> argparse.Namespace:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--input", type=Path, default=DEFAULT_INPUT_PATH)
+    parser.add_argument("--output", type=Path, default=OUTPUT_PATH)
+    return parser.parse_args(argv)
+
+
+def main(argv: list[str] | None = None) -> int:
+    args = _parse_args(argv)
+    args.output.parent.mkdir(parents=True, exist_ok=True)
+    rows = load_rows(args.input)
+    args.output.write_text(build_report(rows), encoding="utf-8")
+    print(f"Wrote {args.output} ({len(rows)} source rows)")
+    return 0
 
 
 if __name__ == "__main__":
-    main()
+    raise SystemExit(main())

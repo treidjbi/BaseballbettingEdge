@@ -26,6 +26,7 @@ from pipeline.name_utils import normalize  # noqa: E402
 
 
 HISTORY_PATH = ROOT / "data" / "picks_history.json"
+GATE_C_DATASET_PATH = ROOT / "data" / "research" / "gate_c" / "pitcher_k_outcome_dataset.jsonl"
 OUTPUT_MD_PATH = ROOT / "analytics" / "output" / "market_agreement_tracker.md"
 OUTPUT_JSONL_PATH = ROOT / "analytics" / "output" / "market_agreement_tracker.jsonl"
 OVERALL_GRADED_MIN_ROWS = 75
@@ -95,6 +96,24 @@ def _current_verdict(row: dict[str, Any]) -> str:
 
 def _raw_verdict(row: dict[str, Any]) -> str:
     return str(row.get("raw_verdict") or "").strip()
+
+
+def _row_pnl(row: dict[str, Any]) -> float | None:
+    for key in ("pnl", "pick_history_pnl", "theoretical_pnl"):
+        value = _to_float(row.get(key))
+        if value is not None:
+            return value
+    return None
+
+
+def _normalize_history_rows(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    normalized: list[dict[str, Any]] = []
+    for row in rows:
+        normalized_row = {**row}
+        if _is_missing(normalized_row.get("pnl")):
+            normalized_row["pnl"] = _row_pnl(row)
+        normalized.append(normalized_row)
+    return normalized
 
 
 def _is_fire_verdict(verdict: str) -> bool:
@@ -269,6 +288,27 @@ def load_json_payload(path: Path | None) -> Any:
     return json.loads(path.read_text(encoding="utf-8"))
 
 
+def load_pick_metadata_rows(path: Path | None) -> list[dict[str, Any]]:
+    if path is None or not path.exists():
+        return []
+
+    text = path.read_text(encoding="utf-8")
+    if path.suffix.lower() == ".jsonl":
+        rows: list[dict[str, Any]] = []
+        for line in text.splitlines():
+            if not line.strip():
+                continue
+            parsed = json.loads(line)
+            if isinstance(parsed, dict):
+                rows.append(parsed)
+        return rows
+
+    payload = json.loads(text)
+    if isinstance(payload, list):
+        return [row for row in payload if isinstance(row, dict)]
+    return extract_current_pick_rows(payload)
+
+
 def _overlay_current_pick_metadata(
     rows: list[dict[str, Any]],
     current_pick_rows: list[dict[str, Any]],
@@ -277,6 +317,7 @@ def _overlay_current_pick_metadata(
     merged_rows: list[dict[str, Any]] = []
     overlay_fields = (
         "raw_verdict",
+        "display_verdict",
         "actionable_verdict",
         "locked_verdict",
         "quality_gate_level",
@@ -317,7 +358,7 @@ def build_tracker_rows(
         market_pick_evidence_rows=market_pick_evidence_rows,
         live_market_display_rows=live_market_display_rows,
         market_snapshot_rows=market_snapshot_rows,
-        history_rows=history_rows,
+        history_rows=_normalize_history_rows(history_rows),
         checkpoints_minutes=checkpoints_minutes,
     )
     if current_pick_rows:
@@ -551,6 +592,7 @@ def _parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--live-market-display", type=Path)
     parser.add_argument("--market-snapshots", type=Path)
     parser.add_argument("--current-artifact", type=Path)
+    parser.add_argument("--gate-c-dataset", type=Path, default=GATE_C_DATASET_PATH)
     parser.add_argument("--checkpoints", default="120,60,30,15,5,0")
     parser.add_argument("--output-md", type=Path, default=OUTPUT_MD_PATH)
     parser.add_argument("--output-jsonl", type=Path, default=OUTPUT_JSONL_PATH)
@@ -560,12 +602,16 @@ def _parse_args(argv: list[str] | None = None) -> argparse.Namespace:
 def main(argv: list[str] | None = None) -> None:
     args = _parse_args(argv)
     current_payload = load_json_payload(args.current_artifact)
+    pick_metadata_rows = [
+        *load_pick_metadata_rows(args.gate_c_dataset),
+        *extract_current_pick_rows(current_payload),
+    ]
     rows = build_tracker_rows(
         market_pick_evidence_rows=load_json_rows(args.market_pick_evidence),
         live_market_display_rows=load_json_rows(args.live_market_display),
         market_snapshot_rows=load_json_rows(args.market_snapshots),
-        history_rows=load_json_rows(args.history),
-        current_pick_rows=extract_current_pick_rows(current_payload),
+        history_rows=[*load_json_rows(args.history), *pick_metadata_rows],
+        current_pick_rows=pick_metadata_rows,
         checkpoints_minutes=_parse_checkpoints(args.checkpoints),
     )
     args.output_md.parent.mkdir(parents=True, exist_ok=True)
