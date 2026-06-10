@@ -150,6 +150,16 @@ enforce mode, seven applied profit-rescue caps, zero current FIRE side verdicts,
 and one same-day stale-lock caveat for Carlos Rodon under, which locked from
 the pre-reconciliation artifact at `2026-06-10T16:40:29Z`.
 
+Gate F selection-progress overlay, 2026-06-10: `analytics/output/gate_f_fire_reentry_lab.md`
+now measures FIRE re-entry volume and candidate decision value. It shows `638`
+historical FIRE-like rows, `134` retained under the profit-rescue policy, and
+`504` capped to LEAN. No candidate is ready for a production plan yet.
+Runtime-safe watch candidates are `moderate_edge_quality_reentry` (`68` rows,
+`+4.77u`, `+7.0% ROI`) and `retained_fire_control` (`134` rows, `+2.71u`,
+`+2.0% ROI`). `clv_supported_reentry` is a strong process anchor (`83` rows,
+`+15.88u`, `+19.1% ROI`) but not a live selector because CLV is post-close
+evidence.
+
 Board rule: each lane can advance independently, but live betting behavior only
 changes after the controlling lane has passed its own promotion gate and Tyler
 explicitly approves the production switch. Operational reliability evidence is

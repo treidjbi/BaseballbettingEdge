@@ -555,6 +555,50 @@ Still closed:
 - any provider, notification, lock, retention, or dashboard source-of-truth
   change
 
+### Gate 12C: FIRE Re-Entry Selection Lab
+
+**State:** Shadow measurement active; no re-entry production behavior approved.
+
+The 2026-06-10 FIRE re-entry lab changes the Gate F question from only "what
+should we cap?" to "which capped or retained FIRE-like rows can earn FIRE back
+with enough runtime-safe evidence?"
+
+Current read from `analytics/output/gate_f_fire_reentry_lab.md`:
+
+- Clean tracked win/loss rows analyzed: `854`.
+- Historical FIRE-like rows analyzed: `638`.
+- Profit-rescue shadow retention: `134` retained FIRE rows and `504`
+  capped-to-LEAN rows, or `21.0%` retained.
+- Ready-for-plan candidates: none.
+- Runtime-safe watch candidates:
+  - `moderate_edge_quality_reentry`: `68` rows, `38-30`, `+4.77u`,
+    `+7.0% ROI`, but recent PnL was negative and slice risks remain.
+  - `retained_fire_control`: `134` rows, `77-57`, `+2.71u`, `+2.0% ROI`,
+    but recent PnL and multiple slices are negative.
+- `clv_supported_reentry` is a process anchor, not a runtime selector:
+  `83` rows, `48-35`, `+15.88u`, `+19.1% ROI`, but CLV is post-close evidence
+  and cannot be the live rule by itself.
+- `avoid_fire_under_reentry` strongly supports keeping the under brake:
+  `348` rows, `164-184`, `-32.77u`, `-9.4% ROI`.
+
+Next decision:
+
+- Keep `PROFIT_RESCUE_REFEREE_MODE=enforce` while collecting graded rows.
+- Rerun the re-entry lab after each grading cycle and track whether
+  `moderate_edge_quality_reentry` or `retained_fire_control` improves recent
+  PnL and survives side, K-line, price, timing, quality, CLV, no-vig, workload,
+  Path B, provider, and market-agreement slices.
+- Draft a separate production re-entry canary only after one candidate reaches
+  `ready_for_plan` with enough retained volume and no major negative slice.
+
+Still closed:
+
+- any FIRE re-entry promotion
+- any LEAN promotion
+- any model/lambda/threshold/staking change
+- any provider, notification, lock, retention, or dashboard source-of-truth
+  change
+
 ### Gate 13: Storage And Retention
 
 **State:** Closed for deletion; open for dry-run evidence.
