@@ -94,6 +94,7 @@ def test_clean_record_keeps_fire_two():
     assert gated["ev_over"]["raw_verdict"] == "FIRE 2u"
     assert gated["ev_over"]["verdict"] == "FIRE 2u"
     assert gated["ev_over"]["actionable_verdict"] == "FIRE 2u"
+    assert "profit_rescue_referee" not in gated["ev_over"]
 
 
 def test_apply_quality_to_record_does_not_mutate_input():
@@ -247,3 +248,35 @@ def test_confidence_referee_enforce_caps_after_quality_gate(monkeypatch):
     assert gated["ev_under"]["verdict"] == "LEAN"
     assert gated["ev_under"]["actionable_verdict"] == "LEAN"
     assert gated["ev_under"]["confidence_referee"]["applied"] is True
+
+
+def test_profit_rescue_shadow_runs_after_quality_without_changing_verdict(monkeypatch):
+    monkeypatch.delenv("MARKET_FAVORITE_REFEREE_MODE", raising=False)
+    monkeypatch.setenv("PROFIT_RESCUE_REFEREE_MODE", "shadow")
+    record = clean_fire_record()
+    record["best_over_odds"] = -125
+    record["best_under_odds"] = 105
+
+    gated = apply_quality_to_record(record)
+
+    assert gated["ev_over"]["verdict"] == "FIRE 2u"
+    assert gated["ev_over"]["actionable_verdict"] == "FIRE 2u"
+    assert gated["ev_over"]["profit_rescue_referee"]["mode"] == "shadow"
+    assert gated["ev_over"]["profit_rescue_referee"]["would_cap_to"] == "FIRE 1u"
+    assert gated["ev_over"]["profit_rescue_referee"]["applied"] is False
+
+
+def test_profit_rescue_enforce_caps_after_confidence_referee(monkeypatch):
+    monkeypatch.setenv("MARKET_FAVORITE_REFEREE_MODE", "off")
+    monkeypatch.setenv("PROFIT_RESCUE_REFEREE_MODE", "enforce")
+    record = clean_fire_record()
+    record["best_over_odds"] = -125
+    record["best_under_odds"] = 105
+
+    gated = apply_quality_to_record(record)
+
+    assert gated["ev_over"]["raw_verdict"] == "FIRE 2u"
+    assert gated["ev_over"]["quality_actionable_verdict"] == "FIRE 2u"
+    assert gated["ev_over"]["verdict"] == "FIRE 1u"
+    assert gated["ev_over"]["actionable_verdict"] == "FIRE 1u"
+    assert gated["ev_over"]["profit_rescue_referee"]["applied"] is True

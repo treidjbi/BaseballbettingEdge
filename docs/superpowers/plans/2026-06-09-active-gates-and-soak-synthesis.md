@@ -497,6 +497,48 @@ Still closed:
 - any provider, notification, lock, retention, or dashboard source-of-truth
   change
 
+### Gate 12B: Profit-Rescue FIRE Exposure Canary
+
+**State:** Implemented behind flag; production behavior closed until Tyler
+approves an environment-variable promotion.
+
+The 2026-06-10 profit-rescue plan adds
+`PROFIT_RESCUE_REFEREE_MODE=off|shadow|enforce` after the quality gate and
+market-favorite confidence referee. Default is `off`. `shadow` adds metadata
+only. `enforce` can only lower verdicts:
+
+- remaining `FIRE 2u` -> `FIRE 1u`;
+- remaining FIRE unders -> `LEAN`;
+- remaining model-fades-market-favorite FIRE rows -> `LEAN`.
+
+This is intentionally downside-only. It does not promote LEANs, change lambda,
+change global thresholds, change staking, change provider order, change
+notifications, change locks, change retention, or change dashboard
+source-of-truth.
+
+Current read from `analytics/output/profit_rescue_audit.md`:
+
+- Clean tracked win/loss rows analyzed: `854`.
+- Current clean-regime FIRE exposure: `536` rows, `-34.07u`.
+- Proposed retained FIRE exposure: `118` rows, `+8.35u`.
+- Last 7 days: current FIRE `64` rows, `-15.93u`; proposed retained FIRE `11`
+  rows, `-1.84u`.
+- Last 30 days: current FIRE `359` rows, `-24.78u`; proposed retained FIRE
+  `81` rows, `+2.68u`.
+
+Next decision:
+
+- Either run `PROFIT_RESCUE_REFEREE_MODE=shadow` first to inspect same-slate
+  metadata, or approve a narrow `enforce` canary because the change only
+  removes FIRE exposure.
+
+Still closed:
+
+- any LEAN promotion
+- any model/lambda/threshold/staking change
+- any provider, notification, lock, retention, or dashboard source-of-truth
+  change
+
 ### Gate 13: Storage And Retention
 
 **State:** Closed for deletion; open for dry-run evidence.
@@ -559,14 +601,17 @@ Use this rule:
 
 Recommended order:
 
-1. Keep Gate 7/Gate 8/Gate 9/Gate 12/Gate 12A/Gate 5 in observation after the
-   2026-06-09 implementation push; do not promote model, provider,
-   confidence-referee v2, market-agreement, bet-selection, or notification
-   behavior from one refreshed report.
-2. For Gate 13, keep deletion closed; the bounded compact-coverage sample is
+1. Review Gate 12B first: decide whether the downside-only profit-rescue
+   canary should run in `shadow` or `enforce`. Do not bundle that with provider
+   strict mode or any lambda/staking/threshold change.
+2. Keep Gate 7/Gate 8/Gate 9/Gate 12/Gate 12A/Gate 5 in observation after the
+   2026-06-09 implementation push; do not promote provider,
+   confidence-referee v2, market-agreement, positive bet-selection, or
+   notification behavior from one refreshed report.
+3. For Gate 13, keep deletion closed; the bounded compact-coverage sample is
    clear after the May 1-26 backfill, but execution needs exact proof or a
    separate Tyler approval.
-3. Keep the provider-source strict cutover, new notification send classes,
+4. Keep the provider-source strict cutover, new notification send classes,
    model changes, and retention deletion in soak until their specific gates
    pass.
 
