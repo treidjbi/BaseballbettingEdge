@@ -34,9 +34,24 @@ def _complete_row(**overrides):
         "opp_team": "NYY",
         "lineup_used": "confirmed",
         "provider": None,
+        "market_agreement_checkpoint": None,
+        "market_agreement_label": None,
+        "movement_strength_label": None,
+        "movement_value_label": None,
+        "movement_magnitude_bucket": None,
+        "market_agreement_tracker_bucket": None,
+        "book_count": None,
+        "books_seen": None,
+        "toward_pick_count": None,
+        "away_from_pick_count": None,
+        "better_now_count": None,
+        "worse_now_count": None,
         "market_consensus": None,
         "bet_value_consensus": None,
         "broad_confirmation": False,
+        "reversal_book_count": None,
+        "volatile_book_count": None,
+        "best_is_off_market": None,
         "source_artifact_path": "dashboard/data/processed/2026-05-12.json",
         "is_tracked_pick": True,
         "bet_time_line": 5.5,
@@ -95,6 +110,9 @@ def _complete_row(**overrides):
 def test_required_dataset_fields_cover_identity_market_model_result_and_context():
     assert {"dataset_key", "slate_date", "context_snapshot", "pitcher"} <= REQUIRED_DATASET_FIELDS
     assert {"side", "k_line", "american_odds", "market_favorite_side"} <= REQUIRED_DATASET_FIELDS
+    assert {"book_count", "books_seen", "toward_pick_count", "away_from_pick_count"} <= REQUIRED_DATASET_FIELDS
+    assert {"better_now_count", "worse_now_count", "reversal_book_count"} <= REQUIRED_DATASET_FIELDS
+    assert {"market_agreement_label", "movement_strength_label"} <= REQUIRED_DATASET_FIELDS
     assert {"model_side", "model_win_prob", "projected_ks", "verdict"} <= REQUIRED_DATASET_FIELDS
     assert {"actual_ks", "result", "theoretical_pnl"} <= REQUIRED_DATASET_FIELDS
     assert {"bet_time_odds", "price_clv_cents", "beat_close_price"} <= REQUIRED_DATASET_FIELDS

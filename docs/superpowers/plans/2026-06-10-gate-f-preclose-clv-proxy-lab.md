@@ -111,3 +111,31 @@
   proxy.
 - No production behavior, lambda, threshold, staking, provider, notification,
   lock, retention, or dashboard source-of-truth behavior changed.
+
+## 2026-06-10 Gate C Market-Field Enrichment Follow-Up
+
+- Added Gate C enrichment from `analytics/output/market_agreement_tracker.jsonl`
+  into `analytics/diagnostics/pitcher_k_outcome_dataset.py` and
+  `scripts/build_pitcher_k_outcome_dataset.py`.
+- The enrichment ignores `post_start` tracker rows, chooses the latest/richest
+  pre-start tracker row by slate date, normalized pitcher, side, and K-line
+  with side fallback, and copies only shadow research fields such as provider,
+  checkpoint, `book_count`, `books_seen`, toward/away counts, better/worse
+  counts, consensus labels, reversal/volatility counts, and movement labels.
+- Regenerated the durable Gate C artifact after rebuilding
+  `actual_opportunity_backfill.json`, preserving actual-opportunity coverage:
+  `1,718/1,718` rows have actual IP, pitch count, and batters faced. The
+  durable Gate C summary now shows `195` market-agreement rows, `195`
+  market-book-count rows, and `195` toward/away-count rows.
+- Rerun CLV proxy read: `886` clean tracked win/loss rows, `155` positive-CLV
+  rows, and `192/886` tracked rows (`21.7%`) with provider/book/movement fields
+  populated. `strong_preclose_clv_proxy` remains `watch_more`, not ready:
+  `299` rows, `166-133`, `+7.18u`, `+2.4% ROI`, `97` positive-CLV rows
+  (`32.4%`), `121` source-FIRE rows, `41` retained FIRE rows, and `80`
+  capped-to-LEAN rows.
+- Remaining blockers: recent PnL is `-6.30u`, there are `13` negative slice
+  risks, broad-confirmation rows are still `0`, `best_is_off_market` coverage
+  is still `0.0%`, and most tracked rows still lack tracker-backed market
+  fields.
+- No production behavior, lambda, threshold, staking, provider, notification,
+  lock, retention, or dashboard source-of-truth behavior changed.

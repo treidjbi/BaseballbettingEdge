@@ -87,6 +87,69 @@ def test_build_official_close_rows_creates_one_row_per_side():
     assert under["lineup_handedness_runtime_safe"] is None
 
 
+def test_enrich_rows_with_market_agreement_uses_latest_pre_start_tracker_row(tmp_path):
+    markets = [
+        {
+            "date": "2026-05-12",
+            "pitcher": "Bryan Woo",
+            "normalized_pitcher": "bryan woo",
+            "k_line": 5.5,
+            "actual_ks": 4,
+            "winning_side": "under",
+            "over_odds": -125,
+            "under_odds": 104,
+            "opening_over_odds": -110,
+            "opening_under_odds": 104,
+            "ref_book": "FanDuel",
+            "model_side": "under",
+            "model_win_prob": 0.57,
+            "applied_lambda": 4.9,
+            "ev_over": {"win_prob": 0.43, "edge": -0.02, "ev": -0.04, "adj_ev": -0.04, "verdict": "PASS"},
+            "ev_under": {"win_prob": 0.57, "edge": 0.04, "ev": 0.09, "adj_ev": 0.09, "verdict": "FIRE 1u"},
+            "team": "SEA",
+            "opp_team": "NYY",
+            "home_away": "home",
+            "lineup_used": "confirmed",
+            "quality_gate_level": "clean",
+        }
+    ]
+    tracker_path = tmp_path / "market_agreement_tracker.jsonl"
+    tracker_path.write_text(
+        "\n".join(
+            [
+                '{"slate_date":"2026-05-12","normalized_pitcher":"bryan woo","side":"under","k_line":"5.5","checkpoint":"post_start","provider":"boltodds","book_count":9,"toward_pick_count":9,"away_from_pick_count":0,"better_now_count":0,"worse_now_count":9,"market_consensus":"toward_pick","bet_value_consensus":"worse_now","broad_confirmation":true,"reversal_book_count":0,"volatile_book_count":0,"books_seen":["fanduel","draftkings"],"movement_agreement_label":"market_with_model","movement_strength_label":"broad_with_model","movement_value_label":"number_worse_now","movement_magnitude_bucket":"line_half_plus","tracker_bucket":"fire_market_with_us"}',
+                '{"slate_date":"2026-05-12","normalized_pitcher":"bryan woo","side":"under","k_line":"5.5","checkpoint":"pre_30","provider":"propline","book_count":1,"toward_pick_count":1,"away_from_pick_count":0,"better_now_count":0,"worse_now_count":1,"market_consensus":"toward_pick","bet_value_consensus":"worse_now","broad_confirmation":false,"reversal_book_count":0,"volatile_book_count":0,"books_seen":["fanduel"],"movement_agreement_label":"market_with_model","movement_strength_label":"single_book_with_model","movement_value_label":"number_worse_now","movement_magnitude_bucket":"odds_10_19c","tracker_bucket":"fire_market_with_us"}',
+                '{"slate_date":"2026-05-12","normalized_pitcher":"bryan woo","side":"under","k_line":"5.5","checkpoint":"pre_5","provider":"boltodds","book_count":3,"toward_pick_count":2,"away_from_pick_count":0,"better_now_count":1,"worse_now_count":2,"market_consensus":"toward_pick","bet_value_consensus":"mixed","broad_confirmation":true,"reversal_book_count":0,"volatile_book_count":0,"books_seen":["fanduel","betmgm","betrivers"],"movement_agreement_label":"market_with_model","movement_strength_label":"broad_with_model","movement_value_label":"value_mixed","movement_magnitude_bucket":"odds_20c_plus","tracker_bucket":"fire_market_with_us"}',
+            ]
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+
+    rows = dataset.enrich_rows_with_market_agreement(
+        build_official_close_rows(markets),
+        tracker_path=tracker_path,
+    )
+
+    under = next(row for row in rows if row["side"] == "under")
+    over = next(row for row in rows if row["side"] == "over")
+    assert under["provider"] == "boltodds"
+    assert under["market_agreement_checkpoint"] == "pre_5"
+    assert under["book_count"] == 3
+    assert under["books_seen"] == ["fanduel", "betmgm", "betrivers"]
+    assert under["toward_pick_count"] == 2
+    assert under["away_from_pick_count"] == 0
+    assert under["better_now_count"] == 1
+    assert under["worse_now_count"] == 2
+    assert under["market_consensus"] == "toward_pick"
+    assert under["bet_value_consensus"] == "mixed"
+    assert under["broad_confirmation"] is True
+    assert under["movement_strength_label"] == "broad_with_model"
+    assert under["market_agreement_label"] == "market_with_model"
+    assert over["provider"] is None
+    assert over["book_count"] is None
+
+
 def test_build_official_close_rows_flags_large_edge_skepticism():
     markets = [
         {
@@ -164,6 +227,11 @@ def test_build_summary_tracks_coverage_and_duplicates():
             "actual_pitch_count": 91,
             "batters_faced": 22,
             "actual_opportunity_source": "mlb_boxscore_reconstructed",
+            "provider": "boltodds",
+            "book_count": 3,
+            "toward_pick_count": 2,
+            "away_from_pick_count": 0,
+            "market_agreement_label": "market_with_model",
         },
         {
             "dataset_key": "a",
@@ -193,6 +261,11 @@ def test_build_summary_tracks_coverage_and_duplicates():
             "actual_pitch_count": None,
             "batters_faced": None,
             "actual_opportunity_source": None,
+            "provider": None,
+            "book_count": None,
+            "toward_pick_count": None,
+            "away_from_pick_count": None,
+            "market_agreement_label": None,
         },
     ]
 
@@ -219,6 +292,10 @@ def test_build_summary_tracks_coverage_and_duplicates():
     assert summary["actual_pitch_count_rows"] == 1
     assert summary["batters_faced_rows"] == 1
     assert summary["actual_opportunity_source_counts"]["mlb_boxscore_reconstructed"] == 1
+    assert summary["market_agreement_rows"] == 1
+    assert summary["market_book_count_rows"] == 1
+    assert summary["toward_away_count_rows"] == 1
+    assert summary["market_agreement_label_counts"]["market_with_model"] == 1
 
 
 def test_load_archived_markets_for_dataset_preserves_baseball_context(tmp_path):

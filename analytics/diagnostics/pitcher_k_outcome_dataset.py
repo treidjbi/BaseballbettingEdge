@@ -39,6 +39,7 @@ ARCHIVE_DIR = ROOT / "dashboard" / "data" / "processed"
 PICKS_HISTORY = ROOT / "data" / "picks_history.json"
 OUTPUT_JSONL = ROOT / "analytics" / "output" / "pitcher_k_outcome_dataset.jsonl"
 OUTPUT_SUMMARY = ROOT / "analytics" / "output" / "pitcher_k_outcome_dataset_summary.md"
+MARKET_AGREEMENT_TRACKER = ROOT / "analytics" / "output" / "market_agreement_tracker.jsonl"
 LINEUP_HANDEDNESS_BACKFILL = ROOT / "analytics" / "output" / "lineup_handedness_backfill.json"
 ACTUAL_OPPORTUNITY_BACKFILL = ROOT / "analytics" / "output" / "actual_opportunity_backfill.json"
 CLEAN_WINDOW_START = "2026-04-28"
@@ -82,9 +83,24 @@ REQUIRED_DATASET_FIELDS = {
     "opp_team",
     "lineup_used",
     "provider",
+    "market_agreement_checkpoint",
+    "market_agreement_label",
+    "movement_strength_label",
+    "movement_value_label",
+    "movement_magnitude_bucket",
+    "market_agreement_tracker_bucket",
+    "book_count",
+    "books_seen",
+    "toward_pick_count",
+    "away_from_pick_count",
+    "better_now_count",
+    "worse_now_count",
     "market_consensus",
     "bet_value_consensus",
     "broad_confirmation",
+    "reversal_book_count",
+    "volatile_book_count",
+    "best_is_off_market",
     "source_artifact_path",
     "is_tracked_pick",
     "bet_time_line",
@@ -567,6 +583,176 @@ def _source_path(market: dict[str, Any]) -> str:
     )
 
 
+def _json_rows_from_path(path: Path | None) -> list[dict[str, Any]]:
+    if path is None or not path.exists():
+        return []
+    try:
+        text = path.read_text(encoding="utf-8").strip()
+    except OSError:
+        return []
+    if not text:
+        return []
+
+    if "\n" in text:
+        rows: list[dict[str, Any]] = []
+        for line in text.splitlines():
+            if not line.strip():
+                continue
+            try:
+                parsed = json.loads(line)
+            except json.JSONDecodeError:
+                continue
+            if isinstance(parsed, dict):
+                rows.append(parsed)
+        return rows
+
+    try:
+        payload = json.loads(text)
+    except json.JSONDecodeError:
+        return []
+    if isinstance(payload, list):
+        return [row for row in payload if isinstance(row, dict)]
+    if isinstance(payload, dict):
+        for key in ("rows", "data", "items", "result"):
+            value = payload.get(key)
+            if isinstance(value, list):
+                return [row for row in value if isinstance(row, dict)]
+    return []
+
+
+def _market_agreement_checkpoint(row: dict[str, Any]) -> str:
+    return str(row.get("checkpoint") or row.get("time_window") or "").strip()
+
+
+def _market_agreement_checkpoint_minutes(row: dict[str, Any]) -> int | None:
+    checkpoint = _market_agreement_checkpoint(row)
+    if checkpoint == "final_pre_start":
+        return 0
+    if checkpoint.startswith("pre_"):
+        return _to_int(checkpoint.replace("pre_", "", 1))
+    raw_minutes = row.get("checkpoint_minutes")
+    if raw_minutes is None:
+        raw_minutes = row.get("minutes_to_game")
+    minutes = _to_int(raw_minutes)
+    return minutes if minutes is not None and minutes >= 0 else None
+
+
+def _is_pre_start_market_agreement_row(row: dict[str, Any]) -> bool:
+    if _market_agreement_checkpoint(row) == "post_start":
+        return False
+    return _market_agreement_checkpoint_minutes(row) is not None
+
+
+def _market_agreement_exact_key(row: dict[str, Any]) -> tuple[str, str, str, str]:
+    return (
+        str(row.get("slate_date") or row.get("date") or "").strip(),
+        _normalized(row.get("normalized_pitcher") or row.get("pitcher")),
+        str(row.get("side") or "").strip().lower(),
+        _line_text(row.get("k_line")),
+    )
+
+
+def _market_agreement_side_key(row: dict[str, Any]) -> tuple[str, str, str]:
+    return _market_agreement_exact_key(row)[:3]
+
+
+def _market_provider_rank(provider: Any) -> int:
+    return {
+        "boltodds": 0,
+        "propline": 1,
+    }.get(str(provider or "").strip().lower(), 9)
+
+
+def _market_agreement_sort_key(row: dict[str, Any]) -> tuple[int, int, int, int, str]:
+    minutes = _market_agreement_checkpoint_minutes(row)
+    return (
+        minutes if minutes is not None else 9999,
+        -(_to_int(row.get("book_count")) or 0),
+        -(_to_int(row.get("snapshot_count")) or 0),
+        _market_provider_rank(row.get("provider")),
+        str(row.get("provider") or ""),
+    )
+
+
+def _market_agreement_indexes(
+    tracker_rows: list[dict[str, Any]],
+) -> tuple[
+    dict[tuple[str, str, str, str], list[dict[str, Any]]],
+    dict[tuple[str, str, str], list[dict[str, Any]]],
+]:
+    exact: dict[tuple[str, str, str, str], list[dict[str, Any]]] = {}
+    side: dict[tuple[str, str, str], list[dict[str, Any]]] = {}
+    for row in tracker_rows:
+        if not _is_pre_start_market_agreement_row(row):
+            continue
+        exact.setdefault(_market_agreement_exact_key(row), []).append(row)
+        side.setdefault(_market_agreement_side_key(row), []).append(row)
+    return exact, side
+
+
+def _best_market_agreement_row(rows: list[dict[str, Any]]) -> dict[str, Any] | None:
+    if not rows:
+        return None
+    return sorted(rows, key=_market_agreement_sort_key)[0]
+
+
+def _market_agreement_row_for_dataset_row(
+    row: dict[str, Any],
+    exact_index: dict[tuple[str, str, str, str], list[dict[str, Any]]],
+    side_index: dict[tuple[str, str, str], list[dict[str, Any]]],
+) -> dict[str, Any] | None:
+    exact_match = _best_market_agreement_row(exact_index.get(_market_agreement_exact_key(row), []))
+    if exact_match is not None:
+        return exact_match
+    return _best_market_agreement_row(side_index.get(_market_agreement_side_key(row), []))
+
+
+def enrich_rows_with_market_agreement(
+    rows: list[dict[str, Any]],
+    *,
+    tracker_path: Path | None = MARKET_AGREEMENT_TRACKER,
+) -> list[dict[str, Any]]:
+    tracker_rows = _json_rows_from_path(tracker_path)
+    exact_index, side_index = _market_agreement_indexes(tracker_rows)
+    enriched: list[dict[str, Any]] = []
+    for row in rows:
+        next_row = dict(row)
+        selected = _market_agreement_row_for_dataset_row(next_row, exact_index, side_index)
+        if selected:
+            next_row.update(
+                {
+                    "provider": selected.get("provider") or next_row.get("provider"),
+                    "market_agreement_checkpoint": _market_agreement_checkpoint(selected) or None,
+                    "checkpoint_minutes_to_game": _market_agreement_checkpoint_minutes(selected),
+                    "market_agreement_label": selected.get("movement_agreement_label")
+                    or selected.get("market_agreement_label"),
+                    "movement_strength_label": selected.get("movement_strength_label"),
+                    "movement_value_label": selected.get("movement_value_label"),
+                    "movement_magnitude_bucket": selected.get("movement_magnitude_bucket"),
+                    "market_agreement_tracker_bucket": selected.get("tracker_bucket"),
+                    "book_count": _to_int(selected.get("book_count")),
+                    "books_seen": selected.get("books_seen"),
+                    "toward_pick_count": _to_int(selected.get("toward_pick_count")),
+                    "away_from_pick_count": _to_int(selected.get("away_from_pick_count")),
+                    "better_now_count": _to_int(selected.get("better_now_count")),
+                    "worse_now_count": _to_int(selected.get("worse_now_count")),
+                    "market_consensus": selected.get("market_consensus"),
+                    "bet_value_consensus": selected.get("bet_value_consensus"),
+                    "broad_confirmation": selected.get("broad_confirmation") is True,
+                    "reversal_book_count": _to_int(selected.get("reversal_book_count")),
+                    "volatile_book_count": _to_int(selected.get("volatile_book_count")),
+                    "best_book": selected.get("best_book") or next_row.get("best_book"),
+                    "best_line": _to_float(selected.get("best_line")) or next_row.get("best_line"),
+                    "best_odds": _to_int(selected.get("best_odds")) or next_row.get("best_odds"),
+                    "best_is_off_market": selected.get("best_is_off_market")
+                    if selected.get("best_is_off_market") is not None
+                    else next_row.get("best_is_off_market"),
+                }
+            )
+        enriched.append(next_row)
+    return enriched
+
+
 def artifact_api_url(base_url: str, artifact_type: str, date: str | None = None) -> str:
     params = {"type": artifact_type}
     if date:
@@ -907,6 +1093,12 @@ def build_official_close_rows(markets: list[dict[str, Any]]) -> list[dict[str, A
                 ),
                 "career_swstr_pct": _to_float(market.get("career_swstr_pct")),
                 "provider": None,
+                "market_agreement_checkpoint": None,
+                "market_agreement_label": None,
+                "movement_strength_label": None,
+                "movement_value_label": None,
+                "movement_magnitude_bucket": None,
+                "market_agreement_tracker_bucket": None,
                 "checkpoint_minutes_to_game": None,
                 "book_count": None,
                 "books_seen": None,
@@ -1035,6 +1227,12 @@ def build_summary(rows: list[dict[str, Any]]) -> dict[str, Any]:
     actual_opportunity_source_counts = Counter(
         str(row.get("actual_opportunity_source") or "missing") for row in rows
     )
+    market_agreement_label_counts = Counter(
+        str(row.get("market_agreement_label") or "missing") for row in rows
+    )
+    movement_strength_counts = Counter(
+        str(row.get("movement_strength_label") or "missing") for row in rows
+    )
     clean_rows = [row for row in rows if str(row.get("slate_date") or "") >= CLEAN_WINDOW_START]
     return {
         "total_rows": len(rows),
@@ -1068,6 +1266,19 @@ def build_summary(rows: list[dict[str, Any]]) -> dict[str, Any]:
         ),
         "batters_faced_rows": sum(1 for row in rows if row.get("batters_faced") is not None),
         "actual_opportunity_source_counts": dict(sorted(actual_opportunity_source_counts.items())),
+        "market_agreement_rows": sum(1 for row in rows if row.get("market_agreement_label")),
+        "market_book_count_rows": sum(1 for row in rows if row.get("book_count") is not None),
+        "toward_away_count_rows": sum(
+            1
+            for row in rows
+            if row.get("toward_pick_count") is not None
+            and row.get("away_from_pick_count") is not None
+        ),
+        "market_broad_confirmation_rows": sum(
+            1 for row in rows if row.get("broad_confirmation") is True
+        ),
+        "market_agreement_label_counts": dict(sorted(market_agreement_label_counts.items())),
+        "movement_strength_label_counts": dict(sorted(movement_strength_counts.items())),
         "large_edge_skepticism_rows": sum(1 for row in rows if row.get("large_edge_skepticism_flag") is True),
         "model_market_relationship_counts": dict(sorted(model_market_counts.items())),
         "opportunity_bucket_counts": dict(sorted(opportunity_counts.items())),
@@ -1472,6 +1683,10 @@ def render_summary(summary: dict[str, Any]) -> str:
         f"- Rows with actual IP: `{summary.get('actual_opportunity_rows', 0)}`",
         f"- Rows with actual pitch count: `{summary.get('actual_pitch_count_rows', 0)}`",
         f"- Rows with batters faced: `{summary.get('batters_faced_rows', 0)}`",
+        f"- Rows with market agreement labels: `{summary.get('market_agreement_rows', 0)}`",
+        f"- Rows with market book counts: `{summary.get('market_book_count_rows', 0)}`",
+        f"- Rows with toward/away counts: `{summary.get('toward_away_count_rows', 0)}`",
+        f"- Broad market confirmation rows: `{summary.get('market_broad_confirmation_rows', 0)}`",
         f"- Large-edge skepticism rows: `{summary.get('large_edge_skepticism_rows', 0)}`",
         f"- Clean graded picks reconciled: `{summary.get('matched_pick_rows', 0)}/{summary.get('graded_pick_rows', 0)}`",
         f"- Unique side fallback reconciliations: `{summary.get('unique_side_fallback_matches', 0)}`",
@@ -1492,6 +1707,8 @@ def render_summary(summary: dict[str, Any]) -> str:
         ("Pitcher Archetype Buckets", "pitcher_archetype_bucket_counts"),
         ("Lineup Handedness Sources", "lineup_handedness_source_counts"),
         ("Actual Opportunity Sources", "actual_opportunity_source_counts"),
+        ("Market Agreement Labels", "market_agreement_label_counts"),
+        ("Movement Strength Labels", "movement_strength_label_counts"),
     ):
         lines.extend(["", f"## {title}", ""])
         for value, count in (summary.get(key) or {}).items():
@@ -1525,6 +1742,7 @@ def build_dataset(
     end_date: str | None = None,
     lineup_handedness_backfill_path: Path = LINEUP_HANDEDNESS_BACKFILL,
     actual_opportunity_backfill_path: Path = ACTUAL_OPPORTUNITY_BACKFILL,
+    market_agreement_tracker_path: Path | None = MARKET_AGREEMENT_TRACKER,
     artifact_api_url: str | None = None,
 ) -> list[dict[str, Any]]:
     markets = load_archived_markets_for_dataset(
@@ -1542,10 +1760,14 @@ def build_dataset(
         rows,
         backfill_path=actual_opportunity_backfill_path,
     )
-    return enrich_rows_with_pick_history(
+    rows = enrich_rows_with_pick_history(
         rows,
         start_date=start_date,
         artifact_api_url=artifact_api_url,
+    )
+    return enrich_rows_with_market_agreement(
+        rows,
+        tracker_path=market_agreement_tracker_path,
     )
 
 
@@ -1557,6 +1779,7 @@ def _parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--summary-output", type=Path, default=OUTPUT_SUMMARY)
     parser.add_argument("--lineup-handedness-backfill", type=Path, default=LINEUP_HANDEDNESS_BACKFILL)
     parser.add_argument("--actual-opportunity-backfill", type=Path, default=ACTUAL_OPPORTUNITY_BACKFILL)
+    parser.add_argument("--market-agreement-tracker", type=Path, default=MARKET_AGREEMENT_TRACKER)
     parser.add_argument(
         "--artifact-source",
         choices=("local", "production"),
@@ -1579,6 +1802,7 @@ def main(argv: list[str] | None = None) -> None:
         end_date=args.end_date,
         lineup_handedness_backfill_path=args.lineup_handedness_backfill,
         actual_opportunity_backfill_path=args.actual_opportunity_backfill,
+        market_agreement_tracker_path=args.market_agreement_tracker,
         artifact_api_url=artifact_api_url_base,
     )
     validation_errors = [

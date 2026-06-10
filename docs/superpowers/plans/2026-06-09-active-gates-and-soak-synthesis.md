@@ -608,29 +608,33 @@ The 2026-06-10 pre-close CLV proxy lab keeps CLV as the validation target, not
 as a live selector. It tests whether fields available before lock can identify
 rows that later beat closing price or line.
 
-Current read from `analytics/output/gate_f_preclose_clv_proxy_lab.md`:
+Current read from `analytics/output/gate_f_preclose_clv_proxy_lab.md` after the
+2026-06-10 Gate C market-field enrichment:
 
-- Clean tracked win/loss rows analyzed: `854`.
-- Positive CLV target rows: `147`.
-- Strong pre-close proxy rows: `291`, with `93` positive-CLV rows (`32.0%`),
-  `164-127`, `+9.05u`, and `+3.1% ROI`.
-- Strong proxy source-FIRE rows: `113`; `39` would remain FIRE under the
-  profit-rescue policy and `74` would be capped to LEAN.
+- Clean tracked win/loss rows analyzed: `886`.
+- Positive CLV target rows: `155`.
+- Strong pre-close proxy rows: `299`, with `97` positive-CLV rows (`32.4%`),
+  `166-133`, `+7.18u`, and `+2.4% ROI`.
+- Strong proxy source-FIRE rows: `121`; `41` would remain FIRE under the
+  profit-rescue policy and `80` would be capped to LEAN.
 - Readiness: `watch_more`, not ready for a production plan.
-- Main blockers: recent PnL is `-8.55u`, and there are `12` negative slice
+- Main blockers: recent PnL is `-6.30u`, and there are `13` negative slice
   risks including model-fades-favorite, plus price, low K-line, capped quality,
   pre-5 timing, unchanged movement, and thin no-vig slices.
-- Richer runtime market fields are mostly missing from current Gate C rows:
+- Gate C now enriches from `analytics/output/market_agreement_tracker.jsonl`.
+  The durable Gate C dataset has `195` market-agreement rows; the CLV proxy
+  report has `192/886` clean tracked rows (`21.7%`) populated for
   `toward_pick_count`, `away_from_pick_count`, `better_now_count`,
-  `worse_now_count`, `book_count`, `best_is_off_market`,
-  `reversal_book_count`, `volatile_book_count`, provider, and
-  `market_agreement_label` currently have `0.0%` coverage in the clean tracked
-  rows. `broad_confirmation` is present but currently false on all rows.
+  `worse_now_count`, `book_count`, `reversal_book_count`,
+  `volatile_book_count`, provider, and `market_agreement_label`.
+- Still missing/weak: `broad_confirmation` is present but false on all rows,
+  `best_is_off_market` has `0.0%` coverage, and most clean tracked rows still
+  do not have tracker-backed market fields.
 
 Next decision:
 
-- Keep CLV as the target label and rerun after the live-market/market-agreement
-  fields are populated into Gate C rows.
+- Keep CLV as the target label and rerun after more live-market/market-agreement
+  rows populate into Gate C.
 - Watch whether `strong_preclose_clv_proxy` keeps positive ROI and improves
   recent/slice performance before drafting any FIRE re-entry canary.
 - Do not promote from CLV alone and do not use CLV fields in live selectors.

@@ -163,12 +163,16 @@ evidence.
 Gate F CLV-proxy overlay, 2026-06-10: `analytics/output/gate_f_preclose_clv_proxy_lab.md`
 keeps CLV as the validation target and tests whether pre-lock fields can
 predict it. The current strong pre-close proxy is a watch candidate, not ready
-for a production plan: `291` rows, `164-127`, `+9.05u`, `+3.1% ROI`, `93`
-positive-CLV rows (`32.0%`), and `113` source-FIRE rows. It also has `-8.55u`
-recent PnL and `12` negative slices, so do not re-enter FIRE from it yet. Rich
-market fields such as `toward_pick_count`, `book_count`, provider, volatility,
-and market-agreement labels are still mostly absent from current Gate C rows,
-so the next improvement is data coverage plus another graded rerun.
+for a production plan: `299` rows, `166-133`, `+7.18u`, `+2.4% ROI`, `97`
+positive-CLV rows (`32.4%`), and `121` source-FIRE rows. It also has `-6.30u`
+recent PnL and `13` negative slices, so do not re-enter FIRE from it yet. Gate C
+now enriches from `analytics/output/market_agreement_tracker.jsonl`: the durable
+dataset has `195` market-agreement rows, and the CLV proxy report has `192/886`
+tracked rows (`21.7%`) with provider, `book_count`, toward/away,
+better/worse, reversal/volatility, and market-agreement labels. Coverage is
+still partial, broad-confirmation rows are still `0`, and `best_is_off_market`
+coverage is still `0`, so the next improvement is richer/current market exports
+plus another graded rerun.
 
 Board rule: each lane can advance independently, but live betting behavior only
 changes after the controlling lane has passed its own promotion gate and Tyler
