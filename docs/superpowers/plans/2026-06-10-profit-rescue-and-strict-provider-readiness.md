@@ -76,4 +76,18 @@
 - `PROFIT_RESCUE_REFEREE_MODE` is implemented with default `off`; `shadow` adds metadata only; `enforce` caps remaining `FIRE 2u` to `FIRE 1u`, remaining FIRE unders to `LEAN`, and remaining model-fades-market-favorite FIRE rows to `LEAN`.
 - `analytics/output/profit_rescue_audit.md` shows strong downside-control evidence on `854` clean tracked win/loss rows: current clean-regime FIRE exposure was `536` rows / `-34.07u`; proposed retained FIRE exposure was `118` rows / `+8.35u`; last 7 days improved from `64` FIRE rows / `-15.93u` to `11` retained FIRE rows / `-1.84u`.
 - `scripts/supabase_strict_provider_readiness.sql` returned `readiness_status=watch`, with no blocking reasons but watch reasons for zero-row BoltOdds coverage audits, line conflicts, and provider-run failures.
-- No environment variables were changed. Enforce mode and strict provider mode both remain separate Tyler approval decisions.
+- Later on 2026-06-10, Tyler approved turning on the profit-rescue canary to
+  stop FIRE exposure bleed. `PROFIT_RESCUE_REFEREE_MODE=enforce` was set on
+  all seven Render pipeline cron services, the group was redeployed at commit
+  `c60bd895`, and a manual Render refresh published `today.json` generated at
+  `2026-06-10T16:52:46Z`.
+- Post-refresh verification: public `today.json` has `54/54` side payloads with
+  `profit_rescue_referee.mode=enforce`; current side objects have `17`
+  actionable LEAN sides and zero current FIRE side verdicts. Seven side objects
+  were capped by the profit-rescue referee. One top-level `tracked_picks` row
+  still shows Carlos Rodon under as `FIRE 1u` because it was already locked at
+  `2026-06-10T16:40:29Z` from the pre-reconciliation artifact; treat that as a
+  same-day stale-lock caveat, not fresh post-canary FIRE evidence.
+- Strict provider mode remains a separate Tyler approval decision. No provider
+  strict mode, lambda, threshold, staking, notification, retention, dashboard
+  source-of-truth, or broader lock-behavior change was made.

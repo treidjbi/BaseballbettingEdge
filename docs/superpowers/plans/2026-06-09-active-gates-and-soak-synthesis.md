@@ -499,8 +499,9 @@ Still closed:
 
 ### Gate 12B: Profit-Rescue FIRE Exposure Canary
 
-**State:** Implemented behind flag; production behavior closed until Tyler
-approves an environment-variable promotion.
+**State:** Active downgrade-only production canary. Tyler approved
+`PROFIT_RESCUE_REFEREE_MODE=enforce` on 2026-06-10 after the first audit showed
+material downside control in the FIRE bucket.
 
 The 2026-06-10 profit-rescue plan adds
 `PROFIT_RESCUE_REFEREE_MODE=off|shadow|enforce` after the quality gate and
@@ -526,11 +527,26 @@ Current read from `analytics/output/profit_rescue_audit.md`:
 - Last 30 days: current FIRE `359` rows, `-24.78u`; proposed retained FIRE
   `81` rows, `+2.68u`.
 
+Production activation:
+
+- `PROFIT_RESCUE_REFEREE_MODE=enforce` is active on the seven Render pipeline
+  cron services as of commit `c60bd895`.
+- Manual Render refresh `job-d8kpc9bbc2fs73cr7uh0` succeeded and published
+  `today.json` generated at `2026-06-10T16:52:46Z`.
+- Public artifact verification showed `54/54` side payloads in enforce mode,
+  seven applied profit-rescue caps, `17` current actionable LEAN sides, and
+  zero current FIRE side verdicts.
+- Same-day caveat: Carlos Rodon under remains as one top-level locked
+  `FIRE 1u` row because it locked at `2026-06-10T16:40:29Z` from the
+  pre-reconciliation artifact. Treat it as a stale-lock caveat for June 10, not
+  fresh post-canary FIRE evidence.
+
 Next decision:
 
-- Either run `PROFIT_RESCUE_REFEREE_MODE=shadow` first to inspect same-slate
-  metadata, or approve a narrow `enforce` canary because the change only
-  removes FIRE exposure.
+- Observe the enforce canary against graded outcomes, CLV, provider/source
+  attribution, FIRE/LEAN, side, K-line, quality, timing, Path B, workload,
+  market agreement, and rolling-window slices.
+- Roll back with `PROFIT_RESCUE_REFEREE_MODE=off` if it behaves unexpectedly.
 
 Still closed:
 
