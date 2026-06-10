@@ -1378,6 +1378,114 @@ def test_attach_tracked_picks_marks_unlocked_replaced_starter_inactive():
     ]
 
 
+def test_attach_tracked_picks_marks_unlocked_pick_inactive_when_current_side_passes():
+    import run_pipeline
+
+    archive = {
+        "date": "2026-06-10",
+        "pitchers": [
+            {
+                "pitcher": "Carlos Rodon",
+                "team": "New York Yankees",
+                "opp_team": "Cleveland Guardians",
+                "game_time": "2026-06-10T17:10:00Z",
+                "ev_under": {
+                    "verdict": "PASS",
+                    "actionable_verdict": "PASS",
+                    "raw_verdict": "PASS",
+                    "profit_rescue_referee": {"mode": "enforce", "applied": False},
+                },
+            },
+        ],
+    }
+    tracked_pick = {
+        "date": "2026-06-10",
+        "pitcher": "Carlos Rodon",
+        "team": "New York Yankees",
+        "opp_team": "Cleveland Guardians",
+        "side": "under",
+        "verdict": "FIRE 1u",
+        "display_verdict": "FIRE 1u",
+        "locked_at": None,
+        "game_time": "2026-06-10T17:10:00Z",
+        "status": "tracking",
+    }
+
+    updated = run_pipeline._attach_tracked_picks(archive, [tracked_pick])
+
+    assert updated["tracked_picks"] == []
+    assert updated["pitchers"][0]["tracked_picks"] == []
+    assert updated["inactive_tracked_picks"] == [
+        {
+            **tracked_pick,
+            "status": "inactive",
+            "inactive_reason": "side_no_longer_actionable",
+        }
+    ]
+
+
+def test_attach_tracked_picks_reconciles_unlocked_pick_to_current_side_verdict():
+    import run_pipeline
+
+    archive = {
+        "date": "2026-06-10",
+        "pitchers": [
+            {
+                "pitcher": "Brady Singer",
+                "team": "Cincinnati Reds",
+                "opp_team": "Cleveland Guardians",
+                "game_time": "2026-06-10T22:40:00Z",
+                "k_line": 4.5,
+                "best_under_odds": 104,
+                "quality_gate_level": "capped",
+                "verdict_cap_reason": "1 soft input flag: projected_lineup",
+                "input_quality_flags": ["projected_lineup"],
+                "data_maturity": {"lineup": "projected"},
+                "data_complete": False,
+                "ev_under": {
+                    "verdict": "LEAN",
+                    "actionable_verdict": "LEAN",
+                    "raw_verdict": "FIRE 2u",
+                    "adj_ev": 0.11,
+                    "raw_adj_ev": 0.24,
+                    "edge": 0.06,
+                    "ev": 0.11,
+                    "profit_rescue_referee": {
+                        "mode": "enforce",
+                        "applied": True,
+                        "reasons": ["cap_fire_under_to_lean"],
+                    },
+                },
+            },
+        ],
+    }
+    tracked_pick = {
+        "date": "2026-06-10",
+        "pitcher": "Brady Singer",
+        "team": "Cincinnati Reds",
+        "opp_team": "Cleveland Guardians",
+        "side": "under",
+        "verdict": "FIRE 2u",
+        "display_verdict": "FIRE 2u",
+        "raw_verdict": "FIRE 2u",
+        "locked_at": None,
+        "game_time": "2026-06-10T22:40:00Z",
+        "status": "tracking",
+    }
+
+    updated = run_pipeline._attach_tracked_picks(archive, [tracked_pick])
+
+    reconciled = updated["tracked_picks"][0]
+    assert reconciled["verdict"] == "LEAN"
+    assert reconciled["display_verdict"] == "LEAN"
+    assert reconciled["actionable_verdict"] == "LEAN"
+    assert reconciled["profit_rescue_referee"]["applied"] is True
+    assert reconciled["k_line"] == 4.5
+    assert reconciled["odds"] == 104
+    assert updated["pitchers"][0]["tracked_picks"] == [reconciled]
+    assert updated["inactive_tracked_picks"] == []
+
+
 def test_attach_tracked_picks_keeps_locked_unmatched_pick_active():
     import run_pipeline
 

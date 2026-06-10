@@ -1400,6 +1400,8 @@ def _tracked_pick_row(pick: dict) -> dict:
     }
     if pick.get("confidence_referee") is not None:
         row["confidence_referee"] = pick.get("confidence_referee")
+    if pick.get("profit_rescue_referee") is not None:
+        row["profit_rescue_referee"] = pick.get("profit_rescue_referee")
     return row
 
 
@@ -1461,14 +1463,108 @@ def _inactive_tracked_pick_row(
     return row
 
 
+def _side_artifact_field(side: str) -> str | None:
+    side_value = str(side or "").strip().lower()
+    if side_value == "over":
+        return "ev_over"
+    if side_value == "under":
+        return "ev_under"
+    return None
+
+
+def _current_side_verdict(side_data: dict) -> str:
+    return str(
+        side_data.get("actionable_verdict")
+        or side_data.get("verdict")
+        or "PASS"
+    ).strip() or "PASS"
+
+
+def _current_side_odds(pitcher_row: dict, side_data: dict, side: str):
+    confidence_referee = side_data.get("confidence_referee")
+    if isinstance(confidence_referee, dict) and confidence_referee.get("selected_odds") is not None:
+        return confidence_referee.get("selected_odds")
+
+    profit_rescue_referee = side_data.get("profit_rescue_referee")
+    if isinstance(profit_rescue_referee, dict) and profit_rescue_referee.get("selected_odds") is not None:
+        return profit_rescue_referee.get("selected_odds")
+
+    if str(side or "").strip().lower() == "over":
+        return pitcher_row.get("best_over_odds")
+    return pitcher_row.get("best_under_odds")
+
+
+def _reconciled_unlocked_tracked_pick(pick: dict, pitcher_row: dict) -> tuple[dict, bool]:
+    """Reconcile an unlocked history row with the current side artifact.
+
+    picks_history can retain a same-day row from an earlier refresh even after a
+    later provider/model canary moves that side down to LEAN or PASS. Locked and
+    graded rows stay frozen, but unlocked rows should reflect the current card.
+    """
+    side = str(pick.get("side") or "").strip().lower()
+    side_field = _side_artifact_field(side)
+    side_data = pitcher_row.get(side_field) if side_field else None
+    if not isinstance(side_data, dict):
+        return (
+            _inactive_tracked_pick_row(
+                pick,
+                reason="side_no_longer_available",
+            ),
+            False,
+        )
+
+    current_verdict = _current_side_verdict(side_data)
+    if current_verdict == "PASS":
+        return (
+            _inactive_tracked_pick_row(
+                pick,
+                reason="side_no_longer_actionable",
+            ),
+            False,
+        )
+
+    row = dict(pick)
+    row.update(
+        {
+            "verdict": current_verdict,
+            "display_verdict": current_verdict,
+            "actionable_verdict": side_data.get("actionable_verdict") or current_verdict,
+            "raw_verdict": side_data.get("raw_verdict"),
+            "k_line": pitcher_row.get("k_line", pick.get("k_line")),
+            "display_k_line": pitcher_row.get("k_line", pick.get("display_k_line")),
+            "odds": _current_side_odds(pitcher_row, side_data, side),
+            "display_odds": _current_side_odds(pitcher_row, side_data, side),
+            "adj_ev": side_data.get("adj_ev"),
+            "raw_adj_ev": side_data.get("raw_adj_ev"),
+            "display_adj_ev": side_data.get("adj_ev"),
+            "edge": side_data.get("edge"),
+            "ev": side_data.get("ev"),
+            "quality_gate_level": side_data.get("quality_gate_level")
+            or pitcher_row.get("quality_gate_level"),
+            "input_quality_flags": pitcher_row.get("input_quality_flags"),
+            "verdict_cap_reason": pitcher_row.get("verdict_cap_reason"),
+            "data_maturity": pitcher_row.get("data_maturity"),
+            "data_complete": pitcher_row.get("data_complete"),
+            "status": "tracking",
+        }
+    )
+    if side_data.get("confidence_referee") is not None:
+        row["confidence_referee"] = side_data.get("confidence_referee")
+    if side_data.get("profit_rescue_referee") is not None:
+        row["profit_rescue_referee"] = side_data.get("profit_rescue_referee")
+    return row, True
+
+
 def _attach_tracked_picks(archive: dict, tracked_picks: list[dict]) -> dict:
     """Attach active tracked pick rows to the archive and matching pitcher cards."""
     pitcher_rows = [dict(pitcher) for pitcher in archive.get("pitchers", [])]
-    active_pitcher_keys = {
-        key
-        for key in (_normalize_name(row.get("pitcher") or "") for row in pitcher_rows)
+    active_pitchers_by_key = {
+        key: row
+        for row in pitcher_rows
+        for key in [_normalize_name(row.get("pitcher") or "")]
         if key
     }
+    active_pitcher_keys = set(active_pitchers_by_key)
     replacement_by_matchup: dict[tuple[str, str, str], str] = {}
     for row in pitcher_rows:
         matchup_key = _tracked_pick_matchup_key(row)
@@ -1481,7 +1577,24 @@ def _attach_tracked_picks(archive: dict, tracked_picks: list[dict]) -> dict:
     by_pitcher: dict[str, list[dict]] = {}
     for pick in tracked_picks:
         key = _normalize_name(pick.get("pitcher") or "")
-        if key in active_pitcher_keys or pick.get("locked_at") or pick.get("result"):
+        if key in active_pitcher_keys:
+            if pick.get("locked_at") or pick.get("result"):
+                reconciled_pick = pick
+                is_active = True
+            else:
+                reconciled_pick, is_active = _reconciled_unlocked_tracked_pick(
+                    pick,
+                    active_pitchers_by_key[key],
+                )
+            if not is_active:
+                inactive_tracked_picks.append(reconciled_pick)
+                continue
+            active_tracked_picks.append(reconciled_pick)
+            if key:
+                by_pitcher.setdefault(key, []).append(reconciled_pick)
+            continue
+
+        if pick.get("locked_at") or pick.get("result"):
             active_tracked_picks.append(pick)
             if key:
                 by_pitcher.setdefault(key, []).append(pick)
