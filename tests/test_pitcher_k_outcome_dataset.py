@@ -150,6 +150,99 @@ def test_enrich_rows_with_market_agreement_uses_latest_pre_start_tracker_row(tmp
     assert over["book_count"] is None
 
 
+def test_enrich_rows_with_live_market_display_adds_book_board_confidence_fields(tmp_path):
+    markets = [
+        {
+            "date": "2026-05-12",
+            "pitcher": "Bryan Woo",
+            "normalized_pitcher": "bryan woo",
+            "k_line": 5.5,
+            "actual_ks": 4,
+            "winning_side": "under",
+            "over_odds": -125,
+            "under_odds": 104,
+            "opening_over_odds": -110,
+            "opening_under_odds": 104,
+            "ref_book": "FanDuel",
+            "model_side": "under",
+            "model_win_prob": 0.57,
+            "applied_lambda": 4.9,
+            "ev_over": {"win_prob": 0.43, "edge": -0.02, "ev": -0.04, "adj_ev": -0.04, "verdict": "PASS"},
+            "ev_under": {"win_prob": 0.57, "edge": 0.04, "ev": 0.09, "adj_ev": 0.09, "verdict": "FIRE 1u"},
+            "team": "SEA",
+            "opp_team": "NYY",
+            "home_away": "home",
+            "lineup_used": "confirmed",
+            "quality_gate_level": "clean",
+        }
+    ]
+    display_path = tmp_path / "live_market_display_state.json"
+    display_path.write_text(
+        """
+        {
+          "rows": [
+            {
+              "slate_date": "2026-05-12",
+              "normalized_pitcher": "bryan woo",
+              "side": "under",
+              "k_line": "5.5",
+              "game_state": "in_progress",
+              "game_time": "2026-05-12T22:40:00+00:00",
+              "latest_snapshot_at": "2026-05-12T22:50:00+00:00",
+              "provider": "boltodds",
+              "book_count": 6,
+              "books_seen": ["fanduel", "draftkings"],
+              "broad_confirmation": true,
+              "best_is_off_market": true,
+              "best_book": "draftkings",
+              "best_line": 6.5,
+              "best_odds": 180,
+              "actionable_state": "off_market"
+            },
+            {
+              "slate_date": "2026-05-12",
+              "normalized_pitcher": "bryan woo",
+              "side": "under",
+              "k_line": "5.5",
+              "game_state": "pregame",
+              "game_time": "2026-05-12T22:40:00+00:00",
+              "latest_snapshot_at": "2026-05-12T22:10:00+00:00",
+              "provider": "propline",
+              "book_count": 3,
+              "books_seen": ["fanduel", "draftkings", "betrivers"],
+              "market_consensus": "toward_pick",
+              "bet_value_consensus": "worse_now",
+              "broad_confirmation": true,
+              "best_is_off_market": true,
+              "best_book": "draftkings",
+              "best_line": 5.5,
+              "best_odds": 124,
+              "actionable_state": "off_market"
+            }
+          ]
+        }
+        """,
+        encoding="utf-8",
+    )
+
+    rows = dataset.enrich_rows_with_live_market_display(
+        build_official_close_rows(markets),
+        live_market_display_path=display_path,
+    )
+
+    under = next(row for row in rows if row["side"] == "under")
+    assert under["live_display_provider"] == "propline"
+    assert under["live_display_state"] == "off_market"
+    assert under["live_display_latest_snapshot_at"] == "2026-05-12T22:10:00+00:00"
+    assert under["broad_confirmation"] is True
+    assert under["best_is_off_market"] is True
+    assert under["best_book"] == "draftkings"
+    assert under["best_line"] == 5.5
+    assert under["best_odds"] == 124
+    assert under["book_count"] == 3
+    assert under["books_seen"] == ["betrivers", "draftkings", "fanduel"]
+
+
 def test_build_official_close_rows_flags_large_edge_skepticism():
     markets = [
         {
@@ -228,10 +321,15 @@ def test_build_summary_tracks_coverage_and_duplicates():
             "batters_faced": 22,
             "actual_opportunity_source": "mlb_boxscore_reconstructed",
             "provider": "boltodds",
+            "live_display_provider": "propline",
+            "live_display_state": "off_market",
+            "live_display_latest_snapshot_at": "2026-05-12T22:10:00+00:00",
             "book_count": 3,
             "toward_pick_count": 2,
             "away_from_pick_count": 0,
             "market_agreement_label": "market_with_model",
+            "best_is_off_market": True,
+            "broad_confirmation": True,
         },
         {
             "dataset_key": "a",
@@ -262,10 +360,15 @@ def test_build_summary_tracks_coverage_and_duplicates():
             "batters_faced": None,
             "actual_opportunity_source": None,
             "provider": None,
+            "live_display_provider": None,
+            "live_display_state": None,
+            "live_display_latest_snapshot_at": None,
             "book_count": None,
             "toward_pick_count": None,
             "away_from_pick_count": None,
             "market_agreement_label": None,
+            "best_is_off_market": None,
+            "broad_confirmation": False,
         },
     ]
 
@@ -295,6 +398,9 @@ def test_build_summary_tracks_coverage_and_duplicates():
     assert summary["market_agreement_rows"] == 1
     assert summary["market_book_count_rows"] == 1
     assert summary["toward_away_count_rows"] == 1
+    assert summary["live_display_rows"] == 1
+    assert summary["best_off_market_rows"] == 1
+    assert summary["market_broad_confirmation_rows"] == 1
     assert summary["market_agreement_label_counts"]["market_with_model"] == 1
 
 

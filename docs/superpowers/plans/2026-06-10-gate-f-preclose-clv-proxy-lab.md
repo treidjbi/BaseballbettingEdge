@@ -139,3 +139,28 @@
   fields.
 - No production behavior, lambda, threshold, staking, provider, notification,
   lock, retention, or dashboard source-of-truth behavior changed.
+
+## 2026-06-10 Live Display Confidence Follow-Up
+
+- Added a second Gate C enrichment pass from
+  `analytics/output/market_agreement_inputs/live_market_display_state.json`.
+  It only accepts `game_state=pregame` rows whose `latest_snapshot_at` is before
+  first pitch, so post-start display snapshots cannot feed the pre-close proxy.
+- The enrichment fills `live_display_provider`, `live_display_state`,
+  `live_display_latest_snapshot_at`, `broad_confirmation`,
+  `best_is_off_market`, `best_book`, `best_line`, `best_odds`, and book-board
+  counts/seen books when a matching pregame display row exists.
+- Regenerated Gate C now has `223` live-display rows, `281` market-book-count
+  rows, `42` broad-confirmation rows, and `75` best-off-market rows while
+  preserving `1,718/1,718` actual-opportunity coverage.
+- Rerun CLV proxy read: `book_count` coverage improved to `278/886` tracked
+  rows (`31.4%`) and `best_is_off_market` coverage improved to `220/886`
+  (`24.8%`). The candidate became more conservative, not more promotable:
+  `strong_preclose_clv_proxy` is `294` rows, `162-132`, `+3.54u`, `+1.2% ROI`,
+  `92` positive-CLV rows (`31.3%`), `121` source-FIRE rows, `41` retained FIRE
+  rows, `80` capped-to-LEAN rows, `-12.33u` recent PnL, and `13` negative
+  slices.
+- Interpretation: the extra book-board evidence increases confidence by
+  exposing risk. It is a reason to keep observing and not re-enter FIRE yet.
+- No production behavior, lambda, threshold, staking, provider, notification,
+  lock, retention, or dashboard source-of-truth behavior changed.

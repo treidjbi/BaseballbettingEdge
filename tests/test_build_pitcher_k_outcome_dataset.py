@@ -62,6 +62,7 @@ def test_build_research_artifact_writes_jsonl_summary_and_manifest(tmp_path, mon
         "end_date": "2026-05-12",
         "production_fill_dates": [],
         "market_agreement_tracker_path": "analytics/output/market_agreement_tracker.jsonl",
+        "live_market_display_path": "analytics/output/market_agreement_inputs/live_market_display_state.json",
     }
     assert result["manifest"]["shadow_only"] is True
     assert result["jsonl_path"].name == "pitcher_k_outcome_dataset.jsonl"
@@ -190,6 +191,7 @@ def test_main_can_run_workload_no_vig_audit_after_fresh_dataset(tmp_path, monkey
                 "lineup_handedness_backfill_path": builder.dataset.LINEUP_HANDEDNESS_BACKFILL,
                 "actual_opportunity_backfill_path": builder.dataset.ACTUAL_OPPORTUNITY_BACKFILL,
                 "market_agreement_tracker_path": builder.dataset.MARKET_AGREEMENT_TRACKER,
+                "live_market_display_path": builder.dataset.LIVE_MARKET_DISPLAY,
             },
         ),
         (

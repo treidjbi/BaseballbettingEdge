@@ -34,6 +34,9 @@ def _complete_row(**overrides):
         "opp_team": "NYY",
         "lineup_used": "confirmed",
         "provider": None,
+        "live_display_provider": None,
+        "live_display_state": None,
+        "live_display_latest_snapshot_at": None,
         "market_agreement_checkpoint": None,
         "market_agreement_label": None,
         "movement_strength_label": None,
@@ -112,6 +115,8 @@ def test_required_dataset_fields_cover_identity_market_model_result_and_context(
     assert {"side", "k_line", "american_odds", "market_favorite_side"} <= REQUIRED_DATASET_FIELDS
     assert {"book_count", "books_seen", "toward_pick_count", "away_from_pick_count"} <= REQUIRED_DATASET_FIELDS
     assert {"better_now_count", "worse_now_count", "reversal_book_count"} <= REQUIRED_DATASET_FIELDS
+    assert {"live_display_provider", "live_display_state"} <= REQUIRED_DATASET_FIELDS
+    assert {"live_display_latest_snapshot_at", "best_is_off_market"} <= REQUIRED_DATASET_FIELDS
     assert {"market_agreement_label", "movement_strength_label"} <= REQUIRED_DATASET_FIELDS
     assert {"model_side", "model_win_prob", "projected_ks", "verdict"} <= REQUIRED_DATASET_FIELDS
     assert {"actual_ks", "result", "theoretical_pnl"} <= REQUIRED_DATASET_FIELDS

@@ -609,27 +609,32 @@ as a live selector. It tests whether fields available before lock can identify
 rows that later beat closing price or line.
 
 Current read from `analytics/output/gate_f_preclose_clv_proxy_lab.md` after the
-2026-06-10 Gate C market-field enrichment:
+2026-06-10 Gate C market-field and live-display enrichment:
 
 - Clean tracked win/loss rows analyzed: `886`.
 - Positive CLV target rows: `155`.
-- Strong pre-close proxy rows: `299`, with `97` positive-CLV rows (`32.4%`),
-  `166-133`, `+7.18u`, and `+2.4% ROI`.
+- Strong pre-close proxy rows: `294`, with `92` positive-CLV rows (`31.3%`),
+  `162-132`, `+3.54u`, and `+1.2% ROI`.
 - Strong proxy source-FIRE rows: `121`; `41` would remain FIRE under the
   profit-rescue policy and `80` would be capped to LEAN.
 - Readiness: `watch_more`, not ready for a production plan.
-- Main blockers: recent PnL is `-6.30u`, and there are `13` negative slice
+- Main blockers: recent PnL is `-12.33u`, and there are `13` negative slice
   risks including model-fades-favorite, plus price, low K-line, capped quality,
   pre-5 timing, unchanged movement, and thin no-vig slices.
 - Gate C now enriches from `analytics/output/market_agreement_tracker.jsonl`.
-  The durable Gate C dataset has `195` market-agreement rows; the CLV proxy
-  report has `192/886` clean tracked rows (`21.7%`) populated for
+  It also enriches pregame book-board confidence from
+  `analytics/output/market_agreement_inputs/live_market_display_state.json`.
+  The durable Gate C dataset has `195` market-agreement rows and `223`
+  live-display rows; the CLV proxy report has `192/886` clean tracked rows
+  (`21.7%`) populated for
   `toward_pick_count`, `away_from_pick_count`, `better_now_count`,
   `worse_now_count`, `book_count`, `reversal_book_count`,
   `volatile_book_count`, provider, and `market_agreement_label`.
-- Still missing/weak: `broad_confirmation` is present but false on all rows,
-  `best_is_off_market` has `0.0%` coverage, and most clean tracked rows still
-  do not have tracker-backed market fields.
+- Additional book-board confidence now exists: `book_count` coverage is
+  `278/886` (`31.4%`), `best_is_off_market` coverage is `220/886` (`24.8%`),
+  and the durable dataset has `42` broad-confirmation rows plus `75`
+  best-off-market rows. This made the candidate more conservative; it did not
+  justify promotion.
 
 Next decision:
 

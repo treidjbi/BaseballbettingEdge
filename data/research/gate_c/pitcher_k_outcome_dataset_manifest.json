@@ -5,7 +5,7 @@
     "jsonl": "data/research/gate_c/pitcher_k_outcome_dataset.jsonl",
     "summary": "data/research/gate_c/pitcher_k_outcome_dataset_summary.md"
   },
-  "generated_at": "2026-06-10T19:37:02.572769+00:00",
+  "generated_at": "2026-06-10T23:42:37.210705+00:00",
   "guardrails": [
     "does_not_change_live_picks",
     "does_not_change_locks",
@@ -16,7 +16,7 @@
     "does_not_change_calibration",
     "does_not_change_dashboard_behavior"
   ],
-  "jsonl_sha256": "de4366d0783c3f1a32319c9074fc6b32349cc74dc0317b2de31f64ed2b2c61d6",
+  "jsonl_sha256": "258520bdf135b0bddcfbcc10c0aa69990be98d5df35b61d30afc7ace17048878",
   "loaded_slate_dates": [
     "2026-04-28",
     "2026-04-29",
@@ -74,6 +74,7 @@
     "artifact_api_url": "https://baseballbettingedge.netlify.app/.netlify/functions/get-artifact",
     "artifact_source": "hybrid",
     "end_date": null,
+    "live_market_display_path": "analytics/output/market_agreement_inputs/live_market_display_state.json",
     "market_agreement_tracker_path": "analytics/output/market_agreement_tracker.jsonl",
     "production_fill_dates": [
       "2026-05-30",
@@ -99,6 +100,7 @@
     "batters_faced_rows": 1718,
     "beat_close_line_rows": 17,
     "beat_close_price_rows": 138,
+    "best_off_market_rows": 75,
     "bet_timing_window_counts": {
       "post_start": 46,
       "pre_120": 5,
@@ -130,6 +132,16 @@
       "missing": 544,
       "mlb_boxscore_reconstructed": 1174
     },
+    "live_display_rows": 223,
+    "live_display_state_counts": {
+      "market_fade": 16,
+      "missing": 1495,
+      "mixed": 17,
+      "monitor": 66,
+      "off_market": 30,
+      "playable_now": 22,
+      "stale": 72
+    },
     "market_agreement_label_counts": {
       "market_against_model": 32,
       "market_mixed": 62,
@@ -138,8 +150,8 @@
       "missing": 1523
     },
     "market_agreement_rows": 195,
-    "market_book_count_rows": 195,
-    "market_broad_confirmation_rows": 0,
+    "market_book_count_rows": 281,
+    "market_broad_confirmation_rows": 42,
     "missing_book_odds": 0,
     "missing_model_fields": 2,
     "missing_team_or_opponent": 0,
@@ -183,6 +195,6 @@
     "toward_away_count_rows": 195,
     "tracked_pick_rows": 886
   },
-  "summary_sha256": "d19b4e5837cce756e438014113794fd58ccf601506a50b6bab6dbac059590369",
+  "summary_sha256": "947df4e235a0759585181c9e32bb6cf03d3a8bf41e0925b7a5238825cab6dce0",
   "tracked_pick_rows": 886
 }

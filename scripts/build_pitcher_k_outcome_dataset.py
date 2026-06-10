@@ -116,6 +116,7 @@ def _build_rows(
     lineup_handedness_backfill_path: Path,
     actual_opportunity_backfill_path: Path,
     market_agreement_tracker_path: Path | None,
+    live_market_display_path: Path | None,
 ) -> tuple[list[dict[str, Any]], list[str]]:
     if artifact_source in {"local", "production"}:
         source_kwargs = _source_kwargs(
@@ -129,6 +130,7 @@ def _build_rows(
                 lineup_handedness_backfill_path=lineup_handedness_backfill_path,
                 actual_opportunity_backfill_path=actual_opportunity_backfill_path,
                 market_agreement_tracker_path=market_agreement_tracker_path,
+                live_market_display_path=live_market_display_path,
                 **source_kwargs,
             ),
             [],
@@ -140,6 +142,7 @@ def _build_rows(
         lineup_handedness_backfill_path=lineup_handedness_backfill_path,
         actual_opportunity_backfill_path=actual_opportunity_backfill_path,
         market_agreement_tracker_path=market_agreement_tracker_path,
+        live_market_display_path=live_market_display_path,
         artifact_api_url=None,
     )
     local_dates = _loaded_slate_dates(local_rows)
@@ -161,6 +164,7 @@ def _build_rows(
                 lineup_handedness_backfill_path=lineup_handedness_backfill_path,
                 actual_opportunity_backfill_path=actual_opportunity_backfill_path,
                 market_agreement_tracker_path=market_agreement_tracker_path,
+                live_market_display_path=live_market_display_path,
                 artifact_api_url=artifact_api_url or DEFAULT_ARTIFACT_API_URL,
             )
         )
@@ -179,6 +183,7 @@ def _manifest(
     jsonl_path: Path,
     summary_path: Path,
     market_agreement_tracker_path: Path | None,
+    live_market_display_path: Path | None,
     production_fill_dates: list[str] | None = None,
 ) -> dict[str, Any]:
     return {
@@ -202,6 +207,7 @@ def _manifest(
             "end_date": end_date,
             "production_fill_dates": production_fill_dates or [],
             "market_agreement_tracker_path": _manifest_path(market_agreement_tracker_path),
+            "live_market_display_path": _manifest_path(live_market_display_path),
         },
         "row_count": len(rows),
         "tracked_pick_rows": int(summary.get("tracked_pick_rows", 0)),
@@ -228,6 +234,7 @@ def build_research_artifact(
     lineup_handedness_backfill_path: Path = dataset.LINEUP_HANDEDNESS_BACKFILL,
     actual_opportunity_backfill_path: Path = dataset.ACTUAL_OPPORTUNITY_BACKFILL,
     market_agreement_tracker_path: Path | None = dataset.MARKET_AGREEMENT_TRACKER,
+    live_market_display_path: Path | None = dataset.LIVE_MARKET_DISPLAY,
 ) -> dict[str, Any]:
     if artifact_source not in {"hybrid", "local", "production"}:
         raise ValueError("artifact_source must be hybrid, local, or production")
@@ -244,6 +251,7 @@ def build_research_artifact(
         lineup_handedness_backfill_path=lineup_handedness_backfill_path,
         actual_opportunity_backfill_path=actual_opportunity_backfill_path,
         market_agreement_tracker_path=market_agreement_tracker_path,
+        live_market_display_path=live_market_display_path,
     )
     validation_errors = [
         (row.get("dataset_key"), errors)
@@ -283,6 +291,7 @@ def build_research_artifact(
         jsonl_path=jsonl_path,
         summary_path=summary_path,
         market_agreement_tracker_path=market_agreement_tracker_path,
+        live_market_display_path=live_market_display_path,
         production_fill_dates=production_fill_dates,
     )
     _write_json(manifest_path, manifest)
@@ -328,6 +337,12 @@ def _parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         help="Optional JSONL export from market_agreement_tracker used to enrich Gate C rows.",
     )
     parser.add_argument(
+        "--live-market-display",
+        type=Path,
+        default=dataset.LIVE_MARKET_DISPLAY,
+        help="Optional JSON export from live_market_display_state used for book-board confidence fields.",
+    )
+    parser.add_argument(
         "--run-workload-no-vig-audit",
         action="store_true",
         help="After writing the Gate C dataset, rebuild the shadow workload/no-vig audit report.",
@@ -346,6 +361,7 @@ def main(argv: list[str] | None = None) -> None:
         lineup_handedness_backfill_path=args.lineup_handedness_backfill,
         actual_opportunity_backfill_path=args.actual_opportunity_backfill,
         market_agreement_tracker_path=args.market_agreement_tracker,
+        live_market_display_path=args.live_market_display,
     )
     if args.run_workload_no_vig_audit:
         from analytics.diagnostics import workload_no_vig_ev_audit  # noqa: WPS433

@@ -19,9 +19,11 @@ Shadow-only: this dataset does not change live picks, locks, thresholds, staking
 - Rows with actual pitch count: `1718`
 - Rows with batters faced: `1718`
 - Rows with market agreement labels: `195`
-- Rows with market book counts: `195`
+- Rows with market book counts: `281`
 - Rows with toward/away counts: `195`
-- Broad market confirmation rows: `0`
+- Rows with live display book-board fields: `223`
+- Broad market confirmation rows: `42`
+- Best off-market rows: `75`
 - Large-edge skepticism rows: `390`
 - Clean graded picks reconciled: `887/887`
 - Unique side fallback reconciliations: `29`
@@ -108,3 +110,13 @@ Shadow-only: this dataset does not change live picks, locks, thresholds, staking
 - `no_movement_signal`: `63`
 - `single_book_against_model`: `6`
 - `single_book_with_model`: `5`
+
+## Live Display States
+
+- `market_fade`: `16`
+- `missing`: `1495`
+- `mixed`: `17`
+- `monitor`: `66`
+- `off_market`: `30`
+- `playable_now`: `22`
+- `stale`: `72`
