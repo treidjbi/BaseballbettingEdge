@@ -63,7 +63,8 @@ official_line_summary as (
   select
     jsonb_agg(row_to_json(summary) order by summary.slate_date) as rows,
     coalesce(sum(summary.rows) filter (where summary.slate_date = settings.phoenix_today), 0) as today_rows,
-    coalesce(sum(summary.ready_rows) filter (where summary.slate_date = settings.phoenix_today), 0) as today_ready_rows
+    coalesce(sum(summary.ready_rows) filter (where summary.slate_date = settings.phoenix_today), 0) as today_ready_rows,
+    coalesce(sum(summary.boltodds_ready_rows) filter (where summary.slate_date = settings.phoenix_today), 0) as today_boltodds_ready_rows
   from settings
   left join lateral (
     select
@@ -71,6 +72,7 @@ official_line_summary as (
       count(*) as rows,
       count(*) filter (where ready_for_pipeline) as ready_rows,
       count(*) filter (where selected_provider = 'boltodds') as boltodds_rows,
+      count(*) filter (where ready_for_pipeline and selected_provider = 'boltodds') as boltodds_ready_rows,
       count(*) filter (where selected_provider = 'propline') as propline_rows,
       count(*) filter (where quality_flags ? 'cross_book_line_conflict') as cross_book_line_conflict_rows,
       max(updated_at) as latest_updated_at
@@ -81,7 +83,10 @@ official_line_summary as (
   group by settings.phoenix_today
 ),
 current_line_summary as (
-  select jsonb_agg(row_to_json(summary) order by summary.slate_date, summary.provider) as rows
+  select
+    jsonb_agg(row_to_json(summary) order by summary.slate_date, summary.provider) as rows,
+    coalesce(sum(summary.complete_rows) filter (where summary.slate_date = settings.phoenix_today and summary.provider = 'boltodds'), 0) as today_boltodds_complete_rows,
+    max(summary.latest_updated_at) filter (where summary.slate_date = settings.phoenix_today and summary.provider = 'boltodds') as today_boltodds_latest_updated_at
   from settings
   left join lateral (
     select
@@ -236,6 +241,30 @@ propline_webhook_deliveries as (
   from public.propline_webhook_deliveries
   where received_at >= now() - interval '7 days'
 ),
+provider_evidence_context as (
+  select
+    jsonb_build_object(
+      'today_boltodds_ready_rows', official_line_summary.today_boltodds_ready_rows,
+      'today_boltodds_complete_rows', current_line_summary.today_boltodds_complete_rows,
+      'today_boltodds_latest_current_line_update', current_line_summary.today_boltodds_latest_updated_at,
+      'boltodds_latest_heartbeat_at', latest_heartbeats.boltodds_observed_at,
+      'boltodds_line_evidence_fresh', (
+        official_line_summary.today_boltodds_ready_rows > 0
+        and current_line_summary.today_boltodds_complete_rows > 0
+        and latest_heartbeats.boltodds_observed_at >= now() - interval '15 minutes'
+        and current_line_summary.today_boltodds_latest_updated_at >= now() - interval '30 minutes'
+      )
+    ) as context,
+    (
+      official_line_summary.today_boltodds_ready_rows > 0
+      and current_line_summary.today_boltodds_complete_rows > 0
+      and latest_heartbeats.boltodds_observed_at >= now() - interval '15 minutes'
+      and current_line_summary.today_boltodds_latest_updated_at >= now() - interval '30 minutes'
+    ) as boltodds_line_evidence_fresh
+  from official_line_summary
+  cross join current_line_summary
+  cross join latest_heartbeats
+),
 strict_provider_readiness as (
   select
     settings.checked_at,
@@ -257,9 +286,15 @@ strict_provider_readiness as (
     ], null) as blocking_reasons,
     array_remove(array[
       case
+        when latest_coverage_audits.today_boltodds_parsed = 0
+          and provider_evidence_context.boltodds_line_evidence_fresh
+          then 'latest BoltOdds coverage audit parsed zero rows but heartbeat/current/official lines are fresh'
         when latest_coverage_audits.today_boltodds_parsed = 0 then 'latest BoltOdds coverage audit parsed zero rows'
       end,
       case
+        when latest_coverage_audits.today_boltodds_complete_groups = 0
+          and provider_evidence_context.boltodds_line_evidence_fresh
+          then 'latest BoltOdds coverage audit has zero complete groups but heartbeat/current/official lines are fresh'
         when latest_coverage_audits.today_boltodds_complete_groups = 0 then 'latest BoltOdds coverage audit has zero complete groups'
       end,
       case
@@ -283,6 +318,7 @@ strict_provider_readiness as (
   cross join official_line_summary
   cross join latest_coverage_audits
   cross join latest_heartbeats
+  cross join provider_evidence_context
   cross join provider_runs
   cross join operational_pick_locks
   cross join notification_events
@@ -300,6 +336,7 @@ select
   strict_provider_readiness.watch_reasons,
   artifact_summary.artifacts as artifact_summary,
   official_line_summary.rows as official_line_summary,
+  provider_evidence_context.context as provider_evidence_context,
   current_line_summary.rows as current_line_summary,
   latest_coverage_audits.rows as latest_coverage_audits,
   latest_heartbeats.rows as latest_heartbeats,
@@ -312,6 +349,7 @@ select
 from strict_provider_readiness
 cross join artifact_summary
 cross join official_line_summary
+cross join provider_evidence_context
 cross join current_line_summary
 cross join latest_coverage_audits
 cross join latest_heartbeats

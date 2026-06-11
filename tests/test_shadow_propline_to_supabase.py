@@ -188,6 +188,65 @@ def test_poll_propline_uses_default_netlify_production_artifact(monkeypatch):
     )
 
 
+def test_poll_propline_records_zero_event_diagnostics_without_raw_payloads(monkeypatch):
+    writer = FakeWriter()
+
+    def fake_propline_get(*args, **kwargs):
+        return [
+            {
+                "id": "event-with-new-date-field",
+                "sport_key": "baseball_mlb",
+                "start_time": "2026-06-11T19:05:00Z",
+                "home_team": "Home Team",
+                "away_team": "Away Team",
+            },
+            {
+                "id": "prior-date-event",
+                "sport_key": "baseball_mlb",
+                "commence_time": "2026-06-10T19:05:00Z",
+                "home_team": "Other Home",
+                "away_team": "Other Away",
+            },
+        ]
+
+    monkeypatch.setattr(
+        "scripts.shadow_propline_to_supabase.propline_get",
+        fake_propline_get,
+    )
+    monkeypatch.setattr(
+        "scripts.shadow_propline_to_supabase._production_artifact_for_slate",
+        lambda slate_date, **kwargs: (
+            {"date": slate_date, "pitchers": []},
+            "https://example.test/.netlify/functions/get-artifact?type=today",
+        ),
+    )
+
+    result = poll_propline_to_supabase(
+        "2026-06-11",
+        writer=writer,
+        observed_at="2026-06-11T15:00:00+00:00",
+    )
+
+    assert result["target_event_count"] == 0
+    completed = writer.upserts[-1][1][0]
+    metadata = completed["metadata"]
+    diagnostics = metadata["event_date_diagnostics"]
+    assert metadata["events_returned_count"] == 2
+    assert metadata["target_event_count"] == 0
+    assert metadata["production_artifact_path"] == "https://example.test/.netlify/functions/get-artifact?type=today"
+    assert diagnostics["date_field_counts"]["start_time"] == 1
+    assert diagnostics["date_field_counts"]["commence_time"] == 1
+    assert diagnostics["parsed_phoenix_date_counts"] == {"2026-06-10": 1, "unparsed": 1}
+    assert diagnostics["sample_event_keys"][0] == [
+        "away_team",
+        "home_team",
+        "id",
+        "sport_key",
+        "start_time",
+    ]
+    assert "Home Team" not in json.dumps(metadata)
+
+
 def test_poll_propline_can_record_shadow_failure_without_raising(monkeypatch):
     writer = FakeWriter()
 

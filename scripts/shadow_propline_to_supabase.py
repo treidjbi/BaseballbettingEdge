@@ -33,6 +33,7 @@ from market_infra.supabase_writer import SupabaseMarketWriter  # noqa: E402
 DEFAULT_PRODUCTION_ARTIFACT_URL = (
     "https://baseballbettingedge.netlify.app/.netlify/functions/get-artifact?type=today"
 )
+EVENT_DATE_DIAGNOSTIC_FIELDS = ("commence_time", "event_date", "start_time", "game_time")
 
 
 def _env(name: str) -> str:
@@ -106,6 +107,55 @@ def _production_artifact_for_slate(
     return None, None
 
 
+def _propline_event_date_diagnostics(events: list[dict[str, Any]], limit: int = 5) -> dict[str, Any]:
+    date_field_counts = {field: 0 for field in EVENT_DATE_DIAGNOSTIC_FIELDS}
+    parsed_phoenix_date_counts: dict[str, int] = {}
+    sample_event_keys: list[list[str]] = []
+    sample_event_date_fields: list[dict[str, str]] = []
+
+    for event in events:
+        for field in EVENT_DATE_DIAGNOSTIC_FIELDS:
+            if event.get(field):
+                date_field_counts[field] += 1
+
+        parsed_date = _the_odds_event_date_phoenix(event) or "unparsed"
+        parsed_phoenix_date_counts[parsed_date] = parsed_phoenix_date_counts.get(parsed_date, 0) + 1
+
+        if len(sample_event_keys) < limit:
+            sample_event_keys.append(sorted(str(key) for key in event.keys()))
+            sample_event_date_fields.append({
+                field: str(event.get(field) or "")
+                for field in EVENT_DATE_DIAGNOSTIC_FIELDS
+                if event.get(field)
+            })
+
+    return {
+        "date_field_counts": date_field_counts,
+        "parsed_phoenix_date_counts": dict(sorted(parsed_phoenix_date_counts.items())),
+        "sample_event_keys": sample_event_keys,
+        "sample_event_date_fields": sample_event_date_fields,
+    }
+
+
+def _run_metadata(
+    *,
+    production_payload: dict | None,
+    production_artifact_path: str | None,
+    events: list[dict[str, Any]],
+    target_events: list[dict[str, Any]],
+) -> dict[str, Any]:
+    metadata: dict[str, Any] = {
+        "script": "scripts/shadow_propline_to_supabase.py",
+        "production_artifact_path": production_artifact_path,
+        "production_artifact_date": _payload_slate_date(production_payload),
+        "events_returned_count": len(events),
+        "target_event_count": len(target_events),
+    }
+    if not target_events:
+        metadata["event_date_diagnostics"] = _propline_event_date_diagnostics(events)
+    return metadata
+
+
 def _coverage_audit_row(
     *,
     run_id: str,
@@ -172,15 +222,19 @@ def poll_propline_to_supabase(
     event_rows: list[dict] = []
     snapshots: list[dict] = []
     target_events = []
+    events: list[dict[str, Any]] = []
     production_payload, production_artifact_path = _production_artifact_for_slate(
         slate_date,
         artifact_url=_production_artifact_url_from_env(),
     )
 
     try:
-        events = propline_get(f"/sports/{PROPLINE_SPORT_KEY}/events")
-        if not isinstance(events, list):
-            events = []
+        events_response = propline_get(f"/sports/{PROPLINE_SPORT_KEY}/events")
+        if isinstance(events_response, list):
+            events = [
+                event for event in events_response
+                if isinstance(event, dict)
+            ]
         target_events = [
             event for event in events
             if _the_odds_event_date_phoenix(event) == slate_date
@@ -242,6 +296,12 @@ def poll_propline_to_supabase(
                 (s["normalized_player_name"], s["line"]) for s in snapshots
             }),
             "books_seen": sorted(books_seen),
+            "metadata": _run_metadata(
+                production_payload=production_payload,
+                production_artifact_path=production_artifact_path,
+                events=events,
+                target_events=target_events,
+            ),
         }], on_conflict="id")
     except Exception as exc:
         error_message = str(exc)[:1000]
@@ -259,6 +319,12 @@ def poll_propline_to_supabase(
             }),
             "books_seen": sorted(books_seen),
             "error_message": error_message,
+            "metadata": _run_metadata(
+                production_payload=production_payload,
+                production_artifact_path=production_artifact_path,
+                events=events,
+                target_events=target_events,
+            ),
         }], on_conflict="id")
         if raise_on_error:
             raise

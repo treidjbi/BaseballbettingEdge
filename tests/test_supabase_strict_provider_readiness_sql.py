@@ -46,6 +46,7 @@ def test_strict_provider_readiness_sql_covers_artifact_provider_and_lock_evidenc
         "blocking_reasons",
         "watch_reasons",
         "official_line_summary",
+        "provider_evidence_context",
         "latest_coverage_audits",
         "latest_heartbeats",
     ]:
@@ -56,3 +57,16 @@ def test_strict_provider_readiness_sql_documents_supabase_cli_command():
     sql = SQL_PATH.read_text(encoding="utf-8").lower()
 
     assert "npx supabase db query --linked --file scripts\\supabase_strict_provider_readiness.sql -o json" in sql
+
+
+def test_strict_provider_readiness_sql_contextualizes_zero_boltodds_audits():
+    sql = SQL_PATH.read_text(encoding="utf-8").lower()
+
+    for expected in [
+        "today_boltodds_ready_rows",
+        "today_boltodds_complete_rows",
+        "boltodds_line_evidence_fresh",
+        "latest boltodds coverage audit parsed zero rows but heartbeat/current/official lines are fresh",
+        "latest boltodds coverage audit has zero complete groups but heartbeat/current/official lines are fresh",
+    ]:
+        assert expected in sql
