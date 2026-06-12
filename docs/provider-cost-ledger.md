@@ -1,6 +1,6 @@
 # Provider Cost Ledger
 
-Last updated: 2026-05-21
+Last updated: 2026-06-12
 
 This doc exists so provider and infrastructure choices stay tied to ROI, not
 just engineering momentum. BaseballBettingEdge is a personal side project, so a
@@ -56,9 +56,9 @@ always-on worker cost in the steady-state view.
 
 | Service | Current / likely cost | What it does | Current decision | Main cost risk |
 | --- | ---: | --- | --- | --- |
-| TheRundown | ~$49-$50/mo | Production book-of-record odds for scheduled pipeline artifacts | Keep as production source | Data-point overage; not suitable for 10-minute live polling |
+| TheRundown | ~$49-$50/mo Starter; 5M data points/month confirmed 2026-06-12 | Production book-of-record odds for scheduled pipeline artifacts; inactive mainline shadow-polling candidate | Keep as production source; mainline 10-minute shadow is built but not scheduled | Data-point overage if full-slate polling is too broad; 60-second delay; no WebSocket on Starter |
 | PropLine | ~$40/mo now; possible ~$80/mo tier | Shadow/fallback odds and live movement polling | Keep shadow/fallback; do not broadly migrate | Webhooks not proven; duplicate polling; unclear upgrade ROI |
-| BoltOdds | $99/mo Starter during trial | WebSocket live market movement evidence | Trial only, shadow-only | Always-on worker complexity; book gaps; Pro is much more expensive |
+| BoltOdds | $99/mo Starter during trial | WebSocket live market movement evidence | Trial only, shadow-only; retirement candidate if TheRundown mainline + PropLine webhook evidence proves enough movement value | Always-on worker complexity; book gaps; Pro is much more expensive |
 | The Odds API | Free/limited fallback currently | FD/DK fallback when TheRundown/PropLine leave gaps | Keep conservative fallback only | Credit burn if called event-by-event too broadly |
 | Netlify | Tyler account currently about ~$5/mo | Static dashboard, serverless notification functions, Netlify Blobs subscriptions | Keep | Usage credits, function calls, logs, bandwidth if traffic grows |
 | Render live cron | ~$1/mo | `bbe-live-layer` every 10 minutes | Keep while live notifications matter | Duplicate PropLine calls if older GitHub polling remains active |
@@ -80,7 +80,25 @@ Use TheRundown for official scheduled artifacts:
 - dated archives
 
 Do not increase TheRundown to high-frequency live polling without explicit cost
-approval. Its value is reliable book-of-record data, not cheap live telemetry.
+approval and data-point header tracking. Its value is reliable book-of-record
+data; the 2026-06-12 Starter increase makes bounded mainline polling plausible,
+but not free.
+
+2026-06-12 measurement on Tyler's Starter account:
+
+- Account headers confirmed `X-Datapoints-Limit=5000000`, `X-Tier=starter`,
+  `X-Rate-Limit=2`, `X-Data-Delay-Seconds=60`, and
+  `X-Websocket-Access=false`.
+- Exact five-target-book, two-date full slate pulls ranged about `963-1789`
+  data points across the probe set. At the high end, 10-minute polling for
+  10h/day plus existing scheduled pulls is about `4.45M/month`; 12h/day can
+  exceed Starter.
+- `main_line=true` on the active slate returned the same `29` parsed pitcher
+  props as the full target-book pull at about `280` data points. That puts a
+  10h/day mainline shadow plus existing scheduled full pulls around
+  `1.17M/month`, with much more headroom.
+- The built shadow path is `scripts/shadow_therundown_mainline_to_supabase.py`.
+  It is inactive/manual only until Tyler approves scheduling or Render wiring.
 
 Keep if:
 
@@ -93,6 +111,8 @@ Review alternatives if:
 - resolved pitcher coverage degrades
 - data-point usage approaches overage
 - another provider proves equal production coverage plus lower cost
+- TheRundown mainline + PropLine webhooks prove enough movement value to retire
+  BoltOdds without losing useful decision timing
 
 ### PropLine
 
@@ -149,6 +169,8 @@ Keep Starter after trial only if:
 - row volume is manageable
 - movement events would have improved timing/confidence
 - it can replace or reduce another cost or manual burden
+- it still adds decision value after TheRundown mainline polling and PropLine
+  webhook evidence are measured together
 
 Do not buy Pro unless:
 

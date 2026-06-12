@@ -89,6 +89,31 @@ Important current-state findings:
 - TheRundown just renewed and remains available through the end of May, which
   creates a useful overlap window for audit and rollback.
 
+### 2026-06-12 TheRundown Mainline Alternative
+
+TheRundown's Starter limit is now confirmed from account headers at `5,000,000`
+data points/month, `2` req/sec, `60` seconds delay, and no WebSocket. Tyler
+approved building an inactive shadow path to test whether TheRundown mainline
+polling plus PropLine webhooks can replace enough BoltOdds movement value to
+avoid the extra BoltOdds subscription/worker cost.
+
+Built but not scheduled:
+
+- `market_infra/therundown_snapshot.py` normalizes TheRundown mainline
+  pitcher-K rows into the existing `market_snapshots` contract.
+- `scripts/shadow_therundown_mainline_to_supabase.py` polls
+  `market_ids=19`, target affiliates `19,22,23,24,25`, `main_line=true`, and
+  `hide_closed_markets=1` by default. It records `X-Datapoints` and related
+  account headers in run/audit metadata.
+
+This path remains shadow-only. It must not change `OFFICIAL_MARKET_SOURCE`,
+`OFFICIAL_MARKET_STRICT`, `ENABLE_BOLTODDS_PIPELINE_SOURCE`, provider order,
+pipeline artifacts, notifications, locks, staking, thresholds, model math,
+retention, or dashboard source-of-truth without a separate Tyler approval.
+The next decision is whether to schedule a bounded 10-minute active-window
+canary and compare its movement value plus PropLine webhook evidence against
+BoltOdds.
+
 ## Supabase Tracker Interaction Matrix
 
 This plan must reuse the current trackers instead of creating duplicate versions
@@ -97,9 +122,9 @@ of the same evidence.
 | Table / artifact | Current role | Cutover action | Writes during cutover | Long-term role |
 | --- | --- | --- | --- | --- |
 | `market_feed_heartbeats` | BoltOdds worker uptime and current-slate proof | Read for cutover freshness gates | Existing BoltOdds worker only | Operational freshness, short retention |
-| `market_provider_runs` | Provider run metadata, including `slate_date` | Read to attach raw snapshots to slate dates | Existing provider workers only | Provider audit and lineage |
-| `market_snapshots` | Raw per-book/provider odds ticks | Read as raw source for current-line builder | Existing BoltOdds/PropLine writers only | High-volume short-retention raw evidence |
-| `provider_coverage_audits` | Slate/book/pitcher coverage summaries | Read for cutover gates | Existing provider audits plus BoltOdds trial writer | Long-term provider decision evidence |
+| `market_provider_runs` | Provider run metadata, including `slate_date` | Read to attach raw snapshots to slate dates | Existing provider workers plus inactive TheRundown mainline shadow script | Provider audit and lineage |
+| `market_snapshots` | Raw per-book/provider odds ticks | Read as raw source for current-line builder | Existing BoltOdds/PropLine writers plus inactive TheRundown mainline shadow script | High-volume short-retention raw evidence |
+| `provider_coverage_audits` | Slate/book/pitcher coverage summaries | Read for cutover gates | Existing provider audits plus BoltOdds trial writer plus inactive TheRundown mainline shadow script | Long-term provider decision evidence |
 | `market_pick_evidence` | Per-pick provider movement rollup | Leave as shadow/research | Existing live layer only | Model-vs-market learning |
 | `live_market_display_state` | App-ready per-provider market state | Leave as shadow/display until explicit UI promotion | Existing live layer only | User-facing evidence after separate display decision |
 | `shadow_notification_candidates` | Would-have-alerted rows | Continue shadow testing BoltOdds notification value | Existing live layer only | Notification promotion evidence |
