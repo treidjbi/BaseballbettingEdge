@@ -104,14 +104,16 @@ do we convert model signal into better betting decisions?"
   IDs after PropLine's 2026-05-19 payload fix. The planned provider stack is
   BoltOdds primary with PropLine fallback/DraftKings coverage, but that is not
   official until the cutover gates and environment switch are completed.
-- As of 2026-06-12, a TheRundown mainline shadow poller exists at
-  `scripts/shadow_therundown_mainline_to_supabase.py`. It writes only
-  observation rows to existing Supabase market trackers (`market_provider_runs`,
-  `market_events`, `market_snapshots`, and `provider_coverage_audits`) with
-  data-point header metadata. It is not scheduled, not wired to Render, not a
-  provider-source switch, and not a notification source. Tyler's current thesis
-  is that TheRundown mainline polling plus PropLine webhooks may recreate enough
-  movement value to retire BoltOdds, but that remains a shadow evidence gate.
+- As of 2026-06-12, the TheRundown mainline shadow canary is wired into the
+  observation-only `shadow-market-infra` workflow. Scheduled runs poll
+  `scripts/shadow_therundown_mainline_to_supabase.py` every 10 minutes during
+  the existing active-window schedule and write only observation rows to
+  existing Supabase market trackers (`market_provider_runs`, `market_events`,
+  `market_snapshots`, and `provider_coverage_audits`) with data-point header
+  metadata. It is not a provider-source switch, not a notification source, and
+  not a model/dashboard/artifact change. TheRundown mainline polling plus
+  PropLine webhooks is now the leading low-cost replacement thesis for
+  BoltOdds, but promotion/cancellation remains a separate evidence decision.
 - BoltOdds is being tested as a separate shadow-only WebSocket live-market
   sidecar. It must not affect production picks, grading, dashboard artifacts,
   or provider order until the provider cutover plan is implemented and Tyler

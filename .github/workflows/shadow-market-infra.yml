@@ -2,11 +2,12 @@ name: Shadow Market Infrastructure
 
 on:
   schedule:
-    # Observation-only PropLine shadow polling, independent of the production
+    # Observation-only provider shadow polling, independent of the production
     # Baseball Pipeline. Times are America/Phoenix (UTC-7, no DST):
     # every 10 minutes from 8:02 AM through 6:52 PM while the one-month
-    # Streaming Lite trial is active. This captures line-movement evidence
-    # without updating picks, dashboard artifacts, grading, or calibration.
+    # Streaming Lite trial / TheRundown mainline canary is active. This captures
+    # line-movement evidence without updating picks, dashboard artifacts,
+    # grading, or calibration.
     - cron: '2,12,22,32,42,52 15-23,0-1 * * *'
   workflow_dispatch:
     inputs:
@@ -14,6 +15,11 @@ on:
         description: "Optional YYYY-MM-DD slate date; defaults to today's Phoenix date"
         required: false
         type: string
+      capture_therundown_mainline:
+        description: "Poll TheRundown mainline and write normalized market snapshots to Supabase"
+        required: false
+        type: boolean
+        default: true
       capture_propline:
         description: "Poll PropLine and write normalized market snapshots to Supabase"
         required: false
@@ -78,6 +84,7 @@ jobs:
       - name: Resolve capture flags
         id: capture
         run: |
+          CAPTURE_THERUNDOWN_MAINLINE="${{ github.event.inputs.capture_therundown_mainline }}"
           CAPTURE_PROPLINE="${{ github.event.inputs.capture_propline }}"
           CAPTURE_ARTIFACTS="${{ github.event.inputs.capture_artifacts }}"
           BUILD_MARKET_LINES="${{ github.event.inputs.build_market_lines }}"
@@ -85,6 +92,7 @@ jobs:
           RUN_EXECUTABLE_MARKET_SHADOW="${{ github.event.inputs.run_executable_market_shadow }}"
 
           if [ "${{ github.event_name }}" = "schedule" ]; then
+            CAPTURE_THERUNDOWN_MAINLINE="true"
             CAPTURE_PROPLINE="true"
             CAPTURE_ARTIFACTS="false"
             BUILD_MARKET_LINES="true"
@@ -92,6 +100,9 @@ jobs:
             RUN_EXECUTABLE_MARKET_SHADOW="false"
           fi
 
+          if [ -z "$CAPTURE_THERUNDOWN_MAINLINE" ]; then
+            CAPTURE_THERUNDOWN_MAINLINE="true"
+          fi
           if [ -z "$CAPTURE_PROPLINE" ]; then
             CAPTURE_PROPLINE="true"
           fi
@@ -108,11 +119,13 @@ jobs:
             RUN_EXECUTABLE_MARKET_SHADOW="false"
           fi
 
+          echo "capture_therundown_mainline=$CAPTURE_THERUNDOWN_MAINLINE" >> "$GITHUB_OUTPUT"
           echo "capture_propline=$CAPTURE_PROPLINE" >> "$GITHUB_OUTPUT"
           echo "capture_artifacts=$CAPTURE_ARTIFACTS" >> "$GITHUB_OUTPUT"
           echo "build_market_lines=$BUILD_MARKET_LINES" >> "$GITHUB_OUTPUT"
           echo "run_cutover_compare=$RUN_CUTOVER_COMPARE" >> "$GITHUB_OUTPUT"
           echo "run_executable_market_shadow=$RUN_EXECUTABLE_MARKET_SHADOW" >> "$GITHUB_OUTPUT"
+          echo "Capture TheRundown mainline: $CAPTURE_THERUNDOWN_MAINLINE"
           echo "Capture PropLine: $CAPTURE_PROPLINE"
           echo "Capture artifacts: $CAPTURE_ARTIFACTS"
           echo "Build market lines: $BUILD_MARKET_LINES"
@@ -121,6 +134,7 @@ jobs:
 
       - name: Validate shadow secrets
         env:
+          CAPTURE_THERUNDOWN_MAINLINE: ${{ steps.capture.outputs.capture_therundown_mainline }}
           CAPTURE_PROPLINE: ${{ steps.capture.outputs.capture_propline }}
           CAPTURE_ARTIFACTS: ${{ steps.capture.outputs.capture_artifacts }}
           BUILD_MARKET_LINES: ${{ steps.capture.outputs.build_market_lines }}
@@ -132,7 +146,7 @@ jobs:
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
         run: |
           missing=0
-          if [ "$CAPTURE_PROPLINE" = "true" ] || [ "$CAPTURE_ARTIFACTS" = "true" ] || [ "$BUILD_MARKET_LINES" = "true" ] || [ "$RUN_CUTOVER_COMPARE" = "true" ] || [ "$RUN_EXECUTABLE_MARKET_SHADOW" = "true" ]; then
+          if [ "$CAPTURE_THERUNDOWN_MAINLINE" = "true" ] || [ "$CAPTURE_PROPLINE" = "true" ] || [ "$CAPTURE_ARTIFACTS" = "true" ] || [ "$BUILD_MARKET_LINES" = "true" ] || [ "$RUN_CUTOVER_COMPARE" = "true" ] || [ "$RUN_EXECUTABLE_MARKET_SHADOW" = "true" ]; then
             if [ -z "$SUPABASE_URL" ]; then
               echo "Missing SUPABASE_URL secret"
               missing=1
@@ -146,11 +160,20 @@ jobs:
             echo "Missing PROPLINE_API_KEY secret"
             missing=1
           fi
-          if [ "$RUN_CUTOVER_COMPARE" = "true" ] && [ -z "$RUNDOWN_API_KEY" ]; then
+          if [ -z "$RUNDOWN_API_KEY" ] && { [ "$CAPTURE_THERUNDOWN_MAINLINE" = "true" ] || [ "$RUN_CUTOVER_COMPARE" = "true" ]; }; then
             echo "Missing RUNDOWN_API_KEY secret"
             missing=1
           fi
           exit "$missing"
+
+      - name: Shadow TheRundown mainline to Supabase
+        if: ${{ steps.capture.outputs.capture_therundown_mainline == 'true' }}
+        env:
+          RUNDOWN_API_KEY: ${{ secrets.RUNDOWN_API_KEY }}
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          THERUNDOWN_MAINLINE_SHADOW_FAIL_ON_ERROR: "false"
+        run: python scripts/shadow_therundown_mainline_to_supabase.py "${{ steps.slate.outputs.date }}"
 
       - name: Shadow PropLine to Supabase
         if: ${{ steps.capture.outputs.capture_propline == 'true' }}

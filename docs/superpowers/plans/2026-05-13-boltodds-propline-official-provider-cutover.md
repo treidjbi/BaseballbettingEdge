@@ -97,7 +97,7 @@ approved building an inactive shadow path to test whether TheRundown mainline
 polling plus PropLine webhooks can replace enough BoltOdds movement value to
 avoid the extra BoltOdds subscription/worker cost.
 
-Built but not scheduled:
+Built and wired into the observation-only shadow workflow:
 
 - `market_infra/therundown_snapshot.py` normalizes TheRundown mainline
   pitcher-K rows into the existing `market_snapshots` contract.
@@ -105,14 +105,18 @@ Built but not scheduled:
   `market_ids=19`, target affiliates `19,22,23,24,25`, `main_line=true`, and
   `hide_closed_markets=1` by default. It records `X-Datapoints` and related
   account headers in run/audit metadata.
+- `.github/workflows/shadow-market-infra.yml` now includes
+  `capture_therundown_mainline`, defaults it on for the existing 10-minute
+  active-window schedule, and runs the TheRundown mainline shadow poll before
+  the existing PropLine and market-line shadow builders.
 
 This path remains shadow-only. It must not change `OFFICIAL_MARKET_SOURCE`,
 `OFFICIAL_MARKET_STRICT`, `ENABLE_BOLTODDS_PIPELINE_SOURCE`, provider order,
 pipeline artifacts, notifications, locks, staking, thresholds, model math,
 retention, or dashboard source-of-truth without a separate Tyler approval.
-The next decision is whether to schedule a bounded 10-minute active-window
-canary and compare its movement value plus PropLine webhook evidence against
-BoltOdds.
+The next decision is whether the scheduled active-window evidence plus PropLine
+webhook processing is strong enough to retire BoltOdds spend or draft a
+separate provider/source promotion plan.
 
 ## Supabase Tracker Interaction Matrix
 

@@ -56,7 +56,7 @@ always-on worker cost in the steady-state view.
 
 | Service | Current / likely cost | What it does | Current decision | Main cost risk |
 | --- | ---: | --- | --- | --- |
-| TheRundown | ~$49-$50/mo Starter; 5M data points/month confirmed 2026-06-12 | Production book-of-record odds for scheduled pipeline artifacts; inactive mainline shadow-polling candidate | Keep as production source; mainline 10-minute shadow is built but not scheduled | Data-point overage if full-slate polling is too broad; 60-second delay; no WebSocket on Starter |
+| TheRundown | ~$49-$50/mo Starter; 5M data points/month confirmed 2026-06-12 | Production book-of-record odds for scheduled pipeline artifacts; active mainline shadow-polling canary | Keep as production source; run 10-minute mainline shadow canary in observation-only workflow | Data-point overage if full-slate polling is too broad; 60-second delay; no WebSocket on Starter |
 | PropLine | ~$40/mo now; possible ~$80/mo tier | Shadow/fallback odds and live movement polling | Keep shadow/fallback; do not broadly migrate | Webhooks not proven; duplicate polling; unclear upgrade ROI |
 | BoltOdds | $99/mo Starter during trial | WebSocket live market movement evidence | Trial only, shadow-only; retirement candidate if TheRundown mainline + PropLine webhook evidence proves enough movement value | Always-on worker complexity; book gaps; Pro is much more expensive |
 | The Odds API | Free/limited fallback currently | FD/DK fallback when TheRundown/PropLine leave gaps | Keep conservative fallback only | Credit burn if called event-by-event too broadly |
@@ -98,7 +98,9 @@ but not free.
   10h/day mainline shadow plus existing scheduled full pulls around
   `1.17M/month`, with much more headroom.
 - The built shadow path is `scripts/shadow_therundown_mainline_to_supabase.py`.
-  It is inactive/manual only until Tyler approves scheduling or Render wiring.
+  As of 2026-06-12 it is wired into the existing observation-only
+  `shadow-market-infra` active-window schedule. This is evidence collection
+  only; it does not switch the production provider or notification source.
 
 Keep if:
 
