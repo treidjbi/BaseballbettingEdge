@@ -113,7 +113,10 @@ Built and wired into shadow-only capture paths:
   mainline poller inside the Render `bbe-live-layer` loop when
   `LIVE_CAPTURE_THERUNDOWN_MAINLINE=true`. Render is the intended primary
   10-minute canary host because GitHub scheduled runs are not reliable enough
-  for cadence evidence.
+  for cadence evidence. The Render path was activated and verified on
+  `2026-06-13T05:30Z`: the scheduled run completed with `27` target events,
+  `120` snapshots, `30` parsed pitcher-line groups, and `174` TheRundown data
+  points.
 
 This path remains shadow-only. It must not change `OFFICIAL_MARKET_SOURCE`,
 `OFFICIAL_MARKET_STRICT`, `ENABLE_BOLTODDS_PIPELINE_SOURCE`, provider order,

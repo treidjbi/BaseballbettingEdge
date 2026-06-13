@@ -98,12 +98,13 @@ but not free.
   10h/day mainline shadow plus existing scheduled full pulls around
   `1.17M/month`, with much more headroom.
 - The built shadow path is `scripts/shadow_therundown_mainline_to_supabase.py`.
-  As of 2026-06-12 it can run from Render `bbe-live-layer` behind
-  `LIVE_CAPTURE_THERUNDOWN_MAINLINE=true`; the GitHub shadow workflow remains
-  a manual observation/fallback surface but scheduled TheRundown capture is off
-  because it is not reliable enough for the primary 10-minute cadence. This is
-  evidence collection only; it does not switch the production provider or
-  notification source.
+  As of 2026-06-12 evening Phoenix time it runs from Render `bbe-live-layer`
+  behind `LIVE_CAPTURE_THERUNDOWN_MAINLINE=true`; the first verified scheduled
+  run at `2026-06-13T05:30Z` used `174` data points. The GitHub shadow workflow
+  remains a manual observation/fallback surface but scheduled TheRundown
+  capture is off because it is not reliable enough for the primary 10-minute
+  cadence. This is evidence collection only; it does not switch the production
+  provider or notification source.
 
 Keep if:
 
