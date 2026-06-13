@@ -152,15 +152,17 @@ do we convert model signal into better betting decisions?"
   and confidence-referee caps. This does not approve LEAN promotion, lambda
   changes, thresholds, staking, provider changes, notifications, locks,
   retention, or dashboard source-of-truth changes.
-- As of 2026-06-13, `scripts/run_post_grading_shadow_reports.py` is the
-  review-only post-grading command for the Gate C/workload/no-vig/
-  market-anchored model research read. Intended schedule is
-  `bbe-gate-c-post-grading-review` at `7 11 * * *` UTC (`4:07 AM` Phoenix),
-  after `bbe-pipeline-grading` at `17 10 * * *` UTC. This command prints the
-  market-anchor Executive Read and Read Rule to scheduler logs and does not
-  publish dashboard artifacts, update calibration, change lambda, change
-  thresholds/staking, change provider behavior, change notifications, change
-  locks, or change retention.
+- As of 2026-06-13, `bbe-gate-c-post-grading-review`
+  (`crn-d8mpcb0g4nts73fq5bv0`) runs
+  `python scripts/run_post_grading_shadow_reports.py` as the review-only
+  post-grading command for the Gate C/workload/no-vig/market-anchored model
+  research read. Schedule is `7 11 * * *` UTC (`4:07 AM` Phoenix), after
+  `bbe-pipeline-grading` at `17 10 * * *` UTC. AutoDeploy is off. One-off
+  Render verification job `job-d8mpda1o3t8c73c3lerg` succeeded on
+  2026-06-13. This command prints the market-anchor Executive Read and Read
+  Rule to scheduler logs and does not publish dashboard artifacts, update
+  calibration, change lambda, change thresholds/staking, change provider
+  behavior, change notifications, change locks, or change retention.
 
 ## Four-Lane Operating Board
 

@@ -295,14 +295,20 @@ Confirm in docs and final response:
 - Added `scripts/run_post_grading_shadow_reports.py` as the Render-friendly
   daily command. It runs:
   `python scripts/run_post_grading_shadow_reports.py`
-- Intended Render cron:
+- Render cron:
   - service name: `bbe-gate-c-post-grading-review`
+  - service ID: `crn-d8mpcb0g4nts73fq5bv0`
+  - dashboard:
+    `https://dashboard.render.com/cron/crn-d8mpcb0g4nts73fq5bv0`
   - schedule: `7 11 * * *` UTC (`4:07 AM` Phoenix), after the
     `bbe-pipeline-grading` cron at `17 10 * * *` UTC
   - command: `python scripts/run_post_grading_shadow_reports.py`
+  - autoDeploy: `off`, matching the pipeline cron posture
 - The runner rebuilds the durable Gate C artifact, the workload/no-vig audit,
   and the market-anchored shadow report, then prints the Executive Read and
   Read Rule sections to Render logs for daily review.
+- One-off Render verification job `job-d8mpda1o3t8c73c3lerg` succeeded on
+  2026-06-13 after the service was created.
 - This schedule is review-only. It does not publish dashboard artifacts,
   update calibration, change lambda, change thresholds/staking, change provider
   source/order, change notification behavior, change locks, or change
