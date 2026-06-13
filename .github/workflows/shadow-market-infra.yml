@@ -5,9 +5,10 @@ on:
     # Observation-only provider shadow polling, independent of the production
     # Baseball Pipeline. Times are America/Phoenix (UTC-7, no DST):
     # every 10 minutes from 8:02 AM through 6:52 PM while the one-month
-    # Streaming Lite trial / TheRundown mainline canary is active. This captures
-    # line-movement evidence without updating picks, dashboard artifacts,
-    # grading, or calibration.
+    # Streaming Lite trial is active. TheRundown mainline cadence moved to
+    # Render bbe-live-layer; manual dispatch can still run TheRundown probes.
+    # This captures line-movement evidence without updating picks, dashboard
+    # artifacts, grading, or calibration.
     - cron: '2,12,22,32,42,52 15-23,0-1 * * *'
   workflow_dispatch:
     inputs:
@@ -92,7 +93,7 @@ jobs:
           RUN_EXECUTABLE_MARKET_SHADOW="${{ github.event.inputs.run_executable_market_shadow }}"
 
           if [ "${{ github.event_name }}" = "schedule" ]; then
-            CAPTURE_THERUNDOWN_MAINLINE="true"
+            CAPTURE_THERUNDOWN_MAINLINE="false"
             CAPTURE_PROPLINE="true"
             CAPTURE_ARTIFACTS="false"
             BUILD_MARKET_LINES="true"

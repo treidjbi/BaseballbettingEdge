@@ -97,7 +97,7 @@ approved building an inactive shadow path to test whether TheRundown mainline
 polling plus PropLine webhooks can replace enough BoltOdds movement value to
 avoid the extra BoltOdds subscription/worker cost.
 
-Built and wired into the observation-only shadow workflow:
+Built and wired into shadow-only capture paths:
 
 - `market_infra/therundown_snapshot.py` normalizes TheRundown mainline
   pitcher-K rows into the existing `market_snapshots` contract.
@@ -106,15 +106,20 @@ Built and wired into the observation-only shadow workflow:
   `hide_closed_markets=1` by default. It records `X-Datapoints` and related
   account headers in run/audit metadata.
 - `.github/workflows/shadow-market-infra.yml` now includes
-  `capture_therundown_mainline`, defaults it on for the existing 10-minute
-  active-window schedule, and runs the TheRundown mainline shadow poll before
-  the existing PropLine and market-line shadow builders.
+  `capture_therundown_mainline` for manual probes. Scheduled GitHub
+  TheRundown capture is off because it is not reliable enough for the primary
+  10-minute cadence.
+- `scripts/build_live_events_to_supabase.py` can also run the same TheRundown
+  mainline poller inside the Render `bbe-live-layer` loop when
+  `LIVE_CAPTURE_THERUNDOWN_MAINLINE=true`. Render is the intended primary
+  10-minute canary host because GitHub scheduled runs are not reliable enough
+  for cadence evidence.
 
 This path remains shadow-only. It must not change `OFFICIAL_MARKET_SOURCE`,
 `OFFICIAL_MARKET_STRICT`, `ENABLE_BOLTODDS_PIPELINE_SOURCE`, provider order,
 pipeline artifacts, notifications, locks, staking, thresholds, model math,
 retention, or dashboard source-of-truth without a separate Tyler approval.
-The next decision is whether the scheduled active-window evidence plus PropLine
+The next decision is whether Render-cadenced TheRundown evidence plus PropLine
 webhook processing is strong enough to retire BoltOdds spend or draft a
 separate provider/source promotion plan.
 

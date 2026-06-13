@@ -1076,6 +1076,58 @@ def test_worker_can_poll_propline_before_building_live_events(tmp_path):
     assert result["line_movement_events"] == 1
 
 
+def test_worker_can_poll_therundown_mainline_before_market_reads(tmp_path):
+    today = _write_artifact(tmp_path, [_fire_pitcher()])
+    calls = []
+    table_rows = {
+        "live_pick_state": [],
+        "market_snapshots": [],
+        "game_reminder_state": [],
+    }
+    writer = Mock()
+
+    def select_rows(table, params):
+        calls.append(("select", table))
+        return table_rows.get(table, [])
+
+    writer.select_rows.side_effect = select_rows
+
+    def poll_therundown(*args, **kwargs):
+        calls.append(("poll", "therundown"))
+        return {
+            "status": "completed",
+            "target_event_count": 2,
+            "snapshot_count": 4,
+            "datapoints": 199,
+        }
+
+    with (
+        patch.object(build_live_events_to_supabase, "SupabaseMarketWriter", return_value=writer),
+        patch.object(
+            build_live_events_to_supabase,
+            "poll_therundown_mainline_to_supabase",
+            side_effect=poll_therundown,
+        ) as poll,
+    ):
+        result = build_live_events_to_supabase.run(
+            slate_date="2026-05-06",
+            artifact_path=today,
+            supabase_url="https://example.supabase.co",
+            service_role_key="secret",
+            poll_therundown_mainline=True,
+        )
+
+    poll.assert_called_once_with(
+        "2026-05-06",
+        writer=writer,
+        observed_at=ANY,
+        raise_on_error=False,
+    )
+    assert calls.index(("poll", "therundown")) < calls.index(("select", "market_snapshots"))
+    assert result["therundown"]["snapshot_count"] == 4
+    assert result["therundown"]["datapoints"] == 199
+
+
 def test_worker_can_process_propline_webhooks_before_market_reads(tmp_path):
     today = _write_artifact(tmp_path, [_fire_pitcher()])
     calls = []
@@ -1279,6 +1331,44 @@ def test_worker_continues_when_optional_propline_poll_times_out(tmp_path):
     assert ("select", "market_snapshots") in calls
 
 
+def test_worker_continues_when_optional_therundown_poll_times_out(tmp_path):
+    today = _write_artifact(tmp_path, [_fire_pitcher()])
+    calls = []
+    writer = Mock()
+
+    def select_rows(table, params):
+        calls.append(("select", table))
+        return {
+            "live_pick_state": [],
+            "market_snapshots": [],
+            "game_reminder_state": [],
+        }.get(table, [])
+
+    writer.select_rows.side_effect = select_rows
+
+    with (
+        patch.object(build_live_events_to_supabase, "SupabaseMarketWriter", return_value=writer),
+        patch.object(
+            build_live_events_to_supabase,
+            "poll_therundown_mainline_to_supabase",
+            side_effect=requests.ReadTimeout("TheRundown timed out"),
+        ),
+    ):
+        result = build_live_events_to_supabase.run(
+            slate_date="2026-05-06",
+            artifact_path=today,
+            supabase_url="https://example.supabase.co",
+            service_role_key="secret",
+            poll_therundown_mainline=True,
+        )
+
+    assert result["live_pick_state"] == 1
+    assert result["therundown"]["skipped"] is True
+    assert result["therundown"]["reason"] == "poll_failed"
+    assert "TheRundown timed out" in result["therundown"]["error"]
+    assert ("select", "market_snapshots") in calls
+
+
 def test_worker_continues_when_market_snapshot_read_fails(tmp_path):
     today = _write_artifact(tmp_path, [_fire_pitcher()])
     writer = Mock()
@@ -1460,13 +1550,98 @@ def test_worker_upserts_non_empty_tables_in_retry_safe_order(tmp_path):
     )
 
 
-def test_render_entrypoint_uses_propline_env_without_therundown_dependency():
+def test_render_entrypoint_uses_propline_env_and_gated_therundown_capture():
     script = Path(build_live_events_to_supabase.__file__).read_text(encoding="utf-8")
 
     assert "PROPLINE_API_KEY" in script
     assert "poll_propline_to_supabase" in script
-    assert "RUNDOWN_API_KEY" not in script
+    assert "LIVE_CAPTURE_THERUNDOWN_MAINLINE" in script
+    assert "poll_therundown_mainline_to_supabase" in script
     assert "fetch_odds(" not in script
+
+
+def test_render_entrypoint_passes_therundown_flag_only_when_enabled(tmp_path, monkeypatch):
+    stale_local = _write_artifact(tmp_path, [])
+    remote_payload = {
+        "date": "2026-05-07",
+        "pitchers": [_fire_pitcher(game_time="2026-05-07T22:10:00Z")],
+    }
+    run_calls = []
+
+    monkeypatch.setattr(build_live_events_to_supabase, "DEFAULT_ARTIFACT", stale_local)
+    monkeypatch.setenv("SUPABASE_URL", "https://example.supabase.co")
+    monkeypatch.setenv("SUPABASE_SERVICE_ROLE_KEY", "secret")
+    monkeypatch.setenv("LIVE_CAPTURE_THERUNDOWN_MAINLINE", "true")
+    monkeypatch.delenv("PROPLINE_API_KEY", raising=False)
+    monkeypatch.setattr(sys, "argv", ["build_live_events_to_supabase.py"])
+    monkeypatch.setattr(
+        build_live_events_to_supabase,
+        "_load_artifact",
+        lambda path, artifact_url=None: (
+            remote_payload,
+            "remote-sha",
+            build_live_events_to_supabase.DEFAULT_ARTIFACT_URL,
+        ),
+    )
+
+    def run(**kwargs):
+        run_calls.append(kwargs)
+        return {
+            "live_pick_state": 1,
+            "notification_events": 1,
+            "line_movement_events": 0,
+            "game_reminders": 0,
+            "propline": {"skipped": True},
+            "therundown": {"status": "completed", "datapoints": 199},
+        }
+
+    monkeypatch.setattr(build_live_events_to_supabase, "run", run)
+
+    assert build_live_events_to_supabase.main() == 0
+
+    assert run_calls[0]["poll_therundown_mainline"] is True
+
+
+def test_render_entrypoint_leaves_therundown_capture_off_by_default(tmp_path, monkeypatch):
+    stale_local = _write_artifact(tmp_path, [])
+    remote_payload = {
+        "date": "2026-05-07",
+        "pitchers": [_fire_pitcher(game_time="2026-05-07T22:10:00Z")],
+    }
+    run_calls = []
+
+    monkeypatch.setattr(build_live_events_to_supabase, "DEFAULT_ARTIFACT", stale_local)
+    monkeypatch.setenv("SUPABASE_URL", "https://example.supabase.co")
+    monkeypatch.setenv("SUPABASE_SERVICE_ROLE_KEY", "secret")
+    monkeypatch.delenv("LIVE_CAPTURE_THERUNDOWN_MAINLINE", raising=False)
+    monkeypatch.delenv("PROPLINE_API_KEY", raising=False)
+    monkeypatch.setattr(sys, "argv", ["build_live_events_to_supabase.py"])
+    monkeypatch.setattr(
+        build_live_events_to_supabase,
+        "_load_artifact",
+        lambda path, artifact_url=None: (
+            remote_payload,
+            "remote-sha",
+            build_live_events_to_supabase.DEFAULT_ARTIFACT_URL,
+        ),
+    )
+
+    def run(**kwargs):
+        run_calls.append(kwargs)
+        return {
+            "live_pick_state": 1,
+            "notification_events": 1,
+            "line_movement_events": 0,
+            "game_reminders": 0,
+            "propline": {"skipped": True},
+            "therundown": {"skipped": True},
+        }
+
+    monkeypatch.setattr(build_live_events_to_supabase, "run", run)
+
+    assert build_live_events_to_supabase.main() == 0
+
+    assert run_calls[0]["poll_therundown_mainline"] is False
 
 
 def test_load_artifact_prefers_remote_url(tmp_path, monkeypatch):

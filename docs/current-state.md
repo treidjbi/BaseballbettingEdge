@@ -104,14 +104,16 @@ do we convert model signal into better betting decisions?"
   IDs after PropLine's 2026-05-19 payload fix. The planned provider stack is
   BoltOdds primary with PropLine fallback/DraftKings coverage, but that is not
   official until the cutover gates and environment switch are completed.
-- As of 2026-06-12, the TheRundown mainline shadow canary is wired into the
-  observation-only `shadow-market-infra` workflow. Scheduled runs poll
-  `scripts/shadow_therundown_mainline_to_supabase.py` every 10 minutes during
-  the existing active-window schedule and write only observation rows to
+- As of 2026-06-12, the TheRundown mainline shadow canary can run in the
+  Render `bbe-live-layer` loop behind `LIVE_CAPTURE_THERUNDOWN_MAINLINE=true`.
+  The first implementation also remains available in the observation-only
+  `shadow-market-infra` workflow for manual dispatch, but scheduled GitHub
+  TheRundown capture is off because GitHub delivery proved too sparse for the
+  primary 10-minute canary cadence. Both paths write only observation rows to
   existing Supabase market trackers (`market_provider_runs`, `market_events`,
   `market_snapshots`, and `provider_coverage_audits`) with data-point header
-  metadata. It is not a provider-source switch, not a notification source, and
-  not a model/dashboard/artifact change. TheRundown mainline polling plus
+  metadata. This is not a provider-source switch, not a notification source,
+  and not a model/dashboard/artifact change. TheRundown mainline polling plus
   PropLine webhooks is now the leading low-cost replacement thesis for
   BoltOdds, but promotion/cancellation remains a separate evidence decision.
 - BoltOdds is being tested as a separate shadow-only WebSocket live-market
@@ -725,7 +727,9 @@ The live layer is now separate from the production pipeline.
 - Source artifact: fresh dashboard artifact state; during migration, verify the
   live layer reads the current Supabase/Netlify artifact path rather than a
   stale baked Render checkout or stale GitHub raw artifact.
-- Market source: PropLine polling when `PROPLINE_API_KEY` is present
+- Market source: PropLine polling when `PROPLINE_API_KEY` is present; optional
+  TheRundown mainline shadow polling when
+  `LIVE_CAPTURE_THERUNDOWN_MAINLINE=true`
 - Shadow provider-state rebuild: `scripts/build_live_events_to_supabase.py`
   can refresh `current_market_lines`, `official_market_lines`,
   `provider_arbitration_decisions`, `provider_request_usage_daily`, and
@@ -736,6 +740,10 @@ The live layer is now separate from the production pipeline.
   calls to `run()` remain opt-in. This is still shadow-only and does not change
   production provider order or pipeline artifacts.
 - Live-layer market-state guardrails:
+  - `LIVE_CAPTURE_THERUNDOWN_MAINLINE=true` enables TheRundown mainline
+    shadow polling inside the Render live-layer run. It writes provider
+    evidence only and must stay off until the canary is intentionally
+    activated on Render.
   - `LIVE_BUILD_MARKET_LINES=false` disables the Render-side rebuild.
   - `LIVE_COMPACT_MARKET_SNAPSHOTS=false` skips compact movement upserts.
   - `LIVE_MARKET_LINE_BUILD_MIN_INTERVAL_SECONDS` defaults to `600`.

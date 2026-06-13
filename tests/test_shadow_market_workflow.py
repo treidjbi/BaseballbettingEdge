@@ -41,7 +41,7 @@ def test_shadow_market_workflow_defaults_capture_flags_for_scheduled_runs():
     assert "Resolve capture flags" in text
     assert "capture_therundown_mainline:" in text
     assert 'if [ "${{ github.event_name }}" = "schedule" ]; then' in text
-    assert 'CAPTURE_THERUNDOWN_MAINLINE="true"' in text
+    assert 'CAPTURE_THERUNDOWN_MAINLINE="false"' in text
     assert 'CAPTURE_PROPLINE="true"' in text
     assert 'CAPTURE_ARTIFACTS="false"' in text
     assert 'BUILD_MARKET_LINES="true"' in text

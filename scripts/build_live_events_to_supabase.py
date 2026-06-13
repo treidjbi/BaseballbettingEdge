@@ -43,6 +43,9 @@ from scripts.process_propline_webhooks import (  # noqa: E402
     run as process_propline_webhook_deliveries,
 )
 from scripts.shadow_propline_to_supabase import poll_propline_to_supabase  # noqa: E402
+from scripts.shadow_therundown_mainline_to_supabase import (  # noqa: E402
+    poll_therundown_mainline_to_supabase,
+)
 
 DEFAULT_ARTIFACT = ROOT / "dashboard" / "data" / "processed" / "today.json"
 DEFAULT_ARTIFACT_URL = (
@@ -605,6 +608,7 @@ def run(
     supabase_url: str,
     service_role_key: str,
     poll_propline: bool = False,
+    poll_therundown_mainline: bool = False,
     artifact_url: str | None = None,
     artifact_payload: dict[str, Any] | None = None,
     artifact_sha: str | None = None,
@@ -628,7 +632,27 @@ def run(
     previous_rows = writer.select_rows("live_pick_state", {"slate_date": f"eq.{slate_date}"})
     observed_at = _now_utc()
     propline_result: dict[str, Any] | None = None
+    therundown_result: dict[str, Any] | None = None
     propline_webhook_result: dict[str, Any] | None = None
+
+    if poll_therundown_mainline:
+        try:
+            therundown_result = poll_therundown_mainline_to_supabase(
+                slate_date,
+                writer=writer,
+                observed_at=observed_at.isoformat(),
+                raise_on_error=False,
+            )
+        except Exception as error:
+            print(
+                f"Warning: optional TheRundown mainline poll failed ({error}); continuing live build",
+                file=sys.stderr,
+            )
+            therundown_result = {
+                "skipped": True,
+                "reason": "poll_failed",
+                "error": str(error)[:1000],
+            }
 
     if poll_propline:
         try:
@@ -788,6 +812,7 @@ def run(
         artifact_source=artifact_source,
         artifact_sha=artifact_sha,
         metadata_extra={
+            "therundown": therundown_result or {"skipped": True},
             "propline_webhooks": propline_webhook_result or {"skipped": True},
             "notification_coordinator": notification_coordination.summary,
         },
@@ -823,6 +848,7 @@ def run(
         "shadow_notification_candidates": len(shadow_notification_candidate_rows),
         "provider_heartbeats": len(provider_heartbeats),
         "game_reminders": len(reminder_rows),
+        "therundown": therundown_result or {"skipped": True},
         "propline": propline_result or {"skipped": True},
         "propline_webhooks": propline_webhook_result or {"skipped": True},
         "artifact_source": artifact_source,
@@ -854,6 +880,7 @@ def main() -> int:
         supabase_url=_env("SUPABASE_URL"),
         service_role_key=_env("SUPABASE_SERVICE_ROLE_KEY"),
         poll_propline=bool(_optional_env("PROPLINE_API_KEY")),
+        poll_therundown_mainline=_env_flag("LIVE_CAPTURE_THERUNDOWN_MAINLINE", default=False),
         artifact_url=artifact_url,
         artifact_payload=payload,
         artifact_sha=artifact_sha,
@@ -885,6 +912,17 @@ def main() -> int:
             f"propline_events={propline['target_event_count']} "
             f"propline_snapshots={propline['snapshot_count']}"
         )
+    therundown = result.get("therundown") or {"skipped": True}
+    therundown_summary = "therundown=skipped"
+    if not therundown.get("skipped"):
+        if therundown.get("status") == "failed":
+            therundown_summary = "therundown=failed"
+        else:
+            therundown_summary = (
+                f"therundown_events={therundown.get('target_event_count', 0)} "
+                f"therundown_snapshots={therundown.get('snapshot_count', 0)} "
+                f"therundown_datapoints={therundown.get('datapoints', 0)}"
+            )
     webhooks = result.get("propline_webhooks") or {"skipped": True}
     webhook_summary = "propline_webhooks=skipped"
     if not webhooks.get("skipped"):
@@ -910,6 +948,7 @@ def main() -> int:
         f"live_market_display={result.get('live_market_display_state', 0)} "
         f"{_lock_build_summary(result)} "
         f"artifact_source={'remote' if str(result.get('artifact_source', artifact_source)).startswith('http') else 'local'} "
+        f"{therundown_summary} "
         f"{propline_summary} "
         f"{webhook_summary} "
         f"{market_line_summary}"
