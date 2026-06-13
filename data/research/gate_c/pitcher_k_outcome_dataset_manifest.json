@@ -5,7 +5,7 @@
     "jsonl": "data/research/gate_c/pitcher_k_outcome_dataset.jsonl",
     "summary": "data/research/gate_c/pitcher_k_outcome_dataset_summary.md"
   },
-  "generated_at": "2026-06-10T23:42:37.210705+00:00",
+  "generated_at": "2026-06-13T17:38:35.794314+00:00",
   "guardrails": [
     "does_not_change_live_picks",
     "does_not_change_locks",
@@ -16,7 +16,7 @@
     "does_not_change_calibration",
     "does_not_change_dashboard_behavior"
   ],
-  "jsonl_sha256": "258520bdf135b0bddcfbcc10c0aa69990be98d5df35b61d30afc7ace17048878",
+  "jsonl_sha256": "3ff02a72c083d911f83bf8cfc5d82a99edf1cca237110396a54c908f0c8ad28f",
   "loaded_slate_dates": [
     "2026-04-28",
     "2026-04-29",
@@ -59,16 +59,19 @@
     "2026-06-06",
     "2026-06-07",
     "2026-06-08",
-    "2026-06-09"
+    "2026-06-09",
+    "2026-06-10",
+    "2026-06-11",
+    "2026-06-12"
   ],
   "reconciliation": {
-    "graded_pick_rows": 887,
-    "matched_pick_rows": 887,
-    "unique_side_fallback_matches": 29,
+    "graded_pick_rows": 957,
+    "matched_pick_rows": 957,
+    "unique_side_fallback_matches": 30,
     "unmatched_examples": [],
     "unmatched_pick_rows": 0
   },
-  "row_count": 1718,
+  "row_count": 1840,
   "shadow_only": true,
   "source": {
     "artifact_api_url": "https://baseballbettingedge.netlify.app/.netlify/functions/get-artifact",
@@ -87,55 +90,59 @@
       "2026-06-06",
       "2026-06-07",
       "2026-06-08",
-      "2026-06-09"
+      "2026-06-09",
+      "2026-06-10",
+      "2026-06-11",
+      "2026-06-12"
     ],
     "start_date": "2026-04-28"
   },
   "summary_counts": {
     "actual_opportunity_rows": 1718,
     "actual_opportunity_source_counts": {
+      "missing": 122,
       "mlb_boxscore_reconstructed": 1718
     },
     "actual_pitch_count_rows": 1718,
     "batters_faced_rows": 1718,
-    "beat_close_line_rows": 17,
-    "beat_close_price_rows": 138,
+    "beat_close_line_rows": 18,
+    "beat_close_price_rows": 153,
     "best_off_market_rows": 75,
     "bet_timing_window_counts": {
       "post_start": 46,
       "pre_120": 5,
       "pre_15": 165,
-      "pre_30": 603,
+      "pre_30": 654,
       "pre_5": 49,
-      "unknown": 850
+      "unknown": 921
     },
-    "clean_window_rows": 1718,
+    "clean_window_rows": 1840,
     "clv_type_counts": {
-      "line_only": 17,
-      "no_clv_edge": 731,
-      "not_tracked": 832,
-      "price_only": 138
+      "line_only": 18,
+      "no_clv_edge": 785,
+      "not_tracked": 884,
+      "price_only": 153
     },
     "context_snapshot_counts": {
-      "official_close": 1718
+      "official_close": 1840
     },
     "duplicate_dataset_keys": 0,
-    "graded_rows": 1718,
-    "large_edge_skepticism_rows": 390,
+    "graded_rows": 1840,
+    "large_edge_skepticism_rows": 419,
     "leash_risk_bucket_counts": {
-      "high": 136,
-      "medium": 64,
-      "normal": 1518
+      "high": 144,
+      "medium": 66,
+      "normal": 1630
     },
     "lineup_hand_count_rows": 1174,
     "lineup_handedness_source_counts": {
-      "missing": 544,
+      "missing": 666,
       "mlb_boxscore_reconstructed": 1174
     },
     "live_display_rows": 223,
     "live_display_state_counts": {
       "market_fade": 16,
-      "missing": 1495,
+      "missing": 1617,
       "mixed": 17,
       "monitor": 66,
       "off_market": 30,
@@ -147,7 +154,7 @@
       "market_mixed": 62,
       "market_no_signal": 63,
       "market_with_model": 38,
-      "missing": 1523
+      "missing": 1645
     },
     "market_agreement_rows": 195,
     "market_book_count_rows": 281,
@@ -156,45 +163,45 @@
     "missing_model_fields": 2,
     "missing_team_or_opponent": 0,
     "model_market_relationship_counts": {
-      "model_agrees_with_favorite": 790,
-      "model_fades_favorite": 866,
-      "unknown": 62
+      "model_agrees_with_favorite": 838,
+      "model_fades_favorite": 936,
+      "unknown": 66
     },
     "movement_strength_label_counts": {
       "broad_against_model": 7,
       "broad_with_model": 6,
-      "missing": 1523,
+      "missing": 1645,
       "mixed_or_reversed": 108,
       "no_movement_signal": 63,
       "single_book_against_model": 6,
       "single_book_with_model": 5
     },
     "opportunity_bucket_counts": {
-      "deep_starter": 190,
-      "normal": 1392,
-      "short_leash": 136
+      "deep_starter": 210,
+      "normal": 1486,
+      "short_leash": 144
     },
     "pitcher_archetype_bucket_counts": {
-      "deep_starter": 122,
-      "high_k_deep_starter": 68,
-      "high_k_standard": 420,
-      "low_k_standard": 100,
-      "short_leash": 136,
-      "standard_starter": 872
+      "deep_starter": 134,
+      "high_k_deep_starter": 76,
+      "high_k_standard": 440,
+      "low_k_standard": 108,
+      "short_leash": 144,
+      "standard_starter": 938
     },
     "process_outcome_bucket_counts": {
-      "good_process_loss": 68,
-      "good_process_win": 87,
-      "unknown": 832,
-      "weak_process_loss": 372,
-      "weak_process_win": 359
+      "good_process_loss": 75,
+      "good_process_win": 96,
+      "unknown": 884,
+      "weak_process_loss": 404,
+      "weak_process_win": 381
     },
     "rows_missing_result": 0,
-    "rows_with_price_clv": 886,
-    "total_rows": 1718,
+    "rows_with_price_clv": 956,
+    "total_rows": 1840,
     "toward_away_count_rows": 195,
-    "tracked_pick_rows": 886
+    "tracked_pick_rows": 956
   },
-  "summary_sha256": "947df4e235a0759585181c9e32bb6cf03d3a8bf41e0925b7a5238825cab6dce0",
-  "tracked_pick_rows": 886
+  "summary_sha256": "ec3291f5a4571abba6edcf46b2ec1f47fd6ba472bb8983a4f07448b75a6ae593",
+  "tracked_pick_rows": 956
 }

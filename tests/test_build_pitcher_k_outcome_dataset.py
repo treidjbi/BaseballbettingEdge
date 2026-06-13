@@ -1,5 +1,6 @@
 import json
 
+from analytics.diagnostics import market_anchored_k_shadow_rebuild
 from analytics.diagnostics import workload_no_vig_ev_audit
 from scripts import build_pitcher_k_outcome_dataset as builder
 
@@ -73,6 +74,42 @@ def test_build_research_artifact_writes_jsonl_summary_and_manifest(tmp_path, mon
     assert manifest["row_count"] == 2
     assert manifest["jsonl_sha256"]
     assert manifest["summary_sha256"]
+
+
+def test_manifest_records_repo_relative_output_paths(tmp_path, monkeypatch):
+    repo_root = tmp_path / "repo"
+    output_dir = repo_root / "data" / "research" / "gate_c"
+    jsonl_path = output_dir / "pitcher_k_outcome_dataset.jsonl"
+    summary_path = output_dir / "pitcher_k_outcome_dataset_summary.md"
+    jsonl_path.parent.mkdir(parents=True)
+    jsonl_path.write_text('{"dataset_key":"row"}\n', encoding="utf-8")
+    summary_path.write_text("# Summary\n", encoding="utf-8")
+    monkeypatch.setattr(builder, "ROOT", repo_root)
+
+    manifest = builder._manifest(
+        rows=[_row("row")],
+        summary={
+            "tracked_pick_rows": 1,
+            "duplicate_dataset_keys": 0,
+        },
+        reconciliation={
+            "graded_pick_rows": 1,
+            "matched_pick_rows": 1,
+        },
+        artifact_source="local",
+        artifact_api_url=None,
+        start_date="2026-05-12",
+        end_date="2026-05-12",
+        jsonl_path=jsonl_path,
+        summary_path=summary_path,
+        market_agreement_tracker_path=None,
+        live_market_display_path=None,
+    )
+
+    assert manifest["files"] == {
+        "jsonl": "data/research/gate_c/pitcher_k_outcome_dataset.jsonl",
+        "summary": "data/research/gate_c/pitcher_k_outcome_dataset_summary.md",
+    }
 
 
 def test_build_research_artifact_exits_on_validation_error(tmp_path, monkeypatch):
@@ -201,6 +238,70 @@ def test_main_can_run_workload_no_vig_audit_after_fresh_dataset(tmp_path, monkey
                 str(tmp_path / "pitcher_k_outcome_dataset.jsonl"),
                 "--output",
                 str(builder.DEFAULT_WORKLOAD_NO_VIG_AUDIT_OUTPUT),
+            ],
+        ),
+    ]
+
+
+def test_main_can_run_market_anchored_rebuild_after_fresh_dataset(tmp_path, monkeypatch):
+    calls = []
+    report_path = tmp_path / "market_anchored_k_shadow_rebuild.md"
+    monkeypatch.delenv("BBE_ARTIFACT_API_URL", raising=False)
+
+    def fake_build_research_artifact(**kwargs):
+        calls.append(("build", kwargs))
+        return {
+            "manifest": {
+                "row_count": 2,
+                "tracked_pick_rows": 1,
+                "duplicate_dataset_keys": 0,
+                "reconciliation": {
+                    "graded_pick_rows": 1,
+                    "matched_pick_rows": 1,
+                },
+            },
+            "manifest_path": tmp_path / "pitcher_k_outcome_dataset_manifest.json",
+        }
+
+    def fake_rebuild_main(argv):
+        calls.append(("market_anchor", argv))
+        return 0
+
+    monkeypatch.setattr(builder, "build_research_artifact", fake_build_research_artifact)
+    monkeypatch.setattr(market_anchored_k_shadow_rebuild, "main", fake_rebuild_main)
+
+    builder.main([
+        "--artifact-source",
+        "hybrid",
+        "--output-dir",
+        str(tmp_path),
+        "--run-market-anchored-rebuild",
+        "--market-anchored-rebuild-output",
+        str(report_path),
+    ])
+
+    assert calls == [
+        (
+            "build",
+            {
+                "output_dir": tmp_path,
+                "artifact_source": "hybrid",
+                "artifact_api_url": builder.DEFAULT_ARTIFACT_API_URL,
+                "start_date": builder.dataset.CLEAN_WINDOW_START,
+                "end_date": None,
+                "lineup_handedness_backfill_path": builder.dataset.LINEUP_HANDEDNESS_BACKFILL,
+                "actual_opportunity_backfill_path": builder.dataset.ACTUAL_OPPORTUNITY_BACKFILL,
+                "market_agreement_tracker_path": builder.dataset.MARKET_AGREEMENT_TRACKER,
+                "live_market_display_path": builder.dataset.LIVE_MARKET_DISPLAY,
+            },
+        ),
+        (
+            "market_anchor",
+            [
+                "--input",
+                str(tmp_path / "pitcher_k_outcome_dataset.jsonl"),
+                "--output",
+                str(report_path),
             ],
         ),
     ]

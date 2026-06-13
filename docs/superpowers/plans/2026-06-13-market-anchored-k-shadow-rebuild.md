@@ -272,16 +272,38 @@ Confirm in docs and final response:
   `tests/test_market_anchored_k_shadow_rebuild.py`.
 - Generated `analytics/output/market_anchored_k_shadow_rebuild.md` from
   `data/research/gate_c/pitcher_k_outcome_dataset.jsonl`.
-- First read: `1,718` clean official-close side rows, `886` clean tracked
-  rows, and `859` official-close markets.
+- First post-grading smoke read: `1,840` clean official-close side rows,
+  `956` clean tracked rows, and `920` official-close markets.
 - Projection read: market-implied projection beat current model MAE/RMSE
-  (`1.713`/`2.139` vs. `1.812`/`2.258`) and side accuracy (`56.8%` vs.
-  `53.8%`). The market-anchored blend was similar (`1.722` MAE, `2.146`
+  (`1.732`/`2.168` vs. `1.832`/`2.286`) and side accuracy (`56.9%` vs.
+  `53.9%`). The market-anchored blend was similar (`1.741` MAE, `2.175`
   RMSE, `56.9%` side accuracy).
-- Tracked selector read: current FIRE was `542` rows, `267-275`, `-36.50u`,
-  `-6.7% ROI`; market-anchor core was `451` rows, `252-199`, `-2.43u`,
-  `-0.5% ROI`; market-anchor strict was `138` rows, `86-52`, `+10.78u`,
-  `+7.8% ROI`.
+- Tracked selector read: current FIRE was `549` rows, `269-280`, `-39.93u`,
+  `-7.3% ROI`; market-anchor core was `485` rows, `269-216`, `-5.48u`,
+  `-1.1% ROI`; market-anchor strict was `149` rows, `90-59`, `+6.41u`,
+  `+4.3% ROI`.
 - Gate status: promising shadow evidence, not a production plan. A live v2
   selector still needs rolling-window and slice survival plus a separate
   Tyler-approved feature-flagged plan.
+
+## 2026-06-13 Post-Grading Review Hook
+
+- Added `--run-market-anchored-rebuild` to
+  `scripts/build_pitcher_k_outcome_dataset.py`, mirroring the existing
+  workload/no-vig audit hook and using the freshly rebuilt Gate C JSONL as the
+  report input.
+- Added `scripts/run_post_grading_shadow_reports.py` as the Render-friendly
+  daily command. It runs:
+  `python scripts/run_post_grading_shadow_reports.py`
+- Intended Render cron:
+  - service name: `bbe-gate-c-post-grading-review`
+  - schedule: `7 11 * * *` UTC (`4:07 AM` Phoenix), after the
+    `bbe-pipeline-grading` cron at `17 10 * * *` UTC
+  - command: `python scripts/run_post_grading_shadow_reports.py`
+- The runner rebuilds the durable Gate C artifact, the workload/no-vig audit,
+  and the market-anchored shadow report, then prints the Executive Read and
+  Read Rule sections to Render logs for daily review.
+- This schedule is review-only. It does not publish dashboard artifacts,
+  update calibration, change lambda, change thresholds/staking, change provider
+  source/order, change notification behavior, change locks, or change
+  retention.

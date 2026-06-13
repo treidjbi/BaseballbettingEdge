@@ -25,6 +25,9 @@ from analytics.diagnostics import pitcher_k_outcome_dataset as dataset  # noqa: 
 DEFAULT_OUTPUT_DIR = ROOT / "data" / "research" / "gate_c"
 DEFAULT_ARTIFACT_API_URL = dataset.DEFAULT_ARTIFACT_API_URL
 DEFAULT_WORKLOAD_NO_VIG_AUDIT_OUTPUT = ROOT / "analytics" / "output" / "workload_no_vig_ev_audit.md"
+DEFAULT_MARKET_ANCHORED_REBUILD_OUTPUT = (
+    ROOT / "analytics" / "output" / "market_anchored_k_shadow_rebuild.md"
+)
 
 
 def _sha256(path: Path) -> str:
@@ -216,8 +219,8 @@ def _manifest(
         "summary_counts": summary,
         "reconciliation": reconciliation,
         "files": {
-            "jsonl": jsonl_path.as_posix(),
-            "summary": summary_path.as_posix(),
+            "jsonl": _manifest_path(jsonl_path),
+            "summary": _manifest_path(summary_path),
         },
         "jsonl_sha256": _sha256(jsonl_path),
         "summary_sha256": _sha256(summary_path),
@@ -347,6 +350,16 @@ def _parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         action="store_true",
         help="After writing the Gate C dataset, rebuild the shadow workload/no-vig audit report.",
     )
+    parser.add_argument(
+        "--run-market-anchored-rebuild",
+        action="store_true",
+        help="After writing the Gate C dataset, rebuild the shadow market-anchored K report.",
+    )
+    parser.add_argument(
+        "--market-anchored-rebuild-output",
+        type=Path,
+        default=DEFAULT_MARKET_ANCHORED_REBUILD_OUTPUT,
+    )
     return parser.parse_args(argv)
 
 
@@ -371,6 +384,15 @@ def main(argv: list[str] | None = None) -> None:
             str(args.output_dir / "pitcher_k_outcome_dataset.jsonl"),
             "--output",
             str(DEFAULT_WORKLOAD_NO_VIG_AUDIT_OUTPUT),
+        ])
+    if args.run_market_anchored_rebuild:
+        from analytics.diagnostics import market_anchored_k_shadow_rebuild  # noqa: WPS433
+
+        market_anchored_k_shadow_rebuild.main([
+            "--input",
+            str(args.output_dir / "pitcher_k_outcome_dataset.jsonl"),
+            "--output",
+            str(args.market_anchored_rebuild_output),
         ])
     manifest = result["manifest"]
     print(

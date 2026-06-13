@@ -40,6 +40,9 @@ For any new work in this repo:
      (report: `analytics/output/market_anchored_k_shadow_rebuild.md`) for
      the shadow-only rebuild experiment that starts from market-implied K
      projection and adds a shrink-adjusted baseball signal
+   - `scripts/run_post_grading_shadow_reports.py` for the review-only daily
+     post-grading command that rebuilds Gate C/workload/no-vig/market-anchor
+     reports and prints the market-anchor Executive Read to scheduler logs
    - `docs/superpowers/plans/2026-06-07-batter-handedness-path-b-canary.md`
      for the Tyler-approved, feature-flagged batter-handedness Path B canary
    - `docs/superpowers/plans/2026-05-20-live-market-decision-ui.md`
@@ -149,6 +152,15 @@ do we convert model signal into better betting decisions?"
   and confidence-referee caps. This does not approve LEAN promotion, lambda
   changes, thresholds, staking, provider changes, notifications, locks,
   retention, or dashboard source-of-truth changes.
+- As of 2026-06-13, `scripts/run_post_grading_shadow_reports.py` is the
+  review-only post-grading command for the Gate C/workload/no-vig/
+  market-anchored model research read. Intended schedule is
+  `bbe-gate-c-post-grading-review` at `7 11 * * *` UTC (`4:07 AM` Phoenix),
+  after `bbe-pipeline-grading` at `17 10 * * *` UTC. This command prints the
+  market-anchor Executive Read and Read Rule to scheduler logs and does not
+  publish dashboard artifacts, update calibration, change lambda, change
+  thresholds/staking, change provider behavior, change notifications, change
+  locks, or change retention.
 
 ## Four-Lane Operating Board
 
@@ -200,17 +212,20 @@ and `13` negative slices. Do not re-enter FIRE from it yet.
 Market-anchored rebuild overlay, 2026-06-13:
 `analytics/output/market_anchored_k_shadow_rebuild.md` now tests a shadow-only
 "start from market, add shrink-adjusted baseball signal" model shape. On
-`859` clean official-close markets, market-implied projection beat current
-model MAE/RMSE (`1.713`/`2.139` vs. `1.812`/`2.258`) and side accuracy
-(`56.8%` vs. `53.8%`); the market-anchored blend was similar (`1.722` MAE,
-`2.146` RMSE, `56.9%` side accuracy). On `886` clean tracked rows, current
-FIRE was `542` rows, `267-275`, `-36.50u`, `-6.7% ROI`; the market-anchor
-core selector was nearly flat (`451` rows, `252-199`, `-2.43u`, `-0.5% ROI`);
-the strict runtime-safe selector was promising (`138` rows, `86-52`,
-`+10.78u`, `+7.8% ROI`). This is shadow evidence only. It does not approve a
-live v2 selector, lambda change, threshold change, staking change, provider
-change, notification change, lock change, retention change, or dashboard
-source-of-truth change.
+`920` clean official-close markets, market-implied projection beat current
+model MAE/RMSE (`1.732`/`2.168` vs. `1.832`/`2.286`) and side accuracy
+(`56.9%` vs. `53.9%`); the market-anchored blend was similar (`1.741` MAE,
+`2.175` RMSE, `56.9%` side accuracy). On `956` clean tracked rows, current
+FIRE was `549` rows, `269-280`, `-39.93u`, `-7.3% ROI`; the market-anchor
+core selector was still near breakeven (`485` rows, `269-216`, `-5.48u`,
+`-1.1% ROI`); the strict runtime-safe selector was promising (`149` rows,
+`90-59`, `+6.41u`, `+4.3% ROI`). This is shadow evidence only. It does not
+approve a live v2 selector, lambda change, threshold change, staking change,
+provider change, notification change, lock change, retention change, or
+dashboard source-of-truth change. The daily review command is
+`python scripts/run_post_grading_shadow_reports.py`; it is intended to run
+after grading and preserve the decision-facing report excerpt in scheduler
+logs.
 
 Board rule: each lane can advance independently, but live betting behavior only
 changes after the controlling lane has passed its own promotion gate and Tyler
