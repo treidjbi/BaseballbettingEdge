@@ -1,6 +1,6 @@
 # Operational Risk Register
 
-Last updated: 2026-06-05
+Last updated: 2026-06-14
 
 This doc tracks the operational side of BaseballBettingEdge: provider trials,
 failure modes, source-conflict rules, data retention, notification quality, and
@@ -17,9 +17,9 @@ currently verified. Re-check provider dashboards before making billing decisions
 
 | Service | Cost | Started | Billing / trial status | Purpose | Current role | Next review | Keep criteria | Kill / downgrade criteria |
 | --- | ---: | --- | --- | --- | --- | --- | --- | --- |
-| TheRundown | ~$49-$50/mo | Approx. 2026-05-05 | Paid production provider | Scheduled odds source for official artifacts | Production book-of-record | Weekly during May, then monthly | Target-book K prop coverage stays healthy; artifacts auditable; no data-point overage pressure | Another provider proves equal production coverage, lower cost, and rollback safety |
-| PropLine | ~$40/mo | Approx. 2026-05-06 | Paid shadow/fallback provider | Polling fallback and line-movement evidence | Shadow/fallback/live polling | Daily during trial; broad review 2026-06-01 | Useful FanDuel/BetRivers coverage; movement evidence improves notifications or decisions; request volume acceptable | Webhooks remain unproven and polling does not affect decisions; BoltOdds replaces live movement value; duplicate polling becomes waste |
-| BoltOdds | $99/mo Starter | 2026-05-07 | Starter trial / early paid decision pending | WebSocket live market evidence | Shadow-only worker branch | Daily during first week; cancel/keep before renewal | Heartbeats fresh; target-book rows useful; movement evidence beats polling; row volume manageable | Stale feed, poor target-book rows, no decision impact, or complexity outweighs value |
+| TheRundown | ~$49-$50/mo | Approx. 2026-05-05 | Paid production provider | Scheduled odds source for official artifacts plus 10-minute mainline live-layer polling | Production book-of-record + mainline provider evidence | Weekly during May, then monthly | Target-book K prop coverage stays healthy; artifacts auditable; 10-minute mainline usage stays safely under the 5M datapoint cap | Another provider proves equal production coverage, lower cost, and rollback safety |
+| PropLine | ~$40/mo | Approx. 2026-05-06 | Paid fallback/live-movement provider | Polling fallback and book-level webhook line movement | Fallback/live movement sidecar | Daily while webhook notification bridge is new | Useful FanDuel/DraftKings/BetRivers coverage; webhook movement notifications are timely, deduped, and tied to real book IDs; request volume acceptable | Webhook/polling duplicates create noisy alerts; movement alerts do not affect decisions; coverage degrades |
+| BoltOdds | $99/mo Starter | 2026-05-07 | Stop/cancel before next renewal unless unexpected blocker appears | WebSocket live market evidence | Retiring shadow-only worker | Verify cancellation/suspension and no stale influence after stop | Only keep if TheRundown + PropLine fails a required live-movement need that BoltOdds uniquely solves | Stale feed, poor target-book rows, no decision impact, or paying double for redundant movement evidence |
 | The Odds API | Free / limited | 2026-05-01 | Fallback only | FD/DK fallback when other providers leave gaps | Conservative fallback | Only when fallback is used | Stays low-volume and helps diagnose gaps | Credit burn grows or coverage is redundant |
 | Netlify | ~$5/mo current account state | Existing | Active | Static dashboard, artifact API, functions, Blobs subscriptions | Production hosting/sender | Monthly | Function usage and logs remain stable; deploys simple; `get-artifact` stays fresh | Usage credits/log limits become a real bottleneck |
 | Render live cron | ~$1/mo | 2026-05-07 | Active | `bbe-live-layer` every 10 minutes | Live notification event builder | Daily while new | Fresh Netlify/Supabase artifact; queue/sender flow healthy; notifications useful | Duplicate PropLine polling adds cost/noise; notifications do not create value |
@@ -42,11 +42,14 @@ Use this hierarchy when sources disagree.
    not redefine the official pick or grading record.
    Its `shadow_pipeline_runs` and `shadow_pick_lock_observations` tables are
    scheduler/lock-timing evidence only until a separate promotion is approved.
-3. **PropLine shadow/fallback evidence**: PropLine polling can support fallback,
-   coverage, and movement analysis. PropLine webhooks now have real signed
-   delivery evidence and book-level movement IDs, but webhook-derived movement
-   remains shadow-only and must not drive production odds, picks, notifications,
-   or provider promotion without a separate review.
+3. **PropLine fallback/live-movement evidence**: PropLine polling can support
+   fallback, coverage, and movement analysis. PropLine webhooks now have real
+   signed delivery evidence and book-level movement IDs. As of 2026-06-14,
+   Tyler approved webhook-derived movement for live line/price movement
+   notifications only, behind
+   `LIVE_SEND_PROPLINE_WEBHOOK_MOVEMENT_NOTIFICATIONS=true`. Webhook rows must
+   not drive production odds, picks, model behavior, locks, dashboard
+   source-of-truth, or provider promotion without a separate review.
 4. **BoltOdds shadow evidence**: BoltOdds WebSocket rows are live-market
    evidence during the trial only. They do not alter production picks or
    notifications until explicitly promoted.
@@ -86,7 +89,9 @@ Review the full May shadow evidence on 2026-06-01:
 - real webhook delivery evidence
 - whether PropLine would have changed decisions or notifications
 
-Default until then: PropLine remains shadow/fallback/live polling evidence.
+Current posture: PropLine remains fallback/live movement sidecar. Webhook rows
+may drive movement notifications only when the new flag is enabled and should be
+watched for duplicates, stale rows, and unsupported ladder outcomes.
 
 ### BoltOdds Trial Review
 
@@ -101,7 +106,8 @@ Before keeping BoltOdds after trial, verify:
 - whether WebSocket movement would have improved timing, confidence, or
   notifications compared with PropLine polling
 
-Default until then: BoltOdds remains shadow-only.
+Current posture: BoltOdds remains shadow-only and is being retired unless the
+TheRundown + PropLine path exposes an unexpected blocker before cancellation.
 
 ### Cost Review
 

@@ -156,6 +156,29 @@ def test_processor_writes_neutral_line_movement_event_from_real_payload_shape():
     assert len(writer.upsert_rows.call_args_list) == 1
 
 
+def test_processor_can_return_movement_rows_for_notification_bridge():
+    payload = _line_movement_payload()
+    payload.update({
+        "bookmaker_key": "fanduel",
+        "bookmaker_title": "FanDuel",
+        "market_id": "market-1",
+        "outcome_id": "outcome-1",
+    })
+    writer = Mock()
+    writer.select_rows.return_value = [_delivery(payload)]
+
+    with patch.object(process_propline_webhooks, "SupabaseMarketWriter", return_value=writer):
+        result = process_propline_webhooks.run(
+            supabase_url="https://example.supabase.co",
+            service_role_key="secret",
+            return_movement_rows=True,
+        )
+
+    assert result["line_movement_events"] == 1
+    assert result["movement_rows"][0]["bookmaker_key"] == "fanduel"
+    assert result["movement_rows"][0]["metadata"]["source"] == "propline_webhook"
+
+
 def test_processor_canonicalizes_observed_at_to_utc_iso():
     payload = _line_movement_payload()
     payload["timestamp"] = "2026-05-19T13:37:42.982116-07:00"

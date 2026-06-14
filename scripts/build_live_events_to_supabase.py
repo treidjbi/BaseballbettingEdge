@@ -19,6 +19,7 @@ from market_infra.live_events import (  # noqa: E402
     build_line_movement_rows,
     build_missing_pick_state_events,
     build_pick_change_events,
+    build_propline_webhook_movement_notification_events,
     build_reminder_events,
 )
 from market_infra.live_market_display import build_live_market_display_rows  # noqa: E402
@@ -620,6 +621,7 @@ def run(
     process_propline_webhooks: bool = False,
     propline_webhook_limit: int = DEFAULT_PROPLINE_WEBHOOK_LIMIT,
     propline_webhook_max_age_minutes: int = DEFAULT_PROPLINE_WEBHOOK_MAX_AGE_MINUTES,
+    send_propline_webhook_movement_notifications: bool = False,
 ) -> dict[str, Any]:
     if artifact_payload is None:
         payload, artifact_sha, artifact_source = _load_artifact(Path(artifact_path), artifact_url=artifact_url)
@@ -682,6 +684,7 @@ def run(
                 service_role_key=service_role_key,
                 limit=max(1, propline_webhook_limit),
                 received_after=received_after,
+                return_movement_rows=send_propline_webhook_movement_notifications,
             )
         except Exception as error:
             print(
@@ -729,6 +732,23 @@ def run(
         current_snapshots=current_snapshots,
     )
     line_movement_rows = build_line_movement_rows(movement_notification_rows)
+    propline_webhook_movement_rows = []
+    if isinstance(propline_webhook_result, dict):
+        raw_webhook_rows = propline_webhook_result.get("movement_rows")
+        if isinstance(raw_webhook_rows, list):
+            propline_webhook_movement_rows = raw_webhook_rows
+            propline_webhook_result = {
+                key: value
+                for key, value in propline_webhook_result.items()
+                if key != "movement_rows"
+            }
+    propline_webhook_notification_rows = []
+    if send_propline_webhook_movement_notifications and propline_webhook_movement_rows:
+        propline_webhook_notification_rows = build_propline_webhook_movement_notification_events(
+            slate_date=slate_date,
+            live_picks=state_rows,
+            webhook_movement_rows=propline_webhook_movement_rows,
+        )
     market_pick_evidence_rows = build_market_pick_evidence_rows(
         slate_date=slate_date,
         live_picks=state_rows,
@@ -763,6 +783,7 @@ def run(
         *pick_notification_rows,
         *missing_notification_rows,
         *movement_notification_rows,
+        *propline_webhook_notification_rows,
         *reminder_notification_rows,
     ]
     notification_coordination = coordinate_notification_rows(
@@ -835,6 +856,7 @@ def run(
         "notification_coordinator_shadow_rows": notification_coordination.shadow_rows,
         "notification_coordinator": notification_coordination.summary,
         "line_movement_rows": line_movement_rows,
+        "propline_webhook_notification_rows": propline_webhook_notification_rows,
         "market_pick_evidence_rows": market_pick_evidence_rows,
         "live_market_display_rows": live_market_display_rows,
         "shadow_notification_candidate_rows": shadow_notification_candidate_rows,
@@ -843,6 +865,7 @@ def run(
         "live_pick_state": len(state_rows),
         "notification_events": len(coordinated_notification_rows),
         "line_movement_events": len(line_movement_rows),
+        "propline_webhook_notification_events": len(propline_webhook_notification_rows),
         "market_pick_evidence": len(market_pick_evidence_rows),
         "live_market_display_state": len(live_market_display_rows),
         "shadow_notification_candidates": len(shadow_notification_candidate_rows),
@@ -888,6 +911,10 @@ def main() -> int:
         build_market_lines=_env_flag("LIVE_BUILD_MARKET_LINES", default=True),
         compact_market_lines=_env_flag("LIVE_COMPACT_MARKET_SNAPSHOTS", default=True),
         process_propline_webhooks=_env_flag("LIVE_PROCESS_PROPLINE_WEBHOOKS", default=True),
+        send_propline_webhook_movement_notifications=_env_flag(
+            "LIVE_SEND_PROPLINE_WEBHOOK_MOVEMENT_NOTIFICATIONS",
+            default=False,
+        ),
         propline_webhook_limit=_env_int(
             "LIVE_PROCESS_PROPLINE_WEBHOOK_LIMIT",
             default=DEFAULT_PROPLINE_WEBHOOK_LIMIT,
@@ -930,6 +957,9 @@ def main() -> int:
             f"propline_webhooks=processed:{webhooks.get('processed', 0)} "
             f"movements:{webhooks.get('line_movement_events', 0)}"
         )
+    webhook_notification_summary = (
+        f"webhook_notifications={result.get('propline_webhook_notification_events', 0)}"
+    )
     market_line_build = result.get("market_line_build") or {"skipped": True}
     if market_line_build.get("skipped"):
         market_line_summary = f"market_lines=skipped:{market_line_build.get('reason', 'unknown')}"
@@ -951,6 +981,7 @@ def main() -> int:
         f"{therundown_summary} "
         f"{propline_summary} "
         f"{webhook_summary} "
+        f"{webhook_notification_summary} "
         f"{market_line_summary}"
     )
     return 0

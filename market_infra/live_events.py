@@ -535,6 +535,130 @@ def build_line_movement_events(
     return events
 
 
+def build_propline_webhook_movement_notification_events(
+    slate_date: str,
+    live_picks: list[dict[str, Any]],
+    webhook_movement_rows: list[dict[str, Any]],
+) -> list[dict[str, Any]]:
+    actionable: dict[tuple[str, str], dict[str, Any]] = {}
+    for pick in live_picks:
+        if not _is_fire(pick.get("current_verdict")):
+            continue
+        pitcher_name = str(pick.get("pitcher") or "").strip()
+        normalized_pitcher = str(pick.get("normalized_pitcher") or normalize(pitcher_name)).strip()
+        side = str(pick.get("side") or "").strip().lower()
+        if normalized_pitcher and side in {"over", "under"}:
+            actionable[(normalized_pitcher, side)] = pick
+
+    events: list[dict[str, Any]] = []
+    for row in webhook_movement_rows:
+        if str(row.get("slate_date") or "") != slate_date:
+            continue
+        metadata = row.get("metadata")
+        metadata = metadata if isinstance(metadata, dict) else {}
+        if metadata.get("source") != "propline_webhook":
+            continue
+        if metadata.get("bookmaker_key_missing"):
+            continue
+
+        normalized = str(row.get("normalized_pitcher") or normalize(row.get("pitcher") or "")).strip()
+        side = str(row.get("side") or "").strip().lower()
+        book = str(row.get("bookmaker_key") or "").strip().lower()
+        pick = actionable.get((normalized, side))
+        if pick is None or side not in {"over", "under"} or not book:
+            continue
+
+        previous_line = _numeric(row.get("previous_line"))
+        current_line = _numeric(row.get("current_line"))
+        previous_odds = _integer(row.get("previous_odds"))
+        current_odds = _integer(row.get("current_odds"))
+        if None in {previous_line, current_line, previous_odds, current_odds}:
+            continue
+
+        line_changed = previous_line != current_line
+        pick_line = _numeric(pick.get("k_line"))
+        if line_changed and pick_line is not None:
+            if not (_matches_line(previous_line, pick_line) or _matches_line(current_line, pick_line)):
+                continue
+
+        odds_delta = current_odds - previous_odds
+        if not line_changed and abs(odds_delta) < 10:
+            continue
+
+        if line_changed and previous_odds != current_odds:
+            movement_kind = "line_and_odds"
+        elif line_changed:
+            movement_kind = "line"
+        else:
+            movement_kind = "odds"
+
+        if line_changed:
+            bet_value_direction = _line_bet_value_direction(side, previous_line, current_line)
+            market_direction = _line_market_direction(side, previous_line, current_line)
+        else:
+            bet_value_direction = _odds_bet_value_direction(odds_delta)
+            market_direction = _odds_market_direction(odds_delta)
+
+        with_model = bet_value_direction == "better_now"
+        event_type = "line_moved_with_us" if with_model else "line_moved_against_us"
+        title_noun = "Price" if movement_kind == "odds" else "Line"
+        title_direction = "Better" if with_model else "Worse"
+        pitcher_name = str(pick.get("pitcher") or row.get("pitcher") or "").strip()
+        provider_event_id = str(
+            metadata.get("prop_line_event_id")
+            or metadata.get("provider_event_id")
+            or ""
+        ).strip()
+        if not provider_event_id:
+            continue
+        dedupe_key = (
+            f"{slate_date}:line:{provider_event_id}:{book}:{normalized}:{side}:"
+            f"{previous_line:g}:{previous_odds}:{current_line:g}:{current_odds}"
+        )
+
+        events.append({
+            "slate_date": slate_date,
+            "event_type": event_type,
+            "severity": "watch" if with_model else "action",
+            "title": f"{title_noun} {title_direction} Now",
+            "body": _movement_body(
+                pitcher_name=pitcher_name,
+                side=side,
+                movement_kind=movement_kind,
+                previous_line=previous_line,
+                current_line=current_line,
+                previous_odds=previous_odds,
+                current_odds=current_odds,
+                book=book,
+                market_direction=market_direction,
+                bet_value_direction=bet_value_direction,
+            ),
+            "url": "/",
+            "dedupe_key": dedupe_key,
+            "payload": {
+                "pitcher": pitcher_name,
+                "normalized_pitcher": normalized,
+                "side": side,
+                "provider_event_id": provider_event_id,
+                "bookmaker_key": book,
+                "previous_line": previous_line,
+                "current_line": current_line,
+                "previous_odds": previous_odds,
+                "current_odds": current_odds,
+                "movement_direction": "with_model" if with_model else "against_model",
+                "market_direction": market_direction,
+                "bet_value_direction": bet_value_direction,
+                "movement_kind": movement_kind,
+                "source": "propline_webhook",
+                "source_line_movement_dedupe_key": row.get("dedupe_key"),
+                "prop_line_delivery_id": metadata.get("prop_line_delivery_id"),
+            },
+            "occurred_at": row.get("observed_at"),
+        })
+
+    return events
+
+
 def build_line_movement_rows(movement_events: list[dict[str, Any]]) -> list[dict[str, Any]]:
     rows: list[dict[str, Any]] = []
     for event in movement_events:

@@ -1,6 +1,6 @@
 # Provider Cost Ledger
 
-Last updated: 2026-06-12
+Last updated: 2026-06-14
 
 This doc exists so provider and infrastructure choices stay tied to ROI, not
 just engineering momentum. BaseballBettingEdge is a personal side project, so a
@@ -42,7 +42,7 @@ context:
 
 | Bucket | Low / steady state | With live trials active | Notes |
 | --- | ---: | ---: | --- |
-| App runtime/data, excluding Codex | ~$120/mo | ~$226/mo | Assumes TheRundown, PropLine, Netlify, Render live layer, Supabase Pro; adds BoltOdds Starter + Render worker during trial |
+| App runtime/data, excluding Codex | ~$120/mo | ~$226/mo | Steady state assumes TheRundown, PropLine, Netlify, Render live layer, and Supabase Pro. Trial-active adds BoltOdds Starter plus the always-on Render worker; Tyler approved retiring that spend before the next renewal if the TheRundown + PropLine path stays clean. |
 | Operator tooling, Codex | $20-$100/mo | $20-$100/mo | Plus may be enough later; Pro makes sense during heavy build/debug periods |
 | Combined view | ~$140-$220/mo | ~$246-$326/mo | Use this as an affordability guardrail, not a precise bill |
 
@@ -56,9 +56,9 @@ always-on worker cost in the steady-state view.
 
 | Service | Current / likely cost | What it does | Current decision | Main cost risk |
 | --- | ---: | --- | --- | --- |
-| TheRundown | ~$49-$50/mo Starter; 5M data points/month confirmed 2026-06-12 | Production book-of-record odds for scheduled pipeline artifacts; active mainline shadow-polling canary | Keep as production source; run 10-minute mainline shadow canary in observation-only workflow | Data-point overage if full-slate polling is too broad; 60-second delay; no WebSocket on Starter |
-| PropLine | ~$40/mo now; possible ~$80/mo tier | Shadow/fallback odds and live movement polling | Keep shadow/fallback; do not broadly migrate | Webhooks not proven; duplicate polling; unclear upgrade ROI |
-| BoltOdds | $99/mo Starter during trial | WebSocket live market movement evidence | Trial only, shadow-only; retirement candidate if TheRundown mainline + PropLine webhook evidence proves enough movement value | Always-on worker complexity; book gaps; Pro is much more expensive |
+| TheRundown | ~$49-$50/mo Starter; 5M data points/month confirmed 2026-06-12 | Production book-of-record odds for scheduled pipeline artifacts; 10-minute mainline live-layer polling for provider evidence/usage tracking | Keep as official source and 10-minute mainline path | Data-point overage if polling broadens beyond mainline; 60-second delay; no WebSocket on Starter |
+| PropLine | ~$40/mo now; possible ~$80/mo tier | Fallback odds, polling movement evidence, and book-level webhook movement alerts | Keep as live-movement sidecar; webhook movement notifications approved behind flag | Duplicate alerts/noise if webhooks and polling disagree; unclear upgrade ROI |
+| BoltOdds | $99/mo Starter during trial | WebSocket live market movement evidence | Retire before next renewal unless an unexpected blocker appears in TheRundown + PropLine verification | Always-on worker complexity; book gaps; paying double for little decision lift |
 | The Odds API | Free/limited fallback currently | FD/DK fallback when TheRundown/PropLine leave gaps | Keep conservative fallback only | Credit burn if called event-by-event too broadly |
 | Netlify | Tyler account currently about ~$5/mo | Static dashboard, serverless notification functions, Netlify Blobs subscriptions | Keep | Usage credits, function calls, logs, bandwidth if traffic grows |
 | Render live cron | ~$1/mo | `bbe-live-layer` every 10 minutes | Keep while live notifications matter | Duplicate PropLine calls if older GitHub polling remains active |
@@ -79,10 +79,10 @@ Use TheRundown for official scheduled artifacts:
 - grading-adjacent source of truth
 - dated archives
 
-Do not increase TheRundown to high-frequency live polling without explicit cost
-approval and data-point header tracking. Its value is reliable book-of-record
-data; the 2026-06-12 Starter increase makes bounded mainline polling plausible,
-but not free.
+Do not broaden TheRundown polling beyond mainline without explicit cost
+approval and data-point header tracking. Tyler approved the 10-minute mainline
+Render live-layer path on 2026-06-14 because the 5M Starter cap leaves enough
+headroom when `main_line=true` stays scoped.
 
 2026-06-12 measurement on Tyler's Starter account:
 
@@ -97,14 +97,14 @@ but not free.
   props as the full target-book pull at about `280` data points. That puts a
   10h/day mainline shadow plus existing scheduled full pulls around
   `1.17M/month`, with much more headroom.
-- The built shadow path is `scripts/shadow_therundown_mainline_to_supabase.py`.
+- The built path is `scripts/shadow_therundown_mainline_to_supabase.py`.
   As of 2026-06-12 evening Phoenix time it runs from Render `bbe-live-layer`
   behind `LIVE_CAPTURE_THERUNDOWN_MAINLINE=true`; the first verified scheduled
   run at `2026-06-13T05:30Z` used `174` data points. The GitHub shadow workflow
   remains a manual observation/fallback surface but scheduled TheRundown
   capture is off because it is not reliable enough for the primary 10-minute
-  cadence. This is evidence collection only; it does not switch the production
-  provider or notification source.
+  cadence. This live-layer polling supports provider evidence and usage
+  tracking; it does not switch official artifacts away from TheRundown.
 
 Keep if:
 
@@ -132,9 +132,9 @@ Current evidence:
 - PropLine's 2026-05-19 payload fix adds `bookmaker_key`, `bookmaker_title`,
   `market_id`, and `outcome_id`, making webhook movement reconcilable to
   polling by stable IDs
-- as of 2026-05-24, webhook consumption is enabled only as a bounded
-  shadow canary into `line_movement_events` with a 100-row / 180-minute default
-  window; historical backlog drains require an explicit max-age override
+- as of 2026-06-14, book-level webhook movement notifications are approved
+  behind `LIVE_SEND_PROPLINE_WEBHOOK_MOVEMENT_NOTIFICATIONS=true`; webhook
+  consumption remains bounded to recent rows by default
 - FanDuel / BetRivers evidence appears more useful than a broad migration case
 
 Keep current tier if:
@@ -151,13 +151,13 @@ Upgrade only if:
 
 Cut or reduce if:
 
-- BoltOdds proves better live movement coverage
+- BoltOdds unexpectedly proves better live movement coverage before cancellation
 - duplicate polling creates noise or waste
 - PropLine does not change decisions by the June 1 provider review
 
 ### BoltOdds
 
-Use BoltOdds only as a shadow WebSocket trial until the evidence says otherwise.
+Use BoltOdds only as a shadow WebSocket trial until Tyler cancels/stops renewal.
 
 Starter trial questions:
 
@@ -168,7 +168,8 @@ Starter trial questions:
 - Do WebSocket movements add signal that 10-minute PropLine polling misses?
 - Does the added complexity improve notification timing or decision quality?
 
-Keep Starter after trial only if:
+Keep Starter after trial only if an unexpected blocker appears in the
+TheRundown + PropLine path and:
 
 - uptime and heartbeats are healthy
 - normalized rows cover enough target books

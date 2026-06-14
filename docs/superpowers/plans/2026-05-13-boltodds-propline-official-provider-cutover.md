@@ -118,13 +118,18 @@ Built and wired into shadow-only capture paths:
   `120` snapshots, `30` parsed pitcher-line groups, and `174` TheRundown data
   points.
 
-This path remains shadow-only. It must not change `OFFICIAL_MARKET_SOURCE`,
-`OFFICIAL_MARKET_STRICT`, `ENABLE_BOLTODDS_PIPELINE_SOURCE`, provider order,
-pipeline artifacts, notifications, locks, staking, thresholds, model math,
-retention, or dashboard source-of-truth without a separate Tyler approval.
-The next decision is whether Render-cadenced TheRundown evidence plus PropLine
-webhook processing is strong enough to retire BoltOdds spend or draft a
-separate provider/source promotion plan.
+On 2026-06-14 Tyler approved the low-cost TheRundown + PropLine path after the
+Starter cap and webhook evidence review. The approved production-facing change
+is narrow: keep `OFFICIAL_MARKET_SOURCE=therundown`, keep TheRundown as the
+official artifact source, run TheRundown mainline polling from Render
+`bbe-live-layer` at the 10-minute cadence for provider evidence/usage tracking,
+and allow clean book-level PropLine webhook rows to create live line/price
+movement notifications behind
+`LIVE_SEND_PROPLINE_WEBHOOK_MOVEMENT_NOTIFICATIONS=true`. This is approval to
+retire BoltOdds spend before renewal if verification stays clean. It is not
+approval for `OFFICIAL_MARKET_SOURCE=boltodds_propline`,
+`OFFICIAL_MARKET_STRICT`, `ENABLE_BOLTODDS_PIPELINE_SOURCE`, model math,
+thresholds, staking, locks, retention, or dashboard source-of-truth changes.
 
 ## Supabase Tracker Interaction Matrix
 

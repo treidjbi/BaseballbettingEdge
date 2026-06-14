@@ -254,6 +254,7 @@ def run(
     service_role_key: str,
     limit: int = DEFAULT_LIMIT,
     received_after: datetime | None = None,
+    return_movement_rows: bool = False,
 ) -> dict[str, Any]:
     writer = SupabaseMarketWriter(supabase_url, service_role_key)
     query = {
@@ -319,7 +320,7 @@ def run(
                 update,
             )
 
-    return {
+    result = {
         "deliveries": len(deliveries),
         "processed": processed,
         "line_movement_events": len(movement_rows),
@@ -330,6 +331,9 @@ def run(
             else None
         ),
     }
+    if return_movement_rows:
+        result["movement_rows"] = movement_rows
+    return result
 
 
 def main() -> int:
