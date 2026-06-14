@@ -57,7 +57,7 @@ always-on worker cost in the steady-state view.
 | Service | Current / likely cost | What it does | Current decision | Main cost risk |
 | --- | ---: | --- | --- | --- |
 | TheRundown | ~$49-$50/mo Starter; 5M data points/month confirmed 2026-06-12 | Production book-of-record odds for scheduled pipeline artifacts; 10-minute mainline live-layer polling for provider evidence/usage tracking | Keep as official source and 10-minute mainline path | Data-point overage if polling broadens beyond mainline; 60-second delay; no WebSocket on Starter |
-| PropLine | ~$40/mo now; possible ~$80/mo tier | Fallback odds, polling movement evidence, and book-level webhook movement alerts | Keep as live-movement sidecar; webhook movement notifications approved behind flag | Duplicate alerts/noise if webhooks and polling disagree; unclear upgrade ROI |
+| PropLine | ~$40/mo now; possible ~$80/mo tier | Fallback odds, polling movement evidence, and supported-book webhook movement alerts | Keep as live-movement sidecar; webhook movement notifications approved behind flag | Duplicate alerts/noise if webhooks and polling disagree; unclear upgrade ROI |
 | BoltOdds | $99/mo Starter during trial | WebSocket live market movement evidence | Retire before next renewal unless an unexpected blocker appears in TheRundown + PropLine verification | Always-on worker complexity; book gaps; paying double for little decision lift |
 | The Odds API | Free/limited fallback currently | FD/DK fallback when TheRundown/PropLine leave gaps | Keep conservative fallback only | Credit burn if called event-by-event too broadly |
 | Netlify | Tyler account currently about ~$5/mo | Static dashboard, serverless notification functions, Netlify Blobs subscriptions | Keep | Usage credits, function calls, logs, bandwidth if traffic grows |
@@ -132,7 +132,7 @@ Current evidence:
 - PropLine's 2026-05-19 payload fix adds `bookmaker_key`, `bookmaker_title`,
   `market_id`, and `outcome_id`, making webhook movement reconcilable to
   polling by stable IDs
-- as of 2026-06-14, book-level webhook movement notifications are approved
+- as of 2026-06-14, supported-book webhook movement notifications are approved
   behind `LIVE_SEND_PROPLINE_WEBHOOK_MOVEMENT_NOTIFICATIONS=true`; webhook
   consumption remains bounded to recent rows by default
 - FanDuel / BetRivers evidence appears more useful than a broad migration case

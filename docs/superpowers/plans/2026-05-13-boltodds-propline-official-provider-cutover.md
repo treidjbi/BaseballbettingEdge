@@ -123,7 +123,7 @@ Starter cap and webhook evidence review. The approved production-facing change
 is narrow: keep `OFFICIAL_MARKET_SOURCE=therundown`, keep TheRundown as the
 official artifact source, run TheRundown mainline polling from Render
 `bbe-live-layer` at the 10-minute cadence for provider evidence/usage tracking,
-and allow clean book-level PropLine webhook rows to create live line/price
+and allow clean supported-book PropLine webhook rows to create live line/price
 movement notifications behind
 `LIVE_SEND_PROPLINE_WEBHOOK_MOVEMENT_NOTIFICATIONS=true`. This is approval to
 retire BoltOdds spend before renewal if verification stays clean. It is not

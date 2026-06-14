@@ -14,6 +14,16 @@ VERDICT_RANK = {
 }
 
 LOCKED_GAME_STATES = {"locked", "in_progress", "final", "completed", "postponed"}
+PROPLINE_WEBHOOK_NOTIFICATION_BOOKS = {
+    "betmgm",
+    "betrivers",
+    "caesars",
+    "draftkings",
+    "fanduel",
+    "kalshi",
+    "scorebet",
+    "thescore",
+}
 
 
 def _isoformat(value: datetime | str) -> str:
@@ -565,7 +575,7 @@ def build_propline_webhook_movement_notification_events(
         side = str(row.get("side") or "").strip().lower()
         book = str(row.get("bookmaker_key") or "").strip().lower()
         pick = actionable.get((normalized, side))
-        if pick is None or side not in {"over", "under"} or not book:
+        if pick is None or side not in {"over", "under"} or book not in PROPLINE_WEBHOOK_NOTIFICATION_BOOKS:
             continue
 
         previous_line = _numeric(row.get("previous_line"))

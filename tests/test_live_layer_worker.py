@@ -1213,14 +1213,23 @@ def test_worker_can_send_book_level_propline_webhook_movement_notifications(tmp_
             "source": "propline_webhook",
         },
     }
+    non_target_webhook_row = {
+        **webhook_row,
+        "bookmaker_key": "underdog",
+        "dedupe_key": "2026-05-06:propline_webhook:delivery-2",
+        "metadata": {
+            **webhook_row["metadata"],
+            "prop_line_delivery_id": "delivery-2",
+        },
+    }
 
     def process_webhooks(*args, **kwargs):
         return {
             "deliveries": 1,
             "processed": 1,
-            "line_movement_events": 1,
+            "line_movement_events": 2,
             "unsupported": 0,
-            "movement_rows": [webhook_row],
+            "movement_rows": [webhook_row, non_target_webhook_row],
         }
 
     with (

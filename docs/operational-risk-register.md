@@ -18,7 +18,7 @@ currently verified. Re-check provider dashboards before making billing decisions
 | Service | Cost | Started | Billing / trial status | Purpose | Current role | Next review | Keep criteria | Kill / downgrade criteria |
 | --- | ---: | --- | --- | --- | --- | --- | --- | --- |
 | TheRundown | ~$49-$50/mo | Approx. 2026-05-05 | Paid production provider | Scheduled odds source for official artifacts plus 10-minute mainline live-layer polling | Production book-of-record + mainline provider evidence | Weekly during May, then monthly | Target-book K prop coverage stays healthy; artifacts auditable; 10-minute mainline usage stays safely under the 5M datapoint cap | Another provider proves equal production coverage, lower cost, and rollback safety |
-| PropLine | ~$40/mo | Approx. 2026-05-06 | Paid fallback/live-movement provider | Polling fallback and book-level webhook line movement | Fallback/live movement sidecar | Daily while webhook notification bridge is new | Useful FanDuel/DraftKings/BetRivers coverage; webhook movement notifications are timely, deduped, and tied to real book IDs; request volume acceptable | Webhook/polling duplicates create noisy alerts; movement alerts do not affect decisions; coverage degrades |
+| PropLine | ~$40/mo | Approx. 2026-05-06 | Paid fallback/live-movement provider | Polling fallback and supported-book webhook line movement | Fallback/live movement sidecar | Daily while webhook notification bridge is new | Useful FanDuel/DraftKings/BetRivers coverage; webhook movement notifications are timely, deduped, and tied to real actionable book IDs; request volume acceptable | Webhook/polling duplicates create noisy alerts; movement alerts do not affect decisions; coverage degrades |
 | BoltOdds | $99/mo Starter | 2026-05-07 | Stop/cancel before next renewal unless unexpected blocker appears | WebSocket live market evidence | Retiring shadow-only worker | Verify cancellation/suspension and no stale influence after stop | Only keep if TheRundown + PropLine fails a required live-movement need that BoltOdds uniquely solves | Stale feed, poor target-book rows, no decision impact, or paying double for redundant movement evidence |
 | The Odds API | Free / limited | 2026-05-01 | Fallback only | FD/DK fallback when other providers leave gaps | Conservative fallback | Only when fallback is used | Stays low-volume and helps diagnose gaps | Credit burn grows or coverage is redundant |
 | Netlify | ~$5/mo current account state | Existing | Active | Static dashboard, artifact API, functions, Blobs subscriptions | Production hosting/sender | Monthly | Function usage and logs remain stable; deploys simple; `get-artifact` stays fresh | Usage credits/log limits become a real bottleneck |
@@ -46,7 +46,7 @@ Use this hierarchy when sources disagree.
    fallback, coverage, and movement analysis. PropLine webhooks now have real
    signed delivery evidence and book-level movement IDs. As of 2026-06-14,
    Tyler approved webhook-derived movement for live line/price movement
-   notifications only, behind
+   notifications only for supported/actionable books, behind
    `LIVE_SEND_PROPLINE_WEBHOOK_MOVEMENT_NOTIFICATIONS=true`. Webhook rows must
    not drive production odds, picks, model behavior, locks, dashboard
    source-of-truth, or provider promotion without a separate review.
