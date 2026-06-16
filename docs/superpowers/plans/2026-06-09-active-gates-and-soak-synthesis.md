@@ -652,6 +652,35 @@ Still closed:
 - any provider, notification, lock, retention, or dashboard source-of-truth
   change
 
+### Gate 12E: Market-Anchored V2 Selector
+
+**State:** Draft plan; production behavior closed.
+
+The selector plan lives in
+`docs/superpowers/plans/2026-06-16-market-anchored-v2-selector-shadow-canary.md`.
+It may add runtime-safe `market_anchor_selector` metadata in shadow mode. It
+must not change verdicts unless Tyler separately approves
+`MARKET_ANCHOR_SELECTOR_MODE=enforce_downside` after audit gates pass.
+
+Promotion-review floors:
+
+- At least `150` clean tracked rows with selector metadata.
+- At least `75` market-anchor strict tracked rows.
+- Strict rows positive after excluding one slate.
+- Strict rows survive over/under, K-line, plus/minus price, quality, timing,
+  CLV, workload, Path B, provider/source, market-agreement, and rolling-window
+  slices.
+- Non-strict FIRE rows remain materially worse than strict FIRE rows.
+- No artifact, lock, notification, provider-source, or dashboard-source
+  regression during shadow soak.
+
+Still closed:
+
+- automatic LEAN promotion
+- any lambda, threshold, staking, provider, notification, lock, retention, or
+  dashboard source-of-truth change
+- `MARKET_ANCHOR_SELECTOR_MODE=enforce_downside`
+
 ### Gate 13: Storage And Retention
 
 **State:** Closed for deletion; open for dry-run evidence.
@@ -717,7 +746,7 @@ Recommended order:
 1. Review Gate 12B first: decide whether the downside-only profit-rescue
    canary should run in `shadow` or `enforce`. Do not bundle that with provider
    strict mode or any lambda/staking/threshold change.
-2. Keep Gate 7/Gate 8/Gate 9/Gate 12/Gate 12A/Gate 5 in observation after the
+2. Keep Gate 7/Gate 8/Gate 9/Gate 12/Gate 12A/Gate 12E/Gate 5 in observation after the
    2026-06-09 implementation push; do not promote provider,
    confidence-referee v2, market-agreement, positive bet-selection, or
    notification behavior from one refreshed report.

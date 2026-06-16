@@ -1,6 +1,6 @@
 # Current State
 
-Last updated: 2026-06-13
+Last updated: 2026-06-16
 
 ## Read Order
 
@@ -17,6 +17,8 @@ For any new work in this repo:
      strict-provider readiness report
    - `docs/superpowers/plans/2026-06-13-market-anchored-k-shadow-rebuild.md`
      for the shadow-only market-anchored K projection/selector rebuild report
+   - `docs/superpowers/plans/2026-06-16-market-anchored-v2-selector-shadow-canary.md`
+     for the feature-flagged market-anchor selector shadow/canary plan
    - `docs/superpowers/plans/2026-05-13-boltodds-propline-official-provider-cutover.md`
    - `docs/superpowers/plans/2026-05-12-pitcher-k-outcome-research-dataset.md`
    - `docs/superpowers/plans/2026-06-05-market-favorite-confidence-referee-production-canary.md`
@@ -103,11 +105,14 @@ do we convert model signal into better betting decisions?"
   2026-06-07, `BATTER_HANDEDNESS_MODE=path_b` is active on the seven Render
   pipeline cron services. The first same-day verification was partial because
   several games had already started before activation.
-- Render preview/full/refresh now run a non-strict BoltOdds + PropLine
-  provider-source canary for scheduled artifact rows. TheRundown remains the
-  fallback/rollback source because `OFFICIAL_MARKET_STRICT=false`; GitHub
-  manual `workflow_dispatch` also remains a TheRundown rollback path unless
-  separately changed.
+- As of 2026-06-16, Render preview/full/refresh are back on the approved
+  low-cost official posture: `OFFICIAL_MARKET_SOURCE=therundown`,
+  `OFFICIAL_MARKET_SOURCE_FALLBACK=propline`,
+  `ENABLE_BOLTODDS_PIPELINE_SOURCE=false`, and
+  `OFFICIAL_MARKET_STRICT=false`. The older non-strict BoltOdds + PropLine
+  provider-source canary is retired from official artifact runs. GitHub manual
+  `workflow_dispatch` remains a TheRundown rollback path unless separately
+  changed.
 - PropLine remains a shadow/fallback/live-movement source. Polling is useful,
   and real signed provider webhooks are now landing with book-level movement
   IDs after PropLine's 2026-05-19 payload fix. The planned provider stack is
@@ -235,6 +240,19 @@ dashboard source-of-truth change. The daily review command is
 `python scripts/run_post_grading_shadow_reports.py`; it is intended to run
 after grading and preserve the decision-facing report excerpt in scheduler
 logs.
+
+Market-anchor v2 selector plan overlay, 2026-06-16:
+`docs/superpowers/plans/2026-06-16-market-anchored-v2-selector-shadow-canary.md`
+is now the draft implementation plan for turning the market-anchored strict
+selector into feature-flagged runtime metadata and a post-grading audit. The
+planned flag is `MARKET_ANCHOR_SELECTOR_MODE=off|shadow|enforce_downside`.
+The only implementation-ready posture is default `off` plus a future
+Tyler-approved `shadow` metadata deployment. `enforce_downside` remains closed
+until the audit reaches its row, slice, CLV, workload, Path B, provider/source,
+market-agreement, and rolling-window gates. This plan does not approve LEAN
+promotion, lambda changes, threshold changes, staking changes, provider
+changes, notification changes, lock changes, retention deletion, or dashboard
+source-of-truth changes.
 
 Board rule: each lane can advance independently, but live betting behavior only
 changes after the controlling lane has passed its own promotion gate and Tyler
