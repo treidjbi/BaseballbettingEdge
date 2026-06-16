@@ -128,6 +128,7 @@ class TestInitDb:
         assert "verdict_cap_reason" in cols
         assert "data_maturity_json" in cols
         assert "confidence_referee_json" in cols
+        assert "market_anchor_selector_json" in cols
         assert "raw_adj_ev" in cols
 
 
@@ -264,6 +265,63 @@ class TestSeedPicks:
         assert json.loads(row[6])["umpire"] == "unknown"
         assert row[7] == 0.19
         assert json.loads(row[8])["relationship"] == "model_fades_favorite"
+
+    def test_seed_persists_market_anchor_selector_metadata(self, tmp_db, tmp_path):
+        db_path, fr = tmp_db
+        selector = {
+            "mode": "shadow",
+            "selected_side": "over",
+            "labels": ["market_anchor_strict"],
+            "applied": False,
+        }
+        today = {
+            "date": "2026-04-29",
+            "pitchers": [
+                {
+                    "pitcher": "Selector Pitcher",
+                    "team": "A",
+                    "opp_team": "B",
+                    "game_time": "2026-04-29T20:05:00Z",
+                    "k_line": 5.5,
+                    "raw_lambda": 6.1,
+                    "lambda": 6.1,
+                    "best_over_odds": -125,
+                    "best_under_odds": 105,
+                    "ev_over": {
+                        "edge": 0.07,
+                        "ev": 0.14,
+                        "adj_ev": 0.12,
+                        "raw_verdict": "FIRE 1u",
+                        "actionable_verdict": "FIRE 1u",
+                        "verdict": "FIRE 1u",
+                        "win_prob": 0.61,
+                        "movement_conf": 1.0,
+                        "market_anchor_selector": selector,
+                    },
+                    "ev_under": {
+                        "edge": -0.03,
+                        "ev": -0.04,
+                        "adj_ev": -0.04,
+                        "verdict": "PASS",
+                        "win_prob": 0.39,
+                        "movement_conf": 1.0,
+                    },
+                }
+            ],
+        }
+        today_path = tmp_path / "today.json"
+        today_path.write_text(json.dumps(today))
+
+        assert fr.seed_picks(today_path) == 1
+
+        conn = sqlite3.connect(db_path)
+        row = conn.execute("""
+            SELECT market_anchor_selector_json
+            FROM picks WHERE pitcher='Selector Pitcher'
+        """).fetchone()
+        conn.close()
+
+        assert json.loads(row[0])["labels"] == ["market_anchor_strict"]
 
     def test_seed_skips_blocked_pass_even_when_raw_verdict_is_fire(self, tmp_db, tmp_path):
         db_path, fr = tmp_db
@@ -413,6 +471,44 @@ class TestLoadHistoryIntoDb:
         assert json.loads(row[6])["umpire"] == "unknown"
         assert json.loads(row[7])["applied"] is True
 
+    def test_loads_market_anchor_selector_from_history(self, tmp_db, tmp_path):
+        db_path, fr = tmp_db
+        history = [
+            {
+                "date": "2026-04-29",
+                "pitcher": "Selector Pitcher",
+                "team": "A",
+                "side": "over",
+                "k_line": 5.5,
+                "verdict": "FIRE 1u",
+                "edge": 0.07,
+                "ev": 0.14,
+                "adj_ev": 0.12,
+                "raw_lambda": 6.1,
+                "applied_lambda": 6.1,
+                "odds": -125,
+                "movement_conf": 1.0,
+                "market_anchor_selector": {
+                    "mode": "shadow",
+                    "labels": ["market_anchor_strict"],
+                    "applied": False,
+                },
+            }
+        ]
+        history_path = tmp_path / "picks_history.json"
+        history_path.write_text(json.dumps(history))
+
+        fr.load_history_into_db(history_path)
+
+        conn = sqlite3.connect(db_path)
+        row = conn.execute("""
+            SELECT market_anchor_selector_json
+            FROM picks WHERE pitcher='Selector Pitcher'
+        """).fetchone()
+        conn.close()
+
+        assert json.loads(row[0])["mode"] == "shadow"
+
     def test_returns_zero_if_file_missing(self, tmp_db, tmp_path):
         """load_history_into_db returns 0 when history file doesn't exist."""
         db_path, fr = tmp_db
@@ -484,6 +580,30 @@ class TestExportDbToHistory:
         assert row["verdict_cap_reason"] == "1 soft input flag: unrated_umpire"
         assert row["data_maturity"]["umpire"] == "unknown"
         assert row["confidence_referee"]["mode"] == "enforce"
+
+    def test_exports_market_anchor_selector_to_history(self, tmp_db, tmp_path):
+        db_path, fr = tmp_db
+        with sqlite3.connect(db_path) as conn:
+            conn.execute("""
+                INSERT INTO picks (
+                  date, pitcher, team, side, k_line, verdict,
+                  edge, ev, adj_ev, raw_lambda, applied_lambda, odds,
+                  movement_conf, market_anchor_selector_json
+                )
+                VALUES (
+                  '2026-04-29','Selector Pitcher','A','over',5.5,'FIRE 1u',
+                  0.07,0.14,0.12,6.1,6.1,-125,
+                  1.0,'{"mode":"shadow","labels":["market_anchor_strict"],"applied":false}'
+                )
+            """)
+        history_path = tmp_path / "picks_history.json"
+
+        fr.export_db_to_history(history_path)
+
+        written = json.loads(history_path.read_text())
+        row = written[0]
+        assert row["market_anchor_selector"]["mode"] == "shadow"
+        assert row["market_anchor_selector"]["labels"] == ["market_anchor_strict"]
 
     def test_overwrites_existing_file(self, tmp_db, tmp_path):
         """export_db_to_history replaces existing history file."""
