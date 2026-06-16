@@ -17,6 +17,7 @@ ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
 
 from scripts import build_pitcher_k_outcome_dataset as builder  # noqa: E402
+from analytics.diagnostics import market_anchor_selector_canary_audit  # noqa: E402
 
 
 def _parse_args(argv: list[str] | None = None) -> argparse.Namespace:
@@ -35,6 +36,16 @@ def _parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         "--skip-workload-no-vig-audit",
         action="store_true",
         help="Only skip this if the workload/no-vig report is being run separately.",
+    )
+    parser.add_argument(
+        "--market-anchor-selector-audit-output",
+        type=Path,
+        default=ROOT / "analytics" / "output" / "market_anchor_selector_canary_audit.md",
+    )
+    parser.add_argument(
+        "--skip-market-anchor-selector-audit",
+        action="store_true",
+        help="Skip only when selector metadata has not been deployed yet.",
     )
     return parser.parse_args(argv)
 
@@ -88,6 +99,13 @@ def main(argv: list[str] | None = None) -> int:
     ])
 
     builder.main(builder_args)
+    if not args.skip_market_anchor_selector_audit:
+        market_anchor_selector_canary_audit.main([
+            "--input",
+            str(args.output_dir / "pitcher_k_outcome_dataset.jsonl"),
+            "--output",
+            str(args.market_anchor_selector_audit_output),
+        ])
     print("Post-grading shadow reports complete.")
     _print_review_excerpt(args.market_anchored_output)
     return 0
