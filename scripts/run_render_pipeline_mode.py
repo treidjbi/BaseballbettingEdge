@@ -129,13 +129,14 @@ def shadow_runtime_env_overrides(
     return overrides
 
 
-def live_provider_canary_env_overrides(mode: str, artifact_key_prefix: str) -> dict[str, str]:
-    """Enable the approved provider-source canary for live preview/full refreshes."""
+def live_official_provider_env_overrides(mode: str, artifact_key_prefix: str) -> dict[str, str]:
+    """Force the approved official market posture for live preview/full refreshes."""
     if artifact_key_prefix or mode not in {"preview", "pipeline"}:
         return {}
     return {
-        "OFFICIAL_MARKET_SOURCE": "boltodds_propline",
-        "ENABLE_BOLTODDS_PIPELINE_SOURCE": "true",
+        "OFFICIAL_MARKET_SOURCE": "therundown",
+        "OFFICIAL_MARKET_SOURCE_FALLBACK": "propline",
+        "ENABLE_BOLTODDS_PIPELINE_SOURCE": "false",
         "OFFICIAL_MARKET_STRICT": "false",
     }
 
@@ -150,7 +151,7 @@ def runtime_env_overrides(
         artifact_key_prefix,
         provider_rehearsal=provider_rehearsal,
     )
-    overrides.update(live_provider_canary_env_overrides(mode, artifact_key_prefix))
+    overrides.update(live_official_provider_env_overrides(mode, artifact_key_prefix))
     return overrides
 
 

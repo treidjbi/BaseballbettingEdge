@@ -131,6 +131,17 @@ approval for `OFFICIAL_MARKET_SOURCE=boltodds_propline`,
 `OFFICIAL_MARKET_STRICT`, `ENABLE_BOLTODDS_PIPELINE_SOURCE`, model math,
 thresholds, staking, locks, retention, or dashboard source-of-truth changes.
 
+On 2026-06-16, source-posture verification found the Render pipeline wrapper
+still auto-enabled the old non-strict BoltOdds + PropLine provider canary for
+live preview/full runs. The wrapper now forces the approved official posture for
+live preview/full/refresh artifact runs:
+`OFFICIAL_MARKET_SOURCE=therundown`,
+`OFFICIAL_MARKET_SOURCE_FALLBACK=propline`,
+`ENABLE_BOLTODDS_PIPELINE_SOURCE=false`, and `OFFICIAL_MARKET_STRICT=false`.
+Provider adapter rehearsal remains available only on explicit shadow runs.
+After deploy, verify the next official artifact reports TheRundown/PropLine
+provenance rather than `odds_source=boltodds+propline`.
+
 ## Supabase Tracker Interaction Matrix
 
 This plan must reuse the current trackers instead of creating duplicate versions

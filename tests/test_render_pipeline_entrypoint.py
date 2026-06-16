@@ -74,16 +74,17 @@ def test_shadow_runtime_overrides_are_empty_for_live_key_publish():
     assert entrypoint.shadow_runtime_env_overrides("") == {}
 
 
-def test_live_provider_canary_enables_provider_for_live_preview_and_pipeline():
+def test_live_official_provider_uses_therundown_plus_propline_for_live_preview_and_pipeline():
     for mode in ("preview", "pipeline"):
         overrides = entrypoint.runtime_env_overrides(mode, "")
 
-        assert overrides["OFFICIAL_MARKET_SOURCE"] == "boltodds_propline"
-        assert overrides["ENABLE_BOLTODDS_PIPELINE_SOURCE"] == "true"
+        assert overrides["OFFICIAL_MARKET_SOURCE"] == "therundown"
+        assert overrides["OFFICIAL_MARKET_SOURCE_FALLBACK"] == "propline"
+        assert overrides["ENABLE_BOLTODDS_PIPELINE_SOURCE"] == "false"
         assert overrides["OFFICIAL_MARKET_STRICT"] == "false"
 
 
-def test_live_provider_canary_does_not_touch_grading_lock_or_shadow_runs():
+def test_live_official_provider_does_not_touch_grading_lock_or_shadow_runs():
     assert entrypoint.runtime_env_overrides("grading", "") == {}
     assert entrypoint.runtime_env_overrides("lock", "") == {}
 
