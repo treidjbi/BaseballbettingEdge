@@ -12,7 +12,24 @@
 
 Date: 2026-06-16
 Owner: Tyler + Codex
-Status: Draft plan, not implemented
+Status: Default-off metadata plumbing implemented on branch `codex/market-anchor-selector-shadow`; not deployed; production behavior closed
+
+## Implementation Update: 2026-06-16
+
+The default-off plumbing now exists on branch
+`codex/market-anchor-selector-shadow`. The implementation adds:
+
+- pure selector metadata in `pipeline/market_anchor_selector.py`
+- quality-gate wiring after confidence-referee and profit-rescue caps
+- SQLite / `picks_history.json` round-trip support
+- tracked-pick and Gate C passthrough fields
+- a post-grading selector canary audit and runner skip flag
+
+The runtime default remains `MARKET_ANCHOR_SELECTOR_MODE=off`, which adds no
+metadata and does not change verdicts. `shadow` is available in code for a
+future Tyler-approved deployment. `enforce_downside` remains closed until the
+post-grading audit gates pass and Tyler separately approves that environment
+change.
 
 ## Evidence Read
 

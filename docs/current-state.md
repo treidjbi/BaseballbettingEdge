@@ -243,11 +243,14 @@ logs.
 
 Market-anchor v2 selector plan overlay, 2026-06-16:
 `docs/superpowers/plans/2026-06-16-market-anchored-v2-selector-shadow-canary.md`
-is now the draft implementation plan for turning the market-anchored strict
-selector into feature-flagged runtime metadata and a post-grading audit. The
+is the controlling plan for turning the market-anchored strict selector into
+feature-flagged runtime metadata and a post-grading audit. As of 2026-06-16,
+branch `codex/market-anchor-selector-shadow` implements the default-off
+metadata plumbing, persistence, Gate C passthrough, and canary audit. The
 planned flag is `MARKET_ANCHOR_SELECTOR_MODE=off|shadow|enforce_downside`.
-The only implementation-ready posture is default `off` plus a future
-Tyler-approved `shadow` metadata deployment. `enforce_downside` remains closed
+The current runtime posture remains default `off`; no Render env or production
+behavior has changed. A future `shadow` metadata deployment still requires
+Tyler approval after branch review/tests. `enforce_downside` remains closed
 until the audit reaches its row, slice, CLV, workload, Path B, provider/source,
 market-agreement, and rolling-window gates. This plan does not approve LEAN
 promotion, lambda changes, threshold changes, staking changes, provider

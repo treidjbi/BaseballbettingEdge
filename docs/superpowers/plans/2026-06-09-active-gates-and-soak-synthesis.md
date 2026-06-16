@@ -654,12 +654,16 @@ Still closed:
 
 ### Gate 12E: Market-Anchored V2 Selector
 
-**State:** Draft plan; production behavior closed.
+**State:** Default-off implementation branch; production behavior closed.
 
 The selector plan lives in
 `docs/superpowers/plans/2026-06-16-market-anchored-v2-selector-shadow-canary.md`.
-It may add runtime-safe `market_anchor_selector` metadata in shadow mode. It
-must not change verdicts unless Tyler separately approves
+As of 2026-06-16, branch `codex/market-anchor-selector-shadow` implements
+default-off metadata plumbing, persistence, Gate C passthrough, and a canary
+audit. It adds no metadata and changes no verdicts while
+`MARKET_ANCHOR_SELECTOR_MODE=off`. A future `shadow` metadata deployment still
+requires Tyler approval after branch review/tests. It must not change verdicts
+unless Tyler separately approves
 `MARKET_ANCHOR_SELECTOR_MODE=enforce_downside` after audit gates pass.
 
 Promotion-review floors:
