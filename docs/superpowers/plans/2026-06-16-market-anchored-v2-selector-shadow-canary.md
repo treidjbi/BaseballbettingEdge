@@ -12,12 +12,13 @@
 
 Date: 2026-06-16
 Owner: Tyler + Codex
-Status: Default-off metadata plumbing implemented on branch `codex/market-anchor-selector-shadow`; not deployed; production behavior closed
+Status: Merged to `main` and deployed to Render pipeline crons in `shadow`; verdict behavior unchanged; `enforce_downside` closed
 
 ## Implementation Update: 2026-06-16
 
-The default-off plumbing now exists on branch
-`codex/market-anchor-selector-shadow`. The implementation adds:
+The default-off plumbing was implemented on branch
+`codex/market-anchor-selector-shadow`, merged to `main`, and pushed at commit
+`687cf472`. The implementation adds:
 
 - pure selector metadata in `pipeline/market_anchor_selector.py`
 - quality-gate wiring after confidence-referee and profit-rescue caps
@@ -25,11 +26,16 @@ The default-off plumbing now exists on branch
 - tracked-pick and Gate C passthrough fields
 - a post-grading selector canary audit and runner skip flag
 
-The runtime default remains `MARKET_ANCHOR_SELECTOR_MODE=off`, which adds no
-metadata and does not change verdicts. `shadow` is available in code for a
-future Tyler-approved deployment. `enforce_downside` remains closed until the
-post-grading audit gates pass and Tyler separately approves that environment
-change.
+Tyler approved the first `shadow` deployment on 2026-06-16. All seven Render
+pipeline cron services were redeployed on commit `687cf472` with
+`MARKET_ANCHOR_SELECTOR_MODE=shadow`. A controlled refresh job
+`job-d8oqplb7uimc739ivvp0` published `today.json` generated at
+`2026-06-16T20:08:07Z`; all `60` side rows carried
+`market_anchor_selector.mode=shadow`, `selector_applied_rows=0`, and provider
+provenance stayed TheRundown (`odds_source=therundown` on 30 pitcher rows).
+This deployment adds audit metadata only. `enforce_downside` remains closed
+until the post-grading audit gates pass and Tyler separately approves that
+environment change.
 
 ## Evidence Read
 

@@ -654,16 +654,18 @@ Still closed:
 
 ### Gate 12E: Market-Anchored V2 Selector
 
-**State:** Default-off implementation branch; production behavior closed.
+**State:** Shadow metadata deployed; production verdict behavior unchanged.
 
 The selector plan lives in
 `docs/superpowers/plans/2026-06-16-market-anchored-v2-selector-shadow-canary.md`.
 As of 2026-06-16, branch `codex/market-anchor-selector-shadow` implements
 default-off metadata plumbing, persistence, Gate C passthrough, and a canary
-audit. It adds no metadata and changes no verdicts while
-`MARKET_ANCHOR_SELECTOR_MODE=off`. A future `shadow` metadata deployment still
-requires Tyler approval after branch review/tests. It must not change verdicts
-unless Tyler separately approves
+audit. Tyler approved `MARKET_ANCHOR_SELECTOR_MODE=shadow` on the seven Render
+pipeline cron services after merge to `main` commit `687cf472`. The first
+controlled refresh artifact generated at `2026-06-16T20:08:07Z` had selector
+metadata on all `60` side rows, `selector_applied_rows=0`, and TheRundown
+provider provenance. It must not change verdicts unless Tyler separately
+approves
 `MARKET_ANCHOR_SELECTOR_MODE=enforce_downside` after audit gates pass.
 
 Promotion-review floors:

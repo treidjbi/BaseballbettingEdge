@@ -245,17 +245,21 @@ Market-anchor v2 selector plan overlay, 2026-06-16:
 `docs/superpowers/plans/2026-06-16-market-anchored-v2-selector-shadow-canary.md`
 is the controlling plan for turning the market-anchored strict selector into
 feature-flagged runtime metadata and a post-grading audit. As of 2026-06-16,
-branch `codex/market-anchor-selector-shadow` implements the default-off
-metadata plumbing, persistence, Gate C passthrough, and canary audit. The
-planned flag is `MARKET_ANCHOR_SELECTOR_MODE=off|shadow|enforce_downside`.
-The current runtime posture remains default `off`; no Render env or production
-behavior has changed. A future `shadow` metadata deployment still requires
-Tyler approval after branch review/tests. `enforce_downside` remains closed
-until the audit reaches its row, slice, CLV, workload, Path B, provider/source,
-market-agreement, and rolling-window gates. This plan does not approve LEAN
-promotion, lambda changes, threshold changes, staking changes, provider
-changes, notification changes, lock changes, retention deletion, or dashboard
-source-of-truth changes.
+branch `codex/market-anchor-selector-shadow` implemented the default-off
+metadata plumbing, persistence, Gate C passthrough, and canary audit; it was
+merged to `main` at commit `687cf472`. Tyler approved deploying
+`MARKET_ANCHOR_SELECTOR_MODE=shadow` on the seven Render pipeline cron
+services on 2026-06-16. The first controlled refresh job
+`job-d8oqplb7uimc739ivvp0` published `today.json` generated at
+`2026-06-16T20:08:07Z` with selector metadata on all `60` side rows and
+`selector_applied_rows=0`; provider provenance remained TheRundown
+(`odds_source=therundown` on 30 pitcher rows). This is metadata-only and does
+not change verdicts. `enforce_downside` remains closed until the audit reaches
+its row, slice, CLV, workload, Path B, provider/source, market-agreement, and
+rolling-window gates. This plan does not approve LEAN promotion, lambda
+changes, threshold changes, staking changes, provider changes, notification
+changes, lock changes, retention deletion, or dashboard source-of-truth
+changes.
 
 Board rule: each lane can advance independently, but live betting behavior only
 changes after the controlling lane has passed its own promotion gate and Tyler
