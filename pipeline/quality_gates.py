@@ -8,6 +8,7 @@ from collections import Counter
 from typing import Any
 
 from confidence_referee import apply_referee_to_side
+from market_anchor_selector import apply_market_anchor_selector_to_side
 from profit_rescue_referee import apply_profit_rescue_to_side
 
 
@@ -290,7 +291,8 @@ def _apply_quality_to_side(
 
     side_name = "over" if side_key == "ev_over" else "under"
     updated = apply_referee_to_side(record, side_name, updated)
-    return apply_profit_rescue_to_side(record, side_name, updated)
+    updated = apply_profit_rescue_to_side(record, side_name, updated)
+    return apply_market_anchor_selector_to_side(record, side_name, updated)
 
 
 def apply_quality_to_record(record: dict) -> dict:

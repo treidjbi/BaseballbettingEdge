@@ -280,3 +280,32 @@ def test_profit_rescue_enforce_caps_after_confidence_referee(monkeypatch):
     assert gated["ev_over"]["verdict"] == "FIRE 1u"
     assert gated["ev_over"]["actionable_verdict"] == "FIRE 1u"
     assert gated["ev_over"]["profit_rescue_referee"]["applied"] is True
+
+
+def test_market_anchor_selector_default_off_is_behavior_identical(monkeypatch):
+    monkeypatch.delenv("MARKET_ANCHOR_SELECTOR_MODE", raising=False)
+    record = clean_fire_record()
+
+    gated = apply_quality_to_record(record)
+
+    assert gated["ev_over"]["verdict"] == "FIRE 2u"
+    assert gated["ev_over"]["actionable_verdict"] == "FIRE 2u"
+    assert "market_anchor_selector" not in gated["ev_over"]
+
+
+def test_market_anchor_selector_shadow_runs_after_existing_caps(monkeypatch):
+    monkeypatch.setenv("MARKET_FAVORITE_REFEREE_MODE", "off")
+    monkeypatch.setenv("PROFIT_RESCUE_REFEREE_MODE", "enforce")
+    monkeypatch.setenv("MARKET_ANCHOR_SELECTOR_MODE", "shadow")
+    record = clean_fire_record()
+    record["best_over_odds"] = -125
+    record["best_under_odds"] = 105
+
+    gated = apply_quality_to_record(record)
+
+    assert gated["ev_over"]["verdict"] == "FIRE 1u"
+    assert gated["ev_over"]["actionable_verdict"] == "FIRE 1u"
+    assert gated["ev_over"]["profit_rescue_referee"]["applied"] is True
+    assert gated["ev_over"]["market_anchor_selector"]["mode"] == "shadow"
+    assert gated["ev_over"]["market_anchor_selector"]["current_verdict"] == "FIRE 1u"
+    assert gated["ev_over"]["market_anchor_selector"]["applied"] is False
