@@ -1109,6 +1109,8 @@ def build_official_close_rows(markets: list[dict[str, Any]]) -> list[dict[str, A
             season_k9 = _to_float(market.get("season_k9"))
             recent_k9 = _to_float(market.get("recent_k9"))
             career_k9 = _to_float(market.get("career_k9"))
+            market_anchor_selector = ev.get("market_anchor_selector") or market.get("market_anchor_selector")
+            selector_dict = market_anchor_selector if isinstance(market_anchor_selector, dict) else None
 
             row = {
                 "dataset_key": build_dataset_key(
@@ -1245,6 +1247,10 @@ def build_official_close_rows(markets: list[dict[str, Any]]) -> list[dict[str, A
                 "is_tracked_pick": False,
                 "pick_history_match_type": None,
                 "confidence_referee": ev.get("confidence_referee") or market.get("confidence_referee"),
+                "market_anchor_selector": market_anchor_selector,
+                "market_anchor_selector_mode": selector_dict.get("mode") if selector_dict else None,
+                "market_anchor_selector_labels": selector_dict.get("labels") if selector_dict else None,
+                "market_anchor_selector_applied": selector_dict.get("applied") if selector_dict else None,
                 "locked_verdict": ev.get("locked_verdict") or market.get("locked_verdict"),
                 "display_verdict": ev.get("display_verdict") or market.get("display_verdict"),
                 "actionable_verdict": ev.get("actionable_verdict") or market.get("actionable_verdict"),
@@ -1586,6 +1592,10 @@ def enrich_rows_with_pick_history(
         next_row.setdefault("is_tracked_pick", False)
         next_row.setdefault("pick_history_match_type", None)
         next_row.setdefault("confidence_referee", None)
+        next_row.setdefault("market_anchor_selector", None)
+        next_row.setdefault("market_anchor_selector_mode", None)
+        next_row.setdefault("market_anchor_selector_labels", None)
+        next_row.setdefault("market_anchor_selector_applied", None)
         next_row.setdefault("locked_verdict", None)
         next_row.setdefault("display_verdict", None)
         next_row.setdefault("actionable_verdict", None)
@@ -1621,6 +1631,9 @@ def enrich_rows_with_pick_history(
                     "confidence_referee": pick.get("confidence_referee")
                     if pick.get("confidence_referee") is not None
                     else next_row.get("confidence_referee"),
+                    "market_anchor_selector": pick.get("market_anchor_selector")
+                    if pick.get("market_anchor_selector") is not None
+                    else next_row.get("market_anchor_selector"),
                     "locked_verdict": pick.get("locked_verdict")
                     if pick.get("locked_verdict") is not None
                     else next_row.get("locked_verdict"),
@@ -1654,6 +1667,11 @@ def enrich_rows_with_pick_history(
                     "pick_history_pnl": _to_float(pick.get("pnl")),
                 }
             )
+            selector = next_row.get("market_anchor_selector")
+            if isinstance(selector, dict):
+                next_row["market_anchor_selector_mode"] = selector.get("mode")
+                next_row["market_anchor_selector_labels"] = selector.get("labels")
+                next_row["market_anchor_selector_applied"] = selector.get("applied")
             clv_type = _clv_type(True, price_clv_cents, line_clv_delta)
             next_row.update(
                 {

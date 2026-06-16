@@ -1238,6 +1238,29 @@ def test_tracked_pick_row_exposes_confidence_referee_metadata():
     assert row["confidence_referee"]["applied"] is True
 
 
+def test_tracked_pick_row_exposes_market_anchor_selector_metadata():
+    import run_pipeline
+
+    row = run_pipeline._tracked_pick_row(
+        {
+            "date": "2026-06-16",
+            "pitcher": "Example Starter",
+            "team": "ARI",
+            "opp_team": "LAD",
+            "side": "over",
+            "verdict": "FIRE 1u",
+            "market_anchor_selector": {
+                "mode": "shadow",
+                "labels": ["market_anchor_strict"],
+                "applied": False,
+            },
+        }
+    )
+
+    assert row["market_anchor_selector"]["mode"] == "shadow"
+    assert row["market_anchor_selector"]["labels"] == ["market_anchor_strict"]
+
+
 def test_enrich_archives_with_tracked_picks_updates_existing_archives(tmp_path, monkeypatch):
     import run_pipeline
 
@@ -1455,6 +1478,11 @@ def test_attach_tracked_picks_reconciles_unlocked_pick_to_current_side_verdict()
                         "applied": True,
                         "reasons": ["cap_fire_under_to_lean"],
                     },
+                    "market_anchor_selector": {
+                        "mode": "shadow",
+                        "labels": ["market_anchor_side_agrees"],
+                        "applied": False,
+                    },
                 },
             },
         ],
@@ -1480,6 +1508,7 @@ def test_attach_tracked_picks_reconciles_unlocked_pick_to_current_side_verdict()
     assert reconciled["display_verdict"] == "LEAN"
     assert reconciled["actionable_verdict"] == "LEAN"
     assert reconciled["profit_rescue_referee"]["applied"] is True
+    assert reconciled["market_anchor_selector"]["mode"] == "shadow"
     assert reconciled["k_line"] == 4.5
     assert reconciled["odds"] == 104
     assert updated["pitchers"][0]["tracked_picks"] == [reconciled]

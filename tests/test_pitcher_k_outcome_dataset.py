@@ -38,7 +38,18 @@ def test_build_official_close_rows_creates_one_row_per_side():
             "model_win_prob": 0.57,
             "applied_lambda": 4.9,
             "ev_over": {"win_prob": 0.43, "edge": -0.02, "ev": -0.04, "adj_ev": -0.04, "verdict": "PASS"},
-            "ev_under": {"win_prob": 0.57, "edge": 0.04, "ev": 0.09, "adj_ev": 0.09, "verdict": "FIRE 1u"},
+            "ev_under": {
+                "win_prob": 0.57,
+                "edge": 0.04,
+                "ev": 0.09,
+                "adj_ev": 0.09,
+                "verdict": "FIRE 1u",
+                "market_anchor_selector": {
+                    "mode": "shadow",
+                    "labels": ["market_anchor_strict"],
+                    "applied": False,
+                },
+            },
             "team": "SEA",
             "opp_team": "NYY",
             "home_away": "home",
@@ -78,6 +89,10 @@ def test_build_official_close_rows_creates_one_row_per_side():
     assert under["large_edge_skepticism_flag"] is False
     assert under["large_edge_skepticism_reasons"] == []
     assert under["pitcher_archetype_bucket"] == "standard_starter"
+    assert under["market_anchor_selector"]["mode"] == "shadow"
+    assert under["market_anchor_selector_mode"] == "shadow"
+    assert under["market_anchor_selector_labels"] == ["market_anchor_strict"]
+    assert under["market_anchor_selector_applied"] is False
     assert under["lineup_count"] == 9
     assert under["batter_handedness_mode"] == "path_b"
     assert under["lineup_split_source"] == "real_split_cache"
@@ -908,6 +923,11 @@ def test_enrich_rows_with_pick_history_adds_bet_time_and_clv_fields(tmp_path):
               "would_cap_to": "LEAN",
               "reasons": ["price_driven_market_fade"]
             },
+            "market_anchor_selector": {
+              "mode": "shadow",
+              "labels": ["market_anchor_side_agrees"],
+              "applied": false
+            },
             "locked_at": "2026-05-12T22:30:00Z",
             "game_time": "2026-05-12T23:05:00Z",
             "pnl": 1.1
@@ -952,3 +972,7 @@ def test_enrich_rows_with_pick_history_adds_bet_time_and_clv_fields(tmp_path):
     assert enriched[0]["locked_adj_ev"] == 0.12
     assert enriched[0]["verdict_cap_reason"] == "confidence referee: market fade"
     assert enriched[0]["confidence_referee"]["applied"] is True
+    assert enriched[0]["market_anchor_selector"]["mode"] == "shadow"
+    assert enriched[0]["market_anchor_selector_mode"] == "shadow"
+    assert enriched[0]["market_anchor_selector_labels"] == ["market_anchor_side_agrees"]
+    assert enriched[0]["market_anchor_selector_applied"] is False
