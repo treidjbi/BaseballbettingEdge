@@ -79,10 +79,11 @@ GitHub rather than copying files manually.
 
 ## Current State
 
-As of 2026-05-13, the repo is still in the clean post-Phase-C evaluation
-regime, but the main provider question has shifted from broad provider
-observation to a planned May overlap cutover from TheRundown to BoltOdds +
-PropLine if the evidence and gates pass.
+As of 2026-06-17, the repo is still in the clean post-Phase-C evaluation
+regime, and the provider posture is the low-cost TheRundown + PropLine path.
+TheRundown remains the official book-of-record source, PropLine remains the
+fallback/live-movement sidecar, and BoltOdds is retired from active runtime
+unless Tyler explicitly reopens a separate provider trial.
 
 - Treat `2026-04-28+` as the clean evaluation regime.
 - The current model-facing track is `bet-selection-first`, using shadow
@@ -105,8 +106,8 @@ PropLine if the evidence and gates pass.
 - For model-facing Gate C, confidence-referee, batter-handedness, opportunity/
   leash, or K-projection challenger work, start with
   `docs/superpowers/plans/2026-05-12-pitcher-k-outcome-research-dataset.md`.
-- For future dashboard UI work that uses BoltOdds/PropLine live-market price
-  tracking after the operational/provider production switch is approved, start
+- For future dashboard UI work that uses live-market price tracking after the
+  operational/provider production switch is approved, start
   with
   `docs/superpowers/plans/2026-05-20-live-market-decision-ui.md`. That plan is
   display-only until Tyler separately approves implementation and promotion.
@@ -118,7 +119,7 @@ PropLine if the evidence and gates pass.
   provider upgrades, higher polling cadence, or always-on infrastructure.
 - Read `docs/operational-risk-register.md` before changing provider behavior,
   notification behavior, retention, live workers, or source-of-truth rules.
-- Read `docs/research/market-tracker-map.md` before adding new BoltOdds,
+- Read `docs/research/market-tracker-map.md` before adding new PropLine,
   Supabase, or market-research trackers so existing raw/compact evidence is
   reused instead of duplicated.
 - Preserve the dated plans in `docs/superpowers/plans/` as historical context
@@ -127,42 +128,36 @@ PropLine if the evidence and gates pass.
   cutover. Render cron services now run preview, grading, full, refresh, and
   lock modes and publish live Supabase artifact keys consumed by Netlify
   `get-artifact`. GitHub Actions `pipeline.yml` keeps manual
-  `workflow_dispatch` rollback only; scheduled triggers are disabled. This is
-  not a provider cutover: TheRundown remains the production odds source and
-  BoltOdds/PropLine remain shadow/fallback evidence unless Tyler separately
-  approves the provider switch.
+  `workflow_dispatch` rollback only; scheduled triggers are disabled.
 
-### May 2026 provider cutover posture
+### Current provider posture
 
-TheRundown renewed through the end of May 2026 and remains the official
-book-of-record source until Tyler explicitly approves the cutover environment
-switch.
+As of 2026-06-17, Tyler chose the low-cost production posture:
 
-Planned target stack:
-
-- BoltOdds primary for real-time MLB pitcher strikeout market movement and
-  supported-book official lines.
-- PropLine fallback and required DraftKings source unless/until BoltOdds proves
-  authenticated DraftKings market rows.
+- TheRundown remains the official book-of-record source for scheduled preview,
+  full, refresh, grading, and dashboard artifacts.
+- PropLine remains target-book fallback, DraftKings coverage source when
+  needed, and live-movement sidecar.
 - The Odds API remains capped emergency FanDuel/DraftKings fallback only.
-- TheRundown remains audit/rollback during the May overlap window.
+- BoltOdds is retired from active runtime; Render worker
+  `bbe-boltodds-shadow-worker` was suspended via Render API on 2026-06-17.
 
-Do not wire BoltOdds + PropLine into official pipeline artifacts until the
-cutover gates pass. The official pipeline should eventually read
-`official_market_lines`, not raw `market_snapshots`.
+Do not revive BoltOdds, enable `OFFICIAL_MARKET_SOURCE=boltodds_propline`, or
+set `ENABLE_BOLTODDS_PIPELINE_SOURCE=true` unless Tyler explicitly approves a
+new provider trial. Official artifacts should remain TheRundown with PropLine
+fallback/sidecar evidence.
 
 As of the 2026-05-13 cutover branch work, `current_market_lines`,
 `market_opening_baselines`, and `official_market_lines` builders exist as
-shadow infrastructure only. They fail closed for incomplete provider state and
-for stale provider state when the provider heartbeat is not fresh. For BoltOdds,
-unchanged complete WebSocket lines can be heartbeat-held in shadow because K-prop
-prices often do not re-emit when they do not change. This is not production
-odds-source behavior until Tyler approves the cutover switch.
+provider rehearsal infrastructure only. They fail closed for incomplete
+provider state and for stale provider state when the provider heartbeat is not
+fresh. Historical BoltOdds rows can remain useful for research, but they are
+not an active runtime source after the 2026-06-17 suspension.
 
 The provider pipeline adapter also exists, but it is double gated:
 `OFFICIAL_MARKET_SOURCE=boltodds_propline` plus
-`ENABLE_BOLTODDS_PIPELINE_SOURCE=true`. Leave both unset/false unless Tyler is
-explicitly rehearsing or approving the cutover.
+`ENABLE_BOLTODDS_PIPELINE_SOURCE=true`. Leave both unset/false unless Tyler
+explicitly approves a new provider trial.
 
 Use `analytics/diagnostics/provider_cutover_shadow_compare.py` for the
 fresh-slate rehearsal before any cutover yes/no decision.
@@ -288,18 +283,15 @@ python -m pytest tests/test_build_features.py -v
   secret added 2026-05-01)
 - `PROPLINE_API_KEY` — PropLine API key (weekend fallback/shadow provider;
   GitHub secret added 2026-05-01)
-- `BOLTODDS_API_KEY` — BoltOdds Starter trial key; used only by the
-  shadow-only BoltOdds trial branch/Render worker until the provider cutover
-  plan is implemented and explicitly promoted
+- `BOLTODDS_API_KEY` — historical BoltOdds Starter trial key. Do not use or
+  restore the BoltOdds worker unless Tyler explicitly reopens a provider trial.
 - `OFFICIAL_MARKET_SOURCE` — planned provider-cutover switch. Current/default
   production remains `therundown`; future allowed values are `therundown`,
   `shadow_compare`, and `boltodds_propline` after implementation.
-- `ENABLE_BOLTODDS_PIPELINE_SOURCE` — planned safety flag for reading
-  BoltOdds/PropLine official market state in the GitHub pipeline; keep false
-  until cutover gates pass.
-- `ENABLE_BOLTODDS_LIVE_NOTIFICATIONS` — planned separate safety flag for
-  sending BoltOdds-sourced live movement notifications; keep false until the
-  notification-specific gates pass.
+- `ENABLE_BOLTODDS_PIPELINE_SOURCE` — retired provider-trial safety flag; keep
+  false unless Tyler explicitly reopens BoltOdds.
+- `ENABLE_BOLTODDS_LIVE_NOTIFICATIONS` — retired provider-trial notification
+  flag; keep false unless Tyler explicitly reopens BoltOdds.
 - `VAPID_PUBLIC_KEY` / `VAPID_PRIVATE_KEY` / `VAPID_SUBJECT` — Web Push keys
 - `NOTIFY_SECRET` — Push notification auth secret (Netlify function)
 - `NETLIFY_SITE_URL` — Netlify site URL for notification endpoint
@@ -369,11 +361,10 @@ This layer may create notification events, but it must not update dashboard
 artifacts, grading, picks history, calibration, model outputs, or production
 provider order.
 
-BoltOdds/PropLine live-notification promotion is now a child phase of the
-provider cutover plan. Keep actual BoltOdds-sourced notification sends disabled
-unless `ENABLE_BOLTODDS_LIVE_NOTIFICATIONS=true` and the notification-specific
-gates have passed. Continue using `shadow_notification_candidates` for
-would-have-sent evidence before promotion.
+PropLine webhook movement notifications are approved only for the reviewed
+line/price movement class. Keep BoltOdds-sourced notification sends disabled;
+continue using `shadow_notification_candidates` for future would-have-sent
+evidence before promoting any new notification class.
 
 `market_pick_evidence` is a shadow-only per-pick/provider rollup for model vs.
 market learning. It summarizes whether live market snapshots moved toward or
@@ -473,10 +464,10 @@ Use this provider conservatively:
 
 ## PropLine API (May 2026 Fallback / DraftKings Provider)
 
-PropLine is being tested through May 2026 as a cheaper fallback, DraftKings
-coverage source, and line-movement signal. The planned target stack is
-BoltOdds primary with PropLine fallback, but TheRundown remains official until
-the provider cutover gates and environment switch are completed.
+PropLine is the active low-cost fallback, DraftKings coverage source when
+needed, and line-movement sidecar. TheRundown remains the official artifact
+source; PropLine evidence must not replace production odds, picks, model
+behavior, locks, or dashboard source-of-truth without a separate review.
 
 - **Plan under test**: paid PropLine polling, with a likely downgrade target of
   Hobby if real request usage stays safely under 5,000 requests/day. Webhook
@@ -529,26 +520,26 @@ May trial review checklist:
 - Would PropLine have changed any model decisions, line locks, or movement
   confidence outcomes versus TheRundown alone?
 
-## BoltOdds API (May 2026 Shadow WebSocket Trial / Planned Primary)
+## BoltOdds API (Retired Shadow WebSocket Trial)
 
-BoltOdds is being tested as a separate live-market sidecar and is now the
-planned primary provider candidate for the official market-source cutover.
-It is not official until the cutover gates and environment switch are completed.
+BoltOdds is historical trial context only after Tyler's 2026-06-17 decision to
+kill the worker and stay on the TheRundown + PropLine path. Do not restart the
+Render worker, restore BoltOdds flags, or use BoltOdds rows for production
+behavior without a separate approval.
 
 - **Branch**: `main`; `codex/boltodds-starter-trial` is historical trial context only
-- **Render worker**: `bbe-boltodds-shadow-worker`
-- **Plan under test**: Starter trial, one persistent WebSocket connection.
-- **Secret**: `BOLTODDS_API_KEY`
+- **Render worker**: `bbe-boltodds-shadow-worker` suspended via Render API on
+  2026-06-17.
+- **Plan under test**: retired Starter trial.
+- **Secret**: `BOLTODDS_API_KEY` is historical/retired.
 - **Host / docs endpoint family**: `https://spro.agency/api` and
   `wss://spro.agency/api`
-- **Purpose**: capture MLB pitcher strikeout market movement into Supabase
-  shadow tables for uptime, coverage, freshness, and migration-risk evidence,
-  then feed `current_market_lines` / `official_market_lines` after the cutover
-  infrastructure is implemented.
+- **Purpose**: historical MLB pitcher strikeout market movement evidence for
+  research and migration-risk analysis only.
 - **Production impact**: none today. Do not wire BoltOdds into
   `pipeline/run_pipeline.py`, `today.json`, grading, picks history,
   calibration, or push notifications until the provider cutover plan gates pass
-  and Tyler explicitly approves the switch.
+  and Tyler explicitly approves a new provider trial.
 
 Starter discovery/probe status as of 2026-05-07:
 

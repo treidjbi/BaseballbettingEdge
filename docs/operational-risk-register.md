@@ -1,6 +1,6 @@
 # Operational Risk Register
 
-Last updated: 2026-06-14
+Last updated: 2026-06-17
 
 This doc tracks the operational side of BaseballBettingEdge: provider trials,
 failure modes, source-conflict rules, data retention, notification quality, and
@@ -19,12 +19,12 @@ currently verified. Re-check provider dashboards before making billing decisions
 | --- | ---: | --- | --- | --- | --- | --- | --- | --- |
 | TheRundown | ~$49-$50/mo | Approx. 2026-05-05 | Paid production provider | Scheduled odds source for official artifacts plus 10-minute mainline live-layer polling | Production book-of-record + mainline provider evidence | Weekly during May, then monthly | Target-book K prop coverage stays healthy; artifacts auditable; 10-minute mainline usage stays safely under the 5M datapoint cap | Another provider proves equal production coverage, lower cost, and rollback safety |
 | PropLine | ~$40/mo | Approx. 2026-05-06 | Paid fallback/live-movement provider | Polling fallback and supported-book webhook line movement | Fallback/live movement sidecar | Daily while webhook notification bridge is new | Useful FanDuel/DraftKings/BetRivers coverage; webhook movement notifications are timely, deduped, and tied to real actionable book IDs; request volume acceptable | Webhook/polling duplicates create noisy alerts; movement alerts do not affect decisions; coverage degrades |
-| BoltOdds | $99/mo Starter | 2026-05-07 | Stop/cancel before next renewal unless unexpected blocker appears | WebSocket live market evidence | Retiring shadow-only worker | Verify cancellation/suspension and no stale influence after stop | Only keep if TheRundown + PropLine fails a required live-movement need that BoltOdds uniquely solves | Stale feed, poor target-book rows, no decision impact, or paying double for redundant movement evidence |
+| BoltOdds | $99/mo Starter; verify stopped/canceled externally | 2026-05-07 | Retired from active runtime on 2026-06-17 | Historical WebSocket live market evidence | Historical evidence only | Verify no post-suspension rows and no continued billing | None unless Tyler opens a new provider trial | Any fresh rows after suspension, stale rows influencing decisions, or continued redundant billing |
 | The Odds API | Free / limited | 2026-05-01 | Fallback only | FD/DK fallback when other providers leave gaps | Conservative fallback | Only when fallback is used | Stays low-volume and helps diagnose gaps | Credit burn grows or coverage is redundant |
 | Netlify | ~$5/mo current account state | Existing | Active | Static dashboard, artifact API, functions, Blobs subscriptions | Production hosting/sender | Monthly | Function usage and logs remain stable; deploys simple; `get-artifact` stays fresh | Usage credits/log limits become a real bottleneck |
 | Render live cron | ~$1/mo | 2026-05-07 | Active | `bbe-live-layer` every 10 minutes | Live notification event builder | Daily while new | Fresh Netlify/Supabase artifact; queue/sender flow healthy; notifications useful | Duplicate PropLine polling adds cost/noise; notifications do not create value |
 | Render pipeline crons | Low-volume cron services; verify billing | 2026-05-30 production cutover | Active | Preview, grading, full, refresh, and lock scheduler | Production scheduler | Daily during first migrated week | Runs finish before betting windows; Supabase artifacts and locks are fresh; manual GitHub rollback stays available | Render misses scheduled windows, artifact publication fails, or lock cron misses due rows |
-| Render BoltOdds worker | ~$7/mo | 2026-05-07 | Active during BoltOdds trial | Always-on WebSocket worker | Shadow-only | Daily during trial | Worker stays fresh, writes auditable rows, no runaway volume | BoltOdds trial fails or worker needs too much babysitting |
+| Render BoltOdds worker | ~$7/mo when active | 2026-05-07 | Suspended by user via Render API on 2026-06-17 | Always-on WebSocket worker | Stopped | Verify no fresh heartbeats/snapshots after `2026-06-17T17:22:29Z` | None unless Tyler opens a new provider trial | Any accidental reactivation |
 | Supabase | Pro, about $25/mo before overages | 2026-05-01 shadow infra; upgraded 2026-05-21 | Active | Artifact store, shadow/live market evidence, notification queue, and lock control plane | Production artifact/lock store plus evidence store | Daily during first migrated week, then weekly | Storage and egress stay bounded; spend cap remains on; artifacts/locks stay fresh; evidence changes locks, alerts, confidence, or provider decisions | Raw volume grows without decision value; spend-cap warnings; queries slow; storage approaches included Pro allowance |
 | GitHub Actions | Free for current public-repo usage | Existing | Manual only after 2026-05-30 | Manual pipeline rollback, probes, audit backup | Rollback / repository automation | Weekday health checks | Manual dispatch works when needed; no stale scheduled runs compete with Render | Manual rollback fails or GitHub artifacts accidentally resume as competing production scheduler |
 | Codex / ChatGPT | $20-$100/mo | Existing | Operator tooling | Engineering, monitoring, debugging, docs, automations | Build/ops assistant | Monthly | Pro plan saves enough time during build/trial periods | Quiet operations month where Plus can handle workload |
@@ -50,9 +50,10 @@ Use this hierarchy when sources disagree.
    `LIVE_SEND_PROPLINE_WEBHOOK_MOVEMENT_NOTIFICATIONS=true`. Webhook rows must
    not drive production odds, picks, model behavior, locks, dashboard
    source-of-truth, or provider promotion without a separate review.
-4. **BoltOdds shadow evidence**: BoltOdds WebSocket rows are live-market
-   evidence during the trial only. They do not alter production picks or
-   notifications until explicitly promoted.
+4. **BoltOdds historical evidence**: BoltOdds WebSocket rows are historical
+   live-market evidence after the 2026-06-17 worker suspension. They do not
+   alter production picks, notifications, provider order, locks, dashboard
+   source-of-truth, or model behavior.
 5. **Supabase**: Supabase stores the production artifact mirror, live evidence,
    notification queues, and operational lock ledger. It is still not a provider
    source or model-change authority; TheRundown-derived pipeline outputs remain
@@ -93,21 +94,18 @@ Current posture: PropLine remains fallback/live movement sidecar. Webhook rows
 may drive movement notifications only when the new flag is enabled and should be
 watched for duplicates, stale rows, and unsupported ladder outcomes.
 
-### BoltOdds Trial Review
+### BoltOdds Retirement Review
 
-Before keeping BoltOdds after trial, verify:
+After the 2026-06-17 suspension, verify:
 
-- worker uptime and heartbeat freshness
-- websocket message volume
-- normalized rows by FanDuel, BetMGM, BetRivers, Kalshi, Caesars, DraftKings,
-  and theScore
-- stale-feed risk
-- row-volume risk
-- whether WebSocket movement would have improved timing, confidence, or
-  notifications compared with PropLine polling
+- no fresh `market_feed_heartbeats` after `2026-06-17T17:22:29Z`
+- no fresh BoltOdds `market_snapshots` after `2026-06-17T17:22:29Z`
+- no official artifacts, notifications, locks, or dashboard decisions depend on
+  BoltOdds rows
+- provider billing/cancellation is verified outside Render
 
-Current posture: BoltOdds remains shadow-only and is being retired unless the
-TheRundown + PropLine path exposes an unexpected blocker before cancellation.
+Current posture: BoltOdds is retired from active runtime. Do not restart or
+promote it without a new Tyler decision.
 
 ### Cost Review
 
@@ -139,9 +137,8 @@ notifications before adding new alert classes:
 - new FIRE, upgraded, and downgraded picks should group by category inside the
   same 10-minute Render live-layer run;
 - line/price movement should usually remain individual, but broader production
-  sends require stronger evidence labels from PropLine polling/webhooks,
-  BoltOdds snapshots/heartbeats, broad confirmation, volatility, and single-book
-  noise review.
+  sends require stronger evidence labels from PropLine polling/webhooks, broad
+  confirmation, volatility, and single-book noise review.
 
 The controlling implementation plan is
 `docs/superpowers/plans/2026-06-04-live-notification-digest-coordinator.md`.
@@ -226,20 +223,19 @@ Tyler explicitly changes this boundary.
 | Unexpected GitHub lock dispatch | Live layer sends workflow_dispatch lock runs after Render lock cron is primary | GitHub queue noise and competing artifact churn | GitHub Actions run list, live-layer logs, `ENABLE_LOCK_ONLY_WORKFLOW_DISPATCH`, `operational_pick_locks.consumed_at` | Keep `ENABLE_LOCK_ONLY_WORKFLOW_DISPATCH=false`; consume rows through Render lock cron; use GitHub lock only as manual rollback | Any automatic wrong-date or duplicate GitHub lock dispatch |
 | Render live layer uses stale checkout | Supabase source artifact is local checkout, old SHA, or old generated_at | Notifications based on stale picks | `market_provider_runs` / live logs source metadata, `LIVE_ARTIFACT_URL`, Netlify `get-artifact` | Confirm the Netlify/Supabase artifact URL; redeploy worker if needed | Any notification generated from stale artifact |
 | PropLine polling stops | No recent PropLine runs/snapshots | Live movement evidence stale | Render logs, GitHub shadow workflow, `market_provider_runs` | Check API key/env, provider errors, schedule health | More than one live window missed during active slate |
-| PropLine webhook processor noisy or ambiguous | Signed webhook rows create duplicate/low-value movement facts, or legacy rows lack sportsbook key | Webhook evidence pollutes shadow reads or future alert logic | `propline_webhook_deliveries`, `line_movement_events`, dedupe keys, `bookmaker_key`, `metadata.market_id`, `metadata.outcome_id`, `metadata.bookmaker_key_missing` | Keep webhook processing shadow-only; compare against polling/BoltOdds; default canary is bounded to 100 recent rows / 180 minutes; disable `LIVE_PROCESS_PROPLINE_WEBHOOKS` if noisy | Do not promote webhook rows to notifications or provider source without book-level proof and reviewed noise evidence |
-| BoltOdds heartbeat stale | `market_feed_heartbeats` not fresh | WebSocket evidence stale or false confidence | Render worker logs and heartbeat table | Restart worker; inspect reconnect/error state | Stale during active slate or repeated overnight |
-| BoltOdds row volume too high | Rapid `market_snapshots` growth | Supabase cost/query risk | Trial audit, migration-risk audit, and `scripts/supabase_storage_guardrail.sql` | Reduce raw capture, add retention, aggregate summaries | Pro storage pressure, spend-cap warning, or slow diagnostics |
+| PropLine webhook processor noisy or ambiguous | Signed webhook rows create duplicate/low-value movement facts, or legacy rows lack sportsbook key | Webhook evidence pollutes shadow reads or future alert logic | `propline_webhook_deliveries`, `line_movement_events`, dedupe keys, `bookmaker_key`, `metadata.market_id`, `metadata.outcome_id`, `metadata.bookmaker_key_missing` | Keep webhook processing bounded; compare against polling and official artifacts; disable `LIVE_PROCESS_PROPLINE_WEBHOOKS` if noisy | Do not promote webhook rows to provider source without book-level proof and reviewed noise evidence |
+| BoltOdds accidentally resumes | Fresh `market_feed_heartbeats` or BoltOdds `market_snapshots` after `2026-06-17T17:22:29Z` | Redundant spend and stale shadow rows may be misread as active evidence | Render worker status and Supabase heartbeat/snapshot tables | Suspend `bbe-boltodds-shadow-worker`; verify no official artifact, alert, or dashboard path reads BoltOdds as current | Any fresh BoltOdds rows during active slate after suspension |
 | Netlify sender not sending | Pending queue grows; sender logs errors | Users miss live alerts; stale-queue guard suppresses old events instead of sending them late | Netlify function logs; `notification_events` sent/failed counts; authenticated sender smoke check | Check env, Supabase service key, VAPID, Blobs, packaged function dependencies; deploy with function cache skipped if imports fail | Pending actionable events remain unsent through game window or stale-suppression count climbs during an active slate |
 | Duplicate notifications | Same pick/move sends more than once | Trust drops fast | `notification_events.dedupe_key`; push tags | Patch dedupe logic; suppress noisy class | Any duplicate FIRE/new-pick notification |
 | GitHub legacy notifications accidentally re-enabled | Duplicate artifact-diff pushes return while live sender is active | Duplicate lock/reminder/new-pick alerts | GitHub variables, workflow logs, received push tags | Set `ENABLE_GITHUB_LEGACY_NOTIFICATIONS=false`; keep live sender primary | Any duplicate from both `send-notifications` and `send-live-notifications` |
-| Source line conflict | Providers disagree on line/price | Confusing movement or wrong confidence | Compare production artifact, PropLine, BoltOdds rows | Treat TheRundown artifact as production; mark conflict in audit | Conflict would change a bet or alert |
+| Source line conflict | Providers disagree on line/price | Confusing movement or wrong confidence | Compare production artifact, PropLine, and historical BoltOdds rows only when relevant | Treat TheRundown artifact as production; mark conflict in audit | Conflict would change a bet or alert |
 | Shadow timing ledger grows too noisy | `shadow_pipeline_runs` or lock observations grow without decision value | Supabase cost/query noise and harder daily reads | Row counts, status distribution, and whether rows changed a lock decision | Retain compact status transitions only; add short retention to run rows | Ledger volume grows but does not support promotion/cut decision |
 | Provider arbitration wrong | `official_market_lines` selects stale, incomplete, or unsupported-book rows | Picks use bad market input even if model math is unchanged | `provider_arbitration_decisions`, `current_market_lines`, freshness flags | Switch `OFFICIAL_MARKET_SOURCE=therundown`; fix arbitration before retry | Any FIRE pick uses stale/incomplete provider line |
 | Derived market-line rebuild delayed | GitHub scheduled `shadow-market-infra` does not rebuild `current_market_lines` / `official_market_lines` near fresh provider rows | Provider cutover evidence looks stale even while BoltOdds/PropLine are healthy | Compare latest `market_snapshots` / `market_feed_heartbeats` against `current_market_lines.updated_at` and `official_market_lines.updated_at` | Let guarded Render live-layer rebuild fill the gap; keep production on TheRundown until official rows are fresh and reviewed | Official rows lag fresh raw/provider rows by more than one active live-layer interval |
 | Opening baseline overwritten | `market_opening_baselines` changes after first usable baseline | Steam and CLV reads become misleading | Compare baseline inserted_at/first_seen_at against preview artifact | Restore baseline from preview/archive; patch writer to preserve first-seen row | Any provider-era pick has moving opening odds |
 | GitHub pipeline scans raw market snapshots | Pipeline runtime slows or returns inconsistent current rows | Slate artifacts become slow or unstable near lock | Pipeline logs and query plan/code review | Move reads back to `official_market_lines`; keep raw scans in builder jobs | Any scheduled run misses action window |
 | Shadow timing ledger grows too noisy | `shadow_pipeline_runs` or lock observations grow without decision value | Supabase cost/query noise and harder daily reads | Row counts, status distribution, and whether rows changed a lock decision | Retain compact status transitions only; add short retention to run rows | Ledger volume grows but does not support promotion/cut decision |
-| Post-TheRundown rollback weaker than expected | TheRundown canceled and BoltOdds/PropLine degraded | No full-strength fallback source | Provider env, billing status, coverage report | Use PropLine-first + The Odds emergency fallback; document degraded mode | Any slate loses FanDuel/DraftKings coverage after cancellation |
+| Post-TheRundown rollback weaker than expected | TheRundown canceled and PropLine degraded | No full-strength fallback source | Provider env, billing status, coverage report | Use PropLine-first + The Odds emergency fallback; document degraded mode | Any slate loses FanDuel/DraftKings coverage after cancellation |
 | Supabase Pro cost pressure | Storage/API/egress/compute rising | Surprise cost, spend-cap interruption, or degraded queries | Supabase dashboard; `scripts/supabase_storage_guardrail.sql`; table row counts | Add retention/aggregation; pause noisy captures; keep spend cap on unless Tyler approves overages | Database approaches 6 GB, egress trends toward allowance, spend-cap warning appears, or a table grows without decision value |
 | Codex/automation drift | Agents miss current docs or duplicate work | More rework and context loss | `AGENTS.md`, `docs/current-state.md`, automations | Update handoff docs and automation prompts | Any repeated incorrect recommendation |
 
@@ -349,6 +345,10 @@ Questions:
 
 ## Change Log
 
+- 2026-06-17: BoltOdds retired from active runtime; Render worker
+  `bbe-boltodds-shadow-worker` suspended by user via Render API. Future risk
+  checks should look for accidental post-suspension rows or continued billing,
+  not promotion evidence.
 - 2026-05-07: Created this register.
 - 2026-05-07: BoltOdds Starter trial branch and Render worker started
   shadow-only.

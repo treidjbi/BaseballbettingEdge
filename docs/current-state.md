@@ -1,6 +1,6 @@
 # Current State
 
-Last updated: 2026-06-16
+Last updated: 2026-06-17
 
 ## Read Order
 
@@ -26,8 +26,7 @@ For any new work in this repo:
      canary plan
    - `docs/superpowers/plans/2026-06-07-market-agreement-tracker.md`
      for the shadow-only market agreement tracker that evaluates LEAN, FIRE,
-     and confidence-referee capped picks against live BoltOdds/PropLine
-     movement
+     and confidence-referee capped picks against live market movement
    - `docs/superpowers/plans/2026-06-03-market-favorite-confidence-referee-shadow-plan.md`
      for active market-favorite confidence-referee shadow work
    - `docs/superpowers/plans/2026-06-03-gate-f-projection-challenger-shadow-plan.md`
@@ -113,11 +112,10 @@ do we convert model signal into better betting decisions?"
   provider-source canary is retired from official artifact runs. GitHub manual
   `workflow_dispatch` remains a TheRundown rollback path unless separately
   changed.
-- PropLine remains a shadow/fallback/live-movement source. Polling is useful,
+- PropLine remains the active fallback/live-movement sidecar. Polling is useful,
   and real signed provider webhooks are now landing with book-level movement
-  IDs after PropLine's 2026-05-19 payload fix. The planned provider stack is
-  BoltOdds primary with PropLine fallback/DraftKings coverage, but that is not
-  official until the cutover gates and environment switch are completed.
+  IDs after PropLine's 2026-05-19 payload fix. PropLine evidence must not
+  replace TheRundown as the official artifact source without a separate review.
 - As of 2026-06-12 evening Phoenix time, the TheRundown mainline shadow canary
   is active in the Render `bbe-live-layer` loop behind
   `LIVE_CAPTURE_THERUNDOWN_MAINLINE=true`.
@@ -138,16 +136,20 @@ do we convert model signal into better betting decisions?"
   high-frequency mainline evidence, allow PropLine supported-book webhook rows to
   drive live line/price movement notifications behind
   `LIVE_SEND_PROPLINE_WEBHOOK_MOVEMENT_NOTIFICATIONS=true`, and retire
-  BoltOdds spend before the next renewal. This is not approval for
+  BoltOdds spend before the next renewal. On 2026-06-17, Tyler approved killing
+  the active BoltOdds runtime; Render worker `bbe-boltodds-shadow-worker`
+  (`srv-d7ugabe7r5hc73b36oag`) was suspended via Render API, and post-suspend
+  checks found zero BoltOdds heartbeats or snapshots after
+  `2026-06-17T17:22:29Z`. This is not approval for
   `OFFICIAL_MARKET_SOURCE=boltodds_propline`, strict provider mode, model
   changes, staking changes, or dashboard source-of-truth changes.
-- BoltOdds is being tested as a separate shadow-only WebSocket live-market
-  sidecar. It must not affect production picks, grading, dashboard artifacts,
-  or provider order until the provider cutover plan is implemented and Tyler
-  explicitly approves the switch.
+- BoltOdds is retired from active runtime. Historical rows remain research
+  evidence only and must not affect production picks, grading, dashboard
+  artifacts, provider order, notifications, or model behavior.
 - As of 2026-06-09, active soaks and promotion gates are formalized in
   `docs/superpowers/plans/2026-06-09-active-gates-and-soak-synthesis.md`.
-  Treat BoltOdds/PropLine dashboard display as operational evidence, but keep
+  Treat PropLine and historical BoltOdds dashboard display as operational
+  evidence, but keep
   official provider source, strict provider mode, new movement notification
   classes, model/lambda/threshold/staking changes, and retention deletion as
   separate closed gates until their pass criteria are met and Tyler approves.
@@ -189,6 +191,14 @@ each lane.
 | Model | `2026-05-12-pitcher-k-outcome-research-dataset.md`, `2026-05-29-gate-ef-under-fire-conversion-shadow-plan.md`, `2026-06-03-market-favorite-confidence-referee-shadow-plan.md`, `2026-06-03-gate-f-projection-challenger-shadow-plan.md`, `2026-06-05-market-favorite-confidence-referee-production-canary.md`, `2026-06-07-batter-handedness-path-b-canary.md`, `2026-06-08-workload-no-vig-k-projection-ev-synthesis.md`, `2026-06-10-profit-rescue-and-strict-provider-readiness.md`, `2026-06-13-market-anchored-k-shadow-rebuild.md` | Gate C durable artifact is now the preferred full-corpus research input. The refreshed market-favorite confidence-referee lab had enough evidence for Tyler to approve a canary plan despite being `16` validation tracked rows short of the old threshold: validation rows were `234 < 250`, while `market_favorite_referee_candidate` was `114` rows, `72-42`, `+11.80`, `+10.4%`; `model_fades_market_favorite` was negative at `113` rows, `51-62`, `-7.07`, `-6.3%`. As of 2026-06-07, Tyler promoted `MARKET_FAVORITE_REFEREE_MODE=enforce` on the Render pipeline cron group. This is verdict-conversion only: runtime-safe market-fade rows may be capped downward, raw verdict metadata is preserved, and no lambda/global-threshold/staking/provider/notification/lock/retention/dashboard-source behavior is approved. June 7 is a partial enforce slate because the full run had already published before the env flip. Tyler also approved and activated a feature-flagged Path B handedness canary: live-collected PA-backed split samples can feed lineup K rate when present, with per-batter Path A fallback and no historical-backfill live input. The first same-day artifact verification was partial: `17/28` pitcher rows carried `batter_handedness_mode=path_b`; the `11` missing rows were games already in progress before activation. Gate F projection challengers remain blocked for broader lambda changes. Gate E/F under-skepticism remains promising but not promotion-ready because the current selected candidate retained zero FIRE 2u wins. The 2026-06-09 Phoenix Gate C refresh rebuilt the durable dataset, actual-opportunity backfill, and workload/no-vig report via optional hooks: `1,662` source rows, `854` clean tracked win/loss rows analyzed, `855/855` clean graded picks reconciled, `831/831` unique pitcher-game opportunity keys reconstructed, and all `1,662` side rows filled with actual IP, pitch count, and batters faced as `actual_opportunity_runtime_safe=false`. The confidence-referee canary audit now reads Gate C rows instead of stale `picks_history` metadata: `164` referee metadata rows and `14` applied caps. The bet-selection/edge synthesis report now summarizes the same `854` clean tracked win/loss rows by verdict, side, edge, adjusted EV, CLV, no-vig, model-market relationship, and opportunity/outcome labels. Gate 12A now defines candidate-specific research and promotion-plan floors for those labels. The 2026-06-10 profit-rescue canary implements `PROFIT_RESCUE_REFEREE_MODE=off|shadow|enforce` after quality and confidence-referee caps; default is still `off`, shadow adds metadata only, and enforce can only lower remaining FIRE exposure. The first audit shows current clean-regime FIRE exposure at `536` rows / `-34.07u` versus proposed retained FIRE exposure at `118` rows / `+8.35u`, with last-7-day FIRE improving from `64` rows / `-15.93u` to `11` rows / `-1.84u`. The 2026-06-13 market-anchored shadow rebuild report compares current model, market-implied, and market-anchored projections plus stricter runtime-safe selector buckets. It is report-only and not approval for LEAN promotion, lambda changes, thresholds, staking, provider changes, notifications, locks, retention, or dashboard source-of-truth changes. | Review `analytics/output/market_anchored_k_shadow_rebuild.md` after each Gate C refresh and decide whether the strict market-anchor selector deserves a separate v2 selector shadow/canary plan after rolling-window and slice survival. Continue tracking Path B/referee/workload/no-vig/bet-selection labels against CLV, Gate F projection reports, FIRE 1u/FIRE 2u, side, price sign, K-line, quality, timing, provider, actual-opportunity explanations, market agreement, and rolling-window slices. Roll back by setting `MARKET_FAVORITE_REFEREE_MODE=shadow|off`, `BATTER_HANDEDNESS_MODE=path_a`, or `PROFIT_RESCUE_REFEREE_MODE=off` if behavior is unexpected. Do not change global lambda formula, thresholds, staking, provider order, notifications, locks, retention, or dashboard source-of-truth from these canaries or the workload/no-vig/edge synthesis. |
 | UI | `2026-05-20-live-market-decision-ui.md`, `2026-05-20-live-notification-coordinator.md`, `2026-06-04-live-notification-digest-coordinator.md` | Phase 2 live market-decision UI is now default-on for actionable cards, with `?marketSheet=0` as the rollback/opt-out. `dashboard/v2-data.js` fetches `/.netlify/functions/live-market-display` by default and attaches sanitized `live_market_display_state` rows; the Netlify function reads with server-side Supabase credentials and returns app-safe allow-listed rows plus sanitized `book_rows` / `movement_events`. `dashboard/v2-app.jsx` keeps PASS cards quiet and shows actionable-card market strips, detail-sheet market panels, a compact book board with Best / Model ref / Same line / Different line / cushion tags, and Log Bet live-book selection that fills the existing line, odds, and book fields. The existing Log Bet modal still records through the existing accepted-bet path, preserves matched push/shadow-review `notification_event_id` / `shadow_candidate_id`, supports same-day review/duplicate warnings and append-only corrections, and keeps manual edits available. This is a UI readout only and does not change provider/source-of-truth, model, threshold, staking, lock, retention, notification, or accepted-bet API behavior. | Review the default-on surface on the next full slate for noise, mobile scan density, stale/live labels, and opt-out rollback. Keep provider promotion, betting-rule changes, broader edit/delete audit, and notification behavior separate. |
 | Tracking / data collection / history | `docs/research/market-tracker-map.md`, `docs/research/pitcher-k-outcome-dataset.md`, `2026-06-07-market-agreement-tracker.md`, compact outcome outputs, live-market audits | Canonical research row plus existing market/live/provider trackers. The market agreement tracker now derives LEAN/FIRE/referee-cap buckets for live movement with or against the model without adding a table; the 2026-06-09 backfill used compact Supabase exports plus Gate C metadata/result overlay and produced `2,482` evidence rows, `2,171` graded rows, and `56` graded confidence-referee cap rows. Actual opportunity is now reconstructed from MLB boxscores into the compact row for postgame workload/leash explanation only. Daily brief keeps a compact Gate C bucket scoreboard and pre/post 2026-04-28 context. | Prefer derived labels on existing live-market and compact outcome rows before adding tables. Use market-agreement, edge-synthesis, CLV, and actual-opportunity buckets to decide what to keep studying, not to auto-promote LEANs, override the referee, or change model/staking/provider/notification behavior. Promote compact storage or retention only after row-volume/cost proof and Tyler approval. |
+
+Pipeline-lane overlay, 2026-06-17: Tyler approved retiring BoltOdds and keeping
+the official production path as TheRundown with PropLine fallback/live-movement
+sidecar. `bbe-boltodds-shadow-worker` (`srv-d7ugabe7r5hc73b36oag`) is suspended
+by user in Render. Morning checks should verify no fresh BoltOdds
+`market_feed_heartbeats` or `market_snapshots` appear after
+`2026-06-17T17:22:29Z`; any fresh rows are an accidental reactivation, not a
+promotion signal.
 
 Model-lane overlay, 2026-06-10: Tyler approved
 `PROFIT_RESCUE_REFEREE_MODE=enforce`; all seven Render pipeline cron services
@@ -293,9 +303,10 @@ Phase 1 promotes only gated foundations:
 - `ENABLE_SUPABASE_LOCK_CONSUMER=true` lets the GitHub pipeline apply those
   lock rows to artifacts/history.
 - Both flags default off in code until Tyler explicitly enables them.
-- BoltOdds + PropLine provider-source promotion still uses the existing
-  `OFFICIAL_MARKET_SOURCE=boltodds_propline` and
-  `ENABLE_BOLTODDS_PIPELINE_SOURCE=true` gates.
+- BoltOdds provider-source promotion is retired after the 2026-06-17
+  suspension. `OFFICIAL_MARKET_SOURCE=boltodds_propline` and
+  `ENABLE_BOLTODDS_PIPELINE_SOURCE=true` remain closed unless Tyler explicitly
+  opens a new provider trial.
 
 Operational rollout note, 2026-05-21:
 
@@ -866,7 +877,7 @@ would-have-sent market alerts by provider, candidate type, suppression reason,
 time window, BetRivers-only status, broad-confirmation status, and
 reversal/volatility status. It does not send pushes.
 
-`live_market_display_state` is the app-facing shadow layer for BoltOdds/PropLine
+`live_market_display_state` is the app-facing shadow layer for live-market
 movement display. It summarizes provider snapshots into market consensus, best
 actionable book, off-market books, movement sequence, and freshness/actionable
 state. It is intentionally not a pick, lock, threshold, staking, provider-order,
@@ -975,16 +986,18 @@ Webhook status:
 
 ### BoltOdds
 
-The BoltOdds Starter trial worker should now deploy from `main`; the old
-`codex/boltodds-starter-trial` branch is historical trial context only.
+BoltOdds is retired from active runtime as of 2026-06-17. The old
+`codex/boltodds-starter-trial` branch and the historical `main` worker code are
+trial context only.
 
 - Branch: `main`
-- Render worker: `bbe-boltodds-shadow-worker`
-- Purpose: one persistent WebSocket connection for MLB pitcher strikeout market
-  evidence.
+- Render worker: `bbe-boltodds-shadow-worker`, suspended by user via Render API
+  on 2026-06-17.
+- Purpose: historical MLB pitcher strikeout market evidence only.
 - Writes: shadow-only Supabase provider runs, feed heartbeats, market snapshots,
   coverage audits, and migration-risk diagnostics.
-- Production impact: none.
+- Production impact: none. Fresh rows after `2026-06-17T17:22:29Z` should be
+  treated as accidental reactivation unless Tyler explicitly reopens BoltOdds.
 
 Starter discovery confirmed enough coverage to test the trial:
 
@@ -998,8 +1011,7 @@ trial can prioritize mainstream-book line movement and CLV evidence while
 reducing row volume. Kalshi remains shadow-only unless Tyler explicitly
 promotes it as an actionable book with a separate source/arbitration decision.
 
-Let the trial collect uptime, heartbeat freshness, normalized book coverage,
-row volume, and stale-feed evidence before any provider decision.
+Do not restart the trial to collect more rows without a new decision.
 
 May 13 stale-slate diagnosis: the persistent worker could heartbeat on the
 wrong slate if it started before GitHub's delayed full run updated `today.json`.
@@ -1083,8 +1095,8 @@ Current readout from 2026-05-07:
   side/price buckets, and side-specific price movement contexts. Use it to
   question price-sensitive selection patterns, not to change live rules
   directly.
-- Live-market outcome context is now a separate shadow read. BoltOdds/PropLine
-  evidence can be joined to graded rows by slate, normalized pitcher, and side,
+- Live-market outcome context is now a separate shadow read. PropLine and
+  historical BoltOdds evidence can be joined to graded rows by slate, normalized pitcher, and side,
   with special attention to pregame checkpoints rebuilt from raw snapshots. This
   is the correct layer for "market moved with us/against us" outcome testing,
   especially broad-book moves, single-book noise, reversals, over/under splits,
@@ -1126,17 +1138,17 @@ Current readout from 2026-05-07:
   accuracy slightly, and simple recent/career rate blends were worse. Treat this
   as projection-lab evidence only, not a live model-rule change.
 - The best-executable market shadow audit scores over/under EV for each fresh
-  supported book line after provider mainline selection. Use it during the
-  Monday BoltOdds + PropLine review to separate single-book outliers from
+  supported book line after provider mainline selection. Use it during PropLine
+  review to separate single-book outliers from
   ref-book-vs-majority conflicts and to see whether disagreement would have
   created better executable candidates. It is not a promotion plan; any live
   best-line selection needs CLV/outcome proof and separate approval.
 - Use `docs/research/market-tracker-map.md` as the current tracker inventory
-  before adding more BoltOdds/Supabase tracking. It distinguishes existing raw
+  before adding more PropLine/Supabase tracking. It distinguishes existing raw
   evidence tables from the compact long-term research row.
 - The weekday `BBE Operations Brief` should now digest the tracker stack daily:
   market-price audit, live-market outcome audit, pitcher K outcome dataset,
-  BoltOdds heartbeats/snapshots/coverage, price CLV, line CLV,
+  PropLine and historical BoltOdds movement evidence, price CLV, line CLV,
   model-versus-market relationship, opportunity/leash buckets, and
   lineup-handedness field availability. The brief should explain what changed
   without promoting live model behavior.
@@ -1266,16 +1278,13 @@ briefing and research; production `get-artifact` alone remains useful for
 freshness checks but can be partial when the published index or historical
 mirror is incomplete.
 
-### BoltOdds Trial Review
+### BoltOdds Retirement Review
 
-Use `docs/superpowers/plans/2026-05-07-boltodds-starter-trial.md`, and for
-official-provider cutover work use the 2026-05-13 cutover plan on
-`codex/boltodds-production-plan`.
-
-Review uptime, heartbeat freshness, normalized row coverage by target book,
-stale-feed risk, row volume risk, and whether the feed would have changed
-timing or notification decisions. Do not buy Pro or promote BoltOdds without a
-post-trial decision.
+Use `docs/superpowers/plans/2026-05-07-boltodds-starter-trial.md` only as
+historical trial context. After the 2026-06-17 suspension, the operational
+check is whether fresh BoltOdds heartbeats or snapshots reappear accidentally;
+do not buy Pro, restart the worker, or promote BoltOdds without a new Tyler
+decision.
 
 Before raw `market_snapshots` retention is enforced, the cutover branch still
 needs compact movement rollups and provider request-usage writes to prove the
