@@ -6,6 +6,15 @@ def test_runner_rebuilds_shadow_reports_and_prints_review_excerpt(tmp_path, monk
     output_dir = tmp_path / "gate_c"
     market_anchor_output = tmp_path / "market_anchored_k_shadow_rebuild.md"
     selector_audit_output = tmp_path / "market_anchor_selector_canary_audit.md"
+    confidence_referee_output = tmp_path / "confidence_referee_canary_audit.md"
+    profit_rescue_output = tmp_path / "profit_rescue_audit.md"
+    bet_selection_output = tmp_path / "bet_selection_edge_synthesis.md"
+    market_agreement_output = tmp_path / "market_agreement_tracker.md"
+    market_agreement_jsonl = tmp_path / "market_agreement_tracker.jsonl"
+    gate_f_output = tmp_path / "gate_f_projection_challenger_shadow_report.md"
+    shadow_candidates = tmp_path / "shadow_notification_candidates.json"
+    shadow_candidates.write_text("[]", encoding="utf-8")
+    shadow_candidate_output = tmp_path / "shadow_notification_candidate_audit.md"
 
     def fake_builder_main(argv):
         calls.append(argv)
@@ -38,6 +47,53 @@ def test_runner_rebuilds_shadow_reports_and_prints_review_excerpt(tmp_path, monk
 
     monkeypatch.setattr(runner.market_anchor_selector_canary_audit, "main", fake_selector_audit_main)
 
+    def fake_simple_report(label):
+        def _fake(argv):
+            calls.append((label, argv))
+        return _fake
+
+    monkeypatch.setattr(
+        runner.confidence_referee_canary_audit,
+        "main",
+        fake_simple_report("confidence_referee_canary"),
+    )
+    monkeypatch.setattr(
+        runner.profit_rescue_audit,
+        "main",
+        fake_simple_report("profit_rescue"),
+    )
+    monkeypatch.setattr(
+        runner.bet_selection_edge_synthesis,
+        "main",
+        fake_simple_report("bet_selection_edge"),
+    )
+    monkeypatch.setattr(
+        runner.market_agreement_tracker,
+        "main",
+        fake_simple_report("market_agreement"),
+    )
+    monkeypatch.setattr(
+        runner.shadow_notification_candidate_audit,
+        "load_rows",
+        lambda path: calls.append(("shadow_candidate_load", path)) or [],
+    )
+    monkeypatch.setattr(
+        runner.shadow_notification_candidate_audit,
+        "build_report",
+        lambda rows: calls.append(("shadow_candidate_report", rows)) or "# Shadow Candidates\n",
+    )
+
+    monkeypatch.setattr(
+        runner.gate_f_projection_challenger_shadow_report,
+        "load_jsonl",
+        lambda path: calls.append(("gate_f_load", path)) or [{"dataset_key": "row-1"}],
+    )
+    monkeypatch.setattr(
+        runner.gate_f_projection_challenger_shadow_report,
+        "build_report",
+        lambda rows: calls.append(("gate_f_report", rows)) or "# Gate F\n",
+    )
+
     exit_code = runner.main([
         "--output-dir",
         str(output_dir),
@@ -45,6 +101,22 @@ def test_runner_rebuilds_shadow_reports_and_prints_review_excerpt(tmp_path, monk
         str(market_anchor_output),
         "--market-anchor-selector-audit-output",
         str(selector_audit_output),
+        "--confidence-referee-canary-output",
+        str(confidence_referee_output),
+        "--profit-rescue-output",
+        str(profit_rescue_output),
+        "--bet-selection-edge-output",
+        str(bet_selection_output),
+        "--market-agreement-output-md",
+        str(market_agreement_output),
+        "--market-agreement-output-jsonl",
+        str(market_agreement_jsonl),
+        "--gate-f-projection-output",
+        str(gate_f_output),
+        "--shadow-notification-candidates",
+        str(shadow_candidates),
+        "--shadow-notification-candidate-output",
+        str(shadow_candidate_output),
     ])
 
     assert exit_code == 0
@@ -68,7 +140,51 @@ def test_runner_rebuilds_shadow_reports_and_prints_review_excerpt(tmp_path, monk
                 str(selector_audit_output),
             ],
         ),
+        (
+            "confidence_referee_canary",
+            [
+                "--input",
+                str(output_dir / "pitcher_k_outcome_dataset.jsonl"),
+                "--output",
+                str(confidence_referee_output),
+            ],
+        ),
+        (
+            "profit_rescue",
+            [
+                "--input",
+                str(output_dir / "pitcher_k_outcome_dataset.jsonl"),
+                "--output",
+                str(profit_rescue_output),
+            ],
+        ),
+        (
+            "bet_selection_edge",
+            [
+                "--input",
+                str(output_dir / "pitcher_k_outcome_dataset.jsonl"),
+                "--output",
+                str(bet_selection_output),
+            ],
+        ),
+        (
+            "market_agreement",
+            [
+                "--gate-c-dataset",
+                str(output_dir / "pitcher_k_outcome_dataset.jsonl"),
+                "--output-md",
+                str(market_agreement_output),
+                "--output-jsonl",
+                str(market_agreement_jsonl),
+            ],
+        ),
+        ("gate_f_load", output_dir / "pitcher_k_outcome_dataset.jsonl"),
+        ("gate_f_report", [{"dataset_key": "row-1"}]),
+        ("shadow_candidate_load", shadow_candidates),
+        ("shadow_candidate_report", []),
     ]
+    assert gate_f_output.read_text(encoding="utf-8") == "# Gate F\n"
+    assert shadow_candidate_output.read_text(encoding="utf-8") == "# Shadow Candidates\n"
 
     output = capsys.readouterr().out
     assert "Post-grading shadow reports complete." in output

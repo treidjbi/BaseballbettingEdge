@@ -1,3 +1,5 @@
+import pytest
+
 from scripts import run_render_pipeline_mode as entrypoint
 
 
@@ -104,6 +106,19 @@ def test_shadow_provider_rehearsal_stays_strict_and_shadow_only():
     assert overrides["ENABLE_BOLTODDS_PIPELINE_SOURCE"] == "true"
     assert overrides["OFFICIAL_MARKET_STRICT"] == "true"
     assert overrides["ENABLE_SUPABASE_LOCK_CONSUMER"] == "false"
+
+
+def test_provider_rehearsal_requires_explicit_reopened_boltodds_trial(monkeypatch):
+    monkeypatch.delenv("ALLOW_BOLTODDS_PROVIDER_REHEARSAL", raising=False)
+
+    with pytest.raises(ValueError, match="BoltOdds provider rehearsal is retired"):
+        entrypoint.validate_provider_rehearsal_allowed(provider_rehearsal=True)
+
+
+def test_provider_rehearsal_validation_allows_explicit_reopened_trial(monkeypatch):
+    monkeypatch.setenv("ALLOW_BOLTODDS_PROVIDER_REHEARSAL", "true")
+
+    entrypoint.validate_provider_rehearsal_allowed(provider_rehearsal=True)
 
 
 def test_live_artifact_hydration_runs_for_modes_that_consume_live_artifacts(monkeypatch):

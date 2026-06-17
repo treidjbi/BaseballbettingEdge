@@ -526,14 +526,13 @@ def test_live_requirements_pin_websockets_dependency():
     assert "-r pipeline/requirements.txt" not in lines
 
 
-def test_render_worker_pins_main_branch_and_python_version():
+def test_render_blueprint_does_not_define_retired_boltodds_worker():
     render_config = (boltodds_ws_worker.ROOT / "render.yaml").read_text(
         encoding="utf-8"
     )
 
-    assert "branch: main" in render_config
-    assert "PYTHON_VERSION" in render_config
-    assert 'value: "3.11.9"' in render_config
+    assert "scripts/boltodds_ws_worker.py" not in render_config
+    assert "BOLTODDS_API_KEY" not in render_config
 
 
 def test_load_websockets_connect_raises_clear_runtime_error(monkeypatch):

@@ -145,10 +145,14 @@ As of 2026-06-17, Tyler chose the low-cost production posture:
 - The Odds API remains capped emergency FanDuel/DraftKings fallback only.
 - BoltOdds is retired from active runtime; Render worker
   `bbe-boltodds-shadow-worker` was suspended via Render API on 2026-06-17.
+  `render.yaml` is intentionally non-deploying (`services: []`) so a Render
+  Blueprint sync cannot recreate the old worker.
 
 Do not revive BoltOdds, enable `OFFICIAL_MARKET_SOURCE=boltodds_propline`, or
 set `ENABLE_BOLTODDS_PIPELINE_SOURCE=true` unless Tyler explicitly approves a
-new provider trial. Official artifacts should remain TheRundown with PropLine
+new provider trial. The historical Render `--provider-rehearsal` path also
+fails closed unless `ALLOW_BOLTODDS_PROVIDER_REHEARSAL=true` is set after that
+fresh approval. Official artifacts should remain TheRundown with PropLine
 fallback/sidecar evidence.
 
 As of the 2026-05-13 cutover branch work, `current_market_lines`,
@@ -535,7 +539,8 @@ behavior without a separate approval.
 
 - **Branch**: `main`; `codex/boltodds-starter-trial` is historical trial context only
 - **Render worker**: `bbe-boltodds-shadow-worker` suspended via Render API on
-  2026-06-17.
+  2026-06-17; `render.yaml` is intentionally non-deploying so Blueprint sync
+  cannot recreate it.
 - **Plan under test**: retired Starter trial.
 - **Secret**: `BOLTODDS_API_KEY` is historical/retired.
 - **Host / docs endpoint family**: `https://spro.agency/api` and

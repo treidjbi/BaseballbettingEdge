@@ -252,6 +252,25 @@ def _env(name: str) -> str:
     return value
 
 
+def _env_flag(name: str, *, default: bool = False) -> bool:
+    value = os.environ.get(name, "").strip().lower()
+    if not value:
+        return default
+    return value not in {"0", "false", "no", "off"}
+
+
+def validate_provider_rehearsal_allowed(*, provider_rehearsal: bool) -> None:
+    if not provider_rehearsal:
+        return
+    if _env_flag("ALLOW_BOLTODDS_PROVIDER_REHEARSAL"):
+        return
+    raise ValueError(
+        "BoltOdds provider rehearsal is retired; set "
+        "ALLOW_BOLTODDS_PROVIDER_REHEARSAL=true only after Tyler opens a new "
+        "provider trial."
+    )
+
+
 def _parse_args(argv: list[str]) -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--mode", choices=("preview", "grading", "pipeline", "lock"), required=True)
@@ -271,8 +290,8 @@ def _parse_args(argv: list[str]) -> argparse.Namespace:
         "--provider-rehearsal",
         action="store_true",
         help=(
-            "With shadow artifact keys, run the pipeline against the "
-            "BoltOdds/PropLine official-market adapter in strict mode."
+            "Retired: with an explicit reopened-trial override, run shadow "
+            "artifact keys against the historical BoltOdds/PropLine adapter."
         ),
     )
     return parser.parse_args(argv)
@@ -289,6 +308,7 @@ def main(argv: list[str] | None = None) -> int:
     )
     if args.provider_rehearsal and not artifact_key_prefix:
         raise ValueError("--provider-rehearsal requires --shadow-prefix or --artifact-key-prefix")
+    validate_provider_rehearsal_allowed(provider_rehearsal=args.provider_rehearsal)
     runtime_previous = _apply_env_overrides(
         runtime_env_overrides(
             args.mode,
