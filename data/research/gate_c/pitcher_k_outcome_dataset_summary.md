@@ -2,17 +2,17 @@
 
 Shadow-only: this dataset does not change live picks, locks, thresholds, staking, provider order, notifications, or calibration.
 
-- Total rows: `1840`
-- Clean-window rows: `1840`
-- Graded rows: `1840`
+- Total rows: `2020`
+- Clean-window rows: `2020`
+- Graded rows: `2020`
 - Rows missing result: `0`
 - Duplicate dataset keys: `0`
 - Missing team/opponent: `0`
 - Missing book odds: `0`
 - Missing model fields: `2`
-- Tracked pick rows: `956`
-- Rows with price CLV: `956`
-- Beat-close price rows: `153`
+- Tracked pick rows: `1050`
+- Rows with price CLV: `1050`
+- Beat-close price rows: `174`
 - Beat-close line rows: `18`
 - Rows with lineup hand counts: `1174`
 - Rows with actual IP: `1718`
@@ -24,74 +24,74 @@ Shadow-only: this dataset does not change live picks, locks, thresholds, staking
 - Rows with live display book-board fields: `223`
 - Broad market confirmation rows: `42`
 - Best off-market rows: `75`
-- Large-edge skepticism rows: `419`
-- Clean graded picks reconciled: `957/957`
-- Unique side fallback reconciliations: `30`
+- Large-edge skepticism rows: `460`
+- Clean graded picks reconciled: `1051/1051`
+- Unique side fallback reconciliations: `31`
 - Unmatched clean graded picks: `0`
 
 ## Context Snapshots
 
-- `official_close`: `1840`
+- `official_close`: `2020`
 
 ## Model Vs Market Relationship
 
-- `model_agrees_with_favorite`: `838`
-- `model_fades_favorite`: `936`
-- `unknown`: `66`
+- `model_agrees_with_favorite`: `934`
+- `model_fades_favorite`: `1014`
+- `unknown`: `72`
 
 ## CLV Types
 
 - `line_only`: `18`
-- `no_clv_edge`: `785`
-- `not_tracked`: `884`
-- `price_only`: `153`
+- `no_clv_edge`: `858`
+- `not_tracked`: `970`
+- `price_only`: `174`
 
 ## Process Outcome Buckets
 
-- `good_process_loss`: `75`
-- `good_process_win`: `96`
-- `unknown`: `884`
-- `weak_process_loss`: `404`
-- `weak_process_win`: `381`
+- `good_process_loss`: `84`
+- `good_process_win`: `108`
+- `unknown`: `970`
+- `weak_process_loss`: `446`
+- `weak_process_win`: `412`
 
 ## Bet Timing Windows
 
 - `post_start`: `46`
 - `pre_120`: `5`
-- `pre_15`: `165`
-- `pre_30`: `654`
+- `pre_15`: `166`
+- `pre_30`: `721`
 - `pre_5`: `49`
-- `unknown`: `921`
+- `unknown`: `1033`
 
 ## Opportunity Buckets
 
-- `deep_starter`: `210`
-- `normal`: `1486`
-- `short_leash`: `144`
+- `deep_starter`: `226`
+- `normal`: `1634`
+- `short_leash`: `160`
 
 ## Leash Risk Buckets
 
-- `high`: `144`
-- `medium`: `66`
-- `normal`: `1630`
+- `high`: `160`
+- `medium`: `76`
+- `normal`: `1784`
 
 ## Pitcher Archetype Buckets
 
-- `deep_starter`: `134`
-- `high_k_deep_starter`: `76`
-- `high_k_standard`: `440`
-- `low_k_standard`: `108`
-- `short_leash`: `144`
-- `standard_starter`: `938`
+- `deep_starter`: `144`
+- `high_k_deep_starter`: `82`
+- `high_k_standard`: `478`
+- `low_k_standard`: `118`
+- `short_leash`: `160`
+- `standard_starter`: `1038`
 
 ## Lineup Handedness Sources
 
-- `missing`: `666`
+- `missing`: `846`
 - `mlb_boxscore_reconstructed`: `1174`
 
 ## Actual Opportunity Sources
 
-- `missing`: `122`
+- `missing`: `302`
 - `mlb_boxscore_reconstructed`: `1718`
 
 ## Market Agreement Labels
@@ -100,13 +100,13 @@ Shadow-only: this dataset does not change live picks, locks, thresholds, staking
 - `market_mixed`: `62`
 - `market_no_signal`: `63`
 - `market_with_model`: `38`
-- `missing`: `1645`
+- `missing`: `1825`
 
 ## Movement Strength Labels
 
 - `broad_against_model`: `7`
 - `broad_with_model`: `6`
-- `missing`: `1645`
+- `missing`: `1825`
 - `mixed_or_reversed`: `108`
 - `no_movement_signal`: `63`
 - `single_book_against_model`: `6`
@@ -115,7 +115,7 @@ Shadow-only: this dataset does not change live picks, locks, thresholds, staking
 ## Live Display States
 
 - `market_fade`: `16`
-- `missing`: `1617`
+- `missing`: `1797`
 - `mixed`: `17`
 - `monitor`: `66`
 - `off_market`: `30`

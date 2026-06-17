@@ -62,17 +62,17 @@ def _extract_sections(markdown: str, section_titles: set[str]) -> str:
     return "\n".join(selected).strip()
 
 
-def _print_review_excerpt(report_path: Path) -> None:
+def _print_review_excerpt(report_path: Path, *, label: str, section_titles: set[str]) -> None:
     if not report_path.exists():
-        print(f"Market-anchored report was not found at {report_path}")
+        print(f"{label} report was not found at {report_path}")
         return
 
     excerpt = _extract_sections(
         report_path.read_text(encoding="utf-8"),
-        {"Executive Read", "Read Rule"},
+        section_titles,
     )
     if excerpt:
-        print("\nMarket-anchored review excerpt:\n")
+        print(f"\n{label} excerpt:\n")
         print(excerpt)
 
 
@@ -107,7 +107,17 @@ def main(argv: list[str] | None = None) -> int:
             str(args.market_anchor_selector_audit_output),
         ])
     print("Post-grading shadow reports complete.")
-    _print_review_excerpt(args.market_anchored_output)
+    _print_review_excerpt(
+        args.market_anchored_output,
+        label="Market-anchored review",
+        section_titles={"Executive Read", "Read Rule"},
+    )
+    if not args.skip_market_anchor_selector_audit:
+        _print_review_excerpt(
+            args.market_anchor_selector_audit_output,
+            label="Market-anchor selector audit",
+            section_titles={"Executive Read", "Input Coverage"},
+        )
     return 0
 
 

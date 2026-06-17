@@ -37,14 +37,36 @@ This deployment adds audit metadata only. `enforce_downside` remains closed
 until the post-grading audit gates pass and Tyler separately approves that
 environment change.
 
+## Follow-Up: 2026-06-17
+
+The first standing selector audit showed `0` selector rows because its Gate C
+input was stale and ended at `2026-06-12`, before the 2026-06-16 shadow
+deployment. The live artifacts did contain selector metadata. Refreshed Gate C
+through the fully graded 2026-06-16 slate with:
+
+```powershell
+python scripts/run_post_grading_shadow_reports.py --artifact-source hybrid --end-date 2026-06-16
+```
+
+Refreshed result:
+
+- Gate C durable artifact: `2020` rows, `1050` tracked rows, `1051/1051`
+  graded pick reconciliations, loaded through `2026-06-16`.
+- Selector canary audit: `24` tracked graded rows with selector metadata.
+- Strict live selector rows: `8` rows, `4-4`, `-1.24u`, `-15.5%` ROI.
+
+The audit script now reports input coverage and warns when the input ends before
+the selector shadow deployment. The post-grading runner now prints the selector
+audit `Executive Read` and `Input Coverage` sections to logs. This fixes the
+stale-zero-row interpretation problem; it does not approve `enforce_downside`.
+
 ## Evidence Read
 
-Current report: `analytics/output/market_anchored_k_shadow_rebuild.md`, generated `2026-06-13T17:38:36Z`.
+Current report: `analytics/output/market_anchored_k_shadow_rebuild.md`, refreshed `2026-06-17` against Gate C through `2026-06-16`.
 
-- Current FIRE tracked selector: `549` rows, `269-280`, `-39.93u`, `-7.3% ROI`.
-- Market-anchor core tracked selector: `485` rows, `269-216`, `-5.48u`, `-1.1% ROI`.
-- Market-anchor strict tracked selector: `149` rows, `90-59`, `+6.41u`, `+4.3% ROI`.
-- Projection lift: current model MAE/RMSE/side accuracy was `1.832` / `2.286` / `53.9%`; market-anchor was `1.741` / `2.175` / `56.9%`.
+- Current FIRE tracked selector: `557` rows, `275-282`, `-37.67u`, `-6.8% ROI`.
+- Market-anchor core tracked selector: `528` rows, `288-240`, `-14.55u`, `-2.8% ROI`.
+- Market-anchor strict tracked selector: `164` rows, `97-67`, `+3.16u`, `+1.9% ROI`.
 
 Interpretation: strict market-anchor shape is promising enough for a shadow/canary plan, not enough for immediate model, threshold, staking, or live promotion.
 

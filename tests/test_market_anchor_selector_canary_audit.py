@@ -62,3 +62,19 @@ def test_render_report_states_shadow_only_boundary():
     assert "Shadow-only" in report
     assert "does not change live" in report
     assert "Promotion Gate" in report
+
+
+def test_render_report_warns_when_input_ends_before_selector_deploy():
+    report = audit.render_report(
+        audit.summarize(
+            [
+                _row(
+                    slate_date="2026-06-12",
+                    market_anchor_selector=None,
+                )
+            ]
+        )
+    )
+
+    assert "Input Coverage" in report
+    assert "Input ends before selector shadow deployment" in report

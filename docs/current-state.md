@@ -200,6 +200,17 @@ by user in Render. Morning checks should verify no fresh BoltOdds
 `2026-06-17T17:22:29Z`; any fresh rows are an accidental reactivation, not a
 promotion signal.
 
+Model-lane overlay, 2026-06-17: refreshed Gate C through the fully graded
+2026-06-16 slate with `python scripts/run_post_grading_shadow_reports.py
+--artifact-source hybrid --end-date 2026-06-16`. The refreshed durable dataset
+has `2020` rows, `1050` tracked rows, `1051/1051` graded pick reconciliations,
+and loaded dates through `2026-06-16`. The market-anchor selector canary audit
+now has `24` tracked graded rows with selector metadata and `8` strict rows
+(`4-4`, `-1.24u`, `-15.5%` ROI). This fixed the stale zero-row audit read, but
+`enforce_downside` remains closed because the live selector sample is tiny and
+the first strict slice is negative. The post-grading runner now prints selector
+audit input coverage so future stale Gate C inputs are visible in logs.
+
 Model-lane overlay, 2026-06-10: Tyler approved
 `PROFIT_RESCUE_REFEREE_MODE=enforce`; all seven Render pipeline cron services
 were updated and redeployed on commit `c60bd895`. The manual refresh published

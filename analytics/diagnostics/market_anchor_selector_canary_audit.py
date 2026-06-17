@@ -5,7 +5,7 @@ from __future__ import annotations
 import argparse
 import json
 from collections import defaultdict
-from datetime import UTC, datetime
+from datetime import UTC, date, datetime
 from pathlib import Path
 from typing import Any
 
@@ -14,6 +14,7 @@ ROOT = Path(__file__).resolve().parents[2]
 DEFAULT_INPUT = ROOT / "data" / "research" / "gate_c" / "pitcher_k_outcome_dataset.jsonl"
 DEFAULT_OUTPUT = ROOT / "analytics" / "output" / "market_anchor_selector_canary_audit.md"
 WIN_LOSS_RESULTS = {"win", "loss"}
+SELECTOR_SHADOW_DEPLOY_DATE = date(2026, 6, 16)
 
 
 def _to_float(value: Any) -> float | None:
@@ -47,6 +48,16 @@ def _labels(row: dict[str, Any]) -> set[str]:
 
 def _is_fire(value: Any) -> bool:
     return str(value or "").startswith("FIRE")
+
+
+def _row_date(row: dict[str, Any]) -> date | None:
+    value = row.get("slate_date") or row.get("game_date") or row.get("date")
+    if not value:
+        return None
+    try:
+        return date.fromisoformat(str(value)[:10])
+    except ValueError:
+        return None
 
 
 def _row_pnl(row: dict[str, Any]) -> float:
@@ -94,8 +105,16 @@ def summarize(rows: list[dict[str, Any]]) -> dict[str, Any]:
             if len(bucket_rows) >= 5:
                 slices[f"{field}={bucket}"] = _score(bucket_rows)
 
+    row_dates = sorted(row_date for row in rows if (row_date := _row_date(row)) is not None)
+    latest_slate_date = row_dates[-1].isoformat() if row_dates else None
+    earliest_slate_date = row_dates[0].isoformat() if row_dates else None
+
     return {
         "generated_at": datetime.now(UTC).isoformat(),
+        "earliest_slate_date": earliest_slate_date,
+        "latest_slate_date": latest_slate_date,
+        "selector_shadow_deploy_date": SELECTOR_SHADOW_DEPLOY_DATE.isoformat(),
+        "input_stale_for_selector": bool(row_dates and row_dates[-1] < SELECTOR_SHADOW_DEPLOY_DATE),
         "tracked_rows": len(tracked),
         "selector_rows": len(with_selector),
         "fire_rows": _score(fire_rows),
@@ -139,9 +158,24 @@ def render_report(summary: dict[str, Any]) -> str:
         _score_line("Non-strict displayed FIRE", summary["non_strict_fire"]),
         _score_line("All market-anchor strict tracked rows", summary["strict_all"]),
         "",
-        "## Strict Slice Check",
+        "## Input Coverage",
         "",
+        f"- Slate date range: `{summary.get('earliest_slate_date') or 'unknown'}` to `{summary.get('latest_slate_date') or 'unknown'}`",
+        f"- Selector shadow deployment date: `{summary['selector_shadow_deploy_date']}`",
     ]
+    if summary.get("input_stale_for_selector"):
+        lines.extend(
+            [
+                "- Warning: Input ends before selector shadow deployment. Refresh the Gate C dataset before interpreting selector rows.",
+            ]
+        )
+    lines.extend(
+        [
+            "",
+            "## Strict Slice Check",
+            "",
+        ]
+    )
     slices = summary.get("strict_slices") or {}
     if not slices:
         lines.append("- No strict slices met the minimum display threshold.")
