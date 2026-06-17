@@ -100,9 +100,13 @@ unless Tyler explicitly reopens a separate provider trial.
   separate approval/promotion plan.
 - Read `docs/current-state.md` for the freshest operating state, then the
   newest dated plan that matches the task. For provider production, line
-  movement, Supabase market-state, or live-notification cutover work, start
-  with
-  `docs/superpowers/plans/2026-05-13-boltodds-propline-official-provider-cutover.md`.
+  movement, Supabase market-state, or live-notification work, start from the
+  current provider posture in this file and `docs/current-state.md`: TheRundown
+  remains the official artifact source, PropLine is fallback/live-movement
+  sidecar, and BoltOdds is retired unless Tyler explicitly opens a new provider
+  trial. Use
+  `docs/superpowers/plans/2026-05-13-boltodds-propline-official-provider-cutover.md`
+  only as historical provider-arbitration context.
 - For model-facing Gate C, confidence-referee, batter-handedness, opportunity/
   leash, or K-projection challenger work, start with
   `docs/superpowers/plans/2026-05-12-pitcher-k-outcome-research-dataset.md`.
@@ -159,10 +163,12 @@ The provider pipeline adapter also exists, but it is double gated:
 `ENABLE_BOLTODDS_PIPELINE_SOURCE=true`. Leave both unset/false unless Tyler
 explicitly approves a new provider trial.
 
-Use `analytics/diagnostics/provider_cutover_shadow_compare.py` for the
-fresh-slate rehearsal before any cutover yes/no decision.
+If Tyler explicitly opens a new provider trial, use
+`analytics/diagnostics/provider_cutover_shadow_compare.py` as historical
+rehearsal tooling to adapt, not as an active promotion mandate.
 
-The provider cutover plan synthesizes the production-facing parts of:
+The historical BoltOdds + PropLine cutover plan previously synthesized the
+production-facing parts of:
 
 - `docs/superpowers/plans/2026-05-13-boltodds-production-line-movement.md`
 - `docs/superpowers/plans/2026-05-07-boltodds-starter-trial.md`
@@ -170,9 +176,11 @@ The provider cutover plan synthesizes the production-facing parts of:
 - `docs/superpowers/plans/2026-05-05-propline-fallback-and-model-signal-plan.md`
 - `docs/superpowers/plans/2026-05-01-propline-supabase-market-infrastructure.md`
 
-Keep those older plans for implementation history and code snippets, but use
-the cutover plan as the controlling plan for provider promotion, official odds
-source behavior, Supabase market-state tables, and live-notification promotion.
+Keep those older plans for implementation history and code snippets only. They
+do not control current provider promotion, official odds-source behavior,
+Supabase market-state behavior, or live-notification promotion after the
+2026-06-17 BoltOdds retirement. Any future provider trial needs a fresh Tyler
+approval and current plan.
 
 ## What This Project Does
 
@@ -285,9 +293,9 @@ python -m pytest tests/test_build_features.py -v
   GitHub secret added 2026-05-01)
 - `BOLTODDS_API_KEY` — historical BoltOdds Starter trial key. Do not use or
   restore the BoltOdds worker unless Tyler explicitly reopens a provider trial.
-- `OFFICIAL_MARKET_SOURCE` — planned provider-cutover switch. Current/default
-  production remains `therundown`; future allowed values are `therundown`,
-  `shadow_compare`, and `boltodds_propline` after implementation.
+- `OFFICIAL_MARKET_SOURCE` — official provider selector. Current/default
+  production remains `therundown`; `boltodds_propline` is retired/closed unless
+  Tyler explicitly opens a new provider trial.
 - `ENABLE_BOLTODDS_PIPELINE_SOURCE` — retired provider-trial safety flag; keep
   false unless Tyler explicitly reopens BoltOdds.
 - `ENABLE_BOLTODDS_LIVE_NOTIFICATIONS` — retired provider-trial notification
@@ -309,11 +317,10 @@ python -m pytest tests/test_build_features.py -v
 ### TheRundown live-polling cost guardrail
 
 TheRundown Starter is the official book-of-record odds source for scheduled
-preview/full/refresh/grading-adjacent artifacts until the BoltOdds + PropLine
-cutover gates and environment switch are explicitly completed. The plan renewed
-through the end of May 2026, so use that overlap window for shadow comparison,
-audit, and rollback. Do **not** design new high-frequency live polling around
-TheRundown without an explicit cost/usage review.
+preview/full/refresh/grading-adjacent artifacts. PropLine is the approved
+fallback/live-movement sidecar. BoltOdds is retired from active runtime. Do
+**not** design new high-frequency live polling around TheRundown without an
+explicit cost/usage review.
 
 Known limit context:
 
@@ -326,10 +333,8 @@ Known limit context:
 For the live layer, default to:
 
 - Read TheRundown-derived picks from `today.json` as the book-of-record model
-  state until `OFFICIAL_MARKET_SOURCE=boltodds_propline` is implemented and
-  explicitly enabled.
-- Use PropLine polling or a proven shadow WebSocket sidecar for line-movement
-  evidence and near-real-time notifications.
+  state.
+- Use PropLine polling/webhooks for fallback and line-movement evidence.
 - Do not increase TheRundown polling cadence beyond the existing pipeline
   schedule unless Tyler explicitly approves the spend/risk tradeoff.
 
@@ -487,10 +492,11 @@ behavior, locks, or dashboard source-of-truth without a separate review.
 - **Current fallback order**: TheRundown primary → PropLine target-book
   fallback → The Odds FD/DK fallback only if PropLine errors/rate-limits/has
   no usable coverage or still leaves missing FanDuel/DraftKings coverage.
-- **Cutover checkpoint**: the May 2026 provider cutover plan supersedes the old
-  June 1 standalone PropLine review for production-provider decisions. Use the
-  new cutover gates and request-usage accounting before downgrading PropLine,
-  promoting provider behavior, or canceling TheRundown.
+- **Current checkpoint**: as of 2026-06-17, PropLine is approved only as
+  fallback/live-movement sidecar next to TheRundown official artifacts. Use
+  current-state, the provider cost ledger, and request-usage accounting before
+  downgrading PropLine, changing provider behavior, or changing TheRundown's
+  role.
 - **Current evidence as of 2026-05-19**: polling is useful for fallback,
   partial-provider, and live-movement evidence. Real signed PropLine
   `line_movement` webhook deliveries now appear in
@@ -538,8 +544,8 @@ behavior without a separate approval.
   research and migration-risk analysis only.
 - **Production impact**: none today. Do not wire BoltOdds into
   `pipeline/run_pipeline.py`, `today.json`, grading, picks history,
-  calibration, or push notifications until the provider cutover plan gates pass
-  and Tyler explicitly approves a new provider trial.
+  calibration, or push notifications unless Tyler explicitly approves a new
+  provider trial and a new promotion plan.
 
 Starter discovery/probe status as of 2026-05-07:
 
