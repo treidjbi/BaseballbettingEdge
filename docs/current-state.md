@@ -20,6 +20,9 @@ For any new work in this repo:
    - `docs/superpowers/plans/2026-06-16-market-anchored-v2-selector-shadow-canary.md`
      for the feature-flagged market-anchor selector shadow/canary plan
    - `docs/superpowers/plans/2026-05-13-boltodds-propline-official-provider-cutover.md`
+     for historical provider-arbitration context only; BoltOdds active runtime
+     was retired on 2026-06-17 and the current production posture is
+     TheRundown with PropLine fallback/live-movement sidecar
    - `docs/superpowers/plans/2026-05-12-pitcher-k-outcome-research-dataset.md`
    - `docs/superpowers/plans/2026-06-05-market-favorite-confidence-referee-production-canary.md`
      for the Tyler-approved market-favorite confidence-referee production
@@ -198,7 +201,19 @@ sidecar. `bbe-boltodds-shadow-worker` (`srv-d7ugabe7r5hc73b36oag`) is suspended
 by user in Render. Morning checks should verify no fresh BoltOdds
 `market_feed_heartbeats` or `market_snapshots` appear after
 `2026-06-17T17:22:29Z`; any fresh rows are an accidental reactivation, not a
-promotion signal.
+promotion signal. This supersedes the older board next-decision wording about
+deploying the 2026-06-16 provider-wrapper fix or stopping BoltOdds before
+renewal; both actions are done.
+
+Branch-hygiene overlay, 2026-06-17: safe merged local branches were deleted,
+merged remote branches were deleted where they still existed, and stale
+patch-equivalent live-market UI remote-tracking refs were pruned after GitHub
+reported the remote refs were already gone. The only remaining non-main local
+and remote branches are `codex/artifact-exit-shadow-mirror`,
+`codex/boltodds-production-plan`, and
+`codex/confidence-referee-shadow-report`; they still contain unique unmerged
+commits and should be treated as historical/archive candidates until Tyler
+explicitly approves deleting or merging them.
 
 Model-lane overlay, 2026-06-17: refreshed Gate C through the fully graded
 2026-06-16 slate with `python scripts/run_post_grading_shadow_reports.py
@@ -465,25 +480,30 @@ Cutover branch infrastructure progress as of 2026-05-14:
 
 ## Provider Plan Precedence
 
-For provider-production work, use
+The old BoltOdds + PropLine production cutover plan is now superseded. For any
+future provider-production work, start from the current production posture:
+TheRundown as official artifact source with PropLine fallback/live-movement
+sidecar, BoltOdds retired from active runtime, and strict provider/source
+promotion closed unless Tyler explicitly opens a new trial. Use
 `docs/superpowers/plans/2026-05-13-boltodds-propline-official-provider-cutover.md`
-as the controlling implementation plan.
+only as historical provider-arbitration context and lessons learned.
 
-This newer plan synthesizes or supersedes production-facing parts of these older
-plans:
+That historical plan synthesized or superseded production-facing parts of these
+older plans:
 
 - `2026-05-13-boltodds-production-line-movement.md`: use only for the May 13
   stale-slate diagnosis, worker-rotation implementation detail, and historical
-  notification/display thinking. The new cutover plan controls official
-  provider source behavior.
+  notification/display thinking. It no longer controls active production
+  provider behavior.
 - `2026-05-07-boltodds-starter-trial.md`: use as trial setup/history and
-  worker-branch context. The new cutover plan controls production promotion.
+  worker-branch context. It no longer controls production promotion.
 - `2026-05-06-live-layer-event-system.md`: keep as the live-layer foundation.
-  The new cutover plan controls BoltOdds/PropLine notification promotion and
-  provider-source changes.
+  BoltOdds notification/provider-source promotion is closed after retirement;
+  PropLine notification behavior stays governed by the live-notification plans
+  and explicit Tyler approvals.
 - `2026-05-05-propline-fallback-and-model-signal-plan.md`: historical fallback
-  and diagnostic work is complete. The new cutover plan controls PropLine's
-  future fallback/DraftKings role and downgrade gates.
+  and diagnostic work is complete. PropLine's current role is fallback and
+  live-movement sidecar unless Tyler explicitly opens a new provider plan.
 - `2026-05-01-propline-supabase-market-infrastructure.md`: historical Supabase
   foundation. Reuse existing trackers and follow
   `docs/research/market-tracker-map.md` before adding tables.

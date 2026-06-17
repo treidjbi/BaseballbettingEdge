@@ -1,5 +1,9 @@
 # BoltOdds Production Line-Movement Implementation Plan
 
+> **Status 2026-06-17:** Historical/retired. BoltOdds live movement is no
+> longer an active production target; keep this file for stale-slate,
+> worker-rotation, and live-layer lessons only.
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Promote BoltOdds from shadow evidence into the production live line-movement layer that powers timing, confidence, and eventually notifications, while keeping TheRundown as the official book-of-record pipeline.

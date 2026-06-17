@@ -1,5 +1,10 @@
 # BoltOdds Starter Trial Implementation Plan
 
+> **Status 2026-06-17:** Historical/retired. BoltOdds active runtime was
+> suspended on 2026-06-17 and TheRundown + PropLine is the approved low-cost
+> production posture. Do not use this plan to restart BoltOdds or promote
+> BoltOdds without a new Tyler approval.
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Prepare a shadow-only BoltOdds WebSocket worker so Tyler can start the 7-day free trial, provide `BOLTODDS_API_KEY`, and immediately capture MLB pitcher strikeout market evidence without changing production picks.

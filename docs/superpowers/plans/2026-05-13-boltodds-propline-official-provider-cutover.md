@@ -1,5 +1,10 @@
 # BoltOdds + PropLine Official Provider Cutover Implementation Plan
 
+> **Status 2026-06-17:** Historical/superseded. The approved production posture
+> is TheRundown as book-of-record with PropLine fallback/live-movement sidecar;
+> BoltOdds runtime is suspended. Keep this plan for provider-arbitration lessons
+> only, not as an active cutover path.
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use
 > `superpowers:subagent-driven-development` or `superpowers:executing-plans` to
 > implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for
@@ -20,7 +25,10 @@ workers, Netlify functions, existing static dashboard artifacts.
 
 Date: 2026-05-13
 Owner: Tyler + Codex
-Status: Draft implementation plan
+Status: Historical/superseded as of 2026-06-17. The approved production posture
+is TheRundown as book-of-record with PropLine fallback/live-movement sidecar;
+BoltOdds runtime is suspended. Keep this plan for provider-arbitration lessons
+only, not as an active cutover path.
 
 ## Goal
 
