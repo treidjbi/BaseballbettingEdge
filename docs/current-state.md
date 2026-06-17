@@ -424,31 +424,25 @@ Cutover branch infrastructure progress as of 2026-05-14:
   duplicate high-cadence shadow rewrites, preserve non-null `game_time`, fail
   closed for legacy `["selected"]` official rows, and reduce duplicate
   arbitration-decision inserts. These guards protect Supabase IO only; they do
-  not make BoltOdds/PropLine the production provider.
-- BoltOdds official-line freshness now treats a fresh current-slate WebSocket
-  heartbeat as supporting evidence for unchanged complete BoltOdds lines. This
-  prevents normal K-prop price quietness from making otherwise usable rows fail
-  stale solely because the exact line did not re-emit. It still fails closed on
-  incomplete rows, missing game time, ambiguous mainline ladders, stale/missing
-  heartbeats, and unsupported books.
-- The live-layer shadow builders now read `market_feed_heartbeats` and apply
-  the same BoltOdds unchanged-line freshness concept to `live_market_display_state`
-  and `market_pick_evidence` metadata. `shadow_notification_candidates` now
-  suppresses stale market evidence unless the provider heartbeat holds it fresh.
-  This remains shadow-only and does not enable BoltOdds notification sends.
-- A shadow mainline selector now runs before official arbitration so
-  same-book BoltOdds alt ladders are not treated as automatic provider outages.
-  It keeps raw/current rows for audit, selects complete supported mainline
-  candidates only when PropLine/TheRundown overlap or cross-book support makes
-  the choice clear, and fails closed on ambiguous ladders. The first May 14
-  rehearsal after this change showed raw schedule-first provider coverage at
-  21/22 starters, but only 14/22 mainline-ready and 14/22 official-ready, so
-  the cutover remains not ready.
-- `.github/workflows/shadow-market-infra.yml` now has a shadow-only derived
-  line build step. Scheduled runs capture PropLine and rebuild
-  `current_market_lines`/`official_market_lines` from existing snapshots; they
-  do not run the production pipeline, push artifacts, or change provider order.
-  The provider cutover comparison report is manual-only from that workflow.
+  not make any sidecar/provider rehearsal table the production provider.
+- Historical BoltOdds official-line freshness can still be tested explicitly,
+  but active current-line, official-line, live-display, and market-evidence
+  defaults exclude retired BoltOdds rows. The active readers now default to
+  TheRundown plus PropLine/the capped emergency Odds API where applicable, so
+  stale same-day BoltOdds rows in Supabase cannot become official/live evidence
+  unless Tyler opens a fresh provider trial and a new flag/path is added.
+- A shadow mainline selector still runs before official arbitration so same-book
+  alt ladders are not treated as automatic provider outages. It keeps raw/current
+  rows for audit, selects complete supported mainline candidates only when
+  provider overlap or cross-book support makes the choice clear, and fails
+  closed on ambiguous ladders. The old BoltOdds rehearsal results remain
+  history, not a current cutover recommendation.
+- `.github/workflows/shadow-market-infra.yml` is manual-only as of 2026-06-17.
+  Manual dispatch can capture TheRundown/PropLine sidecar evidence and rebuild
+  `current_market_lines`/`official_market_lines` from existing snapshots, but it
+  does not run the production pipeline, push artifacts, or change provider
+  order. Routine refresh now belongs to Render/live-layer paths, not scheduled
+  GitHub shadow polling.
 - Step 7 storage/cost support is implemented on the cutover branch:
   `provider_request_usage_daily` is written from fetched provider runs/snapshots,
   and `scripts/compact_market_snapshots.py` upserts compact
@@ -460,21 +454,21 @@ Cutover branch infrastructure progress as of 2026-05-14:
   database at `639 MB`; `market_snapshots` was the dominant table at about
   `462 MB` total. Use `scripts/supabase_storage_guardrail.sql` in daily/weekly
   ops reads and keep spend cap on unless Tyler explicitly approves overages.
-- The Odds API official arbitration remains behind an explicit emergency flag;
-  DraftKings remains PropLine-first until BoltOdds DraftKings coverage is
-  explicitly enabled.
-- A pipeline adapter for `official_market_lines` exists behind a double opt-in:
+- The Odds API official arbitration remains behind an explicit emergency flag.
+  DraftKings remains TheRundown/PropLine-priority in active arbitration; retired
+  BoltOdds compatibility flags do not promote BoltOdds.
+- A historical pipeline adapter for `official_market_lines` exists behind a double opt-in:
   `OFFICIAL_MARKET_SOURCE=boltodds_propline` and
-  `ENABLE_BOLTODDS_PIPELINE_SOURCE=true`. On 2026-06-02 Tyler approved using
-  that adapter in non-strict Render preview/full/refresh canary mode. If the
-  provider rows fail, the pipeline falls back to TheRundown. Strict provider
-  mode remains off until a separate yes/no review.
+  `ENABLE_BOLTODDS_PIPELINE_SOURCE=true`. After the 2026-06-17 retirement, keep
+  both unset/false unless Tyler opens a new provider trial. `--provider-rehearsal`
+  also fails closed unless `ALLOW_BOLTODDS_PROVIDER_REHEARSAL=true` is set for
+  that explicit trial.
 - `analytics/diagnostics/provider_cutover_shadow_compare.py` exists for the
   fresh-slate rehearsal. Use it to compare TheRundown against provider-mode
   rows and evaluate coverage, FD/DK availability, line conflicts, ref-book
   changes, odds deltas, artifact contract, and usage gates before any cutover
-  decision. Its current-line/mainline coverage read uses the same BoltOdds
-  heartbeat-held unchanged-line semantics as official arbitration.
+  decision. Its old BoltOdds heartbeat-held unchanged-line semantics are
+  historical trial context only after retirement.
 - `analytics/diagnostics/executable_market_shadow_audit.py` exists for the
   Monday cutover review. It scores the current model projection against every
   fresh, complete, supported mainline book/line/side from `current_market_lines`
@@ -755,7 +749,7 @@ Artifact-exit rollout note, 2026-05-24:
   `BATTER_SPLIT_COLLECTION_MAX_NEW=0`; this preserves provider/scheduler
   rehearsal value while avoiding memory-heavy research backfill on the small
   cron plan.
-- Render separation follow-up on 2026-05-29: after the missed May 28 lock was
+- Historical Render separation follow-up on 2026-05-29: after the missed May 28 lock was
   traced to delayed GitHub artifacts, Tyler approved waiting another slate but
   cleaning up Render. The active Task 11 scheduler-shadow services now run
   the TheRundown-equivalent command
@@ -763,9 +757,8 @@ Artifact-exit rollout note, 2026-05-24:
   `--provider-rehearsal`; provider-rehearsal remains shadow-only but must be
   evaluated separately because strict BoltOdds/PropLine coverage failures do
   not prove scheduler unreliability. Shadow PropLine scheduled polling now
-  records provider failures without failing the whole GitHub shadow-market
-  workflow, and the BoltOdds shadow worker should retry provider/websocket
-  failures inside the worker instead of relying on Render crash restarts.
+  records provider failures without failing manual shadow-market dispatch, and
+  the old BoltOdds worker retry note is historical only after retirement.
 - Current override as of 2026-06-17: BoltOdds is retired, so
   `--provider-rehearsal` is fail-closed unless
   `ALLOW_BOLTODDS_PROVIDER_REHEARSAL=true` is set after Tyler explicitly opens a
@@ -865,7 +858,7 @@ The live layer is now separate from the production pipeline.
   `compact_market_line_movements` from the live feed path. The script
   entrypoint enables this by default with freshness guards, so the Render
   live-layer cron can keep the production-shaped shadow tables current even
-  when GitHub scheduled shadow-market runs are delayed. Direct test/helper
+  though GitHub shadow-market dispatch is now manual-only. Direct test/helper
   calls to `run()` remain opt-in. This is still shadow-only and does not change
   production provider order or pipeline artifacts.
 - Live-layer market-state guardrails:

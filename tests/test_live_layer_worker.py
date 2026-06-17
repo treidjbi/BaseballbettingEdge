@@ -799,8 +799,8 @@ def test_worker_writes_market_pick_evidence_for_shadow_providers(tmp_path):
                 "observed_at": "2026-05-06T18:00:00+00:00",
             },
             {
-                "id": "bolt-old",
-                "provider": "boltodds",
+                "id": "rundown-old",
+                "provider": "therundown",
                 "normalized_player_name": "tarik skubal",
                 "player_name": "Tarik Skubal",
                 "bookmaker_key": "betrivers",
@@ -810,8 +810,8 @@ def test_worker_writes_market_pick_evidence_for_shadow_providers(tmp_path):
                 "observed_at": "2026-05-06T17:50:00+00:00",
             },
             {
-                "id": "bolt-new",
-                "provider": "boltodds",
+                "id": "rundown-new",
+                "provider": "therundown",
                 "normalized_player_name": "tarik skubal",
                 "player_name": "Tarik Skubal",
                 "bookmaker_key": "betrivers",
@@ -841,8 +841,8 @@ def test_worker_writes_market_pick_evidence_for_shadow_providers(tmp_path):
 
     assert result["market_pick_evidence"] == 2
     assert result["live_market_display_state"] == 2
-    assert {row["provider"] for row in result["market_pick_evidence_rows"]} == {"propline", "boltodds"}
-    assert {row["provider"] for row in result["live_market_display_rows"]} == {"propline", "boltodds"}
+    assert {row["provider"] for row in result["market_pick_evidence_rows"]} == {"propline", "therundown"}
+    assert {row["provider"] for row in result["live_market_display_rows"]} == {"propline", "therundown"}
     assert {row["actionable_state"] for row in result["live_market_display_rows"]} == {"monitor"}
     writer.upsert_rows.assert_any_call(
         "market_pick_evidence",
@@ -862,12 +862,81 @@ def test_worker_writes_market_pick_evidence_for_shadow_providers(tmp_path):
     assert result["shadow_notification_candidates"] == 2
 
 
-def test_worker_passes_boltodds_heartbeats_to_shadow_market_builders(tmp_path):
+def test_worker_filters_retired_boltodds_from_active_market_builders(tmp_path):
+    today = _write_artifact(tmp_path, [_fire_pitcher()])
+    calls = []
+    writer = Mock()
+
+    def select_rows(table, params):
+        calls.append((table, dict(params)))
+        if table == "market_feed_heartbeats":
+            assert params["provider"] == "in.(propline,therundown)"
+            return []
+        if table == "market_snapshots":
+            assert params["provider"] == "in.(propline,therundown)"
+            return [
+                {
+                    "id": "bolt-fd-old",
+                    "provider": "boltodds",
+                    "normalized_player_name": "tarik skubal",
+                    "player_name": "Tarik Skubal",
+                    "bookmaker_key": "fanduel",
+                    "side": "over",
+                    "line": 6.5,
+                    "american_odds": -110,
+                    "observed_at": "2026-05-06T17:00:00+00:00",
+                },
+                {
+                    "id": "bolt-mgm-old",
+                    "provider": "boltodds",
+                    "normalized_player_name": "tarik skubal",
+                    "player_name": "Tarik Skubal",
+                    "bookmaker_key": "betmgm",
+                    "side": "over",
+                    "line": 6.5,
+                    "american_odds": -105,
+                    "observed_at": "2026-05-06T17:00:00+00:00",
+                },
+            ]
+        return {
+            "live_pick_state": [],
+            "game_reminder_state": [],
+        }.get(table, [])
+
+    writer.select_rows.side_effect = select_rows
+
+    with (
+        patch.object(build_live_events_to_supabase, "SupabaseMarketWriter", return_value=writer),
+        patch.object(
+            build_live_events_to_supabase,
+            "_now_utc",
+            return_value=build_live_events_to_supabase.datetime.fromisoformat("2026-05-06T18:10:30+00:00"),
+        ),
+    ):
+        result = build_live_events_to_supabase.run(
+            slate_date="2026-05-06",
+            artifact_path=today,
+            supabase_url="https://example.supabase.co",
+            service_role_key="secret",
+        )
+
+    assert result["provider_heartbeats"] == 0
+    assert result["market_pick_evidence_rows"] == []
+    assert result["live_market_display_rows"] == []
+    assert ("market_feed_heartbeats", {
+        "provider": "in.(propline,therundown)",
+        "slate_date": "eq.2026-05-06",
+        "order": "observed_at.desc",
+        "limit": "25",
+    }) in calls
+
+
+def test_worker_uses_active_provider_heartbeats_for_shadow_market_builders(tmp_path):
     today = _write_artifact(tmp_path, [_fire_pitcher()])
     writer = _writer_with_selects({
         "live_pick_state": [],
         "market_feed_heartbeats": [{
-            "provider": "boltodds",
+            "provider": "therundown",
             "slate_date": "2026-05-06",
             "observed_at": "2026-05-06T18:10:15+00:00",
             "last_message_at": "2026-05-06T18:10:10+00:00",
@@ -876,8 +945,8 @@ def test_worker_passes_boltodds_heartbeats_to_shadow_market_builders(tmp_path):
         }],
         "market_snapshots": [
             {
-                "id": "bolt-fd-old",
-                "provider": "boltodds",
+                "id": "rundown-fd-old",
+                "provider": "therundown",
                 "normalized_player_name": "tarik skubal",
                 "player_name": "Tarik Skubal",
                 "bookmaker_key": "fanduel",
@@ -887,8 +956,8 @@ def test_worker_passes_boltodds_heartbeats_to_shadow_market_builders(tmp_path):
                 "observed_at": "2026-05-06T17:00:00+00:00",
             },
             {
-                "id": "bolt-mgm-old",
-                "provider": "boltodds",
+                "id": "rundown-mgm-old",
+                "provider": "therundown",
                 "normalized_player_name": "tarik skubal",
                 "player_name": "Tarik Skubal",
                 "bookmaker_key": "betmgm",
@@ -916,12 +985,13 @@ def test_worker_passes_boltodds_heartbeats_to_shadow_market_builders(tmp_path):
             service_role_key="secret",
         )
 
-    assert result["live_market_display_rows"][0]["freshness_status"] == "fresh"
-    assert result["live_market_display_rows"][0]["metadata"]["heartbeat_hold"] is True
-    assert result["market_pick_evidence_rows"][0]["metadata"]["freshness_status"] == "fresh"
-    assert result["market_pick_evidence_rows"][0]["metadata"]["heartbeat_hold"] is True
+    assert result["live_market_display_rows"][0]["freshness_status"] == "stale"
+    assert result["live_market_display_rows"][0]["metadata"]["heartbeat_hold"] is False
+    assert result["market_pick_evidence_rows"][0]["metadata"]["freshness_status"] == "stale"
+    assert result["market_pick_evidence_rows"][0]["metadata"]["heartbeat_hold"] is False
     assert writer.select_rows.call_args_list[1].args[0] == "market_feed_heartbeats"
     assert writer.select_rows.call_args_list[1].args[1]["slate_date"] == "eq.2026-05-06"
+    assert writer.select_rows.call_args_list[1].args[1]["provider"] == "in.(propline,therundown)"
 
 
 def test_worker_keeps_heartbeat_read_failures_from_breaking_live_layer(tmp_path):
@@ -964,8 +1034,8 @@ def test_worker_does_not_turn_shadow_candidates_into_notifications(tmp_path):
         "live_pick_state": [],
         "market_snapshots": [
             {
-                "id": "bolt-old",
-                "provider": "boltodds",
+                "id": "propline-old",
+                "provider": "propline",
                 "normalized_player_name": "tarik skubal",
                 "player_name": "Tarik Skubal",
                 "bookmaker_key": "fanduel",
@@ -975,8 +1045,8 @@ def test_worker_does_not_turn_shadow_candidates_into_notifications(tmp_path):
                 "observed_at": "2026-05-06T17:50:00+00:00",
             },
             {
-                "id": "bolt-new",
-                "provider": "boltodds",
+                "id": "propline-new",
+                "provider": "propline",
                 "normalized_player_name": "tarik skubal",
                 "player_name": "Tarik Skubal",
                 "bookmaker_key": "fanduel",
@@ -1818,6 +1888,14 @@ def test_render_entrypoint_uses_remote_today_artifact_when_no_date_argument(tmp_
     output = capsys.readouterr().out
     assert "date=2026-05-07" in output
     assert "artifact_source=remote" in output
+
+
+def test_default_live_artifact_url_uses_get_artifact():
+    assert "baseballbettingedge.netlify.app/.netlify/functions/get-artifact" in (
+        build_live_events_to_supabase.DEFAULT_ARTIFACT_URL
+    )
+    assert "type=today" in build_live_events_to_supabase.DEFAULT_ARTIFACT_URL
+    assert "raw.githubusercontent.com" not in build_live_events_to_supabase.DEFAULT_ARTIFACT_URL
 
 
 def test_render_entrypoint_uses_remote_artifact_when_date_argument_matches(tmp_path, monkeypatch, capsys):

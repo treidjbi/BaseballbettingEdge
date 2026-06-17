@@ -7,8 +7,8 @@ from typing import Any
 
 
 REF_BOOK_PRIORITY = ("fanduel", "draftkings", "betmgm", "betrivers", "caesars")
-DEFAULT_PROVIDER_PRIORITY = ("boltodds", "propline", "the_odds", "therundown")
-DRAFTKINGS_PROVIDER_PRIORITY = ("propline", "boltodds", "the_odds", "therundown")
+DEFAULT_PROVIDER_PRIORITY = ("therundown", "propline", "the_odds", "boltodds")
+DRAFTKINGS_PROVIDER_PRIORITY = ("therundown", "propline", "the_odds", "boltodds")
 THE_ODDS_EMERGENCY_BOOKS = {"fanduel", "draftkings"}
 WEBSOCKET_HOLD_PROVIDERS = {"boltodds"}
 UNKNOWN_FRESHNESS_SECONDS = 1_000_000_000
@@ -586,8 +586,8 @@ def _selection_reasons(
     ]
     if selected_by_book.get("draftkings", {}).get("provider") == "propline":
         reasons.append("propline_draftkings")
-    if any(row.get("provider") == "boltodds" for row in selected_by_book.values()):
-        reasons.append("boltodds_primary")
+    if any(row.get("provider") == "therundown" for row in selected_by_book.values()):
+        reasons.append("therundown_primary")
     for row in selected_by_book.values():
         if _heartbeat_hold(row):
             reason = f"provider_heartbeat_hold:{row.get('provider')}"

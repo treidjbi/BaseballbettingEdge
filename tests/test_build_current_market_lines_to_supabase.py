@@ -1,6 +1,7 @@
 from datetime import datetime, timezone
 
 from scripts.build_current_market_lines_to_supabase import (
+    DEFAULT_ARTIFACT_URL,
     _enrich_game_times_from_artifact,
     _enrich_game_times_from_live_pick_state,
     _fetch_inputs,
@@ -28,14 +29,14 @@ class FakeWriter:
             if table == "market_provider_runs" and "slate_date" in params:
                 return []
             if table == "market_feed_heartbeats":
-                return [{"run_id": "run-rotated", "provider": "boltodds", "slate_date": "2026-05-14"}]
+                return [{"run_id": "run-rotated", "provider": "propline", "slate_date": "2026-05-14"}]
             if table == "market_provider_runs" and "id" in params:
-                return [{"id": "run-rotated", "provider": "boltodds", "slate_date": "2026-05-13"}]
+                return [{"id": "run-rotated", "provider": "propline", "slate_date": "2026-05-13"}]
             if table == "market_snapshots" and params["offset"] == "0":
                 return [{"id": "snap-rotated"}]
             return []
         if table == "market_provider_runs":
-            return [{"id": "run-1", "provider": "boltodds", "slate_date": "2026-05-13"}]
+            return [{"id": "run-1", "provider": "propline", "slate_date": "2026-05-13"}]
         if table == "market_snapshots" and params["offset"] == "0":
             return [{"id": "snap-1"}]
         return []
@@ -54,7 +55,7 @@ def test_fetch_inputs_pages_market_snapshots_without_market_key_filter():
 
     snapshot_rows, run_rows = _fetch_inputs(writer, "2026-05-13")
 
-    assert run_rows == [{"id": "run-1", "provider": "boltodds", "slate_date": "2026-05-13"}]
+    assert run_rows == [{"id": "run-1", "provider": "propline", "slate_date": "2026-05-13"}]
     assert snapshot_rows == [{"id": "snap-1"}]
     snapshot_call = next(call for call in writer.calls if call[0] == "market_snapshots")
     assert snapshot_call[0] == "market_snapshots"
@@ -62,6 +63,8 @@ def test_fetch_inputs_pages_market_snapshots_without_market_key_filter():
     assert snapshot_call[1]["limit"] == "1000"
     assert snapshot_call[1]["offset"] == "0"
     assert "market_key" not in snapshot_call[1]
+    run_call = next(call for call in writer.calls if call[0] == "market_provider_runs")
+    assert run_call[1]["provider"] == "in.(propline,the_odds,therundown)"
 
 
 def test_fetch_snapshot_pages_uses_rest_api_sized_pages():
@@ -90,14 +93,20 @@ def test_fetch_inputs_uses_current_slate_heartbeat_when_run_row_did_not_rotate()
 
     snapshot_rows, run_rows = _fetch_inputs(writer, "2026-05-14")
 
-    assert run_rows == [{"id": "run-rotated", "provider": "boltodds", "slate_date": "2026-05-14"}]
+    assert run_rows == [{"id": "run-rotated", "provider": "propline", "slate_date": "2026-05-14"}]
     assert snapshot_rows == [{"id": "snap-rotated"}]
     assert ("market_feed_heartbeats", {
         "slate_date": "eq.2026-05-14",
-        "provider": "in.(boltodds,propline,the_odds,therundown)",
+        "provider": "in.(propline,the_odds,therundown)",
         "order": "observed_at.desc",
         "limit": "250",
     }) in writer.calls
+
+
+def test_default_market_line_artifact_url_uses_get_artifact():
+    assert "baseballbettingedge.netlify.app/.netlify/functions/get-artifact" in DEFAULT_ARTIFACT_URL
+    assert "type=today" in DEFAULT_ARTIFACT_URL
+    assert "raw.githubusercontent.com" not in DEFAULT_ARTIFACT_URL
 
 
 def test_enrich_game_times_from_live_pick_state_fills_missing_rows_by_pitcher():
@@ -164,7 +173,7 @@ def test_run_enriches_missing_game_times_before_writing_current_lines():
     def select_rows(table, params):
         writer.calls.append((table, dict(params)))
         if table == "market_provider_runs":
-            return [{"id": "run-1", "provider": "boltodds", "slate_date": "2026-05-14"}]
+            return [{"id": "run-1", "provider": "propline", "slate_date": "2026-05-14"}]
         if table == "market_feed_heartbeats":
             return []
         if table == "live_pick_state":
@@ -174,7 +183,7 @@ def test_run_enriches_missing_game_times_before_writing_current_lines():
                 {
                     "id": "snap-over",
                     "run_id": "run-1",
-                    "provider": "boltodds",
+                    "provider": "propline",
                     "bookmaker_key": "fanduel",
                     "bookmaker_title": "FanDuel",
                     "player_name": "Jose Berrios",
@@ -187,7 +196,7 @@ def test_run_enriches_missing_game_times_before_writing_current_lines():
                 {
                     "id": "snap-under",
                     "run_id": "run-1",
-                    "provider": "boltodds",
+                    "provider": "propline",
                     "bookmaker_key": "fanduel",
                     "bookmaker_title": "FanDuel",
                     "player_name": "Jose Berrios",
@@ -220,7 +229,7 @@ def test_run_falls_back_to_artifact_game_times_before_writing_current_lines():
     def select_rows(table, params):
         writer.calls.append((table, dict(params)))
         if table == "market_provider_runs":
-            return [{"id": "run-1", "provider": "boltodds", "slate_date": "2026-05-14"}]
+            return [{"id": "run-1", "provider": "propline", "slate_date": "2026-05-14"}]
         if table == "market_feed_heartbeats":
             return []
         if table == "live_pick_state":
@@ -230,7 +239,7 @@ def test_run_falls_back_to_artifact_game_times_before_writing_current_lines():
                 {
                     "id": "snap-over",
                     "run_id": "run-1",
-                    "provider": "boltodds",
+                    "provider": "propline",
                     "bookmaker_key": "fanduel",
                     "bookmaker_title": "FanDuel",
                     "player_name": "Jose Berrios",
@@ -243,7 +252,7 @@ def test_run_falls_back_to_artifact_game_times_before_writing_current_lines():
                 {
                     "id": "snap-under",
                     "run_id": "run-1",
-                    "provider": "boltodds",
+                    "provider": "propline",
                     "bookmaker_key": "fanduel",
                     "bookmaker_title": "FanDuel",
                     "player_name": "Jose Berrios",

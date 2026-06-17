@@ -5,13 +5,13 @@ ROOT = Path(__file__).resolve().parents[1]
 WORKFLOW = ROOT / ".github" / "workflows" / "shadow-market-infra.yml"
 
 
-def test_shadow_market_workflow_is_scheduled_manual_and_observation_only():
+def test_shadow_market_workflow_is_manual_and_observation_only():
     text = WORKFLOW.read_text(encoding="utf-8")
 
     assert "workflow_dispatch:" in text
-    assert "schedule:" in text
-    assert "2,12,22,32,42,52 15-23,0-1 * * *" in text
-    assert "one-month" in text
+    assert "schedule:" not in text
+    assert "2,12,22,32,42,52 15-23,0-1 * * *" not in text
+    assert "one-month" not in text
     assert "contents: read" in text
     assert "contents: write" not in text
     assert "git push" not in text
@@ -35,15 +35,12 @@ def test_shadow_market_workflow_runs_only_sidecar_scripts_with_required_secrets(
     assert "pipeline/run_pipeline.py" not in text
 
 
-def test_shadow_market_workflow_defaults_capture_flags_for_scheduled_runs():
+def test_shadow_market_workflow_defaults_capture_flags_for_manual_runs():
     text = WORKFLOW.read_text(encoding="utf-8")
 
     assert "Resolve capture flags" in text
     assert "capture_therundown_mainline:" in text
-    assert 'if [ "${{ github.event_name }}" = "schedule" ]; then' in text
-    assert 'CAPTURE_THERUNDOWN_MAINLINE="false"' in text
     assert 'CAPTURE_PROPLINE="true"' in text
-    assert 'CAPTURE_ARTIFACTS="false"' in text
     assert 'BUILD_MARKET_LINES="true"' in text
     assert 'RUN_CUTOVER_COMPARE="false"' in text
     assert "steps.capture.outputs.capture_therundown_mainline == 'true'" in text

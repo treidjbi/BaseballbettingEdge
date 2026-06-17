@@ -41,6 +41,7 @@ def _fetch_current_lines(writer: SupabaseMarketWriter, slate_date: str) -> list[
         "current_market_lines",
         {
             "slate_date": f"eq.{slate_date}",
+            "provider": "in.(therundown,propline,the_odds)",
             "market_key": "eq.pitcher_strikeouts",
             "order": "updated_at.desc",
             "limit": "10000",
@@ -65,7 +66,7 @@ def _fetch_provider_heartbeats(writer: SupabaseMarketWriter, slate_date: str) ->
         "market_feed_heartbeats",
         {
             "slate_date": f"eq.{slate_date}",
-            "provider": "in.(boltodds)",
+            "provider": "in.(propline,therundown)",
             "order": "observed_at.desc",
             "limit": "250",
         },
@@ -172,7 +173,7 @@ def _parse_args(argv: list[str]) -> argparse.Namespace:
     parser.add_argument(
         "--enable-boltodds-draftkings",
         action="store_true",
-        help="Prefer fresh BoltOdds DraftKings after authenticated DK coverage is explicitly approved.",
+        help="Retired compatibility flag; active arbitration keeps TheRundown/PropLine priority.",
     )
     parser.add_argument(
         "--artifact-url",

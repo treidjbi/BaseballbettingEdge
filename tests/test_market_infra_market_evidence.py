@@ -128,6 +128,7 @@ def test_provider_rollup_marks_mixed_book_evidence():
         observed_at="2026-05-08T18:10:00+00:00",
         source_artifact_path="https://raw.example/today.json",
         source_artifact_sha256="abc",
+        providers={"boltodds"},
     )
 
     assert len(rows) == 1
@@ -191,6 +192,7 @@ def test_book_reversal_count_tracks_churn_before_current_state():
         observed_at="2026-05-08T17:10:00+00:00",
         source_artifact_path="https://raw.example/today.json",
         source_artifact_sha256="abc",
+        providers={"boltodds"},
     )
 
     assert len(rows) == 1
@@ -240,6 +242,7 @@ def test_fresh_boltodds_heartbeat_marks_unchanged_stale_evidence_fresh():
         source_artifact_sha256="abc",
         stale_after_seconds=900,
         provider_heartbeats=[_heartbeat()],
+        providers={"boltodds"},
     )
 
     assert len(rows) == 1
@@ -251,3 +254,67 @@ def test_fresh_boltodds_heartbeat_marks_unchanged_stale_evidence_fresh():
     assert row["metadata"]["heartbeat_hold"] is True
     assert row["metadata"]["book_summaries"]["fanduel"]["heartbeat_hold"] is True
     assert row["metadata"]["book_summaries"]["betmgm"]["heartbeat_hold"] is True
+
+
+def test_active_default_tracks_therundown_and_skips_retired_boltodds():
+    rows = build_market_pick_evidence_rows(
+        slate_date="2026-06-17",
+        live_picks=[{
+            "pitcher": "Tarik Skubal",
+            "normalized_pitcher": "tarik skubal",
+            "side": "over",
+            "current_verdict": "FIRE 1u",
+            "k_line": 6.5,
+            "game_time": "2026-06-17T20:00:00+00:00",
+            "game_state": "scheduled",
+            "is_fire": True,
+        }],
+        snapshot_rows=[
+            {
+                "id": "tr-old",
+                "provider": "therundown",
+                "normalized_player_name": "tarik skubal",
+                "bookmaker_key": "fanduel",
+                "side": "over",
+                "line": 6.5,
+                "american_odds": -115,
+                "observed_at": "2026-06-17T18:00:00+00:00",
+            },
+            {
+                "id": "tr-new",
+                "provider": "therundown",
+                "normalized_player_name": "tarik skubal",
+                "bookmaker_key": "fanduel",
+                "side": "over",
+                "line": 6.5,
+                "american_odds": -130,
+                "observed_at": "2026-06-17T18:10:00+00:00",
+            },
+            {
+                "id": "bolt-old",
+                "provider": "boltodds",
+                "normalized_player_name": "tarik skubal",
+                "bookmaker_key": "betmgm",
+                "side": "over",
+                "line": 6.5,
+                "american_odds": -110,
+                "observed_at": "2026-06-17T18:00:00+00:00",
+            },
+            {
+                "id": "bolt-new",
+                "provider": "boltodds",
+                "normalized_player_name": "tarik skubal",
+                "bookmaker_key": "betmgm",
+                "side": "over",
+                "line": 7.5,
+                "american_odds": 120,
+                "observed_at": "2026-06-17T18:10:00+00:00",
+            },
+        ],
+        observed_at="2026-06-17T18:10:00+00:00",
+        source_artifact_path="https://example.test/.netlify/functions/get-artifact?type=today",
+        source_artifact_sha256="abc",
+    )
+
+    assert {row["provider"] for row in rows} == {"therundown"}
+    assert rows[0]["dedupe_key"] == "2026-06-17:market_evidence:therundown:tarik skubal:over"

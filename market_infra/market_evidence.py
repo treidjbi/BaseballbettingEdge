@@ -11,7 +11,8 @@ from market_infra.provider_freshness import (
 from pipeline.name_utils import normalize
 
 
-MARKET_EVIDENCE_PROVIDERS = {"propline", "boltodds"}
+ACTIVE_MARKET_EVIDENCE_PROVIDERS = {"propline", "therundown"}
+HISTORICAL_MARKET_EVIDENCE_PROVIDERS = ACTIVE_MARKET_EVIDENCE_PROVIDERS | {"boltodds"}
 TRACKED_VERDICTS = {"LEAN", "FIRE 1u", "FIRE 2u"}
 DEFAULT_STALE_AFTER_SECONDS = 900
 
@@ -162,11 +163,12 @@ def _time_window(observed_at: datetime, game_time: Any) -> tuple[int | None, str
 
 def _group_snapshots(
     snapshot_rows: list[dict[str, Any]],
+    providers: set[str],
 ) -> dict[tuple[str, str, str], dict[str, list[dict[str, Any]]]]:
     grouped: dict[tuple[str, str, str], dict[str, list[dict[str, Any]]]] = {}
     for snapshot in snapshot_rows:
         provider = str(snapshot.get("provider") or "").strip().lower()
-        if provider not in MARKET_EVIDENCE_PROVIDERS:
+        if provider not in providers:
             continue
         normalized = str(
             snapshot.get("normalized_player_name") or normalize(snapshot.get("player_name") or "")
@@ -271,6 +273,7 @@ def build_market_pick_evidence_rows(
     source_artifact_sha256: str | None,
     stale_after_seconds: int = DEFAULT_STALE_AFTER_SECONDS,
     provider_heartbeats: list[dict[str, Any]] | None = None,
+    providers: set[str] | None = None,
 ) -> list[dict[str, Any]]:
     observed_at_dt = _parse_datetime(observed_at)
     if observed_at_dt is None:
@@ -281,7 +284,12 @@ def build_market_pick_evidence_rows(
         observed_at_dt,
         stale_after_seconds,
     )
-    grouped_snapshots = _group_snapshots(snapshot_rows)
+    provider_set = {
+        str(provider).strip().lower()
+        for provider in (providers or ACTIVE_MARKET_EVIDENCE_PROVIDERS)
+        if str(provider).strip()
+    }
+    grouped_snapshots = _group_snapshots(snapshot_rows, provider_set)
     rows: list[dict[str, Any]] = []
 
     for pick in live_picks:
@@ -297,7 +305,7 @@ def build_market_pick_evidence_rows(
             continue
 
         minutes_to_game, time_window = _time_window(observed_at_dt, pick.get("game_time"))
-        for provider in sorted(MARKET_EVIDENCE_PROVIDERS):
+        for provider in sorted(provider_set):
             book_groups = grouped_snapshots.get((provider, normalized_pitcher, side), {})
             if not book_groups:
                 continue

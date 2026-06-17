@@ -8,9 +8,9 @@ provider order, notifications, or calibration.
 
 | Need | Current Tracker | Notes |
 | --- | --- | --- |
-| Feed uptime and recency | `market_feed_heartbeats` | Fastest proof that the BoltOdds worker is alive. |
+| Feed uptime and recency | `market_feed_heartbeats` | Active proof for TheRundown/PropLine sidecar freshness; also the first place to detect accidental BoltOdds reactivation. |
 | Raw book movement | `market_snapshots` | High-volume evidence; summarize before keeping long term. |
-| Slate/book coverage | `provider_coverage_audits` | First place to judge whether BoltOdds covers enough books/pitchers. |
+| Slate/book coverage | `provider_coverage_audits` | First place to judge active provider coverage, missing books, and historical provider trial value. |
 | Per-pick movement rollup | `market_pick_evidence` | Compact model-vs-market movement for LEAN/FIRE sides. |
 | App-ready live state | `live_market_display_state` | Consensus, best actionable book, off-market books, freshness. |
 | Would-have-alerted rows | `shadow_notification_candidates` | Alert research only; does not send pushes. |
@@ -29,40 +29,43 @@ provider order, notifications, or calibration.
 | Batter-handedness Path B readiness | `batter_handedness_shadow_audit.py` | Checks whether lineup hand counts, matchup buckets, and split cache coverage justify anything beyond shadow collection. |
 | Best executable market candidates | `executable_market_shadow_audit.py` | Scores fresh supported mainline book/line/side rows against the current model projection; shadow-only input for cutover review. |
 
-## Provider Cutover Tracker Ownership
+## Provider Tracker Ownership
 
-The BoltOdds + PropLine cutover should add an official arbitration layer on top
-of existing trackers. It should not create duplicate versions of raw movement,
-per-pick movement, display state, or would-have-alerted state.
+The active provider posture is TheRundown as the official artifact source with
+PropLine as fallback/live-movement sidecar. The old BoltOdds + PropLine cutover
+is retired; future provider trials need a new Tyler approval. Existing trackers
+should still be reused instead of creating duplicate raw movement, per-pick
+movement, display state, or would-have-alerted state.
 
-| Table / artifact | Current role | Cutover action | Writes during cutover | Long-term role |
+| Table / artifact | Current role | Active action | Active writers | Long-term role |
 | --- | --- | --- | --- | --- |
-| `market_feed_heartbeats` | BoltOdds worker uptime and current-slate proof | Read for cutover freshness gates | Existing BoltOdds worker only | Operational freshness, short retention |
-| `market_provider_runs` | Provider run metadata, including `slate_date` | Read to attach raw snapshots to slate dates | Existing provider workers only | Provider audit and lineage |
-| `market_snapshots` | Raw per-book/provider odds ticks | Read as raw source for current-line builder | Existing BoltOdds/PropLine writers only | High-volume short-retention raw evidence |
-| `provider_coverage_audits` | Slate/book/pitcher coverage summaries | Read for cutover gates | Existing provider audits plus BoltOdds trial writer | Long-term provider decision evidence |
+| `market_feed_heartbeats` | Active sidecar/source freshness and accidental-reactivation proof | Read for live-layer health and stale-row guards | Render live layer and provider scripts | Operational freshness, short retention |
+| `market_provider_runs` | Provider run metadata, including `slate_date` | Read to attach raw snapshots to slate dates | Active provider pollers/processors | Provider audit and lineage |
+| `market_snapshots` | Raw per-book/provider odds ticks | Read as raw source for current-line and live-display builders | Active TheRundown/PropLine writers; historical BoltOdds rows only | High-volume short-retention raw evidence |
+| `provider_coverage_audits` | Slate/book/pitcher coverage summaries | Read for active source health and future provider-trial gates | Active provider audits; historical trial writers only | Long-term provider decision evidence |
 | `market_pick_evidence` | Per-pick provider movement rollup | Leave as shadow/research | Existing live layer only | Model-vs-market learning |
 | `live_market_display_state` | App-ready per-provider market state | Leave as shadow/display until explicit UI promotion | Existing live layer only | User-facing evidence after separate display decision |
-| `shadow_notification_candidates` | Would-have-alerted rows | Continue shadow testing BoltOdds notification value | Existing live layer only | Notification promotion evidence |
+| `shadow_notification_candidates` | Would-have-alerted rows | Continue shadow testing future notification classes | Existing live layer only | Notification promotion evidence |
 | `propline_webhook_deliveries` | Raw signed PropLine webhook inbox | Process recent rows only for shadow comparison | Netlify receiver plus bounded live-layer processor | Webhook reliability, dedupe, and timing audit |
 | `shadow_pipeline_runs` | Render-vs-GitHub timing summary | Add as existing-cron timing evidence | Existing live layer only | Short-retention scheduler reliability evidence |
 | `shadow_pick_lock_observations` | Deduped lock timing observations | Add as existing-cron timing evidence | Existing live layer only | Compact evidence for future lock-ledger promotion |
-| `line_movement_events` | Durable movement events | Webhook rows may be added as shadow evidence only; do not widen to BoltOdds sends until notification cutover | Existing live layer; bounded PropLine webhook processor; later gated BoltOdds alerts | Notification/event audit |
-| `notification_events` | Real push queue | Do not write BoltOdds-sourced alerts until separate flag | Existing live sender only | Delivery audit and fatigue control |
+| `line_movement_events` | Durable movement events | PropLine webhook line/price movement rows may write only for the reviewed class; keep new classes separate | Existing live layer; bounded PropLine webhook processor | Notification/event audit |
+| `notification_events` | Real push queue | Do not write new provider-sourced alert classes without a separate flag/review | Existing live sender only | Delivery audit and fatigue control |
 | `game_reminder_state` | Reminder dedupe/state | Unchanged | Existing live layer only | Reminder dedupe |
 | `accepted_bets` | Manual Tyler bet log | Read for CLV, timing proof, and notification-to-bet attribution after the IDs are wired through the app | Manual/UI flow only, later notification-originated logs with explicit source attribution | Bet-timing, CLV, and alert-value audit |
 | `data/preview_lines.json` | Official opening baseline artifact | Preserve shape; eventually feed from provider baselines | GitHub pipeline only | Official opening source for artifacts |
 | `data/picks_history.json` | Durable graded pick history | Add source attribution fields only | GitHub pipeline grading/history only | Regime-aware performance history |
-| `current_market_lines` | New derived complete book lines | Create from raw snapshots | New current-line builder | Current provider state for official arbitration |
-| `official_market_lines` | New official provider-arbitrated market feed | Create as the only pipeline-readable market source | New arbitration builder | Official market source after cutover |
+| `current_market_lines` | Derived complete book lines | Build from active raw snapshots; default active readers exclude retired BoltOdds | Current-line builder | Current provider state for research/arbitration rehearsal |
+| `official_market_lines` | Provider-arbitrated market feed | Keep as rehearsal/evidence unless Tyler approves a source switch | Arbitration builder | Possible future official source after a fresh gate/review |
 | `market_opening_baselines` | New provider opening baselines | Create and preserve first-seen baseline rows | New current-line builder | Provider-era opening-line source |
 | `provider_arbitration_decisions` | New source-choice audit | Create for every official-line build | New arbitration builder | Explain bet/wait/skip/source decisions |
 | `provider_request_usage_daily` | New provider request/cost counter | Write from shadow provider runs/snapshots | Current-line builder and compaction script | Cost and quota guardrail |
 | `compact_market_line_movements` | New compact raw-snapshot summary | Write before long-term raw snapshot retention deletion | `scripts/compact_market_snapshots.py` | Season-long movement history without raw tick volume |
 
-Cutover rule: the GitHub pipeline should read `official_market_lines`, not raw
-`market_snapshots`. Raw snapshots remain evidence; official lines are the
-controlled product input.
+Future source-switch rule: if Tyler opens a new provider trial and approves a
+pipeline adapter, the pipeline should read `official_market_lines`, not raw
+`market_snapshots`. Today, TheRundown-derived Render artifacts remain the
+production source of truth; raw snapshots and official lines remain evidence.
 
 ## Added To Compact Outcome Rows
 
@@ -104,18 +107,20 @@ These should be collected before being used for model or selection rules:
 - injury/ramp-up and return-from-IL flags
 - bullpen rest and likely leash/team pull tendency
 - weather, roof, and game-total/run-environment context
-- provider-specific bet-time consensus rows once BoltOdds is promoted
+- provider-specific bet-time consensus rows for the active TheRundown/PropLine
+  sidecar or any future approved provider trial
 
-## Weekend Read Rule
+## Active Provider Read Rule
 
-If BoltOdds becomes production this weekend, judge it by three proofs:
+For TheRundown/PropLine health, or any future provider trial, judge it by three
+proofs:
 
 1. Coverage: books and pitchers are present and fresh.
 2. Timing: pick-time rows have a complete market state.
 3. CLV: tracked picks beat the close more often than the old path.
 
-Do not copy raw WebSocket tick history into long-term research storage unless a
-separate cost and retention decision says it is worth it.
+Do not copy raw tick history into long-term research storage unless a separate
+cost and retention decision says it is worth it.
 
 The timing-ledger rule is the same: keep `shadow_pipeline_runs` as short-lived
 operational proof and keep `shadow_pick_lock_observations` compact enough to
@@ -171,7 +176,7 @@ The BBE Operations Brief should synthesize this map every weekday:
 7. Regenerate or read `k_projection_shadow_lab.md` when projection quality is
    in question; report whether a challenger improves accuracy without
    promoting it into live lambda.
-8. For provider-cutover or line-conflict days, run/read
+8. For provider-trial, sidecar-health, or line-conflict days, run/read
    `executable_market_shadow_audit_YYYY-MM-DD.md` beside the provider cutover
    report. Separate `single_book_outlier` conflicts from
    `ref_vs_majority` conflicts, and treat best-executable EV as shadow evidence

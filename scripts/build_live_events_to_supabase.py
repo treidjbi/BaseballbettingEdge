@@ -49,10 +49,7 @@ from scripts.shadow_therundown_mainline_to_supabase import (  # noqa: E402
 )
 
 DEFAULT_ARTIFACT = ROOT / "dashboard" / "data" / "processed" / "today.json"
-DEFAULT_ARTIFACT_URL = (
-    "https://raw.githubusercontent.com/treidjbi/BaseballBettingEdge/"
-    "main/dashboard/data/processed/today.json"
-)
+DEFAULT_ARTIFACT_URL = "https://baseballbettingedge.netlify.app/.netlify/functions/get-artifact?type=today"
 DEFAULT_LOCK_ONLY_WORKFLOW_DISPATCH_URL = (
     "https://baseballbettingedge.netlify.app/.netlify/functions/trigger-pipeline"
 )
@@ -226,7 +223,7 @@ def _live_notification_snapshots(rows: list[dict[str, Any]]) -> list[dict[str, A
 def _fetch_provider_heartbeats(writer: SupabaseMarketWriter, slate_date: str) -> list[dict[str, Any]]:
     try:
         return writer.select_rows("market_feed_heartbeats", {
-            "provider": "eq.boltodds",
+            "provider": "in.(propline,therundown)",
             "slate_date": f"eq.{slate_date}",
             "order": "observed_at.desc",
             "limit": "25",
@@ -254,7 +251,7 @@ def _fetch_recent_provider_run_rows(
         "market_provider_runs",
         {
             "slate_date": f"eq.{slate_date}",
-            "provider": "in.(propline,boltodds)",
+            "provider": "in.(propline,therundown)",
             "order": "created_at.desc",
             "limit": str(limit),
         },
@@ -309,7 +306,7 @@ def _fetch_live_market_snapshot_rows(
     return writer.select_rows(
         "market_snapshots",
         {
-            "provider": "in.(propline,boltodds)",
+            "provider": "in.(propline,therundown)",
             "observed_at": f"gte.{lookback_start}",
             "order": "observed_at.desc",
             "limit": str(page_size),

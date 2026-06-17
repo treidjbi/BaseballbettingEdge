@@ -24,10 +24,8 @@ from market_infra.provider_usage import (  # noqa: E402
 from market_infra.supabase_writer import SupabaseMarketWriter  # noqa: E402
 from pipeline.name_utils import normalize  # noqa: E402
 
-DEFAULT_ARTIFACT_URL = (
-    "https://raw.githubusercontent.com/treidjbi/BaseballBettingEdge/"
-    "main/dashboard/data/processed/today.json"
-)
+DEFAULT_ARTIFACT_URL = "https://baseballbettingedge.netlify.app/.netlify/functions/get-artifact?type=today"
+ACTIVE_PROVIDER_RUNS = {"propline", "the_odds", "therundown"}
 
 
 def _env(name: str) -> str:
@@ -58,11 +56,12 @@ def _fetch_inputs(
         "market_provider_runs",
         {
             "slate_date": f"eq.{slate_date}",
-            "provider": "in.(boltodds,propline,the_odds,therundown)",
+            "provider": "in.(propline,the_odds,therundown)",
             "order": "created_at.desc",
             "limit": "250",
         },
     )
+    run_rows = _active_provider_rows(run_rows)
     run_rows = _merge_heartbeat_run_rows(writer, slate_date, run_rows)
     if not run_rows:
         return [], []
@@ -86,7 +85,7 @@ def _merge_heartbeat_run_rows(
         "market_feed_heartbeats",
         {
             "slate_date": f"eq.{slate_date}",
-            "provider": "in.(boltodds,propline,the_odds,therundown)",
+            "provider": "in.(propline,the_odds,therundown)",
             "order": "observed_at.desc",
             "limit": "250",
         },
@@ -110,11 +109,21 @@ def _merge_heartbeat_run_rows(
             run_id = str(row.get("id") or "")
             if not run_id:
                 continue
+            if str(row.get("provider") or "").strip().lower() not in ACTIVE_PROVIDER_RUNS:
+                continue
             normalized = dict(row)
             normalized["slate_date"] = slate_date
             rows_by_id[run_id] = normalized
 
     return list(rows_by_id.values())
+
+
+def _active_provider_rows(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    return [
+        row
+        for row in rows
+        if str(row.get("provider") or "").strip().lower() in ACTIVE_PROVIDER_RUNS
+    ]
 
 
 def _fetch_snapshot_pages(

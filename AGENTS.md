@@ -361,8 +361,10 @@ The live notification layer is separate from the official pipeline.
   (default on for the script entrypoint). It uses freshness guards
   (`LIVE_MARKET_LINE_BUILD_MIN_INTERVAL_SECONDS`, default `600`, and
   `LIVE_MARKET_COMPACTION_MIN_INTERVAL_SECONDS`, default `1800`) so a fresh
-  GitHub shadow-market build is not immediately duplicated. This is shadow
-  infrastructure only; it does not make BoltOdds/PropLine production.
+  manual shadow-market build is not immediately duplicated. GitHub
+  `shadow-market-infra` is manual-only after the 2026-06-17 BoltOdds retirement.
+  This is shadow infrastructure only; it does not make PropLine, BoltOdds, or
+  `official_market_lines` production.
 - **Netlify sender**: scheduled `send-live-notifications` every 10 minutes.
 - **Manual sender**: `/api/send-live-notifications-now` with `NOTIFY_SECRET`.
 
@@ -376,10 +378,12 @@ continue using `shadow_notification_candidates` for future would-have-sent
 evidence before promoting any new notification class.
 
 `market_pick_evidence` is a shadow-only per-pick/provider rollup for model vs.
-market learning. It summarizes whether live market snapshots moved toward or
-away from the pick and whether the current number got better or worse to bet
-now. It must not drive live picks, locks, thresholds, staking, provider order,
-or notification sends without Tyler's explicit approval.
+market learning. Active defaults read TheRundown/PropLine evidence and exclude
+retired BoltOdds unless an explicit historical/provider-trial path requests it.
+It summarizes whether live market snapshots moved toward or away from the pick
+and whether the current number got better or worse to bet now. It must not drive
+live picks, locks, thresholds, staking, provider order, or notification sends
+without Tyler's explicit approval.
 
 `live_market_outcome_audit.py` is the shadow-only post-slate bridge from
 BoltOdds/PropLine market evidence to graded outcomes. It can read exported

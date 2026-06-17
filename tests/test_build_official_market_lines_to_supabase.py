@@ -14,15 +14,17 @@ class FakeWriter:
         self.live_rows = live_rows or []
         self.upserts = []
         self.inserts = []
+        self.calls = []
 
     def select_rows(self, table, params):
+        self.calls.append((table, dict(params)))
         assert params["slate_date"] == "eq.2026-05-13"
         if table == "current_market_lines":
-            return self.rows
+            return _filter_provider_rows(self.rows, params)
         if table == "official_market_lines":
             return self.official_rows
         if table == "market_feed_heartbeats":
-            return self.heartbeat_rows
+            return _filter_provider_rows(self.heartbeat_rows, params)
         if table == "live_pick_state":
             return self.live_rows
         raise AssertionError(f"unexpected table: {table}")
@@ -36,7 +38,7 @@ class FakeWriter:
         return rows
 
 
-def _line(line_id, *, provider="boltodds", book_key="fanduel", book_name="FanDuel"):
+def _line(line_id, *, provider="therundown", book_key="fanduel", book_name="FanDuel"):
     return {
         "id": line_id,
         "slate_date": "2026-05-13",
@@ -55,6 +57,31 @@ def _line(line_id, *, provider="boltodds", book_key="fanduel", book_name="FanDue
         "is_complete": True,
         "quality_flags": [],
     }
+
+
+def _filter_provider_rows(rows, params):
+    provider_filter = params.get("provider")
+    if not provider_filter:
+        return rows
+    if provider_filter.startswith("in.(") and provider_filter.endswith(")"):
+        providers = {
+            item.strip()
+            for item in provider_filter[len("in.("):-1].split(",")
+            if item.strip()
+        }
+        return [
+            row
+            for row in rows
+            if str(row.get("provider") or "").strip().lower() in providers
+        ]
+    if provider_filter.startswith("eq."):
+        provider = provider_filter[len("eq."):]
+        return [
+            row
+            for row in rows
+            if str(row.get("provider") or "").strip().lower() == provider
+        ]
+    return rows
 
 
 def test_dry_run_reports_counts_without_writes():
@@ -84,6 +111,8 @@ def test_upsert_writes_official_lines_and_decision_audit_rows():
     official = writer.upserts[0][1][0]
     assert official["ref_book_key"] == "fanduel"
     assert official["book_odds"]["DraftKings"]["provider"] == "propline"
+    current_line_call = next(call for call in writer.calls if call[0] == "current_market_lines")
+    assert current_line_call[1]["provider"] == "in.(therundown,propline,the_odds)"
 
 
 def test_run_enriches_missing_game_times_before_official_arbitration():
@@ -115,8 +144,8 @@ def test_run_enriches_missing_game_times_before_official_arbitration():
     assert official["ready_for_pipeline"] is True
 
 
-def test_fresh_provider_heartbeat_keeps_unchanged_boltodds_lines_ready():
-    stale_line = _line(1)
+def test_active_builder_filters_out_retired_boltodds_heartbeat_hold():
+    stale_line = _line(1, provider="boltodds")
     stale_line["freshness_seconds"] = 1800
     stale_line["last_seen_at"] = "2026-05-13T18:30:00+00:00"
     stale_line["quality_flags"] = ["stale"]
@@ -135,10 +164,13 @@ def test_fresh_provider_heartbeat_keeps_unchanged_boltodds_lines_ready():
 
     result = run(slate_date="2026-05-13", writer=writer, dry_run=False, now_utc=NOW)
 
-    assert result["ready_for_pipeline"] == 1
-    official = writer.upserts[0][1][0]
-    assert official["selected_provider"] == "boltodds"
-    assert "provider_heartbeat_hold:boltodds" in official["arbitration_reasons"]
+    assert result["current_market_lines"] == 0
+    assert result["provider_heartbeats"] == 0
+    assert result["ready_for_pipeline"] == 0
+    current_line_call = next(call for call in writer.calls if call[0] == "current_market_lines")
+    heartbeat_call = next(call for call in writer.calls if call[0] == "market_feed_heartbeats")
+    assert current_line_call[1]["provider"] == "in.(therundown,propline,the_odds)"
+    assert heartbeat_call[1]["provider"] == "in.(propline,therundown)"
 
 
 def test_missing_existing_ready_rows_are_retired():

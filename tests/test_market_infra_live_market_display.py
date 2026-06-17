@@ -148,3 +148,21 @@ def test_fresh_boltodds_heartbeat_holds_unchanged_stale_lines():
         "betmgm",
     }
     assert rows[0]["best_book"] == "fanduel"
+
+
+def test_default_provider_set_includes_therundown_and_skips_retired_boltodds():
+    therundown = _snapshot("fanduel", -110, "2026-05-12T20:00:00+00:00")
+    therundown["provider"] = "therundown"
+    retired = _snapshot("betmgm", 120, "2026-05-12T20:00:00+00:00")
+    retired["provider"] = "boltodds"
+
+    rows = build_live_market_display_rows(
+        slate_date="2026-05-12",
+        live_picks=[_pick()],
+        snapshot_rows=[therundown, retired],
+        observed_at=datetime(2026, 5, 12, 20, 10, 30, tzinfo=timezone.utc),
+        source_artifact_path="https://example.test/.netlify/functions/get-artifact?type=today",
+        source_artifact_sha256="sha",
+    )
+
+    assert {row["provider"] for row in rows} == {"therundown"}

@@ -385,10 +385,11 @@ def build_live_market_display_rows(
         observed_at_dt,
         stale_after_seconds,
     )
+    active_providers = {"propline", "therundown"}
     providers = [provider.strip().lower()] if provider else sorted({
         str(row.get("provider") or "").strip().lower()
         for row in snapshot_rows
-        if str(row.get("provider") or "").strip().lower() in {"propline", "boltodds"}
+        if str(row.get("provider") or "").strip().lower() in active_providers
     })
 
     rows: list[dict[str, Any]] = []

@@ -9,7 +9,7 @@ NOW = datetime(2026, 5, 13, 19, 0, tzinfo=timezone.utc)
 def _line(
     line_id,
     *,
-    provider="boltodds",
+    provider="therundown",
     book_key="fanduel",
     book_name="FanDuel",
     player="Jose Berrios",
@@ -63,23 +63,24 @@ def _heartbeat(
     }
 
 
-def test_boltodds_fanduel_beats_propline_fanduel_when_fresh():
+def test_therundown_fanduel_beats_propline_and_retired_boltodds_when_fresh():
     official_rows, decision_rows = choose_official_lines(
         [
             _line(1, provider="propline", over_odds=-105),
             _line(2, provider="boltodds", over_odds=-115),
+            _line(3, provider="therundown", over_odds=-120),
         ],
         NOW,
     )
 
     assert len(official_rows) == 1
     official = official_rows[0]
-    assert official["selected_provider"] == "boltodds"
+    assert official["selected_provider"] == "therundown"
     assert official["ref_book_key"] == "fanduel"
     assert official["game_time"] == "2026-05-13T23:05:00Z"
-    assert official["ref_over_odds"] == -115
-    assert official["book_odds"]["FanDuel"]["provider"] == "boltodds"
-    assert "boltodds_primary" in official["arbitration_reasons"]
+    assert official["ref_over_odds"] == -120
+    assert official["book_odds"]["FanDuel"]["provider"] == "therundown"
+    assert "therundown_primary" in official["arbitration_reasons"]
     assert decision_rows[0]["decision"] == "use"
 
 
@@ -254,7 +255,7 @@ def test_cross_book_line_conflicts_are_preserved_with_ref_priority():
     assert "cross_book_line_conflict" in official["arbitration_reasons"]
 
 
-def test_same_book_ladder_selects_line_confirmed_by_fallback_provider():
+def test_same_book_ladder_uses_fallback_provider_when_retired_provider_has_conflict():
     official_rows, decision_rows = choose_official_lines(
         [
             _line(1, provider="boltodds", book_key="fanduel", book_name="FanDuel", line=5.5, quality_flags=["line_conflict"]),
@@ -266,13 +267,11 @@ def test_same_book_ladder_selects_line_confirmed_by_fallback_provider():
 
     official = official_rows[0]
     assert official["ready_for_pipeline"] is True
-    assert official["selected_provider"] == "boltodds"
+    assert official["selected_provider"] == "propline"
     assert official["ref_line"] == 5.5
-    assert official["book_odds"]["FanDuel"]["current_market_line_id"] == 1
-    assert "mainline_selected:fanduel:5.5" in official["arbitration_reasons"]
-    assert "mainline_overlap_provider:fanduel:5.5" in official["arbitration_reasons"]
+    assert official["book_odds"]["FanDuel"]["current_market_line_id"] == 3
     assert decision_rows[0]["decision"] == "use"
-    assert decision_rows[0]["source_line_ids"] == [1]
+    assert decision_rows[0]["source_line_ids"] == [3]
 
 
 def test_same_book_ladder_selects_line_supported_by_another_book():
@@ -315,7 +314,7 @@ def test_same_book_ladder_without_support_fails_closed_as_ambiguous_mainline():
 def test_decisions_explain_selected_missing_and_stale_inputs():
     _, decision_rows = choose_official_lines(
         [
-            _line(1, provider="boltodds", book_key="fanduel", book_name="FanDuel"),
+            _line(1, provider="therundown", book_key="fanduel", book_name="FanDuel"),
             _line(
                 2,
                 provider="propline",
@@ -330,11 +329,11 @@ def test_decisions_explain_selected_missing_and_stale_inputs():
 
     decision = decision_rows[0]
     assert decision["decision"] == "use"
-    assert decision["selected_provider"] == "boltodds"
+    assert decision["selected_provider"] == "therundown"
     assert decision["selected_book_key"] == "fanduel"
     assert decision["selected_line"] == 5.5
     assert "selected_ref_book:fanduel" in decision["reasons"]
-    assert "selected_provider:boltodds" in decision["reasons"]
+    assert "selected_provider:therundown" in decision["reasons"]
     assert "missing_books:draftkings,betmgm,betrivers,caesars" in decision["reasons"]
     assert decision["stale_candidate_count"] == 1
     assert decision["source_line_ids"] == [1]
@@ -401,7 +400,7 @@ def test_the_odds_emergency_is_limited_to_fanduel_and_draftkings():
     assert decision_rows[0]["decision"] == "skip"
 
 
-def test_draftkings_keeps_propline_until_boltodds_draftkings_is_enabled():
+def test_draftkings_keeps_propline_even_if_retired_boltodds_flag_is_enabled():
     current_rows = [
         _line(1, provider="boltodds", book_key="draftkings", book_name="DraftKings", over_odds=-130),
         _line(2, provider="propline", book_key="draftkings", book_name="DraftKings", over_odds=-105),
@@ -416,8 +415,8 @@ def test_draftkings_keeps_propline_until_boltodds_draftkings_is_enabled():
         NOW,
         boltodds_draftkings_enabled=True,
     )
-    assert enabled_rows[0]["selected_provider"] == "boltodds"
-    assert enabled_rows[0]["ref_over_odds"] == -130
+    assert enabled_rows[0]["selected_provider"] == "propline"
+    assert enabled_rows[0]["ref_over_odds"] == -105
 
 
 def test_missing_freshness_is_not_treated_as_fresh():
