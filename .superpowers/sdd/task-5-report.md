@@ -20,7 +20,7 @@ Tests/commands run with exact results:
   - Final result: `13 passed in 0.22s`.
 
 Commit SHA(s):
-- 3dfa0d7d
+- 7e6c613c
 
 Self-review notes and concerns:
 - The diagnostic is read-only against Supabase and writes only local `analytics/output` files.
