@@ -6,6 +6,9 @@ ROOT = Path(__file__).resolve().parent.parent
 MIGRATIONS_DIR = ROOT / "supabase" / "migrations"
 LIVE_LAYER_MIGRATION = MIGRATIONS_DIR / "20260506_live_layer_events.sql"
 MARKET_EVIDENCE_MIGRATION = MIGRATIONS_DIR / "20260508_market_pick_evidence.sql"
+MARKET_EVIDENCE_PROVIDER_MIGRATION = (
+    MIGRATIONS_DIR / "20260619192355_allow_therundown_market_pick_evidence_provider.sql"
+)
 SHADOW_CANDIDATE_MIGRATION = MIGRATIONS_DIR / "20260508_shadow_notification_candidates.sql"
 ACCEPTED_BETS_MIGRATION = MIGRATIONS_DIR / "20260508_accepted_bets_log.sql"
 LIVE_MARKET_DISPLAY_MIGRATION = MIGRATIONS_DIR / "20260512_live_market_display_state.sql"
@@ -80,6 +83,7 @@ def test_local_market_state_guard_migrations_match_live_versions():
 def test_live_layer_migration_file_exists():
     assert LIVE_LAYER_MIGRATION.exists()
     assert MARKET_EVIDENCE_MIGRATION.exists()
+    assert MARKET_EVIDENCE_PROVIDER_MIGRATION.exists()
     assert SHADOW_CANDIDATE_MIGRATION.exists()
     assert ACCEPTED_BETS_MIGRATION.exists()
     assert LIVE_MARKET_DISPLAY_MIGRATION.exists()
@@ -131,6 +135,20 @@ def test_notification_digest_migration_allows_grouped_event_types():
 
     assert "drop constraint if exists notification_events_event_type_check" in sql
     assert "add constraint notification_events_event_type_check" in sql
+
+
+def test_live_layer_provider_migration_allows_active_sources():
+    sql = MARKET_EVIDENCE_PROVIDER_MIGRATION.read_text(encoding="utf-8")
+
+    for constraint_name in [
+        "market_pick_evidence_provider_check",
+        "live_market_display_state_provider_check",
+        "shadow_notification_candidates_provider_check",
+    ]:
+        assert f"drop constraint if exists {constraint_name}" in sql
+        assert f"add constraint {constraint_name}" in sql
+
+    assert sql.count("provider in ('propline', 'boltodds', 'therundown')") == 3
 
 
 def test_shadow_tables_have_readonly_rls_policies():

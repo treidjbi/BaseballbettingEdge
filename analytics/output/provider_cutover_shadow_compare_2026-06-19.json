@@ -5,35 +5,28 @@
     "provider_contract_issues": []
   },
   "coverage": {
-    "ambiguous_mainline_pitchers": [
-      "jose soriano"
-    ],
+    "ambiguous_mainline_pitchers": [],
     "book_counts_for_covered_pitchers": {
-      "BetMGM": 9,
-      "BetRivers": 25,
-      "DraftKings": 26,
-      "FanDuel": 27
+      "BetMGM": 6,
+      "BetRivers": 21,
+      "DraftKings": 22,
+      "FanDuel": 22
     },
     "extra_provider_pitchers": [],
-    "line_conflict_pitchers": [
-      "bryce miller",
-      "cam schlittler",
-      "jeffrey springs",
-      "jose soriano",
-      "ranger suarez",
-      "roki sasaki",
-      "seth lugo"
-    ],
-    "missing_draftkings_pitchers": [
-      "bryce miller"
-    ],
+    "line_conflict_pitchers": [],
+    "missing_draftkings_pitchers": [],
     "missing_provider_pitchers": [
+      "bryce miller",
       "gage jump",
-      "ryan johnson"
+      "jose soriano",
+      "kyle freeland",
+      "roki sasaki",
+      "ryan johnson",
+      "seth lugo"
     ]
   },
   "date": "2026-06-19",
-  "generated_at": "2026-06-19T18:42:07.637269+00:00",
+  "generated_at": "2026-06-19T19:29:21.224930+00:00",
   "input_availability": {
     "provider_current_lines_available": true,
     "provider_evidence_available": true,
@@ -42,9 +35,7 @@
     "warnings": []
   },
   "mainline_selection": {
-    "ambiguous_pitcher_keys": [
-      "jose soriano"
-    ],
+    "ambiguous_pitcher_keys": [],
     "available": true,
     "mainline_candidate_count": 138,
     "mainline_pitcher_keys": [
@@ -76,7 +67,7 @@
       "tatsuya imai",
       "trey gibson"
     ],
-    "raw_candidate_count": 192,
+    "raw_candidate_count": 194,
     "raw_pitcher_keys": [
       "ben brown",
       "bryce miller",
@@ -113,7 +104,7 @@
         "book": "DraftKings",
         "over_delta": 0,
         "pitcher": "Ben Brown",
-        "provider": "propline",
+        "provider": "therundown",
         "provider_line": 4.5,
         "rundown_line": 4.5,
         "same_line": true,
@@ -132,26 +123,6 @@
       {
         "book": "BetMGM",
         "over_delta": 0,
-        "pitcher": "Bryce Miller",
-        "provider": "therundown",
-        "provider_line": 4.5,
-        "rundown_line": 4.5,
-        "same_line": true,
-        "under_delta": 0
-      },
-      {
-        "book": "FanDuel",
-        "over_delta": 0,
-        "pitcher": "Bryce Miller",
-        "provider": "propline",
-        "provider_line": 4.5,
-        "rundown_line": 4.5,
-        "same_line": true,
-        "under_delta": 0
-      },
-      {
-        "book": "BetMGM",
-        "over_delta": 0,
         "pitcher": "Bubba Chandler",
         "provider": "therundown",
         "provider_line": 4.5,
@@ -161,19 +132,19 @@
       },
       {
         "book": "DraftKings",
-        "over_delta": 4,
+        "over_delta": 0,
         "pitcher": "Bubba Chandler",
-        "provider": "propline",
+        "provider": "therundown",
         "provider_line": 4.5,
         "rundown_line": 4.5,
         "same_line": true,
-        "under_delta": -3
+        "under_delta": 0
       },
       {
         "book": "FanDuel",
         "over_delta": 0,
         "pitcher": "Bubba Chandler",
-        "provider": "propline",
+        "provider": "therundown",
         "provider_line": 4.5,
         "rundown_line": 4.5,
         "same_line": true,
@@ -183,7 +154,7 @@
         "book": "DraftKings",
         "over_delta": 0,
         "pitcher": "Cade Cavalli",
-        "provider": "propline",
+        "provider": "therundown",
         "provider_line": 4.5,
         "rundown_line": 4.5,
         "same_line": true,
@@ -193,7 +164,7 @@
         "book": "FanDuel",
         "over_delta": 0,
         "pitcher": "Cade Cavalli",
-        "provider": "propline",
+        "provider": "therundown",
         "provider_line": 4.5,
         "rundown_line": 4.5,
         "same_line": true,
@@ -201,19 +172,19 @@
       },
       {
         "book": "DraftKings",
-        "over_delta": 260,
+        "over_delta": 0,
         "pitcher": "Cam Schlittler",
-        "provider": "propline",
-        "provider_line": 7.5,
+        "provider": "therundown",
+        "provider_line": 6.5,
         "rundown_line": 6.5,
-        "same_line": false,
-        "under_delta": -258
+        "same_line": true,
+        "under_delta": 0
       },
       {
         "book": "FanDuel",
         "over_delta": 0,
         "pitcher": "Cam Schlittler",
-        "provider": "propline",
+        "provider": "therundown",
         "provider_line": 6.5,
         "rundown_line": 6.5,
         "same_line": true,
@@ -233,7 +204,7 @@
         "book": "DraftKings",
         "over_delta": 0,
         "pitcher": "Connor Prielipp",
-        "provider": "propline",
+        "provider": "therundown",
         "provider_line": 3.5,
         "rundown_line": 3.5,
         "same_line": true,
@@ -243,7 +214,7 @@
         "book": "FanDuel",
         "over_delta": 0,
         "pitcher": "Connor Prielipp",
-        "provider": "propline",
+        "provider": "therundown",
         "provider_line": 3.5,
         "rundown_line": 3.5,
         "same_line": true,
@@ -253,7 +224,7 @@
         "book": "DraftKings",
         "over_delta": 0,
         "pitcher": "Erick Fedde",
-        "provider": "propline",
+        "provider": "therundown",
         "provider_line": 3.5,
         "rundown_line": 3.5,
         "same_line": true,
@@ -263,7 +234,7 @@
         "book": "FanDuel",
         "over_delta": 0,
         "pitcher": "Erick Fedde",
-        "provider": "propline",
+        "provider": "therundown",
         "provider_line": 3.5,
         "rundown_line": 3.5,
         "same_line": true,
@@ -273,17 +244,7 @@
         "book": "DraftKings",
         "over_delta": 0,
         "pitcher": "Griffin Jax",
-        "provider": "propline",
-        "provider_line": 4.5,
-        "rundown_line": 4.5,
-        "same_line": true,
-        "under_delta": 0
-      },
-      {
-        "book": "FanDuel",
-        "over_delta": 0,
-        "pitcher": "Griffin Jax",
-        "provider": "propline",
+        "provider": "therundown",
         "provider_line": 4.5,
         "rundown_line": 4.5,
         "same_line": true,
@@ -293,7 +254,7 @@
         "book": "DraftKings",
         "over_delta": 0,
         "pitcher": "Jacob deGrom",
-        "provider": "propline",
+        "provider": "therundown",
         "provider_line": 6.5,
         "rundown_line": 6.5,
         "same_line": true,
@@ -303,7 +264,7 @@
         "book": "FanDuel",
         "over_delta": 0,
         "pitcher": "Jacob deGrom",
-        "provider": "propline",
+        "provider": "therundown",
         "provider_line": 6.5,
         "rundown_line": 6.5,
         "same_line": true,
@@ -313,7 +274,7 @@
         "book": "DraftKings",
         "over_delta": 0,
         "pitcher": "Jacob Misiorowski",
-        "provider": "propline",
+        "provider": "therundown",
         "provider_line": 8.5,
         "rundown_line": 8.5,
         "same_line": true,
@@ -323,7 +284,7 @@
         "book": "FanDuel",
         "over_delta": 0,
         "pitcher": "Jacob Misiorowski",
-        "provider": "propline",
+        "provider": "therundown",
         "provider_line": 8.5,
         "rundown_line": 8.5,
         "same_line": true,
@@ -331,39 +292,19 @@
       },
       {
         "book": "DraftKings",
-        "over_delta": -14,
-        "pitcher": "Jeffrey Springs",
-        "provider": "propline",
-        "provider_line": 4.5,
-        "rundown_line": 4.5,
-        "same_line": true,
-        "under_delta": 211
-      },
-      {
-        "book": "FanDuel",
         "over_delta": 0,
         "pitcher": "Jeffrey Springs",
-        "provider": "propline",
+        "provider": "therundown",
         "provider_line": 4.5,
         "rundown_line": 4.5,
         "same_line": true,
         "under_delta": 0
       },
       {
-        "book": "DraftKings",
-        "over_delta": 280,
-        "pitcher": "Jose Soriano",
-        "provider": "propline",
-        "provider_line": 5.5,
-        "rundown_line": 4.5,
-        "same_line": false,
-        "under_delta": -278
-      },
-      {
         "book": "FanDuel",
         "over_delta": 0,
-        "pitcher": "Jose Soriano",
-        "provider": "propline",
+        "pitcher": "Jeffrey Springs",
+        "provider": "therundown",
         "provider_line": 4.5,
         "rundown_line": 4.5,
         "same_line": true,
@@ -373,7 +314,7 @@
         "book": "DraftKings",
         "over_delta": 0,
         "pitcher": "Kevin Gausman",
-        "provider": "propline",
+        "provider": "therundown",
         "provider_line": 5.5,
         "rundown_line": 5.5,
         "same_line": true,
@@ -391,29 +332,9 @@
       },
       {
         "book": "DraftKings",
-        "over_delta": -5,
-        "pitcher": "Kyle Freeland",
-        "provider": "propline",
-        "provider_line": 3.5,
-        "rundown_line": 3.5,
-        "same_line": true,
-        "under_delta": 3
-      },
-      {
-        "book": "FanDuel",
-        "over_delta": 0,
-        "pitcher": "Kyle Freeland",
-        "provider": "propline",
-        "provider_line": 3.5,
-        "rundown_line": 3.5,
-        "same_line": true,
-        "under_delta": 0
-      },
-      {
-        "book": "DraftKings",
         "over_delta": 0,
         "pitcher": "Landen Roupp",
-        "provider": "propline",
+        "provider": "therundown",
         "provider_line": 5.5,
         "rundown_line": 5.5,
         "same_line": true,
@@ -423,7 +344,7 @@
         "book": "FanDuel",
         "over_delta": 0,
         "pitcher": "Landen Roupp",
-        "provider": "propline",
+        "provider": "therundown",
         "provider_line": 5.5,
         "rundown_line": 5.5,
         "same_line": true,
@@ -443,7 +364,7 @@
         "book": "DraftKings",
         "over_delta": 0,
         "pitcher": "Martin P\u00e9rez",
-        "provider": "propline",
+        "provider": "therundown",
         "provider_line": 3.5,
         "rundown_line": 3.5,
         "same_line": true,
@@ -453,7 +374,7 @@
         "book": "FanDuel",
         "over_delta": 0,
         "pitcher": "Martin P\u00e9rez",
-        "provider": "propline",
+        "provider": "therundown",
         "provider_line": 3.5,
         "rundown_line": 3.5,
         "same_line": true,
@@ -461,19 +382,19 @@
       },
       {
         "book": "DraftKings",
-        "over_delta": 207,
+        "over_delta": 0,
         "pitcher": "Michael McGreevy",
-        "provider": "propline",
+        "provider": "therundown",
         "provider_line": 3.5,
         "rundown_line": 3.5,
         "same_line": true,
-        "under_delta": -9
+        "under_delta": 0
       },
       {
         "book": "FanDuel",
         "over_delta": 0,
         "pitcher": "Michael McGreevy",
-        "provider": "propline",
+        "provider": "therundown",
         "provider_line": 3.5,
         "rundown_line": 3.5,
         "same_line": true,
@@ -483,7 +404,7 @@
         "book": "DraftKings",
         "over_delta": 0,
         "pitcher": "Michael Soroka",
-        "provider": "propline",
+        "provider": "therundown",
         "provider_line": 5.5,
         "rundown_line": 5.5,
         "same_line": true,
@@ -493,7 +414,7 @@
         "book": "FanDuel",
         "over_delta": 0,
         "pitcher": "Michael Soroka",
-        "provider": "propline",
+        "provider": "therundown",
         "provider_line": 5.5,
         "rundown_line": 5.5,
         "same_line": true,
@@ -503,7 +424,7 @@
         "book": "DraftKings",
         "over_delta": 0,
         "pitcher": "Randy Vasquez",
-        "provider": "propline",
+        "provider": "therundown",
         "provider_line": 3.5,
         "rundown_line": 3.5,
         "same_line": true,
@@ -513,7 +434,7 @@
         "book": "FanDuel",
         "over_delta": 0,
         "pitcher": "Randy Vasquez",
-        "provider": "propline",
+        "provider": "therundown",
         "provider_line": 3.5,
         "rundown_line": 3.5,
         "same_line": true,
@@ -531,19 +452,19 @@
       },
       {
         "book": "DraftKings",
-        "over_delta": 268,
+        "over_delta": 0,
         "pitcher": "Ranger Suarez",
-        "provider": "propline",
-        "provider_line": 6.5,
+        "provider": "therundown",
+        "provider_line": 5.5,
         "rundown_line": 5.5,
-        "same_line": false,
-        "under_delta": -269
+        "same_line": true,
+        "under_delta": 0
       },
       {
         "book": "FanDuel",
         "over_delta": 0,
         "pitcher": "Ranger Suarez",
-        "provider": "propline",
+        "provider": "therundown",
         "provider_line": 5.5,
         "rundown_line": 5.5,
         "same_line": true,
@@ -553,7 +474,7 @@
         "book": "DraftKings",
         "over_delta": 0,
         "pitcher": "Rhett Lowder",
-        "provider": "propline",
+        "provider": "therundown",
         "provider_line": 4.5,
         "rundown_line": 4.5,
         "same_line": true,
@@ -563,36 +484,6 @@
         "book": "FanDuel",
         "over_delta": 0,
         "pitcher": "Rhett Lowder",
-        "provider": "propline",
-        "provider_line": 4.5,
-        "rundown_line": 4.5,
-        "same_line": true,
-        "under_delta": 0
-      },
-      {
-        "book": "DraftKings",
-        "over_delta": 0,
-        "pitcher": "Roki Sasaki",
-        "provider": "propline",
-        "provider_line": 5.5,
-        "rundown_line": 5.5,
-        "same_line": true,
-        "under_delta": 0
-      },
-      {
-        "book": "FanDuel",
-        "over_delta": 276,
-        "pitcher": "Roki Sasaki",
-        "provider": "propline",
-        "provider_line": 6.5,
-        "rundown_line": 5.5,
-        "same_line": false,
-        "under_delta": -278
-      },
-      {
-        "book": "BetMGM",
-        "over_delta": 0,
-        "pitcher": "Seth Lugo",
         "provider": "therundown",
         "provider_line": 4.5,
         "rundown_line": 4.5,
@@ -601,39 +492,19 @@
       },
       {
         "book": "DraftKings",
-        "over_delta": 9,
-        "pitcher": "Seth Lugo",
-        "provider": "propline",
-        "provider_line": 4.5,
-        "rundown_line": 4.5,
-        "same_line": true,
-        "under_delta": -12
-      },
-      {
-        "book": "FanDuel",
         "over_delta": 0,
-        "pitcher": "Seth Lugo",
-        "provider": "propline",
+        "pitcher": "Tanner Bibee",
+        "provider": "therundown",
         "provider_line": 4.5,
         "rundown_line": 4.5,
         "same_line": true,
         "under_delta": 0
       },
       {
-        "book": "DraftKings",
-        "over_delta": 4,
-        "pitcher": "Tanner Bibee",
-        "provider": "propline",
-        "provider_line": 4.5,
-        "rundown_line": 4.5,
-        "same_line": true,
-        "under_delta": -5
-      },
-      {
         "book": "FanDuel",
         "over_delta": 0,
         "pitcher": "Tanner Bibee",
-        "provider": "propline",
+        "provider": "therundown",
         "provider_line": 4.5,
         "rundown_line": 4.5,
         "same_line": true,
@@ -651,19 +522,9 @@
       },
       {
         "book": "DraftKings",
-        "over_delta": -216,
-        "pitcher": "Tarik Skubal",
-        "provider": "propline",
-        "provider_line": 6.5,
-        "rundown_line": 6.5,
-        "same_line": true,
-        "under_delta": 20
-      },
-      {
-        "book": "FanDuel",
         "over_delta": 0,
         "pitcher": "Tarik Skubal",
-        "provider": "propline",
+        "provider": "therundown",
         "provider_line": 6.5,
         "rundown_line": 6.5,
         "same_line": true,
@@ -671,23 +532,23 @@
       },
       {
         "book": "DraftKings",
-        "over_delta": 7,
+        "over_delta": 0,
         "pitcher": "Tatsuya Imai",
-        "provider": "propline",
+        "provider": "therundown",
         "provider_line": 4.5,
         "rundown_line": 4.5,
         "same_line": true,
-        "under_delta": -5
+        "under_delta": 0
       },
       {
         "book": "FanDuel",
-        "over_delta": -14,
+        "over_delta": 0,
         "pitcher": "Tatsuya Imai",
-        "provider": "propline",
+        "provider": "therundown",
         "provider_line": 4.5,
         "rundown_line": 4.5,
         "same_line": true,
-        "under_delta": 10
+        "under_delta": 0
       },
       {
         "book": "BetMGM",
@@ -703,7 +564,7 @@
         "book": "DraftKings",
         "over_delta": 0,
         "pitcher": "Trey Gibson",
-        "provider": "propline",
+        "provider": "therundown",
         "provider_line": 3.5,
         "rundown_line": 3.5,
         "same_line": true,
@@ -713,67 +574,78 @@
         "book": "FanDuel",
         "over_delta": 0,
         "pitcher": "Trey Gibson",
-        "provider": "propline",
+        "provider": "therundown",
         "provider_line": 3.5,
         "rundown_line": 3.5,
         "same_line": true,
         "under_delta": 0
       }
     ],
-    "ref_book_changes": [],
+    "ref_book_changes": [
+      {
+        "pitcher": "Griffin Jax",
+        "provider_ref_book": "FanDuel",
+        "rundown_ref_book": "BetMGM"
+      },
+      {
+        "pitcher": "Tarik Skubal",
+        "provider_ref_book": "FanDuel",
+        "rundown_ref_book": "BetMGM"
+      }
+    ],
     "verdict_changes": []
   },
   "provider_usage": {
-    "propline_requests": 517,
-    "propline_snapshots": 5264,
+    "propline_requests": 629,
+    "propline_snapshots": 6342,
     "rows": [
       {
         "provider": "propline",
-        "request_count": 517,
-        "snapshot_count": 5264,
+        "request_count": 629,
+        "snapshot_count": 6342,
         "source": "scripts/shadow_propline_to_supabase.py",
-        "updated_at": "2026-06-19 18:40:50.314892+00"
+        "updated_at": "2026-06-19 19:28:01.566418+00"
       },
       {
         "provider": "therundown",
-        "request_count": 65,
-        "snapshot_count": 6426,
+        "request_count": 79,
+        "snapshot_count": 8041,
         "source": "scripts/shadow_therundown_mainline_to_supabase.py",
-        "updated_at": "2026-06-19 18:40:50.314892+00"
+        "updated_at": "2026-06-19 19:28:01.566418+00"
       }
     ],
-    "therundown_requests": 65,
-    "therundown_snapshots": 6426
+    "therundown_requests": 79,
+    "therundown_snapshots": 8041
   },
   "readiness": {
     "gates": [
       {
-        "detail": "27/29",
+        "detail": "22/29",
         "name": "official_provider_pitcher_coverage_90",
-        "status": "pass",
-        "threshold": ">=0.90",
-        "value": 0.931
-      },
-      {
-        "detail": "27/29",
-        "name": "official_provider_fd_or_dk_coverage_85",
-        "status": "pass",
-        "threshold": ">=0.85",
-        "value": 0.931
-      },
-      {
-        "detail": "27/28",
-        "name": "official_rows_ready_for_pipeline_90",
-        "status": "pass",
-        "threshold": ">=0.90",
-        "value": 0.9643
-      },
-      {
-        "detail": "7/29",
-        "name": "line_conflict_rate_under_10",
         "status": "fail",
+        "threshold": ">=0.90",
+        "value": 0.7586
+      },
+      {
+        "detail": "22/29",
+        "name": "official_provider_fd_or_dk_coverage_85",
+        "status": "fail",
+        "threshold": ">=0.85",
+        "value": 0.7586
+      },
+      {
+        "detail": "21/28",
+        "name": "official_rows_ready_for_pipeline_90",
+        "status": "fail",
+        "threshold": ">=0.90",
+        "value": 0.75
+      },
+      {
+        "detail": "0/29",
+        "name": "line_conflict_rate_under_10",
+        "status": "pass",
         "threshold": "<=0.10",
-        "value": 0.2414
+        "value": 0.0
       },
       {
         "detail": "",
@@ -783,11 +655,11 @@
         "value": 0
       },
       {
-        "detail": "517/5000",
+        "detail": "629/5000",
         "name": "propline_usage_under_70_percent_hobby",
         "status": "pass",
         "threshold": "<=0.7",
-        "value": 0.1034
+        "value": 0.1258
       },
       {
         "detail": "",
@@ -801,49 +673,59 @@
   },
   "schedule_first": {
     "available": true,
-    "extra_provider_pitchers_not_scheduled": [],
+    "extra_provider_pitchers_not_scheduled": [
+      "cade cavalli"
+    ],
     "extra_rundown_pitchers_not_scheduled": [
+      "cade cavalli",
       "gage jump",
       "ryan johnson"
     ],
     "missing_provider_pitchers": [
-      "lake bachar"
+      "bryce miller",
+      "jose soriano",
+      "kyle freeland",
+      "lake bachar",
+      "pj poulin",
+      "roki sasaki",
+      "seth lugo"
     ],
     "missing_rundown_pitchers": [
-      "lake bachar"
+      "lake bachar",
+      "pj poulin"
     ],
-    "provider_at_least_1_book_count": 27,
-    "provider_at_least_2_books_count": 27,
-    "provider_at_least_3_books_count": 25,
-    "provider_coverage_rate": 0.9643,
-    "provider_covered_count": 27,
-    "provider_draftkings_count": 26,
-    "provider_draftkings_rate": 0.9286,
-    "provider_fanduel_count": 27,
-    "provider_fanduel_rate": 0.9643,
-    "provider_fd_or_dk_count": 27,
-    "provider_fd_or_dk_rate": 0.9643,
-    "provider_mainline_ready_count": 27,
-    "provider_mainline_ready_rate": 0.9643,
-    "provider_official_ready_count": 27,
-    "provider_official_ready_rate": 0.9643,
-    "provider_raw_coverage_rate": 0.9643,
-    "provider_raw_covered_count": 27,
-    "rundown_covered_count": 27,
+    "provider_at_least_1_book_count": 21,
+    "provider_at_least_2_books_count": 21,
+    "provider_at_least_3_books_count": 20,
+    "provider_coverage_rate": 0.75,
+    "provider_covered_count": 21,
+    "provider_draftkings_count": 21,
+    "provider_draftkings_rate": 0.75,
+    "provider_fanduel_count": 21,
+    "provider_fanduel_rate": 0.75,
+    "provider_fd_or_dk_count": 21,
+    "provider_fd_or_dk_rate": 0.75,
+    "provider_mainline_ready_count": 26,
+    "provider_mainline_ready_rate": 0.9286,
+    "provider_official_ready_count": 21,
+    "provider_official_ready_rate": 0.75,
+    "provider_raw_coverage_rate": 0.9286,
+    "provider_raw_covered_count": 26,
+    "rundown_covered_count": 26,
     "scheduled_pitcher_count": 28,
-    "zero_provider_book_count": 1
+    "zero_provider_book_count": 7
   },
   "summary": {
-    "covered_pitcher_count": 27,
-    "fd_or_dk_coverage_rate": 0.931,
-    "line_conflict_rate": 0.2414,
-    "missing_draftkings_count": 1,
-    "opening_baseline_rate": 0.931,
-    "pitcher_coverage_rate": 0.931,
+    "covered_pitcher_count": 22,
+    "fd_or_dk_coverage_rate": 0.7586,
+    "line_conflict_rate": 0.0,
+    "missing_draftkings_count": 0,
+    "opening_baseline_rate": 0.7586,
+    "pitcher_coverage_rate": 0.7586,
     "production_pitcher_count": 29,
     "provider_contract_issue_count": 0,
-    "provider_pitcher_count": 27,
-    "ref_book_change_count": 0,
+    "provider_pitcher_count": 22,
+    "ref_book_change_count": 2,
     "verdict_change_count": 0,
     "verdict_comparison_available": false
   }
