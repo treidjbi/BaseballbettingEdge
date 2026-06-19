@@ -1,6 +1,6 @@
 # TheRundown + PropLine Official Provider Parity - 2026-06-19
 
-Generated: `2026-06-19T18:31:28.350087+00:00`
+Generated: `2026-06-19T18:39:17.582022+00:00`
 
 ## Input Availability
 
@@ -14,7 +14,7 @@ Generated: `2026-06-19T18:31:28.350087+00:00`
 - FD/DK coverage: 93.1%
 - Line conflict rate: 17.2%
 - Missing DraftKings: 0
-- Ref-book changes: 0
+- Ref-book changes: 1
 - Verdict changes: 0
 - Verdict comparison available: False
 
@@ -32,7 +32,7 @@ Generated: `2026-06-19T18:31:28.350087+00:00`
 - Missing TheRundown starters: 1
 
 - Raw provider coverage: 27 (96.4%)
-- Mainline-ready coverage: 27 (96.4%)
+- Mainline-ready coverage: 0 (0.0%)
 - Official-ready coverage: 27 (96.4%)
 
 ## Readiness Gates
@@ -41,7 +41,7 @@ Generated: `2026-06-19T18:31:28.350087+00:00`
 - official_provider_fd_or_dk_coverage_85: **pass** (value=0.931, threshold=>=0.85, 27/29)
 - official_rows_ready_for_pipeline_90: **pass** (value=0.9643, threshold=>=0.90, 27/28)
 - line_conflict_rate_under_10: **fail** (value=0.1724, threshold=<=0.10, 5/29)
-- prop_contract_valid: **fail** (value=27, threshold=0 missing-field rows, )
+- prop_contract_valid: **pass** (value=0, threshold=0 missing-field rows, )
 - propline_usage_under_70_percent_hobby: **pass** (value=0.1002, threshold=<=0.7, 501/5000)
 - no_boltodds_active_rows: **pass** (value=0, threshold=0 active BoltOdds current-line/heartbeat rows, )
 

@@ -180,6 +180,7 @@ def official_row_to_prop(
         "line_source_provider": row.get("selected_provider"),
         "source_snapshot_ids": current_line_ids,
         "source_current_market_line_ids": current_line_ids,
+        "source_line_ids": current_line_ids,
         "official_market_line_id": row.get("id"),
         "provider_coverage": provider_coverage,
         "provider_arbitration_reasons": arbitration_reasons,

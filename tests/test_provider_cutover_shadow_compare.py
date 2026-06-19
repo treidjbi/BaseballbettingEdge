@@ -7,6 +7,7 @@ from analytics.diagnostics.provider_cutover_shadow_compare import (
     compare_provider_cutover,
     format_markdown_report,
 )
+from pipeline.fetch_provider_market_odds import official_row_to_prop
 
 
 NOW = datetime(2026, 5, 13, 20, 0, tzinfo=timezone.utc)
@@ -619,6 +620,24 @@ def test_prop_contract_requires_provider_provenance_fields():
     ]
     gate_statuses = {gate["name"]: gate["status"] for gate in report["readiness"]["gates"]}
     assert gate_statuses["prop_contract_valid"] == "fail"
+
+
+def test_converted_official_row_with_source_line_alias_satisfies_prop_contract(monkeypatch):
+    monkeypatch.setenv("OFFICIAL_MARKET_SOURCE", "therundown_propline")
+    provider_prop = official_row_to_prop(_official_row(), {})
+
+    assert provider_prop["source_line_ids"] == [201, 202]
+
+    report = compare_provider_cutover(
+        date_str="2026-06-19",
+        rundown_props=[_prop("Jose Berrios")],
+        provider_props=[provider_prop],
+        generated_at=NOW,
+    )
+
+    assert report["artifact_contract"]["provider_contract_issues"] == []
+    gate_statuses = {gate["name"]: gate["status"] for gate in report["readiness"]["gates"]}
+    assert gate_statuses["prop_contract_valid"] == "pass"
 
 
 def test_unavailable_provider_inputs_make_provider_gates_unknown():
