@@ -1,4 +1,4 @@
-"""Shadow comparison for TheRundown vs BoltOdds + PropLine official-provider rows.
+"""Parity report for TheRundown + PropLine official-provider rows.
 
 This diagnostic is analysis-only. It does not change live picks, locks,
 thresholds, staking, provider order, notification sends, artifacts, or
@@ -150,6 +150,21 @@ def _rate(numerator: int, denominator: int) -> float:
     if denominator <= 0:
         return 0.0
     return round(numerator / denominator, 4)
+
+
+def _is_boltodds_row(row: dict[str, Any]) -> bool:
+    provider = str(row.get("provider") or row.get("odds_source") or "").strip().lower()
+    source = str(row.get("source") or "").strip().lower()
+    return provider == "boltodds" or source.startswith("scripts/boltodds")
+
+
+def _count_boltodds_active_rows(
+    provider_current_lines: list[dict[str, Any]] | None,
+    provider_heartbeats: list[dict[str, Any]] | None,
+) -> int:
+    current_line_count = sum(1 for row in provider_current_lines or [] if _is_boltodds_row(row))
+    heartbeat_count = sum(1 for row in provider_heartbeats or [] if _is_boltodds_row(row))
+    return current_line_count + heartbeat_count
 
 
 def _odds_delta_rows(
@@ -394,6 +409,10 @@ def compare_provider_cutover(
     coverage_rate = _rate(len(covered_keys), production_count)
     fd_dk_rate = _rate(len(fd_dk_keys), production_count)
     conflict_rate = _rate(len(line_conflict_keys), production_count)
+    boltodds_active_row_count = _count_boltodds_active_rows(
+        provider_current_lines,
+        provider_heartbeats,
+    )
     current_line_coverage = (
         _current_line_coverage(provider_current_lines, generated, provider_heartbeats)
         if provider_current_lines is not None
@@ -412,42 +431,54 @@ def compare_provider_cutover(
         if prop_line_requests is not None:
             prop_line_usage_rate = round(prop_line_requests / PROPLINE_HOBBY_DAILY_REQUESTS, 4)
 
+    official_rows_ready_rate = (
+        schedule_first["provider_official_ready_rate"]
+        if schedule_first["available"] and schedule_first["scheduled_pitcher_count"]
+        else coverage_rate
+    )
+    official_rows_ready_detail = (
+        f"{schedule_first['provider_official_ready_count']}/{schedule_first['scheduled_pitcher_count']}"
+        if schedule_first["available"] and schedule_first["scheduled_pitcher_count"]
+        else f"{len(covered_keys)}/{production_count}"
+    )
+
     gates = [
         _gate(
-            "pitcher_coverage_90",
+            "official_provider_pitcher_coverage_90",
             coverage_rate >= 0.90 if production_count else None,
             coverage_rate,
             ">=0.90",
             f"{len(covered_keys)}/{production_count}",
         ),
         _gate(
-            "fd_or_dk_coverage_85",
+            "official_provider_fd_or_dk_coverage_85",
             fd_dk_rate >= 0.85 if production_count else None,
             fd_dk_rate,
             ">=0.85",
             f"{len(fd_dk_keys)}/{production_count}",
         ),
         _gate(
-            "line_conflict_rate_10",
+            "official_rows_ready_for_pipeline_90",
+            official_rows_ready_rate >= 0.90 if production_count else None,
+            official_rows_ready_rate,
+            ">=0.90",
+            official_rows_ready_detail,
+        ),
+        _gate(
+            "line_conflict_rate_under_10",
             conflict_rate <= 0.10 if production_count else None,
             conflict_rate,
             "<=0.10",
             f"{len(line_conflict_keys)}/{production_count}",
         ),
         _gate(
-            "today_contract_valid",
+            "prop_contract_valid",
             len(provider_contract_issues) == 0 if provider_props else None,
             len(provider_contract_issues),
             "0 missing-field rows",
         ),
         _gate(
-            "fire_picks_have_book_odds",
-            len(fire_missing_book_odds) == 0,
-            len(fire_missing_book_odds),
-            "0 FIRE rows missing book_odds",
-        ),
-        _gate(
-            "propline_usage_under_70pct_hobby",
+            "propline_usage_under_70_percent_hobby",
             (
                 prop_line_usage_rate <= PROPLINE_USAGE_WARN_FRACTION
                 if prop_line_usage_rate is not None
@@ -458,26 +489,10 @@ def compare_provider_cutover(
             f"{prop_line_requests or 'unknown'}/{PROPLINE_HOBBY_DAILY_REQUESTS}",
         ),
         _gate(
-            "schedule_provider_coverage_90",
-            (
-                schedule_first["provider_coverage_rate"] >= 0.90
-                if schedule_first["available"] and schedule_first["scheduled_pitcher_count"]
-                else None
-            ),
-            schedule_first["provider_coverage_rate"],
-            ">=0.90",
-            f"{schedule_first['provider_covered_count']}/{schedule_first['scheduled_pitcher_count']}",
-        ),
-        _gate(
-            "schedule_fd_or_dk_coverage_85",
-            (
-                schedule_first["provider_fd_or_dk_rate"] >= 0.85
-                if schedule_first["available"] and schedule_first["scheduled_pitcher_count"]
-                else None
-            ),
-            schedule_first["provider_fd_or_dk_rate"],
-            ">=0.85",
-            f"{schedule_first['provider_fd_or_dk_count']}/{schedule_first['scheduled_pitcher_count']}",
+            "no_boltodds_active_rows",
+            boltodds_active_row_count == 0,
+            boltodds_active_row_count,
+            "0 active BoltOdds current-line/heartbeat rows",
         ),
     ]
     readiness = {
@@ -531,6 +546,7 @@ def compare_provider_cutover(
         "artifact_contract": {
             "provider_contract_issues": provider_contract_issues,
             "fire_missing_book_odds": fire_missing_book_odds,
+            "boltodds_active_row_count": boltodds_active_row_count,
         },
         "mainline_selection": current_line_coverage or {"available": False},
         "provider_usage": provider_usage or {},
@@ -542,7 +558,7 @@ def format_markdown_report(report: dict[str, Any]) -> str:
     readiness = report["readiness"]
     schedule = report.get("schedule_first") or {}
     lines = [
-        f"# Provider Cutover Shadow Compare - {report['date']}",
+        f"# TheRundown + PropLine Official Provider Parity - {report['date']}",
         "",
         f"Generated: `{report['generated_at']}`",
         "",
@@ -603,8 +619,8 @@ def format_markdown_report(report: dict[str, Any]) -> str:
         "",
         "## Notes",
         "",
-        "- This is shadow evidence only. It does not change provider order or live artifacts.",
-        "- Unknown gates should be treated as not ready before a cutover decision.",
+        "- This is diagnostic evidence only. It does not change provider order, live artifacts, model math, locks, staking, notifications, or retention.",
+        "- Unknown gates should be treated as not ready before an official-provider decision.",
     ])
     return "\n".join(lines) + "\n"
 
@@ -648,7 +664,7 @@ def _fetch_provider_heartbeats(writer: Any, date_str: str) -> list[dict[str, Any
         "market_feed_heartbeats",
         {
             "slate_date": f"eq.{date_str}",
-            "provider": "in.(boltodds)",
+            "provider": "in.(therundown,propline,boltodds)",
             "order": "observed_at.desc",
             "limit": "250",
         },

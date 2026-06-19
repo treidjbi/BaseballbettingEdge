@@ -74,7 +74,8 @@ def test_compare_reports_pitcher_and_fd_dk_coverage():
     assert report["summary"]["fd_or_dk_coverage_rate"] == 0.5
     assert report["coverage"]["missing_provider_pitchers"] == ["gerrit cole"]
     assert report["coverage"]["missing_draftkings_pitchers"] == []
-    assert report["readiness"]["gates"][0]["status"] == "fail"
+    gate_statuses = {gate["name"]: gate["status"] for gate in report["readiness"]["gates"]}
+    assert gate_statuses["official_provider_pitcher_coverage_90"] == "fail"
 
 
 def test_compare_reports_schedule_first_provider_coverage():
@@ -112,7 +113,7 @@ def test_compare_reports_schedule_first_provider_coverage():
     assert schedule["missing_rundown_pitchers"] == ["missing arm"]
 
     gate_statuses = {gate["name"]: gate["status"] for gate in report["readiness"]["gates"]}
-    assert gate_statuses["schedule_provider_coverage_90"] == "fail"
+    assert gate_statuses["official_provider_pitcher_coverage_90"] == "fail"
 
 
 def test_compare_reports_raw_mainline_and_official_schedule_coverage():
@@ -291,7 +292,8 @@ def test_compare_tracks_missing_draftkings_and_line_conflicts():
     assert report["coverage"]["missing_draftkings_pitchers"] == ["jose berrios"]
     assert report["coverage"]["line_conflict_pitchers"] == ["jose berrios"]
     assert report["summary"]["line_conflict_rate"] == 1.0
-    assert report["readiness"]["gates"][2]["status"] == "fail"
+    gate_statuses = {gate["name"]: gate["status"] for gate in report["readiness"]["gates"]}
+    assert gate_statuses["line_conflict_rate_under_10"] == "fail"
 
 
 def test_compare_reports_ref_book_changes_and_odds_deltas():
@@ -362,8 +364,8 @@ def test_compare_contract_and_usage_gates():
     )
 
     gate_statuses = {gate["name"]: gate["status"] for gate in report["readiness"]["gates"]}
-    assert gate_statuses["today_contract_valid"] == "fail"
-    assert gate_statuses["propline_usage_under_70pct_hobby"] == "fail"
+    assert gate_statuses["prop_contract_valid"] == "fail"
+    assert gate_statuses["propline_usage_under_70_percent_hobby"] == "fail"
     assert report["summary"]["provider_contract_issue_count"] == 1
 
 
@@ -395,8 +397,79 @@ def test_provider_usage_rows_feed_hobby_budget_gate():
     assert usage["propline_requests"] == 304
     assert usage["propline_snapshots"] == 2622
     assert usage["boltodds_requests"] == 4
-    assert gate_statuses["propline_usage_under_70pct_hobby"]["status"] == "pass"
-    assert gate_statuses["propline_usage_under_70pct_hobby"]["value"] == 0.0608
+    assert gate_statuses["propline_usage_under_70_percent_hobby"]["status"] == "pass"
+    assert gate_statuses["propline_usage_under_70_percent_hobby"]["value"] == 0.0608
+
+
+def test_readiness_gates_use_therundown_propline_official_contract():
+    report = compare_provider_cutover(
+        date_str="2026-05-13",
+        rundown_props=[_prop("Jose Berrios")],
+        provider_props=[_prop("Jose Berrios", odds_source="therundown+propline")],
+        provider_current_lines=[
+            {
+                "id": 1,
+                "slate_date": "2026-05-13",
+                "provider": "therundown",
+                "book_name": "FanDuel",
+                "player_name": "Jose Berrios",
+                "normalized_player_name": "jose berrios",
+                "market_key": "pitcher_strikeouts",
+                "line": 5.5,
+                "over_odds": -115,
+                "under_odds": -105,
+                "last_seen_at": "2026-05-13T19:59:00+00:00",
+                "is_complete": True,
+                "quality_flags": [],
+            },
+        ],
+        provider_usage={"propline_requests": 300},
+        generated_at=NOW,
+    )
+
+    gate_names = [gate["name"] for gate in report["readiness"]["gates"]]
+    assert gate_names == [
+        "official_provider_pitcher_coverage_90",
+        "official_provider_fd_or_dk_coverage_85",
+        "official_rows_ready_for_pipeline_90",
+        "line_conflict_rate_under_10",
+        "prop_contract_valid",
+        "propline_usage_under_70_percent_hobby",
+        "no_boltodds_active_rows",
+    ]
+    assert {gate["name"]: gate["status"] for gate in report["readiness"]["gates"]}[
+        "no_boltodds_active_rows"
+    ] == "pass"
+
+
+def test_no_boltodds_active_rows_gate_fails_when_current_lines_include_boltodds():
+    report = compare_provider_cutover(
+        date_str="2026-05-13",
+        rundown_props=[_prop("Jose Berrios")],
+        provider_props=[_prop("Jose Berrios", odds_source="therundown+propline")],
+        provider_current_lines=[
+            {
+                "id": 1,
+                "slate_date": "2026-05-13",
+                "provider": "boltodds",
+                "book_name": "FanDuel",
+                "player_name": "Jose Berrios",
+                "normalized_player_name": "jose berrios",
+                "market_key": "pitcher_strikeouts",
+                "line": 5.5,
+                "over_odds": -115,
+                "under_odds": -105,
+                "last_seen_at": "2026-05-13T19:59:00+00:00",
+                "is_complete": True,
+                "quality_flags": [],
+            },
+        ],
+        generated_at=NOW,
+    )
+
+    gate_statuses = {gate["name"]: gate for gate in report["readiness"]["gates"]}
+    assert gate_statuses["no_boltodds_active_rows"]["status"] == "fail"
+    assert gate_statuses["no_boltodds_active_rows"]["value"] == 1
 
 
 def test_markdown_report_includes_gate_summary():
@@ -409,7 +482,21 @@ def test_markdown_report_includes_gate_summary():
 
     markdown = format_markdown_report(report)
 
-    assert "# Provider Cutover Shadow Compare - 2026-05-13" in markdown
+    assert "# TheRundown + PropLine Official Provider Parity - 2026-05-13" in markdown
     assert "Schedule-First Coverage" in markdown
-    assert "pitcher_coverage_90" in markdown
+    assert "official_provider_pitcher_coverage_90" in markdown
     assert "Overall ready" in markdown
+
+
+def test_markdown_report_names_therundown_propline_official_parity():
+    report = compare_provider_cutover(
+        date_str="2026-05-13",
+        rundown_props=[_prop("Jose Berrios")],
+        provider_props=[_prop("Jose Berrios", odds_source="therundown+propline")],
+        generated_at=NOW,
+    )
+
+    markdown = format_markdown_report(report)
+
+    assert "TheRundown + PropLine Official Provider Parity" in markdown
+    assert "BoltOdds + PropLine" not in markdown.splitlines()[0]
