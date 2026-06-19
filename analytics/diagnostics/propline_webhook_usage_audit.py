@@ -11,11 +11,13 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import shutil
+import subprocess
 import sys
 from collections import Counter
 from datetime import date, datetime, time, timedelta, timezone
 from pathlib import Path
-from typing import Any
+from typing import Any, Callable
 
 import requests
 
@@ -194,7 +196,16 @@ def run_audit(target_date: date, lookback_days: int, limit: int) -> dict[str, An
     }
 
 
-def _read_supabase_rows(*, start_dt: datetime, end_dt: datetime, limit: int) -> dict[str, Any]:
+CliRunner = Callable[[list[str]], Any]
+
+
+def _read_supabase_rows(
+    *,
+    start_dt: datetime,
+    end_dt: datetime,
+    limit: int,
+    cli_runner: CliRunner | None = None,
+) -> dict[str, Any]:
     result = {
         "deliveries": [],
         "movement_events": [],
@@ -208,11 +219,12 @@ def _read_supabase_rows(*, start_dt: datetime, end_dt: datetime, limit: int) -> 
     supabase_url = os.environ.get("SUPABASE_URL", "").strip()
     service_role_key = os.environ.get("SUPABASE_SERVICE_ROLE_KEY", "").strip()
     if not supabase_url or not service_role_key:
-        result["access_status"] = "blocked"
-        result["access_issues"].append(
-            "SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY unavailable; emitted partial zero-row audit."
+        return _read_supabase_rows_via_cli(
+            start_dt=start_dt,
+            end_dt=end_dt,
+            limit=limit,
+            cli_runner=cli_runner or _run_linked_supabase_cli,
         )
-        return result
 
     from market_infra.supabase_writer import SupabaseMarketWriter
 
@@ -277,6 +289,253 @@ def _read_supabase_rows(*, start_dt: datetime, end_dt: datetime, limit: int) -> 
         result[result_key] = rows
         result["row_counts"][table] = len(rows)
     return result
+
+
+def _read_supabase_rows_via_cli(
+    *,
+    start_dt: datetime,
+    end_dt: datetime,
+    limit: int,
+    cli_runner: CliRunner,
+) -> dict[str, Any]:
+    result = {
+        "deliveries": [],
+        "movement_events": [],
+        "notification_events": [],
+        "market_pick_evidence": [],
+        "accepted_bets": [],
+        "access_status": "complete",
+        "access_issues": [],
+        "row_counts": {},
+    }
+    queries = _linked_cli_queries(start_dt=start_dt, end_dt=end_dt, limit=limit)
+    successful_reads = 0
+    failed_required_reads = 0
+
+    for result_key, spec in queries.items():
+        table = spec["table"]
+        try:
+            payload = cli_runner(["npx", "supabase", "db", "query", "--linked", "-o", "json", _compact_sql(spec["sql"])])
+            rows = _extract_cli_rows(payload)
+            successful_reads += 1
+        except Exception as error:  # noqa: BLE001 - keep audit read path non-fatal.
+            rows = []
+            if spec["optional"]:
+                result["access_status"] = "partial"
+                result["access_issues"].append(f"{table} table unavailable; skipped optional overlap read.")
+            else:
+                failed_required_reads += 1
+                result["access_status"] = "partial"
+                result["access_issues"].append(f"{table} linked CLI read failed: {_safe_cli_error(error)}")
+        result[result_key] = rows
+        result["row_counts"][table] = len(rows)
+
+    if successful_reads == 0:
+        result["access_status"] = "blocked"
+        result["access_issues"] = [
+            "Linked Supabase CLI read failed for all audit tables; output does not prove zero webhooks exist."
+        ]
+        result["row_counts"] = {}
+    elif failed_required_reads:
+        result["access_status"] = "partial"
+    return result
+
+
+def _linked_cli_queries(*, start_dt: datetime, end_dt: datetime, limit: int) -> dict[str, dict[str, Any]]:
+    start_ts = _sql_literal(start_dt.isoformat())
+    end_ts = _sql_literal(end_dt.isoformat())
+    start_date = _sql_literal(start_dt.date().isoformat())
+    end_date = _sql_literal(end_dt.date().isoformat())
+    safe_limit = max(int(limit), 1)
+    return {
+        "deliveries": {
+            "table": "propline_webhook_deliveries",
+            "optional": False,
+            "sql": f"""
+                select
+                  id,
+                  prop_line_delivery_id,
+                  prop_line_event,
+                  prop_line_timestamp,
+                  signature_valid,
+                  processed,
+                  processing_error,
+                  payload,
+                  received_at
+                from public.propline_webhook_deliveries
+                where received_at >= {start_ts}
+                  and received_at <= {end_ts}
+                order by received_at desc
+                limit {safe_limit};
+            """,
+        },
+        "movement_events": {
+            "table": "line_movement_events",
+            "optional": False,
+            "sql": f"""
+                select
+                  id,
+                  slate_date,
+                  normalized_pitcher,
+                  pitcher,
+                  side,
+                  bookmaker_key,
+                  previous_line,
+                  current_line,
+                  previous_odds,
+                  current_odds,
+                  movement_direction,
+                  movement_kind,
+                  observed_at,
+                  dedupe_key,
+                  metadata,
+                  created_at
+                from public.line_movement_events
+                where slate_date >= {start_date}
+                  and slate_date <= {end_date}
+                  and (
+                    metadata->>'source' = 'propline_webhook'
+                    or metadata->>'dedupe_source' = 'propline_webhook'
+                    or dedupe_key ilike '%propline_webhook%'
+                  )
+                order by observed_at desc
+                limit {safe_limit};
+            """,
+        },
+        "notification_events": {
+            "table": "notification_events",
+            "optional": False,
+            "sql": f"""
+                select
+                  id,
+                  slate_date,
+                  event_type,
+                  severity,
+                  title,
+                  body,
+                  dedupe_key,
+                  payload,
+                  occurred_at,
+                  sent_at,
+                  created_at
+                from public.notification_events
+                where (
+                    slate_date >= {start_date}
+                    and slate_date <= {end_date}
+                  )
+                  or (
+                    occurred_at >= {start_ts}
+                    and occurred_at <= {end_ts}
+                  )
+                order by created_at desc
+                limit {safe_limit};
+            """,
+        },
+        "market_pick_evidence": {
+            "table": "market_pick_evidence",
+            "optional": False,
+            "sql": f"""
+                select
+                  id,
+                  slate_date,
+                  pitcher,
+                  normalized_pitcher,
+                  side,
+                  provider,
+                  current_verdict,
+                  k_line,
+                  current_odds,
+                  current_book,
+                  observed_at,
+                  latest_snapshot_at,
+                  market_consensus,
+                  bet_value_consensus,
+                  time_window,
+                  dedupe_key,
+                  metadata,
+                  created_at,
+                  updated_at
+                from public.market_pick_evidence
+                where slate_date >= {start_date}
+                  and slate_date <= {end_date}
+                order by observed_at desc
+                limit {safe_limit};
+            """,
+        },
+        "accepted_bets": {
+            "table": "accepted_bets",
+            "optional": True,
+            "sql": f"""
+                select
+                  id,
+                  slate_date,
+                  pitcher,
+                  normalized_pitcher,
+                  side,
+                  verdict,
+                  k_line,
+                  odds,
+                  book,
+                  units,
+                  source,
+                  notification_event_id,
+                  shadow_candidate_id,
+                  model_snapshot,
+                  metadata,
+                  dedupe_key,
+                  accepted_at,
+                  created_at
+                from public.accepted_bets
+                where accepted_at >= {start_ts}
+                  and accepted_at <= {end_ts}
+                order by accepted_at desc
+                limit {safe_limit};
+            """,
+        },
+    }
+
+
+def _run_linked_supabase_cli(command: list[str]) -> Any:
+    resolved_command = list(command)
+    if resolved_command and resolved_command[0] == "npx":
+        resolved_command[0] = shutil.which("npx") or shutil.which("npx.cmd") or resolved_command[0]
+    completed = subprocess.run(
+        resolved_command,
+        cwd=ROOT,
+        check=True,
+        capture_output=True,
+        text=True,
+        encoding="utf-8",
+    )
+    return json.loads(completed.stdout)
+
+
+def _extract_cli_rows(payload: Any) -> list[dict[str, Any]]:
+    if isinstance(payload, dict):
+        rows = payload.get("rows", [])
+    else:
+        rows = payload
+    if not isinstance(rows, list):
+        return []
+    return [row for row in rows if isinstance(row, dict)]
+
+
+def _sql_literal(value: str) -> str:
+    return "'" + value.replace("'", "''") + "'"
+
+
+def _compact_sql(sql: str) -> str:
+    return " ".join(sql.split())
+
+
+def _safe_cli_error(error: Exception) -> str:
+    if isinstance(error, subprocess.CalledProcessError):
+        stderr = (error.stderr or "").strip()
+        if stderr:
+            return stderr.splitlines()[-1][:180]
+        return f"exit {error.returncode}"
+    message = str(error).strip()
+    return message[:180] if message else error.__class__.__name__
 
 
 def _between_filter(field: str, start_value: str, end_value: str) -> str:

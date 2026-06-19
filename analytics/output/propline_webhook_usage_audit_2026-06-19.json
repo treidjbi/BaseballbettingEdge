@@ -1,11 +1,15 @@
 {
-  "access_issues": [
-    "SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY unavailable; emitted partial zero-row audit."
-  ],
-  "access_status": "blocked",
+  "access_issues": [],
+  "access_status": "complete",
   "date": "2026-06-19",
   "lookback_days": 3,
-  "row_counts": {},
+  "row_counts": {
+    "accepted_bets": 4,
+    "line_movement_events": 377,
+    "market_pick_evidence": 59,
+    "notification_events": 27,
+    "propline_webhook_deliveries": 514
+  },
   "summary": {
     "accepted_bet_overlap_count": 0,
     "blocked_uses": [
@@ -14,19 +18,23 @@
       "staking_input",
       "automatic_bet_trigger"
     ],
-    "deliveries": 0,
+    "deliveries": 514,
     "duplicate_dedupe_keys": 0,
-    "line_movement_events": 0,
+    "line_movement_events": 377,
     "polling_confirmed_movement_events": 0,
     "post_start_or_stale_events": 0,
-    "processed_deliveries": 0,
-    "recommended_uses": [],
-    "signed_deliveries": 0,
-    "unsupported_deliveries": 0,
+    "processed_deliveries": 512,
+    "recommended_uses": [
+      "dashboard_webhook_confirmed_badge",
+      "movement_strength_label",
+      "provider_refresh_trigger_shadow"
+    ],
+    "signed_deliveries": 514,
+    "unsupported_deliveries": 57,
     "webhook_notification_events": 0,
-    "webhook_only_movement_events": 0,
-    "with_bookmaker_key": 0,
-    "with_stable_market_ids": 0
+    "webhook_only_movement_events": 377,
+    "with_bookmaker_key": 514,
+    "with_stable_market_ids": 514
   },
   "window_end": "2026-06-19T23:59:59.999999+00:00",
   "window_start": "2026-06-17T00:00:00+00:00"
