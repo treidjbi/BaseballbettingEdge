@@ -1,0 +1,33 @@
+{
+  "access_issues": [
+    "SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY unavailable; emitted partial zero-row audit."
+  ],
+  "access_status": "blocked",
+  "date": "2026-06-19",
+  "lookback_days": 3,
+  "row_counts": {},
+  "summary": {
+    "accepted_bet_overlap_count": 0,
+    "blocked_uses": [
+      "official_odds_source",
+      "model_input",
+      "staking_input",
+      "automatic_bet_trigger"
+    ],
+    "deliveries": 0,
+    "duplicate_dedupe_keys": 0,
+    "line_movement_events": 0,
+    "polling_confirmed_movement_events": 0,
+    "post_start_or_stale_events": 0,
+    "processed_deliveries": 0,
+    "recommended_uses": [],
+    "signed_deliveries": 0,
+    "unsupported_deliveries": 0,
+    "webhook_notification_events": 0,
+    "webhook_only_movement_events": 0,
+    "with_bookmaker_key": 0,
+    "with_stable_market_ids": 0
+  },
+  "window_end": "2026-06-19T23:59:59.999999+00:00",
+  "window_start": "2026-06-17T00:00:00+00:00"
+}
