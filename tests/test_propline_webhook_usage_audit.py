@@ -102,7 +102,7 @@ def test_summarize_webhook_rows_counts_duplicates_stale_and_confirmed_overlap():
     assert summary["duplicate_dedupe_keys"] == 1
     assert summary["post_start_or_stale_events"] == 1
     assert summary["polling_confirmed_movement_events"] == 1
-    assert summary["webhook_only_movement_events"] == 2
+    assert summary["webhook_only_movement_events"] == 1
     assert summary["webhook_notification_events"] == 1
     assert summary["accepted_bet_overlap_count"] == 1
     assert "movement_strength_label" in summary["recommended_uses"]

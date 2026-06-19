@@ -62,7 +62,7 @@ def summarize_webhook_usage(
         "webhook_notification_events": sum(1 for row in notification_events if _is_webhook_notification(row)),
         "duplicate_dedupe_keys": sum(1 for count in dedupe_counts.values() if count > 1),
         "post_start_or_stale_events": sum(1 for row in webhook_movements if _is_post_start_or_stale(row)),
-        "webhook_only_movement_events": len(webhook_movements),
+        "webhook_only_movement_events": len(webhook_movements) - len(polling_confirmed),
         "polling_confirmed_movement_events": len(polling_confirmed),
         "accepted_bet_overlap_count": sum(1 for row in accepted_bets if _has_webhook_context(row)),
         "recommended_uses": [],
