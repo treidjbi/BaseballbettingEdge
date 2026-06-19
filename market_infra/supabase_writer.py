@@ -123,7 +123,13 @@ class SupabaseMarketWriter:
             json=rows,
             timeout=20,
         )
-        response.raise_for_status()
+        _raise_for_status_with_context(
+            response,
+            table=table,
+            operation="upsert_rows",
+            row_count=len(rows),
+            on_conflict=on_conflict,
+        )
         return response.json()
 
     def insert_ignore_rows(self, table: str, rows: list[dict], on_conflict: str) -> list[dict]:
@@ -147,6 +153,33 @@ def _count_from_content_range(content_range: str) -> int:
     if not total or total == "*":
         return 0
     return int(total)
+
+
+def _raise_for_status_with_context(
+    response: requests.Response,
+    *,
+    table: str,
+    operation: str,
+    row_count: int,
+    on_conflict: str | None = None,
+) -> None:
+    try:
+        response.raise_for_status()
+    except requests.HTTPError as error:
+        body = (getattr(response, "text", "") or "").strip()
+        if len(body) > 1000:
+            body = f"{body[:1000]}..."
+        parts = [
+            str(error),
+            f"table={table}",
+            f"operation={operation}",
+            f"rows={row_count}",
+        ]
+        if on_conflict:
+            parts.append(f"on_conflict={on_conflict}")
+        if body:
+            parts.append(f"response_body={body}")
+        raise requests.HTTPError("; ".join(parts), response=response) from error
 
 
 def _status_code_from_error(

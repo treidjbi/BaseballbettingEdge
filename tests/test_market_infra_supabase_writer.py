@@ -34,6 +34,32 @@ def test_upsert_rows_sets_conflict_target():
     assert post.call_args.kwargs["headers"]["Prefer"] == "resolution=merge-duplicates,return=representation"
 
 
+def test_upsert_rows_error_includes_supabase_body_without_secret():
+    writer = SupabaseMarketWriter("https://example.supabase.co", "secret-key")
+    response = Mock()
+    response.status_code = 400
+    response.text = '{"message":"duplicate key in batch"}'
+    response.raise_for_status.side_effect = requests.HTTPError("400 Client Error")
+
+    with patch("market_infra.supabase_writer.requests.post", return_value=response):
+        try:
+            writer.upsert_rows(
+                "market_pick_evidence",
+                [{"dedupe_key": "abc"}, {"dedupe_key": "def"}],
+                on_conflict="slate_date,normalized_pitcher,side,provider",
+            )
+        except requests.HTTPError as error:
+            message = str(error)
+        else:
+            raise AssertionError("upsert_rows should raise HTTPError")
+
+    assert "market_pick_evidence" in message
+    assert "slate_date,normalized_pitcher,side,provider" in message
+    assert "rows=2" in message
+    assert "duplicate key in batch" in message
+    assert "secret-key" not in message
+
+
 def test_insert_ignore_rows_sets_conflict_target_without_merging():
     writer = SupabaseMarketWriter("https://example.supabase.co", "secret-key")
     response = Mock()
