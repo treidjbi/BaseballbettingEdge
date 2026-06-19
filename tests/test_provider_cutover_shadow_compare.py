@@ -42,7 +42,13 @@ def _prop(
             ref_book: {"line": line, "over": over, "under": under, "provider": odds_source},
         },
         "odds_source": odds_source,
+        "market_source_mode": "therundown_propline",
+        "line_source_provider": "therundown",
+        "provider_coverage": {
+            ref_book.lower(): {"provider": odds_source, "book": ref_book},
+        },
         "provider_arbitration_reasons": reasons or [],
+        "source_line_ids": [101],
         "ev_over": ev_over or {"verdict": "PASS"},
         "ev_under": ev_under or {"verdict": "PASS"},
     }
@@ -58,9 +64,9 @@ def test_compare_reports_pitcher_and_fd_dk_coverage():
         provider_props=[
             _prop(
                 "Jose Berrios",
-                odds_source="boltodds+propline",
+                odds_source="therundown+propline",
                 book_odds={
-                    "FanDuel": {"line": 5.5, "over": -115, "under": -105, "provider": "boltodds"},
+                    "FanDuel": {"line": 5.5, "over": -115, "under": -105, "provider": "therundown"},
                     "DraftKings": {"line": 5.5, "over": -112, "under": -108, "provider": "propline"},
                 },
             ),
@@ -93,9 +99,9 @@ def test_compare_reports_schedule_first_provider_coverage():
         provider_props=[
             _prop(
                 "Jose Berrios",
-                odds_source="boltodds+propline",
+                odds_source="therundown+propline",
                 book_odds={
-                    "FanDuel": {"line": 5.5, "over": -115, "under": -105, "provider": "boltodds"},
+                    "FanDuel": {"line": 5.5, "over": -115, "under": -105, "provider": "therundown"},
                     "DraftKings": {"line": 5.5, "over": -112, "under": -108, "provider": "propline"},
                 },
             ),
@@ -282,7 +288,7 @@ def test_compare_tracks_missing_draftkings_and_line_conflicts():
         provider_props=[
             _prop(
                 "Jose Berrios",
-                book_odds={"FanDuel": {"line": 5.5, "over": -115, "under": -105, "provider": "boltodds"}},
+                book_odds={"FanDuel": {"line": 5.5, "over": -115, "under": -105, "provider": "therundown"}},
                 reasons=["cross_book_line_conflict"],
             ),
         ],
@@ -314,7 +320,7 @@ def test_compare_reports_ref_book_changes_and_odds_deltas():
                 ref_book="FanDuel",
                 over=-115,
                 under=-105,
-                book_odds={"FanDuel": {"line": 5.5, "over": -115, "under": -105, "provider": "boltodds"}},
+                book_odds={"FanDuel": {"line": 5.5, "over": -115, "under": -105, "provider": "therundown"}},
             )
         ],
         generated_at=NOW,
@@ -333,7 +339,7 @@ def test_compare_reports_ref_book_changes_and_odds_deltas():
         "provider_line": 5.5,
         "over_delta": 5,
         "under_delta": -205,
-        "provider": "boltodds",
+        "provider": "therundown",
     }]
 
 
@@ -367,6 +373,90 @@ def test_compare_contract_and_usage_gates():
     assert gate_statuses["prop_contract_valid"] == "fail"
     assert gate_statuses["propline_usage_under_70_percent_hobby"] == "fail"
     assert report["summary"]["provider_contract_issue_count"] == 1
+
+
+def test_prop_contract_requires_provider_provenance_fields():
+    row = _prop("Jose Berrios")
+    for field in (
+        "odds_source",
+        "market_source_mode",
+        "line_source_provider",
+        "provider_coverage",
+        "provider_arbitration_reasons",
+        "source_line_ids",
+    ):
+        row.pop(field, None)
+
+    report = compare_provider_cutover(
+        date_str="2026-05-13",
+        rundown_props=[_prop("Jose Berrios")],
+        provider_props=[row],
+        generated_at=NOW,
+    )
+
+    issue = report["artifact_contract"]["provider_contract_issues"][0]
+    assert issue["missing_fields"] == [
+        "odds_source",
+        "market_source_mode",
+        "line_source_provider",
+        "provider_coverage",
+        "provider_arbitration_reasons",
+        "source_line_ids",
+    ]
+    gate_statuses = {gate["name"]: gate["status"] for gate in report["readiness"]["gates"]}
+    assert gate_statuses["prop_contract_valid"] == "fail"
+
+
+def test_unavailable_provider_inputs_make_provider_gates_unknown():
+    report = compare_provider_cutover(
+        date_str="2026-05-13",
+        rundown_props=[_prop("Jose Berrios")],
+        provider_props=[],
+        scheduled_pitchers=[{"pitcher": "Jose Berrios", "team": "Blue Jays"}],
+        provider_current_lines=None,
+        provider_heartbeats=None,
+        provider_input_warnings=[
+            {
+                "source": "supabase",
+                "status": "unavailable",
+                "message": "SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY are required",
+            }
+        ],
+        generated_at=NOW,
+    )
+
+    gate_statuses = {gate["name"]: gate["status"] for gate in report["readiness"]["gates"]}
+    assert gate_statuses["official_provider_pitcher_coverage_90"] == "unknown"
+    assert gate_statuses["official_provider_fd_or_dk_coverage_85"] == "unknown"
+    assert gate_statuses["official_rows_ready_for_pipeline_90"] == "unknown"
+    assert gate_statuses["prop_contract_valid"] == "unknown"
+    assert gate_statuses["no_boltodds_active_rows"] == "unknown"
+    assert report["input_availability"]["provider_evidence_available"] is False
+    assert report["input_availability"]["warnings"][0]["status"] == "unavailable"
+
+
+def test_markdown_report_warns_when_provider_inputs_unavailable():
+    report = compare_provider_cutover(
+        date_str="2026-05-13",
+        rundown_props=[_prop("Jose Berrios")],
+        provider_props=[],
+        provider_input_warnings=[
+            {
+                "source": "supabase",
+                "status": "unavailable",
+                "message": "provider Supabase writer unavailable",
+            }
+        ],
+        generated_at=NOW,
+    )
+
+    markdown = format_markdown_report(report)
+
+    assert "## Input Availability" in markdown
+    assert "Provider Supabase evidence: **unavailable/partial**" in markdown
+    assert "provider Supabase writer unavailable" in markdown
+    assert "Provider pitchers: 0" in markdown
+    assert "not proof that TheRundown + PropLine provider evidence failed" in markdown
 
 
 def test_provider_usage_rows_feed_hobby_budget_gate():

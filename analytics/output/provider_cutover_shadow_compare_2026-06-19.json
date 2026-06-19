@@ -43,7 +43,20 @@
     ]
   },
   "date": "2026-06-19",
-  "generated_at": "2026-06-19T17:32:03.589967+00:00",
+  "generated_at": "2026-06-19T17:42:17.221911+00:00",
+  "input_availability": {
+    "provider_current_lines_available": false,
+    "provider_evidence_available": false,
+    "provider_heartbeats_available": false,
+    "provider_usage_available": false,
+    "warnings": [
+      {
+        "message": "provider Supabase writer unavailable: OSError: SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY are required",
+        "source": "supabase",
+        "status": "unavailable"
+      }
+    ]
+  },
   "mainline_selection": {
     "available": false
   },
@@ -58,28 +71,28 @@
       {
         "detail": "0/29",
         "name": "official_provider_pitcher_coverage_90",
-        "status": "fail",
+        "status": "unknown",
         "threshold": ">=0.90",
         "value": 0.0
       },
       {
         "detail": "0/29",
         "name": "official_provider_fd_or_dk_coverage_85",
-        "status": "fail",
+        "status": "unknown",
         "threshold": ">=0.85",
         "value": 0.0
       },
       {
         "detail": "0/28",
         "name": "official_rows_ready_for_pipeline_90",
-        "status": "fail",
+        "status": "unknown",
         "threshold": ">=0.90",
         "value": 0.0
       },
       {
         "detail": "0/29",
         "name": "line_conflict_rate_under_10",
-        "status": "pass",
+        "status": "unknown",
         "threshold": "<=0.10",
         "value": 0.0
       },
@@ -100,7 +113,7 @@
       {
         "detail": "",
         "name": "no_boltodds_active_rows",
-        "status": "pass",
+        "status": "unknown",
         "threshold": "0 active BoltOdds current-line/heartbeat rows",
         "value": 0
       }

@@ -36,6 +36,9 @@ PROPLINE_USAGE_WARN_FRACTION = 0.70
 REQUIRED_PROP_FIELDS = (
     "pitcher",
     "k_line",
+    "odds_source",
+    "market_source_mode",
+    "line_source_provider",
     "best_over_book",
     "best_under_book",
     "best_over_odds",
@@ -44,6 +47,9 @@ REQUIRED_PROP_FIELDS = (
     "opening_under_odds",
     "opening_odds_source",
     "book_odds",
+    "provider_coverage",
+    "provider_arbitration_reasons",
+    "source_line_ids",
 )
 
 
@@ -250,7 +256,20 @@ def _contract_missing_fields(row: dict[str, Any]) -> list[str]:
     if not isinstance(row.get("book_odds"), dict) or not row.get("book_odds"):
         if "book_odds" not in missing:
             missing.append("book_odds")
+    if not isinstance(row.get("provider_coverage"), dict) or not row.get("provider_coverage"):
+        if "provider_coverage" not in missing:
+            missing.append("provider_coverage")
+    if "provider_arbitration_reasons" not in row:
+        if "provider_arbitration_reasons" not in missing:
+            missing.append("provider_arbitration_reasons")
+    if not isinstance(row.get("source_line_ids"), list) or not row.get("source_line_ids"):
+        if "source_line_ids" not in missing:
+            missing.append("source_line_ids")
     return missing
+
+
+def _has_unavailable_provider_warning(warnings: list[dict[str, Any]]) -> bool:
+    return any(str(warning.get("status") or "").lower() == "unavailable" for warning in warnings)
 
 
 def _schedule_first_coverage(
@@ -371,9 +390,12 @@ def compare_provider_cutover(
     provider_current_lines: list[dict[str, Any]] | None = None,
     provider_heartbeats: list[dict[str, Any]] | None = None,
     provider_usage: dict[str, Any] | None = None,
+    provider_input_warnings: list[dict[str, Any]] | None = None,
     generated_at: datetime | None = None,
 ) -> dict[str, Any]:
     generated = generated_at or datetime.now(timezone.utc)
+    input_warnings = provider_input_warnings or []
+    provider_evidence_available = not _has_unavailable_provider_warning(input_warnings)
     rundown_by_pitcher = _by_pitcher(rundown_props)
     provider_by_pitcher = _by_pitcher(provider_props)
     production_keys = set(rundown_by_pitcher)
@@ -413,6 +435,10 @@ def compare_provider_cutover(
         provider_current_lines,
         provider_heartbeats,
     )
+    boltodds_active_check_available = (
+        provider_current_lines is not None
+        or provider_heartbeats is not None
+    )
     current_line_coverage = (
         _current_line_coverage(provider_current_lines, generated, provider_heartbeats)
         if provider_current_lines is not None
@@ -445,35 +471,35 @@ def compare_provider_cutover(
     gates = [
         _gate(
             "official_provider_pitcher_coverage_90",
-            coverage_rate >= 0.90 if production_count else None,
+            coverage_rate >= 0.90 if production_count and provider_evidence_available else None,
             coverage_rate,
             ">=0.90",
             f"{len(covered_keys)}/{production_count}",
         ),
         _gate(
             "official_provider_fd_or_dk_coverage_85",
-            fd_dk_rate >= 0.85 if production_count else None,
+            fd_dk_rate >= 0.85 if production_count and provider_evidence_available else None,
             fd_dk_rate,
             ">=0.85",
             f"{len(fd_dk_keys)}/{production_count}",
         ),
         _gate(
             "official_rows_ready_for_pipeline_90",
-            official_rows_ready_rate >= 0.90 if production_count else None,
+            official_rows_ready_rate >= 0.90 if production_count and provider_evidence_available else None,
             official_rows_ready_rate,
             ">=0.90",
             official_rows_ready_detail,
         ),
         _gate(
             "line_conflict_rate_under_10",
-            conflict_rate <= 0.10 if production_count else None,
+            conflict_rate <= 0.10 if production_count and provider_evidence_available else None,
             conflict_rate,
             "<=0.10",
             f"{len(line_conflict_keys)}/{production_count}",
         ),
         _gate(
             "prop_contract_valid",
-            len(provider_contract_issues) == 0 if provider_props else None,
+            len(provider_contract_issues) == 0 if provider_props and provider_evidence_available else None,
             len(provider_contract_issues),
             "0 missing-field rows",
         ),
@@ -490,7 +516,11 @@ def compare_provider_cutover(
         ),
         _gate(
             "no_boltodds_active_rows",
-            boltodds_active_row_count == 0,
+            (
+                boltodds_active_row_count == 0
+                if boltodds_active_row_count > 0 or boltodds_active_check_available
+                else None
+            ),
             boltodds_active_row_count,
             "0 active BoltOdds current-line/heartbeat rows",
         ),
@@ -523,6 +553,13 @@ def compare_provider_cutover(
                 _verdict(row, "over") is not None or _verdict(row, "under") is not None
                 for row in [*rundown_props, *provider_props]
             ),
+        },
+        "input_availability": {
+            "provider_evidence_available": provider_evidence_available,
+            "provider_current_lines_available": provider_current_lines is not None,
+            "provider_heartbeats_available": provider_heartbeats is not None,
+            "provider_usage_available": provider_usage is not None,
+            "warnings": input_warnings,
         },
         "readiness": readiness,
         "schedule_first": schedule_first,
@@ -557,10 +594,30 @@ def format_markdown_report(report: dict[str, Any]) -> str:
     summary = report["summary"]
     readiness = report["readiness"]
     schedule = report.get("schedule_first") or {}
+    input_availability = report.get("input_availability") or {}
+    provider_evidence_available = input_availability.get("provider_evidence_available", True)
+    input_warnings = input_availability.get("warnings") or []
     lines = [
         f"# TheRundown + PropLine Official Provider Parity - {report['date']}",
         "",
         f"Generated: `{report['generated_at']}`",
+        "",
+        "## Input Availability",
+        "",
+    ]
+    if provider_evidence_available:
+        lines.append("- Provider Supabase evidence: **available**")
+    else:
+        lines.extend([
+            "- Provider Supabase evidence: **unavailable/partial**",
+            "- Provider coverage counts and failed coverage gates are not proof that TheRundown + PropLine provider evidence failed.",
+        ])
+    for warning in input_warnings:
+        source = warning.get("source") or "provider input"
+        status = warning.get("status") or "warning"
+        message = warning.get("message") or ""
+        lines.append(f"- {source}: **{status}** - {message}")
+    lines.extend([
         "",
         "## Summary",
         "",
@@ -576,7 +633,7 @@ def format_markdown_report(report: dict[str, Any]) -> str:
         "",
         "## Schedule-First Coverage",
         "",
-    ]
+    ])
     if schedule.get("available"):
         lines.extend([
             f"- Scheduled probable starters: {schedule['scheduled_pitcher_count']}",
@@ -722,6 +779,7 @@ def _parse_args(argv: list[str]) -> argparse.Namespace:
 
 def main(argv: list[str] | None = None) -> int:
     args = _parse_args(argv or sys.argv[1:])
+    provider_input_warnings: list[dict[str, Any]] = []
     scheduled_pitchers: list[dict[str, Any]] = []
     if args.schedule_json:
         scheduled_pitchers = load_json_rows(args.schedule_json)
@@ -740,7 +798,13 @@ def main(argv: list[str] | None = None) -> int:
         try:
             writer = official_market_writer_from_env()
         except Exception as e:
-            print(f"WARNING: provider Supabase writer unavailable: {type(e).__name__}: {e}")
+            message = f"provider Supabase writer unavailable: {type(e).__name__}: {e}"
+            provider_input_warnings.append({
+                "source": "supabase",
+                "status": "unavailable",
+                "message": message,
+            })
+            print(f"WARNING: {message}")
     provider_props = (
         load_json_rows(args.provider_json)
         if args.provider_json
@@ -771,6 +835,7 @@ def main(argv: list[str] | None = None) -> int:
         provider_current_lines=provider_current_lines,
         provider_heartbeats=provider_heartbeats,
         provider_usage=provider_usage,
+        provider_input_warnings=provider_input_warnings,
     )
     json_path, markdown_path = write_report(report, args.output_dir)
     print(f"Wrote {json_path}")
