@@ -309,7 +309,7 @@ def _read_supabase_rows_via_cli(
         "row_counts": {},
     }
     queries = _linked_cli_queries(start_dt=start_dt, end_dt=end_dt, limit=limit)
-    successful_reads = 0
+    successful_required_reads = 0
     failed_required_reads = 0
 
     for result_key, spec in queries.items():
@@ -317,7 +317,8 @@ def _read_supabase_rows_via_cli(
         try:
             payload = cli_runner(["npx", "supabase", "db", "query", "--linked", "-o", "json", _compact_sql(spec["sql"])])
             rows = _extract_cli_rows(payload)
-            successful_reads += 1
+            if not spec["optional"]:
+                successful_required_reads += 1
         except Exception as error:  # noqa: BLE001 - keep audit read path non-fatal.
             rows = []
             if spec["optional"]:
@@ -330,7 +331,7 @@ def _read_supabase_rows_via_cli(
         result[result_key] = rows
         result["row_counts"][table] = len(rows)
 
-    if successful_reads == 0:
+    if successful_required_reads == 0:
         result["access_status"] = "blocked"
         result["access_issues"] = [
             "Linked Supabase CLI read failed for all audit tables; output does not prove zero webhooks exist."
@@ -512,12 +513,16 @@ def _run_linked_supabase_cli(command: list[str]) -> Any:
 
 def _extract_cli_rows(payload: Any) -> list[dict[str, Any]]:
     if isinstance(payload, dict):
-        rows = payload.get("rows", [])
+        if "rows" not in payload:
+            raise ValueError("linked CLI JSON payload is missing rows")
+        rows = payload["rows"]
     else:
         rows = payload
     if not isinstance(rows, list):
-        return []
-    return [row for row in rows if isinstance(row, dict)]
+        raise ValueError("linked CLI JSON rows is not a list")
+    if any(not isinstance(row, dict) for row in rows):
+        raise ValueError("linked CLI JSON rows must contain objects")
+    return rows
 
 
 def _sql_literal(value: str) -> str:

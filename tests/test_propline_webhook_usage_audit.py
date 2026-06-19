@@ -188,6 +188,77 @@ def test_read_supabase_rows_marks_partial_when_optional_cli_table_fails(monkeypa
     assert any("accepted_bets table unavailable" in issue for issue in result["access_issues"])
 
 
+def test_read_supabase_rows_blocks_when_only_optional_cli_table_succeeds(monkeypatch):
+    monkeypatch.delenv("SUPABASE_URL", raising=False)
+    monkeypatch.delenv("SUPABASE_SERVICE_ROLE_KEY", raising=False)
+
+    def fake_cli_runner(command, **kwargs):
+        sql = command[-1]
+        if "accepted_bets" in sql:
+            return {"rows": [{"id": "bet-1", "metadata": {"propline_webhook_confirmed": True}}]}
+        raise RuntimeError("required table unavailable")
+
+    result = _read_supabase_rows(
+        start_dt=datetime(2026, 6, 17, tzinfo=timezone.utc),
+        end_dt=datetime(2026, 6, 19, 23, 59, 59, tzinfo=timezone.utc),
+        limit=100,
+        cli_runner=fake_cli_runner,
+    )
+
+    assert result["access_status"] == "blocked"
+    assert result["row_counts"] == {}
+    assert any("Linked Supabase CLI read failed for all audit tables" in issue for issue in result["access_issues"])
+
+
+def test_read_supabase_rows_remains_partial_when_required_cli_read_succeeds(monkeypatch):
+    monkeypatch.delenv("SUPABASE_URL", raising=False)
+    monkeypatch.delenv("SUPABASE_SERVICE_ROLE_KEY", raising=False)
+
+    def fake_cli_runner(command, **kwargs):
+        sql = command[-1]
+        if "propline_webhook_deliveries" in sql:
+            return {"rows": [{"id": "delivery-1"}]}
+        if "accepted_bets" in sql:
+            return {"rows": [{"id": "bet-1"}]}
+        raise RuntimeError("required table unavailable")
+
+    result = _read_supabase_rows(
+        start_dt=datetime(2026, 6, 17, tzinfo=timezone.utc),
+        end_dt=datetime(2026, 6, 19, 23, 59, 59, tzinfo=timezone.utc),
+        limit=100,
+        cli_runner=fake_cli_runner,
+    )
+
+    assert result["access_status"] == "partial"
+    assert result["deliveries"] == [{"id": "delivery-1"}]
+    assert result["accepted_bets"] == [{"id": "bet-1"}]
+    assert result["row_counts"]["propline_webhook_deliveries"] == 1
+    assert result["row_counts"]["accepted_bets"] == 1
+    assert any("line_movement_events linked CLI read failed" in issue for issue in result["access_issues"])
+
+
+def test_read_supabase_rows_marks_malformed_required_cli_payload_partial(monkeypatch):
+    monkeypatch.delenv("SUPABASE_URL", raising=False)
+    monkeypatch.delenv("SUPABASE_SERVICE_ROLE_KEY", raising=False)
+
+    def fake_cli_runner(command, **kwargs):
+        sql = command[-1]
+        if "propline_webhook_deliveries" in sql:
+            return {"data": []}
+        return {"rows": []}
+
+    result = _read_supabase_rows(
+        start_dt=datetime(2026, 6, 17, tzinfo=timezone.utc),
+        end_dt=datetime(2026, 6, 19, 23, 59, 59, tzinfo=timezone.utc),
+        limit=100,
+        cli_runner=fake_cli_runner,
+    )
+
+    assert result["access_status"] == "partial"
+    assert result["deliveries"] == []
+    assert any("propline_webhook_deliveries linked CLI read failed" in issue for issue in result["access_issues"])
+
+
 def test_read_supabase_rows_blocks_when_linked_cli_path_fails(monkeypatch):
     monkeypatch.delenv("SUPABASE_URL", raising=False)
     monkeypatch.delenv("SUPABASE_SERVICE_ROLE_KEY", raising=False)
