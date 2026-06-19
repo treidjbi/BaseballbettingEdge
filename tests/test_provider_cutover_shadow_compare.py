@@ -1,6 +1,8 @@
 from datetime import datetime, timezone
 
 from analytics.diagnostics.provider_cutover_shadow_compare import (
+    _extract_cli_rows,
+    _load_provider_inputs_via_cli,
     _provider_usage_from_rows,
     compare_provider_cutover,
     format_markdown_report,
@@ -8,6 +10,103 @@ from analytics.diagnostics.provider_cutover_shadow_compare import (
 
 
 NOW = datetime(2026, 5, 13, 20, 0, tzinfo=timezone.utc)
+
+
+def _official_row():
+    return {
+        "id": 101,
+        "slate_date": "2026-06-19",
+        "market_key": "pitcher_strikeouts",
+        "ready_for_pipeline": True,
+        "player_name": "Jose Berrios",
+        "normalized_player_name": "jose berrios",
+        "ref_book_name": "FanDuel",
+        "ref_book_key": "fanduel",
+        "ref_line": 5.5,
+        "ref_over_odds": -115,
+        "ref_under_odds": -105,
+        "game_time": "2026-06-19T23:05:00Z",
+        "book_odds": {
+            "FanDuel": {"line": 5.5, "over": -115, "under": -105, "provider": "therundown"},
+            "DraftKings": {"line": 5.5, "over": -112, "under": -108, "provider": "propline"},
+        },
+        "selected_provider": "therundown",
+        "current_market_line_ids": [201, 202],
+        "provider_coverage": {
+            "fanduel": {"provider": "therundown", "book": "FanDuel"},
+            "draftkings": {"provider": "propline", "book": "DraftKings"},
+        },
+        "arbitration_reasons": [],
+    }
+
+
+def _opening_baseline_row():
+    return {
+        "slate_date": "2026-06-19",
+        "market_key": "pitcher_strikeouts",
+        "normalized_player_name": "jose berrios",
+        "book_name": "FanDuel",
+        "book_key": "fanduel",
+        "line": 5.5,
+        "opening_over_odds": -110,
+        "opening_under_odds": -110,
+        "opening_source": "preview",
+        "first_seen_at": "2026-06-19T05:00:00Z",
+    }
+
+
+def _current_line_row():
+    return {
+        "id": 201,
+        "slate_date": "2026-06-19",
+        "provider": "therundown",
+        "book_key": "fanduel",
+        "book_name": "FanDuel",
+        "player_name": "Jose Berrios",
+        "normalized_player_name": "jose berrios",
+        "market_key": "pitcher_strikeouts",
+        "line": 5.5,
+        "over_odds": -115,
+        "under_odds": -105,
+        "last_seen_at": "2026-06-19T19:59:00+00:00",
+        "is_complete": True,
+        "quality_flags": [],
+    }
+
+
+def _heartbeat_row():
+    return {
+        "provider": "therundown",
+        "slate_date": "2026-06-19",
+        "observed_at": "2026-06-19T19:59:50+00:00",
+        "last_message_at": "2026-06-19T19:59:45+00:00",
+        "books_seen": ["fanduel"],
+        "metadata": {"event": "poll"},
+    }
+
+
+def _usage_row():
+    return {
+        "provider": "propline",
+        "request_count": 42,
+        "snapshot_count": 300,
+        "source": "scripts/shadow_propline_to_supabase.py",
+        "updated_at": "2026-06-19T19:59:00Z",
+    }
+
+
+def _cli_runner_with(rows_by_table, failures=()):
+    def fake_runner(command):
+        sql = command[-1]
+        for table in failures:
+            if f"public.{table}" in sql:
+                raise RuntimeError(f"{table} failed")
+        for table, rows in rows_by_table.items():
+            if f"public.{table}" in sql:
+                return {"rows": rows}
+        raise AssertionError(f"unexpected SQL: {sql}")
+
+    return fake_runner
 
 
 def _prop(
@@ -82,6 +181,121 @@ def test_compare_reports_pitcher_and_fd_dk_coverage():
     assert report["coverage"]["missing_draftkings_pitchers"] == []
     gate_statuses = {gate["name"]: gate["status"] for gate in report["readiness"]["gates"]}
     assert gate_statuses["official_provider_pitcher_coverage_90"] == "fail"
+
+
+def test_linked_cli_fallback_builds_provider_props_and_current_lines():
+    inputs = _load_provider_inputs_via_cli(
+        date_str="2026-06-19",
+        min_props=1,
+        cli_runner=_cli_runner_with({
+            "official_market_lines": [_official_row()],
+            "market_opening_baselines": [_opening_baseline_row()],
+            "current_market_lines": [_current_line_row()],
+            "market_feed_heartbeats": [_heartbeat_row()],
+            "provider_request_usage_daily": [_usage_row()],
+        }),
+    )
+
+    assert len(inputs["provider_props"]) == 1
+    assert len(inputs["provider_current_lines"]) == 1
+    assert len(inputs["provider_heartbeats"]) == 1
+    assert inputs["provider_usage"]["propline_requests"] == 42
+    assert inputs["warnings"] == []
+
+    report = compare_provider_cutover(
+        date_str="2026-06-19",
+        rundown_props=[_prop("Jose Berrios")],
+        provider_props=inputs["provider_props"],
+        provider_current_lines=inputs["provider_current_lines"],
+        provider_heartbeats=inputs["provider_heartbeats"],
+        provider_usage=inputs["provider_usage"],
+        provider_input_warnings=inputs["warnings"],
+        generated_at=NOW,
+    )
+
+    assert report["input_availability"]["provider_evidence_available"] is True
+    assert report["input_availability"]["provider_current_lines_available"] is True
+    assert report["summary"]["provider_pitcher_count"] == 1
+    assert report["mainline_selection"]["raw_candidate_count"] == 1
+
+
+def test_linked_cli_fallback_marks_provider_gates_unknown_when_required_reads_fail():
+    required_tables = {
+        "official_market_lines",
+        "market_opening_baselines",
+        "current_market_lines",
+        "market_feed_heartbeats",
+    }
+    inputs = _load_provider_inputs_via_cli(
+        date_str="2026-06-19",
+        min_props=1,
+        cli_runner=_cli_runner_with(
+            {"provider_request_usage_daily": [_usage_row()]},
+            failures=required_tables,
+        ),
+    )
+
+    report = compare_provider_cutover(
+        date_str="2026-06-19",
+        rundown_props=[_prop("Jose Berrios")],
+        provider_props=inputs["provider_props"],
+        scheduled_pitchers=[{"pitcher": "Jose Berrios"}],
+        provider_current_lines=inputs["provider_current_lines"],
+        provider_heartbeats=inputs["provider_heartbeats"],
+        provider_usage=inputs["provider_usage"],
+        provider_input_warnings=inputs["warnings"],
+        generated_at=NOW,
+    )
+
+    gate_statuses = {gate["name"]: gate["status"] for gate in report["readiness"]["gates"]}
+    assert gate_statuses["official_provider_pitcher_coverage_90"] == "unknown"
+    assert gate_statuses["official_provider_fd_or_dk_coverage_85"] == "unknown"
+    assert gate_statuses["official_rows_ready_for_pipeline_90"] == "unknown"
+    assert gate_statuses["prop_contract_valid"] == "unknown"
+    assert report["input_availability"]["provider_evidence_available"] is False
+    assert any(warning["status"] == "unavailable" for warning in inputs["warnings"])
+
+
+def test_linked_cli_usage_failure_does_not_block_provider_evidence():
+    inputs = _load_provider_inputs_via_cli(
+        date_str="2026-06-19",
+        min_props=1,
+        cli_runner=_cli_runner_with(
+            {
+                "official_market_lines": [_official_row()],
+                "market_opening_baselines": [_opening_baseline_row()],
+                "current_market_lines": [_current_line_row()],
+                "market_feed_heartbeats": [_heartbeat_row()],
+            },
+            failures={"provider_request_usage_daily"},
+        ),
+    )
+
+    report = compare_provider_cutover(
+        date_str="2026-06-19",
+        rundown_props=[_prop("Jose Berrios")],
+        provider_props=inputs["provider_props"],
+        provider_current_lines=inputs["provider_current_lines"],
+        provider_heartbeats=inputs["provider_heartbeats"],
+        provider_usage=inputs["provider_usage"],
+        provider_input_warnings=inputs["warnings"],
+        generated_at=NOW,
+    )
+
+    assert inputs["provider_usage"] is None
+    assert report["input_availability"]["provider_evidence_available"] is True
+    assert {warning["status"] for warning in inputs["warnings"]} == {"warning"}
+    gate_statuses = {gate["name"]: gate["status"] for gate in report["readiness"]["gates"]}
+    assert gate_statuses["official_provider_pitcher_coverage_90"] == "pass"
+
+
+def test_linked_cli_payload_parser_rejects_malformed_shape():
+    try:
+        _extract_cli_rows({"data": []})
+    except ValueError as error:
+        assert "missing rows" in str(error)
+    else:
+        raise AssertionError("malformed CLI payload should raise")
 
 
 def test_compare_reports_schedule_first_provider_coverage():

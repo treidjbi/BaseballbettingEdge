@@ -8,11 +8,13 @@ from __future__ import annotations
 
 import argparse
 import json
+import shutil
+import subprocess
 import sys
 from collections import Counter
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any
+from typing import Any, Callable
 
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT))
@@ -20,8 +22,11 @@ sys.path.insert(0, str(ROOT / "pipeline"))
 
 from pipeline.fetch_odds import _fetch_therundown_odds  # noqa: E402
 from pipeline.fetch_provider_market_odds import (  # noqa: E402
+    MARKET_KEY,
+    _baseline_index,
     fetch_official_market_odds,
     official_market_writer_from_env,
+    official_row_to_prop,
 )
 from pipeline.fetch_stats import fetch_probable_starters  # noqa: E402
 from pipeline.name_utils import normalize  # noqa: E402
@@ -753,6 +758,209 @@ def _provider_usage_from_rows(rows: list[dict[str, Any]]) -> dict[str, Any] | No
     return usage
 
 
+CliRunner = Callable[[list[str]], Any]
+
+
+def _provider_cli_queries(date_str: str) -> dict[str, dict[str, Any]]:
+    slate_date = _sql_literal(date_str)
+    market_key = _sql_literal(MARKET_KEY)
+    provider_list = ", ".join(_sql_literal(provider) for provider in ("therundown", "propline", "boltodds"))
+    return {
+        "official_rows": {
+            "table": "official_market_lines",
+            "optional": False,
+            "sql": f"""
+                select *
+                from public.official_market_lines
+                where slate_date = date {slate_date}
+                  and market_key = {market_key}
+                  and ready_for_pipeline = true
+                order by normalized_player_name asc
+                limit 10000;
+            """,
+        },
+        "opening_baselines": {
+            "table": "market_opening_baselines",
+            "optional": False,
+            "sql": f"""
+                select *
+                from public.market_opening_baselines
+                where slate_date = date {slate_date}
+                  and market_key = {market_key}
+                order by first_seen_at asc
+                limit 10000;
+            """,
+        },
+        "current_lines": {
+            "table": "current_market_lines",
+            "optional": False,
+            "sql": f"""
+                select *
+                from public.current_market_lines
+                where slate_date = date {slate_date}
+                  and market_key = {market_key}
+                order by updated_at desc
+                limit 10000;
+            """,
+        },
+        "heartbeats": {
+            "table": "market_feed_heartbeats",
+            "optional": False,
+            "sql": f"""
+                select *
+                from public.market_feed_heartbeats
+                where slate_date = date {slate_date}
+                  and provider in ({provider_list})
+                order by observed_at desc
+                limit 250;
+            """,
+        },
+        "usage": {
+            "table": "provider_request_usage_daily",
+            "optional": True,
+            "sql": f"""
+                select
+                  provider,
+                  request_count,
+                  snapshot_count,
+                  source,
+                  updated_at
+                from public.provider_request_usage_daily
+                where usage_date = date {slate_date}
+                limit 50;
+            """,
+        },
+    }
+
+
+def _load_provider_inputs_via_cli(
+    *,
+    date_str: str,
+    min_props: int,
+    cli_runner: CliRunner | None = None,
+) -> dict[str, Any]:
+    runner = cli_runner or _run_linked_supabase_cli
+    rows_by_key: dict[str, list[dict[str, Any]] | None] = {}
+    warnings: list[dict[str, Any]] = []
+    required_successes = 0
+    required_failures = 0
+
+    for result_key, spec in _provider_cli_queries(date_str).items():
+        table = spec["table"]
+        try:
+            rows = _extract_cli_rows(runner([
+                "npx",
+                "supabase",
+                "db",
+                "query",
+                "--linked",
+                "-o",
+                "json",
+                _compact_sql(spec["sql"]),
+            ]))
+            rows_by_key[result_key] = rows
+            if not spec["optional"]:
+                required_successes += 1
+        except Exception as error:  # noqa: BLE001 - diagnostics should degrade, not crash.
+            rows_by_key[result_key] = [] if spec["optional"] else None
+            if spec["optional"]:
+                warnings.append({
+                    "source": f"linked_supabase_cli:{table}",
+                    "status": "warning",
+                    "message": f"{table} usage read failed: {_safe_cli_error(error)}",
+                })
+            else:
+                required_failures += 1
+                warnings.append({
+                    "source": f"linked_supabase_cli:{table}",
+                    "status": "unavailable",
+                    "message": f"{table} read failed: {_safe_cli_error(error)}",
+                })
+
+    official_rows = rows_by_key.get("official_rows")
+    baseline_rows = rows_by_key.get("opening_baselines")
+    provider_props: list[dict[str, Any]] = []
+    if isinstance(official_rows, list) and isinstance(baseline_rows, list):
+        baselines = _baseline_index(baseline_rows)
+        provider_props = [
+            prop
+            for row in official_rows
+            if (prop := official_row_to_prop(row, baselines)) is not None
+        ]
+        if len(provider_props) < min_props:
+            provider_props = []
+
+    if required_successes == 0 and required_failures:
+        warnings.append({
+            "source": "linked_supabase_cli",
+            "status": "unavailable",
+            "message": "all required provider evidence reads failed",
+        })
+
+    usage_rows = rows_by_key.get("usage")
+    return {
+        "provider_props": provider_props,
+        "provider_current_lines": rows_by_key.get("current_lines") if isinstance(rows_by_key.get("current_lines"), list) else None,
+        "provider_heartbeats": rows_by_key.get("heartbeats") if isinstance(rows_by_key.get("heartbeats"), list) else None,
+        "provider_usage": _provider_usage_from_rows(usage_rows) if isinstance(usage_rows, list) else None,
+        "warnings": warnings,
+    }
+
+
+def _run_linked_supabase_cli(command: list[str]) -> Any:
+    resolved_command = list(command)
+    if resolved_command and resolved_command[0] == "npx":
+        resolved_command[0] = shutil.which("npx") or shutil.which("npx.cmd") or resolved_command[0]
+    completed = subprocess.run(
+        resolved_command,
+        cwd=ROOT,
+        check=True,
+        capture_output=True,
+        text=True,
+        encoding="utf-8",
+        shell=False,
+    )
+    return json.loads(completed.stdout)
+
+
+def _extract_cli_rows(payload: Any) -> list[dict[str, Any]]:
+    if isinstance(payload, subprocess.CompletedProcess):
+        payload = payload.stdout
+    if isinstance(payload, str):
+        payload = json.loads(payload)
+    if isinstance(payload, dict):
+        if "rows" not in payload:
+            raise ValueError("linked CLI JSON payload is missing rows")
+        rows = payload["rows"]
+    elif isinstance(payload, list):
+        rows = payload
+    else:
+        raise ValueError("linked CLI JSON payload must be a rows object or list")
+    if not isinstance(rows, list):
+        raise ValueError("linked CLI JSON rows is not a list")
+    if any(not isinstance(row, dict) for row in rows):
+        raise ValueError("linked CLI JSON rows must contain objects")
+    return rows
+
+
+def _sql_literal(value: str) -> str:
+    return "'" + value.replace("'", "''") + "'"
+
+
+def _compact_sql(sql: str) -> str:
+    return " ".join(sql.split())
+
+
+def _safe_cli_error(error: Exception) -> str:
+    if isinstance(error, subprocess.CalledProcessError):
+        stderr = (error.stderr or "").strip()
+        if stderr:
+            return stderr.splitlines()[-1][:180]
+        return f"exit {error.returncode}"
+    message = str(error).strip()
+    return message[:180] if message else error.__class__.__name__
+
+
 def _parse_usage(value: str | None) -> dict[str, Any] | None:
     if not value:
         return None
@@ -794,22 +1002,28 @@ def main(argv: list[str] | None = None) -> int:
         else _fetch_therundown_odds(args.date)
     )
     writer = None
+    cli_provider_inputs: dict[str, Any] | None = None
     if not args.provider_json or not args.provider_current_lines_json:
         try:
             writer = official_market_writer_from_env()
         except Exception as e:
-            message = f"provider Supabase writer unavailable: {type(e).__name__}: {e}"
-            provider_input_warnings.append({
-                "source": "supabase",
-                "status": "unavailable",
-                "message": message,
-            })
+            message = (
+                "provider Supabase writer unavailable; trying linked CLI fallback: "
+                f"{type(e).__name__}: {e}"
+            )
             print(f"WARNING: {message}")
+            cli_provider_inputs = _load_provider_inputs_via_cli(
+                date_str=args.date,
+                min_props=args.provider_min_props,
+            )
+            provider_input_warnings.extend(cli_provider_inputs["warnings"])
     provider_props = (
         load_json_rows(args.provider_json)
         if args.provider_json
         else fetch_official_market_odds(args.date, writer=writer, min_props=args.provider_min_props)
         if writer is not None
+        else cli_provider_inputs["provider_props"]
+        if cli_provider_inputs is not None
         else []
     )
     provider_current_lines = (
@@ -817,16 +1031,22 @@ def main(argv: list[str] | None = None) -> int:
         if args.provider_current_lines_json
         else _fetch_provider_current_lines(writer, args.date)
         if writer is not None
+        else cli_provider_inputs["provider_current_lines"]
+        if cli_provider_inputs is not None
         else None
     )
     provider_heartbeats = (
         _fetch_provider_heartbeats(writer, args.date)
         if writer is not None
+        else cli_provider_inputs["provider_heartbeats"]
+        if cli_provider_inputs is not None
         else None
     )
     provider_usage = _parse_usage(args.provider_usage_json)
     if provider_usage is None and writer is not None:
         provider_usage = _fetch_provider_usage(writer, args.date)
+    elif provider_usage is None and cli_provider_inputs is not None:
+        provider_usage = cli_provider_inputs["provider_usage"]
     report = compare_provider_cutover(
         date_str=args.date,
         rundown_props=rundown_props,
