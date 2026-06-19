@@ -156,6 +156,30 @@ def choose_official_lines(
         quality_flags = _official_quality_flags(selected_by_book)
         reasons = _selection_reasons(selected_by_book, missing_books, quality_flags, ref_book_key, ref_row)
         current_line_ids = _line_ids(selected_by_book.values())
+        if "cross_book_line_conflict" in quality_flags:
+            official_rows.append(_inactive_official_row(
+                slate_date=slate_date,
+                normalized_player_name=normalized_player_name,
+                player_name=player_name,
+                market_key=market_key,
+                reasons=["cross_book_line_conflict"],
+                stale_after_seconds=stale_after_seconds,
+                now_utc=observed_now,
+                current_line_ids=current_line_ids,
+            ))
+            decision_rows.append(_decision_row(
+                slate_date=slate_date,
+                normalized_player_name=normalized_player_name,
+                market_key=market_key,
+                decision="skip",
+                reasons=["cross_book_line_conflict"],
+                candidate_count=len(supported_rows),
+                stale_candidate_count=stale_count,
+                missing_book_keys=missing_books,
+                source_line_ids=current_line_ids,
+            ))
+            continue
+
         game_time = _selected_game_time(selected_by_book, ref_book_key)
         if not game_time:
             official_rows.append(_inactive_official_row(

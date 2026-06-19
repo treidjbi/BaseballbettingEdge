@@ -237,8 +237,8 @@ def test_one_sided_over_line_is_skipped():
     assert decision_rows[0]["candidate_count"] == 1
 
 
-def test_cross_book_line_conflicts_are_preserved_with_ref_priority():
-    official_rows, _ = choose_official_lines(
+def test_cross_book_line_conflicts_fail_closed_instead_of_using_ref_priority():
+    official_rows, decision_rows = choose_official_lines(
         [
             _line(1, book_key="fanduel", book_name="FanDuel", line=5.5),
             _line(2, book_key="draftkings", book_name="DraftKings", provider="propline", line=6.5),
@@ -247,12 +247,13 @@ def test_cross_book_line_conflicts_are_preserved_with_ref_priority():
     )
 
     official = official_rows[0]
-    assert official["ref_book_key"] == "fanduel"
-    assert official["ref_line"] == 5.5
-    assert official["book_odds"]["FanDuel"]["line"] == 5.5
-    assert official["book_odds"]["DraftKings"]["line"] == 6.5
-    assert official["quality_flags"] == ["cross_book_line_conflict"]
+    assert official["ready_for_pipeline"] is False
+    assert official["ref_book_key"] is None
+    assert official["quality_flags"] == ["not_ready_for_pipeline", "cross_book_line_conflict"]
     assert "cross_book_line_conflict" in official["arbitration_reasons"]
+    assert decision_rows[0]["decision"] == "skip"
+    assert decision_rows[0]["reasons"] == ["cross_book_line_conflict"]
+    assert decision_rows[0]["source_line_ids"] == [1, 2]
 
 
 def test_same_book_ladder_uses_fallback_provider_when_retired_provider_has_conflict():
