@@ -51,4 +51,4 @@ create index if not exists idx_market_pick_evidence_window
 alter table public.market_pick_evidence enable row level security;
 
 comment on table public.market_pick_evidence is
-  'Shadow-only per-pick market evidence rollup from live market snapshots. Not the official grading or model record.';
+  'Shadow-only per-pick market evidence rollup from live market snapshots. Not the official grading or model record.';;

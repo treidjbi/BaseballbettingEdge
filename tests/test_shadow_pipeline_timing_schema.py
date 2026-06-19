@@ -2,7 +2,7 @@ from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[1]
-MIGRATION = ROOT / "supabase" / "migrations" / "20260514_shadow_pipeline_timing.sql"
+MIGRATION = ROOT / "supabase" / "migrations" / "20260514183125_shadow_pipeline_timing.sql"
 
 
 def test_shadow_pipeline_timing_migration_defines_compact_shadow_tables():

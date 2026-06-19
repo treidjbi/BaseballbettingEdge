@@ -44,22 +44,9 @@ begin
     end if;
   end if;
 
-  if old.updated_at > now() - interval '10 minutes'
-     and new.slate_date is not distinct from old.slate_date
-     and new.provider is not distinct from old.provider
-     and new.book_key is not distinct from old.book_key
-     and new.book_name is not distinct from old.book_name
-     and new.event_id is not distinct from old.event_id
-     and new.provider_event_id is not distinct from old.provider_event_id
-     and new.game_time is not distinct from old.game_time
-     and new.player_name is not distinct from old.player_name
-     and new.normalized_player_name is not distinct from old.normalized_player_name
-     and new.market_key is not distinct from old.market_key
-     and new.line is not distinct from old.line
-     and new.over_odds is not distinct from old.over_odds
-     and new.under_odds is not distinct from old.under_odds
-     and new.is_complete is not distinct from old.is_complete
-     and new.quality_flags is not distinct from old.quality_flags then
+  if old.updated_at > now() - interval '2 minutes'
+     and (to_jsonb(new) - 'updated_at' - 'freshness_seconds')
+       = (to_jsonb(old) - 'updated_at' - 'freshness_seconds') then
     return null;
   end if;
 
@@ -83,21 +70,6 @@ begin
     new.game_time = old.game_time;
   end if;
 
-  if coalesce(new.arbitration_reasons, '[]'::jsonb) ? 'selected' then
-    if tg_op = 'UPDATE' then
-      return null;
-    end if;
-    new.ready_for_pipeline = false;
-    new.quality_flags = public.append_unique_jsonb_text_values(
-      new.quality_flags,
-      array['not_ready_for_pipeline', 'legacy_selected_contract']
-    );
-    new.arbitration_reasons = public.append_unique_jsonb_text_values(
-      new.arbitration_reasons,
-      array['legacy_selected_contract']
-    );
-  end if;
-
   if new.ready_for_pipeline
      and nullif(btrim(coalesce(new.game_time, '')), '') is null then
     new.ready_for_pipeline = false;
@@ -109,14 +81,6 @@ begin
       new.arbitration_reasons,
       array['missing_game_time']
     );
-  end if;
-
-  if tg_op = 'UPDATE'
-     and old.updated_at > now() - interval '2 minutes'
-     and nullif(btrim(coalesce(new.game_time, '')), '') is null
-     and not new.ready_for_pipeline
-     and not old.ready_for_pipeline then
-    return null;
   end if;
 
   if tg_op = 'UPDATE'
@@ -145,12 +109,6 @@ returns trigger
 language plpgsql
 as $$
 begin
-  if new.decision = 'selected'
-     and new.reasons = '["selected"]'::jsonb
-  then
-    return null;
-  end if;
-
   if exists (
     select 1
     from public.provider_arbitration_decisions existing
@@ -177,4 +135,4 @@ $$;
 drop trigger if exists suppress_duplicate_provider_arbitration_decision on public.provider_arbitration_decisions;
 create trigger suppress_duplicate_provider_arbitration_decision
   before insert on public.provider_arbitration_decisions
-  for each row execute function public.suppress_duplicate_provider_arbitration_decision();
+  for each row execute function public.suppress_duplicate_provider_arbitration_decision();;

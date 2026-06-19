@@ -2,7 +2,7 @@ from pathlib import Path
 import re
 
 ROOT = Path(__file__).resolve().parent.parent
-MIGRATION = ROOT / "supabase" / "migrations" / "20260507_boltodds_shadow_trial.sql"
+MIGRATION = ROOT / "supabase" / "migrations" / "20260507210334_boltodds_shadow_trial.sql"
 RUN_ID_INDEX_MIGRATION = (
     ROOT
     / "supabase"

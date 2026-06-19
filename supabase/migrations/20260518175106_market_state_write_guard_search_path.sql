@@ -11,4 +11,4 @@ alter function public.suppress_duplicate_provider_arbitration_decision()
   set search_path = public, pg_temp;
 
 alter function public.set_market_state_updated_at()
-  set search_path = public, pg_temp;
+  set search_path = public, pg_temp;;

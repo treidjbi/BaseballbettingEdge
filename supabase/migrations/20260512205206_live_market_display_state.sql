@@ -74,4 +74,4 @@ begin
     execute 'drop policy if exists bbe_ops_readonly_select_live_market_display_state on public.live_market_display_state';
     execute 'create policy bbe_ops_readonly_select_live_market_display_state on public.live_market_display_state for select to bbe_ops_readonly using (true)';
   end if;
-end $$;
+end $$;;

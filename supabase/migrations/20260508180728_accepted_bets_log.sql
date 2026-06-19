@@ -32,4 +32,4 @@ create index if not exists idx_accepted_bets_pitcher
 alter table public.accepted_bets enable row level security;
 
 comment on table public.accepted_bets is
-  'Manual accepted-bet log. Additive analytics sidecar; does not affect picks, grading, staking, providers, or notifications.';
+  'Manual accepted-bet log. Additive analytics sidecar; does not affect picks, grading, staking, providers, or notifications.';;

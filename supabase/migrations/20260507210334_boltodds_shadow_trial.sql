@@ -61,4 +61,4 @@ create index if not exists idx_market_feed_heartbeats_provider_observed
 alter table public.market_feed_heartbeats enable row level security;
 
 comment on table public.market_feed_heartbeats is
-  'Shadow-only provider feed heartbeat observations for stream/webhook health. Not read by the production pipeline.';
+  'Shadow-only provider feed heartbeat observations for stream/webhook health. Not read by the production pipeline.';;

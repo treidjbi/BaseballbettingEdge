@@ -139,4 +139,4 @@ comment on table public.propline_webhook_deliveries is
   'Raw PropLine webhook inbox with delivery-id dedupe and HMAC validation status.';
 
 comment on table public.artifact_snapshots is
-  'Observation-only immutable copies of JSON artifacts for audit, replay, and future analytics.';
+  'Observation-only immutable copies of JSON artifacts for audit, replay, and future analytics.';;

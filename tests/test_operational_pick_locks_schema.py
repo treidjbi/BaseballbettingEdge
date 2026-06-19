@@ -2,7 +2,7 @@ from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[1]
-MIGRATION = ROOT / "supabase" / "migrations" / "20260519_operational_pick_locks.sql"
+MIGRATION = ROOT / "supabase" / "migrations" / "20260519201848_operational_pick_locks.sql"
 
 
 def test_operational_pick_locks_schema_has_required_contract():

@@ -9,7 +9,8 @@ begin
     new.game_time = old.game_time;
   end if;
 
-  if coalesce(new.arbitration_reasons, '[]'::jsonb) ? 'selected' then
+  if new.ready_for_pipeline
+     and new.arbitration_reasons = '["selected"]'::jsonb then
     if tg_op = 'UPDATE' then
       return null;
     end if;
@@ -57,4 +58,4 @@ end;
 $$;
 
 alter function public.guard_official_market_lines_before_write()
-  set search_path = public, pg_temp;
+  set search_path = public, pg_temp;;

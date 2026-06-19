@@ -40,4 +40,4 @@ end;
 $$;
 
 alter function public.guard_current_market_lines_before_update()
-  set search_path = public, pg_temp;
+  set search_path = public, pg_temp;;

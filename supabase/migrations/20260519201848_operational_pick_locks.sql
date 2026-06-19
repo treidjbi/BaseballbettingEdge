@@ -42,4 +42,4 @@ begin
     execute 'drop policy if exists bbe_ops_readonly_select_operational_pick_locks on public.operational_pick_locks';
     execute 'create policy bbe_ops_readonly_select_operational_pick_locks on public.operational_pick_locks for select to bbe_ops_readonly using (true)';
   end if;
-end $$;
+end $$;;

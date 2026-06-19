@@ -228,4 +228,4 @@ create trigger set_provider_request_usage_daily_updated_at
 drop trigger if exists set_compact_market_line_movements_updated_at on public.compact_market_line_movements;
 create trigger set_compact_market_line_movements_updated_at
   before update on public.compact_market_line_movements
-  for each row execute function public.set_market_state_updated_at();
+  for each row execute function public.set_market_state_updated_at();;

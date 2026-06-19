@@ -1,6 +1,5 @@
 alter table public.notification_events
   drop constraint if exists notification_events_event_type_check;
-
 alter table public.notification_events
   add constraint notification_events_event_type_check
   check (
@@ -19,7 +18,6 @@ alter table public.notification_events
       'pick_downgraded_digest'
     )
   );
-
 comment on constraint notification_events_event_type_check
   on public.notification_events is
   'Allows default individual notification events plus explicitly promoted digest event types.';

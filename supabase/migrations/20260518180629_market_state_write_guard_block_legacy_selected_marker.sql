@@ -57,4 +57,4 @@ end;
 $$;
 
 alter function public.guard_official_market_lines_before_write()
-  set search_path = public, pg_temp;
+  set search_path = public, pg_temp;;

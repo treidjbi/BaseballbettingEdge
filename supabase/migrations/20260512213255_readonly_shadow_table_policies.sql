@@ -10,4 +10,4 @@ begin
     execute 'drop policy if exists bbe_ops_readonly_select_shadow_notification_candidates on public.shadow_notification_candidates';
     execute 'create policy bbe_ops_readonly_select_shadow_notification_candidates on public.shadow_notification_candidates for select to bbe_ops_readonly using (true)';
   end if;
-end $$;
+end $$;;

@@ -60,4 +60,4 @@ create index if not exists idx_shadow_notification_candidates_quality
 alter table public.shadow_notification_candidates enable row level security;
 
 comment on table public.shadow_notification_candidates is
-  'Shadow-only would-have-sent notification candidates. These rows never trigger real push notifications.';
+  'Shadow-only would-have-sent notification candidates. These rows never trigger real push notifications.';;

@@ -15,4 +15,4 @@ create index if not exists idx_market_feed_heartbeats_slate_provider_observed
   on public.market_feed_heartbeats (slate_date, provider, observed_at desc);
 
 create index if not exists idx_market_provider_runs_slate_provider_created
-  on public.market_provider_runs (slate_date, provider, created_at desc);
+  on public.market_provider_runs (slate_date, provider, created_at desc);;

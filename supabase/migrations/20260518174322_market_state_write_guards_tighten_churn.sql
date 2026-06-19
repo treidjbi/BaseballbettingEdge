@@ -16,7 +16,7 @@ begin
     end if;
   end if;
 
-  if old.updated_at > now() - interval '10 minutes'
+  if old.updated_at > now() - interval '2 minutes'
      and new.slate_date is not distinct from old.slate_date
      and new.provider is not distinct from old.provider
      and new.book_key is not distinct from old.book_key
@@ -48,21 +48,6 @@ begin
      and nullif(btrim(coalesce(old.game_time, '')), '') is not null
      and nullif(btrim(coalesce(new.game_time, '')), '') is null then
     new.game_time = old.game_time;
-  end if;
-
-  if coalesce(new.arbitration_reasons, '[]'::jsonb) ? 'selected' then
-    if tg_op = 'UPDATE' then
-      return null;
-    end if;
-    new.ready_for_pipeline = false;
-    new.quality_flags = public.append_unique_jsonb_text_values(
-      new.quality_flags,
-      array['not_ready_for_pipeline', 'legacy_selected_contract']
-    );
-    new.arbitration_reasons = public.append_unique_jsonb_text_values(
-      new.arbitration_reasons,
-      array['legacy_selected_contract']
-    );
   end if;
 
   if new.ready_for_pipeline
@@ -104,7 +89,17 @@ as $$
 begin
   if new.decision = 'selected'
      and new.reasons = '["selected"]'::jsonb
-  then
+     and exists (
+       select 1
+       from public.provider_arbitration_decisions existing
+       where existing.slate_date = new.slate_date
+         and existing.normalized_player_name = new.normalized_player_name
+         and existing.market_key = new.market_key
+         and existing.decision = new.decision
+         and existing.reasons = new.reasons
+         and existing.inserted_at >= now() - interval '10 minutes'
+       limit 1
+     ) then
     return null;
   end if;
 
@@ -129,4 +124,4 @@ begin
 
   return new;
 end;
-$$;
+$$;;

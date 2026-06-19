@@ -82,4 +82,4 @@ begin
     execute 'create policy bbe_ops_readonly_select_shadow_pipeline_runs on public.shadow_pipeline_runs for select to bbe_ops_readonly using (true)';
     execute 'create policy bbe_ops_readonly_select_shadow_pick_lock_observations on public.shadow_pick_lock_observations for select to bbe_ops_readonly using (true)';
   end if;
-end $$;
+end $$;;

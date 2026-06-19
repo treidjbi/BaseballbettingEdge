@@ -5,15 +5,15 @@ import re
 ROOT = Path(__file__).resolve().parent.parent
 MIGRATIONS_DIR = ROOT / "supabase" / "migrations"
 LIVE_LAYER_MIGRATION = MIGRATIONS_DIR / "20260506_live_layer_events.sql"
-MARKET_EVIDENCE_MIGRATION = MIGRATIONS_DIR / "20260508_market_pick_evidence.sql"
+MARKET_EVIDENCE_MIGRATION = MIGRATIONS_DIR / "20260508173221_market_pick_evidence.sql"
 MARKET_EVIDENCE_PROVIDER_MIGRATION = (
     MIGRATIONS_DIR / "20260619192355_allow_therundown_market_pick_evidence_provider.sql"
 )
-SHADOW_CANDIDATE_MIGRATION = MIGRATIONS_DIR / "20260508_shadow_notification_candidates.sql"
-ACCEPTED_BETS_MIGRATION = MIGRATIONS_DIR / "20260508_accepted_bets_log.sql"
-LIVE_MARKET_DISPLAY_MIGRATION = MIGRATIONS_DIR / "20260512_live_market_display_state.sql"
-READONLY_SHADOW_POLICIES_MIGRATION = MIGRATIONS_DIR / "20260512_readonly_shadow_table_policies.sql"
-PROVIDER_CUTOVER_MIGRATION = MIGRATIONS_DIR / "20260513_provider_cutover_market_state.sql"
+SHADOW_CANDIDATE_MIGRATION = MIGRATIONS_DIR / "20260508174842_shadow_notification_candidates.sql"
+ACCEPTED_BETS_MIGRATION = MIGRATIONS_DIR / "20260508180728_accepted_bets_log.sql"
+LIVE_MARKET_DISPLAY_MIGRATION = MIGRATIONS_DIR / "20260512205206_live_market_display_state.sql"
+READONLY_SHADOW_POLICIES_MIGRATION = MIGRATIONS_DIR / "20260512213255_readonly_shadow_table_policies.sql"
+PROVIDER_CUTOVER_MIGRATION = MIGRATIONS_DIR / "20260514160903_provider_cutover_market_state.sql"
 NOTIFICATION_DIGEST_MIGRATION = MIGRATIONS_DIR / "20260604172500_notification_digest_event_types.sql"
 MARKET_STATE_WRITE_GUARDS_MIGRATIONS = [
     MIGRATIONS_DIR / "20260518174018_market_state_write_guards.sql",
