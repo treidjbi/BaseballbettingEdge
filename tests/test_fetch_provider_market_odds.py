@@ -74,8 +74,9 @@ def _baseline_row(**overrides):
     return row
 
 
-def test_official_row_to_prop_returns_existing_fetch_odds_shape():
-    prop = official_row_to_prop(_official_row(), {})
+def test_official_row_to_prop_returns_existing_fetch_odds_shape(monkeypatch):
+    monkeypatch.setenv("OFFICIAL_MARKET_SOURCE", "therundown_propline")
+    prop = official_row_to_prop(_official_row(selected_provider="therundown"), {})
 
     required_fields = {
         "pitcher",
@@ -106,9 +107,9 @@ def test_official_row_to_prop_returns_existing_fetch_odds_shape():
     assert prop["opening_over_odds"] == -115
     assert prop["opening_under_odds"] == -105
     assert prop["opening_odds_source"] == "first_seen"
-    assert prop["odds_source"] == "boltodds+propline"
-    assert prop["market_source_mode"] == "boltodds_propline"
-    assert prop["line_source_provider"] == "boltodds"
+    assert prop["odds_source"] == "therundown+propline"
+    assert prop["market_source_mode"] == "therundown_propline"
+    assert prop["line_source_provider"] == "therundown"
     assert prop["source_snapshot_ids"] == [11, 12]
 
 
@@ -173,13 +174,21 @@ def test_disabled_rows_bad_lines_and_missing_game_times_are_skipped():
 def test_official_market_enabled_requires_explicit_mode_and_enable_flag(monkeypatch):
     monkeypatch.delenv("OFFICIAL_MARKET_SOURCE", raising=False)
     monkeypatch.delenv("ENABLE_BOLTODDS_PIPELINE_SOURCE", raising=False)
+    monkeypatch.delenv("ENABLE_THERUNDOWN_PROPLINE_PIPELINE_SOURCE", raising=False)
     assert official_market_enabled() is False
 
-    monkeypatch.setenv("OFFICIAL_MARKET_SOURCE", "boltodds_propline")
+    monkeypatch.setenv("OFFICIAL_MARKET_SOURCE", "therundown_propline")
     assert official_market_enabled() is False
 
-    monkeypatch.setenv("ENABLE_BOLTODDS_PIPELINE_SOURCE", "true")
+    monkeypatch.setenv("ENABLE_THERUNDOWN_PROPLINE_PIPELINE_SOURCE", "true")
     assert official_market_enabled() is True
+
+
+def test_retired_boltodds_mode_stays_closed_without_rehearsal_approval(monkeypatch):
+    monkeypatch.setenv("OFFICIAL_MARKET_SOURCE", "boltodds_propline")
+    monkeypatch.setenv("ENABLE_BOLTODDS_PIPELINE_SOURCE", "true")
+    monkeypatch.delenv("ALLOW_BOLTODDS_PROVIDER_REHEARSAL", raising=False)
+    assert official_market_enabled() is False
 
 
 def test_blank_or_invalid_min_props_uses_conservative_default(monkeypatch):

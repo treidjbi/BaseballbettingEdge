@@ -9,8 +9,10 @@ from market_infra.supabase_writer import SupabaseMarketWriter
 from name_utils import normalize
 
 
-MARKET_SOURCE_MODE = "boltodds_propline"
-ODDS_SOURCE = "boltodds+propline"
+THERUNDOWN_PROPLINE_MARKET_SOURCE = "therundown_propline"
+LEGACY_BOLTODDS_PROPLINE_MARKET_SOURCE = "boltodds_propline"
+THERUNDOWN_PROPLINE_ODDS_SOURCE = "therundown+propline"
+LEGACY_BOLTODDS_PROPLINE_ODDS_SOURCE = "boltodds+propline"
 MARKET_KEY = "pitcher_strikeouts"
 MIN_REASONABLE_PITCHER_K_LINE = 1.5
 DEFAULT_MIN_PROPS = 12
@@ -42,10 +44,33 @@ def official_market_min_props() -> int:
 
 
 def official_market_enabled() -> bool:
-    return (
-        official_market_source_mode() == MARKET_SOURCE_MODE
-        and _truthy(os.environ.get("ENABLE_BOLTODDS_PIPELINE_SOURCE", "false"))
-    )
+    mode = official_market_source_mode()
+    if mode == THERUNDOWN_PROPLINE_MARKET_SOURCE:
+        return _truthy(os.environ.get("ENABLE_THERUNDOWN_PROPLINE_PIPELINE_SOURCE", "false"))
+    if mode == LEGACY_BOLTODDS_PROPLINE_MARKET_SOURCE:
+        return (
+            _truthy(os.environ.get("ALLOW_BOLTODDS_PROVIDER_REHEARSAL", "false"))
+            and _truthy(os.environ.get("ENABLE_BOLTODDS_PIPELINE_SOURCE", "false"))
+        )
+    return False
+
+
+def official_market_source_label() -> str:
+    mode = official_market_source_mode()
+    if mode == THERUNDOWN_PROPLINE_MARKET_SOURCE:
+        return THERUNDOWN_PROPLINE_MARKET_SOURCE
+    if mode == LEGACY_BOLTODDS_PROPLINE_MARKET_SOURCE:
+        return LEGACY_BOLTODDS_PROPLINE_MARKET_SOURCE
+    return mode
+
+
+def official_odds_source_label() -> str:
+    mode = official_market_source_mode()
+    if mode == THERUNDOWN_PROPLINE_MARKET_SOURCE:
+        return THERUNDOWN_PROPLINE_ODDS_SOURCE
+    if mode == LEGACY_BOLTODDS_PROPLINE_MARKET_SOURCE:
+        return LEGACY_BOLTODDS_PROPLINE_ODDS_SOURCE
+    return mode
 
 
 def official_market_writer_from_env() -> SupabaseMarketWriter:
@@ -150,8 +175,8 @@ def official_row_to_prop(
         "opening_under_odds": opening_under if opening_under is not None else under_odds,
         "opening_odds_source": opening_odds_source,
         "book_odds": book_odds or None,
-        "odds_source": ODDS_SOURCE,
-        "market_source_mode": MARKET_SOURCE_MODE,
+        "odds_source": official_odds_source_label(),
+        "market_source_mode": official_market_source_label(),
         "line_source_provider": row.get("selected_provider"),
         "source_snapshot_ids": current_line_ids,
         "source_current_market_line_ids": current_line_ids,
