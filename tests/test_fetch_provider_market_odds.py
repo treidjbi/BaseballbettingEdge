@@ -94,6 +94,12 @@ def test_official_row_to_prop_returns_existing_fetch_odds_shape(monkeypatch):
         "opening_odds_source",
         "book_odds",
         "odds_source",
+        "market_source_mode",
+        "line_source_provider",
+        "source_snapshot_ids",
+        "source_current_market_line_ids",
+        "official_market_line_id",
+        "provider_coverage",
     }
     assert required_fields.issubset(prop)
     assert prop["pitcher"] == "Jose Berrios"
@@ -111,6 +117,9 @@ def test_official_row_to_prop_returns_existing_fetch_odds_shape(monkeypatch):
     assert prop["market_source_mode"] == "therundown_propline"
     assert prop["line_source_provider"] == "therundown"
     assert prop["source_snapshot_ids"] == [11, 12]
+    assert prop["source_current_market_line_ids"] == [11, 12]
+    assert prop["official_market_line_id"] == 88
+    assert prop["provider_coverage"]["draftkings"]["provider"] == "propline"
 
 
 def test_multiple_books_are_preserved_in_book_odds():

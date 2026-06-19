@@ -14,11 +14,11 @@ from zoneinfo import ZoneInfo
 
 from name_utils import normalize
 from fetch_provider_market_odds import (
-    MARKET_SOURCE_MODE,
     OfficialMarketSourceError,
     fetch_official_market_odds,
     official_market_enabled,
     official_market_min_props,
+    official_market_source_label,
     official_market_strict_mode,
 )
 
@@ -824,7 +824,7 @@ def fetch_odds(date_str: str) -> list:
             raise OfficialMarketSourceError(str(exc)) from exc
         log.warning(
             "Official market source %s failed for %s: %s; falling back to TheRundown",
-            MARKET_SOURCE_MODE,
+            official_market_source_label(),
             date_str,
             exc,
         )
@@ -833,7 +833,7 @@ def fetch_odds(date_str: str) -> list:
     if official_props:
         log.info(
             "Official market source %s returned %d props for %s",
-            MARKET_SOURCE_MODE,
+            official_market_source_label(),
             len(official_props),
             date_str,
         )
@@ -841,13 +841,13 @@ def fetch_odds(date_str: str) -> list:
 
     if strict:
         raise OfficialMarketSourceError(
-            f"Official market source {MARKET_SOURCE_MODE} returned fewer than "
+            f"Official market source {official_market_source_label()} returned fewer than "
             f"{min_props} props for {date_str}"
         )
 
     log.warning(
         "Official market source %s returned fewer than %d props for %s; falling back to TheRundown",
-        MARKET_SOURCE_MODE,
+        official_market_source_label(),
         min_props,
         date_str,
     )

@@ -740,13 +740,16 @@ class TestFetchOddsFailureHandling:
             "best_over_odds": -115,
             "best_under_odds": -105,
             "book_odds": {"FanDuel": {"over": -115, "under": -105}},
-            "odds_source": "boltodds+propline",
-            "market_source_mode": "boltodds_propline",
+            "odds_source": "therundown+propline",
+            "market_source_mode": "therundown_propline",
         }]
 
         with patch.dict(
             "os.environ",
-            {"OFFICIAL_MARKET_SOURCE": "boltodds_propline", "ENABLE_BOLTODDS_PIPELINE_SOURCE": "true"},
+            {
+                "OFFICIAL_MARKET_SOURCE": "therundown_propline",
+                "ENABLE_THERUNDOWN_PROPLINE_PIPELINE_SOURCE": "true",
+            },
         ):
             with patch("fetch_odds.fetch_official_market_odds", return_value=official_props) as mock_official:
                 with patch("fetch_odds._fetch_therundown_odds") as mock_therundown:
@@ -761,7 +764,10 @@ class TestFetchOddsFailureHandling:
 
         with patch.dict(
             "os.environ",
-            {"OFFICIAL_MARKET_SOURCE": "boltodds_propline", "ENABLE_BOLTODDS_PIPELINE_SOURCE": "true"},
+            {
+                "OFFICIAL_MARKET_SOURCE": "therundown_propline",
+                "ENABLE_THERUNDOWN_PROPLINE_PIPELINE_SOURCE": "true",
+            },
         ):
             with patch("fetch_odds.fetch_official_market_odds", return_value=[]):
                 with patch("fetch_odds._fetch_therundown_odds", return_value=fallback_props) as mock_therundown:
@@ -774,8 +780,8 @@ class TestFetchOddsFailureHandling:
         with patch.dict(
             "os.environ",
             {
-                "OFFICIAL_MARKET_SOURCE": "boltodds_propline",
-                "ENABLE_BOLTODDS_PIPELINE_SOURCE": "true",
+                "OFFICIAL_MARKET_SOURCE": "therundown_propline",
+                "ENABLE_THERUNDOWN_PROPLINE_PIPELINE_SOURCE": "true",
                 "OFFICIAL_MARKET_STRICT": "true",
             },
         ):
@@ -789,7 +795,7 @@ class TestFetchOddsFailureHandling:
     def test_official_market_source_requires_second_enable_flag(self):
         good_payload = {"events": [_make_event("Gerrit Cole", 7.5, -112, -108)]}
 
-        with patch.dict("os.environ", {"OFFICIAL_MARKET_SOURCE": "boltodds_propline"}):
+        with patch.dict("os.environ", {"OFFICIAL_MARKET_SOURCE": "therundown_propline"}):
             with patch("fetch_odds.throttled_get", return_value=good_payload):
                 with patch("fetch_odds.fetch_official_market_odds") as mock_official:
                     result = fetch_odds("2026-05-13")
@@ -803,8 +809,8 @@ class TestFetchOddsFailureHandling:
         with patch.dict(
             "os.environ",
             {
-                "OFFICIAL_MARKET_SOURCE": "boltodds_propline",
-                "ENABLE_BOLTODDS_PIPELINE_SOURCE": "true",
+                "OFFICIAL_MARKET_SOURCE": "therundown_propline",
+                "ENABLE_THERUNDOWN_PROPLINE_PIPELINE_SOURCE": "true",
                 "OFFICIAL_MARKET_MIN_PROPS": "1",
             },
         ):
