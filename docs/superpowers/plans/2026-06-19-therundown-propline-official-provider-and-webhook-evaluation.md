@@ -8,6 +8,14 @@
 
 **Tech Stack:** Python 3.11 pipeline and diagnostics, Supabase REST/CLI-backed market tables, Render cron wrappers, Netlify functions, pytest, existing vanilla dashboard surfaces.
 
+## Status Update - 2026-06-19
+
+- `therundown_propline` mode support, non-strict TheRundown fallback, retired BoltOdds guards, provider parity CLI fallback, PropLine webhook audit, and cross-book line-conflict fail-closed behavior are implemented on `main`.
+- Render pipeline cron services and `bbe-live-layer` are deployed on `1ec4a726`.
+- Supabase live-layer rollup constraints were widened for `therundown` on `market_pick_evidence`, `live_market_display_state`, and `shadow_notification_candidates`; final live-layer one-off `job-d8qpj8u7r5hc73dflev0` succeeded.
+- Latest parity report for 2026-06-19 is safer but not promotion-ready: line conflict rate is `0.0%`, but provider pitcher coverage is `22/29` (`75.9%`) and official-ready scheduled starter coverage is `21/28` (`75.0%`).
+- Keep the Render official-provider env flip closed. Do not set `OFFICIAL_MARKET_SOURCE=therundown_propline` or `ENABLE_THERUNDOWN_PROPLINE_PIPELINE_SOURCE=true` until coverage survives the plan gates on clean slices.
+
 ## Global Constraints
 
 - BoltOdds stays retired; do not restart `bbe-boltodds-shadow-worker`.
