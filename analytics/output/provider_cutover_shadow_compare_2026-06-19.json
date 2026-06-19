@@ -5,29 +5,35 @@
     "provider_contract_issues": []
   },
   "coverage": {
-    "ambiguous_mainline_pitchers": [],
+    "ambiguous_mainline_pitchers": [
+      "jose soriano"
+    ],
     "book_counts_for_covered_pitchers": {
-      "BetMGM": 10,
-      "BetRivers": 26,
-      "DraftKings": 27,
+      "BetMGM": 9,
+      "BetRivers": 25,
+      "DraftKings": 26,
       "FanDuel": 27
     },
     "extra_provider_pitchers": [],
     "line_conflict_pitchers": [
       "bryce miller",
       "cam schlittler",
+      "jeffrey springs",
       "jose soriano",
       "ranger suarez",
+      "roki sasaki",
       "seth lugo"
     ],
-    "missing_draftkings_pitchers": [],
+    "missing_draftkings_pitchers": [
+      "bryce miller"
+    ],
     "missing_provider_pitchers": [
       "gage jump",
       "ryan johnson"
     ]
   },
   "date": "2026-06-19",
-  "generated_at": "2026-06-19T18:39:17.582022+00:00",
+  "generated_at": "2026-06-19T18:42:07.637269+00:00",
   "input_availability": {
     "provider_current_lines_available": true,
     "provider_evidence_available": true,
@@ -36,11 +42,41 @@
     "warnings": []
   },
   "mainline_selection": {
-    "ambiguous_pitcher_keys": [],
+    "ambiguous_pitcher_keys": [
+      "jose soriano"
+    ],
     "available": true,
-    "mainline_candidate_count": 0,
-    "mainline_pitcher_keys": [],
-    "raw_candidate_count": 188,
+    "mainline_candidate_count": 138,
+    "mainline_pitcher_keys": [
+      "ben brown",
+      "bryce miller",
+      "bubba chandler",
+      "cade cavalli",
+      "cam schlittler",
+      "connor prielipp",
+      "erick fedde",
+      "griffin jax",
+      "jacob degrom",
+      "jacob misiorowski",
+      "jeffrey springs",
+      "jose soriano",
+      "kevin gausman",
+      "kyle freeland",
+      "landen roupp",
+      "martin perez",
+      "michael mcgreevy",
+      "michael soroka",
+      "randy vasquez",
+      "ranger suarez",
+      "rhett lowder",
+      "roki sasaki",
+      "seth lugo",
+      "tanner bibee",
+      "tarik skubal",
+      "tatsuya imai",
+      "trey gibson"
+    ],
+    "raw_candidate_count": 192,
     "raw_pitcher_keys": [
       "ben brown",
       "bryce miller",
@@ -74,16 +110,6 @@
   "market_differences": {
     "odds_deltas_by_book": [
       {
-        "book": "BetMGM",
-        "over_delta": -230,
-        "pitcher": "Ben Brown",
-        "provider": "therundown",
-        "provider_line": 4.5,
-        "rundown_line": 4.5,
-        "same_line": true,
-        "under_delta": 30
-      },
-      {
         "book": "DraftKings",
         "over_delta": 0,
         "pitcher": "Ben Brown",
@@ -105,16 +131,6 @@
       },
       {
         "book": "BetMGM",
-        "over_delta": 0,
-        "pitcher": "Bryce Miller",
-        "provider": "therundown",
-        "provider_line": 4.5,
-        "rundown_line": 4.5,
-        "same_line": true,
-        "under_delta": 0
-      },
-      {
-        "book": "DraftKings",
         "over_delta": 0,
         "pitcher": "Bryce Miller",
         "provider": "therundown",
@@ -155,13 +171,13 @@
       },
       {
         "book": "FanDuel",
-        "over_delta": -4,
+        "over_delta": 0,
         "pitcher": "Bubba Chandler",
         "provider": "propline",
         "provider_line": 4.5,
         "rundown_line": 4.5,
         "same_line": true,
-        "under_delta": 2
+        "under_delta": 0
       },
       {
         "book": "DraftKings",
@@ -215,13 +231,13 @@
       },
       {
         "book": "DraftKings",
-        "over_delta": 6,
+        "over_delta": 0,
         "pitcher": "Connor Prielipp",
         "provider": "propline",
         "provider_line": 3.5,
         "rundown_line": 3.5,
         "same_line": true,
-        "under_delta": -4
+        "under_delta": 0
       },
       {
         "book": "FanDuel",
@@ -312,6 +328,16 @@
         "rundown_line": 8.5,
         "same_line": true,
         "under_delta": 0
+      },
+      {
+        "book": "DraftKings",
+        "over_delta": -14,
+        "pitcher": "Jeffrey Springs",
+        "provider": "propline",
+        "provider_line": 4.5,
+        "rundown_line": 4.5,
+        "same_line": true,
+        "under_delta": 211
       },
       {
         "book": "FanDuel",
@@ -340,16 +366,6 @@
         "provider": "propline",
         "provider_line": 4.5,
         "rundown_line": 4.5,
-        "same_line": true,
-        "under_delta": 0
-      },
-      {
-        "book": "BetMGM",
-        "over_delta": 2,
-        "pitcher": "Kevin Gausman",
-        "provider": "therundown",
-        "provider_line": 5.5,
-        "rundown_line": 5.5,
         "same_line": true,
         "under_delta": 0
       },
@@ -555,13 +571,13 @@
       },
       {
         "book": "DraftKings",
-        "over_delta": 273,
+        "over_delta": 0,
         "pitcher": "Roki Sasaki",
         "provider": "propline",
-        "provider_line": 6.5,
+        "provider_line": 5.5,
         "rundown_line": 5.5,
-        "same_line": false,
-        "under_delta": -268
+        "same_line": true,
+        "under_delta": 0
       },
       {
         "book": "FanDuel",
@@ -605,23 +621,23 @@
       },
       {
         "book": "DraftKings",
-        "over_delta": -8,
+        "over_delta": 4,
         "pitcher": "Tanner Bibee",
         "provider": "propline",
         "provider_line": 4.5,
         "rundown_line": 4.5,
         "same_line": true,
-        "under_delta": 7
+        "under_delta": -5
       },
       {
         "book": "FanDuel",
-        "over_delta": 2,
+        "over_delta": 0,
         "pitcher": "Tanner Bibee",
         "provider": "propline",
         "provider_line": 4.5,
         "rundown_line": 4.5,
         "same_line": true,
-        "under_delta": -2
+        "under_delta": 0
       },
       {
         "book": "BetMGM",
@@ -655,13 +671,23 @@
       },
       {
         "book": "DraftKings",
-        "over_delta": -1,
+        "over_delta": 7,
         "pitcher": "Tatsuya Imai",
         "provider": "propline",
         "provider_line": 4.5,
         "rundown_line": 4.5,
         "same_line": true,
-        "under_delta": 1
+        "under_delta": -5
+      },
+      {
+        "book": "FanDuel",
+        "over_delta": -14,
+        "pitcher": "Tatsuya Imai",
+        "provider": "propline",
+        "provider_line": 4.5,
+        "rundown_line": 4.5,
+        "same_line": true,
+        "under_delta": 10
       },
       {
         "book": "BetMGM",
@@ -675,13 +701,13 @@
       },
       {
         "book": "DraftKings",
-        "over_delta": -7,
+        "over_delta": 0,
         "pitcher": "Trey Gibson",
         "provider": "propline",
         "provider_line": 3.5,
         "rundown_line": 3.5,
         "same_line": true,
-        "under_delta": 10
+        "under_delta": 0
       },
       {
         "book": "FanDuel",
@@ -694,36 +720,30 @@
         "under_delta": 0
       }
     ],
-    "ref_book_changes": [
-      {
-        "pitcher": "Tatsuya Imai",
-        "provider_ref_book": "FanDuel",
-        "rundown_ref_book": "BetMGM"
-      }
-    ],
+    "ref_book_changes": [],
     "verdict_changes": []
   },
   "provider_usage": {
-    "propline_requests": 501,
-    "propline_snapshots": 5052,
+    "propline_requests": 517,
+    "propline_snapshots": 5264,
     "rows": [
       {
         "provider": "propline",
-        "request_count": 501,
-        "snapshot_count": 5052,
+        "request_count": 517,
+        "snapshot_count": 5264,
         "source": "scripts/shadow_propline_to_supabase.py",
-        "updated_at": "2026-06-19 18:30:30.740356+00"
+        "updated_at": "2026-06-19 18:40:50.314892+00"
       },
       {
         "provider": "therundown",
-        "request_count": 63,
-        "snapshot_count": 6281,
+        "request_count": 65,
+        "snapshot_count": 6426,
         "source": "scripts/shadow_therundown_mainline_to_supabase.py",
-        "updated_at": "2026-06-19 18:30:30.740356+00"
+        "updated_at": "2026-06-19 18:40:50.314892+00"
       }
     ],
-    "therundown_requests": 63,
-    "therundown_snapshots": 6281
+    "therundown_requests": 65,
+    "therundown_snapshots": 6426
   },
   "readiness": {
     "gates": [
@@ -749,11 +769,11 @@
         "value": 0.9643
       },
       {
-        "detail": "5/29",
+        "detail": "7/29",
         "name": "line_conflict_rate_under_10",
         "status": "fail",
         "threshold": "<=0.10",
-        "value": 0.1724
+        "value": 0.2414
       },
       {
         "detail": "",
@@ -763,11 +783,11 @@
         "value": 0
       },
       {
-        "detail": "501/5000",
+        "detail": "517/5000",
         "name": "propline_usage_under_70_percent_hobby",
         "status": "pass",
         "threshold": "<=0.7",
-        "value": 0.1002
+        "value": 0.1034
       },
       {
         "detail": "",
@@ -794,17 +814,17 @@
     ],
     "provider_at_least_1_book_count": 27,
     "provider_at_least_2_books_count": 27,
-    "provider_at_least_3_books_count": 26,
+    "provider_at_least_3_books_count": 25,
     "provider_coverage_rate": 0.9643,
     "provider_covered_count": 27,
-    "provider_draftkings_count": 27,
-    "provider_draftkings_rate": 0.9643,
+    "provider_draftkings_count": 26,
+    "provider_draftkings_rate": 0.9286,
     "provider_fanduel_count": 27,
     "provider_fanduel_rate": 0.9643,
     "provider_fd_or_dk_count": 27,
     "provider_fd_or_dk_rate": 0.9643,
-    "provider_mainline_ready_count": 0,
-    "provider_mainline_ready_rate": 0.0,
+    "provider_mainline_ready_count": 27,
+    "provider_mainline_ready_rate": 0.9643,
     "provider_official_ready_count": 27,
     "provider_official_ready_rate": 0.9643,
     "provider_raw_coverage_rate": 0.9643,
@@ -816,14 +836,14 @@
   "summary": {
     "covered_pitcher_count": 27,
     "fd_or_dk_coverage_rate": 0.931,
-    "line_conflict_rate": 0.1724,
-    "missing_draftkings_count": 0,
+    "line_conflict_rate": 0.2414,
+    "missing_draftkings_count": 1,
     "opening_baseline_rate": 0.931,
     "pitcher_coverage_rate": 0.931,
     "production_pitcher_count": 29,
     "provider_contract_issue_count": 0,
     "provider_pitcher_count": 27,
-    "ref_book_change_count": 1,
+    "ref_book_change_count": 0,
     "verdict_change_count": 0,
     "verdict_comparison_available": false
   }

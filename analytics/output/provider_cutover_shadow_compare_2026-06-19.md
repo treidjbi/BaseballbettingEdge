@@ -1,6 +1,6 @@
 # TheRundown + PropLine Official Provider Parity - 2026-06-19
 
-Generated: `2026-06-19T18:39:17.582022+00:00`
+Generated: `2026-06-19T18:42:07.637269+00:00`
 
 ## Input Availability
 
@@ -12,9 +12,9 @@ Generated: `2026-06-19T18:39:17.582022+00:00`
 - Provider pitchers: 27
 - Covered pitchers: 27 (93.1%)
 - FD/DK coverage: 93.1%
-- Line conflict rate: 17.2%
-- Missing DraftKings: 0
-- Ref-book changes: 1
+- Line conflict rate: 24.1%
+- Missing DraftKings: 1
+- Ref-book changes: 0
 - Verdict changes: 0
 - Verdict comparison available: False
 
@@ -23,16 +23,16 @@ Generated: `2026-06-19T18:39:17.582022+00:00`
 - Scheduled probable starters: 28
 - Provider covered starters: 27 (96.4%)
 - Provider FD/DK starters: 27 (96.4%)
-- Provider DraftKings starters: 27 (96.4%)
+- Provider DraftKings starters: 26 (92.9%)
 - Provider FanDuel starters: 27 (96.4%)
 - Provider 2+ supported books: 27
-- Provider 3+ supported books: 26
+- Provider 3+ supported books: 25
 - No provider book coverage: 1
 - Missing provider starters: 1
 - Missing TheRundown starters: 1
 
 - Raw provider coverage: 27 (96.4%)
-- Mainline-ready coverage: 0 (0.0%)
+- Mainline-ready coverage: 27 (96.4%)
 - Official-ready coverage: 27 (96.4%)
 
 ## Readiness Gates
@@ -40,9 +40,9 @@ Generated: `2026-06-19T18:39:17.582022+00:00`
 - official_provider_pitcher_coverage_90: **pass** (value=0.931, threshold=>=0.90, 27/29)
 - official_provider_fd_or_dk_coverage_85: **pass** (value=0.931, threshold=>=0.85, 27/29)
 - official_rows_ready_for_pipeline_90: **pass** (value=0.9643, threshold=>=0.90, 27/28)
-- line_conflict_rate_under_10: **fail** (value=0.1724, threshold=<=0.10, 5/29)
+- line_conflict_rate_under_10: **fail** (value=0.2414, threshold=<=0.10, 7/29)
 - prop_contract_valid: **pass** (value=0, threshold=0 missing-field rows, )
-- propline_usage_under_70_percent_hobby: **pass** (value=0.1002, threshold=<=0.7, 501/5000)
+- propline_usage_under_70_percent_hobby: **pass** (value=0.1034, threshold=<=0.7, 517/5000)
 - no_boltodds_active_rows: **pass** (value=0, threshold=0 active BoltOdds current-line/heartbeat rows, )
 
 Overall ready: **False**
