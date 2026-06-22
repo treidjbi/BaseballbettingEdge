@@ -2155,8 +2155,11 @@ def test_write_dated_archive_only_creates_dated_file(tmp_path, caplog):
     import run_pipeline
 
     caplog.set_level("WARNING")
+    history_path = tmp_path / "picks_history.json"
+    history_path.write_text("[]", encoding="utf-8")
 
-    with patch.object(run_pipeline, "OUTPUT_PATH", tmp_path / "today.json"):
+    with patch.object(run_pipeline, "OUTPUT_PATH", tmp_path / "today.json"), \
+         patch.object(run_pipeline, "HISTORY_PATH", history_path):
         _write_dated_archive_only([], "2026-04-12", props_available=False)
 
     dated = tmp_path / "2026-04-12.json"
@@ -2181,14 +2184,51 @@ def test_write_dated_archive_only_preserves_existing_index_dates_not_in_checkout
         json.dumps({"dates": [{"date": "2026-06-02", "wins": 13, "losses": 12}]}),
         encoding="utf-8",
     )
+    history_path = tmp_path / "picks_history.json"
+    history_path.write_text("[]", encoding="utf-8")
 
-    with patch.object(run_pipeline, "OUTPUT_PATH", tmp_path / "today.json"):
+    with patch.object(run_pipeline, "OUTPUT_PATH", tmp_path / "today.json"), \
+         patch.object(run_pipeline, "HISTORY_PATH", history_path):
         _write_dated_archive_only([], "2026-06-03", props_available=False)
 
     entries = json.loads((tmp_path / "index.json").read_text())["dates"]
     assert [entry["date"] for entry in entries[:2]] == ["2026-06-03", "2026-06-02"]
     assert entries[1]["wins"] == 13
     assert entries[1]["losses"] == 12
+
+
+def test_index_entries_include_history_dates_missing_from_checkout(tmp_path):
+    """Sparse Render checkouts should recover archive dates from picks_history."""
+    import run_pipeline
+
+    history_path = tmp_path / "picks_history.json"
+    history_path.write_text(
+        json.dumps(
+            [
+                {"date": "2026-06-20", "verdict": "FIRE 1u", "result": "win"},
+                {"date": "2026-06-20", "verdict": "FIRE 1u", "result": "loss"},
+                {"date": "2026-06-21", "verdict": "LEAN", "result": "win"},
+            ]
+        ),
+        encoding="utf-8",
+    )
+    (tmp_path / "index.json").write_text(
+        json.dumps({"dates": [{"date": "2026-05-30", "wins": 7, "losses": 5}]}),
+        encoding="utf-8",
+    )
+
+    with patch.object(run_pipeline, "HISTORY_PATH", history_path):
+        entries = run_pipeline._date_entries_for_index(tmp_path)
+
+    assert [entry["date"] for entry in entries[:3]] == [
+        "2026-06-21",
+        "2026-06-20",
+        "2026-05-30",
+    ]
+    assert entries[0]["wins"] == 0
+    assert entries[0]["losses"] == 0
+    assert entries[1]["wins"] == 1
+    assert entries[1]["losses"] == 1
 
 
 def test_write_dated_archive_only_does_not_touch_today_json(tmp_path):
@@ -2364,6 +2404,8 @@ def test_write_archive_preserves_existing_index_dates_not_in_checkout(tmp_path, 
         json.dumps({"dates": [{"date": "2026-06-02", "wins": 13, "losses": 12}]}),
         encoding="utf-8",
     )
+    history_path = tmp_path / "picks_history.json"
+    history_path.write_text("[]", encoding="utf-8")
     output = {
         "generated_at": "new",
         "date": "2026-06-03",
@@ -2375,7 +2417,8 @@ def test_write_archive_preserves_existing_index_dates_not_in_checkout(tmp_path, 
         "connection_health": {"records_built": 1},
     }
 
-    with patch.object(run_pipeline, "OUTPUT_PATH", today_path):
+    with patch.object(run_pipeline, "OUTPUT_PATH", today_path), \
+         patch.object(run_pipeline, "HISTORY_PATH", history_path):
         run_pipeline._write_archive(output, "2026-06-03")
 
     entries = json.loads((tmp_path / "index.json").read_text())["dates"]

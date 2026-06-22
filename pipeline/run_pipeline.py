@@ -613,7 +613,7 @@ def _date_entries_for_index(base_dir: Path, limit: int = 60) -> list[dict]:
         p.stem
         for p in base_dir.glob("[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9].json")
     }
-    all_dates = sorted(local_dates | set(existing_entries), reverse=True)[:limit]
+    all_dates = sorted(local_dates | set(existing_entries) | _history_dates_for_index(), reverse=True)[:limit]
     results_by_date = _date_results_from_history()
     entries: list[dict] = []
     for date in all_dates:
@@ -1807,6 +1807,11 @@ def _run_grading_steps() -> None:
         calibrate_run()
     except Exception as e:
         log.error("calibrate failed: %s", e)
+    try:
+        date_entry_count = _refresh_index_json()
+        log.info("Grading refreshed index.json (%d entries)", date_entry_count)
+    except Exception as e:
+        log.warning("Grading index refresh failed: %s", e)
 
 
 def _has_valid_output(date_str: str) -> bool:
@@ -2286,6 +2291,24 @@ def _date_results_from_history() -> dict:
     return by_date
 
 
+def _history_dates_for_index() -> set[str]:
+    """Return archive dates present in picks_history.json."""
+    try:
+        with open(HISTORY_PATH) as f:
+            history = json.load(f)
+    except Exception:
+        return set()
+
+    dates: set[str] = set()
+    for pick in history if isinstance(history, list) else []:
+        if not isinstance(pick, dict):
+            continue
+        date = str(pick.get("date") or "").strip()
+        if len(date) == 10 and date[4] == "-" and date[7] == "-":
+            dates.add(date)
+    return dates
+
+
 def _archive_pitcher_key(pitcher: dict) -> tuple[str, str]:
     """Stable row identity for merging dated archives across later refreshes."""
     return (
@@ -2336,6 +2359,16 @@ def _dated_archive_output(base_dir: Path, game_date: str, pitchers: list, output
         "date": game_date,
         "pitchers": _merge_archive_pitchers(existing_pitchers, pitchers),
     }
+
+
+def _refresh_index_json(base_dir: Path | None = None) -> int:
+    """Rebuild index.json from local archives, hydrated index rows, and history."""
+    target_dir = base_dir or OUTPUT_PATH.parent
+    date_entries = _date_entries_for_index(target_dir)
+    index_path = target_dir / "index.json"
+    with open(index_path, "w") as f:
+        json.dump({"dates": date_entries}, f, indent=2)
+    return len(date_entries)
 
 
 def _write_archive(output: dict, run_date_str: str) -> None:
@@ -2392,13 +2425,10 @@ def _write_archive(output: dict, run_date_str: str) -> None:
     if not any_written:
         return
 
-    # 3. Rebuild index.json from dated files plus hydrated index dates.
-    index_path = base_dir / "index.json"
-    date_entries = _date_entries_for_index(base_dir)
+    # 3. Rebuild index.json from dated files, hydrated index dates, and history.
     try:
-        with open(index_path, "w") as f:
-            json.dump({"dates": date_entries}, f, indent=2)
-        log.info("Updated index.json (%d entries)", len(date_entries))
+        date_entry_count = _refresh_index_json(base_dir)
+        log.info("Updated index.json (%d entries)", date_entry_count)
     except Exception as e:
         log.warning("Failed to write index.json: %s", e)
 

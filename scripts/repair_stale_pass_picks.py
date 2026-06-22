@@ -185,6 +185,7 @@ def _rebuild_derived_artifacts(*, include_dates: list[str]) -> None:
     calibrate.run()
     run_pipeline._enrich_archives_with_results()
     run_pipeline._enrich_archives_with_tracked_picks(include_today=False)
+    run_pipeline._refresh_index_json()
 
 
 def _env(name: str) -> str:

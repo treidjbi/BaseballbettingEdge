@@ -22,6 +22,7 @@ GRADING_ARTIFACT_PATHS = [
     Path("dashboard/data/performance.json"),
     Path("data/params.json"),
     Path("data/picks_history.json"),
+    Path("dashboard/data/processed/index.json"),
 ]
 
 PIPELINE_ARTIFACT_PATHS = [

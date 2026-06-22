@@ -84,6 +84,7 @@ def test_collect_artifact_rows_grading_scope_excludes_current_slate_artifacts(tm
         "performance",
         "params",
         "picks_history",
+        "index",
         "dated_slate:2026-05-22",
     ]
 
