@@ -511,7 +511,8 @@ def build_pitcher_record(odds: dict, stats: dict, ump_k_adj: float,
     selected_lam = model_lam
     if projection_challenger_mode() != "off":
         projection_challenger = apply_projection_challenger(model_lam, k_line)
-        selected_lam = projection_challenger["selected_lambda"]
+        if projection_challenger["applied"]:
+            selected_lam = projection_challenger["selected_lambda"]
 
     applied_lam = selected_lam
 

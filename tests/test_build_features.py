@@ -796,6 +796,27 @@ def test_market_shrink_shadow_preserves_lambda_and_adds_metadata(monkeypatch):
     assert rec["ev_under"]["projection_challenger"]["mode"] == "shadow"
 
 
+def test_market_shrink_shadow_preserves_live_outputs_exactly(monkeypatch):
+    from build_features import build_pitcher_record
+
+    monkeypatch.setenv("MARKET_SHRINK_PROJECTION_CANDIDATE", "market_shrink_25")
+    monkeypatch.delenv("MARKET_SHRINK_PROJECTION_MODE", raising=False)
+    off_rec = build_pitcher_record(SAMPLE_ODDS, SAMPLE_STATS, 0.0)
+
+    monkeypatch.setenv("MARKET_SHRINK_PROJECTION_MODE", "shadow")
+    shadow_rec = build_pitcher_record(SAMPLE_ODDS, SAMPLE_STATS, 0.0)
+
+    assert shadow_rec["projection_challenger"]["mode"] == "shadow"
+    assert shadow_rec["projection_challenger"]["applied"] is False
+    assert shadow_rec["projection_challenger"]["would_lambda"] != shadow_rec["lambda"]
+    assert shadow_rec["lambda"] == off_rec["lambda"]
+
+    live_fields = ["win_prob", "edge", "ev", "adj_ev", "verdict"]
+    for side in ["ev_over", "ev_under"]:
+        for field in live_fields:
+            assert shadow_rec[side][field] == off_rec[side][field]
+
+
 def test_market_shrink_enforce_replaces_selected_lambda(monkeypatch):
     from build_features import build_pitcher_record
 
