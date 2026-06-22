@@ -37,6 +37,48 @@ Blocked candidates remain blocked:
 
 Decision: draft a production-canary implementation plan only for the runtime-safe market-shrink family. Start with the balanced `market_shrink_25` candidate even though `market_shrink_35` has the largest aggregate MAE lift; this keeps the first live canary from over-collapsing the model into the market line.
 
+## 2026-06-22 Shadow Activation
+
+Tyler approved activating the canary in shadow mode only after the plan and
+implementation landed on `main`.
+
+- Code commit deployed to all seven Render pipeline cron services:
+  `f7518c5745ea13c6e1a632d34fb77163db372a9d`.
+- Render env on the seven pipeline cron services:
+  `MARKET_SHRINK_PROJECTION_MODE=shadow` and
+  `MARKET_SHRINK_PROJECTION_CANDIDATE=market_shrink_25`.
+- Redeploy proof:
+  - `bbe-pipeline-preview`: `dep-d8spftnavr4c73aqqang`, live at
+    `2026-06-22T20:17:21Z`
+  - `bbe-pipeline-grading`: `dep-d8spglb6sc1c7394i39g`, live at
+    `2026-06-22T20:18:43Z`
+  - `bbe-pipeline-full`: `dep-d8spha0k1i2s73a0i940`, live at
+    `2026-06-22T20:20:37Z`
+  - `bbe-pipeline-refresh-day`: `dep-d8spi6r6sc1c73eupv5g`, live at
+    `2026-06-22T20:22:31Z`
+  - `bbe-pipeline-refresh-evening`: `dep-d8spj21kh4rs73c3vmj0`, live at
+    `2026-06-22T20:24:01Z`
+  - `bbe-pipeline-refresh-final`: `dep-d8spjpmrnols73edpsa0`, live at
+    `2026-06-22T20:25:52Z`
+  - `bbe-pipeline-lock`: `dep-d8spkkvavr4c73aquhug`, live at
+    `2026-06-22T20:27:35Z`
+- First fresh Netlify `today.json` smoke after the scheduled refresh:
+  `generated_at=2026-06-22T20:38:04Z`, `pitcher_count=24`,
+  `projection_challenger` metadata rows `24/24`, mode counts
+  `shadow=24`, candidate counts `market_shrink_25=24`, `applied_rows=0`,
+  `lambda_drift_rows=0`, and
+  `projection_challenger.selected_lambda == current_lambda` on every row.
+- Side-level metadata was present on both `ev_over` and `ev_under` for all
+  `24` pitcher rows.
+- Provider/source posture stayed unchanged in the smoke artifact:
+  `odds_source=therundown` on all `24` rows and zero rows containing
+  BoltOdds text.
+
+This activation is metadata-only. It does not approve `enforce`, permanent
+lambda changes, threshold/staking changes, provider/source changes,
+notification changes, lock changes, retention changes, or dashboard
+source-of-truth changes.
+
 ## File Map
 
 - Create: `pipeline/projection_challenger.py`
