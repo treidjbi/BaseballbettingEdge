@@ -12,6 +12,7 @@ def test_runner_rebuilds_shadow_reports_and_prints_review_excerpt(tmp_path, monk
     market_agreement_output = tmp_path / "market_agreement_tracker.md"
     market_agreement_jsonl = tmp_path / "market_agreement_tracker.jsonl"
     gate_f_output = tmp_path / "gate_f_projection_challenger_shadow_report.md"
+    market_shrink_output = tmp_path / "market_shrink_projection_canary_audit.md"
     shadow_candidates = tmp_path / "shadow_notification_candidates.json"
     shadow_candidates.write_text("[]", encoding="utf-8")
     shadow_candidate_output = tmp_path / "shadow_notification_candidate_audit.md"
@@ -72,6 +73,25 @@ def test_runner_rebuilds_shadow_reports_and_prints_review_excerpt(tmp_path, monk
         "main",
         fake_simple_report("market_agreement"),
     )
+
+    def fake_market_shrink_audit_main(argv):
+        calls.append(("market_shrink_projection", argv))
+        market_shrink_output.write_text(
+            "# Market Shrink Projection Canary Audit\n\n"
+            "## Executive Read\n\n"
+            "- Rows with projection metadata: `0`.\n\n"
+            "## Rollback Recommendation\n\n"
+            "- Keep `MARKET_SHRINK_PROJECTION_MODE=off`.\n\n"
+            "## Debug Detail\n\n"
+            "- Not needed in the log excerpt.\n",
+            encoding="utf-8",
+        )
+
+    monkeypatch.setattr(
+        runner.market_shrink_projection_canary_audit,
+        "main",
+        fake_market_shrink_audit_main,
+    )
     monkeypatch.setattr(
         runner.shadow_notification_candidate_audit,
         "load_rows",
@@ -113,6 +133,8 @@ def test_runner_rebuilds_shadow_reports_and_prints_review_excerpt(tmp_path, monk
         str(market_agreement_jsonl),
         "--gate-f-projection-output",
         str(gate_f_output),
+        "--market-shrink-projection-output",
+        str(market_shrink_output),
         "--shadow-notification-candidates",
         str(shadow_candidates),
         "--shadow-notification-candidate-output",
@@ -180,6 +202,15 @@ def test_runner_rebuilds_shadow_reports_and_prints_review_excerpt(tmp_path, monk
         ),
         ("gate_f_load", output_dir / "pitcher_k_outcome_dataset.jsonl"),
         ("gate_f_report", [{"dataset_key": "row-1"}]),
+        (
+            "market_shrink_projection",
+            [
+                "--input",
+                str(output_dir / "pitcher_k_outcome_dataset.jsonl"),
+                "--output",
+                str(market_shrink_output),
+            ],
+        ),
         ("shadow_candidate_load", shadow_candidates),
         ("shadow_candidate_report", []),
     ]
@@ -195,5 +226,10 @@ def test_runner_rebuilds_shadow_reports_and_prints_review_excerpt(tmp_path, monk
     assert "Market-anchor selector audit excerpt:" in output
     assert "Rows with selector metadata: `24`." in output
     assert "Input Coverage" in output
+    assert "Market-shrink projection canary audit excerpt:" in output
+    assert "Rows with projection metadata: `0`." in output
+    assert "Rollback Recommendation" in output
+    assert "MARKET_SHRINK_PROJECTION_MODE=off" in output
     assert "Implementation Notes" not in output
     assert "Promotion Gate" not in output
+    assert "Debug Detail" not in output

@@ -22,6 +22,7 @@ from analytics.diagnostics import confidence_referee_canary_audit  # noqa: E402
 from analytics.diagnostics import gate_f_projection_challenger_shadow_report  # noqa: E402
 from analytics.diagnostics import market_agreement_tracker  # noqa: E402
 from analytics.diagnostics import market_anchor_selector_canary_audit  # noqa: E402
+from analytics.diagnostics import market_shrink_projection_canary_audit  # noqa: E402
 from analytics.diagnostics import profit_rescue_audit  # noqa: E402
 from analytics.diagnostics import shadow_notification_candidate_audit  # noqa: E402
 
@@ -78,6 +79,11 @@ def _parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         "--gate-f-projection-output",
         type=Path,
         default=gate_f_projection_challenger_shadow_report.OUTPUT_PATH,
+    )
+    parser.add_argument(
+        "--market-shrink-projection-output",
+        type=Path,
+        default=market_shrink_projection_canary_audit.DEFAULT_OUTPUT,
     )
     parser.add_argument("--shadow-notification-candidates", type=Path)
     parser.add_argument(
@@ -207,6 +213,12 @@ def main(argv: list[str] | None = None) -> int:
         dataset_path=dataset_path,
         output_path=args.gate_f_projection_output,
     )
+    market_shrink_projection_canary_audit.main([
+        "--input",
+        str(dataset_path),
+        "--output",
+        str(args.market_shrink_projection_output),
+    ])
     _write_shadow_notification_candidate_report(
         candidates_path=args.shadow_notification_candidates,
         output_path=args.shadow_notification_candidate_output,
@@ -223,6 +235,11 @@ def main(argv: list[str] | None = None) -> int:
             label="Market-anchor selector audit",
             section_titles={"Executive Read", "Input Coverage"},
         )
+    _print_review_excerpt(
+        args.market_shrink_projection_output,
+        label="Market-shrink projection canary audit",
+        section_titles={"Executive Read", "Rollback Recommendation"},
+    )
     return 0
 
 
