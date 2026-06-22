@@ -129,6 +129,7 @@ class TestInitDb:
         assert "data_maturity_json" in cols
         assert "confidence_referee_json" in cols
         assert "market_anchor_selector_json" in cols
+        assert "projection_challenger_json" in cols
         assert "raw_adj_ev" in cols
 
 
@@ -161,6 +162,7 @@ class TestSeedPicks:
         p, data = today_json
         fr.seed_picks(p)
 
+        challenger = {"mode": "shadow", "candidate": "market_shrink_25"}
         data["pitchers"][0]["ev_over"] = {
             "edge": -0.02,
             "ev": -0.03,
@@ -171,6 +173,7 @@ class TestSeedPicks:
             "raw_verdict": "PASS",
             "win_prob": 0.46,
             "movement_conf": 1.0,
+            "projection_challenger": challenger,
         }
         data["pitchers"][0]["best_over_odds"] = -125
         p.write_text(json.dumps(data))
@@ -178,16 +181,28 @@ class TestSeedPicks:
         fr.seed_picks(p, now=datetime(2026, 4, 15, 16, 0, tzinfo=timezone.utc))
 
         conn = sqlite3.connect(db_path)
-        row = conn.execute("""
-            SELECT verdict, raw_verdict, actionable_verdict, odds, adj_ev, locked_at, result
+        columns = [d[1] for d in conn.execute("PRAGMA table_info(picks)").fetchall()]
+        values = conn.execute("""
+            SELECT *
             FROM picks
             WHERE date = '2026-04-15'
               AND pitcher = 'Gerrit Cole'
               AND side = 'over'
         """).fetchone()
         conn.close()
+        row = dict(zip(columns, values))
 
-        assert row == ("PASS", "PASS", "PASS", -125, -0.03, None, None)
+        assert (
+            row["verdict"],
+            row["raw_verdict"],
+            row["actionable_verdict"],
+            row["odds"],
+            row["adj_ev"],
+            row["locked_at"],
+            row["result"],
+        ) == ("PASS", "PASS", "PASS", -125, -0.03, None, None)
+        assert "projection_challenger_json" in row
+        assert json.loads(row["projection_challenger_json"]) == challenger
 
     def test_seeds_correct_fields(self, tmp_db, today_json):
         db_path, fr = tmp_db
@@ -355,6 +370,51 @@ class TestSeedPicks:
         conn.close()
 
         assert json.loads(row[0])["labels"] == ["market_anchor_strict"]
+
+    def test_seed_picks_persists_projection_challenger_metadata(self, tmp_db, tmp_path):
+        _, fr = tmp_db
+
+        today = tmp_path / "today.json"
+        today.write_text(
+            json.dumps(
+                {
+                    "date": "2026-06-22",
+                    "pitchers": [
+                        {
+                            "pitcher": "Example Starter",
+                            "team": "NYY",
+                            "opp_team": "BOS",
+                            "game_time": "2026-06-22T23:05:00Z",
+                            "k_line": 5.5,
+                            "lambda": 5.9,
+                            "raw_lambda": 6.1,
+                            "model_lambda": 6.1,
+                            "best_over_odds": -120,
+                            "best_under_odds": 100,
+                            "projection_challenger": {"mode": "shadow", "candidate": "market_shrink_25"},
+                            "ev_over": {
+                                "verdict": "LEAN",
+                                "edge": 0.04,
+                                "ev": 0.08,
+                                "adj_ev": 0.08,
+                                "movement_conf": 1.0,
+                                "projection_challenger": {"mode": "shadow", "candidate": "market_shrink_25"},
+                            },
+                            "ev_under": {"verdict": "PASS", "ev": -0.05, "adj_ev": -0.05, "movement_conf": 1.0},
+                        }
+                    ],
+                }
+            ),
+            encoding="utf-8",
+        )
+
+        assert fr.seed_picks(today) == 1
+        history_path = tmp_path / "picks_history.json"
+        assert fr.export_db_to_history(history_path) == 1
+        rows = json.loads(history_path.read_text(encoding="utf-8"))
+
+        assert rows[0]["projection_challenger"]["mode"] == "shadow"
+        assert rows[0]["projection_challenger"]["candidate"] == "market_shrink_25"
 
     def test_seed_skips_blocked_pass_even_when_raw_verdict_is_fire(self, tmp_db, tmp_path):
         db_path, fr = tmp_db
@@ -541,6 +601,43 @@ class TestLoadHistoryIntoDb:
         conn.close()
 
         assert json.loads(row[0])["mode"] == "shadow"
+
+    def test_loads_projection_challenger_from_history(self, tmp_db, tmp_path):
+        db_path, fr = tmp_db
+        history = [
+            {
+                "date": "2026-06-22",
+                "pitcher": "Projection Pitcher",
+                "team": "A",
+                "side": "over",
+                "k_line": 5.5,
+                "verdict": "LEAN",
+                "edge": 0.04,
+                "ev": 0.08,
+                "adj_ev": 0.08,
+                "raw_lambda": 6.1,
+                "applied_lambda": 6.1,
+                "odds": -120,
+                "movement_conf": 1.0,
+                "projection_challenger": {
+                    "mode": "shadow",
+                    "candidate": "market_shrink_25",
+                },
+            }
+        ]
+        history_path = tmp_path / "picks_history.json"
+        history_path.write_text(json.dumps(history))
+
+        fr.load_history_into_db(history_path)
+
+        conn = sqlite3.connect(db_path)
+        row = conn.execute("""
+            SELECT projection_challenger_json
+            FROM picks WHERE pitcher='Projection Pitcher'
+        """).fetchone()
+        conn.close()
+
+        assert json.loads(row[0])["candidate"] == "market_shrink_25"
 
     def test_returns_zero_if_file_missing(self, tmp_db, tmp_path):
         """load_history_into_db returns 0 when history file doesn't exist."""
@@ -1546,6 +1643,7 @@ class TestNewColumns:
         "days_since_last_start", "last_pitch_count",
         "rest_k9_delta", "park_factor",
         "confidence_referee_json",
+        "projection_challenger_json",
     ]
 
     def test_new_columns_exist_after_init(self, tmp_db):
@@ -1681,6 +1779,7 @@ class TestSeedPicksNewFields:
         today_v1 = self._make_today_json(tmp_path)
         fr.seed_picks(today_v1)
 
+        challenger = {"mode": "shadow", "candidate": "market_shrink_25"}
         today_v2 = self._make_today_json(tmp_path, extra_fields={
             "best_over_odds": -125,
             "opp_k_rate": 0.248,
@@ -1692,7 +1791,8 @@ class TestSeedPicksNewFields:
             "lineup_used": True,
             "lambda": 7.4,
             "ev_over": {"ev": 0.06, "adj_ev": 0.06, "verdict": "FIRE 1u",
-                        "win_prob": 0.60, "movement_conf": 1.0},
+                        "win_prob": 0.60, "movement_conf": 1.0,
+                        "projection_challenger": challenger},
             "ev_under": {"ev": -0.03, "adj_ev": -0.03, "verdict": "PASS",
                          "win_prob": 0.40, "movement_conf": 1.0},
         })
@@ -1702,7 +1802,7 @@ class TestSeedPicksNewFields:
         row = conn.execute(
             "SELECT best_over_odds, opp_k_rate, swstr_delta_k9, lineup_used, "
             "applied_lambda, days_since_last_start, last_pitch_count, "
-            "rest_k9_delta, park_factor "
+            "rest_k9_delta, park_factor, projection_challenger_json "
             "FROM picks WHERE pitcher='Gerrit Cole' AND side='over'"
         ).fetchone()
         conn.close()
@@ -1716,6 +1816,7 @@ class TestSeedPicksNewFields:
         assert row["last_pitch_count"] == 88
         assert abs(row["rest_k9_delta"] - (-0.1)) < 0.001
         assert abs(row["park_factor"] - 1.02) < 0.001
+        assert json.loads(row["projection_challenger_json"]) == challenger
 
     def test_locked_pick_stats_not_refreshed(self, tmp_db, tmp_path):
         """Once a pick is locked, stats and odds must not change."""

@@ -145,7 +145,8 @@ def init_db() -> None:
                 verdict_cap_reason TEXT,
                 data_maturity_json TEXT,
                 confidence_referee_json TEXT,
-                market_anchor_selector_json TEXT
+                market_anchor_selector_json TEXT,
+                projection_challenger_json TEXT
             )
         """)
         conn.execute("""
@@ -175,6 +176,7 @@ def init_db() -> None:
             ("data_maturity_json", "TEXT"),
             ("confidence_referee_json", "TEXT"),
             ("market_anchor_selector_json", "TEXT"),
+            ("projection_challenger_json", "TEXT"),
             # New columns
             ("opp_team",           "TEXT"),
             ("pitcher_throws",     "TEXT"),
@@ -244,6 +246,7 @@ def seed_picks(today_json_path: Path = TODAY_JSON, now: datetime | None = None) 
                 data_maturity_json = _json_or_none(p.get("data_maturity"))
                 confidence_referee_json = _json_or_none(ev_data.get("confidence_referee"))
                 market_anchor_selector_json = _json_or_none(ev_data.get("market_anchor_selector"))
+                projection_challenger_json = _json_or_none(ev_data.get("projection_challenger"))
                 if verdict == "PASS":
                     conn.execute("""
                         UPDATE picks
@@ -256,7 +259,8 @@ def seed_picks(today_json_path: Path = TODAY_JSON, now: datetime | None = None) 
                             verdict_cap_reason = ?,
                             data_maturity_json = ?,
                             confidence_referee_json = ?,
-                            market_anchor_selector_json = ?
+                            market_anchor_selector_json = ?,
+                            projection_challenger_json = ?
                         WHERE date = ? AND pitcher = ? AND side = ?
                           AND locked_at IS NULL AND result IS NULL
                     """, (
@@ -273,6 +277,7 @@ def seed_picks(today_json_path: Path = TODAY_JSON, now: datetime | None = None) 
                         data_maturity_json,
                         confidence_referee_json,
                         market_anchor_selector_json,
+                        projection_challenger_json,
                         game_date, p["pitcher"], side,
                     ))
                     updated += conn.execute("SELECT changes()").fetchone()[0]
@@ -293,8 +298,9 @@ def seed_picks(today_json_path: Path = TODAY_JSON, now: datetime | None = None) 
                      opening_over_odds, opening_under_odds, opening_odds_source,
                      swstr_pct, career_swstr_pct, data_complete,
                      quality_gate_level, input_quality_flags_json, verdict_cap_reason,
-                     data_maturity_json, confidence_referee_json, market_anchor_selector_json)
-                    VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+                     data_maturity_json, confidence_referee_json, market_anchor_selector_json,
+                     projection_challenger_json)
+                    VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
                 """, (
                     game_date, p["pitcher"], p["team"], side,
                     p["k_line"], verdict,
@@ -331,6 +337,7 @@ def seed_picks(today_json_path: Path = TODAY_JSON, now: datetime | None = None) 
                     data_maturity_json,
                     confidence_referee_json,
                     market_anchor_selector_json,
+                    projection_challenger_json,
                 ))
                 inserted += cur.rowcount
 
@@ -382,7 +389,8 @@ def seed_picks(today_json_path: Path = TODAY_JSON, now: datetime | None = None) 
                             verdict_cap_reason = ?,
                             data_maturity_json = ?,
                             confidence_referee_json = ?,
-                            market_anchor_selector_json = ?
+                            market_anchor_selector_json = ?,
+                            projection_challenger_json = ?
                         WHERE date = ? AND pitcher = ? AND side = ?
                           AND locked_at IS NULL AND result IS NULL
                     """, (
@@ -413,6 +421,7 @@ def seed_picks(today_json_path: Path = TODAY_JSON, now: datetime | None = None) 
                         data_maturity_json,
                         confidence_referee_json,
                         market_anchor_selector_json,
+                        projection_challenger_json,
                         game_date, p["pitcher"], side,
                     ))
                     updated += conn.execute("SELECT changes()").fetchone()[0]
@@ -557,8 +566,8 @@ def load_history_into_db(history_path: Path = None) -> int:
                  locked_at, locked_k_line, locked_odds, locked_adj_ev, locked_verdict,
                  data_complete, quality_gate_level, input_quality_flags_json,
                  verdict_cap_reason, data_maturity_json, confidence_referee_json,
-                 market_anchor_selector_json)
-                VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+                 market_anchor_selector_json, projection_challenger_json)
+                VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
             """, (
                 p.get("date"), p.get("pitcher"), p.get("team"),
                 p.get("opp_team"), p.get("pitcher_throws"),
@@ -597,6 +606,7 @@ def load_history_into_db(history_path: Path = None) -> int:
                 _json_or_none(p.get("data_maturity")),
                 _json_or_none(p.get("confidence_referee")),
                 _json_or_none(p.get("market_anchor_selector")),
+                _json_or_none(p.get("projection_challenger")),
             ))
             inserted += cur.rowcount
 
@@ -626,7 +636,7 @@ def export_db_to_history(history_path: Path = None) -> int:
                    locked_at, locked_k_line, locked_odds, locked_adj_ev, locked_verdict,
                    data_complete, quality_gate_level, input_quality_flags_json,
                    verdict_cap_reason, data_maturity_json, confidence_referee_json,
-                   market_anchor_selector_json
+                   market_anchor_selector_json, projection_challenger_json
             FROM picks
             ORDER BY date, pitcher, side
         """).fetchall()
@@ -646,7 +656,7 @@ def export_db_to_history(history_path: Path = None) -> int:
         "locked_at", "locked_k_line", "locked_odds", "locked_adj_ev", "locked_verdict",
         "data_complete", "quality_gate_level", "input_quality_flags_json",
         "verdict_cap_reason", "data_maturity_json", "confidence_referee_json",
-        "market_anchor_selector_json",
+        "market_anchor_selector_json", "projection_challenger_json",
     ]
     picks = [dict(zip(cols, row)) for row in rows]
     for pick in picks:
@@ -654,6 +664,7 @@ def export_db_to_history(history_path: Path = None) -> int:
         pick["data_maturity"] = _json_load_or_none(pick.pop("data_maturity_json", None))
         pick["confidence_referee"] = _json_load_or_none(pick.pop("confidence_referee_json", None))
         pick["market_anchor_selector"] = _json_load_or_none(pick.pop("market_anchor_selector_json", None))
+        pick["projection_challenger"] = _json_load_or_none(pick.pop("projection_challenger_json", None))
 
     history_path.parent.mkdir(parents=True, exist_ok=True)
     # Write atomically: dump to a temp file in the same directory, then rename.

@@ -1261,6 +1261,33 @@ def test_tracked_pick_row_exposes_market_anchor_selector_metadata():
     assert row["market_anchor_selector"]["labels"] == ["market_anchor_strict"]
 
 
+def test_tracked_pick_row_exposes_projection_challenger_metadata():
+    import run_pipeline
+
+    row = run_pipeline._tracked_pick_row(
+        {
+            "date": "2026-06-22",
+            "pitcher": "Example Starter",
+            "team": "NYY",
+            "opp_team": "BOS",
+            "side": "over",
+            "verdict": "LEAN",
+            "k_line": 5.5,
+            "odds": -120,
+            "adj_ev": 0.08,
+            "projection_challenger": {
+                "mode": "shadow",
+                "candidate": "market_shrink_25",
+                "current_lambda": 6.1,
+                "would_lambda": 5.95,
+            },
+        }
+    )
+
+    assert row["projection_challenger"]["mode"] == "shadow"
+    assert row["projection_challenger"]["candidate"] == "market_shrink_25"
+
+
 def test_enrich_archives_with_tracked_picks_updates_existing_archives(tmp_path, monkeypatch):
     import run_pipeline
 
@@ -1483,6 +1510,10 @@ def test_attach_tracked_picks_reconciles_unlocked_pick_to_current_side_verdict()
                         "labels": ["market_anchor_side_agrees"],
                         "applied": False,
                     },
+                    "projection_challenger": {
+                        "mode": "shadow",
+                        "candidate": "market_shrink_25",
+                    },
                 },
             },
         ],
@@ -1509,6 +1540,7 @@ def test_attach_tracked_picks_reconciles_unlocked_pick_to_current_side_verdict()
     assert reconciled["actionable_verdict"] == "LEAN"
     assert reconciled["profit_rescue_referee"]["applied"] is True
     assert reconciled["market_anchor_selector"]["mode"] == "shadow"
+    assert reconciled["projection_challenger"]["candidate"] == "market_shrink_25"
     assert reconciled["k_line"] == 4.5
     assert reconciled["odds"] == 104
     assert updated["pitchers"][0]["tracked_picks"] == [reconciled]

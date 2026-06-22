@@ -1404,6 +1404,8 @@ def _tracked_pick_row(pick: dict) -> dict:
         row["profit_rescue_referee"] = pick.get("profit_rescue_referee")
     if pick.get("market_anchor_selector") is not None:
         row["market_anchor_selector"] = pick.get("market_anchor_selector")
+    if pick.get("projection_challenger") is not None:
+        row["projection_challenger"] = pick.get("projection_challenger")
     return row
 
 
@@ -1556,6 +1558,8 @@ def _reconciled_unlocked_tracked_pick(pick: dict, pitcher_row: dict) -> tuple[di
         row["profit_rescue_referee"] = side_data.get("profit_rescue_referee")
     if side_data.get("market_anchor_selector") is not None:
         row["market_anchor_selector"] = side_data.get("market_anchor_selector")
+    if side_data.get("projection_challenger") is not None:
+        row["projection_challenger"] = side_data.get("projection_challenger")
     return row, True
 
 
