@@ -34,6 +34,11 @@ For any new work in this repo:
      for active market-favorite confidence-referee shadow work
    - `docs/superpowers/plans/2026-06-03-gate-f-projection-challenger-shadow-plan.md`
      for active Gate F projection-challenger shadow work
+   - `docs/superpowers/plans/2026-06-22-market-shrink-projection-production-canary.md`
+     for the drafted market-shrink projection production canary plan after the
+     2026-06-22 Gate F report marked `market_shrink_15`,
+     `market_shrink_25`, and `market_shrink_35` as
+     `promotion_plan_candidate`
    - `docs/superpowers/plans/2026-06-08-workload-no-vig-k-projection-ev-synthesis.md`
      for the shadow-only workload, no-vig EV, Path B, and
      confidence-referee interaction synthesis
@@ -87,10 +92,12 @@ do we convert model signal into better betting decisions?"
   `docs/superpowers/plans/2026-06-05-market-favorite-confidence-referee-production-canary.md`.
 - Active model-facing child plans are now the market-favorite confidence-referee
   production canary plan, the market-favorite confidence-referee shadow plan,
-  and the Gate F projection-challenger shadow plan. The canary plan is
-  verdict-conversion only and must stay feature-flagged; it does not approve
-  live lambda, global threshold, staking, provider, notification, lock,
-  retention, or dashboard-source changes.
+  the Gate F projection-challenger shadow plan, and the drafted market-shrink
+  projection production-canary plan. The confidence-referee canary plan is
+  verdict-conversion only. The market-shrink plan is not an env-activation
+  approval; `MARKET_SHRINK_PROJECTION_MODE=shadow|enforce` still requires a
+  separate Tyler decision. Neither plan approves global thresholds, staking,
+  provider, notification, lock, retention, or dashboard-source changes.
 - On 2026-06-07, Tyler approved promoting `MARKET_FAVORITE_REFEREE_MODE` from
   `shadow` to `enforce` on the Render pipeline cron group and promoting
   `LIVE_NOTIFICATION_COORDINATOR_MODE` from `shadow` to `grouped` on
@@ -244,6 +251,16 @@ now has `24` tracked graded rows with selector metadata and `8` strict rows
 `enforce_downside` remains closed because the live selector sample is tiny and
 the first strict slice is negative. The post-grading runner now prints selector
 audit input coverage so future stale Gate C inputs are visible in logs.
+
+Model-lane overlay, 2026-06-22: after the weekend stale-PASS and archive-index
+repair, a refreshed production Gate F report covered slates through
+2026-06-21 and marked `market_shrink_15`, `market_shrink_25`, and
+`market_shrink_35` as `promotion_plan_candidate` with zero bad slices and no
+FIRE 2u degradation. `high_line_temper`, `leash_cap`, and
+`handedness_bucket_adjust` remain blocked. The drafted production-canary plan
+is `docs/superpowers/plans/2026-06-22-market-shrink-projection-production-canary.md`.
+This draft does not approve a live lambda change; any `shadow` or `enforce`
+env flip still needs Tyler's explicit approval.
 
 Model-lane overlay, 2026-06-10: Tyler approved
 `PROFIT_RESCUE_REFEREE_MODE=enforce`; all seven Render pipeline cron services

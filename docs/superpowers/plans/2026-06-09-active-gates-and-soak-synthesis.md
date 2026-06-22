@@ -358,10 +358,15 @@ Promotion discussion can begin only after:
 
 ### Gate 11: Projection, Threshold, And Staking Changes
 
-**State:** Closed.
+**State:** Live behavior closed; market-shrink production-canary plan drafted.
 
-Gate F projection challengers remain shadow-only. Current reports show
-directional signals, but no challenger has passed promotion standards.
+Gate F projection challengers remain shadow-only until Tyler explicitly
+approves a feature-flagged canary. The 2026-06-22 refreshed report marked
+`market_shrink_15`, `market_shrink_25`, and `market_shrink_35` as
+`promotion_plan_candidate`, so
+`docs/superpowers/plans/2026-06-22-market-shrink-projection-production-canary.md`
+now controls the drafted market-shrink canary path. `high_line_temper`,
+`leash_cap`, and `handedness_bucket_adjust` remain blocked.
 
 Promotion review requires:
 

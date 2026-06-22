@@ -31,8 +31,8 @@ Implemented on branch `codex/gate-c-f-shadow-labs` on 2026-06-03.
   - `analytics/output/gate_c_holdout_shadow_lab.md`
   - `analytics/output/gate_f_projection_challenger_shadow_report.md`
 
-Current Gate F decision report blocks all projection challengers from
-production-plan status:
+Original 2026-06-03 Gate F decision report blocked all projection challengers
+from production-plan status:
 
 - `market_shrink_15`, `market_shrink_25`, and `market_shrink_35`: blocked
   because holdout MAE lift is below the `0.025` threshold, despite
@@ -44,6 +44,25 @@ production-plan status:
 
 Keep this as a shadow validation package. No challenger deserves a live lambda
 promotion plan yet.
+
+2026-06-22 update after weekend data repair:
+
+- Refreshed production Gate F report covered slates through 2026-06-21.
+- `market_shrink_15`: `promotion_plan_candidate`, `219` rows, MAE delta
+  `-0.030`, RMSE delta `-0.042`, side accuracy delta `+0.000`, `2`
+  positive rolling windows, `0` bad slices, no FIRE 2u degradation.
+- `market_shrink_25`: `promotion_plan_candidate`, `219` rows, MAE delta
+  `-0.048`, RMSE delta `-0.066`, side accuracy delta `+0.000`, `2`
+  positive rolling windows, `0` bad slices, no FIRE 2u degradation.
+- `market_shrink_35`: `promotion_plan_candidate`, `219` rows, MAE delta
+  `-0.063`, RMSE delta `-0.089`, side accuracy delta `+0.000`, `2`
+  positive rolling windows, `0` bad slices, no FIRE 2u degradation.
+- `high_line_temper` and `leash_cap` remain blocked for insufficient MAE lift;
+  `handedness_bucket_adjust` remains blocked as hindsight-only.
+- The resulting production-canary draft is
+  `docs/superpowers/plans/2026-06-22-market-shrink-projection-production-canary.md`.
+  It does not approve a live lambda change; `shadow` or `enforce` still needs
+  Tyler's explicit approval.
 
 Current 2026-06-03 evidence:
 
