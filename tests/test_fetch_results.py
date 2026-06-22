@@ -156,6 +156,39 @@ class TestSeedPicks:
         conn.close()
         assert count == 2  # no duplicates
 
+    def test_seed_picks_downgrades_unlocked_stale_side_to_pass(self, tmp_db, today_json):
+        db_path, fr = tmp_db
+        p, data = today_json
+        fr.seed_picks(p)
+
+        data["pitchers"][0]["ev_over"] = {
+            "edge": -0.02,
+            "ev": -0.03,
+            "adj_ev": -0.03,
+            "raw_adj_ev": -0.03,
+            "verdict": "PASS",
+            "actionable_verdict": "PASS",
+            "raw_verdict": "PASS",
+            "win_prob": 0.46,
+            "movement_conf": 1.0,
+        }
+        data["pitchers"][0]["best_over_odds"] = -125
+        p.write_text(json.dumps(data))
+
+        fr.seed_picks(p, now=datetime(2026, 4, 15, 16, 0, tzinfo=timezone.utc))
+
+        conn = sqlite3.connect(db_path)
+        row = conn.execute("""
+            SELECT verdict, raw_verdict, actionable_verdict, odds, adj_ev, locked_at, result
+            FROM picks
+            WHERE date = '2026-04-15'
+              AND pitcher = 'Gerrit Cole'
+              AND side = 'over'
+        """).fetchone()
+        conn.close()
+
+        assert row == ("PASS", "PASS", "PASS", -125, -0.03, None, None)
+
     def test_seeds_correct_fields(self, tmp_db, today_json):
         db_path, fr = tmp_db
         p, _ = today_json
@@ -725,6 +758,41 @@ class TestFetchAndCloseResults:
         assert row[0] == "win"
         assert row[1] == 8
         assert row[2] > 0
+
+    def test_pass_rows_are_not_graded(self, tmp_db):
+        db_path, fr = tmp_db
+        self._seed_yesterday_pick(
+            db_path,
+            fr,
+            pitcher="Gerrit Cole",
+            side="over",
+            k_line=7.5,
+            verdict="PASS",
+        )
+
+        schedule_mock = MagicMock()
+        schedule_mock.json.return_value = _sched_resp(game_pk=111111, is_final=True)
+        schedule_mock.raise_for_status = MagicMock()
+
+        boxscore_mock = MagicMock()
+        boxscore_mock.json.return_value = _bs_resp("Gerrit Cole", 123, ks=8)
+        boxscore_mock.raise_for_status = MagicMock()
+
+        def mock_get(url, **kwargs):
+            if "boxscore" in url:
+                return boxscore_mock
+            return schedule_mock
+
+        with patch("fetch_results._et_dates", return_value=(_FIXED_TODAY, _FIXED_YESTERDAY)), \
+             patch("fetch_results.requests.get", side_effect=mock_get):
+            count = fr.fetch_and_close_results()
+
+        import sqlite3
+        conn = sqlite3.connect(db_path)
+        row = conn.execute("SELECT result, actual_ks, pnl FROM picks WHERE pitcher='Gerrit Cole'").fetchone()
+        conn.close()
+        assert count == 0
+        assert row == (None, None, None)
 
     def test_loss_over_recorded(self, tmp_db):
         db_path, fr = tmp_db

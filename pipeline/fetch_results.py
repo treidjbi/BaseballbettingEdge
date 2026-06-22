@@ -231,8 +231,6 @@ def seed_picks(today_json_path: Path = TODAY_JSON, now: datetime | None = None) 
             for side in ("over", "under"):
                 ev_data = p[f"ev_{side}"]
                 verdict = _effective_verdict(ev_data)
-                if verdict == "PASS":
-                    continue
                 odds = p[f"best_{side}_odds"]
                 raw_verdict = ev_data.get("raw_verdict") or ev_data.get("verdict")
                 actionable_verdict = ev_data.get("actionable_verdict") or verdict
@@ -246,6 +244,40 @@ def seed_picks(today_json_path: Path = TODAY_JSON, now: datetime | None = None) 
                 data_maturity_json = _json_or_none(p.get("data_maturity"))
                 confidence_referee_json = _json_or_none(ev_data.get("confidence_referee"))
                 market_anchor_selector_json = _json_or_none(ev_data.get("market_anchor_selector"))
+                if verdict == "PASS":
+                    conn.execute("""
+                        UPDATE picks
+                        SET verdict = ?, raw_verdict = ?, actionable_verdict = ?,
+                            edge = ?, ev = ?, adj_ev = ?, raw_adj_ev = ?, odds = ?,
+                            k_line = ?, applied_lambda = ?, movement_conf = ?,
+                            game_time = ?,
+                            quality_gate_level = ?,
+                            input_quality_flags_json = ?,
+                            verdict_cap_reason = ?,
+                            data_maturity_json = ?,
+                            confidence_referee_json = ?,
+                            market_anchor_selector_json = ?
+                        WHERE date = ? AND pitcher = ? AND side = ?
+                          AND locked_at IS NULL AND result IS NULL
+                    """, (
+                        verdict,
+                        raw_verdict,
+                        actionable_verdict,
+                        ev_data.get("edge", ev_data.get("ev")),
+                        ev_data.get("ev"), ev_data.get("adj_ev"), raw_adj_ev, odds,
+                        p["k_line"], p["lambda"], ev_data.get("movement_conf"),
+                        p.get("game_time"),
+                        quality_gate_level,
+                        input_quality_flags_json,
+                        verdict_cap_reason,
+                        data_maturity_json,
+                        confidence_referee_json,
+                        market_anchor_selector_json,
+                        game_date, p["pitcher"], side,
+                    ))
+                    updated += conn.execute("SELECT changes()").fetchone()[0]
+                    continue
+
                 cur = conn.execute("""
                     INSERT OR IGNORE INTO picks
                     (date, pitcher, team, side, k_line, verdict,
@@ -760,7 +792,14 @@ def fetch_and_close_results() -> int:
 
     with get_db() as conn:
         open_picks = conn.execute(
-            "SELECT * FROM picks WHERE date<? AND result IS NULL", (today_et,)
+            """
+            SELECT *
+            FROM picks
+            WHERE date < ?
+              AND result IS NULL
+              AND COALESCE(locked_verdict, verdict, 'PASS') != 'PASS'
+            """,
+            (today_et,),
         ).fetchall()
 
     if not open_picks:
