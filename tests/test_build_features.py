@@ -778,6 +778,37 @@ SAMPLE_STATS = {
     "opp_k_rate": 0.227, "opp_games_played": 20, "starts_count": 5,
 }
 
+
+def test_market_shrink_shadow_preserves_lambda_and_adds_metadata(monkeypatch):
+    from build_features import build_pitcher_record
+
+    monkeypatch.setenv("MARKET_SHRINK_PROJECTION_MODE", "shadow")
+    monkeypatch.setenv("MARKET_SHRINK_PROJECTION_CANDIDATE", "market_shrink_25")
+
+    rec = build_pitcher_record(SAMPLE_ODDS, SAMPLE_STATS, 0.0)
+
+    assert rec["lambda"] == rec["model_lambda"]
+    assert rec["projection_challenger"]["mode"] == "shadow"
+    assert rec["projection_challenger"]["candidate"] == "market_shrink_25"
+    assert rec["projection_challenger"]["applied"] is False
+    assert rec["projection_challenger"]["would_lambda"] != rec["lambda"]
+    assert rec["ev_over"]["projection_challenger"]["mode"] == "shadow"
+    assert rec["ev_under"]["projection_challenger"]["mode"] == "shadow"
+
+
+def test_market_shrink_enforce_replaces_selected_lambda(monkeypatch):
+    from build_features import build_pitcher_record
+
+    monkeypatch.setenv("MARKET_SHRINK_PROJECTION_MODE", "enforce")
+    monkeypatch.setenv("MARKET_SHRINK_PROJECTION_CANDIDATE", "market_shrink_25")
+
+    rec = build_pitcher_record(SAMPLE_ODDS, SAMPLE_STATS, 0.0)
+
+    assert rec["projection_challenger"]["applied"] is True
+    assert rec["lambda"] == round(rec["projection_challenger"]["selected_lambda"], 2)
+    assert rec["lambda"] != rec["model_lambda"]
+
+
 class TestBuildPitcherRecordFields:
     def test_raw_lambda_and_lambda_present(self):
         rec = build_pitcher_record(SAMPLE_ODDS, SAMPLE_STATS, 0.0)

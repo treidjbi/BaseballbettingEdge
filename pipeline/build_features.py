@@ -10,6 +10,7 @@ import os
 from pathlib import Path
 from scipy.stats import poisson
 from name_utils import normalize as _norm
+from projection_challenger import apply_projection_challenger, projection_challenger_mode
 
 PARAMS_PATH = str(Path(__file__).parent.parent / "data" / "params.json")
 
@@ -503,8 +504,16 @@ def build_pitcher_record(odds: dict, stats: dict, ump_k_adj: float,
     # Data shows picks with gap ≥ 3 win at only 21% — the model over-reaches on extreme
     # predictions and generates inflated EVs that don't reflect real edge.
     MAX_LAMBDA_LINE_GAP = 2.5
-    applied_lam = min(applied_lam, k_line + MAX_LAMBDA_LINE_GAP)
-    applied_lam = max(applied_lam, k_line - MAX_LAMBDA_LINE_GAP)
+    model_lam = min(applied_lam, k_line + MAX_LAMBDA_LINE_GAP)
+    model_lam = max(model_lam, k_line - MAX_LAMBDA_LINE_GAP)
+
+    projection_challenger = None
+    selected_lam = model_lam
+    if projection_challenger_mode() != "off":
+        projection_challenger = apply_projection_challenger(model_lam, k_line)
+        selected_lam = projection_challenger["selected_lambda"]
+
+    applied_lam = selected_lam
 
     win_prob_over  = 1 - poisson.cdf(math.floor(k_line), applied_lam)
     win_prob_under = poisson.cdf(math.ceil(k_line) - 1, applied_lam)
@@ -557,7 +566,9 @@ def build_pitcher_record(odds: dict, stats: dict, ump_k_adj: float,
         "price_delta_over":   price_delta_over,
         "price_delta_under":  price_delta_under,
         "raw_lambda":         round(raw_lam, 2),
+        "model_lambda":       round(model_lam, 2),
         "lambda":             round(applied_lam, 2),
+        "projection_challenger": projection_challenger,
         "avg_ip":             avg_ip,
         "is_opener":          opener,
         "opener_note":        opener_note,
@@ -588,6 +599,7 @@ def build_pitcher_record(odds: dict, stats: dict, ump_k_adj: float,
             "verdict":       over_verdict,
             "win_prob":      round(win_prob_over,  3),
             "movement_conf": round(conf_over,    4),
+            "projection_challenger": projection_challenger,
         },
         "ev_under": {
             "edge":          round(edge_under,    4),
@@ -596,6 +608,7 @@ def build_pitcher_record(odds: dict, stats: dict, ump_k_adj: float,
             "verdict":       under_verdict,
             "win_prob":      round(win_prob_under,  3),
             "movement_conf": round(conf_under,    4),
+            "projection_challenger": projection_challenger,
         },
         "book_odds": odds.get("book_odds") or None,
     }
