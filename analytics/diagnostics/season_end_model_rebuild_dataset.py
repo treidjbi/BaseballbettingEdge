@@ -17,6 +17,8 @@ HINDSIGHT_FIELDS = {
     "actual_ks",
     "result",
     "pnl",
+    "theoretical_pnl",
+    "pick_history_pnl",
     "closing_odds",
     "closing_line",
     "beat_close_price",
@@ -26,6 +28,28 @@ HINDSIGHT_FIELDS = {
     "actual_ip",
     "actual_pitch_count",
     "batters_faced",
+}
+
+LINEUP_HANDEDNESS_FIELDS = {
+    "lineup_count",
+    "lineup_used",
+    "lineup_right_batters",
+    "lineup_left_batters",
+    "lineup_switch_batters",
+    "handedness_matchup_bucket",
+    "lineup_handedness_count_matches_existing",
+    "lineup_handedness_game_pk",
+    "lineup_handedness_source",
+}
+
+ACTUAL_OPPORTUNITY_FIELDS = {
+    "opportunity_bucket",
+    "actual_ip",
+    "actual_pitch_count",
+    "batters_faced",
+    "actual_opportunity_game_pk",
+    "actual_opportunity_pitcher_match_type",
+    "actual_opportunity_source",
 }
 
 RUNTIME_FIELDS = {
@@ -58,6 +82,36 @@ RUNTIME_FIELDS = {
     "handedness_matchup_bucket",
 }
 
+RUNTIME_FIELD_GROUPS = {
+    "slate_date": "timing",
+    "pitcher": "identity",
+    "normalized_pitcher": "identity",
+    "team": "identity",
+    "opp_team": "identity",
+    "side": "market",
+    "k_line": "market",
+    "american_odds": "market",
+    "bookmaker_key": "market",
+    "model_win_prob": "model",
+    "projected_ks": "model",
+    "edge": "model",
+    "ev": "model",
+    "adj_ev": "model",
+    "verdict": "model",
+    "raw_verdict": "model",
+    "quality_gate_level": "quality",
+    "model_market_relationship": "market",
+    "no_vig_side_probability": "market",
+    "opportunity_bucket": "workload",
+    "leash_risk_bucket": "workload",
+    "pitcher_throws": "baseball",
+    "lineup_used": "baseball",
+    "lineup_right_batters": "baseball",
+    "lineup_left_batters": "baseball",
+    "lineup_switch_batters": "baseball",
+    "handedness_matchup_bucket": "baseball",
+}
+
 
 def season_bucket(date_str: str) -> str:
     month = int(str(date_str)[5:7])
@@ -77,10 +131,49 @@ def load_jsonl(path: Path) -> list[dict[str, Any]]:
     return [json.loads(line) for line in path.read_text(encoding="utf-8").splitlines() if line.strip()]
 
 
+def is_explicitly_unsafe(value: Any) -> bool:
+    return value is False or str(value).strip().lower() == "false"
+
+
+def source_available_pre_lock(source: dict[str, Any]) -> bool:
+    runtime_flags = [
+        value
+        for key, value in source.items()
+        if key.endswith("_runtime_safe") and value is not None
+    ]
+    return not any(is_explicitly_unsafe(value) for value in runtime_flags)
+
+
+def is_runtime_field_safe(key: str, source: dict[str, Any]) -> bool:
+    if key in LINEUP_HANDEDNESS_FIELDS and is_explicitly_unsafe(
+        source.get("lineup_handedness_runtime_safe")
+    ):
+        return False
+    if key in ACTUAL_OPPORTUNITY_FIELDS and is_explicitly_unsafe(
+        source.get("actual_opportunity_runtime_safe")
+    ):
+        return False
+    return True
+
+
 def build_row(source: dict[str, Any]) -> dict[str, Any]:
     slate_date = source.get("slate_date") or source.get("date")
-    runtime_features = {key: source.get(key) for key in RUNTIME_FIELDS if key in source}
+    runtime_features = {
+        key: source.get(key)
+        for key in RUNTIME_FIELDS
+        if key in source and is_runtime_field_safe(key, source)
+    }
     hindsight_labels = {key: source.get(key) for key in HINDSIGHT_FIELDS if key in source}
+    if is_explicitly_unsafe(source.get("lineup_handedness_runtime_safe")):
+        for key in LINEUP_HANDEDNESS_FIELDS:
+            if key in source:
+                hindsight_labels[key] = source.get(key)
+    if is_explicitly_unsafe(source.get("actual_opportunity_runtime_safe")):
+        for key in ACTUAL_OPPORTUNITY_FIELDS:
+            if key in source:
+                hindsight_labels[key] = source.get(key)
+
+    available_pre_lock = source_available_pre_lock(source)
     return {
         "dataset_key": source.get("dataset_key") or "|".join(
             str(part or "")
@@ -93,10 +186,14 @@ def build_row(source: dict[str, Any]) -> dict[str, Any]:
         ),
         "slate_date": slate_date,
         "season_bucket": season_bucket(slate_date),
-        "available_pre_lock": True,
+        "available_pre_lock": available_pre_lock,
         "runtime_features": runtime_features,
         "hindsight_labels": hindsight_labels,
-        "source_confidence": "official_artifact",
+        "runtime_feature_group": {
+            key: RUNTIME_FIELD_GROUPS.get(key, "unknown") for key in sorted(runtime_features)
+        },
+        "hindsight_explanation_only": {key: True for key in sorted(hindsight_labels)},
+        "source_confidence": "official_artifact" if available_pre_lock else "reconstructed_postgame",
     }
 
 

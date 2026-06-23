@@ -62,3 +62,23 @@ def test_main_surfaces_missing_candidate_lab(tmp_path):
     assert exit_code == 0
     assert "- Candidate lab: missing" in rendered
     assert "No candidate rows loaded." in rendered
+
+
+def test_source_status_blocks_positive_candidate_from_canary_plan():
+    candidates = [
+        {
+            "candidate": "market_supported_lean",
+            "decision": "canary_plan_candidate",
+            "rows": 160,
+            "pnl": 8.5,
+            "bad_slices": 0,
+        }
+    ]
+    source_statuses = [
+        {"label": "Candidate lab", "status": "loaded", "path": "candidate.md", "rows": 1},
+        {"label": "Seasonal audit", "status": "missing", "path": "seasonal.md", "rows": None},
+    ]
+
+    gated = packet.gate_candidate_decisions(candidates, source_statuses)
+
+    assert gated[0]["decision"] == "blocked_unavailable_sources"

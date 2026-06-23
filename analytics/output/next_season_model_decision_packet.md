@@ -14,8 +14,8 @@ Research-only. This packet does not change live behavior.
 
 | Candidate | Decision | Rows | PnL |
 | --- | --- | ---: | ---: |
-| `model_agrees_with_favorite` | `blocked_negative_pnl` | 934 | 0.0 |
-| `clean_quality_only` | `blocked_negative_pnl` | 1050 | 0.0 |
+| `model_agrees_with_favorite` | `blocked_negative_pnl` | 934 | -50.63 |
+| `clean_quality_only` | `blocked_negative_pnl` | 1050 | -69.23 |
 
 ## Allowed offseason decisions
 

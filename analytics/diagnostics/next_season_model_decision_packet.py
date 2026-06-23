@@ -18,15 +18,18 @@ DEFAULT_CONTEXT_SOURCES = {
     "Gate F report": ROOT / "analytics" / "output" / "gate_f_projection_challenger_shadow_report.md",
     "Market agreement tracker": ROOT / "analytics" / "output" / "market_agreement_tracker.md",
 }
+SOURCE_READY_STATUSES = {"available", "loaded"}
 
 
-def decision_label(*, rows: int, pnl: float, bad_slices: int) -> str:
+def decision_label(*, rows: int, pnl: float, bad_slices: int, sources_available: bool = True) -> str:
     if rows < 150:
         return "watch_more"
     if pnl <= 0:
         return "blocked_negative_pnl"
     if bad_slices > 0:
         return "blocked_bad_slice"
+    if not sources_available:
+        return "blocked_unavailable_sources"
     return "canary_plan_candidate"
 
 
@@ -117,12 +120,16 @@ def load_json_rows(path: Path) -> list[dict[str, Any]]:
 def normalize_candidate_row(row: dict[str, Any]) -> dict[str, Any]:
     rows = parse_int(row.get("rows"))
     pnl = parse_float(row.get("pnl"))
+    decision_rows = parse_int(row.get("test_rows"), default=rows)
+    decision_pnl = parse_float(row.get("test_pnl"), default=pnl)
     bad_slices = parse_int(row.get("bad_slices") or row.get("bad_slice_count"))
     return {
         "candidate": clean_cell(str(row.get("candidate", ""))),
-        "decision": decision_label(rows=rows, pnl=pnl, bad_slices=bad_slices),
+        "decision": decision_label(rows=decision_rows, pnl=decision_pnl, bad_slices=bad_slices),
         "rows": rows,
         "pnl": pnl,
+        "decision_rows": decision_rows,
+        "decision_pnl": decision_pnl,
         "bad_slices": bad_slices,
     }
 
@@ -148,6 +155,24 @@ def load_candidate_rows(path: Path) -> tuple[list[dict[str, Any]], dict[str, Any
 
 def context_source_statuses() -> list[dict[str, Any]]:
     return [source_status(label, path) for label, path in DEFAULT_CONTEXT_SOURCES.items()]
+
+
+def sources_available(source_statuses: list[dict[str, Any]]) -> bool:
+    return all(status.get("status") in SOURCE_READY_STATUSES for status in source_statuses)
+
+
+def gate_candidate_decisions(
+    candidates: list[dict[str, Any]], source_statuses: list[dict[str, Any]]
+) -> list[dict[str, Any]]:
+    if sources_available(source_statuses):
+        return [dict(candidate) for candidate in candidates]
+    gated: list[dict[str, Any]] = []
+    for candidate in candidates:
+        row = dict(candidate)
+        if row.get("decision") == "canary_plan_candidate":
+            row["decision"] = "blocked_unavailable_sources"
+        gated.append(row)
+    return gated
 
 
 def render(candidates: list[dict[str, Any]], source_statuses: list[dict[str, Any]] | None = None) -> str:
@@ -214,6 +239,7 @@ def main(argv: list[str] | None = None) -> int:
     lab_path = args.lab or default_lab_path()
     candidates, lab_status = load_candidate_rows(lab_path)
     source_statuses = [lab_status, *context_source_statuses()]
+    candidates = gate_candidate_decisions(candidates, source_statuses)
     args.output.parent.mkdir(parents=True, exist_ok=True)
     args.output.write_text(render(candidates, source_statuses), encoding="utf-8")
     print(f"Wrote {args.output}")
