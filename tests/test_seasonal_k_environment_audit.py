@@ -29,6 +29,28 @@ def test_summarize_by_month_uses_only_graded_rows_with_actual_ks():
     }
 
 
+def test_regime_bucket_keeps_early_and_late_season_separate():
+    assert audit.regime_bucket("2026-04-05") == "early_season"
+    assert audit.regime_bucket("2026-06-10") == "spring_midseason"
+    assert audit.regime_bucket("2026-07-20") == "summer_midseason"
+    assert audit.regime_bucket("2026-09-05") == "late_season"
+
+
+def test_summarize_side_by_regime_preserves_over_under_direction():
+    rows = [
+        {"date": "2026-04-05", "side": "under", "result": "win", "pnl": 0.91, "actual_ks": 4},
+        {"date": "2026-04-06", "side": "under", "result": "loss", "pnl": -1.0, "actual_ks": 7},
+        {"date": "2026-07-05", "side": "over", "result": "win", "pnl": 1.1, "actual_ks": 8},
+    ]
+
+    summary = audit.summarize_side_by_regime(rows)
+
+    assert summary["early_season | under"]["rows"] == 2
+    assert summary["early_season | under"]["pnl"] == -0.09
+    assert summary["summer_midseason | over"]["rows"] == 1
+    assert summary["summer_midseason | over"]["pnl"] == 1.1
+
+
 def test_render_includes_selection_bias_warning_and_no_live_prior_language():
     rendered = audit.render({"2026-04": {"n": 2, "avg_actual_ks": 5.0}})
 

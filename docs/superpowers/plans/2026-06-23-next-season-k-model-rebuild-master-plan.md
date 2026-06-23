@@ -74,6 +74,12 @@ This master plan should not be executed as one giant task. It defines child work
 - Write: `analytics/output/next_season_candidate_model_lab.md`
 - Write: `analytics/output/next_season_model_decision_packet.md`
 
+## Status Summary
+
+- Tasks 1-6: completed scaffold as of 2026-06-23.
+- Task 7: deferred until the 2026 regular season is fully graded and season-end artifacts are frozen.
+- Final review note: decision-packet canary candidates now require explicit slice metadata (`bad_slices` or `bad_slice_count`) and explicit parseable test metrics (`test_rows` and `test_pnl`). Missing slice metadata blocks as `blocked_missing_slices`; missing test metrics that would otherwise promote block as `blocked_missing_test_metrics`.
+
 ## Task 1: Create The Next-Season Feature Catalog
 
 **Files:**
@@ -83,7 +89,7 @@ This master plan should not be executed as one giant task. It defines child work
 - Consumes: existing docs and reports only.
 - Produces: a canonical feature catalog used by Tasks 2-6.
 
-- [ ] **Step 1: Write the feature catalog**
+- [x] **Step 1: Write the feature catalog**
 
 Create `docs/research/next-season-k-model-feature-catalog.md` with this structure:
 
@@ -126,7 +132,7 @@ Every season-end row must carry:
 - Include starter ramp-up, innings caps, call-ups, IL return, and team shutdown risk as possible seasonality explanations.
 ```
 
-- [ ] **Step 2: Review against current docs**
+- [x] **Step 2: Review against current docs**
 
 Run:
 
@@ -136,7 +142,7 @@ rg "hindsight|runtime-safe|seasonality|CLV|accepted-bet|Path B|workload|market a
 
 Expected: output includes the Gate C dataset plan, active gates synthesis, market tracker map, workload/no-vig plan, and Path B plan. Update the catalog only if one of those docs names a feature class not listed above.
 
-- [ ] **Step 3: Commit**
+- [x] **Step 3: Commit**
 
 ```powershell
 git add docs/research/next-season-k-model-feature-catalog.md
@@ -155,7 +161,7 @@ git commit -m "docs: add next season model feature catalog"
 - Optionally consumes: exported market agreement JSONL, exported live display state JSON, exported accepted bets JSON.
 - Produces: deterministic row list with no-leakage labels and seasonality buckets.
 
-- [ ] **Step 1: Write failing tests**
+- [x] **Step 1: Write failing tests**
 
 Create `tests/test_season_end_model_rebuild_dataset.py`:
 
@@ -210,7 +216,7 @@ def test_summarize_reports_runtime_and_hindsight_coverage():
     assert summary["hindsight_label_counts"]["beat_close_price"] == 1
 ```
 
-- [ ] **Step 2: Run tests to verify failure**
+- [x] **Step 2: Run tests to verify failure**
 
 ```powershell
 python -m pytest tests/test_season_end_model_rebuild_dataset.py -q
@@ -218,7 +224,7 @@ python -m pytest tests/test_season_end_model_rebuild_dataset.py -q
 
 Expected: fail because `season_end_model_rebuild_dataset` does not exist.
 
-- [ ] **Step 3: Implement minimal dataset builder**
+- [x] **Step 3: Implement minimal dataset builder**
 
 Create `analytics/diagnostics/season_end_model_rebuild_dataset.py`:
 
@@ -374,7 +380,7 @@ if __name__ == "__main__":
     raise SystemExit(main())
 ```
 
-- [ ] **Step 4: Run tests and builder**
+- [x] **Step 4: Run tests and builder**
 
 ```powershell
 python -m pytest tests/test_season_end_model_rebuild_dataset.py -q
@@ -383,7 +389,7 @@ python analytics/diagnostics/season_end_model_rebuild_dataset.py --input data/re
 
 Expected: tests pass and `analytics/output/season_end_model_rebuild_dataset_summary.md` writes row counts.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```powershell
 git add analytics/diagnostics/season_end_model_rebuild_dataset.py tests/test_season_end_model_rebuild_dataset.py analytics/output/season_end_model_rebuild_dataset_summary.md
@@ -401,7 +407,7 @@ git commit -m "feat: add season-end model rebuild dataset"
 - Consumes: `picks_history.json` and, later, optional MLB-wide starter K/start data.
 - Produces: seasonality buckets that can be used in Task 5 as candidate features.
 
-- [ ] **Step 1: Add failing tests for regime labels**
+- [x] **Step 1: Add failing tests for regime labels**
 
 Append to `tests/test_seasonal_k_environment_audit.py`:
 
@@ -428,7 +434,7 @@ def test_summarize_side_by_regime_preserves_over_under_direction():
     assert summary["summer_midseason | over"]["pnl"] == 1.1
 ```
 
-- [ ] **Step 2: Run tests to verify failure**
+- [x] **Step 2: Run tests to verify failure**
 
 ```powershell
 python -m pytest tests/test_seasonal_k_environment_audit.py -q
@@ -436,7 +442,7 @@ python -m pytest tests/test_seasonal_k_environment_audit.py -q
 
 Expected: fail because `regime_bucket` and `summarize_side_by_regime` do not exist.
 
-- [ ] **Step 3: Add regime helpers**
+- [x] **Step 3: Add regime helpers**
 
 Add to `analytics/diagnostics/seasonal_k_environment_audit.py`:
 
@@ -473,7 +479,7 @@ def summarize_side_by_regime(rows: list[dict]) -> dict:
     return summary
 ```
 
-- [ ] **Step 4: Render side-by-regime output**
+- [x] **Step 4: Render side-by-regime output**
 
 Update `render()` in `analytics/diagnostics/seasonal_k_environment_audit.py` to accept an optional second argument and append:
 
@@ -497,7 +503,7 @@ rows = load_history(args.history)
 print(render(summarize_by_month(rows), summarize_side_by_regime(rows)))
 ```
 
-- [ ] **Step 5: Run tests and write output**
+- [x] **Step 5: Run tests and write output**
 
 ```powershell
 python -m pytest tests/test_seasonal_k_environment_audit.py -q
@@ -506,7 +512,7 @@ python analytics/diagnostics/seasonal_k_environment_audit.py > analytics/output/
 
 Expected: tests pass and the report contains `## Side By Regime`.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```powershell
 git add analytics/diagnostics/seasonal_k_environment_audit.py tests/test_seasonal_k_environment_audit.py analytics/output/seasonal_k_environment_audit.md
@@ -522,7 +528,7 @@ git commit -m "feat: expand seasonal K environment audit"
 - Consumes: feature catalog and current Gate C/Gate F reports.
 - Produces: fixed candidate families for Task 5. No production behavior.
 
-- [ ] **Step 1: Write candidate family doc**
+- [x] **Step 1: Write candidate family doc**
 
 Create `docs/research/next-season-k-model-candidate-families.md`:
 
@@ -570,7 +576,7 @@ Research-only. This document does not change live behavior.
 - Has one rollback flag in a future canary plan.
 ```
 
-- [ ] **Step 2: Commit**
+- [x] **Step 2: Commit**
 
 ```powershell
 git add docs/research/next-season-k-model-candidate-families.md
@@ -588,7 +594,7 @@ git commit -m "docs: define next season model candidate families"
 - Consumes: rows from `analytics/diagnostics/season_end_model_rebuild_dataset.py`.
 - Produces: candidate metrics and readiness labels.
 
-- [ ] **Step 1: Write failing tests**
+- [x] **Step 1: Write failing tests**
 
 Create `tests/test_next_season_candidate_model_lab.py`:
 
@@ -648,7 +654,7 @@ def test_score_candidate_counts_wins_losses_and_pnl():
     assert result["pnl"] == -0.09
 ```
 
-- [ ] **Step 2: Run tests to verify failure**
+- [x] **Step 2: Run tests to verify failure**
 
 ```powershell
 python -m pytest tests/test_next_season_candidate_model_lab.py -q
@@ -656,7 +662,7 @@ python -m pytest tests/test_next_season_candidate_model_lab.py -q
 
 Expected: fail because `next_season_candidate_model_lab` does not exist.
 
-- [ ] **Step 3: Implement minimal candidate lab**
+- [x] **Step 3: Implement minimal candidate lab**
 
 Create `analytics/diagnostics/next_season_candidate_model_lab.py`:
 
@@ -777,7 +783,7 @@ if __name__ == "__main__":
     raise SystemExit(main())
 ```
 
-- [ ] **Step 4: Run tests and report**
+- [x] **Step 4: Run tests and report**
 
 ```powershell
 python -m pytest tests/test_next_season_candidate_model_lab.py -q
@@ -787,7 +793,7 @@ python analytics/diagnostics/next_season_candidate_model_lab.py
 
 Expected: tests pass and `analytics/output/next_season_candidate_model_lab.md` writes candidate rows.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```powershell
 git add analytics/diagnostics/next_season_candidate_model_lab.py tests/test_next_season_candidate_model_lab.py analytics/output/next_season_candidate_model_lab.md
@@ -805,7 +811,7 @@ git commit -m "feat: add next season candidate model lab"
 - Consumes: candidate lab results, seasonal audit, bet-selection synthesis, Gate F report, market agreement tracker.
 - Produces: the offseason yes/no decision packet for next-season canary plans.
 
-- [ ] **Step 1: Write failing tests**
+- [x] **Step 1: Write failing tests**
 
 Create `tests/test_next_season_model_decision_packet.py`:
 
@@ -837,7 +843,7 @@ def test_render_names_required_final_decisions():
     assert "draft_next_season_canary_plan" in rendered
 ```
 
-- [ ] **Step 2: Run tests to verify failure**
+- [x] **Step 2: Run tests to verify failure**
 
 ```powershell
 python -m pytest tests/test_next_season_model_decision_packet.py -q
@@ -845,7 +851,7 @@ python -m pytest tests/test_next_season_model_decision_packet.py -q
 
 Expected: fail because `next_season_model_decision_packet` does not exist.
 
-- [ ] **Step 3: Implement decision packet**
+- [x] **Step 3: Implement decision packet**
 
 Create `analytics/diagnostics/next_season_model_decision_packet.py`:
 
@@ -923,7 +929,7 @@ if __name__ == "__main__":
     raise SystemExit(main())
 ```
 
-- [ ] **Step 4: Run tests and packet**
+- [x] **Step 4: Run tests and packet**
 
 ```powershell
 python -m pytest tests/test_next_season_model_decision_packet.py -q
@@ -932,7 +938,7 @@ python analytics/diagnostics/next_season_model_decision_packet.py
 
 Expected: tests pass and `analytics/output/next_season_model_decision_packet.md` writes.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```powershell
 git add analytics/diagnostics/next_season_model_decision_packet.py tests/test_next_season_model_decision_packet.py analytics/output/next_season_model_decision_packet.md
@@ -948,6 +954,8 @@ git commit -m "feat: add next season model decision packet"
 **Interfaces:**
 - Consumes: outputs from Tasks 1-6.
 - Produces: a Tyler decision list, not live behavior.
+
+**Status:** Deferred until the 2026 regular season is fully graded and the season-end artifacts are frozen. Do not draft child canary plans from the scaffold-only packet.
 
 - [ ] **Step 1: Freeze season-end artifacts**
 
@@ -1054,4 +1062,4 @@ Placeholder scan:
 Type consistency:
 
 - `runtime_features`, `hindsight_labels`, `season_bucket`, and `available_pre_lock` are used consistently across dataset and lab tasks.
-- `canary_plan_candidate`, `watch_more`, `blocked_negative_pnl`, and `blocked_bad_slice` are the decision labels used by the decision packet.
+- `canary_plan_candidate`, `watch_more`, `blocked_negative_pnl`, `blocked_bad_slice`, `blocked_missing_slices`, and `blocked_missing_test_metrics` are the decision labels used by the decision packet.
