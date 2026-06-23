@@ -78,7 +78,7 @@ This master plan should not be executed as one giant task. It defines child work
 
 - Tasks 1-6: completed scaffold as of 2026-06-23.
 - Task 7: deferred until the 2026 regular season is fully graded and season-end artifacts are frozen.
-- Final review note: decision-packet canary candidates now require explicit slice metadata (`bad_slices` or `bad_slice_count`); otherwise they are blocked as `blocked_missing_slices`.
+- Final review note: decision-packet canary candidates now require explicit slice metadata (`bad_slices` or `bad_slice_count`) and explicit parseable test metrics (`test_rows` and `test_pnl`). Missing slice metadata blocks as `blocked_missing_slices`; missing test metrics that would otherwise promote block as `blocked_missing_test_metrics`.
 
 ## Task 1: Create The Next-Season Feature Catalog
 
@@ -1062,4 +1062,4 @@ Placeholder scan:
 Type consistency:
 
 - `runtime_features`, `hindsight_labels`, `season_bucket`, and `available_pre_lock` are used consistently across dataset and lab tasks.
-- `canary_plan_candidate`, `watch_more`, `blocked_negative_pnl`, `blocked_bad_slice`, and `blocked_missing_slices` are the decision labels used by the decision packet.
+- `canary_plan_candidate`, `watch_more`, `blocked_negative_pnl`, `blocked_bad_slice`, `blocked_missing_slices`, and `blocked_missing_test_metrics` are the decision labels used by the decision packet.

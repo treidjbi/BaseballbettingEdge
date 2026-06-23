@@ -47,9 +47,54 @@ def test_main_generates_packet_from_markdown_candidate_lab(tmp_path):
 
     rendered = output_path.read_text(encoding="utf-8")
     assert exit_code == 0
-    assert "| `market_supported_lean` | `canary_plan_candidate` | 160 | 8.5 |" in rendered
+    assert "| `market_supported_lean` | `blocked_missing_test_metrics` | 160 | 8.5 |" in rendered
     assert "| `fire_under_brake` | `blocked_negative_pnl` | 151 | -3.25 |" in rendered
     assert "- Candidate lab: loaded" in rendered
+
+
+def test_normalize_candidate_row_requires_explicit_test_metrics_for_positive_canary():
+    row = packet.normalize_candidate_row(
+        {
+            "candidate": "market_supported_lean",
+            "rows": 160,
+            "pnl": 8.5,
+            "bad_slices": 0,
+        }
+    )
+
+    assert row["decision"] == "blocked_missing_test_metrics"
+
+
+def test_normalize_candidate_row_blocks_unparseable_test_metrics():
+    row = packet.normalize_candidate_row(
+        {
+            "candidate": "market_supported_lean",
+            "rows": 160,
+            "pnl": 8.5,
+            "test_rows": "n/a",
+            "test_pnl": "n/a",
+            "bad_slices": 0,
+        }
+    )
+
+    assert row["decision"] == "blocked_missing_test_metrics"
+
+
+def test_normalize_candidate_row_uses_explicit_test_metrics_for_canary_decision():
+    row = packet.normalize_candidate_row(
+        {
+            "candidate": "market_supported_lean",
+            "rows": 300,
+            "pnl": -5.0,
+            "test_rows": 160,
+            "test_pnl": 8.5,
+            "bad_slices": 0,
+        }
+    )
+
+    assert row["decision"] == "canary_plan_candidate"
+    assert row["decision_rows"] == 160
+    assert row["decision_pnl"] == 8.5
 
 
 def test_missing_slice_metadata_blocks_positive_candidate_from_canary_plan():

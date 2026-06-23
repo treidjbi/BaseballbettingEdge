@@ -96,6 +96,13 @@ def parse_float(value: Any, default: float = 0.0) -> float:
         return default
 
 
+def parse_optional_float(value: Any) -> float | None:
+    try:
+        return float(str(value).replace(",", "").strip())
+    except (TypeError, ValueError):
+        return None
+
+
 def parse_markdown_table(path: Path) -> list[dict[str, Any]]:
     headers: list[str] = []
     rows: list[dict[str, Any]] = []
@@ -147,23 +154,30 @@ def slice_metadata_value(row: dict[str, Any]) -> Any | None:
 def normalize_candidate_row(row: dict[str, Any]) -> dict[str, Any]:
     rows = parse_int(row.get("rows"))
     pnl = parse_float(row.get("pnl"))
-    decision_rows = parse_int(row.get("test_rows"), default=rows)
-    decision_pnl = parse_float(row.get("test_pnl"), default=pnl)
+    parsed_test_rows = parse_optional_int(row.get("test_rows"))
+    parsed_test_pnl = parse_optional_float(row.get("test_pnl"))
+    test_metrics_available = parsed_test_rows is not None and parsed_test_pnl is not None
+    decision_rows = parsed_test_rows if test_metrics_available else rows
+    decision_pnl = parsed_test_pnl if test_metrics_available else pnl
     parsed_bad_slices = parse_optional_int(slice_metadata_value(row))
     slice_metadata_available = parsed_bad_slices is not None
     bad_slices = parsed_bad_slices if slice_metadata_available else 0
+    decision = decision_label(
+        rows=decision_rows,
+        pnl=decision_pnl,
+        bad_slices=bad_slices,
+        slice_metadata_available=slice_metadata_available,
+    )
+    if not test_metrics_available and decision == "canary_plan_candidate":
+        decision = "blocked_missing_test_metrics"
     return {
         "candidate": clean_cell(str(row.get("candidate", ""))),
-        "decision": decision_label(
-            rows=decision_rows,
-            pnl=decision_pnl,
-            bad_slices=bad_slices,
-            slice_metadata_available=slice_metadata_available,
-        ),
+        "decision": decision,
         "rows": rows,
         "pnl": pnl,
         "decision_rows": decision_rows,
         "decision_pnl": decision_pnl,
+        "test_metrics_available": test_metrics_available,
         "bad_slices": bad_slices,
         "slice_metadata_available": slice_metadata_available,
     }
