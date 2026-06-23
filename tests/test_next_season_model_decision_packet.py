@@ -33,10 +33,10 @@ def test_main_generates_packet_from_markdown_candidate_lab(tmp_path):
             [
                 "# Next Season Candidate Model Lab",
                 "",
-                "| Candidate | Status | Rows | W-L | PnL |",
-                "| --- | --- | ---: | ---: | ---: |",
-                "| `market_supported_lean` | `review_ready` | 160 | 90-70 | 8.5 |",
-                "| `fire_under_brake` | `watch` | 151 | 70-81 | -3.25 |",
+                "| Candidate | Status | Rows | W-L | PnL | Bad Slices |",
+                "| --- | --- | ---: | ---: | ---: | ---: |",
+                "| `market_supported_lean` | `review_ready` | 160 | 90-70 | 8.5 | 0 |",
+                "| `fire_under_brake` | `watch` | 151 | 70-81 | -3.25 | 0 |",
                 "",
             ]
         ),
@@ -50,6 +50,20 @@ def test_main_generates_packet_from_markdown_candidate_lab(tmp_path):
     assert "| `market_supported_lean` | `canary_plan_candidate` | 160 | 8.5 |" in rendered
     assert "| `fire_under_brake` | `blocked_negative_pnl` | 151 | -3.25 |" in rendered
     assert "- Candidate lab: loaded" in rendered
+
+
+def test_missing_slice_metadata_blocks_positive_candidate_from_canary_plan():
+    row = packet.normalize_candidate_row(
+        {
+            "candidate": "market_supported_lean",
+            "rows": 160,
+            "pnl": 8.5,
+            "test_rows": 160,
+            "test_pnl": 8.5,
+        }
+    )
+
+    assert row["decision"] == "blocked_missing_slices"
 
 
 def test_main_surfaces_missing_candidate_lab(tmp_path):

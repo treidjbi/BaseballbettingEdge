@@ -19,13 +19,23 @@ DEFAULT_CONTEXT_SOURCES = {
     "Market agreement tracker": ROOT / "analytics" / "output" / "market_agreement_tracker.md",
 }
 SOURCE_READY_STATUSES = {"available", "loaded"}
+SLICE_METADATA_FIELDS = ("bad_slices", "bad_slice_count")
 
 
-def decision_label(*, rows: int, pnl: float, bad_slices: int, sources_available: bool = True) -> str:
+def decision_label(
+    *,
+    rows: int,
+    pnl: float,
+    bad_slices: int,
+    sources_available: bool = True,
+    slice_metadata_available: bool = True,
+) -> str:
     if rows < 150:
         return "watch_more"
     if pnl <= 0:
         return "blocked_negative_pnl"
+    if not slice_metadata_available:
+        return "blocked_missing_slices"
     if bad_slices > 0:
         return "blocked_bad_slice"
     if not sources_available:
@@ -70,6 +80,13 @@ def parse_int(value: Any, default: int = 0) -> int:
         return int(float(str(value).replace(",", "").strip()))
     except (TypeError, ValueError):
         return default
+
+
+def parse_optional_int(value: Any) -> int | None:
+    try:
+        return int(float(str(value).replace(",", "").strip()))
+    except (TypeError, ValueError):
+        return None
 
 
 def parse_float(value: Any, default: float = 0.0) -> float:
@@ -117,20 +134,38 @@ def load_json_rows(path: Path) -> list[dict[str, Any]]:
     return []
 
 
+def slice_metadata_value(row: dict[str, Any]) -> Any | None:
+    for field in SLICE_METADATA_FIELDS:
+        if field not in row:
+            continue
+        value = row.get(field)
+        if value is not None and str(value).strip():
+            return value
+    return None
+
+
 def normalize_candidate_row(row: dict[str, Any]) -> dict[str, Any]:
     rows = parse_int(row.get("rows"))
     pnl = parse_float(row.get("pnl"))
     decision_rows = parse_int(row.get("test_rows"), default=rows)
     decision_pnl = parse_float(row.get("test_pnl"), default=pnl)
-    bad_slices = parse_int(row.get("bad_slices") or row.get("bad_slice_count"))
+    parsed_bad_slices = parse_optional_int(slice_metadata_value(row))
+    slice_metadata_available = parsed_bad_slices is not None
+    bad_slices = parsed_bad_slices if slice_metadata_available else 0
     return {
         "candidate": clean_cell(str(row.get("candidate", ""))),
-        "decision": decision_label(rows=decision_rows, pnl=decision_pnl, bad_slices=bad_slices),
+        "decision": decision_label(
+            rows=decision_rows,
+            pnl=decision_pnl,
+            bad_slices=bad_slices,
+            slice_metadata_available=slice_metadata_available,
+        ),
         "rows": rows,
         "pnl": pnl,
         "decision_rows": decision_rows,
         "decision_pnl": decision_pnl,
         "bad_slices": bad_slices,
+        "slice_metadata_available": slice_metadata_available,
     }
 
 
