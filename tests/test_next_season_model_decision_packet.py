@@ -23,3 +23,42 @@ def test_render_names_required_final_decisions():
     assert "market_supported_lean" in rendered
     assert "Allowed offseason decisions" in rendered
     assert "draft_next_season_canary_plan" in rendered
+
+
+def test_main_generates_packet_from_markdown_candidate_lab(tmp_path):
+    lab_path = tmp_path / "next_season_candidate_model_lab.md"
+    output_path = tmp_path / "decision_packet.md"
+    lab_path.write_text(
+        "\n".join(
+            [
+                "# Next Season Candidate Model Lab",
+                "",
+                "| Candidate | Status | Rows | W-L | PnL |",
+                "| --- | --- | ---: | ---: | ---: |",
+                "| `market_supported_lean` | `review_ready` | 160 | 90-70 | 8.5 |",
+                "| `fire_under_brake` | `watch` | 151 | 70-81 | -3.25 |",
+                "",
+            ]
+        ),
+        encoding="utf-8",
+    )
+
+    exit_code = packet.main(["--lab", str(lab_path), "--output", str(output_path)])
+
+    rendered = output_path.read_text(encoding="utf-8")
+    assert exit_code == 0
+    assert "| `market_supported_lean` | `canary_plan_candidate` | 160 | 8.5 |" in rendered
+    assert "| `fire_under_brake` | `blocked_negative_pnl` | 151 | -3.25 |" in rendered
+    assert "- Candidate lab: loaded" in rendered
+
+
+def test_main_surfaces_missing_candidate_lab(tmp_path):
+    lab_path = tmp_path / "missing_lab.md"
+    output_path = tmp_path / "decision_packet.md"
+
+    exit_code = packet.main(["--lab", str(lab_path), "--output", str(output_path)])
+
+    rendered = output_path.read_text(encoding="utf-8")
+    assert exit_code == 0
+    assert "- Candidate lab: missing" in rendered
+    assert "No candidate rows loaded." in rendered
