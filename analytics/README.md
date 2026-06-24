@@ -24,6 +24,9 @@ python analytics/performance.py --min-ev 0.06
 
 # Shadow projection challenger report
 python analytics/diagnostics/k_projection_shadow_lab.py --output analytics/output/k_projection_shadow_lab.md
+
+# Last-seven-day mainline movement notification pattern report
+python analytics/diagnostics/mainline_movement_pattern_audit.py --date 2026-06-24 --lookback-days 7
 ```
 
 Prints summary tables to the console and saves three plots to

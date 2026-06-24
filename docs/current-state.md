@@ -1021,6 +1021,14 @@ Webhook status:
   webhook rows can still be archived as evidence without creating stale
   notification rows. Roll back processing by setting
   `LIVE_PROCESS_PROPLINE_WEBHOOKS=false`.
+- `analytics/diagnostics/mainline_movement_pattern_audit.py` is the read-only
+  weekly pattern report for movement notifications. It reads processed
+  `line_movement_events`, `notification_events`, `market_pick_evidence`, and
+  `compact_market_line_movements` rather than broad raw webhook inbox scans.
+  The first 2026-06-24 seven-day report found high raw webhook volume, but the
+  reviewed candidate alert patterns were still supported-book mainline polling
+  rows. Use it to decide what to observe next; do not treat it as approval for
+  new notification classes.
 - Direct Supabase verification before the canary found 2,638 valid unprocessed
   deliveries and no current webhook-sourced `line_movement_events`; old
   comparison rows exist but are stale. Keep the canary recent-windowed until

@@ -33,6 +33,14 @@
   show `market_source_mode=therundown_propline` or non-strict TheRundown fallback
   with no `boltodds_propline`, stale official rows, strict-mode behavior, model
   changes, or notification noise.
+- Added `analytics/diagnostics/mainline_movement_pattern_audit.py` to evaluate
+  the last-seven-day movement-notification pattern from processed
+  `line_movement_events`, `notification_events`, `market_pick_evidence`, and
+  `compact_market_line_movements`. It intentionally avoids broad raw
+  `propline_webhook_deliveries` scans and remains read-only. First 2026-06-24
+  report showed raw webhook volume is high, but reviewed candidate alert
+  patterns still come from supported-book mainline polling; do not expand
+  webhook alert classes from raw volume alone.
 
 ## Status Update - 2026-06-19
 

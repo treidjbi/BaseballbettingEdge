@@ -1,0 +1,561 @@
+{
+  "access_issues": [],
+  "access_status": "complete",
+  "date": "2026-06-24",
+  "lookback_days": 7,
+  "row_counts": {
+    "compact_market_line_movements": 2000,
+    "line_movement_events": 2000,
+    "market_pick_evidence": 305,
+    "notification_events": 64
+  },
+  "summary": {
+    "alert_rows": 28,
+    "blocked_uses": [
+      "official_odds_source",
+      "model_input",
+      "staking_input",
+      "automatic_bet_trigger"
+    ],
+    "by_bet_value_direction": {
+      "better_now": 10,
+      "unknown": 1972,
+      "worse_now": 18
+    },
+    "by_book": {
+      "betmgm": 551,
+      "betrivers": 116,
+      "bovada": 41,
+      "draftkings": 383,
+      "fanduel": 29,
+      "novig": 566,
+      "pinnacle": 78,
+      "prizepicks": 68,
+      "sleeper": 52,
+      "underdog": 116
+    },
+    "by_line_class": {
+      "line_move_different_line": 44,
+      "line_move_touches_pick_line": 362,
+      "line_move_unknown_pick_line": 391,
+      "same_line_price_move": 1203
+    },
+    "by_market_direction": {
+      "away_from_pick": 10,
+      "toward_pick": 18,
+      "unknown": 1972
+    },
+    "by_movement_kind": {
+      "line": 76,
+      "line_and_odds": 721,
+      "odds": 1203
+    },
+    "by_source": {
+      "mainline_polling": 28,
+      "propline_webhook": 1972
+    },
+    "candidate_alert_patterns": [
+      {
+        "alert_count": 6,
+        "alert_event_type": "line_moved_against_us",
+        "bet_value_direction": "worse_now",
+        "bookmaker_key": "betrivers",
+        "count": 6,
+        "line_class": "same_line_price_move",
+        "market_direction": "toward_pick",
+        "movement_kind": "odds",
+        "sent_count": 6,
+        "source": "mainline_polling",
+        "supported_count": 6
+      },
+      {
+        "alert_count": 5,
+        "alert_event_type": "line_moved_against_us",
+        "bet_value_direction": "worse_now",
+        "bookmaker_key": "draftkings",
+        "count": 5,
+        "line_class": "same_line_price_move",
+        "market_direction": "toward_pick",
+        "movement_kind": "odds",
+        "sent_count": 5,
+        "source": "mainline_polling",
+        "supported_count": 5
+      },
+      {
+        "alert_count": 4,
+        "alert_event_type": "line_moved_with_us",
+        "bet_value_direction": "better_now",
+        "bookmaker_key": "draftkings",
+        "count": 4,
+        "line_class": "same_line_price_move",
+        "market_direction": "away_from_pick",
+        "movement_kind": "odds",
+        "sent_count": 4,
+        "source": "mainline_polling",
+        "supported_count": 4
+      },
+      {
+        "alert_count": 4,
+        "alert_event_type": "line_moved_against_us",
+        "bet_value_direction": "worse_now",
+        "bookmaker_key": "fanduel",
+        "count": 4,
+        "line_class": "same_line_price_move",
+        "market_direction": "toward_pick",
+        "movement_kind": "odds",
+        "sent_count": 4,
+        "source": "mainline_polling",
+        "supported_count": 4
+      },
+      {
+        "alert_count": 3,
+        "alert_event_type": "line_moved_with_us",
+        "bet_value_direction": "better_now",
+        "bookmaker_key": "betrivers",
+        "count": 3,
+        "line_class": "same_line_price_move",
+        "market_direction": "away_from_pick",
+        "movement_kind": "odds",
+        "sent_count": 3,
+        "source": "mainline_polling",
+        "supported_count": 3
+      },
+      {
+        "alert_count": 2,
+        "alert_event_type": "line_moved_with_us",
+        "bet_value_direction": "better_now",
+        "bookmaker_key": "betrivers",
+        "count": 2,
+        "line_class": "line_move_touches_pick_line",
+        "market_direction": "away_from_pick",
+        "movement_kind": "line_and_odds",
+        "sent_count": 2,
+        "source": "mainline_polling",
+        "supported_count": 2
+      },
+      {
+        "alert_count": 2,
+        "alert_event_type": "line_moved_against_us",
+        "bet_value_direction": "worse_now",
+        "bookmaker_key": "draftkings",
+        "count": 2,
+        "line_class": "line_move_touches_pick_line",
+        "market_direction": "toward_pick",
+        "movement_kind": "line_and_odds",
+        "sent_count": 1,
+        "source": "mainline_polling",
+        "supported_count": 2
+      },
+      {
+        "alert_count": 1,
+        "alert_event_type": "line_moved_against_us",
+        "bet_value_direction": "worse_now",
+        "bookmaker_key": "betrivers",
+        "count": 1,
+        "line_class": "line_move_touches_pick_line",
+        "market_direction": "toward_pick",
+        "movement_kind": "line_and_odds",
+        "sent_count": 1,
+        "source": "mainline_polling",
+        "supported_count": 1
+      },
+      {
+        "alert_count": 1,
+        "alert_event_type": "line_moved_with_us",
+        "bet_value_direction": "better_now",
+        "bookmaker_key": "draftkings",
+        "count": 1,
+        "line_class": "line_move_touches_pick_line",
+        "market_direction": "away_from_pick",
+        "movement_kind": "line_and_odds",
+        "sent_count": 1,
+        "source": "mainline_polling",
+        "supported_count": 1
+      }
+    ],
+    "compact_activity": {
+      "by_book": {
+        "betmgm": 161,
+        "betrivers": 264,
+        "draftkings": 630,
+        "fanduel": 521,
+        "kalshi": 312,
+        "thescore": 112
+      },
+      "by_provider": {
+        "propline": 794,
+        "therundown": 1206
+      },
+      "high_activity_rows": [
+        {
+          "book": "kalshi",
+          "line": "6.5",
+          "odds_move_count": 22,
+          "pitcher": "Kyle Bradish",
+          "provider": "therundown",
+          "side": "over",
+          "slate_date": "2026-06-22",
+          "snapshot_count": 51
+        },
+        {
+          "book": "kalshi",
+          "line": "4.5",
+          "odds_move_count": 19,
+          "pitcher": "Brandon Sproat",
+          "provider": "therundown",
+          "side": "under",
+          "slate_date": "2026-06-23",
+          "snapshot_count": 53
+        },
+        {
+          "book": "kalshi",
+          "line": "5.5",
+          "odds_move_count": 19,
+          "pitcher": "Logan Webb",
+          "provider": "therundown",
+          "side": "over",
+          "slate_date": "2026-06-21",
+          "snapshot_count": 39
+        },
+        {
+          "book": "kalshi",
+          "line": "3.5",
+          "odds_move_count": 17,
+          "pitcher": "Reid Detmers",
+          "provider": "therundown",
+          "side": "over",
+          "slate_date": "2026-06-21",
+          "snapshot_count": 52
+        },
+        {
+          "book": "kalshi",
+          "line": "5.5",
+          "odds_move_count": 17,
+          "pitcher": "Logan Webb",
+          "provider": "therundown",
+          "side": "under",
+          "slate_date": "2026-06-21",
+          "snapshot_count": 36
+        },
+        {
+          "book": "draftkings",
+          "line": "4.5",
+          "odds_move_count": 16,
+          "pitcher": "Brady Singer",
+          "provider": "therundown",
+          "side": "under",
+          "slate_date": "2026-06-22",
+          "snapshot_count": 57
+        },
+        {
+          "book": "kalshi",
+          "line": "5.5",
+          "odds_move_count": 16,
+          "pitcher": "Drew Rasmussen",
+          "provider": "therundown",
+          "side": "under",
+          "slate_date": "2026-06-22",
+          "snapshot_count": 53
+        },
+        {
+          "book": "draftkings",
+          "line": "4.5",
+          "odds_move_count": 16,
+          "pitcher": "Brady Singer",
+          "provider": "therundown",
+          "side": "over",
+          "slate_date": "2026-06-22",
+          "snapshot_count": 57
+        },
+        {
+          "book": "kalshi",
+          "line": "4.5",
+          "odds_move_count": 16,
+          "pitcher": "David Peterson",
+          "provider": "therundown",
+          "side": "over",
+          "slate_date": "2026-06-21",
+          "snapshot_count": 60
+        },
+        {
+          "book": "kalshi",
+          "line": "4.5",
+          "odds_move_count": 15,
+          "pitcher": "Brandon Sproat",
+          "provider": "therundown",
+          "side": "over",
+          "slate_date": "2026-06-23",
+          "snapshot_count": 51
+        },
+        {
+          "book": "kalshi",
+          "line": "4.5",
+          "odds_move_count": 15,
+          "pitcher": "Michael Wacha",
+          "provider": "therundown",
+          "side": "under",
+          "slate_date": "2026-06-22",
+          "snapshot_count": 58
+        },
+        {
+          "book": "draftkings",
+          "line": "4.5",
+          "odds_move_count": 15,
+          "pitcher": "Brady Singer",
+          "provider": "propline",
+          "side": "under",
+          "slate_date": "2026-06-22",
+          "snapshot_count": 57
+        },
+        {
+          "book": "draftkings",
+          "line": "4.5",
+          "odds_move_count": 15,
+          "pitcher": "Brady Singer",
+          "provider": "propline",
+          "side": "over",
+          "slate_date": "2026-06-22",
+          "snapshot_count": 57
+        },
+        {
+          "book": "kalshi",
+          "line": "9.5",
+          "odds_move_count": 15,
+          "pitcher": "Zack Wheeler",
+          "provider": "therundown",
+          "side": "under",
+          "slate_date": "2026-06-21",
+          "snapshot_count": 67
+        },
+        {
+          "book": "kalshi",
+          "line": "9.5",
+          "odds_move_count": 15,
+          "pitcher": "Zack Wheeler",
+          "provider": "therundown",
+          "side": "over",
+          "slate_date": "2026-06-21",
+          "snapshot_count": 61
+        }
+      ],
+      "rows": 2000
+    },
+    "compact_market_movement_rows": 2000,
+    "different_line_moves": 44,
+    "line_moves_touching_pick_line": 362,
+    "market_pick_evidence_rows": 305,
+    "movement_events": 2000,
+    "notification_events": 64,
+    "recommendation": "review_supported_same_line_and_touching_pick_line_alert_patterns",
+    "same_line_price_moves": 1203,
+    "sent_alert_rows": 27,
+    "supported_book_rows": 1079,
+    "top_patterns": [
+      {
+        "alert_count": 0,
+        "alert_event_type": "line_movement",
+        "bet_value_direction": "unknown",
+        "bookmaker_key": "novig",
+        "count": 566,
+        "line_class": "same_line_price_move",
+        "market_direction": "unknown",
+        "movement_kind": "odds",
+        "sent_count": 0,
+        "source": "propline_webhook",
+        "supported_count": 0
+      },
+      {
+        "alert_count": 0,
+        "alert_event_type": "line_movement",
+        "bet_value_direction": "unknown",
+        "bookmaker_key": "betmgm",
+        "count": 292,
+        "line_class": "same_line_price_move",
+        "market_direction": "unknown",
+        "movement_kind": "odds",
+        "sent_count": 0,
+        "source": "propline_webhook",
+        "supported_count": 292
+      },
+      {
+        "alert_count": 0,
+        "alert_event_type": "line_movement",
+        "bet_value_direction": "unknown",
+        "bookmaker_key": "draftkings",
+        "count": 149,
+        "line_class": "same_line_price_move",
+        "market_direction": "unknown",
+        "movement_kind": "odds",
+        "sent_count": 0,
+        "source": "propline_webhook",
+        "supported_count": 149
+      },
+      {
+        "alert_count": 0,
+        "alert_event_type": "line_movement",
+        "bet_value_direction": "unknown",
+        "bookmaker_key": "betmgm",
+        "count": 116,
+        "line_class": "line_move_unknown_pick_line",
+        "market_direction": "unknown",
+        "movement_kind": "line_and_odds",
+        "sent_count": 0,
+        "source": "propline_webhook",
+        "supported_count": 116
+      },
+      {
+        "alert_count": 0,
+        "alert_event_type": "line_movement",
+        "bet_value_direction": "unknown",
+        "bookmaker_key": "draftkings",
+        "count": 114,
+        "line_class": "line_move_touches_pick_line",
+        "market_direction": "unknown",
+        "movement_kind": "line_and_odds",
+        "sent_count": 0,
+        "source": "propline_webhook",
+        "supported_count": 114
+      },
+      {
+        "alert_count": 0,
+        "alert_event_type": "line_movement",
+        "bet_value_direction": "unknown",
+        "bookmaker_key": "draftkings",
+        "count": 108,
+        "line_class": "line_move_unknown_pick_line",
+        "market_direction": "unknown",
+        "movement_kind": "line_and_odds",
+        "sent_count": 0,
+        "source": "propline_webhook",
+        "supported_count": 108
+      },
+      {
+        "alert_count": 0,
+        "alert_event_type": "line_movement",
+        "bet_value_direction": "unknown",
+        "bookmaker_key": "betmgm",
+        "count": 93,
+        "line_class": "line_move_touches_pick_line",
+        "market_direction": "unknown",
+        "movement_kind": "line_and_odds",
+        "sent_count": 0,
+        "source": "propline_webhook",
+        "supported_count": 93
+      },
+      {
+        "alert_count": 0,
+        "alert_event_type": "line_movement",
+        "bet_value_direction": "unknown",
+        "bookmaker_key": "underdog",
+        "count": 52,
+        "line_class": "same_line_price_move",
+        "market_direction": "unknown",
+        "movement_kind": "odds",
+        "sent_count": 0,
+        "source": "propline_webhook",
+        "supported_count": 0
+      },
+      {
+        "alert_count": 0,
+        "alert_event_type": "line_movement",
+        "bet_value_direction": "unknown",
+        "bookmaker_key": "prizepicks",
+        "count": 43,
+        "line_class": "line_move_unknown_pick_line",
+        "market_direction": "unknown",
+        "movement_kind": "line",
+        "sent_count": 0,
+        "source": "propline_webhook",
+        "supported_count": 0
+      },
+      {
+        "alert_count": 0,
+        "alert_event_type": "line_movement",
+        "bet_value_direction": "unknown",
+        "bookmaker_key": "betmgm",
+        "count": 42,
+        "line_class": "line_move_different_line",
+        "market_direction": "unknown",
+        "movement_kind": "line_and_odds",
+        "sent_count": 0,
+        "source": "propline_webhook",
+        "supported_count": 42
+      },
+      {
+        "alert_count": 0,
+        "alert_event_type": "line_movement",
+        "bet_value_direction": "unknown",
+        "bookmaker_key": "betrivers",
+        "count": 41,
+        "line_class": "line_move_touches_pick_line",
+        "market_direction": "unknown",
+        "movement_kind": "line_and_odds",
+        "sent_count": 0,
+        "source": "propline_webhook",
+        "supported_count": 41
+      },
+      {
+        "alert_count": 0,
+        "alert_event_type": "line_movement",
+        "bet_value_direction": "unknown",
+        "bookmaker_key": "pinnacle",
+        "count": 36,
+        "line_class": "same_line_price_move",
+        "market_direction": "unknown",
+        "movement_kind": "odds",
+        "sent_count": 0,
+        "source": "propline_webhook",
+        "supported_count": 0
+      },
+      {
+        "alert_count": 0,
+        "alert_event_type": "line_movement",
+        "bet_value_direction": "unknown",
+        "bookmaker_key": "underdog",
+        "count": 35,
+        "line_class": "line_move_touches_pick_line",
+        "market_direction": "unknown",
+        "movement_kind": "line_and_odds",
+        "sent_count": 0,
+        "source": "propline_webhook",
+        "supported_count": 0
+      },
+      {
+        "alert_count": 0,
+        "alert_event_type": "line_movement",
+        "bet_value_direction": "unknown",
+        "bookmaker_key": "betrivers",
+        "count": 32,
+        "line_class": "same_line_price_move",
+        "market_direction": "unknown",
+        "movement_kind": "odds",
+        "sent_count": 0,
+        "source": "propline_webhook",
+        "supported_count": 32
+      },
+      {
+        "alert_count": 0,
+        "alert_event_type": "line_movement",
+        "bet_value_direction": "unknown",
+        "bookmaker_key": "betrivers",
+        "count": 31,
+        "line_class": "line_move_unknown_pick_line",
+        "market_direction": "unknown",
+        "movement_kind": "line_and_odds",
+        "sent_count": 0,
+        "source": "propline_webhook",
+        "supported_count": 31
+      }
+    ],
+    "unsupported_book_rows": 921,
+    "webhook_vs_polling_timing": {
+      "matched_movements": 3,
+      "median_webhook_lead_seconds": 399.603266,
+      "polling_first": 0,
+      "ties": 0,
+      "webhook_first": 3
+    }
+  },
+  "window_end_date": "2026-06-24",
+  "window_start_date": "2026-06-18"
+}

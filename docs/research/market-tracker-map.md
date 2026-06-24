@@ -28,6 +28,7 @@ provider order, notifications, or calibration.
 | Actual opportunity backfill | `actual_opportunity_backfill.py` | Reconstructs postgame IP, pitch count, and batters faced from MLB boxscores into local shadow artifacts; not runtime proof. |
 | Batter-handedness Path B readiness | `batter_handedness_shadow_audit.py` | Checks whether lineup hand counts, matchup buckets, and split cache coverage justify anything beyond shadow collection. |
 | Best executable market candidates | `executable_market_shadow_audit.py` | Scores fresh supported mainline book/line/side rows against the current model projection; shadow-only input for cutover review. |
+| Mainline movement notification patterns | `mainline_movement_pattern_audit.py` | Reads processed movement/notification/evidence rows to find supported-book same-line and pick-line-touching alert patterns; avoids broad raw webhook inbox scans. |
 
 ## Provider Tracker Ownership
 
@@ -184,7 +185,10 @@ The BBE Operations Brief should synthesize this map every weekday:
 9. For notification work, report grouped start-window opportunities, grouped
    pick-change opportunities, stale/duplicate/post-start suppressions, and
    movement candidates by provider-strength label before recommending any new
-   production send class.
+   production send class. Regenerate or read
+   `analytics/output/mainline_movement_pattern_audit_YYYY-MM-DD.md` when the
+   question is which mainline or webhook movement patterns are worth sending;
+   treat it as read-only evidence, not notification-class approval.
 10. Tie any recommendation back to cost/risk docs before suggesting more
    infrastructure or provider spend.
 11. Explicitly separate "collect more evidence" from "ready to change model or
