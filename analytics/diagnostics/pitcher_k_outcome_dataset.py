@@ -1111,6 +1111,7 @@ def build_official_close_rows(markets: list[dict[str, Any]]) -> list[dict[str, A
             career_k9 = _to_float(market.get("career_k9"))
             market_anchor_selector = ev.get("market_anchor_selector") or market.get("market_anchor_selector")
             selector_dict = market_anchor_selector if isinstance(market_anchor_selector, dict) else None
+            projection_challenger = ev.get("projection_challenger") or market.get("projection_challenger")
 
             row = {
                 "dataset_key": build_dataset_key(
@@ -1251,6 +1252,7 @@ def build_official_close_rows(markets: list[dict[str, Any]]) -> list[dict[str, A
                 "market_anchor_selector_mode": selector_dict.get("mode") if selector_dict else None,
                 "market_anchor_selector_labels": selector_dict.get("labels") if selector_dict else None,
                 "market_anchor_selector_applied": selector_dict.get("applied") if selector_dict else None,
+                "projection_challenger": projection_challenger,
                 "locked_verdict": ev.get("locked_verdict") or market.get("locked_verdict"),
                 "display_verdict": ev.get("display_verdict") or market.get("display_verdict"),
                 "actionable_verdict": ev.get("actionable_verdict") or market.get("actionable_verdict"),
@@ -1596,6 +1598,7 @@ def enrich_rows_with_pick_history(
         next_row.setdefault("market_anchor_selector_mode", None)
         next_row.setdefault("market_anchor_selector_labels", None)
         next_row.setdefault("market_anchor_selector_applied", None)
+        next_row.setdefault("projection_challenger", None)
         next_row.setdefault("locked_verdict", None)
         next_row.setdefault("display_verdict", None)
         next_row.setdefault("actionable_verdict", None)
@@ -1634,6 +1637,9 @@ def enrich_rows_with_pick_history(
                     "market_anchor_selector": pick.get("market_anchor_selector")
                     if pick.get("market_anchor_selector") is not None
                     else next_row.get("market_anchor_selector"),
+                    "projection_challenger": pick.get("projection_challenger")
+                    if pick.get("projection_challenger") is not None
+                    else next_row.get("projection_challenger"),
                     "locked_verdict": pick.get("locked_verdict")
                     if pick.get("locked_verdict") is not None
                     else next_row.get("locked_verdict"),

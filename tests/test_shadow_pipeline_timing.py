@@ -64,6 +64,23 @@ def test_shadow_timing_marks_late_unlocked_pick_as_missed_lock():
     assert observation_rows[0]["minutes_until_start"] == 15.0
 
 
+def test_shadow_timing_honors_configured_operational_lock_grace(monkeypatch):
+    monkeypatch.setenv("OPERATIONAL_LOCK_GRACE_MINUTES", "10")
+
+    run_row, observation_rows = build_shadow_pipeline_timing_rows(
+        slate_date="2026-05-14",
+        pitchers=[_pitcher()],
+        observed_at=datetime.fromisoformat("2026-05-14T18:36:00+00:00"),
+        source_artifact_path="today.json",
+        source_artifact_sha256="sha",
+    )
+
+    assert run_row["due_now_count"] == 1
+    assert run_row["missed_lock_count"] == 0
+    assert run_row["metadata"]["missed_lock_grace_minutes"] == 10
+    assert observation_rows[0]["status"] == "due_now"
+
+
 def test_shadow_timing_distinguishes_artifact_locked_from_started_unlocked():
     locked = _pitcher(locked_at="2026-05-14T18:28:00Z")
     unlocked_started = _pitcher(game_time="2026-05-14T18:20:00Z")

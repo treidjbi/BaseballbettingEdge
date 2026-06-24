@@ -1336,6 +1336,7 @@ def _enrich_archives_with_results() -> None:
                 ),
             )
             p["result"] = _build_result_obj(primary)
+            p["game_state"] = "final"
             modified = True
 
         if modified:

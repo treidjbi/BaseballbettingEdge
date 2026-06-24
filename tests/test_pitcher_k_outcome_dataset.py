@@ -928,6 +928,13 @@ def test_enrich_rows_with_pick_history_adds_bet_time_and_clv_fields(tmp_path):
               "labels": ["market_anchor_side_agrees"],
               "applied": false
             },
+            "projection_challenger": {
+              "mode": "shadow",
+              "candidate": "market_shrink_25",
+              "applied": false,
+              "current_lambda": 5.9,
+              "would_lambda": 5.8
+            },
             "locked_at": "2026-05-12T22:30:00Z",
             "game_time": "2026-05-12T23:05:00Z",
             "pnl": 1.1
@@ -976,3 +983,5 @@ def test_enrich_rows_with_pick_history_adds_bet_time_and_clv_fields(tmp_path):
     assert enriched[0]["market_anchor_selector_mode"] == "shadow"
     assert enriched[0]["market_anchor_selector_labels"] == ["market_anchor_side_agrees"]
     assert enriched[0]["market_anchor_selector_applied"] is False
+    assert enriched[0]["projection_challenger"]["candidate"] == "market_shrink_25"
+    assert enriched[0]["projection_challenger"]["applied"] is False

@@ -2486,6 +2486,7 @@ def test_enrich_archives_with_results_injects_actual_ks_and_result(tmp_path):
             {
                 "pitcher": "Cole",
                 "k_line": 6.5,
+                "game_state": "in_progress",
                 "ev_over":  {"verdict": "FIRE 1u", "adj_ev": 0.05},
                 "ev_under": {"verdict": "PASS",    "adj_ev": -0.02},
             },
@@ -2509,6 +2510,7 @@ def test_enrich_archives_with_results_injects_actual_ks_and_result(tmp_path):
 
     data = json.loads(archive_path.read_text())
     cole = data["pitchers"][0]
+    assert cole["game_state"] == "final"
     assert cole["actual_ks"] == 8
     assert cole["ev_over"]["result"] == "win"
     assert "result" not in cole["ev_under"], "PASS side should not be enriched"

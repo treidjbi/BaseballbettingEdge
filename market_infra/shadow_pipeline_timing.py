@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import hashlib
+import os
 from datetime import datetime, timedelta, timezone
 from typing import Any
 
@@ -16,6 +17,17 @@ TRACKED_VERDICT_RANK = {
 
 LOCK_WINDOW_MINUTES = 30
 MISSED_LOCK_GRACE_MINUTES = 5
+
+
+def _configured_int(name: str, default: int) -> int:
+    value = os.environ.get(name, "").strip()
+    if not value:
+        return default
+    try:
+        parsed = int(value)
+    except ValueError:
+        return default
+    return parsed if parsed > 0 else default
 
 
 def _parse_datetime(value: Any) -> datetime | None:
@@ -99,19 +111,21 @@ def _status(
     observed_at: datetime,
     game_time: datetime | None,
     locked_at: datetime | None,
+    lock_window_minutes: int,
+    missed_lock_grace_minutes: int,
 ) -> tuple[str, datetime | None, float | None]:
     if locked_at is not None:
-        return "artifact_locked", None if game_time is None else game_time - timedelta(minutes=LOCK_WINDOW_MINUTES), None
+        return "artifact_locked", None if game_time is None else game_time - timedelta(minutes=lock_window_minutes), None
 
     if game_time is None:
         return "missing_game_time", None, None
 
-    should_lock_at = game_time - timedelta(minutes=LOCK_WINDOW_MINUTES)
+    should_lock_at = game_time - timedelta(minutes=lock_window_minutes)
     minutes_until_start = round((game_time - observed_at).total_seconds() / 60.0, 2)
 
     if observed_at >= game_time:
         return "started_unlocked", should_lock_at, minutes_until_start
-    if observed_at >= should_lock_at + timedelta(minutes=MISSED_LOCK_GRACE_MINUTES):
+    if observed_at >= should_lock_at + timedelta(minutes=missed_lock_grace_minutes):
         return "missed_lock", should_lock_at, minutes_until_start
     if observed_at >= should_lock_at:
         return "due_now", should_lock_at, minutes_until_start
@@ -138,6 +152,11 @@ def build_shadow_pipeline_timing_rows(
         raise ValueError("observed_at must be parseable")
 
     artifact_generated = _parse_datetime(artifact_generated_at)
+    lock_window_minutes = _configured_int("OPERATIONAL_LOCK_WINDOW_MINUTES", LOCK_WINDOW_MINUTES)
+    missed_lock_grace_minutes = _configured_int(
+        "OPERATIONAL_LOCK_GRACE_MINUTES",
+        MISSED_LOCK_GRACE_MINUTES,
+    )
     run_key = _run_key(
         slate_date=slate_date,
         observed_at=observed_utc,
@@ -177,6 +196,8 @@ def build_shadow_pipeline_timing_rows(
                 observed_at=observed_utc,
                 game_time=game_time,
                 locked_at=locked_at,
+                lock_window_minutes=lock_window_minutes,
+                missed_lock_grace_minutes=missed_lock_grace_minutes,
             )
 
             if status == "artifact_locked":
@@ -233,8 +254,8 @@ def build_shadow_pipeline_timing_rows(
         "artifact_staleness_seconds": None
         if artifact_generated is None
         else int((observed_utc - artifact_generated).total_seconds()),
-        "lock_window_minutes": LOCK_WINDOW_MINUTES,
-        "missed_lock_grace_minutes": MISSED_LOCK_GRACE_MINUTES,
+        "lock_window_minutes": lock_window_minutes,
+        "missed_lock_grace_minutes": missed_lock_grace_minutes,
     }
     if metadata_extra:
         metadata.update(metadata_extra)
