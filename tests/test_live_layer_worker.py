@@ -1335,6 +1335,75 @@ def test_worker_can_send_book_level_propline_webhook_movement_notifications(tmp_
     assert "movement_rows" not in result["propline_webhooks"]
 
 
+def test_worker_processes_old_propline_webhooks_without_queuing_stale_notifications(tmp_path):
+    today = _write_artifact(tmp_path, [_fire_pitcher()])
+    writer = _writer_with_selects({
+        "live_pick_state": [],
+        "market_snapshots": [],
+        "game_reminder_state": [],
+    })
+
+    stale_webhook_row = {
+        "slate_date": "2026-05-06",
+        "normalized_pitcher": "tarik skubal",
+        "pitcher": "Tarik Skubal",
+        "side": "over",
+        "bookmaker_key": "fanduel",
+        "previous_line": 6.5,
+        "current_line": 5.5,
+        "previous_odds": -130,
+        "current_odds": -125,
+        "movement_direction": "neutral",
+        "movement_kind": "line_and_odds",
+        "observed_at": "2026-05-06T17:35:00+00:00",
+        "dedupe_key": "2026-05-06:propline_webhook:delivery-1",
+        "source_snapshot_id": None,
+        "metadata": {
+            "bookmaker_key_missing": False,
+            "prop_line_delivery_id": "delivery-1",
+            "prop_line_event_id": "game-1",
+            "source": "propline_webhook",
+        },
+    }
+
+    def process_webhooks(*args, **kwargs):
+        return {
+            "deliveries": 1,
+            "processed": 1,
+            "line_movement_events": 1,
+            "unsupported": 0,
+            "movement_rows": [stale_webhook_row],
+        }
+
+    with (
+        patch.object(build_live_events_to_supabase, "SupabaseMarketWriter", return_value=writer),
+        patch.object(
+            build_live_events_to_supabase,
+            "process_propline_webhook_deliveries",
+            side_effect=process_webhooks,
+        ) as processor,
+        patch.object(
+            build_live_events_to_supabase,
+            "_now_utc",
+            return_value=build_live_events_to_supabase.datetime.fromisoformat("2026-05-06T18:00:00+00:00"),
+        ),
+    ):
+        result = build_live_events_to_supabase.run(
+            slate_date="2026-05-06",
+            artifact_path=today,
+            supabase_url="https://example.supabase.co",
+            service_role_key="secret",
+            process_propline_webhooks=True,
+            send_propline_webhook_movement_notifications=True,
+            propline_webhook_max_age_minutes=180,
+            propline_webhook_notification_max_age_minutes=20,
+        )
+
+    assert processor.call_args.kwargs["received_after"] is not None
+    assert result["propline_webhooks"]["line_movement_events"] == 1
+    assert result["propline_webhook_notification_events"] == 0
+
+
 def test_worker_can_build_shadow_market_lines_after_live_state(tmp_path):
     today = _write_artifact(tmp_path, [_fire_pitcher()])
     calls = []

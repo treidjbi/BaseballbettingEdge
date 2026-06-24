@@ -89,6 +89,10 @@ Current implementation state:
 - Canary bounds: `LIVE_PROCESS_PROPLINE_WEBHOOK_LIMIT` defaults to `100` rows
   per run, and `LIVE_PROCESS_PROPLINE_WEBHOOK_MAX_AGE_MINUTES` defaults to
   `180`. Set max age to `0` only for an explicit backlog drain.
+- Notification bounds: as of 2026-06-24, webhook movement notifications use a
+  separate queue-eligibility gate,
+  `LIVE_PROPLINE_WEBHOOK_NOTIFICATION_MAX_AGE_MINUTES=20`, so stale webhook
+  evidence can still be processed without queuing stale sends.
 - Direct Supabase check before enabling showed 2,638 valid unprocessed
   deliveries from 2026-05-05 through 2026-05-24, but zero current
   `line_movement_events` with `metadata->>'source'='propline_webhook'`. The

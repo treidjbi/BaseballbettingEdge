@@ -56,6 +56,7 @@ DEFAULT_LOCK_ONLY_WORKFLOW_DISPATCH_URL = (
 LIVE_NOTIFICATION_MOVEMENT_PROVIDERS = {"propline"}
 DEFAULT_PROPLINE_WEBHOOK_LIMIT = 100
 DEFAULT_PROPLINE_WEBHOOK_MAX_AGE_MINUTES = 180
+DEFAULT_PROPLINE_WEBHOOK_NOTIFICATION_MAX_AGE_MINUTES = 20
 
 
 def _env(name: str) -> str:
@@ -157,6 +158,26 @@ def _parse_timestamp(value: Any) -> datetime | None:
     if parsed.tzinfo is None:
         return parsed.replace(tzinfo=timezone.utc)
     return parsed.astimezone(timezone.utc)
+
+
+def _fresh_webhook_movement_rows(
+    rows: list[dict[str, Any]],
+    *,
+    observed_at: datetime,
+    max_age_minutes: int,
+) -> tuple[list[dict[str, Any]], int]:
+    if max_age_minutes <= 0:
+        return rows, 0
+    cutoff = observed_at - timedelta(minutes=max_age_minutes)
+    fresh_rows: list[dict[str, Any]] = []
+    stale_count = 0
+    for row in rows:
+        movement_time = _parse_timestamp(row.get("observed_at"))
+        if movement_time is None or movement_time < cutoff:
+            stale_count += 1
+            continue
+        fresh_rows.append(row)
+    return fresh_rows, stale_count
 
 
 def _latest_table_timestamp(
@@ -618,6 +639,9 @@ def run(
     process_propline_webhooks: bool = False,
     propline_webhook_limit: int = DEFAULT_PROPLINE_WEBHOOK_LIMIT,
     propline_webhook_max_age_minutes: int = DEFAULT_PROPLINE_WEBHOOK_MAX_AGE_MINUTES,
+    propline_webhook_notification_max_age_minutes: int = (
+        DEFAULT_PROPLINE_WEBHOOK_NOTIFICATION_MAX_AGE_MINUTES
+    ),
     send_propline_webhook_movement_notifications: bool = False,
 ) -> dict[str, Any]:
     if artifact_payload is None:
@@ -740,7 +764,15 @@ def run(
                 if key != "movement_rows"
             }
     propline_webhook_notification_rows = []
+    stale_webhook_notification_candidates = 0
     if send_propline_webhook_movement_notifications and propline_webhook_movement_rows:
+        propline_webhook_movement_rows, stale_webhook_notification_candidates = (
+            _fresh_webhook_movement_rows(
+                propline_webhook_movement_rows,
+                observed_at=observed_at,
+                max_age_minutes=propline_webhook_notification_max_age_minutes,
+            )
+        )
         propline_webhook_notification_rows = build_propline_webhook_movement_notification_events(
             slate_date=slate_date,
             live_picks=state_rows,
@@ -863,6 +895,7 @@ def run(
         "notification_events": len(coordinated_notification_rows),
         "line_movement_events": len(line_movement_rows),
         "propline_webhook_notification_events": len(propline_webhook_notification_rows),
+        "stale_propline_webhook_notification_candidates": stale_webhook_notification_candidates,
         "market_pick_evidence": len(market_pick_evidence_rows),
         "live_market_display_state": len(live_market_display_rows),
         "shadow_notification_candidates": len(shadow_notification_candidate_rows),
@@ -920,6 +953,10 @@ def main() -> int:
             "LIVE_PROCESS_PROPLINE_WEBHOOK_MAX_AGE_MINUTES",
             default=DEFAULT_PROPLINE_WEBHOOK_MAX_AGE_MINUTES,
         ),
+        propline_webhook_notification_max_age_minutes=_env_int(
+            "LIVE_PROPLINE_WEBHOOK_NOTIFICATION_MAX_AGE_MINUTES",
+            default=DEFAULT_PROPLINE_WEBHOOK_NOTIFICATION_MAX_AGE_MINUTES,
+        ),
         market_line_min_interval_seconds=_env_int(
             "LIVE_MARKET_LINE_BUILD_MIN_INTERVAL_SECONDS",
             default=600,
@@ -955,7 +992,9 @@ def main() -> int:
             f"movements:{webhooks.get('line_movement_events', 0)}"
         )
     webhook_notification_summary = (
-        f"webhook_notifications={result.get('propline_webhook_notification_events', 0)}"
+        f"webhook_notifications={result.get('propline_webhook_notification_events', 0)} "
+        "stale_webhook_notification_candidates="
+        f"{result.get('stale_propline_webhook_notification_candidates', 0)}"
     )
     market_line_build = result.get("market_line_build") or {"skipped": True}
     if market_line_build.get("skipped"):

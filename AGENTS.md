@@ -478,9 +478,14 @@ Use this provider conservatively:
 ## PropLine API (May 2026 Fallback / DraftKings Provider)
 
 PropLine is the active low-cost fallback, DraftKings coverage source when
-needed, and line-movement sidecar. TheRundown remains the official artifact
-source; PropLine evidence must not replace production odds, picks, model
-behavior, locks, or dashboard source-of-truth without a separate review.
+needed, and live-movement provider. As of Tyler's 2026-06-24 approval,
+live Render preview/full runs may use the explicit non-strict
+`therundown_propline` official mode: curated `official_market_lines` first,
+direct TheRundown fallback, `ENABLE_THERUNDOWN_PROPLINE_PIPELINE_SOURCE=true`,
+and `OFFICIAL_MARKET_STRICT=false`. PropLine webhooks remain movement/timing
+evidence only; they must not replace production odds, picks, model behavior,
+locks, staking, thresholds, or dashboard source-of-truth without a separate
+review.
 
 - **Plan under test**: paid PropLine polling, with a likely downgrade target of
   Hobby if real request usage stays safely under 5,000 requests/day. Webhook
@@ -491,20 +496,26 @@ behavior, locks, or dashboard source-of-truth without a separate review.
 - **Auth**: `X-API-Key` header
 - **MLB sport key**: `baseball_mlb`
 - **Pitcher strikeout market key**: `pitcher_strikeouts`
-- **Target books for this app**: DraftKings, FanDuel, BetRivers, Kalshi.
-  Ignore Bovada, Pinnacle, PrizePicks, Polymarket, and other non-user books
-  unless the user explicitly changes the supported-book list.
+- **PropLine polling/fallback target books**: DraftKings, FanDuel, BetRivers,
+  Kalshi. Ignore Bovada, Pinnacle, PrizePicks, Polymarket, and other non-user
+  books unless the user explicitly changes the supported-book list.
+- **PropLine webhook live-alert supported/actionable books**: FanDuel,
+  DraftKings, BetMGM, BetRivers, Kalshi, Caesars, and theScore/scorebet. This
+  live-alert allow-list is intentionally broader than the polling/fallback
+  target set and still only applies to movement notifications, not official
+  odds-source selection.
 - **Manual probe**: use GitHub Actions `workflow_dispatch` with
   `mode=propline_probe` and an optional `date=YYYY-MM-DD`. It prints returned
   book keys/counts only; it must never print the API key.
 - **Current fallback order**: TheRundown primary → PropLine target-book
   fallback → The Odds FD/DK fallback only if PropLine errors/rate-limits/has
   no usable coverage or still leaves missing FanDuel/DraftKings coverage.
-- **Current checkpoint**: as of 2026-06-17, PropLine is approved only as
-  fallback/live-movement sidecar next to TheRundown official artifacts. Use
+- **Current checkpoint**: as of 2026-06-24, PropLine is approved as part of the
+  non-strict TheRundown+PropLine official provider mode for live preview/full
+  Render runs, with direct TheRundown fallback and strict mode closed. Use
   current-state, the provider cost ledger, and request-usage accounting before
-  downgrading PropLine, changing provider behavior, or changing TheRundown's
-  role.
+  downgrading PropLine, changing strictness, changing notification classes, or
+  changing TheRundown's fallback role.
 - **Current evidence as of 2026-05-19**: polling is useful for fallback,
   partial-provider, and live-movement evidence. Real signed PropLine
   `line_movement` webhook deliveries now appear in
@@ -512,9 +523,11 @@ behavior, locks, or dashboard source-of-truth without a separate review.
   2026-05-19 payload fix adds `bookmaker_key`, `bookmaker_title`, `market_id`,
   and `outcome_id` to `line_movement` and `resolution` deliveries. The
   processor stores those fields when present and keeps a legacy neutral fallback
-  for rows without a sportsbook key. Do not use PropLine webhook rows for
-  production odds, picks, notifications, or provider promotion without a
-  separate review.
+  for rows without a sportsbook key. Webhook evidence processing may use a
+  longer inbox lookback for audit rows, but webhook movement notifications must
+  apply their own freshness gate before queueing. Do not use PropLine webhook
+  rows for production odds, picks, model inputs, staking, or provider promotion
+  without a separate review.
 
 The response shape mirrors The Odds enough to share parser logic:
 `bookmakers[] -> markets[] -> outcomes[]`, where pitcher props use

@@ -8,13 +8,40 @@
 
 **Tech Stack:** Python 3.11 pipeline and diagnostics, Supabase REST/CLI-backed market tables, Render cron wrappers, Netlify functions, pytest, existing vanilla dashboard surfaces.
 
+## Status Update - 2026-06-24
+
+- Tyler approved the narrow production posture change from sidecar-only to
+  explicit non-strict `therundown_propline` official mode for live preview/full
+  Render runs. TheRundown remains the direct fallback and strict mode stays
+  closed.
+- The Render wrapper now sets `OFFICIAL_MARKET_SOURCE=therundown_propline`,
+  `ENABLE_THERUNDOWN_PROPLINE_PIPELINE_SOURCE=true`,
+  `OFFICIAL_MARKET_SOURCE_FALLBACK=therundown`, and
+  `OFFICIAL_MARKET_STRICT=false` for live preview/full runs only. Grading, lock,
+  shadow-prefixed runs, model math, staking, thresholds, and dashboard contracts
+  remain unchanged.
+- PropLine webhook rows remain movement/timing evidence, not official odds
+  source rows. Webhook evidence processing keeps the 180-minute inbox window,
+  but movement notifications now have a separate 20-minute queue-eligibility
+  gate so stale webhook rows can be archived without creating dead
+  notifications.
+- Supported/actionable webhook movement notification books are a live-alert
+  allow-list, not identical to the PropLine polling fallback target set. The
+  current allow-list is FanDuel, DraftKings, BetMGM, BetRivers, Kalshi, Caesars,
+  theScore/scorebet.
+- Next proof step after merge/deploy: verify fresh Render preview/full artifacts
+  show `market_source_mode=therundown_propline` or non-strict TheRundown fallback
+  with no `boltodds_propline`, stale official rows, strict-mode behavior, model
+  changes, or notification noise.
+
 ## Status Update - 2026-06-19
 
 - `therundown_propline` mode support, non-strict TheRundown fallback, retired BoltOdds guards, provider parity CLI fallback, PropLine webhook audit, and cross-book line-conflict fail-closed behavior are implemented on `main`.
 - Render pipeline cron services and `bbe-live-layer` are deployed on `1ec4a726`.
 - Supabase live-layer rollup constraints were widened for `therundown` on `market_pick_evidence`, `live_market_display_state`, and `shadow_notification_candidates`; final live-layer one-off `job-d8qpj8u7r5hc73dflev0` succeeded.
 - Latest parity report for 2026-06-19 is safer but not promotion-ready: line conflict rate is `0.0%`, but provider pitcher coverage is `22/29` (`75.9%`) and official-ready scheduled starter coverage is `21/28` (`75.0%`).
-- Keep the Render official-provider env flip closed. Do not set `OFFICIAL_MARKET_SOURCE=therundown_propline` or `ENABLE_THERUNDOWN_PROPLINE_PIPELINE_SOURCE=true` until coverage survives the plan gates on clean slices.
+- Superseded on 2026-06-24 by Tyler's approval for the non-strict live wrapper
+  flip. Strict mode and any source-of-truth/model promotion remain closed.
 
 ## Global Constraints
 

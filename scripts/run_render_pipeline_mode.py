@@ -134,8 +134,9 @@ def live_official_provider_env_overrides(mode: str, artifact_key_prefix: str) ->
     if artifact_key_prefix or mode not in {"preview", "pipeline"}:
         return {}
     return {
-        "OFFICIAL_MARKET_SOURCE": "therundown",
-        "OFFICIAL_MARKET_SOURCE_FALLBACK": "propline",
+        "OFFICIAL_MARKET_SOURCE": "therundown_propline",
+        "OFFICIAL_MARKET_SOURCE_FALLBACK": "therundown",
+        "ENABLE_THERUNDOWN_PROPLINE_PIPELINE_SOURCE": "true",
         "ENABLE_BOLTODDS_PIPELINE_SOURCE": "false",
         "OFFICIAL_MARKET_STRICT": "false",
     }

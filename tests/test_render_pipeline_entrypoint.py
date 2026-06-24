@@ -80,8 +80,9 @@ def test_live_official_provider_uses_therundown_plus_propline_for_live_preview_a
     for mode in ("preview", "pipeline"):
         overrides = entrypoint.runtime_env_overrides(mode, "")
 
-        assert overrides["OFFICIAL_MARKET_SOURCE"] == "therundown"
-        assert overrides["OFFICIAL_MARKET_SOURCE_FALLBACK"] == "propline"
+        assert overrides["OFFICIAL_MARKET_SOURCE"] == "therundown_propline"
+        assert overrides["OFFICIAL_MARKET_SOURCE_FALLBACK"] == "therundown"
+        assert overrides["ENABLE_THERUNDOWN_PROPLINE_PIPELINE_SOURCE"] == "true"
         assert overrides["ENABLE_BOLTODDS_PIPELINE_SOURCE"] == "false"
         assert overrides["OFFICIAL_MARKET_STRICT"] == "false"
 
