@@ -6,6 +6,7 @@ import {
   buildSenderLog,
   envValue,
   fetchPendingNotificationEvents,
+  isNotificationEventPostStart,
   isNotificationEventStale,
   isLiveNotificationsEnabled,
   notificationMaxAgeMinutes,
@@ -493,6 +494,81 @@ test('enabled sender suppresses stale queue rows instead of sending late alerts'
       send_attempts: 3,
       last_send_error: 'suppressed_stale_live_notification:max_age_minutes=20',
     });
+  } finally {
+    globalThis.fetch = originalFetch;
+    for (const [key, value] of Object.entries(originalEnv)) {
+      if (value === undefined) delete process.env[key];
+      else process.env[key] = value;
+    }
+  }
+});
+
+test('enabled sender suppresses queue rows after listed game time', async () => {
+  const calls = [];
+  const originalFetch = globalThis.fetch;
+  const originalEnv = {
+    NOTIFY_SECRET: process.env.NOTIFY_SECRET,
+    SUPABASE_URL: process.env.SUPABASE_URL,
+    SUPABASE_SERVICE_ROLE_KEY: process.env.SUPABASE_SERVICE_ROLE_KEY,
+    LIVE_NOTIFICATIONS_ENABLED: process.env.LIVE_NOTIFICATIONS_ENABLED,
+    LIVE_NOTIFICATION_MAX_EVENT_AGE_MINUTES: process.env.LIVE_NOTIFICATION_MAX_EVENT_AGE_MINUTES,
+  };
+  const gameTime = new Date(Date.now() - 60 * 1000).toISOString();
+  process.env.NOTIFY_SECRET = 'notify-secret';
+  process.env.SUPABASE_URL = 'https://example.supabase.co';
+  process.env.SUPABASE_SERVICE_ROLE_KEY = 'service-key';
+  process.env.LIVE_NOTIFICATIONS_ENABLED = 'true';
+  process.env.LIVE_NOTIFICATION_MAX_EVENT_AGE_MINUTES = '20';
+
+  globalThis.fetch = async (url, options = {}) => {
+    calls.push({ url, options });
+    if (!options.method || options.method === 'GET') {
+      return new Response(JSON.stringify([{
+        id: 'event-post-start',
+        slate_date: '2026-05-24',
+        event_type: 'line_moved_against_us',
+        severity: 'action',
+        title: 'Line Worse Now',
+        body: 'Old movement',
+        dedupe_key: 'event-post-start-key',
+        occurred_at: new Date().toISOString(),
+        send_attempts: 0,
+        payload: {
+          pitcher: 'Tarik Skubal',
+          side: 'over',
+          game_time: gameTime,
+        },
+      }]), {
+        status: 200,
+        headers: { 'Content-Type': 'application/json' },
+      });
+    }
+    return new Response('', { status: 200 });
+  };
+
+  try {
+    assert.equal(isNotificationEventPostStart({
+      payload: { game_time: gameTime },
+    }), true);
+
+    const response = await sendLiveNotificationsNow(new Request('https://example.test/api/send-live-notifications-now', {
+      method: 'POST',
+      headers: { 'x-notify-secret': 'notify-secret' },
+      body: JSON.stringify({ limit: 1 }),
+    }));
+    const payload = await response.json();
+    const patchCall = calls.find((call) => call.options.method === 'PATCH');
+    const patchBody = JSON.parse(patchCall.options.body);
+
+    assert.equal(response.status, 200);
+    assert.equal(payload.sent, 0);
+    assert.equal(payload.staleSuppressed, 0);
+    assert.equal(payload.postStartSuppressed, 1);
+    assert.equal(payload.message, 'No fresh live notifications');
+    assert.ok(patchCall);
+    assert.match(patchCall.url, /\/rest\/v1\/notification_events\?id=eq\.event-post-start/);
+    assert.equal(patchBody.send_attempts, 3);
+    assert.match(patchBody.last_send_error, /^suppressed_post_start_live_notification:game_time=/);
   } finally {
     globalThis.fetch = originalFetch;
     for (const [key, value] of Object.entries(originalEnv)) {

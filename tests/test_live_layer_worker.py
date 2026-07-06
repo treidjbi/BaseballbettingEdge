@@ -642,10 +642,74 @@ def test_worker_writes_line_movement_events_from_snapshot_history(tmp_path):
     assert result["line_movement_events"] == 1
     assert result["line_movement_rows"][0]["source_snapshot_id"] == "snapshot-new"
     assert result["line_movement_rows"][0]["metadata"]["provider_event_id"] == "game-1"
+    movement_notification = next(
+        row
+        for row in result["notification_rows"]
+        if row["event_type"] == "line_moved_with_us"
+    )
+    assert movement_notification["payload"]["game_time"] == "2026-05-06T22:10:00Z"
+    assert movement_notification["payload"]["game_state"] == "scheduled"
     writer.upsert_rows.assert_any_call(
         "line_movement_events",
         result["line_movement_rows"],
         on_conflict="dedupe_key",
+    )
+
+
+def test_worker_suppresses_post_start_line_movement_notifications(tmp_path):
+    pitcher = _fire_pitcher(game_time="2026-05-06T17:55:00Z")
+    today = _write_artifact(tmp_path, [pitcher])
+    writer = _writer_with_selects({
+        "live_pick_state": [],
+        "market_snapshots": [
+            {
+                "id": "snapshot-old",
+                "provider": "propline",
+                "provider_event_id": "game-1",
+                "normalized_player_name": "tarik skubal",
+                "player_name": "Tarik Skubal",
+                "bookmaker_key": "fanduel",
+                "side": "over",
+                "line": 6.5,
+                "american_odds": -110,
+                "observed_at": "2026-05-06T17:50:00+00:00",
+            },
+            {
+                "id": "snapshot-new",
+                "provider": "propline",
+                "provider_event_id": "game-1",
+                "normalized_player_name": "tarik skubal",
+                "player_name": "Tarik Skubal",
+                "bookmaker_key": "fanduel",
+                "side": "over",
+                "line": 5.5,
+                "american_odds": -112,
+                "observed_at": "2026-05-06T18:00:00+00:00",
+            },
+        ],
+        "game_reminder_state": [],
+    })
+
+    with (
+        patch.object(build_live_events_to_supabase, "SupabaseMarketWriter", return_value=writer),
+        patch.object(
+            build_live_events_to_supabase,
+            "_now_utc",
+            return_value=build_live_events_to_supabase.datetime.fromisoformat("2026-05-06T18:00:00+00:00"),
+        ),
+    ):
+        result = build_live_events_to_supabase.run(
+            slate_date="2026-05-06",
+            artifact_path=today,
+            supabase_url="https://example.supabase.co",
+            service_role_key="secret",
+        )
+
+    assert result["line_movement_events"] == 0
+    assert result["line_movement_rows"] == []
+    assert all(
+        row["event_type"] not in {"line_moved_with_us", "line_moved_against_us"}
+        for row in result["notification_rows"]
     )
 
 
@@ -1402,6 +1466,72 @@ def test_worker_processes_old_propline_webhooks_without_queuing_stale_notificati
     assert processor.call_args.kwargs["received_after"] is not None
     assert result["propline_webhooks"]["line_movement_events"] == 1
     assert result["propline_webhook_notification_events"] == 0
+
+
+def test_worker_suppresses_post_start_propline_webhook_movement_notifications(tmp_path):
+    today = _write_artifact(tmp_path, [_fire_pitcher(game_time="2026-05-06T17:55:00Z")])
+    writer = _writer_with_selects({
+        "live_pick_state": [],
+        "market_snapshots": [],
+        "game_reminder_state": [],
+    })
+
+    webhook_row = {
+        "slate_date": "2026-05-06",
+        "normalized_pitcher": "tarik skubal",
+        "pitcher": "Tarik Skubal",
+        "side": "over",
+        "bookmaker_key": "fanduel",
+        "previous_line": 6.5,
+        "current_line": 5.5,
+        "previous_odds": -130,
+        "current_odds": -125,
+        "movement_direction": "neutral",
+        "movement_kind": "line_and_odds",
+        "observed_at": "2026-05-06T18:00:00+00:00",
+        "dedupe_key": "2026-05-06:propline_webhook:delivery-1",
+        "source_snapshot_id": None,
+        "metadata": {
+            "bookmaker_key_missing": False,
+            "prop_line_delivery_id": "delivery-1",
+            "prop_line_event_id": "game-1",
+            "source": "propline_webhook",
+        },
+    }
+
+    def process_webhooks(*args, **kwargs):
+        return {
+            "deliveries": 1,
+            "processed": 1,
+            "line_movement_events": 1,
+            "unsupported": 0,
+            "movement_rows": [webhook_row],
+        }
+
+    with (
+        patch.object(build_live_events_to_supabase, "SupabaseMarketWriter", return_value=writer),
+        patch.object(
+            build_live_events_to_supabase,
+            "process_propline_webhook_deliveries",
+            side_effect=process_webhooks,
+        ),
+        patch.object(
+            build_live_events_to_supabase,
+            "_now_utc",
+            return_value=build_live_events_to_supabase.datetime.fromisoformat("2026-05-06T18:00:00+00:00"),
+        ),
+    ):
+        result = build_live_events_to_supabase.run(
+            slate_date="2026-05-06",
+            artifact_path=today,
+            supabase_url="https://example.supabase.co",
+            service_role_key="secret",
+            process_propline_webhooks=True,
+            send_propline_webhook_movement_notifications=True,
+        )
+
+    assert result["propline_webhook_notification_events"] == 0
+    assert result["propline_webhook_notification_rows"] == []
 
 
 def test_worker_can_build_shadow_market_lines_after_live_state(tmp_path):

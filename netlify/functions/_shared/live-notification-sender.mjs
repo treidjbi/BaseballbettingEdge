@@ -44,6 +44,18 @@ export function isNotificationEventStale(row, {
   return nowDate.getTime() - occurredAt.getTime() > maxAgeMinutes * 60 * 1000;
 }
 
+export function isNotificationEventPostStart(row, {
+  now = new Date(),
+} = {}) {
+  const payload = row?.payload && typeof row.payload === 'object' ? row.payload : {};
+  const gameTimeValue = payload.game_time;
+  if (!gameTimeValue) return false;
+  const gameTime = new Date(gameTimeValue);
+  const nowDate = now instanceof Date ? now : new Date(now);
+  if (Number.isNaN(gameTime.getTime()) || Number.isNaN(nowDate.getTime())) return false;
+  return nowDate.getTime() >= gameTime.getTime();
+}
+
 export function buildNotificationClickUrl(row) {
   const baseUrl = String(row?.url || '/').trim() || '/';
   if (baseUrl !== '/' && baseUrl !== '/v2.html') return baseUrl;
@@ -187,6 +199,20 @@ async function markStale({ supabaseUrl, serviceRoleKey, row, maxAgeMinutes }) {
   });
 }
 
+async function markPostStart({ supabaseUrl, serviceRoleKey, row }) {
+  const payload = row?.payload && typeof row.payload === 'object' ? row.payload : {};
+  const gameTime = String(payload.game_time || '').slice(0, 120);
+  await patchNotificationEvent({
+    supabaseUrl,
+    serviceRoleKey,
+    id: row.id,
+    patch: {
+      send_attempts: 3,
+      last_send_error: `suppressed_post_start_live_notification:game_time=${gameTime}`,
+    },
+  });
+}
+
 async function loadSubscriptions() {
   const { getStore } = await import('@netlify/blobs');
   const subStore = getStore({ name: 'push-subscriptions', consistency: 'strong' });
@@ -264,7 +290,9 @@ export async function sendLiveNotifications(req, { requiresSharedSecret }) {
   const maxAgeMinutes = notificationMaxAgeMinutes(envValue('LIVE_NOTIFICATION_MAX_EVENT_AGE_MINUTES'));
   const now = new Date();
   const staleRows = pending.filter((row) => isNotificationEventStale(row, { now, maxAgeMinutes }));
-  const freshRows = pending.filter((row) => !isNotificationEventStale(row, { now, maxAgeMinutes }));
+  const nonStaleRows = pending.filter((row) => !isNotificationEventStale(row, { now, maxAgeMinutes }));
+  const postStartRows = nonStaleRows.filter((row) => isNotificationEventPostStart(row, { now }));
+  const freshRows = nonStaleRows.filter((row) => !isNotificationEventPostStart(row, { now }));
 
   if (body?.smoke_check === true) {
     let subscriptions;
@@ -286,6 +314,7 @@ export async function sendLiveNotifications(req, { requiresSharedSecret }) {
       enabled,
       pending: pending.length,
       stale: staleRows.length,
+      postStart: postStartRows.length,
       subscribers: subscriptions.length,
       sends: 0,
     });
@@ -314,6 +343,9 @@ export async function sendLiveNotifications(req, { requiresSharedSecret }) {
   for (const row of staleRows) {
     await markStale({ supabaseUrl, serviceRoleKey, row, maxAgeMinutes });
   }
+  for (const row of postStartRows) {
+    await markPostStart({ supabaseUrl, serviceRoleKey, row });
+  }
 
   if (freshRows.length === 0) {
     console.log(buildSenderLog({
@@ -327,6 +359,7 @@ export async function sendLiveNotifications(req, { requiresSharedSecret }) {
       sent: 0,
       pending: 0,
       staleSuppressed: staleRows.length,
+      postStartSuppressed: postStartRows.length,
       message: 'No fresh live notifications',
     });
   }
@@ -361,6 +394,7 @@ export async function sendLiveNotifications(req, { requiresSharedSecret }) {
       sent: 0,
       pending: freshRows.length,
       staleSuppressed: staleRows.length,
+      postStartSuppressed: postStartRows.length,
       subscribers: 0,
       message: 'No subscribers',
     });
@@ -410,6 +444,7 @@ export async function sendLiveNotifications(req, { requiresSharedSecret }) {
     failed,
     notifications: freshRows.length,
     staleSuppressed: staleRows.length,
+    postStartSuppressed: postStartRows.length,
     subscribers: subscriptions.length,
     staleRemoved: staleKeys.size,
   });

@@ -130,6 +130,16 @@ def _parse_datetime(value: datetime | str) -> datetime:
     return datetime.fromisoformat(str(value).replace("Z", "+00:00"))
 
 
+def _is_post_start_pick(pick: dict[str, Any], observed_at: Any) -> bool:
+    game_time = pick.get("game_time")
+    if not game_time or not observed_at:
+        return False
+    try:
+        return _parse_datetime(observed_at) >= _parse_datetime(game_time)
+    except (TypeError, ValueError):
+        return False
+
+
 def _reminder_dedupe_keys(existing_reminders: Any) -> set[str]:
     keys: set[str] = set()
     for reminder in existing_reminders or []:
@@ -430,6 +440,8 @@ def build_line_movement_events(
     for pick in live_picks:
         if not _is_fire(pick.get("current_verdict")):
             continue
+        if _is_locked_state_row(pick):
+            continue
         pitcher_name = str(pick.get("pitcher") or "").strip()
         normalized_pitcher = str(pick.get("normalized_pitcher") or normalize(pitcher_name)).strip()
         side = str(pick.get("side") or "").strip().lower()
@@ -458,6 +470,8 @@ def build_line_movement_events(
             continue
         pick = actionable.get((normalized, side))
         if pick is None:
+            continue
+        if _is_post_start_pick(pick, snapshot.get("observed_at")):
             continue
 
         previous_line = _numeric(previous.get("line"))
@@ -538,6 +552,9 @@ def build_line_movement_events(
                 "bet_value_direction": bet_value_direction,
                 "movement_kind": movement_kind,
                 "source_snapshot_id": snapshot.get("id"),
+                "game_time": pick.get("game_time"),
+                "game_state": pick.get("game_state"),
+                "is_locked": pick.get("is_locked"),
             },
             "occurred_at": snapshot.get("observed_at"),
         })
@@ -553,6 +570,8 @@ def build_propline_webhook_movement_notification_events(
     actionable: dict[tuple[str, str], dict[str, Any]] = {}
     for pick in live_picks:
         if not _is_fire(pick.get("current_verdict")):
+            continue
+        if _is_locked_state_row(pick):
             continue
         pitcher_name = str(pick.get("pitcher") or "").strip()
         normalized_pitcher = str(pick.get("normalized_pitcher") or normalize(pitcher_name)).strip()
@@ -576,6 +595,8 @@ def build_propline_webhook_movement_notification_events(
         book = str(row.get("bookmaker_key") or "").strip().lower()
         pick = actionable.get((normalized, side))
         if pick is None or side not in {"over", "under"} or book not in PROPLINE_WEBHOOK_NOTIFICATION_BOOKS:
+            continue
+        if _is_post_start_pick(pick, row.get("observed_at")):
             continue
 
         previous_line = _numeric(row.get("previous_line"))
@@ -662,6 +683,9 @@ def build_propline_webhook_movement_notification_events(
                 "source": "propline_webhook",
                 "source_line_movement_dedupe_key": row.get("dedupe_key"),
                 "prop_line_delivery_id": metadata.get("prop_line_delivery_id"),
+                "game_time": pick.get("game_time"),
+                "game_state": pick.get("game_state"),
+                "is_locked": pick.get("is_locked"),
             },
             "occurred_at": row.get("observed_at"),
         })
