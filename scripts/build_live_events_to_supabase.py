@@ -213,19 +213,34 @@ def _build_due(
 
 def _snapshot_pairs(rows: list[dict[str, Any]]) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
     by_key: dict[tuple[str, str, str, str], list[dict[str, Any]]] = {}
+    by_key_line: dict[tuple[str, str, str, str, str], list[dict[str, Any]]] = {}
     for row in rows:
         provider_event_id = str(row.get("provider_event_id") or "").strip()
         book = str(row.get("bookmaker_key") or "").strip()
         normalized = str(row.get("normalized_player_name") or "").strip()
         side = str(row.get("side") or "").strip().lower()
         if provider_event_id and book and normalized and side in {"over", "under"}:
-            by_key.setdefault((provider_event_id, book, normalized, side), []).append(row)
+            base_key = (provider_event_id, book, normalized, side)
+            by_key.setdefault(base_key, []).append(row)
+            line = str(row.get("line") or "").strip()
+            if line:
+                by_key_line.setdefault((*base_key, line), []).append(row)
 
     previous: list[dict[str, Any]] = []
     current: list[dict[str, Any]] = []
+    for snapshots in by_key_line.values():
+        ordered = sorted(snapshots, key=lambda row: str(row.get("observed_at") or ""))
+        if len(ordered) < 2:
+            continue
+        previous.append(ordered[-2])
+        current.append(ordered[-1])
+
     for snapshots in by_key.values():
         ordered = sorted(snapshots, key=lambda row: str(row.get("observed_at") or ""))
         if len(ordered) < 2:
+            continue
+        distinct_lines = {str(row.get("line") or "").strip() for row in ordered if str(row.get("line") or "").strip()}
+        if len(ordered) != 2 or len(distinct_lines) != 2:
             continue
         previous.append(ordered[-2])
         current.append(ordered[-1])

@@ -656,6 +656,92 @@ def test_worker_writes_line_movement_events_from_snapshot_history(tmp_path):
     )
 
 
+def test_worker_ignores_multi_line_ladder_as_line_movement(tmp_path):
+    pitcher = _fire_pitcher(pitcher="Joey Cantillo")
+    pitcher["k_line"] = 4.5
+    pitcher["best_over_odds"] = -170
+    today = _write_artifact(tmp_path, [pitcher])
+    previous_state = _previous_fire_state("Joey Cantillo", game_time="2026-05-06T22:10:00Z")
+    previous_state["normalized_pitcher"] = "joey cantillo"
+    previous_state["k_line"] = 4.5
+    previous_state["current_odds"] = -170
+    writer = _writer_with_selects({
+        "live_pick_state": [previous_state],
+        "market_snapshots": [
+            {
+                "id": "snapshot-old-alt",
+                "provider": "propline",
+                "provider_event_id": "game-1",
+                "normalized_player_name": "joey cantillo",
+                "player_name": "Joey Cantillo",
+                "bookmaker_key": "kalshi",
+                "side": "over",
+                "line": 2.5,
+                "american_odds": -900,
+                "observed_at": "2026-05-06T17:50:00+00:00",
+            },
+            {
+                "id": "snapshot-old-pick",
+                "provider": "propline",
+                "provider_event_id": "game-1",
+                "normalized_player_name": "joey cantillo",
+                "player_name": "Joey Cantillo",
+                "bookmaker_key": "kalshi",
+                "side": "over",
+                "line": 4.5,
+                "american_odds": -170,
+                "observed_at": "2026-05-06T17:50:00+00:00",
+            },
+            {
+                "id": "snapshot-current-pick",
+                "provider": "propline",
+                "provider_event_id": "game-1",
+                "normalized_player_name": "joey cantillo",
+                "player_name": "Joey Cantillo",
+                "bookmaker_key": "kalshi",
+                "side": "over",
+                "line": 4.5,
+                "american_odds": -170,
+                "observed_at": "2026-05-06T18:00:00+00:00",
+            },
+            {
+                "id": "snapshot-current-alt",
+                "provider": "propline",
+                "provider_event_id": "game-1",
+                "normalized_player_name": "joey cantillo",
+                "player_name": "Joey Cantillo",
+                "bookmaker_key": "kalshi",
+                "side": "over",
+                "line": 3.5,
+                "american_odds": -355,
+                "observed_at": "2026-05-06T18:00:00+00:00",
+            },
+        ],
+        "game_reminder_state": [],
+    })
+
+    with (
+        patch.object(build_live_events_to_supabase, "SupabaseMarketWriter", return_value=writer),
+        patch.object(
+            build_live_events_to_supabase,
+            "_now_utc",
+            return_value=build_live_events_to_supabase.datetime.fromisoformat("2026-05-06T18:00:00+00:00"),
+        ),
+    ):
+        result = build_live_events_to_supabase.run(
+            slate_date="2026-05-06",
+            artifact_path=today,
+            supabase_url="https://example.supabase.co",
+            service_role_key="secret",
+        )
+
+    assert result["line_movement_events"] == 0
+    assert all(
+        row["event_type"] not in {"line_moved_with_us", "line_moved_against_us"}
+        for row in result["notification_rows"]
+    )
+
+
 def test_worker_suppresses_post_start_line_movement_notifications(tmp_path):
     pitcher = _fire_pitcher(game_time="2026-05-06T17:55:00Z")
     today = _write_artifact(tmp_path, [pitcher])
