@@ -51,3 +51,34 @@ The test output also showed the existing sender still suppresses stale rows and 
 
 - This task only verifies sender compatibility; it does not exercise the full live-layer production path end to end.
 - The new coverage is intentionally unit-level, so it depends on the sender helper contract staying stable.
+
+---
+
+## Fix Report: Sender-Level Review Findings
+
+## What Changed
+
+- Added sender-level tests in `tests/test_send_live_notifications_function.mjs` that drive `sendLiveNotificationsNow` through the existing queue, subscription, and push flow.
+- Verified `mainline_best_price_changed` produces exactly one push attempt with the expected title, tag, and payload fields.
+- Verified post-start suppression for the same event type through the sender flow, without relying only on the helper-level `isNotificationEventPostStart` check.
+- Kept the change scoped to the test file only.
+
+## Test Command
+
+```bash
+node --test tests/test_send_live_notifications_function.mjs
+```
+
+## Test Result
+
+- `20 tests`
+- `20 pass`
+- `0 fail`
+
+## Files Changed
+
+- `tests/test_send_live_notifications_function.mjs`
+
+## Concerns
+
+- Coverage is still unit-level around the Netlify sender boundary; it does not exercise the deployed function in Netlify.

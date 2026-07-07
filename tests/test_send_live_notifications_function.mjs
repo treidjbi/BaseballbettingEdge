@@ -1,5 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { registerHooks } from 'node:module';
 
 import {
   buildPushPayload,
@@ -17,6 +18,120 @@ import sendLiveNotificationsNow, {
 import sendLiveNotificationsScheduled, {
   config as scheduledConfig,
 } from '../netlify/functions/send-live-notifications.mjs';
+
+const notificationTestState = globalThis.__bbeNotificationTestState ??= {
+  webPush: {
+    setVapidDetailsCalls: [],
+    sendNotificationCalls: [],
+  },
+  blobs: {
+    listCalls: 0,
+    getCalls: [],
+    deleteCalls: [],
+    subscriptions: {},
+    listBlobs: [],
+  },
+};
+
+registerHooks({
+  resolve(specifier, context, nextResolve) {
+    if (specifier === 'web-push') return { url: 'mock:web-push', shortCircuit: true };
+    if (specifier === '@netlify/blobs') return { url: 'mock:@netlify/blobs', shortCircuit: true };
+    return nextResolve(specifier, context);
+  },
+  load(url, context, nextLoad) {
+    if (url === 'mock:web-push') {
+      return {
+        format: 'module',
+        shortCircuit: true,
+        source: `
+          const runtime = globalThis.__bbeNotificationTestState;
+          export default {
+            setVapidDetails(...args) {
+              runtime.webPush.setVapidDetailsCalls.push(args);
+            },
+            async sendNotification(subscription, payload) {
+              runtime.webPush.sendNotificationCalls.push({ subscription, payload });
+            },
+          };
+        `,
+      };
+    }
+    if (url === 'mock:@netlify/blobs') {
+      return {
+        format: 'module',
+        shortCircuit: true,
+        source: `
+          export function getStore() {
+            const runtime = globalThis.__bbeNotificationTestState;
+            return {
+              async list() {
+                runtime.blobs.listCalls += 1;
+                return { blobs: runtime.blobs.listBlobs };
+              },
+              async get(key, options) {
+                runtime.blobs.getCalls.push({ key, options });
+                return runtime.blobs.subscriptions[key] || null;
+              },
+              async delete(key) {
+                runtime.blobs.deleteCalls.push(key);
+                delete runtime.blobs.subscriptions[key];
+              },
+            };
+          }
+        `,
+      };
+    }
+    return nextLoad(url, context);
+  },
+});
+
+function resetNotificationTestState() {
+  notificationTestState.webPush.setVapidDetailsCalls.length = 0;
+  notificationTestState.webPush.sendNotificationCalls.length = 0;
+  notificationTestState.blobs.listCalls = 0;
+  notificationTestState.blobs.getCalls.length = 0;
+  notificationTestState.blobs.deleteCalls.length = 0;
+  notificationTestState.blobs.subscriptions = {};
+  notificationTestState.blobs.listBlobs = [];
+}
+
+function eventRow(overrides = {}) {
+  return {
+    id: 'event-1',
+    slate_date: '2026-07-07',
+    event_type: 'mainline_best_price_changed',
+    severity: 'action',
+    title: 'Best Price Better Now',
+    body: 'Jacob Misiorowski OVER 7.5 best price -120->-105 at fanduel; same main line, price better',
+    dedupe_key: '2026-07-07:mainline_best_price:propline:jacob misiorowski:over:7.5:-120:fanduel:-105',
+    occurred_at: '2099-07-07T18:30:00Z',
+    payload: {
+      pitcher: 'Jacob Misiorowski',
+      normalized_pitcher: 'jacob misiorowski',
+      side: 'over',
+      provider: 'propline',
+      k_line: 7.5,
+      previous_best_book: 'fanduel',
+      previous_best_odds: -120,
+      current_best_book: 'fanduel',
+      current_best_odds: -105,
+      price_delta: 15,
+      game_time: '2099-07-07T23:40:00Z',
+    },
+    ...overrides,
+  };
+}
+
+function subscriptionRow(key = 'sub-1') {
+  return {
+    key,
+    subscription: {
+      endpoint: 'https://push.example.test/send/sub-1',
+      keys: { p256dh: 'p256dh-key', auth: 'auth-key' },
+    },
+  };
+}
 
 test('isLiveNotificationsEnabled is false unless explicitly enabled', () => {
   assert.equal(isLiveNotificationsEnabled(''), false);
@@ -72,27 +187,7 @@ test('buildPushPayload adds alert attribution context to default click urls', ()
 });
 
 test('buildPushPayload keeps mainline best price rows on the generic sender path', () => {
-  const row = {
-    id: 'mainline-price-1',
-    title: 'Best Price Better Now',
-    body: 'Jacob Misiorowski OVER 7.5 best price -120->-105 at fanduel; same main line, price better',
-    dedupe_key: '2026-07-07:mainline_best_price:propline:jacob misiorowski:over:7.5:-120:fanduel:-105',
-    event_type: 'mainline_best_price_changed',
-    payload: {
-      pitcher: 'Jacob Misiorowski',
-      normalized_pitcher: 'jacob misiorowski',
-      side: 'over',
-      provider: 'propline',
-      k_line: 7.5,
-      previous_best_book: 'fanduel',
-      previous_best_odds: -120,
-      current_best_book: 'fanduel',
-      current_best_odds: -105,
-      price_delta: 15,
-      game_time: '2026-07-07T23:40:00Z',
-    },
-  };
-
+  const row = eventRow();
   const payload = buildPushPayload(row);
 
   assert.equal(payload.title, row.title);
@@ -101,9 +196,147 @@ test('buildPushPayload keeps mainline best price rows on the generic sender path
   assert.equal(payload.data.eventType, 'mainline_best_price_changed');
   assert.equal(payload.data.payload.current_best_odds, -105);
   assert.equal(
-    isNotificationEventPostStart(row, { now: new Date('2026-07-07T23:40:00Z') }),
+    isNotificationEventPostStart(
+      eventRow({
+        payload: {
+          ...eventRow().payload,
+          game_time: '2026-07-07T23:40:00Z',
+        },
+      }),
+      { now: new Date('2026-07-07T23:40:00Z') },
+    ),
     true,
   );
+});
+
+test('sender sends mainline best price rows through the existing push flow', async () => {
+  resetNotificationTestState();
+  const calls = [];
+  const originalFetch = globalThis.fetch;
+  const originalEnv = {
+    NOTIFY_SECRET: process.env.NOTIFY_SECRET,
+    SUPABASE_URL: process.env.SUPABASE_URL,
+    SUPABASE_SERVICE_ROLE_KEY: process.env.SUPABASE_SERVICE_ROLE_KEY,
+    LIVE_NOTIFICATIONS_ENABLED: process.env.LIVE_NOTIFICATIONS_ENABLED,
+    VAPID_PUBLIC_KEY: process.env.VAPID_PUBLIC_KEY,
+    VAPID_PRIVATE_KEY: process.env.VAPID_PRIVATE_KEY,
+    VAPID_SUBJECT: process.env.VAPID_SUBJECT,
+  };
+  process.env.NOTIFY_SECRET = 'notify-secret';
+  process.env.SUPABASE_URL = 'https://example.supabase.co';
+  process.env.SUPABASE_SERVICE_ROLE_KEY = 'service-key';
+  process.env.LIVE_NOTIFICATIONS_ENABLED = 'true';
+  process.env.VAPID_PUBLIC_KEY = 'public-key';
+  process.env.VAPID_PRIVATE_KEY = 'private-key';
+  process.env.VAPID_SUBJECT = 'mailto:test@example.com';
+  notificationTestState.blobs.listBlobs = [subscriptionRow()];
+  notificationTestState.blobs.subscriptions = {
+    'sub-1': subscriptionRow().subscription,
+  };
+
+  globalThis.fetch = async (url, options = {}) => {
+    calls.push({ url, options });
+    if (!options.method || options.method === 'GET') {
+      return new Response(JSON.stringify([eventRow()]), {
+        status: 200,
+        headers: { 'Content-Type': 'application/json' },
+      });
+    }
+    return new Response('', { status: 200 });
+  };
+
+  try {
+    const response = await sendLiveNotificationsNow(new Request('https://example.test/api/send-live-notifications-now', {
+      method: 'POST',
+      headers: { 'x-notify-secret': 'notify-secret' },
+      body: JSON.stringify({ limit: 1 }),
+    }));
+    const payload = await response.json();
+
+    assert.equal(response.status, 200);
+    assert.equal(payload.sent, 1);
+    assert.equal(payload.notifications, 1);
+    assert.equal(notificationTestState.webPush.sendNotificationCalls.length, 1);
+    assert.equal(notificationTestState.webPush.setVapidDetailsCalls.length, 1);
+    assert.equal(calls.filter((call) => !call.options.method || call.options.method === 'GET').length, 1);
+    const pushPayload = JSON.parse(notificationTestState.webPush.sendNotificationCalls[0].payload);
+    assert.equal(pushPayload.title, 'Best Price Better Now');
+    assert.equal(pushPayload.tag, eventRow().dedupe_key);
+    assert.equal(pushPayload.data.eventType, 'mainline_best_price_changed');
+    assert.equal(pushPayload.data.payload.current_best_odds, -105);
+  } finally {
+    globalThis.fetch = originalFetch;
+    for (const [key, value] of Object.entries(originalEnv)) {
+      if (value === undefined) delete process.env[key];
+      else process.env[key] = value;
+    }
+  }
+});
+
+test('sender suppresses post-start mainline best price rows through the same flow', async () => {
+  resetNotificationTestState();
+  const calls = [];
+  const originalFetch = globalThis.fetch;
+  const originalEnv = {
+    NOTIFY_SECRET: process.env.NOTIFY_SECRET,
+    SUPABASE_URL: process.env.SUPABASE_URL,
+    SUPABASE_SERVICE_ROLE_KEY: process.env.SUPABASE_SERVICE_ROLE_KEY,
+    LIVE_NOTIFICATIONS_ENABLED: process.env.LIVE_NOTIFICATIONS_ENABLED,
+    VAPID_PUBLIC_KEY: process.env.VAPID_PUBLIC_KEY,
+    VAPID_PRIVATE_KEY: process.env.VAPID_PRIVATE_KEY,
+    VAPID_SUBJECT: process.env.VAPID_SUBJECT,
+  };
+  process.env.NOTIFY_SECRET = 'notify-secret';
+  process.env.SUPABASE_URL = 'https://example.supabase.co';
+  process.env.SUPABASE_SERVICE_ROLE_KEY = 'service-key';
+  process.env.LIVE_NOTIFICATIONS_ENABLED = 'true';
+  process.env.VAPID_PUBLIC_KEY = 'public-key';
+  process.env.VAPID_PRIVATE_KEY = 'private-key';
+  process.env.VAPID_SUBJECT = 'mailto:test@example.com';
+  notificationTestState.blobs.listBlobs = [subscriptionRow()];
+  notificationTestState.blobs.subscriptions = {
+    'sub-1': subscriptionRow().subscription,
+  };
+
+  const row = eventRow({
+    payload: {
+      ...eventRow().payload,
+      occurred_at: '2099-07-07T18:30:00Z',
+      game_time: '2026-07-06T18:35:00Z',
+    },
+  });
+
+  globalThis.fetch = async (url, options = {}) => {
+    calls.push({ url, options });
+    if (!options.method || options.method === 'GET') {
+      return new Response(JSON.stringify([row]), {
+        status: 200,
+        headers: { 'Content-Type': 'application/json' },
+      });
+    }
+    return new Response('', { status: 200 });
+  };
+
+  try {
+    const response = await sendLiveNotificationsNow(new Request('https://example.test/api/send-live-notifications-now', {
+      method: 'POST',
+      headers: { 'x-notify-secret': 'notify-secret' },
+      body: JSON.stringify({ limit: 1 }),
+    }));
+    const payload = await response.json();
+
+    assert.equal(response.status, 200);
+    assert.equal(payload.sent, 0);
+    assert.equal(payload.postStartSuppressed, 1);
+    assert.equal(notificationTestState.webPush.sendNotificationCalls.length, 0);
+    assert.equal(calls.some((call) => call.options.method === 'PATCH'), true);
+  } finally {
+    globalThis.fetch = originalFetch;
+    for (const [key, value] of Object.entries(originalEnv)) {
+      if (value === undefined) delete process.env[key];
+      else process.env[key] = value;
+    }
+  }
 });
 
 test('buildSenderLog produces inspectable non-secret telemetry', () => {
