@@ -10,10 +10,62 @@
 
 Date: 2026-07-07
 Owner: Tyler + Codex
-Status: Implemented in code, verified locally, default `off`, and not promoted
-to `shadow` or `send`. Safe-subset verification completed on 2026-07-07 in the
-`codex/mainline-best-price-notifications` worktree without applying migrations,
-changing Render env vars, deploying, or pushing.
+Status: Implemented, merged to `main`, Supabase migration applied, deployed to
+Render `bbe-live-layer`, and promoted directly to `send` on 2026-07-07 after
+Tyler explicitly approved skipping shadow. `LIVE_MAINLINE_PRICE_MIN_CENTS=10`
+is active. This changes only live notification event creation; it does not
+change model math, provider order, official artifacts, thresholds, staking,
+locks, retention, dashboard source-of-truth, or grading.
+
+## 2026-07-07 Direct Send Promotion Checkpoint
+
+Tyler approved skipping shadow and rolling the policy straight to `send`.
+Production rollout evidence:
+
+- Local `main` fast-forwarded from `4d4ae7b` to `8871b3c3`, then pushed to
+  `origin/main`.
+- `npx supabase db push --linked --dry-run` showed only
+  `20260707190000_mainline_price_notification_event_type.sql`.
+- `npx supabase db push --linked --yes` applied that migration; live constraint
+  verification showed `notification_events_event_type_check` allows
+  `mainline_best_price_changed`.
+- Render `bbe-live-layer` env vars were set directly on service
+  `crn-d7tpb19o3t8c739p3qig`:
+  `LIVE_MAINLINE_PRICE_NOTIFICATION_MODE=send` and
+  `LIVE_MAINLINE_PRICE_MIN_CENTS=10`.
+- Render deploy `dep-d96m057avr4c73a2f85g` is live on commit `8871b3c3`.
+- First verified scheduled run after deploy:
+  `observed_at=2026-07-07T20:30:29.605579Z`,
+  `inserted_at=2026-07-07T20:30:48.312039Z`,
+  `mainline_best_price.mode=send`, `input_count=38`,
+  `candidate_count=0`, `notification_count=0`,
+  `below_threshold_count=2`, `unchanged_count=4`,
+  `suppressed_locked_count=2`.
+- `notification_events` had zero `mainline_best_price_changed` rows after the
+  deploy because no qualifying best-price transition occurred on the first
+  verified tick.
+
+Netlify note: the branch did not modify `netlify/functions/`, dashboard assets,
+or `netlify.toml`; sender compatibility was test-only. A manual Netlify deploy
+attempt returned a 500 upload error, but no Netlify code deploy was required for
+this rollout because the existing sender already sends generic title/body/payload
+notification rows and applies post-start suppression.
+
+Rollback:
+
+- Set `LIVE_MAINLINE_PRICE_NOTIFICATION_MODE=off` on Render `bbe-live-layer`.
+- Redeploy `bbe-live-layer`.
+- Leave the Supabase constraint migration in place; it is backward-compatible
+  and only permits the now-known event type.
+
+Watch next two slates for:
+
+- unexpected `mainline_best_price_changed` volume,
+- stale/post-start sends,
+- duplicate dedupe keys,
+- confusing book/line copy,
+- evidence that raw polling/webhook movement rows are still reaching
+  user-facing `notification_events` while mode is `send`.
 
 ## 2026-07-07 Safe-Subset Verification Checkpoint
 
@@ -43,16 +95,19 @@ What was intentionally not executed in this checkpoint:
 Current rollout posture:
 
 - Code path exists for `off|shadow|send`.
-- Default posture stays `off`.
-- First rollout, if separately approved, must be `shadow`.
-- `send` remains closed until a later Tyler approval after shadow evidence.
+- Default posture remains `off` when the env var is absent or invalid.
+- Production `bbe-live-layer` is intentionally set to `send` after Tyler's
+  2026-07-07 direct approval.
+- `shadow` was skipped by explicit Tyler approval, not by default policy.
 
 ## Global Constraints
 
 - Do not change model math, provider order, official artifact source, thresholds, staking, lock behavior, retention deletion, dashboard source-of-truth, or Render env vars unless Tyler explicitly approves that separate step.
 - TheRundown/approved TheRundown+PropLine artifact path remains production truth; PropLine live-market evidence is sidecar evidence only.
 - BoltOdds remains retired and must not be used for current notification promotion.
-- Default mode must be `off`; first rollout should use `shadow`; `send` requires a separate Tyler approval after shadow evidence.
+- Default mode must be `off` when unset or invalid. Tyler explicitly approved a
+  direct `send` rollout on 2026-07-07; future notification classes still require
+  their own separate approval.
 - Mainline policy means same line as the pick `k_line`, not off-market alternate lines.
 - One alert per pick/provider/side/state transition; no alert on first observation, stale evidence, locked picks, post-start picks, or unchanged best same-line price.
 - Raw market movement rows can remain audit evidence, but in `send` mode raw line/price movement notification rows must not be inserted into `notification_events`.

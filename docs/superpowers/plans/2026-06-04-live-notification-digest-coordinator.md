@@ -19,11 +19,11 @@ start-window reminders and same-run pick-change classes; line/price movement
 alerts remain individual.
 
 2026-07-07 verification note: the separate
-`2026-07-07-mainline-best-price-notification-policy.md` feature is implemented
-in code and verified locally, but it is not part of this grouped-mode approval.
-It remains default-`off` pending a linked Supabase dry run, Tyler-approved
-shadow env flip, and post-deploy verification. This plan still controls grouped
-digest classes only.
+`2026-07-07-mainline-best-price-notification-policy.md` feature was promoted
+directly to `send` after Tyler explicitly approved skipping shadow. It is not
+part of this grouped-mode approval and does not change grouped digest classes:
+start-window reminders and same-run pick changes remain the only grouped
+classes. Mainline best-price alerts are individual movement-class notifications.
 
 ## 2026-06-07 Grouped Promotion Checkpoint
 
