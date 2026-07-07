@@ -8,6 +8,45 @@
 
 **Tech Stack:** Python 3.11, pytest, Supabase Postgres migrations, Render `bbe-live-layer`, existing Netlify `send-live-notifications`, existing `live_market_display_state` and `notification_events`.
 
+Date: 2026-07-07
+Owner: Tyler + Codex
+Status: Implemented in code, verified locally, default `off`, and not promoted
+to `shadow` or `send`. Safe-subset verification completed on 2026-07-07 in the
+`codex/mainline-best-price-notifications` worktree without applying migrations,
+changing Render env vars, deploying, or pushing.
+
+## 2026-07-07 Safe-Subset Verification Checkpoint
+
+Local verification completed for the code-ready/off-by-default posture:
+
+- `python -m pytest tests/test_mainline_price_notifications.py tests/test_market_infra_live_events.py tests/test_live_layer_worker.py tests/test_live_layer_schema.py -q`
+  returned `84 passed in 0.63s`.
+- `node --test tests/test_send_live_notifications_function.mjs` returned
+  `20` passing tests and preserved the generic sender path for
+  `mainline_best_price_changed`.
+- `git diff --check` returned clean.
+- `npx supabase db push --linked --dry-run` did not run in this worktree
+  because the local Supabase CLI is not linked to a project:
+  `Cannot find project ref. Have you run supabase link?`
+
+What was intentionally not executed in this checkpoint:
+
+- No `npx supabase db push --linked` apply.
+- No Render env var changes, including
+  `LIVE_MAINLINE_PRICE_NOTIFICATION_MODE` or
+  `LIVE_MAINLINE_PRICE_MIN_CENTS`.
+- No Render deploy.
+- No verification queries against live `shadow_pipeline_runs` or
+  `notification_events`.
+- No push to GitHub.
+
+Current rollout posture:
+
+- Code path exists for `off|shadow|send`.
+- Default posture stays `off`.
+- First rollout, if separately approved, must be `shadow`.
+- `send` remains closed until a later Tyler approval after shadow evidence.
+
 ## Global Constraints
 
 - Do not change model math, provider order, official artifact source, thresholds, staking, lock behavior, retention deletion, dashboard source-of-truth, or Render env vars unless Tyler explicitly approves that separate step.

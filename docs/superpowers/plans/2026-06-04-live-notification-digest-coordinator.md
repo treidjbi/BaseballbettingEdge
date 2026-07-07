@@ -18,6 +18,13 @@ event types are allowed. Grouped production sends are enabled only for
 start-window reminders and same-run pick-change classes; line/price movement
 alerts remain individual.
 
+2026-07-07 verification note: the separate
+`2026-07-07-mainline-best-price-notification-policy.md` feature is implemented
+in code and verified locally, but it is not part of this grouped-mode approval.
+It remains default-`off` pending a linked Supabase dry run, Tyler-approved
+shadow env flip, and post-deploy verification. This plan still controls grouped
+digest classes only.
+
 ## 2026-06-07 Grouped Promotion Checkpoint
 
 Tyler approved promoting the notification grouping change on 2026-06-07.
