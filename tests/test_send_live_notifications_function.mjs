@@ -71,6 +71,41 @@ test('buildPushPayload adds alert attribution context to default click urls', ()
   assert.equal(url.searchParams.get('source'), 'notification');
 });
 
+test('buildPushPayload keeps mainline best price rows on the generic sender path', () => {
+  const row = {
+    id: 'mainline-price-1',
+    title: 'Best Price Better Now',
+    body: 'Jacob Misiorowski OVER 7.5 best price -120->-105 at fanduel; same main line, price better',
+    dedupe_key: '2026-07-07:mainline_best_price:propline:jacob misiorowski:over:7.5:-120:fanduel:-105',
+    event_type: 'mainline_best_price_changed',
+    payload: {
+      pitcher: 'Jacob Misiorowski',
+      normalized_pitcher: 'jacob misiorowski',
+      side: 'over',
+      provider: 'propline',
+      k_line: 7.5,
+      previous_best_book: 'fanduel',
+      previous_best_odds: -120,
+      current_best_book: 'fanduel',
+      current_best_odds: -105,
+      price_delta: 15,
+      game_time: '2026-07-07T23:40:00Z',
+    },
+  };
+
+  const payload = buildPushPayload(row);
+
+  assert.equal(payload.title, row.title);
+  assert.equal(payload.body, row.body);
+  assert.equal(payload.tag, row.dedupe_key);
+  assert.equal(payload.data.eventType, 'mainline_best_price_changed');
+  assert.equal(payload.data.payload.current_best_odds, -105);
+  assert.equal(
+    isNotificationEventPostStart(row, { now: new Date('2026-07-07T23:40:00Z') }),
+    true,
+  );
+});
+
 test('buildSenderLog produces inspectable non-secret telemetry', () => {
   const line = buildSenderLog({
     stage: 'dry_run',
