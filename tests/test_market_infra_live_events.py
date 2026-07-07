@@ -5,6 +5,7 @@ from market_infra.live_events import (
     build_line_movement_rows,
     build_missing_pick_state_events,
     build_pick_change_events,
+    build_propline_webhook_movement_notification_events,
     build_reminder_events,
 )
 
@@ -370,6 +371,100 @@ def test_line_movement_ignores_off_pick_line_ladder_changes():
     assert events == []
 
 
+def test_line_movement_ignores_off_pick_line_ladder_price_changes():
+    events = build_line_movement_events(
+        slate_date="2026-05-06",
+        live_picks=[{
+            "pitcher": "Tarik Skubal",
+            "normalized_pitcher": "tarik skubal",
+            "side": "over",
+            "current_verdict": "FIRE 1u",
+            "k_line": 5.5,
+        }],
+        previous_snapshots=[{
+            "provider_event_id": "game-1",
+            "normalized_player_name": "tarik skubal",
+            "bookmaker_key": "kalshi",
+            "side": "over",
+            "line": 8.5,
+            "american_odds": 900,
+            "observed_at": "2026-05-06T17:50:00+00:00",
+        }],
+        current_snapshots=[{
+            "id": "snapshot-1",
+            "provider_event_id": "game-1",
+            "normalized_player_name": "tarik skubal",
+            "player_name": "Tarik Skubal",
+            "bookmaker_key": "kalshi",
+            "side": "over",
+            "line": 8.5,
+            "american_odds": 1011,
+            "observed_at": "2026-05-06T18:00:00+00:00",
+        }],
+    )
+
+    assert events == []
+
+
+def test_line_movement_ignores_cross_ladder_comparisons_for_multi_line_books():
+    events = build_line_movement_events(
+        slate_date="2026-05-06",
+        live_picks=[{
+            "pitcher": "Tarik Skubal",
+            "normalized_pitcher": "tarik skubal",
+            "side": "over",
+            "current_verdict": "FIRE 1u",
+            "k_line": 4.5,
+        }],
+        previous_snapshots=[
+            {
+                "provider_event_id": "game-1",
+                "normalized_player_name": "tarik skubal",
+                "bookmaker_key": "kalshi",
+                "side": "over",
+                "line": 2.5,
+                "american_odds": -900,
+                "observed_at": "2026-05-06T17:50:00+00:00",
+            },
+            {
+                "provider_event_id": "game-1",
+                "normalized_player_name": "tarik skubal",
+                "bookmaker_key": "kalshi",
+                "side": "over",
+                "line": 4.5,
+                "american_odds": -144,
+                "observed_at": "2026-05-06T17:50:00+00:00",
+            },
+        ],
+        current_snapshots=[
+            {
+                "id": "snapshot-alt",
+                "provider_event_id": "game-1",
+                "normalized_player_name": "tarik skubal",
+                "player_name": "Tarik Skubal",
+                "bookmaker_key": "kalshi",
+                "side": "over",
+                "line": 2.5,
+                "american_odds": -1011,
+                "observed_at": "2026-05-06T18:00:00+00:00",
+            },
+            {
+                "id": "snapshot-pick",
+                "provider_event_id": "game-1",
+                "normalized_player_name": "tarik skubal",
+                "player_name": "Tarik Skubal",
+                "bookmaker_key": "kalshi",
+                "side": "over",
+                "line": 4.5,
+                "american_odds": -144,
+                "observed_at": "2026-05-06T18:00:00+00:00",
+            },
+        ],
+    )
+
+    assert events == []
+
+
 def test_odds_only_movement_body_describes_odds_change():
     events = build_line_movement_events(
         slate_date="2026-05-06",
@@ -407,6 +502,70 @@ def test_odds_only_movement_body_describes_odds_change():
     assert events[0]["payload"]["market_direction"] == "away_from_pick"
     assert events[0]["payload"]["bet_value_direction"] == "better_now"
     assert events[0]["body"] == "Tarik Skubal UNDER 4.5 odds -152->-138 at fanduel; market away from pick, price better"
+
+
+def test_webhook_movement_ignores_off_pick_line_ladder_price_changes():
+    events = build_propline_webhook_movement_notification_events(
+        slate_date="2026-05-06",
+        live_picks=[{
+            "pitcher": "Tarik Skubal",
+            "normalized_pitcher": "tarik skubal",
+            "side": "over",
+            "current_verdict": "FIRE 1u",
+            "k_line": 5.5,
+        }],
+        webhook_movement_rows=[{
+            "slate_date": "2026-05-06",
+            "pitcher": "Tarik Skubal",
+            "normalized_pitcher": "tarik skubal",
+            "side": "over",
+            "bookmaker_key": "kalshi",
+            "previous_line": 8.5,
+            "current_line": 8.5,
+            "previous_odds": 900,
+            "current_odds": 1011,
+            "observed_at": "2026-05-06T18:00:00+00:00",
+            "dedupe_key": "line-row-1",
+            "metadata": {
+                "source": "propline_webhook",
+                "prop_line_event_id": "game-1",
+            },
+        }],
+    )
+
+    assert events == []
+
+
+def test_webhook_movement_ignores_large_ladder_line_jumps():
+    events = build_propline_webhook_movement_notification_events(
+        slate_date="2026-05-06",
+        live_picks=[{
+            "pitcher": "Tarik Skubal",
+            "normalized_pitcher": "tarik skubal",
+            "side": "over",
+            "current_verdict": "FIRE 1u",
+            "k_line": 4.5,
+        }],
+        webhook_movement_rows=[{
+            "slate_date": "2026-05-06",
+            "pitcher": "Tarik Skubal",
+            "normalized_pitcher": "tarik skubal",
+            "side": "over",
+            "bookmaker_key": "kalshi",
+            "previous_line": 4.5,
+            "current_line": 2.5,
+            "previous_odds": -144,
+            "current_odds": -1011,
+            "observed_at": "2026-05-06T18:00:00+00:00",
+            "dedupe_key": "line-row-1",
+            "metadata": {
+                "source": "propline_webhook",
+                "prop_line_event_id": "game-1",
+            },
+        }],
+    )
+
+    assert events == []
 
 
 def test_movement_ignores_snapshots_from_different_provider_events():

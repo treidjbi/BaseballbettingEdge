@@ -24,6 +24,7 @@ PROPLINE_WEBHOOK_NOTIFICATION_BOOKS = {
     "scorebet",
     "thescore",
 }
+MAX_LINE_MOVEMENT_NOTIFICATION_DELTA = 1.0
 
 
 def _isoformat(value: datetime | str) -> str:
@@ -70,6 +71,19 @@ def _integer(value: Any) -> int | None:
 
 def _matches_line(value: float, target: float) -> bool:
     return abs(value - target) < 0.001
+
+
+def _snapshot_movement_key(snapshot: dict[str, Any]) -> tuple[str, str, str, str] | None:
+    provider_event_id = str(snapshot.get("provider_event_id") or "").strip()
+    book = str(snapshot.get("bookmaker_key") or "").strip()
+    normalized = str(
+        snapshot.get("normalized_player_name")
+        or normalize(snapshot.get("player_name") or "")
+    ).strip()
+    side = str(snapshot.get("side") or "").strip().lower()
+    if provider_event_id and book and normalized and side in {"over", "under"}:
+        return provider_event_id, book, normalized, side
+    return None
 
 
 def _format_odds(value: int) -> str:
@@ -448,24 +462,38 @@ def build_line_movement_events(
         if normalized_pitcher and side in {"over", "under"}:
             actionable[(normalized_pitcher, side)] = pick
 
-    previous_by_provider_book_player_side: dict[tuple[str, str, str, str], dict[str, Any]] = {}
+    previous_by_provider_book_player_side_line: dict[tuple[str, str, str, str, float], dict[str, Any]] = {}
+    previous_lines_by_provider_book_player_side: dict[tuple[str, str, str, str], set[float]] = {}
+    previous_single_snapshot_by_provider_book_player_side: dict[tuple[str, str, str, str], dict[str, Any]] = {}
     for snapshot in previous_snapshots:
-        provider_event_id = str(snapshot.get("provider_event_id") or "").strip()
-        book = str(snapshot.get("bookmaker_key") or "").strip()
-        normalized = str(snapshot.get("normalized_player_name") or "").strip()
-        side = str(snapshot.get("side") or "").strip().lower()
-        if provider_event_id and book and normalized and side in {"over", "under"}:
-            previous_by_provider_book_player_side[(provider_event_id, book, normalized, side)] = snapshot
+        movement_key = _snapshot_movement_key(snapshot)
+        line = _numeric(snapshot.get("line"))
+        if movement_key is None or line is None:
+            continue
+        previous_by_provider_book_player_side_line[(*movement_key, line)] = snapshot
+        previous_lines_by_provider_book_player_side.setdefault(movement_key, set()).add(line)
+        previous_single_snapshot_by_provider_book_player_side[movement_key] = snapshot
+
+    current_lines_by_provider_book_player_side: dict[tuple[str, str, str, str], set[float]] = {}
+    for snapshot in current_snapshots:
+        movement_key = _snapshot_movement_key(snapshot)
+        line = _numeric(snapshot.get("line"))
+        if movement_key is not None and line is not None:
+            current_lines_by_provider_book_player_side.setdefault(movement_key, set()).add(line)
 
     events: list[dict[str, Any]] = []
     for snapshot in current_snapshots:
-        provider_event_id = str(snapshot.get("provider_event_id") or "").strip()
-        book = str(snapshot.get("bookmaker_key") or "").strip()
-        normalized = str(snapshot.get("normalized_player_name") or normalize(snapshot.get("player_name") or "")).strip()
-        side = str(snapshot.get("side") or "").strip().lower()
-        if not provider_event_id or not book or not normalized or side not in {"over", "under"}:
+        movement_key = _snapshot_movement_key(snapshot)
+        current_line = _numeric(snapshot.get("line"))
+        if movement_key is None or current_line is None:
             continue
-        previous = previous_by_provider_book_player_side.get((provider_event_id, book, normalized, side))
+        provider_event_id, book, normalized, side = movement_key
+        previous = previous_by_provider_book_player_side_line.get((*movement_key, current_line))
+        if previous is None:
+            previous_lines = previous_lines_by_provider_book_player_side.get(movement_key, set())
+            current_lines = current_lines_by_provider_book_player_side.get(movement_key, set())
+            if len(previous_lines) == 1 and len(current_lines) == 1:
+                previous = previous_single_snapshot_by_provider_book_player_side.get(movement_key)
         if previous is None:
             continue
         pick = actionable.get((normalized, side))
@@ -475,16 +503,21 @@ def build_line_movement_events(
             continue
 
         previous_line = _numeric(previous.get("line"))
-        current_line = _numeric(snapshot.get("line"))
         previous_odds = _integer(previous.get("american_odds"))
         current_odds = _integer(snapshot.get("american_odds"))
         if None in {previous_line, current_line, previous_odds, current_odds}:
             continue
 
         line_changed = previous_line != current_line
+        if line_changed and abs(current_line - previous_line) > MAX_LINE_MOVEMENT_NOTIFICATION_DELTA:
+            continue
         pick_line = _numeric(pick.get("k_line"))
-        if line_changed and pick_line is not None:
-            if not (_matches_line(previous_line, pick_line) or _matches_line(current_line, pick_line)):
+        if pick_line is not None:
+            if line_changed and not (
+                _matches_line(previous_line, pick_line) or _matches_line(current_line, pick_line)
+            ):
+                continue
+            if not line_changed and not _matches_line(current_line, pick_line):
                 continue
 
         odds_delta = current_odds - previous_odds
@@ -607,9 +640,15 @@ def build_propline_webhook_movement_notification_events(
             continue
 
         line_changed = previous_line != current_line
+        if line_changed and abs(current_line - previous_line) > MAX_LINE_MOVEMENT_NOTIFICATION_DELTA:
+            continue
         pick_line = _numeric(pick.get("k_line"))
-        if line_changed and pick_line is not None:
-            if not (_matches_line(previous_line, pick_line) or _matches_line(current_line, pick_line)):
+        if pick_line is not None:
+            if line_changed and not (
+                _matches_line(previous_line, pick_line) or _matches_line(current_line, pick_line)
+            ):
+                continue
+            if not line_changed and not _matches_line(current_line, pick_line):
                 continue
 
         odds_delta = current_odds - previous_odds
