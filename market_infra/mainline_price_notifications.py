@@ -95,40 +95,6 @@ def _best_same_line_price(row: dict[str, Any]) -> dict[str, Any] | None:
     return sorted(same_line, key=lambda item: (-int(item["odds"]), item["book"]))[0]
 
 
-def _book_line_odds_map(row: dict[str, Any]) -> dict[tuple[str, float], int]:
-    book_rows = row.get("book_rows")
-    if not isinstance(book_rows, list):
-        return {}
-
-    mapping: dict[tuple[str, float], int] = {}
-    for book_row in book_rows:
-        if not isinstance(book_row, dict):
-            continue
-        book = str(book_row.get("book") or "").strip().lower()
-        line = _numeric(book_row.get("line"))
-        odds = _integer(book_row.get("odds"))
-        if book and line is not None and odds is not None:
-            mapping[(book, line)] = odds
-    return mapping
-
-
-def _has_off_line_price_change(previous: dict[str, Any] | None, current: dict[str, Any], pick_line: float) -> bool:
-    if previous is None:
-        return False
-
-    previous_map = _book_line_odds_map(previous)
-    current_map = _book_line_odds_map(current)
-
-    keys = set(previous_map) | set(current_map)
-    for key in keys:
-        book, line = key
-        if _matches_line(line, pick_line):
-            continue
-        if previous_map.get(key) != current_map.get(key):
-            return True
-    return False
-
-
 def _body(
     *,
     pitcher: str,
@@ -221,10 +187,6 @@ def build_mainline_best_price_notification_rows(
             continue
 
         price_delta = int(current_best["odds"]) - int(previous_best["odds"])
-        pick_line = _numeric(current.get("k_line"))
-        if pick_line is not None and _has_off_line_price_change(previous, current, pick_line):
-            summary["off_line_ignored_count"] += 1
-            continue
         if price_delta == 0:
             summary["unchanged_count"] += 1
             continue

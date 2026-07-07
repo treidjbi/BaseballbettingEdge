@@ -48,7 +48,7 @@ def test_first_observation_is_shadow_only_no_notification():
     assert result.shadow_rows[0]["candidate_action"] == "first_seen_shadow"
 
 
-def test_same_line_best_price_change_emits_one_send_row():
+def test_same_line_best_price_change_emits_even_when_alternate_line_moves():
     result = build_mainline_best_price_notification_rows(
         slate_date="2026-07-07",
         previous_rows=[
@@ -65,7 +65,7 @@ def test_same_line_best_price_change_emits_one_send_row():
                 book_rows=[
                     {"book": "fanduel", "line": 7.5, "odds": -105},
                     {"book": "draftkings", "line": 7.5, "odds": -125},
-                    {"book": "kalshi", "line": 8.5, "odds": 900},
+                    {"book": "kalshi", "line": 8.5, "odds": 1200},
                 ]
             )
         ],
@@ -113,7 +113,7 @@ def test_off_line_alt_book_does_not_drive_best_price():
     )
 
     assert result.notification_rows == []
-    assert result.summary["off_line_ignored_count"] == 1
+    assert result.summary["unchanged_count"] == 1
 
 
 def test_stale_locked_and_post_start_rows_are_suppressed():
