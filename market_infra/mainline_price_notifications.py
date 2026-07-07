@@ -67,6 +67,13 @@ def _row_key(row: dict[str, Any], slate_date: str) -> tuple[str, str, str, str] 
     return None
 
 
+def _line_key(row: dict[str, Any]) -> float | None:
+    value = _numeric(row.get("k_line"))
+    if value is None:
+        return None
+    return round(value, 3)
+
+
 def _is_post_start(row: dict[str, Any], observed_at: datetime) -> bool:
     game_time = _parse_datetime(row.get("game_time"))
     return bool(game_time and observed_at >= game_time)
@@ -133,6 +140,7 @@ def build_mainline_best_price_notification_rows(
         "unchanged_count": 0,
         "below_threshold_count": 0,
         "off_line_ignored_count": 0,
+        "suppressed_line_change_count": 0,
         "suppressed_stale_count": 0,
         "suppressed_locked_count": 0,
         "suppressed_post_start_count": 0,
@@ -173,6 +181,12 @@ def build_mainline_best_price_notification_rows(
             continue
 
         previous = previous_by_key.get(key)
+        previous_line = _line_key(previous) if previous else None
+        current_line = _line_key(current)
+        if previous is not None and previous_line is not None and current_line is not None and previous_line != current_line:
+            summary["suppressed_line_change_count"] += 1
+            continue
+
         previous_best = _best_same_line_price(previous) if previous else None
         if previous_best is None:
             summary["first_seen_count"] += 1

@@ -88,6 +88,36 @@ def test_same_line_best_price_change_emits_even_when_alternate_line_moves():
     assert row["payload"]["current_best_book"] == "fanduel"
 
 
+def test_different_line_for_same_pitcher_side_provider_is_suppressed():
+    result = build_mainline_best_price_notification_rows(
+        slate_date="2026-07-07",
+        previous_rows=[
+            _display_row(
+                k_line=7.5,
+                book_rows=[
+                    {"book": "fanduel", "line": 7.5, "odds": -120},
+                    {"book": "draftkings", "line": 7.5, "odds": -125},
+                ],
+            )
+        ],
+        current_rows=[
+            _display_row(
+                k_line=8.5,
+                book_rows=[
+                    {"book": "fanduel", "line": 8.5, "odds": -105},
+                    {"book": "draftkings", "line": 8.5, "odds": -110},
+                ],
+            )
+        ],
+        observed_at=NOW,
+        min_price_move_cents=10,
+        mode="send",
+    )
+
+    assert result.notification_rows == []
+    assert result.summary["suppressed_line_change_count"] == 1
+
+
 def test_off_line_alt_book_does_not_drive_best_price():
     result = build_mainline_best_price_notification_rows(
         slate_date="2026-07-07",
