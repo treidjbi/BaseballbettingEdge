@@ -25,6 +25,7 @@ from analytics.diagnostics import market_anchor_selector_canary_audit  # noqa: E
 from analytics.diagnostics import market_shrink_projection_canary_audit  # noqa: E402
 from analytics.diagnostics import profit_rescue_audit  # noqa: E402
 from analytics.diagnostics import shadow_notification_candidate_audit  # noqa: E402
+from analytics.diagnostics import strong_base_decision_lab  # noqa: E402
 
 
 def _parse_args(argv: list[str] | None = None) -> argparse.Namespace:
@@ -61,6 +62,7 @@ def _parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     )
     parser.add_argument("--profit-rescue-output", type=Path, default=profit_rescue_audit.DEFAULT_OUTPUT)
     parser.add_argument("--bet-selection-edge-output", type=Path, default=bet_selection_edge_synthesis.DEFAULT_OUTPUT)
+    parser.add_argument("--strong-base-output", type=Path, default=strong_base_decision_lab.DEFAULT_OUTPUT)
     parser.add_argument(
         "--market-agreement-output-md",
         type=Path,
@@ -208,6 +210,12 @@ def main(argv: list[str] | None = None) -> int:
         "--output",
         str(args.bet_selection_edge_output),
     ])
+    strong_base_decision_lab.main([
+        "--input",
+        str(dataset_path),
+        "--output",
+        str(args.strong_base_output),
+    ])
     market_agreement_tracker.main(_market_agreement_args(args, dataset_path))
     _write_gate_f_projection_report(
         dataset_path=dataset_path,
@@ -239,6 +247,11 @@ def main(argv: list[str] | None = None) -> int:
         args.market_shrink_projection_output,
         label="Market-shrink projection canary audit",
         section_titles={"Executive Read", "Rollback Recommendation"},
+    )
+    _print_review_excerpt(
+        args.strong_base_output,
+        label="Strong Base decision lab",
+        section_titles={"Executive Read", "Candidate Policy Draft"},
     )
     return 0
 
