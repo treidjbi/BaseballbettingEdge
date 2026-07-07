@@ -46,12 +46,59 @@ The decision system should answer:
   - Covers candidate labeling, provider-era labels, Path B coverage labels, CLV/process separation, PASS expansion counting, readiness gates, and report language.
 - Create `analytics/output/strong_base_decision_lab.md`
   - First generated report artifact from the latest clean post-bump Gate C corpus.
+- Create `analytics/diagnostics/strong_base_portfolio_simulator.py`
+  - Reuses Strong Base candidate labels to compare current staked FIRE, current
+    tracked flat picks, drag-suppressed tracked picks, strict retained FIRE,
+    strict plus selective LEAN, positive-edge PASS expansion, and CLV-confirmed
+    hindsight ceilings.
+- Create `tests/test_strong_base_portfolio_simulator.py`
+  - Covers stake-aware FIRE units, no-hindsight separation, strict runtime
+    filtering, selective LEAN expansion, report language, and direct script
+    execution from the repo root.
+- Create `analytics/output/strong_base_portfolio_simulator.md`
+  - First generated portfolio policy report from the latest clean post-bump
+    Gate C corpus.
 - Modify `scripts/run_post_grading_shadow_reports.py`
-  - Regenerates the Strong Base report as part of the existing review-only post-grading model report runner.
+  - Regenerates the Strong Base report and portfolio simulator as part of the
+    existing review-only post-grading model report runner.
 - Modify `docs/current-state.md`
   - Add the Strong Base lab to the model-lane read order and next-decision language once the first report is generated.
 - Modify `C:\Users\TylerReid\.codex\automations\yesterdays-pipeline-health-bbe\memory.md`
   - Carry the new report path and current gate posture into the next operations brief.
+
+## Portfolio Simulator Addendum
+
+After the first Strong Base lab proved that positive CLV and mass losses were
+both real, Tyler asked for the path to a positive-unit producer. The answer
+needs a portfolio simulator, not just candidate bucket tables.
+
+The simulator is still read-only and uses the same Gate C corpus. It must keep
+three ideas separate:
+
+1. Current staked reality: FIRE 1u risks 1u, FIRE 2u risks 2u, LEAN risks 0u.
+2. No-hindsight runtime policies: drag suppression, strict retained FIRE, and
+   selective LEAN expansion.
+3. Hindsight ceiling: rows that beat closing price or line, which can define
+   the target but cannot directly become a live selector.
+
+First refreshed 2,722-row report:
+
+- Current staked FIRE: `595` rows, `298-297`, `-45.96u` on `721u` risked,
+  `-6.4%` ROI.
+- Current tracked flat: `1,417` rows, `697-720`, `-105.53u`, `-7.4%` ROI.
+- Drag-suppressed tracked flat: `363` rows, `212-151`, `+12.68u`,
+  `+3.5%` ROI.
+- Strict runtime core flat: `83` rows, `55-28`, `+15.26u`, `+18.4%` ROI.
+- Strict plus selective LEAN flat: `215` rows, `133-82`, `+28.02u`,
+  `+13.0%` ROI.
+- Positive-edge PASS expansion: `9` rows, `1-8`, `-6.95u`, `-77.2%` ROI.
+- Price-confirmed hindsight ceiling: `235` rows, `133-102`, `+21.61u`,
+  `+9.2%` ROI.
+
+Gate posture: all runtime policies remain `watch_more`, not live promotion.
+The positive historical policy shapes are useful, but current-provider,
+recent-window, plus-price, worse-CLV, Path B, quality, and market-agreement
+slices must survive before any promotion plan.
 
 ## Candidate Lanes
 

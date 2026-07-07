@@ -57,6 +57,24 @@ Interpretation:
 
 ## What Is Working
 
+Strong Base Portfolio Simulator now gives the first policy-level proof:
+
+- Current staked FIRE baseline: 595 bets, 298-297, -45.96u on 721u risked,
+  -6.4% ROI.
+- Current tracked flat portfolio: 1,417 bets, 697-720, -105.53u, -7.4% ROI.
+- Drag-suppressed tracked flat policy: 363 bets, 212-151, +12.68u, +3.5% ROI.
+- Strict runtime core flat policy: 83 bets, 55-28, +15.26u, +18.4% ROI.
+- Strict plus selective LEAN flat policy: 215 bets, 133-82, +28.02u,
+  +13.0% ROI.
+- Positive-edge PASS expansion check: 9 bets, 1-8, -6.95u, -77.2% ROI.
+- Price-confirmed hindsight ceiling: 235 bets, 133-102, +21.61u,
+  +9.2% ROI.
+
+This is the clearest answer so far: a smaller strict runtime base would have
+been positive, and selective LEAN expansion improves the historical policy.
+But the simulator still marks those runtime policies watch-only because the
+current-provider sample is small and mandatory slice risks remain.
+
 Profit rescue remains the strongest live protection layer:
 
 - Older audit showed current FIRE at 536 bets, -34.07u.
@@ -197,49 +215,46 @@ filters first.
 
 No candidate is ready today for automatic live promotion.
 
-The next approval-quality artifact should be a portfolio simulator that answers:
+The simulator can now produce positive no-hindsight historical policies, so the
+next gate is narrower:
 
-- What would units look like if we kept only retained FIRE plus the strongest
-  keep-FIRE buckets?
-- What would units look like if we suppressed high-edge/model-fade/no-price
-  support buckets?
-- What would units look like if selected LEAN buckets were added at flat 1u?
-- What happens by side, K-line, price bucket, provider era, current-provider
-  only, recent window, quality state, Path B state, market agreement, and CLV
-  proxy?
-- Does the policy remain positive after removing hindsight-only fields?
+- Keep refreshing the simulator after grading.
+- Do not promote a policy unless it is runtime-safe and marked
+  `promotion_plan_candidate`.
+- Current-provider proof must be real, not inherited from pre-current-provider
+  history.
+- Recent-window results must stay positive after the mainline best-price policy
+  begins adding execution evidence.
+- Mandatory negative slices must clear or be explicitly excluded from the policy.
+- Hindsight CLV can define the target, but cannot be a live selector.
 
-If the simulator cannot produce a positive current-provider and recent-window
-portfolio without hindsight, the system should keep observing and stay capped.
-
-If the simulator can produce a positive portfolio that survives slices, then
-draft a narrow promotion plan for that policy only.
+If strict-plus-selective-LEAN remains positive as current-provider rows grow and
+its negative CLV/plus-price slices are either resolved or explicitly excluded,
+then draft a narrow promotion plan for that policy only.
 
 ## Practical Recommendation
 
-The most effective next move is to build a Strong Base Portfolio Simulator
-before touching live behavior.
+The most effective next move is to use the Strong Base Portfolio Simulator as
+the promotion gate after every grading run.
 
-Target output:
+The practical target policy is now:
 
-- Current live portfolio result.
-- Proposed strict portfolio result.
-- Proposed expansion portfolio result.
-- Unit delta from each cap, suppress, keep, and expand rule.
-- Hindsight-field flags so we do not accidentally promote a rule that depends
-  on final CLV.
-- Current-provider and recent-window results shown first.
+- Keep FIRE only through the strict runtime core.
+- Add selective LEAN only when the policy survives current-provider and recent
+  windows.
+- Keep high raw edge, market fade, FIRE-under-fade, and no-price-support mass
+  capped or suppressed until proven otherwise.
+- Use mainline best-price movement as execution evidence, not as a model source
+  of truth.
+- Convert positive CLV into pre-close or best-main-line price rules before any
+  live promotion.
 
-This gives Tyler the answer he actually needs: not just which buckets look
-smart, but whether a realistic decision policy would have turned the post-bump
-model into a positive-unit producer without cheating.
-
-Until that exists, the operating answer is:
+Until that proof matures, the operating answer is:
 
 - Keep the risk-off live caps.
 - Do not expand broad volume.
 - Treat positive CLV as the execution north star.
 - Watch narrow LEAN/FIRE buckets, especially market-confirmed and moderate-EV
   contexts.
-- Make the next change a simulation-backed decision policy, not a lambda,
-  staking, or provider change.
+- Make the next live change, if any, a simulation-backed decision policy, not a
+  lambda, staking, or provider change.

@@ -9,6 +9,8 @@ def test_runner_rebuilds_shadow_reports_and_prints_review_excerpt(tmp_path, monk
     confidence_referee_output = tmp_path / "confidence_referee_canary_audit.md"
     profit_rescue_output = tmp_path / "profit_rescue_audit.md"
     bet_selection_output = tmp_path / "bet_selection_edge_synthesis.md"
+    strong_base_output = tmp_path / "strong_base_decision_lab.md"
+    portfolio_simulator_output = tmp_path / "strong_base_portfolio_simulator.md"
     market_agreement_output = tmp_path / "market_agreement_tracker.md"
     market_agreement_jsonl = tmp_path / "market_agreement_tracker.jsonl"
     gate_f_output = tmp_path / "gate_f_projection_challenger_shadow_report.md"
@@ -69,6 +71,32 @@ def test_runner_rebuilds_shadow_reports_and_prints_review_excerpt(tmp_path, monk
         fake_simple_report("bet_selection_edge"),
     )
     monkeypatch.setattr(
+        runner.strong_base_decision_lab,
+        "main",
+        fake_simple_report("strong_base"),
+    )
+
+    def fake_portfolio_simulator_main(argv):
+        calls.append(("portfolio_simulator", argv))
+        portfolio_simulator_output.write_text(
+            "# Strong Base Portfolio Simulator\n\n"
+            "## Executive Read\n\n"
+            "- Strict runtime core: +4.25u.\n\n"
+            "## Policy Comparison\n\n"
+            "| Policy | Result |\n"
+            "| --- | ---: |\n"
+            "| `strict_runtime_core_flat` | +4.25u |\n\n"
+            "## Debug Detail\n\n"
+            "- Not needed in the log excerpt.\n",
+            encoding="utf-8",
+        )
+
+    monkeypatch.setattr(
+        runner.strong_base_portfolio_simulator,
+        "main",
+        fake_portfolio_simulator_main,
+    )
+    monkeypatch.setattr(
         runner.market_agreement_tracker,
         "main",
         fake_simple_report("market_agreement"),
@@ -127,6 +155,10 @@ def test_runner_rebuilds_shadow_reports_and_prints_review_excerpt(tmp_path, monk
         str(profit_rescue_output),
         "--bet-selection-edge-output",
         str(bet_selection_output),
+        "--strong-base-output",
+        str(strong_base_output),
+        "--portfolio-simulator-output",
+        str(portfolio_simulator_output),
         "--market-agreement-output-md",
         str(market_agreement_output),
         "--market-agreement-output-jsonl",
@@ -190,6 +222,24 @@ def test_runner_rebuilds_shadow_reports_and_prints_review_excerpt(tmp_path, monk
             ],
         ),
         (
+            "strong_base",
+            [
+                "--input",
+                str(output_dir / "pitcher_k_outcome_dataset.jsonl"),
+                "--output",
+                str(strong_base_output),
+            ],
+        ),
+        (
+            "portfolio_simulator",
+            [
+                "--input",
+                str(output_dir / "pitcher_k_outcome_dataset.jsonl"),
+                "--output",
+                str(portfolio_simulator_output),
+            ],
+        ),
+        (
             "market_agreement",
             [
                 "--gate-c-dataset",
@@ -230,6 +280,9 @@ def test_runner_rebuilds_shadow_reports_and_prints_review_excerpt(tmp_path, monk
     assert "Rows with projection metadata: `0`." in output
     assert "Rollback Recommendation" in output
     assert "MARKET_SHRINK_PROJECTION_MODE=off" in output
+    assert "Strong Base portfolio simulator excerpt:" in output
+    assert "Strict runtime core: +4.25u." in output
+    assert "Policy Comparison" in output
     assert "Implementation Notes" not in output
     assert "Promotion Gate" not in output
     assert "Debug Detail" not in output
