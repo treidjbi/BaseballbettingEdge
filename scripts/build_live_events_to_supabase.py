@@ -847,11 +847,18 @@ def run(
         observed_at=observed_at,
     )
 
+    movement_rows_for_notifications = movement_notification_rows
+    webhook_rows_for_notifications = propline_webhook_notification_rows
+    if mainline_best_price_result.summary.get("mode") == "send":
+        movement_rows_for_notifications = []
+        webhook_rows_for_notifications = []
+
     notification_rows = [
         *pick_notification_rows,
         *missing_notification_rows,
-        *movement_notification_rows,
-        *propline_webhook_notification_rows,
+        *movement_rows_for_notifications,
+        *webhook_rows_for_notifications,
+        *mainline_best_price_result.notification_rows,
         *reminder_notification_rows,
     ]
     notification_coordination = coordinate_notification_rows(

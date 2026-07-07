@@ -15,6 +15,9 @@ LIVE_MARKET_DISPLAY_MIGRATION = MIGRATIONS_DIR / "20260512205206_live_market_dis
 READONLY_SHADOW_POLICIES_MIGRATION = MIGRATIONS_DIR / "20260512213255_readonly_shadow_table_policies.sql"
 PROVIDER_CUTOVER_MIGRATION = MIGRATIONS_DIR / "20260514160903_provider_cutover_market_state.sql"
 NOTIFICATION_DIGEST_MIGRATION = MIGRATIONS_DIR / "20260604172500_notification_digest_event_types.sql"
+MAINLINE_PRICE_NOTIFICATION_MIGRATION = (
+    MIGRATIONS_DIR / "20260707190000_mainline_price_notification_event_type.sql"
+)
 MARKET_STATE_WRITE_GUARDS_MIGRATIONS = [
     MIGRATIONS_DIR / "20260518174018_market_state_write_guards.sql",
     MIGRATIONS_DIR / "20260518174322_market_state_write_guards_tighten_churn.sql",
@@ -135,6 +138,14 @@ def test_notification_digest_migration_allows_grouped_event_types():
 
     assert "drop constraint if exists notification_events_event_type_check" in sql
     assert "add constraint notification_events_event_type_check" in sql
+
+
+def test_mainline_price_notification_migration_allows_event_type():
+    sql = MAINLINE_PRICE_NOTIFICATION_MIGRATION.read_text(encoding="utf-8")
+
+    assert "drop constraint if exists notification_events_event_type_check" in sql
+    assert "add constraint notification_events_event_type_check" in sql
+    assert "mainline_best_price_changed" in sql
 
 
 def test_live_layer_provider_migration_allows_active_sources():
