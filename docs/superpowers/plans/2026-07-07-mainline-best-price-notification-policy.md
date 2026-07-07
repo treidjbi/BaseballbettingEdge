@@ -4,7 +4,7 @@
 
 **Goal:** Replace noisy book-by-book line movement pushes with one same-main-line best-price alert per pick when the best actionable book/odds materially changes between 10-minute live-layer intervals.
 
-**Architecture:** Add a pure Python policy builder that compares previous and current `live_market_display_state` rows before the current rows are upserted. It derives the best same-line price from `book_rows` at the pick `k_line`, emits shadow summaries by default, and only sends `notification_events` when `LIVE_MAINLINE_PRICE_NOTIFICATION_MODE=send`. Existing raw `line_movement_events` remain audit evidence; send mode excludes the old raw movement notification rows from user-facing delivery.
+**Architecture:** Add a pure Python policy builder that compares previous and current `live_market_display_state` rows before the current rows are upserted. It derives the best same-line price from `book_rows` at the pick `k_line`, can emit shadow summaries when `LIVE_MAINLINE_PRICE_NOTIFICATION_MODE=shadow`, and only sends `notification_events` when `LIVE_MAINLINE_PRICE_NOTIFICATION_MODE=send`. Existing raw `line_movement_events` remain audit evidence; send mode excludes the old raw movement notification rows from user-facing delivery.
 
 **Tech Stack:** Python 3.11, pytest, Supabase Postgres migrations, Render `bbe-live-layer`, existing Netlify `send-live-notifications`, existing `live_market_display_state` and `notification_events`.
 
