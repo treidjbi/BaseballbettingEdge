@@ -23,6 +23,9 @@ from market_infra.live_events import (  # noqa: E402
     build_reminder_events,
 )
 from market_infra.live_market_display import build_live_market_display_rows  # noqa: E402
+from market_infra.mainline_price_notifications import (  # noqa: E402
+    build_mainline_best_price_notification_rows,
+)
 from market_infra.market_evidence import build_market_pick_evidence_rows  # noqa: E402
 from market_infra.notification_coordinator import coordinate_notification_rows  # noqa: E402
 from market_infra.operational_locks import build_operational_lock_rows  # noqa: E402
@@ -101,6 +104,15 @@ def _notification_coordinator_mode() -> str:
             file=sys.stderr,
         )
     return "off"
+
+
+def _mainline_best_price_notification_mode() -> str:
+    value = os.getenv("LIVE_MAINLINE_PRICE_NOTIFICATION_MODE", "off").strip().lower()
+    return value if value in {"off", "shadow", "send"} else "off"
+
+
+def _mainline_best_price_min_cents() -> int:
+    return max(1, _env_int("LIVE_MAINLINE_PRICE_MIN_CENTS", default=10))
 
 
 def _source_artifact_path(path: Path) -> str:
@@ -793,6 +805,10 @@ def run(
             live_picks=state_rows,
             webhook_movement_rows=propline_webhook_movement_rows,
         )
+    previous_live_market_display_rows = writer.select_rows(
+        "live_market_display_state",
+        {"slate_date": f"eq.{slate_date}"},
+    )
     market_pick_evidence_rows = build_market_pick_evidence_rows(
         slate_date=slate_date,
         live_picks=state_rows,
@@ -810,6 +826,14 @@ def run(
         source_artifact_path=artifact_source,
         source_artifact_sha256=artifact_sha,
         provider_heartbeats=provider_heartbeats,
+    )
+    mainline_best_price_result = build_mainline_best_price_notification_rows(
+        slate_date=slate_date,
+        previous_rows=previous_live_market_display_rows,
+        current_rows=live_market_display_rows,
+        observed_at=observed_at,
+        min_price_move_cents=_mainline_best_price_min_cents(),
+        mode=_mainline_best_price_notification_mode(),
     )
     shadow_notification_candidate_rows = build_shadow_notification_candidate_rows(
         market_pick_evidence_rows
@@ -879,6 +903,7 @@ def run(
         metadata_extra={
             "therundown": therundown_result or {"skipped": True},
             "propline_webhooks": propline_webhook_result or {"skipped": True},
+            "mainline_best_price": mainline_best_price_result.summary,
             "notification_coordinator": notification_coordination.summary,
         },
     )
@@ -899,6 +924,9 @@ def run(
         "notification_source_rows": notification_rows,
         "notification_coordinator_shadow_rows": notification_coordination.shadow_rows,
         "notification_coordinator": notification_coordination.summary,
+        "mainline_best_price": mainline_best_price_result.summary,
+        "mainline_best_price_shadow_rows": mainline_best_price_result.shadow_rows,
+        "mainline_best_price_notifications": len(mainline_best_price_result.notification_rows),
         "line_movement_rows": line_movement_rows,
         "propline_webhook_notification_rows": propline_webhook_notification_rows,
         "market_pick_evidence_rows": market_pick_evidence_rows,

@@ -1012,6 +1012,71 @@ def test_worker_writes_market_pick_evidence_for_shadow_providers(tmp_path):
     assert result["shadow_notification_candidates"] == 2
 
 
+def test_mainline_best_price_shadow_mode_records_summary(tmp_path, monkeypatch):
+    monkeypatch.setenv("LIVE_MAINLINE_PRICE_NOTIFICATION_MODE", "shadow")
+    monkeypatch.setenv("LIVE_MAINLINE_PRICE_MIN_CENTS", "10")
+    pitcher = _fire_pitcher(pitcher="Jacob Misiorowski")
+    pitcher["k_line"] = 7.5
+    today = _write_artifact(tmp_path, [pitcher])
+    previous_state = _previous_fire_state("Jacob Misiorowski", game_time="2026-05-06T22:10:00Z")
+    previous_state["normalized_pitcher"] = "jacob misiorowski"
+    previous_state["k_line"] = 7.5
+
+    previous_display = {
+        "slate_date": "2026-05-06",
+        "pitcher": "Jacob Misiorowski",
+        "normalized_pitcher": "jacob misiorowski",
+        "side": "over",
+        "provider": "propline",
+        "current_verdict": "FIRE 1u",
+        "k_line": 7.5,
+        "game_time": "2026-05-06T22:10:00Z",
+        "game_state": "scheduled",
+        "is_locked": False,
+        "freshness_status": "fresh",
+        "book_rows": [{"book": "fanduel", "line": 7.5, "odds": -120}],
+    }
+    writer = _writer_with_selects({
+        "live_pick_state": [previous_state],
+        "market_snapshots": [
+            {
+                "id": "snapshot-1",
+                "provider": "propline",
+                "provider_event_id": "game-1",
+                "normalized_player_name": "jacob misiorowski",
+                "player_name": "Jacob Misiorowski",
+                "bookmaker_key": "fanduel",
+                "side": "over",
+                "line": 7.5,
+                "american_odds": -105,
+                "observed_at": "2026-05-06T18:00:00+00:00",
+            },
+        ],
+        "live_market_display_state": [previous_display],
+        "game_reminder_state": [],
+    })
+
+    with (
+        patch.object(build_live_events_to_supabase, "SupabaseMarketWriter", return_value=writer),
+        patch.object(
+            build_live_events_to_supabase,
+            "_now_utc",
+            return_value=build_live_events_to_supabase.datetime.fromisoformat("2026-05-06T18:00:00+00:00"),
+        ),
+    ):
+        result = build_live_events_to_supabase.run(
+            slate_date="2026-05-06",
+            artifact_path=today,
+            supabase_url="https://example.supabase.co",
+            service_role_key="secret",
+        )
+
+    assert result["mainline_best_price_notifications"] == 0
+    assert result["mainline_best_price"]["mode"] == "shadow"
+    assert result["mainline_best_price"]["candidate_count"] == 1
+    assert result["shadow_pipeline_timing"]["pipeline_run_row"]["metadata"]["mainline_best_price"]["candidate_count"] == 1
+
+
 def test_worker_filters_retired_boltodds_from_active_market_builders(tmp_path):
     today = _write_artifact(tmp_path, [_fire_pitcher()])
     calls = []
