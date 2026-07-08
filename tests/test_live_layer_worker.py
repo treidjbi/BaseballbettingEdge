@@ -987,13 +987,28 @@ def test_worker_writes_market_pick_evidence_for_shadow_providers(tmp_path):
             artifact_path=today,
             supabase_url="https://example.supabase.co",
             service_role_key="secret",
-        )
+    )
 
     assert result["market_pick_evidence"] == 2
-    assert result["live_market_display_state"] == 2
+    assert result["live_market_display_state"] == 3
     assert {row["provider"] for row in result["market_pick_evidence_rows"]} == {"propline", "therundown"}
-    assert {row["provider"] for row in result["live_market_display_rows"]} == {"propline", "therundown"}
-    assert {row["actionable_state"] for row in result["live_market_display_rows"]} == {"monitor"}
+    assert {row["provider"] for row in result["live_market_display_rows"]} == {
+        "propline",
+        "therundown",
+        "therundown_propline",
+    }
+    combined_row = next(
+        row for row in result["live_market_display_rows"]
+        if row["provider"] == "therundown_propline"
+    )
+    individual_rows = [
+        row for row in result["live_market_display_rows"]
+        if row["provider"] != "therundown_propline"
+    ]
+    assert {row["actionable_state"] for row in individual_rows} == {"monitor"}
+    assert combined_row["actionable_state"] == "market_fade"
+    assert combined_row["book_count"] == 2
+    assert combined_row["books_seen"] == ["betrivers", "fanduel"]
     writer.upsert_rows.assert_any_call(
         "market_pick_evidence",
         result["market_pick_evidence_rows"],

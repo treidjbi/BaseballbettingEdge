@@ -13,9 +13,11 @@ Owner: Tyler + Codex
 Status: Implemented, merged to `main`, Supabase migration applied, deployed to
 Render `bbe-live-layer`, and promoted directly to `send` on 2026-07-07 after
 Tyler explicitly approved skipping shadow. `LIVE_MAINLINE_PRICE_MIN_CENTS=10`
-is active. This changes only live notification event creation; it does not
-change model math, provider order, official artifacts, thresholds, staking,
-locks, retention, dashboard source-of-truth, or grading.
+is active. On 2026-07-08, Tyler approved the non-strict combined
+TheRundown+PropLine live-display/main-line best-price path. This changes only
+live display rows and best-price notification candidate selection; it does not
+change model math, strict provider mode, official artifacts, thresholds,
+staking, locks, retention, dashboard source-of-truth, or grading.
 
 ## 2026-07-07 Direct Send Promotion Checkpoint
 
@@ -66,6 +68,38 @@ Watch next two slates for:
 - confusing book/line copy,
 - evidence that raw polling/webhook movement rows are still reaching
   user-facing `notification_events` while mode is `send`.
+
+## 2026-07-08 Combined Coverage Checkpoint
+
+Tyler approved the non-strict TheRundown + PropLine coverage path for fuller
+book coverage and main-line best-price display. This remains non-strict:
+`OFFICIAL_MARKET_STRICT=false`, TheRundown direct fallback remains open, and no
+model, threshold, staking, lock, retention, grading, or dashboard
+source-of-truth rule changed.
+
+Implementation shape:
+
+- `live_market_display_state` now supports an app-facing combined provider row:
+  `provider='therundown_propline'`.
+- The live layer still writes individual `therundown` and `propline` rows for
+  audit, then adds the combined row when both providers have the same
+  pitcher/side.
+- The combined row dedupes duplicate books, keeps the fuller book board, and
+  uses only the pick's same K line for primary `best_book`, `best_line`, and
+  `best_odds`. Different-line books can still appear in the book board.
+- Mainline best-price notifications prefer the combined provider row when it
+  exists for a pitcher/side, preventing duplicate provider-specific candidates.
+- Netlify `live-market-display` and the dashboard adapter now allow
+  `therundown`, `propline`, and `therundown_propline` rows, with the combined
+  row ranked above individual provider rows for UI attachment.
+
+Rollback:
+
+- Keep the database constraint migration; it is permissive and safe.
+- Revert the live-layer/dashboard/Netlify code and redeploy `bbe-live-layer`
+  plus Netlify if combined rows prove noisy.
+- Do not turn on strict provider mode as a rollback or follow-up from this
+  checkpoint.
 
 ## 2026-07-07 Safe-Subset Verification Checkpoint
 

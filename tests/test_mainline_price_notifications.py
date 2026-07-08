@@ -88,6 +88,44 @@ def test_same_line_best_price_change_emits_even_when_alternate_line_moves():
     assert row["payload"]["current_best_book"] == "fanduel"
 
 
+def test_combined_provider_replaces_individual_provider_notifications():
+    result = build_mainline_best_price_notification_rows(
+        slate_date="2026-07-07",
+        previous_rows=[
+            _display_row(provider="propline"),
+            _display_row(provider="therundown_propline"),
+        ],
+        current_rows=[
+            _display_row(
+                provider="propline",
+                book_rows=[
+                    {"book": "fanduel", "line": 7.5, "odds": -105},
+                    {"book": "draftkings", "line": 7.5, "odds": -125},
+                ],
+            ),
+            _display_row(
+                provider="therundown_propline",
+                book_rows=[
+                    {"book": "fanduel", "line": 7.5, "odds": -105},
+                    {"book": "draftkings", "line": 7.5, "odds": -125},
+                    {"book": "betrivers", "line": 7.5, "odds": 102},
+                    {"book": "caesars", "line": 8.5, "odds": 1200},
+                ],
+            ),
+        ],
+        observed_at=NOW,
+        min_price_move_cents=10,
+        mode="send",
+    )
+
+    assert len(result.notification_rows) == 1
+    row = result.notification_rows[0]
+    assert row["payload"]["provider"] == "therundown_propline"
+    assert row["payload"]["current_best_book"] == "betrivers"
+    assert row["payload"]["current_best_odds"] == 102
+    assert result.summary["candidate_count"] == 1
+
+
 def test_different_line_for_same_pitcher_side_provider_is_suppressed():
     result = build_mainline_best_price_notification_rows(
         slate_date="2026-07-07",

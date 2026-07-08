@@ -219,7 +219,15 @@
   function supportedMarketProvider(provider) {
     const value = String(provider || '').trim().toLowerCase();
     if (!value) return true;
-    return ['boltodds', 'propline', 'prop_line', 'propline_polling', 'propline_webhook'].includes(value);
+    return [
+      'boltodds',
+      'propline',
+      'prop_line',
+      'propline_polling',
+      'propline_webhook',
+      'therundown',
+      'therundown_propline',
+    ].includes(value);
   }
 
   function numericOrNull(value) {
@@ -372,6 +380,8 @@
 
   function marketProviderRank(row) {
     const value = String(row?.provider || '').toLowerCase();
+    if (value === 'therundown_propline') return 4;
+    if (value === 'therundown') return 3;
     if (value === 'boltodds') return 2;
     if (value === 'propline') return 1;
     return 0;

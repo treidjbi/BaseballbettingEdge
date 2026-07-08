@@ -18,6 +18,9 @@ NOTIFICATION_DIGEST_MIGRATION = MIGRATIONS_DIR / "20260604172500_notification_di
 MAINLINE_PRICE_NOTIFICATION_MIGRATION = (
     MIGRATIONS_DIR / "20260707190000_mainline_price_notification_event_type.sql"
 )
+COMBINED_LIVE_MARKET_PROVIDER_MIGRATION = (
+    MIGRATIONS_DIR / "20260708170000_allow_combined_live_market_display_provider.sql"
+)
 MARKET_STATE_WRITE_GUARDS_MIGRATIONS = [
     MIGRATIONS_DIR / "20260518174018_market_state_write_guards.sql",
     MIGRATIONS_DIR / "20260518174322_market_state_write_guards_tighten_churn.sql",
@@ -146,6 +149,14 @@ def test_mainline_price_notification_migration_allows_event_type():
     assert "drop constraint if exists notification_events_event_type_check" in sql
     assert "add constraint notification_events_event_type_check" in sql
     assert "mainline_best_price_changed" in sql
+
+
+def test_combined_live_market_provider_migration_allows_therundown_propline():
+    sql = COMBINED_LIVE_MARKET_PROVIDER_MIGRATION.read_text(encoding="utf-8")
+
+    assert "drop constraint if exists live_market_display_state_provider_check" in sql
+    assert "add constraint live_market_display_state_provider_check" in sql
+    assert "'therundown_propline'" in sql
 
 
 def test_live_layer_provider_migration_allows_active_sources():

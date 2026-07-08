@@ -13,7 +13,12 @@ from market_infra.provider_freshness import (
 from pipeline.name_utils import normalize
 
 
-MAIN_BOOKS = ("fanduel", "draftkings", "betmgm", "betrivers", "caesars")
+THERUNDOWN_PROVIDER = "therundown"
+PROPLINE_PROVIDER = "propline"
+COMBINED_PROVIDER = "therundown_propline"
+ACTIVE_PROVIDERS = {THERUNDOWN_PROVIDER, PROPLINE_PROVIDER}
+COMBINED_INPUT_PROVIDERS = {THERUNDOWN_PROVIDER, PROPLINE_PROVIDER}
+MAIN_BOOKS = ("fanduel", "draftkings", "betmgm", "betrivers", "caesars", "kalshi", "thescore")
 TRACKED_VERDICTS = {"LEAN", "FIRE 1u", "FIRE 2u"}
 OFF_MARKET_ODDS_CENTS = 10
 DEFAULT_STALE_AFTER_SECONDS = 900
@@ -130,6 +135,10 @@ def _is_playable_line(side: str, candidate_line: float, pick_line: float) -> boo
     return candidate_line == pick_line or _is_better_line(side, candidate_line, pick_line)
 
 
+def _matches_line(candidate_line: float, pick_line: float) -> bool:
+    return abs(candidate_line - pick_line) < 0.001
+
+
 def _line_rank(side: str, line: float) -> float:
     return line if side == "over" else -line
 
@@ -188,6 +197,7 @@ def _book_row(
     )
     return {
         "book": book,
+        "provider": provider,
         "line": current["line"],
         "odds": current["american_odds"],
         "first_line": first["line"],
@@ -298,13 +308,20 @@ def _best_actionable(
     pick_line: float,
     book_rows: list[dict[str, Any]],
     freshness_status: str,
+    main_line_only: bool = False,
 ) -> dict[str, Any] | None:
     if freshness_status != "fresh":
         return None
-    playable = [
-        row for row in book_rows
-        if _is_playable_line(side, float(row["line"]), pick_line)
-    ]
+    if main_line_only:
+        playable = [
+            row for row in book_rows
+            if _matches_line(float(row["line"]), pick_line)
+        ]
+    else:
+        playable = [
+            row for row in book_rows
+            if _is_playable_line(side, float(row["line"]), pick_line)
+        ]
     if not playable:
         return None
     selected = sorted(
@@ -364,6 +381,178 @@ def _snapshot_groups(
     return grouped
 
 
+def _provider_duplicate_rank(row: dict[str, Any]) -> int:
+    provider = str(row.get("provider") or "").strip().lower()
+    if provider == THERUNDOWN_PROVIDER:
+        return 0
+    if provider == PROPLINE_PROVIDER:
+        return 1
+    return 2
+
+
+def _dedupe_book_rows(book_rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    by_book: dict[str, dict[str, Any]] = {}
+    for row in book_rows:
+        book = _book(row.get("book"))
+        if not book:
+            continue
+        candidate = {**row, "book": book}
+        current = by_book.get(book)
+        if current is None:
+            by_book[book] = candidate
+            continue
+        candidate_key = (
+            int(candidate.get("freshness_seconds") or 999999),
+            int(candidate.get("line_freshness_seconds") or 999999),
+            _provider_duplicate_rank(candidate),
+            -int(candidate.get("odds") or -999999),
+        )
+        current_key = (
+            int(current.get("freshness_seconds") or 999999),
+            int(current.get("line_freshness_seconds") or 999999),
+            _provider_duplicate_rank(current),
+            -int(current.get("odds") or -999999),
+        )
+        if candidate_key < current_key:
+            by_book[book] = candidate
+    return [by_book[book] for book in sorted(by_book)]
+
+
+def _combined_live_market_display_rows(
+    rows: list[dict[str, Any]],
+    *,
+    stale_after_seconds: int,
+) -> list[dict[str, Any]]:
+    grouped: dict[tuple[str, str, str], list[dict[str, Any]]] = {}
+    for row in rows:
+        provider = str(row.get("provider") or "").strip().lower()
+        if provider not in COMBINED_INPUT_PROVIDERS:
+            continue
+        key = (
+            str(row.get("slate_date") or "").strip(),
+            str(row.get("normalized_pitcher") or "").strip(),
+            str(row.get("side") or "").strip().lower(),
+        )
+        if not all(key):
+            continue
+        grouped.setdefault(key, []).append(row)
+
+    combined_rows: list[dict[str, Any]] = []
+    for (_slate_date, normalized, side), provider_rows in grouped.items():
+        providers_seen = {str(row.get("provider") or "").strip().lower() for row in provider_rows}
+        if not COMBINED_INPUT_PROVIDERS.issubset(providers_seen):
+            continue
+        base = sorted(provider_rows, key=lambda row: str(row.get("observed_at") or ""), reverse=True)[0]
+        pick_line = _numeric(base.get("k_line"))
+        if pick_line is None:
+            continue
+        book_rows = _dedupe_book_rows([
+            book_row
+            for row in provider_rows
+            for book_row in row.get("book_rows", [])
+            if isinstance(book_row, dict)
+        ])
+        if not book_rows:
+            continue
+
+        latest_age = min(int(row["freshness_seconds"]) for row in book_rows)
+        line_latest_age = min(int(row["line_freshness_seconds"]) for row in book_rows)
+        heartbeat_holds = [row for row in book_rows if row.get("heartbeat_hold")]
+        heartbeat_freshness_seconds = [
+            int(row["heartbeat_freshness_seconds"])
+            for row in heartbeat_holds
+            if row.get("heartbeat_freshness_seconds") is not None
+        ]
+        freshness_status = "fresh" if latest_age <= stale_after_seconds else "stale"
+        main_line, main_line_books = _main_line(book_rows)
+        off_market_books = _off_market_books(
+            side=side,
+            main_line=main_line,
+            book_rows=book_rows,
+        )
+        best_actionable = _best_actionable(
+            side=side,
+            pick_line=float(pick_line),
+            book_rows=book_rows,
+            freshness_status=freshness_status,
+            main_line_only=True,
+        )
+        best_is_off_market = bool(
+            best_actionable
+            and any(
+                row["book"] == best_actionable["book"]
+                and row["line"] == best_actionable["line"]
+                and row["odds"] == best_actionable["odds"]
+                for row in off_market_books
+            )
+        )
+        market_consensus = _consensus(
+            values=[row["market_direction"] for row in book_rows],
+            positive_label="toward_pick",
+            negative_label="away_from_pick",
+        )
+        bet_value_consensus = _consensus(
+            values=[row["bet_value_direction"] for row in book_rows],
+            positive_label="better_now",
+            negative_label="worse_now",
+        )
+        market_status = _market_status(market_consensus, bet_value_consensus)
+        movement_events = sorted(
+            [
+                event
+                for row in provider_rows
+                for event in row.get("movement_events", [])
+                if isinstance(event, dict)
+            ],
+            key=lambda row: str(row.get("observed_at") or ""),
+            reverse=True,
+        )[:12]
+
+        combined_rows.append({
+            **base,
+            "provider": COMBINED_PROVIDER,
+            "market_status": market_status,
+            "actionable_state": _actionable_state(
+                market_status=market_status,
+                freshness_status=freshness_status,
+                best_actionable=best_actionable,
+                best_is_off_market=best_is_off_market,
+            ),
+            "market_consensus": market_consensus,
+            "bet_value_consensus": bet_value_consensus,
+            "main_line": main_line,
+            "main_line_books": main_line_books,
+            "best_book": best_actionable["book"] if best_actionable else None,
+            "best_line": best_actionable["line"] if best_actionable else None,
+            "best_odds": best_actionable["odds"] if best_actionable else None,
+            "best_is_off_market": best_is_off_market,
+            "off_market_books": off_market_books,
+            "book_count": len(book_rows),
+            "books_seen": sorted(row["book"] for row in book_rows),
+            "book_rows": book_rows,
+            "movement_events": movement_events,
+            "latest_snapshot_at": max(row["last_seen_at"] for row in book_rows),
+            "freshness_seconds": latest_age,
+            "freshness_status": freshness_status,
+            "broad_confirmation": (
+                sum(1 for row in book_rows if row["market_direction"] == "toward_pick") >= 2
+            ),
+            "dedupe_key": f"{base['slate_date']}:live_market_display:{COMBINED_PROVIDER}:{normalized}:{side}",
+            "metadata": {
+                **(base.get("metadata") if isinstance(base.get("metadata"), dict) else {}),
+                "combined_from_providers": sorted(providers_seen),
+                "main_books": list(MAIN_BOOKS),
+                "line_freshness_seconds": line_latest_age,
+                "heartbeat_hold": bool(heartbeat_holds),
+                "heartbeat_hold_books": sorted(row["book"] for row in heartbeat_holds),
+                "heartbeat_freshness_seconds": (
+                    min(heartbeat_freshness_seconds) if heartbeat_freshness_seconds else None
+                ),
+            },
+        })
+    return combined_rows
+
+
 def build_live_market_display_rows(
     *,
     slate_date: str,
@@ -385,11 +574,10 @@ def build_live_market_display_rows(
         observed_at_dt,
         stale_after_seconds,
     )
-    active_providers = {"propline", "therundown"}
     providers = [provider.strip().lower()] if provider else sorted({
         str(row.get("provider") or "").strip().lower()
         for row in snapshot_rows
-        if str(row.get("provider") or "").strip().lower() in active_providers
+        if str(row.get("provider") or "").strip().lower() in ACTIVE_PROVIDERS
     })
 
     rows: list[dict[str, Any]] = []
@@ -530,5 +718,11 @@ def build_live_market_display_rows(
                 },
                 "updated_at": observed_at_iso,
             })
+
+    if provider is None:
+        rows.extend(_combined_live_market_display_rows(
+            rows,
+            stale_after_seconds=stale_after_seconds,
+        ))
 
     return rows

@@ -1,5 +1,5 @@
 const SOURCE = 'live_market_display_state';
-const SUPPORTED_PROVIDERS = new Set(['boltodds', 'propline']);
+const SUPPORTED_PROVIDERS = new Set(['boltodds', 'propline', 'therundown', 'therundown_propline']);
 const SUPPORTED_BOOKS = new Set([
   'fanduel',
   'draftkings',

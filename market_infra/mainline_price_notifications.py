@@ -7,6 +7,7 @@ from typing import Any
 
 TRACKED_SEND_MODES = {"shadow", "send"}
 LOCKED_GAME_STATES = {"locked", "in_progress", "final", "completed", "postponed"}
+COMBINED_PROVIDER = "therundown_propline"
 
 
 @dataclass(frozen=True)
@@ -65,6 +66,34 @@ def _row_key(row: dict[str, Any], slate_date: str) -> tuple[str, str, str, str] 
     if row_slate and normalized and side in {"over", "under"} and provider:
         return row_slate, normalized, side, provider
     return None
+
+
+def _coverage_key(row: dict[str, Any], slate_date: str) -> tuple[str, str, str] | None:
+    row_slate = str(row.get("slate_date") or slate_date or "").strip()
+    normalized = str(row.get("normalized_pitcher") or "").strip()
+    side = str(row.get("side") or "").strip().lower()
+    if row_slate and normalized and side in {"over", "under"}:
+        return row_slate, normalized, side
+    return None
+
+
+def _prefer_combined_provider_rows(rows: list[dict[str, Any]], slate_date: str) -> list[dict[str, Any]]:
+    combined_keys = {
+        key
+        for row in rows
+        if str(row.get("provider") or "").strip().lower() == COMBINED_PROVIDER
+        if (key := _coverage_key(row, slate_date)) is not None
+    }
+    if not combined_keys:
+        return rows
+    preferred: list[dict[str, Any]] = []
+    for row in rows:
+        key = _coverage_key(row, slate_date)
+        provider = str(row.get("provider") or "").strip().lower()
+        if key in combined_keys and provider != COMBINED_PROVIDER:
+            continue
+        preferred.append(row)
+    return preferred
 
 
 def _line_key(row: dict[str, Any]) -> float | None:
@@ -147,6 +176,10 @@ def build_mainline_best_price_notification_rows(
     }
     if normalized_mode not in TRACKED_SEND_MODES:
         return MainlineBestPriceResult([], [], summary)
+
+    previous_rows = _prefer_combined_provider_rows(previous_rows, slate_date)
+    current_rows = _prefer_combined_provider_rows(current_rows, slate_date)
+    summary["input_count"] = len(current_rows)
 
     previous_by_key = {
         key: row

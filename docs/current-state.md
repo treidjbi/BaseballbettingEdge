@@ -195,6 +195,16 @@ do we convert model signal into better betting decisions?"
   artifacts, thresholds, staking, locks, retention, dashboard source-of-truth,
   or grading. Rollback is `LIVE_MAINLINE_PRICE_NOTIFICATION_MODE=off` plus a
   `bbe-live-layer` redeploy.
+- As of 2026-07-08, Tyler approved the non-strict combined TheRundown+PropLine
+  live-display/main-line best-price path. The live layer still writes
+  individual `therundown` and `propline` rows for audit, then adds
+  `provider=therundown_propline` combined rows for the app-facing book board
+  and best-price notification candidate selection when both providers have the
+  same pitcher/side. The combined row dedupes duplicate books and uses only the
+  pick's same K line for primary `best_book` / `best_line` / `best_odds`;
+  different-line books remain visible as book-board context. This is not strict
+  provider mode and does not change official artifacts, model math, thresholds,
+  staking, locks, retention, dashboard source-of-truth, or grading.
 - As of 2026-06-09, active soaks and promotion gates are formalized in
   `docs/superpowers/plans/2026-06-09-active-gates-and-soak-synthesis.md`.
   Treat PropLine and historical BoltOdds dashboard display as operational
@@ -279,6 +289,14 @@ use `therundown_propline` or direct TheRundown fallback, never
 `boltodds_propline`, and that strict mode remains false. Webhook movement
 notification queueing now has a separate 20-minute freshness gate while the
 180-minute webhook evidence-processing window remains for audit rows.
+
+Pipeline-lane overlay, 2026-07-08: the live-market display path now treats
+TheRundown and PropLine as a combined non-strict coverage surface for UI and
+main-line best-price notifications. `live_market_display_state` permits
+`provider=therundown_propline`; Netlify and `dashboard/v2-data.js` pass through
+and prefer that combined row over individual provider rows. Individual provider
+rows remain audit evidence, and strict provider/source-of-truth promotion
+remains closed.
 
 Branch-hygiene overlay, 2026-06-17: safe merged local branches were deleted,
 merged remote branches were deleted where they still existed, and stale

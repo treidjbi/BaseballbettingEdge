@@ -183,6 +183,49 @@ test('live-market-display reads Supabase through service-role REST and returns o
   }
 });
 
+test('live-market-display allows combined TheRundown plus PropLine provider rows', async () => {
+  const originalFetch = globalThis.fetch;
+  process.env.SUPABASE_URL = 'https://example.supabase.co/';
+  process.env.SUPABASE_SERVICE_ROLE_KEY = 'service-role-secret';
+
+  globalThis.fetch = async () => new Response(JSON.stringify([
+    {
+      slate_date: '2026-06-07',
+      pitcher: 'Market Pitcher',
+      normalized_pitcher: 'market pitcher',
+      side: 'under',
+      provider: 'therundown_propline',
+      observed_at: '2026-06-07T18:40:00Z',
+      freshness_status: 'fresh',
+      actionable_state: 'playable_now',
+      main_line: 5.5,
+      best_book: 'betrivers',
+      best_line: 5.5,
+      best_odds: 104,
+      book_rows: [
+        { book: 'fanduel', line: 5.5, odds: -118 },
+        { book: 'betrivers', line: 5.5, odds: 104 },
+      ],
+    },
+  ]), {
+    status: 200,
+    headers: { 'Content-Type': 'application/json' },
+  });
+
+  try {
+    const response = await parseJsonResponse(await handler(getEvent({ date: '2026-06-07' })));
+
+    assert.equal(response.statusCode, 200);
+    assert.equal(response.json.rows.length, 1);
+    assert.equal(response.json.rows[0].provider, 'therundown_propline');
+    assert.equal(response.json.rows[0].best_book, 'betrivers');
+    assert.equal(response.json.rows[0].book_rows.length, 2);
+  } finally {
+    globalThis.fetch = originalFetch;
+    restoreEnv();
+  }
+});
+
 test('live-market-display fails closed without leaking Supabase error bodies', async () => {
   const originalFetch = globalThis.fetch;
   process.env.SUPABASE_URL = 'https://example.supabase.co';
