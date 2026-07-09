@@ -58,9 +58,20 @@ The decision system should answer:
 - Create `analytics/output/strong_base_portfolio_simulator.md`
   - First generated portfolio policy report from the latest clean post-bump
     Gate C corpus.
+- Create `analytics/diagnostics/shadow_signal_synthesis_lab.py`
+  - Combines Strong Base candidate lanes, market-anchor selector labels,
+    pre-close proxy labels, and market-agreement tracker exports into one
+    read-only policy-shape scoreboard.
+- Create `tests/test_shadow_signal_synthesis_lab.py`
+  - Covers market-agreement JSONL loading, per-pick agreement overlay,
+    combined policy scoring, and shadow-only report language.
+- Create `analytics/output/shadow_signal_synthesis_lab.md`
+  - First generated synthesis report from the refreshed Gate C corpus and
+    refreshed market-agreement tracker export.
 - Modify `scripts/run_post_grading_shadow_reports.py`
-  - Regenerates the Strong Base report and portfolio simulator as part of the
-    existing review-only post-grading model report runner.
+  - Regenerates the Strong Base report, portfolio simulator, market-agreement
+    tracker, and shadow signal synthesis report as part of the existing
+    review-only post-grading model report runner.
 - Modify `docs/current-state.md`
   - Add the Strong Base lab to the model-lane read order and next-decision language once the first report is generated.
 - Modify `C:\Users\TylerReid\.codex\automations\yesterdays-pipeline-health-bbe\memory.md`
@@ -99,6 +110,48 @@ Gate posture: all runtime policies remain `watch_more`, not live promotion.
 The positive historical policy shapes are useful, but current-provider,
 recent-window, plus-price, worse-CLV, Path B, quality, and market-agreement
 slices must survive before any promotion plan.
+
+## Shadow Signal Synthesis Addendum
+
+Tyler asked to mesh the positive shadow signals together instead of evaluating
+market-anchor, Strong Base, pre-close proxy, and market agreement in isolation.
+The resulting synthesis lab is still read-only and does not approve live model,
+threshold, staking, provider, notification, lock, retention, dashboard
+source-of-truth, or `formula_change_date` changes.
+
+First refreshed report through the July 8 graded slate:
+
+- Current tracked baseline: `1,460` rows, `722-738`, `-102.70u`, `-7.0%`.
+- Market agreement export coverage: `1,935` raw tracker rows, `432` tracked
+  covered picks; agreement-with-model was `53` rows, `33-20`, `+6.61u`,
+  while agreement-against-model was `46` rows, `21-25`, `-7.29u`.
+- Market-anchor strict remained the standout individual anchor: `91` rows,
+  `57-34`, `+5.54u`; strict displayed FIRE was `20` rows, `14-6`, `+3.74u`.
+- Strong Base strict plus selective LEAN was `222` rows, `138-84`, `+29.43u`.
+- Broad no-hindsight combined policy without drag rows was `170` rows,
+  `113-57`, `+26.63u`; the higher-conviction watch composite was `131`
+  rows, `84-47`, `+20.46u`.
+
+Gate posture: useful enough to keep building a separate canary-review packet,
+but not promotion-ready. The next review must stress current-provider, recent,
+side, K-line, price, worse-CLV/proxy, Path B, quality, workload, market
+agreement, and provider slices before choosing any live policy shape.
+
+Tyler then chose the aggressive unit-accumulation base:
+`strict_runtime_core_plus_selective_lean`, not the smaller ROI-first watch
+slice. The governing packet is
+`docs/research/strict-runtime-core-selective-lean-canary-packet.md`.
+
+Decision framing:
+
+- Primary lens: total units and seasonal volume.
+- Candidate baseline: `222` rows, `138-84`, `+29.43u`, `+13.3%`, with `85`
+  retained FIRE rows and `137` selective LEAN rows.
+- Guardrails: current-provider, recent-window, side, K-line, price,
+  market-agreement, pre-close proxy, CLV/proxy, Path B, quality, workload, and
+  provider slices.
+- Boundary: this remains read-only until Tyler separately approves a
+  feature-flagged live canary plan.
 
 ## Candidate Lanes
 

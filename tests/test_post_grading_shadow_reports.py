@@ -13,6 +13,7 @@ def test_runner_rebuilds_shadow_reports_and_prints_review_excerpt(tmp_path, monk
     portfolio_simulator_output = tmp_path / "strong_base_portfolio_simulator.md"
     market_agreement_output = tmp_path / "market_agreement_tracker.md"
     market_agreement_jsonl = tmp_path / "market_agreement_tracker.jsonl"
+    shadow_signal_output = tmp_path / "shadow_signal_synthesis_lab.md"
     gate_f_output = tmp_path / "gate_f_projection_challenger_shadow_report.md"
     market_shrink_output = tmp_path / "market_shrink_projection_canary_audit.md"
     shadow_candidates = tmp_path / "shadow_notification_candidates.json"
@@ -102,6 +103,31 @@ def test_runner_rebuilds_shadow_reports_and_prints_review_excerpt(tmp_path, monk
         fake_simple_report("market_agreement"),
     )
 
+    def fake_shadow_signal_synthesis_main(argv):
+        calls.append(("shadow_signal_synthesis", argv))
+        shadow_signal_output.write_text(
+            "# Shadow Signal Synthesis Lab\n\n"
+            "## Executive Read\n\n"
+            "- Combined watch: +3.25u.\n\n"
+            "## Unit Accumulation Candidate\n\n"
+            "- Preferred aggressive candidate: `strict_runtime_core_plus_selective_lean`.\n\n"
+            "## Market Agreement Input\n\n"
+            "- Raw market-agreement rows: `12`.\n\n"
+            "## Composite Policy Shapes\n\n"
+            "| Signal | Result |\n"
+            "| --- | ---: |\n"
+            "| `combined_positive_runtime_watch` | +3.25u |\n\n"
+            "## Debug Detail\n\n"
+            "- Not needed in the log excerpt.\n",
+            encoding="utf-8",
+        )
+
+    monkeypatch.setattr(
+        runner.shadow_signal_synthesis_lab,
+        "main",
+        fake_shadow_signal_synthesis_main,
+    )
+
     def fake_market_shrink_audit_main(argv):
         calls.append(("market_shrink_projection", argv))
         market_shrink_output.write_text(
@@ -163,6 +189,8 @@ def test_runner_rebuilds_shadow_reports_and_prints_review_excerpt(tmp_path, monk
         str(market_agreement_output),
         "--market-agreement-output-jsonl",
         str(market_agreement_jsonl),
+        "--shadow-signal-synthesis-output",
+        str(shadow_signal_output),
         "--gate-f-projection-output",
         str(gate_f_output),
         "--market-shrink-projection-output",
@@ -250,6 +278,17 @@ def test_runner_rebuilds_shadow_reports_and_prints_review_excerpt(tmp_path, monk
                 str(market_agreement_jsonl),
             ],
         ),
+        (
+            "shadow_signal_synthesis",
+            [
+                "--input",
+                str(output_dir / "pitcher_k_outcome_dataset.jsonl"),
+                "--market-agreement",
+                str(market_agreement_jsonl),
+                "--output",
+                str(shadow_signal_output),
+            ],
+        ),
         ("gate_f_load", output_dir / "pitcher_k_outcome_dataset.jsonl"),
         ("gate_f_report", [{"dataset_key": "row-1"}]),
         (
@@ -283,6 +322,12 @@ def test_runner_rebuilds_shadow_reports_and_prints_review_excerpt(tmp_path, monk
     assert "Strong Base portfolio simulator excerpt:" in output
     assert "Strict runtime core: +4.25u." in output
     assert "Policy Comparison" in output
+    assert "Shadow signal synthesis lab excerpt:" in output
+    assert "Combined watch: +3.25u." in output
+    assert "Unit Accumulation Candidate" in output
+    assert "strict_runtime_core_plus_selective_lean" in output
+    assert "Raw market-agreement rows: `12`." in output
+    assert "combined_positive_runtime_watch" in output
     assert "Implementation Notes" not in output
     assert "Promotion Gate" not in output
     assert "Debug Detail" not in output

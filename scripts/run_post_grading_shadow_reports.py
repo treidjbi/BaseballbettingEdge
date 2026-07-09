@@ -24,6 +24,7 @@ from analytics.diagnostics import market_agreement_tracker  # noqa: E402
 from analytics.diagnostics import market_anchor_selector_canary_audit  # noqa: E402
 from analytics.diagnostics import market_shrink_projection_canary_audit  # noqa: E402
 from analytics.diagnostics import profit_rescue_audit  # noqa: E402
+from analytics.diagnostics import shadow_signal_synthesis_lab  # noqa: E402
 from analytics.diagnostics import shadow_notification_candidate_audit  # noqa: E402
 from analytics.diagnostics import strong_base_decision_lab  # noqa: E402
 from analytics.diagnostics import strong_base_portfolio_simulator  # noqa: E402
@@ -78,6 +79,11 @@ def _parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         "--market-agreement-output-jsonl",
         type=Path,
         default=market_agreement_tracker.OUTPUT_JSONL_PATH,
+    )
+    parser.add_argument(
+        "--shadow-signal-synthesis-output",
+        type=Path,
+        default=shadow_signal_synthesis_lab.DEFAULT_OUTPUT,
     )
     parser.add_argument("--market-pick-evidence", type=Path)
     parser.add_argument("--live-market-display", type=Path)
@@ -229,6 +235,14 @@ def main(argv: list[str] | None = None) -> int:
         str(args.portfolio_simulator_output),
     ])
     market_agreement_tracker.main(_market_agreement_args(args, dataset_path))
+    shadow_signal_synthesis_lab.main([
+        "--input",
+        str(dataset_path),
+        "--market-agreement",
+        str(args.market_agreement_output_jsonl),
+        "--output",
+        str(args.shadow_signal_synthesis_output),
+    ])
     _write_gate_f_projection_report(
         dataset_path=dataset_path,
         output_path=args.gate_f_projection_output,
@@ -269,6 +283,16 @@ def main(argv: list[str] | None = None) -> int:
         args.portfolio_simulator_output,
         label="Strong Base portfolio simulator",
         section_titles={"Executive Read", "Policy Comparison"},
+    )
+    _print_review_excerpt(
+        args.shadow_signal_synthesis_output,
+        label="Shadow signal synthesis lab",
+        section_titles={
+            "Executive Read",
+            "Unit Accumulation Candidate",
+            "Market Agreement Input",
+            "Composite Policy Shapes",
+        },
     )
     return 0
 

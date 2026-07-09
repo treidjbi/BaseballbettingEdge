@@ -1,6 +1,6 @@
 # Positive Unit Producer Decision Packet
 
-Date: 2026-07-07
+Date: 2026-07-09
 
 Status: read-only synthesis. This packet does not approve live changes to model
 math, thresholds, staking, provider order, notifications, locks, retention, or
@@ -74,6 +74,28 @@ This is the clearest answer so far: a smaller strict runtime base would have
 been positive, and selective LEAN expansion improves the historical policy.
 But the simulator still marks those runtime policies watch-only because the
 current-provider sample is small and mandatory slice risks remain.
+
+Shadow Signal Synthesis Lab now confirms those policy shapes are useful when
+meshed with market-anchor, market-agreement, and pre-close proxy evidence:
+
+- Current tracked baseline: 1,460 bets, 722-738, -102.70u, -7.0% ROI.
+- Market-anchor strict: 91 bets, 57-34, +5.54u; strict displayed FIRE: 20
+  bets, 14-6, +3.74u.
+- Market agreement with the model: 53 bets, 33-20, +6.61u.
+- Market agreement against the model: 46 bets, 21-25, -7.29u.
+- Broad no-hindsight no-drag composite: 170 bets, 113-57, +26.63u.
+- Higher-conviction watch composite: 131 bets, 84-47, +20.46u.
+
+This makes market agreement useful as a gating input, not as a standalone
+promotion trigger. The agreement-with-model / agreement-against-model split is
+directionally clean, but coverage is still too thin to promote by itself.
+
+Tyler's unit-accumulation preference moves the primary review base from the
+smaller higher-conviction watch composite to
+`strict_runtime_core_plus_selective_lean`: 222 bets, 138-84, +29.43u, +13.3%
+ROI. The narrower composites remain guardrails, but the packet should start
+with the larger unit-producing policy because baseball rewards durable volume
+when the edge survives.
 
 Profit rescue remains the strongest live protection layer:
 
@@ -234,20 +256,24 @@ then draft a narrow promotion plan for that policy only.
 
 ## Practical Recommendation
 
-The most effective next move is to use the Strong Base Portfolio Simulator as
+The most effective next move is to use the Strong Base Portfolio Simulator,
+Shadow Signal Synthesis Lab, and
+`docs/research/strict-runtime-core-selective-lean-canary-packet.md` together as
 the promotion gate after every grading run.
 
 The practical target policy is now:
 
-- Keep FIRE only through the strict runtime core.
-- Add selective LEAN only when the policy survives current-provider and recent
-  windows.
+- Build the aggressive base from `strict_runtime_core_plus_selective_lean`.
+- Use total units and seasonal volume as the primary lens.
+- Keep ROI, current-provider, recent-window, and mandatory slices as guardrails.
 - Keep high raw edge, market fade, FIRE-under-fade, and no-price-support mass
   capped or suppressed until proven otherwise.
 - Use mainline best-price movement as execution evidence, not as a model source
   of truth.
 - Convert positive CLV into pre-close or best-main-line price rules before any
   live promotion.
+- Require market agreement to improve or at least not break the candidate
+  policy before it graduates to a separate canary plan.
 
 Until that proof matures, the operating answer is:
 
