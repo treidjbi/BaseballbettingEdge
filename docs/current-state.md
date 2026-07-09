@@ -250,6 +250,13 @@ do we convert model signal into better betting decisions?"
   dashboard artifacts, update
   calibration, change lambda, change thresholds/staking, change provider
   behavior, change notifications, change locks, or change retention.
+  2026-07-09 update: Tyler approved redeploying this read-only cron after the
+  shadow signal synthesis work. Render deploy `dep-d97ujla8qa3s73aqa53g` is
+  live on commit `6d30632d` (`feat: add shadow signal synthesis packet`), and
+  one-off verification job `job-d97ul53tqb8s739hptf0` succeeded with the same
+  `python scripts/run_post_grading_shadow_reports.py` start command. Service
+  readback stayed unchanged: branch `main`, autoDeploy off, schedule
+  `7 11 * * *`, and the same review-only command.
 
 ## Four-Lane Operating Board
 
