@@ -145,13 +145,31 @@ slice. The governing packet is
 Decision framing:
 
 - Primary lens: total units and seasonal volume.
-- Candidate baseline: `222` rows, `138-84`, `+29.43u`, `+13.3%`, with `85`
-  retained FIRE rows and `137` selective LEAN rows.
+- Candidate baseline after the 2026-07-10 post-grading refresh: `225` rows,
+  `140-85`, `+30.18u`, `+13.4%`, with `85` retained FIRE rows and `140`
+  selective LEAN rows.
 - Guardrails: current-provider, recent-window, side, K-line, price,
   market-agreement, pre-close proxy, CLV/proxy, Path B, quality, workload, and
   provider slices.
-- Boundary: this remains read-only until Tyler separately approves a
-  feature-flagged live canary plan.
+- Boundary: this is now a canary-review candidate, but it remains read-only
+  until Tyler separately approves a disabled `off|shadow` live-canary plan.
+  The first live implementation, if approved, should stamp metadata only; it
+  must not promote LEANs, change displayed verdicts, change staking, change
+  lambda, change thresholds, change provider behavior, change notifications,
+  change locks, change retention, or change dashboard source of truth.
+
+2026-07-10 canary-review escalation:
+
+- The 2026-07-09 tracked slate lost `-2.639u`, while
+  `strict_runtime_core_plus_selective_lean` added three qualifying rows, went
+  `2-1`, and gained `+0.75u`.
+- That moves the selector out of generic watchlist treatment and into a
+  canary-review packet. The governing packet is still
+  `docs/research/strict-runtime-core-selective-lean-canary-packet.md`.
+- Known risk slices remain part of the review: weak pre-close proxy, price
+  bucket `+100 to +119`, and worse-close-price. The canary review should show
+  the full selector both with and without those risk flags before any live
+  plan.
 
 ## Candidate Lanes
 
