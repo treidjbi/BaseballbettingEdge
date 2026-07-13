@@ -142,6 +142,7 @@ def test_hydration_artifacts_include_today_dated_and_history():
     assert by_type["today"].path.as_posix() == "dashboard/data/processed/today.json"
     assert by_type["dated_slate"].path.as_posix() == "dashboard/data/processed/2026-05-30.json"
     assert by_type["dated_slate"].date == "2026-05-30"
+    assert by_type["dated_slate"].required is False
     assert by_type["picks_history"].path.as_posix() == "data/picks_history.json"
     assert by_type["fangraphs_cache"].path.as_posix() == "data/fangraphs_cache.json"
     assert by_type["fangraphs_cache"].required is False
@@ -206,6 +207,57 @@ def test_hydrate_live_artifacts_skips_missing_optional_fangraphs_cache(tmp_path,
     assert count == len(entrypoint.hydration_artifacts("2026-05-30")) - 1
     assert (tmp_path / "data/fangraphs_cache.json").exists() is False
     assert any("type=fangraphs_cache" in url for url, _ in seen_urls)
+
+
+def test_hydrate_live_artifacts_skips_missing_dated_slate_archive(tmp_path, monkeypatch):
+    seen_urls = []
+
+    class Response:
+        def __init__(self, url):
+            self.url = url
+            self.status_code = 404 if "type=dated_slate" in url else 200
+
+        def raise_for_status(self):
+            if self.status_code >= 400:
+                raise RuntimeError(f"unexpected {self.status_code}")
+
+        def json(self):
+            return {"source_url": self.url}
+
+    def fake_get(url, timeout):
+        seen_urls.append((url, timeout))
+        return Response(url)
+
+    monkeypatch.setattr(entrypoint.requests, "get", fake_get)
+    monkeypatch.setenv("RENDER_PIPELINE_ARTIFACT_API_URL", "https://example.test/artifact")
+
+    count = entrypoint.hydrate_live_artifacts_from_api(root=tmp_path, slate_date="2026-07-13")
+
+    assert count == len(entrypoint.hydration_artifacts("2026-07-13")) - 1
+    assert (tmp_path / "dashboard/data/processed/2026-07-13.json").exists() is False
+    assert (tmp_path / "dashboard/data/processed/today.json").exists()
+    assert (tmp_path / "data/picks_history.json").exists()
+    assert any("type=dated_slate&date=2026-07-13" in url for url, _ in seen_urls)
+
+
+def test_hydrate_live_artifacts_raises_required_artifact_http_errors(tmp_path, monkeypatch):
+    class Response:
+        def __init__(self, url):
+            self.url = url
+            self.status_code = 404 if "type=today" in url else 200
+
+        def raise_for_status(self):
+            if self.status_code >= 400:
+                raise RuntimeError(f"unexpected {self.status_code}")
+
+        def json(self):
+            return {"source_url": self.url}
+
+    monkeypatch.setattr(entrypoint.requests, "get", lambda url, timeout: Response(url))
+    monkeypatch.setenv("RENDER_PIPELINE_ARTIFACT_API_URL", "https://example.test/artifact")
+
+    with pytest.raises(RuntimeError, match="unexpected 404"):
+        entrypoint.hydrate_live_artifacts_from_api(root=tmp_path, slate_date="2026-07-13")
 
 
 def test_main_hydrates_before_live_pipeline_run(monkeypatch):

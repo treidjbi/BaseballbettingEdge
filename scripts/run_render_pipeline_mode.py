@@ -177,7 +177,12 @@ def artifact_api_url(artifact_type: str, date: str | None = None) -> str:
 def hydration_artifacts(slate_date: str) -> list[HydrationArtifact]:
     return [
         HydrationArtifact("today", Path("dashboard/data/processed/today.json")),
-        HydrationArtifact("dated_slate", Path("dashboard/data/processed") / f"{slate_date}.json", date=slate_date),
+        HydrationArtifact(
+            "dated_slate",
+            Path("dashboard/data/processed") / f"{slate_date}.json",
+            date=slate_date,
+            required=False,
+        ),
         HydrationArtifact("index", Path("dashboard/data/processed/index.json")),
         HydrationArtifact("steam", Path("dashboard/data/processed/steam.json")),
         HydrationArtifact("performance", Path("dashboard/data/performance.json")),
@@ -196,6 +201,11 @@ def hydrate_live_artifacts_from_api(*, root: Path, slate_date: str) -> int:
             timeout=20,
         )
         if response.status_code == 404 and not artifact.required:
+            print(
+                "render_pipeline_mode_hydration_skip "
+                f"artifact_type={artifact.artifact_type} "
+                f"date={artifact.date or '<none>'} status=404"
+            )
             continue
         response.raise_for_status()
         target = root / artifact.path

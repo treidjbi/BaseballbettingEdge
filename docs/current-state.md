@@ -63,6 +63,9 @@ For any new work in this repo:
    - `docs/research/strict-runtime-core-selective-lean-canary-packet.md`
      for the read-only aggressive unit-accumulation packet Tyler chose to
      center on `strict_runtime_core_plus_selective_lean`
+   - `docs/research/all-star-break-operations-packet.md`
+     for the 2026-07-13 break-window checklist, off-day artifact-noise fix
+     scope, strict-runtime actual-record read, and cost/row-volume notes
    - `analytics/diagnostics/market_anchored_k_shadow_rebuild.py`
      (report: `analytics/output/market_anchored_k_shadow_rebuild.md`) for
      the shadow-only rebuild experiment that starts from market-implied K
@@ -287,6 +290,16 @@ known risk slices called out explicitly: weak pre-close proxy, price bucket
 change, staking change, lambda change, threshold change, provider behavior
 change, notification change, lock change, retention change, dashboard source
 change, or `formula_change_date` change is approved from this overlay.
+
+Pipeline-lane overlay, 2026-07-13: the All-Star break packet is
+`docs/research/all-star-break-operations-packet.md`. It records the
+break-window posture: patch off-day `dated_slate` hydration noise, run a
+post-break restart checklist on the first real slate, keep strict-runtime
+tracking as actual-record shadow evidence only, and monitor cost/row volume
+without cadence or retention changes. The off-day wrapper fix makes pre-run
+`dated_slate` hydration optional while keeping required artifacts fail-closed.
+Tyler approved merging and deploying that wrapper fix to the Render pipeline
+cron group on 2026-07-13.
 
 Pipeline-lane overlay, 2026-06-17: Tyler approved retiring BoltOdds and keeping
 the official production path as TheRundown with PropLine fallback/live-movement
