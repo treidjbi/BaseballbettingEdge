@@ -126,6 +126,79 @@ def test_boltodds_cannot_qualify():
     assert result.candidate_rows == []
 
 
+@pytest.mark.parametrize(
+    "observed_at",
+    ["2026-07-17T23:10:00Z", "2026-07-17T23:11:00Z"],
+)
+def test_at_or_after_start_timestamp_fails_closed_as_started(observed_at):
+    result = _build(observed_at=observed_at)
+
+    metadata = result.state_rows[0]["metadata"]
+    assert metadata["decision_state"] == "started"
+    assert metadata["decision_reasons"] == ["game_started"]
+    assert result.candidate_rows == []
+
+
+def test_unsupported_book_cannot_qualify():
+    result = _build(live_market_rows=[_market(best_book="bovada")])
+
+    metadata = result.state_rows[0]["metadata"]
+    assert metadata["decision_state"] == "watching"
+    assert "same_line_market_unavailable" in metadata["decision_reasons"]
+    assert result.candidate_rows == []
+
+
+@pytest.mark.parametrize(
+    "best_book",
+    [
+        "FanDuel",
+        "DraftKings",
+        "BetMGM",
+        "BetRivers",
+        "Caesars",
+        "Kalshi",
+        "theScore Bet",
+        "scorebet",
+    ],
+)
+def test_supported_book_normalization_qualifies(best_book):
+    result = _build(live_market_rows=[_market(best_book=best_book)])
+
+    assert result.state_rows[0]["metadata"]["decision_state"] == "ready"
+    assert len(result.candidate_rows) == 1
+
+
+@pytest.mark.parametrize(
+    ("state", "expected_state", "expected_reason"),
+    [
+        (
+            _state(
+                game_time="2026-07-17T18:00:00Z",
+                is_locked=True,
+            ),
+            "started",
+            "game_started",
+        ),
+        (_state(is_locked=True), "locked", "pick_locked"),
+    ],
+)
+def test_combined_state_precedence_with_accepted_bet(
+    state, expected_state, expected_reason
+):
+    accepted = {
+        "slate_date": "2026-07-17",
+        "normalized_pitcher": "tarik skubal",
+        "side": "over",
+    }
+
+    result = _build(state_rows=[state], accepted_bets=[accepted])
+
+    metadata = result.state_rows[0]["metadata"]
+    assert metadata["decision_state"] == expected_state
+    assert metadata["decision_reasons"] == [expected_reason]
+    assert result.candidate_rows == []
+
+
 def test_off_mode_is_noop():
     source = [_state()]
 

@@ -11,6 +11,16 @@ from pipeline.name_utils import normalize
 ACTIVE_PROVIDERS = {"therundown_propline", "therundown", "propline"}
 PROVIDER_RANK = {"therundown_propline": 3, "therundown": 2, "propline": 1}
 FRESH_STATUSES = {"fresh", "held_fresh", "heartbeat_held"}
+SUPPORTED_BOOKS = {
+    "fanduel",
+    "draftkings",
+    "betmgm",
+    "betrivers",
+    "caesars",
+    "kalshi",
+    "thescore",
+}
+BOOK_ALIASES = {"scorebet": "thescore", "thescorebet": "thescore"}
 STARTED_STATES = {"in_progress", "final", "completed"}
 LOCKED_STATES = {"locked", "postponed"}
 
@@ -68,16 +78,24 @@ def _quality_level(pitcher: dict[str, Any], side: str) -> str:
     ).strip().lower()
 
 
+def _book_key(value: Any) -> str:
+    normalized = "".join(
+        character for character in str(value or "").casefold() if character.isalnum()
+    )
+    return BOOK_ALIASES.get(normalized, normalized)
+
+
 def _same_line_market(row: dict[str, Any], target_line: float) -> bool:
     provider = str(row.get("provider") or "").strip().lower()
     freshness = str(row.get("freshness_status") or "").strip().lower()
+    best_book = _book_key(row.get("best_book"))
     best_line = _numeric(row.get("best_line"))
     return (
         provider in ACTIVE_PROVIDERS
         and freshness in FRESH_STATUSES
         and best_line is not None
         and abs(best_line - target_line) < 0.001
-        and bool(str(row.get("best_book") or "").strip())
+        and best_book in SUPPORTED_BOOKS
         and _numeric(row.get("best_odds")) is not None
     )
 
@@ -187,6 +205,10 @@ def build_ready_to_bet_shadow(
         game_state = str(
             row.get("game_state") or pitcher.get("game_state") or ""
         ).strip().lower()
+        game_time = _parse_datetime(row.get("game_time") or pitcher.get("game_time"))
+        has_started = game_state in STARTED_STATES or (
+            game_time is not None and observed >= game_time
+        )
         target_line = _numeric(row.get("k_line"))
         market = (
             None
@@ -196,7 +218,7 @@ def build_ready_to_bet_shadow(
         quality_level = _quality_level(pitcher, side)
         reasons: list[str] = []
 
-        if game_state in STARTED_STATES:
+        if has_started:
             decision_state = "started"
             reasons.append("game_started")
         elif bool(row.get("is_locked")) or game_state in LOCKED_STATES:
