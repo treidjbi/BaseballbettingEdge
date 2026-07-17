@@ -100,3 +100,17 @@ def test_ready_to_bet_summary_counts_dates_windows_and_overlap():
         "by_time_window": {"pre_30": 1, "pre_60": 1},
         "notification_overlap": {"pick_upgraded": 1},
     }
+
+
+def test_ready_to_bet_summary_ignores_malformed_notification_overlap_value():
+    rows = [
+        {
+            "slate_date": "2026-07-17",
+            "provider": "therundown_propline",
+            "candidate_type": "ready_to_bet",
+            "time_window": "pre_60",
+            "metadata": {"same_run_notification_types": "pick_upgraded"},
+        }
+    ]
+
+    assert summarize_ready_to_bet(rows)["notification_overlap"] == {}

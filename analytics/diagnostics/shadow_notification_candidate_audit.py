@@ -86,7 +86,10 @@ def summarize_ready_to_bet(rows: list[dict[str, Any]]) -> dict[str, Any]:
         by_provider[str(row.get("provider") or "unknown")] += 1
         by_time_window[str(row.get("time_window") or "unknown")] += 1
         metadata = row.get("metadata") if isinstance(row.get("metadata"), dict) else {}
-        for event_type in metadata.get("same_run_notification_types") or []:
+        notification_types = metadata.get("same_run_notification_types")
+        if not isinstance(notification_types, list):
+            notification_types = []
+        for event_type in notification_types:
             notification_overlap[str(event_type)] += 1
     return {
         "rows": len(ready_rows),
