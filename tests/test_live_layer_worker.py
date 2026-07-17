@@ -125,6 +125,164 @@ def test_worker_writes_state_and_notification_events(tmp_path):
     )
 
 
+def test_ready_to_bet_shadow_record_preserves_notification_rows(tmp_path, monkeypatch):
+    monkeypatch.setenv("LIVE_READY_TO_BET_SHADOW", "record")
+    pitcher = _fire_pitcher()
+    pitcher["quality_gate_level"] = "clean"
+    pitcher["ev_over"]["quality_gate_level"] = "clean"
+    today = _write_artifact(tmp_path, [pitcher])
+    writer = _writer_with_selects({
+        "live_pick_state": [],
+        "accepted_bets": [],
+        "market_snapshots": [{
+            "id": "snapshot-1",
+            "provider": "propline",
+            "provider_event_id": "game-1",
+            "normalized_player_name": "tarik skubal",
+            "player_name": "Tarik Skubal",
+            "bookmaker_key": "fanduel",
+            "side": "over",
+            "line": 6.5,
+            "american_odds": 105,
+            "observed_at": "2026-05-06T18:00:00+00:00",
+        }],
+        "game_reminder_state": [],
+    })
+
+    with (
+        patch.object(build_live_events_to_supabase, "SupabaseMarketWriter", return_value=writer),
+        patch.object(
+            build_live_events_to_supabase,
+            "_now_utc",
+            return_value=build_live_events_to_supabase.datetime.fromisoformat(
+                "2026-05-06T18:00:00+00:00"
+            ),
+        ),
+    ):
+        result = build_live_events_to_supabase.run(
+            slate_date="2026-05-06",
+            artifact_path=today,
+            supabase_url="https://example.supabase.co",
+            service_role_key="secret",
+        )
+
+    assert [row["event_type"] for row in result["notification_rows"]] == ["new_fire_pick"]
+    assert result["ready_to_bet_shadow"]["candidate_count"] == 1
+    assert result["state_rows"][0]["metadata"]["decision_state"] == "ready"
+    writer.insert_ignore_rows.assert_any_call(
+        "shadow_notification_candidates",
+        result["ready_to_bet_candidate_rows"],
+        on_conflict="dedupe_key",
+    )
+    notification_event_rows = next(
+        call.args[1]
+        for call in writer.insert_ignore_rows.call_args_list
+        if call.args[0] == "notification_events"
+    )
+    assert notification_event_rows == result["notification_rows"]
+    assert not any(row.get("candidate_type") == "ready_to_bet" for row in notification_event_rows)
+    assert (
+        result["shadow_pipeline_timing"]["pipeline_run_row"]["metadata"]
+        ["ready_to_bet_shadow"]["mode"]
+        == "record"
+    )
+
+
+def test_ready_to_bet_shadow_accepted_bet_read_failure_fails_closed(tmp_path, monkeypatch):
+    monkeypatch.setenv("LIVE_READY_TO_BET_SHADOW", "record")
+    pitcher = _fire_pitcher()
+    pitcher["quality_gate_level"] = "clean"
+    pitcher["ev_over"]["quality_gate_level"] = "clean"
+    today = _write_artifact(tmp_path, [pitcher])
+    writer = Mock()
+
+    def select_rows(table, params):
+        if table == "accepted_bets":
+            raise RuntimeError("accepted bets unavailable")
+        if table == "market_snapshots":
+            return []
+        return []
+
+    writer.select_rows.side_effect = select_rows
+
+    with (
+        patch.object(build_live_events_to_supabase, "SupabaseMarketWriter", return_value=writer),
+        patch.object(
+            build_live_events_to_supabase,
+            "_now_utc",
+            return_value=build_live_events_to_supabase.datetime.fromisoformat(
+                "2026-05-06T18:00:00+00:00"
+            ),
+        ),
+    ):
+        result = build_live_events_to_supabase.run(
+            slate_date="2026-05-06",
+            artifact_path=today,
+            supabase_url="https://example.supabase.co",
+            service_role_key="secret",
+        )
+
+    assert result["ready_to_bet_shadow"]["accepted_bets_available"] is False
+    assert result["ready_to_bet_candidate_rows"] == []
+    assert [row["event_type"] for row in result["notification_rows"]] == ["new_fire_pick"]
+    notification_event_rows = next(
+        call.args[1]
+        for call in writer.insert_ignore_rows.call_args_list
+        if call.args[0] == "notification_events"
+    )
+    assert notification_event_rows == result["notification_rows"]
+
+
+def test_ready_to_bet_shadow_default_off_skips_accepted_bet_read(tmp_path, monkeypatch):
+    monkeypatch.delenv("LIVE_READY_TO_BET_SHADOW", raising=False)
+    today = _write_artifact(tmp_path, [_fire_pitcher()])
+    writer = _writer_with_selects({
+        "live_pick_state": [],
+        "market_snapshots": [],
+        "game_reminder_state": [],
+    })
+
+    with patch.object(build_live_events_to_supabase, "SupabaseMarketWriter", return_value=writer):
+        result = build_live_events_to_supabase.run(
+            slate_date="2026-05-06",
+            artifact_path=today,
+            supabase_url="https://example.supabase.co",
+            service_role_key="secret",
+        )
+
+    assert result["ready_to_bet_shadow"]["mode"] == "off"
+    assert not any(call.args[0] == "accepted_bets" for call in writer.select_rows.call_args_list)
+    assert not any(
+        call.args[0] == "shadow_notification_candidates"
+        for call in writer.insert_ignore_rows.call_args_list
+    )
+
+
+def test_ready_to_bet_shadow_unknown_mode_fails_closed_to_off(tmp_path, monkeypatch):
+    monkeypatch.setenv("LIVE_READY_TO_BET_SHADOW", "send")
+    today = _write_artifact(tmp_path, [_fire_pitcher()])
+    writer = _writer_with_selects({
+        "live_pick_state": [],
+        "market_snapshots": [],
+        "game_reminder_state": [],
+    })
+
+    with patch.object(build_live_events_to_supabase, "SupabaseMarketWriter", return_value=writer):
+        result = build_live_events_to_supabase.run(
+            slate_date="2026-05-06",
+            artifact_path=today,
+            supabase_url="https://example.supabase.co",
+            service_role_key="secret",
+        )
+
+    assert result["ready_to_bet_shadow"]["mode"] == "off"
+    assert not any(call.args[0] == "accepted_bets" for call in writer.select_rows.call_args_list)
+    assert not any(
+        call.args[0] == "shadow_notification_candidates"
+        for call in writer.insert_ignore_rows.call_args_list
+    )
+
+
 def test_env_int_invalid_value_falls_back(monkeypatch):
     monkeypatch.setenv("LIVE_TEST_INVALID_INT", "bad")
 

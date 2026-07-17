@@ -29,6 +29,7 @@ from market_infra.mainline_price_notifications import (  # noqa: E402
 from market_infra.market_evidence import build_market_pick_evidence_rows  # noqa: E402
 from market_infra.notification_coordinator import coordinate_notification_rows  # noqa: E402
 from market_infra.operational_locks import build_operational_lock_rows  # noqa: E402
+from market_infra.ready_to_bet_shadow import build_ready_to_bet_shadow  # noqa: E402
 from market_infra.shadow_pipeline_timing import build_shadow_pipeline_timing_rows  # noqa: E402
 from market_infra.shadow_notification_candidates import (  # noqa: E402
     build_shadow_notification_candidate_rows,
@@ -109,6 +110,42 @@ def _notification_coordinator_mode() -> str:
 def _mainline_best_price_notification_mode() -> str:
     value = os.getenv("LIVE_MAINLINE_PRICE_NOTIFICATION_MODE", "off").strip().lower()
     return value if value in {"off", "shadow", "send"} else "off"
+
+
+def _ready_to_bet_shadow_mode() -> str:
+    value = str(os.getenv("LIVE_READY_TO_BET_SHADOW") or "off").strip().lower()
+    return value if value in {"off", "record"} else "off"
+
+
+def _write_ready_to_bet_candidates(
+    *,
+    writer: SupabaseMarketWriter,
+    rows: list[dict[str, Any]],
+    mode: str,
+) -> dict[str, Any]:
+    if mode != "record":
+        return {"skipped": True, "reason": "disabled", "rows": 0}
+    if not rows:
+        return {"skipped": True, "reason": "no_candidates", "rows": 0}
+    try:
+        inserted = writer.insert_ignore_rows(
+            "shadow_notification_candidates",
+            rows,
+            on_conflict="dedupe_key",
+        )
+        inserted_count = len(inserted) if isinstance(inserted, list) else len(rows)
+        return {"skipped": False, "rows": len(rows), "inserted_rows": inserted_count}
+    except Exception as error:
+        print(
+            f"Warning: ready-to-bet shadow candidate write failed ({error})",
+            file=sys.stderr,
+        )
+        return {
+            "skipped": True,
+            "reason": "write_failed",
+            "rows": len(rows),
+            "error": str(error)[:1000],
+        }
 
 
 def _mainline_best_price_min_cents() -> int:
@@ -861,6 +898,42 @@ def run(
         *mainline_best_price_result.notification_rows,
         *reminder_notification_rows,
     ]
+    ready_to_bet_mode = _ready_to_bet_shadow_mode()
+    accepted_bets: list[dict[str, Any]] = []
+    accepted_bets_available = True
+    if ready_to_bet_mode == "record":
+        try:
+            accepted_bets = writer.select_rows(
+                "accepted_bets",
+                {
+                    "slate_date": f"eq.{slate_date}",
+                    "select": (
+                        "slate_date,pitcher,normalized_pitcher,side,book,"
+                        "k_line,odds,accepted_at"
+                    ),
+                },
+            )
+        except Exception as error:
+            accepted_bets_available = False
+            print(
+                f"Warning: accepted-bet state read failed ({error}); "
+                "ready shadow failing closed",
+                file=sys.stderr,
+            )
+
+    ready_to_bet_result = build_ready_to_bet_shadow(
+        slate_date=slate_date,
+        pitchers=payload.get("pitchers") or [],
+        state_rows=state_rows,
+        previous_state_rows=previous_rows,
+        live_market_rows=live_market_display_rows,
+        accepted_bets=accepted_bets,
+        accepted_bets_available=accepted_bets_available,
+        notification_rows=notification_rows,
+        observed_at=observed_at,
+        mode=ready_to_bet_mode,
+    )
+    state_rows = ready_to_bet_result.state_rows
     notification_coordination = coordinate_notification_rows(
         notification_rows,
         mode=_notification_coordinator_mode(),
@@ -890,6 +963,11 @@ def run(
         shadow_notification_candidate_rows,
         on_conflict="dedupe_key",
     )
+    ready_to_bet_write = _write_ready_to_bet_candidates(
+        writer=writer,
+        rows=ready_to_bet_result.candidate_rows,
+        mode=ready_to_bet_mode,
+    )
     writer.upsert_rows("game_reminder_state", reminder_rows, on_conflict="dedupe_key")
     writer.upsert_rows("live_pick_state", state_rows, on_conflict="slate_date,normalized_pitcher,side")
     operational_pick_locks = _write_operational_pick_locks(
@@ -912,6 +990,8 @@ def run(
             "propline_webhooks": propline_webhook_result or {"skipped": True},
             "mainline_best_price": mainline_best_price_result.summary,
             "notification_coordinator": notification_coordination.summary,
+            "ready_to_bet_shadow": ready_to_bet_result.summary,
+            "ready_to_bet_shadow_write": ready_to_bet_write,
         },
     )
     market_line_build = _build_shadow_market_state(
@@ -934,6 +1014,9 @@ def run(
         "mainline_best_price": mainline_best_price_result.summary,
         "mainline_best_price_shadow_rows": mainline_best_price_result.shadow_rows,
         "mainline_best_price_notifications": len(mainline_best_price_result.notification_rows),
+        "ready_to_bet_shadow": ready_to_bet_result.summary,
+        "ready_to_bet_shadow_write": ready_to_bet_write,
+        "ready_to_bet_candidate_rows": ready_to_bet_result.candidate_rows,
         "line_movement_rows": line_movement_rows,
         "propline_webhook_notification_rows": propline_webhook_notification_rows,
         "market_pick_evidence_rows": market_pick_evidence_rows,
