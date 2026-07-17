@@ -1,4 +1,8 @@
-from analytics.diagnostics.shadow_notification_candidate_audit import build_report, summarize_candidates
+from analytics.diagnostics.shadow_notification_candidate_audit import (
+    build_report,
+    summarize_candidates,
+    summarize_ready_to_bet,
+)
 
 
 def test_summarize_candidates_counts_candidate_actions_and_noise():
@@ -69,3 +73,30 @@ def test_build_report_keeps_candidates_shadow_only():
     assert "| `boltodds` | `market_confirmed_playable` |" in report
     assert "## Movement Strength Labels" in report
     assert "| `boltodds_confirmed` | 1 |" in report
+
+
+def test_ready_to_bet_summary_counts_dates_windows_and_overlap():
+    rows = [
+        {
+            "slate_date": "2026-07-17",
+            "provider": "therundown_propline",
+            "candidate_type": "ready_to_bet",
+            "time_window": "pre_60",
+            "metadata": {"same_run_notification_types": ["pick_upgraded"]},
+        },
+        {
+            "slate_date": "2026-07-18",
+            "provider": "therundown",
+            "candidate_type": "ready_to_bet",
+            "time_window": "pre_30",
+            "metadata": {"same_run_notification_types": []},
+        },
+    ]
+
+    assert summarize_ready_to_bet(rows) == {
+        "rows": 2,
+        "by_date": {"2026-07-17": 1, "2026-07-18": 1},
+        "by_provider": {"therundown": 1, "therundown_propline": 1},
+        "by_time_window": {"pre_30": 1, "pre_60": 1},
+        "notification_overlap": {"pick_upgraded": 1},
+    }

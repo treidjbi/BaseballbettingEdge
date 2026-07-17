@@ -75,8 +75,31 @@ def summarize_candidates(rows: list[dict[str, Any]]) -> dict[tuple[str, str], di
     return normalized
 
 
+def summarize_ready_to_bet(rows: list[dict[str, Any]]) -> dict[str, Any]:
+    ready_rows = [row for row in rows if row.get("candidate_type") == "ready_to_bet"]
+    by_date: Counter[str] = Counter()
+    by_provider: Counter[str] = Counter()
+    by_time_window: Counter[str] = Counter()
+    notification_overlap: Counter[str] = Counter()
+    for row in ready_rows:
+        by_date[str(row.get("slate_date") or "unknown")] += 1
+        by_provider[str(row.get("provider") or "unknown")] += 1
+        by_time_window[str(row.get("time_window") or "unknown")] += 1
+        metadata = row.get("metadata") if isinstance(row.get("metadata"), dict) else {}
+        for event_type in metadata.get("same_run_notification_types") or []:
+            notification_overlap[str(event_type)] += 1
+    return {
+        "rows": len(ready_rows),
+        "by_date": dict(sorted(by_date.items())),
+        "by_provider": dict(sorted(by_provider.items())),
+        "by_time_window": dict(sorted(by_time_window.items())),
+        "notification_overlap": dict(sorted(notification_overlap.items())),
+    }
+
+
 def build_report(rows: list[dict[str, Any]]) -> str:
     summary = summarize_candidates(rows)
+    ready = summarize_ready_to_bet(rows)
     lines = [
         "# Shadow Notification Candidate Audit",
         "",
@@ -111,6 +134,15 @@ def build_report(rows: list[dict[str, Any]]) -> str:
         for label, count in sorted(label_counts.items()):
             lines.append(f"| `{label}` | {count} |")
     lines.extend([
+        "",
+        "## Ready-To-Bet Shadow",
+        "",
+        f"- Rows: {ready['rows']}",
+        f"- By date: {json.dumps(ready['by_date'], sort_keys=True)}",
+        f"- By provider: {json.dumps(ready['by_provider'], sort_keys=True)}",
+        f"- By time window: {json.dumps(ready['by_time_window'], sort_keys=True)}",
+        f"- Same-run notification overlap: {json.dumps(ready['notification_overlap'], sort_keys=True)}",
+        "- This is shadow evidence only; `ready_to_bet` is not a live notification class.",
         "",
         "## Promotion Rule",
         "",

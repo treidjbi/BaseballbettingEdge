@@ -10,6 +10,9 @@ MARKET_EVIDENCE_PROVIDER_MIGRATION = (
     MIGRATIONS_DIR / "20260619192355_allow_therundown_market_pick_evidence_provider.sql"
 )
 SHADOW_CANDIDATE_MIGRATION = MIGRATIONS_DIR / "20260508174842_shadow_notification_candidates.sql"
+READY_TO_BET_SHADOW_MIGRATION = (
+    MIGRATIONS_DIR / "20260717181500_ready_to_bet_shadow_candidate.sql"
+)
 ACCEPTED_BETS_MIGRATION = MIGRATIONS_DIR / "20260508180728_accepted_bets_log.sql"
 LIVE_MARKET_DISPLAY_MIGRATION = MIGRATIONS_DIR / "20260512205206_live_market_display_state.sql"
 READONLY_SHADOW_POLICIES_MIGRATION = MIGRATIONS_DIR / "20260512213255_readonly_shadow_table_policies.sql"
@@ -95,6 +98,16 @@ def test_live_layer_migration_file_exists():
     assert LIVE_MARKET_DISPLAY_MIGRATION.exists()
     assert READONLY_SHADOW_POLICIES_MIGRATION.exists()
     assert NOTIFICATION_DIGEST_MIGRATION.exists()
+
+
+def test_ready_to_bet_shadow_migration_extends_existing_candidate_contract():
+    sql = READY_TO_BET_SHADOW_MIGRATION.read_text(encoding="utf-8")
+
+    assert "drop constraint if exists shadow_notification_candidates_provider_check" in sql
+    assert "drop constraint if exists shadow_notification_candidates_candidate_type_check" in sql
+    assert "'therundown_propline'" in sql
+    assert "'ready_to_bet'" in sql
+    assert "create table" not in sql.lower()
 
 
 def test_live_layer_migration_defines_required_tables():
