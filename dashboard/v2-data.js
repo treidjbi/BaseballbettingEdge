@@ -285,8 +285,8 @@
     const status = String(row.market_status || '').toLowerCase();
     const consensus = String(row.market_consensus || '').toLowerCase();
     if (freshness && !['fresh', 'held_fresh', 'heartbeat_held'].includes(freshness)) return 'stale';
+    if (actionable.includes('off_market')) return 'alt_line_context';
     if (actionable.includes('shop')) return 'shop_price';
-    if (actionable.includes('off_market')) return 'shop_price';
     if (actionable.includes('play') || actionable.includes('bet')) return 'playable';
     if (status.includes('playable') || status.includes('confirmed')) return 'playable';
     if (consensus.includes('away') || consensus.includes('against')) return 'market_disagrees';
@@ -316,6 +316,7 @@
       action_label: marketActionLabel(row),
       market_consensus: row.market_consensus || null,
       bet_value_consensus: row.bet_value_consensus || null,
+      model_line: numericOrNull(row.k_line ?? row.model_line ?? row.pick_line),
       main_line: numericOrNull(row.main_line ?? row.k_line ?? row.line),
       best_book: row.best_book || row.best_bookmaker || row.best_bookmaker_title || null,
       best_line: numericOrNull(row.best_line ?? row.best_k_line),
@@ -387,9 +388,17 @@
     return 0;
   }
 
+  function marketSameModelLineRank(row) {
+    const bestLine = numericOrNull(row?.best_line);
+    const modelLine = numericOrNull(row?.model_line);
+    if (bestLine == null || modelLine == null) return 0;
+    return Math.abs(bestLine - modelLine) < 0.001 ? 1 : 0;
+  }
+
   function marketRowScore(row) {
     return [
       marketFreshnessRank(row),
+      marketSameModelLineRank(row),
       marketObservedAtMs(row),
       marketActionRank(row),
       row?.broad_confirmation === true ? 1 : 0,
