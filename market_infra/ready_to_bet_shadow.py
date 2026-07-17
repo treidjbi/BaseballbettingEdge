@@ -206,9 +206,7 @@ def build_ready_to_bet_shadow(
             row.get("game_state") or pitcher.get("game_state") or ""
         ).strip().lower()
         game_time = _parse_datetime(row.get("game_time") or pitcher.get("game_time"))
-        has_started = game_state in STARTED_STATES or (
-            game_time is not None and observed >= game_time
-        )
+        timestamp_started = game_time is not None and observed >= game_time
         target_line = _numeric(row.get("k_line"))
         market = (
             None
@@ -218,12 +216,15 @@ def build_ready_to_bet_shadow(
         quality_level = _quality_level(pitcher, side)
         reasons: list[str] = []
 
-        if has_started:
+        if game_state in STARTED_STATES:
             decision_state = "started"
             reasons.append("game_started")
         elif bool(row.get("is_locked")) or game_state in LOCKED_STATES:
             decision_state = "locked"
             reasons.append("pick_locked")
+        elif timestamp_started:
+            decision_state = "started"
+            reasons.append("game_started")
         elif accepted_bets_available and key in accepted_keys:
             decision_state = "logged"
             reasons.append("accepted_bet_logged")

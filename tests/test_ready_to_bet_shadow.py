@@ -139,6 +139,22 @@ def test_at_or_after_start_timestamp_fails_closed_as_started(observed_at):
     assert result.candidate_rows == []
 
 
+def test_postponed_after_scheduled_time_remains_locked():
+    result = _build(
+        state_rows=[
+            _state(
+                game_state="postponed",
+                game_time="2026-07-17T17:00:00Z",
+            )
+        ]
+    )
+
+    metadata = result.state_rows[0]["metadata"]
+    assert metadata["decision_state"] == "locked"
+    assert metadata["decision_reasons"] == ["pick_locked"]
+    assert result.candidate_rows == []
+
+
 def test_unsupported_book_cannot_qualify():
     result = _build(live_market_rows=[_market(best_book="bovada")])
 
@@ -173,6 +189,7 @@ def test_supported_book_normalization_qualifies(best_book):
     [
         (
             _state(
+                game_state="in_progress",
                 game_time="2026-07-17T18:00:00Z",
                 is_locked=True,
             ),
