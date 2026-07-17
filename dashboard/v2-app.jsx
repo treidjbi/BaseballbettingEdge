@@ -288,9 +288,13 @@ function marketPriceCushionForSide(row, side) {
 }
 function marketEffectiveActionLabel(row, side, p = null) {
   if (!row) return null;
+  const modelLine = marketModelLine(row, side, p);
+  if (isFiniteNumber(row?.best_line) && isFiniteNumber(modelLine) && !sameMarketLine(row, side, p)) {
+    return "alt_line_context";
+  }
   const label = row.action_label || "monitor";
   const actionable = String(row.actionable_state || "").toLowerCase();
-  if (label === "monitor" && actionable.includes("off_market")) return "shop_price";
+  if (label === "monitor" && actionable.includes("off_market")) return "alt_line_context";
   const cushion = marketPriceCushionForSide(row, side);
   if (label === "monitor" && isFreshMarketRow(row) && sameMarketLine(row, side, p) && isFiniteNumber(cushion) && cushion >= 0) {
     return "playable_price";
@@ -300,9 +304,10 @@ function marketEffectiveActionLabel(row, side, p = null) {
 function isLiveMarketBetPrefill(row, side = null, p = null) {
   if (!row || row.freshness_status === "stale") return false;
   if (!isFiniteNumber(row.best_line) || !isFiniteNumber(row.best_odds) || !row.best_book) return false;
+  if (!sameMarketLine(row, side, p)) return false;
   const label = marketEffectiveActionLabel(row, side, p);
   return ["playable", "playable_price", "shop_price", "market_agrees"].includes(label) ||
-    ["playable_now", "off_market"].includes(row.actionable_state);
+    row.actionable_state === "playable_now";
 }
 function selectedMarketBetRow(p, side) {
   const row = marketDisplayForSide(p, side);
@@ -776,7 +781,7 @@ function marketDisplayForSide(p, side) {
 function marketActionTone(row, side = null, p = null) {
   if (!row) return "neutral";
   const label = marketEffectiveActionLabel(row, side, p);
-  if (label === "stale" || label === "monitor") return "warn";
+  if (label === "alt_line_context" || ["stale", "monitor"].includes(label)) return "warn";
   if (label === "market_disagrees") return "neg";
   return "pos";
 }
@@ -785,6 +790,7 @@ function marketActionText(row, side = null, p = null) {
   if (!row) return "Market pending";
   const label = marketEffectiveActionLabel(row, side, p);
   const labels = {
+    alt_line_context: "Alt-line context",
     shop_price: "Shop price",
     playable: "Playable",
     playable_price: "Playable price",

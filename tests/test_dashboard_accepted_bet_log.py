@@ -80,6 +80,30 @@ def test_dashboard_uses_price_cushion_for_live_market_prefill_decision():
     assert "isLiveMarketBetPrefill(row, side" in app
 
 
+def test_dashboard_treats_different_line_as_context_not_default():
+    app = DASHBOARD_APP.read_text(encoding="utf-8")
+
+    assert 'alt_line_context: "Alt-line context"' in app
+    assert 'label === "alt_line_context"' in app
+    assert "if (!sameMarketLine(row, side, p)) return false;" in app
+    assert '["playable", "playable_price", "shop_price", "market_agrees"]' in app
+
+
+def test_dashboard_keeps_manual_different_line_selection():
+    app = DASHBOARD_APP.read_text(encoding="utf-8")
+
+    assert 'badges.push(bookRow.sameLine ? "Same line" : "Different line")' in app
+    assert "function selectBetTicketBookRow(bookRow)" in app
+    assert 'priceSource: "live_best"' in app
+
+
+def test_dashboard_cache_busts_same_line_trust_assets():
+    html = DASHBOARD_HTML.read_text(encoding="utf-8")
+
+    assert "v2-data.js?v=2026-07-17-same-line-trust" in html
+    assert "v2-app.js?v=2026-07-17-same-line-trust" in html
+
+
 def test_dashboard_fetches_read_only_same_day_accepted_bet_review():
     app = DASHBOARD_APP.read_text(encoding="utf-8")
 
@@ -162,5 +186,5 @@ def test_dashboard_can_load_review_after_manual_key_entry():
 def test_dashboard_busts_v2_app_cache_for_accepted_bet_ui():
     html = DASHBOARD_HTML.read_text(encoding="utf-8")
 
-    assert "v2-app.js?v=2026-06-08-book-selector-polish" in html
-    assert "v2-data.js?v=2026-06-08-market-default-on" in html
+    assert "v2-app.js?v=2026-07-17-same-line-trust" in html
+    assert "v2-data.js?v=2026-07-17-same-line-trust" in html
