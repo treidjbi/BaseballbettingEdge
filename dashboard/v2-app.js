@@ -550,6 +550,14 @@ function selectedMarketBetRow(p, side) {
   const row = marketDisplayForSide(p, side);
   return isLiveMarketBetPrefill(row, side, p) ? row : null;
 }
+function marketBetTicketContext(p, side) {
+  const displayRow = marketDisplayForSide(p, side);
+  return {
+    displayRow,
+    prefillRow: isLiveMarketBetPrefill(displayRow, side, p) ? displayRow : null,
+    bookRows: marketBookRowsForDisplay(displayRow, side, p)
+  };
+}
 function defaultAcceptedBetForm(p, side, liveRow = selectedMarketBetRow(p, side)) {
   const priceSource = liveRow ? "live_best" : "artifact";
   const defaultBook = defaultBetLogBook(liveRow?.best_book || bookForSide(p, side));
@@ -1426,7 +1434,9 @@ function PickDetail({
     opening: p.opening_under_odds
   };
   const best = displaySide(p);
-  const marketBetRow = selectedMarketBetRow(p, best);
+  const marketBetTicket = marketBetTicketContext(p, best);
+  const marketDisplayRow = marketBetTicket.displayRow;
+  const marketBetRow = marketBetTicket.prefillRow;
   const betAlertContext = acceptedBetAlertContextForPick(p, best);
   const displayOver = best.direction === "OVER" ? best : sideOver;
   const displayUnder = best.direction === "UNDER" ? best : sideUnder;
@@ -1556,7 +1566,7 @@ function PickDetail({
   const betAlreadyLogged = loggedBetKeys.has(currentBetLogKey);
   const reviewDuplicateRows = acceptedBetReview.rows.filter(row => acceptedBetReviewDuplicate(row, p, best));
   const acceptedBetReviewRows = acceptedBetReviewRowsForPick(acceptedBetReview.rows, p, best);
-  const marketBetBookRows = marketBookRowsForDisplay(marketBetRow, best, p);
+  const marketBetBookRows = marketBookRowsForDisplay(marketDisplayRow, best, p);
   const selectedLiveBetBook = String(betForm.book === "Other" ? betForm.bookOther : betForm.book || "").trim();
   const selectedLiveBetLine = String(betForm.line || "").trim() ? parseBetLogNumber(betForm.line) : null;
   const selectedLiveBetOdds = String(betForm.odds || "").trim() ? parseBetLogNumber(betForm.odds) : null;

@@ -58,7 +58,8 @@ def test_dashboard_prefills_bet_ticket_from_live_market_row():
     app = DASHBOARD_APP.read_text(encoding="utf-8")
 
     assert "defaultAcceptedBetForm(p, best, marketBetRow" in app
-    assert "selectedMarketBetRow(p, best)" in app
+    assert "marketBetTicketContext(p, best)" in app
+    assert "marketBetTicket.prefillRow" in app
     assert "isLiveMarketBetPrefill(row, side" in app
     assert 'liveRow ? "live_best" : "artifact"' in app
     assert "selected_live_provider" in app
@@ -101,7 +102,7 @@ def test_dashboard_cache_busts_same_line_trust_assets():
     html = DASHBOARD_HTML.read_text(encoding="utf-8")
 
     assert "v2-data.js?v=2026-07-17-same-line-trust" in html
-    assert "v2-app.js?v=2026-07-17-same-line-trust" in html
+    assert "v2-app.js?v=2026-07-17-alt-line-selector" in html
 
 
 def test_dashboard_fetches_read_only_same_day_accepted_bet_review():
@@ -186,5 +187,5 @@ def test_dashboard_can_load_review_after_manual_key_entry():
 def test_dashboard_busts_v2_app_cache_for_accepted_bet_ui():
     html = DASHBOARD_HTML.read_text(encoding="utf-8")
 
-    assert "v2-app.js?v=2026-07-17-same-line-trust" in html
+    assert "v2-app.js?v=2026-07-17-alt-line-selector" in html
     assert "v2-data.js?v=2026-07-17-same-line-trust" in html
