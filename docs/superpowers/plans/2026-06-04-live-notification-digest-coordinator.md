@@ -25,6 +25,8 @@ part of this grouped-mode approval and does not change grouped digest classes:
 start-window reminders and same-run pick changes remain the only grouped
 classes. Mainline best-price alerts are individual movement-class notifications.
 
+**2026-07-17 ready-to-bet shadow update:** `LIVE_READY_TO_BET_SHADOW=off|record` records decision state and first `ready_to_bet` transitions only. It does not create or suppress notification events. Live send/suppression remains closed pending at least five normal slates and separate Tyler approval.
+
 ## 2026-06-07 Grouped Promotion Checkpoint
 
 Tyler approved promoting the notification grouping change on 2026-06-07.

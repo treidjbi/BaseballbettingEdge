@@ -85,6 +85,8 @@
 > a UI readout only: it does not place bets, change stakes, provider order,
 > model math, thresholds, locks, notifications, retention, source-of-truth, or
 > accepted-bet API behavior.
+>
+> **2026-07-17 same-line trust update:** Alternate-line book rows remain visible, but the compact card labels them `Alt-line context`, same-line live rows outrank different-line rows, and Log Bet automatically prefills only from the model K line. Manual alternate-line selection remains available.
 
 ## Goal
 
