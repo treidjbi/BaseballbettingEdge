@@ -22,7 +22,6 @@ SUPPORTED_BOOKS = {
 }
 BOOK_ALIASES = {"scorebet": "thescore", "thescorebet": "thescore"}
 STARTED_STATES = {"in_progress", "final", "completed"}
-LOCKED_STATES = {"locked", "postponed"}
 
 
 @dataclass(frozen=True)
@@ -219,18 +218,18 @@ def build_ready_to_bet_shadow(
         if game_state in STARTED_STATES:
             decision_state = "started"
             reasons.append("game_started")
-        elif game_state in LOCKED_STATES:
+        elif game_state == "postponed":
+            decision_state = "locked"
+            reasons.append("pick_locked")
+        elif timestamp_started:
+            decision_state = "started"
+            reasons.append("game_started")
+        elif bool(row.get("is_locked")) or game_state == "locked":
             decision_state = "locked"
             reasons.append("pick_locked")
         elif game_time is None:
             decision_state = "watching"
             reasons.append("game_time_unavailable")
-        elif timestamp_started:
-            decision_state = "started"
-            reasons.append("game_started")
-        elif bool(row.get("is_locked")):
-            decision_state = "locked"
-            reasons.append("pick_locked")
         elif accepted_bets_available and key in accepted_keys:
             decision_state = "logged"
             reasons.append("accepted_bet_logged")
@@ -248,6 +247,8 @@ def build_ready_to_bet_shadow(
         state_counts[decision_state] += 1
         reason_counts.update(reasons)
         metadata = dict(_metadata(row))
+        metadata.pop("candidate_write_pending", None)
+        metadata.pop("candidate_write_failure_reason", None)
         metadata.update(
             {
                 "decision_state": decision_state,
@@ -259,10 +260,14 @@ def build_ready_to_bet_shadow(
         row["metadata"] = metadata
         output_rows.append(row)
 
-        previous_state = str(
-            _metadata(previous_by_key.get(key, {})).get("decision_state") or ""
-        )
-        if decision_state != "ready" or previous_state == "ready" or market is None:
+        previous_metadata = _metadata(previous_by_key.get(key, {}))
+        previous_state = str(previous_metadata.get("decision_state") or "")
+        previous_pending_write = previous_metadata.get("candidate_write_pending") is True
+        if (
+            decision_state != "ready"
+            or (previous_state == "ready" and not previous_pending_write)
+            or market is None
+        ):
             continue
 
         minutes_to_game, time_window = _minutes_and_window(

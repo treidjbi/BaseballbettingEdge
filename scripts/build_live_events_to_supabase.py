@@ -169,11 +169,8 @@ def _mark_ready_to_bet_write_pending(
         if key not in candidate_keys or metadata.get("decision_state") != "ready":
             continue
         updated_metadata = dict(metadata)
-        updated_metadata["decision_state"] = "ready_pending_write"
-        reasons = list(updated_metadata.get("decision_reasons") or [])
-        if "candidate_write_failed" not in reasons:
-            reasons.append("candidate_write_failed")
-        updated_metadata["decision_reasons"] = reasons
+        updated_metadata["candidate_write_pending"] = True
+        updated_metadata["candidate_write_failure_reason"] = "write_failed"
         row["metadata"] = updated_metadata
         updated_count += 1
     return updated_count
@@ -1000,20 +997,10 @@ def run(
         mode=ready_to_bet_mode,
     )
     if ready_to_bet_write.get("reason") == "write_failed":
-        pending_count = _mark_ready_to_bet_write_pending(
+        _mark_ready_to_bet_write_pending(
             state_rows,
             ready_to_bet_result.candidate_rows,
         )
-        if pending_count:
-            state_counts = ready_to_bet_result.summary.setdefault("state_counts", {})
-            state_counts["ready"] = max(0, int(state_counts.get("ready", 0)) - pending_count)
-            state_counts["ready_pending_write"] = int(
-                state_counts.get("ready_pending_write", 0)
-            ) + pending_count
-            reason_counts = ready_to_bet_result.summary.setdefault("reason_counts", {})
-            reason_counts["candidate_write_failed"] = int(
-                reason_counts.get("candidate_write_failed", 0)
-            ) + pending_count
     writer.upsert_rows("game_reminder_state", reminder_rows, on_conflict="dedupe_key")
     writer.upsert_rows("live_pick_state", state_rows, on_conflict="slate_date,normalized_pitcher,side")
     operational_pick_locks = _write_operational_pick_locks(

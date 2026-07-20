@@ -164,6 +164,36 @@ def test_locked_row_after_valid_start_time_is_started():
     assert result.candidate_rows == []
 
 
+def test_locked_game_state_after_valid_start_time_is_started():
+    result = _build(
+        pitchers=[_pitcher(game_time="2026-07-17T17:00:00Z")],
+        state_rows=[
+            _state(game_state="locked", game_time="2026-07-17T17:00:00Z")
+        ],
+    )
+
+    metadata = result.state_rows[0]["metadata"]
+    assert metadata["decision_state"] == "started"
+    assert metadata["decision_reasons"] == ["game_started"]
+    assert result.candidate_rows == []
+
+
+@pytest.mark.parametrize("game_time", [None, "not-a-timestamp"])
+@pytest.mark.parametrize("lock_overrides", [{"is_locked": True}, {"game_state": "locked"}])
+def test_ordinary_lock_precedes_missing_or_unparseable_game_time(
+    game_time, lock_overrides
+):
+    result = _build(
+        pitchers=[_pitcher(game_time=game_time)],
+        state_rows=[_state(game_time=game_time, **lock_overrides)],
+    )
+
+    metadata = result.state_rows[0]["metadata"]
+    assert metadata["decision_state"] == "locked"
+    assert metadata["decision_reasons"] == ["pick_locked"]
+    assert result.candidate_rows == []
+
+
 def test_postponed_after_scheduled_time_remains_locked():
     result = _build(
         state_rows=[

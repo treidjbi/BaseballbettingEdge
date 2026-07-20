@@ -277,13 +277,23 @@ def test_ready_to_bet_shadow_candidate_write_failure_stays_retryable(tmp_path, m
         )
 
     assert failed_result["ready_to_bet_shadow_write"]["reason"] == "write_failed"
-    assert failed_result["state_rows"][0]["metadata"]["decision_state"] == "ready_pending_write"
+    assert failed_result["state_rows"][0]["metadata"]["decision_state"] == "ready"
+    assert failed_result["state_rows"][0]["metadata"]["candidate_write_pending"] is True
+    assert failed_result["state_rows"][0]["metadata"]["candidate_write_failure_reason"] == "write_failed"
+    assert set(failed_result["ready_to_bet_shadow"]["state_counts"]) <= {
+        "ready",
+        "watching",
+        "started",
+        "locked",
+        "logged",
+    }
     persisted_rows = next(
         call.args[1]
         for call in failed_writer.upsert_rows.call_args_list
         if call.args[0] == "live_pick_state"
     )
-    assert persisted_rows[0]["metadata"]["decision_state"] == "ready_pending_write"
+    assert persisted_rows[0]["metadata"]["decision_state"] == "ready"
+    assert persisted_rows[0]["metadata"]["candidate_write_pending"] is True
 
     retry_writer = _writer_with_selects({
         "live_pick_state": persisted_rows,
@@ -314,6 +324,9 @@ def test_ready_to_bet_shadow_candidate_write_failure_stays_retryable(tmp_path, m
         )
 
     assert retry_result["ready_to_bet_shadow"]["candidate_count"] == 1
+    assert retry_result["state_rows"][0]["metadata"]["decision_state"] == "ready"
+    assert "candidate_write_pending" not in retry_result["state_rows"][0]["metadata"]
+    assert "candidate_write_failure_reason" not in retry_result["state_rows"][0]["metadata"]
     retry_writer.insert_ignore_rows.assert_any_call(
         "shadow_notification_candidates",
         retry_result["ready_to_bet_candidate_rows"],
