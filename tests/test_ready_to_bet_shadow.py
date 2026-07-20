@@ -139,6 +139,31 @@ def test_at_or_after_start_timestamp_fails_closed_as_started(observed_at):
     assert result.candidate_rows == []
 
 
+@pytest.mark.parametrize("game_time", [None, "not-a-timestamp"])
+def test_missing_or_unparseable_game_time_fails_closed(game_time):
+    result = _build(
+        pitchers=[_pitcher(game_time=game_time)],
+        state_rows=[_state(game_time=game_time)],
+    )
+
+    metadata = result.state_rows[0]["metadata"]
+    assert metadata["decision_state"] == "watching"
+    assert metadata["decision_reasons"] == ["game_time_unavailable"]
+    assert result.candidate_rows == []
+
+
+def test_locked_row_after_valid_start_time_is_started():
+    result = _build(
+        pitchers=[_pitcher(game_time="2026-07-17T17:00:00Z")],
+        state_rows=[_state(is_locked=True, game_time="2026-07-17T17:00:00Z")],
+    )
+
+    metadata = result.state_rows[0]["metadata"]
+    assert metadata["decision_state"] == "started"
+    assert metadata["decision_reasons"] == ["game_started"]
+    assert result.candidate_rows == []
+
+
 def test_postponed_after_scheduled_time_remains_locked():
     result = _build(
         state_rows=[

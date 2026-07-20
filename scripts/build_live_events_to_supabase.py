@@ -148,6 +148,37 @@ def _write_ready_to_bet_candidates(
         }
 
 
+def _mark_ready_to_bet_write_pending(
+    state_rows: list[dict[str, Any]],
+    candidate_rows: list[dict[str, Any]],
+) -> int:
+    candidate_keys = {
+        (
+            str(candidate.get("normalized_pitcher") or "").strip(),
+            str(candidate.get("side") or "").strip().lower(),
+        )
+        for candidate in candidate_rows
+    }
+    updated_count = 0
+    for row in state_rows:
+        key = (
+            str(row.get("normalized_pitcher") or "").strip(),
+            str(row.get("side") or "").strip().lower(),
+        )
+        metadata = row.get("metadata") if isinstance(row.get("metadata"), dict) else {}
+        if key not in candidate_keys or metadata.get("decision_state") != "ready":
+            continue
+        updated_metadata = dict(metadata)
+        updated_metadata["decision_state"] = "ready_pending_write"
+        reasons = list(updated_metadata.get("decision_reasons") or [])
+        if "candidate_write_failed" not in reasons:
+            reasons.append("candidate_write_failed")
+        updated_metadata["decision_reasons"] = reasons
+        row["metadata"] = updated_metadata
+        updated_count += 1
+    return updated_count
+
+
 def _mainline_best_price_min_cents() -> int:
     return max(1, _env_int("LIVE_MAINLINE_PRICE_MIN_CENTS", default=10))
 
@@ -968,6 +999,21 @@ def run(
         rows=ready_to_bet_result.candidate_rows,
         mode=ready_to_bet_mode,
     )
+    if ready_to_bet_write.get("reason") == "write_failed":
+        pending_count = _mark_ready_to_bet_write_pending(
+            state_rows,
+            ready_to_bet_result.candidate_rows,
+        )
+        if pending_count:
+            state_counts = ready_to_bet_result.summary.setdefault("state_counts", {})
+            state_counts["ready"] = max(0, int(state_counts.get("ready", 0)) - pending_count)
+            state_counts["ready_pending_write"] = int(
+                state_counts.get("ready_pending_write", 0)
+            ) + pending_count
+            reason_counts = ready_to_bet_result.summary.setdefault("reason_counts", {})
+            reason_counts["candidate_write_failed"] = int(
+                reason_counts.get("candidate_write_failed", 0)
+            ) + pending_count
     writer.upsert_rows("game_reminder_state", reminder_rows, on_conflict="dedupe_key")
     writer.upsert_rows("live_pick_state", state_rows, on_conflict="slate_date,normalized_pitcher,side")
     operational_pick_locks = _write_operational_pick_locks(

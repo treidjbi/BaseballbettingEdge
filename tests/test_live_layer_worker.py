@@ -233,6 +233,94 @@ def test_ready_to_bet_shadow_accepted_bet_read_failure_fails_closed(tmp_path, mo
     assert notification_event_rows == result["notification_rows"]
 
 
+def test_ready_to_bet_shadow_candidate_write_failure_stays_retryable(tmp_path, monkeypatch):
+    monkeypatch.setenv("LIVE_READY_TO_BET_SHADOW", "record")
+    pitcher = _fire_pitcher()
+    pitcher["quality_gate_level"] = "clean"
+    pitcher["ev_over"]["quality_gate_level"] = "clean"
+    today = _write_artifact(tmp_path, [pitcher])
+    failed_writer = _writer_with_selects({
+        "live_pick_state": [],
+        "accepted_bets": [],
+        "market_snapshots": [{
+            "id": "snapshot-1",
+            "provider": "propline",
+            "provider_event_id": "game-1",
+            "normalized_player_name": "tarik skubal",
+            "player_name": "Tarik Skubal",
+            "bookmaker_key": "fanduel",
+            "side": "over",
+            "line": 6.5,
+            "american_odds": 105,
+            "observed_at": "2026-05-06T18:00:00+00:00",
+        }],
+        "game_reminder_state": [],
+    })
+
+    def fail_ready_candidate_write(table, rows, **kwargs):
+        if table == "shadow_notification_candidates" and rows and rows[0].get("candidate_type") == "ready_to_bet":
+            raise RuntimeError("shadow candidate write unavailable")
+        return []
+
+    failed_writer.insert_ignore_rows.side_effect = fail_ready_candidate_write
+    observed_at = build_live_events_to_supabase.datetime.fromisoformat("2026-05-06T18:00:00+00:00")
+
+    with (
+        patch.object(build_live_events_to_supabase, "SupabaseMarketWriter", return_value=failed_writer),
+        patch.object(build_live_events_to_supabase, "_now_utc", return_value=observed_at),
+    ):
+        failed_result = build_live_events_to_supabase.run(
+            slate_date="2026-05-06",
+            artifact_path=today,
+            supabase_url="https://example.supabase.co",
+            service_role_key="secret",
+        )
+
+    assert failed_result["ready_to_bet_shadow_write"]["reason"] == "write_failed"
+    assert failed_result["state_rows"][0]["metadata"]["decision_state"] == "ready_pending_write"
+    persisted_rows = next(
+        call.args[1]
+        for call in failed_writer.upsert_rows.call_args_list
+        if call.args[0] == "live_pick_state"
+    )
+    assert persisted_rows[0]["metadata"]["decision_state"] == "ready_pending_write"
+
+    retry_writer = _writer_with_selects({
+        "live_pick_state": persisted_rows,
+        "accepted_bets": [],
+        "market_snapshots": [{
+            "id": "snapshot-2",
+            "provider": "propline",
+            "provider_event_id": "game-1",
+            "normalized_player_name": "tarik skubal",
+            "player_name": "Tarik Skubal",
+            "bookmaker_key": "fanduel",
+            "side": "over",
+            "line": 6.5,
+            "american_odds": 105,
+            "observed_at": "2026-05-06T18:00:00+00:00",
+        }],
+        "game_reminder_state": [],
+    })
+    with (
+        patch.object(build_live_events_to_supabase, "SupabaseMarketWriter", return_value=retry_writer),
+        patch.object(build_live_events_to_supabase, "_now_utc", return_value=observed_at),
+    ):
+        retry_result = build_live_events_to_supabase.run(
+            slate_date="2026-05-06",
+            artifact_path=today,
+            supabase_url="https://example.supabase.co",
+            service_role_key="secret",
+        )
+
+    assert retry_result["ready_to_bet_shadow"]["candidate_count"] == 1
+    retry_writer.insert_ignore_rows.assert_any_call(
+        "shadow_notification_candidates",
+        retry_result["ready_to_bet_candidate_rows"],
+        on_conflict="dedupe_key",
+    )
+
+
 def test_ready_to_bet_shadow_default_off_skips_accepted_bet_read(tmp_path, monkeypatch):
     monkeypatch.delenv("LIVE_READY_TO_BET_SHADOW", raising=False)
     today = _write_artifact(tmp_path, [_fire_pitcher()])

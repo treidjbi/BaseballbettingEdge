@@ -219,12 +219,18 @@ def build_ready_to_bet_shadow(
         if game_state in STARTED_STATES:
             decision_state = "started"
             reasons.append("game_started")
-        elif bool(row.get("is_locked")) or game_state in LOCKED_STATES:
+        elif game_state in LOCKED_STATES:
             decision_state = "locked"
             reasons.append("pick_locked")
+        elif game_time is None:
+            decision_state = "watching"
+            reasons.append("game_time_unavailable")
         elif timestamp_started:
             decision_state = "started"
             reasons.append("game_started")
+        elif bool(row.get("is_locked")):
+            decision_state = "locked"
+            reasons.append("pick_locked")
         elif accepted_bets_available and key in accepted_keys:
             decision_state = "logged"
             reasons.append("accepted_bet_logged")

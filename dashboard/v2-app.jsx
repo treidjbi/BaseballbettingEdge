@@ -272,7 +272,7 @@ function defaultBetLogBook(book) {
 }
 function isFreshMarketRow(row) {
   const freshness = String(row?.freshness_status || "").toLowerCase();
-  return !freshness || ["fresh", "held_fresh", "heartbeat_held"].includes(freshness);
+  return ["fresh", "held_fresh", "heartbeat_held"].includes(freshness);
 }
 function marketModelLine(row, side, p = null) {
   const value = side?.k_line ?? p?.k_line ?? side?.display_k_line ?? side?.locked_k_line ?? p?.display_k_line ?? p?.locked_k_line ?? row?.main_line;
@@ -302,7 +302,7 @@ function marketEffectiveActionLabel(row, side, p = null) {
   return label;
 }
 function isLiveMarketBetPrefill(row, side = null, p = null) {
-  if (!row || row.freshness_status === "stale") return false;
+  if (!row || !isFreshMarketRow(row)) return false;
   if (!isFiniteNumber(row.best_line) || !isFiniteNumber(row.best_odds) || !row.best_book) return false;
   if (!sameMarketLine(row, side, p)) return false;
   const label = marketEffectiveActionLabel(row, side, p);
@@ -319,6 +319,25 @@ function marketBetTicketContext(p, side) {
     displayRow,
     prefillRow: isLiveMarketBetPrefill(displayRow, side, p) ? displayRow : null,
     bookRows: marketBookRowsForDisplay(displayRow, side, p),
+  };
+}
+function selectedMarketBetRowForForm({ prefillRow = null, displayRow = null, bookRows = [], form = {} }) {
+  if (form?.priceSource !== "live_best") return prefillRow;
+  const selectedBook = String(form?.book === "Other" ? form?.bookOther : form?.book || "").trim();
+  const selectedLine = parseBetLogNumber(form?.line);
+  const selectedOdds = parseBetLogNumber(form?.odds);
+  const selectedRow = (Array.isArray(bookRows) ? bookRows : []).find((bookRow) => (
+    selectedBook &&
+    bookComparable(selectedBook) === bookComparable(bookRow?.bookName) &&
+    isFiniteNumber(selectedLine) && Math.abs(selectedLine - bookRow.line) < 0.001 &&
+    isFiniteNumber(selectedOdds) && Math.trunc(selectedOdds) === Math.trunc(bookRow.odds)
+  ));
+  if (!selectedRow) return prefillRow;
+  return {
+    ...(displayRow || prefillRow || {}),
+    best_book: selectedRow.bookName,
+    best_line: selectedRow.line,
+    best_odds: selectedRow.odds,
   };
 }
 function defaultAcceptedBetForm(p, side, liveRow = selectedMarketBetRow(p, side)) {
@@ -1317,8 +1336,14 @@ function PickDetail({ p, onClose }) {
   const selectedLiveBetBook = String(betForm.book === "Other" ? betForm.bookOther : betForm.book || "").trim();
   const selectedLiveBetLine = String(betForm.line || "").trim() ? parseBetLogNumber(betForm.line) : null;
   const selectedLiveBetOdds = String(betForm.odds || "").trim() ? parseBetLogNumber(betForm.odds) : null;
-  const liveBetSourceText = marketBetRow
-    ? `${marketBetRow.provider || "live"} - ${selectedLiveBetBook || marketBetRow.best_book || "Live book"} ${formatKLine(isFiniteNumber(selectedLiveBetLine) ? selectedLiveBetLine : marketBetRow.best_line)} ${fmtOdds(isFiniteNumber(selectedLiveBetOdds) ? selectedLiveBetOdds : marketBetRow.best_odds)}`
+  const selectedMarketBetRow = selectedMarketBetRowForForm({
+    prefillRow: marketBetRow,
+    displayRow: marketDisplayRow,
+    bookRows: marketBetBookRows,
+    form: betForm,
+  });
+  const liveBetSourceText = selectedMarketBetRow
+    ? `${selectedMarketBetRow.provider || "live"} - ${selectedLiveBetBook || selectedMarketBetRow.best_book || "Live book"} ${formatKLine(isFiniteNumber(selectedLiveBetLine) ? selectedLiveBetLine : selectedMarketBetRow.best_line)} ${fmtOdds(isFiniteNumber(selectedLiveBetOdds) ? selectedLiveBetOdds : selectedMarketBetRow.best_odds)}`
     : "";
 
   function loadAcceptedBetReview(secret = storedBetLogSecret()) {
@@ -1431,7 +1456,7 @@ function PickDetail({ p, onClose }) {
           book,
           units,
           priceSource: betForm.priceSource || "artifact",
-          marketRow: marketBetRow,
+          marketRow: selectedMarketBetRow,
           alertContext: betAlertContext,
           correctionRow,
         })),
@@ -1799,7 +1824,7 @@ function PickDetail({ p, onClose }) {
             </div>
             <div className={`v2-bet-price-source ${betForm.priceSource}`}>
               <span>{betPriceSourceLabel(betForm.priceSource)}</span>
-              {betForm.priceSource === "live_best" && marketBetRow ? (
+              {betForm.priceSource === "live_best" && selectedMarketBetRow ? (
                 <b>{liveBetSourceText}</b>
               ) : (
                 <b>{bookForSide(p, best) || "Market"} {best.k_line ?? p.k_line}K {fmtOdds(best.odds)}</b>
