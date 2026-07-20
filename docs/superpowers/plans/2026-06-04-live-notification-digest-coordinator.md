@@ -27,6 +27,19 @@ classes. Mainline best-price alerts are individual movement-class notifications.
 
 **2026-07-17 ready-to-bet shadow update:** `LIVE_READY_TO_BET_SHADOW=off|record` records decision state and first `ready_to_bet` transitions only. It does not create or suppress notification events. Live send/suppression remains closed pending at least five normal slates and separate Tyler approval.
 
+**2026-07-20 deployment proof:** additive Supabase migration
+`20260717181500_ready_to_bet_shadow_candidate.sql` was applied. Render deploy
+`dep-d9f5onrtqb8s73blj9lg` first proved the new code at `mode=off` on
+`2026-07-20T17:41:03Z`. Tyler then approved record-only shadow; adding only
+`LIVE_READY_TO_BET_SHADOW=record` and deploying
+`dep-d9f5sltaeets73cgk1lg` produced the first record run at
+`2026-07-20T17:50:32Z`: `60` watching rows, zero ready candidates, zero recent
+notification rows, and zero `ready_to_bet` notification events. The grouped
+coordinator remained unchanged with zero output. Keep every ready-to-bet send
+or suppression behavior closed until five normal slates are reviewed and Tyler
+separately approves a next step. Roll back timing evidence by setting the flag
+to `off` and redeploying only `bbe-live-layer`.
+
 ## 2026-06-07 Grouped Promotion Checkpoint
 
 Tyler approved promoting the notification grouping change on 2026-06-07.

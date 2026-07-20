@@ -87,6 +87,14 @@
 > accepted-bet API behavior.
 >
 > **2026-07-17 same-line trust update:** Alternate-line book rows remain visible, but the compact card labels them `Alt-line context`, same-line live rows outrank different-line rows, and Log Bet automatically prefills only from the model K line. Manual alternate-line selection remains available.
+>
+> **2026-07-20 production proof:** `main` commit `b7906a44` was deployed to
+> Netlify as `6a5e5bbef33863243b980d83`. Production root and `/v2.html`
+> returned `200`; the `2026-07-17-same-line-trust` asset key and deployed
+> same-line ranking, alternate-line copy, explicit freshness prefill gate, and
+> manual selected-row provenance were present. Keep `?marketSheet=0` as the
+> immediate UI rollback. This proof does not change model, provider, lock,
+> notification, staking, or source-of-truth behavior.
 
 ## Goal
 
