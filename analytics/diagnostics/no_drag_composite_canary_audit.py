@@ -342,73 +342,11 @@ def missing_critical_inputs(row: dict[str, Any]) -> tuple[str, ...]:
 
 
 def evaluate_row(row: dict[str, Any]) -> Evaluation:
-    selected_verdict = verdict(row)
-    is_fire = selected_verdict.startswith("FIRE")
-    is_lean = selected_verdict == "LEAN"
-    side = str(row.get("side") or "").strip().lower()
-    relationship = str(row.get("model_market_relationship") or "").strip()
-    line_bucket = str(row.get("line_bucket") or "").strip()
-    leash = str(row.get("leash_risk_bucket") or row.get("opportunity_bucket") or "").strip().lower()
-    quality = str(row.get("quality_gate_level") or "").strip().lower()
-    timing = str(row.get("bet_timing_window") or "").strip()
-    archetype = str(row.get("pitcher_archetype_bucket") or "").strip()
-    no_vig_gap = to_float(row.get("model_no_vig_gap"))
-    families: list[str] = []
-    drag_labels: list[str] = []
-
-    edge = to_float(row.get("edge"))
-    if edge is not None and edge >= 0.06:
-        drag_labels.append("cap_high_raw_edge")
-    if relationship == "model_fades_favorite":
-        drag_labels.append("cap_market_fade")
-    if is_fire and side == "under" and relationship == "model_fades_favorite":
-        drag_labels.append("cap_fire_under_market_fade")
-
-    keep_fire = is_fire and (
-        (
-            relationship == "model_agrees_with_favorite"
-            and ev_bucket(row) == "ev_6_to_17"
-            and timing == "pre_30"
-        )
-        or (
-            side == "over"
-            and ev_bucket(row) == "ev_6_to_17"
-            and leash == "normal"
-        )
-    )
-    if keep_fire and not drag_labels:
-        families.append("strong_base_strict_runtime_core")
-
-    selective_lean = is_lean and (
-        (
-            line_bucket == "4.5"
-            and ev_bucket(row) == "ev_0_to_6"
-            and leash == "normal"
-        )
-        or (
-            archetype == "low_k_standard"
-            and no_vig_gap is not None
-            and no_vig_gap >= 0.02
-        )
-        or (
-            line_bucket == "2.5-3.5"
-            and relationship == "model_fades_favorite"
-            and quality == "capped"
-        )
-    )
-    if selective_lean and not {
-        "cap_high_raw_edge",
-        "cap_fire_under_market_fade",
-    }.intersection(drag_labels):
-        families.append("strong_base_selective_lean")
-
-    if "market_anchor_strict" in market_anchor_labels(row):
-        families.append("market_anchor_strict")
-
+    shared = alternative_selector.no_drag_diagnostic_predicate(row)
     return Evaluation(
-        qualifies=bool(families) and not drag_labels,
-        families=tuple(families),
-        drag_labels=tuple(drag_labels),
+        qualifies=shared["qualifies"],
+        families=shared["families"],
+        drag_labels=shared["drag_labels"],
         missing_inputs=missing_critical_inputs(row),
     )
 

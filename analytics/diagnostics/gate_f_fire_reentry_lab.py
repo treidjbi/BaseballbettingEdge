@@ -176,51 +176,9 @@ def profit_rescue_shadow_decision(row: dict[str, Any]) -> dict[str, Any]:
 
 
 def candidate_labels(row: dict[str, Any]) -> set[str]:
-    verdict = source_fire_verdict(row)
-    if not _is_fire(verdict):
-        return set()
-
-    labels: set[str] = set()
-    decision = profit_rescue_shadow_decision(row)
-    side = str(row.get("side") or "").strip().lower()
-    relationship = str(row.get("model_market_relationship") or "").strip()
-    quality = str(row.get("quality_gate_level") or "").strip().lower()
-    edge = _to_float(row.get("edge"))
-    adj_ev = _to_float(row.get("locked_adj_ev"))
-    if adj_ev is None:
-        adj_ev = _to_float(row.get("adj_ev"))
-    no_vig_gap = _to_float(row.get("model_no_vig_gap"))
-    workload = str(row.get("leash_risk_bucket") or row.get("opportunity_bucket") or "").strip().lower()
-
-    if _is_fire(decision["proposed_verdict"]):
-        labels.add("retained_fire_control")
-
+    labels = alternative_selector.reentry_candidate_labels(row)
     if clv_supported(row):
         labels.add("clv_supported_reentry")
-
-    if relationship == "model_agrees_with_favorite" and no_vig_gap is not None and no_vig_gap >= 0.04:
-        labels.add("market_aligned_reentry")
-
-    if (
-        edge is not None
-        and 0.02 <= edge < 0.06
-        and adj_ev is not None
-        and adj_ev < 0.17
-        and no_vig_gap is not None
-        and no_vig_gap >= 0.04
-        and quality in {"", "clean", "none"}
-        and not _is_true(row.get("large_edge_skepticism_flag"))
-    ):
-        labels.add("moderate_edge_quality_reentry")
-
-    if side == "under" and (
-        not clv_supported(row)
-        or (no_vig_gap is not None and no_vig_gap < 0.02)
-        or relationship == "model_fades_favorite"
-        or workload in {"high", "medium", "short_leash"}
-    ):
-        labels.add("avoid_fire_under_reentry")
-
     return labels
 
 

@@ -15,17 +15,29 @@
     "malformed_anchor_metadata": "pending",
     "absent_anchor_metadata": "disagree",
     "missing_reversal_or_volatility": "pending",
-    "preclose_observations_under_two": "pending"
+    "preclose_observations_under_two": "pending",
+    "non_finite_truthy_adjusted_ev": "pending"
   },
   "enum_normalization": "trim_lowercase",
+  "artifact_provenance": {
+    "allowed_current_paths": ["dashboard/data/processed/today.json"],
+    "sha256_pattern": "^[0-9a-f]{64}$"
+  },
   "provider_allow_list": ["therundown", "propline", "therundown_propline"],
   "thresholds": {
     "edge_high_skepticism_min": "0.06",
-    "moderate_edge_min": "0.02",
-    "moderate_edge_max_exclusive": "0.06",
-    "moderate_ev_max_exclusive": "0.17",
+    "edge_low_max_exclusive": "0.02",
+    "edge_moderate_low_max_exclusive": "0.04",
+    "edge_moderate_max_exclusive": "0.06",
+    "adjusted_ev_low_max_exclusive": "0.06",
+    "adjusted_ev_moderate_max_exclusive": "0.17",
+    "no_vig_base_min": "0.02",
     "no_vig_reentry_min": "0.04",
-    "preclose_strong_score_min": "5"
+    "preclose_strong_score_min": "5",
+    "preclose_medium_score_min": "3"
+  },
+  "preclose_score_weights": {
+    "movement_toward": "3", "movement_away": "-2", "edge_low": "3", "edge_moderate_low": "2", "edge_moderate": "1", "edge_high": "-2", "ev_low": "2", "ev_moderate": "1", "ev_high": "-1", "thin_no_vig": "1", "high_no_vig": "-1", "minus_price": "1", "plus_price": "-1", "clean_quality": "1", "blocked_quality": "-2", "early_timing": "1", "late_timing": "-1", "multi_book": "1", "single_book": "-1", "off_market": "-2", "volatile": "-2", "low_volatility": "1", "under_market_fade": "-1"
   },
   "family_predicates": {
     "base": "strong_base_strict_plus_selective",
@@ -38,10 +50,5 @@
     "consensus_core": "no_drag AND family_count >= 2",
     "reentry_expansion": "reentry_support AND NOT no_drag"
   },
-  "timing_and_freeze": {
-    "timezone": "America/Phoenix",
-    "provisional": "before operational lock",
-    "freeze": "first valid due_now or missed_lock while pregame",
-    "post_start": "never freeze or backfill"
-  }
+  "timing_and_freeze": {"timezone": "America/Phoenix", "provisional": "before operational lock", "freeze": "first valid due_now or missed_lock while pregame", "post_start": "never freeze or backfill"}
 }

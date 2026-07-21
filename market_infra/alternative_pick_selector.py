@@ -1,7 +1,6 @@
-"""Pure, prospective-only selector for the pregame alternative-pick methodology.
+"""Pure, prospective-only contract for alternative pitcher-K pick comparison.
 
-This module deliberately has no network, database, artifact, or runtime writes.
-It is a versioned comparison contract and cannot modify official pick behavior.
+No network, database, artifact, runtime, or official-pick writes occur here.
 """
 
 from __future__ import annotations
@@ -9,6 +8,7 @@ from __future__ import annotations
 import hashlib
 import json
 import math
+import re
 from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
@@ -23,6 +23,13 @@ EXPANSION_SELECTOR_ID = "moderate_edge_quality_reentry_expansion_v1"
 MANIFEST_PATH = Path(__file__).with_name("alternative_pick_selector_manifest_v1.json")
 MANIFEST = json.loads(MANIFEST_PATH.read_text(encoding="utf-8"))
 PHOENIX = ZoneInfo("America/Phoenix")
+
+if MANIFEST.get("bundle_id") != BUNDLE_ID:
+    raise ValueError("alternative selector manifest bundle_id does not match exported constant")
+if MANIFEST.get("selector_ids", {}).get("consensus_core") != CONSENSUS_SELECTOR_ID:
+    raise ValueError("alternative selector manifest consensus selector does not match exported constant")
+if MANIFEST.get("selector_ids", {}).get("reentry_expansion") != EXPANSION_SELECTOR_ID:
+    raise ValueError("alternative selector manifest expansion selector does not match exported constant")
 
 
 @dataclass(frozen=True)
@@ -50,23 +57,34 @@ def sha256_hex(value: str) -> str:
 
 
 def selector_fingerprint() -> str:
-    payload = json.dumps(MANIFEST, sort_keys=True, separators=(",", ":"), ensure_ascii=False)
-    return sha256_hex(payload)
+    return sha256_hex(json.dumps(MANIFEST, sort_keys=True, separators=(",", ":"), ensure_ascii=False))
+
+
+FROZEN_SELECTOR_FINGERPRINT = "f8f7ccf652b8eda4860d07798bc4673920b0b9d727552bc7e2e6547d478b4579"
 
 
 def _number(value: Any) -> float | None:
     if value is None or isinstance(value, bool):
         return None
     try:
-        number = float(value)
+        value = float(value)
     except (TypeError, ValueError):
         return None
-    return number if math.isfinite(number) else None
+    return value if math.isfinite(value) else None
+
+
+def _raw_number(value: Any) -> float | None:
+    if value is None or isinstance(value, bool):
+        return None
+    try:
+        return float(value)
+    except (TypeError, ValueError):
+        return None
 
 
 def _integer(value: Any) -> int | None:
-    number = _number(value)
-    return int(number) if number is not None else None
+    value = _number(value)
+    return int(value) if value is not None else None
 
 
 def _text(value: Any) -> str:
@@ -77,12 +95,20 @@ def _enum(value: Any) -> str:
     return _text(value).lower()
 
 
+def _threshold(name: str) -> float:
+    return float(MANIFEST["thresholds"][name])
+
+
+def _weight(name: str) -> int:
+    return int(MANIFEST["preclose_score_weights"][name])
+
+
 def _parse_time(value: Any) -> datetime | None:
-    text = _text(value)
-    if not text:
+    value = _text(value)
+    if not value:
         return None
     try:
-        return datetime.fromisoformat(f"{text[:-1]}+00:00" if text.endswith("Z") else text)
+        return datetime.fromisoformat(f"{value[:-1]}+00:00" if value.endswith("Z") else value)
     except ValueError:
         return None
 
@@ -110,25 +136,26 @@ def source_fire_verdict(row: dict[str, Any]) -> str:
     return display_verdict(row)
 
 
+def adjusted_ev_resolution(row: dict[str, Any]) -> tuple[float | None, str | None]:
+    """Preserve legacy float(...)-then-truthy-or precedence, including NaN."""
+    for field in MANIFEST["field_precedence"]["adjusted_ev"]:
+        candidate = _raw_number(row.get(field))
+        if candidate:
+            return (candidate, None) if math.isfinite(candidate) else (None, f"{field}:non_finite")
+    return None, None
+
+
 def adjusted_ev(row: dict[str, Any]) -> float | None:
-    # Intentionally preserve Python truthy-or precedence for source compatibility.
-    values = [_number(row.get(field)) for field in MANIFEST["field_precedence"]["adjusted_ev"]]
-    return values[0] or values[1] or values[2]
+    return adjusted_ev_resolution(row)[0]
 
 
 def line_bucket(k_line: Any) -> str:
-    number = _number(k_line)
-    if number is None:
+    value = _number(k_line)
+    if value is None:
         return "unknown"
-    if number <= 3.5:
+    if value <= 3.5:
         return "2.5-3.5"
-    if number == 4.5:
-        return "4.5"
-    if number == 5.5:
-        return "5.5"
-    if number == 6.5:
-        return "6.5"
-    return "7.5+"
+    return {4.5: "4.5", 5.5: "5.5", 6.5: "6.5"}.get(value, "7.5+")
 
 
 def timing_bucket(observed_at: Any, game_time: Any) -> str:
@@ -138,20 +165,13 @@ def timing_bucket(observed_at: Any, game_time: Any) -> str:
     minutes = (start - observed).total_seconds() / 60.0
     if minutes < 0:
         return "post_start"
-    if minutes <= 5:
-        return "pre_5"
-    if minutes <= 15:
-        return "pre_15"
-    if minutes <= 30:
-        return "pre_30"
-    if minutes <= 60:
-        return "pre_60"
-    if minutes <= 120:
-        return "pre_120"
+    for max_minutes, label in ((5, "pre_5"), (15, "pre_15"), (30, "pre_30"), (60, "pre_60"), (120, "pre_120")):
+        if minutes <= max_minutes:
+            return label
     return "early"
 
 
-def _opportunity_bucket(avg_ip: Any, recent_start_count: Any) -> str:
+def runtime_opportunity_bucket(avg_ip: Any, recent_start_count: Any) -> str:
     innings = _number(avg_ip)
     if innings is None:
         return "unknown"
@@ -162,55 +182,26 @@ def _opportunity_bucket(avg_ip: Any, recent_start_count: Any) -> str:
     return "normal"
 
 
-def runtime_opportunity_bucket(avg_ip: Any, recent_start_count: Any) -> str:
-    """Return the runtime-safe workload bucket used by research and selection."""
-    return _opportunity_bucket(avg_ip, recent_start_count)
-
-
-def _leash_bucket(pitcher: dict[str, Any], opportunity: str) -> str:
-    if bool(pitcher.get("is_opener")) or bool(pitcher.get("starter_mismatch")) or opportunity == "short_leash":
+def runtime_leash_risk_bucket(*, is_opener: Any, starter_mismatch: Any, avg_ip: Any, last_pitch_count: Any, days_since_last_start: Any) -> str:
+    if bool(is_opener) or bool(starter_mismatch) or runtime_opportunity_bucket(avg_ip, None) == "short_leash":
         return "high"
-    if (_integer(pitcher.get("last_pitch_count")) or 0) >= 105 or (_integer(pitcher.get("days_since_last_start")) or 99) < 4:
+    if (_integer(last_pitch_count) or 0) >= 105 or (_integer(days_since_last_start) or 99) < 4:
         return "medium"
     return "normal"
 
 
-def runtime_leash_risk_bucket(*, is_opener: Any, starter_mismatch: Any, avg_ip: Any, last_pitch_count: Any, days_since_last_start: Any) -> str:
-    return _leash_bucket({
-        "is_opener": is_opener,
-        "starter_mismatch": starter_mismatch,
-        "avg_ip": avg_ip,
-        "last_pitch_count": last_pitch_count,
-        "days_since_last_start": days_since_last_start,
-    }, _opportunity_bucket(avg_ip, None))
-
-
-def _archetype(pitcher: dict[str, Any], opportunity: str) -> str:
-    if bool(pitcher.get("is_opener")) or bool(pitcher.get("starter_mismatch")):
-        return "opener_or_mismatch"
-    if opportunity == "short_leash":
-        return "short_leash"
-    values = [_number(pitcher.get(field)) for field in ("season_k9", "recent_k9", "career_k9")]
-    max_k9 = max(value for value in values if value is not None) if any(value is not None for value in values) else None
-    if opportunity == "deep_starter" and max_k9 is not None and max_k9 >= 10:
-        return "high_k_deep_starter"
-    if opportunity == "deep_starter":
-        return "deep_starter"
-    if max_k9 is not None and max_k9 >= 10:
-        return "high_k_standard"
-    if max_k9 is not None and max_k9 < 7:
-        return "low_k_standard"
-    return "standard_starter"
-
-
 def runtime_pitcher_archetype_bucket(*, is_opener: Any, starter_mismatch: Any, opportunity_bucket: str, season_k9: Any, recent_k9: Any, career_k9: Any) -> str:
-    return _archetype({
-        "is_opener": is_opener,
-        "starter_mismatch": starter_mismatch,
-        "season_k9": season_k9,
-        "recent_k9": recent_k9,
-        "career_k9": career_k9,
-    }, opportunity_bucket)
+    if bool(is_opener) or bool(starter_mismatch):
+        return "opener_or_mismatch"
+    if opportunity_bucket == "short_leash":
+        return "short_leash"
+    k9s = [value for value in (_number(season_k9), _number(recent_k9), _number(career_k9)) if value is not None]
+    high, low = bool(k9s) and max(k9s) >= 10, bool(k9s) and max(k9s) < 7
+    if opportunity_bucket == "deep_starter":
+        return "high_k_deep_starter" if high else "deep_starter"
+    if high:
+        return "high_k_standard"
+    return "low_k_standard" if low else "standard_starter"
 
 
 def runtime_model_market_relationship(model_side: Any, market_favorite: Any) -> str:
@@ -220,7 +211,35 @@ def runtime_model_market_relationship(model_side: Any, market_favorite: Any) -> 
     return "model_agrees_with_favorite" if model == favorite else "model_fades_favorite"
 
 
-def _anchor_labels(pick: dict[str, Any]) -> tuple[set[str] | None, bool]:
+def derive_model_no_vig_gap(*, model_win_prob: Any, over_odds: Any, under_odds: Any, side: Any) -> float | None:
+    probability, over, under = _number(model_win_prob), _integer(over_odds), _integer(under_odds)
+    side = _enum(side)
+    if probability is None or not 0 <= probability <= 1 or over in {None, 0} or under in {None, 0} or side not in {"over", "under"}:
+        return None
+    over_raw = abs(over) / (abs(over) + 100) if over < 0 else 100 / (over + 100)
+    under_raw = abs(under) / (abs(under) + 100) if under < 0 else 100 / (under + 100)
+    total = over_raw + under_raw
+    if total <= 0:
+        return None
+    market_probability = (over_raw if side == "over" else under_raw) / total
+    return probability - market_probability
+
+
+def market_anchor_labels(row: dict[str, Any]) -> set[str]:
+    raw = row.get("market_anchor_selector")
+    if isinstance(raw, str):
+        try:
+            raw = json.loads(raw)
+        except json.JSONDecodeError:
+            raw = None
+    nested = raw.get("labels") if isinstance(raw, dict) else []
+    flat = row.get("market_anchor_selector_labels") or []
+    values = [nested] if isinstance(nested, str) else list(nested or [])
+    values += [flat] if isinstance(flat, str) else list(flat or [])
+    return {_enum(value) for value in values if _text(value)}
+
+
+def _anchor_metadata(pick: dict[str, Any]) -> tuple[set[str] | None, bool]:
     raw = pick.get("market_anchor_selector")
     if raw is None:
         return set(), False
@@ -229,195 +248,229 @@ def _anchor_labels(pick: dict[str, Any]) -> tuple[set[str] | None, bool]:
             raw = json.loads(raw)
         except json.JSONDecodeError:
             return None, True
-    if not isinstance(raw, dict) or "labels" not in raw:
+    if not isinstance(raw, dict) or not isinstance(raw.get("labels"), (list, tuple, set)):
         return None, True
-    labels = raw.get("labels")
-    if not isinstance(labels, (list, tuple, set)):
-        return None, True
-    return {_enum(value) for value in labels if _text(value)}, False
+    return {_enum(value) for value in raw["labels"] if _text(value)}, False
 
 
 def derive_runtime_features(*, pitcher: dict[str, Any], pick: dict[str, Any], market_evidence: dict[str, Any], observed_at: Any) -> dict[str, Any]:
     side = _enum(pick.get("side"))
-    over_odds, under_odds = _number(pitcher.get("best_over_odds")), _number(pitcher.get("best_under_odds"))
-    odds = over_odds if side == "over" else under_odds if side == "under" else None
-    favorite = "over" if over_odds is not None and under_odds is not None and over_odds < under_odds else "under" if over_odds is not None and under_odds is not None else "unknown"
+    over, under = _integer(pitcher.get("best_over_odds")), _integer(pitcher.get("best_under_odds"))
+    odds = over if side == "over" else under if side == "under" else None
+    favorite = "over" if over is not None and under is not None and over < under else "under" if over is not None and under is not None else "unknown"
     model_side = _enum(pick.get("model_side")) or side
-    relationship = _enum(pick.get("model_market_relationship"))
-    if not relationship:
-        relationship = runtime_model_market_relationship(model_side, favorite)
-    opportunity = _enum(pitcher.get("opportunity_bucket")) or _opportunity_bucket(pitcher.get("avg_ip"), pitcher.get("recent_start_count"))
-    leash = _enum(pitcher.get("leash_risk_bucket")) or _leash_bucket(pitcher, opportunity)
+    relationship = _enum(pick.get("model_market_relationship")) or runtime_model_market_relationship(model_side, favorite)
+    opportunity = _enum(pitcher.get("opportunity_bucket")) or runtime_opportunity_bucket(pitcher.get("avg_ip"), pitcher.get("recent_start_count"))
+    leash = _enum(pitcher.get("leash_risk_bucket")) or runtime_leash_risk_bucket(is_opener=pitcher.get("is_opener"), starter_mismatch=pitcher.get("starter_mismatch"), avg_ip=pitcher.get("avg_ip"), last_pitch_count=pitcher.get("last_pitch_count"), days_since_last_start=pitcher.get("days_since_last_start"))
+    ev, ev_error = adjusted_ev_resolution(pick)
     edge = _number(pick.get("edge"))
+    gap = derive_model_no_vig_gap(model_win_prob=pick.get("model_win_prob"), over_odds=over, under_odds=under, side=side)
+    quality = _enum(pick.get("quality_gate_level"))
     skepticism = bool(pick.get("large_edge_skepticism_flag"))
-    if not skepticism and edge is not None and edge >= 0.06:
-        adverse = sum((relationship == "model_fades_favorite", leash in {"medium", "high"}, opportunity == "short_leash", _enum(pick.get("quality_gate_level")) not in {"", "clean", "none"}))
-        skepticism = adverse >= 2
-    labels, malformed_anchor = _anchor_labels(pick)
+    if not skepticism and edge is not None and edge >= _threshold("edge_high_skepticism_min"):
+        skepticism = sum((relationship == "model_fades_favorite", leash in {"medium", "high"}, opportunity == "short_leash", quality not in {"", "clean", "none"})) >= 2
+    labels, malformed = _anchor_metadata(pick)
+    checkpoint = _as_utc(observed_at)
     return {
         "side": side, "official_verdict": display_verdict(pick), "source_fire_verdict": source_fire_verdict(pick),
-        "k_line": _number(pitcher.get("k_line")), "line_bucket": line_bucket(pitcher.get("k_line")),
-        "odds": odds, "price_sign": "minus" if odds is not None and odds < 0 else "plus" if odds is not None and odds > 0 else "unknown",
+        "pitcher": normalize(pitcher.get("pitcher") or ""), "game_time": _text(pitcher.get("game_time")),
+        "k_line": _number(pitcher.get("k_line")), "line_bucket": line_bucket(pitcher.get("k_line")), "odds": odds,
+        "price_sign": "minus" if odds is not None and odds < 0 else "plus" if odds is not None and odds > 0 else "unknown",
         "bet_timing_window": timing_bucket(observed_at, pitcher.get("game_time")), "model_market_relationship": relationship,
-        "model_no_vig_gap": _number(pick.get("model_no_vig_gap")), "edge": edge, "adjusted_ev": adjusted_ev(pick),
-        "quality_gate_level": _enum(pick.get("quality_gate_level")), "opportunity_bucket": opportunity,
-        "leash_risk_bucket": leash, "pitcher_archetype_bucket": _archetype(pitcher, opportunity),
+        "model_no_vig_gap": gap, "edge": edge, "adjusted_ev": ev, "adjusted_ev_error": ev_error,
+        "quality_gate_level": quality, "opportunity_bucket": opportunity, "leash_risk_bucket": leash,
+        "pitcher_archetype_bucket": runtime_pitcher_archetype_bucket(is_opener=pitcher.get("is_opener"), starter_mismatch=pitcher.get("starter_mismatch"), opportunity_bucket=opportunity, season_k9=pitcher.get("season_k9"), recent_k9=pitcher.get("recent_k9"), career_k9=pitcher.get("career_k9")),
         "large_edge_skepticism_flag": skepticism, "anchor_labels": sorted(labels) if labels is not None else None,
-        "anchor_metadata_malformed": malformed_anchor,
-        "observed_at": _as_utc(observed_at).isoformat() if _as_utc(observed_at) is not None else None,
+        "anchor_metadata_malformed": malformed, "observed_at": checkpoint.isoformat() if checkpoint else None,
     }
 
 
+def _features_missing(features: dict[str, Any], fields: tuple[str, ...]) -> bool:
+    return any(features.get(field) in {None, "", "unknown"} for field in fields)
+
+
 def strong_base_strict_plus_selective(features: dict[str, Any]) -> FamilyVote:
-    required = ("official_verdict", "side", "adjusted_ev", "model_market_relationship", "line_bucket", "leash_risk_bucket", "pitcher_archetype_bucket")
-    if any(features.get(field) in {None, "", "unknown"} for field in required):
-        return FamilyVote("pending", ("base_inputs_missing",))
-    fire = features["official_verdict"].upper().startswith("FIRE")
-    lean = features["official_verdict"].upper() == "LEAN"
-    ev = features["adjusted_ev"]
-    strict = fire and ((features["model_market_relationship"] == "model_agrees_with_favorite" and 0.06 <= ev < 0.17 and features["bet_timing_window"] == "pre_30") or (features["side"] == "over" and 0.06 <= ev < 0.17 and features["leash_risk_bucket"] == "normal"))
-    selective = lean and ((features["line_bucket"] == "4.5" and 0 <= ev < 0.06 and features["leash_risk_bucket"] == "normal") or (features["pitcher_archetype_bucket"] == "low_k_standard" and (features["model_no_vig_gap"] or -1) >= 0.02) or (features["line_bucket"] == "2.5-3.5" and features["model_market_relationship"] == "model_fades_favorite" and features["quality_gate_level"] == "capped"))
+    required = ("official_verdict", "side", "adjusted_ev", "model_market_relationship", "line_bucket", "leash_risk_bucket", "pitcher_archetype_bucket", "model_no_vig_gap", "quality_gate_level", "bet_timing_window")
+    if features.get("adjusted_ev_error") or _features_missing(features, required):
+        return FamilyVote("pending", (features.get("adjusted_ev_error") or "base_inputs_missing",))
+    fire, lean, ev = features["official_verdict"].upper().startswith("FIRE"), features["official_verdict"].upper() == "LEAN", features["adjusted_ev"]
+    moderate_ev = _threshold("adjusted_ev_low_max_exclusive") <= ev < _threshold("adjusted_ev_moderate_max_exclusive")
+    strict = fire and ((features["model_market_relationship"] == "model_agrees_with_favorite" and moderate_ev and features["bet_timing_window"] == "pre_30") or (features["side"] == "over" and moderate_ev and features["leash_risk_bucket"] == "normal"))
+    selective = lean and ((features["line_bucket"] == "4.5" and 0 <= ev < _threshold("adjusted_ev_low_max_exclusive") and features["leash_risk_bucket"] == "normal") or (features["pitcher_archetype_bucket"] == "low_k_standard" and features["model_no_vig_gap"] >= _threshold("no_vig_base_min")) or (features["line_bucket"] == "2.5-3.5" and features["model_market_relationship"] == "model_fades_favorite" and features["quality_gate_level"] == "capped"))
     return FamilyVote("agree" if strict or selective else "disagree", ("strong_base_strict_runtime_core" if strict else "strong_base_selective_lean" if selective else "base_predicate_false",))
 
 
-def preclose_strong(features: dict[str, Any], market_evidence: dict[str, Any]) -> FamilyVote:
-    ids = market_evidence.get("observation_ids")
-    if not isinstance(ids, (list, tuple, set)) or len({str(value) for value in ids if _text(value)}) < 2:
+def _candidate_identity_vote(features: dict[str, Any], evidence: dict[str, Any], slate_date: str | None) -> FamilyVote | None:
+    identity = evidence.get("candidate_identity")
+    if not isinstance(identity, dict):
+        return FamilyVote("pending", ("preclose_candidate_identity_missing",))
+    expected = {"slate_date": slate_date or _text(identity.get("slate_date")), "game_time": features.get("game_time"), "pitcher": features.get("pitcher"), "side": features["side"], "k_line": features["k_line"], "provider": _enum(evidence.get("provider"))}
+    if not all(expected.values()):
+        return FamilyVote("pending", ("preclose_expected_identity_missing",))
+    received = {"slate_date": _text(identity.get("slate_date")), "game_time": _text(identity.get("game_time")), "pitcher": normalize(identity.get("pitcher") or ""), "side": _enum(identity.get("side")), "k_line": _number(identity.get("k_line")), "provider": _enum(identity.get("provider"))}
+    if received != expected:
+        return FamilyVote("pending", ("preclose_candidate_identity_mismatch",))
+    return None
+
+
+def _preclose_observation_vote(features: dict[str, Any], evidence: dict[str, Any]) -> FamilyVote | None:
+    since, checkpoint = _as_utc(evidence.get("candidate_became_current_at")), _as_utc(features.get("observed_at"))
+    observations = evidence.get("observations")
+    if since is None or checkpoint is None or not isinstance(observations, list):
+        return FamilyVote("pending", ("preclose_candidate_window_missing",))
+    parsed: list[tuple[str, datetime]] = []
+    for observation in observations:
+        if not isinstance(observation, dict) or not _text(observation.get("id")) or (at := _as_utc(observation.get("observed_at"))) is None:
+            return FamilyVote("pending", ("preclose_observations_malformed",))
+        parsed.append((_text(observation["id"]), at))
+    ids = {item[0] for item in parsed}
+    if len(parsed) < 2 or len(ids) < 2 or ids != {_text(value) for value in evidence.get("observation_ids", []) if _text(value)}:
         return FamilyVote("pending", ("preclose_observations_immature",))
-    if market_evidence.get("reversal_book_count") is None or market_evidence.get("volatile_book_count") is None:
-        return FamilyVote("pending", ("preclose_volatility_missing",))
-    first_observed, last_observed, checkpoint = (
-        _as_utc(market_evidence.get("first_observed_at")),
-        _as_utc(market_evidence.get("last_observed_at")),
-        _as_utc(features.get("observed_at")),
-    )
-    if first_observed is None or last_observed is None or checkpoint is None:
+    if any(at < since for _, at in parsed):
+        return FamilyVote("pending", ("preclose_observation_before_current_candidate",))
+    if any(at > checkpoint for _, at in parsed):
+        return FamilyVote("pending", ("preclose_observation_after_checkpoint",))
+    first, last = _as_utc(evidence.get("first_observed_at")), _as_utc(evidence.get("last_observed_at"))
+    if first is None or last is None:
         return FamilyVote("pending", ("preclose_observation_times_missing",))
-    if first_observed > last_observed or last_observed > checkpoint:
-        return FamilyVote("pending", ("preclose_observation_times_invalid",))
-    if _enum(market_evidence.get("freshness_status")) != "fresh":
-        return FamilyVote("pending", ("preclose_evidence_stale",))
-    score = 0
-    toward, away = _integer(market_evidence.get("toward_pick_count")), _integer(market_evidence.get("away_from_pick_count"))
-    if toward is None or away is None or _integer(market_evidence.get("book_count")) is None:
-        return FamilyVote("pending", ("preclose_counts_missing",))
-    score += 3 if toward > away else -2 if away > toward else 0
-    edge, ev, gap = features["edge"], features["adjusted_ev"], features["model_no_vig_gap"]
-    if edge is None or ev is None or gap is None:
-        return FamilyVote("pending", ("preclose_runtime_inputs_missing",))
-    score += 3 if edge < .02 else 2 if edge < .04 else 1 if edge < .06 else -2
-    score += 2 if ev < .06 else 1 if ev < .17 else -1
-    score += 1 if 0 < gap < .04 else -1 if gap >= .04 else 0
-    score += 1 if features["price_sign"] == "minus" else -1 if features["price_sign"] == "plus" else 0
-    score += 1 if features["quality_gate_level"] in {"", "clean", "none"} else -2 if features["quality_gate_level"] in {"blocked", "severe"} else 0
-    score += 1 if features["bet_timing_window"] in {"pre_120", "pre_60", "pre_30"} else -1 if features["bet_timing_window"] in {"pre_5", "post_start"} else 0
-    books = _integer(market_evidence.get("book_count")) or 0
-    score += 1 if bool(market_evidence.get("broad_confirmation")) or books >= 3 else -1 if books == 1 else 0
-    score -= 2 if bool(market_evidence.get("best_is_off_market")) else 0
-    reversals, volatility = _integer(market_evidence.get("reversal_book_count")) or 0, _integer(market_evidence.get("volatile_book_count")) or 0
-    score += -2 if reversals > 0 or volatility > 1 else 1 if reversals == 0 and volatility == 0 else 0
-    score -= 1 if features["side"] == "under" and features["model_market_relationship"] == "model_fades_favorite" else 0
-    return FamilyVote("agree" if score >= 5 else "disagree", ("strong_preclose_clv_proxy" if score >= 5 else "preclose_score_below_threshold",))
+    times = [at for _, at in parsed]
+    if first != min(times) or last != max(times):
+        return FamilyVote("pending", ("preclose_observation_bounds_invalid",))
+    return None
+
+
+def preclose_proxy_score_from_row(row: dict[str, Any]) -> dict[str, Any]:
+    """The historical diagnostic scorer; it intentionally has no post-close inputs."""
+    score, positive, risks = 0, [], []
+    def add(points: int, name: str, target: list[str]) -> None:
+        nonlocal score
+        score += points; target.append(name)
+    edge, ev, gap = _number(row.get("edge")), adjusted_ev(row), _number(row.get("model_no_vig_gap"))
+    toward, away = _integer(row.get("toward_pick_count")), _integer(row.get("away_from_pick_count"))
+    movement = _enum(row.get("side_price_movement"))
+    if movement == "with_side" or (toward is not None and away is not None and toward > away): add(_weight("movement_toward"), "movement_toward_pick", positive)
+    if movement == "against_side" or (toward is not None and away is not None and away > toward): add(_weight("movement_away"), "movement_against_pick", risks)
+    if edge is not None: add(_weight("edge_low") if edge < _threshold("edge_low_max_exclusive") else _weight("edge_moderate_low") if edge < _threshold("edge_moderate_low_max_exclusive") else _weight("edge_moderate") if edge < _threshold("edge_moderate_max_exclusive") else _weight("edge_high"), "low_edge_market_validation" if edge < _threshold("edge_low_max_exclusive") else "moderate_low_edge_market_validation" if edge < _threshold("edge_moderate_low_max_exclusive") else "moderate_edge_market_validation" if edge < _threshold("edge_moderate_max_exclusive") else "high_edge_clv_risk", positive if edge < _threshold("edge_moderate_max_exclusive") else risks)
+    if ev is not None: add(_weight("ev_low") if ev < _threshold("adjusted_ev_low_max_exclusive") else _weight("ev_moderate") if ev < _threshold("adjusted_ev_moderate_max_exclusive") else _weight("ev_high"), "low_ev_market_validation" if ev < _threshold("adjusted_ev_low_max_exclusive") else "moderate_ev_market_validation" if ev < _threshold("adjusted_ev_moderate_max_exclusive") else "high_ev_clv_risk", positive if ev < _threshold("adjusted_ev_moderate_max_exclusive") else risks)
+    if gap is not None and 0 < gap < _threshold("no_vig_reentry_min"): add(_weight("thin_no_vig"), "thin_or_price_only_no_vig_gap", positive)
+    elif gap is not None and gap >= _threshold("no_vig_reentry_min"): add(_weight("high_no_vig"), "model_edge_not_clv_proxy", risks)
+    price = _enum(row.get("price_sign")); quality = _enum(row.get("quality_gate_level")); timing = _enum(row.get("bet_timing_window"))
+    if price == "minus": add(_weight("minus_price"), "minus_price_market_support", positive)
+    elif price == "plus": add(_weight("plus_price"), "plus_price_clv_risk", risks)
+    if quality in {"", "clean", "none"}: add(_weight("clean_quality"), "clean_quality", positive)
+    elif quality in {"blocked", "severe"}: add(_weight("blocked_quality"), "blocked_quality", risks)
+    if timing in {"pre_120", "pre_60", "pre_30"}: add(_weight("early_timing"), "early_lock_window", positive)
+    elif timing in {"pre_5", "post_start"}: add(_weight("late_timing"), "late_timing", risks)
+    books = _integer(row.get("book_count")) or len(row.get("books_seen") or [])
+    if bool(row.get("broad_confirmation")) or books >= 3: add(_weight("multi_book"), "multi_book_support", positive)
+    elif books == 1: add(_weight("single_book"), "single_book_support", risks)
+    if bool(row.get("best_is_off_market")): add(_weight("off_market"), "off_market_best_book", risks)
+    reversal, volatility = _integer(row.get("reversal_book_count")) or 0, _integer(row.get("volatile_book_count")) or 0
+    if reversal > 0 or volatility > 1: add(_weight("volatile"), "reversal_or_volatility", risks)
+    elif reversal == 0 and volatility == 0: add(_weight("low_volatility"), "low_volatility", positive)
+    if _enum(row.get("side")) == "under" and _enum(row.get("model_market_relationship")) == "model_fades_favorite": add(_weight("under_market_fade"), "under_market_fade", risks)
+    label = "strong_preclose_clv_proxy" if score >= _threshold("preclose_strong_score_min") else "medium_preclose_clv_proxy" if score >= _threshold("preclose_medium_score_min") else "weak_preclose_clv_proxy"
+    return {"score": score, "label": label, "positive_reasons": positive, "risk_reasons": risks}
+
+
+def preclose_strong(features: dict[str, Any], market_evidence: dict[str, Any], *, slate_date: str | None = None) -> FamilyVote:
+    identity = _candidate_identity_vote(features, market_evidence, slate_date)
+    if identity: return identity
+    observations = _preclose_observation_vote(features, market_evidence)
+    if observations: return observations
+    if market_evidence.get("reversal_book_count") is None or market_evidence.get("volatile_book_count") is None: return FamilyVote("pending", ("preclose_volatility_missing",))
+    if _enum(market_evidence.get("freshness_status")) != "fresh": return FamilyVote("pending", ("preclose_evidence_stale",))
+    if _features_missing(features, ("edge", "adjusted_ev", "model_no_vig_gap", "price_sign", "quality_gate_level", "bet_timing_window")) or features.get("adjusted_ev_error"): return FamilyVote("pending", (features.get("adjusted_ev_error") or "preclose_runtime_inputs_missing",))
+    row = {**market_evidence, **features}
+    scored = preclose_proxy_score_from_row(row)
+    return FamilyVote("agree" if scored["label"] == "strong_preclose_clv_proxy" else "disagree", (scored["label"],))
 
 
 def moderate_edge_quality_reentry(features: dict[str, Any]) -> FamilyVote:
-    required = ("edge", "adjusted_ev", "model_no_vig_gap", "quality_gate_level")
-    if any(features.get(field) is None for field in required):
-        return FamilyVote("pending", ("reentry_inputs_missing",))
-    if not features["source_fire_verdict"].upper().startswith("FIRE"):
-        return FamilyVote("disagree", ("source_not_fire",))
-    agrees = (.02 <= features["edge"] < .06 and features["adjusted_ev"] < .17 and features["model_no_vig_gap"] >= .04 and features["quality_gate_level"] in {"", "clean", "none"} and not features["large_edge_skepticism_flag"])
+    required = ("source_fire_verdict", "side", "model_market_relationship", "quality_gate_level", "edge", "adjusted_ev", "model_no_vig_gap", "large_edge_skepticism_flag")
+    if features.get("adjusted_ev_error") or _features_missing(features, required) or features.get("model_market_relationship") == "unknown": return FamilyVote("pending", (features.get("adjusted_ev_error") or "reentry_inputs_missing",))
+    if not features["source_fire_verdict"].upper().startswith("FIRE"): return FamilyVote("disagree", ("source_not_fire",))
+    agrees = _threshold("edge_low_max_exclusive") <= features["edge"] < _threshold("edge_moderate_max_exclusive") and features["adjusted_ev"] < _threshold("adjusted_ev_moderate_max_exclusive") and features["model_no_vig_gap"] >= _threshold("no_vig_reentry_min") and features["quality_gate_level"] in {"", "clean", "none"} and not features["large_edge_skepticism_flag"]
     return FamilyVote("agree" if agrees else "disagree", ("moderate_edge_quality_reentry" if agrees else "reentry_predicate_false",))
 
 
-def _drag(features: dict[str, Any]) -> bool | None:
-    if features["edge"] is None or features["model_market_relationship"] == "unknown" or not features["official_verdict"] or not features["side"]:
-        return None
-    return features["edge"] >= .06 or features["model_market_relationship"] == "model_fades_favorite" or (features["official_verdict"].upper().startswith("FIRE") and features["side"] == "under" and features["model_market_relationship"] == "model_fades_favorite")
+def reentry_candidate_labels(row: dict[str, Any]) -> set[str]:
+    source, side, relationship = source_fire_verdict(row), _enum(row.get("side")), _enum(row.get("model_market_relationship"))
+    if not source.upper().startswith("FIRE"): return set()
+    labels: set[str] = set(); edge, ev, gap = _number(row.get("edge")), adjusted_ev(row), _number(row.get("model_no_vig_gap")); quality = _enum(row.get("quality_gate_level")); workload = _enum(row.get("leash_risk_bucket") or row.get("opportunity_bucket"))
+    if source == "FIRE 2u": source = "FIRE 1u"
+    proposed_fire = source.upper().startswith("FIRE") and side != "under" and relationship != "model_fades_favorite"
+    if proposed_fire: labels.add("retained_fire_control")
+    if relationship == "model_agrees_with_favorite" and gap is not None and gap >= _threshold("no_vig_reentry_min"): labels.add("market_aligned_reentry")
+    if edge is not None and _threshold("edge_low_max_exclusive") <= edge < _threshold("edge_moderate_max_exclusive") and ev is not None and ev < _threshold("adjusted_ev_moderate_max_exclusive") and gap is not None and gap >= _threshold("no_vig_reentry_min") and quality in {"", "clean", "none"} and not bool(row.get("large_edge_skepticism_flag")): labels.add("moderate_edge_quality_reentry")
+    if side == "under" and (gap is None or gap < _threshold("no_vig_base_min") or relationship == "model_fades_favorite" or workload in {"high", "medium", "short_leash"}): labels.add("avoid_fire_under_reentry")
+    return labels
 
 
-def _eligibility(pitcher: dict[str, Any], pick: dict[str, Any], market_evidence: dict[str, Any], slate_date: Any, is_tracked: bool, observed_at: Any, source_payload_sha256: str, source_artifact_byte_sha256: str) -> tuple[str, ...]:
-    reasons: list[str] = []
-    observed, start = _as_utc(observed_at), _as_utc(pitcher.get("game_time"))
-    observed_slate = observed.astimezone(PHOENIX).date().isoformat() if observed is not None else ""
-    if _text(slate_date) != observed_slate:
-        reasons.append("wrong_phoenix_slate_date")
+def no_drag_predicate(features: dict[str, Any], base: FamilyVote, anchor: FamilyVote) -> bool | None:
+    if base.state == "pending" or anchor.state == "pending" or _features_missing(features, ("edge", "model_market_relationship", "official_verdict", "side")): return None
+    drag = features["edge"] >= _threshold("edge_high_skepticism_min") or features["model_market_relationship"] == "model_fades_favorite" or (features["official_verdict"].upper().startswith("FIRE") and features["side"] == "under" and features["model_market_relationship"] == "model_fades_favorite")
+    strict_anchor = anchor.state == "agree" and "market_anchor_strict" in anchor.reason_codes
+    return (base.state == "agree" or strict_anchor) and not drag
+
+
+def no_drag_diagnostic_predicate(row: dict[str, Any]) -> dict[str, Any]:
+    """Source-compatible historical no-drag predicate used by the audit only."""
+    selected = display_verdict(row); side = _enum(row.get("side")); relationship = _enum(row.get("model_market_relationship")); edge = _number(row.get("edge")); ev = adjusted_ev(row)
+    line = _text(row.get("line_bucket")); leash = _enum(row.get("leash_risk_bucket") or row.get("opportunity_bucket")); quality = _enum(row.get("quality_gate_level")); timing = _text(row.get("bet_timing_window")); archetype = _text(row.get("pitcher_archetype_bucket")); gap = _number(row.get("model_no_vig_gap"))
+    drags: list[str] = []
+    if edge is not None and edge >= _threshold("edge_high_skepticism_min"): drags.append("cap_high_raw_edge")
+    if relationship == "model_fades_favorite": drags.append("cap_market_fade")
+    if selected.startswith("FIRE") and side == "under" and relationship == "model_fades_favorite": drags.append("cap_fire_under_market_fade")
+    moderate_ev = ev is not None and _threshold("adjusted_ev_low_max_exclusive") <= ev < _threshold("adjusted_ev_moderate_max_exclusive")
+    families: list[str] = []
+    keep_fire = selected.startswith("FIRE") and ((relationship == "model_agrees_with_favorite" and moderate_ev and timing == "pre_30") or (side == "over" and moderate_ev and leash == "normal"))
+    if keep_fire and not drags: families.append("strong_base_strict_runtime_core")
+    selective = selected == "LEAN" and ((line == "4.5" and ev is not None and 0 <= ev < _threshold("adjusted_ev_low_max_exclusive") and leash == "normal") or (archetype == "low_k_standard" and gap is not None and gap >= _threshold("no_vig_base_min")) or (line == "2.5-3.5" and relationship == "model_fades_favorite" and quality == "capped"))
+    if selective and not {"cap_high_raw_edge", "cap_fire_under_market_fade"}.intersection(drags): families.append("strong_base_selective_lean")
+    if "market_anchor_strict" in market_anchor_labels(row): families.append("market_anchor_strict")
+    return {"qualifies": bool(families) and not drags, "families": tuple(families), "drag_labels": tuple(drags)}
+
+
+def _eligible_reasons(*, pitcher: dict[str, Any], pick: dict[str, Any], market_evidence: dict[str, Any], slate_date: str, is_tracked: bool, source_artifact_path: str, source_payload_sha256: str, source_artifact_byte_sha256: str, observed_at: str) -> tuple[str, ...]:
+    reasons: list[str] = []; observed, start = _as_utc(observed_at), _as_utc(pitcher.get("game_time")); expected_slate = observed.astimezone(PHOENIX).date().isoformat() if observed else ""
+    if _text(slate_date) != expected_slate: reasons.append("wrong_phoenix_slate_date")
     tracked = _enum(is_tracked) in {"true", "1", "yes"} if isinstance(is_tracked, str) else bool(is_tracked)
-    if not tracked:
-        reasons.append("untracked_pick")
-    if display_verdict(pick).upper() == "PASS":
-        reasons.append("pass_verdict")
-    if observed is None or start is None or observed >= start:
-        reasons.append("game_started")
-    if _enum(market_evidence.get("provider")) not in set(MANIFEST["provider_allow_list"]):
-        reasons.append("unsupported_provider")
-    if _number(pick.get("official_k_line")) is not None and _number(pick.get("official_k_line")) != _number(pitcher.get("k_line")):
-        reasons.append("line_mismatch")
-    if pick.get("source_payload_sha256") is not None and pick.get("source_payload_sha256") != source_payload_sha256:
-        reasons.append("artifact_hash_mismatch")
-    if pick.get("source_artifact_byte_sha256") is not None and pick.get("source_artifact_byte_sha256") != source_artifact_byte_sha256:
-        reasons.append("artifact_hash_mismatch")
-    if _enum(pick.get("candidate_side")) and _enum(pick.get("candidate_side")) != _enum(pick.get("side")):
-        reasons.append("alternate_or_opposite_side_search")
-    for field, expected in (
-        ("candidate_side", _enum(pick.get("side"))),
-        ("candidate_pitcher", normalize(pitcher.get("pitcher") or "")),
-        ("candidate_k_line", _number(pitcher.get("k_line"))),
-        ("candidate_game_time", _text(pitcher.get("game_time"))),
-        ("candidate_source_payload_sha256", source_payload_sha256),
-    ):
-        actual = market_evidence.get(field)
-        if actual is None:
-            continue
-        normalized_actual = normalize(actual) if field == "candidate_pitcher" else _enum(actual) if field == "candidate_side" else _number(actual) if field == "candidate_k_line" else _text(actual)
-        if normalized_actual != expected:
-            reasons.append("market_identity_mismatch")
+    if not tracked: reasons.append("untracked_pick")
+    if display_verdict(pick).upper() == "PASS": reasons.append("pass_verdict")
+    if observed is None or start is None or observed >= start: reasons.append("game_started")
+    if source_artifact_path not in MANIFEST["artifact_provenance"]["allowed_current_paths"]: reasons.append("artifact_path_not_current")
+    pattern = MANIFEST["artifact_provenance"]["sha256_pattern"]
+    if not isinstance(source_payload_sha256, str) or re.fullmatch(pattern, source_payload_sha256) is None: reasons.append("artifact_payload_sha256_invalid")
+    if not isinstance(source_artifact_byte_sha256, str) or re.fullmatch(pattern, source_artifact_byte_sha256) is None: reasons.append("artifact_byte_sha256_invalid")
+    if _enum(market_evidence.get("provider")) not in set(MANIFEST["provider_allow_list"]): reasons.append("unsupported_provider")
+    identity = (pitcher.get("pitcher"), pitcher.get("team"), pitcher.get("opp_team"), pitcher.get("game_time"), pitcher.get("k_line"), pick.get("side"))
+    if not all(_text(value) for value in identity) or _number(pitcher.get("k_line")) is None or _enum(pick.get("side")) not in {"over", "under"}: reasons.append("candidate_identity_incomplete")
+    if _number(pick.get("official_k_line")) is not None and _number(pick.get("official_k_line")) != _number(pitcher.get("k_line")): reasons.append("line_mismatch")
+    for field, value in (("source_artifact_path", source_artifact_path), ("source_payload_sha256", source_payload_sha256), ("source_artifact_byte_sha256", source_artifact_byte_sha256)):
+        if pick.get(field) is not None and pick.get(field) != value: reasons.append("artifact_hash_mismatch")
     return tuple(dict.fromkeys(reasons))
 
 
 def evaluate_alternative_pick(*, pitcher: dict[str, Any], pick: dict[str, Any], market_evidence: dict[str, Any], slate_date: str, is_tracked: bool, source_artifact_path: str, source_payload_sha256: str, source_artifact_byte_sha256: str, observed_at: str) -> AlternativePickEvaluation:
-    del source_artifact_path  # Provenance is recorded by Task 2; it is not a selection input.
     features = derive_runtime_features(pitcher=pitcher, pick=pick, market_evidence=market_evidence, observed_at=observed_at)
-    eligibility = _eligibility(pitcher, pick, market_evidence, slate_date, is_tracked, observed_at, source_payload_sha256, source_artifact_byte_sha256)
+    eligible_reasons = _eligible_reasons(pitcher=pitcher, pick=pick, market_evidence=market_evidence, slate_date=slate_date, is_tracked=is_tracked, source_artifact_path=source_artifact_path, source_payload_sha256=source_payload_sha256, source_artifact_byte_sha256=source_artifact_byte_sha256, observed_at=observed_at)
     base = strong_base_strict_plus_selective(features)
-    if features["anchor_metadata_malformed"]:
-        anchor = FamilyVote("pending", ("anchor_metadata_malformed",))
-    elif "market_anchor_strict" in (features["anchor_labels"] or []):
-        anchor = FamilyVote("agree", ("market_anchor_strict",))
-    elif base.state == "agree" and "market_anchor_core" in (features["anchor_labels"] or []):
-        anchor = FamilyVote("agree", ("market_anchor_core_with_base",))
-    elif base.state == "pending":
-        anchor = FamilyVote("pending", ("base_pending_for_anchor_core",))
-    else:
-        anchor = FamilyVote("disagree", ("market_anchor_not_matched",))
-    raw_preclose = preclose_strong(features, market_evidence)
-    if raw_preclose.state == "pending":
-        preclose = raw_preclose
-    elif base.state == "agree":
-        preclose = raw_preclose
-    elif base.state == "pending":
-        preclose = FamilyVote("pending", ("base_pending_for_preclose",))
-    else:
-        preclose = FamilyVote("disagree", ("base_not_supported",))
-    reentry = moderate_edge_quality_reentry(features)
-    families = {"base": base, "anchor": anchor, "preclose": preclose, "reentry": reentry}
-    drag = _drag(features)
-    strict_anchor = anchor.state == "agree" and "market_anchor_strict" in anchor.reason_codes
-    no_drag = None if drag is None or base.state == "pending" or anchor.state == "pending" else (base.state == "agree" or strict_anchor) and not drag
-    family_count = sum(vote.state == "agree" for vote in families.values())
-    pending = bool(eligibility) or any(vote.state == "pending" for vote in families.values()) or no_drag is None
-    lane: Literal["consensus_core", "reentry_expansion"] | None = None
-    if not pending and no_drag and family_count >= 2:
-        lane = "consensus_core"
-    elif not pending and reentry.state == "agree" and not no_drag:
-        lane = "reentry_expansion"
+    labels = features["anchor_labels"]
+    if features["anchor_metadata_malformed"]: anchor = FamilyVote("pending", ("anchor_metadata_malformed",))
+    elif "market_anchor_strict" in (labels or []): anchor = FamilyVote("agree", ("market_anchor_strict",))
+    elif base.state == "agree" and "market_anchor_core" in (labels or []): anchor = FamilyVote("agree", ("market_anchor_core_with_base",))
+    elif base.state == "pending": anchor = FamilyVote("pending", ("base_pending_for_anchor_core",))
+    else: anchor = FamilyVote("disagree", ("market_anchor_not_matched",))
+    raw_preclose = preclose_strong(features, market_evidence, slate_date=slate_date)
+    preclose = raw_preclose if raw_preclose.state == "pending" or base.state == "agree" else FamilyVote("pending", ("base_pending_for_preclose",)) if base.state == "pending" else FamilyVote("disagree", ("base_not_supported",))
+    reentry = moderate_edge_quality_reentry(features); families = {"base": base, "anchor": anchor, "preclose": preclose, "reentry": reentry}
+    no_drag = no_drag_predicate(features, base, anchor); count = sum(vote.state == "agree" for vote in families.values())
+    pending = bool(eligible_reasons) or any(vote.state == "pending" for vote in families.values()) or no_drag is None
+    lane = "consensus_core" if not pending and no_drag and count >= 2 else "reentry_expansion" if not pending and reentry.state == "agree" and not no_drag else None
     status: Literal["selected", "not_selected", "pending"] = "pending" if pending else "selected" if lane else "not_selected"
-    reasons = tuple(dict.fromkeys((*eligibility, *(reason for vote in families.values() for reason in vote.reason_codes))))
-    return AlternativePickEvaluation(not eligibility, eligibility, selector_fingerprint(), families, family_count, no_drag, lane, status, reasons, features)
-
-
-def research_parity_anchors() -> dict[str, float]:
-    return {"base": 32.603, "preclose": 5.982, "combined": 38.585}
+    reasons = tuple(dict.fromkeys((*eligible_reasons, *(reason for vote in families.values() for reason in vote.reason_codes))))
+    return AlternativePickEvaluation(not eligible_reasons, eligible_reasons, selector_fingerprint(), families, count, no_drag, lane, status, reasons, features)
 
 
 def prospective_ledger_seed() -> dict[str, float | int]:

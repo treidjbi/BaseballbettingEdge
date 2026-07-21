@@ -166,3 +166,7 @@ def test_render_report_names_clv_target_and_runtime_proxy_boundary():
 
 def test_current_verdict_wrapper_keeps_display_precedence():
     assert lab.current_verdict(_row(display_verdict="LEAN", verdict="FIRE 1u")) == "LEAN"
+
+
+def test_preclose_lab_uses_shared_score_for_runtime_fixture():
+    assert lab.preclose_clv_proxy_score(_row()) == lab.alternative_selector.preclose_proxy_score_from_row(_row())

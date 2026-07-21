@@ -805,3 +805,12 @@ def test_later_non_finite_adjusted_ev_is_ignored_after_finite_truthy_winner():
 
 def test_display_verdict_wrapper_keeps_frozen_precedence():
     assert audit.verdict({"display_verdict": "LEAN", "verdict": "FIRE 1u"}) == "LEAN"
+
+
+def test_no_drag_audit_uses_shared_predicate_for_a_meaningful_runtime_row():
+    row = graded_row("2026-07-21", "shared predicate", display_verdict="FIRE 1u")
+    shared = audit.alternative_selector.no_drag_diagnostic_predicate(row)
+    evaluated = audit.evaluate_row(row)
+    assert evaluated.qualifies == shared["qualifies"]
+    assert evaluated.families == shared["families"]
+    assert evaluated.drag_labels == shared["drag_labels"]

@@ -138,3 +138,7 @@ def test_render_report_keeps_shadow_boundary_and_fire_volume_language():
 
 def test_source_fire_wrapper_keeps_raw_fire_before_displayed_lean():
     assert lab.source_fire_verdict(_row(display_verdict="LEAN", raw_verdict="FIRE 1u")) == "FIRE 1u"
+
+
+def test_reentry_lab_uses_shared_label_predicate_for_runtime_fixture():
+    assert lab.candidate_labels(_row()) == lab.alternative_selector.reentry_candidate_labels(_row()) | {"clv_supported_reentry"}
