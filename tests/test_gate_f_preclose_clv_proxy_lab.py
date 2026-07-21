@@ -170,3 +170,10 @@ def test_current_verdict_wrapper_keeps_display_precedence():
 
 def test_preclose_lab_uses_shared_score_for_runtime_fixture():
     assert lab.preclose_clv_proxy_score(_row()) == lab.alternative_selector.preclose_proxy_score_from_row(_row())
+
+
+def test_shared_preclose_book_count_normalizes_comma_delimited_books_like_legacy_lists():
+    list_row = _row(book_count=None, broad_confirmation=False, books_seen=["DK", "FD"])
+    string_row = _row(book_count=None, broad_confirmation=False, books_seen="DK,FD")
+    assert lab.alternative_selector.runtime_book_count("DK,FD") == 2
+    assert lab.preclose_clv_proxy_score(string_row) == lab.preclose_clv_proxy_score(list_row)

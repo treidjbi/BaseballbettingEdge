@@ -86,6 +86,16 @@ def test_runtime_features_are_derived_without_postgame_inputs():
     assert selector.derive_model_no_vig_gap(model_win_prob=None, over_odds=-115, under_odds=-105, side="over") is None
 
 
+def test_runtime_no_vig_uses_canonical_win_prob_from_actual_ev_side_payload_shape():
+    market = {
+        "ev_over": {"edge": 0.035, "adj_ev": 0.09, "verdict": "FIRE 1u", "win_prob": 0.56},
+        "ev_under": {"edge": 0.02, "adj_ev": 0.01, "verdict": "LEAN", "win_prob": 0.44},
+    }
+    pick = {**_inputs()["pick"], **market["ev_over"], "side": "over", "model_win_prob": None, "model_no_vig_gap": 0.99}
+    features = selector.derive_runtime_features(pitcher=_inputs()["pitcher"], pick=pick, market_evidence=_inputs()["market_evidence"], observed_at=_inputs()["observed_at"])
+    assert features["model_no_vig_gap"] == pytest.approx(0.04916576381365123)
+
+
 def test_public_runtime_helpers_match_the_frozen_dataset_contract():
     assert selector.runtime_opportunity_bucket(6.3, 5) == "deep_starter"
     assert selector.runtime_leash_risk_bucket(is_opener=False, starter_mismatch=False, avg_ip=5.8, last_pitch_count=None, days_since_last_start=5) == "normal"

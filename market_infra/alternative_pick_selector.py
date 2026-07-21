@@ -211,6 +211,15 @@ def runtime_model_market_relationship(model_side: Any, market_favorite: Any) -> 
     return "model_agrees_with_favorite" if model == favorite else "model_fades_favorite"
 
 
+def runtime_book_count(books_seen: Any) -> int:
+    """Normalize the legacy book list/string representation without inference."""
+    if isinstance(books_seen, (list, tuple, set)):
+        return len(books_seen)
+    if isinstance(books_seen, str) and books_seen.strip():
+        return len([book for book in books_seen.split(",") if book.strip()])
+    return 0
+
+
 def derive_model_no_vig_gap(*, model_win_prob: Any, over_odds: Any, under_odds: Any, side: Any) -> float | None:
     probability, over, under = _number(model_win_prob), _integer(over_odds), _integer(under_odds)
     side = _enum(side)
@@ -264,7 +273,8 @@ def derive_runtime_features(*, pitcher: dict[str, Any], pick: dict[str, Any], ma
     leash = _enum(pitcher.get("leash_risk_bucket")) or runtime_leash_risk_bucket(is_opener=pitcher.get("is_opener"), starter_mismatch=pitcher.get("starter_mismatch"), avg_ip=pitcher.get("avg_ip"), last_pitch_count=pitcher.get("last_pitch_count"), days_since_last_start=pitcher.get("days_since_last_start"))
     ev, ev_error = adjusted_ev_resolution(pick)
     edge = _number(pick.get("edge"))
-    gap = derive_model_no_vig_gap(model_win_prob=pick.get("model_win_prob"), over_odds=over, under_odds=under, side=side)
+    canonical_win_prob = pick.get("win_prob") if pick.get("win_prob") is not None else pick.get("model_win_prob")
+    gap = derive_model_no_vig_gap(model_win_prob=canonical_win_prob, over_odds=over, under_odds=under, side=side)
     quality = _enum(pick.get("quality_gate_level"))
     skepticism = bool(pick.get("large_edge_skepticism_flag"))
     if not skepticism and edge is not None and edge >= _threshold("edge_high_skepticism_min"):
@@ -361,7 +371,8 @@ def preclose_proxy_score_from_row(row: dict[str, Any]) -> dict[str, Any]:
     elif quality in {"blocked", "severe"}: add(_weight("blocked_quality"), "blocked_quality", risks)
     if timing in {"pre_120", "pre_60", "pre_30"}: add(_weight("early_timing"), "early_lock_window", positive)
     elif timing in {"pre_5", "post_start"}: add(_weight("late_timing"), "late_timing", risks)
-    books = _integer(row.get("book_count")) or len(row.get("books_seen") or [])
+    books = _integer(row.get("book_count"))
+    books = books if books is not None else runtime_book_count(row.get("books_seen"))
     if bool(row.get("broad_confirmation")) or books >= 3: add(_weight("multi_book"), "multi_book_support", positive)
     elif books == 1: add(_weight("single_book"), "single_book_support", risks)
     if bool(row.get("best_is_off_market")): add(_weight("off_market"), "off_market_best_book", risks)
