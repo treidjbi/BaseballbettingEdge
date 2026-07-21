@@ -16,7 +16,7 @@
 - Never read `result`, win/loss, PnL, closing line/price, final CLV, or postgame opportunity in the runtime selector.
 - Missing, stale, mismatched, or immature inputs produce `pending`; they never become `disagree` or a qualifying vote by default.
 - Keep the two lanes disjoint: `consensus_core = no_drag AND family_count >= 2`; `reentry_expansion = reentry_support AND NOT no_drag`.
-- Invoke the optional recorder only after all existing notification, live-state, and operational-lock work succeeds. Catch every sidecar failure, stop that sidecar cycle after the first failure, and preserve the existing process result.
+- Invoke the optional recorder only after all existing notification, live-state, operational-lock, timing, and shadow-market-state work completes successfully. Catch every sidecar failure, stop that sidecar cycle after the first failure, and preserve the existing process result.
 - Bound the sidecar to five seconds total with no retry and at most one provisional plus one frozen row per eligible pick/day.
 - Direct anonymous/authenticated table access stays denied. The browser reads only the explicit Netlify response allow-list.
 - The Alt Picks UI contains no bet action, Log Bet path, stake/units, PnL/history, notification control, or FIRE-red promotion styling.
@@ -81,6 +81,7 @@ evaluation = evaluate_alternative_pick(
         "quality_gate_level": "clean",
         "market_anchor_selector": {"labels": ["market_anchor_core"]},
     },
+    is_tracked=True,
     market_evidence={
         "provider": "therundown_propline",
         "toward_pick_count": 3,
@@ -97,7 +98,8 @@ evaluation = evaluate_alternative_pick(
     },
     slate_date="2026-07-21",
     source_artifact_path="dashboard/data/processed/today.json",
-    source_artifact_sha256="a" * 64,
+    source_payload_sha256="a" * 64,
+    source_artifact_byte_sha256="b" * 64,
     observed_at="2026-07-21T20:10:00Z",
 )
 ```
@@ -128,6 +130,8 @@ class FamilyVote:
 
 @dataclass(frozen=True)
 class AlternativePickEvaluation:
+    eligible: bool
+    eligibility_reason_codes: tuple[str, ...]
     selector_fingerprint: str
     family_states: dict[str, FamilyVote]
     family_count: int
@@ -140,7 +144,8 @@ class AlternativePickEvaluation:
 selector_fingerprint() -> str
 derive_runtime_features(*, pitcher, pick, market_evidence, observed_at) -> dict[str, Any]
 evaluate_alternative_pick(*, pitcher, pick, market_evidence, slate_date,
-                          source_artifact_path, source_artifact_sha256,
+                          is_tracked, source_artifact_path,
+                          source_payload_sha256, source_artifact_byte_sha256,
                           observed_at) -> AlternativePickEvaluation
 ```
 
@@ -183,7 +188,7 @@ git commit -m "feat: freeze alternative pick selector contract"
 
 Cover:
 
-- deterministic game/candidate identity from slate, teams, game time, pitcher, side, and model line;
+- deterministic game/candidate identity from slate, teams, game time, pitcher, side, model line, and supported-provider posture;
 - provisional evidence windows starting only when that exact candidate first becomes current;
 - identity changes resetting old snapshot membership;
 - two distinct supported-provider snapshots no later than the checkpoint;
@@ -192,6 +197,7 @@ Cover:
 - exact lock validation on dedupe key, slate, teams/game, pitcher, side, line, game time, and source SHA;
 - a frozen row being allowed only from the lock written/first observed in the current evaluator cycle, with a missed-freeze reason rather than later reconstruction;
 - no post-start freeze and no same-SHA or later-artifact reconstruction after a missed first valid lock cycle;
+- provisional upserts stopping immediately when a valid frozen row exists or the game has started;
 - at most one provisional and one frozen row for the unique candidate/day key;
 - frozen insert-ignore behavior and migration-level update/delete immutability;
 - RLS enabled, explicit anon/authenticated revoke, service-role grants, and the expected unique constraint.
@@ -215,7 +221,7 @@ UNIQUE_COLUMNS = (
 )
 
 candidate_identity(*, slate_date, pitcher, side, model_k_line,
-                   team, opp_team, game_time) -> str
+                   team, opp_team, game_time, provider_posture) -> str
 associate_candidate_observations(*, candidate, snapshot_rows,
                                  first_current_at, observed_at) -> dict[str, Any]
 build_provisional_row(*, candidate, evaluation, evidence_window,
@@ -224,7 +230,14 @@ build_frozen_row(*, provisional_row, lock_row, observed_at) -> dict[str, Any] | 
 lock_matches_candidate(lock_row, candidate, artifact_sha256) -> bool
 ```
 
-Store compact observation IDs/count/first/last timestamps and reason codes. Frozen rows copy the evaluated selection/provenance once and use the operational lock's `locked_at`, `should_lock_at`, `minutes_until_start`, `status_at_capture`, dedupe key, and source SHA.
+Store compact observation IDs/count/first/last timestamps and reason codes. Frozen rows copy the evaluated selection/provenance once and use the operational lock's `locked_at`, `should_lock_at`, `minutes_until_start`, `status_at_capture`, dedupe key, and byte-level lock source SHA. Once a matching frozen row exists, or once `observed_at >= game_time`, row shaping returns no provisional update.
+
+Use two named hash domains without changing existing lock behavior:
+
+- `source_artifact_sha256` is `market_infra.published_artifacts.canonical_payload_sha256(payload)` and must equal the canonical `published_pipeline_artifacts.payload_sha256` for provisional display;
+- `lock_artifact_sha256` is the existing live-layer SHA-256 of the exact fetched artifact bytes and must equal `operational_pick_locks.source_artifact_sha256` for a frozen link.
+
+Add an end-to-end golden test that starts from one JSON payload, proves key-order-insensitive canonical payload hashing, preserves the exact-byte lock hash, and carries both unchanged through candidate → provisional → lock → frozen row validation.
 
 - [ ] **Step 4: Create the migration through the linked CLI**
 
@@ -280,7 +293,8 @@ Add tests proving:
 
 - mode is `off` for missing/invalid values and only `record` enables work;
 - mode-off performs no alternative reads/writes;
-- notifications, market/display state, reminders, live pick state, and operational locks are written before alternative work starts;
+- notifications, market/display state, reminders, live pick state, operational locks, shadow timing, and `_build_shadow_market_state` are complete before alternative work starts;
+- any existing write/build failure summary skips all alternative reads and writes for the cycle;
 - record mode uses the already loaded artifact, snapshots/evidence, and approved providers, with only narrow state/lock reads;
 - provisional rows use merge-upsert; frozen rows use conflict-ignore on the six-column unique key;
 - a timeout or first read/evaluation/write exception stops alternative work for that cycle, returns a bounded sanitized summary, and leaves the overall run successful;
@@ -317,15 +331,16 @@ def _alternative_pick_selection_mode() -> str:
 
 def _write_alternative_pick_selection_state(
     *, writer, slate_date, payload, snapshot_rows, market_pick_evidence_rows,
-    observed_at, artifact_source, artifact_sha, operational_pick_locks,
+    observed_at, artifact_source, source_payload_sha256,
+    source_artifact_byte_sha256, operational_pick_locks, market_line_build,
     budget_seconds: float = 5.0,
 ) -> dict[str, Any]:
     """Record isolated alternative state or return a bounded skipped summary."""
 ```
 
-Call it after `_write_operational_pick_locks` and `_write_shadow_pipeline_timing`, but before unrelated `_build_shadow_market_state`. Use `time.monotonic()` and pass only the remaining positive budget to each no-retry request. On the first failure or exhausted budget, log a truncated non-secret warning, return `{"skipped": True, "reason": "failed"|"timeout"}`, and make no further alternative call that cycle.
+Call it only after `_write_operational_pick_locks`, `_write_shadow_pipeline_timing`, and `_build_shadow_market_state` return. If any prior existing responsibility returned a failure summary, return `{"skipped": True, "reason": "prerequisite_failed"}` before any alternative read/write. Use `time.monotonic()` and pass only the remaining positive budget to each no-retry request. On the first failure or exhausted budget, log a truncated non-secret warning, return `{"skipped": True, "reason": "failed"|"timeout"}`, and make no further alternative call that cycle.
 
-Read only current-slate provisional state and exact candidate lock rows. A freeze is eligible only when the current lock operation returned the row or the persisted lock's `locked_at` exactly matches this cycle's `observed_at`; an older lock without a frozen row becomes `missed_freeze` and is never reconstructed even if the artifact SHA did not change. Do not make a provider/API call. Return an `alternative_pick_selection` summary in `run()` output without changing existing return keys.
+Compute `source_payload_sha256 = canonical_payload_sha256(payload)` without altering the existing byte hash passed to notifications or locks. Read only current-slate provisional/frozen state and exact candidate lock rows. A freeze is eligible only when the current lock operation returned the row or the persisted lock's `locked_at` exactly matches this cycle's `observed_at`; an older lock without a frozen row becomes `missed_freeze` and is never reconstructed even if either hash did not change. Skip provisional mutation after freeze or game start. Do not make a provider/API call. Return an `alternative_pick_selection` summary in `run()` output without changing existing return keys.
 
 - [ ] **Step 5: Prove green and off-mode compatibility**
 
@@ -382,13 +397,13 @@ Model headers/config handling on `live-market-display.mjs`, but always compute t
 
 Read fixed columns from:
 
-1. `published_pipeline_artifacts` where `artifact_type=eq.today`, selecting the latest `payload_sha256`, slate date, and generated time;
+1. `published_pipeline_artifacts` where the unique canonical key is exactly `artifact_key=eq.today`, selecting `artifact_key`, `payload_sha256`, slate date, generated time, source, and the minimal payload fields needed to verify an approved TheRundown or TheRundown+PropLine production posture; never select the latest arbitrary row by artifact type;
 2. `alternative_pick_selection_state` for the current slate and bundle; and
 3. the exact `operational_pick_locks` dedupe keys needed for frozen validation.
 
-Keep a provisional row only when its source SHA equals the current canonical `today` SHA. Keep a frozen row only when lock key, slate, teams/game, pitcher, side, line, game time, status, and lock source SHA all match. Set `artifact_advanced_after_freeze=true` when a valid frozen SHA differs from the current artifact SHA.
+Keep a provisional row only when its canonical `source_artifact_sha256` equals the exact-key `today.payload_sha256`. Keep a frozen row only when lock key, slate, teams/game, pitcher, side, line, game time, status, and `lock_artifact_sha256` all match the operational lock. Set `artifact_advanced_after_freeze=true` when a valid frozen row's canonical payload SHA differs from the current exact-key artifact SHA. Add a recorder → lock → endpoint golden test for both hash domains.
 
-Construct every returned row from an allow-list. Never return database IDs, raw metadata, source observation payloads, internal URLs, error bodies, or credentials. Use `Cache-Control: no-store`. Missing config/read failure returns HTTP 200 with `status="unavailable"`, zero rows, and a short stable error code.
+Construct every returned row from this exact allow-list: `slate_date`, `pitcher`, `team`, `opp_team`, `game_time`, `side`, `model_k_line`, `official_odds`, `official_book`, `official_verdict`, `bundle_id`, `selector_id`, `lane`, `selection_status`, `family_states`, `family_count`, `checkpoint`, `reason_codes`, `source_artifact_generated_at`, `evidence_observation_count`, `evidence_first_observed_at`, `evidence_last_observed_at`, `evidence_freshness_status`, `frozen_at`, `should_lock_at`, `minutes_until_start`, `lock_status`, and `artifact_advanced_after_freeze`. Never return database IDs, game/candidate identities, hashes, raw metadata, observation IDs/payloads, internal URLs, error bodies, or credentials. Use `Cache-Control: no-store`. Missing config/read failure returns HTTP 200 with `status="unavailable"`, zero rows, and a short stable error code.
 
 - [ ] **Step 4: Prove green**
 
@@ -503,7 +518,8 @@ git commit -m "feat: add same-day alternative picks tab"
 - Modify: `docs/superpowers/specs/2026-07-21-pregame-alternative-pick-methodology-design.md`
 - Modify: `docs/superpowers/plans/2026-07-21-pregame-alternative-pick-methodology.md`
 - Modify: `docs/current-state.md`
-- Modify: `.superpowers/sdd/progress.md`
+
+The ignored local execution ledger `.superpowers/sdd/progress.md` is updated after every reviewed task but is not committed.
 
 - [ ] **Step 1: Document the implemented-but-not-activated posture**
 
@@ -533,7 +549,7 @@ Expected: no production env/provider/model/artifact mutation; the mode helper de
 - [ ] **Step 4: Commit the handoff**
 
 ```powershell
-git add docs/superpowers/specs/2026-07-21-pregame-alternative-pick-methodology-design.md docs/superpowers/plans/2026-07-21-pregame-alternative-pick-methodology.md docs/current-state.md .superpowers/sdd/progress.md
+git add docs/superpowers/specs/2026-07-21-pregame-alternative-pick-methodology-design.md docs/superpowers/plans/2026-07-21-pregame-alternative-pick-methodology.md docs/current-state.md
 git commit -m "docs: hand off default-off alternative picks"
 ```
 
