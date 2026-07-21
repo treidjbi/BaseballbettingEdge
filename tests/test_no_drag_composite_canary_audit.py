@@ -379,6 +379,35 @@ def test_invalid_slate_dates_fail_closed_without_entering_scored_windows(
     assert summary["windows"]["recent_14_slates"]["rows"] == 186
 
 
+def test_whitespace_padded_date_uses_canonical_provider_era_reporting():
+    prospective = graded_row(
+        " 2026-07-21 ",
+        "future padded date",
+    )
+
+    summary = audit.build_audit(locked_historical_rows() + [prospective])
+
+    assert summary["status"] == "collecting"
+    assert summary["integrity"]["input_gap_rows"] == 0
+    assert summary["windows"]["prospective"]["rows"] == 1
+    assert summary["windows"]["current_provider"]["rows"] == 53
+    assert summary["windows"]["recent_14_slates"]["rows"] == 187
+    assert summary["windows"]["recent_14_slates"]["slate_dates"][-1] == "2026-07-21"
+
+    provider_era = summary["slices"]["prospective"]["provider_era"]
+    assert provider_era["official_therundown_propline"]["rows"] == 1
+    assert "pre_current_provider" not in provider_era
+
+    report = audit.render_markdown(summary)
+    prospective_report = report.split("### prospective", 1)[1].split("### combined", 1)[0]
+    provider_era_report = prospective_report.split("#### provider_era", 1)[1].split(
+        "#### provider_attribution",
+        1,
+    )[0]
+    assert "`official_therundown_propline`: 1 rows" in provider_era_report
+    assert "`pre_current_provider`" not in provider_era_report
+
+
 def test_mandatory_slices_include_scores_and_missing_coverage():
     historical = locked_historical_rows()
     prospective = graded_row(
@@ -481,7 +510,10 @@ def _expected_markdown_bucket(bucket, bucket_score):
 
 
 def test_markdown_section_and_slice_statistics_are_complete_and_ordered():
-    summary = audit.build_audit(locked_historical_rows())
+    summary = audit.build_audit(
+        locked_historical_rows()
+        + [graded_row(" 2026-07-21 ", "future padded mandatory slices")]
+    )
     report = audit.render_markdown(summary)
     section_titles = (
         "Executive Read",

@@ -507,7 +507,8 @@ def _slice_bucket(
     if dimension == "final_clv":
         return strong_base.clv_bucket(row)
     if dimension == "provider_era":
-        return strong_base.provider_era(row)
+        reporting_row = {**row, "slate_date": _slate_date(row)}
+        return strong_base.provider_era(reporting_row)
     if dimension == "provider_attribution":
         return _text_or_missing(
             _first_non_empty(row.get("provider"), row.get("live_display_provider"))
