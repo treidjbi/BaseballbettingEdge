@@ -431,7 +431,9 @@ def row_pnl(row: dict[str, Any]) -> float | None:
 def score(rows: list[dict[str, Any]]) -> dict[str, Any]:
     wins = sum(row.get("result") == "win" for row in rows)
     losses = sum(row.get("result") == "loss" for row in rows)
-    pnl = round(sum(row_pnl(row) or 0.0 for row in rows), 3)
+    pnl = 0.0
+    for row in rows:
+        pnl = round(pnl + (row_pnl(row) or 0.0), 3)
     count = wins + losses
     return {
         "rows": count,

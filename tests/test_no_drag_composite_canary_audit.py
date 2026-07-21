@@ -172,10 +172,16 @@ def graded_row(date, pitcher, result="win", pnl=1.0, **overrides):
 
 
 def scored_rows(date, prefix, wins, losses, pnl):
-    win_pnl = (pnl + losses) / wins
+    target_win_pnl = round(pnl + losses, 3)
+    standard_win_pnl = round(target_win_pnl / wins, 3)
+    win_pnls = [standard_win_pnl] * wins
+    win_pnls[-1] = round(
+        target_win_pnl - sum(win_pnls[:-1]),
+        3,
+    )
     return [
         graded_row(date, f"{prefix} win {index}", pnl=win_pnl)
-        for index in range(wins)
+        for index, win_pnl in enumerate(win_pnls)
     ] + [
         graded_row(
             date,
@@ -185,6 +191,21 @@ def scored_rows(date, prefix, wins, losses, pnl):
         )
         for index in range(losses)
     ]
+
+
+def test_score_preserves_frozen_three_decimal_running_total():
+    rows = [
+        graded_row("2026-07-20", f"precision row {index}", pnl=0.1004)
+        for index in range(20)
+    ]
+
+    assert audit.score(rows) == {
+        "rows": 20,
+        "wins": 20,
+        "losses": 0,
+        "pnl": 2.0,
+        "roi": 0.1,
+    }
 
 
 def locked_historical_rows():
