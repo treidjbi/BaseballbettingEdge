@@ -56,6 +56,24 @@ The frozen path now requires `operational_pick_locks.observed_at == locked_at
 pregame timing, and exact `source_artifact_path` equality. State rows keep the
 lane selector ID separate from the required 64-character manifest fingerprint.
 
+## Lock source-path remediation
+
+The normal live worker records the actual Netlify `get-artifact` URL in
+`operational_pick_locks.source_artifact_path`; alternative state must instead
+keep its logical canonical path. The added RED test proved that treating those
+as one field rejected normal remote locks. Frozen rows now copy the exact lock
+path into nullable/all-or-none `lock_source_artifact_path`, while provisional
+rows leave it null and retain `dashboard/data/processed/today.json` in
+`source_artifact_path`.
+
+```text
+python -m pytest tests/test_alternative_pick_selection_state.py tests/test_alternative_pick_selection_schema.py tests/test_operational_locks.py tests/test_operational_pick_locks_schema.py -q
+24 passed in 0.44s
+
+git diff --check
+exit 0
+```
+
 ## Safety and caveats
 
 - Created `supabase/migrations/20260721222627_alternative_pick_selection_state.sql`

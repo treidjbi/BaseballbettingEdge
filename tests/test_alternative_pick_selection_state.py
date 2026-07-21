@@ -25,6 +25,7 @@ def _candidate(**overrides):
     values.update(overrides)
     candidate = state.candidate_record(**values)
     candidate["source_artifact_path"] = "dashboard/data/processed/today.json"
+    candidate["lock_source_artifact_path"] = "dashboard/data/processed/today.json"
     return candidate
 
 
@@ -175,6 +176,7 @@ def test_provisional_row_uses_canonical_hash_and_stops_after_freeze_or_game_star
     assert row["checkpoint"] == "provisional"
     assert row["source_artifact_sha256"] == canonical_payload_sha256(artifact["payload"])
     assert row["lock_artifact_sha256"] is None
+    assert row["lock_source_artifact_path"] is None
     assert state.build_provisional_row(candidate={**candidate, "frozen_exists": True}, evaluation=_evaluation(), evidence_window={}, artifact=artifact, observed_at=OBSERVED_AT) is None
     assert state.build_provisional_row(candidate=candidate, evaluation=_evaluation(), evidence_window={}, artifact=artifact, observed_at=GAME_TIME) is None
     assert state.build_provisional_row(candidate=candidate, evaluation=_evaluation(), evidence_window={}, artifact={**artifact, "payload_sha256": CANONICAL_SHA}, observed_at=OBSERVED_AT) is None
@@ -252,12 +254,30 @@ def test_frozen_row_requires_parseable_nonnegative_lock_timing_and_exact_artifac
         ("should_lock_at", None), ("should_lock_at", "not-a-time"),
         ("minutes_until_start", None), ("minutes_until_start", "nope"),
         ("minutes_until_start", -0.1),
-        ("source_artifact_path", "dashboard/data/processed/other.json"),
-        ("source_artifact_path", None),
     ):
         assert state.build_frozen_row(
             provisional_row=provisional, lock_row=_lock(candidate, **{key: value}), observed_at=OBSERVED_AT,
         ) is None
+
+
+def test_frozen_row_keeps_logical_artifact_path_and_links_the_exact_netlify_lock_source_path():
+    candidate, artifact = _candidate(), _artifact()
+    provisional = state.build_provisional_row(
+        candidate=candidate, evaluation=_evaluation(), evidence_window={}, artifact=artifact, observed_at=OBSERVED_AT,
+    )
+    netlify_url = "https://baseballbettingedge.netlify.app/.netlify/functions/get-artifact?key=today"
+    frozen = state.build_frozen_row(
+        provisional_row=provisional,
+        lock_row=_lock(candidate, source_artifact_path=netlify_url),
+        observed_at=OBSERVED_AT,
+    )
+    assert frozen["source_artifact_path"] == "dashboard/data/processed/today.json"
+    assert frozen["lock_source_artifact_path"] == netlify_url
+    assert state.build_frozen_row(
+        provisional_row={**provisional, "lock_source_artifact_path": "https://wrong.example/today"},
+        lock_row=_lock(candidate, source_artifact_path=netlify_url),
+        observed_at=OBSERVED_AT,
+    ) is None
 
 
 def test_frozen_row_cannot_reconstruct_an_older_provisional_on_a_later_same_hash_cycle():

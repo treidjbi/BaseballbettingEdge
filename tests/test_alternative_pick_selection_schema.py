@@ -16,7 +16,7 @@ def test_schema_has_bounded_identity_display_evidence_and_frozen_provenance_cont
         "create table if not exists public.alternative_pick_selection_state",
         "game_identity text not null", "candidate_identity text not null",
         "family_states jsonb not null", "reason_codes jsonb not null",
-        "source_artifact_sha256 text not null", "lock_artifact_sha256 text",
+        "source_artifact_sha256 text not null", "lock_artifact_sha256 text", "lock_source_artifact_path text",
         "selector_id text", "selector_fingerprint text not null",
         "evidence_observation_count integer not null", "checkpoint text not null",
         "unique (slate_date, game_identity, normalized_pitcher, side, bundle_id, checkpoint)",
@@ -26,7 +26,9 @@ def test_schema_has_bounded_identity_display_evidence_and_frozen_provenance_cont
         "length(lock_artifact_sha256) = 64", "evidence_observation_count >= 0",
         "minutes_until_start is null or minutes_until_start >= 0",
         "frozen_at is null and lock_dedupe_key is null",
+        "lock_source_artifact_path is null",
         "frozen_at is not null and lock_dedupe_key is not null",
+        "lock_source_artifact_path is not null",
     ):
         assert fragment in sql
 
@@ -41,7 +43,7 @@ def test_schema_frozen_link_and_immutability_are_fail_closed_and_pregame_only():
         "from public.operational_pick_locks as lock_row",
         "lock_row.dedupe_key = new.lock_dedupe_key",
         "lock_row.source_artifact_sha256 = new.lock_artifact_sha256",
-        "lock_row.source_artifact_path = new.source_artifact_path",
+        "lock_row.source_artifact_path = new.lock_source_artifact_path",
         "lock_row.observed_at = new.locked_at", "new.observed_at = new.locked_at",
         "lock_row.metadata ->> 'team'", "lock_row.metadata ->> 'opp_team'",
         "new.frozen_at = new.locked_at", "new.observed_at = new.locked_at", "new.frozen_at >= new.game_time",

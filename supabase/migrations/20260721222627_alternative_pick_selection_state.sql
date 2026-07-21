@@ -36,6 +36,7 @@ create table if not exists public.alternative_pick_selection_state (
   frozen_at timestamptz,
   lock_dedupe_key text,
   lock_artifact_sha256 text check (lock_artifact_sha256 is null or length(lock_artifact_sha256) = 64),
+  lock_source_artifact_path text,
   locked_at timestamptz,
   should_lock_at timestamptz,
   minutes_until_start numeric,
@@ -44,10 +45,10 @@ create table if not exists public.alternative_pick_selection_state (
   unique (slate_date, game_identity, normalized_pitcher, side, bundle_id, checkpoint),
   check (minutes_until_start is null or minutes_until_start >= 0),
   check (
-    (checkpoint = 'provisional' and frozen_at is null and lock_dedupe_key is null and lock_artifact_sha256 is null
+    (checkpoint = 'provisional' and frozen_at is null and lock_dedupe_key is null and lock_artifact_sha256 is null and lock_source_artifact_path is null
       and locked_at is null and should_lock_at is null and minutes_until_start is null and lock_status is null)
     or
-    (checkpoint = 'frozen_pregame' and frozen_at is not null and lock_dedupe_key is not null and lock_artifact_sha256 is not null
+    (checkpoint = 'frozen_pregame' and frozen_at is not null and lock_dedupe_key is not null and lock_artifact_sha256 is not null and lock_source_artifact_path is not null
       and locked_at is not null and should_lock_at is not null and minutes_until_start is not null and lock_status is not null)
   )
 );
@@ -101,7 +102,7 @@ begin
       and lock_row.minutes_until_start is not distinct from new.minutes_until_start
       and lock_row.source_artifact_sha256 = new.lock_artifact_sha256
       and lock_row.source_artifact_sha256 = new.source_artifact_byte_sha256
-      and lock_row.source_artifact_path = new.source_artifact_path
+      and lock_row.source_artifact_path = new.lock_source_artifact_path
       and length(lock_row.source_artifact_sha256) = 64
       and upper(trim(lock_row.metadata ->> 'team')) = upper(new.team)
       and upper(trim(lock_row.metadata ->> 'opp_team')) = upper(new.opp_team)

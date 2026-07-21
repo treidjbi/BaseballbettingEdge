@@ -281,6 +281,7 @@ def build_provisional_row(
         "source_artifact_sha256": canonical_sha,
         "source_artifact_byte_sha256": byte_sha,
         "lock_artifact_sha256": None,
+        "lock_source_artifact_path": None,
         "evidence_observation_ids": list((evidence_window or {}).get("observation_ids", [])),
         "evidence_observation_count": int((evidence_window or {}).get("observation_count", 0)),
         "evidence_first_observed_at": (evidence_window or {}).get("first_observed_at"),
@@ -300,7 +301,7 @@ def lock_matches_candidate(lock_row: dict[str, Any], candidate: dict[str, Any], 
     """Validate every frozen-link field; lock dedupe is lookup-only."""
     if (not isinstance(lock_row, dict) or not _candidate_is_canonical(candidate)
             or _hash(artifact_sha256) is None
-            or _text(candidate.get("source_artifact_path")) != APPROVED_ARTIFACT_PATH):
+            or not _text(candidate.get("lock_source_artifact_path"))):
         return False
     expected_dedupe = f"{candidate.get('slate_date')}:{candidate.get('normalized_pitcher')}:{candidate.get('side')}"
     metadata = lock_row.get("metadata") if isinstance(lock_row.get("metadata"), dict) else {}
@@ -313,7 +314,7 @@ def lock_matches_candidate(lock_row: dict[str, Any], candidate: dict[str, Any], 
         _iso(lock_row.get("game_time")) == _iso(candidate.get("game_time")),
         _text(metadata.get("team")).upper() == _text(candidate.get("team")).upper(),
         _text(metadata.get("opp_team")).upper() == _text(candidate.get("opp_team")).upper(),
-        _text(lock_row.get("source_artifact_path")) == _text(candidate.get("source_artifact_path")),
+        _text(lock_row.get("source_artifact_path")) == _text(candidate.get("lock_source_artifact_path")),
         _hash(lock_row.get("source_artifact_sha256")) == _hash(artifact_sha256),
     ))
 
@@ -338,6 +339,11 @@ def frozen_link_reason(*, provisional_row: dict[str, Any], lock_row: dict[str, A
     minutes_until_start = _nonnegative_number(lock_row.get("minutes_until_start"))
     if should_lock_at is None or minutes_until_start is None or should_lock_at > locked_at or should_lock_at >= start:
         return "lock_timing_invalid"
+    saved_lock_source_path = _text(provisional_row.get("lock_source_artifact_path"))
+    lock_source_path = _text(lock_row.get("source_artifact_path"))
+    if saved_lock_source_path and saved_lock_source_path != lock_source_path:
+        return "lock_mismatch"
+    candidate["lock_source_artifact_path"] = lock_source_path
     if not lock_matches_candidate(
         lock_row, candidate, _text(provisional_row.get("source_artifact_byte_sha256")),
     ):
@@ -357,6 +363,7 @@ def build_frozen_row(*, provisional_row: dict[str, Any], lock_row: dict[str, Any
         "frozen_at": _iso(lock_row.get("locked_at")),
         "lock_dedupe_key": lock_row.get("dedupe_key"),
         "lock_artifact_sha256": _hash(lock_row.get("source_artifact_sha256")),
+        "lock_source_artifact_path": _text(lock_row.get("source_artifact_path")),
         "locked_at": _iso(lock_row.get("locked_at")),
         "should_lock_at": _iso(lock_row.get("should_lock_at")),
         "minutes_until_start": lock_row.get("minutes_until_start"),
