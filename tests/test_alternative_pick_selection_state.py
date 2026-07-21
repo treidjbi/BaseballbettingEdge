@@ -23,7 +23,9 @@ def _candidate(**overrides):
         "provider_posture": "therundown_propline",
     }
     values.update(overrides)
-    return state.candidate_record(**values)
+    candidate = state.candidate_record(**values)
+    candidate["source_artifact_path"] = "dashboard/data/processed/today.json"
+    return candidate
 
 
 def _evaluation():
@@ -74,9 +76,11 @@ def _lock(candidate, **overrides):
         "locked_k_line": candidate["model_k_line"],
         "game_time": candidate["game_time"],
         "status_at_capture": "due_now",
+        "observed_at": OBSERVED_AT,
         "locked_at": OBSERVED_AT,
         "should_lock_at": "2026-07-21T22:40:00Z",
         "minutes_until_start": 30.0,
+        "source_artifact_path": "dashboard/data/processed/today.json",
         "source_artifact_sha256": LOCK_SHA,
         "metadata": {"team": candidate["team"], "opp_team": candidate["opp_team"]},
     }
@@ -111,6 +115,30 @@ def test_candidate_observations_start_at_the_current_identity_and_require_two_su
     assert window["first_observed_at"] == "2026-07-21T22:20:00+00:00"
     assert window["last_observed_at"] == "2026-07-21T22:30:00+00:00"
     assert window["ready"] is True
+
+
+def test_forged_or_old_identities_are_rejected_before_evidence_provisional_or_freeze():
+    candidate = _candidate()
+    forged = {**candidate, "game_identity": "f" * 64, "candidate_identity": "e" * 64}
+    window = state.associate_candidate_observations(
+        candidate=forged, snapshot_rows=_snapshots(candidate),
+        first_current_at="2026-07-21T22:15:00Z", observed_at=OBSERVED_AT,
+    )
+    assert window["ready"] is False
+    assert "candidate_identity_invalid" in window["reason_codes"]
+    assert state.build_provisional_row(
+        candidate=forged, evaluation=_evaluation(), evidence_window=window,
+        artifact=_artifact(), observed_at=OBSERVED_AT,
+    ) is None
+    provisional = state.build_provisional_row(
+        candidate=candidate, evaluation=_evaluation(),
+        evidence_window=state.associate_candidate_observations(candidate=candidate, snapshot_rows=_snapshots(candidate), first_current_at="2026-07-21T22:15:00Z", observed_at=OBSERVED_AT),
+        artifact=_artifact(), observed_at=OBSERVED_AT,
+    )
+    assert state.build_frozen_row(
+        provisional_row={**provisional, "candidate_identity": "e" * 64},
+        lock_row=_lock(candidate), observed_at=OBSERVED_AT,
+    ) is None
 
 
 def test_identity_change_resets_old_snapshot_membership_and_invalid_evidence_stays_pending():
@@ -150,6 +178,31 @@ def test_provisional_row_uses_canonical_hash_and_stops_after_freeze_or_game_star
     assert state.build_provisional_row(candidate={**candidate, "frozen_exists": True}, evaluation=_evaluation(), evidence_window={}, artifact=artifact, observed_at=OBSERVED_AT) is None
     assert state.build_provisional_row(candidate=candidate, evaluation=_evaluation(), evidence_window={}, artifact=artifact, observed_at=GAME_TIME) is None
     assert state.build_provisional_row(candidate=candidate, evaluation=_evaluation(), evidence_window={}, artifact={**artifact, "payload_sha256": CANONICAL_SHA}, observed_at=OBSERVED_AT) is None
+    assert state.build_provisional_row(candidate=candidate, evaluation=_evaluation(), evidence_window={}, artifact={**artifact, "path": "dashboard/data/processed/2026-07-21.json"}, observed_at=OBSERVED_AT) is None
+    assert state.build_provisional_row(candidate=candidate, evaluation=_evaluation(), evidence_window={}, artifact={**artifact, "path": None}, observed_at=OBSERVED_AT) is None
+
+
+def test_provisional_stores_lane_selector_identity_separately_from_manifest_fingerprint():
+    candidate, artifact = _candidate(), _artifact()
+    consensus = state.build_provisional_row(
+        candidate=candidate, evaluation=_evaluation(),
+        evidence_window={}, artifact=artifact, observed_at=OBSERVED_AT,
+    )
+    expansion = state.build_provisional_row(
+        candidate=candidate,
+        evaluation={**_evaluation(), "lane": "reentry_expansion"},
+        evidence_window={}, artifact=artifact, observed_at=OBSERVED_AT,
+    )
+    pending = state.build_provisional_row(
+        candidate=candidate,
+        evaluation={**_evaluation(), "lane": None, "selection_status": "pending"},
+        evidence_window={}, artifact=artifact, observed_at=OBSERVED_AT,
+    )
+    assert consensus["selector_id"] == state.CONSENSUS_SELECTOR_ID
+    assert expansion["selector_id"] == state.EXPANSION_SELECTOR_ID
+    assert pending["selector_id"] is None
+    assert consensus["selector_fingerprint"] == "c" * 64
+    assert consensus["selector_id"] != consensus["selector_fingerprint"]
 
 
 def test_lock_validation_checks_lookup_key_but_uses_full_candidate_identity_and_exact_byte_hash():
@@ -163,6 +216,7 @@ def test_lock_validation_checks_lookup_key_but_uses_full_candidate_identity_and_
         ("locked_k_line", 6.5),
         ("game_time", "2026-07-21T23:11:00Z"),
         ("source_artifact_sha256", CANONICAL_SHA),
+        ("source_artifact_path", "dashboard/data/processed/other.json"),
         ("metadata", {"team": "LAD", "opp_team": "ARI"}),
     ):
         assert not state.lock_matches_candidate({**lock, key: value}, candidate, LOCK_SHA)
@@ -184,6 +238,26 @@ def test_frozen_row_requires_current_cycle_due_or_missed_lock_and_never_reconstr
     assert state.build_frozen_row(provisional_row=provisional, lock_row=_lock(candidate, locked_at="2026-07-21T22:35:00Z"), observed_at=OBSERVED_AT) is None
     assert state.build_frozen_row(provisional_row=provisional, lock_row=_lock(candidate), observed_at=GAME_TIME) is None
     assert state.build_frozen_row(provisional_row=provisional, lock_row=_lock(candidate, source_artifact_sha256="d" * 64), observed_at=OBSERVED_AT) is None
+    assert state.build_frozen_row(provisional_row=provisional, lock_row=_lock(candidate, observed_at="2026-07-21T22:39:00Z"), observed_at=OBSERVED_AT) is None
+    assert state.build_frozen_row(provisional_row=provisional, lock_row=_lock(candidate, observed_at=None), observed_at=OBSERVED_AT) is None
+
+
+def test_frozen_row_requires_parseable_nonnegative_lock_timing_and_exact_artifact_path():
+    candidate, artifact = _candidate(), _artifact()
+    provisional = state.build_provisional_row(
+        candidate=candidate, evaluation=_evaluation(),
+        evidence_window={}, artifact=artifact, observed_at=OBSERVED_AT,
+    )
+    for key, value in (
+        ("should_lock_at", None), ("should_lock_at", "not-a-time"),
+        ("minutes_until_start", None), ("minutes_until_start", "nope"),
+        ("minutes_until_start", -0.1),
+        ("source_artifact_path", "dashboard/data/processed/other.json"),
+        ("source_artifact_path", None),
+    ):
+        assert state.build_frozen_row(
+            provisional_row=provisional, lock_row=_lock(candidate, **{key: value}), observed_at=OBSERVED_AT,
+        ) is None
 
 
 def test_frozen_row_cannot_reconstruct_an_older_provisional_on_a_later_same_hash_cycle():

@@ -31,6 +31,31 @@ unsupported evidence fail-closed behavior, provisional stop conditions, exact
 lock matching, both hash domains, current-cycle/no-reconstruction freezes,
 bounded checkpoints, immutable SQL guards, RLS, and grants.
 
+## Review remediation evidence
+
+The Task 2 review added current-cycle, forged-identity, exact artifact-path,
+lock-timing, and selector-identity concerns. New tests first failed because
+the pure state code accepted supplied identities, did not compare the lock's
+`observed_at`, did not validate lock timing, did not require the exact artifact
+path, and stored the manifest fingerprint as the selector ID. The migration
+tests also failed until the new selector fingerprint and lock-path/current-lock
+fragments were present.
+
+After remediation:
+
+```text
+python -m pytest tests/test_alternative_pick_selection_state.py tests/test_alternative_pick_selection_schema.py tests/test_operational_locks.py tests/test_operational_pick_locks_schema.py -q
+23 passed in 0.31s
+
+git diff --check
+exit 0
+```
+
+The frozen path now requires `operational_pick_locks.observed_at == locked_at
+== evaluator observed_at`, canonical recomputation of both identities, valid
+pregame timing, and exact `source_artifact_path` equality. State rows keep the
+lane selector ID separate from the required 64-character manifest fingerprint.
+
 ## Safety and caveats
 
 - Created `supabase/migrations/20260721222627_alternative_pick_selection_state.sql`

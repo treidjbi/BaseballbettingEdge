@@ -12,7 +12,8 @@ create table if not exists public.alternative_pick_selection_state (
   model_k_line numeric not null,
   provider_posture text not null,
   bundle_id text not null,
-  selector_id text not null,
+  selector_id text,
+  selector_fingerprint text not null check (length(selector_fingerprint) = 64),
   checkpoint text not null check (checkpoint in ('provisional', 'frozen_pregame')),
   official_odds integer,
   official_book text,
@@ -41,6 +42,7 @@ create table if not exists public.alternative_pick_selection_state (
   lock_status text check (lock_status is null or lock_status in ('due_now', 'missed_lock')),
   inserted_at timestamptz not null default now(),
   unique (slate_date, game_identity, normalized_pitcher, side, bundle_id, checkpoint),
+  check (minutes_until_start is null or minutes_until_start >= 0),
   check (
     (checkpoint = 'provisional' and frozen_at is null and lock_dedupe_key is null and lock_artifact_sha256 is null
       and locked_at is null and should_lock_at is null and minutes_until_start is null and lock_status is null)
@@ -94,10 +96,12 @@ begin
       and lock_row.game_time = new.game_time
       and lock_row.status_at_capture = new.lock_status
       and lock_row.locked_at = new.locked_at
+      and lock_row.observed_at = new.locked_at
       and lock_row.should_lock_at = new.should_lock_at
       and lock_row.minutes_until_start is not distinct from new.minutes_until_start
       and lock_row.source_artifact_sha256 = new.lock_artifact_sha256
       and lock_row.source_artifact_sha256 = new.source_artifact_byte_sha256
+      and lock_row.source_artifact_path = new.source_artifact_path
       and length(lock_row.source_artifact_sha256) = 64
       and upper(trim(lock_row.metadata ->> 'team')) = upper(new.team)
       and upper(trim(lock_row.metadata ->> 'opp_team')) = upper(new.opp_team)

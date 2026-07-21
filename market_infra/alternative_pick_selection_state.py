@@ -7,10 +7,15 @@ from the exact fetched-artifact hash used by ``operational_pick_locks``.
 from __future__ import annotations
 
 import hashlib
+import math
 from datetime import datetime, timezone
 from typing import Any
 
-from market_infra.alternative_pick_selector import BUNDLE_ID
+from market_infra.alternative_pick_selector import (
+    BUNDLE_ID,
+    CONSENSUS_SELECTOR_ID,
+    EXPANSION_SELECTOR_ID,
+)
 from market_infra.published_artifacts import canonical_payload_sha256
 from pipeline.name_utils import normalize
 
@@ -25,6 +30,11 @@ UNIQUE_COLUMNS = (
 )
 SUPPORTED_PROVIDER_POSTURES = frozenset({"therundown", "propline", "therundown_propline"})
 SUPPORTED_SNAPSHOT_PROVIDERS = frozenset({"therundown", "propline", "therundown_propline"})
+APPROVED_ARTIFACT_PATH = "dashboard/data/processed/today.json"
+SELECTOR_IDS_BY_LANE = {
+    "consensus_core": CONSENSUS_SELECTOR_ID,
+    "reentry_expansion": EXPANSION_SELECTOR_ID,
+}
 
 
 def _text(value: Any) -> str:
@@ -53,6 +63,16 @@ def _line(value: Any) -> float | None:
     except (TypeError, ValueError):
         return None
     return parsed if parsed >= 0 else None
+
+
+def _nonnegative_number(value: Any) -> float | None:
+    if isinstance(value, bool):
+        return None
+    try:
+        parsed = float(value)
+    except (TypeError, ValueError):
+        return None
+    return parsed if math.isfinite(parsed) and parsed >= 0 else None
 
 
 def _hash(value: Any) -> str | None:
@@ -111,6 +131,36 @@ def candidate_record(
     }
 
 
+def _candidate_is_canonical(candidate: dict[str, Any]) -> bool:
+    """Never trust a supplied identity from a prior payload or evaluator cycle."""
+    if not isinstance(candidate, dict):
+        return False
+    line = _line(candidate.get("model_k_line"))
+    if not all((
+        _text(candidate.get("slate_date")), _text(candidate.get("pitcher")),
+        candidate.get("side") in {"over", "under"}, line is not None,
+        _text(candidate.get("team")), _text(candidate.get("opp_team")),
+        _iso(candidate.get("game_time")) is not None,
+        candidate.get("provider_posture") in SUPPORTED_PROVIDER_POSTURES,
+    )):
+        return False
+    expected_game = game_identity(
+        slate_date=candidate["slate_date"], team=candidate["team"],
+        opp_team=candidate["opp_team"], game_time=candidate["game_time"],
+    )
+    expected_candidate = candidate_identity(
+        slate_date=candidate["slate_date"], pitcher=candidate["pitcher"],
+        side=candidate["side"], model_k_line=line, team=candidate["team"],
+        opp_team=candidate["opp_team"], game_time=candidate["game_time"],
+        provider_posture=candidate["provider_posture"],
+    )
+    return (
+        _text(candidate.get("normalized_pitcher")) == normalize(_text(candidate["pitcher"]))
+        and _text(candidate.get("game_identity")) == expected_game
+        and _text(candidate.get("candidate_identity")) == expected_candidate
+    )
+
+
 def associate_candidate_observations(
     *, candidate: dict[str, Any], snapshot_rows: list[dict[str, Any]],
     first_current_at: str, observed_at: str,
@@ -123,7 +173,9 @@ def associate_candidate_observations(
     start, checkpoint = _utc(first_current_at), _utc(observed_at)
     reasons: list[str] = []
     accepted: dict[str, datetime] = {}
-    if start is None or checkpoint is None:
+    if not _candidate_is_canonical(candidate):
+        reasons.append("candidate_identity_invalid")
+    elif start is None or checkpoint is None:
         reasons.append("evidence_window_invalid")
     elif candidate.get("provider_posture") not in SUPPORTED_PROVIDER_POSTURES:
         reasons.append("candidate_provider_posture_unsupported")
@@ -198,14 +250,11 @@ def build_provisional_row(
     canonical_sha = canonical_payload_sha256(payload) if payload is not None else None
     expected_sha = _hash(artifact.get("payload_sha256")) if isinstance(artifact, dict) else None
     byte_sha = _hash(artifact.get("byte_sha256")) if isinstance(artifact, dict) else None
-    valid_candidate = all((
-        _text(candidate.get("slate_date")), _text(candidate.get("normalized_pitcher")),
-        candidate.get("side") in {"over", "under"}, candidate.get("model_k_line") is not None,
-        _text(candidate.get("team")), _text(candidate.get("opp_team")), start is not None,
-        candidate.get("provider_posture") in SUPPORTED_PROVIDER_POSTURES,
-    ))
-    if (not valid_candidate or checkpoint is None or start is None or checkpoint >= start
-            or candidate.get("frozen_exists") or canonical_sha != expected_sha or byte_sha is None):
+    lane = _evaluation_value(evaluation, "lane")
+    selector_fingerprint = _hash(_evaluation_value(evaluation, "selector_fingerprint"))
+    if (not _candidate_is_canonical(candidate) or checkpoint is None or start is None or checkpoint >= start
+            or candidate.get("frozen_exists") or _text(artifact.get("path")) != APPROVED_ARTIFACT_PATH
+            or canonical_sha != expected_sha or byte_sha is None or selector_fingerprint is None):
         return None
     inputs = _evaluation_value(evaluation, "normalized_inputs", {}) or {}
     reason_codes = list(_evaluation_value(evaluation, "reason_codes", ()) or ())
@@ -216,12 +265,13 @@ def build_provisional_row(
             "team", "opp_team", "game_time", "side", "model_k_line", "provider_posture",
         )},
         "bundle_id": BUNDLE_ID,
-        "selector_id": _evaluation_value(evaluation, "selector_fingerprint"),
+        "selector_id": SELECTOR_IDS_BY_LANE.get(lane),
+        "selector_fingerprint": selector_fingerprint,
         "checkpoint": "provisional",
         "official_odds": inputs.get("odds"),
         "official_book": inputs.get("official_book"),
         "official_verdict": inputs.get("official_verdict"),
-        "lane": _evaluation_value(evaluation, "lane"),
+        "lane": lane,
         "selection_status": _evaluation_value(evaluation, "selection_status", "pending"),
         "family_states": _family_states(_evaluation_value(evaluation, "family_states", {})),
         "family_count": _evaluation_value(evaluation, "family_count", 0),
@@ -248,7 +298,9 @@ def build_provisional_row(
 
 def lock_matches_candidate(lock_row: dict[str, Any], candidate: dict[str, Any], artifact_sha256: str) -> bool:
     """Validate every frozen-link field; lock dedupe is lookup-only."""
-    if not isinstance(lock_row, dict) or _hash(artifact_sha256) is None:
+    if (not isinstance(lock_row, dict) or not _candidate_is_canonical(candidate)
+            or _hash(artifact_sha256) is None
+            or _text(candidate.get("source_artifact_path")) != APPROVED_ARTIFACT_PATH):
         return False
     expected_dedupe = f"{candidate.get('slate_date')}:{candidate.get('normalized_pitcher')}:{candidate.get('side')}"
     metadata = lock_row.get("metadata") if isinstance(lock_row.get("metadata"), dict) else {}
@@ -261,21 +313,31 @@ def lock_matches_candidate(lock_row: dict[str, Any], candidate: dict[str, Any], 
         _iso(lock_row.get("game_time")) == _iso(candidate.get("game_time")),
         _text(metadata.get("team")).upper() == _text(candidate.get("team")).upper(),
         _text(metadata.get("opp_team")).upper() == _text(candidate.get("opp_team")).upper(),
+        _text(lock_row.get("source_artifact_path")) == _text(candidate.get("source_artifact_path")),
         _hash(lock_row.get("source_artifact_sha256")) == _hash(artifact_sha256),
     ))
 
 
 def frozen_link_reason(*, provisional_row: dict[str, Any], lock_row: dict[str, Any], observed_at: str) -> str | None:
     candidate = {key: provisional_row.get(key) for key in (
-        "slate_date", "normalized_pitcher", "side", "model_k_line", "game_time", "team", "opp_team",
+        "slate_date", "pitcher", "normalized_pitcher", "side", "model_k_line", "game_time", "team", "opp_team",
+        "provider_posture", "game_identity", "candidate_identity", "source_artifact_path",
     )}
-    checkpoint, start, locked_at = _utc(observed_at), _utc(candidate["game_time"]), _utc(lock_row.get("locked_at"))
+    checkpoint, start = _utc(observed_at), _utc(candidate["game_time"])
+    locked_at, lock_observed_at = _utc(lock_row.get("locked_at")), _utc(lock_row.get("observed_at"))
     if checkpoint is None or start is None or checkpoint >= start:
         return "post_start"
+    if not _candidate_is_canonical(candidate):
+        return "candidate_identity_invalid"
     if _text(lock_row.get("status_at_capture")) not in {"due_now", "missed_lock"}:
         return "lock_status_invalid"
-    if locked_at != checkpoint or _utc(provisional_row.get("observed_at")) != checkpoint:
+    if (locked_at != checkpoint or lock_observed_at != checkpoint
+            or _utc(provisional_row.get("observed_at")) != checkpoint):
         return "missed_freeze"
+    should_lock_at = _utc(lock_row.get("should_lock_at"))
+    minutes_until_start = _nonnegative_number(lock_row.get("minutes_until_start"))
+    if should_lock_at is None or minutes_until_start is None or should_lock_at > locked_at or should_lock_at >= start:
+        return "lock_timing_invalid"
     if not lock_matches_candidate(
         lock_row, candidate, _text(provisional_row.get("source_artifact_byte_sha256")),
     ):
