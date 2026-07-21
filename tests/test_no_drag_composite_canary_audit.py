@@ -1,5 +1,7 @@
 import json
 import math
+import subprocess
+import sys
 
 import pytest
 
@@ -169,20 +171,52 @@ def graded_row(date, pitcher, result="win", pnl=1.0, **overrides):
     )
 
 
-def lock_history_to(monkeypatch, rows):
-    score = audit.score(rows)
-    monkeypatch.setattr(audit, "LOCKED_HISTORICAL", {
-        "rows": score["rows"],
-        "wins": score["wins"],
-        "losses": score["losses"],
-        "pnl": score["pnl"],
-        "roi": score["roi"],
-    })
+def scored_rows(date, prefix, wins, losses, pnl):
+    win_pnl = (pnl + losses) / wins
+    return [
+        graded_row(date, f"{prefix} win {index}", pnl=win_pnl)
+        for index in range(wins)
+    ] + [
+        graded_row(
+            date,
+            f"{prefix} loss {index}",
+            result="loss",
+            pnl=-1.0,
+        )
+        for index in range(losses)
+    ]
 
 
-def test_initial_counter_is_locked_52_plus_zero(monkeypatch):
-    historical = [graded_row("2026-07-20", "history one")]
-    lock_history_to(monkeypatch, historical)
+def locked_historical_rows():
+    prior_provider = scored_rows(
+        "2026-06-23",
+        "prior provider",
+        wins=88,
+        losses=46,
+        pnl=20.03,
+    )
+    current_provider = scored_rows(
+        "2026-07-20",
+        "current provider",
+        wins=36,
+        losses=16,
+        pnl=9.17,
+    )
+    rows = prior_provider + current_provider
+    assert audit.score(rows) == audit.LOCKED_HISTORICAL
+    current_score = audit.score(current_provider)
+    assert {
+        key: current_score[key]
+        for key in ("rows", "wins", "losses", "pnl")
+    } == {
+        key: audit.LOCKED_CURRENT_PROVIDER[key]
+        for key in ("rows", "wins", "losses", "pnl")
+    }
+    return rows
+
+
+def test_initial_counter_is_locked_52_plus_zero():
+    historical = locked_historical_rows()
     summary = audit.build_audit(historical, generated_at="2026-07-21T16:00:00Z")
     assert summary["status"] == "collecting"
     assert summary["counter"] == {
@@ -194,13 +228,12 @@ def test_initial_counter_is_locked_52_plus_zero(monkeypatch):
     }
 
 
-def test_prospective_rows_advance_counter_without_mutating_locked_history(monkeypatch):
-    historical = [graded_row("2026-07-20", "history one")]
+def test_prospective_rows_advance_counter_without_mutating_locked_history():
+    historical = locked_historical_rows()
     prospective = [
         graded_row("2026-07-21", "future one"),
         graded_row("2026-07-22", "future two", result="loss", pnl=-1.0),
     ]
-    lock_history_to(monkeypatch, historical)
     summary = audit.build_audit(historical + prospective)
     assert summary["locked_baselines"]["current_provider"]["rows"] == 52
     assert summary["windows"]["prospective"]["rows"] == 2
@@ -208,13 +241,12 @@ def test_prospective_rows_advance_counter_without_mutating_locked_history(monkey
     assert summary["counter"]["remaining"] == 21
 
 
-def test_reaching_floor_only_becomes_ready_for_review(monkeypatch):
-    historical = [graded_row("2026-07-20", "history one")]
+def test_reaching_floor_only_becomes_ready_for_review():
+    historical = locked_historical_rows()
     prospective = [
         graded_row("2026-07-21", f"future {index}")
         for index in range(23)
     ]
-    lock_history_to(monkeypatch, historical)
     summary = audit.build_audit(historical + prospective)
     assert summary["status"] == "ready_for_review"
     assert summary["counter"]["rows"] == 75
@@ -230,10 +262,47 @@ def test_baseline_drift_blocks_counter_advancement():
     assert summary["reconciliation"]["matches"] is False
 
 
-def test_duplicate_key_blocks_counter_advancement(monkeypatch):
-    historical = [graded_row("2026-07-20", "history one")]
+def test_current_provider_historical_slice_reconciles_before_collecting():
+    summary = audit.build_audit(locked_historical_rows())
+
+    current_provider = summary["reconciliation"]["current_provider"]
+    assert summary["status"] == "collecting"
+    assert summary["reconciliation"]["matches"] is True
+    assert current_provider["matches"] is True
+    assert current_provider["observed"] == {
+        "rows": 52,
+        "wins": 36,
+        "losses": 16,
+        "pnl": 9.17,
+        "roi": 0.1763,
+    }
+    assert current_provider["window"] == {
+        "start": "2026-06-24",
+        "end": "2026-07-20",
+    }
+    assert summary["counter"]["rows"] == 52
+
+
+def test_current_provider_membership_drift_blocks_even_when_full_score_matches():
+    historical = [dict(row) for row in locked_historical_rows()]
+    shifted = next(
+        row for row in historical if row["slate_date"] == "2026-07-20"
+    )
+    shifted["slate_date"] = "2026-06-23"
+
+    summary = audit.build_audit(historical)
+
+    assert summary["reconciliation"]["historical"]["matches"] is True
+    assert summary["reconciliation"]["current_provider"]["matches"] is False
+    assert summary["reconciliation"]["matches"] is False
+    assert summary["status"] == "blocked_baseline_drift"
+    assert summary["counter"]["prospective_qualified_rows"] == 0
+    assert summary["counter"]["rows"] == 52
+
+
+def test_duplicate_key_blocks_counter_advancement():
+    historical = locked_historical_rows()
     duplicate = graded_row("2026-07-21", "same pitcher")
-    lock_history_to(monkeypatch, historical)
     summary = audit.build_audit(historical + [duplicate, dict(duplicate)])
     assert summary["status"] == "blocked_duplicate_keys"
     assert summary["integrity"]["duplicate_keys"] == [
@@ -261,9 +330,8 @@ def test_duplicate_key_blocks_counter_advancement(monkeypatch):
         {"pick_history_pnl": None, "pnl": None, "theoretical_pnl": None},
     ],
 )
-def test_prospective_critical_input_gap_blocks_run(monkeypatch, missing_update):
-    historical = [graded_row("2026-07-20", "history one")]
-    lock_history_to(monkeypatch, historical)
+def test_prospective_critical_input_gap_blocks_run(missing_update):
+    historical = locked_historical_rows()
     row = graded_row("2026-07-21", "future gap")
     row.update(missing_update)
     summary = audit.build_audit(historical + [row])
@@ -272,17 +340,47 @@ def test_prospective_critical_input_gap_blocks_run(monkeypatch, missing_update):
     assert summary["counter"]["rows"] == 52
 
 
-def test_absent_market_anchor_metadata_is_false_not_input_gap(monkeypatch):
-    historical = [graded_row("2026-07-20", "history one")]
-    lock_history_to(monkeypatch, historical)
+def test_absent_market_anchor_metadata_is_false_not_input_gap():
+    historical = locked_historical_rows()
     row = graded_row("2026-07-21", "future complete", market_anchor_selector=None)
     summary = audit.build_audit(historical + [row])
     assert summary["status"] == "collecting"
     assert summary["integrity"]["input_gap_rows"] == 0
 
 
-def test_mandatory_slices_include_scores_and_missing_coverage(monkeypatch):
-    historical = [graded_row("2026-07-20", "history one")]
+@pytest.mark.parametrize(
+    "invalid_date",
+    [None, "", "   ", "not-an-iso-date", "2026-02-30"],
+    ids=["none", "blank", "whitespace", "malformed", "impossible"],
+)
+def test_invalid_slate_dates_fail_closed_without_entering_scored_windows(
+    invalid_date,
+):
+    invalid = graded_row(
+        invalid_date,
+        "future invalid date",
+        display_verdict="PASS",
+        market_anchor_selector={"labels": ["market_anchor_strict"]},
+    )
+
+    summary = audit.build_audit(locked_historical_rows() + [invalid])
+
+    assert summary["status"] == "blocked_input_gap"
+    assert summary["integrity"]["input_gap_rows"] == 1
+    assert any(
+        "slate_date" in missing
+        for missing in summary["integrity"]["input_gaps"].values()
+    )
+    assert summary["counter"]["prospective_qualified_rows"] == 0
+    assert summary["counter"]["rows"] == 52
+    assert summary["windows"]["historical_rebuild"]["rows"] == 186
+    assert summary["windows"]["prospective"]["rows"] == 0
+    assert summary["windows"]["current_provider"]["rows"] == 52
+    assert summary["windows"]["recent_14_slates"]["rows"] == 186
+
+
+def test_mandatory_slices_include_scores_and_missing_coverage():
+    historical = locked_historical_rows()
     prospective = graded_row(
         "2026-07-21",
         "future one",
@@ -294,7 +392,6 @@ def test_mandatory_slices_include_scores_and_missing_coverage(monkeypatch):
         live_display_provider=None,
         price_clv_cents=5,
     )
-    lock_history_to(monkeypatch, historical)
     summary = audit.build_audit(historical + [prospective])
     prospective_slices = summary["slices"]["prospective"]
     assert prospective_slices["verdict_family"]["LEAN"]["rows"] == 1
@@ -307,9 +404,127 @@ def test_mandatory_slices_include_scores_and_missing_coverage(monkeypatch):
     assert summary["integrity"]["slice_missing_coverage"]["prospective"]["provider_attribution"] == 1
 
 
-def test_markdown_leads_with_decision_fields_and_live_boundary(monkeypatch):
-    historical = [graded_row("2026-07-20", "history one")]
-    lock_history_to(monkeypatch, historical)
+def test_all_mandatory_slice_dimensions_are_pinned_for_every_window():
+    expected_dimensions = (
+        "verdict_family",
+        "side",
+        "k_line",
+        "price_sign",
+        "price_bucket",
+        "quality",
+        "path_b",
+        "model_market",
+        "workload_leash",
+        "market_anchor",
+        "market_agreement",
+        "preclose_clv_proxy",
+        "final_clv",
+        "provider_era",
+        "provider_attribution",
+        "recent_14_slates",
+    )
+    summary = audit.build_audit(locked_historical_rows())
+
+    assert audit.SLICE_DIMENSIONS == expected_dimensions
+    assert tuple(summary["slices"]) == (
+        "historical_rebuild",
+        "prospective",
+        "combined",
+    )
+    for window in summary["slices"].values():
+        assert tuple(window) == expected_dimensions
+
+
+def test_json_contract_has_exact_top_level_and_reconciliation_keys():
+    summary = audit.build_audit(locked_historical_rows())
+
+    assert set(summary) == {
+        "generated_at",
+        "selector",
+        "status",
+        "integrity",
+        "locked_baselines",
+        "reconciliation",
+        "windows",
+        "counter",
+        "callouts",
+        "slices",
+        "live_boundary",
+    }
+    assert set(summary["reconciliation"]) == {
+        "matches",
+        "pnl_tolerance",
+        "historical",
+        "current_provider",
+    }
+    assert set(summary["reconciliation"]["historical"]) == {
+        "matches",
+        "checks",
+        "observed",
+        "locked",
+    }
+    assert set(summary["reconciliation"]["current_provider"]) == {
+        "matches",
+        "checks",
+        "observed",
+        "locked",
+        "window",
+    }
+
+
+def _expected_markdown_bucket(bucket, bucket_score):
+    return (
+        f"- `{bucket}`: {bucket_score['rows']} rows, "
+        f"{bucket_score['wins']}-{bucket_score['losses']}, "
+        f"{bucket_score['pnl']:+.2f}u, {bucket_score['roi']:+.1%} ROI"
+    )
+
+
+def test_markdown_section_and_slice_statistics_are_complete_and_ordered():
+    summary = audit.build_audit(locked_historical_rows())
+    report = audit.render_markdown(summary)
+    section_titles = (
+        "Executive Read",
+        "Counter",
+        "Baseline Reconciliation",
+        "Prospective Evidence",
+        "Current Provider and Recent",
+        "Breakout or Deterioration",
+        "Mandatory Slice Risks",
+        "Slice Audit",
+        "Live Boundary",
+    )
+    section_positions = [report.index(f"## {title}") for title in section_titles]
+    assert section_positions == sorted(section_positions)
+
+    window_names = ("historical_rebuild", "prospective", "combined")
+    window_positions = [report.index(f"### {window}") for window in window_names]
+    assert window_positions == sorted(window_positions)
+    for index, window in enumerate(window_names):
+        start = window_positions[index]
+        end = window_positions[index + 1] if index + 1 < len(window_names) else report.index("## Live Boundary")
+        window_report = report[start:end]
+        dimension_positions = [
+            window_report.index(f"#### {dimension}")
+            for dimension in audit.SLICE_DIMENSIONS
+        ]
+        assert dimension_positions == sorted(dimension_positions)
+        for dimension_index, dimension in enumerate(audit.SLICE_DIMENSIONS):
+            dimension_start = dimension_positions[dimension_index]
+            dimension_end = (
+                dimension_positions[dimension_index + 1]
+                if dimension_index + 1 < len(dimension_positions)
+                else len(window_report)
+            )
+            dimension_report = window_report[dimension_start:dimension_end]
+            missing = summary["integrity"]["slice_missing_coverage"][window][dimension]
+            assert f"- Missing coverage: {missing} rows" in dimension_report
+            for bucket, bucket_score in summary["slices"][window][dimension].items():
+                assert _expected_markdown_bucket(bucket, bucket_score) in dimension_report
+
+
+def test_markdown_leads_with_decision_fields_and_live_boundary():
+    historical = locked_historical_rows()
     report = audit.render_markdown(audit.build_audit(historical))
     assert report.startswith("# No-Drag Composite Prospective Canary Audit")
     assert "## Executive Read" in report
@@ -323,9 +538,8 @@ def test_markdown_leads_with_decision_fields_and_live_boundary(monkeypatch):
     assert "requires a separate Tyler-approved plan" in report
 
 
-def test_write_outputs_emits_matching_markdown_and_json(tmp_path, monkeypatch):
-    historical = [graded_row("2026-07-20", "history one")]
-    lock_history_to(monkeypatch, historical)
+def test_write_outputs_emits_matching_markdown_and_json(tmp_path):
+    historical = locked_historical_rows()
     summary = audit.build_audit(historical, generated_at="2026-07-21T16:00:00Z")
     md_path = tmp_path / "audit.md"
     json_path = tmp_path / "audit.json"
@@ -334,14 +548,18 @@ def test_write_outputs_emits_matching_markdown_and_json(tmp_path, monkeypatch):
     assert payload["selector"]["id"] == audit.SELECTOR_ID
     assert payload["selector"]["fingerprint"] == audit.RULE_FINGERPRINT
     assert payload["status"] == "collecting"
+    assert payload["reconciliation"]["current_provider"]["matches"] is True
     assert md_path.read_text(encoding="utf-8").endswith("\n")
     assert json_path.read_text(encoding="utf-8").endswith("\n")
 
 
-def test_main_runs_from_repo_root_and_writes_both_outputs(tmp_path, monkeypatch):
+def test_main_writes_both_outputs(tmp_path):
+    historical = locked_historical_rows()
     input_path = tmp_path / "gate_c.jsonl"
-    input_path.write_text(json.dumps(graded_row("2026-07-20", "history one")) + "\n", encoding="utf-8")
-    lock_history_to(monkeypatch, [graded_row("2026-07-20", "history one")])
+    input_path.write_text(
+        "\n".join(json.dumps(row) for row in historical) + "\n",
+        encoding="utf-8",
+    )
     md_path = tmp_path / "result.md"
     json_path = tmp_path / "result.json"
     assert audit.main([
@@ -351,6 +569,48 @@ def test_main_runs_from_repo_root_and_writes_both_outputs(tmp_path, monkeypatch)
     ]) == 0
     assert md_path.exists()
     assert json_path.exists()
+
+
+def test_cli_subprocess_from_repo_root_fails_closed_on_invalid_date(tmp_path):
+    rows = locked_historical_rows() + [
+        graded_row(
+            "not-an-iso-date",
+            "subprocess invalid date",
+            display_verdict="PASS",
+            market_anchor_selector={"labels": ["market_anchor_strict"]},
+        )
+    ]
+    input_path = tmp_path / "gate_c.jsonl"
+    input_path.write_text(
+        "\n".join(json.dumps(row) for row in rows) + "\n",
+        encoding="utf-8",
+    )
+    md_path = tmp_path / "subprocess-result.md"
+    json_path = tmp_path / "subprocess-result.json"
+
+    completed = subprocess.run(
+        [
+            sys.executable,
+            "analytics/diagnostics/no_drag_composite_canary_audit.py",
+            "--input",
+            str(input_path),
+            "--output-md",
+            str(md_path),
+            "--output-json",
+            str(json_path),
+        ],
+        cwd=audit.ROOT,
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+
+    assert completed.returncode == 0, completed.stderr
+    assert "status=blocked_input_gap counter=52/75" in completed.stdout
+    assert md_path.exists()
+    payload = json.loads(json_path.read_text(encoding="utf-8"))
+    assert payload["status"] == "blocked_input_gap"
+    assert payload["counter"]["rows"] == 52
 
 
 @pytest.mark.parametrize(
@@ -369,13 +629,11 @@ def test_main_runs_from_repo_root_and_writes_both_outputs(tmp_path, monkeypatch)
     ],
 )
 def test_slice_fallbacks_use_trimmed_first_non_empty(
-    monkeypatch,
     overrides,
     dimension,
     bucket,
 ):
-    historical = [graded_row("2026-07-20", "history one")]
-    lock_history_to(monkeypatch, historical)
+    historical = locked_historical_rows()
     prospective = graded_row(
         "2026-07-21",
         "future fallback",
@@ -397,12 +655,10 @@ def test_slice_fallbacks_use_trimmed_first_non_empty(
     ids=["nan", "positive_infinity", "negative_infinity"],
 )
 def test_non_finite_prospective_critical_numeric_blocks_and_stays_json_safe(
-    monkeypatch,
     field,
     value,
 ):
-    historical = [graded_row("2026-07-20", "history one")]
-    lock_history_to(monkeypatch, historical)
+    historical = locked_historical_rows()
     prospective = graded_row(
         "2026-07-21",
         "future non finite",
@@ -416,4 +672,79 @@ def test_non_finite_prospective_critical_numeric_blocks_and_stays_json_safe(
     assert summary["counter"]["prospective_qualified_rows"] == 0
     assert summary["counter"]["rows"] == 52
     assert math.isfinite(summary["windows"]["prospective"]["pnl"])
+    json.dumps(summary, allow_nan=False)
+
+
+@pytest.mark.parametrize(
+    "value",
+    [
+        float("nan"),
+        float("inf"),
+        float("-inf"),
+        "NaN",
+        "Infinity",
+        "-Infinity",
+    ],
+    ids=[
+        "numeric_nan",
+        "numeric_positive_infinity",
+        "numeric_negative_infinity",
+        "string_nan",
+        "string_positive_infinity",
+        "string_negative_infinity",
+    ],
+)
+@pytest.mark.parametrize(
+    ("overrides", "winning_field"),
+    [
+        ({"locked_adj_ev": None, "adj_ev": 0.10, "ev": 0.03}, "locked_adj_ev"),
+        ({"locked_adj_ev": 0.0, "adj_ev": None, "ev": 0.10}, "adj_ev"),
+        ({"locked_adj_ev": 0.0, "adj_ev": 0.0, "ev": None}, "ev"),
+    ],
+    ids=["locked_before_later_finite", "adj_before_later_finite", "ev_terminal"],
+)
+def test_non_finite_adjusted_ev_precedence_winner_blocks_later_finite(
+    value,
+    overrides,
+    winning_field,
+):
+    overrides = dict(overrides)
+    overrides[winning_field] = value
+    prospective = graded_row(
+        "2026-07-21",
+        f"future {winning_field} non finite",
+        display_verdict="PASS",
+        market_anchor_selector={"labels": ["market_anchor_strict"]},
+        **overrides,
+    )
+
+    summary = audit.build_audit(locked_historical_rows() + [prospective])
+
+    assert audit.adjusted_ev(prospective) is None
+    assert summary["status"] == "blocked_input_gap"
+    assert summary["integrity"]["input_gap_rows"] == 1
+    assert any(
+        f"{winning_field}:non_finite" in missing
+        for missing in summary["integrity"]["input_gaps"].values()
+    )
+    assert summary["counter"]["prospective_qualified_rows"] == 0
+    assert summary["counter"]["rows"] == 52
+    json.dumps(summary, allow_nan=False)
+
+
+def test_later_non_finite_adjusted_ev_is_ignored_after_finite_truthy_winner():
+    prospective = graded_row(
+        "2026-07-21",
+        "future finite winner",
+        locked_adj_ev=0.10,
+        adj_ev=float("nan"),
+        ev=float("inf"),
+    )
+
+    summary = audit.build_audit(locked_historical_rows() + [prospective])
+
+    assert audit.adjusted_ev(prospective) == 0.10
+    assert summary["status"] == "collecting"
+    assert summary["integrity"]["input_gap_rows"] == 0
+    assert summary["counter"]["rows"] == 53
     json.dumps(summary, allow_nan=False)

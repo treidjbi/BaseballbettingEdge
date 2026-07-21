@@ -13,7 +13,7 @@ import math
 import sys
 from collections import Counter, defaultdict
 from dataclasses import dataclass
-from datetime import UTC, datetime
+from datetime import UTC, date, datetime
 from pathlib import Path
 from typing import Any
 
@@ -35,6 +35,10 @@ HISTORICAL_END = "2026-07-20"
 PROSPECTIVE_START = "2026-07-21"
 CURRENT_PROVIDER_START = "2026-06-24"
 REVIEW_FLOOR = 75
+CLEAN_WINDOW_START_DATE = date.fromisoformat(CLEAN_WINDOW_START)
+HISTORICAL_END_DATE = date.fromisoformat(HISTORICAL_END)
+PROSPECTIVE_START_DATE = date.fromisoformat(PROSPECTIVE_START)
+CURRENT_PROVIDER_START_DATE = date.fromisoformat(CURRENT_PROVIDER_START)
 LOCKED_HISTORICAL = {"rows": 186, "wins": 124, "losses": 62, "pnl": 29.20, "roi": 0.157}
 LOCKED_CURRENT_PROVIDER = {"rows": 52, "wins": 36, "losses": 16, "pnl": 9.17, "roi": 0.176}
 LOCKED_RECENT_REFERENCE = {"rows": 35, "wins": 24, "losses": 11, "pnl": 5.68, "roi": 0.162}
@@ -47,6 +51,7 @@ VERDICT_FIELDS = (
     "current_verdict",
     "verdict",
 )
+ADJUSTED_EV_FIELDS = ("locked_adj_ev", "adj_ev", "ev")
 CRITICAL_INPUT_GROUPS = (
     ("slate_date",),
     ("normalized_pitcher", "pitcher", "player_name"),
@@ -168,6 +173,13 @@ class Evaluation:
     missing_inputs: tuple[str, ...]
 
 
+@dataclass(frozen=True)
+class _AdjustedEvResolution:
+    value: float | None
+    non_finite_field: str | None
+    finite_input_present: bool
+
+
 def to_float(value: Any) -> float | None:
     if value is None or isinstance(value, bool):
         return None
@@ -182,8 +194,48 @@ def verdict(row: dict[str, Any]) -> str:
     return str(next((row.get(field) for field in VERDICT_FIELDS if row.get(field)), "")).strip()
 
 
+def _numeric_candidate(value: Any) -> tuple[str, float | None]:
+    if value is None or isinstance(value, bool):
+        return "absent_or_unparseable", None
+    try:
+        number = float(value)
+    except (TypeError, ValueError):
+        return "absent_or_unparseable", None
+    if not math.isfinite(number):
+        return "non_finite_truthy", None
+    if number == 0.0:
+        return "finite_zero", number
+    return "finite_truthy", number
+
+
+def _resolve_adjusted_ev(row: dict[str, Any]) -> _AdjustedEvResolution:
+    finite_input_present = False
+    for field in ADJUSTED_EV_FIELDS:
+        state, value = _numeric_candidate(row.get(field))
+        if state == "finite_zero":
+            finite_input_present = True
+            continue
+        if state == "non_finite_truthy":
+            return _AdjustedEvResolution(
+                value=None,
+                non_finite_field=field,
+                finite_input_present=finite_input_present,
+            )
+        if state == "finite_truthy":
+            return _AdjustedEvResolution(
+                value=value,
+                non_finite_field=None,
+                finite_input_present=True,
+            )
+    return _AdjustedEvResolution(
+        value=None,
+        non_finite_field=None,
+        finite_input_present=finite_input_present,
+    )
+
+
 def adjusted_ev(row: dict[str, Any]) -> float | None:
-    return to_float(row.get("locked_adj_ev")) or to_float(row.get("adj_ev")) or to_float(row.get("ev"))
+    return _resolve_adjusted_ev(row).value
 
 
 def ev_bucket(row: dict[str, Any]) -> str:
@@ -237,11 +289,39 @@ def _value_present(value: Any) -> bool:
     return True
 
 
+def parse_slate_date(row: dict[str, Any]) -> date | None:
+    raw_value = row.get("slate_date")
+    if raw_value is None:
+        return None
+    normalized = str(raw_value).strip()[:10]
+    if not normalized:
+        return None
+    try:
+        return date.fromisoformat(normalized)
+    except ValueError:
+        return None
+
+
+def _slate_date(row: dict[str, Any]) -> str:
+    parsed = parse_slate_date(row)
+    return parsed.isoformat() if parsed is not None else ""
+
+
 def missing_critical_inputs(row: dict[str, Any]) -> tuple[str, ...]:
-    if str(row.get("slate_date") or row.get("date") or "")[:10] < PROSPECTIVE_START:
+    slate_date = parse_slate_date(row)
+    if slate_date is None:
+        return ("slate_date",)
+    if slate_date < PROSPECTIVE_START_DATE:
         return ()
     missing: list[str] = []
     for group in CRITICAL_INPUT_GROUPS:
+        if group == ADJUSTED_EV_FIELDS:
+            resolution = _resolve_adjusted_ev(row)
+            if resolution.non_finite_field is not None:
+                missing.append(f"{resolution.non_finite_field}:non_finite")
+            elif not resolution.finite_input_present:
+                missing.append("|".join(group))
+            continue
         if group in NUMERIC_CRITICAL_GROUPS:
             present = any(to_float(row.get(field)) is not None for field in group)
         else:
@@ -333,11 +413,11 @@ def evaluate_row(row: dict[str, Any]) -> Evaluation:
 
 
 def pick_key(row: dict[str, Any]) -> str:
-    date = str(row.get("slate_date") or row.get("date") or "")[:10]
+    slate_date = _slate_date(row)
     pitcher_source = row.get("normalized_pitcher") or row.get("pitcher") or row.get("player_name") or ""
     pitcher = normalize(pitcher_source).strip()
     side = str(row.get("side") or "").strip().lower()
-    return "|".join((date, pitcher, side))
+    return "|".join((slate_date, pitcher, side))
 
 
 def row_pnl(row: dict[str, Any]) -> float | None:
@@ -367,10 +447,6 @@ def _is_tracked(row: dict[str, Any]) -> bool:
     if isinstance(value, str):
         return value.strip().lower() in {"1", "true", "yes"}
     return bool(value)
-
-
-def _slate_date(row: dict[str, Any]) -> str:
-    return str(row.get("slate_date") or row.get("date") or "")[:10]
 
 
 def _text_or_missing(value: Any) -> str:
@@ -499,6 +575,25 @@ def _mandatory_slice_risks(
     return negative + missing
 
 
+def _baseline_reconciliation(
+    observed: dict[str, Any],
+    locked: dict[str, Any],
+) -> dict[str, Any]:
+    pnl_delta = observed["pnl"] - locked["pnl"]
+    checks = {
+        "rows": observed["rows"] == locked["rows"],
+        "wins": observed["wins"] == locked["wins"],
+        "losses": observed["losses"] == locked["losses"],
+        "pnl": abs(pnl_delta) <= BASELINE_PNL_TOLERANCE,
+    }
+    return {
+        "matches": all(checks.values()),
+        "checks": checks,
+        "observed": observed,
+        "locked": dict(locked),
+    }
+
+
 def build_audit(
     rows: list[dict[str, Any]],
     generated_at: str | None = None,
@@ -508,44 +603,81 @@ def build_audit(
         for row in rows
         if _is_tracked(row) and row.get("result") in WIN_LOSS_RESULTS
     ]
-    evaluated = [(row, evaluate_row(row)) for row in tracked_rows]
-    selected_rows = [row for row, evaluation in evaluated if evaluation.qualifies]
-    historical_rows = [
-        row
-        for row in selected_rows
-        if CLEAN_WINDOW_START <= _slate_date(row) <= HISTORICAL_END
+    evaluated = [
+        (row, evaluate_row(row), parse_slate_date(row))
+        for row in tracked_rows
     ]
-    prospective_rows = [
-        row for row in selected_rows if _slate_date(row) >= PROSPECTIVE_START
+    selected_rows = [
+        (row, slate_date)
+        for row, evaluation, slate_date in evaluated
+        if evaluation.qualifies and slate_date is not None
     ]
+    historical_selected = [
+        (row, slate_date)
+        for row, slate_date in selected_rows
+        if CLEAN_WINDOW_START_DATE <= slate_date <= HISTORICAL_END_DATE
+    ]
+    prospective_selected = [
+        (row, slate_date)
+        for row, slate_date in selected_rows
+        if slate_date >= PROSPECTIVE_START_DATE
+    ]
+    historical_rows = [row for row, _ in historical_selected]
+    prospective_rows = [row for row, _ in prospective_selected]
+    combined_selected = historical_selected + prospective_selected
     combined_rows = historical_rows + prospective_rows
     current_provider_rows = [
-        row for row in combined_rows if _slate_date(row) >= CURRENT_PROVIDER_START
+        row
+        for row, slate_date in combined_selected
+        if slate_date >= CURRENT_PROVIDER_START_DATE
     ]
-    recent_dates = sorted({_slate_date(row) for row in combined_rows if _slate_date(row)})[-14:]
-    recent_rows = [row for row in combined_rows if _slate_date(row) in recent_dates]
+    current_provider_historical_rows = [
+        row
+        for row, slate_date in historical_selected
+        if slate_date >= CURRENT_PROVIDER_START_DATE
+    ]
+    recent_date_values = sorted(
+        {slate_date for _, slate_date in combined_selected}
+    )[-14:]
+    recent_dates = [slate_date.isoformat() for slate_date in recent_date_values]
+    recent_rows = [
+        row
+        for row, slate_date in combined_selected
+        if slate_date in recent_date_values
+    ]
 
     integrity_rows = [
-        row for row in tracked_rows if _slate_date(row) >= CLEAN_WINDOW_START
+        row
+        for row, _, slate_date in evaluated
+        if slate_date is not None and slate_date >= CLEAN_WINDOW_START_DATE
     ]
     key_counts = Counter(pick_key(row) for row in integrity_rows)
     duplicate_keys = sorted(key for key, count in key_counts.items() if count > 1)
     input_gap_evaluations = [
         (row, evaluation)
-        for row, evaluation in evaluated
-        if _slate_date(row) >= PROSPECTIVE_START and evaluation.missing_inputs
+        for row, evaluation, slate_date in evaluated
+        if (slate_date is None or slate_date >= PROSPECTIVE_START_DATE)
+        and evaluation.missing_inputs
     ]
 
     historical_score = score(historical_rows)
     prospective_score = score(prospective_rows)
-    reconciliation_checks = {
-        "rows": historical_score["rows"] == LOCKED_HISTORICAL["rows"],
-        "wins": historical_score["wins"] == LOCKED_HISTORICAL["wins"],
-        "losses": historical_score["losses"] == LOCKED_HISTORICAL["losses"],
-        "pnl": abs(historical_score["pnl"] - LOCKED_HISTORICAL["pnl"])
-        <= BASELINE_PNL_TOLERANCE,
+    historical_reconciliation = _baseline_reconciliation(
+        historical_score,
+        LOCKED_HISTORICAL,
+    )
+    current_provider_reconciliation = _baseline_reconciliation(
+        score(current_provider_historical_rows),
+        LOCKED_CURRENT_PROVIDER,
+    )
+    current_provider_reconciliation["window"] = {
+        "start": CURRENT_PROVIDER_START,
+        "end": HISTORICAL_END,
     }
-    reconciliation_matches = all(reconciliation_checks.values())
+    reconciliation_matches = (
+        historical_reconciliation["matches"]
+        and current_provider_reconciliation["matches"]
+    )
     input_gap_rows = len(input_gap_evaluations)
 
     if duplicate_keys:
@@ -612,10 +744,9 @@ def build_audit(
         },
         "reconciliation": {
             "matches": reconciliation_matches,
-            "checks": reconciliation_checks,
-            "observed": historical_score,
-            "locked": dict(LOCKED_HISTORICAL),
             "pnl_tolerance": BASELINE_PNL_TOLERANCE,
+            "historical": historical_reconciliation,
+            "current_provider": current_provider_reconciliation,
         },
         "windows": {
             "historical_rebuild": historical_score,
@@ -670,6 +801,8 @@ def render_markdown(summary: dict[str, Any]) -> str:
     selector = summary["selector"]
     counter = summary["counter"]
     reconciliation = summary["reconciliation"]
+    historical_reconciliation = reconciliation["historical"]
+    current_provider_reconciliation = reconciliation["current_provider"]
     windows = summary["windows"]
     callouts = summary["callouts"]
     risks = callouts["mandatory_slice_risks"]
@@ -694,13 +827,34 @@ def render_markdown(summary: dict[str, Any]) -> str:
         "",
         "## Baseline Reconciliation",
         "",
-        f"- Reconciles: **{'yes' if reconciliation['matches'] else 'no'}**",
-        _score_line("Locked historical", reconciliation["locked"]),
-        _score_line("Observed historical rebuild", reconciliation["observed"]),
+        f"- Both locked baselines reconcile: **{'yes' if reconciliation['matches'] else 'no'}**",
+        (
+            "- Historical rebuild reconciles: "
+            f"**{'yes' if historical_reconciliation['matches'] else 'no'}**"
+        ),
+        _score_line("Locked historical", historical_reconciliation["locked"]),
+        _score_line(
+            "Observed historical rebuild",
+            historical_reconciliation["observed"],
+        ),
+        (
+            "- Locked current-provider slice reconciles: "
+            f"**{'yes' if current_provider_reconciliation['matches'] else 'no'}** "
+            f"(`{current_provider_reconciliation['window']['start']}` through "
+            f"`{current_provider_reconciliation['window']['end']}`)."
+        ),
+        _score_line(
+            "Locked current-provider historical",
+            current_provider_reconciliation["locked"],
+        ),
+        _score_line(
+            "Observed current-provider historical",
+            current_provider_reconciliation["observed"],
+        ),
     ]
     if not reconciliation["matches"]:
         lines.append(
-            "- The input corpus does not reconcile to the locked historical baseline; "
+            "- The input corpus does not reconcile to both locked baselines; "
             "the prospective counter is held fail-closed."
         )
     lines.extend([
@@ -742,18 +896,24 @@ def render_markdown(summary: dict[str, Any]) -> str:
         lines.append("- None at the current evidence volume.")
 
     lines.extend(["", "## Slice Audit", ""])
-    for window, dimensions in summary["slices"].items():
+    for window in ("historical_rebuild", "prospective", "combined"):
+        dimensions = summary["slices"][window]
         lines.append(f"### {window}")
         lines.append("")
-        for dimension, buckets in dimensions.items():
+        for dimension in SLICE_DIMENSIONS:
+            buckets = dimensions[dimension]
+            missing_count = summary["integrity"]["slice_missing_coverage"][window][
+                dimension
+            ]
+            lines.append(f"#### {dimension}")
+            lines.append("")
+            lines.append(f"- Missing coverage: {missing_count} rows")
             if not buckets:
-                lines.append(f"- `{dimension}`: no rows")
-                continue
-            bucket_text = "; ".join(
-                f"{bucket}={bucket_score['rows']} rows/{bucket_score['pnl']:+.2f}u"
-                for bucket, bucket_score in buckets.items()
-            )
-            lines.append(f"- `{dimension}`: {bucket_text}")
+                lines.append("- No buckets in this window.")
+            else:
+                for bucket, bucket_score in buckets.items():
+                    lines.append(_score_line(f"`{bucket}`", bucket_score))
+            lines.append("")
         lines.append("")
 
     lines.extend([
@@ -774,7 +934,7 @@ def write_outputs(
     json_path.parent.mkdir(parents=True, exist_ok=True)
     md_path.write_text(render_markdown(summary), encoding="utf-8")
     json_path.write_text(
-        json.dumps(summary, indent=2, sort_keys=True) + "\n",
+        json.dumps(summary, allow_nan=False, indent=2, sort_keys=True) + "\n",
         encoding="utf-8",
     )
 

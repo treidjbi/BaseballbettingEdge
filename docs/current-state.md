@@ -295,18 +295,22 @@ the grouped coordinator unchanged. After only
 notification rows, and zero `ready_to_bet` notification events. This is the
 first observation only, not promotion evidence; collect five normal slates.
 
-Model-lane overlay, 2026-07-10: Tyler approved escalating
+Model-lane overlay, 2026-07-10 (superseded for lead-candidate purposes): Tyler
+approved escalating
 `strict_runtime_core_plus_selective_lean` from generic watchlist treatment to a
 canary-review candidate after the post-grading refresh through the 2026-07-09
 slate. The selector is now `225` rows, `140-85`, `+30.18u`, `+13.4%`, with
 `85` retained FIRE rows and `140` selective LEAN rows; current-provider/recent
 slice is `44` rows, `29-15`, `+9.55u`. The newest three qualifying rows went
-`2-1`, `+0.75u` while the normal tracked slate lost `-2.639u`. The governing
-packet is `docs/research/strict-runtime-core-selective-lean-canary-packet.md`.
-This is still not a production flip. The next approved work surface is a
-separate disabled `off|shadow` live-canary plan that stamps metadata only, with
-known risk slices called out explicitly: weak pre-close proxy, price bucket
-`+100 to +119`, and worse-close-price. No LEAN promotion, displayed-verdict
+`2-1`, `+0.75u` while the normal tracked slate lost `-2.639u`. Its packet,
+`docs/research/strict-runtime-core-selective-lean-canary-packet.md`, is retained
+as comparison/control historical context. Current lead-candidate work is the
+July 21 no-drag plan and packet:
+`docs/superpowers/plans/2026-07-21-no-drag-composite-prospective-canary.md` and
+`docs/research/no-drag-composite-prospective-canary-packet.md`. This is still
+not a production flip. The superseded overlay's known risk slices were weak
+pre-close proxy, price bucket `+100 to +119`, and worse-close-price. No LEAN
+promotion, displayed-verdict
 change, staking change, lambda change, threshold change, provider behavior
 change, notification change, lock change, retention change, dashboard source
 change, or `formula_change_date` change is approved from this overlay.
