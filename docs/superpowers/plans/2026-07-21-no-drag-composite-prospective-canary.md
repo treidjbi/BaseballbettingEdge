@@ -185,7 +185,7 @@ def test_verdict_precedence_uses_first_non_empty_value():
     ("value", "expected"),
     [
         (-0.001, "ev_negative"),
-        (0.0, "ev_0_to_6"),
+        (0.0, "ev_unknown"),
         (0.059999, "ev_0_to_6"),
         (0.06, "ev_6_to_17"),
         (0.169999, "ev_6_to_17"),
@@ -199,6 +199,10 @@ def test_adjusted_ev_boundaries(value, expected):
 def test_adjusted_ev_preserves_truthy_or_zero_fallthrough():
     row = {"locked_adj_ev": 0.0, "adj_ev": 0.10, "ev": 0.03}
     assert audit.adjusted_ev(row) == 0.10
+
+
+# A lone zero resolves to ev_unknown under the frozen Python truthy-or chain;
+# zero falls through only when a later adjusted-EV source is truthy.
 
 
 def test_market_anchor_labels_accept_object_fallback_and_json_object():
