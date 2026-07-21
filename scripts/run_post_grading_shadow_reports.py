@@ -23,6 +23,7 @@ from analytics.diagnostics import gate_f_projection_challenger_shadow_report  # 
 from analytics.diagnostics import market_agreement_tracker  # noqa: E402
 from analytics.diagnostics import market_anchor_selector_canary_audit  # noqa: E402
 from analytics.diagnostics import market_shrink_projection_canary_audit  # noqa: E402
+from analytics.diagnostics import no_drag_composite_canary_audit  # noqa: E402
 from analytics.diagnostics import profit_rescue_audit  # noqa: E402
 from analytics.diagnostics import shadow_signal_synthesis_lab  # noqa: E402
 from analytics.diagnostics import shadow_notification_candidate_audit  # noqa: E402
@@ -84,6 +85,16 @@ def _parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         "--shadow-signal-synthesis-output",
         type=Path,
         default=shadow_signal_synthesis_lab.DEFAULT_OUTPUT,
+    )
+    parser.add_argument(
+        "--no-drag-canary-output-md",
+        type=Path,
+        default=no_drag_composite_canary_audit.DEFAULT_OUTPUT_MD,
+    )
+    parser.add_argument(
+        "--no-drag-canary-output-json",
+        type=Path,
+        default=no_drag_composite_canary_audit.DEFAULT_OUTPUT_JSON,
     )
     parser.add_argument("--market-pick-evidence", type=Path)
     parser.add_argument("--live-market-display", type=Path)
@@ -243,6 +254,14 @@ def main(argv: list[str] | None = None) -> int:
         "--output",
         str(args.shadow_signal_synthesis_output),
     ])
+    no_drag_composite_canary_audit.main([
+        "--input",
+        str(dataset_path),
+        "--output-md",
+        str(args.no_drag_canary_output_md),
+        "--output-json",
+        str(args.no_drag_canary_output_json),
+    ])
     _write_gate_f_projection_report(
         dataset_path=dataset_path,
         output_path=args.gate_f_projection_output,
@@ -293,6 +312,11 @@ def main(argv: list[str] | None = None) -> int:
             "Market Agreement Input",
             "Composite Policy Shapes",
         },
+    )
+    _print_review_excerpt(
+        args.no_drag_canary_output_md,
+        label="No-drag prospective canary",
+        section_titles={"Executive Read", "Counter", "Baseline Reconciliation"},
     )
     return 0
 

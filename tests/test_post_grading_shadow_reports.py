@@ -14,6 +14,8 @@ def test_runner_rebuilds_shadow_reports_and_prints_review_excerpt(tmp_path, monk
     market_agreement_output = tmp_path / "market_agreement_tracker.md"
     market_agreement_jsonl = tmp_path / "market_agreement_tracker.jsonl"
     shadow_signal_output = tmp_path / "shadow_signal_synthesis_lab.md"
+    no_drag_output_md = tmp_path / "no_drag_composite_canary_audit.md"
+    no_drag_output_json = tmp_path / "no_drag_composite_canary_audit.json"
     gate_f_output = tmp_path / "gate_f_projection_challenger_shadow_report.md"
     market_shrink_output = tmp_path / "market_shrink_projection_canary_audit.md"
     shadow_candidates = tmp_path / "shadow_notification_candidates.json"
@@ -128,6 +130,24 @@ def test_runner_rebuilds_shadow_reports_and_prints_review_excerpt(tmp_path, monk
         fake_shadow_signal_synthesis_main,
     )
 
+    def fake_no_drag_main(argv):
+        calls.append(("no_drag_canary", argv))
+        no_drag_output_md.write_text(
+            "# No-Drag Composite Prospective Canary Audit\n\n"
+            "## Executive Read\n\n"
+            "- Status: `collecting`.\n\n"
+            "## Counter\n\n"
+            "- Counter: `52/75`; `23` remaining.\n\n"
+            "## Baseline Reconciliation\n\n"
+            "- Rebuilt history matches the locked baseline.\n\n"
+            "## Slice Audit\n\n"
+            "- Not needed in the scheduler excerpt.\n",
+            encoding="utf-8",
+        )
+        no_drag_output_json.write_text("{}\n", encoding="utf-8")
+
+    monkeypatch.setattr(runner.no_drag_composite_canary_audit, "main", fake_no_drag_main)
+
     def fake_market_shrink_audit_main(argv):
         calls.append(("market_shrink_projection", argv))
         market_shrink_output.write_text(
@@ -191,6 +211,10 @@ def test_runner_rebuilds_shadow_reports_and_prints_review_excerpt(tmp_path, monk
         str(market_agreement_jsonl),
         "--shadow-signal-synthesis-output",
         str(shadow_signal_output),
+        "--no-drag-canary-output-md",
+        str(no_drag_output_md),
+        "--no-drag-canary-output-json",
+        str(no_drag_output_json),
         "--gate-f-projection-output",
         str(gate_f_output),
         "--market-shrink-projection-output",
@@ -289,6 +313,17 @@ def test_runner_rebuilds_shadow_reports_and_prints_review_excerpt(tmp_path, monk
                 str(shadow_signal_output),
             ],
         ),
+        (
+            "no_drag_canary",
+            [
+                "--input",
+                str(output_dir / "pitcher_k_outcome_dataset.jsonl"),
+                "--output-md",
+                str(no_drag_output_md),
+                "--output-json",
+                str(no_drag_output_json),
+            ],
+        ),
         ("gate_f_load", output_dir / "pitcher_k_outcome_dataset.jsonl"),
         ("gate_f_report", [{"dataset_key": "row-1"}]),
         (
@@ -328,6 +363,12 @@ def test_runner_rebuilds_shadow_reports_and_prints_review_excerpt(tmp_path, monk
     assert "strict_runtime_core_plus_selective_lean" in output
     assert "Raw market-agreement rows: `12`." in output
     assert "combined_positive_runtime_watch" in output
+    assert "No-drag prospective canary excerpt:" in output
+    assert "Status: `collecting`" in output
+    assert "52/75" in output
+    assert "Rebuilt history matches" in output
+    assert "Slice Audit" not in output
+    assert "Not needed in the scheduler excerpt" not in output
     assert "Implementation Notes" not in output
     assert "Promotion Gate" not in output
     assert "Debug Detail" not in output
