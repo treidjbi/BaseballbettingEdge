@@ -1,0 +1,47 @@
+{
+  "bundle_id": "pregame_alternative_pick_methodology_v1",
+  "selector_ids": {
+    "consensus_core": "no_drag_distinct_family_consensus_core_v1",
+    "reentry_expansion": "moderate_edge_quality_reentry_expansion_v1"
+  },
+  "serialization": {"sorted_keys": true, "compact_separators": true, "ensure_ascii": false, "explicit_nulls": true},
+  "field_precedence": {
+    "display_verdict": ["display_verdict", "locked_verdict", "actionable_verdict", "current_verdict", "verdict"],
+    "source_fire_verdict": ["raw_verdict", "quality_actionable_verdict", "display_verdict", "locked_verdict", "actionable_verdict", "current_verdict", "verdict"],
+    "adjusted_ev": ["locked_adj_ev", "adj_ev", "ev"]
+  },
+  "null_behavior": {
+    "missing_required": "pending",
+    "malformed_anchor_metadata": "pending",
+    "absent_anchor_metadata": "disagree",
+    "missing_reversal_or_volatility": "pending",
+    "preclose_observations_under_two": "pending"
+  },
+  "enum_normalization": "trim_lowercase",
+  "provider_allow_list": ["therundown", "propline", "therundown_propline"],
+  "thresholds": {
+    "edge_high_skepticism_min": "0.06",
+    "moderate_edge_min": "0.02",
+    "moderate_edge_max_exclusive": "0.06",
+    "moderate_ev_max_exclusive": "0.17",
+    "no_vig_reentry_min": "0.04",
+    "preclose_strong_score_min": "5"
+  },
+  "family_predicates": {
+    "base": "strong_base_strict_plus_selective",
+    "anchor": "market_anchor_strict OR (base_support AND market_anchor_core)",
+    "preclose": "base_support AND strong_preclose_clv_proxy AND mature_current_candidate_evidence",
+    "reentry": "source_fire AND moderate_edge_quality_reentry"
+  },
+  "portfolio_formulas": {
+    "no_drag": "(base_support OR market_anchor_strict) AND NOT drag_core",
+    "consensus_core": "no_drag AND family_count >= 2",
+    "reentry_expansion": "reentry_support AND NOT no_drag"
+  },
+  "timing_and_freeze": {
+    "timezone": "America/Phoenix",
+    "provisional": "before operational lock",
+    "freeze": "first valid due_now or missed_lock while pregame",
+    "post_start": "never freeze or backfill"
+  }
+}

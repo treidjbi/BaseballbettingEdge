@@ -23,6 +23,7 @@ if str(ROOT) not in sys.path:
 
 from analytics.diagnostics import gate_f_preclose_clv_proxy_lab as preclose_proxy
 from analytics.diagnostics import strong_base_decision_lab as strong_base
+from market_infra import alternative_pick_selector as alternative_selector
 from pipeline.name_utils import normalize
 
 DEFAULT_INPUT = ROOT / "data" / "research" / "gate_c" / "pitcher_k_outcome_dataset.jsonl"
@@ -191,7 +192,7 @@ def to_float(value: Any) -> float | None:
 
 
 def verdict(row: dict[str, Any]) -> str:
-    return str(next((row.get(field) for field in VERDICT_FIELDS if row.get(field)), "")).strip()
+    return alternative_selector.display_verdict(row)
 
 
 def _numeric_candidate(value: Any) -> tuple[str, float | None]:

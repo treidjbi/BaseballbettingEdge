@@ -801,3 +801,7 @@ def test_later_non_finite_adjusted_ev_is_ignored_after_finite_truthy_winner():
     assert summary["integrity"]["input_gap_rows"] == 0
     assert summary["counter"]["rows"] == 53
     json.dumps(summary, allow_nan=False)
+
+
+def test_display_verdict_wrapper_keeps_frozen_precedence():
+    assert audit.verdict({"display_verdict": "LEAN", "verdict": "FIRE 1u"}) == "LEAN"

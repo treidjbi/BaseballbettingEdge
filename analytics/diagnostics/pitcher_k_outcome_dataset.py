@@ -33,6 +33,7 @@ from analytics.diagnostics.market_price_outcome_audit import (  # noqa: E402
     winning_side,
 )
 from pipeline.name_utils import normalize  # noqa: E402
+from market_infra import alternative_pick_selector as alternative_selector  # noqa: E402
 
 
 ARCHIVE_DIR = ROOT / "dashboard" / "data" / "processed"
@@ -389,13 +390,7 @@ def _projection_margin_bucket(value: float | None) -> str:
 
 
 def _opportunity_bucket(avg_ip: float | None, recent_start_count: int | None) -> str:
-    if avg_ip is None:
-        return "unknown"
-    if avg_ip < 4.5:
-        return "short_leash"
-    if avg_ip >= 6.2 and (recent_start_count or 0) >= 3:
-        return "deep_starter"
-    return "normal"
+    return alternative_selector.runtime_opportunity_bucket(avg_ip, recent_start_count)
 
 
 def _leash_risk_bucket(
@@ -406,23 +401,17 @@ def _leash_risk_bucket(
     last_pitch_count: int | None,
     days_since_last_start: int | None,
 ) -> str:
-    if bool(is_opener) or bool(starter_mismatch):
-        return "high"
-    if avg_ip is not None and avg_ip < 4.5:
-        return "high"
-    if last_pitch_count is not None and last_pitch_count >= 105:
-        return "medium"
-    if days_since_last_start is not None and days_since_last_start < 4:
-        return "medium"
-    return "normal"
+    return alternative_selector.runtime_leash_risk_bucket(
+        is_opener=is_opener,
+        starter_mismatch=starter_mismatch,
+        avg_ip=avg_ip,
+        last_pitch_count=last_pitch_count,
+        days_since_last_start=days_since_last_start,
+    )
 
 
 def _model_market_relationship(model_side: str, market_favorite: str) -> str:
-    if model_side not in {"over", "under"} or market_favorite not in {"over", "under"}:
-        return "unknown"
-    if model_side == market_favorite:
-        return "model_agrees_with_favorite"
-    return "model_fades_favorite"
+    return alternative_selector.runtime_model_market_relationship(model_side, market_favorite)
 
 
 def _list_values(value: Any) -> list[Any]:
@@ -478,24 +467,7 @@ def _parse_datetime(value: Any) -> datetime | None:
 
 
 def _bet_timing_window(bet_time_at: Any, game_time: Any) -> str:
-    bet_time = _parse_datetime(bet_time_at)
-    first_pitch = _parse_datetime(game_time)
-    if bet_time is None or first_pitch is None:
-        return "unknown"
-    minutes = (first_pitch - bet_time).total_seconds() / 60.0
-    if minutes < 0:
-        return "post_start"
-    if minutes <= 5:
-        return "pre_5"
-    if minutes <= 15:
-        return "pre_15"
-    if minutes <= 30:
-        return "pre_30"
-    if minutes <= 60:
-        return "pre_60"
-    if minutes <= 120:
-        return "pre_120"
-    return "early"
+    return alternative_selector.timing_bucket(bet_time_at, game_time)
 
 
 def _large_edge_skepticism_reasons(
@@ -549,22 +521,14 @@ def _pitcher_archetype_bucket(
     recent_k9: float | None,
     career_k9: float | None,
 ) -> str:
-    if bool(is_opener) or bool(starter_mismatch):
-        return "opener_or_mismatch"
-    if opportunity_bucket == "short_leash":
-        return "short_leash"
-
-    k9_values = [value for value in (season_k9, recent_k9, career_k9) if value is not None]
-    max_k9 = max(k9_values) if k9_values else None
-    if opportunity_bucket == "deep_starter" and max_k9 is not None and max_k9 >= 10.0:
-        return "high_k_deep_starter"
-    if opportunity_bucket == "deep_starter":
-        return "deep_starter"
-    if max_k9 is not None and max_k9 >= 10.0:
-        return "high_k_standard"
-    if max_k9 is not None and max_k9 < 7.0:
-        return "low_k_standard"
-    return "standard_starter"
+    return alternative_selector.runtime_pitcher_archetype_bucket(
+        is_opener=is_opener,
+        starter_mismatch=starter_mismatch,
+        opportunity_bucket=opportunity_bucket,
+        season_k9=season_k9,
+        recent_k9=recent_k9,
+        career_k9=career_k9,
+    )
 
 
 def _result_for_side(winning_side: Any, side: str) -> str | None:
@@ -1333,17 +1297,7 @@ def _miss_distance_bucket(market: dict[str, Any]) -> str | None:
 
 
 def _line_bucket(k_line: float | None) -> str:
-    if k_line is None:
-        return "unknown"
-    if k_line <= 3.5:
-        return "2.5-3.5"
-    if k_line == 4.5:
-        return "4.5"
-    if k_line == 5.5:
-        return "5.5"
-    if k_line == 6.5:
-        return "6.5"
-    return "7.5+"
+    return alternative_selector.line_bucket(k_line)
 
 
 def build_summary(rows: list[dict[str, Any]]) -> dict[str, Any]:

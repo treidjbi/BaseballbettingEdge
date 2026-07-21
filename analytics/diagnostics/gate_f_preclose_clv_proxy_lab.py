@@ -16,6 +16,8 @@ from datetime import UTC, date, datetime, timedelta
 from pathlib import Path
 from typing import Any
 
+from market_infra import alternative_pick_selector as alternative_selector
+
 
 ROOT = Path(__file__).resolve().parents[2]
 DEFAULT_INPUT = ROOT / "data" / "research" / "gate_c" / "pitcher_k_outcome_dataset.jsonl"
@@ -101,22 +103,11 @@ def _is_fire(verdict: Any) -> bool:
 
 
 def current_verdict(row: dict[str, Any]) -> str:
-    return str(
-        row.get("display_verdict")
-        or row.get("locked_verdict")
-        or row.get("actionable_verdict")
-        or row.get("current_verdict")
-        or row.get("verdict")
-        or ""
-    ).strip()
+    return alternative_selector.display_verdict(row)
 
 
 def source_fire_verdict(row: dict[str, Any]) -> str:
-    for key in ("raw_verdict", "quality_actionable_verdict"):
-        value = str(row.get(key) or "").strip()
-        if _is_fire(value):
-            return value
-    return current_verdict(row)
+    return alternative_selector.source_fire_verdict(row)
 
 
 def no_vig_label(row: dict[str, Any]) -> str:

@@ -134,3 +134,7 @@ def test_render_report_keeps_shadow_boundary_and_fire_volume_language():
     assert "does not change live" in rendered
     assert "zero-FIRE" in rendered
     assert "Candidate Scoreboard" in rendered
+
+
+def test_source_fire_wrapper_keeps_raw_fire_before_displayed_lean():
+    assert lab.source_fire_verdict(_row(display_verdict="LEAN", raw_verdict="FIRE 1u")) == "FIRE 1u"

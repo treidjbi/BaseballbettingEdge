@@ -162,3 +162,7 @@ def test_render_report_names_clv_target_and_runtime_proxy_boundary():
     assert "CLV is the validation target" in rendered
     assert "not a live selector" in rendered
     assert "Proxy Scoreboard" in rendered
+
+
+def test_current_verdict_wrapper_keeps_display_precedence():
+    assert lab.current_verdict(_row(display_verdict="LEAN", verdict="FIRE 1u")) == "LEAN"
