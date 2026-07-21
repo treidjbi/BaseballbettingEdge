@@ -9,6 +9,7 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import math
 import sys
 from collections import Counter, defaultdict
 from dataclasses import dataclass
@@ -171,9 +172,10 @@ def to_float(value: Any) -> float | None:
     if value is None or isinstance(value, bool):
         return None
     try:
-        return float(value)
+        number = float(value)
     except (TypeError, ValueError):
         return None
+    return number if math.isfinite(number) else None
 
 
 def verdict(row: dict[str, Any]) -> str:
@@ -376,6 +378,14 @@ def _text_or_missing(value: Any) -> str:
     return text or "missing"
 
 
+def _first_non_empty(*values: Any) -> str:
+    for value in values:
+        text = str(value or "").strip()
+        if text:
+            return text
+    return ""
+
+
 def _slice_bucket(
     dimension: str,
     row: dict[str, Any],
@@ -404,7 +414,9 @@ def _slice_bucket(
     if dimension == "model_market":
         return _text_or_missing(row.get("model_market_relationship"))
     if dimension == "workload_leash":
-        return _text_or_missing(row.get("leash_risk_bucket") or row.get("opportunity_bucket"))
+        return _text_or_missing(
+            _first_non_empty(row.get("leash_risk_bucket"), row.get("opportunity_bucket"))
+        )
     if dimension == "market_anchor":
         labels = market_anchor_labels(row)
         if "market_anchor_strict" in labels:
@@ -421,7 +433,9 @@ def _slice_bucket(
     if dimension == "provider_era":
         return strong_base.provider_era(row)
     if dimension == "provider_attribution":
-        return _text_or_missing(row.get("provider") or row.get("live_display_provider"))
+        return _text_or_missing(
+            _first_non_empty(row.get("provider"), row.get("live_display_provider"))
+        )
     if dimension == "recent_14_slates":
         return "included" if _slate_date(row) in recent_dates else "outside"
     raise ValueError(f"Unsupported slice dimension: {dimension}")

@@ -1,4 +1,5 @@
 import json
+import math
 
 import pytest
 
@@ -350,3 +351,69 @@ def test_main_runs_from_repo_root_and_writes_both_outputs(tmp_path, monkeypatch)
     ]) == 0
     assert md_path.exists()
     assert json_path.exists()
+
+
+@pytest.mark.parametrize(
+    ("overrides", "dimension", "bucket"),
+    [
+        (
+            {"leash_risk_bucket": "  ", "opportunity_bucket": "normal"},
+            "workload_leash",
+            "normal",
+        ),
+        (
+            {"provider": "\t", "live_display_provider": "propline"},
+            "provider_attribution",
+            "propline",
+        ),
+    ],
+)
+def test_slice_fallbacks_use_trimmed_first_non_empty(
+    monkeypatch,
+    overrides,
+    dimension,
+    bucket,
+):
+    historical = [graded_row("2026-07-20", "history one")]
+    lock_history_to(monkeypatch, historical)
+    prospective = graded_row(
+        "2026-07-21",
+        "future fallback",
+        display_verdict="PASS",
+        market_anchor_selector={"labels": ["market_anchor_strict"]},
+        **overrides,
+    )
+    summary = audit.build_audit(historical + [prospective])
+    assert summary["slices"]["prospective"][dimension][bucket]["rows"] == 1
+
+
+@pytest.mark.parametrize(
+    "field",
+    ["edge", "locked_adj_ev", "model_no_vig_gap", "pick_history_pnl"],
+)
+@pytest.mark.parametrize(
+    "value",
+    [float("nan"), float("inf"), float("-inf")],
+    ids=["nan", "positive_infinity", "negative_infinity"],
+)
+def test_non_finite_prospective_critical_numeric_blocks_and_stays_json_safe(
+    monkeypatch,
+    field,
+    value,
+):
+    historical = [graded_row("2026-07-20", "history one")]
+    lock_history_to(monkeypatch, historical)
+    prospective = graded_row(
+        "2026-07-21",
+        "future non finite",
+        display_verdict="PASS",
+        market_anchor_selector={"labels": ["market_anchor_strict"]},
+    )
+    prospective[field] = value
+    summary = audit.build_audit(historical + [prospective])
+    assert summary["status"] == "blocked_input_gap"
+    assert summary["integrity"]["input_gap_rows"] == 1
+    assert summary["counter"]["prospective_qualified_rows"] == 0
+    assert summary["counter"]["rows"] == 52
+    assert math.isfinite(summary["windows"]["prospective"]["pnl"])
+    json.dumps(summary, allow_nan=False)
