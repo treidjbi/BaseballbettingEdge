@@ -5,6 +5,7 @@ import hashlib
 import json
 import os
 import sys
+import time
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any
@@ -22,6 +23,16 @@ from market_infra.live_events import (  # noqa: E402
     build_propline_webhook_movement_notification_events,
     build_reminder_events,
 )
+from market_infra.alternative_pick_selection_state import (  # noqa: E402
+    APPROVED_ARTIFACT_PATH,
+    UNIQUE_COLUMNS,
+    associate_candidate_observations,
+    build_frozen_row,
+    build_provisional_row,
+    candidate_record,
+    frozen_insert_on_conflict,
+)
+from market_infra.alternative_pick_selector import BUNDLE_ID, evaluate_alternative_pick  # noqa: E402
 from market_infra.live_market_display import build_live_market_display_rows  # noqa: E402
 from market_infra.mainline_price_notifications import (  # noqa: E402
     build_mainline_best_price_notification_rows,
@@ -29,12 +40,14 @@ from market_infra.mainline_price_notifications import (  # noqa: E402
 from market_infra.market_evidence import build_market_pick_evidence_rows  # noqa: E402
 from market_infra.notification_coordinator import coordinate_notification_rows  # noqa: E402
 from market_infra.operational_locks import build_operational_lock_rows  # noqa: E402
+from market_infra.published_artifacts import canonical_payload_sha256  # noqa: E402
 from market_infra.ready_to_bet_shadow import build_ready_to_bet_shadow  # noqa: E402
 from market_infra.shadow_pipeline_timing import build_shadow_pipeline_timing_rows  # noqa: E402
 from market_infra.shadow_notification_candidates import (  # noqa: E402
     build_shadow_notification_candidate_rows,
 )
 from market_infra.supabase_writer import SupabaseMarketWriter  # noqa: E402
+from pipeline.name_utils import normalize  # noqa: E402
 from scripts.build_current_market_lines_to_supabase import (  # noqa: E402
     run as build_current_market_lines_to_supabase,
 )
@@ -115,6 +128,319 @@ def _mainline_best_price_notification_mode() -> str:
 def _ready_to_bet_shadow_mode() -> str:
     value = str(os.getenv("LIVE_READY_TO_BET_SHADOW") or "off").strip().lower()
     return value if value in {"off", "record"} else "off"
+
+
+def _alternative_pick_selection_mode() -> str:
+    return "record" if os.environ.get(
+        "ALTERNATIVE_PICK_SELECTION_MODE", "off"
+    ).strip().lower() == "record" else "off"
+
+
+def _alternative_remaining_timeout(started_at: float, budget_seconds: float) -> float:
+    return budget_seconds - (time.monotonic() - started_at)
+
+
+def _alternative_failure_summary(reason: str) -> dict[str, Any]:
+    warning = "alternative pick selection recorder stopped for this cycle"
+    print(f"Warning: {warning} ({reason})", file=sys.stderr)
+    return {"skipped": True, "reason": reason, "rows": 0, "warning": warning[:200]}
+
+
+def _alternative_prerequisite_failed(
+    operational_pick_locks: dict[str, Any],
+    shadow_pipeline_timing: dict[str, Any],
+    market_line_build: dict[str, Any],
+) -> bool:
+    return bool(
+        operational_pick_locks.get("reason") == "write_failed"
+        or shadow_pipeline_timing.get("error")
+        or market_line_build.get("reason") == "build_failed"
+    )
+
+
+def _alternative_tracked_candidates(
+    *,
+    slate_date: str,
+    payload: dict[str, Any],
+    market_pick_evidence_rows: list[dict[str, Any]],
+) -> list[tuple[dict[str, Any], dict[str, Any], dict[str, Any]]]:
+    """Return exact tracked picks with only approved already-built evidence."""
+    approved = {"therundown", "propline"}
+    evidence_by_pick: dict[tuple[str, str], list[dict[str, Any]]] = {}
+    for row in market_pick_evidence_rows:
+        if not isinstance(row, dict):
+            continue
+        provider = str(row.get("provider") or "").strip().lower()
+        pitcher = str(row.get("normalized_pitcher") or "").strip().lower()
+        side = str(row.get("side") or "").strip().lower()
+        if provider in approved and pitcher and side in {"over", "under"}:
+            evidence_by_pick.setdefault((pitcher, side), []).append(row)
+
+    candidates: list[tuple[dict[str, Any], dict[str, Any], dict[str, Any]]] = []
+    seen: set[str] = set()
+    for pitcher in payload.get("pitchers") or []:
+        if not isinstance(pitcher, dict):
+            continue
+        tracked = pitcher.get("tracked_picks")
+        if not isinstance(tracked, list):
+            continue
+        for pick in tracked:
+            if not isinstance(pick, dict):
+                continue
+            side = str(pick.get("side") or "").strip().lower()
+            if side not in {"over", "under"}:
+                continue
+            name = str(pitcher.get("pitcher") or pick.get("pitcher") or "").strip()
+            normalized = normalize(name)
+            evidence_rows = evidence_by_pick.get((normalized, side), [])
+            providers = {str(row.get("provider") or "").strip().lower() for row in evidence_rows}
+            posture = "therundown_propline" if providers == approved else next(iter(providers), "therundown")
+            line = pick.get("display_k_line") or pick.get("locked_k_line") or pick.get("k_line")
+            try:
+                candidate = candidate_record(
+                    slate_date=slate_date,
+                    pitcher=name,
+                    side=side,
+                    model_k_line=float(line),
+                    team=str(pitcher.get("team") or pick.get("team") or ""),
+                    opp_team=str(pitcher.get("opp_team") or pick.get("opp_team") or ""),
+                    game_time=str(pick.get("game_time") or pitcher.get("game_time") or ""),
+                    provider_posture=posture,
+                )
+            except (TypeError, ValueError):
+                continue
+            if candidate["candidate_identity"] not in seen:
+                candidates.append((candidate, pitcher, pick))
+                seen.add(candidate["candidate_identity"])
+    return candidates
+
+
+def _write_alternative_pick_selection_state(
+    *,
+    writer: SupabaseMarketWriter,
+    slate_date: str,
+    payload: dict[str, Any],
+    snapshot_rows: list[dict[str, Any]],
+    market_pick_evidence_rows: list[dict[str, Any]],
+    observed_at: datetime,
+    artifact_source: str,
+    source_payload_sha256: str,
+    source_artifact_byte_sha256: str,
+    operational_pick_locks: dict[str, Any],
+    market_line_build: dict[str, Any],
+    shadow_pipeline_timing: dict[str, Any] | None = None,
+    budget_seconds: float = 5.0,
+) -> dict[str, Any]:
+    """Record isolated alternative state with bounded, single-attempt requests."""
+    if _alternative_pick_selection_mode() != "record":
+        return {"skipped": True, "reason": "disabled", "rows": 0}
+    shadow_pipeline_timing = shadow_pipeline_timing or {"skipped": True, "reason": "disabled"}
+    if _alternative_prerequisite_failed(
+        operational_pick_locks,
+        shadow_pipeline_timing,
+        market_line_build,
+    ):
+        return {"skipped": True, "reason": "prerequisite_failed", "rows": 0}
+
+    started_at = time.monotonic()
+    candidates = _alternative_tracked_candidates(
+        slate_date=slate_date,
+        payload=payload,
+        market_pick_evidence_rows=market_pick_evidence_rows,
+    )
+    if not candidates:
+        return {"skipped": True, "reason": "no_candidates", "rows": 0}
+
+    def remaining() -> float:
+        return _alternative_remaining_timeout(started_at, budget_seconds)
+
+    try:
+        timeout = remaining()
+        if timeout <= 0:
+            return _alternative_failure_summary("timeout")
+        existing_rows = writer.select_rows(
+            "alternative_pick_selection_state",
+            {
+                "slate_date": f"eq.{slate_date}",
+                "checkpoint": "in.(provisional,frozen_pregame)",
+            },
+            timeout_seconds=timeout,
+            attempts=1,
+        )
+        timeout = remaining()
+        if timeout <= 0:
+            return _alternative_failure_summary("timeout")
+        dedupe_keys = sorted({
+            f"{candidate['slate_date']}:{candidate['normalized_pitcher']}:{candidate['side']}"
+            for candidate, _, _ in candidates
+        })
+        lock_rows = writer.select_rows(
+            "operational_pick_locks",
+            {
+                "slate_date": f"eq.{slate_date}",
+                "dedupe_key": f"in.({','.join(dedupe_keys)})",
+            },
+            timeout_seconds=timeout,
+            attempts=1,
+        )
+    except Exception:
+        return _alternative_failure_summary("failed")
+
+    observed_at_iso = observed_at.astimezone(timezone.utc).isoformat()
+    existing_rows = existing_rows if isinstance(existing_rows, list) else []
+    lock_rows = lock_rows if isinstance(lock_rows, list) else []
+    inserted_locks = operational_pick_locks.get("inserted_lock_rows")
+    if isinstance(inserted_locks, list):
+        lock_rows.extend(inserted_locks)
+    artifact = {
+        "path": APPROVED_ARTIFACT_PATH,
+        "payload": payload,
+        "payload_sha256": source_payload_sha256,
+        "byte_sha256": source_artifact_byte_sha256,
+        "generated_at": payload.get("generated_at"),
+    }
+    provisional_rows: list[dict[str, Any]] = []
+    frozen_rows: list[dict[str, Any]] = []
+    for candidate, pitcher, pick in candidates:
+        key = (
+            candidate["slate_date"],
+            candidate["game_identity"],
+            candidate["normalized_pitcher"],
+            candidate["side"],
+            BUNDLE_ID,
+        )
+        matching_existing = [
+            row for row in existing_rows
+            if isinstance(row, dict) and tuple(row.get(field) for field in UNIQUE_COLUMNS[:5]) == key
+        ]
+        if any(row.get("checkpoint") == "frozen_pregame" for row in matching_existing):
+            continue
+        first_current_at = next(
+            (str(row.get("observed_at")) for row in matching_existing if row.get("checkpoint") == "provisional" and row.get("observed_at")),
+            observed_at_iso,
+        )
+        candidate["frozen_exists"] = False
+        candidate_snapshots = []
+        for row in snapshot_rows:
+            if not isinstance(row, dict):
+                continue
+            normalized = str(row.get("normalized_player_name") or row.get("player_name") or "").strip().lower()
+            if normalized != candidate["normalized_pitcher"] or str(row.get("side") or "").strip().lower() != candidate["side"]:
+                continue
+            candidate_snapshots.append({
+                **row,
+                "candidate_identity": candidate["candidate_identity"],
+                "freshness_status": "fresh",
+            })
+        evidence_window = associate_candidate_observations(
+            candidate=candidate,
+            snapshot_rows=candidate_snapshots,
+            first_current_at=first_current_at,
+            observed_at=observed_at_iso,
+        )
+        evidence_rows = [
+            row for row in market_pick_evidence_rows
+            if isinstance(row, dict)
+            and str(row.get("normalized_pitcher") or "").strip().lower() == candidate["normalized_pitcher"]
+            and str(row.get("side") or "").strip().lower() == candidate["side"]
+            and str(row.get("provider") or "").strip().lower() in {"therundown", "propline"}
+        ]
+        evidence = dict(evidence_rows[0]) if evidence_rows else {}
+        evidence["provider"] = candidate["provider_posture"]
+        evidence["candidate_identity"] = {
+            "slate_date": slate_date,
+            "game_time": candidate["game_time"],
+            "pitcher": candidate["normalized_pitcher"],
+            "side": candidate["side"],
+            "k_line": candidate["model_k_line"],
+            "provider": candidate["provider_posture"],
+        }
+        evidence["candidate_became_current_at"] = first_current_at
+        evidence["observations"] = [
+            {"id": row.get("id"), "observed_at": row.get("observed_at")}
+            for row in candidate_snapshots
+            if row.get("id") and row.get("observed_at")
+        ]
+        evidence["observation_ids"] = evidence_window["observation_ids"]
+        evidence["first_observed_at"] = evidence_window["first_observed_at"]
+        evidence["last_observed_at"] = evidence_window["last_observed_at"]
+        evidence["freshness_status"] = evidence_window["freshness_status"]
+        try:
+            evaluation = evaluate_alternative_pick(
+                pitcher=pitcher,
+                pick=pick,
+                market_evidence=evidence,
+                slate_date=slate_date,
+                is_tracked=True,
+                source_artifact_path=APPROVED_ARTIFACT_PATH,
+                source_payload_sha256=source_payload_sha256,
+                source_artifact_byte_sha256=source_artifact_byte_sha256,
+                observed_at=observed_at_iso,
+            )
+        except Exception:
+            return _alternative_failure_summary("failed")
+        provisional = build_provisional_row(
+            candidate=candidate,
+            evaluation=evaluation,
+            evidence_window=evidence_window,
+            artifact=artifact,
+            observed_at=observed_at_iso,
+        )
+        if provisional is None:
+            continue
+        candidate_lock_rows = [
+            row for row in lock_rows
+            if isinstance(row, dict)
+            and row.get("dedupe_key") == f"{slate_date}:{candidate['normalized_pitcher']}:{candidate['side']}"
+        ]
+        current_lock = next(
+            (
+                row for row in candidate_lock_rows
+                if _parse_timestamp(row.get("locked_at")) == observed_at.astimezone(timezone.utc)
+                and _parse_timestamp(row.get("observed_at")) == observed_at.astimezone(timezone.utc)
+            ),
+            None,
+        )
+        if current_lock is not None:
+            frozen = build_frozen_row(
+                provisional_row=provisional,
+                lock_row=current_lock,
+                observed_at=observed_at_iso,
+            )
+            if frozen is not None:
+                frozen_rows.append(frozen)
+                continue
+        if candidate_lock_rows:
+            provisional["reason_codes"] = list(dict.fromkeys([
+                *provisional.get("reason_codes", []), "missed_freeze",
+            ]))
+        provisional_rows.append(provisional)
+
+    try:
+        for rows, method, conflict in (
+            (provisional_rows, writer.upsert_rows, ",".join(UNIQUE_COLUMNS)),
+            (frozen_rows, writer.insert_ignore_rows, frozen_insert_on_conflict()),
+        ):
+            if not rows:
+                continue
+            timeout = remaining()
+            if timeout <= 0:
+                return _alternative_failure_summary("timeout")
+            method(
+                "alternative_pick_selection_state",
+                rows,
+                on_conflict=conflict,
+                timeout_seconds=timeout,
+            )
+    except Exception:
+        return _alternative_failure_summary("failed")
+    return {
+        "skipped": False,
+        "rows": len(provisional_rows) + len(frozen_rows),
+        "provisional_rows": len(provisional_rows),
+        "frozen_rows": len(frozen_rows),
+        "artifact_source": artifact_source,
+    }
 
 
 def _write_ready_to_bet_candidates(
@@ -572,6 +898,8 @@ def _write_operational_pick_locks(
             "skipped": False,
             "rows": len(rows),
             "inserted_rows": inserted_count,
+            "lock_rows": rows,
+            "inserted_lock_rows": inserted if isinstance(inserted, list) else [],
             "dispatch": dispatch,
         }
     except Exception as error:
@@ -1038,6 +1366,21 @@ def run(
         artifact_payload=payload,
         artifact_source=artifact_source,
     )
+    source_payload_sha256 = canonical_payload_sha256(payload)
+    alternative_pick_selection = _write_alternative_pick_selection_state(
+        writer=writer,
+        slate_date=slate_date,
+        payload=payload,
+        snapshot_rows=snapshot_rows,
+        market_pick_evidence_rows=market_pick_evidence_rows,
+        observed_at=observed_at,
+        artifact_source=artifact_source,
+        source_payload_sha256=source_payload_sha256,
+        source_artifact_byte_sha256=artifact_sha,
+        operational_pick_locks=operational_pick_locks,
+        shadow_pipeline_timing=shadow_pipeline_timing,
+        market_line_build=market_line_build,
+    )
     return {
         "state_rows": state_rows,
         "notification_rows": coordinated_notification_rows,
@@ -1074,6 +1417,7 @@ def run(
         "operational_pick_locks": operational_pick_locks,
         "shadow_pipeline_timing": shadow_pipeline_timing,
         "market_line_build": market_line_build,
+        "alternative_pick_selection": alternative_pick_selection,
     }
 
 

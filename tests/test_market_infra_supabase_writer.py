@@ -116,6 +116,57 @@ def test_select_rows_retries_transient_server_errors():
     sleep.assert_called_once()
 
 
+def test_select_rows_accepts_a_single_attempt_budget_without_retrying():
+    writer = SupabaseMarketWriter("https://example.supabase.co", "secret-key")
+    response = Mock(status_code=500)
+    error = requests.HTTPError("500 Server Error")
+    error.response = response
+    response.raise_for_status.side_effect = error
+
+    with (
+        patch("market_infra.supabase_writer.requests.get", return_value=response) as get,
+        patch("market_infra.supabase_writer.time.sleep") as sleep,
+    ):
+        try:
+            writer.select_rows(
+                "alternative_pick_selection_state",
+                {"slate_date": "eq.2026-05-06"},
+                timeout_seconds=1.25,
+                attempts=1,
+            )
+        except requests.HTTPError:
+            pass
+        else:
+            raise AssertionError("single-attempt select should raise its first failure")
+
+    assert get.call_count == 1
+    assert get.call_args.kwargs["timeout"] == 1.25
+    sleep.assert_not_called()
+
+
+def test_write_methods_accept_caller_supplied_timeout():
+    writer = SupabaseMarketWriter("https://example.supabase.co", "secret-key")
+    response = Mock()
+    response.raise_for_status.return_value = None
+    response.json.return_value = []
+
+    with patch("market_infra.supabase_writer.requests.post", return_value=response) as post:
+        writer.upsert_rows(
+            "alternative_pick_selection_state",
+            [{"checkpoint": "provisional"}],
+            on_conflict="slate_date,game_identity,normalized_pitcher,side,bundle_id,checkpoint",
+            timeout_seconds=2.5,
+        )
+        writer.insert_ignore_rows(
+            "alternative_pick_selection_state",
+            [{"checkpoint": "frozen_pregame"}],
+            on_conflict="slate_date,game_identity,normalized_pitcher,side,bundle_id,checkpoint",
+            timeout_seconds=2.5,
+        )
+
+    assert [call.kwargs["timeout"] for call in post.call_args_list] == [2.5, 2.5]
+
+
 def test_count_rows_reads_content_range(monkeypatch):
     captured = {}
 

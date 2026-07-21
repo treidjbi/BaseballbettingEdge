@@ -34,8 +34,20 @@ class SupabaseMarketWriter:
         response.raise_for_status()
         return response.json()
 
-    def select_rows(self, table: str, params: dict[str, str]) -> list[dict]:
-        response = self._select_response_with_retries(table, params)
+    def select_rows(
+        self,
+        table: str,
+        params: dict[str, str],
+        *,
+        timeout_seconds: float = 20,
+        attempts: int = 3,
+    ) -> list[dict]:
+        response = self._select_response_with_retries(
+            table,
+            params,
+            timeout_seconds=timeout_seconds,
+            attempts=attempts,
+        )
         return response.json()
 
     def count_rows(self, table: str, params: dict[str, str] | None = None) -> int:
@@ -85,6 +97,7 @@ class SupabaseMarketWriter:
         *,
         attempts: int = 3,
         base_delay_seconds: float = 0.5,
+        timeout_seconds: float = 20,
     ) -> requests.Response:
         last_error: Exception | None = None
         for attempt in range(1, attempts + 1):
@@ -94,7 +107,7 @@ class SupabaseMarketWriter:
                     f"{self.supabase_url}/rest/v1/{table}",
                     headers=self._headers("return=representation"),
                     params=params,
-                    timeout=20,
+                    timeout=timeout_seconds,
                 )
                 response.raise_for_status()
                 return response
@@ -113,7 +126,14 @@ class SupabaseMarketWriter:
 
         raise RuntimeError(f"Supabase select_rows failed after {attempts} attempts") from last_error
 
-    def upsert_rows(self, table: str, rows: list[dict], on_conflict: str) -> list[dict]:
+    def upsert_rows(
+        self,
+        table: str,
+        rows: list[dict],
+        on_conflict: str,
+        *,
+        timeout_seconds: float = 20,
+    ) -> list[dict]:
         if not rows:
             return []
         response = requests.post(
@@ -121,7 +141,7 @@ class SupabaseMarketWriter:
             headers=self._headers("resolution=merge-duplicates,return=representation"),
             params={"on_conflict": on_conflict},
             json=rows,
-            timeout=20,
+            timeout=timeout_seconds,
         )
         _raise_for_status_with_context(
             response,
@@ -132,7 +152,14 @@ class SupabaseMarketWriter:
         )
         return response.json()
 
-    def insert_ignore_rows(self, table: str, rows: list[dict], on_conflict: str) -> list[dict]:
+    def insert_ignore_rows(
+        self,
+        table: str,
+        rows: list[dict],
+        on_conflict: str,
+        *,
+        timeout_seconds: float = 20,
+    ) -> list[dict]:
         if not rows:
             return []
         response = requests.post(
@@ -140,7 +167,7 @@ class SupabaseMarketWriter:
             headers=self._headers("resolution=ignore-duplicates,return=representation"),
             params={"on_conflict": on_conflict},
             json=rows,
-            timeout=20,
+            timeout=timeout_seconds,
         )
         response.raise_for_status()
         return response.json()

@@ -66,6 +66,255 @@ def _previous_fire_state(pitcher, *, game_time):
     }
 
 
+def test_alternative_pick_selection_mode_fails_closed_except_exact_record(monkeypatch):
+    for value in (None, "", "RECORDING", "shadow", " true "):
+        if value is None:
+            monkeypatch.delenv("ALTERNATIVE_PICK_SELECTION_MODE", raising=False)
+        else:
+            monkeypatch.setenv("ALTERNATIVE_PICK_SELECTION_MODE", value)
+        assert build_live_events_to_supabase._alternative_pick_selection_mode() == "off"
+
+    monkeypatch.setenv("ALTERNATIVE_PICK_SELECTION_MODE", " ReCoRd ")
+    assert build_live_events_to_supabase._alternative_pick_selection_mode() == "record"
+
+
+def test_alternative_sidecar_off_performs_no_state_reads_or_writes(monkeypatch):
+    monkeypatch.delenv("ALTERNATIVE_PICK_SELECTION_MODE", raising=False)
+    writer = Mock()
+
+    result = build_live_events_to_supabase._write_alternative_pick_selection_state(
+        writer=writer,
+        slate_date="2026-05-06",
+        payload={"date": "2026-05-06", "pitchers": []},
+        snapshot_rows=[],
+        market_pick_evidence_rows=[],
+        observed_at=build_live_events_to_supabase.datetime.fromisoformat("2026-05-06T18:00:00+00:00"),
+        artifact_source="https://example.netlify.app/.netlify/functions/get-artifact?type=today",
+        source_payload_sha256="a" * 64,
+        source_artifact_byte_sha256="b" * 64,
+        operational_pick_locks={"skipped": True, "reason": "disabled"},
+        market_line_build={"skipped": True, "reason": "fresh"},
+    )
+
+    assert result == {"skipped": True, "reason": "disabled", "rows": 0}
+    writer.select_rows.assert_not_called()
+    writer.upsert_rows.assert_not_called()
+    writer.insert_ignore_rows.assert_not_called()
+
+
+def test_alternative_sidecar_stops_after_first_read_failure(monkeypatch):
+    monkeypatch.setenv("ALTERNATIVE_PICK_SELECTION_MODE", "record")
+    writer = Mock()
+    writer.select_rows.side_effect = RuntimeError("database password=do-not-leak")
+    pitcher = _fire_pitcher()
+    pitcher["tracked_picks"] = [{
+        "pitcher": "Tarik Skubal",
+        "side": "over",
+        "display_verdict": "FIRE 1u",
+        "display_k_line": 6.5,
+        "display_odds": -110,
+        "display_adj_ev": 0.09,
+        "game_time": "2026-05-06T22:10:00Z",
+    }]
+
+    result = build_live_events_to_supabase._write_alternative_pick_selection_state(
+        writer=writer,
+        slate_date="2026-05-06",
+        payload={"date": "2026-05-06", "pitchers": [pitcher]},
+        snapshot_rows=[],
+        market_pick_evidence_rows=[],
+        observed_at=build_live_events_to_supabase.datetime.fromisoformat("2026-05-06T18:00:00+00:00"),
+        artifact_source="https://example.netlify.app/.netlify/functions/get-artifact?type=today",
+        source_payload_sha256="a" * 64,
+        source_artifact_byte_sha256="b" * 64,
+        operational_pick_locks={"skipped": True, "reason": "disabled"},
+        market_line_build={"skipped": True, "reason": "fresh"},
+    )
+
+    assert result["skipped"] is True
+    assert result["reason"] == "failed"
+    assert "do-not-leak" not in result["warning"]
+    assert writer.select_rows.call_count == 1
+    writer.upsert_rows.assert_not_called()
+    writer.insert_ignore_rows.assert_not_called()
+
+
+def test_alternative_sidecar_contains_evaluation_exception(monkeypatch):
+    monkeypatch.setenv("ALTERNATIVE_PICK_SELECTION_MODE", "record")
+    writer = Mock()
+    writer.select_rows.side_effect = [[], []]
+    pitcher = _fire_pitcher()
+    pitcher["tracked_picks"] = [{
+        "pitcher": "Tarik Skubal",
+        "side": "over",
+        "display_verdict": "FIRE 1u",
+        "display_k_line": 6.5,
+        "display_odds": -110,
+        "display_adj_ev": 0.09,
+        "game_time": "2026-05-06T22:10:00Z",
+    }]
+    with patch.object(
+        build_live_events_to_supabase,
+        "evaluate_alternative_pick",
+        side_effect=RuntimeError("evaluation secret=never-return"),
+    ):
+        result = build_live_events_to_supabase._write_alternative_pick_selection_state(
+            writer=writer,
+            slate_date="2026-05-06",
+            payload={"date": "2026-05-06", "pitchers": [pitcher]},
+            snapshot_rows=[],
+            market_pick_evidence_rows=[],
+            observed_at=build_live_events_to_supabase.datetime.fromisoformat("2026-05-06T18:00:00+00:00"),
+            artifact_source="https://example.netlify.app/.netlify/functions/get-artifact?type=today",
+            source_payload_sha256="a" * 64,
+            source_artifact_byte_sha256="b" * 64,
+            operational_pick_locks={"skipped": True, "reason": "disabled"},
+            market_line_build={"skipped": True, "reason": "fresh"},
+        )
+
+    assert result["reason"] == "failed"
+    assert "never-return" not in result["warning"]
+    writer.upsert_rows.assert_not_called()
+    writer.insert_ignore_rows.assert_not_called()
+
+
+def test_alternative_sidecar_never_writes_duplicate_provisional_candidates(monkeypatch):
+    monkeypatch.setenv("ALTERNATIVE_PICK_SELECTION_MODE", "record")
+    writer = Mock()
+    writer.select_rows.side_effect = [[], []]
+    pitcher = _fire_pitcher()
+    pick = {
+        "pitcher": "Tarik Skubal",
+        "side": "over",
+        "display_verdict": "FIRE 1u",
+        "display_k_line": 6.5,
+        "display_odds": -110,
+        "display_adj_ev": 0.09,
+        "game_time": "2026-05-06T22:10:00Z",
+    }
+    pitcher["tracked_picks"] = [pick, dict(pick)]
+    payload = {"date": "2026-05-06", "pitchers": [pitcher]}
+
+    result = build_live_events_to_supabase._write_alternative_pick_selection_state(
+        writer=writer,
+        slate_date="2026-05-06",
+        payload=payload,
+        snapshot_rows=[],
+        market_pick_evidence_rows=[],
+        observed_at=build_live_events_to_supabase.datetime.fromisoformat("2026-05-06T18:00:00+00:00"),
+        artifact_source="https://example.netlify.app/.netlify/functions/get-artifact?type=today",
+        source_payload_sha256=build_live_events_to_supabase.canonical_payload_sha256(payload),
+        source_artifact_byte_sha256="b" * 64,
+        operational_pick_locks={"skipped": True, "reason": "disabled"},
+        market_line_build={"skipped": True, "reason": "fresh"},
+    )
+
+    assert result["provisional_rows"] == 1
+    assert writer.upsert_rows.call_args.args[1] and len(writer.upsert_rows.call_args.args[1]) == 1
+
+
+def test_alternative_sidecar_inserts_current_cycle_freeze_without_provisional_update(monkeypatch):
+    monkeypatch.setenv("ALTERNATIVE_PICK_SELECTION_MODE", "record")
+    observed_at = build_live_events_to_supabase.datetime.fromisoformat("2026-05-06T21:45:00+00:00")
+    pitcher = _fire_pitcher()
+    pitcher["tracked_picks"] = [{
+        "pitcher": "Tarik Skubal",
+        "side": "over",
+        "display_verdict": "FIRE 1u",
+        "display_k_line": 6.5,
+        "display_odds": -110,
+        "display_adj_ev": 0.09,
+        "game_time": "2026-05-06T22:10:00Z",
+    }]
+    payload = {"date": "2026-05-06", "pitchers": [pitcher]}
+    lock = {
+        "dedupe_key": "2026-05-06:tarik skubal:over",
+        "slate_date": "2026-05-06",
+        "normalized_pitcher": "tarik skubal",
+        "side": "over",
+        "locked_k_line": 6.5,
+        "game_time": "2026-05-06T22:10:00+00:00",
+        "status_at_capture": "due_now",
+        "observed_at": "2026-05-06T21:45:00Z",
+        "locked_at": "2026-05-06T21:45:00Z",
+        "should_lock_at": "2026-05-06T21:40:00+00:00",
+        "minutes_until_start": 25,
+        "source_artifact_path": "https://example.netlify.app/.netlify/functions/get-artifact?type=today",
+        "source_artifact_sha256": "b" * 64,
+        "metadata": {"team": "DET", "opp_team": "BOS"},
+    }
+    writer = Mock()
+    writer.select_rows.side_effect = [[], [lock]]
+
+    result = build_live_events_to_supabase._write_alternative_pick_selection_state(
+        writer=writer,
+        slate_date="2026-05-06",
+        payload=payload,
+        snapshot_rows=[],
+        market_pick_evidence_rows=[],
+        observed_at=observed_at,
+        artifact_source=lock["source_artifact_path"],
+        source_payload_sha256=build_live_events_to_supabase.canonical_payload_sha256(payload),
+        source_artifact_byte_sha256="b" * 64,
+        operational_pick_locks={"skipped": False, "lock_rows": [lock], "inserted_lock_rows": []},
+        market_line_build={"skipped": True, "reason": "fresh"},
+    )
+
+    assert result["provisional_rows"] == 0
+    assert result["frozen_rows"] == 1
+    writer.upsert_rows.assert_not_called()
+    writer.insert_ignore_rows.assert_called_once_with(
+        "alternative_pick_selection_state",
+        ANY,
+        on_conflict="slate_date,game_identity,normalized_pitcher,side,bundle_id,checkpoint",
+        timeout_seconds=ANY,
+    )
+
+
+def test_worker_calls_alternative_sidecar_only_after_lock_timing_and_market_build(tmp_path, monkeypatch):
+    calls = []
+    today = _write_artifact(tmp_path, [_fire_pitcher()])
+    writer = _writer_with_selects({
+        "live_pick_state": [],
+        "market_snapshots": [],
+        "market_feed_heartbeats": [],
+        "game_reminder_state": [],
+    })
+
+    def locks(**kwargs):
+        calls.append("locks")
+        return {"skipped": True, "reason": "disabled"}
+
+    def timing(**kwargs):
+        calls.append("timing")
+        return {"skipped": True, "reason": "disabled"}
+
+    def market(**kwargs):
+        calls.append("market")
+        return {"skipped": True, "reason": "fresh"}
+
+    def alternative(**kwargs):
+        calls.append("alternative")
+        return {"skipped": True, "reason": "disabled", "rows": 0}
+
+    with (
+        patch.object(build_live_events_to_supabase, "SupabaseMarketWriter", return_value=writer),
+        patch.object(build_live_events_to_supabase, "_write_operational_pick_locks", side_effect=locks),
+        patch.object(build_live_events_to_supabase, "_write_shadow_pipeline_timing", side_effect=timing),
+        patch.object(build_live_events_to_supabase, "_build_shadow_market_state", side_effect=market),
+        patch.object(build_live_events_to_supabase, "_write_alternative_pick_selection_state", side_effect=alternative),
+    ):
+        result = build_live_events_to_supabase.run(
+            slate_date="2026-05-06",
+            artifact_path=today,
+            supabase_url="https://example.supabase.co",
+            service_role_key="secret",
+        )
+
+    assert calls == ["locks", "timing", "market", "alternative"]
+    assert result["alternative_pick_selection"] == {"skipped": True, "reason": "disabled", "rows": 0}
+
+
 def test_worker_writes_state_and_notification_events(tmp_path):
     today = _write_artifact(tmp_path, [_fire_pitcher()])
 
