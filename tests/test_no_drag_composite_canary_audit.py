@@ -156,3 +156,197 @@ def test_market_anchor_labels_accept_object_fallback_and_json_object():
 
 def test_rule_fingerprint_is_pinned():
     assert audit.RULE_FINGERPRINT == "22b03ecea02aa83e9174c24f5f05878823cb67766fe1c75102d34bfe5c3b4aa4"
+
+
+def graded_row(date, pitcher, result="win", pnl=1.0, **overrides):
+    return candidate_row(
+        slate_date=date,
+        normalized_pitcher=pitcher,
+        result=result,
+        pick_history_pnl=pnl,
+        **overrides,
+    )
+
+
+def lock_history_to(monkeypatch, rows):
+    score = audit.score(rows)
+    monkeypatch.setattr(audit, "LOCKED_HISTORICAL", {
+        "rows": score["rows"],
+        "wins": score["wins"],
+        "losses": score["losses"],
+        "pnl": score["pnl"],
+        "roi": score["roi"],
+    })
+
+
+def test_initial_counter_is_locked_52_plus_zero(monkeypatch):
+    historical = [graded_row("2026-07-20", "history one")]
+    lock_history_to(monkeypatch, historical)
+    summary = audit.build_audit(historical, generated_at="2026-07-21T16:00:00Z")
+    assert summary["status"] == "collecting"
+    assert summary["counter"] == {
+        "locked_current_provider_rows": 52,
+        "prospective_qualified_rows": 0,
+        "rows": 52,
+        "floor": 75,
+        "remaining": 23,
+    }
+
+
+def test_prospective_rows_advance_counter_without_mutating_locked_history(monkeypatch):
+    historical = [graded_row("2026-07-20", "history one")]
+    prospective = [
+        graded_row("2026-07-21", "future one"),
+        graded_row("2026-07-22", "future two", result="loss", pnl=-1.0),
+    ]
+    lock_history_to(monkeypatch, historical)
+    summary = audit.build_audit(historical + prospective)
+    assert summary["locked_baselines"]["current_provider"]["rows"] == 52
+    assert summary["windows"]["prospective"]["rows"] == 2
+    assert summary["counter"]["rows"] == 54
+    assert summary["counter"]["remaining"] == 21
+
+
+def test_reaching_floor_only_becomes_ready_for_review(monkeypatch):
+    historical = [graded_row("2026-07-20", "history one")]
+    prospective = [
+        graded_row("2026-07-21", f"future {index}")
+        for index in range(23)
+    ]
+    lock_history_to(monkeypatch, historical)
+    summary = audit.build_audit(historical + prospective)
+    assert summary["status"] == "ready_for_review"
+    assert summary["counter"]["rows"] == 75
+    assert summary["counter"]["remaining"] == 0
+    assert "promot" not in summary["status"]
+
+
+def test_baseline_drift_blocks_counter_advancement():
+    summary = audit.build_audit([graded_row("2026-07-20", "wrong baseline")])
+    assert summary["status"] == "blocked_baseline_drift"
+    assert summary["counter"]["rows"] == 52
+    assert summary["counter"]["prospective_qualified_rows"] == 0
+    assert summary["reconciliation"]["matches"] is False
+
+
+def test_duplicate_key_blocks_counter_advancement(monkeypatch):
+    historical = [graded_row("2026-07-20", "history one")]
+    duplicate = graded_row("2026-07-21", "same pitcher")
+    lock_history_to(monkeypatch, historical)
+    summary = audit.build_audit(historical + [duplicate, dict(duplicate)])
+    assert summary["status"] == "blocked_duplicate_keys"
+    assert summary["integrity"]["duplicate_keys"] == [
+        "2026-07-21|same pitcher|over"
+    ]
+    assert summary["counter"]["rows"] == 52
+
+
+@pytest.mark.parametrize(
+    "missing_update",
+    [
+        {"display_verdict": None, "locked_verdict": None, "actionable_verdict": None, "current_verdict": None, "verdict": None},
+        {"edge": None},
+        {"locked_adj_ev": None, "adj_ev": None, "ev": None},
+        {"model_market_relationship": None},
+        {"line_bucket": None},
+        {"price_sign": None},
+        {"price_bucket": None},
+        {"bet_timing_window": None},
+        {"leash_risk_bucket": None, "opportunity_bucket": None},
+        {"pitcher_archetype_bucket": None},
+        {"model_no_vig_gap": None},
+        {"quality_gate_level": None},
+        {"batter_handedness_mode": None},
+        {"pick_history_pnl": None, "pnl": None, "theoretical_pnl": None},
+    ],
+)
+def test_prospective_critical_input_gap_blocks_run(monkeypatch, missing_update):
+    historical = [graded_row("2026-07-20", "history one")]
+    lock_history_to(monkeypatch, historical)
+    row = graded_row("2026-07-21", "future gap")
+    row.update(missing_update)
+    summary = audit.build_audit(historical + [row])
+    assert summary["status"] == "blocked_input_gap"
+    assert summary["integrity"]["input_gap_rows"] == 1
+    assert summary["counter"]["rows"] == 52
+
+
+def test_absent_market_anchor_metadata_is_false_not_input_gap(monkeypatch):
+    historical = [graded_row("2026-07-20", "history one")]
+    lock_history_to(monkeypatch, historical)
+    row = graded_row("2026-07-21", "future complete", market_anchor_selector=None)
+    summary = audit.build_audit(historical + [row])
+    assert summary["status"] == "collecting"
+    assert summary["integrity"]["input_gap_rows"] == 0
+
+
+def test_mandatory_slices_include_scores_and_missing_coverage(monkeypatch):
+    historical = [graded_row("2026-07-20", "history one")]
+    prospective = graded_row(
+        "2026-07-21",
+        "future one",
+        display_verdict="LEAN",
+        locked_adj_ev=0.03,
+        model_market_relationship="model_other",
+        market_agreement_label=None,
+        provider=None,
+        live_display_provider=None,
+        price_clv_cents=5,
+    )
+    lock_history_to(monkeypatch, historical)
+    summary = audit.build_audit(historical + [prospective])
+    prospective_slices = summary["slices"]["prospective"]
+    assert prospective_slices["verdict_family"]["LEAN"]["rows"] == 1
+    assert prospective_slices["side"]["over"]["rows"] == 1
+    assert prospective_slices["price_bucket"]["-100 to -129"]["rows"] == 1
+    assert prospective_slices["path_b"]["path_b_real_or_mixed"]["rows"] == 1
+    assert prospective_slices["market_agreement"]["missing"]["rows"] == 1
+    assert prospective_slices["provider_attribution"]["missing"]["rows"] == 1
+    assert summary["integrity"]["slice_missing_coverage"]["prospective"]["market_agreement"] == 1
+    assert summary["integrity"]["slice_missing_coverage"]["prospective"]["provider_attribution"] == 1
+
+
+def test_markdown_leads_with_decision_fields_and_live_boundary(monkeypatch):
+    historical = [graded_row("2026-07-20", "history one")]
+    lock_history_to(monkeypatch, historical)
+    report = audit.render_markdown(audit.build_audit(historical))
+    assert report.startswith("# No-Drag Composite Prospective Canary Audit")
+    assert "## Executive Read" in report
+    assert audit.SELECTOR_ID in report
+    assert audit.RULE_FINGERPRINT in report
+    assert "`collecting`" in report
+    assert "52" in report and "23" in report
+    assert "## Baseline Reconciliation" in report
+    assert "## Mandatory Slice Risks" in report
+    assert "## Live Boundary" in report
+    assert "requires a separate Tyler-approved plan" in report
+
+
+def test_write_outputs_emits_matching_markdown_and_json(tmp_path, monkeypatch):
+    historical = [graded_row("2026-07-20", "history one")]
+    lock_history_to(monkeypatch, historical)
+    summary = audit.build_audit(historical, generated_at="2026-07-21T16:00:00Z")
+    md_path = tmp_path / "audit.md"
+    json_path = tmp_path / "audit.json"
+    audit.write_outputs(summary, md_path, json_path)
+    payload = json.loads(json_path.read_text(encoding="utf-8"))
+    assert payload["selector"]["id"] == audit.SELECTOR_ID
+    assert payload["selector"]["fingerprint"] == audit.RULE_FINGERPRINT
+    assert payload["status"] == "collecting"
+    assert md_path.read_text(encoding="utf-8").endswith("\n")
+    assert json_path.read_text(encoding="utf-8").endswith("\n")
+
+
+def test_main_runs_from_repo_root_and_writes_both_outputs(tmp_path, monkeypatch):
+    input_path = tmp_path / "gate_c.jsonl"
+    input_path.write_text(json.dumps(graded_row("2026-07-20", "history one")) + "\n", encoding="utf-8")
+    lock_history_to(monkeypatch, [graded_row("2026-07-20", "history one")])
+    md_path = tmp_path / "result.md"
+    json_path = tmp_path / "result.json"
+    assert audit.main([
+        "--input", str(input_path),
+        "--output-md", str(md_path),
+        "--output-json", str(json_path),
+    ]) == 0
+    assert md_path.exists()
+    assert json_path.exists()

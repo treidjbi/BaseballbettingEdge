@@ -46,6 +46,50 @@ VERDICT_FIELDS = (
     "current_verdict",
     "verdict",
 )
+CRITICAL_INPUT_GROUPS = (
+    ("slate_date",),
+    ("normalized_pitcher", "pitcher", "player_name"),
+    ("side",),
+    ("result",),
+    ("pick_history_pnl", "pnl", "theoretical_pnl"),
+    VERDICT_FIELDS,
+    ("edge",),
+    ("locked_adj_ev", "adj_ev", "ev"),
+    ("model_market_relationship",),
+    ("line_bucket",),
+    ("price_sign",),
+    ("price_bucket",),
+    ("bet_timing_window",),
+    ("leash_risk_bucket", "opportunity_bucket"),
+    ("pitcher_archetype_bucket",),
+    ("model_no_vig_gap",),
+    ("quality_gate_level",),
+    ("batter_handedness_mode",),
+)
+NUMERIC_CRITICAL_GROUPS = {
+    ("pick_history_pnl", "pnl", "theoretical_pnl"),
+    ("edge",),
+    ("locked_adj_ev", "adj_ev", "ev"),
+    ("model_no_vig_gap",),
+}
+SLICE_DIMENSIONS = (
+    "verdict_family",
+    "side",
+    "k_line",
+    "price_sign",
+    "price_bucket",
+    "quality",
+    "path_b",
+    "model_market",
+    "workload_leash",
+    "market_anchor",
+    "market_agreement",
+    "preclose_clv_proxy",
+    "final_clv",
+    "provider_era",
+    "provider_attribution",
+    "recent_14_slates",
+)
 
 RULE_SPEC = {
     "selector_id": SELECTOR_ID,
@@ -183,6 +227,37 @@ def market_anchor_labels(row: dict[str, Any]) -> set[str]:
     }
 
 
+def _value_present(value: Any) -> bool:
+    if value is None:
+        return False
+    if isinstance(value, str):
+        return bool(value.strip())
+    return True
+
+
+def missing_critical_inputs(row: dict[str, Any]) -> tuple[str, ...]:
+    if str(row.get("slate_date") or row.get("date") or "")[:10] < PROSPECTIVE_START:
+        return ()
+    missing: list[str] = []
+    for group in CRITICAL_INPUT_GROUPS:
+        if group in NUMERIC_CRITICAL_GROUPS:
+            present = any(to_float(row.get(field)) is not None for field in group)
+        else:
+            present = any(_value_present(row.get(field)) for field in group)
+        if not present:
+            missing.append("|".join(group))
+    raw_selector = row.get("market_anchor_selector")
+    selector = _json_object(raw_selector)
+    if (
+        raw_selector is not None
+        and selector
+        and "labels" not in selector
+        and not _value_present(row.get("market_anchor_selector_labels"))
+    ):
+        missing.append("market_anchor_selector.labels|market_anchor_selector_labels")
+    return tuple(missing)
+
+
 def evaluate_row(row: dict[str, Any]) -> Evaluation:
     selected_verdict = verdict(row)
     is_fire = selected_verdict.startswith("FIRE")
@@ -251,5 +326,464 @@ def evaluate_row(row: dict[str, Any]) -> Evaluation:
         qualifies=bool(families) and not drag_labels,
         families=tuple(families),
         drag_labels=tuple(drag_labels),
-        missing_inputs=(),
+        missing_inputs=missing_critical_inputs(row),
     )
+
+
+def pick_key(row: dict[str, Any]) -> str:
+    date = str(row.get("slate_date") or row.get("date") or "")[:10]
+    pitcher_source = row.get("normalized_pitcher") or row.get("pitcher") or row.get("player_name") or ""
+    pitcher = normalize(pitcher_source).strip()
+    side = str(row.get("side") or "").strip().lower()
+    return "|".join((date, pitcher, side))
+
+
+def row_pnl(row: dict[str, Any]) -> float | None:
+    for field in ("pick_history_pnl", "pnl", "theoretical_pnl"):
+        value = to_float(row.get(field))
+        if value is not None:
+            return value
+    return None
+
+
+def score(rows: list[dict[str, Any]]) -> dict[str, Any]:
+    wins = sum(row.get("result") == "win" for row in rows)
+    losses = sum(row.get("result") == "loss" for row in rows)
+    pnl = round(sum(row_pnl(row) or 0.0 for row in rows), 3)
+    count = wins + losses
+    return {
+        "rows": count,
+        "wins": wins,
+        "losses": losses,
+        "pnl": pnl,
+        "roi": round(pnl / count, 4) if count else 0.0,
+    }
+
+
+def _is_tracked(row: dict[str, Any]) -> bool:
+    value = row.get("is_tracked_pick")
+    if isinstance(value, str):
+        return value.strip().lower() in {"1", "true", "yes"}
+    return bool(value)
+
+
+def _slate_date(row: dict[str, Any]) -> str:
+    return str(row.get("slate_date") or row.get("date") or "")[:10]
+
+
+def _text_or_missing(value: Any) -> str:
+    text = str(value or "").strip()
+    return text or "missing"
+
+
+def _slice_bucket(
+    dimension: str,
+    row: dict[str, Any],
+    recent_dates: set[str],
+) -> str:
+    if dimension == "verdict_family":
+        selected = verdict(row)
+        if selected.startswith("FIRE"):
+            return "FIRE"
+        if selected == "LEAN":
+            return "LEAN"
+        return "other"
+    if dimension == "side":
+        side = str(row.get("side") or "").strip().lower()
+        return side if side in {"over", "under"} else "missing"
+    if dimension == "k_line":
+        return _text_or_missing(row.get("line_bucket"))
+    if dimension == "price_sign":
+        return _text_or_missing(row.get("price_sign"))
+    if dimension == "price_bucket":
+        return _text_or_missing(row.get("price_bucket"))
+    if dimension == "quality":
+        return _text_or_missing(row.get("quality_gate_level"))
+    if dimension == "path_b":
+        return strong_base.path_b_coverage_bucket(row)
+    if dimension == "model_market":
+        return _text_or_missing(row.get("model_market_relationship"))
+    if dimension == "workload_leash":
+        return _text_or_missing(row.get("leash_risk_bucket") or row.get("opportunity_bucket"))
+    if dimension == "market_anchor":
+        labels = market_anchor_labels(row)
+        if "market_anchor_strict" in labels:
+            return "market_anchor_strict"
+        if "market_anchor_core" in labels:
+            return "market_anchor_core"
+        return "none"
+    if dimension == "market_agreement":
+        return _text_or_missing(row.get("market_agreement_label"))
+    if dimension == "preclose_clv_proxy":
+        return preclose_proxy.preclose_clv_proxy_label(row)
+    if dimension == "final_clv":
+        return strong_base.clv_bucket(row)
+    if dimension == "provider_era":
+        return strong_base.provider_era(row)
+    if dimension == "provider_attribution":
+        return _text_or_missing(row.get("provider") or row.get("live_display_provider"))
+    if dimension == "recent_14_slates":
+        return "included" if _slate_date(row) in recent_dates else "outside"
+    raise ValueError(f"Unsupported slice dimension: {dimension}")
+
+
+def _build_slices(
+    rows: list[dict[str, Any]],
+    recent_dates: set[str],
+) -> dict[str, dict[str, dict[str, Any]]]:
+    slices: dict[str, dict[str, dict[str, Any]]] = {}
+    for dimension in SLICE_DIMENSIONS:
+        buckets: dict[str, list[dict[str, Any]]] = defaultdict(list)
+        for row in rows:
+            buckets[_slice_bucket(dimension, row, recent_dates)].append(row)
+        slices[dimension] = {
+            bucket: score(bucket_rows)
+            for bucket, bucket_rows in sorted(buckets.items())
+        }
+    return slices
+
+
+def _missing_slice_coverage(
+    slices: dict[str, dict[str, dict[str, Any]]],
+) -> dict[str, int]:
+    return {
+        dimension: buckets.get("missing", {}).get("rows", 0)
+        for dimension, buckets in slices.items()
+    }
+
+
+def _mandatory_slice_risks(
+    slices: dict[str, dict[str, dict[str, dict[str, Any]]]],
+    missing_coverage: dict[str, dict[str, int]],
+) -> list[dict[str, Any]]:
+    negative: list[dict[str, Any]] = []
+    for window, dimensions in slices.items():
+        for dimension, buckets in dimensions.items():
+            for bucket, bucket_score in buckets.items():
+                if bucket_score["rows"] >= 10 and bucket_score["pnl"] < 0:
+                    negative.append({
+                        "type": "negative_bucket",
+                        "window": window,
+                        "dimension": dimension,
+                        "bucket": bucket,
+                        **bucket_score,
+                    })
+    negative.sort(key=lambda risk: (risk["pnl"], -risk["rows"]))
+
+    missing = [
+        {
+            "type": "missing_coverage",
+            "window": window,
+            "dimension": dimension,
+            "rows": count,
+        }
+        for window, dimensions in missing_coverage.items()
+        for dimension, count in dimensions.items()
+        if count
+    ]
+    missing.sort(key=lambda risk: (risk["window"], risk["dimension"]))
+    return negative + missing
+
+
+def build_audit(
+    rows: list[dict[str, Any]],
+    generated_at: str | None = None,
+) -> dict[str, Any]:
+    tracked_rows = [
+        row
+        for row in rows
+        if _is_tracked(row) and row.get("result") in WIN_LOSS_RESULTS
+    ]
+    evaluated = [(row, evaluate_row(row)) for row in tracked_rows]
+    selected_rows = [row for row, evaluation in evaluated if evaluation.qualifies]
+    historical_rows = [
+        row
+        for row in selected_rows
+        if CLEAN_WINDOW_START <= _slate_date(row) <= HISTORICAL_END
+    ]
+    prospective_rows = [
+        row for row in selected_rows if _slate_date(row) >= PROSPECTIVE_START
+    ]
+    combined_rows = historical_rows + prospective_rows
+    current_provider_rows = [
+        row for row in combined_rows if _slate_date(row) >= CURRENT_PROVIDER_START
+    ]
+    recent_dates = sorted({_slate_date(row) for row in combined_rows if _slate_date(row)})[-14:]
+    recent_rows = [row for row in combined_rows if _slate_date(row) in recent_dates]
+
+    integrity_rows = [
+        row for row in tracked_rows if _slate_date(row) >= CLEAN_WINDOW_START
+    ]
+    key_counts = Counter(pick_key(row) for row in integrity_rows)
+    duplicate_keys = sorted(key for key, count in key_counts.items() if count > 1)
+    input_gap_evaluations = [
+        (row, evaluation)
+        for row, evaluation in evaluated
+        if _slate_date(row) >= PROSPECTIVE_START and evaluation.missing_inputs
+    ]
+
+    historical_score = score(historical_rows)
+    prospective_score = score(prospective_rows)
+    reconciliation_checks = {
+        "rows": historical_score["rows"] == LOCKED_HISTORICAL["rows"],
+        "wins": historical_score["wins"] == LOCKED_HISTORICAL["wins"],
+        "losses": historical_score["losses"] == LOCKED_HISTORICAL["losses"],
+        "pnl": abs(historical_score["pnl"] - LOCKED_HISTORICAL["pnl"])
+        <= BASELINE_PNL_TOLERANCE,
+    }
+    reconciliation_matches = all(reconciliation_checks.values())
+    input_gap_rows = len(input_gap_evaluations)
+
+    if duplicate_keys:
+        status = "blocked_duplicate_keys"
+    elif not reconciliation_matches:
+        status = "blocked_baseline_drift"
+    elif input_gap_rows:
+        status = "blocked_input_gap"
+    elif LOCKED_CURRENT_PROVIDER["rows"] + prospective_score["rows"] >= REVIEW_FLOOR:
+        status = "ready_for_review"
+    else:
+        status = "collecting"
+
+    qualified_rows = 0 if status.startswith("blocked_") else prospective_score["rows"]
+    counter_rows = LOCKED_CURRENT_PROVIDER["rows"] + qualified_rows
+
+    recent_date_set = set(recent_dates)
+    slices = {
+        "historical_rebuild": _build_slices(historical_rows, recent_date_set),
+        "prospective": _build_slices(prospective_rows, recent_date_set),
+        "combined": _build_slices(combined_rows, recent_date_set),
+    }
+    slice_missing_coverage = {
+        window: _missing_slice_coverage(window_slices)
+        for window, window_slices in slices.items()
+    }
+    if status.startswith("blocked_"):
+        callout = "integrity_block"
+    elif prospective_score["rows"] == 0:
+        callout = "no_prospective_rows"
+    elif prospective_score["rows"] < 10:
+        callout = "small_sample"
+    elif prospective_score["pnl"] > 0 and prospective_score["roi"] >= 0.10:
+        callout = "positive_breakout_watch"
+    elif prospective_score["pnl"] < 0:
+        callout = "deterioration_watch"
+    else:
+        callout = "neutral_soak"
+    mandatory_slice_risks = _mandatory_slice_risks(slices, slice_missing_coverage)
+
+    return {
+        "generated_at": generated_at or datetime.now(UTC).isoformat(),
+        "selector": {
+            "id": SELECTOR_ID,
+            "version": SELECTOR_VERSION,
+            "fingerprint": RULE_FINGERPRINT,
+            "formula": RULE_SPEC["formula"],
+        },
+        "status": status,
+        "integrity": {
+            "duplicate_keys": duplicate_keys,
+            "input_gap_rows": input_gap_rows,
+            "input_gap_keys": [pick_key(row) for row, _ in input_gap_evaluations],
+            "input_gaps": {
+                pick_key(row): list(evaluation.missing_inputs)
+                for row, evaluation in input_gap_evaluations
+            },
+            "slice_missing_coverage": slice_missing_coverage,
+        },
+        "locked_baselines": {
+            "historical": dict(LOCKED_HISTORICAL),
+            "current_provider": dict(LOCKED_CURRENT_PROVIDER),
+            "recent_reference": dict(LOCKED_RECENT_REFERENCE),
+        },
+        "reconciliation": {
+            "matches": reconciliation_matches,
+            "checks": reconciliation_checks,
+            "observed": historical_score,
+            "locked": dict(LOCKED_HISTORICAL),
+            "pnl_tolerance": BASELINE_PNL_TOLERANCE,
+        },
+        "windows": {
+            "historical_rebuild": historical_score,
+            "prospective": prospective_score,
+            "combined": score(combined_rows),
+            "current_provider": score(current_provider_rows),
+            "recent_14_slates": {
+                **score(recent_rows),
+                "slate_dates": recent_dates,
+            },
+        },
+        "counter": {
+            "locked_current_provider_rows": LOCKED_CURRENT_PROVIDER["rows"],
+            "prospective_qualified_rows": qualified_rows,
+            "rows": counter_rows,
+            "floor": REVIEW_FLOOR,
+            "remaining": max(REVIEW_FLOOR - counter_rows, 0),
+        },
+        "callouts": {
+            "breakout_or_deterioration": callout,
+            "mandatory_slice_risks": mandatory_slice_risks,
+        },
+        "slices": slices,
+        "live_boundary": (
+            "This audit cannot change live behavior; promotion requires a separate "
+            "Tyler-approved plan."
+        ),
+    }
+
+
+def load_jsonl(path: Path) -> list[dict[str, Any]]:
+    if not path.exists():
+        return []
+    rows: list[dict[str, Any]] = []
+    for line in path.read_text(encoding="utf-8").splitlines():
+        if not line.strip():
+            continue
+        parsed = json.loads(line)
+        if isinstance(parsed, dict):
+            rows.append(parsed)
+    return rows
+
+
+def _score_line(label: str, window: dict[str, Any]) -> str:
+    return (
+        f"- {label}: {window['rows']} rows, {window['wins']}-{window['losses']}, "
+        f"{window['pnl']:+.2f}u, {window['roi']:+.1%} ROI"
+    )
+
+
+def render_markdown(summary: dict[str, Any]) -> str:
+    selector = summary["selector"]
+    counter = summary["counter"]
+    reconciliation = summary["reconciliation"]
+    windows = summary["windows"]
+    callouts = summary["callouts"]
+    risks = callouts["mandatory_slice_risks"]
+    lines = [
+        "# No-Drag Composite Prospective Canary Audit",
+        "",
+        "## Executive Read",
+        "",
+        f"- Status: `{summary['status']}`",
+        f"- Selector: `{selector['id']}` (version {selector['version']})",
+        f"- Rule fingerprint: `{selector['fingerprint']}`",
+        f"- Generated at: `{summary['generated_at']}`",
+        "",
+        "## Counter",
+        "",
+        (
+            f"- Review counter: **{counter['rows']}/{counter['floor']}**; "
+            f"**{counter['remaining']}** rows remaining."
+        ),
+        f"- Locked current-provider rows: {counter['locked_current_provider_rows']}",
+        f"- Qualified prospective rows credited: {counter['prospective_qualified_rows']}",
+        "",
+        "## Baseline Reconciliation",
+        "",
+        f"- Reconciles: **{'yes' if reconciliation['matches'] else 'no'}**",
+        _score_line("Locked historical", reconciliation["locked"]),
+        _score_line("Observed historical rebuild", reconciliation["observed"]),
+    ]
+    if not reconciliation["matches"]:
+        lines.append(
+            "- The input corpus does not reconcile to the locked historical baseline; "
+            "the prospective counter is held fail-closed."
+        )
+    lines.extend([
+        "",
+        "## Prospective Evidence",
+        "",
+        _score_line("Observed prospective selector rows", windows["prospective"]),
+        (
+            f"- Input-gap rows: {summary['integrity']['input_gap_rows']}; "
+            f"duplicate keys: {len(summary['integrity']['duplicate_keys'])}."
+        ),
+        "",
+        "## Current Provider and Recent",
+        "",
+        _score_line("Observed current-provider window", windows["current_provider"]),
+        _score_line("Latest 14 selected slate dates", windows["recent_14_slates"]),
+        "",
+        "## Breakout or Deterioration",
+        "",
+        f"- Descriptive callout: `{callouts['breakout_or_deterioration']}`",
+        "- This callout is descriptive only and cannot alter status or counter eligibility.",
+        "",
+        "## Mandatory Slice Risks",
+        "",
+    ])
+    if risks:
+        for risk in risks:
+            if risk["type"] == "negative_bucket":
+                lines.append(
+                    f"- Negative bucket: `{risk['window']}` / `{risk['dimension']}` / "
+                    f"`{risk['bucket']}` — {risk['rows']} rows, {risk['pnl']:+.2f}u."
+                )
+            else:
+                lines.append(
+                    f"- Missing coverage: `{risk['window']}` / `{risk['dimension']}` — "
+                    f"{risk['rows']} rows."
+                )
+    else:
+        lines.append("- None at the current evidence volume.")
+
+    lines.extend(["", "## Slice Audit", ""])
+    for window, dimensions in summary["slices"].items():
+        lines.append(f"### {window}")
+        lines.append("")
+        for dimension, buckets in dimensions.items():
+            if not buckets:
+                lines.append(f"- `{dimension}`: no rows")
+                continue
+            bucket_text = "; ".join(
+                f"{bucket}={bucket_score['rows']} rows/{bucket_score['pnl']:+.2f}u"
+                for bucket, bucket_score in buckets.items()
+            )
+            lines.append(f"- `{dimension}`: {bucket_text}")
+        lines.append("")
+
+    lines.extend([
+        "## Live Boundary",
+        "",
+        f"{summary['live_boundary']}",
+        "",
+    ])
+    return "\n".join(lines)
+
+
+def write_outputs(
+    summary: dict[str, Any],
+    md_path: Path,
+    json_path: Path,
+) -> None:
+    md_path.parent.mkdir(parents=True, exist_ok=True)
+    json_path.parent.mkdir(parents=True, exist_ok=True)
+    md_path.write_text(render_markdown(summary), encoding="utf-8")
+    json_path.write_text(
+        json.dumps(summary, indent=2, sort_keys=True) + "\n",
+        encoding="utf-8",
+    )
+
+
+def main(argv: list[str] | None = None) -> int:
+    parser = argparse.ArgumentParser(
+        description="Audit the frozen no-drag composite on post-grading evidence."
+    )
+    parser.add_argument("--input", type=Path, default=DEFAULT_INPUT)
+    parser.add_argument("--output-md", type=Path, default=DEFAULT_OUTPUT_MD)
+    parser.add_argument("--output-json", type=Path, default=DEFAULT_OUTPUT_JSON)
+    args = parser.parse_args(argv)
+
+    summary = build_audit(load_jsonl(args.input))
+    write_outputs(summary, args.output_md, args.output_json)
+    print(
+        f"No-drag canary audit: status={summary['status']} "
+        f"counter={summary['counter']['rows']}/{summary['counter']['floor']}"
+    )
+    print(f"Markdown: {args.output_md}")
+    print(f"JSON: {args.output_json}")
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
