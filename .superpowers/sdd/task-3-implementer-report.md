@@ -37,6 +37,23 @@ TDD regressions reproduced and then closed these failure modes:
 - operational lock rows, arbitrary future fields, error text, and private
   artifact URLs could escape through the returned summary.
 
+The external re-review then exposed five additional regressions. Focused RED
+runs reproduced all five before implementation:
+
+```text
+mixed-row binder + duplicate provider summaries + SQL normalization
+3 failed
+
+pending freeze + old-lock mutation + frozen-first write/failure/timeout order
+6 failed
+```
+
+Specifically, unrelated alternate-line, old-event, and other-provider rows
+poisoned otherwise-valid exact evidence; duplicate exact provider summaries
+were last-row-wins; pending state remained mutable after its operational lock;
+provisional writes ran before irreplaceable frozen inserts; and Python/SQL book
+case normalization disagreed.
+
 ## Implemented contract
 
 - `ALTERNATIVE_PICK_SELECTION_MODE` remains fail-closed unless its trimmed,
@@ -49,20 +66,25 @@ TDD regressions reproduced and then closed these failure modes:
   resets only when its candidate identity changes.
 - Raw evidence must match candidate pitcher, side, model line, game/event or
   artifact snapshot binding, provider, current-candidate window, and real
-  metadata freshness. Every provider declared by the posture must have bound
-  raw observations.
+  metadata freshness. Unrelated ladder, event, and provider rows are ignored
+  and never count; malformed rows explicitly bound to the exact candidate fail
+  closed. Every provider declared by the posture must have bound raw
+  observations.
 - Market movement, book count, reversal, and volatility are derived from the
   exact bound raw rows. Broad provider summaries are used only as a freshness
   and reconciliation check; missing, duplicate, malformed, stale, conflicting,
-  or unbound summaries remain pending.
+  or unbound summaries remain pending. Exact provider summaries are grouped
+  before binding, so duplicate input order cannot change the result.
 - Runtime evaluation begins with the canonical side payload, overlays only the
   tracked display/lock contract, normalizes game time, preserves exact integer
   selected odds/book, and never pairs an alternate line with current-line
   opposite-side odds.
-- A frozen row requires a current-cycle operational lock matching exact slate,
-  game, teams, pitcher, side, line, odds, book, time, status, logical source,
-  and byte-level artifact hash. Python and the unapplied SQL trigger enforce
-  the same odds/book linkage.
+- Every exact current-cycle operational lock freezes the already-evaluated row,
+  including a pending selection and its complete evidence/reason state. An old
+  lock without a frozen row permits no later provisional mutation. A frozen row
+  still requires exact slate, game, teams, pitcher, side, line, odds, normalized
+  book, time, status, logical source, and byte-level artifact hash. Python and
+  the unapplied SQL trigger enforce the same case-insensitive book linkage.
 - Reads are current-slate, bundle/checkpoint or exact-lock-key scoped with
   explicit selected fields. The recorder uses one attempt and the positive
   remainder of a five-second monotonic budget for each request.
@@ -70,6 +92,9 @@ TDD regressions reproduced and then closed these failure modes:
   for that cycle and returns a bounded stable summary. Public lock/artifact
   summaries use strict allow-lists and expose no lock rows, raw errors, or
   private URLs.
+- Frozen insert-ignore batches run before provisional merge-upserts. A frozen
+  failure blocks provisional work; a later provisional failure or timeout does
+  not undo the already-written immutable freeze.
 
 ## Real-artifact dry run
 
@@ -84,13 +109,13 @@ activation gate, not a prospective frozen sample.
 
 ```text
 python -m pytest tests/test_market_infra_supabase_writer.py tests/test_live_layer_worker.py tests/test_notification_coordinator.py tests/test_operational_locks.py -q
-101 passed
+107 passed
 
 python -m pytest tests/test_alternative_pick_selector.py tests/test_no_drag_composite_canary_audit.py tests/test_gate_f_fire_reentry_lab.py tests/test_gate_f_preclose_clv_proxy_lab.py tests/test_build_pitcher_k_outcome_dataset.py -q
 132 passed
 
-python -m pytest tests/test_alternative_pick_selection_state.py tests/test_alternative_pick_selection_schema.py tests/test_operational_locks.py tests/test_operational_pick_locks_schema.py -q
-32 passed
+python -m pytest tests/test_alternative_pick_selection_state.py tests/test_alternative_pick_selection_schema.py tests/test_live_layer_worker.py tests/test_operational_locks.py tests/test_operational_pick_locks_schema.py -q
+114 passed
 
 python -m py_compile market_infra/alternative_pick_selection_state.py market_infra/alternative_pick_selector.py scripts/build_live_events_to_supabase.py
 exit 0
@@ -99,9 +124,10 @@ git diff --check
 exit 0
 ```
 
-The final bounded adversarial review concluded `CLEAN` with no remaining
-correctness blockers; its independent focused run passed 116 tests and
-confirmed that unbound checked-in TheRundown artifacts remain provisional-only.
+The original bounded review was superseded by the external five-finding pass.
+The post-fix bounded adversarial re-review concluded `CLEAN`: all five findings
+were closed, its relevant suite passed 106 tests, and `git diff --check` was
+clean.
 
 ## Closed gates
 

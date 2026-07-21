@@ -46,7 +46,7 @@ def test_schema_frozen_link_and_immutability_are_fail_closed_and_pregame_only():
         "lock_row.source_artifact_sha256 = new.lock_artifact_sha256",
         "lock_row.source_artifact_path = new.lock_source_artifact_path",
         "lock_row.locked_odds = new.official_odds",
-        "nullif(trim(lock_row.locked_book), '') is not distinct from nullif(trim(new.official_book), '')",
+        "lower(nullif(trim(lock_row.locked_book), '')) is not distinct from lower(nullif(trim(new.official_book), ''))",
         "lock_row.observed_at = new.locked_at", "new.observed_at = new.locked_at",
         "lock_row.metadata ->> 'team'", "lock_row.metadata ->> 'opp_team'",
         "new.frozen_at = new.locked_at", "new.observed_at = new.locked_at", "new.frozen_at >= new.game_time",

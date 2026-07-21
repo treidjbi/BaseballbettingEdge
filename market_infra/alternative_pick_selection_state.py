@@ -289,12 +289,12 @@ def bind_candidate_observations(
     }.get(_text(candidate.get("provider_posture")).lower(), set())
     if not snapshot_ids and any(not event_ids.get(provider) for provider in required_providers):
         reasons.append("evidence_event_unbound")
-    exact_evidence: dict[str, dict[str, Any]] = {}
+    exact_evidence_rows: dict[str, list[dict[str, Any]]] = {}
     for row in market_evidence_rows if isinstance(market_evidence_rows, list) else []:
         if not isinstance(row, dict):
             continue
         provider = _text(row.get("provider")).lower()
-        if provider not in SUPPORTED_SNAPSHOT_PROVIDERS:
+        if provider not in required_providers:
             continue
         if (
             _text(row.get("slate_date")) == _text(candidate.get("slate_date"))
@@ -304,45 +304,74 @@ def bind_candidate_observations(
             and _line(row.get("k_line")) == _line(candidate.get("model_k_line"))
             and _iso(row.get("game_time")) == _iso(candidate.get("game_time"))
         ):
-            exact_evidence[provider] = row
+            exact_evidence_rows.setdefault(provider, []).append(row)
+
+    for provider in sorted(required_providers):
+        provider_rows = exact_evidence_rows.get(provider, [])
+        if not provider_rows:
+            reasons.append("provider_evidence_missing")
+            continue
+        if len(provider_rows) != 1:
+            reasons.append("provider_evidence_duplicate")
+            continue
+        evidence = provider_rows[0]
+        metadata = evidence.get("metadata") if isinstance(evidence.get("metadata"), dict) else {}
+        if _text(metadata.get("freshness_status")).lower() != "fresh":
+            reasons.append("evidence_stale")
+            continue
 
     bound_rows: list[dict[str, Any]] = []
-    for snapshot in snapshot_rows if isinstance(snapshot_rows, list) else []:
+    snapshots = snapshot_rows if isinstance(snapshot_rows, list) else []
+    for snapshot in snapshots if not reasons else []:
         if not isinstance(snapshot, dict):
-            reasons.append("evidence_malformed")
             continue
+        snapshot_id = _text(snapshot.get("id"))
+        provider = _text(snapshot.get("provider")).lower()
+        provider_event_id = _text(snapshot.get("provider_event_id"))
         normalized = normalize(_text(snapshot.get("normalized_player_name") or snapshot.get("player_name")))
         side = _text(snapshot.get("side")).lower()
-        if normalized != candidate.get("normalized_pitcher") or side != candidate.get("side"):
+        line = _line(snapshot.get("line"))
+        explicit_snapshot_match = bool(snapshot_id and snapshot_id in snapshot_ids)
+        provider_artifact_events = event_ids.get(provider, set())
+        provider_event_match = bool(
+            provider_event_id and provider_event_id in provider_artifact_events
+        )
+        semantic_match = (
+            provider in required_providers
+            and normalized == candidate.get("normalized_pitcher")
+            and side == candidate.get("side")
+            and line == _line(candidate.get("model_k_line"))
+        )
+        missing_binding_identity = semantic_match and not snapshot_id and not provider_event_id
+        if not (
+            explicit_snapshot_match
+            or (semantic_match and (provider_event_match or missing_binding_identity))
+        ):
             continue
-        provider = _text(snapshot.get("provider")).lower()
-        if provider not in SUPPORTED_SNAPSHOT_PROVIDERS:
+        if provider not in required_providers:
             reasons.append("evidence_provider_unsupported")
             continue
-        if _line(snapshot.get("line")) != _line(candidate.get("model_k_line")):
+        if (
+            normalized != candidate.get("normalized_pitcher")
+            or side != candidate.get("side")
+        ):
+            reasons.append("evidence_candidate_mismatch")
+            continue
+        if line != _line(candidate.get("model_k_line")):
             reasons.append("evidence_line_mismatch")
             continue
         snapshot_game_time = _iso(snapshot.get("game_time"))
-        if snapshot_game_time and snapshot_game_time != _iso(candidate.get("game_time")):
+        if snapshot_game_time is None:
+            reasons.append("evidence_malformed")
+            continue
+        if snapshot_game_time != _iso(candidate.get("game_time")):
             reasons.append("evidence_event_mismatch")
             continue
-        snapshot_id = _text(snapshot.get("id"))
-        provider_event_id = _text(snapshot.get("provider_event_id"))
-        provider_artifact_events = event_ids.get(provider, set())
         if not snapshot_ids and not provider_artifact_events:
             reasons.append("evidence_event_unbound")
             continue
         if snapshot_id not in snapshot_ids and provider_event_id not in provider_artifact_events:
             reasons.append("evidence_event_mismatch")
-            continue
-        evidence = exact_evidence.get(provider)
-        metadata = (
-            evidence.get("metadata")
-            if isinstance(evidence, dict) and isinstance(evidence.get("metadata"), dict)
-            else {}
-        )
-        if not evidence or _text(metadata.get("freshness_status")).lower() != "fresh":
-            reasons.append("evidence_stale")
             continue
         native_freshness = _text(snapshot.get("freshness_status")).lower()
         if native_freshness and native_freshness != "fresh":

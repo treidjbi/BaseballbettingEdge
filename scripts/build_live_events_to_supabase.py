@@ -488,6 +488,21 @@ def _write_alternative_pick_selection_state(
         ]
         if any(row.get("checkpoint") == "frozen_pregame" for row in matching_existing):
             continue
+        candidate_lock_rows = [
+            row for row in lock_rows
+            if isinstance(row, dict)
+            and row.get("dedupe_key") == f"{slate_date}:{candidate['normalized_pitcher']}:{candidate['side']}"
+        ]
+        current_lock = next(
+            (
+                row for row in candidate_lock_rows
+                if _parse_timestamp(row.get("locked_at")) == observed_at.astimezone(timezone.utc)
+                and _parse_timestamp(row.get("observed_at")) == observed_at.astimezone(timezone.utc)
+            ),
+            None,
+        )
+        if candidate_lock_rows and current_lock is None:
+            continue
         first_current_at = resolve_candidate_became_current_at(
             candidate=candidate,
             existing_rows=matching_existing,
@@ -545,45 +560,32 @@ def _write_alternative_pick_selection_state(
             observed_at=observed_at_iso,
         )
         if provisional is None:
+            if remaining() <= 0:
+                return _alternative_failure_summary("timeout")
             continue
-        candidate_lock_rows = [
-            row for row in lock_rows
-            if isinstance(row, dict)
-            and row.get("dedupe_key") == f"{slate_date}:{candidate['normalized_pitcher']}:{candidate['side']}"
-        ]
-        current_lock = next(
-            (
-                row for row in candidate_lock_rows
-                if _parse_timestamp(row.get("locked_at")) == observed_at.astimezone(timezone.utc)
-                and _parse_timestamp(row.get("observed_at")) == observed_at.astimezone(timezone.utc)
-            ),
-            None,
-        )
         if current_lock is not None:
-            if evidence_window.get("ready") and evidence.get("freshness_status") == "fresh":
-                frozen = build_frozen_row(
-                    provisional_row=provisional,
-                    lock_row=current_lock,
-                    observed_at=observed_at_iso,
-                )
-                if frozen is not None:
-                    frozen_rows.append(frozen)
-                    continue
-            provisional["reason_codes"] = list(dict.fromkeys([
-                *provisional.get("reason_codes", []), "freeze_evidence_pending",
-            ]))
-        if candidate_lock_rows:
-            provisional["reason_codes"] = list(dict.fromkeys([
-                *provisional.get("reason_codes", []), "missed_freeze",
-            ]))
+            if not evidence_window.get("ready") or evidence.get("freshness_status") != "fresh":
+                provisional["selection_status"] = "pending"
+                provisional["reason_codes"] = list(dict.fromkeys([
+                    *provisional.get("reason_codes", []), "freeze_evidence_pending",
+                ]))
+            frozen = build_frozen_row(
+                provisional_row=provisional,
+                lock_row=current_lock,
+                observed_at=observed_at_iso,
+            )
+            if frozen is None:
+                return _alternative_failure_summary("failed")
+            frozen_rows.append(frozen)
+            continue
         provisional_rows.append(provisional)
         if remaining() <= 0:
             return _alternative_failure_summary("timeout")
 
     try:
         for rows, method, conflict in (
-            (provisional_rows, writer.upsert_rows, ",".join(UNIQUE_COLUMNS)),
             (frozen_rows, writer.insert_ignore_rows, frozen_insert_on_conflict()),
+            (provisional_rows, writer.upsert_rows, ",".join(UNIQUE_COLUMNS)),
         ):
             if not rows:
                 continue
@@ -598,8 +600,6 @@ def _write_alternative_pick_selection_state(
             )
     except Exception:
         return _alternative_failure_summary("failed")
-    if remaining() <= 0:
-        return _alternative_failure_summary("timeout")
     return {
         "skipped": False,
         "rows": len(provisional_rows) + len(frozen_rows),

@@ -165,9 +165,9 @@ def test_raw_observation_binder_requires_exact_line_event_provider_and_real_fres
 
     invalid_cases = (
         (exact_rows, [_market_evidence(metadata={"freshness_status": "stale"})], "evidence_stale"),
-        ([_raw_snapshot(line=6.5), _raw_snapshot(id="snapshot-2", line=6.5)], [_market_evidence()], "evidence_line_mismatch"),
-        ([_raw_snapshot(provider_event_id="old-doubleheader"), _raw_snapshot(id="snapshot-2", provider_event_id="old-doubleheader")], [_market_evidence()], "evidence_event_mismatch"),
-        ([_raw_snapshot(provider="boltodds"), _raw_snapshot(id="snapshot-2", provider="boltodds")], [_market_evidence()], "evidence_provider_unsupported"),
+        ([_raw_snapshot(id=""), _raw_snapshot(id="")], [_market_evidence()], "evidence_malformed"),
+        ([_raw_snapshot(game_time="not-a-time"), _raw_snapshot(id="snapshot-2", game_time="not-a-time")], [_market_evidence()], "evidence_malformed"),
+        ([_raw_snapshot(freshness_status="stale"), _raw_snapshot(id="snapshot-2", freshness_status="stale")], [_market_evidence()], "evidence_stale"),
     )
     for raw_rows, evidence_rows, reason in invalid_cases:
         window = state.bind_candidate_observations(
@@ -177,6 +177,84 @@ def test_raw_observation_binder_requires_exact_line_event_provider_and_real_fres
         assert window["ready"] is False
         assert window["observation_count"] == 0
         assert reason in window["reason_codes"]
+
+
+def test_raw_observation_binder_ignores_unrelated_ladder_event_and_provider_rows():
+    candidate = _candidate(provider_posture="propline")
+    exact_rows = [
+        _raw_snapshot(),
+        _raw_snapshot(id="snapshot-2", observed_at="2026-07-21T22:30:00Z"),
+    ]
+    unrelated_rows = [
+        _raw_snapshot(id="alternate-line", line=6.5),
+        _raw_snapshot(id="old-event", provider_event_id="pl-game-old"),
+        _raw_snapshot(
+            id="other-provider",
+            provider="therundown",
+            provider_event_id="tr-game-current",
+        ),
+        _raw_snapshot(id="retired-provider", provider="boltodds"),
+    ]
+    window = state.bind_candidate_observations(
+        candidate=candidate,
+        snapshot_rows=[*exact_rows, *unrelated_rows],
+        market_evidence_rows=[_market_evidence()],
+        first_current_at="2026-07-21T22:15:00Z",
+        observed_at=OBSERVED_AT,
+        artifact_snapshot_ids=[],
+        artifact_provider_event_ids={"propline": ["pl-game-current"]},
+    )
+
+    assert window["ready"] is True
+    assert window["observation_ids"] == ["snapshot-1", "snapshot-2"]
+    assert window["bound_observations"] == [
+        {
+            "id": "snapshot-1",
+            "provider": "propline",
+            "bookmaker_key": "fanduel",
+            "american_odds": -110,
+            "observed_at": "2026-07-21T22:20:00+00:00",
+        },
+        {
+            "id": "snapshot-2",
+            "provider": "propline",
+            "bookmaker_key": "fanduel",
+            "american_odds": -110,
+            "observed_at": "2026-07-21T22:30:00+00:00",
+        },
+    ]
+
+
+def test_duplicate_exact_provider_summaries_are_order_independent_and_never_bind():
+    candidate = _candidate(provider_posture="propline")
+    snapshots = [
+        _raw_snapshot(),
+        _raw_snapshot(id="snapshot-2", observed_at="2026-07-21T22:30:00Z"),
+    ]
+    fresh = _market_evidence()
+    stale = _market_evidence(metadata={"freshness_status": "stale"})
+    kwargs = {
+        "candidate": candidate,
+        "snapshot_rows": snapshots,
+        "first_current_at": "2026-07-21T22:15:00Z",
+        "observed_at": OBSERVED_AT,
+        "artifact_snapshot_ids": [],
+        "artifact_provider_event_ids": {"propline": ["pl-game-current"]},
+    }
+
+    forward = state.bind_candidate_observations(
+        market_evidence_rows=[fresh, stale], **kwargs,
+    )
+    reverse = state.bind_candidate_observations(
+        market_evidence_rows=[stale, fresh], **kwargs,
+    )
+
+    assert forward == reverse
+    assert forward["ready"] is False
+    assert forward["observation_count"] == 0
+    assert forward["observation_ids"] == []
+    assert forward["bound_observations"] == []
+    assert "provider_evidence_duplicate" in forward["reason_codes"]
 
 
 def test_raw_observation_binder_stays_pending_without_exact_artifact_event_binding():
@@ -466,6 +544,12 @@ def test_lock_validation_checks_lookup_key_but_uses_full_candidate_identity_and_
     candidate = _candidate()
     lock = _lock(candidate)
     assert state.lock_matches_candidate(lock, candidate, LOCK_SHA)
+    assert state.lock_matches_candidate(
+        _lock(candidate, locked_book="FanDuel"), candidate, LOCK_SHA,
+    )
+    assert not state.lock_matches_candidate(
+        _lock(candidate, locked_book="DraftKings"), candidate, LOCK_SHA,
+    )
     for key, value in (
         ("dedupe_key", "2026-07-21:other:over"),
         ("slate_date", "2026-07-20"),
