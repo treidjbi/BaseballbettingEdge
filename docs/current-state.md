@@ -1,6 +1,6 @@
 # Current State
 
-Last updated: 2026-07-10
+Last updated: 2026-07-21
 
 ## Read Order
 
@@ -60,9 +60,13 @@ For any new work in this repo:
      read-only synthesis that stacks Strong Base, market-anchor,
      market-agreement, and pre-close proxy signals into combined policy-shape
      scoreboards
+   - `docs/superpowers/plans/2026-07-21-no-drag-composite-prospective-canary.md`
+     for the controlling frozen post-grading v1 implementation plan
+   - `docs/research/no-drag-composite-prospective-canary-packet.md`
+     for the lead operator packet for the no-drag prospective canary
    - `docs/research/strict-runtime-core-selective-lean-canary-packet.md`
-     for the read-only aggressive unit-accumulation packet Tyler chose to
-     center on `strict_runtime_core_plus_selective_lean`
+     for comparison/control historical context on
+     `strict_runtime_core_plus_selective_lean`, not the lead candidate
    - `docs/research/all-star-break-operations-packet.md`
      for the 2026-07-13 break-window checklist, off-day artifact-noise fix
      scope, strict-runtime actual-record read, and cost/row-volume notes
