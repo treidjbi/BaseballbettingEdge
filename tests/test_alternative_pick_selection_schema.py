@@ -15,6 +15,7 @@ def test_schema_has_bounded_identity_display_evidence_and_frozen_provenance_cont
     for fragment in (
         "create table if not exists public.alternative_pick_selection_state",
         "game_identity text not null", "candidate_identity text not null",
+        "candidate_became_current_at timestamptz not null",
         "family_states jsonb not null", "reason_codes jsonb not null",
         "source_artifact_sha256 text not null", "lock_artifact_sha256 text", "lock_source_artifact_path text",
         "selector_id text", "selector_fingerprint text not null",
@@ -44,6 +45,8 @@ def test_schema_frozen_link_and_immutability_are_fail_closed_and_pregame_only():
         "lock_row.dedupe_key = new.lock_dedupe_key",
         "lock_row.source_artifact_sha256 = new.lock_artifact_sha256",
         "lock_row.source_artifact_path = new.lock_source_artifact_path",
+        "lock_row.locked_odds = new.official_odds",
+        "nullif(trim(lock_row.locked_book), '') is not distinct from nullif(trim(new.official_book), '')",
         "lock_row.observed_at = new.locked_at", "new.observed_at = new.locked_at",
         "lock_row.metadata ->> 'team'", "lock_row.metadata ->> 'opp_team'",
         "new.frozen_at = new.locked_at", "new.observed_at = new.locked_at", "new.frozen_at >= new.game_time",

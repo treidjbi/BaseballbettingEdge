@@ -3,6 +3,7 @@ create table if not exists public.alternative_pick_selection_state (
   slate_date date not null,
   game_identity text not null,
   candidate_identity text not null,
+  candidate_became_current_at timestamptz not null,
   pitcher text not null,
   normalized_pitcher text not null,
   team text not null,
@@ -94,6 +95,8 @@ begin
       and lock_row.normalized_pitcher = new.normalized_pitcher
       and lock_row.side = new.side
       and lock_row.locked_k_line = new.model_k_line
+      and lock_row.locked_odds = new.official_odds
+      and nullif(trim(lock_row.locked_book), '') is not distinct from nullif(trim(new.official_book), '')
       and lock_row.game_time = new.game_time
       and lock_row.status_at_capture = new.lock_status
       and lock_row.locked_at = new.locked_at

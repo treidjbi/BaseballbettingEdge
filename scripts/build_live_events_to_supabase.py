@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import math
 import os
 import sys
 import time
@@ -26,13 +27,19 @@ from market_infra.live_events import (  # noqa: E402
 from market_infra.alternative_pick_selection_state import (  # noqa: E402
     APPROVED_ARTIFACT_PATH,
     UNIQUE_COLUMNS,
-    associate_candidate_observations,
+    aggregate_candidate_market_evidence,
+    bind_candidate_observations,
     build_frozen_row,
     build_provisional_row,
     candidate_record,
     frozen_insert_on_conflict,
+    resolve_candidate_became_current_at,
 )
-from market_infra.alternative_pick_selector import BUNDLE_ID, evaluate_alternative_pick  # noqa: E402
+from market_infra.alternative_pick_selector import (  # noqa: E402
+    BUNDLE_ID,
+    derive_runtime_features,
+    evaluate_alternative_pick,
+)
 from market_infra.live_market_display import build_live_market_display_rows  # noqa: E402
 from market_infra.mainline_price_notifications import (  # noqa: E402
     build_mainline_best_price_notification_rows,
@@ -47,7 +54,6 @@ from market_infra.shadow_notification_candidates import (  # noqa: E402
     build_shadow_notification_candidate_rows,
 )
 from market_infra.supabase_writer import SupabaseMarketWriter  # noqa: E402
-from pipeline.name_utils import normalize  # noqa: E402
 from scripts.build_current_market_lines_to_supabase import (  # noqa: E402
     run as build_current_market_lines_to_supabase,
 )
@@ -146,16 +152,41 @@ def _alternative_failure_summary(reason: str) -> dict[str, Any]:
     return {"skipped": True, "reason": reason, "rows": 0, "warning": warning[:200]}
 
 
-def _alternative_prerequisite_failed(
-    operational_pick_locks: dict[str, Any],
-    shadow_pipeline_timing: dict[str, Any],
-    market_line_build: dict[str, Any],
-) -> bool:
-    return bool(
-        operational_pick_locks.get("reason") == "write_failed"
-        or shadow_pipeline_timing.get("error")
-        or market_line_build.get("reason") == "build_failed"
-    )
+def _alternative_summary_failed(value: Any) -> bool:
+    if isinstance(value, dict):
+        reason = str(value.get("reason") or "").strip().lower()
+        if value.get("error") or reason == "failed" or reason.endswith("_failed"):
+            return True
+        return any(_alternative_summary_failed(item) for item in value.values())
+    if isinstance(value, (list, tuple)):
+        return any(_alternative_summary_failed(item) for item in value)
+    return False
+
+
+def _alternative_prerequisite_failed(*summaries: dict[str, Any]) -> bool:
+    return any(_alternative_summary_failed(summary) for summary in summaries)
+
+
+def _alternative_american_odds(value: Any) -> int | None:
+    if isinstance(value, bool):
+        return None
+    try:
+        parsed = float(value)
+    except (TypeError, ValueError):
+        return None
+    if not math.isfinite(parsed) or not parsed.is_integer() or parsed == 0:
+        return None
+    return int(parsed)
+
+
+def _alternative_line(value: Any) -> float | None:
+    if isinstance(value, bool):
+        return None
+    try:
+        parsed = float(value)
+    except (TypeError, ValueError):
+        return None
+    return parsed if math.isfinite(parsed) and parsed >= 0 else None
 
 
 def _alternative_tracked_candidates(
@@ -165,21 +196,26 @@ def _alternative_tracked_candidates(
     market_pick_evidence_rows: list[dict[str, Any]],
 ) -> list[tuple[dict[str, Any], dict[str, Any], dict[str, Any]]]:
     """Return exact tracked picks with only approved already-built evidence."""
-    approved = {"therundown", "propline"}
-    evidence_by_pick: dict[tuple[str, str], list[dict[str, Any]]] = {}
-    for row in market_pick_evidence_rows:
-        if not isinstance(row, dict):
-            continue
-        provider = str(row.get("provider") or "").strip().lower()
-        pitcher = str(row.get("normalized_pitcher") or "").strip().lower()
-        side = str(row.get("side") or "").strip().lower()
-        if provider in approved and pitcher and side in {"over", "under"}:
-            evidence_by_pick.setdefault((pitcher, side), []).append(row)
+    del market_pick_evidence_rows  # Candidate identity comes only from the official artifact.
 
     candidates: list[tuple[dict[str, Any], dict[str, Any], dict[str, Any]]] = []
     seen: set[str] = set()
     for pitcher in payload.get("pitchers") or []:
         if not isinstance(pitcher, dict):
+            continue
+        mode = str(pitcher.get("market_source_mode") or "").strip().lower().replace("+", "_")
+        odds_source = str(pitcher.get("odds_source") or "").strip().lower().replace("+", "_")
+        if mode:
+            if (
+                mode not in {"therundown", "therundown_propline"}
+                or odds_source not in {"therundown", "therundown_propline"}
+                or mode != odds_source
+            ):
+                continue
+            posture = mode
+        elif odds_source in {"therundown", "therundown_propline"}:
+            posture = odds_source
+        else:
             continue
         tracked = pitcher.get("tracked_picks")
         if not isinstance(tracked, list):
@@ -191,28 +227,129 @@ def _alternative_tracked_candidates(
             if side not in {"over", "under"}:
                 continue
             name = str(pitcher.get("pitcher") or pick.get("pitcher") or "").strip()
-            normalized = normalize(name)
-            evidence_rows = evidence_by_pick.get((normalized, side), [])
-            providers = {str(row.get("provider") or "").strip().lower() for row in evidence_rows}
-            posture = "therundown_propline" if providers == approved else next(iter(providers), "therundown")
-            line = pick.get("display_k_line") or pick.get("locked_k_line") or pick.get("k_line")
-            try:
-                candidate = candidate_record(
-                    slate_date=slate_date,
-                    pitcher=name,
-                    side=side,
-                    model_k_line=float(line),
-                    team=str(pitcher.get("team") or pick.get("team") or ""),
-                    opp_team=str(pitcher.get("opp_team") or pick.get("opp_team") or ""),
-                    game_time=str(pick.get("game_time") or pitcher.get("game_time") or ""),
-                    provider_posture=posture,
-                )
-            except (TypeError, ValueError):
+            raw_line = next(
+                (pick.get(field) for field in ("display_k_line", "locked_k_line", "k_line")
+                 if pick.get(field) is not None),
+                None,
+            )
+            line = _alternative_line(raw_line)
+            if line is None:
                 continue
+            candidate = candidate_record(
+                slate_date=slate_date,
+                pitcher=name,
+                side=side,
+                model_k_line=line,
+                team=str(pitcher.get("team") or pick.get("team") or ""),
+                opp_team=str(pitcher.get("opp_team") or pick.get("opp_team") or ""),
+                game_time=str(pick.get("game_time") or pitcher.get("game_time") or ""),
+                provider_posture=posture,
+            )
             if candidate["candidate_identity"] not in seen:
                 candidates.append((candidate, pitcher, pick))
                 seen.add(candidate["candidate_identity"])
     return candidates
+
+
+def _alternative_evaluation_inputs(
+    *,
+    pitcher: dict[str, Any],
+    tracked_pick: dict[str, Any],
+    candidate: dict[str, Any],
+) -> tuple[dict[str, Any], dict[str, Any]]:
+    """Use canonical side math, then overlay the tracked display/lock contract."""
+    side = str(candidate.get("side") or "").strip().lower()
+    side_payload = pitcher.get(f"ev_{side}")
+    evaluation_pick = dict(side_payload) if isinstance(side_payload, dict) else {}
+    overlay_fields = (
+        "display_verdict", "locked_verdict", "actionable_verdict", "current_verdict",
+        "verdict", "raw_verdict", "quality_actionable_verdict", "quality_gate_level",
+        "edge", "ev", "adj_ev", "raw_adj_ev", "locked_adj_ev",
+        "market_anchor_selector", "large_edge_skepticism_flag", "win_prob", "model_win_prob",
+    )
+    for field in overlay_fields:
+        if tracked_pick.get(field) is not None:
+            evaluation_pick[field] = tracked_pick[field]
+    if tracked_pick.get("display_adj_ev") is not None:
+        evaluation_pick["locked_adj_ev"] = tracked_pick["display_adj_ev"]
+    tracked_odds = next(
+        (tracked_pick.get(field) for field in ("display_odds", "locked_odds", "odds")
+         if tracked_pick.get(field) is not None),
+        None,
+    )
+    selected_odds = _alternative_american_odds(tracked_odds)
+    tracked_book = next(
+        (tracked_pick.get(field) for field in ("display_book", "locked_book", "book")
+         if tracked_pick.get(field) not in {None, ""}),
+        None,
+    )
+    evaluation_pick.update({
+        "side": side,
+        "official_k_line": candidate.get("model_k_line"),
+        "odds": selected_odds,
+    })
+
+    evaluation_pitcher = dict(pitcher)
+    evaluation_pitcher["game_time"] = candidate.get("game_time")
+    evaluation_pitcher["k_line"] = candidate.get("model_k_line")
+    for price_side in ("over", "under"):
+        evaluation_pitcher[f"best_{price_side}_odds"] = _alternative_american_odds(
+            pitcher.get(f"best_{price_side}_odds")
+        )
+    if tracked_odds is not None:
+        evaluation_pitcher[f"best_{side}_odds"] = selected_odds
+    if tracked_book is not None:
+        evaluation_pitcher[f"best_{side}_book"] = str(tracked_book).strip() or None
+    try:
+        line_matches = abs(float(pitcher.get("k_line")) - float(candidate.get("model_k_line"))) < 0.001
+    except (TypeError, ValueError):
+        line_matches = False
+    if not line_matches:
+        evaluation_pitcher["best_over_odds"] = None
+        evaluation_pitcher["best_under_odds"] = None
+        evaluation_pitcher["best_over_book"] = None
+        evaluation_pitcher["best_under_book"] = None
+        if selected_odds is not None:
+            evaluation_pitcher[f"best_{side}_odds"] = selected_odds
+        if tracked_book is not None:
+            evaluation_pitcher[f"best_{side}_book"] = str(tracked_book).strip() or None
+    return evaluation_pitcher, evaluation_pick
+
+
+def _alternative_persistence_key(candidate: dict[str, Any]) -> tuple[Any, ...]:
+    return (
+        candidate.get("slate_date"),
+        candidate.get("game_identity"),
+        candidate.get("normalized_pitcher"),
+        candidate.get("side"),
+        BUNDLE_ID,
+    )
+
+
+def _alternative_artifact_bindings(
+    pitcher: dict[str, Any],
+) -> tuple[list[Any], dict[str, list[Any]]]:
+    snapshot_ids = pitcher.get("source_snapshot_ids")
+    snapshots = list(snapshot_ids) if isinstance(snapshot_ids, (list, tuple)) else []
+    events: dict[str, list[Any]] = {}
+    field_map = {
+        "propline": ("propline_event_id",),
+        "therundown": ("therundown_event_id", "rundown_event_id", "the_rundown_event_id"),
+    }
+    for provider, fields in field_map.items():
+        values = [pitcher.get(field) for field in fields if pitcher.get(field) not in {None, ""}]
+        if values:
+            events[provider] = values
+    source_provider = str(pitcher.get("line_source_provider") or "").strip().lower()
+    generic_event = pitcher.get("provider_event_id")
+    if source_provider in {"therundown", "propline"} and generic_event not in {None, ""}:
+        events.setdefault(source_provider, []).append(generic_event)
+    return snapshots, events
+
+
+def _postgrest_in_filter(values: list[str]) -> str:
+    escaped = [str(value).replace("\\", "\\\\").replace('"', '\\"') for value in values]
+    return "in.(" + ",".join(f'"{value}"' for value in escaped) + ")"
 
 
 def _write_alternative_pick_selection_state(
@@ -229,16 +366,19 @@ def _write_alternative_pick_selection_state(
     operational_pick_locks: dict[str, Any],
     market_line_build: dict[str, Any],
     shadow_pipeline_timing: dict[str, Any] | None = None,
+    ready_to_bet_write: dict[str, Any] | None = None,
     budget_seconds: float = 5.0,
 ) -> dict[str, Any]:
     """Record isolated alternative state with bounded, single-attempt requests."""
     if _alternative_pick_selection_mode() != "record":
         return {"skipped": True, "reason": "disabled", "rows": 0}
     shadow_pipeline_timing = shadow_pipeline_timing or {"skipped": True, "reason": "disabled"}
+    ready_to_bet_write = ready_to_bet_write or {"skipped": True, "reason": "disabled"}
     if _alternative_prerequisite_failed(
         operational_pick_locks,
         shadow_pipeline_timing,
         market_line_build,
+        ready_to_bet_write,
     ):
         return {"skipped": True, "reason": "prerequisite_failed", "rows": 0}
 
@@ -251,6 +391,34 @@ def _write_alternative_pick_selection_state(
     if not candidates:
         return {"skipped": True, "reason": "no_candidates", "rows": 0}
 
+    identities_by_key: dict[tuple[Any, ...], set[str]] = {}
+    for candidate, _, _ in candidates:
+        identities_by_key.setdefault(_alternative_persistence_key(candidate), set()).add(
+            str(candidate.get("candidate_identity") or "")
+        )
+    collision_groups = {
+        frozenset(identities)
+        for identities in identities_by_key.values()
+        if len(identities) > 1
+    }
+    identities_by_lock_key: dict[str, set[str]] = {}
+    for candidate, _, _ in candidates:
+        lock_key = f"{candidate['slate_date']}:{candidate['normalized_pitcher']}:{candidate['side']}"
+        identities_by_lock_key.setdefault(lock_key, set()).add(str(candidate.get("candidate_identity") or ""))
+    collision_groups.update(
+        frozenset(identities)
+        for identities in identities_by_lock_key.values()
+        if len(identities) > 1
+    )
+    collisions = len(collision_groups)
+    if collisions:
+        return {
+            "skipped": True,
+            "reason": "candidate_key_collision",
+            "rows": 0,
+            "collisions": collisions,
+        }
+
     def remaining() -> float:
         return _alternative_remaining_timeout(started_at, budget_seconds)
 
@@ -262,7 +430,12 @@ def _write_alternative_pick_selection_state(
             "alternative_pick_selection_state",
             {
                 "slate_date": f"eq.{slate_date}",
+                "bundle_id": f"eq.{BUNDLE_ID}",
                 "checkpoint": "in.(provisional,frozen_pregame)",
+                "select": (
+                    "slate_date,game_identity,candidate_identity,candidate_became_current_at,"
+                    "normalized_pitcher,side,bundle_id,checkpoint,observed_at,game_time"
+                ),
             },
             timeout_seconds=timeout,
             attempts=1,
@@ -278,7 +451,13 @@ def _write_alternative_pick_selection_state(
             "operational_pick_locks",
             {
                 "slate_date": f"eq.{slate_date}",
-                "dedupe_key": f"in.({','.join(dedupe_keys)})",
+                "dedupe_key": _postgrest_in_filter(dedupe_keys),
+                "select": (
+                    "dedupe_key,slate_date,normalized_pitcher,side,locked_k_line,game_time,"
+                    "locked_odds,locked_book,"
+                    "status_at_capture,observed_at,locked_at,should_lock_at,minutes_until_start,"
+                    "source_artifact_path,source_artifact_sha256,metadata"
+                ),
             },
             timeout_seconds=timeout,
             attempts=1,
@@ -302,73 +481,52 @@ def _write_alternative_pick_selection_state(
     provisional_rows: list[dict[str, Any]] = []
     frozen_rows: list[dict[str, Any]] = []
     for candidate, pitcher, pick in candidates:
-        key = (
-            candidate["slate_date"],
-            candidate["game_identity"],
-            candidate["normalized_pitcher"],
-            candidate["side"],
-            BUNDLE_ID,
-        )
+        key = _alternative_persistence_key(candidate)
         matching_existing = [
             row for row in existing_rows
             if isinstance(row, dict) and tuple(row.get(field) for field in UNIQUE_COLUMNS[:5]) == key
         ]
         if any(row.get("checkpoint") == "frozen_pregame" for row in matching_existing):
             continue
-        first_current_at = next(
-            (str(row.get("observed_at")) for row in matching_existing if row.get("checkpoint") == "provisional" and row.get("observed_at")),
-            observed_at_iso,
-        )
-        candidate["frozen_exists"] = False
-        candidate_snapshots = []
-        for row in snapshot_rows:
-            if not isinstance(row, dict):
-                continue
-            normalized = str(row.get("normalized_player_name") or row.get("player_name") or "").strip().lower()
-            if normalized != candidate["normalized_pitcher"] or str(row.get("side") or "").strip().lower() != candidate["side"]:
-                continue
-            candidate_snapshots.append({
-                **row,
-                "candidate_identity": candidate["candidate_identity"],
-                "freshness_status": "fresh",
-            })
-        evidence_window = associate_candidate_observations(
+        first_current_at = resolve_candidate_became_current_at(
             candidate=candidate,
-            snapshot_rows=candidate_snapshots,
-            first_current_at=first_current_at,
+            existing_rows=matching_existing,
             observed_at=observed_at_iso,
         )
-        evidence_rows = [
-            row for row in market_pick_evidence_rows
-            if isinstance(row, dict)
-            and str(row.get("normalized_pitcher") or "").strip().lower() == candidate["normalized_pitcher"]
-            and str(row.get("side") or "").strip().lower() == candidate["side"]
-            and str(row.get("provider") or "").strip().lower() in {"therundown", "propline"}
-        ]
-        evidence = dict(evidence_rows[0]) if evidence_rows else {}
-        evidence["provider"] = candidate["provider_posture"]
-        evidence["candidate_identity"] = {
-            "slate_date": slate_date,
-            "game_time": candidate["game_time"],
-            "pitcher": candidate["normalized_pitcher"],
-            "side": candidate["side"],
-            "k_line": candidate["model_k_line"],
-            "provider": candidate["provider_posture"],
-        }
-        evidence["candidate_became_current_at"] = first_current_at
-        evidence["observations"] = [
-            {"id": row.get("id"), "observed_at": row.get("observed_at")}
-            for row in candidate_snapshots
-            if row.get("id") and row.get("observed_at")
-        ]
-        evidence["observation_ids"] = evidence_window["observation_ids"]
-        evidence["first_observed_at"] = evidence_window["first_observed_at"]
-        evidence["last_observed_at"] = evidence_window["last_observed_at"]
-        evidence["freshness_status"] = evidence_window["freshness_status"]
+        if first_current_at is None:
+            return _alternative_failure_summary("failed")
+        candidate["frozen_exists"] = False
         try:
-            evaluation = evaluate_alternative_pick(
+            artifact_snapshot_ids, artifact_provider_event_ids = _alternative_artifact_bindings(pitcher)
+            evidence_window = bind_candidate_observations(
+                candidate=candidate,
+                snapshot_rows=snapshot_rows,
+                market_evidence_rows=market_pick_evidence_rows,
+                first_current_at=first_current_at,
+                observed_at=observed_at_iso,
+                artifact_snapshot_ids=artifact_snapshot_ids,
+                artifact_provider_event_ids=artifact_provider_event_ids,
+            )
+            evidence = aggregate_candidate_market_evidence(
+                candidate=candidate,
+                market_evidence_rows=market_pick_evidence_rows,
+                evidence_window=evidence_window,
+            )
+            evidence_window = {
+                **evidence_window,
+                "reason_codes": tuple(dict.fromkeys((
+                    *evidence_window.get("reason_codes", ()),
+                    *evidence.get("aggregation_reason_codes", ()),
+                ))),
+            }
+            evaluation_pitcher, evaluation_pick = _alternative_evaluation_inputs(
                 pitcher=pitcher,
-                pick=pick,
+                tracked_pick=pick,
+                candidate=candidate,
+            )
+            evaluation = evaluate_alternative_pick(
+                pitcher=evaluation_pitcher,
+                pick=evaluation_pick,
                 market_evidence=evidence,
                 slate_date=slate_date,
                 is_tracked=True,
@@ -402,19 +560,25 @@ def _write_alternative_pick_selection_state(
             None,
         )
         if current_lock is not None:
-            frozen = build_frozen_row(
-                provisional_row=provisional,
-                lock_row=current_lock,
-                observed_at=observed_at_iso,
-            )
-            if frozen is not None:
-                frozen_rows.append(frozen)
-                continue
+            if evidence_window.get("ready") and evidence.get("freshness_status") == "fresh":
+                frozen = build_frozen_row(
+                    provisional_row=provisional,
+                    lock_row=current_lock,
+                    observed_at=observed_at_iso,
+                )
+                if frozen is not None:
+                    frozen_rows.append(frozen)
+                    continue
+            provisional["reason_codes"] = list(dict.fromkeys([
+                *provisional.get("reason_codes", []), "freeze_evidence_pending",
+            ]))
         if candidate_lock_rows:
             provisional["reason_codes"] = list(dict.fromkeys([
                 *provisional.get("reason_codes", []), "missed_freeze",
             ]))
         provisional_rows.append(provisional)
+        if remaining() <= 0:
+            return _alternative_failure_summary("timeout")
 
     try:
         for rows, method, conflict in (
@@ -434,12 +598,14 @@ def _write_alternative_pick_selection_state(
             )
     except Exception:
         return _alternative_failure_summary("failed")
+    if remaining() <= 0:
+        return _alternative_failure_summary("timeout")
     return {
         "skipped": False,
         "rows": len(provisional_rows) + len(frozen_rows),
         "provisional_rows": len(provisional_rows),
         "frozen_rows": len(frozen_rows),
-        "artifact_source": artifact_source,
+        "collisions": 0,
     }
 
 
@@ -865,6 +1031,24 @@ def _lock_build_summary(result: dict[str, Any]) -> str:
         f"inserted:{locks.get('inserted_rows', locks.get('rows', 0))} "
         f"dispatch:{dispatch_label}"
     )
+
+
+def _public_operational_lock_summary(summary: dict[str, Any]) -> dict[str, Any]:
+    allowed = ("skipped", "reason", "rows", "inserted_rows")
+    public = {key: summary[key] for key in allowed if key in summary}
+    dispatch = summary.get("dispatch")
+    if isinstance(dispatch, dict):
+        dispatch_allowed = ("skipped", "reason", "status_code", "via")
+        public["dispatch"] = {
+            key: dispatch[key]
+            for key in dispatch_allowed
+            if key in dispatch
+        }
+    return public
+
+
+def _public_artifact_source(artifact_source: Any) -> str:
+    return "remote" if str(artifact_source or "").lower().startswith("http") else APPROVED_ARTIFACT_PATH
 
 
 def _write_operational_pick_locks(
@@ -1380,6 +1564,7 @@ def run(
         operational_pick_locks=operational_pick_locks,
         shadow_pipeline_timing=shadow_pipeline_timing,
         market_line_build=market_line_build,
+        ready_to_bet_write=ready_to_bet_write,
     )
     return {
         "state_rows": state_rows,
@@ -1413,8 +1598,8 @@ def run(
         "therundown": therundown_result or {"skipped": True},
         "propline": propline_result or {"skipped": True},
         "propline_webhooks": propline_webhook_result or {"skipped": True},
-        "artifact_source": artifact_source,
-        "operational_pick_locks": operational_pick_locks,
+        "artifact_source": _public_artifact_source(artifact_source),
+        "operational_pick_locks": _public_operational_lock_summary(operational_pick_locks),
         "shadow_pipeline_timing": shadow_pipeline_timing,
         "market_line_build": market_line_build,
         "alternative_pick_selection": alternative_pick_selection,
@@ -1523,7 +1708,8 @@ def main() -> int:
         f"notification_events={result['notification_events']} "
         f"live_market_display={result.get('live_market_display_state', 0)} "
         f"{_lock_build_summary(result)} "
-        f"artifact_source={'remote' if str(result.get('artifact_source', artifact_source)).startswith('http') else 'local'} "
+        "artifact_source="
+        f"{'remote' if result.get('artifact_source') == 'remote' or str(result.get('artifact_source', artifact_source)).startswith('http') else 'local'} "
         f"{therundown_summary} "
         f"{propline_summary} "
         f"{webhook_summary} "

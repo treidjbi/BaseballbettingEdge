@@ -11,7 +11,8 @@ def _inputs(**overrides):
         "pitcher": {
             "pitcher": "Test Pitcher", "team": "ARI", "opp_team": "LAD",
             "game_time": "2026-07-21T23:10:00Z", "k_line": 5.5,
-            "best_over_odds": -115, "best_under_odds": -105, "avg_ip": 5.8,
+            "best_over_odds": -115, "best_under_odds": -105,
+            "best_over_book": "FanDuel", "best_under_book": "DraftKings", "avg_ip": 5.8,
             "recent_start_count": 5, "season_k9": 9.4, "recent_k9": 9.7,
             "career_k9": 9.1,
         },
@@ -83,6 +84,7 @@ def test_runtime_features_are_derived_without_postgame_inputs():
     assert features["pitcher_archetype_bucket"] == "standard_starter"
     assert features["large_edge_skepticism_flag"] is False
     assert features["model_no_vig_gap"] == pytest.approx(0.04916576381365123)
+    assert features["official_book"] == "FanDuel"
     assert selector.derive_model_no_vig_gap(model_win_prob=None, over_odds=-115, under_odds=-105, side="over") is None
 
 

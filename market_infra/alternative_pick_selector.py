@@ -285,6 +285,7 @@ def derive_runtime_features(*, pitcher: dict[str, Any], pick: dict[str, Any], ma
         "side": side, "official_verdict": display_verdict(pick), "source_fire_verdict": source_fire_verdict(pick),
         "pitcher": normalize(pitcher.get("pitcher") or ""), "game_time": _text(pitcher.get("game_time")),
         "k_line": _number(pitcher.get("k_line")), "line_bucket": line_bucket(pitcher.get("k_line")), "odds": odds,
+        "official_book": _text(pitcher.get(f"best_{side}_book")) or None,
         "price_sign": "minus" if odds is not None and odds < 0 else "plus" if odds is not None and odds > 0 else "unknown",
         "bet_timing_window": timing_bucket(observed_at, pitcher.get("game_time")), "model_market_relationship": relationship,
         "model_no_vig_gap": gap, "edge": edge, "adjusted_ev": ev, "adjusted_ev_error": ev_error,

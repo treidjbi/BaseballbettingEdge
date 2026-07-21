@@ -66,6 +66,211 @@ def _previous_fire_state(pitcher, *, game_time):
     }
 
 
+def _alternative_artifact_payload(*, tracked_line=6.5, odds_source="therundown", market_source_mode=None):
+    pitcher = _fire_pitcher()
+    pitcher.update({
+        "odds_source": odds_source,
+        "market_source_mode": market_source_mode,
+        "propline_event_id": "pl-game-current",
+        "therundown_event_id": "tr-game-current",
+        "ev_over": {
+            "verdict": "FIRE 1u",
+            "raw_verdict": "FIRE 1u",
+            "actionable_verdict": "FIRE 1u",
+            "adj_ev": 0.09,
+            "edge": 0.05,
+            "win_prob": 0.61,
+            "quality_gate_level": "clean",
+            "market_anchor_selector": {"labels": ["market_anchor_core"]},
+        },
+    })
+    pitcher["tracked_picks"] = [{
+        "pitcher": "Tarik Skubal",
+        "side": "over",
+        "display_verdict": "LEAN",
+        "display_k_line": tracked_line,
+        "display_odds": -108,
+        "display_book": "FanDuel",
+        "display_adj_ev": 0.07,
+        "game_time": "2026-05-06T22:10:00+00:00",
+    }]
+    return {"date": "2026-05-06", "pitchers": [pitcher]}
+
+
+def _alternative_market_evidence(provider, *, observed_at="2026-05-06T21:45:00+00:00"):
+    book = "fanduel" if provider == "therundown" else "draftkings"
+    return {
+        "slate_date": "2026-05-06",
+        "pitcher": "Tarik Skubal",
+        "normalized_pitcher": "tarik skubal",
+        "side": "over",
+        "provider": provider,
+        "k_line": 6.5,
+        "game_time": "2026-05-06T22:10:00+00:00",
+        "observed_at": observed_at,
+        "book_count": 1,
+        "books_seen": [book],
+        "toward_pick_count": 0,
+        "away_from_pick_count": 0,
+        "reversal_book_count": 0,
+        "volatile_book_count": 0,
+        "metadata": {"freshness_status": "fresh"},
+    }
+
+
+def _current_alternative_lock():
+    return {
+        "dedupe_key": "2026-05-06:tarik skubal:over",
+        "slate_date": "2026-05-06",
+        "normalized_pitcher": "tarik skubal",
+        "side": "over",
+        "locked_k_line": 6.5,
+        "locked_odds": -108,
+        "locked_book": "FanDuel",
+        "game_time": "2026-05-06T22:10:00+00:00",
+        "status_at_capture": "due_now",
+        "observed_at": "2026-05-06T21:45:00Z",
+        "locked_at": "2026-05-06T21:45:00Z",
+        "should_lock_at": "2026-05-06T21:40:00+00:00",
+        "minutes_until_start": 25,
+        "source_artifact_path": "https://example.netlify.app/.netlify/functions/get-artifact?type=today",
+        "source_artifact_sha256": "b" * 64,
+        "metadata": {"team": "DET", "opp_team": "BOS"},
+    }
+
+
+def test_alternative_candidate_uses_official_posture_not_available_evidence():
+    payload = _alternative_artifact_payload()
+    without_evidence = build_live_events_to_supabase._alternative_tracked_candidates(
+        slate_date="2026-05-06", payload=payload, market_pick_evidence_rows=[],
+    )
+    with_propline = build_live_events_to_supabase._alternative_tracked_candidates(
+        slate_date="2026-05-06",
+        payload=payload,
+        market_pick_evidence_rows=[{"provider": "propline", "normalized_pitcher": "tarik skubal", "side": "over"}],
+    )
+    assert without_evidence[0][0]["provider_posture"] == "therundown"
+    assert with_propline[0][0]["provider_posture"] == "therundown"
+    assert without_evidence[0][0]["candidate_identity"] == with_propline[0][0]["candidate_identity"]
+
+    unsupported = _alternative_artifact_payload(odds_source="boltodds")
+    assert build_live_events_to_supabase._alternative_tracked_candidates(
+        slate_date="2026-05-06", payload=unsupported, market_pick_evidence_rows=[],
+    ) == []
+
+    explicit_therundown = _alternative_artifact_payload(
+        odds_source="therundown+propline", market_source_mode="therundown",
+    )
+    assert build_live_events_to_supabase._alternative_tracked_candidates(
+        slate_date="2026-05-06", payload=explicit_therundown, market_pick_evidence_rows=[],
+    ) == []
+
+    combined_fallback = _alternative_artifact_payload(
+        odds_source="therundown", market_source_mode="therundown_propline",
+    )
+    assert build_live_events_to_supabase._alternative_tracked_candidates(
+        slate_date="2026-05-06", payload=combined_fallback, market_pick_evidence_rows=[],
+    ) == []
+
+    matching_combined = _alternative_artifact_payload(
+        odds_source="therundown+propline", market_source_mode="therundown_propline",
+    )
+    candidates = build_live_events_to_supabase._alternative_tracked_candidates(
+        slate_date="2026-05-06", payload=matching_combined, market_pick_evidence_rows=[],
+    )
+    assert candidates[0][0]["provider_posture"] == "therundown_propline"
+
+    conflicting = _alternative_artifact_payload(
+        odds_source="therundown", market_source_mode="boltodds_propline",
+    )
+    assert build_live_events_to_supabase._alternative_tracked_candidates(
+        slate_date="2026-05-06", payload=conflicting, market_pick_evidence_rows=[],
+    ) == []
+
+    for malformed_line in (True, float("nan"), float("inf"), -1):
+        malformed = _alternative_artifact_payload(tracked_line=malformed_line)
+        assert build_live_events_to_supabase._alternative_tracked_candidates(
+            slate_date="2026-05-06", payload=malformed, market_pick_evidence_rows=[],
+        ) == []
+
+
+def test_alternative_evaluation_uses_real_side_payload_and_normalized_game_instant():
+    payload = _alternative_artifact_payload()
+    candidate, pitcher, tracked = build_live_events_to_supabase._alternative_tracked_candidates(
+        slate_date="2026-05-06", payload=payload, market_pick_evidence_rows=[],
+    )[0]
+    evaluation_pitcher, evaluation_pick = build_live_events_to_supabase._alternative_evaluation_inputs(
+        pitcher=pitcher, tracked_pick=tracked, candidate=candidate,
+    )
+    assert evaluation_pick["win_prob"] == 0.61
+    assert evaluation_pick["display_verdict"] == "LEAN"
+    assert evaluation_pick["locked_adj_ev"] == 0.07
+    assert evaluation_pitcher["game_time"] == "2026-05-06T22:10:00+00:00"
+    assert evaluation_pitcher["k_line"] == 6.5
+    assert evaluation_pitcher["best_over_odds"] == -108
+    assert evaluation_pitcher["best_over_book"] == "FanDuel"
+
+    tracked["display_odds"] = -108.5
+    malformed_pitcher, malformed_pick = build_live_events_to_supabase._alternative_evaluation_inputs(
+        pitcher=pitcher, tracked_pick=tracked, candidate=candidate,
+    )
+    assert malformed_pick["odds"] is None
+    assert malformed_pitcher["best_over_odds"] is None
+
+
+def test_alternative_evaluation_never_pairs_locked_line_with_current_line_odds():
+    payload = _alternative_artifact_payload(tracked_line=7.5)
+    candidate, pitcher, tracked = build_live_events_to_supabase._alternative_tracked_candidates(
+        slate_date="2026-05-06", payload=payload, market_pick_evidence_rows=[],
+    )[0]
+    evaluation_pitcher, evaluation_pick = build_live_events_to_supabase._alternative_evaluation_inputs(
+        pitcher=pitcher, tracked_pick=tracked, candidate=candidate,
+    )
+    features = build_live_events_to_supabase.derive_runtime_features(
+        pitcher=evaluation_pitcher,
+        pick=evaluation_pick,
+        market_evidence={},
+        observed_at="2026-05-06T18:00:00+00:00",
+    )
+    assert evaluation_pitcher["k_line"] == 7.5
+    assert evaluation_pitcher["best_over_odds"] == -108
+    assert evaluation_pitcher["best_under_odds"] is None
+    assert features["model_no_vig_gap"] is None
+
+
+def test_alternative_sidecar_passes_canonical_side_payload_with_tracked_overlay(monkeypatch):
+    monkeypatch.setenv("ALTERNATIVE_PICK_SELECTION_MODE", "record")
+    payload = _alternative_artifact_payload()
+    writer = Mock()
+    writer.select_rows.side_effect = [[], []]
+
+    with patch.object(
+        build_live_events_to_supabase,
+        "evaluate_alternative_pick",
+        wraps=build_live_events_to_supabase.evaluate_alternative_pick,
+    ) as evaluate:
+        result = build_live_events_to_supabase._write_alternative_pick_selection_state(
+            writer=writer,
+            slate_date="2026-05-06",
+            payload=payload,
+            snapshot_rows=[],
+            market_pick_evidence_rows=[],
+            observed_at=build_live_events_to_supabase.datetime.fromisoformat("2026-05-06T18:00:00+00:00"),
+            artifact_source="test",
+            source_payload_sha256=build_live_events_to_supabase.canonical_payload_sha256(payload),
+            source_artifact_byte_sha256="b" * 64,
+            operational_pick_locks={"skipped": True, "reason": "disabled"},
+            market_line_build={"skipped": True, "reason": "fresh"},
+        )
+
+    call = evaluate.call_args.kwargs
+    assert call["pick"]["win_prob"] == 0.61
+    assert call["pick"]["display_verdict"] == "LEAN"
+    assert call["pick"]["locked_adj_ev"] == 0.07
+    assert call["pitcher"]["best_over_odds"] == -108
+    assert result["provisional_rows"] == 1
+
+
 def test_alternative_pick_selection_mode_fails_closed_except_exact_record(monkeypatch):
     for value in (None, "", "RECORDING", "shadow", " true "):
         if value is None:
@@ -102,11 +307,192 @@ def test_alternative_sidecar_off_performs_no_state_reads_or_writes(monkeypatch):
     writer.insert_ignore_rows.assert_not_called()
 
 
+def test_alternative_sidecar_uses_narrow_allowlisted_state_and_lock_reads(monkeypatch):
+    monkeypatch.setenv("ALTERNATIVE_PICK_SELECTION_MODE", "record")
+    payload = _alternative_artifact_payload()
+    writer = Mock()
+    writer.select_rows.side_effect = [[], []]
+
+    result = build_live_events_to_supabase._write_alternative_pick_selection_state(
+        writer=writer,
+        slate_date="2026-05-06",
+        payload=payload,
+        snapshot_rows=[],
+        market_pick_evidence_rows=[],
+        observed_at=build_live_events_to_supabase.datetime.fromisoformat("2026-05-06T18:00:00+00:00"),
+        artifact_source="https://private.example/get-artifact?token=never-return",
+        source_payload_sha256=build_live_events_to_supabase.canonical_payload_sha256(payload),
+        source_artifact_byte_sha256="b" * 64,
+        operational_pick_locks={"skipped": True, "reason": "disabled"},
+        market_line_build={"skipped": True, "reason": "fresh"},
+    )
+
+    state_params = writer.select_rows.call_args_list[0].args[1]
+    assert state_params["slate_date"] == "eq.2026-05-06"
+    assert state_params["bundle_id"] == f"eq.{build_live_events_to_supabase.BUNDLE_ID}"
+    assert "candidate_became_current_at" in state_params["select"]
+    lock_params = writer.select_rows.call_args_list[1].args[1]
+    assert lock_params["slate_date"] == "eq.2026-05-06"
+    assert lock_params["dedupe_key"].startswith('in.("')
+    assert "source_artifact_sha256" in lock_params["select"]
+    assert "locked_odds" in lock_params["select"]
+    assert "locked_book" in lock_params["select"]
+    assert "artifact_source" not in result
+    assert "private.example" not in repr(result)
+
+
+def test_public_lock_and_artifact_summaries_use_strict_privacy_allowlists():
+    summary = build_live_events_to_supabase._public_operational_lock_summary({
+        "skipped": True,
+        "reason": "write_failed",
+        "rows": 0,
+        "error": "https://private.example/locks?token=never-return",
+        "future_private": {"secret": "never-return"},
+        "lock_rows": [{"source_artifact_path": "https://private.example/today"}],
+        "dispatch": {
+            "skipped": True,
+            "reason": "dispatch_failed",
+            "error": "credential=never-return",
+        },
+    })
+    assert summary == {
+        "skipped": True,
+        "reason": "write_failed",
+        "rows": 0,
+        "dispatch": {"skipped": True, "reason": "dispatch_failed"},
+    }
+    assert "private.example" not in repr(summary)
+    assert "never-return" not in repr(summary)
+    assert build_live_events_to_supabase._public_artifact_source(
+        "https://private.example/get-artifact?token=never-return"
+    ) == "remote"
+    assert build_live_events_to_supabase._public_artifact_source(
+        "C:/private/worktree/dashboard/data/processed/today.json"
+    ) == build_live_events_to_supabase.APPROVED_ARTIFACT_PATH
+
+
+def test_alternative_sidecar_skips_each_failed_prerequisite_without_io(monkeypatch):
+    monkeypatch.setenv("ALTERNATIVE_PICK_SELECTION_MODE", "record")
+    payload = _alternative_artifact_payload()
+    variants = (
+        ({"skipped": True, "reason": "write_failed"}, {"skipped": True, "reason": "disabled"}, {"skipped": True, "reason": "fresh"}, {"skipped": True, "reason": "disabled"}),
+        ({"skipped": True, "reason": "failed"}, {"skipped": True, "reason": "disabled"}, {"skipped": True, "reason": "fresh"}, {"skipped": True, "reason": "disabled"}),
+        ({"skipped": True, "reason": "disabled"}, {"skipped": True, "reason": "write_failed"}, {"skipped": True, "reason": "fresh"}, {"skipped": True, "reason": "disabled"}),
+        ({"skipped": True, "reason": "disabled"}, {"skipped": True, "reason": "disabled"}, {"skipped": False, "current": {"reason": "build_failed"}}, {"skipped": True, "reason": "disabled"}),
+        ({"skipped": True, "reason": "disabled"}, {"skipped": True, "reason": "disabled"}, {"skipped": True, "reason": "fresh"}, {"skipped": True, "reason": "write_failed"}),
+    )
+    for locks, timing, market, ready_write in variants:
+        writer = Mock()
+        result = build_live_events_to_supabase._write_alternative_pick_selection_state(
+            writer=writer,
+            slate_date="2026-05-06",
+            payload=payload,
+            snapshot_rows=[],
+            market_pick_evidence_rows=[],
+            observed_at=build_live_events_to_supabase.datetime.fromisoformat("2026-05-06T18:00:00+00:00"),
+            artifact_source="test",
+            source_payload_sha256="a" * 64,
+            source_artifact_byte_sha256="b" * 64,
+            operational_pick_locks=locks,
+            shadow_pipeline_timing=timing,
+            market_line_build=market,
+            ready_to_bet_write=ready_write,
+        )
+        assert result == {"skipped": True, "reason": "prerequisite_failed", "rows": 0}
+        writer.select_rows.assert_not_called()
+        writer.upsert_rows.assert_not_called()
+        writer.insert_ignore_rows.assert_not_called()
+
+
+def test_alternative_sidecar_reports_timeout_after_evaluation_even_without_rows(monkeypatch):
+    monkeypatch.setenv("ALTERNATIVE_PICK_SELECTION_MODE", "record")
+    payload = _alternative_artifact_payload()
+    writer = Mock()
+    writer.select_rows.side_effect = [[], []]
+    with patch.object(
+        build_live_events_to_supabase.time,
+        "monotonic",
+        side_effect=[0.0, 0.5, 1.0, 6.0],
+    ):
+        result = build_live_events_to_supabase._write_alternative_pick_selection_state(
+            writer=writer,
+            slate_date="2026-05-06",
+            payload=payload,
+            snapshot_rows=[],
+            market_pick_evidence_rows=[],
+            observed_at=build_live_events_to_supabase.datetime.fromisoformat("2026-05-06T23:00:00+00:00"),
+            artifact_source="test",
+            source_payload_sha256=build_live_events_to_supabase.canonical_payload_sha256(payload),
+            source_artifact_byte_sha256="b" * 64,
+            operational_pick_locks={"skipped": True, "reason": "disabled"},
+            market_line_build={"skipped": True, "reason": "fresh"},
+        )
+    assert result["reason"] == "timeout"
+    writer.upsert_rows.assert_not_called()
+    writer.insert_ignore_rows.assert_not_called()
+
+
+def test_alternative_sidecar_skips_colliding_candidate_identities(monkeypatch):
+    monkeypatch.setenv("ALTERNATIVE_PICK_SELECTION_MODE", "record")
+    payload = _alternative_artifact_payload()
+    second = dict(payload["pitchers"][0]["tracked_picks"][0])
+    second["display_k_line"] = 7.5
+    payload["pitchers"][0]["tracked_picks"].append(second)
+    writer = Mock()
+
+    result = build_live_events_to_supabase._write_alternative_pick_selection_state(
+        writer=writer,
+        slate_date="2026-05-06",
+        payload=payload,
+        snapshot_rows=[],
+        market_pick_evidence_rows=[],
+        observed_at=build_live_events_to_supabase.datetime.fromisoformat("2026-05-06T18:00:00+00:00"),
+        artifact_source="test",
+        source_payload_sha256=build_live_events_to_supabase.canonical_payload_sha256(payload),
+        source_artifact_byte_sha256="b" * 64,
+        operational_pick_locks={"skipped": True, "reason": "disabled"},
+        market_line_build={"skipped": True, "reason": "fresh"},
+    )
+    assert result == {"skipped": True, "reason": "candidate_key_collision", "rows": 0, "collisions": 1}
+    writer.select_rows.assert_not_called()
+    writer.upsert_rows.assert_not_called()
+    writer.insert_ignore_rows.assert_not_called()
+
+
+def test_alternative_sidecar_skips_doubleheader_lock_key_collisions(monkeypatch):
+    monkeypatch.setenv("ALTERNATIVE_PICK_SELECTION_MODE", "record")
+    payload = _alternative_artifact_payload()
+    second_pitcher = json.loads(json.dumps(payload["pitchers"][0]))
+    second_pitcher["team"] = "BOS"
+    second_pitcher["opp_team"] = "DET"
+    second_pitcher["game_time"] = "2026-05-07T01:10:00Z"
+    second_pitcher["tracked_picks"][0]["game_time"] = "2026-05-07T01:10:00Z"
+    payload["pitchers"].append(second_pitcher)
+    writer = Mock()
+
+    result = build_live_events_to_supabase._write_alternative_pick_selection_state(
+        writer=writer,
+        slate_date="2026-05-06",
+        payload=payload,
+        snapshot_rows=[],
+        market_pick_evidence_rows=[],
+        observed_at=build_live_events_to_supabase.datetime.fromisoformat("2026-05-06T18:00:00+00:00"),
+        artifact_source="test",
+        source_payload_sha256=build_live_events_to_supabase.canonical_payload_sha256(payload),
+        source_artifact_byte_sha256="b" * 64,
+        operational_pick_locks={"skipped": True, "reason": "disabled"},
+        market_line_build={"skipped": True, "reason": "fresh"},
+    )
+    assert result == {"skipped": True, "reason": "candidate_key_collision", "rows": 0, "collisions": 1}
+    writer.select_rows.assert_not_called()
+
+
 def test_alternative_sidecar_stops_after_first_read_failure(monkeypatch):
     monkeypatch.setenv("ALTERNATIVE_PICK_SELECTION_MODE", "record")
     writer = Mock()
     writer.select_rows.side_effect = RuntimeError("database password=do-not-leak")
     pitcher = _fire_pitcher()
+    pitcher["odds_source"] = "therundown"
     pitcher["tracked_picks"] = [{
         "pitcher": "Tarik Skubal",
         "side": "over",
@@ -139,11 +525,39 @@ def test_alternative_sidecar_stops_after_first_read_failure(monkeypatch):
     writer.insert_ignore_rows.assert_not_called()
 
 
+def test_alternative_sidecar_stops_after_lock_read_failure(monkeypatch):
+    monkeypatch.setenv("ALTERNATIVE_PICK_SELECTION_MODE", "record")
+    payload = _alternative_artifact_payload()
+    writer = Mock()
+    writer.select_rows.side_effect = [[], RuntimeError("private lock read failure")]
+
+    result = build_live_events_to_supabase._write_alternative_pick_selection_state(
+        writer=writer,
+        slate_date="2026-05-06",
+        payload=payload,
+        snapshot_rows=[],
+        market_pick_evidence_rows=[],
+        observed_at=build_live_events_to_supabase.datetime.fromisoformat("2026-05-06T18:00:00+00:00"),
+        artifact_source="test",
+        source_payload_sha256=build_live_events_to_supabase.canonical_payload_sha256(payload),
+        source_artifact_byte_sha256="b" * 64,
+        operational_pick_locks={"skipped": True, "reason": "disabled"},
+        market_line_build={"skipped": True, "reason": "fresh"},
+    )
+
+    assert result["reason"] == "failed"
+    assert "private lock" not in result["warning"]
+    assert writer.select_rows.call_count == 2
+    writer.upsert_rows.assert_not_called()
+    writer.insert_ignore_rows.assert_not_called()
+
+
 def test_alternative_sidecar_contains_evaluation_exception(monkeypatch):
     monkeypatch.setenv("ALTERNATIVE_PICK_SELECTION_MODE", "record")
     writer = Mock()
     writer.select_rows.side_effect = [[], []]
     pitcher = _fire_pitcher()
+    pitcher["odds_source"] = "therundown"
     pitcher["tracked_picks"] = [{
         "pitcher": "Tarik Skubal",
         "side": "over",
@@ -178,11 +592,39 @@ def test_alternative_sidecar_contains_evaluation_exception(monkeypatch):
     writer.insert_ignore_rows.assert_not_called()
 
 
+def test_alternative_sidecar_stops_after_first_write_failure(monkeypatch):
+    monkeypatch.setenv("ALTERNATIVE_PICK_SELECTION_MODE", "record")
+    payload = _alternative_artifact_payload()
+    writer = Mock()
+    writer.select_rows.side_effect = [[], []]
+    writer.upsert_rows.side_effect = RuntimeError("private provisional write failure")
+
+    result = build_live_events_to_supabase._write_alternative_pick_selection_state(
+        writer=writer,
+        slate_date="2026-05-06",
+        payload=payload,
+        snapshot_rows=[],
+        market_pick_evidence_rows=[],
+        observed_at=build_live_events_to_supabase.datetime.fromisoformat("2026-05-06T18:00:00+00:00"),
+        artifact_source="test",
+        source_payload_sha256=build_live_events_to_supabase.canonical_payload_sha256(payload),
+        source_artifact_byte_sha256="b" * 64,
+        operational_pick_locks={"skipped": True, "reason": "disabled"},
+        market_line_build={"skipped": True, "reason": "fresh"},
+    )
+
+    assert result["reason"] == "failed"
+    assert "private provisional" not in result["warning"]
+    writer.upsert_rows.assert_called_once()
+    writer.insert_ignore_rows.assert_not_called()
+
+
 def test_alternative_sidecar_never_writes_duplicate_provisional_candidates(monkeypatch):
     monkeypatch.setenv("ALTERNATIVE_PICK_SELECTION_MODE", "record")
     writer = Mock()
     writer.select_rows.side_effect = [[], []]
     pitcher = _fire_pitcher()
+    pitcher["odds_source"] = "therundown"
     pick = {
         "pitcher": "Tarik Skubal",
         "side": "over",
@@ -216,42 +658,51 @@ def test_alternative_sidecar_never_writes_duplicate_provisional_candidates(monke
 def test_alternative_sidecar_inserts_current_cycle_freeze_without_provisional_update(monkeypatch):
     monkeypatch.setenv("ALTERNATIVE_PICK_SELECTION_MODE", "record")
     observed_at = build_live_events_to_supabase.datetime.fromisoformat("2026-05-06T21:45:00+00:00")
-    pitcher = _fire_pitcher()
-    pitcher["tracked_picks"] = [{
-        "pitcher": "Tarik Skubal",
-        "side": "over",
-        "display_verdict": "FIRE 1u",
-        "display_k_line": 6.5,
-        "display_odds": -110,
-        "display_adj_ev": 0.09,
-        "game_time": "2026-05-06T22:10:00Z",
-    }]
-    payload = {"date": "2026-05-06", "pitchers": [pitcher]}
-    lock = {
-        "dedupe_key": "2026-05-06:tarik skubal:over",
-        "slate_date": "2026-05-06",
-        "normalized_pitcher": "tarik skubal",
-        "side": "over",
-        "locked_k_line": 6.5,
-        "game_time": "2026-05-06T22:10:00+00:00",
-        "status_at_capture": "due_now",
-        "observed_at": "2026-05-06T21:45:00Z",
-        "locked_at": "2026-05-06T21:45:00Z",
-        "should_lock_at": "2026-05-06T21:40:00+00:00",
-        "minutes_until_start": 25,
-        "source_artifact_path": "https://example.netlify.app/.netlify/functions/get-artifact?type=today",
-        "source_artifact_sha256": "b" * 64,
-        "metadata": {"team": "DET", "opp_team": "BOS"},
+    payload = _alternative_artifact_payload(
+        odds_source="therundown+propline",
+        market_source_mode="therundown_propline",
+    )
+    lock = _current_alternative_lock()
+    candidate = build_live_events_to_supabase._alternative_tracked_candidates(
+        slate_date="2026-05-06", payload=payload, market_pick_evidence_rows=[],
+    )[0][0]
+    existing = {
+        "slate_date": candidate["slate_date"],
+        "game_identity": candidate["game_identity"],
+        "candidate_identity": candidate["candidate_identity"],
+        "candidate_became_current_at": "2026-05-06T21:15:00Z",
+        "normalized_pitcher": candidate["normalized_pitcher"],
+        "side": candidate["side"],
+        "bundle_id": build_live_events_to_supabase.BUNDLE_ID,
+        "checkpoint": "provisional",
+        "observed_at": "2026-05-06T21:30:00Z",
+        "game_time": candidate["game_time"],
     }
     writer = Mock()
-    writer.select_rows.side_effect = [[], [lock]]
+    writer.select_rows.side_effect = [[existing], [lock]]
 
     result = build_live_events_to_supabase._write_alternative_pick_selection_state(
         writer=writer,
         slate_date="2026-05-06",
         payload=payload,
-        snapshot_rows=[],
-        market_pick_evidence_rows=[],
+        snapshot_rows=[
+            {
+                "id": "tr-1", "provider": "therundown", "provider_event_id": "tr-game-current",
+                "normalized_player_name": "tarik skubal", "side": "over", "line": 6.5,
+                "bookmaker_key": "fanduel", "american_odds": -108,
+                "game_time": "2026-05-06T22:10:00Z", "observed_at": "2026-05-06T21:20:00Z",
+            },
+            {
+                "id": "pl-1", "provider": "propline", "provider_event_id": "pl-game-current",
+                "normalized_player_name": "tarik skubal", "side": "over", "line": 6.5,
+                "bookmaker_key": "draftkings", "american_odds": -110,
+                "game_time": "2026-05-06T22:10:00Z", "observed_at": "2026-05-06T21:30:00Z",
+            },
+        ],
+        market_pick_evidence_rows=[
+            _alternative_market_evidence("therundown"),
+            _alternative_market_evidence("propline"),
+        ],
         observed_at=observed_at,
         artifact_source=lock["source_artifact_path"],
         source_payload_sha256=build_live_events_to_supabase.canonical_payload_sha256(payload),
@@ -269,6 +720,67 @@ def test_alternative_sidecar_inserts_current_cycle_freeze_without_provisional_up
         on_conflict="slate_date,game_identity,normalized_pitcher,side,bundle_id,checkpoint",
         timeout_seconds=ANY,
     )
+    frozen = writer.insert_ignore_rows.call_args.args[1][0]
+    assert frozen["official_odds"] == lock["locked_odds"] == -108
+    assert frozen["official_book"] == lock["locked_book"] == "FanDuel"
+
+
+def test_alternative_sidecar_never_freezes_unbound_or_stale_raw_evidence(monkeypatch):
+    monkeypatch.setenv("ALTERNATIVE_PICK_SELECTION_MODE", "record")
+    observed_at = build_live_events_to_supabase.datetime.fromisoformat("2026-05-06T21:45:00+00:00")
+    payload = _alternative_artifact_payload(
+        odds_source="therundown+propline",
+        market_source_mode="therundown_propline",
+    )
+    valid_snapshots = [
+        {
+            "id": "tr-1", "provider": "therundown", "provider_event_id": "tr-game-current",
+            "normalized_player_name": "tarik skubal", "side": "over", "line": 6.5,
+            "bookmaker_key": "fanduel", "american_odds": -108,
+            "game_time": "2026-05-06T22:10:00Z", "observed_at": observed_at.isoformat(),
+        },
+        {
+            "id": "pl-1", "provider": "propline", "provider_event_id": "pl-game-current",
+            "normalized_player_name": "tarik skubal", "side": "over", "line": 6.5,
+            "bookmaker_key": "draftkings", "american_odds": -110,
+            "game_time": "2026-05-06T22:10:00Z", "observed_at": observed_at.isoformat(),
+        },
+    ]
+    valid_evidence = [
+        _alternative_market_evidence("therundown"),
+        _alternative_market_evidence("propline"),
+    ]
+    cases = (
+        (
+            valid_snapshots,
+            [valid_evidence[0], {**valid_evidence[1], "metadata": {"freshness_status": "stale"}}],
+        ),
+        ([{**row, "line": 7.5} for row in valid_snapshots], valid_evidence),
+        ([{**row, "provider_event_id": "old-game"} for row in valid_snapshots], valid_evidence),
+        ([{**row, "provider": "boltodds"} for row in valid_snapshots], valid_evidence),
+    )
+
+    for snapshots, evidence in cases:
+        writer = Mock()
+        writer.select_rows.side_effect = [[], [_current_alternative_lock()]]
+        result = build_live_events_to_supabase._write_alternative_pick_selection_state(
+            writer=writer,
+            slate_date="2026-05-06",
+            payload=payload,
+            snapshot_rows=snapshots,
+            market_pick_evidence_rows=evidence,
+            observed_at=observed_at,
+            artifact_source=_current_alternative_lock()["source_artifact_path"],
+            source_payload_sha256=build_live_events_to_supabase.canonical_payload_sha256(payload),
+            source_artifact_byte_sha256="b" * 64,
+            operational_pick_locks={"skipped": False, "lock_rows": [_current_alternative_lock()]},
+            market_line_build={"skipped": True, "reason": "fresh"},
+        )
+
+        assert result["provisional_rows"] == 1
+        assert result["frozen_rows"] == 0
+        writer.upsert_rows.assert_called_once()
+        writer.insert_ignore_rows.assert_not_called()
 
 
 def test_worker_calls_alternative_sidecar_only_after_lock_timing_and_market_build(tmp_path, monkeypatch):
@@ -313,6 +825,7 @@ def test_worker_calls_alternative_sidecar_only_after_lock_timing_and_market_buil
 
     assert calls == ["locks", "timing", "market", "alternative"]
     assert result["alternative_pick_selection"] == {"skipped": True, "reason": "disabled", "rows": 0}
+    assert result["artifact_source"] == build_live_events_to_supabase.APPROVED_ARTIFACT_PATH
 
 
 def test_worker_writes_state_and_notification_events(tmp_path):
@@ -880,6 +1393,8 @@ def test_worker_writes_operational_lock_rows_when_enabled(tmp_path, monkeypatch)
 
     assert result["operational_pick_locks"]["skipped"] is False
     assert result["operational_pick_locks"]["rows"] == 1
+    assert "lock_rows" not in result["operational_pick_locks"]
+    assert "inserted_lock_rows" not in result["operational_pick_locks"]
     lock_call = next(
         call
         for call in writer.insert_ignore_rows.call_args_list
@@ -2425,10 +2940,13 @@ def test_worker_can_build_shadow_market_lines_after_live_state(tmp_path):
             build_market_lines=True,
         )
 
-    artifact_source = result["artifact_source"]
-    assert calls.index(("upsert", "live_pick_state")) < calls.index(("current_lines", artifact_source))
-    assert calls.index(("current_lines", artifact_source)) < calls.index(("official_lines", artifact_source))
-    assert calls.index(("official_lines", artifact_source)) < calls.index(("compact", "2026-05-06"))
+    current_call = next(call for call in calls if call[0] == "current_lines")
+    official_call = next(call for call in calls if call[0] == "official_lines")
+    assert result["artifact_source"] == build_live_events_to_supabase.APPROVED_ARTIFACT_PATH
+    assert current_call[1] == official_call[1]
+    assert calls.index(("upsert", "live_pick_state")) < calls.index(current_call)
+    assert calls.index(current_call) < calls.index(official_call)
+    assert calls.index(official_call) < calls.index(("compact", "2026-05-06"))
     assert result["market_line_build"]["skipped"] is False
     assert result["market_line_build"]["current"]["current_market_lines"] == 3
     assert result["market_line_build"]["official"]["ready_for_pipeline"] == 2

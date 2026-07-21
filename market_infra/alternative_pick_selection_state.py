@@ -58,11 +58,28 @@ def _iso(value: Any) -> str | None:
 
 
 def _line(value: Any) -> float | None:
+    if isinstance(value, bool):
+        return None
     try:
         parsed = float(value)
     except (TypeError, ValueError):
         return None
-    return parsed if parsed >= 0 else None
+    return parsed if math.isfinite(parsed) and parsed >= 0 else None
+
+
+def _integer(value: Any) -> int | None:
+    if isinstance(value, bool):
+        return None
+    try:
+        parsed = float(value)
+    except (TypeError, ValueError):
+        return None
+    return int(parsed) if math.isfinite(parsed) and parsed.is_integer() else None
+
+
+def _nonnegative_integer(value: Any) -> int | None:
+    parsed = _integer(value)
+    return parsed if parsed is not None and parsed >= 0 else None
 
 
 def _nonnegative_number(value: Any) -> float | None:
@@ -221,6 +238,344 @@ def associate_candidate_observations(
     }
 
 
+def resolve_candidate_became_current_at(
+    *, candidate: dict[str, Any], existing_rows: list[dict[str, Any]], observed_at: str,
+) -> str | None:
+    """Keep the window start only while the exact candidate identity is current."""
+    current = _iso(observed_at)
+    if current is None:
+        return None
+    identity = _text(candidate.get("candidate_identity"))
+    for row in existing_rows if isinstance(existing_rows, list) else []:
+        if (
+            isinstance(row, dict)
+            and row.get("checkpoint") == "provisional"
+            and _text(row.get("candidate_identity")) == identity
+        ):
+            persisted = _iso(row.get("candidate_became_current_at"))
+            if persisted is not None:
+                return persisted
+    return current
+
+
+def bind_candidate_observations(
+    *,
+    candidate: dict[str, Any],
+    snapshot_rows: list[dict[str, Any]],
+    market_evidence_rows: list[dict[str, Any]],
+    first_current_at: str,
+    observed_at: str,
+    artifact_snapshot_ids: list[Any] | tuple[Any, ...],
+    artifact_provider_event_ids: dict[str, list[Any] | tuple[Any, ...]],
+) -> dict[str, Any]:
+    """Bind raw rows only when artifact, event, line, timing, and freshness agree."""
+    start, checkpoint = _utc(first_current_at), _utc(observed_at)
+    reasons: list[str] = []
+    if not _candidate_is_canonical(candidate):
+        reasons.append("candidate_identity_invalid")
+    if start is None or checkpoint is None:
+        reasons.append("evidence_window_invalid")
+
+    snapshot_ids = {_text(value) for value in artifact_snapshot_ids if _text(value)}
+    event_ids = {
+        _text(provider).lower(): {_text(value) for value in values if _text(value)}
+        for provider, values in (artifact_provider_event_ids or {}).items()
+        if isinstance(values, (list, tuple, set))
+    }
+    required_providers = {
+        "therundown": {"therundown"},
+        "propline": {"propline"},
+        "therundown_propline": {"therundown", "propline"},
+    }.get(_text(candidate.get("provider_posture")).lower(), set())
+    if not snapshot_ids and any(not event_ids.get(provider) for provider in required_providers):
+        reasons.append("evidence_event_unbound")
+    exact_evidence: dict[str, dict[str, Any]] = {}
+    for row in market_evidence_rows if isinstance(market_evidence_rows, list) else []:
+        if not isinstance(row, dict):
+            continue
+        provider = _text(row.get("provider")).lower()
+        if provider not in SUPPORTED_SNAPSHOT_PROVIDERS:
+            continue
+        if (
+            _text(row.get("slate_date")) == _text(candidate.get("slate_date"))
+            and normalize(_text(row.get("normalized_pitcher") or row.get("pitcher")))
+            == candidate.get("normalized_pitcher")
+            and _text(row.get("side")).lower() == candidate.get("side")
+            and _line(row.get("k_line")) == _line(candidate.get("model_k_line"))
+            and _iso(row.get("game_time")) == _iso(candidate.get("game_time"))
+        ):
+            exact_evidence[provider] = row
+
+    bound_rows: list[dict[str, Any]] = []
+    for snapshot in snapshot_rows if isinstance(snapshot_rows, list) else []:
+        if not isinstance(snapshot, dict):
+            reasons.append("evidence_malformed")
+            continue
+        normalized = normalize(_text(snapshot.get("normalized_player_name") or snapshot.get("player_name")))
+        side = _text(snapshot.get("side")).lower()
+        if normalized != candidate.get("normalized_pitcher") or side != candidate.get("side"):
+            continue
+        provider = _text(snapshot.get("provider")).lower()
+        if provider not in SUPPORTED_SNAPSHOT_PROVIDERS:
+            reasons.append("evidence_provider_unsupported")
+            continue
+        if _line(snapshot.get("line")) != _line(candidate.get("model_k_line")):
+            reasons.append("evidence_line_mismatch")
+            continue
+        snapshot_game_time = _iso(snapshot.get("game_time"))
+        if snapshot_game_time and snapshot_game_time != _iso(candidate.get("game_time")):
+            reasons.append("evidence_event_mismatch")
+            continue
+        snapshot_id = _text(snapshot.get("id"))
+        provider_event_id = _text(snapshot.get("provider_event_id"))
+        provider_artifact_events = event_ids.get(provider, set())
+        if not snapshot_ids and not provider_artifact_events:
+            reasons.append("evidence_event_unbound")
+            continue
+        if snapshot_id not in snapshot_ids and provider_event_id not in provider_artifact_events:
+            reasons.append("evidence_event_mismatch")
+            continue
+        evidence = exact_evidence.get(provider)
+        metadata = (
+            evidence.get("metadata")
+            if isinstance(evidence, dict) and isinstance(evidence.get("metadata"), dict)
+            else {}
+        )
+        if not evidence or _text(metadata.get("freshness_status")).lower() != "fresh":
+            reasons.append("evidence_stale")
+            continue
+        native_freshness = _text(snapshot.get("freshness_status")).lower()
+        if native_freshness and native_freshness != "fresh":
+            reasons.append("evidence_stale")
+            continue
+        timestamp = _utc(snapshot.get("observed_at"))
+        bookmaker_key = _text(snapshot.get("bookmaker_key")).lower()
+        american_odds = _integer(snapshot.get("american_odds"))
+        if not snapshot_id or timestamp is None or not bookmaker_key or american_odds in {None, 0}:
+            reasons.append("evidence_malformed")
+        elif start is None or checkpoint is None:
+            continue
+        elif timestamp < start:
+            reasons.append("evidence_before_current_candidate")
+        elif timestamp > checkpoint:
+            reasons.append("evidence_after_checkpoint")
+        else:
+            bound_rows.append({
+                "id": snapshot_id,
+                "provider": provider,
+                "candidate_identity": candidate["candidate_identity"],
+                "bookmaker_key": bookmaker_key,
+                "american_odds": american_odds,
+                "observed_at": timestamp.isoformat(),
+                "freshness_status": "fresh",
+            })
+
+    if reasons:
+        bound_rows = []
+    window = associate_candidate_observations(
+        candidate=candidate,
+        snapshot_rows=bound_rows,
+        first_current_at=first_current_at,
+        observed_at=observed_at,
+    )
+    combined_reasons = tuple(dict.fromkeys((*reasons, *window.get("reason_codes", ()))))
+    return {
+        **window,
+        "ready": not combined_reasons and bool(window.get("ready")),
+        "reason_codes": combined_reasons,
+        "bound_observations": [
+            {
+                "id": row["id"],
+                "provider": row["provider"],
+                "bookmaker_key": row["bookmaker_key"],
+                "american_odds": row["american_odds"],
+                "observed_at": row["observed_at"],
+            }
+            for row in bound_rows
+        ],
+    }
+
+
+def aggregate_candidate_market_evidence(
+    *,
+    candidate: dict[str, Any],
+    market_evidence_rows: list[dict[str, Any]],
+    evidence_window: dict[str, Any],
+) -> dict[str, Any]:
+    """Deterministically combine complete, exact-current approved-provider rows."""
+    reasons: list[str] = []
+    rows_by_provider: dict[str, list[dict[str, Any]]] = {}
+    for row in market_evidence_rows if isinstance(market_evidence_rows, list) else []:
+        if not isinstance(row, dict):
+            continue
+        provider = _text(row.get("provider")).lower()
+        if provider not in SUPPORTED_SNAPSHOT_PROVIDERS:
+            continue
+        if (
+            _text(row.get("slate_date")) != _text(candidate.get("slate_date"))
+            or normalize(_text(row.get("normalized_pitcher") or row.get("pitcher")))
+            != candidate.get("normalized_pitcher")
+            or _text(row.get("side")).lower() != candidate.get("side")
+            or _line(row.get("k_line")) != _line(candidate.get("model_k_line"))
+            or _iso(row.get("game_time")) != _iso(candidate.get("game_time"))
+        ):
+            continue
+        rows_by_provider.setdefault(provider, []).append(row)
+
+    posture = _text(candidate.get("provider_posture")).lower()
+    declared_by_posture = {
+        "therundown": {"therundown"},
+        "propline": {"propline"},
+        "therundown_propline": {"therundown", "propline"},
+    }
+    declared = declared_by_posture.get(posture, set())
+    if not declared:
+        reasons.append("candidate_provider_posture_unsupported")
+    required = (
+        "book_count",
+        "toward_pick_count",
+        "away_from_pick_count",
+        "reversal_book_count",
+        "volatile_book_count",
+    )
+    bound_by_provider: dict[str, list[dict[str, Any]]] = {}
+    for observation in evidence_window.get("bound_observations", []):
+        if not isinstance(observation, dict):
+            reasons.append("provider_observations_malformed")
+            continue
+        provider = _text(observation.get("provider")).lower()
+        if provider in declared:
+            bound_by_provider.setdefault(provider, []).append(observation)
+
+    provider_stats: dict[str, dict[str, Any]] = {}
+    for provider in sorted(declared):
+        provider_rows = rows_by_provider.get(provider, [])
+        if len(provider_rows) != 1:
+            reasons.append("provider_evidence_missing" if not provider_rows else "provider_evidence_duplicate")
+            continue
+        row = provider_rows[0]
+        metadata = row.get("metadata") if isinstance(row.get("metadata"), dict) else {}
+        if _text(metadata.get("freshness_status")).lower() != "fresh":
+            reasons.append("provider_evidence_stale")
+        reported = {field: _nonnegative_integer(row.get(field)) for field in required}
+        if any(value is None for value in reported.values()):
+            reasons.append("provider_evidence_incomplete")
+            continue
+
+        observations = bound_by_provider.get(provider, [])
+        if not observations:
+            reasons.append("provider_observations_missing")
+            continue
+        by_book: dict[str, list[tuple[datetime, int]]] = {}
+        malformed = False
+        for observation in observations:
+            book = _text(observation.get("bookmaker_key")).lower()
+            timestamp = _utc(observation.get("observed_at"))
+            odds = _integer(observation.get("american_odds"))
+            if not book or timestamp is None or odds in {None, 0}:
+                malformed = True
+                continue
+            by_book.setdefault(book, []).append((timestamp, odds))
+        if malformed or not by_book:
+            reasons.append("provider_observations_malformed")
+            continue
+
+        toward_count = 0
+        away_count = 0
+        reversal_count = 0
+        for values in by_book.values():
+            ordered = sorted(values)
+            first_odds, current_odds = ordered[0][1], ordered[-1][1]
+            if current_odds < first_odds:
+                toward_count += 1
+            elif current_odds > first_odds:
+                away_count += 1
+            directions = [
+                "toward" if current < previous else "away"
+                for (_, previous), (_, current) in zip(ordered, ordered[1:])
+                if current != previous
+            ]
+            if any(previous != current for previous, current in zip(directions, directions[1:])):
+                reversal_count += 1
+
+        derived = {
+            "book_count": len(by_book),
+            "toward_pick_count": toward_count,
+            "away_from_pick_count": away_count,
+            "reversal_book_count": reversal_count,
+            "volatile_book_count": reversal_count,
+        }
+        row_books = row.get("books_seen")
+        if isinstance(row_books, (list, tuple, set)):
+            reported_books = {_text(book).lower() for book in row_books if _text(book)}
+        else:
+            summaries = metadata.get("book_summaries") if isinstance(metadata.get("book_summaries"), dict) else {}
+            reported_books = {_text(book).lower() for book in summaries if _text(book)}
+        if reported != derived or reported_books != set(by_book):
+            reasons.append("provider_evidence_conflict")
+        provider_stats[provider] = {**derived, "books_seen": sorted(by_book)}
+
+    if not evidence_window.get("ready"):
+        reasons.append("candidate_observations_pending")
+    directions = set()
+    for stats in provider_stats.values():
+        toward = stats["toward_pick_count"]
+        away = stats["away_from_pick_count"]
+        if toward > away:
+            directions.add("toward")
+        elif away > toward:
+            directions.add("away")
+    if directions == {"toward", "away"}:
+        reasons.append("provider_disagreement")
+
+    books = {
+        book
+        for stats in provider_stats.values()
+        for book in stats["books_seen"]
+    }
+    toward_count = sum(stats["toward_pick_count"] for stats in provider_stats.values())
+    away_count = sum(stats["away_from_pick_count"] for stats in provider_stats.values())
+    reason_codes = list(dict.fromkeys(reasons))
+    observations = sorted(
+        [
+            {"id": row.get("id"), "observed_at": row.get("observed_at")}
+            for row in evidence_window.get("bound_observations", [])
+            if isinstance(row, dict)
+        ],
+        key=lambda row: (_text(row.get("observed_at")), _text(row.get("id"))),
+    )
+    return {
+        "provider": posture,
+        "declared_providers": sorted(declared),
+        "candidate_identity": {
+            "slate_date": candidate.get("slate_date"),
+            "game_time": candidate.get("game_time"),
+            "pitcher": candidate.get("normalized_pitcher"),
+            "side": candidate.get("side"),
+            "k_line": candidate.get("model_k_line"),
+            "provider": posture,
+        },
+        "candidate_became_current_at": evidence_window.get("first_current_at"),
+        "observations": observations,
+        "observation_ids": list(evidence_window.get("observation_ids", [])),
+        "first_observed_at": evidence_window.get("first_observed_at"),
+        "last_observed_at": evidence_window.get("last_observed_at"),
+        "freshness_status": "fresh" if not reason_codes else "pending",
+        "aggregation_reason_codes": reason_codes,
+        "book_count": len(books),
+        "books_seen": sorted(books),
+        "toward_pick_count": toward_count,
+        "away_from_pick_count": away_count,
+        "side_price_movement": (
+            "with_side" if toward_count > away_count else "against_side" if away_count > toward_count else "neutral"
+        ),
+        "broad_confirmation": len(books) >= 3,
+        "reversal_book_count": sum(stats["reversal_book_count"] for stats in provider_stats.values()),
+        "volatile_book_count": sum(stats["volatile_book_count"] for stats in provider_stats.values()),
+        "best_is_off_market": False,
+    }
+
+
 def _evaluation_value(evaluation: Any, key: str, default: Any = None) -> Any:
     return evaluation.get(key, default) if isinstance(evaluation, dict) else getattr(evaluation, key, default)
 
@@ -268,6 +623,9 @@ def build_provisional_row(
         "selector_id": SELECTOR_IDS_BY_LANE.get(lane),
         "selector_fingerprint": selector_fingerprint,
         "checkpoint": "provisional",
+        "candidate_became_current_at": (
+            _iso((evidence_window or {}).get("first_current_at")) or checkpoint.isoformat()
+        ),
         "official_odds": inputs.get("odds"),
         "official_book": inputs.get("official_book"),
         "official_verdict": inputs.get("official_verdict"),
@@ -311,6 +669,8 @@ def lock_matches_candidate(lock_row: dict[str, Any], candidate: dict[str, Any], 
         normalize(_text(lock_row.get("normalized_pitcher"))) == _text(candidate.get("normalized_pitcher")),
         _text(lock_row.get("side")).lower() == _text(candidate.get("side")).lower(),
         _line(lock_row.get("locked_k_line")) == _line(candidate.get("model_k_line")),
+        _integer(lock_row.get("locked_odds")) == _integer(candidate.get("official_odds")),
+        _text(lock_row.get("locked_book")).lower() == _text(candidate.get("official_book")).lower(),
         _iso(lock_row.get("game_time")) == _iso(candidate.get("game_time")),
         _text(metadata.get("team")).upper() == _text(candidate.get("team")).upper(),
         _text(metadata.get("opp_team")).upper() == _text(candidate.get("opp_team")).upper(),
@@ -323,6 +683,7 @@ def frozen_link_reason(*, provisional_row: dict[str, Any], lock_row: dict[str, A
     candidate = {key: provisional_row.get(key) for key in (
         "slate_date", "pitcher", "normalized_pitcher", "side", "model_k_line", "game_time", "team", "opp_team",
         "provider_posture", "game_identity", "candidate_identity", "source_artifact_path",
+        "official_odds", "official_book",
     )}
     checkpoint, start = _utc(observed_at), _utc(candidate["game_time"])
     locked_at, lock_observed_at = _utc(lock_row.get("locked_at")), _utc(lock_row.get("observed_at"))
