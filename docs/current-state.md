@@ -64,6 +64,10 @@ For any new work in this repo:
      for the controlling frozen post-grading v1 implementation plan
    - `docs/research/no-drag-composite-prospective-canary-packet.md`
      for the lead operator packet for the no-drag prospective canary
+   - `docs/superpowers/specs/2026-07-21-pregame-alternative-pick-methodology-design.md`
+     for the approved product direction and written-review contract for the
+     pregame Alt Picks comparison surface; implementation and activation remain
+     pending
    - `docs/research/strict-runtime-core-selective-lean-canary-packet.md`
      for comparison/control historical context on
      `strict_runtime_core_plus_selective_lean`, not the lead candidate
@@ -279,6 +283,21 @@ each lane.
 | UI | `2026-05-20-live-market-decision-ui.md`, `2026-05-20-live-notification-coordinator.md`, `2026-06-04-live-notification-digest-coordinator.md` | Phase 2 live market-decision UI is now default-on for actionable cards, with `?marketSheet=0` as the rollback/opt-out. `dashboard/v2-data.js` fetches `/.netlify/functions/live-market-display` by default and attaches sanitized `live_market_display_state` rows; the Netlify function reads with server-side Supabase credentials and returns app-safe allow-listed rows plus sanitized `book_rows` / `movement_events`. `dashboard/v2-app.jsx` keeps PASS cards quiet and shows actionable-card market strips, detail-sheet market panels, a compact book board with Best / Model ref / Same line / Different line / cushion tags, and Log Bet live-book selection that fills the existing line, odds, and book fields. The existing Log Bet modal still records through the existing accepted-bet path, preserves matched push/shadow-review `notification_event_id` / `shadow_candidate_id`, supports same-day review/duplicate warnings and append-only corrections, and keeps manual edits available. This is a UI readout only and does not change provider/source-of-truth, model, threshold, staking, lock, retention, notification, or accepted-bet API behavior. | Verify same-line defaulting and alternate-line context on the next normal slate, including that alternate-line rows remain manually selectable but cannot auto-prefill Log Bet. Retain `?marketSheet=0` as rollback/opt-out and keep provider promotion, betting-rule changes, broader edit/delete audit, and notification behavior separate. |
 
 | Tracking / data collection / history | `docs/research/market-tracker-map.md`, `docs/research/pitcher-k-outcome-dataset.md`, `2026-06-07-market-agreement-tracker.md`, compact outcome outputs, live-market audits | Canonical research row plus existing market/live/provider trackers. The market agreement tracker now derives LEAN/FIRE/referee-cap buckets for live movement with or against the model without adding a table; the 2026-06-09 backfill used compact Supabase exports plus Gate C metadata/result overlay and produced `2,482` evidence rows, `2,171` graded rows, and `56` graded confidence-referee cap rows. The 2026-07-09 refreshed export produced `1,935` tracker rows with `432` covered graded tracked picks for synthesis review, enough to make agreement-with-model versus agreement-against-model useful directional evidence while still too sparse for standalone promotion. Actual opportunity is now reconstructed from MLB boxscores into the compact row for postgame workload/leash explanation only. Daily brief keeps a compact Gate C bucket scoreboard and pre/post 2026-04-28 context. | Prefer derived labels on existing live-market and compact outcome rows before adding tables. Use market-agreement, edge-synthesis, CLV, and actual-opportunity buckets to decide what to keep studying, not to auto-promote LEANs, override the referee, or change model/staking/provider/notification behavior. Promote compact storage or retention only after row-volume/cost proof and Tyler approval. |
+
+### July 21 Alt Picks board overlay
+
+The controlling written design is
+`docs/superpowers/specs/2026-07-21-pregame-alternative-pick-methodology-design.md`.
+Tyler approved the product direction: compare official same-day picks with a
+pregame alternative methodology in the middle Alt Picks tab. The written spec
+still needs review before an implementation plan is written.
+
+| Lane | Current stage | Next decision |
+| --- | --- | --- |
+| Pipeline / infrastructure | Design only. The proposed evaluator is a fail-no-op step at the end of the existing live-layer cycle, behind `ALTERNATIVE_PICK_SELECTION_MODE=off|record`; no service, deployment, environment, notification, or lock change has been made. | After written-spec review, write the implementation plan. Keep migration, Render `record` activation, and Netlify deployment as separately approved steps. |
+| Model | Two new, versioned, disjoint selectors are specified without changing no-drag v1: Consensus Core and Re-entry Expansion. Their exploratory official-close combined result is `148-84`, `+38.585u`, `+16.63%` on `232`; it may include post-T-30 market information and is not checkpoint-equivalent or promotion evidence. | Freeze the field manifest/fingerprint and prove runtime input parity, completeness, snapshot association, and prospective-only behavior before collecting a new T-30 record from zero. Keep every official model/staking gate closed. |
+| UI | Product direction approved to replace the middle History tab with same-day Alt Picks while leaving Picks and Results unchanged. Cards show the official pick, alternative lane, distinct-family agreement, and provisional/frozen state; no wager action or historical PnL is included. | Review the written interaction contract, then implement and smoke-test desktop plus 390-pixel mobile behind isolated failure handling. |
+| Tracking / data collection / history | The design proposes one small RLS-protected `alternative_pick_selection_state` table with at most provisional plus frozen rows per eligible pick/day. No migration or retention change has been applied. | Validate the schema and policies in the implementation plan; apply the additive migration only with separate Tyler approval and verify bounded row volume. |
 
 Decision-integrity rollout, 2026-07-20: `main` commit `b7906a44` is live on
 Netlify deploy `6a5e5bbef33863243b980d83`; production root and `/v2.html`
