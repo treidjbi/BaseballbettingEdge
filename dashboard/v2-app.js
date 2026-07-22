@@ -2625,6 +2625,7 @@ function altBookTitle(value) {
     betrivers: "BetRivers",
     kalshi: "Kalshi",
     caesars: "Caesars",
+    thescore: "theScore Bet",
     thescorebet: "theScore Bet"
   };
   const key = String(value || "").trim().toLowerCase().replace(/[^a-z0-9]+/g, "");

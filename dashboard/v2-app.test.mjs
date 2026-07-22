@@ -160,7 +160,7 @@ test("Alt Picks labels singular counts and canonical endpoint book keys", () => 
   assert.equal(altCountLabel(3, "observation"), "3 observations");
   assert.equal(typeof altBookTitle, "function");
   assert.deepEqual(
-    ["fanduel", "draftkings", "betmgm", "betrivers", "kalshi", "caesars", "thescore_bet"].map(altBookTitle),
-    ["FanDuel", "DraftKings", "BetMGM", "BetRivers", "Kalshi", "Caesars", "theScore Bet"],
+    ["fanduel", "draftkings", "betmgm", "betrivers", "kalshi", "caesars", "thescore", "thescore_bet"].map(altBookTitle),
+    ["FanDuel", "DraftKings", "BetMGM", "BetRivers", "Kalshi", "Caesars", "theScore Bet", "theScore Bet"],
   );
 });

@@ -2284,7 +2284,7 @@ function altCountLabel(value, noun) {
 function altBookTitle(value) {
   const titles = {
     fanduel: "FanDuel", draftkings: "DraftKings", betmgm: "BetMGM", betrivers: "BetRivers",
-    kalshi: "Kalshi", caesars: "Caesars", thescorebet: "theScore Bet",
+    kalshi: "Kalshi", caesars: "Caesars", thescore: "theScore Bet", thescorebet: "theScore Bet",
   };
   const key = String(value || "").trim().toLowerCase().replace(/[^a-z0-9]+/g, "");
   return titles[key] || String(value || "").trim();
