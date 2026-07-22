@@ -8,6 +8,13 @@
 
 **Tech Stack:** Python 3.11, pytest, Postgres/Supabase migrations and PostgREST, Netlify Functions on Node, vanilla browser JavaScript, React 18 UMD, Node's built-in test runner, and the existing Babel JSX build.
 
+**Implementation status (2026-07-21):** Tasks 1-5 are implemented and
+review-clean on `codex/pregame-alt-picks`. The frozen manifest fingerprint is
+`f8f7ccf652b8eda4860d07798bc4673920b0b9d727552bc7e2e6547d478b4579`.
+The additive migration is present but unapplied; the live-layer mode defaults
+to `off`; record activation, off-mode deployment, and Netlify deployment are
+separate closed gates. No prospective production rows/sample are claimed.
+
 ## Global Constraints
 
 - Keep official artifacts, picks, verdicts, model math, thresholds, staking, grading, notifications, operational locks, provider order, accepted bets, and dashboard source-of-truth unchanged.
@@ -38,7 +45,7 @@
 - Modify: `tests/test_gate_f_fire_reentry_lab.py`
 - Modify: `tests/test_gate_f_preclose_clv_proxy_lab.py`
 
-- [ ] **Step 1: Write failing manifest and evaluator tests**
+- [x] **Step 1: Write failing manifest and evaluator tests**
 
 Add golden tests for:
 
@@ -104,7 +111,7 @@ evaluation = evaluate_alternative_pick(
 )
 ```
 
-- [ ] **Step 2: Run the focused tests and observe RED**
+- [x] **Step 2: Run the focused tests and observe RED**
 
 Run:
 
@@ -114,7 +121,7 @@ python -m pytest tests/test_alternative_pick_selector.py tests/test_no_drag_comp
 
 Expected: failure because the new selector module and manifest do not exist.
 
-- [ ] **Step 3: Implement the pure module and frozen manifest**
+- [x] **Step 3: Implement the pure module and frozen manifest**
 
 Expose these stable interfaces (the implementation supplies the concrete bodies):
 
@@ -155,7 +162,7 @@ Move the reusable runtime-safe feature and predicate implementations behind publ
 
 Before calling the preclose scorer, explicitly require two distinct current-candidate observation IDs plus non-null reversal and volatility counts. Preserve the existing `strong_preclose_clv_proxy` score threshold only after completeness passes.
 
-- [ ] **Step 4: Prove green and parity**
+- [x] **Step 4: Prove green and parity**
 
 Run the focused command from Step 2 plus:
 
@@ -166,7 +173,7 @@ python -m pytest tests/test_build_pitcher_k_outcome_dataset.py -q
 
 Expected: all tests pass; the machine research ledger remains `+38.585u` combined and the prospective fixture reports zero graded picks.
 
-- [ ] **Step 5: Commit Task 1**
+- [x] **Step 5: Commit Task 1**
 
 ```powershell
 git add market_infra/alternative_pick_selector.py market_infra/alternative_pick_selector_manifest_v1.json analytics/diagnostics/pitcher_k_outcome_dataset.py analytics/diagnostics/no_drag_composite_canary_audit.py analytics/diagnostics/gate_f_fire_reentry_lab.py analytics/diagnostics/gate_f_preclose_clv_proxy_lab.py tests/test_alternative_pick_selector.py tests/test_no_drag_composite_canary_audit.py tests/test_gate_f_fire_reentry_lab.py tests/test_gate_f_preclose_clv_proxy_lab.py
@@ -184,7 +191,7 @@ git commit -m "feat: freeze alternative pick selector contract"
 - Create with Supabase CLI: `supabase/migrations/*_alternative_pick_selection_state.sql` (the CLI assigns the timestamp in Task 2)
 - Create: `tests/test_alternative_pick_selection_schema.py`
 
-- [ ] **Step 1: Write failing pure state and schema tests**
+- [x] **Step 1: Write failing pure state and schema tests**
 
 Cover:
 
@@ -202,7 +209,7 @@ Cover:
 - frozen insert-ignore behavior and migration-level update/delete immutability;
 - RLS enabled, explicit anon/authenticated revoke, service-role grants, and the expected unique constraint.
 
-- [ ] **Step 2: Run the tests and observe RED**
+- [x] **Step 2: Run the tests and observe RED**
 
 ```powershell
 python -m pytest tests/test_alternative_pick_selection_state.py tests/test_alternative_pick_selection_schema.py -q
@@ -210,7 +217,7 @@ python -m pytest tests/test_alternative_pick_selection_state.py tests/test_alter
 
 Expected: failure because the state module and migration are absent.
 
-- [ ] **Step 3: Implement pure state shaping**
+- [x] **Step 3: Implement pure state shaping**
 
 Expose:
 
@@ -239,7 +246,7 @@ Use two named hash domains without changing existing lock behavior:
 
 Add an end-to-end golden test that starts from one JSON payload, proves key-order-insensitive canonical payload hashing, preserves the exact-byte lock hash, and carries both unchanged through candidate → provisional → lock → frozen row validation.
 
-- [ ] **Step 4: Create the migration through the linked CLI**
+- [x] **Step 4: Create the migration through the linked CLI**
 
 Run from the repo root:
 
@@ -261,7 +268,7 @@ Enable RLS, revoke all privileges from `anon` and `authenticated`, and explicitl
 
 Do **not** run `supabase db push`, `migration up`, or any production SQL command.
 
-- [ ] **Step 5: Prove green**
+- [x] **Step 5: Prove green**
 
 ```powershell
 python -m pytest tests/test_alternative_pick_selection_state.py tests/test_alternative_pick_selection_schema.py tests/test_operational_pick_locks_schema.py -q
@@ -269,7 +276,7 @@ python -m pytest tests/test_alternative_pick_selection_state.py tests/test_alter
 
 Expected: all tests pass and `git diff -- supabase/migrations` shows one additive, unapplied migration only.
 
-- [ ] **Step 6: Commit Task 2**
+- [x] **Step 6: Commit Task 2**
 
 ```powershell
 git add market_infra/alternative_pick_selection_state.py tests/test_alternative_pick_selection_state.py tests/test_alternative_pick_selection_schema.py supabase/migrations
@@ -287,7 +294,7 @@ git commit -m "feat: add immutable alternative pick state"
 - Modify: `tests/test_market_infra_supabase_writer.py`
 - Modify: `tests/test_live_layer_worker.py`
 
-- [ ] **Step 1: Write failing timeout, ordering, and isolation tests**
+- [x] **Step 1: Write failing timeout, ordering, and isolation tests**
 
 Add tests proving:
 
@@ -301,7 +308,7 @@ Add tests proving:
 - the writer supports a caller-supplied timeout and single-attempt select without changing existing defaults; and
 - alternative writes never exceed two rows per eligible candidate/day.
 
-- [ ] **Step 2: Run focused tests and observe RED**
+- [x] **Step 2: Run focused tests and observe RED**
 
 ```powershell
 python -m pytest tests/test_market_infra_supabase_writer.py tests/test_live_layer_worker.py -q
@@ -309,7 +316,7 @@ python -m pytest tests/test_market_infra_supabase_writer.py tests/test_live_laye
 
 Expected: the new mode/order/timeout assertions fail.
 
-- [ ] **Step 3: Add backward-compatible request budgets**
+- [x] **Step 3: Add backward-compatible request budgets**
 
 Extend `select_rows`, `upsert_rows`, and `insert_ignore_rows` with keyword-only timeout controls whose defaults remain the existing 20 seconds. Let alternative reads pass `attempts=1`; do not alter retry behavior for current callers.
 
@@ -319,7 +326,7 @@ upsert_rows(self, table, rows, on_conflict, *, timeout_seconds=20)
 insert_ignore_rows(self, table, rows, on_conflict, *, timeout_seconds=20)
 ```
 
-- [ ] **Step 4: Add the optional recorder after lock and timing work**
+- [x] **Step 4: Add the optional recorder after lock and timing work**
 
 Add:
 
@@ -342,7 +349,7 @@ Call it only after `_write_operational_pick_locks`, `_write_shadow_pipeline_timi
 
 Compute `source_payload_sha256 = canonical_payload_sha256(payload)` without altering the existing byte hash passed to notifications or locks. Read only current-slate provisional/frozen state and exact candidate lock rows. A freeze is eligible only when the current lock operation returned the row or the persisted lock's `locked_at` exactly matches this cycle's `observed_at`; an older lock without a frozen row becomes `missed_freeze` and is never reconstructed even if either hash did not change. Skip provisional mutation after freeze or game start. Do not make a provider/API call. Return an `alternative_pick_selection` summary in `run()` output without changing existing return keys.
 
-- [ ] **Step 5: Prove green and off-mode compatibility**
+- [x] **Step 5: Prove green and off-mode compatibility**
 
 ```powershell
 python -m pytest tests/test_market_infra_supabase_writer.py tests/test_live_layer_worker.py tests/test_notification_coordinator.py tests/test_operational_pick_locks.py -q
@@ -350,7 +357,7 @@ python -m pytest tests/test_market_infra_supabase_writer.py tests/test_live_laye
 
 Expected: all tests pass; existing call ordering and results are unchanged when the mode is off.
 
-- [ ] **Step 6: Commit Task 3**
+- [x] **Step 6: Commit Task 3**
 
 ```powershell
 git add market_infra/supabase_writer.py scripts/build_live_events_to_supabase.py tests/test_market_infra_supabase_writer.py tests/test_live_layer_worker.py
@@ -366,7 +373,7 @@ git commit -m "feat: record alternative picks after live locks"
 - Create: `netlify/functions/alternative-picks.mjs`
 - Create: `tests/test_alternative_picks_function.mjs`
 
-- [ ] **Step 1: Write failing endpoint contract tests**
+- [x] **Step 1: Write failing endpoint contract tests**
 
 Cover OPTIONS, missing configuration, Phoenix current-date scope, service-role-only reads, explicit selected fields, stale provisional suppression, exact frozen lock-link validation, frozen preservation after artifact advance, malformed rows, and sanitized failure bodies with no key/raw metadata leakage.
 
@@ -383,7 +390,7 @@ The response shape is:
 }
 ```
 
-- [ ] **Step 2: Run and observe RED**
+- [x] **Step 2: Run and observe RED**
 
 ```powershell
 node --test tests/test_alternative_picks_function.mjs
@@ -391,7 +398,7 @@ node --test tests/test_alternative_picks_function.mjs
 
 Expected: module-not-found failure.
 
-- [ ] **Step 3: Implement the fail-open endpoint**
+- [x] **Step 3: Implement the fail-open endpoint**
 
 Model headers/config handling on `live-market-display.mjs`, but always compute the Phoenix slate date server-side. A mismatched `date` query returns an empty current-slate-only response rather than exposing history.
 
@@ -405,7 +412,7 @@ Keep a provisional row only when its canonical `source_artifact_sha256` equals t
 
 Construct every returned row from this exact allow-list: `slate_date`, `pitcher`, `team`, `opp_team`, `game_time`, `side`, `model_k_line`, `official_odds`, `official_book`, `official_verdict`, `bundle_id`, `selector_id`, `lane`, `selection_status`, `family_states`, `family_count`, `checkpoint`, `reason_codes`, `source_artifact_generated_at`, `evidence_observation_count`, `evidence_first_observed_at`, `evidence_last_observed_at`, `evidence_freshness_status`, `frozen_at`, `should_lock_at`, `minutes_until_start`, `lock_status`, and `artifact_advanced_after_freeze`. Never return database IDs, game/candidate identities, hashes, raw metadata, observation IDs/payloads, internal URLs, error bodies, or credentials. Use `Cache-Control: no-store`. Missing config/read failure returns HTTP 200 with `status="unavailable"`, zero rows, and a short stable error code.
 
-- [ ] **Step 4: Prove green**
+- [x] **Step 4: Prove green**
 
 ```powershell
 node --test tests/test_alternative_picks_function.mjs tests/test_live_market_display_function.mjs
@@ -413,7 +420,7 @@ node --test tests/test_alternative_picks_function.mjs tests/test_live_market_dis
 
 Expected: all tests pass.
 
-- [ ] **Step 5: Commit Task 4**
+- [x] **Step 5: Commit Task 4**
 
 ```powershell
 git add netlify/functions/alternative-picks.mjs tests/test_alternative_picks_function.mjs
@@ -435,7 +442,7 @@ git commit -m "feat: expose sanitized alternative picks"
 - Create: `tests/test_dashboard_alt_picks_ui.py`
 - Modify: `tests/test_dashboard_accepted_bet_log.py`
 
-- [ ] **Step 1: Write failing adapter and UI contract tests**
+- [x] **Step 1: Write failing adapter and UI contract tests**
 
 Adapter tests must prove:
 
@@ -453,7 +460,7 @@ UI tests must prove:
 - family chips preserve `agree`, `disagree`, and `pending` semantics; and
 - the Alt Picks component source contains no `Log Bet`, `Save Bet`, units/stakes, historical PnL, or notification action.
 
-- [ ] **Step 2: Run and observe RED**
+- [x] **Step 2: Run and observe RED**
 
 ```powershell
 node --test dashboard/v2-alt-picks.test.mjs dashboard/v2-app.test.mjs
@@ -462,7 +469,7 @@ python -m pytest tests/test_dashboard_alt_picks_ui.py tests/test_dashboard_accep
 
 Expected: failures because the adapter/tab do not exist and the middle tab is still History.
 
-- [ ] **Step 3: Implement the isolated browser adapter**
+- [x] **Step 3: Implement the isolated browser adapter**
 
 Expose:
 
@@ -476,7 +483,7 @@ window.V2AltPicks = {
 
 This adapter owns its fetch/error state. Do not add the request to `window.__v2DataPromise` and do not modify `dashboard/v2-data.js`.
 
-- [ ] **Step 4: Implement the Alt Picks tab**
+- [x] **Step 4: Implement the Alt Picks tab**
 
 Remove the unused History component/archive helpers and replace them with `AltPicksTab`, `AltPickCard`, and a read-only `AltPickSheet`. Do not reuse `PickSheet`, because it owns wager controls.
 
@@ -484,7 +491,7 @@ Show the compact header/counts, Consensus Core group, Re-entry Expansion group, 
 
 Load `v2-alt-picks.js` between `v2-data.js` and `v2-app.js`, and update both cache-bust tokens. Preserve Picks and Results render branches.
 
-- [ ] **Step 5: Regenerate the checked-in build**
+- [x] **Step 5: Regenerate the checked-in build**
 
 From `dashboard/`:
 
@@ -492,7 +499,7 @@ From `dashboard/`:
 npx --yes -p @babel/core@7 -p @babel/cli@7 -p @babel/preset-react@7 babel v2-app.jsx --presets=@babel/preset-react -o v2-app.js
 ```
 
-- [ ] **Step 6: Prove green and run visual QA**
+- [x] **Step 6: Prove green and run visual QA**
 
 ```powershell
 node --test dashboard/v2-alt-picks.test.mjs dashboard/v2-app.test.mjs dashboard/v2-data.test.mjs dashboard/v2-movement-helpers.test.mjs
@@ -502,7 +509,7 @@ python -m pytest tests/test_dashboard_alt_picks_ui.py tests/test_dashboard_accep
 
 Serve `dashboard/` locally with intercepted endpoint fixtures. Inspect selected, pending, empty, stale, and unavailable states at 1280x900 and 390x844. At 390px verify no horizontal overflow, the primary identity/pick/lane/freeze content appears before supporting detail, chips wrap, and the read-only sheet remains inside the viewport.
 
-- [ ] **Step 7: Commit Task 5**
+- [x] **Step 7: Commit Task 5**
 
 ```powershell
 git add dashboard/v2-alt-picks.js dashboard/v2-alt-picks.test.mjs dashboard/v2-app.jsx dashboard/v2-app.js dashboard/v2-app.test.mjs dashboard/v2.html tests/test_dashboard_alt_picks_ui.py tests/test_dashboard_accepted_bet_log.py
@@ -521,11 +528,11 @@ git commit -m "feat: add same-day alternative picks tab"
 
 The ignored local execution ledger `.superpowers/sdd/progress.md` is updated after every reviewed task but is not committed.
 
-- [ ] **Step 1: Document the implemented-but-not-activated posture**
+- [x] **Step 1: Document the implemented-but-not-activated posture**
 
 Record the final manifest fingerprint, migration filename, tested failure boundary, UI behavior, and exact verification commands. Mark migration apply, Render mode activation, and deployments as still closed separate gates. Do not claim a prospective sample before record mode is separately approved and activated.
 
-- [ ] **Step 2: Run complete verification from a clean working tree candidate**
+- [x] **Step 2: Run complete verification from a clean working tree candidate**
 
 ```powershell
 python -m pytest tests/ -q
@@ -537,7 +544,7 @@ git status --short
 
 Expected: all suites pass; `git diff --check` is clean; only intentional documentation changes remain before the final commit.
 
-- [ ] **Step 3: Verify prohibited production changes are absent**
+- [x] **Step 3: Verify prohibited production changes are absent**
 
 ```powershell
 git diff origin/main...HEAD -- render.yaml netlify.toml .github/workflows data/params.json pipeline dashboard/data data/picks_history.json
@@ -546,7 +553,7 @@ git grep -n "ALTERNATIVE_PICK_SELECTION_MODE" -- . ':!docs'
 
 Expected: no production env/provider/model/artifact mutation; the mode helper defaults to `off`; Netlify configuration and workflows are unchanged; no generated dashboard data or model parameters are committed.
 
-- [ ] **Step 4: Commit the handoff**
+- [x] **Step 4: Commit the handoff**
 
 ```powershell
 git add docs/superpowers/specs/2026-07-21-pregame-alternative-pick-methodology-design.md docs/superpowers/plans/2026-07-21-pregame-alternative-pick-methodology.md docs/current-state.md

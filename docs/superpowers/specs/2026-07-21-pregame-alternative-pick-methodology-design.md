@@ -1,7 +1,7 @@
 # Pregame Alternative Pick Methodology Design
 
 **Date:** 2026-07-21
-**Status:** Written-spec review; Tyler approved the product direction, but implementation and activation remain pending
+**Status:** Implemented and locally verified on `codex/pregame-alt-picks`; default-off and not activated or deployed
 **Bundle ID:** `pregame_alternative_pick_methodology_v1`
 
 ## Executive decision
@@ -21,6 +21,21 @@ The official Picks tab, official artifact, displayed verdicts, grading,
 staking, notifications, locks, provider order, and accepted-bet flow remain
 unchanged. Alt Picks is a prospective comparison surface, not a production
 model promotion.
+
+## Implementation handoff (2026-07-21)
+
+Tasks 1-5 are implemented and review-clean on the feature branch. The frozen
+selector manifest fingerprint is
+`f8f7ccf652b8eda4860d07798bc4673920b0b9d727552bc7e2e6547d478b4579`.
+Migration `supabase/migrations/20260721222627_alternative_pick_selection_state.sql`
+exists locally but is unapplied. `ALTERNATIVE_PICK_SELECTION_MODE` defaults to
+`off`; record-mode activation is a separate Tyler gate. The Netlify endpoint
+and Alt Picks UI are code-complete but undeployed.
+
+No prospective production rows or samples exist or are claimed. Nothing in
+this branch changes official picks, model math, thresholds, staking,
+notifications, operational locks, provider order, source-of-truth rules, or
+accepted-bet behavior.
 
 ## Product intent
 
@@ -259,6 +274,11 @@ This means **after T-30 processing, not after the slate**:
 6. Post-slate research joins outcomes to the frozen identity outside this
    table. Grading never mutates or reconstructs the frozen choice.
 
+At the exact current-cycle lock, incomplete or immature evidence is frozen as
+`pending` with its reason codes rather than guessed into a selection. That
+pending capture is just as immutable as a selected frozen row. The evaluator
+never reconstructs a missed freeze later in pregame or after start.
+
 A freeze is valid only when the artifact used by that evaluator cycle, the
 operational lock row, and the market-evidence window agree on slate/game,
 pitcher, side, model line, and the lock row's source-artifact SHA. If the
@@ -301,6 +321,12 @@ notification, market-state, and lock-ledger responsibilities complete.
 This placement gives the evaluator the freshest approved pregame evidence at
 the lowest operational cost while preserving a fail-safe boundary.
 
+The implemented recorder remains inactive under its default. In `record` it
+starts only after the existing notification, live-state, operational-lock,
+timing, and shadow-market work has succeeded. Its five-second total sidecar
+budget has no retry; its first timeout/read/evaluation/write failure ends only
+the alternative work for that cycle and leaves the normal process successful.
+
 ### Isolated Supabase state
 
 Create a small additive table, proposed as
@@ -332,6 +358,13 @@ two rows per eligible pick per day. Row Level Security is enabled, direct
 anonymous browser reads are denied, and no retention deletion is approved by
 this design.
 
+The implemented additive migration is
+`20260721222627_alternative_pick_selection_state.sql`; it has not been applied
+to Supabase. It deliberately keeps two hash domains: canonical-payload
+`source_artifact_sha256` proves a provisional row matches the published
+artifact, while exact fetched-byte `lock_artifact_sha256` / lock source hash
+proves the frozen operational-lock link. Neither domain is interchangeable.
+
 ### Sanitized Netlify endpoint
 
 A server-side Netlify function reads only the current Phoenix slate and
@@ -345,6 +378,13 @@ after freeze.
 The browser never receives service-role credentials, internal error payloads,
 or unrelated historical state. The existing official artifact adapter and
 live-market endpoint remain unchanged.
+
+The implemented endpoint is undeployed. It reads current-Phoenix-slate state
+only with server-side service-role credentials, validates the exact `today`
+artifact key and approved provider/publication posture, and returns a strict
+sanitized allow-list. Invalid, stale, malformed, foreign-selector, or
+unlinked rows are suppressed; missing configuration or read failures return a
+stable unavailable response without internal details.
 
 ### Dashboard adapter
 
@@ -384,6 +424,12 @@ fold; evidence chips wrap and supporting detail moves into the existing detail
 sheet pattern.
 
 Historical PnL and prior slates are intentionally absent from this tab.
+
+The code-complete UI is also undeployed. It is comparison-only: it does not
+merge alternative rows into official pitcher or accepted-bet state and exposes
+no wager, Log Bet, units/stake, PnL/history, or notification controls. The
+legacy `?tab=history` route canonically redirects to `?tab=alt`; Picks and
+Results remain separate.
 
 ## Failure and empty states
 
@@ -439,25 +485,55 @@ Historical PnL and prior slates are intentionally absent from this tab.
 - No betting actions, stakes, historical PnL, or notification controls appear
   in Alt Picks.
 
+### Completed local verification
+
+Focused task verification was review-clean: Task 1 finished with 132 focused
+tests passing; Task 2 with 24; Task 3 with 136 plus 14 targeted regressions;
+Task 4 with the 14-test endpoint/live-market suite; and Task 5 with 38 Node
+and 115 Python tests, syntax/diff/build parity. The one-cent regression locks
+display formatting at `38.585 -> +38.59u`; it rounds only the displayed value
+and does not change the three-decimal scoring ledger or selector math.
+
+Browser QA covered selected, pending, healthy-empty, waiting/stale-suppressed,
+and unavailable states, the read-only detail sheet, the legacy route, and
+Picks/Results at `1280x900` and `390x844`. Mobile `scrollWidth` equaled `390`,
+with identity, official pick, lane, and freeze state before supporting detail.
+
+The final candidate verification was:
+
+```powershell
+python -m pytest tests/ -q
+node --test dashboard/*.test.mjs tests/*.mjs
+node --check dashboard/v2-app.js
+git diff --check
+git diff origin/main...HEAD -- render.yaml netlify.toml .github/workflows data/params.json pipeline dashboard/data data/picks_history.json
+git grep -n "ALTERNATIVE_PICK_SELECTION_MODE" -- . ':!docs'
+```
+
+Results: `1563 passed` Python tests; `93` Node tests passed; the syntax and
+diff checks were clean; the prohibited-path diff was empty; and the only
+runtime mode helper defaults invalid/missing values to `off`.
+
 ## Rollout sequence
 
 Each state-changing step remains separately approval-gated.
 
-1. Implement the pure evaluator, migration, endpoint, and UI with
+1. [x] Implement the pure evaluator, migration, endpoint, and UI with
    `ALTERNATIVE_PICK_SELECTION_MODE=off`.
-2. Prove the full test suite, official-close parity anchors, prospective
-   checkpoint fixtures, and frozen manifest fingerprint locally.
-3. Apply the additive RLS migration only after Tyler approves that production
+2. [x] Prove the local test suite, official-close parity anchors, prospective
+   checkpoint fixtures, and frozen manifest fingerprint. This is local proof,
+   not a prospective production sample.
+3. [ ] Apply the additive RLS migration only after Tyler approves that production
    database step; verify policies and uniqueness directly.
-4. Deploy the live-layer code with the mode still `off`; verify existing
+4. [ ] Deploy the live-layer code with the mode still `off`; verify existing
    notifications, locks, and live-market UI are unchanged.
-5. After separate Tyler approval, set the mode to `record` and redeploy the
+5. [ ] After separate Tyler approval, set the mode to `record` and redeploy the
    existing live layer.
-6. Verify current-artifact provisional rows, bounded row volume, and no impact
+6. [ ] Verify current-artifact provisional rows, bounded row volume, and no impact
    on existing live-layer writes.
-7. Verify immutable on-time/late pregame frozen rows on a normal slate and
+7. [ ] Verify immutable on-time/late pregame frozen rows on a normal slate and
    confirm later refreshes do not hide valid lock-linked rows.
-8. Deploy the Netlify endpoint/UI and smoke-test desktop plus 390-pixel mobile.
+8. [ ] Deploy the Netlify endpoint/UI and smoke-test desktop plus 390-pixel mobile.
 
 Rollback is `ALTERNATIVE_PICK_SELECTION_MODE=off` plus the prior Netlify
 deploy. No table deletion, history rewrite, or retention action is required.
