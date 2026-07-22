@@ -340,6 +340,79 @@ def test_v2_exact_therundown_qualified_seed_collision_still_fails_closed():
     assert "duplicate_snapshot_conflict" in result.market_evidence["aggregation_reason_codes"]
 
 
+def test_v2_unsupported_direct_seed_cannot_bind():
+    unsupported_seed = _snapshot(
+        TR_OVER, "therundown", "tr-event", -105,
+        "2026-07-22T20:00:00+00:00", book="bovada",
+    )
+    bindings = _bindings(
+        rows=[unsupported_seed],
+        pitcher=_pitcher(
+            source_current_market_line_ids=[],
+            source_snapshot_ids=[TR_OVER],
+            therundown_event_id="tr-event",
+        ),
+    )
+
+    assert bindings["ready"] is False
+    assert bindings["official_binding"] is None
+
+
+def test_v2_unsupported_current_line_side_seed_cannot_bind():
+    unsupported_seed = _snapshot(
+        TR_OVER, "therundown", "tr-event", -105,
+        "2026-07-22T20:00:00+00:00", book="bovada",
+    )
+    bindings = _bindings(
+        rows=[unsupported_seed],
+        pitcher=_pitcher(source_current_market_line_ids=[101]),
+        current_lines={"101": _line(101, "therundown", "tr-event", TR_OVER)},
+    )
+
+    assert bindings["ready"] is False
+    assert bindings["official_binding"] is None
+    assert "side_snapshot_mismatch" in bindings["reason_codes"]
+
+
+def test_v2_unsupported_only_bound_event_collision_is_isolated():
+    identifier = "edededed-eded-4ded-8ded-edededededed"
+    unsupported = _snapshot(
+        identifier, "therundown", "tr-event", -111,
+        "2026-07-22T20:03:00+00:00", book="bovada",
+    )
+    conflict = {**unsupported, "american_odds": 125, "side": "under"}
+    rows = _base_rows() + [unsupported, conflict]
+
+    bindings = _bindings(rows=rows)
+    assert bindings["ready"] is True
+    assert "duplicate_snapshot_conflict" not in bindings["reason_codes"]
+
+    result = _build(rows=rows, bindings=bindings, windows=_windows(bindings))
+    assert result.market_evidence["freshness_status"] == "fresh"
+    assert "duplicate_snapshot_conflict" not in result.market_evidence["aggregation_reason_codes"]
+
+
+def test_v2_mixed_book_collision_with_supported_version_still_fails_closed():
+    identifier = "efefefef-efef-4fef-8fef-efefefefefef"
+    supported = _snapshot(
+        identifier, "therundown", "tr-event", -111,
+        "2026-07-22T20:03:00+00:00", book="fanduel",
+    )
+    unsupported_conflict = {**supported, "american_odds": 125, "bookmaker_key": "bovada"}
+    rows = _base_rows() + [supported, unsupported_conflict]
+
+    bindings = _bindings(rows=rows)
+    assert bindings["ready"] is False
+    assert "duplicate_snapshot_conflict" in bindings["reason_codes"]
+
+    clean_bindings = _bindings()
+    result = _build(
+        rows=rows, bindings=clean_bindings, windows=_windows(clean_bindings),
+    )
+    assert result.market_evidence["freshness_status"] == "pending"
+    assert "duplicate_snapshot_conflict" in result.market_evidence["aggregation_reason_codes"]
+
+
 def test_v2_explicit_artifact_event_conflict_rejects_current_line_binding():
     bindings = _bindings(
         pitcher=_pitcher(

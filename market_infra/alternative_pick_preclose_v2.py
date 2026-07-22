@@ -165,6 +165,7 @@ def _snapshot_semantics_match(
         normalize_market_key(row.get("market_key")) == "pitcher_strikeouts",
         _side(row.get("side")) == _side(candidate.get("side")),
         _number(row.get("line")) == _number(candidate.get("model_k_line")),
+        normalize_book_key(row.get("bookmaker_key") or row.get("bookmaker_title")) in MAIN_BOOKS,
     ))
 
 
@@ -462,6 +463,7 @@ def _candidate_relevant_conflicts(
             == _text(candidate.get("normalized_pitcher"))
             and _side(row.get("side")) == _side(candidate.get("side"))
             and normalize_market_key(row.get("market_key")) == "pitcher_strikeouts"
+            and normalize_book_key(row.get("bookmaker_key") or row.get("bookmaker_title")) in MAIN_BOOKS
             for row in versions
         ):
             relevant.add(token)
