@@ -215,3 +215,52 @@ def test_selector_never_uses_v1_default_coercion_for_v2_decision():
     del inputs["pick"]["adj_ev"]
     evaluation = selector.evaluate_alternative_pick_v2(**inputs)
     assert evaluation.family_states["base"].state == "pending"
+
+
+def test_ineligible_untracked_or_pass_rows_never_select_a_lane():
+    for overrides, reason in (({"is_tracked": False}, "untracked_pick"), ({"pick": {**_complete_inputs()["pick"], "display_verdict": "PASS"}}, "pass_verdict")):
+        evaluation = _evaluate(**overrides)
+        assert not evaluation.eligible
+        assert reason in evaluation.eligibility_reason_codes
+        assert evaluation.lane is None
+        assert evaluation.selection_status == "not_selected"
+
+
+def test_v2_adjusted_ev_zero_does_not_fall_through_to_a_later_value():
+    inputs = _complete_inputs()
+    inputs["pick"] = {**inputs["pick"], "locked_adj_ev": 0.0, "adj_ev": 0.09}
+    evaluation = selector.evaluate_alternative_pick_v2(**inputs)
+    assert evaluation.primitive_presence.values["adjusted_ev"] == 0.0
+    assert evaluation.normalized_inputs["adjusted_ev"] is None
+    assert evaluation.family_states["base"].state == "pending"
+
+
+def test_preclose_requires_bounded_times_and_approved_provider():
+    invalid_bounds = _complete_inputs()
+    invalid_bounds["exact_evidence"] = {**invalid_bounds["exact_evidence"], "first_observed_at": "2026-07-21T22:19:00Z"}
+    invalid_provider = _complete_inputs()
+    invalid_provider["exact_evidence"] = {**invalid_provider["exact_evidence"], "provider": "boltodds", "candidate_identity": {**invalid_provider["exact_evidence"]["candidate_identity"], "provider": "boltodds"}}
+    for inputs, reason in ((invalid_bounds, "preclose_observation_bounds_invalid"), (invalid_provider, "preclose_provider_unsupported")):
+        evaluation = selector.evaluate_alternative_pick_v2(**inputs)
+        assert evaluation.family_states["preclose"].state == "pending"
+        assert reason in evaluation.reason_codes
+
+
+def test_invalid_explicit_relationship_or_skepticism_is_pending_not_coerced():
+    for pick in ({**_complete_inputs()["pick"], "model_market_relationship": "maybe"}, {**_complete_inputs()["pick"], "large_edge_skepticism_flag": "false"}):
+        evaluation = _evaluate(pick=pick)
+        assert evaluation.family_states["base"].state == "pending"
+        assert evaluation.family_states["reentry"].state == "pending"
+
+
+def test_v2_eligibility_requires_candidate_line_hash_and_provider_consistency():
+    cases = (
+        ({"pick": {**_complete_inputs()["pick"], "official_k_line": 6.5}}, "line_mismatch"),
+        ({"pick": {**_complete_inputs()["pick"], "source_payload_sha256": "c" * 64}}, "artifact_hash_mismatch"),
+        ({"exact_evidence": {**_complete_inputs()["exact_evidence"], "provider": "boltodds", "candidate_identity": {**_complete_inputs()["exact_evidence"]["candidate_identity"], "provider": "boltodds"}}}, "unsupported_provider"),
+    )
+    for overrides, reason in cases:
+        evaluation = _evaluate(**overrides)
+        assert not evaluation.eligible
+        assert reason in evaluation.eligibility_reason_codes
+        assert evaluation.lane is None

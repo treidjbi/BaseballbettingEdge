@@ -94,6 +94,10 @@ def selector_fingerprint() -> str:
     return sha256_hex(json.dumps(MANIFEST, sort_keys=True, separators=(",", ":"), ensure_ascii=False))
 
 
+if selector_fingerprint() != FROZEN_SELECTOR_FINGERPRINT:
+    raise ValueError("alternative selector V2 manifest fingerprint does not match frozen contract")
+
+
 def tri_and(*values: TriBool) -> TriBool:
     return False if any(value is False for value in values) else None if any(value is None for value in values) else True
 
@@ -183,6 +187,23 @@ def validate_runtime_primitives_v2(*, pitcher: dict[str, Any], pick: dict[str, A
     scalar("source_fire_verdict", source_verdict)
     scalar("adjusted_ev", adjusted, kind="number")
 
+    relationship = pick.get("model_market_relationship")
+    values["model_market_relationship"] = relationship
+    if relationship is not None:
+        if _enum(relationship) not in {"model_agrees_with_favorite", "model_fades_favorite", "model_neutral"}:
+            malformed.append("model_market_relationship")
+    elif _finite_number(pitcher.get("best_over_odds")) is None or _finite_number(pitcher.get("best_under_odds")) is None or not _enum(pick.get("model_side") or pick.get("side")):
+        missing.append("model_market_relationship")
+    else:
+        values["model_market_relationship"] = "derived"
+
+    skepticism = pick.get("large_edge_skepticism_flag")
+    values["large_edge_skepticism_flag"] = skepticism
+    if skepticism is not None and not isinstance(skepticism, bool):
+        malformed.append("large_edge_skepticism_flag")
+    elif skepticism is None:
+        values["large_edge_skepticism_flag"] = "derived"
+
     labels = pick.get("market_anchor_selector")
     values["anchor_metadata"] = labels
     if labels is None:
@@ -256,7 +277,10 @@ def compose_anchor_v2(base: FamilyVote, strict: FamilyVote, core: FamilyVote) ->
 
 
 def compose_preclose_v2(base: FamilyVote, raw_preclose: FamilyVote) -> FamilyVote:
-    return _tri_to_family(tri_and(_family_to_tri(base), _family_to_tri(raw_preclose)), true_reason="preclose_v2_confirmed", false_reason="preclose_not_supported", pending_reason="preclose_dependency_pending")
+    value = tri_and(_family_to_tri(base), _family_to_tri(raw_preclose))
+    if value is None:
+        return FamilyVote("pending", raw_preclose.reason_codes if raw_preclose.state == "pending" else base.reason_codes)
+    return _tri_to_family(value, true_reason="preclose_v2_confirmed", false_reason="preclose_not_supported", pending_reason="preclose_dependency_pending")
 
 
 def drag_core_v2(features: dict[str, Any]) -> PredicateVote:
@@ -301,13 +325,19 @@ def _has(presence: PrimitivePresence, names: set[str]) -> bool:
 def _features_if_complete(presence: PrimitivePresence, required: set[str], *, pitcher: dict[str, Any], pick: dict[str, Any], exact_evidence: dict[str, Any], observed_at: Any) -> dict[str, Any] | None:
     if not _has(presence, required):
         return None
-    return v1.derive_runtime_features(pitcher=pitcher, pick=pick, market_evidence=exact_evidence, observed_at=observed_at)
+    canonical_pick = dict(pick)
+    for field in MANIFEST["field_precedence"]["adjusted_ev"]:
+        canonical_pick.pop(field, None)
+    canonical_pick["adj_ev"] = presence.values["adjusted_ev"]
+    return v1.derive_runtime_features(pitcher=pitcher, pick=canonical_pick, market_evidence=exact_evidence, observed_at=observed_at)
 
 
 def _raw_preclose_v2(features: dict[str, Any] | None, exact_evidence: Any, *, slate_date: str) -> FamilyVote:
     if features is None or not isinstance(exact_evidence, dict):
         return FamilyVote("pending", ("preclose_runtime_inputs_missing",))
     evidence = exact_evidence
+    if _enum(evidence.get("provider")) not in set(MANIFEST["provider_allow_list"]):
+        return FamilyVote("pending", ("preclose_provider_unsupported",))
     identity = evidence.get("candidate_identity")
     if not isinstance(identity, dict):
         return FamilyVote("pending", ("preclose_candidate_identity_missing",))
@@ -331,6 +361,11 @@ def _raw_preclose_v2(features: dict[str, Any] | None, exact_evidence: Any, *, sl
         return FamilyVote("pending", ("preclose_observations_immature",))
     if any(at < since or at > checkpoint for _, at in parsed):
         return FamilyVote("pending", ("preclose_observation_outside_candidate_window",))
+    first, last = _as_utc(evidence.get("first_observed_at")), _as_utc(evidence.get("last_observed_at"))
+    if first is None or last is None:
+        return FamilyVote("pending", ("preclose_observation_times_missing",))
+    if first != min(at for _, at in parsed) or last != max(at for _, at in parsed):
+        return FamilyVote("pending", ("preclose_observation_bounds_invalid",))
     if _enum(evidence.get("freshness_status")) != "fresh":
         return FamilyVote("pending", ("preclose_evidence_stale",))
     if not isinstance(evidence.get("best_is_off_market"), bool):
@@ -341,7 +376,7 @@ def _raw_preclose_v2(features: dict[str, Any] | None, exact_evidence: Any, *, sl
     return FamilyVote("agree" if scored["label"] == "strong_preclose_clv_proxy" else "disagree", (scored["label"],))
 
 
-def _eligible_reasons_v2(*, pitcher: dict[str, Any], pick: dict[str, Any], slate_date: str, is_tracked: bool, source_artifact_path: str, source_payload_sha256: str, source_artifact_byte_sha256: str, observed_at: str) -> tuple[str, ...]:
+def _eligible_reasons_v2(*, pitcher: dict[str, Any], pick: dict[str, Any], exact_evidence: Any, slate_date: str, is_tracked: bool, source_artifact_path: str, source_payload_sha256: str, source_artifact_byte_sha256: str, observed_at: str) -> tuple[str, ...]:
     reasons: list[str] = []
     observed, start = _as_utc(observed_at), _as_utc(pitcher.get("game_time"))
     if observed is None or start is None or observed >= start:
@@ -359,13 +394,24 @@ def _eligible_reasons_v2(*, pitcher: dict[str, Any], pick: dict[str, Any], slate
         reasons.append("artifact_payload_sha256_invalid")
     if not isinstance(source_artifact_byte_sha256, str) or re.fullmatch(pattern, source_artifact_byte_sha256) is None:
         reasons.append("artifact_byte_sha256_invalid")
-    return tuple(reasons)
+    identity = (pitcher.get("pitcher"), pitcher.get("team"), pitcher.get("opp_team"), pitcher.get("game_time"), pick.get("side"))
+    if not all(_text(value) for value in identity) or _finite_number(pitcher.get("k_line")) is None or _enum(pick.get("side")) not in {"over", "under"}:
+        reasons.append("candidate_identity_incomplete")
+    official_line = pick.get("official_k_line")
+    if official_line is not None and _finite_number(official_line) != _finite_number(pitcher.get("k_line")):
+        reasons.append("line_mismatch")
+    for field, value in (("source_artifact_path", source_artifact_path), ("source_payload_sha256", source_payload_sha256), ("source_artifact_byte_sha256", source_artifact_byte_sha256)):
+        if pick.get(field) is not None and pick.get(field) != value:
+            reasons.append("artifact_hash_mismatch")
+    if not isinstance(exact_evidence, dict) or _enum(exact_evidence.get("provider")) not in set(MANIFEST["provider_allow_list"]):
+        reasons.append("unsupported_provider")
+    return tuple(dict.fromkeys(reasons))
 
 
 def evaluate_alternative_pick_v2(*, pitcher: dict[str, Any], pick: dict[str, Any], exact_evidence: Any, slate_date: str, is_tracked: bool, source_artifact_path: str, source_payload_sha256: str, source_artifact_byte_sha256: str, observed_at: str) -> AlternativePickEvaluationV2:
     presence = validate_runtime_primitives_v2(pitcher=pitcher, pick=pick, exact_evidence=exact_evidence)
     evidence = exact_evidence if isinstance(exact_evidence, dict) else {}
-    common = {"side", "edge", "k_line", "game_time", "quality_gate_level", "model_win_prob", "best_over_odds", "best_under_odds", "avg_ip", "recent_start_count", "season_k9", "recent_k9", "career_k9", "display_verdict", "source_fire_verdict", "adjusted_ev"}
+    common = {"side", "edge", "k_line", "game_time", "quality_gate_level", "model_win_prob", "best_over_odds", "best_under_odds", "avg_ip", "recent_start_count", "season_k9", "recent_k9", "career_k9", "display_verdict", "source_fire_verdict", "adjusted_ev", "model_market_relationship", "large_edge_skepticism_flag"}
     features = _features_if_complete(presence, common, pitcher=pitcher, pick=pick, exact_evidence=evidence, observed_at=observed_at)
     base = _v2_family(v1.strong_base_strict_plus_selective(features)) if features is not None else FamilyVote("pending", ("base_runtime_primitives_missing",))
     strict, core = parse_anchor_primitives_v2(pick)
@@ -377,6 +423,8 @@ def evaluate_alternative_pick_v2(*, pitcher: dict[str, Any], pick: dict[str, Any
     no_drag = no_drag_v2(base, strict, drag_core_v2(drag_features))
     families = {"base": base, "anchor": anchor, "preclose": preclose, "reentry": reentry}
     lanes = evaluate_lanes_v2(families, no_drag)
-    eligibility = _eligible_reasons_v2(pitcher=pitcher, pick=pick, slate_date=slate_date, is_tracked=is_tracked, source_artifact_path=source_artifact_path, source_payload_sha256=source_payload_sha256, source_artifact_byte_sha256=source_artifact_byte_sha256, observed_at=observed_at)
+    eligibility = _eligible_reasons_v2(pitcher=pitcher, pick=pick, exact_evidence=exact_evidence, slate_date=slate_date, is_tracked=is_tracked, source_artifact_path=source_artifact_path, source_payload_sha256=source_payload_sha256, source_artifact_byte_sha256=source_artifact_byte_sha256, observed_at=observed_at)
+    if eligibility:
+        lanes = LaneEvaluation(lanes.consensus_core, lanes.reentry_expansion, None, "not_selected", lanes.family_count, lanes.maximum_family_count, ())
     reasons = tuple(dict.fromkeys((*eligibility, *(reason for vote in families.values() for reason in vote.reason_codes), *no_drag.reason_codes, *lanes.consensus_core.reason_codes, *lanes.reentry_expansion.reason_codes)))
     return AlternativePickEvaluationV2(not eligibility, eligibility, selector_fingerprint(), families, True if no_drag.state == "true" else False if no_drag.state == "false" else None, lanes.lane, lanes.selection_status, lanes.family_count, lanes.maximum_family_count, lanes.decisive_families, reasons, features or {}, presence)
