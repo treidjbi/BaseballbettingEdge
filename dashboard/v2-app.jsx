@@ -2276,6 +2276,20 @@ function PerfTab() {
 }
 
 // ── Tab: Alternative picks ───────────────────────────────────────────────
+function altCountLabel(value, noun) {
+  const count = Number.isFinite(value) ? Math.max(0, Math.trunc(value)) : 0;
+  return `${count} ${noun}${count === 1 ? "" : "s"}`;
+}
+
+function altBookTitle(value) {
+  const titles = {
+    fanduel: "FanDuel", draftkings: "DraftKings", betmgm: "BetMGM", betrivers: "BetRivers",
+    kalshi: "Kalshi", caesars: "Caesars", thescorebet: "theScore Bet",
+  };
+  const key = String(value || "").trim().toLowerCase().replace(/[^a-z0-9]+/g, "");
+  return titles[key] || String(value || "").trim();
+}
+
 function AltPickSheet({ row, onClose }) {
   if (!row) return null;
   const familyLabels = { base: "Base", anchor: "Anchor", preclose: "Preclose", reentry: "Re-entry" };
@@ -2284,7 +2298,7 @@ function AltPickSheet({ row, onClose }) {
       <section className="v2-alt-sheet" role="dialog" aria-modal="true" aria-label="Alternative pick evidence" onClick={(event) => event.stopPropagation()}>
         <div className="v2-alt-sheet-head"><div><b>{row.pitcher}</b><small>{ab(row.team)} vs {ab(row.opp_team)}</small></div><button type="button" onClick={onClose}>Close</button></div>
         <div className="v2-alt-sheet-grid">
-          <div><span>Official pick</span><b>{row.side} {row.model_k_line} K · {fmtOdds(row.official_odds)} {row.official_book}</b></div>
+          <div><span>Official pick</span><b>{row.side} {row.model_k_line} K · {fmtOdds(row.official_odds)} {altBookTitle(row.official_book)}</b></div>
           <div><span>Official verdict</span><b>{row.official_verdict || "—"}</b></div>
           <div><span>Alternative lane</span><b>{row.lane === "consensus_core" ? "Consensus Core" : "Re-entry Expansion"}</b></div>
           <div><span>Freeze</span><b>{window.V2AltPicks?.formatFreezeLabel(row) || "Provisional"}</b></div>
@@ -2292,7 +2306,7 @@ function AltPickSheet({ row, onClose }) {
         <div className="v2-alt-sheet-evidence">
           {Object.entries(row.family_states).map(([key, value]) => <span key={key} className={`v2-alt-chip ${value.state}`}>{familyLabels[key]} · {value.state}</span>)}
         </div>
-        <p>Freshness: {row.evidence_freshness_status || "unknown"} · {row.evidence_observation_count || 0} observations</p>
+        <p>Freshness: {row.evidence_freshness_status || "unknown"} · {altCountLabel(row.evidence_observation_count, "observation")}</p>
         <p>Artifact: {row.source_artifact_generated_at ? fmtTime(row.source_artifact_generated_at) : "not reported"}{row.artifact_advanced_after_freeze ? " · advanced after freeze" : ""}</p>
       </section>
     </div>
@@ -2309,12 +2323,12 @@ function AltPickCard({ row, onOpen }) {
           <div><h3>{row.pitcher}</h3><p>{ab(row.team)} vs {ab(row.opp_team)}</p></div>
           <span className="v2-alt-freeze">{window.V2AltPicks?.formatFreezeLabel(row) || "Provisional"}</span>
         </div>
-        <div className="v2-alt-official"><span>Official pick</span><b>{row.side} {row.model_k_line} K · {fmtOdds(row.official_odds)} {row.official_book}</b><small>{row.official_verdict || "Official verdict unavailable"}</small></div>
+        <div className="v2-alt-official"><span>Official pick</span><b>{row.side} {row.model_k_line} K · {fmtOdds(row.official_odds)} {altBookTitle(row.official_book)}</b><small>{row.official_verdict || "Official verdict unavailable"}</small></div>
         <div className="v2-alt-lane"><span>Alternative lane</span><b>{lane}</b></div>
         <div className="v2-alt-chips">
           {Object.entries(row.family_states).map(([key, value]) => <span key={key} className={`v2-alt-chip ${value.state}`}>{familyLabels[key]} · {value.state}</span>)}
         </div>
-        <div className="v2-alt-provenance">{row.evidence_freshness_status || "unknown"} evidence · {row.evidence_observation_count || 0} observations · {row.source_artifact_generated_at ? fmtTime(row.source_artifact_generated_at) : "artifact time unavailable"}</div>
+        <div className="v2-alt-provenance">{row.evidence_freshness_status || "unknown"} evidence · {altCountLabel(row.evidence_observation_count, "observation")} · {row.source_artifact_generated_at ? fmtTime(row.source_artifact_generated_at) : "artifact time unavailable"}</div>
       </button>
     </article>
   );
@@ -2371,7 +2385,7 @@ function AltPicksTab() {
         {state.status === "loading" && <div className="v2-state"><div className="ttl">Loading alternative evidence</div><div className="sub">Checking the current Phoenix slate.</div></div>}
         {state.status === "unavailable" && <div className="v2-state v2-alt-unavailable"><div className="ttl">Alternative methodology unavailable. Main picks are unaffected.</div></div>}
         {state.status === "ready" && rows.length === 0 && <div className="v2-state"><div className="ttl">Waiting for current-slate evidence.</div><div className="sub">A stale provisional row is never shown here.</div></div>}
-        {state.status === "ready" && rows.length > 0 && selected === 0 && <div className="v2-state v2-alt-empty"><div className="ttl">No alternative qualifiers on this slate.</div><div className="sub">Evidence is healthy; {supporting.length} candidate{supporting.length === 1 ? "" : "s"} remain not selected or pending.</div></div>}
+        {state.status === "ready" && rows.length > 0 && selected === 0 && <div className="v2-state v2-alt-empty"><div className="ttl">No alternative qualifiers on this slate.</div><div className="sub">Evidence is healthy; {altCountLabel(supporting.length, "candidate")} remain not selected or pending.</div></div>}
         {state.status === "ready" && core.length > 0 && <section className="v2-alt-group"><h2>Consensus Core</h2>{core.map((row) => <AltPickCard key={`${row.pitcher}-${row.side}-${row.checkpoint}`} row={row} onOpen={setDetail} />)}</section>}
         {state.status === "ready" && expansion.length > 0 && <section className="v2-alt-group"><h2>Re-entry Expansion</h2>{expansion.map((row) => <AltPickCard key={`${row.pitcher}-${row.side}-${row.checkpoint}`} row={row} onOpen={setDetail} />)}</section>}
         {state.status === "ready" && supporting.length > 0 && <details className="v2-alt-collapsed"><summary>Not selected and pending ({supporting.length})</summary><p>Pending family evidence cannot qualify a card. Review the family chips for the short reason.</p><div className="v2-alt-supporting-list">{supporting.map((row) => <AltSupportingCandidate key={`${row.pitcher}-${row.side}-${row.checkpoint}`} row={row} />)}</div></details>}

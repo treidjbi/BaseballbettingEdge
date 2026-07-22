@@ -46,7 +46,7 @@ function loadTicketHelpers() {
   };
   context.globalThis = context;
   vm.runInNewContext(
-    `${scriptSource.slice(0, footerStart)}\nglobalThis.__ticketHelpers = { marketBetTicketContext, isLiveMarketBetPrefill, selectedMarketBetRowForForm: typeof selectedMarketBetRowForForm === "function" ? selectedMarketBetRowForForm : null, buildAcceptedBetPayload };`,
+    `${scriptSource.slice(0, footerStart)}\nglobalThis.__ticketHelpers = { marketBetTicketContext, isLiveMarketBetPrefill, selectedMarketBetRowForForm: typeof selectedMarketBetRowForForm === "function" ? selectedMarketBetRowForForm : null, buildAcceptedBetPayload, altCountLabel: typeof altCountLabel === "function" ? altCountLabel : null, altBookTitle: typeof altBookTitle === "function" ? altBookTitle : null };`,
     context,
     { filename: scriptPath },
   );
@@ -149,4 +149,18 @@ test("manual alternate book selection retains live provenance without automatic 
   });
   assert.equal(payload.metadata.selected_live_provider, "therundown_propline");
   assert.equal(payload.metadata.selected_live_observed_at, "2026-07-17T18:00:00Z");
+});
+
+test("Alt Picks labels singular counts and canonical endpoint book keys", () => {
+  const { altCountLabel, altBookTitle } = loadTicketHelpers();
+  assert.equal(typeof altCountLabel, "function");
+  assert.equal(altCountLabel(1, "candidate"), "1 candidate");
+  assert.equal(altCountLabel(2, "candidate"), "2 candidates");
+  assert.equal(altCountLabel(1, "observation"), "1 observation");
+  assert.equal(altCountLabel(3, "observation"), "3 observations");
+  assert.equal(typeof altBookTitle, "function");
+  assert.deepEqual(
+    ["fanduel", "draftkings", "betmgm", "betrivers", "kalshi", "caesars", "thescore_bet"].map(altBookTitle),
+    ["FanDuel", "DraftKings", "BetMGM", "BetRivers", "Kalshi", "Caesars", "theScore Bet"],
+  );
 });

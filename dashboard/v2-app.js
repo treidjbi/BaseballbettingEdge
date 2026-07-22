@@ -2613,6 +2613,23 @@ function PerfTab() {
 }
 
 // ── Tab: Alternative picks ───────────────────────────────────────────────
+function altCountLabel(value, noun) {
+  const count = Number.isFinite(value) ? Math.max(0, Math.trunc(value)) : 0;
+  return `${count} ${noun}${count === 1 ? "" : "s"}`;
+}
+function altBookTitle(value) {
+  const titles = {
+    fanduel: "FanDuel",
+    draftkings: "DraftKings",
+    betmgm: "BetMGM",
+    betrivers: "BetRivers",
+    kalshi: "Kalshi",
+    caesars: "Caesars",
+    thescorebet: "theScore Bet"
+  };
+  const key = String(value || "").trim().toLowerCase().replace(/[^a-z0-9]+/g, "");
+  return titles[key] || String(value || "").trim();
+}
 function AltPickSheet({
   row,
   onClose
@@ -2641,12 +2658,12 @@ function AltPickSheet({
     onClick: onClose
   }, "Close")), /*#__PURE__*/React.createElement("div", {
     className: "v2-alt-sheet-grid"
-  }, /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("span", null, "Official pick"), /*#__PURE__*/React.createElement("b", null, row.side, " ", row.model_k_line, " K \xB7 ", fmtOdds(row.official_odds), " ", row.official_book)), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("span", null, "Official verdict"), /*#__PURE__*/React.createElement("b", null, row.official_verdict || "—")), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("span", null, "Alternative lane"), /*#__PURE__*/React.createElement("b", null, row.lane === "consensus_core" ? "Consensus Core" : "Re-entry Expansion")), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("span", null, "Freeze"), /*#__PURE__*/React.createElement("b", null, window.V2AltPicks?.formatFreezeLabel(row) || "Provisional"))), /*#__PURE__*/React.createElement("div", {
+  }, /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("span", null, "Official pick"), /*#__PURE__*/React.createElement("b", null, row.side, " ", row.model_k_line, " K \xB7 ", fmtOdds(row.official_odds), " ", altBookTitle(row.official_book))), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("span", null, "Official verdict"), /*#__PURE__*/React.createElement("b", null, row.official_verdict || "—")), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("span", null, "Alternative lane"), /*#__PURE__*/React.createElement("b", null, row.lane === "consensus_core" ? "Consensus Core" : "Re-entry Expansion")), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("span", null, "Freeze"), /*#__PURE__*/React.createElement("b", null, window.V2AltPicks?.formatFreezeLabel(row) || "Provisional"))), /*#__PURE__*/React.createElement("div", {
     className: "v2-alt-sheet-evidence"
   }, Object.entries(row.family_states).map(([key, value]) => /*#__PURE__*/React.createElement("span", {
     key: key,
     className: `v2-alt-chip ${value.state}`
-  }, familyLabels[key], " \xB7 ", value.state))), /*#__PURE__*/React.createElement("p", null, "Freshness: ", row.evidence_freshness_status || "unknown", " \xB7 ", row.evidence_observation_count || 0, " observations"), /*#__PURE__*/React.createElement("p", null, "Artifact: ", row.source_artifact_generated_at ? fmtTime(row.source_artifact_generated_at) : "not reported", row.artifact_advanced_after_freeze ? " · advanced after freeze" : "")));
+  }, familyLabels[key], " \xB7 ", value.state))), /*#__PURE__*/React.createElement("p", null, "Freshness: ", row.evidence_freshness_status || "unknown", " \xB7 ", altCountLabel(row.evidence_observation_count, "observation")), /*#__PURE__*/React.createElement("p", null, "Artifact: ", row.source_artifact_generated_at ? fmtTime(row.source_artifact_generated_at) : "not reported", row.artifact_advanced_after_freeze ? " · advanced after freeze" : "")));
 }
 function AltPickCard({
   row,
@@ -2672,7 +2689,7 @@ function AltPickCard({
     className: "v2-alt-freeze"
   }, window.V2AltPicks?.formatFreezeLabel(row) || "Provisional")), /*#__PURE__*/React.createElement("div", {
     className: "v2-alt-official"
-  }, /*#__PURE__*/React.createElement("span", null, "Official pick"), /*#__PURE__*/React.createElement("b", null, row.side, " ", row.model_k_line, " K \xB7 ", fmtOdds(row.official_odds), " ", row.official_book), /*#__PURE__*/React.createElement("small", null, row.official_verdict || "Official verdict unavailable")), /*#__PURE__*/React.createElement("div", {
+  }, /*#__PURE__*/React.createElement("span", null, "Official pick"), /*#__PURE__*/React.createElement("b", null, row.side, " ", row.model_k_line, " K \xB7 ", fmtOdds(row.official_odds), " ", altBookTitle(row.official_book)), /*#__PURE__*/React.createElement("small", null, row.official_verdict || "Official verdict unavailable")), /*#__PURE__*/React.createElement("div", {
     className: "v2-alt-lane"
   }, /*#__PURE__*/React.createElement("span", null, "Alternative lane"), /*#__PURE__*/React.createElement("b", null, lane)), /*#__PURE__*/React.createElement("div", {
     className: "v2-alt-chips"
@@ -2681,7 +2698,7 @@ function AltPickCard({
     className: `v2-alt-chip ${value.state}`
   }, familyLabels[key], " \xB7 ", value.state))), /*#__PURE__*/React.createElement("div", {
     className: "v2-alt-provenance"
-  }, row.evidence_freshness_status || "unknown", " evidence \xB7 ", row.evidence_observation_count || 0, " observations \xB7 ", row.source_artifact_generated_at ? fmtTime(row.source_artifact_generated_at) : "artifact time unavailable")));
+  }, row.evidence_freshness_status || "unknown", " evidence \xB7 ", altCountLabel(row.evidence_observation_count, "observation"), " \xB7 ", row.source_artifact_generated_at ? fmtTime(row.source_artifact_generated_at) : "artifact time unavailable")));
 }
 function supportingReason(row) {
   const safeCodes = [...(Array.isArray(row.reason_codes) ? row.reason_codes : []), ...Object.values(row.family_states || {}).flatMap(family => Array.isArray(family?.reason_codes) ? family.reason_codes : [])].filter(code => typeof code === "string" && /^[a-z0-9_ -]{1,80}$/i.test(code.trim())).map(code => code.trim().replace(/[_-]+/g, " "));
@@ -2785,7 +2802,7 @@ function AltPicksTab() {
     className: "ttl"
   }, "No alternative qualifiers on this slate."), /*#__PURE__*/React.createElement("div", {
     className: "sub"
-  }, "Evidence is healthy; ", supporting.length, " candidate", supporting.length === 1 ? "" : "s", " remain not selected or pending.")), state.status === "ready" && core.length > 0 && /*#__PURE__*/React.createElement("section", {
+  }, "Evidence is healthy; ", altCountLabel(supporting.length, "candidate"), " remain not selected or pending.")), state.status === "ready" && core.length > 0 && /*#__PURE__*/React.createElement("section", {
     className: "v2-alt-group"
   }, /*#__PURE__*/React.createElement("h2", null, "Consensus Core"), core.map(row => /*#__PURE__*/React.createElement(AltPickCard, {
     key: `${row.pitcher}-${row.side}-${row.checkpoint}`,
