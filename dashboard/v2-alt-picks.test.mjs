@@ -82,6 +82,21 @@ test("frozen rows require real ISO capture timestamps and known lock states", ()
   assert.equal(api.formatFreezeLabel(row({ frozen_at: "not-a-timestamp", lock_status: "unknown_lock_state" })), "Provisional");
 });
 
+test("zero-observation pending rows allow paired null evidence times only", () => {
+  const { api } = load();
+  const normalized = api.normalizeResponse({
+    slate_date: "2026-07-21", status: "ready", counts: {}, rows: [
+      row({ checkpoint: "provisional", selection_status: "pending", evidence_observation_count: 0, evidence_freshness_status: "pending", evidence_first_observed_at: null, evidence_last_observed_at: null }),
+      row({ checkpoint: "provisional", selection_status: "pending", evidence_observation_count: 0, evidence_freshness_status: "pending", evidence_first_observed_at: null }),
+      row({ checkpoint: "provisional", selection_status: "not_selected", evidence_observation_count: 0, evidence_freshness_status: "pending", evidence_first_observed_at: null, evidence_last_observed_at: null }),
+      row({ checkpoint: "provisional", selection_status: "pending", evidence_observation_count: 0, evidence_freshness_status: "fresh", evidence_first_observed_at: null, evidence_last_observed_at: null }),
+      row({ checkpoint: "provisional", evidence_observation_count: 2, evidence_first_observed_at: "not-a-timestamp" }),
+    ],
+  });
+  assert.equal(normalized.rows.length, 1);
+  assert.equal(normalized.rows[0].selection_status, "pending");
+});
+
 test("adapter failures stay local and do not mutate official or accepted-bet state", async () => {
   const { api, window } = load({ payload: null, status: 503 });
   const data = window.V2_DATA, perf = window.V2_PERF, state = window.V2_APP_STATE, pitcher = data.pitchers[0];

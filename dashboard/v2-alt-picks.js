@@ -40,6 +40,15 @@
     return normalized;
   }
 
+  function validEvidenceTimes(row, selectionStatus) {
+    const count = row.evidence_observation_count;
+    const first = text(row.evidence_first_observed_at);
+    const last = text(row.evidence_last_observed_at);
+    if (!Number.isInteger(count) || count < 0) return false;
+    if (count === 0) return selectionStatus === "pending" && text(row.evidence_freshness_status) === "pending" && !first && !last;
+    return isoTimestamp(first) && isoTimestamp(last);
+  }
+
   function normalizeRow(row, slateDate) {
     if (!row || typeof row !== "object" || Array.isArray(row)) return null;
     const lane = text(row.lane);
@@ -48,7 +57,7 @@
     const familyStates = normalizeFamilyStates(row.family_states);
     if (text(row.slate_date) !== slateDate || !LANES.has(lane) || !STATUSES.has(selectionStatus) || !CHECKPOINTS.has(checkpoint) || !familyStates) return null;
     if (!text(row.pitcher) || !text(row.team) || !text(row.opp_team) || !text(row.side) || !finite(row.model_k_line)) return null;
-    if (!isoTimestamp(row.game_time) || !isoTimestamp(row.source_artifact_generated_at) || !isoTimestamp(row.evidence_first_observed_at) || !isoTimestamp(row.evidence_last_observed_at)) return null;
+    if (!isoTimestamp(row.game_time) || !isoTimestamp(row.source_artifact_generated_at) || !validEvidenceTimes(row, selectionStatus)) return null;
     if (checkpoint === "frozen_pregame" && (!isoTimestamp(row.frozen_at) || !isoTimestamp(row.should_lock_at) || !finite(row.minutes_until_start) || !LOCK_STATUSES.has(text(row.lock_status)))) return null;
     return {
       slate_date: slateDate, pitcher: text(row.pitcher), team: text(row.team), opp_team: text(row.opp_team),
