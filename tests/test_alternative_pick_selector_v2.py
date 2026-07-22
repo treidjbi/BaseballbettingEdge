@@ -214,7 +214,8 @@ def test_selector_never_uses_v1_default_coercion_for_v2_decision():
     inputs["pick"]["locked_adj_ev"] = 0.0
     del inputs["pick"]["adj_ev"]
     evaluation = selector.evaluate_alternative_pick_v2(**inputs)
-    assert evaluation.family_states["base"].state == "pending"
+    assert evaluation.normalized_inputs["adjusted_ev"] == 0.0
+    assert evaluation.family_states["base"].state == "disagree"
 
 
 def test_ineligible_untracked_or_pass_rows_never_select_a_lane():
@@ -231,8 +232,8 @@ def test_v2_adjusted_ev_zero_does_not_fall_through_to_a_later_value():
     inputs["pick"] = {**inputs["pick"], "locked_adj_ev": 0.0, "adj_ev": 0.09}
     evaluation = selector.evaluate_alternative_pick_v2(**inputs)
     assert evaluation.primitive_presence.values["adjusted_ev"] == 0.0
-    assert evaluation.normalized_inputs["adjusted_ev"] is None
-    assert evaluation.family_states["base"].state == "pending"
+    assert evaluation.normalized_inputs["adjusted_ev"] == 0.0
+    assert evaluation.family_states["base"].state == "disagree"
 
 
 def test_preclose_requires_bounded_times_and_approved_provider():
@@ -257,10 +258,31 @@ def test_v2_eligibility_requires_candidate_line_hash_and_provider_consistency():
     cases = (
         ({"pick": {**_complete_inputs()["pick"], "official_k_line": 6.5}}, "line_mismatch"),
         ({"pick": {**_complete_inputs()["pick"], "source_payload_sha256": "c" * 64}}, "artifact_hash_mismatch"),
-        ({"exact_evidence": {**_complete_inputs()["exact_evidence"], "provider": "boltodds", "candidate_identity": {**_complete_inputs()["exact_evidence"]["candidate_identity"], "provider": "boltodds"}}}, "unsupported_provider"),
     )
     for overrides, reason in cases:
         evaluation = _evaluate(**overrides)
         assert not evaluation.eligible
         assert reason in evaluation.eligibility_reason_codes
         assert evaluation.lane is None
+
+    unsupported = _evaluate(exact_evidence={**_complete_inputs()["exact_evidence"], "provider": "boltodds", "candidate_identity": {**_complete_inputs()["exact_evidence"]["candidate_identity"], "provider": "boltodds"}})
+    assert unsupported.eligible
+    assert unsupported.family_states["preclose"].state == "pending"
+    assert "preclose_provider_unsupported" in unsupported.reason_codes
+
+
+def test_missing_exact_evidence_selects_consensus_with_preclose_pending():
+    evaluation = _evaluate(exact_evidence=None)
+    assert evaluation.eligible
+    assert evaluation.family_states["preclose"].state == "pending"
+    assert evaluation.lane == "consensus_core"
+    assert evaluation.selection_status == "selected"
+
+
+def test_zero_adjusted_ev_reaches_real_lean_4_5_base_decision():
+    inputs = _complete_inputs()
+    inputs["pitcher"] = {**inputs["pitcher"], "k_line": 4.5}
+    inputs["pick"] = {**inputs["pick"], "display_verdict": "LEAN", "locked_adj_ev": 0.0}
+    evaluation = selector.evaluate_alternative_pick_v2(**inputs)
+    assert evaluation.normalized_inputs["adjusted_ev"] == 0.0
+    assert evaluation.family_states["base"].state == "agree"

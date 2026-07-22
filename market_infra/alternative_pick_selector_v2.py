@@ -329,7 +329,10 @@ def _features_if_complete(presence: PrimitivePresence, required: set[str], *, pi
     for field in MANIFEST["field_precedence"]["adjusted_ev"]:
         canonical_pick.pop(field, None)
     canonical_pick["adj_ev"] = presence.values["adjusted_ev"]
-    return v1.derive_runtime_features(pitcher=pitcher, pick=canonical_pick, market_evidence=exact_evidence, observed_at=observed_at)
+    features = v1.derive_runtime_features(pitcher=pitcher, pick=canonical_pick, market_evidence=exact_evidence, observed_at=observed_at)
+    features["adjusted_ev"] = presence.values["adjusted_ev"]
+    features["adjusted_ev_error"] = None
+    return features
 
 
 def _raw_preclose_v2(features: dict[str, Any] | None, exact_evidence: Any, *, slate_date: str) -> FamilyVote:
@@ -376,7 +379,7 @@ def _raw_preclose_v2(features: dict[str, Any] | None, exact_evidence: Any, *, sl
     return FamilyVote("agree" if scored["label"] == "strong_preclose_clv_proxy" else "disagree", (scored["label"],))
 
 
-def _eligible_reasons_v2(*, pitcher: dict[str, Any], pick: dict[str, Any], exact_evidence: Any, slate_date: str, is_tracked: bool, source_artifact_path: str, source_payload_sha256: str, source_artifact_byte_sha256: str, observed_at: str) -> tuple[str, ...]:
+def _eligible_reasons_v2(*, pitcher: dict[str, Any], pick: dict[str, Any], slate_date: str, is_tracked: bool, source_artifact_path: str, source_payload_sha256: str, source_artifact_byte_sha256: str, observed_at: str) -> tuple[str, ...]:
     reasons: list[str] = []
     observed, start = _as_utc(observed_at), _as_utc(pitcher.get("game_time"))
     if observed is None or start is None or observed >= start:
@@ -403,8 +406,6 @@ def _eligible_reasons_v2(*, pitcher: dict[str, Any], pick: dict[str, Any], exact
     for field, value in (("source_artifact_path", source_artifact_path), ("source_payload_sha256", source_payload_sha256), ("source_artifact_byte_sha256", source_artifact_byte_sha256)):
         if pick.get(field) is not None and pick.get(field) != value:
             reasons.append("artifact_hash_mismatch")
-    if not isinstance(exact_evidence, dict) or _enum(exact_evidence.get("provider")) not in set(MANIFEST["provider_allow_list"]):
-        reasons.append("unsupported_provider")
     return tuple(dict.fromkeys(reasons))
 
 
@@ -423,7 +424,7 @@ def evaluate_alternative_pick_v2(*, pitcher: dict[str, Any], pick: dict[str, Any
     no_drag = no_drag_v2(base, strict, drag_core_v2(drag_features))
     families = {"base": base, "anchor": anchor, "preclose": preclose, "reentry": reentry}
     lanes = evaluate_lanes_v2(families, no_drag)
-    eligibility = _eligible_reasons_v2(pitcher=pitcher, pick=pick, exact_evidence=exact_evidence, slate_date=slate_date, is_tracked=is_tracked, source_artifact_path=source_artifact_path, source_payload_sha256=source_payload_sha256, source_artifact_byte_sha256=source_artifact_byte_sha256, observed_at=observed_at)
+    eligibility = _eligible_reasons_v2(pitcher=pitcher, pick=pick, slate_date=slate_date, is_tracked=is_tracked, source_artifact_path=source_artifact_path, source_payload_sha256=source_payload_sha256, source_artifact_byte_sha256=source_artifact_byte_sha256, observed_at=observed_at)
     if eligibility:
         lanes = LaneEvaluation(lanes.consensus_core, lanes.reentry_expansion, None, "not_selected", lanes.family_count, lanes.maximum_family_count, ())
     reasons = tuple(dict.fromkeys((*eligibility, *(reason for vote in families.values() for reason in vote.reason_codes), *no_drag.reason_codes, *lanes.consensus_core.reason_codes, *lanes.reentry_expansion.reason_codes)))
