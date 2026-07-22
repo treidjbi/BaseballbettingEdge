@@ -585,6 +585,34 @@ def test_alternative_sidecar_stops_before_numeric_mapping_read_when_budget_is_ex
     writer.insert_ignore_rows.assert_not_called()
 
 
+def test_alternative_sidecar_contains_unhashable_artifact_event_id_during_numeric_prescan(monkeypatch):
+    monkeypatch.setenv("ALTERNATIVE_PICK_SELECTION_MODE", "record")
+    payload = _alternative_artifact_payload()
+    pitcher = payload["pitchers"][0]
+    pitcher["source_snapshot_ids"] = [101]
+    pitcher["therundown_event_id"] = []
+    writer = Mock()
+
+    result = build_live_events_to_supabase._write_alternative_pick_selection_state(
+        writer=writer,
+        slate_date="2026-05-06",
+        payload=payload,
+        snapshot_rows=[],
+        market_pick_evidence_rows=[],
+        observed_at=build_live_events_to_supabase.datetime.fromisoformat("2026-05-06T18:00:00+00:00"),
+        artifact_source="test",
+        source_payload_sha256=build_live_events_to_supabase.canonical_payload_sha256(payload),
+        source_artifact_byte_sha256="b" * 64,
+        operational_pick_locks={"skipped": True, "reason": "disabled"},
+        market_line_build={"skipped": True, "reason": "fresh"},
+    )
+
+    assert result["skipped"] is True
+    assert result["reason"] == "failed"
+    writer.upsert_rows.assert_not_called()
+    writer.insert_ignore_rows.assert_not_called()
+
+
 def test_alternative_pick_selection_mode_fails_closed_except_exact_record(monkeypatch):
     for value in (None, "", "RECORDING", "shadow", " true "):
         if value is None:

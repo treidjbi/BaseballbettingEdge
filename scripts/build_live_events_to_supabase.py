@@ -522,13 +522,13 @@ def _write_alternative_pick_selection_state(
     def remaining() -> float:
         return _alternative_remaining_timeout(started_at, budget_seconds)
 
-    numeric_current_line_ids = sorted({
-        line_id
-        for _, pitcher, _ in candidates
-        for line_id in _alternative_artifact_bindings(pitcher)[2]
-    })
     current_lines_by_id: dict[str, dict[str, Any]] = {}
     try:
+        numeric_current_line_ids = sorted({
+            line_id
+            for _, pitcher, _ in candidates
+            for line_id in _alternative_artifact_bindings(pitcher)[2]
+        })
         timeout = remaining()
         if timeout <= 0:
             return _alternative_failure_summary("timeout")
