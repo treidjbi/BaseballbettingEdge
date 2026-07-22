@@ -343,9 +343,8 @@ def bind_candidate_observations(
             and line == _line(candidate.get("model_k_line"))
         )
         missing_binding_identity = semantic_match and not snapshot_id and not provider_event_id
-        if not (
-            explicit_snapshot_match
-            or (semantic_match and (provider_event_match or missing_binding_identity))
+        if not semantic_match or not (
+            explicit_snapshot_match or provider_event_match or missing_binding_identity
         ):
             continue
         if provider not in required_providers:

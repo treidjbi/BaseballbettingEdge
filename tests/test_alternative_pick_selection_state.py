@@ -225,6 +225,30 @@ def test_raw_observation_binder_ignores_unrelated_ladder_event_and_provider_rows
     ]
 
 
+def test_artifact_listed_alternate_line_is_ignored_before_snapshot_binding():
+    candidate = _candidate(provider_posture="propline")
+    exact_rows = [
+        _raw_snapshot(id="exact-1"),
+        _raw_snapshot(id="exact-2", observed_at="2026-07-21T22:30:00Z"),
+    ]
+    alternate_line = _raw_snapshot(id="listed-6.5", line=6.5)
+
+    window = state.bind_candidate_observations(
+        candidate=candidate,
+        snapshot_rows=[*exact_rows, alternate_line],
+        market_evidence_rows=[_market_evidence()],
+        first_current_at="2026-07-21T22:15:00Z",
+        observed_at=OBSERVED_AT,
+        artifact_snapshot_ids=["listed-6.5"],
+        artifact_provider_event_ids={"propline": ["pl-game-current"]},
+    )
+
+    assert window["ready"] is True
+    assert window["observation_ids"] == ["exact-1", "exact-2"]
+    assert [row["id"] for row in window["bound_observations"]] == ["exact-1", "exact-2"]
+    assert "evidence_line_mismatch" not in window["reason_codes"]
+
+
 def test_duplicate_exact_provider_summaries_are_order_independent_and_never_bind():
     candidate = _candidate(provider_posture="propline")
     snapshots = [
