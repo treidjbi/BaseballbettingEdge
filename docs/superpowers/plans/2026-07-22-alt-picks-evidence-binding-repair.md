@@ -8,6 +8,29 @@
 
 **Tech Stack:** Python 3.11, pytest, existing Supabase/PostgREST writer, existing Render `bbe-live-layer` service. No migration, provider request, new worker, UI code, environment-variable change, or backfill.
 
+**Production verification (2026-07-22 11:21 Phoenix):** The reviewed repair
+merged to `main` at `f39f438b` and is live only on `bbe-live-layer` deploy
+`dep-d9ggi9jrjlhs739nihl0`. The first scheduled run on that deploy started at
+`18:20:31Z` and finished successfully at `18:21:48Z` with the fresh remote
+artifact, zero notification events, zero new locks, and normal TheRundown plus
+PropLine processing. Before that run, all 22 provisional and three immutable
+frozen rows had zero bound observations. After it, 12 current provisional rows
+had five to 45 exact bound observations; the three existing frozen rows were
+unchanged, duplicate alternative keys remained zero, and alternative
+notification events remained zero. The public endpoint returned 15 current
+provisional plus three frozen rows, 12 mature evidence rows, zero selected,
+and 18 pending. Numeric artifact-ID translation is therefore fixed. Selection
+remains honestly closed because strict preclose/provider completeness and
+same-line consistency checks still report missing or conflicting provider
+evidence. No gate, threshold, provider, notification, lock, model, UI, or
+official-pick behavior was relaxed.
+
+Independent task and whole-branch reviews ended PASS with no remaining
+findings. Final merged-main verification passed 1,585 Python tests and all 99
+Node tests. One retired-BoltOdds timing test failed
+identically on the untouched base and remains an explicitly isolated,
+out-of-scope baseline flake.
+
 ## Non-negotiable boundaries
 
 - Change only the isolated alternative-selection recorder and its tests, plus handoff documentation.
@@ -29,7 +52,7 @@
 - Modify after production verification: `docs/superpowers/plans/2026-07-21-pregame-alternative-pick-methodology.md`
 - Modify after production verification: `docs/current-state.md`
 
-- [ ] **Step 1: Write the production-shaped failing regression**
+- [x] **Step 1: Write the production-shaped failing regression**
 
 Add an integration-level sidecar test whose artifact contains numeric `source_snapshot_ids` shaped like production `current_market_lines.id` values and no direct provider event IDs. Mock the bounded reads in production order:
 
@@ -41,7 +64,7 @@ Return exact current-line rows with `id`, `slate_date`, approved `provider`, `pr
 
 Also add fail-closed cases proving that wrong pitcher, wrong line, wrong game time, wrong market, unsupported provider, missing side-specific UUID, and unmapped numeric IDs do not bind. Confirm the mapping is fetched in one current-slate read rather than one query per candidate.
 
-- [ ] **Step 2: Run focused tests and observe RED**
+- [x] **Step 2: Run focused tests and observe RED**
 
 ```powershell
 python -m pytest tests/test_live_layer_worker.py -q
@@ -49,7 +72,7 @@ python -m pytest tests/test_live_layer_worker.py -q
 
 Expected: the new production-shaped test fails because numeric line IDs are currently passed directly to the UUID snapshot binder and no `current_market_lines` translation read exists.
 
-- [ ] **Step 3: Implement one bounded translation read**
+- [x] **Step 3: Implement one bounded translation read**
 
 In the recorder, separate direct snapshot UUIDs from numeric source-line IDs. Before candidate evaluation:
 
@@ -72,15 +95,15 @@ Add the verified side-specific UUID to artifact snapshot IDs and the verified pr
 
 If numeric IDs exist but the mapping read fails, times out, returns malformed data, or yields conflicting duplicate IDs, return the existing sanitized sidecar failure/pending boundary without affecting the rest of the live-layer run.
 
-- [ ] **Step 4: Prove focused green and compatibility**
+- [x] **Step 4: Prove focused green and compatibility**
 
 ```powershell
-python -m pytest tests/test_live_layer_worker.py tests/test_alternative_pick_selection_state.py tests/test_market_infra_supabase_writer.py tests/test_notification_coordinator.py tests/test_operational_pick_locks.py -q
+python -m pytest tests/test_live_layer_worker.py tests/test_alternative_pick_selection_state.py tests/test_market_infra_supabase_writer.py tests/test_notification_coordinator.py tests/test_operational_locks.py -q
 ```
 
 Expected: all tests pass. Mode-off still performs no alternative reads, valid direct-ID fixtures remain compatible, and official notification/lock behavior is unchanged.
 
-- [ ] **Step 5: Run full verification and prohibited-change checks**
+- [x] **Step 5: Run full verification and prohibited-change checks**
 
 ```powershell
 python -m pytest tests/ -q
@@ -93,19 +116,19 @@ git status --short
 
 Expected: all suites pass and there are no provider, model, artifact, UI, workflow, environment, lock, notification, or generated-data changes.
 
-- [ ] **Step 6: Review, merge, and deploy only the live layer**
+- [x] **Step 6: Review, merge, and deploy only the live layer**
 
 Require an independent task review followed by an independent whole-branch review. Resolve every Critical or Important finding, rerun focused and full verification, merge to `main`, and push `origin/main`.
 
 Deploy only `bbe-live-layer` at the verified repair commit. Do not change Render environment variables or deploy Netlify. Confirm the service is live on the new commit and the next scheduled cycle completes successfully.
 
-- [ ] **Step 7: Verify prospective production behavior**
+- [x] **Step 7: Verify prospective production behavior**
 
 Using current-slate Supabase and the public Alt Picks endpoint, verify:
 
 - fresh post-deploy provisional rows bind real observation UUIDs for eligible mapped candidates;
 - selection status resolves when all existing family inputs are complete, while genuinely incomplete candidates remain pending;
-- the two pre-repair frozen pending rows remain byte-for-byte immutable and are not reconstructed;
+- the pre-deploy frozen pending rows remain byte-for-byte immutable and are not reconstructed;
 - no duplicate alternative keys or alternative notification rows appear;
 - official locks, notifications, artifacts, picks, and the main Picks tab remain unchanged; and
 - the existing Alt Picks UI renders the new prospective state without a Netlify deployment.

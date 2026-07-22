@@ -12,15 +12,20 @@
 deployed and the first-normal-slate integrity gate passed. The frozen manifest fingerprint
 is `f8f7ccf652b8eda4860d07798bc4673920b0b9d727552bc7e2e6547d478b4579`.
 Migration `20260721222627` is applied and directly verified. The code default
-remains `off`; Tyler-approved `record` mode is live only on `bbe-live-layer`
-deploy `dep-d9g2nsmrnols739u3h8g`. Netlify deploy
+remains `off`; Tyler-approved `record` mode is live only on `bbe-live-layer`.
+The numeric evidence-binding repair is live at reviewed commit `f39f438b` on
+deploy `dep-d9ggi9jrjlhs739nihl0`. Netlify deploy
 `6a60e7c06cebf50c3948c690` serves the endpoint/UI after the canonical
-team-name allow-list repair. The first normal slate produced 20 bounded
-provisional rows and two immutable pending frozen rows. Both frozen rows match
-consumed operational locks exactly and remain visible after artifact
-advancement; duplicate keys and alternative notifications are zero. This
-proves collection integrity but does not create a selected-lane performance
-sample or open an official promotion gate.
+team-name allow-list repair. After the first repaired scheduled cycle, the
+database held 22 bounded provisional rows and three immutable pending frozen
+rows; the current-artifact endpoint exposed 15 provisional plus all three
+frozen rows. Twelve current provisional rows now carry five to 45 exact bound
+observations, proving the artifact-ID translation is working. All three frozen
+rows remain unchanged; duplicate keys and alternative notifications are zero.
+Selected rows remain zero because strict preclose/provider completeness and
+same-line consistency checks still fail closed on missing or conflicting
+provider evidence. This is healthy collection progress, not a selected-lane
+performance sample or an official promotion gate.
 
 The final independent review found and fixed five contract gaps: valid
 literal-null no-lane supporting rows had been suppressed; missing
