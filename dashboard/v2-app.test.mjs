@@ -46,7 +46,7 @@ function loadTicketHelpers() {
   };
   context.globalThis = context;
   vm.runInNewContext(
-    `${scriptSource.slice(0, footerStart)}\nglobalThis.__ticketHelpers = { marketBetTicketContext, isLiveMarketBetPrefill, selectedMarketBetRowForForm: typeof selectedMarketBetRowForForm === "function" ? selectedMarketBetRowForForm : null, buildAcceptedBetPayload, altCountLabel: typeof altCountLabel === "function" ? altCountLabel : null, altBookTitle: typeof altBookTitle === "function" ? altBookTitle : null };`,
+    `${scriptSource.slice(0, footerStart)}\nglobalThis.__ticketHelpers = { marketBetTicketContext, isLiveMarketBetPrefill, selectedMarketBetRowForForm: typeof selectedMarketBetRowForForm === "function" ? selectedMarketBetRowForForm : null, buildAcceptedBetPayload, altCountLabel: typeof altCountLabel === "function" ? altCountLabel : null, altCandidateStatusCopy: typeof altCandidateStatusCopy === "function" ? altCandidateStatusCopy : null, altBookTitle: typeof altBookTitle === "function" ? altBookTitle : null };`,
     context,
     { filename: scriptPath },
   );
@@ -152,12 +152,15 @@ test("manual alternate book selection retains live provenance without automatic 
 });
 
 test("Alt Picks labels singular counts and canonical endpoint book keys", () => {
-  const { altCountLabel, altBookTitle } = loadTicketHelpers();
+  const { altCountLabel, altCandidateStatusCopy, altBookTitle } = loadTicketHelpers();
   assert.equal(typeof altCountLabel, "function");
   assert.equal(altCountLabel(1, "candidate"), "1 candidate");
   assert.equal(altCountLabel(2, "candidate"), "2 candidates");
   assert.equal(altCountLabel(1, "observation"), "1 observation");
   assert.equal(altCountLabel(3, "observation"), "3 observations");
+  assert.equal(typeof altCandidateStatusCopy, "function");
+  assert.equal(altCandidateStatusCopy(1), "1 candidate remains not selected or pending");
+  assert.equal(altCandidateStatusCopy(2), "2 candidates remain not selected or pending");
   assert.equal(typeof altBookTitle, "function");
   assert.deepEqual(
     ["fanduel", "draftkings", "betmgm", "betrivers", "kalshi", "caesars", "thescore", "thescore_bet"].map(altBookTitle),

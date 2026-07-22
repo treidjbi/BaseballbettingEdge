@@ -2617,6 +2617,10 @@ function altCountLabel(value, noun) {
   const count = Number.isFinite(value) ? Math.max(0, Math.trunc(value)) : 0;
   return `${count} ${noun}${count === 1 ? "" : "s"}`;
 }
+function altCandidateStatusCopy(value) {
+  const count = Number.isFinite(value) ? Math.max(0, Math.trunc(value)) : 0;
+  return `${altCountLabel(count, "candidate")} ${count === 1 ? "remains" : "remain"} not selected or pending`;
+}
 function altBookTitle(value) {
   const titles = {
     fanduel: "FanDuel",
@@ -2803,7 +2807,7 @@ function AltPicksTab() {
     className: "ttl"
   }, "No alternative qualifiers on this slate."), /*#__PURE__*/React.createElement("div", {
     className: "sub"
-  }, "Evidence is healthy; ", altCountLabel(supporting.length, "candidate"), " remain not selected or pending.")), state.status === "ready" && core.length > 0 && /*#__PURE__*/React.createElement("section", {
+  }, "Evidence is healthy; ", altCandidateStatusCopy(supporting.length), ".")), state.status === "ready" && core.length > 0 && /*#__PURE__*/React.createElement("section", {
     className: "v2-alt-group"
   }, /*#__PURE__*/React.createElement("h2", null, "Consensus Core"), core.map(row => /*#__PURE__*/React.createElement(AltPickCard, {
     key: `${row.pitcher}-${row.side}-${row.checkpoint}`,

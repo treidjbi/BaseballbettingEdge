@@ -2281,6 +2281,11 @@ function altCountLabel(value, noun) {
   return `${count} ${noun}${count === 1 ? "" : "s"}`;
 }
 
+function altCandidateStatusCopy(value) {
+  const count = Number.isFinite(value) ? Math.max(0, Math.trunc(value)) : 0;
+  return `${altCountLabel(count, "candidate")} ${count === 1 ? "remains" : "remain"} not selected or pending`;
+}
+
 function altBookTitle(value) {
   const titles = {
     fanduel: "FanDuel", draftkings: "DraftKings", betmgm: "BetMGM", betrivers: "BetRivers",
@@ -2385,7 +2390,7 @@ function AltPicksTab() {
         {state.status === "loading" && <div className="v2-state"><div className="ttl">Loading alternative evidence</div><div className="sub">Checking the current Phoenix slate.</div></div>}
         {state.status === "unavailable" && <div className="v2-state v2-alt-unavailable"><div className="ttl">Alternative methodology unavailable. Main picks are unaffected.</div></div>}
         {state.status === "ready" && rows.length === 0 && <div className="v2-state"><div className="ttl">Waiting for current-slate evidence.</div><div className="sub">A stale provisional row is never shown here.</div></div>}
-        {state.status === "ready" && rows.length > 0 && selected === 0 && <div className="v2-state v2-alt-empty"><div className="ttl">No alternative qualifiers on this slate.</div><div className="sub">Evidence is healthy; {altCountLabel(supporting.length, "candidate")} remain not selected or pending.</div></div>}
+        {state.status === "ready" && rows.length > 0 && selected === 0 && <div className="v2-state v2-alt-empty"><div className="ttl">No alternative qualifiers on this slate.</div><div className="sub">Evidence is healthy; {altCandidateStatusCopy(supporting.length)}.</div></div>}
         {state.status === "ready" && core.length > 0 && <section className="v2-alt-group"><h2>Consensus Core</h2>{core.map((row) => <AltPickCard key={`${row.pitcher}-${row.side}-${row.checkpoint}`} row={row} onOpen={setDetail} />)}</section>}
         {state.status === "ready" && expansion.length > 0 && <section className="v2-alt-group"><h2>Re-entry Expansion</h2>{expansion.map((row) => <AltPickCard key={`${row.pitcher}-${row.side}-${row.checkpoint}`} row={row} onOpen={setDetail} />)}</section>}
         {state.status === "ready" && supporting.length > 0 && <details className="v2-alt-collapsed"><summary>Not selected and pending ({supporting.length})</summary><p>Pending family evidence cannot qualify a card. Review the family chips for the short reason.</p><div className="v2-alt-supporting-list">{supporting.map((row) => <AltSupportingCandidate key={`${row.pitcher}-${row.side}-${row.checkpoint}`} row={row} />)}</div></details>}
