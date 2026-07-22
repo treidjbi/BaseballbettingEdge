@@ -3,6 +3,8 @@ from __future__ import annotations
 import inspect
 from copy import deepcopy
 
+import pytest
+
 from market_infra import alternative_pick_preclose_v2 as preclose
 
 
@@ -167,6 +169,97 @@ def test_v2_binding_rejects_unbound_time_skew_wrong_event_line_and_side():
     ):
         result = _bindings(rows=[bad_row], current_lines={"101": skewed}, pitcher=_pitcher(source_current_market_line_ids=[101]))
         assert result["ready"] is False
+
+
+@pytest.mark.parametrize("seed_slate", [None, "2026-07-21"])
+def test_v2_seed_binding_requires_present_exact_slate_date(seed_slate):
+    seed = _base_rows()[0]
+    if seed_slate is None:
+        seed.pop("slate_date")
+    else:
+        seed["slate_date"] = seed_slate
+
+    bindings = _bindings(
+        rows=[seed],
+        pitcher=_pitcher(source_current_market_line_ids=[101]),
+        current_lines={"101": _line(101, "therundown", "tr-event", TR_OVER)},
+    )
+
+    assert bindings["ready"] is False
+    assert bindings["official_binding"] is None
+    assert "side_snapshot_mismatch" in bindings["reason_codes"]
+
+
+def test_v2_later_rows_require_present_exact_slate_date():
+    seed = _base_rows()[0]
+    valid_later = _base_rows()[1]
+    missing_slate = _snapshot(
+        "ffffffff-ffff-4fff-8fff-ffffffffffff",
+        "therundown", "tr-event", -122,
+        "2026-07-22T20:06:00+00:00",
+    )
+    missing_slate.pop("slate_date")
+    wrong_slate = _snapshot(
+        "eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee",
+        "therundown", "tr-event", -125,
+        "2026-07-22T20:07:00+00:00",
+    )
+    wrong_slate["slate_date"] = "2026-07-21"
+    rows = [seed, valid_later, missing_slate, wrong_slate]
+    bindings = _bindings(
+        rows=[seed],
+        pitcher=_pitcher(source_current_market_line_ids=[101]),
+        current_lines={"101": _line(101, "therundown", "tr-event", TR_OVER)},
+    )
+
+    result = _build(rows=rows, bindings=bindings, windows=_windows(bindings))
+
+    assert result.market_evidence["freshness_status"] == "fresh"
+    assert result.market_evidence["observation_ids"] == [
+        f"therundown:{TR_OVER}", f"therundown:{TR_LATER}",
+    ]
+
+
+@pytest.mark.parametrize("conflict", [
+    {"provider_event_id": "other-event"},
+    {"provider_event_id": None, "slate_date": None, "side": None},
+])
+def test_v2_conflicting_duplicate_tokens_are_rejected_before_semantic_filtering(conflict):
+    valid_seed = _base_rows()[0]
+    conflicting_seed = {**valid_seed, **conflict}
+    current_line = {"101": _line(101, "therundown", "tr-event", TR_OVER)}
+    pitcher = _pitcher(source_current_market_line_ids=[101])
+
+    bindings = _bindings(
+        rows=[conflicting_seed, valid_seed], pitcher=pitcher,
+        current_lines=current_line,
+    )
+    assert bindings["ready"] is False
+    assert "duplicate_snapshot_conflict" in bindings["reason_codes"]
+
+    clean_bindings = _bindings(
+        rows=[valid_seed], pitcher=pitcher, current_lines=current_line,
+    )
+    result = _build(
+        rows=_base_rows() + [conflicting_seed], bindings=clean_bindings,
+        windows=_windows(clean_bindings),
+    )
+    assert result.market_evidence["freshness_status"] == "pending"
+    assert "duplicate_snapshot_conflict" in result.market_evidence["aggregation_reason_codes"]
+
+
+def test_v2_explicit_artifact_event_conflict_rejects_current_line_binding():
+    bindings = _bindings(
+        pitcher=_pitcher(
+            source_current_market_line_ids=[101],
+            therundown_event_id="artifact-event",
+        ),
+        current_lines={"101": _line(101, "therundown", "tr-event", TR_OVER)},
+    )
+
+    assert bindings["ready"] is False
+    assert bindings["official_binding"] is None
+    assert "therundown_binding_conflict" in bindings["reason_codes"]
 
 
 def test_v2_payload_hash_change_alone_does_not_reset_the_window():

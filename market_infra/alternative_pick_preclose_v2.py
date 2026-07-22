@@ -158,7 +158,8 @@ def _snapshot_semantics_match(
         _snapshot_uuid(row.get("id")) == snapshot_id,
         _provider(row.get("provider")) == provider,
         _text(row.get("provider_event_id")) == provider_event_id,
-        _text(row.get("slate_date") or candidate.get("slate_date")) == _text(candidate.get("slate_date")),
+        bool(_text(row.get("slate_date"))),
+        _text(row.get("slate_date")) == _text(candidate.get("slate_date")),
         normalize(_text(row.get("normalized_player_name") or row.get("player_name")))
         == _text(candidate.get("normalized_pitcher")),
         normalize_market_key(row.get("market_key")) == "pitcher_strikeouts",
@@ -186,10 +187,9 @@ def resolve_candidate_bindings_v2(
         for key, row in current_lines_by_id.items()
         if (identifier := _current_line_id(key)) is not None
     }
-    snapshots_by_token = {
-        (_provider(row.get("provider")), _snapshot_uuid(row.get("id"))): row
-        for row in snapshot_rows if isinstance(row, Mapping) and _snapshot_uuid(row.get("id"))
-    }
+    snapshots_by_token, conflicting_tokens = _group_snapshot_rows(snapshot_rows)
+    if conflicting_tokens:
+        reasons.append("duplicate_snapshot_conflict")
     candidates_by_provider: dict[str, list[dict[str, Any]]] = {}
     for line_id in line_ids:
         row = current_line_lookup.get(line_id)
@@ -266,7 +266,9 @@ def resolve_candidate_bindings_v2(
 
     bindings_by_provider: dict[str, dict[str, Any]] = {}
     for provider, rows in candidates_by_provider.items():
-        events = {_text(row.get("provider_event_id")) for row in rows}
+        events = {
+            _text(row.get("provider_event_id")) for row in rows
+        } | set(declared_events.get(provider, set()))
         if len(events) != 1:
             reasons.append(f"{provider}_binding_conflict")
             continue
@@ -298,7 +300,7 @@ def resolve_candidate_bindings_v2(
         if provider != official_provider
     }
     return {
-        "ready": official_binding is not None,
+        "ready": official_binding is not None and not conflicting_tokens,
         "official_provider": official_provider,
         "official_binding": official_binding,
         "official_binding_key": official_binding.get("binding_key") if official_binding else None,
@@ -373,12 +375,38 @@ def resolve_candidate_windows_v2(
 
 def _snapshot_signature(row: Mapping[str, Any]) -> tuple[Any, ...]:
     return (
-        _provider(row.get("provider")), _text(row.get("provider_event_id")),
+        _provider(row.get("provider")), _text(row.get("slate_date")),
+        _text(row.get("provider_event_id")),
         normalize(_text(row.get("normalized_player_name") or row.get("player_name"))),
         normalize_market_key(row.get("market_key")), _side(row.get("side")),
         _number(row.get("line")), normalize_book_key(row.get("bookmaker_key") or row.get("bookmaker_title")),
         _integer(row.get("american_odds")), _iso(row.get("observed_at")), _iso(row.get("game_time")),
     )
+
+
+def _group_snapshot_rows(
+    rows: Sequence[Mapping[str, Any]],
+) -> tuple[dict[tuple[str, str], Mapping[str, Any]], set[tuple[str, str]]]:
+    """Pre-group provider-qualified UUIDs and invalidate every content collision."""
+    grouped: dict[tuple[str, str], list[tuple[tuple[Any, ...], Mapping[str, Any]]]] = {}
+    for row in rows:
+        if not isinstance(row, Mapping):
+            continue
+        provider = _provider(row.get("provider"))
+        identifier = _snapshot_uuid(row.get("id"))
+        if not provider or identifier is None:
+            continue
+        grouped.setdefault((provider, identifier), []).append((_snapshot_signature(row), row))
+
+    conflicting = {
+        token for token, values in grouped.items()
+        if len({signature for signature, _row in values}) > 1
+    }
+    representatives = {
+        token: values[0][1] for token, values in grouped.items()
+        if token not in conflicting
+    }
+    return representatives, conflicting
 
 
 def _direction(ordered: Sequence[Mapping[str, Any]]) -> tuple[str, bool]:
@@ -449,13 +477,17 @@ def build_exact_preclose_evidence_v2(
         list(provider_heartbeats), checkpoint or datetime.now(timezone.utc), stale_after_seconds,
     )
     exact_event_rows: dict[str, list[dict[str, Any]]] = {}
-    seen: dict[tuple[str, str], tuple[Any, ...]] = {}
-    for raw in snapshot_rows if isinstance(snapshot_rows, Sequence) else []:
+    normalized_rows, conflicting_tokens = _group_snapshot_rows(snapshot_rows)
+    if conflicting_tokens:
+        reasons.append("duplicate_snapshot_conflict")
+    for raw in normalized_rows.values():
         if not isinstance(raw, Mapping):
             continue
         provider = _provider(raw.get("provider"))
         binding = bindings_by_provider.get(provider)
         if not isinstance(binding, Mapping):
+            continue
+        if _text(raw.get("slate_date")) != _text(candidate.get("slate_date")):
             continue
         if _text(raw.get("provider_event_id")) != _text(binding.get("provider_event_id")):
             continue
@@ -471,13 +503,6 @@ def build_exact_preclose_evidence_v2(
         start = _utc(provider_starts.get(provider))
         if not identifier or timestamp is None or line is None or odds is None or not book or book not in MAIN_BOOKS or start is None:
             continue
-        token = (provider, identifier)
-        signature = _snapshot_signature(raw)
-        if token in seen:
-            if seen[token] != signature:
-                reasons.append("duplicate_snapshot_conflict")
-            continue
-        seen[token] = signature
         if timestamp < start or checkpoint is None or timestamp > checkpoint or timestamp >= game_time:
             continue
         line_age = max(int((checkpoint - timestamp).total_seconds()), 0)
