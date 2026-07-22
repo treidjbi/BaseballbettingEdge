@@ -790,22 +790,27 @@ def _dispatch_alternative_pick_selection_state(
     if _alternative_pick_selection_mode() == "record" and version is None:
         return {"skipped": True, "reason": "invalid_bundle_version", "rows": 0}
     if _alternative_pick_selection_mode() == "record" and version == "v2":
-        return record_alternative_pick_selection_v2(
-            writer=writer,
-            slate_date=slate_date,
-            payload=payload,
-            snapshot_rows=snapshot_rows,
-            provider_heartbeats=provider_heartbeats,
-            observed_at=observed_at,
-            artifact_source=artifact_source,
-            source_payload_sha256=source_payload_sha256,
-            source_artifact_byte_sha256=source_artifact_byte_sha256,
-            operational_pick_locks=operational_pick_locks,
-            market_line_build=market_line_build,
-            shadow_pipeline_timing=shadow_pipeline_timing,
-            ready_to_bet_write=ready_to_bet_write,
-            budget_seconds=budget_seconds,
-        )
+        try:
+            return record_alternative_pick_selection_v2(
+                writer=writer,
+                slate_date=slate_date,
+                payload=payload,
+                snapshot_rows=snapshot_rows,
+                provider_heartbeats=provider_heartbeats,
+                observed_at=observed_at,
+                artifact_source=artifact_source,
+                source_payload_sha256=source_payload_sha256,
+                source_artifact_byte_sha256=source_artifact_byte_sha256,
+                operational_pick_locks=operational_pick_locks,
+                market_line_build=market_line_build,
+                shadow_pipeline_timing=shadow_pipeline_timing,
+                ready_to_bet_write=ready_to_bet_write,
+                budget_seconds=budget_seconds,
+            )
+        except TimeoutError:
+            return _alternative_failure_summary("timeout")
+        except Exception:
+            return _alternative_failure_summary("failed")
     return _write_alternative_pick_selection_state(
         writer=writer,
         slate_date=slate_date,

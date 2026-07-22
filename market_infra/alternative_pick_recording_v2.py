@@ -5,8 +5,9 @@ from __future__ import annotations
 import math
 import json
 import time
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from typing import Any
+from zoneinfo import ZoneInfo
 
 from market_infra.alternative_pick_evaluation_proof_v2 import build_evaluation_proof_v2
 from market_infra.alternative_pick_preclose_v2 import (
@@ -30,6 +31,8 @@ from market_infra.supabase_writer import SupabaseMarketWriter
 
 ACTIVE_POSTURES = frozenset({"therundown", "propline", "therundown_propline"})
 ACTIVE_PROVIDERS = frozenset({"therundown", "propline"})
+PHOENIX = ZoneInfo("America/Phoenix")
+MAX_ARTIFACT_AGE = timedelta(minutes=90)
 
 
 def _text(value: Any) -> str:
@@ -92,6 +95,16 @@ def _failure(reason: str) -> dict[str, Any]:
     }
 
 
+def _source_posture(pitcher: dict[str, Any]) -> str | None:
+    mode = _text(pitcher.get("market_source_mode")).lower().replace("+", "_")
+    source = _text(pitcher.get("odds_source")).lower().replace("+", "_")
+    if mode:
+        if mode not in ACTIVE_POSTURES or source not in ACTIVE_POSTURES or mode != source:
+            return None
+        return mode
+    return source if source in ACTIVE_POSTURES else None
+
+
 def extract_alternative_pick_candidates_v2(
     *, slate_date: str, payload: dict[str, Any],
 ) -> list[tuple[dict[str, Any], dict[str, Any], dict[str, Any]]]:
@@ -103,15 +116,8 @@ def extract_alternative_pick_candidates_v2(
     for pitcher in payload.get("pitchers") or []:
         if not isinstance(pitcher, dict):
             continue
-        mode = _text(pitcher.get("market_source_mode")).lower().replace("+", "_")
-        source = _text(pitcher.get("odds_source")).lower().replace("+", "_")
-        if mode:
-            if mode not in ACTIVE_POSTURES or source not in ACTIVE_POSTURES or mode != source:
-                continue
-            posture = mode
-        elif source in ACTIVE_POSTURES:
-            posture = source
-        else:
+        posture = _source_posture(pitcher)
+        if posture is None:
             continue
         line_source_provider = _text(pitcher.get("line_source_provider")).lower()
         if line_source_provider not in ACTIVE_PROVIDERS:
@@ -150,6 +156,68 @@ def extract_alternative_pick_candidates_v2(
             seen.add(candidate["candidate_identity"])
             candidates.append((candidate, pitcher, pick))
     return candidates
+
+
+def assess_alternative_pick_artifact_v2(
+    *, slate_date: str, payload: dict[str, Any], observed_at: datetime,
+    require_before_t30: bool,
+) -> dict[str, Any]:
+    """Pure shared runtime/preflight check for the exact official artifact."""
+    observed = observed_at.astimezone(timezone.utc)
+    expected_slate_date = observed.astimezone(PHOENIX).date().isoformat()
+    if (
+        not isinstance(payload, dict)
+        or _text(slate_date) != expected_slate_date
+        or _text(payload.get("date")) != expected_slate_date
+    ):
+        return {"ok": False, "reason": "wrong_phoenix_slate_date", "candidates": []}
+    generated_at = _utc(payload.get("generated_at"))
+    if generated_at is None or generated_at > observed + timedelta(minutes=5):
+        return {"ok": False, "reason": "invalid_artifact", "candidates": []}
+    if observed - generated_at > MAX_ARTIFACT_AGE:
+        return {"ok": False, "reason": "stale_artifact", "candidates": []}
+
+    for pitcher in payload.get("pitchers") or []:
+        if not isinstance(pitcher, dict):
+            continue
+        tracked = pitcher.get("tracked_picks")
+        if not isinstance(tracked, list):
+            continue
+        relevant = [
+            pick for pick in tracked
+            if isinstance(pick, dict) and display_verdict(pick).upper() != "PASS"
+        ]
+        if not relevant:
+            continue
+        if (
+            _source_posture(pitcher) is None
+            or _text(pitcher.get("line_source_provider")).lower() not in ACTIVE_PROVIDERS
+        ):
+            return {"ok": False, "reason": "invalid_source_posture", "candidates": []}
+        if any(_utc(pick.get("game_time") or pitcher.get("game_time")) is None for pick in relevant):
+            return {"ok": False, "reason": "invalid_artifact", "candidates": []}
+
+    candidates = extract_alternative_pick_candidates_v2(slate_date=slate_date, payload=payload)
+    if not candidates:
+        return {
+            "ok": True, "reason": "no_candidates", "candidates": [],
+            "candidate_t30": {}, "generated_at": generated_at,
+        }
+    candidate_t30: dict[str, datetime] = {}
+    for candidate, _, _ in candidates:
+        game_time = _utc(candidate.get("game_time"))
+        if game_time is None:
+            return {"ok": False, "reason": "invalid_artifact", "candidates": []}
+        candidate_t30[candidate["candidate_identity"]] = game_time - timedelta(minutes=30)
+    if require_before_t30 and any(observed >= t30 for t30 in candidate_t30.values()):
+        return {
+            "ok": False, "reason": "too_late", "candidates": candidates,
+            "candidate_t30": candidate_t30, "generated_at": generated_at,
+        }
+    return {
+        "ok": True, "reason": "clean", "candidates": candidates,
+        "candidate_t30": candidate_t30, "generated_at": generated_at,
+    }
 
 
 def _evaluation_inputs(
@@ -250,7 +318,7 @@ def _window_state_row(row: dict[str, Any] | None) -> dict[str, Any] | None:
     }
 
 
-def record_alternative_pick_selection_v2(
+def _record_alternative_pick_selection_v2_impl(
     *, writer: SupabaseMarketWriter, slate_date: str, payload: dict[str, Any],
     snapshot_rows: list[dict[str, Any]], provider_heartbeats: list[dict[str, Any]],
     observed_at: datetime, artifact_source: str, source_payload_sha256: str,
@@ -269,9 +337,14 @@ def record_alternative_pick_selection_v2(
     def remaining() -> float:
         return budget_seconds - (time.monotonic() - started)
 
-    candidates = extract_alternative_pick_candidates_v2(slate_date=slate_date, payload=payload)
-    if not candidates:
-        return {"skipped": True, "reason": "no_candidates", "rows": 0}
+    assessment = assess_alternative_pick_artifact_v2(
+        slate_date=slate_date, payload=payload, observed_at=observed_at,
+        require_before_t30=False,
+    )
+    if not assessment["ok"] or assessment["reason"] == "no_candidates":
+        return {"skipped": True, "reason": assessment["reason"], "rows": 0}
+    candidates = assessment["candidates"]
+    candidate_t30 = assessment["candidate_t30"]
     by_key: dict[tuple[Any, ...], set[str]] = {}
     by_lock: dict[str, set[str]] = {}
     for candidate, _, _ in candidates:
@@ -330,7 +403,8 @@ def record_alternative_pick_selection_v2(
             return _failure("failed")
         current_lines_by_id[identifier] = row
 
-    observed_iso = observed_at.astimezone(timezone.utc).isoformat()
+    observed_utc = observed_at.astimezone(timezone.utc)
+    observed_iso = observed_utc.isoformat()
     artifact = {
         "path": APPROVED_ARTIFACT_PATH, "payload": payload,
         "payload_sha256": source_payload_sha256, "byte_sha256": source_artifact_byte_sha256,
@@ -338,6 +412,7 @@ def record_alternative_pick_selection_v2(
     }
     provisional_rows: list[dict[str, Any]] = []
     frozen_rows: list[dict[str, Any]] = []
+    too_late_without_lock = 0
     for candidate, pitcher, tracked_pick in candidates:
         matching = [
             row for row in existing_rows if isinstance(row, dict)
@@ -347,8 +422,11 @@ def record_alternative_pick_selection_v2(
             continue
         lock_key = f"{slate_date}:{candidate['normalized_pitcher']}:{candidate['side']}"
         candidate_locks = [row for row in lock_rows if isinstance(row, dict) and row.get("dedupe_key") == lock_key]
-        current_lock = next((row for row in candidate_locks if _utc(row.get("locked_at")) == observed_at.astimezone(timezone.utc) and _utc(row.get("observed_at")) == observed_at.astimezone(timezone.utc)), None)
+        current_lock = next((row for row in candidate_locks if _utc(row.get("locked_at")) == observed_utc and _utc(row.get("observed_at")) == observed_utc), None)
         if candidate_locks and current_lock is None:
+            continue
+        if current_lock is None and observed_utc >= candidate_t30[candidate["candidate_identity"]]:
+            too_late_without_lock += 1
             continue
         prior = next((row for row in matching if row.get("checkpoint") == "provisional"), None)
         try:
@@ -423,8 +501,37 @@ def record_alternative_pick_selection_v2(
         return _failure("timeout")
     except Exception:
         return _failure("failed")
+    if not provisional_rows and not frozen_rows and too_late_without_lock:
+        return {"skipped": True, "reason": "too_late", "rows": 0}
     return {
         "skipped": False, "rows": len(provisional_rows) + len(frozen_rows),
         "provisional_rows": len(provisional_rows), "frozen_rows": len(frozen_rows),
         "collisions": 0,
     }
+
+
+def record_alternative_pick_selection_v2(
+    *, writer: SupabaseMarketWriter, slate_date: str, payload: dict[str, Any],
+    snapshot_rows: list[dict[str, Any]], provider_heartbeats: list[dict[str, Any]],
+    observed_at: datetime, artifact_source: str, source_payload_sha256: str,
+    source_artifact_byte_sha256: str, operational_pick_locks: dict[str, Any],
+    market_line_build: dict[str, Any], shadow_pipeline_timing: dict[str, Any],
+    ready_to_bet_write: dict[str, Any], budget_seconds: float = 5.0,
+) -> dict[str, Any]:
+    """Contain every V2 sidecar failure, including candidate preparation and dispatch."""
+    try:
+        return _record_alternative_pick_selection_v2_impl(
+            writer=writer, slate_date=slate_date, payload=payload,
+            snapshot_rows=snapshot_rows, provider_heartbeats=provider_heartbeats,
+            observed_at=observed_at, artifact_source=artifact_source,
+            source_payload_sha256=source_payload_sha256,
+            source_artifact_byte_sha256=source_artifact_byte_sha256,
+            operational_pick_locks=operational_pick_locks,
+            market_line_build=market_line_build,
+            shadow_pipeline_timing=shadow_pipeline_timing,
+            ready_to_bet_write=ready_to_bet_write, budget_seconds=budget_seconds,
+        )
+    except TimeoutError:
+        return _failure("timeout")
+    except Exception:
+        return _failure("failed")

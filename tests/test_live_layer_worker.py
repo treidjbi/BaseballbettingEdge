@@ -701,6 +701,31 @@ def test_v2_writer_receives_existing_snapshots_and_heartbeats_without_new_provid
     assert "live_market_display_rows" not in v2.call_args.kwargs
 
 
+@pytest.mark.parametrize("error,reason", [(ValueError("bad payload"), "failed"), (TimeoutError(), "timeout")])
+def test_v2_dispatcher_contains_recorder_exception_without_touching_other_work(monkeypatch, error, reason):
+    monkeypatch.setenv("ALTERNATIVE_PICK_SELECTION_MODE", "record")
+    monkeypatch.setenv("ALTERNATIVE_PICK_SELECTION_BUNDLE_VERSION", "v2")
+    writer = Mock()
+    with patch.object(
+        build_live_events_to_supabase,
+        "record_alternative_pick_selection_v2",
+        side_effect=error,
+    ):
+        result = build_live_events_to_supabase._dispatch_alternative_pick_selection_state(
+            writer=writer, slate_date="2026-07-22", payload={}, snapshot_rows=[],
+            provider_heartbeats=[], market_pick_evidence_rows=[], live_market_display_rows=[],
+            observed_at=build_live_events_to_supabase.datetime.now(build_live_events_to_supabase.timezone.utc),
+            artifact_source="test", source_payload_sha256="a" * 64,
+            source_artifact_byte_sha256="b" * 64,
+            operational_pick_locks={}, market_line_build={}, shadow_pipeline_timing={}, ready_to_bet_write={},
+        )
+    assert result["skipped"] is True
+    assert result["reason"] == reason
+    assert result["rows"] == 0
+    assert len(result["warning"]) <= 200
+    writer.assert_not_called()
+
+
 def test_alternative_sidecar_off_performs_no_state_reads_or_writes(monkeypatch):
     monkeypatch.delenv("ALTERNATIVE_PICK_SELECTION_MODE", raising=False)
     writer = Mock()

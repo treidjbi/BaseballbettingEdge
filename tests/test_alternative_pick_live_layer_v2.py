@@ -165,6 +165,22 @@ def test_v2_selected_lane_with_pending_preclose_freezes_selected_at_exact_lock(m
     assert writer.inserts[0][1][0]["selection_status"] == "selected"
 
 
+def test_v2_current_lock_at_t30_still_freezes_instead_of_becoming_too_late(monkeypatch):
+    _stub_pipeline(monkeypatch, status="selected", lane="consensus_core")
+    lock = {
+        "dedupe_key": "2026-07-22:tarik skubal:over", "slate_date": "2026-07-22",
+        "normalized_pitcher": "tarik skubal", "side": "over", "locked_at": NOW.isoformat(),
+        "observed_at": NOW.isoformat(), "status_at_capture": "due_now",
+    }
+    writer = Writer({"operational_pick_locks": [lock]})
+    monkeypatch.setattr(recording, "build_frozen_row", lambda **kwargs: {
+        **kwargs["provisional_row"], "checkpoint": "frozen_pregame",
+    })
+    result = _record(writer, payload=_payload(game_time="2026-07-22T20:40:00+00:00"))
+    assert result["frozen_rows"] == 1
+    assert len(writer.inserts) == 1
+
+
 def test_v2_relevant_pending_dependency_freezes_pending(monkeypatch):
     _stub_pipeline(monkeypatch, status="pending", lane=None)
     lock = {"dedupe_key": "2026-07-22:tarik skubal:over", "locked_at": NOW.isoformat(), "observed_at": NOW.isoformat()}
@@ -181,6 +197,79 @@ def test_v2_never_reconstructs_missed_or_existing_frozen_rows(monkeypatch):
     result = _record(writer)
     assert result["rows"] == 0
     assert not writer.upserts and not writer.inserts
+
+
+@pytest.mark.parametrize(
+    "game_time",
+    ["2026-07-22T20:40:00+00:00", "2026-07-22T20:39:59+00:00"],
+)
+def test_v2_no_lock_at_or_after_t30_never_writes_provisional(monkeypatch, game_time):
+    _stub_pipeline(monkeypatch)
+    writer = Writer()
+    result = _record(writer, payload=_payload(game_time=game_time))
+    assert result["reason"] == "too_late"
+    assert result["rows"] == 0
+    assert not writer.upserts and not writer.inserts
+
+
+@pytest.mark.parametrize(
+    "mutate,reason",
+    [
+        (lambda payload: payload.update(generated_at="2026-07-22T18:00:00+00:00"), "stale_artifact"),
+        (lambda payload: payload.update(date="2026-07-21"), "wrong_phoenix_slate_date"),
+        (
+            lambda payload: payload["pitchers"][0].update(
+                odds_source="boltodds", market_source_mode="boltodds"
+            ),
+            "invalid_source_posture",
+        ),
+    ],
+)
+def test_v2_runtime_rejects_stale_wrong_date_and_retired_source_before_reads(mutate, reason):
+    payload = _payload()
+    mutate(payload)
+    writer = Writer()
+    result = _record(writer, payload=payload)
+    assert result == {"skipped": True, "reason": reason, "rows": 0}
+    assert writer.select_calls == []
+
+
+def test_v2_malformed_candidate_extraction_is_bounded_sidecar_failure(monkeypatch):
+    monkeypatch.setattr(
+        recording, "extract_alternative_pick_candidates_v2",
+        Mock(side_effect=ValueError("malformed candidate")),
+    )
+    writer = Writer()
+    result = _record(writer)
+    assert result["skipped"] is True
+    assert result["reason"] == "failed"
+    assert result["rows"] == 0
+    assert len(result["warning"]) <= 200
+    assert writer.select_calls == []
+
+
+def test_v2_early_line_id_preparation_exception_is_bounded_sidecar_failure(monkeypatch):
+    monkeypatch.setattr(
+        recording, "artifact_current_line_ids_v2",
+        Mock(side_effect=TypeError("malformed source ids")),
+    )
+    writer = Writer()
+    result = _record(writer)
+    assert result["skipped"] is True
+    assert result["reason"] == "failed"
+    assert result["rows"] == 0
+    assert writer.select_calls == []
+
+
+def test_v2_early_preparation_timeout_is_bounded_sidecar_failure(monkeypatch):
+    monkeypatch.setattr(
+        recording, "extract_alternative_pick_candidates_v2",
+        Mock(side_effect=TimeoutError("budget")),
+    )
+    result = _record(Writer())
+    assert result["skipped"] is True
+    assert result["reason"] == "timeout"
+    assert result["rows"] == 0
 
 
 def test_v2_proof_failure_is_sidecar_only_and_does_not_touch_other_tables(monkeypatch):

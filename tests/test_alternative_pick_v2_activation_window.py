@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from datetime import datetime, timezone
+from unittest.mock import Mock
 
 from scripts import check_alternative_pick_v2_activation_window as preflight
 
@@ -24,6 +25,22 @@ def test_activation_preflight_uses_exact_artifact_candidates_not_v1_state():
     result = preflight.evaluate_activation_window(payload=_artifact(), raw_bytes=b"artifact", observed_at=NOW)
     assert result["status"] == "clean"
     assert result["candidate_count"] == 1
+
+
+def test_activation_preflight_uses_shared_runtime_artifact_assessment(monkeypatch):
+    assessment = Mock(return_value={
+        "ok": True, "reason": "no_candidates", "candidates": [],
+        "candidate_t30": {}, "generated_at": NOW,
+    })
+    monkeypatch.setattr(preflight, "assess_alternative_pick_artifact_v2", assessment)
+    result = preflight.evaluate_activation_window(
+        payload=_artifact(), raw_bytes=b"artifact", observed_at=NOW,
+    )
+    assert result["status"] == "no_candidates"
+    assessment.assert_called_once_with(
+        slate_date="2026-07-22", payload=_artifact(), observed_at=NOW,
+        require_before_t30=True,
+    )
 
 
 def test_activation_preflight_fails_at_or_past_first_candidate_t30():
