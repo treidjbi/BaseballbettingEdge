@@ -4,6 +4,15 @@ import fs from "node:fs/promises";
 import vm from "node:vm";
 
 const source = await fs.readFile(new URL("./v2-alt-picks.js", import.meta.url), "utf8");
+const FIXED_NOW = "2026-07-21T20:10:00.000Z";
+
+class FixedDate extends Date {
+  constructor(...args) {
+    super(...(args.length ? args : [FIXED_NOW]));
+  }
+
+  static now() { return Date.parse(FIXED_NOW); }
+}
 
 function load({ payload, status = 200 } = {}) {
   const calls = [];
@@ -17,7 +26,7 @@ function load({ payload, status = 200 } = {}) {
     calls.push(String(url));
     return { ok: status >= 200 && status < 300, status, json: async () => payload };
   };
-  const context = { window, fetch, Intl, Date, console };
+  const context = { window, fetch, Intl, Date: FixedDate, console };
   context.globalThis = context;
   vm.runInNewContext(source, context, { filename: "v2-alt-picks.js" });
   return { api: window.V2AltPicks, window, calls };
