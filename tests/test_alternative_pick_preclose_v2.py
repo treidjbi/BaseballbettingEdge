@@ -427,6 +427,127 @@ def test_v2_explicit_artifact_event_conflict_rejects_current_line_binding():
     assert "therundown_binding_conflict" in bindings["reason_codes"]
 
 
+def test_v2_mature_official_event_only_binding_builds_exact_evidence():
+    rows = _base_rows()[:2]
+    bindings = _bindings(
+        rows=rows,
+        pitcher=_pitcher(
+            source_current_market_line_ids=[],
+            therundown_event_id="tr-event",
+        ),
+    )
+
+    assert bindings["ready"] is True
+    assert bindings["official_binding"]["provider_event_id"] == "tr-event"
+    assert bindings["official_binding"]["current_line_ids"] == []
+    assert bindings["official_binding"]["seed_snapshot_ids"] == []
+
+    result = _build(rows=rows, bindings=bindings, windows=_windows(bindings))
+    assert result.market_evidence["freshness_status"] == "fresh"
+    assert result.market_evidence["participating_providers"] == ["therundown"]
+
+
+@pytest.mark.parametrize(("field", "value"), [
+    ("provider_event_id", "wrong-event"),
+    ("normalized_player_name", "other pitcher"),
+    ("side", "under"),
+    ("line", 7.5),
+    ("slate_date", "2026-07-21"),
+    ("bookmaker_key", "bovada"),
+])
+def test_v2_event_only_binding_rejects_wrong_candidate_semantics(field, value):
+    rows = [{**row, field: value} for row in _base_rows()[:2]]
+    bindings = _bindings(
+        rows=rows,
+        pitcher=_pitcher(
+            source_current_market_line_ids=[],
+            therundown_event_id="tr-event",
+        ),
+    )
+
+    assert bindings["ready"] is False
+    assert bindings["official_binding"] is None
+
+
+def test_v2_event_only_binding_rejects_multiple_declared_provider_events():
+    bindings = _bindings(
+        rows=_base_rows()[:2],
+        pitcher=_pitcher(
+            source_current_market_line_ids=[],
+            therundown_event_id="tr-event",
+            rundown_event_id="other-event",
+        ),
+    )
+
+    assert bindings["ready"] is False
+    assert bindings["official_binding"] is None
+    assert "therundown_binding_conflict" in bindings["reason_codes"]
+
+
+def test_v2_event_only_binding_does_not_override_invalid_current_line_attempt():
+    bindings = _bindings(
+        rows=_base_rows()[:2],
+        pitcher=_pitcher(
+            source_current_market_line_ids=[101],
+            therundown_event_id="tr-event",
+        ),
+        current_lines={
+            "101": _line(
+                101, "therundown", "tr-event", TR_OVER,
+                normalized_player_name="other pitcher",
+            ),
+        },
+    )
+
+    assert bindings["ready"] is False
+    assert bindings["official_binding"] is None
+    assert "current_line_mismatch" in bindings["reason_codes"]
+
+
+def test_v2_explicit_event_only_binding_tolerates_provider_start_time_skew():
+    skewed_game_time = "2026-07-22T23:45:00+00:00"
+    rows = [{**row, "game_time": skewed_game_time} for row in _base_rows()[:2]]
+    bindings = _bindings(
+        rows=rows,
+        pitcher=_pitcher(
+            source_current_market_line_ids=[],
+            therundown_event_id="tr-event",
+        ),
+    )
+
+    assert bindings["ready"] is True
+    assert bindings["official_binding"]["mapped_game_times"] == [skewed_game_time]
+
+    result = _build(rows=rows, bindings=bindings, windows=_windows(bindings))
+    assert result.market_evidence["freshness_status"] == "fresh"
+
+
+@pytest.mark.parametrize("sidecar_rows", [
+    [_base_rows()[2]],
+    [
+        _snapshot(PL_OVER, "propline", "pl-event", -104, "2026-07-22T19:30:00+00:00", book="draftkings"),
+        _snapshot(PL_LATER, "propline", "pl-event", -112, "2026-07-22T19:35:00+00:00", book="draftkings"),
+    ],
+])
+def test_v2_optional_event_only_sidecar_is_nonessential_until_mature_and_fresh(sidecar_rows):
+    rows = _base_rows()[:2] + sidecar_rows
+    bindings = _bindings(
+        rows=rows,
+        pitcher=_pitcher(
+            source_current_market_line_ids=[101],
+            propline_event_id="pl-event",
+        ),
+        current_lines={"101": _line(101, "therundown", "tr-event", TR_OVER)},
+    )
+
+    assert bindings["ready"] is True
+    assert bindings["sidecar_bindings"]["propline"]["provider_event_id"] == "pl-event"
+
+    result = _build(rows=rows, bindings=bindings, windows=_windows(bindings))
+    assert result.market_evidence["freshness_status"] == "fresh"
+    assert result.market_evidence["participating_providers"] == ["therundown"]
+
+
 def test_v2_payload_hash_change_alone_does_not_reset_the_window():
     bindings = _bindings()
     windows = _windows(bindings)

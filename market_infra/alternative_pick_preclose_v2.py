@@ -174,7 +174,7 @@ def resolve_candidate_bindings_v2(
     current_lines_by_id: Mapping[str, Mapping[str, Any]],
     snapshot_rows: Sequence[Mapping[str, Any]],
 ) -> dict[str, Any]:
-    """Resolve official and optional sidecar bindings only through artifact IDs."""
+    """Resolve official and optional sidecar bindings through exact artifact sources."""
     official_provider = _provider(pitcher.get("line_source_provider")) or None
     reasons: list[str] = []
     if official_provider not in ACTIVE_PROVIDERS:
@@ -192,12 +192,15 @@ def resolve_candidate_bindings_v2(
     candidates_by_provider: dict[str, list[dict[str, Any]]] = {}
     candidate_side_snapshot_tokens: set[tuple[str, str]] = set()
     candidate_bound_events: dict[str, set[str]] = {}
+    current_line_source_providers: set[str] = set()
     for line_id in line_ids:
         row = current_line_lookup.get(line_id)
         if not isinstance(row, Mapping):
             reasons.append("current_line_missing")
             continue
         provider = _provider(row.get("provider"))
+        if provider in ACTIVE_PROVIDERS:
+            current_line_source_providers.add(provider)
         event_id = _text(row.get("provider_event_id"))
         mapped_time = _utc(row.get("game_time"))
         exact_line = all((
@@ -258,6 +261,12 @@ def resolve_candidate_bindings_v2(
             provider_event_id=event_id, snapshot_id=identifier,
         )
     }
+    artifact_seed_source_providers = {
+        _provider(row.get("provider"))
+        for row in snapshot_rows
+        if _snapshot_uuid(row.get("id")) in direct_seed_ids
+        and _provider(row.get("provider")) in ACTIVE_PROVIDERS
+    }
     for seed_id in direct_seed_ids:
         matches = [
             (provider, row) for (provider, identifier), row in snapshots_by_token.items()
@@ -277,6 +286,39 @@ def resolve_candidate_bindings_v2(
                 "provider_event_id": event_id,
                 "current_line_id": "",
                 "seed_snapshot_id": seed_id,
+                "mapped_game_time": _iso(snapshot.get("game_time")) or _iso(candidate.get("game_time")),
+            })
+
+    for provider in sorted(ACTIVE_PROVIDERS):
+        events = set(declared_events.get(provider, set()))
+        if len(events) > 1:
+            reasons.append(f"{provider}_binding_conflict")
+            continue
+        if (
+            len(events) != 1
+            or provider in candidates_by_provider
+            or provider in candidate_bound_events
+            or provider in current_line_source_providers
+            or provider in artifact_seed_source_providers
+        ):
+            continue
+        event_id = next(iter(events))
+        candidate_bound_events.setdefault(provider, set()).add(event_id)
+        event_rows = [
+            snapshot
+            for (snapshot_provider, snapshot_id), snapshot in snapshots_by_token.items()
+            if snapshot_provider == provider
+            and _snapshot_semantics_match(
+                snapshot, candidate=candidate, provider=provider,
+                provider_event_id=event_id, snapshot_id=snapshot_id,
+            )
+        ]
+        for snapshot in event_rows:
+            candidates_by_provider.setdefault(provider, []).append({
+                "provider": provider,
+                "provider_event_id": event_id,
+                "current_line_id": "",
+                "seed_snapshot_id": "",
                 "mapped_game_time": _iso(snapshot.get("game_time")) or _iso(candidate.get("game_time")),
             })
 
@@ -303,7 +345,7 @@ def resolve_candidate_bindings_v2(
             "provider": provider,
             "provider_event_id": event_id,
             "current_line_ids": sorted({_text(row["current_line_id"]) for row in rows if _text(row["current_line_id"])}),
-            "seed_snapshot_ids": sorted({_text(row["seed_snapshot_id"]) for row in rows}),
+            "seed_snapshot_ids": sorted({_text(row["seed_snapshot_id"]) for row in rows if _text(row["seed_snapshot_id"])}),
             "mapped_game_times": sorted({_text(row["mapped_game_time"]) for row in rows}),
         }
         extra_seeds = [
