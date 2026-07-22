@@ -188,9 +188,9 @@ def resolve_candidate_bindings_v2(
         if (identifier := _current_line_id(key)) is not None
     }
     snapshots_by_token, conflicting_tokens = _group_snapshot_rows(snapshot_rows)
-    if conflicting_tokens:
-        reasons.append("duplicate_snapshot_conflict")
     candidates_by_provider: dict[str, list[dict[str, Any]]] = {}
+    candidate_side_snapshot_tokens: set[tuple[str, str]] = set()
+    candidate_bound_events: dict[str, set[str]] = {}
     for line_id in line_ids:
         row = current_line_lookup.get(line_id)
         if not isinstance(row, Mapping):
@@ -214,6 +214,9 @@ def resolve_candidate_bindings_v2(
             reasons.append("current_line_mismatch")
             continue
         snapshot_id = _snapshot_uuid(row.get(f"{_side(candidate.get('side'))}_snapshot_id"))
+        if snapshot_id is not None:
+            candidate_side_snapshot_tokens.add((provider, snapshot_id))
+        candidate_bound_events.setdefault(provider, set()).add(event_id)
         snapshot = snapshots_by_token.get((provider, snapshot_id)) if snapshot_id else None
         if snapshot_id is None or snapshot is None or not _snapshot_semantics_match(
             snapshot, candidate=candidate, provider=provider,
@@ -264,6 +267,16 @@ def resolve_candidate_bindings_v2(
                 "mapped_game_time": _iso(snapshot.get("game_time")) or _iso(candidate.get("game_time")),
             })
 
+    relevant_conflicting_tokens = _candidate_relevant_conflicts(
+        conflicts=conflicting_tokens,
+        candidate=candidate,
+        direct_seed_ids=direct_seed_ids,
+        side_snapshot_tokens=candidate_side_snapshot_tokens,
+        bound_events=candidate_bound_events,
+    )
+    if relevant_conflicting_tokens:
+        reasons.append("duplicate_snapshot_conflict")
+
     bindings_by_provider: dict[str, dict[str, Any]] = {}
     for provider, rows in candidates_by_provider.items():
         events = {
@@ -300,7 +313,7 @@ def resolve_candidate_bindings_v2(
         if provider != official_provider
     }
     return {
-        "ready": official_binding is not None and not conflicting_tokens,
+        "ready": official_binding is not None and not relevant_conflicting_tokens,
         "official_provider": official_provider,
         "official_binding": official_binding,
         "official_binding_key": official_binding.get("binding_key") if official_binding else None,
@@ -386,7 +399,10 @@ def _snapshot_signature(row: Mapping[str, Any]) -> tuple[Any, ...]:
 
 def _group_snapshot_rows(
     rows: Sequence[Mapping[str, Any]],
-) -> tuple[dict[tuple[str, str], Mapping[str, Any]], set[tuple[str, str]]]:
+) -> tuple[
+    dict[tuple[str, str], Mapping[str, Any]],
+    dict[tuple[str, str], tuple[Mapping[str, Any], ...]],
+]:
     """Pre-group provider-qualified UUIDs and invalidate every content collision."""
     grouped: dict[tuple[str, str], list[tuple[tuple[Any, ...], Mapping[str, Any]]]] = {}
     for row in rows:
@@ -399,7 +415,8 @@ def _group_snapshot_rows(
         grouped.setdefault((provider, identifier), []).append((_snapshot_signature(row), row))
 
     conflicting = {
-        token for token, values in grouped.items()
+        token: tuple(row for _signature, row in values)
+        for token, values in grouped.items()
         if len({signature for signature, _row in values}) > 1
     }
     representatives = {
@@ -407,6 +424,36 @@ def _group_snapshot_rows(
         if token not in conflicting
     }
     return representatives, conflicting
+
+
+def _candidate_relevant_conflicts(
+    *,
+    conflicts: Mapping[tuple[str, str], Sequence[Mapping[str, Any]]],
+    candidate: Mapping[str, Any],
+    direct_seed_ids: set[str],
+    side_snapshot_tokens: set[tuple[str, str]],
+    bound_events: Mapping[str, set[str]],
+) -> set[tuple[str, str]]:
+    relevant: set[tuple[str, str]] = set()
+    for token, versions in conflicts.items():
+        provider, identifier = token
+        if identifier in direct_seed_ids or token in side_snapshot_tokens:
+            relevant.add(token)
+            continue
+        provider_events = bound_events.get(provider, set())
+        if not provider_events:
+            continue
+        if any(
+            _text(row.get("slate_date")) == _text(candidate.get("slate_date"))
+            and _text(row.get("provider_event_id")) in provider_events
+            and normalize(_text(row.get("normalized_player_name") or row.get("player_name")))
+            == _text(candidate.get("normalized_pitcher"))
+            and _side(row.get("side")) == _side(candidate.get("side"))
+            and normalize_market_key(row.get("market_key")) == "pitcher_strikeouts"
+            for row in versions
+        ):
+            relevant.add(token)
+    return relevant
 
 
 def _direction(ordered: Sequence[Mapping[str, Any]]) -> tuple[str, bool]:
@@ -463,6 +510,8 @@ def build_exact_preclose_evidence_v2(
     reasons: list[str] = []
     if not bindings.get("ready") or not official_provider:
         reasons.append("official_binding_pending")
+    if "duplicate_snapshot_conflict" in _values(bindings.get("reason_codes")):
+        reasons.append("duplicate_snapshot_conflict")
     if checkpoint is None or game_time is None or checkpoint >= game_time:
         reasons.append("pregame_checkpoint_invalid")
     provider_starts = windows.get("provider_window_started_at")
@@ -478,7 +527,26 @@ def build_exact_preclose_evidence_v2(
     )
     exact_event_rows: dict[str, list[dict[str, Any]]] = {}
     normalized_rows, conflicting_tokens = _group_snapshot_rows(snapshot_rows)
-    if conflicting_tokens:
+    bound_events = {
+        provider: {_text(binding.get("provider_event_id"))}
+        for provider, binding in bindings_by_provider.items()
+        if isinstance(binding, Mapping) and _text(binding.get("provider_event_id"))
+    }
+    bound_seed_tokens = {
+        (provider, identifier)
+        for provider, binding in bindings_by_provider.items()
+        if isinstance(binding, Mapping)
+        for value in _values(binding.get("seed_snapshot_ids"))
+        if (identifier := _snapshot_uuid(value)) is not None
+    }
+    relevant_conflicting_tokens = _candidate_relevant_conflicts(
+        conflicts=conflicting_tokens,
+        candidate=candidate,
+        direct_seed_ids={identifier for _provider_key, identifier in bound_seed_tokens},
+        side_snapshot_tokens=bound_seed_tokens,
+        bound_events=bound_events,
+    )
+    if relevant_conflicting_tokens:
         reasons.append("duplicate_snapshot_conflict")
     for raw in normalized_rows.values():
         if not isinstance(raw, Mapping):
