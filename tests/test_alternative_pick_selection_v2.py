@@ -30,6 +30,7 @@ def _candidate():
         "lock_source_artifact_path": "dashboard/data/processed/today.json",
         "official_odds": -120,
         "official_book": "fanduel",
+        "official_verdict": "FIRE 1u",
     })
     return candidate
 
@@ -274,6 +275,21 @@ def test_v1_row_remains_valid_with_empty_evaluation_proof():
     ("field", "value"),
     (
         ("selector_id", None),
+        ("bundle_id", "pregame_alternative_pick_methodology_v1"),
+        ("selector_fingerprint", "f" * 64),
+        ("candidate_identity", "f" * 64),
+        ("slate_date", "2026-07-23"),
+        ("normalized_pitcher", "other pitcher"),
+        ("side", "under"),
+        ("model_k_line", 7.5),
+        ("game_time", "2026-07-22T23:30:00+00:00"),
+        ("official_odds", -115),
+        ("official_book", "draftkings"),
+        ("official_verdict", "LEAN"),
+        ("source_artifact_generated_at", "2026-07-22T20:06:00+00:00"),
+        ("source_artifact_path", "dashboard/data/processed/other.json"),
+        ("source_artifact_sha256", "f" * 64),
+        ("source_artifact_byte_sha256", "e" * 64),
         ("family_states", {}),
         ("family_count", 0),
         ("evidence_observation_ids", []),

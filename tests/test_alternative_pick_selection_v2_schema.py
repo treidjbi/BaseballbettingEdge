@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import os
+import json
 import shutil
 import socket
 import subprocess
@@ -58,7 +59,15 @@ def test_v2_migration_is_additive_bounded_and_v1_compatible():
         "evaluation_proof #>> '{candidate,candidate_identity}' = candidate_identity",
         "evaluation_proof #>> '{candidate,normalized_pitcher}' = normalized_pitcher",
         "evaluation_proof #>> '{candidate,side}' = side",
+        "evaluation_proof #>> '{normalized_inputs,pitcher}' = normalized_pitcher",
+        "evaluation_proof #>> '{normalized_inputs,side}' = side",
+        "evaluation_proof #>> '{normalized_inputs,game_time}'",
+        "evaluation_proof #>> '{normalized_inputs,k_line}'",
+        "evaluation_proof #>> '{normalized_inputs,odds}'",
+        "evaluation_proof #>> '{normalized_inputs,official_book}'",
+        "evaluation_proof #>> '{normalized_inputs,official_verdict}'",
         "evaluation_proof #>> '{artifact,source_artifact_path}' = source_artifact_path",
+        "evaluation_proof #>> '{artifact,source_artifact_generated_at}'",
         "evaluation_proof #>> '{artifact,source_artifact_sha256}' = source_artifact_sha256",
         "evaluation_proof #>> '{artifact,source_artifact_byte_sha256}' = source_artifact_byte_sha256",
         "evaluation_proof #> '{decision,family_states}' = family_states",
@@ -190,3 +199,155 @@ def test_v2_omitted_proof_is_rejected_by_postgres_check(isolated_postgres):
     assert v1.returncode == 0, v1.stderr
     assert v2.returncode != 0
     assert "alternative_pick_selection_state_v2_evaluation_proof_check" in v2.stderr
+
+
+def test_postgres_jsonb_text_size_constraint_normalizes_large_numbers(isolated_postgres):
+    psql, port = isolated_postgres
+    inserted = _run_psql(
+        psql, port,
+        _omitted_proof_insert("pregame_alternative_pick_methodology_v1")
+        .replace("game-pregame", "numeric-game-pregame")
+        .replace("candidate-pregame", "numeric-candidate-pregame"),
+    )
+    within = _run_psql(
+        psql, port,
+        """
+update public.alternative_pick_selection_state
+set evaluation_proof = '{"padding":1e32750}'::jsonb
+where candidate_identity like 'numeric-candidate-%';
+""",
+    )
+    oversized = _run_psql(
+        psql, port,
+        """
+update public.alternative_pick_selection_state
+set evaluation_proof = '{"padding":1e32760}'::jsonb
+where candidate_identity like 'numeric-candidate-%';
+""",
+    )
+
+    assert inserted.returncode == 0, inserted.stderr
+    assert within.returncode == 0, within.stderr
+    assert oversized.returncode != 0
+    assert "alternative_pick_selection_state_evaluation_proof_size_check" in oversized.stderr
+
+
+def _valid_v2_insert() -> str:
+    family_states = {
+        name: {"state": "pending", "reason_codes": ["fixture_pending"]}
+        for name in ("base", "anchor", "preclose", "reentry")
+    }
+    proof = {
+        "schema_version": "v2",
+        "bundle_id": "pregame_alternative_pick_methodology_v2",
+        "selector_fingerprint": "f" * 64,
+        "candidate": {
+            "candidate_identity": "c" * 64,
+            "slate_date": "2026-07-22",
+            "normalized_pitcher": "proof pitcher",
+            "side": "over",
+            "model_k_line": 6.5,
+            "game_time": "2026-07-22T23:00:00+00:00",
+            "line_source_provider": "therundown",
+            "official_binding_key": "d" * 64,
+        },
+        "artifact": {
+            "source_artifact_path": "dashboard/data/processed/today.json",
+            "source_artifact_generated_at": "2026-07-22T20:05:00+00:00",
+            "source_artifact_sha256": "a" * 64,
+            "source_artifact_byte_sha256": "b" * 64,
+        },
+        "normalized_inputs": {
+            "pitcher": "proof pitcher", "side": "over",
+            "game_time": "2026-07-22T23:00:00+00:00", "k_line": 6.5,
+            "odds": -120, "official_book": "fanduel",
+            "official_verdict": "FIRE 1u",
+        },
+        "preclose": {
+            "decisive_observation_tokens": [],
+            "qualifying_observation_count": 0,
+            "first_observed_at": None,
+            "last_observed_at": None,
+            "freshness_status": "pending",
+        },
+        "decision": {
+            "family_states": family_states,
+            "family_count": 0,
+            "selection_status": "pending",
+            "selected_lane": None,
+        },
+    }
+    encoded = json.dumps(proof, separators=(",", ":")).replace("'", "''")
+    return f"""
+insert into public.alternative_pick_selection_state (
+  slate_date, game_identity, candidate_identity, candidate_became_current_at,
+  pitcher, normalized_pitcher, team, opp_team, game_time, side, model_k_line,
+  provider_posture, bundle_id, selector_id, selector_fingerprint, checkpoint,
+  official_odds, official_book, official_verdict,
+  selection_status, family_states, family_count, reason_codes,
+  source_artifact_path, source_artifact_generated_at,
+  source_artifact_sha256, source_artifact_byte_sha256,
+  evidence_observation_ids, evidence_observation_count,
+  evidence_first_observed_at, evidence_last_observed_at,
+  evidence_freshness_status, observed_at, evaluation_proof
+) values (
+  '2026-07-22', 'proof-game', '{'c' * 64}', '2026-07-22T19:55:00Z',
+  'Proof Pitcher', 'proof pitcher', 'ARI', 'LAD', '2026-07-22T23:00:00Z',
+  'over', 6.5, 'therundown', 'pregame_alternative_pick_methodology_v2', null,
+  '{'f' * 64}', 'provisional', -120, 'fanduel', 'FIRE 1u',
+  'pending', '{json.dumps(family_states)}'::jsonb, 0, '[]'::jsonb,
+  'dashboard/data/processed/today.json', '2026-07-22T20:05:00Z',
+  '{'a' * 64}', '{'b' * 64}', '[]'::jsonb, 0, null, null, 'pending',
+  '2026-07-22T20:10:00Z', '{encoded}'::jsonb
+);
+"""
+
+
+@pytest.mark.parametrize(
+    "mutation",
+    (
+        "selector_fingerprint = 'e" + "e" * 63 + "'",
+        "candidate_identity = 'd" + "d" * 63 + "'",
+        "slate_date = '2026-07-23'",
+        "normalized_pitcher = 'other pitcher'",
+        "side = 'under'",
+        "model_k_line = 7.5",
+        "game_time = '2026-07-22T23:30:00Z'",
+        "official_odds = -115",
+        "official_book = 'draftkings'",
+        "official_verdict = 'LEAN'",
+        "source_artifact_generated_at = '2026-07-22T20:06:00Z'",
+        "source_artifact_path = 'dashboard/data/processed/other.json'",
+        "source_artifact_sha256 = 'e" + "e" * 63 + "'",
+        "source_artifact_byte_sha256 = 'd" + "d" * 63 + "'",
+        "family_states = '{}'::jsonb",
+        "family_count = 1",
+        "evidence_observation_ids = '[\"therundown:other\"]'::jsonb",
+        "evidence_observation_count = 1",
+        "evidence_first_observed_at = '2026-07-22T20:00:00Z'",
+        "evidence_last_observed_at = '2026-07-22T20:01:00Z'",
+        "evidence_freshness_status = 'fresh'",
+        "selection_status = 'selected'",
+        "lane = 'consensus_core'",
+        "selector_id = 'no_drag_distinct_family_consensus_core_v2'",
+    ),
+)
+def test_postgres_v2_constraint_binds_candidate_inputs_and_display_row_fields(
+    isolated_postgres, mutation,
+):
+    psql, port = isolated_postgres
+    inserted = _run_psql(psql, port, _valid_v2_insert())
+    changed = _run_psql(
+        psql, port,
+        f"update public.alternative_pick_selection_state set {mutation} "
+        "where game_identity = 'proof-game';",
+    )
+
+    assert inserted.returncode == 0, inserted.stderr
+    assert changed.returncode != 0
+    assert "alternative_pick_selection_state_v2_evaluation_proof_check" in changed.stderr
+    cleanup = _run_psql(
+        psql, port,
+        "delete from public.alternative_pick_selection_state where game_identity = 'proof-game';",
+    )
+    assert cleanup.returncode == 0, cleanup.stderr

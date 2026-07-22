@@ -40,7 +40,12 @@ alter table public.alternative_pick_selection_state
             'model_k_line', 'game_time', 'line_source_provider', 'official_binding_key'
           ]
           and (evaluation_proof #> '{artifact}') ?& array[
-            'source_artifact_path', 'source_artifact_sha256', 'source_artifact_byte_sha256'
+            'source_artifact_path', 'source_artifact_generated_at',
+            'source_artifact_sha256', 'source_artifact_byte_sha256'
+          ]
+          and (evaluation_proof #> '{normalized_inputs}') ?& array[
+            'pitcher', 'side', 'game_time', 'k_line', 'odds',
+            'official_book', 'official_verdict'
           ]
           and (evaluation_proof #> '{preclose}') ?& array[
             'decisive_observation_tokens', 'qualifying_observation_count',
@@ -58,7 +63,18 @@ alter table public.alternative_pick_selection_state
           and evaluation_proof #>> '{candidate,side}' = side
           and (evaluation_proof #>> '{candidate,model_k_line}')::numeric = model_k_line
           and (evaluation_proof #>> '{candidate,game_time}')::timestamptz = game_time
+          and evaluation_proof #>> '{normalized_inputs,pitcher}' = normalized_pitcher
+          and evaluation_proof #>> '{normalized_inputs,side}' = side
+          and (evaluation_proof #>> '{normalized_inputs,game_time}')::timestamptz = game_time
+          and (evaluation_proof #>> '{normalized_inputs,k_line}')::numeric = model_k_line
+          and (evaluation_proof #>> '{normalized_inputs,odds}')::integer is not distinct from official_odds
+          and lower(nullif(trim(evaluation_proof #>> '{normalized_inputs,official_book}'), ''))
+            is not distinct from lower(nullif(trim(official_book), ''))
+          and nullif(trim(evaluation_proof #>> '{normalized_inputs,official_verdict}'), '')
+            is not distinct from nullif(trim(official_verdict), '')
           and evaluation_proof #>> '{artifact,source_artifact_path}' = source_artifact_path
+          and (evaluation_proof #>> '{artifact,source_artifact_generated_at}')::timestamptz
+            is not distinct from source_artifact_generated_at
           and evaluation_proof #>> '{artifact,source_artifact_sha256}' = source_artifact_sha256
           and evaluation_proof #>> '{artifact,source_artifact_byte_sha256}' = source_artifact_byte_sha256
           and evaluation_proof #> '{decision,family_states}' = family_states

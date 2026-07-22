@@ -8,6 +8,7 @@ import json
 import math
 from dataclasses import dataclass
 from datetime import datetime, timezone
+from decimal import Decimal
 from typing import Any, Mapping, Sequence
 
 from market_infra.alternative_pick_preclose_v2 import ExactPrecloseResult
@@ -37,6 +38,10 @@ NORMALIZED_INPUT_FIELDS = (
     "adjusted_ev", "adjusted_ev_error", "quality_gate_level", "opportunity_bucket",
     "leash_risk_bucket", "pitcher_archetype_bucket", "large_edge_skepticism_flag",
     "anchor_labels", "anchor_metadata_malformed", "observed_at",
+)
+ROW_BINDING_INPUT_FIELDS = (
+    "side", "pitcher", "game_time", "k_line", "odds", "official_book",
+    "official_verdict",
 )
 
 
@@ -104,10 +109,31 @@ def _encoded_size(proof: Mapping[str, Any]) -> int:
 
 def postgres_jsonb_text_size(proof: Mapping[str, Any]) -> int:
     """Conservative byte count for PostgreSQL ``jsonb::text`` serialization."""
-    return len(json.dumps(
-        proof, sort_keys=True, separators=(", ", ": "), ensure_ascii=False,
-        allow_nan=False,
-    ).encode("utf-8"))
+    def render(value: Any) -> str:
+        if value is None:
+            return "null"
+        if value is True:
+            return "true"
+        if value is False:
+            return "false"
+        if isinstance(value, int):
+            return str(value)
+        if isinstance(value, float):
+            if not math.isfinite(value):
+                raise ValueError("non-finite JSON number")
+            return format(Decimal(str(value)), "f")
+        if isinstance(value, str):
+            return json.dumps(value, ensure_ascii=False)
+        if isinstance(value, Mapping):
+            return "{" + ", ".join(
+                f"{json.dumps(str(key), ensure_ascii=False)}: {render(item)}"
+                for key, item in sorted(value.items(), key=lambda pair: str(pair[0]))
+            ) + "}"
+        if isinstance(value, (list, tuple)):
+            return "[" + ", ".join(render(item) for item in value) + "]"
+        raise TypeError("proof contains a non-JSON value")
+
+    return len(render(proof).encode("utf-8"))
 
 
 def _bounded_text(value: Any, *, maximum: int = MAX_TEXT_BYTES) -> str:
@@ -263,15 +289,25 @@ def _diagnostic_artifact(artifact: Mapping[str, Any]) -> dict[str, Any]:
 def _diagnostic_build(
     *, candidate: Mapping[str, Any], artifact: Mapping[str, Any], reason: str,
 ) -> EvaluationProofBuild:
+    diagnostic_candidate = _diagnostic_candidate(candidate)
+    diagnostic_inputs = {
+        "side": diagnostic_candidate["side"],
+        "pitcher": diagnostic_candidate["normalized_pitcher"],
+        "game_time": diagnostic_candidate["game_time"],
+        "k_line": diagnostic_candidate["model_k_line"],
+        "odds": _integer(candidate.get("official_odds")),
+        "official_book": _enum(candidate.get("official_book")) or None,
+        "official_verdict": _text(candidate.get("official_verdict")) or None,
+    }
     proof = {
         "schema_version": V2_SCHEMA_VERSION,
         "bundle_id": selector_v2.BUNDLE_ID,
         "selector_fingerprint": selector_v2.FROZEN_SELECTOR_FINGERPRINT,
-        "candidate": _diagnostic_candidate(candidate),
+        "candidate": diagnostic_candidate,
         "artifact": _diagnostic_artifact(artifact),
         "bindings": {},
         "freshness": {},
-        "normalized_inputs": {},
+        "normalized_inputs": diagnostic_inputs,
         "preclose": {
             "qualifying_observation_count": 0,
             "decisive_observation_tokens": [],
@@ -337,6 +373,11 @@ def _diagnostic_build(
             "source_artifact_sha256": "0" * 64,
             "source_artifact_byte_sha256": "0" * 64,
         }
+        proof["normalized_inputs"] = {
+            "side": "over", "pitcher": "invalid",
+            "game_time": "1970-01-01T00:00:00+00:00", "k_line": 0.0,
+            "odds": None, "official_book": None, "official_verdict": None,
+        }
     return EvaluationProofBuild(proof, False, (reason,))
 
 
@@ -349,7 +390,7 @@ def _bounded_normalized_inputs(raw: Mapping[str, Any]) -> dict[str, Any]:
         raise ValueError("normalized proof inputs are incomplete")
     for field, value in normalized.items():
         if field == "anchor_labels":
-            normalized[field] = _bounded_string_list(
+            normalized[field] = None if value is None else _bounded_string_list(
                 value, maximum=MAX_LABEL_COUNT, item_bytes=MAX_LABEL_BYTES,
             )
         elif isinstance(value, str):
@@ -359,6 +400,101 @@ def _bounded_normalized_inputs(raw: Mapping[str, Any]) -> dict[str, Any]:
         elif isinstance(value, float) and not math.isfinite(value):
             raise ValueError("normalized proof input is non-finite")
     return normalized
+
+
+def _candidate_inputs_match(
+    *, candidate: Mapping[str, Any], candidate_part: Mapping[str, Any],
+    normalized: Mapping[str, Any],
+) -> bool:
+    return all((
+        _enum(normalized.get("side")) == _enum(candidate_part.get("side")),
+        _enum(normalized.get("pitcher")) == _enum(candidate_part.get("normalized_pitcher")),
+        _iso(normalized.get("game_time")) == _iso(candidate_part.get("game_time")),
+        _number(normalized.get("k_line")) == _number(candidate_part.get("model_k_line")),
+        _integer(normalized.get("odds")) == _integer(candidate.get("official_odds")),
+        _enum(normalized.get("official_book")) == _enum(candidate.get("official_book")),
+        _text(normalized.get("official_verdict")) == _text(candidate.get("official_verdict")),
+    ))
+
+
+def _provider_contract_valid(
+    *, candidate_provider: str, bindings: Mapping[str, Any],
+    freshness: Mapping[str, Any], preclose_status: str,
+) -> bool:
+    official = [
+        provider for provider, binding in bindings.items()
+        if isinstance(binding, Mapping) and binding.get("role") == "official"
+    ]
+    if official != [candidate_provider]:
+        return False
+    if any(
+        not isinstance(binding, Mapping)
+        or binding.get("role") != ("official" if provider == candidate_provider else "sidecar")
+        for provider, binding in bindings.items()
+    ):
+        return False
+    mature = {
+        provider for provider, binding in bindings.items()
+        if isinstance(binding, Mapping) and binding.get("mature") is True
+    }
+    if set(freshness) != mature:
+        return False
+    if preclose_status == "fresh":
+        official_binding = bindings.get(candidate_provider)
+        official_freshness = freshness.get(candidate_provider)
+        if (
+            not isinstance(official_binding, Mapping)
+            or official_binding.get("mature") is not True
+            or not isinstance(official_freshness, Mapping)
+            or official_freshness.get("freshness_status") != "fresh"
+            or any(
+                not isinstance(value, Mapping) or value.get("freshness_status") != "fresh"
+                for value in freshness.values()
+            )
+        ):
+            return False
+    return True
+
+
+def _preclose_state_valid(preclose: Mapping[str, Any]) -> bool:
+    status = _enum(preclose.get("freshness_status"))
+    count = _integer(preclose.get("qualifying_observation_count"))
+    if status not in {"fresh", "pending"} or count is None or count < 0:
+        return False
+    aggregate_fields = (
+        "book_count", "toward_pick_count", "away_from_pick_count",
+        "side_price_movement", "broad_confirmation", "reversal_book_count",
+        "volatile_book_count", "best_is_off_market", "score", "label",
+    )
+    if status == "pending":
+        return all(preclose.get(field) is None for field in aggregate_fields) and bool(
+            _bounded_reasons(preclose.get("reason_codes", []))
+        ) and preclose.get("positive_reasons") == [] and preclose.get("risk_reasons") == []
+
+    integers = {
+        field: _integer(preclose.get(field))
+        for field in (
+            "book_count", "toward_pick_count", "away_from_pick_count",
+            "reversal_book_count", "volatile_book_count", "score",
+        )
+    }
+    first = _iso(preclose.get("first_observed_at"))
+    last = _iso(preclose.get("last_observed_at"))
+    books_seen = preclose.get("books_seen")
+    if any(value is None or value < 0 for value in integers.values()):
+        return False
+    return all((
+        count >= 2,
+        isinstance(preclose.get("broad_confirmation"), bool),
+        isinstance(preclose.get("best_is_off_market"), bool),
+        preclose.get("side_price_movement") in {"with_side", "against_side", "neutral"},
+        integers["reversal_book_count"] == integers["volatile_book_count"],
+        integers["toward_pick_count"] + integers["away_from_pick_count"] <= integers["book_count"],
+        isinstance(books_seen, list) and len(books_seen) == integers["book_count"],
+        first is not None and last is not None and first <= last,
+        bool(_text(preclose.get("label"))),
+        preclose.get("reason_codes") == [],
+    ))
 
 
 def _family_payload(vote: selector_v2.FamilyVote) -> dict[str, Any]:
@@ -371,7 +507,8 @@ def _recompute_semantics(
     base_v1 = selector_v2.v1.strong_base_strict_plus_selective(dict(normalized_inputs))
     base = selector_v2.FamilyVote(base_v1.state, base_v1.reason_codes)
     labels = normalized_inputs.get("anchor_labels")
-    if isinstance(labels, list):
+    anchor_malformed = normalized_inputs.get("anchor_metadata_malformed") is True
+    if isinstance(labels, list) and not anchor_malformed:
         label_set = {_enum(label) for label in labels}
         strict = selector_v2.FamilyVote(
             "agree" if "market_anchor_strict" in label_set else "disagree",
@@ -382,7 +519,8 @@ def _recompute_semantics(
             ("market_anchor_core" if "market_anchor_core" in label_set else "market_anchor_core_absent",),
         )
     else:
-        strict = core = selector_v2.FamilyVote("pending", ("anchor_metadata_malformed",))
+        reason = "anchor_metadata_malformed" if anchor_malformed else "anchor_metadata_absent"
+        strict = core = selector_v2.FamilyVote("pending", (reason,))
     anchor = selector_v2.compose_anchor_v2(base, strict, core)
 
     scored: dict[str, Any] | None = None
@@ -496,6 +634,7 @@ def _build_full_proof(
     raw_bindings = exact["bindings_by_provider"]
     if len(raw_bindings) > len(SUPPORTED_PROVIDERS):
         raise ValueError("provider binding set is not bounded")
+    mature_providers = set(provider_freshness)
     bindings: dict[str, Any] = {}
     for provider in sorted(raw_bindings):
         binding = raw_bindings[provider]
@@ -518,7 +657,7 @@ def _build_full_proof(
             "seed_observation_tokens": [_provider_token(provider, item) for item in seed_ids],
             "binding_key": binding_key,
             "window_started_at": _iso(provider_windows.get(provider)),
-            "mature": provider in participating,
+            "mature": provider in mature_providers,
         }
         if bindings[provider]["window_started_at"] is None:
             raise ValueError("provider window start is invalid")
@@ -539,10 +678,30 @@ def _build_full_proof(
             "latest_snapshot_at": latest,
         }
 
+    preclose_status = _enum(market.get("freshness_status"))
+    if (
+        not mature_providers.issubset(bindings)
+        or not _provider_contract_valid(
+            candidate_provider=official_provider, bindings=bindings,
+            freshness=freshness, preclose_status=preclose_status,
+        )
+        or (preclose_status == "fresh" and participating != mature_providers)
+    ):
+        raise ValueError("provider roles or freshness are inconsistent")
+
     normalized_raw = _value(evaluation, "normalized_inputs", {})
     if not isinstance(normalized_raw, Mapping):
         raise ValueError("normalized inputs must be an object")
     normalized_inputs = _bounded_normalized_inputs(normalized_raw)
+    candidate_part = _candidate_proof(
+        candidate, official_provider=official_provider,
+        official_binding_key=official_binding_key,
+    )
+    if not _candidate_inputs_match(
+        candidate=candidate, candidate_part=candidate_part,
+        normalized=normalized_inputs,
+    ):
+        raise ValueError("candidate and normalized inputs are inconsistent")
     supplied_families = _family_objects(evaluation)
 
     observations = market.get("observations")
@@ -613,6 +772,18 @@ def _build_full_proof(
     aggregation_reasons = list(_bounded_reasons(
         market.get("aggregation_reason_codes", []),
     ))
+    window_reasons = list(_bounded_reasons(window.get("reason_codes", ())))
+    fragment_reasons = list(_bounded_reasons(exact.get("reason_codes", [])))
+    if preclose_status == "fresh":
+        if aggregation_reasons or window_reasons or fragment_reasons:
+            raise ValueError("fresh Preclose cannot retain unresolved reasons")
+    elif (
+        preclose_status != "pending"
+        or not aggregation_reasons
+        or aggregation_reasons != window_reasons
+        or aggregation_reasons != fragment_reasons
+    ):
+        raise ValueError("pending Preclose reason is inconsistent")
     preclose_payload = {
         "qualifying_observation_count": len(ordered_tokens),
         "decisive_observation_tokens": decisive,
@@ -648,6 +819,8 @@ def _build_full_proof(
             "positive_reasons": list(scored["positive_reasons"]),
             "risk_reasons": list(scored["risk_reasons"]),
         })
+    if not _preclose_state_valid(preclose_payload):
+        raise ValueError("Preclose state shape is invalid")
     supplied_family_payload = {
         name: _family_payload(vote) for name, vote in supplied_families.items()
     }
@@ -670,10 +843,7 @@ def _build_full_proof(
         "schema_version": V2_SCHEMA_VERSION,
         "bundle_id": selector_v2.BUNDLE_ID,
         "selector_fingerprint": selector_v2.FROZEN_SELECTOR_FINGERPRINT,
-        "candidate": _candidate_proof(
-            candidate, official_provider=official_provider,
-            official_binding_key=official_binding_key,
-        ),
+        "candidate": candidate_part,
         "artifact": artifact_part,
         "bindings": bindings,
         "freshness": freshness,
@@ -722,10 +892,11 @@ def validate_evaluation_proof_v2(
     *, proof: Mapping[str, Any], row: Mapping[str, Any] | None = None,
 ) -> tuple[bool, tuple[str, ...]]:
     """Validate proof shape plus optional persisted-row identity bindings."""
-    if row and row.get("bundle_id") == "pregame_alternative_pick_methodology_v1":
-        return (True, ()) if isinstance(proof, Mapping) and not proof else (
-            False, ("v1_evaluation_proof_must_be_empty",)
-        )
+    if (
+        row and row.get("bundle_id") == "pregame_alternative_pick_methodology_v1"
+        and isinstance(proof, Mapping) and not proof
+    ):
+        return True, ()
     reasons: list[str] = []
     if not isinstance(proof, Mapping):
         return False, ("evaluation_proof_not_object",)
@@ -845,6 +1016,17 @@ def validate_evaluation_proof_v2(
                 or _iso(value.get("latest_snapshot_at")) is None
             ):
                 reasons.append("evaluation_proof_freshness_invalid")
+    if (
+        not is_diagnostic
+        and isinstance(bindings, Mapping)
+        and isinstance(freshness, Mapping)
+        and not _provider_contract_valid(
+            candidate_provider=_enum(candidate.get("line_source_provider")),
+            bindings=bindings, freshness=freshness,
+            preclose_status=_enum(preclose.get("freshness_status")),
+        )
+    ):
+        reasons.append("evaluation_proof_binding_freshness_mismatch")
 
     count = _integer(preclose.get("qualifying_observation_count"))
     tokens = preclose.get("decisive_observation_tokens")
@@ -885,6 +1067,11 @@ def validate_evaluation_proof_v2(
         _bounded_reasons(preclose.get("reason_codes", []))
     except (TypeError, ValueError):
         reasons.append("evaluation_proof_preclose_bounds_invalid")
+    try:
+        if not _preclose_state_valid(preclose):
+            reasons.append("evaluation_proof_preclose_state_invalid")
+    except (TypeError, ValueError):
+        reasons.append("evaluation_proof_preclose_state_invalid")
 
     family_states = decision.get("family_states")
     if not isinstance(family_states, Mapping) or set(family_states) != set(FAMILY_ORDER):
@@ -922,11 +1109,30 @@ def validate_evaluation_proof_v2(
         reasons.append("evaluation_proof_decision_reasons_invalid")
 
     if is_diagnostic:
-        if proof.get("normalized_inputs") != {} or bindings != {} or freshness != {}:
+        diagnostic_inputs = proof.get("normalized_inputs")
+        if (
+            not isinstance(diagnostic_inputs, Mapping)
+            or set(diagnostic_inputs) != set(ROW_BINDING_INPUT_FIELDS)
+            or bindings != {} or freshness != {}
+        ):
             reasons.append("evaluation_proof_diagnostic_invalid")
+        elif any((
+            _enum(diagnostic_inputs.get("side")) != _enum(candidate.get("side")),
+            _enum(diagnostic_inputs.get("pitcher")) != _enum(candidate.get("normalized_pitcher")),
+            _iso(diagnostic_inputs.get("game_time")) != _iso(candidate.get("game_time")),
+            _number(diagnostic_inputs.get("k_line")) != _number(candidate.get("model_k_line")),
+        )):
+            reasons.append("evaluation_proof_candidate_input_mismatch")
     else:
         try:
             normalized = _bounded_normalized_inputs(proof.get("normalized_inputs", {}))
+            if any((
+                _enum(normalized.get("side")) != _enum(candidate.get("side")),
+                _enum(normalized.get("pitcher")) != _enum(candidate.get("normalized_pitcher")),
+                _iso(normalized.get("game_time")) != _iso(candidate.get("game_time")),
+                _number(normalized.get("k_line")) != _number(candidate.get("model_k_line")),
+            )):
+                raise ValueError
             expected_decision, expected_score = _recompute_semantics(normalized, preclose)
             semantic_keys = (
                 "support", "drag_core", "no_drag", "family_states",
@@ -970,11 +1176,23 @@ def validate_evaluation_proof_v2(
             reasons.append("evaluation_proof_row_candidate_mismatch")
         artifact_checks = (
             ("source_artifact_path", "source_artifact_path", _text),
+            ("source_artifact_generated_at", "source_artifact_generated_at", _iso),
             ("source_artifact_sha256", "source_artifact_sha256", _hash),
             ("source_artifact_byte_sha256", "source_artifact_byte_sha256", _hash),
         )
         if any(normalizer(row.get(row_key)) != normalizer(artifact.get(proof_key)) for row_key, proof_key, normalizer in artifact_checks):
             reasons.append("evaluation_proof_row_artifact_mismatch")
+        normalized = proof.get("normalized_inputs")
+        if not isinstance(normalized, Mapping) or any((
+            _enum(row.get("side")) != _enum(normalized.get("side")),
+            _enum(row.get("normalized_pitcher")) != _enum(normalized.get("pitcher")),
+            _iso(row.get("game_time")) != _iso(normalized.get("game_time")),
+            _number(row.get("model_k_line")) != _number(normalized.get("k_line")),
+            _integer(row.get("official_odds")) != _integer(normalized.get("odds")),
+            _enum(row.get("official_book")) != _enum(normalized.get("official_book")),
+            _text(row.get("official_verdict")) != _text(normalized.get("official_verdict")),
+        )):
+            reasons.append("evaluation_proof_row_normalized_inputs_mismatch")
         if row.get("selection_status") != status or row.get("lane") != lane:
             reasons.append("evaluation_proof_row_decision_mismatch")
         if row.get("family_states") != family_states:

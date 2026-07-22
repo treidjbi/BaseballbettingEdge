@@ -109,6 +109,25 @@ def test_absent_or_malformed_anchor_metadata_is_pending():
     assert strict.state == core.state == "pending"
 
 
+def test_evaluation_preserves_absent_and_malformed_anchor_for_proof_recomputation():
+    for raw_anchor, malformed in ((None, False), ({"labels": "not-a-list"}, True)):
+        inputs = _complete_inputs()
+        if raw_anchor is None:
+            inputs["pick"].pop("market_anchor_selector")
+        else:
+            inputs["pick"]["market_anchor_selector"] = raw_anchor
+
+        evaluation = selector.evaluate_alternative_pick_v2(**inputs)
+
+        assert evaluation.normalized_inputs["anchor_labels"] is None
+        assert evaluation.normalized_inputs["anchor_metadata_malformed"] is malformed
+        assert evaluation.family_states["anchor"].state == "pending"
+        assert evaluation.family_states["base"].state == "agree"
+        assert evaluation.family_states["preclose"].state == "agree"
+        assert evaluation.lane == "consensus_core"
+        assert evaluation.selection_status == "selected"
+
+
 def test_anchor_uses_strict_or_base_and_core_short_circuits():
     assert selector.compose_anchor_v2(_vote("pending"), _vote("agree"), _vote("pending")).state == "agree"
     assert selector.compose_anchor_v2(_vote("agree"), _vote("disagree"), _vote("agree")).state == "agree"

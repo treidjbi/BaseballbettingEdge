@@ -437,6 +437,14 @@ def evaluate_alternative_pick_v2(*, pitcher: dict[str, Any], pick: dict[str, Any
     evidence = exact_evidence if isinstance(exact_evidence, dict) else {}
     common = {"side", "edge", "k_line", "game_time", "quality_gate_level", "model_win_prob", "best_over_odds", "best_under_odds", "avg_ip", "recent_start_count", "season_k9", "recent_k9", "career_k9", "display_verdict", "source_fire_verdict", "adjusted_ev", "model_market_relationship", "large_edge_skepticism_flag"}
     features = _features_if_complete(presence, common, pitcher=pitcher, pick=pick, exact_evidence=evidence, observed_at=observed_at)
+    if features is not None and (
+        "anchor_metadata" in presence.missing or "anchor_metadata" in presence.malformed
+    ):
+        features = {
+            **features,
+            "anchor_labels": None,
+            "anchor_metadata_malformed": "anchor_metadata" in presence.malformed,
+        }
     base = _v2_family(v1.strong_base_strict_plus_selective(features)) if features is not None else FamilyVote("pending", ("base_runtime_primitives_missing",))
     strict, core = parse_anchor_primitives_v2(pick)
     anchor = compose_anchor_v2(base, strict, core)

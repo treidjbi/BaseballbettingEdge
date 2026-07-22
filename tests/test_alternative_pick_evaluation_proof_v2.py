@@ -38,6 +38,7 @@ def _candidate(**overrides):
         "lock_source_artifact_path": "dashboard/data/processed/today.json",
         "official_odds": -120,
         "official_book": "fanduel",
+        "official_verdict": "FIRE 1u",
     })
     return candidate
 
@@ -194,6 +195,52 @@ def _artifact():
     }
 
 
+def _pending_exact_preclose(reason="official_provider_immature"):
+    exact = _exact_preclose()
+    market = copy.deepcopy(exact.market_evidence)
+    market.update({
+        "participating_providers": [],
+        "observation_ids": [],
+        "observations": [],
+        "first_observed_at": None,
+        "last_observed_at": None,
+        "freshness_status": "pending",
+        "book_count": None,
+        "toward_pick_count": None,
+        "away_from_pick_count": None,
+        "side_price_movement": None,
+        "broad_confirmation": None,
+        "reversal_book_count": None,
+        "volatile_book_count": None,
+        "best_is_off_market": None,
+        "aggregation_reason_codes": [reason],
+    })
+    window = copy.deepcopy(exact.evidence_window)
+    window.update({
+        "ready": False,
+        "observation_ids": [],
+        "observation_count": 0,
+        "first_observed_at": None,
+        "last_observed_at": None,
+        "freshness_status": "pending",
+        "reason_codes": (reason,),
+        "bound_observations": [],
+    })
+    fragment = copy.deepcopy(exact.proof_fragment)
+    fragment_exact = fragment["exact_preclose"]
+    fragment_exact.update({
+        "movement_observation_ids": [],
+        "ladder_observation_ids": [],
+        "direction_change_pivot_tokens": [],
+        "latest_ladder_observation_tokens": [],
+        "ladder_observation_token_sha256": hashlib.sha256(b"").hexdigest(),
+        "provider_freshness": {},
+        "ladder": None,
+        "reason_codes": [reason],
+    })
+    return ExactPrecloseResult(market, window, fragment)
+
+
 def _build(**overrides):
     values = {
         "candidate": _candidate(),
@@ -242,6 +289,33 @@ def test_v2_proof_contains_recomputable_inputs_bindings_freshness_and_logic():
     assert proof["decision"]["selected_lane"] == "consensus_core"
     assert proof["decision"]["preclose_required_for_selected_lane"] is False
     assert proof_v2.validate_evaluation_proof_v2(proof=proof) == (True, ())
+
+
+@pytest.mark.parametrize(
+    ("anchor_labels", "malformed"),
+    ((None, False), (None, True)),
+)
+def test_v2_pending_anchor_is_preserved_and_does_not_veto_base_plus_preclose(
+    anchor_labels, malformed,
+):
+    evaluation = _evaluation()
+    evaluation["normalized_inputs"]["anchor_labels"] = anchor_labels
+    evaluation["normalized_inputs"]["anchor_metadata_malformed"] = malformed
+    evaluation["family_states"]["anchor"] = {
+        "state": "pending", "reason_codes": ["anchor_dependency_pending"],
+    }
+    evaluation["family_count"] = 2
+    evaluation["maximum_family_count"] = 3
+    evaluation["decisive_families"] = ("base", "preclose")
+
+    built = _build(evaluation=evaluation)
+
+    assert built.selection_safe is True
+    assert built.proof["normalized_inputs"]["anchor_labels"] is None
+    assert built.proof["normalized_inputs"]["anchor_metadata_malformed"] is malformed
+    assert built.proof["decision"]["family_states"]["anchor"]["state"] == "pending"
+    assert built.proof["decision"]["selected_lane"] == "consensus_core"
+    assert built.proof["decision"]["selection_status"] == "selected"
 
 
 def test_v2_proof_uses_bounded_decisive_tokens_and_full_token_digest():
@@ -376,6 +450,127 @@ def test_v2_builder_requires_exact_official_provider_and_artifact_binding(candid
 
     assert built.selection_safe is False
     assert built.reason_codes == ("evaluation_proof_invalid",)
+
+
+@pytest.mark.parametrize(
+    "mutate",
+    (
+        lambda exact: exact.market_evidence.update(participating_providers=["propline"]),
+        lambda exact: exact.proof_fragment["exact_preclose"]["provider_freshness"]["therundown"].update(freshness_status="stale"),
+        lambda exact: exact.market_evidence.update(participating_providers=["therundown"]),
+    ),
+)
+def test_v2_builder_requires_exact_official_maturity_and_matching_freshness_keys(mutate):
+    exact = _exact_preclose()
+    mutate(exact)
+
+    built = _build(exact_preclose=exact)
+
+    assert built.selection_safe is False
+    assert built.reason_codes == ("evaluation_proof_invalid",)
+
+
+def test_v2_pending_preclose_retains_the_exact_unresolved_reason():
+    exact = _pending_exact_preclose()
+    exact.proof_fragment["exact_preclose"]["reason_codes"] = ["different_reason"]
+    evaluation = _evaluation()
+    evaluation["family_states"]["preclose"] = {
+        "state": "pending", "reason_codes": ["official_provider_immature"],
+    }
+    evaluation["family_count"] = 2
+    evaluation["maximum_family_count"] = 3
+    evaluation["decisive_families"] = ("base", "anchor")
+
+    built = _build(evaluation=evaluation, exact_preclose=exact)
+
+    assert built.selection_safe is False
+    assert built.reason_codes == ("evaluation_proof_invalid",)
+
+
+@pytest.mark.parametrize(
+    "mutate",
+    (
+        lambda proof: proof["bindings"]["propline"].update(role="official"),
+        lambda proof: proof["bindings"]["therundown"].update(role="sidecar"),
+        lambda proof: proof["freshness"].pop("propline"),
+    ),
+)
+def test_v2_validator_enforces_exact_roles_and_freshness_membership(mutate):
+    proof = copy.deepcopy(_build().proof)
+    mutate(proof)
+
+    valid, reasons = proof_v2.validate_evaluation_proof_v2(proof=proof)
+
+    assert valid is False
+    assert any("binding" in reason or "freshness" in reason for reason in reasons)
+
+
+def test_v2_pending_preclose_keeps_unresolved_aggregates_null():
+    exact = _pending_exact_preclose()
+    evaluation = _evaluation()
+    evaluation["family_states"]["preclose"] = {
+        "state": "pending", "reason_codes": ["official_provider_immature"],
+    }
+    evaluation["family_count"] = 2
+    evaluation["maximum_family_count"] = 3
+    evaluation["decisive_families"] = ("base", "anchor")
+    built = _build(evaluation=evaluation, exact_preclose=exact)
+
+    assert built.selection_safe is True
+    for field in (
+        "book_count", "toward_pick_count", "away_from_pick_count",
+        "side_price_movement", "broad_confirmation", "reversal_book_count",
+        "volatile_book_count", "best_is_off_market", "score", "label",
+    ):
+        assert built.proof["preclose"][field] is None
+    assert built.proof["preclose"]["reason_codes"] == ["official_provider_immature"]
+
+    changed = copy.deepcopy(built.proof)
+    changed["preclose"]["book_count"] = 0
+    changed["preclose"]["best_is_off_market"] = False
+    assert proof_v2.validate_evaluation_proof_v2(proof=changed)[0] is False
+
+
+@pytest.mark.parametrize(
+    "mutate",
+    (
+        lambda proof: proof["preclose"].update(book_count=-1),
+        lambda proof: proof["preclose"].update(best_is_off_market=None),
+        lambda proof: proof["preclose"].update(reversal_book_count=1, volatile_book_count=0),
+        lambda proof: proof["preclose"].update(first_observed_at="2026-07-22T20:20:00+00:00"),
+    ),
+)
+def test_v2_fresh_preclose_requires_complete_consistent_shape(mutate):
+    proof = copy.deepcopy(_build().proof)
+    mutate(proof)
+
+    valid, reasons = proof_v2.validate_evaluation_proof_v2(proof=proof)
+
+    assert valid is False
+    assert "evaluation_proof_preclose_state_invalid" in reasons
+
+
+@pytest.mark.parametrize(
+    ("candidate_change", "input_change"),
+    (
+        ({}, {"side": "under"}),
+        ({}, {"pitcher": "other pitcher"}),
+        ({}, {"game_time": "2026-07-22T23:30:00+00:00"}),
+        ({}, {"k_line": 7.5}),
+        ({}, {"odds": -115}),
+        ({}, {"official_book": "draftkings"}),
+        ({}, {"official_verdict": "LEAN"}),
+    ),
+)
+def test_v2_builder_binds_normalized_candidate_and_display_inputs(candidate_change, input_change):
+    candidate = _candidate(**candidate_change)
+    evaluation = _evaluation()
+    evaluation["normalized_inputs"].update(input_change)
+
+    built = _build(candidate=candidate, evaluation=evaluation)
+
+    assert built.selection_safe is False
+    assert built.reason_codes == ("evaluation_proof_invalid",)
     assert proof_v2.validate_evaluation_proof_v2(proof=built.proof) == (True, ())
 
 
@@ -423,6 +618,15 @@ def test_v2_worst_case_valid_proof_fits_postgres_jsonb_text_ceiling():
     assert built.selection_safe is True
     assert proof_v2.postgres_jsonb_text_size(built.proof) <= proof_v2.MAX_PROOF_DB_BYTES
     assert proof_v2.validate_evaluation_proof_v2(proof=built.proof) == (True, ())
+
+
+def test_postgres_jsonb_size_estimator_expands_large_finite_numbers():
+    compact = len(json.dumps({"value": 1e308}).encode("utf-8"))
+
+    estimated = proof_v2.postgres_jsonb_text_size({"value": 1e308})
+
+    assert compact < 32
+    assert estimated > 300
 
 
 def test_v2_diagnostic_sanitizes_oversized_identity_fields_and_revalidates():
