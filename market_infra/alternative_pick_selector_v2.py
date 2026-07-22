@@ -335,6 +335,29 @@ def _features_if_complete(presence: PrimitivePresence, required: set[str], *, pi
     return features
 
 
+def preclose_proxy_score_v2(row: dict[str, Any], *, canonical_adjusted_ev: Any) -> dict[str, Any]:
+    """Adapt the approved V1 scorer without reviving its truthy EV fallback."""
+    adjusted_ev = _finite_number(canonical_adjusted_ev)
+    if adjusted_ev is None:
+        raise ValueError("canonical V2 adjusted EV must be finite")
+    scorer_row = dict(row)
+    for field in MANIFEST["field_precedence"]["adjusted_ev"]:
+        scorer_row.pop(field, None)
+    scored = v1.preclose_proxy_score_from_row(scorer_row)
+    low_cut = float(MANIFEST["thresholds"]["adjusted_ev_low_max_exclusive"])
+    moderate_cut = float(MANIFEST["thresholds"]["adjusted_ev_moderate_max_exclusive"])
+    if adjusted_ev < low_cut:
+        points, reason, target = int(MANIFEST["preclose_score_weights"]["ev_low"]), "low_ev_market_validation", "positive_reasons"
+    elif adjusted_ev < moderate_cut:
+        points, reason, target = int(MANIFEST["preclose_score_weights"]["ev_moderate"]), "moderate_ev_market_validation", "positive_reasons"
+    else:
+        points, reason, target = int(MANIFEST["preclose_score_weights"]["ev_high"]), "high_ev_clv_risk", "risk_reasons"
+    scored["score"] += points
+    scored[target].append(reason)
+    scored["label"] = "strong_preclose_clv_proxy" if scored["score"] >= int(MANIFEST["thresholds"]["preclose_strong_score_min"]) else "medium_preclose_clv_proxy" if scored["score"] >= int(MANIFEST["thresholds"]["preclose_medium_score_min"]) else "weak_preclose_clv_proxy"
+    return scored
+
+
 def _raw_preclose_v2(features: dict[str, Any] | None, exact_evidence: Any, *, slate_date: str) -> FamilyVote:
     if features is None or not isinstance(exact_evidence, dict):
         return FamilyVote("pending", ("preclose_runtime_inputs_missing",))
@@ -375,7 +398,7 @@ def _raw_preclose_v2(features: dict[str, Any] | None, exact_evidence: Any, *, sl
         return FamilyVote("pending", ("preclose_best_off_market_missing",))
     if any(_finite_number(evidence.get(field)) is None for field in ("toward_pick_count", "away_from_pick_count", "book_count", "reversal_book_count", "volatile_book_count")):
         return FamilyVote("pending", ("preclose_evidence_malformed",))
-    scored = v1.preclose_proxy_score_from_row({**evidence, **features})
+    scored = preclose_proxy_score_v2({**evidence, **features}, canonical_adjusted_ev=features["adjusted_ev"])
     return FamilyVote("agree" if scored["label"] == "strong_preclose_clv_proxy" else "disagree", (scored["label"],))
 
 

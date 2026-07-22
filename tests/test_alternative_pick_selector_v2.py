@@ -286,3 +286,20 @@ def test_zero_adjusted_ev_reaches_real_lean_4_5_base_decision():
     evaluation = selector.evaluate_alternative_pick_v2(**inputs)
     assert evaluation.normalized_inputs["adjusted_ev"] == 0.0
     assert evaluation.family_states["base"].state == "agree"
+
+
+def test_preclose_score_uses_canonical_zero_and_nonzero_adjusted_ev_boundaries():
+    row = {
+        "edge": 0.03, "model_no_vig_gap": 0.02, "price_sign": "minus",
+        "quality_gate_level": "clean", "bet_timing_window": "pre_30",
+        "book_count": 3, "best_is_off_market": False,
+        "reversal_book_count": 0, "volatile_book_count": 0,
+        "toward_pick_count": 2, "away_from_pick_count": 0, "side": "over",
+        "model_market_relationship": "model_agrees_with_favorite",
+        "adj_ev": 0.17,
+    }
+    zero = selector.preclose_proxy_score_v2(row, canonical_adjusted_ev=0.0)
+    moderate = selector.preclose_proxy_score_v2(row, canonical_adjusted_ev=0.06)
+    assert zero["score"] == moderate["score"] + 1
+    assert "low_ev_market_validation" in zero["positive_reasons"]
+    assert "moderate_ev_market_validation" in moderate["positive_reasons"]
