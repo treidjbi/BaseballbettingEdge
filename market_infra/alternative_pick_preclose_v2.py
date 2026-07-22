@@ -245,6 +245,18 @@ def resolve_candidate_bindings_v2(
     generic_event = _text(pitcher.get("provider_event_id"))
     if official_provider and generic_event:
         declared_events.setdefault(official_provider, set()).add(generic_event)
+    artifact_seed_tokens = {
+        (provider, identifier)
+        for row in snapshot_rows
+        if (identifier := _snapshot_uuid(row.get("id"))) in direct_seed_ids
+        and (provider := _provider(row.get("provider"))) in ACTIVE_PROVIDERS
+        and (event_id := _text(row.get("provider_event_id")))
+        and (not declared_events.get(provider) or event_id in declared_events[provider])
+        and _snapshot_semantics_match(
+            row, candidate=candidate, provider=provider,
+            provider_event_id=event_id, snapshot_id=identifier,
+        )
+    }
     for seed_id in direct_seed_ids:
         matches = [
             (provider, row) for (provider, identifier), row in snapshots_by_token.items()
@@ -270,7 +282,7 @@ def resolve_candidate_bindings_v2(
     relevant_conflicting_tokens = _candidate_relevant_conflicts(
         conflicts=conflicting_tokens,
         candidate=candidate,
-        direct_seed_ids=direct_seed_ids,
+        direct_seed_tokens=artifact_seed_tokens,
         side_snapshot_tokens=candidate_side_snapshot_tokens,
         bound_events=candidate_bound_events,
     )
@@ -430,14 +442,14 @@ def _candidate_relevant_conflicts(
     *,
     conflicts: Mapping[tuple[str, str], Sequence[Mapping[str, Any]]],
     candidate: Mapping[str, Any],
-    direct_seed_ids: set[str],
+    direct_seed_tokens: set[tuple[str, str]],
     side_snapshot_tokens: set[tuple[str, str]],
     bound_events: Mapping[str, set[str]],
 ) -> set[tuple[str, str]]:
     relevant: set[tuple[str, str]] = set()
     for token, versions in conflicts.items():
-        provider, identifier = token
-        if identifier in direct_seed_ids or token in side_snapshot_tokens:
+        provider, _identifier = token
+        if token in direct_seed_tokens or token in side_snapshot_tokens:
             relevant.add(token)
             continue
         provider_events = bound_events.get(provider, set())
@@ -542,7 +554,7 @@ def build_exact_preclose_evidence_v2(
     relevant_conflicting_tokens = _candidate_relevant_conflicts(
         conflicts=conflicting_tokens,
         candidate=candidate,
-        direct_seed_ids={identifier for _provider_key, identifier in bound_seed_tokens},
+        direct_seed_tokens=bound_seed_tokens,
         side_snapshot_tokens=bound_seed_tokens,
         bound_events=bound_events,
     )

@@ -293,6 +293,53 @@ def test_v2_bound_event_non_seed_collision_still_fails_closed():
     assert "duplicate_snapshot_conflict" in result.market_evidence["aggregation_reason_codes"]
 
 
+def test_v2_same_uuid_boltodds_collision_does_not_poison_therundown_seed():
+    bolt_seed = _snapshot(
+        TR_OVER, "boltodds", "retired-bolt-event", -108,
+        "2026-07-22T20:02:00+00:00",
+    )
+    bolt_conflict = {**bolt_seed, "american_odds": 125, "side": "under"}
+    rows = _base_rows() + [bolt_seed, bolt_conflict]
+    pitcher = _pitcher(
+        source_snapshot_ids=[TR_OVER], therundown_event_id="tr-event",
+    )
+
+    bindings = _bindings(rows=rows, pitcher=pitcher)
+    assert bindings["ready"] is True
+    assert "duplicate_snapshot_conflict" not in bindings["reason_codes"]
+
+    result = _build(rows=rows, bindings=bindings, windows=_windows(bindings))
+    assert result.market_evidence["freshness_status"] == "fresh"
+    assert "duplicate_snapshot_conflict" not in result.market_evidence["aggregation_reason_codes"]
+
+
+def test_v2_exact_therundown_qualified_seed_collision_still_fails_closed():
+    valid_seed = _base_rows()[0]
+    conflicting_seed = {**valid_seed, "american_odds": 125}
+    rows = [valid_seed, conflicting_seed]
+    pitcher = _pitcher(
+        source_current_market_line_ids=[101],
+        source_snapshot_ids=[TR_OVER],
+        therundown_event_id="tr-event",
+    )
+    current_lines = {"101": _line(101, "therundown", "tr-event", TR_OVER)}
+
+    bindings = _bindings(
+        rows=rows, pitcher=pitcher, current_lines=current_lines,
+    )
+    assert bindings["ready"] is False
+    assert "duplicate_snapshot_conflict" in bindings["reason_codes"]
+
+    clean_bindings = _bindings(
+        rows=[valid_seed], pitcher=pitcher, current_lines=current_lines,
+    )
+    result = _build(
+        rows=rows, bindings=clean_bindings, windows=_windows(clean_bindings),
+    )
+    assert result.market_evidence["freshness_status"] == "pending"
+    assert "duplicate_snapshot_conflict" in result.market_evidence["aggregation_reason_codes"]
+
+
 def test_v2_explicit_artifact_event_conflict_rejects_current_line_binding():
     bindings = _bindings(
         pitcher=_pitcher(
