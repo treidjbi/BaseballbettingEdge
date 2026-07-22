@@ -807,6 +807,11 @@ def test_display_verdict_wrapper_keeps_frozen_precedence():
     assert audit.verdict({"display_verdict": "LEAN", "verdict": "FIRE 1u"}) == "LEAN"
 
 
+def test_score_line_rounds_one_cent_positive_pnl_once():
+    line = audit._score_line("Test", {"rows": 1, "wins": 1, "losses": 0, "pnl": 38.585, "roi": 0.1})
+    assert line.count("+38.59u") == 1
+
+
 def test_no_drag_audit_uses_shared_predicate_for_a_meaningful_runtime_row():
     row = graded_row("2026-07-21", "shared predicate", display_verdict="FIRE 1u")
     shared = audit.alternative_selector.no_drag_diagnostic_predicate(row)

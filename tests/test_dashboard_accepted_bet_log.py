@@ -101,8 +101,8 @@ def test_dashboard_keeps_manual_different_line_selection():
 def test_dashboard_cache_busts_same_line_trust_assets():
     html = DASHBOARD_HTML.read_text(encoding="utf-8")
 
-    assert "v2-data.js?v=2026-07-17-same-line-trust" in html
-    assert "v2-app.js?v=2026-07-17-alt-line-selector" in html
+    assert "v2-data.js?v=2026-07-21-alt-picks" in html
+    assert "v2-app.js?v=2026-07-21-alt-picks" in html
 
 
 def test_dashboard_fetches_read_only_same_day_accepted_bet_review():
@@ -187,5 +187,13 @@ def test_dashboard_can_load_review_after_manual_key_entry():
 def test_dashboard_busts_v2_app_cache_for_accepted_bet_ui():
     html = DASHBOARD_HTML.read_text(encoding="utf-8")
 
-    assert "v2-app.js?v=2026-07-17-alt-line-selector" in html
-    assert "v2-data.js?v=2026-07-17-same-line-trust" in html
+    assert "v2-app.js?v=2026-07-21-alt-picks" in html
+    assert "v2-data.js?v=2026-07-21-alt-picks" in html
+
+
+def test_alt_picks_stay_isolated_from_accepted_bet_controls():
+    app = DASHBOARD_APP.read_text(encoding="utf-8")
+    alt = app[app.index("function AltPicksTab()"):app.index("// ── Root app")]
+
+    for forbidden in ["acceptedBet", "buildAcceptedBetPayload", "Log Bet", "Save Bet"]:
+        assert forbidden not in alt

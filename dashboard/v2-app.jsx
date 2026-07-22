@@ -2601,6 +2601,88 @@ function HistoryTab() {
   );
 }
 
+// ── Tab: Alternative picks ───────────────────────────────────────────────
+function AltPickSheet({ row, onClose }) {
+  if (!row) return null;
+  const familyLabels = { base: "Base", anchor: "Anchor", preclose: "Preclose", reentry: "Re-entry" };
+  return (
+    <div className="v2-alt-sheet-backdrop" role="presentation" onClick={onClose}>
+      <section className="v2-alt-sheet" role="dialog" aria-modal="true" aria-label="Alternative pick evidence" onClick={(event) => event.stopPropagation()}>
+        <div className="v2-alt-sheet-head"><div><b>{row.pitcher}</b><small>{ab(row.team)} vs {ab(row.opp_team)}</small></div><button type="button" onClick={onClose}>Close</button></div>
+        <div className="v2-alt-sheet-grid">
+          <div><span>Official pick</span><b>{row.side} {row.model_k_line} K · {fmtOdds(row.official_odds)} {row.official_book}</b></div>
+          <div><span>Official verdict</span><b>{row.official_verdict || "—"}</b></div>
+          <div><span>Alternative lane</span><b>{row.lane === "consensus_core" ? "Consensus Core" : "Re-entry Expansion"}</b></div>
+          <div><span>Freeze</span><b>{window.V2AltPicks?.formatFreezeLabel(row) || "Provisional"}</b></div>
+        </div>
+        <div className="v2-alt-sheet-evidence">
+          {Object.entries(row.family_states).map(([key, value]) => <span key={key} className={`v2-alt-chip ${value.state}`}>{familyLabels[key]} · {value.state}</span>)}
+        </div>
+        <p>Freshness: {row.evidence_freshness_status || "unknown"} · {row.evidence_observation_count || 0} observations</p>
+        <p>Artifact: {row.source_artifact_generated_at ? fmtTime(row.source_artifact_generated_at) : "not reported"}{row.artifact_advanced_after_freeze ? " · advanced after freeze" : ""}</p>
+      </section>
+    </div>
+  );
+}
+
+function AltPickCard({ row, onOpen }) {
+  const familyLabels = { base: "Base", anchor: "Anchor", preclose: "Preclose", reentry: "Re-entry" };
+  const lane = row.lane === "consensus_core" ? "Consensus Core" : "Re-entry Expansion";
+  return (
+    <article className="v2-alt-card">
+      <button type="button" className="v2-alt-card-open" onClick={() => onOpen(row)} aria-label={`View ${row.pitcher} alternative evidence`}>
+        <div className="v2-alt-primary">
+          <div><h3>{row.pitcher}</h3><p>{ab(row.team)} vs {ab(row.opp_team)}</p></div>
+          <span className="v2-alt-freeze">{window.V2AltPicks?.formatFreezeLabel(row) || "Provisional"}</span>
+        </div>
+        <div className="v2-alt-official"><span>Official pick</span><b>{row.side} {row.model_k_line} K · {fmtOdds(row.official_odds)} {row.official_book}</b><small>{row.official_verdict || "Official verdict unavailable"}</small></div>
+        <div className="v2-alt-lane"><span>Alternative lane</span><b>{lane}</b></div>
+        <div className="v2-alt-chips">
+          {Object.entries(row.family_states).map(([key, value]) => <span key={key} className={`v2-alt-chip ${value.state}`}>{familyLabels[key]} · {value.state}</span>)}
+        </div>
+        <div className="v2-alt-provenance">{row.evidence_freshness_status || "unknown"} evidence · {row.evidence_observation_count || 0} observations · {row.source_artifact_generated_at ? fmtTime(row.source_artifact_generated_at) : "artifact time unavailable"}</div>
+      </button>
+    </article>
+  );
+}
+
+function AltPicksTab() {
+  const [state, setState] = useState({ status: "loading", rows: [], counts: {}, slate_date: "", error: "" });
+  const [detail, setDetail] = useState(null);
+  React.useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const adapter = window.V2AltPicks;
+      const next = adapter ? await adapter.fetchCurrentSlate() : { status: "unavailable", rows: [], counts: {}, error: "adapter_missing" };
+      if (!cancelled) setState(next);
+    })();
+    return () => { cancelled = true; };
+  }, []);
+  const rows = Array.isArray(state.rows) ? state.rows : [];
+  const core = rows.filter((row) => row.selection_status === "selected" && row.lane === "consensus_core");
+  const expansion = rows.filter((row) => row.selection_status === "selected" && row.lane === "reentry_expansion");
+  const supporting = rows.filter((row) => row.selection_status !== "selected");
+  const frozen = rows.filter((row) => row.checkpoint === "frozen_pregame").length;
+  const provisional = rows.filter((row) => row.checkpoint === "provisional").length;
+  const selected = core.length + expansion.length;
+  return (
+    <>
+      <div className="v2-header"><div className="v2-header-row"><div className="v2-brand"><div className="v2-kmark">K</div><div><div className="v2-wordmark">Alt Picks</div><div className="v2-subtitle">Prospective comparison · {state.slate_date || window.V2_CURRENT_DATE || "Phoenix current slate"}</div></div></div><div className="v2-header-actions"><button className="v2-icon-btn" title="Theme" onClick={() => window.__v2Theme?.toggleTheme()}>{window.__v2Theme?.theme === "dark" ? Icon.sun : Icon.moon}</button></div></div></div>
+      <main className="v2-alt-wrap">
+        <div className="v2-alt-summary"><div><b>{selected}</b><span>selected</span></div><div><b>{provisional}</b><span>provisional</span></div><div><b>{frozen}</b><span>frozen</span></div><p>Read-only same-day methodology comparison. Official picks are unchanged.</p></div>
+        {state.status === "loading" && <div className="v2-state"><div className="ttl">Loading alternative evidence</div><div className="sub">Checking the current Phoenix slate.</div></div>}
+        {state.status === "unavailable" && <div className="v2-state v2-alt-unavailable"><div className="ttl">Alternative methodology unavailable. Main picks are unaffected.</div></div>}
+        {state.status === "ready" && rows.length === 0 && <div className="v2-state"><div className="ttl">Waiting for current-slate evidence.</div><div className="sub">A stale provisional row is never shown here.</div></div>}
+        {state.status === "ready" && rows.length > 0 && selected === 0 && <div className="v2-state v2-alt-empty"><div className="ttl">No alternative qualifiers on this slate.</div><div className="sub">Evidence is healthy; {supporting.length} candidate{supporting.length === 1 ? "" : "s"} remain not selected or pending.</div></div>}
+        {state.status === "ready" && core.length > 0 && <section className="v2-alt-group"><h2>Consensus Core</h2>{core.map((row) => <AltPickCard key={`${row.pitcher}-${row.side}-${row.checkpoint}`} row={row} onOpen={setDetail} />)}</section>}
+        {state.status === "ready" && expansion.length > 0 && <section className="v2-alt-group"><h2>Re-entry Expansion</h2>{expansion.map((row) => <AltPickCard key={`${row.pitcher}-${row.side}-${row.checkpoint}`} row={row} onOpen={setDetail} />)}</section>}
+        {state.status === "ready" && supporting.length > 0 && <details className="v2-alt-collapsed"><summary>Not selected and pending ({supporting.length})</summary><p>Pending family evidence cannot qualify a card. Review the family chips for the short reason.</p></details>}
+      </main>
+      <AltPickSheet row={detail} onClose={() => setDetail(null)} />
+    </>
+  );
+}
+
 function SteamTab() {
   const d = window.V2_STEAM;
   const [filter, setFilter] = useState("ALL");
@@ -2687,7 +2769,7 @@ function SteamTab() {
 function App() {
   const [tab, setTab] = useState(() => {
     const t = new URLSearchParams(location.search).get("tab");
-    return ["picks", "history", "perf"].includes(t) ? t : "picks";
+    return ["picks", "alt", "perf"].includes(t === "history" ? "alt" : t) ? (t === "history" ? "alt" : t) : "picks";
   });
   const [appState, setAppState] = useState(() => {
     const u = new URLSearchParams(location.search);
@@ -2704,6 +2786,19 @@ function App() {
   }, [theme]);
   const toggleTheme = () => setTheme(t => t === "dark" ? "light" : "dark");
   window.__v2Theme = { theme, toggleTheme };
+  React.useEffect(() => {
+    const searchParams = new URLSearchParams(location.search);
+    if (searchParams.get("tab") === "history") {
+      searchParams.set("tab", "alt");
+      history.replaceState(null, "", `${location.pathname}?${searchParams.toString()}${location.hash}`);
+    }
+  }, []);
+  const selectTab = (nextTab) => {
+    const searchParams = new URLSearchParams(location.search);
+    searchParams.set("tab", nextTab);
+    history.replaceState(null, "", `${location.pathname}?${searchParams.toString()}${location.hash}`);
+    setTab(nextTab);
+  };
 
   const renderPicks = () => {
     if (appState === "loading") return (<>
@@ -2730,17 +2825,17 @@ function App() {
     <>
       {tab === "picks" && renderPicks()}
       {tab === "perf" && <PerfTab />}
-      {tab === "history" && <HistoryTab />}
+      {tab === "alt" && <AltPicksTab />}
       <nav className="v2-tabbar">
         {[
           ["picks", Icon.picks,   "Picks",   null],
-          ["history", Icon.history, "History", null],
+          ["alt", Icon.history, "Alt Picks", null],
           ["perf",  Icon.results, "Results", null]
         ].map(([k, ic, l, badge]) => (
           <button
             key={k}
             className={`v2-tab ${tab === k ? "active" : ""}`}
-            onClick={() => setTab(k)}
+            onClick={() => selectTab(k)}
           >
             {ic}
             <span>{l}</span>

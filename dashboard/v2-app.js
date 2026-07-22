@@ -2980,6 +2980,173 @@ function HistoryTab() {
     className: "sub"
   }, "Try clearing a filter or searching another pitcher or team."))));
 }
+
+// ── Tab: Alternative picks ───────────────────────────────────────────────
+function AltPickSheet({
+  row,
+  onClose
+}) {
+  if (!row) return null;
+  const familyLabels = {
+    base: "Base",
+    anchor: "Anchor",
+    preclose: "Preclose",
+    reentry: "Re-entry"
+  };
+  return /*#__PURE__*/React.createElement("div", {
+    className: "v2-alt-sheet-backdrop",
+    role: "presentation",
+    onClick: onClose
+  }, /*#__PURE__*/React.createElement("section", {
+    className: "v2-alt-sheet",
+    role: "dialog",
+    "aria-modal": "true",
+    "aria-label": "Alternative pick evidence",
+    onClick: event => event.stopPropagation()
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "v2-alt-sheet-head"
+  }, /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("b", null, row.pitcher), /*#__PURE__*/React.createElement("small", null, ab(row.team), " vs ", ab(row.opp_team))), /*#__PURE__*/React.createElement("button", {
+    type: "button",
+    onClick: onClose
+  }, "Close")), /*#__PURE__*/React.createElement("div", {
+    className: "v2-alt-sheet-grid"
+  }, /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("span", null, "Official pick"), /*#__PURE__*/React.createElement("b", null, row.side, " ", row.model_k_line, " K \xB7 ", fmtOdds(row.official_odds), " ", row.official_book)), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("span", null, "Official verdict"), /*#__PURE__*/React.createElement("b", null, row.official_verdict || "—")), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("span", null, "Alternative lane"), /*#__PURE__*/React.createElement("b", null, row.lane === "consensus_core" ? "Consensus Core" : "Re-entry Expansion")), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("span", null, "Freeze"), /*#__PURE__*/React.createElement("b", null, window.V2AltPicks?.formatFreezeLabel(row) || "Provisional"))), /*#__PURE__*/React.createElement("div", {
+    className: "v2-alt-sheet-evidence"
+  }, Object.entries(row.family_states).map(([key, value]) => /*#__PURE__*/React.createElement("span", {
+    key: key,
+    className: `v2-alt-chip ${value.state}`
+  }, familyLabels[key], " \xB7 ", value.state))), /*#__PURE__*/React.createElement("p", null, "Freshness: ", row.evidence_freshness_status || "unknown", " \xB7 ", row.evidence_observation_count || 0, " observations"), /*#__PURE__*/React.createElement("p", null, "Artifact: ", row.source_artifact_generated_at ? fmtTime(row.source_artifact_generated_at) : "not reported", row.artifact_advanced_after_freeze ? " · advanced after freeze" : "")));
+}
+function AltPickCard({
+  row,
+  onOpen
+}) {
+  const familyLabels = {
+    base: "Base",
+    anchor: "Anchor",
+    preclose: "Preclose",
+    reentry: "Re-entry"
+  };
+  const lane = row.lane === "consensus_core" ? "Consensus Core" : "Re-entry Expansion";
+  return /*#__PURE__*/React.createElement("article", {
+    className: "v2-alt-card"
+  }, /*#__PURE__*/React.createElement("button", {
+    type: "button",
+    className: "v2-alt-card-open",
+    onClick: () => onOpen(row),
+    "aria-label": `View ${row.pitcher} alternative evidence`
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "v2-alt-primary"
+  }, /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("h3", null, row.pitcher), /*#__PURE__*/React.createElement("p", null, ab(row.team), " vs ", ab(row.opp_team))), /*#__PURE__*/React.createElement("span", {
+    className: "v2-alt-freeze"
+  }, window.V2AltPicks?.formatFreezeLabel(row) || "Provisional")), /*#__PURE__*/React.createElement("div", {
+    className: "v2-alt-official"
+  }, /*#__PURE__*/React.createElement("span", null, "Official pick"), /*#__PURE__*/React.createElement("b", null, row.side, " ", row.model_k_line, " K \xB7 ", fmtOdds(row.official_odds), " ", row.official_book), /*#__PURE__*/React.createElement("small", null, row.official_verdict || "Official verdict unavailable")), /*#__PURE__*/React.createElement("div", {
+    className: "v2-alt-lane"
+  }, /*#__PURE__*/React.createElement("span", null, "Alternative lane"), /*#__PURE__*/React.createElement("b", null, lane)), /*#__PURE__*/React.createElement("div", {
+    className: "v2-alt-chips"
+  }, Object.entries(row.family_states).map(([key, value]) => /*#__PURE__*/React.createElement("span", {
+    key: key,
+    className: `v2-alt-chip ${value.state}`
+  }, familyLabels[key], " \xB7 ", value.state))), /*#__PURE__*/React.createElement("div", {
+    className: "v2-alt-provenance"
+  }, row.evidence_freshness_status || "unknown", " evidence \xB7 ", row.evidence_observation_count || 0, " observations \xB7 ", row.source_artifact_generated_at ? fmtTime(row.source_artifact_generated_at) : "artifact time unavailable")));
+}
+function AltPicksTab() {
+  const [state, setState] = useState({
+    status: "loading",
+    rows: [],
+    counts: {},
+    slate_date: "",
+    error: ""
+  });
+  const [detail, setDetail] = useState(null);
+  React.useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const adapter = window.V2AltPicks;
+      const next = adapter ? await adapter.fetchCurrentSlate() : {
+        status: "unavailable",
+        rows: [],
+        counts: {},
+        error: "adapter_missing"
+      };
+      if (!cancelled) setState(next);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+  const rows = Array.isArray(state.rows) ? state.rows : [];
+  const core = rows.filter(row => row.selection_status === "selected" && row.lane === "consensus_core");
+  const expansion = rows.filter(row => row.selection_status === "selected" && row.lane === "reentry_expansion");
+  const supporting = rows.filter(row => row.selection_status !== "selected");
+  const frozen = rows.filter(row => row.checkpoint === "frozen_pregame").length;
+  const provisional = rows.filter(row => row.checkpoint === "provisional").length;
+  const selected = core.length + expansion.length;
+  return /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("div", {
+    className: "v2-header"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "v2-header-row"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "v2-brand"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "v2-kmark"
+  }, "K"), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("div", {
+    className: "v2-wordmark"
+  }, "Alt Picks"), /*#__PURE__*/React.createElement("div", {
+    className: "v2-subtitle"
+  }, "Prospective comparison \xB7 ", state.slate_date || window.V2_CURRENT_DATE || "Phoenix current slate"))), /*#__PURE__*/React.createElement("div", {
+    className: "v2-header-actions"
+  }, /*#__PURE__*/React.createElement("button", {
+    className: "v2-icon-btn",
+    title: "Theme",
+    onClick: () => window.__v2Theme?.toggleTheme()
+  }, window.__v2Theme?.theme === "dark" ? Icon.sun : Icon.moon)))), /*#__PURE__*/React.createElement("main", {
+    className: "v2-alt-wrap"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "v2-alt-summary"
+  }, /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("b", null, selected), /*#__PURE__*/React.createElement("span", null, "selected")), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("b", null, provisional), /*#__PURE__*/React.createElement("span", null, "provisional")), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("b", null, frozen), /*#__PURE__*/React.createElement("span", null, "frozen")), /*#__PURE__*/React.createElement("p", null, "Read-only same-day methodology comparison. Official picks are unchanged.")), state.status === "loading" && /*#__PURE__*/React.createElement("div", {
+    className: "v2-state"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "ttl"
+  }, "Loading alternative evidence"), /*#__PURE__*/React.createElement("div", {
+    className: "sub"
+  }, "Checking the current Phoenix slate.")), state.status === "unavailable" && /*#__PURE__*/React.createElement("div", {
+    className: "v2-state v2-alt-unavailable"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "ttl"
+  }, "Alternative methodology unavailable. Main picks are unaffected.")), state.status === "ready" && rows.length === 0 && /*#__PURE__*/React.createElement("div", {
+    className: "v2-state"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "ttl"
+  }, "Waiting for current-slate evidence."), /*#__PURE__*/React.createElement("div", {
+    className: "sub"
+  }, "A stale provisional row is never shown here.")), state.status === "ready" && rows.length > 0 && selected === 0 && /*#__PURE__*/React.createElement("div", {
+    className: "v2-state v2-alt-empty"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "ttl"
+  }, "No alternative qualifiers on this slate."), /*#__PURE__*/React.createElement("div", {
+    className: "sub"
+  }, "Evidence is healthy; ", supporting.length, " candidate", supporting.length === 1 ? "" : "s", " remain not selected or pending.")), state.status === "ready" && core.length > 0 && /*#__PURE__*/React.createElement("section", {
+    className: "v2-alt-group"
+  }, /*#__PURE__*/React.createElement("h2", null, "Consensus Core"), core.map(row => /*#__PURE__*/React.createElement(AltPickCard, {
+    key: `${row.pitcher}-${row.side}-${row.checkpoint}`,
+    row: row,
+    onOpen: setDetail
+  }))), state.status === "ready" && expansion.length > 0 && /*#__PURE__*/React.createElement("section", {
+    className: "v2-alt-group"
+  }, /*#__PURE__*/React.createElement("h2", null, "Re-entry Expansion"), expansion.map(row => /*#__PURE__*/React.createElement(AltPickCard, {
+    key: `${row.pitcher}-${row.side}-${row.checkpoint}`,
+    row: row,
+    onOpen: setDetail
+  }))), state.status === "ready" && supporting.length > 0 && /*#__PURE__*/React.createElement("details", {
+    className: "v2-alt-collapsed"
+  }, /*#__PURE__*/React.createElement("summary", null, "Not selected and pending (", supporting.length, ")"), /*#__PURE__*/React.createElement("p", null, "Pending family evidence cannot qualify a card. Review the family chips for the short reason."))), /*#__PURE__*/React.createElement(AltPickSheet, {
+    row: detail,
+    onClose: () => setDetail(null)
+  }));
+}
 function SteamTab() {
   const d = window.V2_STEAM;
   const [filter, setFilter] = useState("ALL");
@@ -3065,7 +3232,7 @@ function SteamTab() {
 function App() {
   const [tab, setTab] = useState(() => {
     const t = new URLSearchParams(location.search).get("tab");
-    return ["picks", "history", "perf"].includes(t) ? t : "picks";
+    return ["picks", "alt", "perf"].includes(t === "history" ? "alt" : t) ? t === "history" ? "alt" : t : "picks";
   });
   const [appState, setAppState] = useState(() => {
     const u = new URLSearchParams(location.search);
@@ -3090,6 +3257,19 @@ function App() {
   window.__v2Theme = {
     theme,
     toggleTheme
+  };
+  React.useEffect(() => {
+    const searchParams = new URLSearchParams(location.search);
+    if (searchParams.get("tab") === "history") {
+      searchParams.set("tab", "alt");
+      history.replaceState(null, "", `${location.pathname}?${searchParams.toString()}${location.hash}`);
+    }
+  }, []);
+  const selectTab = nextTab => {
+    const searchParams = new URLSearchParams(location.search);
+    searchParams.set("tab", nextTab);
+    history.replaceState(null, "", `${location.pathname}?${searchParams.toString()}${location.hash}`);
+    setTab(nextTab);
   };
   const renderPicks = () => {
     if (appState === "loading") return /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("div", {
@@ -3128,12 +3308,12 @@ function App() {
     });
     return /*#__PURE__*/React.createElement(PicksTab, null);
   };
-  return /*#__PURE__*/React.createElement(React.Fragment, null, tab === "picks" && renderPicks(), tab === "perf" && /*#__PURE__*/React.createElement(PerfTab, null), tab === "history" && /*#__PURE__*/React.createElement(HistoryTab, null), /*#__PURE__*/React.createElement("nav", {
+  return /*#__PURE__*/React.createElement(React.Fragment, null, tab === "picks" && renderPicks(), tab === "perf" && /*#__PURE__*/React.createElement(PerfTab, null), tab === "alt" && /*#__PURE__*/React.createElement(AltPicksTab, null), /*#__PURE__*/React.createElement("nav", {
     className: "v2-tabbar"
-  }, [["picks", Icon.picks, "Picks", null], ["history", Icon.history, "History", null], ["perf", Icon.results, "Results", null]].map(([k, ic, l, badge]) => /*#__PURE__*/React.createElement("button", {
+  }, [["picks", Icon.picks, "Picks", null], ["alt", Icon.history, "Alt Picks", null], ["perf", Icon.results, "Results", null]].map(([k, ic, l, badge]) => /*#__PURE__*/React.createElement("button", {
     key: k,
     className: `v2-tab ${tab === k ? "active" : ""}`,
-    onClick: () => setTab(k)
+    onClick: () => selectTab(k)
   }, ic, /*#__PURE__*/React.createElement("span", null, l), badge != null && /*#__PURE__*/React.createElement("span", {
     className: "v2-tab-badge"
   }, badge), tab === k && /*#__PURE__*/React.createElement("span", {
