@@ -55,6 +55,7 @@ from market_infra.shadow_notification_candidates import (  # noqa: E402
     build_shadow_notification_candidate_rows,
 )
 from market_infra.supabase_writer import SupabaseMarketWriter  # noqa: E402
+from pipeline.name_utils import normalize  # noqa: E402
 from scripts.build_current_market_lines_to_supabase import (  # noqa: E402
     run as build_current_market_lines_to_supabase,
 )
@@ -188,6 +189,22 @@ def _alternative_line(value: Any) -> float | None:
     except (TypeError, ValueError):
         return None
     return parsed if math.isfinite(parsed) and parsed >= 0 else None
+
+
+def _alternative_current_line_id(value: Any) -> str | None:
+    """Return a positive integer current-market-line identifier, never a UUID."""
+    if isinstance(value, bool):
+        return None
+    if isinstance(value, str):
+        text = value.strip()
+        return text if text.isdigit() and int(text) > 0 else None
+    try:
+        parsed = float(value)
+    except (TypeError, ValueError):
+        return None
+    if not math.isfinite(parsed) or not parsed.is_integer() or parsed <= 0:
+        return None
+    return str(int(parsed))
 
 
 def _alternative_tracked_candidates(
@@ -331,9 +348,17 @@ def _alternative_persistence_key(candidate: dict[str, Any]) -> tuple[Any, ...]:
 
 def _alternative_artifact_bindings(
     pitcher: dict[str, Any],
-) -> tuple[list[Any], dict[str, list[Any]]]:
+) -> tuple[list[Any], dict[str, list[Any]], list[str]]:
     snapshot_ids = pitcher.get("source_snapshot_ids")
     snapshots = list(snapshot_ids) if isinstance(snapshot_ids, (list, tuple)) else []
+    direct_snapshots: list[Any] = []
+    current_line_ids: list[str] = []
+    for snapshot_id in snapshots:
+        current_line_id = _alternative_current_line_id(snapshot_id)
+        if current_line_id is None:
+            direct_snapshots.append(snapshot_id)
+        else:
+            current_line_ids.append(current_line_id)
     events: dict[str, list[Any]] = {}
     field_map = {
         "propline": ("propline_event_id",),
@@ -347,7 +372,61 @@ def _alternative_artifact_bindings(
     generic_event = pitcher.get("provider_event_id")
     if source_provider in {"therundown", "propline"} and generic_event not in {None, ""}:
         events.setdefault(source_provider, []).append(generic_event)
-    return snapshots, events
+    return direct_snapshots, events, current_line_ids
+
+
+def _alternative_current_line_matches_candidate(
+    *,
+    row: dict[str, Any],
+    candidate: dict[str, Any],
+    slate_date: str,
+) -> bool:
+    """Allow only an exact, approved current-line mapping for this sidecar candidate."""
+    provider = str(row.get("provider") or "").strip().lower()
+    required_providers = {
+        "therundown": {"therundown"},
+        "propline": {"propline"},
+        "therundown_propline": {"therundown", "propline"},
+    }.get(str(candidate.get("provider_posture") or "").strip().lower(), set())
+    mapped_game_time = row.get("game_time")
+    return all((
+        str(row.get("slate_date") or "").strip() == slate_date,
+        provider in required_providers,
+        normalize(str(row.get("normalized_player_name") or "")) == candidate.get("normalized_pitcher"),
+        str(row.get("market_key") or "").strip().lower() == "pitcher_strikeouts",
+        _alternative_line(row.get("line")) == _alternative_line(candidate.get("model_k_line")),
+        mapped_game_time in {None, ""}
+        or _parse_timestamp(mapped_game_time) == _parse_timestamp(candidate.get("game_time")),
+    ))
+
+
+def _alternative_translate_current_line_bindings(
+    *,
+    candidate: dict[str, Any],
+    pitcher: dict[str, Any],
+    slate_date: str,
+    current_lines_by_id: dict[str, dict[str, Any]],
+) -> tuple[list[Any], dict[str, list[Any]]]:
+    """Translate only exact numeric source-line IDs into existing binder identities."""
+    artifact_snapshot_ids, artifact_provider_event_ids, numeric_line_ids = _alternative_artifact_bindings(pitcher)
+    side = str(candidate.get("side") or "").strip().lower()
+    snapshot_field = f"{side}_snapshot_id"
+    for line_id in numeric_line_ids:
+        row = current_lines_by_id.get(line_id)
+        if not isinstance(row, dict) or not _alternative_current_line_matches_candidate(
+            row=row,
+            candidate=candidate,
+            slate_date=slate_date,
+        ):
+            continue
+        provider = str(row.get("provider") or "").strip().lower()
+        snapshot_id = row.get(snapshot_field)
+        provider_event_id = row.get("provider_event_id")
+        if snapshot_id in {None, ""} or provider_event_id in {None, ""}:
+            continue
+        artifact_snapshot_ids.append(snapshot_id)
+        artifact_provider_event_ids.setdefault(provider, []).append(provider_event_id)
+    return artifact_snapshot_ids, artifact_provider_event_ids
 
 
 def _postgrest_in_filter(values: list[str]) -> str:
@@ -426,6 +505,12 @@ def _write_alternative_pick_selection_state(
     def remaining() -> float:
         return _alternative_remaining_timeout(started_at, budget_seconds)
 
+    numeric_current_line_ids = sorted({
+        line_id
+        for _, pitcher, _ in candidates
+        for line_id in _alternative_artifact_bindings(pitcher)[2]
+    })
+    current_lines_by_id: dict[str, dict[str, Any]] = {}
     try:
         timeout = remaining()
         if timeout <= 0:
@@ -466,6 +551,41 @@ def _write_alternative_pick_selection_state(
             timeout_seconds=timeout,
             attempts=1,
         )
+        if numeric_current_line_ids:
+            timeout = remaining()
+            if timeout <= 0:
+                return _alternative_failure_summary("timeout")
+            current_line_rows = writer.select_rows(
+                "current_market_lines",
+                {
+                    "slate_date": f"eq.{slate_date}",
+                    "id": _postgrest_in_filter(numeric_current_line_ids),
+                    "select": (
+                        "id,slate_date,provider,provider_event_id,normalized_player_name,"
+                        "market_key,line,game_time,over_snapshot_id,under_snapshot_id"
+                    ),
+                },
+                timeout_seconds=timeout,
+                attempts=1,
+            )
+            required_current_line_fields = {
+                "id", "slate_date", "provider", "provider_event_id", "normalized_player_name",
+                "market_key", "line", "game_time", "over_snapshot_id", "under_snapshot_id",
+            }
+            if not isinstance(current_line_rows, list):
+                return _alternative_failure_summary("failed")
+            for row in current_line_rows:
+                line_id = _alternative_current_line_id(row.get("id")) if isinstance(row, dict) else None
+                if (
+                    not isinstance(row, dict)
+                    or line_id not in numeric_current_line_ids
+                    or not required_current_line_fields.issubset(row)
+                ):
+                    return _alternative_failure_summary("failed")
+                existing = current_lines_by_id.get(line_id)
+                if existing is not None and existing != row:
+                    return _alternative_failure_summary("failed")
+                current_lines_by_id[line_id] = row
     except Exception:
         return _alternative_failure_summary("failed")
 
@@ -516,7 +636,12 @@ def _write_alternative_pick_selection_state(
             return _alternative_failure_summary("failed")
         candidate["frozen_exists"] = False
         try:
-            artifact_snapshot_ids, artifact_provider_event_ids = _alternative_artifact_bindings(pitcher)
+            artifact_snapshot_ids, artifact_provider_event_ids = _alternative_translate_current_line_bindings(
+                candidate=candidate,
+                pitcher=pitcher,
+                slate_date=slate_date,
+                current_lines_by_id=current_lines_by_id,
+            )
             evidence_window = bind_candidate_observations(
                 candidate=candidate,
                 snapshot_rows=snapshot_rows,

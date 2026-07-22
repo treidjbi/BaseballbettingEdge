@@ -3,6 +3,7 @@ import sys
 from pathlib import Path
 from unittest.mock import ANY, Mock, patch
 
+import pytest
 import requests
 
 from scripts import build_live_events_to_supabase
@@ -283,6 +284,155 @@ def test_alternative_sidecar_passes_canonical_side_payload_with_tracked_overlay(
     assert call["pick"]["locked_adj_ev"] == 0.07
     assert call["pitcher"]["best_over_odds"] == -108
     assert result["provisional_rows"] == 1
+
+
+def test_alternative_sidecar_binds_numeric_current_market_line_ids_in_one_read(monkeypatch):
+    monkeypatch.setenv("ALTERNATIVE_PICK_SELECTION_MODE", "record")
+    observed_at = build_live_events_to_supabase.datetime.fromisoformat("2026-05-06T18:00:00+00:00")
+    payload = _alternative_artifact_payload(
+        odds_source="therundown+propline",
+        market_source_mode="therundown_propline",
+    )
+    pitcher = payload["pitchers"][0]
+    pitcher.pop("therundown_event_id")
+    pitcher.pop("propline_event_id")
+    pitcher["source_snapshot_ids"] = [101, 202]
+    writer = Mock()
+    current_lines = [
+        {
+            "id": 101, "slate_date": "2026-05-06", "provider": "therundown",
+            "provider_event_id": "tr-game-current", "normalized_player_name": "tarik skubal",
+            "market_key": "pitcher_strikeouts", "line": 6.5,
+            "game_time": "2026-05-06T22:10:00Z", "over_snapshot_id": "tr-1",
+            "under_snapshot_id": "tr-under-1",
+        },
+        {
+            "id": 202, "slate_date": "2026-05-06", "provider": "propline",
+            "provider_event_id": "pl-game-current", "normalized_player_name": "tarik skubal",
+            "market_key": "pitcher_strikeouts", "line": 6.5,
+            "game_time": "2026-05-06T22:10:00Z", "over_snapshot_id": "pl-1",
+            "under_snapshot_id": "pl-under-1",
+        },
+    ]
+    writer.select_rows.side_effect = [[], [], current_lines]
+    complete_evaluation = {
+        "eligible": True,
+        "selector_fingerprint": "c" * 64,
+        "family_states": {"base": {"state": "agree", "reason_codes": ["base_ok"]}},
+        "family_count": 1,
+        "lane": "consensus_core",
+        "selection_status": "selected",
+        "reason_codes": ("selected",),
+        "normalized_inputs": {"official_verdict": "LEAN", "odds": -108, "official_book": "fanduel"},
+    }
+
+    with patch.object(build_live_events_to_supabase, "evaluate_alternative_pick", return_value=complete_evaluation):
+        result = build_live_events_to_supabase._write_alternative_pick_selection_state(
+            writer=writer,
+            slate_date="2026-05-06",
+            payload=payload,
+            snapshot_rows=[
+                {
+                    "id": "tr-1", "provider": "therundown", "provider_event_id": "tr-game-current",
+                    "normalized_player_name": "tarik skubal", "side": "over", "line": 6.5,
+                    "bookmaker_key": "fanduel", "american_odds": -108,
+                    "game_time": "2026-05-06T22:10:00Z", "observed_at": observed_at.isoformat(),
+                },
+                {
+                    "id": "pl-1", "provider": "propline", "provider_event_id": "pl-game-current",
+                    "normalized_player_name": "tarik skubal", "side": "over", "line": 6.5,
+                    "bookmaker_key": "draftkings", "american_odds": -110,
+                    "game_time": "2026-05-06T22:10:00Z", "observed_at": observed_at.isoformat(),
+                },
+            ],
+            market_pick_evidence_rows=[
+                _alternative_market_evidence("therundown", observed_at=observed_at.isoformat()),
+                _alternative_market_evidence("propline", observed_at=observed_at.isoformat()),
+            ],
+            live_market_display_rows=[{
+                "slate_date": "2026-05-06", "normalized_pitcher": "tarik skubal", "side": "over",
+                "k_line": 6.5, "provider": "therundown_propline",
+                "game_time": "2026-05-06T22:10:00Z", "game_state": "scheduled",
+                "observed_at": observed_at.isoformat(), "updated_at": observed_at.isoformat(),
+                "latest_snapshot_at": observed_at.isoformat(), "freshness_status": "fresh",
+                "source_artifact_path": "https://example.netlify.app/.netlify/functions/get-artifact?type=today",
+                "source_artifact_sha256": "b" * 64, "best_is_off_market": False,
+            }],
+            observed_at=observed_at,
+            artifact_source="https://example.netlify.app/.netlify/functions/get-artifact?type=today",
+            source_payload_sha256=build_live_events_to_supabase.canonical_payload_sha256(payload),
+            source_artifact_byte_sha256="b" * 64,
+            operational_pick_locks={"skipped": True, "reason": "disabled"},
+            market_line_build={"skipped": True, "reason": "fresh"},
+        )
+
+    assert result["provisional_rows"] == 1
+    persisted = writer.upsert_rows.call_args.args[1][0]
+    assert persisted["evidence_observation_ids"] == ["pl-1", "tr-1"]
+    assert persisted["evidence_observation_count"] == 2
+    assert persisted["selection_status"] == "selected"
+    assert writer.select_rows.call_count == 3
+    mapping_params = writer.select_rows.call_args_list[2].args[1]
+    assert writer.select_rows.call_args_list[2].args[0] == "current_market_lines"
+    assert mapping_params["slate_date"] == "eq.2026-05-06"
+    assert mapping_params["id"] == 'in.("101","202")'
+    assert set(mapping_params["select"].split(",")) == {
+        "id", "slate_date", "provider", "provider_event_id", "normalized_player_name",
+        "market_key", "line", "game_time", "over_snapshot_id", "under_snapshot_id",
+    }
+
+
+@pytest.mark.parametrize("overrides", [
+    {"normalized_player_name": "wrong pitcher"},
+    {"line": 7.5},
+    {"game_time": "2026-05-06T23:10:00Z"},
+    {"market_key": "batter_hits"},
+    {"provider": "boltodds"},
+    {"over_snapshot_id": ""},
+    None,
+])
+def test_alternative_sidecar_does_not_bind_invalid_numeric_current_market_line_mapping(monkeypatch, overrides):
+    monkeypatch.setenv("ALTERNATIVE_PICK_SELECTION_MODE", "record")
+    payload = _alternative_artifact_payload()
+    pitcher = payload["pitchers"][0]
+    pitcher.pop("therundown_event_id")
+    pitcher.pop("propline_event_id")
+    pitcher["source_snapshot_ids"] = [101]
+    mapping = {
+        "id": 101, "slate_date": "2026-05-06", "provider": "therundown",
+        "provider_event_id": "tr-game-current", "normalized_player_name": "tarik skubal",
+        "market_key": "pitcher_strikeouts", "line": 6.5,
+        "game_time": "2026-05-06T22:10:00Z", "over_snapshot_id": "tr-1",
+        "under_snapshot_id": "tr-under-1",
+    }
+    writer = Mock()
+    writer.select_rows.side_effect = [[], [], [] if overrides is None else [{**mapping, **overrides}]]
+
+    result = build_live_events_to_supabase._write_alternative_pick_selection_state(
+        writer=writer,
+        slate_date="2026-05-06",
+        payload=payload,
+        snapshot_rows=[{
+            "id": "tr-1", "provider": "therundown", "provider_event_id": "tr-game-current",
+            "normalized_player_name": "tarik skubal", "side": "over", "line": 6.5,
+            "bookmaker_key": "fanduel", "american_odds": -108,
+            "game_time": "2026-05-06T22:10:00Z", "observed_at": "2026-05-06T18:00:00Z",
+        }],
+        market_pick_evidence_rows=[_alternative_market_evidence("therundown", observed_at="2026-05-06T18:00:00Z")],
+        observed_at=build_live_events_to_supabase.datetime.fromisoformat("2026-05-06T18:00:00+00:00"),
+        artifact_source="test",
+        source_payload_sha256=build_live_events_to_supabase.canonical_payload_sha256(payload),
+        source_artifact_byte_sha256="b" * 64,
+        operational_pick_locks={"skipped": True, "reason": "disabled"},
+        market_line_build={"skipped": True, "reason": "fresh"},
+    )
+
+    assert result["provisional_rows"] == 1
+    persisted = writer.upsert_rows.call_args.args[1][0]
+    assert persisted["evidence_observation_ids"] == []
+    assert persisted["evidence_observation_count"] == 0
+    assert persisted["evidence_freshness_status"] == "pending"
+    assert writer.select_rows.call_count == 3
 
 
 def test_alternative_pick_selection_mode_fails_closed_except_exact_record(monkeypatch):
