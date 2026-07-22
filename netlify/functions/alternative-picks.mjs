@@ -2,11 +2,23 @@ const BUNDLE_ID = 'pregame_alternative_pick_methodology_v1';
 const CANONICAL_ARTIFACT_KEY = 'today';
 const CANONICAL_ARTIFACT_PATH = 'dashboard/data/processed/today.json';
 const APPROVED_POSTURES = new Set(['therundown', 'therundown_propline']);
+const APPROVED_PUBLICATION_SOURCES = new Set([
+  'github_actions', 'render_pipeline', 'render_live_layer', 'manual_backfill',
+]);
 const LANES = new Set(['consensus_core', 'reentry_expansion']);
+const SELECTOR_IDS_BY_LANE = Object.freeze({
+  consensus_core: 'no_drag_distinct_family_consensus_core_v1',
+  reentry_expansion: 'moderate_edge_quality_reentry_expansion_v1',
+});
+const SELECTOR_FINGERPRINT = 'f8f7ccf652b8eda4860d07798bc4673920b0b9d727552bc7e2e6547d478b4579';
 const SELECTION_STATUSES = new Set(['selected', 'not_selected', 'pending']);
 const CHECKPOINTS = new Set(['provisional', 'frozen_pregame']);
 const FAMILY_STATES = new Set(['agree', 'disagree', 'pending']);
+const FAMILY_KEYS = new Set(['base', 'anchor', 'preclose', 'reentry']);
 const LOCK_STATUSES = new Set(['due_now', 'missed_lock']);
+const EVIDENCE_FRESHNESS = new Set(['fresh', 'pending']);
+const OFFICIAL_VERDICTS = new Set(['PASS', 'LEAN', 'FIRE 1u', 'FIRE 2u']);
+const SUPPORTED_BOOKS = new Set(['fanduel', 'draftkings', 'betmgm', 'betrivers', 'kalshi', 'caesars', 'thescore']);
 
 const CANONICAL_SELECT = [
   'artifact_key', 'payload_sha256', 'slate_date', 'generated_at', 'source',
@@ -20,7 +32,7 @@ const CANONICAL_SELECT = [
 const STATE_SELECT = [
   'slate_date', 'pitcher', 'normalized_pitcher', 'team', 'opp_team', 'game_time', 'side',
   'model_k_line', 'bundle_id', 'selector_id', 'checkpoint', 'official_odds', 'official_book',
-  'official_verdict', 'lane', 'selection_status', 'family_states', 'family_count', 'reason_codes',
+  'official_verdict', 'lane', 'selector_fingerprint', 'selection_status', 'family_states', 'family_count', 'reason_codes',
   'source_artifact_path', 'source_artifact_generated_at', 'source_artifact_sha256',
   'source_artifact_byte_sha256', 'evidence_observation_count', 'evidence_first_observed_at',
   'evidence_last_observed_at', 'evidence_freshness_status', 'frozen_at', 'lock_dedupe_key',
@@ -83,14 +95,35 @@ function text(value) {
   return typeof value === 'string' ? value.trim() : '';
 }
 
+function safeText(value, maximum = 120) {
+  const output = text(value);
+  if (!output || output.length > maximum || /(?:https?:\/\/|www\.|bearer|authorization|password|secret|token|api[_-]?key)/i.test(output)) return '';
+  return /^[\p{L}\p{N} .,'’&()/_-]+$/u.test(output) ? output : '';
+}
+
+function safeTeam(value) {
+  const team = text(value).toUpperCase();
+  return /^[A-Z]{2,4}$/.test(team) ? team : '';
+}
+
+function supportedBook(value) {
+  const compact = text(value).toLowerCase().replace(/&/g, 'and').replace(/[^a-z0-9]+/g, '');
+  const aliases = {
+    fanduelsportsbook: 'fanduel', draftkingssportsbook: 'draftkings', betmgmsportsbook: 'betmgm',
+    betriverssportsbook: 'betrivers', caesarssportsbook: 'caesars', thescorebet: 'thescore',
+    thescoresportsbook: 'thescore', scorebet: 'thescore',
+  };
+  const book = aliases[compact] || compact;
+  return SUPPORTED_BOOKS.has(book) ? book : '';
+}
+
 function validHash(value) {
   const hash = text(value).toLowerCase();
   return /^[a-f0-9]{64}$/.test(hash) ? hash : '';
 }
 
 function number(value) {
-  const parsed = Number(value);
-  return Number.isFinite(parsed) ? parsed : null;
+  return typeof value === 'number' && Number.isFinite(value) ? value : null;
 }
 
 function integer(value) {
@@ -113,24 +146,21 @@ function sameBook(left, right) {
   return text(left).toLowerCase() === text(right).toLowerCase();
 }
 
-function boundedStrings(value, maximum = 24) {
-  if (!Array.isArray(value)) return [];
-  return value
-    .filter(item => typeof item === 'string')
-    .map(item => item.trim())
-    .filter(Boolean)
-    .slice(0, maximum)
-    .map(item => item.slice(0, 160));
+function safeReasonCodes(value, maximum = 24) {
+  if (!Array.isArray(value) || value.length > maximum) return null;
+  const reasons = value.map(item => text(item));
+  return reasons.every(reason => /^[a-z][a-z0-9_]{0,79}$/.test(reason)) ? reasons : null;
 }
 
 function safeFamilyStates(value) {
-  if (!value || typeof value !== 'object' || Array.isArray(value)) return {};
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return null;
   const result = {};
   for (const [name, vote] of Object.entries(value)) {
-    const key = text(name).slice(0, 80);
+    const key = text(name);
     const state = text(vote?.state).toLowerCase();
-    if (!key || !FAMILY_STATES.has(state)) continue;
-    result[key] = { state, reason_codes: boundedStrings(vote.reason_codes, 12) };
+    const reasons = safeReasonCodes(vote?.reason_codes, 12);
+    if (!FAMILY_KEYS.has(key) || !FAMILY_STATES.has(state) || reasons == null) return null;
+    result[key] = { state, reason_codes: reasons };
   }
   return result;
 }
@@ -138,32 +168,32 @@ function safeFamilyStates(value) {
 function responseRow(row, { artifactAdvancedAfterFreeze }) {
   return {
     slate_date: row.slate_date,
-    pitcher: text(row.pitcher),
-    team: text(row.team),
-    opp_team: text(row.opp_team),
+    pitcher: safeText(row.pitcher),
+    team: safeTeam(row.team),
+    opp_team: safeTeam(row.opp_team),
     game_time: timestamp(row.game_time),
     side: text(row.side).toLowerCase(),
     model_k_line: number(row.model_k_line),
     official_odds: integer(row.official_odds),
-    official_book: text(row.official_book) || null,
-    official_verdict: text(row.official_verdict) || null,
+    official_book: supportedBook(row.official_book),
+    official_verdict: text(row.official_verdict),
     bundle_id: BUNDLE_ID,
-    selector_id: text(row.selector_id) || null,
+    selector_id: SELECTOR_IDS_BY_LANE[text(row.lane)] || null,
     lane: text(row.lane),
     selection_status: text(row.selection_status),
     family_states: safeFamilyStates(row.family_states),
     family_count: integer(row.family_count) ?? 0,
     checkpoint: text(row.checkpoint),
-    reason_codes: boundedStrings(row.reason_codes),
+    reason_codes: safeReasonCodes(row.reason_codes),
     source_artifact_generated_at: timestamp(row.source_artifact_generated_at) || null,
     evidence_observation_count: integer(row.evidence_observation_count) ?? 0,
     evidence_first_observed_at: timestamp(row.evidence_first_observed_at) || null,
     evidence_last_observed_at: timestamp(row.evidence_last_observed_at) || null,
-    evidence_freshness_status: text(row.evidence_freshness_status) || null,
+    evidence_freshness_status: text(row.evidence_freshness_status),
     frozen_at: timestamp(row.frozen_at) || null,
     should_lock_at: timestamp(row.should_lock_at) || null,
     minutes_until_start: number(row.minutes_until_start),
-    lock_status: text(row.lock_status) || null,
+    lock_status: text(row.lock_status),
     artifact_advanced_after_freeze: artifactAdvancedAfterFreeze,
   };
 }
@@ -171,32 +201,39 @@ function responseRow(row, { artifactAdvancedAfterFreeze }) {
 function validStateBase(row, slateDate) {
   if (!row || typeof row !== 'object') return false;
   const checkpoint = text(row.checkpoint);
+  const lane = text(row.lane);
+  const familyStates = safeFamilyStates(row.family_states);
+  const reasons = safeReasonCodes(row.reason_codes);
   return validDate(row.slate_date) === slateDate
     && text(row.bundle_id) === BUNDLE_ID
     && CHECKPOINTS.has(checkpoint)
-    && text(row.pitcher) && text(row.normalized_pitcher) && text(row.team) && text(row.opp_team)
+    && safeText(row.pitcher) && safeText(row.normalized_pitcher) && safeTeam(row.team) && safeTeam(row.opp_team)
     && timestamp(row.game_time) && ['over', 'under'].includes(text(row.side).toLowerCase())
     && number(row.model_k_line) != null
-    && LANES.has(text(row.lane))
+    && LANES.has(lane) && text(row.selector_id) === SELECTOR_IDS_BY_LANE[lane]
+    && validHash(row.selector_fingerprint) === SELECTOR_FINGERPRINT
+    && integer(row.official_odds) != null && supportedBook(row.official_book) && OFFICIAL_VERDICTS.has(text(row.official_verdict))
     && SELECTION_STATUSES.has(text(row.selection_status))
     && integer(row.family_count) != null && integer(row.family_count) >= 0
     && integer(row.evidence_observation_count) != null && integer(row.evidence_observation_count) >= 0
+    && familyStates != null && reasons != null && EVIDENCE_FRESHNESS.has(text(row.evidence_freshness_status))
     && validHash(row.source_artifact_sha256) && validHash(row.source_artifact_byte_sha256);
 }
 
 function validCanonical(row, slateDate) {
   if (!row || typeof row !== 'object') return null;
-  const directPosture = text(row.payload_odds_source || row.payload_provider_posture)
-    .toLowerCase().replace(/\+/g, '_');
-  const pitcherPostures = Array.isArray(row.payload_pitchers) ? row.payload_pitchers.map(pitcher => {
-    if (!pitcher || typeof pitcher !== 'object') return '';
-    return text(pitcher.market_source_mode || pitcher.odds_source).toLowerCase().replace(/\+/g, '_');
-  }) : [];
-  const approvedPitchers = pitcherPostures.length > 0
-    && pitcherPostures.every(posture => APPROVED_POSTURES.has(posture));
-  const approvedPosture = pitcherPostures.length > 0
-    ? approvedPitchers && (!directPosture || APPROVED_POSTURES.has(directPosture))
-    : APPROVED_POSTURES.has(directPosture);
+  const normalizePosture = value => text(value).toLowerCase().replace(/\+/g, '_');
+  const postures = [row.payload_odds_source, row.payload_provider_posture];
+  if (row.payload_pitchers != null && !Array.isArray(row.payload_pitchers)) return null;
+  if (Array.isArray(row.payload_pitchers)) {
+    for (const pitcher of row.payload_pitchers) {
+      if (!pitcher || typeof pitcher !== 'object') return null;
+      postures.push(pitcher.market_source_mode, pitcher.odds_source, pitcher.provider_posture);
+    }
+  }
+  const declaredPostures = postures.map(normalizePosture).filter(Boolean);
+  const approvedPosture = declaredPostures.length > 0
+    && declaredPostures.every(posture => APPROVED_POSTURES.has(posture));
   if (text(row.artifact_key) !== CANONICAL_ARTIFACT_KEY
       || validDate(row.slate_date) !== slateDate
       || validDate(row.payload_date) !== slateDate
@@ -204,7 +241,7 @@ function validCanonical(row, slateDate) {
       || !approvedPosture
       || text(row.artifact_path) !== CANONICAL_ARTIFACT_PATH
       || !timestamp(row.generated_at)
-      || !text(row.source)) return null;
+      || !APPROVED_PUBLICATION_SOURCES.has(text(row.source)) ) return null;
   return {
     payloadSha: validHash(row.payload_sha256),
     generatedAt: timestamp(row.generated_at),
@@ -229,8 +266,8 @@ function lockMatchesFrozenRow(row, lock, artifact) {
   const metadata = lock.metadata;
   return text(row.checkpoint) === 'frozen_pregame'
     && text(row.source_artifact_path) === artifact.path
-    && text(row.lock_source_artifact_path) === artifact.path
-    && text(lock.source_artifact_path) === artifact.path
+    && text(row.lock_source_artifact_path)
+    && text(row.lock_source_artifact_path) === text(lock.source_artifact_path)
     && text(row.lock_dedupe_key) && text(lock.dedupe_key) === text(row.lock_dedupe_key)
     && validDate(lock.slate_date) === row.slate_date
     && text(lock.normalized_pitcher) === text(row.normalized_pitcher)

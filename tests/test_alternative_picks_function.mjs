@@ -1,5 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
+import { createHash } from 'node:crypto';
 
 import { handler } from '../netlify/functions/alternative-picks.mjs';
 
@@ -8,6 +10,19 @@ const CURRENT_SHA = 'a'.repeat(64);
 const FROZEN_CANONICAL_SHA = 'b'.repeat(64);
 const LOCK_SHA = 'c'.repeat(64);
 const SECRET = 'service-role-secret';
+const LOCK_URL = 'https://app.example/.netlify/functions/get-artifact?type=today';
+const MANIFEST = JSON.parse(readFileSync(
+  new URL('../market_infra/alternative_pick_selector_manifest_v1.json', import.meta.url),
+));
+function sortManifest(value) {
+  if (Array.isArray(value)) return value.map(sortManifest);
+  if (value && typeof value === 'object') return Object.fromEntries(
+    Object.keys(value).sort().map(key => [key, sortManifest(value[key])])
+  );
+  return value;
+}
+const MANIFEST_FINGERPRINT = createHash('sha256')
+  .update(JSON.stringify(sortManifest(MANIFEST)), 'utf8').digest('hex');
 const ALLOWED_ROW_KEYS = [
   'artifact_advanced_after_freeze', 'bundle_id', 'checkpoint',
   'evidence_first_observed_at', 'evidence_freshness_status',
@@ -69,14 +84,15 @@ function frozenState(overrides = {}) {
     side: 'over',
     model_k_line: 5.5,
     bundle_id: 'pregame_alternative_pick_methodology_v1',
-    selector_id: 'no_drag_distinct_family_consensus_core_v1',
+    selector_id: MANIFEST.selector_ids.consensus_core,
+    selector_fingerprint: MANIFEST_FINGERPRINT,
     checkpoint: 'frozen_pregame',
     official_odds: -115,
     official_book: 'fanduel',
     official_verdict: 'FIRE 1u',
     lane: 'consensus_core',
     selection_status: 'selected',
-    family_states: { base: { state: 'agree' } },
+    family_states: { base: { state: 'agree', reason_codes: ['base_ok'] } },
     family_count: 1,
     reason_codes: ['selected'],
     source_artifact_generated_at: '2026-07-21T19:55:00Z',
@@ -91,7 +107,7 @@ function frozenState(overrides = {}) {
     frozen_at: '2026-07-21T20:00:00Z',
     lock_dedupe_key: '2026-07-21:test pitcher:over',
     lock_artifact_sha256: LOCK_SHA,
-    lock_source_artifact_path: 'dashboard/data/processed/today.json',
+    lock_source_artifact_path: LOCK_URL,
     locked_at: '2026-07-21T20:00:00Z',
     should_lock_at: '2026-07-21T20:00:00Z',
     minutes_until_start: 60,
@@ -198,6 +214,7 @@ test('alternative-picks uses canonical today first and returns only a fully link
     assert.equal(response.json.rows.length, 1);
     assert.deepEqual(Object.keys(response.json.rows[0]).sort(), ALLOWED_ROW_KEYS);
     assert.equal(response.json.rows[0].artifact_advanced_after_freeze, true);
+    assert.equal(JSON.stringify(response.json).includes(LOCK_URL), false);
     assert.equal(JSON.stringify(response.json).includes(SECRET), false);
     assert.equal(JSON.stringify(response.json).includes('never-expose'), false);
     assert.equal(fake.calls.length, 3);
@@ -214,6 +231,68 @@ test('alternative-picks uses canonical today first and returns only a fully link
     assert.match(fake.calls[2].href, /operational_pick_locks/);
     assert.match(fake.calls[2].href, /dedupe_key=in\./);
   } finally { fake.restore(); restoreEnv(); }
+});
+
+test('alternative-picks preserves the Task 2 logical-artifact and exact-fetch lock-path contract', async () => {
+  configure();
+  const frozen = frozenState();
+  const fake = installFetch({ stateRows: [frozen], lockRows: [matchingLock(frozen)] });
+  try {
+    const response = await responseJson(event());
+    assert.equal(frozen.source_artifact_path, 'dashboard/data/processed/today.json');
+    assert.equal(frozen.lock_source_artifact_path, LOCK_URL);
+    assert.equal(matchingLock(frozen).source_artifact_path, LOCK_URL);
+    assert.equal(response.json.rows.length, 1);
+    assert.equal(JSON.stringify(response.json).includes(LOCK_URL), false);
+  } finally { fake.restore(); restoreEnv(); }
+});
+
+test('alternative-picks rejects foreign selectors, bad fingerprints, untyped values, and unsafe display text', async () => {
+  const invalidRows = [
+    frozenState({ selector_id: 'foreign_selector_v1' }),
+    frozenState({ selector_fingerprint: 'e'.repeat(64) }),
+    frozenState({ selector_fingerprint: 'not-a-hash' }),
+    frozenState({ model_k_line: '5.5' }),
+    frozenState({ official_odds: null }),
+    frozenState({ official_book: 'https://private.example/book' }),
+    frozenState({ pitcher: 'https://private.example/secret' }),
+    frozenState({ team: 'ARI?token=secret' }),
+    frozenState({ reason_codes: ['https://private.example/raw'] }),
+    frozenState({ family_states: { 'https://private.example/family': { state: 'agree' } } }),
+  ];
+  for (const state of invalidRows) {
+    configure();
+    const fake = installFetch({ stateRows: [state], lockRows: [matchingLock(state)] });
+    try {
+      const response = await responseJson(event());
+      assert.deepEqual(response.json.rows, []);
+    } finally { fake.restore(); restoreEnv(); }
+  }
+});
+
+test('alternative-picks requires every declared provider posture and an approved publication source', async () => {
+  const artifacts = [
+    canonicalArtifact({ source: 'github_actions' }),
+    canonicalArtifact({ source: 'render_pipeline' }),
+    canonicalArtifact({ source: 'render_live_layer' }),
+    canonicalArtifact({ source: 'manual_backfill' }),
+  ];
+  for (const artifact of artifacts) {
+    configure();
+    const fake = installFetch({ artifact });
+    try { assert.equal((await responseJson(event())).json.status, 'ready'); }
+    finally { fake.restore(); restoreEnv(); }
+  }
+  for (const artifact of [
+    canonicalArtifact({ source: 'unknown_source' }),
+    canonicalArtifact({ payload_pitchers: [{ market_source_mode: 'therundown', odds_source: 'boltodds' }] }),
+    canonicalArtifact({ payload_pitchers: [{ market_source_mode: 'therundown', odds_source: 'propline' }] }),
+  ]) {
+    configure();
+    const fake = installFetch({ artifact });
+    try { assert.equal((await responseJson(event())).json.status, 'unavailable'); }
+    finally { fake.restore(); restoreEnv(); }
+  }
 });
 
 test('alternative-picks suppresses frozen rows for every lock-link mismatch', async () => {
