@@ -625,6 +625,82 @@ def test_alternative_pick_selection_mode_fails_closed_except_exact_record(monkey
     assert build_live_events_to_supabase._alternative_pick_selection_mode() == "record"
 
 
+def test_bundle_version_unset_or_blank_defaults_to_v1(monkeypatch):
+    monkeypatch.delenv("ALTERNATIVE_PICK_SELECTION_BUNDLE_VERSION", raising=False)
+    assert build_live_events_to_supabase._alternative_pick_selection_bundle_version() == "v1"
+    monkeypatch.setenv("ALTERNATIVE_PICK_SELECTION_BUNDLE_VERSION", "   ")
+    assert build_live_events_to_supabase._alternative_pick_selection_bundle_version() == "v1"
+
+
+def test_bundle_version_accepts_exact_v1_and_v2(monkeypatch):
+    for value, expected in (("v1", "v1"), (" V2 ", "v2")):
+        monkeypatch.setenv("ALTERNATIVE_PICK_SELECTION_BUNDLE_VERSION", value)
+        assert build_live_events_to_supabase._alternative_pick_selection_bundle_version() == expected
+
+
+def test_explicit_invalid_bundle_version_skips_sidecar_cycle(monkeypatch):
+    monkeypatch.setenv("ALTERNATIVE_PICK_SELECTION_MODE", "record")
+    monkeypatch.setenv("ALTERNATIVE_PICK_SELECTION_BUNDLE_VERSION", "v3")
+    result = build_live_events_to_supabase._dispatch_alternative_pick_selection_state(
+        writer=Mock(), slate_date="2026-07-22", payload={}, snapshot_rows=[],
+        provider_heartbeats=[], market_pick_evidence_rows=[], live_market_display_rows=[],
+        observed_at=build_live_events_to_supabase.datetime.fromisoformat("2026-07-22T18:00:00+00:00"),
+        artifact_source="test", source_payload_sha256="a" * 64,
+        source_artifact_byte_sha256="b" * 64,
+        operational_pick_locks={}, market_line_build={}, shadow_pipeline_timing={}, ready_to_bet_write={},
+    )
+    assert result == {"skipped": True, "reason": "invalid_bundle_version", "rows": 0}
+
+
+def test_v2_capable_deploy_with_default_gate_writes_zero_v2_rows(monkeypatch):
+    monkeypatch.setenv("ALTERNATIVE_PICK_SELECTION_MODE", "record")
+    monkeypatch.delenv("ALTERNATIVE_PICK_SELECTION_BUNDLE_VERSION", raising=False)
+    with patch.object(build_live_events_to_supabase, "_write_alternative_pick_selection_state", return_value={"version": "v1"}) as v1, patch.object(build_live_events_to_supabase, "record_alternative_pick_selection_v2") as v2:
+        result = build_live_events_to_supabase._dispatch_alternative_pick_selection_state(
+            writer=Mock(), slate_date="2026-07-22", payload={}, snapshot_rows=[], provider_heartbeats=[],
+            market_pick_evidence_rows=[], live_market_display_rows=[], observed_at=build_live_events_to_supabase.datetime.now(build_live_events_to_supabase.timezone.utc),
+            artifact_source="test", source_payload_sha256="a" * 64, source_artifact_byte_sha256="b" * 64,
+            operational_pick_locks={}, market_line_build={}, shadow_pipeline_timing={}, ready_to_bet_write={},
+        )
+    assert result == {"version": "v1"}
+    v1.assert_called_once()
+    v2.assert_not_called()
+
+
+def test_v1_dispatch_retains_existing_arguments_and_output(monkeypatch):
+    monkeypatch.setenv("ALTERNATIVE_PICK_SELECTION_MODE", "record")
+    monkeypatch.setenv("ALTERNATIVE_PICK_SELECTION_BUNDLE_VERSION", "v1")
+    expected = {"skipped": False, "rows": 1}
+    with patch.object(build_live_events_to_supabase, "_write_alternative_pick_selection_state", return_value=expected) as v1:
+        result = build_live_events_to_supabase._dispatch_alternative_pick_selection_state(
+            writer=Mock(), slate_date="2026-07-22", payload={}, snapshot_rows=[{"id": 1}], provider_heartbeats=[{"provider": "therundown"}],
+            market_pick_evidence_rows=[{"broad": True}], live_market_display_rows=[{"persisted": True}], observed_at=build_live_events_to_supabase.datetime.now(build_live_events_to_supabase.timezone.utc),
+            artifact_source="test", source_payload_sha256="a" * 64, source_artifact_byte_sha256="b" * 64,
+            operational_pick_locks={"locks": 1}, market_line_build={"market": 1}, shadow_pipeline_timing={"timing": 1}, ready_to_bet_write={"ready": 1},
+        )
+    assert result is expected
+    assert v1.call_args.kwargs["market_pick_evidence_rows"] == [{"broad": True}]
+    assert v1.call_args.kwargs["live_market_display_rows"] == [{"persisted": True}]
+
+
+def test_v2_writer_receives_existing_snapshots_and_heartbeats_without_new_provider_reads(monkeypatch):
+    monkeypatch.setenv("ALTERNATIVE_PICK_SELECTION_MODE", "record")
+    monkeypatch.setenv("ALTERNATIVE_PICK_SELECTION_BUNDLE_VERSION", "v2")
+    snapshots, heartbeats = [{"id": "snap"}], [{"provider": "therundown"}]
+    with patch.object(build_live_events_to_supabase, "record_alternative_pick_selection_v2", return_value={"version": "v2"}) as v2:
+        result = build_live_events_to_supabase._dispatch_alternative_pick_selection_state(
+            writer=Mock(), slate_date="2026-07-22", payload={}, snapshot_rows=snapshots, provider_heartbeats=heartbeats,
+            market_pick_evidence_rows=[{"broad": True}], live_market_display_rows=[{"persisted": True}], observed_at=build_live_events_to_supabase.datetime.now(build_live_events_to_supabase.timezone.utc),
+            artifact_source="test", source_payload_sha256="a" * 64, source_artifact_byte_sha256="b" * 64,
+            operational_pick_locks={}, market_line_build={}, shadow_pipeline_timing={}, ready_to_bet_write={},
+        )
+    assert result == {"version": "v2"}
+    assert v2.call_args.kwargs["snapshot_rows"] is snapshots
+    assert v2.call_args.kwargs["provider_heartbeats"] is heartbeats
+    assert "market_pick_evidence_rows" not in v2.call_args.kwargs
+    assert "live_market_display_rows" not in v2.call_args.kwargs
+
+
 def test_alternative_sidecar_off_performs_no_state_reads_or_writes(monkeypatch):
     monkeypatch.delenv("ALTERNATIVE_PICK_SELECTION_MODE", raising=False)
     writer = Mock()
