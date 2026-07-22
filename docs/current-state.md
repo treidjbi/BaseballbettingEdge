@@ -65,11 +65,11 @@ For any new work in this repo:
    - `docs/research/no-drag-composite-prospective-canary-packet.md`
      for the lead operator packet for the no-drag prospective canary
    - `docs/superpowers/specs/2026-07-21-pregame-alternative-pick-methodology-design.md`
-     for the approved product direction and written-review contract for the
-     pregame Alt Picks comparison surface; implementation is complete and
-     locally verified on `codex/pregame-alt-picks`, while production activation,
-     migration apply, endpoint/UI deployment, and prospective evidence remain
-     pending and closed
+     for the approved product direction, production rollout contract, and
+     first-normal-slate integrity gate for the pregame Alt Picks comparison
+     surface; code, migration, isolated record mode, endpoint, and UI are live,
+     while prospective row/freeze evidence and every official promotion gate
+     remain pending and closed
    - `docs/research/strict-runtime-core-selective-lean-canary-packet.md`
      for comparison/control historical context on
      `strict_runtime_core_plus_selective_lean`, not the lead candidate
@@ -290,22 +290,24 @@ each lane.
 
 The controlling written design is
 `docs/superpowers/specs/2026-07-21-pregame-alternative-pick-methodology-design.md`.
-Tyler approved the product direction: compare official same-day picks with a
-pregame alternative methodology in the middle Alt Picks tab. Implementation is
-complete and locally verified on `codex/pregame-alt-picks`, but no production
-gate has been opened.
+Tyler approved the product direction and the staged production rollout: compare
+official same-day picks with a pregame alternative methodology in the middle
+Alt Picks tab without changing official behavior.
 
-Tasks 1-6 are whole-branch independently review-clean at `4206789e`. The final
-review locked explicit literal-null no-lane identity, honest pending copy,
-exact fresh same-cycle boolean off-market evidence, and exclusion of PASS or
-otherwise ineligible rows from persistence; all production gates remain closed.
+The independently reviewed feature is merged to `main` at `3a7fe7c5`. The
+final contract locks explicit literal-null no-lane identity, honest pending
+copy, exact fresh same-cycle boolean off-market evidence, and exclusion of PASS
+or otherwise ineligible rows from persistence. Production recording is now
+open only for isolated prospective comparison state; every official model,
+verdict, staking, notification, lock, provider, and source-of-truth promotion
+gate remains closed.
 
 | Lane | Current stage | Next decision |
 | --- | --- | --- |
-| Pipeline / infrastructure | The post-T30 sidecar is implemented at the end of the existing live-layer cycle, after notifications, live state, operational locks, timing, and shadow-market work. `ALTERNATIVE_PICK_SELECTION_MODE` defaults to `off`; record mode is not activated. Its five-second no-retry boundary fails only the sidecar cycle and does not alter official artifacts, notifications, locks, providers, or source truth. No Render deployment has occurred. | Keep migration apply, an off-mode Render deploy, and separate Tyler-approved `record` activation closed. Verify live rows only after those gates, never from local fixtures. |
-| Model | Versioned disjoint Consensus Core and Re-entry Expansion selectors are implemented with frozen fingerprint `f8f7ccf652b8eda4860d07798bc4673920b0b9d727552bc7e2e6547d478b4579`. The exploratory official-close `148-84`, `+38.585u`, `+16.63%` on `232` remains research only, can include post-T30 information, and is not a prospective sample or promotion signal. At a valid exact lock, even `pending` evidence freezes immutably rather than being inferred later. | Do not collect or claim a prospective record until Tyler separately authorizes record mode. Keep official model, staking, thresholds, notifications, locks, providers, and source truth closed. |
-| UI | The isolated same-day Alt Picks adapter/tab, strict sanitized Netlify endpoint contract, read-only sheet, legacy `?tab=history` mapping, and one-cent display regression (`38.585 -> +38.59u` without math change) are code-complete and locally QAed. The UI is comparison-only; Picks, Results, and accepted-bet behavior remain unchanged. Netlify is undeployed. | Deploy endpoint/UI only after its separate approval, then smoke-test selected/pending/empty/waiting/unavailable and desktop/mobile rendering against real current-slate state. |
-| Tracking / data collection / history | Additive migration `supabase/migrations/20260721222627_alternative_pick_selection_state.sql` exists but is unapplied. When applied, it bounds state to provisional plus immutable frozen rows per eligible candidate/day, keeps canonical payload and exact-byte lock hash domains separate, and denies direct browser access. No state rows, retention change, or prospective production sample exists. | Apply the migration only with Tyler approval, verify RLS/uniqueness and bounded rows, then separately activate record mode and observe real pregame captures. |
+| Pipeline / infrastructure | The post-T30 sidecar is live at the end of the existing live-layer cycle, after notifications, live state, operational locks, timing, and shadow-market work. The code default remains `off`; Tyler-approved production `record` mode is isolated to `bbe-live-layer`. Off-mode deploy `dep-d9g2hj7lk1mc739qcfr0` and record deploy `dep-d9g2nsmrnols739u3h8g` both ran commit `3a7fe7c5`. The first record-mode tick at `2026-07-22T02:40:39Z` completed successfully with zero eligible future-game candidates, zero alternative rows, and zero notification events. | On the next normal slate, verify provisional rows, exact T-30 lock-linked freezes, five-second/no-retry isolation, bounded row volume, and unchanged notification/lock timing. Roll back only this sidecar with `ALTERNATIVE_PICK_SELECTION_MODE=off` plus a live-layer redeploy if any boundary fails. |
+| Model | Versioned disjoint Consensus Core and Re-entry Expansion selectors are live for prospective comparison with frozen fingerprint `f8f7ccf652b8eda4860d07798bc4673920b0b9d727552bc7e2e6547d478b4579`. The exploratory official-close `148-84`, `+38.585u`, `+16.63%` on `232` remains research only, can include post-T30 information, and is not a prospective sample or promotion signal. At a valid exact lock, even `pending` evidence freezes immutably rather than being inferred later. | Begin the prospective counter only from valid production frozen rows on the next normal slate. Keep official model, staking, thresholds, notifications, locks, providers, and source truth closed. |
+| UI | Netlify production deploy `6a602de17d040836c1641df0` serves the isolated same-day Alt Picks tab and sanitized endpoint. Production endpoint/root/v2 returned `200`; desktop and 390-pixel waiting/empty rendering passed with no horizontal overflow. The one-cent display regression formats `38.585 -> +38.59u` without changing math. Picks, Results, and accepted-bet behavior remain unchanged. | Verify selected, pending, provisional, and frozen cards against the first normal-slate production rows; retain prior deploy `6a5e5bbef33863243b980d83` as the UI rollback target. |
+| Tracking / data collection / history | Migration `20260721222627_alternative_pick_selection_state.sql` is applied. Direct verification found RLS enabled, no anonymous/authenticated table read, service-role-only read/write privileges, the unique bounded-row constraint, both frozen-row validation/immutability triggers, zero duplicate keys, and zero initial/late-slate rows. No retention behavior changed. | Validate the first normal-slate provisional/frozen rows and later-artifact visibility. Do not claim a prospective sample until valid frozen rows exist, and do not delete or compact this evidence without separate approval. |
 
 Decision-integrity rollout, 2026-07-20: `main` commit `b7906a44` is live on
 Netlify deploy `6a5e5bbef33863243b980d83`; production root and `/v2.html`

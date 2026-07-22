@@ -1,7 +1,7 @@
 # Pregame Alternative Pick Methodology Design
 
 **Date:** 2026-07-21
-**Status:** Tasks 1-6 locally implemented and independently review-clean at `4206789e` on `codex/pregame-alt-picks`; default-off and not activated or deployed
+**Status:** Tasks 1-6 review-clean and merged at `3a7fe7c5`; isolated record mode and Alt Picks UI deployed, first-normal-slate row/freeze proof pending
 **Bundle ID:** `pregame_alternative_pick_methodology_v1`
 
 ## Executive decision
@@ -22,19 +22,22 @@ staking, notifications, locks, provider order, and accepted-bet flow remain
 unchanged. Alt Picks is a prospective comparison surface, not a production
 model promotion.
 
-## Implementation handoff (2026-07-21)
+## Production rollout handoff (2026-07-21 Phoenix)
 
-Tasks 1-6 are locally implemented, and the whole branch is independently
-review-clean at `4206789e` on `codex/pregame-alt-picks`. The frozen selector
-manifest fingerprint is
+Tasks 1-6 are independently review-clean and merged to `main` at `3a7fe7c5`.
+The frozen selector manifest fingerprint is
 `f8f7ccf652b8eda4860d07798bc4673920b0b9d727552bc7e2e6547d478b4579`.
 Migration `supabase/migrations/20260721222627_alternative_pick_selection_state.sql`
-exists locally but is unapplied. `ALTERNATIVE_PICK_SELECTION_MODE` defaults to
-`off`; record-mode activation is a separate Tyler gate. The Netlify endpoint
-and Alt Picks UI are code-complete but undeployed.
+is applied with RLS, browser-role denial, uniqueness, and both frozen-row
+triggers directly verified. The code default remains `off`; Tyler-approved
+`record` mode is live only on `bbe-live-layer` deploy
+`dep-d9g2nsmrnols739u3h8g`. Netlify deploy
+`6a602de17d040836c1641df0` serves the sanitized endpoint and Alt Picks UI.
 
-No prospective production rows or samples exist or are claimed. Nothing in
-this branch changes official picks, model math, thresholds, staking,
+The first record-mode tick at `2026-07-22T02:40:39Z` correctly produced no rows
+because no unstarted games remained. No prospective production sample is
+claimed until a normal slate produces valid exact-lock frozen rows. Nothing in
+this rollout changes official picks, model math, thresholds, staking,
 notifications, operational locks, provider order, source-of-truth rules, or
 accepted-bet behavior.
 
@@ -377,9 +380,9 @@ two rows per eligible pick per day. Row Level Security is enabled, direct
 anonymous browser reads are denied, and no retention deletion is approved by
 this design.
 
-The implemented additive migration is
-`20260721222627_alternative_pick_selection_state.sql`; it has not been applied
-to Supabase. It deliberately keeps two hash domains: canonical-payload
+The additive migration is
+`20260721222627_alternative_pick_selection_state.sql`; it is applied to
+Supabase with its RLS and trigger contract verified. It deliberately keeps two hash domains: canonical-payload
 `source_artifact_sha256` proves a provisional row matches the published
 artifact, while exact fetched-byte `lock_artifact_sha256` / lock source hash
 proves the frozen operational-lock link. Neither domain is interchangeable.
@@ -398,8 +401,8 @@ The browser never receives service-role credentials, internal error payloads,
 or unrelated historical state. The existing official artifact adapter and
 live-market endpoint remain unchanged.
 
-The implemented endpoint is undeployed. It reads current-Phoenix-slate state
-only with server-side service-role credentials, validates the exact `today`
+The deployed endpoint reads current-Phoenix-slate state only with server-side
+service-role credentials, validates the exact `today`
 artifact key and approved provider/publication posture, and returns a strict
 sanitized allow-list. Invalid, stale, malformed, foreign-selector, or
 unlinked rows are suppressed; missing configuration or read failures return a
@@ -444,7 +447,7 @@ sheet pattern.
 
 Historical PnL and prior slates are intentionally absent from this tab.
 
-The code-complete UI is also undeployed. It is comparison-only: it does not
+The deployed UI is comparison-only: it does not
 merge alternative rows into official pitcher or accepted-bet state and exposes
 no wager, Log Bet, units/stake, PnL/history, or notification controls. The
 legacy `?tab=history` route canonically redirects to `?tab=alt`; Picks and
@@ -545,17 +548,20 @@ Each state-changing step remains separately approval-gated.
 2. [x] Prove the local test suite, official-close parity anchors, prospective
    checkpoint fixtures, and frozen manifest fingerprint. This is local proof,
    not a prospective production sample.
-3. [ ] Apply the additive RLS migration only after Tyler approves that production
+3. [x] Apply the additive RLS migration only after Tyler approves that production
    database step; verify policies and uniqueness directly.
-4. [ ] Deploy the live-layer code with the mode still `off`; verify existing
+4. [x] Deploy the live-layer code with the mode still `off`; verify existing
    notifications, locks, and live-market UI are unchanged.
-5. [ ] After separate Tyler approval, set the mode to `record` and redeploy the
+5. [x] After separate Tyler approval, set the mode to `record` and redeploy the
    existing live layer.
 6. [ ] Verify current-artifact provisional rows, bounded row volume, and no impact
-   on existing live-layer writes.
+   on existing live-layer writes. The late-slate zero-candidate/no-write cycle
+   passed; real provisional-row proof waits for the next normal slate.
 7. [ ] Verify immutable on-time/late pregame frozen rows on a normal slate and
    confirm later refreshes do not hide valid lock-linked rows.
-8. [ ] Deploy the Netlify endpoint/UI and smoke-test desktop plus 390-pixel mobile.
+8. [x] Deploy the Netlify endpoint/UI and smoke-test desktop plus 390-pixel mobile.
+   The empty/waiting production state passed; selected/pending/frozen row QA
+   remains part of Steps 6-7 on the next normal slate.
 
 Rollback is `ALTERNATIVE_PICK_SELECTION_MODE=off` plus the prior Netlify
 deploy. No table deletion, history rewrite, or retention action is required.

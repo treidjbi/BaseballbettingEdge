@@ -8,13 +8,16 @@
 
 **Tech Stack:** Python 3.11, pytest, Postgres/Supabase migrations and PostgREST, Netlify Functions on Node, vanilla browser JavaScript, React 18 UMD, Node's built-in test runner, and the existing Babel JSX build.
 
-**Implementation status (2026-07-21):** Tasks 1-6 are locally implemented and
-the whole branch is independently review-clean at `4206789e` on
-`codex/pregame-alt-picks`. The frozen manifest fingerprint is
-`f8f7ccf652b8eda4860d07798bc4673920b0b9d727552bc7e2e6547d478b4579`.
-The additive migration is present but unapplied; the live-layer mode defaults
-to `off`; record activation, off-mode deployment, and Netlify deployment are
-separate closed gates. No prospective production rows/sample are claimed.
+**Production rollout status (2026-07-21 Phoenix):** Tasks 1-6 are independently
+review-clean and merged to `main` at `3a7fe7c5`. The frozen manifest fingerprint
+is `f8f7ccf652b8eda4860d07798bc4673920b0b9d727552bc7e2e6547d478b4579`.
+Migration `20260721222627` is applied and directly verified. The code default
+remains `off`; Tyler-approved `record` mode is live only on `bbe-live-layer`
+deploy `dep-d9g2nsmrnols739u3h8g`. Netlify deploy
+`6a602de17d040836c1641df0` serves the endpoint/UI. The first late-slate
+record-mode tick was a successful zero-candidate/no-write cycle; no prospective
+production rows or sample are claimed until the next normal slate produces
+valid lock-linked freezes.
 
 The final independent review found and fixed five contract gaps: valid
 literal-null no-lane supporting rows had been suppressed; missing
@@ -34,7 +37,7 @@ clean; an independent Babel compilation from JSX produced a byte-identical
 ## Global Constraints
 
 - Keep official artifacts, picks, verdicts, model math, thresholds, staking, grading, notifications, operational locks, provider order, accepted bets, and dashboard source-of-truth unchanged.
-- Keep `ALTERNATIVE_PICK_SELECTION_MODE=off` as the code default. This implementation does not apply the migration, change Render variables, activate record mode, or deploy Netlify/Render.
+- Keep `ALTERNATIVE_PICK_SELECTION_MODE=off` as the code default. The approved production rollout sets only this key to `record` on `bbe-live-layer`; rollback is `off` plus a redeploy. Do not copy activation to another service.
 - Use only canonical TheRundown official state plus approved PropLine fallback/live-movement evidence. Exclude BoltOdds and unknown providers from every prospective vote.
 - Never read `result`, win/loss, PnL, closing line/price, final CLV, or postgame opportunity in the runtime selector.
 - Missing, stale, mismatched, or immature inputs produce `pending`; they never become `disagree` or a qualifying vote by default.
@@ -198,7 +201,7 @@ git commit -m "feat: freeze alternative pick selector contract"
 
 ---
 
-## Task 2: Add bounded state shaping and the unapplied Supabase migration
+## Task 2: Add bounded state shaping and the initially-unapplied Supabase migration
 
 **Files:**
 
@@ -290,7 +293,9 @@ Do **not** run `supabase db push`, `migration up`, or any production SQL command
 python -m pytest tests/test_alternative_pick_selection_state.py tests/test_alternative_pick_selection_schema.py tests/test_operational_pick_locks_schema.py -q
 ```
 
-Expected: all tests pass and `git diff -- supabase/migrations` shows one additive, unapplied migration only.
+Expected at implementation time: all tests pass and `git diff -- supabase/migrations`
+shows one additive, unapplied migration only. The production rollout status at
+the top of this plan controls the migration's current state.
 
 - [x] **Step 6: Commit Task 2**
 
@@ -546,7 +551,7 @@ The ignored local execution ledger `.superpowers/sdd/progress.md` is updated aft
 
 - [x] **Step 1: Document the implemented-but-not-activated posture**
 
-Record the final manifest fingerprint, migration filename, tested failure boundary, UI behavior, and exact verification commands. Mark migration apply, Render mode activation, and deployments as still closed separate gates. Do not claim a prospective sample before record mode is separately approved and activated.
+Record the final manifest fingerprint, migration filename, tested failure boundary, UI behavior, and exact verification commands. At the implementation handoff, mark migration apply, Render mode activation, and deployments as still-closed separate gates; the production rollout status at the top now supersedes that historical checkpoint. Do not claim a prospective sample before valid production frozen rows exist.
 
 - [x] **Step 2: Run complete verification from a clean working tree candidate**
 
