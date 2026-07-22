@@ -16,6 +16,7 @@ TR_UNDER = "22222222-2222-4222-8222-222222222222"
 TR_LATER = "33333333-3333-4333-8333-333333333333"
 PL_OVER = "44444444-4444-4444-8444-444444444444"
 PL_LATER = "55555555-5555-4555-8555-555555555555"
+TR_REVERSAL = "77777777-7777-4777-8777-777777777777"
 
 
 def _candidate(**overrides):
@@ -676,6 +677,25 @@ def test_v2_uses_native_snapshot_age_freshness_without_broad_trackers():
     result = _build(rows=rows, bindings=bindings, windows=windows, observed_at=stale_observed, provider_heartbeats=[{"provider": "therundown", "slate_date": "2026-07-22", "observed_at": stale_observed, "last_message_at": stale_observed, "books_seen": ["fanduel"]}])
     assert result.market_evidence["freshness_status"] == "pending"
     assert "official_provider_immature" in result.market_evidence["aggregation_reason_codes"]
+
+
+def test_v2_proof_fragment_captures_direction_pivots_and_latest_ladder_tokens():
+    rows = _base_rows() + [
+        _snapshot(
+            TR_REVERSAL, "therundown", "tr-event", -110,
+            "2026-07-22T20:08:00+00:00",
+        )
+    ]
+    result = _build(rows=rows)
+    exact = result.proof_fragment["exact_preclose"]
+
+    assert exact["direction_change_pivot_tokens"] == [f"therundown:{TR_REVERSAL}"]
+    assert set(exact["latest_ladder_observation_tokens"]) == {
+        f"therundown:{TR_REVERSAL}", f"propline:{PL_LATER}",
+    }
+    assert exact["ladder_observation_token_sha256"] == __import__("hashlib").sha256(
+        "|".join(exact["ladder_observation_ids"]).encode("utf-8")
+    ).hexdigest()
 
 
 def test_v2_preclose_interface_has_no_market_pick_evidence_or_persisted_display_argument():

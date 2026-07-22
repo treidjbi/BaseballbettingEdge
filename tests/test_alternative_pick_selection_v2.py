@@ -2,6 +2,8 @@ from __future__ import annotations
 
 import copy
 
+import pytest
+
 from market_infra import alternative_pick_evaluation_proof_v2 as proof_v2
 from market_infra import alternative_pick_selection_state as v1_state
 from market_infra import alternative_pick_selection_v2 as selection_v2
@@ -36,17 +38,17 @@ def _evaluation():
     return {
         "selector_fingerprint": V2_FINGERPRINT,
         "family_states": {
-            "base": {"state": "agree", "reason_codes": ["base"]},
-            "anchor": {"state": "agree", "reason_codes": ["anchor"]},
-            "preclose": {"state": "pending", "reason_codes": ["preclose_pending"]},
-            "reentry": {"state": "disagree", "reason_codes": ["reentry_false"]},
+            "base": {"state": "agree", "reason_codes": ["strong_base_strict_runtime_core"]},
+            "anchor": {"state": "agree", "reason_codes": ["market_anchor_v2_confirmed"]},
+            "preclose": {"state": "agree", "reason_codes": ["preclose_v2_confirmed"]},
+            "reentry": {"state": "disagree", "reason_codes": ["reentry_predicate_false"]},
         },
         "no_drag": True,
         "lane": "consensus_core",
         "selection_status": "selected",
-        "family_count": 2,
+        "family_count": 3,
         "maximum_family_count": 3,
-        "decisive_families": ("base", "anchor"),
+        "decisive_families": ("base", "anchor", "preclose"),
         "reason_codes": ("consensus_core_selected",),
         "normalized_inputs": {
             "side": "over", "official_verdict": "FIRE 1u", "source_fire_verdict": "FIRE 1u",
@@ -78,7 +80,7 @@ def _exact_preclose():
     market = {
         "provider": "therundown", "participating_providers": ["therundown", "propline"],
         "candidate_became_current_at": "2026-07-22T19:55:00+00:00",
-        "observation_ids": tokens, "observations": observations,
+        "observation_ids": list(tokens), "observations": observations,
         "first_observed_at": times[0], "last_observed_at": times[-1],
         "freshness_status": "fresh", "book_count": 2,
         "books_seen": ["draftkings", "fanduel"], "toward_pick_count": 2,
@@ -93,7 +95,7 @@ def _exact_preclose():
             "therundown": "2026-07-22T19:55:00+00:00",
             "propline": "2026-07-22T19:56:00+00:00",
         },
-        "observation_ids": tokens, "observation_count": 3,
+        "observation_ids": list(tokens), "observation_count": 3,
         "first_observed_at": times[0], "last_observed_at": times[-1],
         "freshness_status": "fresh", "reason_codes": (),
         "bound_observations": observations,
@@ -114,7 +116,12 @@ def _exact_preclose():
             },
         },
         "provider_window_started_at": window["provider_window_started_at"],
-        "movement_observation_ids": tokens, "ladder_observation_ids": tokens,
+        "movement_observation_ids": list(tokens), "ladder_observation_ids": list(tokens),
+        "direction_change_pivot_tokens": [],
+        "latest_ladder_observation_tokens": [tokens[-1]],
+        "ladder_observation_token_sha256": __import__("hashlib").sha256(
+            "|".join(tokens).encode("utf-8")
+        ).hexdigest(),
         "provider_freshness": {
             "therundown": {"latest_snapshot_at": times[1], "freshness_status": "fresh"},
             "propline": {"latest_snapshot_at": times[2], "freshness_status": "fresh"},
@@ -160,6 +167,11 @@ def _pending_exact_preclose():
     fragment = copy.deepcopy(exact.proof_fragment)
     fragment["exact_preclose"]["movement_observation_ids"] = []
     fragment["exact_preclose"]["ladder_observation_ids"] = []
+    fragment["exact_preclose"]["direction_change_pivot_tokens"] = []
+    fragment["exact_preclose"]["latest_ladder_observation_tokens"] = []
+    fragment["exact_preclose"]["ladder_observation_token_sha256"] = __import__("hashlib").sha256(
+        b""
+    ).hexdigest()
     fragment["exact_preclose"]["provider_freshness"] = {}
     fragment["exact_preclose"]["ladder"] = None
     fragment["exact_preclose"]["reason_codes"] = ["official_provider_immature"]
@@ -223,7 +235,12 @@ def test_v2_provisional_row_uses_only_v2_ids_and_valid_proof():
 
 def test_v2_selected_row_can_retain_pending_nonessential_preclose():
     exact = _pending_exact_preclose()
-    row = _row(exact=exact, proof_build=_proof_build(exact=exact))
+    evaluation = _evaluation()
+    evaluation["family_states"]["preclose"] = {"state": "pending", "reason_codes": ["official_provider_immature"]}
+    evaluation["family_count"] = 2
+    evaluation["maximum_family_count"] = 3
+    evaluation["decisive_families"] = ("base", "anchor")
+    row = _row(evaluation=evaluation, exact=exact, proof_build=_proof_build(evaluation=evaluation, exact=exact))
 
     assert row["selection_status"] == "selected"
     assert row["lane"] == "consensus_core"
@@ -251,3 +268,30 @@ def test_v1_row_remains_valid_with_empty_evaluation_proof():
 
     assert valid is True
     assert reasons == ()
+
+
+@pytest.mark.parametrize(
+    ("field", "value"),
+    (
+        ("selector_id", None),
+        ("family_states", {}),
+        ("family_count", 0),
+        ("evidence_observation_ids", []),
+        ("evidence_observation_count", 0),
+        ("evidence_first_observed_at", "2026-07-22T19:59:00+00:00"),
+        ("evidence_last_observed_at", "2026-07-22T20:08:00+00:00"),
+        ("evidence_freshness_status", "pending"),
+        ("selection_status", "pending"),
+        ("lane", None),
+    ),
+)
+def test_v2_row_validation_binds_every_duplicated_persisted_field(field, value):
+    row = _row()
+    row[field] = value
+
+    valid, reasons = proof_v2.validate_evaluation_proof_v2(
+        proof=row["evaluation_proof"], row=row,
+    )
+
+    assert valid is False
+    assert any(reason.startswith("evaluation_proof_row_") for reason in reasons)

@@ -5,6 +5,8 @@ import hashlib
 import json
 from datetime import datetime, timedelta
 
+import pytest
+
 from market_infra import alternative_pick_evaluation_proof_v2 as proof_v2
 from market_infra.alternative_pick_preclose_v2 import ExactPrecloseResult
 from market_infra.alternative_pick_selection_state import candidate_record
@@ -45,16 +47,16 @@ def _evaluation(**overrides):
         "selector_fingerprint": V2_FINGERPRINT,
         "family_states": {
             "base": {"state": "agree", "reason_codes": ["strong_base_strict_runtime_core"]},
-            "anchor": {"state": "agree", "reason_codes": ["anchor_strict"]},
-            "preclose": {"state": "pending", "reason_codes": ["preclose_evidence_stale"]},
+            "anchor": {"state": "agree", "reason_codes": ["market_anchor_v2_confirmed"]},
+            "preclose": {"state": "agree", "reason_codes": ["preclose_v2_confirmed"]},
             "reentry": {"state": "disagree", "reason_codes": ["reentry_predicate_false"]},
         },
         "no_drag": True,
         "lane": "consensus_core",
         "selection_status": "selected",
-        "family_count": 2,
+        "family_count": 3,
         "maximum_family_count": 3,
-        "decisive_families": ("base", "anchor"),
+        "decisive_families": ("base", "anchor", "preclose"),
         "reason_codes": ("consensus_core_selected",),
         "normalized_inputs": {
             "side": "over",
@@ -98,7 +100,7 @@ def _exact_preclose(*, token_count=6, proof_overrides=None, evidence_overrides=N
         "provider": "therundown",
         "participating_providers": ["therundown", "propline"],
         "candidate_became_current_at": "2026-07-22T19:55:00+00:00",
-        "observation_ids": tokens,
+        "observation_ids": list(tokens),
         "observations": observations,
         "first_observed_at": observations[0]["observed_at"],
         "last_observed_at": observations[-1]["observed_at"],
@@ -122,7 +124,7 @@ def _exact_preclose(*, token_count=6, proof_overrides=None, evidence_overrides=N
             "therundown": "2026-07-22T19:55:00+00:00",
             "propline": "2026-07-22T19:56:00+00:00",
         },
-        "observation_ids": tokens,
+        "observation_ids": list(tokens),
         "observation_count": token_count,
         "first_observed_at": observations[0]["observed_at"],
         "last_observed_at": observations[-1]["observed_at"],
@@ -153,8 +155,13 @@ def _exact_preclose(*, token_count=6, proof_overrides=None, evidence_overrides=N
             },
         },
         "provider_window_started_at": evidence_window["provider_window_started_at"],
-        "movement_observation_ids": tokens,
-        "ladder_observation_ids": tokens,
+        "movement_observation_ids": list(tokens),
+        "ladder_observation_ids": list(tokens),
+        "direction_change_pivot_tokens": [],
+        "latest_ladder_observation_tokens": [tokens[-1]],
+        "ladder_observation_token_sha256": hashlib.sha256(
+            "|".join(tokens).encode("utf-8")
+        ).hexdigest(),
         "provider_freshness": {
             "therundown": {"latest_snapshot_at": observations[-1]["observed_at"], "freshness_status": "fresh"},
             "propline": {"latest_snapshot_at": observations[-1]["observed_at"], "freshness_status": "fresh"},
@@ -230,6 +237,8 @@ def test_v2_proof_contains_recomputable_inputs_bindings_freshness_and_logic():
     assert proof["decision"]["no_drag"] == "true"
     assert proof["decision"]["consensus_core"] == "true"
     assert proof["decision"]["reentry_expansion"] == "false"
+    assert proof["decision"]["family_count"] == 3
+    assert proof["decision"]["maximum_family_count"] == 3
     assert proof["decision"]["selected_lane"] == "consensus_core"
     assert proof["decision"]["preclose_required_for_selected_lane"] is False
     assert proof_v2.validate_evaluation_proof_v2(proof=proof) == (True, ())
@@ -251,6 +260,30 @@ def test_v2_proof_uses_bounded_decisive_tokens_and_full_token_digest():
     assert full_tokens[30] not in preclose["decisive_observation_tokens"]
 
 
+def test_v2_decisive_tokens_include_real_pivots_latest_ladder_and_reject_retired_prefixes():
+    exact = _exact_preclose()
+    exact.proof_fragment["exact_preclose"]["direction_change_pivot_tokens"] = [
+        exact.market_evidence["observation_ids"][2]
+    ]
+    exact.proof_fragment["exact_preclose"]["ladder_observation_ids"].append("propline:ladder-latest")
+    exact.proof_fragment["exact_preclose"]["latest_ladder_observation_tokens"] = ["propline:ladder-latest"]
+    exact.proof_fragment["exact_preclose"]["ladder_observation_token_sha256"] = hashlib.sha256(
+        "|".join(exact.proof_fragment["exact_preclose"]["ladder_observation_ids"]).encode("utf-8")
+    ).hexdigest()
+    built = _build(exact_preclose=exact)
+
+    assert built.selection_safe is True
+    assert exact.market_evidence["observation_ids"][2] in built.proof["preclose"]["decisive_observation_tokens"]
+    assert "propline:ladder-latest" in built.proof["preclose"]["decisive_observation_tokens"]
+    assert built.proof["preclose"]["ladder_observation_token_sha256"] == exact.proof_fragment["exact_preclose"]["ladder_observation_token_sha256"]
+
+    retired = copy.deepcopy(exact)
+    retired.proof_fragment["exact_preclose"]["direction_change_pivot_tokens"] = ["boltodds:retired"]
+    rejected = _build(exact_preclose=retired)
+    assert rejected.selection_safe is False
+    assert rejected.reason_codes == ("evaluation_proof_invalid",)
+
+
 def test_v2_proof_is_under_the_application_working_ceiling():
     built = _build(exact_preclose=_exact_preclose(token_count=500))
     encoded = json.dumps(
@@ -263,12 +296,17 @@ def test_v2_proof_is_under_the_application_working_ceiling():
 
 
 def test_v2_oversized_or_malformed_proof_forces_a_valid_pending_diagnostic():
-    oversized_evaluation = _evaluation()
-    oversized_evaluation["normalized_inputs"] = {
-        **oversized_evaluation["normalized_inputs"],
-        "anchor_labels": ["x" * proof_v2.MAX_PROOF_APPLICATION_BYTES],
-    }
-    oversized = _build(evaluation=oversized_evaluation)
+    oversized_exact = _exact_preclose()
+    for provider, binding in oversized_exact.proof_fragment["exact_preclose"]["bindings_by_provider"].items():
+        binding["current_line_ids"] = [
+            f"{index:02d}" + provider[0] * (proof_v2.MAX_TOKEN_BYTES - 2)
+            for index in range(32)
+        ]
+        binding["seed_snapshot_ids"] = [
+            f"{index:02d}" + provider[-1] * (proof_v2.MAX_TOKEN_BYTES - 2)
+            for index in range(32)
+        ]
+    oversized = _build(exact_preclose=oversized_exact)
     malformed_exact = _exact_preclose(proof_overrides={"bindings_by_provider": ["not", "an", "object"]})
     malformed = _build(exact_preclose=malformed_exact)
 
@@ -314,3 +352,92 @@ def test_v2_proof_rejects_bundle_fingerprint_candidate_or_artifact_mismatch():
         valid, reasons = proof_v2.validate_evaluation_proof_v2(proof=changed, row=row)
         assert valid is False, label
         assert reasons, label
+
+
+@pytest.mark.parametrize(
+    ("candidate_change", "proof_change"),
+    (
+        ({"line_source_provider": None}, None),
+        ({"line_source_provider": "boltodds"}, None),
+        ({"line_source_provider": "propline"}, None),
+        (None, {"source_artifact_path": "dashboard/data/processed/other.json"}),
+        (None, {"source_artifact_byte_sha256": "f" * 64}),
+    ),
+)
+def test_v2_builder_requires_exact_official_provider_and_artifact_binding(candidate_change, proof_change):
+    candidate = _candidate()
+    if candidate_change:
+        candidate.update(candidate_change)
+    exact = _exact_preclose()
+    if proof_change:
+        exact.proof_fragment["exact_preclose"].update(proof_change)
+
+    built = _build(candidate=candidate, exact_preclose=exact)
+
+    assert built.selection_safe is False
+    assert built.reason_codes == ("evaluation_proof_invalid",)
+    assert proof_v2.validate_evaluation_proof_v2(proof=built.proof) == (True, ())
+
+
+@pytest.mark.parametrize(
+    "mutate",
+    (
+        lambda proof: proof["normalized_inputs"].update(adjusted_ev=0.9),
+        lambda proof: proof["preclose"].update(score=proof["preclose"]["score"] + 1),
+        lambda proof: proof["preclose"].update(label="weak_preclose_clv_proxy"),
+        lambda proof: proof["decision"]["family_states"]["base"].update(state="disagree"),
+        lambda proof: proof["decision"].update(support="false"),
+        lambda proof: proof["decision"].update(drag_core="true"),
+        lambda proof: proof["decision"].update(no_drag="false"),
+        lambda proof: proof["decision"].update(consensus_core="false"),
+        lambda proof: proof["decision"].update(reentry_expansion="true"),
+        lambda proof: proof["decision"].update(family_count=2),
+        lambda proof: proof["decision"].update(maximum_family_count=4),
+        lambda proof: proof["decision"].update(decisive_families=["base"]),
+        lambda proof: proof["decision"].update(preclose_required_for_selected_lane=True),
+    ),
+)
+def test_v2_validator_recomputes_family_preclose_and_lane_semantics(mutate):
+    proof = copy.deepcopy(_build().proof)
+    mutate(proof)
+
+    valid, reasons = proof_v2.validate_evaluation_proof_v2(proof=proof)
+
+    assert valid is False
+    assert "evaluation_proof_semantics_mismatch" in reasons
+
+
+def test_v2_worst_case_valid_proof_fits_postgres_jsonb_text_ceiling():
+    evaluation = _evaluation()
+    reason = "r" * proof_v2.MAX_REASON_BYTES
+    evaluation["reason_codes"] = tuple([reason] * proof_v2.MAX_REASON_COUNT)
+    evaluation["normalized_inputs"]["anchor_labels"] = [
+        "market_anchor_strict",
+        *[
+            f"{index:02d}" + "a" * (proof_v2.MAX_LABEL_BYTES - 2)
+            for index in range(proof_v2.MAX_LABEL_COUNT - 1)
+        ],
+    ]
+    built = _build(evaluation=evaluation, exact_preclose=_exact_preclose(token_count=500))
+
+    assert built.selection_safe is True
+    assert proof_v2.postgres_jsonb_text_size(built.proof) <= proof_v2.MAX_PROOF_DB_BYTES
+    assert proof_v2.validate_evaluation_proof_v2(proof=built.proof) == (True, ())
+
+
+def test_v2_diagnostic_sanitizes_oversized_identity_fields_and_revalidates():
+    candidate = _candidate()
+    candidate.update({
+        "candidate_identity": "x" * 100_000,
+        "normalized_pitcher": "y" * 100_000,
+        "line_source_provider": "boltodds",
+    })
+    artifact = _artifact()
+    artifact.update({"path": "z" * 100_000, "byte_sha256": "invalid"})
+
+    built = _build(candidate=candidate, artifact=artifact)
+
+    assert built.selection_safe is False
+    assert built.reason_codes == ("evaluation_proof_invalid",)
+    assert proof_v2.postgres_jsonb_text_size(built.proof) <= proof_v2.MAX_PROOF_DB_BYTES
+    assert proof_v2.validate_evaluation_proof_v2(proof=built.proof) == (True, ())

@@ -18,6 +18,13 @@ from market_infra.published_artifacts import canonical_payload_sha256
 MAX_PROOF_DB_BYTES = 32_768
 MAX_PROOF_APPLICATION_BYTES = 30_720
 MAX_DECISIVE_TOKENS = 32
+MAX_SOURCE_TOKENS = 10_000
+MAX_REASON_COUNT = 16
+MAX_REASON_BYTES = 128
+MAX_LABEL_COUNT = 16
+MAX_LABEL_BYTES = 128
+MAX_TEXT_BYTES = 256
+MAX_TOKEN_BYTES = 384
 
 V2_SCHEMA_VERSION = "v2"
 APPROVED_ARTIFACT_PATH = "dashboard/data/processed/today.json"
@@ -95,6 +102,27 @@ def _encoded_size(proof: Mapping[str, Any]) -> int:
     ).encode("utf-8"))
 
 
+def postgres_jsonb_text_size(proof: Mapping[str, Any]) -> int:
+    """Conservative byte count for PostgreSQL ``jsonb::text`` serialization."""
+    return len(json.dumps(
+        proof, sort_keys=True, separators=(", ", ": "), ensure_ascii=False,
+        allow_nan=False,
+    ).encode("utf-8"))
+
+
+def _bounded_text(value: Any, *, maximum: int = MAX_TEXT_BYTES) -> str:
+    text = _text(value)
+    if not text or len(text.encode("utf-8")) > maximum:
+        raise ValueError("proof string is missing or unbounded")
+    return text
+
+
+def _bounded_reasons(value: Any) -> tuple[str, ...]:
+    if not isinstance(value, (list, tuple)) or len(value) > MAX_REASON_COUNT:
+        raise ValueError("proof reasons are not bounded")
+    return tuple(_bounded_text(reason, maximum=MAX_REASON_BYTES) for reason in value)
+
+
 def _state(value: Any) -> str:
     state = _enum(_value(value, "state", "pending"))
     return state if state in {"agree", "disagree", "pending"} else "pending"
@@ -108,11 +136,9 @@ def _family_objects(evaluation: Any) -> dict[str, selector_v2.FamilyVote]:
     for name in FAMILY_ORDER:
         value = raw.get(name)
         state = _state(value)
-        reasons = _value(value, "reason_codes", ())
-        if not isinstance(reasons, (list, tuple)):
-            raise ValueError("family reasons must be bounded arrays")
+        reasons = _bounded_reasons(_value(value, "reason_codes", ()))
         families[name] = selector_v2.FamilyVote(
-            state, tuple(_text(reason) for reason in reasons if _text(reason)),
+            state, reasons,
         )
     return families
 
@@ -125,11 +151,13 @@ def _family_tri(vote: selector_v2.FamilyVote) -> bool | None:
     return True if vote.state == "agree" else False if vote.state == "disagree" else None
 
 
-def _bounded_string_list(value: Any, *, maximum: int = 32) -> list[str]:
+def _bounded_string_list(
+    value: Any, *, maximum: int = 32, item_bytes: int = MAX_TEXT_BYTES,
+) -> list[str]:
     if not isinstance(value, (list, tuple)) or len(value) > maximum:
         raise ValueError("proof input list is not bounded")
-    result = [_text(item) for item in value]
-    if any(not item for item in result) or len(set(result)) != len(result):
+    result = [_bounded_text(item, maximum=item_bytes) for item in value]
+    if len(set(result)) != len(result):
         raise ValueError("proof input list is malformed")
     return result
 
@@ -138,12 +166,21 @@ def _provider_token(provider: str, identifier: str) -> str:
     return identifier if identifier.startswith(f"{provider}:") else f"{provider}:{identifier}"
 
 
+def _validated_token(token: Any, bindings: Mapping[str, Any]) -> str:
+    value = _bounded_text(token, maximum=MAX_TOKEN_BYTES)
+    provider, separator, identifier = value.partition(":")
+    if not separator or not identifier or provider not in SUPPORTED_PROVIDERS or provider not in bindings:
+        raise ValueError("proof token provider is unsupported or unbound")
+    return value
+
+
 def _decisive_tokens(
-    *, full_tokens: Sequence[str], bindings: Mapping[str, Any], reversal_count: int,
+    *, full_tokens: Sequence[str], bindings: Mapping[str, Any],
+    pivot_tokens: Sequence[str], latest_ladder_tokens: Sequence[str],
 ) -> list[str]:
-    if not full_tokens:
-        return []
-    wanted = {full_tokens[0], full_tokens[-1]}
+    wanted = set(pivot_tokens) | set(latest_ladder_tokens)
+    if full_tokens:
+        wanted.update((full_tokens[0], full_tokens[-1]))
     for provider, binding in bindings.items():
         if not isinstance(binding, Mapping):
             continue
@@ -152,9 +189,8 @@ def _decisive_tokens(
         provider_tokens = [token for token in full_tokens if token.startswith(f"{provider}:")]
         if provider_tokens:
             wanted.update((provider_tokens[0], provider_tokens[-1]))
-    if reversal_count > 0 and len(full_tokens) > 2:
-        wanted.add(full_tokens[len(full_tokens) // 2])
-    decisive = [token for token in full_tokens if token in wanted]
+    ordered = list(dict.fromkeys((*full_tokens, *pivot_tokens, *latest_ladder_tokens)))
+    decisive = [token for token in ordered if token in wanted]
     if len(decisive) > MAX_DECISIVE_TOKENS:
         raise ValueError("decisive token set exceeds bound")
     return decisive
@@ -164,9 +200,9 @@ def _candidate_proof(
     candidate: Mapping[str, Any], *, official_provider: str, official_binding_key: str | None,
 ) -> dict[str, Any]:
     return {
-        "candidate_identity": _text(candidate.get("candidate_identity")),
-        "slate_date": _text(candidate.get("slate_date")),
-        "normalized_pitcher": _text(candidate.get("normalized_pitcher")),
+        "candidate_identity": _bounded_text(candidate.get("candidate_identity"), maximum=64),
+        "slate_date": _bounded_text(candidate.get("slate_date"), maximum=10),
+        "normalized_pitcher": _bounded_text(candidate.get("normalized_pitcher"), maximum=128),
         "side": _enum(candidate.get("side")),
         "model_k_line": _number(candidate.get("model_k_line")),
         "game_time": _iso(candidate.get("game_time")),
@@ -185,20 +221,54 @@ def _artifact_proof(artifact: Mapping[str, Any]) -> dict[str, Any]:
     }
 
 
+def _safe_digest(value: Any) -> str:
+    return hashlib.sha256(_text(value).encode("utf-8")).hexdigest()
+
+
+def _diagnostic_candidate(candidate: Mapping[str, Any]) -> dict[str, Any]:
+    provider = _enum(candidate.get("line_source_provider"))
+    provider = provider if provider in SUPPORTED_PROVIDERS else "therundown"
+    normalized = _text(candidate.get("normalized_pitcher"))
+    if not normalized or len(normalized.encode("utf-8")) > 128:
+        normalized = f"invalid-{_safe_digest(normalized)[:16]}"
+    side = _enum(candidate.get("side"))
+    line = _number(candidate.get("model_k_line"))
+    return {
+        "candidate_identity": _hash(candidate.get("candidate_identity")) or _safe_digest(candidate.get("candidate_identity")),
+        "slate_date": _text(candidate.get("slate_date")) if len(_text(candidate.get("slate_date"))) <= 10 else "1970-01-01",
+        "normalized_pitcher": normalized,
+        "side": side if side in {"over", "under"} else "over",
+        "model_k_line": line if line is not None else 0.0,
+        "game_time": _iso(candidate.get("game_time")) or "1970-01-01T00:00:00+00:00",
+        "line_source_provider": provider,
+        "official_binding_key": None,
+    }
+
+
+def _diagnostic_artifact(artifact: Mapping[str, Any]) -> dict[str, Any]:
+    payload_hash = None
+    try:
+        if artifact.get("payload") is not None:
+            payload_hash = canonical_payload_sha256(artifact.get("payload"))
+    except (TypeError, ValueError, OverflowError):
+        payload_hash = None
+    return {
+        "source_artifact_path": APPROVED_ARTIFACT_PATH,
+        "source_artifact_generated_at": _iso(artifact.get("generated_at")),
+        "source_artifact_sha256": payload_hash or "0" * 64,
+        "source_artifact_byte_sha256": _hash(artifact.get("byte_sha256")) or "0" * 64,
+    }
+
+
 def _diagnostic_build(
     *, candidate: Mapping[str, Any], artifact: Mapping[str, Any], reason: str,
 ) -> EvaluationProofBuild:
-    official_provider = _enum(candidate.get("line_source_provider"))
-    if official_provider not in SUPPORTED_PROVIDERS:
-        official_provider = "therundown"
     proof = {
         "schema_version": V2_SCHEMA_VERSION,
         "bundle_id": selector_v2.BUNDLE_ID,
         "selector_fingerprint": selector_v2.FROZEN_SELECTOR_FINGERPRINT,
-        "candidate": _candidate_proof(
-            candidate, official_provider=official_provider, official_binding_key=None,
-        ),
-        "artifact": _artifact_proof(artifact),
+        "candidate": _diagnostic_candidate(candidate),
+        "artifact": _diagnostic_artifact(artifact),
         "bindings": {},
         "freshness": {},
         "normalized_inputs": {},
@@ -206,6 +276,9 @@ def _diagnostic_build(
             "qualifying_observation_count": 0,
             "decisive_observation_tokens": [],
             "full_ordered_token_sha256": hashlib.sha256(b"").hexdigest(),
+            "direction_change_pivot_tokens": [],
+            "latest_ladder_observation_tokens": [],
+            "ladder_observation_token_sha256": hashlib.sha256(b"").hexdigest(),
             "first_observed_at": None,
             "last_observed_at": None,
             "freshness_status": "pending",
@@ -236,12 +309,128 @@ def _diagnostic_build(
             "reentry_expansion": "pending",
             "selected_lane": None,
             "selection_status": "pending",
+            "family_count": 0,
+            "maximum_family_count": 4,
             "decisive_families": [],
             "preclose_required_for_selected_lane": False,
             "reason_codes": [reason],
         },
     }
+    if (
+        _encoded_size(proof) > MAX_PROOF_APPLICATION_BYTES
+        or postgres_jsonb_text_size(proof) > MAX_PROOF_DB_BYTES
+        or not validate_evaluation_proof_v2(proof=proof)[0]
+    ):
+        proof["candidate"] = {
+            "candidate_identity": "0" * 64,
+            "slate_date": "1970-01-01",
+            "normalized_pitcher": "invalid",
+            "side": "over",
+            "model_k_line": 0.0,
+            "game_time": "1970-01-01T00:00:00+00:00",
+            "line_source_provider": "therundown",
+            "official_binding_key": None,
+        }
+        proof["artifact"] = {
+            "source_artifact_path": APPROVED_ARTIFACT_PATH,
+            "source_artifact_generated_at": None,
+            "source_artifact_sha256": "0" * 64,
+            "source_artifact_byte_sha256": "0" * 64,
+        }
     return EvaluationProofBuild(proof, False, (reason,))
+
+
+def _bounded_normalized_inputs(raw: Mapping[str, Any]) -> dict[str, Any]:
+    normalized = {
+        field: _json_copy(raw[field])
+        for field in NORMALIZED_INPUT_FIELDS if field in raw
+    }
+    if set(normalized) != set(NORMALIZED_INPUT_FIELDS):
+        raise ValueError("normalized proof inputs are incomplete")
+    for field, value in normalized.items():
+        if field == "anchor_labels":
+            normalized[field] = _bounded_string_list(
+                value, maximum=MAX_LABEL_COUNT, item_bytes=MAX_LABEL_BYTES,
+            )
+        elif isinstance(value, str):
+            normalized[field] = _bounded_text(value)
+        elif isinstance(value, (list, tuple, dict)):
+            raise ValueError("normalized proof input has an unsupported container")
+        elif isinstance(value, float) and not math.isfinite(value):
+            raise ValueError("normalized proof input is non-finite")
+    return normalized
+
+
+def _family_payload(vote: selector_v2.FamilyVote) -> dict[str, Any]:
+    return {"state": vote.state, "reason_codes": list(vote.reason_codes)}
+
+
+def _recompute_semantics(
+    normalized_inputs: Mapping[str, Any], preclose: Mapping[str, Any],
+) -> tuple[dict[str, Any], dict[str, Any] | None]:
+    base_v1 = selector_v2.v1.strong_base_strict_plus_selective(dict(normalized_inputs))
+    base = selector_v2.FamilyVote(base_v1.state, base_v1.reason_codes)
+    labels = normalized_inputs.get("anchor_labels")
+    if isinstance(labels, list):
+        label_set = {_enum(label) for label in labels}
+        strict = selector_v2.FamilyVote(
+            "agree" if "market_anchor_strict" in label_set else "disagree",
+            ("market_anchor_strict" if "market_anchor_strict" in label_set else "market_anchor_strict_absent",),
+        )
+        core = selector_v2.FamilyVote(
+            "agree" if "market_anchor_core" in label_set else "disagree",
+            ("market_anchor_core" if "market_anchor_core" in label_set else "market_anchor_core_absent",),
+        )
+    else:
+        strict = core = selector_v2.FamilyVote("pending", ("anchor_metadata_malformed",))
+    anchor = selector_v2.compose_anchor_v2(base, strict, core)
+
+    scored: dict[str, Any] | None = None
+    if _enum(preclose.get("freshness_status")) == "fresh":
+        scored = selector_v2.preclose_proxy_score_v2(
+            {**dict(preclose), **dict(normalized_inputs)},
+            canonical_adjusted_ev=normalized_inputs.get("adjusted_ev"),
+        )
+        raw_preclose = selector_v2.FamilyVote(
+            "agree" if scored["label"] == "strong_preclose_clv_proxy" else "disagree",
+            (scored["label"],),
+        )
+    else:
+        reasons = _bounded_reasons(preclose.get("reason_codes", []))
+        raw_preclose = selector_v2.FamilyVote(
+            "pending", reasons or ("preclose_evidence_pending",),
+        )
+    preclose_vote = selector_v2.compose_preclose_v2(base, raw_preclose)
+    reentry_v1 = selector_v2.v1.moderate_edge_quality_reentry(dict(normalized_inputs))
+    reentry = selector_v2.FamilyVote(reentry_v1.state, reentry_v1.reason_codes)
+    families = {
+        "base": base, "anchor": anchor, "preclose": preclose_vote, "reentry": reentry,
+    }
+    support = selector_v2.tri_or(_family_tri(base), _family_tri(strict))
+    drag = selector_v2.drag_core_v2(dict(normalized_inputs))
+    no_drag = selector_v2.no_drag_v2(base, strict, drag)
+    lanes = selector_v2.evaluate_lanes_v2(families, no_drag)
+    preclose_required = bool(
+        lanes.lane == "consensus_core"
+        and preclose_vote.state == "agree"
+        and sum(
+            families[name].state == "agree" for name in FAMILY_ORDER if name != "preclose"
+        ) < 2
+    )
+    return ({
+        "support": _tri_state(support),
+        "drag_core": drag.state,
+        "no_drag": no_drag.state,
+        "family_states": {name: _family_payload(vote) for name, vote in families.items()},
+        "consensus_core": lanes.consensus_core.state,
+        "reentry_expansion": lanes.reentry_expansion.state,
+        "selected_lane": lanes.lane,
+        "selection_status": lanes.selection_status,
+        "family_count": lanes.family_count,
+        "maximum_family_count": lanes.maximum_family_count,
+        "decisive_families": list(lanes.decisive_families),
+        "preclose_required_for_selected_lane": preclose_required,
+    }, scored)
 
 
 def _build_full_proof(
@@ -273,10 +462,18 @@ def _build_full_proof(
         raise ValueError("exact Preclose proof fragment is malformed")
     official_provider = _enum(exact.get("official_provider"))
     declared_provider = _enum(candidate.get("line_source_provider"))
-    if official_provider not in SUPPORTED_PROVIDERS or (
-        declared_provider and declared_provider != official_provider
+    if (
+        official_provider not in SUPPORTED_PROVIDERS
+        or declared_provider not in SUPPORTED_PROVIDERS
+        or declared_provider != official_provider
     ):
         raise ValueError("official provider mismatch")
+    if (
+        _text(exact.get("source_artifact_path")) != artifact_part["source_artifact_path"]
+        or _hash(exact.get("source_artifact_byte_sha256"))
+        != artifact_part["source_artifact_byte_sha256"]
+    ):
+        raise ValueError("exact Preclose artifact binding mismatch")
     official_binding_key = _hash(exact.get("official_binding_key"))
     if official_binding_key is None:
         raise ValueError("official binding key is invalid")
@@ -285,7 +482,12 @@ def _build_full_proof(
     window = exact_preclose.evidence_window
     if not isinstance(market, Mapping) or not isinstance(window, Mapping):
         raise ValueError("exact Preclose evidence is malformed")
-    participating = set(_bounded_string_list(market.get("participating_providers", [])))
+    participating = set(_bounded_string_list(
+        market.get("participating_providers", []),
+        maximum=len(SUPPORTED_PROVIDERS), item_bytes=32,
+    ))
+    if not participating.issubset(SUPPORTED_PROVIDERS):
+        raise ValueError("participating provider is unsupported")
     provider_windows = exact.get("provider_window_started_at")
     provider_freshness = exact.get("provider_freshness")
     if not isinstance(provider_windows, Mapping) or not isinstance(provider_freshness, Mapping):
@@ -299,10 +501,14 @@ def _build_full_proof(
         binding = raw_bindings[provider]
         if provider not in SUPPORTED_PROVIDERS or not isinstance(binding, Mapping):
             raise ValueError("provider binding is malformed")
-        event_id = _text(binding.get("provider_event_id"))
+        event_id = _bounded_text(binding.get("provider_event_id"))
         binding_key = _hash(binding.get("binding_key"))
-        current_ids = _bounded_string_list(binding.get("current_line_ids", []))
-        seed_ids = _bounded_string_list(binding.get("seed_snapshot_ids", []))
+        current_ids = _bounded_string_list(
+            binding.get("current_line_ids", []), item_bytes=MAX_TOKEN_BYTES,
+        )
+        seed_ids = _bounded_string_list(
+            binding.get("seed_snapshot_ids", []), item_bytes=MAX_TOKEN_BYTES,
+        )
         if not event_id or binding_key is None:
             raise ValueError("provider binding identity is invalid")
         bindings[provider] = {
@@ -336,43 +542,20 @@ def _build_full_proof(
     normalized_raw = _value(evaluation, "normalized_inputs", {})
     if not isinstance(normalized_raw, Mapping):
         raise ValueError("normalized inputs must be an object")
-    normalized_inputs = {
-        field: _json_copy(normalized_raw[field])
-        for field in NORMALIZED_INPUT_FIELDS if field in normalized_raw
-    }
-    families = _family_objects(evaluation)
-    labels = normalized_inputs.get("anchor_labels")
-    strict_anchor = (
-        True if isinstance(labels, list) and "market_anchor_strict" in labels
-        else False if isinstance(labels, list) else None
-    )
-    support = selector_v2.tri_or(_family_tri(families["base"]), strict_anchor)
-    drag_vote = selector_v2.drag_core_v2(normalized_inputs)
-    no_drag_vote = selector_v2.no_drag_v2(
-        families["base"],
-        selector_v2.FamilyVote(
-            "agree" if strict_anchor is True else "disagree" if strict_anchor is False else "pending",
-            (),
-        ),
-        drag_vote,
-    )
-    lanes = selector_v2.evaluate_lanes_v2(families, no_drag_vote)
-    expected_no_drag = True if no_drag_vote.state == "true" else False if no_drag_vote.state == "false" else None
-    if any((
-        _value(evaluation, "no_drag") is not expected_no_drag,
-        _value(evaluation, "lane") != lanes.lane,
-        _value(evaluation, "selection_status") != lanes.selection_status,
-        _integer(_value(evaluation, "family_count")) != lanes.family_count,
-    )):
-        raise ValueError("evaluation decision does not match recomputed logic")
+    normalized_inputs = _bounded_normalized_inputs(normalized_raw)
+    supplied_families = _family_objects(evaluation)
 
     observations = market.get("observations")
     full_tokens = market.get("observation_ids")
-    if not isinstance(observations, list) or not isinstance(full_tokens, list):
+    if (
+        not isinstance(observations, list) or not isinstance(full_tokens, list)
+        or len(observations) > MAX_SOURCE_TOKENS or len(full_tokens) > MAX_SOURCE_TOKENS
+    ):
         raise ValueError("qualifying observation list is malformed")
-    ordered_tokens = [_text(token) for token in full_tokens]
+    ordered_tokens = [_validated_token(token, raw_bindings) for token in full_tokens]
     observed_tokens = [
-        _text(row.get("id")) for row in observations if isinstance(row, Mapping)
+        _validated_token(row.get("id"), raw_bindings)
+        for row in observations if isinstance(row, Mapping)
     ]
     if (
         any(not token or ":" not in token for token in ordered_tokens)
@@ -392,33 +575,97 @@ def _build_full_proof(
     ):
         raise ValueError("qualifying observation bounds are inconsistent")
 
-    reversal_count = _integer(market.get("reversal_book_count"))
-    if reversal_count is None and _enum(market.get("freshness_status")) == "pending":
-        reversal_count = 0
-    if reversal_count is None or reversal_count < 0:
-        raise ValueError("reversal count is invalid")
-    decisive = _decisive_tokens(
-        full_tokens=ordered_tokens, bindings=raw_bindings, reversal_count=reversal_count,
-    )
-    scored: dict[str, Any] | None = None
-    if market.get("freshness_status") == "fresh":
-        scored = selector_v2.preclose_proxy_score_v2(
-            {**dict(market), **normalized_inputs},
-            canonical_adjusted_ev=normalized_inputs.get("adjusted_ev"),
+    ladder_tokens = [
+        _validated_token(token, raw_bindings)
+        for token in _bounded_string_list(
+            exact.get("ladder_observation_ids", []),
+            maximum=MAX_SOURCE_TOKENS, item_bytes=MAX_TOKEN_BYTES,
         )
-
-    decisive_families = list(lanes.decisive_families)
-    preclose_required = bool(
-        lanes.lane == "consensus_core"
-        and families["preclose"].state == "agree"
-        and sum(
-            families[name].state == "agree" for name in FAMILY_ORDER if name != "preclose"
-        ) < 2
+    ]
+    pivot_tokens = [
+        _validated_token(token, raw_bindings)
+        for token in _bounded_string_list(
+            exact.get("direction_change_pivot_tokens", []),
+            maximum=MAX_DECISIVE_TOKENS, item_bytes=MAX_TOKEN_BYTES,
+        )
+    ]
+    latest_ladder_tokens = [
+        _validated_token(token, raw_bindings)
+        for token in _bounded_string_list(
+            exact.get("latest_ladder_observation_tokens", []),
+            maximum=MAX_DECISIVE_TOKENS, item_bytes=MAX_TOKEN_BYTES,
+        )
+    ]
+    ladder_digest = _hash(exact.get("ladder_observation_token_sha256"))
+    if (
+        ladder_digest != hashlib.sha256("|".join(ladder_tokens).encode("utf-8")).hexdigest()
+        or not set(pivot_tokens).issubset(ordered_tokens)
+        or not set(latest_ladder_tokens).issubset(ladder_tokens)
+    ):
+        raise ValueError("decisive token provenance is inconsistent")
+    decisive = _decisive_tokens(
+        full_tokens=ordered_tokens, bindings=raw_bindings,
+        pivot_tokens=pivot_tokens, latest_ladder_tokens=latest_ladder_tokens,
     )
-    family_states = {
-        name: {"state": vote.state, "reason_codes": list(vote.reason_codes)}
-        for name, vote in families.items()
+    books_seen = _bounded_string_list(
+        market.get("books_seen", []), maximum=32, item_bytes=64,
+    )
+    aggregation_reasons = list(_bounded_reasons(
+        market.get("aggregation_reason_codes", []),
+    ))
+    preclose_payload = {
+        "qualifying_observation_count": len(ordered_tokens),
+        "decisive_observation_tokens": decisive,
+        "full_ordered_token_sha256": hashlib.sha256(
+            "|".join(ordered_tokens).encode("utf-8")
+        ).hexdigest(),
+        "direction_change_pivot_tokens": pivot_tokens,
+        "latest_ladder_observation_tokens": latest_ladder_tokens,
+        "ladder_observation_token_sha256": ladder_digest,
+        "first_observed_at": first_at,
+        "last_observed_at": last_at,
+        "freshness_status": _enum(market.get("freshness_status")) or "pending",
+        "book_count": market.get("book_count"),
+        "books_seen": books_seen,
+        "toward_pick_count": market.get("toward_pick_count"),
+        "away_from_pick_count": market.get("away_from_pick_count"),
+        "side_price_movement": market.get("side_price_movement"),
+        "broad_confirmation": market.get("broad_confirmation"),
+        "reversal_book_count": market.get("reversal_book_count"),
+        "volatile_book_count": market.get("volatile_book_count"),
+        "best_is_off_market": market.get("best_is_off_market"),
+        "score": None,
+        "label": None,
+        "positive_reasons": [],
+        "risk_reasons": [],
+        "reason_codes": aggregation_reasons,
     }
+    semantic_decision, scored = _recompute_semantics(normalized_inputs, preclose_payload)
+    if scored:
+        preclose_payload.update({
+            "score": scored["score"],
+            "label": scored["label"],
+            "positive_reasons": list(scored["positive_reasons"]),
+            "risk_reasons": list(scored["risk_reasons"]),
+        })
+    supplied_family_payload = {
+        name: _family_payload(vote) for name, vote in supplied_families.items()
+    }
+    supplied_decision = {
+        "family_states": supplied_family_payload,
+        "no_drag": _tri_state(_value(evaluation, "no_drag")),
+        "selected_lane": _value(evaluation, "lane"),
+        "selection_status": _value(evaluation, "selection_status"),
+        "family_count": _integer(_value(evaluation, "family_count")),
+        "maximum_family_count": _integer(_value(evaluation, "maximum_family_count")),
+        "decisive_families": list(_value(evaluation, "decisive_families", ()) or ()),
+    }
+    for key, value in supplied_decision.items():
+        if semantic_decision[key] != value:
+            raise ValueError("evaluation decision does not match recomputed semantics")
+    decision_reasons = list(_bounded_reasons(
+        _value(evaluation, "reason_codes", ()) or (),
+    ))
     return {
         "schema_version": V2_SCHEMA_VERSION,
         "bundle_id": selector_v2.BUNDLE_ID,
@@ -431,42 +678,10 @@ def _build_full_proof(
         "bindings": bindings,
         "freshness": freshness,
         "normalized_inputs": normalized_inputs,
-        "preclose": {
-            "qualifying_observation_count": len(ordered_tokens),
-            "decisive_observation_tokens": decisive,
-            "full_ordered_token_sha256": hashlib.sha256(
-                "|".join(ordered_tokens).encode("utf-8")
-            ).hexdigest(),
-            "first_observed_at": first_at,
-            "last_observed_at": last_at,
-            "freshness_status": _enum(market.get("freshness_status")) or "pending",
-            "book_count": market.get("book_count"),
-            "books_seen": _json_copy(market.get("books_seen", [])),
-            "toward_pick_count": market.get("toward_pick_count"),
-            "away_from_pick_count": market.get("away_from_pick_count"),
-            "side_price_movement": market.get("side_price_movement"),
-            "broad_confirmation": market.get("broad_confirmation"),
-            "reversal_book_count": market.get("reversal_book_count"),
-            "volatile_book_count": market.get("volatile_book_count"),
-            "best_is_off_market": market.get("best_is_off_market"),
-            "score": scored.get("score") if scored else None,
-            "label": scored.get("label") if scored else None,
-            "positive_reasons": list(scored.get("positive_reasons", [])) if scored else [],
-            "risk_reasons": list(scored.get("risk_reasons", [])) if scored else [],
-            "reason_codes": list(market.get("aggregation_reason_codes", [])),
-        },
+        "preclose": preclose_payload,
         "decision": {
-            "support": _tri_state(support),
-            "drag_core": drag_vote.state,
-            "no_drag": no_drag_vote.state,
-            "family_states": family_states,
-            "consensus_core": lanes.consensus_core.state,
-            "reentry_expansion": lanes.reentry_expansion.state,
-            "selected_lane": lanes.lane,
-            "selection_status": lanes.selection_status,
-            "decisive_families": decisive_families,
-            "preclose_required_for_selected_lane": preclose_required,
-            "reason_codes": list(_value(evaluation, "reason_codes", ()) or ()),
+            **semantic_decision,
+            "reason_codes": decision_reasons,
         },
     }
 
@@ -483,8 +698,10 @@ def build_evaluation_proof_v2(
             candidate=safe_candidate, evaluation=evaluation,
             exact_preclose=exact_preclose, artifact=safe_artifact,
         )
-        size = _encoded_size(proof)
-        if size > MAX_PROOF_APPLICATION_BYTES:
+        if (
+            _encoded_size(proof) > MAX_PROOF_APPLICATION_BYTES
+            or postgres_jsonb_text_size(proof) > MAX_PROOF_DB_BYTES
+        ):
             return _diagnostic_build(
                 candidate=safe_candidate, artifact=safe_artifact,
                 reason="evaluation_proof_oversized",
@@ -516,7 +733,11 @@ def validate_evaluation_proof_v2(
         size = _encoded_size(proof)
     except (TypeError, ValueError, OverflowError):
         return False, ("evaluation_proof_not_json",)
-    if size > MAX_PROOF_DB_BYTES:
+    try:
+        db_size = postgres_jsonb_text_size(proof)
+    except (TypeError, ValueError, OverflowError):
+        return False, ("evaluation_proof_not_json",)
+    if db_size > MAX_PROOF_DB_BYTES:
         reasons.append("evaluation_proof_db_oversized")
     if size > MAX_PROOF_APPLICATION_BYTES:
         reasons.append("evaluation_proof_oversized")
@@ -558,9 +779,9 @@ def validate_evaluation_proof_v2(
     )
 
     if any((
-        not _text(candidate.get("candidate_identity")),
-        not _text(candidate.get("slate_date")),
-        not _text(candidate.get("normalized_pitcher")),
+        _hash(candidate.get("candidate_identity")) is None,
+        not _text(candidate.get("slate_date")) or len(_text(candidate.get("slate_date"))) > 10,
+        not _text(candidate.get("normalized_pitcher")) or len(_text(candidate.get("normalized_pitcher")).encode("utf-8")) > 128,
         _enum(candidate.get("side")) not in {"over", "under"},
         _number(candidate.get("model_k_line")) is None,
         _iso(candidate.get("game_time")) is None,
@@ -601,33 +822,81 @@ def validate_evaluation_proof_v2(
                 not isinstance(seed_tokens, list),
                 isinstance(seed_tokens, list) and (
                     len(seed_tokens) > MAX_DECISIVE_TOKENS
-                    or any(not _text(token).startswith(f"{provider}:") for token in seed_tokens)
+                    or any(
+                        not _text(token).startswith(f"{provider}:")
+                        or len(_text(token).encode("utf-8")) > MAX_TOKEN_BYTES
+                        for token in seed_tokens
+                    )
                 ),
                 not isinstance(current_ids, list),
-                isinstance(current_ids, list) and len(current_ids) > MAX_DECISIVE_TOKENS,
+                isinstance(current_ids, list) and (
+                    len(current_ids) > MAX_DECISIVE_TOKENS
+                    or any(len(_text(value).encode("utf-8")) > MAX_TOKEN_BYTES for value in current_ids)
+                ),
             )):
                 reasons.append("evaluation_proof_binding_invalid")
+
+    freshness = proof.get("freshness")
+    if isinstance(freshness, Mapping):
+        for provider, value in freshness.items():
+            if (
+                provider not in bindings or not isinstance(value, Mapping)
+                or value.get("freshness_status") not in {"fresh", "stale", "pending"}
+                or _iso(value.get("latest_snapshot_at")) is None
+            ):
+                reasons.append("evaluation_proof_freshness_invalid")
 
     count = _integer(preclose.get("qualifying_observation_count"))
     tokens = preclose.get("decisive_observation_tokens")
     if count is None or count < 0:
         reasons.append("evaluation_proof_count_invalid")
-    if (
-        not isinstance(tokens, list) or len(tokens) > MAX_DECISIVE_TOKENS
-        or len({_text(token) for token in tokens}) != len(tokens)
-        or any(not _text(token) or ":" not in _text(token) for token in tokens)
-    ):
+    token_values: list[str] = []
+    try:
+        if not isinstance(tokens, list) or len(tokens) > MAX_DECISIVE_TOKENS:
+            raise ValueError
+        token_values = [_validated_token(token, bindings) for token in tokens]
+        if len(set(token_values)) != len(token_values):
+            raise ValueError
+    except (TypeError, ValueError):
         reasons.append("evaluation_proof_tokens_invalid")
     if _hash(preclose.get("full_ordered_token_sha256")) is None:
         reasons.append("evaluation_proof_token_digest_invalid")
+    pivot_tokens = preclose.get("direction_change_pivot_tokens")
+    latest_ladder_tokens = preclose.get("latest_ladder_observation_tokens")
+    try:
+        pivots = [_validated_token(token, bindings) for token in _bounded_string_list(
+            pivot_tokens, maximum=MAX_DECISIVE_TOKENS, item_bytes=MAX_TOKEN_BYTES,
+        )]
+        latest = [_validated_token(token, bindings) for token in _bounded_string_list(
+            latest_ladder_tokens, maximum=MAX_DECISIVE_TOKENS, item_bytes=MAX_TOKEN_BYTES,
+        )]
+        if not set((*pivots, *latest)).issubset(token_values):
+            raise ValueError
+    except (TypeError, ValueError):
+        reasons.append("evaluation_proof_decisive_provenance_invalid")
+    if _hash(preclose.get("ladder_observation_token_sha256")) is None:
+        reasons.append("evaluation_proof_ladder_digest_invalid")
     if count and (_iso(preclose.get("first_observed_at")) is None or _iso(preclose.get("last_observed_at")) is None):
         reasons.append("evaluation_proof_observation_bounds_invalid")
+    try:
+        _bounded_string_list(preclose.get("books_seen", []), maximum=32, item_bytes=64)
+        _bounded_reasons(preclose.get("positive_reasons", []))
+        _bounded_reasons(preclose.get("risk_reasons", []))
+        _bounded_reasons(preclose.get("reason_codes", []))
+    except (TypeError, ValueError):
+        reasons.append("evaluation_proof_preclose_bounds_invalid")
 
     family_states = decision.get("family_states")
     if not isinstance(family_states, Mapping) or set(family_states) != set(FAMILY_ORDER):
         reasons.append("evaluation_proof_family_states_invalid")
-    elif any(_enum(_value(family_states[name], "state")) not in {"agree", "disagree", "pending"} for name in FAMILY_ORDER):
-        reasons.append("evaluation_proof_family_states_invalid")
+    else:
+        for name in FAMILY_ORDER:
+            if _enum(_value(family_states[name], "state")) not in {"agree", "disagree", "pending"}:
+                reasons.append("evaluation_proof_family_states_invalid")
+            try:
+                _bounded_reasons(_value(family_states[name], "reason_codes", []))
+            except (TypeError, ValueError):
+                reasons.append("evaluation_proof_family_states_invalid")
     for field in ("support", "drag_core", "no_drag", "consensus_core", "reentry_expansion"):
         if decision.get(field) not in {"true", "false", "pending"}:
             reasons.append("evaluation_proof_logic_invalid")
@@ -640,14 +909,55 @@ def validate_evaluation_proof_v2(
         reasons.append("evaluation_proof_decision_invalid")
     if not isinstance(decision.get("decisive_families"), list):
         reasons.append("evaluation_proof_decisive_families_invalid")
+    if (
+        _integer(decision.get("family_count")) is None
+        or _integer(decision.get("maximum_family_count")) is None
+    ):
+        reasons.append("evaluation_proof_family_count_invalid")
     if not isinstance(decision.get("preclose_required_for_selected_lane"), bool):
         reasons.append("evaluation_proof_preclose_dependency_invalid")
+    try:
+        _bounded_reasons(decision.get("reason_codes", []))
+    except (TypeError, ValueError):
+        reasons.append("evaluation_proof_decision_reasons_invalid")
+
+    if is_diagnostic:
+        if proof.get("normalized_inputs") != {} or bindings != {} or freshness != {}:
+            reasons.append("evaluation_proof_diagnostic_invalid")
+    else:
+        try:
+            normalized = _bounded_normalized_inputs(proof.get("normalized_inputs", {}))
+            expected_decision, expected_score = _recompute_semantics(normalized, preclose)
+            semantic_keys = (
+                "support", "drag_core", "no_drag", "family_states",
+                "consensus_core", "reentry_expansion", "selected_lane",
+                "selection_status", "family_count", "maximum_family_count",
+                "decisive_families", "preclose_required_for_selected_lane",
+            )
+            if any(decision.get(key) != expected_decision[key] for key in semantic_keys):
+                raise ValueError
+            expected_preclose = {
+                "score": expected_score.get("score") if expected_score else None,
+                "label": expected_score.get("label") if expected_score else None,
+                "positive_reasons": list(expected_score.get("positive_reasons", [])) if expected_score else [],
+                "risk_reasons": list(expected_score.get("risk_reasons", [])) if expected_score else [],
+            }
+            if any(preclose.get(key) != value for key, value in expected_preclose.items()):
+                raise ValueError
+        except (TypeError, ValueError, OverflowError):
+            reasons.append("evaluation_proof_semantics_mismatch")
 
     if row is not None:
         if row.get("bundle_id") != selector_v2.BUNDLE_ID:
             reasons.append("evaluation_proof_row_bundle_mismatch")
         if row.get("selector_fingerprint") != proof.get("selector_fingerprint"):
             reasons.append("evaluation_proof_row_fingerprint_mismatch")
+        expected_selector = {
+            "consensus_core": selector_v2.CONSENSUS_SELECTOR_ID,
+            "reentry_expansion": selector_v2.EXPANSION_SELECTOR_ID,
+        }.get(lane)
+        if row.get("selector_id") != expected_selector:
+            reasons.append("evaluation_proof_row_selector_mismatch")
         row_candidate_checks = (
             ("candidate_identity", "candidate_identity", _text),
             ("slate_date", "slate_date", _text),
@@ -667,5 +977,19 @@ def validate_evaluation_proof_v2(
             reasons.append("evaluation_proof_row_artifact_mismatch")
         if row.get("selection_status") != status or row.get("lane") != lane:
             reasons.append("evaluation_proof_row_decision_mismatch")
+        if row.get("family_states") != family_states:
+            reasons.append("evaluation_proof_row_family_states_mismatch")
+        if _integer(row.get("family_count")) != _integer(decision.get("family_count")):
+            reasons.append("evaluation_proof_row_family_count_mismatch")
+        if row.get("evidence_observation_ids") != preclose.get("decisive_observation_tokens"):
+            reasons.append("evaluation_proof_row_evidence_ids_mismatch")
+        if _integer(row.get("evidence_observation_count")) != count:
+            reasons.append("evaluation_proof_row_evidence_count_mismatch")
+        if _iso(row.get("evidence_first_observed_at")) != _iso(preclose.get("first_observed_at")):
+            reasons.append("evaluation_proof_row_evidence_first_mismatch")
+        if _iso(row.get("evidence_last_observed_at")) != _iso(preclose.get("last_observed_at")):
+            reasons.append("evaluation_proof_row_evidence_last_mismatch")
+        if row.get("evidence_freshness_status") != preclose.get("freshness_status"):
+            reasons.append("evaluation_proof_row_evidence_freshness_mismatch")
     result = tuple(dict.fromkeys(reasons))
     return not result, result

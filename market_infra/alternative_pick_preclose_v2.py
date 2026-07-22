@@ -527,6 +527,23 @@ def _direction(ordered: Sequence[Mapping[str, Any]]) -> tuple[str, bool]:
     return direction, reversal
 
 
+def _direction_change_pivot_tokens(
+    ordered: Sequence[Mapping[str, Any]], *, provider: str,
+) -> list[str]:
+    pivots: list[str] = []
+    previous_direction: str | None = None
+    for previous, current in zip(ordered, ordered[1:]):
+        prior_odds = _integer(previous.get("american_odds"))
+        current_odds = _integer(current.get("american_odds"))
+        if current_odds == prior_odds:
+            continue
+        direction = "toward" if current_odds < prior_odds else "away"
+        if previous_direction is not None and direction != previous_direction:
+            pivots.append(f"{provider}:{_text(current.get('id'))}")
+        previous_direction = direction
+    return pivots
+
+
 def _pending_evidence(
     *, candidate: Mapping[str, Any], official_provider: str | None,
     windows: Mapping[str, Any], reasons: Sequence[str], observations: Sequence[dict[str, Any]] = (),
@@ -664,17 +681,22 @@ def build_exact_preclose_evidence_v2(
         participating.append(provider)
         directions: dict[str, str] = {}
         reversals: set[str] = set()
+        direction_change_pivots: list[str] = []
         for book, rows in by_book.items():
             rows.sort(key=lambda row: (_utc(row.get("observed_at")), _text(row.get("id"))))
             direction, reversal = _direction(rows)
             directions[book] = direction
             if reversal:
                 reversals.add(book)
+            direction_change_pivots.extend(
+                _direction_change_pivot_tokens(rows, provider=provider)
+            )
         toward = sum(value == "toward" for value in directions.values())
         away = sum(value == "away" for value in directions.values())
         provider_stats[provider] = {
             "rows": movement_rows, "directions": directions,
             "reversal_books": reversals,
+            "direction_change_pivots": direction_change_pivots,
             "majority": "toward" if toward > away else "away" if away > toward else "neutral",
         }
 
@@ -711,6 +733,19 @@ def build_exact_preclose_evidence_v2(
         f"{row['provider']}:{row['id']}"
         for row in sorted(
             ladder_rows, key=lambda row: (_utc(row.get("observed_at")), _text(row.get("id")))
+        )
+    ]
+    latest_ladder_observation_tokens = [
+        f"{row['provider']}:{row['id']}"
+        for row in sorted(
+            {
+                (row["provider"], row["bookmaker_key"]): row
+                for row in sorted(
+                    ladder_rows,
+                    key=lambda item: (_utc(item.get("observed_at")), _text(item.get("id"))),
+                )
+            }.values(),
+            key=lambda item: (item["provider"], item["bookmaker_key"]),
         )
     ]
     ladder = build_exact_event_book_ladder(
@@ -783,6 +818,12 @@ def build_exact_preclose_evidence_v2(
             "provider_window_started_at": dict(provider_starts),
             "movement_observation_ids": market_evidence["observation_ids"],
             "ladder_observation_ids": ladder_observation_ids,
+            "direction_change_pivot_tokens": sorted({
+                token
+                for stats in provider_stats.values()
+                for token in stats["direction_change_pivots"]
+            }),
+            "latest_ladder_observation_tokens": latest_ladder_observation_tokens,
             "ladder_observation_token_sha256": hashlib.sha256(
                 "|".join(ladder_observation_ids).encode("utf-8")
             ).hexdigest(),
