@@ -679,48 +679,40 @@ git commit -m "feat: gate the alternative v2 recorder"
 
 ---
 
-## Task 5: Freeze captured-slate and mature-Preclose regression fixtures
+## Task 5: Freeze synthetic mature-Preclose and historical parity evidence
 
 **Files:**
 
 - Create: `analytics/diagnostics/alternative_pick_v2_historical_comparator.py`
 - Create: `tests/test_alternative_pick_v2_historical_comparator.py`
-- Create: `tests/fixtures/alternative_pick_selection_v2/2026-07-22T183100Z.json`
 - Create: `tests/fixtures/alternative_pick_selection_v2/synthetic_mature_preclose.json`
 - Create: `tests/fixtures/alternative_pick_selection_v2/manifest.json`
 - Create: `tests/test_alternative_pick_selection_v2_fixtures.py`
+- Modify: `docs/superpowers/specs/2026-07-22-alt-picks-dependency-aware-v2-design.md`
+- Modify: `docs/superpowers/plans/2026-07-22-alt-picks-dependency-aware-v2.md`
 
-- [ ] **Step 1: Read the bounded captured source rows without changing production**
+- [ ] **Step 1: Preserve the approved provenance amendment**
 
-Use linked Supabase CLI reads from the repo root. Query only the 2026-07-22 slate and the preserved 18:31Z evaluation window. Bind the artifact by the exact hashes already persisted on the V1 state row; do not use "latest before" as a substitute for hash identity:
+The bounded read-only audit found 47 V1 state rows, including 10 rows at or
+before 18:31Z with seven canonical and seven byte hashes, but zero matching
+raw artifacts. `artifact_snapshots` has no 2026-07-22 capture under any kind,
+path, or time; all 111 surviving `published_pipeline_artifacts` rows, the
+repository, and local JSON archives also had zero exact hash matches. The
+5,259 bounded tracker rows are not an admissible substitute.
 
-```powershell
-npx supabase db query --linked -o json "select slate_date, candidate_identity, candidate_became_current_at, pitcher, normalized_pitcher, team, opp_team, game_time, side, model_k_line, provider_posture, family_states, reason_codes, source_artifact_path, source_artifact_sha256, source_artifact_byte_sha256, evidence_observation_ids, evidence_first_observed_at, evidence_last_observed_at, observed_at, checkpoint from public.alternative_pick_selection_state where slate_date='2026-07-22' and bundle_id='pregame_alternative_pick_methodology_v1' order by observed_at, normalized_pitcher, side, checkpoint;"
-npx supabase db query --linked -o json "with state_hashes as (select distinct source_artifact_path, source_artifact_sha256, source_artifact_byte_sha256 from public.alternative_pick_selection_state where slate_date='2026-07-22' and bundle_id='pregame_alternative_pick_methodology_v1' and observed_at <= '2026-07-22T18:31:00Z') select a.artifact_path, a.content_sha256, a.payload, a.metadata, a.captured_at from public.artifact_snapshots a join state_hashes s on a.artifact_path=s.source_artifact_path and a.content_sha256 in (s.source_artifact_sha256, s.source_artifact_byte_sha256) where a.artifact_kind='today' and a.slate_date='2026-07-22' and a.captured_at <= '2026-07-22T18:31:00Z' order by a.captured_at;"
-npx supabase db query --linked -o json "with state_hashes as (select distinct source_artifact_path, source_artifact_sha256, source_artifact_byte_sha256 from public.alternative_pick_selection_state where slate_date='2026-07-22' and bundle_id='pregame_alternative_pick_methodology_v1' and observed_at <= '2026-07-22T18:31:00Z'), exact_artifacts as (select a.payload from public.artifact_snapshots a join state_hashes s on a.artifact_path=s.source_artifact_path and a.content_sha256 in (s.source_artifact_sha256, s.source_artifact_byte_sha256) where a.artifact_kind='today' and a.slate_date='2026-07-22' and a.captured_at <= '2026-07-22T18:31:00Z'), snapshot_ids as (select distinct trim(both '\"' from j.value::text) as id from exact_artifacts a cross join lateral jsonb_path_query(a.payload, '$.**.source_snapshot_ids[*]') as j(value)) select m.id, m.provider, m.provider_event_id, m.market_key, m.bookmaker_key, m.bookmaker_title, m.player_name, m.normalized_player_name, m.side, m.line, m.american_odds, m.game_time, m.observed_at from public.market_snapshots m join snapshot_ids s on m.id::text=s.id where m.observed_at <= '2026-07-22T18:31:00Z' order by m.provider, m.provider_event_id, m.normalized_player_name, m.side, m.line, m.bookmaker_key, m.observed_at, m.id;"
-npx supabase db query --linked -o json "with state_hashes as (select distinct source_artifact_path, source_artifact_sha256, source_artifact_byte_sha256 from public.alternative_pick_selection_state where slate_date='2026-07-22' and bundle_id='pregame_alternative_pick_methodology_v1' and observed_at <= '2026-07-22T18:31:00Z'), exact_artifacts as (select a.payload from public.artifact_snapshots a join state_hashes s on a.artifact_path=s.source_artifact_path and a.content_sha256 in (s.source_artifact_sha256, s.source_artifact_byte_sha256) where a.artifact_kind='today' and a.slate_date='2026-07-22' and a.captured_at <= '2026-07-22T18:31:00Z'), line_ids as (select distinct trim(both '\"' from j.value::text)::bigint as id from exact_artifacts a cross join lateral jsonb_path_query(a.payload, '$.**.source_current_market_line_ids[*]') as j(value)) select c.id, c.slate_date, c.provider, c.provider_event_id, c.normalized_player_name, c.market_key, c.line, c.game_time, c.first_seen_at, c.last_seen_at, c.updated_at from public.current_market_lines c join line_ids i on c.id=i.id where c.updated_at <= '2026-07-22T18:31:00Z' order by c.provider, c.normalized_player_name, c.line, c.id;"
-npx supabase db query --linked -o json "select id, provider, provider_event_id, market_key, bookmaker_key, bookmaker_title, player_name, normalized_player_name, side, line, american_odds, game_time, observed_at from public.market_snapshots where observed_at >= '2026-07-22T00:00:00Z' and observed_at <= '2026-07-22T18:31:00Z' and normalized_player_name in ('colin rea','cade cavalli','bubba chandler','keider montero','jake bennett') order by provider, provider_event_id, normalized_player_name, side, line, bookmaker_key, observed_at, id;"
-npx supabase db query --linked -o json "select provider, mode, slate_date, observed_at, last_message_at, books_seen, metadata from public.market_feed_heartbeats where slate_date='2026-07-22' and observed_at <= '2026-07-22T18:31:00Z' order by provider, observed_at desc;"
-```
+Tyler approved replacing that unrecoverable historical fixture with the next
+prospectively retained exact fixture. Task 5 continues with synthetic evidence
+and the frozen historical comparator. Tasks 6-9 may proceed on held branches,
+but the Prospective Capture Gate below blocks Task 10 and every production
+migration, activation, endpoint/UI deployment, or source change.
 
-Do not print secrets. Use the returned rows only to construct the named sanitized fixture with `apply_patch`. Include no service-role values, raw provider payloads, accepted bets, notification bodies, or unrelated pitchers.
-
-Expected: one artifact payload whose hashes match the V1 state plus artifact-declared raw snapshots observed no later than 18:31Z. A `current_market_lines` row is admissible only when its own `updated_at` proves it had not changed after the checkpoint; never use its current mutable odds, snapshot pointers, or provider-event binding as historical evidence after that time. If a candidate has only a numeric current-line reference and lacks either a provably pre-cutoff row or artifact-declared raw snapshot binding, stop this task and report the missing source. Do not substitute a later artifact, later mutable line row, broad tracker row, dated close, or fabricated evidence.
-
-- [ ] **Step 2: Write failing fixture-integrity and replay tests**
+- [ ] **Step 2: Write failing synthetic-fixture and comparator tests**
 
 Add tests named:
 
 - `test_v2_fixture_manifest_hashes_match_raw_bytes`
-- `test_v2_captured_fixture_contains_no_broad_tracker_or_hindsight_input`
-- `test_v2_captured_fixture_artifact_hash_matches_v1_state_exactly`
-- `test_v2_captured_fixture_bindings_and_source_timestamps_do_not_exceed_checkpoint`
-- `test_v2_captured_fixture_rejects_later_mutable_current_line_state`
-- `test_v2_captured_1831z_selects_colin_rea_consensus_core`
-- `test_v2_captured_1831z_selects_cade_cavalli_reentry_expansion`
-- `test_v2_captured_1831z_selects_bubba_chandler_reentry_expansion`
-- `test_v2_captured_1831z_keeps_keider_montero_out`
-- `test_v2_captured_fixture_does_not_mutate_jake_bennett_v1_frozen_control`
+- `test_v2_fixture_manifest_marks_prospective_capture_required`
+- `test_v2_synthetic_fixture_contains_no_broad_tracker_or_hindsight_input`
 - `test_v2_synthetic_fixture_resolves_affirmative_exact_preclose`
 - `test_v2_replay_starts_prospective_ledger_at_zero`
 - `test_legacy_official_close_comparator_reproduces_frozen_lane_anchors`
@@ -732,15 +724,13 @@ Add tests named:
 python -m pytest tests/test_alternative_pick_selection_v2_fixtures.py tests/test_alternative_pick_v2_historical_comparator.py -q
 ```
 
-Expected: fixture/comparator files or expected hashes are absent.
+Expected: synthetic fixture/comparator files or expected hashes are absent.
 
-- [ ] **Step 4: Add the captured and synthetic fixtures**
-
-The captured fixture must include only canonical candidate inputs from the exact hash-bound artifact, candidate window start, official provider, exact event/source bindings, artifact-declared raw snapshot IDs observed by the checkpoint, freshness inputs, expected family/lane states, and the frozen V1 control. Its manifest records the V1 source-row identity, both persisted artifact hashes, the matched artifact snapshot hash, the capture cutoff, and the maximum source timestamp. It must not contain mutable post-cutoff `current_market_lines` state, `market_pick_evidence`, persisted `live_market_display_state`, result, actual Ks, CLV outcome, PnL, or post-start data.
+- [ ] **Step 4: Add the synthetic fixture and pending-capture manifest**
 
 The synthetic fixture must independently prove mature official-provider exact-line movement and exact-event ladder calculation, including a permitted alternate line used only for off-market context.
 
-The fixture manifest stores SHA-256 of each fixture's raw bytes and a short source description. Hashes change only through explicit fixture review.
+The fixture manifest stores SHA-256 of each present fixture's raw bytes and a short source description. It also records `prospective_capture.status = "required_before_production_gate_a"` without inventing a filename, hash, candidates, or expected decisions. Hashes and capture status change only through explicit fixture review.
 
 - [ ] **Step 5: Implement the frozen legacy official-close comparator**
 
@@ -776,13 +766,13 @@ python analytics/diagnostics/alternative_pick_v2_historical_comparator.py --inpu
 python analytics/diagnostics/no_drag_composite_canary_audit.py
 ```
 
-Expected: named captured decisions match the specification; the frozen comparator reports Consensus `106-46`, `+32.603u`, Expansion `42-38`, `+5.982u`, and disjoint combined `148-84`, `+38.585u`; the no-drag report remains a separate research tracker; and no V2 prospective result/PnL row is created.
+Expected: the synthetic exact-evidence decision matches the specification; the frozen comparator reports Consensus `106-46`, `+32.603u`, Expansion `42-38`, `+5.982u`, and disjoint combined `148-84`, `+38.585u`; the no-drag report remains a separate research tracker; the manifest keeps the prospective capture gate closed; and no V2 prospective result/PnL row is created.
 
 - [ ] **Step 7: Commit Task 5**
 
 ```powershell
-git add analytics/diagnostics/alternative_pick_v2_historical_comparator.py tests/test_alternative_pick_v2_historical_comparator.py tests/fixtures/alternative_pick_selection_v2/2026-07-22T183100Z.json tests/fixtures/alternative_pick_selection_v2/synthetic_mature_preclose.json tests/fixtures/alternative_pick_selection_v2/manifest.json tests/test_alternative_pick_selection_v2_fixtures.py
-git commit -m "test: freeze alternative v2 captured evidence"
+git add analytics/diagnostics/alternative_pick_v2_historical_comparator.py tests/test_alternative_pick_v2_historical_comparator.py tests/fixtures/alternative_pick_selection_v2/synthetic_mature_preclose.json tests/fixtures/alternative_pick_selection_v2/manifest.json tests/test_alternative_pick_selection_v2_fixtures.py docs/superpowers/specs/2026-07-22-alt-picks-dependency-aware-v2-design.md docs/superpowers/plans/2026-07-22-alt-picks-dependency-aware-v2.md
+git commit -m "test: freeze alternative v2 synthetic evidence"
 ```
 
 ---
@@ -1117,7 +1107,7 @@ git switch codex/alt-picks-dependency-aware-v2
 
 Prepare:
 
-- a core change set containing selector, exact evidence, proof/migration, recorder, fixtures, tests, and core handoff docs; and
+- a core change set containing selector, exact evidence, proof/migration, recorder, the synthetic fixture plus pending-capture manifest, tests, and core handoff docs; and
 - a held web change set from the core branch to `codex/alt-picks-dependency-aware-v2-web`, containing the backward-compatible endpoint plus V2 browser adapter/UI.
 
 Do not merge either yet. Netlify deploys the production branch, so holding the web branch prevents both an early explicit V2 endpoint and an early browser switch.
@@ -1134,7 +1124,48 @@ Read-only checks must show:
 - Netlify still serving the reviewed V1 UI/endpoint deploy; and
 - both reviewed branches exist on origin but `main` has not moved.
 
-Stop and report before Task 10.
+Stop and report before the Prospective Capture Gate.
+
+---
+
+## Prospective Capture Gate - required before Task 10
+
+**Requires:** Tyler approval to perform the read-only capture on a future clean
+normal slate. This gate authorizes no database write, migration, Render change,
+provider request, model change, notification change, lock change, or UI deploy.
+
+- [ ] **Step 1: Capture the exact current artifact before every eligible T-30**
+
+Fetch the official Netlify/Supabase `get-artifact?type=today` response once.
+Record the raw response bytes, Phoenix slate date, `generated_at`, source posture,
+artifact path, raw-byte SHA-256, and canonical-payload SHA-256. In the same
+checkpoint, read the contemporaneous `published_pipeline_artifacts` row and
+require both hashes and the artifact path to match. If any eligible candidate
+is at/past T-30, the slate/date/source is wrong or stale, or the hash pair does
+not match, delete the temporary capture and defer to the next slate.
+
+- [ ] **Step 2: Bind only artifact-declared exact evidence**
+
+Read only the snapshot IDs and numeric current-line IDs declared in those exact
+captured bytes. Require every snapshot observation and every admitted mutable
+line `updated_at` to be no later than the capture checkpoint. Bind exact slate,
+provider, event, pitcher, market, side, line, and supported book. Do not use a
+broad tracker, later line, later artifact, official close, result, actual Ks,
+PnL, CLV outcome, accepted bet, notification, or post-start observation.
+
+- [ ] **Step 3: Sanitize, hash, replay, and review the prospective fixture**
+
+Commit a date-stamped sanitized fixture and update `manifest.json` with its raw
+SHA-256, official artifact hash pair, capture timestamp, maximum source
+timestamp, source description, and `prospective_capture.status = "complete"`.
+Add fixture-integrity tests for exact hashes, source timestamps, forbidden
+fields, expected family/lane decisions, V1 non-mutation, and a zero-start V2
+prospective ledger. Replay must pass deterministically and receive independent
+task review before Task 10 may begin.
+
+Until all three steps pass, the migration, V2 runtime activation, explicit V2
+endpoint/browser request, Netlify UI deployment, merge, and every production
+gate remain closed.
 
 ---
 
