@@ -2621,6 +2621,20 @@ function altCandidateStatusCopy(value) {
   const count = Number.isFinite(value) ? Math.max(0, Math.trunc(value)) : 0;
   return `${altCountLabel(count, "candidate")} ${count === 1 ? "remains" : "remain"} not selected or pending`;
 }
+function altZeroSelectedCopy(rows) {
+  const supporting = Array.isArray(rows) ? rows : [];
+  const pendingCount = supporting.filter(row => row?.selection_status === "pending").length;
+  if (pendingCount > 0) {
+    return {
+      title: "Alternative evaluation still pending.",
+      sub: `${altCountLabel(pendingCount, "candidate")} ${pendingCount === 1 ? "is" : "are"} awaiting complete family evidence.`
+    };
+  }
+  return {
+    title: "No alternative qualifiers on this slate.",
+    sub: `Evidence is healthy; ${altCandidateStatusCopy(supporting.length)}.`
+  };
+}
 function altBookTitle(value) {
   const titles = {
     fanduel: "FanDuel",
@@ -2763,6 +2777,7 @@ function AltPicksTab() {
   const frozen = rows.filter(row => row.checkpoint === "frozen_pregame").length;
   const provisional = rows.filter(row => row.checkpoint === "provisional").length;
   const selected = core.length + expansion.length;
+  const zeroSelectedCopy = altZeroSelectedCopy(supporting);
   return /*#__PURE__*/React.createElement(React.Fragment, null, /*#__PURE__*/React.createElement("div", {
     className: "v2-header"
   }, /*#__PURE__*/React.createElement("div", {
@@ -2805,9 +2820,9 @@ function AltPicksTab() {
     className: "v2-state v2-alt-empty"
   }, /*#__PURE__*/React.createElement("div", {
     className: "ttl"
-  }, "No alternative qualifiers on this slate."), /*#__PURE__*/React.createElement("div", {
+  }, zeroSelectedCopy.title), /*#__PURE__*/React.createElement("div", {
     className: "sub"
-  }, "Evidence is healthy; ", altCandidateStatusCopy(supporting.length), ".")), state.status === "ready" && core.length > 0 && /*#__PURE__*/React.createElement("section", {
+  }, zeroSelectedCopy.sub)), state.status === "ready" && core.length > 0 && /*#__PURE__*/React.createElement("section", {
     className: "v2-alt-group"
   }, /*#__PURE__*/React.createElement("h2", null, "Consensus Core"), core.map(row => /*#__PURE__*/React.createElement(AltPickCard, {
     key: `${row.pitcher}-${row.side}-${row.checkpoint}`,

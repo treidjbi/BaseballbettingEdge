@@ -315,7 +315,15 @@ test('alternative-picks accepts null-lane supporting rows while keeping selected
     provisionalState({ lane: null, selector_id: MANIFEST.selector_ids.consensus_core, selection_status: 'pending' }),
     provisionalState({ selector_id: null, selection_status: 'pending' }),
     provisionalState({ selector_id: MANIFEST.selector_ids.reentry_expansion, selection_status: 'pending' }),
+    provisionalState({ lane: '', selector_id: '', selection_status: 'pending' }),
+    provisionalState({ lane: '   ', selector_id: '\t', selection_status: 'pending' }),
+    provisionalState({ lane: undefined, selector_id: undefined, selection_status: 'pending' }),
   ];
+  const missingLane = provisionalState({ lane: null, selector_id: null, selection_status: 'pending' });
+  delete missingLane.lane;
+  const missingSelector = provisionalState({ lane: null, selector_id: null, selection_status: 'pending' });
+  delete missingSelector.selector_id;
+  invalidRows.push(missingLane, missingSelector);
   for (const state of invalidRows) {
     configure();
     const invalidFetch = installFetch({ stateRows: [state] });

@@ -201,11 +201,15 @@ function responseRow(row, { artifactAdvancedAfterFreeze }) {
 }
 
 function validSelectionIdentity(row) {
-  const lane = text(row.lane);
-  const selectorId = text(row.selector_id);
+  const lane = row.lane;
+  const selectorId = row.selector_id;
   const selectionStatus = text(row.selection_status);
-  const hasApprovedLane = LANES.has(lane) && selectorId === SELECTOR_IDS_BY_LANE[lane];
-  const hasNoLane = !lane && !selectorId;
+  const hasApprovedLane = typeof lane === 'string'
+    && typeof selectorId === 'string'
+    && LANES.has(lane)
+    && selectorId === SELECTOR_IDS_BY_LANE[lane];
+  const hasNoLane = Object.hasOwn(row, 'lane') && Object.hasOwn(row, 'selector_id')
+    && lane === null && selectorId === null;
   if (selectionStatus === 'selected') return hasApprovedLane;
   if (selectionStatus === 'not_selected') return hasNoLane;
   return selectionStatus === 'pending' && (hasNoLane || hasApprovedLane);

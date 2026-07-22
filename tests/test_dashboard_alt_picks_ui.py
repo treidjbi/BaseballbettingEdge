@@ -38,6 +38,10 @@ def test_alt_components_are_read_only_and_keep_required_groups_and_copy():
         "Alternative methodology unavailable. Main picks are unaffected.",
         "Waiting for current-slate evidence.",
         "No alternative qualifiers on this slate.",
+        "Alternative evaluation still pending.",
+    ]:
+        assert copy in app
+    for copy in [
         "Not selected and pending",
         "Base", "Anchor", "Preclose", "Re-entry",
     ]:
@@ -46,6 +50,18 @@ def test_alt_components_are_read_only_and_keep_required_groups_and_copy():
         assert forbidden not in alt
     assert "function AltPickSheet" in alt
     assert "function AltPickCard" in alt
+
+
+def test_zero_selected_copy_gates_healthy_language_on_zero_pending_rows():
+    app = APP.read_text(encoding="utf-8")
+    helper = app[app.index("function altZeroSelectedCopy"):app.index("function altBookTitle")]
+    assert 'row?.selection_status === "pending"' in helper
+    assert 'Evidence is healthy' in helper
+    assert 'Alternative evaluation still pending.' in helper
+    tab = app[app.index("function AltPicksTab"):app.index("function SteamTab")]
+    assert "altZeroSelectedCopy(supporting)" in tab
+    assert "zeroSelectedCopy.title" in tab
+    assert "zeroSelectedCopy.sub" in tab
 
 
 def test_expanded_supporting_candidates_show_read_only_chips_and_reason():

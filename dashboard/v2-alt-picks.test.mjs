@@ -64,6 +64,10 @@ test("normalizeResponse retains only current-slate rows with the approved two la
 
 test("normalizeResponse retains null-lane supporting rows and rejects invalid lane-selector-status combinations", () => {
   const { api } = load();
+  const missingLane = row({ lane: null, selector_id: null, selection_status: "pending" });
+  delete missingLane.lane;
+  const missingSelector = row({ lane: null, selector_id: null, selection_status: "pending" });
+  delete missingSelector.selector_id;
   const normalized = api.normalizeResponse({
     slate_date: "2026-07-21", status: "ready", counts: {}, rows: [
       row({ lane: null, selector_id: null, selection_status: "not_selected" }),
@@ -74,6 +78,11 @@ test("normalizeResponse retains null-lane supporting rows and rejects invalid la
       row({ lane: null, selector_id: "no_drag_distinct_family_consensus_core_v1", selection_status: "pending" }),
       row({ selector_id: null, selection_status: "pending" }),
       row({ selector_id: "moderate_edge_quality_reentry_expansion_v1", selection_status: "pending" }),
+      row({ lane: "", selector_id: "", selection_status: "pending" }),
+      row({ lane: "   ", selector_id: "\t", selection_status: "pending" }),
+      row({ lane: undefined, selector_id: undefined, selection_status: "pending" }),
+      missingLane,
+      missingSelector,
     ],
   });
   assert.deepEqual(

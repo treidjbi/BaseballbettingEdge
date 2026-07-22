@@ -53,9 +53,15 @@
     return isoTimestamp(first) && isoTimestamp(last);
   }
 
-  function validSelectionIdentity(lane, selectorId, selectionStatus) {
-    const hasApprovedLane = LANES.has(lane) && selectorId === SELECTOR_IDS_BY_LANE[lane];
-    const hasNoLane = !lane && !selectorId;
+  function validSelectionIdentity(row, selectionStatus) {
+    const lane = row.lane;
+    const selectorId = row.selector_id;
+    const hasApprovedLane = typeof lane === "string"
+      && typeof selectorId === "string"
+      && LANES.has(lane)
+      && selectorId === SELECTOR_IDS_BY_LANE[lane];
+    const hasNoLane = Object.hasOwn(row, "lane") && Object.hasOwn(row, "selector_id")
+      && lane === null && selectorId === null;
     if (selectionStatus === "selected") return hasApprovedLane;
     if (selectionStatus === "not_selected") return hasNoLane;
     return selectionStatus === "pending" && (hasNoLane || hasApprovedLane);
@@ -68,7 +74,7 @@
     const selectionStatus = text(row.selection_status);
     const checkpoint = text(row.checkpoint);
     const familyStates = normalizeFamilyStates(row.family_states);
-    if (text(row.slate_date) !== slateDate || !STATUSES.has(selectionStatus) || !validSelectionIdentity(lane, selectorId, selectionStatus) || !CHECKPOINTS.has(checkpoint) || !familyStates) return null;
+    if (text(row.slate_date) !== slateDate || !STATUSES.has(selectionStatus) || !validSelectionIdentity(row, selectionStatus) || !CHECKPOINTS.has(checkpoint) || !familyStates) return null;
     if (!text(row.pitcher) || !text(row.team) || !text(row.opp_team) || !text(row.side) || !finite(row.model_k_line)) return null;
     if (!isoTimestamp(row.game_time) || !isoTimestamp(row.source_artifact_generated_at) || !validEvidenceTimes(row, selectionStatus)) return null;
     if (checkpoint === "frozen_pregame" && (!isoTimestamp(row.frozen_at) || !isoTimestamp(row.should_lock_at) || !finite(row.minutes_until_start) || !LOCK_STATUSES.has(text(row.lock_status)))) return null;

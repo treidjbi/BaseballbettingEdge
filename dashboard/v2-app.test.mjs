@@ -46,7 +46,7 @@ function loadTicketHelpers() {
   };
   context.globalThis = context;
   vm.runInNewContext(
-    `${scriptSource.slice(0, footerStart)}\nglobalThis.__ticketHelpers = { marketBetTicketContext, isLiveMarketBetPrefill, selectedMarketBetRowForForm: typeof selectedMarketBetRowForForm === "function" ? selectedMarketBetRowForForm : null, buildAcceptedBetPayload, altCountLabel: typeof altCountLabel === "function" ? altCountLabel : null, altCandidateStatusCopy: typeof altCandidateStatusCopy === "function" ? altCandidateStatusCopy : null, altBookTitle: typeof altBookTitle === "function" ? altBookTitle : null };`,
+    `${scriptSource.slice(0, footerStart)}\nglobalThis.__ticketHelpers = { marketBetTicketContext, isLiveMarketBetPrefill, selectedMarketBetRowForForm: typeof selectedMarketBetRowForForm === "function" ? selectedMarketBetRowForForm : null, buildAcceptedBetPayload, altCountLabel: typeof altCountLabel === "function" ? altCountLabel : null, altCandidateStatusCopy: typeof altCandidateStatusCopy === "function" ? altCandidateStatusCopy : null, altZeroSelectedCopy: typeof altZeroSelectedCopy === "function" ? altZeroSelectedCopy : null, altBookTitle: typeof altBookTitle === "function" ? altBookTitle : null };`,
     context,
     { filename: scriptPath },
   );
@@ -166,4 +166,31 @@ test("Alt Picks labels singular counts and canonical endpoint book keys", () => 
     ["fanduel", "draftkings", "betmgm", "betrivers", "kalshi", "caesars", "thescore", "thescore_bet"].map(altBookTitle),
     ["FanDuel", "DraftKings", "BetMGM", "BetRivers", "Kalshi", "Caesars", "theScore Bet", "theScore Bet"],
   );
+});
+
+test("Alt Picks zero-selected copy distinguishes completed no-qualifier rows from pending evaluations", () => {
+  const { altZeroSelectedCopy } = loadTicketHelpers();
+  assert.equal(typeof altZeroSelectedCopy, "function");
+
+  const allNotSelected = altZeroSelectedCopy([
+    { selection_status: "not_selected" },
+    { selection_status: "not_selected" },
+  ]);
+  const pendingOnly = altZeroSelectedCopy([
+    { selection_status: "pending" },
+    { selection_status: "pending" },
+  ]);
+  const mixed = altZeroSelectedCopy([
+    { selection_status: "not_selected" },
+    { selection_status: "pending" },
+  ]);
+
+  assert.match(allNotSelected.title, /No alternative qualifiers/);
+  assert.match(allNotSelected.sub, /Evidence is healthy/);
+  for (const copy of [pendingOnly, mixed]) {
+    assert.equal(copy.title, "Alternative evaluation still pending.");
+    assert.doesNotMatch(copy.sub, /Evidence is healthy/);
+  }
+  assert.match(pendingOnly.sub, /2 candidates are awaiting complete family evidence/);
+  assert.match(mixed.sub, /1 candidate is awaiting complete family evidence/);
 });
