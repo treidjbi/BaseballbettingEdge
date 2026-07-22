@@ -66,8 +66,10 @@ For any new work in this repo:
      for the lead operator packet for the no-drag prospective canary
    - `docs/superpowers/specs/2026-07-21-pregame-alternative-pick-methodology-design.md`
      for the approved product direction and written-review contract for the
-     pregame Alt Picks comparison surface; implementation and activation remain
-     pending
+     pregame Alt Picks comparison surface; implementation is complete and
+     locally verified on `codex/pregame-alt-picks`, while production activation,
+     migration apply, endpoint/UI deployment, and prospective evidence remain
+     pending and closed
    - `docs/research/strict-runtime-core-selective-lean-canary-packet.md`
      for comparison/control historical context on
      `strict_runtime_core_plus_selective_lean`, not the lead candidate
