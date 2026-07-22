@@ -8,12 +8,28 @@
 
 **Tech Stack:** Python 3.11, pytest, Postgres/Supabase migrations and PostgREST, Netlify Functions on Node, vanilla browser JavaScript, React 18 UMD, Node's built-in test runner, and the existing Babel JSX build.
 
-**Implementation status (2026-07-21):** Tasks 1-5 are implemented and
-review-clean on `codex/pregame-alt-picks`. The frozen manifest fingerprint is
+**Implementation status (2026-07-21):** Tasks 1-6 are locally implemented and
+the whole branch is independently review-clean at `4206789e` on
+`codex/pregame-alt-picks`. The frozen manifest fingerprint is
 `f8f7ccf652b8eda4860d07798bc4673920b0b9d727552bc7e2e6547d478b4579`.
 The additive migration is present but unapplied; the live-layer mode defaults
 to `off`; record activation, off-mode deployment, and Netlify deployment are
 separate closed gates. No prospective production rows/sample are claimed.
+
+The final independent review found and fixed five contract gaps: valid
+literal-null no-lane supporting rows had been suppressed; missing
+`best_is_off_market` could default to a qualifying value; PASS/ineligible rows
+could reach persistence; pending-only results could claim healthy evidence;
+and blank/missing no-lane identity could be coerced into null. The final
+contract requires explicit `lane: null` / `selector_id: null` no-lane pairs,
+never labels pending evidence healthy, requires exact fresh same-cycle display
+evidence with a boolean off-market value before preclose can resolve, and
+keeps PASS/ineligible rows outside the persisted universe.
+
+Final whole-branch verification passed `1568` Python tests and `98` Node
+tests. JavaScript syntax, diff, prohibited-path, and default-off checks were
+clean; an independent Babel compilation from JSX produced a byte-identical
+`dashboard/v2-app.js` hash.
 
 ## Global Constraints
 
@@ -560,6 +576,6 @@ git add docs/superpowers/specs/2026-07-21-pregame-alternative-pick-methodology-d
 git commit -m "docs: hand off default-off alternative picks"
 ```
 
-- [ ] **Step 5: Request whole-branch review**
+- [x] **Step 5: Request whole-branch review**
 
 Generate the review package from the plan base through `HEAD`. Require both specification-compliance and code-quality review, with special attention to forbidden hindsight inputs, lock/artifact identity, RLS/grants, the five-second failure boundary, default-off behavior, and UI isolation. Fix every Critical or Important finding and rerun the relevant focused plus full verification before presenting branch-integration options.

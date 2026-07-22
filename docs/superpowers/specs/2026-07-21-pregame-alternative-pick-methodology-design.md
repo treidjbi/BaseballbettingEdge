@@ -1,7 +1,7 @@
 # Pregame Alternative Pick Methodology Design
 
 **Date:** 2026-07-21
-**Status:** Implemented and locally verified on `codex/pregame-alt-picks`; default-off and not activated or deployed
+**Status:** Tasks 1-6 locally implemented and independently review-clean at `4206789e` on `codex/pregame-alt-picks`; default-off and not activated or deployed
 **Bundle ID:** `pregame_alternative_pick_methodology_v1`
 
 ## Executive decision
@@ -24,8 +24,9 @@ model promotion.
 
 ## Implementation handoff (2026-07-21)
 
-Tasks 1-5 are implemented and review-clean on the feature branch. The frozen
-selector manifest fingerprint is
+Tasks 1-6 are locally implemented, and the whole branch is independently
+review-clean at `4206789e` on `codex/pregame-alt-picks`. The frozen selector
+manifest fingerprint is
 `f8f7ccf652b8eda4860d07798bc4673920b0b9d727552bc7e2e6547d478b4579`.
 Migration `supabase/migrations/20260721222627_alternative_pick_selection_state.sql`
 exists locally but is unapplied. `ALTERNATIVE_PICK_SELECTION_MODE` defaults to
@@ -36,6 +37,12 @@ No prospective production rows or samples exist or are claimed. Nothing in
 this branch changes official picks, model math, thresholds, staking,
 notifications, operational locks, provider order, source-of-truth rules, or
 accepted-bet behavior.
+
+The final review found and fixed five edge contracts: valid literal-null
+no-lane supporting rows had been suppressed; absent `best_is_off_market`
+could default to a qualifying value; PASS/ineligible rows could reach
+persistence; pending-only rows could receive healthy-empty copy; and blank or
+missing no-lane identity could be coerced into null.
 
 ## Product intent
 
@@ -247,6 +254,18 @@ The UI must never render `pending` as model disagreement. The stored row keeps
 both the normalized state and compact reason codes so data-quality issues can
 be distinguished from genuine negative evidence.
 
+Selection identity is explicit. `selected` requires an approved lane and its
+matching selector. `not_selected` requires the literal pair `lane: null` and
+`selector_id: null`; `pending` may carry either that literal pair or a valid
+lane/selector pair. Blank, whitespace, missing, or mixed pairs are invalid and
+suppressed rather than coerced. PASS or otherwise ineligible candidates remain
+outside the persisted universe.
+
+Preclose can resolve only when exact, fresh, same-cycle live-display evidence
+for the candidate supplies a real boolean `best_is_off_market`. Missing or
+mismatched evidence leaves preclose `pending`; it never defaults to safe or
+qualifying. A pending-only UI state likewise never claims evidence is healthy.
+
 ## Pregame timing and freeze
 
 The evaluator runs at the end of each existing `bbe-live-layer` cycle, after
@@ -438,8 +457,10 @@ Results remain separate.
 - Current artifact has no matching provisional evidence: **Waiting for
   current-slate evidence.** Suppress the stale provisional row. A frozen row
   remains eligible only through its exact immutable operational-lock link.
-- No qualifiers: show a healthy empty state and candidate counts; do not imply
-  a pipeline failure.
+- No qualifiers with zero pending rows: show a healthy empty state and
+  candidate counts; do not imply a pipeline failure.
+- Pending-only supporting rows: say the alternative evaluation is still
+  pending; never call the evidence healthy.
 - Family evidence incomplete: show `pending` with a short reason.
 - Freeze missed: show the provisional audit state as missed/unfrozen; do not
   synthesize a frozen choice later.
@@ -510,9 +531,10 @@ git diff origin/main...HEAD -- render.yaml netlify.toml .github/workflows data/p
 git grep -n "ALTERNATIVE_PICK_SELECTION_MODE" -- . ':!docs'
 ```
 
-Results: `1563 passed` Python tests; `93` Node tests passed; the syntax and
-diff checks were clean; the prohibited-path diff was empty; and the only
-runtime mode helper defaults invalid/missing values to `off`.
+Results: `1568 passed` Python tests and `98` Node tests passed. JavaScript
+syntax, diff, prohibited-path, and default-off checks were clean; the runtime
+mode helper defaults invalid/missing values to `off`. An independent Babel
+compilation from JSX produced a byte-identical `dashboard/v2-app.js` hash.
 
 ## Rollout sequence
 

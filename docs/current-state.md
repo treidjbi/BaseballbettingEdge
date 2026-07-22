@@ -295,6 +295,11 @@ pregame alternative methodology in the middle Alt Picks tab. Implementation is
 complete and locally verified on `codex/pregame-alt-picks`, but no production
 gate has been opened.
 
+Tasks 1-6 are whole-branch independently review-clean at `4206789e`. The final
+review locked explicit literal-null no-lane identity, honest pending copy,
+exact fresh same-cycle boolean off-market evidence, and exclusion of PASS or
+otherwise ineligible rows from persistence; all production gates remain closed.
+
 | Lane | Current stage | Next decision |
 | --- | --- | --- |
 | Pipeline / infrastructure | The post-T30 sidecar is implemented at the end of the existing live-layer cycle, after notifications, live state, operational locks, timing, and shadow-market work. `ALTERNATIVE_PICK_SELECTION_MODE` defaults to `off`; record mode is not activated. Its five-second no-retry boundary fails only the sidecar cycle and does not alter official artifacts, notifications, locks, providers, or source truth. No Render deployment has occurred. | Keep migration apply, an off-mode Render deploy, and separate Tyler-approved `record` activation closed. Verify live rows only after those gates, never from local fixtures. |
