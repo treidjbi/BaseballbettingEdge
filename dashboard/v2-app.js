@@ -2683,6 +2683,32 @@ function AltPickCard({
     className: "v2-alt-provenance"
   }, row.evidence_freshness_status || "unknown", " evidence \xB7 ", row.evidence_observation_count || 0, " observations \xB7 ", row.source_artifact_generated_at ? fmtTime(row.source_artifact_generated_at) : "artifact time unavailable")));
 }
+function supportingReason(row) {
+  const safeCodes = [...(Array.isArray(row.reason_codes) ? row.reason_codes : []), ...Object.values(row.family_states || {}).flatMap(family => Array.isArray(family?.reason_codes) ? family.reason_codes : [])].filter(code => typeof code === "string" && /^[a-z0-9_ -]{1,80}$/i.test(code.trim())).map(code => code.trim().replace(/[_-]+/g, " "));
+  if (safeCodes.length) return safeCodes.slice(0, 2).map(code => code.charAt(0).toUpperCase() + code.slice(1)).join(" · ");
+  return row.selection_status === "pending" ? "Awaiting complete family evidence." : "Did not meet the alternative selection criteria.";
+}
+function AltSupportingCandidate({
+  row
+}) {
+  const familyLabels = {
+    base: "Base",
+    anchor: "Anchor",
+    preclose: "Preclose",
+    reentry: "Re-entry"
+  };
+  const status = row.selection_status === "pending" ? "Pending" : "Not selected";
+  return /*#__PURE__*/React.createElement("article", {
+    className: "v2-alt-supporting-candidate"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "v2-alt-supporting-primary"
+  }, /*#__PURE__*/React.createElement("b", null, row.pitcher), /*#__PURE__*/React.createElement("span", null, row.side, " ", row.model_k_line, " K \xB7 ", status)), /*#__PURE__*/React.createElement("div", {
+    className: "v2-alt-supporting-chips"
+  }, Object.entries(row.family_states).map(([key, value]) => /*#__PURE__*/React.createElement("span", {
+    key: key,
+    className: `v2-alt-chip ${value.state}`
+  }, familyLabels[key], " \xB7 ", value.state))), /*#__PURE__*/React.createElement("p", null, supportingReason(row)));
+}
 function AltPicksTab() {
   const [state, setState] = useState({
     status: "loading",
@@ -2773,7 +2799,12 @@ function AltPicksTab() {
     onOpen: setDetail
   }))), state.status === "ready" && supporting.length > 0 && /*#__PURE__*/React.createElement("details", {
     className: "v2-alt-collapsed"
-  }, /*#__PURE__*/React.createElement("summary", null, "Not selected and pending (", supporting.length, ")"), /*#__PURE__*/React.createElement("p", null, "Pending family evidence cannot qualify a card. Review the family chips for the short reason."))), /*#__PURE__*/React.createElement(AltPickSheet, {
+  }, /*#__PURE__*/React.createElement("summary", null, "Not selected and pending (", supporting.length, ")"), /*#__PURE__*/React.createElement("p", null, "Pending family evidence cannot qualify a card. Review the family chips for the short reason."), /*#__PURE__*/React.createElement("div", {
+    className: "v2-alt-supporting-list"
+  }, supporting.map(row => /*#__PURE__*/React.createElement(AltSupportingCandidate, {
+    key: `${row.pitcher}-${row.side}-${row.checkpoint}`,
+    row: row
+  }))))), /*#__PURE__*/React.createElement(AltPickSheet, {
     row: detail,
     onClose: () => setDetail(null)
   }));

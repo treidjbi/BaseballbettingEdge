@@ -48,6 +48,23 @@ def test_alt_components_are_read_only_and_keep_required_groups_and_copy():
     assert "function AltPickCard" in alt
 
 
+def test_expanded_supporting_candidates_show_read_only_chips_and_reason():
+    app = APP.read_text(encoding="utf-8")
+    start = app.index("function AltSupportingCandidate")
+    end = app.index("function AltPicksTab", start)
+    supporting = app[start:end]
+
+    assert "v2-alt-supporting-candidate" in supporting
+    assert "supportingReason(row)" in supporting
+    assert "v2-alt-chip" in supporting
+    assert "row.pitcher" in supporting
+    assert "row.selection_status" in supporting
+    assert "row.model_k_line" in supporting
+    assert "v2-alt-card" not in supporting
+    details = app[app.index('className="v2-alt-collapsed"'):]
+    assert "supporting.map((row) => <AltSupportingCandidate" in details
+
+
 def test_alt_picks_assets_and_scoped_mobile_styles_are_present():
     html = HTML.read_text(encoding="utf-8")
     assert "v2-alt-picks.js?v=2026-07-21-alt-picks" in html
@@ -56,3 +73,9 @@ def test_alt_picks_assets_and_scoped_mobile_styles_are_present():
     assert ".v2-alt-chip" in html
     assert "flex-wrap: wrap" in html
     assert "@media (max-width: 420px)" in html
+
+
+def test_alt_sheet_layer_sits_above_persistent_tabbar():
+    html = HTML.read_text(encoding="utf-8")
+    assert ".v2-alt-sheet-backdrop { position: fixed; inset: 0; z-index: 80;" in html
+    assert ".v2-alt-sheet { position: relative; z-index: 81;" in html

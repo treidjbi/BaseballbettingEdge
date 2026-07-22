@@ -68,6 +68,20 @@ test("formatFreezeLabel uses actual checkpoint capture values", () => {
   assert.equal(api.formatFreezeLabel(row({ minutes_until_start: 21, lock_status: "missed_lock" })), "Frozen T-21 (late)");
 });
 
+test("frozen rows require real ISO capture timestamps and known lock states", () => {
+  const { api } = load();
+  const normalized = api.normalizeResponse({
+    slate_date: "2026-07-21", status: "ready", counts: {}, rows: [
+      row({ frozen_at: "not-a-timestamp" }),
+      row({ lock_status: "unknown_lock_state" }),
+      row({ evidence_last_observed_at: "not-a-timestamp" }),
+      row(),
+    ],
+  });
+  assert.equal(normalized.rows.length, 1);
+  assert.equal(api.formatFreezeLabel(row({ frozen_at: "not-a-timestamp", lock_status: "unknown_lock_state" })), "Provisional");
+});
+
 test("adapter failures stay local and do not mutate official or accepted-bet state", async () => {
   const { api, window } = load({ payload: null, status: 503 });
   const data = window.V2_DATA, perf = window.V2_PERF, state = window.V2_APP_STATE, pitcher = data.pitchers[0];

@@ -2320,6 +2320,30 @@ function AltPickCard({ row, onOpen }) {
   );
 }
 
+function supportingReason(row) {
+  const safeCodes = [
+    ...(Array.isArray(row.reason_codes) ? row.reason_codes : []),
+    ...Object.values(row.family_states || {}).flatMap((family) => Array.isArray(family?.reason_codes) ? family.reason_codes : []),
+  ].filter((code) => typeof code === "string" && /^[a-z0-9_ -]{1,80}$/i.test(code.trim()))
+    .map((code) => code.trim().replace(/[_-]+/g, " "));
+  if (safeCodes.length) return safeCodes.slice(0, 2).map((code) => code.charAt(0).toUpperCase() + code.slice(1)).join(" · ");
+  return row.selection_status === "pending" ? "Awaiting complete family evidence." : "Did not meet the alternative selection criteria.";
+}
+
+function AltSupportingCandidate({ row }) {
+  const familyLabels = { base: "Base", anchor: "Anchor", preclose: "Preclose", reentry: "Re-entry" };
+  const status = row.selection_status === "pending" ? "Pending" : "Not selected";
+  return (
+    <article className="v2-alt-supporting-candidate">
+      <div className="v2-alt-supporting-primary"><b>{row.pitcher}</b><span>{row.side} {row.model_k_line} K · {status}</span></div>
+      <div className="v2-alt-supporting-chips">
+        {Object.entries(row.family_states).map(([key, value]) => <span key={key} className={`v2-alt-chip ${value.state}`}>{familyLabels[key]} · {value.state}</span>)}
+      </div>
+      <p>{supportingReason(row)}</p>
+    </article>
+  );
+}
+
 function AltPicksTab() {
   const [state, setState] = useState({ status: "loading", rows: [], counts: {}, slate_date: "", error: "" });
   const [detail, setDetail] = useState(null);
@@ -2350,7 +2374,7 @@ function AltPicksTab() {
         {state.status === "ready" && rows.length > 0 && selected === 0 && <div className="v2-state v2-alt-empty"><div className="ttl">No alternative qualifiers on this slate.</div><div className="sub">Evidence is healthy; {supporting.length} candidate{supporting.length === 1 ? "" : "s"} remain not selected or pending.</div></div>}
         {state.status === "ready" && core.length > 0 && <section className="v2-alt-group"><h2>Consensus Core</h2>{core.map((row) => <AltPickCard key={`${row.pitcher}-${row.side}-${row.checkpoint}`} row={row} onOpen={setDetail} />)}</section>}
         {state.status === "ready" && expansion.length > 0 && <section className="v2-alt-group"><h2>Re-entry Expansion</h2>{expansion.map((row) => <AltPickCard key={`${row.pitcher}-${row.side}-${row.checkpoint}`} row={row} onOpen={setDetail} />)}</section>}
-        {state.status === "ready" && supporting.length > 0 && <details className="v2-alt-collapsed"><summary>Not selected and pending ({supporting.length})</summary><p>Pending family evidence cannot qualify a card. Review the family chips for the short reason.</p></details>}
+        {state.status === "ready" && supporting.length > 0 && <details className="v2-alt-collapsed"><summary>Not selected and pending ({supporting.length})</summary><p>Pending family evidence cannot qualify a card. Review the family chips for the short reason.</p><div className="v2-alt-supporting-list">{supporting.map((row) => <AltSupportingCandidate key={`${row.pitcher}-${row.side}-${row.checkpoint}`} row={row} />)}</div></details>}
       </main>
       <AltPickSheet row={detail} onClose={() => setDetail(null)} />
     </>
