@@ -1,7 +1,7 @@
 # Pregame Alternative Pick Methodology Design
 
 **Date:** 2026-07-21
-**Status:** Tasks 1-6 review-clean and merged at `3a7fe7c5`; isolated record mode and Alt Picks UI deployed, first-normal-slate row/freeze proof pending
+**Status:** Tasks 1-8 deployed and first-normal-slate integrity proof passed; all official promotion gates remain closed
 **Bundle ID:** `pregame_alternative_pick_methodology_v1`
 
 ## Executive decision
@@ -31,13 +31,18 @@ Migration `supabase/migrations/20260721222627_alternative_pick_selection_state.s
 is applied with RLS, browser-role denial, uniqueness, and both frozen-row
 triggers directly verified. The code default remains `off`; Tyler-approved
 `record` mode is live only on `bbe-live-layer` deploy
-`dep-d9g2nsmrnols739u3h8g`. Netlify deploy
-`6a602de17d040836c1641df0` serves the sanitized endpoint and Alt Picks UI.
+`dep-d9g2nsmrnols739u3h8g`. The July 22 TheRundown adjacent-date dedupe
+repair is live on `bbe-live-layer` deploy `dep-d9ge756rnols73ch9c60`, and
+Netlify deploy `6a60e7c06cebf50c3948c690` serves the sanitized endpoint and
+Alt Picks UI with canonical full-team-name mapping.
 
-The first record-mode tick at `2026-07-22T02:40:39Z` correctly produced no rows
-because no unstarted games remained. No prospective production sample is
-claimed until a normal slate produces valid exact-lock frozen rows. Nothing in
-this rollout changes official picks, model math, thresholds, staking,
+The first normal slate produced 20 bounded provisional rows and two immutable
+`frozen_pregame` rows. Both frozen rows are honestly `pending`, both exactly
+match consumed `operational_pick_locks`, and both remain visible from the
+production endpoint after artifact advancement. Duplicate alternative keys and
+alternative notification events are zero. This is an integrity sample, not a
+selected-lane performance sample. Nothing in this rollout changes official
+picks, model math, thresholds, staking,
 notifications, operational locks, provider order, source-of-truth rules, or
 accepted-bet behavior.
 
@@ -554,14 +559,19 @@ Each state-changing step remains separately approval-gated.
    notifications, locks, and live-market UI are unchanged.
 5. [x] After separate Tyler approval, set the mode to `record` and redeploy the
    existing live layer.
-6. [ ] Verify current-artifact provisional rows, bounded row volume, and no impact
-   on existing live-layer writes. The late-slate zero-candidate/no-write cycle
-   passed; real provisional-row proof waits for the next normal slate.
-7. [ ] Verify immutable on-time/late pregame frozen rows on a normal slate and
-   confirm later refreshes do not hide valid lock-linked rows.
+6. [x] Verify current-artifact provisional rows, bounded row volume, and no
+   impact on existing live-layer writes. The first normal slate produced 20
+   bounded provisional rows, zero duplicate keys, and zero alternative
+   notification events while normal live-layer work continued.
+7. [x] Verify immutable on-time/late pregame frozen rows on a normal slate and
+   confirm later refreshes do not hide valid lock-linked rows. Gerrit Cole and
+   Jake Bennett froze at `T-24.59` and `T-24.36`; both exact ledger links were
+   consumed and the endpoint returned both with
+   `artifact_advanced_after_freeze=true`.
 8. [x] Deploy the Netlify endpoint/UI and smoke-test desktop plus 390-pixel mobile.
-   The empty/waiting production state passed; selected/pending/frozen row QA
-   remains part of Steps 6-7 on the next normal slate.
+   The empty/waiting and pending/provisional/frozen production states passed.
+   Selected-card copy remains unexercised because no lane qualified; that is a
+   normal evidence outcome rather than an integrity blocker.
 
 Rollback is `ALTERNATIVE_PICK_SELECTION_MODE=off` plus the prior Netlify
 deploy. No table deletion, history rewrite, or retention action is required.

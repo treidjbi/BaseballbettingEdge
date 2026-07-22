@@ -1,6 +1,6 @@
 # Provider Cost Ledger
 
-Last updated: 2026-06-17
+Last updated: 2026-07-22
 
 This doc exists so provider and infrastructure choices stay tied to ROI, not
 just engineering momentum. BaseballBettingEdge is a personal side project, so a
@@ -105,6 +105,12 @@ headroom when `main_line=true` stays scoped.
   capture is off because it is not reliable enough for the primary 10-minute
   cadence. This live-layer polling supports provider evidence and usage
   tracking; it does not switch official artifacts away from TheRundown.
+- On 2026-07-22, adjacent-date responses repeated one provider event ID inside
+  the same batch and caused Postgres `21000` before snapshot insertion. The
+  repaired path deduplicates raw provider event IDs before both event and
+  snapshot normalization. Three scheduled proof cycles used the unchanged two
+  requests and 323-329 datapoints each; no cadence, plan, or provider-role
+  increase was approved.
 
 Keep if:
 

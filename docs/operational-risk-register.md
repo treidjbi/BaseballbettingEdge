@@ -1,6 +1,6 @@
 # Operational Risk Register
 
-Last updated: 2026-06-17
+Last updated: 2026-07-22
 
 This doc tracks the operational side of BaseballBettingEdge: provider trials,
 failure modes, source-conflict rules, data retention, notification quality, and
@@ -66,6 +66,21 @@ Use this hierarchy when sources disagree.
 When feeds conflict, first check freshness, target-book identity, line value,
 odds price, and whether the source is production, fallback, or shadow. Do not
 silently replace production artifact values with shadow feed values.
+
+### TheRundown adjacent-date duplicate-batch incident (2026-07-22)
+
+The live-layer mainline sidecar fetched adjacent slate dates whose responses
+overlapped on one provider event ID. Sending both copies in one Supabase
+`market_events` upsert caused Postgres `21000`, and snapshot insertion did not
+run. The optional sidecar failed open for official production work but blocked
+the isolated Alt Picks prerequisite as designed.
+
+The reviewed repair deduplicates raw TheRundown events by provider event ID
+before both event and snapshot normalization and records the raw/unique/
+duplicate counts. Scheduled proof reduced 30 raw events to 29 unique events in
+three consecutive cycles with no further error. Keep this guard even if date
+assignment changes; do not interpret duplicate provider rows as extra coverage
+or increase polling cadence to compensate.
 
 ## Active Decision Gates
 

@@ -1256,3 +1256,18 @@ After all task reviews are clean:
 5. Dispatch a whole-branch reviewer on the complete `main...HEAD` review package. Fix and re-review every Critical or Important finding before presenting integration options.
 
 6. Do not deploy from the implementation branch. After Tyler chooses integration and the reviewed branch reaches `main`, the separate approved operational step is to redeploy only `bbe-gate-c-post-grading-review`, preserve its command/schedule/environment/read-only posture, run one verification job, and confirm the refreshed audit starts at 52 with 23 remaining without changing live artifacts or notifications.
+
+## Operational Verification (2026-07-22)
+
+- Redeployed only `bbe-gate-c-post-grading-review` from current `main` as
+  `dep-d9ge7o3tqb8s73cqjq1g`; its existing schedule, command, environment, and
+  read-only posture were preserved.
+- Verification job `job-d9ge8j4m0tmc73eota20` succeeded and rebuilt Gate C at
+  3,134 source rows / 1,635 tracked rows with zero duplicate keys.
+- The frozen canary reconciled both the 186-row historical baseline and the
+  52-row current-provider starting baseline. It credited two qualified
+  prospective rows and reported `collecting` at `54/75`, with 21 rows
+  remaining.
+- This is counter progress only. It does not authorize a model, verdict,
+  threshold, staking, provider, notification, lock, UI, artifact, or retention
+  change; `ready_for_review` remains the strongest possible future status.

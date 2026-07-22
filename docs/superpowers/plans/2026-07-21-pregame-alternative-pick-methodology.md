@@ -8,16 +8,19 @@
 
 **Tech Stack:** Python 3.11, pytest, Postgres/Supabase migrations and PostgREST, Netlify Functions on Node, vanilla browser JavaScript, React 18 UMD, Node's built-in test runner, and the existing Babel JSX build.
 
-**Production rollout status (2026-07-21 Phoenix):** Tasks 1-6 are independently
-review-clean and merged to `main` at `3a7fe7c5`. The frozen manifest fingerprint
+**Production rollout status (verified 2026-07-22 Phoenix):** Tasks 1-8 are
+deployed and the first-normal-slate integrity gate passed. The frozen manifest fingerprint
 is `f8f7ccf652b8eda4860d07798bc4673920b0b9d727552bc7e2e6547d478b4579`.
 Migration `20260721222627` is applied and directly verified. The code default
 remains `off`; Tyler-approved `record` mode is live only on `bbe-live-layer`
 deploy `dep-d9g2nsmrnols739u3h8g`. Netlify deploy
-`6a602de17d040836c1641df0` serves the endpoint/UI. The first late-slate
-record-mode tick was a successful zero-candidate/no-write cycle; no prospective
-production rows or sample are claimed until the next normal slate produces
-valid lock-linked freezes.
+`6a60e7c06cebf50c3948c690` serves the endpoint/UI after the canonical
+team-name allow-list repair. The first normal slate produced 20 bounded
+provisional rows and two immutable pending frozen rows. Both frozen rows match
+consumed operational locks exactly and remain visible after artifact
+advancement; duplicate keys and alternative notifications are zero. This
+proves collection integrity but does not create a selected-lane performance
+sample or open an official promotion gate.
 
 The final independent review found and fixed five contract gaps: valid
 literal-null no-lane supporting rows had been suppressed; missing
@@ -29,10 +32,15 @@ never labels pending evidence healthy, requires exact fresh same-cycle display
 evidence with a boolean off-market value before preclose can resolve, and
 keeps PASS/ineligible rows outside the persisted universe.
 
-Final whole-branch verification passed `1568` Python tests and `98` Node
+Final original whole-branch verification passed `1568` Python tests and `98` Node
 tests. JavaScript syntax, diff, prohibited-path, and default-off checks were
 clean; an independent Babel compilation from JSX produced a byte-identical
 `dashboard/v2-app.js` hash.
+
+The July 22 repair verification passed `1569` Python tests and `99` Node tests.
+TheRundown raw events now deduplicate before event and snapshot normalization;
+scheduled post-fix cycles completed without another Postgres `21000` while
+keeping the same two-request cadence.
 
 ## Global Constraints
 
