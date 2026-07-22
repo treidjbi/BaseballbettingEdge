@@ -11,6 +11,7 @@ from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any
 from urllib.request import Request, urlopen
+from uuid import UUID
 
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
@@ -195,16 +196,32 @@ def _alternative_current_line_id(value: Any) -> str | None:
     """Return a positive integer current-market-line identifier, never a UUID."""
     if isinstance(value, bool):
         return None
+    maximum = 2**63 - 1
+    safe_float_maximum = 2**53 - 1
+    if isinstance(value, int):
+        return str(value) if 0 < value <= maximum else None
     if isinstance(value, str):
         text = value.strip()
-        return text if text.isdigit() and int(text) > 0 else None
+        if not text.isascii() or not text.isdigit():
+            return None
+        parsed = int(text)
+        return text if 0 < parsed <= maximum else None
+    if not isinstance(value, float):
+        return None
+    if not math.isfinite(value) or not value.is_integer() or not 0 < value <= safe_float_maximum:
+        return None
+    return str(int(value))
+
+
+def _alternative_snapshot_uuid(value: Any) -> str | None:
+    """Return only canonical UUID strings from current-market-line mappings."""
+    text = str(value or "").strip()
     try:
-        parsed = float(value)
-    except (TypeError, ValueError):
+        parsed = UUID(text)
+    except (TypeError, ValueError, AttributeError):
         return None
-    if not math.isfinite(parsed) or not parsed.is_integer() or parsed <= 0:
-        return None
-    return str(int(parsed))
+    canonical = str(parsed)
+    return canonical if text == canonical else None
 
 
 def _alternative_tracked_candidates(
@@ -420,9 +437,9 @@ def _alternative_translate_current_line_bindings(
         ):
             continue
         provider = str(row.get("provider") or "").strip().lower()
-        snapshot_id = row.get(snapshot_field)
+        snapshot_id = _alternative_snapshot_uuid(row.get(snapshot_field))
         provider_event_id = row.get("provider_event_id")
-        if snapshot_id in {None, ""} or provider_event_id in {None, ""}:
+        if snapshot_id is None or provider_event_id in {None, ""}:
             continue
         artifact_snapshot_ids.append(snapshot_id)
         artifact_provider_event_ids.setdefault(provider, []).append(provider_event_id)
