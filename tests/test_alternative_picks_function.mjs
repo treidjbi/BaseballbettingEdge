@@ -332,6 +332,27 @@ test('alternative-picks accepts null-lane supporting rows while keeping selected
   }
 });
 
+test('alternative-picks maps canonical full MLB team names to safe display codes', async () => {
+  configure();
+  const fake = installFetch({
+    stateRows: [provisionalState({
+      team: 'BALTIMORE ORIOLES',
+      opp_team: 'Boston Red Sox',
+      lane: null,
+      selector_id: null,
+      selection_status: 'pending',
+    })],
+  });
+  try {
+    const response = await responseJson(event());
+    assert.equal(response.json.status, 'ready');
+    assert.equal(response.json.rows.length, 1);
+    assert.equal(response.json.rows[0].team, 'BAL');
+    assert.equal(response.json.rows[0].opp_team, 'BOS');
+    assert.deepEqual(response.json.counts, { provisional: 1, frozen: 0, selected: 0, pending: 1 });
+  } finally { fake.restore(); restoreEnv(); }
+});
+
 test('alternative-picks distinguishes a healthy no-qualifier row from waiting on current evidence', async () => {
   configure();
   const healthyFetch = installFetch({

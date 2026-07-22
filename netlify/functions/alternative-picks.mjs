@@ -19,6 +19,19 @@ const LOCK_STATUSES = new Set(['due_now', 'missed_lock']);
 const EVIDENCE_FRESHNESS = new Set(['fresh', 'pending']);
 const OFFICIAL_VERDICTS = new Set(['PASS', 'LEAN', 'FIRE 1u', 'FIRE 2u']);
 const SUPPORTED_BOOKS = new Set(['fanduel', 'draftkings', 'betmgm', 'betrivers', 'kalshi', 'caesars', 'thescore']);
+const MLB_TEAM_CODES = new Map([
+  ['arizona diamondbacks', 'ARI'], ['athletics', 'OAK'], ['oakland athletics', 'OAK'],
+  ['atlanta braves', 'ATL'], ['baltimore orioles', 'BAL'], ['boston red sox', 'BOS'],
+  ['chicago cubs', 'CHC'], ['chicago white sox', 'CWS'], ['cincinnati reds', 'CIN'],
+  ['cleveland guardians', 'CLE'], ['colorado rockies', 'COL'], ['detroit tigers', 'DET'],
+  ['houston astros', 'HOU'], ['kansas city royals', 'KC'], ['los angeles angels', 'LAA'],
+  ['los angeles dodgers', 'LAD'], ['miami marlins', 'MIA'], ['milwaukee brewers', 'MIL'],
+  ['minnesota twins', 'MIN'], ['new york mets', 'NYM'], ['new york yankees', 'NYY'],
+  ['philadelphia phillies', 'PHI'], ['pittsburgh pirates', 'PIT'], ['san diego padres', 'SD'],
+  ['san francisco giants', 'SF'], ['seattle mariners', 'SEA'], ['st. louis cardinals', 'STL'],
+  ['tampa bay rays', 'TB'], ['texas rangers', 'TEX'], ['toronto blue jays', 'TOR'],
+  ['washington nationals', 'WSH'],
+]);
 
 const CANONICAL_SELECT = [
   'artifact_key', 'payload_sha256', 'slate_date', 'generated_at', 'source',
@@ -102,8 +115,10 @@ function safeText(value, maximum = 120) {
 }
 
 function safeTeam(value) {
-  const team = text(value).toUpperCase();
-  return /^[A-Z]{2,4}$/.test(team) ? team : '';
+  const team = text(value);
+  const code = team.toUpperCase();
+  if (/^[A-Z]{2,4}$/.test(code)) return code;
+  return MLB_TEAM_CODES.get(team.toLowerCase()) || '';
 }
 
 function supportedBook(value) {
