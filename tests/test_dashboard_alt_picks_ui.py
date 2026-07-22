@@ -17,6 +17,17 @@ def test_alt_picks_navigation_and_legacy_history_route_are_canonical():
     assert 'searchParams.set("tab", nextTab)' in app
 
 
+def test_legacy_history_component_and_archive_helpers_are_removed():
+    app = APP.read_text(encoding="utf-8")
+
+    for removed in [
+        "function HistoryTab", "function historyDataBase", "function fetchHistorySlate",
+        "function historyRowsFromSlate", "function normalizeHistorySide", "function historySideFromPitcher",
+    ]:
+        assert removed not in app
+    assert 't === "history" ? "alt" : t' in app
+
+
 def test_alt_components_are_read_only_and_keep_required_groups_and_copy():
     app = APP.read_text(encoding="utf-8")
     start = app.index("function AltPickSheet")

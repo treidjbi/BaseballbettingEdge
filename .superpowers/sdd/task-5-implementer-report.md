@@ -11,6 +11,8 @@ Completed 2026-07-21 in the `codex/pregame-alt-picks` worktree only.
 - Replaced the rendered middle navigation route with `Alt Picks`; legacy
   `?tab=history` canonicalizes to `?tab=alt` and tab changes persist the
   canonical query parameter.
+- Removed the unreachable History component and its archive-fetch/row helpers;
+  the retained `history` reference is only the legacy query canonicalization.
 - Added read-only `AltPicksTab`, `AltPickCard`, and `AltPickSheet` with
   Consensus Core before Re-entry Expansion, official-pick comparison, all four
   evidence chips, actual freeze labels, and scoped blue/teal mobile styles.
