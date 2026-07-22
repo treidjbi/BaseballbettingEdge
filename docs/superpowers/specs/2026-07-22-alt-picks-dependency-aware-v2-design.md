@@ -2,9 +2,9 @@
 
 **Date:** 2026-07-22
 
-**Status:** Direction approved by Tyler; written specification awaiting final review
+**Status:** Approved by Tyler; implementation plan drafted, implementation not started
 
-**Proposed bundle:** `pregame_alternative_pick_methodology_v2`
+**Approved bundle:** `pregame_alternative_pick_methodology_v2`
 
 ## Executive decision
 
@@ -97,8 +97,10 @@ V2 remains a read-only comparison surface.
 - `ALTERNATIVE_PICK_SELECTION_MODE=off` remains the code default and emergency
   stop.
 - A separate `ALTERNATIVE_PICK_SELECTION_BUNDLE_VERSION` gate accepts only
-  `v1` or `v2` and defaults to `v1`. Deploying V2-capable code alone therefore
-  cannot create V2 rows while production remains in `record` mode.
+  `v1` or `v2`. Unset or blank defaults to `v1`; an explicitly invalid value
+  skips the isolated recorder cycle instead of silently selecting a version.
+  Deploying V2-capable code alone therefore cannot create V2 rows while
+  production remains in `record` mode.
 
 ## Version identities
 
@@ -329,25 +331,30 @@ book reported by both providers counts once after reconciliation. Matching
 direction collapses to one contribution; contradictory direction for the same
 book, or opposing provider-level majorities at the same checkpoint, is actual
 provider disagreement and leaves Preclose pending. “At the same checkpoint”
-means each participating provider's latest heartbeat-fresh observation at or
-before the single V2 evaluation time; future rows are excluded and a provider
-outside the native freshness limit is not treated as current disagreement.
-Optional-provider absence is not disagreement.
+means each participating provider's latest fresh observation under the native
+freshness policy at or before the single V2 evaluation time; future rows are
+excluded and a provider outside the native freshness limit is not treated as
+current disagreement. Optional-provider absence is not disagreement.
 
 The live layer already loads provider heartbeats for the broad market builders.
 V2 receives those same in-memory heartbeat rows and reuses
 `provider_heartbeat_health` / `effective_book_freshness` plus the existing
-stale threshold. It performs no additional query or provider call. Missing or
-stale heartbeat-qualified evidence from the artifact's exact
-`line_source_provider` leaves Preclose pending; the official provider must
-never be inferred from the combined `therundown_propline` posture label.
+stale threshold. It performs no additional query or provider call. Under the
+current native policy, fresh TheRundown and PropLine snapshots qualify by line
+age; heartbeat-based freshness extension remains limited to providers already
+recognized by the helper. V2 does not broaden that policy, the heartbeat
+schema, or heartbeat writers. Missing or stale evidence from the artifact's
+exact `line_source_provider` under that native policy leaves Preclose pending;
+the official provider must never be inferred from the combined
+`therundown_propline` posture label.
 
 Preclose may resolve only when:
 
 - at least two exact-line movement observations with distinct IDs and
   timestamps exist;
-- the artifact's explicit `line_source_provider` has mature, heartbeat-fresh,
-  exact-event evidence;
+- the artifact's explicit `line_source_provider` has mature exact-event
+  evidence that is fresh under the native policy, including heartbeat
+  qualification only where the existing helper supports it;
 - additional approved sidecar-provider evidence is included only when it has
   a verified exact-event binding and a mature fresh window; a bound-but-
   immature sidecar remains diagnostic and is not mandatory merely because the
@@ -422,8 +429,11 @@ same provider-qualified decisive tokens, while `evidence_observation_count`
 records the full qualifying count. An invalid or oversized proof leaves the V2
 row pending instead of truncating decision evidence.
 
-V1 rows may retain an empty proof. V2 writes and the V2 endpoint fail closed if
-the proof is missing, malformed, mixed-version, or inconsistent with the row.
+V1 rows may retain an empty proof. Because the existing V1 PostgREST upsert
+omits the new column, the migration includes a narrow V1-only null-to-`{}`
+compatibility trigger; it must not default a missing V2 proof or change shared
+writer headers. V2 writes and the V2 endpoint fail closed if the proof is
+missing, malformed, mixed-version, or inconsistent with the row.
 The endpoint exposes only the sanitized decision summary needed by the UI, not
 raw provider identifiers. Frozen V2 rows retain their proof immutably.
 
@@ -444,6 +454,11 @@ production verification.
   reconstructed or converted.
 - Activating V2 mid-slate does not create retroactive V2 picks for already
   locked or started games.
+- Production activation occurs before the first relevant T-30 lock or is
+  deferred to the next Phoenix slate; a legitimate no-candidate or partial
+  no-backfill cycle is not mislabeled as infrastructure failure and cannot
+  unlock the V2 UI. The exact official artifact, not V1 state coverage, is the
+  source for candidate eligibility and T-30 preflight.
 
 ## UI behavior
 
@@ -587,8 +602,12 @@ current wagering advice or a promised production count after later artifacts.
    behavior checks, historical parity, and the captured-slate replay.
 5. Merge and deploy the live-layer code without changing official services or
    provider configuration; prove that deployment alone writes zero V2 rows.
-6. Change only `ALTERNATIVE_PICK_SELECTION_BUNDLE_VERSION` to `v2`, redeploy
-   the existing live-layer, and wait for a clean scheduled cycle.
+6. Before the first relevant T-30 lock, change only
+   `ALTERNATIVE_PICK_SELECTION_BUNDLE_VERSION` to `v2` through a full-list,
+   cursor-paginated preserve-and-verify environment update, record whether the
+   key was originally present or absent, redeploy the existing live-layer, and
+   wait for a clean scheduled cycle. Defer to the next slate if any relevant
+   lock has already occurred.
 7. Verify bounded V2 provisional rows, expected lane decisions, zero duplicate
    keys, zero alternative notification events, and unchanged lock timing.
 8. Deploy the backward-compatible endpoint handshake and V2 browser request
@@ -597,8 +616,8 @@ current wagering advice or a promised production count after later artifacts.
 9. Verify desktop and mobile cards, selected-with-pending copy, and continued
    isolation of Picks, Results, and accepted bets.
 
-Rollback reverses the gates in dependency order: set the recorder bundle back
-to V1 (or set the recorder `off` for an immediate stop), obtain one clean V1
+Rollback reverses the gates in dependency order: restore the bundle key to its
+exact pre-activation state (absent or V1), or set the recorder `off` for an immediate stop, obtain one clean V1
 cycle with zero new V2 writes, and verify current-slate V1 coverage before
 restoring the V1 UI. V1 rows missed while V2 was active are never reconstructed;
 if current-slate V1 coverage is incomplete, the Alt comparison surface remains
