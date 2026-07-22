@@ -429,6 +429,10 @@ def aggregate_candidate_market_evidence(
     candidate: dict[str, Any],
     market_evidence_rows: list[dict[str, Any]],
     evidence_window: dict[str, Any],
+    live_market_display_rows: list[dict[str, Any]] | None = None,
+    source_artifact_path: str | None = None,
+    source_artifact_byte_sha256: str | None = None,
+    observed_at: str | None = None,
 ) -> dict[str, Any]:
     """Deterministically combine complete, exact-current approved-provider rows."""
     reasons: list[str] = []
@@ -556,6 +560,54 @@ def aggregate_candidate_market_evidence(
     if directions == {"toward", "away"}:
         reasons.append("provider_disagreement")
 
+    display_matches = [
+        row
+        for row in live_market_display_rows or []
+        if isinstance(row, dict)
+        and _text(row.get("slate_date")) == _text(candidate.get("slate_date"))
+        and normalize(_text(row.get("normalized_pitcher") or row.get("pitcher")))
+        == candidate.get("normalized_pitcher")
+        and _text(row.get("side")).lower() == candidate.get("side")
+        and _text(row.get("provider")).lower() == posture
+    ]
+    best_is_off_market: bool | None = None
+    if not display_matches:
+        reasons.append("best_off_market_display_missing")
+    elif len(display_matches) != 1:
+        reasons.append("best_off_market_display_duplicate")
+    else:
+        display = display_matches[0]
+        display_observed = _utc(display.get("observed_at"))
+        display_updated = _utc(display.get("updated_at"))
+        current_cycle = _utc(observed_at)
+        latest_snapshot = _utc(display.get("latest_snapshot_at"))
+        game_time = _utc(candidate.get("game_time"))
+        identity_and_provenance_match = (
+            _line(display.get("k_line")) == _line(candidate.get("model_k_line"))
+            and _iso(display.get("game_time")) == _iso(candidate.get("game_time"))
+            and _text(display.get("source_artifact_path")) == _text(source_artifact_path)
+            and _text(display.get("source_artifact_sha256")) == _text(source_artifact_byte_sha256)
+        )
+        if not identity_and_provenance_match:
+            reasons.append("best_off_market_display_mismatch")
+        elif (
+            _text(display.get("freshness_status")).lower() != "fresh"
+            or _text(display.get("game_state")).lower() not in {"pregame", "scheduled"}
+            or current_cycle is None
+            or display_observed != current_cycle
+            or display_updated != current_cycle
+            or latest_snapshot is None
+            or game_time is None
+            or latest_snapshot > current_cycle
+            or latest_snapshot >= game_time
+            or current_cycle >= game_time
+        ):
+            reasons.append("best_off_market_display_stale")
+        elif not isinstance(display.get("best_is_off_market"), bool):
+            reasons.append("best_off_market_display_malformed")
+        else:
+            best_is_off_market = display["best_is_off_market"]
+
     books = {
         book
         for stats in provider_stats.values()
@@ -600,7 +652,7 @@ def aggregate_candidate_market_evidence(
         "broad_confirmation": len(books) >= 3,
         "reversal_book_count": sum(stats["reversal_book_count"] for stats in provider_stats.values()),
         "volatile_book_count": sum(stats["volatile_book_count"] for stats in provider_stats.values()),
-        "best_is_off_market": False,
+        "best_is_off_market": best_is_off_market,
     }
 
 

@@ -2,6 +2,10 @@
 (function () {
   const ENDPOINT = "/.netlify/functions/alternative-picks";
   const LANES = new Set(["consensus_core", "reentry_expansion"]);
+  const SELECTOR_IDS_BY_LANE = Object.freeze({
+    consensus_core: "no_drag_distinct_family_consensus_core_v1",
+    reentry_expansion: "moderate_edge_quality_reentry_expansion_v1",
+  });
   const STATUSES = new Set(["selected", "not_selected", "pending"]);
   const CHECKPOINTS = new Set(["provisional", "frozen_pregame"]);
   const LOCK_STATUSES = new Set(["due_now", "missed_lock"]);
@@ -49,13 +53,22 @@
     return isoTimestamp(first) && isoTimestamp(last);
   }
 
+  function validSelectionIdentity(lane, selectorId, selectionStatus) {
+    const hasApprovedLane = LANES.has(lane) && selectorId === SELECTOR_IDS_BY_LANE[lane];
+    const hasNoLane = !lane && !selectorId;
+    if (selectionStatus === "selected") return hasApprovedLane;
+    if (selectionStatus === "not_selected") return hasNoLane;
+    return selectionStatus === "pending" && (hasNoLane || hasApprovedLane);
+  }
+
   function normalizeRow(row, slateDate) {
     if (!row || typeof row !== "object" || Array.isArray(row)) return null;
     const lane = text(row.lane);
+    const selectorId = text(row.selector_id);
     const selectionStatus = text(row.selection_status);
     const checkpoint = text(row.checkpoint);
     const familyStates = normalizeFamilyStates(row.family_states);
-    if (text(row.slate_date) !== slateDate || !LANES.has(lane) || !STATUSES.has(selectionStatus) || !CHECKPOINTS.has(checkpoint) || !familyStates) return null;
+    if (text(row.slate_date) !== slateDate || !STATUSES.has(selectionStatus) || !validSelectionIdentity(lane, selectorId, selectionStatus) || !CHECKPOINTS.has(checkpoint) || !familyStates) return null;
     if (!text(row.pitcher) || !text(row.team) || !text(row.opp_team) || !text(row.side) || !finite(row.model_k_line)) return null;
     if (!isoTimestamp(row.game_time) || !isoTimestamp(row.source_artifact_generated_at) || !validEvidenceTimes(row, selectionStatus)) return null;
     if (checkpoint === "frozen_pregame" && (!isoTimestamp(row.frozen_at) || !isoTimestamp(row.should_lock_at) || !finite(row.minutes_until_start) || !LOCK_STATUSES.has(text(row.lock_status)))) return null;
@@ -63,7 +76,8 @@
       slate_date: slateDate, pitcher: text(row.pitcher), team: text(row.team), opp_team: text(row.opp_team),
       game_time: text(row.game_time), side: text(row.side).toUpperCase(), model_k_line: row.model_k_line,
       official_odds: finite(row.official_odds) ? row.official_odds : null, official_book: text(row.official_book), official_verdict: text(row.official_verdict),
-      lane, selection_status: selectionStatus, checkpoint, family_states: familyStates,
+      lane: lane || null, selector_id: selectorId || null,
+      selection_status: selectionStatus, checkpoint, family_states: familyStates,
       family_count: Number.isInteger(row.family_count) ? row.family_count : 0,
       reason_codes: Array.isArray(row.reason_codes) ? row.reason_codes.filter((code) => typeof code === "string") : [],
       source_artifact_generated_at: text(row.source_artifact_generated_at), evidence_freshness_status: text(row.evidence_freshness_status),

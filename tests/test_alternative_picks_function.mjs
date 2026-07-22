@@ -117,6 +117,22 @@ function frozenState(overrides = {}) {
   };
 }
 
+function provisionalState(overrides = {}) {
+  return frozenState({
+    checkpoint: 'provisional',
+    source_artifact_sha256: CURRENT_SHA,
+    frozen_at: null,
+    lock_dedupe_key: null,
+    lock_artifact_sha256: null,
+    lock_source_artifact_path: null,
+    locked_at: null,
+    should_lock_at: null,
+    minutes_until_start: null,
+    lock_status: null,
+    ...overrides,
+  });
+}
+
 function matchingLock(state, overrides = {}) {
   return {
     id: 'never-expose-lock-id',
@@ -268,6 +284,69 @@ test('alternative-picks rejects foreign selectors, bad fingerprints, untyped val
       assert.deepEqual(response.json.rows, []);
     } finally { fake.restore(); restoreEnv(); }
   }
+});
+
+test('alternative-picks accepts null-lane supporting rows while keeping selected lane identity strict', async () => {
+  const validRows = [
+    provisionalState({ lane: null, selector_id: null, selection_status: 'not_selected' }),
+    provisionalState({ lane: null, selector_id: null, selection_status: 'pending' }),
+    provisionalState({ selection_status: 'pending' }),
+  ];
+  configure();
+  const validFetch = installFetch({ stateRows: validRows });
+  try {
+    const response = await responseJson(event());
+    assert.equal(response.json.status, 'ready');
+    assert.equal(response.json.rows.length, 3);
+    assert.deepEqual(
+      response.json.rows.map(row => [row.selection_status, row.lane, row.selector_id]),
+      [
+        ['not_selected', null, null],
+        ['pending', null, null],
+        ['pending', 'consensus_core', MANIFEST.selector_ids.consensus_core],
+      ],
+    );
+    assert.deepEqual(response.json.counts, { provisional: 3, frozen: 0, selected: 0, pending: 2 });
+  } finally { validFetch.restore(); restoreEnv(); }
+
+  const invalidRows = [
+    provisionalState({ lane: null, selector_id: null, selection_status: 'selected' }),
+    provisionalState({ selection_status: 'not_selected' }),
+    provisionalState({ lane: null, selector_id: MANIFEST.selector_ids.consensus_core, selection_status: 'pending' }),
+    provisionalState({ selector_id: null, selection_status: 'pending' }),
+    provisionalState({ selector_id: MANIFEST.selector_ids.reentry_expansion, selection_status: 'pending' }),
+  ];
+  for (const state of invalidRows) {
+    configure();
+    const invalidFetch = installFetch({ stateRows: [state] });
+    try { assert.deepEqual((await responseJson(event())).json.rows, []); }
+    finally { invalidFetch.restore(); restoreEnv(); }
+  }
+});
+
+test('alternative-picks distinguishes a healthy no-qualifier row from waiting on current evidence', async () => {
+  configure();
+  const healthyFetch = installFetch({
+    stateRows: [provisionalState({ lane: null, selector_id: null, selection_status: 'not_selected' })],
+  });
+  try {
+    const healthy = await responseJson(event());
+    assert.equal(healthy.json.status, 'ready');
+    assert.equal(healthy.json.rows.length, 1);
+    assert.equal(healthy.json.rows[0].selection_status, 'not_selected');
+  } finally { healthyFetch.restore(); restoreEnv(); }
+
+  configure();
+  const waitingFetch = installFetch({
+    stateRows: [provisionalState({
+      lane: null, selector_id: null, selection_status: 'pending', source_artifact_sha256: FROZEN_CANONICAL_SHA,
+    })],
+  });
+  try {
+    const waiting = await responseJson(event());
+    assert.equal(waiting.json.status, 'ready');
+    assert.deepEqual(waiting.json.rows, []);
+  } finally { waitingFetch.restore(); restoreEnv(); }
 });
 
 test('alternative-picks requires every declared provider posture and an approved publication source', async () => {

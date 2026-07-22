@@ -321,6 +321,74 @@ def test_alternative_sidecar_off_performs_no_state_reads_or_writes(monkeypatch):
     writer.insert_ignore_rows.assert_not_called()
 
 
+def test_alternative_sidecar_filters_pass_before_any_state_read_or_write(monkeypatch):
+    monkeypatch.setenv("ALTERNATIVE_PICK_SELECTION_MODE", "record")
+    payload = _alternative_artifact_payload()
+    payload["pitchers"][0]["tracked_picks"][0].update({
+        "display_verdict": "PASS",
+        "locked_verdict": "FIRE 1u",
+        "verdict": "FIRE 2u",
+    })
+    writer = Mock()
+
+    result = build_live_events_to_supabase._write_alternative_pick_selection_state(
+        writer=writer,
+        slate_date="2026-05-06",
+        payload=payload,
+        snapshot_rows=[],
+        market_pick_evidence_rows=[],
+        live_market_display_rows=[],
+        observed_at=build_live_events_to_supabase.datetime.fromisoformat("2026-05-06T18:00:00+00:00"),
+        artifact_source="https://example.netlify.app/.netlify/functions/get-artifact?type=today",
+        source_payload_sha256=build_live_events_to_supabase.canonical_payload_sha256(payload),
+        source_artifact_byte_sha256="b" * 64,
+        operational_pick_locks={"skipped": True, "reason": "disabled"},
+        market_line_build={"skipped": True, "reason": "fresh"},
+    )
+
+    assert result == {"skipped": True, "reason": "no_candidates", "rows": 0}
+    writer.select_rows.assert_not_called()
+    writer.upsert_rows.assert_not_called()
+    writer.insert_ignore_rows.assert_not_called()
+
+
+def test_alternative_sidecar_defensively_skips_ineligible_evaluations(monkeypatch):
+    monkeypatch.setenv("ALTERNATIVE_PICK_SELECTION_MODE", "record")
+    payload = _alternative_artifact_payload()
+    writer = Mock()
+    writer.select_rows.side_effect = [[], []]
+    ineligible = {
+        "eligible": False,
+        "selector_fingerprint": "c" * 64,
+        "family_states": {"base": {"state": "pending", "reason_codes": ["pass_verdict"]}},
+        "family_count": 0,
+        "lane": None,
+        "selection_status": "pending",
+        "reason_codes": ("pass_verdict",),
+        "normalized_inputs": {"official_verdict": "PASS", "odds": -108, "official_book": "fanduel"},
+    }
+
+    with patch.object(build_live_events_to_supabase, "evaluate_alternative_pick", return_value=ineligible):
+        result = build_live_events_to_supabase._write_alternative_pick_selection_state(
+            writer=writer,
+            slate_date="2026-05-06",
+            payload=payload,
+            snapshot_rows=[],
+            market_pick_evidence_rows=[],
+            live_market_display_rows=[],
+            observed_at=build_live_events_to_supabase.datetime.fromisoformat("2026-05-06T18:00:00+00:00"),
+            artifact_source="https://example.netlify.app/.netlify/functions/get-artifact?type=today",
+            source_payload_sha256=build_live_events_to_supabase.canonical_payload_sha256(payload),
+            source_artifact_byte_sha256="b" * 64,
+            operational_pick_locks={"skipped": True, "reason": "disabled"},
+            market_line_build={"skipped": True, "reason": "fresh"},
+        )
+
+    assert result["rows"] == 0
+    writer.upsert_rows.assert_not_called()
+    writer.insert_ignore_rows.assert_not_called()
+
+
 def test_alternative_sidecar_uses_narrow_allowlisted_state_and_lock_reads(monkeypatch):
     monkeypatch.setenv("ALTERNATIVE_PICK_SELECTION_MODE", "record")
     payload = _alternative_artifact_payload()
@@ -1063,6 +1131,7 @@ def test_worker_calls_alternative_sidecar_only_after_lock_timing_and_market_buil
 
     def alternative(**kwargs):
         calls.append("alternative")
+        assert kwargs["live_market_display_rows"] == []
         return {"skipped": True, "reason": "disabled", "rows": 0}
 
     with (

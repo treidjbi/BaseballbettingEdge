@@ -28,6 +28,7 @@ function row(overrides = {}) {
     slate_date: "2026-07-21", pitcher: "Test Pitcher", team: "ARI", opp_team: "LAD",
     game_time: "2026-07-21T23:00:00Z", side: "over", model_k_line: 5.5,
     official_odds: -115, official_book: "fanduel", official_verdict: "FIRE 1u",
+    selector_id: "no_drag_distinct_family_consensus_core_v1",
     lane: "consensus_core", selection_status: "selected", checkpoint: "frozen_pregame",
     family_states: {
       base: { state: "agree" }, anchor: { state: "disagree" },
@@ -59,6 +60,44 @@ test("normalizeResponse retains only current-slate rows with the approved two la
   assert.equal(normalized.status, "ready");
   assert.equal(normalized.rows.length, 1);
   assert.deepEqual(Object.keys(normalized.rows[0].family_states), ["base", "anchor", "preclose", "reentry"]);
+});
+
+test("normalizeResponse retains null-lane supporting rows and rejects invalid lane-selector-status combinations", () => {
+  const { api } = load();
+  const normalized = api.normalizeResponse({
+    slate_date: "2026-07-21", status: "ready", counts: {}, rows: [
+      row({ lane: null, selector_id: null, selection_status: "not_selected" }),
+      row({ lane: null, selector_id: null, selection_status: "pending" }),
+      row({ selection_status: "pending" }),
+      row({ lane: null, selector_id: null, selection_status: "selected" }),
+      row({ selection_status: "not_selected" }),
+      row({ lane: null, selector_id: "no_drag_distinct_family_consensus_core_v1", selection_status: "pending" }),
+      row({ selector_id: null, selection_status: "pending" }),
+      row({ selector_id: "moderate_edge_quality_reentry_expansion_v1", selection_status: "pending" }),
+    ],
+  });
+  assert.deepEqual(
+    normalized.rows.map(item => [item.selection_status, item.lane, item.selector_id]),
+    [
+      ["not_selected", null, null],
+      ["pending", null, null],
+      ["pending", "consensus_core", "no_drag_distinct_family_consensus_core_v1"],
+    ],
+  );
+});
+
+test("normalized supporting rows distinguish healthy no qualifiers from waiting for rows", () => {
+  const { api } = load();
+  const healthy = api.normalizeResponse({
+    slate_date: "2026-07-21", status: "ready", counts: {},
+    rows: [row({ lane: null, selector_id: null, selection_status: "not_selected" })],
+  });
+  const waiting = api.normalizeResponse({
+    slate_date: "2026-07-21", status: "ready", counts: {}, rows: [],
+  });
+  assert.equal(healthy.rows.length, 1);
+  assert.equal(healthy.rows[0].selection_status, "not_selected");
+  assert.equal(waiting.rows.length, 0);
 });
 
 test("formatFreezeLabel uses actual checkpoint capture values", () => {

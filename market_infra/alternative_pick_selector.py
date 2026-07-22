@@ -391,6 +391,7 @@ def preclose_strong(features: dict[str, Any], market_evidence: dict[str, Any], *
     observations = _preclose_observation_vote(features, market_evidence)
     if observations: return observations
     if market_evidence.get("reversal_book_count") is None or market_evidence.get("volatile_book_count") is None: return FamilyVote("pending", ("preclose_volatility_missing",))
+    if not isinstance(market_evidence.get("best_is_off_market"), bool): return FamilyVote("pending", ("preclose_best_off_market_missing",))
     if _enum(market_evidence.get("freshness_status")) != "fresh": return FamilyVote("pending", ("preclose_evidence_stale",))
     if _features_missing(features, ("edge", "adjusted_ev", "model_no_vig_gap", "price_sign", "quality_gate_level", "bet_timing_window")) or features.get("adjusted_ev_error"): return FamilyVote("pending", (features.get("adjusted_ev_error") or "preclose_runtime_inputs_missing",))
     row = {**market_evidence, **features}

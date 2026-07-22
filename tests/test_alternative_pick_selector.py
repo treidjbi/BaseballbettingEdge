@@ -236,3 +236,23 @@ def test_shared_predicates_match_golden_runtime_rows_without_a_research_ledger_c
     assert selector.preclose_strong(features, _inputs()["market_evidence"]).state == "agree"
     assert selector.moderate_edge_quality_reentry(features).state == "agree"
     assert selector.prospective_ledger_seed() == {"rows": 0, "pnl": 0.0}
+
+
+def test_preclose_requires_explicit_boolean_off_market_evidence_and_penalizes_true():
+    inputs = _inputs()
+    features = selector.derive_runtime_features(**{
+        key: inputs[key] for key in ("pitcher", "pick", "market_evidence", "observed_at")
+    })
+    explicit_false = {**inputs["market_evidence"], "best_is_off_market": False}
+    explicit_true = {**inputs["market_evidence"], "best_is_off_market": True}
+    missing = {key: value for key, value in inputs["market_evidence"].items() if key != "best_is_off_market"}
+
+    false_score = selector.preclose_proxy_score_from_row({**explicit_false, **features})
+    true_score = selector.preclose_proxy_score_from_row({**explicit_true, **features})
+    assert selector.preclose_strong(features, explicit_false).state == "agree"
+    assert true_score["score"] < false_score["score"]
+    assert "off_market_best_book" in true_score["risk_reasons"]
+    for unavailable in (missing, {**missing, "best_is_off_market": "false"}, {**missing, "best_is_off_market": 0}):
+        vote = selector.preclose_strong(features, unavailable)
+        assert vote.state == "pending"
+        assert "preclose_best_off_market_missing" in vote.reason_codes

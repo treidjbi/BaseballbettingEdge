@@ -166,6 +166,8 @@ function safeFamilyStates(value) {
 }
 
 function responseRow(row, { artifactAdvancedAfterFreeze }) {
+  const lane = text(row.lane) || null;
+  const selectorId = text(row.selector_id) || null;
   return {
     slate_date: row.slate_date,
     pitcher: safeText(row.pitcher),
@@ -178,8 +180,8 @@ function responseRow(row, { artifactAdvancedAfterFreeze }) {
     official_book: supportedBook(row.official_book),
     official_verdict: text(row.official_verdict),
     bundle_id: BUNDLE_ID,
-    selector_id: SELECTOR_IDS_BY_LANE[text(row.lane)] || null,
-    lane: text(row.lane),
+    selector_id: selectorId,
+    lane,
     selection_status: text(row.selection_status),
     family_states: safeFamilyStates(row.family_states),
     family_count: integer(row.family_count) ?? 0,
@@ -198,10 +200,20 @@ function responseRow(row, { artifactAdvancedAfterFreeze }) {
   };
 }
 
+function validSelectionIdentity(row) {
+  const lane = text(row.lane);
+  const selectorId = text(row.selector_id);
+  const selectionStatus = text(row.selection_status);
+  const hasApprovedLane = LANES.has(lane) && selectorId === SELECTOR_IDS_BY_LANE[lane];
+  const hasNoLane = !lane && !selectorId;
+  if (selectionStatus === 'selected') return hasApprovedLane;
+  if (selectionStatus === 'not_selected') return hasNoLane;
+  return selectionStatus === 'pending' && (hasNoLane || hasApprovedLane);
+}
+
 function validStateBase(row, slateDate) {
   if (!row || typeof row !== 'object') return false;
   const checkpoint = text(row.checkpoint);
-  const lane = text(row.lane);
   const familyStates = safeFamilyStates(row.family_states);
   const reasons = safeReasonCodes(row.reason_codes);
   return validDate(row.slate_date) === slateDate
@@ -210,7 +222,7 @@ function validStateBase(row, slateDate) {
     && safeText(row.pitcher) && safeText(row.normalized_pitcher) && safeTeam(row.team) && safeTeam(row.opp_team)
     && timestamp(row.game_time) && ['over', 'under'].includes(text(row.side).toLowerCase())
     && number(row.model_k_line) != null
-    && LANES.has(lane) && text(row.selector_id) === SELECTOR_IDS_BY_LANE[lane]
+    && validSelectionIdentity(row)
     && validHash(row.selector_fingerprint) === SELECTOR_FINGERPRINT
     && integer(row.official_odds) != null && supportedBook(row.official_book) && OFFICIAL_VERDICTS.has(text(row.official_verdict))
     && SELECTION_STATUSES.has(text(row.selection_status))

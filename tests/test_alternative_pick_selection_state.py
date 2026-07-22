@@ -145,6 +145,27 @@ def _market_evidence(**overrides):
     return row
 
 
+def _live_display(candidate, **overrides):
+    row = {
+        "slate_date": candidate["slate_date"],
+        "normalized_pitcher": candidate["normalized_pitcher"],
+        "side": candidate["side"],
+        "k_line": candidate["model_k_line"],
+        "provider": candidate["provider_posture"],
+        "game_time": candidate["game_time"],
+        "game_state": "scheduled",
+        "observed_at": OBSERVED_AT,
+        "updated_at": OBSERVED_AT,
+        "latest_snapshot_at": "2026-07-21T22:30:00Z",
+        "freshness_status": "fresh",
+        "source_artifact_path": "dashboard/data/processed/today.json",
+        "source_artifact_sha256": LOCK_SHA,
+        "best_is_off_market": False,
+    }
+    row.update(overrides)
+    return row
+
+
 def test_raw_observation_binder_requires_exact_line_event_provider_and_real_freshness():
     candidate = _candidate(provider_posture="propline")
     exact_rows = [
@@ -354,9 +375,15 @@ def test_market_evidence_aggregation_is_order_independent_and_reads_metadata_fre
     )
     forward = state.aggregate_candidate_market_evidence(
         candidate=candidate, market_evidence_rows=[therundown, propline], evidence_window=window,
+        live_market_display_rows=[_live_display(candidate)],
+        source_artifact_path="dashboard/data/processed/today.json",
+        source_artifact_byte_sha256=LOCK_SHA, observed_at=OBSERVED_AT,
     )
     reverse = state.aggregate_candidate_market_evidence(
         candidate=candidate, market_evidence_rows=[propline, therundown], evidence_window=window,
+        live_market_display_rows=[_live_display(candidate)],
+        source_artifact_path="dashboard/data/processed/today.json",
+        source_artifact_byte_sha256=LOCK_SHA, observed_at=OBSERVED_AT,
     )
     assert forward == reverse
     assert forward["provider"] == "therundown_propline"
@@ -457,6 +484,75 @@ def test_market_evidence_counts_must_be_exact_nonnegative_integers_and_match_bou
     assert aggregate["away_from_pick_count"] == 0
     assert aggregate["freshness_status"] == "pending"
     assert "provider_evidence_conflict" in aggregate["aggregation_reason_codes"]
+
+
+def test_market_evidence_requires_one_current_exact_display_row_for_off_market_flag():
+    candidate = _candidate(provider_posture="propline")
+    window = {
+        "ready": True,
+        "bound_observations": [
+            {"id": "pl-1", "provider": "propline", "bookmaker_key": "fanduel", "american_odds": -110, "observed_at": "2026-07-21T22:20:00+00:00"},
+            {"id": "pl-2", "provider": "propline", "bookmaker_key": "fanduel", "american_odds": -115, "observed_at": "2026-07-21T22:30:00+00:00"},
+        ],
+        "observation_ids": ["pl-1", "pl-2"],
+        "first_observed_at": "2026-07-21T22:20:00+00:00",
+        "last_observed_at": "2026-07-21T22:30:00+00:00",
+        "first_current_at": "2026-07-21T22:15:00+00:00",
+    }
+    evidence_rows = [_market_evidence(
+        provider="propline", book_count=1, books_seen=["fanduel"],
+        toward_pick_count=1, away_from_pick_count=0,
+    )]
+    display = {
+        "slate_date": candidate["slate_date"],
+        "normalized_pitcher": candidate["normalized_pitcher"],
+        "side": candidate["side"],
+        "k_line": candidate["model_k_line"],
+        "provider": candidate["provider_posture"],
+        "game_time": candidate["game_time"],
+        "game_state": "scheduled",
+        "observed_at": OBSERVED_AT,
+        "updated_at": OBSERVED_AT,
+        "latest_snapshot_at": "2026-07-21T22:30:00Z",
+        "freshness_status": "fresh",
+        "source_artifact_path": "dashboard/data/processed/today.json",
+        "source_artifact_sha256": LOCK_SHA,
+        "best_is_off_market": False,
+    }
+    common = {
+        "candidate": candidate,
+        "market_evidence_rows": evidence_rows,
+        "evidence_window": window,
+        "source_artifact_path": "dashboard/data/processed/today.json",
+        "source_artifact_byte_sha256": LOCK_SHA,
+        "observed_at": OBSERVED_AT,
+    }
+
+    explicit_false = state.aggregate_candidate_market_evidence(
+        **common, live_market_display_rows=[display],
+    )
+    explicit_true = state.aggregate_candidate_market_evidence(
+        **common, live_market_display_rows=[{**display, "best_is_off_market": True}],
+    )
+    assert explicit_false["freshness_status"] == "fresh"
+    assert explicit_false["best_is_off_market"] is False
+    assert explicit_true["freshness_status"] == "fresh"
+    assert explicit_true["best_is_off_market"] is True
+
+    unavailable_cases = (
+        ([], "best_off_market_display_missing"),
+        ([{**display, "best_is_off_market": "false"}], "best_off_market_display_malformed"),
+        ([{**display, "freshness_status": "stale"}], "best_off_market_display_stale"),
+        ([{**display, "source_artifact_sha256": "c" * 64}], "best_off_market_display_mismatch"),
+        ([display, dict(display)], "best_off_market_display_duplicate"),
+    )
+    for rows, reason in unavailable_cases:
+        aggregate = state.aggregate_candidate_market_evidence(
+            **common, live_market_display_rows=rows,
+        )
+        assert aggregate["freshness_status"] == "pending"
+        assert aggregate["best_is_off_market"] is None
+        assert reason in aggregate["aggregation_reason_codes"]
 
 
 def test_candidate_observations_start_at_the_current_identity_and_require_two_supported_snapshots():

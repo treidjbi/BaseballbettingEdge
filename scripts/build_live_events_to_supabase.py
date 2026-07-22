@@ -38,6 +38,7 @@ from market_infra.alternative_pick_selection_state import (  # noqa: E402
 from market_infra.alternative_pick_selector import (  # noqa: E402
     BUNDLE_ID,
     derive_runtime_features,
+    display_verdict,
     evaluate_alternative_pick,
 )
 from market_infra.live_market_display import build_live_market_display_rows  # noqa: E402
@@ -223,6 +224,8 @@ def _alternative_tracked_candidates(
         for pick in tracked:
             if not isinstance(pick, dict):
                 continue
+            if display_verdict(pick).upper() == "PASS":
+                continue
             side = str(pick.get("side") or "").strip().lower()
             if side not in {"over", "under"}:
                 continue
@@ -367,6 +370,7 @@ def _write_alternative_pick_selection_state(
     market_line_build: dict[str, Any],
     shadow_pipeline_timing: dict[str, Any] | None = None,
     ready_to_bet_write: dict[str, Any] | None = None,
+    live_market_display_rows: list[dict[str, Any]] | None = None,
     budget_seconds: float = 5.0,
 ) -> dict[str, Any]:
     """Record isolated alternative state with bounded, single-attempt requests."""
@@ -526,6 +530,10 @@ def _write_alternative_pick_selection_state(
                 candidate=candidate,
                 market_evidence_rows=market_pick_evidence_rows,
                 evidence_window=evidence_window,
+                live_market_display_rows=live_market_display_rows,
+                source_artifact_path=artifact_source,
+                source_artifact_byte_sha256=source_artifact_byte_sha256,
+                observed_at=observed_at_iso,
             )
             evidence_window = {
                 **evidence_window,
@@ -550,6 +558,11 @@ def _write_alternative_pick_selection_state(
                 source_artifact_byte_sha256=source_artifact_byte_sha256,
                 observed_at=observed_at_iso,
             )
+            eligible = evaluation.get("eligible") if isinstance(evaluation, dict) else getattr(evaluation, "eligible", None)
+            if eligible is not True:
+                if remaining() <= 0:
+                    return _alternative_failure_summary("timeout")
+                continue
         except Exception:
             return _alternative_failure_summary("failed")
         provisional = build_provisional_row(
@@ -1557,6 +1570,7 @@ def run(
         payload=payload,
         snapshot_rows=snapshot_rows,
         market_pick_evidence_rows=market_pick_evidence_rows,
+        live_market_display_rows=live_market_display_rows,
         observed_at=observed_at,
         artifact_source=artifact_source,
         source_payload_sha256=source_payload_sha256,
