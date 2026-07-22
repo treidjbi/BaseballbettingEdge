@@ -193,3 +193,42 @@ def test_poll_therundown_mainline_can_record_failure_without_raising(monkeypatch
     assert failed["provider"] == "therundown"
     assert failed["status"] == "failed"
     assert failed["error_message"] == "TheRundown read timed out"
+
+
+def test_poll_deduplicates_cross_date_events_before_market_writes(monkeypatch):
+    writer = FakeWriter()
+
+    def fake_fetch(fetch_date, *, main_line, hide_closed_markets):
+        return _fetch_result([_event()], 65, fetch_date)
+
+    monkeypatch.setattr(
+        shadow_therundown_mainline_to_supabase,
+        "fetch_therundown_events",
+        fake_fetch,
+    )
+    monkeypatch.setattr(
+        shadow_therundown_mainline_to_supabase,
+        "_production_artifact_for_slate",
+        lambda slate_date, **kwargs: (None, None),
+    )
+
+    result = poll_therundown_mainline_to_supabase(
+        "2026-06-12",
+        writer=writer,
+        observed_at="2026-06-12T15:03:00+00:00",
+    )
+
+    event_upsert = [entry for entry in writer.upserts if entry[0] == "market_events"][0]
+    snapshot_upsert = [entry for entry in writer.upserts if entry[0] == "market_snapshots"][0]
+    assert len(event_upsert[1]) == 1
+    assert len(snapshot_upsert[1]) == 2
+    assert len({row["dedupe_key"] for row in snapshot_upsert[1]}) == 2
+
+    assert result["target_event_count"] == 2
+    assert result["unique_event_count"] == 1
+    assert result["duplicate_event_count"] == 1
+
+    completed = writer.upserts[-1][1][0]
+    assert completed["metadata"]["unique_event_count"] == 1
+    assert completed["metadata"]["duplicate_event_count"] == 1
+    assert completed["metadata"]["duplicate_event_ids"] == ["tr-evt-1"]

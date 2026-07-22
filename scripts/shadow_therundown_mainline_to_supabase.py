@@ -119,6 +119,29 @@ def _slate_fetch_dates(slate_date: str) -> list[str]:
     return [slate_date, (dt + timedelta(days=1)).strftime("%Y-%m-%d")]
 
 
+def _deduplicate_events(
+    events: list[dict[str, Any]],
+) -> tuple[list[dict[str, Any]], list[str]]:
+    """Keep the first row for each provider event ID across date responses."""
+    unique_events: list[dict[str, Any]] = []
+    seen_ids: set[str] = set()
+    duplicate_ids: list[str] = []
+    reported_duplicate_ids: set[str] = set()
+
+    for event in events:
+        provider_event_id = str(event.get("event_id") or event.get("id") or "").strip()
+        if provider_event_id and provider_event_id in seen_ids:
+            if provider_event_id not in reported_duplicate_ids:
+                duplicate_ids.append(provider_event_id)
+                reported_duplicate_ids.add(provider_event_id)
+            continue
+        if provider_event_id:
+            seen_ids.add(provider_event_id)
+        unique_events.append(event)
+
+    return unique_events, duplicate_ids
+
+
 def fetch_therundown_events(
     fetch_date: str,
     *,
@@ -214,6 +237,9 @@ def _run_metadata(
     production_artifact_path: str | None,
     fetch_results: list[dict[str, Any]],
     snapshot_count: int,
+    unique_event_count: int,
+    duplicate_event_count: int,
+    duplicate_event_ids: list[str],
     query_mode: str,
     hide_closed_markets: bool,
 ) -> dict[str, Any]:
@@ -225,6 +251,9 @@ def _run_metadata(
         "production_artifact_date": _payload_slate_date(production_payload),
         "datapoints_total": sum(_integer(result.get("datapoints")) for result in fetch_results),
         "snapshot_rows": snapshot_count,
+        "unique_event_count": unique_event_count,
+        "duplicate_event_count": duplicate_event_count,
+        "duplicate_event_ids": duplicate_event_ids,
         "target_affiliate_ids": list(TARGET_AFFILIATE_IDS),
         "fetches": [
             {
@@ -249,6 +278,9 @@ def _coverage_audit_row(
     production_payload: dict | None,
     production_artifact_path: str | None,
     fetch_results: list[dict[str, Any]],
+    unique_event_count: int,
+    duplicate_event_count: int,
+    duplicate_event_ids: list[str],
     query_mode: str,
     hide_closed_markets: bool,
 ) -> dict[str, Any]:
@@ -270,6 +302,9 @@ def _coverage_audit_row(
         "query_mode": query_mode,
         "hide_closed_markets": hide_closed_markets,
         "datapoints_total": sum(_integer(result.get("datapoints")) for result in fetch_results),
+        "unique_event_count": unique_event_count,
+        "duplicate_event_count": duplicate_event_count,
+        "duplicate_event_ids": duplicate_event_ids,
         "fetches": [
             {
                 "fetch_date": result.get("fetch_date"),
@@ -332,6 +367,9 @@ def poll_therundown_mainline_to_supabase(
         artifact_url=_production_artifact_url_from_env(),
     )
     request_count = 0
+    raw_event_count = 0
+    unique_event_count = 0
+    duplicate_event_ids: list[str] = []
 
     try:
         for fetch_date in _slate_fetch_dates(slate_date):
@@ -344,6 +382,11 @@ def poll_therundown_mainline_to_supabase(
             fetch_results.append(result)
             events.extend(result.get("events") or [])
             time.sleep(THROTTLE_S)
+
+        raw_event_count = len(events)
+        events, duplicate_event_ids = _deduplicate_events(events)
+        unique_event_count = len(events)
+        duplicate_event_count = raw_event_count - unique_event_count
 
         snapshots = snapshots_from_therundown_events(
             events,
@@ -372,6 +415,9 @@ def poll_therundown_mainline_to_supabase(
                 production_payload=production_payload,
                 production_artifact_path=production_artifact_path,
                 fetch_results=fetch_results,
+                unique_event_count=unique_event_count,
+                duplicate_event_count=duplicate_event_count,
+                duplicate_event_ids=duplicate_event_ids,
                 query_mode=query_mode,
                 hide_closed_markets=hide_closed_markets,
             )
@@ -395,12 +441,16 @@ def poll_therundown_mainline_to_supabase(
                 production_artifact_path=production_artifact_path,
                 fetch_results=fetch_results,
                 snapshot_count=len(snapshots),
+                unique_event_count=unique_event_count,
+                duplicate_event_count=duplicate_event_count,
+                duplicate_event_ids=duplicate_event_ids,
                 query_mode=query_mode,
                 hide_closed_markets=hide_closed_markets,
             ),
         }], on_conflict="id")
     except Exception as exc:
         error_message = str(exc)[:1000]
+        duplicate_event_count = raw_event_count - unique_event_count
         writer.upsert_rows("market_provider_runs", [{
             "id": run_id,
             "provider": "therundown",
@@ -421,6 +471,9 @@ def poll_therundown_mainline_to_supabase(
                 production_artifact_path=production_artifact_path,
                 fetch_results=fetch_results,
                 snapshot_count=len(snapshots),
+                unique_event_count=unique_event_count,
+                duplicate_event_count=duplicate_event_count,
+                duplicate_event_ids=duplicate_event_ids,
                 query_mode=query_mode,
                 hide_closed_markets=hide_closed_markets,
             ),
@@ -432,6 +485,8 @@ def poll_therundown_mainline_to_supabase(
             "status": "failed",
             "request_count": request_count,
             "snapshot_count": len(snapshots),
+            "unique_event_count": unique_event_count,
+            "duplicate_event_count": duplicate_event_count,
             "books_seen": sorted(books_seen),
             "datapoints": sum(_integer(result.get("datapoints")) for result in fetch_results),
             "error": error_message,
@@ -442,6 +497,8 @@ def poll_therundown_mainline_to_supabase(
         "status": "completed",
         "request_count": request_count,
         "target_event_count": sum(len(result.get("events") or []) for result in fetch_results),
+        "unique_event_count": unique_event_count,
+        "duplicate_event_count": raw_event_count - unique_event_count,
         "snapshot_count": len(snapshots),
         "parsed_pitcher_prop_count": len({
             (snapshot["normalized_player_name"], snapshot["line"])
