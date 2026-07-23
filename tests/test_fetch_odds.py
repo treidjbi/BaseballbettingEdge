@@ -452,6 +452,22 @@ def test_home_pitcher_gets_empty_team_not_away():
         assert r["opp_team"] == "", f"Expected empty opp_team, got {r['opp_team']!r}"
 
 
+def test_direct_therundown_parser_declares_explicit_line_source_provider():
+    """Direct TheRundown rows must declare their provider for fail-closed consumers."""
+    import os
+    import sys
+
+    sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'pipeline'))
+    from fetch_odds import _parse_event_k_props
+
+    event = _make_event("Gerrit Cole", 7.5, -112, -108)
+    results = _parse_event_k_props(event)
+
+    assert len(results) == 1
+    assert results[0]["odds_source"] == "therundown"
+    assert results[0]["line_source_provider"] == "therundown"
+
+
 def test_skips_pitcher_with_only_over_no_under():
     event = {
         "event_id": "evt-missing-under",
@@ -760,7 +776,7 @@ class TestFetchOddsFailureHandling:
         assert result == official_props
 
     def test_official_market_source_falls_back_to_therundown_in_overlap_mode(self):
-        fallback_props = [{"pitcher": "Gerrit Cole", "k_line": 7.5, "odds_source": "therundown"}]
+        fallback_props = parse_k_props({"events": [_make_event("Gerrit Cole", 7.5, -112, -108)]})
 
         with patch.dict(
             "os.environ",
@@ -775,6 +791,7 @@ class TestFetchOddsFailureHandling:
 
         mock_therundown.assert_called_once_with("2026-05-13")
         assert result == fallback_props
+        assert result[0]["line_source_provider"] == "therundown"
 
     def test_official_market_source_strict_mode_blocks_empty_official_rows(self):
         with patch.dict(

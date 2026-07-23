@@ -391,6 +391,7 @@ def _parse_event_k_props(event: dict) -> list:
                 "opening_odds_source": "first_seen",
                 "book_odds":          book_odds or None,
                 "odds_source":        "therundown",
+                "line_source_provider": "therundown",
             })
 
     return results

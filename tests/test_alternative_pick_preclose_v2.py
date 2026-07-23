@@ -160,6 +160,17 @@ def test_v2_does_not_infer_official_provider_from_combined_posture():
     assert "official_provider_missing" in bindings["reason_codes"]
 
 
+def test_v2_missing_exact_binding_ids_remain_unbound_without_fallback_inference():
+    bindings = _bindings(
+        pitcher=_pitcher(source_current_market_line_ids=[], source_snapshot_ids=[]),
+        current_lines={},
+    )
+
+    assert bindings["ready"] is False
+    assert bindings["official_binding"] is None
+    assert "official_binding_missing" in bindings["reason_codes"]
+
+
 def test_v2_binding_rejects_unbound_time_skew_wrong_event_line_and_side():
     skewed = _line(101, "therundown", "tr-event", TR_OVER, game_time="2026-07-22T23:05:00+00:00")
     assert _bindings(current_lines={"101": skewed}, pitcher=_pitcher(source_current_market_line_ids=[101]))["ready"] is True
