@@ -2775,6 +2775,64 @@ def test_worker_fetches_market_snapshots_by_recent_run_ids_when_available(tmp_pa
     assert result["line_movement_events"] == 1
 
 
+def test_snapshot_fetch_annotates_only_rows_bound_to_exact_slate_runs():
+    writer = Mock()
+
+    def select_rows(table, params):
+        if table == "market_provider_runs":
+            return [{
+                "id": "run-1",
+                "provider": "therundown",
+                "slate_date": "2026-05-06",
+            }]
+        if table == "market_snapshots":
+            return [
+                {"id": "snapshot-bound", "run_id": "run-1", "provider": "therundown"},
+                {"id": "snapshot-unbound", "run_id": "unknown-run", "provider": "therundown"},
+            ]
+        raise AssertionError(table)
+
+    writer.select_rows.side_effect = select_rows
+
+    rows = build_live_events_to_supabase._fetch_live_market_snapshot_rows(
+        writer,
+        "2026-05-06",
+        build_live_events_to_supabase.datetime.fromisoformat(
+            "2026-05-06T18:00:00+00:00"
+        ),
+    )
+
+    assert rows[0]["slate_date"] == "2026-05-06"
+    assert "slate_date" not in rows[1]
+
+
+def test_snapshot_fetch_does_not_invent_slate_date_on_broad_fallback_rows():
+    writer = Mock()
+
+    def select_rows(table, params):
+        if table == "market_provider_runs":
+            return []
+        if table == "market_snapshots":
+            return [{
+                "id": "snapshot-fallback",
+                "run_id": "run-without-provenance",
+                "provider": "therundown",
+            }]
+        raise AssertionError(table)
+
+    writer.select_rows.side_effect = select_rows
+
+    rows = build_live_events_to_supabase._fetch_live_market_snapshot_rows(
+        writer,
+        "2026-05-06",
+        build_live_events_to_supabase.datetime.fromisoformat(
+            "2026-05-06T18:00:00+00:00"
+        ),
+    )
+
+    assert "slate_date" not in rows[0]
+
+
 def test_worker_ignores_boltodds_shadow_snapshots_for_notifications(tmp_path):
     today = _write_artifact(tmp_path, [_fire_pitcher()])
     writer = _writer_with_selects({

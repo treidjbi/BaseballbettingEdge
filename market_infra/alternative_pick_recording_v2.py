@@ -246,7 +246,10 @@ def _evaluation_inputs(
         pick["locked_adj_ev"] = tracked_pick["display_adj_ev"]
     odds = next((tracked_pick.get(field) for field in ("display_odds", "locked_odds", "odds") if tracked_pick.get(field) is not None), None)
     book = next((tracked_pick.get(field) for field in ("display_book", "locked_book", "book") if tracked_pick.get(field) not in {None, ""}), None)
-    pick.update({"side": side, "official_k_line": candidate["model_k_line"], "odds": _american_odds(odds)})
+    tracked_odds = _american_odds(odds)
+    source_side_odds = _american_odds(pitcher.get(f"best_{side}_odds"))
+    source_side_book = _text(pitcher.get(f"best_{side}_book"))
+    pick.update({"side": side, "official_k_line": candidate["model_k_line"], "odds": tracked_odds})
     pitcher_input = dict(pitcher)
     pitcher_input.update({"game_time": candidate["game_time"], "k_line": candidate["model_k_line"]})
     for price_side in ("over", "under"):
@@ -254,13 +257,21 @@ def _evaluation_inputs(
             pitcher.get(f"best_{price_side}_odds")
         )
     if odds is not None:
-        pitcher_input[f"best_{side}_odds"] = _american_odds(odds)
+        pitcher_input[f"best_{side}_odds"] = tracked_odds
     if book is not None:
         pitcher_input[f"best_{side}_book"] = _text(book)
     try:
         line_matches = abs(float(pitcher.get("k_line")) - float(candidate["model_k_line"])) < 0.001
     except (TypeError, ValueError):
         line_matches = False
+    source_book_matches_tracked_quote = bool(
+        line_matches
+        and source_side_book
+        and source_side_odds is not None
+        and (odds is None or tracked_odds == source_side_odds)
+    )
+    if book is None and not source_book_matches_tracked_quote:
+        pitcher_input[f"best_{side}_book"] = None
     if not line_matches:
         pitcher_input.update({
             "best_over_odds": None, "best_under_odds": None,
@@ -271,8 +282,8 @@ def _evaluation_inputs(
         if book is not None:
             pitcher_input[f"best_{side}_book"] = _text(book)
     candidate.update({
-        "official_odds": _american_odds(odds),
-        "official_book": _text(book).lower(),
+        "official_odds": _american_odds(pitcher_input.get(f"best_{side}_odds")),
+        "official_book": _text(pitcher_input.get(f"best_{side}_book")).lower(),
         "official_verdict": display_verdict(tracked_pick),
     })
     return pitcher_input, pick

@@ -119,6 +119,47 @@ def test_v2_writer_uses_only_tracked_non_pass_current_artifact_candidates():
     assert [item[0]["pitcher"] for item in candidates] == ["Tarik Skubal"]
 
 
+def test_v2_evaluation_inputs_use_effective_pitcher_book_when_tracked_pick_omits_book():
+    payload = _payload()
+    payload["pitchers"][0]["tracked_picks"][0].pop("display_book")
+    candidate, pitcher, tracked_pick = recording.extract_alternative_pick_candidates_v2(
+        slate_date="2026-07-22",
+        payload=payload,
+    )[0]
+
+    pitcher_input, _pick_input = recording._evaluation_inputs(
+        pitcher=pitcher,
+        tracked_pick=tracked_pick,
+        candidate=candidate,
+    )
+
+    assert pitcher_input["best_over_book"] == "fanduel"
+    assert candidate["official_book"] == "fanduel"
+    assert candidate["official_odds"] == -120
+
+
+def test_v2_evaluation_inputs_do_not_pair_unmatched_tracked_price_with_pitcher_book():
+    payload = _payload()
+    tracked_pick = payload["pitchers"][0]["tracked_picks"][0]
+    tracked_pick.pop("display_book")
+    tracked_pick["display_odds"] = -125
+    candidate, pitcher, tracked_pick = recording.extract_alternative_pick_candidates_v2(
+        slate_date="2026-07-22",
+        payload=payload,
+    )[0]
+
+    pitcher_input, _pick_input = recording._evaluation_inputs(
+        pitcher=pitcher,
+        tracked_pick=tracked_pick,
+        candidate=candidate,
+    )
+
+    assert pitcher_input["best_over_odds"] == -125
+    assert pitcher_input["best_over_book"] is None
+    assert candidate["official_odds"] == -125
+    assert candidate["official_book"] == ""
+
+
 def _pitcher_payload(*, pitcher, game_time, line_source_provider="therundown"):
     row = _payload(game_time=game_time)["pitchers"][0]
     row["pitcher"] = pitcher

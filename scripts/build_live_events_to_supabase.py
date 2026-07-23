@@ -1121,8 +1121,15 @@ def _fetch_live_market_snapshot_rows(
 
     rows: list[dict[str, Any]] = []
     if run_rows:
-        run_rows = [row for row in run_rows if row.get("id")]
+        run_rows = [
+            row for row in run_rows
+            if row.get("id") and str(row.get("slate_date") or "").strip() == slate_date
+        ]
     if run_rows:
+        slate_date_by_run_id = {
+            str(row["id"]): str(row["slate_date"])
+            for row in run_rows
+        }
         run_filter = _run_id_filter(run_rows)
         for page in range(max_pages):
             page_rows = writer.select_rows(
@@ -1135,7 +1142,15 @@ def _fetch_live_market_snapshot_rows(
                     "offset": str(page * page_size),
                 },
             )
-            rows.extend(page_rows)
+            rows.extend(
+                {
+                    **row,
+                    "slate_date": slate_date_by_run_id[str(row["run_id"])],
+                }
+                if str(row.get("run_id") or "") in slate_date_by_run_id
+                else row
+                for row in page_rows
+            )
             if len(page_rows) < page_size:
                 break
         return rows

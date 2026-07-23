@@ -298,6 +298,40 @@ def test_missing_exact_evidence_selects_consensus_with_preclose_pending():
     assert evaluation.selection_status == "selected"
 
 
+def test_pending_exact_evidence_preserves_dependency_reasons_for_proof_recomputation():
+    exact_evidence = copy.deepcopy(_complete_inputs()["exact_evidence"])
+    exact_evidence.update({
+        "participating_providers": [],
+        "observation_ids": [],
+        "observations": [],
+        "first_observed_at": None,
+        "last_observed_at": None,
+        "freshness_status": "pending",
+        "book_count": None,
+        "toward_pick_count": None,
+        "away_from_pick_count": None,
+        "side_price_movement": None,
+        "broad_confirmation": None,
+        "reversal_book_count": None,
+        "volatile_book_count": None,
+        "best_is_off_market": None,
+        "aggregation_reason_codes": [
+            "official_provider_immature",
+            "exact_ladder_missing",
+        ],
+    })
+
+    evaluation = _evaluate(exact_evidence=exact_evidence)
+
+    assert evaluation.family_states["preclose"].state == "pending"
+    assert evaluation.family_states["preclose"].reason_codes == (
+        "official_provider_immature",
+        "exact_ladder_missing",
+    )
+    assert evaluation.lane == "consensus_core"
+    assert evaluation.selection_status == "selected"
+
+
 def test_zero_adjusted_ev_reaches_real_lean_4_5_base_decision():
     inputs = _complete_inputs()
     inputs["pitcher"] = {**inputs["pitcher"], "k_line": 4.5}

@@ -196,6 +196,7 @@ def _artifact():
 
 
 def _pending_exact_preclose(reason="official_provider_immature"):
+    reasons = [reason] if isinstance(reason, str) else list(reason)
     exact = _exact_preclose()
     market = copy.deepcopy(exact.market_evidence)
     market.update({
@@ -213,7 +214,7 @@ def _pending_exact_preclose(reason="official_provider_immature"):
         "reversal_book_count": None,
         "volatile_book_count": None,
         "best_is_off_market": None,
-        "aggregation_reason_codes": [reason],
+        "aggregation_reason_codes": reasons,
     })
     window = copy.deepcopy(exact.evidence_window)
     window.update({
@@ -223,7 +224,7 @@ def _pending_exact_preclose(reason="official_provider_immature"):
         "first_observed_at": None,
         "last_observed_at": None,
         "freshness_status": "pending",
-        "reason_codes": (reason,),
+        "reason_codes": tuple(reasons),
         "bound_observations": [],
     })
     fragment = copy.deepcopy(exact.proof_fragment)
@@ -236,7 +237,7 @@ def _pending_exact_preclose(reason="official_provider_immature"):
         "ladder_observation_token_sha256": hashlib.sha256(b"").hexdigest(),
         "provider_freshness": {},
         "ladder": None,
-        "reason_codes": [reason],
+        "reason_codes": reasons,
     })
     return ExactPrecloseResult(market, window, fragment)
 
@@ -529,6 +530,67 @@ def test_v2_pending_preclose_keeps_unresolved_aggregates_null():
     changed["preclose"]["book_count"] = 0
     changed["preclose"]["best_is_off_market"] = False
     assert proof_v2.validate_evaluation_proof_v2(proof=changed)[0] is False
+
+
+def test_v2_real_selector_pending_dependencies_build_selection_safe_proof():
+    reasons = ("official_provider_immature", "exact_ladder_missing")
+    exact = _pending_exact_preclose(reasons)
+    exact.market_evidence["candidate_identity"] = {
+        "slate_date": "2026-07-22",
+        "game_time": GAME_TIME,
+        "pitcher": "tarik skubal",
+        "side": "over",
+        "k_line": 6.5,
+        "provider": "therundown",
+    }
+    evaluation = proof_v2.selector_v2.evaluate_alternative_pick_v2(
+        pitcher={
+            "pitcher": "Tarik Skubal",
+            "team": "DET",
+            "opp_team": "PIT",
+            "game_time": GAME_TIME,
+            "k_line": 6.5,
+            "best_over_odds": -120,
+            "best_under_odds": -105,
+            "best_over_book": "fanduel",
+            "best_under_book": "draftkings",
+            "avg_ip": 5.8,
+            "recent_start_count": 5,
+            "season_k9": 9.4,
+            "recent_k9": 9.7,
+            "career_k9": 9.1,
+        },
+        pick={
+            "side": "over",
+            "display_verdict": "FIRE 1u",
+            "edge": 0.035,
+            "adj_ev": 0.09,
+            "quality_gate_level": "clean",
+            "model_win_prob": 0.56,
+            "market_anchor_selector": {"labels": ["market_anchor_strict"]},
+        },
+        exact_evidence=exact.market_evidence,
+        slate_date="2026-07-22",
+        is_tracked=True,
+        source_artifact_path="dashboard/data/processed/today.json",
+        source_payload_sha256=_artifact()["payload_sha256"],
+        source_artifact_byte_sha256="b" * 64,
+        observed_at=OBSERVED_AT,
+    )
+
+    built = _build(evaluation=evaluation, exact_preclose=exact)
+
+    assert evaluation.family_states["preclose"].reason_codes == reasons
+    assert built.selection_safe is True
+    assert built.proof["decision"]["selected_lane"] == evaluation.lane
+    assert built.proof["decision"]["selection_status"] == evaluation.selection_status
+    assert built.proof["decision"]["family_states"] == {
+        name: {
+            "state": vote.state,
+            "reason_codes": list(vote.reason_codes),
+        }
+        for name, vote in evaluation.family_states.items()
+    }
 
 
 @pytest.mark.parametrize(

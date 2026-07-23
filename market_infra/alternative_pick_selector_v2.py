@@ -376,6 +376,18 @@ def _raw_preclose_v2(features: dict[str, Any] | None, exact_evidence: Any, *, sl
     since, checkpoint = _as_utc(evidence.get("candidate_became_current_at")), _as_utc(features.get("observed_at"))
     if since is None or checkpoint is None or not isinstance(observations, list) or not isinstance(ids, list):
         return FamilyVote("pending", ("preclose_candidate_window_missing",))
+    if _enum(evidence.get("freshness_status")) != "fresh":
+        raw_reasons = evidence.get("aggregation_reason_codes")
+        if isinstance(raw_reasons, (list, tuple)) and len(raw_reasons) <= 16:
+            pending_reasons = tuple(dict.fromkeys(
+                reason.strip()
+                for reason in raw_reasons
+                if isinstance(reason, str)
+                and reason.strip()
+                and len(reason.strip().encode("utf-8")) <= 128
+            ))
+            if pending_reasons:
+                return FamilyVote("pending", pending_reasons)
     parsed: list[tuple[str, Any]] = []
     for observation in observations:
         at = _as_utc(observation.get("observed_at")) if isinstance(observation, dict) else None
