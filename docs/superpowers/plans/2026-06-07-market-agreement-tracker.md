@@ -169,5 +169,7 @@ Flag-off behavior remains unchanged. A live temporary export through
 `2026-07-22` returned `3,089` evidence rows and `3,227` display rows, and the
 tracker wrote `6,316` rows. This is useful shadow evidence, not approval for a
 model, provider, notification, lock, UI, staking, threshold, retention, or
-source-of-truth change. Deployment remains gated by the unresolved exact Gate
-C reconciliation exception documented in the parent dataset plan.
+source-of-truth change. Tyler accepted the one named Robert Gasser exact-line
+reconciliation miss as a visible fail-closed exception on `2026-07-23`, so the
+bounded research-cron deployment may proceed. Cross-line recovery and every
+model-promotion gate remain closed.

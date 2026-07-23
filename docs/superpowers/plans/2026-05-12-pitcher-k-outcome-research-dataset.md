@@ -1215,4 +1215,10 @@ history records 5 actual Ks, but the dated archive contains a `4.5` market
 with no result. The exact-line rule correctly fails closed. Do not broaden
 recovery across line changes or synthesize a tracked row without a separate
 review. Gate D's 100% reconciliation condition therefore remains closed, and
-the research cron deployment is gated.
+the model-promotion gates remain closed.
+
+Later on `2026-07-23`, Tyler explicitly accepted this one named line-mismatch
+as a visible fail-closed exception for the bounded research-cron deployment.
+The accepted deployment result is `1,647/1,648`; the Gasser row remains
+unrecovered, cannot receive no-drag credit, and does not authorize any
+cross-line outcome rule, archive mutation, or live-model change.

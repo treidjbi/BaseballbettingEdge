@@ -719,7 +719,8 @@ python scripts/build_pitcher_k_outcome_dataset.py --artifact-source hybrid --end
 Expected:
 
 - zero duplicate dataset keys;
-- `1,624/1,624` graded tracked picks reconciled;
+- every graded tracked pick reconciled, except for any explicitly approved,
+  named historical line-mismatch exception that continues to fail closed;
 - one exact archive outcome recovered;
 - zero ambiguous recoveries.
 
@@ -757,7 +758,8 @@ the Four-Lane Operating Board:
   pipeline unchanged;
 - model: market-anchor separate shadow review ready, enforcement closed;
 - UI: unchanged;
-- tracking/history: Gate C fully reconciled and scheduled agreement inputs
+- tracking/history: Gate C reconciled except for any explicitly approved,
+  named fail-closed historical exception and scheduled agreement inputs
   restored, but Gate C/D/E/F/12E promotion gates remain closed.
 
 - [ ] **Step 7: Commit Task 5**
@@ -845,7 +847,9 @@ Expected: build and job succeed; no other service deploy is triggered.
 Read job logs and generated report excerpts. Confirm:
 
 - compact evidence export counts and date bounds are nonzero;
-- Gate C reconciliation is complete;
+- Gate C reconciliation is complete except for the approved Robert Gasser
+  historical line-mismatch exception, which must remain visible and
+  fail-closed;
 - market-agreement rows are nonzero;
 - market-anchor report contains the expanded review and keeps shadow;
 - no-drag fingerprint/counter contract is preserved;
@@ -883,9 +887,9 @@ this plan performs only reads and generated research-file writes.
 ## Execution Status (2026-07-23)
 
 Tasks 1-4 are implemented on `codex/research-evidence-repair`. Integrated
-verification returned `142` focused tests, `1,599` full Python tests, and `99`
-Node tests passing. The live temporary compact export/tracker and expanded
-shadow audits also passed.
+verification on current `main` history returned `144` focused tests, `1,867`
+full Python tests, and `99` Node tests passing. The live temporary compact
+export/tracker and expanded shadow audits also passed.
 
 Deployment is intentionally not complete. The Gate C verification condition
 is `1,647/1,648`, not 100%, because Robert Gasser's `2026-06-03` history
@@ -893,3 +897,15 @@ line (`3.5`) differs from the result-less archive market (`4.5`). The approved
 exact-line rule fails closed. The branch does not introduce a cross-line
 recovery rule, and `bbe-gate-c-post-grading-review` has not been changed or
 deployed.
+
+### Tyler approval to proceed with the named exception
+
+At `2026-07-23` Tyler explicitly approved proceeding with the research-cron
+release while keeping Robert Gasser as the one named, visible, fail-closed
+historical exception. This approval:
+
+- accepts `1,647/1,648` as the deployment acceptance result for this repair;
+- does not authorize cross-line recovery, synthesis, or archive mutation;
+- does not count the missing Gasser row toward no-drag or any frozen baseline;
+- allows only the bounded compact-input research cron to deploy; and
+- leaves Gate C/D/E/F/12E model-promotion gates closed.
