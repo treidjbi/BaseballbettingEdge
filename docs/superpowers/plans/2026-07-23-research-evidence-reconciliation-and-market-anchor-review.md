@@ -879,3 +879,17 @@ If the research cron fails:
 
 No Supabase data rollback or production artifact rollback is required because
 this plan performs only reads and generated research-file writes.
+
+## Execution Status (2026-07-23)
+
+Tasks 1-4 are implemented on `codex/research-evidence-repair`. Integrated
+verification returned `142` focused tests, `1,599` full Python tests, and `99`
+Node tests passing. The live temporary compact export/tracker and expanded
+shadow audits also passed.
+
+Deployment is intentionally not complete. The Gate C verification condition
+is `1,647/1,648`, not 100%, because Robert Gasser's `2026-06-03` history
+line (`3.5`) differs from the result-less archive market (`4.5`). The approved
+exact-line rule fails closed. The branch does not introduce a cross-line
+recovery rule, and `bbe-gate-c-post-grading-review` has not been changed or
+deployed.

@@ -1,6 +1,6 @@
 # Current State
 
-Last updated: 2026-07-22
+Last updated: 2026-07-23
 
 ## Read Order
 
@@ -19,6 +19,9 @@ For any new work in this repo:
      for the shadow-only market-anchored K projection/selector rebuild report
    - `docs/superpowers/plans/2026-06-16-market-anchored-v2-selector-shadow-canary.md`
      for the feature-flagged market-anchor selector shadow/canary plan
+   - `docs/superpowers/plans/2026-07-23-research-evidence-reconciliation-and-market-anchor-review.md`
+     for the exact Gate C outcome-recovery, bounded compact market-agreement
+     export, expanded market-anchor review, and gated research-cron rollout
    - `docs/superpowers/plans/2026-05-13-boltodds-propline-official-provider-cutover.md`
      for historical provider-arbitration context only; BoltOdds active runtime
       was retired on 2026-06-17 and the current production posture is
@@ -291,6 +294,19 @@ each lane.
 | UI | `2026-05-20-live-market-decision-ui.md`, `2026-05-20-live-notification-coordinator.md`, `2026-06-04-live-notification-digest-coordinator.md` | Phase 2 live market-decision UI is now default-on for actionable cards, with `?marketSheet=0` as the rollback/opt-out. `dashboard/v2-data.js` fetches `/.netlify/functions/live-market-display` by default and attaches sanitized `live_market_display_state` rows; the Netlify function reads with server-side Supabase credentials and returns app-safe allow-listed rows plus sanitized `book_rows` / `movement_events`. `dashboard/v2-app.jsx` keeps PASS cards quiet and shows actionable-card market strips, detail-sheet market panels, a compact book board with Best / Model ref / Same line / Different line / cushion tags, and Log Bet live-book selection that fills the existing line, odds, and book fields. The existing Log Bet modal still records through the existing accepted-bet path, preserves matched push/shadow-review `notification_event_id` / `shadow_candidate_id`, supports same-day review/duplicate warnings and append-only corrections, and keeps manual edits available. This is a UI readout only and does not change provider/source-of-truth, model, threshold, staking, lock, retention, notification, or accepted-bet API behavior. | Verify same-line defaulting and alternate-line context on the next normal slate, including that alternate-line rows remain manually selectable but cannot auto-prefill Log Bet. Retain `?marketSheet=0` as rollback/opt-out and keep provider promotion, betting-rule changes, broader edit/delete audit, and notification behavior separate. |
 
 | Tracking / data collection / history | `docs/research/market-tracker-map.md`, `docs/research/pitcher-k-outcome-dataset.md`, `2026-06-07-market-agreement-tracker.md`, compact outcome outputs, live-market audits | Canonical research row plus existing market/live/provider trackers. The market agreement tracker now derives LEAN/FIRE/referee-cap buckets for live movement with or against the model without adding a table; the 2026-06-09 backfill used compact Supabase exports plus Gate C metadata/result overlay and produced `2,482` evidence rows, `2,171` graded rows, and `56` graded confidence-referee cap rows. The 2026-07-09 refreshed export produced `1,935` tracker rows with `432` covered graded tracked picks for synthesis review, enough to make agreement-with-model versus agreement-against-model useful directional evidence while still too sparse for standalone promotion. Actual opportunity is now reconstructed from MLB boxscores into the compact row for postgame workload/leash explanation only. Daily brief keeps a compact Gate C bucket scoreboard and pre/post 2026-04-28 context. | Prefer derived labels on existing live-market and compact outcome rows before adding tables. Use market-agreement, edge-synthesis, CLV, and actual-opportunity buckets to decide what to keep studying, not to auto-promote LEANs, override the referee, or change model/staking/provider/notification behavior. Promote compact storage or retention only after row-volume/cost proof and Tyler approval. |
+
+### July 23 research evidence repair board overlay
+
+This is the freshest board read for the scoped research repair on
+`codex/research-evidence-repair`. It supplements the longer lane rows above and
+does not change any live-system approval.
+
+| Lane | Current stage | Next decision / blocker |
+| --- | --- | --- |
+| Pipeline / infrastructure | The research-only post-grading runner now has an explicit `--refresh-market-agreement-inputs` mode. It reads bounded compact Supabase evidence, prebuilds agreement, builds Gate C once, then renders final agreement before downstream audits. Existing flag-off behavior is unchanged. Full verification returned `1,599` Python and `99` Node tests passing. No Render service or production configuration has been changed. | Keep deployment of `bbe-gate-c-post-grading-review` closed. The live temporary Gate C build is `1,647/1,648`; Robert Gasser on `2026-06-03` is a deliberate fail-closed mismatch because history locked `UNDER 3.5` while the dated archive holds a `4.5` market with no result. Any cross-line recovery needs a separate rule review. |
+| Model | The expanded market-anchor audit clears the raw separate-review floors with `331` clean selector rows and `131` strict rows. Strict-all is `81-50`, `+6.62u`; current-provider strict is `58-33`, `+8.31u`; leave-one-slate-out minimum remains `+3.68u`. Strict displayed FIRE is `27` rows, `20-7`, `+7.14u`, but every row is `OVER`. Negative K-line, CLV-proxy, workload, provider-era, and market-agreement slices plus substantial missing provider/agreement attribution remain. The frozen no-drag fingerprint is unchanged; after excluding `24` history-recovered archive rows from backfill credit, both baselines reconcile and the counter is `58/75` with `17` remaining. | Market-anchor status is `separate_shadow_review_ready`, not promotion-ready. Keep `MARKET_ANCHOR_SELECTOR_MODE=shadow` and `enforce_downside` closed. Continue the no-drag prospective soak; history-recovered rows never advance its frozen or prospective counter. |
+| UI | Unchanged. No dashboard, accepted-bet, live-book selector, or display behavior changed in this repair. | Continue the existing normal-slate UI observation plan; do not couple it to this research work. |
+| Tracking / data collection / history | The bounded read-only export produced `3,089` `market_pick_evidence` rows and `3,227` `live_market_display_state` rows through `2026-07-22`; raw `market_snapshots` were not queried. The refreshed tracker produced `6,316` rows. Gate C produced `3,224` side rows, `1,682` tracked rows, zero duplicate keys, `24` unique exact outcome recoveries, and zero ambiguous recoveries. | Decide separately whether the one Robert Gasser alternate-line mismatch should remain an explicit tracked exception or receive a newly reviewed cross-line outcome rule. Until then Gate D's 100% reconciliation condition remains closed and the research cron command stays unchanged. |
 
 ### July 21 Alt Picks board overlay
 
