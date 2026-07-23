@@ -1096,6 +1096,44 @@ Use separate subagents for:
 
 Review the core branch first, then the held web diff against the core branch. Fix every Critical or Important finding. Rerun the focused suite after each fix and the full suite after all fixes. Commit review fixes to the branch that owns them.
 
+### Task 8 local verification record - 2026-07-23
+
+- Core branch `codex/alt-picks-dependency-aware-v2` was verified at
+  `6955a1b5`. The held web branch was verified separately at `ba6b11c1` and
+  remains unmerged and undeployed.
+- Frozen V2 identity:
+  `23bacff0fa923685ae52c5a9cfbadfb9f5902fb64d91759cfe9b4b1169a221c4`.
+  The additive, unapplied proof migration is
+  `20260722230000_alternative_pick_v2_evaluation_proof.sql`.
+- Held web verification passed `375` focused Python, `52` focused Node,
+  `1,816` full Python, and `126` full Node tests. JavaScript syntax checks for
+  the function and both browser assets, `git diff --check`, protected V1 byte
+  checks, and official workflow/model/artifact/history path checks all exited
+  zero.
+- Core verification independently passed `375` focused Python, `12` existing
+  V1 endpoint Node, `1,816` full Python, and `99` full Node tests.
+  `git diff --check`, protected V1 byte checks, and official-path checks exited
+  zero without the held endpoint/UI commits.
+- The 2026-07-23 live isolation read found the new migration absent, the
+  `evaluation_proof` column absent, zero V2 rows, `50` V1 rows, and zero
+  alternative notification events. Live Netlify continued to serve V1.
+- V2 is locally capable but has zero prospective production rows. The clean
+  prospective fixture gate is still incomplete, so migration apply, core
+  merge/Render deploy, V2 activation, and endpoint/UI merge/Netlify deploy all
+  remain closed and separately approval-gated. Local tests do not establish
+  production readiness.
+- Immediate rollback is `ALTERNATIVE_PICK_SELECTION_MODE=off` followed by a
+  `bbe-live-layer` redeploy. Version rollback restores the bundle key to its
+  exact original state (unset or `v1`), redeploys the live layer, obtains a
+  clean V1 cycle with zero new V2 rows, and verifies complete current-slate V1
+  coverage before restoring a V1 UI. Never reconstruct a missed checkpoint;
+  keep the Alt surface unavailable until a clean slate if V1 coverage is
+  incomplete. Revert writers/readers before considering removal of the
+  additive proof column.
+
+Task 8's final independent whole-branch specification/code-quality review
+remains required before Task 9 may push either branch.
+
 ---
 
 ## Task 9: Push the reviewed core and held web branches without merging

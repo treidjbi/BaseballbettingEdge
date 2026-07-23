@@ -117,8 +117,8 @@ V2 receives new identities and a new manifest fingerprint:
 - bundle: `pregame_alternative_pick_methodology_v2`
 - Consensus: `no_drag_distinct_family_consensus_core_v2`
 - Re-entry: `moderate_edge_quality_reentry_expansion_v2`
-- fingerprint: calculated from the reviewed v2 manifest and frozen before any
-  production row is written
+- fingerprint:
+  `23bacff0fa923685ae52c5a9cfbadfb9f5902fb64d91759cfe9b4b1169a221c4`
 
 Existing v1 rows remain in Supabase. V2 never updates, deletes, reconstructs,
 or relabels them. V2 starts a new prospective record at zero.
@@ -605,6 +605,39 @@ The synthetic fixture and future captured rows are deterministic regression
 evidence, not current wagering advice or a promised production count after
 later artifacts.
 
+## Local implementation handoff - 2026-07-23
+
+The reviewed local core is V2-capable at `6955a1b5`. The V2 proof migration is
+`20260722230000_alternative_pick_v2_evaluation_proof.sql`. The public
+endpoint/browser work remains isolated on the held web branch at `ba6b11c1`;
+it has not been merged or deployed. Unset or blank
+`ALTERNATIVE_PICK_SELECTION_BUNDLE_VERSION` still defaults the recorder to V1,
+and `ALTERNATIVE_PICK_SELECTION_MODE=off` remains the code default and
+immediate stop.
+
+Fresh local verification completed on both branches:
+
+- held web: `375` focused Python, `52` focused Node, `1,816` full Python, and
+  `126` full Node tests passed; all three JavaScript syntax checks,
+  `git diff --check`, protected V1 byte checks, and official-path diff checks
+  exited zero;
+- core: `375` focused Python, `12` existing V1 endpoint Node, `1,816` full
+  Python, and `99` full Node tests passed; `git diff --check`, protected V1 byte
+  checks, and official-path diff checks exited zero.
+
+This is local verification, not production readiness. The live isolation read
+recorded on 2026-07-23 found the V2 migration absent, the `evaluation_proof`
+column absent, zero V2 rows, `50` V1 rows, and zero alternative notification
+events. Live Netlify still served the V1 contract. No V2 prospective result
+exists, and the next clean prospective exact fixture remains mandatory before
+Production Gate A.
+
+The proof migration, V2-capable Render merge/deploy, V2 recorder activation,
+and Netlify endpoint/UI merge/deploy remain separate closed mutation gates.
+No local result authorizes a change to official picks, model math, thresholds,
+staking, providers, notifications, locks, accepted bets, artifacts, shared
+tracking/analytics tables, retention, or source-of-truth behavior.
+
 ## Staged rollout
 
 1. Add and review the bounded proof-column migration separately.
@@ -634,15 +667,20 @@ later artifacts.
 10. Verify desktop and mobile cards, selected-with-pending copy, and continued
    isolation of Picks, Results, and accepted bets.
 
-Rollback reverses the gates in dependency order: restore the bundle key to its
-exact pre-activation state (absent or V1), or set the recorder `off` for an immediate stop, obtain one clean V1
-cycle with zero new V2 writes, and verify current-slate V1 coverage before
+Rollback reverses the gates in dependency order. For an immediate stop, set
+`ALTERNATIVE_PICK_SELECTION_MODE=off` and redeploy only `bbe-live-layer`.
+For version rollback, restore the bundle key to its exact pre-activation state
+(unset when originally absent, or `v1` when originally present), redeploy the
+live layer, obtain one clean V1 cycle with zero new V2 writes, and verify
+current-slate V1 coverage before
 restoring the V1 UI. V1 rows missed while V2 was active are never reconstructed;
 if current-slate V1 coverage is incomplete, the Alt comparison surface remains
 unavailable until the next clean slate rather than presenting partial V1 as
 complete. The backward-compatible endpoint may remain deployed because
 unversioned requests serve the validated V1 handshake; a full endpoint rollback
-remains available if that contract itself fails.
+remains available if that contract itself fails. Do not remove the additive
+proof column until every V2 writer and reader has been reverted; retaining the
+unused additive column is the safer database rollback.
 
 No step authorizes an official model, staking, provider, notification, lock,
 artifact, or retention change.
