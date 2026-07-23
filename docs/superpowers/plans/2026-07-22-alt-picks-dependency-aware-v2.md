@@ -1002,13 +1002,15 @@ Serve `dashboard/` locally with intercepted selected, selected-with-pending, pen
 - [ ] **Step 8: Commit Task 7**
 
 ```powershell
-git add dashboard/v2-alt-picks.js dashboard/v2-alt-picks.test.mjs dashboard/v2-app.jsx dashboard/v2-app.js dashboard/v2-app.test.mjs dashboard/v2.html tests/test_dashboard_alt_picks_ui.py
+git add dashboard/v2-alt-picks.js dashboard/v2-alt-picks.test.mjs dashboard/v2-app.jsx dashboard/v2-app.js dashboard/v2-app.test.mjs dashboard/v2.html tests/test_dashboard_alt_picks_ui.py tests/test_dashboard_accepted_bet_log.py
 git commit -m "feat: show dependency-aware alternative picks v2"
 git rev-parse HEAD
 git switch codex/alt-picks-dependency-aware-v2
 ```
 
-Record the web commit SHA. Do not cherry-pick or merge either Task 6 or Task 7 into the core branch yet.
+Record the web commit SHA. The Task 7 commit contains exactly ten reviewed paths,
+including the accepted-bet regression test. Do not cherry-pick or merge either
+Task 6 or Task 7 into the core branch yet.
 
 ---
 
@@ -1098,22 +1100,19 @@ Review the core branch first, then the held web diff against the core branch. Fi
 
 ### Task 8 local verification record - 2026-07-23
 
-- Core branch `codex/alt-picks-dependency-aware-v2` was verified at
-  `6955a1b5`. The held web branch was verified separately at `ba6b11c1` and
-  remains unmerged and undeployed.
+- Core review fixes are held at `ad6a0596`: `2ceaaa35` makes malformed V2
+  proof scalars fail closed, `e5c39523` requires chronological Preclose
+  checkpoints, and `ad6a0596` isolates V2 startup imports. The separately held
+  web branch is at `5ca07dc5`, which aligns endpoint proof-scalar validation.
+  Both branches remain unmerged and undeployed.
 - Frozen V2 identity:
   `23bacff0fa923685ae52c5a9cfbadfb9f5902fb64d91759cfe9b4b1169a221c4`.
   The additive, unapplied proof migration is
   `20260722230000_alternative_pick_v2_evaluation_proof.sql`.
-- Held web verification passed `375` focused Python, `52` focused Node,
-  `1,816` full Python, and `126` full Node tests. JavaScript syntax checks for
-  the function and both browser assets, `git diff --check`, protected V1 byte
-  checks, and official workflow/model/artifact/history path checks all exited
-  zero.
-- Core verification independently passed `375` focused Python, `12` existing
-  V1 endpoint Node, `1,816` full Python, and `99` full Node tests.
-  `git diff --check`, protected V1 byte checks, and official-path checks exited
-  zero without the held endpoint/UI commits.
+- Current core full-Python verification passed `1,850` tests. Held web
+  verification passed `60` focused Node tests and `134` full Node tests. The
+  final Sol Ultra whole-branch re-review is still pending; these results are
+  local verification, not a clean final review.
 - The 2026-07-23 live isolation read found the new migration absent, the
   `evaluation_proof` column absent, zero V2 rows, `50` V1 rows, and zero
   alternative notification events. Live Netlify continued to serve V1.
@@ -1131,8 +1130,8 @@ Review the core branch first, then the held web diff against the core branch. Fi
   incomplete. Revert writers/readers before considering removal of the
   additive proof column.
 
-Task 8's final independent whole-branch specification/code-quality review
-remains required before Task 9 may push either branch.
+Task 8's final Sol Ultra independent whole-branch specification/code-quality
+review remains required before Task 9 may push either branch.
 
 ---
 
@@ -1419,21 +1418,25 @@ git fetch origin
 git switch main
 git pull --ff-only origin main
 git switch -c codex/alt-picks-dependency-aware-v2-web-release
-git restore --source origin/codex/alt-picks-dependency-aware-v2-web -- netlify/functions/alternative-picks.mjs tests/test_alternative_picks_function.mjs dashboard/v2-alt-picks.js dashboard/v2-alt-picks.test.mjs dashboard/v2-app.jsx dashboard/v2-app.js dashboard/v2-app.test.mjs dashboard/v2.html tests/test_dashboard_alt_picks_ui.py
+git restore --source origin/codex/alt-picks-dependency-aware-v2-web -- netlify/functions/alternative-picks.mjs tests/test_alternative_picks_function.mjs dashboard/v2-alt-picks.js dashboard/v2-alt-picks.test.mjs dashboard/v2-app.jsx dashboard/v2-app.js dashboard/v2-app.test.mjs dashboard/v2.html tests/test_dashboard_alt_picks_ui.py tests/test_dashboard_accepted_bet_log.py
 git diff --name-status
-git diff --exit-code origin/codex/alt-picks-dependency-aware-v2-web -- netlify/functions/alternative-picks.mjs tests/test_alternative_picks_function.mjs dashboard/v2-alt-picks.js dashboard/v2-alt-picks.test.mjs dashboard/v2-app.jsx dashboard/v2-app.js dashboard/v2-app.test.mjs dashboard/v2.html tests/test_dashboard_alt_picks_ui.py
+git diff --exit-code origin/codex/alt-picks-dependency-aware-v2-web -- netlify/functions/alternative-picks.mjs tests/test_alternative_picks_function.mjs dashboard/v2-alt-picks.js dashboard/v2-alt-picks.test.mjs dashboard/v2-app.jsx dashboard/v2-app.js dashboard/v2-app.test.mjs dashboard/v2.html tests/test_dashboard_alt_picks_ui.py tests/test_dashboard_accepted_bet_log.py
 node --test tests/test_alternative_picks_function.mjs dashboard/v2-alt-picks.test.mjs dashboard/v2-app.test.mjs
 python -m pytest tests/test_dashboard_alt_picks_ui.py tests/test_dashboard_accepted_bet_log.py -q
 node --check dashboard/v2-alt-picks.js
 node --check dashboard/v2-app.js
 git diff --check
-git add netlify/functions/alternative-picks.mjs tests/test_alternative_picks_function.mjs dashboard/v2-alt-picks.js dashboard/v2-alt-picks.test.mjs dashboard/v2-app.jsx dashboard/v2-app.js dashboard/v2-app.test.mjs dashboard/v2.html tests/test_dashboard_alt_picks_ui.py
+git add netlify/functions/alternative-picks.mjs tests/test_alternative_picks_function.mjs dashboard/v2-alt-picks.js dashboard/v2-alt-picks.test.mjs dashboard/v2-app.jsx dashboard/v2-app.js dashboard/v2-app.test.mjs dashboard/v2.html tests/test_dashboard_alt_picks_ui.py tests/test_dashboard_accepted_bet_log.py
 git commit -m "feat: release dependency-aware alternative picks v2 web"
 git diff --name-only origin/main...HEAD
 git push -u origin codex/alt-picks-dependency-aware-v2-web-release
 ```
 
-Expected: the release branch starts from current `origin/main`, copies only the exact reviewed endpoint/UI paths from the held branch, and all V2 handshake/UI tests pass against production core. The final diff allow-list is exactly the nine paths above. Do not rebase, merge, or squash the held branch directly; its ancestry contains the pre-merge core work.
+Expected: the release branch starts from current `origin/main`, copies only the
+exact ten reviewed endpoint/UI paths from the held branch, and all V2
+handshake/UI tests pass against production core. The final diff allow-list is
+exactly those ten paths. Do not rebase, merge, or squash the held branch
+directly; its ancestry contains the pre-merge core work.
 
 - [ ] **Step 2: Merge only the fresh web-release branch and verify the Netlify deploy**
 

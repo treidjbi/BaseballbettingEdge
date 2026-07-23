@@ -607,23 +607,21 @@ later artifacts.
 
 ## Local implementation handoff - 2026-07-23
 
-The reviewed local core is V2-capable at `6955a1b5`. The V2 proof migration is
-`20260722230000_alternative_pick_v2_evaluation_proof.sql`. The public
-endpoint/browser work remains isolated on the held web branch at `ba6b11c1`;
-it has not been merged or deployed. Unset or blank
+The reviewed local core is V2-capable at `ad6a0596`: `2ceaaa35` makes
+malformed V2 proof scalars fail closed, `e5c39523` requires chronological
+Preclose checkpoints, and `ad6a0596` isolates V2 startup imports. The V2 proof
+migration is `20260722230000_alternative_pick_v2_evaluation_proof.sql`. The
+public endpoint/browser work remains isolated on the held web branch at
+`5ca07dc5`, which aligns endpoint proof-scalar validation; it has not been
+merged or deployed. Unset or blank
 `ALTERNATIVE_PICK_SELECTION_BUNDLE_VERSION` still defaults the recorder to V1,
 and `ALTERNATIVE_PICK_SELECTION_MODE=off` remains the code default and
 immediate stop.
 
-Fresh local verification completed on both branches:
-
-- held web: `375` focused Python, `52` focused Node, `1,816` full Python, and
-  `126` full Node tests passed; all three JavaScript syntax checks,
-  `git diff --check`, protected V1 byte checks, and official-path diff checks
-  exited zero;
-- core: `375` focused Python, `12` existing V1 endpoint Node, `1,816` full
-  Python, and `99` full Node tests passed; `git diff --check`, protected V1 byte
-  checks, and official-path diff checks exited zero.
+Current local verification recorded `1,850` passing core Python tests and
+`60` focused / `134` full passing held-web Node tests. Final Sol Ultra
+whole-branch re-review remains pending, so this is not a clean final-review or
+production-readiness claim.
 
 This is local verification, not production readiness. The live isolation read
 recorded on 2026-07-23 found the V2 migration absent, the `evaluation_proof`
