@@ -700,7 +700,7 @@ Expected: zero failures.
 
 ```powershell
 python -m pytest tests -q
-npm test
+node --test dashboard/*.test.mjs tests/*.mjs
 ```
 
 Expected: zero failures. If the known retired-BoltOdds timing test fails
