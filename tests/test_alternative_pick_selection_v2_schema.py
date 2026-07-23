@@ -119,6 +119,9 @@ def test_followup_migration_resets_service_role_to_exact_write_privileges():
     assert "revoke all privileges on table public.alternative_pick_selection_state from service_role" in sql
     assert "grant select, insert, update on table public.alternative_pick_selection_state to service_role" in sql
     assert "grant select on table public.alternative_pick_selection_state to bbe_ops_readonly" in sql
+    assert "drop policy if exists bbe_ops_readonly_select_alternative_pick_selection_state" in sql
+    assert "create policy bbe_ops_readonly_select_alternative_pick_selection_state" in sql
+    assert "for select to bbe_ops_readonly using (true)" in sql
     assert "grant delete" not in sql
 
 
@@ -187,6 +190,15 @@ create table public.operational_pick_locks (
 
 def test_postgres_followup_migration_removes_default_service_role_delete(isolated_postgres):
     psql, port = isolated_postgres
+    seeded = _run_psql(
+        psql,
+        port,
+        _omitted_proof_insert("pregame_alternative_pick_methodology_v1")
+        .replace("game-pregame", "ops-game-pregame")
+        .replace("candidate-pregame", "ops-candidate-pregame"),
+    )
+    assert seeded.returncode == 0, seeded.stderr
+
     verified = _run_psql(
         psql,
         port,
@@ -214,6 +226,18 @@ then 'least_privilege_ok' else 'least_privilege_failed' end;
 
     assert verified.returncode == 0, verified.stderr
     assert "least_privilege_ok" in verified.stdout
+
+    operator_read = _run_psql(
+        psql,
+        port,
+        """
+set role bbe_ops_readonly;
+select case when count(*) = 1 then 'ops_visible' else 'ops_hidden' end
+from public.alternative_pick_selection_state;
+""",
+    )
+    assert operator_read.returncode == 0, operator_read.stderr
+    assert "ops_visible" in operator_read.stdout
 
 
 def _omitted_proof_insert(bundle_id: str) -> str:
