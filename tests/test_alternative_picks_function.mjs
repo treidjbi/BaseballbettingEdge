@@ -23,6 +23,13 @@ function sortManifest(value) {
 }
 const MANIFEST_FINGERPRINT = createHash('sha256')
   .update(JSON.stringify(sortManifest(MANIFEST)), 'utf8').digest('hex');
+const V1_BUNDLE_ID = 'pregame_alternative_pick_methodology_v1';
+const V2_BUNDLE_ID = 'pregame_alternative_pick_methodology_v2';
+const V2_FINGERPRINT = '23bacff0fa923685ae52c5a9cfbadfb9f5902fb64d91759cfe9b4b1169a221c4';
+const V2_SELECTOR_IDS = Object.freeze({
+  consensus_core: 'no_drag_distinct_family_consensus_core_v2',
+  reentry_expansion: 'moderate_edge_quality_reentry_expansion_v2',
+});
 const ALLOWED_ROW_KEYS = [
   'artifact_advanced_after_freeze', 'bundle_id', 'checkpoint',
   'evidence_first_observed_at', 'evidence_freshness_status',
@@ -75,7 +82,7 @@ function frozenState(overrides = {}) {
     id: 'never-expose-state-id',
     slate_date: '2026-07-21',
     game_identity: 'never-expose-game-identity',
-    candidate_identity: 'never-expose-candidate-identity',
+    candidate_identity: '1'.repeat(64),
     pitcher: 'Test Pitcher',
     normalized_pitcher: 'test pitcher',
     team: 'ARI',
@@ -133,6 +140,141 @@ function provisionalState(overrides = {}) {
   });
 }
 
+function v2Proof(row, overrides = {}) {
+  const preclosePending = row.family_states?.preclose?.state === 'pending';
+  const observationTokens = [
+    'therundown:snapshot-000', 'therundown:snapshot-001', 'therundown:snapshot-002',
+    'therundown:snapshot-003', 'therundown:snapshot-004', 'therundown:snapshot-005',
+  ];
+  const decisiveTokens = preclosePending ? [] : [observationTokens[0], observationTokens.at(-1)];
+  const proof = {
+    schema_version: 'v2',
+    bundle_id: V2_BUNDLE_ID,
+    selector_fingerprint: V2_FINGERPRINT,
+    candidate: {
+      candidate_identity: row.candidate_identity,
+      slate_date: row.slate_date,
+      normalized_pitcher: row.normalized_pitcher,
+      side: row.side,
+      model_k_line: row.model_k_line,
+      game_time: row.game_time,
+      line_source_provider: 'therundown',
+      official_binding_key: 'd'.repeat(64),
+    },
+    artifact: {
+      source_artifact_path: row.source_artifact_path,
+      source_artifact_generated_at: row.source_artifact_generated_at,
+      source_artifact_sha256: row.source_artifact_sha256,
+      source_artifact_byte_sha256: row.source_artifact_byte_sha256,
+    },
+    bindings: {
+      therundown: {
+        role: 'official', provider_event_id: 'private-event-id', current_line_ids: ['private-line-id'],
+        seed_observation_tokens: ['therundown:private-seed-id'], binding_key: 'd'.repeat(64),
+        window_started_at: '2026-07-21T19:40:00Z', mature: !preclosePending,
+      },
+    },
+    freshness: preclosePending ? {} : {
+      therundown: { freshness_status: 'fresh', latest_snapshot_at: '2026-07-21T19:50:05Z' },
+    },
+    normalized_inputs: {
+      side: row.side, official_verdict: row.official_verdict, source_fire_verdict: 'FIRE 1u',
+      pitcher: row.normalized_pitcher, game_time: row.game_time, k_line: row.model_k_line,
+      line_bucket: '5.5', odds: row.official_odds, official_book: row.official_book,
+      price_sign: 'minus', bet_timing_window: 'pre_30',
+      model_market_relationship: 'model_agrees_with_favorite', model_no_vig_gap: 0.031,
+      edge: 0.035, adjusted_ev: 0.09, adjusted_ev_error: null,
+      quality_gate_level: 'clean', opportunity_bucket: 'normal', leash_risk_bucket: 'normal',
+      pitcher_archetype_bucket: 'standard', large_edge_skepticism_flag: false,
+      anchor_labels: ['market_anchor_strict'], anchor_metadata_malformed: false,
+      observed_at: '2026-07-21T20:10:00Z',
+    },
+    preclose: {
+      qualifying_observation_count: preclosePending ? 0 : observationTokens.length,
+      decisive_observation_tokens: decisiveTokens,
+      full_ordered_token_sha256: 'e'.repeat(64), direction_change_pivot_tokens: [],
+      latest_ladder_observation_tokens: preclosePending ? [] : [observationTokens.at(-1)],
+      ladder_observation_token_sha256: 'f'.repeat(64),
+      first_observed_at: preclosePending ? null : '2026-07-21T19:50:00Z',
+      last_observed_at: preclosePending ? null : '2026-07-21T19:50:05Z',
+      freshness_status: preclosePending ? 'pending' : 'fresh',
+      book_count: preclosePending ? null : 2,
+      books_seen: preclosePending ? [] : ['draftkings', 'fanduel'],
+      toward_pick_count: preclosePending ? null : 2,
+      away_from_pick_count: preclosePending ? null : 0,
+      side_price_movement: preclosePending ? null : 'with_side',
+      broad_confirmation: preclosePending ? null : false,
+      reversal_book_count: preclosePending ? null : 0,
+      volatile_book_count: preclosePending ? null : 0,
+      best_is_off_market: preclosePending ? null : false,
+      score: preclosePending ? null : 11,
+      label: preclosePending ? null : 'strong_preclose_clv_proxy',
+      positive_reasons: preclosePending ? [] : [
+        'movement_toward_pick', 'moderate_low_edge_market_validation',
+        'thin_or_price_only_no_vig_gap', 'minus_price_market_support', 'clean_quality',
+        'early_lock_window', 'low_volatility', 'moderate_ev_market_validation',
+      ],
+      risk_reasons: [], reason_codes: preclosePending ? ['official_provider_immature'] : [],
+    },
+    decision: {
+      support: 'true', drag_core: 'false', no_drag: 'true',
+      family_states: row.family_states,
+      consensus_core: 'true', reentry_expansion: 'false', selected_lane: row.lane,
+      selection_status: row.selection_status, family_count: row.family_count,
+      maximum_family_count: Object.values(row.family_states).filter(vote => vote.state !== 'disagree').length,
+      decisive_families: ['base', 'anchor', 'preclose', 'reentry']
+        .filter(name => row.family_states[name].state === 'agree'),
+      preclose_required_for_selected_lane: false,
+      reason_codes: ['consensus_core_selected'],
+    },
+  };
+  return { ...proof, ...overrides };
+}
+
+function v2ProvisionalState(overrides = {}) {
+  const familyStates = {
+    base: { state: 'agree', reason_codes: ['strong_base_strict_runtime_core'] },
+    anchor: { state: 'agree', reason_codes: ['market_anchor_v2_confirmed'] },
+    preclose: { state: 'pending', reason_codes: ['official_provider_immature'] },
+    reentry: { state: 'disagree', reason_codes: ['reentry_predicate_false'] },
+  };
+  const row = provisionalState({
+    bundle_id: V2_BUNDLE_ID,
+    selector_id: V2_SELECTOR_IDS.consensus_core,
+    selector_fingerprint: V2_FINGERPRINT,
+    family_states: familyStates,
+    family_count: 2,
+    evidence_observation_ids: [],
+    evidence_observation_count: 0,
+    evidence_first_observed_at: null,
+    evidence_last_observed_at: null,
+    evidence_freshness_status: 'pending',
+    ...overrides,
+  });
+  if (!Object.hasOwn(overrides, 'evaluation_proof')) row.evaluation_proof = v2Proof(row);
+  return row;
+}
+
+function v2FreshProvisionalState(overrides = {}) {
+  const row = v2ProvisionalState({
+    family_states: {
+      base: { state: 'agree', reason_codes: ['strong_base_strict_runtime_core'] },
+      anchor: { state: 'agree', reason_codes: ['market_anchor_v2_confirmed'] },
+      preclose: { state: 'agree', reason_codes: ['preclose_v2_confirmed'] },
+      reentry: { state: 'disagree', reason_codes: ['reentry_predicate_false'] },
+    },
+    family_count: 3,
+    evidence_observation_ids: ['therundown:snapshot-000', 'therundown:snapshot-005'],
+    evidence_observation_count: 6,
+    evidence_first_observed_at: '2026-07-21T19:50:00Z',
+    evidence_last_observed_at: '2026-07-21T19:50:05Z',
+    evidence_freshness_status: 'fresh',
+    ...overrides,
+  });
+  if (!Object.hasOwn(overrides, 'evaluation_proof')) row.evaluation_proof = v2Proof(row);
+  return row;
+}
+
 function matchingLock(state, overrides = {}) {
   return {
     id: 'never-expose-lock-id',
@@ -156,7 +298,10 @@ function matchingLock(state, overrides = {}) {
   };
 }
 
-function installFetch({ artifact = canonicalArtifact(), stateRows = [], lockRows = [], status = 200 } = {}) {
+function installFetch({
+  artifact = canonicalArtifact(), stateRows = [], lockRows = [], status = 200,
+  directStateRows = false,
+} = {}) {
   const calls = [];
   const originalFetch = globalThis.fetch;
   globalThis.fetch = async (url, options) => {
@@ -167,6 +312,9 @@ function installFetch({ artifact = canonicalArtifact(), stateRows = [], lockRows
     const body = table === 'published_pipeline_artifacts' ? [artifact]
       : table === 'alternative_pick_selection_state' ? stateRows
         : table === 'operational_pick_locks' ? lockRows : [];
+    if (directStateRows && table === 'alternative_pick_selection_state') {
+      return { ok: true, json: async () => body };
+    }
     return new Response(JSON.stringify(body), { status: 200 });
   };
   return { calls, restore: () => { globalThis.fetch = originalFetch; } };
@@ -198,6 +346,7 @@ test('alternative-picks returns a stable unavailable payload without configurati
     assert.equal(response.headers['cache-control'], 'no-store');
     assert.deepEqual(response.json, {
       slate_date: '2026-07-21', generated_at: null, status: 'unavailable',
+      bundle_id: V1_BUNDLE_ID, selector_fingerprint: MANIFEST_FINGERPRINT,
       counts: { provisional: 0, frozen: 0, selected: 0, pending: 0 }, rows: [],
       error: 'missing_supabase_config',
     });
@@ -452,5 +601,409 @@ test('alternative-picks rejects malformed/unapproved canonical artifacts and san
     assert.equal(response.json.status, 'unavailable');
     assert.equal(response.json.error, 'supabase_read_failed');
     assert.equal(JSON.stringify(response.json).includes(SECRET), false);
+  } finally { fake.restore(); restoreEnv(); }
+});
+
+test('alternative-picks defaults an unversioned request to v1', async () => {
+  configure();
+  const fake = installFetch();
+  try {
+    const response = await responseJson(event());
+    assert.equal(response.json.bundle_id, V1_BUNDLE_ID);
+    assert.equal(response.json.selector_fingerprint, MANIFEST_FINGERPRINT);
+    assert.match(fake.calls[1].href, /bundle_id=eq\.pregame_alternative_pick_methodology_v1/);
+  } finally { fake.restore(); restoreEnv(); }
+});
+
+test('alternative-picks serves explicit bundle_version v1 and v2 independently', async () => {
+  for (const [version, state, bundleId, fingerprint] of [
+    ['v1', provisionalState(), V1_BUNDLE_ID, MANIFEST_FINGERPRINT],
+    ['v2', v2ProvisionalState(), V2_BUNDLE_ID, V2_FINGERPRINT],
+  ]) {
+    configure();
+    const fake = installFetch({ stateRows: [state] });
+    try {
+      const response = await responseJson(event({ bundle_version: version }));
+      assert.equal(response.json.status, 'ready');
+      assert.equal(response.json.bundle_id, bundleId);
+      assert.equal(response.json.selector_fingerprint, fingerprint);
+      assert.equal(response.json.rows.length, 1);
+      assert.equal(response.json.rows[0].bundle_id, bundleId);
+      assert.match(fake.calls[1].href, new RegExp(`bundle_id=eq\\.${bundleId}`));
+    } finally { fake.restore(); restoreEnv(); }
+  }
+});
+
+test('alternative-picks rejects unsupported explicit bundle versions', async () => {
+  for (const version of ['v3', 'V2', ' v2 ', 'bogus']) {
+    configure();
+    const fake = installFetch();
+    try {
+      const response = await responseJson(event({ bundle_version: version }));
+      assert.equal(response.json.status, 'unavailable');
+      assert.equal(response.json.error, 'unsupported_bundle_version');
+      assert.equal(response.json.bundle_id, null);
+      assert.equal(response.json.selector_fingerprint, null);
+      assert.equal(fake.calls.length, 0);
+    } finally { fake.restore(); restoreEnv(); }
+  }
+});
+
+test('alternative-picks includes bundle and fingerprint on ready empty and unavailable payloads', async () => {
+  configure();
+  const readyFetch = installFetch();
+  try {
+    const ready = await responseJson(event({ bundle_version: 'v2' }));
+    assert.equal(ready.json.status, 'ready');
+    assert.equal(ready.json.bundle_id, V2_BUNDLE_ID);
+    assert.equal(ready.json.selector_fingerprint, V2_FINGERPRINT);
+  } finally { readyFetch.restore(); restoreEnv(); }
+
+  delete process.env.SUPABASE_URL;
+  delete process.env.SUPABASE_SERVICE_ROLE_KEY;
+  globalThis.__alternativePicksNow = NOW;
+  try {
+    const unavailable = await responseJson(event({ bundle_version: 'v2' }));
+    assert.equal(unavailable.json.status, 'unavailable');
+    assert.equal(unavailable.json.bundle_id, V2_BUNDLE_ID);
+    assert.equal(unavailable.json.selector_fingerprint, V2_FINGERPRINT);
+  } finally { restoreEnv(); }
+});
+
+test('alternative-picks filters Supabase by the selected bundle', async () => {
+  configure();
+  const v1 = provisionalState();
+  const v2 = v2ProvisionalState();
+  const fake = installFetch({ stateRows: [v1, v2] });
+  try {
+    const response = await responseJson(event({ bundle_version: 'v2' }));
+    assert.deepEqual(response.json.rows.map(row => row.bundle_id), [V2_BUNDLE_ID]);
+    const stateUrl = new URL(fake.calls[1].href);
+    assert.equal(stateUrl.searchParams.get('bundle_id'), `eq.${V2_BUNDLE_ID}`);
+    assert.match(stateUrl.searchParams.get('select'), /evaluation_proof/);
+  } finally { fake.restore(); restoreEnv(); }
+});
+
+test('alternative-picks rejects missing malformed oversized or cross-row v2 proof', async () => {
+  const base = v2ProvisionalState();
+  const cases = [];
+  const missing = { ...base };
+  delete missing.evaluation_proof;
+  cases.push(missing);
+  cases.push(v2ProvisionalState({ evaluation_proof: [] }));
+  cases.push(v2ProvisionalState({ evaluation_proof: { ...v2Proof(base), padding: 'x'.repeat(32768) } }));
+  const missingIdentity = v2ProvisionalState({ candidate_identity: null });
+  missingIdentity.evaluation_proof = v2Proof(missingIdentity);
+  cases.push(missingIdentity);
+  const crossRow = v2ProvisionalState();
+  crossRow.evaluation_proof = v2Proof(crossRow, {
+    candidate: { ...v2Proof(crossRow).candidate, candidate_identity: '0'.repeat(64) },
+  });
+  cases.push(crossRow);
+  for (const state of cases) {
+    configure();
+    const fake = installFetch({ stateRows: [state] });
+    try {
+      const response = await responseJson(event({ bundle_version: 'v2' }));
+      assert.equal(response.json.bundle_id, V2_BUNDLE_ID);
+      assert.deepEqual(response.json.rows, []);
+    }
+    finally { fake.restore(); restoreEnv(); }
+  }
+});
+
+test('alternative-picks rejects mixed selector identity family logic and artifact hashes', async () => {
+  const mixedSelector = v2ProvisionalState({ selector_id: MANIFEST.selector_ids.consensus_core });
+  const mixedFamilies = v2ProvisionalState();
+  mixedFamilies.evaluation_proof = v2Proof(mixedFamilies, {
+    decision: { ...v2Proof(mixedFamilies).decision, family_count: 3 },
+  });
+  const mixedArtifact = v2ProvisionalState();
+  mixedArtifact.evaluation_proof = v2Proof(mixedArtifact, {
+    artifact: { ...v2Proof(mixedArtifact).artifact, source_artifact_sha256: '9'.repeat(64) },
+  });
+  for (const state of [mixedSelector, mixedFamilies, mixedArtifact]) {
+    configure();
+    const fake = installFetch({ stateRows: [state] });
+    try {
+      const response = await responseJson(event({ bundle_version: 'v2' }));
+      assert.equal(response.json.bundle_id, V2_BUNDLE_ID);
+      assert.deepEqual(response.json.rows, []);
+    }
+    finally { fake.restore(); restoreEnv(); }
+  }
+});
+
+test('alternative-picks rejects every canonical-python-invalid nested v2 proof mutation', async () => {
+  const mutations = [
+    proof => { delete proof.normalized_inputs.edge; },
+    proof => { proof.bindings.therundown.binding_key = '9'.repeat(64); },
+    proof => { proof.freshness = {}; },
+    proof => { proof.preclose.score = 999; },
+    (proof, row) => {
+      row.official_verdict = 'LEAN';
+      proof.normalized_inputs.official_verdict = 'LEAN';
+    },
+  ];
+  for (const mutate of mutations) {
+    const state = v2FreshProvisionalState();
+    mutate(state.evaluation_proof, state);
+    configure();
+    const fake = installFetch({ stateRows: [state] });
+    try {
+      const response = await responseJson(event({ bundle_version: 'v2' }));
+      assert.deepEqual(response.json.rows, []);
+    } finally { fake.restore(); restoreEnv(); }
+  }
+});
+
+test('alternative-picks rejects empty or duplicate provider binding identifiers', async () => {
+  const mutations = [
+    proof => { proof.bindings.therundown.current_line_ids[0] = ' '; },
+    proof => { proof.bindings.therundown.current_line_ids.push(proof.bindings.therundown.current_line_ids[0]); },
+    proof => { proof.bindings.therundown.seed_observation_tokens[0] = ' '; },
+    proof => {
+      proof.bindings.therundown.seed_observation_tokens.push(
+        proof.bindings.therundown.seed_observation_tokens[0],
+      );
+    },
+  ];
+  for (const mutate of mutations) {
+    const state = v2FreshProvisionalState();
+    mutate(state.evaluation_proof);
+    configure();
+    const fake = installFetch({ stateRows: [state] });
+    try {
+      const response = await responseJson(event({ bundle_version: 'v2' }));
+      assert.deepEqual(response.json.rows, []);
+    } finally { fake.restore(); restoreEnv(); }
+  }
+});
+
+test('alternative-picks enforces the canonical 30720 byte application proof ceiling', async () => {
+  const state = v2FreshProvisionalState();
+  const proof = state.evaluation_proof;
+  proof.bindings.therundown.current_line_ids = Array.from(
+    { length: 32 }, (_, index) => `tr-line-${index}-${'x'.repeat(350)}`,
+  );
+  proof.bindings.therundown.seed_observation_tokens = Array.from(
+    { length: 32 }, (_, index) => `therundown:seed-${index}-${'y'.repeat(350)}`,
+  );
+  proof.bindings.propline = {
+    role: 'sidecar', provider_event_id: 'pl-event', current_line_ids: [],
+    seed_observation_tokens: [], binding_key: '8'.repeat(64),
+    window_started_at: '2026-07-21T19:40:00Z', mature: false,
+  };
+  let size = Buffer.byteLength(JSON.stringify(proof), 'utf8');
+  for (let index = 0; size <= 30720 && index < 32; index += 1) {
+    proof.bindings.propline.current_line_ids.push(`pl-line-${index}-${'z'.repeat(200)}`);
+    size = Buffer.byteLength(JSON.stringify(proof), 'utf8');
+  }
+  assert.ok(size > 30720 && size <= 32768, `fixture size ${size}`);
+  configure();
+  const fake = installFetch({ stateRows: [state] });
+  try {
+    const response = await responseJson(event({ bundle_version: 'v2' }));
+    assert.deepEqual(response.json.rows, []);
+  } finally { fake.restore(); restoreEnv(); }
+});
+
+test('alternative-picks requires decisive families to exactly match agreeing family order', async () => {
+  for (const decisiveFamilies of [
+    ['base', 'anchor'],
+    ['base', 'anchor', 'preclose', 'reentry'],
+    ['preclose', 'base', 'anchor'],
+  ]) {
+    const state = v2FreshProvisionalState();
+    state.evaluation_proof.decision.decisive_families = decisiveFamilies;
+    configure();
+    const fake = installFetch({ stateRows: [state] });
+    try {
+      const response = await responseJson(event({ bundle_version: 'v2' }));
+      assert.deepEqual(response.json.rows, []);
+    } finally { fake.restore(); restoreEnv(); }
+  }
+});
+
+test('alternative-picks accepts the complete canonical v2 proof fixture', async () => {
+  configure();
+  const state = v2FreshProvisionalState();
+  const fake = installFetch({ stateRows: [state] });
+  try {
+    const response = await responseJson(event({ bundle_version: 'v2' }));
+    assert.equal(response.json.rows.length, 1);
+    assert.equal(response.json.rows[0].decision_proof.lane_states.consensus_core, 'true');
+  } finally { fake.restore(); restoreEnv(); }
+});
+
+test('alternative-picks rejects Python-invalid normalized scalar types per row', async t => {
+  for (const [field, value] of [
+    ['adjusted_ev', '0.09'],
+    ['model_no_vig_gap', '0.031'],
+    ['source_fire_verdict', 7],
+  ]) {
+    await t.test(field, async () => {
+      const state = v2FreshProvisionalState();
+      state.evaluation_proof.normalized_inputs[field] = value;
+      configure();
+      const fake = installFetch({ stateRows: [state] });
+      try {
+        const response = await responseJson(event({ bundle_version: 'v2' }));
+        assert.equal(response.json.status, 'ready');
+        assert.equal(response.json.counts.selected, 0);
+        assert.deepEqual(response.json.rows, []);
+      } finally { fake.restore(); restoreEnv(); }
+    });
+  }
+});
+
+test('alternative-picks rejects nullable or confused normalized Boolean proof inputs', async t => {
+  const cases = [
+    ['large_edge_skepticism_flag null', 'large_edge_skepticism_flag', null, true],
+    ['anchor_metadata_malformed null', 'anchor_metadata_malformed', null, false],
+    ['large_edge_skepticism_flag integer', 'large_edge_skepticism_flag', 0, false],
+    ['anchor_metadata_malformed string', 'anchor_metadata_malformed', 'false', false],
+  ];
+  for (const [name, field, value, alignReentryPending] of cases) {
+    await t.test(name, async () => {
+      const state = v2FreshProvisionalState();
+      if (alignReentryPending) {
+        const pendingReentry = { state: 'pending', reason_codes: ['reentry_inputs_missing'] };
+        state.family_states.reentry = pendingReentry;
+        state.evaluation_proof.decision.family_states.reentry = pendingReentry;
+        state.evaluation_proof.decision.maximum_family_count = 4;
+      }
+      state.evaluation_proof.normalized_inputs[field] = value;
+      configure();
+      const fake = installFetch({ stateRows: [state] });
+      try {
+        const response = await responseJson(event({ bundle_version: 'v2' }));
+        assert.equal(response.json.status, 'ready');
+        assert.equal(response.json.counts.selected, 0);
+        assert.deepEqual(response.json.rows, []);
+      } finally { fake.restore(); restoreEnv(); }
+    });
+  }
+});
+
+test('alternative-picks enforces the canonical normalized integer contract for odds', async t => {
+  for (const [name, value] of [['fractional number', -115.5], ['numeric string', '-115']]) {
+    await t.test(name, async () => {
+      const state = v2FreshProvisionalState();
+      state.evaluation_proof.normalized_inputs.odds = value;
+      configure();
+      const fake = installFetch({ stateRows: [state] });
+      try {
+        const response = await responseJson(event({ bundle_version: 'v2' }));
+        assert.equal(response.json.status, 'ready');
+        assert.deepEqual(response.json.rows, []);
+      } finally { fake.restore(); restoreEnv(); }
+    });
+  }
+});
+
+test('alternative-picks suppresses one unexpected v2 proof exception without hiding valid rows', async () => {
+  const explosive = v2FreshProvisionalState();
+  Object.defineProperty(explosive.evaluation_proof, 'normalized_inputs', {
+    enumerable: true,
+    get() { throw new Error('unexpected proof accessor failure'); },
+  });
+  const valid = v2FreshProvisionalState();
+  configure();
+  const fake = installFetch({ stateRows: [explosive, valid], directStateRows: true });
+  try {
+    const response = await responseJson(event({ bundle_version: 'v2' }));
+    assert.equal(response.json.status, 'ready');
+    assert.equal(response.json.counts.selected, 1);
+    assert.equal(response.json.rows.length, 1);
+  } finally { fake.restore(); restoreEnv(); }
+});
+
+test('alternative-picks sanitizes v2 proof without provider identifiers', async () => {
+  configure();
+  const state = v2ProvisionalState();
+  const fake = installFetch({ stateRows: [state] });
+  try {
+    const response = await responseJson(event({ bundle_version: 'v2' }));
+    const decisionProof = response.json.rows[0].decision_proof;
+    assert.deepEqual(Object.keys(decisionProof).sort(), [
+      'decisive_families', 'drag_core', 'lane_states', 'no_drag',
+      'preclose_required_for_selected_lane', 'support',
+    ]);
+    assert.equal(JSON.stringify(response.json).includes('private-event-id'), false);
+    assert.equal(JSON.stringify(response.json).includes('private-line-id'), false);
+    assert.equal(JSON.stringify(response.json).includes('private-seed-id'), false);
+    assert.equal(JSON.stringify(response.json).includes('binding'), false);
+    assert.equal(JSON.stringify(response.json).includes('normalized_inputs'), false);
+  } finally { fake.restore(); restoreEnv(); }
+});
+
+test('alternative-picks allows selected v2 with pending nonessential preclose and zero observations', async () => {
+  configure();
+  const state = v2ProvisionalState();
+  const fake = installFetch({ stateRows: [state] });
+  try {
+    const response = await responseJson(event({ bundle_version: 'v2' }));
+    assert.equal(response.json.rows.length, 1);
+    assert.equal(response.json.rows[0].selection_status, 'selected');
+    assert.equal(response.json.rows[0].family_states.preclose.state, 'pending');
+    assert.equal(response.json.rows[0].evidence_observation_count, 0);
+    assert.equal(response.json.rows[0].decision_proof.preclose_required_for_selected_lane, false);
+    assert.deepEqual(response.json.rows[0].decision_proof.decisive_families, ['base', 'anchor']);
+  } finally { fake.restore(); restoreEnv(); }
+});
+
+test('alternative-picks allows a structurally valid fail-closed v2 diagnostic row', async () => {
+  const pendingFamilies = Object.fromEntries(
+    ['base', 'anchor', 'preclose', 'reentry'].map(name => [name, {
+      state: 'pending', reason_codes: ['evaluation_proof_invalid'],
+    }]),
+  );
+  const state = v2ProvisionalState({
+    lane: null, selector_id: null, selection_status: 'pending',
+    family_states: pendingFamilies, family_count: 0,
+    reason_codes: ['evaluation_proof_invalid'],
+  });
+  const proof = v2Proof(state);
+  proof.candidate.official_binding_key = null;
+  proof.bindings = {};
+  proof.freshness = {};
+  proof.normalized_inputs = {
+    side: state.side, pitcher: state.normalized_pitcher, game_time: state.game_time,
+    k_line: state.model_k_line, odds: state.official_odds,
+    official_book: state.official_book, official_verdict: state.official_verdict,
+  };
+  proof.decision = {
+    support: 'pending', drag_core: 'pending', no_drag: 'pending',
+    family_states: pendingFamilies,
+    consensus_core: 'pending', reentry_expansion: 'pending', selected_lane: null,
+    selection_status: 'pending', family_count: 0, maximum_family_count: 4,
+    decisive_families: [], preclose_required_for_selected_lane: false,
+    reason_codes: ['evaluation_proof_invalid'],
+  };
+  proof.preclose.reason_codes = ['evaluation_proof_invalid'];
+  state.evaluation_proof = proof;
+  configure();
+  const fake = installFetch({ stateRows: [state] });
+  try {
+    const response = await responseJson(event({ bundle_version: 'v2' }));
+    assert.equal(response.json.rows.length, 1);
+    assert.equal(response.json.rows[0].selection_status, 'pending');
+    assert.deepEqual(response.json.rows[0].decision_proof.lane_states, {
+      consensus_core: 'pending', reentry_expansion: 'pending',
+    });
+  } finally { fake.restore(); restoreEnv(); }
+});
+
+test('alternative-picks keeps old client to new endpoint on the v1 contract', async () => {
+  configure();
+  const state = provisionalState();
+  const fake = installFetch({ stateRows: [state] });
+  try {
+    const response = await responseJson(event());
+    assert.equal(response.json.bundle_id, V1_BUNDLE_ID);
+    assert.equal(response.json.selector_fingerprint, MANIFEST_FINGERPRINT);
+    assert.equal(response.json.rows.length, 1);
+    assert.equal(Object.hasOwn(response.json.rows[0], 'decision_proof'), false);
   } finally { fake.restore(); restoreEnv(); }
 });

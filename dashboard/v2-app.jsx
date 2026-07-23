@@ -2310,6 +2310,20 @@ function altBookTitle(value) {
   return titles[key] || String(value || "").trim();
 }
 
+function familyTitle(value) {
+  return { base: "Base", anchor: "Anchor", preclose: "Preclose", reentry: "Re-entry" }[value] || String(value || "");
+}
+
+function altSelectionProofCopy(row) {
+  const pending = Object.entries(row.family_states)
+    .filter(([, vote]) => vote.state === "pending")
+    .map(([name]) => name);
+  if (row.selection_status === "selected" && pending.length) {
+    return `Selected with ${row.family_count} confirmed families; ${familyTitle(pending[0])} still pending.`;
+  }
+  return `Selected with ${row.family_count} confirmed families.`;
+}
+
 function AltPickSheet({ row, onClose }) {
   if (!row) return null;
   const familyLabels = { base: "Base", anchor: "Anchor", preclose: "Preclose", reentry: "Re-entry" };
@@ -2326,6 +2340,7 @@ function AltPickSheet({ row, onClose }) {
         <div className="v2-alt-sheet-evidence">
           {Object.entries(row.family_states).map(([key, value]) => <span key={key} className={`v2-alt-chip ${value.state}`}>{familyLabels[key]} · {value.state}</span>)}
         </div>
+        <p className="v2-alt-selection-proof">{altSelectionProofCopy(row)}</p>
         <p>Freshness: {row.evidence_freshness_status || "unknown"} · {altCountLabel(row.evidence_observation_count, "observation")}</p>
         <p>Artifact: {row.source_artifact_generated_at ? fmtTime(row.source_artifact_generated_at) : "not reported"}{row.artifact_advanced_after_freeze ? " · advanced after freeze" : ""}</p>
       </section>
@@ -2348,6 +2363,7 @@ function AltPickCard({ row, onOpen }) {
         <div className="v2-alt-chips">
           {Object.entries(row.family_states).map(([key, value]) => <span key={key} className={`v2-alt-chip ${value.state}`}>{familyLabels[key]} · {value.state}</span>)}
         </div>
+        <div className="v2-alt-selection-proof">{altSelectionProofCopy(row)}</div>
         <div className="v2-alt-provenance">{row.evidence_freshness_status || "unknown"} evidence · {altCountLabel(row.evidence_observation_count, "observation")} · {row.source_artifact_generated_at ? fmtTime(row.source_artifact_generated_at) : "artifact time unavailable"}</div>
       </button>
     </article>

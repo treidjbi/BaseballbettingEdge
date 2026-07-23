@@ -39,6 +39,9 @@ def test_alt_components_are_read_only_and_keep_required_groups_and_copy():
         "Waiting for current-slate evidence.",
         "No alternative qualifiers on this slate.",
         "Alternative evaluation still pending.",
+        "Selected with",
+        "confirmed families",
+        "still pending.",
     ]:
         assert copy in app
     for copy in [
@@ -50,6 +53,14 @@ def test_alt_components_are_read_only_and_keep_required_groups_and_copy():
         assert forbidden not in alt
     assert "function AltPickSheet" in alt
     assert "function AltPickCard" in alt
+    assert "altSelectionProofCopy(row)" in alt
+    assert alt.count("altSelectionProofCopy(row)") == 2
+    proof_helper = app[app.index("function altSelectionProofCopy"):start]
+    assert "row.family_count" in proof_helper
+    assert "row.evidence_freshness_status" in alt
+    assert "Read-only same-day methodology comparison. Official picks are unchanged." in alt
+    for forbidden_style in ["v2-alt-fire", "fire-red", "background: red", "#ef4444"]:
+        assert forbidden_style not in alt.lower()
 
 
 def test_zero_selected_copy_gates_healthy_language_on_zero_pending_rows():
@@ -83,7 +94,10 @@ def test_expanded_supporting_candidates_show_read_only_chips_and_reason():
 
 def test_alt_picks_assets_and_scoped_mobile_styles_are_present():
     html = HTML.read_text(encoding="utf-8")
-    assert "v2-alt-picks.js?v=2026-07-21-alt-picks" in html
+    assert "v2-alt-picks.js?v=2026-07-22-alt-picks-v2" in html
+    assert "v2-app.js?v=2026-07-22-alt-picks-v2" in html
+    assert "v2-alt-picks.js?v=2026-07-21-alt-picks" not in html
+    assert "v2-app.js?v=2026-07-21-alt-picks" not in html
     assert html.rindex('<script src="v2-data.js') < html.rindex('<script src="v2-alt-picks.js') < html.rindex('<script src="v2-app.js')
     assert ".v2-alt-card" in html
     assert ".v2-alt-chip" in html

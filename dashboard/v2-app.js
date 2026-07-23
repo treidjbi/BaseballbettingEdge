@@ -2649,6 +2649,21 @@ function altBookTitle(value) {
   const key = String(value || "").trim().toLowerCase().replace(/[^a-z0-9]+/g, "");
   return titles[key] || String(value || "").trim();
 }
+function familyTitle(value) {
+  return {
+    base: "Base",
+    anchor: "Anchor",
+    preclose: "Preclose",
+    reentry: "Re-entry"
+  }[value] || String(value || "");
+}
+function altSelectionProofCopy(row) {
+  const pending = Object.entries(row.family_states).filter(([, vote]) => vote.state === "pending").map(([name]) => name);
+  if (row.selection_status === "selected" && pending.length) {
+    return `Selected with ${row.family_count} confirmed families; ${familyTitle(pending[0])} still pending.`;
+  }
+  return `Selected with ${row.family_count} confirmed families.`;
+}
 function AltPickSheet({
   row,
   onClose
@@ -2682,7 +2697,9 @@ function AltPickSheet({
   }, Object.entries(row.family_states).map(([key, value]) => /*#__PURE__*/React.createElement("span", {
     key: key,
     className: `v2-alt-chip ${value.state}`
-  }, familyLabels[key], " \xB7 ", value.state))), /*#__PURE__*/React.createElement("p", null, "Freshness: ", row.evidence_freshness_status || "unknown", " \xB7 ", altCountLabel(row.evidence_observation_count, "observation")), /*#__PURE__*/React.createElement("p", null, "Artifact: ", row.source_artifact_generated_at ? fmtTime(row.source_artifact_generated_at) : "not reported", row.artifact_advanced_after_freeze ? " · advanced after freeze" : "")));
+  }, familyLabels[key], " \xB7 ", value.state))), /*#__PURE__*/React.createElement("p", {
+    className: "v2-alt-selection-proof"
+  }, altSelectionProofCopy(row)), /*#__PURE__*/React.createElement("p", null, "Freshness: ", row.evidence_freshness_status || "unknown", " \xB7 ", altCountLabel(row.evidence_observation_count, "observation")), /*#__PURE__*/React.createElement("p", null, "Artifact: ", row.source_artifact_generated_at ? fmtTime(row.source_artifact_generated_at) : "not reported", row.artifact_advanced_after_freeze ? " · advanced after freeze" : "")));
 }
 function AltPickCard({
   row,
@@ -2716,6 +2733,8 @@ function AltPickCard({
     key: key,
     className: `v2-alt-chip ${value.state}`
   }, familyLabels[key], " \xB7 ", value.state))), /*#__PURE__*/React.createElement("div", {
+    className: "v2-alt-selection-proof"
+  }, altSelectionProofCopy(row)), /*#__PURE__*/React.createElement("div", {
     className: "v2-alt-provenance"
   }, row.evidence_freshness_status || "unknown", " evidence \xB7 ", altCountLabel(row.evidence_observation_count, "observation"), " \xB7 ", row.source_artifact_generated_at ? fmtTime(row.source_artifact_generated_at) : "artifact time unavailable")));
 }
