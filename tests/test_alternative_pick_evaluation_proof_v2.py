@@ -757,6 +757,61 @@ def test_v2_proof_rejects_changed_raw_workload_without_matching_decision():
     assert "evaluation_proof_semantics_mismatch" in reasons
 
 
+@pytest.mark.parametrize(
+    ("updates", "case"),
+    (
+        ({"is_opener": True}, "opener_requires_high_leash_and_opener_archetype"),
+        ({"last_pitch_count": 105}, "high_pitch_count_requires_medium_leash"),
+        ({"opportunity_bucket": "short_leash"}, "short_opportunity_requires_matching_buckets"),
+        ({"pitcher_archetype_bucket": "opener_or_mismatch"}, "orphan_opener_archetype"),
+        ({"pitcher_archetype_bucket": "short_leash"}, "orphan_short_leash_archetype"),
+    ),
+)
+def test_v2_proof_rejects_semantically_unbound_workload_buckets(updates, case):
+    proof = copy.deepcopy(_build().proof)
+    proof["normalized_inputs"].update(updates)
+
+    valid, reasons = proof_v2.validate_evaluation_proof_v2(proof=proof)
+
+    assert valid is False, case
+    assert "evaluation_proof_semantics_mismatch" in reasons
+
+
+@pytest.mark.parametrize(
+    "updates",
+    (
+        {
+            "is_opener": True,
+            "leash_risk_bucket": "high",
+            "pitcher_archetype_bucket": "opener_or_mismatch",
+        },
+        {
+            "starter_mismatch": True,
+            "leash_risk_bucket": "high",
+            "pitcher_archetype_bucket": "opener_or_mismatch",
+        },
+        {
+            "last_pitch_count": 105,
+            "leash_risk_bucket": "medium",
+        },
+        {
+            "days_since_last_start": 3,
+            "leash_risk_bucket": "medium",
+        },
+        {
+            "opportunity_bucket": "short_leash",
+            "leash_risk_bucket": "high",
+            "pitcher_archetype_bucket": "short_leash",
+        },
+    ),
+)
+def test_v2_proof_accepts_workload_values_with_matching_derived_buckets(updates):
+    proof = copy.deepcopy(_build().proof)
+    proof["normalized_inputs"].update(updates)
+
+    assert proof_v2.validate_evaluation_proof_v2(proof=proof) == (True, ())
+
+
 def test_v2_worst_case_valid_proof_fits_postgres_jsonb_text_ceiling():
     evaluation = _evaluation()
     reason = "r" * proof_v2.MAX_REASON_BYTES

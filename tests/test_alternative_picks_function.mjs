@@ -40,6 +40,16 @@ const ALLOWED_ROW_KEYS = [
   'selection_status', 'should_lock_at', 'side', 'slate_date',
   'source_artifact_generated_at', 'team',
 ].sort();
+const V1_ROW_KEY_ORDER = [
+  'slate_date', 'pitcher', 'team', 'opp_team', 'game_time', 'side',
+  'model_k_line', 'official_odds', 'official_book', 'official_verdict',
+  'bundle_id', 'selector_id', 'lane', 'selection_status', 'family_states',
+  'family_count', 'checkpoint', 'reason_codes', 'source_artifact_generated_at',
+  'evidence_observation_count', 'evidence_first_observed_at',
+  'evidence_last_observed_at', 'evidence_freshness_status', 'frozen_at',
+  'should_lock_at', 'minutes_until_start', 'lock_status',
+  'artifact_advanced_after_freeze',
+];
 
 const ORIGINAL_ENV = {
   SUPABASE_URL: process.env.SUPABASE_URL,
@@ -1023,6 +1033,86 @@ test('alternative-picks keeps old client to new endpoint on the v1 contract', as
     assert.equal(response.json.rows.length, 1);
     assert.equal(Object.hasOwn(response.json.rows[0], 'decision_proof'), false);
   } finally { fake.restore(); restoreEnv(); }
+});
+
+test('alternative-picks preserves the serialized v1 row key order and reason position', async () => {
+  configure();
+  const state = provisionalState();
+  const fake = installFetch({ stateRows: [state] });
+  try {
+    const response = await responseJson(event());
+    const publicRow = response.json.rows[0];
+    assert.equal(
+      JSON.stringify(Object.keys(publicRow)),
+      JSON.stringify(V1_ROW_KEY_ORDER),
+    );
+    assert.match(
+      JSON.stringify(publicRow),
+      /"checkpoint":"provisional","reason_codes":\["selected"\],"source_artifact_generated_at":/,
+    );
+  } finally { fake.restore(); restoreEnv(); }
+});
+
+test('alternative-picks rejects complete workload proofs whose raw values contradict derived buckets', async t => {
+  const cases = [
+    ['opener', { is_opener: true }],
+    ['pitch count', { last_pitch_count: 105 }],
+    ['short opportunity', { opportunity_bucket: 'short_leash' }],
+    ['orphan opener archetype', { pitcher_archetype_bucket: 'opener_or_mismatch' }],
+    ['orphan short-leash archetype', { pitcher_archetype_bucket: 'short_leash' }],
+  ];
+  for (const [name, updates] of cases) {
+    await t.test(name, async () => {
+      const state = v2FreshProvisionalState();
+      Object.assign(state.evaluation_proof.normalized_inputs, updates);
+      configure();
+      const fake = installFetch({ stateRows: [state] });
+      try {
+        const response = await responseJson(event({ bundle_version: 'v2' }));
+        assert.deepEqual(response.json.rows, []);
+      } finally { fake.restore(); restoreEnv(); }
+    });
+  }
+});
+
+test('alternative-picks accepts complete workload proofs when raw values and derived buckets agree', async t => {
+  const cases = [
+    ['opener', {
+      is_opener: true,
+      leash_risk_bucket: 'high',
+      pitcher_archetype_bucket: 'opener_or_mismatch',
+    }],
+    ['starter mismatch', {
+      starter_mismatch: true,
+      leash_risk_bucket: 'high',
+      pitcher_archetype_bucket: 'opener_or_mismatch',
+    }],
+    ['pitch count', {
+      last_pitch_count: 105,
+      leash_risk_bucket: 'medium',
+    }],
+    ['short rest', {
+      days_since_last_start: 3,
+      leash_risk_bucket: 'medium',
+    }],
+    ['short opportunity', {
+      opportunity_bucket: 'short_leash',
+      leash_risk_bucket: 'high',
+      pitcher_archetype_bucket: 'short_leash',
+    }],
+  ];
+  for (const [name, updates] of cases) {
+    await t.test(name, async () => {
+      const state = v2FreshProvisionalState();
+      Object.assign(state.evaluation_proof.normalized_inputs, updates);
+      configure();
+      const fake = installFetch({ stateRows: [state] });
+      try {
+        const response = await responseJson(event({ bundle_version: 'v2' }));
+        assert.equal(response.json.rows.length, 1);
+      } finally { fake.restore(); restoreEnv(); }
+    });
+  }
 });
 
 test('alternative-picks v2 prefers one valid frozen row over the same provisional candidate', async () => {

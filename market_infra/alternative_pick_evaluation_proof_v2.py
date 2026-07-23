@@ -459,6 +459,27 @@ def _bounded_normalized_inputs(raw: Mapping[str, Any]) -> dict[str, Any]:
         )
     ):
         raise ValueError("complete workload proof inputs are invalid")
+    if workload_status == "complete":
+        opener_or_mismatch = bool(
+            normalized["is_opener"] or normalized["starter_mismatch"]
+        )
+        short_leash = normalized["opportunity_bucket"] == "short_leash"
+        expected_leash = (
+            "high" if opener_or_mismatch or short_leash
+            else "medium" if (
+                normalized["last_pitch_count"] >= 105
+                or normalized["days_since_last_start"] < 4
+            )
+            else "normal"
+        )
+        archetype = normalized["pitcher_archetype_bucket"]
+        archetype_bound = (
+            archetype == "opener_or_mismatch" if opener_or_mismatch
+            else archetype == "short_leash" if short_leash
+            else archetype not in {"opener_or_mismatch", "short_leash"}
+        )
+        if normalized["leash_risk_bucket"] != expected_leash or not archetype_bound:
+            raise ValueError("complete workload proof buckets are inconsistent")
     if workload_status != "complete" and not (
         any(value is None for value in workload_values)
         or any(

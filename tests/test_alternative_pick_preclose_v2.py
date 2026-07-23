@@ -196,6 +196,21 @@ def test_v2_candidate_window_before_snapshot_lookback_is_pending():
     assert "snapshot_window_incomplete" in result.proof_fragment["exact_preclose"]["reason_codes"]
 
 
+def test_v2_incomplete_snapshot_read_without_reasons_gets_bounded_fallback():
+    result = _build(
+        snapshot_read_complete=False,
+        snapshot_read_reason_codes=(),
+    )
+
+    assert result.market_evidence["freshness_status"] == "pending"
+    assert result.market_evidence["aggregation_reason_codes"] == [
+        "snapshot_read_incomplete",
+    ]
+    assert result.proof_fragment["exact_preclose"]["reason_codes"] == [
+        "snapshot_read_incomplete",
+    ]
+
+
 def test_v2_does_not_infer_official_provider_from_combined_posture():
     bindings = _bindings(pitcher=_pitcher(line_source_provider=None))
     assert bindings["ready"] is False

@@ -372,6 +372,19 @@ function boundedNormalizedInputs(value) {
         || typeof output.starter_mismatch !== 'boolean'
         || !Number.isInteger(output.last_pitch_count) || output.last_pitch_count < 0
         || !Number.isInteger(output.days_since_last_start) || output.days_since_last_start < 0)) return null;
+  if (output.workload_input_status === 'complete') {
+    const openerOrMismatch = output.is_opener || output.starter_mismatch;
+    const shortLeash = output.opportunity_bucket === 'short_leash';
+    const expectedLeash = openerOrMismatch || shortLeash ? 'high'
+      : output.last_pitch_count >= 105 || output.days_since_last_start < 4 ? 'medium'
+        : 'normal';
+    const archetypeBound = openerOrMismatch
+      ? output.pitcher_archetype_bucket === 'opener_or_mismatch'
+      : shortLeash
+        ? output.pitcher_archetype_bucket === 'short_leash'
+        : !['opener_or_mismatch', 'short_leash'].includes(output.pitcher_archetype_bucket);
+    if (output.leash_risk_bucket !== expectedLeash || !archetypeBound) return null;
+  }
   if (output.workload_input_status !== 'complete'
       && !workloadValues.some(item => item === null)
       && ![output.last_pitch_count, output.days_since_last_start].some(item => Number.isInteger(item) && item < 0)) return null;
@@ -788,6 +801,7 @@ function responseRow(row, contract, { artifactAdvancedAfterFreeze, decisionProof
     family_states: safeFamilyStates(row.family_states),
     family_count: integer(row.family_count) ?? 0,
     checkpoint: text(row.checkpoint),
+    ...(!contract.requiresProof ? { reason_codes: safeReasonCodes(row.reason_codes) } : {}),
     source_artifact_generated_at: timestamp(row.source_artifact_generated_at) || null,
     evidence_observation_count: integer(row.evidence_observation_count) ?? 0,
     evidence_first_observed_at: timestamp(row.evidence_first_observed_at) || null,
@@ -799,7 +813,6 @@ function responseRow(row, contract, { artifactAdvancedAfterFreeze, decisionProof
     lock_status: text(row.lock_status),
     artifact_advanced_after_freeze: artifactAdvancedAfterFreeze,
   };
-  if (!contract.requiresProof) output.reason_codes = safeReasonCodes(row.reason_codes);
   if (contract.requiresProof) output.decision_proof = decisionProof;
   return output;
 }

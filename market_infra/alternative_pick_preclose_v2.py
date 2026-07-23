@@ -627,10 +627,11 @@ def build_exact_preclose_evidence_v2(
     official_provider = _provider(bindings.get("official_provider")) or None
     reasons: list[str] = []
     if snapshot_read_complete is not True:
-        reasons.extend(
+        read_reasons = [
             reason for reason in snapshot_read_reason_codes
             if isinstance(reason, str) and reason
-        )
+        ]
+        reasons.extend(read_reasons or ["snapshot_read_incomplete"])
     if not bindings.get("ready") or not official_provider:
         reasons.append("official_binding_pending")
     if "duplicate_snapshot_conflict" in _values(bindings.get("reason_codes")):
