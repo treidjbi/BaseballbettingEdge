@@ -694,6 +694,24 @@ def test_v2_validator_fails_closed_for_malformed_normalized_scalar_types(
     assert "evaluation_proof_semantics_mismatch" in reasons
 
 
+@pytest.mark.parametrize(
+    "mutate",
+    (
+        lambda inputs: inputs.update(unexpected_normalized_input="hidden"),
+        lambda inputs: inputs.update(side=" over "),
+        lambda inputs: inputs.update(anchor_labels=[" market_anchor_strict "]),
+    ),
+)
+def test_v2_normalized_inputs_reject_extra_keys_and_whitespace(mutate):
+    proof = copy.deepcopy(_build().proof)
+    mutate(proof["normalized_inputs"])
+
+    valid, reasons = proof_v2.validate_evaluation_proof_v2(proof=proof)
+
+    assert valid is False
+    assert "evaluation_proof_semantics_mismatch" in reasons
+
+
 def test_v2_proof_requires_workload_inputs_with_exact_scalar_contracts():
     workload_fields = {
         "is_opener", "starter_mismatch", "last_pitch_count",

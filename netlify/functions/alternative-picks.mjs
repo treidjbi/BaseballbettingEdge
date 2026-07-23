@@ -347,9 +347,16 @@ function boundedNormalizedInputs(value) {
   const output = { ...value };
   for (const [field, item] of Object.entries(output)) {
     if (field === 'anchor_labels') {
-      if (item !== null && !proofStringList(item, 16, 128)) return null;
+      if (item !== null && (
+        !proofStringList(item, 16, 128)
+        || item.some(label => proofText(label, 128) !== label)
+      )) return null;
     } else if (NORMALIZED_TEXT_FIELDS.has(field)) {
-      if (item !== null && (typeof item !== 'string' || !proofText(item))) return null;
+      if (item !== null && (
+        typeof item !== 'string'
+        || !proofText(item)
+        || proofText(item) !== item
+      )) return null;
     } else if (NORMALIZED_NUMBER_FIELDS.has(field)) {
       if (item !== null && (typeof item !== 'number' || !Number.isFinite(item))) return null;
     } else if (NORMALIZED_INTEGER_FIELDS.has(field)) {

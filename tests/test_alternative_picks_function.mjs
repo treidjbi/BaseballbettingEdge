@@ -1151,6 +1151,26 @@ test('alternative-picks rejects complete workload proofs whose raw values contra
   }
 });
 
+test('alternative-picks rejects extra normalized keys and whitespace with Python parity', async t => {
+  const cases = [
+    ['extra key', inputs => { inputs.unexpected_normalized_input = 'hidden'; }],
+    ['padded text', inputs => { inputs.side = ' over '; }],
+    ['padded anchor label', inputs => { inputs.anchor_labels = [' market_anchor_strict ']; }],
+  ];
+  for (const [name, mutate] of cases) {
+    await t.test(name, async () => {
+      const state = v2FreshProvisionalState();
+      mutate(state.evaluation_proof.normalized_inputs);
+      configure();
+      const fake = installFetch({ stateRows: [state] });
+      try {
+        const response = await responseJson(event({ bundle_version: 'v2' }));
+        assert.deepEqual(response.json.rows, []);
+      } finally { fake.restore(); restoreEnv(); }
+    });
+  }
+});
+
 test('alternative-picks accepts complete workload proofs when raw values and derived buckets agree', async t => {
   const cases = [
     ['opener', {

@@ -403,21 +403,28 @@ def _diagnostic_build(
 
 
 def _bounded_normalized_inputs(raw: Mapping[str, Any]) -> dict[str, Any]:
+    if not isinstance(raw, Mapping) or set(raw) != set(NORMALIZED_INPUT_FIELDS):
+        raise ValueError("normalized proof inputs do not match the exact contract")
     normalized = {
-        field: _json_copy(raw[field])
-        for field in NORMALIZED_INPUT_FIELDS if field in raw
+        field: _json_copy(raw[field]) for field in NORMALIZED_INPUT_FIELDS
     }
-    if set(normalized) != set(NORMALIZED_INPUT_FIELDS):
-        raise ValueError("normalized proof inputs are incomplete")
     for field, value in normalized.items():
         if field == "anchor_labels":
-            normalized[field] = None if value is None else _bounded_string_list(
-                value, maximum=MAX_LABEL_COUNT, item_bytes=MAX_LABEL_BYTES,
-            )
+            if value is not None:
+                bounded_labels = _bounded_string_list(
+                    value, maximum=MAX_LABEL_COUNT, item_bytes=MAX_LABEL_BYTES,
+                )
+                if bounded_labels != value:
+                    raise ValueError("normalized proof labels are not canonical")
+                normalized[field] = bounded_labels
         elif field in NORMALIZED_TEXT_INPUT_FIELDS:
             if value is not None and not isinstance(value, str):
                 raise ValueError("normalized proof text input has an invalid type")
-            normalized[field] = None if value is None else _bounded_text(value)
+            if value is not None:
+                bounded_text = _bounded_text(value)
+                if bounded_text != value:
+                    raise ValueError("normalized proof text input is not canonical")
+                normalized[field] = bounded_text
         elif field in NORMALIZED_NUMBER_INPUT_FIELDS:
             if value is not None and (
                 isinstance(value, bool)
