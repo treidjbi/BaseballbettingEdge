@@ -1100,19 +1100,20 @@ Review the core branch first, then the held web diff against the core branch. Fi
 
 ### Task 8 local verification record - 2026-07-23
 
-- Core review fixes are held at `ad6a0596`: `2ceaaa35` makes malformed V2
-  proof scalars fail closed, `e5c39523` requires chronological Preclose
-  checkpoints, and `ad6a0596` isolates V2 startup imports. The separately held
-  web branch is at `5ca07dc5`, which aligns endpoint proof-scalar validation.
-  Both branches remain unmerged and undeployed.
+- Final reviewed core reference is `8c29bc66`; its review fixes include
+  `2ceaaa35` for fail-closed malformed V2 proof scalars, `e5c39523` for
+  chronological Preclose checkpoints, and `ad6a0596` for isolated V2 startup
+  imports. The separately held web reference is `5ca07dc5`, which aligns
+  endpoint proof-scalar validation. Both branches remain unmerged and
+  undeployed.
 - Frozen V2 identity:
   `23bacff0fa923685ae52c5a9cfbadfb9f5902fb64d91759cfe9b4b1169a221c4`.
   The additive, unapplied proof migration is
   `20260722230000_alternative_pick_v2_evaluation_proof.sql`.
-- Current core full-Python verification passed `1,850` tests. Held web
-  verification passed `60` focused Node tests and `134` full Node tests. The
-  final Sol Ultra whole-branch re-review is still pending; these results are
-  local verification, not a clean final review.
+- Current core verification passed `1,850` Python and `99` Node tests. Held
+  web verification passed `60` focused Node and `134` full Node tests, plus
+  `24` UI-isolation tests. Final Sol Ultra whole-branch review is CLEAN with no
+  Critical, Important, or Minor findings; all prior findings are closed.
 - The 2026-07-23 live isolation read found the new migration absent, the
   `evaluation_proof` column absent, zero V2 rows, `50` V1 rows, and zero
   alternative notification events. Live Netlify continued to serve V1.
@@ -1131,7 +1132,9 @@ Review the core branch first, then the held web diff against the core branch. Fi
   additive proof column.
 
 Task 8's final Sol Ultra independent whole-branch specification/code-quality
-review remains required before Task 9 may push either branch.
+review permits Task 9 to push the two held branches only. It does not open the
+prospective fixture, migration, deployment, activation, or other production
+gates.
 
 ---
 
