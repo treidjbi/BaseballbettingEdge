@@ -1,3 +1,5 @@
+import json
+
 from scripts import run_post_grading_shadow_reports as runner
 
 
@@ -372,3 +374,126 @@ def test_runner_rebuilds_shadow_reports_and_prints_review_excerpt(tmp_path, monk
     assert "Implementation Notes" not in output
     assert "Promotion Gate" not in output
     assert "Debug Detail" not in output
+
+
+def test_runner_refreshes_compact_inputs_before_one_gate_c_build(tmp_path, monkeypatch):
+    calls = []
+    output_dir = tmp_path / "gate_c"
+    input_dir = tmp_path / "market_inputs"
+    agreement_md = tmp_path / "market_agreement_tracker.md"
+    agreement_jsonl = tmp_path / "market_agreement_tracker.jsonl"
+    dataset_path = output_dir / "pitcher_k_outcome_dataset.jsonl"
+
+    def fake_exporter_main(argv):
+        calls.append(("export_inputs", argv))
+        input_dir.mkdir(parents=True)
+        for filename, payload in {
+            "market_pick_evidence.json": [],
+            "live_market_display_state.json": [],
+            "picks_history.json": [],
+            "today.json": {"slate_date": "2026-07-22", "pitchers": []},
+            "manifest.json": {"artifact": "market_agreement_inputs"},
+        }.items():
+            (input_dir / filename).write_text(
+                json.dumps(payload),
+                encoding="utf-8",
+            )
+        return 0
+
+    def fake_tracker_main(argv):
+        phase = "market_agreement_final" if dataset_path.exists() else "market_agreement_prebuild"
+        calls.append((phase, argv))
+        agreement_jsonl.write_text("", encoding="utf-8")
+
+    def fake_builder_main(argv):
+        calls.append(("gate_c_build", argv))
+        output_dir.mkdir(parents=True)
+        dataset_path.write_text("", encoding="utf-8")
+
+    monkeypatch.setattr(runner.export_market_agreement_inputs, "main", fake_exporter_main)
+    monkeypatch.setattr(runner.market_agreement_tracker, "main", fake_tracker_main)
+    monkeypatch.setattr(runner.builder, "main", fake_builder_main)
+
+    for module_name, module in (
+        ("selector_audit", runner.market_anchor_selector_canary_audit),
+        ("confidence_referee", runner.confidence_referee_canary_audit),
+        ("profit_rescue", runner.profit_rescue_audit),
+        ("bet_selection", runner.bet_selection_edge_synthesis),
+        ("strong_base", runner.strong_base_decision_lab),
+        ("portfolio", runner.strong_base_portfolio_simulator),
+        ("shadow_signal", runner.shadow_signal_synthesis_lab),
+        ("no_drag", runner.no_drag_composite_canary_audit),
+        ("market_shrink", runner.market_shrink_projection_canary_audit),
+    ):
+        monkeypatch.setattr(
+            module,
+            "main",
+            lambda argv, label=module_name: calls.append((label, argv)),
+        )
+    monkeypatch.setattr(
+        runner,
+        "_write_gate_f_projection_report",
+        lambda **kwargs: calls.append(("gate_f", kwargs)),
+    )
+    monkeypatch.setattr(runner, "_print_review_excerpt", lambda *args, **kwargs: None)
+
+    exit_code = runner.main(
+        [
+            "--refresh-market-agreement-inputs",
+            "--market-agreement-input-dir",
+            str(input_dir),
+            "--output-dir",
+            str(output_dir),
+            "--end-date",
+            "2026-07-22",
+            "--market-agreement-output-md",
+            str(agreement_md),
+            "--market-agreement-output-jsonl",
+            str(agreement_jsonl),
+        ]
+    )
+
+    assert exit_code == 0
+    assert [label for label, _ in calls[:4]] == [
+        "export_inputs",
+        "market_agreement_prebuild",
+        "gate_c_build",
+        "market_agreement_final",
+    ]
+    assert [label for label, _ in calls].count("gate_c_build") == 1
+
+    export_args = calls[0][1]
+    assert export_args == [
+        "--output-dir",
+        str(input_dir),
+        "--start-date",
+        runner.builder.dataset.CLEAN_WINDOW_START,
+        "--end-date",
+        "2026-07-22",
+    ]
+
+    prebuild_args = calls[1][1]
+    assert "--history" in prebuild_args
+    assert str(input_dir / "picks_history.json") in prebuild_args
+    assert "--market-pick-evidence" in prebuild_args
+    assert str(input_dir / "market_pick_evidence.json") in prebuild_args
+    assert "--live-market-display" in prebuild_args
+    assert str(input_dir / "live_market_display_state.json") in prebuild_args
+    assert "--current-artifact" in prebuild_args
+    assert str(input_dir / "today.json") in prebuild_args
+    assert "--market-snapshots" not in prebuild_args
+
+    builder_args = calls[2][1]
+    assert builder_args.count("--market-agreement-tracker") == 1
+    assert str(agreement_jsonl) in builder_args
+    assert builder_args.count("--live-market-display") == 1
+    assert str(input_dir / "live_market_display_state.json") in builder_args
+
+    final_args = calls[3][1]
+    assert final_args[final_args.index("--gate-c-dataset") + 1] == str(dataset_path)
+    shadow_signal_args = next(args for label, args in calls if label == "shadow_signal")
+    assert shadow_signal_args[shadow_signal_args.index("--market-agreement") + 1] == str(
+        agreement_jsonl
+    )
+    no_drag_args = next(args for label, args in calls if label == "no_drag")
+    assert no_drag_args[no_drag_args.index("--input") + 1] == str(dataset_path)
