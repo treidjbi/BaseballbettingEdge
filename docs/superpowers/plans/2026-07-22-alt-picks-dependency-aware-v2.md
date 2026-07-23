@@ -1542,6 +1542,50 @@ graded outcomes. This plumbing/UI success is not approval to change official
 pick selection, model math, thresholds, staking, providers, notifications,
 locks, accepted bets, artifact source, retention, or history.
 
+### 2026-07-23 final contract-repair production evidence
+
+- The final reviewed repair tree is `cb2224f1`; release-control commit
+  `6ab9fcf2` has the identical tree and is now `main`/`origin/main`. Full
+  verification passed `1,925` Python and `167` Node tests. Independent Sol High
+  review found no findings, and the final Sol Ultra whole-branch/live review
+  returned GO.
+- The repair keeps one bounded provider-run read (newest `101`, first `100`
+  consumed and the 101st used only as the overflow sentinel) and retains the
+  existing snapshot budget of up to five descending `1,000`-row keyset pages,
+  forming a deterministic newest-`5,000` suffix. Legacy consumers retain their
+  existing `rows`; only V2 consumes the provider/provenance-safe `v2_rows`.
+  Workload inputs, incomplete-read reasons, parent-provider matching,
+  same-checkpoint ambiguity, PASS rejection, frozen-row preference, and
+  proof-bound public reasons are all covered by the reviewed tests.
+- Render deploy `dep-d9h8u9sm0tmc738cfmqg` reached live on `6ab9fcf2` with the
+  existing environment unchanged. The normal `22:10:06Z` scheduled cycle
+  completed successfully at `22:10:59Z` using the remote official artifact.
+- The post-cycle artifact had eight pitchers and four tracked non-PASS picks,
+  all already locked or started. Randy Dobnak and Troy Melton were the only
+  future pitchers and both were official PASS rows, so neither was V2-eligible
+  and no new workload-bound proof or freeze could legitimately be written on
+  this partial slate. Old proofs were not reconstructed. The immutable Brandon
+  Pfaadt frozen proof remained byte-for-byte stable at MD5
+  `efa7e0484981aa26b976b0bd897b7dea`, observed `20:50:12Z`.
+- Netlify production deploy `6a62955898bec52cde5903ae` is `ready` on exact
+  commit `6ab9fcf2`. Explicit V2 is `ready` with zero current rows, which is the
+  correct fail-closed result for incompatible old proofs. Explicit V1 and the
+  unversioned compatibility route each return three legacy rows; invalid
+  versions are unavailable, and V2 exposes no top-level `reason_codes`.
+- Desktop and `390x844` checks show the honest comparison-only waiting state
+  with no wager controls. Official Picks still show eight props and Results
+  still show `1,648` graded picks. Supabase remains at zero notification rows,
+  four unique operational locks all consumed, two unique accepted bets, zero V2
+  duplicate groups, and the unchanged frozen proof above. The served artifact
+  is generated `22:07:47Z`, has zero warnings, and every row remains
+  TheRundown-sourced.
+
+The next decision remains prospective soak: observe the first new
+workload-bound V2 proof and immutable T-30 freeze on the next normal slate. That
+evidence is not a backfill requirement and does not reopen any official model,
+pick-selection, threshold, staking, provider, notification, lock, accepted-bet,
+artifact, history, retention, or source-of-truth gate.
+
 ---
 
 ## Task 14: Exercise and document rollback readiness

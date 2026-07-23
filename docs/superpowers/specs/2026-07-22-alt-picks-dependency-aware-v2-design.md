@@ -2,7 +2,7 @@
 
 **Date:** 2026-07-22
 
-**Status:** Approved by Tyler; implementation plan drafted, implementation not started
+**Status:** Comparison-only V2 is implemented and deployed; the 2026-07-23 final contract-repair wave is deployed and remains in prospective soak, with every official promotion gate closed
 
 **Approved bundle:** `pregame_alternative_pick_methodology_v2`
 
@@ -605,7 +605,7 @@ The synthetic fixture and future captured rows are deterministic regression
 evidence, not current wagering advice or a promised production count after
 later artifacts.
 
-## Local implementation handoff - 2026-07-23
+## Historical local implementation handoff - 2026-07-23
 
 The final reviewed local core reference is `8c29bc66`: its review fixes include
 `2ceaaa35` for fail-closed malformed V2 proof scalars, `e5c39523` for
@@ -639,7 +639,43 @@ No local result authorizes a change to official picks, model math, thresholds,
 staking, providers, notifications, locks, accepted bets, artifacts, shared
 tracking/analytics tables, retention, or source-of-truth behavior.
 
-## Staged rollout
+### Production contract-repair handoff - 2026-07-23
+
+The historical local preflight above is superseded by the observed production
+rollout. The final reviewed repair tree is `cb2224f1`; empty release-control
+commit `6ab9fcf2` has the identical tree and is the exact commit deployed to both
+production surfaces. Full verification passed `1,925` Python and `167` Node
+tests, and the final Sol Ultra whole-branch/live review returned GO.
+
+Render deploy `dep-d9h8u9sm0tmc738cfmqg` reached live without an environment,
+worker, cadence, provider, schema, notification, lock, or official-path change.
+Its first normal scheduled cycle began at `22:10:06Z` and completed successfully
+at `22:10:59Z`. The exact official artifact then had four tracked non-PASS
+candidates, all already locked or started; the two future pitchers had no
+tracked picks. No post-repair candidate therefore existed from which to create a
+new workload-bound V2 proof. The existing Brandon Pfaadt frozen proof remained
+immutable at MD5 `efa7e0484981aa26b976b0bd897b7dea`, observed
+`20:50:12Z`; it was not reconstructed or rewritten.
+
+Netlify production deploy `6a62955898bec52cde5903ae` is ready on
+`6ab9fcf2`. Explicit V2 now returns `ready` with zero current rows because the
+strengthened contract suppresses incompatible old proofs. Explicit V1 and the
+unversioned compatibility route still return their three legacy current rows,
+and invalid versions remain unavailable. Desktop and `390x844` checks showed
+the comparison-only waiting state, no wager controls, eight unchanged official
+props, and `1,648` unchanged graded Results rows.
+
+The next normal prospective slate must supply the first new workload-bound V2
+proof and freeze. That observation is a soak requirement, not permission to
+backfill or a blocker to the comparison-only UI. V2 is the operational Alt
+methodology; V1 remains inert compatibility only. Every official model,
+pick-selection, threshold, staking, provider, notification, lock, accepted-bet,
+artifact, history, retention, and source-of-truth gate remains closed.
+
+## Historical staged rollout
+
+The following checklist records the original gate sequence. It is superseded by
+the observed production handoff above and is retained only as rollout history.
 
 1. Add and review the bounded proof-column migration separately.
 2. Apply the migration and verify the new column/default plus existing RLS,

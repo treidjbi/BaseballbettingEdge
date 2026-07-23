@@ -8,6 +8,8 @@
 
 **Tech Stack:** Python 3.11, pytest, vanilla JavaScript/ES modules, Node test runner, Netlify Functions, Supabase PostgREST, Render cron.
 
+**Status:** Complete and deployed on 2026-07-23; prospective soak remains, with every official promotion gate closed.
+
 ## Global Constraints
 
 - Alt Picks V2 remains comparison-only; do not change official picks, model math, staking, provider order, notifications, locks, accepted bets, artifacts, history, or source of truth.
@@ -74,14 +76,14 @@
 
 **Interfaces:**
 
-- `SnapshotReadResult(rows: list[dict[str, Any]], complete: bool, window_started_at: str, reason_codes: tuple[str, ...])` is produced by `_fetch_live_market_snapshot_rows`.
-- `_fetch_recent_provider_run_rows(...) -> tuple[list[dict[str, Any]], bool]` returns all keyset-paged current-slate TheRundown/PropLine runs up to its explicit hard cap and reports whether the set is complete.
+- `SnapshotReadResult(rows: list[dict[str, Any]], v2_rows: list[dict[str, Any]], complete: bool, window_started_at: str, reason_codes: tuple[str, ...])` is produced by `_fetch_live_market_snapshot_rows`. `rows` preserves the legacy newest-suffix contract; `v2_rows` contains only parent-run/provider-verified rows.
+- `_fetch_recent_provider_run_rows(...) -> tuple[list[dict[str, Any]], bool]` performs one newest-first read of `101` rows, returns the first `100` downstream, and uses only the 101st row as the explicit overflow sentinel.
 - `record_alternative_pick_selection_v2(..., snapshot_read_complete: bool, snapshot_window_started_at: str, snapshot_read_reason_codes: Sequence[str], ...)` passes the read contract without changing V1 arguments.
 - `build_exact_preclose_evidence_v2(..., snapshot_read_complete: bool, snapshot_window_started_at: str, snapshot_read_reason_codes: Sequence[str], ...)` returns pending evidence when the read or candidate window is incomplete.
 - V2 proof `normalized_inputs` adds `is_opener`, `starter_mismatch`, `last_pitch_count`, `days_since_last_start`, and `workload_input_status`. The four raw values are canonical `bool | None`, `bool | None`, `int | None`, and `int | None`; status is exactly `complete`, `missing`, or `malformed`.
 - V2 endpoint coalescing keys on the persisted `candidate_identity`; among already validated and visible rows it chooses a valid `frozen_pregame` row over a provisional row. V1 skips this coalescer.
 
-- [ ] **Step 1: Add the workload/leash red tests**
+- [x] **Step 1: Add the workload/leash red tests**
 
 Add parameterized selector cases proving that missing and malformed values for each of `is_opener`, `starter_mismatch`, `last_pitch_count`, and `days_since_last_start` cannot produce an affirmative Base or Re-entry vote. Assert the affected vote is `pending`, explicit `False` and `0` remain valid inputs, and the unaffected strict Anchor branch can still short-circuit independently.
 
@@ -95,7 +97,7 @@ python -m pytest tests/test_alternative_pick_selector_v2.py tests/test_alternati
 
 Expected: FAIL because workload fields are neither validated nor bound and proof recomputation still accepts the derived optimistic buckets.
 
-- [ ] **Step 2: Implement workload validation and proof binding**
+- [x] **Step 2: Implement workload validation and proof binding**
 
 In `validate_runtime_primitives_v2`, validate the raw fields before calling the V1 feature adapter:
 
@@ -139,13 +141,14 @@ Run the Step 1 command again.
 
 Expected: PASS.
 
-- [ ] **Step 3: Add the complete-read, parent-provider, and ambiguity red tests**
+- [x] **Step 3: Add the complete-read, parent-provider, and ambiguity red tests**
 
 In `tests/test_live_layer_worker.py`, add deterministic fake-page tests proving:
 
-- provider runs use ascending `created_at,id` keyset pages rather than a fixed newest-100 suffix;
-- snapshots use ascending `observed_at,id` keyset pages rather than offsets;
-- a full final allowed page returns `complete=False` with a cap reason;
+- provider runs read newest `101` rows once, expose only the first `100`, and use the 101st as an overflow sentinel;
+- snapshots retain the existing bounded read of up to five descending
+  `1,000`-row keyset pages, forming a deterministic newest-`5,000` suffix;
+- an overflow sentinel or full snapshot cap returns `complete=False` with a bounded reason;
 - a query lookback later than the candidate window is reported as incomplete for that candidate; and
 - a snapshot is stamped with the parent `slate_date` only when its normalized provider equals the parent run provider.
 
@@ -161,7 +164,7 @@ python -m pytest tests/test_live_layer_worker.py tests/test_alternative_pick_pre
 
 Expected: FAIL because reads use fixed limits/offsets, parent provider is not checked, and alternate lines at one timestamp can enter the ladder.
 
-- [ ] **Step 4: Implement deterministic reads and fail-closed Preclose**
+- [x] **Step 4: Implement deterministic reads and fail-closed Preclose**
 
 Add the immutable result type in `scripts/build_live_events_to_supabase.py`:
 
@@ -169,25 +172,27 @@ Add the immutable result type in `scripts/build_live_events_to_supabase.py`:
 @dataclass(frozen=True)
 class SnapshotReadResult:
     rows: list[dict[str, Any]]
+    v2_rows: list[dict[str, Any]]
     complete: bool
     window_started_at: str
     reason_codes: tuple[str, ...]
 ```
 
-Page provider runs with `order=created_at.asc,id.asc` and snapshots with `order=observed_at.asc,id.asc`. Each next request must use:
-
-```python
-params["or"] = (
-    f"({timestamp_field}.gt.{cursor_timestamp},"
-    f"and({timestamp_field}.eq.{cursor_timestamp},id.gt.{cursor_id}))"
-)
-```
-
-Reject a page as incomplete when its cursor fields are missing/non-string, duplicate `(timestamp,id)` tokens occur, order is non-monotonic, or the final permitted page is full. Return the accumulated rows with `complete=False` and the exact bounded reason `provider_run_page_cap_reached`, `snapshot_page_cap_reached`, or `snapshot_keyset_invalid`. Do not silently accept the suffix.
+Read provider runs once in descending `created_at,id` order with limit `101`;
+use the newest `100` downstream and mark the read incomplete when the overflow
+sentinel exists. Retain the existing snapshot budget of up to five descending
+`observed_at,id` keyset pages of `1,000` rows each, validate deterministic
+ordering/identity, and mark a full newest-`5,000` suffix incomplete. This does
+not add a recurring snapshot query, provider call, worker, or cadence.
 
 Build `run_id -> (slate_date, normalized_provider)` from the complete or partial run rows. Stamp a snapshot only when both run ID and normalized provider match. Leave mismatches unstamped and add `snapshot_parent_provider_mismatch`, making the V2 read incomplete. If there is no trustworthy run provenance, preserve the existing broad fallback rows for non-V2 consumers but return `complete=False` with `provider_run_provenance_unavailable`.
 
-Pass `SnapshotReadResult.rows` to all existing non-V2 consumers. Pass its three metadata fields only through the explicit V2 dispatch/recorder interface. In `build_exact_preclose_evidence_v2`, append the bounded read reasons when `snapshot_read_complete` is false and append `snapshot_window_incomplete` when any bound provider window begins before `snapshot_window_started_at`.
+Pass `SnapshotReadResult.rows` to all existing non-V2 consumers and
+`SnapshotReadResult.v2_rows` only to the V2 recorder. Pass the completeness
+metadata only through the explicit V2 interface. In
+`build_exact_preclose_evidence_v2`, append the bounded read reasons when
+`snapshot_read_complete` is false and append `snapshot_window_incomplete` when
+any bound provider window begins before `snapshot_window_started_at`.
 
 Before `_coalesce_exact_checkpoints`, group candidate-relevant rows by provider, event, normalized pitcher, market, side, book, and exact timestamp, deliberately excluding line and price. If a group has more than one distinct `(line, american_odds)` pair, append `same_checkpoint_alternate_line_ambiguity` and return pending evidence. Identical duplicates still collapse deterministically.
 
@@ -195,7 +200,7 @@ Run the Step 3 command again.
 
 Expected: PASS.
 
-- [ ] **Step 5: Add the V2 endpoint/browser red tests**
+- [x] **Step 5: Add the V2 endpoint/browser red tests**
 
 In `tests/test_alternative_picks_function.mjs`, add tests proving:
 
@@ -215,7 +220,7 @@ node --test tests/test_alternative_picks_function.mjs dashboard/v2-alt-picks.tes
 
 Expected: FAIL because V2 currently accepts PASS, exposes raw row reasons, and returns both checkpoints.
 
-- [ ] **Step 6: Implement the V2-only endpoint/browser repair**
+- [x] **Step 6: Implement the V2-only endpoint/browser repair**
 
 In `validStateBase`, keep the existing `OFFICIAL_VERDICTS` rule for V1 and require `LEAN`, `FIRE 1u`, or `FIRE 2u` when `contract.requiresProof` is true. Make `dashboard/v2-alt-picks.js::normalizeRow` enforce the same non-PASS set independently.
 
@@ -233,7 +238,7 @@ Run the Step 5 command again.
 
 Expected: PASS.
 
-- [ ] **Step 7: Run the integrated repair suite and commit the reviewable wave**
+- [x] **Step 7: Run the integrated repair suite and commit the reviewable wave**
 
 ```powershell
 python -m pytest tests/test_alternative_pick_selector_v2.py tests/test_alternative_pick_evaluation_proof_v2.py tests/test_alternative_pick_preclose_v2.py tests/test_alternative_pick_live_layer_v2.py tests/test_live_layer_worker.py tests/test_alternative_pick_selection_v2.py -q
@@ -258,7 +263,7 @@ git commit -m "fix: close alternative picks v2 contract gaps"
 
 **Files:** Review the exact Task 1 commit; do not edit production state.
 
-- [ ] **Step 1: Run full local verification**
+- [x] **Step 1: Run full local verification**
 
 ```powershell
 python -m pytest tests/ -q
@@ -269,7 +274,7 @@ git status --short
 
 Expected: full Python and Node suites pass, the commit has no whitespace errors, and the worktree is clean.
 
-- [ ] **Step 2: Review the eight contracts as one gate**
+- [x] **Step 2: Review the eight contracts as one gate**
 
 Reject the wave if any of these is not directly covered by a passing regression:
 
@@ -282,7 +287,7 @@ Reject the wave if any of these is not directly covered by a passing regression:
 7. V2 omits raw top-level reasons; and
 8. no prohibited official, provider, notification, lock, accepted-bet, artifact, history, migration, worker, cadence, cost, reconstruction, or deletion change exists.
 
-- [ ] **Step 3: Push only after review approval**
+- [x] **Step 3: Push only after review approval**
 
 ```powershell
 git push -u origin codex/alt-v2-final-review-fixes
@@ -297,19 +302,27 @@ Expected: the reviewed commit is on the named remote branch and the worktree is 
 
 **Requires:** A clean Task 2 review. Tyler has already approved the Render and Netlify production deploys for this rollout. Do not alter environment keys, scheduler cadence, providers, or database schema.
 
-- [ ] **Step 1: Record pre-deploy controls**
+- [x] **Step 1: Record pre-deploy controls**
 
 Record the reviewed commit, current `bbe-live-layer` deploy ID, current Netlify production deploy ID, V2/V1 row counts by checkpoint, duplicate candidate groups, alternative notification count, operational lock count/duplicates, accepted-bet count, official artifact hash, and provider posture.
 
-- [ ] **Step 2: Merge through the normal reviewed path and deploy Render first**
+- [x] **Step 2: Hold Netlify with a release-control commit and deploy Render first**
 
-Deploy the reviewed commit to `bbe-live-layer` with the existing environment unchanged. Wait for `live`, then wait for one normal scheduled cycle. Verify new V2 proofs contain the workload fields, incomplete-read cases are pending, frozen rows were not rewritten, and all isolation controls from Step 1 are unchanged.
+Fast-forward the reviewed tree to `main` through an empty `[skip netlify]`
+release-control commit, verify its tree exactly matches the reviewed commit, and
+deploy that exact commit to `bbe-live-layer` with the existing environment
+unchanged. Wait for `live`, then one normal scheduled cycle. If the partial
+slate has no remaining eligible future candidate, treat the absence of a new
+proof as `no_candidates`; never reconstruct an old proof. Verify frozen rows
+were not rewritten and all isolation controls from Step 1 are unchanged.
 
 If the cycle fails, stop before Netlify, preserve the existing environment, diagnose the V2-only failure, and fix forward on the repair branch. Do not roll back or alter the official pipeline.
 
-- [ ] **Step 3: Deploy Netlify only after the recorder cycle passes**
+- [x] **Step 3: Deploy Netlify only after the recorder cycle passes**
 
-Allow the connected production deploy for the same reviewed commit to complete; do not create a duplicate manual deploy. Verify:
+After the Render cycle passes, trigger exactly one normal cached Netlify
+production deploy for the release-control commit. Do not clear cache or create a
+second deploy. Verify:
 
 - unversioned and explicit V1 return the existing V1 bundle/fingerprint;
 - explicit V2 rejects PASS, emits at most one row per candidate, prefers exact-lock frozen, and omits top-level `reason_codes`;
@@ -329,7 +342,7 @@ If the V2 endpoint/browser contract fails, preserve official behavior, diagnose 
 - Modify: `docs/superpowers/plans/2026-07-22-alt-picks-dependency-aware-v2.md`
 - Modify: `docs/current-state.md`
 
-- [ ] **Step 1: Replace the stale design status**
+- [x] **Step 1: Replace the stale design status**
 
 Replace the obsolete “implementation not started” line with:
 
@@ -337,17 +350,13 @@ Replace the obsolete “implementation not started” line with:
 **Status:** Comparison-only V2 is implemented and deployed; the 2026-07-23 final contract-repair wave is deployed and remains in prospective soak, with every official promotion gate closed
 ```
 
-Use that exact line only after Task 3 production verification. Before deployment, use:
+Use that exact line only after Task 3 production verification.
 
-```markdown
-**Status:** Comparison-only V2 is implemented and deployed; the 2026-07-23 final contract-repair wave is reviewed but not yet deployed, with every official promotion gate closed
-```
-
-- [ ] **Step 2: Record exact evidence in the controlling plan and operating board**
+- [x] **Step 2: Record exact evidence in the controlling plan and operating board**
 
 Append the repair commit, Render/Netlify deploy IDs, scheduled-cycle timestamp, row counts, maximum proof size, coalescing/PASS/reason-code endpoint checks, and unchanged isolation controls to `docs/superpowers/plans/2026-07-22-alt-picks-dependency-aware-v2.md`. Update only the July 21 Alt Picks overlay in `docs/current-state.md`; keep the four primary lanes and all promotion gates unchanged.
 
-- [ ] **Step 3: Verify and commit the handoff**
+- [x] **Step 3: Verify and commit the handoff**
 
 ```powershell
 git diff --check
@@ -359,3 +368,30 @@ git status --short --branch
 ```
 
 Expected: the handoff distinguishes reviewed code from observed production evidence, the stale status is gone, `main` and `origin/main` match, and the worktree is clean.
+
+### 2026-07-23 observed production evidence
+
+- Reviewed repair tree: `cb2224f1`.
+- Tree-identical release-control/main commit: `6ab9fcf2`.
+- Full verification: `1,925` Python and `167` Node tests; Sol High review had
+  no findings and the final Sol Ultra whole-branch/live review returned GO.
+- Render deploy `dep-d9h8u9sm0tmc738cfmqg` reached live. Its normal
+  `22:10:06Z` cycle completed successfully at `22:10:59Z` with the environment,
+  provider posture, worker set, and cadence unchanged.
+- The current partial slate had no eligible future tracked candidate after the
+  repair became live, so no new workload-bound proof could legitimately be
+  created. The immutable Brandon Pfaadt frozen proof stayed unchanged at MD5
+  `efa7e0484981aa26b976b0bd897b7dea`; no proof was reconstructed.
+- Netlify deploy `6a62955898bec52cde5903ae` is ready on `6ab9fcf2`.
+  Explicit V2 is `ready` with zero current rows; explicit V1 and unversioned
+  compatibility each return three rows; invalid versions are unavailable; V2
+  emits no top-level `reason_codes`.
+- Desktop and `390x844` checks show comparison-only waiting copy with no wager
+  controls. Picks remain eight props and Results remain `1,648` graded rows.
+  Supabase remains at zero notification rows, four unique locks all consumed,
+  two unique accepted bets, and zero V2 duplicate groups.
+
+The first new workload-bound proof and immutable freeze must be observed on the
+next normal prospective slate. That is soak evidence only; every official model,
+selection, staking, provider, notification, lock, accepted-bet, artifact,
+history, retention, and source-of-truth gate remains closed.
