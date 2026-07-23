@@ -679,48 +679,51 @@ git commit -m "feat: gate the alternative v2 recorder"
 
 ---
 
-## Task 5: Freeze captured-slate and mature-Preclose regression fixtures
+## Task 5: Freeze synthetic mature-Preclose and historical parity evidence
 
 **Files:**
 
 - Create: `analytics/diagnostics/alternative_pick_v2_historical_comparator.py`
 - Create: `tests/test_alternative_pick_v2_historical_comparator.py`
-- Create: `tests/fixtures/alternative_pick_selection_v2/2026-07-22T183100Z.json`
 - Create: `tests/fixtures/alternative_pick_selection_v2/synthetic_mature_preclose.json`
+- Create: `tests/fixtures/alternative_pick_selection_v2/legacy_official_close_parity.json.gz`
 - Create: `tests/fixtures/alternative_pick_selection_v2/manifest.json`
 - Create: `tests/test_alternative_pick_selection_v2_fixtures.py`
+- Modify: `docs/superpowers/specs/2026-07-22-alt-picks-dependency-aware-v2-design.md`
+- Modify: `docs/superpowers/plans/2026-07-22-alt-picks-dependency-aware-v2.md`
 
-- [ ] **Step 1: Read the bounded captured source rows without changing production**
+- [ ] **Step 1: Preserve the approved provenance amendment**
 
-Use linked Supabase CLI reads from the repo root. Query only the 2026-07-22 slate and the preserved 18:31Z evaluation window. Bind the artifact by the exact hashes already persisted on the V1 state row; do not use "latest before" as a substitute for hash identity:
+The bounded read-only audit found 47 V1 state rows, including 10 rows at or
+before 18:31Z with seven canonical and seven byte hashes, but zero matching
+raw artifacts. `artifact_snapshots` has no 2026-07-22 capture under any kind,
+path, or time; all 111 surviving `published_pipeline_artifacts` rows, the
+repository, and local JSON archives also had zero exact hash matches. The
+5,259 bounded tracker rows are not an admissible substitute.
 
-```powershell
-npx supabase db query --linked -o json "select slate_date, candidate_identity, candidate_became_current_at, pitcher, normalized_pitcher, team, opp_team, game_time, side, model_k_line, provider_posture, family_states, reason_codes, source_artifact_path, source_artifact_sha256, source_artifact_byte_sha256, evidence_observation_ids, evidence_first_observed_at, evidence_last_observed_at, observed_at, checkpoint from public.alternative_pick_selection_state where slate_date='2026-07-22' and bundle_id='pregame_alternative_pick_methodology_v1' order by observed_at, normalized_pitcher, side, checkpoint;"
-npx supabase db query --linked -o json "with state_hashes as (select distinct source_artifact_path, source_artifact_sha256, source_artifact_byte_sha256 from public.alternative_pick_selection_state where slate_date='2026-07-22' and bundle_id='pregame_alternative_pick_methodology_v1' and observed_at <= '2026-07-22T18:31:00Z') select a.artifact_path, a.content_sha256, a.payload, a.metadata, a.captured_at from public.artifact_snapshots a join state_hashes s on a.artifact_path=s.source_artifact_path and a.content_sha256 in (s.source_artifact_sha256, s.source_artifact_byte_sha256) where a.artifact_kind='today' and a.slate_date='2026-07-22' and a.captured_at <= '2026-07-22T18:31:00Z' order by a.captured_at;"
-npx supabase db query --linked -o json "with state_hashes as (select distinct source_artifact_path, source_artifact_sha256, source_artifact_byte_sha256 from public.alternative_pick_selection_state where slate_date='2026-07-22' and bundle_id='pregame_alternative_pick_methodology_v1' and observed_at <= '2026-07-22T18:31:00Z'), exact_artifacts as (select a.payload from public.artifact_snapshots a join state_hashes s on a.artifact_path=s.source_artifact_path and a.content_sha256 in (s.source_artifact_sha256, s.source_artifact_byte_sha256) where a.artifact_kind='today' and a.slate_date='2026-07-22' and a.captured_at <= '2026-07-22T18:31:00Z'), snapshot_ids as (select distinct trim(both '\"' from j.value::text) as id from exact_artifacts a cross join lateral jsonb_path_query(a.payload, '$.**.source_snapshot_ids[*]') as j(value)) select m.id, m.provider, m.provider_event_id, m.market_key, m.bookmaker_key, m.bookmaker_title, m.player_name, m.normalized_player_name, m.side, m.line, m.american_odds, m.game_time, m.observed_at from public.market_snapshots m join snapshot_ids s on m.id::text=s.id where m.observed_at <= '2026-07-22T18:31:00Z' order by m.provider, m.provider_event_id, m.normalized_player_name, m.side, m.line, m.bookmaker_key, m.observed_at, m.id;"
-npx supabase db query --linked -o json "with state_hashes as (select distinct source_artifact_path, source_artifact_sha256, source_artifact_byte_sha256 from public.alternative_pick_selection_state where slate_date='2026-07-22' and bundle_id='pregame_alternative_pick_methodology_v1' and observed_at <= '2026-07-22T18:31:00Z'), exact_artifacts as (select a.payload from public.artifact_snapshots a join state_hashes s on a.artifact_path=s.source_artifact_path and a.content_sha256 in (s.source_artifact_sha256, s.source_artifact_byte_sha256) where a.artifact_kind='today' and a.slate_date='2026-07-22' and a.captured_at <= '2026-07-22T18:31:00Z'), line_ids as (select distinct trim(both '\"' from j.value::text)::bigint as id from exact_artifacts a cross join lateral jsonb_path_query(a.payload, '$.**.source_current_market_line_ids[*]') as j(value)) select c.id, c.slate_date, c.provider, c.provider_event_id, c.normalized_player_name, c.market_key, c.line, c.game_time, c.first_seen_at, c.last_seen_at, c.updated_at from public.current_market_lines c join line_ids i on c.id=i.id where c.updated_at <= '2026-07-22T18:31:00Z' order by c.provider, c.normalized_player_name, c.line, c.id;"
-npx supabase db query --linked -o json "select id, provider, provider_event_id, market_key, bookmaker_key, bookmaker_title, player_name, normalized_player_name, side, line, american_odds, game_time, observed_at from public.market_snapshots where observed_at >= '2026-07-22T00:00:00Z' and observed_at <= '2026-07-22T18:31:00Z' and normalized_player_name in ('colin rea','cade cavalli','bubba chandler','keider montero','jake bennett') order by provider, provider_event_id, normalized_player_name, side, line, bookmaker_key, observed_at, id;"
-npx supabase db query --linked -o json "select provider, mode, slate_date, observed_at, last_message_at, books_seen, metadata from public.market_feed_heartbeats where slate_date='2026-07-22' and observed_at <= '2026-07-22T18:31:00Z' order by provider, observed_at desc;"
-```
+Tyler approved replacing that unrecoverable historical fixture with the next
+prospectively retained exact fixture. Task 5 continues with synthetic evidence
+and the frozen historical comparator. Tasks 6-9 may proceed on held branches,
+but the Prospective Capture Gate below blocks Task 10 and every production
+migration, activation, endpoint/UI deployment, or source change.
 
-Do not print secrets. Use the returned rows only to construct the named sanitized fixture with `apply_patch`. Include no service-role values, raw provider payloads, accepted bets, notification bodies, or unrelated pitchers.
+The separate July 21 hybrid Gate C research corpus was recovered intact. Its
+`3,106` source rows include all `1,621` tracked official-close rows through
+`2026-07-20`; corpus SHA-256 is
+`c59cc4fd2a03110ad492163240f5563a85e142d785c258eeb25914ad0273bda4`
+and source-manifest SHA-256 is
+`7f59abe7a4522e793e68a58bac92122585fbfea76658a63b0d09bb3195c85072`.
+Freeze a compact exact-field projection of those tracked rows for historical
+parity only. This does not repair or replace the missing prospective 18:31Z
+artifact and does not open any production gate.
 
-Expected: one artifact payload whose hashes match the V1 state plus artifact-declared raw snapshots observed no later than 18:31Z. A `current_market_lines` row is admissible only when its own `updated_at` proves it had not changed after the checkpoint; never use its current mutable odds, snapshot pointers, or provider-event binding as historical evidence after that time. If a candidate has only a numeric current-line reference and lacks either a provably pre-cutoff row or artifact-declared raw snapshot binding, stop this task and report the missing source. Do not substitute a later artifact, later mutable line row, broad tracker row, dated close, or fabricated evidence.
-
-- [ ] **Step 2: Write failing fixture-integrity and replay tests**
+- [ ] **Step 2: Write failing synthetic-fixture and comparator tests**
 
 Add tests named:
 
 - `test_v2_fixture_manifest_hashes_match_raw_bytes`
-- `test_v2_captured_fixture_contains_no_broad_tracker_or_hindsight_input`
-- `test_v2_captured_fixture_artifact_hash_matches_v1_state_exactly`
-- `test_v2_captured_fixture_bindings_and_source_timestamps_do_not_exceed_checkpoint`
-- `test_v2_captured_fixture_rejects_later_mutable_current_line_state`
-- `test_v2_captured_1831z_selects_colin_rea_consensus_core`
-- `test_v2_captured_1831z_selects_cade_cavalli_reentry_expansion`
-- `test_v2_captured_1831z_selects_bubba_chandler_reentry_expansion`
-- `test_v2_captured_1831z_keeps_keider_montero_out`
-- `test_v2_captured_fixture_does_not_mutate_jake_bennett_v1_frozen_control`
+- `test_v2_fixture_manifest_marks_prospective_capture_required`
+- `test_v2_synthetic_fixture_contains_no_broad_tracker_or_hindsight_input`
 - `test_v2_synthetic_fixture_resolves_affirmative_exact_preclose`
 - `test_v2_replay_starts_prospective_ledger_at_zero`
 - `test_legacy_official_close_comparator_reproduces_frozen_lane_anchors`
@@ -732,15 +735,13 @@ Add tests named:
 python -m pytest tests/test_alternative_pick_selection_v2_fixtures.py tests/test_alternative_pick_v2_historical_comparator.py -q
 ```
 
-Expected: fixture/comparator files or expected hashes are absent.
+Expected: synthetic fixture/comparator files or expected hashes are absent.
 
-- [ ] **Step 4: Add the captured and synthetic fixtures**
-
-The captured fixture must include only canonical candidate inputs from the exact hash-bound artifact, candidate window start, official provider, exact event/source bindings, artifact-declared raw snapshot IDs observed by the checkpoint, freshness inputs, expected family/lane states, and the frozen V1 control. Its manifest records the V1 source-row identity, both persisted artifact hashes, the matched artifact snapshot hash, the capture cutoff, and the maximum source timestamp. It must not contain mutable post-cutoff `current_market_lines` state, `market_pick_evidence`, persisted `live_market_display_state`, result, actual Ks, CLV outcome, PnL, or post-start data.
+- [ ] **Step 4: Add the synthetic fixture and pending-capture manifest**
 
 The synthetic fixture must independently prove mature official-provider exact-line movement and exact-event ladder calculation, including a permitted alternate line used only for off-market context.
 
-The fixture manifest stores SHA-256 of each fixture's raw bytes and a short source description. Hashes change only through explicit fixture review.
+The fixture manifest stores SHA-256 of each present fixture's raw bytes and a short source description. For the compressed historical fixture it also binds the recovered source-corpus, source-manifest, and source-summary hashes, the exact cutoff, row counts, and hindsight-only classification. It records `prospective_capture.status = "required_before_production_gate_a"` without inventing a filename, hash, candidates, or expected decisions. Hashes and capture status change only through explicit fixture review.
 
 - [ ] **Step 5: Implement the frozen legacy official-close comparator**
 
@@ -766,23 +767,23 @@ consensus = no_drag AND explicit_family_count >= 2
 expansion = reentry AND NOT no_drag
 ```
 
-Keep the two lanes disjoint and score flat one-unit official-close outcomes through the fixed 2026-07-20 cutoff. Label this output hindsight-capable research; do not import it into runtime, proof, endpoint, UI, or prospective state.
+Keep the two lanes disjoint and score flat one-unit official-close outcomes through the fixed 2026-07-20 cutoff. Preserve the published lab convention by rounding each row's PnL to three decimals before summing; do not hardcode lane membership or outcomes. Label this output hindsight-capable research; do not import it into runtime, proof, endpoint, UI, or prospective state.
 
 - [ ] **Step 6: Prove deterministic replay and historical separation**
 
 ```powershell
 python -m pytest tests/test_alternative_pick_selection_v2_fixtures.py tests/test_alternative_pick_v2_historical_comparator.py tests/test_alternative_pick_selector_v2.py tests/test_alternative_pick_preclose_v2.py -q
-python analytics/diagnostics/alternative_pick_v2_historical_comparator.py --input data/research/gate_c/pitcher_k_outcome_dataset.jsonl --end-date 2026-07-20
+python analytics/diagnostics/alternative_pick_v2_historical_comparator.py --end-date 2026-07-20
 python analytics/diagnostics/no_drag_composite_canary_audit.py
 ```
 
-Expected: named captured decisions match the specification; the frozen comparator reports Consensus `106-46`, `+32.603u`, Expansion `42-38`, `+5.982u`, and disjoint combined `148-84`, `+38.585u`; the no-drag report remains a separate research tracker; and no V2 prospective result/PnL row is created.
+Expected: the synthetic exact-evidence decision matches the specification; the frozen comparator reports Consensus `106-46`, `+32.603u`, Expansion `42-38`, `+5.982u`, and disjoint combined `148-84`, `+38.585u`; the no-drag report remains a separate research tracker; the manifest keeps the prospective capture gate closed; and no V2 prospective result/PnL row is created.
 
 - [ ] **Step 7: Commit Task 5**
 
 ```powershell
-git add analytics/diagnostics/alternative_pick_v2_historical_comparator.py tests/test_alternative_pick_v2_historical_comparator.py tests/fixtures/alternative_pick_selection_v2/2026-07-22T183100Z.json tests/fixtures/alternative_pick_selection_v2/synthetic_mature_preclose.json tests/fixtures/alternative_pick_selection_v2/manifest.json tests/test_alternative_pick_selection_v2_fixtures.py
-git commit -m "test: freeze alternative v2 captured evidence"
+git add analytics/diagnostics/alternative_pick_v2_historical_comparator.py tests/test_alternative_pick_v2_historical_comparator.py tests/fixtures/alternative_pick_selection_v2/synthetic_mature_preclose.json tests/fixtures/alternative_pick_selection_v2/legacy_official_close_parity.json.gz tests/fixtures/alternative_pick_selection_v2/manifest.json tests/test_alternative_pick_selection_v2_fixtures.py docs/superpowers/specs/2026-07-22-alt-picks-dependency-aware-v2-design.md docs/superpowers/plans/2026-07-22-alt-picks-dependency-aware-v2.md
+git commit -m "test: freeze alternative v2 synthetic evidence"
 ```
 
 ---
@@ -1001,13 +1002,15 @@ Serve `dashboard/` locally with intercepted selected, selected-with-pending, pen
 - [ ] **Step 8: Commit Task 7**
 
 ```powershell
-git add dashboard/v2-alt-picks.js dashboard/v2-alt-picks.test.mjs dashboard/v2-app.jsx dashboard/v2-app.js dashboard/v2-app.test.mjs dashboard/v2.html tests/test_dashboard_alt_picks_ui.py
+git add dashboard/v2-alt-picks.js dashboard/v2-alt-picks.test.mjs dashboard/v2-app.jsx dashboard/v2-app.js dashboard/v2-app.test.mjs dashboard/v2.html tests/test_dashboard_alt_picks_ui.py tests/test_dashboard_accepted_bet_log.py
 git commit -m "feat: show dependency-aware alternative picks v2"
 git rev-parse HEAD
 git switch codex/alt-picks-dependency-aware-v2
 ```
 
-Record the web commit SHA. Do not cherry-pick or merge either Task 6 or Task 7 into the core branch yet.
+Record the web commit SHA. The Task 7 commit contains exactly ten reviewed paths,
+including the accepted-bet regression test. Do not cherry-pick or merge either
+Task 6 or Task 7 into the core branch yet.
 
 ---
 
@@ -1095,6 +1098,44 @@ Use separate subagents for:
 
 Review the core branch first, then the held web diff against the core branch. Fix every Critical or Important finding. Rerun the focused suite after each fix and the full suite after all fixes. Commit review fixes to the branch that owns them.
 
+### Task 8 local verification record - 2026-07-23
+
+- Final reviewed core reference is `8c29bc66`; its review fixes include
+  `2ceaaa35` for fail-closed malformed V2 proof scalars, `e5c39523` for
+  chronological Preclose checkpoints, and `ad6a0596` for isolated V2 startup
+  imports. The separately held web reference is `5ca07dc5`, which aligns
+  endpoint proof-scalar validation. Both branches remain unmerged and
+  undeployed.
+- Frozen V2 identity:
+  `23bacff0fa923685ae52c5a9cfbadfb9f5902fb64d91759cfe9b4b1169a221c4`.
+  The additive, unapplied proof migration is
+  `20260722230000_alternative_pick_v2_evaluation_proof.sql`.
+- Current core verification passed `1,850` Python and `99` Node tests. Held
+  web verification passed `60` focused Node and `134` full Node tests, plus
+  `24` UI-isolation tests. Final Sol Ultra whole-branch review is CLEAN with no
+  Critical, Important, or Minor findings; all prior findings are closed.
+- The 2026-07-23 live isolation read found the new migration absent, the
+  `evaluation_proof` column absent, zero V2 rows, `50` V1 rows, and zero
+  alternative notification events. Live Netlify continued to serve V1.
+- V2 is locally capable but has zero prospective production rows. The clean
+  prospective fixture gate is still incomplete, so migration apply, core
+  merge/Render deploy, V2 activation, and endpoint/UI merge/Netlify deploy all
+  remain closed and separately approval-gated. Local tests do not establish
+  production readiness.
+- Immediate rollback is `ALTERNATIVE_PICK_SELECTION_MODE=off` followed by a
+  `bbe-live-layer` redeploy. Version rollback restores the bundle key to its
+  exact original state (unset or `v1`), redeploys the live layer, obtains a
+  clean V1 cycle with zero new V2 rows, and verifies complete current-slate V1
+  coverage before restoring a V1 UI. Never reconstruct a missed checkpoint;
+  keep the Alt surface unavailable until a clean slate if V1 coverage is
+  incomplete. Revert writers/readers before considering removal of the
+  additive proof column.
+
+Task 8's final Sol Ultra independent whole-branch specification/code-quality
+review permits Task 9 to push the two held branches only. It does not open the
+prospective fixture, migration, deployment, activation, or other production
+gates.
+
 ---
 
 ## Task 9: Push the reviewed core and held web branches without merging
@@ -1117,7 +1158,7 @@ git switch codex/alt-picks-dependency-aware-v2
 
 Prepare:
 
-- a core change set containing selector, exact evidence, proof/migration, recorder, fixtures, tests, and core handoff docs; and
+- a core change set containing selector, exact evidence, proof/migration, recorder, the synthetic fixture plus pending-capture manifest, tests, and core handoff docs; and
 - a held web change set from the core branch to `codex/alt-picks-dependency-aware-v2-web`, containing the backward-compatible endpoint plus V2 browser adapter/UI.
 
 Do not merge either yet. Netlify deploys the production branch, so holding the web branch prevents both an early explicit V2 endpoint and an early browser switch.
@@ -1134,7 +1175,48 @@ Read-only checks must show:
 - Netlify still serving the reviewed V1 UI/endpoint deploy; and
 - both reviewed branches exist on origin but `main` has not moved.
 
-Stop and report before Task 10.
+Stop and report before the Prospective Capture Gate.
+
+---
+
+## Prospective Capture Gate - required before Task 10
+
+**Requires:** Tyler approval to perform the read-only capture on a future clean
+normal slate. This gate authorizes no database write, migration, Render change,
+provider request, model change, notification change, lock change, or UI deploy.
+
+- [ ] **Step 1: Capture the exact current artifact before every eligible T-30**
+
+Fetch the official Netlify/Supabase `get-artifact?type=today` response once.
+Record the raw response bytes, Phoenix slate date, `generated_at`, source posture,
+artifact path, raw-byte SHA-256, and canonical-payload SHA-256. In the same
+checkpoint, read the contemporaneous `published_pipeline_artifacts` row and
+require both hashes and the artifact path to match. If any eligible candidate
+is at/past T-30, the slate/date/source is wrong or stale, or the hash pair does
+not match, delete the temporary capture and defer to the next slate.
+
+- [ ] **Step 2: Bind only artifact-declared exact evidence**
+
+Read only the snapshot IDs and numeric current-line IDs declared in those exact
+captured bytes. Require every snapshot observation and every admitted mutable
+line `updated_at` to be no later than the capture checkpoint. Bind exact slate,
+provider, event, pitcher, market, side, line, and supported book. Do not use a
+broad tracker, later line, later artifact, official close, result, actual Ks,
+PnL, CLV outcome, accepted bet, notification, or post-start observation.
+
+- [ ] **Step 3: Sanitize, hash, replay, and review the prospective fixture**
+
+Commit a date-stamped sanitized fixture and update `manifest.json` with its raw
+SHA-256, official artifact hash pair, capture timestamp, maximum source
+timestamp, source description, and `prospective_capture.status = "complete"`.
+Add fixture-integrity tests for exact hashes, source timestamps, forbidden
+fields, expected family/lane decisions, V1 non-mutation, and a zero-start V2
+prospective ledger. Replay must pass deterministically and receive independent
+task review before Task 10 may begin.
+
+Until all three steps pass, the migration, V2 runtime activation, explicit V2
+endpoint/browser request, Netlify UI deployment, merge, and every production
+gate remain closed.
 
 ---
 
@@ -1339,21 +1421,25 @@ git fetch origin
 git switch main
 git pull --ff-only origin main
 git switch -c codex/alt-picks-dependency-aware-v2-web-release
-git restore --source origin/codex/alt-picks-dependency-aware-v2-web -- netlify/functions/alternative-picks.mjs tests/test_alternative_picks_function.mjs dashboard/v2-alt-picks.js dashboard/v2-alt-picks.test.mjs dashboard/v2-app.jsx dashboard/v2-app.js dashboard/v2-app.test.mjs dashboard/v2.html tests/test_dashboard_alt_picks_ui.py
+git restore --source origin/codex/alt-picks-dependency-aware-v2-web -- netlify/functions/alternative-picks.mjs tests/test_alternative_picks_function.mjs dashboard/v2-alt-picks.js dashboard/v2-alt-picks.test.mjs dashboard/v2-app.jsx dashboard/v2-app.js dashboard/v2-app.test.mjs dashboard/v2.html tests/test_dashboard_alt_picks_ui.py tests/test_dashboard_accepted_bet_log.py
 git diff --name-status
-git diff --exit-code origin/codex/alt-picks-dependency-aware-v2-web -- netlify/functions/alternative-picks.mjs tests/test_alternative_picks_function.mjs dashboard/v2-alt-picks.js dashboard/v2-alt-picks.test.mjs dashboard/v2-app.jsx dashboard/v2-app.js dashboard/v2-app.test.mjs dashboard/v2.html tests/test_dashboard_alt_picks_ui.py
+git diff --exit-code origin/codex/alt-picks-dependency-aware-v2-web -- netlify/functions/alternative-picks.mjs tests/test_alternative_picks_function.mjs dashboard/v2-alt-picks.js dashboard/v2-alt-picks.test.mjs dashboard/v2-app.jsx dashboard/v2-app.js dashboard/v2-app.test.mjs dashboard/v2.html tests/test_dashboard_alt_picks_ui.py tests/test_dashboard_accepted_bet_log.py
 node --test tests/test_alternative_picks_function.mjs dashboard/v2-alt-picks.test.mjs dashboard/v2-app.test.mjs
 python -m pytest tests/test_dashboard_alt_picks_ui.py tests/test_dashboard_accepted_bet_log.py -q
 node --check dashboard/v2-alt-picks.js
 node --check dashboard/v2-app.js
 git diff --check
-git add netlify/functions/alternative-picks.mjs tests/test_alternative_picks_function.mjs dashboard/v2-alt-picks.js dashboard/v2-alt-picks.test.mjs dashboard/v2-app.jsx dashboard/v2-app.js dashboard/v2-app.test.mjs dashboard/v2.html tests/test_dashboard_alt_picks_ui.py
+git add netlify/functions/alternative-picks.mjs tests/test_alternative_picks_function.mjs dashboard/v2-alt-picks.js dashboard/v2-alt-picks.test.mjs dashboard/v2-app.jsx dashboard/v2-app.js dashboard/v2-app.test.mjs dashboard/v2.html tests/test_dashboard_alt_picks_ui.py tests/test_dashboard_accepted_bet_log.py
 git commit -m "feat: release dependency-aware alternative picks v2 web"
 git diff --name-only origin/main...HEAD
 git push -u origin codex/alt-picks-dependency-aware-v2-web-release
 ```
 
-Expected: the release branch starts from current `origin/main`, copies only the exact reviewed endpoint/UI paths from the held branch, and all V2 handshake/UI tests pass against production core. The final diff allow-list is exactly the nine paths above. Do not rebase, merge, or squash the held branch directly; its ancestry contains the pre-merge core work.
+Expected: the release branch starts from current `origin/main`, copies only the
+exact ten reviewed endpoint/UI paths from the held branch, and all V2
+handshake/UI tests pass against production core. The final diff allow-list is
+exactly those ten paths. Do not rebase, merge, or squash the held branch
+directly; its ancestry contains the pre-merge core work.
 
 - [ ] **Step 2: Merge only the fresh web-release branch and verify the Netlify deploy**
 

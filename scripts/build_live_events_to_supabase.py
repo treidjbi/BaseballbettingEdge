@@ -145,6 +145,23 @@ def _alternative_pick_selection_mode() -> str:
     ).strip().lower() == "record" else "off"
 
 
+def _alternative_pick_selection_bundle_version() -> str | None:
+    raw = os.getenv("ALTERNATIVE_PICK_SELECTION_BUNDLE_VERSION")
+    if raw is None or not raw.strip():
+        return "v1"
+    value = raw.strip().lower()
+    return value if value in {"v1", "v2"} else None
+
+
+def _load_alternative_pick_v2_recorder():
+    """Load the optional V2 recorder only after explicit V2 dispatch."""
+    from market_infra.alternative_pick_recording_v2 import (  # noqa: PLC0415
+        record_alternative_pick_selection_v2,
+    )
+
+    return record_alternative_pick_selection_v2
+
+
 def _alternative_remaining_timeout(started_at: float, budget_seconds: float) -> float:
     return budget_seconds - (time.monotonic() - started_at)
 
@@ -762,6 +779,66 @@ def _write_alternative_pick_selection_state(
         "frozen_rows": len(frozen_rows),
         "collisions": 0,
     }
+
+
+def _dispatch_alternative_pick_selection_state(
+    *, writer: SupabaseMarketWriter, slate_date: str, payload: dict[str, Any],
+    snapshot_rows: list[dict[str, Any]], provider_heartbeats: list[dict[str, Any]],
+    market_pick_evidence_rows: list[dict[str, Any]],
+    observed_at: datetime, artifact_source: str,
+    source_payload_sha256: str, source_artifact_byte_sha256: str,
+    operational_pick_locks: dict[str, Any], market_line_build: dict[str, Any],
+    shadow_pipeline_timing: dict[str, Any], ready_to_bet_write: dict[str, Any],
+    live_market_display_rows: list[dict[str, Any]], budget_seconds: float = 5.0,
+) -> dict[str, Any]:
+    """Select exactly one version without changing the frozen V1 writer body."""
+    version = _alternative_pick_selection_bundle_version()
+    if _alternative_pick_selection_mode() == "record" and version is None:
+        return {"skipped": True, "reason": "invalid_bundle_version", "rows": 0}
+    if _alternative_pick_selection_mode() == "record" and version == "v2":
+        started_at = time.monotonic()
+        try:
+            recorder = _load_alternative_pick_v2_recorder()
+            remaining_budget = _alternative_remaining_timeout(started_at, budget_seconds)
+            if remaining_budget <= 0:
+                raise TimeoutError("alternative V2 import exhausted sidecar budget")
+            return recorder(
+                writer=writer,
+                slate_date=slate_date,
+                payload=payload,
+                snapshot_rows=snapshot_rows,
+                provider_heartbeats=provider_heartbeats,
+                observed_at=observed_at,
+                artifact_source=artifact_source,
+                source_payload_sha256=source_payload_sha256,
+                source_artifact_byte_sha256=source_artifact_byte_sha256,
+                operational_pick_locks=operational_pick_locks,
+                market_line_build=market_line_build,
+                shadow_pipeline_timing=shadow_pipeline_timing,
+                ready_to_bet_write=ready_to_bet_write,
+                budget_seconds=remaining_budget,
+            )
+        except TimeoutError:
+            return _alternative_failure_summary("timeout")
+        except Exception:
+            return _alternative_failure_summary("failed")
+    return _write_alternative_pick_selection_state(
+        writer=writer,
+        slate_date=slate_date,
+        payload=payload,
+        snapshot_rows=snapshot_rows,
+        market_pick_evidence_rows=market_pick_evidence_rows,
+        observed_at=observed_at,
+        artifact_source=artifact_source,
+        source_payload_sha256=source_payload_sha256,
+        source_artifact_byte_sha256=source_artifact_byte_sha256,
+        operational_pick_locks=operational_pick_locks,
+        market_line_build=market_line_build,
+        shadow_pipeline_timing=shadow_pipeline_timing,
+        ready_to_bet_write=ready_to_bet_write,
+        live_market_display_rows=live_market_display_rows,
+        budget_seconds=budget_seconds,
+    )
 
 
 def _write_ready_to_bet_candidates(
@@ -1706,11 +1783,12 @@ def run(
         artifact_source=artifact_source,
     )
     source_payload_sha256 = canonical_payload_sha256(payload)
-    alternative_pick_selection = _write_alternative_pick_selection_state(
+    alternative_pick_selection = _dispatch_alternative_pick_selection_state(
         writer=writer,
         slate_date=slate_date,
         payload=payload,
         snapshot_rows=snapshot_rows,
+        provider_heartbeats=provider_heartbeats,
         market_pick_evidence_rows=market_pick_evidence_rows,
         live_market_display_rows=live_market_display_rows,
         observed_at=observed_at,

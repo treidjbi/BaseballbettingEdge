@@ -1,6 +1,9 @@
 from datetime import datetime, timezone
 
-from market_infra.live_market_display import build_live_market_display_rows
+from market_infra.live_market_display import (
+    build_exact_event_book_ladder,
+    build_live_market_display_rows,
+)
 
 
 def _pick(**overrides):
@@ -195,3 +198,26 @@ def test_default_provider_set_adds_combined_therundown_propline_mainline_row():
     assert combined["best_line"] == 5.5
     assert combined["best_odds"] == 104
     assert {row["provider"] for row in combined["book_rows"]} == {"therundown", "propline"}
+
+
+def test_exact_event_ladder_reuses_book_logic_without_database_identity():
+    snapshots = [
+        {**_snapshot("fanduel", -110, "2026-05-12T20:00:00+00:00"), "provider": "therundown"},
+        {**_snapshot("fanduel", -120, "2026-05-12T20:09:00+00:00"), "provider": "therundown"},
+        {**_snapshot("draftkings", -115, "2026-05-12T20:09:00+00:00"), "provider": "propline"},
+        {**_snapshot("betmgm", 115, "2026-05-12T20:09:00+00:00", line=6.5), "provider": "therundown"},
+    ]
+
+    ladder = build_exact_event_book_ladder(
+        slate_date="2026-05-12", side="under", pick_line=5.5,
+        exact_event_snapshots=snapshots,
+        observed_at=datetime(2026, 5, 12, 20, 10, 0, tzinfo=timezone.utc),
+    )
+
+    assert ladder is not None
+    assert ladder["main_line"] == 5.5
+    assert ladder["best_book"] == "betmgm"
+    assert ladder["best_line"] == 6.5
+    assert ladder["best_is_off_market"] is True
+    assert {row["line"] for row in ladder["book_rows"]} == {5.5, 6.5}
+    assert "id" not in ladder
