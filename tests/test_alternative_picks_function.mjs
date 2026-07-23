@@ -287,6 +287,47 @@ function v2FreshProvisionalState(overrides = {}) {
   return row;
 }
 
+function v2NoncompleteWorkloadState(field, status, { includeNull = false } = {}) {
+  const reason = `workload_inputs_${status}`;
+  const pendingVote = { state: 'pending', reason_codes: [reason] };
+  const familyStates = {
+    base: pendingVote,
+    anchor: { state: 'agree', reason_codes: ['market_anchor_v2_confirmed'] },
+    preclose: pendingVote,
+    reentry: pendingVote,
+  };
+  const state = v2FreshProvisionalState();
+  Object.assign(state, {
+    lane: null,
+    selector_id: null,
+    selection_status: 'pending',
+    family_states: familyStates,
+    family_count: 1,
+    reason_codes: [reason],
+  });
+  Object.assign(state.evaluation_proof.normalized_inputs, {
+    [field]: -1,
+    workload_input_status: status,
+  });
+  if (includeNull) state.evaluation_proof.normalized_inputs.is_opener = null;
+  Object.assign(state.evaluation_proof.decision, {
+    support: 'true',
+    drag_core: 'false',
+    no_drag: 'true',
+    family_states: familyStates,
+    consensus_core: 'pending',
+    reentry_expansion: 'false',
+    selected_lane: null,
+    selection_status: 'pending',
+    family_count: 1,
+    maximum_family_count: 4,
+    decisive_families: ['anchor'],
+    preclose_required_for_selected_lane: false,
+    reason_codes: [reason],
+  });
+  return state;
+}
+
 function matchingLock(state, overrides = {}) {
   return {
     id: 'never-expose-lock-id',
@@ -860,6 +901,41 @@ test('alternative-picks v2 proof binds complete workload inputs', async () => {
   } finally {
     installed.restore();
     restoreEnv();
+  }
+});
+
+test('alternative-picks rejects negative workload integers labeled missing even with another null workload value', async t => {
+  for (const field of ['last_pitch_count', 'days_since_last_start']) {
+    await t.test(field, async () => {
+      const state = v2NoncompleteWorkloadState(
+        field, 'missing', { includeNull: true },
+      );
+      configure();
+      const fake = installFetch({ stateRows: [state] });
+      try {
+        const response = await responseJson(event({ bundle_version: 'v2' }));
+        assert.deepEqual(response.json.rows, []);
+      } finally { fake.restore(); restoreEnv(); }
+    });
+  }
+});
+
+test('alternative-picks accepts negative workload integers labeled malformed with aligned pending state', async t => {
+  for (const field of ['last_pitch_count', 'days_since_last_start']) {
+    await t.test(field, async () => {
+      const state = v2NoncompleteWorkloadState(field, 'malformed');
+      configure();
+      const fake = installFetch({ stateRows: [state] });
+      try {
+        const response = await responseJson(event({ bundle_version: 'v2' }));
+        assert.equal(response.json.rows.length, 1);
+        assert.equal(response.json.rows[0].selection_status, 'pending');
+        assert.deepEqual(response.json.rows[0].family_states.base, {
+          state: 'pending',
+          reason_codes: ['workload_inputs_malformed'],
+        });
+      } finally { fake.restore(); restoreEnv(); }
+    });
   }
 });
 

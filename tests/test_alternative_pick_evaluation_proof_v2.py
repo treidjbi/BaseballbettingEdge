@@ -747,6 +747,43 @@ def test_v2_proof_recomputes_incomplete_workload_as_pending(status, reason):
     }
 
 
+def _consistent_noncomplete_workload_proof(
+    *, field: str, status: str, include_null: bool,
+):
+    proof = copy.deepcopy(_build().proof)
+    proof["normalized_inputs"][field] = -1
+    proof["normalized_inputs"]["workload_input_status"] = status
+    if include_null:
+        proof["normalized_inputs"]["is_opener"] = None
+    expected, _ = proof_v2._recompute_semantics(
+        proof["normalized_inputs"], proof["preclose"],
+    )
+    proof["decision"].update(expected)
+    proof["decision"]["reason_codes"] = [f"workload_inputs_{status}"]
+    return proof
+
+
+@pytest.mark.parametrize("field", ("last_pitch_count", "days_since_last_start"))
+def test_v2_proof_rejects_negative_workload_integer_labeled_missing(field):
+    proof = _consistent_noncomplete_workload_proof(
+        field=field, status="missing", include_null=True,
+    )
+
+    valid, reasons = proof_v2.validate_evaluation_proof_v2(proof=proof)
+
+    assert valid is False
+    assert "evaluation_proof_semantics_mismatch" in reasons
+
+
+@pytest.mark.parametrize("field", ("last_pitch_count", "days_since_last_start"))
+def test_v2_proof_accepts_negative_workload_integer_labeled_malformed(field):
+    proof = _consistent_noncomplete_workload_proof(
+        field=field, status="malformed", include_null=False,
+    )
+
+    assert proof_v2.validate_evaluation_proof_v2(proof=proof) == (True, ())
+
+
 def test_v2_proof_rejects_changed_raw_workload_without_matching_decision():
     proof = copy.deepcopy(_build().proof)
     proof["normalized_inputs"]["last_pitch_count"] = None

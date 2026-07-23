@@ -385,9 +385,14 @@ function boundedNormalizedInputs(value) {
         : !['opener_or_mismatch', 'short_leash'].includes(output.pitcher_archetype_bucket);
     if (output.leash_risk_bucket !== expectedLeash || !archetypeBound) return null;
   }
-  if (output.workload_input_status !== 'complete'
-      && !workloadValues.some(item => item === null)
-      && ![output.last_pitch_count, output.days_since_last_start].some(item => Number.isInteger(item) && item < 0)) return null;
+  const hasNullWorkloadValue = workloadValues.some(item => item === null);
+  const hasNegativeWorkloadInteger = [
+    output.last_pitch_count, output.days_since_last_start,
+  ].some(item => Number.isInteger(item) && item < 0);
+  if (output.workload_input_status === 'missing'
+      && (!hasNullWorkloadValue || hasNegativeWorkloadInteger)) return null;
+  if (output.workload_input_status === 'malformed'
+      && !hasNullWorkloadValue && !hasNegativeWorkloadInteger) return null;
   return output;
 }
 

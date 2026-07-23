@@ -480,14 +480,19 @@ def _bounded_normalized_inputs(raw: Mapping[str, Any]) -> dict[str, Any]:
         )
         if normalized["leash_risk_bucket"] != expected_leash or not archetype_bound:
             raise ValueError("complete workload proof buckets are inconsistent")
-    if workload_status != "complete" and not (
-        any(value is None for value in workload_values)
-        or any(
-            isinstance(value, int) and not isinstance(value, bool) and value < 0
-            for value in workload_values[2:]
-        )
+    has_null_workload_value = any(value is None for value in workload_values)
+    has_negative_workload_integer = any(
+        isinstance(value, int) and not isinstance(value, bool) and value < 0
+        for value in workload_values[2:]
+    )
+    if workload_status == "missing" and (
+        not has_null_workload_value or has_negative_workload_integer
     ):
-        raise ValueError("incomplete workload proof inputs lack an incomplete value")
+        raise ValueError("missing workload proof inputs are inconsistent")
+    if workload_status == "malformed" and not (
+        has_null_workload_value or has_negative_workload_integer
+    ):
+        raise ValueError("malformed workload proof inputs lack a malformed value")
     return normalized
 
 
