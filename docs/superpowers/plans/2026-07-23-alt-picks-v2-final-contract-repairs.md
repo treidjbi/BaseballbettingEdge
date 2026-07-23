@@ -15,7 +15,7 @@
 - Preserve TheRundown as official and PropLine as fallback/live-movement sidecar; BoltOdds remains retired.
 - Preserve V1 and unversioned endpoint behavior byte-for-byte except for nondeterministic response ordering that existing tests already ignore.
 - Every production-code change in Task 1 requires its named regression test to be observed failing before the implementation edit.
-- Existing V2 rows are immutable. If an old proof lacks the repaired contract, suppress it; never rewrite or reconstruct it.
+- Frozen V2 rows are immutable and must never be rewritten or reconstructed. Provisional V2 rows retain the controlling design's existing merge-upsert behavior until freeze or game start; incompatible old proofs stay suppressed until a normal prospective cycle re-evaluates that mutable provisional checkpoint.
 - Tyler's existing approval in this task authorizes the reviewed merge and Task 3 deployments. Do not roll back the current rollout; if verification fails, stop, diagnose, and fix forward inside the isolated V2 path.
 
 ---
@@ -303,7 +303,7 @@ Record the reviewed commit, current `bbe-live-layer` deploy ID, current Netlify 
 
 - [ ] **Step 2: Merge through the normal reviewed path and deploy Render first**
 
-Deploy the reviewed commit to `bbe-live-layer` with the existing environment unchanged. Wait for `live`, then wait for one normal scheduled cycle. Verify new V2 proofs contain the workload fields, incomplete-read cases are pending, old immutable rows were not rewritten, and all isolation controls from Step 1 are unchanged.
+Deploy the reviewed commit to `bbe-live-layer` with the existing environment unchanged. Wait for `live`, then wait for one normal scheduled cycle. Verify new V2 proofs contain the workload fields, incomplete-read cases are pending, frozen rows were not rewritten, and all isolation controls from Step 1 are unchanged.
 
 If the cycle fails, stop before Netlify, preserve the existing environment, diagnose the V2-only failure, and fix forward on the repair branch. Do not roll back or alter the official pipeline.
 
