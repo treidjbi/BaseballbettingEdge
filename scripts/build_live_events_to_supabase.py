@@ -89,6 +89,7 @@ DEFAULT_PROPLINE_WEBHOOK_NOTIFICATION_MAX_AGE_MINUTES = 20
 @dataclass(frozen=True)
 class SnapshotReadResult:
     rows: list[dict[str, Any]]
+    v2_rows: list[dict[str, Any]]
     complete: bool
     window_started_at: str
     reason_codes: tuple[str, ...]
@@ -1096,44 +1097,37 @@ def _fetch_recent_provider_run_rows(
     writer: SupabaseMarketWriter,
     slate_date: str,
     *,
-    page_size: int = 100,
-    max_pages: int = 5,
+    limit: int = 100,
 ) -> tuple[list[dict[str, Any]], bool]:
+    """Return the legacy newest-run scope plus V2 completeness in one read."""
+    requested_limit = max(1, limit)
+    raw_rows = writer.select_rows(
+        "market_provider_runs",
+        {
+            "slate_date": f"eq.{slate_date}",
+            "provider": "in.(propline,therundown)",
+            "order": "created_at.desc,id.desc",
+            "limit": str(requested_limit + 1),
+        },
+    )
+    if not isinstance(raw_rows, list):
+        return [], False
+
     rows: list[dict[str, Any]] = []
     seen: set[tuple[str, str]] = set()
     cursor: tuple[str, str] | None = None
-    for page_index in range(max_pages):
-        params = {
-            "slate_date": f"eq.{slate_date}",
-            "provider": "in.(propline,therundown)",
-            "order": "created_at.asc,id.asc",
-            "limit": str(page_size),
-        }
-        if cursor is not None:
-            cursor_timestamp, cursor_id = cursor
-            params["or"] = (
-                f"(created_at.gt.{cursor_timestamp},"
-                f"and(created_at.eq.{cursor_timestamp},id.gt.{cursor_id}))"
-            )
-        page_rows = writer.select_rows("market_provider_runs", params)
-        if not isinstance(page_rows, list):
+    for row in raw_rows[:requested_limit]:
+        timestamp = row.get("created_at") if isinstance(row, dict) else None
+        identifier = row.get("id") if isinstance(row, dict) else None
+        if not isinstance(timestamp, str) or not timestamp or not isinstance(identifier, str) or not identifier:
             return rows, False
-        for row in page_rows:
-            timestamp = row.get("created_at") if isinstance(row, dict) else None
-            identifier = row.get("id") if isinstance(row, dict) else None
-            if not isinstance(timestamp, str) or not timestamp or not isinstance(identifier, str) or not identifier:
-                return rows, False
-            token = (timestamp, identifier)
-            if token in seen or (cursor is not None and token <= cursor):
-                return rows, False
-            seen.add(token)
-            rows.append(row)
-            cursor = token
-        if len(page_rows) < page_size:
-            return rows, True
-        if page_index == max_pages - 1:
+        token = (timestamp, identifier)
+        if token in seen or (cursor is not None and token >= cursor):
             return rows, False
-    return rows, False
+        seen.add(token)
+        rows.append(row)
+        cursor = token
+    return rows, len(raw_rows) <= requested_limit
 
 
 def _fetch_live_market_snapshot_rows(
@@ -1162,11 +1156,12 @@ def _fetch_live_market_snapshot_rows(
         run_rows_complete = False
 
     rows: list[dict[str, Any]] = []
+    v2_rows: list[dict[str, Any]] = []
     reasons: list[str] = []
     if not run_rows_complete:
         reasons.append(
             "provider_run_page_cap_reached"
-            if len(run_rows) >= 100 * 5
+            if len(run_rows) >= 100
             else "provider_run_provenance_unavailable"
         )
     if run_rows:
@@ -1192,14 +1187,14 @@ def _fetch_live_market_snapshot_rows(
             params = {
                 "run_id": run_filter,
                 "observed_at": f"gte.{lookback_start}",
-                "order": "observed_at.asc,id.asc",
+                "order": "observed_at.desc,id.desc",
                 "limit": str(page_size),
             }
             if cursor is not None:
                 cursor_timestamp, cursor_id = cursor
                 params["or"] = (
-                    f"(observed_at.gt.{cursor_timestamp},"
-                    f"and(observed_at.eq.{cursor_timestamp},id.gt.{cursor_id}))"
+                    f"(observed_at.lt.{cursor_timestamp},"
+                    f"and(observed_at.eq.{cursor_timestamp},id.lt.{cursor_id}))"
                 )
             page_rows = writer.select_rows(
                 "market_snapshots",
@@ -1217,7 +1212,7 @@ def _fetch_live_market_snapshot_rows(
                     page_valid = False
                     break
                 token = (timestamp, identifier)
-                if token in seen or (cursor is not None and token <= cursor):
+                if token in seen or (cursor is not None and token >= cursor):
                     reasons.append("snapshot_keyset_invalid")
                     page_valid = False
                     break
@@ -1230,12 +1225,13 @@ def _fetch_live_market_snapshot_rows(
                     rows.append(dict(row))
                     continue
                 parent_slate_date, parent_provider = provenance
+                legacy_row = {**row, "slate_date": parent_slate_date}
+                rows.append(legacy_row)
                 snapshot_provider = str(row.get("provider") or "").strip().lower()
                 if snapshot_provider != parent_provider:
                     reasons.append("snapshot_parent_provider_mismatch")
-                    rows.append(dict(row))
                     continue
-                rows.append({**row, "slate_date": parent_slate_date})
+                v2_rows.append(legacy_row)
             if not page_valid:
                 break
             if len(page_rows) < page_size:
@@ -1244,6 +1240,7 @@ def _fetch_live_market_snapshot_rows(
                 reasons.append("snapshot_page_cap_reached")
         return SnapshotReadResult(
             rows=rows,
+            v2_rows=v2_rows,
             complete=not reasons,
             window_started_at=lookback_start,
             reason_codes=tuple(dict.fromkeys(reasons)),
@@ -1260,6 +1257,7 @@ def _fetch_live_market_snapshot_rows(
     )
     return SnapshotReadResult(
         rows=fallback_rows if isinstance(fallback_rows, list) else [],
+        v2_rows=[],
         complete=False,
         window_started_at=lookback_start,
         reason_codes=tuple(dict.fromkeys((
@@ -1699,6 +1697,7 @@ def run(
         )
         snapshot_read = SnapshotReadResult(
             rows=[],
+            v2_rows=[],
             complete=False,
             window_started_at=observed_at.astimezone(timezone.utc).isoformat(),
             reason_codes=("snapshot_keyset_invalid",),
@@ -1910,7 +1909,7 @@ def run(
         writer=writer,
         slate_date=slate_date,
         payload=payload,
-        snapshot_rows=snapshot_rows,
+        snapshot_rows=snapshot_read.v2_rows,
         provider_heartbeats=provider_heartbeats,
         snapshot_read_complete=snapshot_read.complete,
         snapshot_window_started_at=snapshot_read.window_started_at,

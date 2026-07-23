@@ -2724,19 +2724,6 @@ def test_worker_fetches_market_snapshots_by_recent_run_ids_when_available(tmp_pa
         if table == "market_snapshots":
             return [
                 {
-                    "id": "snapshot-old",
-                    "run_id": "run-1",
-                    "provider": "propline",
-                    "provider_event_id": "game-1",
-                    "normalized_player_name": "tarik skubal",
-                    "player_name": "Tarik Skubal",
-                    "bookmaker_key": "fanduel",
-                    "side": "over",
-                    "line": 6.5,
-                    "american_odds": -110,
-                    "observed_at": "2026-05-06T17:50:00+00:00",
-                },
-                {
                     "id": "snapshot-new",
                     "run_id": "run-1",
                     "provider": "propline",
@@ -2748,6 +2735,19 @@ def test_worker_fetches_market_snapshots_by_recent_run_ids_when_available(tmp_pa
                     "line": 5.5,
                     "american_odds": -112,
                     "observed_at": "2026-05-06T18:00:00+00:00",
+                },
+                {
+                    "id": "snapshot-old",
+                    "run_id": "run-1",
+                    "provider": "propline",
+                    "provider_event_id": "game-1",
+                    "normalized_player_name": "tarik skubal",
+                    "player_name": "Tarik Skubal",
+                    "bookmaker_key": "fanduel",
+                    "side": "over",
+                    "line": 6.5,
+                    "american_odds": -110,
+                    "observed_at": "2026-05-06T17:50:00+00:00",
                 },
             ]
         if table == "game_reminder_state":
@@ -2792,14 +2792,14 @@ def test_snapshot_fetch_annotates_only_rows_bound_to_exact_slate_runs():
         if table == "market_snapshots":
             return [
                 {
-                    "id": "snapshot-bound", "run_id": "run-1",
-                    "provider": "therundown",
-                    "observed_at": "2026-05-06T17:50:00+00:00",
-                },
-                {
                     "id": "snapshot-unbound", "run_id": "unknown-run",
                     "provider": "therundown",
                     "observed_at": "2026-05-06T17:51:00+00:00",
+                },
+                {
+                    "id": "snapshot-bound", "run_id": "run-1",
+                    "provider": "therundown",
+                    "observed_at": "2026-05-06T17:50:00+00:00",
                 },
             ]
         raise AssertionError(table)
@@ -2814,8 +2814,10 @@ def test_snapshot_fetch_annotates_only_rows_bound_to_exact_slate_runs():
         ),
     )
 
-    assert result.rows[0]["slate_date"] == "2026-05-06"
-    assert "slate_date" not in result.rows[1]
+    rows_by_id = {row["id"]: row for row in result.rows}
+    assert rows_by_id["snapshot-bound"]["slate_date"] == "2026-05-06"
+    assert "slate_date" not in rows_by_id["snapshot-unbound"]
+    assert [row["id"] for row in result.v2_rows] == ["snapshot-bound"]
     assert result.complete is False
     assert result.reason_codes == ("provider_run_provenance_unavailable",)
 
@@ -2845,55 +2847,54 @@ def test_snapshot_fetch_does_not_invent_slate_date_on_broad_fallback_rows():
     )
 
     assert "slate_date" not in result.rows[0]
+    assert result.v2_rows == []
     assert result.complete is False
     assert result.reason_codes == ("provider_run_provenance_unavailable",)
 
 
-def test_provider_run_fetch_uses_ascending_keyset_pages():
-    writer = Mock()
-    pages = [
-        [
-            {"id": "run-1", "created_at": "2026-05-06T10:00:00+00:00", "provider": "therundown", "slate_date": "2026-05-06"},
-            {"id": "run-2", "created_at": "2026-05-06T10:00:00+00:00", "provider": "propline", "slate_date": "2026-05-06"},
-        ],
-        [
-            {"id": "run-3", "created_at": "2026-05-06T11:00:00+00:00", "provider": "therundown", "slate_date": "2026-05-06"},
-        ],
-    ]
-    writer.select_rows.side_effect = lambda _table, _params: pages.pop(0)
-
-    rows, complete = build_live_events_to_supabase._fetch_recent_provider_run_rows(
-        writer, "2026-05-06", page_size=2, max_pages=3,
-    )
-
-    assert [row["id"] for row in rows] == ["run-1", "run-2", "run-3"]
-    assert complete is True
-    first, second = [call.args[1] for call in writer.select_rows.call_args_list]
-    assert first["order"] == "created_at.asc,id.asc"
-    assert "or" not in first and "offset" not in first
-    assert second["or"] == (
-        "(created_at.gt.2026-05-06T10:00:00+00:00,"
-        "and(created_at.eq.2026-05-06T10:00:00+00:00,id.gt.run-2))"
-    )
-    assert "offset" not in second
-
-
-def test_provider_run_full_final_page_reports_incomplete_cap():
+def test_provider_run_fetch_retains_one_read_latest_100_scope_and_detects_older_rows():
     writer = Mock()
     writer.select_rows.return_value = [
-        {"id": "run-1", "created_at": "2026-05-06T10:00:00+00:00", "provider": "therundown", "slate_date": "2026-05-06"},
-        {"id": "run-2", "created_at": "2026-05-06T10:01:00+00:00", "provider": "propline", "slate_date": "2026-05-06"},
+        {
+            "id": f"run-{index:03d}",
+            "created_at": f"2026-05-06T{(index // 60):02d}:{(index % 60):02d}:00+00:00",
+            "provider": "therundown",
+            "slate_date": "2026-05-06",
+        }
+        for index in range(101, 0, -1)
     ]
 
     rows, complete = build_live_events_to_supabase._fetch_recent_provider_run_rows(
-        writer, "2026-05-06", page_size=2, max_pages=1,
+        writer, "2026-05-06",
+    )
+
+    assert [row["id"] for row in rows] == [
+        f"run-{index:03d}" for index in range(101, 1, -1)
+    ]
+    assert complete is False
+    writer.select_rows.assert_called_once()
+    params = writer.select_rows.call_args.args[1]
+    assert params["order"] == "created_at.desc,id.desc"
+    assert params["limit"] == "101"
+    assert "or" not in params and "offset" not in params
+
+
+def test_provider_run_fetch_reports_complete_below_latest_100_scope():
+    writer = Mock()
+    writer.select_rows.return_value = [
+        {"id": "run-2", "created_at": "2026-05-06T10:01:00+00:00", "provider": "propline", "slate_date": "2026-05-06"},
+        {"id": "run-1", "created_at": "2026-05-06T10:00:00+00:00", "provider": "therundown", "slate_date": "2026-05-06"},
+    ]
+
+    rows, complete = build_live_events_to_supabase._fetch_recent_provider_run_rows(
+        writer, "2026-05-06",
     )
 
     assert len(rows) == 2
-    assert complete is False
+    assert complete is True
 
 
-def test_snapshot_fetch_uses_ascending_keyset_pages(monkeypatch):
+def test_snapshot_fetch_uses_descending_keyset_pages_for_newest_suffix(monkeypatch):
     run_rows = [{
         "id": "run-1", "created_at": "2026-05-06T10:00:00+00:00",
         "provider": "therundown", "slate_date": "2026-05-06",
@@ -2906,11 +2907,11 @@ def test_snapshot_fetch_uses_ascending_keyset_pages(monkeypatch):
     writer = Mock()
     pages = [
         [
-            {"id": "snapshot-1", "run_id": "run-1", "provider": "therundown", "observed_at": "2026-05-06T10:00:00+00:00"},
+            {"id": "snapshot-3", "run_id": "run-1", "provider": "therundown", "observed_at": "2026-05-06T11:00:00+00:00"},
             {"id": "snapshot-2", "run_id": "run-1", "provider": "therundown", "observed_at": "2026-05-06T10:00:00+00:00"},
         ],
         [
-            {"id": "snapshot-3", "run_id": "run-1", "provider": "therundown", "observed_at": "2026-05-06T11:00:00+00:00"},
+            {"id": "snapshot-1", "run_id": "run-1", "provider": "therundown", "observed_at": "2026-05-06T10:00:00+00:00"},
         ],
     ]
     writer.select_rows.side_effect = lambda _table, _params: pages.pop(0)
@@ -2921,14 +2922,15 @@ def test_snapshot_fetch_uses_ascending_keyset_pages(monkeypatch):
         page_size=2, max_pages=3,
     )
 
-    assert [row["id"] for row in result.rows] == ["snapshot-1", "snapshot-2", "snapshot-3"]
+    assert [row["id"] for row in result.rows] == ["snapshot-3", "snapshot-2", "snapshot-1"]
+    assert result.v2_rows == result.rows
     assert result.complete is True
     first, second = [call.args[1] for call in writer.select_rows.call_args_list]
-    assert first["order"] == "observed_at.asc,id.asc"
+    assert first["order"] == "observed_at.desc,id.desc"
     assert "or" not in first and "offset" not in first
     assert second["or"] == (
-        "(observed_at.gt.2026-05-06T10:00:00+00:00,"
-        "and(observed_at.eq.2026-05-06T10:00:00+00:00,id.gt.snapshot-2))"
+        "(observed_at.lt.2026-05-06T10:00:00+00:00,"
+        "and(observed_at.eq.2026-05-06T10:00:00+00:00,id.lt.snapshot-2))"
     )
     assert "offset" not in second
 
@@ -2945,8 +2947,8 @@ def test_snapshot_full_final_page_reports_incomplete_cap(monkeypatch):
     )
     writer = Mock()
     writer.select_rows.return_value = [
-        {"id": "snapshot-1", "run_id": "run-1", "provider": "therundown", "observed_at": "2026-05-06T10:00:00+00:00"},
         {"id": "snapshot-2", "run_id": "run-1", "provider": "therundown", "observed_at": "2026-05-06T10:01:00+00:00"},
+        {"id": "snapshot-1", "run_id": "run-1", "provider": "therundown", "observed_at": "2026-05-06T10:00:00+00:00"},
     ]
 
     result = build_live_events_to_supabase._fetch_live_market_snapshot_rows(
@@ -2955,9 +2957,54 @@ def test_snapshot_full_final_page_reports_incomplete_cap(monkeypatch):
         page_size=2, max_pages=1,
     )
 
-    assert len(result.rows) == 2
+    assert [row["id"] for row in result.rows] == ["snapshot-2", "snapshot-1"]
+    assert result.v2_rows == result.rows
     assert result.complete is False
     assert result.reason_codes == ("snapshot_page_cap_reached",)
+
+
+def test_snapshot_default_cap_returns_exact_newest_5000_suffix_and_v2_incomplete(
+    monkeypatch,
+):
+    run_rows = [{
+        "id": "run-1", "created_at": "2026-05-06T10:00:00+00:00",
+        "provider": "therundown", "slate_date": "2026-05-06",
+    }]
+    monkeypatch.setattr(
+        build_live_events_to_supabase,
+        "_fetch_recent_provider_run_rows",
+        lambda *_args, **_kwargs: (run_rows, True),
+    )
+    writer = Mock()
+    pages = [
+        [
+            {
+                "id": f"snapshot-{index:05d}",
+                "run_id": "run-1",
+                "provider": "therundown",
+                "observed_at": "2026-05-06T10:00:00+00:00",
+            }
+            for index in range(page_end, page_end - 1000, -1)
+        ]
+        for page_end in (5000, 4000, 3000, 2000, 1000)
+    ]
+    writer.select_rows.side_effect = lambda _table, _params: pages.pop(0)
+
+    result = build_live_events_to_supabase._fetch_live_market_snapshot_rows(
+        writer,
+        "2026-05-06",
+        build_live_events_to_supabase.datetime.fromisoformat(
+            "2026-05-06T18:00:00+00:00"
+        ),
+    )
+
+    assert len(result.rows) == 5000
+    assert result.rows[0]["id"] == "snapshot-05000"
+    assert result.rows[-1]["id"] == "snapshot-00001"
+    assert result.v2_rows == result.rows
+    assert result.complete is False
+    assert result.reason_codes == ("snapshot_page_cap_reached",)
+    assert writer.select_rows.call_count == 5
 
 
 def test_snapshot_slate_stamp_requires_matching_parent_provider():
@@ -2983,9 +3030,96 @@ def test_snapshot_slate_stamp_requires_matching_parent_provider():
         build_live_events_to_supabase.datetime.fromisoformat("2026-05-06T18:00:00+00:00"),
     )
 
-    assert "slate_date" not in result.rows[0]
+    assert result.rows[0]["slate_date"] == "2026-05-06"
+    assert result.v2_rows == []
     assert result.complete is False
     assert result.reason_codes == ("snapshot_parent_provider_mismatch",)
+
+
+def test_worker_keeps_capped_newest_suffix_for_legacy_consumers_and_fails_v2_closed(
+    tmp_path, monkeypatch,
+):
+    today = _write_artifact(tmp_path, [_fire_pitcher()])
+    legacy_rows = [
+        {
+            "id": "snapshot-newest",
+            "provider": "propline",
+            "provider_event_id": "game-1",
+            "normalized_player_name": "tarik skubal",
+            "bookmaker_key": "fanduel",
+            "side": "over",
+            "line": 6.5,
+            "american_odds": -105,
+            "observed_at": "2026-05-06T18:00:00+00:00",
+        },
+        {
+            "id": "snapshot-older",
+            "provider": "propline",
+            "provider_event_id": "game-1",
+            "normalized_player_name": "tarik skubal",
+            "bookmaker_key": "fanduel",
+            "side": "over",
+            "line": 6.5,
+            "american_odds": -110,
+            "observed_at": "2026-05-06T17:50:00+00:00",
+        },
+    ]
+    v2_rows = [legacy_rows[0]]
+    snapshot_read = build_live_events_to_supabase.SnapshotReadResult(
+        rows=legacy_rows,
+        v2_rows=v2_rows,
+        complete=False,
+        window_started_at="2026-05-06T06:00:00+00:00",
+        reason_codes=("snapshot_page_cap_reached",),
+    )
+    fetch = Mock(return_value=snapshot_read)
+    movement = Mock(return_value=[])
+    display = Mock(return_value=[])
+    dispatch = Mock(return_value={"skipped": False, "rows": 0})
+    writer = _writer_with_selects({
+        "live_pick_state": [],
+        "market_feed_heartbeats": [],
+        "live_market_display_state": [],
+        "game_reminder_state": [],
+    })
+
+    monkeypatch.setattr(build_live_events_to_supabase, "_fetch_live_market_snapshot_rows", fetch)
+    monkeypatch.setattr(build_live_events_to_supabase, "build_line_movement_events", movement)
+    monkeypatch.setattr(build_live_events_to_supabase, "build_market_pick_evidence_rows", lambda **_kwargs: [])
+    monkeypatch.setattr(build_live_events_to_supabase, "build_live_market_display_rows", display)
+    monkeypatch.setattr(build_live_events_to_supabase, "_dispatch_alternative_pick_selection_state", dispatch)
+
+    with (
+        patch.object(build_live_events_to_supabase, "SupabaseMarketWriter", return_value=writer),
+        patch.object(
+            build_live_events_to_supabase,
+            "_now_utc",
+            return_value=build_live_events_to_supabase.datetime.fromisoformat(
+                "2026-05-06T18:00:00+00:00"
+            ),
+        ),
+    ):
+        build_live_events_to_supabase.run(
+            slate_date="2026-05-06",
+            artifact_path=today,
+            supabase_url="https://example.supabase.co",
+            service_role_key="secret",
+        )
+
+    fetch.assert_called_once()
+    assert [
+        row["id"]
+        for row in (
+            movement.call_args.kwargs["previous_snapshots"]
+            + movement.call_args.kwargs["current_snapshots"]
+        )
+    ] == ["snapshot-older", "snapshot-newest"]
+    assert display.call_args.kwargs["snapshot_rows"] == legacy_rows
+    assert dispatch.call_args.kwargs["snapshot_rows"] == v2_rows
+    assert dispatch.call_args.kwargs["snapshot_read_complete"] is False
+    assert dispatch.call_args.kwargs["snapshot_read_reason_codes"] == (
+        "snapshot_page_cap_reached",
+    )
 
 
 def test_worker_ignores_boltodds_shadow_snapshots_for_notifications(tmp_path):
