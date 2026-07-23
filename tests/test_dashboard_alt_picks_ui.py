@@ -4,6 +4,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 APP = (ROOT / "dashboard" / "v2-app.jsx")
 HTML = (ROOT / "dashboard" / "v2.html")
+NETLIFY = (ROOT / "netlify.toml")
 
 
 def test_alt_picks_navigation_and_legacy_history_route_are_canonical():
@@ -94,8 +95,9 @@ def test_expanded_supporting_candidates_show_read_only_chips_and_reason():
 
 def test_alt_picks_assets_and_scoped_mobile_styles_are_present():
     html = HTML.read_text(encoding="utf-8")
-    assert "v2-alt-picks.js?v=2026-07-22-alt-picks-v2" in html
+    assert "v2-alt-picks.js?v=2026-07-23-alt-picks-v2-repair" in html
     assert "v2-app.js?v=2026-07-22-alt-picks-v2" in html
+    assert "v2-alt-picks.js?v=2026-07-22-alt-picks-v2" not in html
     assert "v2-alt-picks.js?v=2026-07-21-alt-picks" not in html
     assert "v2-app.js?v=2026-07-21-alt-picks" not in html
     assert html.rindex('<script src="v2-data.js') < html.rindex('<script src="v2-alt-picks.js') < html.rindex('<script src="v2-app.js')
@@ -103,6 +105,16 @@ def test_alt_picks_assets_and_scoped_mobile_styles_are_present():
     assert ".v2-alt-chip" in html
     assert "flex-wrap: wrap" in html
     assert "@media (max-width: 420px)" in html
+
+
+def test_netlify_rebuild_watch_includes_v2_alt_picks_asset():
+    netlify = NETLIFY.read_text(encoding="utf-8")
+    ignore_line = next(
+        line.strip() for line in netlify.splitlines()
+        if line.strip().startswith("ignore = ")
+    )
+
+    assert "dashboard/v2-alt-picks.js" in ignore_line
 
 
 def test_alt_sheet_layer_sits_above_persistent_tabbar():
