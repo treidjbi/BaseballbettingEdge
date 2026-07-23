@@ -802,6 +802,7 @@ def _dispatch_alternative_pick_selection_state(
     live_market_display_rows: list[dict[str, Any]], budget_seconds: float = 5.0,
     snapshot_read_complete: bool = True, snapshot_window_started_at: str = "",
     snapshot_read_reason_codes: tuple[str, ...] = (),
+    v2_snapshot_rows: list[dict[str, Any]] | None = None,
 ) -> dict[str, Any]:
     """Select exactly one version without changing the frozen V1 writer body."""
     version = _alternative_pick_selection_bundle_version()
@@ -818,7 +819,11 @@ def _dispatch_alternative_pick_selection_state(
                 writer=writer,
                 slate_date=slate_date,
                 payload=payload,
-                snapshot_rows=snapshot_rows,
+                snapshot_rows=(
+                    v2_snapshot_rows
+                    if v2_snapshot_rows is not None
+                    else snapshot_rows
+                ),
                 provider_heartbeats=provider_heartbeats,
                 snapshot_read_complete=snapshot_read_complete,
                 snapshot_window_started_at=snapshot_window_started_at,
@@ -1909,7 +1914,8 @@ def run(
         writer=writer,
         slate_date=slate_date,
         payload=payload,
-        snapshot_rows=snapshot_read.v2_rows,
+        snapshot_rows=snapshot_rows,
+        v2_snapshot_rows=snapshot_read.v2_rows,
         provider_heartbeats=provider_heartbeats,
         snapshot_read_complete=snapshot_read.complete,
         snapshot_window_started_at=snapshot_read.window_started_at,
