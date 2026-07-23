@@ -572,6 +572,13 @@ decision proof shows that Preclose was a nonessential pending family.
   research anchors as comparator parity while keeping them clearly separate
   from V2 prospective results. The incomplete historical rows are not expected
   to pass V2's stricter affirmative-evidence rules.
+- Bind that parity check to the recovered July 21 hybrid Gate C corpus through
+  its corpus and manifest hashes. Keep a compressed test-only projection of all
+  `1,621` tracked official-close rows through `2026-07-20`, retaining only the
+  frozen allow-list of source fields and their missing/null semantics. This is
+  hindsight-capable research evidence, not a prospective fixture. Reproduce
+  the published PnL using its original convention: round each row to three
+  decimals before summing.
 - The originally planned 2026-07-22 18:31Z fixture is unavailable: the V1
   state preserved seven canonical and byte-hash pairs, but no matching raw
   artifact survived in `artifact_snapshots`, `published_pipeline_artifacts`,

@@ -686,6 +686,7 @@ git commit -m "feat: gate the alternative v2 recorder"
 - Create: `analytics/diagnostics/alternative_pick_v2_historical_comparator.py`
 - Create: `tests/test_alternative_pick_v2_historical_comparator.py`
 - Create: `tests/fixtures/alternative_pick_selection_v2/synthetic_mature_preclose.json`
+- Create: `tests/fixtures/alternative_pick_selection_v2/legacy_official_close_parity.json.gz`
 - Create: `tests/fixtures/alternative_pick_selection_v2/manifest.json`
 - Create: `tests/test_alternative_pick_selection_v2_fixtures.py`
 - Modify: `docs/superpowers/specs/2026-07-22-alt-picks-dependency-aware-v2-design.md`
@@ -705,6 +706,16 @@ prospectively retained exact fixture. Task 5 continues with synthetic evidence
 and the frozen historical comparator. Tasks 6-9 may proceed on held branches,
 but the Prospective Capture Gate below blocks Task 10 and every production
 migration, activation, endpoint/UI deployment, or source change.
+
+The separate July 21 hybrid Gate C research corpus was recovered intact. Its
+`3,106` source rows include all `1,621` tracked official-close rows through
+`2026-07-20`; corpus SHA-256 is
+`c59cc4fd2a03110ad492163240f5563a85e142d785c258eeb25914ad0273bda4`
+and source-manifest SHA-256 is
+`7f59abe7a4522e793e68a58bac92122585fbfea76658a63b0d09bb3195c85072`.
+Freeze a compact exact-field projection of those tracked rows for historical
+parity only. This does not repair or replace the missing prospective 18:31Z
+artifact and does not open any production gate.
 
 - [ ] **Step 2: Write failing synthetic-fixture and comparator tests**
 
@@ -730,7 +741,7 @@ Expected: synthetic fixture/comparator files or expected hashes are absent.
 
 The synthetic fixture must independently prove mature official-provider exact-line movement and exact-event ladder calculation, including a permitted alternate line used only for off-market context.
 
-The fixture manifest stores SHA-256 of each present fixture's raw bytes and a short source description. It also records `prospective_capture.status = "required_before_production_gate_a"` without inventing a filename, hash, candidates, or expected decisions. Hashes and capture status change only through explicit fixture review.
+The fixture manifest stores SHA-256 of each present fixture's raw bytes and a short source description. For the compressed historical fixture it also binds the recovered source-corpus, source-manifest, and source-summary hashes, the exact cutoff, row counts, and hindsight-only classification. It records `prospective_capture.status = "required_before_production_gate_a"` without inventing a filename, hash, candidates, or expected decisions. Hashes and capture status change only through explicit fixture review.
 
 - [ ] **Step 5: Implement the frozen legacy official-close comparator**
 
@@ -756,13 +767,13 @@ consensus = no_drag AND explicit_family_count >= 2
 expansion = reentry AND NOT no_drag
 ```
 
-Keep the two lanes disjoint and score flat one-unit official-close outcomes through the fixed 2026-07-20 cutoff. Label this output hindsight-capable research; do not import it into runtime, proof, endpoint, UI, or prospective state.
+Keep the two lanes disjoint and score flat one-unit official-close outcomes through the fixed 2026-07-20 cutoff. Preserve the published lab convention by rounding each row's PnL to three decimals before summing; do not hardcode lane membership or outcomes. Label this output hindsight-capable research; do not import it into runtime, proof, endpoint, UI, or prospective state.
 
 - [ ] **Step 6: Prove deterministic replay and historical separation**
 
 ```powershell
 python -m pytest tests/test_alternative_pick_selection_v2_fixtures.py tests/test_alternative_pick_v2_historical_comparator.py tests/test_alternative_pick_selector_v2.py tests/test_alternative_pick_preclose_v2.py -q
-python analytics/diagnostics/alternative_pick_v2_historical_comparator.py --input data/research/gate_c/pitcher_k_outcome_dataset.jsonl --end-date 2026-07-20
+python analytics/diagnostics/alternative_pick_v2_historical_comparator.py --end-date 2026-07-20
 python analytics/diagnostics/no_drag_composite_canary_audit.py
 ```
 
@@ -771,7 +782,7 @@ Expected: the synthetic exact-evidence decision matches the specification; the f
 - [ ] **Step 7: Commit Task 5**
 
 ```powershell
-git add analytics/diagnostics/alternative_pick_v2_historical_comparator.py tests/test_alternative_pick_v2_historical_comparator.py tests/fixtures/alternative_pick_selection_v2/synthetic_mature_preclose.json tests/fixtures/alternative_pick_selection_v2/manifest.json tests/test_alternative_pick_selection_v2_fixtures.py docs/superpowers/specs/2026-07-22-alt-picks-dependency-aware-v2-design.md docs/superpowers/plans/2026-07-22-alt-picks-dependency-aware-v2.md
+git add analytics/diagnostics/alternative_pick_v2_historical_comparator.py tests/test_alternative_pick_v2_historical_comparator.py tests/fixtures/alternative_pick_selection_v2/synthetic_mature_preclose.json tests/fixtures/alternative_pick_selection_v2/legacy_official_close_parity.json.gz tests/fixtures/alternative_pick_selection_v2/manifest.json tests/test_alternative_pick_selection_v2_fixtures.py docs/superpowers/specs/2026-07-22-alt-picks-dependency-aware-v2-design.md docs/superpowers/plans/2026-07-22-alt-picks-dependency-aware-v2.md
 git commit -m "test: freeze alternative v2 synthetic evidence"
 ```
 

@@ -1,0 +1,131 @@
+{
+  "fixture_kind": "synthetic_mature_exact_preclose",
+  "slate_date": "2026-07-23",
+  "observed_at": "2026-07-23T20:10:00+00:00",
+  "source_artifact": {
+    "path": "dashboard/data/processed/today.json",
+    "payload_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "byte_sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+  },
+  "selector_input": {
+    "pitcher": {
+      "pitcher": "Synthetic Pitcher",
+      "team": "ARI",
+      "opp_team": "LAD",
+      "game_time": "2026-07-23T23:00:00+00:00",
+      "k_line": 6.5,
+      "best_over_odds": -120,
+      "best_under_odds": 100,
+      "best_over_book": "FanDuel",
+      "best_under_book": "DraftKings",
+      "avg_ip": 5.8,
+      "recent_start_count": 5,
+      "season_k9": 9.4,
+      "recent_k9": 9.7,
+      "career_k9": 9.1
+    },
+    "pick": {
+      "side": "over",
+      "display_verdict": "FIRE 1u",
+      "edge": 0.035,
+      "adj_ev": 0.09,
+      "quality_gate_level": "clean",
+      "model_win_prob": 0.56,
+      "market_anchor_selector": {
+        "labels": ["market_anchor_core"]
+      }
+    }
+  },
+  "exact_preclose": {
+    "candidate": {
+      "slate_date": "2026-07-23",
+      "pitcher": "Synthetic Pitcher",
+      "normalized_pitcher": "synthetic pitcher",
+      "side": "over",
+      "model_k_line": 6.5,
+      "game_time": "2026-07-23T23:00:00+00:00",
+      "candidate_identity": "synthetic-candidate-v2",
+      "provider_posture": "therundown_propline"
+    },
+    "pitcher": {
+      "line_source_provider": "therundown",
+      "source_current_market_line_ids": [101]
+    },
+    "current_lines_by_id": {
+      "101": {
+        "id": 101,
+        "slate_date": "2026-07-23",
+        "provider": "therundown",
+        "provider_event_id": "synthetic-tr-event",
+        "normalized_player_name": "synthetic pitcher",
+        "market_key": "pitcher_strikeouts",
+        "line": 6.5,
+        "game_time": "2026-07-23T23:00:00+00:00",
+        "over_snapshot_id": "11111111-1111-4111-8111-111111111111",
+        "under_snapshot_id": "22222222-2222-4222-8222-222222222222"
+      }
+    },
+    "existing_state_row": {
+      "candidate_identity": "synthetic-candidate-v2",
+      "candidate_became_current_at": "2026-07-23T19:55:00+00:00",
+      "evaluation_proof": {
+        "schema_version": "alternative_pick_preclose_v2",
+        "exact_preclose": {
+          "official_binding_key": "17cb6e2f5ae1e1a61ed97245b63b627ddb543c4c2bbb8d21a255aab748db3e2c",
+          "sidecar_binding_keys": {},
+          "provider_window_started_at": {
+            "therundown": "2026-07-23T19:55:00+00:00"
+          }
+        }
+      }
+    },
+    "provider_heartbeats": [],
+    "snapshot_rows": [
+      {
+        "id": "11111111-1111-4111-8111-111111111111",
+        "provider": "therundown",
+        "provider_event_id": "synthetic-tr-event",
+        "slate_date": "2026-07-23",
+        "normalized_player_name": "synthetic pitcher",
+        "player_name": "Synthetic Pitcher",
+        "market_key": "pitcher_strikeouts",
+        "bookmaker_key": "fanduel",
+        "side": "over",
+        "line": 6.5,
+        "american_odds": -105,
+        "game_time": "2026-07-23T23:00:00+00:00",
+        "observed_at": "2026-07-23T20:00:00+00:00"
+      },
+      {
+        "id": "33333333-3333-4333-8333-333333333333",
+        "provider": "therundown",
+        "provider_event_id": "synthetic-tr-event",
+        "slate_date": "2026-07-23",
+        "normalized_player_name": "synthetic pitcher",
+        "player_name": "Synthetic Pitcher",
+        "market_key": "pitcher_strikeouts",
+        "bookmaker_key": "fanduel",
+        "side": "over",
+        "line": 6.5,
+        "american_odds": -120,
+        "game_time": "2026-07-23T23:00:00+00:00",
+        "observed_at": "2026-07-23T20:06:00+00:00"
+      },
+      {
+        "id": "44444444-4444-4444-8444-444444444444",
+        "provider": "therundown",
+        "provider_event_id": "synthetic-tr-event",
+        "slate_date": "2026-07-23",
+        "normalized_player_name": "synthetic pitcher",
+        "player_name": "Synthetic Pitcher",
+        "market_key": "pitcher_strikeouts",
+        "bookmaker_key": "betmgm",
+        "side": "over",
+        "line": 5.5,
+        "american_odds": -130,
+        "game_time": "2026-07-23T23:00:00+00:00",
+        "observed_at": "2026-07-23T20:07:00+00:00"
+      }
+    ]
+  }
+}
