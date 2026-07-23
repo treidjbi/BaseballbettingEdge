@@ -593,6 +593,149 @@ def test_v2_exact_movement_requires_two_official_ids_and_timestamps():
     assert result.market_evidence["toward_pick_count"] is None
 
 
+@pytest.mark.parametrize(
+    "duplicate_odds",
+    [(-105, -120), (-120, -105)],
+)
+def test_v2_same_book_same_timestamp_duplicates_cannot_satisfy_provider_maturity(duplicate_odds):
+    duplicate_id = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa"
+    other_book_id = "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb"
+    rows = [
+        _snapshot(TR_OVER, "therundown", "tr-event", duplicate_odds[0], "2026-07-22T20:00:00+00:00"),
+        _snapshot(duplicate_id, "therundown", "tr-event", duplicate_odds[1], "2026-07-22T20:00:00+00:00"),
+        _snapshot(
+            other_book_id, "therundown", "tr-event", -110,
+            "2026-07-22T20:06:00+00:00", book="draftkings",
+        ),
+    ]
+    bindings = _bindings(
+        rows=rows,
+        pitcher=_pitcher(source_current_market_line_ids=[101]),
+        current_lines={"101": _line(101, "therundown", "tr-event", TR_OVER)},
+    )
+
+    result = _build(rows=list(reversed(rows)), bindings=bindings, windows=_windows(bindings))
+
+    assert result.market_evidence["freshness_status"] == "pending"
+    assert "official_provider_immature" in result.market_evidence["aggregation_reason_codes"]
+    assert result.market_evidence["toward_pick_count"] is None
+    assert result.proof_fragment["exact_preclose"]["direction_change_pivot_tokens"] == []
+
+
+@pytest.mark.parametrize("reverse_input", [False, True])
+def test_v2_conflicting_same_timestamp_prices_are_neutral_not_uuid_ordered(reverse_input):
+    same_time_second = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa"
+    fanduel_later = "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb"
+    draftkings_first = "cccccccc-cccc-4ccc-8ccc-cccccccccccc"
+    draftkings_later = "dddddddd-dddd-4ddd-8ddd-dddddddddddd"
+    rows = [
+        _snapshot(TR_OVER, "therundown", "tr-event", -105, "2026-07-22T20:00:00+00:00"),
+        _snapshot(same_time_second, "therundown", "tr-event", -120, "2026-07-22T20:00:00+00:00"),
+        _snapshot(fanduel_later, "therundown", "tr-event", -110, "2026-07-22T20:06:00+00:00"),
+        _snapshot(
+            draftkings_first, "therundown", "tr-event", -105,
+            "2026-07-22T20:00:00+00:00", book="draftkings",
+        ),
+        _snapshot(
+            draftkings_later, "therundown", "tr-event", -120,
+            "2026-07-22T20:06:00+00:00", book="draftkings",
+        ),
+    ]
+    bindings = _bindings(
+        rows=rows,
+        pitcher=_pitcher(source_current_market_line_ids=[101]),
+        current_lines={"101": _line(101, "therundown", "tr-event", TR_OVER)},
+    )
+    if reverse_input:
+        rows = list(reversed(rows))
+
+    result = _build(rows=rows, bindings=bindings, windows=_windows(bindings))
+
+    assert result.market_evidence["freshness_status"] == "fresh"
+    assert result.market_evidence["toward_pick_count"] == 1
+    assert result.market_evidence["away_from_pick_count"] == 0
+    assert result.market_evidence["reversal_book_count"] == 0
+    assert result.proof_fragment["exact_preclose"]["direction_change_pivot_tokens"] == []
+
+
+def test_v2_same_price_duplicate_checkpoint_preserves_legitimate_timeline():
+    duplicate_id = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa"
+    later_id = "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb"
+    rows = [
+        _snapshot(TR_OVER, "therundown", "tr-event", -105, "2026-07-22T20:00:00+00:00"),
+        _snapshot(duplicate_id, "therundown", "tr-event", -105, "2026-07-22T20:00:00+00:00"),
+        _snapshot(later_id, "therundown", "tr-event", -120, "2026-07-22T20:06:00+00:00"),
+    ]
+    bindings = _bindings(
+        rows=rows,
+        pitcher=_pitcher(source_current_market_line_ids=[101]),
+        current_lines={"101": _line(101, "therundown", "tr-event", TR_OVER)},
+    )
+
+    result = _build(rows=list(reversed(rows)), bindings=bindings, windows=_windows(bindings))
+
+    assert result.market_evidence["freshness_status"] == "fresh"
+    assert result.market_evidence["toward_pick_count"] == 1
+    assert result.market_evidence["away_from_pick_count"] == 0
+    assert result.market_evidence["reversal_book_count"] == 0
+
+
+def test_v2_exact_checkpoint_conflicts_are_permutation_invariant_for_ladder_and_movement():
+    conflict_a = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa"
+    conflict_b = "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb"
+    draftkings_first = "cccccccc-cccc-4ccc-8ccc-cccccccccccc"
+    draftkings_later = "dddddddd-dddd-4ddd-8ddd-dddddddddddd"
+
+    def build_rows(*, swap_conflict_prices=False, reverse=False):
+        conflict_prices = (120, -140) if not swap_conflict_prices else (-140, 120)
+        rows = [
+            _snapshot(TR_OVER, "therundown", "tr-event", -105, "2026-07-22T20:00:00+00:00"),
+            _snapshot(conflict_a, "therundown", "tr-event", conflict_prices[0], "2026-07-22T20:06:00+00:00"),
+            _snapshot(conflict_b, "therundown", "tr-event", conflict_prices[1], "2026-07-22T20:06:00+00:00"),
+            _snapshot(
+                draftkings_first, "therundown", "tr-event", -105,
+                "2026-07-22T20:00:00+00:00", book="draftkings",
+            ),
+            _snapshot(
+                draftkings_later, "therundown", "tr-event", -120,
+                "2026-07-22T20:06:00+00:00", book="draftkings",
+            ),
+        ]
+        return list(reversed(rows)) if reverse else rows
+
+    results = []
+    for swap_conflict_prices, reverse in ((False, False), (False, True), (True, False), (True, True)):
+        rows = build_rows(swap_conflict_prices=swap_conflict_prices, reverse=reverse)
+        bindings = _bindings(
+            rows=rows,
+            pitcher=_pitcher(source_current_market_line_ids=[101]),
+            current_lines={"101": _line(101, "therundown", "tr-event", TR_OVER)},
+        )
+        result = _build(rows=rows, bindings=bindings, windows=_windows(bindings))
+        ladder = result.proof_fragment["exact_preclose"]["ladder"]
+        results.append({
+            "freshness_status": result.market_evidence["freshness_status"],
+            "toward_pick_count": result.market_evidence["toward_pick_count"],
+            "away_from_pick_count": result.market_evidence["away_from_pick_count"],
+            "reversal_book_count": result.market_evidence["reversal_book_count"],
+            "movement_observation_ids": result.proof_fragment["exact_preclose"]["movement_observation_ids"],
+            "ladder": {
+                key: ladder[key]
+                for key in (
+                    "main_line", "best_book", "best_line", "best_odds",
+                    "best_is_off_market", "book_rows",
+                )
+            },
+        })
+
+    assert all(result == results[0] for result in results[1:])
+    assert results[0]["freshness_status"] == "fresh"
+    assert results[0]["toward_pick_count"] == 1
+    assert results[0]["away_from_pick_count"] == 0
+    assert results[0]["reversal_book_count"] == 0
+    assert all(token.split(":", 1)[1] not in {conflict_a, conflict_b} for token in results[0]["movement_observation_ids"])
+
+
 def test_v2_movement_excludes_adjacent_event_and_alternate_line():
     rows = _base_rows() + [
         _snapshot("77777777-7777-4777-8777-777777777777", "therundown", "adjacent", 150, "2026-07-22T20:08:00+00:00"),

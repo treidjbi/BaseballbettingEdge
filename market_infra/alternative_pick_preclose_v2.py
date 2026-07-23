@@ -512,6 +512,48 @@ def _candidate_relevant_conflicts(
     return relevant
 
 
+def _coalesce_exact_checkpoints(
+    rows: Sequence[Mapping[str, Any]],
+) -> list[dict[str, Any]]:
+    """Return one deterministic row per exact book/line/timestamp checkpoint.
+
+    Identical semantic duplicates collapse to a single identity. Conflicting
+    prices at the same exact checkpoint contribute no observation, so neither
+    UUID order nor input order can invent movement or ladder state.
+    """
+    grouped: dict[tuple[Any, ...], list[Mapping[str, Any]]] = {}
+    for row in rows:
+        key = (
+            _provider(row.get("provider")),
+            _text(row.get("provider_event_id")),
+            normalize(_text(row.get("normalized_player_name") or row.get("player_name"))),
+            normalize_market_key(row.get("market_key")),
+            _side(row.get("side")),
+            _number(row.get("line")),
+            normalize_book_key(row.get("bookmaker_key") or row.get("bookmaker_title")),
+            _iso(row.get("observed_at")),
+        )
+        grouped.setdefault(key, []).append(row)
+
+    checkpoints: list[dict[str, Any]] = []
+    for values in grouped.values():
+        prices = {_integer(row.get("american_odds")) for row in values}
+        if None in prices or len(prices) != 1:
+            continue
+        representative = min(values, key=lambda row: _text(row.get("id")))
+        checkpoints.append(dict(representative))
+    return sorted(
+        checkpoints,
+        key=lambda row: (
+            _utc(row.get("observed_at")),
+            _provider(row.get("provider")),
+            normalize_book_key(row.get("bookmaker_key") or row.get("bookmaker_title")),
+            _number(row.get("line")),
+            _text(row.get("id")),
+        ),
+    )
+
+
 def _direction(ordered: Sequence[Mapping[str, Any]]) -> tuple[str, bool]:
     first = _integer(ordered[0].get("american_odds"))
     last = _integer(ordered[-1].get("american_odds"))
@@ -660,6 +702,11 @@ def build_exact_preclose_evidence_v2(
             "observed_at": timestamp.isoformat(), "freshness": freshness,
         })
 
+    exact_event_rows = {
+        provider: _coalesce_exact_checkpoints(rows)
+        for provider, rows in exact_event_rows.items()
+    }
+
     provider_stats: dict[str, dict[str, Any]] = {}
     participating: list[str] = []
     for provider, binding in bindings_by_provider.items():
@@ -673,7 +720,14 @@ def build_exact_preclose_evidence_v2(
         by_book: dict[str, list[dict[str, Any]]] = {}
         for row in movement_rows:
             by_book.setdefault(row["bookmaker_key"], []).append(row)
-        mature = len(ids) >= 2 and len(times) >= 2 and any(len(rows) >= 2 for rows in by_book.values())
+        mature = (
+            len(ids) >= 2
+            and len(times) >= 2
+            and any(
+                len({_iso(row.get("observed_at")) for row in rows}) >= 2
+                for rows in by_book.values()
+            )
+        )
         if not mature:
             if provider == official_provider:
                 reasons.append("official_provider_immature")
@@ -683,7 +737,7 @@ def build_exact_preclose_evidence_v2(
         reversals: set[str] = set()
         direction_change_pivots: list[str] = []
         for book, rows in by_book.items():
-            rows.sort(key=lambda row: (_utc(row.get("observed_at")), _text(row.get("id"))))
+            rows.sort(key=lambda row: _utc(row.get("observed_at")))
             direction, reversal = _direction(rows)
             directions[book] = direction
             if reversal:
