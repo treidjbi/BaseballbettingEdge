@@ -44,6 +44,7 @@ LOCKED_HISTORICAL = {"rows": 186, "wins": 124, "losses": 62, "pnl": 29.20, "roi"
 LOCKED_CURRENT_PROVIDER = {"rows": 52, "wins": 36, "losses": 16, "pnl": 9.17, "roi": 0.176}
 LOCKED_RECENT_REFERENCE = {"rows": 35, "wins": 24, "losses": 11, "pnl": 5.68, "roi": 0.162}
 BASELINE_PNL_TOLERANCE = 0.005
+HISTORY_RECOVERED_ARCHIVE_SOURCE = "picks_history_exact"
 WIN_LOSS_RESULTS = {"win", "loss"}
 VERDICT_FIELDS = (
     "display_verdict",
@@ -540,10 +541,22 @@ def build_audit(
     rows: list[dict[str, Any]],
     generated_at: str | None = None,
 ) -> dict[str, Any]:
-    tracked_rows = [
+    all_tracked_rows = [
         row
         for row in rows
         if _is_tracked(row) and row.get("result") in WIN_LOSS_RESULTS
+    ]
+    history_recovered_rows = [
+        row
+        for row in all_tracked_rows
+        if str(row.get("archive_outcome_reconciliation_source") or "").strip()
+        == HISTORY_RECOVERED_ARCHIVE_SOURCE
+    ]
+    tracked_rows = [
+        row
+        for row in all_tracked_rows
+        if str(row.get("archive_outcome_reconciliation_source") or "").strip()
+        != HISTORY_RECOVERED_ARCHIVE_SOURCE
     ]
     evaluated = [
         (row, evaluate_row(row), parse_slate_date(row))
@@ -671,6 +684,10 @@ def build_audit(
         "status": status,
         "integrity": {
             "duplicate_keys": duplicate_keys,
+            "history_recovered_rows_excluded": len(history_recovered_rows),
+            "history_recovered_keys_excluded": sorted(
+                pick_key(row) for row in history_recovered_rows
+            ),
             "input_gap_rows": input_gap_rows,
             "input_gap_keys": [pick_key(row) for row, _ in input_gap_evaluations],
             "input_gaps": {
@@ -792,6 +809,10 @@ def render_markdown(summary: dict[str, Any]) -> str:
         _score_line(
             "Observed current-provider historical",
             current_provider_reconciliation["observed"],
+        ),
+        (
+            "- History-recovered archive rows excluded from the frozen/prospective "
+            f"counter: {summary['integrity']['history_recovered_rows_excluded']}."
         ),
     ]
     if not reconciliation["matches"]:

@@ -63,6 +63,7 @@ def test_build_official_close_rows_creates_one_row_per_side():
             "lineup_path_a_fallback_count": 2,
             "quality_gate_level": "clean",
             "quality_gate_reasons": [],
+            "archive_outcome_reconciliation_source": "picks_history_exact",
             "source_artifact_path": "dashboard/data/processed/2026-05-12.json",
             "pitcher_throws": "R",
             "avg_ip": 5.8,
@@ -102,6 +103,7 @@ def test_build_official_close_rows_creates_one_row_per_side():
     assert under["lineup_path_a_fallback_count"] == 2
     assert under["lineup_handedness_source"] is None
     assert under["lineup_handedness_runtime_safe"] is None
+    assert under["archive_outcome_reconciliation_source"] == "picks_history_exact"
 
 
 def test_enrich_rows_with_market_agreement_uses_latest_pre_start_tracker_row(tmp_path):

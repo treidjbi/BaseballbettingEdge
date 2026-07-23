@@ -4,16 +4,19 @@ from __future__ import annotations
 
 import argparse
 import json
+import sys
 from collections import defaultdict
 from datetime import UTC, date, datetime
 from pathlib import Path
 from typing import Any
 
-from analytics.diagnostics import gate_f_preclose_clv_proxy_lab as preclose_proxy
-from analytics.diagnostics import strong_base_decision_lab as strong_base
-
-
 ROOT = Path(__file__).resolve().parents[2]
+sys.path.insert(0, str(ROOT))
+
+from analytics.diagnostics import gate_f_preclose_clv_proxy_lab as preclose_proxy  # noqa: E402
+from analytics.diagnostics import strong_base_decision_lab as strong_base  # noqa: E402
+
+
 DEFAULT_INPUT = ROOT / "data" / "research" / "gate_c" / "pitcher_k_outcome_dataset.jsonl"
 DEFAULT_OUTPUT = ROOT / "analytics" / "output" / "market_anchor_selector_canary_audit.md"
 WIN_LOSS_RESULTS = {"win", "loss"}

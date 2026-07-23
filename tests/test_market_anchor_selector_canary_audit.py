@@ -1,3 +1,7 @@
+import subprocess
+import sys
+from pathlib import Path
+
 from analytics.diagnostics import market_anchor_selector_canary_audit as audit
 
 
@@ -205,3 +209,22 @@ def test_render_report_keeps_over_only_idea_in_a_new_separate_shadow_review(
     assert "Blocking Evidence" in report
     assert "new selector id, fingerprint, baseline, plan, and prospective canary" in report
     assert "`enforce_downside` remains closed" in report
+
+
+def test_market_anchor_audit_supports_direct_script_execution():
+    repo_root = Path(__file__).resolve().parents[1]
+
+    result = subprocess.run(
+        [
+            sys.executable,
+            "analytics/diagnostics/market_anchor_selector_canary_audit.py",
+            "--help",
+        ],
+        cwd=repo_root,
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+
+    assert result.returncode == 0, result.stderr
+    assert "--input" in result.stdout

@@ -1310,6 +1310,9 @@ def build_official_close_rows(markets: list[dict[str, Any]]) -> list[dict[str, A
                 "actual_opportunity_runtime_safe": None,
                 "actual_opportunity_game_pk": None,
                 "actual_opportunity_pitcher_match_type": None,
+                "archive_outcome_reconciliation_source": market.get(
+                    "archive_outcome_reconciliation_source"
+                ),
                 "source_artifact_path": source_artifact_path,
             }
             rows.append(row)
