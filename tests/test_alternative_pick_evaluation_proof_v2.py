@@ -602,6 +602,27 @@ def test_v2_validator_recomputes_family_preclose_and_lane_semantics(mutate):
     assert "evaluation_proof_semantics_mismatch" in reasons
 
 
+@pytest.mark.parametrize(
+    ("field", "malformed_value"),
+    (
+        *((field, 123) for field in sorted(proof_v2.NORMALIZED_TEXT_INPUT_FIELDS)),
+        *((field, "0.035") for field in sorted(proof_v2.NORMALIZED_NUMBER_INPUT_FIELDS)),
+        *((field, "-120") for field in sorted(proof_v2.NORMALIZED_INTEGER_INPUT_FIELDS)),
+        *((field, 1) for field in sorted(proof_v2.NORMALIZED_BOOLEAN_INPUT_FIELDS)),
+    ),
+)
+def test_v2_validator_fails_closed_for_malformed_normalized_scalar_types(
+    field, malformed_value,
+):
+    proof = copy.deepcopy(_build().proof)
+    proof["normalized_inputs"][field] = malformed_value
+
+    valid, reasons = proof_v2.validate_evaluation_proof_v2(proof=proof)
+
+    assert valid is False
+    assert "evaluation_proof_semantics_mismatch" in reasons
+
+
 def test_v2_worst_case_valid_proof_fits_postgres_jsonb_text_ceiling():
     evaluation = _evaluation()
     reason = "r" * proof_v2.MAX_REASON_BYTES

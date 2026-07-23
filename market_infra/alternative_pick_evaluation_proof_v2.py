@@ -39,6 +39,20 @@ NORMALIZED_INPUT_FIELDS = (
     "leash_risk_bucket", "pitcher_archetype_bucket", "large_edge_skepticism_flag",
     "anchor_labels", "anchor_metadata_malformed", "observed_at",
 )
+NORMALIZED_TEXT_INPUT_FIELDS = frozenset({
+    "side", "official_verdict", "source_fire_verdict", "pitcher", "game_time",
+    "line_bucket", "official_book", "price_sign", "bet_timing_window",
+    "model_market_relationship", "adjusted_ev_error", "quality_gate_level",
+    "opportunity_bucket", "leash_risk_bucket", "pitcher_archetype_bucket",
+    "observed_at",
+})
+NORMALIZED_NUMBER_INPUT_FIELDS = frozenset({
+    "k_line", "model_no_vig_gap", "edge", "adjusted_ev",
+})
+NORMALIZED_INTEGER_INPUT_FIELDS = frozenset({"odds"})
+NORMALIZED_BOOLEAN_INPUT_FIELDS = frozenset({
+    "large_edge_skepticism_flag", "anchor_metadata_malformed",
+})
 ROW_BINDING_INPUT_FIELDS = (
     "side", "pitcher", "game_time", "k_line", "odds", "official_book",
     "official_verdict",
@@ -393,12 +407,27 @@ def _bounded_normalized_inputs(raw: Mapping[str, Any]) -> dict[str, Any]:
             normalized[field] = None if value is None else _bounded_string_list(
                 value, maximum=MAX_LABEL_COUNT, item_bytes=MAX_LABEL_BYTES,
             )
-        elif isinstance(value, str):
-            normalized[field] = _bounded_text(value)
-        elif isinstance(value, (list, tuple, dict)):
-            raise ValueError("normalized proof input has an unsupported container")
-        elif isinstance(value, float) and not math.isfinite(value):
-            raise ValueError("normalized proof input is non-finite")
+        elif field in NORMALIZED_TEXT_INPUT_FIELDS:
+            if value is not None and not isinstance(value, str):
+                raise ValueError("normalized proof text input has an invalid type")
+            normalized[field] = None if value is None else _bounded_text(value)
+        elif field in NORMALIZED_NUMBER_INPUT_FIELDS:
+            if value is not None and (
+                isinstance(value, bool)
+                or not isinstance(value, (int, float))
+                or not math.isfinite(value)
+            ):
+                raise ValueError("normalized proof numeric input has an invalid type")
+        elif field in NORMALIZED_INTEGER_INPUT_FIELDS:
+            if value is not None and (
+                isinstance(value, bool) or not isinstance(value, int)
+            ):
+                raise ValueError("normalized proof integer input has an invalid type")
+        elif field in NORMALIZED_BOOLEAN_INPUT_FIELDS:
+            if not isinstance(value, bool):
+                raise ValueError("normalized proof Boolean input has an invalid type")
+        else:
+            raise ValueError("normalized proof input field has no type contract")
     return normalized
 
 
