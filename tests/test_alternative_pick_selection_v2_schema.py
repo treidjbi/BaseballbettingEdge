@@ -13,6 +13,7 @@ import pytest
 ROOT = Path(__file__).resolve().parents[1]
 V1_MIGRATION = ROOT / "supabase" / "migrations" / "20260721222627_alternative_pick_selection_state.sql"
 V2_MIGRATION = ROOT / "supabase" / "migrations" / "20260722230000_alternative_pick_v2_evaluation_proof.sql"
+LEAST_PRIVILEGE_MIGRATION = ROOT / "supabase" / "migrations" / "20260723210000_alternative_pick_selection_least_privilege.sql"
 
 
 def _sql() -> str:
@@ -112,6 +113,15 @@ def test_v2_migration_preserves_unique_rls_grants_and_frozen_triggers():
     assert v2_sql.count("create trigger") == 1
 
 
+def test_followup_migration_resets_service_role_to_exact_write_privileges():
+    sql = LEAST_PRIVILEGE_MIGRATION.read_text(encoding="utf-8").lower()
+
+    assert "revoke all privileges on table public.alternative_pick_selection_state from service_role" in sql
+    assert "grant select, insert, update on table public.alternative_pick_selection_state to service_role" in sql
+    assert "grant select on table public.alternative_pick_selection_state to bbe_ops_readonly" in sql
+    assert "grant delete" not in sql
+
+
 def _run_psql(psql: str, port: int, sql: str) -> subprocess.CompletedProcess[str]:
     return subprocess.run(
         [psql, "-X", "-v", "ON_ERROR_STOP=1", "-h", "127.0.0.1", "-p", str(port), "-U", "postgres", "-d", "postgres"],
@@ -149,6 +159,8 @@ def isolated_postgres(tmp_path_factory):
 create role anon;
 create role authenticated;
 create role service_role;
+create role bbe_ops_readonly;
+alter default privileges for role postgres in schema public grant all privileges on tables to service_role;
 create table public.operational_pick_locks (
   dedupe_key text, slate_date date, normalized_pitcher text, side text,
   locked_k_line numeric, locked_odds integer, locked_book text,
@@ -159,7 +171,10 @@ create table public.operational_pick_locks (
 """
         applied = _run_psql(
             psql, port,
-            bootstrap + V1_MIGRATION.read_text(encoding="utf-8") + V2_MIGRATION.read_text(encoding="utf-8"),
+            bootstrap
+            + V1_MIGRATION.read_text(encoding="utf-8")
+            + V2_MIGRATION.read_text(encoding="utf-8")
+            + LEAST_PRIVILEGE_MIGRATION.read_text(encoding="utf-8"),
         )
         assert applied.returncode == 0, applied.stderr
         yield psql, port
@@ -168,6 +183,37 @@ create table public.operational_pick_locks (
             [pg_ctl, "-D", str(data), "-m", "fast", "-w", "stop"],
             text=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, timeout=60,
         )
+
+
+def test_postgres_followup_migration_removes_default_service_role_delete(isolated_postgres):
+    psql, port = isolated_postgres
+    verified = _run_psql(
+        psql,
+        port,
+        """
+with grants as (
+  select privilege_type
+  from pg_class c
+  cross join lateral aclexplode(coalesce(c.relacl, acldefault('r', c.relowner))) acl
+  where c.oid = 'public.alternative_pick_selection_state'::regclass
+    and acl.grantee = 'service_role'::regrole
+)
+select case when
+  (select array_agg(privilege_type order by privilege_type) from grants)
+    = array['INSERT', 'SELECT', 'UPDATE']::text[]
+  and has_table_privilege('service_role', 'public.alternative_pick_selection_state', 'select')
+  and has_table_privilege('service_role', 'public.alternative_pick_selection_state', 'insert')
+  and has_table_privilege('service_role', 'public.alternative_pick_selection_state', 'update')
+  and not has_table_privilege('service_role', 'public.alternative_pick_selection_state', 'delete')
+  and has_table_privilege('bbe_ops_readonly', 'public.alternative_pick_selection_state', 'select')
+  and not has_table_privilege('anon', 'public.alternative_pick_selection_state', 'select')
+  and not has_table_privilege('authenticated', 'public.alternative_pick_selection_state', 'select')
+then 'least_privilege_ok' else 'least_privilege_failed' end;
+""",
+    )
+
+    assert verified.returncode == 0, verified.stderr
+    assert "least_privilege_ok" in verified.stdout
 
 
 def _omitted_proof_insert(bundle_id: str) -> str:
