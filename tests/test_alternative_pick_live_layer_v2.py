@@ -119,6 +119,91 @@ def test_v2_writer_uses_only_tracked_non_pass_current_artifact_candidates():
     assert [item[0]["pitcher"] for item in candidates] == ["Tarik Skubal"]
 
 
+def _pitcher_payload(*, pitcher, game_time, line_source_provider="therundown"):
+    row = _payload(game_time=game_time)["pitchers"][0]
+    row["pitcher"] = pitcher
+    row["tracked_picks"][0]["pitcher"] = pitcher
+    if line_source_provider is None:
+        row.pop("line_source_provider", None)
+        row.pop("source_current_market_line_ids", None)
+    else:
+        row["line_source_provider"] = line_source_provider
+    return row
+
+
+def test_v2_assessment_excludes_started_missing_provider_row_before_validating_future_candidate():
+    payload = _payload()
+    payload["pitchers"] = [
+        _pitcher_payload(
+            pitcher="Chris Sale", game_time="2026-07-22T20:00:00+00:00",
+            line_source_provider=None,
+        ),
+        _pitcher_payload(
+            pitcher="Shane Bieber", game_time="2026-07-22T23:00:00+00:00",
+        ),
+    ]
+
+    assessment = recording.assess_alternative_pick_artifact_v2(
+        slate_date="2026-07-22", payload=payload, observed_at=NOW,
+        require_before_t30=False,
+    )
+
+    assert assessment["ok"] is True
+    assert assessment["reason"] == "clean"
+    assert [candidate[0]["pitcher"] for candidate in assessment["candidates"]] == ["Shane Bieber"]
+
+
+def test_v2_assessment_keeps_future_missing_provider_row_as_global_artifact_failure():
+    payload = _payload()
+    payload["pitchers"] = [
+        _pitcher_payload(
+            pitcher="Shane Bieber", game_time="2026-07-22T23:00:00+00:00",
+            line_source_provider=None,
+        ),
+    ]
+
+    assessment = recording.assess_alternative_pick_artifact_v2(
+        slate_date="2026-07-22", payload=payload, observed_at=NOW,
+        require_before_t30=False,
+    )
+
+    assert assessment == {
+        "ok": False,
+        "reason": "invalid_source_posture",
+        "candidates": [],
+    }
+
+
+def test_v2_assessment_and_runtime_never_return_or_write_started_valid_candidate(monkeypatch):
+    payload = _payload(game_time="2026-07-22T20:00:00+00:00")
+
+    assessment = recording.assess_alternative_pick_artifact_v2(
+        slate_date="2026-07-22", payload=payload, observed_at=NOW,
+        require_before_t30=False,
+    )
+
+    assert assessment["ok"] is True
+    assert assessment["reason"] == "no_candidates"
+    assert assessment["candidates"] == []
+    _stub_pipeline(monkeypatch)
+    writer = Writer()
+    result = _record(writer, payload=payload)
+    assert result == {"skipped": True, "reason": "no_candidates", "rows": 0}
+    assert not writer.select_calls and not writer.upserts and not writer.inserts
+
+
+def test_v2_assessment_keeps_candidate_at_t30_before_game_for_runtime_freeze():
+    assessment = recording.assess_alternative_pick_artifact_v2(
+        slate_date="2026-07-22", payload=_payload(game_time="2026-07-22T20:40:00+00:00"),
+        observed_at=NOW, require_before_t30=False,
+    )
+
+    assert assessment["ok"] is True
+    assert assessment["reason"] == "clean"
+    assert len(assessment["candidates"]) == 1
+    assert assessment["candidate_t30"][assessment["candidates"][0][0]["candidate_identity"]] == NOW
+
+
 def test_v2_writer_reuses_persisted_full_proof_window_without_hash_only_reset():
     prior = {
         "candidate_identity": "candidate",

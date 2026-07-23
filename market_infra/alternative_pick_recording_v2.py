@@ -177,16 +177,23 @@ def assess_alternative_pick_artifact_v2(
     if observed - generated_at > MAX_ARTIFACT_AGE:
         return {"ok": False, "reason": "stale_artifact", "candidates": []}
 
+    eligible_pitchers: list[dict[str, Any]] = []
     for pitcher in payload.get("pitchers") or []:
         if not isinstance(pitcher, dict):
             continue
         tracked = pitcher.get("tracked_picks")
         if not isinstance(tracked, list):
             continue
-        relevant = [
-            pick for pick in tracked
-            if isinstance(pick, dict) and display_verdict(pick).upper() != "PASS"
-        ]
+        relevant: list[dict[str, Any]] = []
+        for pick in tracked:
+            if not isinstance(pick, dict) or display_verdict(pick).upper() == "PASS":
+                continue
+            game_time = _utc(pick.get("game_time") or pitcher.get("game_time"))
+            if game_time is None:
+                return {"ok": False, "reason": "invalid_artifact", "candidates": []}
+            if game_time <= observed:
+                continue
+            relevant.append(pick)
         if not relevant:
             continue
         if (
@@ -194,10 +201,11 @@ def assess_alternative_pick_artifact_v2(
             or _text(pitcher.get("line_source_provider")).lower() not in ACTIVE_PROVIDERS
         ):
             return {"ok": False, "reason": "invalid_source_posture", "candidates": []}
-        if any(_utc(pick.get("game_time") or pitcher.get("game_time")) is None for pick in relevant):
-            return {"ok": False, "reason": "invalid_artifact", "candidates": []}
+        eligible_pitchers.append({**pitcher, "tracked_picks": relevant})
 
-    candidates = extract_alternative_pick_candidates_v2(slate_date=slate_date, payload=payload)
+    candidates = extract_alternative_pick_candidates_v2(
+        slate_date=slate_date, payload={**payload, "pitchers": eligible_pitchers},
+    )
     if not candidates:
         return {
             "ok": True, "reason": "no_candidates", "candidates": [],
