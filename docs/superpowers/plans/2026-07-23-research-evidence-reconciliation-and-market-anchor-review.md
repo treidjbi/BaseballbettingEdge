@@ -783,7 +783,7 @@ git commit -m "docs: record research evidence repair gates"
 - Produces one verified research-cron deploy and no other service/config
   mutation.
 
-- [ ] **Step 1: Verify Git state and push**
+- [x] **Step 1: Verify Git state and push**
 
 ```powershell
 git status --short --branch
@@ -793,7 +793,7 @@ git push origin codex/research-evidence-repair
 
 Expected: only intended commits; local and remote branch SHAs match.
 
-- [ ] **Step 2: Inspect the research cron environment names safely**
+- [x] **Step 2: Inspect the research cron environment names safely**
 
 Read the complete environment-variable list through the authenticated Render
 API or Dashboard. Output names/presence only, never values.
@@ -808,7 +808,7 @@ copy only the existing production values into this research cron through a
 full-list preserve-and-verify update. Do not alter or omit any existing key.
 Reread names after the update without printing values.
 
-- [ ] **Step 3: Merge the reviewed branch**
+- [x] **Step 3: Merge the reviewed branch**
 
 After all tests and reviews pass:
 
@@ -821,7 +821,7 @@ git push origin main
 
 Expected: local `main`, `origin/main`, and remote main match.
 
-- [ ] **Step 4: Update only the research cron command**
+- [x] **Step 4: Update only the research cron command**
 
 Preserve schedule, branch, plan, build command, and auto-deploy. Change only:
 
@@ -835,14 +835,14 @@ to:
 python scripts/run_post_grading_shadow_reports.py --refresh-market-agreement-inputs
 ```
 
-- [ ] **Step 5: Deploy only the research cron**
+- [x] **Step 5: Deploy only the research cron**
 
 Trigger a manual deploy of `crn-d8mpcb0g4nts73fq5bv0`, wait for `live`, then
 run one manual job using the service command.
 
 Expected: build and job succeed; no other service deploy is triggered.
 
-- [ ] **Step 6: Verify deployed outputs**
+- [x] **Step 6: Verify deployed outputs**
 
 Read job logs and generated report excerpts. Confirm:
 
@@ -856,14 +856,14 @@ Read job logs and generated report excerpts. Confirm:
 - no provider call, Supabase write, pipeline publication, notification, or
   lock action occurred.
 
-- [ ] **Step 7: Verify production isolation**
+- [x] **Step 7: Verify production isolation**
 
 Check fresh production `today`, published-artifact metadata, lock rows,
 notification counts, provider posture, and latest pipeline deploys.
 
 Expected: no change attributable to the research deployment.
 
-- [ ] **Step 8: Update automation memory**
+- [x] **Step 8: Update automation memory**
 
 Record the final commit/deploy/job IDs, exact research counts, gate decisions,
 and any remaining observation items with the current Phoenix timestamp.
@@ -909,3 +909,51 @@ historical exception. This approval:
 - does not count the missing Gasser row toward no-drag or any frozen baseline;
 - allows only the bounded compact-input research cron to deploy; and
 - leaves Gate C/D/E/F/12E model-promotion gates closed.
+
+## Deployed Research-Cron Verification (2026-07-23)
+
+The reviewed branch was integrated to `main` at
+`0d9b07aacde1f9bde3f22fbe2d626d7f7c438f68`. Fresh integrated verification
+returned `144` focused tests, `1,867` full Python tests, and `99` Node tests.
+A Windows-only raw-fixture hash failure from the newly merged Alt Picks V2
+fixture was traced to `core.autocrlf=true`; the hash-locked JSON fixture set
+now has a scoped `text eol=lf` contract and its original hash test passes.
+
+Only Render cron `crn-d8mpcb0g4nts73fq5bv0`
+(`bbe-gate-c-post-grading-review`) changed:
+
+- its full environment list now contains exactly `SUPABASE_URL` and
+  `SUPABASE_SERVICE_ROLE_KEY`, copied from the existing production pipeline
+  cron and verified equal without printing values;
+- branch `main`, auto-deploy `no`, schedule `7 11 * * *`, Starter plan, and
+  build command were preserved;
+- its command is now
+  `python scripts/run_post_grading_shadow_reports.py --refresh-market-agreement-inputs`;
+- deploy `dep-d9h4mvj7uimc73f3n2gg` built commit `0d9b07aa` and reached
+  `live`; and
+- manual cron run request
+  `crn-d8mpcb0g4nts73fq5bv0-1784826829` ran from `17:14:09Z` through
+  `17:16:27Z` and finished successfully with no error logs.
+
+The deployed run produced:
+
+- `3,105` `market_pick_evidence` rows and `3,251`
+  `live_market_display_state` rows for `2026-04-28..2026-07-23`;
+- `6,356` market-agreement rows;
+- Gate C `3,224` side rows / `1,682` tracked rows, zero duplicate keys, and
+  the accepted visible `1,647/1,648` Gasser exception;
+- market-anchor `separate_shadow_review_ready`, with strict tracked
+  `131`, `81-50`, `+6.62u`, and strict displayed FIRE `27`, `20-7`,
+  `+7.14u`; and
+- unchanged no-drag fingerprint
+  `22b03ecea02aa83e9174c24f5f05878823cb67766fe1c75102d34bfe5c3b4aa4`,
+  both frozen baselines reconciled, `24` recovered rows excluded, and counter
+  `58/75`.
+
+Production isolation passed at `17:19:57Z`: zero pipeline-artifact publication
+runs, operational locks, notification events, or provider runs appeared after
+the research deployment began. Served `today` remained the TheRundown artifact
+generated `17:08:26Z` and published by `render_pipeline` at `17:12:38Z`.
+BoltOdds remained retired with no heartbeat after `2026-06-17` and no snapshot
+after `2026-06-16`. No other pipeline/live-layer service deployed from this
+release.

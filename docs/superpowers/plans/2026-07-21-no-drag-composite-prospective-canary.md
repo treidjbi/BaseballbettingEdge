@@ -1292,3 +1292,10 @@ both locked baselines, preserved fingerprint
 and reported `collecting` at `58/75` with `17` remaining. The six qualified
 prospective rows are `4-2`, `+0.69u`, `+11.4%` ROI. This is counter progress
 only; all live promotion gates remain closed.
+
+The deployed compact-input research run at `2026-07-23T17:16:27Z` preserved
+rule fingerprint
+`22b03ecea02aa83e9174c24f5f05878823cb67766fe1c75102d34bfe5c3b4aa4`,
+reconciled both locked baselines, excluded the same `24` history-recovered
+rows, and remained `collecting` at `58/75` with `17` remaining. The deployment
+did not backfill or advance the prospective counter.

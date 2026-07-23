@@ -173,3 +173,9 @@ source-of-truth change. Tyler accepted the one named Robert Gasser exact-line
 reconciliation miss as a visible fail-closed exception on `2026-07-23`, so the
 bounded research-cron deployment may proceed. Cross-line recovery and every
 model-promotion gate remain closed.
+
+Deployment verification at `2026-07-23T17:16:27Z` exported `3,105`
+`market_pick_evidence` rows and `3,251` `live_market_display_state` rows for
+`2026-04-28..2026-07-23`, then wrote `6,356` market-agreement rows. The run
+read compact evidence only, did not query scheduled raw `market_snapshots`,
+and performed no Supabase write.

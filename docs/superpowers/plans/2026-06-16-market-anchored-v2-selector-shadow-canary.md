@@ -1518,3 +1518,10 @@ not open enforcement. Blocking evidence remains:
 Keep `MARKET_ANCHOR_SELECTOR_MODE=shadow`; `enforce_downside` remains closed.
 Any narrowed OVER-only candidate requires a new selector id, fingerprint,
 baseline, plan, and prospective canary.
+
+The first deployed compact-input research run at
+`2026-07-23T17:16:27Z` reproduced `separate_shadow_review_ready`: strict
+tracked was `131`, `81-50`, `+6.62u`, and strict displayed FIRE remained
+`27`, `20-7`, `+7.14u`. The report explicitly remained shadow metadata only.
+No selector id, fingerprint, candidate logic, lambda, verdict, threshold, or
+staking behavior changed; `enforce_downside` remains closed.

@@ -1222,3 +1222,9 @@ as a visible fail-closed exception for the bounded research-cron deployment.
 The accepted deployment result is `1,647/1,648`; the Gasser row remains
 unrecovered, cannot receive no-drag credit, and does not authorize any
 cross-line outcome rule, archive mutation, or live-model change.
+
+The first deployed bounded research run completed successfully at
+`2026-07-23T17:16:27Z`. Gate C wrote `3,224` side rows / `1,682` tracked rows
+with zero duplicate keys and the accepted `1,647/1,648` reconciliation result.
+Robert Gasser remains unrecovered and visible; the cron did not mutate the
+dated archive or create a cross-line rule.
