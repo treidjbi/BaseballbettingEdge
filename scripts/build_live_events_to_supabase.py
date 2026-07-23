@@ -42,9 +42,6 @@ from market_infra.alternative_pick_selector import (  # noqa: E402
     display_verdict,
     evaluate_alternative_pick,
 )
-from market_infra.alternative_pick_recording_v2 import (  # noqa: E402
-    record_alternative_pick_selection_v2,
-)
 from market_infra.live_market_display import build_live_market_display_rows  # noqa: E402
 from market_infra.mainline_price_notifications import (  # noqa: E402
     build_mainline_best_price_notification_rows,
@@ -154,6 +151,15 @@ def _alternative_pick_selection_bundle_version() -> str | None:
         return "v1"
     value = raw.strip().lower()
     return value if value in {"v1", "v2"} else None
+
+
+def _load_alternative_pick_v2_recorder():
+    """Load the optional V2 recorder only after explicit V2 dispatch."""
+    from market_infra.alternative_pick_recording_v2 import (  # noqa: PLC0415
+        record_alternative_pick_selection_v2,
+    )
+
+    return record_alternative_pick_selection_v2
 
 
 def _alternative_remaining_timeout(started_at: float, budget_seconds: float) -> float:
@@ -790,8 +796,13 @@ def _dispatch_alternative_pick_selection_state(
     if _alternative_pick_selection_mode() == "record" and version is None:
         return {"skipped": True, "reason": "invalid_bundle_version", "rows": 0}
     if _alternative_pick_selection_mode() == "record" and version == "v2":
+        started_at = time.monotonic()
         try:
-            return record_alternative_pick_selection_v2(
+            recorder = _load_alternative_pick_v2_recorder()
+            remaining_budget = _alternative_remaining_timeout(started_at, budget_seconds)
+            if remaining_budget <= 0:
+                raise TimeoutError("alternative V2 import exhausted sidecar budget")
+            return recorder(
                 writer=writer,
                 slate_date=slate_date,
                 payload=payload,
@@ -805,7 +816,7 @@ def _dispatch_alternative_pick_selection_state(
                 market_line_build=market_line_build,
                 shadow_pipeline_timing=shadow_pipeline_timing,
                 ready_to_bet_write=ready_to_bet_write,
-                budget_seconds=budget_seconds,
+                budget_seconds=remaining_budget,
             )
         except TimeoutError:
             return _alternative_failure_summary("timeout")
