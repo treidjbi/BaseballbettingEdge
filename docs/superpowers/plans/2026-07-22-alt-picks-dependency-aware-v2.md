@@ -1330,7 +1330,7 @@ If any V2 row appears, set mode off and redeploy; do not continue.
 
 **Requires:** Tyler approval to change exactly one Render environment key and redeploy. Activation must occur before the first relevant T-30 lock; otherwise defer to the next Phoenix slate.
 
-- [ ] **Step 1: Prove this is still a clean prospective activation window**
+- [x] **Step 1: Prove this is still a clean prospective activation window**
 
 Derive eligibility and T-30 directly from the current exact official artifact. V1 sidecar rows are comparison evidence only and cannot establish that the window is clean. Run:
 
@@ -1343,7 +1343,7 @@ Proceed only when the artifact preflight exits zero with `clean` or `no_candidat
 
 If there are zero current eligible candidates, activation may safely occur, but a subsequent zero-row cycle is classified `no_candidates`, not a recorder failure and not sufficient evidence to unlock the V2 UI.
 
-- [ ] **Step 2: Fetch the full Render environment and review the exact one-key dry run**
+- [x] **Step 2: Fetch the full Render environment and review the exact one-key dry run**
 
 Use the reviewed helper from Task 4:
 
@@ -1353,7 +1353,7 @@ python scripts/update_render_service_env.py --service-id crn-d7tpb19o3t8c739p3qi
 
 Expected: a dry run reports all paginated pages, the complete preserved key count, only the changed key name, and whether that key was originally `present` or `absent`. It prints no values and performs no mutation. Gate B already proved a present key is exactly V1; record the presence state for exact rollback.
 
-- [ ] **Step 3: PUT the complete preserved list, verify it, and redeploy**
+- [x] **Step 3: PUT the complete preserved list, verify it, and redeploy**
 
 ```powershell
 python scripts/update_render_service_env.py --service-id crn-d7tpb19o3t8c739p3qig --set ALTERNATIVE_PICK_SELECTION_BUNDLE_VERSION=v2 --execute
@@ -1376,11 +1376,11 @@ python scripts/update_render_service_env.py --service-id crn-d7tpb19o3t8c739p3qi
 render deploys create crn-d7tpb19o3t8c739p3qig --wait --confirm
 ```
 
-- [ ] **Step 4: Wait for one normal scheduled cycle before trusting rows**
+- [x] **Step 4: Wait for one normal scheduled cycle before trusting rows**
 
 Do not manually synthesize a checkpoint. Wait for the normal live-layer heartbeat and exact official artifact.
 
-- [ ] **Step 5: Verify bounded V2 state and isolation**
+- [x] **Step 5: Verify bounded V2 state and isolation**
 
 ```powershell
 npx supabase db query --linked -o json "with phoenix as (select (now() at time zone 'America/Phoenix')::date as slate_date) select checkpoint, selection_status, lane, count(*) as rows, max(octet_length(evaluation_proof::text)) as max_proof_bytes from public.alternative_pick_selection_state, phoenix where alternative_pick_selection_state.slate_date=phoenix.slate_date and bundle_id='pregame_alternative_pick_methodology_v2' group by checkpoint, selection_status, lane order by checkpoint, selection_status, lane; with phoenix as (select (now() at time zone 'America/Phoenix')::date as slate_date) select slate_date, game_identity, normalized_pitcher, side, bundle_id, checkpoint, count(*) as duplicates from public.alternative_pick_selection_state, phoenix where alternative_pick_selection_state.slate_date=phoenix.slate_date and bundle_id='pregame_alternative_pick_methodology_v2' group by slate_date, game_identity, normalized_pitcher, side, bundle_id, checkpoint having count(*) > 1;"
@@ -1414,7 +1414,7 @@ Only `complete_candidate_cycle` may advance to Gate D. For `infrastructure_failu
 
 **Netlify site:** `47c15fdf-6278-4109-8877-545cc29eb418`
 
-- [ ] **Step 1: Create a fresh path-scoped release branch from updated production core**
+- [x] **Step 1: Create a fresh path-scoped release branch from updated production core**
 
 ```powershell
 git fetch origin
@@ -1441,7 +1441,7 @@ handshake/UI tests pass against production core. The final diff allow-list is
 exactly those ten paths. Do not rebase, merge, or squash the held branch
 directly; its ancestry contains the pre-merge core work.
 
-- [ ] **Step 2: Merge only the fresh web-release branch and verify the Netlify deploy**
+- [x] **Step 2: Merge only the fresh web-release branch and verify the Netlify deploy**
 
 Use the repository's normal reviewed merge path for `codex/alt-picks-dependency-aware-v2-web-release` at its recorded remote SHA. The merge itself may trigger Netlify production deployment. Wait for that deploy and record its ID/commit. If the connected-site deploy does not occur, use the separately approved fallback:
 
@@ -1453,7 +1453,7 @@ netlify deploy --prod --dir dashboard --functions netlify/functions --site 47c15
 
 Do not issue the manual deploy when a healthy automatic deploy for the same commit is already running or complete.
 
-- [ ] **Step 3: Verify the endpoint compatibility matrix**
+- [x] **Step 3: Verify the endpoint compatibility matrix**
 
 Check:
 
@@ -1465,7 +1465,7 @@ Check:
 - stale/malformed/mixed rows are suppressed; and
 - current artifact and exact lock validation still control visibility.
 
-- [ ] **Step 4: Verify desktop and mobile Alt Picks UI**
+- [x] **Step 4: Verify desktop and mobile Alt Picks UI**
 
 Inspect `https://baseballbettingedge.netlify.app/?tab=alt` at `1280x900` and `390x844`.
 
@@ -1479,9 +1479,68 @@ Expected:
 - Picks and Results counts/content remain unchanged; and
 - accepted-bet behavior remains confined to official Picks.
 
-- [ ] **Step 5: Update the production handoff**
+- [x] **Step 5: Update the production handoff**
 
 Record exact Render and Netlify deploy IDs, first clean V2 cycle, row counts by lane/status/checkpoint, maximum proof size, zero duplicate/notification/lock regressions, and the next soak decision. Keep all official promotion gates closed.
+
+### 2026-07-23 production evidence
+
+Tyler explicitly approved completing the rollout on the current partial slate
+without reconstructing any checkpoint that had already passed. That approval
+overrode only the clean-full-slate deferral in Gate C; it did not relax the
+exact candidate binding, T-30 immutability, proof, notification, lock, provider,
+model, or source-of-truth contracts.
+
+- Runtime root cause: `market_snapshots` has no `slate_date` column, while the
+  exact date is present on the parent `market_provider_runs` row. Commit
+  `014a7338` enriches only the already date-scoped, run-ID-bound rows in memory;
+  the broad fallback remains unstamped and fail-closed. The same commit aligns
+  the candidate book/price with the effective official quote and preserves the
+  bounded exact pending dependency reasons used by proof recomputation.
+- Verification before merge returned `1,881` Python and `99` Node tests. The
+  runtime-fix branch was fast-forwarded to `main` and pushed as
+  `014a73383b87c6ae0ca262233050dd5173b36ce5`.
+- Render safe-code deploy `dep-d9h6cijeo5us73bcqnl0` reached `live` with the
+  V2 version key still absent. The complete `19`-key environment was then
+  dry-run, updated with only
+  `ALTERNATIVE_PICK_SELECTION_BUNDLE_VERSION=v2`, and verified as `20` keys.
+  Activation deploy `dep-d9h6d33eo5us73bcrfpg` reached `live` on the same
+  commit.
+- The normal `19:10Z` and `19:20Z` scheduled cycles both finished
+  successfully. V2 has exactly three current-slate provisional rows and zero
+  duplicate groups or proof mismatches. Randy Dobnak UNDER 3.5 is selected in
+  `consensus_core`; Brandon Pfaadt OVER 3.5 and Michael McGreevy OVER 3.5 are
+  `not_selected`. By `19:20Z` all three had fresh exact TheRundown evidence:
+  Dobnak had four observations and three agreeing families; Pfaadt and
+  McGreevy each had six observations and two agreeing families. Maximum proof
+  size was `4,622` bytes.
+- Shane Bieber was already beyond the prospective activation boundary and was
+  not reconstructed. All three persisted V2 candidates were captured before
+  their own T-30 boundary and before game start.
+- The fresh web release was rebuilt from current production core with exactly
+  the ten reviewed endpoint/UI paths, passed `60` Node and `24` Python UI tests,
+  and was pushed/merged as
+  `280d5d8b08206be61eec387aa99b6fa66d988818`. Netlify production deploy
+  `6a6269fe216598bb9cbe7394` is `ready`.
+- Live endpoint checks proved unversioned and explicit V1 requests still serve
+  the V1 bundle, explicit V2 serves the exact V2 fingerprint and three rows,
+  invalid versions fail closed, and raw evaluation proofs/observation IDs are
+  not exposed. Desktop and `390x844` checks showed one selected Consensus Core
+  card, two collapsed supporting rows, accurate evidence detail, no wager
+  controls, and no horizontal overflow.
+- Isolation remained intact across both V2 cycles and the UI deploy:
+  alternative notification rows stayed `0`; operational locks stayed `3/3`
+  unique and consumed; accepted bets stayed at `2` with no new row; the three
+  V1 frozen rows remained present; Picks still displayed the same eight
+  official props; Results still displayed `1,648` graded picks; and the served
+  official artifact stayed byte-identical at SHA-256
+  `058379766c921b7d2183c66bfeb3b99aa992e985071df61036a1073f4e2365ad`,
+  generated `2026-07-23T19:08:04Z`, with TheRundown as every row's line source.
+
+The next decision is soak/observe through real frozen-pregame checkpoints and
+graded outcomes. This plumbing/UI success is not approval to change official
+pick selection, model math, thresholds, staking, providers, notifications,
+locks, accepted bets, artifact source, retention, or history.
 
 ---
 
