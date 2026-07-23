@@ -120,12 +120,13 @@ def _build_rows(
     actual_opportunity_backfill_path: Path,
     market_agreement_tracker_path: Path | None,
     live_market_display_path: Path | None,
-) -> tuple[list[dict[str, Any]], list[str]]:
+) -> tuple[list[dict[str, Any]], list[str], dict[str, int]]:
     if artifact_source in {"local", "production"}:
         source_kwargs = _source_kwargs(
             artifact_source=artifact_source,
             artifact_api_url=artifact_api_url,
         )
+        diagnostics: dict[str, Any] = {}
         return (
             dataset.build_dataset(
                 start_date=start_date,
@@ -134,11 +135,17 @@ def _build_rows(
                 actual_opportunity_backfill_path=actual_opportunity_backfill_path,
                 market_agreement_tracker_path=market_agreement_tracker_path,
                 live_market_display_path=live_market_display_path,
+                diagnostics=diagnostics,
                 **source_kwargs,
             ),
             [],
+            dict(
+                diagnostics.get("archive_outcome_reconciliation")
+                or {"recovered_markets": 0, "ambiguous_markets": 0}
+            ),
         )
 
+    local_diagnostics: dict[str, Any] = {}
     local_rows = dataset.build_dataset(
         start_date=start_date,
         end_date=end_date,
@@ -147,6 +154,11 @@ def _build_rows(
         market_agreement_tracker_path=market_agreement_tracker_path,
         live_market_display_path=live_market_display_path,
         artifact_api_url=None,
+        diagnostics=local_diagnostics,
+    )
+    archive_outcome_reconciliation = dict(
+        local_diagnostics.get("archive_outcome_reconciliation")
+        or {"recovered_markets": 0, "ambiguous_markets": 0}
     )
     local_dates = _loaded_slate_dates(local_rows)
     production_fill_dates = [
@@ -160,6 +172,7 @@ def _build_rows(
     ]
     production_rows: list[dict[str, Any]] = []
     for date in production_fill_dates:
+        production_diagnostics: dict[str, Any] = {}
         production_rows.extend(
             dataset.build_dataset(
                 start_date=date,
@@ -169,9 +182,21 @@ def _build_rows(
                 market_agreement_tracker_path=market_agreement_tracker_path,
                 live_market_display_path=live_market_display_path,
                 artifact_api_url=artifact_api_url or DEFAULT_ARTIFACT_API_URL,
+                diagnostics=production_diagnostics,
             )
         )
-    return _dedupe_rows([*local_rows, *production_rows]), production_fill_dates
+        production_outcome_counts = (
+            production_diagnostics.get("archive_outcome_reconciliation") or {}
+        )
+        for key in ("recovered_markets", "ambiguous_markets"):
+            archive_outcome_reconciliation[key] = int(
+                archive_outcome_reconciliation.get(key, 0)
+            ) + int(production_outcome_counts.get(key, 0))
+    return (
+        _dedupe_rows([*local_rows, *production_rows]),
+        production_fill_dates,
+        archive_outcome_reconciliation,
+    )
 
 
 def _manifest(
@@ -188,6 +213,7 @@ def _manifest(
     market_agreement_tracker_path: Path | None,
     live_market_display_path: Path | None,
     production_fill_dates: list[str] | None = None,
+    archive_outcome_reconciliation: dict[str, int] | None = None,
 ) -> dict[str, Any]:
     return {
         "artifact": "gate_c_pitcher_k_outcome_dataset",
@@ -218,6 +244,8 @@ def _manifest(
         "loaded_slate_dates": sorted(_loaded_slate_dates(rows)),
         "summary_counts": summary,
         "reconciliation": reconciliation,
+        "archive_outcome_reconciliation": archive_outcome_reconciliation
+        or {"recovered_markets": 0, "ambiguous_markets": 0},
         "files": {
             "jsonl": _manifest_path(jsonl_path),
             "summary": _manifest_path(summary_path),
@@ -246,7 +274,7 @@ def build_research_artifact(
         artifact_source=artifact_source,
         artifact_api_url=artifact_api_url,
     )
-    rows, production_fill_dates = _build_rows(
+    rows, production_fill_dates, archive_outcome_reconciliation = _build_rows(
         artifact_source=artifact_source,
         artifact_api_url=artifact_api_url,
         start_date=start_date,
@@ -265,6 +293,7 @@ def build_research_artifact(
         raise SystemExit(f"Dataset validation failed: {validation_errors[:5]}")
 
     summary = dataset.build_summary(rows)
+    summary["archive_outcome_reconciliation"] = archive_outcome_reconciliation
     reconciliation = dataset.reconcile_picks_history(
         rows,
         start_date=start_date,
@@ -296,6 +325,7 @@ def build_research_artifact(
         market_agreement_tracker_path=market_agreement_tracker_path,
         live_market_display_path=live_market_display_path,
         production_fill_dates=production_fill_dates,
+        archive_outcome_reconciliation=archive_outcome_reconciliation,
     )
     _write_json(manifest_path, manifest)
 

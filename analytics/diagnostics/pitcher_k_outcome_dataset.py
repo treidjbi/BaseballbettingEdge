@@ -890,12 +890,50 @@ def _requested_date_range(start_date: str, end_date: str | None) -> list[str]:
     return dates
 
 
+def build_archive_outcome_index(
+    history_rows: list[dict[str, Any]],
+    *,
+    start_date: str = CLEAN_WINDOW_START,
+) -> dict[tuple[str, str, float], list[dict[str, Any]]]:
+    index: dict[tuple[str, str, float], list[dict[str, Any]]] = {}
+    for pick in history_rows:
+        slate_date = str(pick.get("date") or pick.get("slate_date") or "").strip()
+        line = _to_float(
+            pick.get("locked_k_line")
+            if pick.get("locked_k_line") is not None
+            else pick.get("k_line")
+        )
+        result = str(pick.get("result") or "").strip().lower()
+        actual = _to_float(pick.get("actual_ks"))
+        normalized_pitcher = _normalized(pick.get("pitcher"))
+        if (
+            slate_date < start_date
+            or not normalized_pitcher
+            or line is None
+            or result not in {"win", "loss"}
+            or actual is None
+        ):
+            continue
+        index.setdefault((slate_date, normalized_pitcher, line), []).append(pick)
+    return index
+
+
+def _initialize_archive_outcome_stats(stats: dict[str, int]) -> None:
+    stats.setdefault("recovered_markets", 0)
+    stats.setdefault("ambiguous_markets", 0)
+
+
 def _markets_from_archive_payload(
     payload: dict[str, Any],
     *,
     date: str,
     source_artifact_path: str,
+    outcome_index: dict[tuple[str, str, float], list[dict[str, Any]]] | None = None,
+    outcome_reconciliation_stats: dict[str, int] | None = None,
 ) -> list[dict[str, Any]]:
+    stats = outcome_reconciliation_stats
+    if stats is not None:
+        _initialize_archive_outcome_stats(stats)
     markets: list[dict[str, Any]] = []
     for record in payload.get("pitchers") or []:
         if not isinstance(record, dict):
@@ -903,6 +941,19 @@ def _markets_from_archive_payload(
 
         k_line = _to_float(record.get("k_line"))
         actual = _to_float(record.get("actual_ks"))
+        outcome_source = "archive" if actual is not None else None
+        if actual is None and k_line is not None and outcome_index is not None:
+            candidates = outcome_index.get(
+                (date, _normalized(record.get("pitcher")), k_line),
+                [],
+            )
+            if len(candidates) == 1:
+                actual = _to_float(candidates[0].get("actual_ks"))
+                outcome_source = "picks_history_exact"
+                if stats is not None:
+                    stats["recovered_markets"] += 1
+            elif len(candidates) > 1 and stats is not None:
+                stats["ambiguous_markets"] += 1
         over_odds = _to_int(record.get("best_over_odds") or record.get("over_odds"))
         under_odds = _to_int(record.get("best_under_odds") or record.get("under_odds"))
         winner = winning_side(actual, k_line)
@@ -923,6 +974,7 @@ def _markets_from_archive_payload(
                 "under_odds": under_odds,
                 "opening_over_odds": _to_int(record.get("opening_over_odds")),
                 "opening_under_odds": _to_int(record.get("opening_under_odds")),
+                "archive_outcome_reconciliation_source": outcome_source,
                 "source_artifact_path": source_artifact_path,
                 "generated_at": payload.get("generated_at"),
             }
@@ -936,6 +988,8 @@ def _load_remote_archived_markets_for_dataset(
     artifact_api_url_base: str,
     start_date: str,
     end_date: str | None,
+    outcome_index: dict[tuple[str, str, float], list[dict[str, Any]]] | None = None,
+    outcome_reconciliation_stats: dict[str, int] | None = None,
 ) -> list[dict[str, Any]]:
     index_payload = _load_remote_json(artifact_api_url(artifact_api_url_base, "index"))
     dates = _artifact_dates_from_index(
@@ -962,6 +1016,8 @@ def _load_remote_archived_markets_for_dataset(
                 payload,
                 date=date,
                 source_artifact_path=url,
+                outcome_index=outcome_index,
+                outcome_reconciliation_stats=outcome_reconciliation_stats,
             )
         )
     if skipped_missing:
@@ -980,12 +1036,23 @@ def load_archived_markets_for_dataset(
     start_date: str = CLEAN_WINDOW_START,
     end_date: str | None = None,
     artifact_api_url: str | None = None,
+    outcome_history_rows: list[dict[str, Any]] | None = None,
+    outcome_reconciliation_stats: dict[str, int] | None = None,
 ) -> list[dict[str, Any]]:
+    if outcome_reconciliation_stats is not None:
+        _initialize_archive_outcome_stats(outcome_reconciliation_stats)
+    outcome_index = (
+        build_archive_outcome_index(outcome_history_rows, start_date=start_date)
+        if outcome_history_rows is not None
+        else None
+    )
     if artifact_api_url:
         return _load_remote_archived_markets_for_dataset(
             artifact_api_url_base=artifact_api_url,
             start_date=start_date,
             end_date=end_date,
+            outcome_index=outcome_index,
+            outcome_reconciliation_stats=outcome_reconciliation_stats,
         )
 
     markets: list[dict[str, Any]] = []
@@ -1005,6 +1072,8 @@ def load_archived_markets_for_dataset(
                 payload,
                 date=date,
                 source_artifact_path=f"dashboard/data/processed/{date}.json",
+                outcome_index=outcome_index,
+                outcome_reconciliation_stats=outcome_reconciliation_stats,
             )
         )
     return markets
@@ -1538,9 +1607,14 @@ def enrich_rows_with_pick_history(
     history_path: Path = PICKS_HISTORY,
     start_date: str = CLEAN_WINDOW_START,
     artifact_api_url: str | None = None,
+    history_rows: list[dict[str, Any]] | None = None,
 ) -> list[dict[str, Any]]:
-    history_rows = _load_picks_history(history_path, artifact_api_url)
-    exact, side_index = _history_indexes(history_rows, start_date)
+    loaded_history_rows = (
+        history_rows
+        if history_rows is not None
+        else _load_picks_history(history_path, artifact_api_url)
+    )
+    exact, side_index = _history_indexes(loaded_history_rows, start_date)
     enriched: list[dict[str, Any]] = []
     for row in rows:
         pick, match_type = _pick_for_row(row, exact, side_index)
@@ -1773,6 +1847,7 @@ def enrich_rows_with_actual_opportunity(
 
 
 def render_summary(summary: dict[str, Any]) -> str:
+    archive_reconciliation = summary.get("archive_outcome_reconciliation") or {}
     lines = [
         "# Pitcher K Outcome Dataset Summary",
         "",
@@ -1804,6 +1879,8 @@ def render_summary(summary: dict[str, Any]) -> str:
         f"- Clean graded picks reconciled: `{summary.get('matched_pick_rows', 0)}/{summary.get('graded_pick_rows', 0)}`",
         f"- Unique side fallback reconciliations: `{summary.get('unique_side_fallback_matches', 0)}`",
         f"- Unmatched clean graded picks: `{summary.get('unmatched_pick_rows', 0)}`",
+        f"- Archive outcomes recovered from one exact graded history row: `{archive_reconciliation.get('recovered_markets', 0)}`",
+        f"- Ambiguous archive outcome matches left excluded: `{archive_reconciliation.get('ambiguous_markets', 0)}`",
         "",
         "## Context Snapshots",
         "",
@@ -1859,13 +1936,20 @@ def build_dataset(
     market_agreement_tracker_path: Path | None = MARKET_AGREEMENT_TRACKER,
     live_market_display_path: Path | None = LIVE_MARKET_DISPLAY,
     artifact_api_url: str | None = None,
+    diagnostics: dict[str, Any] | None = None,
 ) -> list[dict[str, Any]]:
+    history_rows = _load_picks_history(PICKS_HISTORY, artifact_api_url)
+    archive_outcome_stats: dict[str, int] = {}
     markets = load_archived_markets_for_dataset(
         archive_dir,
         start_date=start_date,
         end_date=end_date,
         artifact_api_url=artifact_api_url,
+        outcome_history_rows=history_rows,
+        outcome_reconciliation_stats=archive_outcome_stats,
     )
+    if diagnostics is not None:
+        diagnostics["archive_outcome_reconciliation"] = dict(archive_outcome_stats)
     rows = build_official_close_rows(markets)
     rows = enrich_rows_with_lineup_handedness(
         rows,
@@ -1878,7 +1962,7 @@ def build_dataset(
     rows = enrich_rows_with_pick_history(
         rows,
         start_date=start_date,
-        artifact_api_url=artifact_api_url,
+        history_rows=history_rows,
     )
     rows = enrich_rows_with_market_agreement(
         rows,
