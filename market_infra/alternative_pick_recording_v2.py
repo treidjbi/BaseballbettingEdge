@@ -6,7 +6,7 @@ import math
 import json
 import time
 from datetime import datetime, timedelta, timezone
-from typing import Any
+from typing import Any, Sequence
 from zoneinfo import ZoneInfo
 
 from market_infra.alternative_pick_evaluation_proof_v2 import build_evaluation_proof_v2
@@ -340,6 +340,8 @@ def _window_state_row(row: dict[str, Any] | None) -> dict[str, Any] | None:
 def _record_alternative_pick_selection_v2_impl(
     *, writer: SupabaseMarketWriter, slate_date: str, payload: dict[str, Any],
     snapshot_rows: list[dict[str, Any]], provider_heartbeats: list[dict[str, Any]],
+    snapshot_read_complete: bool, snapshot_window_started_at: str,
+    snapshot_read_reason_codes: Sequence[str],
     observed_at: datetime, artifact_source: str, source_payload_sha256: str,
     source_artifact_byte_sha256: str, operational_pick_locks: dict[str, Any],
     market_line_build: dict[str, Any], shadow_pipeline_timing: dict[str, Any],
@@ -460,6 +462,9 @@ def _record_alternative_pick_selection_v2_impl(
             exact = build_exact_preclose_evidence_v2(
                 candidate=candidate, bindings=bindings, windows=windows,
                 snapshot_rows=snapshot_rows, provider_heartbeats=provider_heartbeats,
+                snapshot_read_complete=snapshot_read_complete,
+                snapshot_window_started_at=snapshot_window_started_at,
+                snapshot_read_reason_codes=snapshot_read_reason_codes,
                 observed_at=observed_at, source_artifact_path=APPROVED_ARTIFACT_PATH,
                 source_artifact_byte_sha256=source_artifact_byte_sha256,
             )
@@ -532,6 +537,8 @@ def _record_alternative_pick_selection_v2_impl(
 def record_alternative_pick_selection_v2(
     *, writer: SupabaseMarketWriter, slate_date: str, payload: dict[str, Any],
     snapshot_rows: list[dict[str, Any]], provider_heartbeats: list[dict[str, Any]],
+    snapshot_read_complete: bool, snapshot_window_started_at: str,
+    snapshot_read_reason_codes: Sequence[str],
     observed_at: datetime, artifact_source: str, source_payload_sha256: str,
     source_artifact_byte_sha256: str, operational_pick_locks: dict[str, Any],
     market_line_build: dict[str, Any], shadow_pipeline_timing: dict[str, Any],
@@ -542,6 +549,9 @@ def record_alternative_pick_selection_v2(
         return _record_alternative_pick_selection_v2_impl(
             writer=writer, slate_date=slate_date, payload=payload,
             snapshot_rows=snapshot_rows, provider_heartbeats=provider_heartbeats,
+            snapshot_read_complete=snapshot_read_complete,
+            snapshot_window_started_at=snapshot_window_started_at,
+            snapshot_read_reason_codes=snapshot_read_reason_codes,
             observed_at=observed_at, artifact_source=artifact_source,
             source_payload_sha256=source_payload_sha256,
             source_artifact_byte_sha256=source_artifact_byte_sha256,

@@ -80,6 +80,11 @@ def _evaluation(**overrides):
             "opportunity_bucket": "normal",
             "leash_risk_bucket": "normal",
             "pitcher_archetype_bucket": "standard",
+            "is_opener": False,
+            "starter_mismatch": False,
+            "last_pitch_count": 95,
+            "days_since_last_start": 5,
+            "workload_input_status": "complete",
             "large_edge_skepticism_flag": False,
             "anchor_labels": ["market_anchor_strict"],
             "anchor_metadata_malformed": False,
@@ -559,6 +564,10 @@ def test_v2_real_selector_pending_dependencies_build_selection_safe_proof():
             "season_k9": 9.4,
             "recent_k9": 9.7,
             "career_k9": 9.1,
+            "is_opener": False,
+            "starter_mismatch": False,
+            "last_pitch_count": 95,
+            "days_since_last_start": 5,
         },
         pick={
             "side": "over",
@@ -678,6 +687,69 @@ def test_v2_validator_fails_closed_for_malformed_normalized_scalar_types(
 ):
     proof = copy.deepcopy(_build().proof)
     proof["normalized_inputs"][field] = malformed_value
+
+    valid, reasons = proof_v2.validate_evaluation_proof_v2(proof=proof)
+
+    assert valid is False
+    assert "evaluation_proof_semantics_mismatch" in reasons
+
+
+def test_v2_proof_requires_workload_inputs_with_exact_scalar_contracts():
+    workload_fields = {
+        "is_opener", "starter_mismatch", "last_pitch_count",
+        "days_since_last_start", "workload_input_status",
+    }
+    assert workload_fields.issubset(proof_v2.NORMALIZED_INPUT_FIELDS)
+
+    for field in workload_fields:
+        proof = copy.deepcopy(_build().proof)
+        proof["normalized_inputs"].pop(field)
+        valid, reasons = proof_v2.validate_evaluation_proof_v2(proof=proof)
+        assert valid is False
+        assert "evaluation_proof_semantics_mismatch" in reasons
+
+    malformed_values = {
+        "is_opener": 0,
+        "starter_mismatch": "false",
+        "last_pitch_count": True,
+        "days_since_last_start": -1,
+        "workload_input_status": "unknown",
+    }
+    for field, malformed in malformed_values.items():
+        proof = copy.deepcopy(_build().proof)
+        proof["normalized_inputs"][field] = malformed
+        valid, reasons = proof_v2.validate_evaluation_proof_v2(proof=proof)
+        assert valid is False
+        assert "evaluation_proof_semantics_mismatch" in reasons
+
+
+@pytest.mark.parametrize(
+    ("status", "reason"),
+    (
+        ("missing", "workload_inputs_missing"),
+        ("malformed", "workload_inputs_malformed"),
+    ),
+)
+def test_v2_proof_recomputes_incomplete_workload_as_pending(status, reason):
+    proof = copy.deepcopy(_build().proof)
+    proof["normalized_inputs"]["is_opener"] = None
+    proof["normalized_inputs"]["workload_input_status"] = status
+
+    expected, _ = proof_v2._recompute_semantics(
+        proof["normalized_inputs"], proof["preclose"],
+    )
+
+    assert expected["family_states"]["base"] == {
+        "state": "pending", "reason_codes": [reason],
+    }
+    assert expected["family_states"]["reentry"] == {
+        "state": "pending", "reason_codes": [reason],
+    }
+
+
+def test_v2_proof_rejects_changed_raw_workload_without_matching_decision():
+    proof = copy.deepcopy(_build().proof)
+    proof["normalized_inputs"]["last_pitch_count"] = None
 
     valid, reasons = proof_v2.validate_evaluation_proof_v2(proof=proof)
 

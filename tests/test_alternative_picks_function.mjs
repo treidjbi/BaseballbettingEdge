@@ -185,7 +185,9 @@ function v2Proof(row, overrides = {}) {
       model_market_relationship: 'model_agrees_with_favorite', model_no_vig_gap: 0.031,
       edge: 0.035, adjusted_ev: 0.09, adjusted_ev_error: null,
       quality_gate_level: 'clean', opportunity_bucket: 'normal', leash_risk_bucket: 'normal',
-      pitcher_archetype_bucket: 'standard', large_edge_skepticism_flag: false,
+      pitcher_archetype_bucket: 'standard', is_opener: false, starter_mismatch: false,
+      last_pitch_count: 95, days_since_last_start: 5, workload_input_status: 'complete',
+      large_edge_skepticism_flag: false,
       anchor_labels: ['market_anchor_strict'], anchor_metadata_malformed: false,
       observed_at: '2026-07-21T20:10:00Z',
     },
@@ -836,6 +838,21 @@ test('alternative-picks accepts the complete canonical v2 proof fixture', async 
   } finally { fake.restore(); restoreEnv(); }
 });
 
+test('alternative-picks v2 proof binds complete workload inputs', async () => {
+  configure();
+  const row = v2FreshProvisionalState();
+  const installed = installFetch({ stateRows: [row] });
+  try {
+    const response = await handler({ httpMethod: 'GET', queryStringParameters: { bundle_version: 'v2' } });
+    const payload = JSON.parse(response.body);
+    assert.equal(payload.status, 'ready');
+    assert.equal(payload.rows.length, 1);
+  } finally {
+    installed.restore();
+    restoreEnv();
+  }
+});
+
 test('alternative-picks rejects Python-invalid normalized scalar types per row', async t => {
   for (const [field, value] of [
     ['adjusted_ev', '0.09'],
@@ -1005,5 +1022,138 @@ test('alternative-picks keeps old client to new endpoint on the v1 contract', as
     assert.equal(response.json.selector_fingerprint, MANIFEST_FINGERPRINT);
     assert.equal(response.json.rows.length, 1);
     assert.equal(Object.hasOwn(response.json.rows[0], 'decision_proof'), false);
+  } finally { fake.restore(); restoreEnv(); }
+});
+
+test('alternative-picks v2 prefers one valid frozen row over the same provisional candidate', async () => {
+  const provisional = v2FreshProvisionalState();
+  const frozen = v2FreshProvisionalState({
+    checkpoint: 'frozen_pregame',
+    frozen_at: '2026-07-21T20:00:00Z',
+    lock_dedupe_key: '2026-07-21:test pitcher:over',
+    lock_artifact_sha256: LOCK_SHA,
+    lock_source_artifact_path: LOCK_URL,
+    locked_at: '2026-07-21T20:00:00Z',
+    should_lock_at: '2026-07-21T20:00:00Z',
+    minutes_until_start: 60,
+    lock_status: 'due_now',
+  });
+  configure();
+  const fake = installFetch({
+    stateRows: [provisional, frozen],
+    lockRows: [matchingLock(frozen)],
+  });
+  try {
+    const response = await responseJson(event({ bundle_version: 'v2' }));
+    assert.equal(response.json.rows.length, 1);
+    assert.equal(response.json.rows[0].checkpoint, 'frozen_pregame');
+  } finally { fake.restore(); restoreEnv(); }
+});
+
+test('alternative-picks v2 does not let an invalid frozen row suppress a valid provisional row', async () => {
+  const provisional = v2FreshProvisionalState();
+  const invalidFrozen = v2FreshProvisionalState({
+    checkpoint: 'frozen_pregame',
+    frozen_at: '2026-07-21T20:00:00Z',
+    lock_dedupe_key: '2026-07-21:test pitcher:over',
+    lock_artifact_sha256: LOCK_SHA,
+    lock_source_artifact_path: LOCK_URL,
+    locked_at: '2026-07-21T20:00:00Z',
+    should_lock_at: '2026-07-21T20:00:00Z',
+    minutes_until_start: 60,
+    lock_status: 'due_now',
+    evaluation_proof: null,
+  });
+  configure();
+  const fake = installFetch({
+    stateRows: [invalidFrozen, provisional],
+    lockRows: [matchingLock(invalidFrozen)],
+  });
+  try {
+    const response = await responseJson(event({ bundle_version: 'v2' }));
+    assert.equal(response.json.rows.length, 1);
+    assert.equal(response.json.rows[0].checkpoint, 'provisional');
+  } finally { fake.restore(); restoreEnv(); }
+});
+
+test('alternative-picks v2 suppresses same-priority conflicting public rows for one candidate', async () => {
+  const first = v2FreshProvisionalState();
+  const conflicting = v2FreshProvisionalState({ pitcher: 'Conflicting Display Name' });
+  configure();
+  const fake = installFetch({ stateRows: [first, conflicting] });
+  try {
+    const response = await responseJson(event({ bundle_version: 'v2' }));
+    assert.deepEqual(response.json.rows, []);
+  } finally { fake.restore(); restoreEnv(); }
+});
+
+test('alternative-picks v2 rejects PASS even when the proof and row agree', async () => {
+  const familyStates = {
+    base: { state: 'disagree', reason_codes: ['base_predicate_false'] },
+    anchor: { state: 'agree', reason_codes: ['market_anchor_v2_confirmed'] },
+    preclose: { state: 'disagree', reason_codes: ['preclose_not_supported'] },
+    reentry: { state: 'disagree', reason_codes: ['reentry_predicate_false'] },
+  };
+  const state = v2FreshProvisionalState({
+    official_verdict: 'PASS',
+    lane: null,
+    selector_id: null,
+    selection_status: 'not_selected',
+    family_states: familyStates,
+    family_count: 1,
+  });
+  state.evaluation_proof.decision = {
+    ...state.evaluation_proof.decision,
+    support: 'true',
+    drag_core: 'false',
+    no_drag: 'true',
+    family_states: familyStates,
+    consensus_core: 'false',
+    reentry_expansion: 'false',
+    selected_lane: null,
+    selection_status: 'not_selected',
+    family_count: 1,
+    maximum_family_count: 1,
+    decisive_families: ['anchor'],
+    preclose_required_for_selected_lane: false,
+  };
+  configure();
+  const fake = installFetch({ stateRows: [state] });
+  try {
+    const response = await responseJson(event({ bundle_version: 'v2' }));
+    assert.deepEqual(response.json.rows, []);
+  } finally { fake.restore(); restoreEnv(); }
+});
+
+test('alternative-picks v1 preserves PASS and does not coalesce checkpoints', async () => {
+  const provisional = provisionalState({ official_verdict: 'PASS' });
+  const frozen = frozenState({ official_verdict: 'PASS' });
+  configure();
+  const fake = installFetch({
+    stateRows: [provisional, frozen],
+    lockRows: [matchingLock(frozen)],
+  });
+  try {
+    const response = await responseJson(event());
+    assert.equal(response.json.bundle_id, V1_BUNDLE_ID);
+    assert.equal(response.json.rows.length, 2);
+    assert.deepEqual(response.json.rows.map(row => row.official_verdict), ['PASS', 'PASS']);
+  } finally { fake.restore(); restoreEnv(); }
+});
+
+test('alternative-picks v2 omits raw top-level reasons but retains sanitized decision evidence', async () => {
+  const state = v2FreshProvisionalState({
+    reason_codes: ['internal_database_probe'],
+  });
+  configure();
+  const fake = installFetch({ stateRows: [state] });
+  try {
+    const response = await responseJson(event({ bundle_version: 'v2' }));
+    assert.equal(response.json.rows.length, 1);
+    const [publicRow] = response.json.rows;
+    assert.equal(Object.hasOwn(publicRow, 'reason_codes'), false);
+    assert.deepEqual(publicRow.family_states, state.family_states);
+    assert.equal(publicRow.decision_proof.lane_states.consensus_core, 'true');
+    assert.equal(JSON.stringify(response.json).includes('internal_database_probe'), false);
   } finally { fake.restore(); restoreEnv(); }
 });

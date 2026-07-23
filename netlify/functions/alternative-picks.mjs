@@ -37,14 +37,15 @@ const NORMALIZED_INPUT_FIELDS = new Set([
   'bet_timing_window', 'model_market_relationship', 'model_no_vig_gap', 'edge',
   'adjusted_ev', 'adjusted_ev_error', 'quality_gate_level', 'opportunity_bucket',
   'leash_risk_bucket', 'pitcher_archetype_bucket', 'large_edge_skepticism_flag',
-  'anchor_labels', 'anchor_metadata_malformed', 'observed_at',
+  'is_opener', 'starter_mismatch', 'last_pitch_count', 'days_since_last_start',
+  'workload_input_status', 'anchor_labels', 'anchor_metadata_malformed', 'observed_at',
 ]);
 const NORMALIZED_TEXT_FIELDS = new Set([
   'side', 'official_verdict', 'source_fire_verdict', 'pitcher', 'game_time',
   'line_bucket', 'official_book', 'price_sign', 'bet_timing_window',
   'model_market_relationship', 'adjusted_ev_error', 'quality_gate_level',
   'opportunity_bucket', 'leash_risk_bucket', 'pitcher_archetype_bucket',
-  'observed_at',
+  'workload_input_status', 'observed_at',
 ]);
 const NORMALIZED_NUMBER_FIELDS = new Set([
   'k_line', 'model_no_vig_gap', 'edge', 'adjusted_ev',
@@ -53,6 +54,8 @@ const NORMALIZED_INTEGER_FIELDS = new Set(['odds']);
 const NORMALIZED_BOOLEAN_FIELDS = new Set([
   'large_edge_skepticism_flag', 'anchor_metadata_malformed',
 ]);
+const NORMALIZED_NULLABLE_BOOLEAN_FIELDS = new Set(['is_opener', 'starter_mismatch']);
+const NORMALIZED_NULLABLE_INTEGER_FIELDS = new Set(['last_pitch_count', 'days_since_last_start']);
 const ROW_BINDING_INPUT_FIELDS = new Set([
   'side', 'pitcher', 'game_time', 'k_line', 'odds', 'official_book', 'official_verdict',
 ]);
@@ -72,6 +75,7 @@ const PROOF_WEIGHTS = Object.freeze({
 const LOCK_STATUSES = new Set(['due_now', 'missed_lock']);
 const EVIDENCE_FRESHNESS = new Set(['fresh', 'pending']);
 const OFFICIAL_VERDICTS = new Set(['PASS', 'LEAN', 'FIRE 1u', 'FIRE 2u']);
+const V2_OFFICIAL_VERDICTS = new Set(['LEAN', 'FIRE 1u', 'FIRE 2u']);
 const SUPPORTED_BOOKS = new Set(['fanduel', 'draftkings', 'betmgm', 'betrivers', 'kalshi', 'caesars', 'thescore']);
 const MLB_TEAM_CODES = new Map([
   ['arizona diamondbacks', 'ARI'], ['athletics', 'OAK'], ['oakland athletics', 'OAK'],
@@ -352,8 +356,25 @@ function boundedNormalizedInputs(value) {
       if (item !== null && (typeof item !== 'number' || !Number.isInteger(item))) return null;
     } else if (NORMALIZED_BOOLEAN_FIELDS.has(field)) {
       if (typeof item !== 'boolean') return null;
+    } else if (NORMALIZED_NULLABLE_BOOLEAN_FIELDS.has(field)) {
+      if (item !== null && typeof item !== 'boolean') return null;
+    } else if (NORMALIZED_NULLABLE_INTEGER_FIELDS.has(field)) {
+      if (item !== null && (typeof item !== 'number' || !Number.isInteger(item))) return null;
     } else return null;
   }
+  const workloadValues = [
+    output.is_opener, output.starter_mismatch,
+    output.last_pitch_count, output.days_since_last_start,
+  ];
+  if (!['complete', 'missing', 'malformed'].includes(output.workload_input_status)) return null;
+  if (output.workload_input_status === 'complete'
+      && (typeof output.is_opener !== 'boolean'
+        || typeof output.starter_mismatch !== 'boolean'
+        || !Number.isInteger(output.last_pitch_count) || output.last_pitch_count < 0
+        || !Number.isInteger(output.days_since_last_start) || output.days_since_last_start < 0)) return null;
+  if (output.workload_input_status !== 'complete'
+      && !workloadValues.some(item => item === null)
+      && ![output.last_pitch_count, output.days_since_last_start].some(item => Number.isInteger(item) && item < 0)) return null;
   return output;
 }
 
@@ -497,7 +518,9 @@ function precloseScore(inputs, preclose) {
 }
 
 function recomputeDecision(inputs, preclose) {
-  const base = strongBaseVote(inputs);
+  const workloadReason = `workload_inputs_${inputs.workload_input_status}`;
+  const base = inputs.workload_input_status === 'complete'
+    ? strongBaseVote(inputs) : familyVote('pending', [workloadReason]);
   const { strict, anchor } = anchorVotes(inputs, base);
   let scored = null;
   let rawPreclose;
@@ -511,7 +534,8 @@ function recomputeDecision(inputs, preclose) {
   const precloseVote = precloseValue == null
     ? familyVote('pending', [...(rawPreclose.state === 'pending' ? rawPreclose.reason_codes : base.reason_codes)])
     : composeVote(precloseValue, 'preclose_v2_confirmed', 'preclose_not_supported', 'preclose_dependency_pending');
-  const reentry = moderateReentryVote(inputs);
+  const reentry = inputs.workload_input_status === 'complete'
+    ? moderateReentryVote(inputs) : familyVote('pending', [workloadReason]);
   const families = { base, anchor, preclose: precloseVote, reentry };
   const support = triOr(familyTri(base), familyTri(strict));
   const highEdge = typeof inputs.edge === 'number' ? inputs.edge >= PROOF_THRESHOLDS.edgeHigh : null;
@@ -764,7 +788,6 @@ function responseRow(row, contract, { artifactAdvancedAfterFreeze, decisionProof
     family_states: safeFamilyStates(row.family_states),
     family_count: integer(row.family_count) ?? 0,
     checkpoint: text(row.checkpoint),
-    reason_codes: safeReasonCodes(row.reason_codes),
     source_artifact_generated_at: timestamp(row.source_artifact_generated_at) || null,
     evidence_observation_count: integer(row.evidence_observation_count) ?? 0,
     evidence_first_observed_at: timestamp(row.evidence_first_observed_at) || null,
@@ -776,6 +799,7 @@ function responseRow(row, contract, { artifactAdvancedAfterFreeze, decisionProof
     lock_status: text(row.lock_status),
     artifact_advanced_after_freeze: artifactAdvancedAfterFreeze,
   };
+  if (!contract.requiresProof) output.reason_codes = safeReasonCodes(row.reason_codes);
   if (contract.requiresProof) output.decision_proof = decisionProof;
   return output;
 }
@@ -808,12 +832,35 @@ function validStateBase(row, slateDate, contract) {
     && number(row.model_k_line) != null
     && validSelectionIdentity(row, contract)
     && validHash(row.selector_fingerprint) === contract.selectorFingerprint
-    && integer(row.official_odds) != null && supportedBook(row.official_book) && OFFICIAL_VERDICTS.has(text(row.official_verdict))
+    && integer(row.official_odds) != null && supportedBook(row.official_book)
+    && (contract.requiresProof ? V2_OFFICIAL_VERDICTS : OFFICIAL_VERDICTS).has(text(row.official_verdict))
     && SELECTION_STATUSES.has(text(row.selection_status))
     && integer(row.family_count) != null && integer(row.family_count) >= 0
     && integer(row.evidence_observation_count) != null && integer(row.evidence_observation_count) >= 0
     && familyStates != null && reasons != null && EVIDENCE_FRESHNESS.has(text(row.evidence_freshness_status))
     && validHash(row.source_artifact_sha256) && validHash(row.source_artifact_byte_sha256);
+}
+
+function coalesceV2Visible(items) {
+  const byCandidate = new Map();
+  for (const item of items) {
+    const candidateIdentity = text(item.row.candidate_identity);
+    const priority = text(item.row.checkpoint) === 'frozen_pregame' ? 2 : 1;
+    const current = byCandidate.get(candidateIdentity);
+    if (!current || priority > current.priority) {
+      byCandidate.set(candidateIdentity, {
+        priority,
+        response: item.response,
+        ambiguous: false,
+      });
+      continue;
+    }
+    if (priority < current.priority || current.ambiguous) continue;
+    if (!jsonEqual(current.response, item.response)) current.ambiguous = true;
+  }
+  return [...byCandidate.values()]
+    .filter(item => !item.ambiguous)
+    .map(item => item.response);
 }
 
 function validCanonical(row, slateDate) {
@@ -947,18 +994,27 @@ export async function handler(event = {}) {
       params: { select: LOCK_SELECT, slate_date: `eq.${slateDate}`, dedupe_key: lockFilter(dedupeKeys), limit: String(dedupeKeys.length) },
     }) : [];
     const lockByKey = new Map(locks.map(lock => [text(lock.dedupe_key), lock]));
-    const visible = rows.flatMap(({ row, decisionProof }) => {
+    const visibleItems = rows.flatMap(({ row, decisionProof }) => {
       if (text(row.checkpoint) === 'provisional') {
         return provisionalIsCurrent(row, artifact, contract)
-          ? [responseRow(row, contract, { artifactAdvancedAfterFreeze: false, decisionProof })] : [];
+          ? [{
+            row,
+            response: responseRow(row, contract, { artifactAdvancedAfterFreeze: false, decisionProof }),
+          }] : [];
       }
       const lock = lockByKey.get(text(row.lock_dedupe_key));
       if (!lockMatchesFrozenRow(row, lock, artifact)) return [];
-      return [responseRow(row, contract, {
-        artifactAdvancedAfterFreeze: validHash(row.source_artifact_sha256) !== artifact.payloadSha,
-        decisionProof,
-      })];
+      return [{
+        row,
+        response: responseRow(row, contract, {
+          artifactAdvancedAfterFreeze: validHash(row.source_artifact_sha256) !== artifact.payloadSha,
+          decisionProof,
+        }),
+      }];
     });
+    const visible = contract.requiresProof
+      ? coalesceV2Visible(visibleItems)
+      : visibleItems.map(item => item.response);
     const counts = {
       provisional: visible.filter(row => row.checkpoint === 'provisional').length,
       frozen: visible.filter(row => row.checkpoint === 'frozen_pregame').length,

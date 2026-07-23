@@ -616,6 +616,9 @@ def build_exact_preclose_evidence_v2(
     *, candidate: Mapping[str, Any], bindings: Mapping[str, Any],
     windows: Mapping[str, Any], snapshot_rows: Sequence[Mapping[str, Any]],
     provider_heartbeats: Sequence[Mapping[str, Any]],
+    snapshot_read_complete: bool = True,
+    snapshot_window_started_at: str = "1970-01-01T00:00:00+00:00",
+    snapshot_read_reason_codes: Sequence[str] = (),
     observed_at: datetime | str, source_artifact_path: str,
     source_artifact_byte_sha256: str, stale_after_seconds: int = 900,
 ) -> ExactPrecloseResult:
@@ -623,6 +626,11 @@ def build_exact_preclose_evidence_v2(
     game_time = _utc(candidate.get("game_time"))
     official_provider = _provider(bindings.get("official_provider")) or None
     reasons: list[str] = []
+    if snapshot_read_complete is not True:
+        reasons.extend(
+            reason for reason in snapshot_read_reason_codes
+            if isinstance(reason, str) and reason
+        )
     if not bindings.get("ready") or not official_provider:
         reasons.append("official_binding_pending")
     if "duplicate_snapshot_conflict" in _values(bindings.get("reason_codes")):
@@ -633,6 +641,13 @@ def build_exact_preclose_evidence_v2(
     if not isinstance(provider_starts, Mapping):
         provider_starts = {}
         reasons.append("candidate_window_missing")
+    snapshot_window_start = _utc(snapshot_window_started_at)
+    if snapshot_window_start is None or any(
+        (provider_start := _utc(start)) is not None
+        and provider_start < snapshot_window_start
+        for start in provider_starts.values()
+    ):
+        reasons.append("snapshot_window_incomplete")
     bindings_by_provider = bindings.get("bindings_by_provider")
     if not isinstance(bindings_by_provider, Mapping):
         bindings_by_provider = {}
@@ -701,6 +716,24 @@ def build_exact_preclose_evidence_v2(
             "bookmaker_key": book, "line": line, "american_odds": odds,
             "observed_at": timestamp.isoformat(), "freshness": freshness,
         })
+
+    alternate_checkpoint_groups: dict[tuple[Any, ...], set[tuple[Any, Any]]] = {}
+    for rows in exact_event_rows.values():
+        for row in rows:
+            key = (
+                _provider(row.get("provider")),
+                _text(row.get("provider_event_id")),
+                normalize(_text(row.get("normalized_player_name") or row.get("player_name"))),
+                normalize_market_key(row.get("market_key")),
+                _side(row.get("side")),
+                normalize_book_key(row.get("bookmaker_key") or row.get("bookmaker_title")),
+                _iso(row.get("observed_at")),
+            )
+            alternate_checkpoint_groups.setdefault(key, set()).add((
+                _number(row.get("line")), _integer(row.get("american_odds")),
+            ))
+    if any(len(values) > 1 for values in alternate_checkpoint_groups.values()):
+        reasons.append("same_checkpoint_alternate_line_ambiguity")
 
     exact_event_rows = {
         provider: _coalesce_exact_checkpoints(rows)

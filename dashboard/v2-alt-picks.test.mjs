@@ -281,6 +281,28 @@ test("frozen rows require real ISO capture timestamps and known lock states", ()
   assert.equal(api.formatFreezeLabel(row({ frozen_at: "not-a-timestamp", lock_status: "unknown_lock_state" })), "Provisional");
 });
 
+test("normalizeResponse fails the whole v2 response closed when a row uses PASS", () => {
+  const { api } = load();
+  const normalized = api.normalizeResponse(payload([row({ official_verdict: "PASS" })]));
+  assert.equal(normalized.status, "unavailable");
+  assert.equal(normalized.rows.length, 0);
+});
+
+test("normalizeResponse neither requires nor copies raw top-level reason codes", () => {
+  const { api } = load();
+  const withoutReasons = row();
+  delete withoutReasons.reason_codes;
+  const acceptedWithoutReasons = api.normalizeResponse(payload([withoutReasons]));
+  assert.equal(acceptedWithoutReasons.status, "ready");
+  assert.equal(Object.hasOwn(acceptedWithoutReasons.rows[0], "reason_codes"), false);
+
+  const malicious = row({ reason_codes: ["internal_database_probe"] });
+  const acceptedMalicious = api.normalizeResponse(payload([malicious]));
+  assert.equal(acceptedMalicious.status, "ready");
+  assert.equal(Object.hasOwn(acceptedMalicious.rows[0], "reason_codes"), false);
+  assert.equal(JSON.stringify(acceptedMalicious).includes("internal_database_probe"), false);
+});
+
 test("adapter failures stay local and do not mutate official or accepted-bet state", async () => {
   const { api, window } = load({ payload: null, status: 503 });
   const data = window.V2_DATA, perf = window.V2_PERF, state = window.V2_APP_STATE, pitcher = data.pitchers[0];

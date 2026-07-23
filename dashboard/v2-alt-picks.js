@@ -15,6 +15,7 @@
   const FAMILY_STATES = new Set(["agree", "disagree", "pending"]);
   const TRI_STATES = new Set(["true", "false", "pending"]);
   const EVIDENCE_FRESHNESS = new Set(["fresh", "pending"]);
+  const OFFICIAL_VERDICTS = new Set(["LEAN", "FIRE 1u", "FIRE 2u"]);
 
   function phoenixDate() {
     const parts = new Intl.DateTimeFormat("en-CA", {
@@ -153,7 +154,8 @@
       || !CHECKPOINTS.has(checkpoint) || !familyStates) return null;
     if (!text(row.pitcher) || !text(row.team) || !text(row.opp_team)
       || !["over", "under"].includes(text(row.side).toLowerCase()) || !finite(row.model_k_line)
-      || !Number.isInteger(row.official_odds) || !text(row.official_book) || !text(row.official_verdict)) return null;
+      || !Number.isInteger(row.official_odds) || !text(row.official_book)
+      || !OFFICIAL_VERDICTS.has(text(row.official_verdict))) return null;
     if (!isoTimestamp(row.game_time) || !isoTimestamp(row.source_artifact_generated_at)) return null;
 
     const familyCount = FAMILY_KEYS.filter((name) => familyStates[name].state === "agree").length;
@@ -166,15 +168,13 @@
         || !finite(row.minutes_until_start) || !LOCK_STATUSES.has(text(row.lock_status))) return null;
     } else if (text(row.frozen_at) || text(row.should_lock_at) || row.minutes_until_start != null || text(row.lock_status)) return null;
 
-    const reasonCodes = stringList(row.reason_codes);
-    if (reasonCodes == null) return null;
     return {
       slate_date: slateDate, pitcher: text(row.pitcher), team: text(row.team), opp_team: text(row.opp_team),
       game_time: text(row.game_time), side: text(row.side).toUpperCase(), model_k_line: row.model_k_line,
       official_odds: row.official_odds, official_book: text(row.official_book), official_verdict: text(row.official_verdict),
       bundle_id: BUNDLE_ID, lane: row.lane, selector_id: row.selector_id,
       selection_status: selectionStatus, checkpoint, family_states: familyStates,
-      family_count: familyCount, decision_proof: decisionProof, reason_codes: reasonCodes,
+      family_count: familyCount, decision_proof: decisionProof,
       source_artifact_generated_at: text(row.source_artifact_generated_at), evidence_freshness_status: text(row.evidence_freshness_status),
       evidence_observation_count: row.evidence_observation_count,
       evidence_first_observed_at: text(row.evidence_first_observed_at), evidence_last_observed_at: text(row.evidence_last_observed_at),

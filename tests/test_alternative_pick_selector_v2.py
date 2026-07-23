@@ -2,6 +2,8 @@ import copy
 import itertools
 import json
 
+import pytest
+
 from market_infra import alternative_pick_selector as v1
 from market_infra import alternative_pick_selector_v2 as selector
 
@@ -24,7 +26,8 @@ def _complete_inputs(**overrides):
             "best_over_odds": -115, "best_under_odds": -105,
             "best_over_book": "FanDuel", "best_under_book": "DraftKings", "avg_ip": 5.8,
             "recent_start_count": 5, "season_k9": 9.4, "recent_k9": 9.7,
-            "career_k9": 9.1,
+            "career_k9": 9.1, "is_opener": False, "starter_mismatch": False,
+            "last_pitch_count": 95, "days_since_last_start": 5,
         },
         "pick": {
             "side": "over", "display_verdict": "FIRE 1u", "edge": 0.035,
@@ -220,12 +223,62 @@ def test_missing_v2_runtime_primitive_is_pending_not_false_or_zero():
 def test_explicit_false_and_zero_remain_distinct_from_missing():
     inputs = _complete_inputs()
     inputs["pick"]["edge"] = 0.0
+    inputs["pitcher"]["last_pitch_count"] = 0
+    inputs["pitcher"]["days_since_last_start"] = 0
     inputs["exact_evidence"]["best_is_off_market"] = False
     presence = selector.validate_runtime_primitives_v2(pitcher=inputs["pitcher"], pick=inputs["pick"], exact_evidence=inputs["exact_evidence"])
+    evaluation = selector.evaluate_alternative_pick_v2(**inputs)
     assert "edge" not in presence.missing
     assert "best_is_off_market" not in presence.missing
+    assert not {"is_opener", "starter_mismatch", "last_pitch_count", "days_since_last_start"}.intersection(
+        {*presence.missing, *presence.malformed}
+    )
     assert presence.values["edge"] == 0.0
     assert presence.values["best_is_off_market"] is False
+    assert evaluation.normalized_inputs["is_opener"] is False
+    assert evaluation.normalized_inputs["starter_mismatch"] is False
+    assert evaluation.normalized_inputs["last_pitch_count"] == 0
+    assert evaluation.normalized_inputs["days_since_last_start"] == 0
+    assert evaluation.normalized_inputs["workload_input_status"] == "complete"
+
+
+@pytest.mark.parametrize(
+    ("field", "malformed"),
+    (
+        ("is_opener", "false"),
+        ("starter_mismatch", 0),
+        ("last_pitch_count", True),
+        ("days_since_last_start", -1),
+    ),
+)
+@pytest.mark.parametrize("case", ("missing", "malformed"))
+def test_missing_or_malformed_workload_inputs_make_base_and_reentry_pending(
+    field, malformed, case,
+):
+    inputs = _complete_inputs()
+    inputs["pick"]["market_anchor_selector"] = {"labels": ["market_anchor_strict"]}
+    if case == "missing":
+        inputs["pitcher"].pop(field)
+        expected_reason = "workload_inputs_missing"
+    else:
+        inputs["pitcher"][field] = malformed
+        expected_reason = "workload_inputs_malformed"
+
+    presence = selector.validate_runtime_primitives_v2(
+        pitcher=inputs["pitcher"],
+        pick=inputs["pick"],
+        exact_evidence=inputs["exact_evidence"],
+    )
+    evaluation = selector.evaluate_alternative_pick_v2(**inputs)
+
+    assert field in getattr(presence, case)
+    assert evaluation.family_states["base"] == selector.FamilyVote(
+        "pending", (expected_reason,),
+    )
+    assert evaluation.family_states["reentry"] == selector.FamilyVote(
+        "pending", (expected_reason,),
+    )
+    assert evaluation.family_states["anchor"].state == "agree"
 
 
 def test_selector_never_uses_v1_default_coercion_for_v2_decision():

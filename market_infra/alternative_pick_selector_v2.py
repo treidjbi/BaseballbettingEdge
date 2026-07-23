@@ -179,6 +179,15 @@ def validate_runtime_primitives_v2(*, pitcher: dict[str, Any], pick: dict[str, A
     scalar("model_win_prob", pick.get("win_prob") if pick.get("win_prob") is not None else pick.get("model_win_prob"), kind="number")
     for name in ("best_over_odds", "best_under_odds", "avg_ip", "recent_start_count", "season_k9", "recent_k9", "career_k9"):
         scalar(name, pitcher.get(name), kind="number")
+    for name in ("is_opener", "starter_mismatch"):
+        scalar(name, pitcher.get(name), kind="bool")
+    for name in ("last_pitch_count", "days_since_last_start"):
+        value = pitcher.get(name)
+        values[name] = value
+        if value is None:
+            missing.append(name)
+        elif isinstance(value, bool) or not isinstance(value, int) or value < 0:
+            malformed.append(name)
 
     verdict = _first_present(pick, MANIFEST["field_precedence"]["display_verdict"])
     source_verdict = _first_present(pick, MANIFEST["field_precedence"]["source_fire_verdict"])
@@ -449,6 +458,22 @@ def evaluate_alternative_pick_v2(*, pitcher: dict[str, Any], pick: dict[str, Any
     evidence = exact_evidence if isinstance(exact_evidence, dict) else {}
     common = {"side", "edge", "k_line", "game_time", "quality_gate_level", "model_win_prob", "best_over_odds", "best_under_odds", "avg_ip", "recent_start_count", "season_k9", "recent_k9", "career_k9", "display_verdict", "source_fire_verdict", "adjusted_ev", "model_market_relationship", "large_edge_skepticism_flag"}
     features = _features_if_complete(presence, common, pitcher=pitcher, pick=pick, exact_evidence=evidence, observed_at=observed_at)
+    workload_fields = {
+        "is_opener", "starter_mismatch", "last_pitch_count", "days_since_last_start",
+    }
+    workload_status = (
+        "malformed" if workload_fields.intersection(presence.malformed)
+        else "missing" if workload_fields.intersection(presence.missing)
+        else "complete"
+    )
+    if features is not None:
+        features.update({
+            "is_opener": presence.values["is_opener"] if isinstance(presence.values["is_opener"], bool) else None,
+            "starter_mismatch": presence.values["starter_mismatch"] if isinstance(presence.values["starter_mismatch"], bool) else None,
+            "last_pitch_count": presence.values["last_pitch_count"] if isinstance(presence.values["last_pitch_count"], int) and not isinstance(presence.values["last_pitch_count"], bool) else None,
+            "days_since_last_start": presence.values["days_since_last_start"] if isinstance(presence.values["days_since_last_start"], int) and not isinstance(presence.values["days_since_last_start"], bool) else None,
+            "workload_input_status": workload_status,
+        })
     if features is not None and (
         "anchor_metadata" in presence.missing or "anchor_metadata" in presence.malformed
     ):
@@ -457,12 +482,28 @@ def evaluate_alternative_pick_v2(*, pitcher: dict[str, Any], pick: dict[str, Any
             "anchor_labels": None,
             "anchor_metadata_malformed": "anchor_metadata" in presence.malformed,
         }
-    base = _v2_family(v1.strong_base_strict_plus_selective(features)) if features is not None else FamilyVote("pending", ("base_runtime_primitives_missing",))
+    if features is None:
+        base = FamilyVote("pending", ("base_runtime_primitives_missing",))
+    elif workload_status != "complete":
+        base = FamilyVote(
+            "pending",
+            (f"workload_inputs_{workload_status}",),
+        )
+    else:
+        base = _v2_family(v1.strong_base_strict_plus_selective(features))
     strict, core = parse_anchor_primitives_v2(pick)
     anchor = compose_anchor_v2(base, strict, core)
     raw_preclose = _raw_preclose_v2(features, exact_evidence, slate_date=slate_date)
     preclose = compose_preclose_v2(base, raw_preclose)
-    reentry = _v2_family(v1.moderate_edge_quality_reentry(features)) if features is not None else FamilyVote("pending", ("reentry_runtime_primitives_missing",))
+    if features is None:
+        reentry = FamilyVote("pending", ("reentry_runtime_primitives_missing",))
+    elif workload_status != "complete":
+        reentry = FamilyVote(
+            "pending",
+            (f"workload_inputs_{workload_status}",),
+        )
+    else:
+        reentry = _v2_family(v1.moderate_edge_quality_reentry(features))
     drag_features = features if features is not None else {"edge": pick.get("edge"), "model_market_relationship": pick.get("model_market_relationship"), "source_fire_verdict": _first_present(pick, MANIFEST["field_precedence"]["source_fire_verdict"]), "side": pick.get("side")}
     no_drag = no_drag_v2(base, strict, drag_core_v2(drag_features))
     families = {"base": base, "anchor": anchor, "preclose": preclose, "reentry": reentry}

@@ -22,6 +22,8 @@ def _payload(*, verdict="LEAN", game_time="2026-07-22T23:00:00+00:00"):
             "odds_source": "therundown", "market_source_mode": "therundown",
             "line_source_provider": "therundown", "source_current_market_line_ids": [101],
             "best_over_odds": -120, "best_over_book": "fanduel",
+            "is_opener": False, "starter_mismatch": False,
+            "last_pitch_count": 95, "days_since_last_start": 5,
             "ev_over": {"verdict": "FIRE 1u", "adj_ev": 0.09, "edge": 0.05},
             "tracked_picks": [{
                 "pitcher": "Tarik Skubal", "side": "over",
@@ -57,6 +59,9 @@ def _record(writer, payload=None, **overrides):
     kwargs = dict(
         writer=writer, slate_date="2026-07-22", payload=payload or _payload(),
         snapshot_rows=[], provider_heartbeats=[], observed_at=NOW,
+        snapshot_read_complete=True,
+        snapshot_window_started_at="2026-07-22T08:10:00+00:00",
+        snapshot_read_reason_codes=(),
         artifact_source="https://example/get-artifact?type=today",
         source_payload_sha256="a" * 64, source_artifact_byte_sha256="b" * 64,
         operational_pick_locks={"skipped": True, "reason": "disabled"},
@@ -107,6 +112,94 @@ def test_v2_writer_batches_existing_state_locks_and_current_lines_once_each(monk
     assert tables.count("alternative_pick_selection_state") == 1
     assert tables.count("operational_pick_locks") == 1
     assert tables.count("current_market_lines") == 1
+
+
+def test_v2_incomplete_snapshot_read_still_records_with_pending_preclose(monkeypatch):
+    captured = {}
+    monkeypatch.setattr(recording, "resolve_candidate_bindings_v2", lambda **kwargs: {
+        "ready": True,
+    })
+    monkeypatch.setattr(recording, "resolve_candidate_windows_v2", lambda **kwargs: {
+        "ready": True,
+        "candidate_became_current_at": "2026-07-22T19:55:00+00:00",
+        "provider_window_started_at": {"therundown": "2026-07-22T19:55:00+00:00"},
+    })
+
+    def build_exact(**kwargs):
+        captured["snapshot_contract"] = {
+            key: kwargs[key]
+            for key in (
+                "snapshot_read_complete", "snapshot_window_started_at",
+                "snapshot_read_reason_codes",
+            )
+        }
+        return Mock(
+            market_evidence={
+                "freshness_status": "pending",
+                "aggregation_reason_codes": ["snapshot_page_cap_reached"],
+            },
+            evidence_window={"reason_codes": ("snapshot_page_cap_reached",)},
+            proof_fragment={
+                "exact_preclose": {"reason_codes": ["snapshot_page_cap_reached"]},
+            },
+        )
+
+    monkeypatch.setattr(recording, "build_exact_preclose_evidence_v2", build_exact)
+    monkeypatch.setattr(
+        recording,
+        "evaluate_alternative_pick_v2",
+        lambda **kwargs: Mock(
+            eligible=True, selection_status="selected", lane="consensus_core",
+            family_states={
+                "preclose": Mock(
+                    state="pending", reason_codes=("snapshot_page_cap_reached",),
+                ),
+            },
+        ),
+    )
+
+    def build_proof(**kwargs):
+        captured["proof_reason_codes"] = kwargs["exact_preclose"].proof_fragment[
+            "exact_preclose"
+        ]["reason_codes"]
+        return Mock()
+
+    monkeypatch.setattr(recording, "build_evaluation_proof_v2", build_proof)
+    monkeypatch.setattr(
+        recording,
+        "build_provisional_row_v2",
+        lambda **kwargs: {
+            **kwargs["candidate"],
+            "bundle_id": recording.BUNDLE_ID,
+            "checkpoint": "provisional",
+            "selection_status": "selected",
+            "lane": "consensus_core",
+            "observed_at": NOW.isoformat(),
+            "source_artifact_byte_sha256": "b" * 64,
+            "official_odds": -120,
+            "official_book": "fanduel",
+            "lock_source_artifact_path": None,
+            "evaluation_proof": {
+                "preclose": {"reason_codes": ["snapshot_page_cap_reached"]},
+            },
+        },
+    )
+
+    writer = Writer()
+    result = _record(
+        writer,
+        snapshot_read_complete=False,
+        snapshot_window_started_at="2026-07-22T19:50:00+00:00",
+        snapshot_read_reason_codes=("snapshot_page_cap_reached",),
+    )
+
+    assert result["rows"] == 1
+    assert captured["snapshot_contract"] == {
+        "snapshot_read_complete": False,
+        "snapshot_window_started_at": "2026-07-22T19:50:00+00:00",
+        "snapshot_read_reason_codes": ("snapshot_page_cap_reached",),
+    }
+    assert captured["proof_reason_codes"] == ["snapshot_page_cap_reached"]
 
 
 def test_v2_writer_uses_only_tracked_non_pass_current_artifact_candidates():

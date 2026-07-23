@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import inspect
 from copy import deepcopy
+from itertools import permutations
 
 import pytest
 
@@ -17,6 +18,7 @@ TR_LATER = "33333333-3333-4333-8333-333333333333"
 PL_OVER = "44444444-4444-4444-8444-444444444444"
 PL_LATER = "55555555-5555-4555-8555-555555555555"
 TR_REVERSAL = "77777777-7777-4777-8777-777777777777"
+TR_ALTERNATE = "88888888-8888-4888-8888-888888888888"
 
 
 def _candidate(**overrides):
@@ -136,6 +138,9 @@ def _build(rows=None, bindings=None, windows=None, **overrides):
     args = {
         "candidate": _candidate(), "bindings": bindings, "windows": windows,
         "snapshot_rows": rows, "provider_heartbeats": [], "observed_at": OBSERVED_AT,
+        "snapshot_read_complete": True,
+        "snapshot_window_started_at": "2026-07-22T12:10:00+00:00",
+        "snapshot_read_reason_codes": (),
         "source_artifact_path": "dashboard/data/processed/today.json",
         "source_artifact_byte_sha256": "b" * 64,
     }
@@ -151,6 +156,44 @@ def test_v2_binding_uses_explicit_line_source_provider_and_current_line_mapping(
     assert bindings["official_binding"]["provider_event_id"] == "tr-event"
     assert bindings["official_binding"]["current_line_ids"] == ["101"]
     assert bindings["official_binding"]["seed_snapshot_ids"] == [TR_OVER]
+
+
+def test_v2_same_checkpoint_alternate_line_ambiguity_is_order_independent():
+    rows = [
+        _snapshot(TR_OVER, "therundown", "tr-event", -105, "2026-07-22T20:00:00+00:00"),
+        _snapshot(
+            TR_ALTERNATE, "therundown", "tr-event", -110,
+            "2026-07-22T20:00:00+00:00", line=7.5,
+        ),
+        _snapshot(TR_LATER, "therundown", "tr-event", -120, "2026-07-22T20:06:00+00:00"),
+    ]
+    pitcher = _pitcher(source_current_market_line_ids=[101])
+    current_lines = {"101": _line(101, "therundown", "tr-event", TR_OVER)}
+
+    for ordered in permutations(rows):
+        bindings = _bindings(
+            rows=list(ordered), pitcher=pitcher, current_lines=current_lines,
+        )
+        result = _build(
+            rows=list(ordered), bindings=bindings, windows=_windows(bindings),
+        )
+        assert result.market_evidence["freshness_status"] == "pending"
+        assert "same_checkpoint_alternate_line_ambiguity" in (
+            result.market_evidence["aggregation_reason_codes"]
+        )
+        assert "same_checkpoint_alternate_line_ambiguity" in (
+            result.proof_fragment["exact_preclose"]["reason_codes"]
+        )
+
+
+def test_v2_candidate_window_before_snapshot_lookback_is_pending():
+    result = _build(
+        snapshot_window_started_at="2026-07-22T20:00:00+00:00",
+    )
+
+    assert result.market_evidence["freshness_status"] == "pending"
+    assert "snapshot_window_incomplete" in result.market_evidence["aggregation_reason_codes"]
+    assert "snapshot_window_incomplete" in result.proof_fragment["exact_preclose"]["reason_codes"]
 
 
 def test_v2_does_not_infer_official_provider_from_combined_posture():
@@ -634,7 +677,7 @@ def test_v2_same_book_same_timestamp_duplicates_cannot_satisfy_provider_maturity
 
 
 @pytest.mark.parametrize("reverse_input", [False, True])
-def test_v2_conflicting_same_timestamp_prices_are_neutral_not_uuid_ordered(reverse_input):
+def test_v2_conflicting_same_timestamp_prices_are_pending_not_uuid_ordered(reverse_input):
     same_time_second = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa"
     fanduel_later = "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb"
     draftkings_first = "cccccccc-cccc-4ccc-8ccc-cccccccccccc"
@@ -662,10 +705,10 @@ def test_v2_conflicting_same_timestamp_prices_are_neutral_not_uuid_ordered(rever
 
     result = _build(rows=rows, bindings=bindings, windows=_windows(bindings))
 
-    assert result.market_evidence["freshness_status"] == "fresh"
-    assert result.market_evidence["toward_pick_count"] == 1
-    assert result.market_evidence["away_from_pick_count"] == 0
-    assert result.market_evidence["reversal_book_count"] == 0
+    assert result.market_evidence["freshness_status"] == "pending"
+    assert "same_checkpoint_alternate_line_ambiguity" in (
+        result.market_evidence["aggregation_reason_codes"]
+    )
     assert result.proof_fragment["exact_preclose"]["direction_change_pivot_tokens"] == []
 
 
@@ -726,6 +769,7 @@ def test_v2_exact_checkpoint_conflicts_are_permutation_invariant_for_ladder_and_
         ladder = result.proof_fragment["exact_preclose"]["ladder"]
         results.append({
             "freshness_status": result.market_evidence["freshness_status"],
+            "reason_codes": result.market_evidence["aggregation_reason_codes"],
             "toward_pick_count": result.market_evidence["toward_pick_count"],
             "away_from_pick_count": result.market_evidence["away_from_pick_count"],
             "reversal_book_count": result.market_evidence["reversal_book_count"],
@@ -740,10 +784,8 @@ def test_v2_exact_checkpoint_conflicts_are_permutation_invariant_for_ladder_and_
         })
 
     assert all(result == results[0] for result in results[1:])
-    assert results[0]["freshness_status"] == "fresh"
-    assert results[0]["toward_pick_count"] == 1
-    assert results[0]["away_from_pick_count"] == 0
-    assert results[0]["reversal_book_count"] == 0
+    assert results[0]["freshness_status"] == "pending"
+    assert "same_checkpoint_alternate_line_ambiguity" in results[0]["reason_codes"]
     assert all(token.split(":", 1)[1] not in {conflict_a, conflict_b} for token in results[0]["movement_observation_ids"])
 
 

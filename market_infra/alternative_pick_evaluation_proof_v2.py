@@ -37,14 +37,15 @@ NORMALIZED_INPUT_FIELDS = (
     "bet_timing_window", "model_market_relationship", "model_no_vig_gap", "edge",
     "adjusted_ev", "adjusted_ev_error", "quality_gate_level", "opportunity_bucket",
     "leash_risk_bucket", "pitcher_archetype_bucket", "large_edge_skepticism_flag",
-    "anchor_labels", "anchor_metadata_malformed", "observed_at",
+    "is_opener", "starter_mismatch", "last_pitch_count", "days_since_last_start",
+    "workload_input_status", "anchor_labels", "anchor_metadata_malformed", "observed_at",
 )
 NORMALIZED_TEXT_INPUT_FIELDS = frozenset({
     "side", "official_verdict", "source_fire_verdict", "pitcher", "game_time",
     "line_bucket", "official_book", "price_sign", "bet_timing_window",
     "model_market_relationship", "adjusted_ev_error", "quality_gate_level",
     "opportunity_bucket", "leash_risk_bucket", "pitcher_archetype_bucket",
-    "observed_at",
+    "workload_input_status", "observed_at",
 })
 NORMALIZED_NUMBER_INPUT_FIELDS = frozenset({
     "k_line", "model_no_vig_gap", "edge", "adjusted_ev",
@@ -52,6 +53,12 @@ NORMALIZED_NUMBER_INPUT_FIELDS = frozenset({
 NORMALIZED_INTEGER_INPUT_FIELDS = frozenset({"odds"})
 NORMALIZED_BOOLEAN_INPUT_FIELDS = frozenset({
     "large_edge_skepticism_flag", "anchor_metadata_malformed",
+})
+NORMALIZED_NULLABLE_BOOLEAN_INPUT_FIELDS = frozenset({
+    "is_opener", "starter_mismatch",
+})
+NORMALIZED_NULLABLE_INTEGER_INPUT_FIELDS = frozenset({
+    "last_pitch_count", "days_since_last_start",
 })
 ROW_BINDING_INPUT_FIELDS = (
     "side", "pitcher", "game_time", "k_line", "odds", "official_book",
@@ -426,8 +433,40 @@ def _bounded_normalized_inputs(raw: Mapping[str, Any]) -> dict[str, Any]:
         elif field in NORMALIZED_BOOLEAN_INPUT_FIELDS:
             if not isinstance(value, bool):
                 raise ValueError("normalized proof Boolean input has an invalid type")
+        elif field in NORMALIZED_NULLABLE_BOOLEAN_INPUT_FIELDS:
+            if value is not None and not isinstance(value, bool):
+                raise ValueError("normalized proof nullable Boolean input has an invalid type")
+        elif field in NORMALIZED_NULLABLE_INTEGER_INPUT_FIELDS:
+            if value is not None and (
+                isinstance(value, bool) or not isinstance(value, int)
+            ):
+                raise ValueError("normalized proof nullable integer input has an invalid type")
         else:
             raise ValueError("normalized proof input field has no type contract")
+    workload_status = normalized["workload_input_status"]
+    workload_values = (
+        normalized["is_opener"], normalized["starter_mismatch"],
+        normalized["last_pitch_count"], normalized["days_since_last_start"],
+    )
+    if workload_status not in {"complete", "missing", "malformed"}:
+        raise ValueError("normalized proof workload status is invalid")
+    if workload_status == "complete" and (
+        not isinstance(workload_values[0], bool)
+        or not isinstance(workload_values[1], bool)
+        or any(
+            isinstance(value, bool) or not isinstance(value, int) or value < 0
+            for value in workload_values[2:]
+        )
+    ):
+        raise ValueError("complete workload proof inputs are invalid")
+    if workload_status != "complete" and not (
+        any(value is None for value in workload_values)
+        or any(
+            isinstance(value, int) and not isinstance(value, bool) and value < 0
+            for value in workload_values[2:]
+        )
+    ):
+        raise ValueError("incomplete workload proof inputs lack an incomplete value")
     return normalized
 
 
@@ -533,8 +572,14 @@ def _family_payload(vote: selector_v2.FamilyVote) -> dict[str, Any]:
 def _recompute_semantics(
     normalized_inputs: Mapping[str, Any], preclose: Mapping[str, Any],
 ) -> tuple[dict[str, Any], dict[str, Any] | None]:
-    base_v1 = selector_v2.v1.strong_base_strict_plus_selective(dict(normalized_inputs))
-    base = selector_v2.FamilyVote(base_v1.state, base_v1.reason_codes)
+    workload_status = _enum(normalized_inputs.get("workload_input_status"))
+    if workload_status == "complete":
+        base_v1 = selector_v2.v1.strong_base_strict_plus_selective(dict(normalized_inputs))
+        base = selector_v2.FamilyVote(base_v1.state, base_v1.reason_codes)
+    else:
+        base = selector_v2.FamilyVote(
+            "pending", (f"workload_inputs_{workload_status}",),
+        )
     labels = normalized_inputs.get("anchor_labels")
     anchor_malformed = normalized_inputs.get("anchor_metadata_malformed") is True
     if isinstance(labels, list) and not anchor_malformed:
@@ -568,8 +613,13 @@ def _recompute_semantics(
             "pending", reasons or ("preclose_evidence_pending",),
         )
     preclose_vote = selector_v2.compose_preclose_v2(base, raw_preclose)
-    reentry_v1 = selector_v2.v1.moderate_edge_quality_reentry(dict(normalized_inputs))
-    reentry = selector_v2.FamilyVote(reentry_v1.state, reentry_v1.reason_codes)
+    if workload_status == "complete":
+        reentry_v1 = selector_v2.v1.moderate_edge_quality_reentry(dict(normalized_inputs))
+        reentry = selector_v2.FamilyVote(reentry_v1.state, reentry_v1.reason_codes)
+    else:
+        reentry = selector_v2.FamilyVote(
+            "pending", (f"workload_inputs_{workload_status}",),
+        )
     families = {
         "base": base, "anchor": anchor, "preclose": preclose_vote, "reentry": reentry,
     }
