@@ -1171,6 +1171,10 @@ test('alternative-picks accepts complete workload proofs when raw values and der
       days_since_last_start: 3,
       leash_risk_bucket: 'medium',
     }],
+    ['zero rest', {
+      days_since_last_start: 0,
+      leash_risk_bucket: 'medium',
+    }],
     ['short opportunity', {
       opportunity_bucket: 'short_leash',
       leash_risk_bucket: 'high',

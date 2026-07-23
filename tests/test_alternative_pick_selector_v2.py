@@ -240,6 +240,21 @@ def test_explicit_false_and_zero_remain_distinct_from_missing():
     assert evaluation.normalized_inputs["last_pitch_count"] == 0
     assert evaluation.normalized_inputs["days_since_last_start"] == 0
     assert evaluation.normalized_inputs["workload_input_status"] == "complete"
+    assert evaluation.normalized_inputs["leash_risk_bucket"] == "medium"
+    assert evaluation.normalized_inputs["pitcher_archetype_bucket"] == "standard_starter"
+
+
+def test_zero_rest_recomputes_v2_large_edge_skepticism_from_medium_leash():
+    inputs = _complete_inputs()
+    inputs["pitcher"]["days_since_last_start"] = 0
+    inputs["pick"]["edge"] = 0.07
+    inputs["pick"]["quality_gate_level"] = "capped"
+
+    evaluation = selector.evaluate_alternative_pick_v2(**inputs)
+
+    assert evaluation.normalized_inputs["leash_risk_bucket"] == "medium"
+    assert evaluation.normalized_inputs["pitcher_archetype_bucket"] == "standard_starter"
+    assert evaluation.normalized_inputs["large_edge_skepticism_flag"] is True
 
 
 @pytest.mark.parametrize(

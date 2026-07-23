@@ -474,6 +474,40 @@ def evaluate_alternative_pick_v2(*, pitcher: dict[str, Any], pick: dict[str, Any
             "days_since_last_start": presence.values["days_since_last_start"] if isinstance(presence.values["days_since_last_start"], int) and not isinstance(presence.values["days_since_last_start"], bool) else None,
             "workload_input_status": workload_status,
         })
+        if workload_status == "complete":
+            opportunity = _enum(features.get("opportunity_bucket"))
+            if features["is_opener"] or features["starter_mismatch"] or opportunity == "short_leash":
+                leash = "high"
+            elif features["last_pitch_count"] >= 105 or features["days_since_last_start"] < 4:
+                leash = "medium"
+            else:
+                leash = "normal"
+            archetype = v1.runtime_pitcher_archetype_bucket(
+                is_opener=features["is_opener"],
+                starter_mismatch=features["starter_mismatch"],
+                opportunity_bucket=opportunity,
+                season_k9=pitcher.get("season_k9"),
+                recent_k9=pitcher.get("recent_k9"),
+                career_k9=pitcher.get("career_k9"),
+            )
+            skepticism = bool(pick.get("large_edge_skepticism_flag"))
+            edge = _finite_number(features.get("edge"))
+            if (
+                not skepticism
+                and edge is not None
+                and edge >= float(MANIFEST["thresholds"]["edge_high_skepticism_min"])
+            ):
+                skepticism = sum((
+                    features.get("model_market_relationship") == "model_fades_favorite",
+                    leash in {"medium", "high"},
+                    opportunity == "short_leash",
+                    features.get("quality_gate_level") not in {"", "clean", "none"},
+                )) >= 2
+            features.update({
+                "leash_risk_bucket": leash,
+                "pitcher_archetype_bucket": archetype,
+                "large_edge_skepticism_flag": skepticism,
+            })
     if features is not None and (
         "anchor_metadata" in presence.missing or "anchor_metadata" in presence.malformed
     ):

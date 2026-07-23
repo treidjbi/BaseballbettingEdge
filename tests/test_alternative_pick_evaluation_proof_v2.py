@@ -723,6 +723,63 @@ def test_v2_proof_requires_workload_inputs_with_exact_scalar_contracts():
         assert "evaluation_proof_semantics_mismatch" in reasons
 
 
+def test_v2_zero_rest_flows_from_selector_through_selection_safe_proof():
+    exact = _pending_exact_preclose(("official_provider_immature", "exact_ladder_missing"))
+    exact.market_evidence["candidate_identity"] = {
+        "slate_date": "2026-07-22",
+        "game_time": GAME_TIME,
+        "pitcher": "tarik skubal",
+        "side": "over",
+        "k_line": 6.5,
+        "provider": "therundown",
+    }
+    evaluation = proof_v2.selector_v2.evaluate_alternative_pick_v2(
+        pitcher={
+            "pitcher": "Tarik Skubal",
+            "team": "DET",
+            "opp_team": "PIT",
+            "game_time": GAME_TIME,
+            "k_line": 6.5,
+            "best_over_odds": -120,
+            "best_under_odds": -105,
+            "best_over_book": "fanduel",
+            "best_under_book": "draftkings",
+            "avg_ip": 5.8,
+            "recent_start_count": 5,
+            "season_k9": 9.4,
+            "recent_k9": 9.7,
+            "career_k9": 9.1,
+            "is_opener": False,
+            "starter_mismatch": False,
+            "last_pitch_count": 95,
+            "days_since_last_start": 0,
+        },
+        pick={
+            "side": "over",
+            "display_verdict": "FIRE 1u",
+            "edge": 0.035,
+            "adj_ev": 0.09,
+            "quality_gate_level": "clean",
+            "model_win_prob": 0.56,
+            "market_anchor_selector": {"labels": ["market_anchor_strict"]},
+        },
+        exact_evidence=exact.market_evidence,
+        slate_date="2026-07-22",
+        is_tracked=True,
+        source_artifact_path="dashboard/data/processed/today.json",
+        source_payload_sha256=_artifact()["payload_sha256"],
+        source_artifact_byte_sha256="b" * 64,
+        observed_at=OBSERVED_AT,
+    )
+
+    built = _build(evaluation=evaluation, exact_preclose=exact)
+
+    assert evaluation.normalized_inputs["days_since_last_start"] == 0
+    assert evaluation.normalized_inputs["leash_risk_bucket"] == "medium"
+    assert built.selection_safe is True
+    assert proof_v2.validate_evaluation_proof_v2(proof=built.proof) == (True, ())
+
+
 @pytest.mark.parametrize(
     ("status", "reason"),
     (
