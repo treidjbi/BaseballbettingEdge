@@ -9,6 +9,7 @@ const NOW = '2026-07-21T20:10:00.000Z';
 const CURRENT_SHA = 'a'.repeat(64);
 const FROZEN_CANONICAL_SHA = 'b'.repeat(64);
 const LOCK_SHA = 'c'.repeat(64);
+const SERVED_BODY_SHA = 'd5dd3a6a1c43476d0381c2aebed9a228edbfc0d24809046b3735b2e92cf1be9b';
 const SECRET = 'service-role-secret';
 const LOCK_URL = 'https://app.example/.netlify/functions/get-artifact?type=today';
 const MANIFEST = JSON.parse(readFileSync(
@@ -82,6 +83,11 @@ function canonicalArtifact(overrides = {}) {
     source: 'render_pipeline',
     payload_date: '2026-07-21',
     payload_pitchers: [{ odds_source: 'therundown_propline', market_source_mode: 'therundown_propline' }],
+    payload: {
+      date: '2026-07-21',
+      generated_at: '2026-07-21T20:00:00Z',
+      pitchers: [{ odds_source: 'therundown_propline', market_source_mode: 'therundown_propline' }],
+    },
     artifact_path: 'dashboard/data/processed/today.json',
     ...overrides,
   };
@@ -448,6 +454,23 @@ test('alternative-picks uses canonical today first and returns only a fully link
     assert.match(fake.calls[1].href, /bundle_id=eq\.pregame_alternative_pick_methodology_v1/);
     assert.match(fake.calls[2].href, /operational_pick_locks/);
     assert.match(fake.calls[2].href, /dedupe_key=in\./);
+  } finally { fake.restore(); restoreEnv(); }
+});
+
+test('alternative-picks keeps current V2 provisional rows visible across publisher hash normalization', async () => {
+  configure();
+  const state = v2FreshProvisionalState({
+    source_artifact_generated_at: '2026-07-21T20:00:00Z',
+    source_artifact_sha256: FROZEN_CANONICAL_SHA,
+    source_artifact_byte_sha256: SERVED_BODY_SHA,
+  });
+  const fake = installFetch({ stateRows: [state] });
+  try {
+    const response = await responseJson(event({ bundle_version: 'v2' }));
+    assert.equal(response.json.status, 'ready');
+    assert.equal(response.json.generated_at, '2026-07-21T20:00:00.000Z');
+    assert.equal(response.json.rows.length, 1);
+    assert.equal(response.json.rows[0].pitcher, 'Test Pitcher');
   } finally { fake.restore(); restoreEnv(); }
 });
 

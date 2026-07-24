@@ -1580,11 +1580,106 @@ locks, accepted bets, artifact source, retention, or history.
   is generated `22:07:47Z`, has zero warnings, and every row remains
   TheRundown-sourced.
 
-The next decision remains prospective soak: observe the first new
-workload-bound V2 proof and immutable T-30 freeze on the next normal slate. That
-evidence is not a backfill requirement and does not reopen any official model,
-pick-selection, threshold, staking, provider, notification, lock, accepted-bet,
-artifact, history, retention, or source-of-truth gate.
+The next normal-slate evidence arrived on 2026-07-24:
+
+- Current-artifact linkage repair `44c54ce0` was fast-forwarded to `main` and
+  deployed only to `bbe-live-layer` as Render deploy
+  `dep-d9hq3pl7vvec73euer70`.
+- The natural `17:40:12Z` scheduled cycle completed successfully at
+  `17:41:05Z` using the remote official artifact generated `17:37:37Z`.
+- Supabase and the explicit V2 endpoint agree on 18 current provisional rows:
+  one selected, one pending, 16 not selected, zero frozen, and zero duplicate
+  candidate/checkpoint groups. Maximum proof size is `5,881` bytes.
+- The selected comparison row is Trevor Rogers OVER 4.5 at -136 FanDuel in
+  Consensus Core. The deployed Alt Picks browser shows that card and the
+  `1 selected / 18 provisional / 0 frozen` summary.
+- V2 continues to reject PASS, expose no top-level raw `reason_codes`, and
+  preserve unversioned/V1 compatibility. Isolation checks found zero Alt
+  notifications, zero Alt accepted-bet writes, zero Alt operational locks, and
+  no official artifact or provider-posture change. The served artifact remains
+  `render_pipeline` output using only TheRundown or TheRundown+PropLine rows.
+- At `18:07:59Z`, the next full publication exposed a second narrow handoff
+  gap: the publisher's original logical payload hash differed from the hash and
+  exact body bytes observed after the same JSONB payload passed through
+  `get-artifact`. The `18:10:14Z` live-layer cycle wrote all 18 current V2 rows,
+  but the endpoint correctly suppressed them until the `18:12:25Z` lock
+  publication normalized the stored logical hash. This explains the temporary
+  waiting state Tyler observed; no candidate evidence was lost.
+- Endpoint-only repair `55a36b3e` now conditionally reads the exact current
+  payload only when a proof-valid V2 provisional row misses the stored logical
+  hash. It accepts that row only when the artifact timestamp also matches and
+  the row's bound byte hash equals the exact current `get-artifact` body hash.
+  Normal matching rows, V1, frozen rows, official artifacts, publishers,
+  providers, locks, notifications, accepted bets, model behavior, and cadence
+  are unchanged. The regression was observed red before implementation; 73
+  endpoint tests and the full 168-test JavaScript suite pass.
+- Netlify production deploy `6a63ad9ffaa87100085d7ca8` is ready on exact
+  commit `55a36b3e`. The next normal refresh supplied the final live proof:
+  `today` advanced to `18:37:45Z`; the V2 recorder wrote 19 provisional rows
+  at `18:40:44Z`; and the endpoint served all 19 by `18:41:40Z`, with one
+  selected, one pending, and zero frozen. At that moment the publisher's
+  stored logical hash was still `0f329575...`, the recorder's logical hash was
+  `f3c74820...`, and the exact served-body hash matched the recorder's bound
+  byte hash `77c47747...`. The rows therefore became visible before the later
+  lock republish could normalize logical hashes, proving the conditional bridge
+  fixes the observed waiting window while retaining exact artifact binding.
+
+The first new immutable T-30 checkpoint passed on 2026-07-24. Shane Drohan
+OVER 5.5 froze at `19:40:21Z`, 29.64 minutes before first pitch, as
+`not_selected`. Its lock key, pitcher, side, line, game time, artifact path,
+and artifact hash all match the operational lock consumed at `19:42:23Z`.
+Current integrity remains clean: one frozen row, 20 current provisional rows,
+zero current selected rows, zero duplicate candidate/checkpoint groups, zero
+missing or non-object V2 proofs, zero Alt notifications, and zero Alt
+accepted-bet writes. Tomoyuki Sugano had no official tracked pick at the T-30
+artifact and therefore was not an eligible freeze candidate.
+
+The first **selected** immutable T-30 freeze also passed on 2026-07-24.
+Matthew Boyd UNDER 5.5 froze in Consensus Core at `22:10:36Z`, 29.39 minutes
+before first pitch. The exact lock was consumed at `22:12:34Z`, and lock key,
+pitcher, side, line, game time, artifact path, and artifact hash all match.
+The public endpoint then showed 19 provisional rows, four frozen rows, and one
+selected row.
+
+The next model decision remains prospective soak: build the first genuinely
+prospective graded outcome record. Tyler separately approved the
+dashboard-only recovery repair on 2026-07-24. Exact commit `049276bc` and ready
+Netlify deploy `6a63e8d36373af0008e5c6ed` added an immediate read,
+non-overlapping 60-second mounted polling, last-good preservation, retry copy,
+and fresh app/adapter asset tokens. Production then supplied new evidence that
+superseded the original no-alias assumption: Chrome returned
+`ERR_BLOCKED_BY_CLIENT` for the function URL while independent requests
+continued to return healthy V2 JSON.
+
+Exact follow-up commit `8fba5303` and ready Netlify deploy
+`6a63ea91d4787300084cadc6` therefore add only the neutral same-origin
+`/api/slate-comparison` rewrite to the unchanged `alternative-picks` function
+and a new adapter token. The live alias returned `ready` V2 JSON with 11
+frozen rows and two selected at the 22:43Z checkpoint.
+
+Tyler then reproduced the same unavailable state in normal Chrome and on his
+phone, superseding the transport hypothesis. Passing the exact live payload
+through the deployed normalizer returned `invalid_row`; row-by-row validation
+isolated Matthew Boyd's valid dependency short-circuit. Base disagreement made
+the composite Preclose family disagree with zero qualifying observations,
+while Anchor and Re-entry still selected Consensus Core and the proof marked
+Preclose nonessential. The browser had incorrectly required zero-observation
+selected rows to display Preclose as pending.
+
+Exact commit `31005482` and completed Netlify deploy
+`6a63ed9fd8afa30008e443c8` correct only that client check: zero observations
+remain valid for a selected row when evidence freshness is pending, timestamps
+are empty, Preclose is not agreement, and the proof marks it nonessential.
+Zero-observation Preclose agreement still fails closed. The exact live payload
+then normalized with 13 frozen rows and two selected; a cache-busted production
+Chrome session rendered Trevor Rogers, Matthew Boyd, and 11 supporting rows.
+All 173 JavaScript tests and 1,928 Python tests passed. No non-fetch transport
+is required or approved; the earlier `window.fetch`/`XMLHttpRequest` result was
+a controlled-inspection limitation rather than reliable product-runtime
+evidence. The current proof is
+infrastructure/readiness evidence only and does not reopen any official model,
+pick-selection, threshold, staking, provider, notification, lock,
+accepted-bet, artifact, history, retention, or source-of-truth gate.
 
 ---
 

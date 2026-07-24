@@ -1,6 +1,6 @@
 /* Isolated, read-only adapter for same-day alternative methodology evidence. */
 (function () {
-  const ENDPOINT = "/.netlify/functions/alternative-picks?bundle_version=v2";
+  const ENDPOINT = "/api/slate-comparison?bundle_version=v2";
   const BUNDLE_ID = "pregame_alternative_pick_methodology_v2";
   const SELECTOR_FINGERPRINT = "23bacff0fa923685ae52c5a9cfbadfb9f5902fb64d91759cfe9b4b1169a221c4";
   const LANES = ["consensus_core", "reentry_expansion"];
@@ -139,7 +139,7 @@
     if (count === 0) {
       if (freshness !== "pending" || first || last) return false;
       return selectionStatus !== "selected"
-        || (familyStates.preclose.state === "pending" && decisionProof.preclose_required_for_selected_lane === false);
+        || (familyStates.preclose.state !== "agree" && decisionProof.preclose_required_for_selected_lane === false);
     }
     return isoTimestamp(first) && isoTimestamp(last) && Date.parse(first) <= Date.parse(last);
   }
@@ -232,5 +232,61 @@
     }
   }
 
-  window.V2AltPicks = { fetchCurrentSlate, normalizeResponse, formatFreezeLabel };
+  function startCurrentSlatePolling({
+    onUpdate,
+    fetcher = fetchCurrentSlate,
+    intervalMs = 60000,
+    schedule = setTimeout,
+    cancelSchedule = clearTimeout,
+  } = {}) {
+    if (typeof onUpdate !== "function") throw new TypeError("onUpdate is required");
+    let active = true;
+    let timer = null;
+    let lastGood = null;
+
+    async function poll() {
+      if (!active) return;
+      let next;
+      try {
+        next = await fetcher();
+      } catch {
+        next = unavailable(phoenixDate(), "fetch_failed");
+      }
+      if (!active) return;
+
+      if (next?.status === "ready") {
+        lastGood = next;
+        onUpdate({ ...next, refresh_status: "current", refresh_error: "" });
+      } else if (lastGood) {
+        onUpdate({
+          ...lastGood,
+          refresh_status: "retrying",
+          refresh_error: text(next?.error) || "fetch_failed",
+        });
+      } else {
+        const failed = next?.status === "unavailable"
+          ? next
+          : unavailable(phoenixDate(), "fetch_failed");
+        onUpdate({
+          ...failed,
+          refresh_status: "retrying",
+          refresh_error: text(failed.error) || "fetch_failed",
+        });
+      }
+      if (active) timer = schedule(poll, intervalMs);
+    }
+
+    void poll();
+    return () => {
+      active = false;
+      if (timer != null) cancelSchedule(timer);
+    };
+  }
+
+  window.V2AltPicks = {
+    fetchCurrentSlate,
+    startCurrentSlatePolling,
+    normalizeResponse,
+    formatFreezeLabel,
+  };
 })();

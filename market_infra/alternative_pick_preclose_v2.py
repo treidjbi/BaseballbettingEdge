@@ -34,6 +34,17 @@ class ExactPrecloseResult:
     proof_fragment: dict[str, Any]
 
 
+@dataclass(frozen=True)
+class CandidateSnapshotIndexV2:
+    rows: tuple[Mapping[str, Any], ...]
+    row_tokens: tuple[tuple[str, str] | None, ...]
+    tokens_by_candidate: Mapping[
+        tuple[str, str, str],
+        frozenset[tuple[str, str]],
+    ]
+    tokens_by_id: Mapping[str, frozenset[tuple[str, str]]]
+
+
 def _text(value: Any) -> str:
     return str(value or "").strip()
 
@@ -479,6 +490,91 @@ def _group_snapshot_rows(
         if token not in conflicting
     }
     return representatives, conflicting
+
+
+def build_candidate_snapshot_index_v2(
+    rows: Sequence[Mapping[str, Any]],
+) -> CandidateSnapshotIndexV2:
+    """Index one bounded snapshot suffix before per-candidate proof work."""
+    indexed_rows: list[Mapping[str, Any]] = []
+    row_tokens: list[tuple[str, str] | None] = []
+    candidate_tokens: dict[
+        tuple[str, str, str],
+        set[tuple[str, str]],
+    ] = {}
+    tokens_by_id: dict[str, set[tuple[str, str]]] = {}
+    for row in rows:
+        if not isinstance(row, Mapping):
+            continue
+        provider = _provider(row.get("provider"))
+        identifier = _snapshot_uuid(row.get("id"))
+        token = (
+            (provider, identifier)
+            if provider in ACTIVE_PROVIDERS and identifier is not None
+            else None
+        )
+        indexed_rows.append(row)
+        row_tokens.append(token)
+        if token is None:
+            continue
+        tokens_by_id.setdefault(identifier, set()).add(token)
+        if (
+            _text(row.get("slate_date"))
+            and normalize_market_key(row.get("market_key")) == "pitcher_strikeouts"
+            and _side(row.get("side")) in {"over", "under"}
+        ):
+            key = (
+                _text(row.get("slate_date")),
+                normalize(_text(
+                    row.get("normalized_player_name") or row.get("player_name")
+                )),
+                _side(row.get("side")),
+            )
+            candidate_tokens.setdefault(key, set()).add(token)
+    return CandidateSnapshotIndexV2(
+        rows=tuple(indexed_rows),
+        row_tokens=tuple(row_tokens),
+        tokens_by_candidate={
+            key: frozenset(tokens)
+            for key, tokens in candidate_tokens.items()
+        },
+        tokens_by_id={
+            identifier: frozenset(tokens)
+            for identifier, tokens in tokens_by_id.items()
+        },
+    )
+
+
+def candidate_snapshot_rows_v2(
+    *,
+    index: CandidateSnapshotIndexV2,
+    candidate: Mapping[str, Any],
+    pitcher: Mapping[str, Any],
+    current_lines_by_id: Mapping[str, Mapping[str, Any]],
+) -> list[Mapping[str, Any]]:
+    """Return the conservative candidate subset while retaining token conflicts."""
+    relevant_tokens = set(index.tokens_by_candidate.get((
+        _text(candidate.get("slate_date")),
+        _text(candidate.get("normalized_pitcher")),
+        _side(candidate.get("side")),
+    ), ()))
+    seed_ids = set(_artifact_seed_snapshot_ids(pitcher))
+    side = _side(candidate.get("side"))
+    for line_id in artifact_current_line_ids_v2(pitcher):
+        row = current_lines_by_id.get(line_id)
+        if not isinstance(row, Mapping):
+            continue
+        provider = _provider(row.get("provider"))
+        snapshot_id = _snapshot_uuid(row.get(f"{side}_snapshot_id"))
+        if provider in ACTIVE_PROVIDERS and snapshot_id is not None:
+            relevant_tokens.add((provider, snapshot_id))
+    for seed_id in seed_ids:
+        relevant_tokens.update(index.tokens_by_id.get(seed_id, ()))
+    return [
+        row
+        for row, token in zip(index.rows, index.row_tokens)
+        if token in relevant_tokens
+    ]
 
 
 def _candidate_relevant_conflicts(

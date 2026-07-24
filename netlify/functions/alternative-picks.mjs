@@ -1,3 +1,5 @@
+import { createHash } from 'node:crypto';
+
 const CONTRACTS = Object.freeze({
   v1: Object.freeze({
     bundleId: 'pregame_alternative_pick_methodology_v1',
@@ -912,16 +914,28 @@ function validCanonical(row, slateDate) {
       || !APPROVED_PUBLICATION_SOURCES.has(text(row.source)) ) return null;
   return {
     payloadSha: validHash(row.payload_sha256),
+    servedBodySha: null,
     generatedAt: timestamp(row.generated_at),
     path: CANONICAL_ARTIFACT_PATH,
   };
 }
 
+function servedArtifactBodySha(payload) {
+  if (!plainObject(payload) || !finiteJson(payload)) return '';
+  let serialized;
+  try { serialized = JSON.stringify(payload); } catch { return ''; }
+  if (!serialized || Buffer.byteLength(serialized, 'utf8') > 5 * 1024 * 1024) return '';
+  return createHash('sha256').update(serialized, 'utf8').digest('hex');
+}
+
 function provisionalIsCurrent(row, artifact, contract) {
+  const logicalHashMatches = validHash(row.source_artifact_sha256) === artifact.payloadSha;
+  const servedBodyMatches = sameTimestamp(row.source_artifact_generated_at, artifact.generatedAt)
+    && validHash(row.source_artifact_byte_sha256) === artifact.servedBodySha;
   return validStateBase(row, row.slate_date, contract)
     && text(row.checkpoint) === 'provisional'
     && text(row.source_artifact_path) === artifact.path
-    && validHash(row.source_artifact_sha256) === artifact.payloadSha
+    && (logicalHashMatches || servedBodyMatches)
     && !text(row.frozen_at) && !text(row.lock_dedupe_key) && !text(row.lock_artifact_sha256)
     && !text(row.lock_source_artifact_path) && !text(row.locked_at)
     && !text(row.should_lock_at) && row.minutes_until_start == null && !text(row.lock_status);
@@ -995,7 +1009,7 @@ export async function handler(event = {}) {
       supabaseUrl, serviceRoleKey, table: 'published_pipeline_artifacts',
       params: { select: CANONICAL_SELECT, artifact_key: 'eq.today', limit: '1' },
     });
-    const artifact = canonicalRows.length === 1 ? validCanonical(canonicalRows[0], slateDate) : null;
+    let artifact = canonicalRows.length === 1 ? validCanonical(canonicalRows[0], slateDate) : null;
     if (!artifact) return jsonResponse(200, emptyPayload(slateDate, 'canonical_artifact_unavailable', 'unavailable', contract));
 
     const stateRows = await supabaseRead({
@@ -1012,6 +1026,22 @@ export async function handler(event = {}) {
       try { decisionProof = validateV2Proof(row); } catch { return []; }
       return decisionProof ? [{ row, decisionProof }] : [];
     });
+    const needsServedBodyHash = contract.requiresProof && rows.some(
+      item => text(item.row.checkpoint) === 'provisional'
+        && validHash(item.row.source_artifact_sha256) !== artifact.payloadSha,
+    );
+    if (needsServedBodyHash) {
+      const payloadRows = await supabaseRead({
+        supabaseUrl, serviceRoleKey, table: 'published_pipeline_artifacts',
+        params: {
+          select: 'payload', artifact_key: 'eq.today',
+          payload_sha256: `eq.${artifact.payloadSha}`, limit: '1',
+        },
+      });
+      const servedBodySha = payloadRows.length === 1
+        ? servedArtifactBodySha(payloadRows[0]?.payload) : '';
+      artifact = { ...artifact, servedBodySha };
+    }
     const frozenRows = rows.filter(item => text(item.row.checkpoint) === 'frozen_pregame');
     const dedupeKeys = [...new Set(frozenRows.map(item => text(item.row.lock_dedupe_key)).filter(Boolean))];
     const locks = dedupeKeys.length ? await supabaseRead({
