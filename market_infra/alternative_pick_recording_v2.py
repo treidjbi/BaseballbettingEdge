@@ -12,7 +12,9 @@ from zoneinfo import ZoneInfo
 from market_infra.alternative_pick_evaluation_proof_v2 import build_evaluation_proof_v2
 from market_infra.alternative_pick_preclose_v2 import (
     artifact_current_line_ids_v2,
+    build_candidate_snapshot_index_v2,
     build_exact_preclose_evidence_v2,
+    candidate_snapshot_rows_v2,
     resolve_candidate_bindings_v2,
     resolve_candidate_windows_v2,
 )
@@ -423,6 +425,7 @@ def _record_alternative_pick_selection_v2_impl(
         if identifier not in line_ids or identifier in current_lines_by_id:
             return _failure("failed")
         current_lines_by_id[identifier] = row
+    snapshot_index = build_candidate_snapshot_index_v2(snapshot_rows)
 
     observed_utc = observed_at.astimezone(timezone.utc)
     observed_iso = observed_utc.isoformat()
@@ -451,9 +454,16 @@ def _record_alternative_pick_selection_v2_impl(
             continue
         prior = next((row for row in matching if row.get("checkpoint") == "provisional"), None)
         try:
+            candidate_snapshot_rows = candidate_snapshot_rows_v2(
+                index=snapshot_index,
+                candidate=candidate,
+                pitcher=pitcher,
+                current_lines_by_id=current_lines_by_id,
+            )
             bindings = resolve_candidate_bindings_v2(
                 candidate=candidate, pitcher=pitcher,
-                current_lines_by_id=current_lines_by_id, snapshot_rows=snapshot_rows,
+                current_lines_by_id=current_lines_by_id,
+                snapshot_rows=candidate_snapshot_rows,
             )
             windows = resolve_candidate_windows_v2(
                 candidate=candidate, bindings=bindings,
@@ -461,7 +471,8 @@ def _record_alternative_pick_selection_v2_impl(
             )
             exact = build_exact_preclose_evidence_v2(
                 candidate=candidate, bindings=bindings, windows=windows,
-                snapshot_rows=snapshot_rows, provider_heartbeats=provider_heartbeats,
+                snapshot_rows=candidate_snapshot_rows,
+                provider_heartbeats=provider_heartbeats,
                 snapshot_read_complete=snapshot_read_complete,
                 snapshot_window_started_at=snapshot_window_started_at,
                 snapshot_read_reason_codes=snapshot_read_reason_codes,

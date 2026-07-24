@@ -862,6 +862,46 @@ def test_v2_duplicate_provider_qualified_id_with_conflicting_content_fails_close
     assert "duplicate_snapshot_conflict" in result.market_evidence["aggregation_reason_codes"]
 
 
+def test_v2_candidate_snapshot_index_keeps_conflicts_and_explicit_seed_rows():
+    direct_seed = "99999999-9999-4999-8999-999999999999"
+    matching = _base_rows()[0]
+    conflicting = {
+        **matching,
+        "normalized_player_name": "different pitcher",
+        "american_odds": 120,
+    }
+    explicit_seed = _snapshot(
+        direct_seed,
+        "therundown",
+        "other-event",
+        -110,
+        "2026-07-22T20:02:00+00:00",
+        side="under",
+        normalized_player_name="different pitcher",
+    )
+    noise = _snapshot(
+        "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+        "therundown",
+        "noise-event",
+        -110,
+        "2026-07-22T20:03:00+00:00",
+        normalized_player_name="noise pitcher",
+    )
+    rows = [matching, conflicting, explicit_seed, noise]
+
+    subset = preclose.candidate_snapshot_rows_v2(
+        index=preclose.build_candidate_snapshot_index_v2(rows),
+        candidate=_candidate(),
+        pitcher=_pitcher(
+            source_current_market_line_ids=[],
+            source_snapshot_ids=[direct_seed],
+        ),
+        current_lines_by_id={},
+    )
+
+    assert subset == [matching, conflicting, explicit_seed]
+
+
 def test_v2_future_post_start_and_stale_rows_are_excluded():
     rows = _base_rows() + [
         _snapshot("aaaaaaaa-1111-4111-8111-aaaaaaaaaaaa", "therundown", "tr-event", -140, "2026-07-22T20:11:00+00:00"),

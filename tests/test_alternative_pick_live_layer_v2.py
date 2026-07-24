@@ -508,3 +508,68 @@ def test_v2_timeout_and_exception_return_bounded_failure_summary(monkeypatch, fa
     assert result["skipped"] is True
     assert result["reason"] in {"timeout", "failed"}
     assert len(result["warning"]) <= 200
+
+
+def test_v2_recorder_filters_snapshot_page_to_candidate_before_exact_evaluation(
+    monkeypatch,
+):
+    _stub_pipeline(monkeypatch)
+    virtual_clock = {"seconds": 0.0}
+    seen_snapshot_counts = []
+    monkeypatch.setattr(
+        recording.time,
+        "monotonic",
+        lambda: virtual_clock["seconds"],
+    )
+
+    def charge_for_snapshot_scan(**kwargs):
+        row_count = len(kwargs["snapshot_rows"])
+        seen_snapshot_counts.append(row_count)
+        virtual_clock["seconds"] += row_count / 1_000
+        return {"ready": True}
+
+    def build_exact(**kwargs):
+        charge_for_snapshot_scan(**kwargs)
+        return Mock(market_evidence={"freshness_status": "pending"}, evidence_window={})
+
+    monkeypatch.setattr(
+        recording,
+        "resolve_candidate_bindings_v2",
+        charge_for_snapshot_scan,
+    )
+    monkeypatch.setattr(recording, "build_exact_preclose_evidence_v2", build_exact)
+
+    snapshots = [
+        {
+            "id": f"00000000-0000-4000-8000-{index:012x}",
+            "provider": "therundown",
+            "slate_date": "2026-07-22",
+            "provider_event_id": f"noise-{index}",
+            "normalized_player_name": f"noise pitcher {index}",
+            "market_key": "pitcher_strikeouts",
+            "side": "over",
+        }
+        for index in range(4_999)
+    ]
+    snapshots.append({
+        "id": "11111111-1111-4111-8111-111111111111",
+        "provider": "therundown",
+        "slate_date": "2026-07-22",
+        "provider_event_id": "game-1",
+        "normalized_player_name": "tarik skubal",
+        "market_key": "pitcher_strikeouts",
+        "side": "over",
+    })
+
+    writer = Writer()
+    result = _record(
+        writer,
+        snapshot_rows=snapshots,
+        snapshot_read_complete=False,
+        snapshot_read_reason_codes=("snapshot_page_cap_reached",),
+        budget_seconds=5.0,
+    )
+
+    assert result["rows"] == 1
+    assert seen_snapshot_counts == [1, 1]
+    assert len(writer.upserts) == 1
