@@ -283,6 +283,35 @@ def test_baseline_drift_blocks_counter_advancement():
     assert summary["reconciliation"]["matches"] is False
 
 
+def test_history_recovered_archive_outcomes_do_not_backfill_frozen_counter():
+    historical = locked_historical_rows()
+    recovered_historical = graded_row(
+        "2026-07-20",
+        "recovered historical",
+        archive_outcome_reconciliation_source="picks_history_exact",
+    )
+    recovered_prospective = graded_row(
+        "2026-07-21",
+        "recovered prospective",
+        archive_outcome_reconciliation_source="picks_history_exact",
+    )
+
+    summary = audit.build_audit(
+        historical + [recovered_historical, recovered_prospective]
+    )
+
+    assert summary["status"] == "collecting"
+    assert summary["reconciliation"]["matches"] is True
+    assert summary["windows"]["historical_rebuild"]["rows"] == 186
+    assert summary["windows"]["prospective"]["rows"] == 0
+    assert summary["counter"]["rows"] == 52
+    assert summary["integrity"]["history_recovered_rows_excluded"] == 2
+    assert summary["integrity"]["history_recovered_keys_excluded"] == [
+        "2026-07-20|recovered historical|over",
+        "2026-07-21|recovered prospective|over",
+    ]
+
+
 def test_current_provider_historical_slice_reconciles_before_collecting():
     summary = audit.build_audit(locked_historical_rows())
 

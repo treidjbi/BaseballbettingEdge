@@ -46,7 +46,7 @@ function loadTicketHelpers() {
   };
   context.globalThis = context;
   vm.runInNewContext(
-    `${scriptSource.slice(0, footerStart)}\nglobalThis.__ticketHelpers = { marketBetTicketContext, isLiveMarketBetPrefill, selectedMarketBetRowForForm: typeof selectedMarketBetRowForForm === "function" ? selectedMarketBetRowForForm : null, buildAcceptedBetPayload, altCountLabel: typeof altCountLabel === "function" ? altCountLabel : null, altCandidateStatusCopy: typeof altCandidateStatusCopy === "function" ? altCandidateStatusCopy : null, altZeroSelectedCopy: typeof altZeroSelectedCopy === "function" ? altZeroSelectedCopy : null, altBookTitle: typeof altBookTitle === "function" ? altBookTitle : null };`,
+    `${scriptSource.slice(0, footerStart)}\nglobalThis.__ticketHelpers = { marketBetTicketContext, isLiveMarketBetPrefill, selectedMarketBetRowForForm: typeof selectedMarketBetRowForForm === "function" ? selectedMarketBetRowForForm : null, buildAcceptedBetPayload, altCountLabel: typeof altCountLabel === "function" ? altCountLabel : null, altCandidateStatusCopy: typeof altCandidateStatusCopy === "function" ? altCandidateStatusCopy : null, altZeroSelectedCopy: typeof altZeroSelectedCopy === "function" ? altZeroSelectedCopy : null, altBookTitle: typeof altBookTitle === "function" ? altBookTitle : null, altSelectionProofCopy: typeof altSelectionProofCopy === "function" ? altSelectionProofCopy : null };`,
     context,
     { filename: scriptPath },
   );
@@ -193,4 +193,24 @@ test("Alt Picks zero-selected copy distinguishes completed no-qualifier rows fro
   }
   assert.match(pendingOnly.sub, /2 candidates are awaiting complete family evidence/);
   assert.match(mixed.sub, /1 candidate is awaiting complete family evidence/);
+});
+
+test("Alt Picks selected proof copy distinguishes confirmed families from pending Preclose", () => {
+  const { altSelectionProofCopy } = loadTicketHelpers();
+  assert.equal(typeof altSelectionProofCopy, "function");
+  const family_states = {
+    base: { state: "agree" }, anchor: { state: "agree" },
+    preclose: { state: "pending" }, reentry: { state: "disagree" },
+  };
+  assert.equal(
+    altSelectionProofCopy({ selection_status: "selected", family_count: 2, family_states }),
+    "Selected with 2 confirmed families; Preclose still pending.",
+  );
+  assert.equal(
+    altSelectionProofCopy({
+      selection_status: "selected", family_count: 3,
+      family_states: { ...family_states, preclose: { state: "agree" } },
+    }),
+    "Selected with 3 confirmed families.",
+  );
 });

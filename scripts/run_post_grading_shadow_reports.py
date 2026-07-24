@@ -17,6 +17,7 @@ ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
 
 from scripts import build_pitcher_k_outcome_dataset as builder  # noqa: E402
+from scripts import export_market_agreement_inputs  # noqa: E402
 from analytics.diagnostics import bet_selection_edge_synthesis  # noqa: E402
 from analytics.diagnostics import confidence_referee_canary_audit  # noqa: E402
 from analytics.diagnostics import gate_f_projection_challenger_shadow_report  # noqa: E402
@@ -101,6 +102,19 @@ def _parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--market-snapshots", type=Path)
     parser.add_argument("--current-artifact", type=Path)
     parser.add_argument(
+        "--refresh-market-agreement-inputs",
+        action="store_true",
+        help=(
+            "Read bounded compact Supabase evidence and production artifacts "
+            "before the single Gate C build."
+        ),
+    )
+    parser.add_argument(
+        "--market-agreement-input-dir",
+        type=Path,
+        default=export_market_agreement_inputs.DEFAULT_OUTPUT_DIR,
+    )
+    parser.add_argument(
         "--gate-f-projection-output",
         type=Path,
         default=gate_f_projection_challenger_shadow_report.OUTPUT_PATH,
@@ -116,7 +130,12 @@ def _parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         type=Path,
         default=ROOT / "analytics" / "output" / "shadow_notification_candidate_audit.md",
     )
-    return parser.parse_args(argv)
+    args = parser.parse_args(argv)
+    if args.refresh_market_agreement_inputs and args.market_snapshots is not None:
+        parser.error(
+            "--market-snapshots is forbidden with --refresh-market-agreement-inputs"
+        )
+    return args
 
 
 def _extract_sections(markdown: str, section_titles: set[str]) -> str:
@@ -163,7 +182,15 @@ def _write_shadow_notification_candidate_report(*, candidates_path: Path | None,
     print(f"Wrote {output_path} ({len(rows)} source rows)")
 
 
-def _market_agreement_args(args: argparse.Namespace, dataset_path: Path) -> list[str]:
+def _market_agreement_args(
+    args: argparse.Namespace,
+    dataset_path: Path,
+    *,
+    history_path: Path | None = None,
+    market_pick_evidence_path: Path | None = None,
+    live_market_display_path: Path | None = None,
+    current_artifact_path: Path | None = None,
+) -> list[str]:
     tracker_args = [
         "--gate-c-dataset",
         str(dataset_path),
@@ -173,10 +200,26 @@ def _market_agreement_args(args: argparse.Namespace, dataset_path: Path) -> list
         str(args.market_agreement_output_jsonl),
     ]
     optional_paths = (
-        ("--market-pick-evidence", args.market_pick_evidence),
-        ("--live-market-display", args.live_market_display),
+        ("--history", history_path),
+        (
+            "--market-pick-evidence",
+            market_pick_evidence_path
+            if market_pick_evidence_path is not None
+            else args.market_pick_evidence,
+        ),
+        (
+            "--live-market-display",
+            live_market_display_path
+            if live_market_display_path is not None
+            else args.live_market_display,
+        ),
         ("--market-snapshots", args.market_snapshots),
-        ("--current-artifact", args.current_artifact),
+        (
+            "--current-artifact",
+            current_artifact_path
+            if current_artifact_path is not None
+            else args.current_artifact,
+        ),
     )
     for flag, path in optional_paths:
         if path is not None:
@@ -186,6 +229,43 @@ def _market_agreement_args(args: argparse.Namespace, dataset_path: Path) -> list
 
 def main(argv: list[str] | None = None) -> int:
     args = _parse_args(argv)
+    dataset_path = args.output_dir / "pitcher_k_outcome_dataset.jsonl"
+    refreshed_history_path: Path | None = None
+    refreshed_evidence_path: Path | None = None
+    refreshed_display_path: Path | None = None
+    refreshed_current_artifact_path: Path | None = None
+
+    if args.refresh_market_agreement_inputs:
+        export_args = [
+            "--output-dir",
+            str(args.market_agreement_input_dir),
+            "--start-date",
+            args.start_date,
+        ]
+        if args.end_date:
+            export_args.extend(["--end-date", args.end_date])
+        if args.artifact_api_url:
+            export_args.extend(["--artifact-api-url", args.artifact_api_url])
+        export_market_agreement_inputs.main(export_args)
+        refreshed_history_path = args.market_agreement_input_dir / "picks_history.json"
+        refreshed_evidence_path = (
+            args.market_agreement_input_dir / "market_pick_evidence.json"
+        )
+        refreshed_display_path = (
+            args.market_agreement_input_dir / "live_market_display_state.json"
+        )
+        refreshed_current_artifact_path = args.market_agreement_input_dir / "today.json"
+        market_agreement_tracker.main(
+            _market_agreement_args(
+                args,
+                dataset_path,
+                history_path=refreshed_history_path,
+                market_pick_evidence_path=refreshed_evidence_path,
+                live_market_display_path=refreshed_display_path,
+                current_artifact_path=refreshed_current_artifact_path,
+            )
+        )
+
     builder_args = [
         "--artifact-source",
         args.artifact_source,
@@ -200,6 +280,15 @@ def main(argv: list[str] | None = None) -> int:
         builder_args.extend(["--end-date", args.end_date])
     if not args.skip_workload_no_vig_audit:
         builder_args.append("--run-workload-no-vig-audit")
+    if args.refresh_market_agreement_inputs:
+        builder_args.extend(
+            [
+                "--market-agreement-tracker",
+                str(args.market_agreement_output_jsonl),
+                "--live-market-display",
+                str(refreshed_display_path),
+            ]
+        )
     builder_args.extend([
         "--run-market-anchored-rebuild",
         "--market-anchored-rebuild-output",
@@ -207,7 +296,17 @@ def main(argv: list[str] | None = None) -> int:
     ])
 
     builder.main(builder_args)
-    dataset_path = args.output_dir / "pitcher_k_outcome_dataset.jsonl"
+    if args.refresh_market_agreement_inputs:
+        market_agreement_tracker.main(
+            _market_agreement_args(
+                args,
+                dataset_path,
+                history_path=refreshed_history_path,
+                market_pick_evidence_path=refreshed_evidence_path,
+                live_market_display_path=refreshed_display_path,
+                current_artifact_path=refreshed_current_artifact_path,
+            )
+        )
     if not args.skip_market_anchor_selector_audit:
         market_anchor_selector_canary_audit.main([
             "--input",
@@ -245,7 +344,8 @@ def main(argv: list[str] | None = None) -> int:
         "--output",
         str(args.portfolio_simulator_output),
     ])
-    market_agreement_tracker.main(_market_agreement_args(args, dataset_path))
+    if not args.refresh_market_agreement_inputs:
+        market_agreement_tracker.main(_market_agreement_args(args, dataset_path))
     shadow_signal_synthesis_lab.main([
         "--input",
         str(dataset_path),

@@ -1271,3 +1271,31 @@ After all task reviews are clean:
 - This is counter progress only. It does not authorize a model, verdict,
   threshold, staking, provider, notification, lock, UI, artifact, or retention
   change; `ready_for_review` remains the strongest possible future status.
+
+## Research Outcome-Recovery Boundary (2026-07-23)
+
+Gate C exact-outcome recovery can add retrospective rows that were absent from
+the frozen no-drag baseline. Those rows now carry
+`archive_outcome_reconciliation_source=picks_history_exact`.
+
+The no-drag audit excludes every such row from both the frozen historical
+rebuild and prospective counter. This is an input-boundary guard only:
+
+- selector id/version and rule fingerprint remain unchanged;
+- locked baselines remain `186` historical and `52` current-provider rows;
+- history-recovered rows receive no historical or prospective credit; and
+- normal prospectively collected graded rows continue to advance the counter.
+
+Live temporary verification excluded `24` history-recovered rows, reconciled
+both locked baselines, preserved fingerprint
+`22b03ecea02aa83e9174c24f5f05878823cb67766fe1c75102d34bfe5c3b4aa4`,
+and reported `collecting` at `58/75` with `17` remaining. The six qualified
+prospective rows are `4-2`, `+0.69u`, `+11.4%` ROI. This is counter progress
+only; all live promotion gates remain closed.
+
+The deployed compact-input research run at `2026-07-23T17:16:27Z` preserved
+rule fingerprint
+`22b03ecea02aa83e9174c24f5f05878823cb67766fe1c75102d34bfe5c3b4aa4`,
+reconciled both locked baselines, excluded the same `24` history-recovered
+rows, and remained `collecting` at `58/75` with `17` remaining. The deployment
+did not backfill or advance the prospective counter.

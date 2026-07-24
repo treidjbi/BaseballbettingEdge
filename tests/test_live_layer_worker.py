@@ -1,4 +1,5 @@
 import json
+import subprocess
 import sys
 from pathlib import Path
 from unittest.mock import ANY, Mock, patch
@@ -12,6 +13,10 @@ THERUNDOWN_OVER_SNAPSHOT_ID = "11111111-1111-4111-8111-111111111111"
 THERUNDOWN_UNDER_SNAPSHOT_ID = "11111111-1111-4111-8111-111111111112"
 PROPLINE_OVER_SNAPSHOT_ID = "22222222-2222-4222-8222-222222222221"
 PROPLINE_UNDER_SNAPSHOT_ID = "22222222-2222-4222-8222-222222222222"
+
+
+def _ordered_uuid(value):
+    return f"00000000-0000-4000-8000-{value:012d}"
 
 
 def _writer_with_selects(table_rows):
@@ -623,6 +628,196 @@ def test_alternative_pick_selection_mode_fails_closed_except_exact_record(monkey
 
     monkeypatch.setenv("ALTERNATIVE_PICK_SELECTION_MODE", " ReCoRd ")
     assert build_live_events_to_supabase._alternative_pick_selection_mode() == "record"
+
+
+def test_bundle_version_unset_or_blank_defaults_to_v1(monkeypatch):
+    monkeypatch.delenv("ALTERNATIVE_PICK_SELECTION_BUNDLE_VERSION", raising=False)
+    assert build_live_events_to_supabase._alternative_pick_selection_bundle_version() == "v1"
+    monkeypatch.setenv("ALTERNATIVE_PICK_SELECTION_BUNDLE_VERSION", "   ")
+    assert build_live_events_to_supabase._alternative_pick_selection_bundle_version() == "v1"
+
+
+def test_bundle_version_accepts_exact_v1_and_v2(monkeypatch):
+    for value, expected in (("v1", "v1"), (" V2 ", "v2")):
+        monkeypatch.setenv("ALTERNATIVE_PICK_SELECTION_BUNDLE_VERSION", value)
+        assert build_live_events_to_supabase._alternative_pick_selection_bundle_version() == expected
+
+
+def test_worker_module_import_never_touches_v2_recorder_chain():
+    repo_root = Path(__file__).resolve().parents[1]
+    script = r'''
+import importlib.abc
+import sys
+
+class BlockV2Recorder(importlib.abc.MetaPathFinder):
+    def find_spec(self, fullname, path=None, target=None):
+        if fullname == "market_infra.alternative_pick_recording_v2":
+            raise RuntimeError("V2 recorder chain must not load during worker startup")
+        return None
+
+sys.meta_path.insert(0, BlockV2Recorder())
+from scripts import build_live_events_to_supabase
+assert "market_infra.alternative_pick_recording_v2" not in sys.modules
+'''
+    completed = subprocess.run(
+        [sys.executable, "-c", script],
+        cwd=repo_root,
+        capture_output=True,
+        text=True,
+        timeout=30,
+        check=False,
+    )
+    assert completed.returncode == 0, completed.stderr
+
+
+def test_explicit_invalid_bundle_version_skips_sidecar_cycle(monkeypatch):
+    monkeypatch.setenv("ALTERNATIVE_PICK_SELECTION_MODE", "record")
+    monkeypatch.setenv("ALTERNATIVE_PICK_SELECTION_BUNDLE_VERSION", "v3")
+    result = build_live_events_to_supabase._dispatch_alternative_pick_selection_state(
+        writer=Mock(), slate_date="2026-07-22", payload={}, snapshot_rows=[],
+        provider_heartbeats=[], market_pick_evidence_rows=[], live_market_display_rows=[],
+        observed_at=build_live_events_to_supabase.datetime.fromisoformat("2026-07-22T18:00:00+00:00"),
+        artifact_source="test", source_payload_sha256="a" * 64,
+        source_artifact_byte_sha256="b" * 64,
+        operational_pick_locks={}, market_line_build={}, shadow_pipeline_timing={}, ready_to_bet_write={},
+    )
+    assert result == {"skipped": True, "reason": "invalid_bundle_version", "rows": 0}
+
+
+def test_v2_capable_deploy_with_default_gate_writes_zero_v2_rows(monkeypatch):
+    monkeypatch.setenv("ALTERNATIVE_PICK_SELECTION_MODE", "record")
+    monkeypatch.delenv("ALTERNATIVE_PICK_SELECTION_BUNDLE_VERSION", raising=False)
+    with patch.object(build_live_events_to_supabase, "_write_alternative_pick_selection_state", return_value={"version": "v1"}) as v1, patch.object(build_live_events_to_supabase, "_load_alternative_pick_v2_recorder") as v2:
+        result = build_live_events_to_supabase._dispatch_alternative_pick_selection_state(
+            writer=Mock(), slate_date="2026-07-22", payload={}, snapshot_rows=[], provider_heartbeats=[],
+            market_pick_evidence_rows=[], live_market_display_rows=[], observed_at=build_live_events_to_supabase.datetime.now(build_live_events_to_supabase.timezone.utc),
+            artifact_source="test", source_payload_sha256="a" * 64, source_artifact_byte_sha256="b" * 64,
+            operational_pick_locks={}, market_line_build={}, shadow_pipeline_timing={}, ready_to_bet_write={},
+        )
+    assert result == {"version": "v1"}
+    v1.assert_called_once()
+    v2.assert_not_called()
+
+
+def test_v1_dispatch_retains_existing_arguments_and_output(monkeypatch):
+    monkeypatch.setenv("ALTERNATIVE_PICK_SELECTION_MODE", "record")
+    monkeypatch.setenv("ALTERNATIVE_PICK_SELECTION_BUNDLE_VERSION", "v1")
+    expected = {"skipped": False, "rows": 1}
+    with patch.object(build_live_events_to_supabase, "_write_alternative_pick_selection_state", return_value=expected) as v1:
+        result = build_live_events_to_supabase._dispatch_alternative_pick_selection_state(
+            writer=Mock(), slate_date="2026-07-22", payload={},
+            snapshot_rows=[{"id": "legacy"}],
+            v2_snapshot_rows=[{"id": "v2-filtered"}],
+            provider_heartbeats=[{"provider": "therundown"}],
+            market_pick_evidence_rows=[{"broad": True}], live_market_display_rows=[{"persisted": True}], observed_at=build_live_events_to_supabase.datetime.now(build_live_events_to_supabase.timezone.utc),
+            artifact_source="test", source_payload_sha256="a" * 64, source_artifact_byte_sha256="b" * 64,
+            operational_pick_locks={"locks": 1}, market_line_build={"market": 1}, shadow_pipeline_timing={"timing": 1}, ready_to_bet_write={"ready": 1},
+        )
+    assert result is expected
+    assert v1.call_args.kwargs["snapshot_rows"] == [{"id": "legacy"}]
+    assert v1.call_args.kwargs["market_pick_evidence_rows"] == [{"broad": True}]
+    assert v1.call_args.kwargs["live_market_display_rows"] == [{"persisted": True}]
+
+
+def test_v2_writer_receives_existing_snapshots_and_heartbeats_without_new_provider_reads(monkeypatch):
+    monkeypatch.setenv("ALTERNATIVE_PICK_SELECTION_MODE", "record")
+    monkeypatch.setenv("ALTERNATIVE_PICK_SELECTION_BUNDLE_VERSION", "v2")
+    legacy_snapshots = [{"id": "legacy"}]
+    snapshots, heartbeats = [{"id": "v2-filtered"}], [{"provider": "therundown"}]
+    v2 = Mock(return_value={"version": "v2"})
+    with patch.object(build_live_events_to_supabase, "_load_alternative_pick_v2_recorder", return_value=v2):
+        result = build_live_events_to_supabase._dispatch_alternative_pick_selection_state(
+            writer=Mock(), slate_date="2026-07-22", payload={},
+            snapshot_rows=legacy_snapshots, v2_snapshot_rows=snapshots,
+            provider_heartbeats=heartbeats,
+            market_pick_evidence_rows=[{"broad": True}], live_market_display_rows=[{"persisted": True}], observed_at=build_live_events_to_supabase.datetime.now(build_live_events_to_supabase.timezone.utc),
+            artifact_source="test", source_payload_sha256="a" * 64, source_artifact_byte_sha256="b" * 64,
+            operational_pick_locks={}, market_line_build={}, shadow_pipeline_timing={}, ready_to_bet_write={},
+        )
+    assert result == {"version": "v2"}
+    assert v2.call_args.kwargs["snapshot_rows"] is snapshots
+    assert v2.call_args.kwargs["provider_heartbeats"] is heartbeats
+    assert "market_pick_evidence_rows" not in v2.call_args.kwargs
+    assert "live_market_display_rows" not in v2.call_args.kwargs
+
+
+@pytest.mark.parametrize("error,reason", [(ValueError("bad payload"), "failed"), (TimeoutError(), "timeout")])
+def test_v2_dispatcher_contains_recorder_exception_without_touching_other_work(monkeypatch, error, reason):
+    monkeypatch.setenv("ALTERNATIVE_PICK_SELECTION_MODE", "record")
+    monkeypatch.setenv("ALTERNATIVE_PICK_SELECTION_BUNDLE_VERSION", "v2")
+    writer = Mock()
+    v2 = Mock(side_effect=error)
+    with patch.object(
+        build_live_events_to_supabase,
+        "_load_alternative_pick_v2_recorder",
+        return_value=v2,
+    ):
+        result = build_live_events_to_supabase._dispatch_alternative_pick_selection_state(
+            writer=writer, slate_date="2026-07-22", payload={}, snapshot_rows=[],
+            provider_heartbeats=[], market_pick_evidence_rows=[], live_market_display_rows=[],
+            observed_at=build_live_events_to_supabase.datetime.now(build_live_events_to_supabase.timezone.utc),
+            artifact_source="test", source_payload_sha256="a" * 64,
+            source_artifact_byte_sha256="b" * 64,
+            operational_pick_locks={}, market_line_build={}, shadow_pipeline_timing={}, ready_to_bet_write={},
+        )
+    assert result["skipped"] is True
+    assert result["reason"] == reason
+    assert result["rows"] == 0
+    assert len(result["warning"]) <= 200
+    writer.assert_not_called()
+
+
+def test_explicit_v2_contains_lazy_recorder_import_failure(monkeypatch):
+    monkeypatch.setenv("ALTERNATIVE_PICK_SELECTION_MODE", "record")
+    monkeypatch.setenv("ALTERNATIVE_PICK_SELECTION_BUNDLE_VERSION", "v2")
+    monkeypatch.setattr(
+        build_live_events_to_supabase,
+        "_load_alternative_pick_v2_recorder",
+        Mock(side_effect=ValueError("invalid V2 manifest")),
+    )
+
+    result = build_live_events_to_supabase._dispatch_alternative_pick_selection_state(
+        writer=Mock(), slate_date="2026-07-22", payload={}, snapshot_rows=[],
+        provider_heartbeats=[], market_pick_evidence_rows=[], live_market_display_rows=[],
+        observed_at=build_live_events_to_supabase.datetime.now(build_live_events_to_supabase.timezone.utc),
+        artifact_source="test", source_payload_sha256="a" * 64,
+        source_artifact_byte_sha256="b" * 64,
+        operational_pick_locks={}, market_line_build={}, shadow_pipeline_timing={}, ready_to_bet_write={},
+    )
+
+    assert result["skipped"] is True
+    assert result["reason"] == "failed"
+    assert result["rows"] == 0
+    assert len(result["warning"]) <= 200
+
+
+def test_explicit_v2_import_time_counts_against_sidecar_budget(monkeypatch):
+    monkeypatch.setenv("ALTERNATIVE_PICK_SELECTION_MODE", "record")
+    monkeypatch.setenv("ALTERNATIVE_PICK_SELECTION_BUNDLE_VERSION", "v2")
+    recorder = Mock(return_value={"version": "v2"})
+    monkeypatch.setattr(
+        build_live_events_to_supabase,
+        "_load_alternative_pick_v2_recorder",
+        Mock(return_value=recorder),
+    )
+    monkeypatch.setattr(
+        build_live_events_to_supabase.time,
+        "monotonic",
+        Mock(side_effect=[100.0, 102.0]),
+    )
+
+    result = build_live_events_to_supabase._dispatch_alternative_pick_selection_state(
+        writer=Mock(), slate_date="2026-07-22", payload={}, snapshot_rows=[],
+        provider_heartbeats=[], market_pick_evidence_rows=[], live_market_display_rows=[],
+        observed_at=build_live_events_to_supabase.datetime.now(build_live_events_to_supabase.timezone.utc),
+        artifact_source="test", source_payload_sha256="a" * 64,
+        source_artifact_byte_sha256="b" * 64,
+        operational_pick_locks={}, market_line_build={}, shadow_pipeline_timing={}, ready_to_bet_write={},
+        budget_seconds=5.0,
+    )
+
+    assert result == {"version": "v2"}
+    assert recorder.call_args.kwargs["budget_seconds"] == pytest.approx(3.0)
 
 
 def test_alternative_sidecar_off_performs_no_state_reads_or_writes(monkeypatch):
@@ -1435,7 +1630,17 @@ def test_alternative_sidecar_freezes_unbound_or_stale_raw_evidence_as_pending(mo
         assert "freeze_evidence_pending" in frozen["reason_codes"]
 
 
-def test_worker_calls_alternative_sidecar_only_after_lock_timing_and_market_build(tmp_path, monkeypatch):
+@pytest.mark.parametrize(
+    "mode,bundle",
+    [
+        (None, "v2"),
+        ("record", None),
+        ("record", "v1"),
+    ],
+)
+def test_worker_calls_alternative_sidecar_only_after_prior_work_when_v2_import_is_broken(
+    tmp_path, monkeypatch, mode, bundle,
+):
     calls = []
     today = _write_artifact(tmp_path, [_fire_pitcher()])
     writer = _writer_with_selects({
@@ -1444,6 +1649,31 @@ def test_worker_calls_alternative_sidecar_only_after_lock_timing_and_market_buil
         "market_feed_heartbeats": [],
         "game_reminder_state": [],
     })
+
+    if mode is None:
+        monkeypatch.delenv("ALTERNATIVE_PICK_SELECTION_MODE", raising=False)
+    else:
+        monkeypatch.setenv("ALTERNATIVE_PICK_SELECTION_MODE", mode)
+    if bundle is None:
+        monkeypatch.delenv("ALTERNATIVE_PICK_SELECTION_BUNDLE_VERSION", raising=False)
+    else:
+        monkeypatch.setenv("ALTERNATIVE_PICK_SELECTION_BUNDLE_VERSION", bundle)
+
+    original_evidence = build_live_events_to_supabase.build_market_pick_evidence_rows
+    original_display = build_live_events_to_supabase.build_live_market_display_rows
+    original_coordinate = build_live_events_to_supabase.coordinate_notification_rows
+
+    def evidence(**kwargs):
+        calls.append("evidence")
+        return original_evidence(**kwargs)
+
+    def display(**kwargs):
+        calls.append("display")
+        return original_display(**kwargs)
+
+    def notifications(*args, **kwargs):
+        calls.append("notifications")
+        return original_coordinate(*args, **kwargs)
 
     def locks(**kwargs):
         calls.append("locks")
@@ -1464,10 +1694,18 @@ def test_worker_calls_alternative_sidecar_only_after_lock_timing_and_market_buil
 
     with (
         patch.object(build_live_events_to_supabase, "SupabaseMarketWriter", return_value=writer),
+        patch.object(build_live_events_to_supabase, "build_market_pick_evidence_rows", side_effect=evidence),
+        patch.object(build_live_events_to_supabase, "build_live_market_display_rows", side_effect=display),
+        patch.object(build_live_events_to_supabase, "coordinate_notification_rows", side_effect=notifications),
         patch.object(build_live_events_to_supabase, "_write_operational_pick_locks", side_effect=locks),
         patch.object(build_live_events_to_supabase, "_write_shadow_pipeline_timing", side_effect=timing),
         patch.object(build_live_events_to_supabase, "_build_shadow_market_state", side_effect=market),
         patch.object(build_live_events_to_supabase, "_write_alternative_pick_selection_state", side_effect=alternative),
+        patch.object(
+            build_live_events_to_supabase,
+            "_load_alternative_pick_v2_recorder",
+            side_effect=RuntimeError("invalid V2 manifest"),
+        ) as v2_loader,
     ):
         result = build_live_events_to_supabase.run(
             slate_date="2026-05-06",
@@ -1476,7 +1714,10 @@ def test_worker_calls_alternative_sidecar_only_after_lock_timing_and_market_buil
             service_role_key="secret",
         )
 
-    assert calls == ["locks", "timing", "market", "alternative"]
+    assert calls == [
+        "evidence", "display", "notifications", "locks", "timing", "market", "alternative",
+    ]
+    v2_loader.assert_not_called()
     assert result["alternative_pick_selection"] == {"skipped": True, "reason": "disabled", "rows": 0}
     assert result["artifact_source"] == build_live_events_to_supabase.APPROVED_ARTIFACT_PATH
 
@@ -2487,22 +2728,12 @@ def test_worker_fetches_market_snapshots_by_recent_run_ids_when_available(tmp_pa
         if table == "market_feed_heartbeats":
             return []
         if table == "market_provider_runs":
-            return [{"id": "run-1", "provider": "propline", "slate_date": "2026-05-06"}]
+            return [{
+                "id": "run-1", "created_at": "2026-05-06T17:40:00+00:00",
+                "provider": "propline", "slate_date": "2026-05-06",
+            }]
         if table == "market_snapshots":
             return [
-                {
-                    "id": "snapshot-old",
-                    "run_id": "run-1",
-                    "provider": "propline",
-                    "provider_event_id": "game-1",
-                    "normalized_player_name": "tarik skubal",
-                    "player_name": "Tarik Skubal",
-                    "bookmaker_key": "fanduel",
-                    "side": "over",
-                    "line": 6.5,
-                    "american_odds": -110,
-                    "observed_at": "2026-05-06T17:50:00+00:00",
-                },
                 {
                     "id": "snapshot-new",
                     "run_id": "run-1",
@@ -2515,6 +2746,19 @@ def test_worker_fetches_market_snapshots_by_recent_run_ids_when_available(tmp_pa
                     "line": 5.5,
                     "american_odds": -112,
                     "observed_at": "2026-05-06T18:00:00+00:00",
+                },
+                {
+                    "id": "snapshot-old",
+                    "run_id": "run-1",
+                    "provider": "propline",
+                    "provider_event_id": "game-1",
+                    "normalized_player_name": "tarik skubal",
+                    "player_name": "Tarik Skubal",
+                    "bookmaker_key": "fanduel",
+                    "side": "over",
+                    "line": 6.5,
+                    "american_odds": -110,
+                    "observed_at": "2026-05-06T17:50:00+00:00",
                 },
             ]
         if table == "game_reminder_state":
@@ -2543,6 +2787,357 @@ def test_worker_fetches_market_snapshots_by_recent_run_ids_when_available(tmp_pa
     assert snapshot_call[1]["observed_at"].startswith("gte.")
     assert snapshot_call[1]["limit"] == "1000"
     assert result["line_movement_events"] == 1
+
+
+def test_snapshot_fetch_annotates_only_rows_bound_to_exact_slate_runs():
+    writer = Mock()
+
+    def select_rows(table, params):
+        if table == "market_provider_runs":
+            return [{
+                "id": "run-1",
+                "created_at": "2026-05-06T17:40:00+00:00",
+                "provider": "therundown",
+                "slate_date": "2026-05-06",
+            }]
+        if table == "market_snapshots":
+            return [
+                {
+                    "id": "snapshot-unbound", "run_id": "unknown-run",
+                    "provider": "therundown",
+                    "observed_at": "2026-05-06T17:51:00+00:00",
+                },
+                {
+                    "id": "snapshot-bound", "run_id": "run-1",
+                    "provider": "therundown",
+                    "observed_at": "2026-05-06T17:50:00+00:00",
+                },
+            ]
+        raise AssertionError(table)
+
+    writer.select_rows.side_effect = select_rows
+
+    result = build_live_events_to_supabase._fetch_live_market_snapshot_rows(
+        writer,
+        "2026-05-06",
+        build_live_events_to_supabase.datetime.fromisoformat(
+            "2026-05-06T18:00:00+00:00"
+        ),
+    )
+
+    rows_by_id = {row["id"]: row for row in result.rows}
+    assert rows_by_id["snapshot-bound"]["slate_date"] == "2026-05-06"
+    assert "slate_date" not in rows_by_id["snapshot-unbound"]
+    assert [row["id"] for row in result.v2_rows] == ["snapshot-bound"]
+    assert result.complete is False
+    assert result.reason_codes == ("provider_run_provenance_unavailable",)
+
+
+def test_snapshot_fetch_does_not_invent_slate_date_on_broad_fallback_rows():
+    writer = Mock()
+
+    def select_rows(table, params):
+        if table == "market_provider_runs":
+            return []
+        if table == "market_snapshots":
+            return [{
+                "id": "snapshot-fallback",
+                "run_id": "run-without-provenance",
+                "provider": "therundown",
+            }]
+        raise AssertionError(table)
+
+    writer.select_rows.side_effect = select_rows
+
+    result = build_live_events_to_supabase._fetch_live_market_snapshot_rows(
+        writer,
+        "2026-05-06",
+        build_live_events_to_supabase.datetime.fromisoformat(
+            "2026-05-06T18:00:00+00:00"
+        ),
+    )
+
+    assert "slate_date" not in result.rows[0]
+    assert result.v2_rows == []
+    assert result.complete is False
+    assert result.reason_codes == ("provider_run_provenance_unavailable",)
+
+
+def test_provider_run_fetch_retains_one_read_latest_100_scope_and_detects_older_rows():
+    writer = Mock()
+    writer.select_rows.return_value = [
+        {
+            "id": _ordered_uuid(index),
+            "created_at": f"2026-05-06T{(index // 60):02d}:{(index % 60):02d}:00+00:00",
+            "provider": "therundown",
+            "slate_date": "2026-05-06",
+        }
+        for index in range(101, 0, -1)
+    ]
+
+    rows, complete = build_live_events_to_supabase._fetch_recent_provider_run_rows(
+        writer, "2026-05-06",
+    )
+
+    assert [row["id"] for row in rows] == [
+        _ordered_uuid(index) for index in range(101, 1, -1)
+    ]
+    assert complete is False
+    assert _ordered_uuid(1) not in build_live_events_to_supabase._run_id_filter(rows)
+    writer.select_rows.assert_called_once()
+    params = writer.select_rows.call_args.args[1]
+    assert params["order"] == "created_at.desc,id.desc"
+    assert params["limit"] == "101"
+    assert "or" not in params and "offset" not in params
+
+
+def test_provider_run_fetch_reports_complete_below_latest_100_scope():
+    writer = Mock()
+    writer.select_rows.return_value = [
+        {"id": "run-2", "created_at": "2026-05-06T10:01:00+00:00", "provider": "propline", "slate_date": "2026-05-06"},
+        {"id": "run-1", "created_at": "2026-05-06T10:00:00+00:00", "provider": "therundown", "slate_date": "2026-05-06"},
+    ]
+
+    rows, complete = build_live_events_to_supabase._fetch_recent_provider_run_rows(
+        writer, "2026-05-06",
+    )
+
+    assert len(rows) == 2
+    assert complete is True
+
+
+def test_snapshot_fetch_uses_descending_keyset_pages_for_newest_suffix(monkeypatch):
+    run_rows = [{
+        "id": _ordered_uuid(9000), "created_at": "2026-05-06T10:00:00+00:00",
+        "provider": "therundown", "slate_date": "2026-05-06",
+    }]
+    monkeypatch.setattr(
+        build_live_events_to_supabase,
+        "_fetch_recent_provider_run_rows",
+        lambda *_args, **_kwargs: (run_rows, True),
+    )
+    writer = Mock()
+    pages = [
+        [
+            {"id": _ordered_uuid(3), "run_id": _ordered_uuid(9000), "provider": "therundown", "observed_at": "2026-05-06T11:00:00+00:00"},
+            {"id": _ordered_uuid(2), "run_id": _ordered_uuid(9000), "provider": "therundown", "observed_at": "2026-05-06T10:00:00+00:00"},
+        ],
+        [
+            {"id": _ordered_uuid(1), "run_id": _ordered_uuid(9000), "provider": "therundown", "observed_at": "2026-05-06T10:00:00+00:00"},
+        ],
+    ]
+    writer.select_rows.side_effect = lambda _table, _params: pages.pop(0)
+
+    result = build_live_events_to_supabase._fetch_live_market_snapshot_rows(
+        writer, "2026-05-06",
+        build_live_events_to_supabase.datetime.fromisoformat("2026-05-06T18:00:00+00:00"),
+        page_size=2, max_pages=3,
+    )
+
+    assert [row["id"] for row in result.rows] == [
+        _ordered_uuid(3), _ordered_uuid(2), _ordered_uuid(1),
+    ]
+    assert len({row["id"] for row in result.rows}) == 3
+    assert result.v2_rows == result.rows
+    assert result.complete is True
+    first, second = [call.args[1] for call in writer.select_rows.call_args_list]
+    assert first["order"] == "observed_at.desc,id.desc"
+    assert "or" not in first and "offset" not in first
+    assert second["or"] == (
+        "(observed_at.lt.2026-05-06T10:00:00+00:00,"
+        "and(observed_at.eq.2026-05-06T10:00:00+00:00,"
+        f"id.lt.{_ordered_uuid(2)}))"
+    )
+    assert "offset" not in second
+
+
+def test_snapshot_full_final_page_reports_incomplete_cap(monkeypatch):
+    run_rows = [{
+        "id": _ordered_uuid(9000), "created_at": "2026-05-06T10:00:00+00:00",
+        "provider": "therundown", "slate_date": "2026-05-06",
+    }]
+    monkeypatch.setattr(
+        build_live_events_to_supabase,
+        "_fetch_recent_provider_run_rows",
+        lambda *_args, **_kwargs: (run_rows, True),
+    )
+    writer = Mock()
+    writer.select_rows.return_value = [
+        {"id": "snapshot-2", "run_id": _ordered_uuid(9000), "provider": "therundown", "observed_at": "2026-05-06T10:01:00+00:00"},
+        {"id": "snapshot-1", "run_id": _ordered_uuid(9000), "provider": "therundown", "observed_at": "2026-05-06T10:00:00+00:00"},
+    ]
+
+    result = build_live_events_to_supabase._fetch_live_market_snapshot_rows(
+        writer, "2026-05-06",
+        build_live_events_to_supabase.datetime.fromisoformat("2026-05-06T18:00:00+00:00"),
+        page_size=2, max_pages=1,
+    )
+
+    assert [row["id"] for row in result.rows] == ["snapshot-2", "snapshot-1"]
+    assert result.v2_rows == result.rows
+    assert result.complete is False
+    assert result.reason_codes == ("snapshot_page_cap_reached",)
+
+
+def test_snapshot_default_cap_returns_exact_newest_5000_suffix_and_v2_incomplete(
+    monkeypatch,
+):
+    run_rows = [{
+        "id": _ordered_uuid(9000), "created_at": "2026-05-06T10:00:00+00:00",
+        "provider": "therundown", "slate_date": "2026-05-06",
+    }]
+    monkeypatch.setattr(
+        build_live_events_to_supabase,
+        "_fetch_recent_provider_run_rows",
+        lambda *_args, **_kwargs: (run_rows, True),
+    )
+    writer = Mock()
+    pages = [
+        [
+            {
+                "id": _ordered_uuid(index),
+                "run_id": _ordered_uuid(9000),
+                "provider": "therundown",
+                "observed_at": "2026-05-06T10:00:00+00:00",
+            }
+            for index in range(page_end, page_end - 1000, -1)
+        ]
+        for page_end in (5000, 4000, 3000, 2000, 1000)
+    ]
+    writer.select_rows.side_effect = lambda _table, _params: pages.pop(0)
+
+    result = build_live_events_to_supabase._fetch_live_market_snapshot_rows(
+        writer,
+        "2026-05-06",
+        build_live_events_to_supabase.datetime.fromisoformat(
+            "2026-05-06T18:00:00+00:00"
+        ),
+    )
+
+    assert len(result.rows) == 5000
+    assert result.rows[0]["id"] == _ordered_uuid(5000)
+    assert result.rows[-1]["id"] == _ordered_uuid(1)
+    assert len({row["id"] for row in result.rows}) == 5000
+    assert result.v2_rows == result.rows
+    assert result.complete is False
+    assert result.reason_codes == ("snapshot_page_cap_reached",)
+    assert writer.select_rows.call_count == 5
+
+
+def test_snapshot_slate_stamp_requires_matching_parent_provider():
+    writer = Mock()
+
+    def select_rows(table, params):
+        if table == "market_provider_runs":
+            return [{
+                "id": "run-1", "created_at": "2026-05-06T10:00:00+00:00",
+                "provider": "TheRundown", "slate_date": "2026-05-06",
+            }]
+        if table == "market_snapshots":
+            return [{
+                "id": "snapshot-1", "run_id": "run-1",
+                "provider": "propline", "observed_at": "2026-05-06T10:01:00+00:00",
+            }]
+        raise AssertionError(table)
+
+    writer.select_rows.side_effect = select_rows
+
+    result = build_live_events_to_supabase._fetch_live_market_snapshot_rows(
+        writer, "2026-05-06",
+        build_live_events_to_supabase.datetime.fromisoformat("2026-05-06T18:00:00+00:00"),
+    )
+
+    assert result.rows[0]["slate_date"] == "2026-05-06"
+    assert result.v2_rows == []
+    assert result.complete is False
+    assert result.reason_codes == ("snapshot_parent_provider_mismatch",)
+
+
+def test_worker_keeps_capped_newest_suffix_for_legacy_consumers_and_fails_v2_closed(
+    tmp_path, monkeypatch,
+):
+    today = _write_artifact(tmp_path, [_fire_pitcher()])
+    legacy_rows = [
+        {
+            "id": "snapshot-newest",
+            "provider": "propline",
+            "provider_event_id": "game-1",
+            "normalized_player_name": "tarik skubal",
+            "bookmaker_key": "fanduel",
+            "side": "over",
+            "line": 6.5,
+            "american_odds": -105,
+            "observed_at": "2026-05-06T18:00:00+00:00",
+        },
+        {
+            "id": "snapshot-older",
+            "provider": "propline",
+            "provider_event_id": "game-1",
+            "normalized_player_name": "tarik skubal",
+            "bookmaker_key": "fanduel",
+            "side": "over",
+            "line": 6.5,
+            "american_odds": -110,
+            "observed_at": "2026-05-06T17:50:00+00:00",
+        },
+    ]
+    v2_rows = [legacy_rows[0]]
+    snapshot_read = build_live_events_to_supabase.SnapshotReadResult(
+        rows=legacy_rows,
+        v2_rows=v2_rows,
+        complete=False,
+        window_started_at="2026-05-06T06:00:00+00:00",
+        reason_codes=("snapshot_page_cap_reached",),
+    )
+    fetch = Mock(return_value=snapshot_read)
+    movement = Mock(return_value=[])
+    display = Mock(return_value=[])
+    dispatch = Mock(return_value={"skipped": False, "rows": 0})
+    writer = _writer_with_selects({
+        "live_pick_state": [],
+        "market_feed_heartbeats": [],
+        "live_market_display_state": [],
+        "game_reminder_state": [],
+    })
+
+    monkeypatch.setattr(build_live_events_to_supabase, "_fetch_live_market_snapshot_rows", fetch)
+    monkeypatch.setattr(build_live_events_to_supabase, "build_line_movement_events", movement)
+    monkeypatch.setattr(build_live_events_to_supabase, "build_market_pick_evidence_rows", lambda **_kwargs: [])
+    monkeypatch.setattr(build_live_events_to_supabase, "build_live_market_display_rows", display)
+    monkeypatch.setattr(build_live_events_to_supabase, "_dispatch_alternative_pick_selection_state", dispatch)
+
+    with (
+        patch.object(build_live_events_to_supabase, "SupabaseMarketWriter", return_value=writer),
+        patch.object(
+            build_live_events_to_supabase,
+            "_now_utc",
+            return_value=build_live_events_to_supabase.datetime.fromisoformat(
+                "2026-05-06T18:00:00+00:00"
+            ),
+        ),
+    ):
+        build_live_events_to_supabase.run(
+            slate_date="2026-05-06",
+            artifact_path=today,
+            supabase_url="https://example.supabase.co",
+            service_role_key="secret",
+        )
+
+    fetch.assert_called_once()
+    assert [
+        row["id"]
+        for row in (
+            movement.call_args.kwargs["previous_snapshots"]
+            + movement.call_args.kwargs["current_snapshots"]
+        )
+    ] == ["snapshot-older", "snapshot-newest"]
+    assert display.call_args.kwargs["snapshot_rows"] == legacy_rows
+    assert dispatch.call_args.kwargs["snapshot_rows"] == legacy_rows
+    assert dispatch.call_args.kwargs["v2_snapshot_rows"] == v2_rows
+    assert dispatch.call_args.kwargs["snapshot_read_complete"] is False
+    assert dispatch.call_args.kwargs["snapshot_read_reason_codes"] == (
+        "snapshot_page_cap_reached",
+    )
 
 
 def test_worker_ignores_boltodds_shadow_snapshots_for_notifications(tmp_path):

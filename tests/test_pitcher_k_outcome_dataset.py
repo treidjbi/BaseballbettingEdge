@@ -1,3 +1,5 @@
+import json
+
 from analytics.diagnostics.pitcher_k_outcome_dataset import (
     actual_opportunity_lookup_key,
     build_official_close_rows,
@@ -61,6 +63,7 @@ def test_build_official_close_rows_creates_one_row_per_side():
             "lineup_path_a_fallback_count": 2,
             "quality_gate_level": "clean",
             "quality_gate_reasons": [],
+            "archive_outcome_reconciliation_source": "picks_history_exact",
             "source_artifact_path": "dashboard/data/processed/2026-05-12.json",
             "pitcher_throws": "R",
             "avg_ip": 5.8,
@@ -100,6 +103,7 @@ def test_build_official_close_rows_creates_one_row_per_side():
     assert under["lineup_path_a_fallback_count"] == 2
     assert under["lineup_handedness_source"] is None
     assert under["lineup_handedness_runtime_safe"] is None
+    assert under["archive_outcome_reconciliation_source"] == "picks_history_exact"
 
 
 def test_enrich_rows_with_market_agreement_uses_latest_pre_start_tracker_row(tmp_path):
@@ -457,6 +461,201 @@ def test_load_archived_markets_for_dataset_preserves_baseball_context(tmp_path):
     assert markets[0]["opp_team"] == "NYY"
     assert markets[0]["winning_side"] == "under"
     assert markets[0]["source_artifact_path"] == "dashboard/data/processed/2026-05-12.json"
+
+
+def test_load_archived_markets_recovers_missing_actual_from_one_exact_graded_history_row(
+    tmp_path,
+):
+    archive = tmp_path / "2026-06-16.json"
+    archive.write_text(
+        json.dumps(
+            {
+                "pitchers": [
+                    {
+                        "pitcher": "Adrian Houser",
+                        "k_line": 3.5,
+                        "actual_ks": None,
+                        "result": None,
+                        "best_over_odds": 114,
+                        "best_under_odds": -146,
+                        "ev_over": {"verdict": "PASS"},
+                        "ev_under": {"verdict": "LEAN"},
+                    }
+                ]
+            }
+        ),
+        encoding="utf-8",
+    )
+    stats = {}
+
+    markets = load_archived_markets_for_dataset(
+        tmp_path,
+        start_date="2026-06-16",
+        end_date="2026-06-16",
+        outcome_history_rows=[
+            {
+                "date": "2026-06-16",
+                "pitcher": "Adrian Houser",
+                "side": "under",
+                "locked_k_line": 3.5,
+                "result": "win",
+                "actual_ks": 2,
+            }
+        ],
+        outcome_reconciliation_stats=stats,
+    )
+
+    assert len(markets) == 1
+    assert markets[0]["actual_ks"] == 2
+    assert markets[0]["winning_side"] == "under"
+    assert markets[0]["archive_outcome_reconciliation_source"] == "picks_history_exact"
+    assert stats == {"recovered_markets": 1, "ambiguous_markets": 0}
+
+
+def test_load_archived_markets_never_overwrites_archive_actual(tmp_path):
+    archive = tmp_path / "2026-06-16.json"
+    archive.write_text(
+        json.dumps(
+            {
+                "pitchers": [
+                    {
+                        "pitcher": "Adrian Houser",
+                        "k_line": 3.5,
+                        "actual_ks": 5,
+                        "best_over_odds": 114,
+                        "best_under_odds": -146,
+                    }
+                ]
+            }
+        ),
+        encoding="utf-8",
+    )
+    stats = {}
+
+    markets = load_archived_markets_for_dataset(
+        tmp_path,
+        start_date="2026-06-16",
+        end_date="2026-06-16",
+        outcome_history_rows=[
+            {
+                "date": "2026-06-16",
+                "pitcher": "Adrian Houser",
+                "side": "under",
+                "locked_k_line": 3.5,
+                "result": "win",
+                "actual_ks": 2,
+            }
+        ],
+        outcome_reconciliation_stats=stats,
+    )
+
+    assert markets[0]["actual_ks"] == 5
+    assert markets[0]["winning_side"] == "over"
+    assert markets[0]["archive_outcome_reconciliation_source"] == "archive"
+    assert stats == {"recovered_markets": 0, "ambiguous_markets": 0}
+
+
+def test_load_archived_markets_missing_actual_fails_closed_without_exact_graded_history(
+    tmp_path,
+):
+    archive = tmp_path / "2026-06-16.json"
+    archive.write_text(
+        json.dumps(
+            {
+                "pitchers": [
+                    {
+                        "pitcher": "Adrian Houser",
+                        "k_line": 3.5,
+                        "actual_ks": None,
+                        "best_over_odds": 114,
+                        "best_under_odds": -146,
+                    }
+                ]
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    invalid_history_cases = [
+        [
+            {
+                "date": "2026-06-16",
+                "pitcher": "Adrian Houser",
+                "locked_k_line": 4.5,
+                "result": "win",
+                "actual_ks": 2,
+            }
+        ],
+        [
+            {
+                "date": "2026-06-16",
+                "pitcher": "Adrian Houser",
+                "locked_k_line": 3.5,
+                "result": None,
+                "actual_ks": 2,
+            }
+        ],
+        [
+            {
+                "date": "2026-06-16",
+                "pitcher": "Adrian Houser",
+                "locked_k_line": 3.5,
+                "result": "win",
+                "actual_ks": None,
+            }
+        ],
+    ]
+
+    for history_rows in invalid_history_cases:
+        stats = {}
+        markets = load_archived_markets_for_dataset(
+            tmp_path,
+            start_date="2026-06-16",
+            end_date="2026-06-16",
+            outcome_history_rows=history_rows,
+            outcome_reconciliation_stats=stats,
+        )
+        assert markets == []
+        assert stats == {"recovered_markets": 0, "ambiguous_markets": 0}
+
+
+def test_load_archived_markets_ambiguous_exact_history_fails_closed(tmp_path):
+    archive = tmp_path / "2026-06-16.json"
+    archive.write_text(
+        json.dumps(
+            {
+                "pitchers": [
+                    {
+                        "pitcher": "Adrian Houser",
+                        "k_line": 3.5,
+                        "actual_ks": None,
+                        "best_over_odds": 114,
+                        "best_under_odds": -146,
+                    }
+                ]
+            }
+        ),
+        encoding="utf-8",
+    )
+    history_row = {
+        "date": "2026-06-16",
+        "pitcher": "Adrian Houser",
+        "locked_k_line": 3.5,
+        "result": "win",
+        "actual_ks": 2,
+    }
+    stats = {}
+
+    markets = load_archived_markets_for_dataset(
+        tmp_path,
+        start_date="2026-06-16",
+        end_date="2026-06-16",
+        outcome_history_rows=[history_row, dict(history_row)],
+        outcome_reconciliation_stats=stats,
+    )
+
+    assert markets == []
+    assert stats == {"recovered_markets": 0, "ambiguous_markets": 1}
 
 
 def test_load_archived_markets_can_read_production_artifact_api(monkeypatch):

@@ -2,7 +2,7 @@
 
 **Date:** 2026-07-22
 
-**Status:** Approved by Tyler; implementation plan drafted, implementation not started
+**Status:** Comparison-only V2 is implemented and deployed; the 2026-07-23 final contract-repair wave is deployed and remains in prospective soak, with every official promotion gate closed
 
 **Approved bundle:** `pregame_alternative_pick_methodology_v2`
 
@@ -117,8 +117,8 @@ V2 receives new identities and a new manifest fingerprint:
 - bundle: `pregame_alternative_pick_methodology_v2`
 - Consensus: `no_drag_distinct_family_consensus_core_v2`
 - Re-entry: `moderate_edge_quality_reentry_expansion_v2`
-- fingerprint: calculated from the reviewed v2 manifest and frozen before any
-  production row is written
+- fingerprint:
+  `23bacff0fa923685ae52c5a9cfbadfb9f5902fb64d91759cfe9b4b1169a221c4`
 
 Existing v1 rows remain in Supabase. V2 never updates, deletes, reconstructs,
 or relabels them. V2 starts a new prospective record at zero.
@@ -572,25 +572,110 @@ decision proof shows that Preclose was a nonessential pending family.
   research anchors as comparator parity while keeping them clearly separate
   from V2 prospective results. The incomplete historical rows are not expected
   to pass V2's stricter affirmative-evidence rules.
-- Commit a sanitized captured fixture at
-  `tests/fixtures/alternative_pick_selection_v2/2026-07-22T183100Z.json` plus
-  a fixture manifest containing its SHA-256. It must contain the canonical
-  candidate fields, `candidate_became_current_at`, official provider and exact
-  event/current-line bindings, bound observation IDs/timestamps, heartbeat
-  freshness inputs, exact ladder inputs, and expected V2 outputs. Replay that
-  captured state. Dependency-aware lane logic
-  should surface Colin Rea Under 4.5 as Consensus Core and Cade Cavalli Over
-  5.5 plus Bubba Chandler Under 4.5 as Re-entry Expansion. Keider Montero must
-  remain out because no-drag is false and Re-entry does not agree.
-- Do not alter or reconstruct Jake Bennett's already-frozen v1 row.
-- Commit a second synthetic golden fixture with mature exact official-provider
+- Bind that parity check to the recovered July 21 hybrid Gate C corpus through
+  its corpus and manifest hashes. Keep a compressed test-only projection of all
+  `1,621` tracked official-close rows through `2026-07-20`, retaining only the
+  frozen allow-list of source fields and their missing/null semantics. This is
+  hindsight-capable research evidence, not a prospective fixture. Reproduce
+  the published PnL using its original convention: round each row to three
+  decimals before summing.
+- The originally planned 2026-07-22 18:31Z fixture is unavailable: the V1
+  state preserved seven canonical and byte-hash pairs, but no matching raw
+  artifact survived in `artifact_snapshots`, `published_pipeline_artifacts`,
+  the repository, or local archives. Do not reconstruct it from the 5,259
+  broad tracker rows, later mutable lines, close data, or later artifacts.
+- Commit a synthetic golden fixture with mature exact official-provider
   movement and ladder evidence that affirmatively resolves Preclose, so the
-  exact evidence path is tested independently of the three selected rows above.
+  exact evidence path is tested independently of live captured rows.
+- Before Production Gate A, commit a sanitized fixture from the next clean
+  prospective normal slate. Capture the official `get-artifact` bytes while
+  the artifact is current and before every eligible candidate's T-30, verify
+  both raw-byte and canonical-payload SHA-256 against the contemporaneous
+  published artifact row, and retain only artifact-declared snapshot/current-
+  line IDs whose own timestamps do not exceed the checkpoint. The manifest
+  must bind the raw fixture hash, official artifact hashes, capture timestamp,
+  maximum source timestamp, and expected V2 outputs. If exact retention or
+  binding fails, defer to another slate.
+- Do not alter, reconstruct, or backfill any already-frozen V1 row. The future
+  captured fixture starts the V2 prospective ledger at zero and contains no
+  result, actual Ks, PnL, CLV outcome, accepted-bet, notification, or post-start
+  input.
 
-These named rows are a deterministic captured-slate regression fixture, not
-current wagering advice or a promised production count after later artifacts.
+The synthetic fixture and future captured rows are deterministic regression
+evidence, not current wagering advice or a promised production count after
+later artifacts.
 
-## Staged rollout
+## Historical local implementation handoff - 2026-07-23
+
+The final reviewed local core reference is `8c29bc66`: its review fixes include
+`2ceaaa35` for fail-closed malformed V2 proof scalars, `e5c39523` for
+chronological Preclose checkpoints, and `ad6a0596` for isolated V2 startup
+imports. The V2 proof migration is
+`20260722230000_alternative_pick_v2_evaluation_proof.sql`. The public
+endpoint/browser work remains isolated on the held web branch at `5ca07dc5`,
+which aligns endpoint proof-scalar validation; it has not been merged or
+deployed. Unset or blank
+`ALTERNATIVE_PICK_SELECTION_BUNDLE_VERSION` still defaults the recorder to V1,
+and `ALTERNATIVE_PICK_SELECTION_MODE=off` remains the code default and
+immediate stop.
+
+Current local verification recorded `1,850` passing core Python tests and `99`
+passing core Node tests; held web passed `60` focused / `134` full Node tests
+and `24` UI-isolation tests. The final Sol Ultra whole-branch review is CLEAN
+with no Critical, Important, or Minor findings, and all prior findings are
+closed. This qualifies only the Task 9 branch push; it is not production
+readiness.
+
+This is local verification, not production readiness. The live isolation read
+recorded on 2026-07-23 found the V2 migration absent, the `evaluation_proof`
+column absent, zero V2 rows, `50` V1 rows, and zero alternative notification
+events. Live Netlify still served the V1 contract. No V2 prospective result
+exists, and the next clean prospective exact fixture remains mandatory before
+Production Gate A.
+
+The proof migration, V2-capable Render merge/deploy, V2 recorder activation,
+and Netlify endpoint/UI merge/deploy remain separate closed mutation gates.
+No local result authorizes a change to official picks, model math, thresholds,
+staking, providers, notifications, locks, accepted bets, artifacts, shared
+tracking/analytics tables, retention, or source-of-truth behavior.
+
+### Production contract-repair handoff - 2026-07-23
+
+The historical local preflight above is superseded by the observed production
+rollout. The final reviewed repair tree is `cb2224f1`; empty release-control
+commit `6ab9fcf2` has the identical tree and is the exact commit deployed to both
+production surfaces. Full verification passed `1,925` Python and `167` Node
+tests, and the final Sol Ultra whole-branch/live review returned GO.
+
+Render deploy `dep-d9h8u9sm0tmc738cfmqg` reached live without an environment,
+worker, cadence, provider, schema, notification, lock, or official-path change.
+Its first normal scheduled cycle began at `22:10:06Z` and completed successfully
+at `22:10:59Z`. The exact official artifact then had four tracked non-PASS
+candidates, all already locked or started; the two future pitchers had no
+tracked picks. No post-repair candidate therefore existed from which to create a
+new workload-bound V2 proof. The existing Brandon Pfaadt frozen proof remained
+immutable at MD5 `efa7e0484981aa26b976b0bd897b7dea`, observed
+`20:50:12Z`; it was not reconstructed or rewritten.
+
+Netlify production deploy `6a62955898bec52cde5903ae` is ready on
+`6ab9fcf2`. Explicit V2 now returns `ready` with zero current rows because the
+strengthened contract suppresses incompatible old proofs. Explicit V1 and the
+unversioned compatibility route still return their three legacy current rows,
+and invalid versions remain unavailable. Desktop and `390x844` checks showed
+the comparison-only waiting state, no wager controls, eight unchanged official
+props, and `1,648` unchanged graded Results rows.
+
+The next normal prospective slate must supply the first new workload-bound V2
+proof and freeze. That observation is a soak requirement, not permission to
+backfill or a blocker to the comparison-only UI. V2 is the operational Alt
+methodology; V1 remains inert compatibility only. Every official model,
+pick-selection, threshold, staking, provider, notification, lock, accepted-bet,
+artifact, history, retention, and source-of-truth gate remains closed.
+
+## Historical staged rollout
+
+The following checklist records the original gate sequence. It is superseded by
+the observed production handoff above and is retained only as rollout history.
 
 1. Add and review the bounded proof-column migration separately.
 2. Apply the migration and verify the new column/default plus existing RLS,
@@ -599,32 +684,40 @@ current wagering advice or a promised production count after later artifacts.
 3. Implement the explicit bundle-version gate, V2 evaluator, endpoint
    handshake, and browser adapter with the bundle gate still defaulted to V1.
 4. Run focused selector/evidence tests, full Python and Node suites, protected
-   behavior checks, historical parity, and the captured-slate replay.
-5. Merge and deploy the live-layer code without changing official services or
+   behavior checks, historical parity, and the synthetic exact-evidence replay.
+5. Before applying the proof migration or merging either reviewed branch,
+   capture and independently review the next clean prospective exact fixture
+   under the gate above. Until it passes, all production steps remain closed.
+6. Merge and deploy the live-layer code without changing official services or
    provider configuration; prove that deployment alone writes zero V2 rows.
-6. Before the first relevant T-30 lock, change only
+7. Before the first relevant T-30 lock, change only
    `ALTERNATIVE_PICK_SELECTION_BUNDLE_VERSION` to `v2` through a full-list,
    cursor-paginated preserve-and-verify environment update, record whether the
    key was originally present or absent, redeploy the existing live-layer, and
    wait for a clean scheduled cycle. Defer to the next slate if any relevant
    lock has already occurred.
-7. Verify bounded V2 provisional rows, expected lane decisions, zero duplicate
+8. Verify bounded V2 provisional rows, expected lane decisions, zero duplicate
    keys, zero alternative notification events, and unchanged lock timing.
-8. Deploy the backward-compatible endpoint handshake and V2 browser request
+9. Deploy the backward-compatible endpoint handshake and V2 browser request
    only after the V2 rows pass that check. Unversioned requests must continue
    serving V1.
-9. Verify desktop and mobile cards, selected-with-pending copy, and continued
+10. Verify desktop and mobile cards, selected-with-pending copy, and continued
    isolation of Picks, Results, and accepted bets.
 
-Rollback reverses the gates in dependency order: restore the bundle key to its
-exact pre-activation state (absent or V1), or set the recorder `off` for an immediate stop, obtain one clean V1
-cycle with zero new V2 writes, and verify current-slate V1 coverage before
+Rollback reverses the gates in dependency order. For an immediate stop, set
+`ALTERNATIVE_PICK_SELECTION_MODE=off` and redeploy only `bbe-live-layer`.
+For version rollback, restore the bundle key to its exact pre-activation state
+(unset when originally absent, or `v1` when originally present), redeploy the
+live layer, obtain one clean V1 cycle with zero new V2 writes, and verify
+current-slate V1 coverage before
 restoring the V1 UI. V1 rows missed while V2 was active are never reconstructed;
 if current-slate V1 coverage is incomplete, the Alt comparison surface remains
 unavailable until the next clean slate rather than presenting partial V1 as
 complete. The backward-compatible endpoint may remain deployed because
 unversioned requests serve the validated V1 handshake; a full endpoint rollback
-remains available if that contract itself fails.
+remains available if that contract itself fails. Do not remove the additive
+proof column until every V2 writer and reader has been reverted; retaining the
+unused additive column is the safer database rollback.
 
 No step authorizes an official model, staking, provider, notification, lock,
 artifact, or retention change.

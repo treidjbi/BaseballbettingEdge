@@ -263,6 +263,9 @@ def _parse_event_k_props(event: dict) -> list:
     away_team = next((t["name"] for t in teams if t.get("is_away")), "")
     home_team = next((t["name"] for t in teams if t.get("is_home")), "")
     game_time = event.get("event_date", "")
+    therundown_event_id = str(
+        event.get("event_id") or event.get("id") or ""
+    ).strip()
 
     results = []
     for market in event.get("markets", []):
@@ -391,6 +394,8 @@ def _parse_event_k_props(event: dict) -> list:
                 "opening_odds_source": "first_seen",
                 "book_odds":          book_odds or None,
                 "odds_source":        "therundown",
+                "line_source_provider": "therundown",
+                "therundown_event_id": therundown_event_id,
             })
 
     return results

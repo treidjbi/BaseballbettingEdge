@@ -139,3 +139,43 @@ The sample gate was added on 2026-06-07:
 - [x] Update the BBE Operations Brief automation memory so future briefs carry
       the new tracker checklist.
 - [x] Commit and push the scoped changes.
+
+## 2026-07-23 Scheduled Compact-Input Repair
+
+The research branch adds
+`scripts/export_market_agreement_inputs.py` and an explicit
+`--refresh-market-agreement-inputs` post-grading runner mode.
+
+The exporter:
+
+- reads only `market_pick_evidence` and `live_market_display_state`;
+- applies inclusive clean-regime start/end bounds;
+- paginates with a stable order and verifies the fetched unique row count
+  against an exact Supabase count;
+- fetches current production `picks_history` and `today` artifacts;
+- stages and hashes every output before replacement; and
+- never reads scheduled raw `market_snapshots`, writes Supabase rows, or
+  changes live artifacts.
+
+The refreshed runner order is:
+
+1. compact export;
+2. market-agreement prebuild from production history/current artifact;
+3. one Gate C build using the fresh tracker/display inputs;
+4. final market-agreement render from the fresh Gate C dataset; and
+5. existing downstream shadow reports.
+
+Flag-off behavior remains unchanged. A live temporary export through
+`2026-07-22` returned `3,089` evidence rows and `3,227` display rows, and the
+tracker wrote `6,316` rows. This is useful shadow evidence, not approval for a
+model, provider, notification, lock, UI, staking, threshold, retention, or
+source-of-truth change. Tyler accepted the one named Robert Gasser exact-line
+reconciliation miss as a visible fail-closed exception on `2026-07-23`, so the
+bounded research-cron deployment may proceed. Cross-line recovery and every
+model-promotion gate remain closed.
+
+Deployment verification at `2026-07-23T17:16:27Z` exported `3,105`
+`market_pick_evidence` rows and `3,251` `live_market_display_state` rows for
+`2026-04-28..2026-07-23`, then wrote `6,356` market-agreement rows. The run
+read compact evidence only, did not query scheduled raw `market_snapshots`,
+and performed no Supabase write.

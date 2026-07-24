@@ -1485,3 +1485,43 @@ Expected rollback behavior:
 - No `market_anchor_selector` metadata on new artifacts.
 - Existing historical metadata remains in `picks_history` and Gate C for audit.
 - Verdicts continue through quality, confidence-referee, and profit-rescue exactly as before.
+
+## 2026-07-23 Dedicated Slice Review
+
+The research branch expands the post-grading audit without changing selector
+logic, metadata, fingerprint, lambda, EV, verdicts, or runtime mode.
+
+Live temporary verification through `2026-07-22` found:
+
+- `331` clean tracked rows with selector metadata;
+- `131` market-anchor strict rows at `81-50`, `+6.62u`, `+5.1%` ROI;
+- current-provider strict at `91` rows, `58-33`, `+8.31u`, `+9.1%` ROI;
+- recent-14 strict at `49` rows, `32-17`, `+5.93u`, `+12.1%` ROI;
+- strict displayed FIRE at `27` rows, `20-7`, `+7.14u`, `+26.5%` ROI;
+- current-provider strict displayed FIRE at `20` rows, `15-5`,
+  `+5.71u`, `+28.5%` ROI; and
+- leave-one-slate-out minimums of `+3.68u` for strict-all and `+5.70u`
+  for strict displayed FIRE.
+
+The raw floors therefore open status `separate_shadow_review_ready`. They do
+not open enforcement. Blocking evidence remains:
+
+- every strict displayed FIRE row is `OVER`;
+- the `6.5` K-line slice is negative;
+- neutral/unknown final CLV and medium/weak pre-close proxy slices are
+  negative;
+- high/medium workload slices are negative;
+- retired/pre-current provider-era and several market-agreement slices are
+  negative; and
+- `122/131` strict rows lack provider attribution and market-agreement labels.
+
+Keep `MARKET_ANCHOR_SELECTOR_MODE=shadow`; `enforce_downside` remains closed.
+Any narrowed OVER-only candidate requires a new selector id, fingerprint,
+baseline, plan, and prospective canary.
+
+The first deployed compact-input research run at
+`2026-07-23T17:16:27Z` reproduced `separate_shadow_review_ready`: strict
+tracked was `131`, `81-50`, `+6.62u`, and strict displayed FIRE remained
+`27`, `20-7`, `+7.14u`. The report explicitly remained shadow metadata only.
+No selector id, fingerprint, candidate logic, lambda, verdict, threshold, or
+staking behavior changed; `enforce_downside` remains closed.

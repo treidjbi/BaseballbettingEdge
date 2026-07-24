@@ -7,6 +7,7 @@ import math
 import os
 import sys
 import time
+from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any
@@ -85,6 +86,15 @@ DEFAULT_PROPLINE_WEBHOOK_MAX_AGE_MINUTES = 180
 DEFAULT_PROPLINE_WEBHOOK_NOTIFICATION_MAX_AGE_MINUTES = 20
 
 
+@dataclass(frozen=True)
+class SnapshotReadResult:
+    rows: list[dict[str, Any]]
+    v2_rows: list[dict[str, Any]]
+    complete: bool
+    window_started_at: str
+    reason_codes: tuple[str, ...]
+
+
 def _env(name: str) -> str:
     value = os.environ.get(name, "").strip()
     if not value:
@@ -143,6 +153,23 @@ def _alternative_pick_selection_mode() -> str:
     return "record" if os.environ.get(
         "ALTERNATIVE_PICK_SELECTION_MODE", "off"
     ).strip().lower() == "record" else "off"
+
+
+def _alternative_pick_selection_bundle_version() -> str | None:
+    raw = os.getenv("ALTERNATIVE_PICK_SELECTION_BUNDLE_VERSION")
+    if raw is None or not raw.strip():
+        return "v1"
+    value = raw.strip().lower()
+    return value if value in {"v1", "v2"} else None
+
+
+def _load_alternative_pick_v2_recorder():
+    """Load the optional V2 recorder only after explicit V2 dispatch."""
+    from market_infra.alternative_pick_recording_v2 import (  # noqa: PLC0415
+        record_alternative_pick_selection_v2,
+    )
+
+    return record_alternative_pick_selection_v2
 
 
 def _alternative_remaining_timeout(started_at: float, budget_seconds: float) -> float:
@@ -764,6 +791,76 @@ def _write_alternative_pick_selection_state(
     }
 
 
+def _dispatch_alternative_pick_selection_state(
+    *, writer: SupabaseMarketWriter, slate_date: str, payload: dict[str, Any],
+    snapshot_rows: list[dict[str, Any]], provider_heartbeats: list[dict[str, Any]],
+    market_pick_evidence_rows: list[dict[str, Any]],
+    observed_at: datetime, artifact_source: str,
+    source_payload_sha256: str, source_artifact_byte_sha256: str,
+    operational_pick_locks: dict[str, Any], market_line_build: dict[str, Any],
+    shadow_pipeline_timing: dict[str, Any], ready_to_bet_write: dict[str, Any],
+    live_market_display_rows: list[dict[str, Any]], budget_seconds: float = 5.0,
+    snapshot_read_complete: bool = True, snapshot_window_started_at: str = "",
+    snapshot_read_reason_codes: tuple[str, ...] = (),
+    v2_snapshot_rows: list[dict[str, Any]] | None = None,
+) -> dict[str, Any]:
+    """Select exactly one version without changing the frozen V1 writer body."""
+    version = _alternative_pick_selection_bundle_version()
+    if _alternative_pick_selection_mode() == "record" and version is None:
+        return {"skipped": True, "reason": "invalid_bundle_version", "rows": 0}
+    if _alternative_pick_selection_mode() == "record" and version == "v2":
+        started_at = time.monotonic()
+        try:
+            recorder = _load_alternative_pick_v2_recorder()
+            remaining_budget = _alternative_remaining_timeout(started_at, budget_seconds)
+            if remaining_budget <= 0:
+                raise TimeoutError("alternative V2 import exhausted sidecar budget")
+            return recorder(
+                writer=writer,
+                slate_date=slate_date,
+                payload=payload,
+                snapshot_rows=(
+                    v2_snapshot_rows
+                    if v2_snapshot_rows is not None
+                    else snapshot_rows
+                ),
+                provider_heartbeats=provider_heartbeats,
+                snapshot_read_complete=snapshot_read_complete,
+                snapshot_window_started_at=snapshot_window_started_at,
+                snapshot_read_reason_codes=snapshot_read_reason_codes,
+                observed_at=observed_at,
+                artifact_source=artifact_source,
+                source_payload_sha256=source_payload_sha256,
+                source_artifact_byte_sha256=source_artifact_byte_sha256,
+                operational_pick_locks=operational_pick_locks,
+                market_line_build=market_line_build,
+                shadow_pipeline_timing=shadow_pipeline_timing,
+                ready_to_bet_write=ready_to_bet_write,
+                budget_seconds=remaining_budget,
+            )
+        except TimeoutError:
+            return _alternative_failure_summary("timeout")
+        except Exception:
+            return _alternative_failure_summary("failed")
+    return _write_alternative_pick_selection_state(
+        writer=writer,
+        slate_date=slate_date,
+        payload=payload,
+        snapshot_rows=snapshot_rows,
+        market_pick_evidence_rows=market_pick_evidence_rows,
+        observed_at=observed_at,
+        artifact_source=artifact_source,
+        source_payload_sha256=source_payload_sha256,
+        source_artifact_byte_sha256=source_artifact_byte_sha256,
+        operational_pick_locks=operational_pick_locks,
+        market_line_build=market_line_build,
+        shadow_pipeline_timing=shadow_pipeline_timing,
+        ready_to_bet_write=ready_to_bet_write,
+        live_market_display_rows=live_market_display_rows,
+        budget_seconds=budget_seconds,
+    )
+
+
 def _write_ready_to_bet_candidates(
     *,
     writer: SupabaseMarketWriter,
@@ -1006,16 +1103,36 @@ def _fetch_recent_provider_run_rows(
     slate_date: str,
     *,
     limit: int = 100,
-) -> list[dict[str, Any]]:
-    return writer.select_rows(
+) -> tuple[list[dict[str, Any]], bool]:
+    """Return the legacy newest-run scope plus V2 completeness in one read."""
+    requested_limit = max(1, limit)
+    raw_rows = writer.select_rows(
         "market_provider_runs",
         {
             "slate_date": f"eq.{slate_date}",
             "provider": "in.(propline,therundown)",
-            "order": "created_at.desc",
-            "limit": str(limit),
+            "order": "created_at.desc,id.desc",
+            "limit": str(requested_limit + 1),
         },
     )
+    if not isinstance(raw_rows, list):
+        return [], False
+
+    rows: list[dict[str, Any]] = []
+    seen: set[tuple[str, str]] = set()
+    cursor: tuple[str, str] | None = None
+    for row in raw_rows[:requested_limit]:
+        timestamp = row.get("created_at") if isinstance(row, dict) else None
+        identifier = row.get("id") if isinstance(row, dict) else None
+        if not isinstance(timestamp, str) or not timestamp or not isinstance(identifier, str) or not identifier:
+            return rows, False
+        token = (timestamp, identifier)
+        if token in seen or (cursor is not None and token >= cursor):
+            return rows, False
+        seen.add(token)
+        rows.append(row)
+        cursor = token
+    return rows, len(raw_rows) <= requested_limit
 
 
 def _fetch_live_market_snapshot_rows(
@@ -1026,7 +1143,7 @@ def _fetch_live_market_snapshot_rows(
     lookback_minutes: int | None = None,
     page_size: int = 1000,
     max_pages: int = 5,
-) -> list[dict[str, Any]]:
+) -> SnapshotReadResult:
     """Fetch bounded current-slate market rows without scanning all snapshots."""
     lookback = lookback_minutes
     if lookback is None:
@@ -1034,36 +1151,107 @@ def _fetch_live_market_snapshot_rows(
     lookback_start = (observed_at - timedelta(minutes=lookback)).isoformat()
 
     try:
-        run_rows = _fetch_recent_provider_run_rows(writer, slate_date)
+        run_rows, run_rows_complete = _fetch_recent_provider_run_rows(writer, slate_date)
     except Exception as error:
         print(
             f"Warning: market provider run read failed ({error}); falling back to bounded snapshot read",
             file=sys.stderr,
         )
         run_rows = []
+        run_rows_complete = False
 
     rows: list[dict[str, Any]] = []
+    v2_rows: list[dict[str, Any]] = []
+    reasons: list[str] = []
+    if not run_rows_complete:
+        reasons.append(
+            "provider_run_page_cap_reached"
+            if len(run_rows) >= 100
+            else "provider_run_provenance_unavailable"
+        )
     if run_rows:
-        run_rows = [row for row in run_rows if row.get("id")]
+        run_rows = [
+            row for row in run_rows
+            if isinstance(row, dict)
+            and isinstance(row.get("id"), str) and row["id"]
+            and str(row.get("slate_date") or "").strip() == slate_date
+            and str(row.get("provider") or "").strip()
+        ]
     if run_rows:
+        provenance_by_run_id = {
+            str(row["id"]): (
+                str(row["slate_date"]),
+                str(row["provider"]).strip().lower(),
+            )
+            for row in run_rows
+        }
         run_filter = _run_id_filter(run_rows)
-        for page in range(max_pages):
+        seen: set[tuple[str, str]] = set()
+        cursor: tuple[str, str] | None = None
+        for page_index in range(max_pages):
+            params = {
+                "run_id": run_filter,
+                "observed_at": f"gte.{lookback_start}",
+                "order": "observed_at.desc,id.desc",
+                "limit": str(page_size),
+            }
+            if cursor is not None:
+                cursor_timestamp, cursor_id = cursor
+                params["or"] = (
+                    f"(observed_at.lt.{cursor_timestamp},"
+                    f"and(observed_at.eq.{cursor_timestamp},id.lt.{cursor_id}))"
+                )
             page_rows = writer.select_rows(
                 "market_snapshots",
-                {
-                    "run_id": run_filter,
-                    "observed_at": f"gte.{lookback_start}",
-                    "order": "observed_at.desc",
-                    "limit": str(page_size),
-                    "offset": str(page * page_size),
-                },
+                params,
             )
-            rows.extend(page_rows)
+            if not isinstance(page_rows, list):
+                reasons.append("snapshot_keyset_invalid")
+                break
+            page_valid = True
+            for row in page_rows:
+                timestamp = row.get("observed_at") if isinstance(row, dict) else None
+                identifier = row.get("id") if isinstance(row, dict) else None
+                if not isinstance(timestamp, str) or not timestamp or not isinstance(identifier, str) or not identifier:
+                    reasons.append("snapshot_keyset_invalid")
+                    page_valid = False
+                    break
+                token = (timestamp, identifier)
+                if token in seen or (cursor is not None and token >= cursor):
+                    reasons.append("snapshot_keyset_invalid")
+                    page_valid = False
+                    break
+                seen.add(token)
+                cursor = token
+                run_id = str(row.get("run_id") or "")
+                provenance = provenance_by_run_id.get(run_id)
+                if provenance is None:
+                    reasons.append("provider_run_provenance_unavailable")
+                    rows.append(dict(row))
+                    continue
+                parent_slate_date, parent_provider = provenance
+                legacy_row = {**row, "slate_date": parent_slate_date}
+                rows.append(legacy_row)
+                snapshot_provider = str(row.get("provider") or "").strip().lower()
+                if snapshot_provider != parent_provider:
+                    reasons.append("snapshot_parent_provider_mismatch")
+                    continue
+                v2_rows.append(legacy_row)
+            if not page_valid:
+                break
             if len(page_rows) < page_size:
                 break
-        return rows
+            if page_index == max_pages - 1:
+                reasons.append("snapshot_page_cap_reached")
+        return SnapshotReadResult(
+            rows=rows,
+            v2_rows=v2_rows,
+            complete=not reasons,
+            window_started_at=lookback_start,
+            reason_codes=tuple(dict.fromkeys(reasons)),
+        )
 
-    return writer.select_rows(
+    fallback_rows = writer.select_rows(
         "market_snapshots",
         {
             "provider": "in.(propline,therundown)",
@@ -1071,6 +1259,15 @@ def _fetch_live_market_snapshot_rows(
             "order": "observed_at.desc",
             "limit": str(page_size),
         },
+    )
+    return SnapshotReadResult(
+        rows=fallback_rows if isinstance(fallback_rows, list) else [],
+        v2_rows=[],
+        complete=False,
+        window_started_at=lookback_start,
+        reason_codes=tuple(dict.fromkeys((
+            *reasons, "provider_run_provenance_unavailable",
+        ))),
     )
 
 
@@ -1497,13 +1694,20 @@ def run(
 
     provider_heartbeats = _fetch_provider_heartbeats(writer, slate_date)
     try:
-        snapshot_rows = _fetch_live_market_snapshot_rows(writer, slate_date, observed_at)
+        snapshot_read = _fetch_live_market_snapshot_rows(writer, slate_date, observed_at)
     except Exception as error:
         print(
             f"Warning: market snapshot read failed ({error}); continuing without market evidence",
             file=sys.stderr,
         )
-        snapshot_rows = []
+        snapshot_read = SnapshotReadResult(
+            rows=[],
+            v2_rows=[],
+            complete=False,
+            window_started_at=observed_at.astimezone(timezone.utc).isoformat(),
+            reason_codes=("snapshot_keyset_invalid",),
+        )
+    snapshot_rows = snapshot_read.rows
     previous_snapshots, current_snapshots = _snapshot_pairs(_live_notification_snapshots(snapshot_rows))
     movement_notification_rows = build_line_movement_events(
         slate_date=slate_date,
@@ -1706,11 +1910,16 @@ def run(
         artifact_source=artifact_source,
     )
     source_payload_sha256 = canonical_payload_sha256(payload)
-    alternative_pick_selection = _write_alternative_pick_selection_state(
+    alternative_pick_selection = _dispatch_alternative_pick_selection_state(
         writer=writer,
         slate_date=slate_date,
         payload=payload,
         snapshot_rows=snapshot_rows,
+        v2_snapshot_rows=snapshot_read.v2_rows,
+        provider_heartbeats=provider_heartbeats,
+        snapshot_read_complete=snapshot_read.complete,
+        snapshot_window_started_at=snapshot_read.window_started_at,
+        snapshot_read_reason_codes=snapshot_read.reason_codes,
         market_pick_evidence_rows=market_pick_evidence_rows,
         live_market_display_rows=live_market_display_rows,
         observed_at=observed_at,

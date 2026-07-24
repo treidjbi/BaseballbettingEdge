@@ -19,8 +19,16 @@ def test_build_research_artifact_writes_jsonl_summary_and_manifest(tmp_path, mon
         _row("2026-05-12:official_close:a:over:5.5"),
         _row("2026-05-12:official_close:a:under:5.5", tracked=False),
     ]
+    rendered_summaries = []
 
-    monkeypatch.setattr(builder.dataset, "build_dataset", lambda **kwargs: rows)
+    def fake_build_dataset(**kwargs):
+        kwargs["diagnostics"]["archive_outcome_reconciliation"] = {
+            "recovered_markets": 1,
+            "ambiguous_markets": 0,
+        }
+        return rows
+
+    monkeypatch.setattr(builder.dataset, "build_dataset", fake_build_dataset)
     monkeypatch.setattr(builder.dataset, "validate_dataset_row", lambda row: [])
     monkeypatch.setattr(
         builder.dataset,
@@ -40,7 +48,11 @@ def test_build_research_artifact_writes_jsonl_summary_and_manifest(tmp_path, mon
             "unmatched_pick_rows": 0,
         },
     )
-    monkeypatch.setattr(builder.dataset, "render_summary", lambda summary: "# Summary\n")
+    monkeypatch.setattr(
+        builder.dataset,
+        "render_summary",
+        lambda summary: rendered_summaries.append(summary) or "# Summary\n",
+    )
 
     result = builder.build_research_artifact(
         output_dir=tmp_path,
@@ -55,6 +67,18 @@ def test_build_research_artifact_writes_jsonl_summary_and_manifest(tmp_path, mon
         "graded_pick_rows": 1,
         "matched_pick_rows": 1,
         "unmatched_pick_rows": 0,
+    }
+    assert result["manifest"]["archive_outcome_reconciliation"] == {
+        "recovered_markets": 1,
+        "ambiguous_markets": 0,
+    }
+    assert result["manifest"]["summary_counts"]["archive_outcome_reconciliation"] == {
+        "recovered_markets": 1,
+        "ambiguous_markets": 0,
+    }
+    assert rendered_summaries[0]["archive_outcome_reconciliation"] == {
+        "recovered_markets": 1,
+        "ambiguous_markets": 0,
     }
     assert result["manifest"]["source"] == {
         "artifact_source": "local",
@@ -139,7 +163,15 @@ def test_hybrid_source_adds_production_only_graded_dates(tmp_path, monkeypatch):
     def fake_build_dataset(**kwargs):
         calls.append(kwargs)
         if kwargs.get("artifact_api_url"):
+            kwargs["diagnostics"]["archive_outcome_reconciliation"] = {
+                "recovered_markets": 2,
+                "ambiguous_markets": 1,
+            }
             return production_rows
+        kwargs["diagnostics"]["archive_outcome_reconciliation"] = {
+            "recovered_markets": 1,
+            "ambiguous_markets": 0,
+        }
         return local_rows
 
     monkeypatch.setattr(builder.dataset, "build_dataset", fake_build_dataset)
@@ -176,6 +208,10 @@ def test_hybrid_source_adds_production_only_graded_dates(tmp_path, monkeypatch):
     assert result["manifest"]["row_count"] == 2
     assert result["manifest"]["source"]["artifact_source"] == "hybrid"
     assert result["manifest"]["source"]["production_fill_dates"] == ["2026-06-01"]
+    assert result["manifest"]["archive_outcome_reconciliation"] == {
+        "recovered_markets": 3,
+        "ambiguous_markets": 1,
+    }
     assert calls[0]["artifact_api_url"] is None
     assert calls[1]["artifact_api_url"] == "https://example.test/.netlify/functions/get-artifact"
     assert calls[1]["start_date"] == "2026-06-01"

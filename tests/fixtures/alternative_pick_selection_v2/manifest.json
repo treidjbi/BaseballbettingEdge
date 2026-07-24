@@ -1,0 +1,25 @@
+{
+  "schema_version": "alternative_pick_selection_v2_fixture_manifest_v1",
+  "fixtures": {
+    "synthetic_mature_preclose.json": {
+      "sha256": "e7e23d75b5725bf660778cd29429f5641104aa03638fbf423065fc8f36e4b5d6",
+      "source": "synthetic mature exact-line Preclose regression evidence"
+    },
+    "legacy_official_close_parity.json.gz": {
+      "sha256": "c48264b4c05407e8a98952d5bf3721ede6a30ea0cd38cbbe5e0e421a568ef1e3",
+      "source": "compact exact-field projection of the recovered 2026-07-21 hybrid Gate C corpus",
+      "classification": "hindsight_capable_research_only",
+      "fixed_start_date": "2026-04-28",
+      "fixed_end_date": "2026-07-20",
+      "row_count": 1621,
+      "source_corpus_row_count": 3106,
+      "source_tracked_pick_row_count": 1621,
+      "source_corpus_sha256": "c59cc4fd2a03110ad492163240f5563a85e142d785c258eeb25914ad0273bda4",
+      "source_manifest_sha256": "7f59abe7a4522e793e68a58bac92122585fbfea76658a63b0d09bb3195c85072",
+      "source_summary_sha256": "70ef12236f0997e47324cac1e4dc64faaa3222c0f88e70730e05c0b47fadbcc2"
+    }
+  },
+  "prospective_capture": {
+    "status": "required_before_production_gate_a"
+  }
+}

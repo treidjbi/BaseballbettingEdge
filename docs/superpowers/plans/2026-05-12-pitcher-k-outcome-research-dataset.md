@@ -1185,3 +1185,46 @@ Recommended order:
 
 The business value is not the table itself. The value is making every future
 bet-selection question answerable without rebuilding context from scratch.
+
+## 2026-07-23 Exact Archive Outcome Reconciliation
+
+Tyler approved a research-only repair on
+`codex/research-evidence-repair`. The Gate C archive loader now:
+
+- loads graded `picks_history` once and reuses it for archive outcome recovery
+  and tracked-pick enrichment;
+- recovers a missing archive `actual_ks` only from one exact
+  `(slate date, normalized pitcher, archive K-line)` graded match;
+- never overwrites an archive-provided result;
+- leaves line mismatches, ungraded rows, missing actuals, and ambiguous matches
+  excluded; and
+- carries `archive_outcome_reconciliation_source` into Gate C side rows and
+  records recovered/ambiguous counts in the summary and manifest.
+
+The live temporary verification through `2026-07-22` produced:
+
+- `3,224` side rows;
+- `1,682` tracked rows;
+- zero duplicate dataset keys;
+- `24` exact outcome recoveries;
+- zero ambiguous recoveries; and
+- `1,647/1,648` graded tracked picks reconciled.
+
+The remaining row is Robert Gasser `UNDER 3.5` on `2026-06-03`. Production
+history records 5 actual Ks, but the dated archive contains a `4.5` market
+with no result. The exact-line rule correctly fails closed. Do not broaden
+recovery across line changes or synthesize a tracked row without a separate
+review. Gate D's 100% reconciliation condition therefore remains closed, and
+the model-promotion gates remain closed.
+
+Later on `2026-07-23`, Tyler explicitly accepted this one named line-mismatch
+as a visible fail-closed exception for the bounded research-cron deployment.
+The accepted deployment result is `1,647/1,648`; the Gasser row remains
+unrecovered, cannot receive no-drag credit, and does not authorize any
+cross-line outcome rule, archive mutation, or live-model change.
+
+The first deployed bounded research run completed successfully at
+`2026-07-23T17:16:27Z`. Gate C wrote `3,224` side rows / `1,682` tracked rows
+with zero duplicate keys and the accepted `1,647/1,648` reconciliation result.
+Robert Gasser remains unrecovered and visible; the cron did not mutate the
+dated archive or create a cross-line rule.

@@ -418,6 +418,93 @@ def _dedupe_book_rows(book_rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
     return [by_book[book] for book in sorted(by_book)]
 
 
+def build_exact_event_book_ladder(
+    *,
+    slate_date: str,
+    side: str,
+    pick_line: float,
+    exact_event_snapshots: list[dict[str, Any]],
+    observed_at: datetime | str,
+    provider_heartbeats: list[dict[str, Any]] | None = None,
+    stale_after_seconds: int = DEFAULT_STALE_AFTER_SECONDS,
+) -> dict[str, Any] | None:
+    """Build an ephemeral ladder from an already verified exact-event slice."""
+    observed_at_dt = _parse_datetime(observed_at)
+    normalized_side = str(side or "").strip().lower()
+    numeric_pick_line = _numeric(pick_line)
+    if observed_at_dt is None or normalized_side not in {"over", "under"} or numeric_pick_line is None:
+        return None
+
+    heartbeat_health = provider_heartbeat_health(
+        provider_heartbeats or [], observed_at_dt, stale_after_seconds,
+    )
+    grouped: dict[tuple[str, str], list[dict[str, Any]]] = {}
+    for snapshot in exact_event_snapshots if isinstance(exact_event_snapshots, list) else []:
+        if not isinstance(snapshot, dict):
+            continue
+        provider = str(snapshot.get("provider") or "").strip().lower()
+        book = _book(snapshot.get("bookmaker_key") or snapshot.get("bookmaker_title"))
+        if provider not in ACTIVE_PROVIDERS or book not in MAIN_BOOKS:
+            continue
+        grouped.setdefault((provider, book), []).append(snapshot)
+
+    book_rows = _dedupe_book_rows([
+        row
+        for (provider, book), snapshots in sorted(grouped.items())
+        if (row := _book_row(
+            slate_date=slate_date,
+            provider=provider,
+            side=normalized_side,
+            book=book,
+            snapshots=snapshots,
+            observed_at=observed_at_dt,
+            provider_health=heartbeat_health,
+            stale_after_seconds=stale_after_seconds,
+        )) is not None
+    ])
+    if not book_rows:
+        return None
+
+    freshness_seconds = min(int(row["freshness_seconds"]) for row in book_rows)
+    line_freshness_seconds = min(int(row["line_freshness_seconds"]) for row in book_rows)
+    freshness_status = "fresh" if freshness_seconds <= stale_after_seconds else "stale"
+    main_line, main_line_books = _main_line(book_rows)
+    off_market_books = _off_market_books(
+        side=normalized_side, main_line=main_line, book_rows=book_rows,
+    )
+    best_actionable = _best_actionable(
+        side=normalized_side,
+        pick_line=float(numeric_pick_line),
+        book_rows=book_rows,
+        freshness_status=freshness_status,
+    )
+    best_is_off_market = bool(
+        best_actionable
+        and any(
+            row["book"] == best_actionable["book"]
+            and row["line"] == best_actionable["line"]
+            and row["odds"] == best_actionable["odds"]
+            for row in off_market_books
+        )
+    )
+    return {
+        "main_line": main_line,
+        "main_line_books": main_line_books,
+        "best_book": best_actionable["book"] if best_actionable else None,
+        "best_line": best_actionable["line"] if best_actionable else None,
+        "best_odds": best_actionable["odds"] if best_actionable else None,
+        "best_is_off_market": best_is_off_market,
+        "off_market_books": off_market_books,
+        "book_count": len(book_rows),
+        "books_seen": sorted(row["book"] for row in book_rows),
+        "book_rows": book_rows,
+        "latest_snapshot_at": max(row["last_seen_at"] for row in book_rows),
+        "freshness_seconds": freshness_seconds,
+        "line_freshness_seconds": line_freshness_seconds,
+        "freshness_status": freshness_status,
+    }
+
+
 def _combined_live_market_display_rows(
     rows: list[dict[str, Any]],
     *,
