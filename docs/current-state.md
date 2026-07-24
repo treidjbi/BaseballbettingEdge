@@ -113,14 +113,22 @@ For any new work in this repo:
      `6a63ea91d4787300084cadc6` add only the neutral same-origin
      `/api/slate-comparison` rewrite and a fresh adapter token. The route
      returned current V2 JSON with 11 frozen rows and two selected at the
-     22:43Z checkpoint. Tyler then explicitly refreshed the in-app browser to
-     the new deploy and it remained unavailable. Runtime inspection confirmed
-     both `window.fetch` and `window.XMLHttpRequest` are undefined there, so
-     neither polling nor an alias can load current JSON in that client. The
-     remaining decision is either treat the in-app browser as unsupported for
-     live Alt evidence or separately approve a fixed-callback script transport
-     fallback; this is not a model, selector, provider, lock, notification,
-     accepted-bet, or source-of-truth change
+     22:43Z checkpoint. Tyler then reproduced the same unavailable state in
+     normal Chrome and on his phone, superseding the transport hypothesis.
+     Exact live-response validation isolated one client-contract mismatch:
+     Matthew Boyd validly selected Consensus Core with Anchor plus Re-entry,
+     zero qualifying Preclose observations, and Base already short-circuiting
+     composite Preclose to disagreement. The endpoint accepted the proof, but
+     the browser incorrectly allowed selected zero-observation rows only when
+     the displayed Preclose family stayed pending. Exact commit `31005482` and
+     completed Netlify deploy `6a63ed9fd8afa30008e443c8` now permit pending or
+     disproved nonessential Preclose while still rejecting zero-observation
+     Preclose agreement. The exact live payload normalized with 13 frozen rows
+     and two selected, and production Chrome rendered Trevor Rogers, Matthew
+     Boyd, and 11 supporting rows. All 173 JavaScript tests and 1,928 Python
+     tests passed. No alternate script transport is required or approved; this
+     remains comparison-only and changes no model, selector, provider, lock,
+     notification, accepted-bet, artifact, history, or source-of-truth behavior
    - `docs/research/strict-runtime-core-selective-lean-canary-packet.md`
      for comparison/control historical context on
      `strict_runtime_core_plus_selective_lean`, not the lead candidate
@@ -371,7 +379,7 @@ remains closed.
 | --- | --- | --- |
 | Pipeline / infrastructure | V2 remains isolated in the existing post-lock `bbe-live-layer` sidecar. The final repair binds raw workload inputs, separates the legacy snapshot suffix from V2-safe rows, uses one newest-101 provider-run read, retains the existing snapshot budget of up to five descending 1,000-row keyset pages, and fails incomplete/ambiguous evidence to pending. Render deploy `dep-d9h8u9sm0tmc738cfmqg` is live on `6ab9fcf2`; its first normal `22:10Z` cycle completed successfully from the remote official artifact. No environment, worker, cadence, schema, provider, notification, lock, or official pipeline path changed. | Observe the first new workload-bound V2 proof and immutable freeze on the next normal slate. Do not reconstruct old proofs. Immediate sidecar stop remains `ALTERNATIVE_PICK_SELECTION_MODE=off` plus a `bbe-live-layer` redeploy; do not change cadence or provider posture. |
 | Model | The dependency-aware V2 comparison selector remains live with frozen fingerprint `23bacff0fa923685ae52c5a9cfbadfb9f5902fb64d91759cfe9b4b1169a221c4`. The repair closes proof and ambiguity gaps but does not change the frozen methodology. The post-repair partial slate had no eligible future tracked candidate: its four tracked picks were already locked/started and the two future pitchers were official PASS rows. Old frozen state stayed immutable. The exploratory official-close `148-84`, `+38.585u`, `+16.63%` on `232` remains hindsight-capable research only. | Soak the first new proof through T-30 freeze and graded outcome on a normal slate. This is comparison evidence, not approval for official pick selection, model math, thresholds, staking, providers, notifications, locks, retention, or source truth. |
-| UI | **Watch / in-app broken.** The dashboard-only recovery is live on exact `main` commit `8fba5303` as ready Netlify deploy `6a63ea91d4787300084cadc6`. Immediate plus 60-second non-overlapping reads, last-good retention, the neutral alias, and both cache-bust waves are deployed. The alias returned `ready` current V2 JSON with 11 frozen rows and two selected at 22:43Z. However, Tyler's refreshed in-app tab still shows unavailable because that runtime exposes neither `window.fetch` nor `window.XMLHttpRequest`. No wager controls or other dashboard-tab behavior changed. | Decide separately whether in-app support is required. If yes, approve a fixed-callback same-origin script fallback that still passes the unchanged V2 normalizer; if no, document that live Alt evidence requires a normal browser/PWA with request support. Do not infer any model or provider promotion. |
+| UI | **Healthy - soak.** The dashboard-only recovery is live on exact `main` commit `31005482` as completed Netlify deploy `6a63ed9fd8afa30008e443c8`. Immediate plus 60-second non-overlapping reads, last-good retention, the neutral alias, and the `2026-07-24-alt-contract-recovery` adapter token are deployed. The exact live V2 payload normalized with 13 frozen rows and two selected; a cache-busted production Chrome session rendered Trevor Rogers and Matthew Boyd plus 11 supporting rows and remained healthy through the next mounted refresh. The root cause was a narrow browser-contract mismatch for valid zero-observation, dependency-short-circuited Preclose disagreement—not missing data or a product transport gap. Zero-observation Preclose agreement still fails closed. No wager controls or other dashboard-tab behavior changed. | Keep the UI in prospective soak and confirm a normal phone refresh. Do not add a script fallback or infer any model, selector, provider, notification, lock, accepted-bet, artifact, history, or source-of-truth promotion. |
 | Tracking / data collection / history | The additive V2 proof schema remains active. Post-deploy controls are zero notification rows, four unique operational locks all consumed, two unique accepted bets, and zero V2 duplicate groups. The Brandon Pfaadt frozen V2 proof remains unchanged at MD5 `efa7e0484981aa26b976b0bd897b7dea`, observed `20:50:12Z`; no historical proof was rewritten. The current official artifact was generated `22:07:47Z`, has eight pitchers, four tracked picks, zero warnings, and TheRundown as every row's line source. | Continue bounded prospective collection. The next normal slate must prove a new workload-bound row; do not backfill missed checkpoints, delete/compact Alt evidence, or let Alt rows enter official history/analytics without separate approval. |
 
 Decision-integrity rollout, 2026-07-20: `main` commit `b7906a44` is live on

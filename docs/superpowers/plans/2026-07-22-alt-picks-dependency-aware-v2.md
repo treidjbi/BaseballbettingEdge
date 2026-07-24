@@ -1655,15 +1655,28 @@ Exact follow-up commit `8fba5303` and ready Netlify deploy
 `6a63ea91d4787300084cadc6` therefore add only the neutral same-origin
 `/api/slate-comparison` rewrite to the unchanged `alternative-picks` function
 and a new adapter token. The live alias returned `ready` V2 JSON with 11
-frozen rows and two selected at the 22:43Z checkpoint. The controlled browser
-suppresses page API access even through the neutral alias. Tyler explicitly
-refreshed the in-app page to the new deploy and it remained unavailable;
-runtime inspection confirmed both `window.fetch` and
-`window.XMLHttpRequest` are undefined there. Do not claim rendered-card
-recovery in that client. The next UI decision is separate: either document the
-in-app browser as unsupported for live Alt evidence or approve a
-fixed-callback same-origin script fallback that still passes the unchanged V2
-normalizer. No such fallback is implemented yet. The current proof is
+frozen rows and two selected at the 22:43Z checkpoint.
+
+Tyler then reproduced the same unavailable state in normal Chrome and on his
+phone, superseding the transport hypothesis. Passing the exact live payload
+through the deployed normalizer returned `invalid_row`; row-by-row validation
+isolated Matthew Boyd's valid dependency short-circuit. Base disagreement made
+the composite Preclose family disagree with zero qualifying observations,
+while Anchor and Re-entry still selected Consensus Core and the proof marked
+Preclose nonessential. The browser had incorrectly required zero-observation
+selected rows to display Preclose as pending.
+
+Exact commit `31005482` and completed Netlify deploy
+`6a63ed9fd8afa30008e443c8` correct only that client check: zero observations
+remain valid for a selected row when evidence freshness is pending, timestamps
+are empty, Preclose is not agreement, and the proof marks it nonessential.
+Zero-observation Preclose agreement still fails closed. The exact live payload
+then normalized with 13 frozen rows and two selected; a cache-busted production
+Chrome session rendered Trevor Rogers, Matthew Boyd, and 11 supporting rows.
+All 173 JavaScript tests and 1,928 Python tests passed. No non-fetch transport
+is required or approved; the earlier `window.fetch`/`XMLHttpRequest` result was
+a controlled-inspection limitation rather than reliable product-runtime
+evidence. The current proof is
 infrastructure/readiness evidence only and does not reopen any official model,
 pick-selection, threshold, staking, provider, notification, lock,
 accepted-bet, artifact, history, retention, or source-of-truth gate.

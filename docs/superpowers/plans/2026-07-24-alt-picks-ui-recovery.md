@@ -452,18 +452,60 @@ in-app page loaded the new assets but remained unavailable; runtime inspection
 confirmed `window.fetch` and `window.XMLHttpRequest` are both undefined.
 Therefore current Alt cards and one mounted refresh could not be proven in that
 client. The deployed fetch/polling path is healthy, but in-app support remains
-blocked on a separately approved non-fetch transport.
+blocked on a separately approved non-fetch transport. This was the interim
+diagnosis at that checkpoint; Task 6 below supersedes it with the exact
+live-contract root cause and proves that no alternate transport is needed.
 
-### Further transport decision - not approved
+### Task 6: Correct the production V2 client-contract mismatch
 
-Two honest choices remain:
+The transport diagnosis above was superseded when Tyler reproduced the same
+unavailable state in normal Chrome and on his phone. The exact live endpoint
+returned 23 otherwise valid rows, but the deployed browser normalizer rejected
+the entire response as `invalid_row`. Row-by-row validation isolated the
+failure to Matthew Boyd:
 
-1. Treat the in-app browser as unsupported for live Alt evidence and use a
-   normal browser/PWA that exposes `fetch`.
-2. Add a fixed-callback, same-origin script payload as a fallback after normal
-   fetch fails. The existing V2 normalizer and comparison-only UI boundaries
-   would remain unchanged.
+- selected in `consensus_core`;
+- Base `disagree`, Anchor `agree`, Preclose `disagree`, Re-entry `agree`;
+- zero qualifying Preclose observations with pending evidence freshness; and
+- `preclose_required_for_selected_lane=false`.
 
-The second choice is the recommended minimal path if in-app support is
-required. Do not implement it without Tyler's approval because it expands the
-reviewed transport contract.
+This is valid V2 dependency behavior. Base disagreement short-circuits the
+composite Preclose family to disagreement even before exact Preclose evidence
+exists, while Anchor plus Re-entry still provide the two non-drag agreements
+required by Consensus Core. The client incorrectly allowed a zero-observation
+selected row only when the displayed Preclose family was `pending`.
+
+- [x] **Step 1: Add the exact failing browser regression**
+
+The new test uses the Matthew Boyd family/evidence shape and failed
+`unavailable` before the implementation change.
+
+- [x] **Step 2: Make the narrow validation correction**
+
+For a selected zero-observation row, retain the existing requirements that
+freshness is pending, observation timestamps are empty, and the proof marks
+Preclose nonessential. Permit the displayed Preclose family to be either
+`pending` or `disagree`; continue rejecting any zero-observation row that
+claims Preclose `agree`.
+
+- [x] **Step 3: Cache-bust only the changed adapter**
+
+`dashboard/v2.html` now loads
+`v2-alt-picks.js?v=2026-07-24-alt-contract-recovery`.
+
+- [x] **Step 4: Verify and deploy**
+
+The exact live production JSON passed the corrected local normalizer with 13
+frozen rows, two selected rows, and zero errors. All 173 JavaScript tests and
+1,928 Python tests passed. Exact commit `31005482` is live as completed Netlify
+deploy `6a63ed9fd8afa30008e443c8`. A cache-busted production Chrome session
+rendered `2 selected / 0 provisional / 13 frozen`, including Trevor Rogers and
+Matthew Boyd, plus 11 not-selected/supporting rows, and the same healthy state
+remained after the next mounted refresh.
+
+No script-transport fallback is required or approved. The earlier
+`window.fetch`/`XMLHttpRequest` conclusion came from the controlled inspection
+environment and must not be treated as proof of the product browser runtime.
+The neutral same-origin alias remains a harmless deployed route, but it was not
+the final root cause. No model, selector, provider, notification, lock,
+accepted-bet, artifact, history, or source-of-truth behavior changed.

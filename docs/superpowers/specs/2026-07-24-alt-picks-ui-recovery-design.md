@@ -67,25 +67,40 @@ original function route remains available for compatibility and operational
 checks. No second function, data source, selector, provider call, table, or
 runtime worker is added.
 
-### In-app browser transport gap
+### Production root-cause correction: valid dependency short-circuit
 
-The neutral-route deploy did not resolve the in-app browser. On exact deploy
-`6a63ea91d4787300084cadc6`, the refreshed Alt page loaded the new adapter and
-app assets but still rendered unavailable. Read-only runtime inspection then
-confirmed both `window.fetch` and `window.XMLHttpRequest` are undefined in the
-in-app browser. The alias itself returns valid current JSON outside that
-restricted page runtime, so this is a client transport gap rather than missing
-Alt evidence.
+The neutral-route deploy did not resolve the unavailable state, and Tyler then
+reproduced it in normal Chrome and on his phone. That cross-client result
+superseded the transport hypothesis. Passing the exact live endpoint response
+through the deployed browser normalizer returned `invalid_row`; validating one
+row at a time isolated the mismatch to Matthew Boyd.
 
-Polling and URL aliases cannot solve a runtime that exposes neither browser
-request API. Supporting the in-app browser requires a separately approved
-non-fetch transport. The minimal candidate is a fixed-callback script payload:
-the existing sanitized function would return JavaScript only for one explicit
-transport query, and the Alt adapter would load a cache-busted same-origin
-`<script>` as a fallback after normal fetch fails. The callback name must be
-fixed, the payload must pass the unchanged V2 normalizer, and the script node
-and callback must be removed after each attempt. This candidate is not yet
-implemented or approved.
+The row had zero qualifying Preclose observations and pending evidence
+freshness. Base already disagreed, which validly short-circuited the composite
+Preclose family to disagreement. Anchor and Re-entry agreed, `no_drag=true`,
+and the persisted decision proof showed
+`preclose_required_for_selected_lane=false`, so Consensus Core was selected
+without depending on Preclose. The endpoint correctly accepted the complete V2
+proof, but the browser's lighter validator incorrectly required the displayed
+Preclose family to remain `pending` whenever a selected row had zero
+observations.
+
+The production correction permits zero observations for a selected row only
+when evidence freshness is pending, both evidence timestamps are empty,
+Preclose is not `agree`, and the decision proof says Preclose was nonessential.
+It continues to reject any zero-observation row that claims Preclose agreement.
+This matches V2 dependency short-circuiting without weakening the fail-closed
+bundle, fingerprint, lane, proof, evidence-time, or freeze checks.
+
+Exact commit `31005482` is live as completed Netlify deploy
+`6a63ed9fd8afa30008e443c8`. The exact live payload passed the corrected
+normalizer with 13 frozen rows and two selected. Production Chrome rendered
+both Trevor Rogers and Matthew Boyd plus 11 supporting rows. All 173 JavaScript
+tests and 1,928 Python tests passed.
+
+No script-transport fallback is required or approved. The earlier
+`window.fetch`/`XMLHttpRequest` inspection was a limitation of the controlled
+inspection environment, not reliable proof of the product browser runtime.
 
 ## Scope and boundaries
 
