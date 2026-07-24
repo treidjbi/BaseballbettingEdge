@@ -80,11 +80,15 @@ For any new work in this repo:
      `docs/superpowers/plans/2026-07-22-alt-picks-dependency-aware-v2.md`.
      The isolated V2 comparison recorder and versioned Alt Picks UI are live.
      The 2026-07-24 current-artifact linkage repair produced the first healthy
-     prospective slate: 18 provisional rows, one selected Consensus Core row,
-     one pending row, zero duplicates, and correct browser display. A second
-     endpoint-only repair on `55a36b3e` bridges the brief full/refresh-to-lock
-     artifact hash-normalization window that could otherwise show an honest but
-     confusing waiting state. Official picks, model math, staking, providers,
+     prospective slate. The next normal `18:37:45Z` refresh then proved the
+     endpoint-only bridge on `55a36b3e`: after the V2 recorder wrote 19
+     provisional rows at `18:40:44Z`, the endpoint served all 19 by
+     `18:41:40Z` with one selected Consensus Core row and one pending row,
+     before the later lock republish could normalize the publisher and recorder
+     logical hashes. The exact served-body hash still matched the recorder's
+     bound byte hash, so the brief full/refresh-to-lock handoff is repaired
+     without weakening fail-closed artifact linkage. Official picks, model
+     math, staking, providers,
      notifications, locks, accepted bets, artifacts, and history remain
      unchanged and closed to promotion
    - `docs/research/strict-runtime-core-selective-lean-canary-packet.md`

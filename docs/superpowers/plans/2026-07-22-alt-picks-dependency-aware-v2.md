@@ -1614,10 +1614,15 @@ The next normal-slate evidence arrived on 2026-07-24:
   are unchanged. The regression was observed red before implementation; 73
   endpoint tests and the full 168-test JavaScript suite pass.
 - Netlify production deploy `6a63ad9ffaa87100085d7ca8` is ready on exact
-  commit `55a36b3e`. The current browser and endpoint again show 18 provisional
-  rows, one selected, one pending, and zero frozen. The next normal
-  full/refresh transition remains the final live proof of the conditional
-  bridge.
+  commit `55a36b3e`. The next normal refresh supplied the final live proof:
+  `today` advanced to `18:37:45Z`; the V2 recorder wrote 19 provisional rows
+  at `18:40:44Z`; and the endpoint served all 19 by `18:41:40Z`, with one
+  selected, one pending, and zero frozen. At that moment the publisher's
+  stored logical hash was still `0f329575...`, the recorder's logical hash was
+  `f3c74820...`, and the exact served-body hash matched the recorder's bound
+  byte hash `77c47747...`. The rows therefore became visible before the later
+  lock republish could normalize logical hashes, proving the conditional bridge
+  fixes the observed waiting window while retaining exact artifact binding.
 
 The next decision remains prospective soak: observe the first new
 immutable T-30 freeze and build a genuinely prospective outcome record. The
