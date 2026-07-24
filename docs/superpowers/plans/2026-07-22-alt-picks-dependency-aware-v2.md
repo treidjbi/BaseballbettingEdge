@@ -1624,10 +1624,20 @@ The next normal-slate evidence arrived on 2026-07-24:
   lock republish could normalize logical hashes, proving the conditional bridge
   fixes the observed waiting window while retaining exact artifact binding.
 
-The next decision remains prospective soak: observe the first new
+The first new immutable T-30 checkpoint passed on 2026-07-24. Shane Drohan
+OVER 5.5 froze at `19:40:21Z`, 29.64 minutes before first pitch, as
+`not_selected`. Its lock key, pitcher, side, line, game time, artifact path,
+and artifact hash all match the operational lock consumed at `19:42:23Z`.
+Current integrity remains clean: one frozen row, 20 current provisional rows,
+zero current selected rows, zero duplicate candidate/checkpoint groups, zero
+missing or non-object V2 proofs, zero Alt notifications, and zero Alt
+accepted-bet writes. Tomoyuki Sugano had no official tracked pick at the T-30
+artifact and therefore was not an eligible freeze candidate.
+
+The next decision remains prospective soak: observe the first **selected**
 immutable T-30 freeze and build a genuinely prospective outcome record. The
-current provisional proof is infrastructure/readiness evidence only and does
-not reopen any official model, pick-selection, threshold, staking, provider,
+current proof is infrastructure/readiness evidence only and does not reopen
+any official model, pick-selection, threshold, staking, provider,
 notification, lock, accepted-bet, artifact, history, retention, or
 source-of-truth gate.
 

@@ -90,7 +90,13 @@ For any new work in this repo:
      without weakening fail-closed artifact linkage. Official picks, model
      math, staking, providers,
      notifications, locks, accepted bets, artifacts, and history remain
-     unchanged and closed to promotion
+     unchanged and closed to promotion. The first immutable V2 T-30 checkpoint
+     then passed on Shane Drohan OVER 5.5: it froze at `19:40:21Z`, 29.64
+     minutes before first pitch, matched the exact operational-lock artifact,
+     and was consumed at `19:42:23Z`. The row was correctly `not_selected`;
+     there are zero duplicate groups, malformed/missing proofs, Alt
+     notifications, or Alt accepted-bet writes. Next evidence needed is the
+     first selected T-30 freeze and a genuinely prospective graded outcome
    - `docs/research/strict-runtime-core-selective-lean-canary-packet.md`
      for comparison/control historical context on
      `strict_runtime_core_plus_selective_lean`, not the lead candidate
