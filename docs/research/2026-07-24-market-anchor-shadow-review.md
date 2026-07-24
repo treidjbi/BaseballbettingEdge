@@ -83,4 +83,3 @@ concentrated slice.
   notifications, locks, dashboard behavior, or history.
 - Controlling gates remain in
   `docs/superpowers/plans/2026-06-16-market-anchored-v2-selector-shadow-canary.md`.
-

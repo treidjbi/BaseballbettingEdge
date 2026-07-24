@@ -96,4 +96,3 @@ the bet.
   `docs/superpowers/plans/2026-06-03-gate-f-projection-challenger-shadow-plan.md`
   and
   `docs/superpowers/plans/2026-06-22-market-shrink-projection-production-canary.md`.
-
