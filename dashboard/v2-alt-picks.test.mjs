@@ -99,10 +99,159 @@ function payload(rows = [], overrides = {}) {
   };
 }
 
+function manualScheduler() {
+  const tasks = [];
+  return {
+    tasks,
+    schedule(fn, delay) {
+      const task = { fn, delay, cancelled: false };
+      tasks.push(task);
+      return task;
+    },
+    cancelSchedule(task) {
+      if (task) task.cancelled = true;
+    },
+  };
+}
+
+function deferred() {
+  let resolve;
+  const promise = new Promise((done) => { resolve = done; });
+  return { promise, resolve };
+}
+
+async function flushAsyncWork() {
+  await new Promise((resolve) => setImmediate(resolve));
+}
+
 test("fetchCurrentSlate calls only the explicit v2 alternative-picks endpoint", async () => {
   const { api, calls } = load({ payload: payload() });
   await api.fetchCurrentSlate();
   assert.deepEqual(calls, ["/.netlify/functions/alternative-picks?bundle_version=v2"]);
+});
+
+test("polling fetches immediately and schedules a 60-second non-overlapping refresh", async () => {
+  const { api } = load();
+  const scheduler = manualScheduler();
+  const first = deferred();
+  const second = deferred();
+  const updates = [];
+  let calls = 0;
+  const fetcher = () => {
+    calls += 1;
+    return calls === 1 ? first.promise : second.promise;
+  };
+  const ready = api.normalizeResponse(payload([row()]));
+
+  const stop = api.startCurrentSlatePolling({
+    fetcher,
+    onUpdate: (state) => updates.push(state),
+    schedule: scheduler.schedule,
+    cancelSchedule: scheduler.cancelSchedule,
+  });
+
+  assert.equal(calls, 1);
+  assert.equal(scheduler.tasks.length, 0);
+  first.resolve(ready);
+  await flushAsyncWork();
+  assert.equal(updates.length, 1);
+  assert.equal(updates[0].refresh_status, "current");
+  assert.equal(scheduler.tasks.length, 1);
+  assert.equal(scheduler.tasks[0].delay, 60000);
+
+  const refresh = scheduler.tasks.shift().fn();
+  assert.equal(calls, 2);
+  assert.equal(scheduler.tasks.length, 0);
+  second.resolve(ready);
+  await refresh;
+  assert.equal(updates.length, 2);
+  assert.equal(scheduler.tasks.length, 1);
+  stop();
+});
+
+test("polling retains the last valid state when a later read fails", async () => {
+  const { api } = load();
+  const scheduler = manualScheduler();
+  const ready = api.normalizeResponse(payload([row({ pitcher: "Current Pitcher" })]));
+  const failed = { status: "unavailable", rows: [], counts: {}, error: "fetch_failed" };
+  const responses = [ready, failed];
+  const updates = [];
+
+  const stop = api.startCurrentSlatePolling({
+    fetcher: async () => responses.shift(),
+    onUpdate: (state) => updates.push(state),
+    schedule: scheduler.schedule,
+    cancelSchedule: scheduler.cancelSchedule,
+  });
+  await flushAsyncWork();
+  await scheduler.tasks.shift().fn();
+
+  assert.equal(updates.length, 2);
+  assert.equal(updates[1].status, "ready");
+  assert.equal(updates[1].rows[0].pitcher, "Current Pitcher");
+  assert.equal(updates[1].refresh_status, "retrying");
+  assert.equal(updates[1].refresh_error, "fetch_failed");
+  stop();
+});
+
+test("polling replaces retained data with a valid empty current state", async () => {
+  const { api } = load();
+  const scheduler = manualScheduler();
+  const responses = [
+    api.normalizeResponse(payload([row({ pitcher: "Old Pitcher" })])),
+    { status: "unavailable", rows: [], counts: {}, error: "fetch_failed" },
+    api.normalizeResponse(payload([])),
+  ];
+  const updates = [];
+
+  const stop = api.startCurrentSlatePolling({
+    fetcher: async () => responses.shift(),
+    onUpdate: (state) => updates.push(state),
+    schedule: scheduler.schedule,
+    cancelSchedule: scheduler.cancelSchedule,
+  });
+  await flushAsyncWork();
+  await scheduler.tasks.shift().fn();
+  await scheduler.tasks.shift().fn();
+
+  assert.equal(updates.length, 3);
+  assert.equal(updates[1].refresh_status, "retrying");
+  assert.equal(updates[2].status, "ready");
+  assert.equal(updates[2].rows.length, 0);
+  assert.equal(updates[2].refresh_status, "current");
+  assert.equal(updates[2].refresh_error, "");
+  stop();
+});
+
+test("stopping polling clears a scheduled refresh and ignores a late response", async () => {
+  const { api } = load();
+  const scheduler = manualScheduler();
+  const ready = api.normalizeResponse(payload([row()]));
+  const updates = [];
+
+  const firstStop = api.startCurrentSlatePolling({
+    fetcher: async () => ready,
+    onUpdate: (state) => updates.push(state),
+    schedule: scheduler.schedule,
+    cancelSchedule: scheduler.cancelSchedule,
+  });
+  await flushAsyncWork();
+  assert.equal(scheduler.tasks.length, 1);
+  firstStop();
+  assert.equal(scheduler.tasks[0].cancelled, true);
+
+  const late = deferred();
+  const lateUpdates = [];
+  const lateStop = api.startCurrentSlatePolling({
+    fetcher: () => late.promise,
+    onUpdate: (state) => lateUpdates.push(state),
+    schedule: scheduler.schedule,
+    cancelSchedule: scheduler.cancelSchedule,
+  });
+  lateStop();
+  late.resolve(ready);
+  await flushAsyncWork();
+  assert.equal(lateUpdates.length, 0);
 });
 
 test("normalizeResponse requires the exact v2 bundle and fingerprint before accepting rows or counts", () => {
