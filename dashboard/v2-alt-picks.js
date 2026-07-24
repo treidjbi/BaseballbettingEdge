@@ -1,6 +1,6 @@
 /* Isolated, read-only adapter for same-day alternative methodology evidence. */
 (function () {
-  const ENDPOINT = "/.netlify/functions/alternative-picks?bundle_version=v2";
+  const ENDPOINT = "/api/slate-comparison?bundle_version=v2";
   const BUNDLE_ID = "pregame_alternative_pick_methodology_v2";
   const SELECTOR_FINGERPRINT = "23bacff0fa923685ae52c5a9cfbadfb9f5902fb64d91759cfe9b4b1169a221c4";
   const LANES = ["consensus_core", "reentry_expansion"];

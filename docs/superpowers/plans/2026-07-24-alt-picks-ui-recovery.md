@@ -16,7 +16,8 @@
 - Keep `pregame_alternative_pick_methodology_v2` and selector fingerprint `23bacff0fa923685ae52c5a9cfbadfb9f5902fb64d91759cfe9b4b1169a221c4` unchanged.
 - Do not change the endpoint, Supabase state, selector, model, official picks, accepted bets, locks, notifications, providers, artifacts, history, or source-of-truth behavior.
 - Keep the Alt surface comparison-only with no wager, stake, Log Bet, Save Bet, or notification controls.
-- Use new version token `2026-07-24-alt-ui-recovery` for both `v2-alt-picks.js` and `v2-app.js`.
+- Use `2026-07-24-alt-route-recovery` for `v2-alt-picks.js` and
+  `2026-07-24-alt-ui-recovery` for `v2-app.js`.
 
 ---
 
@@ -388,3 +389,62 @@ Record the exact commit, deploy ID, test counts, current endpoint state, live UI
 result, and preserved guardrails. If the page remains unavailable, mark the
 handoff broken with the exact observed error instead of claiming success.
 
+### Task 5: Correct the production-confirmed client-blocked route
+
+**Files:**
+- Modify: `dashboard/v2-alt-picks.js`
+- Modify: `dashboard/v2-alt-picks.test.mjs`
+- Modify: `dashboard/v2.html`
+- Modify: `netlify.toml`
+- Modify: `tests/test_dashboard_alt_picks_ui.py`
+- Modify: `docs/superpowers/specs/2026-07-24-alt-picks-ui-recovery-design.md`
+
+**Interfaces:**
+- Preserves: the existing `alternative-picks` function and V2 response
+  contract.
+- Produces: neutral same-origin alias
+  `/api/slate-comparison?bundle_version=v2`.
+
+- [x] **Step 1: Capture the live failure**
+
+The first production recovery deploy served the new assets and a healthy
+endpoint, but Chrome showed `ERR_BLOCKED_BY_CLIENT` for the function URL while
+the app rendered the retrying unavailable state.
+
+- [x] **Step 2: Write and observe failing route tests**
+
+The adapter test required `/api/slate-comparison?bundle_version=v2`, and a
+TOML-parsing pytest required the exact Netlify rewrite. Both failed before the
+route change.
+
+- [x] **Step 3: Add the neutral alias and update the adapter**
+
+Add:
+
+```toml
+[[redirects]]
+  from = "/api/slate-comparison"
+  to = "/.netlify/functions/alternative-picks"
+  status = 200
+  force = true
+```
+
+Point `ENDPOINT` at the alias and bump only the changed adapter asset to
+`2026-07-24-alt-route-recovery`.
+
+- [x] **Step 4: Run focused route, polling, UI, and isolation tests**
+
+Run:
+
+```powershell
+node --test dashboard/v2-alt-picks.test.mjs dashboard/v2-app.test.mjs
+python -m pytest tests/test_dashboard_alt_picks_ui.py tests/test_dashboard_accepted_bet_log.py -q
+```
+
+Expected: zero failures.
+
+- [ ] **Step 5: Deploy and verify the neutral route in Chrome**
+
+Verify the exact commit/deploy, a `200` JSON response from
+`/api/slate-comparison?bundle_version=v2`, current Alt cards in Chrome, one
+successful mounted refresh, and continued absence of wager controls.

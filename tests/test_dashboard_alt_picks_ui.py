@@ -1,4 +1,5 @@
 from pathlib import Path
+import tomllib
 
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -98,8 +99,9 @@ def test_expanded_supporting_candidates_show_read_only_chips_and_reason():
 
 def test_alt_picks_assets_and_scoped_mobile_styles_are_present():
     html = HTML.read_text(encoding="utf-8")
-    assert "v2-alt-picks.js?v=2026-07-24-alt-ui-recovery" in html
+    assert "v2-alt-picks.js?v=2026-07-24-alt-route-recovery" in html
     assert "v2-app.js?v=2026-07-24-alt-ui-recovery" in html
+    assert "v2-alt-picks.js?v=2026-07-24-alt-ui-recovery" not in html
     assert "v2-alt-picks.js?v=2026-07-23-alt-picks-v2-repair" not in html
     assert "v2-app.js?v=2026-07-22-alt-picks-v2" not in html
     assert "v2-alt-picks.js?v=2026-07-22-alt-picks-v2" not in html
@@ -120,6 +122,17 @@ def test_netlify_rebuild_watch_includes_v2_alt_picks_asset():
     )
 
     assert "dashboard/v2-alt-picks.js" in ignore_line
+
+
+def test_netlify_exposes_neutral_same_origin_alt_comparison_route():
+    config = tomllib.loads(NETLIFY.read_text(encoding="utf-8"))
+
+    assert {
+        "from": "/api/slate-comparison",
+        "to": "/.netlify/functions/alternative-picks",
+        "status": 200,
+        "force": True,
+    } in config["redirects"]
 
 
 def test_alt_sheet_layer_sits_above_persistent_tabbar():

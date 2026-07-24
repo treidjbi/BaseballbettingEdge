@@ -124,10 +124,10 @@ async function flushAsyncWork() {
   await new Promise((resolve) => setImmediate(resolve));
 }
 
-test("fetchCurrentSlate calls only the explicit v2 alternative-picks endpoint", async () => {
+test("fetchCurrentSlate uses the neutral same-origin v2 comparison route", async () => {
   const { api, calls } = load({ payload: payload() });
   await api.fetchCurrentSlate();
-  assert.deepEqual(calls, ["/.netlify/functions/alternative-picks?bundle_version=v2"]);
+  assert.deepEqual(calls, ["/api/slate-comparison?bundle_version=v2"]);
 });
 
 test("polling fetches immediately and schedules a 60-second non-overlapping refresh", async () => {

@@ -50,6 +50,23 @@ methodology state, a failed selector, or an official-model problem.
    routes while independent requests to the production endpoint returned
    `200`. A second route would add an unproven contract and maintenance path.
 
+### Production correction: neutral route required
+
+The initial recovery deployment supplied stronger evidence that supersedes the
+third alternative above. Netlify served the exact reviewed commit, both new
+assets returned `200`, and the V2 endpoint returned a valid current response,
+but both the in-app browser and Chrome rendered the retrying unavailable state.
+Direct Chrome navigation to
+`/.netlify/functions/alternative-picks?bundle_version=v2` then failed with
+`ERR_BLOCKED_BY_CLIENT`.
+
+The approved endpoint contract remains unchanged, but the browser adapter now
+uses the neutral same-origin alias `/api/slate-comparison?bundle_version=v2`.
+Netlify internally rewrites that exact path to the existing function. The
+original function route remains available for compatibility and operational
+checks. No second function, data source, selector, provider call, table, or
+runtime worker is added.
+
 ## Scope and boundaries
 
 The change may modify only the Alt Picks browser adapter, Alt tab rendering,
@@ -113,8 +130,11 @@ official pick or wager recommendation.
 ## Asset delivery
 
 Both `v2-alt-picks.js` and `v2-app.js` receive new version query tokens in the
-dashboard HTML. Updating only the adapter is insufficient because the refresh
-loop lives in the app bundle.
+dashboard HTML. Updating only the adapter was initially insufficient because
+the refresh loop lives in the app bundle. After the client-blocked route was
+confirmed, the adapter receives the later
+`2026-07-24-alt-route-recovery` token so clients cannot retain the blocked URL;
+the already-current app bundle keeps `2026-07-24-alt-ui-recovery`.
 
 The deployed HTML and both script bodies must be verified from production
 after Netlify reports the deploy ready. A hard refresh should not be required
