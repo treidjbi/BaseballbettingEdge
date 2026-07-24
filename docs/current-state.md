@@ -1,6 +1,6 @@
 # Current State
 
-Last updated: 2026-07-23
+Last updated: 2026-07-24
 
 ## Read Order
 
@@ -101,10 +101,26 @@ For any new work in this repo:
      Consensus Core froze at `22:10:36Z`, 29.39 minutes before first pitch,
      and the exact operational lock was consumed at `22:12:34Z` with every
      candidate/artifact linkage field matching. The remaining evidence gate is
-     a genuinely prospective graded outcome. The Alt tab still performs only
-     one fetch per mount, so a transient fetch/handoff can leave an unavailable
-     or empty view stuck until reload; any automatic retry/refresh is a
-     separate Tyler-approved dashboard change
+     a genuinely prospective graded outcome. Tyler approved the dashboard-only
+     recovery repair on 2026-07-24. The Alt tab now fetches immediately, polls
+     every 60 seconds only while mounted, prevents overlapping reads, preserves
+     the last healthy response through later failures, and cache-busts both
+     frontend assets. Netlify deploy `6a63e8d36373af0008e5c6ed` proved those
+     assets on exact commit `049276bc`, but Chrome then supplied stronger
+     evidence: direct access to the function URL failed
+     `ERR_BLOCKED_BY_CLIENT` while the endpoint itself remained healthy.
+     The follow-up exact commit `8fba5303` and ready Netlify deploy
+     `6a63ea91d4787300084cadc6` add only the neutral same-origin
+     `/api/slate-comparison` rewrite and a fresh adapter token. The route
+     returned current V2 JSON with 11 frozen rows and two selected at the
+     22:43Z checkpoint. Tyler then explicitly refreshed the in-app browser to
+     the new deploy and it remained unavailable. Runtime inspection confirmed
+     both `window.fetch` and `window.XMLHttpRequest` are undefined there, so
+     neither polling nor an alias can load current JSON in that client. The
+     remaining decision is either treat the in-app browser as unsupported for
+     live Alt evidence or separately approve a fixed-callback script transport
+     fallback; this is not a model, selector, provider, lock, notification,
+     accepted-bet, or source-of-truth change
    - `docs/research/strict-runtime-core-selective-lean-canary-packet.md`
      for comparison/control historical context on
      `strict_runtime_core_plus_selective_lean`, not the lead candidate
@@ -355,7 +371,7 @@ remains closed.
 | --- | --- | --- |
 | Pipeline / infrastructure | V2 remains isolated in the existing post-lock `bbe-live-layer` sidecar. The final repair binds raw workload inputs, separates the legacy snapshot suffix from V2-safe rows, uses one newest-101 provider-run read, retains the existing snapshot budget of up to five descending 1,000-row keyset pages, and fails incomplete/ambiguous evidence to pending. Render deploy `dep-d9h8u9sm0tmc738cfmqg` is live on `6ab9fcf2`; its first normal `22:10Z` cycle completed successfully from the remote official artifact. No environment, worker, cadence, schema, provider, notification, lock, or official pipeline path changed. | Observe the first new workload-bound V2 proof and immutable freeze on the next normal slate. Do not reconstruct old proofs. Immediate sidecar stop remains `ALTERNATIVE_PICK_SELECTION_MODE=off` plus a `bbe-live-layer` redeploy; do not change cadence or provider posture. |
 | Model | The dependency-aware V2 comparison selector remains live with frozen fingerprint `23bacff0fa923685ae52c5a9cfbadfb9f5902fb64d91759cfe9b4b1169a221c4`. The repair closes proof and ambiguity gaps but does not change the frozen methodology. The post-repair partial slate had no eligible future tracked candidate: its four tracked picks were already locked/started and the two future pitchers were official PASS rows. Old frozen state stayed immutable. The exploratory official-close `148-84`, `+38.585u`, `+16.63%` on `232` remains hindsight-capable research only. | Soak the first new proof through T-30 freeze and graded outcome on a normal slate. This is comparison evidence, not approval for official pick selection, model math, thresholds, staking, providers, notifications, locks, retention, or source truth. |
-| UI | Netlify production deploy `6a62955898bec52cde5903ae` is ready on exact commit `6ab9fcf2`. Explicit V2 is `ready` with zero current rows because incompatible old proofs fail the strengthened contract; explicit V1 and the unversioned compatibility route each return three legacy rows; invalid versions are unavailable; V2 exposes no top-level raw reasons. Desktop and `390x844` checks show the honest comparison-only waiting state with no wager controls or overflow. Picks still show eight official props and Results still show `1,648` graded picks. | Keep V2 as the operational Alt page and V1 as compatibility only. Observe the first prospective selected/provisional-to-frozen card under the repaired contract; do not use UI value as model or provider promotion evidence. |
+| UI | **Watch / in-app broken.** The dashboard-only recovery is live on exact `main` commit `8fba5303` as ready Netlify deploy `6a63ea91d4787300084cadc6`. Immediate plus 60-second non-overlapping reads, last-good retention, the neutral alias, and both cache-bust waves are deployed. The alias returned `ready` current V2 JSON with 11 frozen rows and two selected at 22:43Z. However, Tyler's refreshed in-app tab still shows unavailable because that runtime exposes neither `window.fetch` nor `window.XMLHttpRequest`. No wager controls or other dashboard-tab behavior changed. | Decide separately whether in-app support is required. If yes, approve a fixed-callback same-origin script fallback that still passes the unchanged V2 normalizer; if no, document that live Alt evidence requires a normal browser/PWA with request support. Do not infer any model or provider promotion. |
 | Tracking / data collection / history | The additive V2 proof schema remains active. Post-deploy controls are zero notification rows, four unique operational locks all consumed, two unique accepted bets, and zero V2 duplicate groups. The Brandon Pfaadt frozen V2 proof remains unchanged at MD5 `efa7e0484981aa26b976b0bd897b7dea`, observed `20:50:12Z`; no historical proof was rewritten. The current official artifact was generated `22:07:47Z`, has eight pitchers, four tracked picks, zero warnings, and TheRundown as every row's line source. | Continue bounded prospective collection. The next normal slate must prove a new workload-bound row; do not backfill missed checkpoints, delete/compact Alt evidence, or let Alt rows enter official history/analytics without separate approval. |
 
 Decision-integrity rollout, 2026-07-20: `main` commit `b7906a44` is live on

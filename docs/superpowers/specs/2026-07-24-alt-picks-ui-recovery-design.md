@@ -67,6 +67,26 @@ original function route remains available for compatibility and operational
 checks. No second function, data source, selector, provider call, table, or
 runtime worker is added.
 
+### In-app browser transport gap
+
+The neutral-route deploy did not resolve the in-app browser. On exact deploy
+`6a63ea91d4787300084cadc6`, the refreshed Alt page loaded the new adapter and
+app assets but still rendered unavailable. Read-only runtime inspection then
+confirmed both `window.fetch` and `window.XMLHttpRequest` are undefined in the
+in-app browser. The alias itself returns valid current JSON outside that
+restricted page runtime, so this is a client transport gap rather than missing
+Alt evidence.
+
+Polling and URL aliases cannot solve a runtime that exposes neither browser
+request API. Supporting the in-app browser requires a separately approved
+non-fetch transport. The minimal candidate is a fixed-callback script payload:
+the existing sanitized function would return JavaScript only for one explicit
+transport query, and the Alt adapter would load a cache-busted same-origin
+`<script>` as a fallback after normal fetch fails. The callback name must be
+fixed, the payload must pass the unchanged V2 normalizer, and the script node
+and callback must be removed after each attempt. This candidate is not yet
+implemented or approved.
+
 ## Scope and boundaries
 
 The change may modify only the Alt Picks browser adapter, Alt tab rendering,

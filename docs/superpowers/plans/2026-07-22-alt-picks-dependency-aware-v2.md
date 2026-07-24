@@ -1641,15 +1641,32 @@ pitcher, side, line, game time, artifact path, and artifact hash all match.
 The public endpoint then showed 19 provisional rows, four frozen rows, and one
 selected row.
 
-The next decision remains prospective soak: build the first genuinely
-prospective graded outcome record. The Alt browser currently fetches once on
-mount; a transient request failure or artifact handoff can therefore leave an
-unavailable/empty state stuck until reload even after the endpoint recovers.
-Automatic retry/refresh would be a separate Tyler-approved dashboard change.
-The current proof is infrastructure/readiness evidence only and does not
-reopen any official model, pick-selection, threshold, staking, provider,
-notification, lock, accepted-bet, artifact, history, retention, or
-source-of-truth gate.
+The next model decision remains prospective soak: build the first genuinely
+prospective graded outcome record. Tyler separately approved the
+dashboard-only recovery repair on 2026-07-24. Exact commit `049276bc` and ready
+Netlify deploy `6a63e8d36373af0008e5c6ed` added an immediate read,
+non-overlapping 60-second mounted polling, last-good preservation, retry copy,
+and fresh app/adapter asset tokens. Production then supplied new evidence that
+superseded the original no-alias assumption: Chrome returned
+`ERR_BLOCKED_BY_CLIENT` for the function URL while independent requests
+continued to return healthy V2 JSON.
+
+Exact follow-up commit `8fba5303` and ready Netlify deploy
+`6a63ea91d4787300084cadc6` therefore add only the neutral same-origin
+`/api/slate-comparison` rewrite to the unchanged `alternative-picks` function
+and a new adapter token. The live alias returned `ready` V2 JSON with 11
+frozen rows and two selected at the 22:43Z checkpoint. The controlled browser
+suppresses page API access even through the neutral alias. Tyler explicitly
+refreshed the in-app page to the new deploy and it remained unavailable;
+runtime inspection confirmed both `window.fetch` and
+`window.XMLHttpRequest` are undefined there. Do not claim rendered-card
+recovery in that client. The next UI decision is separate: either document the
+in-app browser as unsupported for live Alt evidence or approve a
+fixed-callback same-origin script fallback that still passes the unchanged V2
+normalizer. No such fallback is implemented yet. The current proof is
+infrastructure/readiness evidence only and does not reopen any official model,
+pick-selection, threshold, staking, provider, notification, lock,
+accepted-bet, artifact, history, retention, or source-of-truth gate.
 
 ---
 

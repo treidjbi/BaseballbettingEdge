@@ -443,8 +443,27 @@ python -m pytest tests/test_dashboard_alt_picks_ui.py tests/test_dashboard_accep
 
 Expected: zero failures.
 
-- [ ] **Step 5: Deploy and verify the neutral route in Chrome**
+- [x] **Step 5: Deploy and evaluate the neutral route**
 
-Verify the exact commit/deploy, a `200` JSON response from
-`/api/slate-comparison?bundle_version=v2`, current Alt cards in Chrome, one
-successful mounted refresh, and continued absence of wager controls.
+Exact commit `8fba5303` is live as ready Netlify deploy
+`6a63ea91d4787300084cadc6`. The neutral route returned `200` current V2 JSON
+with 11 frozen rows and two selected at the 22:43Z checkpoint. The refreshed
+in-app page loaded the new assets but remained unavailable; runtime inspection
+confirmed `window.fetch` and `window.XMLHttpRequest` are both undefined.
+Therefore current Alt cards and one mounted refresh could not be proven in that
+client. The deployed fetch/polling path is healthy, but in-app support remains
+blocked on a separately approved non-fetch transport.
+
+### Further transport decision - not approved
+
+Two honest choices remain:
+
+1. Treat the in-app browser as unsupported for live Alt evidence and use a
+   normal browser/PWA that exposes `fetch`.
+2. Add a fixed-callback, same-origin script payload as a fallback after normal
+   fetch fails. The existing V2 normalizer and comparison-only UI boundaries
+   would remain unchanged.
+
+The second choice is the recommended minimal path if in-app support is
+required. Do not implement it without Tyler's approval because it expands the
+reviewed transport contract.
