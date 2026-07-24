@@ -96,7 +96,15 @@ For any new work in this repo:
      and was consumed at `19:42:23Z`. The row was correctly `not_selected`;
      there are zero duplicate groups, malformed/missing proofs, Alt
      notifications, or Alt accepted-bet writes. Next evidence needed is the
-     first selected T-30 freeze and a genuinely prospective graded outcome
+     first selected T-30 freeze and a genuinely prospective graded outcome.
+     The selected-freeze gate then passed on Matthew Boyd UNDER 5.5:
+     Consensus Core froze at `22:10:36Z`, 29.39 minutes before first pitch,
+     and the exact operational lock was consumed at `22:12:34Z` with every
+     candidate/artifact linkage field matching. The remaining evidence gate is
+     a genuinely prospective graded outcome. The Alt tab still performs only
+     one fetch per mount, so a transient fetch/handoff can leave an unavailable
+     or empty view stuck until reload; any automatic retry/refresh is a
+     separate Tyler-approved dashboard change
    - `docs/research/strict-runtime-core-selective-lean-canary-packet.md`
      for comparison/control historical context on
      `strict_runtime_core_plus_selective_lean`, not the lead candidate

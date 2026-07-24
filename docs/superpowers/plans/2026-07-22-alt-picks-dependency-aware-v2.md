@@ -1634,10 +1634,20 @@ missing or non-object V2 proofs, zero Alt notifications, and zero Alt
 accepted-bet writes. Tomoyuki Sugano had no official tracked pick at the T-30
 artifact and therefore was not an eligible freeze candidate.
 
-The next decision remains prospective soak: observe the first **selected**
-immutable T-30 freeze and build a genuinely prospective outcome record. The
-current proof is infrastructure/readiness evidence only and does not reopen
-any official model, pick-selection, threshold, staking, provider,
+The first **selected** immutable T-30 freeze also passed on 2026-07-24.
+Matthew Boyd UNDER 5.5 froze in Consensus Core at `22:10:36Z`, 29.39 minutes
+before first pitch. The exact lock was consumed at `22:12:34Z`, and lock key,
+pitcher, side, line, game time, artifact path, and artifact hash all match.
+The public endpoint then showed 19 provisional rows, four frozen rows, and one
+selected row.
+
+The next decision remains prospective soak: build the first genuinely
+prospective graded outcome record. The Alt browser currently fetches once on
+mount; a transient request failure or artifact handoff can therefore leave an
+unavailable/empty state stuck until reload even after the endpoint recovers.
+Automatic retry/refresh would be a separate Tyler-approved dashboard change.
+The current proof is infrastructure/readiness evidence only and does not
+reopen any official model, pick-selection, threshold, staking, provider,
 notification, lock, accepted-bet, artifact, history, retention, or
 source-of-truth gate.
 
