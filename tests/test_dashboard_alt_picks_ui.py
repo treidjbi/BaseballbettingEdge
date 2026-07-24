@@ -99,8 +99,9 @@ def test_expanded_supporting_candidates_show_read_only_chips_and_reason():
 
 def test_alt_picks_assets_and_scoped_mobile_styles_are_present():
     html = HTML.read_text(encoding="utf-8")
-    assert "v2-alt-picks.js?v=2026-07-24-alt-route-recovery" in html
+    assert "v2-alt-picks.js?v=2026-07-24-alt-contract-recovery" in html
     assert "v2-app.js?v=2026-07-24-alt-ui-recovery" in html
+    assert "v2-alt-picks.js?v=2026-07-24-alt-route-recovery" not in html
     assert "v2-alt-picks.js?v=2026-07-24-alt-ui-recovery" not in html
     assert "v2-alt-picks.js?v=2026-07-23-alt-picks-v2-repair" not in html
     assert "v2-app.js?v=2026-07-22-alt-picks-v2" not in html

@@ -139,7 +139,7 @@
     if (count === 0) {
       if (freshness !== "pending" || first || last) return false;
       return selectionStatus !== "selected"
-        || (familyStates.preclose.state === "pending" && decisionProof.preclose_required_for_selected_lane === false);
+        || (familyStates.preclose.state !== "agree" && decisionProof.preclose_required_for_selected_lane === false);
     }
     return isoTimestamp(first) && isoTimestamp(last) && Date.parse(first) <= Date.parse(last);
   }

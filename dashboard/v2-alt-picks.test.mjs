@@ -319,6 +319,25 @@ test("selected v2 can retain zero Preclose observations only with a proven nones
   }
 });
 
+test("selected v2 retains zero observations when Base already disproves nonessential Preclose", () => {
+  const { api } = load();
+  const accepted = api.normalizeResponse(payload([row({
+    pitcher: "Matthew Boyd",
+    family_states: {
+      base: { state: "disagree", reason_codes: ["base_predicate_false"] },
+      anchor: { state: "agree", reason_codes: ["market_anchor_v2_confirmed"] },
+      preclose: { state: "disagree", reason_codes: ["preclose_not_supported"] },
+      reentry: { state: "agree", reason_codes: ["moderate_edge_quality_reentry"] },
+    },
+  })]));
+
+  assert.equal(accepted.status, "ready");
+  assert.equal(accepted.rows.length, 1);
+  assert.equal(accepted.rows[0].pitcher, "Matthew Boyd");
+  assert.equal(accepted.rows[0].family_states.preclose.state, "disagree");
+  assert.equal(accepted.rows[0].evidence_observation_count, 0);
+});
+
 test("selected v2 accepts observed but still pending nonessential Preclose evidence", () => {
   const { api } = load();
   const accepted = api.normalizeResponse(payload([row({
