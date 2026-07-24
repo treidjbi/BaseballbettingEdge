@@ -36,7 +36,9 @@ def test_alt_components_are_read_only_and_keep_required_groups_and_copy():
     alt = app[start:end]
     assert alt.index("Consensus Core") < alt.index("Re-entry Expansion")
     for copy in [
-        "Alternative methodology unavailable. Main picks are unaffected.",
+        "Alternative methodology unavailable.",
+        "Retrying automatically. Main picks are unaffected.",
+        "Last update retained; retrying current evidence.",
         "Waiting for current-slate evidence.",
         "No alternative qualifiers on this slate.",
         "Alternative evaluation still pending.",
@@ -60,6 +62,7 @@ def test_alt_components_are_read_only_and_keep_required_groups_and_copy():
     assert "row.family_count" in proof_helper
     assert "row.evidence_freshness_status" in alt
     assert "Read-only same-day methodology comparison. Official picks are unchanged." in alt
+    assert "startCurrentSlatePolling" in alt
     for forbidden_style in ["v2-alt-fire", "fire-red", "background: red", "#ef4444"]:
         assert forbidden_style not in alt.lower()
 
@@ -95,8 +98,10 @@ def test_expanded_supporting_candidates_show_read_only_chips_and_reason():
 
 def test_alt_picks_assets_and_scoped_mobile_styles_are_present():
     html = HTML.read_text(encoding="utf-8")
-    assert "v2-alt-picks.js?v=2026-07-23-alt-picks-v2-repair" in html
-    assert "v2-app.js?v=2026-07-22-alt-picks-v2" in html
+    assert "v2-alt-picks.js?v=2026-07-24-alt-ui-recovery" in html
+    assert "v2-app.js?v=2026-07-24-alt-ui-recovery" in html
+    assert "v2-alt-picks.js?v=2026-07-23-alt-picks-v2-repair" not in html
+    assert "v2-app.js?v=2026-07-22-alt-picks-v2" not in html
     assert "v2-alt-picks.js?v=2026-07-22-alt-picks-v2" not in html
     assert "v2-alt-picks.js?v=2026-07-21-alt-picks" not in html
     assert "v2-app.js?v=2026-07-21-alt-picks" not in html

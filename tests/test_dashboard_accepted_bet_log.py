@@ -102,7 +102,7 @@ def test_dashboard_cache_busts_same_line_trust_assets():
     html = DASHBOARD_HTML.read_text(encoding="utf-8")
 
     assert "v2-data.js?v=2026-07-21-alt-picks" in html
-    assert "v2-app.js?v=2026-07-22-alt-picks-v2" in html
+    assert "v2-app.js?v=2026-07-24-alt-ui-recovery" in html
 
 
 def test_dashboard_fetches_read_only_same_day_accepted_bet_review():
@@ -187,7 +187,7 @@ def test_dashboard_can_load_review_after_manual_key_entry():
 def test_dashboard_busts_v2_app_cache_for_accepted_bet_ui():
     html = DASHBOARD_HTML.read_text(encoding="utf-8")
 
-    assert "v2-app.js?v=2026-07-22-alt-picks-v2" in html
+    assert "v2-app.js?v=2026-07-24-alt-ui-recovery" in html
     assert "v2-data.js?v=2026-07-21-alt-picks" in html
 
 

@@ -2770,24 +2770,28 @@ function AltPicksTab() {
     rows: [],
     counts: {},
     slate_date: "",
-    error: ""
+    error: "",
+    refresh_status: "current",
+    refresh_error: ""
   });
   const [detail, setDetail] = useState(null);
   React.useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      const adapter = window.V2AltPicks;
-      const next = adapter ? await adapter.fetchCurrentSlate() : {
+    const adapter = window.V2AltPicks;
+    if (!adapter?.startCurrentSlatePolling) {
+      setState({
         status: "unavailable",
         rows: [],
         counts: {},
-        error: "adapter_missing"
-      };
-      if (!cancelled) setState(next);
-    })();
-    return () => {
-      cancelled = true;
-    };
+        slate_date: "",
+        error: "adapter_missing",
+        refresh_status: "retrying",
+        refresh_error: "adapter_missing"
+      });
+      return undefined;
+    }
+    return adapter.startCurrentSlatePolling({
+      onUpdate: setState
+    });
   }, []);
   const rows = Array.isArray(state.rows) ? state.rows : [];
   const core = rows.filter(row => row.selection_status === "selected" && row.lane === "consensus_core");
@@ -2829,7 +2833,13 @@ function AltPicksTab() {
     className: "v2-state v2-alt-unavailable"
   }, /*#__PURE__*/React.createElement("div", {
     className: "ttl"
-  }, "Alternative methodology unavailable. Main picks are unaffected.")), state.status === "ready" && rows.length === 0 && /*#__PURE__*/React.createElement("div", {
+  }, "Alternative methodology unavailable."), /*#__PURE__*/React.createElement("div", {
+    className: "sub"
+  }, "Retrying automatically. Main picks are unaffected.")), state.status === "ready" && state.refresh_status === "retrying" && /*#__PURE__*/React.createElement("div", {
+    className: "v2-state v2-alt-retrying"
+  }, /*#__PURE__*/React.createElement("div", {
+    className: "sub"
+  }, "Last update retained; retrying current evidence.")), state.status === "ready" && rows.length === 0 && /*#__PURE__*/React.createElement("div", {
     className: "v2-state"
   }, /*#__PURE__*/React.createElement("div", {
     className: "ttl"

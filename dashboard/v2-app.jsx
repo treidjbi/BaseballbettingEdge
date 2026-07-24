@@ -2395,16 +2395,21 @@ function AltSupportingCandidate({ row }) {
 }
 
 function AltPicksTab() {
-  const [state, setState] = useState({ status: "loading", rows: [], counts: {}, slate_date: "", error: "" });
+  const [state, setState] = useState({
+    status: "loading", rows: [], counts: {}, slate_date: "", error: "",
+    refresh_status: "current", refresh_error: "",
+  });
   const [detail, setDetail] = useState(null);
   React.useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      const adapter = window.V2AltPicks;
-      const next = adapter ? await adapter.fetchCurrentSlate() : { status: "unavailable", rows: [], counts: {}, error: "adapter_missing" };
-      if (!cancelled) setState(next);
-    })();
-    return () => { cancelled = true; };
+    const adapter = window.V2AltPicks;
+    if (!adapter?.startCurrentSlatePolling) {
+      setState({
+        status: "unavailable", rows: [], counts: {}, slate_date: "",
+        error: "adapter_missing", refresh_status: "retrying", refresh_error: "adapter_missing",
+      });
+      return undefined;
+    }
+    return adapter.startCurrentSlatePolling({ onUpdate: setState });
   }, []);
   const rows = Array.isArray(state.rows) ? state.rows : [];
   const core = rows.filter((row) => row.selection_status === "selected" && row.lane === "consensus_core");
@@ -2420,7 +2425,8 @@ function AltPicksTab() {
       <main className="v2-alt-wrap">
         <div className="v2-alt-summary"><div><b>{selected}</b><span>selected</span></div><div><b>{provisional}</b><span>provisional</span></div><div><b>{frozen}</b><span>frozen</span></div><p>Read-only same-day methodology comparison. Official picks are unchanged.</p></div>
         {state.status === "loading" && <div className="v2-state"><div className="ttl">Loading alternative evidence</div><div className="sub">Checking the current Phoenix slate.</div></div>}
-        {state.status === "unavailable" && <div className="v2-state v2-alt-unavailable"><div className="ttl">Alternative methodology unavailable. Main picks are unaffected.</div></div>}
+        {state.status === "unavailable" && <div className="v2-state v2-alt-unavailable"><div className="ttl">Alternative methodology unavailable.</div><div className="sub">Retrying automatically. Main picks are unaffected.</div></div>}
+        {state.status === "ready" && state.refresh_status === "retrying" && <div className="v2-state v2-alt-retrying"><div className="sub">Last update retained; retrying current evidence.</div></div>}
         {state.status === "ready" && rows.length === 0 && <div className="v2-state"><div className="ttl">Waiting for current-slate evidence.</div><div className="sub">A stale provisional row is never shown here.</div></div>}
         {state.status === "ready" && rows.length > 0 && selected === 0 && <div className="v2-state v2-alt-empty"><div className="ttl">{zeroSelectedCopy.title}</div><div className="sub">{zeroSelectedCopy.sub}</div></div>}
         {state.status === "ready" && core.length > 0 && <section className="v2-alt-group"><h2>Consensus Core</h2>{core.map((row) => <AltPickCard key={`${row.pitcher}-${row.side}-${row.checkpoint}`} row={row} onOpen={setDetail} />)}</section>}
