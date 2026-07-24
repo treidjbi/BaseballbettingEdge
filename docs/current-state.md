@@ -81,9 +81,12 @@ For any new work in this repo:
      The isolated V2 comparison recorder and versioned Alt Picks UI are live.
      The 2026-07-24 current-artifact linkage repair produced the first healthy
      prospective slate: 18 provisional rows, one selected Consensus Core row,
-     one pending row, zero duplicates, and correct browser display. Official
-     picks, model math, staking, providers, notifications, locks, accepted
-     bets, artifacts, and history remain unchanged and closed to promotion
+     one pending row, zero duplicates, and correct browser display. A second
+     endpoint-only repair on `55a36b3e` bridges the brief full/refresh-to-lock
+     artifact hash-normalization window that could otherwise show an honest but
+     confusing waiting state. Official picks, model math, staking, providers,
+     notifications, locks, accepted bets, artifacts, and history remain
+     unchanged and closed to promotion
    - `docs/research/strict-runtime-core-selective-lean-canary-packet.md`
      for comparison/control historical context on
      `strict_runtime_core_plus_selective_lean`, not the lead candidate

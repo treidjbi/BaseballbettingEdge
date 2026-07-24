@@ -1598,6 +1598,26 @@ The next normal-slate evidence arrived on 2026-07-24:
   notifications, zero Alt accepted-bet writes, zero Alt operational locks, and
   no official artifact or provider-posture change. The served artifact remains
   `render_pipeline` output using only TheRundown or TheRundown+PropLine rows.
+- At `18:07:59Z`, the next full publication exposed a second narrow handoff
+  gap: the publisher's original logical payload hash differed from the hash and
+  exact body bytes observed after the same JSONB payload passed through
+  `get-artifact`. The `18:10:14Z` live-layer cycle wrote all 18 current V2 rows,
+  but the endpoint correctly suppressed them until the `18:12:25Z` lock
+  publication normalized the stored logical hash. This explains the temporary
+  waiting state Tyler observed; no candidate evidence was lost.
+- Endpoint-only repair `55a36b3e` now conditionally reads the exact current
+  payload only when a proof-valid V2 provisional row misses the stored logical
+  hash. It accepts that row only when the artifact timestamp also matches and
+  the row's bound byte hash equals the exact current `get-artifact` body hash.
+  Normal matching rows, V1, frozen rows, official artifacts, publishers,
+  providers, locks, notifications, accepted bets, model behavior, and cadence
+  are unchanged. The regression was observed red before implementation; 73
+  endpoint tests and the full 168-test JavaScript suite pass.
+- Netlify production deploy `6a63ad9ffaa87100085d7ca8` is ready on exact
+  commit `55a36b3e`. The current browser and endpoint again show 18 provisional
+  rows, one selected, one pending, and zero frozen. The next normal
+  full/refresh transition remains the final live proof of the conditional
+  bridge.
 
 The next decision remains prospective soak: observe the first new
 immutable T-30 freeze and build a genuinely prospective outcome record. The
