@@ -78,10 +78,12 @@ For any new work in this repo:
      dependency-aware lane resolution and exact candidate-grain Preclose
      evidence; the test-first implementation plan is
      `docs/superpowers/plans/2026-07-22-alt-picks-dependency-aware-v2.md`.
-     The isolated V2 comparison recorder and versioned Alt Picks UI are live as
-     of 2026-07-23; official picks, model math, staking, providers,
-     notifications, locks, accepted bets, artifacts, and history remain
-     unchanged and closed to promotion
+     The isolated V2 comparison recorder and versioned Alt Picks UI are live.
+     The 2026-07-24 current-artifact linkage repair produced the first healthy
+     prospective slate: 18 provisional rows, one selected Consensus Core row,
+     one pending row, zero duplicates, and correct browser display. Official
+     picks, model math, staking, providers, notifications, locks, accepted
+     bets, artifacts, and history remain unchanged and closed to promotion
    - `docs/research/strict-runtime-core-selective-lean-canary-packet.md`
      for comparison/control historical context on
      `strict_runtime_core_plus_selective_lean`, not the lead candidate

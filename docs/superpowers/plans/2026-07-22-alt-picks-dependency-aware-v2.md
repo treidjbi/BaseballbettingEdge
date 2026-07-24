@@ -1580,11 +1580,31 @@ locks, accepted bets, artifact source, retention, or history.
   is generated `22:07:47Z`, has zero warnings, and every row remains
   TheRundown-sourced.
 
+The next normal-slate evidence arrived on 2026-07-24:
+
+- Current-artifact linkage repair `44c54ce0` was fast-forwarded to `main` and
+  deployed only to `bbe-live-layer` as Render deploy
+  `dep-d9hq3pl7vvec73euer70`.
+- The natural `17:40:12Z` scheduled cycle completed successfully at
+  `17:41:05Z` using the remote official artifact generated `17:37:37Z`.
+- Supabase and the explicit V2 endpoint agree on 18 current provisional rows:
+  one selected, one pending, 16 not selected, zero frozen, and zero duplicate
+  candidate/checkpoint groups. Maximum proof size is `5,881` bytes.
+- The selected comparison row is Trevor Rogers OVER 4.5 at -136 FanDuel in
+  Consensus Core. The deployed Alt Picks browser shows that card and the
+  `1 selected / 18 provisional / 0 frozen` summary.
+- V2 continues to reject PASS, expose no top-level raw `reason_codes`, and
+  preserve unversioned/V1 compatibility. Isolation checks found zero Alt
+  notifications, zero Alt accepted-bet writes, zero Alt operational locks, and
+  no official artifact or provider-posture change. The served artifact remains
+  `render_pipeline` output using only TheRundown or TheRundown+PropLine rows.
+
 The next decision remains prospective soak: observe the first new
-workload-bound V2 proof and immutable T-30 freeze on the next normal slate. That
-evidence is not a backfill requirement and does not reopen any official model,
-pick-selection, threshold, staking, provider, notification, lock, accepted-bet,
-artifact, history, retention, or source-of-truth gate.
+immutable T-30 freeze and build a genuinely prospective outcome record. The
+current provisional proof is infrastructure/readiness evidence only and does
+not reopen any official model, pick-selection, threshold, staking, provider,
+notification, lock, accepted-bet, artifact, history, retention, or
+source-of-truth gate.
 
 ---
 
