@@ -70,6 +70,70 @@ def _effective_verdict(ev_data: dict) -> str:
     return ev_data.get("actionable_verdict") or ev_data.get("verdict") or "PASS"
 
 
+def _pick_identity(pick: dict) -> tuple[str, str, str] | None:
+    """Return the stable history identity without changing display spelling."""
+    game_date = str(pick.get("date") or "").strip()
+    pitcher = _normalize(str(pick.get("pitcher") or ""))
+    side = str(pick.get("side") or "").strip().lower()
+    if not game_date or not pitcher or side not in {"over", "under"}:
+        return None
+    return game_date, pitcher, side
+
+
+def _history_row_rank(pick: dict, index: int) -> tuple[int, int, int]:
+    """Prefer graded rows, then locked rows, then the latest serialized row."""
+    return (
+        int(bool(pick.get("result"))),
+        int(bool(pick.get("locked_at"))),
+        index,
+    )
+
+
+def _deduplicate_history_rows(picks: list[dict]) -> list[dict]:
+    """Collapse accent/casing aliases while preserving the strongest evidence."""
+    selected: dict[tuple[str, str, str], tuple[tuple[int, int, int], dict]] = {}
+    order: list[tuple[str, str, str] | tuple[str, int]] = []
+    invalid: dict[tuple[str, int], dict] = {}
+
+    for index, pick in enumerate(picks):
+        identity = _pick_identity(pick)
+        if identity is None:
+            invalid_key = ("invalid", index)
+            order.append(invalid_key)
+            invalid[invalid_key] = pick
+            continue
+
+        rank = _history_row_rank(pick, index)
+        if identity not in selected:
+            order.append(identity)
+            selected[identity] = (rank, pick)
+        elif rank > selected[identity][0]:
+            selected[identity] = (rank, pick)
+
+    return [
+        invalid[key] if key in invalid else selected[key][1]
+        for key in order
+    ]
+
+
+def _stored_pitcher_alias(
+    conn: sqlite3.Connection, game_date: str, pitcher: str, side: str
+) -> str | None:
+    """Find an existing same-pick row using normalized pitcher identity."""
+    rows = conn.execute(
+        "SELECT pitcher FROM picks WHERE date = ? AND side = ? ORDER BY id",
+        (game_date, side),
+    ).fetchall()
+    normalized = _normalize(pitcher)
+    for row in rows:
+        stored = row["pitcher"]
+        if stored == pitcher:
+            return stored
+        if _normalize(stored) == normalized:
+            return stored
+    return None
+
+
 def get_db() -> sqlite3.Connection:
     DB_PATH.parent.mkdir(parents=True, exist_ok=True)
     conn = sqlite3.connect(DB_PATH)
@@ -232,6 +296,10 @@ def seed_picks(today_json_path: Path = TODAY_JSON, now: datetime | None = None) 
 
             for side in ("over", "under"):
                 ev_data = p[f"ev_{side}"]
+                stored_pitcher = _stored_pitcher_alias(
+                    conn, game_date, p["pitcher"], side
+                )
+                identity_pitcher = stored_pitcher or p["pitcher"]
                 verdict = _effective_verdict(ev_data)
                 odds = p[f"best_{side}_odds"]
                 raw_verdict = ev_data.get("raw_verdict") or ev_data.get("verdict")
@@ -250,7 +318,8 @@ def seed_picks(today_json_path: Path = TODAY_JSON, now: datetime | None = None) 
                 if verdict == "PASS":
                     conn.execute("""
                         UPDATE picks
-                        SET verdict = ?, raw_verdict = ?, actionable_verdict = ?,
+                        SET pitcher = ?,
+                            verdict = ?, raw_verdict = ?, actionable_verdict = ?,
                             edge = ?, ev = ?, adj_ev = ?, raw_adj_ev = ?, odds = ?,
                             k_line = ?, applied_lambda = ?, movement_conf = ?,
                             game_time = ?,
@@ -264,6 +333,7 @@ def seed_picks(today_json_path: Path = TODAY_JSON, now: datetime | None = None) 
                         WHERE date = ? AND pitcher = ? AND side = ?
                           AND locked_at IS NULL AND result IS NULL
                     """, (
+                        p["pitcher"],
                         verdict,
                         raw_verdict,
                         actionable_verdict,
@@ -278,7 +348,7 @@ def seed_picks(today_json_path: Path = TODAY_JSON, now: datetime | None = None) 
                         confidence_referee_json,
                         market_anchor_selector_json,
                         projection_challenger_json,
-                        game_date, p["pitcher"], side,
+                        game_date, identity_pitcher, side,
                     ))
                     updated += conn.execute("SELECT changes()").fetchone()[0]
                     continue
@@ -302,7 +372,7 @@ def seed_picks(today_json_path: Path = TODAY_JSON, now: datetime | None = None) 
                      projection_challenger_json)
                     VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
                 """, (
-                    game_date, p["pitcher"], p["team"], side,
+                    game_date, identity_pitcher, p["team"], side,
                     p["k_line"], verdict,
                     raw_verdict, actionable_verdict,
                     ev_data.get("edge", ev_data["ev"]),
@@ -369,7 +439,8 @@ def seed_picks(today_json_path: Path = TODAY_JSON, now: datetime | None = None) 
                     # latest state of the pick's underlying inputs.
                     conn.execute("""
                         UPDATE picks
-                        SET verdict = ?, raw_verdict = ?, actionable_verdict = ?,
+                        SET pitcher = ?,
+                            verdict = ?, raw_verdict = ?, actionable_verdict = ?,
                             edge = ?, ev = ?, adj_ev = ?, raw_adj_ev = ?, odds = ?,
                             k_line = ?, applied_lambda = ?, movement_conf = ?,
                             lineup_used = ?, game_time = ?,
@@ -394,6 +465,7 @@ def seed_picks(today_json_path: Path = TODAY_JSON, now: datetime | None = None) 
                         WHERE date = ? AND pitcher = ? AND side = ?
                           AND locked_at IS NULL AND result IS NULL
                     """, (
+                        p["pitcher"],
                         verdict,
                         raw_verdict,
                         actionable_verdict,
@@ -422,7 +494,7 @@ def seed_picks(today_json_path: Path = TODAY_JSON, now: datetime | None = None) 
                         confidence_referee_json,
                         market_anchor_selector_json,
                         projection_challenger_json,
-                        game_date, p["pitcher"], side,
+                        game_date, identity_pitcher, side,
                     ))
                     updated += conn.execute("SELECT changes()").fetchone()[0]
 
@@ -549,9 +621,17 @@ def load_history_into_db(history_path: Path = None) -> int:
         log.warning("load_history_into_db: could not read %s: %s — skipping", history_path, e)
         return 0
 
+    deduplicated_picks = _deduplicate_history_rows(picks)
+    duplicate_count = len(picks) - len(deduplicated_picks)
+    if duplicate_count:
+        log.warning(
+            "load_history_into_db: collapsed %d normalized pitcher alias rows",
+            duplicate_count,
+        )
+
     inserted = 0
     with get_db() as conn:
-        for p in picks:
+        for p in deduplicated_picks:
             cur = conn.execute("""
                 INSERT OR IGNORE INTO picks
                 (date, pitcher, team, opp_team, pitcher_throws, side, k_line,

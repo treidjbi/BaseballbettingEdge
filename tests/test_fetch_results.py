@@ -157,6 +157,49 @@ class TestSeedPicks:
         conn.close()
         assert count == 2  # no duplicates
 
+    def test_reuses_normalized_pitcher_alias_instead_of_inserting_duplicate(
+        self, tmp_db, today_json
+    ):
+        db_path, fr = tmp_db
+        today_path, data = today_json
+        data["pitchers"][0]["pitcher"] = "Gerrit Colé"
+        today_path.write_text(json.dumps(data))
+
+        conn = sqlite3.connect(db_path)
+        conn.execute(
+            """
+            INSERT INTO picks (
+                date, pitcher, team, side, k_line, verdict,
+                ev, adj_ev, raw_lambda, applied_lambda, odds, movement_conf
+            )
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """,
+            (
+                "2026-04-15", "Gerrit Cole", "New York", "over", 7.5, "LEAN",
+                0.03, 0.03, 7.0, 7.0, -120, 1.0,
+            ),
+        )
+        conn.commit()
+        conn.close()
+
+        assert fr.seed_picks(today_path) == 1
+
+        conn = sqlite3.connect(db_path)
+        rows = conn.execute(
+            """
+            SELECT pitcher, side, verdict
+            FROM picks
+            WHERE date = '2026-04-15'
+            ORDER BY side
+            """
+        ).fetchall()
+        conn.close()
+
+        assert rows == [
+            ("Gerrit Colé", "over", "FIRE 1u"),
+            ("Shane Bieber", "under", "FIRE 2u"),
+        ]
+
     def test_seed_picks_downgrades_unlocked_stale_side_to_pass(self, tmp_db, today_json):
         db_path, fr = tmp_db
         p, data = today_json
@@ -508,6 +551,63 @@ class TestLoadHistoryIntoDb:
         count = conn.execute("SELECT COUNT(*) FROM picks").fetchone()[0]
         conn.close()
         assert count == 1
+
+    def test_deduplicates_normalized_aliases_and_preserves_locked_row(
+        self, tmp_db, tmp_path
+    ):
+        db_path, fr = tmp_db
+        history = [
+            {
+                "date": "2026-07-27",
+                "pitcher": "Martin Perez",
+                "team": "CWS",
+                "side": "under",
+                "k_line": 3.5,
+                "verdict": "LEAN",
+                "ev": 0.04,
+                "adj_ev": 0.04,
+                "raw_lambda": 3.1,
+                "applied_lambda": 3.1,
+                "odds": -120,
+                "movement_conf": 1.0,
+            },
+            {
+                "date": "2026-07-27",
+                "pitcher": "Martin Pérez",
+                "team": "CWS",
+                "side": "under",
+                "k_line": 3.5,
+                "verdict": "FIRE 1u",
+                "ev": 0.08,
+                "adj_ev": 0.08,
+                "raw_lambda": 3.1,
+                "applied_lambda": 3.1,
+                "odds": -115,
+                "movement_conf": 1.0,
+                "locked_at": "2026-07-27T22:40:00Z",
+                "locked_k_line": 3.5,
+                "locked_odds": -115,
+                "locked_verdict": "FIRE 1u",
+            },
+        ]
+        history_path = tmp_path / "picks_history.json"
+        history_path.write_text(json.dumps(history))
+
+        assert fr.load_history_into_db(history_path) == 1
+
+        conn = sqlite3.connect(db_path)
+        rows = conn.execute(
+            """
+            SELECT pitcher, verdict, locked_at, locked_odds
+            FROM picks
+            WHERE date = '2026-07-27' AND side = 'under'
+            """
+        ).fetchall()
+        conn.close()
+
+        assert rows == [
+            ("Martin Pérez", "FIRE 1u", "2026-07-27T22:40:00Z", -115)
+        ]
 
     def test_loads_quality_gate_fields_from_history(self, tmp_db, tmp_path):
         db_path, fr = tmp_db
