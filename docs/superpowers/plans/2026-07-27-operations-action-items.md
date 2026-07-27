@@ -8,6 +8,45 @@
 
 **Tech Stack:** Python 3.11, SQLite, pytest, Markdown operating packets, Supabase CLI read-only SQL, Render CLI v2.17.
 
+## Execution Record
+
+**Status: complete on 2026-07-27.**
+
+- The normalized history/seeding repair and review packets were merged and
+  pushed to `main` at `56f3d25ed6245bc2171b8be45ac600fe0027a3a5`.
+- The focused results/pipeline suite passed `190` tests. The full suite passed
+  `1,905` tests on the feature tree and again after the fast-forward merge.
+- Render CLI authentication was refreshed and the intended Tyler workspace and
+  service inventory were verified. No token was printed or stored in the repo.
+- All seven pipeline cron deploys reached `live` on the exact pushed commit:
+
+  | Service | Deploy |
+  | --- | --- |
+  | `bbe-pipeline-preview` | `dep-d9josl4vikkc73bf5qj0` |
+  | `bbe-pipeline-grading` | `dep-d9jot2vavr4c73d07ccg` |
+  | `bbe-pipeline-full` | `dep-d9jotj9l565s739rsvc0` |
+  | `bbe-pipeline-refresh-day` | `dep-d9jou7reo5us73bre0o0` |
+  | `bbe-pipeline-refresh-evening` | `dep-d9jouvurnols7396eiug` |
+  | `bbe-pipeline-refresh-final` | `dep-d9jovdpl565s73d74l50` |
+  | `bbe-pipeline-lock` | `dep-d9jovv8u01pc7395rlm0` |
+
+- The first scheduled post-deploy refresh ran from `17:07:07Z` through
+  `17:08:18Z` and succeeded. It logged six collapsed normalized historical
+  alias rows, hydrated `2,677` history rows, and preserved external-ledger lock
+  behavior with zero rows due before the lock window.
+- Netlify/Supabase published `today`, dated slate, and `picks_history` at
+  `2026-07-27T17:08:07.180813Z`. The public artifacts contain one
+  `Martin Pérez` `under 3.5` identity, zero normalized duplicate groups for
+  the July 27 history, and the expected `therundown_propline` /
+  TheRundown-line-source posture.
+- Alt V2 returned `ready`, `15` provisional rows, `4` selected rows, one
+  normalized Pérez row, and no endpoint/proof error after its next live-layer
+  cycle.
+- The shadow-model checkpoint is scheduled for `2026-08-10`. The retention
+  yes/no checkpoint is scheduled for `2026-08-03`; deletion remains `NO-GO`
+  because exact compact coverage is false and both bounded samples contain
+  uncovered groups.
+
 ## Global Constraints
 
 - Do not change model math, parameters, formula dates, thresholds, staking, provider order, source-of-truth rules, notification behavior, lock behavior, dashboard behavior, secrets, environment variables, or retention rows.
