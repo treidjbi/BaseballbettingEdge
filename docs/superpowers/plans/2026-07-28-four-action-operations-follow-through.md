@@ -12,7 +12,7 @@
 
 Date: 2026-07-28
 Owner: Tyler + Codex
-Status: Evidence work complete; final verification and branch handoff in progress
+Status: Complete; verified and pushed on the isolated review branch
 
 ## Guardrails
 
@@ -57,4 +57,4 @@ Status: Evidence work complete; final verification and branch handoff in progres
 
 - [x] Update controlling research checkpoints and `docs/current-state.md` only where the evidence materially changed.
 - [x] Run document/link checks, `git diff --check`, and the relevant test verification.
-- [ ] Commit and push the isolated review branch; leave production unchanged.
+- [x] Commit and push the isolated review branch; leave production unchanged.
