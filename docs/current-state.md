@@ -1,6 +1,6 @@
 # Current State
 
-Last updated: 2026-07-24
+Last updated: 2026-07-28
 
 ## Read Order
 
@@ -67,6 +67,12 @@ For any new work in this repo:
      for the controlling frozen post-grading v1 implementation plan
    - `docs/research/no-drag-composite-prospective-canary-packet.md`
      for the lead operator packet for the no-drag prospective canary
+   - `docs/research/2026-07-28-no-drag-strict-runtime-core-review-packet.md`
+     for the early-trigger review after no-drag reached `75/75`, including the
+     strict-runtime-core comparison and the still-closed promotion gates
+   - `docs/research/2026-07-28-artifact-publisher-timeout-resilience-review.md`
+     for the scoped diagnosis of recurring lock-publisher PostgREST statement
+     timeouts and the separately gated publisher-only resilience options
    - `docs/superpowers/specs/2026-07-21-pregame-alternative-pick-methodology-design.md`
      for the approved product direction, production rollout contract, and
      first-normal-slate integrity gate for the pregame Alt Picks comparison
@@ -344,6 +350,20 @@ each lane.
 | UI | `2026-05-20-live-market-decision-ui.md`, `2026-05-20-live-notification-coordinator.md`, `2026-06-04-live-notification-digest-coordinator.md` | Phase 2 live market-decision UI is now default-on for actionable cards, with `?marketSheet=0` as the rollback/opt-out. `dashboard/v2-data.js` fetches `/.netlify/functions/live-market-display` by default and attaches sanitized `live_market_display_state` rows; the Netlify function reads with server-side Supabase credentials and returns app-safe allow-listed rows plus sanitized `book_rows` / `movement_events`. `dashboard/v2-app.jsx` keeps PASS cards quiet and shows actionable-card market strips, detail-sheet market panels, a compact book board with Best / Model ref / Same line / Different line / cushion tags, and Log Bet live-book selection that fills the existing line, odds, and book fields. The existing Log Bet modal still records through the existing accepted-bet path, preserves matched push/shadow-review `notification_event_id` / `shadow_candidate_id`, supports same-day review/duplicate warnings and append-only corrections, and keeps manual edits available. This is a UI readout only and does not change provider/source-of-truth, model, threshold, staking, lock, retention, notification, or accepted-bet API behavior. | Verify same-line defaulting and alternate-line context on the next normal slate, including that alternate-line rows remain manually selectable but cannot auto-prefill Log Bet. Retain `?marketSheet=0` as rollback/opt-out and keep provider promotion, betting-rule changes, broader edit/delete audit, and notification behavior separate. |
 
 | Tracking / data collection / history | `docs/research/market-tracker-map.md`, `docs/research/pitcher-k-outcome-dataset.md`, `2026-06-07-market-agreement-tracker.md`, compact outcome outputs, live-market audits | Canonical research row plus existing market/live/provider trackers. The market agreement tracker now derives LEAN/FIRE/referee-cap buckets for live movement with or against the model without adding a table; the 2026-06-09 backfill used compact Supabase exports plus Gate C metadata/result overlay and produced `2,482` evidence rows, `2,171` graded rows, and `56` graded confidence-referee cap rows. The 2026-07-09 refreshed export produced `1,935` tracker rows with `432` covered graded tracked picks for synthesis review, enough to make agreement-with-model versus agreement-against-model useful directional evidence while still too sparse for standalone promotion. Actual opportunity is now reconstructed from MLB boxscores into the compact row for postgame workload/leash explanation only. Daily brief keeps a compact Gate C bucket scoreboard and pre/post 2026-04-28 context. | Prefer derived labels on existing live-market and compact outcome rows before adding tables. Use market-agreement, edge-synthesis, CLV, and actual-opportunity buckets to decide what to keep studying, not to auto-promote LEANs, override the referee, or change model/staking/provider/notification behavior. Promote compact storage or retention only after row-volume/cost proof and Tyler approval. |
+
+### July 28 four-action operations follow-through overlay
+
+Tyler approved four read-only follow-ups from the July 28 morning brief. The
+review artifacts are documentation and evidence only; they do not approve a
+production deploy, model/provider/notification/lock/UI change, or retention
+write.
+
+| Lane | Current stage | Next decision / blocker |
+| --- | --- | --- |
+| Pipeline / infrastructure | A scoped review confirmed four identical `published_pipeline_artifacts` `57014` statement timeouts on lock runs: Jul 23 `02:32`, Jul 25 `11:42`, and Jul 27 `00:32`/`05:32` Phoenix. Each was the same three-artifact bulk upsert and each next 10-minute cycle recovered. No due lock, served artifact, or grading impact was found. The resilience gap is the growing roughly `5.9 MiB` logical response, an `8s` PostgREST statement ceiling, unnecessary `return=representation`, and no transient retry; the table itself is small, recently vacuumed/analyzed, and has no custom triggers. The final natural-refresh check used the served artifact generated at `13:37:53` Phoenix: 30 pitchers, 21 tracked picks, `7` clean / `23` capped, and lineup maturity of 14 confirmed / 16 projected across pitcher rows (10 / 11 among tracked picks). The approved non-strict wrapper selected PropLine for two rows without changing source posture: Cal Quantrill UNDER 2.5 `+126` (confirmed lineup) and Luis Castillo OVER 4.5 `+112` (projected lineup); both remained first-seen-opening-capped LEANs, with TheRundown still primary and cross-book rows present. | No emergency repair or rollback. Review `docs/research/2026-07-28-artifact-publisher-timeout-resilience-review.md`, then separately approve or decline a test-first publisher-only minimal-return/bounded-retry plan. Escalate only if a timeout causes a stale served artifact, missed due lock, or grading/history divergence. Continue natural refresh observation for the remaining projected lineups; the two PropLine selections are normal approved fallback evidence, not a provider-promotion signal. |
+| Model | The scheduled July 28 research run reconciled the frozen no-drag baselines/fingerprint and reached `ready_for_review` at `75/75`. Prospective July 21-27 is `23`, `15-8`, `+2.621u/+11.4%`, with positive leave-one-slate-out PnL. Strict runtime core is `95`, `63-32`, `+17.05u`; current provider `19`, `14-5`, `+5.19u`; recent `17`, `14-3`, `+7.19u`. No-drag still has zero plus-price and FIRE 2u prospective rows; strict core's current-provider rows are all OVER at minus money. | Keep the August 10 four-candidate checkpoint and read `docs/research/2026-07-28-no-drag-strict-runtime-core-review-packet.md`. Refresh provider/agreement, side, price, K-line, quality, timing, CLV, Path B, workload, and rolling slices then. No live promotion plan yet; Gate C/D/E/F/12E remain closed. |
+| UI | No dashboard behavior changed. The lineup and fallback check was artifact-only and the PropLine rows remain within the approved non-strict fallback contract. | Continue existing Alt V2/default-on live-market UI soak. Do not treat the fallback rows or model breakout as UI/provider promotion. |
+| Tracking / data collection / history | The July 28 linked-CLI review reports `3,331 MB` database use (`40.66%` of 8 GB) and `2,374 MB` of `market_snapshots`. The 14-day window has `2,003,860` raw rows / `1,745 MB` / `148` uncovered sampled groups; the 30-day window has `1,303,579` rows / `1,135 MB` / `30` uncovered groups. Exact coverage is false and both windows are ineligible. | Retention remains `NO-GO`; keep spend cap and current rules. August 3 is a confirmation review, not execution. Exact provider/date compact coverage, recoverability, material benefit, the exact statement, and separate Tyler approval are all still required. |
 
 ### July 27 operations action overlay
 

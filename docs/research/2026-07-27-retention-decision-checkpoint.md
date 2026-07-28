@@ -5,8 +5,33 @@ Scheduled yes/no review: **2026-08-03**
 ## Current decision
 
 **NO-GO for deletion.** Keep the Supabase spend cap and current retention rules
-unchanged. The July 27 linked-CLI reports were read-only; no retention flag or
-delete path was enabled.
+unchanged. Tyler approved an early read-only review on July 28; no retention
+flag, compaction write, or delete path was enabled.
+
+## July 28 early review
+
+| Measure | Current value |
+| --- | ---: |
+| Database size | `3,331 MB` (`40.66%` of included 8 GB) |
+| `market_snapshots` | `2,374 MB`, about `2.73M` estimated rows |
+| Raw rows older than 14 days | `2,003,860` (estimated `1,745 MB`) |
+| Raw rows older than 30 days | `1,303,579` (estimated `1,135 MB`) |
+| 14-day bounded compact sample | `1,310` groups; `148` uncovered |
+| 30-day bounded compact sample | `860` groups; `30` uncovered |
+| Exact compact coverage | `false` |
+| Eligible for execute | `false` for both windows |
+
+The database grew about `83 MB` from the July 27 checkpoint and remains below
+the 6 GB escalation line. The 30-day bounded sample improved, but exact
+coverage is still false. Its current examples are retired BoltOdds groups;
+the 14-day sample also contains current TheRundown and PropLine groups. A broad
+age-only delete would therefore mix retired noise with unreconciled current
+provider/CLV evidence.
+
+Decision: keep August 3 as a confirmation review, not an execution date. The
+next safe evidence step is an exact provider/date coverage proof. Any compact
+backfill is a separate write requiring approval, and any eventual deletion
+still requires the exact reviewed statement and Tyler's separate approval.
 
 ## July 27 evidence
 

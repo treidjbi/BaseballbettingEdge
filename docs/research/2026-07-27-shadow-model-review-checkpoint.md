@@ -12,16 +12,28 @@ artifacts, dashboard behavior, or retention.
 scheduled because the signals are worth preserving, not because any promotion
 gate is open.
 
+The no-drag early-review trigger fired on July 28. The read-only packet is
+`docs/research/2026-07-28-no-drag-strict-runtime-core-review-packet.md`. It
+does not replace this August 10 checkpoint or open a live gate.
+
 | Candidate | Current high-signal evidence | Blocking evidence |
 | --- | --- | --- |
-| Market-anchor strict | Partial through July 26: `147` graded rows, `90-57`, `+6.01u`; strict FIRE remains `27`, `20-7`, `+7.14u` | FIRE result remains all `OVER`; K-line, CLV, workload, provider, agreement, and rolling-window slices remain incomplete or mixed |
-| Market-shrink | Partial rebuild: all Gate F shrink candidates improved MAE/RMSE on a `305`-row holdout, with `7` positive windows and zero bad slices | Below the default `800`-row discussion floor; no paired decision-changing profitability proof |
-| Moderate-edge / CLV | Partial rebuild: moderate-edge-clean `39`, `29-10`, `+10.51u`; CLV-supported `111`, `62-49`, `+3.95u` | CLV is post-close validation evidence and the cohorts need provider, timing, side, price, K-line, quality, and rolling-window balance |
-| No-drag composite | Partial prospective read: `19`, `13-6`, `+3.09u` | Audit was `blocked_baseline_drift`; the fail-closed operational counter and frozen fingerprint must reconcile before results are trusted |
+| Market-anchor strict | July 28 selector audit: all strict `152`, `92-60`, `+4.27u`; strict displayed FIRE `28`, `20-8`, `+6.14u` | FIRE result remains all `OVER`; K-line, CLV, workload, provider, agreement, and rolling-window slices remain incomplete or mixed |
+| Market-shrink | Live-metadata audit: `581`, `287-294`, `-41.50u`, with zero applied rows | Negative graded metadata result; paired projection-error and decision-changing proof remains insufficient |
+| Moderate-edge / CLV | CLV-supported full slice `276`, `155-121`, `+20.01u`; current provider `55`, `33-22`, `+6.52u` | Recent slice is `14-16/-4.64u`; CLV remains post-close validation and needs timing, side, price, K-line, quality, provider, and rolling balance |
+| No-drag composite | Canonical audit is `ready_for_review` at `75/75`; prospective July 21-27 is `23`, `15-8`, `+2.621u`, and all leave-one-slate-out reads remain positive | All prospective prices are minus money; FIRE 2u has zero rows; `-130` to `-149`, K=4.5, capped-quality, provider-attribution, and market-agreement gates remain weak or incomplete |
 
-The partial figures above are a scheduling baseline only. The August 10 packet
-must rebuild from the approved full production index and must not overwrite the
-canonical full-clean counts with a partial archive window.
+The July 28 figures use the scheduled full-corpus reports for canonical totals
+and a complete public production-artifact reconstruction only for the July
+21-27 prospective slices. The August 10 packet must rebuild from the approved
+full production index with fresh compact provider/agreement enrichment.
+
+Comparison/control breakout watch: `strict_runtime_core_flat` is `95`,
+`63-32`, `+17.05u`; current provider is `19`, `14-5`, `+5.19u`; recent is
+`17`, `14-3`, `+7.19u`. It remains `watch_more` because all 19 current-provider
+rows are OVER at minus money and the controlling provider/agreement sample is
+still small. The broader strict-plus-selective control has a negative recent
+window at `16-18/-5.36u`.
 
 ## Review triggers
 
@@ -29,7 +41,8 @@ Run the packet on August 10, or earlier only if one of these objective triggers
 fires:
 
 1. no-drag reaches its controlling prospective sample floor with the frozen
-   baseline and fingerprint fully reconciled;
+   baseline and fingerprint fully reconciled (**fired July 28; packet written,
+   live promotion still closed**);
 2. market-anchor adds another complete 14-slate rolling window with materially
    better provider and market-agreement attribution;
 3. market-shrink reaches the controlling holdout floor and a paired
