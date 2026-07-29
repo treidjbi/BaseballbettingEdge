@@ -22,6 +22,7 @@ from analytics.diagnostics import bet_selection_edge_synthesis  # noqa: E402
 from analytics.diagnostics import confidence_referee_canary_audit  # noqa: E402
 from analytics.diagnostics import gate_f_projection_challenger_shadow_report  # noqa: E402
 from analytics.diagnostics import market_agreement_tracker  # noqa: E402
+from analytics.diagnostics import market_anchor_downside_counterfactual_audit  # noqa: E402
 from analytics.diagnostics import market_anchor_selector_canary_audit  # noqa: E402
 from analytics.diagnostics import market_shrink_projection_canary_audit  # noqa: E402
 from analytics.diagnostics import no_drag_composite_canary_audit  # noqa: E402
@@ -29,6 +30,7 @@ from analytics.diagnostics import profit_rescue_audit  # noqa: E402
 from analytics.diagnostics import shadow_signal_synthesis_lab  # noqa: E402
 from analytics.diagnostics import shadow_notification_candidate_audit  # noqa: E402
 from analytics.diagnostics import strong_base_decision_lab  # noqa: E402
+from analytics.diagnostics import strong_base_fire_policy_matrix  # noqa: E402
 from analytics.diagnostics import strong_base_portfolio_simulator  # noqa: E402
 
 
@@ -60,6 +62,21 @@ def _parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         help="Skip only when selector metadata has not been deployed yet.",
     )
     parser.add_argument(
+        "--market-anchor-downside-output-md",
+        type=Path,
+        default=market_anchor_downside_counterfactual_audit.DEFAULT_OUTPUT_MD,
+    )
+    parser.add_argument(
+        "--market-anchor-downside-output-json",
+        type=Path,
+        default=market_anchor_downside_counterfactual_audit.DEFAULT_OUTPUT_JSON,
+    )
+    parser.add_argument(
+        "--skip-market-anchor-downside-counterfactual-audit",
+        action="store_true",
+        help="Skip only when the stored market-anchor selector cohort is intentionally unavailable.",
+    )
+    parser.add_argument(
         "--confidence-referee-canary-output",
         type=Path,
         default=confidence_referee_canary_audit.OUTPUT_PATH,
@@ -86,6 +103,21 @@ def _parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         "--shadow-signal-synthesis-output",
         type=Path,
         default=shadow_signal_synthesis_lab.DEFAULT_OUTPUT,
+    )
+    parser.add_argument(
+        "--strong-base-fire-policy-matrix-output-md",
+        type=Path,
+        default=strong_base_fire_policy_matrix.DEFAULT_OUTPUT_MD,
+    )
+    parser.add_argument(
+        "--strong-base-fire-policy-matrix-output-json",
+        type=Path,
+        default=strong_base_fire_policy_matrix.DEFAULT_OUTPUT_JSON,
+    )
+    parser.add_argument(
+        "--skip-strong-base-fire-policy-matrix",
+        action="store_true",
+        help="Skip the frozen research-only FIRE policy matrix.",
     )
     parser.add_argument(
         "--no-drag-canary-output-md",
@@ -314,6 +346,15 @@ def main(argv: list[str] | None = None) -> int:
             "--output",
             str(args.market_anchor_selector_audit_output),
         ])
+    if not args.skip_market_anchor_downside_counterfactual_audit:
+        market_anchor_downside_counterfactual_audit.main([
+            "--input",
+            str(dataset_path),
+            "--output-md",
+            str(args.market_anchor_downside_output_md),
+            "--output-json",
+            str(args.market_anchor_downside_output_json),
+        ])
     confidence_referee_canary_audit.main([
         "--input",
         str(dataset_path),
@@ -354,6 +395,15 @@ def main(argv: list[str] | None = None) -> int:
         "--output",
         str(args.shadow_signal_synthesis_output),
     ])
+    if not args.skip_strong_base_fire_policy_matrix:
+        strong_base_fire_policy_matrix.main([
+            "--input",
+            str(dataset_path),
+            "--output-md",
+            str(args.strong_base_fire_policy_matrix_output_md),
+            "--output-json",
+            str(args.strong_base_fire_policy_matrix_output_json),
+        ])
     no_drag_composite_canary_audit.main([
         "--input",
         str(dataset_path),
@@ -388,6 +438,12 @@ def main(argv: list[str] | None = None) -> int:
             label="Market-anchor selector audit",
             section_titles={"Executive Read", "Input Coverage"},
         )
+    if not args.skip_market_anchor_downside_counterfactual_audit:
+        _print_review_excerpt(
+            args.market_anchor_downside_output_md,
+            label="Market-anchor downside audit",
+            section_titles={"Executive Read", "Review Gates"},
+        )
     _print_review_excerpt(
         args.market_shrink_projection_output,
         label="Market-shrink projection canary audit",
@@ -413,6 +469,12 @@ def main(argv: list[str] | None = None) -> int:
             "Composite Policy Shapes",
         },
     )
+    if not args.skip_strong_base_fire_policy_matrix:
+        _print_review_excerpt(
+            args.strong_base_fire_policy_matrix_output_md,
+            label="Strong Base FIRE policy matrix",
+            section_titles={"Executive Read", "Policy Matrix"},
+        )
     _print_review_excerpt(
         args.no_drag_canary_output_md,
         label="No-drag prospective canary",

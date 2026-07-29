@@ -22,6 +22,12 @@ For any new work in this repo:
    - `docs/superpowers/plans/2026-07-23-research-evidence-reconciliation-and-market-anchor-review.md`
      for the exact Gate C outcome-recovery, bounded compact market-agreement
      export, expanded market-anchor review, and gated research-cron rollout
+   - `docs/superpowers/plans/2026-07-29-market-anchor-downside-review.md`
+     and `docs/research/market-anchor-downside-review-packet.md` for the exact
+     paired downside cohort and the current `keep_shadow` decision
+   - `docs/superpowers/plans/2026-07-29-strong-base-fire-policy-shadow-matrix.md`
+     and `docs/research/strong-base-fire-policy-shortlist.md` for the six
+     frozen FIRE policies and the July 30 prospective shortlist
    - `docs/superpowers/plans/2026-05-13-boltodds-propline-official-provider-cutover.md`
      for historical provider-arbitration context only; BoltOdds active runtime
       was retired on 2026-06-17 and the current production posture is
@@ -63,6 +69,11 @@ For any new work in this repo:
      read-only synthesis that stacks Strong Base, market-anchor,
      market-agreement, and pre-close proxy signals into combined policy-shape
      scoreboards
+   - `analytics/diagnostics/market_anchor_downside_counterfactual_audit.py`
+     for the exact paired, pre-start, would-change market-anchor downside read
+   - `analytics/diagnostics/strong_base_fire_policy_matrix.py`
+     for immutable downside-cap and retained-FIRE policy fingerprints,
+     incremental value, overlap, slices, and prospective counters
    - `docs/superpowers/plans/2026-07-21-no-drag-composite-prospective-canary.md`
      for the controlling frozen post-grading v1 implementation plan
    - `docs/research/no-drag-composite-prospective-canary-packet.md`
@@ -150,8 +161,8 @@ For any new work in this repo:
      projection and adds a shrink-adjusted baseball signal
    - `scripts/run_post_grading_shadow_reports.py` for the review-only daily
      post-grading command that rebuilds Gate C/workload/no-vig/market-anchor,
-     Strong Base, market-agreement, and synthesis reports and prints
-     decision-facing excerpts to scheduler logs
+     Strong Base, market-agreement, synthesis, paired downside, and FIRE policy
+     matrix reports and prints decision-facing excerpts to scheduler logs
    - `docs/superpowers/plans/2026-06-07-batter-handedness-path-b-canary.md`
      for the Tyler-approved, feature-flagged batter-handedness Path B canary
    - `docs/superpowers/plans/2026-05-20-live-market-decision-ui.md`
@@ -393,6 +404,20 @@ run produced `3,434` Gate C rows, `1,793` tracked rows, zero duplicates,
 history-recovered rows excluded. The service remained branch `main`,
 autoDeploy off, schedule `7 11 * * *`, and start command
 `python scripts/run_post_grading_shadow_reports.py --refresh-market-agreement-inputs`.
+
+### July 29 market-anchor downside and Strong Base FIRE matrix overlay
+
+Tyler approved executing the two bounded research plans. The implementation
+adds post-grading diagnostics and scheduler excerpts only; no live selector,
+mode, verdict, threshold, stake, provider, notification, lock, artifact, UI,
+retention, environment variable, or source-of-truth behavior changed.
+
+| Lane | Current stage | Next decision / blocker |
+| --- | --- | --- |
+| Model | The exact market-anchor downside audit covers `743/743` tracked rows since the June 16 selector deployment. One post-start row is excluded. The exact pre-start would-change cohort is `48`, all OVER/FIRE 1u/minus-price, `27-21`, with current displayed PnL `-0.763u` and hypothetical downside value `+0.763u`. Current-provider delta is `+4.632u` on 41; recent delta is `+1.714u` on 24. The decision is `keep_shadow`. The Strong Base matrix reconciles all six locked historical counts and freezes `cap_high_raw_edge` plus `strict_runtime_core_flat` for prospective review starting July 30. | Market-anchor still needs at least two more exact rows, at least 10 UNDER rows, and complete provider/agreement/CLV attribution; do not promote when the count alone reaches 50. Strong Base counters are `0/75`; only diverse post-July-29 graded rows advance them. All live gates remain closed. |
+| Pipeline / infrastructure | `scripts/run_post_grading_shadow_reports.py` now invokes both research diagnostics with independent skip flags and bounded excerpts. Generated Markdown/JSON remains under ignored `analytics/output/`. | Let the next scheduled post-grading run refresh compact attribution and prove both new reports execute in the existing read-only job. A successful research run is not a Render variable or live-behavior approval. |
+| UI | Unchanged. | Continue the existing Alt V2/default-on live-market UI soak independently. |
+| Tracking / data collection / history | The local production-shaped rebuild through July 28 matched the canonical `3,434` side rows, `1,793` tracked rows, zero duplicate keys, and `1,750/1,750` reconciliation. Its available compact market-agreement enrichment ended July 13, so missing provider/agreement fields are treated as blockers. | Use the scheduled `--refresh-market-agreement-inputs` path for the next canonical packet; do not fill missing attribution by inference. |
 
 ### July 28 four-action operations follow-through overlay
 

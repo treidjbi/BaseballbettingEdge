@@ -1,5 +1,28 @@
 # Strong Base FIRE Policy Shadow Matrix Implementation Plan
 
+Status: **Implemented as a frozen research-only matrix; prospective collection starts 2026-07-30; all live gates remain closed.**
+
+## July 29 implementation result
+
+All six frozen selectors reconcile to their locked historical counts and unit
+results. After the active cap stack, `cap_high_raw_edge` has `429` genuinely
+incremental FIRE rows (`205-224`, flat `-51.360u`, risk-weighted avoided-loss
+value `+64.719u`). `cap_market_fade` has `272` incremental rows (`111-161`,
+flat `-40.767u`, avoided-loss value `+49.934u`), but only one incremental row
+in the current-provider window because the live confidence referee already
+handles most market-fade exposure.
+
+The retained-FIRE shortlist is `strict_runtime_core_flat`: `96`, `64-32`,
+`+17.727u`, with current-provider `20`, `15-5`, `+5.864u`, and recent `17`,
+`14-3`, `+7.106u`. The market-anchor union is a control: it overlaps the strict
+core by `85.7%`, adds only `16` historical rows and `+2.801u`, and therefore
+does not displace the simpler policy before prospective evidence.
+
+Frozen prospective candidates are `cap_high_raw_edge` for downside and
+`strict_runtime_core_flat` for retained FIRE. Their counters are `0/75` until
+the first fully graded slate on or after July 30. All other policies remain
+controls; this plan creates no live selector.
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Freeze and compare the strongest runtime-safe FIRE retention and downside-cap policies, then identify whether any one policy adds decision value beyond the active cap stack.
@@ -38,11 +61,11 @@
 - Export `policy_specs()`, `evaluate_policy(row, spec)`, `build_matrix(rows)`, `render_report(summary)`, and `main(argv=None)`.
 - Write `analytics/output/strong_base_fire_policy_matrix.md` and `.json`.
 
-- [ ] Write failing truth-table tests for every candidate boundary and exclusion.
-- [ ] Generate a stable fingerprint per policy and reject duplicate ids.
-- [ ] Prove selectors do not read result, PnL, actual workload, final CLV, or post-start evidence.
-- [ ] Run `python -m pytest tests/test_strong_base_fire_policy_matrix.py -v`.
-- [ ] Commit `test: freeze strong base fire policy matrix`.
+- [x] Write failing truth-table tests for every candidate boundary and exclusion.
+- [x] Generate a stable fingerprint per policy and reject duplicate ids.
+- [x] Prove selectors do not read result, PnL, actual workload, final CLV, or post-start evidence.
+- [x] Run `python -m pytest tests/test_strong_base_fire_policy_matrix.py -v`.
+- [x] Commit `test: freeze strong base fire policy matrix`.
 
 ### Task 2: Add overlap and incremental-value accounting
 
@@ -51,12 +74,12 @@
 - Modify: `analytics/diagnostics/strong_base_fire_policy_matrix.py`
 - Modify: `tests/test_strong_base_fire_policy_matrix.py`
 
-- [ ] Add pairwise overlap, Jaccard similarity, unique-row count, and paired unit-delta tables.
-- [ ] For downside caps, separate already-capped rows from incremental would-cap rows.
-- [ ] For retained FIRE, compare retained rows with current displayed FIRE and never add stake.
-- [ ] Add current-provider, prospective, recent-14, leave-one-slate-out, side, price, K-line, FIRE level, quality, timing, model/market, Path B, workload, CLV/proxy, provider, and agreement slices.
-- [ ] Block readiness on missing critical attribution or a negative mandatory slice with at least 10 rows.
-- [ ] Commit `feat: measure incremental strong base policy value`.
+- [x] Add pairwise overlap, Jaccard similarity, unique-row count, and paired unit-delta tables.
+- [x] For downside caps, separate already-capped rows from incremental would-cap rows.
+- [x] For retained FIRE, compare retained rows with current displayed FIRE and never add stake.
+- [x] Add current-provider, prospective, recent-14, leave-one-slate-out, side, price, K-line, FIRE level, quality, timing, model/market, Path B, workload, CLV/proxy, provider, and agreement slices.
+- [x] Block readiness on missing critical attribution or a negative mandatory slice with at least 10 rows.
+- [x] Commit `feat: measure incremental strong base policy value`.
 
 ### Task 3: Schedule research output and issue a shortlist
 
@@ -67,10 +90,10 @@
 - Create: `docs/research/strong-base-fire-policy-shortlist.md`
 - Modify: `docs/current-state.md`
 
-- [ ] Invoke the matrix after Strong Base and synthesis reports.
-- [ ] Add `--skip-strong-base-fire-policy-matrix` and a bounded log excerpt.
-- [ ] Freeze at most one downside candidate and one retained-FIRE candidate for prospective review; keep all others as controls or retire them.
-- [ ] Require Tyler approval before drafting any behavior-changing canary.
-- [ ] Run focused tests, `python -m pytest tests -q`, and `git diff --check`.
-- [ ] Commit `docs: shortlist strong base fire policies`.
+- [x] Invoke the matrix after Strong Base and synthesis reports.
+- [x] Add `--skip-strong-base-fire-policy-matrix` and a bounded log excerpt.
+- [x] Freeze at most one downside candidate and one retained-FIRE candidate for prospective review; keep all others as controls or retire them.
+- [x] Require Tyler approval before drafting any behavior-changing canary.
+- [x] Run focused tests, `python -m pytest tests -q`, and `git diff --check`.
+- [x] Commit `docs: shortlist strong base fire policies`.
 

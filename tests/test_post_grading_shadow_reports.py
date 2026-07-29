@@ -8,6 +8,8 @@ def test_runner_rebuilds_shadow_reports_and_prints_review_excerpt(tmp_path, monk
     output_dir = tmp_path / "gate_c"
     market_anchor_output = tmp_path / "market_anchored_k_shadow_rebuild.md"
     selector_audit_output = tmp_path / "market_anchor_selector_canary_audit.md"
+    anchor_downside_output_md = tmp_path / "market_anchor_downside_counterfactual_audit.md"
+    anchor_downside_output_json = tmp_path / "market_anchor_downside_counterfactual_audit.json"
     confidence_referee_output = tmp_path / "confidence_referee_canary_audit.md"
     profit_rescue_output = tmp_path / "profit_rescue_audit.md"
     bet_selection_output = tmp_path / "bet_selection_edge_synthesis.md"
@@ -16,6 +18,8 @@ def test_runner_rebuilds_shadow_reports_and_prints_review_excerpt(tmp_path, monk
     market_agreement_output = tmp_path / "market_agreement_tracker.md"
     market_agreement_jsonl = tmp_path / "market_agreement_tracker.jsonl"
     shadow_signal_output = tmp_path / "shadow_signal_synthesis_lab.md"
+    fire_policy_matrix_output_md = tmp_path / "strong_base_fire_policy_matrix.md"
+    fire_policy_matrix_output_json = tmp_path / "strong_base_fire_policy_matrix.json"
     no_drag_output_md = tmp_path / "no_drag_composite_canary_audit.md"
     no_drag_output_json = tmp_path / "no_drag_composite_canary_audit.json"
     gate_f_output = tmp_path / "gate_f_projection_challenger_shadow_report.md"
@@ -54,6 +58,26 @@ def test_runner_rebuilds_shadow_reports_and_prints_review_excerpt(tmp_path, monk
         )
 
     monkeypatch.setattr(runner.market_anchor_selector_canary_audit, "main", fake_selector_audit_main)
+
+    def fake_anchor_downside_main(argv):
+        calls.append(("anchor_downside", argv))
+        anchor_downside_output_md.write_text(
+            "# Market-Anchor Downside Counterfactual Audit\n\n"
+            "## Executive Read\n\n"
+            "- Decision: `keep_shadow`.\n\n"
+            "## Review Gates\n\n"
+            "- `would_change_floor_50`: `closed`\n\n"
+            "## Debug Detail\n\n"
+            "- Not needed in the log excerpt.\n",
+            encoding="utf-8",
+        )
+        anchor_downside_output_json.write_text("{}\n", encoding="utf-8")
+
+    monkeypatch.setattr(
+        runner.market_anchor_downside_counterfactual_audit,
+        "main",
+        fake_anchor_downside_main,
+    )
 
     def fake_simple_report(label):
         def _fake(argv):
@@ -132,6 +156,28 @@ def test_runner_rebuilds_shadow_reports_and_prints_review_excerpt(tmp_path, monk
         fake_shadow_signal_synthesis_main,
     )
 
+    def fake_fire_policy_matrix_main(argv):
+        calls.append(("fire_policy_matrix", argv))
+        fire_policy_matrix_output_md.write_text(
+            "# Strong Base FIRE Policy Shadow Matrix\n\n"
+            "## Executive Read\n\n"
+            "- Prospective freeze date: `2026-07-30`.\n\n"
+            "## Policy Matrix\n\n"
+            "| Policy | Readiness |\n"
+            "| --- | --- |\n"
+            "| `strict_runtime_core_flat` | `collecting` |\n\n"
+            "## Debug Detail\n\n"
+            "- Not needed in the log excerpt.\n",
+            encoding="utf-8",
+        )
+        fire_policy_matrix_output_json.write_text("{}\n", encoding="utf-8")
+
+    monkeypatch.setattr(
+        runner.strong_base_fire_policy_matrix,
+        "main",
+        fake_fire_policy_matrix_main,
+    )
+
     def fake_no_drag_main(argv):
         calls.append(("no_drag_canary", argv))
         no_drag_output_md.write_text(
@@ -197,6 +243,10 @@ def test_runner_rebuilds_shadow_reports_and_prints_review_excerpt(tmp_path, monk
         str(market_anchor_output),
         "--market-anchor-selector-audit-output",
         str(selector_audit_output),
+        "--market-anchor-downside-output-md",
+        str(anchor_downside_output_md),
+        "--market-anchor-downside-output-json",
+        str(anchor_downside_output_json),
         "--confidence-referee-canary-output",
         str(confidence_referee_output),
         "--profit-rescue-output",
@@ -213,6 +263,10 @@ def test_runner_rebuilds_shadow_reports_and_prints_review_excerpt(tmp_path, monk
         str(market_agreement_jsonl),
         "--shadow-signal-synthesis-output",
         str(shadow_signal_output),
+        "--strong-base-fire-policy-matrix-output-md",
+        str(fire_policy_matrix_output_md),
+        "--strong-base-fire-policy-matrix-output-json",
+        str(fire_policy_matrix_output_json),
         "--no-drag-canary-output-md",
         str(no_drag_output_md),
         "--no-drag-canary-output-json",
@@ -246,6 +300,17 @@ def test_runner_rebuilds_shadow_reports_and_prints_review_excerpt(tmp_path, monk
                 str(output_dir / "pitcher_k_outcome_dataset.jsonl"),
                 "--output",
                 str(selector_audit_output),
+            ],
+        ),
+        (
+            "anchor_downside",
+            [
+                "--input",
+                str(output_dir / "pitcher_k_outcome_dataset.jsonl"),
+                "--output-md",
+                str(anchor_downside_output_md),
+                "--output-json",
+                str(anchor_downside_output_json),
             ],
         ),
         (
@@ -316,6 +381,17 @@ def test_runner_rebuilds_shadow_reports_and_prints_review_excerpt(tmp_path, monk
             ],
         ),
         (
+            "fire_policy_matrix",
+            [
+                "--input",
+                str(output_dir / "pitcher_k_outcome_dataset.jsonl"),
+                "--output-md",
+                str(fire_policy_matrix_output_md),
+                "--output-json",
+                str(fire_policy_matrix_output_json),
+            ],
+        ),
+        (
             "no_drag_canary",
             [
                 "--input",
@@ -352,6 +428,9 @@ def test_runner_rebuilds_shadow_reports_and_prints_review_excerpt(tmp_path, monk
     assert "Market-anchor selector audit excerpt:" in output
     assert "Rows with selector metadata: `24`." in output
     assert "Input Coverage" in output
+    assert "Market-anchor downside audit excerpt:" in output
+    assert "Decision: `keep_shadow`" in output
+    assert "would_change_floor_50" in output
     assert "Market-shrink projection canary audit excerpt:" in output
     assert "Rows with projection metadata: `0`." in output
     assert "Rollback Recommendation" in output
@@ -365,6 +444,9 @@ def test_runner_rebuilds_shadow_reports_and_prints_review_excerpt(tmp_path, monk
     assert "strict_runtime_core_plus_selective_lean" in output
     assert "Raw market-agreement rows: `12`." in output
     assert "combined_positive_runtime_watch" in output
+    assert "Strong Base FIRE policy matrix excerpt:" in output
+    assert "Prospective freeze date: `2026-07-30`" in output
+    assert "strict_runtime_core_flat" in output
     assert "No-drag prospective canary excerpt:" in output
     assert "Status: `collecting`" in output
     assert "52/75" in output
@@ -421,7 +503,9 @@ def test_runner_refreshes_compact_inputs_before_one_gate_c_build(tmp_path, monke
         ("bet_selection", runner.bet_selection_edge_synthesis),
         ("strong_base", runner.strong_base_decision_lab),
         ("portfolio", runner.strong_base_portfolio_simulator),
+        ("anchor_downside", runner.market_anchor_downside_counterfactual_audit),
         ("shadow_signal", runner.shadow_signal_synthesis_lab),
+        ("fire_policy_matrix", runner.strong_base_fire_policy_matrix),
         ("no_drag", runner.no_drag_composite_canary_audit),
         ("market_shrink", runner.market_shrink_projection_canary_audit),
     ):
