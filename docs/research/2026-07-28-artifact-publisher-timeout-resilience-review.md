@@ -44,9 +44,9 @@ Phoenix, July 25 at `11:42`, and July 27 at `00:32` and `05:32`, plus the July
 scheduled cycle recovered.
 
 No stale served artifact, missed due lock, duplicate lock, wrong-date lock, or
-grading impact was found. Do not run a repair today. The evidence is strong
-enough to prepare a separate test-first publisher-resilience change, but that
-implementation and deployment still require Tyler's approval.
+grading impact was found. Do not run a repair today. Tyler approved and the
+branch now contains the test-first publisher-resilience implementation;
+merging and production activation remain separate decisions.
 
 ## Confirmed failure pattern
 
@@ -117,8 +117,9 @@ effects than the observed problem warrants.
 
 ## Decision gate
 
-Recommended next decision: approve or decline a separate test-first,
-publisher-only resilience implementation. Until then, keep ordinary
-observation. Escalate to `Broken` and use the approved stale-artifact repair
-path only if a timeout causes a stale served artifact, a due lock to remain
-unpublished, or grading/history artifacts to diverge.
+Recommended next decision: review the tested branch, then approve or decline
+merge and production activation as separate steps. Until activation, keep
+ordinary observation. After activation, verify served hashes and the next
+natural lock publication. Escalate to `Broken` and use the approved
+stale-artifact repair path only if a timeout causes a stale served artifact, a
+due lock to remain unpublished, or grading/history artifacts to diverge.

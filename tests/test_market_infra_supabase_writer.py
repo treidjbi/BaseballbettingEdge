@@ -77,6 +77,62 @@ def test_upsert_rows_retries_one_selected_transient_database_error():
     sleep.assert_called_once_with(0.5)
 
 
+def test_upsert_rows_does_not_retry_selected_database_code_on_non_transient_status():
+    writer = SupabaseMarketWriter("https://example.supabase.co", "secret-key")
+    failing = Mock(status_code=400, text='{"code":"57014","message":"statement timeout"}')
+    failing.raise_for_status.side_effect = requests.HTTPError("400 Client Error")
+
+    with (
+        patch("market_infra.supabase_writer.requests.post", return_value=failing) as post,
+        patch("market_infra.supabase_writer.time.sleep") as sleep,
+    ):
+        try:
+            writer.upsert_rows(
+                "published_pipeline_artifacts",
+                [{"artifact_key": "today"}],
+                on_conflict="artifact_key",
+                return_representation=False,
+                attempts=2,
+                retry_database_codes={"57014"},
+            )
+        except requests.HTTPError as error:
+            assert "57014" in str(error)
+        else:
+            raise AssertionError("a non-transient status must fail without retrying")
+
+    assert post.call_count == 1
+    sleep.assert_not_called()
+
+
+def test_upsert_rows_stops_after_one_retry_when_selected_error_repeats():
+    writer = SupabaseMarketWriter("https://example.supabase.co", "secret-key")
+    first = Mock(status_code=500, text='{"code":"57014","message":"statement timeout"}')
+    first.raise_for_status.side_effect = requests.HTTPError("500 Server Error")
+    second = Mock(status_code=500, text='{"code":"57014","message":"statement timeout"}')
+    second.raise_for_status.side_effect = requests.HTTPError("500 Server Error")
+
+    with (
+        patch("market_infra.supabase_writer.requests.post", side_effect=[first, second]) as post,
+        patch("market_infra.supabase_writer.time.sleep") as sleep,
+    ):
+        try:
+            writer.upsert_rows(
+                "published_pipeline_artifacts",
+                [{"artifact_key": "today"}],
+                on_conflict="artifact_key",
+                return_representation=False,
+                attempts=2,
+                retry_database_codes={"57014"},
+            )
+        except requests.HTTPError as error:
+            assert "57014" in str(error)
+        else:
+            raise AssertionError("the second selected timeout must surface after one retry")
+
+    assert post.call_count == 2
+    sleep.assert_called_once_with(0.5)
+
+
 def test_upsert_rows_does_not_retry_an_unselected_database_error():
     writer = SupabaseMarketWriter("https://example.supabase.co", "secret-key")
     failing = Mock(status_code=500, text='{"code":"23505","message":"duplicate key"}')
