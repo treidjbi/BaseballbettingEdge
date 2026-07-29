@@ -23,6 +23,7 @@ from analytics.diagnostics import workload_no_vig_ev_audit  # noqa: E402
 DEFAULT_INPUT = ROOT / "data" / "research" / "gate_c" / "pitcher_k_outcome_dataset.jsonl"
 DEFAULT_OUTPUT = ROOT / "analytics" / "output" / "market_shrink_projection_canary_audit.md"
 WIN_LOSS_RESULTS = {"win", "loss"}
+CURRENT_PROVIDER_START = "2026-06-24"
 
 
 def _is_true(value: Any) -> bool:
@@ -129,6 +130,154 @@ def load_jsonl(path: Path) -> list[dict[str, Any]]:
     return rows
 
 
+def _slate_date(row: dict[str, Any]) -> str:
+    return str(row.get("slate_date") or row.get("date") or "").strip()[:10]
+
+
+def _selected_lambda_drift(rows: list[dict[str, Any]]) -> dict[str, Any]:
+    drifts: list[float] = []
+    for row in rows:
+        meta = _projection_challenger(row)
+        current = _to_float(meta.get("current_lambda"))
+        selected = _to_float(meta.get("selected_lambda"))
+        if current is None or selected is None:
+            continue
+        drift = abs(selected - current)
+        if drift > 1e-9:
+            drifts.append(drift)
+    return {
+        "rows": len(drifts),
+        "mean_absolute": round(sum(drifts) / len(drifts), 4) if drifts else 0.0,
+        "max_absolute": round(max(drifts), 4) if drifts else 0.0,
+    }
+
+
+def _projection_error(rows: list[dict[str, Any]]) -> dict[str, Any]:
+    paired: dict[tuple[str, str], tuple[float, float]] = {}
+    for index, row in enumerate(rows):
+        meta = _projection_challenger(row)
+        actual = _to_float(row.get("actual_ks"))
+        current = _to_float(meta.get("current_lambda"))
+        would = _to_float(meta.get("would_lambda"))
+        if actual is None or current is None or would is None:
+            continue
+        pitcher = str(
+            row.get("normalized_pitcher")
+            or row.get("pitcher")
+            or row.get("player_name")
+            or f"row-{index}"
+        ).strip().lower()
+        key = (_slate_date(row), pitcher)
+        paired.setdefault(key, (abs(current - actual), abs(would - actual)))
+    current_errors = [values[0] for values in paired.values()]
+    would_errors = [values[1] for values in paired.values()]
+    if not current_errors:
+        return {
+            "paired_rows": 0,
+            "current_mae": None,
+            "would_mae": None,
+            "mae_lift": None,
+        }
+    current_mae = sum(current_errors) / len(current_errors)
+    would_mae = sum(would_errors) / len(would_errors)
+    return {
+        "paired_rows": len(current_errors),
+        "current_mae": round(current_mae, 4),
+        "would_mae": round(would_mae, 4),
+        "mae_lift": round(current_mae - would_mae, 4),
+    }
+
+
+def _verdict_rank(value: Any) -> int | None:
+    verdict_value = str(value or "").strip().upper()
+    if verdict_value.startswith("FIRE 2"):
+        return 3
+    if verdict_value.startswith("FIRE"):
+        return 2
+    if verdict_value == "LEAN":
+        return 1
+    if verdict_value == "PASS":
+        return 0
+    return None
+
+
+def _verdict_change_agreement(rows: list[dict[str, Any]]) -> dict[str, Any]:
+    aligned = 0
+    opposed = 0
+    for row in rows:
+        meta = _projection_challenger(row)
+        current = _verdict_rank(meta.get("current_verdict"))
+        would = _verdict_rank(meta.get("would_verdict"))
+        if current is None or would is None or current == would:
+            continue
+        result = row.get("result")
+        if result not in WIN_LOSS_RESULTS:
+            continue
+        change_aligned = (would < current and result == "loss") or (
+            would > current and result == "win"
+        )
+        if change_aligned:
+            aligned += 1
+        else:
+            opposed += 1
+    total = aligned + opposed
+    return {
+        "rows": total,
+        "aligned": aligned,
+        "opposed": opposed,
+        "alignment_rate": round(aligned / total, 4) if total else None,
+    }
+
+
+def _missing_metadata(rows: list[dict[str, Any]]) -> dict[str, int]:
+    meta_fields = (
+        "current_lambda",
+        "would_lambda",
+        "selected_lambda",
+        "current_verdict",
+        "would_verdict",
+    )
+    missing = {
+        field: sum(
+            _projection_challenger(row).get(field) in {None, ""}
+            for row in rows
+        )
+        for field in meta_fields
+    }
+    missing["actual_ks"] = sum(_to_float(row.get("actual_ks")) is None for row in rows)
+    return missing
+
+
+def _classification_changes(rows: list[dict[str, Any]]) -> dict[str, int]:
+    fields = {
+        "gate_f": "market_shrink_changed_gate_f_classification",
+        "no_drag": "market_shrink_changed_no_drag_classification",
+        "strong_base": "market_shrink_changed_strong_base_classification",
+        "market_anchor": "market_shrink_changed_market_anchor_classification",
+    }
+    return {
+        label: sum(
+            _is_true(row.get(field))
+            or _is_true(_projection_challenger(row).get(field))
+            for row in rows
+        )
+        for label, field in fields.items()
+    }
+
+
+def _decision_value(rows: list[dict[str, Any]]) -> dict[str, Any]:
+    return {
+        "would_change_rows": sum(
+            _changed_lambda(_projection_challenger(row)) for row in rows
+        ),
+        "selected_lambda_drift": _selected_lambda_drift(rows),
+        "verdict_change_agreement": _verdict_change_agreement(rows),
+        "projection_error": _projection_error(rows),
+        "missing_metadata": _missing_metadata(rows),
+        "research_classification_changes": _classification_changes(rows),
+    }
+
+
 def summarize(rows: list[dict[str, Any]]) -> dict[str, Any]:
     with_meta = [row for row in rows if _projection_challenger(row)]
     tracked_graded = [
@@ -139,6 +288,11 @@ def summarize(rows: list[dict[str, Any]]) -> dict[str, Any]:
     metas = [_projection_challenger(row) for row in with_meta]
     mode_counts = Counter(meta.get("mode") for meta in metas)
     candidate_counts = Counter(meta.get("candidate") for meta in metas)
+    current_provider = [
+        row for row in tracked_graded if _slate_date(row) >= CURRENT_PROVIDER_START
+    ]
+    recent_dates = sorted({_slate_date(row) for row in tracked_graded if _slate_date(row)})[-14:]
+    recent = [row for row in tracked_graded if _slate_date(row) in set(recent_dates)]
 
     return {
         "generated_at": datetime.now(UTC).isoformat(),
@@ -149,6 +303,14 @@ def summarize(rows: list[dict[str, Any]]) -> dict[str, Any]:
         "candidate_counts": dict(candidate_counts),
         "applied_rows": sum(1 for meta in metas if meta.get("applied") is True),
         "changed_lambda_rows": sum(1 for meta in metas if _changed_lambda(meta)),
+        "windows": {
+            "current_provider": _score(current_provider),
+            "latest_14_slates": {
+                **_score(recent),
+                "slate_dates": recent_dates,
+            },
+        },
+        "decision_value": _decision_value(with_meta),
         "by_verdict": _bucket_score(tracked_graded, "verdict"),
         "by_side": _bucket_score(tracked_graded, "side"),
         "by_line_bucket": _bucket_score(tracked_graded, "line_bucket"),
@@ -209,6 +371,8 @@ def _rollback_recommendation(summary: dict[str, Any]) -> str:
 
 def build_report(rows: list[dict[str, Any]]) -> str:
     summary = summarize(rows)
+    decision = summary["decision_value"]
+    projection_error = decision["projection_error"]
     lines = [
         "# Market Shrink Projection Canary Audit",
         "",
@@ -223,6 +387,45 @@ def build_report(rows: list[dict[str, Any]]) -> str:
         f"- Changed would-have lambda rows: `{summary['changed_lambda_rows']}`",
         f"- Applied rows: `{summary['applied_rows']}`",
         _score_line("Tracked graded rows with metadata", summary["tracked_graded"]),
+        _score_line(
+            "Current-provider tracked graded",
+            summary["windows"]["current_provider"],
+        ),
+        _score_line(
+            "Latest 14 metadata slates",
+            summary["windows"]["latest_14_slates"],
+        ),
+        "",
+        "## Decision Value",
+        "",
+        f"- Would-change lambda rows: `{decision['would_change_rows']}`.",
+        (
+            "- Selected-lambda drift: "
+            f"`{decision['selected_lambda_drift']['rows']}` rows, mean absolute "
+            f"`{decision['selected_lambda_drift']['mean_absolute']:.4f}`, maximum "
+            f"`{decision['selected_lambda_drift']['max_absolute']:.4f}`."
+        ),
+        (
+            "- Verdict-change agreement: "
+            f"`{decision['verdict_change_agreement']['aligned']}` aligned / "
+            f"`{decision['verdict_change_agreement']['opposed']}` opposed from "
+            f"`{decision['verdict_change_agreement']['rows']}` rows."
+        ),
+        (
+            "- Research classification changes: "
+            f"`{json.dumps(decision['research_classification_changes'], sort_keys=True)}`."
+        ),
+        (
+            "- Missing metadata: "
+            f"`{json.dumps(decision['missing_metadata'], sort_keys=True)}`."
+        ),
+        "",
+        "## Projection Error",
+        "",
+        f"- Paired pitcher-game rows: `{projection_error['paired_rows']}`.",
+        f"- Current lambda MAE: `{projection_error['current_mae']}`.",
+        f"- Would-lambda MAE: `{projection_error['would_mae']}`.",
+        f"- MAE lift (positive favors shrink): `{projection_error['mae_lift']}`.",
         "",
         "## Mode Counts",
         "",

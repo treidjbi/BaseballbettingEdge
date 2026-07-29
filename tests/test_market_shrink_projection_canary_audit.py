@@ -105,3 +105,154 @@ def test_report_handles_pre_shadow_zero_metadata_state():
     assert "Rows with projection metadata: `0`" in report
     assert "No projection metadata found yet" in report
     assert "keep `MARKET_SHRINK_PROJECTION_MODE=off`" in report
+
+
+def test_decision_value_accounts_for_drift_verdict_changes_and_projection_error():
+    rows = [
+        {
+            "slate_date": "2026-07-25",
+            "result": "loss",
+            "is_tracked_pick": True,
+            "pick_history_pnl": -1.0,
+            "projection_challenger": {
+                "mode": "shadow",
+                "candidate": "market_shrink_25",
+                "applied": False,
+                "current_lambda": 6.0,
+                "would_lambda": 5.5,
+                "selected_lambda": 6.0,
+                "current_verdict": "FIRE 1u",
+                "would_verdict": "LEAN",
+            },
+            "actual_ks": 5,
+        },
+        {
+            "slate_date": "2026-07-26",
+            "result": "win",
+            "is_tracked_pick": True,
+            "pick_history_pnl": 0.9,
+            "projection_challenger": {
+                "mode": "enforce",
+                "candidate": "market_shrink_25",
+                "applied": True,
+                "current_lambda": 4.0,
+                "would_lambda": 4.5,
+                "selected_lambda": 4.5,
+                "current_verdict": "LEAN",
+                "would_verdict": "FIRE 1u",
+            },
+            "actual_ks": 5,
+        },
+        {
+            "slate_date": "2026-07-27",
+            "result": "win",
+            "is_tracked_pick": True,
+            "pick_history_pnl": 0.8,
+            "projection_challenger": {
+                "mode": "shadow",
+                "candidate": "market_shrink_25",
+            },
+        },
+    ]
+
+    summary = audit.summarize(rows)
+    decision = summary["decision_value"]
+
+    assert decision["would_change_rows"] == 2
+    assert decision["selected_lambda_drift"] == {
+        "rows": 1,
+        "mean_absolute": 0.5,
+        "max_absolute": 0.5,
+    }
+    assert decision["verdict_change_agreement"] == {
+        "rows": 2,
+        "aligned": 2,
+        "opposed": 0,
+        "alignment_rate": 1.0,
+    }
+    assert decision["projection_error"] == {
+        "paired_rows": 2,
+        "current_mae": 1.0,
+        "would_mae": 0.5,
+        "mae_lift": 0.5,
+    }
+    assert decision["missing_metadata"] == {
+        "current_lambda": 1,
+        "would_lambda": 1,
+        "selected_lambda": 1,
+        "current_verdict": 1,
+        "would_verdict": 1,
+        "actual_ks": 1,
+    }
+    assert decision["research_classification_changes"] == {
+        "gate_f": 0,
+        "no_drag": 0,
+        "strong_base": 0,
+        "market_anchor": 0,
+    }
+
+
+def test_current_provider_recent_windows_and_decision_value_are_deterministic():
+    rows = [
+        {
+            "slate_date": "2026-06-23",
+            "result": "loss",
+            "is_tracked_pick": True,
+            "pick_history_pnl": -1.0,
+            "projection_challenger": {
+                "mode": "shadow",
+                "candidate": "market_shrink_25",
+                "applied": False,
+                "current_lambda": 5.0,
+                "would_lambda": 4.8,
+                "selected_lambda": 5.0,
+            },
+            "actual_ks": 4,
+        },
+        {
+            "slate_date": "2026-06-24",
+            "result": "win",
+            "is_tracked_pick": True,
+            "pick_history_pnl": 0.9,
+            "projection_challenger": {
+                "mode": "shadow",
+                "candidate": "market_shrink_25",
+                "applied": False,
+                "current_lambda": 4.0,
+                "would_lambda": 4.2,
+                "selected_lambda": 4.0,
+            },
+            "actual_ks": 5,
+        },
+    ]
+
+    first = audit.summarize(rows)
+    second = audit.summarize(rows)
+
+    assert first["windows"]["current_provider"]["rows"] == 1
+    assert first["windows"]["latest_14_slates"]["rows"] == 2
+    assert first["decision_value"] == second["decision_value"]
+
+
+def test_report_surfaces_decision_value_and_projection_error():
+    report = audit.build_report([
+        {
+            "slate_date": "2026-07-25",
+            "result": "win",
+            "is_tracked_pick": True,
+            "projection_challenger": {
+                "mode": "shadow",
+                "candidate": "market_shrink_25",
+                "applied": False,
+                "current_lambda": 5.0,
+                "would_lambda": 4.8,
+                "selected_lambda": 5.0,
+            },
+            "actual_ks": 4,
+        }
+    ])
+
+    assert "## Decision Value" in report
+    assert "## Projection Error" in report
+    assert "Current-provider tracked graded" in report
+    assert "Latest 14 metadata slates" in report
