@@ -18,7 +18,7 @@ artifacts, dashboard behavior, retention, or `formula_change_date`.
 | No-drag v1 | No | `77/75`, prospective `25`, `16-9`, `+2.297u` | Fill missing diversity: plus price, FIRE 2u, middle-price/K=4.5, provider/agreement, CLV, and additional rolling windows |
 | Strict runtime core | Yes, but only diverse volume | `96`, `64-32`, `+17.72u`; current provider `20`, `15-5`, `+5.86u` | Reach the current-provider floor with UNDER, plus-price, provider/agreement, and CLV representation rather than more OVER/minus copies |
 | Market-anchor strict | No for the raw review floor | Strict all `155`, `93-62`, `+3.03u`; strict displayed FIRE `28`, `20-8`, `+6.14u` | Measure the exact downside-only would-change cohort and mandatory slices |
-| Market-shrink | No | `605`, `300-305`, `-42.56u`, `-7.0%`; zero applied rows | Run a retirement/diagnostic-value decision, not a promotion soak |
+| Market-shrink | No | `605`, `300-305`, `-42.56u`, `-7.0%`; zero applied rows; paired projection MAE improves by `0.0540` K | Retain diagnostic shadow only; close the betting-promotion path |
 | Strong Base downside caps | Partly | `cap_high_raw_edge` and `cap_market_fade` have large samples and materially negative results | Prove incremental value after overlap with the live cap stack |
 | Retained FIRE specialists | Partly | Moderate-EV/normal-leash FIRE `198`, `+21.25u`; market-agreed moderate-EV FIRE `170`, `+20.05u` | Freeze non-overlapping runtime-safe definitions and collect prospective evidence |
 | Selective LEAN | Yes | Historical candidates are positive, but current/recent windows are weak or negative | Keep as research funnel until one fixed candidate survives a prospective holdout |
@@ -28,12 +28,12 @@ artifacts, dashboard behavior, retention, or `formula_change_date`.
 
 | Workstream | Plan | Recommendation now |
 | --- | --- | --- |
-| No-drag and strict runtime core | `docs/superpowers/plans/2026-07-29-no-drag-and-strict-runtime-prospective-review.md` | Keep soaking; August 10 is a decision review, not activation |
+| No-drag and strict runtime core | `docs/superpowers/plans/2026-07-29-no-drag-and-strict-runtime-prospective-review.md` | Strict audit is implemented; collect diverse evidence from July 30 and keep August 10 as a decision review, not activation |
 | Market-anchor strict downside path | `docs/superpowers/plans/2026-07-29-market-anchor-downside-review.md` | Build the paired counterfactual packet; keep `shadow` |
 | Strong Base FIRE policy matrix | `docs/superpowers/plans/2026-07-29-strong-base-fire-policy-shadow-matrix.md` | Prioritize incremental downside protection and retained-FIRE evidence |
 | Selective LEAN and pre-close | `docs/superpowers/plans/2026-07-29-selective-lean-preclose-research-funnel.md` | Research only; recent weakness blocks a prospective canary |
 | CLV process target | `docs/superpowers/plans/2026-07-29-clv-process-target-validation.md` | Use CLV only as an offline label and proxy benchmark |
-| Market-shrink | `docs/superpowers/plans/2026-07-29-market-shrink-retirement-decision.md` | Prepare a retire/retain-for-diagnostics decision; do not promote |
+| Market-shrink | `docs/superpowers/plans/2026-07-29-market-shrink-retirement-decision.md` | Decision is `retain_diagnostic_shadow`; betting promotion is closed and no runtime change is approved |
 
 ## Existing plans that remain controlling
 

@@ -87,6 +87,13 @@ For any new work in this repo:
    - `docs/research/2026-07-29-research-candidate-plan-map.md`
      for the July 29 candidate inventory, the distinction between volume and
      evidence-diversity gates, and links to the six bounded follow-up plans
+   - `docs/superpowers/plans/2026-07-29-no-drag-and-strict-runtime-prospective-review.md`
+     for the implemented frozen strict-runtime-core audit, its July 30
+     prospective boundary, and the still-future August 10 independent review
+   - `docs/superpowers/plans/2026-07-29-market-shrink-retirement-decision.md`
+     and `docs/research/market-shrink-retirement-review.md` for the decision to
+     retain market-shrink as projection-error diagnostics only while closing
+     its betting-promotion path
    - `docs/superpowers/specs/2026-07-21-pregame-alternative-pick-methodology-design.md`
      for the approved product direction, production rollout contract, and
      first-normal-slate integrity gate for the pregame Alt Picks comparison
@@ -364,6 +371,21 @@ each lane.
 | UI | `2026-05-20-live-market-decision-ui.md`, `2026-05-20-live-notification-coordinator.md`, `2026-06-04-live-notification-digest-coordinator.md` | Phase 2 live market-decision UI is now default-on for actionable cards, with `?marketSheet=0` as the rollback/opt-out. `dashboard/v2-data.js` fetches `/.netlify/functions/live-market-display` by default and attaches sanitized `live_market_display_state` rows; the Netlify function reads with server-side Supabase credentials and returns app-safe allow-listed rows plus sanitized `book_rows` / `movement_events`. `dashboard/v2-app.jsx` keeps PASS cards quiet and shows actionable-card market strips, detail-sheet market panels, a compact book board with Best / Model ref / Same line / Different line / cushion tags, and Log Bet live-book selection that fills the existing line, odds, and book fields. The existing Log Bet modal still records through the existing accepted-bet path, preserves matched push/shadow-review `notification_event_id` / `shadow_candidate_id`, supports same-day review/duplicate warnings and append-only corrections, and keeps manual edits available. This is a UI readout only and does not change provider/source-of-truth, model, threshold, staking, lock, retention, notification, or accepted-bet API behavior. | Verify same-line defaulting and alternate-line context on the next normal slate, including that alternate-line rows remain manually selectable but cannot auto-prefill Log Bet. Retain `?marketSheet=0` as rollback/opt-out and keep provider promotion, betting-rule changes, broader edit/delete audit, and notification behavior separate. |
 
 | Tracking / data collection / history | `docs/research/market-tracker-map.md`, `docs/research/pitcher-k-outcome-dataset.md`, `2026-06-07-market-agreement-tracker.md`, compact outcome outputs, live-market audits | Canonical research row plus existing market/live/provider trackers. The market agreement tracker now derives LEAN/FIRE/referee-cap buckets for live movement with or against the model without adding a table; the 2026-06-09 backfill used compact Supabase exports plus Gate C metadata/result overlay and produced `2,482` evidence rows, `2,171` graded rows, and `56` graded confidence-referee cap rows. The 2026-07-09 refreshed export produced `1,935` tracker rows with `432` covered graded tracked picks for synthesis review, enough to make agreement-with-model versus agreement-against-model useful directional evidence while still too sparse for standalone promotion. Actual opportunity is now reconstructed from MLB boxscores into the compact row for postgame workload/leash explanation only. Daily brief keeps a compact Gate C bucket scoreboard and pre/post 2026-04-28 context. | Prefer derived labels on existing live-market and compact outcome rows before adding tables. Use market-agreement, edge-synthesis, CLV, and actual-opportunity buckets to decide what to keep studying, not to auto-promote LEANs, override the referee, or change model/staking/provider/notification behavior. Promote compact storage or retention only after row-volume/cost proof and Tyler approval. |
+
+### July 29 strict-runtime implementation and market-shrink decision overlay
+
+Tyler approved executing the two bounded research plans. This work is on the
+research-only branch and has not been deployed. It adds audits, tests, and
+operator documentation only; no live model, lambda, verdict, threshold,
+staking, provider, notification, lock, artifact, UI, retention, environment,
+or source-of-truth behavior changed.
+
+| Lane | Current stage | Next decision / blocker |
+| --- | --- | --- |
+| Pipeline / infrastructure | The post-grading research runner now invokes a frozen strict-runtime-core audit with an independent skip flag and bounded output. The audit writes ignored research Markdown/JSON only and has no publisher or live-table writer. | After branch review/merge, any Render research-cron deployment remains a separate approval and verification step. Production pipeline behavior is unchanged. |
+| Model | Strict-runtime core is frozen as `strict_runtime_core_flat` with fingerprint `6d07a98031a8b26915ad34fc031def76d26519850dc476db723d37f25a8d9905` and prospective credit starting `2026-07-30`. The current canonical read is `collecting`: historical `96`, `64-32`, `+17.724u`; current provider `20/50`, `15-5`, `+5.864u`; recent `17`, `14-3`, `+7.106u`; UNDER, plus-price, provider-attribution, and agreement-attribution counts are all zero. Market-shrink is `retain_diagnostic_shadow`: `605`, `300-305`, `-42.56u/-7.0%`; current provider `574`, `285-289`, `-39.81u/-6.9%`; recent `255`, `123-132`, `-27.47u/-10.8%`; zero applied rows and zero selected-lambda drift. Its paired `578` unique pitcher-games improved MAE from `1.9472` to `1.8932` (`+0.0540` K), so its projection-error diagnostic remains useful while its betting-promotion path closes. | Accumulate only genuinely prospective, diverse strict-core rows; do not weaken the `50` current-provider, `10` UNDER, `10` plus-price, provider/agreement, slice, rolling-window, and leave-one-slate-out gates. Issue the no-drag/strict packet on August 10 using the then-latest graded slate. Do not draft market-shrink enforce work. Gate C/D/E/F/12E and every live behavior gate remain closed. |
+| UI | Unchanged. | Continue Alt V2/default-on live-market UI soak independently. |
+| Tracking / data collection / history | The production-shaped hybrid rebuild through July 28 reconciled `3,434` Gate C side rows, `1,793` tracked rows, zero duplicates, and `1,750/1,750` graded picks. Strict history-recovered rows remain historical context only and receive no prospective credit. Market-shrink adds zero provider calls and zero Supabase rows; its JSON footprint is about `25 KB` in `today` and `234 KB` across `picks_history`. | Preserve provenance and existing shadow metadata. If artifact bloat later becomes material, require a separate approved simplification plan; no retirement or retention write is approved now. |
 
 ### July 29 publisher implementation and model-evidence overlay
 

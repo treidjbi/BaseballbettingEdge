@@ -8,6 +8,13 @@
 
 **Tech Stack:** Python 3.11, Gate C JSONL, existing Strong Base labels, standard-library JSON/hashlib, pytest, Render research cron.
 
+**Implementation status (2026-07-29):** Tasks 1-3 are complete on the
+research-only branch. The strict selector is frozen with prospective credit
+beginning `2026-07-30`, and the post-grading runner invokes its audit without
+publishing production artifacts or writing live tables. Task 4 remains
+scheduled for `2026-08-10`; no future decision packet or prospective result
+has been fabricated in advance.
+
 ## Global Constraints
 
 - Preserve no-drag selector id `combined_runtime_broad_no_hindsight_no_drag_v1` and its existing fingerprint.
@@ -33,11 +40,11 @@
 - Reuse `strong_base_decision_lab.candidate_labels(row)` only for the immutable input labels; encode the strict allow/exclude rule locally.
 - Write `analytics/output/strict_runtime_core_canary_audit.md` and `.json`.
 
-- [ ] Write failing truth-table tests covering eligible FIRE rows, every drag exclusion, missing critical inputs, current-provider classification, and result-free selector behavior.
-- [ ] Implement the frozen rule and stable JSON fingerprint.
-- [ ] Add duplicate-key, baseline-drift, input-gap, and post-start leakage blockers.
-- [ ] Run `python -m pytest tests/test_strict_runtime_core_canary_audit.py -v`.
-- [ ] Commit `test: freeze strict runtime core prospective audit`.
+- [x] Write failing truth-table tests covering eligible FIRE rows, every drag exclusion, missing critical inputs, current-provider classification, and result-free selector behavior.
+- [x] Implement the frozen rule and stable JSON fingerprint.
+- [x] Add duplicate-key, baseline-drift, input-gap, and post-start leakage blockers.
+- [x] Run `python -m pytest tests/test_strict_runtime_core_canary_audit.py -v`.
+- [x] Commit `test: freeze strict runtime core prospective audit`.
 
 ### Task 2: Add prospective accounting and diversity gates
 
@@ -46,12 +53,12 @@
 - Modify: `analytics/diagnostics/strict_runtime_core_canary_audit.py`
 - Modify: `tests/test_strict_runtime_core_canary_audit.py`
 
-- [ ] Add full, current-provider, prospective, latest-14-slate, and leave-one-slate-out scoreboards.
-- [ ] Add explicit counters for UNDER, plus price, FIRE 1u/FIRE 2u, provider attribution, and market agreement.
-- [ ] Make same-profile OVER/minus rows increase the descriptive sample but not satisfy the diversity gate.
-- [ ] Prove final CLV is report-only and never used by `evaluate_row`.
-- [ ] Run the focused test file and direct CLI against a temporary canonical Gate C build.
-- [ ] Commit `feat: add strict core diversity review gates`.
+- [x] Add full, current-provider, prospective, latest-14-slate, and leave-one-slate-out scoreboards.
+- [x] Add explicit counters for UNDER, plus price, FIRE 1u/FIRE 2u, provider attribution, and market agreement.
+- [x] Make same-profile OVER/minus rows increase the descriptive sample but not satisfy the diversity gate.
+- [x] Prove final CLV is report-only and never used by `evaluate_row`.
+- [x] Run the focused test file and direct CLI against a temporary canonical Gate C build.
+- [x] Commit `feat: add strict core diversity review gates`.
 
 ### Task 3: Extend the post-grading research runner
 
@@ -60,12 +67,12 @@
 - Modify: `scripts/run_post_grading_shadow_reports.py`
 - Modify: `tests/test_post_grading_shadow_reports.py`
 
-- [ ] Invoke the strict audit after Gate C, Strong Base, and market-agreement inputs are fresh.
-- [ ] Add `--skip-strict-runtime-core-audit` for isolated diagnostics.
-- [ ] Print only status, fingerprint, current-provider counter, diversity blockers, and recent PnL.
-- [ ] Prove the runner cannot publish pipeline artifacts or write live tables.
-- [ ] Run `python -m pytest tests/test_post_grading_shadow_reports.py tests/test_strict_runtime_core_canary_audit.py -v`.
-- [ ] Commit `feat: schedule strict core research audit`.
+- [x] Invoke the strict audit after Gate C, Strong Base, and market-agreement inputs are fresh.
+- [x] Add `--skip-strict-runtime-core-audit` for isolated diagnostics.
+- [x] Print only status, fingerprint, current-provider counter, diversity blockers, and recent PnL.
+- [x] Prove the runner cannot publish pipeline artifacts or write live tables.
+- [x] Run `python -m pytest tests/test_post_grading_shadow_reports.py tests/test_strict_runtime_core_canary_audit.py -v`.
+- [x] Commit `feat: schedule strict core research audit`.
 
 ### Task 4: Issue the August 10 decision packet
 
@@ -83,8 +90,8 @@
 
 ### Task 5: Final verification
 
-- [ ] Run `python -m pytest tests/test_no_drag_composite_canary_audit.py tests/test_strict_runtime_core_canary_audit.py tests/test_post_grading_shadow_reports.py -v`.
-- [ ] Run `python -m pytest tests -q`.
-- [ ] Search the new code for `lambda`, `staking`, `notification_events`, `operational_pick_locks`, and publisher writes; document why any match is read-only.
-- [ ] Confirm `git diff --check` and a clean intentional worktree.
+- [x] Run `python -m pytest tests/test_no_drag_composite_canary_audit.py tests/test_strict_runtime_core_canary_audit.py tests/test_post_grading_shadow_reports.py -v` (`119` passed).
+- [x] Run `python -m pytest tests -q` (`1,959` passed).
+- [x] Search the new code for `lambda`, `staking`, `notification_events`, `operational_pick_locks`, and publisher writes; the matches are report fields, calculations, and guardrail prose only. No publisher or live-table writer is imported or invoked.
+- [x] Confirm `git diff --check` and a clean intentional worktree before branch handoff.
 

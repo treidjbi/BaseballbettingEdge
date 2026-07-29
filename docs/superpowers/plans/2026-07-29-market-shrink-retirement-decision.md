@@ -8,6 +8,11 @@
 
 **Tech Stack:** Python 3.11, existing market-shrink audit, Gate F challenger report, Gate C JSONL, Render/Supabase read-only evidence, pytest.
 
+**Decision status (2026-07-29):** Tasks 1-2 are complete. The selected outcome
+is **`retain_diagnostic_shadow`**: close the betting-promotion path, preserve
+the low-cost projection-error diagnostic, and make no Render/environment
+change. Task 3 is not applicable because retirement was not selected.
+
 ## Global Constraints
 
 - Current evidence is `605` graded metadata rows, `300-305`, `-42.56u`, `-7.0%`, with zero applied rows.
@@ -25,12 +30,12 @@
 - Modify: `analytics/diagnostics/market_shrink_projection_canary_audit.py`
 - Modify: `tests/test_market_shrink_projection_canary_audit.py`
 
-- [ ] Write failing tests for applied count, would-change count, selected-lambda drift, verdict-change agreement, projection-error lift, and missing metadata.
-- [ ] Add current-provider and recent-14 scoreboards plus paired current-lambda projection error.
-- [ ] Report whether shrink metadata changed any Gate F, no-drag, Strong Base, or market-anchor research classification.
-- [ ] Emit a deterministic `decision_value` block without mutating runtime state.
-- [ ] Run `python -m pytest tests/test_market_shrink_projection_canary_audit.py -v`.
-- [ ] Commit `feat: add market shrink decision value audit`.
+- [x] Write failing tests for applied count, would-change count, selected-lambda drift, verdict-change agreement, projection-error lift, and missing metadata.
+- [x] Add current-provider and recent-14 scoreboards plus paired current-lambda projection error.
+- [x] Report whether shrink metadata changed any Gate F, no-drag, Strong Base, or market-anchor research classification.
+- [x] Emit a deterministic `decision_value` block without mutating runtime state.
+- [x] Run `python -m pytest tests/test_market_shrink_projection_canary_audit.py -v`.
+- [x] Commit `feat: add market shrink decision value audit`.
 
 ### Task 2: Measure marginal cost and dependencies
 
@@ -40,14 +45,17 @@
 - Modify: `docs/provider-cost-ledger.md` only if verified marginal provider or compute cost exists
 - Modify: `docs/operational-risk-register.md` only if retirement changes a tracked risk
 
-- [ ] Verify whether the shadow calculation causes provider calls, database rows, artifact bloat, or material cron duration; distinguish zero marginal provider cost from nonzero operational noise.
-- [ ] Identify reports/tests that depend on the metadata and the preservation path for historical analysis.
-- [ ] Treat zero betting lift but useful projection-error attribution as a possible reason to retain a cheaper diagnostic subset.
-- [ ] Recommend one of the three allowed outcomes with exact evidence.
-- [ ] Do not edit a Render environment variable.
-- [ ] Commit `docs: decide market shrink shadow posture`.
+- [x] Verify whether the shadow calculation causes provider calls, database rows, artifact bloat, or material cron duration; distinguish zero marginal provider cost from nonzero operational noise.
+- [x] Identify reports/tests that depend on the metadata and the preservation path for historical analysis.
+- [x] Treat zero betting lift but useful projection-error attribution as a possible reason to retain a cheaper diagnostic subset.
+- [x] Recommend one of the three allowed outcomes with exact evidence.
+- [x] Do not edit a Render environment variable.
+- [x] Commit `docs: decide market shrink shadow posture`.
 
 ### Task 3: Prepare, but do not execute, retirement
+
+**Not applicable:** `retain_diagnostic_shadow` was selected, so no retirement
+runbook, Render variable change, or retirement commit should be created.
 
 **Files:**
 
