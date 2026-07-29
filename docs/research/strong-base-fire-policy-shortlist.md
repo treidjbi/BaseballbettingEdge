@@ -52,4 +52,3 @@ may only reduce existing FIRE exposure.
 
 Reaching `75` opens a Tyler review, not activation. Any survivor needs a
 separate behavior-changing canary plan and explicit approval.
-
