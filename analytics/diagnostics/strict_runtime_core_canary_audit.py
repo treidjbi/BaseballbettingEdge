@@ -13,7 +13,7 @@ import hashlib
 import json
 import math
 import sys
-from collections import Counter
+from collections import Counter, defaultdict
 from dataclasses import dataclass
 from datetime import UTC, date, datetime
 from pathlib import Path
@@ -40,6 +40,7 @@ HISTORICAL_END = "2026-07-29"
 PROSPECTIVE_START = "2026-07-30"
 CURRENT_PROVIDER_REVIEW_FLOOR = 50
 DIVERSITY_FLOOR = 10
+MANDATORY_SLICE_FLOOR = 10
 BASELINE_PNL_TOLERANCE = 0.005
 WIN_LOSS_RESULTS = {"win", "loss"}
 HISTORY_RECOVERED_ARCHIVE_SOURCES = {
@@ -98,6 +99,21 @@ NUMERIC_CRITICAL_GROUPS = {
     ("edge",),
     ADJUSTED_EV_FIELDS,
 }
+SLICE_DIMENSIONS = (
+    "verdict_family",
+    "side",
+    "k_line",
+    "price_sign",
+    "quality",
+    "timing",
+    "model_market",
+    "path_b",
+    "workload",
+    "preclose_clv_proxy",
+    "final_clv",
+    "provider_attribution",
+    "market_agreement",
+)
 
 RULE_SPEC = {
     "selector_id": SELECTOR_ID,
@@ -229,6 +245,15 @@ def evaluate_row(row: dict[str, Any]) -> Evaluation:
     )
 
 
+def _selector_match(row: dict[str, Any]) -> bool:
+    labels = _runtime_labels(row)
+    return (
+        verdict(row).upper().startswith("FIRE")
+        and any(label in labels for label in RULE_SPEC["keep_labels"])
+        and not any(label in labels for label in RULE_SPEC["drag_labels"])
+    )
+
+
 def pick_key(row: dict[str, Any]) -> str:
     slate_date = parse_slate_date(row)
     pitcher_value = (
@@ -305,6 +330,143 @@ def _audit_input_gaps(row: dict[str, Any], evaluation: Evaluation) -> tuple[str,
     return tuple(missing)
 
 
+def _text_bucket(value: Any) -> str:
+    text = str(value or "").strip()
+    return text if text else "missing"
+
+
+def _slice_bucket(row: dict[str, Any], dimension: str) -> str:
+    if dimension == "verdict_family":
+        value = verdict(row)
+        if value.startswith("FIRE 2"):
+            return "FIRE 2u"
+        if value.startswith("FIRE"):
+            return "FIRE 1u"
+        return _text_bucket(value)
+    if dimension == "side":
+        return _text_bucket(row.get("side")).lower()
+    if dimension == "k_line":
+        return _text_bucket(row.get("line_bucket") or row.get("k_line"))
+    if dimension == "price_sign":
+        return _text_bucket(row.get("price_sign")).lower()
+    if dimension == "quality":
+        return _text_bucket(row.get("quality_gate_level")).lower()
+    if dimension == "timing":
+        return _text_bucket(row.get("bet_timing_window")).lower()
+    if dimension == "model_market":
+        return _text_bucket(row.get("model_market_relationship"))
+    if dimension == "path_b":
+        return _text_bucket(
+            row.get("path_b_coverage_bucket") or row.get("batter_handedness_mode")
+        )
+    if dimension == "workload":
+        return _text_bucket(
+            row.get("workload_bucket")
+            or row.get("leash_risk_bucket")
+            or row.get("opportunity_bucket")
+        )
+    if dimension == "preclose_clv_proxy":
+        return _text_bucket(
+            row.get("preclose_clv_proxy_label") or row.get("preclose_clv_proxy")
+        )
+    if dimension == "final_clv":
+        return _text_bucket(
+            row.get("final_clv_bucket")
+            or row.get("clv_bucket")
+            or row.get("final_clv")
+        )
+    if dimension == "provider_attribution":
+        return _text_bucket(
+            row.get("provider")
+            or row.get("live_display_provider")
+            or row.get("odds_source")
+        )
+    if dimension == "market_agreement":
+        return _text_bucket(
+            row.get("market_agreement_label") or row.get("market_agreement")
+        )
+    raise ValueError(f"Unknown slice dimension: {dimension}")
+
+
+def _build_slices(rows: list[dict[str, Any]]) -> dict[str, dict[str, dict[str, Any]]]:
+    result: dict[str, dict[str, dict[str, Any]]] = {}
+    for dimension in SLICE_DIMENSIONS:
+        buckets: dict[str, list[dict[str, Any]]] = defaultdict(list)
+        for row in rows:
+            buckets[_slice_bucket(row, dimension)].append(row)
+        result[dimension] = {
+            bucket: score(bucket_rows)
+            for bucket, bucket_rows in sorted(buckets.items())
+        }
+    return result
+
+
+def _attributed(value: str) -> bool:
+    return value.strip().lower() not in {"", "missing", "unknown", "none"}
+
+
+def _diversity(rows: list[dict[str, Any]]) -> dict[str, int]:
+    return {
+        "under_rows": sum(_slice_bucket(row, "side") == "under" for row in rows),
+        "plus_price_rows": sum(
+            _slice_bucket(row, "price_sign").startswith("plus") for row in rows
+        ),
+        "fire_1u_rows": sum(
+            _slice_bucket(row, "verdict_family") == "FIRE 1u" for row in rows
+        ),
+        "fire_2u_rows": sum(
+            _slice_bucket(row, "verdict_family") == "FIRE 2u" for row in rows
+        ),
+        "provider_attributed_rows": sum(
+            _attributed(_slice_bucket(row, "provider_attribution")) for row in rows
+        ),
+        "market_agreement_attributed_rows": sum(
+            _attributed(_slice_bucket(row, "market_agreement")) for row in rows
+        ),
+    }
+
+
+def _leave_one_slate_out(rows: list[dict[str, Any]]) -> dict[str, Any]:
+    dates = sorted(
+        {
+            parsed.isoformat()
+            for row in rows
+            if (parsed := parse_slate_date(row)) is not None
+        }
+    )
+    cases = [
+        {
+            "excluded_slate_date": excluded,
+            **score(
+                [
+                    row
+                    for row in rows
+                    if (parse_slate_date(row) or date.min).isoformat() != excluded
+                ]
+            ),
+        }
+        for excluded in dates
+    ]
+    return {
+        "cases": cases,
+        "minimum": min(cases, key=lambda item: item["pnl"])
+        if cases
+        else {"rows": 0, "wins": 0, "losses": 0, "pnl": 0.0, "roi": 0.0},
+    }
+
+
+def _negative_mandatory_slices(
+    slices: dict[str, dict[str, dict[str, Any]]],
+) -> list[dict[str, Any]]:
+    return [
+        {"dimension": dimension, "bucket": bucket, **bucket_score}
+        for dimension, buckets in slices.items()
+        for bucket, bucket_score in buckets.items()
+        if bucket_score["rows"] >= MANDATORY_SLICE_FLOOR
+        and bucket_score["pnl"] < 0
+    ]
+
+
 def build_audit(
     rows: list[dict[str, Any]],
     generated_at: str | None = None,
@@ -320,23 +482,24 @@ def build_audit(
         if str(row.get("archive_outcome_reconciliation_source") or "").strip()
         in HISTORY_RECOVERED_ARCHIVE_SOURCES
     ]
-    tracked = [row for row in all_tracked if row not in history_recovered]
+    tracked = list(all_tracked)
     evaluated = [(row, evaluate_row(row), parse_slate_date(row)) for row in tracked]
 
-    selected = [
-        (row, slate_date)
-        for row, evaluation, slate_date in evaluated
-        if evaluation.qualifies and slate_date is not None
-    ]
     historical_selected = [
         (row, slate_date)
-        for row, slate_date in selected
-        if CLEAN_WINDOW_START_DATE <= slate_date <= HISTORICAL_END_DATE
+        for row, _, slate_date in evaluated
+        if slate_date is not None
+        and CLEAN_WINDOW_START_DATE <= slate_date <= HISTORICAL_END_DATE
+        and _selector_match(row)
     ]
     prospective_selected = [
         (row, slate_date)
-        for row, slate_date in selected
-        if slate_date >= PROSPECTIVE_START_DATE
+        for row, evaluation, slate_date in evaluated
+        if slate_date is not None
+        and slate_date >= PROSPECTIVE_START_DATE
+        and evaluation.qualifies
+        and str(row.get("archive_outcome_reconciliation_source") or "").strip()
+        not in HISTORY_RECOVERED_ARCHIVE_SOURCES
     ]
     combined_selected = historical_selected + prospective_selected
     current_provider_selected = [
@@ -383,6 +546,14 @@ def build_audit(
         for row, slate_date in combined_selected
         if slate_date in set(recent_dates)
     ]
+    current_provider_slices = _build_slices(current_provider_rows)
+    diversity = _diversity(current_provider_rows)
+    leave_one_slate_out = _leave_one_slate_out(current_provider_rows)
+    negative_mandatory_slices = _negative_mandatory_slices(
+        current_provider_slices
+    )
+    current_provider_score = score(current_provider_rows)
+    recent_score = score(recent_rows)
 
     historical_reconciliation = _baseline_reconciliation(
         score(historical_rows),
@@ -397,6 +568,35 @@ def build_audit(
         and current_provider_reconciliation["matches"]
     )
 
+    gates = {
+        "current_provider_floor": (
+            current_provider_score["rows"] >= CURRENT_PROVIDER_REVIEW_FLOOR
+        ),
+        "under_diversity": diversity["under_rows"] >= DIVERSITY_FLOOR,
+        "plus_price_diversity": (
+            diversity["plus_price_rows"] >= DIVERSITY_FLOOR
+        ),
+        "provider_attribution_complete": (
+            diversity["provider_attributed_rows"] == current_provider_score["rows"]
+        ),
+        "market_agreement_attribution_complete": (
+            diversity["market_agreement_attributed_rows"]
+            == current_provider_score["rows"]
+        ),
+        "current_provider_positive": current_provider_score["pnl"] > 0,
+        "latest_14_positive": recent_score["rows"] > 0 and recent_score["pnl"] > 0,
+        "leave_one_slate_out_positive": (
+            leave_one_slate_out["minimum"]["rows"] > 0
+            and leave_one_slate_out["minimum"]["pnl"] > 0
+        ),
+        "mandatory_slices_nonnegative": not negative_mandatory_slices,
+    }
+    diversity_blockers: list[str] = []
+    if diversity["under_rows"] < DIVERSITY_FLOOR:
+        diversity_blockers.append(f"under_rows<{DIVERSITY_FLOOR}")
+    if diversity["plus_price_rows"] < DIVERSITY_FLOOR:
+        diversity_blockers.append(f"plus_price_rows<{DIVERSITY_FLOOR}")
+
     if duplicate_keys:
         status = "blocked_duplicate_keys"
     elif not reconciliation_matches:
@@ -405,6 +605,8 @@ def build_audit(
         status = "blocked_input_gap"
     elif post_start_rows:
         status = "blocked_post_start_leakage"
+    elif all(gates.values()):
+        status = "ready_for_review"
     else:
         status = "collecting"
 
@@ -419,7 +621,12 @@ def build_audit(
         "status": status,
         "integrity": {
             "duplicate_keys": duplicate_keys,
-            "history_recovered_rows_excluded": len(history_recovered),
+            "history_recovered_rows_context_only": len(history_recovered),
+            "history_recovered_prospective_rows_excluded": sum(
+                1
+                for row in history_recovered
+                if (parse_slate_date(row) or date.min) >= PROSPECTIVE_START_DATE
+            ),
             "input_gap_rows": len(input_gap_evaluations),
             "input_gap_keys": [pick_key(row) for row, _ in input_gap_evaluations],
             "input_gaps": {
@@ -428,6 +635,12 @@ def build_audit(
             },
             "post_start_leakage_rows": len(post_start_rows),
             "post_start_leakage_keys": [pick_key(row) for row in post_start_rows],
+            "historical_post_start_context_rows": sum(
+                1
+                for row, slate_date in historical_selected
+                if slate_date <= HISTORICAL_END_DATE
+                and evaluate_row(row).post_start_leakage
+            ),
         },
         "locked_baselines": {
             "historical": dict(LOCKED_HISTORICAL),
@@ -444,18 +657,29 @@ def build_audit(
             "prospective": score(prospective_rows),
             "combined": score(combined_rows),
             "current_provider": score(current_provider_rows),
-            "recent_14_slates": {
-                **score(recent_rows),
+            "latest_14_slates": {
+                **recent_score,
                 "slate_dates": [value.isoformat() for value in recent_dates],
             },
         },
         "counter": {
-            "rows": score(current_provider_rows)["rows"],
+            "rows": current_provider_score["rows"],
             "floor": CURRENT_PROVIDER_REVIEW_FLOOR,
             "remaining": max(
-                CURRENT_PROVIDER_REVIEW_FLOOR - score(current_provider_rows)["rows"],
+                CURRENT_PROVIDER_REVIEW_FLOOR - current_provider_score["rows"],
                 0,
             ),
+        },
+        "diversity": diversity,
+        "diversity_blockers": diversity_blockers,
+        "gates": gates,
+        "leave_one_slate_out": leave_one_slate_out,
+        "negative_mandatory_slices": negative_mandatory_slices,
+        "slices": {
+            "historical_rebuild": _build_slices(historical_rows),
+            "prospective": _build_slices(prospective_rows),
+            "current_provider": current_provider_slices,
+            "latest_14_slates": _build_slices(recent_rows),
         },
         "live_boundary": (
             "Research only. A separate Tyler-approved plan is required before "
@@ -466,9 +690,8 @@ def build_audit(
 
 def render_report(summary: dict[str, Any]) -> str:
     current = summary["windows"]["current_provider"]
-    recent = summary["windows"]["recent_14_slates"]
-    return "\n".join(
-        [
+    recent = summary["windows"]["latest_14_slates"]
+    lines = [
             "# Strict Runtime Core Prospective Canary Audit",
             "",
             f"Generated at: `{summary['generated_at']}`",
@@ -491,12 +714,39 @@ def render_report(summary: dict[str, Any]) -> str:
                 f"`{recent['wins']}-{recent['losses']}`, `{recent['pnl']:+.3f}u`."
             ),
             "",
+            "## Diversity Gates",
+            "",
+            f"- UNDER rows: `{summary['diversity']['under_rows']}/{DIVERSITY_FLOOR}`.",
+            f"- Plus-price rows: `{summary['diversity']['plus_price_rows']}/{DIVERSITY_FLOOR}`.",
+            f"- FIRE 1u / FIRE 2u: `{summary['diversity']['fire_1u_rows']}` / `{summary['diversity']['fire_2u_rows']}`.",
+            (
+                "- Provider attribution: "
+                f"`{summary['diversity']['provider_attributed_rows']}/{current['rows']}`."
+            ),
+            (
+                "- Market-agreement attribution: "
+                f"`{summary['diversity']['market_agreement_attributed_rows']}/{current['rows']}`."
+            ),
+            (
+                "- Remaining diversity blockers: "
+                f"`{json.dumps(summary['diversity_blockers'])}`."
+            ),
+            "",
+            "## Review Gates",
+            "",
+        ]
+    for gate, passed in summary["gates"].items():
+        lines.append(f"- `{gate}`: `{'pass' if passed else 'hold'}`")
+    lines.extend(
+        [
+            "",
             "## Live Boundary",
             "",
             f"- {summary['live_boundary']}",
             "",
         ]
     )
+    return "\n".join(lines)
 
 
 def load_jsonl(path: Path) -> list[dict[str, Any]]:
