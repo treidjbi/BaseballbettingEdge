@@ -374,15 +374,16 @@ each lane.
 
 ### July 29 strict-runtime implementation and market-shrink decision overlay
 
-Tyler approved executing the two bounded research plans. This work is on the
-research-only branch and has not been deployed. It adds audits, tests, and
-operator documentation only; no live model, lambda, verdict, threshold,
-staking, provider, notification, lock, artifact, UI, retention, environment,
-or source-of-truth behavior changed.
+Tyler approved executing both bounded research plans and externally activating
+the strict audit runner. The implementation is merged and pushed on `main`;
+only the read-only post-grading research cron was redeployed. It adds audits,
+tests, and operator documentation only; no live model, lambda, verdict,
+threshold, staking, provider, notification, lock, artifact, UI, retention,
+environment, or source-of-truth behavior changed.
 
 | Lane | Current stage | Next decision / blocker |
 | --- | --- | --- |
-| Pipeline / infrastructure | The post-grading research runner now invokes a frozen strict-runtime-core audit with an independent skip flag and bounded output. The audit writes ignored research Markdown/JSON only and has no publisher or live-table writer. | After branch review/merge, any Render research-cron deployment remains a separate approval and verification step. Production pipeline behavior is unchanged. |
+| Pipeline / infrastructure | The post-grading research runner now invokes a frozen strict-runtime-core audit with an independent skip flag and bounded output. The audit writes ignored research Markdown/JSON only and has no publisher or live-table writer. Exact code commit `e8962820` is live only on `bbe-gate-c-post-grading-review` as deploy `dep-d9l590f10e5c73frlcog`; verification job `job-d9l59dlf1gfc73dijd9g` succeeded at `2026-07-29T19:33:04Z`. Cross-service deploy readback found no other deploy after activation began. The service remains branch `main`, auto-deploy off, schedule `7 11 * * *`, starter plan, and command `python scripts/run_post_grading_shadow_reports.py --refresh-market-agreement-inputs`. Render exposed final deploy/job status but no retained task log body, so bounded excerpt and no-writer behavior remain proven by the committed runner tests. | Treat activation as complete and observe the next scheduled post-grading run. The later handoff-doc commit does not require redeployment. Production pipeline behavior is unchanged. |
 | Model | Strict-runtime core is frozen as `strict_runtime_core_flat` with fingerprint `6d07a98031a8b26915ad34fc031def76d26519850dc476db723d37f25a8d9905` and prospective credit starting `2026-07-30`. The current canonical read is `collecting`: historical `96`, `64-32`, `+17.724u`; current provider `20/50`, `15-5`, `+5.864u`; recent `17`, `14-3`, `+7.106u`; UNDER, plus-price, provider-attribution, and agreement-attribution counts are all zero. Market-shrink is `retain_diagnostic_shadow`: `605`, `300-305`, `-42.56u/-7.0%`; current provider `574`, `285-289`, `-39.81u/-6.9%`; recent `255`, `123-132`, `-27.47u/-10.8%`; zero applied rows and zero selected-lambda drift. Its paired `578` unique pitcher-games improved MAE from `1.9472` to `1.8932` (`+0.0540` K), so its projection-error diagnostic remains useful while its betting-promotion path closes. | Accumulate only genuinely prospective, diverse strict-core rows; do not weaken the `50` current-provider, `10` UNDER, `10` plus-price, provider/agreement, slice, rolling-window, and leave-one-slate-out gates. Issue the no-drag/strict packet on August 10 using the then-latest graded slate. Do not draft market-shrink enforce work. Gate C/D/E/F/12E and every live behavior gate remain closed. |
 | UI | Unchanged. | Continue Alt V2/default-on live-market UI soak independently. |
 | Tracking / data collection / history | The production-shaped hybrid rebuild through July 28 reconciled `3,434` Gate C side rows, `1,793` tracked rows, zero duplicates, and `1,750/1,750` graded picks. Strict history-recovered rows remain historical context only and receive no prospective credit. Market-shrink adds zero provider calls and zero Supabase rows; its JSON footprint is about `25 KB` in `today` and `234 KB` across `picks_history`. | Preserve provenance and existing shadow metadata. If artifact bloat later becomes material, require a separate approved simplification plan; no retirement or retention write is approved now. |

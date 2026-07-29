@@ -8,12 +8,17 @@
 
 **Tech Stack:** Python 3.11, Gate C JSONL, existing Strong Base labels, standard-library JSON/hashlib, pytest, Render research cron.
 
-**Implementation status (2026-07-29):** Tasks 1-3 are complete on the
-research-only branch. The strict selector is frozen with prospective credit
-beginning `2026-07-30`, and the post-grading runner invokes its audit without
-publishing production artifacts or writing live tables. Task 4 remains
-scheduled for `2026-08-10`; no future decision packet or prospective result
-has been fabricated in advance.
+**Implementation status (2026-07-29):** Tasks 1-3 are complete, merged, and
+deployed only to the read-only `bbe-gate-c-post-grading-review` cron on exact
+code commit `e8962820a4511a6b780c93bdff510b811d195cda`. Render deploy
+`dep-d9l590f10e5c73frlcog` reached `live`, and the one approved verification
+job `job-d9l59dlf1gfc73dijd9g` succeeded at `2026-07-29T19:33:04Z`. Branch
+`main`, auto-deploy off, schedule `7 11 * * *`, starter plan, build command,
+and `python scripts/run_post_grading_shadow_reports.py
+--refresh-market-agreement-inputs` remained unchanged; no other service was
+deployed. The strict selector is frozen with prospective credit beginning
+`2026-07-30`. Task 4 remains scheduled for `2026-08-10`; no future decision
+packet or prospective result has been fabricated in advance.
 
 ## Global Constraints
 
