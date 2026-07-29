@@ -73,6 +73,9 @@ For any new work in this repo:
    - `docs/research/2026-07-28-artifact-publisher-timeout-resilience-review.md`
      for the scoped diagnosis of recurring lock-publisher PostgREST statement
      timeouts and the separately gated publisher-only resilience options
+   - `docs/research/2026-07-29-research-candidate-plan-map.md`
+     for the July 29 candidate inventory, the distinction between volume and
+     evidence-diversity gates, and links to the six bounded follow-up plans
    - `docs/superpowers/specs/2026-07-21-pregame-alternative-pick-methodology-design.md`
      for the approved product direction, production rollout contract, and
      first-normal-slate integrity gate for the pregame Alt Picks comparison
@@ -354,18 +357,33 @@ each lane.
 ### July 29 publisher implementation and model-evidence overlay
 
 Tyler approved the narrow artifact-publisher resilience implementation. It is
-merged and pushed on `main` at `a1019485`; production activation remains
-separate because the Render pipeline cron group has autoDeploy off. The merged
+merged and pushed on `main` at `a1019485`; the later approval and verified
+production deployment are recorded in the next July 29 overlay. The merged
 tree passed `1,911` tests and the publisher dry run collected the expected
 seven all-scope artifacts. No model, provider, lock, notification,
 source-of-truth, or retention behavior changed.
 
 | Lane | Current stage | Next decision / blocker |
 | --- | --- | --- |
-| Pipeline / infrastructure | A fifth `published_pipeline_artifacts` `57014` timeout occurred on the July 28 `14:07` Phoenix refresh and recovered on the next scheduled refresh without stale artifacts, missed locks, grading divergence, or betting impact. `main` at `a1019485` changes only this publisher to `return=minimal` plus one retry requiring a transient HTTP status and exact database code `57014`; other writer defaults and all artifact/lock contracts remain unchanged. The merged tree passed `1,911` tests and the publisher dry run passed. | Keep the current deployed behavior until Tyler separately approves Render activation. If approved, deploy the Render pipeline cron group together, then verify served hashes and the next natural lock publication. |
+| Pipeline / infrastructure | A fifth `published_pipeline_artifacts` `57014` timeout occurred on the July 28 `14:07` Phoenix refresh and recovered on the next scheduled refresh without stale artifacts, missed locks, grading divergence, or betting impact. `main` at `a1019485` changes only this publisher to `return=minimal` plus one retry requiring a transient HTTP status and exact database code `57014`; other writer defaults and all artifact/lock contracts remain unchanged. The merged tree passed `1,911` tests and the publisher dry run passed. | This was the pre-activation read. Tyler subsequently approved deployment; use the next July 29 overlay for verified production state. |
 | Model | No-drag is `77/75` and `ready_for_review`; prospective July 21-28 is `25`, `16-9`, `+2.297u/+9.2%`. Strict runtime core is `96`, `64-32`, `+17.72u`; current provider `20`, `15-5`, `+5.86u`; recent `17`, `14-3`, `+7.11u`. The raw count gate is complete for no-drag, but no-drag still lacks plus-price/FIRE 2u diversity and has negative middle-price/K=4.5 slices. Strict current-provider evidence remains concentrated in OVER/minus rows. | Keep the August 10 canonical review. Treat missing UNDER/plus-price/provider-agreement/CLV/rolling-window evidence as the blocker; do not mistake more same-profile picks for gate progress. No live promotion plan yet. |
 | UI | No dashboard behavior changed. | Continue Alt V2/default-on live-market UI soak. |
 | Tracking / data collection / history | July 29 storage is `3,390 MB` (`41.38%` of 8 GB); exact compact coverage remains false and retention execution remains ineligible. | Keep the August 3 `fix_compaction_first` confirmation and make no deletion. |
+
+### July 29 approved deployment, Gate D repair, and research plan map
+
+Tyler approved the two previously separate actions: deploy the merged
+publisher-resilience fix and resolve the named Robert Gasser Gate D exception.
+The six new research plans are planning artifacts only; none changes live
+model, provider, threshold, staking, notification, lock, UI, retention, or
+source-of-truth behavior.
+
+| Lane | Current stage | Next decision / blocker |
+| --- | --- | --- |
+| Pipeline / infrastructure | All seven Render pipeline cron services are live on publisher commit `ad6f7d9b`. Deploys `dep-d9l2o8favr4c739uc020` through `dep-d9l2q3jl550s73fg5rs0` completed successfully. The first natural post-deploy lock at `2026-07-29T16:42Z` checked out `ad6f7d9b`, consumed five newly represented lock rows, published `today`, `dated_slate:2026-07-29`, and `picks_history`, and finished successfully. Supabase source commit/run metadata and Netlify ETags matched the published hashes. | Observe the next normal preview, grading, full, and refresh runs. Roll back only if minimal-return/retry behavior produces a stale artifact, repeated failure, or contract mismatch. |
+| Model | No-drag remains `77/75` and strict runtime core remains the strongest comparison signal. The candidate map creates separate plans for no-drag/strict, market-anchor downside, Strong Base FIRE policy, selective LEAN/pre-close, CLV process validation, and market-shrink retirement. | Follow `docs/research/2026-07-29-research-candidate-plan-map.md`. Keep the August 10 independent review; no plan authorizes activation. |
+| UI | No dashboard behavior changed. | Continue Alt V2/default-on live-market UI soak. |
+| Tracking / data collection / history | The Gasser exception is repaired with a consensus-only pitcher-game actual-K fallback after exact-line recovery. Production-shaped hybrid verification through July 28 produced `3,434` side rows, `1,793` tracked rows, zero duplicates, `25` recoveries, zero ambiguities, and `1,750/1,750` reconciliation. The archived `4.5` market and official `UNDER 3.5` bet remain distinct; all recovered rows remain excluded from no-drag credit. | Let the next ten scheduled graded slates prove the new path remains boring. Gate D and all model-promotion gates stay closed until that operational proof and candidate-specific slice gates pass. |
 
 ### July 28 four-action operations follow-through overlay
 
