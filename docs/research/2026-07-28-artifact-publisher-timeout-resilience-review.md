@@ -2,7 +2,7 @@
 
 Date: 2026-07-28
 
-Status: **Implementation approved 2026-07-29; tested branch pending separate production activation.**
+Status: **Implementation merged 2026-07-29; pending separate production activation.**
 
 This is a read-only diagnosis. It does not authorize a pipeline deploy,
 Supabase setting change, manual repair, provider change, lock change, artifact
@@ -16,8 +16,7 @@ finished its pipeline work, failed on the `published_pipeline_artifacts`
 `57014` upsert, and recovered on the next scheduled refresh without stale
 served artifacts, missed locks, grading divergence, or betting impact.
 
-Branch `codex/artifact-publisher-timeout-resilience` now implements the narrow
-reviewed contract:
+`main` commit `a1019485` now contains the narrow reviewed contract:
 
 - `published_pipeline_artifacts` requests `return=minimal`; other Supabase
   upserts retain `return=representation` by default;
@@ -28,10 +27,10 @@ reviewed contract:
 - the artifact set, conflict key, timeout, cadence, source-of-truth behavior,
   lock behavior, and publication-run ledger contract are unchanged.
 
-Focused TDD verification is `28 passed`; full branch verification is `1,909
-passed`, and the lock-scope publisher dry run collected the expected two
-artifacts. Production activation remains a separate gate because Render
-pipeline crons keep autoDeploy off. After merge approval, redeploy the
+Focused TDD verification is `30 passed`; full merged-tree verification is
+`1,911 passed`, and the all-scope publisher dry run collected the expected
+seven artifacts. Production activation remains a separate gate because Render
+pipeline crons keep autoDeploy off. If Tyler approves activation, redeploy the
 validated pipeline cron group together and verify hashes plus the next natural
 lock publication.
 
@@ -44,9 +43,9 @@ Phoenix, July 25 at `11:42`, and July 27 at `00:32` and `05:32`, plus the July
 scheduled cycle recovered.
 
 No stale served artifact, missed due lock, duplicate lock, wrong-date lock, or
-grading impact was found. Do not run a repair today. Tyler approved and the
-branch now contains the test-first publisher-resilience implementation;
-merging and production activation remain separate decisions.
+grading impact was found. Do not run a repair today. Tyler approved the
+test-first publisher-resilience implementation and it is now merged to `main`;
+production activation remains a separate decision.
 
 ## Confirmed failure pattern
 
