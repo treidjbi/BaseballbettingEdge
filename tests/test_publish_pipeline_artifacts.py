@@ -9,8 +9,8 @@ class FakeWriter:
         self.upserts = []
         self.inserts = []
 
-    def upsert_rows(self, table, rows, on_conflict):
-        self.upserts.append((table, rows, on_conflict))
+    def upsert_rows(self, table, rows, on_conflict, **options):
+        self.upserts.append((table, rows, on_conflict, options))
         return len(rows)
 
     def insert_rows(self, table, rows):
@@ -234,6 +234,29 @@ def test_run_execute_upserts_artifacts_and_run_row(tmp_path):
     assert writer.upserts[0][0] == "published_pipeline_artifacts"
     assert writer.upserts[0][2] == "artifact_key"
     assert writer.inserts[0][0] == "pipeline_artifact_publication_runs"
+
+
+def test_run_execute_bounds_artifact_timeout_resilience_to_the_publisher(tmp_path):
+    processed = tmp_path / "dashboard" / "data" / "processed"
+    processed.mkdir(parents=True)
+    (processed / "today.json").write_text('{"date":"2026-05-22","pitchers":[]}', encoding="utf-8")
+    writer = FakeWriter()
+
+    run(
+        root=tmp_path,
+        writer=writer,
+        slate_date="2026-05-22",
+        source="render_pipeline",
+        source_run_id="run-1",
+        source_commit_sha="sha",
+        execute=True,
+    )
+
+    assert writer.upserts[0][3] == {
+        "return_representation": False,
+        "attempts": 2,
+        "retry_database_codes": {"57014"},
+    }
 
 
 def test_run_execute_sets_started_before_completed(tmp_path):

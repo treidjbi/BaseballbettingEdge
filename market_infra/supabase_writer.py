@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 import sys
 import time
 
@@ -133,24 +134,58 @@ class SupabaseMarketWriter:
         on_conflict: str,
         *,
         timeout_seconds: float = 20,
+        return_representation: bool = True,
+        attempts: int = 1,
+        retry_database_codes: set[str] | None = None,
     ) -> list[dict]:
         if not rows:
             return []
-        response = requests.post(
-            f"{self.supabase_url}/rest/v1/{table}",
-            headers=self._headers("resolution=merge-duplicates,return=representation"),
-            params={"on_conflict": on_conflict},
-            json=rows,
-            timeout=timeout_seconds,
-        )
-        _raise_for_status_with_context(
-            response,
-            table=table,
-            operation="upsert_rows",
-            row_count=len(rows),
-            on_conflict=on_conflict,
-        )
-        return response.json()
+        if attempts < 1:
+            raise ValueError("upsert attempts must be at least 1")
+        selected_database_codes = {str(code) for code in (retry_database_codes or set())}
+        return_preference = "representation" if return_representation else "minimal"
+
+        for attempt in range(1, attempts + 1):
+            response = requests.post(
+                f"{self.supabase_url}/rest/v1/{table}",
+                headers=self._headers(f"resolution=merge-duplicates,return={return_preference}"),
+                params={"on_conflict": on_conflict},
+                json=rows,
+                timeout=timeout_seconds,
+            )
+            try:
+                _raise_for_status_with_context(
+                    response,
+                    table=table,
+                    operation="upsert_rows",
+                    row_count=len(rows),
+                    on_conflict=on_conflict,
+                )
+            except requests.HTTPError as error:
+                status_code = _status_code_from_error(error, response)
+                database_code = _database_code_from_response(response)
+                retry_selected = (
+                    attempt < attempts
+                    and status_code in TRANSIENT_STATUS_CODES
+                    and database_code in selected_database_codes
+                )
+                if not retry_selected:
+                    raise
+                delay = 0.5 * attempt
+                print(
+                    "Warning: Supabase upsert_rows selected transient failure "
+                    f"table={table} status={status_code} database_code={database_code}; "
+                    f"retrying attempt {attempt + 1}/{attempts}",
+                    file=sys.stderr,
+                )
+                time.sleep(delay)
+                continue
+
+            if return_representation:
+                return response.json()
+            return []
+
+        raise RuntimeError(f"Supabase upsert_rows failed after {attempts} attempts")
 
     def insert_ignore_rows(
         self,
@@ -219,3 +254,16 @@ def _status_code_from_error(
     if error_response is not None and error_response.status_code:
         return int(error_response.status_code)
     return None
+
+
+def _database_code_from_response(response: requests.Response) -> str | None:
+    body = (getattr(response, "text", "") or "").strip()
+    if not body:
+        return None
+    try:
+        payload = json.loads(body)
+    except (TypeError, ValueError):
+        return None
+    if not isinstance(payload, dict) or payload.get("code") is None:
+        return None
+    return str(payload["code"])

@@ -8,6 +8,24 @@ This packet is read-only. It does not authorize model, verdict, threshold,
 staking, provider, notification, lock, artifact, dashboard, retention, or
 `formula_change_date` changes.
 
+## July 29 evidence update
+
+The post-grading counter is now `77/75`. The genuinely prospective July 21-28
+window is `25` rows, `16-9`, `+2.297u`, `+9.2%` flat ROI. The count gate is
+complete; the remaining no-drag gate is evidence diversity, especially zero
+plus-price and FIRE 2u rows, the negative `-130` to `-149` and `4.5` K-line
+slices, broader side/quality survival, and canonical provider/agreement/CLV
+coverage.
+
+Strict runtime core is now `96` rows, `64-32`, `+17.72u`, with current-provider
+evidence at `20`, `15-5`, `+5.86u`, and the recent read at `17`, `14-3`,
+`+7.11u`. More copies of the same OVER/minus-money profile do not close the
+gate. The next useful rows are UNDER, plus-price, provider/agreement-attributed,
+and CLV-resolved rows across additional rolling windows.
+
+Keep the August 10 canonical packet. This update changes neither selector nor
+live behavior.
+
 ## Executive decision
 
 The frozen no-drag canary reached its controlling `75/75` review floor with

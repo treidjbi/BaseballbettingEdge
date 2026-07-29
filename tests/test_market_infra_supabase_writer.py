@@ -34,6 +34,76 @@ def test_upsert_rows_sets_conflict_target():
     assert post.call_args.kwargs["headers"]["Prefer"] == "resolution=merge-duplicates,return=representation"
 
 
+def test_upsert_rows_can_request_minimal_return_without_decoding_a_body():
+    writer = SupabaseMarketWriter("https://example.supabase.co", "secret-key")
+    response = Mock(status_code=204, text="")
+    response.raise_for_status.return_value = None
+    response.json.side_effect = AssertionError("minimal responses must not be decoded")
+
+    with patch("market_infra.supabase_writer.requests.post", return_value=response) as post:
+        result = writer.upsert_rows(
+            "published_pipeline_artifacts",
+            [{"artifact_key": "today"}],
+            on_conflict="artifact_key",
+            return_representation=False,
+        )
+
+    assert result == []
+    assert post.call_args.kwargs["headers"]["Prefer"] == "resolution=merge-duplicates,return=minimal"
+
+
+def test_upsert_rows_retries_one_selected_transient_database_error():
+    writer = SupabaseMarketWriter("https://example.supabase.co", "secret-key")
+    failing = Mock(status_code=500, text='{"code":"57014","message":"statement timeout"}')
+    failing.raise_for_status.side_effect = requests.HTTPError("500 Server Error")
+    succeeding = Mock(status_code=204, text="")
+    succeeding.raise_for_status.return_value = None
+
+    with (
+        patch("market_infra.supabase_writer.requests.post", side_effect=[failing, succeeding]) as post,
+        patch("market_infra.supabase_writer.time.sleep") as sleep,
+    ):
+        result = writer.upsert_rows(
+            "published_pipeline_artifacts",
+            [{"artifact_key": "today"}],
+            on_conflict="artifact_key",
+            return_representation=False,
+            attempts=2,
+            retry_database_codes={"57014"},
+        )
+
+    assert result == []
+    assert post.call_count == 2
+    sleep.assert_called_once_with(0.5)
+
+
+def test_upsert_rows_does_not_retry_an_unselected_database_error():
+    writer = SupabaseMarketWriter("https://example.supabase.co", "secret-key")
+    failing = Mock(status_code=500, text='{"code":"23505","message":"duplicate key"}')
+    failing.raise_for_status.side_effect = requests.HTTPError("500 Server Error")
+
+    with (
+        patch("market_infra.supabase_writer.requests.post", return_value=failing) as post,
+        patch("market_infra.supabase_writer.time.sleep") as sleep,
+    ):
+        try:
+            writer.upsert_rows(
+                "published_pipeline_artifacts",
+                [{"artifact_key": "today"}],
+                on_conflict="artifact_key",
+                return_representation=False,
+                attempts=2,
+                retry_database_codes={"57014"},
+            )
+        except requests.HTTPError as error:
+            assert "23505" in str(error)
+        else:
+            raise AssertionError("an unselected database error must fail without retrying")
+
+    assert post.call_count == 1
+    sleep.assert_not_called()
+
+
 def test_upsert_rows_error_includes_supabase_body_without_secret():
     writer = SupabaseMarketWriter("https://example.supabase.co", "secret-key")
     response = Mock()

@@ -351,6 +351,21 @@ each lane.
 
 | Tracking / data collection / history | `docs/research/market-tracker-map.md`, `docs/research/pitcher-k-outcome-dataset.md`, `2026-06-07-market-agreement-tracker.md`, compact outcome outputs, live-market audits | Canonical research row plus existing market/live/provider trackers. The market agreement tracker now derives LEAN/FIRE/referee-cap buckets for live movement with or against the model without adding a table; the 2026-06-09 backfill used compact Supabase exports plus Gate C metadata/result overlay and produced `2,482` evidence rows, `2,171` graded rows, and `56` graded confidence-referee cap rows. The 2026-07-09 refreshed export produced `1,935` tracker rows with `432` covered graded tracked picks for synthesis review, enough to make agreement-with-model versus agreement-against-model useful directional evidence while still too sparse for standalone promotion. Actual opportunity is now reconstructed from MLB boxscores into the compact row for postgame workload/leash explanation only. Daily brief keeps a compact Gate C bucket scoreboard and pre/post 2026-04-28 context. | Prefer derived labels on existing live-market and compact outcome rows before adding tables. Use market-agreement, edge-synthesis, CLV, and actual-opportunity buckets to decide what to keep studying, not to auto-promote LEANs, override the referee, or change model/staking/provider/notification behavior. Promote compact storage or retention only after row-volume/cost proof and Tyler approval. |
 
+### July 29 publisher implementation and model-evidence overlay
+
+Tyler approved the narrow artifact-publisher resilience implementation. It is
+prepared on `codex/artifact-publisher-timeout-resilience`; production
+activation remains separate because the Render pipeline cron group has
+autoDeploy off. No model, provider, lock, notification, source-of-truth, or
+retention behavior changed.
+
+| Lane | Current stage | Next decision / blocker |
+| --- | --- | --- |
+| Pipeline / infrastructure | A fifth `published_pipeline_artifacts` `57014` timeout occurred on the July 28 `14:07` Phoenix refresh and recovered on the next scheduled refresh without stale artifacts, missed locks, grading divergence, or betting impact. The approved branch changes only this publisher to `return=minimal` plus one retry requiring a transient HTTP status and exact database code `57014`; other writer defaults and all artifact/lock contracts remain unchanged. | Finish branch verification and review. Merge/deploy the Render pipeline cron group only after separate activation approval, then verify served hashes and the next natural lock publication. |
+| Model | No-drag is `77/75` and `ready_for_review`; prospective July 21-28 is `25`, `16-9`, `+2.297u/+9.2%`. Strict runtime core is `96`, `64-32`, `+17.72u`; current provider `20`, `15-5`, `+5.86u`; recent `17`, `14-3`, `+7.11u`. The raw count gate is complete for no-drag, but no-drag still lacks plus-price/FIRE 2u diversity and has negative middle-price/K=4.5 slices. Strict current-provider evidence remains concentrated in OVER/minus rows. | Keep the August 10 canonical review. Treat missing UNDER/plus-price/provider-agreement/CLV/rolling-window evidence as the blocker; do not mistake more same-profile picks for gate progress. No live promotion plan yet. |
+| UI | No dashboard behavior changed. | Continue Alt V2/default-on live-market UI soak. |
+| Tracking / data collection / history | July 29 storage is `3,390 MB` (`41.38%` of 8 GB); exact compact coverage remains false and retention execution remains ineligible. | Keep the August 3 `fix_compaction_first` confirmation and make no deletion. |
+
 ### July 28 four-action operations follow-through overlay
 
 Tyler approved four read-only follow-ups from the July 28 morning brief. The

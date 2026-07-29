@@ -2,18 +2,46 @@
 
 Date: 2026-07-28
 
-Status: **Watch; recurring resilience gap confirmed, no emergency repair required.**
+Status: **Implementation approved 2026-07-29; tested branch pending separate production activation.**
 
 This is a read-only diagnosis. It does not authorize a pipeline deploy,
 Supabase setting change, manual repair, provider change, lock change, artifact
 contract change, or GitHub rollback run.
 
+## July 29 implementation update
+
+Tyler approved the publisher-only resilience implementation after a fifth
+matching timeout occurred on the July 28 `14:07` Phoenix refresh. That refresh
+finished its pipeline work, failed on the `published_pipeline_artifacts`
+`57014` upsert, and recovered on the next scheduled refresh without stale
+served artifacts, missed locks, grading divergence, or betting impact.
+
+Branch `codex/artifact-publisher-timeout-resilience` now implements the narrow
+reviewed contract:
+
+- `published_pipeline_artifacts` requests `return=minimal`; other Supabase
+  upserts retain `return=representation` by default;
+- only that publisher supplies a two-attempt budget;
+- retry eligibility requires both a transient HTTP status and exact database
+  code `57014`;
+- the second failure and every non-selected database error fail normally;
+- the artifact set, conflict key, timeout, cadence, source-of-truth behavior,
+  lock behavior, and publication-run ledger contract are unchanged.
+
+Focused TDD verification is `28 passed`; full branch verification is `1,909
+passed`, and the lock-scope publisher dry run collected the expected two
+artifacts. Production activation remains a separate gate because Render
+pipeline crons keep autoDeploy off. After merge approval, redeploy the
+validated pipeline cron group together and verify hashes plus the next natural
+lock publication.
+
 ## Executive decision
 
-Four `bbe-pipeline-lock` runs have now failed on the same Supabase PostgREST
-statement timeout: July 23 at `02:32` Phoenix, July 25 at `11:42`, and July 27
-at `00:32` and `05:32`. Every failure was the three-row lock-scope artifact
-upsert and every next 10-minute cycle recovered.
+Five Render pipeline runs have now failed on the same Supabase PostgREST
+statement timeout: four `bbe-pipeline-lock` runs on July 23 at `02:32`
+Phoenix, July 25 at `11:42`, and July 27 at `00:32` and `05:32`, plus the July
+28 `14:07` refresh. Every failure was the artifact upsert and every next
+scheduled cycle recovered.
 
 No stale served artifact, missed due lock, duplicate lock, wrong-date lock, or
 grading impact was found. Do not run a repair today. The evidence is strong

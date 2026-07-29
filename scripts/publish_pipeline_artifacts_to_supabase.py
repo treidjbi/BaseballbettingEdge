@@ -129,7 +129,14 @@ def run(
             raise EnvironmentError("Supabase writer is required when --execute is set")
         published_at = datetime.now(timezone.utc).isoformat()
         rows_to_publish = [{**row, "published_at": published_at} for row in rows]
-        writer.upsert_rows("published_pipeline_artifacts", rows_to_publish, on_conflict="artifact_key")
+        writer.upsert_rows(
+            "published_pipeline_artifacts",
+            rows_to_publish,
+            on_conflict="artifact_key",
+            return_representation=False,
+            attempts=2,
+            retry_database_codes={"57014"},
+        )
         completed_at = datetime.now(timezone.utc).isoformat()
         run_row = {
             "run_id": source_run_id or f"{source}:{slate_date}:{completed_at}",
