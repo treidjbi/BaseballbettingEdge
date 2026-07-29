@@ -32,6 +32,7 @@ from analytics.diagnostics import shadow_notification_candidate_audit  # noqa: E
 from analytics.diagnostics import strong_base_decision_lab  # noqa: E402
 from analytics.diagnostics import strong_base_fire_policy_matrix  # noqa: E402
 from analytics.diagnostics import strong_base_portfolio_simulator  # noqa: E402
+from analytics.diagnostics import strict_runtime_core_canary_audit  # noqa: E402
 
 
 def _parse_args(argv: list[str] | None = None) -> argparse.Namespace:
@@ -128,6 +129,21 @@ def _parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         "--no-drag-canary-output-json",
         type=Path,
         default=no_drag_composite_canary_audit.DEFAULT_OUTPUT_JSON,
+    )
+    parser.add_argument(
+        "--strict-runtime-core-output-md",
+        type=Path,
+        default=strict_runtime_core_canary_audit.DEFAULT_OUTPUT_MD,
+    )
+    parser.add_argument(
+        "--strict-runtime-core-output-json",
+        type=Path,
+        default=strict_runtime_core_canary_audit.DEFAULT_OUTPUT_JSON,
+    )
+    parser.add_argument(
+        "--skip-strict-runtime-core-audit",
+        action="store_true",
+        help="Skip the frozen research-only strict-runtime-core audit.",
     )
     parser.add_argument("--market-pick-evidence", type=Path)
     parser.add_argument("--live-market-display", type=Path)
@@ -412,6 +428,15 @@ def main(argv: list[str] | None = None) -> int:
         "--output-json",
         str(args.no_drag_canary_output_json),
     ])
+    if not args.skip_strict_runtime_core_audit:
+        strict_runtime_core_canary_audit.main([
+            "--input",
+            str(dataset_path),
+            "--output-md",
+            str(args.strict_runtime_core_output_md),
+            "--output-json",
+            str(args.strict_runtime_core_output_json),
+        ])
     _write_gate_f_projection_report(
         dataset_path=dataset_path,
         output_path=args.gate_f_projection_output,
@@ -480,6 +505,12 @@ def main(argv: list[str] | None = None) -> int:
         label="No-drag prospective canary",
         section_titles={"Executive Read", "Counter", "Baseline Reconciliation"},
     )
+    if not args.skip_strict_runtime_core_audit:
+        _print_review_excerpt(
+            args.strict_runtime_core_output_md,
+            label="Strict runtime core prospective audit",
+            section_titles={"Executive Read", "Diversity Gates"},
+        )
     return 0
 
 

@@ -22,6 +22,8 @@ def test_runner_rebuilds_shadow_reports_and_prints_review_excerpt(tmp_path, monk
     fire_policy_matrix_output_json = tmp_path / "strong_base_fire_policy_matrix.json"
     no_drag_output_md = tmp_path / "no_drag_composite_canary_audit.md"
     no_drag_output_json = tmp_path / "no_drag_composite_canary_audit.json"
+    strict_output_md = tmp_path / "strict_runtime_core_canary_audit.md"
+    strict_output_json = tmp_path / "strict_runtime_core_canary_audit.json"
     gate_f_output = tmp_path / "gate_f_projection_challenger_shadow_report.md"
     market_shrink_output = tmp_path / "market_shrink_projection_canary_audit.md"
     shadow_candidates = tmp_path / "shadow_notification_candidates.json"
@@ -196,6 +198,31 @@ def test_runner_rebuilds_shadow_reports_and_prints_review_excerpt(tmp_path, monk
 
     monkeypatch.setattr(runner.no_drag_composite_canary_audit, "main", fake_no_drag_main)
 
+    def fake_strict_runtime_main(argv):
+        calls.append(("strict_runtime_core", argv))
+        strict_output_md.write_text(
+            "# Strict Runtime Core Prospective Canary Audit\n\n"
+            "## Executive Read\n\n"
+            "- Status: `collecting`\n"
+            "- Fingerprint: `frozen-strict-core`.\n"
+            "- Current-provider counter: `20/50`.\n"
+            "- Latest 14 selected slates: `17` rows, `14-3`, `+7.106u`.\n\n"
+            "## Diversity Gates\n\n"
+            "- UNDER rows: `0/10`.\n"
+            "- Plus-price rows: `0/10`.\n"
+            "- Remaining diversity blockers: `[under_rows<10, plus_price_rows<10]`.\n\n"
+            "## Debug Detail\n\n"
+            "- Not needed in the scheduler excerpt.\n",
+            encoding="utf-8",
+        )
+        strict_output_json.write_text("{}\n", encoding="utf-8")
+
+    monkeypatch.setattr(
+        runner.strict_runtime_core_canary_audit,
+        "main",
+        fake_strict_runtime_main,
+    )
+
     def fake_market_shrink_audit_main(argv):
         calls.append(("market_shrink_projection", argv))
         market_shrink_output.write_text(
@@ -271,6 +298,10 @@ def test_runner_rebuilds_shadow_reports_and_prints_review_excerpt(tmp_path, monk
         str(no_drag_output_md),
         "--no-drag-canary-output-json",
         str(no_drag_output_json),
+        "--strict-runtime-core-output-md",
+        str(strict_output_md),
+        "--strict-runtime-core-output-json",
+        str(strict_output_json),
         "--gate-f-projection-output",
         str(gate_f_output),
         "--market-shrink-projection-output",
@@ -402,6 +433,17 @@ def test_runner_rebuilds_shadow_reports_and_prints_review_excerpt(tmp_path, monk
                 str(no_drag_output_json),
             ],
         ),
+        (
+            "strict_runtime_core",
+            [
+                "--input",
+                str(output_dir / "pitcher_k_outcome_dataset.jsonl"),
+                "--output-md",
+                str(strict_output_md),
+                "--output-json",
+                str(strict_output_json),
+            ],
+        ),
         ("gate_f_load", output_dir / "pitcher_k_outcome_dataset.jsonl"),
         ("gate_f_report", [{"dataset_key": "row-1"}]),
         (
@@ -451,6 +493,11 @@ def test_runner_rebuilds_shadow_reports_and_prints_review_excerpt(tmp_path, monk
     assert "Status: `collecting`" in output
     assert "52/75" in output
     assert "Rebuilt history matches" in output
+    assert "Strict runtime core prospective audit excerpt:" in output
+    assert "Fingerprint: `frozen-strict-core`" in output
+    assert "Current-provider counter: `20/50`" in output
+    assert "UNDER rows: `0/10`" in output
+    assert "Plus-price rows: `0/10`" in output
     assert "Slice Audit" not in output
     assert "Not needed in the scheduler excerpt" not in output
     assert "Implementation Notes" not in output
@@ -507,6 +554,7 @@ def test_runner_refreshes_compact_inputs_before_one_gate_c_build(tmp_path, monke
         ("shadow_signal", runner.shadow_signal_synthesis_lab),
         ("fire_policy_matrix", runner.strong_base_fire_policy_matrix),
         ("no_drag", runner.no_drag_composite_canary_audit),
+        ("strict_runtime", runner.strict_runtime_core_canary_audit),
         ("market_shrink", runner.market_shrink_projection_canary_audit),
     ):
         monkeypatch.setattr(
@@ -534,6 +582,7 @@ def test_runner_refreshes_compact_inputs_before_one_gate_c_build(tmp_path, monke
             str(agreement_md),
             "--market-agreement-output-jsonl",
             str(agreement_jsonl),
+            "--skip-strict-runtime-core-audit",
         ]
     )
 
@@ -581,3 +630,4 @@ def test_runner_refreshes_compact_inputs_before_one_gate_c_build(tmp_path, monke
     )
     no_drag_args = next(args for label, args in calls if label == "no_drag")
     assert no_drag_args[no_drag_args.index("--input") + 1] == str(dataset_path)
+    assert not any(label == "strict_runtime" for label, _ in calls)
