@@ -1228,3 +1228,33 @@ The first deployed bounded research run completed successfully at
 with zero duplicate keys and the accepted `1,647/1,648` reconciliation result.
 Robert Gasser remains unrecovered and visible; the cron did not mutate the
 dated archive or create a cross-line rule.
+
+## 2026-07-29 Pitcher-Game Outcome Reconciliation
+
+Tyler separately approved resolving the named Robert Gasser exception. The
+repair preserves the exact-line rule as the first choice and adds a narrower
+pitcher-game fallback because actual strikeouts are a pitcher-game fact, not a
+bet-line fact:
+
+- load graded history by `(slate date, normalized pitcher)` only after exact
+  `(date, pitcher, K-line)` recovery finds no candidate;
+- recover only when every graded history row for that pitcher-game agrees on
+  one non-null `actual_ks` value;
+- fail closed and increment `ambiguous_markets` when conflicting actual values
+  exist;
+- retain the archived `4.5` market and odds, then let the existing unique
+  pitcher-side reconciliation attach Gasser's official `UNDER 3.5` bet; and
+- label the recovery `picks_history_pitcher_game` and exclude it from frozen
+  no-drag historical/prospective credit exactly like `picks_history_exact`.
+
+No dated archive, official history row, model field, odds field, provider
+field, or live artifact is mutated. The production-shaped hybrid verification
+through `2026-07-28` produced `3,434` side rows, `1,793` tracked rows, zero
+duplicate keys, `25` recovered markets, zero ambiguous recoveries, and
+`1,750/1,750` graded-pick reconciliation. Gasser retained the archived `4.5`
+market, the official `UNDER 3.5` tracked bet, and 5 actual Ks. The no-drag
+counter stayed `77/75`; all `25` history-recovered rows were excluded.
+
+This resolves the named data-integrity exception. It does not by itself open
+Gate D or any model gate: Gate D still requires boring scheduled daily
+collection proof with zero duplicate or reconciliation failures.

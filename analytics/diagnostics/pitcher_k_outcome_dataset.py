@@ -918,6 +918,28 @@ def build_archive_outcome_index(
     return index
 
 
+def build_pitcher_game_outcome_index(
+    history_rows: list[dict[str, Any]],
+    *,
+    start_date: str = CLEAN_WINDOW_START,
+) -> dict[tuple[str, str], list[dict[str, Any]]]:
+    index: dict[tuple[str, str], list[dict[str, Any]]] = {}
+    for pick in history_rows:
+        slate_date = str(pick.get("date") or pick.get("slate_date") or "").strip()
+        result = str(pick.get("result") or "").strip().lower()
+        actual = _to_float(pick.get("actual_ks"))
+        normalized_pitcher = _normalized(pick.get("pitcher"))
+        if (
+            slate_date < start_date
+            or not normalized_pitcher
+            or result not in {"win", "loss"}
+            or actual is None
+        ):
+            continue
+        index.setdefault((slate_date, normalized_pitcher), []).append(pick)
+    return index
+
+
 def _initialize_archive_outcome_stats(stats: dict[str, int]) -> None:
     stats.setdefault("recovered_markets", 0)
     stats.setdefault("ambiguous_markets", 0)
@@ -929,6 +951,8 @@ def _markets_from_archive_payload(
     date: str,
     source_artifact_path: str,
     outcome_index: dict[tuple[str, str, float], list[dict[str, Any]]] | None = None,
+    pitcher_game_outcome_index: dict[tuple[str, str], list[dict[str, Any]]]
+    | None = None,
     outcome_reconciliation_stats: dict[str, int] | None = None,
 ) -> list[dict[str, Any]]:
     stats = outcome_reconciliation_stats
@@ -952,8 +976,26 @@ def _markets_from_archive_payload(
                 outcome_source = "picks_history_exact"
                 if stats is not None:
                     stats["recovered_markets"] += 1
-            elif len(candidates) > 1 and stats is not None:
-                stats["ambiguous_markets"] += 1
+            elif len(candidates) > 1:
+                if stats is not None:
+                    stats["ambiguous_markets"] += 1
+            elif pitcher_game_outcome_index is not None:
+                pitcher_game_candidates = pitcher_game_outcome_index.get(
+                    (date, _normalized(record.get("pitcher"))),
+                    [],
+                )
+                actual_values = {
+                    value
+                    for candidate in pitcher_game_candidates
+                    if (value := _to_float(candidate.get("actual_ks"))) is not None
+                }
+                if len(actual_values) == 1:
+                    actual = next(iter(actual_values))
+                    outcome_source = "picks_history_pitcher_game"
+                    if stats is not None:
+                        stats["recovered_markets"] += 1
+                elif len(actual_values) > 1 and stats is not None:
+                    stats["ambiguous_markets"] += 1
         over_odds = _to_int(record.get("best_over_odds") or record.get("over_odds"))
         under_odds = _to_int(record.get("best_under_odds") or record.get("under_odds"))
         winner = winning_side(actual, k_line)
@@ -989,6 +1031,8 @@ def _load_remote_archived_markets_for_dataset(
     start_date: str,
     end_date: str | None,
     outcome_index: dict[tuple[str, str, float], list[dict[str, Any]]] | None = None,
+    pitcher_game_outcome_index: dict[tuple[str, str], list[dict[str, Any]]]
+    | None = None,
     outcome_reconciliation_stats: dict[str, int] | None = None,
 ) -> list[dict[str, Any]]:
     index_payload = _load_remote_json(artifact_api_url(artifact_api_url_base, "index"))
@@ -1017,6 +1061,7 @@ def _load_remote_archived_markets_for_dataset(
                 date=date,
                 source_artifact_path=url,
                 outcome_index=outcome_index,
+                pitcher_game_outcome_index=pitcher_game_outcome_index,
                 outcome_reconciliation_stats=outcome_reconciliation_stats,
             )
         )
@@ -1046,12 +1091,21 @@ def load_archived_markets_for_dataset(
         if outcome_history_rows is not None
         else None
     )
+    pitcher_game_outcome_index = (
+        build_pitcher_game_outcome_index(
+            outcome_history_rows,
+            start_date=start_date,
+        )
+        if outcome_history_rows is not None
+        else None
+    )
     if artifact_api_url:
         return _load_remote_archived_markets_for_dataset(
             artifact_api_url_base=artifact_api_url,
             start_date=start_date,
             end_date=end_date,
             outcome_index=outcome_index,
+            pitcher_game_outcome_index=pitcher_game_outcome_index,
             outcome_reconciliation_stats=outcome_reconciliation_stats,
         )
 
@@ -1073,6 +1127,7 @@ def load_archived_markets_for_dataset(
                 date=date,
                 source_artifact_path=f"dashboard/data/processed/{date}.json",
                 outcome_index=outcome_index,
+                pitcher_game_outcome_index=pitcher_game_outcome_index,
                 outcome_reconciliation_stats=outcome_reconciliation_stats,
             )
         )

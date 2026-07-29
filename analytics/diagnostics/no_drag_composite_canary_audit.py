@@ -44,7 +44,10 @@ LOCKED_HISTORICAL = {"rows": 186, "wins": 124, "losses": 62, "pnl": 29.20, "roi"
 LOCKED_CURRENT_PROVIDER = {"rows": 52, "wins": 36, "losses": 16, "pnl": 9.17, "roi": 0.176}
 LOCKED_RECENT_REFERENCE = {"rows": 35, "wins": 24, "losses": 11, "pnl": 5.68, "roi": 0.162}
 BASELINE_PNL_TOLERANCE = 0.005
-HISTORY_RECOVERED_ARCHIVE_SOURCE = "picks_history_exact"
+HISTORY_RECOVERED_ARCHIVE_SOURCES = {
+    "picks_history_exact",
+    "picks_history_pitcher_game",
+}
 WIN_LOSS_RESULTS = {"win", "loss"}
 VERDICT_FIELDS = (
     "display_verdict",
@@ -550,13 +553,13 @@ def build_audit(
         row
         for row in all_tracked_rows
         if str(row.get("archive_outcome_reconciliation_source") or "").strip()
-        == HISTORY_RECOVERED_ARCHIVE_SOURCE
+        in HISTORY_RECOVERED_ARCHIVE_SOURCES
     ]
     tracked_rows = [
         row
         for row in all_tracked_rows
         if str(row.get("archive_outcome_reconciliation_source") or "").strip()
-        != HISTORY_RECOVERED_ARCHIVE_SOURCE
+        not in HISTORY_RECOVERED_ARCHIVE_SOURCES
     ]
     evaluated = [
         (row, evaluate_row(row), parse_slate_date(row))

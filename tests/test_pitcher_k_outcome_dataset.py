@@ -512,6 +512,151 @@ def test_load_archived_markets_recovers_missing_actual_from_one_exact_graded_his
     assert stats == {"recovered_markets": 1, "ambiguous_markets": 0}
 
 
+def test_load_archived_markets_recovers_pitcher_game_actual_when_market_line_moved(
+    tmp_path,
+):
+    archive = tmp_path / "2026-06-03.json"
+    archive.write_text(
+        json.dumps(
+            {
+                "pitchers": [
+                    {
+                        "pitcher": "Robert Gasser",
+                        "k_line": 4.5,
+                        "actual_ks": None,
+                        "best_over_odds": 118,
+                        "best_under_odds": -144,
+                    }
+                ]
+            }
+        ),
+        encoding="utf-8",
+    )
+    stats = {}
+
+    markets = load_archived_markets_for_dataset(
+        tmp_path,
+        start_date="2026-06-03",
+        end_date="2026-06-03",
+        outcome_history_rows=[
+            {
+                "date": "2026-06-03",
+                "pitcher": "Robert Gasser",
+                "side": "under",
+                "locked_k_line": 3.5,
+                "result": "loss",
+                "actual_ks": 5,
+            }
+        ],
+        outcome_reconciliation_stats=stats,
+    )
+
+    assert len(markets) == 1
+    assert markets[0]["actual_ks"] == 5
+    assert markets[0]["k_line"] == 4.5
+    assert markets[0]["winning_side"] == "over"
+    assert (
+        markets[0]["archive_outcome_reconciliation_source"]
+        == "picks_history_pitcher_game"
+    )
+    assert stats == {"recovered_markets": 1, "ambiguous_markets": 0}
+
+
+def test_load_archived_markets_conflicting_pitcher_game_actuals_fail_closed(tmp_path):
+    archive = tmp_path / "2026-06-03.json"
+    archive.write_text(
+        json.dumps(
+            {
+                "pitchers": [
+                    {
+                        "pitcher": "Robert Gasser",
+                        "k_line": 4.5,
+                        "actual_ks": None,
+                        "best_over_odds": 118,
+                        "best_under_odds": -144,
+                    }
+                ]
+            }
+        ),
+        encoding="utf-8",
+    )
+    stats = {}
+
+    markets = load_archived_markets_for_dataset(
+        tmp_path,
+        start_date="2026-06-03",
+        end_date="2026-06-03",
+        outcome_history_rows=[
+            {
+                "date": "2026-06-03",
+                "pitcher": "Robert Gasser",
+                "locked_k_line": 3.5,
+                "result": "loss",
+                "actual_ks": 5,
+            },
+            {
+                "date": "2026-06-03",
+                "pitcher": "Robert Gasser",
+                "locked_k_line": 5.5,
+                "result": "win",
+                "actual_ks": 6,
+            },
+        ],
+        outcome_reconciliation_stats=stats,
+    )
+
+    assert markets == []
+    assert stats == {"recovered_markets": 0, "ambiguous_markets": 1}
+
+
+def test_load_archived_markets_exact_line_ambiguity_never_uses_pitcher_game_fallback(
+    tmp_path,
+):
+    archive = tmp_path / "2026-06-03.json"
+    archive.write_text(
+        json.dumps(
+            {
+                "pitchers": [
+                    {
+                        "pitcher": "Robert Gasser",
+                        "k_line": 4.5,
+                        "actual_ks": None,
+                        "best_over_odds": 118,
+                        "best_under_odds": -144,
+                    }
+                ]
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    markets = load_archived_markets_for_dataset(
+        tmp_path,
+        start_date="2026-06-03",
+        end_date="2026-06-03",
+        outcome_history_rows=[
+            {
+                "date": "2026-06-03",
+                "pitcher": "Robert Gasser",
+                "locked_k_line": 4.5,
+                "side": "over",
+                "result": "win",
+                "actual_ks": 5,
+            },
+            {
+                "date": "2026-06-03",
+                "pitcher": "Robert Gasser",
+                "locked_k_line": 4.5,
+                "side": "under",
+                "result": "loss",
+                "actual_ks": 5,
+            },
+        ],
+    )
+
+    assert markets == []
+
+
 def test_load_archived_markets_never_overwrites_archive_actual(tmp_path):
     archive = tmp_path / "2026-06-16.json"
     archive.write_text(
@@ -555,7 +700,7 @@ def test_load_archived_markets_never_overwrites_archive_actual(tmp_path):
     assert stats == {"recovered_markets": 0, "ambiguous_markets": 0}
 
 
-def test_load_archived_markets_missing_actual_fails_closed_without_exact_graded_history(
+def test_load_archived_markets_missing_actual_fails_closed_without_graded_history_actual(
     tmp_path,
 ):
     archive = tmp_path / "2026-06-16.json"
@@ -577,15 +722,6 @@ def test_load_archived_markets_missing_actual_fails_closed_without_exact_graded_
     )
 
     invalid_history_cases = [
-        [
-            {
-                "date": "2026-06-16",
-                "pitcher": "Adrian Houser",
-                "locked_k_line": 4.5,
-                "result": "win",
-                "actual_ks": 2,
-            }
-        ],
         [
             {
                 "date": "2026-06-16",

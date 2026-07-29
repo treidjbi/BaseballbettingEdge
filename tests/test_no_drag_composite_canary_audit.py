@@ -312,6 +312,25 @@ def test_history_recovered_archive_outcomes_do_not_backfill_frozen_counter():
     ]
 
 
+def test_pitcher_game_recovered_outcomes_do_not_backfill_frozen_counter():
+    recovered = graded_row(
+        "2026-07-21",
+        "pitcher game recovered",
+        archive_outcome_reconciliation_source="picks_history_pitcher_game",
+    )
+
+    summary = audit.build_audit(locked_historical_rows() + [recovered])
+
+    assert summary["status"] == "collecting"
+    assert summary["reconciliation"]["matches"] is True
+    assert summary["windows"]["prospective"]["rows"] == 0
+    assert summary["counter"]["rows"] == 52
+    assert summary["integrity"]["history_recovered_rows_excluded"] == 1
+    assert summary["integrity"]["history_recovered_keys_excluded"] == [
+        "2026-07-21|pitcher game recovered|over"
+    ]
+
+
 def test_current_provider_historical_slice_reconciles_before_collecting():
     summary = audit.build_audit(locked_historical_rows())
 

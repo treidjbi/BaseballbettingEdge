@@ -26,6 +26,16 @@ and CLV-resolved rows across additional rolling windows.
 Keep the August 10 canonical packet. This update changes neither selector nor
 live behavior.
 
+## July 29 Gate D integrity update
+
+The previously named Gasser exception now has a separately approved,
+consensus-only pitcher-game outcome repair after exact-line recovery. The
+production-shaped hybrid rebuild reconciled `1,750/1,750` graded picks with
+zero duplicate keys and zero ambiguous recoveries. All `25` history-recovered
+rows, including Gasser, remain excluded from the frozen and prospective
+no-drag counter, which stays `77/75`. This improves dataset integrity without
+adding candidate evidence or opening a model gate.
+
 ## Executive decision
 
 The frozen no-drag canary reached its controlling `75/75` review floor with
