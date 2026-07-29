@@ -10,7 +10,7 @@
 
 ## Global Constraints
 
-- Treat `evidence_clv_supported` (`276`, `155-121`, `+20.01u`, `+7.2%`) as a process benchmark, not a live candidate.
+- Treat `evidence_clv_supported` (`277`, `155-122`, `+19.01u`, `+6.9%`) as a process benchmark, not a live candidate.
 - The recent `30`-row result of `-4.64u` prevents a performance claim based on CLV support alone.
 - Final CLV, closing line, final price, graded result, actual Ks, and actual workload are prohibited selector inputs.
 - Provider/book, same-line versus alternate-line, timestamp, and freshness provenance must be explicit.

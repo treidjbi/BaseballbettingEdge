@@ -11,7 +11,7 @@
 ## Global Constraints
 
 - Freeze these candidates before prospective collection:
-  - `cap_high_raw_edge` (`925`, `-121.20u` historical);
+  - `cap_high_raw_edge` (`926`, `-122.20u` historical);
   - `cap_market_fade` (`872`, `-94.37u` historical);
   - `keep_fire_over_moderate_ev_normal_leash` (`198`, `+21.25u`);
   - `keep_fire_market_agreed_moderate_ev` (`170`, `+20.05u`);

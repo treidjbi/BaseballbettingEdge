@@ -22,7 +22,7 @@ artifacts, dashboard behavior, retention, or `formula_change_date`.
 | Strong Base downside caps | Partly | `cap_high_raw_edge` and `cap_market_fade` have large samples and materially negative results | Prove incremental value after overlap with the live cap stack |
 | Retained FIRE specialists | Partly | Moderate-EV/normal-leash FIRE `198`, `+21.25u`; market-agreed moderate-EV FIRE `170`, `+20.05u` | Freeze non-overlapping runtime-safe definitions and collect prospective evidence |
 | Selective LEAN | Yes | Historical candidates are positive, but current/recent windows are weak or negative | Keep as research funnel until one fixed candidate survives a prospective holdout |
-| CLV-supported rows | No for process use; yes for proxy validation | `276`, `+20.01u`, but recent `-4.64u` and final CLV is hindsight-only | Use as an offline target to validate live-safe pre-close proxies |
+| CLV-supported rows | No for process use; yes for proxy validation | `277`, `+19.01u`, but recent `-4.64u` and final CLV is hindsight-only | Use as an offline target to validate live-safe pre-close proxies |
 
 ## New controlling plans
 

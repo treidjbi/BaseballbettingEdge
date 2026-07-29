@@ -385,6 +385,15 @@ source-of-truth behavior.
 | UI | No dashboard behavior changed. | Continue Alt V2/default-on live-market UI soak. |
 | Tracking / data collection / history | The Gasser exception is repaired with a consensus-only pitcher-game actual-K fallback after exact-line recovery. Production-shaped hybrid verification through July 28 produced `3,434` side rows, `1,793` tracked rows, zero duplicates, `25` recoveries, zero ambiguities, and `1,750/1,750` reconciliation. The archived `4.5` market and official `UNDER 3.5` bet remain distinct; all recovered rows remain excluded from no-drag credit. | Let the next ten scheduled graded slates prove the new path remains boring. Gate D and all model-promotion gates stay closed until that operational proof and candidate-specific slice gates pass. |
 
+The research-only service is also deployed on the repaired code: Render deploy
+`dep-d9l3a79t0dsc73fng6t0` is live on `519f099d`, and verification job
+`job-d9l3avtf1gfc73dfmmag` succeeded at `2026-07-29T17:20:02Z`. Its canonical
+run produced `3,434` Gate C rows, `1,793` tracked rows, zero duplicates,
+`1,750/1,750` reconciliation, and no-drag `77/75` with all `25`
+history-recovered rows excluded. The service remained branch `main`,
+autoDeploy off, schedule `7 11 * * *`, and start command
+`python scripts/run_post_grading_shadow_reports.py --refresh-market-agreement-inputs`.
+
 ### July 28 four-action operations follow-through overlay
 
 Tyler approved four read-only follow-ups from the July 28 morning brief. The
