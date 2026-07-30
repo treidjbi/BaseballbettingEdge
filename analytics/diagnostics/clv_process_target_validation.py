@@ -32,6 +32,42 @@ def _fresh(row: dict[str, Any]) -> bool:
     return str(row.get("freshness") or "").strip().lower() == "fresh"
 
 
+def _slate_date(row: dict[str, Any]) -> str:
+    return str(row.get("slate_date") or row.get("date") or "").strip()
+
+
+def _normalized_pitcher(row: dict[str, Any]) -> str:
+    return normalize(str(row.get("normalized_pitcher") or row.get("pitcher") or row.get("player_name") or ""))
+
+
+def _event_identity(row: dict[str, Any]) -> str:
+    for key in ("provider_event_id", "event_id", "game_id", "game_pk"):
+        value = str(row.get(key) or "").strip()
+        if value:
+            return value
+    return ""
+
+
+def _same_identity(lock_row: dict[str, Any], close_row: dict[str, Any]) -> bool:
+    lock_date = _slate_date(lock_row)
+    close_date = _slate_date(close_row)
+    lock_pitcher = _normalized_pitcher(lock_row)
+    close_pitcher = _normalized_pitcher(close_row)
+    lock_side = str(lock_row.get("side") or "").strip().lower()
+    close_side = str(close_row.get("side") or "").strip().lower()
+    if not all((lock_date, close_date, lock_pitcher, close_pitcher, lock_side, close_side)):
+        return False
+    if (lock_date, lock_pitcher, lock_side) != (close_date, close_pitcher, close_side):
+        return False
+    lock_event = _event_identity(lock_row)
+    close_event = _event_identity(close_row)
+    return not (lock_event and close_event and lock_event != close_event)
+
+
+def _same_line(lock_line: float | None, close_line: float | None) -> bool:
+    return lock_line is not None and close_line is not None and lock_line == close_line
+
+
 def classify_final_clv(row: dict[str, Any]) -> str:
     if row.get("close_eligibility") != "eligible":
         return "unknown"
@@ -59,9 +95,11 @@ def classify_final_clv(row: dict[str, Any]) -> str:
 
 
 def build_target_row(gate_c_row: dict[str, Any], market_rows: list[dict[str, Any]]) -> dict[str, Any]:
-    slate_date = str(gate_c_row.get("slate_date") or gate_c_row.get("date") or "").strip()
-    display_pitcher = str(gate_c_row.get("pitcher") or gate_c_row.get("player_name") or "").strip()
-    normalized_pitcher = str(gate_c_row.get("normalized_pitcher") or normalize(display_pitcher)).strip()
+    slate_date = _slate_date(gate_c_row)
+    display_pitcher = str(
+        gate_c_row.get("pitcher") or gate_c_row.get("player_name") or gate_c_row.get("normalized_pitcher") or ""
+    ).strip()
+    normalized_pitcher = _normalized_pitcher(gate_c_row)
     side = str(gate_c_row.get("side") or "").strip().lower()
     lock_provider = str(gate_c_row.get("lock_provider") or gate_c_row.get("provider") or "").strip().lower()
     lock_book = str(
@@ -82,29 +120,53 @@ def build_target_row(gate_c_row: dict[str, Any], market_rows: list[dict[str, Any
     if lock_odds is None:
         lock_odds = _number(gate_c_row.get("american_odds"))
 
-    close_candidates = [
+    close_observations = [
         observation
         for observation in market_rows
         if str(observation.get("observation_type") or "").lower() == "official_close"
-        and str(observation.get("side") or "").strip().lower() == side
     ]
+    close_candidates = [observation for observation in close_observations if _same_identity(gate_c_row, observation)]
     matching_provider = [
         observation
         for observation in close_candidates
-        if str(observation.get("provider") or "").strip().lower() == lock_provider
+        if lock_provider
+        and _book(lock_book)
+        and str(observation.get("provider") or "").strip().lower() == lock_provider
         and _book(observation.get("bookmaker")) == _book(lock_book)
     ]
     close_candidates = matching_provider or close_candidates
-    close = next((observation for observation in close_candidates if _number(observation.get("line")) == lock_line), None)
+    close = next(
+        (observation for observation in close_candidates if _same_line(lock_line, _number(observation.get("line")))),
+        None,
+    )
     close = close or (close_candidates[0] if close_candidates else None)
     close_provider = str(close.get("provider") or "").strip().lower() if close else ""
     close_book = _book(close.get("bookmaker")) if close else ""
-    eligibility = "missing_close"
+    close_line = _number(close.get("line")) if close else None
+    eligibility = "identity_mismatch" if close_observations else "missing_close"
     if close:
-        if close_provider != lock_provider:
+        if not lock_provider:
+            eligibility = "missing_lock_provider"
+        elif not close_provider:
+            eligibility = "missing_close_provider"
+        elif close_provider != lock_provider:
             eligibility = "provider_mismatch"
+        elif not _book(lock_book):
+            eligibility = "missing_lock_book"
+        elif not close_book:
+            eligibility = "missing_close_book"
         elif close_book != _book(lock_book):
             eligibility = "book_mismatch"
+        elif not (gate_c_row.get("locked_at") or gate_c_row.get("bet_time_at")):
+            eligibility = "missing_lock_timestamp"
+        elif not close.get("observed_at"):
+            eligibility = "missing_close_timestamp"
+        elif lock_line is None:
+            eligibility = "missing_lock_line"
+        elif close_line is None:
+            eligibility = "missing_close_line"
+        elif close.get("freshness") is None or str(close.get("freshness")).strip() == "":
+            eligibility = "missing_close_freshness"
         elif not _fresh(close):
             eligibility = "stale_evidence"
         else:
@@ -126,12 +188,13 @@ def build_target_row(gate_c_row: dict[str, Any], market_rows: list[dict[str, Any
         "close_observed_at": close.get("observed_at") if close else None,
         "close_provider": close.get("provider") if close else None,
         "close_book": close.get("bookmaker") if close else None,
-        "close_line": _number(close.get("line")) if close else None,
+        "close_line": close_line,
         "close_odds": _number(close.get("american_odds")) if close else None,
+        "close_freshness": close.get("freshness") if close else None,
         "close_line_match": (
             "same_line"
-            if close and _number(close.get("line")) == lock_line
-            else ("alternate_line" if close else "unknown")
+            if close and _same_line(lock_line, close_line)
+            else ("alternate_line" if close and lock_line is not None and close_line is not None else "unknown")
         ),
     }
     row["final_clv"] = classify_final_clv(row)
@@ -146,9 +209,9 @@ def classify_proxy(row: dict[str, Any]) -> str:
 def build_summary(rows: list[dict[str, Any]]) -> dict[str, Any]:
     deduplicated: dict[tuple[str, str, str], dict[str, Any]] = {}
     for row in rows:
-        slate_date = str(row.get("slate_date") or row.get("date") or "").strip()
-        display_pitcher = str(row.get("display_pitcher") or row.get("pitcher") or "").strip()
-        normalized_pitcher = str(row.get("normalized_pitcher") or normalize(display_pitcher)).strip()
+        slate_date = _slate_date(row)
+        display_pitcher = str(row.get("display_pitcher") or row.get("pitcher") or row.get("normalized_pitcher") or "").strip()
+        normalized_pitcher = _normalized_pitcher(row)
         side = str(row.get("side") or "").strip().lower()
         key = (slate_date, normalized_pitcher, side)
         if key in deduplicated:
