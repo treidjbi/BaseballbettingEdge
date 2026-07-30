@@ -45,6 +45,46 @@ def test_build_target_row_marks_same_line_better_price_as_price_clv():
     assert row["final_clv"] == "beat_close_price"
 
 
+def test_build_target_row_preserves_gate_c_pnl_outside_preclose_proxy_inputs():
+    row = build_target_row(
+        {
+            "slate_date": "2026-07-29",
+            "pitcher": "Chris Sale",
+            "side": "over",
+            "locked_at": "2026-07-29T18:00:00+00:00",
+            "lock_provider": "therundown",
+            "lock_book": "FanDuel",
+            "lock_line": 5.5,
+            "lock_odds": -110,
+            "pick_history_pnl": 1.25,
+            "theoretical_pnl": 0.9,
+        },
+        [
+            {
+                "observation_id": "close-456",
+                "slate_date": "2026-07-29",
+                "pitcher": "Chris Sale",
+                "observed_at": "2026-07-29T22:00:00+00:00",
+                "provider": "therundown",
+                "bookmaker": "FanDuel",
+                "side": "over",
+                "line": 5.5,
+                "american_odds": -125,
+                "freshness": "fresh",
+                "observation_type": "official_close",
+            }
+        ],
+    )
+
+    assert row["pick_history_pnl"] == 1.25
+    assert row["theoretical_pnl"] == 0.9
+    assert "pick_history_pnl" not in row["preclose_proxy_inputs"]
+    assert "theoretical_pnl" not in row["preclose_proxy_inputs"]
+    summary = clv.build_summary([row])
+    proxy_label = summary["rows"][0]["proxy_label"]
+    assert summary["pnl_crosstab"][proxy_label]["beat"]["pnl"] == 1.25
+
+
 def test_build_target_row_marks_over_at_lower_locked_line_as_line_clv():
     row = build_target_row(
         {
@@ -140,6 +180,53 @@ def test_build_target_row_marks_stale_close_evidence_unknown():
     )
 
     assert row["close_eligibility"] == "stale_evidence"
+    assert row["final_clv"] == "unknown"
+
+
+@pytest.mark.parametrize(
+    ("lock_timestamp", "close_timestamp", "eligibility"),
+    [
+        ("2026-07-29T18:00:00", "2026-07-29T22:00:00+00:00", "invalid_lock_timestamp"),
+        ("2026-07-29T18:00:00+00:00", "2026-07-29T22:00:00", "invalid_close_timestamp"),
+        (
+            "2026-07-29T22:00:00+00:00",
+            "2026-07-29T22:00:00+00:00",
+            "close_not_after_lock",
+        ),
+    ],
+)
+def test_build_target_row_requires_aware_strictly_later_close_timestamp(
+    lock_timestamp, close_timestamp, eligibility
+):
+    row = build_target_row(
+        {
+            "slate_date": "2026-07-29",
+            "pitcher": "Paul Skenes",
+            "side": "under",
+            "locked_at": lock_timestamp,
+            "lock_provider": "therundown",
+            "lock_book": "FanDuel",
+            "lock_line": 6.5,
+            "lock_odds": -110,
+        },
+        [
+            {
+                "observation_id": "close-time-1",
+                "slate_date": "2026-07-29",
+                "pitcher": "Paul Skenes",
+                "observed_at": close_timestamp,
+                "provider": "therundown",
+                "bookmaker": "FanDuel",
+                "side": "under",
+                "line": 6.5,
+                "american_odds": -125,
+                "freshness": "fresh",
+                "observation_type": "official_close",
+            }
+        ],
+    )
+
+    assert row["close_eligibility"] == eligibility
     assert row["final_clv"] == "unknown"
 
 
@@ -458,7 +545,7 @@ def test_summary_deduplicates_normalized_pick_key_and_keeps_final_data_out_of_pr
 
 def test_main_writes_process_only_markdown_and_json_from_gate_c_conventions(tmp_path):
     gate_c_input = tmp_path / "gate_c.jsonl"
-    market_input = tmp_path / "market.jsonl"
+    close_evidence_input = tmp_path / "official_close_packet.jsonl"
     output_dir = tmp_path / "output"
     gate_c_input.write_text(
         json.dumps(
@@ -477,7 +564,7 @@ def test_main_writes_process_only_markdown_and_json_from_gate_c_conventions(tmp_
         + "\n",
         encoding="utf-8",
     )
-    market_input.write_text(
+    close_evidence_input.write_text(
         json.dumps(
             {
                 "observation_id": "close-1",
@@ -501,8 +588,8 @@ def test_main_writes_process_only_markdown_and_json_from_gate_c_conventions(tmp_
         [
             "--gate-c-input",
             str(gate_c_input),
-            "--market-input",
-            str(market_input),
+            "--close-evidence-input",
+            str(close_evidence_input),
             "--output-dir",
             str(output_dir),
         ]
@@ -515,6 +602,33 @@ def test_main_writes_process_only_markdown_and_json_from_gate_c_conventions(tmp_
     assert "process benchmark" in report
     assert "-4.64u" in report
     assert "does not create a selector" in report
+
+
+def test_close_packet_rejects_non_over_under_side_before_target_build(tmp_path):
+    close_packet = tmp_path / "official_close_packet.json"
+    close_packet.write_text(
+        json.dumps(
+            [
+                {
+                    "observation_id": "close-1",
+                    "slate_date": "2026-07-29",
+                    "pitcher": "Chris Sale",
+                    "observed_at": "2026-07-29T22:00:00+00:00",
+                    "provider": "therundown",
+                    "bookmaker": "FanDuel",
+                    "side": "both",
+                    "line": 5.5,
+                    "american_odds": -125,
+                    "freshness": "fresh",
+                    "observation_type": "official_close",
+                }
+            ]
+        ),
+        encoding="utf-8",
+    )
+
+    with pytest.raises(ValueError, match="side"):
+        clv.load_close_evidence_packet(close_packet)
 
 
 def _proxy_target(**overrides):

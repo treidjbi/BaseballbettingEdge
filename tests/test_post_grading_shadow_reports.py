@@ -2,6 +2,7 @@ import json
 from pathlib import Path
 from types import SimpleNamespace
 
+from analytics.diagnostics import clv_process_target_validation as clv
 from scripts import run_post_grading_shadow_reports as runner
 
 
@@ -36,7 +37,7 @@ def _stub_clv_runner_dependencies(tmp_path, monkeypatch):
                         "strong_preclose_clv_proxy": {"lift_vs_base_rate": 0.125}
                     },
                     "provider_era_drift": {
-                        "current_therundown_propline": {"lift_vs_base_rate": 0.05}
+                        "official_therundown_propline": {"lift_vs_base_rate": 0.05}
                     },
                     "readiness": {
                         "status": "keep_as_process_kpi",
@@ -60,7 +61,11 @@ def _stub_clv_runner_dependencies(tmp_path, monkeypatch):
     monkeypatch.setattr(
         runner,
         "clv_process_target_validation",
-        SimpleNamespace(main=fake_clv_main, DEFAULT_OUTPUT_DIR=tmp_path / "clv_default"),
+        SimpleNamespace(
+            main=fake_clv_main,
+            DEFAULT_OUTPUT_DIR=tmp_path / "clv_default",
+            load_close_evidence_packet=clv.load_close_evidence_packet,
+        ),
     )
     for module in (
         runner.market_anchor_selector_canary_audit,
@@ -130,6 +135,145 @@ def test_runner_skip_flag_omits_clv_invocation_and_summary(tmp_path, monkeypatch
     assert "CLV process target:" not in capsys.readouterr().out
 
 
+def test_runner_uses_distinct_explicit_close_packet_after_agreement_and_preclose(
+    tmp_path, monkeypatch, capsys
+):
+    """Movement rollups remain agreement inputs; only an explicit close packet reaches CLV."""
+    calls, output_dir, _, preclose_output = _stub_clv_runner_dependencies(tmp_path, monkeypatch)
+    movement_input = tmp_path / "market_pick_evidence.json"
+    movement_input.write_text("[]", encoding="utf-8")
+    close_packet = tmp_path / "official_close_packet.json"
+    close_packet.write_text("[]", encoding="utf-8")
+    clv_output_dir = tmp_path / "clv"
+
+    assert runner.main(
+        [
+            "--output-dir",
+            str(output_dir),
+            "--market-pick-evidence",
+            str(movement_input),
+            "--clv-process-target-close-evidence",
+            str(close_packet),
+            "--preclose-clv-proxy-output",
+            str(preclose_output),
+            "--clv-process-target-output-dir",
+            str(clv_output_dir),
+        ]
+    ) == 0
+
+    labels = [label for label, _ in calls]
+    assert labels.index("agreement") < labels.index("preclose") < labels.index("clv")
+    clv_args = next(argv for label, argv in calls if label == "clv")
+    assert clv_args[clv_args.index("--close-evidence-input") + 1] == str(close_packet)
+    assert str(movement_input) not in clv_args
+    assert "readiness keep_as_process_kpi" in capsys.readouterr().out
+
+
+def test_runner_rejects_real_shape_market_pick_evidence_as_close_packet(tmp_path, monkeypatch, capsys):
+    """A movement-rollup row cannot satisfy official-close provenance."""
+    calls, output_dir, _, preclose_output = _stub_clv_runner_dependencies(tmp_path, monkeypatch)
+    movement_rollup = tmp_path / "market_pick_evidence.json"
+    movement_rollup.write_text(
+        json.dumps(
+            [
+                {
+                    "slate_date": "2026-07-29",
+                    "pitcher": "Chris Sale",
+                    "normalized_pitcher": "chris sale",
+                    "side": "over",
+                    "provider": "therundown",
+                    "observed_at": "2026-07-29T20:00:00+00:00",
+                    "latest_snapshot_at": "2026-07-29T19:59:00+00:00",
+                    "books_seen": ["fanduel"],
+                    "market_consensus": "toward_pick",
+                    "metadata": {"freshness_status": "fresh"},
+                }
+            ]
+        ),
+        encoding="utf-8",
+    )
+
+    assert runner.main(
+        [
+            "--output-dir",
+            str(output_dir),
+            "--clv-process-target-close-evidence",
+            str(movement_rollup),
+            "--preclose-clv-proxy-output",
+            str(preclose_output),
+        ]
+    ) == 0
+
+    assert "clv" not in [label for label, _ in calls]
+    assert "shadow_signal_synthesis_lab" in [label for label, _ in calls]
+    assert "readiness proxy_failed" in capsys.readouterr().out
+
+
+def test_runner_bounds_malformed_close_packet_and_runs_later_reports(tmp_path, monkeypatch, capsys):
+    calls, output_dir, _, preclose_output = _stub_clv_runner_dependencies(tmp_path, monkeypatch)
+    malformed_packet = tmp_path / "official_close_packet.jsonl"
+    malformed_packet.write_text('{"observation_type": "official_close"\n', encoding="utf-8")
+
+    assert runner.main(
+        [
+            "--output-dir",
+            str(output_dir),
+            "--clv-process-target-close-evidence",
+            str(malformed_packet),
+            "--preclose-clv-proxy-output",
+            str(preclose_output),
+        ]
+    ) == 0
+
+    labels = [label for label, _ in calls]
+    assert "clv" not in labels
+    assert "shadow_signal_synthesis_lab" in labels
+    assert "readiness proxy_failed" in capsys.readouterr().out
+
+
+def test_runner_bounds_unreadable_close_packet_and_runs_later_reports(tmp_path, monkeypatch, capsys):
+    calls, output_dir, _, preclose_output = _stub_clv_runner_dependencies(tmp_path, monkeypatch)
+    unreadable_packet = tmp_path / "official_close_packet.json"
+    unreadable_packet.write_bytes(b"\xff\xfe\x00")
+
+    assert runner.main(
+        [
+            "--output-dir",
+            str(output_dir),
+            "--clv-process-target-close-evidence",
+            str(unreadable_packet),
+            "--preclose-clv-proxy-output",
+            str(preclose_output),
+        ]
+    ) == 0
+
+    labels = [label for label, _ in calls]
+    assert "clv" not in labels
+    assert "shadow_signal_synthesis_lab" in labels
+    assert "readiness proxy_failed" in capsys.readouterr().out
+
+
+def test_runner_summary_uses_shared_official_provider_era_label(tmp_path, capsys):
+    (tmp_path / "clv_process_target_validation.json").write_text(
+        json.dumps(
+            {
+                "eligible_target_rows": 2,
+                "rows": [{}, {}],
+                "proxy_buckets": {"strong_preclose_clv_proxy": {"lift_vs_base_rate": 0.1}},
+                "provider_era_drift": {
+                    "official_therundown_propline": {"lift_vs_base_rate": 0.075}
+                },
+                "readiness": {"status": "keep_as_process_kpi"},
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    runner._print_clv_process_summary(tmp_path)
+
+    assert "current-provider drift +7.5%" in capsys.readouterr().out
+
+
 def test_runner_runs_clv_process_validation_after_agreement_and_preclose_reports(
     tmp_path, monkeypatch, capsys
 ):
@@ -137,8 +281,8 @@ def test_runner_runs_clv_process_validation_after_agreement_and_preclose_reports
     calls = []
     output_dir = tmp_path / "gate_c"
     dataset_path = output_dir / "pitcher_k_outcome_dataset.jsonl"
-    market_input = tmp_path / "market_pick_evidence.json"
-    market_input.write_text("[]", encoding="utf-8")
+    close_packet = tmp_path / "official_close_packet.json"
+    close_packet.write_text("[]", encoding="utf-8")
     preclose_output = tmp_path / "gate_f_preclose_clv_proxy_lab.md"
     clv_output_dir = tmp_path / "clv"
 
@@ -166,7 +310,7 @@ def test_runner_runs_clv_process_validation_after_agreement_and_preclose_reports
                         "strong_preclose_clv_proxy": {"lift_vs_base_rate": 0.125}
                     },
                     "provider_era_drift": {
-                        "current_therundown_propline": {"lift_vs_base_rate": 0.05}
+                        "official_therundown_propline": {"lift_vs_base_rate": 0.05}
                     },
                     "readiness": {
                         "status": "keep_as_process_kpi",
@@ -190,7 +334,11 @@ def test_runner_runs_clv_process_validation_after_agreement_and_preclose_reports
     monkeypatch.setattr(
         runner,
         "clv_process_target_validation",
-        SimpleNamespace(main=fake_clv_main, DEFAULT_OUTPUT_DIR=clv_output_dir),
+        SimpleNamespace(
+            main=fake_clv_main,
+            DEFAULT_OUTPUT_DIR=clv_output_dir,
+            load_close_evidence_packet=clv.load_close_evidence_packet,
+        ),
     )
     for module in (
         runner.market_anchor_selector_canary_audit,
@@ -215,8 +363,8 @@ def test_runner_runs_clv_process_validation_after_agreement_and_preclose_reports
         [
             "--output-dir",
             str(output_dir),
-            "--market-pick-evidence",
-            str(market_input),
+            "--clv-process-target-close-evidence",
+            str(close_packet),
             "--preclose-clv-proxy-output",
             str(preclose_output),
             "--clv-process-target-output-dir",
@@ -230,8 +378,8 @@ def test_runner_runs_clv_process_validation_after_agreement_and_preclose_reports
     assert clv_args == [
         "--gate-c-input",
         str(dataset_path),
-        "--market-input",
-        str(market_input),
+        "--close-evidence-input",
+        str(close_packet),
         "--output-dir",
         str(clv_output_dir),
     ]

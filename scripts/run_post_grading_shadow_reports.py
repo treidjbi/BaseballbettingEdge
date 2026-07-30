@@ -114,10 +114,9 @@ def _parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         default=clv_process_target_validation.DEFAULT_OUTPUT_DIR,
     )
     parser.add_argument(
-        "--clv-process-target-market-input",
+        "--clv-process-target-close-evidence",
         type=Path,
-        default=export_market_agreement_inputs.DEFAULT_OUTPUT_DIR / "market_pick_evidence.json",
-        help="Bounded compact market evidence used only for the offline CLV target.",
+        help="Explicit bounded official-close provenance packet for the offline CLV target.",
     )
     parser.add_argument(
         "--skip-clv-process-target-validation",
@@ -294,7 +293,7 @@ def _print_clv_process_summary(output_dir: Path) -> None:
     drift_buckets = summary.get("provider_era_drift")
     current_drift = None
     if isinstance(drift_buckets, dict):
-        current_bucket = drift_buckets.get("current_therundown_propline", {})
+        current_bucket = drift_buckets.get("official_therundown_propline", {})
         if isinstance(current_bucket, dict):
             current_drift = current_bucket.get("lift_vs_base_rate")
     readiness = summary.get("readiness")
@@ -313,14 +312,11 @@ def _print_clv_process_summary(output_dir: Path) -> None:
     )
 
 
-def _clv_market_input_is_readable(path: Path) -> bool:
-    """Require a paired compact export, while allowing a valid empty export."""
-    if not path.is_file():
-        return False
+def _clv_close_evidence_is_valid(path: Path) -> bool:
+    """Require a valid explicit close packet, while allowing a valid empty packet."""
     try:
-        with path.open("rb") as handle:
-            handle.read(1)
-    except OSError:
+        clv_process_target_validation.load_close_evidence_packet(path)
+    except (OSError, ValueError):
         return False
     return True
 
@@ -509,19 +505,15 @@ def main(argv: list[str] | None = None) -> int:
         str(args.preclose_clv_proxy_output),
     ])
     if not args.skip_clv_process_target_validation:
-        clv_market_input = (
-            refreshed_evidence_path
-            if refreshed_evidence_path is not None
-            else args.market_pick_evidence or args.clv_process_target_market_input
-        )
-        if not _clv_market_input_is_readable(clv_market_input):
+        close_evidence_input = args.clv_process_target_close_evidence
+        if close_evidence_input is None or not _clv_close_evidence_is_valid(close_evidence_input):
             _print_clv_process_input_failure()
         else:
             clv_process_target_validation.main([
                 "--gate-c-input",
                 str(dataset_path),
-                "--market-input",
-                str(clv_market_input),
+                "--close-evidence-input",
+                str(close_evidence_input),
                 "--output-dir",
                 str(args.clv_process_target_output_dir),
             ])

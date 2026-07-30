@@ -5,6 +5,7 @@ from __future__ import annotations
 import argparse
 import json
 from collections import Counter, defaultdict
+from datetime import datetime
 from pathlib import Path
 from typing import Any
 
@@ -67,6 +68,56 @@ LIVE_SAFE_PROXY_FIELDS = (
     "last_pitch_count",
     "recent_start_count",
 )
+
+
+def _timezone_aware_timestamp(value: Any) -> datetime | None:
+    if not isinstance(value, str) or not value.strip():
+        return None
+    try:
+        parsed = datetime.fromisoformat(value.replace("Z", "+00:00"))
+    except ValueError:
+        return None
+    return parsed if parsed.tzinfo is not None else None
+
+
+def load_close_evidence_packet(path: Path) -> list[dict[str, Any]]:
+    """Load only the explicit official-close packet; reject movement-rollup shapes."""
+    if not path.is_file():
+        raise ValueError("close packet is missing or unreadable")
+    try:
+        content = path.read_text(encoding="utf-8").strip()
+    except OSError as exc:
+        raise ValueError("close packet is missing or unreadable") from exc
+    if not content:
+        return []
+    try:
+        if path.suffix.lower() == ".json":
+            parsed = json.loads(content)
+            rows = parsed if isinstance(parsed, list) else [parsed]
+        else:
+            rows = [json.loads(line) for line in content.splitlines() if line.strip()]
+    except json.JSONDecodeError as exc:
+        raise ValueError("close packet is malformed JSON or JSONL") from exc
+    if not all(isinstance(row, dict) for row in rows):
+        raise ValueError("close packet rows must be objects")
+    for row in rows:
+        if str(row.get("observation_type") or "").strip().lower() != "official_close":
+            raise ValueError("close packet requires official_close observations")
+        required_strings = (
+            _slate_date(row),
+            _normalized_pitcher(row),
+            str(row.get("provider") or "").strip().lower(),
+            _book(row.get("bookmaker")),
+            str(row.get("observation_id") or "").strip(),
+            str(row.get("freshness") or "").strip().lower(),
+        )
+        if not all(required_strings) or _timezone_aware_timestamp(row.get("observed_at")) is None:
+            raise ValueError("close packet row is missing required provenance")
+        if str(row.get("side") or "").strip().lower() not in {"over", "under"}:
+            raise ValueError("close packet row requires over or under side")
+        if _number(row.get("line")) is None or _number(row.get("american_odds")) is None:
+            raise ValueError("close packet row requires numeric close line and price")
+    return rows
 
 
 def _number(value: Any) -> float | None:
@@ -173,6 +224,7 @@ def build_target_row(gate_c_row: dict[str, Any], market_rows: list[dict[str, Any
         lock_odds = _number(gate_c_row.get("bet_time_odds"))
     if lock_odds is None:
         lock_odds = _number(gate_c_row.get("american_odds"))
+    lock_observed_at = gate_c_row.get("locked_at") or gate_c_row.get("bet_time_at")
 
     close_observations = [
         observation
@@ -197,6 +249,8 @@ def build_target_row(gate_c_row: dict[str, Any], market_rows: list[dict[str, Any
     close_provider = str(close.get("provider") or "").strip().lower() if close else ""
     close_book = _book(close.get("bookmaker")) if close else ""
     close_line = _number(close.get("line")) if close else None
+    lock_timestamp = _timezone_aware_timestamp(lock_observed_at)
+    close_timestamp = _timezone_aware_timestamp(close.get("observed_at")) if close else None
     eligibility = "identity_mismatch" if close_observations else "missing_close"
     if close:
         if not lock_provider:
@@ -211,10 +265,16 @@ def build_target_row(gate_c_row: dict[str, Any], market_rows: list[dict[str, Any
             eligibility = "missing_close_book"
         elif close_book != _book(lock_book):
             eligibility = "book_mismatch"
-        elif not (gate_c_row.get("locked_at") or gate_c_row.get("bet_time_at")):
+        elif not lock_observed_at:
             eligibility = "missing_lock_timestamp"
+        elif lock_timestamp is None:
+            eligibility = "invalid_lock_timestamp"
         elif not close.get("observed_at"):
             eligibility = "missing_close_timestamp"
+        elif close_timestamp is None:
+            eligibility = "invalid_close_timestamp"
+        elif close_timestamp <= lock_timestamp:
+            eligibility = "close_not_after_lock"
         elif lock_line is None:
             eligibility = "missing_lock_line"
         elif close_line is None:
@@ -232,7 +292,7 @@ def build_target_row(gate_c_row: dict[str, Any], market_rows: list[dict[str, Any
         "display_pitcher": display_pitcher,
         "side": side,
         "official_lock_reference": gate_c_row.get("official_lock_reference") or gate_c_row.get("dataset_key"),
-        "lock_observed_at": gate_c_row.get("locked_at") or gate_c_row.get("bet_time_at"),
+        "lock_observed_at": lock_observed_at,
         "lock_provider": lock_provider or None,
         "lock_book": lock_book or None,
         "lock_line": lock_line,
@@ -250,6 +310,10 @@ def build_target_row(gate_c_row: dict[str, Any], market_rows: list[dict[str, Any
             if close and _same_line(lock_line, close_line)
             else ("alternate_line" if close and lock_line is not None and close_line is not None else "unknown")
         ),
+        # Graded PnL is descriptive report context only. It is deliberately
+        # kept outside the explicitly bounded pre-close proxy input surface.
+        "pick_history_pnl": _number(gate_c_row.get("pick_history_pnl")),
+        "theoretical_pnl": _number(gate_c_row.get("theoretical_pnl")),
         "preclose_proxy_inputs": {
             "side": side,
             **{field: gate_c_row.get(field) for field in LIVE_SAFE_PROXY_FIELDS},
@@ -712,11 +776,12 @@ def _load_json_rows(path: Path) -> list[dict[str, Any]]:
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="Build offline CLV process target rows.")
     parser.add_argument("--gate-c-input", type=Path, required=True)
-    parser.add_argument("--market-input", type=Path, required=True)
+    parser.add_argument("--close-evidence-input", type=Path, required=True)
     parser.add_argument("--output-dir", type=Path, default=DEFAULT_OUTPUT_DIR)
     args = parser.parse_args(argv)
 
-    target_rows = [build_target_row(row, _load_json_rows(args.market_input)) for row in _load_json_rows(args.gate_c_input)]
+    close_rows = load_close_evidence_packet(args.close_evidence_input)
+    target_rows = [build_target_row(row, close_rows) for row in _load_json_rows(args.gate_c_input)]
     summary = build_summary(target_rows)
     args.output_dir.mkdir(parents=True, exist_ok=True)
     (args.output_dir / "clv_process_target_validation.json").write_text(

@@ -67,3 +67,35 @@
 - [ ] Run focused tests, `python -m pytest tests -q`, and `git diff --check`.
 - [ ] Commit `docs: review clv process target validity`.
 
+## Final Review Correction (2026-07-30)
+
+`market_pick_evidence` is a per-pick movement rollup, not an official-close
+source. Its bounded export remains the agreement/pre-close input only and must
+never be passed to the final-CLV validator. The runner requires a separate,
+explicit, bounded read-only close-provenance packet before it may invoke that
+validator. `--refresh-market-agreement-inputs` does not create this packet.
+
+The close packet may be JSON or JSONL. Every non-empty row must explicitly
+identify an `official_close` observation with slate date, normalized pitcher,
+side, provider, bookmaker, observation id, timezone-aware close timestamp,
+numeric close line and price, and freshness. Event identity is optional but
+must match when both sides provide it. A valid explicit empty packet is allowed
+and produces `unknown` close outcomes; a missing, unreadable, malformed, or
+wrong-schema packet is a bounded `proxy_failed` runner outcome. It must not
+prevent the later shadow reports from running.
+
+Gate C PnL remains descriptive top-level context for the final report and must
+not enter proxy inputs. The target requires a timezone-aware official lock
+timestamp and a strictly later timezone-aware close timestamp. Invalid or
+non-increasing timestamps remain `unknown` with a specific eligibility reason.
+The shared provider-era classifier label is authoritative.
+
+- [x] Add real-shape movement-rollup rejection and separate close-packet tests.
+- [x] Validate JSON/JSONL packet structure before runner invocation; fail closed
+  without aborting subsequent reports.
+- [x] Preserve descriptive PnL, use the shared provider-era label, and cover
+  timezone/order eligibility.
+- [x] Update the review/current-state handoff: close producer missing,
+  movement export insufficient, `keep_as_process_kpi`, and runner
+  `proxy_failed` until a valid packet exists.
+
