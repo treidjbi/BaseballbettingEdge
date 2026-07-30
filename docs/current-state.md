@@ -98,6 +98,10 @@ For any new work in this repo:
      and `docs/research/clv-process-target-review.md` for the offline final-CLV
      process target, its bounded compact-input contract, and the current
      `keep_as_process_kpi` decision
+   - `docs/research/2026-07-30-umpire-ytd-name-audit.md` for the read-only
+     1,627-game name-set audit, the eight active names missing from the live
+     cache, and the decision to leave production umpire inputs unchanged until
+     a separate prior-smoothed coverage review is approved
    - `docs/superpowers/specs/2026-07-21-pregame-alternative-pick-methodology-design.md`
      for the approved product direction, production rollout contract, and
      first-normal-slate integrity gate for the pregame Alt Picks comparison
