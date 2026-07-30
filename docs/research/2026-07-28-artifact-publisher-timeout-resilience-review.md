@@ -2,7 +2,7 @@
 
 Date: 2026-07-28
 
-Status: **Implementation merged 2026-07-29; pending separate production activation.**
+Status: **Production-deployed to all seven Render pipeline crons on 2026-07-29; natural publisher and lock runs have succeeded.**
 
 This is a read-only diagnosis. It does not authorize a pipeline deploy,
 Supabase setting change, manual repair, provider change, lock change, artifact
@@ -29,10 +29,11 @@ served artifacts, missed locks, grading divergence, or betting impact.
 
 Focused TDD verification is `30 passed`; full merged-tree verification is
 `1,911 passed`, and the all-scope publisher dry run collected the expected
-seven artifacts. Production activation remains a separate gate because Render
-pipeline crons keep autoDeploy off. If Tyler approves activation, redeploy the
-validated pipeline cron group together and verify hashes plus the next natural
-lock publication.
+seven artifacts. Tyler then approved activation: all seven Render pipeline
+crons are production-deployed on `ad6f7d9b`. The first natural post-deploy lock
+checked out that commit, consumed five newly represented lock rows, published
+the expected three artifacts, and matched Supabase run metadata and Netlify
+ETags to the published hashes.
 
 ## Executive decision
 
@@ -43,9 +44,9 @@ Phoenix, July 25 at `11:42`, and July 27 at `00:32` and `05:32`, plus the July
 scheduled cycle recovered.
 
 No stale served artifact, missed due lock, duplicate lock, wrong-date lock, or
-grading impact was found. Do not run a repair today. Tyler approved the
-test-first publisher-resilience implementation and it is now merged to `main`;
-production activation remains a separate decision.
+grading impact was found. Do not run a repair today. The publisher-only change
+is merged and production-deployed; ordinary observation is now the only next
+step.
 
 ## Confirmed failure pattern
 
@@ -116,9 +117,6 @@ effects than the observed problem warrants.
 
 ## Decision gate
 
-Recommended next decision: review the tested branch, then approve or decline
-merge and production activation as separate steps. Until activation, keep
-ordinary observation. After activation, verify served hashes and the next
-natural lock publication. Escalate to `Broken` and use the approved
-stale-artifact repair path only if a timeout causes a stale served artifact, a
-due lock to remain unpublished, or grading/history artifacts to diverge.
+Activation is complete. Keep ordinary observation and escalate to `Broken` only
+if a timeout causes a stale served artifact, a due lock to remain unpublished,
+or grading/history artifacts to diverge.

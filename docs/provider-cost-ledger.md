@@ -64,7 +64,7 @@ worker cost in the steady-state view.
 | Render live cron | ~$1/mo | `bbe-live-layer` every 10 minutes | Keep while live notifications matter | Duplicate PropLine calls if older GitHub polling remains active |
 | Render BoltOdds worker | ~$7/mo when active | `bbe-boltodds-shadow-worker` always-on WebSocket worker | Suspended by user via Render API on 2026-06-17 | Accidental reactivation or continued provider billing |
 | Supabase | Pro, about $25/mo before overages | Shadow/live market tables, notification queue, provider evidence | Keep Pro with spend cap on; monitor storage and egress | Raw market snapshot growth, compute/storage overages, spend-cap interruptions |
-| GitHub Actions | Free for current public-repo usage | Scheduled pipeline, grading, artifacts, shadow jobs | Keep | Operational schedule jitter more important than cost right now |
+| GitHub Actions | Free for current public-repo usage | Manual pipeline rollback/repair, probes, and audit jobs; scheduled workflows are disabled | Keep as rollback/repair only | Manual rollback unavailable when Render/Supabase/Netlify needs repair |
 | Codex / ChatGPT | $20-$100/mo depending on plan | Engineering, monitoring, debugging, automation, docs | Use the lowest plan that still supports the workflow | Pro can quietly become the biggest recurring cost |
 
 ## Source-Specific Decision Rules

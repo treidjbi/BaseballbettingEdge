@@ -33,10 +33,12 @@ currently verified. Re-check provider dashboards before making billing decisions
 
 Use this hierarchy when sources disagree.
 
-1. **Production truth**: TheRundown-derived Render pipeline artifacts published
-   to Supabase and served by Netlify `get-artifact` are the official model and
-   dashboard truth. GitHub `workflow_dispatch` remains manual rollback/audit
-   backup, and static JSON remains a fallback surface.
+1. **Production truth**: Render pipeline artifacts published to Supabase and
+   served by Netlify `get-artifact` are the official model and dashboard truth.
+   The active wrapper is non-strict `therundown_propline`: curated official
+   lines when ready and direct TheRundown fallback, with TheRundown the book of
+   record. GitHub `workflow_dispatch` remains manual rollback/repair backup,
+   and static JSON remains a fallback surface.
 2. **Live notification evidence**: Render `bbe-live-layer` can create live
    pick-state, notification events, and shadow timing rows, but those events do
    not redefine the official pick or grading record.
@@ -249,12 +251,12 @@ Tyler explicitly changes this boundary.
 | Netlify sender not sending | Pending queue grows; sender logs errors | Users miss live alerts; stale-queue guard suppresses old events instead of sending them late | Netlify function logs; `notification_events` sent/failed counts; authenticated sender smoke check | Check env, Supabase service key, VAPID, Blobs, packaged function dependencies; deploy with function cache skipped if imports fail | Pending actionable events remain unsent through game window or stale-suppression count climbs during an active slate |
 | Duplicate notifications | Same pick/move sends more than once | Trust drops fast | `notification_events.dedupe_key`; push tags | Patch dedupe logic; suppress noisy class | Any duplicate FIRE/new-pick notification |
 | GitHub legacy notifications accidentally re-enabled | Duplicate artifact-diff pushes return while live sender is active | Duplicate lock/reminder/new-pick alerts | GitHub variables, workflow logs, received push tags | Set `ENABLE_GITHUB_LEGACY_NOTIFICATIONS=false`; keep live sender primary | Any duplicate from both `send-notifications` and `send-live-notifications` |
-| Source line conflict | Providers disagree on line/price | Confusing movement or wrong confidence | Compare production artifact, PropLine, and historical BoltOdds rows only when relevant | Treat TheRundown artifact as production; mark conflict in audit | Conflict would change a bet or alert |
+| Source line conflict | Providers disagree on line/price | Confusing movement or wrong confidence | Compare the official artifact, PropLine, and historical BoltOdds rows only when relevant | Treat the approved non-strict artifact wrapper as production; mark conflict in audit | Conflict would change a bet or alert |
 | Shadow timing ledger grows too noisy | `shadow_pipeline_runs` or lock observations grow without decision value | Supabase cost/query noise and harder daily reads | Row counts, status distribution, and whether rows changed a lock decision | Retain compact status transitions only; add short retention to run rows | Ledger volume grows but does not support promotion/cut decision |
 | Provider arbitration wrong | `official_market_lines` selects stale, incomplete, or unsupported-book rows | Picks use bad market input even if model math is unchanged | `provider_arbitration_decisions`, `current_market_lines`, freshness flags | Switch `OFFICIAL_MARKET_SOURCE=therundown`; fix arbitration before retry | Any FIRE pick uses stale/incomplete provider line |
 | Derived market-line rebuild delayed | GitHub scheduled `shadow-market-infra` does not rebuild `current_market_lines` / `official_market_lines` near fresh provider rows | Provider cutover evidence looks stale even while BoltOdds/PropLine are healthy | Compare latest `market_snapshots` / `market_feed_heartbeats` against `current_market_lines.updated_at` and `official_market_lines.updated_at` | Let guarded Render live-layer rebuild fill the gap; keep production on TheRundown until official rows are fresh and reviewed | Official rows lag fresh raw/provider rows by more than one active live-layer interval |
 | Opening baseline overwritten | `market_opening_baselines` changes after first usable baseline | Steam and CLV reads become misleading | Compare baseline inserted_at/first_seen_at against preview artifact | Restore baseline from preview/archive; patch writer to preserve first-seen row | Any provider-era pick has moving opening odds |
-| GitHub pipeline scans raw market snapshots | Pipeline runtime slows or returns inconsistent current rows | Slate artifacts become slow or unstable near lock | Pipeline logs and query plan/code review | Move reads back to `official_market_lines`; keep raw scans in builder jobs | Any scheduled run misses action window |
+| Render pipeline scans raw market snapshots | Pipeline runtime slows or returns inconsistent current rows | Slate artifacts become slow or unstable near lock | Render logs and query plan/code review | Move reads back to the approved wrapper/`official_market_lines`; keep raw scans in builder jobs | Any scheduled run misses action window |
 | Shadow timing ledger grows too noisy | `shadow_pipeline_runs` or lock observations grow without decision value | Supabase cost/query noise and harder daily reads | Row counts, status distribution, and whether rows changed a lock decision | Retain compact status transitions only; add short retention to run rows | Ledger volume grows but does not support promotion/cut decision |
 | Post-TheRundown rollback weaker than expected | TheRundown canceled and PropLine degraded | No full-strength fallback source | Provider env, billing status, coverage report | Use PropLine-first + The Odds emergency fallback; document degraded mode | Any slate loses FanDuel/DraftKings coverage after cancellation |
 | Supabase Pro cost pressure | Storage/API/egress/compute rising | Surprise cost, spend-cap interruption, or degraded queries | Supabase dashboard; `scripts/supabase_storage_guardrail.sql`; table row counts | Add retention/aggregation; pause noisy captures; keep spend cap on unless Tyler approves overages | Database approaches 6 GB, egress trends toward allowance, spend-cap warning appears, or a table grows without decision value |

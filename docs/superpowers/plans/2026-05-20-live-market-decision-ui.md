@@ -6,8 +6,10 @@
 >
 > **Guardrail:** This plan must not change production provider order, model math,
 > thresholds, staking, lock behavior, notification sends, retention, secrets, or
-> source-of-truth rules. TheRundown-derived GitHub artifacts remain production
-> truth until the provider cutover gates pass and Tyler approves the switch.
+> source-of-truth rules. Render/Supabase artifacts served by Netlify
+> `get-artifact` remain production truth. The approved non-strict
+> `therundown_propline` wrapper uses curated official lines when ready and
+> direct TheRundown fallback; no strict-provider promotion is implied.
 >
 > **2026-06-04 update:** The active notification implementation child plan is
 > `docs/superpowers/plans/2026-06-04-live-notification-digest-coordinator.md`.
@@ -98,7 +100,7 @@
 
 ## Goal
 
-Use the new BoltOdds, PropLine polling, and PropLine webhook evidence to make
+Use active TheRundown/PropLine polling and PropLine webhook evidence to make
 the dashboard answer one practical question faster:
 
 **Can I still bet this pick at the current market, and where is the best price?**
@@ -110,20 +112,21 @@ turning shadow market evidence into live betting rules.
 
 The existing v2 dashboard already has a useful pick detail sheet, simple
 open-to-current movement, accepted-bet logging, quality gates, and tracked-pick
-lock display. That was enough when GitHub artifacts and TheRundown snapshots
-were the only operational source.
+lock display. That was enough before the Render/Supabase artifact path and
+combined TheRundown/PropLine live-display surface became the active
+operational read.
 
 The operational base is changing:
 
-- `live_market_display_state` is now the app-ready shadow table for provider
-  market state.
+- `live_market_display_state` is now the app-ready, default-on display-only
+  table for provider market state.
 - `market_pick_evidence` rolls up per-pick provider movement.
 - `current_market_lines` and `official_market_lines` exist for provider cutover
   rehearsal, but are not production.
 - Real signed PropLine webhooks are landing, and the processor can write
   webhook movement into `line_movement_events` once observation is enabled.
-- BoltOdds provides faster WebSocket movement for several target books, while
-  PropLine remains useful for DraftKings/fallback/webhook comparison.
+- BoltOdds is retired historical evidence; TheRundown/PropLine remains the
+  active polling, fallback, and webhook-comparison surface.
 
 That combination supports a new read-only decision surface: a market execution
 panel that sits beside the model pick.
@@ -276,13 +279,13 @@ adapted to the existing v2 app style:
    - Input quality
    - Final display verdict: e.g. `Playable, but shop price`
 
-### Provider Comparison Add-On
+### Historical Provider Comparison Add-On
 
 After webhook processor observation is enabled and stable, add a compact
 provider comparison block:
 
-- BoltOdds consensus
-- PropLine polling consensus
+- Historical BoltOdds consensus, only when reviewing archived trial rows
+- Active TheRundown/PropLine polling consensus
 - PropLine webhook movement, if present
 - Overlapping books: same line, line conflict, price difference
 - Status: `agree`, `mixed`, `single-provider`, `stale`, `webhook-only`
@@ -481,10 +484,9 @@ The browser should:
 ### Phase 3 - Provider Agreement / Webhook Comparison
 
 After `LIVE_PROCESS_PROPLINE_WEBHOOKS` observation is enabled and proves clean,
-extend the endpoint to include a compact provider-comparison block:
+extend the endpoint to include a compact active-provider comparison block:
 
-- per-pick BoltOdds rows
-- per-pick PropLine polling rows
+- per-pick TheRundown/PropLine rows
 - recent PropLine webhook movement events
 - overlap summary for books both providers saw
 

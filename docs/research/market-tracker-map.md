@@ -32,9 +32,10 @@ provider order, notifications, or calibration.
 
 ## Provider Tracker Ownership
 
-The active provider posture is TheRundown as the official artifact source with
-PropLine as fallback/live-movement sidecar. The old BoltOdds + PropLine cutover
-is retired; future provider trials need a new Tyler approval. Existing trackers
+The active provider posture is non-strict `therundown_propline`: curated
+official lines when ready, direct TheRundown fallback, with TheRundown remaining
+the book of record and PropLine the fallback/live-movement sidecar. The old
+BoltOdds + PropLine cutover is retired; future provider trials need a new Tyler approval. Existing trackers
 should still be reused instead of creating duplicate raw movement, per-pick
 movement, display state, or would-have-alerted state.
 
@@ -45,7 +46,7 @@ movement, display state, or would-have-alerted state.
 | `market_snapshots` | Raw per-book/provider odds ticks | Read as raw source for current-line and live-display builders | Active TheRundown/PropLine writers; historical BoltOdds rows only | High-volume short-retention raw evidence |
 | `provider_coverage_audits` | Slate/book/pitcher coverage summaries | Read for active source health and future provider-trial gates | Active provider audits; historical trial writers only | Long-term provider decision evidence |
 | `market_pick_evidence` | Per-pick provider movement rollup | Leave as shadow/research | Existing live layer only | Model-vs-market learning |
-| `live_market_display_state` | App-ready per-provider market state | Leave as shadow/display until explicit UI promotion | Existing live layer only | User-facing evidence after separate display decision |
+| `live_market_display_state` | App-ready per-provider market state | Default-on, display-only UI read; keep it separate from provider or betting-rule promotion | Existing live layer only | User-facing display evidence |
 | `shadow_notification_candidates` | Would-have-alerted rows | Continue shadow testing future notification classes | Existing live layer only | Notification promotion evidence |
 | `propline_webhook_deliveries` | Raw signed PropLine webhook inbox | Process recent rows only for shadow comparison | Netlify receiver plus bounded live-layer processor | Webhook reliability, dedupe, and timing audit |
 | `shadow_pipeline_runs` | Render-vs-GitHub timing summary | Add as existing-cron timing evidence | Existing live layer only | Short-retention scheduler reliability evidence |
@@ -57,16 +58,17 @@ movement, display state, or would-have-alerted state.
 | `data/preview_lines.json` | Official opening baseline artifact | Preserve shape; eventually feed from provider baselines | GitHub pipeline only | Official opening source for artifacts |
 | `data/picks_history.json` | Durable graded pick history | Add source attribution fields only | GitHub pipeline grading/history only | Regime-aware performance history |
 | `current_market_lines` | Derived complete book lines | Build from active raw snapshots; default active readers exclude retired BoltOdds | Current-line builder | Current provider state for research/arbitration rehearsal |
-| `official_market_lines` | Provider-arbitrated market feed | Keep as rehearsal/evidence unless Tyler approves a source switch | Arbitration builder | Possible future official source after a fresh gate/review |
+| `official_market_lines` | Provider-arbitrated market feed | Use only through the approved non-strict wrapper when curated lines are ready; direct TheRundown fallback otherwise | Arbitration builder | Auditable curated-official-line input, not a strict-provider promotion |
 | `market_opening_baselines` | New provider opening baselines | Create and preserve first-seen baseline rows | New current-line builder | Provider-era opening-line source |
 | `provider_arbitration_decisions` | New source-choice audit | Create for every official-line build | New arbitration builder | Explain bet/wait/skip/source decisions |
 | `provider_request_usage_daily` | New provider request/cost counter | Write from shadow provider runs/snapshots | Current-line builder and compaction script | Cost and quota guardrail |
 | `compact_market_line_movements` | New compact raw-snapshot summary | Write before long-term raw snapshot retention deletion | `scripts/compact_market_snapshots.py` | Season-long movement history without raw tick volume |
 
 Future source-switch rule: if Tyler opens a new provider trial and approves a
-pipeline adapter, the pipeline should read `official_market_lines`, not raw
-`market_snapshots`. Today, TheRundown-derived Render artifacts remain the
-production source of truth; raw snapshots and official lines remain evidence.
+pipeline adapter, it should read `official_market_lines`, not raw
+`market_snapshots`. Today, the approved non-strict wrapper can use curated
+official lines when ready and otherwise uses direct TheRundown; raw snapshots
+remain evidence, and strict-provider promotion remains closed.
 
 ## Added To Compact Outcome Rows
 
