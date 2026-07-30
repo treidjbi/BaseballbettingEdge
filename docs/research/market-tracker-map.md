@@ -55,8 +55,8 @@ movement, display state, or would-have-alerted state.
 | `notification_events` | Real push queue | Do not write new provider-sourced alert classes without a separate flag/review | Existing live sender only | Delivery audit and fatigue control |
 | `game_reminder_state` | Reminder dedupe/state | Unchanged | Existing live layer only | Reminder dedupe |
 | `accepted_bets` | Manual Tyler bet log | Read for CLV, timing proof, and notification-to-bet attribution after the IDs are wired through the app | Manual/UI flow only, later notification-originated logs with explicit source attribution | Bet-timing, CLV, and alert-value audit |
-| `data/preview_lines.json` | Official opening baseline artifact | Preserve shape; eventually feed from provider baselines | GitHub pipeline only | Official opening source for artifacts |
-| `data/picks_history.json` | Durable graded pick history | Add source attribution fields only | GitHub pipeline grading/history only | Regime-aware performance history |
+| `data/preview_lines.json` | Official opening baseline artifact | Preserve shape; eventually feed from provider baselines | Render pipeline cron publishes through Supabase; GitHub manual rollback/repair only | Official opening source for artifacts |
+| `data/picks_history.json` | Durable graded pick history | Add source attribution fields only | Render grading/history pipeline publishes through Supabase; GitHub manual rollback/repair only | Regime-aware performance history |
 | `current_market_lines` | Derived complete book lines | Build from active raw snapshots; default active readers exclude retired BoltOdds | Current-line builder | Current provider state for research/arbitration rehearsal |
 | `official_market_lines` | Provider-arbitrated market feed | Use only through the approved non-strict wrapper when curated lines are ready; direct TheRundown fallback otherwise | Arbitration builder | Auditable curated-official-line input, not a strict-provider promotion |
 | `market_opening_baselines` | New provider opening baselines | Create and preserve first-seen baseline rows | New current-line builder | Provider-era opening-line source |

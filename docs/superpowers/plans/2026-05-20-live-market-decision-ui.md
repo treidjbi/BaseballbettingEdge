@@ -490,8 +490,9 @@ extend the endpoint to include a compact active-provider comparison block:
 - recent PropLine webhook movement events
 - overlap summary for books both providers saw
 
-This should be read-only. It should help decide whether BoltOdds and PropLine
-agree, not choose production truth.
+This should be read-only. It should help decide whether active
+TheRundown/PropLine evidence agrees, not choose production truth; BoltOdds is
+available only as explicitly archived trial history.
 
 ### Phase 4 - Default-On UI Promotion
 
