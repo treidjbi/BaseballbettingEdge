@@ -313,6 +313,22 @@ def _print_clv_process_summary(output_dir: Path) -> None:
     )
 
 
+def _clv_market_input_is_readable(path: Path) -> bool:
+    """Require a paired compact export, while allowing a valid empty export."""
+    if not path.is_file():
+        return False
+    try:
+        with path.open("rb") as handle:
+            handle.read(1)
+    except OSError:
+        return False
+    return True
+
+
+def _print_clv_process_input_failure() -> None:
+    print("CLV process target: coverage --; strong lift --; current-provider drift --; readiness proxy_failed.")
+
+
 def _market_agreement_args(
     args: argparse.Namespace,
     dataset_path: Path,
@@ -498,15 +514,18 @@ def main(argv: list[str] | None = None) -> int:
             if refreshed_evidence_path is not None
             else args.market_pick_evidence or args.clv_process_target_market_input
         )
-        clv_process_target_validation.main([
-            "--gate-c-input",
-            str(dataset_path),
-            "--market-input",
-            str(clv_market_input),
-            "--output-dir",
-            str(args.clv_process_target_output_dir),
-        ])
-        _print_clv_process_summary(args.clv_process_target_output_dir)
+        if not _clv_market_input_is_readable(clv_market_input):
+            _print_clv_process_input_failure()
+        else:
+            clv_process_target_validation.main([
+                "--gate-c-input",
+                str(dataset_path),
+                "--market-input",
+                str(clv_market_input),
+                "--output-dir",
+                str(args.clv_process_target_output_dir),
+            ])
+            _print_clv_process_summary(args.clv_process_target_output_dir)
     shadow_signal_synthesis_lab.main([
         "--input",
         str(dataset_path),
