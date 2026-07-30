@@ -1,6 +1,124 @@
 import json
+from types import SimpleNamespace
 
 from scripts import run_post_grading_shadow_reports as runner
+
+
+def test_runner_runs_clv_process_validation_after_agreement_and_preclose_reports(
+    tmp_path, monkeypatch, capsys
+):
+    """The CLV target remains an offline decision report fed by bounded inputs."""
+    calls = []
+    output_dir = tmp_path / "gate_c"
+    dataset_path = output_dir / "pitcher_k_outcome_dataset.jsonl"
+    market_input = tmp_path / "market_pick_evidence.json"
+    market_input.write_text("[]", encoding="utf-8")
+    preclose_output = tmp_path / "gate_f_preclose_clv_proxy_lab.md"
+    clv_output_dir = tmp_path / "clv"
+
+    def fake_builder_main(argv):
+        calls.append(("gate_c_build", argv))
+        output_dir.mkdir(parents=True, exist_ok=True)
+        dataset_path.write_text("", encoding="utf-8")
+
+    def fake_simple_main(label):
+        return lambda argv: calls.append((label, argv))
+
+    def fake_preclose_main(argv):
+        calls.append(("preclose", argv))
+        preclose_output.write_text("# Pre-close\n", encoding="utf-8")
+
+    def fake_clv_main(argv):
+        calls.append(("clv", argv))
+        clv_output_dir.mkdir(parents=True, exist_ok=True)
+        (clv_output_dir / "clv_process_target_validation.json").write_text(
+            json.dumps(
+                {
+                    "eligible_target_rows": 12,
+                    "rows": [{"dataset_key": "one"}] * 20,
+                    "proxy_buckets": {
+                        "strong_preclose_clv_proxy": {"lift_vs_base_rate": 0.125}
+                    },
+                    "provider_era_drift": {
+                        "current_therundown_propline": {"lift_vs_base_rate": 0.05}
+                    },
+                    "readiness": {
+                        "status": "keep_as_process_kpi",
+                        "fully_attributed_current_provider_targets": 12,
+                        "minimum_current_provider_targets": 100,
+                        "positive_proxy_lift_windows": 0,
+                        "minimum_positive_windows": 2,
+                    },
+                }
+            ),
+            encoding="utf-8",
+        )
+
+    monkeypatch.setattr(runner.builder, "main", fake_builder_main)
+    monkeypatch.setattr(runner.market_agreement_tracker, "main", fake_simple_main("agreement"))
+    monkeypatch.setattr(
+        runner,
+        "gate_f_preclose_clv_proxy_lab",
+        SimpleNamespace(main=fake_preclose_main, DEFAULT_OUTPUT=preclose_output),
+    )
+    monkeypatch.setattr(
+        runner,
+        "clv_process_target_validation",
+        SimpleNamespace(main=fake_clv_main, DEFAULT_OUTPUT_DIR=clv_output_dir),
+    )
+    for module in (
+        runner.market_anchor_selector_canary_audit,
+        runner.market_anchor_downside_counterfactual_audit,
+        runner.confidence_referee_canary_audit,
+        runner.profit_rescue_audit,
+        runner.bet_selection_edge_synthesis,
+        runner.strong_base_decision_lab,
+        runner.strong_base_portfolio_simulator,
+        runner.shadow_signal_synthesis_lab,
+        runner.strong_base_fire_policy_matrix,
+        runner.no_drag_composite_canary_audit,
+        runner.strict_runtime_core_canary_audit,
+        runner.market_shrink_projection_canary_audit,
+    ):
+        monkeypatch.setattr(module, "main", fake_simple_main(module.__name__.split(".")[-1]))
+    monkeypatch.setattr(runner, "_write_gate_f_projection_report", lambda **kwargs: None)
+    monkeypatch.setattr(runner, "_write_shadow_notification_candidate_report", lambda **kwargs: None)
+    monkeypatch.setattr(runner, "_print_review_excerpt", lambda *args, **kwargs: None)
+
+    assert runner.main(
+        [
+            "--output-dir",
+            str(output_dir),
+            "--market-pick-evidence",
+            str(market_input),
+            "--preclose-clv-proxy-output",
+            str(preclose_output),
+            "--clv-process-target-output-dir",
+            str(clv_output_dir),
+        ]
+    ) == 0
+
+    labels = [label for label, _ in calls]
+    assert labels.index("agreement") < labels.index("preclose") < labels.index("clv")
+    clv_args = next(argv for label, argv in calls if label == "clv")
+    assert clv_args == [
+        "--gate-c-input",
+        str(dataset_path),
+        "--market-input",
+        str(market_input),
+        "--output-dir",
+        str(clv_output_dir),
+    ]
+    output = capsys.readouterr().out
+    assert "CLV process target: coverage 12/20; strong lift +12.5%;" in output
+    assert "current-provider drift +5.0%; readiness keep_as_process_kpi (12/100, 0/2 windows)." in output
+    assert "dataset_key" not in output
+
+
+def test_runner_skip_flag_omits_clv_process_validation():
+    args = runner._parse_args(["--skip-clv-process-target-validation"])
+
+    assert args.skip_clv_process_target_validation is True
 
 
 def test_runner_rebuilds_shadow_reports_and_prints_review_excerpt(tmp_path, monkeypatch, capsys):

@@ -9,6 +9,7 @@ notifications, locks, retention, dashboard artifacts, or source-of-truth rules.
 from __future__ import annotations
 
 import argparse
+import json
 import sys
 from pathlib import Path
 
@@ -20,7 +21,9 @@ from scripts import build_pitcher_k_outcome_dataset as builder  # noqa: E402
 from scripts import export_market_agreement_inputs  # noqa: E402
 from analytics.diagnostics import bet_selection_edge_synthesis  # noqa: E402
 from analytics.diagnostics import confidence_referee_canary_audit  # noqa: E402
+from analytics.diagnostics import clv_process_target_validation  # noqa: E402
 from analytics.diagnostics import gate_f_projection_challenger_shadow_report  # noqa: E402
+from analytics.diagnostics import gate_f_preclose_clv_proxy_lab  # noqa: E402
 from analytics.diagnostics import market_agreement_tracker  # noqa: E402
 from analytics.diagnostics import market_anchor_downside_counterfactual_audit  # noqa: E402
 from analytics.diagnostics import market_anchor_selector_canary_audit  # noqa: E402
@@ -99,6 +102,27 @@ def _parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         "--market-agreement-output-jsonl",
         type=Path,
         default=market_agreement_tracker.OUTPUT_JSONL_PATH,
+    )
+    parser.add_argument(
+        "--preclose-clv-proxy-output",
+        type=Path,
+        default=gate_f_preclose_clv_proxy_lab.DEFAULT_OUTPUT,
+    )
+    parser.add_argument(
+        "--clv-process-target-output-dir",
+        type=Path,
+        default=clv_process_target_validation.DEFAULT_OUTPUT_DIR,
+    )
+    parser.add_argument(
+        "--clv-process-target-market-input",
+        type=Path,
+        default=export_market_agreement_inputs.DEFAULT_OUTPUT_DIR / "market_pick_evidence.json",
+        help="Bounded compact market evidence used only for the offline CLV target.",
+    )
+    parser.add_argument(
+        "--skip-clv-process-target-validation",
+        action="store_true",
+        help="Skip only when the bounded CLV process-target review runs separately.",
     )
     parser.add_argument(
         "--shadow-signal-synthesis-output",
@@ -228,6 +252,65 @@ def _write_shadow_notification_candidate_report(*, candidates_path: Path | None,
     output_path.parent.mkdir(parents=True, exist_ok=True)
     output_path.write_text(report if report.endswith("\n") else f"{report}\n", encoding="utf-8")
     print(f"Wrote {output_path} ({len(rows)} source rows)")
+
+
+def _clv_process_decision(summary: dict[str, object]) -> str:
+    readiness = summary.get("readiness")
+    if not isinstance(readiness, dict):
+        return "proxy_failed"
+    status = readiness.get("status")
+    if status in {"keep_as_process_kpi", "ready_for_proxy_design"}:
+        return str(status)
+    return "proxy_failed"
+
+
+def _format_percent(value: object) -> str:
+    try:
+        return f"{float(value):+.1%}"
+    except (TypeError, ValueError):
+        return "--"
+
+
+def _print_clv_process_summary(output_dir: Path) -> None:
+    """Print the bounded CLV process summary, never rows or pick actions."""
+    path = output_dir / "clv_process_target_validation.json"
+    if not path.exists():
+        print("CLV process target: coverage --; strong lift --; current-provider drift --; readiness proxy_failed.")
+        return
+    try:
+        summary = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        print("CLV process target: coverage --; strong lift --; current-provider drift --; readiness proxy_failed.")
+        return
+    if not isinstance(summary, dict):
+        print("CLV process target: coverage --; strong lift --; current-provider drift --; readiness proxy_failed.")
+        return
+    rows = summary.get("rows")
+    total_rows = len(rows) if isinstance(rows, list) else 0
+    eligible_rows = summary.get("eligible_target_rows", 0)
+    proxy_buckets = summary.get("proxy_buckets")
+    strong_bucket = proxy_buckets.get("strong_preclose_clv_proxy", {}) if isinstance(proxy_buckets, dict) else {}
+    strong_lift = strong_bucket.get("lift_vs_base_rate") if isinstance(strong_bucket, dict) else None
+    drift_buckets = summary.get("provider_era_drift")
+    current_drift = None
+    if isinstance(drift_buckets, dict):
+        current_bucket = drift_buckets.get("current_therundown_propline", {})
+        if isinstance(current_bucket, dict):
+            current_drift = current_bucket.get("lift_vs_base_rate")
+    readiness = summary.get("readiness")
+    if not isinstance(readiness, dict):
+        readiness = {}
+    decision = _clv_process_decision(summary)
+    attributed = readiness.get("fully_attributed_current_provider_targets", 0)
+    minimum_targets = readiness.get("minimum_current_provider_targets", 100)
+    positive_windows = readiness.get("positive_proxy_lift_windows", 0)
+    minimum_windows = readiness.get("minimum_positive_windows", 2)
+    print(
+        "CLV process target: "
+        f"coverage {eligible_rows}/{total_rows}; strong lift {_format_percent(strong_lift)}; "
+        f"current-provider drift {_format_percent(current_drift)}; readiness {decision} "
+        f"({attributed}/{minimum_targets}, {positive_windows}/{minimum_windows} windows)."
+    )
 
 
 def _market_agreement_args(
@@ -403,6 +486,27 @@ def main(argv: list[str] | None = None) -> int:
     ])
     if not args.refresh_market_agreement_inputs:
         market_agreement_tracker.main(_market_agreement_args(args, dataset_path))
+    gate_f_preclose_clv_proxy_lab.main([
+        "--input",
+        str(dataset_path),
+        "--output",
+        str(args.preclose_clv_proxy_output),
+    ])
+    if not args.skip_clv_process_target_validation:
+        clv_market_input = (
+            refreshed_evidence_path
+            if refreshed_evidence_path is not None
+            else args.market_pick_evidence or args.clv_process_target_market_input
+        )
+        clv_process_target_validation.main([
+            "--gate-c-input",
+            str(dataset_path),
+            "--market-input",
+            str(clv_market_input),
+            "--output-dir",
+            str(args.clv_process_target_output_dir),
+        ])
+        _print_clv_process_summary(args.clv_process_target_output_dir)
     shadow_signal_synthesis_lab.main([
         "--input",
         str(dataset_path),
