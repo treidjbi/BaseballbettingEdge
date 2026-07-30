@@ -706,6 +706,83 @@ def test_proxy_readiness_requires_current_provider_coverage_and_two_positive_14_
     assert all(window["strong_lift_vs_base_rate"] > 0 for window in readiness["rolling_14_slate_windows"])
 
 
+def test_proxy_readiness_does_not_count_historical_lift_windows_toward_current_provider_gate():
+    rows = []
+    for day in range(1, 29):
+        slate_date = f"2026-04-{day:02d}"
+        rows.extend(
+            [
+                _proxy_target(
+                    slate_date=slate_date,
+                    normalized_pitcher=f"historic strong {day}",
+                    display_pitcher=f"Historic Strong {day}",
+                ),
+                _proxy_target(
+                    slate_date=slate_date,
+                    normalized_pitcher=f"historic weak {day}",
+                    display_pitcher=f"Historic Weak {day}",
+                    side="under",
+                    final_clv="worse_close_price",
+                    edge=0.08,
+                    adj_ev=0.2,
+                    model_no_vig_gap=0.005,
+                    model_market_relationship="model_fades_favorite",
+                    quality_gate_level="blocked",
+                    price_sign="plus",
+                    bet_timing_window="pre_5",
+                    side_price_movement="against_side",
+                    toward_pick_count=0,
+                    away_from_pick_count=2,
+                    book_count=1,
+                    broad_confirmation=False,
+                    best_is_off_market=True,
+                    reversal_book_count=2,
+                    volatile_book_count=3,
+                    market_consensus="away_from_pick",
+                    pick_history_pnl=-1.0,
+                    result="loss",
+                ),
+            ]
+        )
+    for copy in range(100):
+        rows.append(
+            _proxy_target(
+                slate_date="2026-07-01",
+                normalized_pitcher=f"current weak {copy}",
+                display_pitcher=f"Current Weak {copy}",
+                side="under",
+                final_clv="worse_close_price",
+                edge=0.08,
+                adj_ev=0.2,
+                model_no_vig_gap=0.005,
+                model_market_relationship="model_fades_favorite",
+                quality_gate_level="blocked",
+                price_sign="plus",
+                bet_timing_window="pre_5",
+                side_price_movement="against_side",
+                toward_pick_count=0,
+                away_from_pick_count=2,
+                book_count=1,
+                broad_confirmation=False,
+                best_is_off_market=True,
+                reversal_book_count=2,
+                volatile_book_count=3,
+                market_consensus="away_from_pick",
+                pick_history_pnl=-1.0,
+                result="loss",
+            )
+        )
+
+    readiness = clv.build_summary(rows)["readiness"]
+
+    assert readiness["fully_attributed_current_provider_targets"] == 100
+    assert readiness["all_era_positive_proxy_lift_windows"] == 2
+    assert readiness["positive_proxy_lift_windows"] == 0
+    assert len(readiness["all_era_rolling_14_slate_windows"]) == 2
+    assert readiness["readiness_rolling_14_slate_windows"][0]["slates"] == 1
+    assert readiness["status"] == "keep_as_process_kpi"
+
+
 def test_proxy_validation_report_marks_pnl_as_non_causal_and_brier_as_process_diagnostic():
     report = clv.render_report(clv.build_summary([_proxy_target()]))
 

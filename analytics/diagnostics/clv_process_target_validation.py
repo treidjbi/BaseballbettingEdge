@@ -530,10 +530,10 @@ def build_summary(rows: list[dict[str, Any]]) -> dict[str, Any]:
             value: _bucket_metrics(bucket_rows, denominator=len(target_rows), base_rate=base_rate, forecast=None)
             for value, bucket_rows in sorted(grouped.items())
         }
-    rolling_windows = _rolling_14_slate_windows(target_rows, base_rate)
+    all_era_rolling_windows = _rolling_14_slate_windows(target_rows, base_rate)
     slices["rolling_14_slates"] = {
         f"{window['start_date']}..{window['end_date']}": window
-        for window in rolling_windows
+        for window in all_era_rolling_windows
     }
     pnl_crosstab: dict[str, dict[str, dict[str, Any]]] = {}
     for label in PROXY_LABELS:
@@ -546,11 +546,19 @@ def build_summary(rows: list[dict[str, Any]]) -> dict[str, Any]:
                 forecast=None,
             )
             for target in ("beat", "neutral", "worse", "unknown")
-        }
+    }
     fully_attributed_current = [row for row in target_rows if _is_fully_attributed_current_provider(row)]
+    readiness_rolling_windows = _rolling_14_slate_windows(fully_attributed_current, base_rate)
+    all_era_positive_windows = [
+        window
+        for window in all_era_rolling_windows
+        if window["slates"] == 14
+        and window["strong_evaluated_rows"] > 0
+        and (window["strong_lift_vs_base_rate"] or 0.0) > 0
+    ]
     positive_windows = [
         window
-        for window in rolling_windows
+        for window in readiness_rolling_windows
         if window["slates"] == 14
         and window["strong_evaluated_rows"] > 0
         and (window["strong_lift_vs_base_rate"] or 0.0) > 0
@@ -577,7 +585,10 @@ def build_summary(rows: list[dict[str, Any]]) -> dict[str, Any]:
             "current_provider_start": CURRENT_PROVIDER_START,
             "fully_attributed_current_provider_targets": len(fully_attributed_current),
             "minimum_current_provider_targets": 100,
-            "rolling_14_slate_windows": rolling_windows,
+            "all_era_rolling_14_slate_windows": all_era_rolling_windows,
+            "all_era_positive_proxy_lift_windows": len(all_era_positive_windows),
+            "readiness_rolling_14_slate_windows": readiness_rolling_windows,
+            "rolling_14_slate_windows": readiness_rolling_windows,
             "positive_proxy_lift_windows": len(positive_windows),
             "minimum_positive_windows": 2,
             "status": readiness_status,
@@ -657,7 +668,8 @@ def render_report(summary: dict[str, Any]) -> str:
             "",
             f"- Status: `{readiness.get('status', 'keep_as_process_kpi')}`",
             f"- Fully attributed current-provider targets since `{readiness.get('current_provider_start', CURRENT_PROVIDER_START)}`: `{readiness.get('fully_attributed_current_provider_targets', 0)}` / `{readiness.get('minimum_current_provider_targets', 100)}`.",
-            f"- Positive strong-proxy lift windows: `{readiness.get('positive_proxy_lift_windows', 0)}` / `{readiness.get('minimum_positive_windows', 2)}` consecutive 14-slate windows.",
+            f"- Current-provider readiness windows: `{len(readiness.get('readiness_rolling_14_slate_windows') or [])}`; positive strong-proxy lift windows: `{readiness.get('positive_proxy_lift_windows', 0)}` / `{readiness.get('minimum_positive_windows', 2)}` consecutive 14-slate windows.",
+            f"- All-era descriptive windows: `{len(readiness.get('all_era_rolling_14_slate_windows') or [])}`; positive all-era windows: `{readiness.get('all_era_positive_proxy_lift_windows', 0)}`. These cannot satisfy readiness.",
             "- Brier-style scoring uses fixed ordinal pre-close forecasts (strong .75, medium .50, weak .25); it is a process calibration diagnostic, not a calibrated probability claim.",
             "- PnL is cross-tabbed with final CLV for context only; it is not causal proof of the other outcome.",
             "- Side, price, K-line, timing, quality, Path B, workload, provider, agreement, and rolling 14-slate slices are included in the JSON for review before any separate design plan.",
