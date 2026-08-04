@@ -400,6 +400,66 @@ def test_v2_current_lock_at_t30_still_freezes_instead_of_becoming_too_late(monke
     assert len(writer.inserts) == 1
 
 
+def test_v2_current_lock_freezes_when_shadow_timing_contains_optional_webhook_error(
+    monkeypatch,
+):
+    _stub_pipeline(monkeypatch, status="selected", lane="consensus_core")
+    lock = {
+        "dedupe_key": "2026-07-22:tarik skubal:over",
+        "slate_date": "2026-07-22",
+        "normalized_pitcher": "tarik skubal",
+        "side": "over",
+        "locked_at": NOW.isoformat(),
+        "observed_at": NOW.isoformat(),
+        "status_at_capture": "due_now",
+    }
+    shadow_pipeline_timing = {
+        "skipped": False,
+        "pipeline_runs": 1,
+        "pick_lock_observations": 1,
+        "pipeline_run_row": {
+            "metadata": {
+                "propline_webhooks": {
+                    "skipped": True,
+                    "reason": "webhook_processing_failed",
+                    "error": "Supabase REST returned 500",
+                },
+            },
+        },
+    }
+    writer = Writer({"operational_pick_locks": [lock]})
+    monkeypatch.setattr(recording, "build_frozen_row", lambda **kwargs: {
+        **kwargs["provisional_row"], "checkpoint": "frozen_pregame",
+    })
+
+    result = _record(
+        writer,
+        payload=_payload(game_time="2026-07-22T20:40:00+00:00"),
+        shadow_pipeline_timing=shadow_pipeline_timing,
+    )
+
+    assert result["frozen_rows"] == 1
+    assert len(writer.inserts) == 1
+
+
+@pytest.mark.parametrize(
+    "prerequisite,summary",
+    [
+        ("operational_pick_locks", {"skipped": True, "reason": "write_failed"}),
+        ("market_line_build", {"skipped": True, "reason": "build_failed"}),
+        ("shadow_pipeline_timing", {"skipped": True, "error": "write failed"}),
+        ("ready_to_bet_write", {"skipped": True, "reason": "write_failed"}),
+    ],
+)
+def test_v2_top_level_prerequisite_failures_still_fail_closed(prerequisite, summary):
+    writer = Writer()
+
+    result = _record(writer, **{prerequisite: summary})
+
+    assert result == {"skipped": True, "reason": "prerequisite_failed", "rows": 0}
+    assert writer.select_calls == []
+
+
 def test_v2_relevant_pending_dependency_freezes_pending(monkeypatch):
     _stub_pipeline(monkeypatch, status="pending", lane=None)
     lock = {"dedupe_key": "2026-07-22:tarik skubal:over", "locked_at": NOW.isoformat(), "observed_at": NOW.isoformat()}

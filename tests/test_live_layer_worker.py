@@ -4670,6 +4670,12 @@ def test_render_entrypoint_uses_remote_today_artifact_when_no_date_argument(tmp_
             "line_movement_events": 0,
             "game_reminders": 0,
             "propline": {"skipped": True},
+            "alternative_pick_selection": {
+                "skipped": False,
+                "rows": 1,
+                "provisional_rows": 0,
+                "frozen_rows": 1,
+            },
         }
 
     monkeypatch.setattr(build_live_events_to_supabase, "_load_artifact", load_artifact)
@@ -4682,6 +4688,7 @@ def test_render_entrypoint_uses_remote_today_artifact_when_no_date_argument(tmp_
     output = capsys.readouterr().out
     assert "date=2026-05-07" in output
     assert "artifact_source=remote" in output
+    assert "alt_picks=rows:1 provisional:0 frozen:1" in output
 
 
 def test_default_live_artifact_url_uses_get_artifact():

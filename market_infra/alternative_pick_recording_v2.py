@@ -88,6 +88,19 @@ def _summary_failed(value: Any) -> bool:
     return False
 
 
+def _top_level_summary_failed(value: Any) -> bool:
+    if not isinstance(value, dict):
+        return False
+    reason = _text(value.get("reason")).lower()
+    status = _text(value.get("status")).lower()
+    return bool(
+        value.get("error")
+        or status == "failed"
+        or reason == "failed"
+        or reason.endswith("_failed")
+    )
+
+
 def _failure(reason: str) -> dict[str, Any]:
     return {
         "skipped": True,
@@ -351,9 +364,12 @@ def _record_alternative_pick_selection_v2_impl(
 ) -> dict[str, Any]:
     """Record V2 state with one-attempt reads and no provider or broad-evidence input."""
     del artifact_source
-    if any(_summary_failed(summary) for summary in (
-        operational_pick_locks, market_line_build, shadow_pipeline_timing, ready_to_bet_write,
-    )):
+    if (
+        _summary_failed(operational_pick_locks)
+        or _summary_failed(market_line_build)
+        or _top_level_summary_failed(shadow_pipeline_timing)
+        or _summary_failed(ready_to_bet_write)
+    ):
         return {"skipped": True, "reason": "prerequisite_failed", "rows": 0}
     started = time.monotonic()
 

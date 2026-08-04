@@ -1385,6 +1385,20 @@ def _lock_build_summary(result: dict[str, Any]) -> str:
     )
 
 
+def _alternative_pick_build_summary(result: dict[str, Any]) -> str:
+    alternative = result.get("alternative_pick_selection") or {
+        "skipped": True,
+        "reason": "missing",
+    }
+    if alternative.get("skipped"):
+        return f"alt_picks=skipped:{alternative.get('reason', 'unknown')}"
+    return (
+        f"alt_picks=rows:{alternative.get('rows', 0)} "
+        f"provisional:{alternative.get('provisional_rows', 0)} "
+        f"frozen:{alternative.get('frozen_rows', 0)}"
+    )
+
+
 def _public_operational_lock_summary(summary: dict[str, Any]) -> dict[str, Any]:
     allowed = ("skipped", "reason", "rows", "inserted_rows")
     public = {key: summary[key] for key in allowed if key in summary}
@@ -2073,6 +2087,7 @@ def main() -> int:
         f"notification_events={result['notification_events']} "
         f"live_market_display={result.get('live_market_display_state', 0)} "
         f"{_lock_build_summary(result)} "
+        f"{_alternative_pick_build_summary(result)} "
         "artifact_source="
         f"{'remote' if result.get('artifact_source') == 'remote' or str(result.get('artifact_source', artifact_source)).startswith('http') else 'local'} "
         f"{therundown_summary} "
