@@ -394,6 +394,21 @@ retention, or source-of-truth behavior.
 | UI | Live-market display remains default-on and display-only; Alt V2 remains comparison-only. | Continue separate soak; neither surface opens a provider, betting-rule, or official-pick promotion. |
 | Tracking / data collection / history | Gate D repair is live on the research cron. The July 30 run refreshed canonical research evidence without authorizing new storage, retention, or runtime behavior. | Require ten clean scheduled graded slates; keep the Gasser exception fail-closed and do not infer missing attribution. |
 
+### August 5 Alt V2 optional-telemetry and lock-integrity overlay
+
+Tyler approved the previously local Alt V2 prerequisite fix for push and
+production deployment. This overlay records the deployment and the separate
+Gabriel Hughes lock-gap diagnosis; it does not approve a model, provider,
+notification, strict-lock, dashboard-source, accepted-bet, staking, threshold,
+or retention change.
+
+| Lane | Confirmed evidence | Next decision |
+| --- | --- | --- |
+| Pipeline / infrastructure | Exact commit `cf103127` passed the complete `2,005`-test suite, was pushed to `main`, and is live only on `bbe-live-layer` as Render deploy `dep-d9pmuivlk1mc73eeoak0`. The first scheduled cycle used the remote artifact and logged `alt_picks=rows:17 provisional:17 frozen:0`. Natural T-30 cycles at `17:40:50Z` and `17:50:25Z` each inserted two `due_now` operational locks and two linked V2 frozen rows; the following lock crons applied and consumed all four rows. | Keep normal soak. The exact nested optional-webhook-error path is regression-proven but did not occur naturally in either production checkpoint, so verify it opportunistically if a real optional webhook failure coincides with a future due lock; do not inject an error. |
+| Model | Unchanged. Alt V2 remains a comparison-only selector over official non-PASS candidates and changes no lambda, verdict, threshold, staking, or official history rule. | Continue prospective grading separately from official model performance; all live model gates remain closed. |
+| UI | Unchanged. No dashboard or endpoint deploy was required. | Continue the existing Alt V2/default-on live-market UI soak. |
+| Tracking / data collection / history | Hunter Brown UNDER 5.5 and Jameson Taillon UNDER 4.5 froze as `not_selected` at `29.16` minutes before first pitch. Eric Lauer OVER 3.5 froze `not_selected` and Shota Imanaga OVER 4.5 froze `selected` in `consensus_core` at `29.57` minutes. For all four rows, lock key, artifact hash/path, line, price, book, game time, and observation time match the consumed operational lock. The Gabriel Hughes August 4 gap was not a provider or failed-lock incident: confirmed Tampa Bay lineup data dropped his lambda from `3.99` to `3.59` and current verdict to PASS at `22:07Z`; FanDuel later moved from `+108` to `+112`, and the `00:37` refresh restored LEAN only about two minutes before the `00:40` start, after the last usable live-layer/lock window. | Treat Hughes as a separate late-verdict-reentry/cadence design gap. Any rule that suppresses, freezes, or immediately locks a post-T-30 re-entry needs a separate Tyler-approved plan; make no retrospective lock or Alt freeze. |
+
 ### July 29 strict-runtime implementation and market-shrink decision overlay
 
 Tyler approved executing both bounded research plans and externally activating

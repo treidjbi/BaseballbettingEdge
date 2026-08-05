@@ -1681,6 +1681,59 @@ infrastructure/readiness evidence only and does not reopen any official model,
 pick-selection, threshold, staking, provider, notification, lock,
 accepted-bet, artifact, history, retention, or source-of-truth gate.
 
+### 2026-08-05 optional-telemetry repair deployment evidence
+
+- The August 3 missed-freeze investigation isolated optional PropLine webhook
+  telemetry as the cause: nested `webhook_processing_failed` metadata inside
+  an otherwise successful shadow-timing summary was recursively treated as a
+  fatal V2 prerequisite. Official locks, quotes, artifacts, providers, and the
+  lock consumer were healthy. Historical missed checkpoints remain
+  intentionally unreconstructed.
+- Scoped commit `cf103127` evaluates the shadow-timing prerequisite only from
+  its top-level `error`, failure `status`, or failure `reason`; required lock,
+  market-line, shadow-timing write, and ready-to-bet write failures remain
+  fail-closed. It also adds the bounded `alt_picks=...` live-layer log summary.
+  The red-green optional-error regression and the complete `2,005`-test suite
+  passed on the exact commit before publication.
+- Tyler approved push and deployment on August 5. GitHub `main` and local
+  `main` both resolved to `cf103127`; Render deploy
+  `dep-d9pmuivlk1mc73eeoak0` reached `live` on the same commit for
+  `bbe-live-layer` only. No environment variable, schedule, pipeline cron,
+  provider, model, notification, lock, dashboard, or retention setting changed.
+- The first scheduled cycle on the deployed code completed at `17:21:05Z`
+  from the remote artifact and logged
+  `alt_picks=rows:17 provisional:17 frozen:0`. The first natural T-30 cycle
+  then captured Hunter Brown UNDER 5.5 and Jameson Taillon UNDER 4.5 at
+  `17:40:50Z`, `29.16` minutes before first pitch. It inserted two exact
+  `due_now` operational locks and two V2 `frozen_pregame` rows, both
+  `not_selected`; the `17:42` lock cron applied and consumed both rows.
+- A second natural T-30 cycle captured Eric Lauer OVER 3.5 and Shota Imanaga
+  OVER 4.5 at `17:50:25Z`, `29.57` minutes before first pitch. Lauer froze
+  `not_selected`; Imanaga froze `selected` in `consensus_core`. The `17:52`
+  lock cron applied and consumed both new rows.
+- Database verification matched all four frozen rows to their consumed
+  operational locks on key, artifact hash/path, line, odds, book, game time,
+  and observation timestamp. Both production checkpoints had healthy optional
+  webhook processing (`50` and `8` deliveries processed), so they prove the
+  natural deployed freeze path but not a naturally occurring webhook-error coincidence.
+  The exact optional-error branch remains regression-proven; verify it only if
+  a real future optional failure overlaps a due lock, without injecting an
+  error or synthesizing a checkpoint.
+- A separate read-only August 4 review found Gabriel Hughes did not disappear
+  from provider coverage. His confirmed Tampa Bay lineup arrived at `22:07Z`,
+  dropping lambda from `3.99` to `3.59` and the current verdict from FIRE to
+  PASS. FanDuel OVER 3.5 stayed available and later moved from `+108` to `+112`;
+  the `00:37` refresh restored LEAN only about two minutes before the `00:40`
+  first pitch. The next live cycle correctly classified him
+  `started_unlocked`, so no valid operational lock or V2 freeze could be
+  written. Any late-verdict-reentry rule is a separate design/approval gate;
+  do not reconstruct the historical row.
+
+The decision remains soak/observe. Neither the repair, the two natural frozen
+rows, nor the Hughes diagnosis opens any official-pick, model, provider,
+threshold, staking, notification, strict-lock, accepted-bet, artifact,
+dashboard-source, history, or retention gate.
+
 ---
 
 ## Task 14: Exercise and document rollback readiness
