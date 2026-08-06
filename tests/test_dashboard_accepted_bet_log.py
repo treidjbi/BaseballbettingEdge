@@ -37,7 +37,7 @@ def test_dashboard_bet_ticket_allows_negative_american_odds():
 
     assert "parseBetLogNumber" in app
     assert 'replace(/\\u2212/g, "-")' in app
-    assert 'pattern="[+-]?[0-9]*"' in app
+    assert 'pattern="[+\\-]?[0-9]*"' in app
     assert 'placeholder="-145"' in app
     assert 'inputMode="text"' in app
 
@@ -102,7 +102,7 @@ def test_dashboard_cache_busts_same_line_trust_assets():
     html = DASHBOARD_HTML.read_text(encoding="utf-8")
 
     assert "v2-data.js?v=2026-07-21-alt-picks" in html
-    assert "v2-app.js?v=2026-07-24-alt-ui-recovery" in html
+    assert "v2-app.js?v=2026-08-06-bet-ticket-pattern" in html
 
 
 def test_dashboard_fetches_read_only_same_day_accepted_bet_review():
@@ -187,7 +187,7 @@ def test_dashboard_can_load_review_after_manual_key_entry():
 def test_dashboard_busts_v2_app_cache_for_accepted_bet_ui():
     html = DASHBOARD_HTML.read_text(encoding="utf-8")
 
-    assert "v2-app.js?v=2026-07-24-alt-ui-recovery" in html
+    assert "v2-app.js?v=2026-08-06-bet-ticket-pattern" in html
     assert "v2-data.js?v=2026-07-21-alt-picks" in html
 
 

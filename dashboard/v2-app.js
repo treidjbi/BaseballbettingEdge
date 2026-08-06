@@ -2039,7 +2039,7 @@ function PickDetail({
     value: betForm.odds,
     onChange: e => updateBetForm("odds", e.target.value),
     inputMode: "text",
-    pattern: "[+-]?[0-9]*",
+    pattern: "[+\\-]?[0-9]*",
     placeholder: "-145",
     autoComplete: "off"
   })), /*#__PURE__*/React.createElement("label", {

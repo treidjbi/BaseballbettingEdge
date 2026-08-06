@@ -7,6 +7,24 @@ import vm from "node:vm";
 const scriptPath = path.resolve("dashboard/v2-app.js");
 const scriptSource = await fs.readFile(scriptPath, "utf8");
 
+test("Bet Ticket odds pattern is valid under browser Unicode Sets rules", () => {
+  const match = scriptSource.match(
+    /value: betForm\.odds,[\s\S]{0,350}?pattern: ("(?:\\.|[^"\\])*")/,
+  );
+  assert.ok(match, "compiled Bet Ticket odds input exposes a pattern");
+  const oddsPattern = JSON.parse(match[1]);
+  let validationPattern;
+  assert.doesNotThrow(() => {
+    validationPattern = new RegExp(`^(?:${oddsPattern})$`, "v");
+  });
+  for (const validOdds of ["-145", "+120", "100", ""]) {
+    assert.equal(validationPattern.test(validOdds), true, validOdds);
+  }
+  for (const invalidOdds of ["1.5", "abc", "++120", "+ 120"]) {
+    assert.equal(validationPattern.test(invalidOdds), false, invalidOdds);
+  }
+});
+
 function loadTicketContextHelper() {
   const footerStart = scriptSource.indexOf("const root = ReactDOM.createRoot");
   assert.notEqual(footerStart, -1, "dashboard app root footer is present");
