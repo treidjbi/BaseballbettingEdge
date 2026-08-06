@@ -1,6 +1,6 @@
 # Current State
 
-Last updated: 2026-07-30
+Last updated: 2026-08-06
 
 ## Read Order
 
@@ -408,6 +408,18 @@ or retention change.
 | Model | Unchanged. Alt V2 remains a comparison-only selector over official non-PASS candidates and changes no lambda, verdict, threshold, staking, or official history rule. | Continue prospective grading separately from official model performance; all live model gates remain closed. |
 | UI | Unchanged. No dashboard or endpoint deploy was required. | Continue the existing Alt V2/default-on live-market UI soak. |
 | Tracking / data collection / history | Hunter Brown UNDER 5.5 and Jameson Taillon UNDER 4.5 froze as `not_selected` at `29.16` minutes before first pitch. Eric Lauer OVER 3.5 froze `not_selected` and Shota Imanaga OVER 4.5 froze `selected` in `consensus_core` at `29.57` minutes. For all four rows, lock key, artifact hash/path, line, price, book, game time, and observation time match the consumed operational lock. The Gabriel Hughes August 4 gap was not a provider or failed-lock incident: confirmed Tampa Bay lineup data dropped his lambda from `3.99` to `3.59` and current verdict to PASS at `22:07Z`; FanDuel later moved from `+108` to `+112`, and the `00:37` refresh restored LEAN only about two minutes before the `00:40` start, after the last usable live-layer/lock window. | Treat Hughes as a separate late-verdict-reentry/cadence design gap. Any rule that suppresses, freezes, or immediately locks a post-T-30 re-entry needs a separate Tyler-approved plan; make no retrospective lock or Alt freeze. |
+
+### August 6 Bet Ticket validation deployment overlay
+
+The scoped Bet Ticket HTML-pattern repair is deployed and verified. It changes
+only client-side accepted-bet form validation; it does not change accepted-bet
+storage, model, provider, notification, lock, artifact, staking, threshold,
+retention, or source-of-truth behavior.
+
+| Lane | Confirmed evidence | Next decision |
+| --- | --- | --- |
+| UI | Exact `main` commit `f44a31d8` passed all `59` JavaScript and `2,005` Python tests, was pushed to GitHub, and is live on ready Netlify production deploy `6a74c6f2cbaa4900089d2fb6`. A cache-busted production browser check opened Dylan Cease's live-book Bet Ticket and confirmed the deployed odds pattern is `[+\\-]?[0-9]*`: existing `-126` and test `+120` were valid, while `1.5` failed with `patternMismatch=true`. The prior invalid regular-expression console error did not recur. The ticket was canceled without saving; the only console error was the pre-existing missing `favicon.ico`. | Treat the Bet Ticket validation defect as resolved and continue the existing UI soak. Same-line/alternate-line behavior, same-day duplicate warnings, phone density, and accepted-bet provenance remain observation items; no broader UI or betting-rule promotion follows from this repair. |
+| Pipeline / infrastructure | The dashboard-only Netlify publication did not redeploy Render services or alter Supabase, provider, scheduler, lock, notification, or artifact behavior. | Continue ordinary pipeline observation and escalate only for stale served artifacts, missed due locks, grading/history divergence, or notification delivery failures. |
 
 ### July 29 strict-runtime implementation and market-shrink decision overlay
 
