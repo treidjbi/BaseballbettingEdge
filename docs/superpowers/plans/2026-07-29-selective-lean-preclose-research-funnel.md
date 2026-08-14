@@ -1,5 +1,13 @@
 # Selective LEAN and Pre-Close Research Funnel Implementation Plan
 
+> **2026-08-14 status:** Tyler approved one frozen research-only counter after
+> the independent 2026-08-13 design review found that
+> `expand_lean_low_line_capped_model_fade` had repaired its earlier
+> current/recent weakness. Task 2 is now controlled by
+> `2026-08-14-selective-lean-prospective-audit.md`. The original threshold
+> funnel remains unimplemented; no additional LEAN rule or pre-close modifier
+> was searched or promoted.
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Reduce the current selective-LEAN ideas to at most one fixed, live-safe research candidate by testing whether pre-close confirmation repairs their weak current and recent performance.
@@ -15,7 +23,9 @@
   - `expand_lean_low_line_capped_model_fade` (`83`, `+1.96u`; current `-6.46u`);
   - `expand_lean_low_k_standard_no_vig` (`66`, `+1.93u`; current `-3.52u`); and
   - `strict_runtime_core_plus_selective_lean_and_preclose_strong` as a comparison only (`186`, `+31.40u`).
-- Current/recent weakness blocks an immediate prospective canary.
+- The original July 29 current/recent weakness was superseded by the verified
+  August 13 review. Only `expand_lean_low_line_capped_model_fade` is nominated;
+  formal prospective evidence still starts at zero.
 - Final CLV cannot be a selector input. Only exact pre-close evidence available before the official lock may be used.
 - The funnel may nominate at most one fixed rule. If none clears holdout requirements, report `no_candidate`.
 - A future review requires at least `75` post-freeze graded rows, positive current-provider and latest-14-slate PnL, at least `20` UNDER and `10` plus-price rows, and complete mandatory slices.
@@ -51,10 +61,10 @@
 - Modify: `scripts/run_post_grading_shadow_reports.py`
 - Modify: `tests/test_post_grading_shadow_reports.py`
 
-- [ ] Use only the last fully graded pre-freeze slate for selection; all later rows are holdout.
-- [ ] Freeze the exact rule and SHA-256 fingerprint, or record `no_candidate` and stop.
-- [ ] Count only rows with mature pre-lock evidence and no critical attribution gap.
-- [ ] Keep output post-grading-only and add a skip flag to the research runner.
+- [x] Use only the last fully graded pre-freeze slate for selection; all later rows are holdout.
+- [x] Freeze the exact rule and SHA-256 fingerprint, or record `no_candidate` and stop.
+- [x] Count only rows with mature pre-lock evidence and no critical attribution gap.
+- [x] Keep output post-grading-only and add a skip flag to the research runner.
 - [ ] Commit `test: freeze selective lean holdout candidate` only if a nominee exists.
 
 ### Task 3: Review without promotion
@@ -64,10 +74,10 @@
 - Create: `docs/research/selective-lean-preclose-review.md`
 - Modify: `docs/current-state.md`
 
-- [ ] Report historical nomination data separately from prospective holdout data.
-- [ ] Include side, price, K-line, quality, timing, model/market, Path B, workload, CLV/proxy, provider, agreement, and rolling windows.
-- [ ] Issue `continue_research`, `ready_for_separate_shadow_design`, or `retire`.
-- [ ] Stop before any official-pick or staking design.
-- [ ] Run all focused tests, the full Python suite, and `git diff --check`.
+- [x] Report historical nomination data separately from prospective holdout data.
+- [x] Include side, price, K-line, quality, timing, model/market, Path B, workload, CLV/proxy, provider, agreement, and rolling windows.
+- [x] Issue `continue_research`, `ready_for_separate_shadow_design`, or `retire`.
+- [x] Stop before any official-pick or staking design.
+- [x] Run all focused tests, the full Python suite, and `git diff --check`.
 - [ ] Commit `docs: review selective lean preclose research`.
 

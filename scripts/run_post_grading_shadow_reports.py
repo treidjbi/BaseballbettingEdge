@@ -30,6 +30,7 @@ from analytics.diagnostics import market_anchor_selector_canary_audit  # noqa: E
 from analytics.diagnostics import market_shrink_projection_canary_audit  # noqa: E402
 from analytics.diagnostics import no_drag_composite_canary_audit  # noqa: E402
 from analytics.diagnostics import profit_rescue_audit  # noqa: E402
+from analytics.diagnostics import selective_lean_prospective_audit  # noqa: E402
 from analytics.diagnostics import shadow_signal_synthesis_lab  # noqa: E402
 from analytics.diagnostics import shadow_notification_candidate_audit  # noqa: E402
 from analytics.diagnostics import strong_base_decision_lab  # noqa: E402
@@ -152,6 +153,21 @@ def _parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         "--no-drag-canary-output-json",
         type=Path,
         default=no_drag_composite_canary_audit.DEFAULT_OUTPUT_JSON,
+    )
+    parser.add_argument(
+        "--selective-lean-prospective-output-md",
+        type=Path,
+        default=selective_lean_prospective_audit.DEFAULT_OUTPUT_MD,
+    )
+    parser.add_argument(
+        "--selective-lean-prospective-output-json",
+        type=Path,
+        default=selective_lean_prospective_audit.DEFAULT_OUTPUT_JSON,
+    )
+    parser.add_argument(
+        "--skip-selective-lean-prospective-audit",
+        action="store_true",
+        help="Skip the frozen research-only selective-LEAN prospective audit.",
     )
     parser.add_argument(
         "--strict-runtime-core-output-md",
@@ -543,6 +559,15 @@ def main(argv: list[str] | None = None) -> int:
         "--output-json",
         str(args.no_drag_canary_output_json),
     ])
+    if not args.skip_selective_lean_prospective_audit:
+        selective_lean_prospective_audit.main([
+            "--input",
+            str(dataset_path),
+            "--output-md",
+            str(args.selective_lean_prospective_output_md),
+            "--output-json",
+            str(args.selective_lean_prospective_output_json),
+        ])
     if not args.skip_strict_runtime_core_audit:
         strict_runtime_core_canary_audit.main([
             "--input",
@@ -620,6 +645,12 @@ def main(argv: list[str] | None = None) -> int:
         label="No-drag prospective canary",
         section_titles={"Executive Read", "Counter", "Baseline Reconciliation"},
     )
+    if not args.skip_selective_lean_prospective_audit:
+        _print_review_excerpt(
+            args.selective_lean_prospective_output_md,
+            label="Selective LEAN prospective audit",
+            section_titles={"Executive Read", "Integrity", "Review Gates"},
+        )
     if not args.skip_strict_runtime_core_audit:
         _print_review_excerpt(
             args.strict_runtime_core_output_md,

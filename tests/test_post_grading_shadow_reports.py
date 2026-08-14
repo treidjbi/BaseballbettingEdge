@@ -78,6 +78,7 @@ def _stub_clv_runner_dependencies(tmp_path, monkeypatch):
         runner.shadow_signal_synthesis_lab,
         runner.strong_base_fire_policy_matrix,
         runner.no_drag_composite_canary_audit,
+        runner.selective_lean_prospective_audit,
         runner.strict_runtime_core_canary_audit,
         runner.market_shrink_projection_canary_audit,
     ):
@@ -351,6 +352,7 @@ def test_runner_runs_clv_process_validation_after_agreement_and_preclose_reports
         runner.shadow_signal_synthesis_lab,
         runner.strong_base_fire_policy_matrix,
         runner.no_drag_composite_canary_audit,
+        runner.selective_lean_prospective_audit,
         runner.strict_runtime_core_canary_audit,
         runner.market_shrink_projection_canary_audit,
     ):
@@ -414,6 +416,8 @@ def test_runner_rebuilds_shadow_reports_and_prints_review_excerpt(tmp_path, monk
     fire_policy_matrix_output_json = tmp_path / "strong_base_fire_policy_matrix.json"
     no_drag_output_md = tmp_path / "no_drag_composite_canary_audit.md"
     no_drag_output_json = tmp_path / "no_drag_composite_canary_audit.json"
+    selective_lean_output_md = tmp_path / "selective_lean_prospective_audit.md"
+    selective_lean_output_json = tmp_path / "selective_lean_prospective_audit.json"
     strict_output_md = tmp_path / "strict_runtime_core_canary_audit.md"
     strict_output_json = tmp_path / "strict_runtime_core_canary_audit.json"
     gate_f_output = tmp_path / "gate_f_projection_challenger_shadow_report.md"
@@ -590,6 +594,30 @@ def test_runner_rebuilds_shadow_reports_and_prints_review_excerpt(tmp_path, monk
 
     monkeypatch.setattr(runner.no_drag_composite_canary_audit, "main", fake_no_drag_main)
 
+    def fake_selective_lean_main(argv):
+        calls.append(("selective_lean_prospective", argv))
+        selective_lean_output_md.write_text(
+            "# Selective LEAN Prospective Audit\n\n"
+            "## Executive Read\n\n"
+            "- Status: `collecting`\n"
+            "- Decision: `continue_research`\n"
+            "- Formal prospective counter: `0/75`.\n\n"
+            "## Integrity\n\n"
+            "- Historical baseline reconciles: `yes`.\n\n"
+            "## Review Gates\n\n"
+            "- `prospective_floor`: `hold`\n\n"
+            "## Debug Detail\n\n"
+            "- Not needed in the scheduler excerpt.\n",
+            encoding="utf-8",
+        )
+        selective_lean_output_json.write_text("{}\n", encoding="utf-8")
+
+    monkeypatch.setattr(
+        runner.selective_lean_prospective_audit,
+        "main",
+        fake_selective_lean_main,
+    )
+
     def fake_strict_runtime_main(argv):
         calls.append(("strict_runtime_core", argv))
         strict_output_md.write_text(
@@ -690,6 +718,10 @@ def test_runner_rebuilds_shadow_reports_and_prints_review_excerpt(tmp_path, monk
         str(no_drag_output_md),
         "--no-drag-canary-output-json",
         str(no_drag_output_json),
+        "--selective-lean-prospective-output-md",
+        str(selective_lean_output_md),
+        "--selective-lean-prospective-output-json",
+        str(selective_lean_output_json),
         "--strict-runtime-core-output-md",
         str(strict_output_md),
         "--strict-runtime-core-output-json",
@@ -826,6 +858,17 @@ def test_runner_rebuilds_shadow_reports_and_prints_review_excerpt(tmp_path, monk
             ],
         ),
         (
+            "selective_lean_prospective",
+            [
+                "--input",
+                str(output_dir / "pitcher_k_outcome_dataset.jsonl"),
+                "--output-md",
+                str(selective_lean_output_md),
+                "--output-json",
+                str(selective_lean_output_json),
+            ],
+        ),
+        (
             "strict_runtime_core",
             [
                 "--input",
@@ -885,6 +928,11 @@ def test_runner_rebuilds_shadow_reports_and_prints_review_excerpt(tmp_path, monk
     assert "Status: `collecting`" in output
     assert "52/75" in output
     assert "Rebuilt history matches" in output
+    assert "Selective LEAN prospective audit excerpt:" in output
+    assert "Decision: `continue_research`" in output
+    assert "Formal prospective counter: `0/75`" in output
+    assert "Historical baseline reconciles: `yes`" in output
+    assert "`prospective_floor`: `hold`" in output
     assert "Strict runtime core prospective audit excerpt:" in output
     assert "Fingerprint: `frozen-strict-core`" in output
     assert "Current-provider counter: `20/50`" in output
@@ -946,6 +994,7 @@ def test_runner_refreshes_compact_inputs_before_one_gate_c_build(tmp_path, monke
         ("shadow_signal", runner.shadow_signal_synthesis_lab),
         ("fire_policy_matrix", runner.strong_base_fire_policy_matrix),
         ("no_drag", runner.no_drag_composite_canary_audit),
+        ("selective_lean", runner.selective_lean_prospective_audit),
         ("strict_runtime", runner.strict_runtime_core_canary_audit),
         ("market_shrink", runner.market_shrink_projection_canary_audit),
     ):
@@ -1022,4 +1071,67 @@ def test_runner_refreshes_compact_inputs_before_one_gate_c_build(tmp_path, monke
     )
     no_drag_args = next(args for label, args in calls if label == "no_drag")
     assert no_drag_args[no_drag_args.index("--input") + 1] == str(dataset_path)
+    selective_lean_args = next(
+        args for label, args in calls if label == "selective_lean"
+    )
+    assert selective_lean_args[selective_lean_args.index("--input") + 1] == str(
+        dataset_path
+    )
     assert not any(label == "strict_runtime" for label, _ in calls)
+
+
+def test_runner_invokes_selective_lean_audit_with_explicit_outputs(
+    tmp_path, monkeypatch
+):
+    calls, output_dir, dataset_path, preclose_output = _stub_clv_runner_dependencies(
+        tmp_path, monkeypatch
+    )
+    output_md = tmp_path / "selective_lean.md"
+    output_json = tmp_path / "selective_lean.json"
+
+    assert runner.main(
+        [
+            "--output-dir",
+            str(output_dir),
+            "--preclose-clv-proxy-output",
+            str(preclose_output),
+            "--selective-lean-prospective-output-md",
+            str(output_md),
+            "--selective-lean-prospective-output-json",
+            str(output_json),
+        ]
+    ) == 0
+
+    argv = next(
+        args
+        for label, args in calls
+        if label == "selective_lean_prospective_audit"
+    )
+    assert argv == [
+        "--input",
+        str(dataset_path),
+        "--output-md",
+        str(output_md),
+        "--output-json",
+        str(output_json),
+    ]
+
+
+def test_runner_skip_flag_omits_selective_lean_audit(tmp_path, monkeypatch):
+    calls, output_dir, _, preclose_output = _stub_clv_runner_dependencies(
+        tmp_path, monkeypatch
+    )
+
+    assert runner.main(
+        [
+            "--output-dir",
+            str(output_dir),
+            "--preclose-clv-proxy-output",
+            str(preclose_output),
+            "--skip-selective-lean-prospective-audit",
+        ]
+    ) == 0
+
+    assert "selective_lean_prospective_audit" not in [
+        label for label, _ in calls
+    ]

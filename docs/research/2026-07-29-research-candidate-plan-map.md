@@ -21,7 +21,7 @@ artifacts, dashboard behavior, retention, or `formula_change_date`.
 | Market-shrink | No | `605`, `300-305`, `-42.56u`, `-7.0%`; zero applied rows; paired projection MAE improves by `0.0540` K | Retain diagnostic shadow only; close the betting-promotion path |
 | Strong Base downside caps | Partly | `cap_high_raw_edge` is frozen for prospective review at `0/75`; historical downside remains the rationale | Prove incremental value after overlap with the live cap stack |
 | Retained FIRE specialists | Partly | Moderate-EV/normal-leash FIRE `198`, `+21.25u`; market-agreed moderate-EV FIRE `170`, `+20.05u` | Freeze non-overlapping runtime-safe definitions and collect prospective evidence |
-| Selective LEAN | Yes | Historical candidates are positive, but current/recent windows are weak or negative | Keep as research funnel until one fixed candidate survives a prospective holdout |
+| Selective LEAN | Yes, after attribution infrastructure | The frozen low-line capped market-fade candidate reconciles at `103`, `55-48`, `+11.416u`; formal prospective evidence starts `0/75` on 2026-08-15 | Collect only rows with consumed-lock, provider, and agreement proof; keep live promotion closed |
 | CLV-supported rows | No for process use; yes for proxy validation | `277`, `+19.01u`, but recent `-4.64u` and final CLV is hindsight-only | Use as an offline target to validate live-safe pre-close proxies |
 
 ## New controlling plans
@@ -31,7 +31,7 @@ artifacts, dashboard behavior, retention, or `formula_change_date`.
 | No-drag and strict runtime core | `docs/superpowers/plans/2026-07-29-no-drag-and-strict-runtime-prospective-review.md` | No-drag is `ready_for_review`; strict audit is collecting only diverse evidence from July 30. Keep August 10 as a decision review, not activation |
 | Market-anchor strict downside path | `docs/superpowers/plans/2026-07-29-market-anchor-downside-review.md` | The paired counterfactual packet is complete; retain `keep_shadow` |
 | Strong Base FIRE policy matrix | `docs/superpowers/plans/2026-07-29-strong-base-fire-policy-shadow-matrix.md` | `cap_high_raw_edge` and `strict_runtime_core_flat` are frozen at `0/75`; prioritize only diverse prospective evidence |
-| Selective LEAN and pre-close | `docs/superpowers/plans/2026-07-29-selective-lean-preclose-research-funnel.md` | Research only; recent weakness blocks a prospective canary |
+| Selective LEAN and pre-close | `docs/superpowers/plans/2026-08-14-selective-lean-prospective-audit.md` | One rule is frozen at `0/75`; consumed-lock linkage is the first fail-closed evidence blocker |
 | CLV process target | `docs/superpowers/plans/2026-07-29-clv-process-target-validation.md` | Use CLV only as an offline label and proxy benchmark |
 | Market-shrink | `docs/superpowers/plans/2026-07-29-market-shrink-retirement-decision.md` | Decision is `retain_diagnostic_shadow`; betting promotion is closed and no runtime change is approved |
 
