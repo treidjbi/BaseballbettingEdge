@@ -5,9 +5,15 @@ from scripts.publish_pipeline_artifacts_to_supabase import collect_artifact_rows
 
 
 class FakeWriter:
-    def __init__(self):
+    def __init__(self, selected_rows=None):
+        self.selected_rows = list(selected_rows or [])
+        self.selects = []
         self.upserts = []
         self.inserts = []
+
+    def select_rows(self, table, params):
+        self.selects.append((table, params))
+        return list(self.selected_rows)
 
     def upsert_rows(self, table, rows, on_conflict, **options):
         self.upserts.append((table, rows, on_conflict, options))
@@ -16,6 +22,27 @@ class FakeWriter:
     def insert_rows(self, table, rows):
         self.inserts.append((table, rows))
         return len(rows)
+
+
+def _write_lock_artifacts(root, *, slate_date="2026-05-24"):
+    processed = root / "dashboard" / "data" / "processed"
+    processed.mkdir(parents=True)
+    payload = f'{{"date":"{slate_date}","pitchers":[]}}'
+    (processed / "today.json").write_text(payload, encoding="utf-8")
+    (processed / f"{slate_date}.json").write_text(payload, encoding="utf-8")
+    (root / "data").mkdir()
+    (root / "data" / "picks_history.json").write_text("[]", encoding="utf-8")
+
+
+def _lock_artifact_rows(root, *, slate_date="2026-05-24"):
+    return collect_artifact_rows(
+        root=root,
+        slate_date=slate_date,
+        source="render_pipeline",
+        source_run_id="run-1",
+        source_commit_sha="sha",
+        scope="lock",
+    )
 
 
 def test_collect_artifact_rows_includes_today_and_dated_archive(tmp_path):
@@ -256,6 +283,134 @@ def test_run_execute_bounds_artifact_timeout_resilience_to_the_publisher(tmp_pat
         "return_representation": False,
         "attempts": 2,
         "retry_database_codes": {"57014"},
+    }
+
+
+def test_run_execute_lock_scope_skips_unchanged_artifact_upsert(tmp_path):
+    _write_lock_artifacts(tmp_path)
+    candidate_rows = _lock_artifact_rows(tmp_path)
+    writer = FakeWriter(
+        selected_rows=[
+            {
+                "artifact_key": row["artifact_key"],
+                "payload_sha256": row["payload_sha256"],
+            }
+            for row in candidate_rows
+        ]
+    )
+
+    result = run(
+        root=tmp_path,
+        writer=writer,
+        slate_date="2026-05-24",
+        source="render_pipeline",
+        source_run_id="run-1",
+        source_commit_sha="sha",
+        execute=True,
+        scope="lock",
+    )
+
+    assert result == {
+        "artifact_count": 0,
+        "candidate_artifact_count": 3,
+        "unchanged_artifact_count": 3,
+        "execute": True,
+    }
+    assert writer.selects == [
+        (
+            "published_pipeline_artifacts",
+            {
+                "artifact_key": "in.(today,picks_history,dated_slate:2026-05-24)",
+                "select": "artifact_key,payload_sha256",
+                "limit": "3",
+            },
+        )
+    ]
+    assert writer.upserts == []
+    run_row = writer.inserts[0][1][0]
+    assert run_row["artifact_count"] == 0
+    assert run_row["metadata"]["candidate_artifact_count"] == 3
+    assert run_row["metadata"]["unchanged_artifact_count"] == 3
+
+
+def test_run_execute_lock_scope_upserts_only_changed_artifacts(tmp_path):
+    _write_lock_artifacts(tmp_path)
+    candidate_rows = _lock_artifact_rows(tmp_path)
+    writer = FakeWriter(
+        selected_rows=[
+            {
+                "artifact_key": row["artifact_key"],
+                "payload_sha256": (
+                    "stale-hash"
+                    if row["artifact_key"] == "picks_history"
+                    else row["payload_sha256"]
+                ),
+            }
+            for row in candidate_rows
+        ]
+    )
+
+    result = run(
+        root=tmp_path,
+        writer=writer,
+        slate_date="2026-05-24",
+        source="render_pipeline",
+        source_run_id="run-1",
+        source_commit_sha="sha",
+        execute=True,
+        scope="lock",
+    )
+
+    assert result == {
+        "artifact_count": 1,
+        "candidate_artifact_count": 3,
+        "unchanged_artifact_count": 2,
+        "execute": True,
+    }
+    assert [row["artifact_key"] for row in writer.upserts[0][1]] == ["picks_history"]
+    run_row = writer.inserts[0][1][0]
+    assert run_row["artifact_count"] == 1
+    assert run_row["metadata"]["candidate_artifact_count"] == 3
+    assert run_row["metadata"]["unchanged_artifact_count"] == 2
+
+
+def test_run_execute_pipeline_scope_publishes_all_without_hash_lookup(tmp_path):
+    processed = tmp_path / "dashboard" / "data" / "processed"
+    processed.mkdir(parents=True)
+    (processed / "today.json").write_text('{"date":"2026-05-24"}', encoding="utf-8")
+    (processed / "index.json").write_text('{"dates":[]}', encoding="utf-8")
+    (processed / "steam.json").write_text('{"steam":[]}', encoding="utf-8")
+    (processed / "2026-05-24.json").write_text('{"date":"2026-05-24"}', encoding="utf-8")
+    (tmp_path / "data").mkdir()
+    (tmp_path / "data" / "picks_history.json").write_text("[]", encoding="utf-8")
+    writer = FakeWriter(
+        selected_rows=[{"artifact_key": "today", "payload_sha256": "same"}]
+    )
+
+    result = run(
+        root=tmp_path,
+        writer=writer,
+        slate_date="2026-05-24",
+        source="render_pipeline",
+        source_run_id="run-1",
+        source_commit_sha="sha",
+        execute=True,
+        scope="pipeline",
+    )
+
+    assert writer.selects == []
+    assert [row["artifact_key"] for row in writer.upserts[0][1]] == [
+        "today",
+        "index",
+        "steam",
+        "picks_history",
+        "dated_slate:2026-05-24",
+    ]
+    assert result == {
+        "artifact_count": 5,
+        "candidate_artifact_count": 5,
+        "unchanged_artifact_count": 0,
+        "execute": True,
     }
 
 

@@ -102,6 +102,36 @@ def collect_artifact_rows(
     return rows
 
 
+def _changed_artifact_rows(
+    *,
+    writer,
+    rows: list[dict[str, Any]],
+) -> tuple[list[dict[str, Any]], int]:
+    if not rows:
+        return [], 0
+
+    artifact_keys = [str(row["artifact_key"]) for row in rows]
+    current_rows = writer.select_rows(
+        "published_pipeline_artifacts",
+        {
+            "artifact_key": f"in.({','.join(artifact_keys)})",
+            "select": "artifact_key,payload_sha256",
+            "limit": str(len(artifact_keys)),
+        },
+    )
+    current_hashes = {
+        str(row.get("artifact_key")): str(row.get("payload_sha256"))
+        for row in current_rows
+        if row.get("artifact_key") and row.get("payload_sha256")
+    }
+    changed_rows = [
+        row
+        for row in rows
+        if current_hashes.get(str(row["artifact_key"])) != str(row["payload_sha256"])
+    ]
+    return changed_rows, len(rows) - len(changed_rows)
+
+
 def run(
     *,
     root: Path,
@@ -124,19 +154,27 @@ def run(
         scope=scope,
         artifact_key_prefix=artifact_key_prefix,
     )
+    rows_to_publish = rows
+    unchanged_artifact_count = 0
     if execute:
         if writer is None:
             raise EnvironmentError("Supabase writer is required when --execute is set")
-        published_at = datetime.now(timezone.utc).isoformat()
-        rows_to_publish = [{**row, "published_at": published_at} for row in rows]
-        writer.upsert_rows(
-            "published_pipeline_artifacts",
-            rows_to_publish,
-            on_conflict="artifact_key",
-            return_representation=False,
-            attempts=2,
-            retry_database_codes={"57014"},
-        )
+        if scope == "lock":
+            rows_to_publish, unchanged_artifact_count = _changed_artifact_rows(
+                writer=writer,
+                rows=rows,
+            )
+        if rows_to_publish:
+            published_at = datetime.now(timezone.utc).isoformat()
+            published_rows = [{**row, "published_at": published_at} for row in rows_to_publish]
+            writer.upsert_rows(
+                "published_pipeline_artifacts",
+                published_rows,
+                on_conflict="artifact_key",
+                return_representation=False,
+                attempts=2,
+                retry_database_codes={"57014"},
+            )
         completed_at = datetime.now(timezone.utc).isoformat()
         run_row = {
             "run_id": source_run_id or f"{source}:{slate_date}:{completed_at}",
@@ -144,16 +182,23 @@ def run(
             "run_type": os.environ.get("PIPELINE_RUN_TYPE", "full"),
             "slate_date": slate_date,
             "status": "completed",
-            "artifact_count": len(rows),
+            "artifact_count": len(rows_to_publish),
             "started_at": started_at,
             "completed_at": completed_at,
             "metadata": {
                 "source_commit_sha": source_commit_sha,
                 "artifact_key_prefix": artifact_key_prefix or None,
+                "candidate_artifact_count": len(rows),
+                "unchanged_artifact_count": unchanged_artifact_count,
             },
         }
         writer.insert_rows("pipeline_artifact_publication_runs", [run_row])
-    return {"artifact_count": len(rows), "execute": execute}
+    return {
+        "artifact_count": len(rows_to_publish),
+        "candidate_artifact_count": len(rows),
+        "unchanged_artifact_count": unchanged_artifact_count,
+        "execute": execute,
+    }
 
 
 def _parse_args(argv: list[str]) -> argparse.Namespace:
