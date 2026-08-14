@@ -17,6 +17,30 @@
 - Keep the change minimal: no new dependencies and no compact-market reader refactor in this branch.
 - Use TDD for Python behavior: write each regression test, verify the expected failure, implement the smallest passing change, then rerun the focused tests.
 
+## Production Rollout Result — 2026-08-14
+
+- Tyler separately approved commit, push, online migration, merge, and Render
+  deployment after the implementation session. PR `#46` fast-forwarded
+  `main` to `5bc06334513837cad0593680a8c59c7fd6d5a33e`; the full suite passed
+  `2019` tests on both the feature branch and integrated `main`.
+- Migration `20260814175128_optimize_propline_webhook_inbox.sql` is present in
+  linked migration history. Index
+  `idx_propline_webhook_deliveries_unprocessed_received_at` is ready and valid,
+  and the live inbox query shape used the index in the post-migration
+  `EXPLAIN (ANALYZE, BUFFERS)` check. Supabase performance advisors reported
+  no issues.
+- Render deploy `dep-d9vlphtbedkc73elbh6g` is live on `bbe-pipeline-lock` at
+  the exact approved commit. The first clean scheduled post-deploy run finished
+  successfully at `2026-08-14T18:32:52Z`; its publication audit recorded
+  `candidate_artifact_count=3`, `unchanged_artifact_count=3`, and
+  `artifact_count=0` with the approved source SHA.
+- No provider, model, staking, threshold, notification, lock-consumer,
+  dashboard, retention, artifact-key, or source-of-truth behavior changed.
+  Remaining soak evidence is one naturally changed lock cycle proving the
+  required lock artifacts still publish, plus normal-slate observation for
+  recurrence of REST `57014` pressure failures. The compact/current market
+  snapshot truncation repair remains a separate plan.
+
 ---
 
 ### Task 1: Online webhook inbox index migration
