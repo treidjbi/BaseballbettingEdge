@@ -382,15 +382,16 @@ each lane.
 
 ### August 14 selective-LEAN prospective-counter overlay
 
-Tyler approved only the local research implementation. No commit, push,
-deployment, Render activation, database change, or live behavior change is
+Tyler approved the bounded research implementation, merge, push, and hosted
+research-cron deployment. No database, model, provider, notification, lock,
+UI, history, artifact, retention, or source-of-truth behavior change is
 authorized by this overlay.
 
 | Lane | Confirmed evidence | Next decision |
 | --- | --- | --- |
 | Model | `expand_lean_low_line_capped_model_fade` is frozen at fingerprint `4e00a180e35fe75dc8889d47065a25c4351cb37ac55664eb42f01b77c07fd13a`. Historical nomination is `103`, `55-48`, `+11.415935u`; current-provider is `56`, `28-28`, `+2.999676u`. Formal prospective evidence begins 2026-08-15 at `0/75`; August 13-14 are explicitly excluded. | Continue research only. Require 75 eligible rows, 20 UNDER, 10 plus-price, positive prospective/latest-14 PnL, complete provider/agreement attribution, nonnegative mandatory slices, and positive leave-one-slate-out evidence before a separate review. |
-| Tracking / data collection / history | The post-grading runner now has a frozen selective-LEAN audit and independent skip flag. It writes ignored Markdown/JSON only. The audit fail-closes on missing consumed operational-lock identifier/time/source-artifact proof; current Gate C rows do not yet carry that linkage. | Decide separately whether to enrich Gate C from the existing lock ledger. Until then, prospective matches are visible as blocked evidence and receive no credit. Add no table and weaken no proof gate. |
-| Pipeline / infrastructure | Unchanged. The implementation has not been deployed or activated on the hosted research cron. | Keep production and hosted research behavior unchanged until Tyler separately approves commit/push/deployment. |
+| Tracking / data collection / history | The post-grading runner now has a frozen selective-LEAN audit and independent skip flag. It writes ignored Markdown/JSON only. The audit fail-closes on missing consumed operational-lock identifier/time/source-artifact proof; current Gate C rows do not yet carry that linkage. Exact code commit `5f3b010c` passed `2,015` tests on both the feature branch and merged `main`, and GitHub `main` matches the full SHA. | Decide separately whether to enrich Gate C from the existing lock ledger. Until then, prospective matches are visible as blocked evidence and receive no credit. Add no table and weaken no proof gate. |
+| Pipeline / infrastructure | Only `bbe-gate-c-post-grading-review` was manually targeted for the research release: deploy `dep-d9vkm6ou01pc738c91c0` is live on `5f3b010c`, and verification job `job-d9vkmqflk1mc738bb57g` succeeded at `2026-08-14T17:12:03Z` using the unchanged `python scripts/run_post_grading_shadow_reports.py --refresh-market-agreement-inputs` command. Branch `main`, auto-deploy off, schedule `7 11 * * *`, and service posture are unchanged. The GitHub push also triggered the pre-existing `bbe-live-layer` auto-deploy setting: deploy `dep-d9vklmjl550s73fvr180` reached live on the same commit. No live-layer code or config path changed, and its first post-deploy scheduled run succeeded at `2026-08-14T17:11:21Z`. All pipeline-cron deploys remained on `ad6f7d9b`; BoltOdds remained suspended. | Observe the next natural post-grading research run. Treat the live-layer rebuild as behavior-neutral but keep its auto-deploy posture visible before future docs/research pushes. All live production gates remain closed. |
 | UI | Unchanged. | No action. |
 
 ### July 30 natural research-run overlay

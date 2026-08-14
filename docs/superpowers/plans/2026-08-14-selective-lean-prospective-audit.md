@@ -84,3 +84,19 @@ existing post-grading research runner and write ignored local outputs.
   Gate C inputs.
 - [x] Run `git diff --check` and inspect `git status`.
 - [x] Do not commit, push, deploy, or activate without separate Tyler approval.
+
+## 2026-08-14 deployment record
+
+Tyler separately approved merge and deployment. Exact commit `5f3b010c`
+passed all `2,015` tests on both the feature branch and merged `main`, was
+pushed to GitHub, and is live only as an intentional research release on
+`bbe-gate-c-post-grading-review` deploy `dep-d9vkm6ou01pc738c91c0`.
+Verification job `job-d9vkmqflk1mc738bb57g` succeeded at
+`2026-08-14T17:12:03Z`.
+
+The GitHub push also triggered the pre-existing auto-deploy setting on
+`bbe-live-layer`; deploy `dep-d9vklmjl550s73fvr180` reached live on the same
+commit. The commit changed no live-layer file or configuration, and the first
+post-deploy scheduled run succeeded at `2026-08-14T17:11:21Z`. No pipeline
+cron was redeployed, BoltOdds remained suspended, and every live behavior gate
+remains closed.

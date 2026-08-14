@@ -28,6 +28,14 @@ grading and writes ignored Markdown/JSON research outputs. The existing
 post-grading research runner invokes it by default and provides independent
 output flags plus `--skip-selective-lean-prospective-audit`.
 
+The research release is live on `bbe-gate-c-post-grading-review` at exact
+commit `5f3b010c` as deploy `dep-d9vkm6ou01pc738c91c0`. Verification job
+`job-d9vkmqflk1mc738bb57g` succeeded with the unchanged review-only command.
+The push also caused the existing auto-deploy setting on `bbe-live-layer` to
+rebuild that service on the same commit; no live-layer file or configuration
+changed, and its first post-deploy scheduled run succeeded. No pipeline cron
+was redeployed.
+
 Prospective candidates fail closed unless they are unique tracked win/loss
 rows with exact `pre_30` timing, a lock timestamp, consumed operational-lock
 identifier/time/source-artifact proof, provider attribution, market-agreement
