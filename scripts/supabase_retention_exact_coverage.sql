@@ -255,7 +255,7 @@ anomaly_counts as (
     count(*) filter (where run_id is not null and run_row_id is null)::bigint
       as rows_missing_run_row,
     count(*) filter (
-      where nullif(trim(bookmaker_key), '') is null
+      where nullif(trim(book_key), '') is null
         or nullif(trim(normalized_player_name), '') is null
         or lower(trim(side)) not in ('over', 'under')
         or line is null

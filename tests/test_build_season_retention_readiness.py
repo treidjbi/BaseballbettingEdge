@@ -67,6 +67,16 @@ def test_exact_coverage_sql_avoids_redundant_full_season_sorts_and_materializati
     assert sql.count(" as materialized (") <= 1
 
 
+def test_exact_coverage_sql_anomaly_scan_reuses_narrow_projection_aliases():
+    sql = SQL_PATH.read_text(encoding="utf-8").lower()
+    anomaly_scan = sql.split("anomaly_counts as (", 1)[1].split(
+        "source_anomalies as (", 1
+    )[0]
+
+    assert "nullif(trim(book_key), '')" in anomaly_scan
+    assert "nullif(trim(bookmaker_key), '')" not in anomaly_scan
+
+
 def test_exact_coverage_sql_emits_all_blocking_metrics_and_runtime_boundaries():
     sql = SQL_PATH.read_text(encoding="utf-8").lower()
     expected = (
