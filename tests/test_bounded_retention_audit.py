@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import inspect
 import json
 import subprocess
 from datetime import date, timedelta
@@ -416,6 +417,41 @@ def test_validate_chunk_payload_rejects_more_groups_than_snapshots():
         audit.validate_chunk_payload(payload, chunk)
 
 
+def test_validate_chunk_payload_rejects_snapshots_without_raw_groups():
+    chunk = audit.ChunkSpec("propline", date(2026, 5, 1), date(2026, 5, 1))
+    payload = valid_payload(chunk)
+    payload["coverage"][0].update({
+        "raw_group_count": 0,
+        "compact_group_count": 0,
+        "exact_group_count": 0,
+    })
+    with pytest.raises(ValueError, match="raw row/group zero-state"):
+        audit.validate_chunk_payload(payload, chunk)
+
+
+def test_validate_chunk_payload_rejects_snapshots_without_provider_run():
+    chunk = audit.ChunkSpec("propline", date(2026, 5, 1), date(2026, 5, 1))
+    payload = valid_payload(chunk)
+    payload["candidate_runtime"][0].update({
+        "first_run_at": None,
+        "last_run_at": None,
+        "run_count": 0,
+        "completed_run_count": 0,
+        "request_count": 0,
+    })
+    with pytest.raises(ValueError, match="snapshots require a provider run"):
+        audit.validate_chunk_payload(payload, chunk)
+
+
+def test_validate_chunk_payload_rejects_books_without_snapshots():
+    chunk = audit.ChunkSpec("propline", date(2026, 5, 1), date(2026, 5, 1))
+    payload = valid_payload(chunk)
+    make_zero_partition(payload)
+    payload["candidate_runtime"][0]["books_seen"] = ["fanduel"]
+    with pytest.raises(ValueError, match="books_seen requires snapshots"):
+        audit.validate_chunk_payload(payload, chunk)
+
+
 @pytest.mark.parametrize(
     ("raw_rows", "raw_bytes"),
     [(0, 20), (2, 0)],
@@ -682,6 +718,13 @@ def test_cli_version_lookup_failure_prevents_builder_and_query(command, tmp_path
     chunk_builder.assert_not_called()
     runtime_builder.assert_not_called()
     query.assert_not_called()
+
+
+@pytest.mark.parametrize("command", [audit.run_chunks, audit.run_runtime_boundary])
+def test_query_capable_functions_reject_cli_version_override(command, tmp_path):
+    assert "cli_version" not in inspect.signature(command).parameters
+    with pytest.raises(TypeError, match="cli_version"):
+        command(audit.build_scope("2026-08-18"), tmp_path, cli_version="9.9.9")
 
 
 def test_run_chunks_writes_bound_checkpoint_and_exactly_thirty_second_cooldown(
@@ -1070,6 +1113,56 @@ def test_runtime_payload_rejects_malformed_or_naive_boundary_timestamp(value):
     payload = valid_runtime_payload(scope)
     payload["providers"][0]["current_latest_run_at"] = value
     with pytest.raises(ValueError, match="runtime boundary timestamp"):
+        audit._validate_runtime_payload(payload, scope)
+
+
+@pytest.mark.parametrize("generated_at", [None, "2026-08-18T12:00:00"])
+def test_runtime_payload_requires_timezone_aware_generated_at(generated_at):
+    scope = audit.build_scope("2026-08-18")
+    payload = valid_runtime_payload(scope)
+    if generated_at is None:
+        payload.pop("generated_at")
+    else:
+        payload["generated_at"] = generated_at
+    with pytest.raises(ValueError, match="generated_at"):
+        audit._validate_runtime_payload(payload, scope)
+
+
+@pytest.mark.parametrize(
+    ("current_field", "candidate_field"),
+    [
+        ("current_latest_run_at", "candidate_latest_run_at"),
+        ("current_latest_snapshot_at", "candidate_latest_snapshot_at"),
+        ("current_latest_heartbeat_at", "candidate_latest_heartbeat_at"),
+        ("current_latest_message_at", "candidate_latest_message_at"),
+    ],
+)
+def test_runtime_payload_rejects_candidate_boundary_newer_than_current(
+    current_field, candidate_field,
+):
+    scope = audit.build_scope("2026-08-18")
+    payload = valid_runtime_payload(scope)
+    row = payload["providers"][1]
+    row[current_field] = "2026-07-01T12:00:00Z"
+    row[candidate_field] = "2026-07-01T12:00:01Z"
+    with pytest.raises(ValueError, match="candidate runtime boundary"):
+        audit._validate_runtime_payload(payload, scope)
+
+
+@pytest.mark.parametrize(
+    "candidate_field",
+    [
+        "candidate_latest_run_at",
+        "candidate_latest_snapshot_at",
+        "candidate_latest_heartbeat_at",
+        "candidate_latest_message_at",
+    ],
+)
+def test_runtime_payload_rejects_candidate_boundary_without_current(candidate_field):
+    scope = audit.build_scope("2026-08-18")
+    payload = valid_runtime_payload(scope)
+    payload["providers"][1][candidate_field] = "2026-07-01T12:00:00Z"
+    with pytest.raises(ValueError, match="candidate runtime boundary"):
         audit._validate_runtime_payload(payload, scope)
 
 

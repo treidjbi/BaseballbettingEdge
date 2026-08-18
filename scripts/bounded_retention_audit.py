@@ -88,6 +88,12 @@ _RUNTIME_BOUNDARY_FIELDS = (
     "candidate_latest_heartbeat_at",
     "candidate_latest_message_at",
 )
+_RUNTIME_BOUNDARY_PAIRS = (
+    ("current_latest_run_at", "candidate_latest_run_at"),
+    ("current_latest_snapshot_at", "candidate_latest_snapshot_at"),
+    ("current_latest_heartbeat_at", "candidate_latest_heartbeat_at"),
+    ("current_latest_message_at", "candidate_latest_message_at"),
+)
 
 
 @dataclass(frozen=True)
@@ -364,6 +370,8 @@ def validate_chunk_payload(payload: dict[str, Any], chunk: ChunkSpec) -> None:
         _require_nonnegative_integers(row, _COVERAGE_COUNTS)
         if row["raw_group_count"] > row["raw_snapshot_rows"]:
             raise ValueError("raw groups cannot exceed snapshots")
+        if (row["raw_snapshot_rows"] == 0) != (row["raw_group_count"] == 0):
+            raise ValueError("raw row/group zero-state is inconsistent")
         if (row["raw_snapshot_rows"] == 0) != (row["raw_logical_bytes"] == 0):
             raise ValueError("raw row/byte consistency is invalid")
         _validate_timestamp_pair(
@@ -408,6 +416,8 @@ def validate_chunk_payload(payload: dict[str, Any], chunk: ChunkSpec) -> None:
             raise ValueError("runtime run counts are inconsistent")
         if runtime_row["run_count"] == 0 and runtime_row["request_count"] != 0:
             raise ValueError("runtime request count requires a provider run")
+        if runtime_row["snapshot_count"] > 0 and runtime_row["run_count"] == 0:
+            raise ValueError("runtime snapshots require a provider run")
         if runtime_row["snapshot_count"] != row["raw_snapshot_rows"]:
             raise ValueError("runtime snapshot count does not match coverage")
         if runtime_row["snapshot_logical_bytes"] != row["raw_logical_bytes"]:
@@ -443,6 +453,8 @@ def validate_chunk_payload(payload: dict[str, Any], chunk: ChunkSpec) -> None:
             or books != sorted(set(books))
         ):
             raise ValueError("runtime books_seen must be canonical and unique")
+        if runtime_row["snapshot_count"] == 0 and books:
+            raise ValueError("runtime books_seen requires snapshots")
 
 
 def write_json_atomic(path: Path, value: dict[str, Any]) -> None:
@@ -605,12 +617,11 @@ def run_chunks(
     scope: AuditScope,
     output_dir: Path,
     max_chunks: int = DEFAULT_MAX_CHUNKS,
-    cli_version: str | None = None,
 ) -> list[CheckpointRecord]:
     if isinstance(max_chunks, bool) or not isinstance(max_chunks, int) or not 1 <= max_chunks <= HARD_MAX_CHUNKS:
         raise ValueError("max_chunks must be between 1 and 5")
     output_dir = preflight_output_dir(output_dir)
-    resolved_cli_version = cli_version or resolve_cli_version()
+    resolved_cli_version = resolve_cli_version()
     checkpoints = load_valid_checkpoints(
         output_dir, scope, cli_version=resolved_cli_version,
     )
@@ -788,6 +799,8 @@ def load_valid_checkpoints(
 def _validate_runtime_payload(payload: dict[str, Any], scope: AuditScope) -> None:
     if payload.get("runtime_version") != AUDIT_VERSION:
         raise ValueError("runtime payload version is invalid")
+    if _parse_nullable_timestamp(payload, "generated_at") is None:
+        raise ValueError("generated_at timestamp is required")
     if payload.get("candidate_end_date") != scope.candidate_end_date.isoformat():
         raise ValueError("runtime candidate cutoff is invalid")
     providers = payload.get("providers")
@@ -818,6 +831,11 @@ def _validate_runtime_payload(payload: dict[str, Any], scope: AuditScope) -> Non
             if parsed.tzinfo is None or parsed.utcoffset() is None:
                 raise ValueError(f"runtime boundary timestamp must be timezone-aware: {field}")
             boundaries[field] = parsed
+        for current_field, candidate_field in _RUNTIME_BOUNDARY_PAIRS:
+            current = boundaries[current_field]
+            candidate = boundaries[candidate_field]
+            if candidate is not None and (current is None or candidate > current):
+                raise ValueError("candidate runtime boundary is outside current evidence")
         actual_closure_flag = row.get("post_boltodds_suspension")
         if not isinstance(actual_closure_flag, bool):
             raise ValueError("runtime closure flag is invalid")
@@ -840,10 +858,9 @@ def _validate_runtime_payload(payload: dict[str, Any], scope: AuditScope) -> Non
 def run_runtime_boundary(
     scope: AuditScope,
     output_dir: Path,
-    cli_version: str | None = None,
 ) -> Path:
     output_dir = preflight_output_dir(output_dir)
-    resolved_cli_version = cli_version or resolve_cli_version()
+    resolved_cli_version = resolve_cli_version()
     sql = bounded_sql.build_runtime_boundary_sql(scope.candidate_end_date.isoformat())
     started_at = datetime.now(timezone.utc)
     started_clock = time.perf_counter()
