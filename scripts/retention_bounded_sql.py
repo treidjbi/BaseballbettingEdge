@@ -476,6 +476,7 @@ def build_runtime_boundary_sql(candidate_end_date: str) -> str:
     sql = f"""with settings as (
   select
     date '{candidate_literal}' as candidate_end_date,
+    (date '{CLEAN_REGIME_START.isoformat()}'::timestamp at time zone 'America/Phoenix') as candidate_observed_start,
     ((date '{candidate_literal}' + 1)::timestamp at time zone 'America/Phoenix') as candidate_observed_end
 ),
 providers as (
@@ -504,10 +505,9 @@ runtime_rows as (
   from providers
   cross join settings
   left join lateral (
-    select coalesce(mpr.completed_at, mpr.started_at) as latest_run_at
+    select max(coalesce(mpr.completed_at, mpr.started_at)) as latest_run_at
     from public.market_provider_runs mpr
     where mpr.provider = providers.provider
-    order by mpr.slate_date desc, mpr.started_at desc, mpr.id desc limit 1
   ) as current_run on true
   left join lateral (
     select ms.observed_at as latest_snapshot_at
@@ -522,40 +522,38 @@ runtime_rows as (
     order by h.observed_at desc, h.id desc limit 1
   ) as current_heartbeat on true
   left join lateral (
-    select h.last_message_at as latest_message_at
+    select max(h.last_message_at) as latest_message_at
     from public.market_feed_heartbeats h
-    where h.provider = providers.provider and h.last_message_at is not null
-    order by h.last_message_at desc, h.id desc limit 1
+    where h.provider = providers.provider
   ) as current_message on true
   left join lateral (
-    select coalesce(mpr.completed_at, mpr.started_at) as latest_run_at
+    select max(coalesce(mpr.completed_at, mpr.started_at)) as latest_run_at
     from public.market_provider_runs mpr
     where mpr.provider = providers.provider
       and mpr.slate_date between date '{CLEAN_REGIME_START.isoformat()}' and settings.candidate_end_date
-    order by mpr.slate_date desc, mpr.started_at desc, mpr.id desc limit 1
   ) as candidate_run on true
   left join lateral (
     select ms.observed_at as latest_snapshot_at
-    from public.market_provider_runs mpr
-    join public.market_snapshots ms on ms.run_id = mpr.id
-    where mpr.provider = providers.provider
-      and mpr.slate_date between date '{CLEAN_REGIME_START.isoformat()}' and settings.candidate_end_date
+    from public.market_snapshots ms
+    where ms.provider = providers.provider
+      and ms.observed_at >= settings.candidate_observed_start
+      and ms.observed_at < settings.candidate_observed_end
     order by ms.observed_at desc, ms.id desc limit 1
   ) as candidate_snapshot on true
   left join lateral (
     select h.observed_at as latest_heartbeat_at
     from public.market_feed_heartbeats h
     where h.provider = providers.provider
-      and h.slate_date between date '{CLEAN_REGIME_START.isoformat()}' and settings.candidate_end_date
+      and h.observed_at >= settings.candidate_observed_start
+      and h.observed_at < settings.candidate_observed_end
     order by h.observed_at desc, h.id desc limit 1
   ) as candidate_heartbeat on true
   left join lateral (
-    select h.last_message_at as latest_message_at
+    select max(h.last_message_at) as latest_message_at
     from public.market_feed_heartbeats h
     where h.provider = providers.provider
-      and h.slate_date between date '{CLEAN_REGIME_START.isoformat()}' and settings.candidate_end_date
-      and h.last_message_at is not null
-    order by h.last_message_at desc, h.id desc limit 1
+      and h.observed_at >= settings.candidate_observed_start
+      and h.observed_at < settings.candidate_observed_end
   ) as candidate_message on true
 )
 select jsonb_build_object(

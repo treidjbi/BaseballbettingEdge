@@ -92,13 +92,35 @@ def test_assert_select_only_rejects_multiple_statements_and_mutations():
         bounded_sql.assert_select_only("with x as (delete from x returning 1) select 1;")
 
 
+def test_runtime_boundary_sql_uses_actual_run_boundary_for_old_slate_post_suspension_activity():
+    sql = bounded_sql.build_runtime_boundary_sql("2026-07-19").lower()
+    assert sql.count("max(coalesce(mpr.completed_at, mpr.started_at))") == 2
+    assert "order by mpr.slate_date desc, mpr.started_at desc, mpr.id desc limit 1" not in sql
+
+
+def test_runtime_boundary_sql_uses_index_bounded_snapshot_and_heartbeat_scans():
+    sql = bounded_sql.build_runtime_boundary_sql("2026-07-19").lower()
+    assert sql.count("order by ms.observed_at desc, ms.id desc limit 1") == 2
+    assert sql.count("order by h.observed_at desc, h.id desc limit 1") == 2
+    assert "ms.observed_at >= settings.candidate_observed_start" in sql
+    assert "ms.observed_at < settings.candidate_observed_end" in sql
+    assert "h.observed_at >= settings.candidate_observed_start" in sql
+    assert "h.observed_at < settings.candidate_observed_end" in sql
+    assert "from public.market_provider_runs mpr\n    join public.market_snapshots ms" not in sql
+
+
+def test_runtime_boundary_sql_uses_aggregate_message_maxima_without_unindexed_sorts():
+    sql = bounded_sql.build_runtime_boundary_sql("2026-07-19").lower()
+    assert sql.count("max(h.last_message_at)") == 2
+    assert "order by h.last_message_at" not in sql
+
+
 def test_runtime_boundary_sql_is_narrow_select_only_with_boltodds_closure_check():
     sql = bounded_sql.build_runtime_boundary_sql("2026-07-19")
     lowered = f" {sql.lower()} "
     assert sql.rstrip().endswith(";")
     assert sql.count(";") == 1
     assert not any(token in lowered for token in FORBIDDEN)
-    assert "order by mpr.slate_date desc, mpr.started_at desc, mpr.id desc limit 1" in lowered
     assert "order by ms.observed_at desc, ms.id desc limit 1" in lowered
     assert "order by h.observed_at desc, h.id desc limit 1" in lowered
     assert "post_boltodds_suspension" in lowered
