@@ -426,3 +426,31 @@ def test_main_returns_three_and_writes_no_report_for_invalid_input(tmp_path):
         "--as-of", "2026-08-18", "--output-dir", str(tmp_path),
     ]) == 3
     assert not (tmp_path / "season_retention_readiness.json").exists()
+
+
+def test_readiness_markdown_states_closed_execution_and_no_production_authority():
+    report = retention.build_readiness_report(
+        envelope=_envelope(), gate_c=_gate_c_manifest(),
+        season_evidence=_season_evidence(), pins=_pins(),
+        as_of="2026-08-18", raw_retention_days=30,
+    )
+
+    markdown = retention.render_readiness_markdown(report)
+
+    assert "**Deletion status: CLOSED**" in markdown
+    assert "- Retention execution closed: `true`" in markdown
+    assert "- Production authority: `none`" in markdown
+
+
+def test_readiness_markdown_renders_deferred_reason_codes_for_recent_partitions():
+    report = retention.build_readiness_report(
+        envelope=_envelope(coverage=[_coverage(slate_date="2026-08-17")]),
+        gate_c=_gate_c_manifest(), season_evidence=_season_evidence(), pins=_pins(),
+        as_of="2026-08-18", raw_retention_days=30,
+    )
+
+    markdown = retention.render_readiness_markdown(report)
+
+    assert "not_in_policy_window" in markdown
+    assert "missing_season_evidence_date" in markdown
+    assert "missing_pin_manifest_partition" in markdown

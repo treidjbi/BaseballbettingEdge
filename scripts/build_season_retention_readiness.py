@@ -510,6 +510,8 @@ def render_readiness_markdown(report: dict[str, Any]) -> str:
         "",
         "**Deletion status: CLOSED**",
         "",
+        f"- Retention execution closed: `{str(report['retention_execution_closed']).lower()}`",
+        f"- Production authority: `{report['production_authority']}`",
         f"- Generated: `{report['generated_at']}`",
         f"- As of: `{report['as_of']}`",
         f"- Source date range: `{source_range['start_date']} through {source_range['end_date']}`",
@@ -529,7 +531,9 @@ def render_readiness_markdown(report: dict[str, Any]) -> str:
             "{mismatched_group_count} | {decision} | {reasons} |".format(
                 **row,
                 raw_mb=row["raw_logical_bytes"] / 1024 / 1024,
-                reasons=", ".join(row.get("reason_codes", ())) or "none",
+                reasons=", ".join(
+                    row.get("reason_codes") or row.get("deferred_reason_codes", ())
+                ) or "none",
             )
         )
     lines.extend([
