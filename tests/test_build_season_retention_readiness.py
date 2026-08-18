@@ -548,3 +548,48 @@ def test_boltodds_closure_cli_writes_sanitized_json_and_markdown(tmp_path):
     combined = json_path.read_text(encoding="utf-8") + md_path.read_text(encoding="utf-8")
     assert "Deletion status: CLOSED" in combined
     assert "does not authorize BoltOdds runtime reactivation" in combined
+
+
+def test_boltodds_closure_main_returns_zero_for_ready_report(tmp_path):
+    query = tmp_path / "query.json"
+    gate_c = tmp_path / "gate-c.json"
+    season = tmp_path / "season.json"
+    pins = tmp_path / "pins.json"
+    query.write_text(
+        json.dumps([{"retention_exact_coverage": _envelope()}]), encoding="utf-8"
+    )
+    gate_c.write_text(json.dumps(_gate_c_manifest()), encoding="utf-8")
+    season.write_text(json.dumps(_season_evidence()), encoding="utf-8")
+    pins.write_text(json.dumps(_pins()), encoding="utf-8")
+
+    exit_code = retention.main([
+        "boltodds-closure", "--query-json", str(query),
+        "--gate-c-manifest", str(gate_c),
+        "--season-evidence", str(season), "--pins", str(pins),
+        "--as-of", "2026-08-18", "--output-dir", str(tmp_path),
+    ])
+
+    assert exit_code == 0
+    report = json.loads(
+        (tmp_path / "boltodds_retirement_closure.json").read_text(encoding="utf-8")
+    )
+    assert report["status"] == "ready_for_retirement_review"
+
+
+def test_boltodds_closure_main_returns_three_and_writes_no_report_for_invalid_input(
+    tmp_path,
+):
+    query = tmp_path / "query.json"
+    gate_c = tmp_path / "gate-c.json"
+    query.write_text("[]", encoding="utf-8")
+    gate_c.write_text(json.dumps(_gate_c_manifest()), encoding="utf-8")
+
+    exit_code = retention.main([
+        "boltodds-closure", "--query-json", str(query),
+        "--gate-c-manifest", str(gate_c),
+        "--as-of", "2026-08-18", "--output-dir", str(tmp_path),
+    ])
+
+    assert exit_code == 3
+    assert not (tmp_path / "boltodds_retirement_closure.json").exists()
+    assert not (tmp_path / "boltodds_retirement_closure.md").exists()
