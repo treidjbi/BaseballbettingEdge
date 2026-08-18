@@ -2,7 +2,7 @@
 
 **Date:** 2026-08-18
 
-**Status:** Draft for written-spec review; architecture approved 2026-08-18
+**Status:** Approved 2026-08-18
 
 **Scope:** Phase 1 only — local, read-only evidence tooling and retention-readiness reports
 
