@@ -360,3 +360,69 @@ def test_missing_gate_c_manifest_blocks_outcome_evidence():
         as_of="2026-08-18", raw_retention_days=30,
     )
     assert report["partitions"][0]["decision"] == "blocked_outcome_evidence"
+
+
+def test_rendered_readiness_reports_are_closed_and_contain_no_secret_fields(tmp_path):
+    report = retention.build_readiness_report(
+        envelope=_envelope(), gate_c=_gate_c_manifest(),
+        season_evidence=_season_evidence(), pins=_pins(),
+        as_of="2026-08-18", raw_retention_days=30,
+    )
+    report["authorization"] = "Bearer secret"
+    report["provider_summaries"][0]["api_key"] = "secret-value"
+    paths = retention.write_report_pair(
+        report=report, output_dir=tmp_path, stem="season_retention_readiness"
+    )
+    combined = paths["json"].read_text(encoding="utf-8") + paths["markdown"].read_text(encoding="utf-8")
+    lowered = combined.lower()
+    assert "deletion status: closed" in lowered
+    assert "retention_execution_closed" in combined
+    for forbidden in (
+        "bearer secret", "secret-value", "api_key", "authorization",
+        "delete from", "truncate table", "vacuum full",
+    ):
+        assert forbidden not in lowered
+
+
+def test_readiness_main_returns_two_for_blocked_report_and_writes_outputs(tmp_path):
+    query = tmp_path / "query.json"
+    gate_c = tmp_path / "gate-c.json"
+    query.write_text(json.dumps([{"retention_exact_coverage": _envelope(
+        coverage=[_coverage(missing_compact_group_count=1, coverage_exact=False)]
+    )}]), encoding="utf-8")
+    gate_c.write_text(json.dumps(_gate_c_manifest()), encoding="utf-8")
+    exit_code = retention.main([
+        "readiness", "--query-json", str(query), "--gate-c-manifest", str(gate_c),
+        "--as-of", "2026-08-18", "--output-dir", str(tmp_path),
+    ])
+    assert exit_code == 2
+    assert (tmp_path / "season_retention_readiness.json").exists()
+    assert (tmp_path / "season_retention_readiness.md").exists()
+
+
+def test_readiness_main_returns_zero_only_for_nonblocked_decisions(tmp_path):
+    query = tmp_path / "query.json"
+    gate_c = tmp_path / "gate-c.json"
+    season = tmp_path / "season.json"
+    pins = tmp_path / "pins.json"
+    query.write_text(json.dumps([{"retention_exact_coverage": _envelope()}]), encoding="utf-8")
+    gate_c.write_text(json.dumps(_gate_c_manifest()), encoding="utf-8")
+    season.write_text(json.dumps(_season_evidence()), encoding="utf-8")
+    pins.write_text(json.dumps(_pins()), encoding="utf-8")
+    exit_code = retention.main([
+        "readiness", "--query-json", str(query), "--gate-c-manifest", str(gate_c),
+        "--season-evidence", str(season), "--pins", str(pins),
+        "--as-of", "2026-08-18", "--output-dir", str(tmp_path),
+    ])
+    assert exit_code == 0
+
+
+def test_main_returns_three_and_writes_no_report_for_invalid_input(tmp_path):
+    query = tmp_path / "query.json"
+    query.write_text("[]", encoding="utf-8")
+    assert retention.main([
+        "readiness", "--query-json", str(query),
+        "--gate-c-manifest", str(tmp_path / "missing.json"),
+        "--as-of", "2026-08-18", "--output-dir", str(tmp_path),
+    ]) == 3
+    assert not (tmp_path / "season_retention_readiness.json").exists()

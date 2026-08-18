@@ -25,6 +25,9 @@ REQUIRED_DECISION_EVIDENCE = (
     "results", "bet_timing", "checkpoint_market", "close_clv", "provider_metadata",
 )
 BOLTODDS_SUSPENDED_AT = datetime.fromisoformat("2026-06-17T17:22:29+00:00")
+SECRET_KEY = re.compile(
+    r"(?:authorization|password|secret|token|api[_-]?key|service[_-]?role)", re.IGNORECASE
+)
 
 _COVERAGE_INTEGER_FIELDS = (
     "raw_snapshot_rows", "raw_logical_bytes", "raw_group_count",
@@ -439,6 +442,10 @@ def build_readiness_report(
         "generated_at": datetime.now(timezone.utc).isoformat(),
         "as_of": as_of_date.isoformat(),
         "raw_retention_days": raw_retention_days,
+        "source_date_range": {
+            "start_date": envelope["query_scope"]["start_date"],
+            "end_date": envelope["query_scope"]["end_date"],
+        },
         "gate_c": {
             "jsonl_sha256": gate_c_summary.get("jsonl_sha256"),
             "summary_sha256": gate_c_summary.get("summary_sha256"),
@@ -475,3 +482,121 @@ def _provider_summaries(
         decision = partition["decision"]
         summary["decision_counts"][decision] = summary["decision_counts"].get(decision, 0) + 1
     return [summaries[provider] for provider in sorted(summaries)]
+
+
+def redact_sensitive(value: Any) -> Any:
+    if isinstance(value, dict):
+        return {
+            key: redact_sensitive(child)
+            for key, child in value.items()
+            if not SECRET_KEY.search(str(key))
+        }
+    if isinstance(value, list):
+        return [redact_sensitive(child) for child in value]
+    return value
+
+
+def render_readiness_markdown(report: dict[str, Any]) -> str:
+    summary = report["summary"]["decision_counts"]
+    source_range = report["source_date_range"]
+    gate_c = report["gate_c"]
+    loaded_dates = gate_c["loaded_slate_dates"]
+    gate_c_dates = (
+        f"{min(loaded_dates)} through {max(loaded_dates)}"
+        if loaded_dates else "none"
+    )
+    lines = [
+        "# Season Retention Readiness",
+        "",
+        "**Deletion status: CLOSED**",
+        "",
+        f"- Generated: `{report['generated_at']}`",
+        f"- As of: `{report['as_of']}`",
+        f"- Source date range: `{source_range['start_date']} through {source_range['end_date']}`",
+        f"- Gate C loaded dates: `{gate_c_dates}`",
+        f"- Gate C JSONL SHA-256: `{gate_c['jsonl_sha256']}`",
+        f"- Gate C summary SHA-256: `{gate_c['summary_sha256']}`",
+        f"- Raw retention candidate window: `{report['raw_retention_days']} days`",
+        f"- Decision counts: `{json.dumps(summary, sort_keys=True)}`",
+        "",
+        "| Slate | Provider | Raw rows | Raw MB | Exact / Raw groups | Missing | Mismatched | Decision | Reasons |",
+        "|---|---|---:|---:|---:|---:|---:|---|---|",
+    ]
+    for row in report["partitions"]:
+        lines.append(
+            "| {slate_date} | {provider} | {raw_snapshot_rows} | {raw_mb:.2f} | "
+            "{exact_group_count} / {raw_group_count} | {missing_compact_group_count} | "
+            "{mismatched_group_count} | {decision} | {reasons} |".format(
+                **row,
+                raw_mb=row["raw_logical_bytes"] / 1024 / 1024,
+                reasons=", ".join(row.get("reason_codes", ())) or "none",
+            )
+        )
+    lines.extend([
+        "",
+        "`ready_for_retention_review` is evidence status only and does not authorize deletion.",
+    ])
+    return "\n".join(lines)
+
+
+def write_report_pair(
+    *, report: dict[str, Any], output_dir: Path, stem: str,
+    renderer: Callable[[dict[str, Any]], str] = render_readiness_markdown,
+) -> dict[str, Path]:
+    output_dir.mkdir(parents=True, exist_ok=True)
+    clean = redact_sensitive(report)
+    json_path = output_dir / f"{stem}.json"
+    markdown_path = output_dir / f"{stem}.md"
+    json_path.write_text(
+        json.dumps(clean, indent=2, sort_keys=True) + "\n", encoding="utf-8"
+    )
+    markdown_path.write_text(renderer(clean).rstrip() + "\n", encoding="utf-8")
+    return {"json": json_path, "markdown": markdown_path}
+
+
+def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
+    parser = argparse.ArgumentParser(description="Build closed season-retention evidence reports.")
+    subcommands = parser.add_subparsers(dest="command", required=True)
+    for command in ("readiness", "boltodds-closure"):
+        subparser = subcommands.add_parser(command)
+        subparser.add_argument("--query-json", required=True)
+        subparser.add_argument("--gate-c-manifest", required=True)
+        subparser.add_argument("--season-evidence")
+        subparser.add_argument("--pins")
+        subparser.add_argument("--as-of", required=True)
+        subparser.add_argument("--output-dir", required=True)
+        if command == "readiness":
+            subparser.add_argument("--raw-retention-days", type=int, default=30)
+    return parser.parse_args(argv)
+
+
+def main(argv: list[str] | None = None) -> int:
+    try:
+        args = parse_args(argv)
+        envelope = load_query_envelope(args.query_json)
+        gate_c = load_json_object(Path(args.gate_c_manifest))
+        season_evidence = load_json_object(Path(args.season_evidence)) if args.season_evidence else None
+        pins = load_json_object(Path(args.pins)) if args.pins else None
+        if args.command != "readiness":
+            raise ValueError("boltodds-closure is not available until its closure report is implemented")
+        report = build_readiness_report(
+            envelope=envelope, gate_c=gate_c, season_evidence=season_evidence, pins=pins,
+            as_of=args.as_of, raw_retention_days=args.raw_retention_days,
+        )
+        paths = write_report_pair(
+            report=report, output_dir=Path(args.output_dir), stem="season_retention_readiness",
+        )
+    except (OSError, json.JSONDecodeError, TypeError, ValueError) as exc:
+        print(f"retention_audit_error: {exc}", file=sys.stderr)
+        return 3
+
+    print(f"json={paths['json']}")
+    print(f"markdown={paths['markdown']}")
+    print(f"decision_counts={json.dumps(report['summary']['decision_counts'], sort_keys=True)}")
+    if any(row["decision"].startswith("blocked_") for row in report["partitions"]):
+        return 2
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
