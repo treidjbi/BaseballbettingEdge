@@ -8,7 +8,14 @@
 
 **Tech Stack:** PostgreSQL SQL through the linked Supabase CLI, Python 3.11 standard library, pytest
 
-**Spec:** `docs/superpowers/specs/2026-08-18-season-retention-foundation-design.md`
+**Specs:**
+
+- `docs/superpowers/specs/2026-08-18-season-retention-foundation-design.md`
+  controls the implemented Phase 1 evidence and readiness contract.
+- `docs/superpowers/specs/2026-08-18-bounded-retention-audit-design.md`
+  is the approved architectural replacement for the failed monolithic live
+  verification shape; its written specification awaits Tyler review before an
+  implementation plan is created.
 
 **Implementation status (2026-08-18):** Phase 1 implementation and local
 verification are complete and merged on local `main` at `c74385a7`. The first
@@ -18,10 +25,11 @@ projection alias, a separately approved second one-query attempt passed local
 preflight but failed with PostgreSQL `57014` statement timeout after about two
 minutes. It returned no stdout, generated no reports, changed no data, and was
 not retried. The monolithic full-season aggregation is not live-viable under
-the observed hosted limits. Live verification now requires a separately
-approved bounded provider/date read strategy; Phase 2, Phase 3, backfill,
-migration, retention activation, deletion, vacuum, push, and deployment remain
-closed.
+the observed hosted limits. The bounded replacement architecture is captured
+in `docs/superpowers/specs/2026-08-18-bounded-retention-audit-design.md` and
+awaits Tyler's review of the written specification before implementation
+planning. No bounded query has run. Phase 2, Phase 3, backfill, migration,
+retention activation, deletion, vacuum, push, and deployment remain closed.
 
 ## Final-review hardening contract
 
