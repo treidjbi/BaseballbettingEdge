@@ -11,11 +11,17 @@
 **Spec:** `docs/superpowers/specs/2026-08-18-season-retention-foundation-design.md`
 
 **Implementation status (2026-08-18):** Phase 1 implementation and local
-verification are complete on `codex/season-retention-foundation`. The first
-live read-only query attempt failed once with PostgreSQL `53100` temporary-file
-`No space left on device` and was not retried. Live verification remains
-blocked pending a separately approved, one-query operator window; Phase 2,
-Phase 3, backfill, migration, retention activation, and deletion remain closed.
+verification are complete and merged on local `main` at `c74385a7`. The first
+live read-only query attempt failed with PostgreSQL `53100` temporary-file
+`No space left on device`. After narrowing the projection and correcting one
+projection alias, a separately approved second one-query attempt passed local
+preflight but failed with PostgreSQL `57014` statement timeout after about two
+minutes. It returned no stdout, generated no reports, changed no data, and was
+not retried. The monolithic full-season aggregation is not live-viable under
+the observed hosted limits. Live verification now requires a separately
+approved bounded provider/date read strategy; Phase 2, Phase 3, backfill,
+migration, retention activation, deletion, vacuum, push, and deployment remain
+closed.
 
 ## Final-review hardening contract
 
@@ -1369,6 +1375,15 @@ Write-Output "readiness_exit=$readinessExit closure_exit=$closureExit"
 Expected: the database is queried once. Both reports are generated. Exit `2` is expected while exact compaction gaps and explicit season/pin inputs remain unresolved; exit `3` is a failure.
 
 If the pooler returns `ECIRCUITBREAKER`, authentication retries, or a timeout, do not immediately rerun. Record the exact error, wait for a later operator window, and keep the report status blocked.
+
+Execution note for 2026-08-18: the repaired query was run once after a clean
+preflight and was canceled with PostgreSQL `57014` statement timeout after
+about two minutes. It returned no captured JSON, so neither reporter ran and
+Steps 3-5 could not validate live evidence. Combined with the earlier `53100`
+temporary-file failure, this rejects another monolithic full-season retry or a
+simple timeout increase. Any replacement must be designed and approved as a
+bounded provider/date read strategy that preserves the exact reconciliation
+contract without creating production writes or deletion authority.
 
 - [ ] **Step 3: Verify the live report reproduces the known 2026-08-18 blockers**
 
