@@ -484,6 +484,128 @@ def _provider_summaries(
     return [summaries[provider] for provider in sorted(summaries)]
 
 
+def build_boltodds_closure(
+    *,
+    envelope: dict[str, Any],
+    gate_c: dict[str, Any] | None,
+    season_evidence: dict[str, Any] | None,
+    pins: dict[str, Any] | None,
+    as_of: str,
+) -> dict[str, Any]:
+    """Build a closed, evidence-only retirement package for BoltOdds."""
+    validate_envelope(envelope)
+    gate_c = _validate_gate_c_manifest(gate_c)
+    as_of_date = _parse_date(as_of, "as_of")
+    if envelope["query_scope"]["end_date"] != as_of_date.isoformat():
+        raise ValueError("query scope is stale for requested as-of date")
+
+    boltodds_runtime = [
+        row for row in envelope["provider_runtime"] if row["provider"] == "boltodds"
+    ]
+    if len(boltodds_runtime) != 1:
+        raise ValueError("provider_runtime must contain exactly one boltodds row")
+    runtime_source = boltodds_runtime[0]
+    runtime = {
+        field: runtime_source.get(field)
+        for field in (*_RUNTIME_TIMESTAMP_FIELDS, *_RUNTIME_INTEGER_FIELDS)
+    }
+    runtime["books_seen"] = sorted(set(runtime_source["books_seen"]))
+
+    coverage_rows = [
+        row for row in envelope["coverage"] if row["provider"] == "boltodds"
+    ]
+    coverage_rows.sort(key=lambda row: row["slate_date"])
+    coverage_totals = {
+        field: sum(row[field] for row in coverage_rows)
+        for field in _COVERAGE_INTEGER_FIELDS
+    }
+    partitions = [{
+        "slate_date": row["slate_date"],
+        "raw_snapshot_rows": row["raw_snapshot_rows"],
+        "raw_logical_bytes": row["raw_logical_bytes"],
+        "raw_group_count": row["raw_group_count"],
+        "compact_group_count": row["compact_group_count"],
+        "exact_group_count": row["exact_group_count"],
+        "mismatched_group_count": row["mismatched_group_count"],
+        "coverage_exact": row["coverage_exact"],
+    } for row in coverage_rows]
+
+    season_by_date = _index_season_evidence(season_evidence)
+    pins_by_partition = _index_pins(pins)
+    anomalies = next(
+        row for row in envelope["source_anomalies"] if row["provider"] == "boltodds"
+    )
+    gaps: list[str] = []
+    if not coverage_rows:
+        gaps.append("boltodds_coverage_missing")
+    if gate_c is None:
+        gaps.append("gate_c_manifest_missing")
+    if season_evidence is None:
+        gaps.append("season_evidence_manifest_missing")
+    if pins is None:
+        gaps.append("pin_manifest_missing")
+    if any(row["coverage_exact"] is not True for row in coverage_rows):
+        gaps.append("compaction_not_exact")
+    for field in MISMATCH_FIELDS:
+        if coverage_totals[field] > 0:
+            gaps.append(field)
+    if coverage_totals["mismatched_group_count"] > 0:
+        gaps.append("mismatched_group_count")
+    for field in _ANOMALY_INTEGER_FIELDS:
+        if anomalies[field] > 0:
+            gaps.append(field)
+    for row in coverage_rows:
+        gaps.extend(_outcome_reason_codes(
+            row["slate_date"], gate_c, season_by_date.get(row["slate_date"]),
+        ))
+        _, pin_gaps = _has_preserved_pins(
+            pins_by_partition.get((row["slate_date"], "boltodds"))
+        )
+        gaps.extend(pin_gaps)
+
+    post_suspension_runtime = any(
+        timestamp is not None and timestamp > BOLTODDS_SUSPENDED_AT
+        for timestamp in (
+            _parse_timestamp(runtime_source[field], f"boltodds.{field}", nullable=True)
+            for field in ("last_snapshot_at", "last_heartbeat_at")
+        )
+    )
+    if post_suspension_runtime:
+        gaps.append("post_suspension_runtime_evidence")
+    unresolved_evidence_gaps = sorted(set(gaps))
+    if post_suspension_runtime:
+        status = "operational_exception"
+        recommendation = "investigate_accidental_reactivation"
+    elif unresolved_evidence_gaps:
+        status = "incomplete_evidence"
+        recommendation = "complete_evidence_before_retention_review"
+    else:
+        status = "ready_for_retirement_review"
+        recommendation = "schedule_separate_retention_review"
+
+    return {
+        "report_type": "boltodds_retirement_closure",
+        "generated_at": datetime.now(timezone.utc).isoformat(),
+        "as_of": as_of_date.isoformat(),
+        "provider": "boltodds",
+        "documented_suspension_at": BOLTODDS_SUSPENDED_AT.isoformat(),
+        "status": status,
+        "recommendation": recommendation,
+        "runtime": runtime,
+        "coverage_totals": coverage_totals,
+        "partitions": partitions,
+        "unresolved_evidence_gaps": unresolved_evidence_gaps,
+        "retention_execution_closed": True,
+        "deletion_approved": False,
+        "production_authority": "none",
+        "runtime_reactivation_approved": False,
+        "historical_lessons": (
+            "BoltOdds evidence is research-only and cannot drive provider order, "
+            "official artifacts, picks, models, notifications, locks, UI, or retention execution."
+        ),
+    }
+
+
 def redact_sensitive(value: Any) -> Any:
     if isinstance(value, dict):
         return {
@@ -494,6 +616,32 @@ def redact_sensitive(value: Any) -> Any:
     if isinstance(value, list):
         return [redact_sensitive(child) for child in value]
     return value
+
+
+def render_boltodds_markdown(report: dict[str, Any]) -> str:
+    runtime = report["runtime"]
+    totals = report["coverage_totals"]
+    lines = [
+        "# BoltOdds Retirement Closure",
+        "",
+        "**Deletion status: CLOSED**",
+        "",
+        "This package does not authorize BoltOdds runtime reactivation.",
+        "",
+        f"- Status: `{report['status']}`",
+        f"- Documented suspension: `{report['documented_suspension_at']}`",
+        f"- Last heartbeat: `{runtime.get('last_heartbeat_at')}`",
+        f"- Last snapshot: `{runtime.get('last_snapshot_at')}`",
+        f"- Books observed: `{', '.join(runtime.get('books_seen', [])) or 'none'}`",
+        f"- Raw rows / logical bytes: `{totals['raw_snapshot_rows']} / {totals['raw_logical_bytes']}`",
+        f"- Exact / raw groups: `{totals['exact_group_count']} / {totals['raw_group_count']}`",
+        f"- Missing / mismatched groups: `{totals['missing_compact_group_count']} / {totals['mismatched_group_count']}`",
+        f"- Unresolved gaps: `{', '.join(report['unresolved_evidence_gaps']) or 'none'}`",
+        f"- Recommendation: `{report['recommendation']}`",
+        "",
+        "BoltOdds remains historical research evidence only and has no production authority.",
+    ]
+    return "\n".join(lines)
 
 
 def render_readiness_markdown(report: dict[str, Any]) -> str:
@@ -581,25 +729,36 @@ def main(argv: list[str] | None = None) -> int:
         gate_c = load_json_object(Path(args.gate_c_manifest))
         season_evidence = load_json_object(Path(args.season_evidence)) if args.season_evidence else None
         pins = load_json_object(Path(args.pins)) if args.pins else None
-        if args.command != "readiness":
-            raise ValueError("boltodds-closure is not available until its closure report is implemented")
-        report = build_readiness_report(
-            envelope=envelope, gate_c=gate_c, season_evidence=season_evidence, pins=pins,
-            as_of=args.as_of, raw_retention_days=args.raw_retention_days,
-        )
-        paths = write_report_pair(
-            report=report, output_dir=Path(args.output_dir), stem="season_retention_readiness",
-        )
+        if args.command == "readiness":
+            report = build_readiness_report(
+                envelope=envelope, gate_c=gate_c, season_evidence=season_evidence, pins=pins,
+                as_of=args.as_of, raw_retention_days=args.raw_retention_days,
+            )
+            paths = write_report_pair(
+                report=report, output_dir=Path(args.output_dir), stem="season_retention_readiness",
+            )
+        else:
+            report = build_boltodds_closure(
+                envelope=envelope, gate_c=gate_c, season_evidence=season_evidence,
+                pins=pins, as_of=args.as_of,
+            )
+            paths = write_report_pair(
+                report=report, output_dir=Path(args.output_dir),
+                stem="boltodds_retirement_closure", renderer=render_boltodds_markdown,
+            )
     except (OSError, json.JSONDecodeError, TypeError, ValueError) as exc:
         print(f"retention_audit_error: {exc}", file=sys.stderr)
         return 3
 
     print(f"json={paths['json']}")
     print(f"markdown={paths['markdown']}")
-    print(f"decision_counts={json.dumps(report['summary']['decision_counts'], sort_keys=True)}")
-    if any(row["decision"].startswith("blocked_") for row in report["partitions"]):
-        return 2
-    return 0
+    if args.command == "readiness":
+        print(f"decision_counts={json.dumps(report['summary']['decision_counts'], sort_keys=True)}")
+        if any(row["decision"].startswith("blocked_") for row in report["partitions"]):
+            return 2
+        return 0
+    print(f"status={report['status']}")
+    return 0 if report["status"] == "ready_for_retirement_review" else 2
 
 
 if __name__ == "__main__":

@@ -454,3 +454,97 @@ def test_readiness_markdown_renders_deferred_reason_codes_for_recent_partitions(
     assert "not_in_policy_window" in markdown
     assert "missing_season_evidence_date" in markdown
     assert "missing_pin_manifest_partition" in markdown
+
+
+def test_boltodds_closure_preserves_trial_facts_without_runtime_authority():
+    closure = retention.build_boltodds_closure(
+        envelope=_envelope(), gate_c=_gate_c_manifest(),
+        season_evidence=_season_evidence(), pins=_pins(), as_of="2026-08-18",
+    )
+
+    assert closure["provider"] == "boltodds"
+    assert closure["documented_suspension_at"] == "2026-06-17T17:22:29+00:00"
+    assert closure["runtime"]["last_snapshot_at"] == "2026-06-16T13:37:44+00:00"
+    assert closure["runtime"]["books_seen"] == ["betmgm", "fanduel"]
+    assert closure["production_authority"] == "none"
+    assert closure["runtime_reactivation_approved"] is False
+    assert closure["retention_execution_closed"] is True
+    assert closure["deletion_approved"] is False
+
+
+def test_boltodds_closure_blocks_on_compaction_gaps_and_missing_preservation_inputs():
+    envelope = _envelope(coverage=[_coverage(
+        missing_compact_group_count=1, coverage_exact=False,
+    )])
+
+    closure = retention.build_boltodds_closure(
+        envelope=envelope, gate_c=_gate_c_manifest(),
+        season_evidence=None, pins=None, as_of="2026-08-18",
+    )
+
+    assert closure["status"] == "incomplete_evidence"
+    assert "compaction_not_exact" in closure["unresolved_evidence_gaps"]
+    assert "season_evidence_manifest_missing" in closure["unresolved_evidence_gaps"]
+    assert "pin_manifest_missing" in closure["unresolved_evidence_gaps"]
+    assert closure["recommendation"] == "complete_evidence_before_retention_review"
+
+
+@pytest.mark.parametrize("runtime_field", ["last_snapshot_at", "last_heartbeat_at"])
+def test_boltodds_closure_flags_any_post_suspension_runtime(runtime_field):
+    runtime = _runtime(**{runtime_field: "2026-06-17T17:22:30+00:00"})
+
+    closure = retention.build_boltodds_closure(
+        envelope=_envelope(runtime=[runtime]), gate_c=_gate_c_manifest(),
+        season_evidence=_season_evidence(), pins=_pins(), as_of="2026-08-18",
+    )
+
+    assert closure["status"] == "operational_exception"
+    assert "post_suspension_runtime_evidence" in closure["unresolved_evidence_gaps"]
+
+
+def test_boltodds_closure_blocks_provider_anomalies_even_when_coverage_is_exact():
+    envelope = _envelope(anomalies=[{
+        "provider": "boltodds", "rows_missing_run_id": 1,
+        "rows_missing_run_row": 0, "rows_missing_group_key": 0,
+        "provider_run_mismatch_rows": 0,
+    }])
+
+    closure = retention.build_boltodds_closure(
+        envelope=envelope, gate_c=_gate_c_manifest(),
+        season_evidence=_season_evidence(), pins=_pins(), as_of="2026-08-18",
+    )
+
+    assert closure["status"] == "incomplete_evidence"
+    assert "rows_missing_run_id" in closure["unresolved_evidence_gaps"]
+
+
+def test_boltodds_closure_validates_envelope_before_reading_evidence():
+    envelope = _envelope()
+    envelope["complete"] = False
+
+    with pytest.raises(ValueError, match="complete must be true"):
+        retention.build_boltodds_closure(
+            envelope=envelope, gate_c=_gate_c_manifest(),
+            season_evidence=_season_evidence(), pins=_pins(), as_of="2026-08-18",
+        )
+
+
+def test_boltodds_closure_cli_writes_sanitized_json_and_markdown(tmp_path):
+    query = tmp_path / "query.json"
+    gate_c = tmp_path / "gate-c.json"
+    query.write_text(json.dumps([{"retention_exact_coverage": _envelope()}]), encoding="utf-8")
+    gate_c.write_text(json.dumps(_gate_c_manifest()), encoding="utf-8")
+
+    exit_code = retention.main([
+        "boltodds-closure", "--query-json", str(query),
+        "--gate-c-manifest", str(gate_c), "--as-of", "2026-08-18",
+        "--output-dir", str(tmp_path),
+    ])
+
+    assert exit_code == 2
+    json_path = tmp_path / "boltodds_retirement_closure.json"
+    md_path = tmp_path / "boltodds_retirement_closure.md"
+    assert json_path.exists() and md_path.exists()
+    combined = json_path.read_text(encoding="utf-8") + md_path.read_text(encoding="utf-8")
+    assert "Deletion status: CLOSED" in combined
+    assert "does not authorize BoltOdds runtime reactivation" in combined
