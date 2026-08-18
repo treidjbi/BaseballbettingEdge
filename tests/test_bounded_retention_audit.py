@@ -11,6 +11,13 @@ import pytest
 from scripts import bounded_retention_audit as audit
 
 
+@pytest.fixture(autouse=True)
+def fixed_cli_version(monkeypatch, request):
+    if request.node.name.startswith("test_resolve_cli_version"):
+        return
+    monkeypatch.setattr(audit, "resolve_cli_version", Mock(return_value="2.48.3"), raising=False)
+
+
 def make_checkpoint(
     provider: str,
     start_date: date,
@@ -27,7 +34,7 @@ def make_checkpoint(
         query_contract_sha256="a" * 64,
         rendered_sql_sha256="b" * 64,
         scope_fingerprint="c" * 64,
-        cli_version=audit.CLI_VERSION,
+        cli_version="2.48.3",
         payload={},
     )
 
@@ -129,6 +136,50 @@ def valid_runtime_payload(scope: audit.AuditScope) -> dict:
             for provider in scope.providers
         ],
     }
+
+
+def make_zero_partition(payload: dict, index: int = 0) -> None:
+    coverage = payload["coverage"][index]
+    for field in (
+        "raw_snapshot_rows",
+        "raw_logical_bytes",
+        "raw_group_count",
+        "compact_group_count",
+        "exact_group_count",
+        "mismatched_group_count",
+        "missing_compact_group_count",
+        "unexpected_compact_group_count",
+        "duplicate_compact_group_count",
+        "first_seen_mismatch_count",
+        "last_seen_mismatch_count",
+        "first_odds_mismatch_count",
+        "last_odds_mismatch_count",
+        "min_odds_mismatch_count",
+        "max_odds_mismatch_count",
+        "odds_move_count_mismatch_count",
+        "snapshot_count_mismatch_count",
+    ):
+        coverage[field] = 0
+    coverage["first_raw_seen_at"] = None
+    coverage["last_raw_seen_at"] = None
+    coverage["coverage_exact"] = True
+    runtime = payload["candidate_runtime"][index]
+    runtime.update({
+        "first_run_at": None,
+        "last_run_at": None,
+        "run_count": 0,
+        "completed_run_count": 0,
+        "failed_run_count": 0,
+        "request_count": 0,
+        "books_seen": [],
+        "first_snapshot_at": None,
+        "last_snapshot_at": None,
+        "snapshot_count": 0,
+        "snapshot_logical_bytes": 0,
+        "last_heartbeat_at": None,
+        "last_message_at": None,
+        "heartbeat_count": 0,
+    })
 
 
 @pytest.fixture
@@ -288,6 +339,37 @@ def test_run_linked_query_closes_mocked_temp_file_before_subprocess(monkeypatch)
     unlink.assert_called_once_with(sql_file.name)
 
 
+def test_resolve_cli_version_uses_safe_fixed_local_preflight(monkeypatch):
+    completed = subprocess.CompletedProcess([], 0, "2.48.3\n", "")
+    run = Mock(return_value=completed)
+    monkeypatch.setattr(audit.shutil, "which", lambda name: "C:/bin/npx.cmd" if name == "npx" else None)
+    monkeypatch.setattr(audit.subprocess, "run", run)
+
+    assert audit.resolve_cli_version() == "2.48.3"
+    assert run.call_args.args[0] == ["C:/bin/npx.cmd", "supabase", "--version"]
+    assert run.call_args.kwargs == {
+        "check": False,
+        "capture_output": True,
+        "text": True,
+        "shell": False,
+        "timeout": audit.CLI_VERSION_TIMEOUT_SECONDS,
+    }
+
+
+@pytest.mark.parametrize(
+    "completed",
+    [
+        subprocess.CompletedProcess([], 1, "", "lookup failed"),
+        subprocess.CompletedProcess([], 0, "not-a-version", ""),
+        subprocess.CompletedProcess([], 0, "", ""),
+    ],
+)
+def test_resolve_cli_version_fails_closed_on_lookup_or_parse_failure(monkeypatch, completed):
+    monkeypatch.setattr(audit.subprocess, "run", Mock(return_value=completed))
+    with pytest.raises(audit.AuditFailure, match="subprocess_failed"):
+        audit.resolve_cli_version()
+
+
 def test_parse_supabase_object_requires_one_row_and_object_column():
     assert audit.parse_supabase_object('[{"result": {"complete": true}}]', "result") == {
         "complete": True,
@@ -319,6 +401,120 @@ def test_validate_chunk_payload_rejects_missing_negative_or_contradictory_aggreg
     payload = valid_payload(chunk)
     mutate(payload)
     with pytest.raises(ValueError, match=message):
+        audit.validate_chunk_payload(payload, chunk)
+
+
+def test_validate_chunk_payload_rejects_more_groups_than_snapshots():
+    chunk = audit.ChunkSpec("propline", date(2026, 5, 1), date(2026, 5, 1))
+    payload = valid_payload(chunk)
+    payload["coverage"][0].update({
+        "raw_group_count": 3,
+        "compact_group_count": 3,
+        "exact_group_count": 3,
+    })
+    with pytest.raises(ValueError, match="raw groups cannot exceed snapshots"):
+        audit.validate_chunk_payload(payload, chunk)
+
+
+@pytest.mark.parametrize(
+    ("raw_rows", "raw_bytes"),
+    [(0, 20), (2, 0)],
+)
+def test_validate_chunk_payload_rejects_inconsistent_row_byte_zero_state(raw_rows, raw_bytes):
+    chunk = audit.ChunkSpec("propline", date(2026, 5, 1), date(2026, 5, 1))
+    payload = valid_payload(chunk)
+    if raw_rows == 0:
+        make_zero_partition(payload)
+    payload["coverage"][0]["raw_snapshot_rows"] = raw_rows
+    payload["coverage"][0]["raw_logical_bytes"] = raw_bytes
+    payload["candidate_runtime"][0]["snapshot_count"] = raw_rows
+    payload["candidate_runtime"][0]["snapshot_logical_bytes"] = raw_bytes
+    with pytest.raises(ValueError, match="row/byte consistency"):
+        audit.validate_chunk_payload(payload, chunk)
+
+
+@pytest.mark.parametrize(
+    "mutation",
+    [
+        lambda payload: payload["coverage"][0].pop("first_raw_seen_at"),
+        lambda payload: payload["coverage"][0].update(first_raw_seen_at=None),
+        lambda payload: payload["coverage"][0].update(
+            first_raw_seen_at="2026-04-28T12:02:00Z",
+            last_raw_seen_at="2026-04-28T12:01:00Z",
+        ),
+        lambda payload: payload["candidate_runtime"][0].update(first_run_at=None),
+        lambda payload: payload["candidate_runtime"][0].update(first_snapshot_at=None),
+        lambda payload: payload["candidate_runtime"][0].update(
+            first_snapshot_at="not-a-timestamp",
+        ),
+    ],
+)
+def test_validate_chunk_payload_rejects_missing_null_or_reversed_required_timestamps(mutation):
+    chunk = audit.ChunkSpec("propline", date(2026, 5, 1), date(2026, 5, 1))
+    payload = valid_payload(chunk)
+    mutation(payload)
+    with pytest.raises(ValueError, match="timestamp"):
+        audit.validate_chunk_payload(payload, chunk)
+
+
+def test_validate_chunk_payload_rejects_nonnull_raw_timestamp_for_zero_partition():
+    chunk = audit.ChunkSpec("propline", date(2026, 5, 1), date(2026, 5, 1))
+    payload = valid_payload(chunk)
+    make_zero_partition(payload)
+    payload["coverage"][0]["first_raw_seen_at"] = "2026-05-01T12:00:00Z"
+    with pytest.raises(ValueError, match="timestamp"):
+        audit.validate_chunk_payload(payload, chunk)
+
+
+@pytest.mark.parametrize("audit_generated_at", [None, "not-a-timestamp", "2026-08-18T12:00:00"])
+def test_validate_chunk_payload_requires_timezone_aware_audit_timestamp(audit_generated_at):
+    chunk = audit.ChunkSpec("propline", date(2026, 5, 1), date(2026, 5, 1))
+    payload = valid_payload(chunk)
+    if audit_generated_at is None:
+        payload.pop("audit_generated_at")
+    else:
+        payload["audit_generated_at"] = audit_generated_at
+    with pytest.raises(ValueError, match="audit_generated_at"):
+        audit.validate_chunk_payload(payload, chunk)
+
+
+def test_validate_chunk_payload_rejects_message_timestamp_without_heartbeat_rows():
+    chunk = audit.ChunkSpec("propline", date(2026, 5, 1), date(2026, 5, 1))
+    payload = valid_payload(chunk)
+    payload["candidate_runtime"][0]["last_message_at"] = "2026-05-01T12:00:00Z"
+    with pytest.raises(ValueError, match="heartbeat timestamp/count"):
+        audit.validate_chunk_payload(payload, chunk)
+
+
+def test_validate_chunk_payload_rejects_requests_without_provider_runs():
+    chunk = audit.ChunkSpec("propline", date(2026, 5, 1), date(2026, 5, 1))
+    payload = valid_payload(chunk)
+    payload["candidate_runtime"][0].update({
+        "first_run_at": None,
+        "last_run_at": None,
+        "run_count": 0,
+        "completed_run_count": 0,
+        "request_count": 1,
+    })
+    with pytest.raises(ValueError, match="request count"):
+        audit.validate_chunk_payload(payload, chunk)
+
+
+@pytest.mark.parametrize(
+    "books",
+    [
+        ["fanduel", "fanduel"],
+        ["fanduel", "draftkings"],
+        ["FanDuel"],
+        [" fanduel"],
+        [""],
+    ],
+)
+def test_validate_chunk_payload_requires_canonical_unique_books(books):
+    chunk = audit.ChunkSpec("propline", date(2026, 5, 1), date(2026, 5, 1))
+    payload = valid_payload(chunk)
+    payload["candidate_runtime"][0]["books_seen"] = books
+    with pytest.raises(ValueError, match="books_seen"):
         audit.validate_chunk_payload(payload, chunk)
 
 
@@ -409,6 +605,85 @@ def test_run_chunks_rejects_non_directory_output_before_query(tmp_path, monkeypa
     query.assert_not_called()
 
 
+@pytest.mark.parametrize("command", ["run", "runtime-boundary"])
+@pytest.mark.parametrize("path_shape", ["output_is_file", "file_parent"])
+def test_linked_commands_preflight_invalid_output_before_builder_or_query(
+    command, path_shape, tmp_path, monkeypatch,
+):
+    if path_shape == "output_is_file":
+        output_dir = tmp_path / "output"
+        output_dir.write_text("occupied", encoding="utf-8")
+    else:
+        file_parent = tmp_path / "file-parent"
+        file_parent.write_text("occupied", encoding="utf-8")
+        output_dir = file_parent / "missing"
+    chunk_builder = Mock()
+    runtime_builder = Mock()
+    query = Mock()
+    monkeypatch.setattr(audit.bounded_sql, "build_chunk_sql", chunk_builder)
+    monkeypatch.setattr(audit.bounded_sql, "build_runtime_boundary_sql", runtime_builder)
+    monkeypatch.setattr(audit, "run_linked_query", query)
+    scope = audit.build_scope("2026-08-18")
+
+    with pytest.raises((OSError, ValueError)):
+        if command == "run":
+            audit.run_chunks(scope, output_dir)
+        else:
+            audit.run_runtime_boundary(scope, output_dir)
+
+    chunk_builder.assert_not_called()
+    runtime_builder.assert_not_called()
+    query.assert_not_called()
+
+
+@pytest.mark.parametrize("command", ["run", "runtime-boundary"])
+def test_linked_commands_atomic_write_probe_failure_prevents_builder_and_query(
+    command, tmp_path, monkeypatch,
+):
+    chunk_builder = Mock()
+    runtime_builder = Mock()
+    query = Mock()
+    monkeypatch.setattr(audit.bounded_sql, "build_chunk_sql", chunk_builder)
+    monkeypatch.setattr(audit.bounded_sql, "build_runtime_boundary_sql", runtime_builder)
+    monkeypatch.setattr(audit, "run_linked_query", query)
+    monkeypatch.setattr(audit, "write_json_atomic", Mock(side_effect=PermissionError("denied")))
+    scope = audit.build_scope("2026-08-18")
+
+    with pytest.raises(PermissionError):
+        if command == "run":
+            audit.run_chunks(scope, tmp_path)
+        else:
+            audit.run_runtime_boundary(scope, tmp_path)
+
+    chunk_builder.assert_not_called()
+    runtime_builder.assert_not_called()
+    query.assert_not_called()
+
+
+@pytest.mark.parametrize("command", ["run", "runtime-boundary"])
+def test_cli_version_lookup_failure_prevents_builder_and_query(command, tmp_path, monkeypatch):
+    version = Mock(side_effect=audit.AuditFailure("subprocess_failed"))
+    chunk_builder = Mock()
+    runtime_builder = Mock()
+    query = Mock()
+    monkeypatch.setattr(audit, "resolve_cli_version", version)
+    monkeypatch.setattr(audit.bounded_sql, "build_chunk_sql", chunk_builder)
+    monkeypatch.setattr(audit.bounded_sql, "build_runtime_boundary_sql", runtime_builder)
+    monkeypatch.setattr(audit, "run_linked_query", query)
+    scope = audit.build_scope("2026-08-18")
+
+    with pytest.raises(audit.AuditFailure, match="subprocess_failed"):
+        if command == "run":
+            audit.run_chunks(scope, tmp_path)
+        else:
+            audit.run_runtime_boundary(scope, tmp_path)
+
+    version.assert_called_once_with()
+    chunk_builder.assert_not_called()
+    runtime_builder.assert_not_called()
+    query.assert_not_called()
+
+
 def test_run_chunks_writes_bound_checkpoint_and_exactly_thirty_second_cooldown(
     tmp_path, monkeypatch,
 ):
@@ -423,9 +698,11 @@ def test_run_chunks_writes_bound_checkpoint_and_exactly_thirty_second_cooldown(
         ),
     ]
     query = Mock(side_effect=results)
+    version = Mock(return_value="2.48.3")
     sleep = Mock()
     clock = iter((100.0, 110.0, 200.0, 210.0))
     monkeypatch.setattr(audit, "run_linked_query", query)
+    monkeypatch.setattr(audit, "resolve_cli_version", version)
     monkeypatch.setattr(audit.time, "sleep", sleep)
     monkeypatch.setattr(audit.time, "perf_counter", lambda: next(clock))
 
@@ -438,10 +715,13 @@ def test_run_chunks_writes_bound_checkpoint_and_exactly_thirty_second_cooldown(
         (second.start_date, second.end_date),
     ]
     sleep.assert_called_once_with(30.0)
+    version.assert_called_once_with()
     files = sorted(tmp_path.glob("checkpoint-*.json"))
     assert len(files) == 2
     saved = json.loads(files[0].read_text(encoding="utf-8"))
     assert saved["audit_version"] == 2
+    assert saved["cli_version"] == "2.48.3"
+    assert saved["query_contract_version"] == audit.QUERY_CONTRACT_VERSION
     assert saved["providers"] == ["boltodds", "propline", "the_odds", "therundown"]
     assert saved["status"] == "completed"
     assert saved["complete"] is True
@@ -494,6 +774,80 @@ def test_load_valid_checkpoints_resumes_only_exact_bound_evidence(tmp_path, monk
     assert audit.select_next_chunk(scope, records) == audit.ChunkSpec(
         "boltodds", date(2026, 4, 29), date(2026, 5, 1),
     )
+
+
+def test_checkpoint_integrity_hash_rejects_elapsed_cadence_tamper(tmp_path, monkeypatch):
+    chunk = audit.ChunkSpec("boltodds", date(2026, 4, 28), date(2026, 4, 28))
+    query = Mock(return_value=subprocess.CompletedProcess(
+        [], 0, json.dumps([{"retention_bounded_chunk": valid_payload(chunk)}]), "",
+    ))
+    clock = iter((100.0, 131.0))
+    scope = audit.build_scope("2026-08-18")
+    monkeypatch.setattr(audit, "run_linked_query", query)
+    monkeypatch.setattr(audit.time, "perf_counter", lambda: next(clock))
+    audit.run_chunks(scope, tmp_path)
+    path = next(tmp_path.glob("checkpoint-*.json"))
+    saved = json.loads(path.read_text(encoding="utf-8"))
+    assert saved["elapsed_seconds"] == 31.0
+    assert len(saved["checkpoint_integrity_sha256"]) == 64
+
+    saved["elapsed_seconds"] = 1.0
+    path.write_text(json.dumps(saved), encoding="utf-8")
+
+    with pytest.raises(ValueError, match="checkpoint integrity"):
+        audit.load_valid_checkpoints(tmp_path, scope, cli_version="2.48.3")
+
+
+@pytest.mark.parametrize(
+    ("field", "replacement"),
+    [
+        ("started_at", "2026-08-18T11:59:59+00:00"),
+        ("status", "completed-but-untrusted"),
+        ("row_count", 2),
+        ("partition_count", 2),
+        ("cli_version", "2.48.4"),
+        ("result_sha256", "0" * 64),
+        ("query_contract_sha256", "1" * 64),
+    ],
+)
+def test_checkpoint_integrity_hash_binds_all_resume_metadata(
+    field, replacement, tmp_path, monkeypatch,
+):
+    chunk = audit.ChunkSpec("boltodds", date(2026, 4, 28), date(2026, 4, 28))
+    query = Mock(return_value=subprocess.CompletedProcess(
+        [], 0, json.dumps([{"retention_bounded_chunk": valid_payload(chunk)}]), "",
+    ))
+    clock = iter((100.0, 110.0))
+    scope = audit.build_scope("2026-08-18")
+    monkeypatch.setattr(audit, "run_linked_query", query)
+    monkeypatch.setattr(audit.time, "perf_counter", lambda: next(clock))
+    audit.run_chunks(scope, tmp_path)
+    path = next(tmp_path.glob("checkpoint-*.json"))
+    saved = json.loads(path.read_text(encoding="utf-8"))
+    saved[field] = replacement
+    path.write_text(json.dumps(saved), encoding="utf-8")
+
+    with pytest.raises(ValueError, match="checkpoint integrity"):
+        audit.load_valid_checkpoints(tmp_path, scope, cli_version="2.48.3")
+
+
+def test_checkpoint_integrity_hash_binds_added_resume_metadata(tmp_path, monkeypatch):
+    chunk = audit.ChunkSpec("boltodds", date(2026, 4, 28), date(2026, 4, 28))
+    query = Mock(return_value=subprocess.CompletedProcess(
+        [], 0, json.dumps([{"retention_bounded_chunk": valid_payload(chunk)}]), "",
+    ))
+    clock = iter((100.0, 110.0))
+    scope = audit.build_scope("2026-08-18")
+    monkeypatch.setattr(audit, "run_linked_query", query)
+    monkeypatch.setattr(audit.time, "perf_counter", lambda: next(clock))
+    audit.run_chunks(scope, tmp_path)
+    path = next(tmp_path.glob("checkpoint-*.json"))
+    saved = json.loads(path.read_text(encoding="utf-8"))
+    saved["unbound_resume_hint"] = "fast"
+    path.write_text(json.dumps(saved), encoding="utf-8")
+
+    with pytest.raises(ValueError, match="checkpoint integrity"):
+        audit.load_valid_checkpoints(tmp_path, scope, cli_version="2.48.3")
 
 
 @pytest.mark.parametrize("tamper", ["payload", "scope", "hash", "filename"])
@@ -566,6 +920,7 @@ def test_load_valid_checkpoints_rejects_overlapping_ranges(tmp_path, monkeypatch
             audit.datetime(2026, 8, 18, 12, index, tzinfo=audit.timezone.utc),
             audit.datetime(2026, 8, 18, 12, index, 10, tzinfo=audit.timezone.utc),
             10.0,
+            "2.48.3",
         )
         audit.write_json_atomic(audit._checkpoint_path(tmp_path, chunk), value)
 
@@ -658,6 +1013,8 @@ def test_run_runtime_boundary_writes_separate_validated_atomic_evidence(tmp_path
     assert saved["payload"] == payload
     assert saved["elapsed_seconds"] == 10.0
     assert saved["candidate_end_date"] == "2026-07-19"
+    assert saved["cli_version"] == "2.48.3"
+    assert saved["query_contract_version"] == audit.QUERY_CONTRACT_VERSION
     assert saved["status"] == "completed"
     assert saved["sanitized_error"] is None
     assert len(saved["rendered_sql_sha256"]) == 64
@@ -681,6 +1038,64 @@ def test_run_runtime_boundary_rejects_noncanonical_provider_order_without_file(
     assert exc_info.value.code == "validation_failed"
     assert query.call_count == 1
     assert list(tmp_path.iterdir()) == []
+
+
+@pytest.mark.parametrize(
+    "field",
+    [
+        "current_latest_run_at",
+        "current_latest_snapshot_at",
+        "current_latest_heartbeat_at",
+        "current_latest_message_at",
+        "candidate_latest_run_at",
+        "candidate_latest_snapshot_at",
+        "candidate_latest_heartbeat_at",
+        "candidate_latest_message_at",
+    ],
+)
+def test_runtime_payload_requires_every_current_and_candidate_boundary(field):
+    scope = audit.build_scope("2026-08-18")
+    payload = valid_runtime_payload(scope)
+    payload["providers"][0].pop(field)
+    with pytest.raises(ValueError, match="runtime boundary field"):
+        audit._validate_runtime_payload(payload, scope)
+
+
+@pytest.mark.parametrize(
+    "value",
+    ["not-a-timestamp", "2026-06-17T17:22:30"],
+)
+def test_runtime_payload_rejects_malformed_or_naive_boundary_timestamp(value):
+    scope = audit.build_scope("2026-08-18")
+    payload = valid_runtime_payload(scope)
+    payload["providers"][0]["current_latest_run_at"] = value
+    with pytest.raises(ValueError, match="runtime boundary timestamp"):
+        audit._validate_runtime_payload(payload, scope)
+
+
+def test_runtime_payload_recomputes_false_boltodds_closure_flag():
+    scope = audit.build_scope("2026-08-18")
+    payload = valid_runtime_payload(scope)
+    payload["providers"][0]["current_latest_snapshot_at"] = "2026-06-17T17:22:30Z"
+    payload["providers"][0]["post_boltodds_suspension"] = False
+    with pytest.raises(ValueError, match="post_boltodds_suspension"):
+        audit._validate_runtime_payload(payload, scope)
+
+
+def test_runtime_payload_recomputes_true_boltodds_closure_flag():
+    scope = audit.build_scope("2026-08-18")
+    payload = valid_runtime_payload(scope)
+    payload["providers"][0]["post_boltodds_suspension"] = True
+    with pytest.raises(ValueError, match="post_boltodds_suspension"):
+        audit._validate_runtime_payload(payload, scope)
+
+
+def test_runtime_payload_rejects_true_closure_flag_for_active_provider():
+    scope = audit.build_scope("2026-08-18")
+    payload = valid_runtime_payload(scope)
+    payload["providers"][1]["post_boltodds_suspension"] = True
+    with pytest.raises(ValueError, match="post_boltodds_suspension"):
+        audit._validate_runtime_payload(payload, scope)
 
 
 def test_assemble_cli_is_local_only_and_never_calls_linked_query(tmp_path, monkeypatch):

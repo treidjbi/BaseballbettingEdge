@@ -5,6 +5,7 @@ import hashlib
 import json
 import math
 import os
+import re
 import shutil
 import subprocess
 import sys
@@ -25,9 +26,11 @@ COOLDOWN_SECONDS = 30.0
 DEFAULT_MAX_CHUNKS = 1
 HARD_MAX_CHUNKS = 5
 QUERY_TIMEOUT_SECONDS = 120
-CLI_VERSION = "supabase-db-query-linked-json-v1"
+CLI_VERSION_TIMEOUT_SECONDS = 30
+QUERY_CONTRACT_VERSION = "supabase-db-query-linked-json-v1"
 RUNNER_VERSION = "2"
 TIMEZONE = "America/Phoenix"
+_CLI_VERSION_PATTERN = re.compile(r"\d+\.\d+\.\d+(?:[-+][0-9A-Za-z.-]+)?")
 
 _COVERAGE_COUNTS = (
     "raw_snapshot_rows",
@@ -74,6 +77,16 @@ _RUNTIME_COUNTS = (
     "snapshot_count",
     "snapshot_logical_bytes",
     "heartbeat_count",
+)
+_RUNTIME_BOUNDARY_FIELDS = (
+    "current_latest_run_at",
+    "current_latest_snapshot_at",
+    "current_latest_heartbeat_at",
+    "current_latest_message_at",
+    "candidate_latest_run_at",
+    "candidate_latest_snapshot_at",
+    "candidate_latest_heartbeat_at",
+    "candidate_latest_message_at",
 )
 
 
@@ -222,6 +235,27 @@ def run_linked_query(sql: str) -> subprocess.CompletedProcess[str]:
                 pass
 
 
+def resolve_cli_version() -> str:
+    npx = shutil.which("npx") or shutil.which("npx.cmd") or "npx"
+    try:
+        completed = subprocess.run(
+            [npx, "supabase", "--version"],
+            check=False,
+            capture_output=True,
+            text=True,
+            shell=False,
+            timeout=CLI_VERSION_TIMEOUT_SECONDS,
+        )
+    except subprocess.TimeoutExpired as exc:
+        raise AuditFailure("timeout") from exc
+    except OSError as exc:
+        raise AuditFailure("subprocess_failed") from exc
+    version = (completed.stdout or "").strip()
+    if completed.returncode != 0 or _CLI_VERSION_PATTERN.fullmatch(version) is None:
+        raise AuditFailure("subprocess_failed")
+    return version
+
+
 def parse_supabase_object(stdout: str, column: str) -> dict[str, Any]:
     if not isinstance(stdout, str) or not stdout.strip():
         raise ValueError("empty stdout")
@@ -242,6 +276,39 @@ def _require_nonnegative_integers(record: dict[str, Any], fields: tuple[str, ...
         value = record.get(field)
         if isinstance(value, bool) or not isinstance(value, int) or value < 0:
             raise ValueError(f"{field} must be a non-negative integer")
+
+
+def _parse_nullable_timestamp(record: dict[str, Any], field: str) -> datetime | None:
+    if field not in record:
+        raise ValueError(f"required timestamp field is missing: {field}")
+    value = record[field]
+    if value is None:
+        return None
+    if not isinstance(value, str):
+        raise ValueError(f"timestamp field is invalid: {field}")
+    try:
+        parsed = datetime.fromisoformat(value)
+    except ValueError as exc:
+        raise ValueError(f"timestamp field is invalid: {field}") from exc
+    if parsed.tzinfo is None or parsed.utcoffset() is None:
+        raise ValueError(f"timestamp field must be timezone-aware: {field}")
+    return parsed
+
+
+def _validate_timestamp_pair(
+    record: dict[str, Any],
+    first_field: str,
+    last_field: str,
+    count: int,
+) -> None:
+    first = _parse_nullable_timestamp(record, first_field)
+    last = _parse_nullable_timestamp(record, last_field)
+    if count == 0 and (first is not None or last is not None):
+        raise ValueError(f"timestamp pair must be null for zero count: {first_field}")
+    if count > 0 and (first is None or last is None):
+        raise ValueError(f"timestamp pair is required for nonzero count: {first_field}")
+    if first is not None and last is not None and first > last:
+        raise ValueError(f"timestamp pair is reversed: {first_field}")
 
 
 def _records_by_partition(
@@ -278,6 +345,8 @@ def validate_chunk_payload(payload: dict[str, Any], chunk: ChunkSpec) -> None:
         raise ValueError("chunk payload must be an object")
     if payload.get("chunk_version") != AUDIT_VERSION or payload.get("complete") is not True:
         raise ValueError("chunk payload version or completion status is invalid")
+    if _parse_nullable_timestamp(payload, "audit_generated_at") is None:
+        raise ValueError("audit_generated_at timestamp is required")
     query_scope = payload.get("query_scope")
     expected_scope = {
         "start_date": chunk.start_date.isoformat(),
@@ -293,6 +362,16 @@ def validate_chunk_payload(payload: dict[str, Any], chunk: ChunkSpec) -> None:
     runtime = _records_by_partition(payload, "candidate_runtime", chunk)
     for slate_date, row in coverage.items():
         _require_nonnegative_integers(row, _COVERAGE_COUNTS)
+        if row["raw_group_count"] > row["raw_snapshot_rows"]:
+            raise ValueError("raw groups cannot exceed snapshots")
+        if (row["raw_snapshot_rows"] == 0) != (row["raw_logical_bytes"] == 0):
+            raise ValueError("raw row/byte consistency is invalid")
+        _validate_timestamp_pair(
+            row,
+            "first_raw_seen_at",
+            "last_raw_seen_at",
+            row["raw_snapshot_rows"],
+        )
         if row["raw_group_count"] != (
             row["exact_group_count"]
             + row["mismatched_group_count"]
@@ -327,13 +406,43 @@ def validate_chunk_payload(payload: dict[str, Any], chunk: ChunkSpec) -> None:
         _require_nonnegative_integers(runtime_row, _RUNTIME_COUNTS)
         if runtime_row["completed_run_count"] + runtime_row["failed_run_count"] > runtime_row["run_count"]:
             raise ValueError("runtime run counts are inconsistent")
+        if runtime_row["run_count"] == 0 and runtime_row["request_count"] != 0:
+            raise ValueError("runtime request count requires a provider run")
         if runtime_row["snapshot_count"] != row["raw_snapshot_rows"]:
             raise ValueError("runtime snapshot count does not match coverage")
         if runtime_row["snapshot_logical_bytes"] != row["raw_logical_bytes"]:
             raise ValueError("runtime snapshot bytes do not match coverage")
+        _validate_timestamp_pair(
+            runtime_row,
+            "first_run_at",
+            "last_run_at",
+            runtime_row["run_count"],
+        )
+        _validate_timestamp_pair(
+            runtime_row,
+            "first_snapshot_at",
+            "last_snapshot_at",
+            runtime_row["snapshot_count"],
+        )
+        last_heartbeat = _parse_nullable_timestamp(runtime_row, "last_heartbeat_at")
+        last_message = _parse_nullable_timestamp(runtime_row, "last_message_at")
+        if (
+            (runtime_row["heartbeat_count"] == 0) != (last_heartbeat is None)
+            or (runtime_row["heartbeat_count"] == 0 and last_message is not None)
+        ):
+            raise ValueError("heartbeat timestamp/count consistency is invalid")
         books = runtime_row.get("books_seen")
-        if not isinstance(books, list) or any(not isinstance(book, str) for book in books):
-            raise ValueError("runtime books_seen must be a string list")
+        if (
+            not isinstance(books, list)
+            or any(
+                not isinstance(book, str)
+                or not book
+                or book != book.strip().lower()
+                for book in books
+            )
+            or books != sorted(set(books))
+        ):
+            raise ValueError("runtime books_seen must be canonical and unique")
 
 
 def write_json_atomic(path: Path, value: dict[str, Any]) -> None:
@@ -365,6 +474,37 @@ def write_json_atomic(path: Path, value: dict[str, Any]) -> None:
                 pass
 
 
+def preflight_output_dir(output_dir: Path) -> Path:
+    output_dir = Path(output_dir)
+    if output_dir.exists() and not output_dir.is_dir():
+        raise ValueError("output directory must be a directory")
+    output_dir.mkdir(parents=True, exist_ok=True)
+    if not output_dir.is_dir():
+        raise ValueError("output directory must be a directory")
+    probe_path: Path | None = None
+    try:
+        with tempfile.NamedTemporaryFile(
+            mode="w",
+            dir=output_dir,
+            prefix=".bounded-retention-write-probe-",
+            suffix=".json",
+            delete=False,
+            encoding="utf-8",
+        ) as handle:
+            probe_path = Path(handle.name)
+        os.unlink(probe_path)
+        write_json_atomic(probe_path, {"probe_version": 1})
+        if json.loads(probe_path.read_text(encoding="utf-8")) != {"probe_version": 1}:
+            raise ValueError("output directory atomic-write probe failed")
+    finally:
+        if probe_path is not None:
+            try:
+                os.unlink(probe_path)
+            except FileNotFoundError:
+                pass
+    return output_dir
+
+
 def classify_failure(value: object) -> str:
     if isinstance(value, subprocess.TimeoutExpired):
         return "timeout"
@@ -389,6 +529,12 @@ def _canonical_sha256(value: Any) -> str:
         value, sort_keys=True, separators=(",", ":"), ensure_ascii=True,
     ).encode("utf-8")
     return hashlib.sha256(encoded).hexdigest()
+
+
+def _checkpoint_integrity_sha256(value: dict[str, Any]) -> str:
+    bound_value = dict(value)
+    bound_value.pop("checkpoint_integrity_sha256", None)
+    return _canonical_sha256(bound_value)
 
 
 def _scope_fingerprint(scope: AuditScope) -> str:
@@ -419,11 +565,13 @@ def _checkpoint_value(
     started_at: datetime,
     finished_at: datetime,
     elapsed_seconds: float,
+    cli_version: str,
 ) -> dict[str, Any]:
-    return {
+    value = {
         "audit_version": AUDIT_VERSION,
         "runner_version": RUNNER_VERSION,
-        "cli_version": CLI_VERSION,
+        "cli_version": cli_version,
+        "query_contract_version": QUERY_CONTRACT_VERSION,
         "status": "completed",
         "complete": True,
         "sanitized_error": None,
@@ -449,17 +597,23 @@ def _checkpoint_value(
         "result_sha256": _canonical_sha256(payload),
         "payload": payload,
     }
+    value["checkpoint_integrity_sha256"] = _checkpoint_integrity_sha256(value)
+    return value
 
 
 def run_chunks(
     scope: AuditScope,
     output_dir: Path,
     max_chunks: int = DEFAULT_MAX_CHUNKS,
+    cli_version: str | None = None,
 ) -> list[CheckpointRecord]:
     if isinstance(max_chunks, bool) or not isinstance(max_chunks, int) or not 1 <= max_chunks <= HARD_MAX_CHUNKS:
         raise ValueError("max_chunks must be between 1 and 5")
-    output_dir = Path(output_dir)
-    checkpoints = load_valid_checkpoints(output_dir, scope)
+    output_dir = preflight_output_dir(output_dir)
+    resolved_cli_version = cli_version or resolve_cli_version()
+    checkpoints = load_valid_checkpoints(
+        output_dir, scope, cli_version=resolved_cli_version,
+    )
     written: list[CheckpointRecord] = []
     for index in range(max_chunks):
         chunk = select_next_chunk(scope, checkpoints)
@@ -492,6 +646,7 @@ def run_chunks(
         finished_at = datetime.now(timezone.utc)
         checkpoint_value = _checkpoint_value(
             scope, chunk, sql, payload, started_at, finished_at, elapsed,
+            resolved_cli_version,
         )
         path = _checkpoint_path(output_dir, chunk)
         write_json_atomic(path, checkpoint_value)
@@ -517,7 +672,9 @@ def run_chunks(
 
 
 def load_valid_checkpoints(
-    output_dir: Path, scope: AuditScope,
+    output_dir: Path,
+    scope: AuditScope,
+    cli_version: str | None = None,
 ) -> list[CheckpointRecord]:
     output_dir = Path(output_dir)
     if not output_dir.exists():
@@ -527,7 +684,7 @@ def load_valid_checkpoints(
     expected_scope_fields = {
         "audit_version": AUDIT_VERSION,
         "runner_version": RUNNER_VERSION,
-        "cli_version": CLI_VERSION,
+        "query_contract_version": QUERY_CONTRACT_VERSION,
         "status": "completed",
         "complete": True,
         "sanitized_error": None,
@@ -549,9 +706,22 @@ def load_valid_checkpoints(
             value = json.loads(path.read_text(encoding="utf-8"))
             if not isinstance(value, dict):
                 raise ValueError("root is not an object")
+            integrity_hash = value.get("checkpoint_integrity_sha256")
+            if (
+                not isinstance(integrity_hash, str)
+                or integrity_hash != _checkpoint_integrity_sha256(value)
+            ):
+                raise ValueError("checkpoint integrity hash mismatch")
             for field, expected in expected_scope_fields.items():
                 if value.get(field) != expected:
                     raise ValueError(f"{field} mismatch")
+            stored_cli_version = value.get("cli_version")
+            if (
+                not isinstance(stored_cli_version, str)
+                or _CLI_VERSION_PATTERN.fullmatch(stored_cli_version) is None
+                or (cli_version is not None and stored_cli_version != cli_version)
+            ):
+                raise ValueError("cli_version mismatch")
             provider = bounded_sql.validate_provider(value.get("provider"))
             start = bounded_sql.parse_iso_date(value.get("chunk_start_date"), "chunk_start_date")
             end = bounded_sql.parse_iso_date(value.get("chunk_end_date"), "chunk_end_date")
@@ -607,6 +777,8 @@ def load_valid_checkpoints(
                 payload=payload,
             ))
         except (KeyError, TypeError, ValueError, json.JSONDecodeError) as exc:
+            if "checkpoint integrity" in str(exc):
+                raise ValueError(f"checkpoint integrity validation failed: {path.name}") from exc
             raise ValueError(f"checkpoint validation failed: {path.name}") from exc
     return sorted(records, key=lambda item: (
         scope.providers.index(item.provider), item.start_date, item.end_date,
@@ -629,13 +801,49 @@ def _validate_runtime_payload(payload: dict[str, Any], scope: AuditScope) -> Non
         if provider in seen:
             raise ValueError("runtime provider record is duplicated")
         seen.append(provider)
-        if not isinstance(row.get("post_boltodds_suspension"), bool):
+        boundaries: dict[str, datetime | None] = {}
+        for field in _RUNTIME_BOUNDARY_FIELDS:
+            if field not in row:
+                raise ValueError(f"runtime boundary field is missing: {field}")
+            value = row[field]
+            if value is None:
+                boundaries[field] = None
+                continue
+            if not isinstance(value, str):
+                raise ValueError(f"runtime boundary timestamp is invalid: {field}")
+            try:
+                parsed = datetime.fromisoformat(value)
+            except ValueError as exc:
+                raise ValueError(f"runtime boundary timestamp is invalid: {field}") from exc
+            if parsed.tzinfo is None or parsed.utcoffset() is None:
+                raise ValueError(f"runtime boundary timestamp must be timezone-aware: {field}")
+            boundaries[field] = parsed
+        actual_closure_flag = row.get("post_boltodds_suspension")
+        if not isinstance(actual_closure_flag, bool):
             raise ValueError("runtime closure flag is invalid")
+        suspended_at = datetime.fromisoformat(bounded_sql.BOLTODDS_SUSPENDED_AT)
+        expected_closure_flag = provider == "boltodds" and any(
+            boundaries[field] is not None and boundaries[field] > suspended_at
+            for field in (
+                "current_latest_run_at",
+                "current_latest_snapshot_at",
+                "current_latest_heartbeat_at",
+                "current_latest_message_at",
+            )
+        )
+        if actual_closure_flag != expected_closure_flag:
+            raise ValueError("post_boltodds_suspension contradicts runtime boundaries")
     if tuple(seen) != scope.providers:
         raise ValueError("runtime providers are not in canonical order")
 
 
-def run_runtime_boundary(scope: AuditScope, output_dir: Path) -> Path:
+def run_runtime_boundary(
+    scope: AuditScope,
+    output_dir: Path,
+    cli_version: str | None = None,
+) -> Path:
+    output_dir = preflight_output_dir(output_dir)
+    resolved_cli_version = cli_version or resolve_cli_version()
     sql = bounded_sql.build_runtime_boundary_sql(scope.candidate_end_date.isoformat())
     started_at = datetime.now(timezone.utc)
     started_clock = time.perf_counter()
@@ -661,7 +869,8 @@ def run_runtime_boundary(scope: AuditScope, output_dir: Path) -> Path:
     value = {
         "audit_version": AUDIT_VERSION,
         "runner_version": RUNNER_VERSION,
-        "cli_version": CLI_VERSION,
+        "cli_version": resolved_cli_version,
+        "query_contract_version": QUERY_CONTRACT_VERSION,
         "status": "completed",
         "complete": True,
         "sanitized_error": None,
@@ -681,7 +890,8 @@ def run_runtime_boundary(scope: AuditScope, output_dir: Path) -> Path:
         "result_sha256": _canonical_sha256(payload),
         "payload": payload,
     }
-    path = Path(output_dir) / f"runtime-boundary-{scope.as_of_date.isoformat()}.json"
+    value["checkpoint_integrity_sha256"] = _checkpoint_integrity_sha256(value)
+    path = output_dir / f"runtime-boundary-{scope.as_of_date.isoformat()}.json"
     write_json_atomic(path, value)
     return path
 
