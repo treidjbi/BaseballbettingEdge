@@ -14,8 +14,8 @@
   controls the implemented Phase 1 evidence and readiness contract.
 - `docs/superpowers/specs/2026-08-18-bounded-retention-audit-design.md`
   is the approved architectural replacement for the failed monolithic live
-  verification shape; its written specification awaits Tyler review before an
-  implementation plan is created.
+  verification shape. Its local-only implementation plan is
+  `docs/superpowers/plans/2026-08-18-bounded-retention-audit.md`.
 
 **Implementation status (2026-08-18):** Phase 1 implementation and local
 verification are complete and merged on local `main` at `c74385a7`. The first
@@ -26,10 +26,11 @@ preflight but failed with PostgreSQL `57014` statement timeout after about two
 minutes. It returned no stdout, generated no reports, changed no data, and was
 not retried. The monolithic full-season aggregation is not live-viable under
 the observed hosted limits. The bounded replacement architecture is captured
-in `docs/superpowers/specs/2026-08-18-bounded-retention-audit-design.md` and
-awaits Tyler's review of the written specification before implementation
-planning. No bounded query has run. Phase 2, Phase 3, backfill, migration,
-retention activation, deletion, vacuum, push, and deployment remain closed.
+in `docs/superpowers/specs/2026-08-18-bounded-retention-audit-design.md`; Tyler
+approved the written specification, and the separate local-only implementation
+plan is `docs/superpowers/plans/2026-08-18-bounded-retention-audit.md`. No
+bounded query has run. Phase 2, Phase 3, backfill, migration, retention
+activation, deletion, vacuum, push, and deployment remain closed.
 
 ## Final-review hardening contract
 

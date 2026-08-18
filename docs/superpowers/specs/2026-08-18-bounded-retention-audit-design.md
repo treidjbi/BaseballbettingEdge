@@ -2,7 +2,7 @@
 
 **Date:** 2026-08-18
 
-**Status:** Architecture approved in conversation; written specification awaiting Tyler review
+**Status:** Approved 2026-08-18
 
 **Scope:** Local, read-only replacement for the live verification step of the
 Season Retention Foundation
