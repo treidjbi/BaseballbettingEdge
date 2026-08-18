@@ -10,6 +10,42 @@
 
 **Spec:** `docs/superpowers/specs/2026-08-18-season-retention-foundation-design.md`
 
+**Implementation status (2026-08-18):** Phase 1 implementation and local
+verification are complete on `codex/season-retention-foundation`. The first
+live read-only query attempt failed once with PostgreSQL `53100` temporary-file
+`No space left on device` and was not retried. Live verification remains
+blocked pending a separately approved, one-query operator window; Phase 2,
+Phase 3, backfill, migration, retention activation, and deletion remain closed.
+
+## Final-review hardening contract
+
+This section supersedes narrower code excerpts later in this implementation
+plan where they conflict:
+
+- The exact SQL remains one SELECT-only statement. It projects only required
+  `market_snapshots` scalar columns plus `pg_column_size(ms)`, materializes only
+  that narrow shared source, and uses one ascending named window for first,
+  last, and movement-order evidence. A second reverse-order full-season window
+  sort and `ms.*` are prohibited.
+- The envelope is invalid when coverage is empty or truncated, aggregate count
+  equations contradict one another, runtime count/timestamp relationships are
+  impossible, or `coverage_exact` disagrees with the emitted blocker counts.
+  Provider anomalies without an attributable coverage partition also fail
+  closed.
+- `audit_generated_at`, normalized season evidence, and pin manifests must be
+  fresh for the requested `as_of` date in `America/Phoenix`. Gate C freshness
+  is bounded by its existing `source.start_date`, `source.end_date`, loaded
+  dates, and `generated_at`; no new production authority is inferred.
+- Decision linkage is derived from every normalized evidence count. An explicit
+  `decision_linked=false` is valid only when all seven counts are zero. Every
+  positive official-pick, accepted-bet, sent-notification, consumed-lock,
+  frozen-Alt-V2, operator-incident, or model-review count requires its
+  applicable outcome/timing fields and a matching preserved pin reason.
+- The BoltOdds closure retains aggregate decision-impact counts, outcome and
+  pin preservation summaries, and an evidence-qualified production-impact
+  statement. It excludes raw provider payloads and keeps runtime reactivation,
+  retention execution, and deletion authority closed.
+
 ## Global Constraints
 
 - Phase 1 is local and read-only; no database write, DDL, backfill, deletion, archive, vacuum, migration, function, trigger, or retention policy is allowed.

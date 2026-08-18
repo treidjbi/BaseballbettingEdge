@@ -7,6 +7,7 @@ import sys
 from datetime import date, datetime, timezone
 from pathlib import Path
 from typing import Any, Callable, TextIO
+from zoneinfo import ZoneInfo
 
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -25,6 +26,31 @@ REQUIRED_DECISION_EVIDENCE = (
     "results", "bet_timing", "checkpoint_market", "close_clv", "provider_metadata",
 )
 BOLTODDS_SUSPENDED_AT = datetime.fromisoformat("2026-06-17T17:22:29+00:00")
+PHOENIX_TZ = ZoneInfo("America/Phoenix")
+EVIDENCE_PIN_REASONS = {
+    "official_tracked_picks": "official_tracked_pick",
+    "accepted_bets": "accepted_bet",
+    "sent_notifications": "sent_notification",
+    "consumed_locks": "consumed_lock",
+    "frozen_alt_v2_rows": "frozen_alt_v2",
+    "operator_incidents": "operator_incident",
+    "model_review_pins": "model_review",
+}
+EVIDENCE_REQUIRED_FIELDS = {
+    "official_tracked_picks": (
+        "results", "checkpoint_market", "close_clv", "provider_metadata",
+    ),
+    "accepted_bets": REQUIRED_DECISION_EVIDENCE,
+    "sent_notifications": ("bet_timing", "checkpoint_market", "provider_metadata"),
+    "consumed_locks": ("checkpoint_market", "provider_metadata"),
+    "frozen_alt_v2_rows": (
+        "results", "checkpoint_market", "close_clv", "provider_metadata",
+    ),
+    "operator_incidents": ("provider_metadata",),
+    "model_review_pins": (
+        "results", "checkpoint_market", "close_clv", "provider_metadata",
+    ),
+}
 SECRET_KEY = re.compile(
     r"(?:authorization|password|secret|token|api[_-]?key|service[_-]?role)", re.IGNORECASE
 )
@@ -120,6 +146,20 @@ def _parse_timestamp(value: Any, label: str, *, nullable: bool = False) -> datet
     return parsed
 
 
+def _phoenix_date(timestamp: datetime) -> date:
+    return timestamp.astimezone(PHOENIX_TZ).date()
+
+
+def _require_audit_day_timestamp(
+    value: Any, label: str, as_of_date: date,
+) -> datetime:
+    timestamp = _parse_timestamp(value, label)
+    assert timestamp is not None
+    if _phoenix_date(timestamp) != as_of_date:
+        raise ValueError(f"{label} is stale for requested Phoenix as-of date")
+    return timestamp
+
+
 def _require_provider(value: Any, label: str) -> str:
     provider = _require_string(value, label)
     if provider not in ALLOWED_PROVIDERS:
@@ -127,12 +167,19 @@ def _require_provider(value: Any, label: str) -> str:
     return provider
 
 
-def validate_envelope(envelope: dict[str, Any]) -> None:
+def validate_envelope(
+    envelope: dict[str, Any], *, as_of: date | None = None,
+) -> None:
     """Validate the versioned SQL envelope before any retention decision."""
     envelope = _require_mapping(envelope, "envelope")
     if type(envelope.get("audit_version")) is not int or envelope["audit_version"] != 1:
         raise ValueError("audit_version must be 1")
-    _parse_timestamp(envelope.get("audit_generated_at"), "audit_generated_at")
+    if as_of is None:
+        _parse_timestamp(envelope.get("audit_generated_at"), "audit_generated_at")
+    else:
+        _require_audit_day_timestamp(
+            envelope.get("audit_generated_at"), "audit_generated_at", as_of,
+        )
     if envelope.get("complete") is not True:
         raise ValueError("complete must be true")
     if envelope.get("retention_execution_closed") is not True:
@@ -155,6 +202,8 @@ def validate_envelope(envelope: dict[str, Any]) -> None:
     for key in ("coverage", "source_anomalies", "provider_runtime"):
         if not isinstance(envelope.get(key), list):
             raise ValueError(f"{key} must be a list")
+    if not envelope["coverage"]:
+        raise ValueError("coverage must not be empty")
 
     anomalies_by_provider: dict[str, dict[str, Any]] = {}
     for index, raw_row in enumerate(envelope["source_anomalies"]):
@@ -169,6 +218,7 @@ def validate_envelope(envelope: dict[str, Any]) -> None:
         raise ValueError("source_anomalies must contain every query scope provider exactly once")
 
     runtime_by_provider: dict[str, dict[str, Any]] = {}
+    runtime_timestamps_by_provider: dict[str, dict[str, datetime | None]] = {}
     for index, raw_row in enumerate(envelope["provider_runtime"]):
         row = _require_mapping(raw_row, f"provider_runtime[{index}]")
         provider = _require_provider(row.get("provider"), f"provider_runtime[{index}].provider")
@@ -177,15 +227,73 @@ def validate_envelope(envelope: dict[str, Any]) -> None:
         for field in _RUNTIME_INTEGER_FIELDS:
             _require_nonnegative_int(row.get(field), f"provider_runtime[{index}].{field}")
         books_seen = row.get("books_seen")
-        if not isinstance(books_seen, list) or not all(isinstance(book, str) for book in books_seen):
+        if (
+            not isinstance(books_seen, list)
+            or not all(isinstance(book, str) and bool(book) for book in books_seen)
+            or len(set(books_seen)) != len(books_seen)
+        ):
             raise ValueError(f"provider_runtime[{index}].books_seen must be a string list")
-        for field in _RUNTIME_TIMESTAMP_FIELDS:
-            _parse_timestamp(row.get(field), f"provider_runtime[{index}].{field}", nullable=True)
+        timestamps = {
+            field: _parse_timestamp(
+                row.get(field), f"provider_runtime[{index}].{field}", nullable=True,
+            )
+            for field in _RUNTIME_TIMESTAMP_FIELDS
+        }
+        run_count = row["run_count"]
+        if row["completed_run_count"] + row["failed_run_count"] > run_count:
+            raise ValueError("provider runtime status counts exceed run_count")
+        if run_count == 0:
+            if timestamps["first_run_at"] is not None or timestamps["last_run_at"] is not None:
+                raise ValueError("provider runtime timestamps contradict run_count")
+            if row["request_count"] != 0:
+                raise ValueError("provider request_count contradicts run_count")
+        elif timestamps["first_run_at"] is None or timestamps["last_run_at"] is None:
+            raise ValueError("provider runtime timestamps are incomplete")
+        if (
+            timestamps["first_run_at"] is not None
+            and timestamps["last_run_at"] is not None
+            and timestamps["first_run_at"] > timestamps["last_run_at"]
+        ):
+            raise ValueError("provider runtime timestamps are reversed")
+
+        snapshot_count = row["snapshot_count"]
+        if snapshot_count == 0:
+            if (
+                timestamps["first_snapshot_at"] is not None
+                or timestamps["last_snapshot_at"] is not None
+                or row["snapshot_logical_bytes"] != 0
+            ):
+                raise ValueError("provider snapshot fields contradict snapshot_count")
+        elif (
+            timestamps["first_snapshot_at"] is None
+            or timestamps["last_snapshot_at"] is None
+            or row["snapshot_logical_bytes"] < snapshot_count
+        ):
+            raise ValueError("provider snapshot fields are incomplete")
+        if (
+            timestamps["first_snapshot_at"] is not None
+            and timestamps["last_snapshot_at"] is not None
+            and timestamps["first_snapshot_at"] > timestamps["last_snapshot_at"]
+        ):
+            raise ValueError("provider snapshot timestamps are reversed")
+
+        heartbeat_count = row["heartbeat_count"]
+        if heartbeat_count == 0:
+            if (
+                timestamps["last_heartbeat_at"] is not None
+                or timestamps["last_message_at"] is not None
+            ):
+                raise ValueError("provider heartbeat fields contradict heartbeat_count")
+        elif timestamps["last_heartbeat_at"] is None:
+            raise ValueError("provider heartbeat timestamp is incomplete")
         runtime_by_provider[provider] = row
+        runtime_timestamps_by_provider[provider] = timestamps
     if set(runtime_by_provider) != set(scope_providers):
         raise ValueError("provider_runtime must contain every query scope provider exactly once")
 
     seen_partitions: set[tuple[str, str]] = set()
+    coverage_providers: set[str] = set()
+    coverage_totals_by_provider: dict[str, dict[str, Any]] = {}
     for index, raw_row in enumerate(envelope["coverage"]):
         row = _require_mapping(raw_row, f"coverage[{index}]")
         slate_date = _parse_date(row.get("slate_date"), f"coverage[{index}].slate_date")
@@ -198,20 +306,122 @@ def validate_envelope(envelope: dict[str, Any]) -> None:
         if partition in seen_partitions:
             raise ValueError("coverage provider/date partitions must be unique")
         seen_partitions.add(partition)
+        coverage_providers.add(provider)
         for field in _COVERAGE_INTEGER_FIELDS:
             _require_nonnegative_int(row.get(field), f"coverage[{index}].{field}")
-        _parse_timestamp(row.get("first_raw_seen_at"), f"coverage[{index}].first_raw_seen_at")
-        _parse_timestamp(row.get("last_raw_seen_at"), f"coverage[{index}].last_raw_seen_at")
-        _require_bool(row.get("coverage_exact"), f"coverage[{index}].coverage_exact")
+        compact_only = row["raw_group_count"] == 0
+        first_seen = _parse_timestamp(
+            row.get("first_raw_seen_at"), f"coverage[{index}].first_raw_seen_at",
+            nullable=compact_only,
+        )
+        last_seen = _parse_timestamp(
+            row.get("last_raw_seen_at"), f"coverage[{index}].last_raw_seen_at",
+            nullable=compact_only,
+        )
+        if first_seen is not None and last_seen is not None and first_seen > last_seen:
+            raise ValueError("coverage raw timestamps are reversed")
+        if compact_only and (
+            row["raw_snapshot_rows"] != 0
+            or row["raw_logical_bytes"] != 0
+            or first_seen is not None
+            or last_seen is not None
+        ):
+            raise ValueError("compact-only coverage contains contradictory raw evidence")
+
+        if row["raw_group_count"] != (
+            row["exact_group_count"]
+            + row["mismatched_group_count"]
+            + row["missing_compact_group_count"]
+        ):
+            raise ValueError("raw_group_count contradicts coverage components")
+        if row["compact_group_count"] != (
+            row["exact_group_count"]
+            + row["mismatched_group_count"]
+            + row["unexpected_compact_group_count"]
+        ):
+            raise ValueError("compact_group_count contradicts coverage components")
+        if row["raw_snapshot_rows"] < row["raw_group_count"]:
+            raise ValueError("raw_snapshot_rows is smaller than raw_group_count")
+        if row["raw_logical_bytes"] < row["raw_snapshot_rows"]:
+            raise ValueError("raw_logical_bytes is smaller than raw_snapshot_rows")
+
+        metric_mismatches = [row[field] for field in MISMATCH_FIELDS[3:]]
+        if any(value > row["mismatched_group_count"] for value in metric_mismatches):
+            raise ValueError("field mismatch count exceeds mismatched_group_count")
+        if (row["mismatched_group_count"] > 0) != any(metric_mismatches):
+            raise ValueError("mismatched_group_count contradicts field mismatches")
+
+        coverage_exact = _require_bool(
+            row.get("coverage_exact"), f"coverage[{index}].coverage_exact",
+        )
+        expected_exact = not any(
+            row[field] > 0
+            for field in (
+                "missing_compact_group_count", "unexpected_compact_group_count",
+                "duplicate_compact_group_count", "mismatched_group_count",
+            )
+        )
+        if coverage_exact is not expected_exact:
+            raise ValueError("coverage_exact contradicts coverage aggregates")
+
+        if not compact_only:
+            provider_totals = coverage_totals_by_provider.setdefault(provider, {
+                "raw_snapshot_rows": 0,
+                "raw_logical_bytes": 0,
+                "first_raw_seen_at": first_seen,
+                "last_raw_seen_at": last_seen,
+            })
+            provider_totals["raw_snapshot_rows"] += row["raw_snapshot_rows"]
+            provider_totals["raw_logical_bytes"] += row["raw_logical_bytes"]
+            provider_totals["first_raw_seen_at"] = min(
+                provider_totals["first_raw_seen_at"], first_seen,
+            )
+            provider_totals["last_raw_seen_at"] = max(
+                provider_totals["last_raw_seen_at"], last_seen,
+            )
+
+    orphaned_anomalies = {
+        provider
+        for provider, row in anomalies_by_provider.items()
+        if provider not in coverage_providers
+        and any(row[field] > 0 for field in _ANOMALY_INTEGER_FIELDS)
+    }
+    if orphaned_anomalies:
+        raise ValueError("provider anomalies without coverage partitions are unassignable")
+
+    for provider, anomaly_row in anomalies_by_provider.items():
+        runtime_snapshot_count = runtime_by_provider[provider]["snapshot_count"]
+        if any(
+            anomaly_row[field] > runtime_snapshot_count
+            for field in _ANOMALY_INTEGER_FIELDS
+        ):
+            raise ValueError("provider anomaly count exceeds provider runtime snapshots")
+
+    for provider, totals in coverage_totals_by_provider.items():
+        runtime = runtime_by_provider[provider]
+        timestamps = runtime_timestamps_by_provider[provider]
+        if (
+            totals["raw_snapshot_rows"] > runtime["snapshot_count"]
+            or totals["raw_logical_bytes"] > runtime["snapshot_logical_bytes"]
+            or timestamps["first_snapshot_at"] is None
+            or timestamps["last_snapshot_at"] is None
+            or totals["first_raw_seen_at"] < timestamps["first_snapshot_at"]
+            or totals["last_raw_seen_at"] > timestamps["last_snapshot_at"]
+        ):
+            raise ValueError("coverage contradicts provider runtime snapshot totals")
 
 
-def _index_season_evidence(season_evidence: dict[str, Any] | None) -> dict[str, dict[str, Any]]:
+def _index_season_evidence(
+    season_evidence: dict[str, Any] | None, *, as_of: date,
+) -> dict[str, dict[str, Any]]:
     if season_evidence is None:
         return {}
     manifest = _require_mapping(season_evidence, "season_evidence")
     if type(manifest.get("schema_version")) is not int or manifest["schema_version"] != 1:
         raise ValueError("season_evidence.schema_version must be 1")
-    _parse_timestamp(manifest.get("generated_at"), "season_evidence.generated_at")
+    _require_audit_day_timestamp(
+        manifest.get("generated_at"), "season_evidence.generated_at", as_of,
+    )
     dates = manifest.get("dates")
     if not isinstance(dates, list):
         raise ValueError("season_evidence.dates must be a list")
@@ -225,8 +435,15 @@ def _index_season_evidence(season_evidence: dict[str, Any] | None) -> dict[str, 
         evidence_counts = _require_mapping(row.get("evidence_counts"), f"season_evidence.dates[{index}].evidence_counts")
         for field in _SEASON_EVIDENCE_COUNT_FIELDS:
             _require_nonnegative_int(evidence_counts.get(field), f"season_evidence.dates[{index}].evidence_counts.{field}")
+        derived_decision_linked = any(
+            evidence_counts[field] > 0 for field in _SEASON_EVIDENCE_COUNT_FIELDS
+        )
+        if derived_decision_linked and decision_linked is False:
+            raise ValueError(
+                "season_evidence decision_linked=false contradicts positive evidence counts"
+            )
         required_evidence = row.get("required_evidence")
-        if decision_linked:
+        if decision_linked or derived_decision_linked:
             required_evidence = _require_mapping(required_evidence, f"season_evidence.dates[{index}].required_evidence")
         if required_evidence is not None:
             required_evidence = _require_mapping(required_evidence, f"season_evidence.dates[{index}].required_evidence")
@@ -236,12 +453,17 @@ def _index_season_evidence(season_evidence: dict[str, Any] | None) -> dict[str, 
     return indexed
 
 
-def _validate_gate_c_manifest(gate_c: dict[str, Any] | None) -> dict[str, Any] | None:
+def _validate_gate_c_manifest(
+    gate_c: dict[str, Any] | None, *, as_of: date,
+) -> dict[str, Any] | None:
     if gate_c is None:
         return None
     manifest = _require_mapping(gate_c, "gate_c")
     _require_string(manifest.get("artifact"), "gate_c.artifact")
-    _parse_timestamp(manifest.get("generated_at"), "gate_c.generated_at")
+    generated_at = _parse_timestamp(manifest.get("generated_at"), "gate_c.generated_at")
+    assert generated_at is not None
+    if _phoenix_date(generated_at) > as_of:
+        raise ValueError("gate_c.generated_at is newer than requested as-of date")
     for field in ("jsonl_sha256", "summary_sha256"):
         digest = _require_string(manifest.get(field), f"gate_c.{field}")
         if re.fullmatch(r"[0-9A-Fa-f]{64}", digest) is None:
@@ -252,6 +474,15 @@ def _validate_gate_c_manifest(gate_c: dict[str, Any] | None) -> dict[str, Any] |
     normalized_dates = [_parse_date(value, "gate_c.loaded_slate_dates").isoformat() for value in loaded_dates]
     if len(set(normalized_dates)) != len(normalized_dates):
         raise ValueError("gate_c.loaded_slate_dates must be unique")
+    source = _require_mapping(manifest.get("source"), "gate_c.source")
+    source_start = _parse_date(source.get("start_date"), "gate_c.source.start_date")
+    source_end = _parse_date(source.get("end_date"), "gate_c.source.end_date")
+    if source_start > source_end:
+        raise ValueError("gate_c source dates are reversed")
+    if any(not source_start <= date.fromisoformat(value) <= source_end for value in normalized_dates):
+        raise ValueError("gate_c loaded dates fall outside source coverage")
+    if _phoenix_date(generated_at) < source_end:
+        raise ValueError("gate_c.generated_at predates source coverage")
     reconciliation = _require_mapping(manifest.get("reconciliation"), "gate_c.reconciliation")
     for field in ("graded_pick_rows", "matched_pick_rows", "unmatched_pick_rows"):
         _require_nonnegative_int(reconciliation.get(field), f"gate_c.reconciliation.{field}")
@@ -263,13 +494,15 @@ def _validate_gate_c_manifest(gate_c: dict[str, Any] | None) -> dict[str, Any] |
     return manifest
 
 
-def _index_pins(pins: dict[str, Any] | None) -> dict[tuple[str, str], dict[str, Any]]:
+def _index_pins(
+    pins: dict[str, Any] | None, *, as_of: date,
+) -> dict[tuple[str, str], dict[str, Any]]:
     if pins is None:
         return {}
     manifest = _require_mapping(pins, "pins")
     if type(manifest.get("schema_version")) is not int or manifest["schema_version"] != 1:
         raise ValueError("pins.schema_version must be 1")
-    _parse_timestamp(manifest.get("generated_at"), "pins.generated_at")
+    _require_audit_day_timestamp(manifest.get("generated_at"), "pins.generated_at", as_of)
     partitions = manifest.get("partitions")
     if not isinstance(partitions, list):
         raise ValueError("pins.partitions must be a list")
@@ -294,10 +527,14 @@ def _index_pins(pins: dict[str, Any] | None) -> dict[tuple[str, str], dict[str, 
     return indexed
 
 
-def _has_preserved_pins(pin_record: dict[str, Any] | None) -> tuple[bool, list[str]]:
+def _has_preserved_pins(
+    pin_record: dict[str, Any] | None,
+    season_record: dict[str, Any] | None,
+) -> tuple[bool, list[str]]:
     if pin_record is None:
         return False, ["missing_pin_manifest_partition"]
     reasons: list[str] = []
+    preserved_reasons: set[str] = set()
     if pin_record["reconciled"] is not True:
         reasons.append("pin_reconciliation_incomplete")
     for pin in pin_record["pins"]:
@@ -308,6 +545,13 @@ def _has_preserved_pins(pin_record: dict[str, Any] | None) -> tuple[bool, list[s
         is_relative = isinstance(artifact, str) and bool(artifact.strip()) and _is_repo_relative(artifact)
         if pin.get("status") != "preserved" or not is_relative:
             reasons.append("unpreserved_pin_evidence")
+        else:
+            preserved_reasons.add(str(pin.get("reason")))
+    evidence_counts = season_record.get("evidence_counts") if season_record else None
+    if isinstance(evidence_counts, dict):
+        for count_field, pin_reason in EVIDENCE_PIN_REASONS.items():
+            if evidence_counts.get(count_field, 0) > 0 and pin_reason not in preserved_reasons:
+                reasons.append(f"missing_preserved_pin_{pin_reason}")
     return not reasons, reasons
 
 
@@ -329,33 +573,42 @@ def _outcome_reason_codes(
         return ["missing_gate_c_manifest"]
     if season_record is None:
         return ["missing_season_evidence_date"]
-    if season_record["decision_linked"] is False:
-        return []
-
-    reasons: list[str] = []
     evidence_counts = season_record.get("evidence_counts")
     if not isinstance(evidence_counts, dict):
         return ["missing_required_outcome_evidence"]
+    derived_decision_linked = any(
+        evidence_counts.get(field, 0) > 0 for field in _SEASON_EVIDENCE_COUNT_FIELDS
+    )
+    if season_record["decision_linked"] is False and not derived_decision_linked:
+        return []
+
+    reasons: list[str] = []
     tracked_picks = evidence_counts.get("official_tracked_picks")
     if type(tracked_picks) is not int or tracked_picks < 0:
         return ["missing_required_outcome_evidence"]
-    if tracked_picks <= 0:
-        return []
-
-    loaded_dates = gate_c.get("loaded_slate_dates")
-    if not isinstance(loaded_dates, list) or slate_date not in loaded_dates:
-        reasons.append("gate_c_date_not_loaded")
-    reconciliation = gate_c.get("reconciliation")
-    if not isinstance(reconciliation, dict) or reconciliation.get("unmatched_pick_rows") != 0:
-        reasons.append("gate_c_unmatched_picks")
-    summary_counts = gate_c.get("summary_counts")
-    if not isinstance(summary_counts, dict) or summary_counts.get("rows_missing_result") != 0:
-        reasons.append("gate_c_missing_results")
+    if tracked_picks > 0:
+        loaded_dates = gate_c.get("loaded_slate_dates")
+        if not isinstance(loaded_dates, list) or slate_date not in loaded_dates:
+            reasons.append("gate_c_date_not_loaded")
+        reconciliation = gate_c.get("reconciliation")
+        if not isinstance(reconciliation, dict) or reconciliation.get("unmatched_pick_rows") != 0:
+            reasons.append("gate_c_unmatched_picks")
+        summary_counts = gate_c.get("summary_counts")
+        if not isinstance(summary_counts, dict) or summary_counts.get("rows_missing_result") != 0:
+            reasons.append("gate_c_missing_results")
     required = season_record.get("required_evidence")
     if not isinstance(required, dict):
         reasons.append("missing_required_outcome_evidence")
     else:
-        for field in REQUIRED_DECISION_EVIDENCE:
+        applicable_fields = {
+            field
+            for count_field, fields in EVIDENCE_REQUIRED_FIELDS.items()
+            if evidence_counts.get(count_field, 0) > 0
+            for field in fields
+        }
+        if season_record["decision_linked"] is True and not applicable_fields:
+            applicable_fields.update(REQUIRED_DECISION_EVIDENCE)
+        for field in sorted(applicable_fields):
             if required.get(field) is not True:
                 reasons.append(f"required_evidence_{field}_incomplete")
     return reasons
@@ -381,16 +634,16 @@ def build_readiness_report(
     raw_retention_days: int,
 ) -> dict[str, Any]:
     """Return evidence-only retention decisions; this function has no execution authority."""
-    validate_envelope(envelope)
-    gate_c = _validate_gate_c_manifest(gate_c)
     as_of_date = _parse_date(as_of, "as_of")
+    validate_envelope(envelope, as_of=as_of_date)
+    gate_c = _validate_gate_c_manifest(gate_c, as_of=as_of_date)
     if type(raw_retention_days) is not int or raw_retention_days <= 0:
         raise ValueError("raw_retention_days must be a positive integer")
     if envelope["query_scope"]["end_date"] != as_of_date.isoformat():
         raise ValueError("query scope is stale for requested as-of date")
 
-    season_by_date = _index_season_evidence(season_evidence)
-    pins_by_partition = _index_pins(pins)
+    season_by_date = _index_season_evidence(season_evidence, as_of=as_of_date)
+    pins_by_partition = _index_pins(pins, as_of=as_of_date)
     anomalies_by_provider = {row["provider"]: row for row in envelope["source_anomalies"]}
     partitions: list[dict[str, Any]] = []
 
@@ -400,7 +653,10 @@ def build_readiness_report(
         age_days = (as_of_date - slate_date).days
         coverage_reasons = _coverage_reason_codes(coverage, anomalies_by_provider[provider])
         outcome_reasons = _outcome_reason_codes(coverage["slate_date"], gate_c, season_by_date.get(coverage["slate_date"]))
-        _, pin_reasons = _has_preserved_pins(pins_by_partition.get((coverage["slate_date"], provider)))
+        season_record = season_by_date.get(coverage["slate_date"])
+        _, pin_reasons = _has_preserved_pins(
+            pins_by_partition.get((coverage["slate_date"], provider)), season_record,
+        )
         all_reasons = coverage_reasons + outcome_reasons + pin_reasons
         record = {
             "slate_date": coverage["slate_date"],
@@ -484,6 +740,66 @@ def _provider_summaries(
     return [summaries[provider] for provider in sorted(summaries)]
 
 
+def _boltodds_preservation_summaries(
+    *,
+    coverage_rows: list[dict[str, Any]],
+    gate_c: dict[str, Any] | None,
+    season_by_date: dict[str, dict[str, Any]],
+    pins_by_partition: dict[tuple[str, str], dict[str, Any]],
+) -> tuple[dict[str, int], dict[str, int], dict[str, int]]:
+    decision_counts = {field: 0 for field in _SEASON_EVIDENCE_COUNT_FIELDS}
+    outcome_summary = {
+        "coverage_dates": len(coverage_rows),
+        "manifest_dates": 0,
+        "decision_linked_dates": 0,
+        "complete_dates": 0,
+        "incomplete_dates": 0,
+    }
+    pin_summary = {
+        "coverage_partitions": len(coverage_rows),
+        "manifest_partitions": 0,
+        "reconciled_partitions": 0,
+        "preserved_pin_count": 0,
+        "unpreserved_pin_count": 0,
+        "missing_required_reason_count": 0,
+    }
+    for row in coverage_rows:
+        slate_date = row["slate_date"]
+        season_record = season_by_date.get(slate_date)
+        if season_record is not None:
+            outcome_summary["manifest_dates"] += 1
+            evidence_counts = season_record["evidence_counts"]
+            for field in _SEASON_EVIDENCE_COUNT_FIELDS:
+                decision_counts[field] += evidence_counts[field]
+            if season_record["decision_linked"] or any(evidence_counts.values()):
+                outcome_summary["decision_linked_dates"] += 1
+        if not _outcome_reason_codes(slate_date, gate_c, season_record):
+            outcome_summary["complete_dates"] += 1
+        else:
+            outcome_summary["incomplete_dates"] += 1
+
+        pin_record = pins_by_partition.get((slate_date, "boltodds"))
+        if pin_record is not None:
+            pin_summary["manifest_partitions"] += 1
+            if pin_record["reconciled"] is True:
+                pin_summary["reconciled_partitions"] += 1
+            for pin in pin_record["pins"]:
+                artifact = pin.get("preserved_artifact")
+                if (
+                    pin.get("status") == "preserved"
+                    and isinstance(artifact, str)
+                    and _is_repo_relative(artifact)
+                ):
+                    pin_summary["preserved_pin_count"] += 1
+                else:
+                    pin_summary["unpreserved_pin_count"] += 1
+        _, pin_reasons = _has_preserved_pins(pin_record, season_record)
+        pin_summary["missing_required_reason_count"] += sum(
+            reason.startswith("missing_preserved_pin_") for reason in pin_reasons
+        )
+    return decision_counts, outcome_summary, pin_summary
+
+
 def build_boltodds_closure(
     *,
     envelope: dict[str, Any],
@@ -493,9 +809,9 @@ def build_boltodds_closure(
     as_of: str,
 ) -> dict[str, Any]:
     """Build a closed, evidence-only retirement package for BoltOdds."""
-    validate_envelope(envelope)
-    gate_c = _validate_gate_c_manifest(gate_c)
     as_of_date = _parse_date(as_of, "as_of")
+    validate_envelope(envelope, as_of=as_of_date)
+    gate_c = _validate_gate_c_manifest(gate_c, as_of=as_of_date)
     if envelope["query_scope"]["end_date"] != as_of_date.isoformat():
         raise ValueError("query scope is stale for requested as-of date")
 
@@ -530,8 +846,8 @@ def build_boltodds_closure(
         "coverage_exact": row["coverage_exact"],
     } for row in coverage_rows]
 
-    season_by_date = _index_season_evidence(season_evidence)
-    pins_by_partition = _index_pins(pins)
+    season_by_date = _index_season_evidence(season_evidence, as_of=as_of_date)
+    pins_by_partition = _index_pins(pins, as_of=as_of_date)
     anomalies = next(
         row for row in envelope["source_anomalies"] if row["provider"] == "boltodds"
     )
@@ -559,9 +875,43 @@ def build_boltodds_closure(
             row["slate_date"], gate_c, season_by_date.get(row["slate_date"]),
         ))
         _, pin_gaps = _has_preserved_pins(
-            pins_by_partition.get((row["slate_date"], "boltodds"))
+            pins_by_partition.get((row["slate_date"], "boltodds")),
+            season_by_date.get(row["slate_date"]),
         )
         gaps.extend(pin_gaps)
+
+    (
+        decision_impact_counts,
+        outcome_preservation_summary,
+        pin_preservation_summary,
+    ) = _boltodds_preservation_summaries(
+        coverage_rows=coverage_rows,
+        gate_c=gate_c,
+        season_by_date=season_by_date,
+        pins_by_partition=pins_by_partition,
+    )
+    total_decision_impact = sum(decision_impact_counts.values())
+    if season_evidence is None:
+        production_impact_statement = (
+            "Production decision impact is unresolved because no normalized season-evidence "
+            "manifest was supplied. BoltOdds is retired and has no active production authority."
+        )
+    elif total_decision_impact:
+        production_impact_statement = (
+            f"Supplied normalized season evidence records {total_decision_impact} aggregate "
+            "decision-impact rows on BoltOdds-covered dates. Date overlap does not prove "
+            "BoltOdds caused a production decision; BoltOdds is retired and has no active "
+            "production authority."
+        )
+    else:
+        production_impact_statement = (
+            "Supplied normalized season evidence records zero decision-impact rows on "
+            "BoltOdds-covered dates. BoltOdds is retired and has no active production authority."
+        )
+    production_impact_evidence_basis = (
+        "Aggregate normalized season-evidence counts on BoltOdds-covered dates; date overlap "
+        "is not provider-causal attribution."
+    )
 
     post_suspension_runtime = any(
         timestamp is not None and timestamp > BOLTODDS_SUSPENDED_AT
@@ -594,6 +944,11 @@ def build_boltodds_closure(
         "runtime": runtime,
         "coverage_totals": coverage_totals,
         "partitions": partitions,
+        "decision_impact_counts": decision_impact_counts,
+        "outcome_preservation_summary": outcome_preservation_summary,
+        "pin_preservation_summary": pin_preservation_summary,
+        "production_impact_statement": production_impact_statement,
+        "production_impact_evidence_basis": production_impact_evidence_basis,
         "unresolved_evidence_gaps": unresolved_evidence_gaps,
         "retention_execution_closed": True,
         "deletion_approved": False,
@@ -636,6 +991,11 @@ def render_boltodds_markdown(report: dict[str, Any]) -> str:
         f"- Raw rows / logical bytes: `{totals['raw_snapshot_rows']} / {totals['raw_logical_bytes']}`",
         f"- Exact / raw groups: `{totals['exact_group_count']} / {totals['raw_group_count']}`",
         f"- Missing / mismatched groups: `{totals['missing_compact_group_count']} / {totals['mismatched_group_count']}`",
+        f"- Decision-impact counts: `{json.dumps(report['decision_impact_counts'], sort_keys=True)}`",
+        f"- Outcome preservation summary: `{json.dumps(report['outcome_preservation_summary'], sort_keys=True)}`",
+        f"- Pin preservation summary: `{json.dumps(report['pin_preservation_summary'], sort_keys=True)}`",
+        f"- Production-impact statement: {report['production_impact_statement']}",
+        f"- Evidence basis: {report['production_impact_evidence_basis']}",
         f"- Unresolved gaps: `{', '.join(report['unresolved_evidence_gaps']) or 'none'}`",
         f"- Recommendation: `{report['recommendation']}`",
         "",
@@ -712,11 +1072,11 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     for command in ("readiness", "boltodds-closure"):
         subparser = subcommands.add_parser(command)
         subparser.add_argument("--query-json", required=True)
-        subparser.add_argument("--gate-c-manifest", required=True)
+        subparser.add_argument("--gate-c-manifest", default=DEFAULT_GATE_C_MANIFEST)
         subparser.add_argument("--season-evidence")
         subparser.add_argument("--pins")
         subparser.add_argument("--as-of", required=True)
-        subparser.add_argument("--output-dir", required=True)
+        subparser.add_argument("--output-dir", default=DEFAULT_OUTPUT_DIR)
         if command == "readiness":
             subparser.add_argument("--raw-retention-days", type=int, default=30)
     return parser.parse_args(argv)
@@ -724,7 +1084,10 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
 
 def main(argv: list[str] | None = None) -> int:
     try:
-        args = parse_args(argv)
+        try:
+            args = parse_args(argv)
+        except SystemExit as exc:
+            return 0 if exc.code == 0 else 3
         envelope = load_query_envelope(args.query_json)
         gate_c = load_json_object(Path(args.gate_c_manifest))
         season_evidence = load_json_object(Path(args.season_evidence)) if args.season_evidence else None

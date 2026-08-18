@@ -12,6 +12,16 @@ ROOT = Path(__file__).resolve().parents[1]
 SQL_PATH = ROOT / "scripts" / "supabase_retention_exact_coverage.sql"
 REPORTER_PATH = ROOT / "scripts" / "build_season_retention_readiness.py"
 
+EVIDENCE_PIN_REASONS = {
+    "official_tracked_picks": "official_tracked_pick",
+    "accepted_bets": "accepted_bet",
+    "sent_notifications": "sent_notification",
+    "consumed_locks": "consumed_lock",
+    "frozen_alt_v2_rows": "frozen_alt_v2",
+    "operator_incidents": "operator_incident",
+    "model_review_pins": "model_review",
+}
+
 
 def test_exact_coverage_sql_exists_and_is_read_only():
     assert SQL_PATH.exists()
@@ -33,9 +43,28 @@ def test_exact_coverage_sql_uses_the_canonical_group_and_ordering_contract():
     ):
         assert field in sql
     assert "order by observed_at asc, id asc" in sql
-    assert "order by observed_at desc, id desc" in sql
+    assert "last_value(american_odds)" in sql
+    assert "order by observed_at desc, id desc" not in sql
     assert "lag(american_odds)" in sql
     assert "pg_column_size" in sql
+
+
+def test_exact_coverage_sql_keeps_one_statement_and_a_narrow_snapshot_projection():
+    sql = SQL_PATH.read_text(encoding="utf-8").lower()
+
+    assert sql.count(";") == 1
+    assert sql.rstrip().endswith(";")
+    assert "ms.*" not in sql
+    assert "ms.id as snapshot_id" in sql
+    assert "pg_column_size(ms)::bigint as logical_bytes" in sql
+
+
+def test_exact_coverage_sql_avoids_redundant_full_season_sorts_and_materialization():
+    sql = SQL_PATH.read_text(encoding="utf-8").lower()
+
+    assert sql.count("order by observed_at asc, id asc") == 1
+    assert "window raw_order as" in sql
+    assert sql.count(" as materialized (") <= 1
 
 
 def test_exact_coverage_sql_emits_all_blocking_metrics_and_runtime_boundaries():
@@ -144,16 +173,22 @@ def _season_evidence(*, complete=True):
     }
 
 
-def _pins(*, reconciled=True, status="preserved"):
+def _pins(*, reconciled=True, status="preserved", reasons=None):
+    pin_reasons = reasons if reasons is not None else [
+        EVIDENCE_PIN_REASONS["official_tracked_picks"],
+        EVIDENCE_PIN_REASONS["accepted_bets"],
+        EVIDENCE_PIN_REASONS["sent_notifications"],
+        EVIDENCE_PIN_REASONS["consumed_locks"],
+    ]
     return {
         "schema_version": 1, "generated_at": "2026-08-18T18:00:00+00:00",
         "partitions": [{
             "slate_date": "2026-06-01", "provider": "boltodds",
             "reconciled": reconciled,
             "pins": [{
-                "reason": "accepted_bet", "status": status,
+                "reason": reason, "status": status,
                 "preserved_artifact": "data/picks_history.json",
-            }],
+            } for reason in pin_reasons],
         }],
     }
 
@@ -163,6 +198,7 @@ def _gate_c_manifest():
         "artifact": "gate_c_pitcher_k_outcome_dataset",
         "generated_at": "2026-08-18T17:00:00+00:00",
         "loaded_slate_dates": ["2026-06-01"],
+        "source": {"start_date": "2026-04-28", "end_date": "2026-06-01"},
         "jsonl_sha256": "a" * 64,
         "summary_sha256": "b" * 64,
         "reconciliation": {"graded_pick_rows": 2, "matched_pick_rows": 2,
@@ -190,6 +226,154 @@ def test_validate_envelope_rejects_untrustworthy_input(mutation):
     mutation(envelope)
     with pytest.raises(ValueError):
         retention.validate_envelope(envelope)
+
+
+def test_validate_envelope_rejects_empty_coverage():
+    with pytest.raises(ValueError, match="coverage must not be empty"):
+        retention.validate_envelope(_envelope(coverage=[]))
+
+
+@pytest.mark.parametrize("field", list(_coverage()))
+def test_validate_envelope_rejects_truncated_coverage_rows(field):
+    row = _coverage()
+    del row[field]
+
+    with pytest.raises(ValueError):
+        retention.validate_envelope(_envelope(coverage=[row]))
+
+
+@pytest.mark.parametrize("overrides", [
+    {"raw_group_count": 5},
+    {"compact_group_count": 5},
+    {"raw_snapshot_rows": 3},
+    {"mismatched_group_count": 0, "first_seen_mismatch_count": 1},
+    {"first_raw_seen_at": "2026-06-01T23:00:00+00:00"},
+    {"coverage_exact": False},
+    {
+        "raw_group_count": 4, "compact_group_count": 3,
+        "exact_group_count": 3, "missing_compact_group_count": 1,
+        "coverage_exact": True,
+    },
+])
+def test_validate_envelope_rejects_contradictory_coverage_aggregates(overrides):
+    with pytest.raises(ValueError):
+        retention.validate_envelope(_envelope(coverage=[_coverage(**overrides)]))
+
+
+@pytest.mark.parametrize("runtime_overrides", [
+    {"run_count": 19, "completed_run_count": 19, "failed_run_count": 1},
+    {"first_run_at": None},
+    {"first_snapshot_at": None},
+    {"heartbeat_count": 0, "last_heartbeat_at": "2026-06-17T17:20:59+00:00"},
+])
+def test_validate_envelope_rejects_contradictory_runtime_aggregates(runtime_overrides):
+    with pytest.raises(ValueError):
+        retention.validate_envelope(_envelope(runtime=[_runtime(**runtime_overrides)]))
+
+
+@pytest.mark.parametrize("runtime_overrides", [
+    {"snapshot_count": 99},
+    {"snapshot_count": 100, "snapshot_logical_bytes": 49999},
+    {"first_snapshot_at": "2026-06-01T17:00:00+00:00"},
+    {"last_snapshot_at": "2026-06-01T21:00:00+00:00"},
+])
+def test_validate_envelope_cross_checks_coverage_against_provider_runtime(
+    runtime_overrides,
+):
+    with pytest.raises(ValueError, match="coverage contradicts provider runtime"):
+        retention.validate_envelope(_envelope(runtime=[_runtime(**runtime_overrides)]))
+
+
+def test_validate_envelope_rejects_anomaly_counts_larger_than_provider_runtime():
+    anomalies = [{
+        "provider": "boltodds", "rows_missing_run_id": 611973,
+        "rows_missing_run_row": 0, "rows_missing_group_key": 0,
+        "provider_run_mismatch_rows": 0,
+    }]
+
+    with pytest.raises(ValueError, match="anomaly count exceeds provider runtime"):
+        retention.validate_envelope(_envelope(anomalies=anomalies))
+
+
+def test_compact_only_partition_is_valid_evidence_but_blocks_compaction():
+    coverage = _coverage(
+        raw_snapshot_rows=0, raw_logical_bytes=0, raw_group_count=0,
+        compact_group_count=1, exact_group_count=0, mismatched_group_count=0,
+        unexpected_compact_group_count=1, first_raw_seen_at=None,
+        last_raw_seen_at=None, coverage_exact=False,
+    )
+    runtime = _runtime(
+        books_seen=[], first_snapshot_at=None, last_snapshot_at=None,
+        snapshot_count=0, snapshot_logical_bytes=0,
+    )
+
+    report = retention.build_readiness_report(
+        envelope=_envelope(coverage=[coverage], runtime=[runtime]),
+        gate_c=_gate_c_manifest(), season_evidence=_season_evidence(), pins=_pins(),
+        as_of="2026-08-18", raw_retention_days=30,
+    )
+
+    assert report["partitions"][0]["decision"] == "blocked_compaction"
+    assert "unexpected_compact_group_count" in report["partitions"][0]["reason_codes"]
+
+
+def test_provider_anomaly_without_a_coverage_partition_cannot_produce_readiness():
+    envelope = _envelope()
+    envelope["query_scope"]["providers"].append("propline")
+    envelope["source_anomalies"].append({
+        "provider": "propline", "rows_missing_run_id": 1,
+        "rows_missing_run_row": 0, "rows_missing_group_key": 0,
+        "provider_run_mismatch_rows": 0,
+    })
+    envelope["provider_runtime"].append(_runtime(
+        provider="propline", first_run_at=None, last_run_at=None,
+        run_count=0, completed_run_count=0, failed_run_count=0,
+        request_count=0, books_seen=[], first_snapshot_at=None,
+        last_snapshot_at=None, snapshot_count=0, snapshot_logical_bytes=0,
+        last_heartbeat_at=None, last_message_at=None, heartbeat_count=0,
+    ))
+
+    with pytest.raises(ValueError, match="anomalies without coverage"):
+        retention.validate_envelope(envelope)
+
+
+def test_audit_timestamp_must_be_fresh_for_the_as_of_day_in_phoenix():
+    envelope = _envelope()
+    envelope["audit_generated_at"] = "2026-08-18T06:59:59+00:00"
+
+    with pytest.raises(ValueError, match="audit_generated_at is stale"):
+        retention.build_readiness_report(
+            envelope=envelope, gate_c=_gate_c_manifest(),
+            season_evidence=_season_evidence(), pins=_pins(),
+            as_of="2026-08-18", raw_retention_days=30,
+        )
+
+
+@pytest.mark.parametrize("manifest_name", ["season_evidence", "pins"])
+def test_audit_supporting_manifests_must_be_fresh_in_phoenix(manifest_name):
+    season_evidence = _season_evidence()
+    pins = _pins()
+    manifest = season_evidence if manifest_name == "season_evidence" else pins
+    manifest["generated_at"] = "2026-08-18T06:59:59+00:00"
+
+    with pytest.raises(ValueError, match=f"{manifest_name}.generated_at is stale"):
+        retention.build_readiness_report(
+            envelope=_envelope(), gate_c=_gate_c_manifest(),
+            season_evidence=season_evidence, pins=pins,
+            as_of="2026-08-18", raw_retention_days=30,
+        )
+
+
+def test_gate_c_manifest_cannot_claim_dates_newer_than_its_generation():
+    gate_c = _gate_c_manifest()
+    gate_c["generated_at"] = "2026-05-31T20:00:00+00:00"
+
+    with pytest.raises(ValueError, match="gate_c.generated_at predates source coverage"):
+        retention.build_readiness_report(
+            envelope=_envelope(), gate_c=gate_c,
+            season_evidence=_season_evidence(), pins=_pins(),
+            as_of="2026-08-18", raw_retention_days=30,
+        )
 
 
 def test_stale_query_scope_is_rejected_for_requested_as_of_date():
@@ -227,11 +411,14 @@ def test_every_compaction_mismatch_blocks(field):
         "missing_compact_group_count", "unexpected_compact_group_count",
         "duplicate_compact_group_count",
     }
-    row = _coverage(**{
-        field: 1,
-        "mismatched_group_count": 1 if metric_mismatch else 0,
-        "coverage_exact": False,
-    })
+    overrides = {field: 1, "coverage_exact": False}
+    if field == "missing_compact_group_count":
+        overrides.update(compact_group_count=3, exact_group_count=3)
+    elif field == "unexpected_compact_group_count":
+        overrides.update(compact_group_count=5)
+    elif metric_mismatch:
+        overrides.update(mismatched_group_count=1, exact_group_count=3)
+    row = _coverage(**overrides)
     report = retention.build_readiness_report(
         envelope=_envelope(coverage=[row]), gate_c=_gate_c_manifest(),
         season_evidence=_season_evidence(), pins=_pins(),
@@ -297,13 +484,71 @@ def test_complete_decision_linked_false_evidence_can_be_ready_for_review():
     season_evidence = _season_evidence()
     record = season_evidence["dates"][0]
     record["decision_linked"] = False
+    record["evidence_counts"] = {
+        field: 0 for field in EVIDENCE_PIN_REASONS
+    }
     del record["required_evidence"]
     report = retention.build_readiness_report(
         envelope=_envelope(), gate_c=_gate_c_manifest(),
-        season_evidence=season_evidence, pins=_pins(),
+        season_evidence=season_evidence, pins=_pins(reasons=[]),
         as_of="2026-08-18", raw_retention_days=30,
     )
     assert report["partitions"][0]["decision"] == "ready_for_retention_review"
+
+
+@pytest.mark.parametrize("count_field", list(EVIDENCE_PIN_REASONS))
+def test_each_positive_evidence_count_contradicts_decision_linked_false(count_field):
+    season_evidence = _season_evidence()
+    record = season_evidence["dates"][0]
+    record["decision_linked"] = False
+    record["evidence_counts"] = {
+        field: int(field == count_field) for field in EVIDENCE_PIN_REASONS
+    }
+    del record["required_evidence"]
+
+    with pytest.raises(ValueError, match="decision_linked=false contradicts positive"):
+        retention.build_readiness_report(
+            envelope=_envelope(), gate_c=_gate_c_manifest(),
+            season_evidence=season_evidence, pins=_pins(reasons=[]),
+            as_of="2026-08-18", raw_retention_days=30,
+        )
+
+
+@pytest.mark.parametrize("count_field", list(EVIDENCE_PIN_REASONS))
+def test_each_positive_evidence_count_requires_outcome_preservation(count_field):
+    season_evidence = _season_evidence(complete=False)
+    record = season_evidence["dates"][0]
+    record["evidence_counts"] = {
+        field: int(field == count_field) for field in EVIDENCE_PIN_REASONS
+    }
+
+    report = retention.build_readiness_report(
+        envelope=_envelope(), gate_c=_gate_c_manifest(),
+        season_evidence=season_evidence,
+        pins=_pins(reasons=[EVIDENCE_PIN_REASONS[count_field]]),
+        as_of="2026-08-18", raw_retention_days=30,
+    )
+
+    assert report["partitions"][0]["decision"] == "blocked_outcome_evidence"
+
+
+@pytest.mark.parametrize("count_field,pin_reason", EVIDENCE_PIN_REASONS.items())
+def test_each_positive_evidence_count_requires_matching_preserved_pin(
+    count_field, pin_reason,
+):
+    season_evidence = _season_evidence()
+    season_evidence["dates"][0]["evidence_counts"] = {
+        field: int(field == count_field) for field in EVIDENCE_PIN_REASONS
+    }
+
+    report = retention.build_readiness_report(
+        envelope=_envelope(), gate_c=_gate_c_manifest(),
+        season_evidence=season_evidence, pins=_pins(reasons=[]),
+        as_of="2026-08-18", raw_retention_days=30,
+    )
+
+    assert report["partitions"][0]["decision"] == "blocked_pinned_evidence"
+    assert f"missing_preserved_pin_{pin_reason}" in report["partitions"][0]["reason_codes"]
 
 
 @pytest.mark.parametrize("field", ["artifact", "generated_at", "jsonl_sha256", "summary_sha256"])
@@ -388,7 +633,10 @@ def test_readiness_main_returns_two_for_blocked_report_and_writes_outputs(tmp_pa
     query = tmp_path / "query.json"
     gate_c = tmp_path / "gate-c.json"
     query.write_text(json.dumps([{"retention_exact_coverage": _envelope(
-        coverage=[_coverage(missing_compact_group_count=1, coverage_exact=False)]
+        coverage=[_coverage(
+            compact_group_count=3, exact_group_count=3,
+            missing_compact_group_count=1, coverage_exact=False,
+        )]
     )}]), encoding="utf-8")
     gate_c.write_text(json.dumps(_gate_c_manifest()), encoding="utf-8")
     exit_code = retention.main([
@@ -426,6 +674,28 @@ def test_main_returns_three_and_writes_no_report_for_invalid_input(tmp_path):
         "--as-of", "2026-08-18", "--output-dir", str(tmp_path),
     ]) == 3
     assert not (tmp_path / "season_retention_readiness.json").exists()
+
+
+@pytest.mark.parametrize("argv", [
+    [],
+    ["unknown-command"],
+    ["readiness", "--unknown-option"],
+])
+def test_main_converts_malformed_argparse_invocations_to_exit_three(argv):
+    assert retention.main(argv) == 3
+
+
+def test_main_keeps_argparse_help_as_a_normal_exit():
+    assert retention.main(["readiness", "--help"]) == 0
+
+
+def test_parse_args_uses_repository_defaults_for_gate_c_and_output():
+    args = retention.parse_args([
+        "readiness", "--query-json", "query.json", "--as-of", "2026-08-18",
+    ])
+
+    assert Path(args.gate_c_manifest) == retention.DEFAULT_GATE_C_MANIFEST
+    assert Path(args.output_dir) == retention.DEFAULT_OUTPUT_DIR
 
 
 def test_readiness_markdown_states_closed_execution_and_no_production_authority():
@@ -470,10 +740,24 @@ def test_boltodds_closure_preserves_trial_facts_without_runtime_authority():
     assert closure["runtime_reactivation_approved"] is False
     assert closure["retention_execution_closed"] is True
     assert closure["deletion_approved"] is False
+    assert closure["decision_impact_counts"] == {
+        "official_tracked_picks": 2,
+        "accepted_bets": 1,
+        "sent_notifications": 1,
+        "consumed_locks": 2,
+        "frozen_alt_v2_rows": 0,
+        "operator_incidents": 0,
+        "model_review_pins": 0,
+    }
+    assert closure["outcome_preservation_summary"]["complete_dates"] == 1
+    assert closure["pin_preservation_summary"]["preserved_pin_count"] == 4
+    assert "BoltOdds-covered dates" in closure["production_impact_statement"]
+    assert "not provider-causal attribution" in closure["production_impact_evidence_basis"]
 
 
 def test_boltodds_closure_blocks_on_compaction_gaps_and_missing_preservation_inputs():
     envelope = _envelope(coverage=[_coverage(
+        compact_group_count=3, exact_group_count=3,
         missing_compact_group_count=1, coverage_exact=False,
     )])
 
@@ -548,6 +832,9 @@ def test_boltodds_closure_cli_writes_sanitized_json_and_markdown(tmp_path):
     combined = json_path.read_text(encoding="utf-8") + md_path.read_text(encoding="utf-8")
     assert "Deletion status: CLOSED" in combined
     assert "does not authorize BoltOdds runtime reactivation" in combined
+    assert "Decision-impact counts" in combined
+    assert "Production-impact statement" in combined
+    assert "source_payload" not in combined
 
 
 def test_boltodds_closure_main_returns_zero_for_ready_report(tmp_path):

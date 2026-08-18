@@ -4,22 +4,31 @@
 --   npx supabase db query --linked --file scripts\supabase_retention_exact_coverage.sql -o json
 
 with
-settings as materialized (
+settings as (
   select
     date '2026-04-28' as start_date,
     (now() at time zone 'America/Phoenix')::date as end_date,
     array['boltodds', 'propline', 'the_odds', 'therundown']::text[] as providers
 ),
-target_runs as materialized (
-  select id, lower(trim(provider)) as provider, slate_date, started_at,
-         completed_at, status, request_count, books_seen
+target_runs as (
+  select lower(trim(provider)) as provider, started_at,
+         completed_at, status, request_count
   from public.market_provider_runs, settings
   where slate_date between settings.start_date and settings.end_date
     and lower(trim(provider)) = any(settings.providers)
 ),
-raw_input as materialized (
+raw_source as materialized (
   select
-    ms.*,
+    ms.id as snapshot_id,
+    ms.run_id,
+    lower(trim(ms.provider)) as provider,
+    lower(trim(ms.bookmaker_key)) as book_key,
+    trim(ms.normalized_player_name) as normalized_player_name,
+    coalesce(nullif(trim(ms.market_key), ''), 'pitcher_strikeouts') as market_key,
+    lower(trim(ms.side)) as side,
+    ms.line::numeric as line,
+    ms.observed_at,
+    ms.american_odds::integer as american_odds,
     mpr.id as run_row_id,
     mpr.slate_date,
     lower(trim(mpr.provider)) as run_provider,
@@ -33,49 +42,51 @@ raw_input as materialized (
         ) between settings.start_date and settings.end_date
     and lower(trim(ms.provider)) = any(settings.providers)
 ),
-valid_raw as materialized (
+valid_raw as (
   select
     slate_date,
-    lower(trim(provider)) as provider,
-    lower(trim(bookmaker_key)) as book_key,
-    trim(normalized_player_name) as normalized_player_name,
-    coalesce(nullif(trim(player_name), ''), trim(normalized_player_name)) as player_name,
-    coalesce(nullif(trim(market_key), ''), 'pitcher_strikeouts') as market_key,
-    lower(trim(side)) as side,
-    line::numeric as line,
+    provider,
+    book_key,
+    normalized_player_name,
+    market_key,
+    side,
+    line,
     observed_at,
-    american_odds::integer as american_odds,
-    id,
+    american_odds,
+    snapshot_id as id,
     logical_bytes
-  from raw_input
+  from raw_source
   where run_row_id is not null
     and slate_date is not null
     and provider = run_provider
-    and nullif(trim(bookmaker_key), '') is not null
-    and nullif(trim(normalized_player_name), '') is not null
-    and lower(trim(side)) in ('over', 'under')
+    and nullif(book_key, '') is not null
+    and nullif(normalized_player_name, '') is not null
+    and side in ('over', 'under')
     and line is not null
 ),
-windowed_raw as materialized (
+windowed_raw as (
   select
-    valid_raw.*,
-    first_value(american_odds) over (
-      partition by slate_date, provider, book_key, normalized_player_name, market_key, side, line
-      order by observed_at asc, id asc
-      rows between unbounded preceding and unbounded following
-    ) as first_odds,
-    first_value(american_odds) over (
-      partition by slate_date, provider, book_key, normalized_player_name, market_key, side, line
-      order by observed_at desc, id desc
-      rows between unbounded preceding and unbounded following
-    ) as last_odds,
-    lag(american_odds) over (
-      partition by slate_date, provider, book_key, normalized_player_name, market_key, side, line
-      order by observed_at asc, id asc
-    ) as previous_odds
+    slate_date,
+    provider,
+    book_key,
+    normalized_player_name,
+    market_key,
+    side,
+    line,
+    observed_at,
+    american_odds,
+    logical_bytes,
+    first_value(american_odds) over raw_order as first_odds,
+    last_value(american_odds) over raw_order as last_odds,
+    lag(american_odds) over raw_order as previous_odds
   from valid_raw
+  window raw_order as (
+      partition by slate_date, provider, book_key, normalized_player_name, market_key, side, line
+      order by observed_at asc, id asc
+      rows between unbounded preceding and unbounded following
+    )
 ),
-raw_groups as materialized (
+raw_groups as (
   select
     slate_date, provider, book_key, normalized_player_name, market_key, side, line,
     min(observed_at) as first_seen_at,
@@ -93,7 +104,7 @@ raw_groups as materialized (
   from windowed_raw
   group by slate_date, provider, book_key, normalized_player_name, market_key, side, line
 ),
-compact_groups as materialized (
+compact_groups as (
   select
     slate_date, lower(trim(provider)) as provider, lower(trim(book_key)) as book_key,
     trim(normalized_player_name) as normalized_player_name,
@@ -116,15 +127,10 @@ compact_groups as materialized (
            coalesce(nullif(trim(market_key), ''), 'pitcher_strikeouts'),
            lower(trim(side)), line::numeric
 ),
-joined_groups as materialized (
+joined_groups as (
   select
     coalesce(r.slate_date, c.slate_date) as slate_date,
     coalesce(r.provider, c.provider) as provider,
-    coalesce(r.book_key, c.book_key) as book_key,
-    coalesce(r.normalized_player_name, c.normalized_player_name) as normalized_player_name,
-    coalesce(r.market_key, c.market_key) as market_key,
-    coalesce(r.side, c.side) as side,
-    coalesce(r.line, c.line) as line,
     r.slate_date is not null as raw_present,
     c.slate_date is not null as compact_present,
     r.first_seen_at as raw_first_seen_at,
@@ -155,7 +161,7 @@ joined_groups as materialized (
    and c.side = r.side
    and c.line = r.line
 ),
-coverage_by_partition as materialized (
+coverage_by_partition as (
   select
     slate_date,
     provider,
@@ -231,7 +237,7 @@ coverage_by_partition as materialized (
   from joined_groups
   group by slate_date, provider
 ),
-coverage_with_exactness as materialized (
+coverage_with_exactness as (
   select
     coverage_by_partition.*,
     (
@@ -242,7 +248,7 @@ coverage_with_exactness as materialized (
     ) as coverage_exact
   from coverage_by_partition
 ),
-anomaly_counts as materialized (
+anomaly_counts as (
   select
     lower(trim(provider)) as provider,
     count(*) filter (where run_id is null)::bigint as rows_missing_run_id,
@@ -258,10 +264,10 @@ anomaly_counts as materialized (
       where run_row_id is not null
         and lower(trim(provider)) is distinct from run_provider
     )::bigint as provider_run_mismatch_rows
-  from raw_input
+  from raw_source
   group by lower(trim(provider))
 ),
-source_anomalies as materialized (
+source_anomalies as (
   select
     target.provider,
     coalesce(anomaly_counts.rows_missing_run_id, 0)::bigint as rows_missing_run_id,
@@ -272,7 +278,7 @@ source_anomalies as materialized (
   from unnest((select providers from settings)) as target(provider)
   left join anomaly_counts on anomaly_counts.provider = target.provider
 ),
-run_summary as materialized (
+run_summary as (
   select
     provider,
     min(started_at) as first_run_at,
@@ -284,24 +290,24 @@ run_summary as materialized (
   from target_runs
   group by provider
 ),
-book_summary as materialized (
+book_summary as (
   select
     provider,
     array_agg(distinct book_key order by book_key) as books_seen
   from valid_raw
   group by provider
 ),
-snapshot_summary as materialized (
+snapshot_summary as (
   select
     lower(trim(provider)) as provider,
     min(observed_at) as first_snapshot_at,
     max(observed_at) as last_snapshot_at,
     count(*)::bigint as snapshot_count,
     coalesce(sum(logical_bytes), 0)::bigint as snapshot_logical_bytes
-  from raw_input
+  from raw_source
   group by lower(trim(provider))
 ),
-heartbeat_summary as materialized (
+heartbeat_summary as (
   select
     lower(trim(h.provider)) as provider,
     max(h.observed_at) as last_heartbeat_at,
@@ -313,7 +319,7 @@ heartbeat_summary as materialized (
     and lower(trim(h.provider)) = any(settings.providers)
   group by lower(trim(h.provider))
 ),
-provider_runtime as materialized (
+provider_runtime as (
   select
     target.provider,
     run_summary.first_run_at,
