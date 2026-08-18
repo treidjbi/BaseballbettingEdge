@@ -15,6 +15,7 @@ from dataclasses import dataclass
 from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any
+from zoneinfo import ZoneInfo
 
 from scripts import retention_bounded_sql as bounded_sql
 
@@ -129,6 +130,10 @@ class CheckpointRecord:
     scope_fingerprint: str
     cli_version: str
     payload: dict[str, Any]
+    candidate_end_date: date | None = None
+    provider_allowlist: tuple[str, ...] | None = None
+    runner_version: str | None = None
+    query_contract_version: str | None = None
 
 
 class AuditFailure(RuntimeError):
@@ -672,6 +677,10 @@ def run_chunks(
             scope_fingerprint=checkpoint_value["scope_fingerprint"],
             cli_version=checkpoint_value["cli_version"],
             payload=payload,
+            candidate_end_date=scope.candidate_end_date,
+            provider_allowlist=scope.providers,
+            runner_version=RUNNER_VERSION,
+            query_contract_version=QUERY_CONTRACT_VERSION,
         )
         checkpoints.append(record)
         written.append(record)
@@ -786,6 +795,10 @@ def load_valid_checkpoints(
                 scope_fingerprint=value["scope_fingerprint"],
                 cli_version=value["cli_version"],
                 payload=payload,
+                candidate_end_date=scope.candidate_end_date,
+                provider_allowlist=scope.providers,
+                runner_version=value["runner_version"],
+                query_contract_version=value["query_contract_version"],
             ))
         except (KeyError, TypeError, ValueError, json.JSONDecodeError) as exc:
             if "checkpoint integrity" in str(exc):
@@ -794,6 +807,236 @@ def load_valid_checkpoints(
     return sorted(records, key=lambda item: (
         scope.providers.index(item.provider), item.start_date, item.end_date,
     ))
+
+
+def _timestamp_extreme(
+    values: list[str],
+    *,
+    latest: bool,
+) -> str | None:
+    if not values:
+        return None
+    chooser = max if latest else min
+    return chooser(values, key=datetime.fromisoformat)
+
+
+def aggregate_candidate_rows(
+    checkpoints: list[CheckpointRecord],
+    scope: AuditScope,
+) -> tuple[list[dict[str, Any]], list[dict[str, Any]], list[dict[str, Any]]]:
+    if not isinstance(checkpoints, list):
+        raise ValueError("checkpoints must be a list")
+
+    expected = expected_partitions(scope)
+    expected_set = set(expected)
+    expected_query_hash = bounded_sql.query_contract_sha256()
+    expected_scope_fingerprint = _scope_fingerprint(scope)
+    shared_cli_version: str | None = None
+    occupied: set[tuple[str, str]] = set()
+    coverage_by_partition: dict[tuple[str, str], dict[str, Any]] = {}
+    anomalies_by_partition: dict[tuple[str, str], dict[str, Any]] = {}
+    runtime_by_partition: dict[tuple[str, str], dict[str, Any]] = {}
+
+    for checkpoint in checkpoints:
+        if not isinstance(checkpoint, CheckpointRecord):
+            raise ValueError("checkpoint record is invalid")
+        if checkpoint.query_contract_sha256 != expected_query_hash:
+            raise ValueError("query_contract_sha256 mismatch")
+        if checkpoint.scope_fingerprint != expected_scope_fingerprint:
+            raise ValueError("scope_fingerprint mismatch")
+        if checkpoint.candidate_end_date != scope.candidate_end_date:
+            raise ValueError("candidate cutoff mismatch")
+        if checkpoint.provider_allowlist != scope.providers:
+            raise ValueError("provider allowlist mismatch")
+        if checkpoint.runner_version != RUNNER_VERSION:
+            raise ValueError("runner_version mismatch")
+        if checkpoint.query_contract_version != QUERY_CONTRACT_VERSION:
+            raise ValueError("query_contract_version mismatch")
+        if (
+            not isinstance(checkpoint.cli_version, str)
+            or _CLI_VERSION_PATTERN.fullmatch(checkpoint.cli_version) is None
+        ):
+            raise ValueError("cli_version is invalid")
+        if shared_cli_version is None:
+            shared_cli_version = checkpoint.cli_version
+        elif checkpoint.cli_version != shared_cli_version:
+            raise ValueError("cli_version mismatch")
+        if checkpoint.provider not in scope.providers:
+            raise ValueError("checkpoint provider is outside scope")
+        bounded_sql.validate_chunk(
+            checkpoint.provider,
+            checkpoint.start_date.isoformat(),
+            checkpoint.end_date.isoformat(),
+        )
+        if (
+            checkpoint.start_date < scope.start_date
+            or checkpoint.end_date > scope.candidate_end_date
+        ):
+            raise ValueError("checkpoint range is outside candidate cutoff")
+        chunk = ChunkSpec(
+            checkpoint.provider, checkpoint.start_date, checkpoint.end_date,
+        )
+        sql = bounded_sql.build_chunk_sql(
+            checkpoint.provider,
+            checkpoint.start_date.isoformat(),
+            checkpoint.end_date.isoformat(),
+        )
+        rendered_hash = hashlib.sha256(sql.encode("utf-8")).hexdigest()
+        if checkpoint.rendered_sql_sha256 != rendered_hash:
+            raise ValueError("rendered_sql_sha256 mismatch")
+        validate_chunk_payload(checkpoint.payload, chunk)
+
+        coverage_rows = {
+            row["slate_date"]: row for row in checkpoint.payload["coverage"]
+        }
+        anomaly_rows = {
+            row["slate_date"]: row
+            for row in checkpoint.payload["source_anomalies"]
+        }
+        runtime_rows = {
+            row["slate_date"]: row
+            for row in checkpoint.payload["candidate_runtime"]
+        }
+        for offset in range(chunk.days):
+            slate_date = (chunk.start_date + timedelta(days=offset)).isoformat()
+            partition = (chunk.provider, slate_date)
+            if partition in occupied:
+                raise ValueError("checkpoint ranges overlap")
+            occupied.add(partition)
+            coverage_by_partition[partition] = dict(coverage_rows[slate_date])
+            anomalies_by_partition[partition] = dict(anomaly_rows[slate_date])
+            runtime_by_partition[partition] = dict(runtime_rows[slate_date])
+
+    if occupied != expected_set:
+        raise ValueError("checkpoint partition matrix is incomplete")
+
+    coverage = [coverage_by_partition[partition] for partition in expected]
+    for row in coverage:
+        if row["coverage_exact"] is not True:
+            raise ValueError(
+                "coverage_exact=false blocks completeness for "
+                f"{row['provider']} {row['slate_date']}"
+            )
+    repeated_unknown_by_date: dict[str, int] = {}
+    for _provider, slate_date in expected:
+        unknown_count = anomalies_by_partition[(_provider, slate_date)][
+            "unknown_provider_rows"
+        ]
+        previous = repeated_unknown_by_date.setdefault(slate_date, unknown_count)
+        if previous != unknown_count:
+            raise ValueError(
+                "unknown_provider_rows must be identical across provider chunks"
+            )
+    deduplicated_unknown_total = sum(repeated_unknown_by_date.values())
+
+    anomalies: list[dict[str, Any]] = []
+    candidate_runtime: list[dict[str, Any]] = []
+    for provider in scope.providers:
+        provider_anomalies = [
+            anomalies_by_partition[(provider, slate_date)]
+            for partition_provider, slate_date in expected
+            if partition_provider == provider
+        ]
+        anomaly_row = {
+            "provider": provider,
+            **{
+                field: (
+                    deduplicated_unknown_total
+                    if field == "unknown_provider_rows"
+                    else sum(row[field] for row in provider_anomalies)
+                )
+                for field in _ANOMALY_COUNTS
+            },
+        }
+        anomalies.append(anomaly_row)
+
+        provider_runtime = [
+            runtime_by_partition[(provider, slate_date)]
+            for partition_provider, slate_date in expected
+            if partition_provider == provider
+        ]
+        runtime_row = {
+            "provider": provider,
+            "first_run_at": _timestamp_extreme(
+                [row["first_run_at"] for row in provider_runtime if row["first_run_at"]],
+                latest=False,
+            ),
+            "last_run_at": _timestamp_extreme(
+                [row["last_run_at"] for row in provider_runtime if row["last_run_at"]],
+                latest=True,
+            ),
+            "run_count": sum(row["run_count"] for row in provider_runtime),
+            "completed_run_count": sum(
+                row["completed_run_count"] for row in provider_runtime
+            ),
+            "failed_run_count": sum(
+                row["failed_run_count"] for row in provider_runtime
+            ),
+            "request_count": sum(row["request_count"] for row in provider_runtime),
+            "books_seen": sorted({
+                book for row in provider_runtime for book in row["books_seen"]
+            }),
+            "first_snapshot_at": _timestamp_extreme(
+                [
+                    row["first_snapshot_at"]
+                    for row in provider_runtime
+                    if row["first_snapshot_at"]
+                ],
+                latest=False,
+            ),
+            "last_snapshot_at": _timestamp_extreme(
+                [
+                    row["last_snapshot_at"]
+                    for row in provider_runtime
+                    if row["last_snapshot_at"]
+                ],
+                latest=True,
+            ),
+            "snapshot_count": sum(
+                row["snapshot_count"] for row in provider_runtime
+            ),
+            "snapshot_logical_bytes": sum(
+                row["snapshot_logical_bytes"] for row in provider_runtime
+            ),
+            "last_heartbeat_at": _timestamp_extreme(
+                [
+                    row["last_heartbeat_at"]
+                    for row in provider_runtime
+                    if row["last_heartbeat_at"]
+                ],
+                latest=True,
+            ),
+            "last_message_at": _timestamp_extreme(
+                [
+                    row["last_message_at"]
+                    for row in provider_runtime
+                    if row["last_message_at"]
+                ],
+                latest=True,
+            ),
+            "heartbeat_count": sum(
+                row["heartbeat_count"] for row in provider_runtime
+            ),
+        }
+        coverage_rows = [row for row in coverage if row["provider"] == provider]
+        if runtime_row["snapshot_count"] != sum(
+            row["raw_snapshot_rows"] for row in coverage_rows
+        ):
+            raise ValueError("candidate runtime snapshot rows contradict coverage")
+        if runtime_row["snapshot_logical_bytes"] != sum(
+            row["raw_logical_bytes"] for row in coverage_rows
+        ):
+            raise ValueError("candidate runtime snapshot bytes contradict coverage")
+        candidate_runtime.append(runtime_row)
+
+    for row in anomalies:
+        for field in _ANOMALY_COUNTS:
+            if row[field] != 0:
+                raise ValueError(
+                    f"source anomaly blocks completeness: {field}={row[field]}"
+                )
+
+    return coverage, anomalies, candidate_runtime
 
 
 def _validate_runtime_payload(payload: dict[str, Any], scope: AuditScope) -> None:
@@ -851,8 +1094,144 @@ def _validate_runtime_payload(payload: dict[str, Any], scope: AuditScope) -> Non
         )
         if actual_closure_flag != expected_closure_flag:
             raise ValueError("post_boltodds_suspension contradicts runtime boundaries")
+        if expected_closure_flag:
+            raise ValueError("post_boltodds_suspension blocks runtime closure")
     if tuple(seen) != scope.providers:
         raise ValueError("runtime providers are not in canonical order")
+
+
+def _phoenix_today() -> date:
+    return datetime.now(ZoneInfo(TIMEZONE)).date()
+
+
+def validate_runtime_boundary(value: dict[str, Any], scope: AuditScope) -> None:
+    if not isinstance(value, dict):
+        raise ValueError("runtime boundary must be an object")
+    _validate_runtime_payload(value, scope)
+    generated_at = _parse_nullable_timestamp(value, "generated_at")
+    if generated_at is None:
+        raise ValueError("generated_at timestamp is required")
+    phoenix_day = generated_at.astimezone(ZoneInfo(TIMEZONE)).date()
+    if scope.as_of_date != _phoenix_today() or phoenix_day != scope.as_of_date:
+        raise ValueError("generated_at must match the current Phoenix audit day")
+
+
+def _same_timestamp(left: str | None, right: str | None) -> bool:
+    if left is None or right is None:
+        return left is right
+    return datetime.fromisoformat(left) == datetime.fromisoformat(right)
+
+
+def assemble_v2_envelope(
+    scope: AuditScope,
+    checkpoints: list[CheckpointRecord],
+    runtime_boundary: dict[str, Any],
+    audit_generated_at: datetime,
+) -> dict[str, Any]:
+    if (
+        not isinstance(audit_generated_at, datetime)
+        or audit_generated_at.tzinfo is None
+        or audit_generated_at.utcoffset() is None
+    ):
+        raise ValueError("audit_generated_at must be timezone-aware Phoenix time")
+    phoenix = ZoneInfo(TIMEZONE)
+    phoenix_generated_at = audit_generated_at.astimezone(phoenix)
+    if (
+        phoenix_generated_at.utcoffset() != audit_generated_at.utcoffset()
+        or phoenix_generated_at.date() != scope.as_of_date
+    ):
+        raise ValueError("audit_generated_at must match the Phoenix audit day")
+
+    coverage, source_anomalies, candidate_runtime = aggregate_candidate_rows(
+        checkpoints, scope,
+    )
+    validate_runtime_boundary(runtime_boundary, scope)
+    boundary_by_provider = {
+        row["provider"]: row for row in runtime_boundary["providers"]
+    }
+    runtime_by_provider = {row["provider"]: row for row in candidate_runtime}
+    candidate_fields = (
+        ("candidate_latest_run_at", "last_run_at"),
+        ("candidate_latest_snapshot_at", "last_snapshot_at"),
+        ("candidate_latest_heartbeat_at", "last_heartbeat_at"),
+        ("candidate_latest_message_at", "last_message_at"),
+    )
+    for provider in scope.providers:
+        boundary_row = boundary_by_provider[provider]
+        candidate_row = runtime_by_provider[provider]
+        for boundary_field, candidate_field in candidate_fields:
+            if not _same_timestamp(
+                boundary_row[boundary_field], candidate_row[candidate_field],
+            ):
+                raise ValueError(
+                    f"{boundary_field} does not match candidate runtime"
+                )
+
+    expected_chunk_ranges = [
+        {
+            "provider": provider,
+            "start_date": scope.start_date.isoformat(),
+            "end_date": scope.candidate_end_date.isoformat(),
+        }
+        for provider in scope.providers
+    ]
+    completed_chunk_ranges = [
+        {
+            "provider": checkpoint.provider,
+            "start_date": checkpoint.start_date.isoformat(),
+            "end_date": checkpoint.end_date.isoformat(),
+        }
+        for checkpoint in sorted(
+            checkpoints,
+            key=lambda item: (
+                scope.providers.index(item.provider), item.start_date, item.end_date,
+            ),
+        )
+    ]
+    cli_versions = {checkpoint.cli_version for checkpoint in checkpoints}
+    if len(cli_versions) != 1:
+        raise ValueError("cli_version mismatch")
+    execution_contract = {
+        "query_contract_sha256": bounded_sql.query_contract_sha256(),
+        "query_contract_version": QUERY_CONTRACT_VERSION,
+        "runner_version": RUNNER_VERSION,
+        "cli_version": next(iter(cli_versions)),
+        "chunk_ladder_days": list(CHUNK_LADDER),
+        "soft_elapsed_seconds": SOFT_ELAPSED_SECONDS,
+        "cooldown_seconds": COOLDOWN_SECONDS,
+        "max_chunk_days": max(CHUNK_LADDER),
+        "default_max_chunks": DEFAULT_MAX_CHUNKS,
+        "hard_max_chunks": HARD_MAX_CHUNKS,
+        "expected_chunk_ranges": expected_chunk_ranges,
+        "completed_chunk_ranges": completed_chunk_ranges,
+        "complete": True,
+    }
+    return {
+        "audit_version": AUDIT_VERSION,
+        "audit_generated_at": audit_generated_at.isoformat(),
+        "as_of_date": scope.as_of_date.isoformat(),
+        "timezone": TIMEZONE,
+        "candidate_scope": {
+            "start_date": scope.start_date.isoformat(),
+            "end_date": scope.candidate_end_date.isoformat(),
+            "raw_retention_days": scope.raw_retention_days,
+            "providers": list(scope.providers),
+        },
+        "protected_scope": {
+            "start_date": scope.first_protected_date.isoformat(),
+            "reason": "dates inside the raw retention window are excluded",
+        },
+        "execution": execution_contract,
+        "coverage": coverage,
+        "source_anomalies": source_anomalies,
+        "candidate_runtime": candidate_runtime,
+        "runtime_boundary": runtime_boundary["providers"],
+        "season_evidence": None,
+        "pins": None,
+        "complete": True,
+        "retention_execution_closed": True,
+        "deletion_approved": False,
+    }
 
 
 def run_runtime_boundary(
@@ -879,7 +1258,7 @@ def run_runtime_boundary(
     except ValueError as exc:
         raise AuditFailure("malformed_json") from exc
     try:
-        _validate_runtime_payload(payload, scope)
+        validate_runtime_boundary(payload, scope)
     except ValueError as exc:
         raise AuditFailure("validation_failed") from exc
     finished_at = datetime.now(timezone.utc)
@@ -913,9 +1292,91 @@ def run_runtime_boundary(
     return path
 
 
-def assemble_local(scope: AuditScope, output_dir: Path, runtime_json: Path) -> None:
-    del scope, output_dir, runtime_json
-    raise AuditFailure("validation_failed")
+def _load_runtime_boundary_checkpoint(
+    path: Path,
+    scope: AuditScope,
+    cli_version: str,
+) -> dict[str, Any]:
+    path = Path(path)
+    if not path.is_file():
+        raise ValueError("runtime boundary evidence is absent")
+    if path.name != f"runtime-boundary-{scope.as_of_date.isoformat()}.json":
+        raise ValueError("runtime boundary filename mismatch")
+    value = json.loads(path.read_text(encoding="utf-8"))
+    if not isinstance(value, dict):
+        raise ValueError("runtime boundary checkpoint must be an object")
+    integrity_hash = value.get("checkpoint_integrity_sha256")
+    if (
+        not isinstance(integrity_hash, str)
+        or integrity_hash != _checkpoint_integrity_sha256(value)
+    ):
+        raise ValueError("runtime boundary checkpoint integrity mismatch")
+    expected_fields = {
+        "audit_version": AUDIT_VERSION,
+        "runner_version": RUNNER_VERSION,
+        "cli_version": cli_version,
+        "query_contract_version": QUERY_CONTRACT_VERSION,
+        "status": "completed",
+        "complete": True,
+        "sanitized_error": None,
+        "timezone": TIMEZONE,
+        "as_of_date": scope.as_of_date.isoformat(),
+        "start_date": scope.start_date.isoformat(),
+        "candidate_end_date": scope.candidate_end_date.isoformat(),
+        "first_protected_date": scope.first_protected_date.isoformat(),
+        "raw_retention_days": scope.raw_retention_days,
+        "providers": list(scope.providers),
+        "query_contract_sha256": bounded_sql.query_contract_sha256(),
+        "scope_fingerprint": _scope_fingerprint(scope),
+    }
+    for field, expected in expected_fields.items():
+        if value.get(field) != expected:
+            raise ValueError(f"runtime boundary {field} mismatch")
+    elapsed = value.get("elapsed_seconds")
+    if (
+        isinstance(elapsed, bool)
+        or not isinstance(elapsed, (int, float))
+        or not math.isfinite(elapsed)
+        or elapsed < 0
+    ):
+        raise ValueError("runtime boundary elapsed_seconds is invalid")
+    started_at = _parse_nullable_timestamp(value, "started_at")
+    finished_at = _parse_nullable_timestamp(value, "finished_at")
+    if started_at is None or finished_at is None or finished_at < started_at:
+        raise ValueError("runtime boundary checkpoint timestamps are invalid")
+    sql = bounded_sql.build_runtime_boundary_sql(scope.candidate_end_date.isoformat())
+    rendered_hash = hashlib.sha256(sql.encode("utf-8")).hexdigest()
+    if value.get("rendered_sql_sha256") != rendered_hash:
+        raise ValueError("runtime boundary rendered_sql_sha256 mismatch")
+    payload = value.get("payload")
+    if not isinstance(payload, dict):
+        raise ValueError("runtime boundary payload is invalid")
+    if value.get("result_sha256") != _canonical_sha256(payload):
+        raise ValueError("runtime boundary result_sha256 mismatch")
+    validate_runtime_boundary(payload, scope)
+    return payload
+
+
+def assemble_local(scope: AuditScope, output_dir: Path, runtime_json: Path) -> Path:
+    output_dir = preflight_output_dir(output_dir)
+    checkpoints = load_valid_checkpoints(output_dir, scope)
+    if not checkpoints:
+        raise ValueError("checkpoint matrix is absent")
+    cli_versions = {checkpoint.cli_version for checkpoint in checkpoints}
+    if len(cli_versions) != 1:
+        raise ValueError("cli_version mismatch")
+    runtime_boundary = _load_runtime_boundary_checkpoint(
+        runtime_json, scope, next(iter(cli_versions)),
+    )
+    envelope = assemble_v2_envelope(
+        scope,
+        checkpoints,
+        runtime_boundary,
+        audit_generated_at=datetime.now(ZoneInfo(TIMEZONE)),
+    )
+    output_path = output_dir / "bounded_retention_envelope.json"
+    write_json_atomic(output_path, envelope)
+    return output_path
 
 
 def _parser() -> argparse.ArgumentParser:

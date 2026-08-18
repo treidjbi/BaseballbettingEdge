@@ -1,11 +1,15 @@
 from __future__ import annotations
 
+import copy
+import hashlib
 import inspect
 import json
 import subprocess
-from datetime import date, timedelta
+from dataclasses import replace
+from datetime import date, datetime, timedelta
 from pathlib import Path
 from unittest.mock import Mock
+from zoneinfo import ZoneInfo
 
 import pytest
 
@@ -14,6 +18,9 @@ from scripts import bounded_retention_audit as audit
 
 @pytest.fixture(autouse=True)
 def fixed_cli_version(monkeypatch, request):
+    monkeypatch.setattr(
+        audit, "_phoenix_today", lambda: date(2026, 8, 18), raising=False,
+    )
     if request.node.name.startswith("test_resolve_cli_version"):
         return
     monkeypatch.setattr(audit, "resolve_cli_version", Mock(return_value="2.48.3"), raising=False)
@@ -1083,6 +1090,26 @@ def test_run_runtime_boundary_rejects_noncanonical_provider_order_without_file(
     assert list(tmp_path.iterdir()) == []
 
 
+def test_run_runtime_boundary_rejects_stale_phoenix_audit_day_without_file(
+    tmp_path, monkeypatch,
+):
+    scope = audit.build_scope("2026-08-17")
+    payload = valid_runtime_payload(scope)
+    payload["generated_at"] = "2026-08-17T12:00:00-07:00"
+    query = Mock(return_value=subprocess.CompletedProcess(
+        [], 0, json.dumps([{"retention_runtime_boundary": payload}]), "",
+    ))
+    monkeypatch.setattr(audit, "run_linked_query", query)
+    monkeypatch.setattr(audit, "_phoenix_today", lambda: date(2026, 8, 18))
+
+    with pytest.raises(audit.AuditFailure) as exc_info:
+        audit.run_runtime_boundary(scope, tmp_path)
+
+    assert exc_info.value.code == "validation_failed"
+    assert query.call_count == 1
+    assert list(tmp_path.iterdir()) == []
+
+
 @pytest.mark.parametrize(
     "field",
     [
@@ -1213,3 +1240,470 @@ def test_malformed_cli_arguments_return_three_without_query(monkeypatch):
     monkeypatch.setattr(audit, "run_linked_query", query)
     assert audit.main(["run", "--as-of", "2026-08-18", "--timeout", "999"]) == 3
     query.assert_not_called()
+
+
+def assembly_checkpoint(
+    scope: audit.AuditScope,
+    provider: str,
+    start_date: date,
+    end_date: date,
+) -> audit.CheckpointRecord:
+    chunk = audit.ChunkSpec(provider, start_date, end_date)
+    sql = audit.bounded_sql.build_chunk_sql(
+        provider, start_date.isoformat(), end_date.isoformat(),
+    )
+    return audit.CheckpointRecord(
+        path=Path(
+            f"checkpoint-{provider}-{start_date.isoformat()}-{end_date.isoformat()}.json"
+        ),
+        provider=provider,
+        start_date=start_date,
+        end_date=end_date,
+        elapsed_seconds=10.0,
+        query_contract_sha256=audit.bounded_sql.query_contract_sha256(),
+        rendered_sql_sha256=hashlib.sha256(sql.encode("utf-8")).hexdigest(),
+        scope_fingerprint=audit._scope_fingerprint(scope),
+        cli_version="2.48.3",
+        payload=valid_payload(chunk),
+        candidate_end_date=scope.candidate_end_date,
+        provider_allowlist=scope.providers,
+        runner_version=audit.RUNNER_VERSION,
+        query_contract_version=audit.QUERY_CONTRACT_VERSION,
+    )
+
+
+def complete_checkpoints(scope: audit.AuditScope) -> list[audit.CheckpointRecord]:
+    checkpoints: list[audit.CheckpointRecord] = []
+    for provider in scope.providers:
+        cursor = scope.start_date
+        while cursor <= scope.candidate_end_date:
+            end_date = min(cursor + timedelta(days=6), scope.candidate_end_date)
+            checkpoints.append(assembly_checkpoint(scope, provider, cursor, end_date))
+            cursor = end_date + timedelta(days=1)
+    return checkpoints
+
+
+def runtime_for_checkpoints(
+    scope: audit.AuditScope,
+    checkpoints: list[audit.CheckpointRecord],
+) -> dict:
+    payload = {
+        "runtime_version": 2,
+        "generated_at": datetime(
+            scope.as_of_date.year,
+            scope.as_of_date.month,
+            scope.as_of_date.day,
+            12,
+            tzinfo=ZoneInfo("America/Phoenix"),
+        ).isoformat(),
+        "candidate_end_date": scope.candidate_end_date.isoformat(),
+        "providers": [],
+    }
+    for provider in scope.providers:
+        provider_records = [item for item in checkpoints if item.provider == provider]
+        runtime_rows = [
+            row
+            for item in provider_records
+            for row in item.payload["candidate_runtime"]
+        ]
+        candidate_run = max(row["last_run_at"] for row in runtime_rows)
+        candidate_snapshot = max(row["last_snapshot_at"] for row in runtime_rows)
+        payload["providers"].append({
+            "provider": provider,
+            "current_latest_run_at": candidate_run,
+            "current_latest_snapshot_at": candidate_snapshot,
+            "current_latest_heartbeat_at": None,
+            "current_latest_message_at": None,
+            "candidate_latest_run_at": candidate_run,
+            "candidate_latest_snapshot_at": candidate_snapshot,
+            "candidate_latest_heartbeat_at": None,
+            "candidate_latest_message_at": None,
+            "post_boltodds_suspension": False,
+        })
+    return payload
+
+
+@pytest.fixture
+def two_date_two_provider_checkpoint_set():
+    scope = audit.AuditScope(
+        as_of_date=date(2026, 5, 29),
+        start_date=date(2026, 4, 28),
+        candidate_end_date=date(2026, 4, 29),
+        first_protected_date=date(2026, 4, 30),
+        raw_retention_days=30,
+        providers=("boltodds", "propline"),
+    )
+    checkpoints = [
+        assembly_checkpoint(
+            scope, provider, scope.start_date, scope.candidate_end_date,
+        )
+        for provider in scope.providers
+    ]
+    return scope, checkpoints
+
+
+def test_aggregate_candidate_rows_requires_exact_complete_matrix(
+    two_date_two_provider_checkpoint_set,
+):
+    scope, checkpoints = two_date_two_provider_checkpoint_set
+    with pytest.raises(ValueError, match="partition matrix"):
+        audit.aggregate_candidate_rows(checkpoints[:-1], scope)
+
+
+def test_aggregate_candidate_rows_rejects_duplicate_and_overlapping_ranges(
+    two_date_two_provider_checkpoint_set,
+):
+    scope, checkpoints = two_date_two_provider_checkpoint_set
+    with pytest.raises(ValueError, match="overlap"):
+        audit.aggregate_candidate_rows([*checkpoints, checkpoints[0]], scope)
+
+
+@pytest.mark.parametrize(
+    ("field", "replacement", "message"),
+    [
+        ("query_contract_sha256", "0" * 64, "query_contract_sha256"),
+        ("scope_fingerprint", "1" * 64, "scope_fingerprint"),
+        ("cli_version", "2.48.4", "cli_version"),
+        ("rendered_sql_sha256", "2" * 64, "rendered_sql_sha256"),
+    ],
+)
+def test_aggregate_candidate_rows_rejects_mixed_checkpoint_contracts(
+    two_date_two_provider_checkpoint_set, field, replacement, message,
+):
+    scope, checkpoints = two_date_two_provider_checkpoint_set
+    checkpoints[1] = replace(checkpoints[1], **{field: replacement})
+    with pytest.raises(ValueError, match=message):
+        audit.aggregate_candidate_rows(checkpoints, scope)
+
+
+@pytest.mark.parametrize(
+    ("field", "replacement", "message"),
+    [
+        ("candidate_end_date", date(2026, 4, 28), "candidate cutoff"),
+        ("provider_allowlist", ("propline", "boltodds"), "provider allowlist"),
+        ("runner_version", "3", "runner_version"),
+        ("query_contract_version", "different-contract", "query_contract_version"),
+    ],
+)
+def test_aggregate_candidate_rows_rejects_cutoff_allowlist_or_version_drift(
+    two_date_two_provider_checkpoint_set, field, replacement, message,
+):
+    scope, checkpoints = two_date_two_provider_checkpoint_set
+    checkpoints[1] = replace(checkpoints[1], **{field: replacement})
+    with pytest.raises(ValueError, match=message):
+        audit.aggregate_candidate_rows(checkpoints, scope)
+
+
+def test_aggregate_candidate_rows_revalidates_candidate_row_and_byte_equations(
+    two_date_two_provider_checkpoint_set,
+):
+    scope, checkpoints = two_date_two_provider_checkpoint_set
+    altered = copy.deepcopy(checkpoints[0].payload)
+    altered["coverage"][0]["raw_snapshot_rows"] = 3
+    checkpoints[0] = replace(checkpoints[0], payload=altered)
+    with pytest.raises(ValueError, match="runtime snapshot count"):
+        audit.aggregate_candidate_rows(checkpoints, scope)
+
+
+def test_aggregate_candidate_rows_rejects_nonexact_coverage_blocker(
+    two_date_two_provider_checkpoint_set,
+):
+    scope, checkpoints = two_date_two_provider_checkpoint_set
+    altered = copy.deepcopy(checkpoints[0].payload)
+    altered["coverage"][0].update({
+        "exact_group_count": 0,
+        "mismatched_group_count": 1,
+        "first_seen_mismatch_count": 1,
+        "coverage_exact": False,
+    })
+    checkpoints[0] = replace(checkpoints[0], payload=altered)
+    with pytest.raises(ValueError, match="coverage_exact.*blocks completeness"):
+        audit.aggregate_candidate_rows(checkpoints, scope)
+
+
+def test_aggregate_candidate_rows_rejects_unattributed_anomaly(
+    two_date_two_provider_checkpoint_set,
+):
+    scope, checkpoints = two_date_two_provider_checkpoint_set
+    for index, checkpoint in enumerate(checkpoints):
+        altered = copy.deepcopy(checkpoint.payload)
+        altered["source_anomalies"][0]["unknown_provider_rows"] = 1
+        checkpoints[index] = replace(checkpoint, payload=altered)
+    with pytest.raises(ValueError, match="unknown_provider_rows"):
+        audit.aggregate_candidate_rows(checkpoints, scope)
+
+
+def test_aggregate_candidate_rows_rejects_contradictory_repeated_unknown_totals(
+    two_date_two_provider_checkpoint_set,
+):
+    scope, checkpoints = two_date_two_provider_checkpoint_set
+    altered = copy.deepcopy(checkpoints[0].payload)
+    altered["source_anomalies"][0]["unknown_provider_rows"] = 1
+    checkpoints[0] = replace(checkpoints[0], payload=altered)
+    with pytest.raises(ValueError, match="unknown_provider_rows.*identical"):
+        audit.aggregate_candidate_rows(checkpoints, scope)
+
+
+def test_aggregate_candidate_rows_preserves_zero_partitions_and_canonical_order(
+    two_date_two_provider_checkpoint_set,
+):
+    scope, checkpoints = two_date_two_provider_checkpoint_set
+    altered = copy.deepcopy(checkpoints[1].payload)
+    make_zero_partition(altered, index=1)
+    checkpoints[1] = replace(checkpoints[1], payload=altered)
+
+    coverage, anomalies, runtime = audit.aggregate_candidate_rows(checkpoints, scope)
+
+    assert [(row["provider"], row["slate_date"]) for row in coverage] == list(
+        audit.expected_partitions(scope)
+    )
+    assert coverage[-1]["raw_snapshot_rows"] == 0
+    assert [row["provider"] for row in anomalies] == list(scope.providers)
+    assert [row["provider"] for row in runtime] == list(scope.providers)
+    assert runtime[1]["snapshot_count"] == 2
+    assert runtime[1]["snapshot_logical_bytes"] == 20
+
+
+def test_validate_runtime_boundary_requires_current_phoenix_audit_day(
+    two_date_two_provider_checkpoint_set,
+):
+    scope, checkpoints = two_date_two_provider_checkpoint_set
+    runtime_boundary = runtime_for_checkpoints(scope, checkpoints)
+    runtime_boundary["generated_at"] = "2026-05-28T23:59:59-07:00"
+    with pytest.raises(ValueError, match="generated_at.*Phoenix audit day"):
+        audit.validate_runtime_boundary(runtime_boundary, scope)
+
+
+def test_validate_runtime_boundary_rejects_stale_scope_even_when_generation_matches(
+    two_date_two_provider_checkpoint_set, monkeypatch,
+):
+    scope, checkpoints = two_date_two_provider_checkpoint_set
+    runtime_boundary = runtime_for_checkpoints(scope, checkpoints)
+    monkeypatch.setattr(
+        audit, "_phoenix_today", lambda: scope.as_of_date + timedelta(days=1),
+        raising=False,
+    )
+    with pytest.raises(ValueError, match="current Phoenix audit day"):
+        audit.validate_runtime_boundary(runtime_boundary, scope)
+
+
+def test_validate_runtime_boundary_blocks_post_suspension_boltodds_evidence(
+    two_date_two_provider_checkpoint_set, monkeypatch,
+):
+    scope, checkpoints = two_date_two_provider_checkpoint_set
+    monkeypatch.setattr(audit, "_phoenix_today", lambda: scope.as_of_date)
+    runtime_boundary = runtime_for_checkpoints(scope, checkpoints)
+    runtime_boundary["providers"][0].update({
+        "current_latest_snapshot_at": "2026-06-17T17:22:30Z",
+        "post_boltodds_suspension": True,
+    })
+    with pytest.raises(ValueError, match="post_boltodds_suspension"):
+        audit.validate_runtime_boundary(runtime_boundary, scope)
+
+
+def test_assemble_v2_separates_candidate_and_current_runtime():
+    scope = audit.build_scope("2026-08-18")
+    checkpoints = complete_checkpoints(scope)
+    runtime_boundary = runtime_for_checkpoints(scope, checkpoints)
+    runtime_boundary["providers"][1]["current_latest_snapshot_at"] = (
+        "2026-08-18T18:00:00Z"
+    )
+
+    envelope = audit.assemble_v2_envelope(
+        scope,
+        checkpoints,
+        runtime_boundary,
+        audit_generated_at=datetime(
+            2026, 8, 18, 10, 0, tzinfo=ZoneInfo("America/Phoenix"),
+        ),
+    )
+
+    assert envelope["audit_version"] == 2
+    assert envelope["as_of_date"] == "2026-08-18"
+    assert envelope["candidate_scope"] == {
+        "start_date": "2026-04-28",
+        "end_date": "2026-07-19",
+        "raw_retention_days": 30,
+        "providers": ["boltodds", "propline", "the_odds", "therundown"],
+    }
+    assert envelope["protected_scope"]["start_date"] == "2026-07-20"
+    assert envelope["execution"]["complete"] is True
+    assert envelope["execution"]["chunk_ladder_days"] == [1, 3, 7]
+    assert envelope["execution"]["soft_elapsed_seconds"] == 30.0
+    assert envelope["execution"]["cooldown_seconds"] == 30.0
+    assert envelope["execution"]["max_chunk_days"] == 7
+    assert envelope["execution"]["default_max_chunks"] == 1
+    assert envelope["execution"]["hard_max_chunks"] == 5
+    assert len(envelope["execution"]["expected_chunk_ranges"]) == 4
+    assert len(envelope["execution"]["completed_chunk_ranges"]) == len(checkpoints)
+    assert envelope["complete"] is True
+    assert envelope["retention_execution_closed"] is True
+    assert envelope["deletion_approved"] is False
+    assert envelope["season_evidence"] is None
+    assert envelope["pins"] is None
+    assert len(envelope["coverage"]) == len(audit.expected_partitions(scope))
+    assert envelope["candidate_runtime"][1]["last_snapshot_at"] == (
+        "2026-04-28T12:01:00Z"
+    )
+    assert envelope["runtime_boundary"][1]["current_latest_snapshot_at"] == (
+        "2026-08-18T18:00:00Z"
+    )
+
+
+def test_assemble_v2_rejects_runtime_candidate_maximum_contradiction(
+    two_date_two_provider_checkpoint_set, monkeypatch,
+):
+    scope, checkpoints = two_date_two_provider_checkpoint_set
+    monkeypatch.setattr(audit, "_phoenix_today", lambda: scope.as_of_date)
+    runtime_boundary = runtime_for_checkpoints(scope, checkpoints)
+    runtime_boundary["providers"][1]["candidate_latest_snapshot_at"] = (
+        "2026-04-28T12:00:00Z"
+    )
+    with pytest.raises(ValueError, match="candidate_latest_snapshot_at"):
+        audit.assemble_v2_envelope(
+            scope,
+            checkpoints,
+            runtime_boundary,
+            audit_generated_at=datetime(
+                2026, 5, 29, 10, 0, tzinfo=ZoneInfo("America/Phoenix"),
+            ),
+        )
+
+
+def test_assemble_v2_requires_phoenix_aware_generation_timestamp(
+    two_date_two_provider_checkpoint_set,
+):
+    scope, checkpoints = two_date_two_provider_checkpoint_set
+    runtime_boundary = runtime_for_checkpoints(scope, checkpoints)
+    with pytest.raises(ValueError, match="audit_generated_at.*Phoenix"):
+        audit.assemble_v2_envelope(
+            scope,
+            checkpoints,
+            runtime_boundary,
+            audit_generated_at=datetime(2026, 5, 29, 10, 0),
+        )
+
+
+def test_assemble_local_fails_closed_without_complete_matrix(tmp_path):
+    runtime_path = tmp_path / "runtime-boundary-2026-08-18.json"
+    runtime_path.write_text("{}", encoding="utf-8")
+    with pytest.raises(ValueError):
+        audit.assemble_local(audit.build_scope("2026-08-18"), tmp_path, runtime_path)
+    assert not (tmp_path / "bounded_retention_envelope.json").exists()
+
+
+def write_complete_local_evidence(
+    output_dir: Path,
+    scope: audit.AuditScope,
+) -> tuple[list[audit.CheckpointRecord], Path]:
+    checkpoints = complete_checkpoints(scope)
+    for index, checkpoint in enumerate(checkpoints):
+        sql = audit.bounded_sql.build_chunk_sql(
+            checkpoint.provider,
+            checkpoint.start_date.isoformat(),
+            checkpoint.end_date.isoformat(),
+        )
+        started_at = datetime(
+            2026, 8, 18, 12, 0, index, tzinfo=ZoneInfo("America/Phoenix"),
+        )
+        value = audit._checkpoint_value(
+            scope,
+            audit.ChunkSpec(
+                checkpoint.provider, checkpoint.start_date, checkpoint.end_date,
+            ),
+            sql,
+            checkpoint.payload,
+            started_at,
+            started_at + timedelta(seconds=10),
+            10.0,
+            "2.48.3",
+        )
+        audit.write_json_atomic(
+            audit._checkpoint_path(output_dir, audit.ChunkSpec(
+                checkpoint.provider, checkpoint.start_date, checkpoint.end_date,
+            )),
+            value,
+        )
+
+    payload = runtime_for_checkpoints(scope, checkpoints)
+    sql = audit.bounded_sql.build_runtime_boundary_sql(
+        scope.candidate_end_date.isoformat(),
+    )
+    started_at = datetime(
+        2026, 8, 18, 13, 0, tzinfo=ZoneInfo("America/Phoenix"),
+    )
+    runtime_value = {
+        "audit_version": audit.AUDIT_VERSION,
+        "runner_version": audit.RUNNER_VERSION,
+        "cli_version": "2.48.3",
+        "query_contract_version": audit.QUERY_CONTRACT_VERSION,
+        "status": "completed",
+        "complete": True,
+        "sanitized_error": None,
+        "timezone": audit.TIMEZONE,
+        "as_of_date": scope.as_of_date.isoformat(),
+        "start_date": scope.start_date.isoformat(),
+        "candidate_end_date": scope.candidate_end_date.isoformat(),
+        "first_protected_date": scope.first_protected_date.isoformat(),
+        "raw_retention_days": scope.raw_retention_days,
+        "providers": list(scope.providers),
+        "started_at": started_at.isoformat(),
+        "finished_at": (started_at + timedelta(seconds=10)).isoformat(),
+        "elapsed_seconds": 10.0,
+        "query_contract_sha256": audit.bounded_sql.query_contract_sha256(),
+        "rendered_sql_sha256": hashlib.sha256(sql.encode("utf-8")).hexdigest(),
+        "scope_fingerprint": audit._scope_fingerprint(scope),
+        "result_sha256": audit._canonical_sha256(payload),
+        "payload": payload,
+    }
+    runtime_value["checkpoint_integrity_sha256"] = (
+        audit._checkpoint_integrity_sha256(runtime_value)
+    )
+    runtime_path = output_dir / f"runtime-boundary-{scope.as_of_date.isoformat()}.json"
+    audit.write_json_atomic(runtime_path, runtime_value)
+    return checkpoints, runtime_path
+
+
+def test_assemble_local_requires_runtime_boundary_file_with_complete_matrix(tmp_path):
+    scope = audit.build_scope("2026-08-18")
+    write_complete_local_evidence(tmp_path, scope)
+    missing = tmp_path / "runtime-boundary-missing.json"
+    with pytest.raises(ValueError, match="runtime boundary evidence is absent"):
+        audit.assemble_local(scope, tmp_path, missing)
+    assert not (tmp_path / "bounded_retention_envelope.json").exists()
+
+
+def test_assemble_local_writes_only_sanitized_envelope_without_linked_read(
+    tmp_path, monkeypatch,
+):
+    scope = audit.build_scope("2026-08-18")
+    checkpoints, runtime_path = write_complete_local_evidence(tmp_path, scope)
+    before = {path.name for path in tmp_path.iterdir()}
+    query = Mock()
+    monkeypatch.setattr(audit, "run_linked_query", query)
+
+    class FixedDatetime(datetime):
+        @classmethod
+        def now(cls, tz=None):
+            return cls(2026, 8, 18, 10, 0, tzinfo=tz)
+
+    monkeypatch.setattr(audit, "datetime", FixedDatetime)
+
+    output_path = audit.assemble_local(scope, tmp_path, runtime_path)
+
+    assert output_path == tmp_path / "bounded_retention_envelope.json"
+    query.assert_not_called()
+    assert {path.name for path in tmp_path.iterdir()} - before == {
+        "bounded_retention_envelope.json",
+    }
+    envelope = json.loads(output_path.read_text(encoding="utf-8"))
+    assert set(envelope) == {
+        "audit_version", "audit_generated_at", "as_of_date", "timezone",
+        "candidate_scope", "protected_scope", "execution", "coverage",
+        "source_anomalies", "candidate_runtime", "runtime_boundary",
+        "season_evidence", "pins", "complete", "retention_execution_closed",
+        "deletion_approved",
+    }
+    assert len(envelope["execution"]["completed_chunk_ranges"]) == len(checkpoints)
+    assert "payload" not in envelope
+    assert "checkpoint_integrity_sha256" not in envelope
