@@ -124,7 +124,7 @@ def _runtime(**overrides):
         "books_seen": ["fanduel", "betmgm"],
         "first_snapshot_at": "2026-05-07T16:05:00+00:00",
         "last_snapshot_at": "2026-06-16T13:37:44+00:00",
-        "snapshot_count": 611972, "snapshot_logical_bytes": 461536160,
+        "snapshot_count": 100, "snapshot_logical_bytes": 50000,
         "last_heartbeat_at": "2026-06-17T17:20:59+00:00",
         "last_message_at": "2026-06-17T17:20:30+00:00", "heartbeat_count": 51900,
     }
@@ -278,6 +278,33 @@ def test_validate_envelope_rejects_contradictory_runtime_aggregates(runtime_over
     {"last_snapshot_at": "2026-06-01T21:00:00+00:00"},
 ])
 def test_validate_envelope_cross_checks_coverage_against_provider_runtime(
+    runtime_overrides,
+):
+    with pytest.raises(ValueError, match="coverage contradicts provider runtime"):
+        retention.validate_envelope(_envelope(runtime=[_runtime(**runtime_overrides)]))
+
+
+def test_validate_envelope_rejects_zero_anomaly_runtime_without_raw_coverage():
+    envelope = _envelope()
+    envelope["query_scope"]["providers"].append("propline")
+    envelope["source_anomalies"].append({
+        "provider": "propline", "rows_missing_run_id": 0,
+        "rows_missing_run_row": 0, "rows_missing_group_key": 0,
+        "provider_run_mismatch_rows": 0,
+    })
+    envelope["provider_runtime"].append(_runtime(
+        provider="propline", snapshot_count=10, snapshot_logical_bytes=5000,
+    ))
+
+    with pytest.raises(ValueError, match="coverage contradicts provider runtime"):
+        retention.validate_envelope(envelope)
+
+
+@pytest.mark.parametrize("runtime_overrides", [
+    {"snapshot_count": 101},
+    {"snapshot_logical_bytes": 50001},
+])
+def test_validate_envelope_rejects_zero_anomaly_raw_coverage_below_runtime(
     runtime_overrides,
 ):
     with pytest.raises(ValueError, match="coverage contradicts provider runtime"):

@@ -410,6 +410,20 @@ def validate_envelope(
         ):
             raise ValueError("coverage contradicts provider runtime snapshot totals")
 
+    for provider, anomaly_row in anomalies_by_provider.items():
+        if any(anomaly_row[field] > 0 for field in _ANOMALY_INTEGER_FIELDS):
+            continue
+        totals = coverage_totals_by_provider.get(provider, {
+            "raw_snapshot_rows": 0,
+            "raw_logical_bytes": 0,
+        })
+        runtime = runtime_by_provider[provider]
+        if (
+            totals["raw_snapshot_rows"] != runtime["snapshot_count"]
+            or totals["raw_logical_bytes"] != runtime["snapshot_logical_bytes"]
+        ):
+            raise ValueError("coverage contradicts provider runtime snapshot totals")
+
 
 def _index_season_evidence(
     season_evidence: dict[str, Any] | None, *, as_of: date,
