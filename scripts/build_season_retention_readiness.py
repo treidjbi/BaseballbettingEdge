@@ -43,6 +43,11 @@ _RUNTIME_TIMESTAMP_FIELDS = (
     "first_run_at", "last_run_at", "first_snapshot_at", "last_snapshot_at",
     "last_heartbeat_at", "last_message_at",
 )
+_SEASON_EVIDENCE_COUNT_FIELDS = (
+    "official_tracked_picks", "accepted_bets", "sent_notifications",
+    "consumed_locks", "frozen_alt_v2_rows", "operator_incidents",
+    "model_review_pins",
+)
 
 
 def load_query_envelope(
@@ -201,6 +206,9 @@ def _index_season_evidence(season_evidence: dict[str, Any] | None) -> dict[str, 
     if season_evidence is None:
         return {}
     manifest = _require_mapping(season_evidence, "season_evidence")
+    if type(manifest.get("schema_version")) is not int or manifest["schema_version"] != 1:
+        raise ValueError("season_evidence.schema_version must be 1")
+    _parse_timestamp(manifest.get("generated_at"), "season_evidence.generated_at")
     dates = manifest.get("dates")
     if not isinstance(dates, list):
         raise ValueError("season_evidence.dates must be a list")
@@ -210,15 +218,55 @@ def _index_season_evidence(season_evidence: dict[str, Any] | None) -> dict[str, 
         slate_date = _parse_date(row.get("slate_date"), f"season_evidence.dates[{index}].slate_date").isoformat()
         if slate_date in indexed:
             raise ValueError("season_evidence dates must be unique")
-        _require_bool(row.get("decision_linked"), f"season_evidence.dates[{index}].decision_linked")
+        decision_linked = _require_bool(row.get("decision_linked"), f"season_evidence.dates[{index}].decision_linked")
+        evidence_counts = _require_mapping(row.get("evidence_counts"), f"season_evidence.dates[{index}].evidence_counts")
+        for field in _SEASON_EVIDENCE_COUNT_FIELDS:
+            _require_nonnegative_int(evidence_counts.get(field), f"season_evidence.dates[{index}].evidence_counts.{field}")
+        required_evidence = row.get("required_evidence")
+        if decision_linked:
+            required_evidence = _require_mapping(required_evidence, f"season_evidence.dates[{index}].required_evidence")
+        if required_evidence is not None:
+            required_evidence = _require_mapping(required_evidence, f"season_evidence.dates[{index}].required_evidence")
+            for field in REQUIRED_DECISION_EVIDENCE:
+                _require_bool(required_evidence.get(field), f"season_evidence.dates[{index}].required_evidence.{field}")
         indexed[slate_date] = row
     return indexed
+
+
+def _validate_gate_c_manifest(gate_c: dict[str, Any] | None) -> dict[str, Any] | None:
+    if gate_c is None:
+        return None
+    manifest = _require_mapping(gate_c, "gate_c")
+    _require_string(manifest.get("artifact"), "gate_c.artifact")
+    _parse_timestamp(manifest.get("generated_at"), "gate_c.generated_at")
+    for field in ("jsonl_sha256", "summary_sha256"):
+        digest = _require_string(manifest.get(field), f"gate_c.{field}")
+        if re.fullmatch(r"[0-9A-Fa-f]{64}", digest) is None:
+            raise ValueError(f"gate_c.{field} must be a SHA-256 digest")
+    loaded_dates = manifest.get("loaded_slate_dates")
+    if not isinstance(loaded_dates, list):
+        raise ValueError("gate_c.loaded_slate_dates must be a list")
+    normalized_dates = [_parse_date(value, "gate_c.loaded_slate_dates").isoformat() for value in loaded_dates]
+    if len(set(normalized_dates)) != len(normalized_dates):
+        raise ValueError("gate_c.loaded_slate_dates must be unique")
+    reconciliation = _require_mapping(manifest.get("reconciliation"), "gate_c.reconciliation")
+    for field in ("graded_pick_rows", "matched_pick_rows", "unmatched_pick_rows"):
+        _require_nonnegative_int(reconciliation.get(field), f"gate_c.reconciliation.{field}")
+    summary_counts = _require_mapping(manifest.get("summary_counts"), "gate_c.summary_counts")
+    for field in ("rows_missing_result", "tracked_pick_rows"):
+        _require_nonnegative_int(summary_counts.get(field), f"gate_c.summary_counts.{field}")
+    snapshots = _require_mapping(summary_counts.get("context_snapshot_counts"), "gate_c.summary_counts.context_snapshot_counts")
+    _require_nonnegative_int(snapshots.get("official_close"), "gate_c.summary_counts.context_snapshot_counts.official_close")
+    return manifest
 
 
 def _index_pins(pins: dict[str, Any] | None) -> dict[tuple[str, str], dict[str, Any]]:
     if pins is None:
         return {}
     manifest = _require_mapping(pins, "pins")
+    if type(manifest.get("schema_version")) is not int or manifest["schema_version"] != 1:
+        raise ValueError("pins.schema_version must be 1")
+    _parse_timestamp(manifest.get("generated_at"), "pins.generated_at")
     partitions = manifest.get("partitions")
     if not isinstance(partitions, list):
         raise ValueError("pins.partitions must be a list")
@@ -231,8 +279,14 @@ def _index_pins(pins: dict[str, Any] | None) -> dict[tuple[str, str], dict[str, 
         if key in indexed:
             raise ValueError("pin manifest partitions must be unique")
         _require_bool(row.get("reconciled"), f"pins.partitions[{index}].reconciled")
-        if not isinstance(row.get("pins"), list):
+        pin_rows = row.get("pins")
+        if not isinstance(pin_rows, list):
             raise ValueError(f"pins.partitions[{index}].pins must be a list")
+        for pin_index, pin in enumerate(pin_rows):
+            pin = _require_mapping(pin, f"pins.partitions[{index}].pins[{pin_index}]")
+            _require_string(pin.get("reason"), f"pins.partitions[{index}].pins[{pin_index}].reason")
+            _require_string(pin.get("status"), f"pins.partitions[{index}].pins[{pin_index}].status")
+            _require_string(pin.get("preserved_artifact"), f"pins.partitions[{index}].pins[{pin_index}].preserved_artifact")
         indexed[key] = row
     return indexed
 
@@ -258,9 +312,8 @@ def _is_repo_relative(path_value: str) -> bool:
     normalized = path_value.strip().replace("\\", "/")
     return not (
         normalized.startswith("/")
-        or normalized.startswith("../")
-        or "/../" in normalized
         or re.match(r"^[A-Za-z]:", normalized) is not None
+        or any(segment in {".", ".."} for segment in normalized.split("/"))
     )
 
 
@@ -326,6 +379,7 @@ def build_readiness_report(
 ) -> dict[str, Any]:
     """Return evidence-only retention decisions; this function has no execution authority."""
     validate_envelope(envelope)
+    gate_c = _validate_gate_c_manifest(gate_c)
     as_of_date = _parse_date(as_of, "as_of")
     if type(raw_retention_days) is not int or raw_retention_days <= 0:
         raise ValueError("raw_retention_days must be a positive integer")

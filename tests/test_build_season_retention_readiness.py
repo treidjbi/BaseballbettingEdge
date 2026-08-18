@@ -266,3 +266,97 @@ def test_missing_or_unpreserved_pin_evidence_blocks():
         as_of="2026-08-18", raw_retention_days=30,
     )
     assert report["partitions"][0]["decision"] == "blocked_pinned_evidence"
+
+
+@pytest.mark.parametrize("field", ["schema_version", "generated_at"])
+def test_incomplete_season_manifest_contract_cannot_produce_readiness(field):
+    season_evidence = _season_evidence()
+    del season_evidence[field]
+    with pytest.raises(ValueError):
+        retention.build_readiness_report(
+            envelope=_envelope(), gate_c=_gate_c_manifest(),
+            season_evidence=season_evidence, pins=_pins(),
+            as_of="2026-08-18", raw_retention_days=30,
+        )
+
+
+def test_decision_linked_false_still_requires_complete_evidence_counts():
+    season_evidence = _season_evidence()
+    record = season_evidence["dates"][0]
+    record["decision_linked"] = False
+    del record["evidence_counts"]["accepted_bets"]
+    with pytest.raises(ValueError):
+        retention.build_readiness_report(
+            envelope=_envelope(), gate_c=_gate_c_manifest(),
+            season_evidence=season_evidence, pins=_pins(),
+            as_of="2026-08-18", raw_retention_days=30,
+        )
+
+
+def test_complete_decision_linked_false_evidence_can_be_ready_for_review():
+    season_evidence = _season_evidence()
+    record = season_evidence["dates"][0]
+    record["decision_linked"] = False
+    del record["required_evidence"]
+    report = retention.build_readiness_report(
+        envelope=_envelope(), gate_c=_gate_c_manifest(),
+        season_evidence=season_evidence, pins=_pins(),
+        as_of="2026-08-18", raw_retention_days=30,
+    )
+    assert report["partitions"][0]["decision"] == "ready_for_retention_review"
+
+
+@pytest.mark.parametrize("field", ["artifact", "generated_at", "jsonl_sha256", "summary_sha256"])
+def test_incomplete_gate_c_manifest_cannot_produce_readiness(field):
+    gate_c = _gate_c_manifest()
+    del gate_c[field]
+    with pytest.raises(ValueError):
+        retention.build_readiness_report(
+            envelope=_envelope(), gate_c=gate_c,
+            season_evidence=_season_evidence(), pins=_pins(),
+            as_of="2026-08-18", raw_retention_days=30,
+        )
+
+
+@pytest.mark.parametrize("artifact", [".", "data/.."])
+def test_root_resolving_pin_path_cannot_be_preserved(artifact):
+    pins = _pins()
+    pins["partitions"][0]["pins"][0]["preserved_artifact"] = artifact
+    report = retention.build_readiness_report(
+        envelope=_envelope(), gate_c=_gate_c_manifest(),
+        season_evidence=_season_evidence(), pins=pins,
+        as_of="2026-08-18", raw_retention_days=30,
+    )
+    assert report["partitions"][0]["decision"] == "blocked_pinned_evidence"
+
+
+@pytest.mark.parametrize("field", ["schema_version", "generated_at"])
+def test_incomplete_pin_manifest_contract_cannot_produce_readiness(field):
+    pins = _pins()
+    del pins[field]
+    with pytest.raises(ValueError):
+        retention.build_readiness_report(
+            envelope=_envelope(), gate_c=_gate_c_manifest(),
+            season_evidence=_season_evidence(), pins=pins,
+            as_of="2026-08-18", raw_retention_days=30,
+        )
+
+
+def test_pin_without_reason_cannot_produce_readiness():
+    pins = _pins()
+    del pins["partitions"][0]["pins"][0]["reason"]
+    with pytest.raises(ValueError):
+        retention.build_readiness_report(
+            envelope=_envelope(), gate_c=_gate_c_manifest(),
+            season_evidence=_season_evidence(), pins=pins,
+            as_of="2026-08-18", raw_retention_days=30,
+        )
+
+
+def test_missing_gate_c_manifest_blocks_outcome_evidence():
+    report = retention.build_readiness_report(
+        envelope=_envelope(), gate_c=None,
+        season_evidence=_season_evidence(), pins=_pins(),
+        as_of="2026-08-18", raw_retention_days=30,
+    )
+    assert report["partitions"][0]["decision"] == "blocked_outcome_evidence"
