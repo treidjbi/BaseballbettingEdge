@@ -1,0 +1,707 @@
+from __future__ import annotations
+
+import json
+import subprocess
+from datetime import date, timedelta
+from pathlib import Path
+from unittest.mock import Mock
+
+import pytest
+
+from scripts import bounded_retention_audit as audit
+
+
+def make_checkpoint(
+    provider: str,
+    start_date: date,
+    days: int,
+    elapsed_seconds: float,
+) -> audit.CheckpointRecord:
+    end_date = start_date + timedelta(days=days - 1)
+    return audit.CheckpointRecord(
+        path=Path(f"checkpoint-{provider}-{start_date}-{end_date}.json"),
+        provider=provider,
+        start_date=start_date,
+        end_date=end_date,
+        elapsed_seconds=elapsed_seconds,
+        query_contract_sha256="a" * 64,
+        rendered_sql_sha256="b" * 64,
+        scope_fingerprint="c" * 64,
+        cli_version=audit.CLI_VERSION,
+        payload={},
+    )
+
+
+def valid_payload(chunk: audit.ChunkSpec) -> dict:
+    coverage = []
+    anomalies = []
+    runtime = []
+    cursor = chunk.start_date
+    while cursor <= chunk.end_date:
+        slate_date = cursor.isoformat()
+        coverage.append({
+            "slate_date": slate_date,
+            "provider": chunk.provider,
+            "raw_snapshot_rows": 2,
+            "raw_logical_bytes": 20,
+            "raw_group_count": 1,
+            "compact_group_count": 1,
+            "exact_group_count": 1,
+            "mismatched_group_count": 0,
+            "missing_compact_group_count": 0,
+            "unexpected_compact_group_count": 0,
+            "duplicate_compact_group_count": 0,
+            "first_seen_mismatch_count": 0,
+            "last_seen_mismatch_count": 0,
+            "first_odds_mismatch_count": 0,
+            "last_odds_mismatch_count": 0,
+            "min_odds_mismatch_count": 0,
+            "max_odds_mismatch_count": 0,
+            "odds_move_count_mismatch_count": 0,
+            "snapshot_count_mismatch_count": 0,
+            "coverage_exact": True,
+            "first_raw_seen_at": "2026-04-28T12:00:00Z",
+            "last_raw_seen_at": "2026-04-28T12:01:00Z",
+        })
+        anomalies.append({
+            "slate_date": slate_date,
+            "provider": chunk.provider,
+            "rows_missing_run_id": 0,
+            "rows_missing_run_row": 0,
+            "rows_missing_group_key": 0,
+            "provider_run_mismatch_rows": 0,
+            "slate_date_mismatch_rows": 0,
+            "unknown_provider_rows": 0,
+        })
+        runtime.append({
+            "slate_date": slate_date,
+            "provider": chunk.provider,
+            "first_run_at": "2026-04-28T12:00:00Z",
+            "last_run_at": "2026-04-28T12:01:00Z",
+            "run_count": 1,
+            "completed_run_count": 1,
+            "failed_run_count": 0,
+            "request_count": 1,
+            "books_seen": ["fanduel"],
+            "first_snapshot_at": "2026-04-28T12:00:00Z",
+            "last_snapshot_at": "2026-04-28T12:01:00Z",
+            "snapshot_count": 2,
+            "snapshot_logical_bytes": 20,
+            "last_heartbeat_at": None,
+            "last_message_at": None,
+            "heartbeat_count": 0,
+        })
+        cursor += timedelta(days=1)
+    return {
+        "chunk_version": 2,
+        "audit_generated_at": "2026-08-18T12:00:00Z",
+        "complete": True,
+        "query_scope": {
+            "start_date": chunk.start_date.isoformat(),
+            "end_date": chunk.end_date.isoformat(),
+            "provider": chunk.provider,
+            "timezone": "America/Phoenix",
+        },
+        "coverage": coverage,
+        "source_anomalies": anomalies,
+        "candidate_runtime": runtime,
+    }
+
+
+def valid_runtime_payload(scope: audit.AuditScope) -> dict:
+    return {
+        "runtime_version": 2,
+        "generated_at": "2026-08-18T12:00:00Z",
+        "candidate_end_date": scope.candidate_end_date.isoformat(),
+        "providers": [
+            {
+                "provider": provider,
+                "current_latest_run_at": None,
+                "current_latest_snapshot_at": None,
+                "current_latest_heartbeat_at": None,
+                "current_latest_message_at": None,
+                "candidate_latest_run_at": None,
+                "candidate_latest_snapshot_at": None,
+                "candidate_latest_heartbeat_at": None,
+                "candidate_latest_message_at": None,
+                "post_boltodds_suspension": False,
+            }
+            for provider in scope.providers
+        ],
+    }
+
+
+@pytest.fixture
+def checkpoint_factory():
+    def factory(provider: str, days: int, elapsed: float) -> audit.CheckpointRecord:
+        return make_checkpoint(provider, date(2026, 4, 28), days, elapsed)
+
+    return factory
+
+
+def test_build_scope_uses_clean_regime_and_inclusive_thirty_day_cutoff():
+    scope = audit.build_scope("2026-08-18")
+    assert scope == audit.AuditScope(
+        as_of_date=date(2026, 8, 18),
+        start_date=date(2026, 4, 28),
+        candidate_end_date=date(2026, 7, 19),
+        first_protected_date=date(2026, 7, 20),
+        raw_retention_days=30,
+        providers=("boltodds", "propline", "the_odds", "therundown"),
+    )
+
+
+def test_expected_partitions_has_every_provider_date_in_canonical_order():
+    scope = audit.build_scope("2026-05-28")
+    assert audit.expected_partitions(scope) == (
+        ("boltodds", "2026-04-28"),
+        ("propline", "2026-04-28"),
+        ("the_odds", "2026-04-28"),
+        ("therundown", "2026-04-28"),
+    )
+
+
+@pytest.mark.parametrize(
+    ("previous_days", "elapsed", "expected"),
+    [
+        (1, 29.9, 3),
+        (3, 30.0, 7),
+        (7, 2.0, 7),
+        (1, 30.1, 1),
+        (3, 31.0, 1),
+        (7, 31.0, 3),
+    ],
+)
+def test_preferred_chunk_days_promotes_fast_and_deescalates_slow(
+    checkpoint_factory, previous_days, elapsed, expected,
+):
+    checkpoints = [checkpoint_factory("boltodds", previous_days, elapsed)]
+    assert audit.preferred_chunk_days(checkpoints, "boltodds") == expected
+
+
+def test_select_next_chunk_starts_each_new_provider_with_one_date():
+    scope = audit.build_scope("2026-06-03")
+    checkpoints: list[audit.CheckpointRecord] = []
+
+    for provider in scope.providers:
+        chunk = audit.select_next_chunk(scope, checkpoints)
+        assert chunk == audit.ChunkSpec(provider, scope.start_date, scope.start_date)
+        checkpoints.append(
+            make_checkpoint(
+                provider,
+                scope.start_date,
+                (scope.candidate_end_date - scope.start_date).days + 1,
+                10.0,
+            )
+        )
+
+    assert audit.select_next_chunk(scope, checkpoints) is None
+
+
+def test_select_next_chunk_uses_earliest_gap_and_stops_before_existing_range():
+    scope = audit.build_scope("2026-06-08")
+    checkpoints = [
+        make_checkpoint("boltodds", date(2026, 4, 28), 1, 10.0),
+        make_checkpoint("boltodds", date(2026, 5, 2), 3, 10.0),
+    ]
+    assert audit.select_next_chunk(scope, checkpoints) == audit.ChunkSpec(
+        "boltodds", date(2026, 4, 29), date(2026, 5, 1),
+    )
+
+
+def test_select_next_chunk_never_overlaps_or_exceeds_seven_dates():
+    scope = audit.build_scope("2026-06-20")
+    checkpoints = [
+        make_checkpoint("boltodds", date(2026, 4, 28), 7, 2.0),
+    ]
+    chunk = audit.select_next_chunk(scope, checkpoints)
+    assert chunk == audit.ChunkSpec("boltodds", date(2026, 5, 5), date(2026, 5, 11))
+    assert chunk.days == 7
+
+
+def test_run_linked_query_uses_fixed_safe_argv_temp_file_and_timeout(monkeypatch):
+    completed = subprocess.CompletedProcess([], 0, stdout="[]", stderr="")
+    run = Mock(return_value=completed)
+    unlinked: list[str] = []
+    monkeypatch.setattr(audit.shutil, "which", lambda name: "C:/bin/npx.cmd" if name == "npx" else None)
+    monkeypatch.setattr(audit.subprocess, "run", run)
+    monkeypatch.setattr(audit.os, "unlink", lambda path: unlinked.append(path))
+
+    result = audit.run_linked_query("select 1;")
+
+    assert result is completed
+    argv = run.call_args.args[0]
+    assert argv[:5] == ["C:/bin/npx.cmd", "supabase", "db", "query", "--linked"]
+    assert argv[5] == "--file"
+    assert argv[7:] == ["-o", "json"]
+    assert Path(argv[6]).suffix == ".sql"
+    assert run.call_args.kwargs == {
+        "check": False,
+        "capture_output": True,
+        "text": True,
+        "shell": False,
+        "timeout": 120,
+    }
+    assert unlinked == [argv[6]]
+    Path(argv[6]).unlink(missing_ok=True)
+
+
+def test_run_linked_query_closes_mocked_temp_file_before_subprocess(monkeypatch):
+    class FakeSqlFile:
+        name = "C:/temp/bounded-audit.sql"
+        closed = False
+        contents = ""
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *_args):
+            self.closed = True
+
+        def write(self, value):
+            self.contents += value
+
+    sql_file = FakeSqlFile()
+    named_temp = Mock(return_value=sql_file)
+    unlink = Mock()
+
+    def checked_run(argv, **_kwargs):
+        assert sql_file.closed is True
+        assert sql_file.contents == "select 1;"
+        assert argv[6] == sql_file.name
+        return subprocess.CompletedProcess(argv, 0, "[]", "")
+
+    monkeypatch.setattr(audit.tempfile, "NamedTemporaryFile", named_temp)
+    monkeypatch.setattr(audit.shutil, "which", lambda _name: "npx")
+    monkeypatch.setattr(audit.subprocess, "run", checked_run)
+    monkeypatch.setattr(audit.os, "unlink", unlink)
+
+    audit.run_linked_query("select 1;")
+
+    assert named_temp.call_args.kwargs == {
+        "mode": "w",
+        "suffix": ".sql",
+        "delete": False,
+        "encoding": "utf-8",
+        "newline": "\n",
+    }
+    unlink.assert_called_once_with(sql_file.name)
+
+
+def test_parse_supabase_object_requires_one_row_and_object_column():
+    assert audit.parse_supabase_object('[{"result": {"complete": true}}]', "result") == {
+        "complete": True,
+    }
+    for stdout in ("[]", "[{}, {}]", '[{"result": "{}"}]'):
+        with pytest.raises(ValueError):
+            audit.parse_supabase_object(stdout, "result")
+
+
+def test_validate_chunk_payload_accepts_exact_partitions_and_equations():
+    chunk = audit.ChunkSpec("propline", date(2026, 5, 1), date(2026, 5, 3))
+    audit.validate_chunk_payload(valid_payload(chunk), chunk)
+
+
+@pytest.mark.parametrize(
+    ("mutate", "message"),
+    [
+        (lambda payload: payload["coverage"].pop(), "coverage partitions"),
+        (lambda payload: payload["coverage"][0].update(raw_snapshot_rows=-1), "non-negative integer"),
+        (lambda payload: payload["coverage"][0].update(raw_group_count=2), "raw group equation"),
+        (lambda payload: payload["coverage"][0].update(coverage_exact=False), "coverage_exact"),
+        (lambda payload: payload["candidate_runtime"][0].update(snapshot_count=3), "runtime snapshot"),
+    ],
+)
+def test_validate_chunk_payload_rejects_missing_negative_or_contradictory_aggregates(
+    mutate, message,
+):
+    chunk = audit.ChunkSpec("propline", date(2026, 5, 1), date(2026, 5, 2))
+    payload = valid_payload(chunk)
+    mutate(payload)
+    with pytest.raises(ValueError, match=message):
+        audit.validate_chunk_payload(payload, chunk)
+
+
+def test_write_json_atomic_replaces_only_after_closed_valid_temp_file(tmp_path, monkeypatch):
+    target = tmp_path / "checkpoint.json"
+    real_replace = audit.os.replace
+    observations: list[tuple[Path, Path, dict]] = []
+
+    def checked_replace(source, destination):
+        source_path = Path(source)
+        with source_path.open("r", encoding="utf-8") as handle:
+            parsed = json.load(handle)
+        observations.append((source_path, Path(destination), parsed))
+        real_replace(source, destination)
+
+    monkeypatch.setattr(audit.os, "replace", checked_replace)
+    audit.write_json_atomic(target, {"safe": True})
+    assert observations[0][1:] == (target, {"safe": True})
+    assert json.loads(target.read_text(encoding="utf-8")) == {"safe": True}
+
+
+def test_write_json_atomic_never_replaces_after_serialization_failure(tmp_path, monkeypatch):
+    replace = Mock()
+    monkeypatch.setattr(audit.os, "replace", replace)
+    with pytest.raises(TypeError):
+        audit.write_json_atomic(tmp_path / "checkpoint.json", {"bad": object()})
+    replace.assert_not_called()
+    assert list(tmp_path.iterdir()) == []
+
+
+@pytest.mark.parametrize(
+    ("result_or_error", "expected_code"),
+    [
+        (subprocess.CompletedProcess([], 1, "", "ERROR 53100"), "postgres_53100"),
+        (subprocess.CompletedProcess([], 1, "", "ERROR 57014"), "postgres_57014"),
+        (subprocess.CompletedProcess([], 1, "", "ECIRCUITBREAKER"), "pooler_circuit_breaker"),
+        (subprocess.CompletedProcess([], 1, "", "authentication failed"), "authentication_error"),
+        (subprocess.TimeoutExpired(["npx"], 120), "timeout"),
+        (subprocess.CompletedProcess([], 1, "", "other failure"), "subprocess_failed"),
+        (subprocess.CompletedProcess([], 0, "", ""), "empty_stdout"),
+        (subprocess.CompletedProcess([], 0, "not-json", ""), "malformed_json"),
+    ],
+)
+def test_run_chunks_classifies_failure_once_without_checkpoint(
+    tmp_path, monkeypatch, result_or_error, expected_code,
+):
+    query = Mock()
+    if isinstance(result_or_error, BaseException):
+        query.side_effect = result_or_error
+    else:
+        query.return_value = result_or_error
+    monkeypatch.setattr(audit, "run_linked_query", query)
+
+    with pytest.raises(audit.AuditFailure) as exc_info:
+        audit.run_chunks(audit.build_scope("2026-08-18"), tmp_path)
+
+    assert exc_info.value.code == expected_code
+    assert query.call_count == 1
+    assert list(tmp_path.glob("checkpoint-*.json")) == []
+
+
+def test_run_chunks_classifies_validation_failure_once_without_checkpoint(tmp_path, monkeypatch):
+    chunk = audit.ChunkSpec("boltodds", date(2026, 4, 28), date(2026, 4, 28))
+    payload = valid_payload(chunk)
+    payload["coverage"][0]["coverage_exact"] = False
+    query = Mock(return_value=subprocess.CompletedProcess(
+        [], 0, json.dumps([{"retention_bounded_chunk": payload}]), "",
+    ))
+    monkeypatch.setattr(audit, "run_linked_query", query)
+
+    with pytest.raises(audit.AuditFailure) as exc_info:
+        audit.run_chunks(audit.build_scope("2026-08-18"), tmp_path)
+
+    assert exc_info.value.code == "validation_failed"
+    assert query.call_count == 1
+    assert list(tmp_path.glob("checkpoint-*.json")) == []
+
+
+def test_run_chunks_rejects_non_directory_output_before_query(tmp_path, monkeypatch):
+    output_file = tmp_path / "not-a-directory"
+    output_file.write_text("occupied", encoding="utf-8")
+    query = Mock()
+    monkeypatch.setattr(audit, "run_linked_query", query)
+
+    with pytest.raises(ValueError, match="output directory"):
+        audit.run_chunks(audit.build_scope("2026-08-18"), output_file)
+
+    query.assert_not_called()
+
+
+def test_run_chunks_writes_bound_checkpoint_and_exactly_thirty_second_cooldown(
+    tmp_path, monkeypatch,
+):
+    first = audit.ChunkSpec("boltodds", date(2026, 4, 28), date(2026, 4, 28))
+    second = audit.ChunkSpec("boltodds", date(2026, 4, 29), date(2026, 5, 1))
+    results = [
+        subprocess.CompletedProcess(
+            [], 0, json.dumps([{"retention_bounded_chunk": valid_payload(first)}]), "",
+        ),
+        subprocess.CompletedProcess(
+            [], 0, json.dumps([{"retention_bounded_chunk": valid_payload(second)}]), "",
+        ),
+    ]
+    query = Mock(side_effect=results)
+    sleep = Mock()
+    clock = iter((100.0, 110.0, 200.0, 210.0))
+    monkeypatch.setattr(audit, "run_linked_query", query)
+    monkeypatch.setattr(audit.time, "sleep", sleep)
+    monkeypatch.setattr(audit.time, "perf_counter", lambda: next(clock))
+
+    written = audit.run_chunks(
+        audit.build_scope("2026-08-18"), tmp_path, max_chunks=2,
+    )
+
+    assert [(item.start_date, item.end_date) for item in written] == [
+        (first.start_date, first.end_date),
+        (second.start_date, second.end_date),
+    ]
+    sleep.assert_called_once_with(30.0)
+    files = sorted(tmp_path.glob("checkpoint-*.json"))
+    assert len(files) == 2
+    saved = json.loads(files[0].read_text(encoding="utf-8"))
+    assert saved["audit_version"] == 2
+    assert saved["providers"] == ["boltodds", "propline", "the_odds", "therundown"]
+    assert saved["status"] == "completed"
+    assert saved["complete"] is True
+    assert saved["sanitized_error"] is None
+    assert saved["row_count"] == 1
+    assert saved["partition_count"] == 1
+    assert saved["query_contract_sha256"] == audit.bounded_sql.query_contract_sha256()
+    assert len(saved["rendered_sql_sha256"]) == 64
+    assert len(saved["scope_fingerprint"]) == 64
+    assert len(saved["result_sha256"]) == 64
+    assert saved["payload"] == valid_payload(first)
+
+
+def test_run_chunks_saves_slow_success_then_stops_without_sleep(tmp_path, monkeypatch):
+    chunk = audit.ChunkSpec("boltodds", date(2026, 4, 28), date(2026, 4, 28))
+    query = Mock(return_value=subprocess.CompletedProcess(
+        [], 0, json.dumps([{"retention_bounded_chunk": valid_payload(chunk)}]), "",
+    ))
+    sleep = Mock()
+    clock = iter((100.0, 130.1))
+    monkeypatch.setattr(audit, "run_linked_query", query)
+    monkeypatch.setattr(audit.time, "sleep", sleep)
+    monkeypatch.setattr(audit.time, "perf_counter", lambda: next(clock))
+
+    written = audit.run_chunks(audit.build_scope("2026-08-18"), tmp_path, max_chunks=5)
+
+    assert len(written) == 1
+    assert query.call_count == 1
+    sleep.assert_not_called()
+    assert len(list(tmp_path.glob("checkpoint-*.json"))) == 1
+
+
+def test_load_valid_checkpoints_resumes_only_exact_bound_evidence(tmp_path, monkeypatch):
+    chunk = audit.ChunkSpec("boltodds", date(2026, 4, 28), date(2026, 4, 28))
+    query = Mock(return_value=subprocess.CompletedProcess(
+        [], 0, json.dumps([{"retention_bounded_chunk": valid_payload(chunk)}]), "",
+    ))
+    clock = iter((100.0, 110.0))
+    scope = audit.build_scope("2026-08-18")
+    monkeypatch.setattr(audit, "run_linked_query", query)
+    monkeypatch.setattr(audit.time, "perf_counter", lambda: next(clock))
+    audit.run_chunks(scope, tmp_path)
+
+    records = audit.load_valid_checkpoints(tmp_path, scope)
+
+    assert len(records) == 1
+    assert records[0].provider == "boltodds"
+    assert records[0].start_date == date(2026, 4, 28)
+    assert records[0].end_date == date(2026, 4, 28)
+    assert audit.select_next_chunk(scope, records) == audit.ChunkSpec(
+        "boltodds", date(2026, 4, 29), date(2026, 5, 1),
+    )
+
+
+@pytest.mark.parametrize("tamper", ["payload", "scope", "hash", "filename"])
+def test_load_valid_checkpoints_rejects_tampered_stale_or_foreign_evidence(
+    tmp_path, monkeypatch, tamper,
+):
+    chunk = audit.ChunkSpec("boltodds", date(2026, 4, 28), date(2026, 4, 28))
+    query = Mock(return_value=subprocess.CompletedProcess(
+        [], 0, json.dumps([{"retention_bounded_chunk": valid_payload(chunk)}]), "",
+    ))
+    clock = iter((100.0, 110.0))
+    scope = audit.build_scope("2026-08-18")
+    monkeypatch.setattr(audit, "run_linked_query", query)
+    monkeypatch.setattr(audit.time, "perf_counter", lambda: next(clock))
+    audit.run_chunks(scope, tmp_path)
+    path = next(tmp_path.glob("checkpoint-*.json"))
+    saved = json.loads(path.read_text(encoding="utf-8"))
+    if tamper == "payload":
+        saved["payload"]["coverage"][0]["raw_snapshot_rows"] = 99
+    elif tamper == "scope":
+        saved["as_of_date"] = "2026-08-17"
+    elif tamper == "hash":
+        saved["query_contract_sha256"] = "0" * 64
+    else:
+        path.rename(tmp_path / "checkpoint-propline-2026-04-28-2026-04-28.json")
+        path = tmp_path / "checkpoint-propline-2026-04-28-2026-04-28.json"
+    if tamper != "filename":
+        path.write_text(json.dumps(saved), encoding="utf-8")
+
+    with pytest.raises(ValueError, match="checkpoint"):
+        audit.load_valid_checkpoints(tmp_path, scope)
+
+
+def test_load_valid_checkpoints_rejects_malformed_json(tmp_path):
+    (tmp_path / "checkpoint-boltodds-2026-04-28-2026-04-28.json").write_text(
+        "{truncated", encoding="utf-8",
+    )
+    with pytest.raises(ValueError, match="checkpoint"):
+        audit.load_valid_checkpoints(tmp_path, audit.build_scope("2026-08-18"))
+
+
+def test_run_chunks_fails_closed_on_malformed_resume_without_query(tmp_path, monkeypatch):
+    (tmp_path / "checkpoint-boltodds-2026-04-28-2026-04-28.json").write_text(
+        "{truncated", encoding="utf-8",
+    )
+    query = Mock()
+    monkeypatch.setattr(audit, "run_linked_query", query)
+
+    with pytest.raises(ValueError, match="checkpoint"):
+        audit.run_chunks(audit.build_scope("2026-08-18"), tmp_path)
+
+    query.assert_not_called()
+
+
+def test_load_valid_checkpoints_rejects_overlapping_ranges(tmp_path, monkeypatch):
+    scope = audit.build_scope("2026-08-18")
+    chunks = (
+        audit.ChunkSpec("boltodds", date(2026, 4, 28), date(2026, 4, 30)),
+        audit.ChunkSpec("boltodds", date(2026, 4, 30), date(2026, 5, 1)),
+    )
+    for index, chunk in enumerate(chunks):
+        sql = audit.bounded_sql.build_chunk_sql(
+            chunk.provider, chunk.start_date.isoformat(), chunk.end_date.isoformat(),
+        )
+        value = audit._checkpoint_value(
+            scope,
+            chunk,
+            sql,
+            valid_payload(chunk),
+            audit.datetime(2026, 8, 18, 12, index, tzinfo=audit.timezone.utc),
+            audit.datetime(2026, 8, 18, 12, index, 10, tzinfo=audit.timezone.utc),
+            10.0,
+        )
+        audit.write_json_atomic(audit._checkpoint_path(tmp_path, chunk), value)
+
+    with pytest.raises(ValueError, match="checkpoint validation failed"):
+        audit.load_valid_checkpoints(tmp_path, scope)
+
+
+def test_cli_help_lists_only_bounded_commands_and_no_dangerous_controls(capsys):
+    assert audit.main(["--help"]) == 0
+    help_text = capsys.readouterr().out
+    for command in ("run", "runtime-boundary", "assemble"):
+        assert command in help_text
+    for forbidden in (
+        "--timeout", "--provider", "--sql", "--execute", "--delete",
+        "--backfill", "--vacuum", "--allow-linked-read",
+    ):
+        assert forbidden not in help_text
+
+
+@pytest.mark.parametrize("command", ["run", "runtime-boundary"])
+def test_linked_cli_commands_require_explicit_acknowledgement(command, tmp_path, monkeypatch):
+    query = Mock()
+    monkeypatch.setattr(audit, "run_linked_query", query)
+    assert audit.main([
+        command,
+        "--as-of", "2026-08-18",
+        "--output-dir", str(tmp_path),
+    ]) == 3
+    query.assert_not_called()
+
+
+def test_run_cli_requires_extra_acknowledgement_above_one_chunk(tmp_path, monkeypatch):
+    run = Mock()
+    monkeypatch.setattr(audit, "run_chunks", run)
+    assert audit.main([
+        "run", "--as-of", "2026-08-18", "--output-dir", str(tmp_path),
+        "--run-linked-read", "--max-chunks", "2",
+    ]) == 3
+    run.assert_not_called()
+
+
+@pytest.mark.parametrize("value", ["0", "6", "not-a-number"])
+def test_run_cli_rejects_chunk_caps_outside_one_to_five(value, tmp_path, monkeypatch):
+    run = Mock()
+    monkeypatch.setattr(audit, "run_chunks", run)
+    assert audit.main([
+        "run", "--as-of", "2026-08-18", "--output-dir", str(tmp_path),
+        "--run-linked-read", "--max-chunks", value, "--allow-multi-chunk",
+    ]) == 3
+    run.assert_not_called()
+
+
+def test_run_cli_routes_only_validated_scope_and_cap(tmp_path, monkeypatch):
+    run = Mock(return_value=[])
+    monkeypatch.setattr(audit, "run_chunks", run)
+    assert audit.main([
+        "run", "--as-of", "2026-08-18", "--output-dir", str(tmp_path),
+        "--run-linked-read", "--max-chunks", "2", "--allow-multi-chunk",
+    ]) == 0
+    scope, output_dir = run.call_args.args
+    assert scope == audit.build_scope("2026-08-18")
+    assert output_dir == tmp_path
+    assert run.call_args.kwargs == {"max_chunks": 2}
+
+
+def test_runtime_boundary_cli_routes_through_separate_acknowledged_read(tmp_path, monkeypatch):
+    run = Mock(return_value=tmp_path / "runtime-boundary-2026-08-18.json")
+    monkeypatch.setattr(audit, "run_runtime_boundary", run)
+    assert audit.main([
+        "runtime-boundary", "--as-of", "2026-08-18",
+        "--output-dir", str(tmp_path), "--run-linked-read",
+    ]) == 0
+    run.assert_called_once_with(audit.build_scope("2026-08-18"), tmp_path)
+
+
+def test_run_runtime_boundary_writes_separate_validated_atomic_evidence(tmp_path, monkeypatch):
+    scope = audit.build_scope("2026-08-18")
+    payload = valid_runtime_payload(scope)
+    query = Mock(return_value=subprocess.CompletedProcess(
+        [], 0, json.dumps([{"retention_runtime_boundary": payload}]), "",
+    ))
+    clock = iter((100.0, 110.0))
+    monkeypatch.setattr(audit, "run_linked_query", query)
+    monkeypatch.setattr(audit.time, "perf_counter", lambda: next(clock))
+
+    path = audit.run_runtime_boundary(scope, tmp_path)
+
+    assert path == tmp_path / "runtime-boundary-2026-08-18.json"
+    saved = json.loads(path.read_text(encoding="utf-8"))
+    assert saved["payload"] == payload
+    assert saved["elapsed_seconds"] == 10.0
+    assert saved["candidate_end_date"] == "2026-07-19"
+    assert saved["status"] == "completed"
+    assert saved["sanitized_error"] is None
+    assert len(saved["rendered_sql_sha256"]) == 64
+    assert query.call_count == 1
+
+
+def test_run_runtime_boundary_rejects_noncanonical_provider_order_without_file(
+    tmp_path, monkeypatch,
+):
+    scope = audit.build_scope("2026-08-18")
+    payload = valid_runtime_payload(scope)
+    payload["providers"].reverse()
+    query = Mock(return_value=subprocess.CompletedProcess(
+        [], 0, json.dumps([{"retention_runtime_boundary": payload}]), "",
+    ))
+    monkeypatch.setattr(audit, "run_linked_query", query)
+
+    with pytest.raises(audit.AuditFailure) as exc_info:
+        audit.run_runtime_boundary(scope, tmp_path)
+
+    assert exc_info.value.code == "validation_failed"
+    assert query.call_count == 1
+    assert list(tmp_path.iterdir()) == []
+
+
+def test_assemble_cli_is_local_only_and_never_calls_linked_query(tmp_path, monkeypatch):
+    runtime_path = tmp_path / "runtime.json"
+    runtime_path.write_text("{}", encoding="utf-8")
+    assemble = Mock(return_value=None)
+    query = Mock()
+    monkeypatch.setattr(audit, "assemble_local", assemble)
+    monkeypatch.setattr(audit, "run_linked_query", query)
+    assert audit.main([
+        "assemble", "--as-of", "2026-08-18", "--output-dir", str(tmp_path),
+        "--runtime-json", str(runtime_path),
+    ]) == 0
+    assemble.assert_called_once_with(
+        audit.build_scope("2026-08-18"), tmp_path, runtime_path,
+    )
+    query.assert_not_called()
+
+
+def test_malformed_cli_arguments_return_three_without_query(monkeypatch):
+    query = Mock()
+    monkeypatch.setattr(audit, "run_linked_query", query)
+    assert audit.main(["run", "--as-of", "2026-08-18", "--timeout", "999"]) == 3
+    query.assert_not_called()
