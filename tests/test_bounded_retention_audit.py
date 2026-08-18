@@ -393,6 +393,28 @@ def test_validate_chunk_payload_accepts_exact_partitions_and_equations():
 
 
 @pytest.mark.parametrize(
+    ("target", "injected_key"),
+    [
+        ("payload", "raw_checkpoint_rows"),
+        ("coverage", "raw_checkpoint_rows"),
+        ("source_anomalies", "authorization"),
+        ("candidate_runtime", "cleanup_sql"),
+    ],
+)
+def test_validate_chunk_payload_rejects_unknown_nested_evidence_fields(
+    target, injected_key,
+):
+    chunk = audit.ChunkSpec("propline", date(2026, 5, 1), date(2026, 5, 1))
+    payload = valid_payload(chunk)
+    if target == "payload":
+        payload[injected_key] = [{"sensitive": True}]
+    else:
+        payload[target][0][injected_key] = "must-not-flow"
+    with pytest.raises(ValueError, match=rf"{target}.*{injected_key}"):
+        audit.validate_chunk_payload(payload, chunk)
+
+
+@pytest.mark.parametrize(
     ("mutate", "message"),
     [
         (lambda payload: payload["coverage"].pop(), "coverage partitions"),
@@ -1132,6 +1154,27 @@ def test_runtime_payload_requires_every_current_and_candidate_boundary(field):
 
 
 @pytest.mark.parametrize(
+    ("target", "injected_key"),
+    [
+        ("payload", "raw_checkpoint_rows"),
+        ("provider", "authorization"),
+        ("provider", "cleanup_sql"),
+    ],
+)
+def test_runtime_payload_rejects_unknown_nested_evidence_fields(
+    target, injected_key,
+):
+    scope = audit.build_scope("2026-08-18")
+    payload = valid_runtime_payload(scope)
+    if target == "payload":
+        payload[injected_key] = [{"sensitive": True}]
+    else:
+        payload["providers"][0][injected_key] = "must-not-flow"
+    with pytest.raises(ValueError, match=rf"runtime {target}.*{injected_key}"):
+        audit._validate_runtime_payload(payload, scope)
+
+
+@pytest.mark.parametrize(
     "value",
     ["not-a-timestamp", "2026-06-17T17:22:30"],
 )
@@ -1548,6 +1591,52 @@ def test_assemble_v2_separates_candidate_and_current_runtime():
     assert envelope["runtime_boundary"][1]["current_latest_snapshot_at"] == (
         "2026-08-18T18:00:00Z"
     )
+    assert set(envelope["coverage"][0]) == {
+        "slate_date", "provider", "raw_snapshot_rows", "raw_logical_bytes",
+        "raw_group_count", "compact_group_count", "exact_group_count",
+        "mismatched_group_count", "missing_compact_group_count",
+        "unexpected_compact_group_count", "duplicate_compact_group_count",
+        "first_seen_mismatch_count", "last_seen_mismatch_count",
+        "first_odds_mismatch_count", "last_odds_mismatch_count",
+        "min_odds_mismatch_count", "max_odds_mismatch_count",
+        "odds_move_count_mismatch_count", "snapshot_count_mismatch_count",
+        "first_raw_seen_at", "last_raw_seen_at", "coverage_exact",
+    }
+    assert set(envelope["source_anomalies"][0]) == {
+        "provider", "rows_missing_run_id", "rows_missing_run_row",
+        "rows_missing_group_key", "provider_run_mismatch_rows",
+        "slate_date_mismatch_rows", "unknown_provider_rows",
+    }
+    assert set(envelope["candidate_runtime"][0]) == {
+        "provider", "first_run_at", "last_run_at", "run_count",
+        "completed_run_count", "failed_run_count", "request_count",
+        "books_seen", "first_snapshot_at", "last_snapshot_at",
+        "snapshot_count", "snapshot_logical_bytes", "last_heartbeat_at",
+        "last_message_at", "heartbeat_count",
+    }
+    assert set(envelope["runtime_boundary"][0]) == {
+        "provider", "current_latest_run_at", "current_latest_snapshot_at",
+        "current_latest_heartbeat_at", "current_latest_message_at",
+        "candidate_latest_run_at", "candidate_latest_snapshot_at",
+        "candidate_latest_heartbeat_at", "candidate_latest_message_at",
+        "post_boltodds_suspension",
+    }
+
+
+def test_assemble_v2_rejects_runtime_boundary_provider_injection():
+    scope = audit.build_scope("2026-08-18")
+    checkpoints = complete_checkpoints(scope)
+    runtime_boundary = runtime_for_checkpoints(scope, checkpoints)
+    runtime_boundary["providers"][0]["raw_checkpoint_rows"] = [{"secret": True}]
+    with pytest.raises(ValueError, match="runtime provider.*raw_checkpoint_rows"):
+        audit.assemble_v2_envelope(
+            scope,
+            checkpoints,
+            runtime_boundary,
+            audit_generated_at=datetime(
+                2026, 8, 18, 10, 0, tzinfo=ZoneInfo("America/Phoenix"),
+            ),
+        )
 
 
 def test_assemble_v2_rejects_runtime_candidate_maximum_contradiction(

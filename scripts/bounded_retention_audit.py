@@ -95,6 +95,49 @@ _RUNTIME_BOUNDARY_PAIRS = (
     ("current_latest_heartbeat_at", "candidate_latest_heartbeat_at"),
     ("current_latest_message_at", "candidate_latest_message_at"),
 )
+_CHUNK_PAYLOAD_FIELDS = (
+    "chunk_version",
+    "audit_generated_at",
+    "complete",
+    "query_scope",
+    "coverage",
+    "source_anomalies",
+    "candidate_runtime",
+)
+_COVERAGE_FIELDS = (
+    "slate_date",
+    "provider",
+    *_COVERAGE_COUNTS,
+    "first_raw_seen_at",
+    "last_raw_seen_at",
+    "coverage_exact",
+)
+_ANOMALY_FIELDS = ("slate_date", "provider", *_ANOMALY_COUNTS)
+_CANDIDATE_RUNTIME_FIELDS = (
+    "slate_date",
+    "provider",
+    "first_run_at",
+    "last_run_at",
+    *_RUNTIME_COUNTS[:4],
+    "books_seen",
+    "first_snapshot_at",
+    "last_snapshot_at",
+    *_RUNTIME_COUNTS[4:6],
+    "last_heartbeat_at",
+    "last_message_at",
+    _RUNTIME_COUNTS[6],
+)
+_RUNTIME_PAYLOAD_FIELDS = (
+    "runtime_version",
+    "generated_at",
+    "candidate_end_date",
+    "providers",
+)
+_RUNTIME_PROVIDER_FIELDS = (
+    "provider",
+    *_RUNTIME_BOUNDARY_FIELDS,
+    "post_boltodds_suspension",
+)
 
 
 @dataclass(frozen=True)
@@ -289,6 +332,18 @@ def _require_nonnegative_integers(record: dict[str, Any], fields: tuple[str, ...
             raise ValueError(f"{field} must be a non-negative integer")
 
 
+def _reject_unknown_fields(
+    record: dict[str, Any],
+    allowed_fields: tuple[str, ...],
+    label: str,
+) -> None:
+    unexpected = sorted(set(record) - set(allowed_fields))
+    if unexpected:
+        raise ValueError(
+            f"{label} has unexpected fields: {', '.join(unexpected)}"
+        )
+
+
 def _parse_nullable_timestamp(record: dict[str, Any], field: str) -> datetime | None:
     if field not in record:
         raise ValueError(f"required timestamp field is missing: {field}")
@@ -354,6 +409,7 @@ def _records_by_partition(
 def validate_chunk_payload(payload: dict[str, Any], chunk: ChunkSpec) -> None:
     if not isinstance(payload, dict):
         raise ValueError("chunk payload must be an object")
+    _reject_unknown_fields(payload, _CHUNK_PAYLOAD_FIELDS, "payload")
     if payload.get("chunk_version") != AUDIT_VERSION or payload.get("complete") is not True:
         raise ValueError("chunk payload version or completion status is invalid")
     if _parse_nullable_timestamp(payload, "audit_generated_at") is None:
@@ -372,6 +428,7 @@ def validate_chunk_payload(payload: dict[str, Any], chunk: ChunkSpec) -> None:
     anomalies = _records_by_partition(payload, "source_anomalies", chunk)
     runtime = _records_by_partition(payload, "candidate_runtime", chunk)
     for slate_date, row in coverage.items():
+        _reject_unknown_fields(row, _COVERAGE_FIELDS, "coverage record")
         _require_nonnegative_integers(row, _COVERAGE_COUNTS)
         if row["raw_group_count"] > row["raw_snapshot_rows"]:
             raise ValueError("raw groups cannot exceed snapshots")
@@ -414,8 +471,14 @@ def validate_chunk_payload(payload: dict[str, Any], chunk: ChunkSpec) -> None:
             raise ValueError("coverage_exact does not match blocker counts")
 
         anomaly_row = anomalies[slate_date]
+        _reject_unknown_fields(
+            anomaly_row, _ANOMALY_FIELDS, "source_anomalies record",
+        )
         _require_nonnegative_integers(anomaly_row, _ANOMALY_COUNTS)
         runtime_row = runtime[slate_date]
+        _reject_unknown_fields(
+            runtime_row, _CANDIDATE_RUNTIME_FIELDS, "candidate_runtime record",
+        )
         _require_nonnegative_integers(runtime_row, _RUNTIME_COUNTS)
         if runtime_row["completed_run_count"] + runtime_row["failed_run_count"] > runtime_row["run_count"]:
             raise ValueError("runtime run counts are inconsistent")
@@ -903,7 +966,10 @@ def aggregate_candidate_rows(
             if partition in occupied:
                 raise ValueError("checkpoint ranges overlap")
             occupied.add(partition)
-            coverage_by_partition[partition] = dict(coverage_rows[slate_date])
+            coverage_by_partition[partition] = {
+                field: coverage_rows[slate_date][field]
+                for field in _COVERAGE_FIELDS
+            }
             anomalies_by_partition[partition] = dict(anomaly_rows[slate_date])
             runtime_by_partition[partition] = dict(runtime_rows[slate_date])
 
@@ -1040,6 +1106,9 @@ def aggregate_candidate_rows(
 
 
 def _validate_runtime_payload(payload: dict[str, Any], scope: AuditScope) -> None:
+    if not isinstance(payload, dict):
+        raise ValueError("runtime payload must be an object")
+    _reject_unknown_fields(payload, _RUNTIME_PAYLOAD_FIELDS, "runtime payload")
     if payload.get("runtime_version") != AUDIT_VERSION:
         raise ValueError("runtime payload version is invalid")
     if _parse_nullable_timestamp(payload, "generated_at") is None:
@@ -1053,6 +1122,9 @@ def _validate_runtime_payload(payload: dict[str, Any], scope: AuditScope) -> Non
     for row in providers:
         if not isinstance(row, dict) or row.get("provider") not in scope.providers:
             raise ValueError("runtime provider record is invalid")
+        _reject_unknown_fields(
+            row, _RUNTIME_PROVIDER_FIELDS, "runtime provider record",
+        )
         provider = row["provider"]
         if provider in seen:
             raise ValueError("runtime provider record is duplicated")
@@ -1225,7 +1297,10 @@ def assemble_v2_envelope(
         "coverage": coverage,
         "source_anomalies": source_anomalies,
         "candidate_runtime": candidate_runtime,
-        "runtime_boundary": runtime_boundary["providers"],
+        "runtime_boundary": [
+            {field: row[field] for field in _RUNTIME_PROVIDER_FIELDS}
+            for row in runtime_boundary["providers"]
+        ],
         "season_evidence": None,
         "pins": None,
         "complete": True,
