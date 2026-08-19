@@ -67,7 +67,16 @@ _ANOMALY_INTEGER_FIELDS = (
     "provider_run_mismatch_rows",
 )
 _V2_ANOMALY_INTEGER_FIELDS = (
-    *_ANOMALY_INTEGER_FIELDS, "slate_date_mismatch_rows", "unknown_provider_rows",
+    *_ANOMALY_INTEGER_FIELDS,
+    "slate_date_mismatch_rows",
+    "preserved_slate_date_mismatch_rows",
+    "unpreserved_slate_date_mismatch_rows",
+    "unknown_provider_rows",
+)
+_V2_BLOCKING_ANOMALY_INTEGER_FIELDS = (
+    *_ANOMALY_INTEGER_FIELDS,
+    "unpreserved_slate_date_mismatch_rows",
+    "unknown_provider_rows",
 )
 _RUNTIME_INTEGER_FIELDS = (
     "run_count", "completed_run_count", "failed_run_count", "request_count",
@@ -719,6 +728,11 @@ def _validate_v2_envelope(
             raise ValueError("source_anomalies providers must be unique")
         for field in _V2_ANOMALY_INTEGER_FIELDS:
             _require_nonnegative_int(row.get(field), f"source_anomalies[{index}].{field}")
+        if row["slate_date_mismatch_rows"] != (
+            row["preserved_slate_date_mismatch_rows"]
+            + row["unpreserved_slate_date_mismatch_rows"]
+        ):
+            raise ValueError("cross-date preservation equation is inconsistent")
         anomalies_by_provider[provider] = row
     if list(anomalies_by_provider) != providers:
         raise ValueError("source_anomalies must contain the canonical provider matrix")
@@ -1162,7 +1176,9 @@ def _coverage_reason_codes(
     if row["coverage_exact"] is not True:
         reasons.append("coverage_not_exact")
     anomaly_fields = (
-        _V2_ANOMALY_INTEGER_FIELDS if audit_version == 2 else _ANOMALY_INTEGER_FIELDS
+        _V2_BLOCKING_ANOMALY_INTEGER_FIELDS
+        if audit_version == 2
+        else _ANOMALY_INTEGER_FIELDS
     )
     reasons.extend(field for field in anomaly_fields if anomalies[field] > 0)
     return reasons
@@ -1254,7 +1270,7 @@ def build_readiness_report(
         decision_counts[decision] = decision_counts.get(decision, 0) + 1
 
     gate_c_summary = gate_c if isinstance(gate_c, dict) else {}
-    return {
+    report = {
         "report_type": "season_retention_readiness",
         "generated_at": datetime.now(timezone.utc).isoformat(),
         "as_of": as_of_date.isoformat(),
@@ -1275,6 +1291,12 @@ def build_readiness_report(
         "partitions": partitions,
         "provider_summaries": _provider_summaries(partitions, raw_retention_days),
     }
+    if audit_version == 2:
+        report["source_anomalies"] = [
+            {field: row[field] for field in _V2_ANOMALY_FIELDS}
+            for row in envelope["source_anomalies"]
+        ]
+    return report
 
 
 def _provider_summaries(
@@ -1430,7 +1452,9 @@ def build_boltodds_closure(
     if coverage_totals["mismatched_group_count"] > 0:
         gaps.append("mismatched_group_count")
     anomaly_fields = (
-        _V2_ANOMALY_INTEGER_FIELDS if audit_version == 2 else _ANOMALY_INTEGER_FIELDS
+        _V2_BLOCKING_ANOMALY_INTEGER_FIELDS
+        if audit_version == 2
+        else _ANOMALY_INTEGER_FIELDS
     )
     for field in anomaly_fields:
         if anomalies[field] > 0:
@@ -1547,6 +1571,12 @@ def build_boltodds_closure(
             "official artifacts, picks, models, notifications, locks, UI, or retention execution."
         ),
     }
+    if audit_version == 2:
+        report["source_anomalies"] = {
+            field: anomalies[field]
+            for field in _V2_ANOMALY_FIELDS
+            if field != "provider"
+        }
     if current_runtime_boundary is not None:
         report["current_runtime_boundary"] = {
             field: current_runtime_boundary[field]
@@ -1585,6 +1615,11 @@ def render_boltodds_markdown(report: dict[str, Any]) -> str:
         f"- Raw rows / logical bytes: `{totals['raw_snapshot_rows']} / {totals['raw_logical_bytes']}`",
         f"- Exact / raw groups: `{totals['exact_group_count']} / {totals['raw_group_count']}`",
         f"- Missing / mismatched groups: `{totals['missing_compact_group_count']} / {totals['mismatched_group_count']}`",
+        *(
+            [f"- Source anomalies: `{json.dumps(report['source_anomalies'], sort_keys=True)}`"]
+            if "source_anomalies" in report
+            else []
+        ),
         f"- Decision-impact counts: `{json.dumps(report['decision_impact_counts'], sort_keys=True)}`",
         f"- Outcome preservation summary: `{json.dumps(report['outcome_preservation_summary'], sort_keys=True)}`",
         f"- Pin preservation summary: `{json.dumps(report['pin_preservation_summary'], sort_keys=True)}`",

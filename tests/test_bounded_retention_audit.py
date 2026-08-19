@@ -87,6 +87,8 @@ def valid_payload(chunk: audit.ChunkSpec) -> dict:
             "rows_missing_group_key": 0,
             "provider_run_mismatch_rows": 0,
             "slate_date_mismatch_rows": 0,
+            "preserved_slate_date_mismatch_rows": 0,
+            "unpreserved_slate_date_mismatch_rows": 0,
             "unknown_provider_rows": 0,
         })
         runtime.append({
@@ -424,6 +426,31 @@ def test_validate_chunk_payload_rejects_unknown_nested_evidence_fields(
     else:
         payload[target][0][injected_key] = "must-not-flow"
     with pytest.raises(ValueError, match=rf"{target}.*{injected_key}"):
+        audit.validate_chunk_payload(payload, chunk)
+
+
+def test_validate_chunk_payload_accepts_fully_preserved_cross_date_lineage():
+    chunk = audit.ChunkSpec("boltodds", date(2026, 4, 28), date(2026, 4, 28))
+    payload = valid_payload(chunk)
+    payload["source_anomalies"][0].update({
+        "slate_date_mismatch_rows": 2,
+        "preserved_slate_date_mismatch_rows": 2,
+        "unpreserved_slate_date_mismatch_rows": 0,
+    })
+
+    audit.validate_chunk_payload(payload, chunk)
+
+
+def test_validate_chunk_payload_rejects_cross_date_preservation_equation():
+    chunk = audit.ChunkSpec("boltodds", date(2026, 4, 28), date(2026, 4, 28))
+    payload = valid_payload(chunk)
+    payload["source_anomalies"][0].update({
+        "slate_date_mismatch_rows": 2,
+        "preserved_slate_date_mismatch_rows": 1,
+        "unpreserved_slate_date_mismatch_rows": 0,
+    })
+
+    with pytest.raises(ValueError, match="cross-date preservation equation"):
         audit.validate_chunk_payload(payload, chunk)
 
 
@@ -1506,6 +1533,42 @@ def test_aggregate_candidate_rows_rejects_unattributed_anomaly(
         audit.aggregate_candidate_rows(checkpoints, scope)
 
 
+def test_aggregate_candidate_rows_allows_fully_preserved_cross_date_lineage(
+    two_date_two_provider_checkpoint_set,
+):
+    scope, checkpoints = two_date_two_provider_checkpoint_set
+    altered = copy.deepcopy(checkpoints[0].payload)
+    altered["source_anomalies"][0].update({
+        "slate_date_mismatch_rows": 2,
+        "preserved_slate_date_mismatch_rows": 2,
+        "unpreserved_slate_date_mismatch_rows": 0,
+    })
+    checkpoints[0] = replace(checkpoints[0], payload=altered)
+
+    _coverage, anomalies, _runtime = audit.aggregate_candidate_rows(checkpoints, scope)
+
+    boltodds = next(row for row in anomalies if row["provider"] == "boltodds")
+    assert boltodds["slate_date_mismatch_rows"] == 2
+    assert boltodds["preserved_slate_date_mismatch_rows"] == 2
+    assert boltodds["unpreserved_slate_date_mismatch_rows"] == 0
+
+
+def test_aggregate_candidate_rows_rejects_unpreserved_cross_date_lineage(
+    two_date_two_provider_checkpoint_set,
+):
+    scope, checkpoints = two_date_two_provider_checkpoint_set
+    altered = copy.deepcopy(checkpoints[0].payload)
+    altered["source_anomalies"][0].update({
+        "slate_date_mismatch_rows": 1,
+        "preserved_slate_date_mismatch_rows": 0,
+        "unpreserved_slate_date_mismatch_rows": 1,
+    })
+    checkpoints[0] = replace(checkpoints[0], payload=altered)
+
+    with pytest.raises(ValueError, match="unpreserved_slate_date_mismatch_rows"):
+        audit.aggregate_candidate_rows(checkpoints, scope)
+
+
 def test_aggregate_candidate_rows_rejects_contradictory_repeated_unknown_totals(
     two_date_two_provider_checkpoint_set,
 ):
@@ -1635,7 +1698,8 @@ def test_assemble_v2_separates_candidate_and_current_runtime():
     assert set(envelope["source_anomalies"][0]) == {
         "provider", "rows_missing_run_id", "rows_missing_run_row",
         "rows_missing_group_key", "provider_run_mismatch_rows",
-        "slate_date_mismatch_rows", "unknown_provider_rows",
+        "slate_date_mismatch_rows", "preserved_slate_date_mismatch_rows",
+        "unpreserved_slate_date_mismatch_rows", "unknown_provider_rows",
     }
     assert set(envelope["candidate_runtime"][0]) == {
         "provider", "first_run_at", "last_run_at", "run_count",

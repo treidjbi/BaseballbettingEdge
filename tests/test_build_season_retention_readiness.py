@@ -290,6 +290,8 @@ def _v2_envelope():
             "provider": provider, "rows_missing_run_id": 0,
             "rows_missing_run_row": 0, "rows_missing_group_key": 0,
             "provider_run_mismatch_rows": 0, "slate_date_mismatch_rows": 0,
+            "preserved_slate_date_mismatch_rows": 0,
+            "unpreserved_slate_date_mismatch_rows": 0,
             "unknown_provider_rows": 0,
         } for provider in providers],
         "candidate_runtime": candidate_runtime,
@@ -552,11 +554,13 @@ def test_v2_rejects_candidate_runtime_row_or_byte_mismatch(field):
 
 
 @pytest.mark.parametrize(
-    "field", ["slate_date_mismatch_rows", "unknown_provider_rows"],
+    "field", ["unpreserved_slate_date_mismatch_rows", "unknown_provider_rows"],
 )
 def test_v2_new_unattributed_anomalies_block_readiness_and_closure(field):
     envelope = _v2_envelope()
     envelope["source_anomalies"][0][field] = 1
+    if field == "unpreserved_slate_date_mismatch_rows":
+        envelope["source_anomalies"][0]["slate_date_mismatch_rows"] = 1
 
     report = retention.build_readiness_report(
         envelope=envelope, gate_c=_v2_gate_c_manifest(),
@@ -574,6 +578,50 @@ def test_v2_new_unattributed_anomalies_block_readiness_and_closure(field):
     assert field in boltodds["reason_codes"]
     assert closure["status"] == "incomplete_evidence"
     assert field in closure["unresolved_evidence_gaps"]
+
+
+def test_v2_preserved_cross_date_lineage_is_visible_without_blocking():
+    envelope = _v2_envelope()
+    envelope["source_anomalies"][0].update({
+        "slate_date_mismatch_rows": 1,
+        "preserved_slate_date_mismatch_rows": 1,
+        "unpreserved_slate_date_mismatch_rows": 0,
+    })
+
+    report = retention.build_readiness_report(
+        envelope=envelope, gate_c=_v2_gate_c_manifest(),
+        season_evidence=_v2_season_evidence(), pins=_v2_pins(),
+        as_of="2026-05-29", raw_retention_days=30,
+    )
+    closure = retention.build_boltodds_closure(
+        envelope=envelope, gate_c=_v2_gate_c_manifest(),
+        season_evidence=_v2_season_evidence(), pins=_v2_pins(),
+        as_of="2026-05-29",
+    )
+
+    boltodds = [row for row in report["partitions"] if row["provider"] == "boltodds"]
+    assert {row["decision"] for row in boltodds} == {"ready_for_retention_review"}
+    assert all("slate_date_mismatch_rows" not in row["reason_codes"] for row in boltodds)
+    report_anomalies = next(
+        row for row in report["source_anomalies"] if row["provider"] == "boltodds"
+    )
+    assert report_anomalies["slate_date_mismatch_rows"] == 1
+    assert report_anomalies["preserved_slate_date_mismatch_rows"] == 1
+    assert closure["status"] == "ready_for_retirement_review"
+    assert closure["source_anomalies"]["slate_date_mismatch_rows"] == 1
+    assert closure["source_anomalies"]["preserved_slate_date_mismatch_rows"] == 1
+
+
+def test_v2_rejects_cross_date_preservation_equation():
+    envelope = _v2_envelope()
+    envelope["source_anomalies"][0].update({
+        "slate_date_mismatch_rows": 2,
+        "preserved_slate_date_mismatch_rows": 1,
+        "unpreserved_slate_date_mismatch_rows": 0,
+    })
+
+    with pytest.raises(ValueError, match="cross-date preservation equation"):
+        retention.validate_envelope(envelope, as_of=date.fromisoformat("2026-05-29"))
 
 
 def test_v2_rejects_stale_runtime_boundary_generation_day():
@@ -1474,6 +1522,7 @@ def test_boltodds_closure_preserves_trial_facts_without_runtime_authority():
     assert closure["runtime_reactivation_approved"] is False
     assert closure["retention_execution_closed"] is True
     assert closure["deletion_approved"] is False
+    assert "source_anomalies" not in closure
     assert closure["decision_impact_counts"] == {
         "official_tracked_picks": 2,
         "accepted_bets": 1,

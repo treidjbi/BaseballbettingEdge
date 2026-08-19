@@ -16,8 +16,10 @@ results while keeping retention execution, database writes, production changes,
 and deletion closed.
 
 This specification changes how the existing Phase 1 audit is read and
-assembled. It does not change what evidence is required before a provider-date
-partition can reach `ready_for_retention_review`.
+assembled. The 2026-08-19 preserved-lineage amendment below narrows one anomaly
+classification without weakening preservation: a historical cross-date row is
+informational only when an exact compact group proves its source ID and time
+range; any unpreserved cross-date row still blocks readiness.
 
 ## Business Outcome
 
@@ -177,6 +179,27 @@ slate dates. The query must:
    normalized-player boundary; and
 4. normalize grouping fields only after the indexed date/run boundary is
    established.
+
+### Preserved historical cross-date lineage
+
+The audit must keep the original `slate_date_mismatch_rows` count visible and
+split it into two exhaustive counters:
+
+- `preserved_slate_date_mismatch_rows`; and
+- `unpreserved_slate_date_mismatch_rows`.
+
+Their sum must equal `slate_date_mismatch_rows` in every chunk and in the final
+provider aggregate. A cross-date row is preserved only when a compact row keyed
+to the provider run's original `run_slate_date` and normalized market group:
+
+1. contains the raw snapshot ID in `source_snapshot_ids`; and
+2. covers the raw `observed_at` inside its `first_seen_at` / `last_seen_at`
+   bounds.
+
+The total and preserved counters are informational. A nonzero unpreserved
+counter is a hard completeness blocker. Missing run linkage, missing group
+keys, provider/run disagreement, unknown providers, and all compact-coverage
+mismatches remain hard blockers. Version 1 behavior is unchanged.
 
 Index-driving predicates must not wrap date, provider, or run identifiers in
 `lower`, `trim`, casts, or other functions. The SQL may normalize fields in a

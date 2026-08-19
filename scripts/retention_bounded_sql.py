@@ -104,6 +104,30 @@ bounded_observed_source as (
     and ms.observed_at >= settings.observed_start
     and ms.observed_at < settings.observed_end
 ),
+bounded_observed_lineage as (
+  select
+    bounded_observed_source.*,
+    (
+      run_row_id is not null
+      and run_slate_date is distinct from observed_slate_date
+      and exists (
+        select 1
+        from public.compact_market_line_movements cmlm
+        where cmlm.slate_date = bounded_observed_source.run_slate_date
+          and cmlm.provider = lower(trim(bounded_observed_source.run_provider))
+          and cmlm.book_key = lower(trim(bounded_observed_source.bookmaker_key))
+          and cmlm.normalized_player_name = trim(bounded_observed_source.normalized_player_name)
+          and cmlm.market_key
+              = coalesce(nullif(trim(bounded_observed_source.market_key), ''), 'pitcher_strikeouts')
+          and cmlm.side = lower(trim(bounded_observed_source.side))
+          and cmlm.line::numeric = bounded_observed_source.line::numeric
+          and jsonb_typeof(cmlm.source_snapshot_ids) = 'array'
+          and cmlm.source_snapshot_ids ? bounded_observed_source.snapshot_id::text
+          and bounded_observed_source.observed_at between cmlm.first_seen_at and cmlm.last_seen_at
+      )
+    ) as slate_date_mismatch_preserved
+  from bounded_observed_source
+),
 bounded_run_source as (
   select
     mpr.slate_date,
@@ -348,8 +372,18 @@ anomaly_counts as (
     )::bigint as provider_run_mismatch_rows,
     count(*) filter (
       where run_row_id is not null and run_slate_date is distinct from observed_slate_date
-    )::bigint as slate_date_mismatch_rows
-  from bounded_observed_source
+    )::bigint as slate_date_mismatch_rows,
+    count(*) filter (
+      where run_row_id is not null
+        and run_slate_date is distinct from observed_slate_date
+        and slate_date_mismatch_preserved
+    )::bigint as preserved_slate_date_mismatch_rows,
+    count(*) filter (
+      where run_row_id is not null
+        and run_slate_date is distinct from observed_slate_date
+        and not slate_date_mismatch_preserved
+    )::bigint as unpreserved_slate_date_mismatch_rows
+  from bounded_observed_lineage
   group by observed_slate_date
 ),
 source_anomalies as (
@@ -361,6 +395,8 @@ source_anomalies as (
     coalesce(anomaly_counts.rows_missing_group_key, 0)::bigint as rows_missing_group_key,
     coalesce(anomaly_counts.provider_run_mismatch_rows, 0)::bigint as provider_run_mismatch_rows,
     coalesce(anomaly_counts.slate_date_mismatch_rows, 0)::bigint as slate_date_mismatch_rows,
+    coalesce(anomaly_counts.preserved_slate_date_mismatch_rows, 0)::bigint as preserved_slate_date_mismatch_rows,
+    coalesce(anomaly_counts.unpreserved_slate_date_mismatch_rows, 0)::bigint as unpreserved_slate_date_mismatch_rows,
     coalesce(all_provider_anomalies.unknown_provider_rows, 0)::bigint as unknown_provider_rows
   from requested_partitions
   left join anomaly_counts on anomaly_counts.slate_date = requested_partitions.slate_date

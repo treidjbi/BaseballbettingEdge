@@ -79,10 +79,35 @@ def test_chunk_sql_emits_explicit_zeros_and_all_exact_metrics():
         "snapshot_count_mismatch_count", "coverage_exact",
         "rows_missing_run_id", "rows_missing_run_row",
         "rows_missing_group_key", "provider_run_mismatch_rows",
-        "slate_date_mismatch_rows", "unknown_provider_rows",
+        "slate_date_mismatch_rows", "preserved_slate_date_mismatch_rows",
+        "unpreserved_slate_date_mismatch_rows", "unknown_provider_rows",
         "candidate_runtime", "retention_bounded_chunk",
     ):
         assert field in sql
+
+
+def test_chunk_sql_requires_source_id_and_time_bounds_for_preserved_cross_date_lineage():
+    sql = bounded_sql.build_chunk_sql("boltodds", "2026-06-11", "2026-06-11").lower()
+    lineage_sql = sql.split("bounded_observed_lineage as (", 1)[1].split(
+        "bounded_run_source as (", 1
+    )[0]
+
+    assert "cmlm.slate_date = bounded_observed_source.run_slate_date" in sql
+    assert "cmlm.provider = lower(trim(bounded_observed_source.run_provider))" in sql
+    assert "cmlm.book_key = lower(trim(bounded_observed_source.bookmaker_key))" in sql
+    assert (
+        "cmlm.normalized_player_name = "
+        "trim(bounded_observed_source.normalized_player_name)"
+    ) in sql
+    assert "lower(trim(cmlm.provider))" not in lineage_sql
+    assert "lower(trim(cmlm.book_key))" not in lineage_sql
+    assert "trim(cmlm.normalized_player_name)" not in lineage_sql
+    assert "jsonb_typeof(cmlm.source_snapshot_ids) = 'array'" in sql
+    assert "cmlm.source_snapshot_ids ? bounded_observed_source.snapshot_id::text" in sql
+    assert (
+        "bounded_observed_source.observed_at between cmlm.first_seen_at "
+        "and cmlm.last_seen_at"
+    ) in sql
 
 
 def test_assert_select_only_rejects_multiple_statements_and_mutations():

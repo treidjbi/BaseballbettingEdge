@@ -914,6 +914,25 @@ Expected: clean commit verification, no unintended worktree changes, and no push
   Gate 4, retention activation, deletion, vacuum, and storage reclamation remain
   closed until that contract is implemented, reviewed, and verified.
 
+### Phase 2 Preserved-Lineage Contract — 2026-08-19
+
+- A local-only version 2 audit amendment now retains the original cross-date
+  mismatch count and adds preserved/unpreserved counters with an exact sum
+  equation. Preserved status requires the original run-date compact group,
+  exact raw snapshot ID membership, and first/last time-bound coverage.
+- Readiness and BoltOdds closure treat only the unpreserved counter as blocking;
+  the total and preserved counters remain visible evidence. All other anomaly,
+  coverage, runtime, decision-linkage, outcome, and pin blockers are unchanged,
+  and version 1 behavior is unchanged.
+- The rendered SQL change invalidates prior chunk checkpoints through the
+  existing query-contract hash. No version bypass, checkpoint rewrite, schema
+  migration, dependency, provider/runtime change, or production behavior change
+  was introduced.
+- Focused retention verification passed `380` tests. This is code-level proof
+  only: no linked query, Gate 4 invocation, retention activation, deletion,
+  vacuum, or storage reclamation was run. A fresh live audit remains a separate
+  approval boundary.
+
 ---
 
 ## Separate Live-Validation Gates — Not Authorized by This Plan

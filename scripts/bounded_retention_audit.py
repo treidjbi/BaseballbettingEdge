@@ -68,6 +68,16 @@ _ANOMALY_COUNTS = (
     "rows_missing_group_key",
     "provider_run_mismatch_rows",
     "slate_date_mismatch_rows",
+    "preserved_slate_date_mismatch_rows",
+    "unpreserved_slate_date_mismatch_rows",
+    "unknown_provider_rows",
+)
+_BLOCKING_ANOMALY_COUNTS = (
+    "rows_missing_run_id",
+    "rows_missing_run_row",
+    "rows_missing_group_key",
+    "provider_run_mismatch_rows",
+    "unpreserved_slate_date_mismatch_rows",
     "unknown_provider_rows",
 )
 _RUNTIME_COUNTS = (
@@ -477,6 +487,11 @@ def validate_chunk_payload(payload: dict[str, Any], chunk: ChunkSpec) -> None:
             anomaly_row, _ANOMALY_FIELDS, "source_anomalies record",
         )
         _require_nonnegative_integers(anomaly_row, _ANOMALY_COUNTS)
+        if anomaly_row["slate_date_mismatch_rows"] != (
+            anomaly_row["preserved_slate_date_mismatch_rows"]
+            + anomaly_row["unpreserved_slate_date_mismatch_rows"]
+        ):
+            raise ValueError("cross-date preservation equation is inconsistent")
         runtime_row = runtime[slate_date]
         _reject_unknown_fields(
             runtime_row, _CANDIDATE_RUNTIME_FIELDS, "candidate_runtime record",
@@ -1016,6 +1031,11 @@ def aggregate_candidate_rows(
                 for field in _ANOMALY_COUNTS
             },
         }
+        if anomaly_row["slate_date_mismatch_rows"] != (
+            anomaly_row["preserved_slate_date_mismatch_rows"]
+            + anomaly_row["unpreserved_slate_date_mismatch_rows"]
+        ):
+            raise ValueError("cross-date preservation equation is inconsistent")
         anomalies.append(anomaly_row)
 
         provider_runtime = [
@@ -1098,7 +1118,7 @@ def aggregate_candidate_rows(
         candidate_runtime.append(runtime_row)
 
     for row in anomalies:
-        for field in _ANOMALY_COUNTS:
+        for field in _BLOCKING_ANOMALY_COUNTS:
             if row[field] != 0:
                 raise ValueError(
                     f"source anomaly blocks completeness: {field}={row[field]}"
