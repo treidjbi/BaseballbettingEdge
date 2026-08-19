@@ -756,8 +756,33 @@ Expected: clean commit verification, no unintended worktree changes, and no push
   `git diff --check` passes.
 - No second live query, database write, deletion, vacuum, retention activation,
   backfill, migration, push, deploy, or production behavior change occurred.
-  Gate 1 remains incomplete and requires fresh Tyler approval before one clean
-  retry. Gates 2-4 remain separately closed.
+  At the close of this attempt, Gate 1 remained incomplete and required fresh
+  Tyler approval before one clean retry. Gates 2-4 remained separately closed.
+
+### Phase 2 Gate 1 Clean Retry — 2026-08-19
+
+- Tyler supplied fresh approval for exactly one retry of the same first gate.
+  The runner issued one linked, SELECT-only `boltodds` / `2026-04-28` chunk
+  with `--max-chunks 1`, completed successfully in `13.09` seconds, and wrote
+  `checkpoint-boltodds-2026-04-28-2026-04-28.json`. No retry or second query
+  ran.
+- The local checkpoint is audit version 2, `complete: true`, status
+  `completed`, validation `passed`, and integrity-valid under the current CLI,
+  query-contract, rendered-SQL, result, scope, and checkpoint hashes. It has
+  exactly one provider/date partition and passed the runner's full checkpoint
+  loader after creation.
+- This was a valid zero-row canary: raw snapshots/groups/logical bytes,
+  compact/exact/missing/unexpected/mismatched groups, anomalies, provider runs,
+  heartbeats, messages, and requests all reconcile at zero. Redaction checks
+  found no secret, token, raw-payload, cleanup-SQL, deletion, or vacuum text.
+  The result proves the bounded read, CLI envelope parsing, checkpoint,
+  validation, equation, and redaction path. It does not supply non-zero
+  compaction coverage or deletion-readiness evidence.
+- Gate 1 is complete. Stop before Gate 2: the retired-BoltOdds active-trial
+  provider/date canary still needs separate Tyler approval. Gate 3 runtime
+  boundary and Gate 4 capped multi-chunk execution remain separately closed.
+  No database write, deletion, vacuum, retention activation, backfill,
+  migration, push, deploy, or production behavior change occurred.
 
 ---
 
