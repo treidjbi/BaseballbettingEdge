@@ -784,6 +784,39 @@ Expected: clean commit verification, no unintended worktree changes, and no push
   No database write, deletion, vacuum, retention activation, backfill,
   migration, push, deploy, or production behavior change occurred.
 
+### Phase 2 Gate 2 Stress Canary — 2026-08-19
+
+- Tyler separately approved one retired-BoltOdds active-trial provider/date
+  stress canary. The standard chronological resume path cannot jump from the
+  first clean-regime checkpoint to the active trial, so the operator invoked
+  the existing allowlisted SQL builder, linked-query wrapper, payload
+  validator, checkpoint/hash builder, and atomic writer directly for
+  `boltodds` / `2026-06-11`. No code or CLI capability changed.
+- Exactly one linked, SELECT-only query completed in `23.74` seconds and wrote
+  `checkpoint-boltodds-2026-06-11-2026-06-11.json`. It had no `53100`,
+  `57014`, pooler, authentication, timeout, parsing, or validation failure; no
+  retry or second query ran. The audit-v2 checkpoint is complete,
+  integrity-valid, validation-passed, and redaction-clean.
+- The high-volume preservation result failed closed. It found `7,139` raw
+  snapshots / `5,414,880` logical bytes across `340` raw groups and `340`
+  compact groups. `336` groups are exact, `4` are mismatched, and
+  `coverage_exact` is false. There are no missing, unexpected, or duplicate
+  compact groups, but all four mismatches differ on last-seen, last-odds,
+  odds-move-count, and snapshot-count; three also differ on minimum odds and
+  one on maximum odds. First-seen and first-odds match.
+- Source anomalies also block readiness: `157` snapshots observed during the
+  Phoenix-date window link to provider runs whose `slate_date` differs from the
+  observed Phoenix date. Missing run IDs, missing run rows, missing group keys,
+  provider/run mismatches, and unknown-provider counts are all zero. The
+  aggregate runtime contains `235` runs (`232` completed / `3` failed), `470`
+  requests, `751` heartbeats, four books, and the same `7,139` snapshots.
+- Gate 2's query/infrastructure canary is complete, but exact retention
+  coverage is blocked. Do not backfill or reinterpret the four compact
+  mismatches or the `157` slate-date mismatches without a separate diagnostic
+  and approval. Gate 3's narrow runtime-boundary read still needs separate
+  Tyler approval; Gate 4 capped multi-chunk execution, retention activation,
+  deletion, vacuum, and storage reclamation remain closed.
+
 ---
 
 ## Separate Live-Validation Gates — Not Authorized by This Plan
