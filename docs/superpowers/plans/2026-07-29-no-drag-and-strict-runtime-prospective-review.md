@@ -20,6 +20,15 @@ deployed. The strict selector is frozen with prospective credit beginning
 `2026-07-30`. Task 4 remains scheduled for `2026-08-10`; no future decision
 packet or prospective result has been fabricated in advance.
 
+**Decision status (2026-08-19):** Task 4 is complete in
+`docs/research/2026-08-10-no-drag-strict-runtime-decision.md`, issued on the
+actual August 19 review date with evidence through the fully graded August 18
+slate. No-drag v1 is `retire` from the active promotion path while remaining a
+read-only comparison/control. Strict runtime is `narrow_specialist_review`,
+not a live-plan candidate. No runtime, environment, model, provider,
+notification, lock, UI, artifact, retention, or source-of-truth change is
+authorized.
+
 ## Global Constraints
 
 - Preserve no-drag selector id `combined_runtime_broad_no_hindsight_no_drag_v1` and its existing fingerprint.
@@ -86,12 +95,12 @@ packet or prospective result has been fabricated in advance.
 - Create: `docs/research/2026-08-10-no-drag-strict-runtime-decision.md`
 - Modify: `docs/current-state.md`
 
-- [ ] Rebuild canonical Gate C and both audits through the latest fully graded slate.
-- [ ] Reconcile no-drag locked baselines/fingerprint and exclude all history-recovered rows from prospective credit.
-- [ ] Present no-drag and strict core as independent decisions with all mandatory slices.
-- [ ] Assign exactly one outcome to each: `keep_soaking`, `narrow_specialist_review`, `draft_separate_shadow_plan`, or `retire`.
-- [ ] If either survives, stop and request Tyler's separate approval before any runtime or environment work.
-- [ ] Commit `docs: issue no-drag and strict core decision packet`.
+- [x] Rebuild canonical Gate C and both audits through the latest fully graded slate.
+- [x] Reconcile no-drag locked baselines/fingerprint and exclude all history-recovered rows from prospective credit.
+- [x] Present no-drag and strict core as independent decisions with all mandatory slices.
+- [x] Assign exactly one outcome to each: `keep_soaking`, `narrow_specialist_review`, `draft_separate_shadow_plan`, or `retire`.
+- [x] If either survives, stop and request Tyler's separate approval before any runtime or environment work.
+- [x] Commit `docs: issue no-drag and strict core decision packet`.
 
 ### Task 5: Final verification
 
