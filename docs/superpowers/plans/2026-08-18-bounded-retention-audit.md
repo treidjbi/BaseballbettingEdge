@@ -1096,6 +1096,47 @@ Expected: clean commit verification, no unintended worktree changes, and no push
 - Retention activation, raw deletion, vacuum, storage reclamation, provider/
   model/notification/lock/UI changes, push, and deployment remain closed.
 
+### Phase 2 Unexpected-Compact Diagnosis 2 — 2026-08-19
+
+- Tyler approved one further bounded aggregate-only diagnosis to identify the
+  May 17 key mismatch dimensions and split the `23` May 18 groups without full
+  heartbeat proof. The one CTE SELECT ran through Supabase CLI `--file` under
+  SHA-256 `30197b6fb8cf53515d0e036363a2d45f65d1b748a7302feef0e6940bd3524d29`,
+  completed in `26.77s`, returned two date-level rows plus anonymous mismatch
+  pattern counts, and was not retried. No individual market value, snapshot ID,
+  player, book, payload, credential, write, repair, or deletion was returned or
+  performed; the temporary ignored SQL file was removed.
+- May 17 is isolated to market-key alias drift rather than broad grouping
+  corruption. Every one of the `2,485` source rows in all `220` groups differs
+  only on `market_key`; provider, book, normalized player, side, and line have
+  zero mismatches. All `220` groups are single-run. `37` groups / `55` sources
+  retain full heartbeat-alias evidence; the other `183` groups have none and
+  link to earlier May 16 runs. All compact rows were inserted at the same
+  `2026-05-17T16:32:08.700389Z` timestamp and updated only through
+  `2026-05-17T16:53:43.470986Z`, supporting a narrow historical boundary.
+- Repo history independently confirms a known BoltOdds market-key alias change
+  in this period: commit `5a836a26` added `Strikeouts` as an accepted canonical
+  pitcher-strikeouts alias, and migration
+  `20260516152310_normalize_boltodds_strikeouts_in_shadow_movement_tracking.sql`
+  maps `Strikeouts` to `pitcher_strikeouts` for shadow movement tracking. That
+  supports the alias-drift hypothesis, but the intentionally anonymous live
+  query did not expose the exact compact/source value pair, so reclassification
+  is not yet authorized.
+- May 18 has no key mismatch at all. `612/635` groups and `19,176/19,276`
+  sources retain complete heartbeat aliases. The remaining `23` groups / `100`
+  sources have no heartbeat alias rather than a partial one; `17` are
+  single-run and `6` are multi-run. Their compact rows were inserted from
+  `2026-05-18T16:41:12.866270Z` through `2026-05-18T18:53:26.527274Z` and some
+  were updated through `2026-05-19T15:40:42.398127Z`. Valid source/run/key
+  lineage is proven, but the missing heartbeat linkage remains unexplained.
+- Keep all `855` groups blocking exact coverage. The smallest next evidence gate
+  is a separately approved aggregate query that reports only the exact May 17
+  compact/source market-key alias pairs and the May 18 no-heartbeat run/compact
+  timing cohorts. Do not repair, normalize, reclassify, delete, weaken the audit,
+  or resume the broad matrix before that proof is reviewed.
+- Retention activation, raw deletion, vacuum, storage reclamation, provider/
+  model/notification/lock/UI changes, push, and deployment remain closed.
+
 ---
 
 ## Separate Live-Validation Gates — Not Authorized by This Plan
