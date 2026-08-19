@@ -945,6 +945,30 @@ Expected: clean commit verification, no unintended worktree changes, and no push
   deletion, vacuum, or storage reclamation ran. Fresh checkpoints under the new
   query hash and Gate 4 remain separate approval boundaries.
 
+### Phase 2 New-Hash Checkpoint Refresh — 2026-08-19
+
+- Tyler approved the bounded read-only checkpoint refresh under query hash
+  `217003a22a376b736da16302f9108d5a78ca8d30a828f0efe9e82b4adae66a12`.
+  The three reads ran serially with no database retry and wrote only ignored
+  local checkpoint files under
+  `analytics/output/retention/preserved-lineage-2026-08-19/`.
+- The April 28 low-volume BoltOdds checkpoint completed in `19.19s`: explicit
+  zero raw/compact/runtime rows, exact coverage, and zero anomalies.
+- The June 11 retired-BoltOdds checkpoint completed in `18.35s`: `7,139` raw
+  snapshots, `340/340` exact raw/compact groups, `157` cross-date rows, all
+  `157` preserved, and zero unpreserved rows. This is the intended proof that
+  preserved historical lineage stays visible without weakening the blocker.
+- The runtime-boundary checkpoint completed in `7.42s`, validated all four
+  canonical providers, and again reported `post_boltodds_suspension=false`.
+  BoltOdds current maxima remain unchanged and pre-suspension.
+- Integrity, rendered-query hash, scope, equation, provider matrix, and local
+  redaction checks passed. A post-check initially assumed the wrong local JSON
+  nesting, then validated the already-written checkpoint correctly without a
+  second database call.
+- Stop before Gate 4. Capped multi-chunk execution, retention activation,
+  deletion, vacuum, storage reclamation, push, deployment, and production
+  behavior changes remain separately closed.
+
 ---
 
 ## Separate Live-Validation Gates — Not Authorized by This Plan
