@@ -1061,6 +1061,41 @@ Expected: clean commit verification, no unintended worktree changes, and no push
   vacuum, or storage-reclamation decision is available. Push, deployment, and
   every production behavior change remain closed.
 
+### Phase 2 Unexpected-Compact Diagnosis 1 — 2026-08-19
+
+- Tyler approved one bounded aggregate-only diagnosis of the `855` compact-only
+  groups from May 17-18. A first local attempt was rejected by Windows because
+  the SQL was too long for a command-line argument; it did not connect to the
+  database. The same validated CTE SELECT then ran once through the documented
+  Supabase CLI `--file` transport, completed in `31.11s`, and returned only two
+  date-level aggregate rows. No retry, raw row, credential, source payload,
+  write, repair, or deletion occurred; the temporary ignored SQL file was
+  removed immediately afterward.
+- The query disproves a simple orphaned-compact explanation. All `21,761`
+  listed source snapshot IDs resolve to existing raw snapshots, every compact
+  `snapshot_count` equals its listed source-ID count, and every source links to
+  an existing provider run.
+- May 18 is mostly, but not completely, explained by the historical heartbeat
+  compaction path introduced in commit `cf8c37f9`: all `635` groups / `19,276`
+  sources match their compact market key and link to an actual May 17 run,
+  while `612` groups also have a May 18 heartbeat alias. The remaining `23`
+  groups have valid source/run/key lineage but lack current heartbeat-table
+  proof of that alias.
+- May 17 remains unresolved. All `220` groups / `2,485` listed sources resolve
+  and the source counts agree, but zero groups have every source snapshot match
+  the compact row's canonical provider/book/player/market/side/line key. Actual
+  run dates span May 16-17, observed dates span May 16-17, `183` groups contain
+  only earlier-run sources, and only `37` groups have heartbeat-alias evidence.
+  This is consistent with historical relabel/overwrite behavior but does not
+  prove one benign cause.
+- Keep all `855` groups as a hard exact-coverage blocker. Do not delete them,
+  reclassify them as harmless, modify the audit contract, repair compact rows,
+  or continue the broad matrix from May 26 until a separately approved
+  aggregate-only diagnostic identifies which key dimensions disagree on May 17
+  and explains the `23` May 18 groups without heartbeat proof.
+- Retention activation, raw deletion, vacuum, storage reclamation, provider/
+  model/notification/lock/UI changes, push, and deployment remain closed.
+
 ---
 
 ## Separate Live-Validation Gates — Not Authorized by This Plan
