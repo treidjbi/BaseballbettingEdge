@@ -641,6 +641,78 @@ def test_v2_boltodds_closure_blocks_each_post_suspension_current_maximum(field):
 
 
 @pytest.mark.parametrize(
+    "field",
+    [
+        "current_latest_run_at", "current_latest_snapshot_at",
+        "current_latest_heartbeat_at", "current_latest_message_at",
+    ],
+)
+def test_v2_readiness_blocks_each_post_suspension_boltodds_current_maximum(
+    field, tmp_path,
+):
+    envelope = _v2_envelope()
+    boundary = envelope["runtime_boundary"][0]
+    boundary[field] = "2026-06-17T17:22:30+00:00"
+    boundary["post_boltodds_suspension"] = True
+
+    report = retention.build_readiness_report(
+        envelope=envelope, gate_c=_v2_gate_c_manifest(),
+        season_evidence=_v2_season_evidence(), pins=_v2_pins(),
+        as_of="2026-05-29", raw_retention_days=30,
+    )
+    boltodds_partitions = [
+        row for row in report["partitions"] if row["provider"] == "boltodds"
+    ]
+    assert {row["decision"] for row in boltodds_partitions} == {"blocked_compaction"}
+    assert all(
+        row["reason_codes"] == ["post_suspension_runtime_evidence"]
+        for row in boltodds_partitions
+    )
+    assert {
+        row["decision"]
+        for row in report["partitions"]
+        if row["provider"] != "boltodds"
+    } == {"ready_for_retention_review"}
+
+    query = tmp_path / "query.json"
+    gate_c = tmp_path / "gate-c.json"
+    season = tmp_path / "season.json"
+    pins = tmp_path / "pins.json"
+    output_dir = tmp_path / "readiness"
+    query.write_text(json.dumps(envelope), encoding="utf-8")
+    gate_c.write_text(json.dumps(_v2_gate_c_manifest()), encoding="utf-8")
+    season.write_text(json.dumps(_v2_season_evidence()), encoding="utf-8")
+    pins.write_text(json.dumps(_v2_pins()), encoding="utf-8")
+
+    exit_code = retention.main([
+        "readiness", "--query-json", str(query),
+        "--gate-c-manifest", str(gate_c),
+        "--season-evidence", str(season), "--pins", str(pins),
+        "--as-of", "2026-05-29", "--output-dir", str(output_dir),
+    ])
+    written_report = json.loads(
+        (output_dir / "season_retention_readiness.json").read_text(encoding="utf-8")
+    )
+
+    assert exit_code == 2
+    assert all(
+        row["decision"] != "ready_for_retention_review"
+        and "post_suspension_runtime_evidence" in row["reason_codes"]
+        for row in written_report["partitions"]
+        if row["provider"] == "boltodds"
+    )
+
+    closure = retention.build_boltodds_closure(
+        envelope=envelope, gate_c=_v2_gate_c_manifest(),
+        season_evidence=_v2_season_evidence(), pins=_v2_pins(),
+        as_of="2026-05-29",
+    )
+    assert closure["status"] == "operational_exception"
+    assert closure["current_runtime_boundary"][field] == "2026-06-17T17:22:30+00:00"
+    assert "post_suspension_runtime_evidence" in closure["unresolved_evidence_gaps"]
+
+
+@pytest.mark.parametrize(
     ("field", "value"),
     [("retention_execution_closed", False), ("deletion_approved", True)],
 )

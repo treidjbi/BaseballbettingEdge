@@ -10,7 +10,8 @@
 
 **Spec:** `docs/superpowers/specs/2026-08-18-bounded-retention-audit-design.md`
 
-**Plan status (2026-08-19):** Tasks 1-5 are implemented and locally verified.
+**Plan status (2026-08-19):** Tasks 1-5 and the single final whole-branch
+review fix are implemented and locally verified.
 The exact pre-handoff implementation head was
 `810c21a9353776a7eb2754e80918283fa42dba3b`. Task 5 added fixture-only
 1/3/7-day checkpoint coverage, local assembly, and both closed reporter paths;
@@ -714,6 +715,25 @@ Expected: clean commit verification, no unintended worktree changes, and no push
   production behavior change occurred. All separate Phase 2, Phase 3,
   durable-evidence, sizing, retention, deletion, and reclamation gates remain
   closed.
+
+### Final Whole-Branch Review Fix Verification
+
+- Four direct-v2 regressions independently place the current BoltOdds run,
+  snapshot, heartbeat, or message maximum one second after the documented
+  suspension boundary. In each case every BoltOdds partition is blocked with
+  `post_suspension_runtime_evidence`, the readiness CLI exits `2`, and the
+  closure remains `operational_exception` with the corresponding boundary
+  value. Pre-suspension BoltOdds and all non-Bolt provider readiness remain
+  unchanged.
+- The exact reporter suite passed `194` tests, the exact focused retention
+  suite passed `382` tests, and the full repository suite passed `2,391` tests.
+  The three retention modules passed `py_compile`; the known generated Gate F
+  report was restored via `apply_patch` to its exact tracked object.
+- Validation still accepts a correctly flagged operational-exception envelope
+  so closure can report it. Retention execution and deletion remain closed;
+  no live read, mutation, push, deploy, provider, model, notification, lock,
+  UI, or production behavior changed. The final commit SHA is recorded in the
+  ignored local final-fix report.
 
 ---
 

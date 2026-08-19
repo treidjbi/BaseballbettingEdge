@@ -1195,6 +1195,10 @@ def build_readiness_report(
     season_by_date = _index_season_evidence(season_evidence, as_of=as_of_date)
     pins_by_partition = _index_pins(pins, as_of=as_of_date)
     anomalies_by_provider = {row["provider"]: row for row in envelope["source_anomalies"]}
+    post_suspension_boltodds = audit_version == 2 and next(
+        row for row in envelope["runtime_boundary"]
+        if row["provider"] == "boltodds"
+    )["post_boltodds_suspension"] is True
     partitions: list[dict[str, Any]] = []
 
     for coverage in envelope["coverage"]:
@@ -1204,12 +1208,17 @@ def build_readiness_report(
         coverage_reasons = _coverage_reason_codes(
             coverage, anomalies_by_provider[provider], audit_version=audit_version,
         )
+        operational_reasons = (
+            ["post_suspension_runtime_evidence"]
+            if provider == "boltodds" and post_suspension_boltodds
+            else []
+        )
         outcome_reasons = _outcome_reason_codes(coverage["slate_date"], gate_c, season_by_date.get(coverage["slate_date"]))
         season_record = season_by_date.get(coverage["slate_date"])
         _, pin_reasons = _has_preserved_pins(
             pins_by_partition.get((coverage["slate_date"], provider)), season_record,
         )
-        all_reasons = coverage_reasons + outcome_reasons + pin_reasons
+        all_reasons = coverage_reasons + operational_reasons + outcome_reasons + pin_reasons
         record = {
             "slate_date": coverage["slate_date"],
             "provider": provider,
@@ -1224,7 +1233,7 @@ def build_readiness_report(
         if age_days < raw_retention_days:
             record["decision"] = "not_in_policy_window"
             record["deferred_reason_codes"] = all_reasons
-        elif coverage_reasons:
+        elif coverage_reasons or operational_reasons:
             record["decision"] = "blocked_compaction"
             record["reason_codes"] = all_reasons
         elif outcome_reasons:
