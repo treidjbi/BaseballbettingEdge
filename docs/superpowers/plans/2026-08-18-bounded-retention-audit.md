@@ -11,15 +11,14 @@
 **Spec:** `docs/superpowers/specs/2026-08-18-bounded-retention-audit-design.md`
 
 **Plan status (2026-08-19):** Tasks 1-5 and the single final whole-branch
-review fix are implemented and locally verified.
-The exact pre-handoff implementation head was
-`810c21a9353776a7eb2754e80918283fa42dba3b`. Task 5 added fixture-only
-1/3/7-day checkpoint coverage, local assembly, and both closed reporter paths;
-it made no live Supabase read and required no production-code change. The final
-handoff commit is recorded in the ignored local Task 5 report rather than
-claimed self-referentially in this committed document. Review round 1 began
-from Task 5 handoff head `531ee6a200efa4fba6b29246cbe33ea686d4567c`
-and strengthened only the local integration fixture and assertions.
+review fix are implemented, independently reviewed, and merged locally to
+`main` at `5b0cf17cec6d9c1950dcebad045221e49e95e782`. Task 5 added
+fixture-only 1/3/7-day checkpoint coverage, local assembly, and both closed
+reporter paths; the final review fix blocks retired-BoltOdds readiness when
+any current runtime maximum is after suspension while preserving the closure
+diagnostic. The merged tree passed all `2,391` tests. Nothing was pushed or
+deployed, no live Supabase read ran, and every Phase 2/3, retention, deletion,
+vacuum, sizing, and storage-reclamation gate remains separately closed.
 
 ## Global Constraints
 
@@ -732,8 +731,9 @@ Expected: clean commit verification, no unintended worktree changes, and no push
 - Validation still accepts a correctly flagged operational-exception envelope
   so closure can report it. Retention execution and deletion remain closed;
   no live read, mutation, push, deploy, provider, model, notification, lock,
-  UI, or production behavior changed. The final commit SHA is recorded in the
-  ignored local final-fix report.
+  UI, or production behavior changed. The final reviewed implementation is
+  merged locally on `main` at
+  `5b0cf17cec6d9c1950dcebad045221e49e95e782`.
 
 ---
 
