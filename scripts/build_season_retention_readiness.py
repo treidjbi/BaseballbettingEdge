@@ -4,10 +4,12 @@ import argparse
 import json
 import re
 import sys
-from datetime import date, datetime, timezone
+from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any, Callable, TextIO
 from zoneinfo import ZoneInfo
+
+from scripts import retention_bounded_sql as bounded_sql
 
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -64,6 +66,9 @@ _ANOMALY_INTEGER_FIELDS = (
     "rows_missing_run_id", "rows_missing_run_row", "rows_missing_group_key",
     "provider_run_mismatch_rows",
 )
+_V2_ANOMALY_INTEGER_FIELDS = (
+    *_ANOMALY_INTEGER_FIELDS, "slate_date_mismatch_rows", "unknown_provider_rows",
+)
 _RUNTIME_INTEGER_FIELDS = (
     "run_count", "completed_run_count", "failed_run_count", "request_count",
     "snapshot_count", "snapshot_logical_bytes", "heartbeat_count",
@@ -72,6 +77,13 @@ _RUNTIME_TIMESTAMP_FIELDS = (
     "first_run_at", "last_run_at", "first_snapshot_at", "last_snapshot_at",
     "last_heartbeat_at", "last_message_at",
 )
+_V2_RUNTIME_BOUNDARY_PAIRS = (
+    ("current_latest_run_at", "candidate_latest_run_at", "last_run_at"),
+    ("current_latest_snapshot_at", "candidate_latest_snapshot_at", "last_snapshot_at"),
+    ("current_latest_heartbeat_at", "candidate_latest_heartbeat_at", "last_heartbeat_at"),
+    ("current_latest_message_at", "candidate_latest_message_at", "last_message_at"),
+)
+_V2_CANONICAL_PROVIDERS = ("boltodds", "propline", "the_odds", "therundown")
 _SEASON_EVIDENCE_COUNT_FIELDS = (
     "official_tracked_picks", "accepted_bets", "sent_notifications",
     "consumed_locks", "frozen_alt_v2_rows", "operator_incidents",
@@ -84,6 +96,8 @@ def load_query_envelope(
 ) -> dict[str, Any]:
     raw = (stdin or sys.stdin).read() if path_or_dash == "-" else Path(path_or_dash).read_text(encoding="utf-8")
     wrapper = json.loads(raw)
+    if isinstance(wrapper, dict) and wrapper.get("audit_version") == 2:
+        return wrapper
     if not isinstance(wrapper, list) or len(wrapper) != 1 or not isinstance(wrapper[0], dict):
         raise ValueError("Supabase query output must contain exactly one row")
     value = wrapper[0].get("retention_exact_coverage")
@@ -167,10 +181,10 @@ def _require_provider(value: Any, label: str) -> str:
     return provider
 
 
-def validate_envelope(
+def _validate_v1_envelope(
     envelope: dict[str, Any], *, as_of: date | None = None,
 ) -> None:
-    """Validate the versioned SQL envelope before any retention decision."""
+    """Validate the original monolithic SQL envelope without changing its rules."""
     envelope = _require_mapping(envelope, "envelope")
     if type(envelope.get("audit_version")) is not int or envelope["audit_version"] != 1:
         raise ValueError("audit_version must be 1")
@@ -425,6 +439,387 @@ def validate_envelope(
             raise ValueError("coverage contradicts provider runtime snapshot totals")
 
 
+def _validate_v2_runtime_row(
+    row: dict[str, Any], *, index: int,
+) -> dict[str, datetime | None]:
+    label = f"candidate_runtime[{index}]"
+    for field in _RUNTIME_INTEGER_FIELDS:
+        _require_nonnegative_int(row.get(field), f"{label}.{field}")
+    books_seen = row.get("books_seen")
+    if (
+        not isinstance(books_seen, list)
+        or not all(isinstance(book, str) and bool(book) for book in books_seen)
+        or books_seen != sorted(set(books_seen))
+    ):
+        raise ValueError(f"{label}.books_seen must be a canonical string list")
+    timestamps = {
+        field: _parse_timestamp(row.get(field), f"{label}.{field}", nullable=True)
+        for field in _RUNTIME_TIMESTAMP_FIELDS
+    }
+    run_count = row["run_count"]
+    if row["completed_run_count"] + row["failed_run_count"] > run_count:
+        raise ValueError("candidate runtime status counts exceed run_count")
+    if run_count == 0:
+        if (
+            timestamps["first_run_at"] is not None
+            or timestamps["last_run_at"] is not None
+            or row["request_count"] != 0
+        ):
+            raise ValueError("candidate runtime run fields contradict run_count")
+    elif timestamps["first_run_at"] is None or timestamps["last_run_at"] is None:
+        raise ValueError("candidate runtime timestamps are incomplete")
+    if (
+        timestamps["first_run_at"] is not None
+        and timestamps["last_run_at"] is not None
+        and timestamps["first_run_at"] > timestamps["last_run_at"]
+    ):
+        raise ValueError("candidate runtime timestamps are reversed")
+
+    snapshot_count = row["snapshot_count"]
+    if snapshot_count == 0:
+        if (
+            timestamps["first_snapshot_at"] is not None
+            or timestamps["last_snapshot_at"] is not None
+            or row["snapshot_logical_bytes"] != 0
+            or books_seen
+        ):
+            raise ValueError("candidate runtime snapshot fields contradict snapshot_count")
+    elif (
+        timestamps["first_snapshot_at"] is None
+        or timestamps["last_snapshot_at"] is None
+        or row["snapshot_logical_bytes"] < snapshot_count
+        or run_count == 0
+    ):
+        raise ValueError("candidate runtime snapshot fields are incomplete")
+    if (
+        timestamps["first_snapshot_at"] is not None
+        and timestamps["last_snapshot_at"] is not None
+        and timestamps["first_snapshot_at"] > timestamps["last_snapshot_at"]
+    ):
+        raise ValueError("candidate runtime snapshot timestamps are reversed")
+
+    heartbeat_count = row["heartbeat_count"]
+    if heartbeat_count == 0:
+        if (
+            timestamps["last_heartbeat_at"] is not None
+            or timestamps["last_message_at"] is not None
+        ):
+            raise ValueError("candidate runtime heartbeat fields contradict heartbeat_count")
+    elif timestamps["last_heartbeat_at"] is None:
+        raise ValueError("candidate runtime heartbeat timestamp is incomplete")
+    return timestamps
+
+
+def _validate_v2_execution(
+    execution: dict[str, Any], *, start_date: date, end_date: date,
+    providers: list[str],
+) -> None:
+    if execution.get("complete") is not True:
+        raise ValueError("execution.complete must be true")
+    if execution.get("query_contract_sha256") != bounded_sql.query_contract_sha256():
+        raise ValueError("execution.query_contract_sha256 is invalid")
+    expected_scalars = {
+        "query_contract_version": "supabase-db-query-linked-json-v1",
+        "runner_version": "2",
+        "chunk_ladder_days": [1, 3, 7],
+        "soft_elapsed_seconds": 30.0,
+        "cooldown_seconds": 30.0,
+        "max_chunk_days": 7,
+        "default_max_chunks": 1,
+        "hard_max_chunks": 5,
+    }
+    for field, expected in expected_scalars.items():
+        if execution.get(field) != expected:
+            raise ValueError(f"execution.{field} is invalid")
+    _require_string(execution.get("cli_version"), "execution.cli_version")
+
+    expected_ranges = execution.get("expected_chunk_ranges")
+    expected_value = [{
+        "provider": provider,
+        "start_date": start_date.isoformat(),
+        "end_date": end_date.isoformat(),
+    } for provider in providers]
+    if expected_ranges != expected_value:
+        raise ValueError("execution expected chunk ranges contradict candidate scope")
+
+    completed_ranges = execution.get("completed_chunk_ranges")
+    if not isinstance(completed_ranges, list) or not completed_ranges:
+        raise ValueError("execution completed chunk ranges are incomplete")
+    completed_partitions: set[tuple[str, str]] = set()
+    for index, value in enumerate(completed_ranges):
+        row = _require_mapping(value, f"execution.completed_chunk_ranges[{index}]")
+        provider = _require_provider(
+            row.get("provider"), f"execution.completed_chunk_ranges[{index}].provider",
+        )
+        range_start = _parse_date(
+            row.get("start_date"), f"execution.completed_chunk_ranges[{index}].start_date",
+        )
+        range_end = _parse_date(
+            row.get("end_date"), f"execution.completed_chunk_ranges[{index}].end_date",
+        )
+        if (
+            provider not in providers
+            or range_start > range_end
+            or range_start < start_date
+            or range_end > end_date
+            or (range_end - range_start).days + 1 > 7
+        ):
+            raise ValueError("execution completed chunk ranges are invalid")
+        cursor = range_start
+        while cursor <= range_end:
+            partition = (provider, cursor.isoformat())
+            if partition in completed_partitions:
+                raise ValueError("execution completed chunk ranges overlap")
+            completed_partitions.add(partition)
+            cursor += timedelta(days=1)
+    expected_partitions = {
+        (provider, cursor.isoformat())
+        for provider in providers
+        for cursor in (
+            start_date + timedelta(days=offset)
+            for offset in range((end_date - start_date).days + 1)
+        )
+    }
+    if completed_partitions != expected_partitions:
+        raise ValueError("execution completed chunk ranges are incomplete")
+
+
+def _validate_v2_envelope(
+    envelope: dict[str, Any], *, as_of: date | None,
+) -> None:
+    if envelope.get("complete") is not True:
+        raise ValueError("complete must be true")
+    if envelope.get("retention_execution_closed") is not True:
+        raise ValueError("retention_execution_closed must be true")
+    if envelope.get("deletion_approved") is not False:
+        raise ValueError("deletion_approved must be false")
+    envelope_as_of = _parse_date(envelope.get("as_of_date"), "as_of_date")
+    if as_of is not None and envelope_as_of != as_of:
+        raise ValueError("as_of_date does not match requested as-of date")
+    effective_as_of = as_of or envelope_as_of
+    if envelope.get("timezone") != "America/Phoenix":
+        raise ValueError("timezone must be America/Phoenix")
+    try:
+        _require_audit_day_timestamp(
+            envelope.get("audit_generated_at"), "runtime boundary generated_at",
+            effective_as_of,
+        )
+    except ValueError as exc:
+        raise ValueError("runtime boundary generated_at is stale") from exc
+
+    scope = _require_mapping(envelope.get("candidate_scope"), "candidate_scope")
+    start_date = _parse_date(scope.get("start_date"), "candidate_scope.start_date")
+    end_date = _parse_date(scope.get("end_date"), "candidate_scope.end_date")
+    if start_date != date(2026, 4, 28):
+        raise ValueError("candidate_scope.start_date must be 2026-04-28")
+    if start_date > end_date:
+        raise ValueError("candidate_scope dates are reversed")
+    if scope.get("raw_retention_days") != 30:
+        raise ValueError("candidate_scope.raw_retention_days must be 30")
+    providers = scope.get("providers")
+    if providers != list(_V2_CANONICAL_PROVIDERS):
+        raise ValueError("candidate_scope.providers must match the canonical provider matrix")
+    if end_date != effective_as_of - timedelta(days=30):
+        raise ValueError("candidate_scope.end_date must equal as_of_date minus 30 days")
+
+    protected = _require_mapping(envelope.get("protected_scope"), "protected_scope")
+    protected_start = _parse_date(
+        protected.get("start_date"), "protected_scope.start_date",
+    )
+    if protected_start != end_date + timedelta(days=1):
+        raise ValueError("protected_scope.start_date must follow candidate cutoff")
+    _require_string(protected.get("reason"), "protected_scope.reason")
+    for field in ("season_evidence", "pins"):
+        if field not in envelope:
+            raise ValueError(f"{field} placeholder is required")
+        if envelope[field] is not None and not isinstance(envelope[field], dict):
+            raise ValueError(f"{field} must be null or an object")
+    _validate_v2_execution(
+        _require_mapping(envelope.get("execution"), "execution"),
+        start_date=start_date, end_date=end_date, providers=providers,
+    )
+
+    for key in ("coverage", "source_anomalies", "candidate_runtime", "runtime_boundary"):
+        if not isinstance(envelope.get(key), list):
+            raise ValueError(f"{key} must be a list")
+
+    anomalies_by_provider: dict[str, dict[str, Any]] = {}
+    for index, raw_row in enumerate(envelope["source_anomalies"]):
+        row = _require_mapping(raw_row, f"source_anomalies[{index}]")
+        provider = _require_provider(row.get("provider"), f"source_anomalies[{index}].provider")
+        if provider in anomalies_by_provider:
+            raise ValueError("source_anomalies providers must be unique")
+        for field in _V2_ANOMALY_INTEGER_FIELDS:
+            _require_nonnegative_int(row.get(field), f"source_anomalies[{index}].{field}")
+        anomalies_by_provider[provider] = row
+    if list(anomalies_by_provider) != providers:
+        raise ValueError("source_anomalies must contain the canonical provider matrix")
+
+    runtime_by_provider: dict[str, dict[str, Any]] = {}
+    runtime_timestamps: dict[str, dict[str, datetime | None]] = {}
+    for index, raw_row in enumerate(envelope["candidate_runtime"]):
+        row = _require_mapping(raw_row, f"candidate_runtime[{index}]")
+        provider = _require_provider(row.get("provider"), f"candidate_runtime[{index}].provider")
+        if provider in runtime_by_provider:
+            raise ValueError("candidate_runtime providers must be unique")
+        runtime_by_provider[provider] = row
+        runtime_timestamps[provider] = _validate_v2_runtime_row(row, index=index)
+    if list(runtime_by_provider) != providers:
+        raise ValueError("candidate_runtime must contain the canonical provider matrix")
+
+    expected_matrix = {
+        (provider, (start_date + timedelta(days=offset)).isoformat())
+        for provider in providers
+        for offset in range((end_date - start_date).days + 1)
+    }
+    seen_matrix: set[tuple[str, str]] = set()
+    totals = {
+        provider: {"raw_snapshot_rows": 0, "raw_logical_bytes": 0}
+        for provider in providers
+    }
+    for index, raw_row in enumerate(envelope["coverage"]):
+        row = _require_mapping(raw_row, f"coverage[{index}]")
+        provider = _require_provider(row.get("provider"), f"coverage[{index}].provider")
+        slate_date = _parse_date(row.get("slate_date"), f"coverage[{index}].slate_date")
+        partition = (provider, slate_date.isoformat())
+        if partition in seen_matrix:
+            raise ValueError("coverage provider/date partitions must be unique")
+        seen_matrix.add(partition)
+        for field in _COVERAGE_INTEGER_FIELDS:
+            _require_nonnegative_int(row.get(field), f"coverage[{index}].{field}")
+        zero_raw = row["raw_group_count"] == 0
+        first_seen = _parse_timestamp(
+            row.get("first_raw_seen_at"), f"coverage[{index}].first_raw_seen_at",
+            nullable=zero_raw,
+        )
+        last_seen = _parse_timestamp(
+            row.get("last_raw_seen_at"), f"coverage[{index}].last_raw_seen_at",
+            nullable=zero_raw,
+        )
+        if zero_raw and (
+            row["raw_snapshot_rows"] != 0
+            or row["raw_logical_bytes"] != 0
+            or first_seen is not None
+            or last_seen is not None
+        ):
+            raise ValueError("zero coverage partition contains contradictory raw evidence")
+        if first_seen is not None and last_seen is not None and first_seen > last_seen:
+            raise ValueError("coverage raw timestamps are reversed")
+        if row["raw_group_count"] != (
+            row["exact_group_count"] + row["mismatched_group_count"]
+            + row["missing_compact_group_count"]
+        ):
+            raise ValueError("raw_group_count contradicts coverage components")
+        if row["compact_group_count"] != (
+            row["exact_group_count"] + row["mismatched_group_count"]
+            + row["unexpected_compact_group_count"]
+        ):
+            raise ValueError("compact_group_count contradicts coverage components")
+        if (
+            row["raw_snapshot_rows"] < row["raw_group_count"]
+            or row["raw_logical_bytes"] < row["raw_snapshot_rows"]
+        ):
+            raise ValueError("coverage row/byte equations are invalid")
+        metric_mismatches = [row[field] for field in MISMATCH_FIELDS[3:]]
+        if any(value > row["mismatched_group_count"] for value in metric_mismatches):
+            raise ValueError("field mismatch count exceeds mismatched_group_count")
+        if (row["mismatched_group_count"] > 0) != any(metric_mismatches):
+            raise ValueError("mismatched_group_count contradicts field mismatches")
+        expected_exact = not any(
+            row[field] > 0 for field in (
+                "missing_compact_group_count", "unexpected_compact_group_count",
+                "duplicate_compact_group_count", "mismatched_group_count",
+            )
+        )
+        if _require_bool(row.get("coverage_exact"), f"coverage[{index}].coverage_exact") is not expected_exact:
+            raise ValueError("coverage_exact contradicts coverage aggregates")
+        totals[provider]["raw_snapshot_rows"] += row["raw_snapshot_rows"]
+        totals[provider]["raw_logical_bytes"] += row["raw_logical_bytes"]
+    if seen_matrix != expected_matrix:
+        raise ValueError("coverage partition matrix is incomplete")
+
+    for provider in providers:
+        runtime = runtime_by_provider[provider]
+        if runtime["snapshot_count"] != totals[provider]["raw_snapshot_rows"]:
+            raise ValueError("candidate runtime snapshot rows contradict coverage")
+        if runtime["snapshot_logical_bytes"] != totals[provider]["raw_logical_bytes"]:
+            raise ValueError("candidate runtime snapshot bytes contradict coverage")
+        for field in _V2_ANOMALY_INTEGER_FIELDS:
+            if anomalies_by_provider[provider][field] > runtime["snapshot_count"]:
+                raise ValueError("provider anomaly count exceeds candidate runtime snapshots")
+
+    boundary_by_provider: dict[str, dict[str, Any]] = {}
+    for index, raw_row in enumerate(envelope["runtime_boundary"]):
+        row = _require_mapping(raw_row, f"runtime_boundary[{index}]")
+        provider = _require_provider(row.get("provider"), f"runtime_boundary[{index}].provider")
+        if provider in boundary_by_provider:
+            raise ValueError("runtime_boundary provider is duplicated")
+        parsed: dict[str, datetime | None] = {}
+        for current_field, candidate_field, runtime_field in _V2_RUNTIME_BOUNDARY_PAIRS:
+            parsed[current_field] = _parse_timestamp(
+                row.get(current_field), f"runtime_boundary[{index}].{current_field}",
+                nullable=True,
+            )
+            parsed[candidate_field] = _parse_timestamp(
+                row.get(candidate_field), f"runtime_boundary[{index}].{candidate_field}",
+                nullable=True,
+            )
+            runtime_value = runtime_timestamps[provider][runtime_field]
+            if parsed[candidate_field] != runtime_value:
+                raise ValueError("runtime boundary candidate maximum contradicts candidate runtime")
+            if parsed[candidate_field] is not None and (
+                parsed[current_field] is None
+                or parsed[current_field] < parsed[candidate_field]
+            ):
+                raise ValueError("current runtime boundary is older than candidate maximum")
+        post_suspension = _require_bool(
+            row.get("post_boltodds_suspension"),
+            f"runtime_boundary[{index}].post_boltodds_suspension",
+        )
+        expected_post_suspension = provider == "boltodds" and any(
+            parsed[current_field] is not None
+            and parsed[current_field] > BOLTODDS_SUSPENDED_AT
+            for current_field, _candidate_field, _runtime_field
+            in _V2_RUNTIME_BOUNDARY_PAIRS
+        )
+        if post_suspension is not expected_post_suspension:
+            raise ValueError("post_boltodds_suspension contradicts current runtime boundaries")
+        boundary_by_provider[provider] = row
+    if list(boundary_by_provider) != providers:
+        raise ValueError("runtime_boundary provider matrix is incomplete")
+
+
+def validate_envelope(
+    envelope: dict[str, Any], *, as_of: date | None = None,
+) -> None:
+    """Validate v1 or direct bounded-v2 input before decision normalization."""
+    envelope = _require_mapping(envelope, "envelope")
+    version = envelope.get("audit_version")
+    if type(version) is not int or version not in (1, 2):
+        raise ValueError("audit_version must be 1 or 2")
+    if version == 1:
+        _validate_v1_envelope(envelope, as_of=as_of)
+    else:
+        _validate_v2_envelope(envelope, as_of=as_of)
+
+
+def _normalize_envelope_for_decisions(
+    envelope: dict[str, Any], *, as_of: date | None,
+) -> dict[str, Any]:
+    validate_envelope(envelope, as_of=as_of)
+    if envelope["audit_version"] == 1:
+        return envelope
+    return {
+        **envelope,
+        "query_scope": {
+            "start_date": envelope["candidate_scope"]["start_date"],
+            "end_date": envelope["candidate_scope"]["end_date"],
+            "providers": envelope["candidate_scope"]["providers"],
+        },
+        "provider_runtime": envelope["candidate_runtime"],
+    }
+
+
 def _index_season_evidence(
     season_evidence: dict[str, Any] | None, *, as_of: date,
 ) -> dict[str, dict[str, Any]]:
@@ -628,13 +1023,18 @@ def _outcome_reason_codes(
     return reasons
 
 
-def _coverage_reason_codes(row: dict[str, Any], anomalies: dict[str, Any]) -> list[str]:
+def _coverage_reason_codes(
+    row: dict[str, Any], anomalies: dict[str, Any], *, audit_version: int,
+) -> list[str]:
     reasons = [field for field in MISMATCH_FIELDS if row[field] > 0]
     if row["mismatched_group_count"] > 0:
         reasons.append("mismatched_group_count")
     if row["coverage_exact"] is not True:
         reasons.append("coverage_not_exact")
-    reasons.extend(field for field in _ANOMALY_INTEGER_FIELDS if anomalies[field] > 0)
+    anomaly_fields = (
+        _V2_ANOMALY_INTEGER_FIELDS if audit_version == 2 else _ANOMALY_INTEGER_FIELDS
+    )
+    reasons.extend(field for field in anomaly_fields if anomalies[field] > 0)
     return reasons
 
 
@@ -649,11 +1049,17 @@ def build_readiness_report(
 ) -> dict[str, Any]:
     """Return evidence-only retention decisions; this function has no execution authority."""
     as_of_date = _parse_date(as_of, "as_of")
-    validate_envelope(envelope, as_of=as_of_date)
+    audit_version = envelope.get("audit_version")
+    envelope = _normalize_envelope_for_decisions(envelope, as_of=as_of_date)
     gate_c = _validate_gate_c_manifest(gate_c, as_of=as_of_date)
     if type(raw_retention_days) is not int or raw_retention_days <= 0:
         raise ValueError("raw_retention_days must be a positive integer")
-    if envelope["query_scope"]["end_date"] != as_of_date.isoformat():
+    if (
+        audit_version == 2
+        and raw_retention_days != envelope["candidate_scope"]["raw_retention_days"]
+    ):
+        raise ValueError("raw_retention_days must match candidate_scope")
+    if audit_version == 1 and envelope["query_scope"]["end_date"] != as_of_date.isoformat():
         raise ValueError("query scope is stale for requested as-of date")
 
     season_by_date = _index_season_evidence(season_evidence, as_of=as_of_date)
@@ -665,7 +1071,9 @@ def build_readiness_report(
         slate_date = _parse_date(coverage["slate_date"], "coverage.slate_date")
         provider = coverage["provider"]
         age_days = (as_of_date - slate_date).days
-        coverage_reasons = _coverage_reason_codes(coverage, anomalies_by_provider[provider])
+        coverage_reasons = _coverage_reason_codes(
+            coverage, anomalies_by_provider[provider], audit_version=audit_version,
+        )
         outcome_reasons = _outcome_reason_codes(coverage["slate_date"], gate_c, season_by_date.get(coverage["slate_date"]))
         season_record = season_by_date.get(coverage["slate_date"])
         _, pin_reasons = _has_preserved_pins(
@@ -824,9 +1232,10 @@ def build_boltodds_closure(
 ) -> dict[str, Any]:
     """Build a closed, evidence-only retirement package for BoltOdds."""
     as_of_date = _parse_date(as_of, "as_of")
-    validate_envelope(envelope, as_of=as_of_date)
+    audit_version = envelope.get("audit_version")
+    envelope = _normalize_envelope_for_decisions(envelope, as_of=as_of_date)
     gate_c = _validate_gate_c_manifest(gate_c, as_of=as_of_date)
-    if envelope["query_scope"]["end_date"] != as_of_date.isoformat():
+    if audit_version == 1 and envelope["query_scope"]["end_date"] != as_of_date.isoformat():
         raise ValueError("query scope is stale for requested as-of date")
 
     boltodds_runtime = [
@@ -881,7 +1290,10 @@ def build_boltodds_closure(
             gaps.append(field)
     if coverage_totals["mismatched_group_count"] > 0:
         gaps.append("mismatched_group_count")
-    for field in _ANOMALY_INTEGER_FIELDS:
+    anomaly_fields = (
+        _V2_ANOMALY_INTEGER_FIELDS if audit_version == 2 else _ANOMALY_INTEGER_FIELDS
+    )
+    for field in anomaly_fields:
         if anomalies[field] > 0:
             gaps.append(field)
     for row in coverage_rows:
@@ -927,13 +1339,36 @@ def build_boltodds_closure(
         "is not provider-causal attribution."
     )
 
-    post_suspension_runtime = any(
-        timestamp is not None and timestamp > BOLTODDS_SUSPENDED_AT
-        for timestamp in (
-            _parse_timestamp(runtime_source[field], f"boltodds.{field}", nullable=True)
-            for field in ("last_snapshot_at", "last_heartbeat_at")
+    current_runtime_boundary = None
+    if audit_version == 2:
+        current_runtime_boundary = next(
+            row for row in envelope["runtime_boundary"]
+            if row["provider"] == "boltodds"
         )
-    )
+        post_suspension_runtime = (
+            current_runtime_boundary["post_boltodds_suspension"] is True
+            or any(
+                timestamp is not None and timestamp > BOLTODDS_SUSPENDED_AT
+                for timestamp in (
+                    _parse_timestamp(
+                        current_runtime_boundary[field], f"boltodds.{field}",
+                        nullable=True,
+                    )
+                    for field in (
+                        "current_latest_run_at", "current_latest_snapshot_at",
+                        "current_latest_heartbeat_at", "current_latest_message_at",
+                    )
+                )
+            )
+        )
+    else:
+        post_suspension_runtime = any(
+            timestamp is not None and timestamp > BOLTODDS_SUSPENDED_AT
+            for timestamp in (
+                _parse_timestamp(runtime_source[field], f"boltodds.{field}", nullable=True)
+                for field in ("last_snapshot_at", "last_heartbeat_at")
+            )
+        )
     if post_suspension_runtime:
         gaps.append("post_suspension_runtime_evidence")
     unresolved_evidence_gaps = sorted(set(gaps))
@@ -947,7 +1382,7 @@ def build_boltodds_closure(
         status = "ready_for_retirement_review"
         recommendation = "schedule_separate_retention_review"
 
-    return {
+    report = {
         "report_type": "boltodds_retirement_closure",
         "generated_at": datetime.now(timezone.utc).isoformat(),
         "as_of": as_of_date.isoformat(),
@@ -973,6 +1408,9 @@ def build_boltodds_closure(
             "official artifacts, picks, models, notifications, locks, UI, or retention execution."
         ),
     }
+    if current_runtime_boundary is not None:
+        report["current_runtime_boundary"] = dict(current_runtime_boundary)
+    return report
 
 
 def redact_sensitive(value: Any) -> Any:

@@ -1,11 +1,13 @@
 from __future__ import annotations
 
 import json
+from datetime import date
 from pathlib import Path
 
 import pytest
 
 from scripts import build_season_retention_readiness as retention
+from scripts import retention_bounded_sql as bounded_sql
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -163,6 +165,175 @@ def _envelope(*, coverage=None, anomalies=None, runtime=None):
     }
 
 
+def _v2_envelope():
+    providers = ["boltodds", "propline", "the_odds", "therundown"]
+    coverage = []
+    candidate_runtime = []
+    runtime_boundary = []
+    for provider in providers:
+        first_rows = 100 if provider == "boltodds" else 10
+        first_bytes = 50000 if provider == "boltodds" else 100
+        second_rows = 0 if provider == "boltodds" else 5
+        second_bytes = 0 if provider == "boltodds" else 50
+        coverage.extend([
+            _coverage(
+                slate_date="2026-04-28", provider=provider,
+                raw_snapshot_rows=first_rows, raw_logical_bytes=first_bytes,
+                raw_group_count=1, compact_group_count=1, exact_group_count=1,
+                first_raw_seen_at="2026-04-28T16:00:00+00:00",
+                last_raw_seen_at="2026-04-28T22:00:00+00:00",
+            ),
+            _coverage(
+                slate_date="2026-04-29", provider=provider,
+                raw_snapshot_rows=second_rows, raw_logical_bytes=second_bytes,
+                raw_group_count=int(second_rows > 0),
+                compact_group_count=int(second_rows > 0),
+                exact_group_count=int(second_rows > 0),
+                first_raw_seen_at=(
+                    "2026-04-29T16:00:00+00:00" if second_rows else None
+                ),
+                last_raw_seen_at=(
+                    "2026-04-29T22:00:00+00:00" if second_rows else None
+                ),
+            ),
+        ])
+        last_snapshot_at = (
+            "2026-04-28T22:00:00+00:00"
+            if provider == "boltodds"
+            else "2026-04-29T22:00:00+00:00"
+        )
+        heartbeat_count = 2 if provider == "boltodds" else 0
+        last_heartbeat_at = (
+            "2026-04-29T22:01:00+00:00" if provider == "boltodds" else None
+        )
+        last_message_at = (
+            "2026-04-29T22:00:30+00:00" if provider == "boltodds" else None
+        )
+        candidate_runtime.append(_runtime(
+            provider=provider,
+            first_run_at="2026-04-28T15:55:00+00:00",
+            last_run_at="2026-04-29T15:55:00+00:00",
+            run_count=2, completed_run_count=2, failed_run_count=0,
+            request_count=2, books_seen=["fanduel"],
+            first_snapshot_at="2026-04-28T16:00:00+00:00",
+            last_snapshot_at=last_snapshot_at,
+            snapshot_count=first_rows + second_rows,
+            snapshot_logical_bytes=first_bytes + second_bytes,
+            last_heartbeat_at=last_heartbeat_at,
+            last_message_at=last_message_at,
+            heartbeat_count=heartbeat_count,
+        ))
+        if provider == "boltodds":
+            current = {
+                "run": "2026-06-17T17:22:29+00:00",
+                "snapshot": "2026-06-17T17:22:28+00:00",
+                "heartbeat": "2026-06-17T17:22:27+00:00",
+                "message": "2026-06-17T17:22:26+00:00",
+            }
+        else:
+            current = {
+                "run": "2026-05-29T18:00:00+00:00",
+                "snapshot": "2026-05-29T18:00:00+00:00",
+                "heartbeat": None,
+                "message": None,
+            }
+        runtime_boundary.append({
+            "provider": provider,
+            "current_latest_run_at": current["run"],
+            "current_latest_snapshot_at": current["snapshot"],
+            "current_latest_heartbeat_at": current["heartbeat"],
+            "current_latest_message_at": current["message"],
+            "candidate_latest_run_at": "2026-04-29T15:55:00+00:00",
+            "candidate_latest_snapshot_at": last_snapshot_at,
+            "candidate_latest_heartbeat_at": last_heartbeat_at,
+            "candidate_latest_message_at": last_message_at,
+            "post_boltodds_suspension": False,
+        })
+
+    expected_ranges = [{
+        "provider": provider,
+        "start_date": "2026-04-28",
+        "end_date": "2026-04-29",
+    } for provider in providers]
+    completed_ranges = [{
+        "provider": provider,
+        "start_date": slate_date,
+        "end_date": slate_date,
+    } for provider in providers for slate_date in ("2026-04-28", "2026-04-29")]
+    return {
+        "audit_version": 2,
+        "audit_generated_at": "2026-05-29T18:00:00+00:00",
+        "as_of_date": "2026-05-29",
+        "timezone": "America/Phoenix",
+        "candidate_scope": {
+            "start_date": "2026-04-28", "end_date": "2026-04-29",
+            "raw_retention_days": 30, "providers": providers,
+        },
+        "protected_scope": {
+            "start_date": "2026-04-30",
+            "reason": "dates inside the raw retention window are excluded",
+        },
+        "execution": {
+            "query_contract_sha256": bounded_sql.query_contract_sha256(),
+            "query_contract_version": "supabase-db-query-linked-json-v1",
+            "runner_version": "2", "cli_version": "2.48.3",
+            "chunk_ladder_days": [1, 3, 7], "soft_elapsed_seconds": 30.0,
+            "cooldown_seconds": 30.0, "max_chunk_days": 7,
+            "default_max_chunks": 1, "hard_max_chunks": 5,
+            "expected_chunk_ranges": expected_ranges,
+            "completed_chunk_ranges": completed_ranges,
+            "complete": True,
+        },
+        "coverage": coverage,
+        "source_anomalies": [{
+            "provider": provider, "rows_missing_run_id": 0,
+            "rows_missing_run_row": 0, "rows_missing_group_key": 0,
+            "provider_run_mismatch_rows": 0, "slate_date_mismatch_rows": 0,
+            "unknown_provider_rows": 0,
+        } for provider in providers],
+        "candidate_runtime": candidate_runtime,
+        "runtime_boundary": runtime_boundary,
+        "season_evidence": None,
+        "pins": None,
+        "complete": True,
+        "retention_execution_closed": True,
+        "deletion_approved": False,
+    }
+
+
+def _v2_season_evidence():
+    evidence = _season_evidence()
+    evidence["generated_at"] = "2026-05-29T18:00:00+00:00"
+    second = json.loads(json.dumps(evidence["dates"][0]))
+    evidence["dates"][0]["slate_date"] = "2026-04-28"
+    second["slate_date"] = "2026-04-29"
+    evidence["dates"].append(second)
+    return evidence
+
+
+def _v2_pins():
+    pins = _pins()
+    pins["generated_at"] = "2026-05-29T18:00:00+00:00"
+    template = pins["partitions"][0]
+    pins["partitions"] = []
+    for slate_date in ("2026-04-28", "2026-04-29"):
+        for provider in ("boltodds", "propline", "the_odds", "therundown"):
+            row = json.loads(json.dumps(template))
+            row.update(slate_date=slate_date, provider=provider)
+            pins["partitions"].append(row)
+    return pins
+
+
+def _v2_gate_c_manifest():
+    manifest = _gate_c_manifest()
+    manifest.update(
+        generated_at="2026-05-29T18:00:00+00:00",
+        loaded_slate_dates=["2026-04-28", "2026-04-29"],
+    )
+    manifest["source"]["end_date"] = "2026-04-29"
+    return manifest
+
+
 def _season_evidence(*, complete=True):
     return {
         "schema_version": 1, "generated_at": "2026-08-18T18:00:00+00:00",
@@ -222,6 +393,240 @@ def test_load_query_envelope_accepts_supabase_array_wrapper(tmp_path):
     path = tmp_path / "query.json"
     path.write_text(json.dumps([{"retention_exact_coverage": _envelope()}]), encoding="utf-8")
     assert retention.load_query_envelope(str(path))["audit_version"] == 1
+
+
+def test_load_query_envelope_accepts_direct_v2_object(tmp_path):
+    path = tmp_path / "bounded-envelope.json"
+    path.write_text(json.dumps(_v2_envelope()), encoding="utf-8")
+
+    loaded = retention.load_query_envelope(str(path))
+
+    assert loaded["audit_version"] == 2
+    assert loaded["candidate_scope"]["end_date"] == "2026-04-29"
+
+
+def test_v1_normalization_preserves_the_existing_envelope_object():
+    envelope = _envelope()
+
+    normalized = retention._normalize_envelope_for_decisions(
+        envelope, as_of=None,
+    )
+
+    assert normalized is envelope
+
+
+def test_complete_v2_matrix_uses_candidate_cutoff_and_current_runtime_separately():
+    envelope = _v2_envelope()
+    report = retention.build_readiness_report(
+        envelope=envelope, gate_c=_v2_gate_c_manifest(),
+        season_evidence=_v2_season_evidence(), pins=_v2_pins(),
+        as_of="2026-05-29", raw_retention_days=30,
+    )
+    closure = retention.build_boltodds_closure(
+        envelope=envelope, gate_c=_v2_gate_c_manifest(),
+        season_evidence=_v2_season_evidence(), pins=_v2_pins(),
+        as_of="2026-05-29",
+    )
+
+    assert report["source_date_range"] == {
+        "start_date": "2026-04-28", "end_date": "2026-04-29",
+    }
+    assert report["summary"]["decision_counts"] == {
+        "ready_for_retention_review": 8,
+    }
+    assert closure["status"] == "ready_for_retirement_review"
+    assert closure["runtime"]["last_snapshot_at"] == "2026-04-28T22:00:00+00:00"
+    assert closure["current_runtime_boundary"]["current_latest_snapshot_at"] == (
+        "2026-06-17T17:22:28+00:00"
+    )
+
+
+def test_v2_null_embedded_evidence_never_invents_readiness():
+    report = retention.build_readiness_report(
+        envelope=_v2_envelope(), gate_c=_v2_gate_c_manifest(),
+        season_evidence=None, pins=None,
+        as_of="2026-05-29", raw_retention_days=30,
+    )
+
+    assert report["summary"]["decision_counts"] == {
+        "blocked_outcome_evidence": 8,
+    }
+
+
+def test_v2_report_rejects_a_retention_window_different_from_candidate_scope():
+    with pytest.raises(ValueError, match="raw_retention_days.*candidate_scope"):
+        retention.build_readiness_report(
+            envelope=_v2_envelope(), gate_c=_v2_gate_c_manifest(),
+            season_evidence=_v2_season_evidence(), pins=_v2_pins(),
+            as_of="2026-05-29", raw_retention_days=14,
+        )
+
+
+def test_v2_requires_the_clean_regime_candidate_start_date():
+    envelope = _v2_envelope()
+    envelope["candidate_scope"]["start_date"] = "2026-04-29"
+
+    with pytest.raises(ValueError, match="candidate_scope.start_date"):
+        retention.validate_envelope(envelope, as_of=date.fromisoformat("2026-05-29"))
+
+
+@pytest.mark.parametrize("field", ["season_evidence", "pins"])
+def test_v2_requires_explicit_top_level_evidence_placeholders(field):
+    envelope = _v2_envelope()
+    del envelope[field]
+
+    with pytest.raises(ValueError, match=field):
+        retention.validate_envelope(envelope, as_of=date.fromisoformat("2026-05-29"))
+
+
+@pytest.mark.parametrize("mode", ["missing", "duplicate"])
+def test_v2_rejects_missing_or_duplicate_matrix_partition(mode):
+    envelope = _v2_envelope()
+    if mode == "missing":
+        envelope["coverage"].pop()
+    else:
+        envelope["coverage"].append(dict(envelope["coverage"][0]))
+
+    with pytest.raises(ValueError, match="coverage.*matrix|partitions.*unique"):
+        retention.validate_envelope(envelope, as_of=date.fromisoformat("2026-05-29"))
+
+
+def test_v2_rejects_incomplete_execution_metadata():
+    envelope = _v2_envelope()
+    envelope["execution"]["complete"] = False
+
+    with pytest.raises(ValueError, match="execution.complete"):
+        retention.validate_envelope(envelope, as_of=date.fromisoformat("2026-05-29"))
+
+
+@pytest.mark.parametrize("range_kind", ["expected", "completed"])
+def test_v2_rejects_expected_or_completed_range_mismatch(range_kind):
+    envelope = _v2_envelope()
+    key = f"{range_kind}_chunk_ranges"
+    envelope["execution"][key][0]["end_date"] = (
+        "2026-04-28" if range_kind == "expected" else "2026-04-29"
+    )
+
+    with pytest.raises(ValueError, match=f"{range_kind}.*ranges"):
+        retention.validate_envelope(envelope, as_of=date.fromisoformat("2026-05-29"))
+
+
+def test_v2_rejects_invalid_query_contract_hash():
+    envelope = _v2_envelope()
+    envelope["execution"]["query_contract_sha256"] = "0" * 64
+
+    with pytest.raises(ValueError, match="query_contract_sha256"):
+        retention.validate_envelope(envelope, as_of=date.fromisoformat("2026-05-29"))
+
+
+@pytest.mark.parametrize("field", ["snapshot_count", "snapshot_logical_bytes"])
+def test_v2_rejects_candidate_runtime_row_or_byte_mismatch(field):
+    envelope = _v2_envelope()
+    envelope["candidate_runtime"][0][field] += 1
+
+    with pytest.raises(ValueError, match="candidate runtime snapshot"):
+        retention.validate_envelope(envelope, as_of=date.fromisoformat("2026-05-29"))
+
+
+@pytest.mark.parametrize(
+    "field", ["slate_date_mismatch_rows", "unknown_provider_rows"],
+)
+def test_v2_new_unattributed_anomalies_block_readiness_and_closure(field):
+    envelope = _v2_envelope()
+    envelope["source_anomalies"][0][field] = 1
+
+    report = retention.build_readiness_report(
+        envelope=envelope, gate_c=_v2_gate_c_manifest(),
+        season_evidence=_v2_season_evidence(), pins=_v2_pins(),
+        as_of="2026-05-29", raw_retention_days=30,
+    )
+    closure = retention.build_boltodds_closure(
+        envelope=envelope, gate_c=_v2_gate_c_manifest(),
+        season_evidence=_v2_season_evidence(), pins=_v2_pins(),
+        as_of="2026-05-29",
+    )
+
+    boltodds = next(row for row in report["partitions"] if row["provider"] == "boltodds")
+    assert boltodds["decision"] == "blocked_compaction"
+    assert field in boltodds["reason_codes"]
+    assert closure["status"] == "incomplete_evidence"
+    assert field in closure["unresolved_evidence_gaps"]
+
+
+def test_v2_rejects_stale_runtime_boundary_generation_day():
+    envelope = _v2_envelope()
+    envelope["audit_generated_at"] = "2026-05-29T06:59:59+00:00"
+
+    with pytest.raises(ValueError, match="runtime boundary.*stale"):
+        retention.validate_envelope(envelope, as_of=date.fromisoformat("2026-05-29"))
+
+
+@pytest.mark.parametrize("mode", ["missing", "duplicate"])
+def test_v2_rejects_missing_or_duplicate_runtime_boundary_provider(mode):
+    envelope = _v2_envelope()
+    if mode == "missing":
+        envelope["runtime_boundary"].pop()
+    else:
+        envelope["runtime_boundary"].append(dict(envelope["runtime_boundary"][0]))
+
+    with pytest.raises(ValueError, match="runtime_boundary.*provider"):
+        retention.validate_envelope(envelope, as_of=date.fromisoformat("2026-05-29"))
+
+
+@pytest.mark.parametrize(
+    ("current_field", "candidate_field"),
+    [
+        ("current_latest_run_at", "candidate_latest_run_at"),
+        ("current_latest_snapshot_at", "candidate_latest_snapshot_at"),
+        ("current_latest_heartbeat_at", "candidate_latest_heartbeat_at"),
+        ("current_latest_message_at", "candidate_latest_message_at"),
+    ],
+)
+def test_v2_rejects_current_runtime_maximum_older_than_candidate(
+    current_field, candidate_field,
+):
+    envelope = _v2_envelope()
+    boundary = envelope["runtime_boundary"][0]
+    boundary[current_field] = "2026-04-27T23:59:59+00:00"
+    assert boundary[candidate_field] is not None
+
+    with pytest.raises(ValueError, match="current runtime boundary.*candidate"):
+        retention.validate_envelope(envelope, as_of=date.fromisoformat("2026-05-29"))
+
+
+@pytest.mark.parametrize(
+    "field",
+    [
+        "current_latest_run_at", "current_latest_snapshot_at",
+        "current_latest_heartbeat_at", "current_latest_message_at",
+    ],
+)
+def test_v2_boltodds_closure_blocks_each_post_suspension_current_maximum(field):
+    envelope = _v2_envelope()
+    boundary = envelope["runtime_boundary"][0]
+    boundary[field] = "2026-06-17T17:22:30+00:00"
+    boundary["post_boltodds_suspension"] = True
+
+    closure = retention.build_boltodds_closure(
+        envelope=envelope, gate_c=_v2_gate_c_manifest(),
+        season_evidence=_v2_season_evidence(), pins=_v2_pins(),
+        as_of="2026-05-29",
+    )
+
+    assert closure["status"] == "operational_exception"
+    assert "post_suspension_runtime_evidence" in closure["unresolved_evidence_gaps"]
+
+
+@pytest.mark.parametrize(
+    ("field", "value"),
+    [("retention_execution_closed", False), ("deletion_approved", True)],
+)
+def test_v2_rejects_open_execution_or_approved_deletion(field, value):
+    envelope = _v2_envelope()
+    envelope[field] = value
+
+    with pytest.raises(ValueError, match=field):
+        retention.validate_envelope(envelope, as_of=date.fromisoformat("2026-05-29"))
 
 
 @pytest.mark.parametrize("mutation", [
