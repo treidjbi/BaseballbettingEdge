@@ -110,6 +110,8 @@ money, FIRE 1u, pre-30, and Path B. K-line results are `4-3/-0.266u` at
 2.5-3.5, `6-2/+2.398u` at 4.5, `2-0/+1.434u` at 5.5, and `3-0/+2.298u` at
 6.5. Clean quality is `7-2/+3.178u`; capped quality is `8-3/+2.686u`.
 Normal workload is `15-4/+6.864u`; the only medium-workload row lost.
+Model/market is `13-5/+4.094u` across `18` model-agrees rows; the `2`
+unknown rows are `2-0/+1.770u`, and no model-fades rows are present.
 
 Historical leave-one-slate-out PnL stays positive with a `+4.290u` minimum,
 but that evidence predates the July 30 prospective boundary. The audit still
