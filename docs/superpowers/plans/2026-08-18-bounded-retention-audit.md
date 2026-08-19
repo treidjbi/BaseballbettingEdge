@@ -1137,6 +1137,51 @@ Expected: clean commit verification, no unintended worktree changes, and no push
 - Retention activation, raw deletion, vacuum, storage reclamation, provider/
   model/notification/lock/UI changes, push, and deployment remain closed.
 
+### Phase 2 Unexpected-Compact Diagnosis 3 — 2026-08-19
+
+- Tyler approved one final bounded aggregate-only diagnosis for the exact May 17
+  market alias pair and the May 18 no-heartbeat timing cohorts. The one CTE
+  SELECT ran once through Supabase CLI `--file` under SHA-256
+  `8dd98540830fade34a3cf1445754a3559916f7da9d11471de22ca0bf8f897ae0`,
+  completed in `46.12s`, and exited successfully without retry. It returned only
+  market-key labels, counts, relationship classes, and timestamp extrema; no
+  player, book, snapshot/run ID, payload, credential, write, repair, or deletion
+  was returned or performed. The temporary ignored SQL file was removed.
+- May 17 is now causally isolated to the exact historical alias pair. All `220`
+  groups / `2,485` sources carry compact `pitcher_strikeouts` against source
+  `Strikeouts`. Together with the earlier proof that every source exists, counts
+  agree, and provider/book/player/side/line dimensions match, plus commit
+  `5a836a26` and the contemporaneous SQL normalization, this closes the broad
+  corruption hypothesis. It is an explicit canonical-market alias class, not a
+  missing-source or mixed-key class. It still does not authorize weakening the
+  general unexpected-compact invariant.
+- The `23` May 18 groups / `100` sources also collapse into two internally
+  consistent prior-day cohorts. The `17` single-run groups contain `35` sources;
+  the `6` multi-run groups contain `65` sources across `18` group/run links. In
+  both cohorts every actual run is dated May 17, every source snapshot and every
+  surviving heartbeat is before the May 18 Phoenix boundary, compact insertion
+  occurred `6-24h` after the final source observation, and compact updates
+  completed within one hour. The rows have heartbeat proof for the source runs
+  only on the prior day, not a same-day heartbeat alias. This is consistent with
+  a historical requested-date compaction replay/carryover, but the exact trigger
+  that admitted those prior-day runs is not retained in current heartbeat state.
+- All `635` May 18 extras are therefore bounded: `612` retain direct same-slate
+  heartbeat-alias proof and the remaining `23` have one uniform prior-day
+  source/run/heartbeat and next-morning-compaction shape. The evidence explains
+  the shape but does not yet prove that every unexpected row's derived movement
+  metrics equal its listed sources or that every listed source group is already
+  preserved by an exact actual-date compact row.
+- Keep all `855` groups blocking the generic exact-coverage contract. The
+  smallest next gate is a separately approved aggregate-only equivalence read:
+  reconstruct first/last/min/max odds, movement count, time bounds, and source
+  count from each unexpected row's listed source IDs; compare those values with
+  the compact row; and prove the sources also belong to exact actual-date compact
+  groups. Only after that proof should a separately reviewed, date/provider/
+  alias-bounded exception contract be designed and tested. Do not repair,
+  normalize, reclassify, delete, weaken the audit, or resume the broad matrix.
+- Retention activation, raw deletion, vacuum, storage reclamation, provider/
+  model/notification/lock/UI changes, push, and deployment remain closed.
+
 ---
 
 ## Separate Live-Validation Gates — Not Authorized by This Plan
