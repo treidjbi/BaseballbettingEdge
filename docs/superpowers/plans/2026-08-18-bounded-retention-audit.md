@@ -993,6 +993,35 @@ Expected: clean commit verification, no unintended worktree changes, and no push
   approval. Deletion, vacuum, storage reclamation, push, deployment, and every
   production behavior change remain closed.
 
+### Phase 2 Gate 4 Capped Invocation 2 — 2026-08-19
+
+- Tyler approved a second capped multi-chunk invocation with the same hard
+  limit of five linked SELECT-only queries. The runner resumed from the four
+  validated historical checkpoints and selected BoltOdds `2026-05-05` through
+  `2026-05-07` as the next missing bounded unit.
+- The first three-date chunk completed in `18.11s` and reconciled `4,662` raw
+  snapshots across `928/928` exact raw/compact groups, with zero missing,
+  unexpected, mismatched, or blocking-anomaly rows.
+- After the required cooldown, the second chunk (`2026-05-08` through
+  `2026-05-10`) completed in `64.96s` and reconciled `175,746` raw snapshots
+  across `3,495/3,495` exact raw/compact groups. All `4,800` cross-date rows
+  were preserved by compact lineage and zero were unpreserved. This large
+  historical slice is positive proof that the preserved-lineage contract is
+  retaining the evidence needed for end-of-season analysis.
+- Because the second successful query exceeded the 30-second soft ceiling, the
+  runner stopped automatically after two queries and did not issue the three
+  remaining queries allowed by the hard cap. There was no retry and no
+  database, pooler, authentication, timeout, parsing, integrity, equation, or
+  redaction failure.
+- Six historical checkpoints plus the four-provider runtime checkpoint now
+  validate under the current query hash. The next missing unit is BoltOdds
+  `2026-05-11` through `2026-05-13`; the full provider/date matrix remains
+  incomplete, so no envelope, readiness report, retention activation, or
+  deletion decision is available.
+- Stop before another invocation. Continuing the bounded matrix requires fresh
+  approval. Deletion, vacuum, storage reclamation, push, deployment, and every
+  production behavior change remain closed.
+
 ---
 
 ## Separate Live-Validation Gates — Not Authorized by This Plan
