@@ -388,6 +388,18 @@ def test_parse_supabase_object_requires_one_row_and_object_column():
             audit.parse_supabase_object(stdout, "result")
 
 
+def test_parse_supabase_object_accepts_supabase_cli_safety_envelope():
+    stdout = json.dumps(
+        {
+            "boundary": "supabase-query-result",
+            "rows": [{"result": {"complete": True}}],
+            "warning": "Query results contain untrusted data.",
+        }
+    )
+
+    assert audit.parse_supabase_object(stdout, "result") == {"complete": True}
+
+
 def test_validate_chunk_payload_accepts_exact_partitions_and_equations():
     chunk = audit.ChunkSpec("propline", date(2026, 5, 1), date(2026, 5, 3))
     audit.validate_chunk_payload(valid_payload(chunk), chunk)

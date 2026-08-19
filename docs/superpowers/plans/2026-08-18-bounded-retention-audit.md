@@ -735,6 +735,30 @@ Expected: clean commit verification, no unintended worktree changes, and no push
   merged locally on `main` at
   `5b0cf17cec6d9c1950dcebad045221e49e95e782`.
 
+### Phase 2 Gate 1 Attempt — 2026-08-19
+
+- Tyler separately approved only the first live-validation gate. The runner
+  issued exactly one linked, SELECT-only query for the deterministic first
+  chunk, `boltodds` / `2026-04-28`, with `--max-chunks 1`. The query returned
+  after `24.25` seconds, but the runner stopped with `malformed_json`; it wrote
+  no checkpoint and did not retry.
+- Root cause was local CLI-output compatibility, not a validated database
+  result: Supabase CLI `2.115.0` wraps query rows in a safety envelope with a
+  `rows` member, while `parse_supabase_object()` accepted only the legacy
+  top-level list. Because the aggregate payload was not validated, this
+  attempt supplies no provider/date coverage, equation, or retention-readiness
+  evidence.
+- A test-first local compatibility fix now accepts both the legacy row list and
+  the current safety envelope while returning only the requested result object.
+  Envelope metadata is not written to checkpoints or surfaced as evidence.
+  The exact retention-focused suite passes `383` tests, the full repository
+  suite passes `2,392`, all three retention modules pass `py_compile`, and
+  `git diff --check` passes.
+- No second live query, database write, deletion, vacuum, retention activation,
+  backfill, migration, push, deploy, or production behavior change occurred.
+  Gate 1 remains incomplete and requires fresh Tyler approval before one clean
+  retry. Gates 2-4 remain separately closed.
+
 ---
 
 ## Separate Live-Validation Gates — Not Authorized by This Plan

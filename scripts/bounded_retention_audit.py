@@ -317,6 +317,8 @@ def parse_supabase_object(stdout: str, column: str) -> dict[str, Any]:
         rows = json.loads(stdout)
     except json.JSONDecodeError as exc:
         raise ValueError("malformed JSON") from exc
+    if isinstance(rows, dict):
+        rows = rows.get("rows")
     if not isinstance(rows, list) or len(rows) != 1 or not isinstance(rows[0], dict):
         raise ValueError("expected one result row")
     value = rows[0].get(column)
