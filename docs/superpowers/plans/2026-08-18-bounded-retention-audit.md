@@ -817,6 +817,36 @@ Expected: clean commit verification, no unintended worktree changes, and no push
   Tyler approval; Gate 4 capped multi-chunk execution, retention activation,
   deletion, vacuum, and storage reclamation remain closed.
 
+### Phase 2 Gate 3 Runtime Boundary — 2026-08-19
+
+- Tyler separately approved exactly one narrow runtime-boundary read. The
+  existing `runtime-boundary` command issued one linked, SELECT-only query for
+  candidate cutoff `2026-07-20`, completed the database call in `16.03`
+  seconds, and wrote `runtime-boundary-2026-08-19.json`. There was no retry or
+  second query and no database, pooler, authentication, timeout, parsing, or
+  validation failure.
+- The audit-v2 checkpoint passed filename, integrity, CLI, query-contract,
+  rendered-SQL, scope, result-hash, timestamp, exact-provider, freshness,
+  candidate/current ordering, and redaction validation for BoltOdds, PropLine,
+  The Odds API, and TheRundown.
+- BoltOdds retirement is clean in database runtime evidence:
+  `post_boltodds_suspension` is false. The current and candidate maxima are
+  identical: run `2026-06-17T17:20:59.716833Z`, heartbeat
+  `2026-06-17T17:20:59.652720Z`, message
+  `2026-06-17T17:20:59.627200Z`, and snapshot
+  `2026-06-16T13:37:44.405859Z`. All are at or before the documented
+  `2026-06-17T17:22:29Z` suspension boundary; no accidental reactivation is
+  present.
+- A local post-check initially compared canonical UTC timestamps with the raw
+  checkpoint's equivalent Phoenix-offset strings and failed its own overly
+  exact textual assertion. The checkpoint's validator had already passed.
+  Rechecking against canonical UTC values passed without another database
+  call; no code or checkpoint correction was needed.
+- Gate 3 is complete, but it does not clear Gate 2's four compact-group
+  mismatches or `157` slate-date mismatch rows. Stop before Gate 4. Capped
+  multi-chunk execution, mismatch diagnosis/backfill, retention activation,
+  deletion, vacuum, and storage reclamation remain separately closed.
+
 ---
 
 ## Separate Live-Validation Gates — Not Authorized by This Plan
