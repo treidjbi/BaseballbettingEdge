@@ -847,6 +847,38 @@ Expected: clean commit verification, no unintended worktree changes, and no push
   multi-chunk execution, mismatch diagnosis/backfill, retention activation,
   deletion, vacuum, and storage reclamation remain separately closed.
 
+### Phase 2 Gate 2 Mismatch Diagnosis — 2026-08-19
+
+- Tyler approved a read-only diagnosis of Gate 2's four compact-group
+  mismatches and `157` slate-date mismatch rows. Two narrow linked,
+  SELECT-only aggregate queries completed in `19.07` and `24.78` seconds.
+  There was no retry, mutation, raw-payload output, backfill, retention
+  activation, deletion, vacuum, push, deploy, or production behavior change.
+- The four June 11 compact groups are genuinely stale rather than an audit
+  definition mismatch. All four are Caesars / Anthony Kay groups. Their
+  compact rows were last updated at `2026-06-12T12:40:56Z`, but six additional
+  raw snapshots arrived at `13:08:07Z` through `13:17:53Z`. The missing deltas
+  are `2`, `1`, `1`, and `2` snapshots and explain the last-seen, last-odds,
+  movement-count, snapshot-count, minimum-odds, and maximum-odds differences.
+- The `157` cross-date rows are also a real preservation gap. They cover `117`
+  groups: `152` snapshots from a run labeled `2026-05-30` and `5` from a run
+  labeled `2026-06-10`, all observed during the Phoenix `2026-06-11` window.
+  None of the `157` snapshot IDs are present in compact `source_snapshot_ids`
+  and none fall inside a matching compact row's first/last time bounds. `19`
+  rows lack a matching compact group entirely; the other `138` match a group
+  whose compact evidence predates the late snapshot.
+- Root cause: historical persistent BoltOdds workers continued writing under
+  older provider-run slate dates, while compact rollups completed before those
+  late writes and did not perform a final reconciliation of the affected run
+  dates. The exact audit correctly prevented raw deletion that would have lost
+  end-of-season movement evidence.
+- The smallest safe repair, if separately approved, is a bounded compact
+  backfill for BoltOdds run-date partitions `2026-05-30`, `2026-06-10`, and
+  `2026-06-11`, followed by fresh exact coverage and cross-date source-ID/time-
+  bound checks. Do not alter provider/runtime rows, reinterpret observed dates,
+  or delete raw snapshots. Gate 4, retention activation, deletion, vacuum, and
+  storage reclamation remain closed until the repair and proof pass.
+
 ---
 
 ## Separate Live-Validation Gates — Not Authorized by This Plan
