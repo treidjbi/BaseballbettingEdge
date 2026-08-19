@@ -933,6 +933,18 @@ Expected: clean commit verification, no unintended worktree changes, and no push
   vacuum, or storage reclamation was run. A fresh live audit remains a separate
   approval boundary.
 
+### Phase 2 Preserved-Lineage Local Merge — 2026-08-19
+
+- Tyler selected local merge. `codex/retention-preserved-lineage` fast-forwarded
+  cleanly onto local `main` at `7507cebd97805a1047dbd43a925554a7ab796543`;
+  the merged feature branch was then deleted.
+- The exact merged commit passed all `2,399` repository tests in `60.77s`.
+  Independent review had no remaining findings, and the known generated Gate F
+  report was restored to its committed content.
+- Nothing was pushed or deployed and no live query, retention activation,
+  deletion, vacuum, or storage reclamation ran. Fresh checkpoints under the new
+  query hash and Gate 4 remain separate approval boundaries.
+
 ---
 
 ## Separate Live-Validation Gates — Not Authorized by This Plan
