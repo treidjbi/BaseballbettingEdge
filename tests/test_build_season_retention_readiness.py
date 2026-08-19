@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import re
 from datetime import date
 from pathlib import Path
 
@@ -334,6 +335,28 @@ def _v2_gate_c_manifest():
     return manifest
 
 
+def _make_v2_provider_snapshotless(envelope, provider):
+    for row in envelope["coverage"]:
+        if row["provider"] != provider:
+            continue
+        row.update(
+            raw_snapshot_rows=0, raw_logical_bytes=0,
+            raw_group_count=0, compact_group_count=0, exact_group_count=0,
+            first_raw_seen_at=None, last_raw_seen_at=None,
+        )
+    runtime = next(
+        row for row in envelope["candidate_runtime"] if row["provider"] == provider
+    )
+    runtime.update(
+        books_seen=[], first_snapshot_at=None, last_snapshot_at=None,
+        snapshot_count=0, snapshot_logical_bytes=0,
+    )
+    boundary = next(
+        row for row in envelope["runtime_boundary"] if row["provider"] == provider
+    )
+    boundary["candidate_latest_snapshot_at"] = None
+
+
 def _season_evidence(*, complete=True):
     return {
         "schema_version": 1, "generated_at": "2026-08-18T18:00:00+00:00",
@@ -627,6 +650,203 @@ def test_v2_rejects_open_execution_or_approved_deletion(field, value):
 
     with pytest.raises(ValueError, match=field):
         retention.validate_envelope(envelope, as_of=date.fromisoformat("2026-05-29"))
+
+
+@pytest.mark.parametrize(("label", "locate"), [
+    pytest.param("envelope", lambda value: value, id="top-level"),
+    pytest.param("candidate_scope", lambda value: value["candidate_scope"], id="candidate-scope"),
+    pytest.param("protected_scope", lambda value: value["protected_scope"], id="protected-scope"),
+    pytest.param("execution", lambda value: value["execution"], id="execution"),
+    pytest.param(
+        "execution.expected_chunk_ranges[0]",
+        lambda value: value["execution"]["expected_chunk_ranges"][0],
+        id="expected-range",
+    ),
+    pytest.param(
+        "execution.completed_chunk_ranges[0]",
+        lambda value: value["execution"]["completed_chunk_ranges"][0],
+        id="completed-range",
+    ),
+    pytest.param("coverage[0]", lambda value: value["coverage"][0], id="coverage"),
+    pytest.param(
+        "source_anomalies[0]", lambda value: value["source_anomalies"][0],
+        id="source-anomaly",
+    ),
+    pytest.param(
+        "candidate_runtime[0]", lambda value: value["candidate_runtime"][0],
+        id="candidate-runtime",
+    ),
+    pytest.param(
+        "runtime_boundary[0]", lambda value: value["runtime_boundary"][0],
+        id="runtime-boundary",
+    ),
+])
+def test_v2_rejects_unknown_keys_at_every_object_tier(label, locate):
+    envelope = _v2_envelope()
+    locate(envelope)["raw_database_rows"] = "do-not-copy-this-value"
+
+    with pytest.raises(ValueError, match=rf"{re.escape(label)}.*unknown"):
+        retention.validate_envelope(envelope, as_of=date.fromisoformat("2026-05-29"))
+
+
+@pytest.mark.parametrize(("label", "locate", "field"), [
+    pytest.param("coverage[1]", lambda value: value["coverage"][1], "first_raw_seen_at", id="coverage-null"),
+    pytest.param(
+        "candidate_runtime[1]", lambda value: value["candidate_runtime"][1],
+        "last_heartbeat_at", id="runtime-null",
+    ),
+    pytest.param(
+        "runtime_boundary[1]", lambda value: value["runtime_boundary"][1],
+        "current_latest_message_at", id="boundary-current-null",
+    ),
+    pytest.param(
+        "runtime_boundary[1]", lambda value: value["runtime_boundary"][1],
+        "candidate_latest_message_at", id="boundary-candidate-null",
+    ),
+])
+def test_v2_requires_nullable_keys_to_be_present(label, locate, field):
+    envelope = _v2_envelope()
+    del locate(envelope)[field]
+
+    with pytest.raises(
+        ValueError, match=rf"{re.escape(label)}.*missing.*{field}",
+    ):
+        retention.validate_envelope(envelope, as_of=date.fromisoformat("2026-05-29"))
+
+
+def test_v2_missing_runtime_boundary_key_uses_controlled_cli_exit(tmp_path, capsys):
+    envelope = _v2_envelope()
+    del envelope["runtime_boundary"][1]["current_latest_message_at"]
+    query = tmp_path / "query.json"
+    gate_c = tmp_path / "gate-c.json"
+    query.write_text(json.dumps(envelope), encoding="utf-8")
+    gate_c.write_text(json.dumps(_v2_gate_c_manifest()), encoding="utf-8")
+
+    exit_code = retention.main([
+        "readiness", "--query-json", str(query),
+        "--gate-c-manifest", str(gate_c), "--as-of", "2026-05-29",
+        "--output-dir", str(tmp_path),
+    ])
+
+    assert exit_code == 3
+    assert "retention_audit_error" in capsys.readouterr().err
+    assert not (tmp_path / "season_retention_readiness.json").exists()
+    assert not (tmp_path / "season_retention_readiness.md").exists()
+
+
+def test_v2_unknown_raw_payload_is_rejected_without_output_leakage(tmp_path, capsys):
+    envelope = _v2_envelope()
+    secret = "Bearer should-never-appear"
+    envelope["runtime_boundary"][0]["raw_payload"] = {"authorization": secret}
+    query = tmp_path / "query.json"
+    gate_c = tmp_path / "gate-c.json"
+    query.write_text(json.dumps(envelope), encoding="utf-8")
+    gate_c.write_text(json.dumps(_v2_gate_c_manifest()), encoding="utf-8")
+
+    exit_code = retention.main([
+        "boltodds-closure", "--query-json", str(query),
+        "--gate-c-manifest", str(gate_c), "--as-of", "2026-05-29",
+        "--output-dir", str(tmp_path),
+    ])
+
+    captured = capsys.readouterr()
+    assert exit_code == 3
+    assert secret not in captured.out + captured.err
+    assert not (tmp_path / "boltodds_retirement_closure.json").exists()
+    assert not (tmp_path / "boltodds_retirement_closure.md").exists()
+
+
+@pytest.mark.parametrize(("field", "value"), [
+    ("first_snapshot_at", "2026-04-28T15:59:59+00:00"),
+    ("first_snapshot_at", "2026-04-28T16:00:01+00:00"),
+    ("last_snapshot_at", "2026-04-29T21:59:59+00:00"),
+    ("last_snapshot_at", "2026-04-29T22:00:01+00:00"),
+])
+def test_v2_candidate_runtime_snapshot_extrema_must_exactly_match_coverage(field, value):
+    envelope = _v2_envelope()
+    runtime = envelope["candidate_runtime"][1]
+    runtime[field] = value
+    if field == "last_snapshot_at":
+        envelope["runtime_boundary"][1]["candidate_latest_snapshot_at"] = value
+
+    with pytest.raises(ValueError, match="candidate runtime snapshot timestamps contradict coverage"):
+        retention.validate_envelope(envelope, as_of=date.fromisoformat("2026-05-29"))
+
+
+def test_v2_accepts_snapshotless_provider_with_null_candidate_extrema():
+    envelope = _v2_envelope()
+    _make_v2_provider_snapshotless(envelope, "the_odds")
+
+    retention.validate_envelope(envelope, as_of=date.fromisoformat("2026-05-29"))
+
+
+def test_v2_rejects_nonnull_candidate_extremum_for_snapshotless_provider():
+    envelope = _v2_envelope()
+    _make_v2_provider_snapshotless(envelope, "the_odds")
+    envelope["candidate_runtime"][2]["first_snapshot_at"] = "2026-04-28T16:00:00+00:00"
+
+    with pytest.raises(ValueError, match="candidate runtime snapshot"):
+        retention.validate_envelope(envelope, as_of=date.fromisoformat("2026-05-29"))
+
+
+def test_v2_rejects_null_candidate_extremum_for_nonzero_coverage():
+    envelope = _v2_envelope()
+    envelope["candidate_runtime"][1]["first_snapshot_at"] = None
+
+    with pytest.raises(ValueError, match="candidate runtime snapshot"):
+        retention.validate_envelope(envelope, as_of=date.fromisoformat("2026-05-29"))
+
+
+def test_v2_rejects_post_suspension_boltodds_candidate_snapshot_hidden_by_runtime():
+    envelope = _v2_envelope()
+    envelope["coverage"][0].update(
+        first_raw_seen_at="2026-06-18T16:00:00+00:00",
+        last_raw_seen_at="2026-06-18T22:00:00+00:00",
+    )
+
+    with pytest.raises(ValueError, match="candidate runtime snapshot timestamps contradict coverage"):
+        retention.validate_envelope(envelope, as_of=date.fromisoformat("2026-05-29"))
+
+
+def test_v2_rejects_under_explained_mismatched_groups():
+    envelope = _v2_envelope()
+    row = envelope["coverage"][0]
+    row.update(
+        raw_group_count=2, compact_group_count=2, exact_group_count=0,
+        mismatched_group_count=2, first_seen_mismatch_count=1,
+        coverage_exact=False,
+    )
+
+    with pytest.raises(ValueError, match="mismatched_group_count exceeds explained"):
+        retention.validate_envelope(envelope, as_of=date.fromisoformat("2026-05-29"))
+
+
+def test_v2_accepts_overlapping_mismatch_subtypes_for_one_group():
+    envelope = _v2_envelope()
+    row = envelope["coverage"][0]
+    row.update(
+        exact_group_count=0, mismatched_group_count=1,
+        first_seen_mismatch_count=1, last_seen_mismatch_count=1,
+        coverage_exact=False,
+    )
+
+    retention.validate_envelope(envelope, as_of=date.fromisoformat("2026-05-29"))
+
+
+def test_v2_closure_projects_only_approved_runtime_boundary_fields():
+    closure = retention.build_boltodds_closure(
+        envelope=_v2_envelope(), gate_c=_v2_gate_c_manifest(),
+        season_evidence=_v2_season_evidence(), pins=_v2_pins(),
+        as_of="2026-05-29",
+    )
+
+    assert set(closure["current_runtime_boundary"]) == {
+        "provider", "current_latest_run_at", "current_latest_snapshot_at",
+        "current_latest_heartbeat_at", "current_latest_message_at",
+        "candidate_latest_run_at", "candidate_latest_snapshot_at",
+        "candidate_latest_heartbeat_at", "candidate_latest_message_at",
+        "post_boltodds_suspension",
+    }
 
 
 @pytest.mark.parametrize("mutation", [

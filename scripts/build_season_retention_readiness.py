@@ -84,6 +84,47 @@ _V2_RUNTIME_BOUNDARY_PAIRS = (
     ("current_latest_message_at", "candidate_latest_message_at", "last_message_at"),
 )
 _V2_CANONICAL_PROVIDERS = ("boltodds", "propline", "the_odds", "therundown")
+_V2_TOP_LEVEL_FIELDS = (
+    "audit_version", "audit_generated_at", "as_of_date", "timezone",
+    "candidate_scope", "protected_scope", "execution", "coverage",
+    "source_anomalies", "candidate_runtime", "runtime_boundary",
+    "season_evidence", "pins", "complete", "retention_execution_closed",
+    "deletion_approved",
+)
+_V2_CANDIDATE_SCOPE_FIELDS = (
+    "start_date", "end_date", "raw_retention_days", "providers",
+)
+_V2_PROTECTED_SCOPE_FIELDS = ("start_date", "reason")
+_V2_EXECUTION_FIELDS = (
+    "query_contract_sha256", "query_contract_version", "runner_version",
+    "cli_version", "chunk_ladder_days", "soft_elapsed_seconds",
+    "cooldown_seconds", "max_chunk_days", "default_max_chunks",
+    "hard_max_chunks", "expected_chunk_ranges", "completed_chunk_ranges",
+    "complete",
+)
+_V2_RANGE_FIELDS = ("provider", "start_date", "end_date")
+_V2_COVERAGE_FIELDS = (
+    "slate_date", "provider", *_COVERAGE_INTEGER_FIELDS,
+    "first_raw_seen_at", "last_raw_seen_at", "coverage_exact",
+)
+_V2_ANOMALY_FIELDS = ("provider", *_V2_ANOMALY_INTEGER_FIELDS)
+_V2_CANDIDATE_RUNTIME_FIELDS = (
+    "provider", "first_run_at", "last_run_at",
+    *_RUNTIME_INTEGER_FIELDS[:4], "books_seen",
+    "first_snapshot_at", "last_snapshot_at",
+    *_RUNTIME_INTEGER_FIELDS[4:6], "last_heartbeat_at", "last_message_at",
+    _RUNTIME_INTEGER_FIELDS[6],
+)
+_V2_RUNTIME_BOUNDARY_FIELDS = (
+    "provider",
+    *(
+        field
+        for current_field, candidate_field, _runtime_field
+        in _V2_RUNTIME_BOUNDARY_PAIRS
+        for field in (current_field, candidate_field)
+    ),
+    "post_boltodds_suspension",
+)
 _SEASON_EVIDENCE_COUNT_FIELDS = (
     "official_tracked_picks", "accepted_bets", "sent_notifications",
     "consumed_locks", "frozen_alt_v2_rows", "operator_incidents",
@@ -121,6 +162,18 @@ def _require_mapping(value: Any, label: str) -> dict[str, Any]:
     if not isinstance(value, dict):
         raise ValueError(f"{label} must be an object")
     return value
+
+
+def _require_exact_keys(
+    value: dict[str, Any], fields: tuple[str, ...], label: str,
+) -> None:
+    expected = set(fields)
+    missing = sorted(expected - set(value))
+    if missing:
+        raise ValueError(f"{label} is missing required fields: {', '.join(missing)}")
+    unknown = sorted(set(value) - expected)
+    if unknown:
+        raise ValueError(f"{label} contains unknown fields: {', '.join(unknown)}")
 
 
 def _require_string(value: Any, label: str) -> str:
@@ -514,6 +567,7 @@ def _validate_v2_execution(
     execution: dict[str, Any], *, start_date: date, end_date: date,
     providers: list[str],
 ) -> None:
+    _require_exact_keys(execution, _V2_EXECUTION_FIELDS, "execution")
     if execution.get("complete") is not True:
         raise ValueError("execution.complete must be true")
     if execution.get("query_contract_sha256") != bounded_sql.query_contract_sha256():
@@ -534,6 +588,13 @@ def _validate_v2_execution(
     _require_string(execution.get("cli_version"), "execution.cli_version")
 
     expected_ranges = execution.get("expected_chunk_ranges")
+    if not isinstance(expected_ranges, list):
+        raise ValueError("execution.expected_chunk_ranges must be a list")
+    for index, value in enumerate(expected_ranges):
+        row = _require_mapping(value, f"execution.expected_chunk_ranges[{index}]")
+        _require_exact_keys(
+            row, _V2_RANGE_FIELDS, f"execution.expected_chunk_ranges[{index}]",
+        )
     expected_value = [{
         "provider": provider,
         "start_date": start_date.isoformat(),
@@ -548,6 +609,9 @@ def _validate_v2_execution(
     completed_partitions: set[tuple[str, str]] = set()
     for index, value in enumerate(completed_ranges):
         row = _require_mapping(value, f"execution.completed_chunk_ranges[{index}]")
+        _require_exact_keys(
+            row, _V2_RANGE_FIELDS, f"execution.completed_chunk_ranges[{index}]",
+        )
         provider = _require_provider(
             row.get("provider"), f"execution.completed_chunk_ranges[{index}].provider",
         )
@@ -587,6 +651,7 @@ def _validate_v2_execution(
 def _validate_v2_envelope(
     envelope: dict[str, Any], *, as_of: date | None,
 ) -> None:
+    _require_exact_keys(envelope, _V2_TOP_LEVEL_FIELDS, "envelope")
     if envelope.get("complete") is not True:
         raise ValueError("complete must be true")
     if envelope.get("retention_execution_closed") is not True:
@@ -608,6 +673,7 @@ def _validate_v2_envelope(
         raise ValueError("runtime boundary generated_at is stale") from exc
 
     scope = _require_mapping(envelope.get("candidate_scope"), "candidate_scope")
+    _require_exact_keys(scope, _V2_CANDIDATE_SCOPE_FIELDS, "candidate_scope")
     start_date = _parse_date(scope.get("start_date"), "candidate_scope.start_date")
     end_date = _parse_date(scope.get("end_date"), "candidate_scope.end_date")
     if start_date != date(2026, 4, 28):
@@ -623,6 +689,7 @@ def _validate_v2_envelope(
         raise ValueError("candidate_scope.end_date must equal as_of_date minus 30 days")
 
     protected = _require_mapping(envelope.get("protected_scope"), "protected_scope")
+    _require_exact_keys(protected, _V2_PROTECTED_SCOPE_FIELDS, "protected_scope")
     protected_start = _parse_date(
         protected.get("start_date"), "protected_scope.start_date",
     )
@@ -630,10 +697,8 @@ def _validate_v2_envelope(
         raise ValueError("protected_scope.start_date must follow candidate cutoff")
     _require_string(protected.get("reason"), "protected_scope.reason")
     for field in ("season_evidence", "pins"):
-        if field not in envelope:
-            raise ValueError(f"{field} placeholder is required")
-        if envelope[field] is not None and not isinstance(envelope[field], dict):
-            raise ValueError(f"{field} must be null or an object")
+        if envelope[field] is not None:
+            raise ValueError(f"{field} must be null; supply its manifest separately")
     _validate_v2_execution(
         _require_mapping(envelope.get("execution"), "execution"),
         start_date=start_date, end_date=end_date, providers=providers,
@@ -646,6 +711,9 @@ def _validate_v2_envelope(
     anomalies_by_provider: dict[str, dict[str, Any]] = {}
     for index, raw_row in enumerate(envelope["source_anomalies"]):
         row = _require_mapping(raw_row, f"source_anomalies[{index}]")
+        _require_exact_keys(
+            row, _V2_ANOMALY_FIELDS, f"source_anomalies[{index}]",
+        )
         provider = _require_provider(row.get("provider"), f"source_anomalies[{index}].provider")
         if provider in anomalies_by_provider:
             raise ValueError("source_anomalies providers must be unique")
@@ -659,6 +727,9 @@ def _validate_v2_envelope(
     runtime_timestamps: dict[str, dict[str, datetime | None]] = {}
     for index, raw_row in enumerate(envelope["candidate_runtime"]):
         row = _require_mapping(raw_row, f"candidate_runtime[{index}]")
+        _require_exact_keys(
+            row, _V2_CANDIDATE_RUNTIME_FIELDS, f"candidate_runtime[{index}]",
+        )
         provider = _require_provider(row.get("provider"), f"candidate_runtime[{index}].provider")
         if provider in runtime_by_provider:
             raise ValueError("candidate_runtime providers must be unique")
@@ -674,11 +745,15 @@ def _validate_v2_envelope(
     }
     seen_matrix: set[tuple[str, str]] = set()
     totals = {
-        provider: {"raw_snapshot_rows": 0, "raw_logical_bytes": 0}
+        provider: {
+            "raw_snapshot_rows": 0, "raw_logical_bytes": 0,
+            "first_raw_seen_at": None, "last_raw_seen_at": None,
+        }
         for provider in providers
     }
     for index, raw_row in enumerate(envelope["coverage"]):
         row = _require_mapping(raw_row, f"coverage[{index}]")
+        _require_exact_keys(row, _V2_COVERAGE_FIELDS, f"coverage[{index}]")
         provider = _require_provider(row.get("provider"), f"coverage[{index}].provider")
         slate_date = _parse_date(row.get("slate_date"), f"coverage[{index}].slate_date")
         partition = (provider, slate_date.isoformat())
@@ -723,6 +798,8 @@ def _validate_v2_envelope(
         metric_mismatches = [row[field] for field in MISMATCH_FIELDS[3:]]
         if any(value > row["mismatched_group_count"] for value in metric_mismatches):
             raise ValueError("field mismatch count exceeds mismatched_group_count")
+        if row["mismatched_group_count"] > sum(metric_mismatches):
+            raise ValueError("mismatched_group_count exceeds explained field mismatches")
         if (row["mismatched_group_count"] > 0) != any(metric_mismatches):
             raise ValueError("mismatched_group_count contradicts field mismatches")
         expected_exact = not any(
@@ -735,6 +812,17 @@ def _validate_v2_envelope(
             raise ValueError("coverage_exact contradicts coverage aggregates")
         totals[provider]["raw_snapshot_rows"] += row["raw_snapshot_rows"]
         totals[provider]["raw_logical_bytes"] += row["raw_logical_bytes"]
+        if first_seen is not None:
+            totals[provider]["first_raw_seen_at"] = (
+                first_seen
+                if totals[provider]["first_raw_seen_at"] is None
+                else min(totals[provider]["first_raw_seen_at"], first_seen)
+            )
+            totals[provider]["last_raw_seen_at"] = (
+                last_seen
+                if totals[provider]["last_raw_seen_at"] is None
+                else max(totals[provider]["last_raw_seen_at"], last_seen)
+            )
     if seen_matrix != expected_matrix:
         raise ValueError("coverage partition matrix is incomplete")
 
@@ -744,6 +832,13 @@ def _validate_v2_envelope(
             raise ValueError("candidate runtime snapshot rows contradict coverage")
         if runtime["snapshot_logical_bytes"] != totals[provider]["raw_logical_bytes"]:
             raise ValueError("candidate runtime snapshot bytes contradict coverage")
+        if (
+            runtime_timestamps[provider]["first_snapshot_at"]
+            != totals[provider]["first_raw_seen_at"]
+            or runtime_timestamps[provider]["last_snapshot_at"]
+            != totals[provider]["last_raw_seen_at"]
+        ):
+            raise ValueError("candidate runtime snapshot timestamps contradict coverage")
         for field in _V2_ANOMALY_INTEGER_FIELDS:
             if anomalies_by_provider[provider][field] > runtime["snapshot_count"]:
                 raise ValueError("provider anomaly count exceeds candidate runtime snapshots")
@@ -751,6 +846,9 @@ def _validate_v2_envelope(
     boundary_by_provider: dict[str, dict[str, Any]] = {}
     for index, raw_row in enumerate(envelope["runtime_boundary"]):
         row = _require_mapping(raw_row, f"runtime_boundary[{index}]")
+        _require_exact_keys(
+            row, _V2_RUNTIME_BOUNDARY_FIELDS, f"runtime_boundary[{index}]",
+        )
         provider = _require_provider(row.get("provider"), f"runtime_boundary[{index}].provider")
         if provider in boundary_by_provider:
             raise ValueError("runtime_boundary provider is duplicated")
@@ -809,15 +907,47 @@ def _normalize_envelope_for_decisions(
     validate_envelope(envelope, as_of=as_of)
     if envelope["audit_version"] == 1:
         return envelope
-    return {
-        **envelope,
+    normalized = {
+        field: envelope[field]
+        for field in _V2_TOP_LEVEL_FIELDS
+    }
+    normalized.update({
+        "candidate_scope": {
+            field: envelope["candidate_scope"][field]
+            for field in _V2_CANDIDATE_SCOPE_FIELDS
+        },
+        "protected_scope": {
+            field: envelope["protected_scope"][field]
+            for field in _V2_PROTECTED_SCOPE_FIELDS
+        },
+        "execution": {
+            field: envelope["execution"][field]
+            for field in _V2_EXECUTION_FIELDS
+        },
+        "coverage": [
+            {field: row[field] for field in _V2_COVERAGE_FIELDS}
+            for row in envelope["coverage"]
+        ],
+        "source_anomalies": [
+            {field: row[field] for field in _V2_ANOMALY_FIELDS}
+            for row in envelope["source_anomalies"]
+        ],
+        "candidate_runtime": [
+            {field: row[field] for field in _V2_CANDIDATE_RUNTIME_FIELDS}
+            for row in envelope["candidate_runtime"]
+        ],
+        "runtime_boundary": [
+            {field: row[field] for field in _V2_RUNTIME_BOUNDARY_FIELDS}
+            for row in envelope["runtime_boundary"]
+        ],
         "query_scope": {
             "start_date": envelope["candidate_scope"]["start_date"],
             "end_date": envelope["candidate_scope"]["end_date"],
-            "providers": envelope["candidate_scope"]["providers"],
+            "providers": list(envelope["candidate_scope"]["providers"]),
         },
-        "provider_runtime": envelope["candidate_runtime"],
-    }
+    })
+    normalized["provider_runtime"] = normalized["candidate_runtime"]
+    return normalized
 
 
 def _index_season_evidence(
@@ -1409,7 +1539,10 @@ def build_boltodds_closure(
         ),
     }
     if current_runtime_boundary is not None:
-        report["current_runtime_boundary"] = dict(current_runtime_boundary)
+        report["current_runtime_boundary"] = {
+            field: current_runtime_boundary[field]
+            for field in _V2_RUNTIME_BOUNDARY_FIELDS
+        }
     return report
 
 
