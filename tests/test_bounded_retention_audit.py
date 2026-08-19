@@ -14,6 +14,7 @@ from zoneinfo import ZoneInfo
 import pytest
 
 from scripts import bounded_retention_audit as audit
+from scripts import build_season_retention_readiness as readiness
 
 
 @pytest.fixture(autouse=True)
@@ -1319,10 +1320,17 @@ def complete_checkpoints(scope: audit.AuditScope) -> list[audit.CheckpointRecord
     checkpoints: list[audit.CheckpointRecord] = []
     for provider in scope.providers:
         cursor = scope.start_date
+        ladder_index = 0
         while cursor <= scope.candidate_end_date:
-            end_date = min(cursor + timedelta(days=6), scope.candidate_end_date)
+            chunk_days = audit.CHUNK_LADDER[
+                min(ladder_index, len(audit.CHUNK_LADDER) - 1)
+            ]
+            end_date = min(
+                cursor + timedelta(days=chunk_days - 1), scope.candidate_end_date,
+            )
             checkpoints.append(assembly_checkpoint(scope, provider, cursor, end_date))
             cursor = end_date + timedelta(days=1)
+            ladder_index += 1
     return checkpoints
 
 
@@ -1796,3 +1804,102 @@ def test_assemble_local_writes_only_sanitized_envelope_without_linked_read(
     assert len(envelope["execution"]["completed_chunk_ranges"]) == len(checkpoints)
     assert "payload" not in envelope
     assert "checkpoint_integrity_sha256" not in envelope
+
+
+def test_fixture_only_cli_workflow_assembles_and_runs_both_closed_reporters(
+    tmp_path, monkeypatch,
+):
+    scope = audit.build_scope("2026-08-18")
+    checkpoints, runtime_path = write_complete_local_evidence(tmp_path, scope)
+    gate_c_path = tmp_path / "gate-c-manifest.json"
+    audit.write_json_atomic(gate_c_path, {
+        "artifact": "data/research/gate_c/pitcher_k_outcome_dataset.jsonl",
+        "generated_at": "2026-08-18T12:00:00-07:00",
+        "jsonl_sha256": "1" * 64,
+        "summary_sha256": "2" * 64,
+        "loaded_slate_dates": [],
+        "source": {
+            "start_date": scope.start_date.isoformat(),
+            "end_date": scope.candidate_end_date.isoformat(),
+        },
+        "reconciliation": {
+            "graded_pick_rows": 0,
+            "matched_pick_rows": 0,
+            "unmatched_pick_rows": 0,
+        },
+        "summary_counts": {
+            "rows_missing_result": 0,
+            "tracked_pick_rows": 0,
+            "context_snapshot_counts": {"official_close": 0},
+        },
+    })
+    linked_query = Mock()
+    subprocess_run = Mock()
+    monkeypatch.setattr(audit, "run_linked_query", linked_query)
+    monkeypatch.setattr(audit.subprocess, "run", subprocess_run)
+
+    class FixedDatetime(datetime):
+        @classmethod
+        def now(cls, tz=None):
+            return cls(2026, 8, 18, 10, 0, tzinfo=tz)
+
+    monkeypatch.setattr(audit, "datetime", FixedDatetime)
+
+    assembly_exit = audit.main([
+        "assemble",
+        "--as-of", scope.as_of_date.isoformat(),
+        "--output-dir", str(tmp_path),
+        "--runtime-json", str(runtime_path),
+    ])
+    envelope_path = tmp_path / "bounded_retention_envelope.json"
+    readiness_output = tmp_path / "readiness"
+    closure_output = tmp_path / "closure"
+    readiness_exit = readiness.main([
+        "readiness",
+        "--query-json", str(envelope_path),
+        "--gate-c-manifest", str(gate_c_path),
+        "--as-of", scope.as_of_date.isoformat(),
+        "--output-dir", str(readiness_output),
+    ])
+    closure_exit = readiness.main([
+        "boltodds-closure",
+        "--query-json", str(envelope_path),
+        "--gate-c-manifest", str(gate_c_path),
+        "--as-of", scope.as_of_date.isoformat(),
+        "--output-dir", str(closure_output),
+    ])
+
+    assert assembly_exit == 0
+    assert readiness_exit == 2
+    assert closure_exit == 2
+    assert 3 not in (assembly_exit, readiness_exit, closure_exit)
+    linked_query.assert_not_called()
+    subprocess_run.assert_not_called()
+
+    envelope = json.loads(envelope_path.read_text(encoding="utf-8"))
+    readiness_report = json.loads(
+        (readiness_output / "season_retention_readiness.json").read_text(
+            encoding="utf-8",
+        )
+    )
+    closure_report = json.loads(
+        (closure_output / "boltodds_retirement_closure.json").read_text(
+            encoding="utf-8",
+        )
+    )
+    for value in (envelope, readiness_report, closure_report):
+        assert value["retention_execution_closed"] is True
+        assert value["deletion_approved"] is False
+        serialized = json.dumps(value, sort_keys=True).lower()
+        assert "delete from" not in serialized
+        assert "service_role" not in serialized
+        assert "source_payload" not in serialized
+    assert readiness_report["summary"]["decision_counts"] == {
+        "blocked_outcome_evidence": len(audit.expected_partitions(scope)),
+    }
+    assert closure_report["status"] == "incomplete_evidence"
+    assert "payload" not in envelope
+    assert {
+        checkpoint.end_date.toordinal() - checkpoint.start_date.toordinal() + 1
+        for checkpoint in checkpoints
+    } >= {1, 3, 7}

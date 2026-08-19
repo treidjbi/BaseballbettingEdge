@@ -10,7 +10,13 @@
 
 **Spec:** `docs/superpowers/specs/2026-08-18-bounded-retention-audit-design.md`
 
-**Plan status (2026-08-18):** Ready for execution-path selection. No implementation or live Supabase read has run from this plan.
+**Plan status (2026-08-19):** Tasks 1-5 are implemented and locally verified.
+The exact pre-handoff implementation head was
+`810c21a9353776a7eb2754e80918283fa42dba3b`. Task 5 added fixture-only
+1/3/7-day checkpoint coverage, local assembly, and both closed reporter paths;
+it made no live Supabase read and required no production-code change. The final
+handoff commit is recorded in the ignored local Task 5 report rather than
+claimed self-referentially in this committed document.
 
 ## Global Constraints
 
@@ -641,6 +647,43 @@ git status --short --branch
 ```
 
 Expected: clean commit verification, no unintended worktree changes, and no push or deploy.
+
+---
+
+## Task 5 Local Verification Record — 2026-08-19
+
+- The exact focused retention suite passed `378` tests.
+- The exact full repository suite passed `2,387` tests on the pre-handoff
+  implementation tree. The three retention modules also passed `py_compile`,
+  and `git diff --check` was clean apart from informational Windows line-ending
+  warnings.
+- The fixture-only CLI integration test creates validated 1-day, 3-day, and
+  7-day checkpoints plus a runtime-boundary checkpoint in `tmp_path`, runs the
+  local assembler and both reporter commands, receives assembly success and
+  evidence-blocked reporter exit `2` rather than validation exit `3`, and
+  proves no query subprocess ran.
+- `scripts/retire_market_snapshots.py` remained object-identical at blob
+  `2b19e8f1b00838caa6e3feb949ec745ba97dc94f`; and
+  `scripts/backfill_compact_market_movements_via_cli.py` remained
+  object-identical at blob `a3627ebf61b95162a490034cdf7ccbcb35803c96`.
+  Both objects match the Task 5 base and the whole-feature merge base
+  `39a180bd2e59494ff96945ee72adef3453a30d3a`.
+- The prohibited-capability search found no execute, delete, backfill, vacuum,
+  service-role, mutation-flag, or mutation-SQL capability in the bounded audit
+  runtime paths. Serialized local envelope and reporter outputs retained
+  `retention_execution_closed: true`, `deletion_approved: false`, and exposed
+  no cleanup SQL, service-role value, or raw source payload.
+- This is static/local audit-tooling evidence only. No linked CLI, network,
+  provider, or live Supabase read ran; no database row, schema, migration,
+  backfill, delete, vacuum, service, schedule, artifact, provider, model,
+  notification, lock, UI, push, deployment, or production behavior changed.
+- Phase 2 remains closed: the one-date low-volume canary, retired-BoltOdds
+  stress canary, and narrow runtime-boundary read each require separate Tyler
+  approval and review. Phase 3 remains closed: any capped multi-chunk run needs
+  another separate Tyler approval after those canaries. Durable-evidence
+  finalization/backfill, sizing and table/provider retention decisions,
+  retention activation, partition-specific deletion, and storage reclamation
+  are not complete or authorized.
 
 ---
 
