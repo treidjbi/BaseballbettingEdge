@@ -1182,6 +1182,53 @@ Expected: clean commit verification, no unintended worktree changes, and no push
 - Retention activation, raw deletion, vacuum, storage reclamation, provider/
   model/notification/lock/UI changes, push, and deployment remain closed.
 
+### Phase 2 Unexpected-Compact Equivalence Gate — 2026-08-19
+
+- Tyler approved one final aggregate-only equivalence read for the `855`
+  unexpected May 17-18 compact groups. The statically validated CTE SELECT ran
+  exactly once through Supabase CLI `--file` under SHA-256
+  `b1406ad7ec1c2752728f2eac2a17f5935f3ddf3a02a2d19d0c82c9cbe12156bd`,
+  completed in `59.55s`, and exited successfully without retry. It returned
+  counts, dates, mismatch classes, and booleans only; no identifier, player,
+  book, payload, credential, write, repair, or deletion was returned or
+  performed. The temporary ignored SQL file was removed.
+- The strict unexpected-row equivalence gate did **not** pass: only `703/855`
+  extra compact groups reproduce every listed-source invariant. On May 17,
+  `103/220` extras are fully equivalent and the other `117` differ only on
+  `odds_move_count`; first/last seen, first/last/min/max odds, snapshot count,
+  source set, run linkage, and every non-market key dimension have zero
+  mismatch. On May 18, `600/635` extras are fully equivalent and the other
+  `35` have duplicate listed source IDs; every time, odds, movement, count,
+  source-set, and non-market key comparison otherwise has zero mismatch.
+- The underlying preservation proof is exact despite those noncanonical
+  extras. The May 17 sources belong to `220` actual-date groups containing
+  `5,103` raw snapshots, and the May 18 sources belong to `635` actual-date
+  groups containing `20,117` raw snapshots. All `855/855` actual-date groups
+  have exact compact matches with zero time, odds, movement, count, or source-
+  set mismatch. All `21,761/21,761` source IDs listed by the extras map to those
+  exact actual-date compact groups. The extras are therefore redundant
+  historical artifacts; they are not canonical season evidence.
+- Local code/history review provides a high-confidence code-path explanation,
+  not a separate row-level database proof. `scripts/compact_market_snapshots.py`
+  pages by non-unique `observed_at` with offset pagination and no `id`
+  tiebreaker. `market_infra/market_snapshot_compaction.py` also sorts only by
+  `observed_at` and neither deduplicates nor fails closed on duplicate source
+  IDs. Both behaviors originated in commit `71ab4d2e`; later commit `7c1564e9`
+  changed page size but not ordering. Unstable tied-timestamp ordering explains
+  the May 17 movement-count-only class, while repeated/omitted rows at offset
+  page boundaries plus no dedupe is consistent with the May 18 duplicate-ID
+  class. Existing tests do not cover tied timestamps, stable
+  `(observed_at, id)` ordering, or duplicate source IDs.
+- No further database diagnosis is needed for the retention decision. The next
+  separately approved work should design and test deterministic ordering,
+  duplicate handling, and a date/provider/alias-bounded historical-extra rule
+  that can classify an extra only after exact actual-date preservation passes.
+  Do not treat the extras as season truth or weaken the generic invariant.
+  Broad May 26-28 matrix work remains paused until that contract is reviewed.
+- Raw deletion, retention activation, repair/normalization/reclassification,
+  vacuum, storage reclamation, provider/model/notification/lock/UI changes,
+  push, and deployment remain closed. This read changed no database space.
+
 ---
 
 ## Separate Live-Validation Gates — Not Authorized by This Plan
