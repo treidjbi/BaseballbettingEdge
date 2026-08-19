@@ -879,6 +879,41 @@ Expected: clean commit verification, no unintended worktree changes, and no push
   or delete raw snapshots. Gate 4, retention activation, deletion, vacuum, and
   storage reclamation remain closed until the repair and proof pass.
 
+### Phase 2 Gate 2 Bounded Repair — 2026-08-19
+
+- Tyler separately approved the bounded BoltOdds compact backfill and exact
+  post-write proof for run dates `2026-05-30`, `2026-06-10`, and `2026-06-11`.
+  Preflight rejected the legacy backfill CLI as too broad because it selects
+  every provider in a date range. The executed statement instead hard-coded
+  only `boltodds` and the three approved dates; it could only insert/update
+  `compact_market_line_movements` and contained no delete, truncate, vacuum,
+  schema, provider/runtime, raw-snapshot, or production-behavior mutation.
+- The bounded dry-run completed in `11.33` seconds. It found `33,588`
+  compactable raw snapshots, `1,743` candidate compact groups, zero
+  non-compactable raw rows, and zero unexpected compact groups. Repair scope
+  was `233` groups: May 30 had `13,146` snapshots / `779` candidate groups,
+  with `13` missing and `138` mismatched; June 10 had `13,303` snapshots / `624`
+  candidate groups, with `15` missing and `63` mismatched; June 11 had `7,139`
+  snapshots / `340` groups, with zero missing and `4` mismatched.
+- One atomic linked upsert completed in `8.88` seconds and changed exactly the
+  predicted `233` BoltOdds compact groups: `151`, `78`, and `4` by date. No
+  other provider/date was in scope. Raw snapshots and provider/runtime rows
+  were not changed or removed.
+- One combined SELECT-only verification completed in `6.38` seconds. Each
+  partition now has exact candidate/current group equality (`779`, `624`, and
+  `340`) with zero missing, unexpected, mismatched, or non-compactable rows.
+  All `157` cross-date snapshots now have a matching compact group, appear in
+  `source_snapshot_ids`, and fall inside the compact first/last time bounds;
+  all three missing/unpreserved counters are zero.
+- Historical lineage is preserved rather than rewritten: the `157` rows still
+  link to provider runs labeled May 30 or June 10, so the current audit's raw
+  `slate_date_mismatch_rows` rule will continue to block readiness even though
+  preservation is now exact. Do not weaken or bypass that rule ad hoc. The next
+  separately planned change should distinguish preserved historical cross-date
+  lineage from unpreserved mismatch rows while keeping the latter fail-closed.
+  Gate 4, retention activation, deletion, vacuum, and storage reclamation remain
+  closed until that contract is implemented, reviewed, and verified.
+
 ---
 
 ## Separate Live-Validation Gates — Not Authorized by This Plan
