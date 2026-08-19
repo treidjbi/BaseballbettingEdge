@@ -1359,16 +1359,26 @@ def runtime_for_checkpoints(
         ]
         candidate_run = max(row["last_run_at"] for row in runtime_rows)
         candidate_snapshot = max(row["last_snapshot_at"] for row in runtime_rows)
+        candidate_heartbeat = max(
+            (row["last_heartbeat_at"] for row in runtime_rows
+             if row["last_heartbeat_at"] is not None),
+            default=None,
+        )
+        candidate_message = max(
+            (row["last_message_at"] for row in runtime_rows
+             if row["last_message_at"] is not None),
+            default=None,
+        )
         payload["providers"].append({
             "provider": provider,
             "current_latest_run_at": candidate_run,
             "current_latest_snapshot_at": candidate_snapshot,
-            "current_latest_heartbeat_at": None,
-            "current_latest_message_at": None,
+            "current_latest_heartbeat_at": candidate_heartbeat,
+            "current_latest_message_at": candidate_message,
             "candidate_latest_run_at": candidate_run,
             "candidate_latest_snapshot_at": candidate_snapshot,
-            "candidate_latest_heartbeat_at": None,
-            "candidate_latest_message_at": None,
+            "candidate_latest_heartbeat_at": candidate_heartbeat,
+            "candidate_latest_message_at": candidate_message,
             "post_boltodds_suspension": False,
         })
     return payload
@@ -1692,8 +1702,20 @@ def test_assemble_local_fails_closed_without_complete_matrix(tmp_path):
 def write_complete_local_evidence(
     output_dir: Path,
     scope: audit.AuditScope,
+    *,
+    include_boltodds_runtime_boundaries: bool = False,
 ) -> tuple[list[audit.CheckpointRecord], Path]:
     checkpoints = complete_checkpoints(scope)
+    if include_boltodds_runtime_boundaries:
+        for checkpoint in checkpoints:
+            if checkpoint.provider != "boltodds":
+                continue
+            for row in checkpoint.payload["candidate_runtime"]:
+                row.update({
+                    "last_heartbeat_at": "2026-04-28T12:01:00Z",
+                    "last_message_at": "2026-04-28T12:01:00Z",
+                    "heartbeat_count": 1,
+                })
     for index, checkpoint in enumerate(checkpoints):
         sql = audit.bounded_sql.build_chunk_sql(
             checkpoint.provider,
@@ -1810,7 +1832,9 @@ def test_fixture_only_cli_workflow_assembles_and_runs_both_closed_reporters(
     tmp_path, monkeypatch,
 ):
     scope = audit.build_scope("2026-08-18")
-    checkpoints, runtime_path = write_complete_local_evidence(tmp_path, scope)
+    checkpoints, runtime_path = write_complete_local_evidence(
+        tmp_path, scope, include_boltodds_runtime_boundaries=True,
+    )
     gate_c_path = tmp_path / "gate-c-manifest.json"
     audit.write_json_atomic(gate_c_path, {
         "artifact": "data/research/gate_c/pitcher_k_outcome_dataset.jsonl",
@@ -1832,6 +1856,29 @@ def test_fixture_only_cli_workflow_assembles_and_runs_both_closed_reporters(
             "tracked_pick_rows": 0,
             "context_snapshot_counts": {"official_close": 0},
         },
+    })
+    season_evidence_path = tmp_path / "season-evidence.json"
+    audit.write_json_atomic(season_evidence_path, {
+        "schema_version": 1,
+        "generated_at": "2026-08-18T12:00:00-07:00",
+        "dates": [{
+            "slate_date": slate_date.isoformat(),
+            "decision_linked": False,
+            "evidence_counts": {
+                "official_tracked_picks": 0,
+                "accepted_bets": 0,
+                "sent_notifications": 0,
+                "consumed_locks": 0,
+                "frozen_alt_v2_rows": 0,
+                "operator_incidents": 0,
+                "model_review_pins": 0,
+            },
+        } for slate_date in (
+            scope.start_date + timedelta(days=offset)
+            for offset in range(
+                (scope.candidate_end_date - scope.start_date).days + 1
+            )
+        )],
     })
     linked_query = Mock()
     subprocess_run = Mock()
@@ -1858,6 +1905,7 @@ def test_fixture_only_cli_workflow_assembles_and_runs_both_closed_reporters(
         "readiness",
         "--query-json", str(envelope_path),
         "--gate-c-manifest", str(gate_c_path),
+        "--season-evidence", str(season_evidence_path),
         "--as-of", scope.as_of_date.isoformat(),
         "--output-dir", str(readiness_output),
     ])
@@ -1865,6 +1913,7 @@ def test_fixture_only_cli_workflow_assembles_and_runs_both_closed_reporters(
         "boltodds-closure",
         "--query-json", str(envelope_path),
         "--gate-c-manifest", str(gate_c_path),
+        "--season-evidence", str(season_evidence_path),
         "--as-of", scope.as_of_date.isoformat(),
         "--output-dir", str(closure_output),
     ])
@@ -1895,9 +1944,29 @@ def test_fixture_only_cli_workflow_assembles_and_runs_both_closed_reporters(
         assert "service_role" not in serialized
         assert "source_payload" not in serialized
     assert readiness_report["summary"]["decision_counts"] == {
-        "blocked_outcome_evidence": len(audit.expected_partitions(scope)),
+        "blocked_pinned_evidence": len(audit.expected_partitions(scope)),
     }
+    assert {
+        tuple(partition["reason_codes"])
+        for partition in readiness_report["partitions"]
+    } == {("missing_pin_manifest_partition",)}
     assert closure_report["status"] == "incomplete_evidence"
+    assert set(closure_report["unresolved_evidence_gaps"]) == {
+        "missing_pin_manifest_partition",
+        "pin_manifest_missing",
+    }
+    assert "post_suspension_runtime_evidence" not in json.dumps(
+        closure_report, sort_keys=True,
+    )
+    boltodds_boundary = closure_report["current_runtime_boundary"]
+    assert boltodds_boundary["post_boltodds_suspension"] is False
+    for field in (
+        "current_latest_run_at",
+        "current_latest_snapshot_at",
+        "current_latest_heartbeat_at",
+        "current_latest_message_at",
+    ):
+        assert boltodds_boundary[field] == "2026-04-28T12:01:00Z"
     assert "payload" not in envelope
     assert {
         checkpoint.end_date.toordinal() - checkpoint.start_date.toordinal() + 1

@@ -16,7 +16,9 @@ The exact pre-handoff implementation head was
 1/3/7-day checkpoint coverage, local assembly, and both closed reporter paths;
 it made no live Supabase read and required no production-code change. The final
 handoff commit is recorded in the ignored local Task 5 report rather than
-claimed self-referentially in this committed document.
+claimed self-referentially in this committed document. Review round 1 began
+from Task 5 handoff head `531ee6a200efa4fba6b29246cbe33ea686d4567c`
+and strengthened only the local integration fixture and assertions.
 
 ## Global Constraints
 
@@ -684,6 +686,34 @@ Expected: clean commit verification, no unintended worktree changes, and no push
   finalization/backfill, sizing and table/provider retention decisions,
   retention activation, partition-specific deletion, and storage reclamation
   are not complete or authorized.
+
+### Task 5 Review Round 1 Verification
+
+- The fixture supplies complete valid zero-decision season evidence for every
+  candidate date while deliberately omitting the pin manifest. All `332`
+  provider/date partitions therefore report `blocked_pinned_evidence` with
+  only `missing_pin_manifest_partition` partition reasons; the BoltOdds
+  closure remains evidence-blocked with the explicit
+  `missing_pin_manifest_partition` and `pin_manifest_missing` gaps.
+- All four BoltOdds current runtime-boundary fields are explicit fixture values
+  at `2026-04-28T12:01:00Z`, before the retirement cutoff. The closure records
+  `post_boltodds_suspension: false` and contains no
+  `post_suspension_runtime_evidence` gap or reason.
+- Local assembly still exits `0`; both closed reporters exit `2`; no path exits
+  `3`; no linked query or subprocess executes; and serialized outputs keep
+  execution and deletion closed without cleanup SQL, service-role text, or raw
+  source payload.
+- After this proof correction, the exact focused retention suite still passes
+  `378` tests and the exact full repository suite still passes `2,387` tests.
+  The three retention modules pass `py_compile`; `git diff --check` passes; and
+  the generated Gate F report was restored via `apply_patch` to its exact
+  tracked object before the focused suite was rerun.
+- The protected retirement/backfill scripts remain object-identical to Task 5
+  base `810c21a9353776a7eb2754e80918283fa42dba3b` and whole-feature merge base
+  `39a180bd2e59494ff96945ee72adef3453a30d3a`. No live Supabase read or any
+  production behavior change occurred. All separate Phase 2, Phase 3,
+  durable-evidence, sizing, retention, deletion, and reclamation gates remain
+  closed.
 
 ---
 
