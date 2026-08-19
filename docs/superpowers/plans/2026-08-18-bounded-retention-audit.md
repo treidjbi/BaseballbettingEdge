@@ -1022,6 +1022,45 @@ Expected: clean commit verification, no unintended worktree changes, and no push
   approval. Deletion, vacuum, storage reclamation, push, deployment, and every
   production behavior change remain closed.
 
+### Phase 2 Gate 4 Capped Invocation 3 — 2026-08-19
+
+- Tyler approved a third capped multi-chunk invocation with the same hard limit
+  of five linked SELECT-only queries. Preflight revalidated the repo/remote,
+  Supabase CLI `2.115.0` command contract, six historical checkpoints, the
+  four-provider runtime checkpoint, current query hash, and redaction safety.
+- The invocation used its full five-query cap and issued no sixth query. The
+  five BoltOdds chunks completed serially without retry or database error:
+  - `2026-05-11` through `2026-05-13`: `28.83s`, `57,388` raw snapshots,
+    `1,799/1,799` exact raw/compact groups;
+  - `2026-05-14` through `2026-05-16`: `13.44s`, `31,972` raw snapshots,
+    `2,077/2,077` exact groups;
+  - `2026-05-17` through `2026-05-19`: `23.51s`, `55,066` raw snapshots,
+    `3,421` raw groups, `4,276` compact groups, and all `3,421` paired groups
+    exact, but `855` compact groups are unexpected and make coverage false;
+  - `2026-05-20` through `2026-05-22`: `17.92s`, `36,601` raw snapshots,
+    `1,740/1,740` exact groups; and
+  - `2026-05-23` through `2026-05-25`: `16.84s`, `29,474` raw snapshots,
+    `2,084/2,084` exact groups.
+- Across the invocation, `210,501` raw snapshots and all `11,121` raw groups
+  reconcile exactly to a compact group. The compact side has `11,976` groups
+  because May 17 contains `220` and May 18 contains `635` unexpected compact
+  groups. There are zero missing, mismatched, or duplicate groups and zero
+  first/last/odds/movement/count mismatches.
+- The invocation also reports `20,176` preserved cross-date rows (`19,457` on
+  May 18 and `719` on May 23-25), zero unpreserved cross-date rows, and zero
+  missing-run, missing-key, provider/run, unknown-provider, or other blocking
+  anomalies. That proves the preserved-lineage rule is working but does not
+  excuse the separate unexpected-compact blocker.
+- Eleven historical checkpoints plus the four-provider runtime checkpoint now
+  pass integrity, scope, equation, and redaction validation. The next missing
+  matrix unit is BoltOdds `2026-05-26` through `2026-05-28`, but the safer next
+  decision is a separately approved, aggregate-only diagnosis of the `855`
+  unexpected compact groups before running more broad matrix slices.
+- Stop here. The full matrix remains incomplete and coverage is not exact for
+  May 17-18, so no envelope, readiness report, retention activation, deletion,
+  vacuum, or storage-reclamation decision is available. Push, deployment, and
+  every production behavior change remain closed.
+
 ---
 
 ## Separate Live-Validation Gates — Not Authorized by This Plan
