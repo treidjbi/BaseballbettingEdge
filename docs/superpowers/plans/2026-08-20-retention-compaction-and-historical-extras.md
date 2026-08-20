@@ -1211,3 +1211,17 @@ database mutation, retention activation, deletion, vacuum, or reclamation has
 occurred. Publishing local `main`, running one explicit new-hash chunk, and
 reviewing any bounded deletion proposal remain separate decisions in that
 order.
+
+## Targeted optimization publication checkpoint — 2026-08-20
+
+Tyler separately approved publication. Local `main` at `c71f9ee0` passed the
+complete `2,448`-test suite immediately before push. GitHub `main`, the remote
+ref, and the GitHub commit API all returned exact SHA
+`c71f9ee025668ae744c425b7038f51108fdacaf3`. No GitHub Actions run was created
+for the commit, consistent with the manual-only workflow posture.
+
+This publication does not authorize or perform a deployment, linked Supabase
+read, database mutation, retention activation, deletion, vacuum, or
+reclamation. The next gate remains a separately approved explicit one-chunk
+read under query hash `e3091876`, followed by completion of the evidence
+matrix before any deletion proposal.
