@@ -66,6 +66,8 @@ def valid_payload(chunk: audit.ChunkSpec) -> dict:
             "mismatched_group_count": 0,
             "missing_compact_group_count": 0,
             "unexpected_compact_group_count": 0,
+            "preserved_unexpected_compact_group_count": 0,
+            "unpreserved_unexpected_compact_group_count": 0,
             "duplicate_compact_group_count": 0,
             "first_seen_mismatch_count": 0,
             "last_seen_mismatch_count": 0,
@@ -76,6 +78,7 @@ def valid_payload(chunk: audit.ChunkSpec) -> dict:
             "odds_move_count_mismatch_count": 0,
             "snapshot_count_mismatch_count": 0,
             "coverage_exact": True,
+            "retention_preservation_complete": True,
             "first_raw_seen_at": "2026-04-28T12:00:00Z",
             "last_raw_seen_at": "2026-04-28T12:01:00Z",
         })
@@ -160,6 +163,8 @@ def make_zero_partition(payload: dict, index: int = 0) -> None:
         "mismatched_group_count",
         "missing_compact_group_count",
         "unexpected_compact_group_count",
+        "preserved_unexpected_compact_group_count",
+        "unpreserved_unexpected_compact_group_count",
         "duplicate_compact_group_count",
         "first_seen_mismatch_count",
         "last_seen_mismatch_count",
@@ -174,6 +179,7 @@ def make_zero_partition(payload: dict, index: int = 0) -> None:
     coverage["first_raw_seen_at"] = None
     coverage["last_raw_seen_at"] = None
     coverage["coverage_exact"] = True
+    coverage["retention_preservation_complete"] = True
     runtime = payload["candidate_runtime"][index]
     runtime.update({
         "first_run_at": None,
@@ -405,6 +411,44 @@ def test_parse_supabase_object_accepts_supabase_cli_safety_envelope():
 def test_validate_chunk_payload_accepts_exact_partitions_and_equations():
     chunk = audit.ChunkSpec("propline", date(2026, 5, 1), date(2026, 5, 3))
     audit.validate_chunk_payload(valid_payload(chunk), chunk)
+
+
+def test_validate_chunk_accepts_strict_extra_when_canonical_preservation_is_complete():
+    chunk = audit.ChunkSpec("boltodds", date(2026, 5, 17), date(2026, 5, 17))
+    payload = valid_payload(chunk)
+    payload["coverage"][0].update({
+        "compact_group_count": 2,
+        "unexpected_compact_group_count": 1,
+        "preserved_unexpected_compact_group_count": 1,
+        "unpreserved_unexpected_compact_group_count": 0,
+        "coverage_exact": False,
+        "retention_preservation_complete": True,
+    })
+    audit.validate_chunk_payload(payload, chunk)
+
+
+@pytest.mark.parametrize(
+    "updates",
+    [
+        {
+            "compact_group_count": 2,
+            "unexpected_compact_group_count": 1,
+        },
+        {
+            "compact_group_count": 2,
+            "unexpected_compact_group_count": 1,
+            "preserved_unexpected_compact_group_count": 2,
+        },
+        {"unpreserved_unexpected_compact_group_count": 1},
+        {"retention_preservation_complete": False},
+    ],
+)
+def test_validate_chunk_rejects_preservation_equation_or_boolean_contradiction(updates):
+    chunk = audit.ChunkSpec("boltodds", date(2026, 5, 17), date(2026, 5, 17))
+    payload = valid_payload(chunk)
+    payload["coverage"][0].update(updates)
+    with pytest.raises(ValueError, match="preservation"):
+        audit.validate_chunk_payload(payload, chunk)
 
 
 @pytest.mark.parametrize(
@@ -886,6 +930,36 @@ def test_load_valid_checkpoints_resumes_only_exact_bound_evidence(tmp_path, monk
     assert audit.select_next_chunk(scope, records) == audit.ChunkSpec(
         "boltodds", date(2026, 4, 29), date(2026, 5, 1),
     )
+
+
+def test_run_chunks_rejects_runner_version_two_checkpoint_before_query(tmp_path, monkeypatch):
+    scope = audit.build_scope("2026-08-18")
+    chunk = audit.ChunkSpec("boltodds", date(2026, 4, 28), date(2026, 4, 28))
+    sql = audit.bounded_sql.build_chunk_sql(
+        chunk.provider, chunk.start_date.isoformat(), chunk.end_date.isoformat(),
+    )
+    checkpoint = audit._checkpoint_value(
+        scope,
+        chunk,
+        sql,
+        valid_payload(chunk),
+        audit.datetime(2026, 8, 18, 12, tzinfo=audit.timezone.utc),
+        audit.datetime(2026, 8, 18, 12, 10, tzinfo=audit.timezone.utc),
+        10.0,
+        "2.48.3",
+    )
+    checkpoint["runner_version"] = "2"
+    checkpoint["checkpoint_integrity_sha256"] = audit._checkpoint_integrity_sha256(
+        checkpoint,
+    )
+    audit.write_json_atomic(audit._checkpoint_path(tmp_path, chunk), checkpoint)
+    query = Mock()
+    monkeypatch.setattr(audit, "run_linked_query", query)
+
+    with pytest.raises(ValueError, match="checkpoint validation failed"):
+        audit.run_chunks(scope, tmp_path)
+
+    query.assert_not_called()
 
 
 def test_checkpoint_integrity_hash_rejects_elapsed_cadence_tamper(tmp_path, monkeypatch):
@@ -1481,7 +1555,7 @@ def test_aggregate_candidate_rows_rejects_mixed_checkpoint_contracts(
     [
         ("candidate_end_date", date(2026, 4, 28), "candidate cutoff"),
         ("provider_allowlist", ("propline", "boltodds"), "provider allowlist"),
-        ("runner_version", "3", "runner_version"),
+        ("runner_version", "2", "runner_version"),
         ("query_contract_version", "different-contract", "query_contract_version"),
     ],
 )
@@ -1505,19 +1579,41 @@ def test_aggregate_candidate_rows_revalidates_candidate_row_and_byte_equations(
         audit.aggregate_candidate_rows(checkpoints, scope)
 
 
-def test_aggregate_candidate_rows_rejects_nonexact_coverage_blocker(
+def test_assembly_accepts_preserved_extra_with_strict_coverage_false(
     two_date_two_provider_checkpoint_set,
 ):
     scope, checkpoints = two_date_two_provider_checkpoint_set
     altered = copy.deepcopy(checkpoints[0].payload)
     altered["coverage"][0].update({
-        "exact_group_count": 0,
-        "mismatched_group_count": 1,
-        "first_seen_mismatch_count": 1,
+        "compact_group_count": 2,
+        "unexpected_compact_group_count": 1,
+        "preserved_unexpected_compact_group_count": 1,
+        "unpreserved_unexpected_compact_group_count": 0,
         "coverage_exact": False,
+        "retention_preservation_complete": True,
     })
     checkpoints[0] = replace(checkpoints[0], payload=altered)
-    with pytest.raises(ValueError, match="coverage_exact.*blocks completeness"):
+    assembled = audit.aggregate_candidate_rows(checkpoints, scope)
+    assert assembled[0][0]["coverage_exact"] is False
+    assert assembled[0][0]["retention_preservation_complete"] is True
+
+
+def test_assembly_rejects_unpreserved_extra(two_date_two_provider_checkpoint_set):
+    scope, checkpoints = two_date_two_provider_checkpoint_set
+    altered = copy.deepcopy(checkpoints[0].payload)
+    altered["coverage"][0].update({
+        "compact_group_count": 2,
+        "unexpected_compact_group_count": 1,
+        "preserved_unexpected_compact_group_count": 0,
+        "unpreserved_unexpected_compact_group_count": 1,
+        "coverage_exact": False,
+        "retention_preservation_complete": False,
+    })
+    checkpoints[0] = replace(checkpoints[0], payload=altered)
+    with pytest.raises(
+        ValueError,
+        match="retention_preservation_complete=false blocks completeness",
+    ):
         audit.aggregate_candidate_rows(checkpoints, scope)
 
 
@@ -1688,12 +1784,16 @@ def test_assemble_v2_separates_candidate_and_current_runtime():
         "slate_date", "provider", "raw_snapshot_rows", "raw_logical_bytes",
         "raw_group_count", "compact_group_count", "exact_group_count",
         "mismatched_group_count", "missing_compact_group_count",
-        "unexpected_compact_group_count", "duplicate_compact_group_count",
+        "unexpected_compact_group_count",
+        "preserved_unexpected_compact_group_count",
+        "unpreserved_unexpected_compact_group_count",
+        "duplicate_compact_group_count",
         "first_seen_mismatch_count", "last_seen_mismatch_count",
         "first_odds_mismatch_count", "last_odds_mismatch_count",
         "min_odds_mismatch_count", "max_odds_mismatch_count",
         "odds_move_count_mismatch_count", "snapshot_count_mismatch_count",
         "first_raw_seen_at", "last_raw_seen_at", "coverage_exact",
+        "retention_preservation_complete",
     }
     assert set(envelope["source_anomalies"][0]) == {
         "provider", "rows_missing_run_id", "rows_missing_run_row",

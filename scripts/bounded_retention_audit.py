@@ -29,7 +29,7 @@ HARD_MAX_CHUNKS = 5
 QUERY_TIMEOUT_SECONDS = 120
 CLI_VERSION_TIMEOUT_SECONDS = 30
 QUERY_CONTRACT_VERSION = "supabase-db-query-linked-json-v1"
-RUNNER_VERSION = "2"
+RUNNER_VERSION = "3"
 TIMEZONE = "America/Phoenix"
 _CLI_VERSION_PATTERN = re.compile(r"\d+\.\d+\.\d+(?:[-+][0-9A-Za-z.-]+)?")
 
@@ -42,6 +42,8 @@ _COVERAGE_COUNTS = (
     "mismatched_group_count",
     "missing_compact_group_count",
     "unexpected_compact_group_count",
+    "preserved_unexpected_compact_group_count",
+    "unpreserved_unexpected_compact_group_count",
     "duplicate_compact_group_count",
     "first_seen_mismatch_count",
     "last_seen_mismatch_count",
@@ -121,6 +123,7 @@ _COVERAGE_FIELDS = (
     "first_raw_seen_at",
     "last_raw_seen_at",
     "coverage_exact",
+    "retention_preservation_complete",
 )
 _ANOMALY_FIELDS = ("slate_date", "provider", *_ANOMALY_COUNTS)
 _CANDIDATE_RUNTIME_FIELDS = (
@@ -466,6 +469,11 @@ def validate_chunk_payload(payload: dict[str, Any], chunk: ChunkSpec) -> None:
             + row["unexpected_compact_group_count"]
         ):
             raise ValueError("compact group equation is inconsistent")
+        if row["unexpected_compact_group_count"] != (
+            row["preserved_unexpected_compact_group_count"]
+            + row["unpreserved_unexpected_compact_group_count"]
+        ):
+            raise ValueError("unexpected compact preservation equation is inconsistent")
         if any(row[field] > row["mismatched_group_count"] for field in _MISMATCH_COUNTS):
             raise ValueError("mismatch subtype exceeds mismatched groups")
         if row["mismatched_group_count"] > sum(row[field] for field in _MISMATCH_COUNTS):
@@ -481,6 +489,22 @@ def validate_chunk_payload(payload: dict[str, Any], chunk: ChunkSpec) -> None:
         )
         if not isinstance(row.get("coverage_exact"), bool) or row["coverage_exact"] != recomputed_exact:
             raise ValueError("coverage_exact does not match blocker counts")
+        recomputed_preservation = all(
+            row[field] == 0
+            for field in (
+                "mismatched_group_count",
+                "missing_compact_group_count",
+                "unpreserved_unexpected_compact_group_count",
+                "duplicate_compact_group_count",
+            )
+        )
+        if (
+            not isinstance(row.get("retention_preservation_complete"), bool)
+            or row["retention_preservation_complete"] != recomputed_preservation
+        ):
+            raise ValueError(
+                "retention preservation completeness does not match blocker counts"
+            )
 
         anomaly_row = anomalies[slate_date]
         _reject_unknown_fields(
@@ -995,9 +1019,9 @@ def aggregate_candidate_rows(
 
     coverage = [coverage_by_partition[partition] for partition in expected]
     for row in coverage:
-        if row["coverage_exact"] is not True:
+        if row["retention_preservation_complete"] is not True:
             raise ValueError(
-                "coverage_exact=false blocks completeness for "
+                "retention_preservation_complete=false blocks completeness for "
                 f"{row['provider']} {row['slate_date']}"
             )
     repeated_unknown_by_date: dict[str, int] = {}
