@@ -1303,3 +1303,58 @@ Any error stops immediately without retry. No live validation step authorizes ba
   secret/configuration change, push, deployment, or merge occurred in this
   local handoff. After separately approved local merge, a fresh bounded audit
   remains a distinct approval gate; deletion remains separately closed.
+
+### June 16 BoltOdds Compact-Partition Blocker and Repair Preview — 2026-08-20
+
+- Fresh read-only evidence under query-contract SHA-256
+  `e3091876ffe253d948c83e3e31c89f1a4fbde54381f91695f3963f2208866e05`
+  now covers `21` continuous BoltOdds checkpoints from April 28 through July 9.
+  The June 16 partition is the first hard blocker: `172` raw rows in `107`
+  groups compare with `107` compact groups, of which `90` are exact and `17`
+  are mismatched. Missing, unexpected, duplicate, and source-anomaly counts are
+  all zero. The raw logical footprint is only `131,160` bytes, about `0.125`
+  MiB, so this date must not be deleted around or excused for capacity reasons.
+- Tyler separately approved one aggregate-only June 16 diagnosis. The one
+  SELECT-only query ran once under SHA-256
+  `f93a9d2198d20826e053272119063af42021fdaa91e7ab0928bb2936437de7e5`,
+  completed in `19s`, and was not retried. Across the `17` mismatched groups,
+  raw snapshot count is `46` while the compact source arrays contain `18`
+  distinct IDs. Every compact source array is internally valid and agrees with
+  its stored compact snapshot count, but none represents the full raw group.
+  Compact first-seen time is later in every group by `126.849694` to
+  `817.097145` seconds; the aggregate snapshot-count and movement-count deltas
+  are both `-28`. Last-seen time and last odds remain exact. There are zero
+  timestamp-tie groups and zero duplicate raw IDs.
+- The evidence isolates stale/truncated historical compaction rather than a
+  retention-predicate defect: the stored compact rows faithfully describe a
+  partial set ending at the correct final observation while omitting `28`
+  earlier snapshots. The broad all-provider compactor is also called by the
+  live layer and is therefore unchanged.
+- Tyler approved a bounded code-only repair-preflight tool. Local commits
+  `d98411e7` and `8e619bb1` add
+  `scripts/repair_compact_market_snapshot_partition.py` plus tests. Preview is
+  aggregate-only and exact-provider/date scoped. It validates run UUIDs,
+  heartbeat linkage, and the Phoenix midnight-to-midnight observation window;
+  selects no raw payloads; performs one-attempt reads; never writes provider
+  usage; never deletes; and refuses to overwrite prior evidence.
+- Database execution is hard-limited in code to BoltOdds June 16 and requires
+  both `ALLOW_COMPACT_MARKET_PARTITION_REPAIR=true` and the exact current
+  preview SHA-256. Any unexpected compact row, no-op/empty partition, or raw or
+  compact partition requiring offset pagination blocks execution. An approved
+  write could upsert only missing/mismatched compact rows on the existing exact
+  unique key, then it must reread raw inputs and compact state and prove the
+  preview remained current. Ambiguous request failures remain unconfirmed
+  unless that bounded post-state is exact.
+- Test-first verification passed `37` focused compaction/repair tests and
+  `2,473` complete repository tests. Python compilation and `git diff --check`
+  passed, the generated Gate F report was restored to its committed blob, and
+  independent rereview found no Critical, Important, or Minor issue. This is a
+  local branch handoff only; no live repair preview, database write, deletion,
+  vacuum, reclamation, push, deployment, or production behavior change has
+  occurred.
+- The next gate is one separately approved read-only BoltOdds June 16 preview
+  into a fresh output directory. Review its counts, blockers, rebuilt/existing
+  hashes, and preview fingerprint before considering a separately approved
+  upsert. Only after an exact post-repair June 16 retention checkpoint may the
+  remaining provider/date matrix resume. Retention execution and deletion stay
+  closed through all of those steps.
