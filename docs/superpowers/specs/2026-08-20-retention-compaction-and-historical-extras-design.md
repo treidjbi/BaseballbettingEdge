@@ -1,7 +1,7 @@
 # Retention Compaction Hardening and Historical Extras Design
 
 **Date:** 2026-08-20
-**Status:** Approved in chat; written-spec review pending
+**Status:** Implemented locally; merge review pending
 **Scope:** Local code and tests only; no live Supabase read or mutation
 
 ## Objective
