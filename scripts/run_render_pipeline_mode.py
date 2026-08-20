@@ -165,11 +165,18 @@ def live_artifact_hydration_enabled(mode: str, artifact_key_prefix: str) -> bool
     return mode in {"grading", "pipeline", "lock"}
 
 
-def artifact_api_url(artifact_type: str, date: str | None = None) -> str:
+def artifact_api_url(
+    artifact_type: str,
+    date: str | None = None,
+    *,
+    hydrate_run: str | None = None,
+) -> str:
     base = os.environ.get("RENDER_PIPELINE_ARTIFACT_API_URL", "").strip() or DEFAULT_ARTIFACT_API_URL
     params = {"type": artifact_type}
     if date:
         params["date"] = date
+    if hydrate_run:
+        params["hydrate_run"] = hydrate_run
     separator = "&" if "?" in base else "?"
     return f"{base}{separator}{urlencode(params)}"
 
@@ -193,25 +200,50 @@ def hydration_artifacts(slate_date: str) -> list[HydrationArtifact]:
     ]
 
 
-def hydrate_live_artifacts_from_api(*, root: Path, slate_date: str) -> int:
+def hydrate_live_artifacts_from_api(
+    *,
+    root: Path,
+    slate_date: str,
+    writer: SupabaseMarketWriter | None = None,
+) -> int:
     hydrated = 0
+    hydrate_run = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%S%fZ")
     for artifact in hydration_artifacts(slate_date):
-        response = requests.get(
-            artifact_api_url(artifact.artifact_type, artifact.date),
-            timeout=20,
-        )
-        if response.status_code == 404 and not artifact.required:
-            print(
-                "render_pipeline_mode_hydration_skip "
-                f"artifact_type={artifact.artifact_type} "
-                f"date={artifact.date or '<none>'} status=404"
+        if artifact.artifact_type == "picks_history" and writer is not None:
+            rows = writer.select_rows(
+                "published_pipeline_artifacts",
+                {
+                    "artifact_key": "eq.picks_history",
+                    "select": "artifact_key,payload,payload_sha256",
+                    "limit": "1",
+                },
+                timeout_seconds=30,
             )
-            continue
-        response.raise_for_status()
+            if len(rows) != 1 or rows[0].get("payload") is None:
+                raise RuntimeError("Supabase picks_history artifact is missing or malformed")
+            payload = rows[0]["payload"]
+        else:
+            response = requests.get(
+                artifact_api_url(
+                    artifact.artifact_type,
+                    artifact.date,
+                    hydrate_run=hydrate_run,
+                ),
+                timeout=20,
+            )
+            if response.status_code == 404 and not artifact.required:
+                print(
+                    "render_pipeline_mode_hydration_skip "
+                    f"artifact_type={artifact.artifact_type} "
+                    f"date={artifact.date or '<none>'} status=404"
+                )
+                continue
+            response.raise_for_status()
+            payload = response.json()
         target = root / artifact.path
         target.parent.mkdir(parents=True, exist_ok=True)
         with target.open("w", encoding="utf-8") as handle:
-            json.dump(response.json(), handle, indent=2)
+            json.dump(payload, handle, indent=2)
         hydrated += 1
     return hydrated
 
@@ -327,20 +359,29 @@ def main(argv: list[str] | None = None) -> int:
             provider_rehearsal=args.provider_rehearsal,
         )
     )
+    writer = None
+    if args.execute:
+        writer = SupabaseMarketWriter(_env("SUPABASE_URL"), _env("SUPABASE_SERVICE_ROLE_KEY"))
 
     try:
         hydrated_artifacts = 0
         if live_artifact_hydration_enabled(args.mode, artifact_key_prefix):
-            hydrated_artifacts = hydrate_live_artifacts_from_api(root=ROOT, slate_date=contract.publish_date)
+            if writer is None:
+                hydrated_artifacts = hydrate_live_artifacts_from_api(
+                    root=ROOT,
+                    slate_date=contract.publish_date,
+                )
+            else:
+                hydrated_artifacts = hydrate_live_artifacts_from_api(
+                    root=ROOT,
+                    slate_date=contract.publish_date,
+                    writer=writer,
+                )
             print(
                 "render_pipeline_mode_hydration "
                 f"mode={args.mode} slate_date={contract.publish_date} artifacts={hydrated_artifacts}"
             )
         subprocess.run(contract.pipeline_args, cwd=ROOT, check=True)
-
-        writer = None
-        if args.execute:
-            writer = SupabaseMarketWriter(_env("SUPABASE_URL"), _env("SUPABASE_SERVICE_ROLE_KEY"))
 
         previous_run_type = os.environ.get("PIPELINE_RUN_TYPE")
         os.environ["PIPELINE_RUN_TYPE"] = contract.pipeline_run_type

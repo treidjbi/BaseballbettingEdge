@@ -1,3 +1,6 @@
+import json
+from urllib.parse import parse_qs, urlparse
+
 import pytest
 
 from scripts import run_render_pipeline_mode as entrypoint
@@ -180,6 +183,79 @@ def test_hydrate_live_artifacts_from_api_writes_current_payloads(tmp_path, monke
     assert all(timeout == 20 for _, timeout in seen_urls)
 
 
+def test_hydrate_live_artifacts_bypasses_shared_cache_with_one_run_token(tmp_path, monkeypatch):
+    seen_urls = []
+
+    class Response:
+        status_code = 200
+
+        def __init__(self, url):
+            self.url = url
+
+        def raise_for_status(self):
+            return None
+
+        def json(self):
+            query = parse_qs(urlparse(self.url).query)
+            return {
+                "generation": "fresh" if query.get("hydrate_run") else "stale",
+            }
+
+    def fake_get(url, timeout):
+        seen_urls.append(url)
+        return Response(url)
+
+    monkeypatch.setattr(entrypoint.requests, "get", fake_get)
+    monkeypatch.setenv("RENDER_PIPELINE_ARTIFACT_API_URL", "https://example.test/artifact")
+
+    entrypoint.hydrate_live_artifacts_from_api(root=tmp_path, slate_date="2026-08-20")
+
+    history = json.loads((tmp_path / "data/picks_history.json").read_text(encoding="utf-8"))
+    assert history["generation"] == "fresh"
+    hydrate_tokens = {
+        parse_qs(urlparse(url).query)["hydrate_run"][0]
+        for url in seen_urls
+    }
+    assert len(hydrate_tokens) == 1
+
+
+def test_hydrate_live_artifacts_reads_oversized_history_directly_from_supabase(tmp_path, monkeypatch):
+    class Response:
+        def __init__(self, url):
+            self.url = url
+            self.status_code = 502 if "type=picks_history" in url else 200
+
+        def raise_for_status(self):
+            if self.status_code >= 400:
+                raise RuntimeError(f"unexpected {self.status_code}")
+
+        def json(self):
+            return {"source_url": self.url}
+
+    class Writer:
+        def select_rows(self, table, params, **kwargs):
+            return [
+                {
+                    "artifact_key": "picks_history",
+                    "payload": {"generation": "fresh_supabase"},
+                    "payload_sha256": "history-sha",
+                }
+            ]
+
+    monkeypatch.setattr(entrypoint.requests, "get", lambda url, timeout: Response(url))
+    monkeypatch.setenv("RENDER_PIPELINE_ARTIFACT_API_URL", "https://example.test/artifact")
+
+    count = entrypoint.hydrate_live_artifacts_from_api(
+        root=tmp_path,
+        slate_date="2026-08-20",
+        writer=Writer(),
+    )
+
+    history = json.loads((tmp_path / "data/picks_history.json").read_text(encoding="utf-8"))
+    assert history == {"generation": "fresh_supabase"}
+    assert count == len(entrypoint.hydration_artifacts("2026-08-20"))
+
+
 def test_hydrate_live_artifacts_skips_missing_optional_fangraphs_cache(tmp_path, monkeypatch):
     seen_urls = []
 
@@ -285,6 +361,38 @@ def test_main_hydrates_before_live_pipeline_run(monkeypatch):
         ("hydrate", "2026-05-30"),
         ("pipeline", entrypoint.build_publish_contract("pipeline", "2026-05-30").pipeline_args),
         ("publish", "pipeline"),
+    ]
+
+
+def test_main_execute_passes_supabase_writer_to_live_hydration(monkeypatch):
+    calls = []
+    writer = object()
+
+    def fake_hydrate(*, root, slate_date, writer):
+        calls.append(("hydrate", slate_date, writer))
+        return 9
+
+    def fake_pipeline_run(*args, **kwargs):
+        calls.append(("pipeline", args[0]))
+
+    def fake_publish_artifacts(**kwargs):
+        calls.append(("publish", kwargs["writer"]))
+        return {"artifact_count": 8}
+
+    monkeypatch.setenv("SUPABASE_URL", "https://example.supabase.co")
+    monkeypatch.setenv("SUPABASE_SERVICE_ROLE_KEY", "service-role-test-key")
+    monkeypatch.setattr(entrypoint, "SupabaseMarketWriter", lambda url, key: writer)
+    monkeypatch.setattr(entrypoint, "hydrate_live_artifacts_from_api", fake_hydrate)
+    monkeypatch.setattr(entrypoint.subprocess, "run", fake_pipeline_run)
+    monkeypatch.setattr(entrypoint, "publish_artifacts", fake_publish_artifacts)
+    monkeypatch.setattr(entrypoint, "resolve_source_commit_sha", lambda: "sha")
+
+    assert entrypoint.main(["--mode", "lock", "--date", "2026-08-20", "--execute"]) == 0
+
+    assert calls == [
+        ("hydrate", "2026-08-20", writer),
+        ("pipeline", entrypoint.build_publish_contract("lock", "2026-08-20").pipeline_args),
+        ("publish", writer),
     ]
 
 
