@@ -4,11 +4,16 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import math
 import os
 import sys
-from datetime import date, datetime, timezone
+from datetime import date, datetime, time, timedelta, timezone
 from pathlib import Path
 from typing import Any
+from uuid import UUID
+from zoneinfo import ZoneInfo
+
+import requests
 
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
@@ -47,8 +52,23 @@ VALUE_FIELDS = (
 )
 COMPACT_FIELDS = KEY_FIELDS + VALUE_FIELDS
 SELECT_FIELDS = ",".join(COMPACT_FIELDS)
+SNAPSHOT_SELECT_FIELDS = ",".join((
+    "id",
+    "run_id",
+    "provider",
+    "bookmaker_key",
+    "player_name",
+    "normalized_player_name",
+    "market_key",
+    "side",
+    "line",
+    "american_odds",
+    "observed_at",
+))
 PAGE_SIZE = 1000
 MAX_PAGES = 20
+PHOENIX = ZoneInfo("America/Phoenix")
+EXECUTION_PARTITION = ("boltodds", "2026-06-16")
 
 
 def _env(name: str) -> str:
@@ -67,6 +87,38 @@ def _validated_date(value: str) -> str:
     if parsed.isoformat() != value:
         raise ValueError("date must use YYYY-MM-DD format")
     return value
+
+
+def _validated_uuid(value: Any, *, label: str) -> str:
+    text = str(value or "").strip()
+    try:
+        parsed = UUID(text)
+    except (AttributeError, TypeError, ValueError) as error:
+        raise ValueError(f"{label} must be a UUID") from error
+    return str(parsed)
+
+
+def _aware_datetime(value: Any, *, label: str) -> datetime:
+    try:
+        parsed = datetime.fromisoformat(str(value).replace("Z", "+00:00"))
+    except (TypeError, ValueError) as error:
+        raise ValueError(f"{label} must be a timezone-aware timestamp") from error
+    if parsed.tzinfo is None:
+        raise ValueError(f"{label} must be a timezone-aware timestamp")
+    return parsed.astimezone(timezone.utc)
+
+
+def _phoenix_window(slate_date: str) -> tuple[datetime, datetime, str, str]:
+    local_start = datetime.combine(date.fromisoformat(slate_date), time.min, tzinfo=PHOENIX)
+    local_end = local_start + timedelta(days=1)
+    start = local_start.astimezone(timezone.utc)
+    end = local_end.astimezone(timezone.utc)
+    return (
+        start,
+        end,
+        start.isoformat().replace("+00:00", "Z"),
+        end.isoformat().replace("+00:00", "Z"),
+    )
 
 
 def _select_rows(
@@ -99,13 +151,12 @@ def _fetch_provider_runs(
     rows_by_id: dict[str, dict[str, Any]] = {}
     for raw_row in run_rows:
         row = dict(raw_row)
-        run_id = str(row.get("id") or "").strip()
-        if not run_id:
-            raise ValueError("provider run id is required")
+        run_id = _validated_uuid(row.get("id"), label="provider run id")
         if str(row.get("provider") or "").strip().lower() != provider:
             raise ValueError("provider run escaped requested partition")
         if str(row.get("slate_date") or "").strip() != slate_date:
             raise ValueError("provider run date escaped requested partition")
+        row["id"] = run_id
         rows_by_id[run_id] = row
 
     heartbeat_rows = _select_rows(
@@ -121,12 +172,23 @@ def _fetch_provider_runs(
     if len(heartbeat_rows) >= PAGE_SIZE:
         raise ValueError("provider heartbeat query reached its fail-closed row ceiling")
 
-    extra_ids = sorted({
-        str(row.get("run_id") or "").strip()
-        for row in heartbeat_rows
-        if str(row.get("run_id") or "").strip()
-        and str(row.get("run_id") or "").strip() not in rows_by_id
-    })
+    extra_id_set: set[str] = set()
+    window_start, window_end, _, _ = _phoenix_window(slate_date)
+    for row in heartbeat_rows:
+        if (
+            str(row.get("provider") or "").strip().lower() != provider
+            or str(row.get("slate_date") or "").strip() != slate_date
+        ):
+            raise ValueError("heartbeat escaped requested partition")
+        observed_at = _aware_datetime(row.get("observed_at"), label="heartbeat observed_at")
+        if not window_start <= observed_at < window_end:
+            raise ValueError("heartbeat escaped requested Phoenix date")
+        if row.get("run_id") is None:
+            continue
+        run_id = _validated_uuid(row.get("run_id"), label="heartbeat run id")
+        if run_id not in rows_by_id:
+            extra_id_set.add(run_id)
+    extra_ids = sorted(extra_id_set)
     if extra_ids:
         extra_rows = _select_rows(
             writer,
@@ -141,12 +203,12 @@ def _fetch_provider_runs(
         returned_ids = set()
         for raw_row in extra_rows:
             row = dict(raw_row)
-            run_id = str(row.get("id") or "").strip()
+            run_id = _validated_uuid(row.get("id"), label="heartbeat provider run id")
             if run_id not in extra_ids:
                 raise ValueError("heartbeat provider run escaped requested partition")
             if str(row.get("provider") or "").strip().lower() != provider:
                 raise ValueError("heartbeat provider run escaped requested provider")
-            row["slate_date"] = slate_date
+            row["id"] = run_id
             rows_by_id[run_id] = row
             returned_ids.add(run_id)
         if returned_ids != set(extra_ids):
@@ -164,7 +226,9 @@ def _fetch_snapshot_rows(
 ) -> list[dict[str, Any]]:
     if not run_rows:
         return []
-    run_ids = [str(row["id"]) for row in run_rows]
+    run_ids = [_validated_uuid(row["id"], label="provider run id") for row in run_rows]
+    allowed_run_ids = set(run_ids)
+    window_start, window_end, window_start_iso, window_end_iso = _phoenix_window(slate_date)
     rows: list[dict[str, Any]] = []
     for page in range(MAX_PAGES):
         page_rows = _select_rows(
@@ -173,6 +237,11 @@ def _fetch_snapshot_rows(
             {
                 "run_id": f"in.({','.join(run_ids)})",
                 "provider": f"eq.{provider}",
+                "select": SNAPSHOT_SELECT_FIELDS,
+                "and": (
+                    f"(observed_at.gte.{window_start_iso},"
+                    f"observed_at.lt.{window_end_iso})"
+                ),
                 "order": "observed_at.asc,id.asc",
                 "limit": str(PAGE_SIZE),
                 "offset": str(page * PAGE_SIZE),
@@ -183,9 +252,16 @@ def _fetch_snapshot_rows(
             row_provider = str(row.get("provider") or "").strip().lower()
             if row_provider != provider:
                 raise ValueError("snapshot provider escaped requested partition")
+            row_run_id = _validated_uuid(row.get("run_id"), label="snapshot run id")
+            if row_run_id not in allowed_run_ids:
+                raise ValueError("snapshot run escaped requested partition")
+            observed_at = _aware_datetime(row.get("observed_at"), label="snapshot observed_at")
+            if not window_start <= observed_at < window_end:
+                raise ValueError("snapshot timestamp escaped requested Phoenix date")
             row_date = str(row.get("slate_date") or "").strip()
             if row_date and row_date != slate_date:
                 raise ValueError("snapshot date escaped requested partition")
+            row["run_id"] = row_run_id
             row["slate_date"] = slate_date
             rows.append(row)
         if len(page_rows) < PAGE_SIZE:
@@ -246,22 +322,53 @@ def _canonical_compact(row: dict[str, Any]) -> dict[str, Any]:
         "normalized_player_name": str(row.get("normalized_player_name") or "").strip(),
         "market_key": str(row.get("market_key") or "").strip(),
         "side": str(row.get("side") or "").strip().lower(),
-        "line": float(row.get("line")),
+        "line": _finite_float(row.get("line"), label="line"),
         "player_name": str(row.get("player_name") or "").strip(),
         "first_seen_at": _canonical_timestamp(row.get("first_seen_at")),
         "last_seen_at": _canonical_timestamp(row.get("last_seen_at")),
-        "first_odds": _optional_int(row.get("first_odds")),
-        "last_odds": _optional_int(row.get("last_odds")),
-        "min_odds": _optional_int(row.get("min_odds")),
-        "max_odds": _optional_int(row.get("max_odds")),
-        "odds_move_count": int(row.get("odds_move_count")),
-        "snapshot_count": int(row.get("snapshot_count")),
+        "first_odds": _optional_int(row.get("first_odds"), label="first_odds"),
+        "last_odds": _optional_int(row.get("last_odds"), label="last_odds"),
+        "min_odds": _optional_int(row.get("min_odds"), label="min_odds"),
+        "max_odds": _optional_int(row.get("max_odds"), label="max_odds"),
+        "odds_move_count": _strict_int(
+            row.get("odds_move_count"), label="odds_move_count", nonnegative=True,
+        ),
+        "snapshot_count": _strict_int(
+            row.get("snapshot_count"), label="snapshot_count", nonnegative=True,
+        ),
         "source_snapshot_ids": [str(value) for value in source_ids],
     }
 
 
-def _optional_int(value: Any) -> int | None:
-    return None if value is None else int(value)
+def _finite_float(value: Any, *, label: str) -> float:
+    if isinstance(value, bool):
+        raise ValueError(f"{label} must be a finite number")
+    try:
+        number = float(value)
+    except (TypeError, ValueError) as error:
+        raise ValueError(f"{label} must be a finite number") from error
+    if not math.isfinite(number):
+        raise ValueError(f"{label} must be a finite number")
+    return number
+
+
+def _strict_int(value: Any, *, label: str, nonnegative: bool = False) -> int:
+    if isinstance(value, bool):
+        raise ValueError(f"{label} must be an integer")
+    try:
+        number = float(value)
+    except (TypeError, ValueError) as error:
+        raise ValueError(f"{label} must be an integer") from error
+    if not math.isfinite(number) or not number.is_integer():
+        raise ValueError(f"{label} must be an integer")
+    result = int(number)
+    if nonnegative and result < 0:
+        raise ValueError(f"{label} must be nonnegative")
+    return result
+
+
+def _optional_int(value: Any, *, label: str) -> int | None:
+    return None if value is None else _strict_int(value, label=label)
 
 
 def _key(row: dict[str, Any]) -> tuple[Any, ...]:
@@ -352,7 +459,7 @@ def _build_preview(
     provider: str,
     slate_date: str,
     writer: SupabaseMarketWriter,
-) -> tuple[dict[str, Any], list[dict[str, Any]], list[dict[str, Any]]]:
+) -> tuple[dict[str, Any], list[dict[str, Any]]]:
     run_rows = _fetch_provider_runs(
         writer,
         provider=provider,
@@ -383,6 +490,12 @@ def _build_preview(
         blockers.append("no_rebuilt_compacts")
     if comparison["unexpected_compact_count"]:
         blockers.append("unexpected_compact_rows")
+    if len(snapshot_rows) >= PAGE_SIZE:
+        blockers.append("snapshot_pagination_required")
+    if len(existing_rows) >= PAGE_SIZE:
+        blockers.append("compact_pagination_required")
+    if (provider, slate_date) != EXECUTION_PARTITION:
+        blockers.append("execution_partition_not_allowlisted")
     if not comparison["rows_to_upsert"]:
         blockers.append("no_changes")
 
@@ -410,7 +523,7 @@ def _build_preview(
         "retention_execution_closed": True,
     }
     report["preview_sha256"] = _preview_fingerprint(report)
-    return report, comparison["rows_to_upsert"], comparison["canonical_rebuilt"]
+    return report, comparison["rows_to_upsert"]
 
 
 def run(
@@ -430,7 +543,9 @@ def run(
         raise ValueError("ALLOW_COMPACT_MARKET_PARTITION_REPAIR must be true to execute")
     if execute and not expected_preview_sha256:
         raise ValueError("expected preview fingerprint is required to execute")
-    report, rows_to_upsert, rebuilt_rows = _build_preview(
+    if execute and (normalized_provider, normalized_date) != EXECUTION_PARTITION:
+        raise ValueError("execution is limited to boltodds 2026-06-16")
+    report, rows_to_upsert = _build_preview(
         provider=normalized_provider,
         slate_date=normalized_date,
         writer=writer,
@@ -447,32 +562,78 @@ def run(
             "repair preview is not execution eligible: " + ",".join(report["blockers"])
         )
 
-    written_rows = writer.upsert_rows(
-        "compact_market_line_movements",
-        rows_to_upsert,
-        on_conflict=ON_CONFLICT,
-        attempts=1,
-    )
-    post_rows = _fetch_existing_compacts(
-        writer,
-        provider=normalized_provider,
-        slate_date=normalized_date,
-    )
-    post = _compare_compacts(rebuilt_rows=rebuilt_rows, existing_rows=post_rows)
-    post_exact = not any((
-        post["missing_compact_count"],
-        post["mismatched_compact_count"],
-        post["unexpected_compact_count"],
-    ))
-    return {
+    write_error_type: str | None = None
+    try:
+        written_rows = writer.upsert_rows(
+            "compact_market_line_movements",
+            rows_to_upsert,
+            on_conflict=ON_CONFLICT,
+            attempts=1,
+        )
+        written_count: int | None = len(written_rows)
+        write_performed: bool | None = True
+        write_outcome = "confirmed"
+    except requests.RequestException as error:
+        written_count = None
+        write_performed = None
+        write_outcome = "ambiguous"
+        write_error_type = type(error).__name__
+
+    execution_report = {
         **report,
         "action": "execute",
-        "database_write_performed": True,
-        "written_compact_count": len(written_rows),
+        "database_write_attempted": True,
+        "database_write_performed": write_performed,
+        "database_write_outcome": write_outcome,
+        "written_compact_count": written_count,
+        "write_error_type": write_error_type,
+    }
+    try:
+        post_run_rows = _fetch_provider_runs(
+            writer,
+            provider=normalized_provider,
+            slate_date=normalized_date,
+        )
+        post_snapshot_rows = _fetch_snapshot_rows(
+            writer,
+            provider=normalized_provider,
+            slate_date=normalized_date,
+            run_rows=post_run_rows,
+        )
+        post_rebuilt_rows = compact_snapshot_rows(post_snapshot_rows)
+        post_rows = _fetch_existing_compacts(
+            writer,
+            provider=normalized_provider,
+            slate_date=normalized_date,
+        )
+        post = _compare_compacts(rebuilt_rows=post_rebuilt_rows, existing_rows=post_rows)
+        post_rebuilt_sha256 = _rows_sha256(post["canonical_rebuilt"])
+        preview_still_current = post_rebuilt_sha256 == report["rebuilt_compacts_sha256"]
+        post_exact = preview_still_current and not any((
+            post["missing_compact_count"],
+            post["mismatched_compact_count"],
+            post["unexpected_compact_count"],
+        ))
+    except (requests.RequestException, OSError, TypeError, ValueError) as error:
+        return {
+            **execution_report,
+            "post_write_check_completed": False,
+            "post_write_exact": False,
+            "post_write_error_type": type(error).__name__,
+        }
+
+    if write_outcome == "ambiguous" and post_exact:
+        execution_report["database_write_outcome"] = "confirmed_by_post_state"
+    return {
+        **execution_report,
+        "post_write_check_completed": True,
         "post_write_exact": post_exact,
+        "post_write_preview_still_current": preview_still_current,
+        "post_write_raw_snapshot_count": len(post_snapshot_rows),
         "post_write_missing_compact_count": post["missing_compact_count"],
         "post_write_mismatched_compact_count": post["mismatched_compact_count"],
         "post_write_unexpected_compact_count": post["unexpected_compact_count"],
+        "post_write_rebuilt_compacts_sha256": post_rebuilt_sha256,
         "post_write_compacts_sha256": _rows_sha256(post["canonical_existing"]),
     }
 
@@ -556,6 +717,9 @@ def main(argv: list[str] | None = None) -> int:
         if report["action"] == "execute" and report["post_write_exact"] is not True:
             return 2
         return 0
+    except requests.RequestException as error:
+        print(f"supabase_request_failed: {type(error).__name__}", file=sys.stderr)
+        return 3
     except (EnvironmentError, OSError, TypeError, ValueError) as error:
         print(f"compact_partition_repair_error: {error}", file=sys.stderr)
         return 3
