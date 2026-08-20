@@ -50,6 +50,17 @@ VALUE_FIELDS = (
     "snapshot_count",
     "source_snapshot_ids",
 )
+SOURCE_STATE_FIELDS = (
+    "provider",
+    "slate_date",
+    "provider_run_count",
+    "heartbeat_row_count",
+    "in_window_heartbeat_count",
+    "out_of_window_heartbeat_count",
+    "raw_snapshot_count",
+    "rebuilt_compact_count",
+    "rebuilt_compacts_sha256",
+)
 COMPACT_FIELDS = KEY_FIELDS + VALUE_FIELDS
 SELECT_FIELDS = ",".join(COMPACT_FIELDS)
 SNAPSHOT_SELECT_FIELDS = ",".join((
@@ -134,7 +145,7 @@ def _fetch_provider_runs(
     *,
     provider: str,
     slate_date: str,
-) -> list[dict[str, Any]]:
+) -> tuple[list[dict[str, Any]], dict[str, int]]:
     run_rows = _select_rows(
         writer,
         "market_provider_runs",
@@ -173,6 +184,8 @@ def _fetch_provider_runs(
         raise ValueError("provider heartbeat query reached its fail-closed row ceiling")
 
     extra_id_set: set[str] = set()
+    in_window_heartbeat_count = 0
+    out_of_window_heartbeat_count = 0
     window_start, window_end, _, _ = _phoenix_window(slate_date)
     for row in heartbeat_rows:
         if (
@@ -182,7 +195,9 @@ def _fetch_provider_runs(
             raise ValueError("heartbeat escaped requested partition")
         observed_at = _aware_datetime(row.get("observed_at"), label="heartbeat observed_at")
         if not window_start <= observed_at < window_end:
-            raise ValueError("heartbeat escaped requested Phoenix date")
+            out_of_window_heartbeat_count += 1
+            continue
+        in_window_heartbeat_count += 1
         if row.get("run_id") is None:
             continue
         run_id = _validated_uuid(row.get("run_id"), label="heartbeat run id")
@@ -214,7 +229,14 @@ def _fetch_provider_runs(
         if returned_ids != set(extra_ids):
             raise ValueError("heartbeat provider run could not be resolved")
 
-    return [rows_by_id[run_id] for run_id in sorted(rows_by_id)]
+    return (
+        [rows_by_id[run_id] for run_id in sorted(rows_by_id)],
+        {
+            "heartbeat_row_count": len(heartbeat_rows),
+            "in_window_heartbeat_count": in_window_heartbeat_count,
+            "out_of_window_heartbeat_count": out_of_window_heartbeat_count,
+        },
+    )
 
 
 def _fetch_snapshot_rows(
@@ -395,6 +417,15 @@ def _rows_sha256(rows: list[dict[str, Any]]) -> str:
     return hashlib.sha256(payload).hexdigest()
 
 
+def _source_state_sha256(values: dict[str, Any]) -> str:
+    payload = json.dumps(
+        {field: values[field] for field in SOURCE_STATE_FIELDS},
+        sort_keys=True,
+        separators=(",", ":"),
+    ).encode("utf-8")
+    return hashlib.sha256(payload).hexdigest()
+
+
 def _compare_compacts(
     *,
     rebuilt_rows: list[dict[str, Any]],
@@ -434,10 +465,13 @@ def _compare_compacts(
 
 def _preview_fingerprint(report: dict[str, Any]) -> str:
     fields = {
-        "fingerprint_version": 1,
+        "fingerprint_version": 2,
         "provider": report["provider"],
         "slate_date": report["slate_date"],
         "provider_run_count": report["provider_run_count"],
+        "heartbeat_row_count": report["heartbeat_row_count"],
+        "in_window_heartbeat_count": report["in_window_heartbeat_count"],
+        "out_of_window_heartbeat_count": report["out_of_window_heartbeat_count"],
         "raw_snapshot_count": report["raw_snapshot_count"],
         "rebuilt_compact_count": report["rebuilt_compact_count"],
         "existing_compact_count": report["existing_compact_count"],
@@ -460,7 +494,7 @@ def _build_preview(
     slate_date: str,
     writer: SupabaseMarketWriter,
 ) -> tuple[dict[str, Any], list[dict[str, Any]]]:
-    run_rows = _fetch_provider_runs(
+    run_rows, heartbeat_summary = _fetch_provider_runs(
         writer,
         provider=provider,
         slate_date=slate_date,
@@ -505,6 +539,7 @@ def _build_preview(
         "provider": provider,
         "slate_date": slate_date,
         "provider_run_count": len(run_rows),
+        **heartbeat_summary,
         "raw_snapshot_count": len(snapshot_rows),
         "rebuilt_compact_count": len(rebuilt_rows),
         "existing_compact_count": len(existing_rows),
@@ -522,6 +557,7 @@ def _build_preview(
         "deletion_approved": False,
         "retention_execution_closed": True,
     }
+    report["source_state_sha256"] = _source_state_sha256(report)
     report["preview_sha256"] = _preview_fingerprint(report)
     return report, comparison["rows_to_upsert"]
 
@@ -589,7 +625,7 @@ def run(
         "write_error_type": write_error_type,
     }
     try:
-        post_run_rows = _fetch_provider_runs(
+        post_run_rows, post_heartbeat_summary = _fetch_provider_runs(
             writer,
             provider=normalized_provider,
             slate_date=normalized_date,
@@ -608,7 +644,16 @@ def run(
         )
         post = _compare_compacts(rebuilt_rows=post_rebuilt_rows, existing_rows=post_rows)
         post_rebuilt_sha256 = _rows_sha256(post["canonical_rebuilt"])
-        preview_still_current = post_rebuilt_sha256 == report["rebuilt_compacts_sha256"]
+        post_source_state_sha256 = _source_state_sha256({
+            "provider": normalized_provider,
+            "slate_date": normalized_date,
+            "provider_run_count": len(post_run_rows),
+            **post_heartbeat_summary,
+            "raw_snapshot_count": len(post_snapshot_rows),
+            "rebuilt_compact_count": len(post_rebuilt_rows),
+            "rebuilt_compacts_sha256": post_rebuilt_sha256,
+        })
+        preview_still_current = post_source_state_sha256 == report["source_state_sha256"]
         post_exact = preview_still_current and not any((
             post["missing_compact_count"],
             post["mismatched_compact_count"],
@@ -629,6 +674,14 @@ def run(
         "post_write_check_completed": True,
         "post_write_exact": post_exact,
         "post_write_preview_still_current": preview_still_current,
+        "post_write_source_state_sha256": post_source_state_sha256,
+        "post_write_heartbeat_row_count": post_heartbeat_summary["heartbeat_row_count"],
+        "post_write_in_window_heartbeat_count": post_heartbeat_summary[
+            "in_window_heartbeat_count"
+        ],
+        "post_write_out_of_window_heartbeat_count": post_heartbeat_summary[
+            "out_of_window_heartbeat_count"
+        ],
         "post_write_raw_snapshot_count": len(post_snapshot_rows),
         "post_write_missing_compact_count": post["missing_compact_count"],
         "post_write_mismatched_compact_count": post["mismatched_compact_count"],

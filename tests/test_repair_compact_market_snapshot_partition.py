@@ -57,8 +57,8 @@ def _compact(*, first_seen="2026-06-16T18:05:00Z", first_odds=-125,
 
 class FakeWriter:
     def __init__(self, *, snapshots=None, existing=None, run_rows=None, heartbeats=None,
-                 parent_rows=None, post_write_snapshots=None, upsert_error=None,
-                 apply_before_error=False):
+                 parent_rows=None, post_write_snapshots=None, post_write_heartbeats=None,
+                 upsert_error=None, apply_before_error=False):
         self.snapshots = list([
             _snapshot("snap-1", "2026-06-16T18:00:00Z", -110),
             _snapshot("snap-2", "2026-06-16T18:05:00Z", -125),
@@ -75,6 +75,9 @@ class FakeWriter:
         self.post_write_snapshots = (
             None if post_write_snapshots is None else list(post_write_snapshots)
         )
+        self.post_write_heartbeats = (
+            None if post_write_heartbeats is None else list(post_write_heartbeats)
+        )
         self.upsert_error = upsert_error
         self.apply_before_error = apply_before_error
         self.selects = []
@@ -85,6 +88,8 @@ class FakeWriter:
         if table == "market_provider_runs" and "slate_date" in params:
             return list(self.run_rows)
         if table == "market_feed_heartbeats":
+            if self.upserts and self.post_write_heartbeats is not None:
+                return list(self.post_write_heartbeats)
             return list(self.heartbeats)
         if table == "market_provider_runs" and "id" in params:
             wanted = params["id"]
@@ -300,6 +305,37 @@ def test_execute_rechecks_raw_partition_and_fails_exactness_if_source_rows_chang
     assert report["post_write_mismatched_compact_count"] == 1
 
 
+def test_execute_rejects_current_preview_when_quarantined_heartbeat_count_changes():
+    repair = _module()
+    changed_heartbeat = {
+        "id": "33333333-3333-4333-8333-333333333333",
+        "run_id": OTHER_RUN_ID,
+        "provider": "boltodds",
+        "slate_date": "2026-06-16",
+        "observed_at": "2026-06-17T17:20:59Z",
+    }
+    writer = FakeWriter(post_write_heartbeats=[changed_heartbeat])
+    preview = repair.run(
+        provider="boltodds",
+        slate_date="2026-06-16",
+        writer=writer,
+        execute=False,
+    )
+
+    report = repair.run(
+        provider="boltodds",
+        slate_date="2026-06-16",
+        writer=writer,
+        execute=True,
+        expected_preview_sha256=preview["preview_sha256"],
+        allow_execute=True,
+    )
+
+    assert report["post_write_out_of_window_heartbeat_count"] == 1
+    assert report["post_write_preview_still_current"] is False
+    assert report["post_write_exact"] is False
+
+
 def test_ambiguous_upsert_failure_is_sanitized_and_followed_by_exact_post_check():
     repair = _module()
     writer = FakeWriter(
@@ -504,6 +540,69 @@ def test_partition_scope_rejects_heartbeat_provider_or_date_drift(heartbeat):
             writer=writer,
             execute=False,
         )
+
+
+def test_out_of_window_heartbeat_is_quarantined_and_reported_without_expanding_lineage():
+    repair = _module()
+    heartbeat = {
+        "id": "33333333-3333-4333-8333-333333333333",
+        "run_id": OTHER_RUN_ID,
+        "provider": "boltodds",
+        "slate_date": "2026-06-16",
+        "observed_at": "2026-06-17T17:20:59Z",
+    }
+    parent = {
+        "id": OTHER_RUN_ID,
+        "provider": "boltodds",
+        "slate_date": "2026-06-17",
+        "created_at": "2026-06-17T17:20:59Z",
+    }
+    writer = FakeWriter(heartbeats=[heartbeat], parent_rows=[parent])
+
+    report = repair.run(
+        provider="boltodds",
+        slate_date="2026-06-16",
+        writer=writer,
+        execute=False,
+    )
+
+    assert report["provider_run_count"] == 1
+    assert report["heartbeat_row_count"] == 1
+    assert report["in_window_heartbeat_count"] == 0
+    assert report["out_of_window_heartbeat_count"] == 1
+    assert report["execution_eligible"] is True
+    parent_reads = [
+        params
+        for table, params, _kwargs in writer.selects
+        if table == "market_provider_runs" and "id" in params
+    ]
+    assert parent_reads == []
+
+
+def test_preview_fingerprint_binds_out_of_window_heartbeat_count():
+    repair = _module()
+    baseline = repair.run(
+        provider="boltodds",
+        slate_date="2026-06-16",
+        writer=FakeWriter(),
+        execute=False,
+    )
+    heartbeat = {
+        "id": "33333333-3333-4333-8333-333333333333",
+        "run_id": OTHER_RUN_ID,
+        "provider": "boltodds",
+        "slate_date": "2026-06-16",
+        "observed_at": "2026-06-17T17:20:59Z",
+    }
+    quarantined = repair.run(
+        provider="boltodds",
+        slate_date="2026-06-16",
+        writer=FakeWriter(heartbeats=[heartbeat]),
+        execute=False,
+    )
+
+    assert baseline["rebuilt_compacts_sha256"] == quarantined["rebuilt_compacts_sha256"]
+    assert baseline["preview_sha256"] != quarantined["preview_sha256"]
 
 
 def test_partition_scope_rejects_malformed_provider_run_uuid():
