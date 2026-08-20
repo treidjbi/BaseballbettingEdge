@@ -1,3 +1,5 @@
+import pytest
+
 from scripts import compact_market_snapshots
 
 
@@ -160,3 +162,84 @@ def test_compact_script_pages_past_supabase_rest_default_limit():
     assert result["snapshot_rows"] == 1001
     market_snapshot_calls = [call for call in writer.selects if call[0] == "market_snapshots"]
     assert [call[1]["offset"] for call in market_snapshot_calls] == ["0", "1000"]
+
+
+def test_compact_script_uses_unique_deterministic_rest_order():
+    writer = FakeWriter()
+
+    compact_market_snapshots.run(
+        slate_date="2026-05-14", writer=writer, dry_run=True,
+    )
+
+    snapshot_calls = [params for table, params in writer.selects if table == "market_snapshots"]
+    assert snapshot_calls[0]["order"] == "observed_at.asc,id.asc"
+
+
+def test_snapshot_pages_collapse_identical_boundary_duplicate():
+    writer = FakeWriter()
+    duplicate = {
+        "id": "snap-999",
+        "run_id": "run-1",
+        "provider": "boltodds",
+        "bookmaker_key": "fanduel",
+        "player_name": "Example Pitcher",
+        "normalized_player_name": "example pitcher",
+        "market_key": "pitcher_strikeouts",
+        "side": "over",
+        "line": 5.5,
+        "american_odds": -110,
+        "observed_at": "2026-05-14T19:00:00Z",
+    }
+    pages = {
+        "0": [{**duplicate, "id": f"snap-{i}"} for i in range(999)] + [duplicate],
+        "1000": [dict(duplicate)],
+    }
+    writer.select_rows = lambda table, params: (
+        [{"id": "run-1", "provider": "boltodds", "slate_date": "2026-05-14"}]
+        if table == "market_provider_runs" and "slate_date" in params
+        else [] if table == "market_feed_heartbeats"
+        else pages.get(params.get("offset"), []) if table == "market_snapshots"
+        else []
+    )
+
+    rows = compact_market_snapshots._fetch_snapshot_pages(
+        writer, [{"id": "run-1"}], slate_date="2026-05-14",
+    )
+
+    assert len(rows) == 1000
+
+
+def test_snapshot_pages_reject_conflicting_boundary_duplicate():
+    writer = FakeWriter()
+    duplicate = {
+        "id": "snap-999",
+        "run_id": "run-1",
+        "provider": "boltodds",
+        "bookmaker_key": "fanduel",
+        "player_name": "Example Pitcher",
+        "normalized_player_name": "example pitcher",
+        "market_key": "pitcher_strikeouts",
+        "side": "over",
+        "line": 5.5,
+        "american_odds": -110,
+        "observed_at": "2026-05-14T19:00:00Z",
+    }
+    pages = {
+        "0": [{**duplicate, "id": f"snap-{i}"} for i in range(999)] + [duplicate],
+        "1000": [{**duplicate, "american_odds": -125}],
+    }
+
+    def select_rows(table, params):
+        writer.selects.append((table, dict(params)))
+        if table == "market_snapshots":
+            return pages.get(params.get("offset"), [])
+        return []
+
+    writer.select_rows = select_rows
+
+    with pytest.raises(
+        ValueError, match="conflicting duplicate snapshot id: snap-999",
+    ):
+        compact_market_snapshots._fetch_snapshot_pages(
+            writer, [{"id": "run-1"}], slate_date="2026-05-14",
+        )

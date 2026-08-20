@@ -10,7 +10,10 @@ from typing import Any
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
 
-from market_infra.market_snapshot_compaction import compact_snapshot_rows  # noqa: E402
+from market_infra.market_snapshot_compaction import (  # noqa: E402
+    compact_snapshot_rows,
+    deduplicate_snapshot_rows,
+)
 from market_infra.provider_usage import (  # noqa: E402
     build_provider_usage_rows,
     write_provider_usage_rows,
@@ -114,7 +117,7 @@ def _fetch_snapshot_pages(
             "market_snapshots",
             {
                 "run_id": run_filter,
-                "order": "observed_at.asc",
+                "order": "observed_at.asc,id.asc",
                 "limit": str(page_size),
                 "offset": str(page * page_size),
             },
@@ -124,7 +127,7 @@ def _fetch_snapshot_pages(
         rows.extend(page_rows)
         if len(page_rows) < page_size:
             break
-    return rows
+    return deduplicate_snapshot_rows(rows)
 
 
 def run(
