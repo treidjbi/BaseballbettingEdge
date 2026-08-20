@@ -132,7 +132,7 @@ def test_historical_extra_proof_is_boltodds_date_and_alias_bounded():
     candidate_sql = " ".join(sql.split("historical_extra_candidates as (", 1)[1].split(
         "historical_extra_source_ids as (", 1
     )[0].split())
-    assert "unexpected.provider = 'boltodds' and unexpected.slate_date = date '2026-05-17' and unexpected.market_key = 'pitcher_strikeouts' then 'may17_alias'" in candidate_sql
+    assert "unexpected.provider = 'boltodds' and unexpected.slate_date = date '2026-05-17' and unexpected.raw_market_key = 'pitcher_strikeouts' then 'may17_alias'" in candidate_sql
     assert "unexpected.provider = 'boltodds' and unexpected.slate_date = date '2026-05-18' then 'may18_carryover' else null" in candidate_sql
 
     source_proof_sql = " ".join(sql.split("historical_extra_resolved_sources as (", 1)[1].split(
@@ -140,7 +140,7 @@ def test_historical_extra_proof_is_boltodds_date_and_alias_bounded():
     )[0].split())
     assert "candidate.historical_class = 'may17_alias' and source_snapshot.market_key = 'strikeouts'" in source_proof_sql
     assert "source_run.slate_date in (date '2026-05-16', date '2026-05-17')" in source_proof_sql
-    assert "candidate.historical_class = 'may18_carryover' and source_snapshot.market_key = candidate.market_key" in source_proof_sql
+    assert "candidate.historical_class = 'may18_carryover' and source_snapshot.market_key = candidate.raw_market_key" in source_proof_sql
     assert "source_run.slate_date = date '2026-05-17'" in source_proof_sql
 
 
@@ -209,6 +209,49 @@ def test_historical_extra_source_resolution_keeps_index_driving_predicates_raw()
     assert "canonical_compact.line = canonical_group.line" in normalized_sql
 
 
+def test_bounded_compact_rows_normalize_logical_keys_and_keep_raw_index_predicates():
+    sql = bounded_sql.build_chunk_sql("boltodds", "2026-05-17", "2026-05-19").lower()
+    compact_rows_sql = " ".join(sql.split("bounded_compact_rows as (", 1)[1].split(
+        "compact_groups as (", 1
+    )[0].split())
+
+    for projection in (
+        "lower(trim(cmlm.provider)) as provider",
+        "lower(trim(cmlm.book_key)) as book_key",
+        "trim(cmlm.normalized_player_name) as normalized_player_name",
+        "coalesce(nullif(trim(cmlm.market_key), ''), 'pitcher_strikeouts') as market_key",
+        "lower(trim(cmlm.side)) as side",
+        "cmlm.line::numeric as line",
+    ):
+        assert projection in compact_rows_sql
+    assert "cmlm.market_key as raw_market_key" in compact_rows_sql
+    assert "cmlm.slate_date between date '2026-05-17' and date '2026-05-19'" in compact_rows_sql
+    assert "cmlm.provider = 'boltodds'" in compact_rows_sql
+    assert "lower(trim(cmlm.provider)) = 'boltodds'" not in compact_rows_sql
+
+
+def test_strict_compact_grouping_uses_normalized_projection_not_raw_variants():
+    sql = bounded_sql.build_chunk_sql("boltodds", "2026-05-17", "2026-05-19").lower()
+    compact_groups_sql = " ".join(sql.split("compact_groups as (", 1)[1].split(
+        "joined_groups as (", 1
+    )[0].split())
+    assert "from bounded_compact_rows" in compact_groups_sql
+    assert (
+        "group by slate_date, provider, book_key, normalized_player_name, "
+        "market_key, side, line"
+    ) in compact_groups_sql
+    assert "cmlm." not in compact_groups_sql
+
+    candidate_sql = " ".join(sql.split("historical_extra_candidates as (", 1)[1].split(
+        "historical_extra_source_ids as (", 1
+    )[0].split())
+    source_proof_sql = " ".join(sql.split("historical_extra_resolved_sources as (", 1)[1].split(
+        "historical_extra_listed_counts as (", 1
+    )[0].split())
+    assert "unexpected.raw_market_key = 'pitcher_strikeouts'" in candidate_sql
+    assert "source_snapshot.market_key = candidate.raw_market_key" in source_proof_sql
+
+
 def test_canonical_actual_rows_reuse_raw_group_normalization_and_validity():
     sql = bounded_sql.build_chunk_sql("boltodds", "2026-05-17", "2026-05-19").lower()
     canonical_sql = " ".join(sql.split("canonical_actual_rows as (", 1)[1].split(
@@ -218,6 +261,20 @@ def test_canonical_actual_rows_reuse_raw_group_normalization_and_validity():
     assert "nullif(trim(canonical_snapshot.bookmaker_key), '') is not null" in canonical_sql
     assert "nullif(trim(canonical_snapshot.normalized_player_name), '') is not null" in canonical_sql
     assert "lower(trim(canonical_snapshot.side)) in ('over', 'under')" in canonical_sql
+
+
+def test_canonical_compact_source_expansion_case_guards_non_array_json():
+    sql = bounded_sql.build_chunk_sql("boltodds", "2026-05-17", "2026-05-19").lower()
+    canonical_proof_sql = " ".join(sql.split("canonical_actual_compact as (", 1)[1].split(
+        "historical_extra_canonical_summary as (", 1
+    )[0].split())
+
+    assert "jsonb_typeof(canonical_compact.source_snapshot_ids) = 'array'" in canonical_proof_sql
+    assert (
+        "jsonb_array_elements_text( case when "
+        "jsonb_typeof(canonical_compact.source_snapshot_ids) = 'array' "
+        "then canonical_compact.source_snapshot_ids else '[]'::jsonb end )"
+    ) in canonical_proof_sql
 
 
 def test_chunk_sql_requires_source_id_and_time_bounds_for_preserved_cross_date_lineage():

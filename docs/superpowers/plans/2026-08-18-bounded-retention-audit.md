@@ -1251,6 +1251,13 @@ Any error stops immediately without retry. No live validation step authorizes ba
   is the next decision. This handoff does not authorize a linked audit, mutation,
   retention activation, deletion, vacuum, storage reclamation, push, deployment,
   or any production behavior change.
+- **Final review fix:** the final fix commit is this commit, subject
+  `fix: close final retention compaction review findings`. Canonical compact
+  source expansion now CASE-guards non-array JSON before
+  `jsonb_array_elements_text`, strict compact coverage again groups on normalized
+  provider/book/player/market/side/line keys, and only the raw compact market key
+  is retained for the two literal historical allowlist checks. The provider/date
+  index predicates remain raw and unchanged.
 - **Deterministic compaction:** snapshot paging now requests
   `observed_at.asc,id.asc`, and compaction orders source rows by
   `(_parse_datetime(observed_at), str(id))`. Missing source IDs fail closed;
@@ -1274,7 +1281,7 @@ Any error stops immediately without retry. No live validation step authorizes ba
   correct-date compact preservation; all other dates, providers, aliases, and
   timing patterns remain unpreserved and blocking.
 - **Checkpoint invalidation:** the current code-derived query-contract SHA-256
-  is `a222b8608ea39ffb6e00d7254361b8ce8672c5f10a6f55e7342be92e6c82fa0a`.
+  is `748ebd215769b49bffeb255dd9a147349ba0939b47d75a885832d49271776a2a`.
   The runner is version `3` under query-contract version
   `supabase-db-query-linked-json-v1`; all prior-contract checkpoints fail
   closed and cannot be resumed or mixed with this contract.
@@ -1283,7 +1290,12 @@ Any error stops immediately without retry. No live validation step authorizes ba
   (historical-extra SQL and null/malformed-source fail-closed fix; 28 focused /
   2412 full-suite tests); Task 3 `19cd05fc` (runner/envelope validation and
   runner v3); and Task 4 `1607befe` (readiness, closure, reporting, and the
-  reporter-version seam; 408 focused / 2434 full-suite tests). Task 3's
+  reporter-version seam; 408 focused / 2434 full-suite tests). The final fix is
+  this commit (`fix: close final retention compaction review findings`) and the
+  final exact tree passes 31 SQL-contract tests, 423 five-file focused tests,
+  and 2,437 full-repository tests. The full suite's generated Gate F report was
+  restored to committed blob `1ef07b8332e2f3dd040317592950e909b1e852ae`.
+  Task 3's
   temporary reporter failure was a sequencing seam resolved by Task 4; the
   final branch must be fully green before any merge decision.
 - **Closed gates:** no live query, database mutation, deletion, retention

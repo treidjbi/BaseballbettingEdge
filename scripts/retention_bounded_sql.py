@@ -204,8 +204,14 @@ raw_groups as (
 ),
 bounded_compact_rows as (
   select
-    cmlm.id, cmlm.slate_date, cmlm.provider, cmlm.book_key,
-    cmlm.normalized_player_name, cmlm.market_key, cmlm.side,
+    cmlm.id,
+    cmlm.slate_date,
+    lower(trim(cmlm.provider)) as provider,
+    lower(trim(cmlm.book_key)) as book_key,
+    trim(cmlm.normalized_player_name) as normalized_player_name,
+    coalesce(nullif(trim(cmlm.market_key), ''), 'pitcher_strikeouts') as market_key,
+    cmlm.market_key as raw_market_key,
+    lower(trim(cmlm.side)) as side,
     cmlm.line::numeric as line,
     cmlm.first_seen_at, cmlm.last_seen_at,
     cmlm.first_odds, cmlm.last_odds, cmlm.min_odds, cmlm.max_odds,
@@ -291,7 +297,7 @@ historical_extra_candidates as (
     case
       when unexpected.provider = 'boltodds'
        and unexpected.slate_date = date '2026-05-17'
-       and unexpected.market_key = 'pitcher_strikeouts'
+       and unexpected.raw_market_key = 'pitcher_strikeouts'
       then 'may17_alias'
       when unexpected.provider = 'boltodds'
        and unexpected.slate_date = date '2026-05-18'
@@ -357,7 +363,7 @@ historical_extra_resolved_sources as (
         )
         or (
           candidate.historical_class = 'may18_carryover'
-          and source_snapshot.market_key = candidate.market_key
+          and source_snapshot.market_key = candidate.raw_market_key
           and source_run.slate_date = date '2026-05-17'
           and (source_snapshot.observed_at at time zone 'America/Phoenix')::date
               = date '2026-05-17'
@@ -536,7 +542,11 @@ canonical_actual_compact as (
           and coalesce((
             select array_agg(distinct compact_source.value order by compact_source.value)
             from jsonb_array_elements_text(
-              canonical_compact.source_snapshot_ids
+              case
+                when jsonb_typeof(canonical_compact.source_snapshot_ids) = 'array'
+                then canonical_compact.source_snapshot_ids
+                else '[]'::jsonb
+              end
             ) compact_source(value)
           ), '{{}}'::text[]) = canonical_group.distinct_source_snapshot_ids
       )::bigint as exact_canonical_compact_count
