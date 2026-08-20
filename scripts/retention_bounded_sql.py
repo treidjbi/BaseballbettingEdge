@@ -381,7 +381,12 @@ historical_extra_listed_counts as (
   select
     compact_id,
     count(*)::bigint as listed_source_count,
-    count(distinct source_id_text)::bigint as distinct_listed_source_count
+    count(distinct source_id_text)::bigint as distinct_listed_source_count,
+    count(*) filter (
+      where source_id_text is null
+         or source_id_text
+            !~* '^[0-9a-f]{{8}}-[0-9a-f]{{4}}-[1-5][0-9a-f]{{3}}-[89ab][0-9a-f]{{3}}-[0-9a-f]{{12}}$'
+    )::bigint as invalid_source_element_count
   from historical_extra_source_ids
   group by compact_id
 ),
@@ -404,6 +409,8 @@ historical_extra_source_shape as (
     coalesce(listed.listed_source_count, 0)::bigint as listed_source_count,
     coalesce(listed.distinct_listed_source_count, 0)::bigint
       as distinct_listed_source_count,
+    coalesce(listed.invalid_source_element_count, 0)::bigint
+      as invalid_source_element_count,
     coalesce(resolved.resolved_source_count, 0)::bigint as resolved_source_count,
     coalesce(resolved.linked_run_count, 0)::bigint as linked_run_count,
     coalesce(resolved.class_dimension_match_count, 0)::bigint
@@ -596,6 +603,7 @@ historical_extra_proof_components as (
       source_shape.source_ids_json_array
       and source_shape.listed_source_count > 0
       and source_shape.distinct_listed_source_count > 0
+      and source_shape.invalid_source_element_count = 0
       and source_shape.listed_source_count
           >= source_shape.distinct_listed_source_count
       and source_shape.resolved_source_count

@@ -179,6 +179,20 @@ def test_historical_extra_proof_fails_closed_on_all_nine_requirements():
     assert "candidate.historical_class is not null" in sql
 
 
+def test_historical_extra_proof_counts_null_source_elements_as_invalid():
+    sql = bounded_sql.build_chunk_sql("boltodds", "2026-05-17", "2026-05-19").lower()
+    listed_counts_sql = " ".join(sql.split(
+        "historical_extra_listed_counts as (", 1
+    )[1].split("historical_extra_resolved_counts as (", 1)[0].split())
+    proof_sql = " ".join(sql.split(
+        "historical_extra_proof_components as (", 1
+    )[1].split("historical_extra_proof as (", 1)[0].split())
+
+    assert "where source_id_text is null or source_id_text !~*" in listed_counts_sql
+    assert "as invalid_source_element_count" in listed_counts_sql
+    assert "source_shape.invalid_source_element_count = 0" in proof_sql
+
+
 def test_historical_extra_source_resolution_keeps_index_driving_predicates_raw():
     sql = bounded_sql.build_chunk_sql("boltodds", "2026-05-17", "2026-05-19").lower()
     normalized_sql = " ".join(sql.split())
