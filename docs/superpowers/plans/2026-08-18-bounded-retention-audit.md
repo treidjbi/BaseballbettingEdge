@@ -1369,10 +1369,23 @@ Any error stops immediately without retry. No live validation step authorizes ba
   and independent rereview found no Critical, Important, or Minor issue. This
   is still a local branch handoff only; no database write, deletion, vacuum,
   reclamation, push, deployment, or production behavior change has occurred.
-- The next gate is one new, separately approved read-only BoltOdds June 16
-  preview from the linked main clone into a fresh output directory. Review its
-  quarantined-heartbeat count, aggregate repair counts, rebuilt/existing
-  hashes, and version-2 preview fingerprint before considering a separately
-  approved upsert. Only after an exact post-repair June 16 retention checkpoint
-  may the remaining provider/date matrix resume. Retention execution and
-  deletion stay closed through all of those steps.
+- Tyler approved that next read-only preview. Local preflight confirmed the
+  reviewed branch, a fresh output destination, one-attempt SELECT behavior, and
+  no execute flag. The linked CLI invocation used SELECT-only query SHA-256
+  `e943b90da134317e6b4c8d0d8b6bb18d047a158b09c1a289f404f86c5c16cf44`
+  and exited once with code `1`. The wrapper intentionally did not retry. It
+  produced no evidence directory or preview report and could not expose the
+  underlying CLI error text, so no preview facts or fingerprint are available.
+  The query was read-only and no database mutation, repair, deletion, vacuum,
+  reclamation, provider-usage write, push, deployment, or production behavior
+  change occurred.
+- The failed invocation does not reopen execution. The one-use local wrapper
+  now retains only a sanitized CLI error class on a future failure; local
+  classifier checks cover circuit breaker, authentication, statement timeout,
+  connection, SQL-contract, and unclassified failures without exposing raw CLI
+  output. Request separate approval for one replacement read-only preview.
+  Review its quarantined-heartbeat count, aggregate repair counts,
+  rebuilt/existing hashes, and version-2 preview fingerprint before considering
+  any separately approved upsert. Only after an exact post-repair June 16
+  retention checkpoint may the remaining provider/date matrix resume.
+  Retention execution and deletion stay closed through all of those steps.
