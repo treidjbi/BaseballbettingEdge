@@ -1117,7 +1117,7 @@ def test_load_valid_checkpoints_rejects_overlapping_ranges(tmp_path, monkeypatch
 def test_cli_help_lists_only_bounded_commands_and_no_dangerous_controls(capsys):
     assert audit.main(["--help"]) == 0
     help_text = capsys.readouterr().out
-    for command in ("run", "runtime-boundary", "assemble"):
+    for command in ("run", "run-chunk", "runtime-boundary", "assemble"):
         assert command in help_text
     for forbidden in (
         "--timeout", "--provider", "--sql", "--execute", "--delete",
@@ -1126,15 +1126,20 @@ def test_cli_help_lists_only_bounded_commands_and_no_dangerous_controls(capsys):
         assert forbidden not in help_text
 
 
-@pytest.mark.parametrize("command", ["run", "runtime-boundary"])
+@pytest.mark.parametrize("command", ["run", "run-chunk", "runtime-boundary"])
 def test_linked_cli_commands_require_explicit_acknowledgement(command, tmp_path, monkeypatch):
     query = Mock()
     monkeypatch.setattr(audit, "run_linked_query", query)
-    assert audit.main([
-        command,
-        "--as-of", "2026-08-18",
-        "--output-dir", str(tmp_path),
-    ]) == 3
+    args = [
+        command, "--as-of", "2026-08-18", "--output-dir", str(tmp_path),
+    ]
+    if command == "run-chunk":
+        args.extend([
+            "--provider", "boltodds",
+            "--start-date", "2026-05-17",
+            "--end-date", "2026-05-19",
+        ])
+    assert audit.main(args) == 3
     query.assert_not_called()
 
 
@@ -1170,6 +1175,119 @@ def test_run_cli_routes_only_validated_scope_and_cap(tmp_path, monkeypatch):
     assert scope == audit.build_scope("2026-08-18")
     assert output_dir == tmp_path
     assert run.call_args.kwargs == {"max_chunks": 2}
+
+
+def test_run_chunk_cli_routes_only_validated_explicit_chunk(tmp_path, monkeypatch):
+    run = Mock(return_value=(
+        tmp_path / "checkpoint-boltodds-2026-05-17-2026-05-19.json"
+    ))
+    monkeypatch.setattr(audit, "run_explicit_chunk", run, raising=False)
+
+    assert audit.main([
+        "run-chunk", "--as-of", "2026-08-18",
+        "--output-dir", str(tmp_path), "--run-linked-read",
+        "--provider", "boltodds",
+        "--start-date", "2026-05-17", "--end-date", "2026-05-19",
+    ]) == 0
+
+    scope, output_dir, chunk = run.call_args.args
+    assert scope == audit.build_scope("2026-08-18")
+    assert output_dir == tmp_path
+    assert chunk == audit.ChunkSpec(
+        "boltodds", date(2026, 5, 17), date(2026, 5, 19),
+    )
+
+
+def test_run_chunk_cli_requires_explicit_output_dir_before_execution(
+    capsys, monkeypatch,
+):
+    run = Mock()
+    monkeypatch.setattr(audit, "run_explicit_chunk", run, raising=False)
+
+    assert audit.main([
+        "run-chunk", "--as-of", "2026-08-18", "--run-linked-read",
+        "--provider", "boltodds",
+        "--start-date", "2026-05-17", "--end-date", "2026-05-19",
+    ]) == 3
+
+    assert "required: --output-dir" in capsys.readouterr().err
+    run.assert_not_called()
+
+
+def test_run_explicit_chunk_writes_one_integrity_valid_checkpoint(
+    tmp_path, monkeypatch,
+):
+    scope = audit.build_scope("2026-08-18")
+    chunk = audit.ChunkSpec(
+        "boltodds", date(2026, 5, 17), date(2026, 5, 19),
+    )
+    query = Mock(return_value=subprocess.CompletedProcess(
+        [], 0, json.dumps([{"retention_bounded_chunk": valid_payload(chunk)}]), "",
+    ))
+    clock = iter((100.0, 110.0))
+    monkeypatch.setattr(audit, "run_linked_query", query)
+    monkeypatch.setattr(audit.time, "perf_counter", lambda: next(clock))
+
+    path = audit.run_explicit_chunk(scope, tmp_path, chunk)
+
+    assert path == (
+        tmp_path / "checkpoint-boltodds-2026-05-17-2026-05-19.json"
+    )
+    records = audit.load_valid_checkpoints(
+        tmp_path, scope, cli_version="2.48.3",
+    )
+    assert len(records) == 1
+    assert records[0].path == path
+    assert records[0].start_date == date(2026, 5, 17)
+    assert records[0].end_date == date(2026, 5, 19)
+    assert query.call_count == 1
+
+
+def test_run_explicit_chunk_rejects_range_outside_scope_before_query(
+    tmp_path, monkeypatch,
+):
+    scope = audit.build_scope("2026-08-18")
+    chunk = audit.ChunkSpec(
+        "boltodds", date(2026, 7, 19), date(2026, 7, 20),
+    )
+    query = Mock()
+    monkeypatch.setattr(audit, "run_linked_query", query)
+
+    with pytest.raises(ValueError, match="outside the candidate scope"):
+        audit.run_explicit_chunk(scope, tmp_path, chunk)
+
+    query.assert_not_called()
+    assert list(tmp_path.iterdir()) == []
+
+
+def test_run_explicit_chunk_rejects_existing_overlap_before_query(
+    tmp_path, monkeypatch,
+):
+    scope = audit.build_scope("2026-08-18")
+    chunk = audit.ChunkSpec(
+        "boltodds", date(2026, 5, 17), date(2026, 5, 19),
+    )
+    sql = audit.bounded_sql.build_chunk_sql(
+        chunk.provider, chunk.start_date.isoformat(), chunk.end_date.isoformat(),
+    )
+    checkpoint = audit._checkpoint_value(
+        scope,
+        chunk,
+        sql,
+        valid_payload(chunk),
+        audit.datetime(2026, 8, 18, 12, tzinfo=audit.timezone.utc),
+        audit.datetime(2026, 8, 18, 12, 10, tzinfo=audit.timezone.utc),
+        10.0,
+        "2.48.3",
+    )
+    audit.write_json_atomic(audit._checkpoint_path(tmp_path, chunk), checkpoint)
+    query = Mock()
+    monkeypatch.setattr(audit, "run_linked_query", query)
+
+    with pytest.raises(ValueError, match="overlaps existing checkpoint"):
+        audit.run_explicit_chunk(scope, tmp_path, chunk)
+
+    query.assert_not_called()
 
 
 def test_runtime_boundary_cli_routes_through_separate_acknowledged_read(tmp_path, monkeypatch):

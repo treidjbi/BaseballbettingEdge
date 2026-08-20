@@ -722,6 +722,69 @@ def _checkpoint_value(
     return value
 
 
+def _execute_chunk(
+    scope: AuditScope,
+    output_dir: Path,
+    chunk: ChunkSpec,
+    cli_version: str,
+) -> CheckpointRecord:
+    sql = bounded_sql.build_chunk_sql(
+        chunk.provider, chunk.start_date.isoformat(), chunk.end_date.isoformat(),
+    )
+    started_at = datetime.now(timezone.utc)
+    started_clock = time.perf_counter()
+    try:
+        completed = run_linked_query(sql)
+    except subprocess.TimeoutExpired as exc:
+        raise AuditFailure("timeout") from exc
+    except Exception as exc:
+        raise AuditFailure(classify_failure(exc)) from exc
+    if completed.returncode != 0:
+        raise AuditFailure(classify_failure(completed))
+    if not completed.stdout or not completed.stdout.strip():
+        raise AuditFailure("empty_stdout")
+    try:
+        payload = parse_supabase_object(
+            completed.stdout, "retention_bounded_chunk",
+        )
+    except ValueError as exc:
+        raise AuditFailure("malformed_json") from exc
+    try:
+        validate_chunk_payload(payload, chunk)
+    except ValueError as exc:
+        raise AuditFailure("validation_failed") from exc
+    elapsed = time.perf_counter() - started_clock
+    finished_at = datetime.now(timezone.utc)
+    checkpoint_value = _checkpoint_value(
+        scope,
+        chunk,
+        sql,
+        payload,
+        started_at,
+        finished_at,
+        elapsed,
+        cli_version,
+    )
+    path = _checkpoint_path(output_dir, chunk)
+    write_json_atomic(path, checkpoint_value)
+    return CheckpointRecord(
+        path=path,
+        provider=chunk.provider,
+        start_date=chunk.start_date,
+        end_date=chunk.end_date,
+        elapsed_seconds=elapsed,
+        query_contract_sha256=checkpoint_value["query_contract_sha256"],
+        rendered_sql_sha256=checkpoint_value["rendered_sql_sha256"],
+        scope_fingerprint=checkpoint_value["scope_fingerprint"],
+        cli_version=checkpoint_value["cli_version"],
+        payload=payload,
+        candidate_end_date=scope.candidate_end_date,
+        provider_allowlist=scope.providers,
+        runner_version=RUNNER_VERSION,
+        query_contract_version=QUERY_CONTRACT_VERSION,
+    )
+
+
 def run_chunks(
     scope: AuditScope,
     output_dir: Path,
@@ -739,60 +802,52 @@ def run_chunks(
         chunk = select_next_chunk(scope, checkpoints)
         if chunk is None:
             break
-        sql = bounded_sql.build_chunk_sql(
-            chunk.provider, chunk.start_date.isoformat(), chunk.end_date.isoformat(),
-        )
-        started_at = datetime.now(timezone.utc)
-        started_clock = time.perf_counter()
-        try:
-            completed = run_linked_query(sql)
-        except subprocess.TimeoutExpired as exc:
-            raise AuditFailure("timeout") from exc
-        except Exception as exc:
-            raise AuditFailure(classify_failure(exc)) from exc
-        if completed.returncode != 0:
-            raise AuditFailure(classify_failure(completed))
-        if not completed.stdout or not completed.stdout.strip():
-            raise AuditFailure("empty_stdout")
-        try:
-            payload = parse_supabase_object(completed.stdout, "retention_bounded_chunk")
-        except ValueError as exc:
-            raise AuditFailure("malformed_json") from exc
-        try:
-            validate_chunk_payload(payload, chunk)
-        except ValueError as exc:
-            raise AuditFailure("validation_failed") from exc
-        elapsed = time.perf_counter() - started_clock
-        finished_at = datetime.now(timezone.utc)
-        checkpoint_value = _checkpoint_value(
-            scope, chunk, sql, payload, started_at, finished_at, elapsed,
-            resolved_cli_version,
-        )
-        path = _checkpoint_path(output_dir, chunk)
-        write_json_atomic(path, checkpoint_value)
-        record = CheckpointRecord(
-            path=path,
-            provider=chunk.provider,
-            start_date=chunk.start_date,
-            end_date=chunk.end_date,
-            elapsed_seconds=elapsed,
-            query_contract_sha256=checkpoint_value["query_contract_sha256"],
-            rendered_sql_sha256=checkpoint_value["rendered_sql_sha256"],
-            scope_fingerprint=checkpoint_value["scope_fingerprint"],
-            cli_version=checkpoint_value["cli_version"],
-            payload=payload,
-            candidate_end_date=scope.candidate_end_date,
-            provider_allowlist=scope.providers,
-            runner_version=RUNNER_VERSION,
-            query_contract_version=QUERY_CONTRACT_VERSION,
+        record = _execute_chunk(
+            scope, output_dir, chunk, resolved_cli_version,
         )
         checkpoints.append(record)
         written.append(record)
-        if elapsed > SOFT_ELAPSED_SECONDS:
+        if record.elapsed_seconds > SOFT_ELAPSED_SECONDS:
             break
         if index + 1 < max_chunks and select_next_chunk(scope, checkpoints) is not None:
             time.sleep(COOLDOWN_SECONDS)
     return written
+
+
+def run_explicit_chunk(
+    scope: AuditScope,
+    output_dir: Path,
+    chunk: ChunkSpec,
+) -> Path:
+    if not isinstance(scope, AuditScope) or not isinstance(chunk, ChunkSpec):
+        raise ValueError("scope and chunk must use the audit contracts")
+    provider, start, end = bounded_sql.validate_chunk(
+        chunk.provider, chunk.start_date.isoformat(), chunk.end_date.isoformat(),
+    )
+    checked_chunk = ChunkSpec(provider, start, end)
+    if (
+        checked_chunk.start_date < scope.start_date
+        or checked_chunk.end_date > scope.candidate_end_date
+    ):
+        raise ValueError("explicit chunk is outside the candidate scope")
+
+    output_dir = preflight_output_dir(output_dir)
+    resolved_cli_version = resolve_cli_version()
+    checkpoints = load_valid_checkpoints(
+        output_dir, scope, cli_version=resolved_cli_version,
+    )
+    for checkpoint in checkpoints:
+        if (
+            checkpoint.provider == checked_chunk.provider
+            and checkpoint.start_date <= checked_chunk.end_date
+            and checkpoint.end_date >= checked_chunk.start_date
+        ):
+            raise ValueError("explicit chunk overlaps existing checkpoint")
+
+    record = _execute_chunk(
+        scope, output_dir, checked_chunk, resolved_cli_version,
+    )
+    return record.path
 
 
 def load_valid_checkpoints(
@@ -1514,6 +1569,16 @@ def _parser() -> argparse.ArgumentParser:
     run.add_argument("--max-chunks", type=int, choices=range(1, HARD_MAX_CHUNKS + 1), default=DEFAULT_MAX_CHUNKS)
     run.add_argument("--allow-multi-chunk", action="store_true")
 
+    explicit = commands.add_parser(
+        "run-chunk", help="Run one explicit bounded historical chunk",
+    )
+    explicit.add_argument("--as-of", required=True)
+    explicit.add_argument("--output-dir", type=Path, required=True)
+    explicit.add_argument("--run-linked-read", action="store_true")
+    explicit.add_argument("--provider", required=True)
+    explicit.add_argument("--start-date", required=True)
+    explicit.add_argument("--end-date", required=True)
+
     runtime = commands.add_parser(
         "runtime-boundary", help="Run the separate bounded runtime read",
     )
@@ -1535,7 +1600,7 @@ def main(argv: list[str] | None = None) -> int:
         return 0 if exc.code == 0 else 3
     try:
         scope = build_scope(args.as_of)
-        if args.command in ("run", "runtime-boundary") and not args.run_linked_read:
+        if args.command in ("run", "run-chunk", "runtime-boundary") and not args.run_linked_read:
             print("error: linked_read_acknowledgement_required", file=sys.stderr)
             return 3
         if args.command == "run":
@@ -1543,6 +1608,13 @@ def main(argv: list[str] | None = None) -> int:
                 print("error: multi_chunk_acknowledgement_required", file=sys.stderr)
                 return 3
             run_chunks(scope, args.output_dir, max_chunks=args.max_chunks)
+        elif args.command == "run-chunk":
+            provider, start, end = bounded_sql.validate_chunk(
+                args.provider, args.start_date, args.end_date,
+            )
+            run_explicit_chunk(
+                scope, args.output_dir, ChunkSpec(provider, start, end),
+            )
         elif args.command == "runtime-boundary":
             run_runtime_boundary(scope, args.output_dir)
         else:

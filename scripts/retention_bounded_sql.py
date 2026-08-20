@@ -561,6 +561,28 @@ canonical_actual_compact as (
       and canonical_compact.line = canonical_group.line
   ) compact_proof on true
 ),
+canonical_exact_source_membership as (
+  select
+    canonical_row.slate_date,
+    canonical_row.provider,
+    canonical_row.book_key,
+    canonical_row.normalized_player_name,
+    canonical_row.market_key,
+    canonical_row.side,
+    canonical_row.line,
+    canonical_row.id as source_snapshot_id
+  from canonical_actual_rows canonical_row
+  join canonical_actual_compact canonical_compact
+    on canonical_compact.slate_date = canonical_row.slate_date
+   and canonical_compact.provider = canonical_row.provider
+   and canonical_compact.book_key = canonical_row.book_key
+   and canonical_compact.normalized_player_name
+       = canonical_row.normalized_player_name
+   and canonical_compact.market_key = canonical_row.market_key
+   and canonical_compact.side = canonical_row.side
+   and canonical_compact.line = canonical_row.line
+  where canonical_compact.canonical_group_exact
+),
 historical_extra_canonical_summary as (
   select
     group_map.compact_id,
@@ -585,25 +607,20 @@ historical_extra_canonical_summary as (
 historical_extra_listed_source_preservation as (
   select
     source.compact_id,
-    count(*) filter (
+    count(membership.source_snapshot_id) filter (
       where source.class_dimensions_match
-        and exists (
-          select 1
-          from canonical_actual_compact canonical_compact
-          where canonical_compact.slate_date = source.canonical_slate_date
-            and canonical_compact.provider = source.canonical_provider
-            and canonical_compact.book_key = source.canonical_book_key
-            and canonical_compact.normalized_player_name
-                = source.canonical_player_name
-            and canonical_compact.market_key = source.canonical_market_key
-            and canonical_compact.side = source.canonical_side
-            and canonical_compact.line = source.canonical_line
-            and canonical_compact.canonical_group_exact
-            and source.source_snapshot_id::text
-                = any(canonical_compact.distinct_source_snapshot_ids)
-        )
     )::bigint as listed_source_preserved_count
   from historical_extra_resolved_sources source
+  left join canonical_exact_source_membership membership
+    on source.class_dimensions_match
+   and membership.slate_date = source.canonical_slate_date
+   and membership.provider = source.canonical_provider
+   and membership.book_key = source.canonical_book_key
+   and membership.normalized_player_name = source.canonical_player_name
+   and membership.market_key = source.canonical_market_key
+   and membership.side = source.canonical_side
+   and membership.line = source.canonical_line
+   and membership.source_snapshot_id = source.source_snapshot_id
   group by source.compact_id
 ),
 historical_extra_proof_components as (

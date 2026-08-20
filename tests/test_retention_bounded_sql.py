@@ -296,6 +296,55 @@ def test_canonical_compact_source_expansion_case_guards_non_array_json():
     ) in canonical_proof_sql
 
 
+def test_historical_source_preservation_uses_set_based_exact_membership():
+    sql = bounded_sql.build_chunk_sql(
+        "boltodds", "2026-05-17", "2026-05-19",
+    ).lower()
+    assert "canonical_exact_source_membership as (" in sql
+    membership_sql = " ".join(
+        sql.split("canonical_exact_source_membership as (", 1)[1]
+        .split("historical_extra_canonical_summary as (", 1)[0]
+        .split()
+    )
+    preservation_sql = " ".join(
+        sql.split("historical_extra_listed_source_preservation as (", 1)[1]
+        .split("historical_extra_proof_components as (", 1)[0]
+        .split()
+    )
+
+    assert "from canonical_actual_rows canonical_row" in membership_sql
+    assert "join canonical_actual_compact canonical_compact" in membership_sql
+    for predicate in (
+        "canonical_compact.slate_date = canonical_row.slate_date",
+        "canonical_compact.provider = canonical_row.provider",
+        "canonical_compact.book_key = canonical_row.book_key",
+        "canonical_compact.normalized_player_name = canonical_row.normalized_player_name",
+        "canonical_compact.market_key = canonical_row.market_key",
+        "canonical_compact.side = canonical_row.side",
+        "canonical_compact.line = canonical_row.line",
+        "canonical_compact.canonical_group_exact",
+    ):
+        assert predicate in membership_sql
+    assert "canonical_row.id as source_snapshot_id" in membership_sql
+
+    assert "left join canonical_exact_source_membership membership" in preservation_sql
+    for predicate in (
+        "membership.slate_date = source.canonical_slate_date",
+        "membership.provider = source.canonical_provider",
+        "membership.book_key = source.canonical_book_key",
+        "membership.normalized_player_name = source.canonical_player_name",
+        "membership.market_key = source.canonical_market_key",
+        "membership.side = source.canonical_side",
+        "membership.line = source.canonical_line",
+        "membership.source_snapshot_id = source.source_snapshot_id",
+    ):
+        assert predicate in preservation_sql
+    assert "count(membership.source_snapshot_id) filter (" in preservation_sql
+    assert "where source.class_dimensions_match" in preservation_sql
+    assert "exists (" not in preservation_sql
+    assert "= any(" not in preservation_sql
+
+
 def test_chunk_sql_requires_source_id_and_time_bounds_for_preserved_cross_date_lineage():
     sql = bounded_sql.build_chunk_sql("boltodds", "2026-06-11", "2026-06-11").lower()
     lineage_sql = sql.split("bounded_observed_lineage as (", 1)[1].split(
