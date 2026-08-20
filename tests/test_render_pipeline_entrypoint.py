@@ -1,3 +1,6 @@
+import json
+from urllib.parse import parse_qs, urlparse
+
 import pytest
 
 from scripts import run_render_pipeline_mode as entrypoint
@@ -178,6 +181,42 @@ def test_hydrate_live_artifacts_from_api_writes_current_payloads(tmp_path, monke
     assert (tmp_path / "data/picks_history.json").exists()
     assert any("type=dated_slate&date=2026-05-30" in url for url, _ in seen_urls)
     assert all(timeout == 20 for _, timeout in seen_urls)
+
+
+def test_hydrate_live_artifacts_bypasses_shared_cache_with_one_run_token(tmp_path, monkeypatch):
+    seen_urls = []
+
+    class Response:
+        status_code = 200
+
+        def __init__(self, url):
+            self.url = url
+
+        def raise_for_status(self):
+            return None
+
+        def json(self):
+            query = parse_qs(urlparse(self.url).query)
+            return {
+                "generation": "fresh" if query.get("hydrate_run") else "stale",
+            }
+
+    def fake_get(url, timeout):
+        seen_urls.append(url)
+        return Response(url)
+
+    monkeypatch.setattr(entrypoint.requests, "get", fake_get)
+    monkeypatch.setenv("RENDER_PIPELINE_ARTIFACT_API_URL", "https://example.test/artifact")
+
+    entrypoint.hydrate_live_artifacts_from_api(root=tmp_path, slate_date="2026-08-20")
+
+    history = json.loads((tmp_path / "data/picks_history.json").read_text(encoding="utf-8"))
+    assert history["generation"] == "fresh"
+    hydrate_tokens = {
+        parse_qs(urlparse(url).query)["hydrate_run"][0]
+        for url in seen_urls
+    }
+    assert len(hydrate_tokens) == 1
 
 
 def test_hydrate_live_artifacts_skips_missing_optional_fangraphs_cache(tmp_path, monkeypatch):
