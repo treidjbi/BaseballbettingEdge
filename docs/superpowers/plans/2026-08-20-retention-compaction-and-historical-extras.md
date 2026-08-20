@@ -1164,3 +1164,36 @@ deployment, linked Supabase audit, database mutation, retention execution,
 deletion, vacuum, or storage reclamation. The next decisions remain separate:
 publish local `main`, approve a new-hash linked read, finish the full matrix,
 and only then review any bounded deletion proposal.
+
+## Targeted chunk optimization after the 120-second stop — 2026-08-20
+
+The May 18 carryover correction and its handoff are now published on `main` at
+`2e5299aa`. One separately approved, read-only May 17-19 BoltOdds query under
+query hash `c95139e3` reached the unchanged 120-second ceiling. It produced no
+checkpoint, was not retried, and performed no database write, deletion,
+vacuum, or reclamation.
+
+Tyler then approved a code-only optimization phase. Commit `8c8d590f` on
+`codex/retention-targeted-chunk-optimization` adds a separate `run-chunk`
+command that requires an explicit provider, start date, end date, as-of date,
+output directory, and linked-read acknowledgement. The requested range must
+remain inside the fixed candidate scope, prior checkpoints must pass all
+current runner/query/CLI/hash checks, and any same-provider overlap stops
+before a query. The 120-second timeout and zero-retry behavior are unchanged.
+
+The preservation proof now builds exact canonical source membership once and
+joins on provider, book, player, market, side, line, slate date, and source
+snapshot UUID. This is the same preservation rule without the repeated
+per-source array scan that became expensive when the 610 May 18 carryover
+groups qualified. The query-contract SHA is now
+`e3091876ffe253d948c83e3e31c89f1a4fbde54381f91695f3963f2208866e05`,
+so all earlier checkpoints remain fail-closed.
+
+Test-first verification passed `431` focused retention/compaction tests and
+`2,448` complete repository tests. Python compilation and `git diff --check`
+passed, and independent read-only review found no remaining Critical or
+Important issue. The known generated Gate F report was restored to its exact
+committed blob. No post-optimization linked read, merge, push, deployment,
+database mutation, retention activation, deletion, vacuum, or reclamation has
+occurred. The next gate is local merge review; a new-hash linked read and any
+deletion proposal remain separate approvals.
