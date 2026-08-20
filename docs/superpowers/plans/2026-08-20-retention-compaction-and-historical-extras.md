@@ -1197,3 +1197,17 @@ committed blob. No post-optimization linked read, merge, push, deployment,
 database mutation, retention activation, deletion, vacuum, or reclamation has
 occurred. The next gate is local merge review; a new-hash linked read and any
 deletion proposal remain separate approvals.
+
+## Targeted optimization local integration checkpoint — 2026-08-20
+
+Tyler selected branch-finishing option 1. After local `main` was verified clean
+and current with `origin/main` at `2e5299aa`, the reviewed optimization branch
+was fast-forwarded into local `main` at `ebef1f39`. The complete merged-tree
+suite passed `2,448` tests, and the known generated Gate F report was restored
+to its exact committed blob.
+
+This is local integration only. No push, deployment, linked Supabase read,
+database mutation, retention activation, deletion, vacuum, or reclamation has
+occurred. Publishing local `main`, running one explicit new-hash chunk, and
+reviewing any bounded deletion proposal remain separate decisions in that
+order.
