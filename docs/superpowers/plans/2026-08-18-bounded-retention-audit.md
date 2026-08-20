@@ -1345,16 +1345,34 @@ Any error stops immediately without retry. No live validation step authorizes ba
   unique key, then it must reread raw inputs and compact state and prove the
   preview remained current. Ambiguous request failures remain unconfirmed
   unless that bounded post-state is exact.
-- Test-first verification passed `37` focused compaction/repair tests and
-  `2,473` complete repository tests. Python compilation and `git diff --check`
-  passed, the generated Gate F report was restored to its committed blob, and
-  independent rereview found no Critical, Important, or Minor issue. This is a
-  local branch handoff only; no live repair preview, database write, deletion,
-  vacuum, reclamation, push, deployment, or production behavior change has
-  occurred.
-- The next gate is one separately approved read-only BoltOdds June 16 preview
-  into a fresh output directory. Review its counts, blockers, rebuilt/existing
-  hashes, and preview fingerprint before considering a separately approved
-  upsert. Only after an exact post-repair June 16 retention checkpoint may the
-  remaining provider/date matrix resume. Retention execution and deletion stay
-  closed through all of those steps.
+- Tyler approved one read-only repair preview. Two local transport attempts
+  stopped before the database because the select-only guard requires the
+  literal `WITH ` prefix and the isolated worktree does not carry the ignored
+  Supabase link metadata. The approved SELECT was then run once from the linked
+  main clone while importing the reviewed worktree code. It returned data, but
+  preview generation failed closed before writing a report because one or more
+  same-provider/same-slate heartbeats had observation timestamps outside the
+  June 16 Phoenix day. No database mutation occurred and the read was not
+  retried.
+- Tyler then approved a code-only correction, committed locally as `e6416fc1`.
+  Valid BoltOdds/June 16 heartbeats outside the Phoenix day are now quarantined
+  and counted, and their run IDs cannot expand repair lineage. Provider/date
+  drift and malformed timestamps still fail closed. The preview fingerprint is
+  version `2` and binds total, in-window, and out-of-window heartbeat counts.
+  A separate source-state digest also binds provider runs, those heartbeat
+  counts, raw snapshots, and rebuilt compact state so an approved future upsert
+  cannot be reported exact if any source input changes during execution.
+- Test-first verification passed `40` focused repair tests, `204` combined
+  repair/retention tests, and `2,476` complete repository tests. Python
+  compilation and `git diff --check` passed, the generated Gate F report was
+  restored to committed blob `1ef07b8332e2f3dd040317592950e909b1e852ae`,
+  and independent rereview found no Critical, Important, or Minor issue. This
+  is still a local branch handoff only; no database write, deletion, vacuum,
+  reclamation, push, deployment, or production behavior change has occurred.
+- The next gate is one new, separately approved read-only BoltOdds June 16
+  preview from the linked main clone into a fresh output directory. Review its
+  quarantined-heartbeat count, aggregate repair counts, rebuilt/existing
+  hashes, and version-2 preview fingerprint before considering a separately
+  approved upsert. Only after an exact post-repair June 16 retention checkpoint
+  may the remaining provider/date matrix resume. Retention execution and
+  deletion stay closed through all of those steps.
