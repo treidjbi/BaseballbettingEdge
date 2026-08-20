@@ -1150,3 +1150,17 @@ The generated query-contract SHA changes from
 so every old-hash checkpoint remains fail-closed. This code task authorizes no
 linked re-read, merge, push, deployment, database mutation, repair,
 reclassification, retention activation, deletion, vacuum, or reclamation.
+
+## Local integration checkpoint — 2026-08-20
+
+Tyler selected branch-finishing option 1. After confirming local `main` was
+clean and current with `origin/main` at `f6550337`, the reviewed correction was
+fast-forwarded into local `main` at `0bbc5957`. The complete merged repository
+suite passed `2,441` tests. The known generated Gate F pre-close report was
+restored to its exact committed blob after the suite ran.
+
+This checkpoint is local integration only. It does not authorize a push,
+deployment, linked Supabase audit, database mutation, retention execution,
+deletion, vacuum, or storage reclamation. The next decisions remain separate:
+publish local `main`, approve a new-hash linked read, finish the full matrix,
+and only then review any bounded deletion proposal.
