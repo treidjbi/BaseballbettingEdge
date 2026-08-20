@@ -366,7 +366,7 @@ historical_extra_resolved_sources as (
           and source_snapshot.market_key = candidate.raw_market_key
           and source_run.slate_date = date '2026-05-17'
           and (source_snapshot.observed_at at time zone 'America/Phoenix')::date
-              = date '2026-05-17'
+              in (date '2026-05-17', date '2026-05-18')
         )
       )
     ) as class_dimensions_match

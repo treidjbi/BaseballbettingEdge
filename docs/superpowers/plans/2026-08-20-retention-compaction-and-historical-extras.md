@@ -1117,3 +1117,36 @@ the handoff is ready for code review and a separate local-merge decision.
 
 Do not merge, push, deploy, run a linked audit, activate retention, delete,
 vacuum, or reclaim storage in this task.
+
+## Post-merge May 18 carryover predicate correction — 2026-08-20
+
+The reviewed implementation was merged and pushed on `main` at `f6550337`.
+Tyler then separately approved bounded read-only matrix evidence. The fresh
+runner-v3 May 17-19 checkpoint reproduced all `855` historical BoltOdds extras,
+but its preservation decision accepted `220/220` May 17 extras and only
+`25/635` May 18 extras. One separately approved aggregate-only diagnostic,
+SHA-256 `1a52788c1dcaf17c6d09260ab944dbf5a1af611ee0f0657664fc166457cc003e`,
+proved that the other `610` May 18 groups had valid source arrays, resolved
+every listed source, linked every provider run, and failed only the historical
+class-dimension predicate.
+
+The live evidence and the earlier reviewed lineage proof isolate the false
+negative: May 18 carryover compacts correctly link to May 17 provider runs, but
+many source snapshots were observed on May 18 Phoenix time. The SQL required
+both the run and observation date to be May 17. The narrow correction keeps the
+May 17 run-date pin and every provider/book/player/market/side/line, source-ID,
+canonical-compact, and listed-source-preservation check, while allowing the
+source observation date to be May 17 or May 18.
+
+Implementation is isolated on `codex/retention-may18-carryover-fix`. TDD proved
+the new regression fails on the old one-day predicate and passes on the bounded
+two-day predicate. Focused compaction/retention verification passed `424`
+tests, the full repository suite passed `2,441` tests, Python compilation and
+`git diff --check` passed, and the known generated Gate F report was restored
+to its committed contents.
+The generated query-contract SHA changes from
+`748ebd215769b49bffeb255dd9a147349ba0939b47d75a885832d49271776a2a` to
+`c95139e3822cbce108f6e6136fd0540e0a79e6623952b84915d473b4798ca310`,
+so every old-hash checkpoint remains fail-closed. This code task authorizes no
+linked re-read, merge, push, deployment, database mutation, repair,
+reclassification, retention activation, deletion, vacuum, or reclamation.

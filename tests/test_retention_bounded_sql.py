@@ -144,6 +144,25 @@ def test_historical_extra_proof_is_boltodds_date_and_alias_bounded():
     assert "source_run.slate_date = date '2026-05-17'" in source_proof_sql
 
 
+def test_may18_carryover_accepts_prior_run_sources_observed_on_may18():
+    sql = bounded_sql.build_chunk_sql(
+        "boltodds", "2026-05-17", "2026-05-19",
+    ).lower()
+    source_proof_sql = " ".join(
+        sql.split("historical_extra_resolved_sources as (", 1)[1]
+        .split("historical_extra_listed_counts as (", 1)[0]
+        .split()
+    )
+
+    assert (
+        "candidate.historical_class = 'may18_carryover' "
+        "and source_snapshot.market_key = candidate.raw_market_key "
+        "and source_run.slate_date = date '2026-05-17' "
+        "and (source_snapshot.observed_at at time zone 'america/phoenix')::date "
+        "in (date '2026-05-17', date '2026-05-18')"
+    ) in source_proof_sql
+
+
 def test_historical_extra_proof_remains_select_only_and_aggregate_only():
     sql = bounded_sql.build_chunk_sql("boltodds", "2026-05-17", "2026-05-19")
     bounded_sql.assert_select_only(sql)
