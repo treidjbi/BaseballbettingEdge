@@ -26,6 +26,23 @@ def _integer(value: Any) -> int | None:
     return int(value)
 
 
+def deduplicate_snapshot_rows(
+    snapshot_rows: list[dict[str, Any]],
+) -> list[dict[str, Any]]:
+    rows_by_id: dict[str, dict[str, Any]] = {}
+    for raw_row in snapshot_rows:
+        row = dict(raw_row)
+        snapshot_id = str(row.get("id") or "").strip()
+        if not snapshot_id:
+            raise ValueError("snapshot id is required for compaction")
+        existing = rows_by_id.get(snapshot_id)
+        if existing is None:
+            rows_by_id[snapshot_id] = row
+        elif existing != row:
+            raise ValueError(f"conflicting duplicate snapshot id: {snapshot_id}")
+    return list(rows_by_id.values())
+
+
 def _snapshot_key(row: dict[str, Any]) -> tuple[str, str, str, str, str, str, str, float]:
     player_name = str(row.get("player_name") or "").strip()
     normalized_player = str(row.get("normalized_player_name") or "").strip() or normalize(player_name)
@@ -54,8 +71,9 @@ def _odds_move_count(ordered_rows: list[dict[str, Any]]) -> int:
 
 
 def compact_snapshot_rows(snapshot_rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    validated_rows = deduplicate_snapshot_rows(snapshot_rows)
     grouped: dict[tuple[str, str, str, str, str, str, str, float], list[dict[str, Any]]] = {}
-    for row in snapshot_rows:
+    for row in validated_rows:
         if not row.get("observed_at"):
             continue
         side = str(row.get("side") or "").strip().lower()
@@ -75,7 +93,13 @@ def compact_snapshot_rows(snapshot_rows: list[dict[str, Any]]) -> list[dict[str,
             player_name,
             line,
         ) = key
-        ordered = sorted(rows, key=lambda row: _parse_datetime(row["observed_at"]))
+        ordered = sorted(
+            rows,
+            key=lambda row: (
+                _parse_datetime(row["observed_at"]),
+                str(row["id"]),
+            ),
+        )
         odds_values = [
             odds
             for odds in (_integer(row.get("american_odds", row.get("odds"))) for row in ordered)

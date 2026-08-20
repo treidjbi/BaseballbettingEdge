@@ -1241,3 +1241,65 @@ After Tasks 1-5 pass independent review, stop and request fresh Tyler approval f
 4. Only after reviewing those outputs, consider a separately approved capped multi-chunk invocation.
 
 Any error stops immediately without retry. No live validation step authorizes backfill, deletion, vacuum, retention activation, timeout changes, schema changes, push, deployment, or production behavior changes.
+
+---
+
+### Retention Compaction and Historical-Extras Local Handoff — 2026-08-20
+
+- **Local implementation status:** Stages 1-4 are implemented and independently
+  reviewed on `codex/retention-compaction-historical-extras`; local merge review
+  is the next decision. This handoff does not authorize a linked audit, mutation,
+  retention activation, deletion, vacuum, storage reclamation, push, deployment,
+  or any production behavior change.
+- **Final review fix:** the final fix commit is this commit, subject
+  `fix: close final retention compaction review findings`. Canonical compact
+  source expansion now CASE-guards non-array JSON before
+  `jsonb_array_elements_text`, strict compact coverage again groups on normalized
+  provider/book/player/market/side/line keys, and only the raw compact market key
+  is retained for the two literal historical allowlist checks. The provider/date
+  index predicates remain raw and unchanged.
+- **Deterministic compaction:** snapshot paging now requests
+  `observed_at.asc,id.asc`, and compaction orders source rows by
+  `(_parse_datetime(observed_at), str(id))`. Missing source IDs fail closed;
+  exact duplicate mappings collapse, while conflicting duplicate mappings fail
+  closed. First/last odds, movement count, snapshot count, and source IDs derive
+  from the validated unique deterministic sequence.
+- **Version 2 preservation contract:** the audit now enforces
+  `unexpected_compact_group_count = preserved_unexpected_compact_group_count + unpreserved_unexpected_compact_group_count`.
+  Strict `coverage_exact` is unchanged and remains false for any compact-only
+  group, including a proven redundant historical extra.
+  `retention_preservation_complete` is a separately recomputed decision: it is
+  true only when missing, duplicate, mismatched, and unpreserved-unexpected
+  counts are all zero. Readiness and retired-BoltOdds closure use that narrow
+  preservation decision while continuing to report strict coverage and all three
+  extra counts.
+- **Historical allowlist:** preservation is limited exactly to BoltOdds May 17
+  compact `pitcher_strikeouts` rows whose listed sources are `Strikeouts` with
+  May 16-17 run/Phoenix observation dates, and BoltOdds May 18 carryover rows
+  whose run/Phoenix observation dates are all May 17. Both classes require exact
+  provider/book/player/market/side/line dimensions and exact canonical
+  correct-date compact preservation; all other dates, providers, aliases, and
+  timing patterns remain unpreserved and blocking.
+- **Checkpoint invalidation:** the current code-derived query-contract SHA-256
+  is `748ebd215769b49bffeb255dd9a147349ba0939b47d75a885832d49271776a2a`.
+  The runner is version `3` under query-contract version
+  `supabase-db-query-linked-json-v1`; all prior-contract checkpoints fail
+  closed and cannot be resumed or mixed with this contract.
+- **Reviewed local commits:** Task 1 `525bea29` (deterministic compaction;
+  12 focused / 2406 full-suite tests); Task 2 `598f5369` and `ebe21b20`
+  (historical-extra SQL and null/malformed-source fail-closed fix; 28 focused /
+  2412 full-suite tests); Task 3 `19cd05fc` (runner/envelope validation and
+  runner v3); and Task 4 `1607befe` (readiness, closure, reporting, and the
+  reporter-version seam; 408 focused / 2434 full-suite tests). The final fix is
+  this commit (`fix: close final retention compaction review findings`) and the
+  final exact tree passes 31 SQL-contract tests, 423 five-file focused tests,
+  and 2,437 full-repository tests. The full suite's generated Gate F report was
+  restored to committed blob `1ef07b8332e2f3dd040317592950e909b1e852ae`.
+  Task 3's
+  temporary reporter failure was a sequencing seam resolved by Task 4; the
+  final branch must be fully green before any merge decision.
+- **Closed gates:** no live query, database mutation, deletion, retention
+  execution, repair, normalization, backfill, vacuum, storage reclamation,
+  secret/configuration change, push, deployment, or merge occurred in this
+  local handoff. After separately approved local merge, a fresh bounded audit
+  remains a distinct approval gate; deletion remains separately closed.

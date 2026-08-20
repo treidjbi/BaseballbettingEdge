@@ -129,6 +129,17 @@ def _coverage(**overrides):
     return row
 
 
+def _v2_coverage(**overrides):
+    row = _coverage()
+    row.update({
+        "preserved_unexpected_compact_group_count": 0,
+        "unpreserved_unexpected_compact_group_count": 0,
+        "retention_preservation_complete": True,
+    })
+    row.update(overrides)
+    return row
+
+
 def _runtime(**overrides):
     row = {
         "provider": "boltodds", "first_run_at": "2026-05-07T16:00:00+00:00",
@@ -177,14 +188,14 @@ def _v2_envelope():
         second_rows = 0 if provider == "boltodds" else 5
         second_bytes = 0 if provider == "boltodds" else 50
         coverage.extend([
-            _coverage(
+            _v2_coverage(
                 slate_date="2026-04-28", provider=provider,
                 raw_snapshot_rows=first_rows, raw_logical_bytes=first_bytes,
                 raw_group_count=1, compact_group_count=1, exact_group_count=1,
                 first_raw_seen_at="2026-04-28T16:00:00+00:00",
                 last_raw_seen_at="2026-04-28T22:00:00+00:00",
             ),
-            _coverage(
+            _v2_coverage(
                 slate_date="2026-04-29", provider=provider,
                 raw_snapshot_rows=second_rows, raw_logical_bytes=second_bytes,
                 raw_group_count=int(second_rows > 0),
@@ -277,7 +288,7 @@ def _v2_envelope():
         "execution": {
             "query_contract_sha256": bounded_sql.query_contract_sha256(),
             "query_contract_version": "supabase-db-query-linked-json-v1",
-            "runner_version": "2", "cli_version": "2.48.3",
+            "runner_version": "3", "cli_version": "2.48.3",
             "chunk_ladder_days": [1, 3, 7], "soft_elapsed_seconds": 30.0,
             "cooldown_seconds": 30.0, "max_chunk_days": 7,
             "default_max_chunks": 1, "hard_max_chunks": 5,
@@ -302,6 +313,22 @@ def _v2_envelope():
         "retention_execution_closed": True,
         "deletion_approved": False,
     }
+
+
+def _set_v2_unexpected_group(envelope, *, preserved):
+    row = next(
+        item for item in envelope["coverage"]
+        if item["provider"] == "boltodds" and item["slate_date"] == "2026-04-28"
+    )
+    row.update({
+        "compact_group_count": row["compact_group_count"] + 1,
+        "unexpected_compact_group_count": 1,
+        "preserved_unexpected_compact_group_count": int(preserved),
+        "unpreserved_unexpected_compact_group_count": int(not preserved),
+        "coverage_exact": False,
+        "retention_preservation_complete": preserved,
+    })
+    return row
 
 
 def _v2_season_evidence():
@@ -440,6 +467,44 @@ def test_v1_normalization_preserves_the_existing_envelope_object():
     assert normalized is envelope
 
 
+def test_v1_readiness_partition_keeps_legacy_json_contract():
+    report = retention.build_readiness_report(
+        envelope=_envelope(), gate_c=_gate_c_manifest(),
+        season_evidence=_season_evidence(), pins=_pins(),
+        as_of="2026-08-18", raw_retention_days=30,
+    )
+
+    assert set(report["partitions"][0]) == {
+        "slate_date", "provider", "age_days", "raw_snapshot_rows",
+        "raw_logical_bytes", "raw_group_count", "exact_group_count",
+        "missing_compact_group_count", "mismatched_group_count",
+        "decision", "reason_codes",
+    }
+
+
+def test_v1_boltodds_closure_keeps_legacy_coverage_contract():
+    closure = retention.build_boltodds_closure(
+        envelope=_envelope(), gate_c=_gate_c_manifest(),
+        season_evidence=_season_evidence(), pins=_pins(), as_of="2026-08-18",
+    )
+
+    assert set(closure["coverage_totals"]) == {
+        "raw_snapshot_rows", "raw_logical_bytes", "raw_group_count",
+        "compact_group_count", "exact_group_count", "mismatched_group_count",
+        "missing_compact_group_count", "unexpected_compact_group_count",
+        "duplicate_compact_group_count", "first_seen_mismatch_count",
+        "last_seen_mismatch_count", "first_odds_mismatch_count",
+        "last_odds_mismatch_count", "min_odds_mismatch_count",
+        "max_odds_mismatch_count", "odds_move_count_mismatch_count",
+        "snapshot_count_mismatch_count",
+    }
+    assert set(closure["partitions"][0]) == {
+        "slate_date", "raw_snapshot_rows", "raw_logical_bytes",
+        "raw_group_count", "compact_group_count", "exact_group_count",
+        "mismatched_group_count", "coverage_exact",
+    }
+
+
 def test_complete_v2_matrix_uses_candidate_cutoff_and_current_runtime_separately():
     envelope = _v2_envelope()
     report = retention.build_readiness_report(
@@ -464,6 +529,112 @@ def test_complete_v2_matrix_uses_candidate_cutoff_and_current_runtime_separately
     assert closure["current_runtime_boundary"]["current_latest_snapshot_at"] == (
         "2026-06-17T17:22:28+00:00"
     )
+
+
+def test_v2_preserved_unexpected_group_is_visible_but_not_a_compaction_blocker():
+    envelope = _v2_envelope()
+    _set_v2_unexpected_group(envelope, preserved=True)
+    report = retention.build_readiness_report(
+        envelope=envelope,
+        gate_c=_v2_gate_c_manifest(),
+        season_evidence=_v2_season_evidence(),
+        pins=_v2_pins(),
+        as_of="2026-05-29",
+        raw_retention_days=envelope["candidate_scope"]["raw_retention_days"],
+    )
+    partition = next(
+        item for item in report["partitions"]
+        if item["provider"] == "boltodds" and item["slate_date"] == "2026-04-28"
+    )
+    assert partition["unexpected_compact_group_count"] == 1
+    assert partition["preserved_unexpected_compact_group_count"] == 1
+    assert partition["unpreserved_unexpected_compact_group_count"] == 0
+    assert partition["coverage_exact"] is False
+    assert partition["retention_preservation_complete"] is True
+    assert "unexpected_compact_group_count" not in partition["reason_codes"]
+    assert "coverage_not_exact" not in partition["reason_codes"]
+
+
+def test_v2_unpreserved_unexpected_group_blocks_compaction():
+    envelope = _v2_envelope()
+    _set_v2_unexpected_group(envelope, preserved=False)
+    report = retention.build_readiness_report(
+        envelope=envelope,
+        gate_c=_v2_gate_c_manifest(),
+        season_evidence=_v2_season_evidence(),
+        pins=_v2_pins(),
+        as_of="2026-05-29",
+        raw_retention_days=envelope["candidate_scope"]["raw_retention_days"],
+    )
+    partition = next(
+        item for item in report["partitions"]
+        if item["provider"] == "boltodds" and item["slate_date"] == "2026-04-28"
+    )
+    assert partition["decision"] == "blocked_compaction"
+    assert (
+        "unpreserved_unexpected_compact_group_count"
+        in partition["reason_codes"]
+    )
+
+
+def test_v2_boltodds_closure_keeps_preserved_extra_visible_without_blocking():
+    envelope = _v2_envelope()
+    _set_v2_unexpected_group(envelope, preserved=True)
+    closure = retention.build_boltodds_closure(
+        envelope=envelope,
+        gate_c=_v2_gate_c_manifest(),
+        season_evidence=_v2_season_evidence(),
+        pins=_v2_pins(),
+        as_of="2026-05-29",
+    )
+    partition = next(
+        item for item in closure["partitions"]
+        if item["slate_date"] == "2026-04-28"
+    )
+    assert closure["coverage_totals"]["unexpected_compact_group_count"] == 1
+    assert closure["coverage_totals"]["preserved_unexpected_compact_group_count"] == 1
+    assert partition["preserved_unexpected_compact_group_count"] == 1
+    assert "compaction_not_preserved" not in closure["unresolved_evidence_gaps"]
+
+
+def test_v2_boltodds_closure_blocks_unpreserved_extra():
+    envelope = _v2_envelope()
+    _set_v2_unexpected_group(envelope, preserved=False)
+    closure = retention.build_boltodds_closure(
+        envelope=envelope,
+        gate_c=_v2_gate_c_manifest(),
+        season_evidence=_v2_season_evidence(),
+        pins=_v2_pins(),
+        as_of="2026-05-29",
+    )
+    assert closure["status"] == "incomplete_evidence"
+    assert "compaction_not_preserved" in closure["unresolved_evidence_gaps"]
+    assert (
+        "unpreserved_unexpected_compact_group_count"
+        in closure["unresolved_evidence_gaps"]
+    )
+
+
+def test_v2_rejects_unexpected_compact_preservation_equation():
+    envelope = _v2_envelope()
+    row = envelope["coverage"][0]
+    row.update({
+        "compact_group_count": row["compact_group_count"] + 1,
+        "unexpected_compact_group_count": 1,
+        "coverage_exact": False,
+    })
+
+    with pytest.raises(ValueError, match="unexpected compact preservation equation"):
+        retention.validate_envelope(envelope, as_of=date.fromisoformat("2026-05-29"))
+
+
+@pytest.mark.parametrize("value", [False, "true"])
+def test_v2_rejects_retention_preservation_boolean_contradiction(value):
+    envelope = _v2_envelope()
+    envelope["coverage"][0]["retention_preservation_complete"] = value
+
+    with pytest.raises(ValueError, match="retention_preservation_complete"):
+        retention.validate_envelope(envelope, as_of=date.fromisoformat("2026-05-29"))
 
 
 def test_v2_null_embedded_evidence_never_invents_readiness():
@@ -521,6 +692,21 @@ def test_v2_rejects_incomplete_execution_metadata():
     envelope["execution"]["complete"] = False
 
     with pytest.raises(ValueError, match="execution.complete"):
+        retention.validate_envelope(envelope, as_of=date.fromisoformat("2026-05-29"))
+
+
+def test_v2_accepts_task3_runner_contract_version():
+    envelope = _v2_envelope()
+    envelope["execution"]["runner_version"] = "3"
+
+    retention.validate_envelope(envelope, as_of=date.fromisoformat("2026-05-29"))
+
+
+def test_v2_rejects_stale_runner_contract_version():
+    envelope = _v2_envelope()
+    envelope["execution"]["runner_version"] = "2"
+
+    with pytest.raises(ValueError, match="execution.runner_version"):
         retention.validate_envelope(envelope, as_of=date.fromisoformat("2026-05-29"))
 
 
@@ -947,7 +1133,7 @@ def test_v2_accepts_overlapping_mismatch_subtypes_for_one_group():
     row.update(
         exact_group_count=0, mismatched_group_count=1,
         first_seen_mismatch_count=1, last_seen_mismatch_count=1,
-        coverage_exact=False,
+        coverage_exact=False, retention_preservation_complete=False,
     )
 
     retention.validate_envelope(envelope, as_of=date.fromisoformat("2026-05-29"))
@@ -1492,6 +1678,54 @@ def test_readiness_markdown_states_closed_execution_and_no_production_authority(
     assert "**Deletion status: CLOSED**" in markdown
     assert "- Retention execution closed: `true`" in markdown
     assert "- Production authority: `none`" in markdown
+
+
+def test_v1_readiness_markdown_keeps_legacy_table_shape():
+    report = retention.build_readiness_report(
+        envelope=_envelope(), gate_c=_gate_c_manifest(),
+        season_evidence=_season_evidence(), pins=_pins(),
+        as_of="2026-08-18", raw_retention_days=30,
+    )
+
+    markdown = retention.render_readiness_markdown(report)
+
+    assert (
+        "| Slate | Provider | Raw rows | Raw MB | Exact / Raw groups | Missing | "
+        "Mismatched | Decision | Reasons |"
+    ) in markdown
+    assert "| Unexpected | Preserved | Unpreserved |" not in markdown
+
+
+def test_v2_readiness_markdown_shows_strict_and_preservation_columns():
+    envelope = _v2_envelope()
+    _set_v2_unexpected_group(envelope, preserved=True)
+    report = retention.build_readiness_report(
+        envelope=envelope, gate_c=_v2_gate_c_manifest(),
+        season_evidence=_v2_season_evidence(), pins=_v2_pins(),
+        as_of="2026-05-29", raw_retention_days=30,
+    )
+
+    markdown = retention.render_readiness_markdown(report)
+
+    assert (
+        "| Slate | Provider | Raw rows | Raw MB | Exact / Raw groups | Missing | "
+        "Mismatched | Unexpected | Preserved | Unpreserved | Decision | Reasons |"
+    ) in markdown
+    assert "| 1 | 1 | 0 | ready_for_retention_review | none |" in markdown
+
+
+def test_v2_boltodds_markdown_shows_strict_and_preservation_totals():
+    envelope = _v2_envelope()
+    _set_v2_unexpected_group(envelope, preserved=True)
+    closure = retention.build_boltodds_closure(
+        envelope=envelope, gate_c=_v2_gate_c_manifest(),
+        season_evidence=_v2_season_evidence(), pins=_v2_pins(),
+        as_of="2026-05-29",
+    )
+
+    markdown = retention.render_boltodds_markdown(closure)
+
+    assert "- Strict unexpected / preserved / unpreserved groups: `1 / 1 / 0`" in markdown
 
 
 def test_readiness_markdown_renders_deferred_reason_codes_for_recent_partitions():

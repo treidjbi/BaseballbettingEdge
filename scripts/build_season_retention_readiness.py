@@ -57,10 +57,15 @@ SECRET_KEY = re.compile(
     r"(?:authorization|password|secret|token|api[_-]?key|service[_-]?role)", re.IGNORECASE
 )
 
-_COVERAGE_INTEGER_FIELDS = (
+_V1_COVERAGE_INTEGER_FIELDS = (
     "raw_snapshot_rows", "raw_logical_bytes", "raw_group_count",
     "compact_group_count", "exact_group_count", "mismatched_group_count",
     *MISMATCH_FIELDS,
+)
+_COVERAGE_INTEGER_FIELDS = (
+    *_V1_COVERAGE_INTEGER_FIELDS,
+    "preserved_unexpected_compact_group_count",
+    "unpreserved_unexpected_compact_group_count",
 )
 _ANOMALY_INTEGER_FIELDS = (
     "rows_missing_run_id", "rows_missing_run_row", "rows_missing_group_key",
@@ -115,6 +120,7 @@ _V2_RANGE_FIELDS = ("provider", "start_date", "end_date")
 _V2_COVERAGE_FIELDS = (
     "slate_date", "provider", *_COVERAGE_INTEGER_FIELDS,
     "first_raw_seen_at", "last_raw_seen_at", "coverage_exact",
+    "retention_preservation_complete",
 )
 _V2_ANOMALY_FIELDS = ("provider", *_V2_ANOMALY_INTEGER_FIELDS)
 _V2_CANDIDATE_RUNTIME_FIELDS = (
@@ -383,7 +389,7 @@ def _validate_v1_envelope(
             raise ValueError("coverage provider/date partitions must be unique")
         seen_partitions.add(partition)
         coverage_providers.add(provider)
-        for field in _COVERAGE_INTEGER_FIELDS:
+        for field in _V1_COVERAGE_INTEGER_FIELDS:
             _require_nonnegative_int(row.get(field), f"coverage[{index}].{field}")
         compact_only = row["raw_group_count"] == 0
         first_seen = _parse_timestamp(
@@ -583,7 +589,7 @@ def _validate_v2_execution(
         raise ValueError("execution.query_contract_sha256 is invalid")
     expected_scalars = {
         "query_contract_version": "supabase-db-query-linked-json-v1",
-        "runner_version": "2",
+        "runner_version": "3",
         "chunk_ladder_days": [1, 3, 7],
         "soft_elapsed_seconds": 30.0,
         "cooldown_seconds": 30.0,
@@ -804,6 +810,11 @@ def _validate_v2_envelope(
             + row["unexpected_compact_group_count"]
         ):
             raise ValueError("compact_group_count contradicts coverage components")
+        if row["unexpected_compact_group_count"] != (
+            row["preserved_unexpected_compact_group_count"]
+            + row["unpreserved_unexpected_compact_group_count"]
+        ):
+            raise ValueError("unexpected compact preservation equation is invalid")
         if (
             row["raw_snapshot_rows"] < row["raw_group_count"]
             or row["raw_logical_bytes"] < row["raw_snapshot_rows"]
@@ -816,14 +827,30 @@ def _validate_v2_envelope(
             raise ValueError("mismatched_group_count exceeds explained field mismatches")
         if (row["mismatched_group_count"] > 0) != any(metric_mismatches):
             raise ValueError("mismatched_group_count contradicts field mismatches")
-        expected_exact = not any(
+        expected_strict = not any(
             row[field] > 0 for field in (
                 "missing_compact_group_count", "unexpected_compact_group_count",
                 "duplicate_compact_group_count", "mismatched_group_count",
             )
         )
-        if _require_bool(row.get("coverage_exact"), f"coverage[{index}].coverage_exact") is not expected_exact:
+        expected_preserved = not any(
+            row[field] > 0 for field in (
+                "missing_compact_group_count",
+                "unpreserved_unexpected_compact_group_count",
+                "duplicate_compact_group_count", "mismatched_group_count",
+            )
+        )
+        if _require_bool(
+            row.get("coverage_exact"), f"coverage[{index}].coverage_exact",
+        ) is not expected_strict:
             raise ValueError("coverage_exact contradicts coverage aggregates")
+        if _require_bool(
+            row.get("retention_preservation_complete"),
+            f"coverage[{index}].retention_preservation_complete",
+        ) is not expected_preserved:
+            raise ValueError(
+                "retention_preservation_complete contradicts coverage aggregates"
+            )
         totals[provider]["raw_snapshot_rows"] += row["raw_snapshot_rows"]
         totals[provider]["raw_logical_bytes"] += row["raw_logical_bytes"]
         if first_seen is not None:
@@ -1170,11 +1197,27 @@ def _outcome_reason_codes(
 def _coverage_reason_codes(
     row: dict[str, Any], anomalies: dict[str, Any], *, audit_version: int,
 ) -> list[str]:
-    reasons = [field for field in MISMATCH_FIELDS if row[field] > 0]
-    if row["mismatched_group_count"] > 0:
-        reasons.append("mismatched_group_count")
-    if row["coverage_exact"] is not True:
-        reasons.append("coverage_not_exact")
+    if audit_version == 2:
+        blocking_fields = (
+            "missing_compact_group_count",
+            "unpreserved_unexpected_compact_group_count",
+            "duplicate_compact_group_count",
+            "first_seen_mismatch_count", "last_seen_mismatch_count",
+            "first_odds_mismatch_count", "last_odds_mismatch_count",
+            "min_odds_mismatch_count", "max_odds_mismatch_count",
+            "odds_move_count_mismatch_count", "snapshot_count_mismatch_count",
+        )
+        reasons = [field for field in blocking_fields if row[field] > 0]
+        if row["mismatched_group_count"] > 0:
+            reasons.append("mismatched_group_count")
+        if row["retention_preservation_complete"] is not True:
+            reasons.append("retention_preservation_incomplete")
+    else:
+        reasons = [field for field in MISMATCH_FIELDS if row[field] > 0]
+        if row["mismatched_group_count"] > 0:
+            reasons.append("mismatched_group_count")
+        if row["coverage_exact"] is not True:
+            reasons.append("coverage_not_exact")
     anomaly_fields = (
         _V2_BLOCKING_ANOMALY_INTEGER_FIELDS
         if audit_version == 2
@@ -1246,6 +1289,22 @@ def build_readiness_report(
             "missing_compact_group_count": coverage["missing_compact_group_count"],
             "mismatched_group_count": coverage["mismatched_group_count"],
         }
+        if audit_version == 2:
+            record.update({
+                "unexpected_compact_group_count": (
+                    coverage["unexpected_compact_group_count"]
+                ),
+                "preserved_unexpected_compact_group_count": (
+                    coverage["preserved_unexpected_compact_group_count"]
+                ),
+                "unpreserved_unexpected_compact_group_count": (
+                    coverage["unpreserved_unexpected_compact_group_count"]
+                ),
+                "coverage_exact": coverage["coverage_exact"],
+                "retention_preservation_complete": (
+                    coverage["retention_preservation_complete"]
+                ),
+            })
         if age_days < raw_retention_days:
             record["decision"] = "not_in_policy_window"
             record["deferred_reason_codes"] = all_reasons
@@ -1415,20 +1474,43 @@ def build_boltodds_closure(
         row for row in envelope["coverage"] if row["provider"] == "boltodds"
     ]
     coverage_rows.sort(key=lambda row: row["slate_date"])
+    coverage_integer_fields = (
+        _COVERAGE_INTEGER_FIELDS
+        if audit_version == 2
+        else _V1_COVERAGE_INTEGER_FIELDS
+    )
     coverage_totals = {
         field: sum(row[field] for row in coverage_rows)
-        for field in _COVERAGE_INTEGER_FIELDS
+        for field in coverage_integer_fields
     }
-    partitions = [{
-        "slate_date": row["slate_date"],
-        "raw_snapshot_rows": row["raw_snapshot_rows"],
-        "raw_logical_bytes": row["raw_logical_bytes"],
-        "raw_group_count": row["raw_group_count"],
-        "compact_group_count": row["compact_group_count"],
-        "exact_group_count": row["exact_group_count"],
-        "mismatched_group_count": row["mismatched_group_count"],
-        "coverage_exact": row["coverage_exact"],
-    } for row in coverage_rows]
+    partitions = []
+    for row in coverage_rows:
+        partition = {
+            "slate_date": row["slate_date"],
+            "raw_snapshot_rows": row["raw_snapshot_rows"],
+            "raw_logical_bytes": row["raw_logical_bytes"],
+            "raw_group_count": row["raw_group_count"],
+            "compact_group_count": row["compact_group_count"],
+            "exact_group_count": row["exact_group_count"],
+            "mismatched_group_count": row["mismatched_group_count"],
+            "coverage_exact": row["coverage_exact"],
+        }
+        if audit_version == 2:
+            partition.update({
+                "unexpected_compact_group_count": (
+                    row["unexpected_compact_group_count"]
+                ),
+                "preserved_unexpected_compact_group_count": (
+                    row["preserved_unexpected_compact_group_count"]
+                ),
+                "unpreserved_unexpected_compact_group_count": (
+                    row["unpreserved_unexpected_compact_group_count"]
+                ),
+                "retention_preservation_complete": (
+                    row["retention_preservation_complete"]
+                ),
+            })
+        partitions.append(partition)
 
     season_by_date = _index_season_evidence(season_evidence, as_of=as_of_date)
     pins_by_partition = _index_pins(pins, as_of=as_of_date)
@@ -1444,11 +1526,28 @@ def build_boltodds_closure(
         gaps.append("season_evidence_manifest_missing")
     if pins is None:
         gaps.append("pin_manifest_missing")
-    if any(row["coverage_exact"] is not True for row in coverage_rows):
-        gaps.append("compaction_not_exact")
-    for field in MISMATCH_FIELDS:
-        if coverage_totals[field] > 0:
-            gaps.append(field)
+    if audit_version == 2:
+        if any(
+            row["retention_preservation_complete"] is not True
+            for row in coverage_rows
+        ):
+            gaps.append("compaction_not_preserved")
+        blocking_fields = (
+            field
+            for field in MISMATCH_FIELDS
+            if field != "unexpected_compact_group_count"
+        )
+        for field in blocking_fields:
+            if coverage_totals[field] > 0:
+                gaps.append(field)
+        if coverage_totals["unpreserved_unexpected_compact_group_count"] > 0:
+            gaps.append("unpreserved_unexpected_compact_group_count")
+    else:
+        if any(row["coverage_exact"] is not True for row in coverage_rows):
+            gaps.append("compaction_not_exact")
+        for field in MISMATCH_FIELDS:
+            if coverage_totals[field] > 0:
+                gaps.append(field)
     if coverage_totals["mismatched_group_count"] > 0:
         gaps.append("mismatched_group_count")
     anomaly_fields = (
@@ -1615,6 +1714,12 @@ def render_boltodds_markdown(report: dict[str, Any]) -> str:
         f"- Raw rows / logical bytes: `{totals['raw_snapshot_rows']} / {totals['raw_logical_bytes']}`",
         f"- Exact / raw groups: `{totals['exact_group_count']} / {totals['raw_group_count']}`",
         f"- Missing / mismatched groups: `{totals['missing_compact_group_count']} / {totals['mismatched_group_count']}`",
+        *([
+            "- Strict unexpected / preserved / unpreserved groups: "
+            f"`{totals['unexpected_compact_group_count']} / "
+            f"{totals['preserved_unexpected_compact_group_count']} / "
+            f"{totals['unpreserved_unexpected_compact_group_count']}`",
+        ] if "preserved_unexpected_compact_group_count" in totals else []),
         *(
             [f"- Source anomalies: `{json.dumps(report['source_anomalies'], sort_keys=True)}`"]
             if "source_anomalies" in report
@@ -1642,6 +1747,10 @@ def render_readiness_markdown(report: dict[str, Any]) -> str:
         f"{min(loaded_dates)} through {max(loaded_dates)}"
         if loaded_dates else "none"
     )
+    has_preservation_fields = all(
+        "preserved_unexpected_compact_group_count" in row
+        for row in report["partitions"]
+    )
     lines = [
         "# Season Retention Readiness",
         "",
@@ -1658,21 +1767,44 @@ def render_readiness_markdown(report: dict[str, Any]) -> str:
         f"- Raw retention candidate window: `{report['raw_retention_days']} days`",
         f"- Decision counts: `{json.dumps(summary, sort_keys=True)}`",
         "",
-        "| Slate | Provider | Raw rows | Raw MB | Exact / Raw groups | Missing | Mismatched | Decision | Reasons |",
-        "|---|---|---:|---:|---:|---:|---:|---|---|",
+        *(
+            [
+                "| Slate | Provider | Raw rows | Raw MB | Exact / Raw groups | Missing | Mismatched | Unexpected | Preserved | Unpreserved | Decision | Reasons |",
+                "|---|---|---:|---:|---:|---:|---:|---:|---:|---:|---|---|",
+            ]
+            if has_preservation_fields
+            else [
+                "| Slate | Provider | Raw rows | Raw MB | Exact / Raw groups | Missing | Mismatched | Decision | Reasons |",
+                "|---|---|---:|---:|---:|---:|---:|---|---|",
+            ]
+        ),
     ]
     for row in report["partitions"]:
-        lines.append(
-            "| {slate_date} | {provider} | {raw_snapshot_rows} | {raw_mb:.2f} | "
-            "{exact_group_count} / {raw_group_count} | {missing_compact_group_count} | "
-            "{mismatched_group_count} | {decision} | {reasons} |".format(
-                **row,
-                raw_mb=row["raw_logical_bytes"] / 1024 / 1024,
-                reasons=", ".join(
-                    row.get("reason_codes") or row.get("deferred_reason_codes", ())
-                ) or "none",
+        reasons = ", ".join(
+            row.get("reason_codes") or row.get("deferred_reason_codes", ())
+        ) or "none"
+        if has_preservation_fields:
+            lines.append(
+                "| {slate_date} | {provider} | {raw_snapshot_rows} | {raw_mb:.2f} | "
+                "{exact_group_count} / {raw_group_count} | {missing_compact_group_count} | "
+                "{mismatched_group_count} | {unexpected_compact_group_count} | "
+                "{preserved_unexpected_compact_group_count} | "
+                "{unpreserved_unexpected_compact_group_count} | {decision} | {reasons} |".format(
+                    **row,
+                    raw_mb=row["raw_logical_bytes"] / 1024 / 1024,
+                    reasons=reasons,
+                )
             )
-        )
+        else:
+            lines.append(
+                "| {slate_date} | {provider} | {raw_snapshot_rows} | {raw_mb:.2f} | "
+                "{exact_group_count} / {raw_group_count} | {missing_compact_group_count} | "
+                "{mismatched_group_count} | {decision} | {reasons} |".format(
+                    **row,
+                    raw_mb=row["raw_logical_bytes"] / 1024 / 1024,
+                    reasons=reasons,
+                )
+            )
     lines.extend([
         "",
         "`ready_for_retention_review` is evidence status only and does not authorize deletion.",

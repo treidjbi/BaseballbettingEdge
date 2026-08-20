@@ -202,36 +202,50 @@ raw_groups as (
   from windowed_raw
   group by slate_date, provider, book_key, normalized_player_name, market_key, side, line
 ),
-compact_groups as (
+bounded_compact_rows as (
   select
+    cmlm.id,
     cmlm.slate_date,
     lower(trim(cmlm.provider)) as provider,
     lower(trim(cmlm.book_key)) as book_key,
     trim(cmlm.normalized_player_name) as normalized_player_name,
     coalesce(nullif(trim(cmlm.market_key), ''), 'pitcher_strikeouts') as market_key,
+    cmlm.market_key as raw_market_key,
     lower(trim(cmlm.side)) as side,
     cmlm.line::numeric as line,
-    min(cmlm.first_seen_at) as first_seen_at,
-    max(cmlm.last_seen_at) as last_seen_at,
-    min(cmlm.first_odds) as first_odds,
-    min(cmlm.last_odds) as last_odds,
-    min(cmlm.min_odds) as min_odds,
-    max(cmlm.max_odds) as max_odds,
-    max(cmlm.odds_move_count) as odds_move_count,
-    max(cmlm.snapshot_count) as snapshot_count,
-    greatest(count(*) - 1, 0)::integer as compact_duplicate_count
+    cmlm.first_seen_at, cmlm.last_seen_at,
+    cmlm.first_odds, cmlm.last_odds, cmlm.min_odds, cmlm.max_odds,
+    cmlm.odds_move_count, cmlm.snapshot_count, cmlm.source_snapshot_ids
   from public.compact_market_line_movements cmlm
   where cmlm.slate_date between date '{start_literal}' and date '{end_literal}'
     and cmlm.provider = '{checked_provider}'
-  group by cmlm.slate_date, lower(trim(cmlm.provider)), lower(trim(cmlm.book_key)),
-           trim(cmlm.normalized_player_name),
-           coalesce(nullif(trim(cmlm.market_key), ''), 'pitcher_strikeouts'),
-           lower(trim(cmlm.side)), cmlm.line::numeric
+),
+compact_groups as (
+  select
+    slate_date, provider, book_key, normalized_player_name, market_key, side, line,
+    min(first_seen_at) as first_seen_at,
+    max(last_seen_at) as last_seen_at,
+    min(first_odds) as first_odds,
+    min(last_odds) as last_odds,
+    min(min_odds) as min_odds,
+    max(max_odds) as max_odds,
+    max(odds_move_count) as odds_move_count,
+    max(snapshot_count) as snapshot_count,
+    greatest(count(*) - 1, 0)::integer as compact_duplicate_count
+  from bounded_compact_rows
+  group by slate_date, provider, book_key, normalized_player_name, market_key, side, line
 ),
 joined_groups as (
   select
     coalesce(raw_groups.slate_date, compact_groups.slate_date) as slate_date,
     coalesce(raw_groups.provider, compact_groups.provider) as provider,
+    coalesce(raw_groups.book_key, compact_groups.book_key) as book_key,
+    coalesce(
+      raw_groups.normalized_player_name, compact_groups.normalized_player_name
+    ) as normalized_player_name,
+    coalesce(raw_groups.market_key, compact_groups.market_key) as market_key,
+    coalesce(raw_groups.side, compact_groups.side) as side,
+    coalesce(raw_groups.line, compact_groups.line) as line,
     raw_groups.slate_date is not null as raw_present,
     compact_groups.slate_date is not null as compact_present,
     raw_groups.first_seen_at as raw_first_seen_at,
@@ -262,10 +276,398 @@ joined_groups as (
    and compact_groups.side = raw_groups.side
    and compact_groups.line = raw_groups.line
 ),
+unexpected_compact_rows as (
+  select compact.*
+  from bounded_compact_rows compact
+  where not exists (
+    select 1
+    from raw_groups raw
+    where raw.slate_date = compact.slate_date
+      and raw.provider = compact.provider
+      and raw.book_key = compact.book_key
+      and raw.normalized_player_name = compact.normalized_player_name
+      and raw.market_key = compact.market_key
+      and raw.side = compact.side
+      and raw.line = compact.line
+  )
+),
+historical_extra_candidates as (
+  select
+    unexpected.*,
+    case
+      when unexpected.provider = 'boltodds'
+       and unexpected.slate_date = date '2026-05-17'
+       and unexpected.raw_market_key = 'pitcher_strikeouts'
+      then 'may17_alias'
+      when unexpected.provider = 'boltodds'
+       and unexpected.slate_date = date '2026-05-18'
+      then 'may18_carryover'
+      else null
+    end as historical_class
+  from unexpected_compact_rows unexpected
+),
+historical_extra_source_ids as (
+  select
+    candidate.id as compact_id,
+    candidate.historical_class,
+    candidate.slate_date as compact_slate_date,
+    candidate.provider, candidate.book_key, candidate.normalized_player_name,
+    candidate.market_key, candidate.side, candidate.line,
+    source.value as source_id_text
+  from historical_extra_candidates candidate
+  cross join lateral jsonb_array_elements_text(
+    case
+      when candidate.historical_class is not null
+       and jsonb_typeof(candidate.source_snapshot_ids) = 'array'
+      then candidate.source_snapshot_ids
+      else '[]'::jsonb
+    end
+  ) source(value)
+  where candidate.historical_class is not null
+),
+historical_extra_distinct_source_ids as (
+  select distinct compact_id, source_id_text
+  from historical_extra_source_ids
+),
+historical_extra_resolved_sources as (
+  select
+    candidate.id as compact_id,
+    source_id.source_id_text,
+    source_snapshot.id as source_snapshot_id,
+    source_snapshot.run_id as source_run_id,
+    source_run.id as linked_run_id,
+    source_run.slate_date as canonical_slate_date,
+    candidate.provider as canonical_provider,
+    lower(trim(source_snapshot.bookmaker_key)) as canonical_book_key,
+    trim(source_snapshot.normalized_player_name) as canonical_player_name,
+    source_snapshot.market_key as canonical_market_key,
+    lower(trim(source_snapshot.side)) as canonical_side,
+    source_snapshot.line::numeric as canonical_line,
+    (
+      source_snapshot.id is not null
+      and source_run.id is not null
+      and source_snapshot.provider = candidate.provider
+      and source_run.provider = candidate.provider
+      and lower(trim(source_snapshot.bookmaker_key)) = candidate.book_key
+      and trim(source_snapshot.normalized_player_name)
+          = candidate.normalized_player_name
+      and lower(trim(source_snapshot.side)) = candidate.side
+      and source_snapshot.line::numeric = candidate.line
+      and (
+        (
+          candidate.historical_class = 'may17_alias'
+          and source_snapshot.market_key = 'Strikeouts'
+          and source_run.slate_date in (date '2026-05-16', date '2026-05-17')
+          and (source_snapshot.observed_at at time zone 'America/Phoenix')::date
+              in (date '2026-05-16', date '2026-05-17')
+        )
+        or (
+          candidate.historical_class = 'may18_carryover'
+          and source_snapshot.market_key = candidate.raw_market_key
+          and source_run.slate_date = date '2026-05-17'
+          and (source_snapshot.observed_at at time zone 'America/Phoenix')::date
+              = date '2026-05-17'
+        )
+      )
+    ) as class_dimensions_match
+  from historical_extra_distinct_source_ids source_id
+  join historical_extra_candidates candidate
+    on candidate.id = source_id.compact_id
+  left join public.market_snapshots source_snapshot
+    on source_snapshot.id = case
+      when source_id.source_id_text
+        ~* '^[0-9a-f]{{8}}-[0-9a-f]{{4}}-[1-5][0-9a-f]{{3}}-[89ab][0-9a-f]{{3}}-[0-9a-f]{{12}}$'
+      then source_id.source_id_text::uuid
+      else null
+    end
+  left join public.market_provider_runs source_run
+    on source_run.id = source_snapshot.run_id
+),
+historical_extra_listed_counts as (
+  select
+    compact_id,
+    count(*)::bigint as listed_source_count,
+    count(distinct source_id_text)::bigint as distinct_listed_source_count,
+    count(*) filter (
+      where source_id_text is null
+         or source_id_text
+            !~* '^[0-9a-f]{{8}}-[0-9a-f]{{4}}-[1-5][0-9a-f]{{3}}-[89ab][0-9a-f]{{3}}-[0-9a-f]{{12}}$'
+    )::bigint as invalid_source_element_count
+  from historical_extra_source_ids
+  group by compact_id
+),
+historical_extra_resolved_counts as (
+  select
+    compact_id,
+    count(*) filter (where source_snapshot_id is not null)::bigint
+      as resolved_source_count,
+    count(*) filter (where linked_run_id is not null)::bigint
+      as linked_run_count,
+    count(*) filter (where class_dimensions_match)::bigint
+      as class_dimension_match_count
+  from historical_extra_resolved_sources
+  group by compact_id
+),
+historical_extra_source_shape as (
+  select
+    candidate.id as compact_id,
+    jsonb_typeof(candidate.source_snapshot_ids) = 'array' as source_ids_json_array,
+    coalesce(listed.listed_source_count, 0)::bigint as listed_source_count,
+    coalesce(listed.distinct_listed_source_count, 0)::bigint
+      as distinct_listed_source_count,
+    coalesce(listed.invalid_source_element_count, 0)::bigint
+      as invalid_source_element_count,
+    coalesce(resolved.resolved_source_count, 0)::bigint as resolved_source_count,
+    coalesce(resolved.linked_run_count, 0)::bigint as linked_run_count,
+    coalesce(resolved.class_dimension_match_count, 0)::bigint
+      as class_dimension_match_count
+  from historical_extra_candidates candidate
+  left join historical_extra_listed_counts listed
+    on listed.compact_id = candidate.id
+  left join historical_extra_resolved_counts resolved
+    on resolved.compact_id = candidate.id
+),
+historical_extra_canonical_group_map as (
+  select distinct
+    source.compact_id,
+    source.canonical_slate_date as slate_date,
+    source.canonical_provider as provider,
+    source.canonical_book_key as book_key,
+    source.canonical_player_name as normalized_player_name,
+    source.canonical_market_key as market_key,
+    source.canonical_side as side,
+    source.canonical_line as line
+  from historical_extra_resolved_sources source
+  where source.class_dimensions_match
+),
+canonical_actual_group_keys as (
+  select distinct
+    slate_date, provider, book_key, normalized_player_name, market_key, side, line
+  from historical_extra_canonical_group_map
+),
+canonical_actual_rows as (
+  select
+    canonical_key.slate_date,
+    canonical_key.provider,
+    canonical_key.book_key,
+    canonical_key.normalized_player_name,
+    canonical_key.market_key,
+    canonical_key.side,
+    canonical_key.line,
+    canonical_snapshot.observed_at,
+    canonical_snapshot.american_odds::integer as american_odds,
+    canonical_snapshot.id
+  from canonical_actual_group_keys canonical_key
+  join public.market_provider_runs canonical_run
+    on canonical_run.slate_date = canonical_key.slate_date
+   and canonical_run.provider = canonical_key.provider
+  join public.market_snapshots canonical_snapshot
+    on canonical_snapshot.run_id = canonical_run.id
+   and canonical_snapshot.provider = canonical_key.provider
+   and lower(trim(canonical_snapshot.bookmaker_key)) = canonical_key.book_key
+   and trim(canonical_snapshot.normalized_player_name)
+       = canonical_key.normalized_player_name
+   and coalesce(nullif(trim(canonical_snapshot.market_key), ''), 'pitcher_strikeouts')
+       = canonical_key.market_key
+   and lower(trim(canonical_snapshot.side)) = canonical_key.side
+   and canonical_snapshot.line::numeric = canonical_key.line
+   and nullif(trim(canonical_snapshot.bookmaker_key), '') is not null
+   and nullif(trim(canonical_snapshot.normalized_player_name), '') is not null
+   and lower(trim(canonical_snapshot.side)) in ('over', 'under')
+),
+windowed_canonical_actual as (
+  select
+    slate_date, provider, book_key, normalized_player_name, market_key, side, line,
+    observed_at, american_odds, id,
+    first_value(american_odds) over canonical_order as first_odds,
+    last_value(american_odds) over canonical_order as last_odds,
+    lag(american_odds) over canonical_order as previous_odds
+  from canonical_actual_rows
+  window canonical_order as (
+    partition by slate_date, provider, book_key, normalized_player_name,
+                 market_key, side, line
+    order by observed_at asc, id asc
+    rows between unbounded preceding and unbounded following
+  )
+),
+canonical_actual_groups as (
+  select
+    slate_date, provider, book_key, normalized_player_name, market_key, side, line,
+    min(observed_at) as first_seen_at,
+    max(observed_at) as last_seen_at,
+    min(first_odds) as first_odds,
+    min(last_odds) as last_odds,
+    min(american_odds) as min_odds,
+    max(american_odds) as max_odds,
+    count(*) filter (
+      where previous_odds is not null and american_odds is distinct from previous_odds
+    )::integer as odds_move_count,
+    count(*)::integer as snapshot_count,
+    array_agg(id::text order by observed_at, id) as source_snapshot_ids,
+    array_agg(id::text order by id::text) as distinct_source_snapshot_ids
+  from windowed_canonical_actual
+  group by slate_date, provider, book_key, normalized_player_name, market_key, side, line
+),
+canonical_actual_compact as (
+  select
+    canonical_group.*,
+    coalesce(compact_proof.canonical_compact_count, 0)::bigint
+      as canonical_compact_count,
+    (
+      coalesce(compact_proof.canonical_compact_count, 0) = 1
+      and coalesce(compact_proof.exact_canonical_compact_count, 0) = 1
+    ) as canonical_group_exact
+  from canonical_actual_groups canonical_group
+  left join lateral (
+    select
+      count(*)::bigint as canonical_compact_count,
+      count(*) filter (
+        where canonical_compact.first_seen_at
+                is not distinct from canonical_group.first_seen_at
+          and canonical_compact.last_seen_at
+                is not distinct from canonical_group.last_seen_at
+          and canonical_compact.first_odds
+                is not distinct from canonical_group.first_odds
+          and canonical_compact.last_odds
+                is not distinct from canonical_group.last_odds
+          and canonical_compact.min_odds
+                is not distinct from canonical_group.min_odds
+          and canonical_compact.max_odds
+                is not distinct from canonical_group.max_odds
+          and canonical_compact.odds_move_count
+                is not distinct from canonical_group.odds_move_count
+          and canonical_compact.snapshot_count
+                is not distinct from canonical_group.snapshot_count
+          and jsonb_typeof(canonical_compact.source_snapshot_ids) = 'array'
+          and coalesce((
+            select array_agg(distinct compact_source.value order by compact_source.value)
+            from jsonb_array_elements_text(
+              case
+                when jsonb_typeof(canonical_compact.source_snapshot_ids) = 'array'
+                then canonical_compact.source_snapshot_ids
+                else '[]'::jsonb
+              end
+            ) compact_source(value)
+          ), '{{}}'::text[]) = canonical_group.distinct_source_snapshot_ids
+      )::bigint as exact_canonical_compact_count
+    from public.compact_market_line_movements canonical_compact
+    where canonical_compact.slate_date = canonical_group.slate_date
+      and canonical_compact.provider = canonical_group.provider
+      and canonical_compact.book_key = canonical_group.book_key
+      and canonical_compact.normalized_player_name
+          = canonical_group.normalized_player_name
+      and canonical_compact.market_key = canonical_group.market_key
+      and canonical_compact.side = canonical_group.side
+      and canonical_compact.line = canonical_group.line
+  ) compact_proof on true
+),
+historical_extra_canonical_summary as (
+  select
+    group_map.compact_id,
+    count(*)::bigint as canonical_group_count,
+    count(*) filter (
+      where coalesce(canonical_compact.canonical_compact_count, 0) = 1
+    )::bigint as canonical_compact_count,
+    count(*) filter (
+      where coalesce(canonical_compact.canonical_group_exact, false)
+    )::bigint as exact_canonical_group_count
+  from historical_extra_canonical_group_map group_map
+  left join canonical_actual_compact canonical_compact
+    on canonical_compact.slate_date = group_map.slate_date
+   and canonical_compact.provider = group_map.provider
+   and canonical_compact.book_key = group_map.book_key
+   and canonical_compact.normalized_player_name = group_map.normalized_player_name
+   and canonical_compact.market_key = group_map.market_key
+   and canonical_compact.side = group_map.side
+   and canonical_compact.line = group_map.line
+  group by group_map.compact_id
+),
+historical_extra_listed_source_preservation as (
+  select
+    source.compact_id,
+    count(*) filter (
+      where source.class_dimensions_match
+        and exists (
+          select 1
+          from canonical_actual_compact canonical_compact
+          where canonical_compact.slate_date = source.canonical_slate_date
+            and canonical_compact.provider = source.canonical_provider
+            and canonical_compact.book_key = source.canonical_book_key
+            and canonical_compact.normalized_player_name
+                = source.canonical_player_name
+            and canonical_compact.market_key = source.canonical_market_key
+            and canonical_compact.side = source.canonical_side
+            and canonical_compact.line = source.canonical_line
+            and canonical_compact.canonical_group_exact
+            and source.source_snapshot_id::text
+                = any(canonical_compact.distinct_source_snapshot_ids)
+        )
+    )::bigint as listed_source_preserved_count
+  from historical_extra_resolved_sources source
+  group by source.compact_id
+),
+historical_extra_proof_components as (
+  select
+    source_shape.compact_id,
+    (
+      source_shape.source_ids_json_array
+      and source_shape.listed_source_count > 0
+      and source_shape.distinct_listed_source_count > 0
+      and source_shape.invalid_source_element_count = 0
+      and source_shape.listed_source_count
+          >= source_shape.distinct_listed_source_count
+      and source_shape.resolved_source_count
+          = source_shape.distinct_listed_source_count
+      and source_shape.linked_run_count
+          = source_shape.distinct_listed_source_count
+      and source_shape.class_dimension_match_count
+          = source_shape.distinct_listed_source_count
+    ) as all_source_shape_checks_pass,
+    (
+      coalesce(canonical_summary.canonical_group_count, 0) > 0
+      and canonical_summary.canonical_compact_count
+          = canonical_summary.canonical_group_count
+      and canonical_summary.exact_canonical_group_count
+          = canonical_summary.canonical_group_count
+    ) as all_canonical_groups_exact,
+    (
+      coalesce(preservation.listed_source_preserved_count, 0)
+          = source_shape.distinct_listed_source_count
+      and source_shape.distinct_listed_source_count > 0
+    ) as all_listed_sources_preserved
+  from historical_extra_source_shape source_shape
+  left join historical_extra_canonical_summary canonical_summary
+    on canonical_summary.compact_id = source_shape.compact_id
+  left join historical_extra_listed_source_preservation preservation
+    on preservation.compact_id = source_shape.compact_id
+),
+historical_extra_proof as (
+  select
+    candidate.id as compact_id,
+    coalesce(proof.all_source_shape_checks_pass, false)
+      and coalesce(proof.all_canonical_groups_exact, false)
+      and coalesce(proof.all_listed_sources_preserved, false)
+      as preserved
+  from historical_extra_candidates candidate
+  left join historical_extra_proof_components proof
+    on proof.compact_id = candidate.id
+),
+historical_extra_group_proof as (
+  select
+    candidate.slate_date, candidate.provider, candidate.book_key,
+    candidate.normalized_player_name, candidate.market_key,
+    candidate.side, candidate.line,
+    bool_and(proof.preserved) as preserved
+  from historical_extra_candidates candidate
+  join historical_extra_proof proof on proof.compact_id = candidate.id
+  group by candidate.slate_date, candidate.provider, candidate.book_key,
+           candidate.normalized_player_name, candidate.market_key,
+           candidate.side, candidate.line
+),
 coverage_by_partition as (
   select
-    slate_date,
-    provider,
+    joined_groups.slate_date,
+    joined_groups.provider,
     coalesce(sum(raw_snapshot_count) filter (where raw_present), 0)::bigint as raw_snapshot_rows,
     coalesce(sum(raw_logical_bytes) filter (where raw_present), 0)::bigint as raw_logical_bytes,
     count(*) filter (where raw_present)::bigint as raw_group_count,
@@ -294,7 +696,17 @@ coverage_by_partition as (
       )
     )::bigint as mismatched_group_count,
     count(*) filter (where raw_present and not compact_present)::bigint as missing_compact_group_count,
-    count(*) filter (where compact_present and not raw_present)::bigint as unexpected_compact_group_count,
+    count(*) filter (
+      where compact_present and not raw_present
+    )::bigint as unexpected_compact_group_count,
+    count(*) filter (
+      where compact_present and not raw_present
+        and coalesce(historical_extra_group_proof.preserved, false)
+    )::bigint as preserved_unexpected_compact_group_count,
+    count(*) filter (
+      where compact_present and not raw_present
+        and not coalesce(historical_extra_group_proof.preserved, false)
+    )::bigint as unpreserved_unexpected_compact_group_count,
     coalesce(sum(compact_duplicate_count), 0)::bigint as duplicate_compact_group_count,
     count(*) filter (where raw_present and compact_present and raw_first_seen_at is distinct from compact_first_seen_at)::bigint as first_seen_mismatch_count,
     count(*) filter (where raw_present and compact_present and raw_last_seen_at is distinct from compact_last_seen_at)::bigint as last_seen_mismatch_count,
@@ -307,7 +719,25 @@ coverage_by_partition as (
     min(raw_first_seen_at) filter (where raw_present) as first_raw_seen_at,
     max(raw_last_seen_at) filter (where raw_present) as last_raw_seen_at
   from joined_groups
-  group by slate_date, provider
+  left join historical_extra_group_proof
+    on historical_extra_group_proof.slate_date = joined_groups.slate_date
+   and historical_extra_group_proof.provider = joined_groups.provider
+   and historical_extra_group_proof.book_key = joined_groups.book_key
+   and historical_extra_group_proof.normalized_player_name
+       = joined_groups.normalized_player_name
+   and historical_extra_group_proof.market_key = joined_groups.market_key
+   and historical_extra_group_proof.side = joined_groups.side
+   and historical_extra_group_proof.line = joined_groups.line
+  group by joined_groups.slate_date, joined_groups.provider
+),
+coverage_with_preservation_equation as (
+  select
+    coverage_by_partition.*,
+    (
+      unexpected_compact_group_count = preserved_unexpected_compact_group_count
+        + unpreserved_unexpected_compact_group_count
+    ) as preservation_equation_exact
+  from coverage_by_partition
 ),
 coverage_with_exactness as (
   select
@@ -321,6 +751,12 @@ coverage_with_exactness as (
     coalesce(coverage_by_partition.mismatched_group_count, 0)::bigint as mismatched_group_count,
     coalesce(coverage_by_partition.missing_compact_group_count, 0)::bigint as missing_compact_group_count,
     coalesce(coverage_by_partition.unexpected_compact_group_count, 0)::bigint as unexpected_compact_group_count,
+    coalesce(
+      coverage_by_partition.preserved_unexpected_compact_group_count, 0
+    )::bigint as preserved_unexpected_compact_group_count,
+    coalesce(
+      coverage_by_partition.unpreserved_unexpected_compact_group_count, 0
+    )::bigint as unpreserved_unexpected_compact_group_count,
     coalesce(coverage_by_partition.duplicate_compact_group_count, 0)::bigint as duplicate_compact_group_count,
     coalesce(coverage_by_partition.first_seen_mismatch_count, 0)::bigint as first_seen_mismatch_count,
     coalesce(coverage_by_partition.last_seen_mismatch_count, 0)::bigint as last_seen_mismatch_count,
@@ -337,9 +773,18 @@ coverage_with_exactness as (
       and coalesce(coverage_by_partition.unexpected_compact_group_count, 0) = 0
       and coalesce(coverage_by_partition.duplicate_compact_group_count, 0) = 0
       and coalesce(coverage_by_partition.mismatched_group_count, 0) = 0
-    ) as coverage_exact
+    ) as coverage_exact,
+    (
+      coalesce(coverage_by_partition.missing_compact_group_count, 0) = 0
+      and coalesce(coverage_by_partition.duplicate_compact_group_count, 0) = 0
+      and coalesce(coverage_by_partition.mismatched_group_count, 0) = 0
+      and coalesce(
+        coverage_by_partition.unpreserved_unexpected_compact_group_count, 0
+      ) = 0
+      and coalesce(coverage_by_partition.preservation_equation_exact, true)
+    ) as retention_preservation_complete
   from requested_partitions
-  left join coverage_by_partition
+  left join coverage_with_preservation_equation coverage_by_partition
     on coverage_by_partition.slate_date = requested_partitions.slate_date
    and coverage_by_partition.provider = requested_partitions.provider
 ),
