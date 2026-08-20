@@ -165,11 +165,18 @@ def live_artifact_hydration_enabled(mode: str, artifact_key_prefix: str) -> bool
     return mode in {"grading", "pipeline", "lock"}
 
 
-def artifact_api_url(artifact_type: str, date: str | None = None) -> str:
+def artifact_api_url(
+    artifact_type: str,
+    date: str | None = None,
+    *,
+    hydrate_run: str | None = None,
+) -> str:
     base = os.environ.get("RENDER_PIPELINE_ARTIFACT_API_URL", "").strip() or DEFAULT_ARTIFACT_API_URL
     params = {"type": artifact_type}
     if date:
         params["date"] = date
+    if hydrate_run:
+        params["hydrate_run"] = hydrate_run
     separator = "&" if "?" in base else "?"
     return f"{base}{separator}{urlencode(params)}"
 
@@ -195,9 +202,14 @@ def hydration_artifacts(slate_date: str) -> list[HydrationArtifact]:
 
 def hydrate_live_artifacts_from_api(*, root: Path, slate_date: str) -> int:
     hydrated = 0
+    hydrate_run = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%S%fZ")
     for artifact in hydration_artifacts(slate_date):
         response = requests.get(
-            artifact_api_url(artifact.artifact_type, artifact.date),
+            artifact_api_url(
+                artifact.artifact_type,
+                artifact.date,
+                hydrate_run=hydrate_run,
+            ),
             timeout=20,
         )
         if response.status_code == 404 and not artifact.required:
