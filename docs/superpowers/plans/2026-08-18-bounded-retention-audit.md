@@ -1466,12 +1466,63 @@ Any error stops immediately without retry. No live validation step authorizes ba
   `30c0d67bc534ae8fd2ba6b5fd53878a111fc1af12ad85660e017bd6c8cc668c2`.
   The June 16 compact-integrity blocker is therefore closed. The upsert repaired
   historical compact evidence but reclaimed no database space.
-- One subsequent read-only BoltOdds checkpoint for July 10-16 failed closed
-  once as `subprocess_failed` after about six seconds. It wrote no checkpoint,
-  performed no mutation, and was not retried; a separate local CLI version
-  check still returned `2.115.0`. July 10-22 therefore remains unverified in
-  the current local evidence set and should resume only after a clean linked-read
-  window rather than through rapid retries.
+- One subsequent read-only BoltOdds checkpoint for July 10-16 initially failed
+  closed as `subprocess_failed`. Instrumented diagnosis proved the exact local
+  cause: the isolated worktree has no `supabase/.temp/project-ref`, so the CLI
+  reported `Cannot find project ref` and never queried the database. This was
+  not a pooler, authentication, statement-timeout, SQL-contract, or database
+  pressure failure. The unchanged reviewed worktree code was then run from the
+  linked main clone, matching the successful June 16 transport.
+- The linked July 10-16 checkpoint completed in `13.79s`. All seven requested
+  partitions have zero raw/compact rows, zero candidate runtime, zero source
+  anomalies, `coverage_exact: true`, and
+  `retention_preservation_complete: true`. Checkpoint file SHA-256 is
+  `25655f8eec984018dbe54184b2e828ca7a0bf80a830b9033073596d72dc0124e`;
+  integrity SHA-256 is
+  `93c1a48d4c257b53f417d1c787b7f2e6428bff507a7f4242776f3b5bcbfa9268`.
+- After the normal 30-second cooldown, the linked July 17-22 checkpoint
+  completed in `11.96s`. All six partitions have the same exact zero state.
+  Checkpoint file SHA-256 is
+  `c13ed95d79b3f52751f63617e64869738883c3fc5ef97e22da4c2bfe2b652f77`;
+  integrity SHA-256 is
+  `c762e4113381a0505733fb816b9556140147e36b3521f0213f5896794049c3b5`.
+  Together with the documented April 28-July 9 checkpoint sequence, this
+  closes retired-BoltOdds candidate-date coverage through July 22 and confirms
+  no fresh retired-provider runtime after June 16.
+- One aggregate-only sizing read then completed under SELECT-only query SHA-256
+  `ed83774953eb0e2c7148bebd2bdf93460438210828de5d1cb6615a4204e81519`.
+  Sanitized local evidence SHA-256 is
+  `e91942fb81b27a306c4e027d6132fea91900a27e6ad7cd811250ee077b23fe05`.
+  The database is `5,046,348,947` bytes, about `4.70 GiB` or `58.75%` of the
+  included 8 GiB. `market_snapshots` occupies `3,513,262,080` total bytes.
+  The exact retired-BoltOdds candidate scope contains `611,972` raw rows and
+  `461,536,160` logical bytes, about `440 MiB`; its preserved compact evidence
+  is `26,726` rows and `28,600,016` logical bytes. There are zero raw BoltOdds
+  rows after `2026-06-17T17:22:29Z`. This is a meaningful cleanup candidate,
+  but ordinary deletion would create reusable table space and would not by
+  itself guarantee an immediate fall in physical database bytes.
+- No explicit normalized season-evidence or pin manifest is present in the
+  repository. The existing readiness contract therefore remains blocked on
+  outcome-linked evidence, incident/accepted-bet/alert/provider-transition
+  pins, and recovery/export proof even though compact coverage is now exact.
+- Gate C covers `40/41` BoltOdds-era dates from May 7 through June 16. June 3
+  is absent even though aggregate-only evidence records `14` accepted bets,
+  `73` sent notifications, and `24` consumed locks that day. The compact
+  archive itself is healthy for June 3 (`13,801` raw rows preserved into `627`
+  compact rows), so this is a season-evidence gap rather than a compaction
+  failure. Across the same period, `652/844` tracked rows lack explicit
+  provider metadata. Both gaps must be resolved or explicitly pinned before
+  any raw deletion proposal can pass readiness.
+- The current backup inventory shows completed physical backups through
+  `2026-08-21T05:32:59.453Z`, with `pitr_enabled: false`. That latest backup
+  predates the June 16 compact repair and this closure evidence. A completed
+  post-repair backup is therefore still required; backup inventory alone is
+  not proof of a tested restore.
+- The repository documents the earlier April 28-July 9 checkpoint sequence,
+  but those older checkpoint files are not present in the current local
+  evidence directory. Do not claim a freshly assembled canonical
+  four-provider envelope until the existing artifacts are recovered or the
+  matrix is regenerated through separately bounded reads.
 - Stop before any additional mutation. Recoverability proof, recoverable-space
   estimate, season-evidence pins, retention execution, deletion, vacuum,
   reclamation, push, merge, deployment, and production behavior remain closed
