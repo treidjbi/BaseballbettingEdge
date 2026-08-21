@@ -1445,9 +1445,35 @@ Any error stops immediately without retry. No live validation step authorizes ba
   and source-state SHA-256
   `4c7c44839d7ef7bad3498adc45a836c8192c09b1f9252b82b24c445740d1c3b0`.
   It performed no write and keeps deletion and retention execution closed.
-- Stop before mutation. A bounded `17`-row upsert is the next materially
-  different gate and must use the exact current preview fingerprint plus the
-  code execution flag, followed by a fresh post-write source-state and exactness
-  check. It would not delete or reclaim space. Database repair/upsert, retention
-  execution, deletion, vacuum, reclamation, push, deployment, and production
-  behavior remain closed until separately authorized.
+- Tyler explicitly approved the bounded repair. A fresh pre-read reproduced
+  preview fingerprint
+  `320c254d958d52f24a29ab75db980273ad3e9b4651fc6a3e3f4e7762a142399f`
+  and the reviewed one-attempt wrapper upserted exactly the `17` canonical
+  BoltOdds June 16 compact rows on the existing unique key. The execution
+  report SHA-256 is
+  `c8feae95bf052e26b985625083862615eebb14427964568e64eb7d6c4e051cd7`.
+  Its fresh post-read found `0` missing, `0` mismatched, and `0` unexpected
+  groups, confirmed that the source state was still current, and recorded no
+  deletion. No other provider/date partition or table was mutated.
+- A separate fresh, read-only bounded checkpoint then completed under query
+  contract SHA-256
+  `e3091876ffe253d948c83e3e31c89f1a4fbde54381f91695f3963f2208866e05`.
+  Checkpoint file SHA-256
+  `150734f5db762d083885d9faec93431e433ced47695211797326f81ecbc6330b`
+  proves `107/107` exact groups, `retention_preservation_complete: true`, zero
+  missing/mismatched/unexpected/duplicate groups, zero source anomalies, and
+  `131,160` raw logical bytes. The checkpoint integrity SHA-256 is
+  `30c0d67bc534ae8fd2ba6b5fd53878a111fc1af12ad85660e017bd6c8cc668c2`.
+  The June 16 compact-integrity blocker is therefore closed. The upsert repaired
+  historical compact evidence but reclaimed no database space.
+- One subsequent read-only BoltOdds checkpoint for July 10-16 failed closed
+  once as `subprocess_failed` after about six seconds. It wrote no checkpoint,
+  performed no mutation, and was not retried; a separate local CLI version
+  check still returned `2.115.0`. July 10-22 therefore remains unverified in
+  the current local evidence set and should resume only after a clean linked-read
+  window rather than through rapid retries.
+- Stop before any additional mutation. Recoverability proof, recoverable-space
+  estimate, season-evidence pins, retention execution, deletion, vacuum,
+  reclamation, push, merge, deployment, and production behavior remain closed
+  and separately gated. Provider, model, notification, lock, UI, artifact, and
+  source-of-truth behavior are unchanged.
