@@ -159,6 +159,9 @@ def test_hybrid_source_adds_production_only_graded_dates(tmp_path, monkeypatch):
     local_rows = [_row("2026-05-30:official_close:a:over:5.5", slate_date="2026-05-30")]
     production_rows = [_row("2026-06-01:official_close:b:over:5.5", slate_date="2026-06-01")]
     calls = []
+    history_path = tmp_path / "picks_history.json"
+    history_loader_calls = []
+    reconciliation_calls = []
 
     def fake_build_dataset(**kwargs):
         calls.append(kwargs)
@@ -185,17 +188,22 @@ def test_hybrid_source_adds_production_only_graded_dates(tmp_path, monkeypatch):
             "duplicate_dataset_keys": 0,
         },
     )
-    monkeypatch.setattr(
-        builder.dataset,
-        "reconcile_picks_history",
-        lambda rows, **kwargs: {
+    def fake_reconcile(rows, **kwargs):
+        reconciliation_calls.append(kwargs)
+        return {
             "graded_pick_rows": len(rows),
             "matched_pick_rows": len(rows),
             "unmatched_pick_rows": 0,
-        },
-    )
+        }
+
+    monkeypatch.setattr(builder.dataset, "reconcile_picks_history", fake_reconcile)
     monkeypatch.setattr(builder.dataset, "render_summary", lambda summary: "# Summary\n")
-    monkeypatch.setattr(builder, "_graded_history_dates", lambda **kwargs: ["2026-05-30", "2026-06-01"])
+
+    def fake_graded_history_dates(**kwargs):
+        history_loader_calls.append(kwargs)
+        return ["2026-05-30", "2026-06-01"]
+
+    monkeypatch.setattr(builder, "_graded_history_dates", fake_graded_history_dates)
 
     result = builder.build_research_artifact(
         output_dir=tmp_path,
@@ -203,6 +211,7 @@ def test_hybrid_source_adds_production_only_graded_dates(tmp_path, monkeypatch):
         artifact_api_url="https://example.test/.netlify/functions/get-artifact",
         start_date="2026-05-30",
         end_date="2026-06-01",
+        picks_history_path=history_path,
     )
 
     assert result["manifest"]["row_count"] == 2
@@ -216,6 +225,10 @@ def test_hybrid_source_adds_production_only_graded_dates(tmp_path, monkeypatch):
     assert calls[1]["artifact_api_url"] == "https://example.test/.netlify/functions/get-artifact"
     assert calls[1]["start_date"] == "2026-06-01"
     assert calls[1]["end_date"] == "2026-06-01"
+    assert history_loader_calls[0]["history_path"] == history_path
+    assert history_loader_calls[0]["artifact_api_url"] is None
+    assert reconciliation_calls[0]["history_path"] == history_path
+    assert reconciliation_calls[0]["artifact_api_url"] is None
 
 
 def test_main_can_run_workload_no_vig_audit_after_fresh_dataset(tmp_path, monkeypatch):
@@ -277,6 +290,36 @@ def test_main_can_run_workload_no_vig_audit_after_fresh_dataset(tmp_path, monkey
             ],
         ),
     ]
+
+
+def test_main_passes_explicit_picks_history_to_research_builder(tmp_path, monkeypatch):
+    calls = []
+    history_path = tmp_path / "picks_history.json"
+
+    def fake_build_research_artifact(**kwargs):
+        calls.append(kwargs)
+        return {
+            "manifest": {
+                "row_count": 0,
+                "tracked_pick_rows": 0,
+                "duplicate_dataset_keys": 0,
+                "reconciliation": {"graded_pick_rows": 0, "matched_pick_rows": 0},
+            },
+            "manifest_path": tmp_path / "pitcher_k_outcome_dataset_manifest.json",
+        }
+
+    monkeypatch.setattr(builder, "build_research_artifact", fake_build_research_artifact)
+
+    builder.main(
+        [
+            "--output-dir",
+            str(tmp_path),
+            "--picks-history",
+            str(history_path),
+        ]
+    )
+
+    assert calls[0]["picks_history_path"] == history_path
 
 
 def test_main_can_run_market_anchored_rebuild_after_fresh_dataset(tmp_path, monkeypatch):

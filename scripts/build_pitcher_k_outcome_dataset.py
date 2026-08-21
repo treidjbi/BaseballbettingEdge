@@ -120,6 +120,7 @@ def _build_rows(
     actual_opportunity_backfill_path: Path,
     market_agreement_tracker_path: Path | None,
     live_market_display_path: Path | None,
+    picks_history_path: Path | None = None,
 ) -> tuple[list[dict[str, Any]], list[str], dict[str, int]]:
     if artifact_source in {"local", "production"}:
         source_kwargs = _source_kwargs(
@@ -166,7 +167,12 @@ def _build_rows(
         for date in _graded_history_dates(
             start_date=start_date,
             end_date=end_date,
-            artifact_api_url=artifact_api_url or DEFAULT_ARTIFACT_API_URL,
+            history_path=picks_history_path or dataset.PICKS_HISTORY,
+            artifact_api_url=(
+                None
+                if picks_history_path is not None
+                else artifact_api_url or DEFAULT_ARTIFACT_API_URL
+            ),
         )
         if date not in local_dates
     ]
@@ -212,6 +218,7 @@ def _manifest(
     summary_path: Path,
     market_agreement_tracker_path: Path | None,
     live_market_display_path: Path | None,
+    picks_history_path: Path | None = None,
     production_fill_dates: list[str] | None = None,
     archive_outcome_reconciliation: dict[str, int] | None = None,
 ) -> dict[str, Any]:
@@ -237,6 +244,11 @@ def _manifest(
             "production_fill_dates": production_fill_dates or [],
             "market_agreement_tracker_path": _manifest_path(market_agreement_tracker_path),
             "live_market_display_path": _manifest_path(live_market_display_path),
+            **(
+                {"picks_history_path": _manifest_path(picks_history_path)}
+                if picks_history_path is not None
+                else {}
+            ),
         },
         "row_count": len(rows),
         "tracked_pick_rows": int(summary.get("tracked_pick_rows", 0)),
@@ -266,6 +278,7 @@ def build_research_artifact(
     actual_opportunity_backfill_path: Path = dataset.ACTUAL_OPPORTUNITY_BACKFILL,
     market_agreement_tracker_path: Path | None = dataset.MARKET_AGREEMENT_TRACKER,
     live_market_display_path: Path | None = dataset.LIVE_MARKET_DISPLAY,
+    picks_history_path: Path | None = None,
 ) -> dict[str, Any]:
     if artifact_source not in {"hybrid", "local", "production"}:
         raise ValueError("artifact_source must be hybrid, local, or production")
@@ -283,6 +296,7 @@ def build_research_artifact(
         actual_opportunity_backfill_path=actual_opportunity_backfill_path,
         market_agreement_tracker_path=market_agreement_tracker_path,
         live_market_display_path=live_market_display_path,
+        picks_history_path=picks_history_path,
     )
     validation_errors = [
         (row.get("dataset_key"), errors)
@@ -297,9 +311,14 @@ def build_research_artifact(
     reconciliation = dataset.reconcile_picks_history(
         rows,
         start_date=start_date,
-        artifact_api_url=source_kwargs["artifact_api_url"],
+        history_path=picks_history_path or dataset.PICKS_HISTORY,
+        artifact_api_url=(
+            None if picks_history_path is not None else source_kwargs["artifact_api_url"]
+        ),
         included_slate_dates=(
-            _loaded_slate_dates(rows) if source_kwargs["artifact_api_url"] else None
+            _loaded_slate_dates(rows)
+            if source_kwargs["artifact_api_url"] or picks_history_path is not None
+            else None
         ),
     )
     summary_for_report = dict(summary)
@@ -324,6 +343,7 @@ def build_research_artifact(
         summary_path=summary_path,
         market_agreement_tracker_path=market_agreement_tracker_path,
         live_market_display_path=live_market_display_path,
+        picks_history_path=picks_history_path,
         production_fill_dates=production_fill_dates,
         archive_outcome_reconciliation=archive_outcome_reconciliation,
     )
@@ -350,6 +370,11 @@ def _parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser.add_argument(
         "--artifact-api-url",
         default=os.environ.get("BBE_ARTIFACT_API_URL", "").strip() or DEFAULT_ARTIFACT_API_URL,
+    )
+    parser.add_argument(
+        "--picks-history",
+        type=Path,
+        help="Optional staged picks_history.json; avoids oversized remote history reads.",
     )
     parser.add_argument("--start-date", default=dataset.CLEAN_WINDOW_START)
     parser.add_argument("--end-date")
@@ -395,7 +420,7 @@ def _parse_args(argv: list[str] | None = None) -> argparse.Namespace:
 
 def main(argv: list[str] | None = None) -> None:
     args = _parse_args(argv)
-    result = build_research_artifact(
+    build_kwargs = dict(
         output_dir=args.output_dir,
         artifact_source=args.artifact_source,
         artifact_api_url=args.artifact_api_url,
@@ -406,6 +431,9 @@ def main(argv: list[str] | None = None) -> None:
         market_agreement_tracker_path=args.market_agreement_tracker,
         live_market_display_path=args.live_market_display,
     )
+    if args.picks_history is not None:
+        build_kwargs["picks_history_path"] = args.picks_history
+    result = build_research_artifact(**build_kwargs)
     if args.run_workload_no_vig_audit:
         from analytics.diagnostics import workload_no_vig_ev_audit  # noqa: WPS433
 

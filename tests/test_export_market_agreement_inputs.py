@@ -295,6 +295,44 @@ def test_load_artifact_rejects_missing_direct_history():
         )
 
 
+def test_main_uses_direct_supabase_loader_for_history(tmp_path, monkeypatch):
+    writer = FakeWriter(
+        {
+            "published_pipeline_artifacts": [
+                {
+                    "artifact_key": "picks_history",
+                    "payload": [{"date": "2026-08-20", "pitcher": "Brady Singer"}],
+                    "payload_sha256": "history-sha",
+                }
+            ]
+        }
+    )
+    monkeypatch.setenv("SUPABASE_URL", writer.supabase_url)
+    monkeypatch.setenv("SUPABASE_SERVICE_ROLE_KEY", writer.service_role_key)
+    monkeypatch.setattr(exporter, "SupabaseMarketWriter", lambda *_args: writer)
+
+    captured = {}
+
+    def fake_export_inputs(**kwargs):
+        captured["history"] = kwargs["artifact_loader"]("picks_history")
+        return {
+            "tables": {
+                "market_pick_evidence": {"rows": 0},
+                "live_market_display_state": {"rows": 0},
+            },
+            "start_date": "2026-04-28",
+            "end_date": "2026-08-21",
+        }
+
+    monkeypatch.setattr(exporter, "export_inputs", fake_export_inputs)
+
+    assert exporter.main(["--output-dir", str(tmp_path)]) == 0
+    assert captured["history"] == [
+        {"date": "2026-08-20", "pitcher": "Brady Singer"}
+    ]
+    assert writer.select_calls[0].table == "published_pipeline_artifacts"
+
+
 def test_exporter_supports_direct_script_execution():
     repo_root = Path(__file__).resolve().parents[1]
 

@@ -442,6 +442,8 @@ def main(argv: list[str] | None = None) -> int:
     if args.refresh_market_agreement_inputs:
         builder_args.extend(
             [
+                "--picks-history",
+                str(refreshed_history_path),
                 "--market-agreement-tracker",
                 str(args.market_agreement_output_jsonl),
                 "--live-market-display",

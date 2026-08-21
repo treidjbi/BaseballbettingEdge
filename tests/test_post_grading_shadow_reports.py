@@ -1062,6 +1062,8 @@ def test_runner_refreshes_compact_inputs_before_one_gate_c_build(tmp_path, monke
     assert str(agreement_jsonl) in builder_args
     assert builder_args.count("--live-market-display") == 1
     assert str(input_dir / "live_market_display_state.json") in builder_args
+    assert builder_args.count("--picks-history") == 1
+    assert str(input_dir / "picks_history.json") in builder_args
 
     final_args = calls[3][1]
     assert final_args[final_args.index("--gate-c-dataset") + 1] == str(dataset_path)
