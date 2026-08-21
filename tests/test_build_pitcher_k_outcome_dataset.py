@@ -223,6 +223,7 @@ def test_hybrid_source_adds_production_only_graded_dates(tmp_path, monkeypatch):
     }
     assert calls[0]["artifact_api_url"] is None
     assert calls[1]["artifact_api_url"] == "https://example.test/.netlify/functions/get-artifact"
+    assert calls[1]["picks_history_path"] == history_path
     assert calls[1]["start_date"] == "2026-06-01"
     assert calls[1]["end_date"] == "2026-06-01"
     assert history_loader_calls[0]["history_path"] == history_path

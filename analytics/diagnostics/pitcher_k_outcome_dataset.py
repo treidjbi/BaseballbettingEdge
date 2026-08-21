@@ -2025,11 +2025,12 @@ def build_dataset(
     market_agreement_tracker_path: Path | None = MARKET_AGREEMENT_TRACKER,
     live_market_display_path: Path | None = LIVE_MARKET_DISPLAY,
     artifact_api_url: str | None = None,
+    picks_history_path: Path | None = None,
     diagnostics: dict[str, Any] | None = None,
 ) -> list[dict[str, Any]]:
     history_rows = _load_picks_history(
-        PICKS_HISTORY,
-        artifact_api_url,
+        picks_history_path or PICKS_HISTORY,
+        None if picks_history_path is not None else artifact_api_url,
         start_date=start_date,
         end_date=end_date,
     )
