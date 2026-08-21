@@ -1398,9 +1398,18 @@ Any error stops immediately without retry. No live validation step authorizes ba
 - The next gate is one separately approved, aggregate-only
   `information_schema.columns` read for the four referenced tables. It should
   return only table, column, and data-type metadata, retain a sanitized CLI
-  failure detail if it fails, and make no data-row read. Reconcile that hosted
-  schema with the local migrations before drafting another preview query.
-  Only a later separately approved preview may review quarantined-heartbeat
-  counts, repair counts, rebuilt/existing hashes, and the version-2 fingerprint.
-  Database repair, upsert, retention execution, deletion, vacuum, reclamation,
-  push, deployment, and production behavior remain closed.
+  failure detail if it fails, and make no data-row read. Tyler approved the
+  metadata-only query at SHA-256
+  `639f6cfb88cea1fb3860ef80340acb7159dc964f708dac9aee6f524bea8c9e23`.
+  It exited once with code `1`, was classified as `sql_contract`, was not
+  retried, and produced no evidence directory. Because even this simple hosted
+  catalog read failed the same way, the coarse classifier may be masking a
+  CLI/link/control-plane error rather than proving a schema mismatch.
+- Do not query application tables again yet. The next gate is one separately
+  approved linked `select now()` connectivity read whose wrapper retains an
+  aggressively redacted CLI error excerpt if it fails. Use that to distinguish
+  linked CLI/control-plane failure from SQL-shape failure before revisiting the
+  hosted schema read. Only a later separately approved preview may review
+  quarantined-heartbeat counts, repair counts, rebuilt/existing hashes, and the
+  version-2 fingerprint. Database repair, upsert, retention execution, deletion,
+  vacuum, reclamation, push, deployment, and production behavior remain closed.
