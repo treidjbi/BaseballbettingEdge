@@ -1415,8 +1415,18 @@ Any error stops immediately without retry. No live validation step authorizes ba
 - Do not query application tables again yet. The metadata wrapper now accepts
   list, `rows`, `result`, and `data` envelopes and, on CLI failure, persists only
   an aggressively redacted error excerpt. Local envelope/redaction checks pass.
-  Request separate approval for one replacement `information_schema.columns`
-  read under the unchanged metadata query hash `639f6cfb...`. Only after the
-  hosted schema/error evidence is retained should another preview be drafted.
+  Tyler approved one replacement `information_schema.columns` read under the
+  unchanged metadata query hash `639f6cfb...`. It exited once with code `1`,
+  was not retried, and retained PostgreSQL error `42601`: syntax error at end of
+  input on line `0`. This proves the multiline SQL arrived empty through the
+  Windows inline `npx.cmd` argument; it is not evidence of a hosted schema
+  mismatch.
+- The exact same metadata-only SQL is now stored in a fresh temporary file and
+  the wrapper uses CLI `--file`, matching the transport used by earlier
+  successful bounded reads in this plan. The exact file SHA-256 is
+  `0911a036c28b53eeff0bd3708b31bb883c2b83848f7fffc6e3eccfcec610b5f8`;
+  local select-only and redaction checks pass, and it has not run live. Request
+  separate approval for one file-transport metadata read. Only after the hosted
+  schema/error evidence is retained should another preview be drafted.
   Database repair, upsert, retention execution, deletion, vacuum, reclamation,
   push, deployment, and production behavior remain closed.
