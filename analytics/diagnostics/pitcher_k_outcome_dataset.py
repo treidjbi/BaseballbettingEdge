@@ -1994,9 +1994,13 @@ def build_dataset(
     market_agreement_tracker_path: Path | None = MARKET_AGREEMENT_TRACKER,
     live_market_display_path: Path | None = LIVE_MARKET_DISPLAY,
     artifact_api_url: str | None = None,
+    picks_history_path: Path | None = None,
     diagnostics: dict[str, Any] | None = None,
 ) -> list[dict[str, Any]]:
-    history_rows = _load_picks_history(PICKS_HISTORY, artifact_api_url)
+    history_rows = _load_picks_history(
+        picks_history_path or PICKS_HISTORY,
+        None if picks_history_path is not None else artifact_api_url,
+    )
     archive_outcome_stats: dict[str, int] = {}
     markets = load_archived_markets_for_dataset(
         archive_dir,

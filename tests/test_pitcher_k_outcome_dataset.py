@@ -22,6 +22,30 @@ def test_theoretical_pnl_uses_one_unit_risk_for_american_odds():
     assert theoretical_pnl(None, -120) is None
 
 
+def test_build_dataset_prefers_explicit_history_over_remote_artifact(tmp_path, monkeypatch):
+    history_path = tmp_path / "picks_history.json"
+    calls = []
+
+    def fake_load_history(path, artifact_api_url):
+        calls.append((path, artifact_api_url))
+        return []
+
+    monkeypatch.setattr(dataset, "_load_picks_history", fake_load_history)
+    monkeypatch.setattr(dataset, "load_archived_markets_for_dataset", lambda *args, **kwargs: [])
+    monkeypatch.setattr(dataset, "build_official_close_rows", lambda rows: [])
+    monkeypatch.setattr(dataset, "enrich_rows_with_lineup_handedness", lambda rows, **kwargs: rows)
+    monkeypatch.setattr(dataset, "enrich_rows_with_actual_opportunity", lambda rows, **kwargs: rows)
+    monkeypatch.setattr(dataset, "enrich_rows_with_pick_history", lambda rows, **kwargs: rows)
+    monkeypatch.setattr(dataset, "enrich_rows_with_market_agreement", lambda rows, **kwargs: rows)
+    monkeypatch.setattr(dataset, "enrich_rows_with_live_market_display", lambda rows, **kwargs: rows)
+
+    assert dataset.build_dataset(
+        artifact_api_url="https://example.test/.netlify/functions/get-artifact",
+        picks_history_path=history_path,
+    ) == []
+    assert calls == [(history_path, None)]
+
+
 def test_build_official_close_rows_creates_one_row_per_side():
     markets = [
         {

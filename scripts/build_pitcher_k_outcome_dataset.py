@@ -122,6 +122,11 @@ def _build_rows(
     live_market_display_path: Path | None,
     picks_history_path: Path | None = None,
 ) -> tuple[list[dict[str, Any]], list[str], dict[str, int]]:
+    history_kwargs = (
+        {"picks_history_path": picks_history_path}
+        if picks_history_path is not None
+        else {}
+    )
     if artifact_source in {"local", "production"}:
         source_kwargs = _source_kwargs(
             artifact_source=artifact_source,
@@ -137,6 +142,7 @@ def _build_rows(
                 market_agreement_tracker_path=market_agreement_tracker_path,
                 live_market_display_path=live_market_display_path,
                 diagnostics=diagnostics,
+                **history_kwargs,
                 **source_kwargs,
             ),
             [],
@@ -156,6 +162,7 @@ def _build_rows(
         live_market_display_path=live_market_display_path,
         artifact_api_url=None,
         diagnostics=local_diagnostics,
+        **history_kwargs,
     )
     archive_outcome_reconciliation = dict(
         local_diagnostics.get("archive_outcome_reconciliation")
@@ -189,6 +196,7 @@ def _build_rows(
                 live_market_display_path=live_market_display_path,
                 artifact_api_url=artifact_api_url or DEFAULT_ARTIFACT_API_URL,
                 diagnostics=production_diagnostics,
+                **history_kwargs,
             )
         )
         production_outcome_counts = (
