@@ -1528,3 +1528,27 @@ Any error stops immediately without retry. No live validation step authorizes ba
   reclamation, push, merge, deployment, and production behavior remain closed
   and separately gated. Provider, model, notification, lock, UI, artifact, and
   source-of-truth behavior are unchanged.
+
+## 2026-08-21 Gate C Transport Closure Overlay
+
+- The bounded `picks_history` date-window transport was merged and pushed on
+  `main` at `016f0676`, then deployed to Netlify production as deploy
+  `6a88b9462f9c4a8071b3d91f` after a successful preview.
+- Production proof for June 3 returned `24` rows in `33,196` bytes, preserved
+  Robert Gasser as the official `UNDER 3.5` loss with `5` actual strikeouts,
+  rejected a reversed window with HTTP `400`, and left the normal `today`
+  artifact healthy.
+- The canonical April 28-June 16 Gate C rebuild now covers all `50` dates with
+  `2,070` rows, `1,075` tracked rows, zero duplicate keys, and `1,075/1,075`
+  reconciliation. June 3 is present, and Gasser's archived `4.5` market is
+  recovered through `picks_history_pitcher_game` without mutating the archive
+  or official history.
+- Semantic comparison against the prior canonical JSONL found `48` added June
+  3 rows, `2` late June 16 Adrian Houser rows, zero removed keys, and only the
+  explicit archive-reconciliation source plus the null
+  `projection_challenger` schema field added to pre-existing rows.
+- This closes the Gate C date-coverage blocker. It does not close provider
+  attribution or explicit unknown pins, normalized season/pin manifests, the
+  canonical checkpoint envelope, or the post-repair backup gate. Retention
+  execution, deletion, vacuum, and reclamation remain closed and require a
+  separate exact proposal and approval.

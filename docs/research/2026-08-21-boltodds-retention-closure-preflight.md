@@ -13,12 +13,11 @@ or `58.75%` of the included 8 GiB. Deleting the retired raw slice would make
 space reusable inside PostgreSQL, but ordinary deletion would not guarantee an
 immediate reduction in the physical database size.
 
-Deletion is blocked by season-evaluation and recovery gaps, not by compact
-integrity. June 3 is missing from Gate C despite material accepted-bet,
-notification, and lock activity; explicit provider metadata is missing on most
-tracked BoltOdds-era rows; the normalized evidence and pin manifests do not
-exist; the full checkpoint envelope is not assembled locally; and the newest
-completed physical backup predates the repair.
+Deletion remains blocked by season-evaluation and recovery gaps, not by compact
+integrity. The June 3 Gate C gap is now repaired, but explicit provider metadata
+is missing on most tracked BoltOdds-era rows; the normalized evidence and pin
+manifests do not exist; the full checkpoint envelope is not assembled locally;
+and the newest completed physical backup predates the repair.
 
 ## Verified Cleanup Opportunity
 
@@ -59,17 +58,17 @@ in scope.
 |---|---|---|
 | Compact coverage | June 16 `107/107` exact; later partitions exact zero | Pass |
 | Retired-runtime boundary | Zero raw BoltOdds rows after suspension | Pass |
-| Gate C date coverage | `40/41` BoltOdds-era dates; June 3 missing | Blocked |
+| Gate C date coverage | All `41/41` BoltOdds-era dates; canonical clean window `50/50` | Pass |
 | Provider attribution | `652/844` tracked rows lack explicit provider metadata | Blocked |
 | Season evidence and pins | No normalized manifests in the repository | Blocked |
 | Canonical checkpoint envelope | Earlier files documented but not assembled locally | Blocked |
 | Recovery point | Latest completed physical backup predates repair; PITR disabled | Blocked |
 
-June 3 is the highest-signal gap. It contains `13,801` raw BoltOdds rows,
+June 3 was the highest-signal gap. It contains `13,801` raw BoltOdds rows,
 `627` exact compact rows, `278` completed provider runs, `14` accepted bets,
-`73` sent notifications, and `24` consumed locks. Removing its raw rows before
-the season evidence is repaired or explicitly pinned would weaken the final
-season review even though compaction itself is healthy.
+`73` sent notifications, and `24` consumed locks. The canonical Gate C rebuild
+now preserves that slate and its graded outcome evidence, but the remaining
+provider/pin/envelope/recovery gates still prohibit raw deletion.
 
 Provider attribution is the broader quality issue. Only `192/844` tracked
 BoltOdds-era rows carry explicit provider metadata (`22.75%`). The missing
@@ -83,13 +82,19 @@ Gasser at a `4.5` line with no embedded result, while the live Supabase
 `picks_history` artifact contains his official `UNDER 3.5` loss and `5` actual
 strikeouts. The existing pitcher-game reconciliation rule can join those facts.
 
-The failure is that the public unfiltered `picks_history` response now exceeds
+The failure was that the public unfiltered `picks_history` response exceeded
 the Netlify function's response-size ceiling, while the committed local history
-ends before June 3. A bounded local code change now supports inclusive history
-date windows and makes Gate C request only its build window. Its focused
-regression tests pass, but it has not been merged, pushed, deployed, or proven
-against the production endpoint. June 3 therefore remains blocked in the
-committed retention manifest until that separate release and rebuild completes.
+ended before June 3. The bounded transport was merged and pushed on `main` at
+`016f0676` and deployed to Netlify production as deploy
+`6a88b9462f9c4a8071b3d91f`. Production returned `24` June 3 history rows in
+`33,196` bytes, rejected a reversed window with HTTP `400`, and preserved the
+normal `today` artifact.
+
+The canonical April 28-June 16 rebuild now contains all `50` dates, `2,070`
+rows, `1,075` tracked rows, zero duplicate keys, and `1,075/1,075`
+reconciliation. Gasser retains the archived `4.5` market, the official UNDER
+loss, `5` actual strikeouts, and the `picks_history_pitcher_game` recovery
+source. The June 3 Gate C blocker is closed.
 
 ## Recovery Posture
 
@@ -106,20 +111,16 @@ season layers.
 
 ## Next Decision Sequence
 
-1. Review and separately release the bounded `picks_history` date-window
-   transport, then run a production-shaped Gate C rebuild. If June 3 still
-   fails, explicitly pin it without changing live model behavior, grades,
-   thresholds, staking, or source-of-truth rules.
-2. Enrich supported provider attribution and preserve unknowns explicitly; do
+1. Enrich supported provider attribution and preserve unknowns explicitly; do
    not infer provider labels.
-3. Generate aggregate-only season-evidence and pin manifests. Keep accepted-bet
+2. Generate aggregate-only season-evidence and pin manifests. Keep accepted-bet
    details and notification bodies out of the public repository.
-4. Recover or regenerate the canonical checkpoint envelope without weakening
+3. Recover or regenerate the canonical checkpoint envelope without weakening
    the generic multi-provider contract.
-5. Verify the first completed physical backup after the repair.
-6. Draft an exact date/provider-bounded deletion statement and dry-run report.
+4. Verify the first completed physical backup after the repair.
+5. Draft an exact date/provider-bounded deletion statement and dry-run report.
    Tyler must separately approve the deletion statement before execution.
-7. If approved, delete only the verified BoltOdds raw candidate, verify the
+6. If approved, delete only the verified BoltOdds raw candidate, verify the
    permanent layers again, and use ordinary maintenance only as separately
    justified. Do not default to `VACUUM FULL` or another blocking rewrite.
 
@@ -143,9 +144,15 @@ Key local evidence fingerprints:
 - July 17-22 checkpoint SHA-256:
   `c13ed95d79b3f52751f63617e64869738883c3fc5ef97e22da4c2bfe2b652f77`;
 - Gate C manifest SHA-256:
-  `db66cc7a830ae0951a040894490a40ea6b345b73efacca78f6599526906e1ccf`.
+  `b6f1c9d414fa4330ce70f9cfcddc70c9cadc8239f9010ca5c60d0e607e9ed845`;
+- Gate C JSONL SHA-256:
+  `317e8a3134f5e43093728dd06d45b8f3ef717f998c4403a084bf654a118c3f61`;
+- Gate C summary SHA-256:
+  `7abac6a879df881469be4b4e8eb6369293f1604db79c760e0dc930adfede43e6`.
 
 Supabase backup behavior and retention options are documented in
 [Database Backups](https://supabase.com/docs/guides/platform/backups). This
-preflight performed no database write, deletion, restore, vacuum, provider
-change, deployment, or production behavior change.
+retention preflight and Gate C rebuild performed no database write, deletion,
+restore, vacuum, provider change, model change, or source-of-truth change. The
+separately approved Netlify deployment changed only the bounded history-read
+transport.

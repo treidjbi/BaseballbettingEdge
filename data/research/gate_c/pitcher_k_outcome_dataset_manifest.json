@@ -1,11 +1,15 @@
 {
+  "archive_outcome_reconciliation": {
+    "ambiguous_markets": 0,
+    "recovered_markets": 25
+  },
   "artifact": "gate_c_pitcher_k_outcome_dataset",
   "duplicate_dataset_keys": 0,
   "files": {
     "jsonl": "data/research/gate_c/pitcher_k_outcome_dataset.jsonl",
     "summary": "data/research/gate_c/pitcher_k_outcome_dataset_summary.md"
   },
-  "generated_at": "2026-06-17T17:54:14.328540+00:00",
+  "generated_at": "2026-08-21T20:51:29.813528+00:00",
   "guardrails": [
     "does_not_change_live_picks",
     "does_not_change_locks",
@@ -16,7 +20,7 @@
     "does_not_change_calibration",
     "does_not_change_dashboard_behavior"
   ],
-  "jsonl_sha256": "167342042366e9a9f8eeb09167d86feed4daab7edb5c6a225b89a15f78bc8bdd",
+  "jsonl_sha256": "317e8a3134f5e43093728dd06d45b8f3ef717f998c4403a084bf654a118c3f61",
   "loaded_slate_dates": [
     "2026-04-28",
     "2026-04-29",
@@ -54,6 +58,7 @@
     "2026-05-31",
     "2026-06-01",
     "2026-06-02",
+    "2026-06-03",
     "2026-06-04",
     "2026-06-05",
     "2026-06-06",
@@ -69,13 +74,13 @@
     "2026-06-16"
   ],
   "reconciliation": {
-    "graded_pick_rows": 1051,
-    "matched_pick_rows": 1051,
-    "unique_side_fallback_matches": 31,
+    "graded_pick_rows": 1075,
+    "matched_pick_rows": 1075,
+    "unique_side_fallback_matches": 32,
     "unmatched_examples": [],
     "unmatched_pick_rows": 0
   },
-  "row_count": 2020,
+  "row_count": 2070,
   "shadow_only": true,
   "source": {
     "artifact_api_url": "https://baseballbettingedge.netlify.app/.netlify/functions/get-artifact",
@@ -108,108 +113,102 @@
   "summary_counts": {
     "actual_opportunity_rows": 1718,
     "actual_opportunity_source_counts": {
-      "missing": 302,
+      "missing": 352,
       "mlb_boxscore_reconstructed": 1718
     },
     "actual_pitch_count_rows": 1718,
+    "archive_outcome_reconciliation": {
+      "ambiguous_markets": 0,
+      "recovered_markets": 25
+    },
     "batters_faced_rows": 1718,
     "beat_close_line_rows": 18,
-    "beat_close_price_rows": 174,
-    "best_off_market_rows": 75,
+    "beat_close_price_rows": 181,
+    "best_off_market_rows": 101,
     "bet_timing_window_counts": {
       "post_start": 46,
       "pre_120": 5,
       "pre_15": 166,
-      "pre_30": 721,
+      "pre_30": 747,
       "pre_5": 49,
-      "unknown": 1033
+      "unknown": 1057
     },
-    "clean_window_rows": 2020,
+    "clean_window_rows": 2070,
     "clv_type_counts": {
       "line_only": 18,
-      "no_clv_edge": 858,
-      "not_tracked": 970,
-      "price_only": 174
+      "no_clv_edge": 876,
+      "not_tracked": 995,
+      "price_only": 181
     },
     "context_snapshot_counts": {
-      "official_close": 2020
+      "official_close": 2070
     },
     "duplicate_dataset_keys": 0,
-    "graded_rows": 2020,
-    "large_edge_skepticism_rows": 460,
+    "graded_rows": 2070,
+    "large_edge_skepticism_rows": 466,
     "leash_risk_bucket_counts": {
       "high": 160,
-      "medium": 76,
-      "normal": 1784
+      "medium": 78,
+      "normal": 1832
     },
     "lineup_hand_count_rows": 1174,
     "lineup_handedness_source_counts": {
-      "missing": 846,
+      "missing": 896,
       "mlb_boxscore_reconstructed": 1174
     },
-    "live_display_rows": 223,
+    "live_display_rows": 300,
     "live_display_state_counts": {
-      "market_fade": 16,
-      "missing": 1797,
-      "mixed": 17,
-      "monitor": 66,
-      "off_market": 30,
-      "playable_now": 22,
-      "stale": 72
+      "market_fade": 20,
+      "missing": 1770,
+      "mixed": 22,
+      "monitor": 89,
+      "off_market": 42,
+      "playable_now": 31,
+      "stale": 96
     },
     "market_agreement_label_counts": {
-      "market_against_model": 32,
-      "market_mixed": 62,
-      "market_no_signal": 63,
-      "market_with_model": 38,
-      "missing": 1825
+      "missing": 2070
     },
-    "market_agreement_rows": 195,
-    "market_book_count_rows": 281,
-    "market_broad_confirmation_rows": 42,
+    "market_agreement_rows": 0,
+    "market_book_count_rows": 300,
+    "market_broad_confirmation_rows": 63,
     "missing_book_odds": 0,
     "missing_model_fields": 2,
     "missing_team_or_opponent": 0,
     "model_market_relationship_counts": {
-      "model_agrees_with_favorite": 934,
-      "model_fades_favorite": 1014,
-      "unknown": 72
+      "model_agrees_with_favorite": 958,
+      "model_fades_favorite": 1034,
+      "unknown": 78
     },
     "movement_strength_label_counts": {
-      "broad_against_model": 7,
-      "broad_with_model": 6,
-      "missing": 1825,
-      "mixed_or_reversed": 108,
-      "no_movement_signal": 63,
-      "single_book_against_model": 6,
-      "single_book_with_model": 5
+      "missing": 2070
     },
     "opportunity_bucket_counts": {
-      "deep_starter": 226,
-      "normal": 1634,
+      "deep_starter": 232,
+      "normal": 1678,
       "short_leash": 160
     },
     "pitcher_archetype_bucket_counts": {
       "deep_starter": 144,
-      "high_k_deep_starter": 82,
-      "high_k_standard": 478,
-      "low_k_standard": 118,
+      "high_k_deep_starter": 88,
+      "high_k_standard": 492,
+      "low_k_standard": 122,
       "short_leash": 160,
-      "standard_starter": 1038
+      "standard_starter": 1064
     },
     "process_outcome_bucket_counts": {
-      "good_process_loss": 84,
-      "good_process_win": 108,
-      "unknown": 970,
-      "weak_process_loss": 446,
-      "weak_process_win": 412
+      "good_process_loss": 87,
+      "good_process_win": 112,
+      "unknown": 995,
+      "weak_process_loss": 455,
+      "weak_process_win": 421
     },
     "rows_missing_result": 0,
-    "rows_with_price_clv": 1050,
-    "total_rows": 2020,
-    "toward_away_count_rows": 195,
-    "tracked_pick_rows": 1050
+    "rows_with_price_clv": 1075,
+    "total_rows": 2070,
+    "toward_away_count_rows": 0,
+    "tracked_pick_rows": 1075
   },
-  "summary_sha256": "6c29f146fbeefdd5b147f0310b0a41e24b028e374c056e4e3081620b5fe018cb",
-  "tracked_pick_rows": 1050
+  "summary_sha256": "7abac6a879df881469be4b4e8eb6369293f1604db79c760e0dc930adfede43e6",
+  "tracked_pick_rows": 1075
 }

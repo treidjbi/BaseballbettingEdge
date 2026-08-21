@@ -1261,8 +1261,8 @@ collection proof with zero duplicate or reconciliation failures.
 
 ## 2026-08-21 Bounded Production-History Transport Repair
 
-The committed Gate C manifest still omits June 3 even though the July 29
-pitcher-game rule is correct. Read-only diagnosis found a transport failure,
+The previously committed Gate C manifest omitted June 3 even though the July 29
+pitcher-game rule was correct. Read-only diagnosis found a transport failure,
 not missing season evidence:
 
 - the production June 3 dated slate still contains Robert Gasser at `4.5`
@@ -1282,9 +1282,21 @@ discovery, and final reconciliation. The regression fixture proves that the
 bounded June 3 response recovers Gasser through the existing
 `picks_history_pitcher_game` rule without mutating either source artifact.
 
-This change remains local-only pending separate merge, push, Netlify deploy,
-and production-shaped rebuild gates. It does not change live picks, grades,
-model fields, provider order, thresholds, staking, notifications, locks,
-dashboard source-of-truth, retention, or stored artifact payloads. Deletion
-readiness remains closed until the deployed bounded route produces a fresh
-Gate C manifest that includes June 3 and passes full reconciliation.
+The repair was merged and pushed on `main` at `016f0676`, then deployed to
+Netlify production as deploy `6a88b9462f9c4a8071b3d91f`. The public bounded
+June 3 request returned `24` history rows in `33,196` bytes, preserved Robert
+Gasser as the official `UNDER 3.5` loss with `5` actual strikeouts, rejected a
+reversed date window with HTTP `400`, and left the normal `today` artifact
+healthy.
+
+The canonical April 28-June 16 Gate C rebuild now contains all `50` slate
+dates, `2,070` side rows, `1,075` tracked rows, zero duplicate keys, and
+`1,075/1,075` graded-pick reconciliation. The June 3 Gasser row retains the
+archived `4.5` market and is labeled
+`archive_outcome_reconciliation_source=picks_history_pitcher_game`; no source
+artifact was mutated. This closes the June 3 Gate C transport/date-coverage
+blocker only. It does not change live picks, grades, model fields, provider
+order, thresholds, staking, notifications, locks, dashboard source-of-truth,
+or retention. Raw deletion remains closed on provider attribution or explicit
+unknown pins, normalized season/pin manifests, the canonical checkpoint
+envelope, and a completed post-repair backup.
