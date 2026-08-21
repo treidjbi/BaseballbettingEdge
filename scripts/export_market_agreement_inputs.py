@@ -283,7 +283,26 @@ def export_inputs(
     return manifest
 
 
-def _load_artifact(base_url: str, artifact_type: str) -> Any:
+def _load_artifact(
+    base_url: str,
+    artifact_type: str,
+    *,
+    writer: SupabaseMarketWriter | None = None,
+) -> Any:
+    if artifact_type == "picks_history" and writer is not None:
+        rows = writer.select_rows(
+            "published_pipeline_artifacts",
+            {
+                "artifact_key": "eq.picks_history",
+                "select": "artifact_key,payload,payload_sha256",
+                "limit": "1",
+            },
+            timeout_seconds=30,
+        )
+        if len(rows) != 1 or not isinstance(rows[0].get("payload"), list):
+            raise RuntimeError("Supabase picks_history artifact is missing or malformed")
+        return rows[0]["payload"]
+
     url = dataset.artifact_api_url(base_url, artifact_type)
     with urlopen(url, timeout=20) as response:
         return json.loads(response.read().decode("utf-8"))
@@ -324,6 +343,7 @@ def main(argv: list[str] | None = None) -> int:
         artifact_loader=lambda artifact_type: _load_artifact(
             args.artifact_api_url,
             artifact_type,
+            writer=writer,
         ),
         output_dir=args.output_dir,
         start_date=args.start_date,

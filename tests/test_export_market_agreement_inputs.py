@@ -27,8 +27,10 @@ class FakeWriter:
         self.count_calls.append(SelectCall(table, dict(params)))
         return len(self.table_rows[table])
 
-    def select_rows(self, table, params):
+    def select_rows(self, table, params, **kwargs):
         self.select_calls.append(SelectCall(table, dict(params)))
+        if table == "published_pipeline_artifacts":
+            return self.table_rows[table]
         offset = int(params["offset"])
         limit = int(params["limit"])
         return self.table_rows[table][offset : offset + limit]
@@ -241,6 +243,56 @@ def test_main_requires_credentials_before_creating_output(tmp_path, monkeypatch)
         exporter.main(["--output-dir", str(tmp_path)])
 
     assert list(tmp_path.iterdir()) == []
+
+
+def test_load_artifact_reads_oversized_history_directly_from_supabase(monkeypatch):
+    writer = FakeWriter(
+        {
+            "published_pipeline_artifacts": [
+                {
+                    "artifact_key": "picks_history",
+                    "payload": [{"date": "2026-08-20", "pitcher": "Brady Singer"}],
+                    "payload_sha256": "history-sha",
+                }
+            ]
+        }
+    )
+    monkeypatch.setattr(
+        exporter,
+        "urlopen",
+        lambda *args, **kwargs: (_ for _ in ()).throw(
+            AssertionError("picks_history must not use Netlify")
+        ),
+    )
+
+    payload = exporter._load_artifact(
+        "https://example.test/artifact",
+        "picks_history",
+        writer=writer,
+    )
+
+    assert payload == [{"date": "2026-08-20", "pitcher": "Brady Singer"}]
+    assert writer.select_calls == [
+        SelectCall(
+            "published_pipeline_artifacts",
+            {
+                "artifact_key": "eq.picks_history",
+                "select": "artifact_key,payload,payload_sha256",
+                "limit": "1",
+            },
+        )
+    ]
+
+
+def test_load_artifact_rejects_missing_direct_history():
+    writer = FakeWriter({"published_pipeline_artifacts": []})
+
+    with pytest.raises(RuntimeError, match="missing or malformed"):
+        exporter._load_artifact(
+            "https://example.test/artifact",
+            "picks_history",
+            writer=writer,
+        )
 
 
 def test_exporter_supports_direct_script_execution():
