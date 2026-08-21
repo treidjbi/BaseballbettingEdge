@@ -33,6 +33,9 @@ def _complete_row(**overrides):
         "home_away": "home",
         "opp_team": "NYY",
         "lineup_used": "confirmed",
+        "official_odds_source": "therundown+propline",
+        "official_market_source_mode": "therundown_propline",
+        "official_line_source_provider": "propline",
         "provider": None,
         "live_display_provider": None,
         "live_display_state": None,
@@ -116,6 +119,11 @@ def test_required_dataset_fields_cover_identity_market_model_result_and_context(
     assert {"book_count", "books_seen", "toward_pick_count", "away_from_pick_count"} <= REQUIRED_DATASET_FIELDS
     assert {"better_now_count", "worse_now_count", "reversal_book_count"} <= REQUIRED_DATASET_FIELDS
     assert {"live_display_provider", "live_display_state"} <= REQUIRED_DATASET_FIELDS
+    assert {
+        "official_odds_source",
+        "official_market_source_mode",
+        "official_line_source_provider",
+    } <= REQUIRED_DATASET_FIELDS
     assert {"live_display_latest_snapshot_at", "best_is_off_market"} <= REQUIRED_DATASET_FIELDS
     assert {"market_agreement_label", "movement_strength_label"} <= REQUIRED_DATASET_FIELDS
     assert {"model_side", "model_win_prob", "projected_ks", "verdict"} <= REQUIRED_DATASET_FIELDS
