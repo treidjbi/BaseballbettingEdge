@@ -1425,8 +1425,29 @@ Any error stops immediately without retry. No live validation step authorizes ba
   the wrapper uses CLI `--file`, matching the transport used by earlier
   successful bounded reads in this plan. The exact file SHA-256 is
   `0911a036c28b53eeff0bd3708b31bb883c2b83848f7fffc6e3eccfcec610b5f8`;
-  local select-only and redaction checks pass, and it has not run live. Request
-  separate approval for one file-transport metadata read. Only after the hosted
-  schema/error evidence is retained should another preview be drafted.
-  Database repair, upsert, retention execution, deletion, vacuum, reclamation,
-  push, deployment, and production behavior remain closed.
+  local select-only and redaction checks pass. Tyler approved continuing the
+  remaining read-only diagnosis without repeated approval prompts. The linked
+  file-transport metadata read succeeded once without retry and retained `63`
+  columns across all four expected tables (`20` compact, `10` heartbeat, `14`
+  provider-run, `19` snapshot); hosted names and data types match the preview
+  contract. No database write occurred.
+- The same `--file` transport then ran the exact June 16 preview query at
+  SHA-256 `2f88ae7838cb54971b91061b09abf805411e111e6b098440270bafb11c4c6bd1`.
+  It succeeded once without retry and wrote aggregate-only local report SHA-256
+  `47b381cbabebd52bf136c4678a922f6e4af7f09911cd7ae4da2da9c09fee3832`.
+  The preview finds `285` provider runs and `791` same-slate heartbeats: `580`
+  in-window and `211` quarantined outside the Phoenix day. `172` raw snapshots
+  deterministically rebuild `107` compact groups against `107` existing rows;
+  `17` are mismatched, `0` missing, and `0` unexpected, so exactly `17` rows
+  would be upserted. The preview is blocker-free and execution-eligible under
+  preview fingerprint
+  `320c254d958d52f24a29ab75db980273ad3e9b4651fc6a3e3f4e7762a142399f`
+  and source-state SHA-256
+  `4c7c44839d7ef7bad3498adc45a836c8192c09b1f9252b82b24c445740d1c3b0`.
+  It performed no write and keeps deletion and retention execution closed.
+- Stop before mutation. A bounded `17`-row upsert is the next materially
+  different gate and must use the exact current preview fingerprint plus the
+  code execution flag, followed by a fresh post-write source-state and exactness
+  check. It would not delete or reclaim space. Database repair/upsert, retention
+  execution, deletion, vacuum, reclamation, push, deployment, and production
+  behavior remain closed until separately authorized.
