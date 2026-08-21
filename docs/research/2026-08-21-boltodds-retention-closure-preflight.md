@@ -13,11 +13,12 @@ or `58.75%` of the included 8 GiB. Deleting the retired raw slice would make
 space reusable inside PostgreSQL, but ordinary deletion would not guarantee an
 immediate reduction in the physical database size.
 
-Deletion remains blocked by season-evaluation and recovery gaps, not by compact
-integrity. The June 3 Gate C gap is now repaired, but explicit provider metadata
-is missing on most tracked BoltOdds-era rows; the normalized evidence and pin
-manifests do not exist; the full checkpoint envelope is not assembled locally;
-and the newest completed physical backup predates the repair.
+Deletion remains blocked by recovery/package gaps, not by compact integrity or
+candidate-window season evidence. The June 3 Gate C gap is repaired, all
+`869/869` May 7-June 16 tracked rows now carry explicit archived official-source
+attribution, and aggregate-only season/pin manifests cover all `41` BoltOdds
+candidate dates. The full checkpoint envelope is not assembled locally, and
+the newest completed physical backup predates the repair.
 
 ## Verified Cleanup Opportunity
 
@@ -59,21 +60,22 @@ in scope.
 | Compact coverage | June 16 `107/107` exact; later partitions exact zero | Pass |
 | Retired-runtime boundary | Zero raw BoltOdds rows after suspension | Pass |
 | Gate C date coverage | All `41/41` BoltOdds-era dates; canonical clean window `50/50` | Pass |
-| Provider attribution | `652/844` tracked rows lack explicit provider metadata | Blocked |
-| Season evidence and pins | No normalized manifests in the repository | Blocked |
+| Provider attribution | `869/869` candidate-window tracked rows have explicit archived official source | Pass |
+| Season evidence and pins | `41/41` candidate dates/partitions normalized and reconciled | Pass |
 | Canonical checkpoint envelope | Earlier files documented but not assembled locally | Blocked |
 | Recovery point | Latest completed physical backup predates repair; PITR disabled | Blocked |
 
 June 3 was the highest-signal gap. It contains `13,801` raw BoltOdds rows,
 `627` exact compact rows, `278` completed provider runs, `14` accepted bets,
 `73` sent notifications, and `24` consumed locks. The canonical Gate C rebuild
-now preserves that slate and its graded outcome evidence, but the remaining
-provider/pin/envelope/recovery gates still prohibit raw deletion.
+now preserves that slate and its graded outcome evidence. The remaining
+checkpoint-envelope and recovery gates still prohibit raw deletion.
 
-Provider attribution is the broader quality issue. Only `192/844` tracked
-BoltOdds-era rows carry explicit provider metadata (`22.75%`). The missing
-`652` rows must be enriched when supported by durable evidence or explicitly
-recorded as unknown; they must not be guessed.
+Provider attribution is now explicit for the deletion candidate. Its `869`
+tracked rows split into `549` TheRundown, `318` BoltOdds+PropLine, and `2`
+PropLine official odds-source rows. The `65` tracked rows with unknown archived
+source are April 28-30 only, outside the candidate, and remain null rather than
+being guessed.
 
 ### June 3 transport diagnosis
 
@@ -111,16 +113,12 @@ season layers.
 
 ## Next Decision Sequence
 
-1. Enrich supported provider attribution and preserve unknowns explicitly; do
-   not infer provider labels.
-2. Generate aggregate-only season-evidence and pin manifests. Keep accepted-bet
-   details and notification bodies out of the public repository.
-3. Recover or regenerate the canonical checkpoint envelope without weakening
+1. Recover or regenerate the canonical checkpoint envelope without weakening
    the generic multi-provider contract.
-4. Verify the first completed physical backup after the repair.
-5. Draft an exact date/provider-bounded deletion statement and dry-run report.
+2. Verify the first completed physical backup after the repair.
+3. Draft an exact date/provider-bounded deletion statement and dry-run report.
    Tyler must separately approve the deletion statement before execution.
-6. If approved, delete only the verified BoltOdds raw candidate, verify the
+4. If approved, delete only the verified BoltOdds raw candidate, verify the
    permanent layers again, and use ordinary maintenance only as separately
    justified. Do not default to `VACUUM FULL` or another blocking rewrite.
 
@@ -144,11 +142,15 @@ Key local evidence fingerprints:
 - July 17-22 checkpoint SHA-256:
   `c13ed95d79b3f52751f63617e64869738883c3fc5ef97e22da4c2bfe2b652f77`;
 - Gate C manifest SHA-256:
-  `b6f1c9d414fa4330ce70f9cfcddc70c9cadc8239f9010ca5c60d0e607e9ed845`;
+  `a977df90b8397cf0f5339a442919c22cb6b8eaf27a991863f2eebe6ca37825a1`;
 - Gate C JSONL SHA-256:
-  `317e8a3134f5e43093728dd06d45b8f3ef717f998c4403a084bf654a118c3f61`;
+  `e8c7c6d53ca51610213d1b168af58e831f5f8e079f2e28f88944856c3316a0da`;
 - Gate C summary SHA-256:
-  `7abac6a879df881469be4b4e8eb6369293f1604db79c760e0dc930adfede43e6`.
+  `6fec2e22c0e1da27aefe850d4fd2f43fe099f5fcf092da67d741199961183d88`;
+- season-evidence manifest SHA-256:
+  `00ae996eced1333fc099270bc1fd55462cae5a93f056aaf084e451b76f035c7a`;
+- pin manifest SHA-256:
+  `10a0296c618be053a0e5df4f21bbfb641baca2fb0507cd2f2d27f975bd0195e4`.
 
 Supabase backup behavior and retention options are documented in
 [Database Backups](https://supabase.com/docs/guides/platform/backups). This

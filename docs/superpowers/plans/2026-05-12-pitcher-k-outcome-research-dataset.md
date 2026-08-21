@@ -1300,3 +1300,31 @@ order, thresholds, staking, notifications, locks, dashboard source-of-truth,
 or retention. Raw deletion remains closed on provider attribution or explicit
 unknown pins, normalized season/pin manifests, the canonical checkpoint
 envelope, and a completed post-repair backup.
+
+## 2026-08-21 Explicit Official-Source Attribution
+
+Tyler approved an additive, non-inferred provider-provenance repair for the
+canonical Gate C dataset. The dataset now copies three immutable fields from
+each archived pitcher market:
+
+- `official_odds_source` from archived `odds_source`;
+- `official_market_source_mode` from archived `market_source_mode`; and
+- `official_line_source_provider` from archived `line_source_provider`.
+
+Blank or absent source values remain `null`. The existing `provider` field
+continues to mean market-agreement/live-movement evidence and is not renamed,
+overwritten, or used as an official-source fallback.
+
+The April 28-June 16 rebuild remains `2,070` rows, `1,075` tracked rows, zero
+duplicate keys, and `1,075/1,075` reconciliation. After stripping the three
+new fields, all pre-existing row values match the prior canonical dataset.
+Within the exact retired-BoltOdds deletion-candidate window, May 7-June 16,
+all `869/869` tracked rows now have explicit `official_odds_source`: `549`
+TheRundown, `318` BoltOdds+PropLine, and `2` PropLine. The `65` tracked rows
+with unknown source are confined to April 28-30, outside that candidate, and
+remain explicitly null.
+
+This closes only the candidate-window official-source attribution blocker. It
+does not promote a provider, reinterpret historical BoltOdds as active, change
+model inputs, or authorize retention execution, deletion, vacuum, or storage
+reclamation.

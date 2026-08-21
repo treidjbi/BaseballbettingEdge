@@ -1552,3 +1552,28 @@ Any error stops immediately without retry. No live validation step authorizes ba
   canonical checkpoint envelope, or the post-repair backup gate. Retention
   execution, deletion, vacuum, and reclamation remain closed and require a
   separate exact proposal and approval.
+
+## 2026-08-21 Attribution And Aggregate-Manifest Closure Overlay
+
+- The additive Gate C provenance repair preserves archived `odds_source`,
+  `market_source_mode`, and `line_source_provider` in separate official-source
+  fields. It never infers a provider and does not repurpose the live-movement
+  `provider` field.
+- The canonical April 28-June 16 dataset remains `2,070` rows, `1,075` tracked,
+  zero duplicates, and `1,075/1,075` reconciled. The exact May 7-June 16 raw
+  deletion candidate has explicit official odds-source coverage on all
+  `869/869` tracked rows. The `65` explicit unknowns are confined to April
+  28-30 and are outside the candidate.
+- One bounded SELECT-only aggregate read produced `41` date rows with no bet
+  identity, notification text, lock identity, provider payload, or credential.
+  The normalized season manifest records `869` official tracked picks, `317`
+  accepted bets, `1,778` sent notifications, `535` consumed locks, zero frozen
+  Alt V2 rows in this older window, and four repository-linked incident pins.
+- The pin manifest contains all `41/41` BoltOdds candidate partitions, all
+  reconciled under the existing version-1 consumer contract. Detailed accepted
+  bets, notifications, locks, and Alt state remain in their untouched Supabase
+  tables and are not part of the proposed raw `market_snapshots` deletion.
+- This closes the candidate-window official-source and normalized season/pin
+  blockers. The canonical four-provider checkpoint envelope and a completed
+  post-repair physical backup remain open. Retention execution, deletion,
+  vacuum, and reclamation remain separately closed.
