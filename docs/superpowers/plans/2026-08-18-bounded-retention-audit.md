@@ -1390,9 +1390,17 @@ Any error stops immediately without retry. No live validation step authorizes ba
   the exact BoltOdds/June 16/Phoenix-window scope, and passed local contract
   assertions at SHA-256
   `062aafdc67521d1ee4f282a1321c3177f8fe8c8bd6ae88a31bf21b397016ce4b`.
-  It has not been run live. Request separate approval for one replacement
-  read-only preview. Review its quarantined-heartbeat count, aggregate repair
-  counts, rebuilt/existing hashes, and version-2 preview fingerprint before
-  considering any separately approved upsert. Only after an exact post-repair
-  June 16 retention checkpoint may the remaining provider/date matrix resume.
-  Retention execution and deletion stay closed through all of those steps.
+  Tyler separately approved one live attempt under that exact hash. It exited
+  once with code `1`, classified as `sql_contract`, was not retried, and again
+  produced no evidence directory or preview report. Fully qualifying the tables
+  and simplifying the joins therefore did not resolve the hosted SQL contract;
+  do not keep guessing at preview SQL.
+- The next gate is one separately approved, aggregate-only
+  `information_schema.columns` read for the four referenced tables. It should
+  return only table, column, and data-type metadata, retain a sanitized CLI
+  failure detail if it fails, and make no data-row read. Reconcile that hosted
+  schema with the local migrations before drafting another preview query.
+  Only a later separately approved preview may review quarantined-heartbeat
+  counts, repair counts, rebuilt/existing hashes, and the version-2 fingerprint.
+  Database repair, upsert, retention execution, deletion, vacuum, reclamation,
+  push, deployment, and production behavior remain closed.
