@@ -841,10 +841,21 @@ def enrich_rows_with_live_market_display(
     return enriched
 
 
-def artifact_api_url(base_url: str, artifact_type: str, date: str | None = None) -> str:
+def artifact_api_url(
+    base_url: str,
+    artifact_type: str,
+    date: str | None = None,
+    *,
+    start_date: str | None = None,
+    end_date: str | None = None,
+) -> str:
     params = {"type": artifact_type}
     if date:
         params["date"] = date
+    if start_date:
+        params["start_date"] = start_date
+    if end_date:
+        params["end_date"] = end_date
     separator = "&" if "?" in base_url else "?"
     return f"{base_url}{separator}{urlencode(params)}"
 
@@ -1517,6 +1528,7 @@ def reconcile_picks_history(
     *,
     history_path: Path = PICKS_HISTORY,
     start_date: str = CLEAN_WINDOW_START,
+    end_date: str | None = None,
     artifact_api_url: str | None = None,
     included_slate_dates: set[str] | None = None,
 ) -> dict[str, Any]:
@@ -1532,6 +1544,8 @@ def reconcile_picks_history(
     payload = _load_picks_history_payload(
         history_path=history_path,
         artifact_api_url_base=artifact_api_url,
+        start_date=start_date,
+        end_date=end_date,
     )
 
     graded_pick_rows = 0
@@ -1592,19 +1606,36 @@ def _load_picks_history_payload(
     *,
     history_path: Path,
     artifact_api_url_base: str | None = None,
+    start_date: str | None = None,
+    end_date: str | None = None,
 ) -> Any:
     if artifact_api_url_base:
-        return _load_remote_json(artifact_api_url(artifact_api_url_base, "picks_history"))
+        return _load_remote_json(
+            artifact_api_url(
+                artifact_api_url_base,
+                "picks_history",
+                start_date=start_date,
+                end_date=end_date,
+            )
+        )
     try:
         return json.loads(history_path.read_text(encoding="utf-8"))
     except (OSError, json.JSONDecodeError):
         return []
 
 
-def _load_picks_history(path: Path, artifact_api_url_base: str | None = None) -> list[dict[str, Any]]:
+def _load_picks_history(
+    path: Path,
+    artifact_api_url_base: str | None = None,
+    *,
+    start_date: str | None = None,
+    end_date: str | None = None,
+) -> list[dict[str, Any]]:
     payload = _load_picks_history_payload(
         history_path=path,
         artifact_api_url_base=artifact_api_url_base,
+        start_date=start_date,
+        end_date=end_date,
     )
     return [row for row in payload if isinstance(row, dict)] if isinstance(payload, list) else []
 
@@ -1996,7 +2027,12 @@ def build_dataset(
     artifact_api_url: str | None = None,
     diagnostics: dict[str, Any] | None = None,
 ) -> list[dict[str, Any]]:
-    history_rows = _load_picks_history(PICKS_HISTORY, artifact_api_url)
+    history_rows = _load_picks_history(
+        PICKS_HISTORY,
+        artifact_api_url,
+        start_date=start_date,
+        end_date=end_date,
+    )
     archive_outcome_stats: dict[str, int] = {}
     markets = load_archived_markets_for_dataset(
         archive_dir,
@@ -2082,6 +2118,7 @@ def main(argv: list[str] | None = None) -> None:
         reconcile_picks_history(
             rows,
             start_date=args.start_date,
+            end_date=args.end_date,
             artifact_api_url=artifact_api_url_base,
             included_slate_dates=(
                 {str(row.get("slate_date") or "").strip() for row in rows if row.get("slate_date")}

@@ -229,6 +229,32 @@ def test_hybrid_source_adds_production_only_graded_dates(tmp_path, monkeypatch):
     assert history_loader_calls[0]["artifact_api_url"] is None
     assert reconciliation_calls[0]["history_path"] == history_path
     assert reconciliation_calls[0]["artifact_api_url"] is None
+    assert reconciliation_calls[0]["end_date"] == "2026-06-01"
+
+
+def test_graded_history_dates_requests_only_the_requested_window(monkeypatch):
+    seen_urls = []
+
+    def fake_load_remote_json(url):
+        seen_urls.append(url)
+        return [
+            {"date": "2026-06-03", "result": "win"},
+            {"date": "2026-06-04", "result": "loss"},
+        ]
+
+    monkeypatch.setattr(builder.dataset, "_load_remote_json", fake_load_remote_json)
+
+    dates = builder._graded_history_dates(
+        start_date="2026-06-03",
+        end_date="2026-06-04",
+        artifact_api_url="https://example.test/.netlify/functions/get-artifact",
+    )
+
+    assert dates == ["2026-06-03", "2026-06-04"]
+    assert seen_urls == [
+        "https://example.test/.netlify/functions/get-artifact?"
+        "type=picks_history&start_date=2026-06-03&end_date=2026-06-04"
+    ]
 
 
 def test_main_can_run_workload_no_vig_audit_after_fresh_dataset(tmp_path, monkeypatch):

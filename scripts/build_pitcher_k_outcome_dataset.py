@@ -83,7 +83,12 @@ def _graded_history_dates(
     try:
         if artifact_api_url:
             history = dataset._load_remote_json(
-                dataset.artifact_api_url(artifact_api_url, "picks_history")
+                dataset.artifact_api_url(
+                    artifact_api_url,
+                    "picks_history",
+                    start_date=start_date,
+                    end_date=end_date,
+                )
             )
         else:
             history = json.loads(history_path.read_text(encoding="utf-8"))
@@ -311,6 +316,7 @@ def build_research_artifact(
     reconciliation = dataset.reconcile_picks_history(
         rows,
         start_date=start_date,
+        end_date=end_date,
         history_path=picks_history_path or dataset.PICKS_HISTORY,
         artifact_api_url=(
             None if picks_history_path is not None else source_kwargs["artifact_api_url"]

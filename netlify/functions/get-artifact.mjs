@@ -29,13 +29,36 @@ function artifactKey(type, date) {
   return type;
 }
 
+function isIsoDate(value) {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(value || '')) return false;
+  const parsed = new Date(`${value}T00:00:00Z`);
+  return Number.isFinite(parsed.getTime())
+    && parsed.toISOString().slice(0, 10) === value;
+}
+
+function historyRowDate(row) {
+  if (!row || typeof row !== 'object' || Array.isArray(row)) return '';
+  return String(row.date || row.slate_date || '');
+}
+
 export async function handler(event) {
   const params = event.queryStringParameters || {};
   const type = params.type || 'today';
   const date = params.date || '';
+  const startDate = params.start_date || '';
+  const endDate = params.end_date || '';
 
   if (!ALLOWED_TYPES.has(type)) {
     return jsonResponse(400, { error: 'unsupported artifact type' });
+  }
+  if ((startDate || endDate) && type !== 'picks_history') {
+    return jsonResponse(400, { error: 'date windows are supported only for picks_history' });
+  }
+  if ((startDate && !isIsoDate(startDate)) || (endDate && !isIsoDate(endDate))) {
+    return jsonResponse(400, { error: 'start_date and end_date must use YYYY-MM-DD' });
+  }
+  if (startDate && endDate && startDate > endDate) {
+    return jsonResponse(400, { error: 'start_date must be on or before end_date' });
   }
 
   let key;
@@ -73,7 +96,15 @@ export async function handler(event) {
   }
 
   const row = rows[0];
-  return jsonResponse(200, row.payload, {
+  let payload = row.payload;
+  if (type === 'picks_history' && (startDate || endDate)) {
+    payload = payload.filter((item) => {
+      const itemDate = historyRowDate(item);
+      if (!isIsoDate(itemDate)) return false;
+      return (!startDate || itemDate >= startDate) && (!endDate || itemDate <= endDate);
+    });
+  }
+  return jsonResponse(200, payload, {
     'cache-control': 'public, max-age=30, stale-while-revalidate=120',
     ETag: `"${row.payload_sha256}"`,
     'x-artifact-key': row.artifact_key,

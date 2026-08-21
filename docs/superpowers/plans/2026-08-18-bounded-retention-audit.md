@@ -1303,3 +1303,228 @@ Any error stops immediately without retry. No live validation step authorizes ba
   secret/configuration change, push, deployment, or merge occurred in this
   local handoff. After separately approved local merge, a fresh bounded audit
   remains a distinct approval gate; deletion remains separately closed.
+
+### June 16 BoltOdds Compact-Partition Blocker and Repair Preview — 2026-08-20
+
+- Fresh read-only evidence under query-contract SHA-256
+  `e3091876ffe253d948c83e3e31c89f1a4fbde54381f91695f3963f2208866e05`
+  now covers `21` continuous BoltOdds checkpoints from April 28 through July 9.
+  The June 16 partition is the first hard blocker: `172` raw rows in `107`
+  groups compare with `107` compact groups, of which `90` are exact and `17`
+  are mismatched. Missing, unexpected, duplicate, and source-anomaly counts are
+  all zero. The raw logical footprint is only `131,160` bytes, about `0.125`
+  MiB, so this date must not be deleted around or excused for capacity reasons.
+- Tyler separately approved one aggregate-only June 16 diagnosis. The one
+  SELECT-only query ran once under SHA-256
+  `f93a9d2198d20826e053272119063af42021fdaa91e7ab0928bb2936437de7e5`,
+  completed in `19s`, and was not retried. Across the `17` mismatched groups,
+  raw snapshot count is `46` while the compact source arrays contain `18`
+  distinct IDs. Every compact source array is internally valid and agrees with
+  its stored compact snapshot count, but none represents the full raw group.
+  Compact first-seen time is later in every group by `126.849694` to
+  `817.097145` seconds; the aggregate snapshot-count and movement-count deltas
+  are both `-28`. Last-seen time and last odds remain exact. There are zero
+  timestamp-tie groups and zero duplicate raw IDs.
+- The evidence isolates stale/truncated historical compaction rather than a
+  retention-predicate defect: the stored compact rows faithfully describe a
+  partial set ending at the correct final observation while omitting `28`
+  earlier snapshots. The broad all-provider compactor is also called by the
+  live layer and is therefore unchanged.
+- Tyler approved a bounded code-only repair-preflight tool. Local commits
+  `d98411e7` and `8e619bb1` add
+  `scripts/repair_compact_market_snapshot_partition.py` plus tests. Preview is
+  aggregate-only and exact-provider/date scoped. It validates run UUIDs,
+  heartbeat linkage, and the Phoenix midnight-to-midnight observation window;
+  selects no raw payloads; performs one-attempt reads; never writes provider
+  usage; never deletes; and refuses to overwrite prior evidence.
+- Database execution is hard-limited in code to BoltOdds June 16 and requires
+  both `ALLOW_COMPACT_MARKET_PARTITION_REPAIR=true` and the exact current
+  preview SHA-256. Any unexpected compact row, no-op/empty partition, or raw or
+  compact partition requiring offset pagination blocks execution. An approved
+  write could upsert only missing/mismatched compact rows on the existing exact
+  unique key, then it must reread raw inputs and compact state and prove the
+  preview remained current. Ambiguous request failures remain unconfirmed
+  unless that bounded post-state is exact.
+- Tyler approved one read-only repair preview. Two local transport attempts
+  stopped before the database because the select-only guard requires the
+  literal `WITH ` prefix and the isolated worktree does not carry the ignored
+  Supabase link metadata. The approved SELECT was then run once from the linked
+  main clone while importing the reviewed worktree code. It returned data, but
+  preview generation failed closed before writing a report because one or more
+  same-provider/same-slate heartbeats had observation timestamps outside the
+  June 16 Phoenix day. No database mutation occurred and the read was not
+  retried.
+- Tyler then approved a code-only correction, committed locally as `e6416fc1`.
+  Valid BoltOdds/June 16 heartbeats outside the Phoenix day are now quarantined
+  and counted, and their run IDs cannot expand repair lineage. Provider/date
+  drift and malformed timestamps still fail closed. The preview fingerprint is
+  version `2` and binds total, in-window, and out-of-window heartbeat counts.
+  A separate source-state digest also binds provider runs, those heartbeat
+  counts, raw snapshots, and rebuilt compact state so an approved future upsert
+  cannot be reported exact if any source input changes during execution.
+- Test-first verification passed `40` focused repair tests, `204` combined
+  repair/retention tests, and `2,476` complete repository tests. Python
+  compilation and `git diff --check` passed, the generated Gate F report was
+  restored to committed blob `1ef07b8332e2f3dd040317592950e909b1e852ae`,
+  and independent rereview found no Critical, Important, or Minor issue. This
+  is still a local branch handoff only; no database write, deletion, vacuum,
+  reclamation, push, deployment, or production behavior change has occurred.
+- Tyler approved that next read-only preview. Local preflight confirmed the
+  reviewed branch, a fresh output destination, one-attempt SELECT behavior, and
+  no execute flag. The linked CLI invocation used SELECT-only query SHA-256
+  `e943b90da134317e6b4c8d0d8b6bb18d047a158b09c1a289f404f86c5c16cf44`
+  and exited once with code `1`. The wrapper intentionally did not retry. It
+  produced no evidence directory or preview report and could not expose the
+  underlying CLI error text, so no preview facts or fingerprint are available.
+  Tyler separately approved one replacement attempt under the same query hash;
+  it also exited once with code `1`, this time classified as `sql_contract`,
+  and was not retried. The queries were read-only and no database mutation,
+  repair, deletion, vacuum, reclamation, provider-usage write, push, deployment,
+  or production behavior change occurred.
+- The failed invocation does not reopen execution. The one-use local wrapper
+  now retains only a sanitized CLI error class on a future failure; local
+  classifier checks cover circuit breaker, authentication, statement timeout,
+  connection, SQL-contract, and unclassified failures without exposing raw CLI
+  output. The next local query shape is simplified and fully schema-qualified,
+  drops the unnecessary parameter joins and `created_at` dependency, preserves
+  the exact BoltOdds/June 16/Phoenix-window scope, and passed local contract
+  assertions at SHA-256
+  `062aafdc67521d1ee4f282a1321c3177f8fe8c8bd6ae88a31bf21b397016ce4b`.
+  Tyler separately approved one live attempt under that exact hash. It exited
+  once with code `1`, classified as `sql_contract`, was not retried, and again
+  produced no evidence directory or preview report. Fully qualifying the tables
+  and simplifying the joins therefore did not resolve the hosted SQL contract;
+  do not keep guessing at preview SQL.
+- The next gate is one separately approved, aggregate-only
+  `information_schema.columns` read for the four referenced tables. It should
+  return only table, column, and data-type metadata, retain a sanitized CLI
+  failure detail if it fails, and make no data-row read. Tyler approved the
+  metadata-only query at SHA-256
+  `639f6cfb88cea1fb3860ef80340acb7159dc964f708dac9aee6f524bea8c9e23`.
+  It exited once with code `1`, was classified as `sql_contract`, was not
+  retried, and produced no evidence directory. Because even this simple hosted
+  catalog read failed the same way, the coarse classifier may be masking a
+  CLI/link/control-plane error rather than proving a schema mismatch.
+- Tyler approved one linked `select now()` connectivity read at query SHA-256
+  `03bb88f628780fe2325cf7a763a1e2494004b8ffbc0fb5061064dda0736db146`.
+  The CLI exited successfully without retry, proving the linked database path
+  is reachable. The temporary wrapper then rejected the CLI's successful JSON
+  envelope before writing its local report, so the exact returned timestamp is
+  not retained. This was a decoder-only local failure after a successful
+  read-only query; no database write or application-table read occurred.
+- Do not query application tables again yet. The metadata wrapper now accepts
+  list, `rows`, `result`, and `data` envelopes and, on CLI failure, persists only
+  an aggressively redacted error excerpt. Local envelope/redaction checks pass.
+  Tyler approved one replacement `information_schema.columns` read under the
+  unchanged metadata query hash `639f6cfb...`. It exited once with code `1`,
+  was not retried, and retained PostgreSQL error `42601`: syntax error at end of
+  input on line `0`. This proves the multiline SQL arrived empty through the
+  Windows inline `npx.cmd` argument; it is not evidence of a hosted schema
+  mismatch.
+- The exact same metadata-only SQL is now stored in a fresh temporary file and
+  the wrapper uses CLI `--file`, matching the transport used by earlier
+  successful bounded reads in this plan. The exact file SHA-256 is
+  `0911a036c28b53eeff0bd3708b31bb883c2b83848f7fffc6e3eccfcec610b5f8`;
+  local select-only and redaction checks pass. Tyler approved continuing the
+  remaining read-only diagnosis without repeated approval prompts. The linked
+  file-transport metadata read succeeded once without retry and retained `63`
+  columns across all four expected tables (`20` compact, `10` heartbeat, `14`
+  provider-run, `19` snapshot); hosted names and data types match the preview
+  contract. No database write occurred.
+- The same `--file` transport then ran the exact June 16 preview query at
+  SHA-256 `2f88ae7838cb54971b91061b09abf805411e111e6b098440270bafb11c4c6bd1`.
+  It succeeded once without retry and wrote aggregate-only local report SHA-256
+  `47b381cbabebd52bf136c4678a922f6e4af7f09911cd7ae4da2da9c09fee3832`.
+  The preview finds `285` provider runs and `791` same-slate heartbeats: `580`
+  in-window and `211` quarantined outside the Phoenix day. `172` raw snapshots
+  deterministically rebuild `107` compact groups against `107` existing rows;
+  `17` are mismatched, `0` missing, and `0` unexpected, so exactly `17` rows
+  would be upserted. The preview is blocker-free and execution-eligible under
+  preview fingerprint
+  `320c254d958d52f24a29ab75db980273ad3e9b4651fc6a3e3f4e7762a142399f`
+  and source-state SHA-256
+  `4c7c44839d7ef7bad3498adc45a836c8192c09b1f9252b82b24c445740d1c3b0`.
+  It performed no write and keeps deletion and retention execution closed.
+- Tyler explicitly approved the bounded repair. A fresh pre-read reproduced
+  preview fingerprint
+  `320c254d958d52f24a29ab75db980273ad3e9b4651fc6a3e3f4e7762a142399f`
+  and the reviewed one-attempt wrapper upserted exactly the `17` canonical
+  BoltOdds June 16 compact rows on the existing unique key. The execution
+  report SHA-256 is
+  `c8feae95bf052e26b985625083862615eebb14427964568e64eb7d6c4e051cd7`.
+  Its fresh post-read found `0` missing, `0` mismatched, and `0` unexpected
+  groups, confirmed that the source state was still current, and recorded no
+  deletion. No other provider/date partition or table was mutated.
+- A separate fresh, read-only bounded checkpoint then completed under query
+  contract SHA-256
+  `e3091876ffe253d948c83e3e31c89f1a4fbde54381f91695f3963f2208866e05`.
+  Checkpoint file SHA-256
+  `150734f5db762d083885d9faec93431e433ced47695211797326f81ecbc6330b`
+  proves `107/107` exact groups, `retention_preservation_complete: true`, zero
+  missing/mismatched/unexpected/duplicate groups, zero source anomalies, and
+  `131,160` raw logical bytes. The checkpoint integrity SHA-256 is
+  `30c0d67bc534ae8fd2ba6b5fd53878a111fc1af12ad85660e017bd6c8cc668c2`.
+  The June 16 compact-integrity blocker is therefore closed. The upsert repaired
+  historical compact evidence but reclaimed no database space.
+- One subsequent read-only BoltOdds checkpoint for July 10-16 initially failed
+  closed as `subprocess_failed`. Instrumented diagnosis proved the exact local
+  cause: the isolated worktree has no `supabase/.temp/project-ref`, so the CLI
+  reported `Cannot find project ref` and never queried the database. This was
+  not a pooler, authentication, statement-timeout, SQL-contract, or database
+  pressure failure. The unchanged reviewed worktree code was then run from the
+  linked main clone, matching the successful June 16 transport.
+- The linked July 10-16 checkpoint completed in `13.79s`. All seven requested
+  partitions have zero raw/compact rows, zero candidate runtime, zero source
+  anomalies, `coverage_exact: true`, and
+  `retention_preservation_complete: true`. Checkpoint file SHA-256 is
+  `25655f8eec984018dbe54184b2e828ca7a0bf80a830b9033073596d72dc0124e`;
+  integrity SHA-256 is
+  `93c1a48d4c257b53f417d1c787b7f2e6428bff507a7f4242776f3b5bcbfa9268`.
+- After the normal 30-second cooldown, the linked July 17-22 checkpoint
+  completed in `11.96s`. All six partitions have the same exact zero state.
+  Checkpoint file SHA-256 is
+  `c13ed95d79b3f52751f63617e64869738883c3fc5ef97e22da4c2bfe2b652f77`;
+  integrity SHA-256 is
+  `c762e4113381a0505733fb816b9556140147e36b3521f0213f5896794049c3b5`.
+  Together with the documented April 28-July 9 checkpoint sequence, this
+  closes retired-BoltOdds candidate-date coverage through July 22 and confirms
+  no fresh retired-provider runtime after June 16.
+- One aggregate-only sizing read then completed under SELECT-only query SHA-256
+  `ed83774953eb0e2c7148bebd2bdf93460438210828de5d1cb6615a4204e81519`.
+  Sanitized local evidence SHA-256 is
+  `e91942fb81b27a306c4e027d6132fea91900a27e6ad7cd811250ee077b23fe05`.
+  The database is `5,046,348,947` bytes, about `4.70 GiB` or `58.75%` of the
+  included 8 GiB. `market_snapshots` occupies `3,513,262,080` total bytes.
+  The exact retired-BoltOdds candidate scope contains `611,972` raw rows and
+  `461,536,160` logical bytes, about `440 MiB`; its preserved compact evidence
+  is `26,726` rows and `28,600,016` logical bytes. There are zero raw BoltOdds
+  rows after `2026-06-17T17:22:29Z`. This is a meaningful cleanup candidate,
+  but ordinary deletion would create reusable table space and would not by
+  itself guarantee an immediate fall in physical database bytes.
+- No explicit normalized season-evidence or pin manifest is present in the
+  repository. The existing readiness contract therefore remains blocked on
+  outcome-linked evidence, incident/accepted-bet/alert/provider-transition
+  pins, and recovery/export proof even though compact coverage is now exact.
+- Gate C covers `40/41` BoltOdds-era dates from May 7 through June 16. June 3
+  is absent even though aggregate-only evidence records `14` accepted bets,
+  `73` sent notifications, and `24` consumed locks that day. The compact
+  archive itself is healthy for June 3 (`13,801` raw rows preserved into `627`
+  compact rows), so this is a season-evidence gap rather than a compaction
+  failure. Across the same period, `652/844` tracked rows lack explicit
+  provider metadata. Both gaps must be resolved or explicitly pinned before
+  any raw deletion proposal can pass readiness.
+- The current backup inventory shows completed physical backups through
+  `2026-08-21T05:32:59.453Z`, with `pitr_enabled: false`. That latest backup
+  predates the June 16 compact repair and this closure evidence. A completed
+  post-repair backup is therefore still required; backup inventory alone is
+  not proof of a tested restore.
+- The repository documents the earlier April 28-July 9 checkpoint sequence,
+  but those older checkpoint files are not present in the current local
+  evidence directory. Do not claim a freshly assembled canonical
+  four-provider envelope until the existing artifacts are recovered or the
+  matrix is regenerated through separately bounded reads.
+- Stop before any additional mutation. Recoverability proof, recoverable-space
+  estimate, season-evidence pins, retention execution, deletion, vacuum,
+  reclamation, push, merge, deployment, and production behavior remain closed
+  and separately gated. Provider, model, notification, lock, UI, artifact, and
+  source-of-truth behavior are unchanged.

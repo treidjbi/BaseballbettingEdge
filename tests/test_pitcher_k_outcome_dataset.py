@@ -1040,8 +1040,83 @@ def test_reconcile_picks_history_can_read_production_artifact_api(monkeypatch):
     assert result["graded_pick_rows"] == 1
     assert result["matched_pick_rows"] == 1
     assert seen_urls == [
-        "https://example.test/.netlify/functions/get-artifact?type=picks_history"
+        "https://example.test/.netlify/functions/get-artifact?"
+        "type=picks_history&start_date=2026-05-12"
     ]
+
+
+def test_build_dataset_bounds_remote_history_and_recovers_june_3_pitcher_game(
+    monkeypatch,
+    tmp_path,
+):
+    seen_urls = []
+
+    class Response:
+        def __init__(self, payload):
+            self.payload = payload
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *args):
+            return False
+
+        def read(self):
+            return json.dumps(self.payload).encode("utf-8")
+
+    def fake_urlopen(url, timeout=20):
+        seen_urls.append(url)
+        if "type=picks_history" in url:
+            return Response(
+                [
+                    {
+                        "date": "2026-06-03",
+                        "pitcher": "Robert Gasser",
+                        "side": "under",
+                        "k_line": 3.5,
+                        "result": "loss",
+                        "actual_ks": 5,
+                    }
+                ]
+            )
+        if "type=index" in url:
+            return Response({"dates": [{"date": "2026-06-03"}]})
+        assert "type=dated_slate" in url
+        assert "date=2026-06-03" in url
+        return Response(
+            {
+                "pitchers": [
+                    {
+                        "pitcher": "Robert Gasser",
+                        "k_line": 4.5,
+                        "actual_ks": None,
+                        "best_over_odds": 118,
+                        "best_under_odds": -144,
+                    }
+                ]
+            }
+        )
+
+    monkeypatch.setattr(dataset, "urlopen", fake_urlopen)
+
+    rows = dataset.build_dataset(
+        start_date="2026-06-03",
+        end_date="2026-06-03",
+        artifact_api_url="https://example.test/.netlify/functions/get-artifact",
+        lineup_handedness_backfill_path=tmp_path / "missing-lineups.json",
+        actual_opportunity_backfill_path=tmp_path / "missing-opportunity.json",
+        market_agreement_tracker_path=None,
+        live_market_display_path=None,
+    )
+
+    assert any(
+        "type=picks_history&start_date=2026-06-03&end_date=2026-06-03" in url
+        for url in seen_urls
+    )
+    assert {row["actual_ks"] for row in rows} == {5}
+    assert {
+        row["archive_outcome_reconciliation_source"] for row in rows
+    } == {"picks_history_pitcher_game"}
 
 
 def test_enrich_rows_with_lineup_handedness_marks_reconstructed_context(tmp_path):

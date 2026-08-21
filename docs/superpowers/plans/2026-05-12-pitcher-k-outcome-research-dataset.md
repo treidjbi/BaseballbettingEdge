@@ -1258,3 +1258,33 @@ counter stayed `77/75`; all `25` history-recovered rows were excluded.
 This resolves the named data-integrity exception. It does not by itself open
 Gate D or any model gate: Gate D still requires boring scheduled daily
 collection proof with zero duplicate or reconciliation failures.
+
+## 2026-08-21 Bounded Production-History Transport Repair
+
+The committed Gate C manifest still omits June 3 even though the July 29
+pitcher-game rule is correct. Read-only diagnosis found a transport failure,
+not missing season evidence:
+
+- the production June 3 dated slate still contains Robert Gasser at `4.5`
+  strikeouts with no embedded result;
+- the live Supabase `picks_history` artifact contains the official Robert
+  Gasser `UNDER 3.5` loss with `5` actual strikeouts;
+- the public Netlify `get-artifact?type=picks_history` response now exceeds the
+  function's roughly 6 MiB response ceiling; and
+- the local committed `data/picks_history.json` ends before June 3, so it
+  cannot supply the pitcher-game fallback by itself.
+
+Tyler approved a bounded local repair. `get-artifact` now accepts optional
+inclusive `start_date` / `end_date` filters only for `picks_history`, validates
+the window before reading Supabase, and preserves the unfiltered default.
+Gate C passes its requested build window through history loading, graded-date
+discovery, and final reconciliation. The regression fixture proves that the
+bounded June 3 response recovers Gasser through the existing
+`picks_history_pitcher_game` rule without mutating either source artifact.
+
+This change remains local-only pending separate merge, push, Netlify deploy,
+and production-shaped rebuild gates. It does not change live picks, grades,
+model fields, provider order, thresholds, staking, notifications, locks,
+dashboard source-of-truth, retention, or stored artifact payloads. Deletion
+readiness remains closed until the deployed bounded route produces a fresh
+Gate C manifest that includes June 3 and passes full reconciliation.
