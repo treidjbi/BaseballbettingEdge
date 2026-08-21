@@ -95,6 +95,9 @@ def test_build_official_close_rows_creates_one_row_per_side():
             "lineup_path_a_fallback_count": 2,
             "quality_gate_level": "clean",
             "quality_gate_reasons": [],
+            "odds_source": "therundown+propline",
+            "market_source_mode": "therundown_propline",
+            "line_source_provider": "propline",
             "archive_outcome_reconciliation_source": "picks_history_exact",
             "source_artifact_path": "dashboard/data/processed/2026-05-12.json",
             "pitcher_throws": "R",
@@ -116,6 +119,9 @@ def test_build_official_close_rows_creates_one_row_per_side():
     assert under["model_no_vig_gap"] is not None
     assert under["k_margin_to_line"] == 0.6
     assert under["provider"] is None
+    assert under["official_odds_source"] == "therundown+propline"
+    assert under["official_market_source_mode"] == "therundown_propline"
+    assert under["official_line_source_provider"] == "propline"
     assert under["model_market_relationship"] == "model_fades_favorite"
     assert under["projection_margin_bucket"] == "0.5-1.0"
     assert under["pitcher_throws"] == "R"
@@ -136,6 +142,34 @@ def test_build_official_close_rows_creates_one_row_per_side():
     assert under["lineup_handedness_source"] is None
     assert under["lineup_handedness_runtime_safe"] is None
     assert under["archive_outcome_reconciliation_source"] == "picks_history_exact"
+
+
+def test_build_official_close_rows_keeps_missing_official_sources_explicitly_null():
+    base_market = {
+        "date": "2026-04-28",
+        "pitcher": "Bryan Woo",
+        "k_line": 5.5,
+        "actual_ks": 4,
+        "winning_side": "under",
+        "over_odds": -125,
+        "under_odds": 104,
+    }
+
+    for source_fields in (
+        {},
+        {
+            "odds_source": "   ",
+            "market_source_mode": "",
+            "line_source_provider": None,
+        },
+    ):
+        rows = build_official_close_rows([{**base_market, **source_fields}])
+
+        assert len(rows) == 2
+        assert rows[0]["official_odds_source"] is None
+        assert rows[0]["official_market_source_mode"] is None
+        assert rows[0]["official_line_source_provider"] is None
+        assert rows[0]["provider"] is None
 
 
 def test_enrich_rows_with_market_agreement_uses_latest_pre_start_tracker_row(tmp_path):
@@ -372,6 +406,9 @@ def test_build_summary_tracks_coverage_and_duplicates():
             "batters_faced": 22,
             "actual_opportunity_source": "mlb_boxscore_reconstructed",
             "provider": "boltodds",
+            "official_odds_source": "therundown+propline",
+            "official_market_source_mode": "therundown_propline",
+            "official_line_source_provider": "propline",
             "live_display_provider": "propline",
             "live_display_state": "off_market",
             "live_display_latest_snapshot_at": "2026-05-12T22:10:00+00:00",
@@ -411,6 +448,9 @@ def test_build_summary_tracks_coverage_and_duplicates():
             "batters_faced": None,
             "actual_opportunity_source": None,
             "provider": None,
+            "official_odds_source": None,
+            "official_market_source_mode": None,
+            "official_line_source_provider": None,
             "live_display_provider": None,
             "live_display_state": None,
             "live_display_latest_snapshot_at": None,
@@ -453,6 +493,21 @@ def test_build_summary_tracks_coverage_and_duplicates():
     assert summary["best_off_market_rows"] == 1
     assert summary["market_broad_confirmation_rows"] == 1
     assert summary["market_agreement_label_counts"]["market_with_model"] == 1
+    assert summary["official_odds_source_rows"] == 1
+    assert summary["official_market_source_mode_rows"] == 1
+    assert summary["official_line_source_provider_rows"] == 1
+    assert summary["official_odds_source_counts"] == {
+        "missing": 1,
+        "therundown+propline": 1,
+    }
+    assert summary["official_market_source_mode_counts"] == {
+        "missing": 1,
+        "therundown_propline": 1,
+    }
+    assert summary["official_line_source_provider_counts"] == {
+        "missing": 1,
+        "propline": 1,
+    }
 
 
 def test_load_archived_markets_for_dataset_preserves_baseball_context(tmp_path):

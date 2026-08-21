@@ -84,6 +84,9 @@ REQUIRED_DATASET_FIELDS = {
     "home_away",
     "opp_team",
     "lineup_used",
+    "official_odds_source",
+    "official_market_source_mode",
+    "official_line_source_provider",
     "provider",
     "live_display_provider",
     "live_display_state",
@@ -179,6 +182,11 @@ def _to_int(value: Any) -> int | None:
 
 def _normalized(value: Any) -> str:
     return normalize(str(value or "")).strip()
+
+
+def _optional_source_text(value: Any) -> str | None:
+    text = str(value or "").strip()
+    return text or None
 
 
 def lineup_handedness_lookup_key(
@@ -1318,6 +1326,13 @@ def build_official_close_rows(markets: list[dict[str, Any]]) -> list[dict[str, A
                     market.get("current_swstr_pct") or market.get("swstr_pct")
                 ),
                 "career_swstr_pct": _to_float(market.get("career_swstr_pct")),
+                "official_odds_source": _optional_source_text(market.get("odds_source")),
+                "official_market_source_mode": _optional_source_text(
+                    market.get("market_source_mode")
+                ),
+                "official_line_source_provider": _optional_source_text(
+                    market.get("line_source_provider")
+                ),
                 "provider": None,
                 "live_display_provider": None,
                 "live_display_state": None,
@@ -1463,6 +1478,15 @@ def build_summary(rows: list[dict[str, Any]]) -> dict[str, Any]:
     live_display_state_counts = Counter(
         str(row.get("live_display_state") or "missing") for row in rows
     )
+    official_odds_source_counts = Counter(
+        str(row.get("official_odds_source") or "missing") for row in rows
+    )
+    official_market_source_mode_counts = Counter(
+        str(row.get("official_market_source_mode") or "missing") for row in rows
+    )
+    official_line_source_provider_counts = Counter(
+        str(row.get("official_line_source_provider") or "missing") for row in rows
+    )
     clean_rows = [row for row in rows if str(row.get("slate_date") or "") >= CLEAN_WINDOW_START]
     return {
         "total_rows": len(rows),
@@ -1508,6 +1532,22 @@ def build_summary(rows: list[dict[str, Any]]) -> dict[str, Any]:
             1 for row in rows if row.get("broad_confirmation") is True
         ),
         "live_display_rows": sum(1 for row in rows if row.get("live_display_provider")),
+        "official_odds_source_rows": sum(
+            1 for row in rows if row.get("official_odds_source")
+        ),
+        "official_market_source_mode_rows": sum(
+            1 for row in rows if row.get("official_market_source_mode")
+        ),
+        "official_line_source_provider_rows": sum(
+            1 for row in rows if row.get("official_line_source_provider")
+        ),
+        "official_odds_source_counts": dict(sorted(official_odds_source_counts.items())),
+        "official_market_source_mode_counts": dict(
+            sorted(official_market_source_mode_counts.items())
+        ),
+        "official_line_source_provider_counts": dict(
+            sorted(official_line_source_provider_counts.items())
+        ),
         "best_off_market_rows": sum(1 for row in rows if row.get("best_is_off_market") is True),
         "market_agreement_label_counts": dict(sorted(market_agreement_label_counts.items())),
         "movement_strength_label_counts": dict(sorted(movement_strength_counts.items())),
@@ -1962,6 +2002,9 @@ def render_summary(summary: dict[str, Any]) -> str:
         f"- Rows with market book counts: `{summary.get('market_book_count_rows', 0)}`",
         f"- Rows with toward/away counts: `{summary.get('toward_away_count_rows', 0)}`",
         f"- Rows with live display book-board fields: `{summary.get('live_display_rows', 0)}`",
+        f"- Rows with explicit official odds source: `{summary.get('official_odds_source_rows', 0)}`",
+        f"- Rows with explicit official market-source mode: `{summary.get('official_market_source_mode_rows', 0)}`",
+        f"- Rows with explicit official line-source provider: `{summary.get('official_line_source_provider_rows', 0)}`",
         f"- Broad market confirmation rows: `{summary.get('market_broad_confirmation_rows', 0)}`",
         f"- Best off-market rows: `{summary.get('best_off_market_rows', 0)}`",
         f"- Large-edge skepticism rows: `{summary.get('large_edge_skepticism_rows', 0)}`",
@@ -1989,6 +2032,9 @@ def render_summary(summary: dict[str, Any]) -> str:
         ("Market Agreement Labels", "market_agreement_label_counts"),
         ("Movement Strength Labels", "movement_strength_label_counts"),
         ("Live Display States", "live_display_state_counts"),
+        ("Official Odds Sources", "official_odds_source_counts"),
+        ("Official Market-Source Modes", "official_market_source_mode_counts"),
+        ("Official Line-Source Providers", "official_line_source_provider_counts"),
     ):
         lines.extend(["", f"## {title}", ""])
         for value, count in (summary.get(key) or {}).items():

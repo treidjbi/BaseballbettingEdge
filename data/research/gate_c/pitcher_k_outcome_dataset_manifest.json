@@ -9,7 +9,7 @@
     "jsonl": "data/research/gate_c/pitcher_k_outcome_dataset.jsonl",
     "summary": "data/research/gate_c/pitcher_k_outcome_dataset_summary.md"
   },
-  "generated_at": "2026-08-21T20:51:29.813528+00:00",
+  "generated_at": "2026-08-21T21:15:24.851047+00:00",
   "guardrails": [
     "does_not_change_live_picks",
     "does_not_change_locks",
@@ -20,7 +20,7 @@
     "does_not_change_calibration",
     "does_not_change_dashboard_behavior"
   ],
-  "jsonl_sha256": "317e8a3134f5e43093728dd06d45b8f3ef717f998c4403a084bf654a118c3f61",
+  "jsonl_sha256": "e8c7c6d53ca51610213d1b168af58e831f5f8e079f2e28f88944856c3316a0da",
   "loaded_slate_dates": [
     "2026-04-28",
     "2026-04-29",
@@ -183,6 +183,27 @@
     "movement_strength_label_counts": {
       "missing": 2070
     },
+    "official_line_source_provider_counts": {
+      "boltodds": 568,
+      "missing": 1476,
+      "propline": 22,
+      "therundown": 4
+    },
+    "official_line_source_provider_rows": 594,
+    "official_market_source_mode_counts": {
+      "boltodds_propline": 594,
+      "missing": 1476
+    },
+    "official_market_source_mode_rows": 594,
+    "official_odds_source_counts": {
+      "boltodds+propline": 594,
+      "missing": 126,
+      "propline": 4,
+      "therundown": 1208,
+      "therundown+propline": 60,
+      "therundown+the_odds": 78
+    },
+    "official_odds_source_rows": 1944,
     "opportunity_bucket_counts": {
       "deep_starter": 232,
       "normal": 1678,
@@ -209,6 +230,6 @@
     "toward_away_count_rows": 0,
     "tracked_pick_rows": 1075
   },
-  "summary_sha256": "7abac6a879df881469be4b4e8eb6369293f1604db79c760e0dc930adfede43e6",
+  "summary_sha256": "6fec2e22c0e1da27aefe850d4fd2f43fe099f5fcf092da67d741199961183d88",
   "tracked_pick_rows": 1075
 }

@@ -22,6 +22,9 @@ Shadow-only: this dataset does not change live picks, locks, thresholds, staking
 - Rows with market book counts: `300`
 - Rows with toward/away counts: `0`
 - Rows with live display book-board fields: `300`
+- Rows with explicit official odds source: `1944`
+- Rows with explicit official market-source mode: `594`
+- Rows with explicit official line-source provider: `594`
 - Broad market confirmation rows: `63`
 - Best off-market rows: `101`
 - Large-edge skepticism rows: `466`
@@ -113,3 +116,24 @@ Shadow-only: this dataset does not change live picks, locks, thresholds, staking
 - `off_market`: `42`
 - `playable_now`: `31`
 - `stale`: `96`
+
+## Official Odds Sources
+
+- `boltodds+propline`: `594`
+- `missing`: `126`
+- `propline`: `4`
+- `therundown`: `1208`
+- `therundown+propline`: `60`
+- `therundown+the_odds`: `78`
+
+## Official Market-Source Modes
+
+- `boltodds_propline`: `594`
+- `missing`: `1476`
+
+## Official Line-Source Providers
+
+- `boltodds`: `568`
+- `missing`: `1476`
+- `propline`: `22`
+- `therundown`: `4`
