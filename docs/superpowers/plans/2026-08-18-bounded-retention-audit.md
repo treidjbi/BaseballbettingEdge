@@ -1405,11 +1405,18 @@ Any error stops immediately without retry. No live validation step authorizes ba
   retried, and produced no evidence directory. Because even this simple hosted
   catalog read failed the same way, the coarse classifier may be masking a
   CLI/link/control-plane error rather than proving a schema mismatch.
-- Do not query application tables again yet. The next gate is one separately
-  approved linked `select now()` connectivity read whose wrapper retains an
-  aggressively redacted CLI error excerpt if it fails. Use that to distinguish
-  linked CLI/control-plane failure from SQL-shape failure before revisiting the
-  hosted schema read. Only a later separately approved preview may review
-  quarantined-heartbeat counts, repair counts, rebuilt/existing hashes, and the
-  version-2 fingerprint. Database repair, upsert, retention execution, deletion,
-  vacuum, reclamation, push, deployment, and production behavior remain closed.
+- Tyler approved one linked `select now()` connectivity read at query SHA-256
+  `03bb88f628780fe2325cf7a763a1e2494004b8ffbc0fb5061064dda0736db146`.
+  The CLI exited successfully without retry, proving the linked database path
+  is reachable. The temporary wrapper then rejected the CLI's successful JSON
+  envelope before writing its local report, so the exact returned timestamp is
+  not retained. This was a decoder-only local failure after a successful
+  read-only query; no database write or application-table read occurred.
+- Do not query application tables again yet. The metadata wrapper now accepts
+  list, `rows`, `result`, and `data` envelopes and, on CLI failure, persists only
+  an aggressively redacted error excerpt. Local envelope/redaction checks pass.
+  Request separate approval for one replacement `information_schema.columns`
+  read under the unchanged metadata query hash `639f6cfb...`. Only after the
+  hosted schema/error evidence is retained should another preview be drafted.
+  Database repair, upsert, retention execution, deletion, vacuum, reclamation,
+  push, deployment, and production behavior remain closed.
