@@ -1,4 +1,5 @@
 import json
+from pathlib import Path
 
 import pytest
 
@@ -349,3 +350,12 @@ def test_verify_graded_recoveries_requires_closed_exact_rows():
             slate_date=DATE,
             expected_keys=[(PITCHER, SIDE)],
         )
+
+
+def test_repair_publication_source_is_allowed_by_artifact_schema():
+    migration = (
+        Path(__file__).resolve().parents[1]
+        / "supabase/migrations/20260522_published_pipeline_artifacts.sql"
+    ).read_text(encoding="utf-8")
+
+    assert f"'{repair.PUBLICATION_SOURCE}'" in migration

@@ -30,6 +30,7 @@ from scripts.compare_supabase_artifacts import (  # noqa: E402
 
 
 RECOVERY_FLAG = "history_recovered_from_lock_evidence"
+PUBLICATION_SOURCE = "manual_backfill"
 NUMERIC_TOLERANCE = 0.00015
 EV_TOLERANCE = 0.0015
 
@@ -588,7 +589,7 @@ def execute_repair(
             root=root,
             writer=writer,
             slate_date=slate_date,
-            source="manual_history_repair",
+            source=PUBLICATION_SOURCE,
             source_run_id=source_run_id,
             source_commit_sha=_source_commit_sha(root),
             execute=True,
