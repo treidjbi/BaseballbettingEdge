@@ -76,6 +76,21 @@ BoltOdds-era rows carry explicit provider metadata (`22.75%`). The missing
 `652` rows must be enriched when supported by durable evidence or explicitly
 recorded as unknown; they must not be guessed.
 
+### June 3 transport diagnosis
+
+The June 3 evidence is preserved. The production dated slate contains Robert
+Gasser at a `4.5` line with no embedded result, while the live Supabase
+`picks_history` artifact contains his official `UNDER 3.5` loss and `5` actual
+strikeouts. The existing pitcher-game reconciliation rule can join those facts.
+
+The failure is that the public unfiltered `picks_history` response now exceeds
+the Netlify function's response-size ceiling, while the committed local history
+ends before June 3. A bounded local code change now supports inclusive history
+date windows and makes Gate C request only its build window. Its focused
+regression tests pass, but it has not been merged, pushed, deployed, or proven
+against the production endpoint. June 3 therefore remains blocked in the
+committed retention manifest until that separate release and rebuild completes.
+
 ## Recovery Posture
 
 The current Supabase inventory reports completed physical backups through
@@ -91,8 +106,10 @@ season layers.
 
 ## Next Decision Sequence
 
-1. Rebuild or explicitly pin June 3 in Gate C without changing live model
-   behavior, grades, thresholds, staking, or source-of-truth rules.
+1. Review and separately release the bounded `picks_history` date-window
+   transport, then run a production-shaped Gate C rebuild. If June 3 still
+   fails, explicitly pin it without changing live model behavior, grades,
+   thresholds, staking, or source-of-truth rules.
 2. Enrich supported provider attribution and preserve unknowns explicitly; do
    not infer provider labels.
 3. Generate aggregate-only season-evidence and pin manifests. Keep accepted-bet
