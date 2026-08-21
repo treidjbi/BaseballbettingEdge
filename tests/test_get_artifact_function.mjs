@@ -65,3 +65,86 @@ test('get-artifact supports fangraphs cache artifact', async () => {
     delete process.env.SUPABASE_SERVICE_ROLE_KEY;
   }
 });
+
+test('get-artifact filters picks_history to the inclusive requested date window', async () => {
+  const oldFetch = global.fetch;
+  global.fetch = async () => ({
+    ok: true,
+    json: async () => [{
+      artifact_key: 'picks_history',
+      payload_sha256: 'sha-history',
+      published_at: '2026-08-21T20:08:03Z',
+      payload: [
+        { date: '2026-06-02', pitcher: 'Before Window' },
+        { date: '2026-06-03', pitcher: 'Robert Gasser' },
+        { slate_date: '2026-06-04', pitcher: 'Inside Window' },
+        { date: '2026-06-05', pitcher: 'After Window' },
+      ],
+    }],
+  });
+  process.env.SUPABASE_URL = 'https://example.supabase.co';
+  process.env.SUPABASE_SERVICE_ROLE_KEY = 'service-role';
+
+  try {
+    const response = await handler({
+      queryStringParameters: {
+        type: 'picks_history',
+        start_date: '2026-06-03',
+        end_date: '2026-06-04',
+      },
+    });
+
+    assert.equal(response.statusCode, 200);
+    assert.deepEqual(JSON.parse(response.body), [
+      { date: '2026-06-03', pitcher: 'Robert Gasser' },
+      { slate_date: '2026-06-04', pitcher: 'Inside Window' },
+    ]);
+    assert.equal(response.headers.ETag, '"sha-history"');
+  } finally {
+    global.fetch = oldFetch;
+    delete process.env.SUPABASE_URL;
+    delete process.env.SUPABASE_SERVICE_ROLE_KEY;
+  }
+});
+
+test('get-artifact rejects invalid picks_history date windows before reading Supabase', async () => {
+  const oldFetch = global.fetch;
+  let fetchCalled = false;
+  global.fetch = async () => {
+    fetchCalled = true;
+    throw new Error('fetch must not run');
+  };
+  process.env.SUPABASE_URL = 'https://example.supabase.co';
+  process.env.SUPABASE_SERVICE_ROLE_KEY = 'service-role';
+
+  try {
+    const malformed = await handler({
+      queryStringParameters: {
+        type: 'picks_history',
+        start_date: '06-03-2026',
+      },
+    });
+    const reversed = await handler({
+      queryStringParameters: {
+        type: 'picks_history',
+        start_date: '2026-06-04',
+        end_date: '2026-06-03',
+      },
+    });
+    const wrongType = await handler({
+      queryStringParameters: {
+        type: 'today',
+        start_date: '2026-06-03',
+      },
+    });
+
+    assert.equal(malformed.statusCode, 400);
+    assert.equal(reversed.statusCode, 400);
+    assert.equal(wrongType.statusCode, 400);
+    assert.equal(fetchCalled, false);
+  } finally {
+    global.fetch = oldFetch;
+    delete process.env.SUPABASE_URL;
+    delete process.env.SUPABASE_SERVICE_ROLE_KEY;
+  }
+});
