@@ -142,14 +142,34 @@ def _validate_frozen_proof(
     if state.get("lock_artifact_sha256") != lock.get("source_artifact_sha256"):
         raise ValueError("frozen proof does not match lock")
 
-    edge = _number(inputs.get("edge"), "frozen proof edge")
-    adjusted_ev = _number(inputs.get("adjusted_ev"), "frozen proof adjusted_ev")
-    exact_ev = _flat_unit_ev(odds=int(lock["locked_odds"]), edge=edge)
-    if abs(exact_ev - adjusted_ev) > EV_TOLERANCE:
-        raise ValueError("frozen proof adjusted EV is inconsistent with its edge and price")
     if not str(inputs.get("source_fire_verdict") or "").strip():
         raise ValueError("frozen proof is missing source_fire_verdict")
     return inputs
+
+
+def _validate_adjusted_ev_consistency(
+    *,
+    lock: dict[str, Any],
+    proof_inputs: dict[str, Any],
+    side_data: dict[str, Any],
+    archive_core_match: bool,
+) -> None:
+    edge = _number(proof_inputs.get("edge"), "frozen proof edge")
+    adjusted_ev = _number(
+        proof_inputs.get("adjusted_ev"),
+        "frozen proof adjusted_ev",
+    )
+    exact_ev = _flat_unit_ev(odds=int(lock["locked_odds"]), edge=edge)
+    if abs(exact_ev - adjusted_ev) <= EV_TOLERANCE:
+        return
+    if not archive_core_match:
+        raise ValueError("frozen proof adjusted EV is inconsistent with its edge and price")
+
+    movement_conf = _number(side_data.get("movement_conf"), "archive movement_conf")
+    if not 0.0 <= movement_conf <= 1.0:
+        raise ValueError("archive movement_conf must be between zero and one")
+    if abs((exact_ev * movement_conf) - adjusted_ev) > EV_TOLERANCE:
+        raise ValueError("frozen proof adjusted EV is inconsistent with its edge and price")
 
 
 def _validate_archive_identity(
@@ -217,6 +237,11 @@ def _history_row(
     selected_edge = _number(proof_inputs.get("edge"), "frozen proof edge")
     selected_odds = int(lock["locked_odds"])
     selected_ev = _flat_unit_ev(odds=selected_odds, edge=selected_edge)
+    movement_conf = (
+        _number(side_data.get("movement_conf"), "archive movement_conf")
+        if archive_core_match
+        else 1.0
+    )
     best_over_odds = pitcher_row.get("best_over_odds")
     best_under_odds = pitcher_row.get("best_under_odds")
     if side == "over":
@@ -242,7 +267,7 @@ def _history_row(
         "raw_lambda": pitcher_row.get("raw_lambda"),
         "applied_lambda": pitcher_row.get("lambda"),
         "odds": selected_odds,
-        "movement_conf": 1.0,
+        "movement_conf": movement_conf,
         "season_k9": pitcher_row.get("season_k9"),
         "recent_k9": pitcher_row.get("recent_k9"),
         "career_k9": pitcher_row.get("career_k9"),
@@ -349,6 +374,12 @@ def reconstruct_missing_history_rows(
             side_data=side_data,
             lock=lock,
             proof_inputs=proof_inputs,
+        )
+        _validate_adjusted_ev_consistency(
+            lock=lock,
+            proof_inputs=proof_inputs,
+            side_data=side_data,
+            archive_core_match=core_match,
         )
         reconstructed.append(
             _history_row(

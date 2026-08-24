@@ -184,6 +184,38 @@ def test_reconstruction_preserves_shadow_metadata_when_archive_core_matches_lock
     assert audit[0]["archive_core_match"] is True
 
 
+def test_reconstruction_accepts_movement_confidence_adjusted_ev_when_archive_core_matches():
+    archive = _archive(selected_odds=-148, selected_adj_ev=0.0282)
+    archive_side = archive["pitchers"][0]["ev_over"]
+    archive_side["edge"] = 0.0281
+    archive_side["raw_verdict"] = "LEAN"
+    archive_side["movement_conf"] = 0.6
+
+    lock = _lock()
+    lock["locked_odds"] = -148
+    lock["locked_adj_ev"] = 0.0282
+
+    state = _frozen_state()
+    state["official_odds"] = -148
+    inputs = state["evaluation_proof"]["normalized_inputs"]
+    inputs["odds"] = -148
+    inputs["adjusted_ev"] = 0.0282
+    inputs["edge"] = 0.0281
+    inputs["source_fire_verdict"] = "LEAN"
+
+    rows, audit = reconstruct_missing_history_rows(
+        history=[],
+        archive=archive,
+        locks=[lock],
+        frozen_states=[state],
+        expected_keys=[(PITCHER, SIDE)],
+    )
+
+    assert rows[0]["adj_ev"] == pytest.approx(0.0282)
+    assert rows[0]["movement_conf"] == pytest.approx(0.6)
+    assert audit[0]["archive_core_match"] is True
+
+
 @pytest.mark.parametrize(
     ("history", "locks", "states", "match"),
     [
