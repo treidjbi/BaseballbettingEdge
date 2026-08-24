@@ -381,9 +381,9 @@ each lane.
 | Model | `2026-05-12-pitcher-k-outcome-research-dataset.md`, `2026-07-29-no-drag-and-strict-runtime-prospective-review.md`, `docs/research/2026-08-10-no-drag-strict-runtime-decision.md`, `2026-07-29-market-anchor-downside-review.md`, `2026-07-29-strong-base-fire-policy-shadow-matrix.md`, `2026-07-29-market-shrink-retirement-decision.md`, `2026-07-29-clv-process-target-validation.md`, `2026-08-14-selective-lean-prospective-audit.md` | Gate C remains the canonical research input; active canaries remain bounded and do not approve live model, threshold, staking, provider, notification, lock, retention, or dashboard-source changes. No-drag v1 reached its count floor but failed the frozen prospective test at `41-34`, `-4.883u`, so its active promotion path is retired and its audit remains comparison/control only. Strict runtime is a narrow OVER/minus specialist review at `20/50`, `15-5`, `+5.864u`, with zero UNDER, plus-price, provider-attributed, agreement-attributed, or credited post-freeze prospective rows; no live plan follows. Market-anchor remains shadow, Strong Base FIRE policies remain frozen, market-shrink remains diagnostic-only, and final CLV remains a process target with no approved close-packet producer. The August 21 hosted rebuild reached `4,204` Gate C rows, `2,204` tracked rows, zero duplicates, and `2,135/2,135` reconciliation. Market-anchor strict displayed FIRE is `47`, `29-18`, `+2.92u`, but its side and critical-attribution gates remain closed; selective LEAN is `0/75` eligible and strict runtime remains `20/50`. | Keep all live gates closed. Treat market-anchor strict as breakout-watch evidence only, not a promotion trigger. Resolve prospective input gaps and require the controlling side, price, provider, agreement, timing, workload, CLV, Path B, rolling-window, and leave-one-slate-out gates before a separate review. |
 | UI | `2026-05-20-live-market-decision-ui.md`, `2026-05-20-live-notification-coordinator.md`, `2026-06-04-live-notification-digest-coordinator.md` | Phase 2 live market-decision UI is now default-on for actionable cards, with `?marketSheet=0` as the rollback/opt-out. `dashboard/v2-data.js` fetches `/.netlify/functions/live-market-display` by default and attaches sanitized `live_market_display_state` rows; the Netlify function reads with server-side Supabase credentials and returns app-safe allow-listed rows plus sanitized `book_rows` / `movement_events`. `dashboard/v2-app.jsx` keeps PASS cards quiet and shows actionable-card market strips, detail-sheet market panels, a compact book board with Best / Model ref / Same line / Different line / cushion tags, and Log Bet live-book selection that fills the existing line, odds, and book fields. The existing Log Bet modal still records through the existing accepted-bet path, preserves matched push/shadow-review `notification_event_id` / `shadow_candidate_id`, supports same-day review/duplicate warnings and append-only corrections, and keeps manual edits available. This is a UI readout only and does not change provider/source-of-truth, model, threshold, staking, lock, retention, notification, or accepted-bet API behavior. | Verify same-line defaulting and alternate-line context on the next normal slate, including that alternate-line rows remain manually selectable but cannot auto-prefill Log Bet. Retain `?marketSheet=0` as rollback/opt-out and keep provider promotion, betting-rule changes, broader edit/delete audit, and notification behavior separate. |
 
-| Tracking / data collection / history | `docs/research/market-tracker-map.md`, `2026-08-18-bounded-retention-audit.md`, `docs/research/2026-08-21-boltodds-retention-closure-preflight.md`, `2026-08-20-retention-compaction-and-historical-extras-design.md`, `2026-08-20-retention-compaction-and-historical-extras.md`, compact outcome outputs, live-market audits | Canonical research and market/live/provider trackers remain active. The documented `21` continuous BoltOdds checkpoints cover April 28-July 9, the repaired June 16 checkpoint is exact at `107/107`, and fresh July 10-16 plus July 17-22 checkpoints prove all `13` later partitions are exact zero rows/runtime/anomalies. The retired-provider candidate contains about `440 MiB` of raw logical payload backed by about `27.3 MiB` of compact evidence; the database is about `4.70 GiB`, or `58.75%` of the included 8 GiB. The bounded history transport is live on Netlify from `main` commit `016f0676`. On August 21, six August 20 picks were rebuilt only from consumed locks, frozen Alt V2 proofs, and retained archives; the canonical slate is now `11`, `7-4`, `+2.317154u`. All six remain `data_complete=0`, so calibration stayed at sample `1,713` and `lambda_bias=0.012`. The hosted research refresh loaded `4,464` compact evidence rows and `5,288` display rows without raw snapshots. On August 24, a read-only reconciliation found nine August 19 consumed-lock picks absent from canonical history. All nine have one exact frozen Alt proof and a matching retained archive row; the corrected local repair validator now dry-runs `9/9` with calibration quarantine, but no backfill has been executed. The three missing selected Alt rows grade `0-3`, `-3.000u` from official MLB box scores. The candidate-window provenance and manifest gates are now closed: all `869/869` May 7-June 16 tracked rows carry explicit archived official-source attribution, and aggregate-only season evidence plus `41/41` BoltOdds pin partitions preserve `317` accepted bets, `1,778` sent notifications, `535` consumed locks, and four documented incident pins without raw details. Deletion readiness remains blocked because the canonical checkpoint envelope is not assembled and the latest verified physical backup predates the repair. | Preserve the existing calibration quarantine. Require separate approval to integrate the repair-tool correction and execute one bounded nine-row August 19 `manual_backfill`; do not repair only the three selected Alt rows because official history is missing the full nine-row slice. After any approved repair, verify grading, performance, bounded history, Alt prospective totals, and unchanged calibration before rerunning research. Assemble the canonical checkpoint envelope and verify a completed post-repair backup before drafting any exact deletion proposal. Retention execution, deletion, vacuum, and reclamation remain closed. |
+| Tracking / data collection / history | `docs/research/market-tracker-map.md`, `2026-08-18-bounded-retention-audit.md`, `docs/research/2026-08-21-boltodds-retention-closure-preflight.md`, `2026-08-20-retention-compaction-and-historical-extras-design.md`, `2026-08-20-retention-compaction-and-historical-extras.md`, compact outcome outputs, live-market audits | Canonical research and market/live/provider trackers remain active. The documented BoltOdds checkpoint and aggregate-only preservation gates remain closed, and BoltOdds stays retired. The bounded Netlify history path is live. August 20 remains repaired at `11`, `7-4`, `+2.317154u`. On August 24, approved job `job-da68v42jnfac73a6si6g` restored all nine missing August 19 lock-backed rows: the canonical slate is now `18`, `8-10`, `-3.752883u`, all nine recovered rows remain `data_complete=0`, and bounded Supabase/Netlify reads agree. The frozen Alt V2 record from the first healthy July 24 slate is `38-46`, `-16.751729u` on `84` graded rows, plus one void and zero missing. The raw PropLine webhook inbox contains `440,717` rows/about `435.6 MiB`; it has no FK/view/trigger dependency, but active writes and `10` recent unprocessed rows were present. The latest completed physical backup predates the repair and PITR is disabled. | Preserve the repaired rows' calibration quarantine and observe the next natural grading/research cycle. Webhook deletion is approved only when clean and remains `NO-GO` until a completed post-repair backup exists and the inbox is quiescent; do not delete derived movement, notification, lock, pick, or compact evidence under that approval. Retention vacuum/reclamation and any receiver or notification change remain separate gates. |
 
-### August 24 webhook saturation and August 19 history-repair preview
+### August 24 webhook retention gate and August 19 history repair
 
 The recent `734`-row PropLine webhook watch item is processor-capacity debt,
 not a signature, source, or current-stream failure. All `734` rows are signed;
@@ -391,22 +391,34 @@ not a signature, source, or current-stream failure. All `734` rows are signed;
 `706` arrived after game start, and `626` are Kalshi rows. Across August 22-23,
 `163/288` live-layer cycles selected the hard maximum `100` rows and four
 additional cycles hit Supabase REST `500` reads. The bounded processor then let
-the remaining rows age past its `180`-minute window. No row was replayed,
-reclassified, deleted, or allowed to queue a notification. Keep current
-processing on; treat any cap, prioritization, catch-up, or archival change as a
-separate notification/storage decision.
+the remaining rows age past its `180`-minute window. Tyler approved deleting
+the raw webhook inbox only if the deletion gate was clean. It was not: at
+`2026-08-24T18:36:35Z`, `propline_webhook_deliveries` held `440,717` rows and
+about `435.6 MiB`, including `52` rows received in the prior 20 minutes and
+`10` recent unprocessed rows. The table has no foreign keys, dependent views,
+or user triggers, but the receiver was actively writing. The latest completed
+physical backup was `2026-08-24T05:33:11Z`, before the history repair, and PITR
+remains disabled. No webhook row was replayed, reclassified, or deleted. Keep
+current processing on; require a completed post-repair backup and a quiescent
+inbox before any one-table purge. Any cap, prioritization, catch-up, receiver,
+or derived-table retention change remains a separate notification/storage
+decision.
 
-The August 19 history preview is broader than the three missing selected Alt
-outcomes. Canonical history contains nine official rows, while nine additional
-consumed-lock rows are absent; the complete recovered official slice would be
-18 rows. All nine missing rows have exact frozen Alt proofs and matching
-retained archive fields. A local regression-first correction allows the repair
-tool to validate movement-confidence-adjusted EV when the archive core matches;
-the nine-row dry run passes with `9/9` archive matches and `9/9`
-`data_complete=0` quarantine. Official MLB box scores grade those nine `3-6`,
-`-3.526424u`; the selected Alt subset is Clay Holmes OVER 4.5, Michael King
-OVER 4.5, and Taj Bradley UNDER 5.5, all losses. No history, artifact,
-performance, calibration, Alt state, or production service was changed.
+Tyler approved the complete nine-row August 19 repair. Exact commit `6f645cc9`
+was fast-forwarded to `main`; grading deploy `dep-da68um740ujc7398j4s0` became
+live and one-off job `job-da68v42jnfac73a6si6g` succeeded with source
+`manual_backfill`. Supabase and bounded Netlify reads now agree on `18` August
+19 official rows, zero duplicate pitcher-side keys, an `8-10` record, and
+`-3.752883u`. The nine recovered rows are `3-6`, `-3.526424u`; all nine retain
+the recovery flag, exact lock fields, archive-result parity, and
+`data_complete=0`. Performance now reports `2,198` total picks and `1,759`
+calibration-eligible rows; the recovered rows remain outside calibration.
+The three repaired frozen Alt selections—Clay Holmes OVER 4.5, Michael King
+OVER 4.5, and Taj Bradley UNDER 5.5—are all losses. The frozen V2 prospective
+record from the first healthy July 24 slate is now complete at `38-46`,
+`-16.751729u` across `84` graded selections, plus one void and zero missing
+outcomes. Two earlier provisional-only selected rows remain excluded from that
+immutable T-30 record.
 
 ### August 21 history repair and Gate C transport overlay
 
