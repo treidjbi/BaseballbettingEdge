@@ -1619,3 +1619,47 @@ Any error stops immediately without retry. No live validation step authorizes ba
   approved repairs, regenerate the exact checkpoints and canonical envelope,
   then verify a completed physical backup newer than every repair before any
   deletion proposal can be drafted.
+
+## 2026-08-24 Nine-Partition Repair Execution Overlay
+
+- Tyler explicitly approved the exact nine-date Supabase compact repair after
+  reviewing the v4 previews. Execution used pushed branch commit `e2a9d5f3`
+  with a clean worktree and the unchanged v4 preview fingerprint for each date.
+  The tool processed one date at a time and stopped between dates until the
+  prior execution report proved a confirmed write, current source state, and
+  exact post-read.
+- The nine confirmed upserts were June 2 `141`, June 3 `164`, June 5 `87`,
+  June 6 `14`, June 9 `380`, June 12 `385`, June 13 `473`, June 14 `225`, and
+  June 15 `169`: exactly `2,038` compact rows. Every report records
+  `database_write_outcome: confirmed`, `database_write_performed: true`,
+  `post_write_preview_still_current: true`, and `post_write_exact: true`.
+  Aggregate post-state is zero missing, mismatched, and unexpected groups.
+  Execution evidence is retained in ignored local directory
+  `analytics/output/retention/repair-execution-nine-partitions-2026-08-24-v4`.
+- Two separate SELECT-only checkpoints then completed under canonical query
+  contract SHA-256
+  `e3091876ffe253d948c83e3e31c89f1a4fbde54381f91695f3963f2208866e05`.
+  June 2-8 checkpoint SHA-256 is
+  `89a70eb4f60993342d747669fa4bdd08049f3ad89cfabf0134063862561a4a06`;
+  all seven partitions are coverage-exact and retention-complete, with `109`
+  preserved cross-date rows and zero unpreserved rows. June 9-15 checkpoint
+  SHA-256 is
+  `77c4831a9a99e9fad6733986ccb28037a564f0d89b3cede4f1b0bd12d2d957ef`;
+  all seven partitions are also exact and complete, with `187` preserved
+  cross-date rows and zero unpreserved rows. Both ranges have zero
+  missing/mismatched/unexpected/duplicate groups and zero other blocking source
+  anomalies.
+- Fresh runtime-boundary evidence SHA-256
+  `80be0989cbe93d8124ec7cd175b5e959526cc7cb11d8af703709aa4220d49c88`
+  keeps BoltOdds at the documented retirement boundary: latest snapshot June
+  16 and latest heartbeat/message/run June 17. The compact repair did not
+  reactivate the worker or create fresh raw snapshots.
+- The latest completed physical backup remains
+  `2026-08-24T05:33:11.108Z`, before the final execution evidence at
+  `2026-08-24T17:57:48Z`; PITR is disabled. Therefore recoverability remains
+  open even though compact coverage is now exact. Wait for a completed physical
+  backup newer than every repair, then assemble or regenerate the complete
+  canonical four-provider checkpoint envelope.
+- No raw snapshot was deleted. Retention activation, deletion, vacuum,
+  reclamation, provider/runtime changes, model changes, notification changes,
+  lock changes, UI changes, and source-of-truth changes remain closed.
