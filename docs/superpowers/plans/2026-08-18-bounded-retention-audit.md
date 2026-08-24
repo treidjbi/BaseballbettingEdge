@@ -1577,3 +1577,45 @@ Any error stops immediately without retry. No live validation step authorizes ba
   blockers. The canonical four-provider checkpoint envelope and a completed
   post-repair physical backup remain open. Retention execution, deletion,
   vacuum, and reclamation remain separately closed.
+
+## 2026-08-24 Nine-Partition Repair Preview Overlay
+
+- Fresh comparison of the saved August 20/21 checkpoints proved that nine
+  BoltOdds partitions were already non-exact in the retained evidence; this is
+  not new provider runtime. The dates are June 2, 3, 5, 6, 9, 12, 13, 14, and
+  15. Together they contain `317` missing and `1,721` mismatched compact groups,
+  or exactly `2,038` rows requiring bounded upsert repair. BoltOdds remains
+  retired and has no role in production artifacts, picks, models, alerts,
+  locks, UI, or provider order.
+- The manual repair tool now uses deterministic keyset pagination instead of
+  offset pagination. Snapshot paging orders on `(observed_at, id)` and compact
+  paging orders on the positive compact row ID; both fail closed if the cursor
+  does not advance or the page ceiling is reached. Execution remains limited
+  to the exact reviewed BoltOdds dates, including the already repaired June 16
+  regression partition, and still requires the environment gate plus the exact
+  current preview fingerprint.
+- A first v3 preview exposed a contract mismatch on June 6 and was stopped
+  before further reads: the repair tool clipped snapshots to the Phoenix day,
+  while the controlling retention audit groups all snapshots by verified
+  provider-run slate date. The corrected v4 contract reads only snapshots tied
+  to the exact provider/date run IDs, separately counts cross-boundary rows,
+  and binds those counts plus rebuilt compact hashes into the source-state and
+  preview fingerprints. This preserves `109` legitimate cross-boundary rows:
+  two on the June 3 run partition and `107` on June 6.
+- Nine fresh v4 previews completed without retries or mutation. They cover
+  `106,997` raw snapshots, `5,102` rebuilt groups, and `4,785` existing groups.
+  Every date matches its saved missing/mismatch counts, has zero unexpected
+  rows, is execution-eligible, and records `database_write_performed: false`.
+  The aggregate-only reports are under ignored local directory
+  `analytics/output/retention/repair-preview-nine-partitions-2026-08-24-v4`.
+- Test-first verification passed `40` focused repair tests, `466` combined
+  repair/retention tests, and `2,514` full-repository tests. Python compilation
+  and `git diff --check` passed; the full suite's generated Gate F report was
+  restored to committed blob `1ef07b8332e2f3dd040317592950e909b1e852ae`.
+- This evidence approves no write by itself. Repair execution remains a
+  separate Tyler decision and, if approved, must run one fingerprint-bound date
+  at a time with exact post-read verification. Deletion, retention activation,
+  vacuum, reclamation, and production behavior remain closed. After all
+  approved repairs, regenerate the exact checkpoints and canonical envelope,
+  then verify a completed physical backup newer than every repair before any
+  deletion proposal can be drafted.
