@@ -1607,13 +1607,15 @@ Any error stops immediately without retry. No live validation step authorizes ba
   `retention_execution_closed: true`; it contains no source snapshot or run
   identifiers.
 - The bounded proof query now includes the exact
-  `propline_may17_prior_day_carryover` class. One linked, SELECT-only May 17
-  proof under new query contract SHA-256
+  `propline_may17_prior_day_carryover` class. The first linked SELECT-only May
+  17 read completed but its terminal stream was not retained. After confirming
+  that process had ended, one repeat under new query contract SHA-256
   `611dd4eb568a556d96658e74049d6579d2f6ac0f9cacdff57720b3176f97929e`
   found `24` unexpected compact groups, all `24` preserved against exact May
   16 source/run/dimension/time/canonical-compact evidence, and `0`
-  unpreserved. Strict `coverage_exact` remains false because the groups are
-  intentionally extra; `retention_preservation_complete` is true.
+  unpreserved. Both invocations were read-only. Strict `coverage_exact` remains
+  false because the groups are intentionally extra;
+  `retention_preservation_complete` is true.
 - A completed physical backup at `2026-08-25T05:39:27.316Z` is newer than the
   prior repairs. PITR remains disabled. This closes the stale-backup blocker
   for the current evidence but is not proof of a tested restore.

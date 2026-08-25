@@ -167,10 +167,12 @@ git status --short
 - The local checkpoint manifest reconciled the completed August 25 audit to
   `105` active-provider repair partitions and `34,861` aggregate upserts:
   PropLine `63/15,387`, TheRundown `42/19,474`.
-- One narrow linked SELECT-only query proved all `24` PropLine May 17 extras
-  are exact May 16 carryover; preserved `24`, unpreserved `0`, and
-  `retention_preservation_complete: true` under query contract
+- The first narrow linked SELECT-only read completed without a retained
+  terminal stream. After confirming it had ended, one repeat proved all `24`
+  PropLine May 17 extras are exact May 16 carryover; preserved `24`,
+  unpreserved `0`, and `retention_preservation_complete: true` under query contract
   `611dd4eb568a556d96658e74049d6579d2f6ac0f9cacdff57720b3176f97929e`.
+  Both invocations were read-only.
 - Focused verification passed `96` tests, all four changed/added scripts passed
   `py_compile`, and the complete repository suite passed `2,526` tests. The
   generated Gate F report was restored to its committed evidence.
