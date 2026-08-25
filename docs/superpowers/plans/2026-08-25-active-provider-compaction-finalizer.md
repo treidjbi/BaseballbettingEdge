@@ -232,3 +232,30 @@ git status --short
   performed no database mutation. Active-provider repair,
   deletion, vacuum/reclamation, retention activation, and every provider/
   model/notification/lock/UI/source-of-truth gate remain closed.
+
+## 2026-08-25 Production Merge And First-Cycle Verification
+
+- Tyler approved the bounded production step. Branch
+  `codex/compaction-alt-failure-isolation` was fast-forwarded to `main` at
+  commit `2278c249`; the merged tree compiled cleanly and passed all `2,531`
+  tests before push.
+- The `main` push auto-deployed only `bbe-live-layer` as Render deploy
+  `dep-da6vieap6svc73b5nvv0`. It reached `live` at
+  `2026-08-25T20:21:55.275608Z` on the exact approved commit.
+- The first post-deploy compaction-due run started at
+  `2026-08-25T20:30:20Z`, ran the approved live-layer command at `20:30:49Z`,
+  logged the contained compaction warning at `20:31:29Z`, and finished
+  successfully at `20:31:33Z`.
+- The summary proved the intended isolation:
+  `alt_picks=rows:21 provisional:21 frozen:0` alongside
+  `compact:skipped:build_failed`. Current and official builders were not due
+  on that cycle (`current:0`, `official_ready:0`); neither reported failure.
+- A linked SELECT confirmed all `21` provisional Alt rows at observed time
+  `2026-08-25T20:30:51.894703Z`. Compact state remained unchanged at `876`
+  rows, `20,000` represented snapshots, and latest update
+  `2026-08-25T18:41:16.124362Z`, proving no partial compact publication.
+- This production gate is complete. The next cleanup step is a separate
+  read-only design for low-frequency complete active-provider compaction.
+  Active-provider upserts, raw-row deletion, webhook deletion,
+  vacuum/reclamation, retention activation, and every provider/model/
+  notification/lock/UI/source-of-truth change remain closed.
