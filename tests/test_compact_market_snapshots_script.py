@@ -164,6 +164,90 @@ def test_compact_script_pages_past_supabase_rest_default_limit():
     assert [call[1]["offset"] for call in market_snapshot_calls] == ["0", "1000"]
 
 
+def test_snapshot_pages_fail_closed_when_every_allowed_page_is_full():
+    writer = FakeWriter()
+
+    def select_rows(table, params):
+        writer.selects.append((table, dict(params)))
+        if table != "market_snapshots":
+            return []
+        offset = int(params["offset"])
+        return [
+            {
+                "id": f"snap-{offset + index}",
+                "observed_at": "2026-05-14T19:00:00Z",
+            }
+            for index in range(2)
+        ]
+
+    writer.select_rows = select_rows
+
+    with pytest.raises(
+        ValueError,
+        match="snapshot query reached its fail-closed page ceiling",
+    ):
+        compact_market_snapshots._fetch_snapshot_pages(
+            writer,
+            [{"id": "run-1"}],
+            slate_date="2026-05-14",
+            page_size=2,
+            max_pages=2,
+        )
+
+
+def test_compact_run_does_not_publish_when_snapshot_page_ceiling_is_reached(
+    monkeypatch,
+):
+    writer = FakeWriter()
+
+    def select_rows(table, params):
+        writer.selects.append((table, dict(params)))
+        if table == "market_provider_runs" and "slate_date" in params:
+            return [{"id": "run-1", "provider": "propline", "slate_date": "2026-05-14"}]
+        if table == "market_feed_heartbeats":
+            return []
+        if table == "market_snapshots":
+            offset = int(params["offset"])
+            return [
+                {
+                    "id": f"snap-{offset + index}",
+                    "observed_at": "2026-05-14T19:00:00Z",
+                }
+                for index in range(2)
+            ]
+        return []
+
+    writer.select_rows = select_rows
+    original_fetch = compact_market_snapshots._fetch_snapshot_pages
+
+    def bounded_fetch(selected_writer, run_rows, *, slate_date):
+        return original_fetch(
+            selected_writer,
+            run_rows,
+            slate_date=slate_date,
+            page_size=2,
+            max_pages=2,
+        )
+
+    monkeypatch.setattr(
+        compact_market_snapshots,
+        "_fetch_snapshot_pages",
+        bounded_fetch,
+    )
+
+    with pytest.raises(
+        ValueError,
+        match="snapshot query reached its fail-closed page ceiling",
+    ):
+        compact_market_snapshots.run(
+            slate_date="2026-05-14",
+            writer=writer,
+            dry_run=False,
+        )
+
+    assert writer.upserts == []
+
+
 def test_compact_script_uses_unique_deterministic_rest_order():
     writer = FakeWriter()
 

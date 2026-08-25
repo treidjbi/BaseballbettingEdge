@@ -126,8 +126,8 @@ def _fetch_snapshot_pages(
             row.setdefault("slate_date", slate_date)
         rows.extend(page_rows)
         if len(page_rows) < page_size:
-            break
-    return deduplicate_snapshot_rows(rows)
+            return deduplicate_snapshot_rows(rows)
+    raise ValueError("snapshot query reached its fail-closed page ceiling")
 
 
 def run(

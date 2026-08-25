@@ -133,7 +133,7 @@ def test_historical_extra_proof_is_boltodds_date_and_alias_bounded():
         "historical_extra_source_ids as (", 1
     )[0].split())
     assert "unexpected.provider = 'boltodds' and unexpected.slate_date = date '2026-05-17' and unexpected.raw_market_key = 'pitcher_strikeouts' then 'may17_alias'" in candidate_sql
-    assert "unexpected.provider = 'boltodds' and unexpected.slate_date = date '2026-05-18' then 'may18_carryover' else null" in candidate_sql
+    assert "unexpected.provider = 'boltodds' and unexpected.slate_date = date '2026-05-18' then 'may18_carryover'" in candidate_sql
 
     source_proof_sql = " ".join(sql.split("historical_extra_resolved_sources as (", 1)[1].split(
         "historical_extra_listed_counts as (", 1
@@ -161,6 +161,42 @@ def test_may18_carryover_accepts_prior_run_sources_observed_on_may18():
         "and (source_snapshot.observed_at at time zone 'america/phoenix')::date "
         "in (date '2026-05-17', date '2026-05-18')"
     ) in source_proof_sql
+
+
+def test_propline_may17_prior_day_carryover_is_exactly_bounded_and_preserved():
+    sql = bounded_sql.build_chunk_sql(
+        "propline", "2026-05-16", "2026-05-17",
+    ).lower()
+    candidate_sql = " ".join(
+        sql.split("historical_extra_candidates as (", 1)[1]
+        .split("historical_extra_source_ids as (", 1)[0]
+        .split()
+    )
+    source_proof_sql = " ".join(
+        sql.split("historical_extra_resolved_sources as (", 1)[1]
+        .split("historical_extra_listed_counts as (", 1)[0]
+        .split()
+    )
+
+    assert (
+        "unexpected.provider = 'propline' "
+        "and unexpected.slate_date = date '2026-05-17' "
+        "and unexpected.raw_market_key = 'pitcher_strikeouts' "
+        "then 'propline_may17_prior_day_carryover'"
+    ) in candidate_sql
+    assert (
+        "candidate.historical_class = 'propline_may17_prior_day_carryover' "
+        "and source_snapshot.market_key = candidate.raw_market_key "
+        "and source_run.slate_date = date '2026-05-16' "
+        "and (source_snapshot.observed_at at time zone 'america/phoenix')::date "
+        "= date '2026-05-16'"
+    ) in source_proof_sql
+    assert "source_snapshot.provider = candidate.provider" in source_proof_sql
+    assert "source_run.provider = candidate.provider" in source_proof_sql
+    assert "lower(trim(source_snapshot.bookmaker_key)) = candidate.book_key" in source_proof_sql
+    assert "trim(source_snapshot.normalized_player_name) = candidate.normalized_player_name" in source_proof_sql
+    assert "lower(trim(source_snapshot.side)) = candidate.side" in source_proof_sql
+    assert "source_snapshot.line::numeric = candidate.line" in source_proof_sql
 
 
 def test_historical_extra_proof_remains_select_only_and_aggregate_only():

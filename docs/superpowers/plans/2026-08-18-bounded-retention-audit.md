@@ -1577,3 +1577,48 @@ Any error stops immediately without retry. No live validation step authorizes ba
   blockers. The canonical four-provider checkpoint envelope and a completed
   post-repair physical backup remain open. Retention execution, deletion,
   vacuum, and reclamation remain separately closed.
+
+## 2026-08-25 Active-Provider Compaction Finalizer Overlay
+
+- A fresh SELECT-only audit under query contract SHA-256
+  `e3091876ffe253d948c83e3e31c89f1a4fbde54381f91695f3963f2208866e05`
+  completed all `360/360` provider/date partitions from April 28 through July
+  26. BoltOdds is exact, The Odds is empty/exact, and the active-provider
+  shortfall is `105` partitions requiring `34,861` aggregate compact upserts:
+  PropLine `63` dates / `15,387` groups and TheRundown `42` dates / `19,474`
+  groups. Eighteen PropLine and 23 TheRundown dates exceed the live
+  compactor's old 20,000-row ceiling; the observed maxima are `55,232` and
+  `28,400` raw rows respectively.
+- The root cause is the frequent live compactor returning a successful partial
+  result after 20 full offset pages. The code-only implementation in
+  `docs/superpowers/plans/2026-08-25-active-provider-compaction-finalizer.md`
+  now raises before any compact or provider-usage publication when every
+  allowed live page is full. This branch is not deployed, so production
+  behavior is unchanged.
+- The exact partition preview foundation uses deterministic
+  `(observed_at,id)` keyset paging and a separate 75-page snapshot ceiling.
+  It preserves one-attempt reads and aggregate-only output. PropLine and
+  TheRundown remain outside the execution allowlist, and the existing retired
+  BoltOdds execution allowlist is unchanged.
+- The local checkpoint manifest reviewed all `180` active-provider partitions
+  from the completed audit and reconciled exactly to the `105` repair
+  partitions and `34,861` aggregate upserts above. It records
+  `database_write_performed: false`, `deletion_approved: false`, and
+  `retention_execution_closed: true`; it contains no source snapshot or run
+  identifiers.
+- The bounded proof query now includes the exact
+  `propline_may17_prior_day_carryover` class. One linked, SELECT-only May 17
+  proof under new query contract SHA-256
+  `611dd4eb568a556d96658e74049d6579d2f6ac0f9cacdff57720b3176f97929e`
+  found `24` unexpected compact groups, all `24` preserved against exact May
+  16 source/run/dimension/time/canonical-compact evidence, and `0`
+  unpreserved. Strict `coverage_exact` remains false because the groups are
+  intentionally extra; `retention_preservation_complete` is true.
+- A completed physical backup at `2026-08-25T05:39:27.316Z` is newer than the
+  prior repairs. PITR remains disabled. This closes the stale-backup blocker
+  for the current evidence but is not proof of a tested restore.
+- No database write, deletion, vacuum, retention activation, provider/model/
+  notification/lock/UI/source-of-truth change, deployment, or merge occurred.
+  Active-provider finalization needs a separate reviewed execution design and
+  approval after the fail-closed runtime change is reviewed. Raw retention
+  deletion and physical reclamation remain closed.

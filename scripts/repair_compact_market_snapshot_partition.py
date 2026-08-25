@@ -58,11 +58,14 @@ SOURCE_STATE_FIELDS = (
     "in_window_heartbeat_count",
     "out_of_window_heartbeat_count",
     "raw_snapshot_count",
+    "snapshot_in_window_count",
+    "snapshot_out_of_window_count",
     "rebuilt_compact_count",
     "rebuilt_compacts_sha256",
 )
 COMPACT_FIELDS = KEY_FIELDS + VALUE_FIELDS
 SELECT_FIELDS = ",".join(COMPACT_FIELDS)
+COMPACT_SELECT_FIELDS = ",".join(("id",) + COMPACT_FIELDS)
 SNAPSHOT_SELECT_FIELDS = ",".join((
     "id",
     "run_id",
@@ -77,9 +80,21 @@ SNAPSHOT_SELECT_FIELDS = ",".join((
     "observed_at",
 ))
 PAGE_SIZE = 1000
-MAX_PAGES = 20
+SNAPSHOT_MAX_PAGES = 75
+COMPACT_MAX_PAGES = 20
 PHOENIX = ZoneInfo("America/Phoenix")
-EXECUTION_PARTITION = ("boltodds", "2026-06-16")
+EXECUTION_PARTITIONS = frozenset({
+    ("boltodds", "2026-06-02"),
+    ("boltodds", "2026-06-03"),
+    ("boltodds", "2026-06-05"),
+    ("boltodds", "2026-06-06"),
+    ("boltodds", "2026-06-09"),
+    ("boltodds", "2026-06-12"),
+    ("boltodds", "2026-06-13"),
+    ("boltodds", "2026-06-14"),
+    ("boltodds", "2026-06-15"),
+    ("boltodds", "2026-06-16"),
+})
 
 
 def _env(name: str) -> str:
@@ -91,6 +106,13 @@ def _env(name: str) -> str:
 
 def _enabled(value: str | None) -> bool:
     return str(value or "").strip().lower() in {"1", "true", "yes", "on"}
+
+
+def is_execution_partition(provider: str, slate_date: str) -> bool:
+    return (
+        str(provider).strip().lower(),
+        str(slate_date).strip(),
+    ) in EXECUTION_PARTITIONS
 
 
 def _validated_date(value: str) -> str:
@@ -250,24 +272,26 @@ def _fetch_snapshot_rows(
         return []
     run_ids = [_validated_uuid(row["id"], label="provider run id") for row in run_rows]
     allowed_run_ids = set(run_ids)
-    window_start, window_end, window_start_iso, window_end_iso = _phoenix_window(slate_date)
     rows: list[dict[str, Any]] = []
-    for page in range(MAX_PAGES):
+    cursor: tuple[datetime, str] | None = None
+    for _ in range(SNAPSHOT_MAX_PAGES):
+        params = {
+            "run_id": f"in.({','.join(run_ids)})",
+            "provider": f"eq.{provider}",
+            "select": SNAPSHOT_SELECT_FIELDS,
+            "order": "observed_at.asc,id.asc",
+            "limit": str(PAGE_SIZE),
+        }
+        if cursor is not None:
+            cursor_at = cursor[0].isoformat().replace("+00:00", "Z")
+            params["or"] = (
+                f"(observed_at.gt.{cursor_at},"
+                f"and(observed_at.eq.{cursor_at},id.gt.{cursor[1]}))"
+            )
         page_rows = _select_rows(
             writer,
             "market_snapshots",
-            {
-                "run_id": f"in.({','.join(run_ids)})",
-                "provider": f"eq.{provider}",
-                "select": SNAPSHOT_SELECT_FIELDS,
-                "and": (
-                    f"(observed_at.gte.{window_start_iso},"
-                    f"observed_at.lt.{window_end_iso})"
-                ),
-                "order": "observed_at.asc,id.asc",
-                "limit": str(PAGE_SIZE),
-                "offset": str(page * PAGE_SIZE),
-            },
+            params,
         )
         for raw_row in page_rows:
             row = dict(raw_row)
@@ -278,17 +302,39 @@ def _fetch_snapshot_rows(
             if row_run_id not in allowed_run_ids:
                 raise ValueError("snapshot run escaped requested partition")
             observed_at = _aware_datetime(row.get("observed_at"), label="snapshot observed_at")
-            if not window_start <= observed_at < window_end:
-                raise ValueError("snapshot timestamp escaped requested Phoenix date")
+            snapshot_id = _validated_uuid(row.get("id"), label="snapshot id")
+            row_cursor = (observed_at, snapshot_id)
+            if cursor is not None and row_cursor <= cursor:
+                raise ValueError("snapshot keyset order did not advance")
             row_date = str(row.get("slate_date") or "").strip()
             if row_date and row_date != slate_date:
                 raise ValueError("snapshot date escaped requested partition")
+            row["id"] = snapshot_id
             row["run_id"] = row_run_id
             row["slate_date"] = slate_date
             rows.append(row)
+            cursor = row_cursor
         if len(page_rows) < PAGE_SIZE:
             return deduplicate_snapshot_rows(rows)
     raise ValueError("snapshot query reached its fail-closed page ceiling")
+
+
+def _snapshot_window_counts(
+    snapshot_rows: list[dict[str, Any]],
+    *,
+    slate_date: str,
+) -> dict[str, int]:
+    window_start, window_end, _, _ = _phoenix_window(slate_date)
+    in_window_count = sum(
+        window_start
+        <= _aware_datetime(row.get("observed_at"), label="snapshot observed_at")
+        < window_end
+        for row in snapshot_rows
+    )
+    return {
+        "snapshot_in_window_count": in_window_count,
+        "snapshot_out_of_window_count": len(snapshot_rows) - in_window_count,
+    }
 
 
 def _fetch_existing_compacts(
@@ -298,21 +344,21 @@ def _fetch_existing_compacts(
     slate_date: str,
 ) -> list[dict[str, Any]]:
     rows: list[dict[str, Any]] = []
-    for page in range(MAX_PAGES):
+    cursor_id: int | None = None
+    for _ in range(COMPACT_MAX_PAGES):
+        params = {
+            "select": COMPACT_SELECT_FIELDS,
+            "slate_date": f"eq.{slate_date}",
+            "provider": f"eq.{provider}",
+            "order": "id.asc",
+            "limit": str(PAGE_SIZE),
+        }
+        if cursor_id is not None:
+            params["id"] = f"gt.{cursor_id}"
         page_rows = _select_rows(
             writer,
             "compact_market_line_movements",
-            {
-                "select": SELECT_FIELDS,
-                "slate_date": f"eq.{slate_date}",
-                "provider": f"eq.{provider}",
-                "order": (
-                    "book_key.asc,normalized_player_name.asc,market_key.asc,"
-                    "side.asc,line.asc"
-                ),
-                "limit": str(PAGE_SIZE),
-                "offset": str(page * PAGE_SIZE),
-            },
+            params,
         )
         for raw_row in page_rows:
             row = dict(raw_row)
@@ -320,6 +366,12 @@ def _fetch_existing_compacts(
                 raise ValueError("compact provider escaped requested partition")
             if str(row.get("slate_date") or "").strip() != slate_date:
                 raise ValueError("compact date escaped requested partition")
+            compact_id = _strict_int(row.pop("id", None), label="compact id", nonnegative=True)
+            if compact_id <= 0:
+                raise ValueError("compact id must be positive")
+            if cursor_id is not None and compact_id <= cursor_id:
+                raise ValueError("compact keyset order did not advance")
+            cursor_id = compact_id
             rows.append(row)
         if len(page_rows) < PAGE_SIZE:
             return rows
@@ -465,7 +517,7 @@ def _compare_compacts(
 
 def _preview_fingerprint(report: dict[str, Any]) -> str:
     fields = {
-        "fingerprint_version": 2,
+        "fingerprint_version": report["preview_fingerprint_version"],
         "provider": report["provider"],
         "slate_date": report["slate_date"],
         "provider_run_count": report["provider_run_count"],
@@ -473,6 +525,8 @@ def _preview_fingerprint(report: dict[str, Any]) -> str:
         "in_window_heartbeat_count": report["in_window_heartbeat_count"],
         "out_of_window_heartbeat_count": report["out_of_window_heartbeat_count"],
         "raw_snapshot_count": report["raw_snapshot_count"],
+        "snapshot_in_window_count": report["snapshot_in_window_count"],
+        "snapshot_out_of_window_count": report["snapshot_out_of_window_count"],
         "rebuilt_compact_count": report["rebuilt_compact_count"],
         "existing_compact_count": report["existing_compact_count"],
         "missing_compact_count": report["missing_compact_count"],
@@ -505,6 +559,10 @@ def _build_preview(
         slate_date=slate_date,
         run_rows=run_rows,
     )
+    snapshot_window_summary = _snapshot_window_counts(
+        snapshot_rows,
+        slate_date=slate_date,
+    )
     rebuilt_rows = compact_snapshot_rows(snapshot_rows)
     existing_rows = _fetch_existing_compacts(
         writer,
@@ -524,11 +582,7 @@ def _build_preview(
         blockers.append("no_rebuilt_compacts")
     if comparison["unexpected_compact_count"]:
         blockers.append("unexpected_compact_rows")
-    if len(snapshot_rows) >= PAGE_SIZE:
-        blockers.append("snapshot_pagination_required")
-    if len(existing_rows) >= PAGE_SIZE:
-        blockers.append("compact_pagination_required")
-    if (provider, slate_date) != EXECUTION_PARTITION:
+    if not is_execution_partition(provider, slate_date):
         blockers.append("execution_partition_not_allowlisted")
     if not comparison["rows_to_upsert"]:
         blockers.append("no_changes")
@@ -536,11 +590,13 @@ def _build_preview(
     report = {
         "report_type": "compact_market_snapshot_partition_repair",
         "action": "preview",
+        "preview_fingerprint_version": 4,
         "provider": provider,
         "slate_date": slate_date,
         "provider_run_count": len(run_rows),
         **heartbeat_summary,
         "raw_snapshot_count": len(snapshot_rows),
+        **snapshot_window_summary,
         "rebuilt_compact_count": len(rebuilt_rows),
         "existing_compact_count": len(existing_rows),
         "missing_compact_count": comparison["missing_compact_count"],
@@ -579,8 +635,8 @@ def run(
         raise ValueError("ALLOW_COMPACT_MARKET_PARTITION_REPAIR must be true to execute")
     if execute and not expected_preview_sha256:
         raise ValueError("expected preview fingerprint is required to execute")
-    if execute and (normalized_provider, normalized_date) != EXECUTION_PARTITION:
-        raise ValueError("execution is limited to boltodds 2026-06-16")
+    if execute and not is_execution_partition(normalized_provider, normalized_date):
+        raise ValueError("execution is limited to reviewed BoltOdds repair partitions")
     report, rows_to_upsert = _build_preview(
         provider=normalized_provider,
         slate_date=normalized_date,
@@ -636,6 +692,10 @@ def run(
             slate_date=normalized_date,
             run_rows=post_run_rows,
         )
+        post_snapshot_window_summary = _snapshot_window_counts(
+            post_snapshot_rows,
+            slate_date=normalized_date,
+        )
         post_rebuilt_rows = compact_snapshot_rows(post_snapshot_rows)
         post_rows = _fetch_existing_compacts(
             writer,
@@ -650,6 +710,7 @@ def run(
             "provider_run_count": len(post_run_rows),
             **post_heartbeat_summary,
             "raw_snapshot_count": len(post_snapshot_rows),
+            **post_snapshot_window_summary,
             "rebuilt_compact_count": len(post_rebuilt_rows),
             "rebuilt_compacts_sha256": post_rebuilt_sha256,
         })
@@ -683,6 +744,12 @@ def run(
             "out_of_window_heartbeat_count"
         ],
         "post_write_raw_snapshot_count": len(post_snapshot_rows),
+        "post_write_snapshot_in_window_count": post_snapshot_window_summary[
+            "snapshot_in_window_count"
+        ],
+        "post_write_snapshot_out_of_window_count": post_snapshot_window_summary[
+            "snapshot_out_of_window_count"
+        ],
         "post_write_missing_compact_count": post["missing_compact_count"],
         "post_write_mismatched_compact_count": post["mismatched_compact_count"],
         "post_write_unexpected_compact_count": post["unexpected_compact_count"],

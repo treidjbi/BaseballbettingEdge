@@ -302,6 +302,10 @@ historical_extra_candidates as (
       when unexpected.provider = 'boltodds'
        and unexpected.slate_date = date '2026-05-18'
       then 'may18_carryover'
+      when unexpected.provider = 'propline'
+       and unexpected.slate_date = date '2026-05-17'
+       and unexpected.raw_market_key = 'pitcher_strikeouts'
+      then 'propline_may17_prior_day_carryover'
       else null
     end as historical_class
   from unexpected_compact_rows unexpected
@@ -367,6 +371,13 @@ historical_extra_resolved_sources as (
           and source_run.slate_date = date '2026-05-17'
           and (source_snapshot.observed_at at time zone 'America/Phoenix')::date
               in (date '2026-05-17', date '2026-05-18')
+        )
+        or (
+          candidate.historical_class = 'propline_may17_prior_day_carryover'
+          and source_snapshot.market_key = candidate.raw_market_key
+          and source_run.slate_date = date '2026-05-16'
+          and (source_snapshot.observed_at at time zone 'America/Phoenix')::date
+              = date '2026-05-16'
         )
       )
     ) as class_dimensions_match

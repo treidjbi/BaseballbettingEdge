@@ -7,6 +7,9 @@ import requests
 
 RUN_ID = "11111111-1111-4111-8111-111111111111"
 OTHER_RUN_ID = "22222222-2222-4222-8222-222222222222"
+SNAP_1 = "00000000-0000-4000-8000-000000000001"
+SNAP_2 = "00000000-0000-4000-8000-000000000002"
+SNAP_3 = "00000000-0000-4000-8000-000000000003"
 
 
 def _module():
@@ -51,7 +54,7 @@ def _compact(*, first_seen="2026-06-16T18:05:00Z", first_odds=-125,
         "max_odds": max_odds,
         "odds_move_count": move_count,
         "snapshot_count": snapshot_count,
-        "source_snapshot_ids": list(source_ids or ["snap-2"]),
+        "source_snapshot_ids": list(source_ids or [SNAP_2]),
     }
 
 
@@ -60,8 +63,8 @@ class FakeWriter:
                  parent_rows=None, post_write_snapshots=None, post_write_heartbeats=None,
                  upsert_error=None, apply_before_error=False):
         self.snapshots = list([
-            _snapshot("snap-1", "2026-06-16T18:00:00Z", -110),
-            _snapshot("snap-2", "2026-06-16T18:05:00Z", -125),
+            _snapshot(SNAP_1, "2026-06-16T18:00:00Z", -110),
+            _snapshot(SNAP_2, "2026-06-16T18:05:00Z", -125),
         ] if snapshots is None else snapshots)
         self.existing = list([_compact()] if existing is None else existing)
         self.run_rows = list([{
@@ -100,9 +103,17 @@ class FakeWriter:
                 if self.upserts and self.post_write_snapshots is not None
                 else self.snapshots
             )
-            return list(selected) if params["offset"] == "0" else []
+            if "offset" in params:
+                return list(selected) if params["offset"] == "0" else []
+            return list(selected) if "or" not in params else []
         if table == "compact_market_line_movements":
-            return list(self.existing) if params["offset"] == "0" else []
+            selected = [
+                dict(row, id=row.get("id", index))
+                for index, row in enumerate(self.existing, start=1)
+            ]
+            if "offset" in params:
+                return selected if params["offset"] == "0" else []
+            return selected if "id" not in params else []
         return []
 
     def upsert_rows(self, table, rows, on_conflict, **kwargs):
@@ -149,6 +160,8 @@ def test_preview_is_one_provider_one_date_and_reports_only_aggregate_differences
     assert report["slate_date"] == "2026-06-16"
     assert report["provider_run_count"] == 1
     assert report["raw_snapshot_count"] == 2
+    assert report["snapshot_in_window_count"] == 2
+    assert report["snapshot_out_of_window_count"] == 0
     assert report["rebuilt_compact_count"] == 1
     assert report["existing_compact_count"] == 1
     assert report["missing_compact_count"] == 0
@@ -162,11 +175,12 @@ def test_preview_is_one_provider_one_date_and_reports_only_aggregate_differences
     assert report["deletion_approved"] is False
     assert report["retention_execution_closed"] is True
     assert report["database_write_performed"] is False
+    assert report["preview_fingerprint_version"] == 4
     assert len(report["preview_sha256"]) == 64
     assert writer.upserts == []
     rendered = json.dumps(report, sort_keys=True)
-    assert "snap-1" not in rendered
-    assert "snap-2" not in rendered
+    assert SNAP_1 not in rendered
+    assert SNAP_2 not in rendered
 
     by_table = {}
     for table, params, kwargs in writer.selects:
@@ -176,10 +190,7 @@ def test_preview_is_one_provider_one_date_and_reports_only_aggregate_differences
     assert by_table["market_feed_heartbeats"][0][0]["provider"] == "eq.boltodds"
     assert by_table["market_snapshots"][0][0]["provider"] == "eq.boltodds"
     assert "source_payload" not in by_table["market_snapshots"][0][0]["select"]
-    assert by_table["market_snapshots"][0][0]["and"] == (
-        "(observed_at.gte.2026-06-16T07:00:00Z,"
-        "observed_at.lt.2026-06-17T07:00:00Z)"
-    )
+    assert "and" not in by_table["market_snapshots"][0][0]
     assert by_table["compact_market_line_movements"][0][0]["provider"] == "eq.boltodds"
     assert all(kwargs == {"attempts": 1} for calls in by_table.values() for _, kwargs in calls)
     assert not any(table == "provider_request_usage_daily" for table, _, _ in writer.selects)
@@ -220,12 +231,35 @@ def test_execute_requires_environment_gate_and_exact_preview_fingerprint():
     assert wrong_hash_writer.upserts == []
 
 
-def test_execute_is_hard_limited_to_the_reviewed_june16_boltodds_partition():
+@pytest.mark.parametrize(
+    "slate_date",
+    [
+        "2026-06-02",
+        "2026-06-03",
+        "2026-06-05",
+        "2026-06-06",
+        "2026-06-09",
+        "2026-06-12",
+        "2026-06-13",
+        "2026-06-14",
+        "2026-06-15",
+        "2026-06-16",
+    ],
+)
+def test_execute_allowlist_contains_only_reviewed_boltodds_repair_dates(slate_date):
+    repair = _module()
+
+    assert repair.is_execution_partition("boltodds", slate_date) is True
+    assert repair.is_execution_partition("propline", slate_date) is False
+
+
+@pytest.mark.parametrize("provider", ["propline", "therundown"])
+def test_execute_is_hard_limited_to_reviewed_boltodds_repair_partitions(provider):
     repair = _module()
     writer = FakeWriter()
-    with pytest.raises(ValueError, match="execution is limited to boltodds 2026-06-16"):
+    with pytest.raises(ValueError, match="reviewed BoltOdds repair partitions"):
         repair.run(
-            provider="propline",
+            provider=provider,
             slate_date="2026-06-16",
             writer=writer,
             execute=True,
@@ -277,11 +311,11 @@ def test_execute_upserts_only_changed_compacts_and_rechecks_exact_partition():
 def test_execute_rechecks_raw_partition_and_fails_exactness_if_source_rows_change():
     repair = _module()
     initial = [
-        _snapshot("snap-1", "2026-06-16T18:00:00Z", -110),
-        _snapshot("snap-2", "2026-06-16T18:05:00Z", -125),
+        _snapshot(SNAP_1, "2026-06-16T18:00:00Z", -110),
+        _snapshot(SNAP_2, "2026-06-16T18:05:00Z", -125),
     ]
     changed = initial + [
-        _snapshot("snap-3", "2026-06-16T18:10:00Z", -120),
+        _snapshot(SNAP_3, "2026-06-16T18:10:00Z", -120),
     ]
     writer = FakeWriter(snapshots=initial, post_write_snapshots=changed)
     preview = repair.run(
@@ -396,11 +430,11 @@ def test_ambiguous_upsert_that_reached_database_is_confirmed_only_by_post_state(
     assert report["post_write_exact"] is True
 
 
-def test_execution_is_ineligible_when_raw_partition_requires_offset_pagination():
+def test_keyset_paged_raw_partition_is_not_blocked_only_for_pagination():
     repair = _module()
     snapshots = [
         _snapshot(
-            f"snap-{index}",
+            f"00000000-0000-4000-8000-{index + 1:012x}",
             "2026-06-16T18:00:00Z",
             -110,
         )
@@ -416,8 +450,166 @@ def test_execution_is_ineligible_when_raw_partition_requires_offset_pagination()
     )
 
     assert report["raw_snapshot_count"] == 1000
-    assert report["execution_eligible"] is False
-    assert "snapshot_pagination_required" in report["blockers"]
+    assert "snapshot_pagination_required" not in report["blockers"]
+
+
+def test_snapshot_reader_uses_strict_observed_at_and_id_keyset(monkeypatch):
+    repair = _module()
+    monkeypatch.setattr(repair, "PAGE_SIZE", 2)
+    rows = [
+        _snapshot(
+            "00000000-0000-4000-8000-000000000001",
+            "2026-06-16T18:00:00Z",
+            -110,
+        ),
+        _snapshot(
+            "00000000-0000-4000-8000-000000000002",
+            "2026-06-16T18:00:00Z",
+            -115,
+        ),
+        _snapshot(
+            "00000000-0000-4000-8000-000000000003",
+            "2026-06-16T18:01:00Z",
+            -120,
+        ),
+    ]
+
+    class PagingWriter:
+        def __init__(self):
+            self.calls = []
+
+        def select_rows(self, table, params, **kwargs):
+            self.calls.append((table, dict(params), dict(kwargs)))
+            return rows[:2] if len(self.calls) == 1 else rows[2:]
+
+    writer = PagingWriter()
+    selected = repair._fetch_snapshot_rows(
+        writer,
+        provider="boltodds",
+        slate_date="2026-06-16",
+        run_rows=[{"id": RUN_ID}],
+    )
+
+    assert len(selected) == 3
+    assert len(writer.calls) == 2
+    first = writer.calls[0][1]
+    second = writer.calls[1][1]
+    assert first["order"] == "observed_at.asc,id.asc"
+    assert "offset" not in first
+    assert "offset" not in second
+    assert second["or"] == (
+        "(observed_at.gt.2026-06-16T18:00:00Z,"
+        "and(observed_at.eq.2026-06-16T18:00:00Z,"
+        "id.gt.00000000-0000-4000-8000-000000000002))"
+    )
+    assert all(kwargs == {"attempts": 1} for _, _, kwargs in writer.calls)
+
+
+def test_snapshot_preview_keyset_paging_continues_beyond_twenty_full_pages(
+    monkeypatch,
+):
+    repair = _module()
+    monkeypatch.setattr(repair, "PAGE_SIZE", 1)
+    rows = [
+        _snapshot(
+            f"00000000-0000-4000-8000-{index:012x}",
+            "2026-06-16T18:00:00Z",
+            -110,
+        )
+        for index in range(1, 22)
+    ]
+
+    class PagingWriter:
+        def __init__(self):
+            self.calls = []
+
+        def select_rows(self, table, params, **kwargs):
+            self.calls.append((table, dict(params), dict(kwargs)))
+            page = len(self.calls) - 1
+            return rows[page:page + 1]
+
+    writer = PagingWriter()
+    selected = repair._fetch_snapshot_rows(
+        writer,
+        provider="boltodds",
+        slate_date="2026-06-16",
+        run_rows=[{"id": RUN_ID}],
+    )
+
+    assert len(selected) == 21
+    assert len(writer.calls) == 22
+    assert all(kwargs == {"attempts": 1} for _, _, kwargs in writer.calls)
+
+
+def test_snapshot_preview_still_fails_closed_at_enlarged_page_ceiling(monkeypatch):
+    repair = _module()
+    monkeypatch.setattr(repair, "PAGE_SIZE", 1)
+
+    class FullPageWriter:
+        def __init__(self):
+            self.calls = []
+
+        def select_rows(self, table, params, **kwargs):
+            self.calls.append((table, dict(params), dict(kwargs)))
+            index = len(self.calls)
+            return [
+                _snapshot(
+                    f"00000000-0000-4000-8000-{index:012x}",
+                    "2026-06-16T18:00:00Z",
+                    -110,
+                )
+            ]
+
+    writer = FullPageWriter()
+    with pytest.raises(
+        ValueError,
+        match="snapshot query reached its fail-closed page ceiling",
+    ):
+        repair._fetch_snapshot_rows(
+            writer,
+            provider="boltodds",
+            slate_date="2026-06-16",
+            run_rows=[{"id": RUN_ID}],
+        )
+
+    assert len(writer.calls) == 75
+
+
+def test_compact_reader_uses_strict_id_keyset(monkeypatch):
+    repair = _module()
+    monkeypatch.setattr(repair, "PAGE_SIZE", 2)
+    rows = []
+    for compact_id in (1, 2, 3):
+        row = _compact(player=f"pitcher {compact_id}")
+        row["id"] = compact_id
+        rows.append(row)
+
+    class PagingWriter:
+        def __init__(self):
+            self.calls = []
+
+        def select_rows(self, table, params, **kwargs):
+            self.calls.append((table, dict(params), dict(kwargs)))
+            return rows[:2] if len(self.calls) == 1 else rows[2:]
+
+    writer = PagingWriter()
+    selected = repair._fetch_existing_compacts(
+        writer,
+        provider="boltodds",
+        slate_date="2026-06-16",
+    )
+
+    assert len(selected) == 3
+    assert all("id" not in row for row in selected)
+    assert len(writer.calls) == 2
+    first = writer.calls[0][1]
+    second = writer.calls[1][1]
+    assert first["select"].startswith("id,")
+    assert first["order"] == "id.asc"
+    assert "offset" not in first
+    assert "offset" not in second
+    assert second["id"] == "gt.2"
+    assert all(kwargs == {"attempts": 1} for _, _, kwargs in writer.calls)
 
 
 def test_unexpected_compact_blocks_execute_because_repair_never_deletes():
@@ -449,7 +641,7 @@ def test_unexpected_compact_blocks_execute_because_repair_never_deletes():
 def test_partition_scope_rejects_snapshot_provider_or_date_drift():
     repair = _module()
     wrong_provider = FakeWriter(snapshots=[
-        _snapshot("snap-1", "2026-06-16T18:00:00Z", -110, provider="propline")
+        _snapshot(SNAP_1, "2026-06-16T18:00:00Z", -110, provider="propline")
     ])
     with pytest.raises(ValueError, match="snapshot provider escaped requested partition"):
         repair.run(
@@ -460,7 +652,7 @@ def test_partition_scope_rejects_snapshot_provider_or_date_drift():
         )
 
     wrong_date = FakeWriter(snapshots=[
-        _snapshot("snap-1", "2026-06-16T18:00:00Z", -110, slate_date="2026-06-15")
+        _snapshot(SNAP_1, "2026-06-16T18:00:00Z", -110, slate_date="2026-06-15")
     ])
     with pytest.raises(ValueError, match="snapshot date escaped requested partition"):
         repair.run(
@@ -471,9 +663,9 @@ def test_partition_scope_rejects_snapshot_provider_or_date_drift():
         )
 
 
-def test_normal_schema_snapshot_without_slate_date_uses_verified_phoenix_window():
+def test_normal_schema_snapshot_without_slate_date_uses_verified_run_lineage():
     repair = _module()
-    snapshot = _snapshot("snap-1", "2026-06-16T18:00:00Z", -110)
+    snapshot = _snapshot(SNAP_1, "2026-06-16T18:00:00Z", -110)
     snapshot.pop("slate_date")
     report = repair.run(
         provider="boltodds",
@@ -484,31 +676,38 @@ def test_normal_schema_snapshot_without_slate_date_uses_verified_phoenix_window(
     assert report["raw_snapshot_count"] == 1
 
 
-@pytest.mark.parametrize(
-    ("snapshot", "message"),
-    [
-        (
-            _snapshot(
-                "snap-1", "2026-06-16T18:00:00Z", -110,
-                run_id=OTHER_RUN_ID,
-            ),
-            "snapshot run escaped requested partition",
-        ),
-        (
-            _snapshot("snap-1", "2026-06-17T07:00:00Z", -110),
-            "snapshot timestamp escaped requested Phoenix date",
-        ),
-    ],
-)
-def test_partition_scope_rejects_run_or_phoenix_time_drift(snapshot, message):
+def test_partition_scope_rejects_run_drift():
     repair = _module()
-    with pytest.raises(ValueError, match=message):
+    snapshot = _snapshot(
+        SNAP_1,
+        "2026-06-16T18:00:00Z",
+        -110,
+        run_id=OTHER_RUN_ID,
+    )
+    with pytest.raises(ValueError, match="snapshot run escaped requested partition"):
         repair.run(
             provider="boltodds",
             slate_date="2026-06-16",
             writer=FakeWriter(snapshots=[snapshot]),
             execute=False,
         )
+
+
+def test_verified_run_lineage_includes_and_counts_cross_phoenix_boundary_snapshot():
+    repair = _module()
+    snapshot = _snapshot(SNAP_1, "2026-06-17T07:00:00Z", -110)
+
+    report = repair.run(
+        provider="boltodds",
+        slate_date="2026-06-16",
+        writer=FakeWriter(snapshots=[snapshot], existing=[]),
+        execute=False,
+    )
+
+    assert report["raw_snapshot_count"] == 1
+    assert report["snapshot_in_window_count"] == 0
+    assert report["snapshot_out_of_window_count"] == 1
+    assert "unexpected_compact_rows" not in report["blockers"]
 
 
 @pytest.mark.parametrize(
@@ -638,7 +837,7 @@ def test_valid_heartbeat_parent_keeps_original_run_date_and_uses_snapshot_window
         "created_at": "2026-05-01T18:00:00Z",
     }
     snapshot = _snapshot(
-        "snap-1",
+        SNAP_1,
         "2026-06-16T18:05:00Z",
         -125,
         run_id=OTHER_RUN_ID,
@@ -685,7 +884,7 @@ def test_empty_or_already_exact_partition_is_not_execution_eligible():
         max_odds=-110,
         move_count=1,
         snapshot_count=2,
-        source_ids=["snap-1", "snap-2"],
+        source_ids=[SNAP_1, SNAP_2],
     )
     exact_report = repair.run(
         provider="boltodds",
