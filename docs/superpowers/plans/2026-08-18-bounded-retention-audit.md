@@ -1624,3 +1624,23 @@ Any error stops immediately without retry. No live validation step authorizes ba
   Active-provider finalization needs a separate reviewed execution design and
   approval after the fail-closed runtime change is reviewed. Raw retention
   deletion and physical reclamation remain closed.
+
+## 2026-08-25 Compaction Safeguard Deployment Overlay
+
+- Tyler subsequently approved only the bounded fail-closed safeguard rollout.
+  Feature commit `643c8c10` was fast-forwarded to `main`, pushed, and deployed
+  automatically only to `bbe-live-layer` as Render deploy
+  `dep-da6u6j8ae00c7399fr6g`. The merged tree passed all `2,526` tests before
+  the push.
+- The deploy reached `live` at `2026-08-25T18:48:26Z`. Its first scheduled
+  live-layer cycle finished successfully at `2026-08-25T18:51:06Z`, used the
+  remote artifact path, and produced no error-level Render logs.
+- That cycle reported `compact:0` because the prior compact state remained
+  inside the 1,800-second minimum interval. The latest compact update was
+  `2026-08-25T18:41:16Z`, so the first normal cron expected to exercise the
+  compactor is `2026-08-25T19:20:00Z`. Natural observation of the new ceiling
+  guard remains pending until that due cycle.
+- This approval did not authorize or execute the `34,861` active-provider
+  repair upserts, any deletion, vacuum/reclamation, retention activation,
+  provider/model/notification/lock/UI/source-of-truth change, Render setting,
+  or environment-variable change. Those gates remain closed.

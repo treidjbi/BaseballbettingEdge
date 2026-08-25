@@ -179,3 +179,26 @@ git status --short
 - Deletion, vacuum/reclamation, active-provider repair execution, deployment,
   merge, and every provider/model/notification/lock/UI/source-of-truth change
   remain closed and require separate approval.
+
+## 2026-08-25 Deployment record
+
+- Tyler separately approved deployment of the fail-closed compaction safeguard
+  only. Commit `643c8c10` was fast-forwarded to `main`; the merged tree passed
+  all `2,526` tests and was pushed without changing the active-provider
+  execution allowlist.
+- The `main` push auto-deployed only `bbe-live-layer` as Render deploy
+  `dep-da6u6j8ae00c7399fr6g`. It reached `live` at
+  `2026-08-25T18:48:26Z` on the exact approved commit.
+- The first post-deploy scheduled cycle used remote artifacts, completed at
+  `2026-08-25T18:51:06Z`, and produced no error-level Render logs. It reported
+  `compact:0` because compaction was not yet due.
+- The most recent compact update was `2026-08-25T18:41:16Z`; with the existing
+  1,800-second interval, the first normal due cron is
+  `2026-08-25T19:20:00Z`. Observation of that cycle remains a separate pending
+  verification item; the guard has not yet been claimed as naturally
+  exercised.
+- No active-provider repair, deletion, vacuum/reclamation, retention
+  activation, provider/model/notification/lock/UI/source-of-truth change,
+  Render setting, or environment-variable change was executed. The `34,861`
+  aggregate repair-upsert gate remains closed pending a separate exact design
+  and approval.
