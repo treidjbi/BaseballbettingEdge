@@ -442,11 +442,36 @@ def test_v2_current_lock_freezes_when_shadow_timing_contains_optional_webhook_er
     assert len(writer.inserts) == 1
 
 
+def test_v2_continues_when_only_market_compaction_failed(monkeypatch):
+    _stub_pipeline(monkeypatch, status="selected", lane="consensus_core")
+    writer = Writer()
+
+    result = _record(
+        writer,
+        market_line_build={
+            "skipped": False,
+            "compact": {
+                "skipped": True,
+                "reason": "build_failed",
+                "error": "snapshot query reached its fail-closed page ceiling",
+            },
+        },
+    )
+
+    assert result["skipped"] is False
+    assert result["provisional_rows"] == 1
+    assert result["rows"] == 1
+
+
 @pytest.mark.parametrize(
     "prerequisite,summary",
     [
         ("operational_pick_locks", {"skipped": True, "reason": "write_failed"}),
         ("market_line_build", {"skipped": True, "reason": "build_failed"}),
+        (
+            "market_line_build",
+            {"skipped": False, "current": {"reason": "build_failed"}},
+        ),
         ("shadow_pipeline_timing", {"skipped": True, "error": "write failed"}),
         ("ready_to_bet_write", {"skipped": True, "reason": "write_failed"}),
     ],

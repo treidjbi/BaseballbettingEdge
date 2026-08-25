@@ -197,6 +197,14 @@ def _alternative_prerequisite_failed(*summaries: dict[str, Any]) -> bool:
     return any(_alternative_summary_failed(summary) for summary in summaries)
 
 
+def _alternative_market_prerequisite_failed(summary: dict[str, Any]) -> bool:
+    return _alternative_summary_failed({
+        key: value
+        for key, value in summary.items()
+        if key != "compact"
+    })
+
+
 def _alternative_american_odds(value: Any) -> int | None:
     if isinstance(value, bool):
         return None
@@ -504,9 +512,8 @@ def _write_alternative_pick_selection_state(
     if _alternative_prerequisite_failed(
         operational_pick_locks,
         shadow_pipeline_timing,
-        market_line_build,
         ready_to_bet_write,
-    ):
+    ) or _alternative_market_prerequisite_failed(market_line_build):
         return {"skipped": True, "reason": "prerequisite_failed", "rows": 0}
 
     started_at = time.monotonic()
@@ -1399,6 +1406,28 @@ def _alternative_pick_build_summary(result: dict[str, Any]) -> str:
     )
 
 
+def _market_line_build_summary(market_line_build: dict[str, Any]) -> str:
+    if market_line_build.get("skipped"):
+        return f"market_lines=skipped:{market_line_build.get('reason', 'unknown')}"
+    current_lines = (market_line_build.get("current") or {}).get(
+        "current_market_lines",
+        0,
+    )
+    official_ready = (market_line_build.get("official") or {}).get(
+        "ready_for_pipeline",
+        0,
+    )
+    compact = market_line_build.get("compact") or {}
+    if compact.get("skipped"):
+        compact_label = f"skipped:{compact.get('reason', 'unknown')}"
+    else:
+        compact_label = str(compact.get("compact_rows", 0))
+    return (
+        f"market_lines=current:{current_lines} "
+        f"official_ready:{official_ready} compact:{compact_label}"
+    )
+
+
 def _public_operational_lock_summary(summary: dict[str, Any]) -> dict[str, Any]:
     allowed = ("skipped", "reason", "rows", "inserted_rows")
     public = {key: summary[key] for key in allowed if key in summary}
@@ -1576,11 +1605,23 @@ def _build_shadow_market_state(
                 artifact_source=artifact_source,
             )
         if compact_due:
-            result["compact"] = compact_market_snapshots_to_supabase(
-                slate_date=slate_date,
-                writer=writer,
-                dry_run=False,
-            )
+            try:
+                result["compact"] = compact_market_snapshots_to_supabase(
+                    slate_date=slate_date,
+                    writer=writer,
+                    dry_run=False,
+                )
+            except Exception as error:
+                print(
+                    f"Warning: shadow market-state compaction failed ({error}); "
+                    "continuing market-state build",
+                    file=sys.stderr,
+                )
+                result["compact"] = {
+                    "skipped": True,
+                    "reason": "build_failed",
+                    "error": str(error)[:1000],
+                }
         return result
     except Exception as error:
         print(
@@ -2070,17 +2111,9 @@ def main() -> int:
         "stale_webhook_notification_candidates="
         f"{result.get('stale_propline_webhook_notification_candidates', 0)}"
     )
-    market_line_build = result.get("market_line_build") or {"skipped": True}
-    if market_line_build.get("skipped"):
-        market_line_summary = f"market_lines=skipped:{market_line_build.get('reason', 'unknown')}"
-    else:
-        current_lines = (market_line_build.get("current") or {}).get("current_market_lines", 0)
-        official_ready = (market_line_build.get("official") or {}).get("ready_for_pipeline", 0)
-        compact_rows = (market_line_build.get("compact") or {}).get("compact_rows", 0)
-        market_line_summary = (
-            f"market_lines=current:{current_lines} "
-            f"official_ready:{official_ready} compact:{compact_rows}"
-        )
+    market_line_summary = _market_line_build_summary(
+        result.get("market_line_build") or {"skipped": True}
+    )
     print(
         "Live event build "
         f"date={slate_date} state_rows={result['live_pick_state']} "

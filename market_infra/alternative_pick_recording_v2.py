@@ -101,6 +101,16 @@ def _top_level_summary_failed(value: Any) -> bool:
     )
 
 
+def _market_summary_failed(value: Any) -> bool:
+    if not isinstance(value, dict):
+        return _summary_failed(value)
+    return _summary_failed({
+        key: item
+        for key, item in value.items()
+        if key != "compact"
+    })
+
+
 def _failure(reason: str) -> dict[str, Any]:
     return {
         "skipped": True,
@@ -366,7 +376,7 @@ def _record_alternative_pick_selection_v2_impl(
     del artifact_source
     if (
         _summary_failed(operational_pick_locks)
-        or _summary_failed(market_line_build)
+        or _market_summary_failed(market_line_build)
         or _top_level_summary_failed(shadow_pipeline_timing)
         or _summary_failed(ready_to_bet_write)
     ):

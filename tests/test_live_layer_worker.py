@@ -296,6 +296,42 @@ def test_alternative_sidecar_passes_canonical_side_payload_with_tracked_overlay(
     assert result["provisional_rows"] == 1
 
 
+def test_alternative_sidecar_continues_when_only_compaction_failed(monkeypatch):
+    monkeypatch.setenv("ALTERNATIVE_PICK_SELECTION_MODE", "record")
+    payload = _alternative_artifact_payload()
+    writer = Mock()
+    writer.select_rows.side_effect = [[], []]
+
+    result = build_live_events_to_supabase._write_alternative_pick_selection_state(
+        writer=writer,
+        slate_date="2026-05-06",
+        payload=payload,
+        snapshot_rows=[],
+        market_pick_evidence_rows=[],
+        observed_at=build_live_events_to_supabase.datetime.fromisoformat(
+            "2026-05-06T18:00:00+00:00"
+        ),
+        artifact_source="test",
+        source_payload_sha256=build_live_events_to_supabase.canonical_payload_sha256(
+            payload
+        ),
+        source_artifact_byte_sha256="b" * 64,
+        operational_pick_locks={"skipped": True, "reason": "disabled"},
+        market_line_build={
+            "skipped": False,
+            "compact": {
+                "skipped": True,
+                "reason": "build_failed",
+                "error": "snapshot query reached its fail-closed page ceiling",
+            },
+        },
+    )
+
+    assert result["skipped"] is False
+    assert result["provisional_rows"] == 1
+    assert result["rows"] == 1
+
+
 def test_alternative_sidecar_binds_numeric_current_market_line_ids_in_one_read(monkeypatch):
     monkeypatch.setenv("ALTERNATIVE_PICK_SELECTION_MODE", "record")
     observed_at = build_live_events_to_supabase.datetime.fromisoformat("2026-05-06T18:00:00+00:00")
@@ -976,6 +1012,20 @@ def test_public_lock_and_artifact_summaries_use_strict_privacy_allowlists():
     ) == build_live_events_to_supabase.APPROVED_ARTIFACT_PATH
 
 
+def test_market_line_summary_surfaces_contained_compaction_failure():
+    summary = build_live_events_to_supabase._market_line_build_summary({
+        "skipped": False,
+        "current": {"current_market_lines": 185},
+        "official": {"ready_for_pipeline": 28},
+        "compact": {"skipped": True, "reason": "build_failed"},
+    })
+
+    assert summary == (
+        "market_lines=current:185 official_ready:28 "
+        "compact:skipped:build_failed"
+    )
+
+
 def test_alternative_sidecar_skips_each_failed_prerequisite_without_io(monkeypatch):
     monkeypatch.setenv("ALTERNATIVE_PICK_SELECTION_MODE", "record")
     payload = _alternative_artifact_payload()
@@ -983,6 +1033,7 @@ def test_alternative_sidecar_skips_each_failed_prerequisite_without_io(monkeypat
         ({"skipped": True, "reason": "write_failed"}, {"skipped": True, "reason": "disabled"}, {"skipped": True, "reason": "fresh"}, {"skipped": True, "reason": "disabled"}),
         ({"skipped": True, "reason": "failed"}, {"skipped": True, "reason": "disabled"}, {"skipped": True, "reason": "fresh"}, {"skipped": True, "reason": "disabled"}),
         ({"skipped": True, "reason": "disabled"}, {"skipped": True, "reason": "write_failed"}, {"skipped": True, "reason": "fresh"}, {"skipped": True, "reason": "disabled"}),
+        ({"skipped": True, "reason": "disabled"}, {"skipped": True, "reason": "disabled"}, {"skipped": True, "reason": "build_failed"}, {"skipped": True, "reason": "disabled"}),
         ({"skipped": True, "reason": "disabled"}, {"skipped": True, "reason": "disabled"}, {"skipped": False, "current": {"reason": "build_failed"}}, {"skipped": True, "reason": "disabled"}),
         ({"skipped": True, "reason": "disabled"}, {"skipped": True, "reason": "disabled"}, {"skipped": True, "reason": "fresh"}, {"skipped": True, "reason": "write_failed"}),
     )
@@ -4199,6 +4250,45 @@ def test_worker_can_build_shadow_market_lines_after_live_state(tmp_path):
     assert result["market_line_build"]["current"]["current_market_lines"] == 3
     assert result["market_line_build"]["official"]["ready_for_pipeline"] == 2
     assert result["market_line_build"]["compact"]["compact_rows"] == 4
+
+
+def test_shadow_market_state_contains_compaction_failure_without_failing_bundle():
+    writer = _writer_with_selects({
+        "current_market_lines": [{"updated_at": "2026-05-06T17:59:30+00:00"}],
+        "official_market_lines": [{"updated_at": "2026-05-06T17:59:30+00:00"}],
+        "compact_market_line_movements": [
+            {"updated_at": "2026-05-06T17:00:00+00:00"}
+        ],
+    })
+
+    with patch.object(
+        build_live_events_to_supabase,
+        "compact_market_snapshots_to_supabase",
+        side_effect=ValueError("snapshot query reached its fail-closed page ceiling"),
+    ):
+        result = build_live_events_to_supabase._build_shadow_market_state(
+            writer=writer,
+            slate_date="2026-05-06",
+            observed_at=build_live_events_to_supabase.datetime.fromisoformat(
+                "2026-05-06T18:00:00+00:00"
+            ),
+            enabled=True,
+            compact_enabled=True,
+            market_line_min_interval_seconds=600,
+            compact_market_min_interval_seconds=1800,
+            artifact_payload={"date": "2026-05-06", "pitchers": []},
+            artifact_source="test",
+        )
+
+    assert result["skipped"] is False
+    assert result["compact"] == {
+        "skipped": True,
+        "reason": "build_failed",
+        "error": "snapshot query reached its fail-closed page ceiling",
+    }
+    assert result["latest_current_market_lines_at"] == "2026-05-06T17:59:30+00:00"
+    assert result["latest_official_market_lines_at"] == "2026-05-06T17:59:30+00:00"
+    assert result["latest_compact_market_lines_at"] == "2026-05-06T17:00:00+00:00"
 
 
 def test_worker_skips_shadow_market_line_build_when_official_rows_are_fresh(tmp_path):

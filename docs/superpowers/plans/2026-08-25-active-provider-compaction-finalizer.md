@@ -202,3 +202,33 @@ git status --short
   Render setting, or environment-variable change was executed. The `34,861`
   aggregate repair-upsert gate remains closed pending a separate exact design
   and approval.
+
+## 2026-08-25 First Due-Cycle Observation And Local Isolation Follow-Up
+
+- The first compaction-due live-layer cycle started at
+  `2026-08-25T19:20:12Z` and finished successfully at
+  `2026-08-25T19:21:26Z`. The new safeguard naturally reached the 20,000-row
+  ceiling, logged `snapshot query reached its fail-closed page ceiling`, and
+  performed no partial compact publication.
+- A linked SELECT after the cycle found the August 25 compact state unchanged
+  at `876` rows, `20,000` represented snapshots, and latest update
+  `2026-08-25T18:41:16.124362Z`. The rest of the live build continued from the
+  remote artifact and completed normally.
+- The contained compaction exception still collapsed the combined market-state
+  result to top-level `build_failed`. Both the legacy and active V2 Alt
+  recorders therefore returned `prerequisite_failed`, even though neither
+  recorder consumes the compact table.
+- Tyler approved a bounded local fix on branch
+  `codex/compaction-alt-failure-isolation`: contain only the compact sub-result,
+  keep its warning explicit, and exclude only that sub-result from the legacy
+  and V2 Alt prerequisite checks. Top-level, current-line, official-line,
+  lock, timing, and ready-to-bet failures remain blocking.
+- The frequent compactor remains bounded at 20,000 rows. Raising it to the
+  75,000-row exact-preview ceiling is intentionally outside this fix because
+  it would repeat a large Supabase read every 30 minutes. Complete active-
+  provider compaction needs a separate low-frequency finalizer design.
+- Focused local verification passed `173` tests, and the complete repository
+  suite passed `2,531` tests. The branch is not merged or deployed, and it
+  performed no database mutation. Active-provider repair,
+  deletion, vacuum/reclamation, retention activation, and every provider/
+  model/notification/lock/UI/source-of-truth gate remain closed.
