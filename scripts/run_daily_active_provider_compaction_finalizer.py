@@ -76,6 +76,32 @@ PROVIDER_SUMMARY_FIELDS = (
     "preview_sha256",
 )
 
+SAFE_TOP_LEVEL_FIELDS = (
+    "report_type",
+    "mode",
+    "target_slate_date",
+    "status",
+    "preflight_complete",
+    "database_write_attempted",
+    "database_write_performed",
+    "provider_usage_rows_written",
+    "deletion_performed",
+    "retention_execution_closed",
+    "deadline_exceeded",
+    "elapsed_seconds",
+)
+
+SAFE_PROVIDER_FIELDS = PROVIDER_SUMMARY_FIELDS + (
+    "error_type",
+    "execution_status",
+    "failure_reason",
+    "database_write_attempted",
+    "database_write_performed",
+    "write_row_count",
+    "write_error_type",
+    "post_write_exact",
+)
+
 
 def _aggregate_provider_summary(report: dict[str, Any]) -> dict[str, Any]:
     return {
@@ -428,3 +454,66 @@ def run_finalizer(
         ),
         "elapsed_seconds": round(monotonic_fn() - started, 3),
     }
+
+
+def _parse_args(argv: list[str]) -> argparse.Namespace:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--execute", action="store_true")
+    return parser.parse_args(argv)
+
+
+def _env(name: str) -> str:
+    value = os.environ.get(name, "").strip()
+    if not value:
+        raise EnvironmentError(f"{name} is required")
+    return value
+
+
+def _safe_summary(report: dict[str, Any]) -> dict[str, Any]:
+    safe = {key: report[key] for key in SAFE_TOP_LEVEL_FIELDS if key in report}
+    safe["provider_results"] = [
+        {key: item[key] for key in SAFE_PROVIDER_FIELDS if key in item}
+        for item in report.get("provider_results", [])
+    ]
+    return safe
+
+
+def main(argv: list[str] | None = None) -> int:
+    try:
+        args = _parse_args(argv if argv is not None else sys.argv[1:])
+        allow_execute = os.environ.get(WRITE_GATE_ENV, "") == WRITE_GATE_VALUE
+        if args.execute and not allow_execute:
+            raise EnvironmentError("daily_active_provider_compaction_write_gate_closed")
+        writer = SupabaseMarketWriter(
+            _env("SUPABASE_URL"),
+            _env("SUPABASE_SERVICE_ROLE_KEY"),
+        )
+        report = run_finalizer(
+            writer=writer,
+            execute=args.execute,
+            allow_execute=allow_execute,
+        )
+        print(json.dumps(_safe_summary(report), sort_keys=True, separators=(",", ":")))
+        return 0 if report["status"] == "success" else 2
+    except requests.RequestException as error:
+        print(
+            f"daily_compaction_finalizer_request_error:{type(error).__name__}",
+            file=sys.stderr,
+        )
+        return 2
+    except FinalizerDeadlineExceeded as error:
+        print(
+            f"daily_compaction_finalizer_runtime_error:{type(error).__name__}",
+            file=sys.stderr,
+        )
+        return 2
+    except (EnvironmentError, OSError, TypeError, ValueError) as error:
+        print(
+            f"daily_compaction_finalizer_config_error:{type(error).__name__}",
+            file=sys.stderr,
+        )
+        return 3
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

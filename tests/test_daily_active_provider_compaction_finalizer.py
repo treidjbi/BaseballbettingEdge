@@ -549,3 +549,128 @@ def test_deadline_expiry_before_upsert_performs_zero_new_writes(monkeypatch):
     assert result["status"] == "failed"
     assert result["deadline_exceeded"] is True
     assert underlying.upserts == []
+
+
+def test_cli_accepts_no_arbitrary_date_or_provider(monkeypatch):
+    finalizer = _module()
+    with pytest.raises(SystemExit):
+        finalizer._parse_args(["--date", "2026-08-25"])
+    with pytest.raises(SystemExit):
+        finalizer._parse_args(["--provider", "propline"])
+
+
+def test_execute_cli_checks_exact_gate_before_loading_credentials(monkeypatch):
+    finalizer = _module()
+    monkeypatch.delenv(finalizer.WRITE_GATE_ENV, raising=False)
+    monkeypatch.delenv("SUPABASE_URL", raising=False)
+    monkeypatch.delenv("SUPABASE_SERVICE_ROLE_KEY", raising=False)
+
+    assert finalizer.main(["--execute"]) == 3
+
+
+def test_preview_cli_prints_one_aggregate_json_line(monkeypatch, capsys):
+    finalizer = _module()
+    monkeypatch.setattr(finalizer, "SupabaseMarketWriter", lambda *args: object())
+    monkeypatch.setattr(
+        finalizer,
+        "run_finalizer",
+        lambda **kwargs: {
+            "report_type": "daily_active_provider_compaction_finalizer",
+            "mode": "preview",
+            "status": "success",
+            "provider_results": [],
+            "database_write_attempted": False,
+            "database_write_performed": False,
+            "provider_usage_rows_written": 0,
+            "deletion_performed": False,
+            "retention_execution_closed": True,
+        },
+    )
+    monkeypatch.setenv("SUPABASE_URL", "https://example.supabase.co")
+    monkeypatch.setenv("SUPABASE_SERVICE_ROLE_KEY", "secret-value")
+
+    assert finalizer.main([]) == 0
+    captured = capsys.readouterr()
+    assert len(captured.out.splitlines()) == 1
+    assert json.loads(captured.out)["status"] == "success"
+    assert "secret-value" not in captured.out + captured.err
+
+
+def test_runtime_failure_returns_two_and_prints_no_exception_message(
+    monkeypatch,
+    capsys,
+):
+    finalizer = _module()
+    monkeypatch.setenv("SUPABASE_URL", "https://example.supabase.co")
+    monkeypatch.setenv("SUPABASE_SERVICE_ROLE_KEY", "secret-value")
+    monkeypatch.setattr(finalizer, "SupabaseMarketWriter", lambda *args: object())
+    monkeypatch.setattr(
+        finalizer,
+        "run_finalizer",
+        lambda **kwargs: {
+            "report_type": "daily_active_provider_compaction_finalizer",
+            "mode": "preview",
+            "target_slate_date": "2026-08-25",
+            "status": "failed",
+            "preflight_complete": False,
+            "provider_results": [{"provider": "propline", "error_type": "ValueError"}],
+            "database_write_attempted": False,
+            "database_write_performed": False,
+            "provider_usage_rows_written": 0,
+            "deletion_performed": False,
+            "retention_execution_closed": True,
+            "elapsed_seconds": 1.0,
+        },
+    )
+    assert finalizer.main([]) == 2
+    captured = capsys.readouterr()
+    assert json.loads(captured.out)["status"] == "failed"
+    assert "secret-value" not in captured.out + captured.err
+
+
+def test_configuration_failure_returns_three_with_static_error_code(monkeypatch, capsys):
+    finalizer = _module()
+    monkeypatch.delenv("SUPABASE_URL", raising=False)
+    monkeypatch.delenv("SUPABASE_SERVICE_ROLE_KEY", raising=False)
+    assert finalizer.main([]) == 3
+    captured = capsys.readouterr()
+    assert captured.out == ""
+    assert captured.err.strip() == "daily_compaction_finalizer_config_error:OSError"
+
+
+@pytest.mark.parametrize(
+    "value",
+    ["", "true", "1", "d1_active_providers_compact_only", "D1_ACTIVE_PROVIDERS"],
+)
+def test_execute_gate_requires_the_exact_literal_value(monkeypatch, value):
+    finalizer = _module()
+    monkeypatch.setenv(finalizer.WRITE_GATE_ENV, value)
+    monkeypatch.delenv("SUPABASE_URL", raising=False)
+    assert finalizer.main(["--execute"]) == 3
+
+
+def test_summary_serialization_rejects_unapproved_top_level_fields():
+    finalizer = _module()
+    report = {
+        "report_type": "daily_active_provider_compaction_finalizer",
+        "status": "success",
+        "provider_results": [{
+            "provider": "propline",
+            "execution_status": "no_op",
+            "canonical_rows": [{"source_snapshot_ids": ["nested-secret-id"]}],
+        }],
+        "canonical_rows": [{"source_snapshot_ids": ["secret-id"]}],
+        "credentials": "secret-value",
+    }
+    safe = finalizer._safe_summary(report)
+    assert safe == {
+        "report_type": "daily_active_provider_compaction_finalizer",
+        "status": "success",
+        "provider_results": [{
+            "provider": "propline",
+            "execution_status": "no_op",
+        }],
+    }
+    assert "secret-id" not in json.dumps(safe)
+    assert "nested-secret-id" not in json.dumps(safe)
+    assert "secret-value" not in json.dumps(safe)
