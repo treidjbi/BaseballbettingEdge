@@ -175,7 +175,7 @@ def test_preview_is_one_provider_one_date_and_reports_only_aggregate_differences
     assert report["deletion_approved"] is False
     assert report["retention_execution_closed"] is True
     assert report["database_write_performed"] is False
-    assert report["preview_fingerprint_version"] == 4
+    assert report["preview_fingerprint_version"] == 5
     assert len(report["preview_sha256"]) == 64
     assert writer.upserts == []
     rendered = json.dumps(report, sort_keys=True)
@@ -194,6 +194,84 @@ def test_preview_is_one_provider_one_date_and_reports_only_aggregate_differences
     assert by_table["compact_market_line_movements"][0][0]["provider"] == "eq.boltodds"
     assert all(kwargs == {"attempts": 1} for calls in by_table.values() for _, kwargs in calls)
     assert not any(table == "provider_request_usage_daily" for table, _, _ in writer.selects)
+
+
+def test_public_partition_preview_separates_evidence_from_execution_blockers():
+    repair = _module()
+    snapshots = [
+        _snapshot(SNAP_1, "2026-06-16T18:00:00Z", -110, provider="propline"),
+        _snapshot(SNAP_2, "2026-06-16T18:05:00Z", -125, provider="propline"),
+    ]
+    run_rows = [{
+        "id": RUN_ID,
+        "provider": "propline",
+        "slate_date": "2026-06-16",
+        "created_at": "2026-06-16T18:00:00Z",
+    }]
+    writer = FakeWriter(snapshots=snapshots, existing=[], run_rows=run_rows)
+
+    report, rows_to_upsert = repair.build_partition_preview(
+        provider="propline",
+        slate_date="2026-06-16",
+        writer=writer,
+    )
+
+    assert report["evidence_blockers"] == []
+    assert report["blockers"] == ["execution_partition_not_allowlisted"]
+    assert report["execution_eligible"] is False
+    assert report["first_source_observed_at"] == "2026-06-16T18:00:00Z"
+    assert report["last_source_observed_at"] == "2026-06-16T18:05:00Z"
+    assert report["preview_fingerprint_version"] == 5
+    assert len(rows_to_upsert) == 1
+    assert writer.upserts == []
+
+
+def test_empty_partition_is_an_evidence_failure_but_exact_partition_is_clean():
+    repair = _module()
+
+    empty_report, empty_rows = repair.build_partition_preview(
+        provider="propline",
+        slate_date="2026-06-16",
+        writer=FakeWriter(run_rows=[], heartbeats=[], snapshots=[], existing=[]),
+    )
+    assert empty_report["evidence_blockers"] == [
+        "no_provider_runs",
+        "no_raw_snapshots",
+        "no_rebuilt_compacts",
+    ]
+    assert empty_report["first_source_observed_at"] is None
+    assert empty_report["last_source_observed_at"] is None
+    assert empty_rows == []
+
+    snapshots = [
+        _snapshot(SNAP_1, "2026-06-16T18:00:00Z", -110, provider="propline"),
+        _snapshot(SNAP_2, "2026-06-16T18:05:00Z", -125, provider="propline"),
+    ]
+    run_rows = [{
+        "id": RUN_ID,
+        "provider": "propline",
+        "slate_date": "2026-06-16",
+        "created_at": "2026-06-16T18:00:00Z",
+    }]
+    first_writer = FakeWriter(snapshots=snapshots, existing=[], run_rows=run_rows)
+    _, rebuilt_rows = repair.build_partition_preview(
+        provider="propline",
+        slate_date="2026-06-16",
+        writer=first_writer,
+    )
+    exact_writer = FakeWriter(
+        snapshots=snapshots,
+        existing=rebuilt_rows,
+        run_rows=run_rows,
+    )
+    exact_report, exact_rows = repair.build_partition_preview(
+        provider="propline",
+        slate_date="2026-06-16",
+        writer=exact_writer,
+    )
+    assert exact_report["evidence_blockers"] == []
+    assert exact_report["rows_to_upsert_count"] == 0
+    assert exact_rows == []
 
 
 def test_execute_requires_environment_gate_and_exact_preview_fingerprint():
@@ -802,6 +880,19 @@ def test_preview_fingerprint_binds_out_of_window_heartbeat_count():
 
     assert baseline["rebuilt_compacts_sha256"] == quarantined["rebuilt_compacts_sha256"]
     assert baseline["preview_sha256"] != quarantined["preview_sha256"]
+
+
+def test_source_timestamp_bounds_are_bound_into_both_fingerprints():
+    repair = _module()
+    report, _ = repair.build_partition_preview(
+        provider="boltodds",
+        slate_date="2026-06-16",
+        writer=FakeWriter(),
+    )
+    changed = dict(report)
+    changed["first_source_observed_at"] = "2026-06-16T17:59:59Z"
+    assert repair._source_state_sha256(changed) != report["source_state_sha256"]
+    assert repair._preview_fingerprint(changed) != report["preview_sha256"]
 
 
 def test_partition_scope_rejects_malformed_provider_run_uuid():

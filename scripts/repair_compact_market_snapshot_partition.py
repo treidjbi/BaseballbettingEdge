@@ -60,6 +60,8 @@ SOURCE_STATE_FIELDS = (
     "raw_snapshot_count",
     "snapshot_in_window_count",
     "snapshot_out_of_window_count",
+    "first_source_observed_at",
+    "last_source_observed_at",
     "rebuilt_compact_count",
     "rebuilt_compacts_sha256",
 )
@@ -337,6 +339,21 @@ def _snapshot_window_counts(
     }
 
 
+def _source_observed_bounds(
+    rows: list[dict[str, Any]],
+) -> tuple[str | None, str | None]:
+    if not rows:
+        return None, None
+    observed = sorted(
+        _aware_datetime(row.get("observed_at"), label="snapshot observed_at")
+        for row in rows
+    )
+    return (
+        observed[0].isoformat().replace("+00:00", "Z"),
+        observed[-1].isoformat().replace("+00:00", "Z"),
+    )
+
+
 def _fetch_existing_compacts(
     writer: SupabaseMarketWriter,
     *,
@@ -527,6 +544,8 @@ def _preview_fingerprint(report: dict[str, Any]) -> str:
         "raw_snapshot_count": report["raw_snapshot_count"],
         "snapshot_in_window_count": report["snapshot_in_window_count"],
         "snapshot_out_of_window_count": report["snapshot_out_of_window_count"],
+        "first_source_observed_at": report["first_source_observed_at"],
+        "last_source_observed_at": report["last_source_observed_at"],
         "rebuilt_compact_count": report["rebuilt_compact_count"],
         "existing_compact_count": report["existing_compact_count"],
         "missing_compact_count": report["missing_compact_count"],
@@ -536,6 +555,7 @@ def _preview_fingerprint(report: dict[str, Any]) -> str:
         "mismatch_field_counts": report["mismatch_field_counts"],
         "rebuilt_compacts_sha256": report["rebuilt_compacts_sha256"],
         "existing_compacts_sha256": report["existing_compacts_sha256"],
+        "evidence_blockers": report["evidence_blockers"],
         "blockers": report["blockers"],
     }
     payload = json.dumps(fields, sort_keys=True, separators=(",", ":")).encode("utf-8")
@@ -573,15 +593,19 @@ def _build_preview(
         rebuilt_rows=rebuilt_rows,
         existing_rows=existing_rows,
     )
-    blockers = []
+    first_source_observed_at, last_source_observed_at = _source_observed_bounds(
+        snapshot_rows
+    )
+    evidence_blockers: list[str] = []
     if not run_rows:
-        blockers.append("no_provider_runs")
+        evidence_blockers.append("no_provider_runs")
     if not snapshot_rows:
-        blockers.append("no_raw_snapshots")
+        evidence_blockers.append("no_raw_snapshots")
     if not rebuilt_rows:
-        blockers.append("no_rebuilt_compacts")
+        evidence_blockers.append("no_rebuilt_compacts")
     if comparison["unexpected_compact_count"]:
-        blockers.append("unexpected_compact_rows")
+        evidence_blockers.append("unexpected_compact_rows")
+    blockers = list(evidence_blockers)
     if not is_execution_partition(provider, slate_date):
         blockers.append("execution_partition_not_allowlisted")
     if not comparison["rows_to_upsert"]:
@@ -590,13 +614,15 @@ def _build_preview(
     report = {
         "report_type": "compact_market_snapshot_partition_repair",
         "action": "preview",
-        "preview_fingerprint_version": 4,
+        "preview_fingerprint_version": 5,
         "provider": provider,
         "slate_date": slate_date,
         "provider_run_count": len(run_rows),
         **heartbeat_summary,
         "raw_snapshot_count": len(snapshot_rows),
         **snapshot_window_summary,
+        "first_source_observed_at": first_source_observed_at,
+        "last_source_observed_at": last_source_observed_at,
         "rebuilt_compact_count": len(rebuilt_rows),
         "existing_compact_count": len(existing_rows),
         "missing_compact_count": comparison["missing_compact_count"],
@@ -606,6 +632,7 @@ def _build_preview(
         "mismatch_field_counts": comparison["mismatch_field_counts"],
         "rebuilt_compacts_sha256": _rows_sha256(comparison["canonical_rebuilt"]),
         "existing_compacts_sha256": _rows_sha256(comparison["canonical_existing"]),
+        "evidence_blockers": evidence_blockers,
         "blockers": blockers,
         "execution_eligible": not blockers,
         "database_write_performed": False,
@@ -616,6 +643,23 @@ def _build_preview(
     report["source_state_sha256"] = _source_state_sha256(report)
     report["preview_sha256"] = _preview_fingerprint(report)
     return report, comparison["rows_to_upsert"]
+
+
+def build_partition_preview(
+    *,
+    provider: str,
+    slate_date: str,
+    writer: SupabaseMarketWriter,
+) -> tuple[dict[str, Any], list[dict[str, Any]]]:
+    normalized_provider = str(provider).strip().lower()
+    if normalized_provider not in PROVIDERS:
+        raise ValueError(f"provider must be one of: {', '.join(PROVIDERS)}")
+    normalized_date = _validated_date(str(slate_date).strip())
+    return _build_preview(
+        provider=normalized_provider,
+        slate_date=normalized_date,
+        writer=writer,
+    )
 
 
 def run(
@@ -637,7 +681,7 @@ def run(
         raise ValueError("expected preview fingerprint is required to execute")
     if execute and not is_execution_partition(normalized_provider, normalized_date):
         raise ValueError("execution is limited to reviewed BoltOdds repair partitions")
-    report, rows_to_upsert = _build_preview(
+    report, rows_to_upsert = build_partition_preview(
         provider=normalized_provider,
         slate_date=normalized_date,
         writer=writer,
@@ -704,6 +748,9 @@ def run(
         )
         post = _compare_compacts(rebuilt_rows=post_rebuilt_rows, existing_rows=post_rows)
         post_rebuilt_sha256 = _rows_sha256(post["canonical_rebuilt"])
+        post_first_source_observed_at, post_last_source_observed_at = (
+            _source_observed_bounds(post_snapshot_rows)
+        )
         post_source_state_sha256 = _source_state_sha256({
             "provider": normalized_provider,
             "slate_date": normalized_date,
@@ -711,6 +758,8 @@ def run(
             **post_heartbeat_summary,
             "raw_snapshot_count": len(post_snapshot_rows),
             **post_snapshot_window_summary,
+            "first_source_observed_at": post_first_source_observed_at,
+            "last_source_observed_at": post_last_source_observed_at,
             "rebuilt_compact_count": len(post_rebuilt_rows),
             "rebuilt_compacts_sha256": post_rebuilt_sha256,
         })
@@ -750,6 +799,8 @@ def run(
         "post_write_snapshot_out_of_window_count": post_snapshot_window_summary[
             "snapshot_out_of_window_count"
         ],
+        "post_write_first_source_observed_at": post_first_source_observed_at,
+        "post_write_last_source_observed_at": post_last_source_observed_at,
         "post_write_missing_compact_count": post["missing_compact_count"],
         "post_write_mismatched_compact_count": post["mismatched_compact_count"],
         "post_write_unexpected_compact_count": post["unexpected_compact_count"],
