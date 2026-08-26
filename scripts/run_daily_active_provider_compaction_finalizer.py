@@ -99,6 +99,155 @@ def _preflight_failure(
     }
 
 
+def _failed_execution(
+    *,
+    provider: str,
+    slate_date: str,
+    reason: str,
+    report: dict[str, Any] | None = None,
+    error_type: str | None = None,
+    attempted: bool = False,
+    performed: bool | None = False,
+    write_row_count: int = 0,
+) -> dict[str, Any]:
+    result = (
+        _aggregate_provider_summary(report)
+        if report is not None
+        else {"provider": provider, "slate_date": slate_date}
+    )
+    result.update({
+        "execution_status": "failed",
+        "failure_reason": reason,
+        "database_write_attempted": attempted,
+        "database_write_performed": performed,
+        "write_row_count": write_row_count,
+        "post_write_exact": False,
+    })
+    if error_type is not None:
+        result["write_error_type"] = error_type
+    return result
+
+
+def _execution_result(
+    *,
+    report: dict[str, Any],
+    status: str,
+    attempted: bool,
+    performed: bool | None,
+    write_row_count: int,
+    write_error_type: str | None,
+    post_write_exact: bool,
+) -> dict[str, Any]:
+    result = _aggregate_provider_summary(report)
+    result.update({
+        "execution_status": status,
+        "database_write_attempted": attempted,
+        "database_write_performed": performed,
+        "write_row_count": write_row_count,
+        "post_write_exact": post_write_exact,
+    })
+    if write_error_type is not None:
+        result["write_error_type"] = write_error_type
+    return result
+
+
+def _execute_provider(
+    *,
+    provider: str,
+    slate_date: str,
+    writer: _DeadlineBoundWriter,
+    preflight_report: dict[str, Any],
+) -> dict[str, Any]:
+    fresh_report, fresh_rows = build_partition_preview(
+        provider=provider,
+        slate_date=slate_date,
+        writer=writer,
+    )
+    if fresh_report["evidence_blockers"]:
+        return _failed_execution(
+            provider=provider,
+            slate_date=slate_date,
+            reason="fresh_preflight_blocked",
+            report=fresh_report,
+        )
+    if fresh_report["source_state_sha256"] != preflight_report["source_state_sha256"]:
+        return _failed_execution(
+            provider=provider,
+            slate_date=slate_date,
+            reason="source_state_drift",
+            report=fresh_report,
+        )
+
+    if not fresh_rows:
+        return {
+            **_aggregate_provider_summary(fresh_report),
+            "execution_status": "no_op",
+            "database_write_attempted": False,
+            "database_write_performed": False,
+            "write_row_count": 0,
+            "post_write_exact": True,
+        }
+
+    write_outcome = "confirmed"
+    write_performed: bool | None = True
+    write_error_type: str | None = None
+    try:
+        writer.upsert_rows(
+            "compact_market_line_movements",
+            fresh_rows,
+            on_conflict=ON_CONFLICT,
+            attempts=1,
+            return_representation=False,
+        )
+    except requests.RequestException as error:
+        write_outcome = "ambiguous"
+        write_performed = None
+        write_error_type = type(error).__name__
+
+    try:
+        post_report, _ = build_partition_preview(
+            provider=provider,
+            slate_date=slate_date,
+            writer=writer,
+        )
+    except (
+        FinalizerDeadlineExceeded,
+        requests.RequestException,
+        OSError,
+        TypeError,
+        ValueError,
+    ) as error:
+        return _failed_execution(
+            provider=provider,
+            slate_date=slate_date,
+            reason="post_write_check_failed",
+            report=fresh_report,
+            error_type=type(error).__name__,
+            attempted=True,
+            performed=write_performed,
+            write_row_count=len(fresh_rows),
+        )
+    post_exact = (
+        post_report["source_state_sha256"]
+        == preflight_report["source_state_sha256"]
+        and post_report["missing_compact_count"] == 0
+        and post_report["mismatched_compact_count"] == 0
+        and post_report["unexpected_compact_count"] == 0
+        and not post_report["evidence_blockers"]
+    )
+    if write_outcome == "ambiguous" and post_exact:
+        write_outcome = "confirmed_by_post_state"
+    return _execution_result(
+        report=post_report,
+        status=write_outcome if post_exact else "failed",
+        attempted=True,
+        performed=write_performed,
+        write_row_count=len(fresh_rows),
+        write_error_type=write_error_type,
+        post_write_exact=post_exact,
+    )
+
+
 def run_finalizer(
     *,
     writer: SupabaseMarketWriter,
@@ -108,13 +257,9 @@ def run_finalizer(
     monotonic_fn: Callable[[], float] = time.monotonic,
     deadline_seconds: float = DEFAULT_DEADLINE_SECONDS,
 ) -> dict[str, Any]:
-    """Preview or fail closed before any daily compact writes are installed."""
+    """Preview or, when separately double-gated, finalize Phoenix D-1."""
     if execute and not allow_execute:
         raise ValueError("daily active-provider compaction write gate is closed")
-    if execute:
-        raise ValueError(
-            "execute mode is disabled until the compact-only executor is installed"
-        )
     if deadline_seconds <= 0:
         raise ValueError("deadline_seconds must be positive")
 
@@ -128,6 +273,7 @@ def run_finalizer(
 
     bounded_writer = _DeadlineBoundWriter(writer, check_deadline)
     provider_summaries: list[dict[str, Any]] = []
+    preflight_reports: dict[str, dict[str, Any]] = {}
     for provider in ACTIVE_PROVIDERS:
         try:
             check_deadline()
@@ -136,6 +282,7 @@ def run_finalizer(
                 slate_date=target_slate_date,
                 writer=bounded_writer,
             )
+            preflight_reports[provider] = report
             provider_summaries.append(_aggregate_provider_summary(report))
         except (
             FinalizerDeadlineExceeded,
@@ -157,21 +304,127 @@ def run_finalizer(
     )
     status = "success" if preflight_complete else "failed"
 
+    if not execute:
+        return {
+            "report_type": "daily_active_provider_compaction_finalizer",
+            "mode": "preview",
+            "target_slate_date": target_slate_date,
+            "status": status,
+            "preflight_complete": preflight_complete,
+            "provider_results": provider_summaries,
+            "database_write_attempted": False,
+            "database_write_performed": False,
+            "provider_usage_rows_written": 0,
+            "deletion_performed": False,
+            "retention_execution_closed": True,
+            "deadline_exceeded": any(
+                item.get("error_type") == "FinalizerDeadlineExceeded"
+                for item in provider_summaries
+            ),
+            "elapsed_seconds": round(monotonic_fn() - started, 3),
+        }
+
+    if not preflight_complete:
+        return {
+            "report_type": "daily_active_provider_compaction_finalizer",
+            "mode": "execute",
+            "target_slate_date": target_slate_date,
+            "status": "failed",
+            "preflight_complete": False,
+            "provider_results": provider_summaries,
+            "database_write_attempted": False,
+            "database_write_performed": False,
+            "provider_usage_rows_written": 0,
+            "deletion_performed": False,
+            "retention_execution_closed": True,
+            "deadline_exceeded": any(
+                item.get("error_type") == "FinalizerDeadlineExceeded"
+                for item in provider_summaries
+            ),
+            "elapsed_seconds": round(monotonic_fn() - started, 3),
+        }
+
+    provider_results: list[dict[str, Any]] = []
+    for index, provider in enumerate(ACTIVE_PROVIDERS):
+        try:
+            check_deadline()
+            result = _execute_provider(
+                provider=provider,
+                slate_date=target_slate_date,
+                writer=bounded_writer,
+                preflight_report=preflight_reports[provider],
+            )
+        except (
+            FinalizerDeadlineExceeded,
+            requests.RequestException,
+            OSError,
+            TypeError,
+            ValueError,
+        ) as error:
+            result = _failed_execution(
+                provider=provider,
+                slate_date=target_slate_date,
+                reason="provider_execution_failed",
+                error_type=type(error).__name__,
+            )
+        provider_results.append(result)
+        if result["execution_status"] == "failed":
+            for remaining in ACTIVE_PROVIDERS[index + 1:]:
+                provider_results.append({
+                    "provider": remaining,
+                    "slate_date": target_slate_date,
+                    "execution_status": "not_attempted_after_prior_failure",
+                    "failure_reason": "prior_provider_failed",
+                    "database_write_attempted": False,
+                    "database_write_performed": False,
+                    "write_row_count": 0,
+                    "post_write_exact": False,
+                })
+            break
+
+    successful_states = {"no_op", "confirmed", "confirmed_by_post_state"}
+    status = (
+        "success"
+        if len(provider_results) == len(ACTIVE_PROVIDERS)
+        and all(
+            item["execution_status"] in successful_states
+            for item in provider_results
+        )
+        else "failed"
+    )
+
+    attempted_results = [
+        item for item in provider_results if item["database_write_attempted"]
+    ]
+    if any(
+        item["database_write_performed"] is None
+        for item in attempted_results
+    ):
+        top_level_write_performed: bool | None = None
+    else:
+        top_level_write_performed = any(
+            item["database_write_performed"] is True
+            for item in attempted_results
+        )
+
     return {
         "report_type": "daily_active_provider_compaction_finalizer",
-        "mode": "preview",
+        "mode": "execute",
         "target_slate_date": target_slate_date,
         "status": status,
-        "preflight_complete": preflight_complete,
-        "provider_results": provider_summaries,
-        "database_write_attempted": False,
-        "database_write_performed": False,
+        "preflight_complete": True,
+        "provider_results": provider_results,
+        "database_write_attempted": any(
+            item["database_write_attempted"] for item in provider_results
+        ),
+        "database_write_performed": top_level_write_performed,
         "provider_usage_rows_written": 0,
         "deletion_performed": False,
         "retention_execution_closed": True,
         "deadline_exceeded": any(
             item.get("error_type") == "FinalizerDeadlineExceeded"
-            for item in provider_summaries
+            or item.get("write_error_type") == "FinalizerDeadlineExceeded"
+            for item in provider_results
         ),
         "elapsed_seconds": round(monotonic_fn() - started, 3),
     }
