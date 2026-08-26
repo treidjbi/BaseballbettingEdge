@@ -291,5 +291,7 @@ git status --short
   change, network/database access, or automation-memory update occurred.
 - Preview remains the default and the write gate remains unset. The historical
   `105`-partition / `34,861`-upsert backlog and all deletion authority remain
-  closed. The next decision is code review and merge, followed by a separate
-  preview-only Render cron creation review.
+  closed. The next procedural step is to push the reviewed feature branch.
+  Merge remains a separate decision; preview-only Render creation, live-preview
+  observation, execute activation, historical backlog work, and deletion remain
+  separately gated.

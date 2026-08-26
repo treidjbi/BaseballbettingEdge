@@ -1822,8 +1822,9 @@ The separate daily active-provider compaction finalizer is implemented and
 locally verified on an isolated branch. Preview remains the default; no Render
 service exists, the write gate is unset, no live preview or database mutation
 occurred, the historical 105-partition backlog remains closed, and deletion
-remains NO-GO. The next decision is code review and merge, followed by a
-separate preview-only Render cron creation review.
+remains NO-GO. The next procedural step is to push the reviewed feature
+branch. Merge remains a separate decision, followed by a separately reviewed
+preview-only Render cron creation decision.
 ```
 
 In this plan's execution record, include:
@@ -1877,9 +1878,12 @@ No checkpoint inherits approval from the one before it.
 
 ## Task 5 Local Verification Record (Steps 1-4)
 
-- Implementation HEAD verified: `02f49aeee4ff53b4f2e0e3680b1cfe5ea330908b`
-  (`02f49aee`). No code change was required.
-- Focused suite: `109 passed`; complete repository suite: `2,565 passed`.
+- Final reviewed implementation branch:
+  `codex/daily-compaction-finalizer-implementation`, at implementation HEAD
+  `304555b1bd796f435fbbc5754cdb3dc96af7073f` (`304555b1`). The bounded
+  final-review hardening commit addressed the reviewed deadline, read-budget,
+  and unexpected-exception boundaries.
+- Focused suite: `117 passed`; complete repository suite: `2,573 passed`.
   The focused command used
   `tests/test_market_infra_supabase_writer.py`, the authorized replacement for
   the nonexistent `tests/test_supabase_writer.py` named above.
@@ -1903,9 +1907,9 @@ No checkpoint inherits approval from the one before it.
   `retention_execution_closed=true`.
 - Preview remains the default; no Render service exists and the write gate is
   unset. The historical `105`-partition backlog remains closed, deletion is
-  NO-GO, and no automation memory was updated. The next decision is code
-  review and merge, followed by a separate preview-only Render cron creation
-  review.
+  NO-GO, and no automation memory was updated. The next procedural step is to
+  push the reviewed feature branch. Merge remains a separate decision, followed
+  by a separately reviewed preview-only Render cron creation decision.
 
 ## Final Review Correction Record (2026-08-26)
 
