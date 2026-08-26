@@ -33,6 +33,15 @@ class FinalizerDeadlineExceeded(RuntimeError):
     """Raised when a finalizer operation reaches its bounded deadline."""
 
 
+class CliArgumentError(SystemExit):
+    """Raised for invalid CLI input without writing parser details."""
+
+
+class _RedactedArgumentParser(argparse.ArgumentParser):
+    def error(self, message: str) -> None:
+        raise CliArgumentError(2)
+
+
 class _DeadlineBoundWriter:
     def __init__(self, writer: SupabaseMarketWriter, check_deadline: Callable[[], None]):
         self._writer = writer
@@ -457,7 +466,7 @@ def run_finalizer(
 
 
 def _parse_args(argv: list[str]) -> argparse.Namespace:
-    parser = argparse.ArgumentParser(description=__doc__)
+    parser = _RedactedArgumentParser(description=__doc__)
     parser.add_argument("--execute", action="store_true")
     return parser.parse_args(argv)
 
@@ -513,6 +522,12 @@ def main(argv: list[str] | None = None) -> int:
             file=sys.stderr,
         )
         return 3
+    except CliArgumentError:
+        print("daily_compaction_finalizer_config_error:CliArgumentError", file=sys.stderr)
+        return 3
+    except Exception:
+        print("daily_compaction_finalizer_runtime_error:UnhandledError", file=sys.stderr)
+        return 2
 
 
 if __name__ == "__main__":

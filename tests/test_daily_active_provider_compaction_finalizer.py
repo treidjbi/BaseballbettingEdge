@@ -674,3 +674,35 @@ def test_summary_serialization_rejects_unapproved_top_level_fields():
     assert "secret-id" not in json.dumps(safe)
     assert "nested-secret-id" not in json.dumps(safe)
     assert "secret-value" not in json.dumps(safe)
+
+
+def test_cli_rejection_does_not_echo_sensitive_argument(capsys):
+    finalizer = _module()
+    sensitive_value = "https://opaque-source.example/token-secret"
+
+    assert finalizer.main(["--date", sensitive_value]) == 3
+
+    captured = capsys.readouterr()
+    assert captured.out == ""
+    assert captured.err.strip() == "daily_compaction_finalizer_config_error:CliArgumentError"
+    assert sensitive_value not in captured.out + captured.err
+
+
+def test_unexpected_runtime_error_prints_only_static_redacted_error(monkeypatch, capsys):
+    finalizer = _module()
+    sensitive_message = "opaque-source-id-and-token"
+    monkeypatch.setenv("SUPABASE_URL", "https://example.supabase.co")
+    monkeypatch.setenv("SUPABASE_SERVICE_ROLE_KEY", "secret-value")
+    monkeypatch.setattr(finalizer, "SupabaseMarketWriter", lambda *args: object())
+
+    def unexpected_failure(**kwargs):
+        raise RuntimeError(sensitive_message)
+
+    monkeypatch.setattr(finalizer, "run_finalizer", unexpected_failure)
+
+    assert finalizer.main([]) == 2
+    captured = capsys.readouterr()
+    assert captured.out == ""
+    assert captured.err.strip() == "daily_compaction_finalizer_runtime_error:UnhandledError"
+    assert sensitive_message not in captured.out + captured.err
+    assert "secret-value" not in captured.out + captured.err
