@@ -1910,6 +1910,10 @@ No checkpoint inherits approval from the one before it.
 ## Final Review Correction Record (2026-08-26)
 
 - Review started from `36502102e5382bcb88addbe1aa9ed3aa26747243`.
+- Bounded final-review hardening was committed as
+  `304555b1bd796f435fbbc5754cdb3dc96af7073f` (`304555b1`). The final
+  independent re-review addressed all findings and returned **Ready to merge:
+  Yes**.
 - Strict TDD reproduced the three Important findings before fixes:
   deadline boundary `2 failed, 31 passed`; compact-only/read-budget
   `9 failed, 72 passed`; unexpected exception boundaries

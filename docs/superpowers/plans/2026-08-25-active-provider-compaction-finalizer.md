@@ -265,12 +265,13 @@ git status --short
 - The isolated implementation branch
   `codex/daily-active-provider-compaction-finalizer-implementation` was
   verified at implementation HEAD
-  `02f49aeee4ff53b4f2e0e3680b1cfe5ea330908b` (`02f49aee`). No code change was
-  required during this verification.
-- The focused safety suite passed `109` tests using the authorized current
+  `304555b1bd796f435fbbc5754cdb3dc96af7073f` (`304555b1`). The bounded
+  final-review hardening commit addressed the reviewed deadline, read-budget,
+  and unexpected-exception boundaries.
+- The focused safety suite passed `117` tests using the authorized current
   writer test filename `tests/test_market_infra_supabase_writer.py` in place
   of the obsolete plan reference `tests/test_supabase_writer.py`. The complete
-  repository suite passed `2,565` tests. `git diff --check` passed.
+  repository suite passed `2,573` tests. `git diff --check` passed.
 - The full suite regenerated only the known tracked
   `analytics/output/gate_f_preclose_clv_proxy_lab.md` report with local
   zero-row fixture output; that exact generated report was restored to HEAD
