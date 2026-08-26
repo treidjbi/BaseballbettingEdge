@@ -20,6 +20,7 @@ from market_infra.supabase_writer import SupabaseMarketWriter
 from scripts.repair_compact_market_snapshot_partition import (
     ON_CONFLICT,
     build_partition_preview,
+    verify_compact_partition_exact,
 )
 
 PHOENIX = ZoneInfo("America/Phoenix")
@@ -31,6 +32,10 @@ DEFAULT_DEADLINE_SECONDS = 480.0
 
 class FinalizerDeadlineExceeded(RuntimeError):
     """Raised when a finalizer operation reaches its bounded deadline."""
+
+    def __init__(self, message: str, *, operation_completed: bool = False):
+        super().__init__(message)
+        self.operation_completed = operation_completed
 
 
 class CliArgumentError(SystemExit):
@@ -49,11 +54,27 @@ class _DeadlineBoundWriter:
 
     def select_rows(self, table: str, params: dict[str, str], **kwargs):
         self._check_deadline()
-        return self._writer.select_rows(table, params, **kwargs)
+        result = self._writer.select_rows(table, params, **kwargs)
+        self._check_after_operation()
+        return result
 
     def upsert_rows(self, table: str, rows: list[dict], on_conflict: str, **kwargs):
         self._check_deadline()
-        return self._writer.upsert_rows(table, rows, on_conflict, **kwargs)
+        result = self._writer.upsert_rows(table, rows, on_conflict, **kwargs)
+        self._check_after_operation()
+        return result
+
+    def check_deadline(self) -> None:
+        self._check_deadline()
+
+    def _check_after_operation(self) -> None:
+        try:
+            self._check_deadline()
+        except FinalizerDeadlineExceeded as error:
+            raise FinalizerDeadlineExceeded(
+                "daily finalizer deadline exceeded",
+                operation_completed=True,
+            ) from error
 
 
 def _target_slate_date(now_utc: datetime) -> str:
@@ -193,11 +214,33 @@ def _execute_provider(
     writer: _DeadlineBoundWriter,
     preflight_report: dict[str, Any],
 ) -> dict[str, Any]:
-    fresh_report, fresh_rows = build_partition_preview(
-        provider=provider,
-        slate_date=slate_date,
-        writer=writer,
-    )
+    try:
+        fresh_report, fresh_rows = build_partition_preview(
+            provider=provider,
+            slate_date=slate_date,
+            writer=writer,
+        )
+        writer.check_deadline()
+    except (
+        FinalizerDeadlineExceeded,
+        requests.RequestException,
+        OSError,
+        TypeError,
+        ValueError,
+    ) as error:
+        return _failed_execution(
+            provider=provider,
+            slate_date=slate_date,
+            reason="fresh_preflight_failed",
+            error_type=type(error).__name__,
+        )
+    except Exception as error:
+        return _failed_execution(
+            provider=provider,
+            slate_date=slate_date,
+            reason="fresh_preflight_failed",
+            error_type=type(error).__name__,
+        )
     if fresh_report["evidence_blockers"]:
         return _failed_execution(
             provider=provider,
@@ -214,6 +257,7 @@ def _execute_provider(
         )
 
     if not fresh_rows:
+        writer.check_deadline()
         return {
             **_aggregate_provider_summary(fresh_report),
             "execution_status": "no_op",
@@ -234,17 +278,38 @@ def _execute_provider(
             attempts=1,
             return_representation=False,
         )
+    except FinalizerDeadlineExceeded as error:
+        if error.operation_completed:
+            return _failed_execution(
+                provider=provider,
+                slate_date=slate_date,
+                reason="deadline_exceeded_after_write",
+                report=fresh_report,
+                error_type=type(error).__name__,
+                attempted=True,
+                performed=True,
+                write_row_count=len(fresh_rows),
+            )
+        raise
     except requests.RequestException as error:
+        write_outcome = "ambiguous"
+        write_performed = None
+        write_error_type = type(error).__name__
+    except Exception as error:
         write_outcome = "ambiguous"
         write_performed = None
         write_error_type = type(error).__name__
 
     try:
-        post_report, _ = build_partition_preview(
+        compact_proof = verify_compact_partition_exact(
             provider=provider,
             slate_date=slate_date,
             writer=writer,
+            expected_compact_count=fresh_report["rebuilt_compact_count"],
+            expected_compacts_sha256=fresh_report["rebuilt_compacts_sha256"],
         )
+        writer.check_deadline()
+        post_exact = compact_proof["compact_state_exact"]
     except (
         FinalizerDeadlineExceeded,
         requests.RequestException,
@@ -262,18 +327,21 @@ def _execute_provider(
             performed=write_performed,
             write_row_count=len(fresh_rows),
         )
-    post_exact = (
-        post_report["source_state_sha256"]
-        == preflight_report["source_state_sha256"]
-        and post_report["missing_compact_count"] == 0
-        and post_report["mismatched_compact_count"] == 0
-        and post_report["unexpected_compact_count"] == 0
-        and not post_report["evidence_blockers"]
-    )
+    except Exception as error:
+        return _failed_execution(
+            provider=provider,
+            slate_date=slate_date,
+            reason="post_write_check_failed",
+            report=fresh_report,
+            error_type=type(error).__name__,
+            attempted=True,
+            performed=write_performed,
+            write_row_count=len(fresh_rows),
+        )
     if write_outcome == "ambiguous" and post_exact:
         write_outcome = "confirmed_by_post_state"
     return _execution_result(
-        report=post_report,
+        report=fresh_report,
         status=write_outcome if post_exact else "failed",
         attempted=True,
         performed=write_performed,
@@ -306,6 +374,17 @@ def run_finalizer(
         if monotonic_fn() - started >= deadline_seconds:
             raise FinalizerDeadlineExceeded("daily finalizer deadline exceeded")
 
+    def final_timing(
+        provider_results: list[dict[str, Any]],
+    ) -> tuple[float, bool]:
+        elapsed = monotonic_fn() - started
+        captured_deadline = any(
+            item.get("error_type") == "FinalizerDeadlineExceeded"
+            or item.get("write_error_type") == "FinalizerDeadlineExceeded"
+            for item in provider_results
+        )
+        return round(elapsed, 3), captured_deadline or elapsed >= deadline_seconds
+
     bounded_writer = _DeadlineBoundWriter(writer, check_deadline)
     provider_summaries: list[dict[str, Any]] = []
     preflight_reports: dict[str, dict[str, Any]] = {}
@@ -317,6 +396,7 @@ def run_finalizer(
                 slate_date=target_slate_date,
                 writer=bounded_writer,
             )
+            check_deadline()
             preflight_reports[provider] = report
             provider_summaries.append(_aggregate_provider_summary(report))
         except (
@@ -331,6 +411,12 @@ def run_finalizer(
                 slate_date=target_slate_date,
                 error=error,
             ))
+        except Exception as error:
+            provider_summaries.append(_preflight_failure(
+                provider=provider,
+                slate_date=target_slate_date,
+                error=error,
+            ))
 
     preflight_complete = (
         len(provider_summaries) == len(ACTIVE_PROVIDERS)
@@ -340,6 +426,9 @@ def run_finalizer(
     status = "success" if preflight_complete else "failed"
 
     if not execute:
+        elapsed_seconds, deadline_exceeded = final_timing(provider_summaries)
+        if deadline_exceeded:
+            status = "failed"
         return {
             "report_type": "daily_active_provider_compaction_finalizer",
             "mode": "preview",
@@ -352,14 +441,12 @@ def run_finalizer(
             "provider_usage_rows_written": 0,
             "deletion_performed": False,
             "retention_execution_closed": True,
-            "deadline_exceeded": any(
-                item.get("error_type") == "FinalizerDeadlineExceeded"
-                for item in provider_summaries
-            ),
-            "elapsed_seconds": round(monotonic_fn() - started, 3),
+            "deadline_exceeded": deadline_exceeded,
+            "elapsed_seconds": elapsed_seconds,
         }
 
     if not preflight_complete:
+        elapsed_seconds, deadline_exceeded = final_timing(provider_summaries)
         return {
             "report_type": "daily_active_provider_compaction_finalizer",
             "mode": "execute",
@@ -372,11 +459,8 @@ def run_finalizer(
             "provider_usage_rows_written": 0,
             "deletion_performed": False,
             "retention_execution_closed": True,
-            "deadline_exceeded": any(
-                item.get("error_type") == "FinalizerDeadlineExceeded"
-                for item in provider_summaries
-            ),
-            "elapsed_seconds": round(monotonic_fn() - started, 3),
+            "deadline_exceeded": deadline_exceeded,
+            "elapsed_seconds": elapsed_seconds,
         }
 
     provider_results: list[dict[str, Any]] = []
@@ -396,6 +480,13 @@ def run_finalizer(
             TypeError,
             ValueError,
         ) as error:
+            result = _failed_execution(
+                provider=provider,
+                slate_date=target_slate_date,
+                reason="provider_execution_failed",
+                error_type=type(error).__name__,
+            )
+        except Exception as error:
             result = _failed_execution(
                 provider=provider,
                 slate_date=target_slate_date,
@@ -442,6 +533,10 @@ def run_finalizer(
             for item in attempted_results
         )
 
+    elapsed_seconds, deadline_exceeded = final_timing(provider_results)
+    if deadline_exceeded:
+        status = "failed"
+
     return {
         "report_type": "daily_active_provider_compaction_finalizer",
         "mode": "execute",
@@ -456,12 +551,8 @@ def run_finalizer(
         "provider_usage_rows_written": 0,
         "deletion_performed": False,
         "retention_execution_closed": True,
-        "deadline_exceeded": any(
-            item.get("error_type") == "FinalizerDeadlineExceeded"
-            or item.get("write_error_type") == "FinalizerDeadlineExceeded"
-            for item in provider_results
-        ),
-        "elapsed_seconds": round(monotonic_fn() - started, 3),
+        "deadline_exceeded": deadline_exceeded,
+        "elapsed_seconds": elapsed_seconds,
     }
 
 

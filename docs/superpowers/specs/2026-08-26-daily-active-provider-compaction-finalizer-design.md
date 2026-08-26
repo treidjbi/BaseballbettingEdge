@@ -1,8 +1,8 @@
 # Daily Active-Provider Compaction Finalizer Design
 
 **Date:** 2026-08-26
-**Status:** Approved by Tyler on 2026-08-26; implementation plan written,
-execution not started
+**Status:** Approved by Tyler on 2026-08-26 and implemented locally; not
+merged, deployed, scheduled, or activated
 **Scope:** A separate low-frequency Render cron and its local implementation;
 no production creation, activation, database write, or deletion is authorized
 by this document
@@ -207,8 +207,10 @@ is not activated by this design.
 4. If stored compact state is already exact, record an idempotent no-op.
 5. Otherwise, upsert only the rebuilt compact rows for that provider/date.
 6. Use one write attempt. Do not automatically replay an ambiguous request.
-7. Re-read compact state and require an exact post-write match before marking
-   that provider successful.
+7. Re-read only `compact_market_line_movements` and require its canonical
+   count and hash to match the fresh pre-write rebuild before marking that
+   provider successful. This compact-only verifier does not perform a third
+   raw source read.
 8. Continue to the second provider only after the first provider's exact
    post-state is proven.
 

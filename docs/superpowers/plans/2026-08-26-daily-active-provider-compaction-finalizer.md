@@ -47,6 +47,10 @@ deployment gate.
 - Execute mode may upsert only `compact_market_line_movements`, with
   `attempts=1`, after both provider preflights complete and a fresh per-provider
   source-state fingerprint matches.
+- Execute mode performs at most two full raw partition reads per provider:
+  initial preflight and fresh pre-write validation. Post-write verification
+  reads only `compact_market_line_movements` and compares canonical count/hash
+  against the fresh rebuild, preserving the 300,000-row maximum.
 - The finalizer never writes provider usage and never deletes any row.
 - The wall-clock budget is exactly `480.0` seconds. The deadline is checked
   before every Supabase request and before every upsert.
@@ -107,6 +111,17 @@ def build_partition_preview(
     """Return aggregate preview evidence and canonical rows that would upsert."""
 
 
+def verify_compact_partition_exact(
+    *,
+    provider: str,
+    slate_date: str,
+    writer: SupabaseMarketWriter,
+    expected_compact_count: int,
+    expected_compacts_sha256: str,
+) -> dict[str, Any]:
+    """Return aggregate compact-only count/hash proof; never canonical rows."""
+
+
 # scripts/run_daily_active_provider_compaction_finalizer.py
 ACTIVE_PROVIDERS: tuple[str, ...] = ("propline", "therundown")
 WRITE_GATE_ENV = "ALLOW_DAILY_ACTIVE_PROVIDER_COMPACTION_WRITE"
@@ -149,7 +164,7 @@ allowlist and never serializes those rows.
   `evidence_blockers: list[str]`, source timestamp fields, and fingerprint
   version `5`.
 
-- [ ] **Step 1: Write failing public-contract tests**
+- [x] **Step 1: Write failing public-contract tests**
 
 Add these assertions to the existing preview fixture and add a direct public
 entrypoint regression:
@@ -250,7 +265,7 @@ def test_source_timestamp_bounds_are_bound_into_both_fingerprints():
     assert repair._preview_fingerprint(changed) != report["preview_sha256"]
 ```
 
-- [ ] **Step 2: Run the focused tests and confirm the public interface is absent**
+- [x] **Step 2: Run the focused tests and confirm the public interface is absent**
 
 Run:
 
@@ -261,7 +276,7 @@ python -m pytest tests/test_repair_compact_market_snapshot_partition.py -q
 Expected: the new tests fail because `build_partition_preview` and the new
 aggregate fields do not exist.
 
-- [ ] **Step 3: Add the public preview and evidence-only blocker set**
+- [x] **Step 3: Add the public preview and evidence-only blocker set**
 
 Extend the source fingerprint fields and build the report with two blocker
 levels:
@@ -370,7 +385,7 @@ Include both post-write timestamp fields in the returned execution report so
 existing exact-repair tests prove the new fingerprint remains internally
 consistent.
 
-- [ ] **Step 4: Run exact-preview and compactor regressions**
+- [x] **Step 4: Run exact-preview and compactor regressions**
 
 Run:
 
@@ -381,7 +396,7 @@ python -m pytest tests/test_repair_compact_market_snapshot_partition.py tests/te
 Expected: all tests pass; active-provider historical execution remains blocked
 and the frequent compactor remains unchanged.
 
-- [ ] **Step 5: Commit the public read-only contract**
+- [x] **Step 5: Commit the public read-only contract**
 
 ```powershell
 git add scripts/repair_compact_market_snapshot_partition.py tests/test_repair_compact_market_snapshot_partition.py
@@ -402,7 +417,7 @@ git commit -m "refactor: expose exact compaction preview"
 - Produces: `_target_slate_date(...)`, `_DeadlineBoundWriter`, aggregate
   provider summaries, and preview-capable `run_finalizer(...)`.
 
-- [ ] **Step 1: Write failing date, provider-order, and zero-write tests**
+- [x] **Step 1: Write failing date, provider-order, and zero-write tests**
 
 Create the test module with a recording writer and deterministic preview
 factory:
@@ -601,7 +616,7 @@ def test_deadline_bound_writer_refuses_requests_at_or_after_cutoff():
     assert underlying.upserts == []
 ```
 
-- [ ] **Step 2: Run the new test file and confirm the module is absent**
+- [x] **Step 2: Run the new test file and confirm the module is absent**
 
 Run:
 
@@ -612,7 +627,7 @@ python -m pytest tests/test_daily_active_provider_compaction_finalizer.py -q
 Expected: collection or import fails because the finalizer module does not
 exist.
 
-- [ ] **Step 3: Implement the preview core and deadline-bound writer**
+- [x] **Step 3: Implement the preview core and deadline-bound writer**
 
 Create the module with these constants and helpers:
 
@@ -810,7 +825,7 @@ for provider in ACTIVE_PROVIDERS:
         ))
 ```
 
-- [ ] **Step 4: Run preview and exact-reader tests**
+- [x] **Step 4: Run preview and exact-reader tests**
 
 Run:
 
@@ -820,7 +835,7 @@ python -m pytest tests/test_daily_active_provider_compaction_finalizer.py tests/
 
 Expected: all tests pass, and the preview test records zero writes.
 
-- [ ] **Step 5: Commit the isolated preview core**
+- [x] **Step 5: Commit the isolated preview core**
 
 ```powershell
 git add scripts/run_daily_active_provider_compaction_finalizer.py tests/test_daily_active_provider_compaction_finalizer.py
@@ -842,7 +857,7 @@ git commit -m "feat: add daily compaction preview finalizer"
   states `no_op`, `confirmed`, `confirmed_by_post_state`, `failed`, and
   `not_attempted_after_prior_failure`.
 
-- [ ] **Step 1: Write failing execute-gate and preflight-order tests**
+- [x] **Step 1: Write failing execute-gate and preflight-order tests**
 
 Add tests that use an ordered event list shared by the preview fake and writer:
 
@@ -867,8 +882,8 @@ def test_execute_preflights_both_providers_before_first_upsert(monkeypatch):
     events = []
     writer = RecordingWriter()
 
-    # The preview sequence returns one preflight, one pre-write read, and one
-    # exact post-write read per provider.
+    # The preview sequence returns one preflight and one pre-write raw read per
+    # provider. Compact-only post-state verification uses its own fake.
     sequence = PreviewSequence.exact_write_cycle(events)
     monkeypatch.setattr(finalizer, "build_partition_preview", sequence)
     writer.on_upsert = lambda rows: events.append(("upsert", rows[0]["provider"]))
@@ -909,11 +924,9 @@ class PreviewSequence:
         responses = {}
         for provider in ("propline", "therundown"):
             pending = _report(provider, rows_to_upsert=1)
-            exact = _report(provider, rows_to_upsert=0)
             responses[provider] = [
                 ("preflight", (pending, [{"provider": provider}])),
                 ("fresh", (pending, [{"provider": provider}])),
-                ("post", (exact, [])),
             ]
         return cls(responses, events)
 ```
@@ -1047,7 +1060,6 @@ def test_ambiguous_inexact_upsert_fails_and_prevents_second_write(monkeypatch):
         "propline": [
             ("preflight", (pending, [{"provider": "propline"}])),
             ("fresh", (pending, [{"provider": "propline"}])),
-            ("post", (pending, [{"provider": "propline"}])),
         ],
         "therundown": [
             ("preflight", (_report("therundown"), [{"provider": "therundown"}])),
@@ -1078,12 +1090,10 @@ def test_second_provider_failure_reports_bounded_partial_state(monkeypatch):
         "propline": [
             ("preflight", (propline_pending, [{"provider": "propline"}])),
             ("fresh", (propline_pending, [{"provider": "propline"}])),
-            ("post", (propline_exact, [])),
         ],
         "therundown": [
             ("preflight", (rundown_pending, [{"provider": "therundown"}])),
             ("fresh", (rundown_pending, [{"provider": "therundown"}])),
-            ("post", (rundown_pending, [{"provider": "therundown"}])),
         ],
     })
     monkeypatch.setattr(finalizer, "build_partition_preview", sequence)
@@ -1114,7 +1124,6 @@ def test_retry_treats_completed_first_provider_as_no_op(monkeypatch):
         "therundown": [
             ("preflight", (rundown_pending, [{"provider": "therundown"}])),
             ("fresh", (rundown_pending, [{"provider": "therundown"}])),
-            ("post", (rundown_exact, [])),
         ],
     })
     monkeypatch.setattr(finalizer, "build_partition_preview", sequence)
@@ -1166,7 +1175,7 @@ def test_deadline_expiry_before_upsert_performs_zero_new_writes(monkeypatch):
     assert underlying.upserts == []
 ```
 
-- [ ] **Step 2: Run execute tests and confirm the fail-closed stub blocks them**
+- [x] **Step 2: Run execute tests and confirm the fail-closed stub blocks them**
 
 Run:
 
@@ -1177,7 +1186,7 @@ python -m pytest tests/test_daily_active_provider_compaction_finalizer.py -q
 Expected: the new execute-path tests fail because Task 2 deliberately left
 execute mode closed.
 
-- [ ] **Step 3: Implement source-bound one-attempt execution**
+- [x] **Step 3: Implement source-bound one-attempt execution**
 
 Store both preflight reports and row lists before entering the write loop. If
 either provider has an exception or non-empty `evidence_blockers`, return
@@ -1292,10 +1301,12 @@ def _execute_provider(
         write_error_type = type(error).__name__
 
     try:
-        post_report, _ = build_partition_preview(
+        compact_proof = verify_compact_partition_exact(
             provider=provider,
             slate_date=slate_date,
             writer=writer,
+            expected_compact_count=fresh_report["rebuilt_compact_count"],
+            expected_compacts_sha256=fresh_report["rebuilt_compacts_sha256"],
         )
     except (
         FinalizerDeadlineExceeded,
@@ -1314,18 +1325,11 @@ def _execute_provider(
             performed=write_performed,
             write_row_count=len(fresh_rows),
         )
-    post_exact = (
-        post_report["source_state_sha256"]
-        == preflight_report["source_state_sha256"]
-        and post_report["missing_compact_count"] == 0
-        and post_report["mismatched_compact_count"] == 0
-        and post_report["unexpected_compact_count"] == 0
-        and not post_report["evidence_blockers"]
-    )
+    post_exact = compact_proof["compact_state_exact"]
     if write_outcome == "ambiguous" and post_exact:
         write_outcome = "confirmed_by_post_state"
     return _execution_result(
-        report=post_report,
+        report=fresh_report,
         status=write_outcome if post_exact else "failed",
         attempted=True,
         performed=write_performed,
@@ -1458,7 +1462,7 @@ return {
 }
 ```
 
-- [ ] **Step 4: Run execute, exact-reader, and writer regressions**
+- [x] **Step 4: Run execute, exact-reader, and writer regressions**
 
 Run:
 
@@ -1470,7 +1474,7 @@ Expected: all tests pass; every upsert assertion shows
 `attempts=1`, `return_representation=False`, and table
 `compact_market_line_movements`.
 
-- [ ] **Step 5: Commit the compact-only executor**
+- [x] **Step 5: Commit the compact-only executor**
 
 ```powershell
 git add scripts/run_daily_active_provider_compaction_finalizer.py tests/test_daily_active_provider_compaction_finalizer.py
@@ -1492,7 +1496,7 @@ git commit -m "feat: gate daily compact finalization"
   `--execute` as the only mode flag, one-line aggregate JSON, and stable exit
   codes `0`, `2`, and `3`.
 
-- [ ] **Step 1: Write failing CLI and redaction tests**
+- [x] **Step 1: Write failing CLI and redaction tests**
 
 Add the following tests:
 
@@ -1625,7 +1629,7 @@ def test_summary_serialization_rejects_unapproved_top_level_fields():
     assert "secret-value" not in json.dumps(safe)
 ```
 
-- [ ] **Step 2: Run CLI tests and confirm the CLI contract is incomplete**
+- [x] **Step 2: Run CLI tests and confirm the CLI contract is incomplete**
 
 Run:
 
@@ -1636,7 +1640,7 @@ python -m pytest tests/test_daily_active_provider_compaction_finalizer.py -q
 Expected: new CLI tests fail before `_parse_args`, `_safe_summary`, and final
 exit behavior are implemented.
 
-- [ ] **Step 3: Implement preview-default parsing and safe output**
+- [x] **Step 3: Implement preview-default parsing and safe output**
 
 Use no date, provider, output, or retry option:
 
@@ -1724,7 +1728,7 @@ def main(argv: list[str] | None = None) -> int:
 Do not print `str(error)`. End the module with
 `raise SystemExit(main())` under the normal `__main__` guard.
 
-- [ ] **Step 4: Run CLI security and complete focused tests**
+- [x] **Step 4: Run CLI security and complete focused tests**
 
 Run:
 
@@ -1736,7 +1740,7 @@ python -m py_compile scripts/run_daily_active_provider_compaction_finalizer.py s
 Expected: all tests and both compilations pass; captured output contains no
 credentials, raw rows, source IDs, player names, books, or exception messages.
 
-- [ ] **Step 5: Commit the CLI and redaction boundary**
+- [x] **Step 5: Commit the CLI and redaction boundary**
 
 ```powershell
 git add scripts/run_daily_active_provider_compaction_finalizer.py tests/test_daily_active_provider_compaction_finalizer.py
@@ -1835,7 +1839,7 @@ In this plan's execution record, include:
 Do not update the automation memory because production posture has not
 changed.
 
-- [ ] **Step 5: Run final review using the completion skills**
+- [x] **Step 5: Run final review using the completion skills**
 
 Use `superpowers:requesting-code-review` for an independent requirements and
 quality review. Resolve only findings inside this approved scope. Then use
@@ -1902,3 +1906,32 @@ No checkpoint inherits approval from the one before it.
   NO-GO, and no automation memory was updated. The next decision is code
   review and merge, followed by a separate preview-only Render cron creation
   review.
+
+## Final Review Correction Record (2026-08-26)
+
+- Review started from `36502102e5382bcb88addbe1aa9ed3aa26747243`.
+- Strict TDD reproduced the three Important findings before fixes:
+  deadline boundary `2 failed, 31 passed`; compact-only/read-budget
+  `9 failed, 72 passed`; unexpected exception boundaries
+  `4 failed, 34 passed`.
+- Finalizer and exact-reader modules passed `85` tests. The authorized
+  five-file safety suite passed `117` tests, and the complete repository suite
+  passed `2,573` tests.
+- Execute now performs at most two full raw reads per provider. Post-write
+  proof reads only `compact_market_line_movements` and compares canonical
+  count/hash against the fresh rebuild.
+- Deadline checks run after bounded operations and final elapsed time can
+  force top-level failure while preserving known or ambiguous write state.
+- Unexpected `Exception` subclasses are sanitized at preflight, fresh-read,
+  upsert, and post-check boundaries. `BaseException`, `SystemExit`, and
+  `KeyboardInterrupt` are not caught.
+- The full suite regenerated only
+  `analytics/output/gate_f_preclose_clv_proxy_lab.md`; its zero-row fixture
+  diff was verified and that exact tracked artifact was restored to HEAD.
+- Compile, whitespace, static provider/deadline/allowlist, and boundary diff
+  checks passed. No network, Supabase, database, Render, deploy, push, merge,
+  deletion, retention, provider-usage, notification, lock, UI, model, or
+  source-of-truth action occurred.
+- Step 6 remains open because this bounded review wave does not authorize a
+  push. Merge, Render creation, live preview, execute activation, historical
+  backlog work, and deletion remain separately gated.

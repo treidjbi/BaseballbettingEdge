@@ -56,6 +56,7 @@ def _report(provider, *, blockers=(), rows_to_upsert=1, source_hash=None):
         "evidence_blockers": list(blockers),
         "source_state_sha256": source_hash or f"source-{provider}",
         "preview_sha256": f"preview-{provider}",
+        "rebuilt_compacts_sha256": f"rebuilt-{provider}",
     }
 
 
@@ -79,13 +80,59 @@ class PreviewSequence:
         responses = {}
         for provider in ("propline", "therundown"):
             pending = _report(provider, rows_to_upsert=1)
-            exact = _report(provider, rows_to_upsert=0)
             responses[provider] = [
                 ("preflight", (pending, [{"provider": provider}])),
                 ("fresh", (pending, [{"provider": provider}])),
-                ("post", (exact, [])),
             ]
         return cls(responses, events)
+
+
+def _compact_proof(provider, *, exact=True):
+    expected_hash = f"rebuilt-{provider}"
+    return {
+        "provider": provider,
+        "slate_date": "2026-08-25",
+        "expected_compact_count": 10,
+        "actual_compact_count": 10 if exact else 9,
+        "expected_compacts_sha256": expected_hash,
+        "actual_compacts_sha256": expected_hash if exact else "different",
+        "compact_state_exact": exact,
+    }
+
+
+class CompactVerificationSequence:
+    def __init__(self, responses, events=None):
+        self.responses = {
+            provider: list(items) for provider, items in responses.items()
+        }
+        self.events = events if events is not None else []
+
+    def __call__(
+        self,
+        *,
+        provider,
+        slate_date,
+        writer,
+        expected_compact_count,
+        expected_compacts_sha256,
+    ):
+        self.events.append(("verify", provider))
+        result = self.responses[provider].pop(0)
+        if isinstance(result, Exception):
+            raise result
+        assert expected_compact_count == 10
+        assert expected_compacts_sha256 == f"rebuilt-{provider}"
+        return dict(result)
+
+    @classmethod
+    def exact_write_cycle(cls, events=None):
+        return cls(
+            {
+                provider: [_compact_proof(provider)]
+                for provider in ("propline", "therundown")
+            },
+            events,
+        )
 
 
 def test_preview_targets_phoenix_d_minus_one_in_fixed_provider_order(monkeypatch):
@@ -251,6 +298,12 @@ def test_execute_preflights_both_providers_before_first_upsert(monkeypatch):
     writer = RecordingWriter()
     sequence = PreviewSequence.exact_write_cycle(events)
     monkeypatch.setattr(finalizer, "build_partition_preview", sequence)
+    monkeypatch.setattr(
+        finalizer,
+        "verify_compact_partition_exact",
+        CompactVerificationSequence.exact_write_cycle(events),
+        raising=False,
+    )
     writer.on_upsert = lambda rows: events.append(("upsert", rows[0]["provider"]))
 
     result = finalizer.run_finalizer(
@@ -370,6 +423,12 @@ def test_successful_upsert_uses_one_attempt_and_return_minimal(monkeypatch):
         "build_partition_preview",
         PreviewSequence.exact_write_cycle(),
     )
+    monkeypatch.setattr(
+        finalizer,
+        "verify_compact_partition_exact",
+        CompactVerificationSequence.exact_write_cycle(),
+        raising=False,
+    )
 
     result = finalizer.run_finalizer(
         writer=writer,
@@ -396,6 +455,12 @@ def test_ambiguous_upsert_is_success_only_when_post_state_is_exact(monkeypatch):
         "build_partition_preview",
         PreviewSequence.exact_write_cycle(),
     )
+    monkeypatch.setattr(
+        finalizer,
+        "verify_compact_partition_exact",
+        CompactVerificationSequence.exact_write_cycle(),
+        raising=False,
+    )
 
     result = finalizer.run_finalizer(
         writer=writer,
@@ -420,7 +485,6 @@ def test_ambiguous_inexact_upsert_fails_and_prevents_second_write(monkeypatch):
         "propline": [
             ("preflight", (pending, [{"provider": "propline"}])),
             ("fresh", (pending, [{"provider": "propline"}])),
-            ("post", (pending, [{"provider": "propline"}])),
         ],
         "therundown": [
             (
@@ -430,6 +494,14 @@ def test_ambiguous_inexact_upsert_fails_and_prevents_second_write(monkeypatch):
         ],
     })
     monkeypatch.setattr(finalizer, "build_partition_preview", sequence)
+    monkeypatch.setattr(
+        finalizer,
+        "verify_compact_partition_exact",
+        CompactVerificationSequence({
+            "propline": [_compact_proof("propline", exact=False)],
+        }),
+        raising=False,
+    )
 
     result = finalizer.run_finalizer(
         writer=writer,
@@ -451,21 +523,27 @@ def test_second_provider_failure_reports_bounded_partial_state(monkeypatch):
     writer = RecordingWriter()
     writer.upsert_errors = [None, requests.Timeout("ambiguous")]
     propline_pending = _report("propline", rows_to_upsert=1)
-    propline_exact = _report("propline", rows_to_upsert=0)
     rundown_pending = _report("therundown", rows_to_upsert=1)
     sequence = PreviewSequence({
         "propline": [
             ("preflight", (propline_pending, [{"provider": "propline"}])),
             ("fresh", (propline_pending, [{"provider": "propline"}])),
-            ("post", (propline_exact, [])),
         ],
         "therundown": [
             ("preflight", (rundown_pending, [{"provider": "therundown"}])),
             ("fresh", (rundown_pending, [{"provider": "therundown"}])),
-            ("post", (rundown_pending, [{"provider": "therundown"}])),
         ],
     })
     monkeypatch.setattr(finalizer, "build_partition_preview", sequence)
+    monkeypatch.setattr(
+        finalizer,
+        "verify_compact_partition_exact",
+        CompactVerificationSequence({
+            "propline": [_compact_proof("propline")],
+            "therundown": [_compact_proof("therundown", exact=False)],
+        }),
+        raising=False,
+    )
 
     result = finalizer.run_finalizer(
         writer=writer,
@@ -484,7 +562,6 @@ def test_retry_treats_completed_first_provider_as_no_op(monkeypatch):
     writer = RecordingWriter()
     propline_exact = _report("propline", rows_to_upsert=0)
     rundown_pending = _report("therundown", rows_to_upsert=1)
-    rundown_exact = _report("therundown", rows_to_upsert=0)
     sequence = PreviewSequence({
         "propline": [
             ("preflight", (propline_exact, [])),
@@ -493,10 +570,17 @@ def test_retry_treats_completed_first_provider_as_no_op(monkeypatch):
         "therundown": [
             ("preflight", (rundown_pending, [{"provider": "therundown"}])),
             ("fresh", (rundown_pending, [{"provider": "therundown"}])),
-            ("post", (rundown_exact, [])),
         ],
     })
     monkeypatch.setattr(finalizer, "build_partition_preview", sequence)
+    monkeypatch.setattr(
+        finalizer,
+        "verify_compact_partition_exact",
+        CompactVerificationSequence({
+            "therundown": [_compact_proof("therundown")],
+        }),
+        raising=False,
+    )
 
     result = finalizer.run_finalizer(
         writer=writer,
@@ -549,6 +633,250 @@ def test_deadline_expiry_before_upsert_performs_zero_new_writes(monkeypatch):
     assert result["status"] == "failed"
     assert result["deadline_exceeded"] is True
     assert underlying.upserts == []
+
+
+def test_preview_crossing_deadline_on_last_read_returns_failed(monkeypatch):
+    finalizer = _module()
+
+    class MutableClock:
+        value = 0.0
+
+        def __call__(self):
+            return self.value
+
+    clock = MutableClock()
+
+    def preview(*, provider, slate_date, writer):
+        if provider == "therundown":
+            clock.value = 5.0
+        return _report(provider), [{"provider": provider}]
+
+    monkeypatch.setattr(finalizer, "build_partition_preview", preview)
+    result = finalizer.run_finalizer(
+        writer=RecordingWriter(),
+        now_utc=datetime(2026, 8, 26, 12, 5, tzinfo=timezone.utc),
+        monotonic_fn=clock,
+        deadline_seconds=5.0,
+    )
+
+    assert result["status"] == "failed"
+    assert result["deadline_exceeded"] is True
+    assert result["database_write_attempted"] is False
+    assert result["elapsed_seconds"] == 5.0
+
+
+def test_execute_crossing_deadline_after_completed_upsert_preserves_write_state(
+    monkeypatch,
+):
+    finalizer = _module()
+
+    class MutableClock:
+        value = 0.0
+
+        def __call__(self):
+            return self.value
+
+    clock = MutableClock()
+    writer = RecordingWriter()
+    completed_writes = 0
+
+    def cross_deadline_after_second_write(rows):
+        nonlocal completed_writes
+        completed_writes += 1
+        if completed_writes == 2:
+            clock.value = 5.0
+
+    writer.on_upsert = cross_deadline_after_second_write
+    monkeypatch.setattr(
+        finalizer,
+        "build_partition_preview",
+        PreviewSequence.exact_write_cycle(),
+    )
+    monkeypatch.setattr(
+        finalizer,
+        "verify_compact_partition_exact",
+        CompactVerificationSequence.exact_write_cycle(),
+        raising=False,
+    )
+
+    result = finalizer.run_finalizer(
+        writer=writer,
+        execute=True,
+        allow_execute=True,
+        now_utc=datetime(2026, 8, 26, 12, 5, tzinfo=timezone.utc),
+        monotonic_fn=clock,
+        deadline_seconds=5.0,
+    )
+
+    second = result["provider_results"][1]
+    assert result["status"] == "failed"
+    assert result["deadline_exceeded"] is True
+    assert second["execution_status"] == "failed"
+    assert second["failure_reason"] == "deadline_exceeded_after_write"
+    assert second["database_write_attempted"] is True
+    assert second["database_write_performed"] is True
+    assert len(writer.upserts) == 2
+
+
+def test_execute_uses_at_most_two_full_previews_per_provider(monkeypatch):
+    finalizer = _module()
+    calls = []
+    provider_counts = {"propline": 0, "therundown": 0}
+
+    def preview(*, provider, slate_date, writer):
+        provider_counts[provider] += 1
+        calls.append(provider)
+        rows_to_upsert = 0 if provider_counts[provider] == 3 else 1
+        return _report(provider, rows_to_upsert=rows_to_upsert), (
+            [] if rows_to_upsert == 0 else [{"provider": provider}]
+        )
+
+    monkeypatch.setattr(finalizer, "build_partition_preview", preview)
+    monkeypatch.setattr(
+        finalizer,
+        "verify_compact_partition_exact",
+        CompactVerificationSequence.exact_write_cycle(),
+        raising=False,
+    )
+
+    result = finalizer.run_finalizer(
+        writer=RecordingWriter(),
+        execute=True,
+        allow_execute=True,
+        now_utc=datetime(2026, 8, 26, 12, 5, tzinfo=timezone.utc),
+    )
+
+    assert result["status"] == "success"
+    assert calls == ["propline", "therundown", "propline", "therundown"]
+
+
+def test_unexpected_preflight_exception_is_sanitized_and_second_read_runs(
+    monkeypatch,
+):
+    finalizer = _module()
+    calls = []
+
+    def preview(*, provider, slate_date, writer):
+        calls.append(provider)
+        if provider == "propline":
+            raise RuntimeError("sensitive-preflight-source-id")
+        return _report(provider), [{"provider": provider}]
+
+    monkeypatch.setattr(finalizer, "build_partition_preview", preview)
+    result = finalizer.run_finalizer(
+        writer=RecordingWriter(),
+        now_utc=datetime(2026, 8, 26, 12, 5, tzinfo=timezone.utc),
+    )
+
+    assert calls == ["propline", "therundown"]
+    assert result["status"] == "failed"
+    assert result["provider_results"][0]["error_type"] == "RuntimeError"
+    assert "sensitive-preflight-source-id" not in json.dumps(result)
+
+
+def test_unexpected_fresh_read_exception_is_sanitized_before_any_write(monkeypatch):
+    finalizer = _module()
+    writer = RecordingWriter()
+    sequence = PreviewSequence({
+        "propline": [
+            ("preflight", (_report("propline"), [{"provider": "propline"}])),
+            ("fresh", RuntimeError("sensitive-fresh-source-id")),
+        ],
+        "therundown": [
+            (
+                "preflight",
+                (_report("therundown"), [{"provider": "therundown"}]),
+            )
+        ],
+    })
+    monkeypatch.setattr(finalizer, "build_partition_preview", sequence)
+
+    result = finalizer.run_finalizer(
+        writer=writer,
+        execute=True,
+        allow_execute=True,
+        now_utc=datetime(2026, 8, 26, 12, 5, tzinfo=timezone.utc),
+    )
+
+    first, second = result["provider_results"]
+    assert result["status"] == "failed"
+    assert first["execution_status"] == "failed"
+    assert first["failure_reason"] == "fresh_preflight_failed"
+    assert first["write_error_type"] == "RuntimeError"
+    assert second["execution_status"] == "not_attempted_after_prior_failure"
+    assert writer.upserts == []
+    assert "sensitive-fresh-source-id" not in json.dumps(result)
+
+
+def test_unexpected_upsert_exception_is_ambiguous_and_uses_exact_post_state(
+    monkeypatch,
+):
+    finalizer = _module()
+    writer = RecordingWriter()
+    writer.upsert_errors = [RuntimeError("sensitive-upsert-body"), None]
+    monkeypatch.setattr(
+        finalizer,
+        "build_partition_preview",
+        PreviewSequence.exact_write_cycle(),
+    )
+    monkeypatch.setattr(
+        finalizer,
+        "verify_compact_partition_exact",
+        CompactVerificationSequence.exact_write_cycle(),
+    )
+
+    result = finalizer.run_finalizer(
+        writer=writer,
+        execute=True,
+        allow_execute=True,
+        now_utc=datetime(2026, 8, 26, 12, 5, tzinfo=timezone.utc),
+    )
+
+    first = result["provider_results"][0]
+    assert result["status"] == "success"
+    assert first["execution_status"] == "confirmed_by_post_state"
+    assert first["database_write_attempted"] is True
+    assert first["database_write_performed"] is None
+    assert first["write_error_type"] == "RuntimeError"
+    assert len(writer.upserts) == 2
+    assert "sensitive-upsert-body" not in json.dumps(result)
+
+
+def test_unexpected_post_check_exception_preserves_known_successful_write(
+    monkeypatch,
+):
+    finalizer = _module()
+    writer = RecordingWriter()
+    monkeypatch.setattr(
+        finalizer,
+        "build_partition_preview",
+        PreviewSequence.exact_write_cycle(),
+    )
+    monkeypatch.setattr(
+        finalizer,
+        "verify_compact_partition_exact",
+        CompactVerificationSequence({
+            "propline": [RuntimeError("sensitive-post-state-body")],
+        }),
+    )
+
+    result = finalizer.run_finalizer(
+        writer=writer,
+        execute=True,
+        allow_execute=True,
+        now_utc=datetime(2026, 8, 26, 12, 5, tzinfo=timezone.utc),
+    )
+
+    first, second = result["provider_results"]
+    assert result["status"] == "failed"
+    assert first["execution_status"] == "failed"
+    assert first["failure_reason"] == "post_write_check_failed"
+    assert first["database_write_attempted"] is True
+    assert first["database_write_performed"] is True
+    assert first["write_error_type"] == "RuntimeError"
+    assert second["execution_status"] == "not_attempted_after_prior_failure"
+    assert len(writer.upserts) == 1
+    assert "sensitive-post-state-body" not in json.dumps(result)
 
 
 def test_cli_accepts_no_arbitrary_date_or_provider(monkeypatch):

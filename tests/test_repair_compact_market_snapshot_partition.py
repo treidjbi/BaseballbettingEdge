@@ -226,6 +226,45 @@ def test_public_partition_preview_separates_evidence_from_execution_blockers():
     assert writer.upserts == []
 
 
+def test_public_compact_exact_verifier_reads_only_compact_partition():
+    repair = _module()
+    writer = FakeWriter(existing=[_compact()])
+
+    proof = repair.verify_compact_partition_exact(
+        provider="boltodds",
+        slate_date="2026-06-16",
+        writer=writer,
+        expected_compact_count=1,
+        expected_compacts_sha256=(
+            "20edbce441b3dfdae5d7f2b33f4e32c52e06b028f74e62052ce2c69a91b77ab3"
+        ),
+    )
+
+    assert proof == {
+        "provider": "boltodds",
+        "slate_date": "2026-06-16",
+        "expected_compact_count": 1,
+        "actual_compact_count": 1,
+        "expected_compacts_sha256": (
+            "20edbce441b3dfdae5d7f2b33f4e32c52e06b028f74e62052ce2c69a91b77ab3"
+        ),
+        "actual_compacts_sha256": (
+            "20edbce441b3dfdae5d7f2b33f4e32c52e06b028f74e62052ce2c69a91b77ab3"
+        ),
+        "compact_state_exact": True,
+    }
+    assert {table for table, _, _ in writer.selects} == {
+        "compact_market_line_movements"
+    }
+    params = writer.selects[0][1]
+    assert params["provider"] == "eq.boltodds"
+    assert params["slate_date"] == "eq.2026-06-16"
+    rendered = json.dumps(proof, sort_keys=True)
+    assert "Example Pitcher" not in rendered
+    assert SNAP_1 not in rendered
+    assert SNAP_2 not in rendered
+
+
 def test_empty_partition_is_an_evidence_failure_but_exact_partition_is_clean():
     repair = _module()
 

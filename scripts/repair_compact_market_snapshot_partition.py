@@ -662,6 +662,51 @@ def build_partition_preview(
     )
 
 
+def verify_compact_partition_exact(
+    *,
+    provider: str,
+    slate_date: str,
+    writer: SupabaseMarketWriter,
+    expected_compact_count: int,
+    expected_compacts_sha256: str,
+) -> dict[str, Any]:
+    """Return aggregate compact-only proof against a pre-write rebuild."""
+    normalized_provider = str(provider).strip().lower()
+    if normalized_provider not in PROVIDERS:
+        raise ValueError(f"provider must be one of: {', '.join(PROVIDERS)}")
+    normalized_date = _validated_date(str(slate_date).strip())
+    normalized_count = _strict_int(
+        expected_compact_count,
+        label="expected compact count",
+        nonnegative=True,
+    )
+    normalized_hash = str(expected_compacts_sha256).strip().lower()
+    if len(normalized_hash) != 64 or any(
+        character not in "0123456789abcdef" for character in normalized_hash
+    ):
+        raise ValueError("expected compact hash must be lowercase SHA-256")
+
+    existing_rows = _fetch_existing_compacts(
+        writer,
+        provider=normalized_provider,
+        slate_date=normalized_date,
+    )
+    canonical_existing = [_canonical_compact(row) for row in existing_rows]
+    actual_hash = _rows_sha256(canonical_existing)
+    return {
+        "provider": normalized_provider,
+        "slate_date": normalized_date,
+        "expected_compact_count": normalized_count,
+        "actual_compact_count": len(canonical_existing),
+        "expected_compacts_sha256": normalized_hash,
+        "actual_compacts_sha256": actual_hash,
+        "compact_state_exact": (
+            len(canonical_existing) == normalized_count
+            and actual_hash == normalized_hash
+        ),
+    }
+
+
 def run(
     *,
     provider: str,
