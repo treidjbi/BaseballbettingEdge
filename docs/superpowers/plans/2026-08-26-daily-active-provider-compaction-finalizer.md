@@ -1758,7 +1758,7 @@ git commit -m "feat: add redacted compaction finalizer cli"
   and a precise next decision of merge review, followed by a separate
   preview-only Render creation decision.
 
-- [ ] **Step 1: Run the focused finalizer safety suite**
+- [x] **Step 1: Run the focused finalizer safety suite**
 
 Run:
 
@@ -1770,7 +1770,7 @@ Expected: all tests pass, including fixed provider order, preview zero-write,
 double gating, source drift, ambiguous write, idempotent retry, deadline, and
 redaction regressions.
 
-- [ ] **Step 2: Run the complete repository verification**
+- [x] **Step 2: Run the complete repository verification**
 
 Run:
 
@@ -1783,7 +1783,7 @@ Expected: the complete test suite passes and Git reports no whitespace errors.
 If tests change a tracked generated report, restore only that generated report
 to its pre-test content and rerun `git status --short`.
 
-- [ ] **Step 3: Prove the production boundary stayed closed**
+- [x] **Step 3: Prove the production boundary stayed closed**
 
 Run:
 
@@ -1807,7 +1807,7 @@ Also run this static assertion:
 python -c "from scripts.run_daily_active_provider_compaction_finalizer import ACTIVE_PROVIDERS, DEFAULT_DEADLINE_SECONDS; assert ACTIVE_PROVIDERS == ('propline', 'therundown'); assert DEFAULT_DEADLINE_SECONDS == 480.0"
 ```
 
-- [ ] **Step 4: Record the local-only implementation evidence**
+- [x] **Step 4: Record the local-only implementation evidence**
 
 Append an execution record to the 2026-08-25 controlling plan using exact
 commit IDs and test counts. Update the tracking/data lane in
@@ -1870,3 +1870,35 @@ next approvals remain separate and sequential:
    coverage, season-evidence, and dry-run gates pass.
 
 No checkpoint inherits approval from the one before it.
+
+## Task 5 Local Verification Record (Steps 1-4)
+
+- Implementation HEAD verified: `02f49aeee4ff53b4f2e0e3680b1cfe5ea330908b`
+  (`02f49aee`). No code change was required.
+- Focused suite: `109 passed`; complete repository suite: `2,565 passed`.
+  The focused command used
+  `tests/test_market_infra_supabase_writer.py`, the authorized replacement for
+  the nonexistent `tests/test_supabase_writer.py` named above.
+- `git diff --check` passed. The only test-generated tracked change was
+  `analytics/output/gate_f_preclose_clv_proxy_lab.md`; its zero-row fixture
+  output was verified and only that exact generated report was restored to
+  HEAD before this documentation change.
+- Boundary commands showed no diff under `render.yaml`, `dashboard`,
+  `netlify`, `pipeline`, or `market_infra/supabase_writer.py`. The code/test
+  portion of `origin/main..HEAD` is limited to
+  `scripts/repair_compact_market_snapshot_partition.py`,
+  `scripts/run_daily_active_provider_compaction_finalizer.py`,
+  `tests/test_repair_compact_market_snapshot_partition.py`, and
+  `tests/test_daily_active_provider_compaction_finalizer.py`; the separate
+  design and this plan are documentation. No active provider appears in
+  historical `EXECUTION_PARTITIONS`. Static assertions confirmed
+  `ACTIVE_PROVIDERS == ('propline', 'therundown')` and
+  `DEFAULT_DEADLINE_SECONDS == 480.0`.
+- `database_write_performed=false`; `live_preview_performed=false`;
+  `render_service_created=false`; `historical_backlog_execution_closed=true`;
+  `retention_execution_closed=true`.
+- Preview remains the default; no Render service exists and the write gate is
+  unset. The historical `105`-partition backlog remains closed, deletion is
+  NO-GO, and no automation memory was updated. The next decision is code
+  review and merge, followed by a separate preview-only Render cron creation
+  review.

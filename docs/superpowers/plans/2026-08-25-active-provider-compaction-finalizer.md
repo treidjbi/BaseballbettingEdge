@@ -259,3 +259,36 @@ git status --short
   Active-provider upserts, raw-row deletion, webhook deletion,
   vacuum/reclamation, retention activation, and every provider/model/
   notification/lock/UI/source-of-truth change remain closed.
+
+## 2026-08-26 Daily Finalizer Local Verification Record
+
+- The isolated implementation branch
+  `codex/daily-active-provider-compaction-finalizer-implementation` was
+  verified at implementation HEAD
+  `02f49aeee4ff53b4f2e0e3680b1cfe5ea330908b` (`02f49aee`). No code change was
+  required during this verification.
+- The focused safety suite passed `109` tests using the authorized current
+  writer test filename `tests/test_market_infra_supabase_writer.py` in place
+  of the obsolete plan reference `tests/test_supabase_writer.py`. The complete
+  repository suite passed `2,565` tests. `git diff --check` passed.
+- The full suite regenerated only the known tracked
+  `analytics/output/gate_f_preclose_clv_proxy_lab.md` report with local
+  zero-row fixture output; that exact generated report was restored to HEAD
+  before documentation work. No source or user change was restored.
+- Boundary review of `origin/main..HEAD` found only the approved design/plan,
+  two scripts, and two test files. There is no diff under `render.yaml`,
+  `dashboard`, `netlify`, `pipeline`, or `market_infra/supabase_writer.py`.
+  `scripts/repair_compact_market_snapshot_partition.py` has no
+  `EXECUTION_PARTITIONS` or `ALLOW_COMPACT_MARKET_PARTITION_REPAIR` diff;
+  direct static inspection confirmed `propline` and `therundown` are absent
+  from `EXECUTION_PARTITIONS`. The finalizer static assertion confirmed the
+  fixed provider order `('propline', 'therundown')` and
+  `DEFAULT_DEADLINE_SECONDS == 480.0`.
+- `database_write_performed=false`; `live_preview_performed=false`;
+  `render_service_created=false`; `historical_backlog_execution_closed=true`;
+  `retention_execution_closed=true`. No deployment, Render change, gate
+  change, network/database access, or automation-memory update occurred.
+- Preview remains the default and the write gate remains unset. The historical
+  `105`-partition / `34,861`-upsert backlog and all deletion authority remain
+  closed. The next decision is code review and merge, followed by a separate
+  preview-only Render cron creation review.
