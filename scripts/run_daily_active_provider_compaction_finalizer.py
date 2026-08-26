@@ -48,7 +48,7 @@ class _DeadlineBoundWriter:
 
 
 def _target_slate_date(now_utc: datetime) -> str:
-    if now_utc.tzinfo is None:
+    if now_utc.tzinfo is None or now_utc.utcoffset() is None:
         raise ValueError("now_utc must be timezone-aware")
     return (now_utc.astimezone(PHOENIX).date() - timedelta(days=1)).isoformat()
 

@@ -1,4 +1,4 @@
-from datetime import datetime, timezone
+from datetime import datetime, timezone, tzinfo
 import importlib
 import json
 
@@ -89,6 +89,19 @@ def test_phoenix_target_is_stable_across_utc_date_boundary():
     finalizer = _module()
     now_utc = datetime(2026, 8, 26, 2, 0, tzinfo=timezone.utc)
     assert finalizer._target_slate_date(now_utc) == "2026-08-24"
+
+
+def test_target_rejects_tzinfo_with_no_utcoffset():
+    finalizer = _module()
+
+    class NoOffsetTZ(tzinfo):
+        def utcoffset(self, dt):
+            return None
+
+    with pytest.raises(ValueError, match="timezone-aware"):
+        finalizer._target_slate_date(
+            datetime(2026, 8, 26, 12, tzinfo=NoOffsetTZ())
+        )
 
 
 def test_preview_allows_would_upserts_but_blocks_unexpected_compacts(monkeypatch):
