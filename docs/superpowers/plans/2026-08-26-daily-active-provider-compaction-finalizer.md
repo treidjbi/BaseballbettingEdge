@@ -1822,9 +1822,10 @@ The separate daily active-provider compaction finalizer is implemented and
 locally verified on an isolated branch. Preview remains the default; no Render
 service exists, the write gate is unset, no live preview or database mutation
 occurred, the historical 105-partition backlog remains closed, and deletion
-remains NO-GO. The next procedural step is to push the reviewed feature
-branch. Merge remains a separate decision, followed by a separately reviewed
-preview-only Render cron creation decision.
+remains NO-GO. The reviewed feature branch was pushed at
+`6090f2547776411d4da94bba2f56add3b2238ba8` (`6090f254`). The next decision is
+a separate merge review/decision; preview-only Render cron creation remains a
+later separately reviewed decision.
 ```
 
 In this plan's execution record, include:
@@ -1847,7 +1848,7 @@ quality review. Resolve only findings inside this approved scope. Then use
 `superpowers:verification-before-completion` and rerun the commands it
 requires against the final commit.
 
-- [ ] **Step 6: Commit and push the reviewed feature branch**
+- [x] **Step 6: Commit and push the reviewed feature branch**
 
 ```powershell
 git add docs/superpowers/plans/2026-08-25-active-provider-compaction-finalizer.md docs/current-state.md docs/superpowers/plans/2026-08-26-daily-active-provider-compaction-finalizer.md
@@ -1907,9 +1908,10 @@ No checkpoint inherits approval from the one before it.
   `retention_execution_closed=true`.
 - Preview remains the default; no Render service exists and the write gate is
   unset. The historical `105`-partition backlog remains closed, deletion is
-  NO-GO, and no automation memory was updated. The next procedural step is to
-  push the reviewed feature branch. Merge remains a separate decision, followed
-  by a separately reviewed preview-only Render cron creation decision.
+  NO-GO, and no automation memory was updated. The reviewed feature branch was
+  pushed at `6090f2547776411d4da94bba2f56add3b2238ba8` (`6090f254`) and tracks
+  its upstream. The next decision is a separate merge review/decision;
+  preview-only Render cron creation remains a later separately reviewed step.
 
 ## Final Review Correction Record (2026-08-26)
 
@@ -1940,6 +1942,9 @@ No checkpoint inherits approval from the one before it.
   checks passed. No network, Supabase, database, Render, deploy, push, merge,
   deletion, retention, provider-usage, notification, lock, UI, model, or
   source-of-truth action occurred.
-- Step 6 remains open because this bounded review wave does not authorize a
-  push. Merge, Render creation, live preview, execute activation, historical
-  backlog work, and deletion remain separately gated.
+- Step 6 push completed for
+  `codex/daily-compaction-finalizer-implementation` at
+  `6090f2547776411d4da94bba2f56add3b2238ba8` (`6090f254`), with upstream
+  tracking set. The next decision is a separate merge review/decision; Render
+  creation, live preview, execute activation, historical backlog work, and
+  deletion remain separately gated.
