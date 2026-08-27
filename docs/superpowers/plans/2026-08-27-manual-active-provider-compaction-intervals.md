@@ -323,7 +323,14 @@ operator checkpoints.
 - A fresh post-write preview returned zero missing, mismatched, unexpected, or
   remaining upsert rows. PropLine is exact at `150` rebuilt/existing rows and
   TheRundown is exact at `437` rebuilt/existing rows for the target date.
-- The next read-only checkpoint for `2026-06-18` passed with no evidence
-  blockers and no write attempt. It identified `44` PropLine and `224`
-  TheRundown compact rows to repair (`268` total). That exact tranche remains
+- After Tyler separately approved the exact `2026-06-18` compact-only tranche,
+  the execution wrote `44` PropLine and `224` TheRundown compact rows (`268`
+  total). Both providers reported `execution_status=confirmed` and
+  `post_write_exact=true`.
+- A fresh post-write preview returned zero missing, mismatched, unexpected, or
+  remaining upsert rows. PropLine is exact at `112` rebuilt/existing rows and
+  TheRundown is exact at `288` rebuilt/existing rows for the target date.
+- The next read-only checkpoint for `2026-06-19` passed with no evidence
+  blockers and no write attempt. It identified `180` PropLine and `450`
+  TheRundown compact rows to repair (`630` total). That exact tranche remains
   preview-only pending separate Tyler approval.
