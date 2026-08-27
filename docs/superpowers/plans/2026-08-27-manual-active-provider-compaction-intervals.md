@@ -290,7 +290,12 @@ operator checkpoints.
   receiver changes, provider changes, and automated cadence remain closed.
   Every additional historical date still requires its own successful preview
   and separately approved compact-only execution.
-- The next read-only checkpoint for `2026-06-13` passed with no evidence
-  blockers and no write attempt. It identified `185` PropLine and `591`
-  TheRundown compact rows to repair (`776` total). That exact tranche remains
+- The `2026-06-13` checkpoint passed with no evidence blockers and identified
+  `185` PropLine and `591` TheRundown compact rows to repair (`776` total).
+  After separate Tyler approval, the exact execution wrote all `776` rows and
+  both providers reported `post_write_exact=true`. A fresh post-write preview
+  returned zero missing, mismatched, unexpected, or remaining upsert rows.
+- The next read-only checkpoint for `2026-06-14` passed with no evidence
+  blockers and no write attempt. It identified `172` PropLine and `266`
+  TheRundown compact rows to repair (`438` total). That exact tranche remains
   preview-only pending separate Tyler approval.
