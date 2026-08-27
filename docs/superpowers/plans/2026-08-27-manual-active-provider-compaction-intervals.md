@@ -269,3 +269,24 @@ operator checkpoints.
 - The full suite regenerated only the known tracked
   `analytics/output/gate_f_preclose_clv_proxy_lab.md` fixture artifact. Its
   exact committed hash was restored before final status review.
+
+## First Manual Production Checkpoint (2026-08-27)
+
+- The explicit `2026-05-14` preview failed closed because PropLine had source
+  evidence but TheRundown had no provider runs, raw snapshots, or rebuilt
+  compacts. It attempted no write and performed no deletion.
+- The explicit `2026-06-12` preview passed twice with identical provider source
+  and preview fingerprints. It identified `208` PropLine and `369` TheRundown
+  compact rows to repair (`577` total), with no evidence blockers.
+- After Tyler separately approved that exact compact-only tranche, the manual
+  write gate authorized one `2026-06-12` execution. It wrote `208` PropLine and
+  `369` TheRundown compact rows; both providers reported
+  `execution_status=confirmed` and `post_write_exact=true`.
+- A fresh post-write preview returned zero missing compacts, zero mismatched
+  compacts, zero unexpected compacts, and `rows_to_upsert_count=0` for both
+  providers. PropLine is exact at `218` rebuilt/existing rows and TheRundown is
+  exact at `456` rebuilt/existing rows for the target date.
+- `deletion_performed=false` throughout. Raw retention deletion, vacuum,
+  receiver changes, provider changes, and automated cadence remain closed.
+  Every additional historical date still requires its own successful preview
+  and separately approved compact-only execution.
