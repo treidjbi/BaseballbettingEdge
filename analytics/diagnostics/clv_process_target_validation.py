@@ -117,6 +117,8 @@ def load_close_evidence_packet(path: Path) -> list[dict[str, Any]]:
             raise ValueError("close packet row requires over or under side")
         if _number(row.get("line")) is None or _number(row.get("american_odds")) is None:
             raise ValueError("close packet row requires numeric close line and price")
+        if not _has_operational_lock_provenance(row):
+            raise ValueError("close packet row is missing operational lock provenance")
     return rows
 
 
@@ -127,6 +129,22 @@ def _number(value: Any) -> float | None:
         return float(value)
     except (TypeError, ValueError):
         return None
+
+
+def _has_operational_lock_provenance(row: dict[str, Any]) -> bool:
+    required_strings = (
+        str(row.get("official_lock_reference") or "").strip(),
+        str(row.get("lock_provider") or "").strip().lower(),
+        _book(row.get("lock_book")),
+        str(row.get("lock_source_artifact_path") or "").strip(),
+        str(row.get("lock_source_artifact_sha256") or "").strip(),
+    )
+    return (
+        all(required_strings)
+        and _number(row.get("lock_line")) is not None
+        and _number(row.get("lock_odds")) is not None
+        and _timezone_aware_timestamp(row.get("lock_observed_at")) is not None
+    )
 
 
 def _book(value: Any) -> str:
@@ -206,31 +224,33 @@ def build_target_row(gate_c_row: dict[str, Any], market_rows: list[dict[str, Any
     ).strip()
     normalized_pitcher = _normalized_pitcher(gate_c_row)
     side = str(gate_c_row.get("side") or "").strip().lower()
-    lock_provider = str(gate_c_row.get("lock_provider") or gate_c_row.get("provider") or "").strip().lower()
-    if not lock_provider:
+    gate_c_lock_provider = str(
+        gate_c_row.get("lock_provider") or gate_c_row.get("provider") or ""
+    ).strip().lower()
+    if not gate_c_lock_provider:
         for field in ("official_line_source_provider", "official_odds_source"):
             candidate = str(gate_c_row.get(field) or "").strip().lower()
             if candidate in {"therundown", "propline"}:
-                lock_provider = candidate
+                gate_c_lock_provider = candidate
                 break
-    lock_book = str(
+    gate_c_lock_book = str(
         gate_c_row.get("lock_book")
         or gate_c_row.get("bet_time_book")
         or gate_c_row.get("bookmaker_title")
         or gate_c_row.get("bookmaker_key")
         or ""
     ).strip()
-    lock_line = _number(gate_c_row.get("lock_line"))
-    if lock_line is None:
-        lock_line = _number(gate_c_row.get("bet_time_line"))
-    if lock_line is None:
-        lock_line = _number(gate_c_row.get("k_line"))
-    lock_odds = _number(gate_c_row.get("lock_odds"))
-    if lock_odds is None:
-        lock_odds = _number(gate_c_row.get("bet_time_odds"))
-    if lock_odds is None:
-        lock_odds = _number(gate_c_row.get("american_odds"))
-    lock_observed_at = gate_c_row.get("locked_at") or gate_c_row.get("bet_time_at")
+    gate_c_lock_line = _number(gate_c_row.get("lock_line"))
+    if gate_c_lock_line is None:
+        gate_c_lock_line = _number(gate_c_row.get("bet_time_line"))
+    if gate_c_lock_line is None:
+        gate_c_lock_line = _number(gate_c_row.get("k_line"))
+    gate_c_lock_odds = _number(gate_c_row.get("lock_odds"))
+    if gate_c_lock_odds is None:
+        gate_c_lock_odds = _number(gate_c_row.get("bet_time_odds"))
+    if gate_c_lock_odds is None:
+        gate_c_lock_odds = _number(gate_c_row.get("american_odds"))
+    gate_c_lock_observed_at = gate_c_row.get("locked_at") or gate_c_row.get("bet_time_at")
 
     close_observations = [
         observation
@@ -238,25 +258,76 @@ def build_target_row(gate_c_row: dict[str, Any], market_rows: list[dict[str, Any
         if str(observation.get("observation_type") or "").lower() == "official_close"
     ]
     close_candidates = [observation for observation in close_observations if _same_identity(gate_c_row, observation)]
-    matching_provider = [
+    operational_candidates = [
         observation
         for observation in close_candidates
-        if lock_provider
-        and _book(lock_book)
-        and str(observation.get("provider") or "").strip().lower() == lock_provider
-        and _book(observation.get("bookmaker")) == _book(lock_book)
+        if _has_operational_lock_provenance(observation)
     ]
-    close_candidates = matching_provider or close_candidates
-    close = next(
-        (observation for observation in close_candidates if _same_line(lock_line, _number(observation.get("line")))),
-        None,
-    )
-    close = close or (close_candidates[0] if close_candidates else None)
+    uses_operational_lock = bool(operational_candidates)
+    if uses_operational_lock:
+        close = operational_candidates[0]
+        lock_provider = str(close.get("lock_provider") or "").strip().lower()
+        lock_book = str(close.get("lock_book") or "").strip()
+        lock_line = _number(close.get("lock_line"))
+        lock_odds = _number(close.get("lock_odds"))
+        lock_observed_at = close.get("lock_observed_at")
+        official_lock_reference = close.get("official_lock_reference")
+        lock_source_artifact_path = close.get("lock_source_artifact_path")
+        lock_source_artifact_sha256 = close.get("lock_source_artifact_sha256")
+    else:
+        matching_provider = [
+            observation
+            for observation in close_candidates
+            if gate_c_lock_provider
+            and _book(gate_c_lock_book)
+            and str(observation.get("provider") or "").strip().lower()
+            == gate_c_lock_provider
+            and _book(observation.get("bookmaker")) == _book(gate_c_lock_book)
+        ]
+        close_candidates = matching_provider or close_candidates
+        close = next(
+            (
+                observation
+                for observation in close_candidates
+                if _same_line(gate_c_lock_line, _number(observation.get("line")))
+            ),
+            None,
+        )
+        close = close or (close_candidates[0] if close_candidates else None)
+        lock_provider = gate_c_lock_provider
+        lock_book = gate_c_lock_book
+        lock_line = gate_c_lock_line
+        lock_odds = gate_c_lock_odds
+        lock_observed_at = gate_c_lock_observed_at
+        official_lock_reference = gate_c_row.get("official_lock_reference") or gate_c_row.get("dataset_key")
+        lock_source_artifact_path = None
+        lock_source_artifact_sha256 = None
     close_provider = str(close.get("provider") or "").strip().lower() if close else ""
     close_book = _book(close.get("bookmaker")) if close else ""
     close_line = _number(close.get("line")) if close else None
     lock_timestamp = _timezone_aware_timestamp(lock_observed_at)
     close_timestamp = _timezone_aware_timestamp(close.get("observed_at")) if close else None
+    gate_c_timestamp = _timezone_aware_timestamp(gate_c_lock_observed_at)
+    gate_c_book_agrees = (
+        _book(gate_c_lock_book) == _book(lock_book)
+        if _book(gate_c_lock_book) and _book(lock_book)
+        else None
+    )
+    gate_c_line_agrees = (
+        gate_c_lock_line == lock_line
+        if gate_c_lock_line is not None and lock_line is not None
+        else None
+    )
+    gate_c_odds_agrees = (
+        gate_c_lock_odds == lock_odds
+        if gate_c_lock_odds is not None and lock_odds is not None
+        else None
+    )
+    gate_c_timestamp_agrees = (
+        gate_c_timestamp == lock_timestamp
+        if gate_c_timestamp is not None and lock_timestamp is not None
+        else None
+    )
     eligibility = "identity_mismatch" if close_observations else "missing_close"
     if close:
         if not lock_provider:
@@ -289,6 +360,18 @@ def build_target_row(gate_c_row: dict[str, Any], market_rows: list[dict[str, Any
             eligibility = "missing_close_freshness"
         elif not _fresh(close):
             eligibility = "stale_evidence"
+        elif uses_operational_lock and None in (
+            gate_c_line_agrees,
+            gate_c_odds_agrees,
+            gate_c_timestamp_agrees,
+        ):
+            eligibility = "missing_gate_c_lock_reconciliation"
+        elif uses_operational_lock and not gate_c_line_agrees:
+            eligibility = "gate_c_lock_line_mismatch"
+        elif uses_operational_lock and not gate_c_odds_agrees:
+            eligibility = "gate_c_lock_odds_mismatch"
+        elif uses_operational_lock and not gate_c_timestamp_agrees:
+            eligibility = "gate_c_lock_timestamp_mismatch"
         else:
             eligibility = "eligible"
     row = {
@@ -297,12 +380,19 @@ def build_target_row(gate_c_row: dict[str, Any], market_rows: list[dict[str, Any
         "normalized_pitcher": normalized_pitcher,
         "display_pitcher": display_pitcher,
         "side": side,
-        "official_lock_reference": gate_c_row.get("official_lock_reference") or gate_c_row.get("dataset_key"),
+        "official_lock_reference": official_lock_reference,
         "lock_observed_at": lock_observed_at,
         "lock_provider": lock_provider or None,
         "lock_book": lock_book or None,
         "lock_line": lock_line,
         "lock_odds": lock_odds,
+        "lock_source_artifact_path": lock_source_artifact_path,
+        "lock_source_artifact_sha256": lock_source_artifact_sha256,
+        "gate_c_bet_time_book": gate_c_lock_book or None,
+        "gate_c_book_agrees_with_operational_lock": gate_c_book_agrees,
+        "gate_c_line_agrees_with_operational_lock": gate_c_line_agrees,
+        "gate_c_odds_agrees_with_operational_lock": gate_c_odds_agrees,
+        "gate_c_timestamp_agrees_with_operational_lock": gate_c_timestamp_agrees,
         "close_eligibility": eligibility,
         "close_observation_id": close.get("observation_id") if close else None,
         "close_observed_at": close.get("observed_at") if close else None,

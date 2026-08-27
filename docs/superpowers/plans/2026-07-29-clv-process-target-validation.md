@@ -78,11 +78,14 @@ validator. `--refresh-market-agreement-inputs` does not create this packet.
 The close packet may be JSON or JSONL. Every non-empty row must explicitly
 identify an `official_close` observation with slate date, normalized pitcher,
 side, provider, bookmaker, observation id, timezone-aware close timestamp,
-numeric close line and price, and freshness. Event identity is optional but
-must match when both sides provide it. A valid explicit empty packet is allowed
-and produces `unknown` close outcomes; a missing, unreadable, malformed, or
-wrong-schema packet is a bounded `proxy_failed` runner outcome. It must not
-prevent the later shadow reports from running.
+numeric close line and price, and freshness. Every non-empty row must also
+carry the consumed operational lock reference, provider, book, line, odds,
+timezone-aware timestamp, source artifact path, and artifact hash. Event
+identity is optional but must match when both sides provide it. A valid
+explicit empty packet is allowed and produces `unknown` close outcomes; a
+missing, unreadable, malformed, or wrong-schema packet is a bounded
+`proxy_failed` runner outcome. It must not prevent the later shadow reports
+from running.
 
 Gate C PnL remains descriptive top-level context for the final report and must
 not enter proxy inputs. The target requires a timezone-aware official lock
@@ -144,11 +147,24 @@ writes.
 Nine locks were excluded because no exact pre-lock provenance snapshot existed
 within the 20-minute window. Eight had a same-line price mismatch and one had a
 line mismatch. Those exclusions remain fail-closed; the matcher was not
-weakened. The target validator accepted `32` of the `33` packet rows. Logan
-Webb UNDER on August 26 remained `book_mismatch`: the operational lock and
-close packet use FanDuel, while Gate C's `bet_time_book` is DraftKings. That
-conflict requires an explicit future lock-definition decision and must not be
-resolved by inference.
+weakened.
+
+Tyler approved the process-target definition: official process CLV anchors the
+consumed operational lock. The offline packet therefore carries the exact lock
+provider, book, line, odds, timestamp, source artifact path, and artifact hash,
+and the validator uses those fields rather than reconstructing the lock from
+Gate C. Gate C book disagreement is descriptive; Gate C line, odds, or
+timestamp disagreement fails closed with a specific eligibility reason.
+
+The rerun accepted all `33` packet rows. Logan Webb UNDER on August 26 uses the
+FanDuel operational lock and close packet; Gate C's DraftKings book remains an
+explicit warning, while the 5.5 line, -106 price, and timestamp reconcile
+exactly. Independent reconciliation found zero operational-lock provenance
+violations across all 33 rows.
+
+Accepted-bet CLV remains a separate future execution metric. No accepted bets
+exist in this two-slate window, and accepted-bet behavior or history is not
+changed by this plan.
 
 The validator now recognizes Gate C's exact single-provider
 `official_line_source_provider` or `official_odds_source` when legacy provider
@@ -156,7 +172,7 @@ fields are absent. Composite values such as `therundown+propline` remain
 ineligible as exact lock attribution. This is a research-reader repair only;
 it changes no selector or runtime behavior.
 
-Readiness remains `keep_as_process_kpi`: `32/100` fully attributed
+Readiness remains `keep_as_process_kpi`: `33/100` fully attributed
 current-provider targets, only two completed slates, and no complete 14-slate
 window. The strong pre-close bucket was `2` beat / `4` neutral / `0` worse on
 six evaluated rows, which is too small and too concentrated for a proxy-design

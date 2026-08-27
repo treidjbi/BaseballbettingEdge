@@ -6,6 +6,32 @@ from analytics.diagnostics.clv_process_target_validation import build_target_row
 from analytics.diagnostics import clv_process_target_validation as clv
 
 
+def _operational_close_packet(**overrides):
+    row = {
+        "observation_id": "close-operational-1",
+        "observation_type": "official_close",
+        "slate_date": "2026-08-26",
+        "pitcher": "Logan Webb",
+        "side": "under",
+        "observed_at": "2026-08-26T19:29:00+00:00",
+        "provider": "therundown",
+        "bookmaker": "FanDuel",
+        "line": 5.5,
+        "american_odds": -110,
+        "freshness": "fresh",
+        "official_lock_reference": "lock-logan-webb",
+        "lock_provider": "therundown",
+        "lock_book": "FanDuel",
+        "lock_line": 5.5,
+        "lock_odds": -106,
+        "lock_observed_at": "2026-08-26T19:20:23.821626+00:00",
+        "lock_source_artifact_path": "https://example.net/api/get-artifact?type=today",
+        "lock_source_artifact_sha256": "b" * 64,
+    }
+    row.update(overrides)
+    return row
+
+
 def test_build_target_row_marks_same_line_better_price_as_price_clv():
     row = build_target_row(
         {
@@ -360,6 +386,61 @@ def test_build_target_row_rejects_book_mismatch_without_inferring_close():
     assert row["final_clv"] == "unknown"
 
 
+def test_operational_lock_packet_overrides_gate_c_book_and_records_disagreement():
+    gate_c_row = {
+        "dataset_key": "2026-08-26:logan-webb:under:5.5",
+        "slate_date": "2026-08-26",
+        "pitcher": "Logan Webb",
+        "side": "under",
+        "bet_time_at": "2026-08-26T12:20:23.821626-07:00",
+        "bet_time_book": "DraftKings",
+        "bet_time_line": 5.5,
+        "bet_time_odds": -106,
+        "official_line_source_provider": "therundown",
+    }
+
+    row = build_target_row(gate_c_row, [_operational_close_packet()])
+
+    assert row["close_eligibility"] == "eligible"
+    assert row["official_lock_reference"] == "lock-logan-webb"
+    assert row["lock_book"] == "FanDuel"
+    assert row["lock_line"] == 5.5
+    assert row["lock_odds"] == -106
+    assert row["lock_observed_at"] == "2026-08-26T19:20:23.821626+00:00"
+    assert row["gate_c_bet_time_book"] == "DraftKings"
+    assert row["gate_c_book_agrees_with_operational_lock"] is False
+    assert row["lock_source_artifact_sha256"] == "b" * 64
+
+
+@pytest.mark.parametrize(
+    ("gate_override", "eligibility"),
+    [
+        ({"bet_time_line": 6.5}, "gate_c_lock_line_mismatch"),
+        ({"bet_time_odds": -105}, "gate_c_lock_odds_mismatch"),
+        ({"bet_time_at": "2026-08-26T12:21:23.821626-07:00"}, "gate_c_lock_timestamp_mismatch"),
+    ],
+)
+def test_operational_lock_packet_fails_closed_on_gate_c_value_disagreement(
+    gate_override, eligibility
+):
+    gate_c_row = {
+        "slate_date": "2026-08-26",
+        "pitcher": "Logan Webb",
+        "side": "under",
+        "bet_time_at": "2026-08-26T12:20:23.821626-07:00",
+        "bet_time_book": "FanDuel",
+        "bet_time_line": 5.5,
+        "bet_time_odds": -106,
+        "official_line_source_provider": "therundown",
+        **gate_override,
+    }
+
+    row = build_target_row(gate_c_row, [_operational_close_packet()])
+
+    assert row["close_eligibility"] == eligibility
+    assert row["final_clv"] == "unknown"
+
+
 def test_build_target_row_selects_same_slate_same_pitcher_close_not_another_pitcher():
     row = build_target_row(
         {
@@ -621,6 +702,14 @@ def test_main_writes_process_only_markdown_and_json_from_gate_c_conventions(tmp_
                 "american_odds": -125,
                 "freshness": "fresh",
                 "observation_type": "official_close",
+                "official_lock_reference": "2026-07-29:official_close:chris-sale:over:5.5",
+                "lock_provider": "therundown",
+                "lock_book": "FanDuel",
+                "lock_line": 5.5,
+                "lock_odds": -110,
+                "lock_observed_at": "2026-07-29T18:00:00Z",
+                "lock_source_artifact_path": "https://example.net/api/get-artifact?type=today",
+                "lock_source_artifact_sha256": "c" * 64,
             }
         )
         + "\n",
@@ -664,6 +753,14 @@ def test_close_packet_rejects_non_over_under_side_before_target_build(tmp_path):
                     "american_odds": -125,
                     "freshness": "fresh",
                     "observation_type": "official_close",
+                    "official_lock_reference": "2026-07-29:official_close:chris-sale:over:5.5",
+                    "lock_provider": "therundown",
+                    "lock_book": "FanDuel",
+                    "lock_line": 5.5,
+                    "lock_odds": -110,
+                    "lock_observed_at": "2026-07-29T18:00:00Z",
+                    "lock_source_artifact_path": "https://example.net/api/get-artifact?type=today",
+                    "lock_source_artifact_sha256": "c" * 64,
                 }
             ]
         ),
@@ -671,6 +768,26 @@ def test_close_packet_rejects_non_over_under_side_before_target_build(tmp_path):
     )
 
     with pytest.raises(ValueError, match="side"):
+        clv.load_close_evidence_packet(close_packet)
+
+
+def test_close_packet_rejects_rows_without_operational_lock_provenance(tmp_path):
+    close_packet = tmp_path / "official_close_packet.json"
+    legacy_row = _operational_close_packet()
+    for field in (
+        "official_lock_reference",
+        "lock_provider",
+        "lock_book",
+        "lock_line",
+        "lock_odds",
+        "lock_observed_at",
+        "lock_source_artifact_path",
+        "lock_source_artifact_sha256",
+    ):
+        legacy_row.pop(field)
+    close_packet.write_text(json.dumps([legacy_row]), encoding="utf-8")
+
+    with pytest.raises(ValueError, match="operational lock provenance"):
         clv.load_close_evidence_packet(close_packet)
 
 

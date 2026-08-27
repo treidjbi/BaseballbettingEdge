@@ -11,10 +11,10 @@ Decision: `keep_as_process_kpi`
 The offline close-packet path works on current TheRundown/PropLine-era data,
 but it is not ready for recurring use or proxy design. Forty-two consumed
 operational locks produced 33 exact official-close observations; the CLV
-validator accepted 32. Nine locks had no exact pre-lock quote match in the
-20-minute provenance window, and one accepted packet row exposed a real
-operational-lock versus bet-time-book conflict. All exclusions remain
-fail-closed.
+validator accepted all 33. Nine locks had no exact pre-lock quote match in the
+20-minute provenance window. One row retains a descriptive Gate C
+bet-time-book disagreement, while its line, odds, and timestamp reconcile
+exactly to the consumed operational lock. All exclusions remain fail-closed.
 
 This was read-only evidence synthesis. Database writes were zero. No model,
 verdict, threshold, stake, provider order, notification, lock, artifact, UI,
@@ -36,12 +36,12 @@ All 33 packet rows resolved to TheRundown. Independent reconciliation found 33
 unique packet keys, 33 unique close observations, nine unique exclusion lock
 references, zero packet/exclusion overlap, and complete coverage of all 42
 bounded locks. Every packet row matched its operational lock, exact
-provider/book/event/line/price provenance snapshot, official Gate C provider,
-and timestamp order: strictly after lock, strictly before first pitch, and no
-more than 20 minutes old at game time.
+provider/book/event/line/price provenance snapshot, source artifact path/hash,
+official Gate C provider, and timestamp order: strictly after lock, strictly
+before first pitch, and no more than 20 minutes old at game time.
 
 The packet fingerprint is
-`882a84849586a1f45efb1d8e7f059a59814e44a4cf24bb49b8ce437322911d36`.
+`0c23ea9103a11bc0ee03ec0533c8bbd9664b9a6ae596f0a84576e37eb2644106`.
 The ignored local dry-run outputs are under
 `analytics/output/clv_close_dry_run_2026-08-25_2026-08-26/`.
 
@@ -56,26 +56,35 @@ exact match was not weakened.
 
 ## Validator result
 
-The target validator classified 32 rows as eligible, one as `book_mismatch`,
-and the remaining 51 Gate C rows as `identity_mismatch` because no close packet
-row existed for that pitcher/side identity. Eligible final-CLV labels were two
-`beat_close_price`, 28 `neutral_close`, and two `worse_close_price`.
+The target validator classified all 33 packet rows as eligible and the
+remaining 51 Gate C rows as `identity_mismatch` because no close packet row
+existed for that pitcher/side identity. Eligible final-CLV labels were two
+`beat_close_price`, 29 `neutral_close`, and two `worse_close_price`.
 
-The one book mismatch is Logan Webb UNDER on August 26. The operational lock
-ledger and close packet use FanDuel, while Gate C's `bet_time_book` is
-DraftKings at the same 5.5 line and -106 price. The validator correctly kept
-the row unknown. A wider packet needs an explicit contract decision about
-whether final CLV follows the operational lock or the accepted/bet-time book;
-the code must not guess or weaken same-book matching.
+The one descriptive book disagreement is Logan Webb UNDER on August 26. The
+consumed operational lock and close packet use FanDuel, while Gate C's
+`bet_time_book` is DraftKings at the same 5.5 line, -106 price, and timestamp.
+The approved process-CLV contract now anchors the consumed operational lock,
+so the row is eligible and neutral. The warning remains explicit. Any Gate C
+line, odds, or timestamp disagreement fails closed with its own eligibility
+reason; no value is inferred or reconstructed.
+
+Accepted-bet CLV remains a separate future execution metric. There were zero
+accepted-bet rows in this two-slate window. The bounded historical read found
+26 accepted bets across 13 dates since June 24, ending July 27, so it cannot be
+silently substituted into this process-CLV packet.
 
 The validator needed one narrow research-reader correction: when legacy
 provider fields are absent, it now accepts Gate C's exact single-provider
 `official_line_source_provider` or `official_odds_source`. Composite provider
-values remain ineligible as exact lock attribution.
+values remain ineligible as exact lock attribution. The packet now carries the
+exact operational lock provider, book, line, odds, timestamp, artifact path,
+and artifact hash, and the validator requires that provenance before a
+non-empty packet can run.
 
 ## Readiness and affected audits
 
-- Fully attributed current-provider targets: `32/100`.
+- Fully attributed current-provider targets: `33/100`.
 - Complete 14-slate windows: zero; this packet spans two slates.
 - Strong pre-close bucket: six evaluated, two beat / four neutral / zero worse.
   Its apparent 27.1-point lift is a tiny-sample observation, not a breakout or
@@ -91,10 +100,10 @@ values remain ineligible as exact lock attribution.
 
 ## Next gate
 
-Do not schedule or widen the producer yet. First review the operational-lock
-versus bet-time-book definition. Any later wider validation still requires at
-least 100 fully attributed current-provider targets, positive strong-proxy lift
-in two consecutive complete 14-slate windows, and side, price, K-line, timing,
-quality, Path B, workload, provider, agreement, rolling-window, and
-leave-one-slate-out survival. All model and behavior-changing gates remain
-closed.
+Do not schedule or widen the producer without a separate approval. Any later
+wider validation still requires at least 100 fully attributed current-provider
+targets, positive strong-proxy lift in two consecutive complete 14-slate
+windows, and side, price, K-line, timing, quality, Path B, workload, provider,
+agreement, rolling-window, and leave-one-slate-out survival. Accepted-bet CLV,
+if pursued, needs a separate execution-metric design. All model and
+behavior-changing gates remain closed.

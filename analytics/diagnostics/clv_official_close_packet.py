@@ -207,6 +207,9 @@ def build_close_packet(
         lock_name = _normalized_name(lock, "normalized_pitcher", "pitcher")
         side = str(lock.get("side") or "").strip().lower()
         lock_book = _book_key(lock.get("locked_book"))
+        lock_reference = str(lock.get("id") or lock.get("dedupe_key") or "").strip()
+        lock_source_artifact_path = str(lock.get("source_artifact_path") or "").strip()
+        lock_source_artifact_sha256 = str(lock.get("source_artifact_sha256") or "").strip()
         missing_fields = [
             label
             for label, present in (
@@ -217,6 +220,9 @@ def build_close_packet(
                 ("locked_book", bool(lock_book)),
                 ("locked_k_line", lock_line is not None),
                 ("locked_odds", lock_odds is not None),
+                ("lock_reference", bool(lock_reference)),
+                ("source_artifact_path", bool(lock_source_artifact_path)),
+                ("source_artifact_sha256", bool(lock_source_artifact_sha256)),
             )
             if not present
         ]
@@ -359,12 +365,18 @@ def build_close_packet(
                 "freshness": "fresh",
                 "game_time": _iso(game_time),
                 "line": _number(close.get("line")),
+                "lock_book": str(lock.get("locked_book") or "").strip(),
+                "lock_line": lock_line,
                 "lock_observed_at": _iso(locked_at),
+                "lock_odds": int(lock_odds),
+                "lock_provider": provider,
+                "lock_source_artifact_path": lock_source_artifact_path,
+                "lock_source_artifact_sha256": lock_source_artifact_sha256,
                 "normalized_pitcher": lock_name,
                 "observation_id": observation_id,
                 "observation_type": "official_close",
                 "observed_at": _iso(latest_at),
-                "official_lock_reference": str(lock.get("id") or lock.get("dedupe_key") or "").strip(),
+                "official_lock_reference": lock_reference,
                 "pitcher": str(lock.get("pitcher") or close.get("player_name") or "").strip(),
                 "provider": provider,
                 "side": side,

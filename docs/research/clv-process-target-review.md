@@ -45,12 +45,19 @@ create a permanently unusable close source, not a CLV result.
 
 The first bounded current-provider dry run covered August 25-26. It reconciled
 `42` consumed operational locks to `33` exact official-close observations and
-`9` fail-closed exclusions. The existing validator accepted `32` targets and
-kept one Logan Webb UNDER row unknown because Gate C's DraftKings
-`bet_time_book` disagreed with the FanDuel operational lock and close packet.
-The result is `32/100` fully attributed current-provider targets across only
-two slates, so readiness remains `keep_as_process_kpi`; no complete 14-slate
-window or performance claim exists.
+`9` fail-closed exclusions. The approved contract anchors process CLV to the
+consumed operational lock. The packet now carries its exact provider, book,
+line, odds, timestamp, source artifact path, and artifact hash. The validator
+accepted all `33` targets. Logan Webb UNDER retains a descriptive Gate C
+DraftKings-versus-FanDuel book warning, while line, odds, and timestamp agree
+exactly. The result is `33/100` fully attributed current-provider targets
+across only two slates, so readiness remains `keep_as_process_kpi`; no complete
+14-slate window or performance claim exists.
+
+Accepted-bet CLV is a separate future execution metric, not a substitute for
+the operational-lock process target. The bounded read found no accepted bets
+in the August 25-26 packet window. Any accepted-bet analysis needs its own
+pairing and review contract.
 
 Each target run still requires its own explicitly validated packet. A valid
 explicit empty packet is allowed; it creates `unknown` targets. Missing
@@ -61,10 +68,10 @@ neutral close, or reconstructed value.
 
 | Review surface | Current verified state | Required before a proxy-design discussion |
 | --- | --- | --- |
-| Fully attributed current-provider targets | `32/100` from the August 25-26 packet | At least 100 eligible targets since 2026-06-24 |
+| Fully attributed current-provider targets | `33/100` from the August 25-26 packet | At least 100 eligible targets since 2026-06-24 |
 | Strong pre-close proxy lift | Six evaluated rows: `2` beat / `4` neutral / `0` worse; only two slates | Positive in two consecutive complete 14-slate windows |
-| Provider drift | All 32 eligible targets are current-era TheRundown observations | Current-provider review must not be hidden by historical-era results |
-| Final-close provenance | `33/42` exact packet rows; nine exact pre-lock quote gaps; one later validator book mismatch | Same provider, same book, same event, fresh timestamped official close after lock |
+| Provider drift | All 33 eligible targets are current-era TheRundown observations | Current-provider review must not be hidden by historical-era results |
+| Final-close provenance | `33/42` exact packet rows; nine exact pre-lock quote gaps; all 33 reconcile to the consumed lock; one descriptive Gate C book warning | Same provider, same book, same event, fresh timestamped official close after lock |
 | Slices | Generated for the bounded packet, but the sample/window floors are not met and agreement is uninformative | Side, price, K line, timing, quality, Path B, workload, provider, agreement, and rolling windows all reviewed |
 
 The historical `evidence_clv_supported` reference (`277`, `155-122`, `+19.01u`,

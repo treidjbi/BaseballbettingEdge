@@ -26,6 +26,8 @@ def _lock(**overrides):
         "locked_at": "2026-08-26T17:40:00+00:00",
         "game_time": "2026-08-26T18:00:00+00:00",
         "consumed_at": "2026-08-26T17:42:00+00:00",
+        "source_artifact_path": "https://example.net/api/get-artifact?type=today",
+        "source_artifact_sha256": "a" * 64,
     }
     row.update(overrides)
     return row
@@ -85,7 +87,13 @@ def test_exact_lock_provenance_builds_latest_fresh_official_close_row():
             "freshness": "fresh",
             "game_time": "2026-08-26T18:00:00+00:00",
             "line": 6.5,
+            "lock_book": "FanDuel",
+            "lock_line": 5.5,
             "lock_observed_at": "2026-08-26T17:40:00+00:00",
+            "lock_odds": -110,
+            "lock_provider": "therundown",
+            "lock_source_artifact_path": "https://example.net/api/get-artifact?type=today",
+            "lock_source_artifact_sha256": "a" * 64,
             "normalized_pitcher": "chris sale",
             "observation_id": "snapshot-close-latest",
             "observation_type": "official_close",
@@ -244,6 +252,25 @@ def test_close_without_observation_id_is_excluded_before_packet_validation():
 
     assert result["packet_rows"] == []
     assert result["exclusions"][0]["reason"] == "missing_close_observation_id"
+
+
+def test_lock_without_reference_is_excluded_before_packet_validation():
+    producer = _producer_module()
+    snapshots = [
+        _snapshot(),
+        _snapshot(id="snapshot-close", observed_at="2026-08-26T17:55:00+00:00"),
+    ]
+
+    result = producer.build_close_packet(
+        [_lock(id=None, dedupe_key=None)],
+        snapshots,
+        start_date="2026-08-26",
+        end_date="2026-08-26",
+    )
+
+    assert result["packet_rows"] == []
+    assert result["exclusions"][0]["reason"] == "missing_lock_fields"
+    assert "lock_reference" in result["exclusions"][0]["details"]["fields"]
 
 
 def test_retired_boltodds_cannot_supply_lock_provenance_by_default():
