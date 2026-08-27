@@ -233,7 +233,7 @@ python -c "from scripts.run_daily_active_provider_compaction_finalizer import AC
 
 Expected: both diffs are empty and the fixed provider assertion passes.
 
-- [ ] **Step 4: Commit the documentation and verification record**
+- [x] **Step 4: Commit the documentation and verification record**
 
 ```powershell
 git add docs/current-state.md docs/operational-risk-register.md docs/superpowers/specs/2026-08-27-manual-active-provider-compaction-intervals-design.md docs/superpowers/plans/2026-08-26-daily-active-provider-compaction-finalizer.md docs/superpowers/plans/2026-08-27-manual-active-provider-compaction-intervals.md
@@ -243,3 +243,29 @@ git commit -m "docs: adopt manual compaction intervals"
 Do not merge, push, deploy, run a live preview, set either write gate, write to
 Supabase, or delete data as part of this plan. Those actions remain later
 operator checkpoints.
+
+## Execution Record (2026-08-27)
+
+- Implemented test-first on isolated branch
+  `codex/manual-retention-intervals`, rebased onto `origin/main` commit
+  `e63a6252` without conflict.
+- Target-boundary RED proof: `7` expected failures because the resolver and
+  explicit slate-date input did not exist. GREEN proof: `9` selected tests
+  passed.
+- CLI/gate RED proof: `6` expected failures because `--slate-date` and the
+  manual write gate did not exist. GREEN proof: `10` selected tests passed.
+- The complete finalizer/reader/writer safety suite passed `134` tests after
+  the rebase. The complete repository suite passed `2,602` tests.
+- Implementation commits after the rebase are `6d02ead6` (validated manual
+  date), `72541d18` (separate manual gate), and `9a58f9c6` (manual operating
+  posture and plan).
+- Fixed providers remain exactly `("propline", "therundown")`; there is no
+  provider or date-range argument. The historical repair allowlist, frequent
+  live compactor, writer, Render, dashboard, Netlify, pipeline, and database
+  schemas are unchanged.
+- `database_write_performed=false`; `live_preview_performed=false`;
+  `render_service_created=false`; `deletion_performed=false`;
+  `retention_execution_closed=true`. Neither write gate was set.
+- The full suite regenerated only the known tracked
+  `analytics/output/gate_f_preclose_clv_proxy_lab.md` fixture artifact. Its
+  exact committed hash was restored before final status review.
