@@ -359,6 +359,43 @@ operator checkpoints.
   remaining upsert rows. PropLine is exact at `178` rebuilt/existing rows and
   TheRundown is exact at `463` rebuilt/existing rows for the target date.
 - The next read-only checkpoint for `2026-06-23` passed with no evidence
-  blockers and no write attempt. It identified `198` PropLine and `516`
-  TheRundown compact rows to repair (`714` total). That exact tranche remains
-  preview-only pending separate Tyler approval.
+  blockers and identified `198` PropLine and `516` TheRundown compact rows to
+  repair (`714` total). Later approved interval work superseded this
+  preview-only checkpoint; use the completion record below for current state.
+
+## Manual Historical Interval Completion (2026-08-27)
+
+- The approved one-date-at-a-time process completed every source-complete
+  active-provider repair date from `2026-06-12` through `2026-07-26`.
+  Independent zero-upsert proofs now cover `2026-06-12` through `2026-06-30`,
+  `2026-07-02` through `2026-07-12`, and `2026-07-16` through `2026-07-26`.
+  Each exact date has equal rebuilt/existing counts and zero missing,
+  mismatched, or unexpected compact rows for both PropLine and TheRundown.
+- The database write ledger shows `34,236` compact rows touched across `41`
+  historical dates: `14,435` PropLine and `19,801` TheRundown. Fresh gates
+  safely converted already-exact dates to no-ops rather than repeating writes.
+  Only `compact_market_line_movements` changed; no provider-usage row or raw
+  evidence row was written or deleted.
+- The current residual repair footprint is `23` provider/date partitions and
+  `1,274` compact rows. It consists of `21` PropLine-only partitions from
+  `2026-05-14` through `2026-06-11`, the `2026-07-01` PropLine partition
+  (`145` rows), and the `2026-07-15` TheRundown partition (`17` rows). The
+  companion provider has zero raw snapshots in every residual bucket, so the
+  fixed two-provider finalizer correctly fails closed. Do not weaken provider
+  scope or add a single-provider execution path to clear these exceptions.
+- The separately reviewed `2026-05-17` PropLine carryover remains preserved
+  historical evidence, not a repair partition: its `24` unexpected groups are
+  exact May 16 carryover and require no upsert.
+- Post-interval sizing is `5,287 MB`, or `64.54%` of the included `8 GB` Pro
+  allowance. `market_snapshots` is `3,640 MB` total, the PropLine webhook inbox
+  is `471 MB`, and `compact_market_line_movements` is `215 MB`. Compaction
+  preserved the season-evaluation evidence but did not reclaim physical space.
+- The latest completed physical backup is `2026-08-27T05:41:09.424Z`; the last
+  historical compact write was later at `2026-08-27T22:19:39.703533Z`.
+  Therefore raw deletion, webhook deletion, retention activation, vacuum, and
+  physical reclamation remain `NO-GO` until a newer completed backup is
+  verified, recovery posture is rechecked, and Tyler separately approves the
+  exact deletion scope. PITR remains disabled.
+- No Render service, schedule, worker, deploy, provider behavior, model,
+  notification, lock, dashboard, source-of-truth rule, or environment setting
+  changed during the interval work.
