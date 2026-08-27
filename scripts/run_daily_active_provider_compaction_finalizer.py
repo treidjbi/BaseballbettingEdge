@@ -27,6 +27,8 @@ PHOENIX = ZoneInfo("America/Phoenix")
 ACTIVE_PROVIDERS = ("propline", "therundown")
 WRITE_GATE_ENV = "ALLOW_DAILY_ACTIVE_PROVIDER_COMPACTION_WRITE"
 WRITE_GATE_VALUE = "D1_ACTIVE_PROVIDERS_COMPACT_ONLY"
+MANUAL_WRITE_GATE_ENV = "ALLOW_MANUAL_ACTIVE_PROVIDER_COMPACTION_WRITE"
+MANUAL_WRITE_GATE_VALUE = "EXACT_DATE_ACTIVE_PROVIDERS_COMPACT_ONLY"
 DEFAULT_DEADLINE_SECONDS = 480.0
 CLEAN_REGIME_START = date(2026, 4, 28)
 
@@ -584,6 +586,7 @@ def run_finalizer(
 
 def _parse_args(argv: list[str]) -> argparse.Namespace:
     parser = _RedactedArgumentParser(description=__doc__)
+    parser.add_argument("--slate-date")
     parser.add_argument("--execute", action="store_true")
     return parser.parse_args(argv)
 
@@ -607,7 +610,13 @@ def _safe_summary(report: dict[str, Any]) -> dict[str, Any]:
 def main(argv: list[str] | None = None) -> int:
     try:
         args = _parse_args(argv if argv is not None else sys.argv[1:])
-        allow_execute = os.environ.get(WRITE_GATE_ENV, "") == WRITE_GATE_VALUE
+        if args.slate_date is None:
+            gate_env = WRITE_GATE_ENV
+            gate_value = WRITE_GATE_VALUE
+        else:
+            gate_env = MANUAL_WRITE_GATE_ENV
+            gate_value = MANUAL_WRITE_GATE_VALUE
+        allow_execute = os.environ.get(gate_env, "") == gate_value
         if args.execute and not allow_execute:
             raise EnvironmentError("daily_active_provider_compaction_write_gate_closed")
         writer = SupabaseMarketWriter(
@@ -618,6 +627,7 @@ def main(argv: list[str] | None = None) -> int:
             writer=writer,
             execute=args.execute,
             allow_execute=allow_execute,
+            slate_date=args.slate_date,
         )
         print(json.dumps(_safe_summary(report), sort_keys=True, separators=(",", ":")))
         return 0 if report["status"] == "success" else 2

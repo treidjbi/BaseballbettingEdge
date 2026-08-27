@@ -947,12 +947,155 @@ def test_unexpected_post_check_exception_preserves_known_successful_write(
     assert "sensitive-post-state-body" not in json.dumps(result)
 
 
-def test_cli_accepts_no_arbitrary_date_or_provider(monkeypatch):
+def test_cli_accepts_one_explicit_slate_date_but_no_provider_or_range():
     finalizer = _module()
+    args = finalizer._parse_args(["--slate-date", "2026-08-19"])
+    assert args.slate_date == "2026-08-19"
+
     with pytest.raises(SystemExit):
         finalizer._parse_args(["--date", "2026-08-25"])
     with pytest.raises(SystemExit):
         finalizer._parse_args(["--provider", "propline"])
+    with pytest.raises(SystemExit):
+        finalizer._parse_args([
+            "--slate-date-from",
+            "2026-08-19",
+            "--slate-date-to",
+            "2026-08-25",
+        ])
+
+
+def test_explicit_date_preview_cli_forwards_one_slate_date(monkeypatch, capsys):
+    finalizer = _module()
+    captured_kwargs = {}
+
+    def fake_finalizer(**kwargs):
+        captured_kwargs.update(kwargs)
+        return {
+            "report_type": "daily_active_provider_compaction_finalizer",
+            "mode": "preview",
+            "target_slate_date": "2026-08-19",
+            "target_date_source": "explicit",
+            "status": "success",
+            "provider_results": [],
+            "database_write_attempted": False,
+            "database_write_performed": False,
+            "provider_usage_rows_written": 0,
+            "deletion_performed": False,
+            "retention_execution_closed": True,
+        }
+
+    monkeypatch.setattr(finalizer, "SupabaseMarketWriter", lambda *args: object())
+    monkeypatch.setattr(finalizer, "run_finalizer", fake_finalizer)
+    monkeypatch.setenv("SUPABASE_URL", "https://example.supabase.co")
+    monkeypatch.setenv("SUPABASE_SERVICE_ROLE_KEY", "secret-value")
+
+    assert finalizer.main(["--slate-date", "2026-08-19"]) == 0
+    assert captured_kwargs["slate_date"] == "2026-08-19"
+    assert captured_kwargs["execute"] is False
+    assert json.loads(capsys.readouterr().out)["target_date_source"] == "explicit"
+
+
+def test_daily_gate_does_not_authorize_explicit_date_execute(monkeypatch):
+    finalizer = _module()
+    monkeypatch.setenv(finalizer.WRITE_GATE_ENV, finalizer.WRITE_GATE_VALUE)
+    monkeypatch.delenv(finalizer.MANUAL_WRITE_GATE_ENV, raising=False)
+    monkeypatch.delenv("SUPABASE_URL", raising=False)
+    monkeypatch.delenv("SUPABASE_SERVICE_ROLE_KEY", raising=False)
+
+    assert finalizer.main([
+        "--slate-date",
+        "2026-08-19",
+        "--execute",
+    ]) == 3
+
+
+def test_manual_gate_does_not_authorize_implicit_d_minus_one_execute(monkeypatch):
+    finalizer = _module()
+    monkeypatch.setenv(
+        finalizer.MANUAL_WRITE_GATE_ENV,
+        finalizer.MANUAL_WRITE_GATE_VALUE,
+    )
+    monkeypatch.delenv(finalizer.WRITE_GATE_ENV, raising=False)
+    monkeypatch.delenv("SUPABASE_URL", raising=False)
+    monkeypatch.delenv("SUPABASE_SERVICE_ROLE_KEY", raising=False)
+
+    assert finalizer.main(["--execute"]) == 3
+
+
+def test_explicit_date_execute_cli_uses_exact_manual_gate(monkeypatch, capsys):
+    finalizer = _module()
+    captured_kwargs = {}
+
+    def fake_finalizer(**kwargs):
+        captured_kwargs.update(kwargs)
+        return {
+            "report_type": "daily_active_provider_compaction_finalizer",
+            "mode": "execute",
+            "target_slate_date": "2026-08-19",
+            "target_date_source": "explicit",
+            "status": "success",
+            "provider_results": [],
+            "database_write_attempted": False,
+            "database_write_performed": False,
+            "provider_usage_rows_written": 0,
+            "deletion_performed": False,
+            "retention_execution_closed": True,
+        }
+
+    monkeypatch.setenv(
+        finalizer.MANUAL_WRITE_GATE_ENV,
+        finalizer.MANUAL_WRITE_GATE_VALUE,
+    )
+    monkeypatch.delenv(finalizer.WRITE_GATE_ENV, raising=False)
+    monkeypatch.setenv("SUPABASE_URL", "https://example.supabase.co")
+    monkeypatch.setenv("SUPABASE_SERVICE_ROLE_KEY", "secret-value")
+    monkeypatch.setattr(finalizer, "SupabaseMarketWriter", lambda *args: object())
+    monkeypatch.setattr(finalizer, "run_finalizer", fake_finalizer)
+
+    assert finalizer.main([
+        "--slate-date",
+        "2026-08-19",
+        "--execute",
+    ]) == 0
+    assert captured_kwargs["slate_date"] == "2026-08-19"
+    assert captured_kwargs["execute"] is True
+    assert captured_kwargs["allow_execute"] is True
+    assert "secret-value" not in capsys.readouterr().out
+
+
+def test_implicit_execute_cli_still_uses_exact_daily_gate(monkeypatch, capsys):
+    finalizer = _module()
+    captured_kwargs = {}
+
+    def fake_finalizer(**kwargs):
+        captured_kwargs.update(kwargs)
+        return {
+            "report_type": "daily_active_provider_compaction_finalizer",
+            "mode": "execute",
+            "target_slate_date": "2026-08-26",
+            "target_date_source": "phoenix_d_minus_one",
+            "status": "success",
+            "provider_results": [],
+            "database_write_attempted": False,
+            "database_write_performed": False,
+            "provider_usage_rows_written": 0,
+            "deletion_performed": False,
+            "retention_execution_closed": True,
+        }
+
+    monkeypatch.setenv(finalizer.WRITE_GATE_ENV, finalizer.WRITE_GATE_VALUE)
+    monkeypatch.delenv(finalizer.MANUAL_WRITE_GATE_ENV, raising=False)
+    monkeypatch.setenv("SUPABASE_URL", "https://example.supabase.co")
+    monkeypatch.setenv("SUPABASE_SERVICE_ROLE_KEY", "secret-value")
+    monkeypatch.setattr(finalizer, "SupabaseMarketWriter", lambda *args: object())
+    monkeypatch.setattr(finalizer, "run_finalizer", fake_finalizer)
+
+    assert finalizer.main(["--execute"]) == 0
+    assert captured_kwargs["slate_date"] is None
+    assert captured_kwargs["execute"] is True
+    assert captured_kwargs["allow_execute"] is True
+    assert "secret-value" not in capsys.readouterr().out
 
 
 def test_execute_cli_checks_exact_gate_before_loading_credentials(monkeypatch):
@@ -1043,6 +1186,29 @@ def test_execute_gate_requires_the_exact_literal_value(monkeypatch, value):
     monkeypatch.setenv(finalizer.WRITE_GATE_ENV, value)
     monkeypatch.delenv("SUPABASE_URL", raising=False)
     assert finalizer.main(["--execute"]) == 3
+
+
+@pytest.mark.parametrize(
+    "value",
+    [
+        "",
+        "true",
+        "1",
+        "exact_date_active_providers_compact_only",
+        "EXACT_DATE_ACTIVE_PROVIDERS",
+    ],
+)
+def test_manual_execute_gate_requires_the_exact_literal_value(monkeypatch, value):
+    finalizer = _module()
+    monkeypatch.setenv(finalizer.MANUAL_WRITE_GATE_ENV, value)
+    monkeypatch.delenv(finalizer.WRITE_GATE_ENV, raising=False)
+    monkeypatch.delenv("SUPABASE_URL", raising=False)
+
+    assert finalizer.main([
+        "--slate-date",
+        "2026-08-19",
+        "--execute",
+    ]) == 3
 
 
 def test_summary_serialization_rejects_unapproved_top_level_fields():
