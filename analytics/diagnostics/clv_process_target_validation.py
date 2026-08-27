@@ -207,6 +207,12 @@ def build_target_row(gate_c_row: dict[str, Any], market_rows: list[dict[str, Any
     normalized_pitcher = _normalized_pitcher(gate_c_row)
     side = str(gate_c_row.get("side") or "").strip().lower()
     lock_provider = str(gate_c_row.get("lock_provider") or gate_c_row.get("provider") or "").strip().lower()
+    if not lock_provider:
+        for field in ("official_line_source_provider", "official_odds_source"):
+            candidate = str(gate_c_row.get(field) or "").strip().lower()
+            if candidate in {"therundown", "propline"}:
+                lock_provider = candidate
+                break
     lock_book = str(
         gate_c_row.get("lock_book")
         or gate_c_row.get("bet_time_book")

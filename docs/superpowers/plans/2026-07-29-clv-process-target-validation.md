@@ -121,15 +121,44 @@ A bounded live shape check across August 25-26 found `42` lock rows: `10` had
 one unique provider/event match and `32` were ambiguous because TheRundown and
 PropLine shared the same pre-lock signature. That result is why the Gate C
 official-provider resolver is optional but necessary for useful coverage; the
-producer never guesses. No current close packet has been exported and
-validated yet, so the recurring runner remains `proxy_failed` unless an
-explicit valid packet is supplied. No CLV readiness count or performance
-claim follows from this implementation.
+producer never guesses.
 
 - [x] Add test-first exact lock-provenance, timestamp-order, freshness,
   ambiguity, retired-provider, CLI-output, and validator-contract coverage.
 - [x] Keep the producer offline and dry-run only; do not wire it into the
   recurring post-grading runner without a separate approval.
-- [ ] Export one bounded current-provider window, inspect every exclusion, and
+- [x] Export one bounded current-provider window, inspect every exclusion, and
   validate the packet before measuring the existing readiness gates.
+
+## Bounded Current-Provider Dry Run (2026-08-27)
+
+The approved read-only dry run covered the completed August 25-26 slates. It
+exported `42` consumed operational locks and `339` matching TheRundown/PropLine
+snapshots, rebuilt `84` Gate C side rows with `45` tracked rows, and produced
+`33` validated official-close observations. All `33` packet rows were
+TheRundown observations; BoltOdds contributed zero rows. The packet,
+exclusions, and independent reconciliation all retained exact lock, event,
+provider, book, line, price, and timestamp provenance, with zero database
+writes.
+
+Nine locks were excluded because no exact pre-lock provenance snapshot existed
+within the 20-minute window. Eight had a same-line price mismatch and one had a
+line mismatch. Those exclusions remain fail-closed; the matcher was not
+weakened. The target validator accepted `32` of the `33` packet rows. Logan
+Webb UNDER on August 26 remained `book_mismatch`: the operational lock and
+close packet use FanDuel, while Gate C's `bet_time_book` is DraftKings. That
+conflict requires an explicit future lock-definition decision and must not be
+resolved by inference.
+
+The validator now recognizes Gate C's exact single-provider
+`official_line_source_provider` or `official_odds_source` when legacy provider
+fields are absent. Composite values such as `therundown+propline` remain
+ineligible as exact lock attribution. This is a research-reader repair only;
+it changes no selector or runtime behavior.
+
+Readiness remains `keep_as_process_kpi`: `32/100` fully attributed
+current-provider targets, only two completed slates, and no complete 14-slate
+window. The strong pre-close bucket was `2` beat / `4` neutral / `0` worse on
+six evaluated rows, which is too small and too concentrated for a proxy-design
+plan. All model and behavior-changing gates remain closed.
 

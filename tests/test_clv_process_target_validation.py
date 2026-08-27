@@ -45,6 +45,49 @@ def test_build_target_row_marks_same_line_better_price_as_price_clv():
     assert row["final_clv"] == "beat_close_price"
 
 
+@pytest.mark.parametrize(
+    "provider_fields",
+    [
+        {"official_line_source_provider": "therundown"},
+        {"official_odds_source": "therundown"},
+    ],
+)
+def test_build_target_row_accepts_exact_gate_c_official_provider_fields(
+    provider_fields,
+):
+    gate_c_row = {
+        "slate_date": "2026-08-25",
+        "pitcher": "Aaron Nola",
+        "side": "over",
+        "bet_time_at": "2026-08-25T18:10:34-07:00",
+        "bet_time_book": "FanDuel",
+        "bet_time_line": 5.5,
+        "bet_time_odds": -125,
+        **provider_fields,
+    }
+    close_rows = [
+        {
+            "observation_id": "close-1",
+            "observation_type": "official_close",
+            "slate_date": "2026-08-25",
+            "pitcher": "Aaron Nola",
+            "side": "over",
+            "provider": "therundown",
+            "bookmaker": "FanDuel",
+            "line": 5.5,
+            "american_odds": -125,
+            "observed_at": "2026-08-25T18:30:19-07:00",
+            "freshness": "fresh",
+        }
+    ]
+
+    row = build_target_row(gate_c_row, close_rows)
+
+    assert row["lock_provider"] == "therundown"
+    assert row["close_eligibility"] == "eligible"
+    assert row["final_clv"] == "neutral_close"
+
+
 def test_build_target_row_preserves_gate_c_pnl_outside_preclose_proxy_inputs():
     row = build_target_row(
         {

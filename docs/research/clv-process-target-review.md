@@ -2,6 +2,8 @@
 
 Date: 2026-07-30
 
+Updated: 2026-08-27
+
 ## Decision
 
 `keep_as_process_kpi`.
@@ -33,22 +35,25 @@ never prints rows or recommends a pick action. The explicit
 
 ## Current evidence status
 
-An approved offline producer now exists at
+An approved offline producer exists at
 `analytics/diagnostics/clv_official_close_packet.py`. It consumes bounded lock
 and market-snapshot exports, optionally uses Gate C's exact official-provider
 field to resolve otherwise ambiguous TheRundown/PropLine matches, and writes a
 packet, exclusions, and manifest with zero database writes. It is not wired to
-the recurring runner. The local Gate C manifest also names an older source
-window through 2026-06-16. Passing a movement export to the target would still
+the recurring runner. Passing a movement export to the target would still
 create a permanently unusable close source, not a CLV result.
 
-No current packet has been exported and validated yet. Therefore the default
-runner readiness remains `proxy_failed`, and this review does not infer close
-provenance from archive fields or claim a new coverage, lift, PnL, or
-calibration result.
+The first bounded current-provider dry run covered August 25-26. It reconciled
+`42` consumed operational locks to `33` exact official-close observations and
+`9` fail-closed exclusions. The existing validator accepted `32` targets and
+kept one Logan Webb UNDER row unknown because Gate C's DraftKings
+`bet_time_book` disagreed with the FanDuel operational lock and close packet.
+The result is `32/100` fully attributed current-provider targets across only
+two slates, so readiness remains `keep_as_process_kpi`; no complete 14-slate
+window or performance claim exists.
 
-An explicitly validated packet is still required before the target can run. A
-valid explicit empty packet is allowed; it creates `unknown` targets. Missing
+Each target run still requires its own explicitly validated packet. A valid
+explicit empty packet is allowed; it creates `unknown` targets. Missing
 close evidence must remain `unknown`; it must never be treated as a loss,
 neutral close, or reconstructed value.
 
@@ -56,11 +61,11 @@ neutral close, or reconstructed value.
 
 | Review surface | Current verified state | Required before a proxy-design discussion |
 | --- | --- | --- |
-| Fully attributed current-provider targets | Not measured from a paired current packet | At least 100 eligible targets since 2026-06-24 |
-| Strong pre-close proxy lift | Not measured from a paired current packet | Positive in two consecutive complete 14-slate windows |
-| Provider drift | Not measured from a paired current packet | Current-provider review must not be hidden by historical-era results |
-| Final-close provenance | Offline producer approved and implemented; no current packet validated; refreshed movement exports remain insufficient | Same provider, same book, same event, fresh timestamped official close after lock |
-| Slices | Not measured from a paired current packet | Side, price, K line, timing, quality, Path B, workload, provider, agreement, and rolling windows all reviewed |
+| Fully attributed current-provider targets | `32/100` from the August 25-26 packet | At least 100 eligible targets since 2026-06-24 |
+| Strong pre-close proxy lift | Six evaluated rows: `2` beat / `4` neutral / `0` worse; only two slates | Positive in two consecutive complete 14-slate windows |
+| Provider drift | All 32 eligible targets are current-era TheRundown observations | Current-provider review must not be hidden by historical-era results |
+| Final-close provenance | `33/42` exact packet rows; nine exact pre-lock quote gaps; one later validator book mismatch | Same provider, same book, same event, fresh timestamped official close after lock |
+| Slices | Generated for the bounded packet, but the sample/window floors are not met and agreement is uninformative | Side, price, K line, timing, quality, Path B, workload, provider, agreement, and rolling windows all reviewed |
 
 The historical `evidence_clv_supported` reference (`277`, `155-122`, `+19.01u`,
 `+6.9%`) is a process benchmark only. The recent 30-row `-4.64u` result blocks a
