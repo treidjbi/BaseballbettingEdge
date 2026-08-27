@@ -168,6 +168,74 @@ def test_phoenix_target_is_stable_across_utc_date_boundary():
     assert finalizer._target_slate_date(now_utc) == "2026-08-24"
 
 
+def test_omitted_slate_date_reports_phoenix_d_minus_one_source():
+    finalizer = _module()
+
+    assert finalizer._resolve_target_slate_date(
+        now_utc=datetime(2026, 8, 27, 12, 0, tzinfo=timezone.utc),
+        explicit_slate_date=None,
+    ) == ("2026-08-26", "phoenix_d_minus_one")
+
+
+def test_explicit_slate_date_targets_fixed_providers_and_reports_source(monkeypatch):
+    finalizer = _module()
+    calls = []
+
+    def fake_preview(*, provider, slate_date, writer):
+        calls.append((provider, slate_date))
+        report = _report(provider)
+        report["slate_date"] = slate_date
+        return report, []
+
+    monkeypatch.setattr(finalizer, "build_partition_preview", fake_preview)
+    result = finalizer.run_finalizer(
+        writer=RecordingWriter(),
+        now_utc=datetime(2026, 8, 27, 12, 0, tzinfo=timezone.utc),
+        slate_date="2026-08-19",
+    )
+
+    assert calls == [
+        ("propline", "2026-08-19"),
+        ("therundown", "2026-08-19"),
+    ]
+    assert result["target_slate_date"] == "2026-08-19"
+    assert result["target_date_source"] == "explicit"
+    assert result["database_write_attempted"] is False
+    assert result["database_write_performed"] is False
+
+
+@pytest.mark.parametrize(
+    "explicit_slate_date",
+    [
+        "not-a-date",
+        "2026-8-19",
+        "2026-04-27",
+        "2026-08-27",
+        "2026-08-28",
+    ],
+)
+def test_explicit_slate_date_rejects_unsafe_values_before_provider_reads(
+    monkeypatch,
+    explicit_slate_date,
+):
+    finalizer = _module()
+    calls = []
+    monkeypatch.setattr(
+        finalizer,
+        "build_partition_preview",
+        lambda **kwargs: calls.append(kwargs),
+    )
+
+    with pytest.raises(ValueError):
+        finalizer.run_finalizer(
+            writer=RecordingWriter(),
+            now_utc=datetime(2026, 8, 27, 12, 0, tzinfo=timezone.utc),
+            slate_date=explicit_slate_date,
+        )
+
+    assert calls == []
+
+
 def test_target_rejects_tzinfo_with_no_utcoffset():
     finalizer = _module()
 

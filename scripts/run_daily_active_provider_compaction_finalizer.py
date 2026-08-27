@@ -7,7 +7,7 @@ import os
 from pathlib import Path
 import sys
 import time
-from datetime import datetime, timedelta, timezone
+from datetime import date, datetime, timedelta, timezone
 from typing import Any, Callable
 from zoneinfo import ZoneInfo
 
@@ -28,6 +28,7 @@ ACTIVE_PROVIDERS = ("propline", "therundown")
 WRITE_GATE_ENV = "ALLOW_DAILY_ACTIVE_PROVIDER_COMPACTION_WRITE"
 WRITE_GATE_VALUE = "D1_ACTIVE_PROVIDERS_COMPACT_ONLY"
 DEFAULT_DEADLINE_SECONDS = 480.0
+CLEAN_REGIME_START = date(2026, 4, 28)
 
 
 class FinalizerDeadlineExceeded(RuntimeError):
@@ -83,6 +84,23 @@ def _target_slate_date(now_utc: datetime) -> str:
     return (now_utc.astimezone(PHOENIX).date() - timedelta(days=1)).isoformat()
 
 
+def _resolve_target_slate_date(
+    *,
+    now_utc: datetime,
+    explicit_slate_date: str | None,
+) -> tuple[str, str]:
+    d_minus_one = date.fromisoformat(_target_slate_date(now_utc))
+    if explicit_slate_date is None:
+        return d_minus_one.isoformat(), "phoenix_d_minus_one"
+
+    parsed = date.fromisoformat(explicit_slate_date)
+    if parsed.isoformat() != explicit_slate_date:
+        raise ValueError("slate_date must use canonical YYYY-MM-DD format")
+    if parsed < CLEAN_REGIME_START or parsed > d_minus_one:
+        raise ValueError("slate_date is outside the allowed historical window")
+    return parsed.isoformat(), "explicit"
+
+
 PROVIDER_SUMMARY_FIELDS = (
     "provider",
     "slate_date",
@@ -110,6 +128,7 @@ SAFE_TOP_LEVEL_FIELDS = (
     "report_type",
     "mode",
     "target_slate_date",
+    "target_date_source",
     "status",
     "preflight_complete",
     "database_write_attempted",
@@ -357,6 +376,7 @@ def run_finalizer(
     execute: bool = False,
     allow_execute: bool = False,
     now_utc: datetime | None = None,
+    slate_date: str | None = None,
     monotonic_fn: Callable[[], float] = time.monotonic,
     deadline_seconds: float = DEFAULT_DEADLINE_SECONDS,
 ) -> dict[str, Any]:
@@ -367,7 +387,10 @@ def run_finalizer(
         raise ValueError("deadline_seconds must be positive")
 
     resolved_now = now_utc or datetime.now(timezone.utc)
-    target_slate_date = _target_slate_date(resolved_now)
+    target_slate_date, target_date_source = _resolve_target_slate_date(
+        now_utc=resolved_now,
+        explicit_slate_date=slate_date,
+    )
     started = monotonic_fn()
 
     def check_deadline() -> None:
@@ -433,6 +456,7 @@ def run_finalizer(
             "report_type": "daily_active_provider_compaction_finalizer",
             "mode": "preview",
             "target_slate_date": target_slate_date,
+            "target_date_source": target_date_source,
             "status": status,
             "preflight_complete": preflight_complete,
             "provider_results": provider_summaries,
@@ -451,6 +475,7 @@ def run_finalizer(
             "report_type": "daily_active_provider_compaction_finalizer",
             "mode": "execute",
             "target_slate_date": target_slate_date,
+            "target_date_source": target_date_source,
             "status": "failed",
             "preflight_complete": False,
             "provider_results": provider_summaries,
@@ -541,6 +566,7 @@ def run_finalizer(
         "report_type": "daily_active_provider_compaction_finalizer",
         "mode": "execute",
         "target_slate_date": target_slate_date,
+        "target_date_source": target_date_source,
         "status": status,
         "preflight_complete": True,
         "provider_results": provider_results,
