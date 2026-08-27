@@ -1948,3 +1948,34 @@ No checkpoint inherits approval from the one before it.
   tracking set. The next decision is a separate merge review/decision; Render
   creation, live preview, execute activation, historical backlog work, and
   deletion remain separately gated.
+
+## 2026-08-27 Manual-Interval Superseding Decision
+
+- Tyler declined the proposed additional paid Render cron because the baseball
+  season is nearing completion and chose operator-run intervals instead.
+- The implementation direction is now the bounded design and plan in
+  `docs/superpowers/specs/2026-08-27-manual-active-provider-compaction-intervals-design.md`
+  and
+  `docs/superpowers/plans/2026-08-27-manual-active-provider-compaction-intervals.md`.
+- The D-1 target remains the backward-compatible default, but the manual tool
+  may accept one validated historical `--slate-date`. It still uses only the
+  fixed PropLine/TheRundown pair and never accepts a provider or date range.
+- The existing D-1 execute gate cannot authorize an explicit historical date.
+  Historical execution requires a separate exact manual write gate plus
+  `--execute` and retains all compact-only, fingerprint, deadline, post-write,
+  and redaction protections.
+- No Render service will be created for this finalizer. The intended cadence is
+  a manual review approximately every seven days, at 70 percent database
+  utilization, and at season end.
+- The operator preview command targets one date and performs no write:
+
+  ```powershell
+  python scripts/run_daily_active_provider_compaction_finalizer.py --slate-date 2026-08-19
+  ```
+
+  A later compact-only execution requires the same exact date plus `--execute`
+  and the process-scoped exact manual gate documented in the August 27 design.
+  Do not retain that gate in a machine, Render, GitHub, or shared environment.
+- This decision does not approve a live preview, database write, raw-snapshot
+  deletion, webhook deletion, vacuum, retention activation, or any provider,
+  model, notification, lock, UI, artifact, or source-of-truth change.

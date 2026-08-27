@@ -277,6 +277,17 @@ affected window, `scripts/retire_market_snapshots.py --execute` is used, and
 `ALLOW_MARKET_SNAPSHOT_DELETE=true` is set. Dry-run output should be reviewed
 before every execute run.
 
+As of Tyler's 2026-08-27 cost decision, active-provider compaction should be
+operated manually instead of through another paid Render cron. Review storage
+and exact compact coverage approximately every seven days, once at season end,
+or sooner if database utilization reaches 70 percent. A manual finalizer run
+must target exactly one historical slate date and the fixed PropLine/TheRundown
+provider pair. Do not automate a date-range loop. Manual compaction is evidence
+preparation only: it does not inherit raw-snapshot deletion authority, and each
+deletion tranche still requires a current backup/recovery proof, exact coverage,
+dry-run review, and approval for the exact target dates. Keep webhook retention
+as a separate gate.
+
 Use the linked-CLI readiness report before discussing any execute step:
 
 ```powershell
