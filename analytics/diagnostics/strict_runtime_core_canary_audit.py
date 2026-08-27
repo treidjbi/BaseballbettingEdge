@@ -91,7 +91,13 @@ CRITICAL_INPUT_GROUPS = (
     ("bet_timing_window",),
     ("leash_risk_bucket", "opportunity_bucket"),
     ("batter_handedness_mode", "path_b_coverage_bucket"),
-    ("provider", "live_display_provider", "odds_source"),
+    (
+        "provider",
+        "live_display_provider",
+        "odds_source",
+        "official_line_source_provider",
+        "official_odds_source",
+    ),
     ("market_agreement_label", "market_agreement"),
     ("preclose_clv_proxy_label", "preclose_clv_proxy"),
 )
@@ -380,6 +386,8 @@ def _slice_bucket(row: dict[str, Any], dimension: str) -> str:
             row.get("provider")
             or row.get("live_display_provider")
             or row.get("odds_source")
+            or row.get("official_line_source_provider")
+            or row.get("official_odds_source")
         )
     if dimension == "market_agreement":
         return _text_bucket(

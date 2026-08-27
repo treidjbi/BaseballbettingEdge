@@ -138,6 +138,22 @@ def test_paired_summary_scores_avoided_losses_and_foregone_wins():
     assert "leave_one_slate_out" in summary
 
 
+def test_gate_c_official_line_source_fills_provider_attribution():
+    row = _row(
+        provider_era=None,
+        odds_source=None,
+        market_source_mode=None,
+        market_provider=None,
+        official_line_source_provider="therundown",
+        official_odds_source="therundown+propline",
+    )
+
+    summary = audit.build_summary([row])
+
+    assert summary["slices"]["provider"]["therundown"]["rows"] == 1
+    assert summary["missing_critical_attribution"]["provider"] == 0
+
+
 def test_duplicate_candidate_key_blocks_exact_reconstruction():
     row = _row()
     summary = audit.build_summary([row, dict(row)])

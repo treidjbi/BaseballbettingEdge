@@ -168,6 +168,8 @@ def _slice_bucket(row: dict[str, Any], dimension: str) -> str:
             row.get("provider")
             or row.get("live_display_provider")
             or row.get("odds_source")
+            or row.get("official_line_source_provider")
+            or row.get("official_odds_source")
         )
     if dimension == "provider_era":
         return strong_base.provider_era(row)

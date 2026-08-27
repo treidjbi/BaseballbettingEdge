@@ -109,3 +109,14 @@ authorized.
 - [x] Search the new code for `lambda`, `staking`, `notification_events`, `operational_pick_locks`, and publisher writes; the matches are report fields, calculations, and guardrail prose only. No publisher or live-table writer is imported or invoked.
 - [x] Confirm `git diff --check` and a clean intentional worktree before branch handoff.
 
+## Research Attribution Repair (2026-08-27)
+
+The strict-runtime audit now treats Gate C's existing
+`official_line_source_provider` and `official_odds_source` fields as fallback
+provider attribution after the legacy `provider`, `live_display_provider`, and
+`odds_source` fields. This repairs a field-name mismatch only. It does not
+change the frozen selector rule, fingerprint, prospective boundary, sample
+floors, diversity requirements, or any runtime behavior. A fresh hosted Gate C
+rebuild/audit is still required to quantify the repaired provider slice;
+strict-runtime promotion and all live gates remain closed.
+

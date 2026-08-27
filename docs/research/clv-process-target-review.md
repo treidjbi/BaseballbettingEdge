@@ -33,17 +33,24 @@ never prints rows or recommends a pick action. The explicit
 
 ## Current evidence status
 
-There is no approved producer for the paired official-close packet. The local
-Gate C manifest also names an older source window through 2026-06-16. Passing a
-movement export to the target would create a permanently unusable close source,
-not a CLV result. Therefore the default runner readiness is `proxy_failed`, and
-this review does not infer close provenance from archive fields or claim a new
-coverage, lift, PnL, or calibration result.
+An approved offline producer now exists at
+`analytics/diagnostics/clv_official_close_packet.py`. It consumes bounded lock
+and market-snapshot exports, optionally uses Gate C's exact official-provider
+field to resolve otherwise ambiguous TheRundown/PropLine matches, and writes a
+packet, exclusions, and manifest with zero database writes. It is not wired to
+the recurring runner. The local Gate C manifest also names an older source
+window through 2026-06-16. Passing a movement export to the target would still
+create a permanently unusable close source, not a CLV result.
 
-An explicitly approved close-packet producer and validated packet are required
-before the target can run. A valid explicit empty packet is allowed; it creates
-`unknown` targets. Missing close evidence must remain `unknown`; it must never
-be treated as a loss, neutral close, or reconstructed value.
+No current packet has been exported and validated yet. Therefore the default
+runner readiness remains `proxy_failed`, and this review does not infer close
+provenance from archive fields or claim a new coverage, lift, PnL, or
+calibration result.
+
+An explicitly validated packet is still required before the target can run. A
+valid explicit empty packet is allowed; it creates `unknown` targets. Missing
+close evidence must remain `unknown`; it must never be treated as a loss,
+neutral close, or reconstructed value.
 
 ## Compact operator scoreboard
 
@@ -52,7 +59,7 @@ be treated as a loss, neutral close, or reconstructed value.
 | Fully attributed current-provider targets | Not measured from a paired current packet | At least 100 eligible targets since 2026-06-24 |
 | Strong pre-close proxy lift | Not measured from a paired current packet | Positive in two consecutive complete 14-slate windows |
 | Provider drift | Not measured from a paired current packet | Current-provider review must not be hidden by historical-era results |
-| Final-close provenance | No approved paired close-packet producer; refreshed movement exports are insufficient | Same provider, same book, fresh timestamped official close after lock |
+| Final-close provenance | Offline producer approved and implemented; no current packet validated; refreshed movement exports remain insufficient | Same provider, same book, same event, fresh timestamped official close after lock |
 | Slices | Not measured from a paired current packet | Side, price, K line, timing, quality, Path B, workload, provider, agreement, and rolling windows all reviewed |
 
 The historical `evidence_clv_supported` reference (`277`, `155-122`, `+19.01u`,

@@ -163,7 +163,25 @@ def test_missing_prospective_critical_input_fails_closed():
     evaluation = audit.evaluate_row(row)
 
     assert evaluation.qualifies is False
-    assert "provider|live_display_provider|odds_source" in evaluation.missing_inputs
+    assert (
+        "provider|live_display_provider|odds_source|"
+        "official_line_source_provider|official_odds_source"
+    ) in evaluation.missing_inputs
+
+
+def test_gate_c_official_line_source_satisfies_provider_attribution():
+    audit = _audit_module()
+    row = candidate_row(
+        provider=None,
+        official_line_source_provider="therundown",
+        official_odds_source="therundown+propline",
+    )
+
+    evaluation = audit.evaluate_row(row)
+
+    assert evaluation.qualifies is True
+    assert evaluation.missing_inputs == ()
+    assert audit._slice_bucket(row, "provider_attribution") == "therundown"
 
 
 def test_post_start_keep_over_row_is_detected_and_excluded():

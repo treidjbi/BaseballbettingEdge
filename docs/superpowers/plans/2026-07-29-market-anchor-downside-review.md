@@ -90,3 +90,13 @@ live behavior changed.
 - [x] Run focused tests, `python -m pytest tests -q`, and `git diff --check`.
 - [x] Commit `docs: issue market anchor downside review`.
 
+## Research Attribution Repair (2026-08-27)
+
+The downside audit now accepts Gate C's existing
+`official_line_source_provider` and `official_odds_source` fields only as
+fallback provider attribution after its legacy provider fields. This changes
+report coverage, not candidate reconstruction, counterfactual math, selector
+metadata, or gate thresholds. A fresh hosted rebuild is required before citing
+new provider-slice counts. `MARKET_ANCHOR_SELECTOR_MODE=shadow` and the separate
+downside canary gate remain closed.
+

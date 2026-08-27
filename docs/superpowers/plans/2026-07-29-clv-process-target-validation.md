@@ -99,3 +99,37 @@ The shared provider-era classifier label is authoritative.
   movement export insufficient, `keep_as_process_kpi`, and runner
   `proxy_failed` until a valid packet exists.
 
+## Approved Offline Producer (2026-08-27)
+
+Tyler approved a bounded research-only producer. The implementation is
+`analytics/diagnostics/clv_official_close_packet.py`; it reads explicit
+JSON/JSONL exports of `operational_pick_locks` and `market_snapshots`, with an
+optional Gate C input used only to resolve `official_line_source_provider` or
+an exact single-provider `official_odds_source`. It has no database client,
+scheduled-runner wiring, publisher, or live-table write path.
+
+The producer fails closed unless it can establish one exact provider/event
+from a same-pitcher, side, book, line, price, and game-time snapshot observed
+within 20 minutes before lock. It then requires the latest same-provider,
+same-book, same-event snapshot to be strictly after lock, strictly before first
+pitch, and no more than 20 minutes old at game time. BoltOdds is excluded from
+the default provider allow-list. Missing, ambiguous, stale, or post-start rows
+are written to a separate exclusions packet; a manifest records bounds,
+counts, fingerprints, freshness settings, and zero database writes.
+
+A bounded live shape check across August 25-26 found `42` lock rows: `10` had
+one unique provider/event match and `32` were ambiguous because TheRundown and
+PropLine shared the same pre-lock signature. That result is why the Gate C
+official-provider resolver is optional but necessary for useful coverage; the
+producer never guesses. No current close packet has been exported and
+validated yet, so the recurring runner remains `proxy_failed` unless an
+explicit valid packet is supplied. No CLV readiness count or performance
+claim follows from this implementation.
+
+- [x] Add test-first exact lock-provenance, timestamp-order, freshness,
+  ambiguity, retired-provider, CLI-output, and validator-contract coverage.
+- [x] Keep the producer offline and dry-run only; do not wire it into the
+  recurring post-grading runner without a separate approval.
+- [ ] Export one bounded current-provider window, inspect every exclusion, and
+  validate the packet before measuring the existing readiness gates.
+

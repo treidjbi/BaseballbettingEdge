@@ -59,6 +59,21 @@ def test_summarize_counts_strict_and_non_strict_fire_rows():
     assert summary["non_strict_fire"]["pnl"] == -1.0
 
 
+def test_gate_c_official_line_source_fills_provider_slice():
+    row = _row(
+        provider=None,
+        live_display_provider=None,
+        odds_source=None,
+        official_line_source_provider="therundown",
+        official_odds_source="therundown+propline",
+    )
+
+    summary = audit.summarize([row])
+
+    assert summary["strict_slices"]["provider"]["therundown"]["rows"] == 1
+    assert summary["missing_coverage_counts"]["strict_all"]["provider"] == 0
+
+
 def test_render_report_states_shadow_only_boundary():
     report = audit.render_report(audit.summarize([_row()]))
 

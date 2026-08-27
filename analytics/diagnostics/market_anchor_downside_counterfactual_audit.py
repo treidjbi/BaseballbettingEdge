@@ -229,7 +229,14 @@ def _explicit_clv(row: dict[str, Any]) -> str:
 
 
 def _provider(row: dict[str, Any]) -> str:
-    for key in ("provider_era", "odds_source", "market_source_mode", "market_provider"):
+    for key in (
+        "provider_era",
+        "odds_source",
+        "market_source_mode",
+        "market_provider",
+        "official_line_source_provider",
+        "official_odds_source",
+    ):
         if row.get(key):
             return str(row[key])
     return "missing"

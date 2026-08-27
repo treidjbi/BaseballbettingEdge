@@ -1525,3 +1525,13 @@ tracked was `131`, `81-50`, `+6.62u`, and strict displayed FIRE remained
 `27`, `20-7`, `+7.14u`. The report explicitly remained shadow metadata only.
 No selector id, fingerprint, candidate logic, lambda, verdict, threshold, or
 staking behavior changed; `enforce_downside` remains closed.
+
+## Research Attribution Repair (2026-08-27)
+
+The post-grading selector audit now reads Gate C's existing
+`official_line_source_provider` and `official_odds_source` fields as fallback
+provider attribution after the legacy provider fields. This closes a report
+field-name gap only; it does not alter selector metadata, lambda, verdicts,
+thresholds, staking, providers, locks, notifications, or live mode. Fresh
+hosted output is required before replacing the previously reported missing
+provider counts, and `enforce_downside` remains closed.
