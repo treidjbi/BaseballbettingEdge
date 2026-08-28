@@ -10,6 +10,11 @@ For new work, read files in this order:
 2. `docs/current-state.md`
 3. the active dated plan referenced there
 
+For the first Mac session after the 2026-08-28 Windows-to-Mac transfer, read
+`docs/handoffs/2026-08-28-windows-to-mac-transfer.md` immediately after this
+file and before `docs/current-state.md`. After the transfer acceptance checks
+pass, resume the normal read order above.
+
 `CLAUDE.md` may exist for compatibility, but `AGENTS.md` is the source of truth
 going forward.
 
