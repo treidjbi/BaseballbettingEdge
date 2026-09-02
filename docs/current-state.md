@@ -420,6 +420,16 @@ approved or active.
 | --- | --- | --- |
 | Tracking / data collection / history | The fixed PropLine/TheRundown candidate remains June 12-30, July 2-12, and July 16-26: `41` dates / `82` provider-date partitions. Current bounded reads count `1,006,737` PropLine plus `809,528` TheRundown raw snapshots (`1,816,265` total / `947,935,885` logical bytes, about `904.02 MiB`). Compact representation counts match the raw counts for both providers across all `41` dates, consistent with the independent August 27 zero-upsert proofs. Sanitized evidence is in `data/research/retention/prepared-active-provider-deletion-preview-2026-09-02.json`; the SELECT-only scope query is `scripts/supabase_prepared_market_snapshot_deletion_preview.sql`. The combined query hit one connector HTTP `504` and was not retried; separate raw, compact, and 82-partition reads succeeded. | The scope is ready for an exact bounded-executor design review, not deletion. The old `scripts/retire_market_snapshots.py --older-than-days` path is too broad because it would include fail-closed and post-July-26 dates. Before any removal, implement and review one-provider/one-date transactional execution with approved counts, reverify the latest completed backup and recovery point, run a final exact preview, and obtain Tyler's separate approval for the exact command/hash. Keep BoltOdds, webhooks, post-July-26 rows, vacuum, and reclamation separate. |
 
+### September 2 bounded deletion-executor implementation overlay
+
+This overlay supersedes only the deletion-review overlay's request to implement
+an executor. It does not approve a linked production preview, deletion,
+retention activation, vacuum, reclamation, or any other database write.
+
+| Lane | Confirmed evidence | Next decision / blocker |
+| --- | --- | --- |
+| Tracking / data collection / history | Tyler approved implementation only. `scripts/retire_prepared_market_snapshots.py` is now a dormant one-provider/one-date executor fixed to the reviewed `82` partitions. It rejects ranges and every excluded provider/date, requires a current-backup timestamp newer than the September 2 packet, binds the exact source state and SQL hashes into a 24-hour preview token, repeats the exact SELECT before its one cardinality-gated statement, postchecks compact preservation, refuses result-file overwrite, never retries uncertain writes, and never vacuums. The focused retention suite passes `239` tests, including `21` new executor tests. No linked production preview ran, no execution gate was set, and zero rows were deleted. | First verify the latest completed physical backup and recovery point. Then, only with separate approval, run one exact SELECT-only partition preview and show its provider, date, counts, token, SQL hash, and proposed command. Deletion remains closed until Tyler separately approves that exact token and command. Keep the broad age-based executor, automatic loops, BoltOdds, webhooks, post-July-26 rows, vacuum, and reclamation out of this path. |
+
 ### August 24 webhook retention gate and August 19 history repair
 
 The recent `734`-row PropLine webhook watch item is processor-capacity debt,

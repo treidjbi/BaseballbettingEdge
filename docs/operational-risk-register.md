@@ -1,6 +1,6 @@
 # Operational Risk Register
 
-Last updated: 2026-07-22
+Last updated: 2026-09-02
 
 This doc tracks the operational side of BaseballBettingEdge: provider trials,
 failure modes, source-conflict rules, data retention, notification quality, and
@@ -272,10 +272,21 @@ size cap. The active guardrail is now: keep spend cap on, track database/table
 size before adding capture volume, and review dry-run retention output before
 any deletion.
 
-Raw snapshot deletion requires three conditions: compact summaries exist for the
-affected window, `scripts/retire_market_snapshots.py --execute` is used, and
-`ALLOW_MARKET_SNAPSHOT_DELETE=true` is set. Dry-run output should be reviewed
-before every execute run.
+The older `scripts/retire_market_snapshots.py --older-than-days` path remains a
+generic age-based tool, but it is not eligible for the September 2 prepared
+active-provider packet. Its moving cutoff would include fail-closed and newer
+partitions.
+
+The prepared PropLine/TheRundown scope has a separate dormant executor at
+`scripts/retire_prepared_market_snapshots.py`. It is fixed to June 12-30,
+July 2-12, and July 16-26, 2026 and accepts exactly one provider/date partition
+per invocation. A future write requires a fresh exact linked preview, a
+completed-backup timestamp newer than the review evidence, an unexpired
+preview-bound token, both execute acknowledgements, and both process-scoped
+environment gates. The executor repeats the exact preview before its one
+cardinality-gated statement, performs a postcheck, never retries an uncertain
+write, refuses to overwrite its local result ledger, and never vacuums. Its
+implementation approval did not authorize a production preview or deletion.
 
 As of Tyler's 2026-08-27 cost decision, active-provider compaction should be
 operated manually instead of through another paid Render cron. Review storage
@@ -287,6 +298,11 @@ preparation only: it does not inherit raw-snapshot deletion authority, and each
 deletion tranche still requires a current backup/recovery proof, exact coverage,
 dry-run review, and approval for the exact target dates. Keep webhook retention
 as a separate gate.
+
+Never loop prepared deletions automatically. After a separately approved
+single-partition attempt, inspect its immutable result file and fresh read-only
+state before proposing another partition. A timeout or malformed/contradictory
+response is an uncertain outcome, not permission to retry.
 
 Use the linked-CLI readiness report before discussing any execute step:
 

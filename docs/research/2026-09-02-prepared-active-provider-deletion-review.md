@@ -4,13 +4,15 @@ Review date: **2026-09-02**
 
 ## Decision
 
-**READY FOR AN EXACT EXECUTION-DESIGN REVIEW; NOT APPROVED FOR DELETION.**
+**EXACT EXECUTOR IMPLEMENTED AND LOCALLY VERIFIED; NOT APPROVED FOR A
+PRODUCTION PREVIEW OR DELETION.**
 
 The completed manual compaction interval remains valid for the exact historical
 PropLine/TheRundown dates below. Current read-only Supabase counts still match
 the compact representation counts, and the candidate is materially large.
-No row was deleted, no retention flag was enabled, and the existing broad
-age-based executor must not be used for this scope.
+No row was deleted, no linked production preview was run during implementation,
+no retention flag was enabled, and the existing broad age-based executor must
+not be used for this scope.
 
 ## Exact Prepared Scope
 
@@ -82,14 +84,15 @@ Backup inventory is not proof of a tested restore. Before execution, record:
 3. the expected recovery point and potential data-loss window; and
 4. whether a separate logical export is required for this exact scope.
 
-## Execution Design Required Before Approval
+## Implemented Dormant Executor
 
 The current `scripts/retire_market_snapshots.py` accepts only
 `--older-than-days`. On September 2 that broad predicate would include
 fail-closed dates and post-July-26 data, so it is not an acceptable executor for
 this packet.
 
-The execution implementation must be reviewed before use and must:
+The implementation at `scripts/retire_prepared_market_snapshots.py` satisfies
+the following reviewed design:
 
 1. hard-code or cryptographically bind the exact providers and 41-date set;
 2. process one provider/date partition per transaction;
@@ -103,12 +106,42 @@ The execution implementation must be reviewed before use and must:
    evidence after each partition; and
 8. leave vacuum/reclamation disabled.
 
+It has SHA-256
+`95ae71e9e69f218832ec58e889a32148294453a5b7010912a576f546272323e6`.
+The focused retention safety suite passes `239` tests, including `21` executor
+tests that use fake query runners for every mutation case. No production read
+or write was used to prove execution behavior.
+
+The future preview shape is intentionally one partition and SELECT-only:
+
+```bash
+python scripts/retire_prepared_market_snapshots.py preview \
+  --provider propline \
+  --slate-date 2026-06-12 \
+  --backup-completed-at '<verified-completed-backup-timestamp>' \
+  --output data/research/retention/prepared-delete-propline-2026-06-12.json \
+  --run-linked-read
+```
+
+That command has not been run. The supplied backup timestamp must first be
+verified against the current Supabase backup inventory. A successful report
+still contains `deletion_approved=false`; it only creates a 24-hour token that
+can be presented with the exact proposed delete command for Tyler's separate
+approval.
+
+A later execution would additionally require the exact report token in
+`APPROVED_PREPARED_MARKET_SNAPSHOT_DELETE_TOKEN`,
+`ALLOW_MARKET_SNAPSHOT_DELETE=true`, `execute`, `--execute`, and
+`--run-linked-delete`. Do not populate those gates until Tyler approves that
+specific provider, date, token, and command.
+
 ## Approval Boundary
 
-This packet asks only whether to implement and review that exact bounded
-executor. It is not approval to remove rows. After the executor, current backup
-proof, final per-partition preview, and proposed command/hash are visible,
-Tyler must separately approve the exact deletion execution.
+Tyler approved only implementation and local verification of the exact bounded
+executor. It is not approval to query production for the final preview or to
+remove rows. The next gate is current backup proof plus one exact SELECT-only
+partition preview. After that preview and its proposed command/hash are
+visible, Tyler must separately approve the exact deletion execution.
 
 Retired BoltOdds May 7-June 16 remains a separate candidate and must not be
 silently combined with this active-provider tranche.
