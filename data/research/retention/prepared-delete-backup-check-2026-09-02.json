@@ -1,0 +1,19 @@
+{
+  "backup_after_review_packet": false,
+  "checked_at": "2026-09-02T23:37:39Z",
+  "deletion_executed": false,
+  "execution_gate_opened": false,
+  "latest_completed_backup": {
+    "inserted_at": "2026-09-02T05:42:14.276Z",
+    "is_physical_backup": true,
+    "status": "COMPLETED"
+  },
+  "pitr_enabled": false,
+  "preview_executed": false,
+  "preview_target": {
+    "provider": "propline",
+    "slate_date": "2026-06-12"
+  },
+  "review_packet_generated_at": "2026-09-02T17:56:49Z",
+  "status": "blocked_backup_not_newer_than_review_packet"
+}

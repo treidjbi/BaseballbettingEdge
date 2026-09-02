@@ -4,8 +4,8 @@ Review date: **2026-09-02**
 
 ## Decision
 
-**EXACT EXECUTOR IMPLEMENTED AND LOCALLY VERIFIED; NOT APPROVED FOR A
-PRODUCTION PREVIEW OR DELETION.**
+**EXACT EXECUTOR IMPLEMENTED; FIRST SELECT-ONLY PREVIEW APPROVED BUT BLOCKED ON
+BACKUP FRESHNESS; DELETION NOT APPROVED.**
 
 The completed manual compaction interval remains valid for the exact historical
 PropLine/TheRundown dates below. Current read-only Supabase counts still match
@@ -137,11 +137,20 @@ specific provider, date, token, and command.
 
 ## Approval Boundary
 
-Tyler approved only implementation and local verification of the exact bounded
-executor. It is not approval to query production for the final preview or to
-remove rows. The next gate is current backup proof plus one exact SELECT-only
-partition preview. After that preview and its proposed command/hash are
-visible, Tyler must separately approve the exact deletion execution.
+Tyler's initial approval covered only implementation and local verification of
+the exact bounded executor, not a production query or row removal. The next gate
+was current backup proof plus one exact SELECT-only partition preview. After a
+successful preview and its proposed command/hash are visible, Tyler must still
+separately approve the exact deletion execution.
+
+Tyler subsequently approved the first exact SELECT-only preview for PropLine
+`2026-06-12`. At `2026-09-02T23:37:39Z`, the latest completed physical backup
+was `2026-09-02T05:42:14.276Z`, older than this packet's
+`2026-09-02T17:56:49Z` generation time, and PITR remained disabled. The backup
+gate therefore failed closed before the partition query. No preview report or
+token was generated and no deletion gate opened. Retry only after a later
+physical backup is confirmed `COMPLETED`; do not infer completion from the
+daily schedule.
 
 Retired BoltOdds May 7-June 16 remains a separate candidate and must not be
 silently combined with this active-provider tranche.

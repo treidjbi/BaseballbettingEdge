@@ -430,6 +430,18 @@ retention activation, vacuum, reclamation, or any other database write.
 | --- | --- | --- |
 | Tracking / data collection / history | Tyler approved implementation only. `scripts/retire_prepared_market_snapshots.py` is now a dormant one-provider/one-date executor fixed to the reviewed `82` partitions. It rejects ranges and every excluded provider/date, requires a current-backup timestamp newer than the September 2 packet, binds the exact source state and SQL hashes into a 24-hour preview token, repeats the exact SELECT before its one cardinality-gated statement, postchecks compact preservation, refuses result-file overwrite, never retries uncertain writes, and never vacuums. The focused retention suite passes `239` tests, including `21` new executor tests. No linked production preview ran, no execution gate was set, and zero rows were deleted. | First verify the latest completed physical backup and recovery point. Then, only with separate approval, run one exact SELECT-only partition preview and show its provider, date, counts, token, SQL hash, and proposed command. Deletion remains closed until Tyler separately approves that exact token and command. Keep the broad age-based executor, automatic loops, BoltOdds, webhooks, post-July-26 rows, vacuum, and reclamation out of this path. |
 
+### September 2 first exact-preview backup check
+
+Tyler approved one exact SELECT-only preview for the first prepared partition,
+PropLine `2026-06-12`. The pre-query backup check at
+`2026-09-02T23:37:39Z` found the latest completed physical backup at
+`2026-09-02T05:42:14.276Z`, before the review packet's
+`2026-09-02T17:56:49Z` generation time. PITR remains disabled. The gate failed
+closed before any partition query, so no preview report/token exists and zero
+rows were deleted. Recheck for a later `COMPLETED` backup before retrying the
+same SELECT-only preview; do not assume a scheduled backup succeeded. Deletion,
+execution environment gates, loops, vacuum, and reclamation remain closed.
+
 ### August 24 webhook retention gate and August 19 history repair
 
 The recent `734`-row PropLine webhook watch item is processor-capacity debt,

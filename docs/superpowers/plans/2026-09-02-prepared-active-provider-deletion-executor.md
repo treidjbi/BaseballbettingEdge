@@ -103,3 +103,21 @@ it is a separately approved exact SELECT-only preview after the latest completed
 backup has been verified and its timestamp recorded. The resulting provider,
 date, token, source state, and exact command must be shown to Tyler before any
 execution gate is opened.
+
+## First Preview Authorization and Backup Blocker
+
+At **2026-09-02T23:37:39Z**, Tyler approved the first exact SELECT-only preview,
+using the first prepared partition: PropLine on `2026-06-12`. The backup check
+ran before the partition query. Supabase reported the latest completed physical
+backup at `2026-09-02T05:42:14.276Z`, while this review packet was generated at
+`2026-09-02T17:56:49Z`. PITR remains disabled.
+
+Because the backup predates the packet, the preview gate failed closed. No
+partition query ran, no preview report or token was generated, no execution
+environment value was set, and no row was deleted. The sanitized check is in
+`data/research/retention/prepared-delete-backup-check-2026-09-02.json`.
+
+The approval may be retried only after a later physical backup reports
+`COMPLETED`. Recheck the backup inventory first; do not assume the next scheduled
+backup completed. Then rerun only the same PropLine `2026-06-12` SELECT-only
+preview. Deletion remains separately gated.
