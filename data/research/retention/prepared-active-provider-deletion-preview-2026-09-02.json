@@ -1,0 +1,100 @@
+{
+  "schema_version": 1,
+  "generated_at": "2026-09-02T17:56:49Z",
+  "scope_id": "prepared_active_provider_scope_v1",
+  "scope": {
+    "providers": [
+      "propline",
+      "therundown"
+    ],
+    "date_windows": [
+      {
+        "start_date": "2026-06-12",
+        "end_date": "2026-06-30"
+      },
+      {
+        "start_date": "2026-07-02",
+        "end_date": "2026-07-12"
+      },
+      {
+        "start_date": "2026-07-16",
+        "end_date": "2026-07-26"
+      }
+    ],
+    "prepared_date_count": 41,
+    "provider_date_partition_count": 82
+  },
+  "providers": [
+    {
+      "provider": "propline",
+      "prepared_dates_with_runs": 41,
+      "raw_snapshot_rows": 1006737,
+      "raw_logical_bytes": 534532381,
+      "first_snapshot_at": "2026-06-12T13:20:31.428038Z",
+      "last_snapshot_at": "2026-07-27T02:20:26.751517Z",
+      "compact_dates": 41,
+      "compact_groups": 15106,
+      "represented_snapshot_rows": 1006737,
+      "earliest_compact_update": "2026-06-13T13:00:41.564706Z",
+      "latest_compact_update": "2026-08-27T22:18:33.899143Z",
+      "representation_count_matches": true
+    },
+    {
+      "provider": "therundown",
+      "prepared_dates_with_runs": 41,
+      "raw_snapshot_rows": 809528,
+      "raw_logical_bytes": 413403504,
+      "first_snapshot_at": "2026-06-12T16:17:04.819475Z",
+      "last_snapshot_at": "2026-07-27T13:10:29.143610Z",
+      "compact_dates": 41,
+      "compact_groups": 21401,
+      "represented_snapshot_rows": 809528,
+      "earliest_compact_update": "2026-06-13T13:00:41.564706Z",
+      "latest_compact_update": "2026-08-27T22:19:39.703533Z",
+      "representation_count_matches": true
+    }
+  ],
+  "totals": {
+    "raw_snapshot_rows": 1816265,
+    "raw_logical_bytes": 947935885,
+    "raw_logical_mib": 904.02,
+    "compact_groups": 36507,
+    "represented_snapshot_rows": 1816265,
+    "representation_count_matches": true
+  },
+  "excluded_fail_closed_partitions": [
+    {
+      "provider": "propline",
+      "start_date": "2026-05-14",
+      "end_date": "2026-06-11"
+    },
+    {
+      "provider": "propline",
+      "start_date": "2026-07-01",
+      "end_date": "2026-07-01"
+    },
+    {
+      "provider": "therundown",
+      "start_date": "2026-07-15",
+      "end_date": "2026-07-15"
+    }
+  ],
+  "evidence": {
+    "preview_sql": "scripts/supabase_prepared_market_snapshot_deletion_preview.sql",
+    "preview_sql_sha256": "561b7033f8ee904076588a969fbe7324c457f56131dfca50804c37064ecdca6c",
+    "current_source_counts": "two successful bounded Supabase SELECT reads",
+    "partition_count_read": "one successful bounded Supabase SELECT read covering all 82 provider/date partitions",
+    "prior_exactness": "independent zero-upsert proofs recorded in the August 27 manual interval completion",
+    "combined_preview_transport": "HTTP 504 after connector timeout; no retry and no database mutation"
+  },
+  "backup": {
+    "documented_completed_backup": "2026-08-28T05:45:45.570Z",
+    "last_historical_compact_write": "2026-08-27T22:19:39.703533Z",
+    "documented_backup_newer_than_compact_write": true,
+    "current_backup_reverification_required_before_execution": true,
+    "pitr_enabled": false
+  },
+  "retention_execution_closed": true,
+  "deletion_approved": false,
+  "deleted_rows": 0
+}

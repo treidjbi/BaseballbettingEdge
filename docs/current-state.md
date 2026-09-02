@@ -409,6 +409,17 @@ retention, or source-of-truth behavior changed.
 | UI | No dashboard code or behavior changed. The current slate and live-market display continued serving fresh data during the incident. | Continue ordinary display-only observation. |
 | Tracking / data collection / history | The guardrail read reports `5,715 MB` (`69.76%` of 8 GB), with `3,900 MB` in `market_snapshots`, `573 MB` in raw PropLine webhooks, and `368 MB` in line-movement events. Raw snapshots include `3,907,213` rows older than 14 days and `3,002,287` older than 30 days. The bounded August 12-18 read covered `396,106` active-provider snapshots; all 14 provider/date partitions failed exact compact coverage, including missing and mismatched compact groups. | Raw deletion, webhook deletion, retention activation, vacuum, and reclamation remain `NO-GO`. The next storage action is a separate exact active-provider compaction plan for post-July-26 partitions plus current backup proof; do not use space pressure to weaken exactness or authorize deletion. |
 
+### September 2 prepared historical deletion-review overlay
+
+This overlay clarifies that the failed August 12-18 coverage check does not
+invalidate the exact historical work completed on August 27. It prepares a
+review packet only; no deletion path, retention flag, vacuum, or reclamation is
+approved or active.
+
+| Lane | Confirmed evidence | Next decision / blocker |
+| --- | --- | --- |
+| Tracking / data collection / history | The fixed PropLine/TheRundown candidate remains June 12-30, July 2-12, and July 16-26: `41` dates / `82` provider-date partitions. Current bounded reads count `1,006,737` PropLine plus `809,528` TheRundown raw snapshots (`1,816,265` total / `947,935,885` logical bytes, about `904.02 MiB`). Compact representation counts match the raw counts for both providers across all `41` dates, consistent with the independent August 27 zero-upsert proofs. Sanitized evidence is in `data/research/retention/prepared-active-provider-deletion-preview-2026-09-02.json`; the SELECT-only scope query is `scripts/supabase_prepared_market_snapshot_deletion_preview.sql`. The combined query hit one connector HTTP `504` and was not retried; separate raw, compact, and 82-partition reads succeeded. | The scope is ready for an exact bounded-executor design review, not deletion. The old `scripts/retire_market_snapshots.py --older-than-days` path is too broad because it would include fail-closed and post-July-26 dates. Before any removal, implement and review one-provider/one-date transactional execution with approved counts, reverify the latest completed backup and recovery point, run a final exact preview, and obtain Tyler's separate approval for the exact command/hash. Keep BoltOdds, webhooks, post-July-26 rows, vacuum, and reclamation separate. |
+
 ### August 24 webhook retention gate and August 19 history repair
 
 The recent `734`-row PropLine webhook watch item is processor-capacity debt,
