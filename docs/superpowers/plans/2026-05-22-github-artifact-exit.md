@@ -1731,3 +1731,25 @@ provider order, model formula, thresholds, staking, notifications, retention,
 or dashboard source-of-truth rules. Next proof is a deployed Render run showing
 `hydrated_artifacts > 0` for grading/full/lock and no stale ancillary artifact
 overwrite.
+
+Manual grading rollback failure on 2026-09-02: the scheduled Render grading
+publication for the September 1 slate was absent, so Tyler approved one manual
+repair attempt. GitHub Actions run
+`https://github.com/treidjbi/BaseballbettingEdge/actions/runs/33650131043`
+was dispatched with `mode=grading` and `date=2026-09-02`. It proved the current
+workflow is not a safe grading rollback after artifact exit: the Git checkout
+contained only `1,418` history rows and treated `2026-05-30`, not
+`2026-09-01`, as its one open grading date. The run created an ephemeral
+57-file commit, then failed because grading refreshes
+`dashboard/data/processed/index.json` while the grading commit scope does not
+stage that file. It stopped before push, Supabase publication, or notification
+steps; production artifacts remained unchanged.
+
+Do not retry GitHub `mode=grading`, and do not merely add `index.json` to its
+staging list. That would let stale repository artifacts publish. The safe
+immediate repair path is the hydrated Render `bbe-pipeline-grading` service.
+Restoring a GitHub grading fallback requires a separate plan that hydrates the
+current Supabase/Netlify artifact set before grading and proves that the prior
+slate, history, params, performance, dated archive, and publication scope all
+match the live source of truth. This incident changes no production provider,
+model, threshold, staking, notification, lock, retention, or dashboard rule.

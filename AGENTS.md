@@ -275,6 +275,16 @@ For health checks, focus first on Render run completion, Supabase
 consumption. Use manual GitHub dispatch only as rollback or stale-artifact
 repair, then verify the repaired artifact path before trusting it.
 
+Known grading exception as of 2026-09-02: do not dispatch GitHub
+`pipeline.yml` with `mode=grading`. After artifact exit, the Git checkout no
+longer hydrates current history before grading; approved repair run
+`33650131043` selected stale May 30 rows instead of September 1 and stopped
+before push/publication only because `index.json` was left unstaged. The
+hydrated Render `bbe-pipeline-grading` service is the immediate grading repair
+path. A future GitHub grading fallback needs a separate hydration repair and
+proof; staging `index.json` alone is unsafe. Other GitHub manual modes remain
+rollback-only and still require artifact verification.
+
 ## Key Commands
 
 ```bash

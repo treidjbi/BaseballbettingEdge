@@ -1,6 +1,6 @@
 # Current State
 
-Last updated: 2026-08-27
+Last updated: 2026-09-02
 
 ## Read Order
 
@@ -393,6 +393,21 @@ usage, runtime behavior, or source-of-truth rule changed.
 | --- | --- | --- |
 | Tracking / data collection / history | The approved manual interval completed every source-complete active-provider repair date. Independent zero-upsert proof covers June 12-30, July 2-12, and July 16-26 for both PropLine and TheRundown. The write ledger shows `34,236` compact rows touched across `41` dates: `14,435` PropLine and `19,801` TheRundown. The exact residual is `23` fail-closed provider/date partitions / `1,274` rows: 21 PropLine-only partitions from May 14-June 11, July 1 PropLine (`145`), and July 15 TheRundown (`17`). Every exception has zero companion-provider raw snapshots, so the fixed provider pair was not weakened. Post-interval storage is `5,287 MB` (`64.54%` of 8 GB): market snapshots `3,640 MB`, webhook deliveries `471 MB`, and compacts `215 MB`. | Wait for a completed physical backup newer than the final compact write at `2026-08-27T22:19:39.703533Z`, then rerun bounded sizing and recovery evidence. The latest completed backup is `2026-08-27T05:41:09.424Z`, so raw retention deletion, webhook deletion, vacuum/reclamation, and physical space recovery remain `NO-GO`. Do not force the 23 exceptions or add a single-provider path. Any deletion still needs Tyler's exact-scope approval. |
 | Pipeline / infrastructure | No Render service, schedule, worker, deploy, environment value, provider behavior, notification behavior, lock behavior, artifact, dashboard, or production source changed. PITR remains disabled. | Continue ordinary production observation. Recheck storage at 70% utilization and at season end; do not treat compaction completion as deletion or provider-promotion authority. |
+
+### September 2 grading-repair and storage-trigger overlay
+
+This overlay supersedes the assumption that GitHub `mode=grading` is a safe
+manual rollback after artifact exit. It also records the first live storage
+review at the documented 70 percent trigger. No provider, model, threshold,
+staking, notification, lock, dashboard, retention, or source-of-truth behavior
+changed.
+
+| Lane | Confirmed evidence | Next decision / blocker |
+| --- | --- | --- |
+| Pipeline / infrastructure | The September 2 scheduled Render grading publication for the September 1 slate is absent. Performance and params remain on the September 1 publication, and all 23 September 1 history rows remain ungraded. Tyler approved one manual repair attempt. GitHub run `33650131043` read the stale repository history, selected May 30 as its open grading date, and failed in its commit step because `index.json` remained unstaged. It stopped before push, Supabase publication, or notifications; a fresh publication-ledger read confirms no GitHub artifact write. Preview, full, lock, live-layer, and current-slate artifacts remained healthy. | Do not retry GitHub grading or patch only its staging list. The immediate safe repair is an authenticated manual run of hydrated Render service `bbe-pipeline-grading`, followed by exact verification of September 1 history, dated archive, performance, params, and research refresh. A usable GitHub grading fallback needs a separate artifact-hydration design and proof. |
+| Model | September 1 has no canonical graded outcomes, so all grading-dependent official, Alt V2, Gate C, CLV, market-anchor, and bet-selection reads remain stale. | Hold every model/change gate. Refresh research only after the canonical grading artifacts are repaired. |
+| UI | No dashboard code or behavior changed. The current slate and live-market display continued serving fresh data during the incident. | Continue ordinary display-only observation. |
+| Tracking / data collection / history | The guardrail read reports `5,715 MB` (`69.76%` of 8 GB), with `3,900 MB` in `market_snapshots`, `573 MB` in raw PropLine webhooks, and `368 MB` in line-movement events. Raw snapshots include `3,907,213` rows older than 14 days and `3,002,287` older than 30 days. The bounded August 12-18 read covered `396,106` active-provider snapshots; all 14 provider/date partitions failed exact compact coverage, including missing and mismatched compact groups. | Raw deletion, webhook deletion, retention activation, vacuum, and reclamation remain `NO-GO`. The next storage action is a separate exact active-provider compaction plan for post-July-26 partitions plus current backup proof; do not use space pressure to weaken exactness or authorize deletion. |
 
 ### August 24 webhook retention gate and August 19 history repair
 
