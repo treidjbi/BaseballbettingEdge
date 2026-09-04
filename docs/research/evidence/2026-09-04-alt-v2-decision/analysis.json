@@ -1,0 +1,6030 @@
+{
+  "checks": {
+    "archive_context_counts": {
+      "lock_consistent_archive": 725,
+      "unmatched_archive_context": 1
+    },
+    "close_manifest": {
+      "allowed_providers": [
+        "propline",
+        "therundown"
+      ],
+      "bounded_lock_rows": 113,
+      "database_writes": 0,
+      "eligible_close_rows": 90,
+      "end_date": "2026-09-03",
+      "excluded_lock_rows": 23,
+      "exclusion_reason_counts": {
+        "missing_lock_provenance_snapshot": 22,
+        "missing_pregame_close_snapshot": 1
+      },
+      "generated_at": "2026-09-04 22:00:57 UTC",
+      "input_lock_fingerprint": "6cb7a0480784a1687262b27a65aa084da6a2e0b6608243bc76f951ba84b0785c",
+      "input_lock_rows": 113,
+      "input_official_fingerprint": "c01004d6f6f00fd2e06adab3dcec02521387b730e7cae10aa2fbfec12e7d7afd",
+      "input_official_rows": 113,
+      "input_snapshot_fingerprint": "7fefebb438d82de054bc2cfb6cf3e74152f3ceac30a20f3cd4843bc01e52d96f",
+      "input_snapshot_rows": 458,
+      "max_close_age_minutes": 20,
+      "max_lock_provenance_age_minutes": 20,
+      "mode": "offline_dry_run",
+      "official_provider_resolved_locks": 113,
+      "packet_fingerprint": "0051a577b2afd699872752936677b6c6002255c99c5972666d388859745b5aaa",
+      "start_date": "2026-07-24"
+    },
+    "closed_locked_history": 726,
+    "complete_window_slate_dates": [
+      "2026-07-24",
+      "2026-07-25",
+      "2026-07-26",
+      "2026-07-27",
+      "2026-07-28",
+      "2026-07-29",
+      "2026-07-30",
+      "2026-07-31",
+      "2026-08-01",
+      "2026-08-02",
+      "2026-08-03",
+      "2026-08-04",
+      "2026-08-05",
+      "2026-08-06",
+      "2026-08-07",
+      "2026-08-08",
+      "2026-08-09",
+      "2026-08-10",
+      "2026-08-11",
+      "2026-08-12",
+      "2026-08-13",
+      "2026-08-14",
+      "2026-08-15",
+      "2026-08-16",
+      "2026-08-17",
+      "2026-08-18",
+      "2026-08-19",
+      "2026-08-20",
+      "2026-08-21",
+      "2026-08-22",
+      "2026-08-23",
+      "2026-08-24",
+      "2026-08-25",
+      "2026-08-26",
+      "2026-08-27",
+      "2026-08-28",
+      "2026-08-29",
+      "2026-08-30",
+      "2026-08-31",
+      "2026-09-01",
+      "2026-09-02",
+      "2026-09-03"
+    ],
+    "frozen_status_counts": {
+      "not_selected": 590,
+      "pending": 17,
+      "selected": 113
+    },
+    "frozen_v2": 720,
+    "frozen_without_normalized_observed_at": 3,
+    "history_artifact_sha256": "5c18c351f08886d40c6063c6d3c3eb37dc38ca3566facd2f1deeef800d4caeef",
+    "history_rows": 978,
+    "history_without_operational_lock": [],
+    "lock_history_frozen_mismatches": [],
+    "missing_history": [
+      {
+        "any_history": null,
+        "frozen_status": "not_selected",
+        "identity": [
+          "2026-08-19",
+          "kumar rocker",
+          "under"
+        ],
+        "line": 4.5,
+        "lock_id": "dabe1657-2a2d-4bbd-a708-4fdc6bd3e9a3",
+        "odds": -138,
+        "verdict": "LEAN"
+      }
+    ],
+    "operational_locks": 727,
+    "raw_snapshots": 458,
+    "selected_proof_failures": [],
+    "selected_proofs_valid": 113,
+    "selector_fingerprint": "23bacff0fa923685ae52c5a9cfbadfb9f5902fb64d91759cfe9b4b1169a221c4",
+    "snapshot_targets_without_rows": 10,
+    "source_hashes": {
+      "archive-context.json": "d404b6dfbaa981927515e2f0e44f22bdd552c85d054551e007d0debcbcb2131a",
+      "bounded-close-snapshots.json": "86e997093c64a1db8a0971dded7bc6ac30c84d06318fdf4f320f33dbfb642c87",
+      "bounded-history.json": "479ef2016fb1f8e0742b26f59c4c16aed8a0a92572fdcc46bee4663001ac39d6",
+      "comparison-universe.json": "cfb8f2c43678209cb1f6b3c5543d35f77dbb87405455b58f43e07bd5618bf32f",
+      "selected-lock-proofs.json": "f5fdaeffdd2b3bf31692a821073bdbe9ddcb2002081c8ca76652daa97c93d4f9"
+    }
+  },
+  "robustness": {
+    "all_alt": {
+      "by_slate": {
+        "2026-07-24": {
+          "losses": 0,
+          "pitchers": 2,
+          "pnl": 1.482213,
+          "roi_pct": 74.1107,
+          "rows": 2,
+          "settled_risk_units": 2,
+          "slate_dates": 1,
+          "voids": 0,
+          "wins": 2
+        },
+        "2026-07-25": {
+          "losses": 0,
+          "pitchers": 3,
+          "pnl": 2.518534,
+          "roi_pct": 83.9511,
+          "rows": 3,
+          "settled_risk_units": 3,
+          "slate_dates": 1,
+          "voids": 0,
+          "wins": 3
+        },
+        "2026-07-26": {
+          "losses": 3,
+          "pitchers": 5,
+          "pnl": -1.590431,
+          "roi_pct": -31.8086,
+          "rows": 5,
+          "settled_risk_units": 5,
+          "slate_dates": 1,
+          "voids": 0,
+          "wins": 2
+        },
+        "2026-07-27": {
+          "losses": 2,
+          "pitchers": 4,
+          "pnl": -0.465694,
+          "roi_pct": -11.6423,
+          "rows": 4,
+          "settled_risk_units": 4,
+          "slate_dates": 1,
+          "voids": 0,
+          "wins": 2
+        },
+        "2026-07-28": {
+          "losses": 1,
+          "pitchers": 3,
+          "pnl": 0.775676,
+          "roi_pct": 25.8559,
+          "rows": 3,
+          "settled_risk_units": 3,
+          "slate_dates": 1,
+          "voids": 0,
+          "wins": 2
+        },
+        "2026-07-29": {
+          "losses": 1,
+          "pitchers": 3,
+          "pnl": 0.526807,
+          "roi_pct": 17.5602,
+          "rows": 3,
+          "settled_risk_units": 3,
+          "slate_dates": 1,
+          "voids": 0,
+          "wins": 2
+        },
+        "2026-07-30": {
+          "losses": 0,
+          "pitchers": 2,
+          "pnl": 1.400313,
+          "roi_pct": 70.0157,
+          "rows": 2,
+          "settled_risk_units": 2,
+          "slate_dates": 1,
+          "voids": 0,
+          "wins": 2
+        },
+        "2026-07-31": {
+          "losses": 1,
+          "pitchers": 1,
+          "pnl": -1.0,
+          "roi_pct": -100.0,
+          "rows": 1,
+          "settled_risk_units": 1,
+          "slate_dates": 1,
+          "voids": 0,
+          "wins": 0
+        },
+        "2026-08-01": {
+          "losses": 1,
+          "pitchers": 3,
+          "pnl": -0.180328,
+          "roi_pct": -9.0164,
+          "rows": 3,
+          "settled_risk_units": 2,
+          "slate_dates": 1,
+          "voids": 1,
+          "wins": 1
+        },
+        "2026-08-02": {
+          "losses": 3,
+          "pitchers": 4,
+          "pnl": -2.21875,
+          "roi_pct": -55.4688,
+          "rows": 4,
+          "settled_risk_units": 4,
+          "slate_dates": 1,
+          "voids": 0,
+          "wins": 1
+        },
+        "2026-08-05": {
+          "losses": 0,
+          "pitchers": 1,
+          "pnl": 0.819672,
+          "roi_pct": 81.9672,
+          "rows": 1,
+          "settled_risk_units": 1,
+          "slate_dates": 1,
+          "voids": 0,
+          "wins": 1
+        },
+        "2026-08-06": {
+          "losses": 2,
+          "pitchers": 3,
+          "pnl": -1.479167,
+          "roi_pct": -49.3056,
+          "rows": 3,
+          "settled_risk_units": 3,
+          "slate_dates": 1,
+          "voids": 0,
+          "wins": 1
+        },
+        "2026-08-08": {
+          "losses": 3,
+          "pitchers": 5,
+          "pnl": -1.593074,
+          "roi_pct": -31.8615,
+          "rows": 5,
+          "settled_risk_units": 5,
+          "slate_dates": 1,
+          "voids": 0,
+          "wins": 2
+        },
+        "2026-08-09": {
+          "losses": 1,
+          "pitchers": 2,
+          "pnl": 0.02,
+          "roi_pct": 1.0,
+          "rows": 2,
+          "settled_risk_units": 2,
+          "slate_dates": 1,
+          "voids": 0,
+          "wins": 1
+        },
+        "2026-08-10": {
+          "losses": 2,
+          "pitchers": 2,
+          "pnl": -2.0,
+          "roi_pct": -100.0,
+          "rows": 2,
+          "settled_risk_units": 2,
+          "slate_dates": 1,
+          "voids": 0,
+          "wins": 0
+        },
+        "2026-08-11": {
+          "losses": 3,
+          "pitchers": 4,
+          "pnl": -2.315068,
+          "roi_pct": -57.8767,
+          "rows": 4,
+          "settled_risk_units": 4,
+          "slate_dates": 1,
+          "voids": 0,
+          "wins": 1
+        },
+        "2026-08-12": {
+          "losses": 3,
+          "pitchers": 4,
+          "pnl": -2.130435,
+          "roi_pct": -53.2609,
+          "rows": 4,
+          "settled_risk_units": 4,
+          "slate_dates": 1,
+          "voids": 0,
+          "wins": 1
+        },
+        "2026-08-13": {
+          "losses": 0,
+          "pitchers": 3,
+          "pnl": 2.765598,
+          "roi_pct": 92.1866,
+          "rows": 3,
+          "settled_risk_units": 3,
+          "slate_dates": 1,
+          "voids": 0,
+          "wins": 3
+        },
+        "2026-08-14": {
+          "losses": 1,
+          "pitchers": 1,
+          "pnl": -1.0,
+          "roi_pct": -100.0,
+          "rows": 1,
+          "settled_risk_units": 1,
+          "slate_dates": 1,
+          "voids": 0,
+          "wins": 0
+        },
+        "2026-08-15": {
+          "losses": 2,
+          "pitchers": 4,
+          "pnl": -0.315382,
+          "roi_pct": -7.8846,
+          "rows": 4,
+          "settled_risk_units": 4,
+          "slate_dates": 1,
+          "voids": 0,
+          "wins": 2
+        },
+        "2026-08-16": {
+          "losses": 3,
+          "pitchers": 5,
+          "pnl": -1.786765,
+          "roi_pct": -35.7353,
+          "rows": 5,
+          "settled_risk_units": 5,
+          "slate_dates": 1,
+          "voids": 0,
+          "wins": 2
+        },
+        "2026-08-17": {
+          "losses": 1,
+          "pitchers": 3,
+          "pnl": 0.488483,
+          "roi_pct": 16.2828,
+          "rows": 3,
+          "settled_risk_units": 3,
+          "slate_dates": 1,
+          "voids": 0,
+          "wins": 2
+        },
+        "2026-08-18": {
+          "losses": 2,
+          "pitchers": 2,
+          "pnl": -2.0,
+          "roi_pct": -100.0,
+          "rows": 2,
+          "settled_risk_units": 2,
+          "slate_dates": 1,
+          "voids": 0,
+          "wins": 0
+        },
+        "2026-08-19": {
+          "losses": 3,
+          "pitchers": 5,
+          "pnl": -1.541667,
+          "roi_pct": -30.8333,
+          "rows": 5,
+          "settled_risk_units": 5,
+          "slate_dates": 1,
+          "voids": 0,
+          "wins": 2
+        },
+        "2026-08-20": {
+          "losses": 1,
+          "pitchers": 2,
+          "pnl": -0.333333,
+          "roi_pct": -16.6667,
+          "rows": 2,
+          "settled_risk_units": 2,
+          "slate_dates": 1,
+          "voids": 0,
+          "wins": 1
+        },
+        "2026-08-21": {
+          "losses": 5,
+          "pitchers": 5,
+          "pnl": -5.0,
+          "roi_pct": -100.0,
+          "rows": 5,
+          "settled_risk_units": 5,
+          "slate_dates": 1,
+          "voids": 0,
+          "wins": 0
+        },
+        "2026-08-22": {
+          "losses": 1,
+          "pitchers": 1,
+          "pnl": -1.0,
+          "roi_pct": -100.0,
+          "rows": 1,
+          "settled_risk_units": 1,
+          "slate_dates": 1,
+          "voids": 0,
+          "wins": 0
+        },
+        "2026-08-23": {
+          "losses": 1,
+          "pitchers": 3,
+          "pnl": 0.401067,
+          "roi_pct": 13.3689,
+          "rows": 3,
+          "settled_risk_units": 3,
+          "slate_dates": 1,
+          "voids": 0,
+          "wins": 2
+        },
+        "2026-08-24": {
+          "losses": 2,
+          "pitchers": 2,
+          "pnl": -2.0,
+          "roi_pct": -100.0,
+          "rows": 2,
+          "settled_risk_units": 2,
+          "slate_dates": 1,
+          "voids": 0,
+          "wins": 0
+        },
+        "2026-08-25": {
+          "losses": 2,
+          "pitchers": 3,
+          "pnl": -1.382716,
+          "roi_pct": -46.0905,
+          "rows": 3,
+          "settled_risk_units": 3,
+          "slate_dates": 1,
+          "voids": 0,
+          "wins": 1
+        },
+        "2026-08-26": {
+          "losses": 2,
+          "pitchers": 3,
+          "pnl": -0.94,
+          "roi_pct": -31.3333,
+          "rows": 3,
+          "settled_risk_units": 3,
+          "slate_dates": 1,
+          "voids": 0,
+          "wins": 1
+        },
+        "2026-08-27": {
+          "losses": 0,
+          "pitchers": 1,
+          "pnl": 0.847458,
+          "roi_pct": 84.7458,
+          "rows": 1,
+          "settled_risk_units": 1,
+          "slate_dates": 1,
+          "voids": 0,
+          "wins": 1
+        },
+        "2026-08-28": {
+          "losses": 2,
+          "pitchers": 4,
+          "pnl": -0.620099,
+          "roi_pct": -15.5025,
+          "rows": 4,
+          "settled_risk_units": 4,
+          "slate_dates": 1,
+          "voids": 0,
+          "wins": 2
+        },
+        "2026-08-29": {
+          "losses": 2,
+          "pitchers": 4,
+          "pnl": -0.251765,
+          "roi_pct": -6.2941,
+          "rows": 4,
+          "settled_risk_units": 4,
+          "slate_dates": 1,
+          "voids": 0,
+          "wins": 2
+        },
+        "2026-08-30": {
+          "losses": 0,
+          "pitchers": 2,
+          "pnl": 1.835676,
+          "roi_pct": 91.7838,
+          "rows": 2,
+          "settled_risk_units": 2,
+          "slate_dates": 1,
+          "voids": 0,
+          "wins": 2
+        },
+        "2026-08-31": {
+          "losses": 1,
+          "pitchers": 2,
+          "pnl": -0.350649,
+          "roi_pct": -17.5325,
+          "rows": 2,
+          "settled_risk_units": 2,
+          "slate_dates": 1,
+          "voids": 0,
+          "wins": 1
+        },
+        "2026-09-01": {
+          "losses": 3,
+          "pitchers": 3,
+          "pnl": -3.0,
+          "roi_pct": -100.0,
+          "rows": 3,
+          "settled_risk_units": 3,
+          "slate_dates": 1,
+          "voids": 0,
+          "wins": 0
+        },
+        "2026-09-03": {
+          "losses": 3,
+          "pitchers": 4,
+          "pnl": -2.275362,
+          "roi_pct": -56.8841,
+          "rows": 4,
+          "settled_risk_units": 4,
+          "slate_dates": 1,
+          "voids": 0,
+          "wins": 1
+        }
+      },
+      "leave_one_slate_out_pnl_range": [
+        -27.654785,
+        -19.889187
+      ],
+      "lock_minutes_range": [
+        24.149117783333335,
+        29.855369166666666
+      ],
+      "max_pitcher_rows": 3,
+      "positive_14_windows": 1,
+      "rolling_14_windows": 29,
+      "unique_pitchers": 85
+    },
+    "consensus_core": {
+      "by_slate": {
+        "2026-07-24": {
+          "losses": 0,
+          "pitchers": 2,
+          "pnl": 1.482213,
+          "roi_pct": 74.1107,
+          "rows": 2,
+          "settled_risk_units": 2,
+          "slate_dates": 1,
+          "voids": 0,
+          "wins": 2
+        },
+        "2026-07-25": {
+          "losses": 0,
+          "pitchers": 2,
+          "pnl": 1.398534,
+          "roi_pct": 69.9267,
+          "rows": 2,
+          "settled_risk_units": 2,
+          "slate_dates": 1,
+          "voids": 0,
+          "wins": 2
+        },
+        "2026-07-26": {
+          "losses": 2,
+          "pitchers": 4,
+          "pnl": -0.590431,
+          "roi_pct": -14.7608,
+          "rows": 4,
+          "settled_risk_units": 4,
+          "slate_dates": 1,
+          "voids": 0,
+          "wins": 2
+        },
+        "2026-07-27": {
+          "losses": 2,
+          "pitchers": 3,
+          "pnl": -1.350649,
+          "roi_pct": -45.0216,
+          "rows": 3,
+          "settled_risk_units": 3,
+          "slate_dates": 1,
+          "voids": 0,
+          "wins": 1
+        },
+        "2026-07-28": {
+          "losses": 0,
+          "pitchers": 1,
+          "pnl": 0.675676,
+          "roi_pct": 67.5676,
+          "rows": 1,
+          "settled_risk_units": 1,
+          "slate_dates": 1,
+          "voids": 0,
+          "wins": 1
+        },
+        "2026-07-29": {
+          "losses": 1,
+          "pitchers": 2,
+          "pnl": -0.242424,
+          "roi_pct": -12.1212,
+          "rows": 2,
+          "settled_risk_units": 2,
+          "slate_dates": 1,
+          "voids": 0,
+          "wins": 1
+        },
+        "2026-07-30": {
+          "losses": 0,
+          "pitchers": 2,
+          "pnl": 1.400313,
+          "roi_pct": 70.0157,
+          "rows": 2,
+          "settled_risk_units": 2,
+          "slate_dates": 1,
+          "voids": 0,
+          "wins": 2
+        },
+        "2026-07-31": {
+          "losses": 1,
+          "pitchers": 1,
+          "pnl": -1.0,
+          "roi_pct": -100.0,
+          "rows": 1,
+          "settled_risk_units": 1,
+          "slate_dates": 1,
+          "voids": 0,
+          "wins": 0
+        },
+        "2026-08-01": {
+          "losses": 0,
+          "pitchers": 2,
+          "pnl": 0.819672,
+          "roi_pct": 81.9672,
+          "rows": 2,
+          "settled_risk_units": 1,
+          "slate_dates": 1,
+          "voids": 1,
+          "wins": 1
+        },
+        "2026-08-02": {
+          "losses": 2,
+          "pitchers": 3,
+          "pnl": -1.21875,
+          "roi_pct": -40.625,
+          "rows": 3,
+          "settled_risk_units": 3,
+          "slate_dates": 1,
+          "voids": 0,
+          "wins": 1
+        },
+        "2026-08-05": {
+          "losses": 0,
+          "pitchers": 1,
+          "pnl": 0.819672,
+          "roi_pct": 81.9672,
+          "rows": 1,
+          "settled_risk_units": 1,
+          "slate_dates": 1,
+          "voids": 0,
+          "wins": 1
+        },
+        "2026-08-06": {
+          "losses": 1,
+          "pitchers": 2,
+          "pnl": -0.479167,
+          "roi_pct": -23.9583,
+          "rows": 2,
+          "settled_risk_units": 2,
+          "slate_dates": 1,
+          "voids": 0,
+          "wins": 1
+        },
+        "2026-08-08": {
+          "losses": 2,
+          "pitchers": 4,
+          "pnl": -0.593074,
+          "roi_pct": -14.8268,
+          "rows": 4,
+          "settled_risk_units": 4,
+          "slate_dates": 1,
+          "voids": 0,
+          "wins": 2
+        },
+        "2026-08-10": {
+          "losses": 2,
+          "pitchers": 2,
+          "pnl": -2.0,
+          "roi_pct": -100.0,
+          "rows": 2,
+          "settled_risk_units": 2,
+          "slate_dates": 1,
+          "voids": 0,
+          "wins": 0
+        },
+        "2026-08-11": {
+          "losses": 2,
+          "pitchers": 3,
+          "pnl": -1.315068,
+          "roi_pct": -43.8356,
+          "rows": 3,
+          "settled_risk_units": 3,
+          "slate_dates": 1,
+          "voids": 0,
+          "wins": 1
+        },
+        "2026-08-12": {
+          "losses": 3,
+          "pitchers": 4,
+          "pnl": -2.130435,
+          "roi_pct": -53.2609,
+          "rows": 4,
+          "settled_risk_units": 4,
+          "slate_dates": 1,
+          "voids": 0,
+          "wins": 1
+        },
+        "2026-08-13": {
+          "losses": 0,
+          "pitchers": 1,
+          "pnl": 0.819672,
+          "roi_pct": 81.9672,
+          "rows": 1,
+          "settled_risk_units": 1,
+          "slate_dates": 1,
+          "voids": 0,
+          "wins": 1
+        },
+        "2026-08-14": {
+          "losses": 1,
+          "pitchers": 1,
+          "pnl": -1.0,
+          "roi_pct": -100.0,
+          "rows": 1,
+          "settled_risk_units": 1,
+          "slate_dates": 1,
+          "voids": 0,
+          "wins": 0
+        },
+        "2026-08-15": {
+          "losses": 1,
+          "pitchers": 2,
+          "pnl": -0.295775,
+          "roi_pct": -14.7887,
+          "rows": 2,
+          "settled_risk_units": 2,
+          "slate_dates": 1,
+          "voids": 0,
+          "wins": 1
+        },
+        "2026-08-16": {
+          "losses": 0,
+          "pitchers": 2,
+          "pnl": 1.213235,
+          "roi_pct": 60.6618,
+          "rows": 2,
+          "settled_risk_units": 2,
+          "slate_dates": 1,
+          "voids": 0,
+          "wins": 2
+        },
+        "2026-08-17": {
+          "losses": 1,
+          "pitchers": 3,
+          "pnl": 0.488483,
+          "roi_pct": 16.2828,
+          "rows": 3,
+          "settled_risk_units": 3,
+          "slate_dates": 1,
+          "voids": 0,
+          "wins": 2
+        },
+        "2026-08-18": {
+          "losses": 1,
+          "pitchers": 1,
+          "pnl": -1.0,
+          "roi_pct": -100.0,
+          "rows": 1,
+          "settled_risk_units": 1,
+          "slate_dates": 1,
+          "voids": 0,
+          "wins": 0
+        },
+        "2026-08-19": {
+          "losses": 2,
+          "pitchers": 4,
+          "pnl": -0.541667,
+          "roi_pct": -13.5417,
+          "rows": 4,
+          "settled_risk_units": 4,
+          "slate_dates": 1,
+          "voids": 0,
+          "wins": 2
+        },
+        "2026-08-20": {
+          "losses": 1,
+          "pitchers": 2,
+          "pnl": -0.333333,
+          "roi_pct": -16.6667,
+          "rows": 2,
+          "settled_risk_units": 2,
+          "slate_dates": 1,
+          "voids": 0,
+          "wins": 1
+        },
+        "2026-08-21": {
+          "losses": 4,
+          "pitchers": 4,
+          "pnl": -4.0,
+          "roi_pct": -100.0,
+          "rows": 4,
+          "settled_risk_units": 4,
+          "slate_dates": 1,
+          "voids": 0,
+          "wins": 0
+        },
+        "2026-08-23": {
+          "losses": 0,
+          "pitchers": 2,
+          "pnl": 1.401067,
+          "roi_pct": 70.0534,
+          "rows": 2,
+          "settled_risk_units": 2,
+          "slate_dates": 1,
+          "voids": 0,
+          "wins": 2
+        },
+        "2026-08-24": {
+          "losses": 1,
+          "pitchers": 1,
+          "pnl": -1.0,
+          "roi_pct": -100.0,
+          "rows": 1,
+          "settled_risk_units": 1,
+          "slate_dates": 1,
+          "voids": 0,
+          "wins": 0
+        },
+        "2026-08-25": {
+          "losses": 2,
+          "pitchers": 3,
+          "pnl": -1.382716,
+          "roi_pct": -46.0905,
+          "rows": 3,
+          "settled_risk_units": 3,
+          "slate_dates": 1,
+          "voids": 0,
+          "wins": 1
+        },
+        "2026-08-27": {
+          "losses": 0,
+          "pitchers": 1,
+          "pnl": 0.847458,
+          "roi_pct": 84.7458,
+          "rows": 1,
+          "settled_risk_units": 1,
+          "slate_dates": 1,
+          "voids": 0,
+          "wins": 1
+        },
+        "2026-08-28": {
+          "losses": 2,
+          "pitchers": 4,
+          "pnl": -0.620099,
+          "roi_pct": -15.5025,
+          "rows": 4,
+          "settled_risk_units": 4,
+          "slate_dates": 1,
+          "voids": 0,
+          "wins": 2
+        },
+        "2026-08-29": {
+          "losses": 0,
+          "pitchers": 1,
+          "pnl": 0.588235,
+          "roi_pct": 58.8235,
+          "rows": 1,
+          "settled_risk_units": 1,
+          "slate_dates": 1,
+          "voids": 0,
+          "wins": 1
+        },
+        "2026-08-30": {
+          "losses": 0,
+          "pitchers": 1,
+          "pnl": 0.675676,
+          "roi_pct": 67.5676,
+          "rows": 1,
+          "settled_risk_units": 1,
+          "slate_dates": 1,
+          "voids": 0,
+          "wins": 1
+        },
+        "2026-08-31": {
+          "losses": 1,
+          "pitchers": 2,
+          "pnl": -0.350649,
+          "roi_pct": -17.5325,
+          "rows": 2,
+          "settled_risk_units": 2,
+          "slate_dates": 1,
+          "voids": 0,
+          "wins": 1
+        },
+        "2026-09-01": {
+          "losses": 2,
+          "pitchers": 2,
+          "pnl": -2.0,
+          "roi_pct": -100.0,
+          "rows": 2,
+          "settled_risk_units": 2,
+          "slate_dates": 1,
+          "voids": 0,
+          "wins": 0
+        },
+        "2026-09-03": {
+          "losses": 1,
+          "pitchers": 2,
+          "pnl": -0.275362,
+          "roi_pct": -13.7681,
+          "rows": 2,
+          "settled_risk_units": 2,
+          "slate_dates": 1,
+          "voids": 0,
+          "wins": 1
+        }
+      },
+      "leave_one_slate_out_pnl_range": [
+        -12.571905,
+        -7.089692
+      ],
+      "lock_minutes_range": [
+        24.250340433333335,
+        29.855369166666666
+      ],
+      "max_pitcher_rows": 3,
+      "positive_14_windows": 2,
+      "rolling_14_windows": 29,
+      "unique_pitchers": 63
+    },
+    "reentry_expansion": {
+      "by_slate": {
+        "2026-07-25": {
+          "losses": 0,
+          "pitchers": 1,
+          "pnl": 1.12,
+          "roi_pct": 112.0,
+          "rows": 1,
+          "settled_risk_units": 1,
+          "slate_dates": 1,
+          "voids": 0,
+          "wins": 1
+        },
+        "2026-07-26": {
+          "losses": 1,
+          "pitchers": 1,
+          "pnl": -1.0,
+          "roi_pct": -100.0,
+          "rows": 1,
+          "settled_risk_units": 1,
+          "slate_dates": 1,
+          "voids": 0,
+          "wins": 0
+        },
+        "2026-07-27": {
+          "losses": 0,
+          "pitchers": 1,
+          "pnl": 0.884956,
+          "roi_pct": 88.4956,
+          "rows": 1,
+          "settled_risk_units": 1,
+          "slate_dates": 1,
+          "voids": 0,
+          "wins": 1
+        },
+        "2026-07-28": {
+          "losses": 1,
+          "pitchers": 2,
+          "pnl": 0.1,
+          "roi_pct": 5.0,
+          "rows": 2,
+          "settled_risk_units": 2,
+          "slate_dates": 1,
+          "voids": 0,
+          "wins": 1
+        },
+        "2026-07-29": {
+          "losses": 0,
+          "pitchers": 1,
+          "pnl": 0.769231,
+          "roi_pct": 76.9231,
+          "rows": 1,
+          "settled_risk_units": 1,
+          "slate_dates": 1,
+          "voids": 0,
+          "wins": 1
+        },
+        "2026-08-01": {
+          "losses": 1,
+          "pitchers": 1,
+          "pnl": -1.0,
+          "roi_pct": -100.0,
+          "rows": 1,
+          "settled_risk_units": 1,
+          "slate_dates": 1,
+          "voids": 0,
+          "wins": 0
+        },
+        "2026-08-02": {
+          "losses": 1,
+          "pitchers": 1,
+          "pnl": -1.0,
+          "roi_pct": -100.0,
+          "rows": 1,
+          "settled_risk_units": 1,
+          "slate_dates": 1,
+          "voids": 0,
+          "wins": 0
+        },
+        "2026-08-06": {
+          "losses": 1,
+          "pitchers": 1,
+          "pnl": -1.0,
+          "roi_pct": -100.0,
+          "rows": 1,
+          "settled_risk_units": 1,
+          "slate_dates": 1,
+          "voids": 0,
+          "wins": 0
+        },
+        "2026-08-08": {
+          "losses": 1,
+          "pitchers": 1,
+          "pnl": -1.0,
+          "roi_pct": -100.0,
+          "rows": 1,
+          "settled_risk_units": 1,
+          "slate_dates": 1,
+          "voids": 0,
+          "wins": 0
+        },
+        "2026-08-09": {
+          "losses": 1,
+          "pitchers": 2,
+          "pnl": 0.02,
+          "roi_pct": 1.0,
+          "rows": 2,
+          "settled_risk_units": 2,
+          "slate_dates": 1,
+          "voids": 0,
+          "wins": 1
+        },
+        "2026-08-11": {
+          "losses": 1,
+          "pitchers": 1,
+          "pnl": -1.0,
+          "roi_pct": -100.0,
+          "rows": 1,
+          "settled_risk_units": 1,
+          "slate_dates": 1,
+          "voids": 0,
+          "wins": 0
+        },
+        "2026-08-13": {
+          "losses": 0,
+          "pitchers": 2,
+          "pnl": 1.945926,
+          "roi_pct": 97.2963,
+          "rows": 2,
+          "settled_risk_units": 2,
+          "slate_dates": 1,
+          "voids": 0,
+          "wins": 2
+        },
+        "2026-08-15": {
+          "losses": 1,
+          "pitchers": 2,
+          "pnl": -0.019608,
+          "roi_pct": -0.9804,
+          "rows": 2,
+          "settled_risk_units": 2,
+          "slate_dates": 1,
+          "voids": 0,
+          "wins": 1
+        },
+        "2026-08-16": {
+          "losses": 3,
+          "pitchers": 3,
+          "pnl": -3.0,
+          "roi_pct": -100.0,
+          "rows": 3,
+          "settled_risk_units": 3,
+          "slate_dates": 1,
+          "voids": 0,
+          "wins": 0
+        },
+        "2026-08-18": {
+          "losses": 1,
+          "pitchers": 1,
+          "pnl": -1.0,
+          "roi_pct": -100.0,
+          "rows": 1,
+          "settled_risk_units": 1,
+          "slate_dates": 1,
+          "voids": 0,
+          "wins": 0
+        },
+        "2026-08-19": {
+          "losses": 1,
+          "pitchers": 1,
+          "pnl": -1.0,
+          "roi_pct": -100.0,
+          "rows": 1,
+          "settled_risk_units": 1,
+          "slate_dates": 1,
+          "voids": 0,
+          "wins": 0
+        },
+        "2026-08-21": {
+          "losses": 1,
+          "pitchers": 1,
+          "pnl": -1.0,
+          "roi_pct": -100.0,
+          "rows": 1,
+          "settled_risk_units": 1,
+          "slate_dates": 1,
+          "voids": 0,
+          "wins": 0
+        },
+        "2026-08-22": {
+          "losses": 1,
+          "pitchers": 1,
+          "pnl": -1.0,
+          "roi_pct": -100.0,
+          "rows": 1,
+          "settled_risk_units": 1,
+          "slate_dates": 1,
+          "voids": 0,
+          "wins": 0
+        },
+        "2026-08-23": {
+          "losses": 1,
+          "pitchers": 1,
+          "pnl": -1.0,
+          "roi_pct": -100.0,
+          "rows": 1,
+          "settled_risk_units": 1,
+          "slate_dates": 1,
+          "voids": 0,
+          "wins": 0
+        },
+        "2026-08-24": {
+          "losses": 1,
+          "pitchers": 1,
+          "pnl": -1.0,
+          "roi_pct": -100.0,
+          "rows": 1,
+          "settled_risk_units": 1,
+          "slate_dates": 1,
+          "voids": 0,
+          "wins": 0
+        },
+        "2026-08-26": {
+          "losses": 2,
+          "pitchers": 3,
+          "pnl": -0.94,
+          "roi_pct": -31.3333,
+          "rows": 3,
+          "settled_risk_units": 3,
+          "slate_dates": 1,
+          "voids": 0,
+          "wins": 1
+        },
+        "2026-08-29": {
+          "losses": 2,
+          "pitchers": 3,
+          "pnl": -0.84,
+          "roi_pct": -28.0,
+          "rows": 3,
+          "settled_risk_units": 3,
+          "slate_dates": 1,
+          "voids": 0,
+          "wins": 1
+        },
+        "2026-08-30": {
+          "losses": 0,
+          "pitchers": 1,
+          "pnl": 1.16,
+          "roi_pct": 116.0,
+          "rows": 1,
+          "settled_risk_units": 1,
+          "slate_dates": 1,
+          "voids": 0,
+          "wins": 1
+        },
+        "2026-09-01": {
+          "losses": 1,
+          "pitchers": 1,
+          "pnl": -1.0,
+          "roi_pct": -100.0,
+          "rows": 1,
+          "settled_risk_units": 1,
+          "slate_dates": 1,
+          "voids": 0,
+          "wins": 0
+        },
+        "2026-09-03": {
+          "losses": 2,
+          "pitchers": 2,
+          "pnl": -2.0,
+          "roi_pct": -100.0,
+          "rows": 2,
+          "settled_risk_units": 2,
+          "slate_dates": 1,
+          "voids": 0,
+          "wins": 0
+        }
+      },
+      "leave_one_slate_out_pnl_range": [
+        -15.745421,
+        -10.799495
+      ],
+      "lock_minutes_range": [
+        24.149117783333335,
+        29.787065466666665
+      ],
+      "max_pitcher_rows": 3,
+      "positive_14_windows": 0,
+      "rolling_14_windows": 29,
+      "unique_pitchers": 29
+    }
+  },
+  "rolling_14_slate_windows": [
+    {
+      "end": "2026-08-06",
+      "scores": {
+        "all_alt": {
+          "losses": 14,
+          "pitchers": 29,
+          "pnl": 0.588846,
+          "roi_pct": 1.7844,
+          "rows": 34,
+          "settled_risk_units": 33,
+          "slate_dates": 12,
+          "voids": 1,
+          "wins": 19
+        },
+        "consensus_core": {
+          "losses": 9,
+          "pitchers": 21,
+          "pnl": 1.71466,
+          "roi_pct": 7.1444,
+          "rows": 25,
+          "settled_risk_units": 24,
+          "slate_dates": 12,
+          "voids": 1,
+          "wins": 15
+        },
+        "mainline_all_locked_flat": {
+          "losses": 127,
+          "pitchers": 152,
+          "pnl": -15.914761,
+          "roi_pct": -6.1925,
+          "rows": 260,
+          "settled_risk_units": 257,
+          "slate_dates": 14,
+          "voids": 3,
+          "wins": 130
+        },
+        "mainline_fire_weighted": {
+          "losses": 7,
+          "pitchers": 19,
+          "pnl": 3.477041,
+          "roi_pct": 16.5573,
+          "rows": 21,
+          "settled_risk_units": 21,
+          "slate_dates": 13,
+          "voids": 0,
+          "wins": 14
+        },
+        "reentry_expansion": {
+          "losses": 5,
+          "pitchers": 9,
+          "pnl": -1.125813,
+          "roi_pct": -12.509,
+          "rows": 9,
+          "settled_risk_units": 9,
+          "slate_dates": 8,
+          "voids": 0,
+          "wins": 4
+        }
+      },
+      "start": "2026-07-24"
+    },
+    {
+      "end": "2026-08-07",
+      "scores": {
+        "all_alt": {
+          "losses": 14,
+          "pitchers": 28,
+          "pnl": -0.893367,
+          "roi_pct": -2.8818,
+          "rows": 32,
+          "settled_risk_units": 31,
+          "slate_dates": 11,
+          "voids": 1,
+          "wins": 17
+        },
+        "consensus_core": {
+          "losses": 9,
+          "pitchers": 20,
+          "pnl": 0.232446,
+          "roi_pct": 1.0566,
+          "rows": 23,
+          "settled_risk_units": 22,
+          "slate_dates": 11,
+          "voids": 1,
+          "wins": 13
+        },
+        "mainline_all_locked_flat": {
+          "losses": 121,
+          "pitchers": 150,
+          "pnl": -13.557917,
+          "roi_pct": -5.489,
+          "rows": 250,
+          "settled_risk_units": 247,
+          "slate_dates": 14,
+          "voids": 3,
+          "wins": 126
+        },
+        "mainline_fire_weighted": {
+          "losses": 7,
+          "pitchers": 18,
+          "pnl": 2.662658,
+          "roi_pct": 13.3133,
+          "rows": 20,
+          "settled_risk_units": 20,
+          "slate_dates": 13,
+          "voids": 0,
+          "wins": 13
+        },
+        "reentry_expansion": {
+          "losses": 5,
+          "pitchers": 9,
+          "pnl": -1.125813,
+          "roi_pct": -12.509,
+          "rows": 9,
+          "settled_risk_units": 9,
+          "slate_dates": 8,
+          "voids": 0,
+          "wins": 4
+        }
+      },
+      "start": "2026-07-25"
+    },
+    {
+      "end": "2026-08-08",
+      "scores": {
+        "all_alt": {
+          "losses": 17,
+          "pitchers": 29,
+          "pnl": -5.004975,
+          "roi_pct": -15.1666,
+          "rows": 34,
+          "settled_risk_units": 33,
+          "slate_dates": 11,
+          "voids": 1,
+          "wins": 16
+        },
+        "consensus_core": {
+          "losses": 11,
+          "pitchers": 22,
+          "pnl": -1.759161,
+          "roi_pct": -7.3298,
+          "rows": 25,
+          "settled_risk_units": 24,
+          "slate_dates": 11,
+          "voids": 1,
+          "wins": 13
+        },
+        "mainline_all_locked_flat": {
+          "losses": 127,
+          "pitchers": 151,
+          "pnl": -21.880719,
+          "roi_pct": -8.6828,
+          "rows": 255,
+          "settled_risk_units": 252,
+          "slate_dates": 14,
+          "voids": 3,
+          "wins": 125
+        },
+        "mainline_fire_weighted": {
+          "losses": 10,
+          "pitchers": 23,
+          "pnl": 1.069584,
+          "roi_pct": 4.2783,
+          "rows": 25,
+          "settled_risk_units": 25,
+          "slate_dates": 13,
+          "voids": 0,
+          "wins": 15
+        },
+        "reentry_expansion": {
+          "losses": 6,
+          "pitchers": 9,
+          "pnl": -3.245813,
+          "roi_pct": -36.0646,
+          "rows": 9,
+          "settled_risk_units": 9,
+          "slate_dates": 8,
+          "voids": 0,
+          "wins": 3
+        }
+      },
+      "start": "2026-07-26"
+    },
+    {
+      "end": "2026-08-09",
+      "scores": {
+        "all_alt": {
+          "losses": 15,
+          "pitchers": 29,
+          "pnl": -3.394544,
+          "roi_pct": -11.3151,
+          "rows": 31,
+          "settled_risk_units": 30,
+          "slate_dates": 11,
+          "voids": 1,
+          "wins": 15
+        },
+        "consensus_core": {
+          "losses": 9,
+          "pitchers": 20,
+          "pnl": -1.168731,
+          "roi_pct": -5.8437,
+          "rows": 21,
+          "settled_risk_units": 20,
+          "slate_dates": 10,
+          "voids": 1,
+          "wins": 11
+        },
+        "mainline_all_locked_flat": {
+          "losses": 122,
+          "pitchers": 152,
+          "pnl": -15.759041,
+          "roi_pct": -6.3545,
+          "rows": 251,
+          "settled_risk_units": 248,
+          "slate_dates": 14,
+          "voids": 3,
+          "wins": 126
+        },
+        "mainline_fire_weighted": {
+          "losses": 10,
+          "pitchers": 23,
+          "pnl": 1.069584,
+          "roi_pct": 4.2783,
+          "rows": 25,
+          "settled_risk_units": 25,
+          "slate_dates": 13,
+          "voids": 0,
+          "wins": 15
+        },
+        "reentry_expansion": {
+          "losses": 6,
+          "pitchers": 10,
+          "pnl": -2.225813,
+          "roi_pct": -22.2581,
+          "rows": 10,
+          "settled_risk_units": 10,
+          "slate_dates": 8,
+          "voids": 0,
+          "wins": 4
+        }
+      },
+      "start": "2026-07-27"
+    },
+    {
+      "end": "2026-08-10",
+      "scores": {
+        "all_alt": {
+          "losses": 15,
+          "pitchers": 27,
+          "pnl": -4.92885,
+          "roi_pct": -17.603,
+          "rows": 29,
+          "settled_risk_units": 28,
+          "slate_dates": 11,
+          "voids": 1,
+          "wins": 13
+        },
+        "consensus_core": {
+          "losses": 9,
+          "pitchers": 19,
+          "pnl": -1.818081,
+          "roi_pct": -9.5688,
+          "rows": 20,
+          "settled_risk_units": 19,
+          "slate_dates": 10,
+          "voids": 1,
+          "wins": 10
+        },
+        "mainline_all_locked_flat": {
+          "losses": 120,
+          "pitchers": 152,
+          "pnl": -13.848291,
+          "roi_pct": -5.6294,
+          "rows": 248,
+          "settled_risk_units": 246,
+          "slate_dates": 14,
+          "voids": 2,
+          "wins": 126
+        },
+        "mainline_fire_weighted": {
+          "losses": 11,
+          "pitchers": 23,
+          "pnl": -0.815371,
+          "roi_pct": -3.2615,
+          "rows": 25,
+          "settled_risk_units": 25,
+          "slate_dates": 13,
+          "voids": 0,
+          "wins": 14
+        },
+        "reentry_expansion": {
+          "losses": 6,
+          "pitchers": 9,
+          "pnl": -3.110769,
+          "roi_pct": -34.5641,
+          "rows": 9,
+          "settled_risk_units": 9,
+          "slate_dates": 7,
+          "voids": 0,
+          "wins": 3
+        }
+      },
+      "start": "2026-07-28"
+    },
+    {
+      "end": "2026-08-11",
+      "scores": {
+        "all_alt": {
+          "losses": 17,
+          "pitchers": 28,
+          "pnl": -8.019595,
+          "roi_pct": -27.6538,
+          "rows": 30,
+          "settled_risk_units": 29,
+          "slate_dates": 11,
+          "voids": 1,
+          "wins": 12
+        },
+        "consensus_core": {
+          "losses": 11,
+          "pitchers": 21,
+          "pnl": -3.808825,
+          "roi_pct": -18.1373,
+          "rows": 22,
+          "settled_risk_units": 21,
+          "slate_dates": 10,
+          "voids": 1,
+          "wins": 10
+        },
+        "mainline_all_locked_flat": {
+          "losses": 122,
+          "pitchers": 150,
+          "pnl": -19.932596,
+          "roi_pct": -8.1691,
+          "rows": 245,
+          "settled_risk_units": 244,
+          "slate_dates": 14,
+          "voids": 1,
+          "wins": 122
+        },
+        "mainline_fire_weighted": {
+          "losses": 13,
+          "pitchers": 25,
+          "pnl": -2.815371,
+          "roi_pct": -10.4273,
+          "rows": 27,
+          "settled_risk_units": 27,
+          "slate_dates": 13,
+          "voids": 0,
+          "wins": 14
+        },
+        "reentry_expansion": {
+          "losses": 6,
+          "pitchers": 8,
+          "pnl": -4.210769,
+          "roi_pct": -52.6346,
+          "rows": 8,
+          "settled_risk_units": 8,
+          "slate_dates": 7,
+          "voids": 0,
+          "wins": 2
+        }
+      },
+      "start": "2026-07-29"
+    },
+    {
+      "end": "2026-08-12",
+      "scores": {
+        "all_alt": {
+          "losses": 19,
+          "pitchers": 29,
+          "pnl": -10.676836,
+          "roi_pct": -35.5895,
+          "rows": 31,
+          "settled_risk_units": 30,
+          "slate_dates": 11,
+          "voids": 1,
+          "wins": 11
+        },
+        "consensus_core": {
+          "losses": 13,
+          "pitchers": 23,
+          "pnl": -5.696836,
+          "roi_pct": -24.7689,
+          "rows": 24,
+          "settled_risk_units": 23,
+          "slate_dates": 10,
+          "voids": 1,
+          "wins": 10
+        },
+        "mainline_all_locked_flat": {
+          "losses": 119,
+          "pitchers": 148,
+          "pnl": -15.799202,
+          "roi_pct": -6.5286,
+          "rows": 243,
+          "settled_risk_units": 242,
+          "slate_dates": 14,
+          "voids": 1,
+          "wins": 123
+        },
+        "mainline_fire_weighted": {
+          "losses": 15,
+          "pitchers": 27,
+          "pnl": -4.815371,
+          "roi_pct": -16.6047,
+          "rows": 29,
+          "settled_risk_units": 29,
+          "slate_dates": 14,
+          "voids": 0,
+          "wins": 14
+        },
+        "reentry_expansion": {
+          "losses": 6,
+          "pitchers": 7,
+          "pnl": -4.98,
+          "roi_pct": -71.1429,
+          "rows": 7,
+          "settled_risk_units": 7,
+          "slate_dates": 6,
+          "voids": 0,
+          "wins": 1
+        }
+      },
+      "start": "2026-07-30"
+    },
+    {
+      "end": "2026-08-13",
+      "scores": {
+        "all_alt": {
+          "losses": 19,
+          "pitchers": 30,
+          "pnl": -9.311551,
+          "roi_pct": -30.0373,
+          "rows": 32,
+          "settled_risk_units": 31,
+          "slate_dates": 11,
+          "voids": 1,
+          "wins": 12
+        },
+        "consensus_core": {
+          "losses": 13,
+          "pitchers": 22,
+          "pnl": -6.277477,
+          "roi_pct": -28.534,
+          "rows": 23,
+          "settled_risk_units": 22,
+          "slate_dates": 10,
+          "voids": 1,
+          "wins": 9
+        },
+        "mainline_all_locked_flat": {
+          "losses": 118,
+          "pitchers": 147,
+          "pnl": -8.583374,
+          "roi_pct": -3.4892,
+          "rows": 247,
+          "settled_risk_units": 246,
+          "slate_dates": 14,
+          "voids": 1,
+          "wins": 128
+        },
+        "mainline_fire_weighted": {
+          "losses": 15,
+          "pitchers": 27,
+          "pnl": -4.606091,
+          "roi_pct": -15.8831,
+          "rows": 29,
+          "settled_risk_units": 29,
+          "slate_dates": 14,
+          "voids": 0,
+          "wins": 14
+        },
+        "reentry_expansion": {
+          "losses": 6,
+          "pitchers": 9,
+          "pnl": -3.034074,
+          "roi_pct": -33.7119,
+          "rows": 9,
+          "settled_risk_units": 9,
+          "slate_dates": 7,
+          "voids": 0,
+          "wins": 3
+        }
+      },
+      "start": "2026-07-31"
+    },
+    {
+      "end": "2026-08-14",
+      "scores": {
+        "all_alt": {
+          "losses": 19,
+          "pitchers": 30,
+          "pnl": -9.311551,
+          "roi_pct": -30.0373,
+          "rows": 32,
+          "settled_risk_units": 31,
+          "slate_dates": 11,
+          "voids": 1,
+          "wins": 12
+        },
+        "consensus_core": {
+          "losses": 13,
+          "pitchers": 22,
+          "pnl": -6.277477,
+          "roi_pct": -28.534,
+          "rows": 23,
+          "settled_risk_units": 22,
+          "slate_dates": 10,
+          "voids": 1,
+          "wins": 9
+        },
+        "mainline_all_locked_flat": {
+          "losses": 116,
+          "pitchers": 145,
+          "pnl": -4.540168,
+          "roi_pct": -1.8456,
+          "rows": 247,
+          "settled_risk_units": 246,
+          "slate_dates": 14,
+          "voids": 1,
+          "wins": 130
+        },
+        "mainline_fire_weighted": {
+          "losses": 15,
+          "pitchers": 27,
+          "pnl": -3.721135,
+          "roi_pct": -12.4038,
+          "rows": 30,
+          "settled_risk_units": 30,
+          "slate_dates": 14,
+          "voids": 0,
+          "wins": 15
+        },
+        "reentry_expansion": {
+          "losses": 6,
+          "pitchers": 9,
+          "pnl": -3.034074,
+          "roi_pct": -33.7119,
+          "rows": 9,
+          "settled_risk_units": 9,
+          "slate_dates": 7,
+          "voids": 0,
+          "wins": 3
+        }
+      },
+      "start": "2026-08-01"
+    },
+    {
+      "end": "2026-08-15",
+      "scores": {
+        "all_alt": {
+          "losses": 20,
+          "pitchers": 30,
+          "pnl": -9.446606,
+          "roi_pct": -28.6261,
+          "rows": 33,
+          "settled_risk_units": 33,
+          "slate_dates": 11,
+          "voids": 0,
+          "wins": 13
+        },
+        "consensus_core": {
+          "losses": 14,
+          "pitchers": 22,
+          "pnl": -7.392924,
+          "roi_pct": -32.1431,
+          "rows": 23,
+          "settled_risk_units": 23,
+          "slate_dates": 10,
+          "voids": 0,
+          "wins": 9
+        },
+        "mainline_all_locked_flat": {
+          "losses": 118,
+          "pitchers": 144,
+          "pnl": -8.793936,
+          "roi_pct": -3.6041,
+          "rows": 244,
+          "settled_risk_units": 244,
+          "slate_dates": 14,
+          "voids": 0,
+          "wins": 126
+        },
+        "mainline_fire_weighted": {
+          "losses": 16,
+          "pitchers": 27,
+          "pnl": -5.338419,
+          "roi_pct": -17.7947,
+          "rows": 30,
+          "settled_risk_units": 30,
+          "slate_dates": 14,
+          "voids": 0,
+          "wins": 14
+        },
+        "reentry_expansion": {
+          "losses": 6,
+          "pitchers": 9,
+          "pnl": -2.053682,
+          "roi_pct": -20.5368,
+          "rows": 10,
+          "settled_risk_units": 10,
+          "slate_dates": 7,
+          "voids": 0,
+          "wins": 4
+        }
+      },
+      "start": "2026-08-02"
+    },
+    {
+      "end": "2026-08-16",
+      "scores": {
+        "all_alt": {
+          "losses": 20,
+          "pitchers": 30,
+          "pnl": -9.014621,
+          "roi_pct": -26.5136,
+          "rows": 34,
+          "settled_risk_units": 34,
+          "slate_dates": 11,
+          "voids": 0,
+          "wins": 14
+        },
+        "consensus_core": {
+          "losses": 12,
+          "pitchers": 21,
+          "pnl": -4.960939,
+          "roi_pct": -22.5497,
+          "rows": 22,
+          "settled_risk_units": 22,
+          "slate_dates": 10,
+          "voids": 0,
+          "wins": 10
+        },
+        "mainline_all_locked_flat": {
+          "losses": 115,
+          "pitchers": 143,
+          "pnl": -5.09457,
+          "roi_pct": -2.1052,
+          "rows": 242,
+          "settled_risk_units": 242,
+          "slate_dates": 14,
+          "voids": 0,
+          "wins": 127
+        },
+        "mainline_fire_weighted": {
+          "losses": 19,
+          "pitchers": 28,
+          "pnl": -9.225421,
+          "roi_pct": -28.8294,
+          "rows": 32,
+          "settled_risk_units": 32,
+          "slate_dates": 14,
+          "voids": 0,
+          "wins": 13
+        },
+        "reentry_expansion": {
+          "losses": 8,
+          "pitchers": 10,
+          "pnl": -4.053682,
+          "roi_pct": -33.7807,
+          "rows": 12,
+          "settled_risk_units": 12,
+          "slate_dates": 7,
+          "voids": 0,
+          "wins": 4
+        }
+      },
+      "start": "2026-08-03"
+    },
+    {
+      "end": "2026-08-17",
+      "scores": {
+        "all_alt": {
+          "losses": 21,
+          "pitchers": 33,
+          "pnl": -8.526137,
+          "roi_pct": -23.0436,
+          "rows": 37,
+          "settled_risk_units": 37,
+          "slate_dates": 12,
+          "voids": 0,
+          "wins": 16
+        },
+        "consensus_core": {
+          "losses": 13,
+          "pitchers": 24,
+          "pnl": -4.472455,
+          "roi_pct": -17.8898,
+          "rows": 25,
+          "settled_risk_units": 25,
+          "slate_dates": 11,
+          "voids": 0,
+          "wins": 12
+        },
+        "mainline_all_locked_flat": {
+          "losses": 115,
+          "pitchers": 144,
+          "pnl": -3.53852,
+          "roi_pct": -1.4502,
+          "rows": 244,
+          "settled_risk_units": 244,
+          "slate_dates": 14,
+          "voids": 0,
+          "wins": 129
+        },
+        "mainline_fire_weighted": {
+          "losses": 19,
+          "pitchers": 28,
+          "pnl": -8.628301,
+          "roi_pct": -26.1464,
+          "rows": 33,
+          "settled_risk_units": 33,
+          "slate_dates": 14,
+          "voids": 0,
+          "wins": 14
+        },
+        "reentry_expansion": {
+          "losses": 8,
+          "pitchers": 10,
+          "pnl": -4.053682,
+          "roi_pct": -33.7807,
+          "rows": 12,
+          "settled_risk_units": 12,
+          "slate_dates": 7,
+          "voids": 0,
+          "wins": 4
+        }
+      },
+      "start": "2026-08-04"
+    },
+    {
+      "end": "2026-08-18",
+      "scores": {
+        "all_alt": {
+          "losses": 23,
+          "pitchers": 35,
+          "pnl": -10.526137,
+          "roi_pct": -26.9901,
+          "rows": 39,
+          "settled_risk_units": 39,
+          "slate_dates": 13,
+          "voids": 0,
+          "wins": 16
+        },
+        "consensus_core": {
+          "losses": 14,
+          "pitchers": 25,
+          "pnl": -5.472455,
+          "roi_pct": -21.0479,
+          "rows": 26,
+          "settled_risk_units": 26,
+          "slate_dates": 12,
+          "voids": 0,
+          "wins": 12
+        },
+        "mainline_all_locked_flat": {
+          "losses": 117,
+          "pitchers": 142,
+          "pnl": -11.140844,
+          "roi_pct": -4.6614,
+          "rows": 239,
+          "settled_risk_units": 239,
+          "slate_dates": 14,
+          "voids": 0,
+          "wins": 122
+        },
+        "mainline_fire_weighted": {
+          "losses": 21,
+          "pitchers": 29,
+          "pnl": -11.428301,
+          "roi_pct": -33.6127,
+          "rows": 34,
+          "settled_risk_units": 34,
+          "slate_dates": 14,
+          "voids": 0,
+          "wins": 13
+        },
+        "reentry_expansion": {
+          "losses": 9,
+          "pitchers": 11,
+          "pnl": -5.053682,
+          "roi_pct": -38.8745,
+          "rows": 13,
+          "settled_risk_units": 13,
+          "slate_dates": 8,
+          "voids": 0,
+          "wins": 4
+        }
+      },
+      "start": "2026-08-05"
+    },
+    {
+      "end": "2026-08-19",
+      "scores": {
+        "all_alt": {
+          "losses": 26,
+          "pitchers": 38,
+          "pnl": -12.887476,
+          "roi_pct": -29.9709,
+          "rows": 43,
+          "settled_risk_units": 43,
+          "slate_dates": 13,
+          "voids": 0,
+          "wins": 17
+        },
+        "consensus_core": {
+          "losses": 16,
+          "pitchers": 28,
+          "pnl": -6.833794,
+          "roi_pct": -23.5648,
+          "rows": 29,
+          "settled_risk_units": 29,
+          "slate_dates": 12,
+          "voids": 0,
+          "wins": 13
+        },
+        "mainline_all_locked_flat": {
+          "losses": 116,
+          "pitchers": 143,
+          "pnl": -15.614054,
+          "roi_pct": -6.6727,
+          "rows": 234,
+          "settled_risk_units": 234,
+          "slate_dates": 14,
+          "voids": 0,
+          "wins": 118
+        },
+        "mainline_fire_weighted": {
+          "losses": 21,
+          "pitchers": 29,
+          "pnl": -9.805741,
+          "roi_pct": -27.2382,
+          "rows": 36,
+          "settled_risk_units": 36,
+          "slate_dates": 14,
+          "voids": 0,
+          "wins": 15
+        },
+        "reentry_expansion": {
+          "losses": 10,
+          "pitchers": 11,
+          "pnl": -6.053682,
+          "roi_pct": -43.2406,
+          "rows": 14,
+          "settled_risk_units": 14,
+          "slate_dates": 9,
+          "voids": 0,
+          "wins": 4
+        }
+      },
+      "start": "2026-08-06"
+    },
+    {
+      "end": "2026-08-20",
+      "scores": {
+        "all_alt": {
+          "losses": 25,
+          "pitchers": 38,
+          "pnl": -11.741643,
+          "roi_pct": -27.9563,
+          "rows": 42,
+          "settled_risk_units": 42,
+          "slate_dates": 13,
+          "voids": 0,
+          "wins": 17
+        },
+        "consensus_core": {
+          "losses": 16,
+          "pitchers": 28,
+          "pnl": -6.687961,
+          "roi_pct": -23.0619,
+          "rows": 29,
+          "settled_risk_units": 29,
+          "slate_dates": 12,
+          "voids": 0,
+          "wins": 13
+        },
+        "mainline_all_locked_flat": {
+          "losses": 117,
+          "pitchers": 140,
+          "pnl": -21.084466,
+          "roi_pct": -9.1672,
+          "rows": 230,
+          "settled_risk_units": 230,
+          "slate_dates": 14,
+          "voids": 0,
+          "wins": 113
+        },
+        "mainline_fire_weighted": {
+          "losses": 20,
+          "pitchers": 28,
+          "pnl": -8.690295,
+          "roi_pct": -24.8294,
+          "rows": 35,
+          "settled_risk_units": 35,
+          "slate_dates": 14,
+          "voids": 0,
+          "wins": 15
+        },
+        "reentry_expansion": {
+          "losses": 9,
+          "pitchers": 10,
+          "pnl": -5.053682,
+          "roi_pct": -38.8745,
+          "rows": 13,
+          "settled_risk_units": 13,
+          "slate_dates": 8,
+          "voids": 0,
+          "wins": 4
+        }
+      },
+      "start": "2026-08-07"
+    },
+    {
+      "end": "2026-08-21",
+      "scores": {
+        "all_alt": {
+          "losses": 30,
+          "pitchers": 43,
+          "pnl": -16.741643,
+          "roi_pct": -35.6205,
+          "rows": 47,
+          "settled_risk_units": 47,
+          "slate_dates": 14,
+          "voids": 0,
+          "wins": 17
+        },
+        "consensus_core": {
+          "losses": 20,
+          "pitchers": 32,
+          "pnl": -10.687961,
+          "roi_pct": -32.3878,
+          "rows": 33,
+          "settled_risk_units": 33,
+          "slate_dates": 13,
+          "voids": 0,
+          "wins": 13
+        },
+        "mainline_all_locked_flat": {
+          "losses": 122,
+          "pitchers": 139,
+          "pnl": -24.787998,
+          "roi_pct": -10.5481,
+          "rows": 235,
+          "settled_risk_units": 235,
+          "slate_dates": 14,
+          "voids": 0,
+          "wins": 113
+        },
+        "mainline_fire_weighted": {
+          "losses": 25,
+          "pitchers": 31,
+          "pnl": -14.420222,
+          "roi_pct": -36.9749,
+          "rows": 39,
+          "settled_risk_units": 39,
+          "slate_dates": 14,
+          "voids": 0,
+          "wins": 14
+        },
+        "reentry_expansion": {
+          "losses": 10,
+          "pitchers": 11,
+          "pnl": -6.053682,
+          "roi_pct": -43.2406,
+          "rows": 14,
+          "settled_risk_units": 14,
+          "slate_dates": 9,
+          "voids": 0,
+          "wins": 4
+        }
+      },
+      "start": "2026-08-08"
+    },
+    {
+      "end": "2026-08-22",
+      "scores": {
+        "all_alt": {
+          "losses": 28,
+          "pitchers": 40,
+          "pnl": -16.148569,
+          "roi_pct": -37.5548,
+          "rows": 43,
+          "settled_risk_units": 43,
+          "slate_dates": 14,
+          "voids": 0,
+          "wins": 15
+        },
+        "consensus_core": {
+          "losses": 18,
+          "pitchers": 29,
+          "pnl": -10.094887,
+          "roi_pct": -34.81,
+          "rows": 29,
+          "settled_risk_units": 29,
+          "slate_dates": 12,
+          "voids": 0,
+          "wins": 11
+        },
+        "mainline_all_locked_flat": {
+          "losses": 116,
+          "pitchers": 140,
+          "pnl": -19.114976,
+          "roi_pct": -8.4207,
+          "rows": 227,
+          "settled_risk_units": 227,
+          "slate_dates": 14,
+          "voids": 0,
+          "wins": 111
+        },
+        "mainline_fire_weighted": {
+          "losses": 21,
+          "pitchers": 29,
+          "pnl": -11.827148,
+          "roi_pct": -35.8398,
+          "rows": 33,
+          "settled_risk_units": 33,
+          "slate_dates": 13,
+          "voids": 0,
+          "wins": 12
+        },
+        "reentry_expansion": {
+          "losses": 10,
+          "pitchers": 11,
+          "pnl": -6.053682,
+          "roi_pct": -43.2406,
+          "rows": 14,
+          "settled_risk_units": 14,
+          "slate_dates": 9,
+          "voids": 0,
+          "wins": 4
+        }
+      },
+      "start": "2026-08-09"
+    },
+    {
+      "end": "2026-08-23",
+      "scores": {
+        "all_alt": {
+          "losses": 28,
+          "pitchers": 41,
+          "pnl": -15.767502,
+          "roi_pct": -35.8352,
+          "rows": 44,
+          "settled_risk_units": 44,
+          "slate_dates": 14,
+          "voids": 0,
+          "wins": 16
+        },
+        "consensus_core": {
+          "losses": 18,
+          "pitchers": 30,
+          "pnl": -8.69382,
+          "roi_pct": -28.0446,
+          "rows": 31,
+          "settled_risk_units": 31,
+          "slate_dates": 13,
+          "voids": 0,
+          "wins": 13
+        },
+        "mainline_all_locked_flat": {
+          "losses": 115,
+          "pitchers": 142,
+          "pnl": -15.286922,
+          "roi_pct": -6.6755,
+          "rows": 229,
+          "settled_risk_units": 229,
+          "slate_dates": 14,
+          "voids": 0,
+          "wins": 114
+        },
+        "mainline_fire_weighted": {
+          "losses": 20,
+          "pitchers": 30,
+          "pnl": -8.752883,
+          "roi_pct": -25.0082,
+          "rows": 35,
+          "settled_risk_units": 35,
+          "slate_dates": 13,
+          "voids": 0,
+          "wins": 15
+        },
+        "reentry_expansion": {
+          "losses": 10,
+          "pitchers": 11,
+          "pnl": -7.073682,
+          "roi_pct": -54.4129,
+          "rows": 13,
+          "settled_risk_units": 13,
+          "slate_dates": 9,
+          "voids": 0,
+          "wins": 3
+        }
+      },
+      "start": "2026-08-10"
+    },
+    {
+      "end": "2026-08-24",
+      "scores": {
+        "all_alt": {
+          "losses": 28,
+          "pitchers": 41,
+          "pnl": -15.767502,
+          "roi_pct": -35.8352,
+          "rows": 44,
+          "settled_risk_units": 44,
+          "slate_dates": 14,
+          "voids": 0,
+          "wins": 16
+        },
+        "consensus_core": {
+          "losses": 17,
+          "pitchers": 29,
+          "pnl": -7.69382,
+          "roi_pct": -25.6461,
+          "rows": 30,
+          "settled_risk_units": 30,
+          "slate_dates": 13,
+          "voids": 0,
+          "wins": 13
+        },
+        "mainline_all_locked_flat": {
+          "losses": 115,
+          "pitchers": 143,
+          "pnl": -11.116775,
+          "roi_pct": -4.7508,
+          "rows": 234,
+          "settled_risk_units": 234,
+          "slate_dates": 14,
+          "voids": 0,
+          "wins": 119
+        },
+        "mainline_fire_weighted": {
+          "losses": 21,
+          "pitchers": 33,
+          "pnl": -8.218576,
+          "roi_pct": -21.6278,
+          "rows": 38,
+          "settled_risk_units": 38,
+          "slate_dates": 13,
+          "voids": 0,
+          "wins": 17
+        },
+        "reentry_expansion": {
+          "losses": 11,
+          "pitchers": 12,
+          "pnl": -8.073682,
+          "roi_pct": -57.6692,
+          "rows": 14,
+          "settled_risk_units": 14,
+          "slate_dates": 10,
+          "voids": 0,
+          "wins": 3
+        }
+      },
+      "start": "2026-08-11"
+    },
+    {
+      "end": "2026-08-25",
+      "scores": {
+        "all_alt": {
+          "losses": 27,
+          "pitchers": 40,
+          "pnl": -14.835149,
+          "roi_pct": -34.5003,
+          "rows": 43,
+          "settled_risk_units": 43,
+          "slate_dates": 14,
+          "voids": 0,
+          "wins": 16
+        },
+        "consensus_core": {
+          "losses": 17,
+          "pitchers": 28,
+          "pnl": -7.761467,
+          "roi_pct": -25.8716,
+          "rows": 30,
+          "settled_risk_units": 30,
+          "slate_dates": 13,
+          "voids": 0,
+          "wins": 13
+        },
+        "mainline_all_locked_flat": {
+          "losses": 113,
+          "pitchers": 145,
+          "pnl": -6.637041,
+          "roi_pct": -2.8363,
+          "rows": 234,
+          "settled_risk_units": 234,
+          "slate_dates": 14,
+          "voids": 0,
+          "wins": 121
+        },
+        "mainline_fire_weighted": {
+          "losses": 19,
+          "pitchers": 35,
+          "pnl": -4.048105,
+          "roi_pct": -10.3798,
+          "rows": 39,
+          "settled_risk_units": 39,
+          "slate_dates": 13,
+          "voids": 0,
+          "wins": 20
+        },
+        "reentry_expansion": {
+          "losses": 10,
+          "pitchers": 12,
+          "pnl": -7.073682,
+          "roi_pct": -54.4129,
+          "rows": 13,
+          "settled_risk_units": 13,
+          "slate_dates": 9,
+          "voids": 0,
+          "wins": 3
+        }
+      },
+      "start": "2026-08-12"
+    },
+    {
+      "end": "2026-08-26",
+      "scores": {
+        "all_alt": {
+          "losses": 26,
+          "pitchers": 40,
+          "pnl": -13.644714,
+          "roi_pct": -32.4874,
+          "rows": 42,
+          "settled_risk_units": 42,
+          "slate_dates": 14,
+          "voids": 0,
+          "wins": 16
+        },
+        "consensus_core": {
+          "losses": 14,
+          "pitchers": 25,
+          "pnl": -5.631033,
+          "roi_pct": -21.6578,
+          "rows": 26,
+          "settled_risk_units": 26,
+          "slate_dates": 12,
+          "voids": 0,
+          "wins": 12
+        },
+        "mainline_all_locked_flat": {
+          "losses": 116,
+          "pitchers": 147,
+          "pnl": -11.014463,
+          "roi_pct": -4.6671,
+          "rows": 236,
+          "settled_risk_units": 236,
+          "slate_dates": 14,
+          "voids": 0,
+          "wins": 120
+        },
+        "mainline_fire_weighted": {
+          "losses": 18,
+          "pitchers": 35,
+          "pnl": -1.521299,
+          "roi_pct": -3.8032,
+          "rows": 40,
+          "settled_risk_units": 40,
+          "slate_dates": 13,
+          "voids": 0,
+          "wins": 22
+        },
+        "reentry_expansion": {
+          "losses": 12,
+          "pitchers": 15,
+          "pnl": -8.013682,
+          "roi_pct": -50.0855,
+          "rows": 16,
+          "settled_risk_units": 16,
+          "slate_dates": 10,
+          "voids": 0,
+          "wins": 4
+        }
+      },
+      "start": "2026-08-13"
+    },
+    {
+      "end": "2026-08-27",
+      "scores": {
+        "all_alt": {
+          "losses": 26,
+          "pitchers": 39,
+          "pnl": -15.562855,
+          "roi_pct": -38.9071,
+          "rows": 40,
+          "settled_risk_units": 40,
+          "slate_dates": 14,
+          "voids": 0,
+          "wins": 14
+        },
+        "consensus_core": {
+          "losses": 14,
+          "pitchers": 25,
+          "pnl": -5.603247,
+          "roi_pct": -21.551,
+          "rows": 26,
+          "settled_risk_units": 26,
+          "slate_dates": 12,
+          "voids": 0,
+          "wins": 12
+        },
+        "mainline_all_locked_flat": {
+          "losses": 114,
+          "pitchers": 144,
+          "pnl": -17.182108,
+          "roi_pct": -7.6027,
+          "rows": 226,
+          "settled_risk_units": 226,
+          "slate_dates": 14,
+          "voids": 0,
+          "wins": 112
+        },
+        "mainline_fire_weighted": {
+          "losses": 18,
+          "pitchers": 35,
+          "pnl": -1.558797,
+          "roi_pct": -3.897,
+          "rows": 40,
+          "settled_risk_units": 40,
+          "slate_dates": 13,
+          "voids": 0,
+          "wins": 22
+        },
+        "reentry_expansion": {
+          "losses": 12,
+          "pitchers": 14,
+          "pnl": -9.959608,
+          "roi_pct": -71.1401,
+          "rows": 14,
+          "settled_risk_units": 14,
+          "slate_dates": 9,
+          "voids": 0,
+          "wins": 2
+        }
+      },
+      "start": "2026-08-14"
+    },
+    {
+      "end": "2026-08-28",
+      "scores": {
+        "all_alt": {
+          "losses": 27,
+          "pitchers": 41,
+          "pnl": -15.182954,
+          "roi_pct": -35.3092,
+          "rows": 43,
+          "settled_risk_units": 43,
+          "slate_dates": 14,
+          "voids": 0,
+          "wins": 16
+        },
+        "consensus_core": {
+          "losses": 15,
+          "pitchers": 27,
+          "pnl": -5.223346,
+          "roi_pct": -18.0115,
+          "rows": 29,
+          "settled_risk_units": 29,
+          "slate_dates": 12,
+          "voids": 0,
+          "wins": 14
+        },
+        "mainline_all_locked_flat": {
+          "losses": 115,
+          "pitchers": 145,
+          "pnl": -12.82838,
+          "roi_pct": -5.5057,
+          "rows": 233,
+          "settled_risk_units": 233,
+          "slate_dates": 14,
+          "voids": 0,
+          "wins": 118
+        },
+        "mainline_fire_weighted": {
+          "losses": 18,
+          "pitchers": 37,
+          "pnl": -1.118726,
+          "roi_pct": -2.7286,
+          "rows": 41,
+          "settled_risk_units": 41,
+          "slate_dates": 13,
+          "voids": 0,
+          "wins": 23
+        },
+        "reentry_expansion": {
+          "losses": 12,
+          "pitchers": 14,
+          "pnl": -9.959608,
+          "roi_pct": -71.1401,
+          "rows": 14,
+          "settled_risk_units": 14,
+          "slate_dates": 9,
+          "voids": 0,
+          "wins": 2
+        }
+      },
+      "start": "2026-08-15"
+    },
+    {
+      "end": "2026-08-29",
+      "scores": {
+        "all_alt": {
+          "losses": 27,
+          "pitchers": 41,
+          "pnl": -15.119336,
+          "roi_pct": -35.1612,
+          "rows": 43,
+          "settled_risk_units": 43,
+          "slate_dates": 14,
+          "voids": 0,
+          "wins": 16
+        },
+        "consensus_core": {
+          "losses": 14,
+          "pitchers": 26,
+          "pnl": -4.339336,
+          "roi_pct": -15.4976,
+          "rows": 28,
+          "settled_risk_units": 28,
+          "slate_dates": 12,
+          "voids": 0,
+          "wins": 14
+        },
+        "mainline_all_locked_flat": {
+          "losses": 112,
+          "pitchers": 146,
+          "pnl": -4.119054,
+          "roi_pct": -1.738,
+          "rows": 237,
+          "settled_risk_units": 237,
+          "slate_dates": 14,
+          "voids": 0,
+          "wins": 125
+        },
+        "mainline_fire_weighted": {
+          "losses": 17,
+          "pitchers": 36,
+          "pnl": -0.118726,
+          "roi_pct": -0.2968,
+          "rows": 40,
+          "settled_risk_units": 40,
+          "slate_dates": 13,
+          "voids": 0,
+          "wins": 23
+        },
+        "reentry_expansion": {
+          "losses": 13,
+          "pitchers": 15,
+          "pnl": -10.78,
+          "roi_pct": -71.8667,
+          "rows": 15,
+          "settled_risk_units": 15,
+          "slate_dates": 9,
+          "voids": 0,
+          "wins": 2
+        }
+      },
+      "start": "2026-08-16"
+    },
+    {
+      "end": "2026-08-30",
+      "scores": {
+        "all_alt": {
+          "losses": 24,
+          "pitchers": 38,
+          "pnl": -11.496896,
+          "roi_pct": -28.7422,
+          "rows": 40,
+          "settled_risk_units": 40,
+          "slate_dates": 14,
+          "voids": 0,
+          "wins": 16
+        },
+        "consensus_core": {
+          "losses": 14,
+          "pitchers": 25,
+          "pnl": -4.876896,
+          "roi_pct": -18.0626,
+          "rows": 27,
+          "settled_risk_units": 27,
+          "slate_dates": 12,
+          "voids": 0,
+          "wins": 13
+        },
+        "mainline_all_locked_flat": {
+          "losses": 110,
+          "pitchers": 145,
+          "pnl": 2.342326,
+          "roi_pct": 0.9842,
+          "rows": 238,
+          "settled_risk_units": 238,
+          "slate_dates": 14,
+          "voids": 0,
+          "wins": 128
+        },
+        "mainline_fire_weighted": {
+          "losses": 14,
+          "pitchers": 33,
+          "pnl": 2.949515,
+          "roi_pct": 7.9717,
+          "rows": 37,
+          "settled_risk_units": 37,
+          "slate_dates": 13,
+          "voids": 0,
+          "wins": 23
+        },
+        "reentry_expansion": {
+          "losses": 10,
+          "pitchers": 13,
+          "pnl": -6.62,
+          "roi_pct": -50.9231,
+          "rows": 13,
+          "settled_risk_units": 13,
+          "slate_dates": 9,
+          "voids": 0,
+          "wins": 3
+        }
+      },
+      "start": "2026-08-17"
+    },
+    {
+      "end": "2026-08-31",
+      "scores": {
+        "all_alt": {
+          "losses": 24,
+          "pitchers": 36,
+          "pnl": -12.336028,
+          "roi_pct": -31.6308,
+          "rows": 39,
+          "settled_risk_units": 39,
+          "slate_dates": 14,
+          "voids": 0,
+          "wins": 15
+        },
+        "consensus_core": {
+          "losses": 14,
+          "pitchers": 24,
+          "pnl": -5.716028,
+          "roi_pct": -21.9847,
+          "rows": 26,
+          "settled_risk_units": 26,
+          "slate_dates": 12,
+          "voids": 0,
+          "wins": 12
+        },
+        "mainline_all_locked_flat": {
+          "losses": 114,
+          "pitchers": 146,
+          "pnl": -6.0515,
+          "roi_pct": -2.5642,
+          "rows": 236,
+          "settled_risk_units": 236,
+          "slate_dates": 14,
+          "voids": 0,
+          "wins": 122
+        },
+        "mainline_fire_weighted": {
+          "losses": 14,
+          "pitchers": 31,
+          "pnl": 1.667463,
+          "roi_pct": 4.7642,
+          "rows": 35,
+          "settled_risk_units": 35,
+          "slate_dates": 13,
+          "voids": 0,
+          "wins": 21
+        },
+        "reentry_expansion": {
+          "losses": 10,
+          "pitchers": 13,
+          "pnl": -6.62,
+          "roi_pct": -50.9231,
+          "rows": 13,
+          "settled_risk_units": 13,
+          "slate_dates": 9,
+          "voids": 0,
+          "wins": 3
+        }
+      },
+      "start": "2026-08-18"
+    },
+    {
+      "end": "2026-09-01",
+      "scores": {
+        "all_alt": {
+          "losses": 25,
+          "pitchers": 38,
+          "pnl": -13.336028,
+          "roi_pct": -33.3401,
+          "rows": 40,
+          "settled_risk_units": 40,
+          "slate_dates": 14,
+          "voids": 0,
+          "wins": 15
+        },
+        "consensus_core": {
+          "losses": 15,
+          "pitchers": 25,
+          "pnl": -6.716028,
+          "roi_pct": -24.8742,
+          "rows": 27,
+          "settled_risk_units": 27,
+          "slate_dates": 12,
+          "voids": 0,
+          "wins": 12
+        },
+        "mainline_all_locked_flat": {
+          "losses": 112,
+          "pitchers": 148,
+          "pnl": -2.821105,
+          "roi_pct": -1.1954,
+          "rows": 236,
+          "settled_risk_units": 236,
+          "slate_dates": 14,
+          "voids": 0,
+          "wins": 124
+        },
+        "mainline_fire_weighted": {
+          "losses": 15,
+          "pitchers": 34,
+          "pnl": 2.096326,
+          "roi_pct": 5.5166,
+          "rows": 38,
+          "settled_risk_units": 38,
+          "slate_dates": 13,
+          "voids": 0,
+          "wins": 23
+        },
+        "reentry_expansion": {
+          "losses": 10,
+          "pitchers": 13,
+          "pnl": -6.62,
+          "roi_pct": -50.9231,
+          "rows": 13,
+          "settled_risk_units": 13,
+          "slate_dates": 9,
+          "voids": 0,
+          "wins": 3
+        }
+      },
+      "start": "2026-08-19"
+    },
+    {
+      "end": "2026-09-02",
+      "scores": {
+        "all_alt": {
+          "losses": 22,
+          "pitchers": 34,
+          "pnl": -11.794362,
+          "roi_pct": -33.6982,
+          "rows": 35,
+          "settled_risk_units": 35,
+          "slate_dates": 13,
+          "voids": 0,
+          "wins": 13
+        },
+        "consensus_core": {
+          "losses": 13,
+          "pitchers": 22,
+          "pnl": -6.174362,
+          "roi_pct": -26.8451,
+          "rows": 23,
+          "settled_risk_units": 23,
+          "slate_dates": 11,
+          "voids": 0,
+          "wins": 10
+        },
+        "mainline_all_locked_flat": {
+          "losses": 112,
+          "pitchers": 152,
+          "pnl": -3.059465,
+          "roi_pct": -1.3019,
+          "rows": 235,
+          "settled_risk_units": 235,
+          "slate_dates": 14,
+          "voids": 0,
+          "wins": 123
+        },
+        "mainline_fire_weighted": {
+          "losses": 16,
+          "pitchers": 31,
+          "pnl": -2.052215,
+          "roi_pct": -5.8635,
+          "rows": 35,
+          "settled_risk_units": 35,
+          "slate_dates": 13,
+          "voids": 0,
+          "wins": 19
+        },
+        "reentry_expansion": {
+          "losses": 9,
+          "pitchers": 12,
+          "pnl": -5.62,
+          "roi_pct": -46.8333,
+          "rows": 12,
+          "settled_risk_units": 12,
+          "slate_dates": 8,
+          "voids": 0,
+          "wins": 3
+        }
+      },
+      "start": "2026-08-20"
+    },
+    {
+      "end": "2026-09-03",
+      "scores": {
+        "all_alt": {
+          "losses": 24,
+          "pitchers": 35,
+          "pnl": -13.736391,
+          "roi_pct": -37.1254,
+          "rows": 37,
+          "settled_risk_units": 37,
+          "slate_dates": 13,
+          "voids": 0,
+          "wins": 13
+        },
+        "consensus_core": {
+          "losses": 13,
+          "pitchers": 22,
+          "pnl": -6.116391,
+          "roi_pct": -26.593,
+          "rows": 23,
+          "settled_risk_units": 23,
+          "slate_dates": 11,
+          "voids": 0,
+          "wins": 10
+        },
+        "mainline_all_locked_flat": {
+          "losses": 114,
+          "pitchers": 150,
+          "pnl": -6.490834,
+          "roi_pct": -2.7504,
+          "rows": 236,
+          "settled_risk_units": 236,
+          "slate_dates": 14,
+          "voids": 0,
+          "wins": 122
+        },
+        "mainline_fire_weighted": {
+          "losses": 17,
+          "pitchers": 31,
+          "pnl": -3.871887,
+          "roi_pct": -11.0625,
+          "rows": 35,
+          "settled_risk_units": 35,
+          "slate_dates": 13,
+          "voids": 0,
+          "wins": 18
+        },
+        "reentry_expansion": {
+          "losses": 11,
+          "pitchers": 14,
+          "pnl": -7.62,
+          "roi_pct": -54.4286,
+          "rows": 14,
+          "settled_risk_units": 14,
+          "slate_dates": 9,
+          "voids": 0,
+          "wins": 3
+        }
+      },
+      "start": "2026-08-21"
+    }
+  ],
+  "slices": {
+    "all_alt": {
+      "archetype": {
+        "deep_starter": {
+          "losses": 5,
+          "pitchers": 6,
+          "pnl": -2.818437,
+          "roi_pct": -35.2305,
+          "rows": 8,
+          "settled_risk_units": 8,
+          "slate_dates": 8,
+          "voids": 0,
+          "wins": 3
+        },
+        "high_k_deep_starter": {
+          "losses": 1,
+          "pitchers": 6,
+          "pnl": 4.366977,
+          "roi_pct": 62.3854,
+          "rows": 7,
+          "settled_risk_units": 7,
+          "slate_dates": 7,
+          "voids": 0,
+          "wins": 6
+        },
+        "high_k_standard": {
+          "losses": 16,
+          "pitchers": 21,
+          "pnl": -8.498223,
+          "roi_pct": -33.9929,
+          "rows": 25,
+          "settled_risk_units": 25,
+          "slate_dates": 18,
+          "voids": 0,
+          "wins": 9
+        },
+        "low_k_standard": {
+          "losses": 6,
+          "pitchers": 8,
+          "pnl": -3.315008,
+          "roi_pct": -33.1501,
+          "rows": 10,
+          "settled_risk_units": 10,
+          "slate_dates": 8,
+          "voids": 0,
+          "wins": 4
+        },
+        "short_leash": {
+          "losses": 3,
+          "pitchers": 4,
+          "pnl": -2.295775,
+          "roi_pct": -57.3944,
+          "rows": 4,
+          "settled_risk_units": 4,
+          "slate_dates": 4,
+          "voids": 0,
+          "wins": 1
+        },
+        "standard_starter": {
+          "losses": 32,
+          "pitchers": 47,
+          "pnl": -12.328722,
+          "roi_pct": -21.2564,
+          "rows": 59,
+          "settled_risk_units": 58,
+          "slate_dates": 35,
+          "voids": 1,
+          "wins": 26
+        }
+      },
+      "book": {
+        "BetMGM": {
+          "losses": 1,
+          "pitchers": 1,
+          "pnl": -1.0,
+          "roi_pct": -100.0,
+          "rows": 1,
+          "settled_risk_units": 1,
+          "slate_dates": 1,
+          "voids": 0,
+          "wins": 0
+        },
+        "DraftKings": {
+          "losses": 1,
+          "pitchers": 1,
+          "pnl": -1.0,
+          "roi_pct": -100.0,
+          "rows": 1,
+          "settled_risk_units": 1,
+          "slate_dates": 1,
+          "voids": 0,
+          "wins": 0
+        },
+        "FanDuel": {
+          "losses": 61,
+          "pitchers": 85,
+          "pnl": -22.889187,
+          "roi_pct": -20.8084,
+          "rows": 111,
+          "settled_risk_units": 110,
+          "slate_dates": 38,
+          "voids": 1,
+          "wins": 49
+        }
+      },
+      "exact_provider": {
+        "propline": {
+          "losses": 1,
+          "pitchers": 3,
+          "pnl": 0.316701,
+          "roi_pct": 10.5567,
+          "rows": 3,
+          "settled_risk_units": 3,
+          "slate_dates": 3,
+          "voids": 0,
+          "wins": 2
+        },
+        "therundown": {
+          "losses": 62,
+          "pitchers": 85,
+          "pnl": -25.205889,
+          "roi_pct": -23.1247,
+          "rows": 110,
+          "settled_risk_units": 109,
+          "slate_dates": 38,
+          "voids": 1,
+          "wins": 47
+        }
+      },
+      "final_clv": {
+        "beat_close_price": {
+          "losses": 11,
+          "pitchers": 18,
+          "pnl": -5.910976,
+          "roi_pct": -32.8388,
+          "rows": 18,
+          "settled_risk_units": 18,
+          "slate_dates": 14,
+          "voids": 0,
+          "wins": 7
+        },
+        "neutral_close": {
+          "losses": 38,
+          "pitchers": 51,
+          "pnl": -17.927839,
+          "roi_pct": -28.9159,
+          "rows": 62,
+          "settled_risk_units": 62,
+          "slate_dates": 29,
+          "voids": 0,
+          "wins": 24
+        },
+        "unknown": {
+          "losses": 9,
+          "pitchers": 23,
+          "pnl": 0.190862,
+          "roi_pct": 0.8676,
+          "rows": 23,
+          "settled_risk_units": 22,
+          "slate_dates": 13,
+          "voids": 1,
+          "wins": 13
+        },
+        "worse_close_price": {
+          "losses": 5,
+          "pitchers": 10,
+          "pnl": -1.241235,
+          "roi_pct": -12.4123,
+          "rows": 10,
+          "settled_risk_units": 10,
+          "slate_dates": 7,
+          "voids": 0,
+          "wins": 5
+        }
+      },
+      "leash": {
+        "high": {
+          "losses": 3,
+          "pitchers": 4,
+          "pnl": -2.295775,
+          "roi_pct": -57.3944,
+          "rows": 4,
+          "settled_risk_units": 4,
+          "slate_dates": 4,
+          "voids": 0,
+          "wins": 1
+        },
+        "medium": {
+          "losses": 1,
+          "pitchers": 3,
+          "pnl": 0.824638,
+          "roi_pct": 27.4879,
+          "rows": 3,
+          "settled_risk_units": 3,
+          "slate_dates": 3,
+          "voids": 0,
+          "wins": 2
+        },
+        "normal": {
+          "losses": 59,
+          "pitchers": 81,
+          "pnl": -23.41805,
+          "roi_pct": -22.3029,
+          "rows": 106,
+          "settled_risk_units": 105,
+          "slate_dates": 38,
+          "voids": 1,
+          "wins": 46
+        }
+      },
+      "line": {
+        "2.5": {
+          "losses": 1,
+          "pitchers": 2,
+          "pnl": -0.358974,
+          "roi_pct": -17.9487,
+          "rows": 2,
+          "settled_risk_units": 2,
+          "slate_dates": 2,
+          "voids": 0,
+          "wins": 1
+        },
+        "3.5": {
+          "losses": 14,
+          "pitchers": 21,
+          "pnl": -7.504136,
+          "roi_pct": -32.6267,
+          "rows": 23,
+          "settled_risk_units": 23,
+          "slate_dates": 18,
+          "voids": 0,
+          "wins": 9
+        },
+        "4.5": {
+          "losses": 29,
+          "pitchers": 40,
+          "pnl": -16.680807,
+          "roi_pct": -36.2626,
+          "rows": 47,
+          "settled_risk_units": 46,
+          "slate_dates": 30,
+          "voids": 1,
+          "wins": 17
+        },
+        "5.5": {
+          "losses": 11,
+          "pitchers": 23,
+          "pnl": 2.965436,
+          "roi_pct": 10.5908,
+          "rows": 28,
+          "settled_risk_units": 28,
+          "slate_dates": 22,
+          "voids": 0,
+          "wins": 17
+        },
+        "6.5": {
+          "losses": 4,
+          "pitchers": 7,
+          "pnl": -0.079936,
+          "roi_pct": -0.9992,
+          "rows": 8,
+          "settled_risk_units": 8,
+          "slate_dates": 8,
+          "voids": 0,
+          "wins": 4
+        },
+        "7.5": {
+          "losses": 4,
+          "pitchers": 4,
+          "pnl": -4.0,
+          "roi_pct": -100.0,
+          "rows": 4,
+          "settled_risk_units": 4,
+          "slate_dates": 4,
+          "voids": 0,
+          "wins": 0
+        },
+        "8.5": {
+          "losses": 0,
+          "pitchers": 1,
+          "pnl": 0.769231,
+          "roi_pct": 76.9231,
+          "rows": 1,
+          "settled_risk_units": 1,
+          "slate_dates": 1,
+          "voids": 0,
+          "wins": 1
+        }
+      },
+      "model_market": {
+        "model_agrees_with_favorite": {
+          "losses": 39,
+          "pitchers": 65,
+          "pnl": -11.320461,
+          "roi_pct": -14.5134,
+          "rows": 79,
+          "settled_risk_units": 78,
+          "slate_dates": 35,
+          "voids": 1,
+          "wins": 39
+        },
+        "model_fades_favorite": {
+          "losses": 24,
+          "pitchers": 28,
+          "pnl": -13.568726,
+          "roi_pct": -39.908,
+          "rows": 34,
+          "settled_risk_units": 34,
+          "slate_dates": 23,
+          "voids": 0,
+          "wins": 10
+        }
+      },
+      "official_verdict": {
+        "FIRE 1u": {
+          "losses": 12,
+          "pitchers": 24,
+          "pnl": -1.979032,
+          "roi_pct": -7.6117,
+          "rows": 26,
+          "settled_risk_units": 26,
+          "slate_dates": 20,
+          "voids": 0,
+          "wins": 14
+        },
+        "LEAN": {
+          "losses": 51,
+          "pitchers": 70,
+          "pnl": -22.910156,
+          "roi_pct": -26.6397,
+          "rows": 87,
+          "settled_risk_units": 86,
+          "slate_dates": 37,
+          "voids": 1,
+          "wins": 35
+        }
+      },
+      "opportunity": {
+        "deep_starter": {
+          "losses": 6,
+          "pitchers": 12,
+          "pnl": 1.54854,
+          "roi_pct": 10.3236,
+          "rows": 15,
+          "settled_risk_units": 15,
+          "slate_dates": 13,
+          "voids": 0,
+          "wins": 9
+        },
+        "normal": {
+          "losses": 54,
+          "pitchers": 74,
+          "pnl": -24.141953,
+          "roi_pct": -25.9591,
+          "rows": 94,
+          "settled_risk_units": 93,
+          "slate_dates": 38,
+          "voids": 1,
+          "wins": 39
+        },
+        "short_leash": {
+          "losses": 3,
+          "pitchers": 4,
+          "pnl": -2.295775,
+          "roi_pct": -57.3944,
+          "rows": 4,
+          "settled_risk_units": 4,
+          "slate_dates": 4,
+          "voids": 0,
+          "wins": 1
+        }
+      },
+      "path_b": {
+        "all_real_splits": {
+          "losses": 11,
+          "pitchers": 20,
+          "pnl": -4.298472,
+          "roi_pct": -21.4924,
+          "rows": 20,
+          "settled_risk_units": 20,
+          "slate_dates": 16,
+          "voids": 0,
+          "wins": 9
+        },
+        "mixed_or_fallback_splits": {
+          "losses": 52,
+          "pitchers": 75,
+          "pnl": -20.590715,
+          "roi_pct": -22.3812,
+          "rows": 92,
+          "settled_risk_units": 92,
+          "slate_dates": 36,
+          "voids": 0,
+          "wins": 40
+        },
+        "unknown": {
+          "losses": 0,
+          "pitchers": 1,
+          "pnl": 0.0,
+          "roi_pct": null,
+          "rows": 1,
+          "settled_risk_units": 0,
+          "slate_dates": 1,
+          "voids": 1,
+          "wins": 0
+        }
+      },
+      "price_sign": {
+        "minus": {
+          "losses": 43,
+          "pitchers": 71,
+          "pnl": -12.529187,
+          "roi_pct": -14.7402,
+          "rows": 86,
+          "settled_risk_units": 85,
+          "slate_dates": 37,
+          "voids": 1,
+          "wins": 42
+        },
+        "plus": {
+          "losses": 20,
+          "pitchers": 24,
+          "pnl": -12.36,
+          "roi_pct": -45.7778,
+          "rows": 27,
+          "settled_risk_units": 27,
+          "slate_dates": 19,
+          "voids": 0,
+          "wins": 7
+        }
+      },
+      "provider_posture": {
+        "therundown": {
+          "losses": 7,
+          "pitchers": 17,
+          "pnl": 0.345116,
+          "roi_pct": 2.0301,
+          "rows": 17,
+          "settled_risk_units": 17,
+          "slate_dates": 12,
+          "voids": 0,
+          "wins": 10
+        },
+        "therundown_propline": {
+          "losses": 56,
+          "pitchers": 78,
+          "pnl": -25.234304,
+          "roi_pct": -26.5624,
+          "rows": 96,
+          "settled_risk_units": 95,
+          "slate_dates": 36,
+          "voids": 1,
+          "wins": 39
+        }
+      },
+      "quality": {
+        "capped": {
+          "losses": 17,
+          "pitchers": 30,
+          "pnl": -4.601948,
+          "roi_pct": -13.1484,
+          "rows": 35,
+          "settled_risk_units": 35,
+          "slate_dates": 22,
+          "voids": 0,
+          "wins": 18
+        },
+        "clean": {
+          "losses": 46,
+          "pitchers": 64,
+          "pnl": -20.287239,
+          "roi_pct": -26.3471,
+          "rows": 78,
+          "settled_risk_units": 77,
+          "slate_dates": 35,
+          "voids": 1,
+          "wins": 31
+        }
+      },
+      "side": {
+        "over": {
+          "losses": 33,
+          "pitchers": 50,
+          "pnl": -15.112082,
+          "roi_pct": -26.9859,
+          "rows": 56,
+          "settled_risk_units": 56,
+          "slate_dates": 32,
+          "voids": 0,
+          "wins": 23
+        },
+        "under": {
+          "losses": 30,
+          "pitchers": 50,
+          "pnl": -9.777106,
+          "roi_pct": -17.4591,
+          "rows": 57,
+          "settled_risk_units": 56,
+          "slate_dates": 31,
+          "voids": 1,
+          "wins": 26
+        }
+      },
+      "timing": {
+        "pre_30": {
+          "losses": 63,
+          "pitchers": 85,
+          "pnl": -24.889187,
+          "roi_pct": -22.2225,
+          "rows": 113,
+          "settled_risk_units": 112,
+          "slate_dates": 38,
+          "voids": 1,
+          "wins": 49
+        }
+      },
+      "v2_status": {
+        "selected": {
+          "losses": 63,
+          "pitchers": 85,
+          "pnl": -24.889187,
+          "roi_pct": -22.2225,
+          "rows": 113,
+          "settled_risk_units": 112,
+          "slate_dates": 38,
+          "voids": 1,
+          "wins": 49
+        }
+      },
+      "workload": {
+        "complete": {
+          "losses": 63,
+          "pitchers": 85,
+          "pnl": -24.889187,
+          "roi_pct": -22.2225,
+          "rows": 113,
+          "settled_risk_units": 112,
+          "slate_dates": 38,
+          "voids": 1,
+          "wins": 49
+        }
+      }
+    },
+    "consensus_core": {
+      "archetype": {
+        "deep_starter": {
+          "losses": 1,
+          "pitchers": 3,
+          "pnl": 1.181563,
+          "roi_pct": 29.5391,
+          "rows": 4,
+          "settled_risk_units": 4,
+          "slate_dates": 4,
+          "voids": 0,
+          "wins": 3
+        },
+        "high_k_deep_starter": {
+          "losses": 0,
+          "pitchers": 3,
+          "pnl": 2.266585,
+          "roi_pct": 75.5528,
+          "rows": 3,
+          "settled_risk_units": 3,
+          "slate_dates": 3,
+          "voids": 0,
+          "wins": 3
+        },
+        "high_k_standard": {
+          "losses": 7,
+          "pitchers": 12,
+          "pnl": -3.51338,
+          "roi_pct": -29.2782,
+          "rows": 12,
+          "settled_risk_units": 12,
+          "slate_dates": 10,
+          "voids": 0,
+          "wins": 5
+        },
+        "low_k_standard": {
+          "losses": 6,
+          "pitchers": 8,
+          "pnl": -3.315008,
+          "roi_pct": -33.1501,
+          "rows": 10,
+          "settled_risk_units": 10,
+          "slate_dates": 8,
+          "voids": 0,
+          "wins": 4
+        },
+        "short_leash": {
+          "losses": 1,
+          "pitchers": 2,
+          "pnl": -0.295775,
+          "roi_pct": -14.7887,
+          "rows": 2,
+          "settled_risk_units": 2,
+          "slate_dates": 2,
+          "voids": 0,
+          "wins": 1
+        },
+        "standard_starter": {
+          "losses": 23,
+          "pitchers": 37,
+          "pnl": -7.413678,
+          "roi_pct": -16.4748,
+          "rows": 46,
+          "settled_risk_units": 45,
+          "slate_dates": 30,
+          "voids": 1,
+          "wins": 22
+        }
+      },
+      "book": {
+        "BetMGM": {
+          "losses": 1,
+          "pitchers": 1,
+          "pnl": -1.0,
+          "roi_pct": -100.0,
+          "rows": 1,
+          "settled_risk_units": 1,
+          "slate_dates": 1,
+          "voids": 0,
+          "wins": 0
+        },
+        "DraftKings": {
+          "losses": 1,
+          "pitchers": 1,
+          "pnl": -1.0,
+          "roi_pct": -100.0,
+          "rows": 1,
+          "settled_risk_units": 1,
+          "slate_dates": 1,
+          "voids": 0,
+          "wins": 0
+        },
+        "FanDuel": {
+          "losses": 36,
+          "pitchers": 63,
+          "pnl": -9.089692,
+          "roi_pct": -12.2834,
+          "rows": 75,
+          "settled_risk_units": 74,
+          "slate_dates": 35,
+          "voids": 1,
+          "wins": 38
+        }
+      },
+      "exact_provider": {
+        "propline": {
+          "losses": 1,
+          "pitchers": 3,
+          "pnl": 0.316701,
+          "roi_pct": 10.5567,
+          "rows": 3,
+          "settled_risk_units": 3,
+          "slate_dates": 3,
+          "voids": 0,
+          "wins": 2
+        },
+        "therundown": {
+          "losses": 37,
+          "pitchers": 63,
+          "pnl": -11.406393,
+          "roi_pct": -15.6252,
+          "rows": 74,
+          "settled_risk_units": 73,
+          "slate_dates": 34,
+          "voids": 1,
+          "wins": 36
+        }
+      },
+      "final_clv": {
+        "beat_close_price": {
+          "losses": 10,
+          "pitchers": 17,
+          "pnl": -4.910976,
+          "roi_pct": -28.8881,
+          "rows": 17,
+          "settled_risk_units": 17,
+          "slate_dates": 13,
+          "voids": 0,
+          "wins": 7
+        },
+        "neutral_close": {
+          "losses": 20,
+          "pitchers": 32,
+          "pnl": -8.313186,
+          "roi_pct": -23.0922,
+          "rows": 36,
+          "settled_risk_units": 36,
+          "slate_dates": 19,
+          "voids": 0,
+          "wins": 16
+        },
+        "unknown": {
+          "losses": 6,
+          "pitchers": 19,
+          "pnl": 2.070862,
+          "roi_pct": 11.5048,
+          "rows": 19,
+          "settled_risk_units": 18,
+          "slate_dates": 13,
+          "voids": 1,
+          "wins": 12
+        },
+        "worse_close_price": {
+          "losses": 2,
+          "pitchers": 5,
+          "pnl": 0.063609,
+          "roi_pct": 1.2722,
+          "rows": 5,
+          "settled_risk_units": 5,
+          "slate_dates": 4,
+          "voids": 0,
+          "wins": 3
+        }
+      },
+      "leash": {
+        "high": {
+          "losses": 1,
+          "pitchers": 2,
+          "pnl": -0.295775,
+          "roi_pct": -14.7887,
+          "rows": 2,
+          "settled_risk_units": 2,
+          "slate_dates": 2,
+          "voids": 0,
+          "wins": 1
+        },
+        "medium": {
+          "losses": 1,
+          "pitchers": 2,
+          "pnl": -0.275362,
+          "roi_pct": -13.7681,
+          "rows": 2,
+          "settled_risk_units": 2,
+          "slate_dates": 2,
+          "voids": 0,
+          "wins": 1
+        },
+        "normal": {
+          "losses": 36,
+          "pitchers": 59,
+          "pnl": -10.518555,
+          "roi_pct": -14.6091,
+          "rows": 73,
+          "settled_risk_units": 72,
+          "slate_dates": 35,
+          "voids": 1,
+          "wins": 36
+        }
+      },
+      "line": {
+        "2.5": {
+          "losses": 1,
+          "pitchers": 2,
+          "pnl": -0.358974,
+          "roi_pct": -17.9487,
+          "rows": 2,
+          "settled_risk_units": 2,
+          "slate_dates": 2,
+          "voids": 0,
+          "wins": 1
+        },
+        "3.5": {
+          "losses": 8,
+          "pitchers": 14,
+          "pnl": -2.564136,
+          "roi_pct": -16.0259,
+          "rows": 16,
+          "settled_risk_units": 16,
+          "slate_dates": 12,
+          "voids": 0,
+          "wins": 8
+        },
+        "4.5": {
+          "losses": 23,
+          "pitchers": 34,
+          "pnl": -11.565763,
+          "roi_pct": -29.6558,
+          "rows": 40,
+          "settled_risk_units": 39,
+          "slate_dates": 27,
+          "voids": 1,
+          "wins": 16
+        },
+        "5.5": {
+          "losses": 5,
+          "pitchers": 17,
+          "pnl": 3.57951,
+          "roi_pct": 21.0559,
+          "rows": 17,
+          "settled_risk_units": 17,
+          "slate_dates": 17,
+          "voids": 0,
+          "wins": 12
+        },
+        "6.5": {
+          "losses": 1,
+          "pitchers": 2,
+          "pnl": -0.180328,
+          "roi_pct": -9.0164,
+          "rows": 2,
+          "settled_risk_units": 2,
+          "slate_dates": 2,
+          "voids": 0,
+          "wins": 1
+        }
+      },
+      "model_market": {
+        "model_agrees_with_favorite": {
+          "losses": 38,
+          "pitchers": 63,
+          "pnl": -11.089692,
+          "roi_pct": -14.5917,
+          "rows": 77,
+          "settled_risk_units": 76,
+          "slate_dates": 35,
+          "voids": 1,
+          "wins": 38
+        }
+      },
+      "official_verdict": {
+        "FIRE 1u": {
+          "losses": 12,
+          "pitchers": 23,
+          "pnl": -2.863987,
+          "roi_pct": -11.4559,
+          "rows": 25,
+          "settled_risk_units": 25,
+          "slate_dates": 19,
+          "voids": 0,
+          "wins": 13
+        },
+        "LEAN": {
+          "losses": 26,
+          "pitchers": 47,
+          "pnl": -8.225705,
+          "roi_pct": -16.1288,
+          "rows": 52,
+          "settled_risk_units": 51,
+          "slate_dates": 30,
+          "voids": 1,
+          "wins": 25
+        }
+      },
+      "opportunity": {
+        "deep_starter": {
+          "losses": 1,
+          "pitchers": 6,
+          "pnl": 3.448148,
+          "roi_pct": 49.2593,
+          "rows": 7,
+          "settled_risk_units": 7,
+          "slate_dates": 7,
+          "voids": 0,
+          "wins": 6
+        },
+        "normal": {
+          "losses": 36,
+          "pitchers": 56,
+          "pnl": -14.242065,
+          "roi_pct": -21.2568,
+          "rows": 68,
+          "settled_risk_units": 67,
+          "slate_dates": 34,
+          "voids": 1,
+          "wins": 31
+        },
+        "short_leash": {
+          "losses": 1,
+          "pitchers": 2,
+          "pnl": -0.295775,
+          "roi_pct": -14.7887,
+          "rows": 2,
+          "settled_risk_units": 2,
+          "slate_dates": 2,
+          "voids": 0,
+          "wins": 1
+        }
+      },
+      "path_b": {
+        "all_real_splits": {
+          "losses": 5,
+          "pitchers": 12,
+          "pnl": -0.384398,
+          "roi_pct": -3.2033,
+          "rows": 12,
+          "settled_risk_units": 12,
+          "slate_dates": 11,
+          "voids": 0,
+          "wins": 7
+        },
+        "mixed_or_fallback_splits": {
+          "losses": 33,
+          "pitchers": 55,
+          "pnl": -10.705294,
+          "roi_pct": -16.727,
+          "rows": 64,
+          "settled_risk_units": 64,
+          "slate_dates": 32,
+          "voids": 0,
+          "wins": 31
+        },
+        "unknown": {
+          "losses": 0,
+          "pitchers": 1,
+          "pnl": 0.0,
+          "roi_pct": null,
+          "rows": 1,
+          "settled_risk_units": 0,
+          "slate_dates": 1,
+          "voids": 1,
+          "wins": 0
+        }
+      },
+      "price_sign": {
+        "minus": {
+          "losses": 38,
+          "pitchers": 63,
+          "pnl": -11.089692,
+          "roi_pct": -14.5917,
+          "rows": 77,
+          "settled_risk_units": 76,
+          "slate_dates": 35,
+          "voids": 1,
+          "wins": 38
+        }
+      },
+      "provider_posture": {
+        "therundown": {
+          "losses": 6,
+          "pitchers": 15,
+          "pnl": 0.41919,
+          "roi_pct": 2.7946,
+          "rows": 15,
+          "settled_risk_units": 15,
+          "slate_dates": 11,
+          "voids": 0,
+          "wins": 9
+        },
+        "therundown_propline": {
+          "losses": 32,
+          "pitchers": 56,
+          "pnl": -11.508882,
+          "roi_pct": -18.867,
+          "rows": 62,
+          "settled_risk_units": 61,
+          "slate_dates": 31,
+          "voids": 1,
+          "wins": 29
+        }
+      },
+      "quality": {
+        "capped": {
+          "losses": 17,
+          "pitchers": 30,
+          "pnl": -4.601948,
+          "roi_pct": -13.1484,
+          "rows": 35,
+          "settled_risk_units": 35,
+          "slate_dates": 22,
+          "voids": 0,
+          "wins": 18
+        },
+        "clean": {
+          "losses": 21,
+          "pitchers": 40,
+          "pnl": -6.487744,
+          "roi_pct": -15.8238,
+          "rows": 42,
+          "settled_risk_units": 41,
+          "slate_dates": 27,
+          "voids": 1,
+          "wins": 20
+        }
+      },
+      "side": {
+        "over": {
+          "losses": 20,
+          "pitchers": 35,
+          "pnl": -7.11743,
+          "roi_pct": -18.7301,
+          "rows": 38,
+          "settled_risk_units": 38,
+          "slate_dates": 24,
+          "voids": 0,
+          "wins": 18
+        },
+        "under": {
+          "losses": 18,
+          "pitchers": 37,
+          "pnl": -3.972262,
+          "roi_pct": -10.4533,
+          "rows": 39,
+          "settled_risk_units": 38,
+          "slate_dates": 26,
+          "voids": 1,
+          "wins": 20
+        }
+      },
+      "timing": {
+        "pre_30": {
+          "losses": 38,
+          "pitchers": 63,
+          "pnl": -11.089692,
+          "roi_pct": -14.5917,
+          "rows": 77,
+          "settled_risk_units": 76,
+          "slate_dates": 35,
+          "voids": 1,
+          "wins": 38
+        }
+      },
+      "v2_status": {
+        "selected": {
+          "losses": 38,
+          "pitchers": 63,
+          "pnl": -11.089692,
+          "roi_pct": -14.5917,
+          "rows": 77,
+          "settled_risk_units": 76,
+          "slate_dates": 35,
+          "voids": 1,
+          "wins": 38
+        }
+      },
+      "workload": {
+        "complete": {
+          "losses": 38,
+          "pitchers": 63,
+          "pnl": -11.089692,
+          "roi_pct": -14.5917,
+          "rows": 77,
+          "settled_risk_units": 76,
+          "slate_dates": 35,
+          "voids": 1,
+          "wins": 38
+        }
+      }
+    },
+    "mainline_all_locked_flat": {
+      "archetype": {
+        "deep_starter": {
+          "losses": 26,
+          "pitchers": 24,
+          "pnl": -5.957804,
+          "roi_pct": -12.1588,
+          "rows": 49,
+          "settled_risk_units": 49,
+          "slate_dates": 26,
+          "voids": 0,
+          "wins": 23
+        },
+        "high_k_deep_starter": {
+          "losses": 11,
+          "pitchers": 14,
+          "pnl": 7.41989,
+          "roi_pct": 23.1872,
+          "rows": 32,
+          "settled_risk_units": 32,
+          "slate_dates": 24,
+          "voids": 0,
+          "wins": 21
+        },
+        "high_k_standard": {
+          "losses": 72,
+          "pitchers": 65,
+          "pnl": -0.074842,
+          "roi_pct": -0.0502,
+          "rows": 149,
+          "settled_risk_units": 149,
+          "slate_dates": 42,
+          "voids": 0,
+          "wins": 77
+        },
+        "low_k_standard": {
+          "losses": 27,
+          "pitchers": 22,
+          "pnl": -6.652047,
+          "roi_pct": -13.3041,
+          "rows": 50,
+          "settled_risk_units": 50,
+          "slate_dates": 28,
+          "voids": 0,
+          "wins": 23
+        },
+        "short_leash": {
+          "losses": 47,
+          "pitchers": 50,
+          "pnl": -5.978067,
+          "roi_pct": -6.163,
+          "rows": 97,
+          "settled_risk_units": 97,
+          "slate_dates": 39,
+          "voids": 0,
+          "wins": 50
+        },
+        "standard_starter": {
+          "losses": 170,
+          "pitchers": 123,
+          "pnl": -31.077657,
+          "roi_pct": -9.2219,
+          "rows": 339,
+          "settled_risk_units": 337,
+          "slate_dates": 42,
+          "voids": 2,
+          "wins": 167
+        },
+        "unknown": {
+          "losses": 5,
+          "pitchers": 10,
+          "pnl": -1.169534,
+          "roi_pct": -12.9948,
+          "rows": 10,
+          "settled_risk_units": 9,
+          "slate_dates": 6,
+          "voids": 1,
+          "wins": 4
+        }
+      },
+      "book": {
+        "BetMGM": {
+          "losses": 3,
+          "pitchers": 5,
+          "pnl": -1.047619,
+          "roi_pct": -20.9524,
+          "rows": 5,
+          "settled_risk_units": 5,
+          "slate_dates": 5,
+          "voids": 0,
+          "wins": 2
+        },
+        "BetRivers": {
+          "losses": 0,
+          "pitchers": 1,
+          "pnl": 0.719424,
+          "roi_pct": 71.9424,
+          "rows": 1,
+          "settled_risk_units": 1,
+          "slate_dates": 1,
+          "voids": 0,
+          "wins": 1
+        },
+        "DraftKings": {
+          "losses": 5,
+          "pitchers": 6,
+          "pnl": -0.310649,
+          "roi_pct": -3.1065,
+          "rows": 10,
+          "settled_risk_units": 10,
+          "slate_dates": 9,
+          "voids": 0,
+          "wins": 5
+        },
+        "FanDuel": {
+          "losses": 350,
+          "pitchers": 185,
+          "pnl": -42.851218,
+          "roi_pct": -6.061,
+          "rows": 710,
+          "settled_risk_units": 707,
+          "slate_dates": 42,
+          "voids": 3,
+          "wins": 357
+        }
+      },
+      "exact_provider": {
+        "propline": {
+          "losses": 7,
+          "pitchers": 16,
+          "pnl": 3.99935,
+          "roi_pct": 19.9967,
+          "rows": 20,
+          "settled_risk_units": 20,
+          "slate_dates": 14,
+          "voids": 0,
+          "wins": 13
+        },
+        "therundown": {
+          "losses": 348,
+          "pitchers": 186,
+          "pnl": -48.319876,
+          "roi_pct": -6.9425,
+          "rows": 699,
+          "settled_risk_units": 696,
+          "slate_dates": 42,
+          "voids": 3,
+          "wins": 348
+        },
+        "unknown": {
+          "losses": 3,
+          "pitchers": 7,
+          "pnl": 0.830466,
+          "roi_pct": 11.8638,
+          "rows": 7,
+          "settled_risk_units": 7,
+          "slate_dates": 3,
+          "voids": 0,
+          "wins": 4
+        }
+      },
+      "final_clv": {
+        "beat_close_price": {
+          "losses": 11,
+          "pitchers": 18,
+          "pnl": -5.910976,
+          "roi_pct": -32.8388,
+          "rows": 18,
+          "settled_risk_units": 18,
+          "slate_dates": 14,
+          "voids": 0,
+          "wins": 7
+        },
+        "neutral_close": {
+          "losses": 38,
+          "pitchers": 51,
+          "pnl": -17.927839,
+          "roi_pct": -28.9159,
+          "rows": 62,
+          "settled_risk_units": 62,
+          "slate_dates": 29,
+          "voids": 0,
+          "wins": 24
+        },
+        "not_requested": {
+          "losses": 295,
+          "pitchers": 187,
+          "pnl": -18.600874,
+          "roi_pct": -3.0443,
+          "rows": 613,
+          "settled_risk_units": 611,
+          "slate_dates": 42,
+          "voids": 2,
+          "wins": 316
+        },
+        "unknown": {
+          "losses": 9,
+          "pitchers": 23,
+          "pnl": 0.190862,
+          "roi_pct": 0.8676,
+          "rows": 23,
+          "settled_risk_units": 22,
+          "slate_dates": 13,
+          "voids": 1,
+          "wins": 13
+        },
+        "worse_close_price": {
+          "losses": 5,
+          "pitchers": 10,
+          "pnl": -1.241235,
+          "roi_pct": -12.4123,
+          "rows": 10,
+          "settled_risk_units": 10,
+          "slate_dates": 7,
+          "voids": 0,
+          "wins": 5
+        }
+      },
+      "leash": {
+        "high": {
+          "losses": 47,
+          "pitchers": 50,
+          "pnl": -5.978067,
+          "roi_pct": -6.163,
+          "rows": 97,
+          "settled_risk_units": 97,
+          "slate_dates": 39,
+          "voids": 0,
+          "wins": 50
+        },
+        "medium": {
+          "losses": 10,
+          "pitchers": 18,
+          "pnl": 2.122167,
+          "roi_pct": 8.4887,
+          "rows": 25,
+          "settled_risk_units": 25,
+          "slate_dates": 17,
+          "voids": 0,
+          "wins": 15
+        },
+        "normal": {
+          "losses": 296,
+          "pitchers": 178,
+          "pnl": -38.464627,
+          "roi_pct": -6.4974,
+          "rows": 594,
+          "settled_risk_units": 592,
+          "slate_dates": 42,
+          "voids": 2,
+          "wins": 296
+        },
+        "unknown": {
+          "losses": 5,
+          "pitchers": 10,
+          "pnl": -1.169534,
+          "roi_pct": -12.9948,
+          "rows": 10,
+          "settled_risk_units": 9,
+          "slate_dates": 6,
+          "voids": 1,
+          "wins": 4
+        }
+      },
+      "line": {
+        "1.5": {
+          "losses": 0,
+          "pitchers": 1,
+          "pnl": 0.729927,
+          "roi_pct": 72.9927,
+          "rows": 1,
+          "settled_risk_units": 1,
+          "slate_dates": 1,
+          "voids": 0,
+          "wins": 1
+        },
+        "2.5": {
+          "losses": 7,
+          "pitchers": 14,
+          "pnl": 5.448873,
+          "roi_pct": 25.947,
+          "rows": 21,
+          "settled_risk_units": 21,
+          "slate_dates": 14,
+          "voids": 0,
+          "wins": 14
+        },
+        "3.5": {
+          "losses": 79,
+          "pitchers": 84,
+          "pnl": -10.77076,
+          "roi_pct": -6.6899,
+          "rows": 161,
+          "settled_risk_units": 161,
+          "slate_dates": 41,
+          "voids": 0,
+          "wins": 82
+        },
+        "4.5": {
+          "losses": 131,
+          "pitchers": 117,
+          "pnl": -31.970951,
+          "roi_pct": -12.9963,
+          "rows": 248,
+          "settled_risk_units": 246,
+          "slate_dates": 42,
+          "voids": 2,
+          "wins": 115
+        },
+        "5.5": {
+          "losses": 90,
+          "pitchers": 87,
+          "pnl": -3.852948,
+          "roi_pct": -2.0604,
+          "rows": 187,
+          "settled_risk_units": 187,
+          "slate_dates": 41,
+          "voids": 0,
+          "wins": 97
+        },
+        "6.5": {
+          "losses": 28,
+          "pitchers": 32,
+          "pnl": 4.406749,
+          "roi_pct": 6.8855,
+          "rows": 64,
+          "settled_risk_units": 64,
+          "slate_dates": 33,
+          "voids": 0,
+          "wins": 36
+        },
+        "7.5": {
+          "losses": 19,
+          "pitchers": 14,
+          "pnl": -6.31037,
+          "roi_pct": -18.0296,
+          "rows": 36,
+          "settled_risk_units": 35,
+          "slate_dates": 23,
+          "voids": 1,
+          "wins": 16
+        },
+        "8.5": {
+          "losses": 3,
+          "pitchers": 4,
+          "pnl": -0.874807,
+          "roi_pct": -14.5801,
+          "rows": 6,
+          "settled_risk_units": 6,
+          "slate_dates": 5,
+          "voids": 0,
+          "wins": 3
+        },
+        "9.5": {
+          "losses": 1,
+          "pitchers": 1,
+          "pnl": -0.295775,
+          "roi_pct": -14.7887,
+          "rows": 2,
+          "settled_risk_units": 2,
+          "slate_dates": 2,
+          "voids": 0,
+          "wins": 1
+        }
+      },
+      "model_market": {
+        "model_agrees_with_favorite": {
+          "losses": 173,
+          "pitchers": 163,
+          "pnl": -18.904645,
+          "roi_pct": -4.8723,
+          "rows": 390,
+          "settled_risk_units": 388,
+          "slate_dates": 42,
+          "voids": 2,
+          "wins": 215
+        },
+        "model_fades_favorite": {
+          "losses": 180,
+          "pitchers": 160,
+          "pnl": -23.415882,
+          "roi_pct": -7.1828,
+          "rows": 326,
+          "settled_risk_units": 326,
+          "slate_dates": 42,
+          "voids": 0,
+          "wins": 146
+        },
+        "unknown": {
+          "losses": 5,
+          "pitchers": 10,
+          "pnl": -1.169534,
+          "roi_pct": -12.9948,
+          "rows": 10,
+          "settled_risk_units": 9,
+          "slate_dates": 6,
+          "voids": 1,
+          "wins": 4
+        }
+      },
+      "official_verdict": {
+        "FIRE 1u": {
+          "losses": 44,
+          "pitchers": 66,
+          "pnl": -9.085141,
+          "roi_pct": -9.9837,
+          "rows": 91,
+          "settled_risk_units": 91,
+          "slate_dates": 40,
+          "voids": 0,
+          "wins": 47
+        },
+        "LEAN": {
+          "losses": 314,
+          "pitchers": 187,
+          "pnl": -34.40492,
+          "roi_pct": -5.4438,
+          "rows": 635,
+          "settled_risk_units": 632,
+          "slate_dates": 42,
+          "voids": 3,
+          "wins": 318
+        }
+      },
+      "opportunity": {
+        "deep_starter": {
+          "losses": 37,
+          "pitchers": 37,
+          "pnl": 1.462086,
+          "roi_pct": 1.805,
+          "rows": 81,
+          "settled_risk_units": 81,
+          "slate_dates": 31,
+          "voids": 0,
+          "wins": 44
+        },
+        "normal": {
+          "losses": 269,
+          "pitchers": 173,
+          "pnl": -37.804546,
+          "roi_pct": -7.0531,
+          "rows": 538,
+          "settled_risk_units": 536,
+          "slate_dates": 42,
+          "voids": 2,
+          "wins": 267
+        },
+        "short_leash": {
+          "losses": 47,
+          "pitchers": 50,
+          "pnl": -5.978067,
+          "roi_pct": -6.163,
+          "rows": 97,
+          "settled_risk_units": 97,
+          "slate_dates": 39,
+          "voids": 0,
+          "wins": 50
+        },
+        "unknown": {
+          "losses": 5,
+          "pitchers": 10,
+          "pnl": -1.169534,
+          "roi_pct": -12.9948,
+          "rows": 10,
+          "settled_risk_units": 9,
+          "slate_dates": 6,
+          "voids": 1,
+          "wins": 4
+        }
+      },
+      "path_b": {
+        "all_real_splits": {
+          "losses": 52,
+          "pitchers": 80,
+          "pnl": -9.889592,
+          "roi_pct": -9.6957,
+          "rows": 102,
+          "settled_risk_units": 102,
+          "slate_dates": 42,
+          "voids": 0,
+          "wins": 50
+        },
+        "mixed_or_fallback_splits": {
+          "losses": 306,
+          "pitchers": 182,
+          "pnl": -33.600469,
+          "roi_pct": -5.4107,
+          "rows": 623,
+          "settled_risk_units": 621,
+          "slate_dates": 42,
+          "voids": 2,
+          "wins": 315
+        },
+        "unknown": {
+          "losses": 0,
+          "pitchers": 1,
+          "pnl": 0.0,
+          "roi_pct": null,
+          "rows": 1,
+          "settled_risk_units": 0,
+          "slate_dates": 1,
+          "voids": 1,
+          "wins": 0
+        }
+      },
+      "price_sign": {
+        "minus": {
+          "losses": 220,
+          "pitchers": 172,
+          "pnl": -23.990061,
+          "roi_pct": -4.9979,
+          "rows": 483,
+          "settled_risk_units": 480,
+          "slate_dates": 42,
+          "voids": 3,
+          "wins": 260
+        },
+        "plus": {
+          "losses": 138,
+          "pitchers": 138,
+          "pnl": -19.5,
+          "roi_pct": -8.0247,
+          "rows": 243,
+          "settled_risk_units": 243,
+          "slate_dates": 41,
+          "voids": 0,
+          "wins": 105
+        }
+      },
+      "provider_posture": {
+        "None": {
+          "losses": 38,
+          "pitchers": 79,
+          "pnl": 11.288362,
+          "roi_pct": 11.7587,
+          "rows": 96,
+          "settled_risk_units": 96,
+          "slate_dates": 37,
+          "voids": 0,
+          "wins": 58
+        },
+        "therundown": {
+          "losses": 7,
+          "pitchers": 17,
+          "pnl": 0.345116,
+          "roi_pct": 2.0301,
+          "rows": 17,
+          "settled_risk_units": 17,
+          "slate_dates": 12,
+          "voids": 0,
+          "wins": 10
+        },
+        "therundown_propline": {
+          "losses": 313,
+          "pitchers": 185,
+          "pnl": -55.123539,
+          "roi_pct": -9.0366,
+          "rows": 613,
+          "settled_risk_units": 610,
+          "slate_dates": 42,
+          "voids": 3,
+          "wins": 297
+        }
+      },
+      "quality": {
+        "capped": {
+          "losses": 183,
+          "pitchers": 164,
+          "pnl": -28.359222,
+          "roi_pct": -7.7273,
+          "rows": 367,
+          "settled_risk_units": 367,
+          "slate_dates": 42,
+          "voids": 0,
+          "wins": 184
+        },
+        "clean": {
+          "losses": 170,
+          "pitchers": 129,
+          "pnl": -13.961305,
+          "roi_pct": -4.0234,
+          "rows": 349,
+          "settled_risk_units": 347,
+          "slate_dates": 42,
+          "voids": 2,
+          "wins": 177
+        },
+        "unknown": {
+          "losses": 5,
+          "pitchers": 10,
+          "pnl": -1.169534,
+          "roi_pct": -12.9948,
+          "rows": 10,
+          "settled_risk_units": 9,
+          "slate_dates": 6,
+          "voids": 1,
+          "wins": 4
+        }
+      },
+      "side": {
+        "over": {
+          "losses": 154,
+          "pitchers": 142,
+          "pnl": -25.62826,
+          "roi_pct": -8.5713,
+          "rows": 299,
+          "settled_risk_units": 299,
+          "slate_dates": 42,
+          "voids": 0,
+          "wins": 145
+        },
+        "under": {
+          "losses": 204,
+          "pitchers": 159,
+          "pnl": -17.8618,
+          "roi_pct": -4.2127,
+          "rows": 427,
+          "settled_risk_units": 424,
+          "slate_dates": 42,
+          "voids": 3,
+          "wins": 220
+        }
+      },
+      "timing": {
+        "pre_15": {
+          "losses": 1,
+          "pitchers": 1,
+          "pnl": -1.0,
+          "roi_pct": -100.0,
+          "rows": 1,
+          "settled_risk_units": 1,
+          "slate_dates": 1,
+          "voids": 0,
+          "wins": 0
+        },
+        "pre_30": {
+          "losses": 351,
+          "pitchers": 188,
+          "pnl": -41.560527,
+          "roi_pct": -5.8454,
+          "rows": 713,
+          "settled_risk_units": 711,
+          "slate_dates": 42,
+          "voids": 2,
+          "wins": 360
+        },
+        "pre_5": {
+          "losses": 1,
+          "pitchers": 2,
+          "pnl": 0.24,
+          "roi_pct": 12.0,
+          "rows": 2,
+          "settled_risk_units": 2,
+          "slate_dates": 2,
+          "voids": 0,
+          "wins": 1
+        },
+        "unknown": {
+          "losses": 5,
+          "pitchers": 10,
+          "pnl": -1.169534,
+          "roi_pct": -12.9948,
+          "rows": 10,
+          "settled_risk_units": 9,
+          "slate_dates": 6,
+          "voids": 1,
+          "wins": 4
+        }
+      },
+      "v2_status": {
+        "no_frozen_v2": {
+          "losses": 3,
+          "pitchers": 7,
+          "pnl": 0.830466,
+          "roi_pct": 11.8638,
+          "rows": 7,
+          "settled_risk_units": 7,
+          "slate_dates": 3,
+          "voids": 0,
+          "wins": 4
+        },
+        "not_selected": {
+          "losses": 284,
+          "pitchers": 181,
+          "pnl": -18.443476,
+          "roi_pct": -3.1366,
+          "rows": 589,
+          "settled_risk_units": 588,
+          "slate_dates": 42,
+          "voids": 1,
+          "wins": 304
+        },
+        "pending": {
+          "losses": 8,
+          "pitchers": 17,
+          "pnl": -0.987864,
+          "roi_pct": -6.1741,
+          "rows": 17,
+          "settled_risk_units": 16,
+          "slate_dates": 13,
+          "voids": 1,
+          "wins": 8
+        },
+        "selected": {
+          "losses": 63,
+          "pitchers": 85,
+          "pnl": -24.889187,
+          "roi_pct": -22.2225,
+          "rows": 113,
+          "settled_risk_units": 112,
+          "slate_dates": 38,
+          "voids": 1,
+          "wins": 49
+        }
+      },
+      "workload": {
+        "complete": {
+          "losses": 350,
+          "pitchers": 184,
+          "pnl": -43.77386,
+          "roi_pct": -6.2003,
+          "rows": 708,
+          "settled_risk_units": 706,
+          "slate_dates": 42,
+          "voids": 2,
+          "wins": 356
+        },
+        "missing": {
+          "losses": 3,
+          "pitchers": 8,
+          "pnl": 1.453334,
+          "roi_pct": 18.1667,
+          "rows": 8,
+          "settled_risk_units": 8,
+          "slate_dates": 6,
+          "voids": 0,
+          "wins": 5
+        },
+        "unknown": {
+          "losses": 5,
+          "pitchers": 10,
+          "pnl": -1.169534,
+          "roi_pct": -12.9948,
+          "rows": 10,
+          "settled_risk_units": 9,
+          "slate_dates": 6,
+          "voids": 1,
+          "wins": 4
+        }
+      }
+    },
+    "mainline_fire_flat": {
+      "archetype": {
+        "deep_starter": {
+          "losses": 8,
+          "pitchers": 10,
+          "pnl": -1.838386,
+          "roi_pct": -11.4899,
+          "rows": 16,
+          "settled_risk_units": 16,
+          "slate_dates": 12,
+          "voids": 0,
+          "wins": 8
+        },
+        "high_k_deep_starter": {
+          "losses": 4,
+          "pitchers": 6,
+          "pnl": 1.252283,
+          "roi_pct": 11.3844,
+          "rows": 11,
+          "settled_risk_units": 11,
+          "slate_dates": 11,
+          "voids": 0,
+          "wins": 7
+        },
+        "high_k_standard": {
+          "losses": 6,
+          "pitchers": 10,
+          "pnl": -1.848121,
+          "roi_pct": -15.401,
+          "rows": 12,
+          "settled_risk_units": 12,
+          "slate_dates": 9,
+          "voids": 0,
+          "wins": 6
+        },
+        "low_k_standard": {
+          "losses": 0,
+          "pitchers": 3,
+          "pnl": 2.749953,
+          "roi_pct": 68.7488,
+          "rows": 4,
+          "settled_risk_units": 4,
+          "slate_dates": 4,
+          "voids": 0,
+          "wins": 4
+        },
+        "standard_starter": {
+          "losses": 25,
+          "pitchers": 40,
+          "pnl": -8.40087,
+          "roi_pct": -17.8742,
+          "rows": 47,
+          "settled_risk_units": 47,
+          "slate_dates": 27,
+          "voids": 0,
+          "wins": 22
+        },
+        "unknown": {
+          "losses": 1,
+          "pitchers": 1,
+          "pnl": -1.0,
+          "roi_pct": -100.0,
+          "rows": 1,
+          "settled_risk_units": 1,
+          "slate_dates": 1,
+          "voids": 0,
+          "wins": 0
+        }
+      },
+      "book": {
+        "DraftKings": {
+          "losses": 0,
+          "pitchers": 2,
+          "pnl": 1.449351,
+          "roi_pct": 72.4676,
+          "rows": 2,
+          "settled_risk_units": 2,
+          "slate_dates": 2,
+          "voids": 0,
+          "wins": 2
+        },
+        "FanDuel": {
+          "losses": 44,
+          "pitchers": 64,
+          "pnl": -10.534492,
+          "roi_pct": -11.8365,
+          "rows": 89,
+          "settled_risk_units": 89,
+          "slate_dates": 39,
+          "voids": 0,
+          "wins": 45
+        }
+      },
+      "exact_provider": {
+        "propline": {
+          "losses": 0,
+          "pitchers": 3,
+          "pnl": 2.696602,
+          "roi_pct": 67.4151,
+          "rows": 4,
+          "settled_risk_units": 4,
+          "slate_dates": 4,
+          "voids": 0,
+          "wins": 4
+        },
+        "therundown": {
+          "losses": 43,
+          "pitchers": 64,
+          "pnl": -10.781743,
+          "roi_pct": -12.5369,
+          "rows": 86,
+          "settled_risk_units": 86,
+          "slate_dates": 39,
+          "voids": 0,
+          "wins": 43
+        },
+        "unknown": {
+          "losses": 1,
+          "pitchers": 1,
+          "pnl": -1.0,
+          "roi_pct": -100.0,
+          "rows": 1,
+          "settled_risk_units": 1,
+          "slate_dates": 1,
+          "voids": 0,
+          "wins": 0
+        }
+      },
+      "final_clv": {
+        "beat_close_price": {
+          "losses": 3,
+          "pitchers": 4,
+          "pnl": -2.242424,
+          "roi_pct": -56.0606,
+          "rows": 4,
+          "settled_risk_units": 4,
+          "slate_dates": 4,
+          "voids": 0,
+          "wins": 1
+        },
+        "neutral_close": {
+          "losses": 5,
+          "pitchers": 13,
+          "pnl": 1.015049,
+          "roi_pct": 7.8081,
+          "rows": 13,
+          "settled_risk_units": 13,
+          "slate_dates": 11,
+          "voids": 0,
+          "wins": 8
+        },
+        "not_requested": {
+          "losses": 32,
+          "pitchers": 48,
+          "pnl": -7.106109,
+          "roi_pct": -10.9325,
+          "rows": 65,
+          "settled_risk_units": 65,
+          "slate_dates": 37,
+          "voids": 0,
+          "wins": 33
+        },
+        "unknown": {
+          "losses": 3,
+          "pitchers": 7,
+          "pnl": -0.333052,
+          "roi_pct": -4.7579,
+          "rows": 7,
+          "settled_risk_units": 7,
+          "slate_dates": 6,
+          "voids": 0,
+          "wins": 4
+        },
+        "worse_close_price": {
+          "losses": 1,
+          "pitchers": 2,
+          "pnl": -0.418605,
+          "roi_pct": -20.9302,
+          "rows": 2,
+          "settled_risk_units": 2,
+          "slate_dates": 2,
+          "voids": 0,
+          "wins": 1
+        }
+      },
+      "leash": {
+        "medium": {
+          "losses": 3,
+          "pitchers": 4,
+          "pnl": -2.242424,
+          "roi_pct": -56.0606,
+          "rows": 4,
+          "settled_risk_units": 4,
+          "slate_dates": 4,
+          "voids": 0,
+          "wins": 1
+        },
+        "normal": {
+          "losses": 40,
+          "pitchers": 64,
+          "pnl": -5.842716,
+          "roi_pct": -6.7939,
+          "rows": 86,
+          "settled_risk_units": 86,
+          "slate_dates": 39,
+          "voids": 0,
+          "wins": 46
+        },
+        "unknown": {
+          "losses": 1,
+          "pitchers": 1,
+          "pnl": -1.0,
+          "roi_pct": -100.0,
+          "rows": 1,
+          "settled_risk_units": 1,
+          "slate_dates": 1,
+          "voids": 0,
+          "wins": 0
+        }
+      },
+      "line": {
+        "1.5": {
+          "losses": 0,
+          "pitchers": 1,
+          "pnl": 0.729927,
+          "roi_pct": 72.9927,
+          "rows": 1,
+          "settled_risk_units": 1,
+          "slate_dates": 1,
+          "voids": 0,
+          "wins": 1
+        },
+        "2.5": {
+          "losses": 0,
+          "pitchers": 2,
+          "pnl": 2.036126,
+          "roi_pct": 67.8709,
+          "rows": 3,
+          "settled_risk_units": 3,
+          "slate_dates": 3,
+          "voids": 0,
+          "wins": 3
+        },
+        "3.5": {
+          "losses": 19,
+          "pitchers": 28,
+          "pnl": -6.68008,
+          "roi_pct": -18.5558,
+          "rows": 36,
+          "settled_risk_units": 36,
+          "slate_dates": 24,
+          "voids": 0,
+          "wins": 17
+        },
+        "4.5": {
+          "losses": 15,
+          "pitchers": 26,
+          "pnl": -4.919879,
+          "roi_pct": -17.571,
+          "rows": 28,
+          "settled_risk_units": 28,
+          "slate_dates": 23,
+          "voids": 0,
+          "wins": 13
+        },
+        "5.5": {
+          "losses": 5,
+          "pitchers": 15,
+          "pnl": 2.467293,
+          "roi_pct": 16.4486,
+          "rows": 15,
+          "settled_risk_units": 15,
+          "slate_dates": 12,
+          "voids": 0,
+          "wins": 10
+        },
+        "6.5": {
+          "losses": 2,
+          "pitchers": 3,
+          "pnl": -1.180328,
+          "roi_pct": -39.3443,
+          "rows": 3,
+          "settled_risk_units": 3,
+          "slate_dates": 3,
+          "voids": 0,
+          "wins": 1
+        },
+        "7.5": {
+          "losses": 3,
+          "pitchers": 3,
+          "pnl": -1.538199,
+          "roi_pct": -30.764,
+          "rows": 5,
+          "settled_risk_units": 5,
+          "slate_dates": 5,
+          "voids": 0,
+          "wins": 2
+        }
+      },
+      "model_market": {
+        "model_agrees_with_favorite": {
+          "losses": 39,
+          "pitchers": 60,
+          "pnl": -8.509919,
+          "roi_pct": -10.5061,
+          "rows": 81,
+          "settled_risk_units": 81,
+          "slate_dates": 38,
+          "voids": 0,
+          "wins": 42
+        },
+        "model_fades_favorite": {
+          "losses": 4,
+          "pitchers": 9,
+          "pnl": 0.424779,
+          "roi_pct": 4.7198,
+          "rows": 9,
+          "settled_risk_units": 9,
+          "slate_dates": 9,
+          "voids": 0,
+          "wins": 5
+        },
+        "unknown": {
+          "losses": 1,
+          "pitchers": 1,
+          "pnl": -1.0,
+          "roi_pct": -100.0,
+          "rows": 1,
+          "settled_risk_units": 1,
+          "slate_dates": 1,
+          "voids": 0,
+          "wins": 0
+        }
+      },
+      "official_verdict": {
+        "FIRE 1u": {
+          "losses": 44,
+          "pitchers": 66,
+          "pnl": -9.085141,
+          "roi_pct": -9.9837,
+          "rows": 91,
+          "settled_risk_units": 91,
+          "slate_dates": 40,
+          "voids": 0,
+          "wins": 47
+        }
+      },
+      "opportunity": {
+        "deep_starter": {
+          "losses": 12,
+          "pitchers": 16,
+          "pnl": -0.586102,
+          "roi_pct": -2.1707,
+          "rows": 27,
+          "settled_risk_units": 27,
+          "slate_dates": 19,
+          "voids": 0,
+          "wins": 15
+        },
+        "normal": {
+          "losses": 31,
+          "pitchers": 52,
+          "pnl": -7.499038,
+          "roi_pct": -11.9032,
+          "rows": 63,
+          "settled_risk_units": 63,
+          "slate_dates": 32,
+          "voids": 0,
+          "wins": 32
+        },
+        "unknown": {
+          "losses": 1,
+          "pitchers": 1,
+          "pnl": -1.0,
+          "roi_pct": -100.0,
+          "rows": 1,
+          "settled_risk_units": 1,
+          "slate_dates": 1,
+          "voids": 0,
+          "wins": 0
+        }
+      },
+      "path_b": {
+        "all_real_splits": {
+          "losses": 6,
+          "pitchers": 8,
+          "pnl": -3.789887,
+          "roi_pct": -42.1099,
+          "rows": 9,
+          "settled_risk_units": 9,
+          "slate_dates": 8,
+          "voids": 0,
+          "wins": 3
+        },
+        "mixed_or_fallback_splits": {
+          "losses": 38,
+          "pitchers": 64,
+          "pnl": -5.295254,
+          "roi_pct": -6.4576,
+          "rows": 82,
+          "settled_risk_units": 82,
+          "slate_dates": 39,
+          "voids": 0,
+          "wins": 44
+        }
+      },
+      "price_sign": {
+        "minus": {
+          "losses": 44,
+          "pitchers": 66,
+          "pnl": -9.085141,
+          "roi_pct": -9.9837,
+          "rows": 91,
+          "settled_risk_units": 91,
+          "slate_dates": 40,
+          "voids": 0,
+          "wins": 47
+        }
+      },
+      "provider_posture": {
+        "None": {
+          "losses": 4,
+          "pitchers": 12,
+          "pnl": 2.5041,
+          "roi_pct": 19.2623,
+          "rows": 13,
+          "settled_risk_units": 13,
+          "slate_dates": 13,
+          "voids": 0,
+          "wins": 9
+        },
+        "therundown": {
+          "losses": 3,
+          "pitchers": 8,
+          "pnl": 0.62941,
+          "roi_pct": 7.8676,
+          "rows": 8,
+          "settled_risk_units": 8,
+          "slate_dates": 7,
+          "voids": 0,
+          "wins": 5
+        },
+        "therundown_propline": {
+          "losses": 37,
+          "pitchers": 53,
+          "pnl": -12.21865,
+          "roi_pct": -17.4552,
+          "rows": 70,
+          "settled_risk_units": 70,
+          "slate_dates": 33,
+          "voids": 0,
+          "wins": 33
+        }
+      },
+      "quality": {
+        "capped": {
+          "losses": 24,
+          "pitchers": 44,
+          "pnl": -2.935807,
+          "roi_pct": -5.5393,
+          "rows": 53,
+          "settled_risk_units": 53,
+          "slate_dates": 31,
+          "voids": 0,
+          "wins": 29
+        },
+        "clean": {
+          "losses": 19,
+          "pitchers": 28,
+          "pnl": -5.149334,
+          "roi_pct": -13.9171,
+          "rows": 37,
+          "settled_risk_units": 37,
+          "slate_dates": 28,
+          "voids": 0,
+          "wins": 18
+        },
+        "unknown": {
+          "losses": 1,
+          "pitchers": 1,
+          "pnl": -1.0,
+          "roi_pct": -100.0,
+          "rows": 1,
+          "settled_risk_units": 1,
+          "slate_dates": 1,
+          "voids": 0,
+          "wins": 0
+        }
+      },
+      "side": {
+        "over": {
+          "losses": 44,
+          "pitchers": 66,
+          "pnl": -9.085141,
+          "roi_pct": -9.9837,
+          "rows": 91,
+          "settled_risk_units": 91,
+          "slate_dates": 40,
+          "voids": 0,
+          "wins": 47
+        }
+      },
+      "timing": {
+        "pre_30": {
+          "losses": 43,
+          "pitchers": 65,
+          "pnl": -8.085141,
+          "roi_pct": -8.9835,
+          "rows": 90,
+          "settled_risk_units": 90,
+          "slate_dates": 40,
+          "voids": 0,
+          "wins": 47
+        },
+        "unknown": {
+          "losses": 1,
+          "pitchers": 1,
+          "pnl": -1.0,
+          "roi_pct": -100.0,
+          "rows": 1,
+          "settled_risk_units": 1,
+          "slate_dates": 1,
+          "voids": 0,
+          "wins": 0
+        }
+      },
+      "v2_status": {
+        "no_frozen_v2": {
+          "losses": 1,
+          "pitchers": 1,
+          "pnl": -1.0,
+          "roi_pct": -100.0,
+          "rows": 1,
+          "settled_risk_units": 1,
+          "slate_dates": 1,
+          "voids": 0,
+          "wins": 0
+        },
+        "not_selected": {
+          "losses": 30,
+          "pitchers": 44,
+          "pnl": -6.477062,
+          "roi_pct": -10.6181,
+          "rows": 61,
+          "settled_risk_units": 61,
+          "slate_dates": 36,
+          "voids": 0,
+          "wins": 31
+        },
+        "pending": {
+          "losses": 1,
+          "pitchers": 3,
+          "pnl": 0.370953,
+          "roi_pct": 12.3651,
+          "rows": 3,
+          "settled_risk_units": 3,
+          "slate_dates": 3,
+          "voids": 0,
+          "wins": 2
+        },
+        "selected": {
+          "losses": 12,
+          "pitchers": 24,
+          "pnl": -1.979032,
+          "roi_pct": -7.6117,
+          "rows": 26,
+          "settled_risk_units": 26,
+          "slate_dates": 20,
+          "voids": 0,
+          "wins": 14
+        }
+      },
+      "workload": {
+        "complete": {
+          "losses": 42,
+          "pitchers": 62,
+          "pnl": -8.456093,
+          "roi_pct": -9.7196,
+          "rows": 87,
+          "settled_risk_units": 87,
+          "slate_dates": 39,
+          "voids": 0,
+          "wins": 45
+        },
+        "missing": {
+          "losses": 1,
+          "pitchers": 3,
+          "pnl": 0.370953,
+          "roi_pct": 12.3651,
+          "rows": 3,
+          "settled_risk_units": 3,
+          "slate_dates": 3,
+          "voids": 0,
+          "wins": 2
+        },
+        "unknown": {
+          "losses": 1,
+          "pitchers": 1,
+          "pnl": -1.0,
+          "roi_pct": -100.0,
+          "rows": 1,
+          "settled_risk_units": 1,
+          "slate_dates": 1,
+          "voids": 0,
+          "wins": 0
+        }
+      }
+    },
+    "reentry_expansion": {
+      "archetype": {
+        "deep_starter": {
+          "losses": 4,
+          "pitchers": 3,
+          "pnl": -4.0,
+          "roi_pct": -100.0,
+          "rows": 4,
+          "settled_risk_units": 4,
+          "slate_dates": 4,
+          "voids": 0,
+          "wins": 0
+        },
+        "high_k_deep_starter": {
+          "losses": 1,
+          "pitchers": 3,
+          "pnl": 2.100392,
+          "roi_pct": 52.5098,
+          "rows": 4,
+          "settled_risk_units": 4,
+          "slate_dates": 4,
+          "voids": 0,
+          "wins": 3
+        },
+        "high_k_standard": {
+          "losses": 9,
+          "pitchers": 11,
+          "pnl": -4.984843,
+          "roi_pct": -38.3449,
+          "rows": 13,
+          "settled_risk_units": 13,
+          "slate_dates": 13,
+          "voids": 0,
+          "wins": 4
+        },
+        "short_leash": {
+          "losses": 2,
+          "pitchers": 2,
+          "pnl": -2.0,
+          "roi_pct": -100.0,
+          "rows": 2,
+          "settled_risk_units": 2,
+          "slate_dates": 2,
+          "voids": 0,
+          "wins": 0
+        },
+        "standard_starter": {
+          "losses": 9,
+          "pitchers": 13,
+          "pnl": -4.915044,
+          "roi_pct": -37.808,
+          "rows": 13,
+          "settled_risk_units": 13,
+          "slate_dates": 11,
+          "voids": 0,
+          "wins": 4
+        }
+      },
+      "book": {
+        "FanDuel": {
+          "losses": 25,
+          "pitchers": 29,
+          "pnl": -13.799495,
+          "roi_pct": -38.3319,
+          "rows": 36,
+          "settled_risk_units": 36,
+          "slate_dates": 25,
+          "voids": 0,
+          "wins": 11
+        }
+      },
+      "exact_provider": {
+        "therundown": {
+          "losses": 25,
+          "pitchers": 29,
+          "pnl": -13.799495,
+          "roi_pct": -38.3319,
+          "rows": 36,
+          "settled_risk_units": 36,
+          "slate_dates": 25,
+          "voids": 0,
+          "wins": 11
+        }
+      },
+      "final_clv": {
+        "beat_close_price": {
+          "losses": 1,
+          "pitchers": 1,
+          "pnl": -1.0,
+          "roi_pct": -100.0,
+          "rows": 1,
+          "settled_risk_units": 1,
+          "slate_dates": 1,
+          "voids": 0,
+          "wins": 0
+        },
+        "neutral_close": {
+          "losses": 18,
+          "pitchers": 21,
+          "pnl": -9.614652,
+          "roi_pct": -36.9794,
+          "rows": 26,
+          "settled_risk_units": 26,
+          "slate_dates": 19,
+          "voids": 0,
+          "wins": 8
+        },
+        "unknown": {
+          "losses": 3,
+          "pitchers": 4,
+          "pnl": -1.88,
+          "roi_pct": -47.0,
+          "rows": 4,
+          "settled_risk_units": 4,
+          "slate_dates": 4,
+          "voids": 0,
+          "wins": 1
+        },
+        "worse_close_price": {
+          "losses": 3,
+          "pitchers": 5,
+          "pnl": -1.304843,
+          "roi_pct": -26.0969,
+          "rows": 5,
+          "settled_risk_units": 5,
+          "slate_dates": 5,
+          "voids": 0,
+          "wins": 2
+        }
+      },
+      "leash": {
+        "high": {
+          "losses": 2,
+          "pitchers": 2,
+          "pnl": -2.0,
+          "roi_pct": -100.0,
+          "rows": 2,
+          "settled_risk_units": 2,
+          "slate_dates": 2,
+          "voids": 0,
+          "wins": 0
+        },
+        "medium": {
+          "losses": 0,
+          "pitchers": 1,
+          "pnl": 1.1,
+          "roi_pct": 110.0,
+          "rows": 1,
+          "settled_risk_units": 1,
+          "slate_dates": 1,
+          "voids": 0,
+          "wins": 1
+        },
+        "normal": {
+          "losses": 23,
+          "pitchers": 27,
+          "pnl": -12.899495,
+          "roi_pct": -39.0894,
+          "rows": 33,
+          "settled_risk_units": 33,
+          "slate_dates": 24,
+          "voids": 0,
+          "wins": 10
+        }
+      },
+      "line": {
+        "3.5": {
+          "losses": 6,
+          "pitchers": 7,
+          "pnl": -4.94,
+          "roi_pct": -70.5714,
+          "rows": 7,
+          "settled_risk_units": 7,
+          "slate_dates": 6,
+          "voids": 0,
+          "wins": 1
+        },
+        "4.5": {
+          "losses": 6,
+          "pitchers": 6,
+          "pnl": -5.115044,
+          "roi_pct": -73.0721,
+          "rows": 7,
+          "settled_risk_units": 7,
+          "slate_dates": 7,
+          "voids": 0,
+          "wins": 1
+        },
+        "5.5": {
+          "losses": 6,
+          "pitchers": 8,
+          "pnl": -0.614074,
+          "roi_pct": -5.5825,
+          "rows": 11,
+          "settled_risk_units": 11,
+          "slate_dates": 10,
+          "voids": 0,
+          "wins": 5
+        },
+        "6.5": {
+          "losses": 3,
+          "pitchers": 5,
+          "pnl": 0.100392,
+          "roi_pct": 1.6732,
+          "rows": 6,
+          "settled_risk_units": 6,
+          "slate_dates": 6,
+          "voids": 0,
+          "wins": 3
+        },
+        "7.5": {
+          "losses": 4,
+          "pitchers": 4,
+          "pnl": -4.0,
+          "roi_pct": -100.0,
+          "rows": 4,
+          "settled_risk_units": 4,
+          "slate_dates": 4,
+          "voids": 0,
+          "wins": 0
+        },
+        "8.5": {
+          "losses": 0,
+          "pitchers": 1,
+          "pnl": 0.769231,
+          "roi_pct": 76.9231,
+          "rows": 1,
+          "settled_risk_units": 1,
+          "slate_dates": 1,
+          "voids": 0,
+          "wins": 1
+        }
+      },
+      "model_market": {
+        "model_agrees_with_favorite": {
+          "losses": 1,
+          "pitchers": 2,
+          "pnl": -0.230769,
+          "roi_pct": -11.5385,
+          "rows": 2,
+          "settled_risk_units": 2,
+          "slate_dates": 2,
+          "voids": 0,
+          "wins": 1
+        },
+        "model_fades_favorite": {
+          "losses": 24,
+          "pitchers": 28,
+          "pnl": -13.568726,
+          "roi_pct": -39.908,
+          "rows": 34,
+          "settled_risk_units": 34,
+          "slate_dates": 23,
+          "voids": 0,
+          "wins": 10
+        }
+      },
+      "official_verdict": {
+        "FIRE 1u": {
+          "losses": 0,
+          "pitchers": 1,
+          "pnl": 0.884956,
+          "roi_pct": 88.4956,
+          "rows": 1,
+          "settled_risk_units": 1,
+          "slate_dates": 1,
+          "voids": 0,
+          "wins": 1
+        },
+        "LEAN": {
+          "losses": 25,
+          "pitchers": 28,
+          "pnl": -14.684451,
+          "roi_pct": -41.9556,
+          "rows": 35,
+          "settled_risk_units": 35,
+          "slate_dates": 24,
+          "voids": 0,
+          "wins": 10
+        }
+      },
+      "opportunity": {
+        "deep_starter": {
+          "losses": 5,
+          "pitchers": 6,
+          "pnl": -1.899608,
+          "roi_pct": -23.7451,
+          "rows": 8,
+          "settled_risk_units": 8,
+          "slate_dates": 7,
+          "voids": 0,
+          "wins": 3
+        },
+        "normal": {
+          "losses": 18,
+          "pitchers": 23,
+          "pnl": -9.899888,
+          "roi_pct": -38.0765,
+          "rows": 26,
+          "settled_risk_units": 26,
+          "slate_dates": 22,
+          "voids": 0,
+          "wins": 8
+        },
+        "short_leash": {
+          "losses": 2,
+          "pitchers": 2,
+          "pnl": -2.0,
+          "roi_pct": -100.0,
+          "rows": 2,
+          "settled_risk_units": 2,
+          "slate_dates": 2,
+          "voids": 0,
+          "wins": 0
+        }
+      },
+      "path_b": {
+        "all_real_splits": {
+          "losses": 6,
+          "pitchers": 8,
+          "pnl": -3.914074,
+          "roi_pct": -48.9259,
+          "rows": 8,
+          "settled_risk_units": 8,
+          "slate_dates": 7,
+          "voids": 0,
+          "wins": 2
+        },
+        "mixed_or_fallback_splits": {
+          "losses": 19,
+          "pitchers": 23,
+          "pnl": -9.885421,
+          "roi_pct": -35.3051,
+          "rows": 28,
+          "settled_risk_units": 28,
+          "slate_dates": 24,
+          "voids": 0,
+          "wins": 9
+        }
+      },
+      "price_sign": {
+        "minus": {
+          "losses": 5,
+          "pitchers": 9,
+          "pnl": -1.439495,
+          "roi_pct": -15.9944,
+          "rows": 9,
+          "settled_risk_units": 9,
+          "slate_dates": 9,
+          "voids": 0,
+          "wins": 4
+        },
+        "plus": {
+          "losses": 20,
+          "pitchers": 24,
+          "pnl": -12.36,
+          "roi_pct": -45.7778,
+          "rows": 27,
+          "settled_risk_units": 27,
+          "slate_dates": 19,
+          "voids": 0,
+          "wins": 7
+        }
+      },
+      "provider_posture": {
+        "therundown": {
+          "losses": 1,
+          "pitchers": 2,
+          "pnl": -0.074074,
+          "roi_pct": -3.7037,
+          "rows": 2,
+          "settled_risk_units": 2,
+          "slate_dates": 2,
+          "voids": 0,
+          "wins": 1
+        },
+        "therundown_propline": {
+          "losses": 24,
+          "pitchers": 28,
+          "pnl": -13.725421,
+          "roi_pct": -40.3689,
+          "rows": 34,
+          "settled_risk_units": 34,
+          "slate_dates": 24,
+          "voids": 0,
+          "wins": 10
+        }
+      },
+      "quality": {
+        "clean": {
+          "losses": 25,
+          "pitchers": 29,
+          "pnl": -13.799495,
+          "roi_pct": -38.3319,
+          "rows": 36,
+          "settled_risk_units": 36,
+          "slate_dates": 25,
+          "voids": 0,
+          "wins": 11
+        }
+      },
+      "side": {
+        "over": {
+          "losses": 13,
+          "pitchers": 16,
+          "pnl": -7.994652,
+          "roi_pct": -44.4147,
+          "rows": 18,
+          "settled_risk_units": 18,
+          "slate_dates": 15,
+          "voids": 0,
+          "wins": 5
+        },
+        "under": {
+          "losses": 12,
+          "pitchers": 16,
+          "pnl": -5.804843,
+          "roi_pct": -32.2491,
+          "rows": 18,
+          "settled_risk_units": 18,
+          "slate_dates": 17,
+          "voids": 0,
+          "wins": 6
+        }
+      },
+      "timing": {
+        "pre_30": {
+          "losses": 25,
+          "pitchers": 29,
+          "pnl": -13.799495,
+          "roi_pct": -38.3319,
+          "rows": 36,
+          "settled_risk_units": 36,
+          "slate_dates": 25,
+          "voids": 0,
+          "wins": 11
+        }
+      },
+      "v2_status": {
+        "selected": {
+          "losses": 25,
+          "pitchers": 29,
+          "pnl": -13.799495,
+          "roi_pct": -38.3319,
+          "rows": 36,
+          "settled_risk_units": 36,
+          "slate_dates": 25,
+          "voids": 0,
+          "wins": 11
+        }
+      },
+      "workload": {
+        "complete": {
+          "losses": 25,
+          "pitchers": 29,
+          "pnl": -13.799495,
+          "roi_pct": -38.3319,
+          "rows": 36,
+          "settled_risk_units": 36,
+          "slate_dates": 25,
+          "voids": 0,
+          "wins": 11
+        }
+      }
+    }
+  },
+  "summary": {
+    "all_alt": {
+      "losses": 63,
+      "pitchers": 85,
+      "pnl": -24.889187,
+      "roi_pct": -22.2225,
+      "rows": 113,
+      "settled_risk_units": 112,
+      "slate_dates": 38,
+      "voids": 1,
+      "wins": 49
+    },
+    "alt_incremental_lean": {
+      "losses": 51,
+      "pitchers": 70,
+      "pnl": -22.910156,
+      "roi_pct": -26.6397,
+      "rows": 87,
+      "settled_risk_units": 86,
+      "slate_dates": 37,
+      "voids": 1,
+      "wins": 35
+    },
+    "alt_mainline_overlap": {
+      "losses": 12,
+      "pitchers": 24,
+      "pnl": -1.979032,
+      "roi_pct": -7.6117,
+      "rows": 26,
+      "settled_risk_units": 26,
+      "slate_dates": 20,
+      "voids": 0,
+      "wins": 14
+    },
+    "common_v2_universe_flat": {
+      "losses": 355,
+      "pitchers": 189,
+      "pnl": -44.320527,
+      "roi_pct": -6.19,
+      "rows": 719,
+      "settled_risk_units": 716,
+      "slate_dates": 42,
+      "voids": 3,
+      "wins": 361
+    },
+    "consensus_core": {
+      "losses": 38,
+      "pitchers": 63,
+      "pnl": -11.089692,
+      "roi_pct": -14.5917,
+      "rows": 77,
+      "settled_risk_units": 76,
+      "slate_dates": 35,
+      "voids": 1,
+      "wins": 38
+    },
+    "mainline_all_locked_flat": {
+      "losses": 358,
+      "pitchers": 189,
+      "pnl": -43.490061,
+      "roi_pct": -6.0152,
+      "rows": 726,
+      "settled_risk_units": 723,
+      "slate_dates": 42,
+      "voids": 3,
+      "wins": 365
+    },
+    "mainline_fire_flat": {
+      "losses": 44,
+      "pitchers": 66,
+      "pnl": -9.085141,
+      "roi_pct": -9.9837,
+      "rows": 91,
+      "settled_risk_units": 91,
+      "slate_dates": 40,
+      "voids": 0,
+      "wins": 47
+    },
+    "mainline_fire_not_alt": {
+      "losses": 32,
+      "pitchers": 48,
+      "pnl": -7.106109,
+      "roi_pct": -10.9325,
+      "rows": 65,
+      "settled_risk_units": 65,
+      "slate_dates": 37,
+      "voids": 0,
+      "wins": 33
+    },
+    "mainline_fire_weighted": {
+      "losses": 44,
+      "pitchers": 66,
+      "pnl": -9.085141,
+      "roi_pct": -9.9837,
+      "rows": 91,
+      "settled_risk_units": 91,
+      "slate_dates": 40,
+      "voids": 0,
+      "wins": 47
+    },
+    "no_frozen_v2": {
+      "losses": 3,
+      "pitchers": 7,
+      "pnl": 0.830466,
+      "roi_pct": 11.8638,
+      "rows": 7,
+      "settled_risk_units": 7,
+      "slate_dates": 3,
+      "voids": 0,
+      "wins": 4
+    },
+    "pending_v2": {
+      "losses": 8,
+      "pitchers": 17,
+      "pnl": -0.987864,
+      "roi_pct": -6.1741,
+      "rows": 17,
+      "settled_risk_units": 16,
+      "slate_dates": 13,
+      "voids": 1,
+      "wins": 8
+    },
+    "reentry_expansion": {
+      "losses": 25,
+      "pitchers": 29,
+      "pnl": -13.799495,
+      "roi_pct": -38.3319,
+      "rows": 36,
+      "settled_risk_units": 36,
+      "slate_dates": 25,
+      "voids": 0,
+      "wins": 11
+    },
+    "unselected_v2": {
+      "losses": 284,
+      "pitchers": 181,
+      "pnl": -18.443476,
+      "roi_pct": -3.1366,
+      "rows": 589,
+      "settled_risk_units": 588,
+      "slate_dates": 42,
+      "voids": 1,
+      "wins": 304
+    }
+  }
+}

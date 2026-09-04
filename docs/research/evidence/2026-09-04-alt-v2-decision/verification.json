@@ -1,0 +1,30 @@
+{
+  "scope": "Offline Alt V2 paired decision verification; no production changes",
+  "base_commit": "8ac59296009d92a5ebb673bd4767957a47049e74",
+  "notebook_python": "3.12.14 (main, Aug 25 2026, 13:50:33) [Clang 22.1.3 ]",
+  "notebook_executed_code_cells": 5,
+  "code_sha256": {
+    "market_infra/alternative_pick_evaluation_proof_v2.py": "20dc51d598267d6319cb4cc2fee95c46b77c36319f7456bfb21a829bab616a07",
+    "market_infra/alternative_pick_selector_v2.py": "7641a8e9324f069f00fe00160b9564f5e63f7fd974c09a2516f9180c15a06ec3",
+    "market_infra/alternative_pick_selector.py": "c2363f6cff54f2ac49a274fd7a815fbc9001b812389f5128f5038c17bb94eaee",
+    "market_infra/alternative_pick_selector_manifest_v2.json": "2b1fb1eee231c27a647081b4b9e53ece48089ee3df07d66c653807b51f5164ee",
+    "analytics/diagnostics/clv_official_close_packet.py": "fc1d0bfb45fb487239a1f322d48a9ea65bee06f7dc9b492d1d5f82375096225b",
+    "analytics/diagnostics/clv_process_target_validation.py": "3105df5469f995b93c33113ce302e5170d2fe27c1703b0d602bb74098322b1fc",
+    "docs/research/evidence/2026-09-04-alt-v2-decision/reproduce.py": "c357148c9dbd5c23cd86d231fe450578691eb3afad8139beec6d91ee4f4123d1"
+  },
+  "tests": {
+    "files": [
+      "tests/test_alternative_pick_evaluation_proof_v2.py",
+      "tests/test_clv_official_close_packet.py"
+    ],
+    "passed": 105,
+    "failed": 0
+  },
+  "captured_file_sha256": {
+    "archive-context.json": "d404b6dfbaa981927515e2f0e44f22bdd552c85d054551e007d0debcbcb2131a",
+    "bounded-close-snapshots.json": "86e997093c64a1db8a0971dded7bc6ac30c84d06318fdf4f320f33dbfb642c87",
+    "bounded-history.json": "479ef2016fb1f8e0742b26f59c4c16aed8a0a92572fdcc46bee4663001ac39d6",
+    "comparison-universe.json": "cfb8f2c43678209cb1f6b3c5543d35f77dbb87405455b58f43e07bd5618bf32f",
+    "selected-lock-proofs.json": "f5fdaeffdd2b3bf31692a821073bdbe9ddcb2002081c8ca76652daa97c93d4f9"
+  }
+}

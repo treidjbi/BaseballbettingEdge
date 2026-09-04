@@ -1,6 +1,7 @@
 # BBE companion operating brief
 
-As of September 4, 2026; live evidence captured at 21:38Z (14:38 Phoenix).
+As of September 4, 2026; operations evidence captured at 21:38Z (14:38 Phoenix),
+with the Alt paired research review captured at 21:58–22:01Z.
 Read after AGENTS.md and current-state. This is a navigation and decision
 summary; the linked dated plans retain every detailed gate.
 
@@ -12,7 +13,9 @@ not a safe fallback until its hydration problem is separately repaired.
 **Predictive/selection value: no new promotion justified.** Near-zero average
 K bias is not proof of profitable selection. Alt V2's verified prospective
 record is 49–63 with one void, **-24.889u** on 113 selected frozen rows.
-Both lanes lose; Re-entry is 11–25/-13.799u. The 75-freeze review is due now.
+The formal paired review is complete: **retire both Alt V2 promotion paths**
+and retain frozen comparison controls. Consensus is -11.090u; Re-entry is
+11–25/-13.799u. Same-window mainline FIRE is also negative, 47–44/-9.085u.
 Historical +38.585u is a different, hindsight-capable comparator.
 
 Unit results include recorded odds, but measured fees, slippage and allocated
@@ -21,9 +24,9 @@ operating costs are absent. No candidate has established fully costed profit.
 | Lane | Next decision | Evidence needed | Revisit trigger |
 | --- | --- | --- | --- |
 | Pipeline / infrastructure | Keep ordinary operation; review repairs only on failure | Natural-run artifact/served hashes, grading freshness, due/consumed locks, sender outcomes | Stale/missing publication, unconsumed lock, repeated timeout or send error |
-| Model | Complete formal Alt V2 paired retain/retire review; keep promotions closed | Full mainline comparison and missing quality/Path B/workload/model-market/CLV slices; refreshed hosted eligibility for other candidates | **Alt review due now**; other candidates need attribution/diversity, not generic volume |
+| Model | Alt V2 paired review complete; both promotion paths retired, frozen controls retained | Any reopening needs a material evidence correction or separately reviewed new frozen hypothesis and future holdout; other candidates need current hosted attribution/diversity | Reconciled evidence changes the conclusion or a separately reviewed research proposal; no automatic restart on count growth |
 | UI | Keep display/comparison behavior; review usability independently | Current mobile/desktop interaction and candidate/artifact/lock proof | Incorrect freeze, stale-state confusion or contract mismatch |
-| Tracking / history | Prioritize consumed-lock research linkage and bounded backlog diagnosis; observe storage | Exact research lineage, supported-class backlog/processing rates, size and compact coverage | Zero eligibility from missing fields, backlog/growth, or separately scoped retention need |
+| Tracking / history | Next: bounded Gate C provenance and consumed-lock linkage review; investigate one missing unselected LEAN | File/manifest/hosted lineage, exact lock-to-history joins, Kumar Rocker August 19 omission; bounded backlog/size evidence | Existing hash mismatch, structural zero eligibility, exact history omission or ongoing growth |
 
 Current research treatment:
 
@@ -45,13 +48,15 @@ Current research treatment:
   +0.0540 K paired MAE lift did not establish betting improvement.
 
 Retain daily operational/integrity deltas and bounded candidate eligibility.
-Recommend pausing redundant historical scoreboards and broad overlapping
+Recommend pausing routine Alt promotion scoreboards, post-hoc subset searches,
+redundant historical scoreboards and broad overlapping
 searches. Retire completed cleanup/repair reminders and old BoltOdds cutover
 readiness from active attention. Preserve all historical records and existing
 running behavior. September's umpire task is a name/coverage audit, not a
 production re-seed.
 
 [Detailed assessments, candidate contracts, costs and work recommendations](research/2026-09-04-operating-and-research-assessment.md)
+· [Completed Alt V2 paired decision and required slices](research/2026-09-04-alt-v2-paired-decision.md)
 · [Captured primary evidence and SQL](research/evidence/2026-09-04-operating-review/read-only-evidence.json)
 · [Reproducible checks](research/evidence/2026-09-04-operating-review/evidence-checks.ipynb)
 · [Current operating record](current-state.md)
@@ -61,4 +66,9 @@ execution costs, sender delivery logs and a fresh mobile interaction. Local
 Gate C ends June 16 despite its August generation timestamp. These limits
 remain explicit. Its stored JSONL hash also mismatches the actual file, even
 after checking line endings; preserve it pending provenance reconciliation.
+The Alt packet validates 113/113 freezes and accepts 90/113 exact closes;
+23 close exclusions remain unknown. Broader history reconciles 726/727 locks,
+with one unselected Kumar Rocker LEAN missing. Path B slices are later archive
+context, not proven frozen covariates. None of these limits changes the Alt
+retirement decision or the separate CLV process gate.
 No scheduler, setting, production or retention change is made.

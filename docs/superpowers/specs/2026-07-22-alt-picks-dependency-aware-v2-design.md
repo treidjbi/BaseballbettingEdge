@@ -748,3 +748,24 @@ The V2 design is complete only when:
 - changing provider order, strict mode, polling cadence, notification classes,
   lock behavior, artifact source, retention, or dashboard source of truth; or
 - reviving BoltOdds.
+
+## September 4, 2026 formal research decision
+
+The [paired decision packet](../../research/2026-09-04-alt-v2-paired-decision.md)
+completes the inherited 75-frozen-pick formal review using current hosted
+records through September 3: 113 validated selected freezes, 49–63 with one
+void, -24.889u at frozen odds. Consensus is 77/-11.090u and Re-entry
+36/-13.799u; the same-window mainline FIRE paper portfolio is 91/-9.085u.
+
+Retire both V2 lanes from active promotion research; retain their frozen
+records as comparison controls. This is not a new selection predicate or
+sample gate. The original hypotheses, fingerprints, required inputs and
+review history remain unchanged. The packet retains the full paired
+comparison, required slices, costs, explicit history/CLV exclusions, next
+decision and reopening requirements for each lane.
+
+Runtime collection, Alt display, jobs, production controls and all settings
+remain unchanged. Reopening promotion work requires an evidence correction
+that changes the conclusion or a separately reviewed new frozen hypothesis
+and future holdout; post-hoc winning subsets and generic volume are not a
+promotion rationale. A later runtime/display retirement is a separate scope.
