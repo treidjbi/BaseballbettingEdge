@@ -1,0 +1,1501 @@
+{
+  "compact_counts": {
+    "derived_tracker": 2239,
+    "display": 1343,
+    "evidence": 896
+  },
+  "consumption": {
+    "closed_locked_history": 329,
+    "consumed": 329,
+    "missing_history": [
+      {
+        "consumed_at": null,
+        "identity": [
+          "2026-08-19",
+          "kumar rocker",
+          "under"
+        ]
+      }
+    ],
+    "operational_locks": 330
+  },
+  "gate_c_provenance": {
+    "lf_sha256": "6f5745a290b12ab3976a81f5231084eb8619adc855384d1107187ad5c51ff66b",
+    "manifest_sha256": "e8c7c6d53ca51610213d1b168af58e831f5f8e079f2e28f88944856c3316a0da",
+    "manifest_summary_sha256": "6fec2e22c0e1da27aefe850d4fd2f43fe099f5fcf092da67d741199961183d88",
+    "reconstructed_windows_crlf_sha256": "e8c7c6d53ca51610213d1b168af58e831f5f8e079f2e28f88944856c3316a0da",
+    "row_values_identical": true,
+    "rows": 2070,
+    "source_window": {
+      "artifact_api_url": "https://baseballbettingedge.netlify.app/.netlify/functions/get-artifact",
+      "artifact_source": "hybrid",
+      "end_date": "2026-06-16",
+      "live_market_display_path": "analytics/output/market_agreement_inputs/live_market_display_state.json",
+      "market_agreement_tracker_path": "analytics/output/market_agreement_tracker.jsonl",
+      "production_fill_dates": [
+        "2026-05-30",
+        "2026-05-31",
+        "2026-06-01",
+        "2026-06-02",
+        "2026-06-03",
+        "2026-06-04",
+        "2026-06-05",
+        "2026-06-06",
+        "2026-06-07",
+        "2026-06-08",
+        "2026-06-09",
+        "2026-06-10",
+        "2026-06-11",
+        "2026-06-12",
+        "2026-06-13",
+        "2026-06-14",
+        "2026-06-15",
+        "2026-06-16"
+      ],
+      "start_date": "2026-04-28"
+    },
+    "summary_crlf_sha256": "6fec2e22c0e1da27aefe850d4fd2f43fe099f5fcf092da67d741199961183d88",
+    "summary_lf_sha256": "5528801514d2fad35f256e53747758d4ab961d64da3be8c8c1c56567acda011a"
+  },
+  "lock_join": {
+    "exact_matches": 314,
+    "exclusions": [
+      {
+        "gate_c_bet_time_book": "theScore Bet",
+        "identity": [
+          "2026-08-15",
+          "matthew boyd",
+          "over"
+        ],
+        "operational_lock_book": "FanDuel",
+        "reasons": [
+          "bet_time_book_mismatch"
+        ]
+      },
+      {
+        "gate_c_bet_time_book": "FanDuel",
+        "identity": [
+          "2026-08-15",
+          "connor prielipp",
+          "over"
+        ],
+        "operational_lock_book": null,
+        "reasons": [
+          "missing_or_ambiguous_operational_lock"
+        ]
+      },
+      {
+        "gate_c_bet_time_book": "BetMGM",
+        "identity": [
+          "2026-08-16",
+          "ryan johnson",
+          "under"
+        ],
+        "operational_lock_book": "FanDuel",
+        "reasons": [
+          "bet_time_book_mismatch"
+        ]
+      },
+      {
+        "gate_c_bet_time_book": "FanDuel",
+        "identity": [
+          "2026-08-16",
+          "dean kremer",
+          "over"
+        ],
+        "operational_lock_book": null,
+        "reasons": [
+          "missing_or_ambiguous_operational_lock"
+        ]
+      },
+      {
+        "gate_c_bet_time_book": "BetMGM",
+        "identity": [
+          "2026-08-16",
+          "noah cameron",
+          "over"
+        ],
+        "operational_lock_book": null,
+        "reasons": [
+          "missing_or_ambiguous_operational_lock"
+        ]
+      },
+      {
+        "gate_c_bet_time_book": "FanDuel",
+        "identity": [
+          "2026-08-16",
+          "blade tidwell",
+          "under"
+        ],
+        "operational_lock_book": null,
+        "reasons": [
+          "missing_or_ambiguous_operational_lock"
+        ]
+      },
+      {
+        "gate_c_bet_time_book": "BetMGM",
+        "identity": [
+          "2026-08-17",
+          "carmen mlodzinski",
+          "over"
+        ],
+        "operational_lock_book": "FanDuel",
+        "reasons": [
+          "bet_time_book_mismatch"
+        ]
+      },
+      {
+        "gate_c_bet_time_book": "BetMGM",
+        "identity": [
+          "2026-08-17",
+          "tomoyuki sugano",
+          "over"
+        ],
+        "operational_lock_book": "FanDuel",
+        "reasons": [
+          "bet_time_book_mismatch"
+        ]
+      },
+      {
+        "gate_c_bet_time_book": "FanDuel",
+        "identity": [
+          "2026-08-19",
+          "drew rasmussen",
+          "over"
+        ],
+        "operational_lock_book": null,
+        "reasons": [
+          "missing_or_ambiguous_operational_lock"
+        ]
+      },
+      {
+        "gate_c_bet_time_book": "FanDuel",
+        "identity": [
+          "2026-08-21",
+          "tanner gordon",
+          "over"
+        ],
+        "operational_lock_book": null,
+        "reasons": [
+          "missing_or_ambiguous_operational_lock"
+        ]
+      },
+      {
+        "gate_c_bet_time_book": "FanDuel",
+        "identity": [
+          "2026-08-21",
+          "joey cantillo",
+          "under"
+        ],
+        "operational_lock_book": null,
+        "reasons": [
+          "missing_or_ambiguous_operational_lock"
+        ]
+      },
+      {
+        "gate_c_bet_time_book": "BetMGM",
+        "identity": [
+          "2026-08-23",
+          "daniel lynch iv",
+          "under"
+        ],
+        "operational_lock_book": "DraftKings",
+        "reasons": [
+          "bet_time_book_mismatch"
+        ]
+      },
+      {
+        "gate_c_bet_time_book": "BetMGM",
+        "identity": [
+          "2026-08-23",
+          "tomoyuki sugano",
+          "over"
+        ],
+        "operational_lock_book": "FanDuel",
+        "reasons": [
+          "bet_time_book_mismatch"
+        ]
+      },
+      {
+        "gate_c_bet_time_book": "BetMGM",
+        "identity": [
+          "2026-08-24",
+          "carson whisenhunt",
+          "under"
+        ],
+        "operational_lock_book": "FanDuel",
+        "reasons": [
+          "bet_time_book_mismatch"
+        ]
+      },
+      {
+        "gate_c_bet_time_book": "FanDuel",
+        "identity": [
+          "2026-08-24",
+          "logan gilbert",
+          "over"
+        ],
+        "operational_lock_book": null,
+        "reasons": [
+          "missing_or_ambiguous_operational_lock"
+        ]
+      },
+      {
+        "gate_c_bet_time_book": "FanDuel",
+        "identity": [
+          "2026-08-25",
+          "payton tolle",
+          "over"
+        ],
+        "operational_lock_book": null,
+        "reasons": [
+          "missing_or_ambiguous_operational_lock"
+        ]
+      },
+      {
+        "gate_c_bet_time_book": "DraftKings",
+        "identity": [
+          "2026-08-26",
+          "logan webb",
+          "under"
+        ],
+        "operational_lock_book": "FanDuel",
+        "reasons": [
+          "bet_time_book_mismatch"
+        ]
+      },
+      {
+        "gate_c_bet_time_book": "FanDuel",
+        "identity": [
+          "2026-08-26",
+          "bryan woo",
+          "over"
+        ],
+        "operational_lock_book": null,
+        "reasons": [
+          "missing_or_ambiguous_operational_lock"
+        ]
+      },
+      {
+        "gate_c_bet_time_book": "FanDuel",
+        "identity": [
+          "2026-08-26",
+          "connor prielipp",
+          "over"
+        ],
+        "operational_lock_book": null,
+        "reasons": [
+          "missing_or_ambiguous_operational_lock"
+        ]
+      },
+      {
+        "gate_c_bet_time_book": "FanDuel",
+        "identity": [
+          "2026-08-27",
+          "jose cabrera",
+          "under"
+        ],
+        "operational_lock_book": null,
+        "reasons": [
+          "missing_or_ambiguous_operational_lock"
+        ]
+      },
+      {
+        "gate_c_bet_time_book": "FanDuel",
+        "identity": [
+          "2026-08-28",
+          "eury perez",
+          "over"
+        ],
+        "operational_lock_book": null,
+        "reasons": [
+          "missing_or_ambiguous_operational_lock"
+        ]
+      },
+      {
+        "gate_c_bet_time_book": "FanDuel",
+        "identity": [
+          "2026-08-28",
+          "blade tidwell",
+          "under"
+        ],
+        "operational_lock_book": null,
+        "reasons": [
+          "missing_or_ambiguous_operational_lock"
+        ]
+      },
+      {
+        "gate_c_bet_time_book": "BetMGM",
+        "identity": [
+          "2026-08-29",
+          "foster griffin",
+          "under"
+        ],
+        "operational_lock_book": "FanDuel",
+        "reasons": [
+          "bet_time_book_mismatch"
+        ]
+      },
+      {
+        "gate_c_bet_time_book": "DraftKings",
+        "identity": [
+          "2026-08-29",
+          "merrill kelly",
+          "under"
+        ],
+        "operational_lock_book": "FanDuel",
+        "reasons": [
+          "bet_time_book_mismatch"
+        ]
+      },
+      {
+        "gate_c_bet_time_book": "FanDuel",
+        "identity": [
+          "2026-08-29",
+          "nolan mclean",
+          "over"
+        ],
+        "operational_lock_book": null,
+        "reasons": [
+          "missing_or_ambiguous_operational_lock"
+        ]
+      },
+      {
+        "gate_c_bet_time_book": "BetMGM",
+        "identity": [
+          "2026-08-29",
+          "daniel lynch iv",
+          "under"
+        ],
+        "operational_lock_book": "DraftKings",
+        "reasons": [
+          "bet_time_book_mismatch"
+        ]
+      },
+      {
+        "gate_c_bet_time_book": "DraftKings",
+        "identity": [
+          "2026-08-29",
+          "martin perez",
+          "over"
+        ],
+        "operational_lock_book": "FanDuel",
+        "reasons": [
+          "bet_time_book_mismatch"
+        ]
+      },
+      {
+        "gate_c_bet_time_book": "BetMGM",
+        "identity": [
+          "2026-08-29",
+          "martin perez",
+          "under"
+        ],
+        "operational_lock_book": null,
+        "reasons": [
+          "missing_or_ambiguous_operational_lock"
+        ]
+      },
+      {
+        "gate_c_bet_time_book": "BetMGM",
+        "identity": [
+          "2026-08-29",
+          "erick fedde",
+          "over"
+        ],
+        "operational_lock_book": "FanDuel",
+        "reasons": [
+          "bet_time_book_mismatch"
+        ]
+      },
+      {
+        "gate_c_bet_time_book": "FanDuel",
+        "identity": [
+          "2026-08-29",
+          "ryan johnson",
+          "over"
+        ],
+        "operational_lock_book": null,
+        "reasons": [
+          "missing_or_ambiguous_operational_lock"
+        ]
+      },
+      {
+        "gate_c_bet_time_book": "FanDuel",
+        "identity": [
+          "2026-08-31",
+          "anthony kay",
+          "over"
+        ],
+        "operational_lock_book": null,
+        "reasons": [
+          "missing_or_ambiguous_operational_lock"
+        ]
+      },
+      {
+        "gate_c_bet_time_book": "BetMGM",
+        "identity": [
+          "2026-08-31",
+          "anthony molina",
+          "over"
+        ],
+        "operational_lock_book": "FanDuel",
+        "reasons": [
+          "bet_time_book_mismatch"
+        ]
+      },
+      {
+        "gate_c_bet_time_book": "BetMGM",
+        "identity": [
+          "2026-08-31",
+          "aaron nola",
+          "over"
+        ],
+        "operational_lock_book": "FanDuel",
+        "reasons": [
+          "bet_time_book_mismatch"
+        ]
+      },
+      {
+        "gate_c_bet_time_book": "FanDuel",
+        "identity": [
+          "2026-09-01",
+          "paul skenes",
+          "under"
+        ],
+        "operational_lock_book": null,
+        "reasons": [
+          "missing_or_ambiguous_operational_lock"
+        ]
+      },
+      {
+        "gate_c_bet_time_book": "FanDuel",
+        "identity": [
+          "2026-09-01",
+          "kyle bradish",
+          "under"
+        ],
+        "operational_lock_book": null,
+        "reasons": [
+          "missing_or_ambiguous_operational_lock"
+        ]
+      },
+      {
+        "gate_c_bet_time_book": "FanDuel",
+        "identity": [
+          "2026-09-02",
+          "noah cameron",
+          "over"
+        ],
+        "operational_lock_book": null,
+        "reasons": [
+          "missing_or_ambiguous_operational_lock"
+        ]
+      },
+      {
+        "gate_c_bet_time_book": "FanDuel",
+        "identity": [
+          "2026-09-02",
+          "yoshinobu yamamoto",
+          "under"
+        ],
+        "operational_lock_book": null,
+        "reasons": [
+          "missing_or_ambiguous_operational_lock"
+        ]
+      }
+    ]
+  },
+  "rebuild": {
+    "dates": 20,
+    "diagnostics": {
+      "archive_outcome_reconciliation": {
+        "ambiguous_markets": 0,
+        "recovered_markets": 0
+      }
+    },
+    "duplicates": 0,
+    "reconciliation": {
+      "graded_pick_rows": 330,
+      "matched_pick_rows": 330,
+      "unique_side_fallback_matches": 0,
+      "unmatched_examples": [],
+      "unmatched_pick_rows": 0
+    },
+    "rows": 660,
+    "tracked_graded": 351
+  },
+  "scope": "Bounded offline reconstruction and counterfactual schema preview; not a hosted-run certification or eligibility promotion",
+  "selective_lean": {
+    "candidates": [
+      {
+        "agreement": null,
+        "archive_line": 3.5,
+        "archive_outcome_source": "archive",
+        "dataset_key": "2026-08-15:official_close:brad lord:over:3.5",
+        "diagnostic_pnl": -1.0,
+        "formal_prospective_credit": false,
+        "identity": [
+          "2026-08-15",
+          "brad lord",
+          "over"
+        ],
+        "lock_join_reasons": [],
+        "locked_line": 3.5,
+        "missing_after_lock_only_preview": [
+          "provider|live_display_provider|odds_source",
+          "market_agreement_label|market_agreement",
+          "preclose_clv_proxy_label|preclose_clv_proxy"
+        ],
+        "missing_before": [
+          "operational_lock_id|lock_id|lock_key|operational_lock_key",
+          "operational_lock_consumed_at|consumed_at|lock_consumed_at",
+          "operational_lock_source_artifact_path|lock_source_artifact_path",
+          "provider|live_display_provider|odds_source",
+          "market_agreement_label|market_agreement",
+          "preclose_clv_proxy_label|preclose_clv_proxy"
+        ],
+        "official_provider": "therundown",
+        "provider": null,
+        "quote_differs_from_lock": false,
+        "result": "loss",
+        "selector_fingerprint": "4e00a180e35fe75dc8889d47065a25c4351cb37ac55664eb42f01b77c07fd13a",
+        "timing": "pre_30",
+        "would_pass_missing_inputs_only": false
+      },
+      {
+        "agreement": null,
+        "archive_line": 3.5,
+        "archive_outcome_source": "archive",
+        "dataset_key": "2026-08-17:official_close:mason barnett:over:3.5",
+        "diagnostic_pnl": -1.0,
+        "formal_prospective_credit": false,
+        "identity": [
+          "2026-08-17",
+          "mason barnett",
+          "over"
+        ],
+        "lock_join_reasons": [],
+        "locked_line": 3.5,
+        "missing_after_lock_only_preview": [
+          "provider|live_display_provider|odds_source",
+          "market_agreement_label|market_agreement",
+          "preclose_clv_proxy_label|preclose_clv_proxy"
+        ],
+        "missing_before": [
+          "operational_lock_id|lock_id|lock_key|operational_lock_key",
+          "operational_lock_consumed_at|consumed_at|lock_consumed_at",
+          "operational_lock_source_artifact_path|lock_source_artifact_path",
+          "provider|live_display_provider|odds_source",
+          "market_agreement_label|market_agreement",
+          "preclose_clv_proxy_label|preclose_clv_proxy"
+        ],
+        "official_provider": "therundown",
+        "provider": null,
+        "quote_differs_from_lock": false,
+        "result": "loss",
+        "selector_fingerprint": "4e00a180e35fe75dc8889d47065a25c4351cb37ac55664eb42f01b77c07fd13a",
+        "timing": "pre_30",
+        "would_pass_missing_inputs_only": false
+      },
+      {
+        "agreement": null,
+        "archive_line": 3.5,
+        "archive_outcome_source": "archive",
+        "dataset_key": "2026-08-19:official_close:robert stock:under:3.5",
+        "diagnostic_pnl": -1.0,
+        "formal_prospective_credit": false,
+        "identity": [
+          "2026-08-19",
+          "robert stock",
+          "under"
+        ],
+        "lock_join_reasons": [],
+        "locked_line": 3.5,
+        "missing_after_lock_only_preview": [
+          "provider|live_display_provider|odds_source",
+          "market_agreement_label|market_agreement",
+          "preclose_clv_proxy_label|preclose_clv_proxy"
+        ],
+        "missing_before": [
+          "operational_lock_id|lock_id|lock_key|operational_lock_key",
+          "operational_lock_consumed_at|consumed_at|lock_consumed_at",
+          "operational_lock_source_artifact_path|lock_source_artifact_path",
+          "provider|live_display_provider|odds_source",
+          "market_agreement_label|market_agreement",
+          "preclose_clv_proxy_label|preclose_clv_proxy"
+        ],
+        "official_provider": "therundown",
+        "provider": null,
+        "quote_differs_from_lock": false,
+        "result": "loss",
+        "selector_fingerprint": "4e00a180e35fe75dc8889d47065a25c4351cb37ac55664eb42f01b77c07fd13a",
+        "timing": "pre_30",
+        "would_pass_missing_inputs_only": false
+      },
+      {
+        "agreement": null,
+        "archive_line": 2.5,
+        "archive_outcome_source": "archive",
+        "dataset_key": "2026-08-21:official_close:randy vasquez:under:2.5",
+        "diagnostic_pnl": -1.0,
+        "formal_prospective_credit": false,
+        "identity": [
+          "2026-08-21",
+          "randy vasquez",
+          "under"
+        ],
+        "lock_join_reasons": [],
+        "locked_line": 2.5,
+        "missing_after_lock_only_preview": [
+          "provider|live_display_provider|odds_source",
+          "market_agreement_label|market_agreement",
+          "preclose_clv_proxy_label|preclose_clv_proxy"
+        ],
+        "missing_before": [
+          "operational_lock_id|lock_id|lock_key|operational_lock_key",
+          "operational_lock_consumed_at|consumed_at|lock_consumed_at",
+          "operational_lock_source_artifact_path|lock_source_artifact_path",
+          "provider|live_display_provider|odds_source",
+          "market_agreement_label|market_agreement",
+          "preclose_clv_proxy_label|preclose_clv_proxy"
+        ],
+        "official_provider": "therundown",
+        "provider": null,
+        "quote_differs_from_lock": false,
+        "result": "loss",
+        "selector_fingerprint": "4e00a180e35fe75dc8889d47065a25c4351cb37ac55664eb42f01b77c07fd13a",
+        "timing": "pre_30",
+        "would_pass_missing_inputs_only": false
+      },
+      {
+        "agreement": null,
+        "archive_line": 3.5,
+        "archive_outcome_source": "archive",
+        "dataset_key": "2026-08-22:official_close:ryan johnson:under:3.5",
+        "diagnostic_pnl": 1.22,
+        "formal_prospective_credit": false,
+        "identity": [
+          "2026-08-22",
+          "ryan johnson",
+          "under"
+        ],
+        "lock_join_reasons": [],
+        "locked_line": 3.5,
+        "missing_after_lock_only_preview": [
+          "provider|live_display_provider|odds_source",
+          "market_agreement_label|market_agreement",
+          "preclose_clv_proxy_label|preclose_clv_proxy"
+        ],
+        "missing_before": [
+          "operational_lock_id|lock_id|lock_key|operational_lock_key",
+          "operational_lock_consumed_at|consumed_at|lock_consumed_at",
+          "operational_lock_source_artifact_path|lock_source_artifact_path",
+          "provider|live_display_provider|odds_source",
+          "market_agreement_label|market_agreement",
+          "preclose_clv_proxy_label|preclose_clv_proxy"
+        ],
+        "official_provider": "therundown",
+        "provider": null,
+        "quote_differs_from_lock": false,
+        "result": "win",
+        "selector_fingerprint": "4e00a180e35fe75dc8889d47065a25c4351cb37ac55664eb42f01b77c07fd13a",
+        "timing": "pre_30",
+        "would_pass_missing_inputs_only": false
+      },
+      {
+        "agreement": null,
+        "archive_line": 3.5,
+        "archive_outcome_source": "archive",
+        "dataset_key": "2026-08-22:official_close:andrew painter:under:3.5",
+        "diagnostic_pnl": -1.0,
+        "formal_prospective_credit": false,
+        "identity": [
+          "2026-08-22",
+          "andrew painter",
+          "under"
+        ],
+        "lock_join_reasons": [],
+        "locked_line": 3.5,
+        "missing_after_lock_only_preview": [
+          "provider|live_display_provider|odds_source",
+          "market_agreement_label|market_agreement",
+          "preclose_clv_proxy_label|preclose_clv_proxy"
+        ],
+        "missing_before": [
+          "operational_lock_id|lock_id|lock_key|operational_lock_key",
+          "operational_lock_consumed_at|consumed_at|lock_consumed_at",
+          "operational_lock_source_artifact_path|lock_source_artifact_path",
+          "provider|live_display_provider|odds_source",
+          "market_agreement_label|market_agreement",
+          "preclose_clv_proxy_label|preclose_clv_proxy"
+        ],
+        "official_provider": "therundown",
+        "provider": null,
+        "quote_differs_from_lock": false,
+        "result": "loss",
+        "selector_fingerprint": "4e00a180e35fe75dc8889d47065a25c4351cb37ac55664eb42f01b77c07fd13a",
+        "timing": "pre_30",
+        "would_pass_missing_inputs_only": false
+      },
+      {
+        "agreement": null,
+        "archive_line": 3.5,
+        "archive_outcome_source": "archive",
+        "dataset_key": "2026-08-22:official_close:blade tidwell:under:3.5",
+        "diagnostic_pnl": -1.0,
+        "formal_prospective_credit": false,
+        "identity": [
+          "2026-08-22",
+          "blade tidwell",
+          "under"
+        ],
+        "lock_join_reasons": [],
+        "locked_line": 3.5,
+        "missing_after_lock_only_preview": [
+          "provider|live_display_provider|odds_source",
+          "market_agreement_label|market_agreement",
+          "preclose_clv_proxy_label|preclose_clv_proxy"
+        ],
+        "missing_before": [
+          "operational_lock_id|lock_id|lock_key|operational_lock_key",
+          "operational_lock_consumed_at|consumed_at|lock_consumed_at",
+          "operational_lock_source_artifact_path|lock_source_artifact_path",
+          "provider|live_display_provider|odds_source",
+          "market_agreement_label|market_agreement",
+          "preclose_clv_proxy_label|preclose_clv_proxy"
+        ],
+        "official_provider": "therundown",
+        "provider": null,
+        "quote_differs_from_lock": false,
+        "result": "loss",
+        "selector_fingerprint": "4e00a180e35fe75dc8889d47065a25c4351cb37ac55664eb42f01b77c07fd13a",
+        "timing": "pre_30",
+        "would_pass_missing_inputs_only": false
+      },
+      {
+        "agreement": null,
+        "archive_line": 3.5,
+        "archive_outcome_source": "archive",
+        "dataset_key": "2026-08-23:official_close:mitch bratt:under:3.5",
+        "diagnostic_pnl": 1.34,
+        "formal_prospective_credit": false,
+        "identity": [
+          "2026-08-23",
+          "mitch bratt",
+          "under"
+        ],
+        "lock_join_reasons": [],
+        "locked_line": 3.5,
+        "missing_after_lock_only_preview": [
+          "provider|live_display_provider|odds_source",
+          "market_agreement_label|market_agreement",
+          "preclose_clv_proxy_label|preclose_clv_proxy"
+        ],
+        "missing_before": [
+          "operational_lock_id|lock_id|lock_key|operational_lock_key",
+          "operational_lock_consumed_at|consumed_at|lock_consumed_at",
+          "operational_lock_source_artifact_path|lock_source_artifact_path",
+          "provider|live_display_provider|odds_source",
+          "market_agreement_label|market_agreement",
+          "preclose_clv_proxy_label|preclose_clv_proxy"
+        ],
+        "official_provider": "therundown",
+        "provider": null,
+        "quote_differs_from_lock": false,
+        "result": "win",
+        "selector_fingerprint": "4e00a180e35fe75dc8889d47065a25c4351cb37ac55664eb42f01b77c07fd13a",
+        "timing": "pre_30",
+        "would_pass_missing_inputs_only": false
+      },
+      {
+        "agreement": null,
+        "archive_line": 2.5,
+        "archive_outcome_source": "archive",
+        "dataset_key": "2026-08-23:official_close:daniel lynch iv:under:2.5",
+        "diagnostic_pnl": 1.04,
+        "formal_prospective_credit": false,
+        "identity": [
+          "2026-08-23",
+          "daniel lynch iv",
+          "under"
+        ],
+        "lock_join_reasons": [
+          "bet_time_book_mismatch"
+        ],
+        "locked_line": 2.5,
+        "missing_after_lock_only_preview": [
+          "operational_lock_id|lock_id|lock_key|operational_lock_key",
+          "operational_lock_consumed_at|consumed_at|lock_consumed_at",
+          "operational_lock_source_artifact_path|lock_source_artifact_path",
+          "provider|live_display_provider|odds_source",
+          "market_agreement_label|market_agreement",
+          "preclose_clv_proxy_label|preclose_clv_proxy"
+        ],
+        "missing_before": [
+          "operational_lock_id|lock_id|lock_key|operational_lock_key",
+          "operational_lock_consumed_at|consumed_at|lock_consumed_at",
+          "operational_lock_source_artifact_path|lock_source_artifact_path",
+          "provider|live_display_provider|odds_source",
+          "market_agreement_label|market_agreement",
+          "preclose_clv_proxy_label|preclose_clv_proxy"
+        ],
+        "official_provider": "therundown",
+        "provider": null,
+        "quote_differs_from_lock": false,
+        "result": "win",
+        "selector_fingerprint": "4e00a180e35fe75dc8889d47065a25c4351cb37ac55664eb42f01b77c07fd13a",
+        "timing": "pre_30",
+        "would_pass_missing_inputs_only": false
+      },
+      {
+        "agreement": null,
+        "archive_line": 2.5,
+        "archive_outcome_source": "archive",
+        "dataset_key": "2026-08-23:official_close:tomoyuki sugano:over:2.5",
+        "diagnostic_pnl": -1.0,
+        "formal_prospective_credit": false,
+        "identity": [
+          "2026-08-23",
+          "tomoyuki sugano",
+          "over"
+        ],
+        "lock_join_reasons": [
+          "bet_time_book_mismatch"
+        ],
+        "locked_line": 2.5,
+        "missing_after_lock_only_preview": [
+          "operational_lock_id|lock_id|lock_key|operational_lock_key",
+          "operational_lock_consumed_at|consumed_at|lock_consumed_at",
+          "operational_lock_source_artifact_path|lock_source_artifact_path",
+          "provider|live_display_provider|odds_source",
+          "market_agreement_label|market_agreement",
+          "preclose_clv_proxy_label|preclose_clv_proxy"
+        ],
+        "missing_before": [
+          "operational_lock_id|lock_id|lock_key|operational_lock_key",
+          "operational_lock_consumed_at|consumed_at|lock_consumed_at",
+          "operational_lock_source_artifact_path|lock_source_artifact_path",
+          "provider|live_display_provider|odds_source",
+          "market_agreement_label|market_agreement",
+          "preclose_clv_proxy_label|preclose_clv_proxy"
+        ],
+        "official_provider": "propline",
+        "provider": null,
+        "quote_differs_from_lock": false,
+        "result": "loss",
+        "selector_fingerprint": "4e00a180e35fe75dc8889d47065a25c4351cb37ac55664eb42f01b77c07fd13a",
+        "timing": "pre_30",
+        "would_pass_missing_inputs_only": false
+      },
+      {
+        "agreement": null,
+        "archive_line": 2.5,
+        "archive_outcome_source": "archive",
+        "dataset_key": "2026-08-23:official_close:lake bachar:over:2.5",
+        "diagnostic_pnl": -1.0,
+        "formal_prospective_credit": false,
+        "identity": [
+          "2026-08-23",
+          "lake bachar",
+          "over"
+        ],
+        "lock_join_reasons": [],
+        "locked_line": 2.5,
+        "missing_after_lock_only_preview": [
+          "provider|live_display_provider|odds_source",
+          "market_agreement_label|market_agreement",
+          "preclose_clv_proxy_label|preclose_clv_proxy"
+        ],
+        "missing_before": [
+          "operational_lock_id|lock_id|lock_key|operational_lock_key",
+          "operational_lock_consumed_at|consumed_at|lock_consumed_at",
+          "operational_lock_source_artifact_path|lock_source_artifact_path",
+          "provider|live_display_provider|odds_source",
+          "market_agreement_label|market_agreement",
+          "preclose_clv_proxy_label|preclose_clv_proxy"
+        ],
+        "official_provider": "therundown",
+        "provider": null,
+        "quote_differs_from_lock": false,
+        "result": "loss",
+        "selector_fingerprint": "4e00a180e35fe75dc8889d47065a25c4351cb37ac55664eb42f01b77c07fd13a",
+        "timing": "pre_30",
+        "would_pass_missing_inputs_only": false
+      },
+      {
+        "agreement": null,
+        "archive_line": 3.5,
+        "archive_outcome_source": "archive",
+        "dataset_key": "2026-08-25:official_close:zac thornton:under:3.5",
+        "diagnostic_pnl": -1.0,
+        "formal_prospective_credit": false,
+        "identity": [
+          "2026-08-25",
+          "zac thornton",
+          "under"
+        ],
+        "lock_join_reasons": [],
+        "locked_line": 3.5,
+        "missing_after_lock_only_preview": [
+          "provider|live_display_provider|odds_source",
+          "market_agreement_label|market_agreement",
+          "preclose_clv_proxy_label|preclose_clv_proxy"
+        ],
+        "missing_before": [
+          "operational_lock_id|lock_id|lock_key|operational_lock_key",
+          "operational_lock_consumed_at|consumed_at|lock_consumed_at",
+          "operational_lock_source_artifact_path|lock_source_artifact_path",
+          "provider|live_display_provider|odds_source",
+          "market_agreement_label|market_agreement",
+          "preclose_clv_proxy_label|preclose_clv_proxy"
+        ],
+        "official_provider": "therundown",
+        "provider": null,
+        "quote_differs_from_lock": false,
+        "result": "loss",
+        "selector_fingerprint": "4e00a180e35fe75dc8889d47065a25c4351cb37ac55664eb42f01b77c07fd13a",
+        "timing": "pre_30",
+        "would_pass_missing_inputs_only": false
+      },
+      {
+        "agreement": null,
+        "archive_line": 3.5,
+        "archive_outcome_source": "archive",
+        "dataset_key": "2026-08-25:official_close:tyler phillips:under:3.5",
+        "diagnostic_pnl": -1.0,
+        "formal_prospective_credit": false,
+        "identity": [
+          "2026-08-25",
+          "tyler phillips",
+          "under"
+        ],
+        "lock_join_reasons": [],
+        "locked_line": 3.5,
+        "missing_after_lock_only_preview": [
+          "provider|live_display_provider|odds_source",
+          "market_agreement_label|market_agreement",
+          "preclose_clv_proxy_label|preclose_clv_proxy"
+        ],
+        "missing_before": [
+          "operational_lock_id|lock_id|lock_key|operational_lock_key",
+          "operational_lock_consumed_at|consumed_at|lock_consumed_at",
+          "operational_lock_source_artifact_path|lock_source_artifact_path",
+          "provider|live_display_provider|odds_source",
+          "market_agreement_label|market_agreement",
+          "preclose_clv_proxy_label|preclose_clv_proxy"
+        ],
+        "official_provider": "therundown",
+        "provider": null,
+        "quote_differs_from_lock": false,
+        "result": "loss",
+        "selector_fingerprint": "4e00a180e35fe75dc8889d47065a25c4351cb37ac55664eb42f01b77c07fd13a",
+        "timing": "pre_30",
+        "would_pass_missing_inputs_only": false
+      },
+      {
+        "agreement": null,
+        "archive_line": 3.5,
+        "archive_outcome_source": "archive",
+        "dataset_key": "2026-08-26:official_close:elmer rodriguez:under:3.5",
+        "diagnostic_pnl": -1.0,
+        "formal_prospective_credit": false,
+        "identity": [
+          "2026-08-26",
+          "elmer rodriguez",
+          "under"
+        ],
+        "lock_join_reasons": [],
+        "locked_line": 3.5,
+        "missing_after_lock_only_preview": [
+          "provider|live_display_provider|odds_source",
+          "market_agreement_label|market_agreement",
+          "preclose_clv_proxy_label|preclose_clv_proxy"
+        ],
+        "missing_before": [
+          "operational_lock_id|lock_id|lock_key|operational_lock_key",
+          "operational_lock_consumed_at|consumed_at|lock_consumed_at",
+          "operational_lock_source_artifact_path|lock_source_artifact_path",
+          "provider|live_display_provider|odds_source",
+          "market_agreement_label|market_agreement",
+          "preclose_clv_proxy_label|preclose_clv_proxy"
+        ],
+        "official_provider": "therundown",
+        "provider": null,
+        "quote_differs_from_lock": false,
+        "result": "loss",
+        "selector_fingerprint": "4e00a180e35fe75dc8889d47065a25c4351cb37ac55664eb42f01b77c07fd13a",
+        "timing": "pre_30",
+        "would_pass_missing_inputs_only": false
+      },
+      {
+        "agreement": null,
+        "archive_line": 3.5,
+        "archive_outcome_source": "archive",
+        "dataset_key": "2026-08-26:official_close:tanner gordon:under:3.5",
+        "diagnostic_pnl": -1.0,
+        "formal_prospective_credit": false,
+        "identity": [
+          "2026-08-26",
+          "tanner gordon",
+          "under"
+        ],
+        "lock_join_reasons": [],
+        "locked_line": 3.5,
+        "missing_after_lock_only_preview": [
+          "provider|live_display_provider|odds_source",
+          "market_agreement_label|market_agreement",
+          "preclose_clv_proxy_label|preclose_clv_proxy"
+        ],
+        "missing_before": [
+          "operational_lock_id|lock_id|lock_key|operational_lock_key",
+          "operational_lock_consumed_at|consumed_at|lock_consumed_at",
+          "operational_lock_source_artifact_path|lock_source_artifact_path",
+          "provider|live_display_provider|odds_source",
+          "market_agreement_label|market_agreement",
+          "preclose_clv_proxy_label|preclose_clv_proxy"
+        ],
+        "official_provider": "therundown",
+        "provider": null,
+        "quote_differs_from_lock": false,
+        "result": "loss",
+        "selector_fingerprint": "4e00a180e35fe75dc8889d47065a25c4351cb37ac55664eb42f01b77c07fd13a",
+        "timing": "pre_30",
+        "would_pass_missing_inputs_only": false
+      },
+      {
+        "agreement": null,
+        "archive_line": 3.5,
+        "archive_outcome_source": "archive",
+        "dataset_key": "2026-08-27:official_close:jose cabrera:over:3.5",
+        "diagnostic_pnl": 0.9615384615384616,
+        "formal_prospective_credit": false,
+        "identity": [
+          "2026-08-27",
+          "jose cabrera",
+          "over"
+        ],
+        "lock_join_reasons": [],
+        "locked_line": 3.5,
+        "missing_after_lock_only_preview": [
+          "provider|live_display_provider|odds_source",
+          "market_agreement_label|market_agreement",
+          "preclose_clv_proxy_label|preclose_clv_proxy"
+        ],
+        "missing_before": [
+          "operational_lock_id|lock_id|lock_key|operational_lock_key",
+          "operational_lock_consumed_at|consumed_at|lock_consumed_at",
+          "operational_lock_source_artifact_path|lock_source_artifact_path",
+          "provider|live_display_provider|odds_source",
+          "market_agreement_label|market_agreement",
+          "preclose_clv_proxy_label|preclose_clv_proxy"
+        ],
+        "official_provider": "therundown",
+        "provider": null,
+        "quote_differs_from_lock": false,
+        "result": "win",
+        "selector_fingerprint": "4e00a180e35fe75dc8889d47065a25c4351cb37ac55664eb42f01b77c07fd13a",
+        "timing": "pre_30",
+        "would_pass_missing_inputs_only": false
+      },
+      {
+        "agreement": null,
+        "archive_line": 3.5,
+        "archive_outcome_source": "archive",
+        "dataset_key": "2026-08-28:official_close:kohl drake:under:3.5",
+        "diagnostic_pnl": -1.0,
+        "formal_prospective_credit": false,
+        "identity": [
+          "2026-08-28",
+          "kohl drake",
+          "under"
+        ],
+        "lock_join_reasons": [],
+        "locked_line": 3.5,
+        "missing_after_lock_only_preview": [
+          "provider|live_display_provider|odds_source",
+          "market_agreement_label|market_agreement",
+          "preclose_clv_proxy_label|preclose_clv_proxy"
+        ],
+        "missing_before": [
+          "operational_lock_id|lock_id|lock_key|operational_lock_key",
+          "operational_lock_consumed_at|consumed_at|lock_consumed_at",
+          "operational_lock_source_artifact_path|lock_source_artifact_path",
+          "provider|live_display_provider|odds_source",
+          "market_agreement_label|market_agreement",
+          "preclose_clv_proxy_label|preclose_clv_proxy"
+        ],
+        "official_provider": "therundown",
+        "provider": null,
+        "quote_differs_from_lock": false,
+        "result": "loss",
+        "selector_fingerprint": "4e00a180e35fe75dc8889d47065a25c4351cb37ac55664eb42f01b77c07fd13a",
+        "timing": "pre_30",
+        "would_pass_missing_inputs_only": false
+      },
+      {
+        "agreement": null,
+        "archive_line": 3.5,
+        "archive_outcome_source": "archive",
+        "dataset_key": "2026-08-29:official_close:mitch bratt:under:3.5",
+        "diagnostic_pnl": 0.9615384615384616,
+        "formal_prospective_credit": false,
+        "identity": [
+          "2026-08-29",
+          "mitch bratt",
+          "under"
+        ],
+        "lock_join_reasons": [],
+        "locked_line": 3.5,
+        "missing_after_lock_only_preview": [
+          "provider|live_display_provider|odds_source",
+          "market_agreement_label|market_agreement",
+          "preclose_clv_proxy_label|preclose_clv_proxy"
+        ],
+        "missing_before": [
+          "operational_lock_id|lock_id|lock_key|operational_lock_key",
+          "operational_lock_consumed_at|consumed_at|lock_consumed_at",
+          "operational_lock_source_artifact_path|lock_source_artifact_path",
+          "provider|live_display_provider|odds_source",
+          "market_agreement_label|market_agreement",
+          "preclose_clv_proxy_label|preclose_clv_proxy"
+        ],
+        "official_provider": "therundown",
+        "provider": null,
+        "quote_differs_from_lock": false,
+        "result": "win",
+        "selector_fingerprint": "4e00a180e35fe75dc8889d47065a25c4351cb37ac55664eb42f01b77c07fd13a",
+        "timing": "pre_30",
+        "would_pass_missing_inputs_only": false
+      },
+      {
+        "agreement": null,
+        "archive_line": 2.5,
+        "archive_outcome_source": "archive",
+        "dataset_key": "2026-08-30:official_close:janson junk:under:2.5",
+        "diagnostic_pnl": 1.24,
+        "formal_prospective_credit": false,
+        "identity": [
+          "2026-08-30",
+          "janson junk",
+          "under"
+        ],
+        "lock_join_reasons": [],
+        "locked_line": 2.5,
+        "missing_after_lock_only_preview": [
+          "provider|live_display_provider|odds_source",
+          "market_agreement_label|market_agreement",
+          "preclose_clv_proxy_label|preclose_clv_proxy",
+          "bet_timing_window=pre_30"
+        ],
+        "missing_before": [
+          "operational_lock_id|lock_id|lock_key|operational_lock_key",
+          "operational_lock_consumed_at|consumed_at|lock_consumed_at",
+          "operational_lock_source_artifact_path|lock_source_artifact_path",
+          "provider|live_display_provider|odds_source",
+          "market_agreement_label|market_agreement",
+          "preclose_clv_proxy_label|preclose_clv_proxy",
+          "bet_timing_window=pre_30"
+        ],
+        "official_provider": "propline",
+        "provider": null,
+        "quote_differs_from_lock": false,
+        "result": "win",
+        "selector_fingerprint": "4e00a180e35fe75dc8889d47065a25c4351cb37ac55664eb42f01b77c07fd13a",
+        "timing": "pre_5",
+        "would_pass_missing_inputs_only": false
+      },
+      {
+        "agreement": null,
+        "archive_line": 2.5,
+        "archive_outcome_source": "archive",
+        "dataset_key": "2026-08-31:official_close:anthony molina:over:2.5",
+        "diagnostic_pnl": 1.0,
+        "formal_prospective_credit": false,
+        "identity": [
+          "2026-08-31",
+          "anthony molina",
+          "over"
+        ],
+        "lock_join_reasons": [
+          "bet_time_book_mismatch"
+        ],
+        "locked_line": 2.5,
+        "missing_after_lock_only_preview": [
+          "operational_lock_id|lock_id|lock_key|operational_lock_key",
+          "operational_lock_consumed_at|consumed_at|lock_consumed_at",
+          "operational_lock_source_artifact_path|lock_source_artifact_path",
+          "provider|live_display_provider|odds_source",
+          "market_agreement_label|market_agreement",
+          "preclose_clv_proxy_label|preclose_clv_proxy"
+        ],
+        "missing_before": [
+          "operational_lock_id|lock_id|lock_key|operational_lock_key",
+          "operational_lock_consumed_at|consumed_at|lock_consumed_at",
+          "operational_lock_source_artifact_path|lock_source_artifact_path",
+          "provider|live_display_provider|odds_source",
+          "market_agreement_label|market_agreement",
+          "preclose_clv_proxy_label|preclose_clv_proxy"
+        ],
+        "official_provider": "propline",
+        "provider": null,
+        "quote_differs_from_lock": false,
+        "result": "win",
+        "selector_fingerprint": "4e00a180e35fe75dc8889d47065a25c4351cb37ac55664eb42f01b77c07fd13a",
+        "timing": "pre_30",
+        "would_pass_missing_inputs_only": false
+      },
+      {
+        "agreement": null,
+        "archive_line": 3.5,
+        "archive_outcome_source": "archive",
+        "dataset_key": "2026-08-31:official_close:ryan gusto:under:3.5",
+        "diagnostic_pnl": -1.0,
+        "formal_prospective_credit": false,
+        "identity": [
+          "2026-08-31",
+          "ryan gusto",
+          "under"
+        ],
+        "lock_join_reasons": [],
+        "locked_line": 3.5,
+        "missing_after_lock_only_preview": [
+          "provider|live_display_provider|odds_source",
+          "market_agreement_label|market_agreement",
+          "preclose_clv_proxy_label|preclose_clv_proxy"
+        ],
+        "missing_before": [
+          "operational_lock_id|lock_id|lock_key|operational_lock_key",
+          "operational_lock_consumed_at|consumed_at|lock_consumed_at",
+          "operational_lock_source_artifact_path|lock_source_artifact_path",
+          "provider|live_display_provider|odds_source",
+          "market_agreement_label|market_agreement",
+          "preclose_clv_proxy_label|preclose_clv_proxy"
+        ],
+        "official_provider": "therundown",
+        "provider": null,
+        "quote_differs_from_lock": false,
+        "result": "loss",
+        "selector_fingerprint": "4e00a180e35fe75dc8889d47065a25c4351cb37ac55664eb42f01b77c07fd13a",
+        "timing": "pre_30",
+        "would_pass_missing_inputs_only": false
+      },
+      {
+        "agreement": null,
+        "archive_line": 3.5,
+        "archive_outcome_source": "archive",
+        "dataset_key": "2026-09-02:official_close:justin hagenman:over:3.5",
+        "diagnostic_pnl": -1.0,
+        "formal_prospective_credit": false,
+        "identity": [
+          "2026-09-02",
+          "justin hagenman",
+          "over"
+        ],
+        "lock_join_reasons": [],
+        "locked_line": 3.5,
+        "missing_after_lock_only_preview": [
+          "provider|live_display_provider|odds_source",
+          "market_agreement_label|market_agreement",
+          "preclose_clv_proxy_label|preclose_clv_proxy"
+        ],
+        "missing_before": [
+          "operational_lock_id|lock_id|lock_key|operational_lock_key",
+          "operational_lock_consumed_at|consumed_at|lock_consumed_at",
+          "operational_lock_source_artifact_path|lock_source_artifact_path",
+          "provider|live_display_provider|odds_source",
+          "market_agreement_label|market_agreement",
+          "preclose_clv_proxy_label|preclose_clv_proxy"
+        ],
+        "official_provider": "therundown",
+        "provider": null,
+        "quote_differs_from_lock": false,
+        "result": "loss",
+        "selector_fingerprint": "4e00a180e35fe75dc8889d47065a25c4351cb37ac55664eb42f01b77c07fd13a",
+        "timing": "pre_30",
+        "would_pass_missing_inputs_only": false
+      },
+      {
+        "agreement": null,
+        "archive_line": 3.5,
+        "archive_outcome_source": "archive",
+        "dataset_key": "2026-09-03:official_close:cal quantrill:over:3.5",
+        "diagnostic_pnl": 1.22,
+        "formal_prospective_credit": false,
+        "identity": [
+          "2026-09-03",
+          "cal quantrill",
+          "over"
+        ],
+        "lock_join_reasons": [],
+        "locked_line": 3.5,
+        "missing_after_lock_only_preview": [
+          "provider|live_display_provider|odds_source",
+          "market_agreement_label|market_agreement",
+          "preclose_clv_proxy_label|preclose_clv_proxy"
+        ],
+        "missing_before": [
+          "operational_lock_id|lock_id|lock_key|operational_lock_key",
+          "operational_lock_consumed_at|consumed_at|lock_consumed_at",
+          "operational_lock_source_artifact_path|lock_source_artifact_path",
+          "provider|live_display_provider|odds_source",
+          "market_agreement_label|market_agreement",
+          "preclose_clv_proxy_label|preclose_clv_proxy"
+        ],
+        "official_provider": "therundown",
+        "provider": null,
+        "quote_differs_from_lock": false,
+        "result": "win",
+        "selector_fingerprint": "4e00a180e35fe75dc8889d47065a25c4351cb37ac55664eb42f01b77c07fd13a",
+        "timing": "pre_30",
+        "would_pass_missing_inputs_only": false
+      }
+    ],
+    "fingerprint": "4e00a180e35fe75dc8889d47065a25c4351cb37ac55664eb42f01b77c07fd13a",
+    "formal_credit_granted": 0,
+    "frozen_comparison": {
+      "archive_only": [
+        [
+          "2026-08-21",
+          "randy vasquez",
+          "under"
+        ],
+        [
+          "2026-09-02",
+          "justin hagenman",
+          "over"
+        ]
+      ],
+      "archive_rule_matches": 23,
+      "frozen_only": [
+        [
+          "2026-08-29",
+          "erick fedde",
+          "over"
+        ],
+        [
+          "2026-08-30",
+          "mason adams",
+          "over"
+        ]
+      ],
+      "frozen_rule_matches": 23,
+      "overlap": 21,
+      "preclose_freshness": {
+        "pending": 23
+      },
+      "preclose_labels": {
+        "None": 23
+      },
+      "preclose_reason_codes": {
+        "exact_ladder_missing": 8,
+        "official_provider_immature": 8,
+        "provider_run_page_cap_reached": 14,
+        "same_checkpoint_alternate_line_ambiguity": 13,
+        "snapshot_page_cap_reached": 23
+      }
+    },
+    "matched_candidates": 23,
+    "missing_after_lock_only_preview": {
+      "bet_timing_window=pre_30": 1,
+      "market_agreement_label|market_agreement": 23,
+      "operational_lock_consumed_at|consumed_at|lock_consumed_at": 3,
+      "operational_lock_id|lock_id|lock_key|operational_lock_key": 3,
+      "operational_lock_source_artifact_path|lock_source_artifact_path": 3,
+      "preclose_clv_proxy_label|preclose_clv_proxy": 23,
+      "provider|live_display_provider|odds_source": 23
+    },
+    "missing_before": {
+      "bet_timing_window=pre_30": 1,
+      "market_agreement_label|market_agreement": 23,
+      "operational_lock_consumed_at|consumed_at|lock_consumed_at": 23,
+      "operational_lock_id|lock_id|lock_key|operational_lock_key": 23,
+      "operational_lock_source_artifact_path|lock_source_artifact_path": 23,
+      "preclose_clv_proxy_label|preclose_clv_proxy": 23,
+      "provider|live_display_provider|odds_source": 23
+    },
+    "pass_missing_inputs_after_lock_only": 0,
+    "pass_missing_inputs_before": 0
+  },
+  "source_capture": "2026-09-04 22:25:16.326135+00",
+  "source_presence": {
+    "bounded_current_gate_c": {
+      "fields": {
+        "consumed_at": 0,
+        "market_agreement_label": 26,
+        "official_line_source_provider": 660,
+        "operational_lock_consumed_at": 0,
+        "operational_lock_id": 0,
+        "operational_lock_source_artifact_path": 0,
+        "preclose_clv_proxy_label": 0,
+        "source_artifact_sha256": 0
+      },
+      "rows": 660
+    },
+    "bounded_history": {
+      "fields": {
+        "consumed_at": 0,
+        "market_agreement_label": 0,
+        "official_line_source_provider": 0,
+        "operational_lock_consumed_at": 0,
+        "operational_lock_id": 0,
+        "operational_lock_source_artifact_path": 0,
+        "preclose_clv_proxy_label": 0,
+        "source_artifact_sha256": 0
+      },
+      "rows": 441
+    },
+    "canonical_historical_gate_c": {
+      "fields": {
+        "consumed_at": 0,
+        "market_agreement_label": 0,
+        "official_line_source_provider": 594,
+        "operational_lock_consumed_at": 0,
+        "operational_lock_id": 0,
+        "operational_lock_source_artifact_path": 0,
+        "preclose_clv_proxy_label": 0,
+        "source_artifact_sha256": 0
+      },
+      "rows": 2070
+    },
+    "operational_locks": {
+      "fields": {
+        "consumed_at": 329,
+        "market_agreement_label": 0,
+        "official_line_source_provider": 0,
+        "operational_lock_consumed_at": 0,
+        "operational_lock_id": 0,
+        "operational_lock_source_artifact_path": 0,
+        "preclose_clv_proxy_label": 0,
+        "source_artifact_sha256": 330
+      },
+      "rows": 330
+    }
+  },
+  "transport": {
+    "august30_sql_and_served_values_equal": true,
+    "note": "Stored issuer hash is not a cross-serialization byte checksum. Do not certify all dated payload hashes from served JSON.",
+    "served_hash_mismatch_dates": [
+      "2026-08-30",
+      "2026-08-20",
+      "2026-08-19",
+      "2026-09-02",
+      "2026-08-31",
+      "2026-08-16",
+      "2026-08-18",
+      "2026-08-29",
+      "2026-08-25",
+      "2026-08-17",
+      "2026-09-03",
+      "2026-08-22",
+      "2026-08-24",
+      "2026-08-26",
+      "2026-08-23",
+      "2026-08-21",
+      "2026-08-15",
+      "2026-08-28",
+      "2026-09-01",
+      "2026-08-27"
+    ]
+  }
+}

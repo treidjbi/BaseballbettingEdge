@@ -1,0 +1,24 @@
+{
+  "base_commit": "4a38c149770f87429d968a51cd0714684eed67d2",
+  "python": "3.12.14 (main, Aug 25 2026, 13:50:33) [Clang 22.1.3 ]",
+  "executed_notebook_cells": 6,
+  "existing_tests_passed": 47,
+  "source_files_sha256": {
+    "compact-and-lock-source.json.gz": "d8dd28b48e1bc29d42eda539c49604234c16404efa50f3a486162bf544db0960",
+    "served-artifacts.json.gz": "7b22b0050b848568cb557a57e469b2a72d873a7dd9ededf9a00ee5987d9b4ea7",
+    "kumar-source.json": "b216c530f6e3833d607d05f5369d4bf869b46d86deb3ccd3d2969cea972bba46",
+    "mlb-schedule.json": "f7294c7b6c78f841d27e0ba34c3b21150a282888a3ac62f00496bd8646105b2e",
+    "mlb-kumar-boxscore.json": "aa75fd939e7c46f1c80b67c50866fbbefa75ba2b5141152aade0bc12b051e8e3",
+    "frozen-candidate-proof.json": "ca0de2c9490067543d5047a74ba25a68dd323ea1fe4afd0a5987e6df487c4bc1",
+    "selector-disagreements.json": "192b48786e7f6d8c0401f00c601b15f9245787a68ad92ae955976733e761c2fe",
+    "transport-sample.json": "4d33f541ff1767c1b9423e34bac92a547ea9b90014fe042be6d7280822875885"
+  },
+  "code_sha256": {
+    "analytics/diagnostics/pitcher_k_outcome_dataset.py": "ee8dca32c7a86c5e3295ef03887b74750586ac9868a90c176ca5145487e1e44a",
+    "analytics/diagnostics/market_agreement_tracker.py": "089844a02ace1e12c6380f3ca85c2e11b9c8ef338dabd77b8516ca9b0ac68872",
+    "analytics/diagnostics/selective_lean_prospective_audit.py": "e19ede879e57b531006b1bf27fb98b0381a19f3fa682726b23e3a446bf06274c",
+    "scripts/repair_missing_locked_picks.py": "1048325501b2226d6f75f5395ffd3aa42639b45c98c3cf575f91e22b35ed2ae3",
+    "docs/research/evidence/2026-09-04-research-lineage/reproduce.py": "bf05317059a489eb286850437f2efda3b88d6fe19bc01d8b962b02e86b9a90f5"
+  },
+  "historical_files_unchanged": true
+}

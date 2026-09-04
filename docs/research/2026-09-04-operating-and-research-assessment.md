@@ -4,6 +4,12 @@ Reviewed September 4, 2026. Starting repository: clean Mac `main`, pulled and
 verified at `f948ccc000e4c05e55a53b8ea9c2357934a9628f`.
 Companion: [concise operating brief](../operating-brief.md).
 
+Later September 4 correction: the [lineage follow-up](2026-09-04-research-lineage-decision.md)
+reproduces the Gate C JSONL and summary manifest hashes exactly by restoring
+Windows CRLF in memory. It supersedes this assessment's unresolved-hash
+conclusion. The historical corpus, original observations and results below
+remain preserved; current candidate eligibility still requires newer evidence.
+
 ## Decisions supported now
 
 **Operational reliability: Watch.** Current artifact publication and the

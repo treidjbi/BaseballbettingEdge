@@ -1,0 +1,352 @@
+{
+  "query": "select now() as captured_at,(select to_jsonb(l) from public.operational_pick_locks l where id='dabe1657-2a2d-4bbd-a708-4fdc6bd3e9a3') as operational_lock,(select jsonb_build_object('hash',p.payload_sha256,'published_at',p.published_at,'generated_at',p.generated_at,'pitchers',(select jsonb_agg(x) from jsonb_array_elements(p.payload->'pitchers') x where lower(x->>'pitcher')='kumar rocker')) from public.published_pipeline_artifacts p where artifact_key='dated_slate:2026-08-19') as archive,(select jsonb_build_object('hash',p.payload_sha256,'published_at',p.published_at,'matches',(select jsonb_agg(x) from jsonb_array_elements(p.payload) x where x->>'date' between '2026-08-18' and '2026-08-20' and lower(x->>'pitcher')='kumar rocker')) from public.published_pipeline_artifacts p where artifact_key='picks_history') as history",
+  "captured_at": "2026-09-04 22:24:21.239026+00",
+  "operational_lock": {
+    "id": "dabe1657-2a2d-4bbd-a708-4fdc6bd3e9a3",
+    "side": "under",
+    "source": "live_layer",
+    "pitcher": "Kumar Rocker",
+    "metadata": {
+      "team": "Texas Rangers",
+      "opp_team": "Washington Nationals",
+      "lock_window_minutes": 30,
+      "artifact_generated_at": "2026-08-19T23:37:57+00:00",
+      "missed_lock_grace_minutes": 10
+    },
+    "game_time": "2026-08-20T00:05:00+00:00",
+    "locked_at": "2026-08-19T23:40:39.688912+00:00",
+    "dedupe_key": "2026-08-19:kumar rocker:under",
+    "slate_date": "2026-08-19",
+    "consumed_at": null,
+    "inserted_at": "2026-08-19T23:41:07.443462+00:00",
+    "locked_book": "FanDuel",
+    "locked_odds": -138,
+    "observed_at": "2026-08-19T23:40:39.688912+00:00",
+    "locked_adj_ev": 0.1349,
+    "locked_k_line": 4.5,
+    "locked_verdict": "LEAN",
+    "should_lock_at": "2026-08-19T23:35:00+00:00",
+    "status_at_capture": "due_now",
+    "normalized_pitcher": "kumar rocker",
+    "minutes_until_start": 24.34,
+    "source_artifact_path": "https://baseballbettingedge.netlify.app/.netlify/functions/get-artifact?type=today",
+    "source_artifact_sha256": "eccc9982f35597154652fd8881dcdaa607aee967bc0d0d162e1a975322c94bea"
+  },
+  "archive": {
+    "hash": "43e908f418e6cdc2a9bef1dbb869b2ead013a6ccedcf4763bcc77a361bbab52f",
+    "pitchers": [
+      {
+        "team": "Texas Rangers",
+        "avg_ip": 5.2,
+        "k_line": 4.5,
+        "lambda": 3.85,
+        "umpire": "Bill Miller",
+        "ev_over": {
+          "ev": -0.2887,
+          "edge": -0.1388,
+          "adj_ev": -0.2887,
+          "verdict": "PASS",
+          "win_prob": 0.342,
+          "raw_adj_ev": -0.2887,
+          "raw_verdict": "PASS",
+          "movement_conf": 1,
+          "actionable_verdict": "PASS",
+          "confidence_referee": {
+            "mode": "enforce",
+            "applied": false,
+            "reasons": [
+              "price_driven_market_fade",
+              "plus_money_thin_edge",
+              "thin_projection_margin",
+              "quality_gate_capped_or_blocked"
+            ],
+            "price_sign": "plus",
+            "relationship": "model_fades_favorite",
+            "would_cap_to": "PASS",
+            "selected_odds": 108,
+            "selected_side": "over",
+            "probability_edge": -0.1388,
+            "market_favorite_side": "under",
+            "projection_margin_ks": -0.65
+          },
+          "quality_gate_level": "capped",
+          "quality_gate_reasons": [
+            "first seen opening"
+          ],
+          "profit_rescue_referee": {
+            "mode": "enforce",
+            "applied": false,
+            "reasons": [],
+            "relationship": "model_fades_favorite",
+            "would_cap_to": "PASS",
+            "selected_side": "over",
+            "market_favorite_side": "under"
+          },
+          "projection_challenger": {
+            "mode": "shadow",
+            "delta": 0.163,
+            "k_line": 4.5,
+            "reason": "shadow_only",
+            "weight": 0.25,
+            "applied": false,
+            "candidate": "market_shrink_25",
+            "would_lambda": 4.013,
+            "current_lambda": 3.85,
+            "selected_lambda": 3.85
+          },
+          "market_anchor_selector": {
+            "mode": "shadow",
+            "labels": [],
+            "applied": false,
+            "reasons": [],
+            "anchor_edge": -0.0165,
+            "anchor_side": "under",
+            "relationship": "model_fades_favorite",
+            "would_cap_to": "PASS",
+            "selected_side": "over",
+            "would_verdict": "PASS",
+            "current_verdict": "PASS",
+            "market_favorite_side": "under",
+            "no_vig_side_probability": 0.4533,
+            "market_anchor_projection": 4.3374,
+            "market_implied_projection": 4.4234
+          },
+          "quality_actionable_verdict": "PASS"
+        },
+        "pitcher": "Kumar Rocker",
+        "ev_under": {
+          "ev": 0.1349,
+          "edge": 0.0782,
+          "adj_ev": 0.1349,
+          "verdict": "LEAN",
+          "win_prob": 0.658,
+          "raw_adj_ev": 0.1349,
+          "raw_verdict": "FIRE 1u",
+          "movement_conf": 1,
+          "actionable_verdict": "LEAN",
+          "confidence_referee": {
+            "mode": "enforce",
+            "applied": false,
+            "reasons": [],
+            "price_sign": "minus",
+            "relationship": "model_agrees_with_favorite",
+            "would_cap_to": "FIRE 1u",
+            "selected_odds": -138,
+            "selected_side": "under",
+            "probability_edge": 0.0782,
+            "market_favorite_side": "under",
+            "projection_margin_ks": 0.65
+          },
+          "quality_gate_level": "capped",
+          "quality_gate_reasons": [
+            "first seen opening"
+          ],
+          "profit_rescue_referee": {
+            "mode": "enforce",
+            "applied": true,
+            "reasons": [
+              "cap_fire_under_to_lean"
+            ],
+            "relationship": "model_agrees_with_favorite",
+            "would_cap_to": "LEAN",
+            "selected_side": "under",
+            "market_favorite_side": "under"
+          },
+          "projection_challenger": {
+            "mode": "shadow",
+            "delta": 0.163,
+            "k_line": 4.5,
+            "reason": "shadow_only",
+            "weight": 0.25,
+            "applied": false,
+            "candidate": "market_shrink_25",
+            "would_lambda": 4.013,
+            "current_lambda": 3.85,
+            "selected_lambda": 3.85
+          },
+          "market_anchor_selector": {
+            "mode": "shadow",
+            "labels": [
+              "market_anchor_side_agrees",
+              "market_anchor_core"
+            ],
+            "applied": false,
+            "reasons": [],
+            "anchor_edge": 0.0276,
+            "anchor_side": "under",
+            "relationship": "model_agrees_with_favorite",
+            "would_cap_to": "LEAN",
+            "selected_side": "under",
+            "would_verdict": "LEAN",
+            "current_verdict": "LEAN",
+            "market_favorite_side": "under",
+            "no_vig_side_probability": 0.5467,
+            "market_anchor_projection": 4.2801,
+            "market_implied_projection": 4.4234
+          },
+          "quality_actionable_verdict": "FIRE 1u"
+        },
+        "opp_team": "Washington Nationals",
+        "ref_book": "FanDuel",
+        "book_odds": {
+          "BetMGM": {
+            "line": 4.5,
+            "over": -120,
+            "under": -120,
+            "provider": "therundown"
+          },
+          "FanDuel": {
+            "line": 4.5,
+            "over": 108,
+            "under": -138,
+            "provider": "therundown"
+          },
+          "BetRivers": {
+            "line": 4.5,
+            "over": -105,
+            "under": -127,
+            "provider": "propline"
+          },
+          "DraftKings": {
+            "line": 4.5,
+            "over": -106,
+            "under": -120,
+            "provider": "therundown"
+          }
+        },
+        "career_k9": 8.25,
+        "game_time": "2026-08-20T00:05:00Z",
+        "is_opener": false,
+        "recent_k9": 9,
+        "season_k9": 8.22,
+        "swstr_pct": 0.1155,
+        "ump_k_adj": 0.52,
+        "game_state": "in_progress",
+        "opp_k_rate": 0.15966363633333333,
+        "raw_lambda": 3.84,
+        "lineup_used": true,
+        "odds_source": "therundown+propline",
+        "opener_note": null,
+        "park_factor": 1.01,
+        "lineup_count": 9,
+        "model_lambda": 3.85,
+        "opening_line": 4.5,
+        "data_complete": true,
+        "data_maturity": {
+          "lineup": "confirmed",
+          "market": "first_seen",
+          "umpire": "mature",
+          "pitcher": "mature"
+        },
+        "rest_k9_delta": 0,
+        "tracked_picks": [],
+        "best_over_book": "FanDuel",
+        "best_over_odds": 108,
+        "pitcher_throws": "R",
+        "swstr_delta_k9": -0.013,
+        "best_under_book": "FanDuel",
+        "best_under_odds": -138,
+        "projection_safe": true,
+        "career_swstr_pct": 0.1233,
+        "last_pitch_count": 94,
+        "price_delta_over": 256,
+        "starter_mismatch": false,
+        "opening_over_odds": -148,
+        "price_delta_under": -254,
+        "propline_event_id": null,
+        "provider_coverage": {
+          "betmgm": {
+            "line": 4.5,
+            "provider": "therundown",
+            "heartbeat_hold": false,
+            "freshness_seconds": 0,
+            "line_freshness_seconds": 0
+          },
+          "fanduel": {
+            "line": 4.5,
+            "provider": "therundown",
+            "heartbeat_hold": false,
+            "freshness_seconds": 0,
+            "line_freshness_seconds": 0
+          },
+          "betrivers": {
+            "line": 4.5,
+            "provider": "propline",
+            "heartbeat_hold": false,
+            "freshness_seconds": 0,
+            "line_freshness_seconds": 0
+          },
+          "draftkings": {
+            "line": 4.5,
+            "provider": "therundown",
+            "heartbeat_hold": false,
+            "freshness_seconds": 599,
+            "line_freshness_seconds": 599
+          }
+        },
+        "the_odds_event_id": null,
+        "umpire_has_rating": true,
+        "market_source_mode": "therundown_propline",
+        "opening_under_odds": 116,
+        "quality_gate_level": "capped",
+        "recent_start_count": 5,
+        "verdict_cap_reason": "1 soft input flag: first_seen_opening",
+        "input_quality_flags": [
+          "first_seen_opening"
+        ],
+        "lineup_split_source": "mixed_real_split_cache",
+        "opening_odds_source": "first_seen",
+        "source_snapshot_ids": [
+          1926419,
+          1926393,
+          1926369,
+          1926291
+        ],
+        "therundown_event_id": null,
+        "umpire_rating_games": null,
+        "line_source_provider": "therundown",
+        "quality_gate_reasons": [
+          "first seen opening"
+        ],
+        "days_since_last_start": 5,
+        "projection_challenger": {
+          "mode": "shadow",
+          "delta": 0.163,
+          "k_line": 4.5,
+          "reason": "shadow_only",
+          "weight": 0.25,
+          "applied": false,
+          "candidate": "market_shrink_25",
+          "would_lambda": 4.013,
+          "current_lambda": 3.85,
+          "selected_lambda": 3.85
+        },
+        "batter_handedness_mode": "path_b",
+        "max_actionable_verdict": "FIRE 1u",
+        "lineup_real_split_count": 8,
+        "official_market_line_id": 241362,
+        "lineup_path_a_fallback_count": 1,
+        "provider_arbitration_reasons": [
+          "fresh_complete_supported_line",
+          "selected_ref_book:fanduel",
+          "selected_provider:therundown",
+          "therundown_primary",
+          "missing_books:caesars"
+        ],
+        "source_current_market_line_ids": [
+          1926419,
+          1926393,
+          1926369,
+          1926291
+        ]
+      }
+    ],
+    "generated_at": "2026-08-20T01:08:14+00:00",
+    "published_at": "2026-08-24T18:38:41.51038+00:00"
+  },
+  "history": {
+    "hash": "4e2be299fce17cee8420bdcb1fd50ac9f371c3eebcd7f1ae29528bce7fcff2e2",
+    "matches": null,
+    "published_at": "2026-09-04T22:12:49.638685+00:00"
+  }
+}

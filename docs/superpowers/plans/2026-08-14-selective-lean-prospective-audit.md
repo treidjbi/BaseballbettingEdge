@@ -100,3 +100,21 @@ commit. The commit changed no live-layer file or configuration, and the first
 post-deploy scheduled run succeeded at `2026-08-14T17:11:21Z`. No pipeline
 cron was redeployed, BoltOdds remained suspended, and every live behavior gate
 remains closed.
+
+## 2026-09-04 Input-Lineage Review
+
+The [bounded lineage review](../../research/2026-09-04-research-lineage-decision.md)
+confirms that waiting for lock linkage alone is insufficient. Among 23
+August 15–September 3 final-archive rule matches, an exact lock-only preview
+resolves linkage on 20 but leaves zero fully eligible rows: accepted provider
+fields, agreement and persisted preclose labels are still missing. All 23
+have explicit official-provider fields that this audit's legacy reader does
+not yet accept. The available frozen-input match set differs by two identities
+in each direction, so archive features cannot be credited merely by appending
+lock IDs. The frozen proof set also has no mature Preclose labels.
+
+Retain this fingerprint, frozen baselines and all original no-back-credit,
+sample/diversity and timing rules. Recommend pausing repeated promotion
+readouts until a separately reviewed decision-time adapter and evidence
+contract can satisfy the gaps. No audit code, runner, collector, production
+behavior or formal prospective count was changed by the preview.

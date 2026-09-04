@@ -1,5 +1,11 @@
 # Alt V2 paired decision — September 4, 2026
 
+Later September 4 [lineage follow-up](2026-09-04-research-lineage-decision.md):
+Kumar Rocker's missing row has an unconsumed operational lock; MLB confirms
+3 strikeouts, but the existing consumed-lock repair contract excludes it.
+Historical Gate C hash provenance is resolved through CRLF reconstruction.
+Neither finding changes the frozen Alt results or retirement decisions below.
+
 **Retire Consensus Core and Re-entry Expansion from active promotion research;
 retain their frozen records as comparison controls.** Neither has demonstrated
 incremental selection value. This is a decision about research attention, not

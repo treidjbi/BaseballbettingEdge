@@ -1328,3 +1328,31 @@ This closes only the candidate-window official-source attribution blocker. It
 does not promote a provider, reinterpret historical BoltOdds as active, change
 model inputs, or authorize retention execution, deletion, vacuum, or storage
 reclamation.
+
+## 2026-09-04 Research-Lineage Diagnosis
+
+The [current lineage decision](../../research/2026-09-04-research-lineage-decision.md)
+resolves the canonical JSONL/manifest mismatch: restoring Windows CRLF in
+memory reproduces both original JSONL and summary hashes exactly. Historical
+files remain unchanged and still cover April 28–June 16 only.
+
+A separate offline reconstruction of current August 15–September 3 artifacts
+produces 660 Gate C rows on 20 dates with zero duplicate keys and the existing
+330/330 history reconciliation. This is not a hosted-run certification. That
+history denominator differs from the 329 consumed operational locks, all of
+which have closed locked history. Kumar Rocker's additional August 19 lock is
+unconsumed and remains outside the current consumed-lock repair contract.
+
+The strict research linkage preview matches 314 of 351 tracked side-outcome
+rows; 15 book disagreements and 22 absent operational-lock identities remain
+excluded. Selective LEAN has 23 final-archive rule matches, but lock-only
+enrichment still leaves zero rows passing its required inputs. Available
+immutable decision inputs yield 23 rule matches with only 21 overlapping.
+Future enrichment must preserve separate decision-time and final-archive
+fields, exact lock quote/book/path, official-source attribution, and missing
+pregame agreement/proxy evidence. Do not grant prospective credit from a lock
+identifier alone or overwrite the historical corpus with this bounded build.
+
+The packet proposes a research-only decision-time adapter for separate
+implementation review. No builder, scheduler, source, model, staking,
+notification, retention, dataset-promotion gate or production setting changed.

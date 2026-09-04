@@ -390,14 +390,14 @@ jobs, data collection, production behavior, or any promotion gate.
 | Pipeline / infrastructure | Watch: current publication is fresh; September 3 locks are 12/12 consumed. GitHub grading remains unsafe without hydration repair. | Continue ordinary natural-run observation. Investigate missing/stale artifacts, unconsumed locks, repeat timeouts or sender failures; no repair or deployment follows from this review. |
 | Model | No new promotion justified. The [formal Alt V2 paired review](research/2026-09-04-alt-v2-paired-decision.md) is complete: 113/113 validated freezes, 49-63 with one void, -24.889187u. Consensus is -11.089692u and Re-entry -13.799495u versus same-window mainline FIRE -9.085141u. Both V2 promotion paths are retired; frozen controls remain. | Pause recurring promotion scoreboards and hindsight subset searches as a research-attention recommendation only. Reopen on a material evidence correction or a separately reviewed new frozen hypothesis/future holdout. Existing Alt runtime/display stays unchanged; other candidates retain their own attribution/diversity gates. |
 | UI | Existing live-market and Alt V2 comparison behavior remains unchanged. No fresh mobile interaction was performed for this review. | Revisit on contract/freeze mismatch or user confusion; assess display usefulness separately from predictive value. |
-| Tracking / data collection / history | Prepared cleanup is complete at 82/82 partitions. Current live physical database size is 6,143,741,075 bytes (~71.52% of 8 GiB), despite reusable space. Local Gate C ends June 16 and its file/manifest hash mismatches. The Alt packet reconciles 726/727 operational locks; August 19 Kumar Rocker UNDER 4.5/-138 is an unselected LEAN missing from canonical history. | Next bounded work: Gate C provenance, exact consumed-lock research linkage and the Kumar exception. Preserve evidence before any repair; do not infer outcomes or overwrite history. Retain bounded backlog and size/coverage observation. Structural zero eligibility, exact omissions or ongoing growth trigger review; cleanup/physical rewrite/automatic retention remain separate gates. |
+| Tracking / data collection / history | Prepared cleanup remains 82/82 complete; last storage read is ~71.52% of 8 GiB. The [lineage review](research/2026-09-04-research-lineage-decision.md) resolves historical Gate C hashes through exact CRLF reconstruction; its data still ends June 16. The bounded August 15–September 3 rebuild has 660 rows and 330/330 history reconciliation, distinct from 329/329 consumed locks with history. Kumar's additional August 19 lock is unconsumed; MLB confirms 3 K, but the existing repair contract excludes it. | Review a research-only decision-time adapter. Lock-only enrichment leaves selective LEAN at zero eligible: official-provider reader, agreement and preclose gaps remain, and archive/frozen candidate sets differ. Preserve conflicts and no-back-credit rules. Revisit on a complete reviewed evidence contract; Kumar needs historical consumption proof or a separately reviewed recovery policy. No production, history, retention or scheduler change. |
 
 The existing BBE Operations Brief reads this board; carry these decisions
 forward through this linked companion without changing its automation settings.
-The review also found a local Gate C JSONL/manifest byte-hash mismatch that
-does not resolve through line-ending normalization. Row count/date bounds
-match; preserve the historical files and reconcile provenance before using
-that manifest as integrity proof. This is separate from live artifact health.
+The subsequent lineage review corrected the earlier hash diagnosis: converting
+the preserved LF JSONL and summary to Windows CRLF in memory reproduces both
+manifest hashes exactly. No historical file was altered. The remaining issue
+is current decision-time evidence completeness, not corruption of that corpus.
 
 ### Detailed board and prior operating context
 

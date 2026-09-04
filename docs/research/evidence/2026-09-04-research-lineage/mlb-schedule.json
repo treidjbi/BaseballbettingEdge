@@ -1,0 +1,111 @@
+{
+  "url": "https://statsapi.mlb.com/api/v1/schedule?sportId=1&teamId=140&date=2026-08-19&hydrate=probablePitcher",
+  "payload": {
+    "copyright": "Copyright 2026 MLB Advanced Media, L.P.  Use of any content on this page acknowledges agreement to the terms posted here http://gdx.mlb.com/components/copyright.txt",
+    "totalItems": 1,
+    "totalEvents": 0,
+    "totalGames": 1,
+    "totalGamesInProgress": 0,
+    "dates": [
+      {
+        "date": "2026-08-19",
+        "totalItems": 1,
+        "totalEvents": 0,
+        "totalGames": 1,
+        "totalGamesInProgress": 0,
+        "games": [
+          {
+            "gamePk": 822860,
+            "gameGuid": "b3fecd76-1ff4-4939-8325-01a42cea3e52",
+            "link": "/api/v1.1/game/822860/feed/live",
+            "gameType": "R",
+            "season": "2026",
+            "gameDate": "2026-08-20T00:05:00Z",
+            "officialDate": "2026-08-19",
+            "status": {
+              "abstractGameState": "Final",
+              "codedGameState": "F",
+              "detailedState": "Final",
+              "statusCode": "F",
+              "startTimeTBD": false,
+              "abstractGameCode": "F"
+            },
+            "teams": {
+              "away": {
+                "team": {
+                  "id": 120,
+                  "name": "Washington Nationals",
+                  "link": "/api/v1/teams/120"
+                },
+                "leagueRecord": {
+                  "wins": 61,
+                  "losses": 67,
+                  "ties": 0,
+                  "pct": ".477"
+                },
+                "score": 6,
+                "isWinner": true,
+                "probablePitcher": {
+                  "id": 676917,
+                  "fullName": "Cade Cavalli",
+                  "link": "/api/v1/people/676917"
+                },
+                "splitSquad": false,
+                "seriesNumber": 41
+              },
+              "home": {
+                "team": {
+                  "id": 140,
+                  "name": "Texas Rangers",
+                  "link": "/api/v1/teams/140"
+                },
+                "leagueRecord": {
+                  "wins": 62,
+                  "losses": 65,
+                  "ties": 0,
+                  "pct": ".488"
+                },
+                "score": 0,
+                "isWinner": false,
+                "probablePitcher": {
+                  "id": 677958,
+                  "fullName": "Kumar Rocker",
+                  "link": "/api/v1/people/677958"
+                },
+                "splitSquad": false,
+                "seriesNumber": 41
+              }
+            },
+            "venue": {
+              "id": 5325,
+              "name": "Globe Life Field",
+              "link": "/api/v1/venues/5325"
+            },
+            "content": {
+              "link": "/api/v1/game/822860/content"
+            },
+            "isTie": false,
+            "gameNumber": 1,
+            "publicFacing": true,
+            "doubleHeader": "N",
+            "gamedayType": "P",
+            "tiebreaker": "N",
+            "calendarEventID": "14-822860-2026-08-19",
+            "seasonDisplay": "2026",
+            "dayNight": "night",
+            "scheduledInnings": 9,
+            "reverseHomeAwayStatus": false,
+            "inningBreakLength": 120,
+            "gamesInSeries": 3,
+            "seriesGameNumber": 2,
+            "seriesDescription": "Regular Season",
+            "recordSource": "S",
+            "ifNecessary": "N",
+            "ifNecessaryDescription": "Normal Game"
+          }
+        ],
+        "events": []
+      }
+    ]
+  }
+}
