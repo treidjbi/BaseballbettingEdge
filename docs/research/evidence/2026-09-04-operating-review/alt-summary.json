@@ -1,0 +1,231 @@
+{
+  "total": {
+    "selected": 113,
+    "wins": 49,
+    "losses": 63,
+    "voids": 1,
+    "pnl": -24.889187,
+    "roi_percent": -22.222,
+    "slates": 38
+  },
+  "lane": {
+    "consensus_core": {
+      "selected": 77,
+      "wins": 38,
+      "losses": 38,
+      "voids": 1,
+      "pnl": -11.089692,
+      "roi_percent": -14.592,
+      "slates": 35
+    },
+    "reentry_expansion": {
+      "selected": 36,
+      "wins": 11,
+      "losses": 25,
+      "voids": 0,
+      "pnl": -13.799495,
+      "roi_percent": -38.332,
+      "slates": 25
+    }
+  },
+  "side": {
+    "over": {
+      "selected": 56,
+      "wins": 23,
+      "losses": 33,
+      "voids": 0,
+      "pnl": -15.112082,
+      "roi_percent": -26.986,
+      "slates": 32
+    },
+    "under": {
+      "selected": 57,
+      "wins": 26,
+      "losses": 30,
+      "voids": 1,
+      "pnl": -9.777106,
+      "roi_percent": -17.459,
+      "slates": 31
+    }
+  },
+  "official_verdict": {
+    "FIRE 1u": {
+      "selected": 26,
+      "wins": 14,
+      "losses": 12,
+      "voids": 0,
+      "pnl": -1.979032,
+      "roi_percent": -7.612,
+      "slates": 20
+    },
+    "LEAN": {
+      "selected": 87,
+      "wins": 35,
+      "losses": 51,
+      "voids": 1,
+      "pnl": -22.910156,
+      "roi_percent": -26.64,
+      "slates": 37
+    }
+  },
+  "official_book": {
+    "BetMGM": {
+      "selected": 1,
+      "wins": 0,
+      "losses": 1,
+      "voids": 0,
+      "pnl": -1,
+      "roi_percent": -100.0,
+      "slates": 1
+    },
+    "DraftKings": {
+      "selected": 1,
+      "wins": 0,
+      "losses": 1,
+      "voids": 0,
+      "pnl": -1,
+      "roi_percent": -100.0,
+      "slates": 1
+    },
+    "FanDuel": {
+      "selected": 111,
+      "wins": 49,
+      "losses": 61,
+      "voids": 1,
+      "pnl": -22.889187,
+      "roi_percent": -20.808,
+      "slates": 38
+    }
+  },
+  "provider_posture": {
+    "therundown": {
+      "selected": 17,
+      "wins": 10,
+      "losses": 7,
+      "voids": 0,
+      "pnl": 0.345116,
+      "roi_percent": 2.03,
+      "slates": 12
+    },
+    "therundown_propline": {
+      "selected": 96,
+      "wins": 39,
+      "losses": 56,
+      "voids": 1,
+      "pnl": -25.234304,
+      "roi_percent": -26.562,
+      "slates": 36
+    }
+  },
+  "model_k_line": {
+    "2.5": {
+      "selected": 2,
+      "wins": 1,
+      "losses": 1,
+      "voids": 0,
+      "pnl": -0.358974,
+      "roi_percent": -17.949,
+      "slates": 2
+    },
+    "3.5": {
+      "selected": 23,
+      "wins": 9,
+      "losses": 14,
+      "voids": 0,
+      "pnl": -7.504136,
+      "roi_percent": -32.627,
+      "slates": 18
+    },
+    "4.5": {
+      "selected": 47,
+      "wins": 17,
+      "losses": 29,
+      "voids": 1,
+      "pnl": -16.680807,
+      "roi_percent": -36.263,
+      "slates": 30
+    },
+    "5.5": {
+      "selected": 28,
+      "wins": 17,
+      "losses": 11,
+      "voids": 0,
+      "pnl": 2.965436,
+      "roi_percent": 10.591,
+      "slates": 22
+    },
+    "6.5": {
+      "selected": 8,
+      "wins": 4,
+      "losses": 4,
+      "voids": 0,
+      "pnl": -0.079936,
+      "roi_percent": -0.999,
+      "slates": 8
+    },
+    "7.5": {
+      "selected": 4,
+      "wins": 0,
+      "losses": 4,
+      "voids": 0,
+      "pnl": -4,
+      "roi_percent": -100.0,
+      "slates": 4
+    },
+    "8.5": {
+      "selected": 1,
+      "wins": 1,
+      "losses": 0,
+      "voids": 0,
+      "pnl": 0.769231,
+      "roi_percent": 76.923,
+      "slates": 1
+    }
+  },
+  "price": {
+    "plus": {
+      "selected": 27,
+      "wins": 7,
+      "losses": 20,
+      "voids": 0,
+      "pnl": -12.36,
+      "roi_percent": -45.778,
+      "slates": 19
+    },
+    "minus": {
+      "selected": 86,
+      "wins": 42,
+      "losses": 43,
+      "voids": 1,
+      "pnl": -12.529187,
+      "roi_percent": -14.74,
+      "slates": 37
+    }
+  },
+  "latest_14_selected_slates": {
+    "selected": 39,
+    "wins": 14,
+    "losses": 25,
+    "voids": 0,
+    "pnl": -14.069724,
+    "roi_percent": -36.076,
+    "slates": 14
+  },
+  "leave_one_slate_out": {
+    "min": -27.654785,
+    "max": -19.889187
+  },
+  "paired_same_rows_only": {
+    "mainline_displayed_fire_pnl": -1.979032,
+    "alternative_flat_pnl": -24.889187,
+    "delta": -22.910156,
+    "warning": "Different risk exposure; this is not the full mainline portfolio or a causal effect."
+  },
+  "integrity": {
+    "unique_keys": 113,
+    "matched_history": 113,
+    "exact_line_odds_time": 113,
+    "consumed_locks": 113,
+    "invalid": 0
+  }
+}

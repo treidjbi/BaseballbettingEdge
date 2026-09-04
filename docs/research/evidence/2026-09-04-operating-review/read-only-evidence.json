@@ -1,0 +1,3597 @@
+{
+  "observed_at": "2026-09-04T21:38:36.120321+00:00",
+  "base_commit": "f948ccc000e4c05e55a53b8ea9c2357934a9628f",
+  "project_id": "htoaytcsjrdyyzcwxjfg",
+  "window": [
+    "2026-07-24",
+    "2026-09-03"
+  ],
+  "queries": {
+    "alt": "with a as (\nselect * from public.alternative_pick_selection_state\nwhere bundle_id='pregame_alternative_pick_methodology_v2' and checkpoint='frozen_pregame' and selection_status='selected' and slate_date between '2026-07-24' and '2026-09-03'\n), h as materialized (\nselect x from public.published_pipeline_artifacts p cross join lateral jsonb_array_elements(p.payload) x\nwhere p.artifact_key='picks_history' and x->>'date' between '2026-07-24' and '2026-09-03'\n)\nselect a.slate_date,a.pitcher,a.side,a.model_k_line,a.official_odds,a.official_verdict,a.official_book,a.lane,a.selector_fingerprint,a.provider_posture,\na.frozen_at,a.game_time,a.lock_status,a.minutes_until_start,\n(a.frozen_at<a.game_time and a.locked_at=a.frozen_at) as prestart_valid,\n(l.consumed_at is not null and l.source_artifact_sha256=a.lock_artifact_sha256 and l.source_artifact_path=a.lock_source_artifact_path and l.locked_k_line=a.model_k_line and l.locked_odds=a.official_odds and l.locked_at=a.locked_at) as lock_valid,\n(select jsonb_agg(jsonb_build_object('result',x->>'result','actual_ks',x->'actual_ks','pnl',x->'pnl','odds',x->'odds','locked_odds',x->'locked_odds','k_line',x->'k_line','locked_k_line',x->'locked_k_line','game_time',x->>'game_time')) from h where x->>'date'=a.slate_date::text and x->>'pitcher'=a.pitcher and lower(x->>'side')=lower(a.side)) as history_matches\nfrom a left join public.operational_pick_locks l on l.dedupe_key=a.lock_dedupe_key order by a.slate_date,a.pitcher",
+    "operations": "select jsonb_build_object(\n'observed_at',now(),\n'artifacts',(select jsonb_agg(jsonb_build_object('key',artifact_key,'generated_at',generated_at,'published_at',published_at,'source_run_id',source_run_id,'sha256',payload_sha256)) from public.published_pipeline_artifacts where artifact_key in ('today','params','performance','preview_lines','dated_slate:2026-09-03')),\n'params',(select payload from public.published_pipeline_artifacts where artifact_key='params'),\n'performance',(select payload from public.published_pipeline_artifacts where artifact_key='performance'),\n'locks_sep3',(select jsonb_build_object('rows',count(*),'unconsumed',count(*) filter(where consumed_at is null),'duplicate_keys',count(*)-count(distinct dedupe_key)) from public.operational_pick_locks where slate_date='2026-09-03'),\n'database_bytes',pg_database_size(current_database()),\n'snapshot_relation_bytes',pg_total_relation_size('public.market_snapshots'),\n'webhook_relation_bytes',pg_total_relation_size('public.propline_webhook_deliveries')\n) as evidence;"
+  },
+  "operations": {
+    "params": {
+      "ump_scale": 0,
+      "updated_at": "2026-09-04T10:17:52Z",
+      "lambda_bias": -0.002,
+      "sample_size": 1911,
+      "weight_recent": 0.138,
+      "swstr_k9_scale": 5,
+      "calibration_notes": [
+        "[2026-09-04] K/9 blend weights updated: season 40% → 40%, recent 13% → 14%",
+        "[2026-09-03] K/9 blend weights updated: season 40% → 40%, recent 12% → 13%",
+        "[2026-09-02] Umpire scale decreased 0.050 → 0.000 (umpire adjustment not reliably predictive)",
+        "[2026-09-02] K/9 blend weights updated: season 40% → 40%, recent 12% → 12%",
+        "[2026-08-31] K/9 blend weights updated: season 40% → 40%, recent 11% → 11%",
+        "[2026-08-28] K/9 blend weights updated: season 40% → 40%, recent 10% → 10%",
+        "[2026-08-27] Lambda bias adjusted -0.007 → -0.012 (model was systematically over-predicting Ks)",
+        "[2026-08-26] Lambda bias adjusted -0.012 → -0.007 (model was systematically over-predicting Ks)",
+        "[2026-08-26] Umpire scale decreased 0.100 → 0.050 (umpire adjustment not reliably predictive)",
+        "[2026-08-26] K/9 blend weights updated: season 40% → 40%, recent 11% → 10%",
+        "[2026-08-25] Lambda bias adjusted -0.006 → -0.012 (model was systematically over-predicting Ks)",
+        "[2026-08-23] K/9 blend weights updated: season 40% → 40%, recent 10% → 11%",
+        "[2026-08-22] Lambda bias adjusted +0.012 → +0.000 (model was systematically over-predicting Ks)"
+      ],
+      "weight_season_cap": 0.4,
+      "formula_change_date": "2026-04-28"
+    },
+    "artifacts": [
+      {
+        "key": "today",
+        "sha256": "5527524fdb5289f64e526020c67e95fb82e450458266b52ccc28b4dcd7964526",
+        "generated_at": "2026-09-04T21:38:08+00:00",
+        "published_at": "2026-09-04T21:38:12.464852+00:00",
+        "source_run_id": "manual-render-pipeline-2026-09-04-20260904T213811Z"
+      },
+      {
+        "key": "dated_slate:2026-09-03",
+        "sha256": "75be4d7908536f1523ad876543f4454a3fe47ae9b29d2d6a9472172f60b3ec14",
+        "generated_at": "2026-09-04T01:07:55+00:00",
+        "published_at": "2026-09-04T10:17:53.910905+00:00",
+        "source_run_id": "manual-render-grading-2026-09-03-20260904T101753Z"
+      },
+      {
+        "key": "preview_lines",
+        "sha256": "1cc146d4a4842918433e63f2eb429e31990e4a5b3bfb4a605939e0bbfc3f1342",
+        "generated_at": "2026-09-04T07:17:35+00:00",
+        "published_at": "2026-09-04T07:18:04.071842+00:00",
+        "source_run_id": "manual-render-preview-2026-09-04-20260904T071804Z"
+      },
+      {
+        "key": "performance",
+        "sha256": "5c63a5e1d9ba626554c1133ac040503210d074d8cee71bb1f069220a0f0c2c4a",
+        "generated_at": "2026-09-04T10:17:52+00:00",
+        "published_at": "2026-09-04T10:17:53.910905+00:00",
+        "source_run_id": "manual-render-grading-2026-09-03-20260904T101753Z"
+      },
+      {
+        "key": "params",
+        "sha256": "1c492a518928daf1521c00fb36fc812541de180429f8b548c3c5798195f9806c",
+        "generated_at": "2026-09-04T10:17:52+00:00",
+        "published_at": "2026-09-04T10:17:53.910905+00:00",
+        "source_run_id": "manual-render-grading-2026-09-03-20260904T101753Z"
+      }
+    ],
+    "locks_sep3": {
+      "rows": 12,
+      "unconsumed": 0,
+      "duplicate_keys": 0
+    },
+    "observed_at": "2026-09-04T21:38:36.120321+00:00",
+    "performance": {
+      "rows": [
+        {
+          "roi": -23.52,
+          "side": "over",
+          "wins": 18,
+          "picks": 46,
+          "avg_ev": 0.2566,
+          "losses": 28,
+          "pushes": 0,
+          "verdict": "FIRE 2u",
+          "win_pct": 0.391
+        },
+        {
+          "roi": -1.7,
+          "side": "under",
+          "wins": 44,
+          "picks": 86,
+          "avg_ev": 0.295,
+          "losses": 42,
+          "pushes": 0,
+          "verdict": "FIRE 2u",
+          "win_pct": 0.512
+        },
+        {
+          "roi": -1.15,
+          "side": "over",
+          "wins": 201,
+          "picks": 369,
+          "avg_ev": 0.1562,
+          "losses": 168,
+          "pushes": 0,
+          "verdict": "FIRE 1u",
+          "win_pct": 0.545
+        },
+        {
+          "roi": -14.28,
+          "side": "under",
+          "wins": 106,
+          "picks": 230,
+          "avg_ev": 0.1439,
+          "losses": 124,
+          "pushes": 0,
+          "verdict": "FIRE 1u",
+          "win_pct": 0.461
+        },
+        {
+          "roi": -7.64,
+          "side": "over",
+          "wins": 270,
+          "picks": 569,
+          "avg_ev": 0.1457,
+          "losses": 299,
+          "pushes": 0,
+          "verdict": "LEAN",
+          "win_pct": 0.475
+        },
+        {
+          "roi": -6.91,
+          "side": "under",
+          "wins": 543,
+          "picks": 1080,
+          "avg_ev": 0.1605,
+          "losses": 537,
+          "pushes": 0,
+          "verdict": "LEAN",
+          "win_pct": 0.503
+        }
+      ],
+      "params": {
+        "ump_scale": 0,
+        "updated_at": "2026-09-04T10:17:52Z",
+        "lambda_bias": -0.002,
+        "sample_size": 1911,
+        "weight_recent": 0.138,
+        "swstr_k9_scale": 5,
+        "calibration_notes": [
+          "[2026-09-04] K/9 blend weights updated: season 40% → 40%, recent 13% → 14%",
+          "[2026-09-03] K/9 blend weights updated: season 40% → 40%, recent 12% → 13%",
+          "[2026-09-02] Umpire scale decreased 0.050 → 0.000 (umpire adjustment not reliably predictive)",
+          "[2026-09-02] K/9 blend weights updated: season 40% → 40%, recent 12% → 12%",
+          "[2026-08-31] K/9 blend weights updated: season 40% → 40%, recent 11% → 11%",
+          "[2026-08-28] K/9 blend weights updated: season 40% → 40%, recent 10% → 10%",
+          "[2026-08-27] Lambda bias adjusted -0.007 → -0.012 (model was systematically over-predicting Ks)",
+          "[2026-08-26] Lambda bias adjusted -0.012 → -0.007 (model was systematically over-predicting Ks)",
+          "[2026-08-26] Umpire scale decreased 0.100 → 0.050 (umpire adjustment not reliably predictive)",
+          "[2026-08-26] K/9 blend weights updated: season 40% → 40%, recent 11% → 10%",
+          "[2026-08-25] Lambda bias adjusted -0.006 → -0.012 (model was systematically over-predicting Ks)",
+          "[2026-08-23] K/9 blend weights updated: season 40% → 40%, recent 10% → 11%",
+          "[2026-08-22] Lambda bias adjusted +0.012 → +0.000 (model was systematically over-predicting Ks)"
+        ],
+        "weight_season_cap": 0.4,
+        "formula_change_date": "2026-04-28"
+      },
+      "total_picks": 2380,
+      "generated_at": "2026-09-04T10:17:52Z",
+      "lambda_accuracy": {
+        "bias": -0.02,
+        "avg_actual": 4.95,
+        "avg_predicted": 4.97
+      },
+      "last_calibrated": "2026-09-04T10:17:52Z",
+      "calibration_notes": [
+        "[2026-09-04] K/9 blend weights updated: season 40% → 40%, recent 13% → 14%",
+        "[2026-09-03] K/9 blend weights updated: season 40% → 40%, recent 12% → 13%",
+        "[2026-09-02] Umpire scale decreased 0.050 → 0.000 (umpire adjustment not reliably predictive)",
+        "[2026-09-02] K/9 blend weights updated: season 40% → 40%, recent 12% → 12%",
+        "[2026-08-31] K/9 blend weights updated: season 40% → 40%, recent 11% → 11%",
+        "[2026-08-28] K/9 blend weights updated: season 40% → 40%, recent 10% → 10%",
+        "[2026-08-27] Lambda bias adjusted -0.007 → -0.012 (model was systematically over-predicting Ks)",
+        "[2026-08-26] Lambda bias adjusted -0.012 → -0.007 (model was systematically over-predicting Ks)",
+        "[2026-08-26] Umpire scale decreased 0.100 → 0.050 (umpire adjustment not reliably predictive)",
+        "[2026-08-26] K/9 blend weights updated: season 40% → 40%, recent 11% → 10%",
+        "[2026-08-25] Lambda bias adjusted -0.006 → -0.012 (model was systematically over-predicting Ks)",
+        "[2026-08-23] K/9 blend weights updated: season 40% → 40%, recent 10% → 11%",
+        "[2026-08-22] Lambda bias adjusted +0.012 → +0.000 (model was systematically over-predicting Ks)"
+      ],
+      "calibration_sample": 1911
+    },
+    "database_bytes": 6143741075,
+    "webhook_relation_bytes": 640876544,
+    "snapshot_relation_bytes": 4168032256
+  },
+  "alt_rows": [
+    {
+      "slate_date": "2026-07-24",
+      "pitcher": "Matthew Boyd",
+      "side": "under",
+      "model_k_line": "5.5",
+      "official_odds": -132,
+      "official_verdict": "LEAN",
+      "official_book": "FanDuel",
+      "lane": "consensus_core",
+      "selector_fingerprint": "23bacff0fa923685ae52c5a9cfbadfb9f5902fb64d91759cfe9b4b1169a221c4",
+      "provider_posture": "therundown_propline",
+      "frozen_at": "2026-07-24 22:10:36.836008+00",
+      "game_time": "2026-07-24 22:40:00+00",
+      "lock_status": "due_now",
+      "minutes_until_start": "29.39",
+      "prestart_valid": true,
+      "lock_valid": true,
+      "history_matches": [
+        {
+          "pnl": 0.7575757575757576,
+          "odds": -132,
+          "k_line": 5.5,
+          "result": "win",
+          "actual_ks": 4,
+          "game_time": "2026-07-24T22:40:00Z",
+          "locked_odds": -132,
+          "locked_k_line": 5.5
+        }
+      ]
+    },
+    {
+      "slate_date": "2026-07-24",
+      "pitcher": "Trevor Rogers",
+      "side": "over",
+      "model_k_line": "4.5",
+      "official_odds": -138,
+      "official_verdict": "FIRE 1u",
+      "official_book": "FanDuel",
+      "lane": "consensus_core",
+      "selector_fingerprint": "23bacff0fa923685ae52c5a9cfbadfb9f5902fb64d91759cfe9b4b1169a221c4",
+      "provider_posture": "therundown_propline",
+      "frozen_at": "2026-07-24 22:40:20.61642+00",
+      "game_time": "2026-07-24 23:05:00+00",
+      "lock_status": "due_now",
+      "minutes_until_start": "24.66",
+      "prestart_valid": true,
+      "lock_valid": true,
+      "history_matches": [
+        {
+          "pnl": 0.7246376811594203,
+          "odds": -138,
+          "k_line": 4.5,
+          "result": "win",
+          "actual_ks": 6,
+          "game_time": "2026-07-24T23:05:00Z",
+          "locked_odds": -138,
+          "locked_k_line": 4.5
+        }
+      ]
+    },
+    {
+      "slate_date": "2026-07-25",
+      "pitcher": "Bryan Woo",
+      "side": "under",
+      "model_k_line": "5.5",
+      "official_odds": 112,
+      "official_verdict": "LEAN",
+      "official_book": "FanDuel",
+      "lane": "reentry_expansion",
+      "selector_fingerprint": "23bacff0fa923685ae52c5a9cfbadfb9f5902fb64d91759cfe9b4b1169a221c4",
+      "provider_posture": "therundown_propline",
+      "frozen_at": "2026-07-25 22:50:12.360907+00",
+      "game_time": "2026-07-25 23:15:00+00",
+      "lock_status": "due_now",
+      "minutes_until_start": "24.79",
+      "prestart_valid": true,
+      "lock_valid": true,
+      "history_matches": [
+        {
+          "pnl": 1.12,
+          "odds": 112,
+          "k_line": 5.5,
+          "result": "win",
+          "actual_ks": 5,
+          "game_time": "2026-07-25T23:15:00Z",
+          "locked_odds": 112,
+          "locked_k_line": 5.5
+        }
+      ]
+    },
+    {
+      "slate_date": "2026-07-25",
+      "pitcher": "Casey Mize",
+      "side": "under",
+      "model_k_line": "5.5",
+      "official_odds": -128,
+      "official_verdict": "LEAN",
+      "official_book": "FanDuel",
+      "lane": "consensus_core",
+      "selector_fingerprint": "23bacff0fa923685ae52c5a9cfbadfb9f5902fb64d91759cfe9b4b1169a221c4",
+      "provider_posture": "therundown_propline",
+      "frozen_at": "2026-07-25 16:40:22.854651+00",
+      "game_time": "2026-07-25 17:10:00+00",
+      "lock_status": "due_now",
+      "minutes_until_start": "29.62",
+      "prestart_valid": true,
+      "lock_valid": true,
+      "history_matches": [
+        {
+          "pnl": 0.78125,
+          "odds": -128,
+          "k_line": 5.5,
+          "result": "win",
+          "actual_ks": 3,
+          "game_time": "2026-07-25T17:10:00Z",
+          "locked_odds": -128,
+          "locked_k_line": 5.5
+        }
+      ]
+    },
+    {
+      "slate_date": "2026-07-25",
+      "pitcher": "Ryan Feltner",
+      "side": "under",
+      "model_k_line": "4.5",
+      "official_odds": -162,
+      "official_verdict": "LEAN",
+      "official_book": "FanDuel",
+      "lane": "consensus_core",
+      "selector_fingerprint": "23bacff0fa923685ae52c5a9cfbadfb9f5902fb64d91759cfe9b4b1169a221c4",
+      "provider_posture": "therundown_propline",
+      "frozen_at": "2026-07-25 22:40:36.022268+00",
+      "game_time": "2026-07-25 23:10:00+00",
+      "lock_status": "due_now",
+      "minutes_until_start": "29.4",
+      "prestart_valid": true,
+      "lock_valid": true,
+      "history_matches": [
+        {
+          "pnl": 0.6172839506172839,
+          "odds": -162,
+          "k_line": 4.5,
+          "result": "win",
+          "actual_ks": 4,
+          "game_time": "2026-07-25T23:10:00Z",
+          "locked_odds": -162,
+          "locked_k_line": 4.5
+        }
+      ]
+    },
+    {
+      "slate_date": "2026-07-26",
+      "pitcher": "Freddy Peralta",
+      "side": "under",
+      "model_k_line": "5.5",
+      "official_odds": -138,
+      "official_verdict": "LEAN",
+      "official_book": "FanDuel",
+      "lane": "consensus_core",
+      "selector_fingerprint": "23bacff0fa923685ae52c5a9cfbadfb9f5902fb64d91759cfe9b4b1169a221c4",
+      "provider_posture": "therundown_propline",
+      "frozen_at": "2026-07-26 17:10:14.438527+00",
+      "game_time": "2026-07-26 17:40:00+00",
+      "lock_status": "due_now",
+      "minutes_until_start": "29.76",
+      "prestart_valid": true,
+      "lock_valid": true,
+      "history_matches": [
+        {
+          "pnl": 0.7246376811594203,
+          "odds": -138,
+          "k_line": 5.5,
+          "result": "win",
+          "actual_ks": 3,
+          "game_time": "2026-07-26T17:40:00Z",
+          "locked_odds": -138,
+          "locked_k_line": 5.5
+        }
+      ]
+    },
+    {
+      "slate_date": "2026-07-26",
+      "pitcher": "Jacob deGrom",
+      "side": "over",
+      "model_k_line": "7.5",
+      "official_odds": 126,
+      "official_verdict": "LEAN",
+      "official_book": "FanDuel",
+      "lane": "reentry_expansion",
+      "selector_fingerprint": "23bacff0fa923685ae52c5a9cfbadfb9f5902fb64d91759cfe9b4b1169a221c4",
+      "provider_posture": "therundown_propline",
+      "frozen_at": "2026-07-26 18:10:34.198631+00",
+      "game_time": "2026-07-26 18:35:00+00",
+      "lock_status": "due_now",
+      "minutes_until_start": "24.43",
+      "prestart_valid": true,
+      "lock_valid": true,
+      "history_matches": [
+        {
+          "pnl": -1,
+          "odds": 126,
+          "k_line": 7.5,
+          "result": "loss",
+          "actual_ks": 4,
+          "game_time": "2026-07-26T18:35:00Z",
+          "locked_odds": 126,
+          "locked_k_line": 7.5
+        }
+      ]
+    },
+    {
+      "slate_date": "2026-07-26",
+      "pitcher": "Kyle Freeland",
+      "side": "under",
+      "model_k_line": "4.5",
+      "official_odds": -146,
+      "official_verdict": "LEAN",
+      "official_book": "FanDuel",
+      "lane": "consensus_core",
+      "selector_fingerprint": "23bacff0fa923685ae52c5a9cfbadfb9f5902fb64d91759cfe9b4b1169a221c4",
+      "provider_posture": "therundown_propline",
+      "frozen_at": "2026-07-26 17:40:31.604844+00",
+      "game_time": "2026-07-26 18:10:00+00",
+      "lock_status": "due_now",
+      "minutes_until_start": "29.47",
+      "prestart_valid": true,
+      "lock_valid": true,
+      "history_matches": [
+        {
+          "pnl": 0.684931506849315,
+          "odds": -146,
+          "k_line": 4.5,
+          "result": "win",
+          "actual_ks": 2,
+          "game_time": "2026-07-26T18:10:00Z",
+          "locked_odds": -146,
+          "locked_k_line": 4.5
+        }
+      ]
+    },
+    {
+      "slate_date": "2026-07-26",
+      "pitcher": "Miles Mikolas",
+      "side": "over",
+      "model_k_line": "2.5",
+      "official_odds": -134,
+      "official_verdict": "LEAN",
+      "official_book": "DraftKings",
+      "lane": "consensus_core",
+      "selector_fingerprint": "23bacff0fa923685ae52c5a9cfbadfb9f5902fb64d91759cfe9b4b1169a221c4",
+      "provider_posture": "therundown_propline",
+      "frozen_at": "2026-07-26 17:10:14.438527+00",
+      "game_time": "2026-07-26 17:35:00+00",
+      "lock_status": "due_now",
+      "minutes_until_start": "24.76",
+      "prestart_valid": true,
+      "lock_valid": true,
+      "history_matches": [
+        {
+          "pnl": -1,
+          "odds": -134,
+          "k_line": 2.5,
+          "result": "loss",
+          "actual_ks": 1,
+          "game_time": "2026-07-26T17:35:00Z",
+          "locked_odds": -134,
+          "locked_k_line": 2.5
+        }
+      ]
+    },
+    {
+      "slate_date": "2026-07-26",
+      "pitcher": "Ranger Suarez",
+      "side": "under",
+      "model_k_line": "4.5",
+      "official_odds": -132,
+      "official_verdict": "LEAN",
+      "official_book": "FanDuel",
+      "lane": "consensus_core",
+      "selector_fingerprint": "23bacff0fa923685ae52c5a9cfbadfb9f5902fb64d91759cfe9b4b1169a221c4",
+      "provider_posture": "therundown_propline",
+      "frozen_at": "2026-07-26 17:10:14.438527+00",
+      "game_time": "2026-07-26 17:35:00+00",
+      "lock_status": "due_now",
+      "minutes_until_start": "24.76",
+      "prestart_valid": true,
+      "lock_valid": true,
+      "history_matches": [
+        {
+          "pnl": -1,
+          "odds": -132,
+          "k_line": 4.5,
+          "result": "loss",
+          "actual_ks": 6,
+          "game_time": "2026-07-26T17:35:00Z",
+          "locked_odds": -132,
+          "locked_k_line": 4.5
+        }
+      ]
+    },
+    {
+      "slate_date": "2026-07-27",
+      "pitcher": "Kumar Rocker",
+      "side": "over",
+      "model_k_line": "4.5",
+      "official_odds": -113,
+      "official_verdict": "FIRE 1u",
+      "official_book": "FanDuel",
+      "lane": "reentry_expansion",
+      "selector_fingerprint": "23bacff0fa923685ae52c5a9cfbadfb9f5902fb64d91759cfe9b4b1169a221c4",
+      "provider_posture": "therundown_propline",
+      "frozen_at": "2026-07-27 18:10:18.034316+00",
+      "game_time": "2026-07-27 18:35:00+00",
+      "lock_status": "due_now",
+      "minutes_until_start": "24.7",
+      "prestart_valid": true,
+      "lock_valid": true,
+      "history_matches": [
+        {
+          "pnl": 0.8849557522123894,
+          "odds": -113,
+          "k_line": 4.5,
+          "result": "win",
+          "actual_ks": 7,
+          "game_time": "2026-07-27T18:35:00Z",
+          "locked_odds": -113,
+          "locked_k_line": 4.5
+        }
+      ]
+    },
+    {
+      "slate_date": "2026-07-27",
+      "pitcher": "Max Fried",
+      "side": "under",
+      "model_k_line": "5.5",
+      "official_odds": -154,
+      "official_verdict": "LEAN",
+      "official_book": "FanDuel",
+      "lane": "consensus_core",
+      "selector_fingerprint": "23bacff0fa923685ae52c5a9cfbadfb9f5902fb64d91759cfe9b4b1169a221c4",
+      "provider_posture": "therundown_propline",
+      "frozen_at": "2026-07-27 23:10:38.323928+00",
+      "game_time": "2026-07-27 23:40:00+00",
+      "lock_status": "due_now",
+      "minutes_until_start": "29.36",
+      "prestart_valid": true,
+      "lock_valid": true,
+      "history_matches": [
+        {
+          "pnl": 0.6493506493506493,
+          "odds": -154,
+          "k_line": 5.5,
+          "result": "win",
+          "actual_ks": 4,
+          "game_time": "2026-07-27T23:40:00Z",
+          "locked_odds": -154,
+          "locked_k_line": 5.5
+        }
+      ]
+    },
+    {
+      "slate_date": "2026-07-27",
+      "pitcher": "Merrill Kelly",
+      "side": "under",
+      "model_k_line": "4.5",
+      "official_odds": -130,
+      "official_verdict": "LEAN",
+      "official_book": "FanDuel",
+      "lane": "consensus_core",
+      "selector_fingerprint": "23bacff0fa923685ae52c5a9cfbadfb9f5902fb64d91759cfe9b4b1169a221c4",
+      "provider_posture": "therundown_propline",
+      "frozen_at": "2026-07-27 22:10:32.926347+00",
+      "game_time": "2026-07-27 22:40:00+00",
+      "lock_status": "due_now",
+      "minutes_until_start": "29.45",
+      "prestart_valid": true,
+      "lock_valid": true,
+      "history_matches": [
+        {
+          "pnl": -1,
+          "odds": -130,
+          "k_line": 4.5,
+          "result": "loss",
+          "actual_ks": 6,
+          "game_time": "2026-07-27T22:40:00Z",
+          "locked_odds": -130,
+          "locked_k_line": 4.5
+        }
+      ]
+    },
+    {
+      "slate_date": "2026-07-27",
+      "pitcher": "Zac Thornton",
+      "side": "under",
+      "model_k_line": "4.5",
+      "official_odds": -132,
+      "official_verdict": "LEAN",
+      "official_book": "FanDuel",
+      "lane": "consensus_core",
+      "selector_fingerprint": "23bacff0fa923685ae52c5a9cfbadfb9f5902fb64d91759cfe9b4b1169a221c4",
+      "provider_posture": "therundown_propline",
+      "frozen_at": "2026-07-27 22:40:44.877499+00",
+      "game_time": "2026-07-27 23:10:00+00",
+      "lock_status": "due_now",
+      "minutes_until_start": "29.25",
+      "prestart_valid": true,
+      "lock_valid": true,
+      "history_matches": [
+        {
+          "pnl": -1,
+          "odds": -132,
+          "k_line": 4.5,
+          "result": "loss",
+          "actual_ks": 5,
+          "game_time": "2026-07-27T23:10:00Z",
+          "locked_odds": -132,
+          "locked_k_line": 4.5
+        }
+      ]
+    },
+    {
+      "slate_date": "2026-07-28",
+      "pitcher": "Jake Bennett",
+      "side": "over",
+      "model_k_line": "3.5",
+      "official_odds": -148,
+      "official_verdict": "FIRE 1u",
+      "official_book": "FanDuel",
+      "lane": "consensus_core",
+      "selector_fingerprint": "23bacff0fa923685ae52c5a9cfbadfb9f5902fb64d91759cfe9b4b1169a221c4",
+      "provider_posture": "therundown_propline",
+      "frozen_at": "2026-07-29 01:10:25.771136+00",
+      "game_time": "2026-07-29 01:40:00+00",
+      "lock_status": "due_now",
+      "minutes_until_start": "29.57",
+      "prestart_valid": true,
+      "lock_valid": true,
+      "history_matches": [
+        {
+          "pnl": 0.6756756756756757,
+          "odds": -148,
+          "k_line": 3.5,
+          "result": "win",
+          "actual_ks": 4,
+          "game_time": "2026-07-29T01:40:00Z",
+          "locked_odds": -148,
+          "locked_k_line": 3.5
+        }
+      ]
+    },
+    {
+      "slate_date": "2026-07-28",
+      "pitcher": "Seth Lugo",
+      "side": "over",
+      "model_k_line": "4.5",
+      "official_odds": 124,
+      "official_verdict": "LEAN",
+      "official_book": "FanDuel",
+      "lane": "reentry_expansion",
+      "selector_fingerprint": "23bacff0fa923685ae52c5a9cfbadfb9f5902fb64d91759cfe9b4b1169a221c4",
+      "provider_posture": "therundown_propline",
+      "frozen_at": "2026-07-28 23:10:17.965663+00",
+      "game_time": "2026-07-28 23:40:00+00",
+      "lock_status": "due_now",
+      "minutes_until_start": "29.7",
+      "prestart_valid": true,
+      "lock_valid": true,
+      "history_matches": [
+        {
+          "pnl": -1,
+          "odds": 124,
+          "k_line": 4.5,
+          "result": "loss",
+          "actual_ks": 2,
+          "game_time": "2026-07-28T23:40:00Z",
+          "locked_odds": 124,
+          "locked_k_line": 4.5
+        }
+      ]
+    },
+    {
+      "slate_date": "2026-07-28",
+      "pitcher": "Taj Bradley",
+      "side": "over",
+      "model_k_line": "6.5",
+      "official_odds": 110,
+      "official_verdict": "LEAN",
+      "official_book": "FanDuel",
+      "lane": "reentry_expansion",
+      "selector_fingerprint": "23bacff0fa923685ae52c5a9cfbadfb9f5902fb64d91759cfe9b4b1169a221c4",
+      "provider_posture": "therundown_propline",
+      "frozen_at": "2026-07-28 23:10:17.965663+00",
+      "game_time": "2026-07-28 23:40:00+00",
+      "lock_status": "due_now",
+      "minutes_until_start": "29.7",
+      "prestart_valid": true,
+      "lock_valid": true,
+      "history_matches": [
+        {
+          "pnl": 1.1,
+          "odds": 110,
+          "k_line": 6.5,
+          "result": "win",
+          "actual_ks": 10,
+          "game_time": "2026-07-28T23:40:00Z",
+          "locked_odds": 110,
+          "locked_k_line": 6.5
+        }
+      ]
+    },
+    {
+      "slate_date": "2026-07-29",
+      "pitcher": "MacKenzie Gore",
+      "side": "under",
+      "model_k_line": "5.5",
+      "official_odds": -154,
+      "official_verdict": "LEAN",
+      "official_book": "FanDuel",
+      "lane": "consensus_core",
+      "selector_fingerprint": "23bacff0fa923685ae52c5a9cfbadfb9f5902fb64d91759cfe9b4b1169a221c4",
+      "provider_posture": "therundown_propline",
+      "frozen_at": "2026-07-29 22:10:15.714152+00",
+      "game_time": "2026-07-29 22:40:00+00",
+      "lock_status": "due_now",
+      "minutes_until_start": "29.74",
+      "prestart_valid": true,
+      "lock_valid": true,
+      "history_matches": [
+        {
+          "pnl": -1,
+          "odds": -154,
+          "k_line": 5.5,
+          "result": "loss",
+          "actual_ks": 9,
+          "game_time": "2026-07-29T22:40:00Z",
+          "locked_odds": -154,
+          "locked_k_line": 5.5
+        }
+      ]
+    },
+    {
+      "slate_date": "2026-07-29",
+      "pitcher": "Tarik Skubal",
+      "side": "under",
+      "model_k_line": "8.5",
+      "official_odds": -130,
+      "official_verdict": "LEAN",
+      "official_book": "FanDuel",
+      "lane": "reentry_expansion",
+      "selector_fingerprint": "23bacff0fa923685ae52c5a9cfbadfb9f5902fb64d91759cfe9b4b1169a221c4",
+      "provider_posture": "therundown_propline",
+      "frozen_at": "2026-07-29 16:40:27.808383+00",
+      "game_time": "2026-07-29 17:10:00+00",
+      "lock_status": "due_now",
+      "minutes_until_start": "29.54",
+      "prestart_valid": true,
+      "lock_valid": true,
+      "history_matches": [
+        {
+          "pnl": 0.7692307692307693,
+          "odds": -130,
+          "k_line": 8.5,
+          "result": "win",
+          "actual_ks": 6,
+          "game_time": "2026-07-29T17:10:00Z",
+          "locked_odds": -130,
+          "locked_k_line": 8.5
+        }
+      ]
+    },
+    {
+      "slate_date": "2026-07-29",
+      "pitcher": "Trevor Rogers",
+      "side": "over",
+      "model_k_line": "4.5",
+      "official_odds": -132,
+      "official_verdict": "LEAN",
+      "official_book": "FanDuel",
+      "lane": "consensus_core",
+      "selector_fingerprint": "23bacff0fa923685ae52c5a9cfbadfb9f5902fb64d91759cfe9b4b1169a221c4",
+      "provider_posture": "therundown_propline",
+      "frozen_at": "2026-07-29 16:40:27.808383+00",
+      "game_time": "2026-07-29 17:10:00+00",
+      "lock_status": "due_now",
+      "minutes_until_start": "29.54",
+      "prestart_valid": true,
+      "lock_valid": true,
+      "history_matches": [
+        {
+          "pnl": 0.7575757575757576,
+          "odds": -132,
+          "k_line": 4.5,
+          "result": "win",
+          "actual_ks": 6,
+          "game_time": "2026-07-29T17:10:00Z",
+          "locked_odds": -132,
+          "locked_k_line": 4.5
+        }
+      ]
+    },
+    {
+      "slate_date": "2026-07-30",
+      "pitcher": "Eury Perez",
+      "side": "over",
+      "model_k_line": "5.5",
+      "official_odds": -148,
+      "official_verdict": "FIRE 1u",
+      "official_book": "FanDuel",
+      "lane": "consensus_core",
+      "selector_fingerprint": "23bacff0fa923685ae52c5a9cfbadfb9f5902fb64d91759cfe9b4b1169a221c4",
+      "provider_posture": "therundown",
+      "frozen_at": "2026-07-30 22:40:12.553158+00",
+      "game_time": "2026-07-30 23:10:00+00",
+      "lock_status": "due_now",
+      "minutes_until_start": "29.79",
+      "prestart_valid": true,
+      "lock_valid": true,
+      "history_matches": [
+        {
+          "pnl": 0.6756756756756757,
+          "odds": -148,
+          "k_line": 5.5,
+          "result": "win",
+          "actual_ks": 6,
+          "game_time": "2026-07-30T23:10:00Z",
+          "locked_odds": -148,
+          "locked_k_line": 5.5
+        }
+      ]
+    },
+    {
+      "slate_date": "2026-07-30",
+      "pitcher": "Grant Holmes",
+      "side": "under",
+      "model_k_line": "4.5",
+      "official_odds": -138,
+      "official_verdict": "LEAN",
+      "official_book": "FanDuel",
+      "lane": "consensus_core",
+      "selector_fingerprint": "23bacff0fa923685ae52c5a9cfbadfb9f5902fb64d91759cfe9b4b1169a221c4",
+      "provider_posture": "therundown",
+      "frozen_at": "2026-07-30 22:30:38.350915+00",
+      "game_time": "2026-07-30 23:00:00+00",
+      "lock_status": "due_now",
+      "minutes_until_start": "29.36",
+      "prestart_valid": true,
+      "lock_valid": true,
+      "history_matches": [
+        {
+          "pnl": 0.7246376811594203,
+          "odds": -138,
+          "k_line": 4.5,
+          "result": "win",
+          "actual_ks": 4,
+          "game_time": "2026-07-30T23:00:00Z",
+          "locked_odds": -138,
+          "locked_k_line": 4.5
+        }
+      ]
+    },
+    {
+      "slate_date": "2026-07-31",
+      "pitcher": "Erick Fedde",
+      "side": "under",
+      "model_k_line": "3.5",
+      "official_odds": -154,
+      "official_verdict": "LEAN",
+      "official_book": "FanDuel",
+      "lane": "consensus_core",
+      "selector_fingerprint": "23bacff0fa923685ae52c5a9cfbadfb9f5902fb64d91759cfe9b4b1169a221c4",
+      "provider_posture": "therundown_propline",
+      "frozen_at": "2026-07-31 22:40:17.037288+00",
+      "game_time": "2026-07-31 23:10:00+00",
+      "lock_status": "due_now",
+      "minutes_until_start": "29.72",
+      "prestart_valid": true,
+      "lock_valid": true,
+      "history_matches": [
+        {
+          "pnl": -1,
+          "odds": -154,
+          "k_line": 3.5,
+          "result": "loss",
+          "actual_ks": 6,
+          "game_time": "2026-07-31T23:10:00Z",
+          "locked_odds": -154,
+          "locked_k_line": 3.5
+        }
+      ]
+    },
+    {
+      "slate_date": "2026-08-01",
+      "pitcher": "Cristopher Sanchez",
+      "side": "under",
+      "model_k_line": "7.5",
+      "official_odds": -156,
+      "official_verdict": "LEAN",
+      "official_book": "FanDuel",
+      "lane": "reentry_expansion",
+      "selector_fingerprint": "23bacff0fa923685ae52c5a9cfbadfb9f5902fb64d91759cfe9b4b1169a221c4",
+      "provider_posture": "therundown_propline",
+      "frozen_at": "2026-08-01 22:40:33.362983+00",
+      "game_time": "2026-08-01 23:05:00+00",
+      "lock_status": "due_now",
+      "minutes_until_start": "24.44",
+      "prestart_valid": true,
+      "lock_valid": true,
+      "history_matches": [
+        {
+          "pnl": -1,
+          "odds": -156,
+          "k_line": 7.5,
+          "result": "loss",
+          "actual_ks": 11,
+          "game_time": "2026-08-01T23:05:00Z",
+          "locked_odds": -156,
+          "locked_k_line": 7.5
+        }
+      ]
+    },
+    {
+      "slate_date": "2026-08-01",
+      "pitcher": "Jacob deGrom",
+      "side": "under",
+      "model_k_line": "6.5",
+      "official_odds": -122,
+      "official_verdict": "LEAN",
+      "official_book": "FanDuel",
+      "lane": "consensus_core",
+      "selector_fingerprint": "23bacff0fa923685ae52c5a9cfbadfb9f5902fb64d91759cfe9b4b1169a221c4",
+      "provider_posture": "therundown_propline",
+      "frozen_at": "2026-08-01 22:40:33.362983+00",
+      "game_time": "2026-08-01 23:10:00+00",
+      "lock_status": "due_now",
+      "minutes_until_start": "29.44",
+      "prestart_valid": true,
+      "lock_valid": true,
+      "history_matches": [
+        {
+          "pnl": 0.819672131147541,
+          "odds": -122,
+          "k_line": 6.5,
+          "result": "win",
+          "actual_ks": 3,
+          "game_time": "2026-08-01T23:10:00Z",
+          "locked_odds": -122,
+          "locked_k_line": 6.5
+        }
+      ]
+    },
+    {
+      "slate_date": "2026-08-01",
+      "pitcher": "Reynaldo Lopez",
+      "side": "under",
+      "model_k_line": "4.5",
+      "official_odds": -142,
+      "official_verdict": "LEAN",
+      "official_book": "FanDuel",
+      "lane": "consensus_core",
+      "selector_fingerprint": "23bacff0fa923685ae52c5a9cfbadfb9f5902fb64d91759cfe9b4b1169a221c4",
+      "provider_posture": "therundown_propline",
+      "frozen_at": "2026-08-01 22:50:18.718418+00",
+      "game_time": "2026-08-01 23:15:00+00",
+      "lock_status": "due_now",
+      "minutes_until_start": "24.69",
+      "prestart_valid": true,
+      "lock_valid": true,
+      "history_matches": [
+        {
+          "pnl": 0,
+          "odds": -142,
+          "k_line": 4.5,
+          "result": "void",
+          "actual_ks": null,
+          "game_time": "2026-08-01T23:15:00Z",
+          "locked_odds": -142,
+          "locked_k_line": 4.5
+        }
+      ]
+    },
+    {
+      "slate_date": "2026-08-02",
+      "pitcher": "Cade Cavalli",
+      "side": "over",
+      "model_k_line": "4.5",
+      "official_odds": -158,
+      "official_verdict": "LEAN",
+      "official_book": "FanDuel",
+      "lane": "consensus_core",
+      "selector_fingerprint": "23bacff0fa923685ae52c5a9cfbadfb9f5902fb64d91759cfe9b4b1169a221c4",
+      "provider_posture": "therundown",
+      "frozen_at": "2026-08-02 17:10:20.440685+00",
+      "game_time": "2026-08-02 17:35:00+00",
+      "lock_status": "due_now",
+      "minutes_until_start": "24.66",
+      "prestart_valid": true,
+      "lock_valid": true,
+      "history_matches": [
+        {
+          "pnl": -1,
+          "odds": -158,
+          "k_line": 4.5,
+          "result": "loss",
+          "actual_ks": 3,
+          "game_time": "2026-08-02T17:35:00Z",
+          "locked_odds": -158,
+          "locked_k_line": 4.5
+        }
+      ]
+    },
+    {
+      "slate_date": "2026-08-02",
+      "pitcher": "Jake Bennett",
+      "side": "over",
+      "model_k_line": "3.5",
+      "official_odds": -128,
+      "official_verdict": "FIRE 1u",
+      "official_book": "FanDuel",
+      "lane": "consensus_core",
+      "selector_fingerprint": "23bacff0fa923685ae52c5a9cfbadfb9f5902fb64d91759cfe9b4b1169a221c4",
+      "provider_posture": "therundown",
+      "frozen_at": "2026-08-02 22:50:29.72637+00",
+      "game_time": "2026-08-02 23:20:00+00",
+      "lock_status": "due_now",
+      "minutes_until_start": "29.5",
+      "prestart_valid": true,
+      "lock_valid": true,
+      "history_matches": [
+        {
+          "pnl": 0.78125,
+          "odds": -128,
+          "k_line": 3.5,
+          "result": "win",
+          "actual_ks": 4,
+          "game_time": "2026-08-02T23:20:00Z",
+          "locked_odds": -128,
+          "locked_k_line": 3.5
+        }
+      ]
+    },
+    {
+      "slate_date": "2026-08-02",
+      "pitcher": "Kyle Freeland",
+      "side": "under",
+      "model_k_line": "4.5",
+      "official_odds": -162,
+      "official_verdict": "LEAN",
+      "official_book": "FanDuel",
+      "lane": "consensus_core",
+      "selector_fingerprint": "23bacff0fa923685ae52c5a9cfbadfb9f5902fb64d91759cfe9b4b1169a221c4",
+      "provider_posture": "therundown_propline",
+      "frozen_at": "2026-08-02 18:40:08.67785+00",
+      "game_time": "2026-08-02 19:10:00+00",
+      "lock_status": "due_now",
+      "minutes_until_start": "29.86",
+      "prestart_valid": true,
+      "lock_valid": true,
+      "history_matches": [
+        {
+          "pnl": -1,
+          "odds": -162,
+          "k_line": 4.5,
+          "result": "loss",
+          "actual_ks": 8,
+          "game_time": "2026-08-02T19:10:00Z",
+          "locked_odds": -162,
+          "locked_k_line": 4.5
+        }
+      ]
+    },
+    {
+      "slate_date": "2026-08-02",
+      "pitcher": "Peter Lambert",
+      "side": "under",
+      "model_k_line": "5.5",
+      "official_odds": 100,
+      "official_verdict": "LEAN",
+      "official_book": "FanDuel",
+      "lane": "reentry_expansion",
+      "selector_fingerprint": "23bacff0fa923685ae52c5a9cfbadfb9f5902fb64d91759cfe9b4b1169a221c4",
+      "provider_posture": "therundown_propline",
+      "frozen_at": "2026-08-02 17:40:33.096011+00",
+      "game_time": "2026-08-02 18:10:00+00",
+      "lock_status": "due_now",
+      "minutes_until_start": "29.45",
+      "prestart_valid": true,
+      "lock_valid": true,
+      "history_matches": [
+        {
+          "pnl": -1,
+          "odds": 100,
+          "k_line": 5.5,
+          "result": "loss",
+          "actual_ks": 8,
+          "game_time": "2026-08-02T18:10:00Z",
+          "locked_odds": 100,
+          "locked_k_line": 5.5
+        }
+      ]
+    },
+    {
+      "slate_date": "2026-08-05",
+      "pitcher": "Shota Imanaga",
+      "side": "over",
+      "model_k_line": "4.5",
+      "official_odds": -122,
+      "official_verdict": "LEAN",
+      "official_book": "FanDuel",
+      "lane": "consensus_core",
+      "selector_fingerprint": "23bacff0fa923685ae52c5a9cfbadfb9f5902fb64d91759cfe9b4b1169a221c4",
+      "provider_posture": "therundown_propline",
+      "frozen_at": "2026-08-05 17:50:25.823946+00",
+      "game_time": "2026-08-05 18:20:00+00",
+      "lock_status": "due_now",
+      "minutes_until_start": "29.57",
+      "prestart_valid": true,
+      "lock_valid": true,
+      "history_matches": [
+        {
+          "pnl": 0.819672131147541,
+          "odds": -122,
+          "k_line": 4.5,
+          "result": "win",
+          "actual_ks": 6,
+          "game_time": "2026-08-05T18:20:00Z",
+          "locked_odds": -122,
+          "locked_k_line": 4.5
+        }
+      ]
+    },
+    {
+      "slate_date": "2026-08-06",
+      "pitcher": "Bailey Ober",
+      "side": "over",
+      "model_k_line": "3.5",
+      "official_odds": -115,
+      "official_verdict": "FIRE 1u",
+      "official_book": "FanDuel",
+      "lane": "consensus_core",
+      "selector_fingerprint": "23bacff0fa923685ae52c5a9cfbadfb9f5902fb64d91759cfe9b4b1169a221c4",
+      "provider_posture": "therundown",
+      "frozen_at": "2026-08-06 23:00:37.984069+00",
+      "game_time": "2026-08-06 23:30:00+00",
+      "lock_status": "due_now",
+      "minutes_until_start": "29.37",
+      "prestart_valid": true,
+      "lock_valid": true,
+      "history_matches": [
+        {
+          "pnl": -1,
+          "odds": -115,
+          "k_line": 3.5,
+          "result": "loss",
+          "actual_ks": 0,
+          "game_time": "2026-08-06T23:30:00Z",
+          "locked_odds": -115,
+          "locked_k_line": 3.5
+        }
+      ]
+    },
+    {
+      "slate_date": "2026-08-06",
+      "pitcher": "Miles Mikolas",
+      "side": "under",
+      "model_k_line": "3.5",
+      "official_odds": -192,
+      "official_verdict": "LEAN",
+      "official_book": "FanDuel",
+      "lane": "consensus_core",
+      "selector_fingerprint": "23bacff0fa923685ae52c5a9cfbadfb9f5902fb64d91759cfe9b4b1169a221c4",
+      "provider_posture": "therundown",
+      "frozen_at": "2026-08-06 21:40:26.649417+00",
+      "game_time": "2026-08-06 22:05:00+00",
+      "lock_status": "due_now",
+      "minutes_until_start": "24.56",
+      "prestart_valid": true,
+      "lock_valid": true,
+      "history_matches": [
+        {
+          "pnl": 0.5208333333333334,
+          "odds": -192,
+          "k_line": 3.5,
+          "result": "win",
+          "actual_ks": 1,
+          "game_time": "2026-08-06T22:05:00Z",
+          "locked_odds": -192,
+          "locked_k_line": 3.5
+        }
+      ]
+    },
+    {
+      "slate_date": "2026-08-06",
+      "pitcher": "Nolan McLean",
+      "side": "under",
+      "model_k_line": "5.5",
+      "official_odds": 112,
+      "official_verdict": "LEAN",
+      "official_book": "FanDuel",
+      "lane": "reentry_expansion",
+      "selector_fingerprint": "23bacff0fa923685ae52c5a9cfbadfb9f5902fb64d91759cfe9b4b1169a221c4",
+      "provider_posture": "therundown_propline",
+      "frozen_at": "2026-08-06 16:40:24.913468+00",
+      "game_time": "2026-08-06 17:10:00+00",
+      "lock_status": "due_now",
+      "minutes_until_start": "29.58",
+      "prestart_valid": true,
+      "lock_valid": true,
+      "history_matches": [
+        {
+          "pnl": -1,
+          "odds": 112,
+          "k_line": 5.5,
+          "result": "loss",
+          "actual_ks": 8,
+          "game_time": "2026-08-06T17:10:00Z",
+          "locked_odds": 112,
+          "locked_k_line": 5.5
+        }
+      ]
+    },
+    {
+      "slate_date": "2026-08-08",
+      "pitcher": "Aaron Nola",
+      "side": "under",
+      "model_k_line": "4.5",
+      "official_odds": -130,
+      "official_verdict": "LEAN",
+      "official_book": "FanDuel",
+      "lane": "consensus_core",
+      "selector_fingerprint": "23bacff0fa923685ae52c5a9cfbadfb9f5902fb64d91759cfe9b4b1169a221c4",
+      "provider_posture": "therundown_propline",
+      "frozen_at": "2026-08-08 21:40:10.545473+00",
+      "game_time": "2026-08-08 22:05:00+00",
+      "lock_status": "due_now",
+      "minutes_until_start": "24.82",
+      "prestart_valid": true,
+      "lock_valid": true,
+      "history_matches": [
+        {
+          "pnl": -1,
+          "odds": -130,
+          "k_line": 4.5,
+          "result": "loss",
+          "actual_ks": 8,
+          "game_time": "2026-08-08T22:05:00Z",
+          "locked_odds": -130,
+          "locked_k_line": 4.5
+        }
+      ]
+    },
+    {
+      "slate_date": "2026-08-08",
+      "pitcher": "Chris Sale",
+      "side": "under",
+      "model_k_line": "7.5",
+      "official_odds": 108,
+      "official_verdict": "LEAN",
+      "official_book": "FanDuel",
+      "lane": "reentry_expansion",
+      "selector_fingerprint": "23bacff0fa923685ae52c5a9cfbadfb9f5902fb64d91759cfe9b4b1169a221c4",
+      "provider_posture": "therundown_propline",
+      "frozen_at": "2026-08-08 18:40:13.079431+00",
+      "game_time": "2026-08-08 19:05:00+00",
+      "lock_status": "due_now",
+      "minutes_until_start": "24.78",
+      "prestart_valid": true,
+      "lock_valid": true,
+      "history_matches": [
+        {
+          "pnl": -1,
+          "odds": 108,
+          "k_line": 7.5,
+          "result": "loss",
+          "actual_ks": 8,
+          "game_time": "2026-08-08T19:05:00Z",
+          "locked_odds": 108,
+          "locked_k_line": 7.5
+        }
+      ]
+    },
+    {
+      "slate_date": "2026-08-08",
+      "pitcher": "Gerrit Cole",
+      "side": "over",
+      "model_k_line": "5.5",
+      "official_odds": -132,
+      "official_verdict": "FIRE 1u",
+      "official_book": "FanDuel",
+      "lane": "consensus_core",
+      "selector_fingerprint": "23bacff0fa923685ae52c5a9cfbadfb9f5902fb64d91759cfe9b4b1169a221c4",
+      "provider_posture": "therundown_propline",
+      "frozen_at": "2026-08-08 18:40:13.079431+00",
+      "game_time": "2026-08-08 19:05:00+00",
+      "lock_status": "due_now",
+      "minutes_until_start": "24.78",
+      "prestart_valid": true,
+      "lock_valid": true,
+      "history_matches": [
+        {
+          "pnl": 0.7575757575757576,
+          "odds": -132,
+          "k_line": 5.5,
+          "result": "win",
+          "actual_ks": 9,
+          "game_time": "2026-08-08T19:05:00Z",
+          "locked_odds": -132,
+          "locked_k_line": 5.5
+        }
+      ]
+    },
+    {
+      "slate_date": "2026-08-08",
+      "pitcher": "Landen Roupp",
+      "side": "over",
+      "model_k_line": "4.5",
+      "official_odds": -154,
+      "official_verdict": "FIRE 1u",
+      "official_book": "FanDuel",
+      "lane": "consensus_core",
+      "selector_fingerprint": "23bacff0fa923685ae52c5a9cfbadfb9f5902fb64d91759cfe9b4b1169a221c4",
+      "provider_posture": "therundown",
+      "frozen_at": "2026-08-08 22:50:26.309794+00",
+      "game_time": "2026-08-08 23:15:00+00",
+      "lock_status": "due_now",
+      "minutes_until_start": "24.56",
+      "prestart_valid": true,
+      "lock_valid": true,
+      "history_matches": [
+        {
+          "pnl": -1,
+          "odds": -154,
+          "k_line": 4.5,
+          "result": "loss",
+          "actual_ks": 3,
+          "game_time": "2026-08-08T23:15:00Z",
+          "locked_odds": -154,
+          "locked_k_line": 4.5
+        }
+      ]
+    },
+    {
+      "slate_date": "2026-08-08",
+      "pitcher": "Seth Lugo",
+      "side": "over",
+      "model_k_line": "3.5",
+      "official_odds": -154,
+      "official_verdict": "FIRE 1u",
+      "official_book": "FanDuel",
+      "lane": "consensus_core",
+      "selector_fingerprint": "23bacff0fa923685ae52c5a9cfbadfb9f5902fb64d91759cfe9b4b1169a221c4",
+      "provider_posture": "therundown",
+      "frozen_at": "2026-08-08 22:40:41.245606+00",
+      "game_time": "2026-08-08 23:10:00+00",
+      "lock_status": "due_now",
+      "minutes_until_start": "29.31",
+      "prestart_valid": true,
+      "lock_valid": true,
+      "history_matches": [
+        {
+          "pnl": 0.6493506493506493,
+          "odds": -154,
+          "k_line": 3.5,
+          "result": "win",
+          "actual_ks": 5,
+          "game_time": "2026-08-08T23:10:00Z",
+          "locked_odds": -154,
+          "locked_k_line": 3.5
+        }
+      ]
+    },
+    {
+      "slate_date": "2026-08-09",
+      "pitcher": "Jesus Luzardo",
+      "side": "over",
+      "model_k_line": "6.5",
+      "official_odds": 102,
+      "official_verdict": "LEAN",
+      "official_book": "FanDuel",
+      "lane": "reentry_expansion",
+      "selector_fingerprint": "23bacff0fa923685ae52c5a9cfbadfb9f5902fb64d91759cfe9b4b1169a221c4",
+      "provider_posture": "therundown_propline",
+      "frozen_at": "2026-08-09 17:10:22.003358+00",
+      "game_time": "2026-08-09 17:35:00+00",
+      "lock_status": "due_now",
+      "minutes_until_start": "24.63",
+      "prestart_valid": true,
+      "lock_valid": true,
+      "history_matches": [
+        {
+          "pnl": 1.02,
+          "odds": 102,
+          "k_line": 6.5,
+          "result": "win",
+          "actual_ks": 12,
+          "game_time": "2026-08-09T17:35:00Z",
+          "locked_odds": 102,
+          "locked_k_line": 6.5
+        }
+      ]
+    },
+    {
+      "slate_date": "2026-08-09",
+      "pitcher": "Michael McGreevy",
+      "side": "under",
+      "model_k_line": "3.5",
+      "official_odds": 104,
+      "official_verdict": "LEAN",
+      "official_book": "FanDuel",
+      "lane": "reentry_expansion",
+      "selector_fingerprint": "23bacff0fa923685ae52c5a9cfbadfb9f5902fb64d91759cfe9b4b1169a221c4",
+      "provider_posture": "therundown_propline",
+      "frozen_at": "2026-08-09 17:50:23.437671+00",
+      "game_time": "2026-08-09 18:15:00+00",
+      "lock_status": "due_now",
+      "minutes_until_start": "24.61",
+      "prestart_valid": true,
+      "lock_valid": true,
+      "history_matches": [
+        {
+          "pnl": -1,
+          "odds": 104,
+          "k_line": 3.5,
+          "result": "loss",
+          "actual_ks": 4,
+          "game_time": "2026-08-09T18:15:00Z",
+          "locked_odds": 104,
+          "locked_k_line": 3.5
+        }
+      ]
+    },
+    {
+      "slate_date": "2026-08-10",
+      "pitcher": "Dean Kremer",
+      "side": "under",
+      "model_k_line": "5.5",
+      "official_odds": -146,
+      "official_verdict": "LEAN",
+      "official_book": "FanDuel",
+      "lane": "consensus_core",
+      "selector_fingerprint": "23bacff0fa923685ae52c5a9cfbadfb9f5902fb64d91759cfe9b4b1169a221c4",
+      "provider_posture": "therundown_propline",
+      "frozen_at": "2026-08-10 23:10:14.238363+00",
+      "game_time": "2026-08-10 23:40:00+00",
+      "lock_status": "due_now",
+      "minutes_until_start": "29.76",
+      "prestart_valid": true,
+      "lock_valid": true,
+      "history_matches": [
+        {
+          "pnl": -1,
+          "odds": -146,
+          "k_line": 5.5,
+          "result": "loss",
+          "actual_ks": 7,
+          "game_time": "2026-08-10T23:40:00Z",
+          "locked_odds": -146,
+          "locked_k_line": 5.5
+        }
+      ]
+    },
+    {
+      "slate_date": "2026-08-10",
+      "pitcher": "Noah Cameron",
+      "side": "over",
+      "model_k_line": "4.5",
+      "official_odds": -146,
+      "official_verdict": "FIRE 1u",
+      "official_book": "FanDuel",
+      "lane": "consensus_core",
+      "selector_fingerprint": "23bacff0fa923685ae52c5a9cfbadfb9f5902fb64d91759cfe9b4b1169a221c4",
+      "provider_posture": "therundown_propline",
+      "frozen_at": "2026-08-11 01:40:31.625172+00",
+      "game_time": "2026-08-11 02:10:00+00",
+      "lock_status": "due_now",
+      "minutes_until_start": "29.47",
+      "prestart_valid": true,
+      "lock_valid": true,
+      "history_matches": [
+        {
+          "pnl": -1,
+          "odds": -146,
+          "k_line": 4.5,
+          "result": "loss",
+          "actual_ks": 2,
+          "game_time": "2026-08-11T02:10:00Z",
+          "locked_odds": -146,
+          "locked_k_line": 4.5
+        }
+      ]
+    },
+    {
+      "slate_date": "2026-08-11",
+      "pitcher": "Bailey Ober",
+      "side": "under",
+      "model_k_line": "4.5",
+      "official_odds": -146,
+      "official_verdict": "LEAN",
+      "official_book": "FanDuel",
+      "lane": "consensus_core",
+      "selector_fingerprint": "23bacff0fa923685ae52c5a9cfbadfb9f5902fb64d91759cfe9b4b1169a221c4",
+      "provider_posture": "therundown_propline",
+      "frozen_at": "2026-08-11 23:10:23.269392+00",
+      "game_time": "2026-08-11 23:40:00+00",
+      "lock_status": "due_now",
+      "minutes_until_start": "29.61",
+      "prestart_valid": true,
+      "lock_valid": true,
+      "history_matches": [
+        {
+          "pnl": 0.684931506849315,
+          "odds": -146,
+          "k_line": 4.5,
+          "result": "win",
+          "actual_ks": 4,
+          "game_time": "2026-08-11T23:40:00Z",
+          "locked_odds": -146,
+          "locked_k_line": 4.5
+        }
+      ]
+    },
+    {
+      "slate_date": "2026-08-11",
+      "pitcher": "Nolan McLean",
+      "side": "over",
+      "model_k_line": "5.5",
+      "official_odds": -150,
+      "official_verdict": "FIRE 1u",
+      "official_book": "FanDuel",
+      "lane": "consensus_core",
+      "selector_fingerprint": "23bacff0fa923685ae52c5a9cfbadfb9f5902fb64d91759cfe9b4b1169a221c4",
+      "provider_posture": "therundown_propline",
+      "frozen_at": "2026-08-11 22:50:24.327538+00",
+      "game_time": "2026-08-11 23:15:00+00",
+      "lock_status": "due_now",
+      "minutes_until_start": "24.59",
+      "prestart_valid": true,
+      "lock_valid": true,
+      "history_matches": [
+        {
+          "pnl": -1,
+          "odds": -150,
+          "k_line": 5.5,
+          "result": "loss",
+          "actual_ks": 3,
+          "game_time": "2026-08-11T23:15:00Z",
+          "locked_odds": -150,
+          "locked_k_line": 5.5
+        }
+      ]
+    },
+    {
+      "slate_date": "2026-08-11",
+      "pitcher": "Tanner Bibee",
+      "side": "over",
+      "model_k_line": "4.5",
+      "official_odds": -111,
+      "official_verdict": "LEAN",
+      "official_book": "FanDuel",
+      "lane": "reentry_expansion",
+      "selector_fingerprint": "23bacff0fa923685ae52c5a9cfbadfb9f5902fb64d91759cfe9b4b1169a221c4",
+      "provider_posture": "therundown_propline",
+      "frozen_at": "2026-08-11 22:10:20.676989+00",
+      "game_time": "2026-08-11 22:40:00+00",
+      "lock_status": "due_now",
+      "minutes_until_start": "29.66",
+      "prestart_valid": true,
+      "lock_valid": true,
+      "history_matches": [
+        {
+          "pnl": -1,
+          "odds": -111,
+          "k_line": 4.5,
+          "result": "loss",
+          "actual_ks": 4,
+          "game_time": "2026-08-11T22:40:00Z",
+          "locked_odds": -111,
+          "locked_k_line": 4.5
+        }
+      ]
+    },
+    {
+      "slate_date": "2026-08-11",
+      "pitcher": "Walker Buehler",
+      "side": "under",
+      "model_k_line": "4.5",
+      "official_odds": -158,
+      "official_verdict": "LEAN",
+      "official_book": "FanDuel",
+      "lane": "consensus_core",
+      "selector_fingerprint": "23bacff0fa923685ae52c5a9cfbadfb9f5902fb64d91759cfe9b4b1169a221c4",
+      "provider_posture": "therundown_propline",
+      "frozen_at": "2026-08-12 01:10:23.361116+00",
+      "game_time": "2026-08-12 01:40:00+00",
+      "lock_status": "due_now",
+      "minutes_until_start": "29.61",
+      "prestart_valid": true,
+      "lock_valid": true,
+      "history_matches": [
+        {
+          "pnl": -1,
+          "odds": -158,
+          "k_line": 4.5,
+          "result": "loss",
+          "actual_ks": 5,
+          "game_time": "2026-08-12T01:40:00Z",
+          "locked_odds": -158,
+          "locked_k_line": 4.5
+        }
+      ]
+    },
+    {
+      "slate_date": "2026-08-12",
+      "pitcher": "Bryce Miller",
+      "side": "under",
+      "model_k_line": "5.5",
+      "official_odds": -115,
+      "official_verdict": "LEAN",
+      "official_book": "FanDuel",
+      "lane": "consensus_core",
+      "selector_fingerprint": "23bacff0fa923685ae52c5a9cfbadfb9f5902fb64d91759cfe9b4b1169a221c4",
+      "provider_posture": "therundown_propline",
+      "frozen_at": "2026-08-12 22:30:25.971962+00",
+      "game_time": "2026-08-12 23:00:00+00",
+      "lock_status": "due_now",
+      "minutes_until_start": "29.57",
+      "prestart_valid": true,
+      "lock_valid": true,
+      "history_matches": [
+        {
+          "pnl": 0.8695652173913043,
+          "odds": -115,
+          "k_line": 5.5,
+          "result": "win",
+          "actual_ks": 5,
+          "game_time": "2026-08-12T23:00:00Z",
+          "locked_odds": -115,
+          "locked_k_line": 5.5
+        }
+      ]
+    },
+    {
+      "slate_date": "2026-08-12",
+      "pitcher": "Cal Quantrill",
+      "side": "under",
+      "model_k_line": "3.5",
+      "official_odds": -125,
+      "official_verdict": "LEAN",
+      "official_book": "FanDuel",
+      "lane": "consensus_core",
+      "selector_fingerprint": "23bacff0fa923685ae52c5a9cfbadfb9f5902fb64d91759cfe9b4b1169a221c4",
+      "provider_posture": "therundown_propline",
+      "frozen_at": "2026-08-13 01:30:52.136577+00",
+      "game_time": "2026-08-13 02:00:00+00",
+      "lock_status": "due_now",
+      "minutes_until_start": "29.13",
+      "prestart_valid": true,
+      "lock_valid": true,
+      "history_matches": [
+        {
+          "pnl": -1,
+          "odds": -125,
+          "k_line": 3.5,
+          "result": "loss",
+          "actual_ks": 6,
+          "game_time": "2026-08-13T02:00:00Z",
+          "locked_odds": -125,
+          "locked_k_line": 3.5
+        }
+      ]
+    },
+    {
+      "slate_date": "2026-08-12",
+      "pitcher": "Eric Lauer",
+      "side": "under",
+      "model_k_line": "4.5",
+      "official_odds": -162,
+      "official_verdict": "LEAN",
+      "official_book": "FanDuel",
+      "lane": "consensus_core",
+      "selector_fingerprint": "23bacff0fa923685ae52c5a9cfbadfb9f5902fb64d91759cfe9b4b1169a221c4",
+      "provider_posture": "therundown",
+      "frozen_at": "2026-08-13 01:40:24.167134+00",
+      "game_time": "2026-08-13 02:10:00+00",
+      "lock_status": "due_now",
+      "minutes_until_start": "29.6",
+      "prestart_valid": true,
+      "lock_valid": true,
+      "history_matches": [
+        {
+          "pnl": -1,
+          "odds": -162,
+          "k_line": 4.5,
+          "result": "loss",
+          "actual_ks": 6,
+          "game_time": "2026-08-13T02:10:00Z",
+          "locked_odds": -162,
+          "locked_k_line": 4.5
+        }
+      ]
+    },
+    {
+      "slate_date": "2026-08-12",
+      "pitcher": "Shane Baz",
+      "side": "over",
+      "model_k_line": "4.5",
+      "official_odds": -128,
+      "official_verdict": "FIRE 1u",
+      "official_book": "FanDuel",
+      "lane": "consensus_core",
+      "selector_fingerprint": "23bacff0fa923685ae52c5a9cfbadfb9f5902fb64d91759cfe9b4b1169a221c4",
+      "provider_posture": "therundown_propline",
+      "frozen_at": "2026-08-12 17:10:24.952178+00",
+      "game_time": "2026-08-12 17:40:00+00",
+      "lock_status": "due_now",
+      "minutes_until_start": "29.58",
+      "prestart_valid": true,
+      "lock_valid": true,
+      "history_matches": [
+        {
+          "pnl": -1,
+          "odds": -128,
+          "k_line": 4.5,
+          "result": "loss",
+          "actual_ks": 2,
+          "game_time": "2026-08-12T17:40:00Z",
+          "locked_odds": -128,
+          "locked_k_line": 4.5
+        }
+      ]
+    },
+    {
+      "slate_date": "2026-08-13",
+      "pitcher": "Andrew Abbott",
+      "side": "under",
+      "model_k_line": "4.5",
+      "official_odds": -122,
+      "official_verdict": "LEAN",
+      "official_book": "FanDuel",
+      "lane": "consensus_core",
+      "selector_fingerprint": "23bacff0fa923685ae52c5a9cfbadfb9f5902fb64d91759cfe9b4b1169a221c4",
+      "provider_posture": "therundown_propline",
+      "frozen_at": "2026-08-13 16:40:12.776072+00",
+      "game_time": "2026-08-13 17:10:00+00",
+      "lock_status": "due_now",
+      "minutes_until_start": "29.79",
+      "prestart_valid": true,
+      "lock_valid": true,
+      "history_matches": [
+        {
+          "pnl": 0.819672131147541,
+          "odds": -122,
+          "k_line": 4.5,
+          "result": "win",
+          "actual_ks": 3,
+          "game_time": "2026-08-13T17:10:00Z",
+          "locked_odds": -122,
+          "locked_k_line": 4.5
+        }
+      ]
+    },
+    {
+      "slate_date": "2026-08-13",
+      "pitcher": "Parker Messick",
+      "side": "over",
+      "model_k_line": "5.5",
+      "official_odds": 102,
+      "official_verdict": "LEAN",
+      "official_book": "FanDuel",
+      "lane": "reentry_expansion",
+      "selector_fingerprint": "23bacff0fa923685ae52c5a9cfbadfb9f5902fb64d91759cfe9b4b1169a221c4",
+      "provider_posture": "therundown_propline",
+      "frozen_at": "2026-08-13 16:40:12.776072+00",
+      "game_time": "2026-08-13 17:10:00+00",
+      "lock_status": "due_now",
+      "minutes_until_start": "29.79",
+      "prestart_valid": true,
+      "lock_valid": true,
+      "history_matches": [
+        {
+          "pnl": 1.02,
+          "odds": 102,
+          "k_line": 5.5,
+          "result": "win",
+          "actual_ks": 6,
+          "game_time": "2026-08-13T17:10:00Z",
+          "locked_odds": 102,
+          "locked_k_line": 5.5
+        }
+      ]
+    },
+    {
+      "slate_date": "2026-08-13",
+      "pitcher": "Taj Bradley",
+      "side": "under",
+      "model_k_line": "5.5",
+      "official_odds": -108,
+      "official_verdict": "LEAN",
+      "official_book": "FanDuel",
+      "lane": "reentry_expansion",
+      "selector_fingerprint": "23bacff0fa923685ae52c5a9cfbadfb9f5902fb64d91759cfe9b4b1169a221c4",
+      "provider_posture": "therundown",
+      "frozen_at": "2026-08-13 23:01:15.850086+00",
+      "game_time": "2026-08-13 23:30:00+00",
+      "lock_status": "due_now",
+      "minutes_until_start": "28.74",
+      "prestart_valid": true,
+      "lock_valid": true,
+      "history_matches": [
+        {
+          "pnl": 0.9259259259259259,
+          "odds": -108,
+          "k_line": 5.5,
+          "result": "win",
+          "actual_ks": 3,
+          "game_time": "2026-08-13T23:30:00Z",
+          "locked_odds": -108,
+          "locked_k_line": 5.5
+        }
+      ]
+    },
+    {
+      "slate_date": "2026-08-14",
+      "pitcher": "Robert Gasser",
+      "side": "under",
+      "model_k_line": "4.5",
+      "official_odds": -138,
+      "official_verdict": "LEAN",
+      "official_book": "FanDuel",
+      "lane": "consensus_core",
+      "selector_fingerprint": "23bacff0fa923685ae52c5a9cfbadfb9f5902fb64d91759cfe9b4b1169a221c4",
+      "provider_posture": "therundown_propline",
+      "frozen_at": "2026-08-15 01:40:50.121461+00",
+      "game_time": "2026-08-15 02:10:00+00",
+      "lock_status": "due_now",
+      "minutes_until_start": "29.16",
+      "prestart_valid": true,
+      "lock_valid": true,
+      "history_matches": [
+        {
+          "pnl": -1,
+          "odds": -138,
+          "k_line": 4.5,
+          "result": "loss",
+          "actual_ks": 7,
+          "game_time": "2026-08-15T02:10:00Z",
+          "locked_odds": -138,
+          "locked_k_line": 4.5
+        }
+      ]
+    },
+    {
+      "slate_date": "2026-08-15",
+      "pitcher": "Jared Jones",
+      "side": "under",
+      "model_k_line": "4.5",
+      "official_odds": 106,
+      "official_verdict": "LEAN",
+      "official_book": "FanDuel",
+      "lane": "reentry_expansion",
+      "selector_fingerprint": "23bacff0fa923685ae52c5a9cfbadfb9f5902fb64d91759cfe9b4b1169a221c4",
+      "provider_posture": "therundown_propline",
+      "frozen_at": "2026-08-15 22:50:25.281252+00",
+      "game_time": "2026-08-15 23:15:00+00",
+      "lock_status": "due_now",
+      "minutes_until_start": "24.58",
+      "prestart_valid": true,
+      "lock_valid": true,
+      "history_matches": [
+        {
+          "pnl": -1,
+          "odds": 106,
+          "k_line": 4.5,
+          "result": "loss",
+          "actual_ks": 7,
+          "game_time": "2026-08-15T23:15:00Z",
+          "locked_odds": 106,
+          "locked_k_line": 4.5
+        }
+      ]
+    },
+    {
+      "slate_date": "2026-08-15",
+      "pitcher": "Jesus Luzardo",
+      "side": "over",
+      "model_k_line": "6.5",
+      "official_odds": -102,
+      "official_verdict": "LEAN",
+      "official_book": "FanDuel",
+      "lane": "reentry_expansion",
+      "selector_fingerprint": "23bacff0fa923685ae52c5a9cfbadfb9f5902fb64d91759cfe9b4b1169a221c4",
+      "provider_posture": "therundown_propline",
+      "frozen_at": "2026-08-15 22:40:15.410979+00",
+      "game_time": "2026-08-15 23:10:00+00",
+      "lock_status": "due_now",
+      "minutes_until_start": "29.74",
+      "prestart_valid": true,
+      "lock_valid": true,
+      "history_matches": [
+        {
+          "pnl": 0.9803921568627451,
+          "odds": -102,
+          "k_line": 6.5,
+          "result": "win",
+          "actual_ks": 9,
+          "game_time": "2026-08-15T23:10:00Z",
+          "locked_odds": -102,
+          "locked_k_line": 6.5
+        }
+      ]
+    },
+    {
+      "slate_date": "2026-08-15",
+      "pitcher": "Michael Lorenzen",
+      "side": "under",
+      "model_k_line": "3.5",
+      "official_odds": -142,
+      "official_verdict": "LEAN",
+      "official_book": "FanDuel",
+      "lane": "consensus_core",
+      "selector_fingerprint": "23bacff0fa923685ae52c5a9cfbadfb9f5902fb64d91759cfe9b4b1169a221c4",
+      "provider_posture": "therundown_propline",
+      "frozen_at": "2026-08-15 19:40:31.880566+00",
+      "game_time": "2026-08-15 20:05:00+00",
+      "lock_status": "due_now",
+      "minutes_until_start": "24.47",
+      "prestart_valid": true,
+      "lock_valid": true,
+      "history_matches": [
+        {
+          "pnl": 0.704225352112676,
+          "odds": -142,
+          "k_line": 3.5,
+          "result": "win",
+          "actual_ks": 1,
+          "game_time": "2026-08-15T20:05:00Z",
+          "locked_odds": -142,
+          "locked_k_line": 3.5
+        }
+      ]
+    },
+    {
+      "slate_date": "2026-08-15",
+      "pitcher": "Randy Dobnak",
+      "side": "under",
+      "model_k_line": "3.5",
+      "official_odds": -156,
+      "official_verdict": "LEAN",
+      "official_book": "FanDuel",
+      "lane": "consensus_core",
+      "selector_fingerprint": "23bacff0fa923685ae52c5a9cfbadfb9f5902fb64d91759cfe9b4b1169a221c4",
+      "provider_posture": "therundown_propline",
+      "frozen_at": "2026-08-16 01:10:29.515873+00",
+      "game_time": "2026-08-16 01:38:00+00",
+      "lock_status": "due_now",
+      "minutes_until_start": "27.51",
+      "prestart_valid": true,
+      "lock_valid": true,
+      "history_matches": [
+        {
+          "pnl": -1,
+          "odds": -156,
+          "k_line": 3.5,
+          "result": "loss",
+          "actual_ks": 6,
+          "game_time": "2026-08-16T01:38:00Z",
+          "locked_odds": -156,
+          "locked_k_line": 3.5
+        }
+      ]
+    },
+    {
+      "slate_date": "2026-08-16",
+      "pitcher": "Casey Mize",
+      "side": "under",
+      "model_k_line": "4.5",
+      "official_odds": -170,
+      "official_verdict": "LEAN",
+      "official_book": "FanDuel",
+      "lane": "consensus_core",
+      "selector_fingerprint": "23bacff0fa923685ae52c5a9cfbadfb9f5902fb64d91759cfe9b4b1169a221c4",
+      "provider_posture": "therundown_propline",
+      "frozen_at": "2026-08-16 17:10:35.666548+00",
+      "game_time": "2026-08-16 17:40:00+00",
+      "lock_status": "due_now",
+      "minutes_until_start": "29.41",
+      "prestart_valid": true,
+      "lock_valid": true,
+      "history_matches": [
+        {
+          "pnl": 0.5882352941176471,
+          "odds": -170,
+          "k_line": 4.5,
+          "result": "win",
+          "actual_ks": 3,
+          "game_time": "2026-08-16T17:40:00Z",
+          "locked_odds": -170,
+          "locked_k_line": 4.5
+        }
+      ]
+    },
+    {
+      "slate_date": "2026-08-16",
+      "pitcher": "Cody Bradford",
+      "side": "under",
+      "model_k_line": "4.5",
+      "official_odds": -160,
+      "official_verdict": "LEAN",
+      "official_book": "FanDuel",
+      "lane": "consensus_core",
+      "selector_fingerprint": "23bacff0fa923685ae52c5a9cfbadfb9f5902fb64d91759cfe9b4b1169a221c4",
+      "provider_posture": "therundown_propline",
+      "frozen_at": "2026-08-16 19:40:21.257138+00",
+      "game_time": "2026-08-16 20:05:00+00",
+      "lock_status": "due_now",
+      "minutes_until_start": "24.65",
+      "prestart_valid": true,
+      "lock_valid": true,
+      "history_matches": [
+        {
+          "pnl": 0.625,
+          "odds": -160,
+          "k_line": 4.5,
+          "result": "win",
+          "actual_ks": 4,
+          "game_time": "2026-08-16T20:05:00Z",
+          "locked_odds": -160,
+          "locked_k_line": 4.5
+        }
+      ]
+    },
+    {
+      "slate_date": "2026-08-16",
+      "pitcher": "Ryan Johnson",
+      "side": "under",
+      "model_k_line": "3.5",
+      "official_odds": 124,
+      "official_verdict": "LEAN",
+      "official_book": "FanDuel",
+      "lane": "reentry_expansion",
+      "selector_fingerprint": "23bacff0fa923685ae52c5a9cfbadfb9f5902fb64d91759cfe9b4b1169a221c4",
+      "provider_posture": "therundown_propline",
+      "frozen_at": "2026-08-16 19:40:21.257138+00",
+      "game_time": "2026-08-16 20:07:00+00",
+      "lock_status": "due_now",
+      "minutes_until_start": "26.65",
+      "prestart_valid": true,
+      "lock_valid": true,
+      "history_matches": [
+        {
+          "pnl": -1,
+          "odds": 124,
+          "k_line": 3.5,
+          "result": "loss",
+          "actual_ks": 4,
+          "game_time": "2026-08-16T20:07:00Z",
+          "locked_odds": 124,
+          "locked_k_line": 3.5
+        }
+      ]
+    },
+    {
+      "slate_date": "2026-08-16",
+      "pitcher": "Tanner Bibee",
+      "side": "over",
+      "model_k_line": "4.5",
+      "official_odds": 104,
+      "official_verdict": "LEAN",
+      "official_book": "FanDuel",
+      "lane": "reentry_expansion",
+      "selector_fingerprint": "23bacff0fa923685ae52c5a9cfbadfb9f5902fb64d91759cfe9b4b1169a221c4",
+      "provider_posture": "therundown_propline",
+      "frozen_at": "2026-08-16 17:10:35.666548+00",
+      "game_time": "2026-08-16 17:40:00+00",
+      "lock_status": "due_now",
+      "minutes_until_start": "29.41",
+      "prestart_valid": true,
+      "lock_valid": true,
+      "history_matches": [
+        {
+          "pnl": -1,
+          "odds": 104,
+          "k_line": 4.5,
+          "result": "loss",
+          "actual_ks": 3,
+          "game_time": "2026-08-16T17:40:00Z",
+          "locked_odds": 104,
+          "locked_k_line": 4.5
+        }
+      ]
+    },
+    {
+      "slate_date": "2026-08-16",
+      "pitcher": "Tarik Skubal",
+      "side": "over",
+      "model_k_line": "7.5",
+      "official_odds": 112,
+      "official_verdict": "LEAN",
+      "official_book": "FanDuel",
+      "lane": "reentry_expansion",
+      "selector_fingerprint": "23bacff0fa923685ae52c5a9cfbadfb9f5902fb64d91759cfe9b4b1169a221c4",
+      "provider_posture": "therundown_propline",
+      "frozen_at": "2026-08-16 19:40:21.257138+00",
+      "game_time": "2026-08-16 20:10:00+00",
+      "lock_status": "due_now",
+      "minutes_until_start": "29.65",
+      "prestart_valid": true,
+      "lock_valid": true,
+      "history_matches": [
+        {
+          "pnl": -1,
+          "odds": 112,
+          "k_line": 7.5,
+          "result": "loss",
+          "actual_ks": 7,
+          "game_time": "2026-08-16T20:10:00Z",
+          "locked_odds": 112,
+          "locked_k_line": 7.5
+        }
+      ]
+    },
+    {
+      "slate_date": "2026-08-17",
+      "pitcher": "Luis Castillo",
+      "side": "over",
+      "model_k_line": "4.5",
+      "official_odds": -120,
+      "official_verdict": "FIRE 1u",
+      "official_book": "FanDuel",
+      "lane": "consensus_core",
+      "selector_fingerprint": "23bacff0fa923685ae52c5a9cfbadfb9f5902fb64d91759cfe9b4b1169a221c4",
+      "provider_posture": "therundown_propline",
+      "frozen_at": "2026-08-17 23:40:44.979574+00",
+      "game_time": "2026-08-18 00:05:00+00",
+      "lock_status": "due_now",
+      "minutes_until_start": "24.25",
+      "prestart_valid": true,
+      "lock_valid": true,
+      "history_matches": [
+        {
+          "pnl": -1,
+          "odds": -120,
+          "k_line": 4.5,
+          "result": "loss",
+          "actual_ks": 1,
+          "game_time": "2026-08-18T00:05:00Z",
+          "locked_odds": -120,
+          "locked_k_line": 4.5
+        }
+      ]
+    },
+    {
+      "slate_date": "2026-08-17",
+      "pitcher": "Martin Perez",
+      "side": "under",
+      "model_k_line": "3.5",
+      "official_odds": -118,
+      "official_verdict": "LEAN",
+      "official_book": "FanDuel",
+      "lane": "consensus_core",
+      "selector_fingerprint": "23bacff0fa923685ae52c5a9cfbadfb9f5902fb64d91759cfe9b4b1169a221c4",
+      "provider_posture": "therundown_propline",
+      "frozen_at": "2026-08-17 23:10:35.283651+00",
+      "game_time": "2026-08-17 23:40:00+00",
+      "lock_status": "due_now",
+      "minutes_until_start": "29.41",
+      "prestart_valid": true,
+      "lock_valid": true,
+      "history_matches": [
+        {
+          "pnl": 0.847457627118644,
+          "odds": -118,
+          "k_line": 3.5,
+          "result": "win",
+          "actual_ks": 3,
+          "game_time": "2026-08-17T23:40:00Z",
+          "locked_odds": -118,
+          "locked_k_line": 3.5
+        }
+      ]
+    },
+    {
+      "slate_date": "2026-08-17",
+      "pitcher": "Tomoyuki Sugano",
+      "side": "over",
+      "model_k_line": "2.5",
+      "official_odds": -156,
+      "official_verdict": "FIRE 1u",
+      "official_book": "FanDuel",
+      "lane": "consensus_core",
+      "selector_fingerprint": "23bacff0fa923685ae52c5a9cfbadfb9f5902fb64d91759cfe9b4b1169a221c4",
+      "provider_posture": "therundown_propline",
+      "frozen_at": "2026-08-18 00:10:34.714047+00",
+      "game_time": "2026-08-18 00:40:00+00",
+      "lock_status": "due_now",
+      "minutes_until_start": "29.42",
+      "prestart_valid": true,
+      "lock_valid": true,
+      "history_matches": [
+        {
+          "pnl": 0.6410256410256411,
+          "odds": -156,
+          "k_line": 2.5,
+          "result": "win",
+          "actual_ks": 3,
+          "game_time": "2026-08-18T00:40:00Z",
+          "locked_odds": -156,
+          "locked_k_line": 2.5
+        }
+      ]
+    },
+    {
+      "slate_date": "2026-08-18",
+      "pitcher": "Kyle Harrison",
+      "side": "under",
+      "model_k_line": "5.5",
+      "official_odds": 126,
+      "official_verdict": "LEAN",
+      "official_book": "FanDuel",
+      "lane": "reentry_expansion",
+      "selector_fingerprint": "23bacff0fa923685ae52c5a9cfbadfb9f5902fb64d91759cfe9b4b1169a221c4",
+      "provider_posture": "therundown_propline",
+      "frozen_at": "2026-08-18 23:10:31.725315+00",
+      "game_time": "2026-08-18 23:40:00+00",
+      "lock_status": "due_now",
+      "minutes_until_start": "29.47",
+      "prestart_valid": true,
+      "lock_valid": true,
+      "history_matches": [
+        {
+          "pnl": -1,
+          "odds": 126,
+          "k_line": 5.5,
+          "result": "loss",
+          "actual_ks": 8,
+          "game_time": "2026-08-18T23:40:00Z",
+          "locked_odds": 126,
+          "locked_k_line": 5.5
+        }
+      ]
+    },
+    {
+      "slate_date": "2026-08-18",
+      "pitcher": "Kyle Leahy",
+      "side": "under",
+      "model_k_line": "5.5",
+      "official_odds": -132,
+      "official_verdict": "LEAN",
+      "official_book": "FanDuel",
+      "lane": "consensus_core",
+      "selector_fingerprint": "23bacff0fa923685ae52c5a9cfbadfb9f5902fb64d91759cfe9b4b1169a221c4",
+      "provider_posture": "therundown_propline",
+      "frozen_at": "2026-08-18 22:10:31.698324+00",
+      "game_time": "2026-08-18 22:40:00+00",
+      "lock_status": "due_now",
+      "minutes_until_start": "29.47",
+      "prestart_valid": true,
+      "lock_valid": true,
+      "history_matches": [
+        {
+          "pnl": -1,
+          "odds": -132,
+          "k_line": 5.5,
+          "result": "loss",
+          "actual_ks": 6,
+          "game_time": "2026-08-18T22:40:00Z",
+          "locked_odds": -132,
+          "locked_k_line": 5.5
+        }
+      ]
+    },
+    {
+      "slate_date": "2026-08-19",
+      "pitcher": "Clay Holmes",
+      "side": "over",
+      "model_k_line": "4.5",
+      "official_odds": -125,
+      "official_verdict": "LEAN",
+      "official_book": "FanDuel",
+      "lane": "consensus_core",
+      "selector_fingerprint": "23bacff0fa923685ae52c5a9cfbadfb9f5902fb64d91759cfe9b4b1169a221c4",
+      "provider_posture": "therundown_propline",
+      "frozen_at": "2026-08-19 17:50:24.309468+00",
+      "game_time": "2026-08-19 18:20:00+00",
+      "lock_status": "due_now",
+      "minutes_until_start": "29.59",
+      "prestart_valid": true,
+      "lock_valid": true,
+      "history_matches": [
+        {
+          "pnl": -1,
+          "odds": -125,
+          "k_line": 4.5,
+          "result": "loss",
+          "actual_ks": 1,
+          "game_time": "2026-08-19T18:20:00Z",
+          "locked_odds": -125,
+          "locked_k_line": 4.5
+        }
+      ]
+    },
+    {
+      "slate_date": "2026-08-19",
+      "pitcher": "Michael King",
+      "side": "over",
+      "model_k_line": "4.5",
+      "official_odds": -148,
+      "official_verdict": "LEAN",
+      "official_book": "FanDuel",
+      "lane": "consensus_core",
+      "selector_fingerprint": "23bacff0fa923685ae52c5a9cfbadfb9f5902fb64d91759cfe9b4b1169a221c4",
+      "provider_posture": "therundown_propline",
+      "frozen_at": "2026-08-19 16:40:41.520087+00",
+      "game_time": "2026-08-19 17:10:00+00",
+      "lock_status": "due_now",
+      "minutes_until_start": "29.31",
+      "prestart_valid": true,
+      "lock_valid": true,
+      "history_matches": [
+        {
+          "pnl": -1,
+          "odds": -148,
+          "k_line": 4.5,
+          "result": "loss",
+          "actual_ks": 4,
+          "game_time": "2026-08-19T17:10:00Z",
+          "locked_odds": -148,
+          "locked_k_line": 4.5
+        }
+      ]
+    },
+    {
+      "slate_date": "2026-08-19",
+      "pitcher": "Payton Tolle",
+      "side": "over",
+      "model_k_line": "5.5",
+      "official_odds": -120,
+      "official_verdict": "FIRE 1u",
+      "official_book": "FanDuel",
+      "lane": "consensus_core",
+      "selector_fingerprint": "23bacff0fa923685ae52c5a9cfbadfb9f5902fb64d91759cfe9b4b1169a221c4",
+      "provider_posture": "therundown_propline",
+      "frozen_at": "2026-08-19 19:40:30.976443+00",
+      "game_time": "2026-08-19 20:10:00+00",
+      "lock_status": "due_now",
+      "minutes_until_start": "29.48",
+      "prestart_valid": true,
+      "lock_valid": true,
+      "history_matches": [
+        {
+          "pnl": 0.8333333333333334,
+          "odds": -115,
+          "k_line": 5.5,
+          "result": "win",
+          "actual_ks": 6,
+          "game_time": "2026-08-19T20:10:00Z",
+          "locked_odds": -120,
+          "locked_k_line": 5.5
+        }
+      ]
+    },
+    {
+      "slate_date": "2026-08-19",
+      "pitcher": "Roki Sasaki",
+      "side": "over",
+      "model_k_line": "4.5",
+      "official_odds": -160,
+      "official_verdict": "LEAN",
+      "official_book": "FanDuel",
+      "lane": "consensus_core",
+      "selector_fingerprint": "23bacff0fa923685ae52c5a9cfbadfb9f5902fb64d91759cfe9b4b1169a221c4",
+      "provider_posture": "therundown_propline",
+      "frozen_at": "2026-08-20 00:10:13.273793+00",
+      "game_time": "2026-08-20 00:40:00+00",
+      "lock_status": "due_now",
+      "minutes_until_start": "29.78",
+      "prestart_valid": true,
+      "lock_valid": true,
+      "history_matches": [
+        {
+          "pnl": 0.625,
+          "odds": -160,
+          "k_line": 4.5,
+          "result": "win",
+          "actual_ks": 6,
+          "game_time": "2026-08-20T00:40:00Z",
+          "locked_odds": -160,
+          "locked_k_line": 4.5
+        }
+      ]
+    },
+    {
+      "slate_date": "2026-08-19",
+      "pitcher": "Taj Bradley",
+      "side": "under",
+      "model_k_line": "5.5",
+      "official_odds": 102,
+      "official_verdict": "LEAN",
+      "official_book": "FanDuel",
+      "lane": "reentry_expansion",
+      "selector_fingerprint": "23bacff0fa923685ae52c5a9cfbadfb9f5902fb64d91759cfe9b4b1169a221c4",
+      "provider_posture": "therundown_propline",
+      "frozen_at": "2026-08-19 17:10:30.87307+00",
+      "game_time": "2026-08-19 17:40:00+00",
+      "lock_status": "due_now",
+      "minutes_until_start": "29.49",
+      "prestart_valid": true,
+      "lock_valid": true,
+      "history_matches": [
+        {
+          "pnl": -1,
+          "odds": 102,
+          "k_line": 5.5,
+          "result": "loss",
+          "actual_ks": 7,
+          "game_time": "2026-08-19T17:40:00Z",
+          "locked_odds": 102,
+          "locked_k_line": 5.5
+        }
+      ]
+    },
+    {
+      "slate_date": "2026-08-20",
+      "pitcher": "Gage Jump",
+      "side": "over",
+      "model_k_line": "4.5",
+      "official_odds": -138,
+      "official_verdict": "LEAN",
+      "official_book": "FanDuel",
+      "lane": "consensus_core",
+      "selector_fingerprint": "23bacff0fa923685ae52c5a9cfbadfb9f5902fb64d91759cfe9b4b1169a221c4",
+      "provider_posture": "therundown_propline",
+      "frozen_at": "2026-08-20 17:40:44.116163+00",
+      "game_time": "2026-08-20 18:10:00+00",
+      "lock_status": "due_now",
+      "minutes_until_start": "29.26",
+      "prestart_valid": true,
+      "lock_valid": true,
+      "history_matches": [
+        {
+          "pnl": -1,
+          "odds": -138,
+          "k_line": 4.5,
+          "result": "loss",
+          "actual_ks": 3,
+          "game_time": "2026-08-20T18:10:00Z",
+          "locked_odds": -138,
+          "locked_k_line": 4.5
+        }
+      ]
+    },
+    {
+      "slate_date": "2026-08-20",
+      "pitcher": "Landen Roupp",
+      "side": "under",
+      "model_k_line": "4.5",
+      "official_odds": -150,
+      "official_verdict": "LEAN",
+      "official_book": "FanDuel",
+      "lane": "consensus_core",
+      "selector_fingerprint": "23bacff0fa923685ae52c5a9cfbadfb9f5902fb64d91759cfe9b4b1169a221c4",
+      "provider_posture": "therundown_propline",
+      "frozen_at": "2026-08-20 16:40:21.629523+00",
+      "game_time": "2026-08-20 17:10:00+00",
+      "lock_status": "due_now",
+      "minutes_until_start": "29.64",
+      "prestart_valid": true,
+      "lock_valid": true,
+      "history_matches": [
+        {
+          "pnl": 0.6666666666666666,
+          "odds": -150,
+          "k_line": 4.5,
+          "result": "win",
+          "actual_ks": 2,
+          "game_time": "2026-08-20T17:10:00Z",
+          "locked_odds": -150,
+          "locked_k_line": 4.5
+        }
+      ]
+    },
+    {
+      "slate_date": "2026-08-21",
+      "pitcher": "Hayden Wesneski",
+      "side": "over",
+      "model_k_line": "4.5",
+      "official_odds": -120,
+      "official_verdict": "LEAN",
+      "official_book": "FanDuel",
+      "lane": "consensus_core",
+      "selector_fingerprint": "23bacff0fa923685ae52c5a9cfbadfb9f5902fb64d91759cfe9b4b1169a221c4",
+      "provider_posture": "therundown_propline",
+      "frozen_at": "2026-08-21 23:41:00.196368+00",
+      "game_time": "2026-08-22 00:10:00+00",
+      "lock_status": "due_now",
+      "minutes_until_start": "29.0",
+      "prestart_valid": true,
+      "lock_valid": true,
+      "history_matches": [
+        {
+          "pnl": -1,
+          "odds": -120,
+          "k_line": 4.5,
+          "result": "loss",
+          "actual_ks": 4,
+          "game_time": "2026-08-22T00:10:00Z",
+          "locked_odds": -120,
+          "locked_k_line": 4.5
+        }
+      ]
+    },
+    {
+      "slate_date": "2026-08-21",
+      "pitcher": "Hunter Dobbins",
+      "side": "over",
+      "model_k_line": "3.5",
+      "official_odds": -128,
+      "official_verdict": "FIRE 1u",
+      "official_book": "FanDuel",
+      "lane": "consensus_core",
+      "selector_fingerprint": "23bacff0fa923685ae52c5a9cfbadfb9f5902fb64d91759cfe9b4b1169a221c4",
+      "provider_posture": "therundown_propline",
+      "frozen_at": "2026-08-21 22:10:34.270788+00",
+      "game_time": "2026-08-21 22:40:00+00",
+      "lock_status": "due_now",
+      "minutes_until_start": "29.43",
+      "prestart_valid": true,
+      "lock_valid": true,
+      "history_matches": [
+        {
+          "pnl": -1,
+          "odds": -128,
+          "k_line": 3.5,
+          "result": "loss",
+          "actual_ks": 3,
+          "game_time": "2026-08-21T22:40:00Z",
+          "locked_odds": -128,
+          "locked_k_line": 3.5
+        }
+      ]
+    },
+    {
+      "slate_date": "2026-08-21",
+      "pitcher": "J.T. Ginn",
+      "side": "over",
+      "model_k_line": "4.5",
+      "official_odds": -122,
+      "official_verdict": "FIRE 1u",
+      "official_book": "FanDuel",
+      "lane": "consensus_core",
+      "selector_fingerprint": "23bacff0fa923685ae52c5a9cfbadfb9f5902fb64d91759cfe9b4b1169a221c4",
+      "provider_posture": "therundown",
+      "frozen_at": "2026-08-21 23:41:00.196368+00",
+      "game_time": "2026-08-22 00:10:00+00",
+      "lock_status": "due_now",
+      "minutes_until_start": "29.0",
+      "prestart_valid": true,
+      "lock_valid": true,
+      "history_matches": [
+        {
+          "pnl": -1,
+          "odds": -122,
+          "k_line": 4.5,
+          "result": "loss",
+          "actual_ks": 4,
+          "game_time": "2026-08-22T00:10:00Z",
+          "locked_odds": -122,
+          "locked_k_line": 4.5
+        }
+      ]
+    },
+    {
+      "slate_date": "2026-08-21",
+      "pitcher": "Nick Lodolo",
+      "side": "over",
+      "model_k_line": "3.5",
+      "official_odds": -122,
+      "official_verdict": "FIRE 1u",
+      "official_book": "FanDuel",
+      "lane": "consensus_core",
+      "selector_fingerprint": "23bacff0fa923685ae52c5a9cfbadfb9f5902fb64d91759cfe9b4b1169a221c4",
+      "provider_posture": "therundown_propline",
+      "frozen_at": "2026-08-22 01:10:24.271725+00",
+      "game_time": "2026-08-22 01:40:00+00",
+      "lock_status": "due_now",
+      "minutes_until_start": "29.6",
+      "prestart_valid": true,
+      "lock_valid": true,
+      "history_matches": [
+        {
+          "pnl": -1,
+          "odds": -122,
+          "k_line": 3.5,
+          "result": "loss",
+          "actual_ks": 2,
+          "game_time": "2026-08-22T01:40:00Z",
+          "locked_odds": -122,
+          "locked_k_line": 3.5
+        }
+      ]
+    },
+    {
+      "slate_date": "2026-08-21",
+      "pitcher": "Reid Detmers",
+      "side": "over",
+      "model_k_line": "6.5",
+      "official_odds": 100,
+      "official_verdict": "LEAN",
+      "official_book": "FanDuel",
+      "lane": "reentry_expansion",
+      "selector_fingerprint": "23bacff0fa923685ae52c5a9cfbadfb9f5902fb64d91759cfe9b4b1169a221c4",
+      "provider_posture": "therundown_propline",
+      "frozen_at": "2026-08-21 23:50:23.344908+00",
+      "game_time": "2026-08-22 00:15:00+00",
+      "lock_status": "due_now",
+      "minutes_until_start": "24.61",
+      "prestart_valid": true,
+      "lock_valid": true,
+      "history_matches": [
+        {
+          "pnl": -1,
+          "odds": 100,
+          "k_line": 6.5,
+          "result": "loss",
+          "actual_ks": 5,
+          "game_time": "2026-08-22T00:15:00Z",
+          "locked_odds": 100,
+          "locked_k_line": 6.5
+        }
+      ]
+    },
+    {
+      "slate_date": "2026-08-22",
+      "pitcher": "Logan Henderson",
+      "side": "over",
+      "model_k_line": "6.5",
+      "official_odds": -102,
+      "official_verdict": "LEAN",
+      "official_book": "FanDuel",
+      "lane": "reentry_expansion",
+      "selector_fingerprint": "23bacff0fa923685ae52c5a9cfbadfb9f5902fb64d91759cfe9b4b1169a221c4",
+      "provider_posture": "therundown_propline",
+      "frozen_at": "2026-08-22 17:40:22.340748+00",
+      "game_time": "2026-08-22 18:10:00+00",
+      "lock_status": "due_now",
+      "minutes_until_start": "29.63",
+      "prestart_valid": true,
+      "lock_valid": true,
+      "history_matches": [
+        {
+          "pnl": -1,
+          "odds": -102,
+          "k_line": 6.5,
+          "result": "loss",
+          "actual_ks": 4,
+          "game_time": "2026-08-22T18:10:00Z",
+          "locked_odds": -102,
+          "locked_k_line": 6.5
+        }
+      ]
+    },
+    {
+      "slate_date": "2026-08-23",
+      "pitcher": "Cal Quantrill",
+      "side": "over",
+      "model_k_line": "3.5",
+      "official_odds": -172,
+      "official_verdict": "FIRE 1u",
+      "official_book": "FanDuel",
+      "lane": "consensus_core",
+      "selector_fingerprint": "23bacff0fa923685ae52c5a9cfbadfb9f5902fb64d91759cfe9b4b1169a221c4",
+      "provider_posture": "therundown_propline",
+      "frozen_at": "2026-08-23 18:10:25.521101+00",
+      "game_time": "2026-08-23 18:35:00+00",
+      "lock_status": "due_now",
+      "minutes_until_start": "24.57",
+      "prestart_valid": true,
+      "lock_valid": true,
+      "history_matches": [
+        {
+          "pnl": 0.5813953488372093,
+          "odds": -172,
+          "k_line": 3.5,
+          "result": "win",
+          "actual_ks": 6,
+          "game_time": "2026-08-23T18:35:00Z",
+          "locked_odds": -172,
+          "locked_k_line": 3.5
+        }
+      ]
+    },
+    {
+      "slate_date": "2026-08-23",
+      "pitcher": "Shane Drohan",
+      "side": "over",
+      "model_k_line": "4.5",
+      "official_odds": -122,
+      "official_verdict": "LEAN",
+      "official_book": "FanDuel",
+      "lane": "consensus_core",
+      "selector_fingerprint": "23bacff0fa923685ae52c5a9cfbadfb9f5902fb64d91759cfe9b4b1169a221c4",
+      "provider_posture": "therundown",
+      "frozen_at": "2026-08-23 22:31:02.669223+00",
+      "game_time": "2026-08-23 23:00:00+00",
+      "lock_status": "due_now",
+      "minutes_until_start": "28.96",
+      "prestart_valid": true,
+      "lock_valid": true,
+      "history_matches": [
+        {
+          "pnl": 0.819672131147541,
+          "odds": -122,
+          "k_line": 4.5,
+          "result": "win",
+          "actual_ks": 5,
+          "game_time": "2026-08-23T23:00:00Z",
+          "locked_odds": -122,
+          "locked_k_line": 4.5
+        }
+      ]
+    },
+    {
+      "slate_date": "2026-08-23",
+      "pitcher": "Tyler Mahle",
+      "side": "over",
+      "model_k_line": "5.5",
+      "official_odds": 126,
+      "official_verdict": "LEAN",
+      "official_book": "FanDuel",
+      "lane": "reentry_expansion",
+      "selector_fingerprint": "23bacff0fa923685ae52c5a9cfbadfb9f5902fb64d91759cfe9b4b1169a221c4",
+      "provider_posture": "therundown",
+      "frozen_at": "2026-08-23 22:31:02.669223+00",
+      "game_time": "2026-08-23 23:00:00+00",
+      "lock_status": "due_now",
+      "minutes_until_start": "28.96",
+      "prestart_valid": true,
+      "lock_valid": true,
+      "history_matches": [
+        {
+          "pnl": -1,
+          "odds": 126,
+          "k_line": 5.5,
+          "result": "loss",
+          "actual_ks": 4,
+          "game_time": "2026-08-23T23:00:00Z",
+          "locked_odds": 126,
+          "locked_k_line": 5.5
+        }
+      ]
+    },
+    {
+      "slate_date": "2026-08-24",
+      "pitcher": "Robbie Ray",
+      "side": "over",
+      "model_k_line": "5.5",
+      "official_odds": -130,
+      "official_verdict": "FIRE 1u",
+      "official_book": "FanDuel",
+      "lane": "consensus_core",
+      "selector_fingerprint": "23bacff0fa923685ae52c5a9cfbadfb9f5902fb64d91759cfe9b4b1169a221c4",
+      "provider_posture": "therundown_propline",
+      "frozen_at": "2026-08-25 01:10:26.026929+00",
+      "game_time": "2026-08-25 01:40:00+00",
+      "lock_status": "due_now",
+      "minutes_until_start": "29.57",
+      "prestart_valid": true,
+      "lock_valid": true,
+      "history_matches": [
+        {
+          "pnl": -1,
+          "odds": -130,
+          "k_line": 5.5,
+          "result": "loss",
+          "actual_ks": 5,
+          "game_time": "2026-08-25T01:40:00Z",
+          "locked_odds": -130,
+          "locked_k_line": 5.5
+        }
+      ]
+    },
+    {
+      "slate_date": "2026-08-24",
+      "pitcher": "Ryan Feltner",
+      "side": "under",
+      "model_k_line": "3.5",
+      "official_odds": -104,
+      "official_verdict": "LEAN",
+      "official_book": "FanDuel",
+      "lane": "reentry_expansion",
+      "selector_fingerprint": "23bacff0fa923685ae52c5a9cfbadfb9f5902fb64d91759cfe9b4b1169a221c4",
+      "provider_posture": "therundown_propline",
+      "frozen_at": "2026-08-24 22:20:10.84978+00",
+      "game_time": "2026-08-24 22:45:00+00",
+      "lock_status": "due_now",
+      "minutes_until_start": "24.82",
+      "prestart_valid": true,
+      "lock_valid": true,
+      "history_matches": [
+        {
+          "pnl": -1,
+          "odds": -104,
+          "k_line": 3.5,
+          "result": "loss",
+          "actual_ks": 6,
+          "game_time": "2026-08-24T22:45:00Z",
+          "locked_odds": -104,
+          "locked_k_line": 3.5
+        }
+      ]
+    },
+    {
+      "slate_date": "2026-08-25",
+      "pitcher": "Anthony Kay",
+      "side": "over",
+      "model_k_line": "4.5",
+      "official_odds": -122,
+      "official_verdict": "LEAN",
+      "official_book": "FanDuel",
+      "lane": "consensus_core",
+      "selector_fingerprint": "23bacff0fa923685ae52c5a9cfbadfb9f5902fb64d91759cfe9b4b1169a221c4",
+      "provider_posture": "therundown_propline",
+      "frozen_at": "2026-08-25 23:10:17.42925+00",
+      "game_time": "2026-08-25 23:40:00+00",
+      "lock_status": "due_now",
+      "minutes_until_start": "29.71",
+      "prestart_valid": true,
+      "lock_valid": true,
+      "history_matches": [
+        {
+          "pnl": -1,
+          "odds": -122,
+          "k_line": 4.5,
+          "result": "loss",
+          "actual_ks": 4,
+          "game_time": "2026-08-25T23:40:00Z",
+          "locked_odds": -122,
+          "locked_k_line": 4.5
+        }
+      ]
+    },
+    {
+      "slate_date": "2026-08-25",
+      "pitcher": "Payton Tolle",
+      "side": "under",
+      "model_k_line": "6.5",
+      "official_odds": -146,
+      "official_verdict": "LEAN",
+      "official_book": "FanDuel",
+      "lane": "consensus_core",
+      "selector_fingerprint": "23bacff0fa923685ae52c5a9cfbadfb9f5902fb64d91759cfe9b4b1169a221c4",
+      "provider_posture": "therundown_propline",
+      "frozen_at": "2026-08-25 22:10:27.980163+00",
+      "game_time": "2026-08-25 22:40:00+00",
+      "lock_status": "due_now",
+      "minutes_until_start": "29.53",
+      "prestart_valid": true,
+      "lock_valid": true,
+      "history_matches": [
+        {
+          "pnl": -1,
+          "odds": -146,
+          "k_line": 6.5,
+          "result": "loss",
+          "actual_ks": 7,
+          "game_time": "2026-08-25T22:40:00Z",
+          "locked_odds": -146,
+          "locked_k_line": 6.5
+        }
+      ]
+    },
+    {
+      "slate_date": "2026-08-25",
+      "pitcher": "Tyler Glasnow",
+      "side": "over",
+      "model_k_line": "5.5",
+      "official_odds": -162,
+      "official_verdict": "FIRE 1u",
+      "official_book": "FanDuel",
+      "lane": "consensus_core",
+      "selector_fingerprint": "23bacff0fa923685ae52c5a9cfbadfb9f5902fb64d91759cfe9b4b1169a221c4",
+      "provider_posture": "therundown_propline",
+      "frozen_at": "2026-08-25 22:50:18.612869+00",
+      "game_time": "2026-08-25 23:15:00+00",
+      "lock_status": "due_now",
+      "minutes_until_start": "24.69",
+      "prestart_valid": true,
+      "lock_valid": true,
+      "history_matches": [
+        {
+          "pnl": 0.6172839506172839,
+          "odds": -162,
+          "k_line": 5.5,
+          "result": "win",
+          "actual_ks": 7,
+          "game_time": "2026-08-25T23:15:00Z",
+          "locked_odds": -162,
+          "locked_k_line": 5.5
+        }
+      ]
+    },
+    {
+      "slate_date": "2026-08-26",
+      "pitcher": "Ryan Gusto",
+      "side": "under",
+      "model_k_line": "3.5",
+      "official_odds": 106,
+      "official_verdict": "LEAN",
+      "official_book": "FanDuel",
+      "lane": "reentry_expansion",
+      "selector_fingerprint": "23bacff0fa923685ae52c5a9cfbadfb9f5902fb64d91759cfe9b4b1169a221c4",
+      "provider_posture": "therundown_propline",
+      "frozen_at": "2026-08-26 22:10:29.753768+00",
+      "game_time": "2026-08-26 22:40:00+00",
+      "lock_status": "due_now",
+      "minutes_until_start": "29.5",
+      "prestart_valid": true,
+      "lock_valid": true,
+      "history_matches": [
+        {
+          "pnl": 1.06,
+          "odds": 106,
+          "k_line": 3.5,
+          "result": "win",
+          "actual_ks": 2,
+          "game_time": "2026-08-26T22:40:00Z",
+          "locked_odds": 106,
+          "locked_k_line": 3.5
+        }
+      ]
+    },
+    {
+      "slate_date": "2026-08-26",
+      "pitcher": "Sonny Gray",
+      "side": "over",
+      "model_k_line": "5.5",
+      "official_odds": -111,
+      "official_verdict": "LEAN",
+      "official_book": "FanDuel",
+      "lane": "reentry_expansion",
+      "selector_fingerprint": "23bacff0fa923685ae52c5a9cfbadfb9f5902fb64d91759cfe9b4b1169a221c4",
+      "provider_posture": "therundown_propline",
+      "frozen_at": "2026-08-26 22:10:29.753768+00",
+      "game_time": "2026-08-26 22:40:00+00",
+      "lock_status": "due_now",
+      "minutes_until_start": "29.5",
+      "prestart_valid": true,
+      "lock_valid": true,
+      "history_matches": [
+        {
+          "pnl": -1,
+          "odds": -111,
+          "k_line": 5.5,
+          "result": "loss",
+          "actual_ks": 5,
+          "game_time": "2026-08-26T22:40:00Z",
+          "locked_odds": -111,
+          "locked_k_line": 5.5
+        }
+      ]
+    },
+    {
+      "slate_date": "2026-08-26",
+      "pitcher": "Troy Melton",
+      "side": "under",
+      "model_k_line": "3.5",
+      "official_odds": 132,
+      "official_verdict": "LEAN",
+      "official_book": "FanDuel",
+      "lane": "reentry_expansion",
+      "selector_fingerprint": "23bacff0fa923685ae52c5a9cfbadfb9f5902fb64d91759cfe9b4b1169a221c4",
+      "provider_posture": "therundown_propline",
+      "frozen_at": "2026-08-26 16:40:40.277313+00",
+      "game_time": "2026-08-26 17:10:00+00",
+      "lock_status": "due_now",
+      "minutes_until_start": "29.33",
+      "prestart_valid": true,
+      "lock_valid": true,
+      "history_matches": [
+        {
+          "pnl": -1,
+          "odds": 132,
+          "k_line": 3.5,
+          "result": "loss",
+          "actual_ks": 4,
+          "game_time": "2026-08-26T17:10:00Z",
+          "locked_odds": 132,
+          "locked_k_line": 3.5
+        }
+      ]
+    },
+    {
+      "slate_date": "2026-08-27",
+      "pitcher": "Trevor Rogers",
+      "side": "over",
+      "model_k_line": "4.5",
+      "official_odds": -118,
+      "official_verdict": "FIRE 1u",
+      "official_book": "FanDuel",
+      "lane": "consensus_core",
+      "selector_fingerprint": "23bacff0fa923685ae52c5a9cfbadfb9f5902fb64d91759cfe9b4b1169a221c4",
+      "provider_posture": "therundown",
+      "frozen_at": "2026-08-27 17:50:41.517262+00",
+      "game_time": "2026-08-27 18:15:00+00",
+      "lock_status": "due_now",
+      "minutes_until_start": "24.31",
+      "prestart_valid": true,
+      "lock_valid": true,
+      "history_matches": [
+        {
+          "pnl": 0.847457627118644,
+          "odds": -118,
+          "k_line": 4.5,
+          "result": "win",
+          "actual_ks": 7,
+          "game_time": "2026-08-27T18:15:00Z",
+          "locked_odds": -118,
+          "locked_k_line": 4.5
+        }
+      ]
+    },
+    {
+      "slate_date": "2026-08-28",
+      "pitcher": "Brandon Young",
+      "side": "under",
+      "model_k_line": "4.5",
+      "official_odds": -142,
+      "official_verdict": "LEAN",
+      "official_book": "FanDuel",
+      "lane": "consensus_core",
+      "selector_fingerprint": "23bacff0fa923685ae52c5a9cfbadfb9f5902fb64d91759cfe9b4b1169a221c4",
+      "provider_posture": "therundown_propline",
+      "frozen_at": "2026-08-29 01:10:20.58633+00",
+      "game_time": "2026-08-29 01:40:00+00",
+      "lock_status": "due_now",
+      "minutes_until_start": "29.66",
+      "prestart_valid": true,
+      "lock_valid": true,
+      "history_matches": [
+        {
+          "pnl": 0.704225352112676,
+          "odds": -142,
+          "k_line": 4.5,
+          "result": "win",
+          "actual_ks": 4,
+          "game_time": "2026-08-29T01:40:00Z",
+          "locked_odds": -142,
+          "locked_k_line": 4.5
+        }
+      ]
+    },
+    {
+      "slate_date": "2026-08-28",
+      "pitcher": "Grant Holmes",
+      "side": "over",
+      "model_k_line": "4.5",
+      "official_odds": -142,
+      "official_verdict": "LEAN",
+      "official_book": "FanDuel",
+      "lane": "consensus_core",
+      "selector_fingerprint": "23bacff0fa923685ae52c5a9cfbadfb9f5902fb64d91759cfe9b4b1169a221c4",
+      "provider_posture": "therundown_propline",
+      "frozen_at": "2026-08-28 22:50:36.446328+00",
+      "game_time": "2026-08-28 23:15:00+00",
+      "lock_status": "due_now",
+      "minutes_until_start": "24.39",
+      "prestart_valid": true,
+      "lock_valid": true,
+      "history_matches": [
+        {
+          "pnl": -1,
+          "odds": -142,
+          "k_line": 4.5,
+          "result": "loss",
+          "actual_ks": 3,
+          "game_time": "2026-08-28T23:15:00Z",
+          "locked_odds": -142,
+          "locked_k_line": 4.5
+        }
+      ]
+    },
+    {
+      "slate_date": "2026-08-28",
+      "pitcher": "Rhett Lowder",
+      "side": "over",
+      "model_k_line": "3.5",
+      "official_odds": -148,
+      "official_verdict": "FIRE 1u",
+      "official_book": "FanDuel",
+      "lane": "consensus_core",
+      "selector_fingerprint": "23bacff0fa923685ae52c5a9cfbadfb9f5902fb64d91759cfe9b4b1169a221c4",
+      "provider_posture": "therundown_propline",
+      "frozen_at": "2026-08-28 17:50:41.409082+00",
+      "game_time": "2026-08-28 18:20:00+00",
+      "lock_status": "due_now",
+      "minutes_until_start": "29.31",
+      "prestart_valid": true,
+      "lock_valid": true,
+      "history_matches": [
+        {
+          "pnl": 0.6756756756756757,
+          "odds": -148,
+          "k_line": 3.5,
+          "result": "win",
+          "actual_ks": 5,
+          "game_time": "2026-08-28T18:20:00Z",
+          "locked_odds": -148,
+          "locked_k_line": 3.5
+        }
+      ]
+    },
+    {
+      "slate_date": "2026-08-28",
+      "pitcher": "Tomoyuki Sugano",
+      "side": "under",
+      "model_k_line": "3.5",
+      "official_odds": -155,
+      "official_verdict": "LEAN",
+      "official_book": "BetMGM",
+      "lane": "consensus_core",
+      "selector_fingerprint": "23bacff0fa923685ae52c5a9cfbadfb9f5902fb64d91759cfe9b4b1169a221c4",
+      "provider_posture": "therundown",
+      "frozen_at": "2026-08-28 22:50:36.446328+00",
+      "game_time": "2026-08-28 23:15:00+00",
+      "lock_status": "due_now",
+      "minutes_until_start": "24.39",
+      "prestart_valid": true,
+      "lock_valid": true,
+      "history_matches": [
+        {
+          "pnl": -1,
+          "odds": -155,
+          "k_line": 3.5,
+          "result": "loss",
+          "actual_ks": 4,
+          "game_time": "2026-08-28T23:15:00Z",
+          "locked_odds": -155,
+          "locked_k_line": 3.5
+        }
+      ]
+    },
+    {
+      "slate_date": "2026-08-29",
+      "pitcher": "Carlos Rodon",
+      "side": "under",
+      "model_k_line": "5.5",
+      "official_odds": -170,
+      "official_verdict": "LEAN",
+      "official_book": "FanDuel",
+      "lane": "consensus_core",
+      "selector_fingerprint": "23bacff0fa923685ae52c5a9cfbadfb9f5902fb64d91759cfe9b4b1169a221c4",
+      "provider_posture": "therundown_propline",
+      "frozen_at": "2026-08-29 16:40:25.181031+00",
+      "game_time": "2026-08-29 17:05:00+00",
+      "lock_status": "due_now",
+      "minutes_until_start": "24.58",
+      "prestart_valid": true,
+      "lock_valid": true,
+      "history_matches": [
+        {
+          "pnl": 0.5882352941176471,
+          "odds": -170,
+          "k_line": 5.5,
+          "result": "win",
+          "actual_ks": 5,
+          "game_time": "2026-08-29T17:05:00Z",
+          "locked_odds": -170,
+          "locked_k_line": 5.5
+        }
+      ]
+    },
+    {
+      "slate_date": "2026-08-29",
+      "pitcher": "Nolan McLean",
+      "side": "under",
+      "model_k_line": "5.5",
+      "official_odds": 116,
+      "official_verdict": "LEAN",
+      "official_book": "FanDuel",
+      "lane": "reentry_expansion",
+      "selector_fingerprint": "23bacff0fa923685ae52c5a9cfbadfb9f5902fb64d91759cfe9b4b1169a221c4",
+      "provider_posture": "therundown_propline",
+      "frozen_at": "2026-08-29 19:40:47.198157+00",
+      "game_time": "2026-08-29 20:10:00+00",
+      "lock_status": "due_now",
+      "minutes_until_start": "29.21",
+      "prestart_valid": true,
+      "lock_valid": true,
+      "history_matches": [
+        {
+          "pnl": 1.16,
+          "odds": 116,
+          "k_line": 5.5,
+          "result": "win",
+          "actual_ks": 4,
+          "game_time": "2026-08-29T20:10:00Z",
+          "locked_odds": 116,
+          "locked_k_line": 5.5
+        }
+      ]
+    },
+    {
+      "slate_date": "2026-08-29",
+      "pitcher": "Sandy Alcantara",
+      "side": "over",
+      "model_k_line": "4.5",
+      "official_odds": 116,
+      "official_verdict": "LEAN",
+      "official_book": "FanDuel",
+      "lane": "reentry_expansion",
+      "selector_fingerprint": "23bacff0fa923685ae52c5a9cfbadfb9f5902fb64d91759cfe9b4b1169a221c4",
+      "provider_posture": "therundown_propline",
+      "frozen_at": "2026-08-29 19:40:47.198157+00",
+      "game_time": "2026-08-29 20:05:00+00",
+      "lock_status": "due_now",
+      "minutes_until_start": "24.21",
+      "prestart_valid": true,
+      "lock_valid": true,
+      "history_matches": [
+        {
+          "pnl": -1,
+          "odds": 116,
+          "k_line": 4.5,
+          "result": "loss",
+          "actual_ks": 3,
+          "game_time": "2026-08-29T20:05:00Z",
+          "locked_odds": 116,
+          "locked_k_line": 4.5
+        }
+      ]
+    },
+    {
+      "slate_date": "2026-08-29",
+      "pitcher": "Walker Buehler",
+      "side": "over",
+      "model_k_line": "3.5",
+      "official_odds": 126,
+      "official_verdict": "LEAN",
+      "official_book": "FanDuel",
+      "lane": "reentry_expansion",
+      "selector_fingerprint": "23bacff0fa923685ae52c5a9cfbadfb9f5902fb64d91759cfe9b4b1169a221c4",
+      "provider_posture": "therundown_propline",
+      "frozen_at": "2026-08-29 19:40:47.198157+00",
+      "game_time": "2026-08-29 20:10:00+00",
+      "lock_status": "due_now",
+      "minutes_until_start": "29.21",
+      "prestart_valid": true,
+      "lock_valid": true,
+      "history_matches": [
+        {
+          "pnl": -1,
+          "odds": 126,
+          "k_line": 3.5,
+          "result": "loss",
+          "actual_ks": 3,
+          "game_time": "2026-08-29T20:10:00Z",
+          "locked_odds": 126,
+          "locked_k_line": 3.5
+        }
+      ]
+    },
+    {
+      "slate_date": "2026-08-30",
+      "pitcher": "Chase Burns",
+      "side": "over",
+      "model_k_line": "5.5",
+      "official_odds": -148,
+      "official_verdict": "FIRE 1u",
+      "official_book": "FanDuel",
+      "lane": "consensus_core",
+      "selector_fingerprint": "23bacff0fa923685ae52c5a9cfbadfb9f5902fb64d91759cfe9b4b1169a221c4",
+      "provider_posture": "therundown",
+      "frozen_at": "2026-08-30 22:50:26.373879+00",
+      "game_time": "2026-08-30 23:20:00+00",
+      "lock_status": "due_now",
+      "minutes_until_start": "29.56",
+      "prestart_valid": true,
+      "lock_valid": true,
+      "history_matches": [
+        {
+          "pnl": 0.6756756756756757,
+          "odds": -148,
+          "k_line": 5.5,
+          "result": "win",
+          "actual_ks": 7,
+          "game_time": "2026-08-30T23:20:00Z",
+          "locked_odds": -148,
+          "locked_k_line": 5.5
+        }
+      ]
+    },
+    {
+      "slate_date": "2026-08-30",
+      "pitcher": "Parker Messick",
+      "side": "under",
+      "model_k_line": "5.5",
+      "official_odds": 116,
+      "official_verdict": "LEAN",
+      "official_book": "FanDuel",
+      "lane": "reentry_expansion",
+      "selector_fingerprint": "23bacff0fa923685ae52c5a9cfbadfb9f5902fb64d91759cfe9b4b1169a221c4",
+      "provider_posture": "therundown_propline",
+      "frozen_at": "2026-08-30 17:10:50.882537+00",
+      "game_time": "2026-08-30 17:40:00+00",
+      "lock_status": "due_now",
+      "minutes_until_start": "29.15",
+      "prestart_valid": true,
+      "lock_valid": true,
+      "history_matches": [
+        {
+          "pnl": 1.16,
+          "odds": 116,
+          "k_line": 5.5,
+          "result": "win",
+          "actual_ks": 5,
+          "game_time": "2026-08-30T17:40:00Z",
+          "locked_odds": 116,
+          "locked_k_line": 5.5
+        }
+      ]
+    },
+    {
+      "slate_date": "2026-08-31",
+      "pitcher": "Anthony Kay",
+      "side": "under",
+      "model_k_line": "4.5",
+      "official_odds": -146,
+      "official_verdict": "LEAN",
+      "official_book": "FanDuel",
+      "lane": "consensus_core",
+      "selector_fingerprint": "23bacff0fa923685ae52c5a9cfbadfb9f5902fb64d91759cfe9b4b1169a221c4",
+      "provider_posture": "therundown_propline",
+      "frozen_at": "2026-08-31 23:40:23.652503+00",
+      "game_time": "2026-09-01 00:10:00+00",
+      "lock_status": "due_now",
+      "minutes_until_start": "29.61",
+      "prestart_valid": true,
+      "lock_valid": true,
+      "history_matches": [
+        {
+          "pnl": -1,
+          "odds": -146,
+          "k_line": 4.5,
+          "result": "loss",
+          "actual_ks": 5,
+          "game_time": "2026-09-01T00:10:00Z",
+          "locked_odds": -146,
+          "locked_k_line": 4.5
+        }
+      ]
+    },
+    {
+      "slate_date": "2026-08-31",
+      "pitcher": "Kyle Harrison",
+      "side": "under",
+      "model_k_line": "5.5",
+      "official_odds": -154,
+      "official_verdict": "LEAN",
+      "official_book": "FanDuel",
+      "lane": "consensus_core",
+      "selector_fingerprint": "23bacff0fa923685ae52c5a9cfbadfb9f5902fb64d91759cfe9b4b1169a221c4",
+      "provider_posture": "therundown_propline",
+      "frozen_at": "2026-08-31 23:10:39.1882+00",
+      "game_time": "2026-08-31 23:40:00+00",
+      "lock_status": "due_now",
+      "minutes_until_start": "29.35",
+      "prestart_valid": true,
+      "lock_valid": true,
+      "history_matches": [
+        {
+          "pnl": 0.6493506493506493,
+          "odds": -154,
+          "k_line": 5.5,
+          "result": "win",
+          "actual_ks": 3,
+          "game_time": "2026-08-31T23:40:00Z",
+          "locked_odds": -154,
+          "locked_k_line": 5.5
+        }
+      ]
+    },
+    {
+      "slate_date": "2026-09-01",
+      "pitcher": "Eric Lauer",
+      "side": "over",
+      "model_k_line": "3.5",
+      "official_odds": -138,
+      "official_verdict": "FIRE 1u",
+      "official_book": "FanDuel",
+      "lane": "consensus_core",
+      "selector_fingerprint": "23bacff0fa923685ae52c5a9cfbadfb9f5902fb64d91759cfe9b4b1169a221c4",
+      "provider_posture": "therundown_propline",
+      "frozen_at": "2026-09-02 01:40:51.248848+00",
+      "game_time": "2026-09-02 02:10:00+00",
+      "lock_status": "due_now",
+      "minutes_until_start": "29.15",
+      "prestart_valid": true,
+      "lock_valid": true,
+      "history_matches": [
+        {
+          "pnl": -1,
+          "odds": -138,
+          "k_line": 3.5,
+          "result": "loss",
+          "actual_ks": 2,
+          "game_time": "2026-09-02T02:10:00Z",
+          "locked_odds": -138,
+          "locked_k_line": 3.5
+        }
+      ]
+    },
+    {
+      "slate_date": "2026-09-01",
+      "pitcher": "Kyle Bradish",
+      "side": "over",
+      "model_k_line": "4.5",
+      "official_odds": -125,
+      "official_verdict": "FIRE 1u",
+      "official_book": "FanDuel",
+      "lane": "consensus_core",
+      "selector_fingerprint": "23bacff0fa923685ae52c5a9cfbadfb9f5902fb64d91759cfe9b4b1169a221c4",
+      "provider_posture": "therundown_propline",
+      "frozen_at": "2026-09-02 00:10:50.321049+00",
+      "game_time": "2026-09-02 00:40:00+00",
+      "lock_status": "due_now",
+      "minutes_until_start": "29.16",
+      "prestart_valid": true,
+      "lock_valid": true,
+      "history_matches": [
+        {
+          "pnl": -1,
+          "odds": -125,
+          "k_line": 4.5,
+          "result": "loss",
+          "actual_ks": 4,
+          "game_time": "2026-09-02T00:40:00Z",
+          "locked_odds": -125,
+          "locked_k_line": 4.5
+        }
+      ]
+    },
+    {
+      "slate_date": "2026-09-01",
+      "pitcher": "Paul Skenes",
+      "side": "over",
+      "model_k_line": "6.5",
+      "official_odds": 118,
+      "official_verdict": "LEAN",
+      "official_book": "FanDuel",
+      "lane": "reentry_expansion",
+      "selector_fingerprint": "23bacff0fa923685ae52c5a9cfbadfb9f5902fb64d91759cfe9b4b1169a221c4",
+      "provider_posture": "therundown_propline",
+      "frozen_at": "2026-09-01 22:10:48.573779+00",
+      "game_time": "2026-09-01 22:40:00+00",
+      "lock_status": "due_now",
+      "minutes_until_start": "29.19",
+      "prestart_valid": true,
+      "lock_valid": true,
+      "history_matches": [
+        {
+          "pnl": -1,
+          "odds": 118,
+          "k_line": 6.5,
+          "result": "loss",
+          "actual_ks": 4,
+          "game_time": "2026-09-01T22:40:00Z",
+          "locked_odds": 118,
+          "locked_k_line": 6.5
+        }
+      ]
+    },
+    {
+      "slate_date": "2026-09-03",
+      "pitcher": "Blade Tidwell",
+      "side": "under",
+      "model_k_line": "4.5",
+      "official_odds": -150,
+      "official_verdict": "LEAN",
+      "official_book": "FanDuel",
+      "lane": "consensus_core",
+      "selector_fingerprint": "23bacff0fa923685ae52c5a9cfbadfb9f5902fb64d91759cfe9b4b1169a221c4",
+      "provider_posture": "therundown_propline",
+      "frozen_at": "2026-09-03 16:10:33.23715+00",
+      "game_time": "2026-09-03 16:35:00+00",
+      "lock_status": "due_now",
+      "minutes_until_start": "24.45",
+      "prestart_valid": true,
+      "lock_valid": true,
+      "history_matches": [
+        {
+          "pnl": -1,
+          "odds": -150,
+          "k_line": 4.5,
+          "result": "loss",
+          "actual_ks": 5,
+          "game_time": "2026-09-03T16:35:00Z",
+          "locked_odds": -150,
+          "locked_k_line": 4.5
+        }
+      ]
+    },
+    {
+      "slate_date": "2026-09-03",
+      "pitcher": "Brandon Young",
+      "side": "under",
+      "model_k_line": "3.5",
+      "official_odds": 118,
+      "official_verdict": "LEAN",
+      "official_book": "FanDuel",
+      "lane": "reentry_expansion",
+      "selector_fingerprint": "23bacff0fa923685ae52c5a9cfbadfb9f5902fb64d91759cfe9b4b1169a221c4",
+      "provider_posture": "therundown_propline",
+      "frozen_at": "2026-09-03 22:50:51.052933+00",
+      "game_time": "2026-09-03 23:15:00+00",
+      "lock_status": "due_now",
+      "minutes_until_start": "24.15",
+      "prestart_valid": true,
+      "lock_valid": true,
+      "history_matches": [
+        {
+          "pnl": -1,
+          "odds": 118,
+          "k_line": 3.5,
+          "result": "loss",
+          "actual_ks": 7,
+          "game_time": "2026-09-03T23:15:00Z",
+          "locked_odds": 118,
+          "locked_k_line": 3.5
+        }
+      ]
+    },
+    {
+      "slate_date": "2026-09-03",
+      "pitcher": "Jose Soriano",
+      "side": "over",
+      "model_k_line": "4.5",
+      "official_odds": 140,
+      "official_verdict": "LEAN",
+      "official_book": "FanDuel",
+      "lane": "reentry_expansion",
+      "selector_fingerprint": "23bacff0fa923685ae52c5a9cfbadfb9f5902fb64d91759cfe9b4b1169a221c4",
+      "provider_posture": "therundown_propline",
+      "frozen_at": "2026-09-03 16:40:50.579593+00",
+      "game_time": "2026-09-03 17:10:00+00",
+      "lock_status": "due_now",
+      "minutes_until_start": "29.16",
+      "prestart_valid": true,
+      "lock_valid": true,
+      "history_matches": [
+        {
+          "pnl": -1,
+          "odds": 140,
+          "k_line": 4.5,
+          "result": "loss",
+          "actual_ks": 2,
+          "game_time": "2026-09-03T17:10:00Z",
+          "locked_odds": 140,
+          "locked_k_line": 4.5
+        }
+      ]
+    },
+    {
+      "slate_date": "2026-09-03",
+      "pitcher": "Michael Wacha",
+      "side": "over",
+      "model_k_line": "4.5",
+      "official_odds": -138,
+      "official_verdict": "LEAN",
+      "official_book": "FanDuel",
+      "lane": "consensus_core",
+      "selector_fingerprint": "23bacff0fa923685ae52c5a9cfbadfb9f5902fb64d91759cfe9b4b1169a221c4",
+      "provider_posture": "therundown",
+      "frozen_at": "2026-09-03 23:10:37.921207+00",
+      "game_time": "2026-09-03 23:40:00+00",
+      "lock_status": "due_now",
+      "minutes_until_start": "29.37",
+      "prestart_valid": true,
+      "lock_valid": true,
+      "history_matches": [
+        {
+          "pnl": 0.7246376811594203,
+          "odds": -138,
+          "k_line": 4.5,
+          "result": "win",
+          "actual_ks": 7,
+          "game_time": "2026-09-03T23:40:00Z",
+          "locked_odds": -138,
+          "locked_k_line": 4.5
+        }
+      ]
+    }
+  ]
+}
