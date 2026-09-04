@@ -173,5 +173,12 @@ and it expires at `2026-09-05T01:36:27.853637Z`. The report retains
 deleted. Tyler must separately approve the exact token and command before any
 write.
 
+That separate deletion approval is not ready to request yet. The executor's
+required immediate pre-delete preview still uses the local CLI path that failed
+twice. The connected fallback validates the partition evidence only. First
+diagnose and prove the intended execution transport, then generate a fresh
+preview/token through that path. Do not use the current token to bypass the
+transport blocker.
+
 Retired BoltOdds May 7-June 16 remains a separate candidate and must not be
 silently combined with this active-provider tranche.

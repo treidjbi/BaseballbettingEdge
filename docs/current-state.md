@@ -457,9 +457,13 @@ at SHA-256 `2f9016da...`. Its token `feba1b62...` and delete SQL hash
 `cc424e6a...` expire at `2026-09-05T01:36:27.853637Z`. The report remains
 `deletion_approved=false` / `retention_execution_closed=true`; no environment
 gate was set and zero rows were deleted. The next decision is Tyler's separate
-approval or rejection of that exact provider/date/token/command. If the token
-expires first, require a new backup check and exact preview. Automatic loops,
-BoltOdds, webhooks, post-July-26 rows, vacuum, and reclamation remain closed.
+approval or rejection of that exact provider/date/token/command, but that
+decision is blocked until the executor's local CLI transport is diagnosed and
+proven because the mandatory immediate pre-delete preview uses that same failed
+path. Treat the current token as review evidence only. After transport proof,
+require a new backup check and exact preview/token rather than racing the
+current expiration. Automatic loops, BoltOdds, webhooks, post-July-26 rows,
+vacuum, and reclamation remain closed.
 
 ### August 24 webhook retention gate and August 19 history repair
 

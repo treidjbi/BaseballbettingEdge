@@ -173,3 +173,12 @@ python3 scripts/retire_prepared_market_snapshots.py execute \
 Do not run it without Tyler's separate approval of this provider, date, token,
 and command. If the token expires, discard the proposed command and generate a
 new exact preview after rechecking backup status.
+
+The recorded command is not yet operationally ready for that approval. Its
+mandatory immediate pre-delete preview uses the same local linked-CLI path that
+returned code `1` twice. The connected fallback proves the partition data gate,
+but it does not prove the command's execution transport. Diagnose the CLI
+failure without another blind query, repair or safely adapt the executor under
+tests if needed, and obtain a fresh exact preview through the intended execution
+path before seeking deletion approval. Treat the current token as review
+evidence only; do not race its expiration.
