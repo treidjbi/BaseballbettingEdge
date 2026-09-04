@@ -182,3 +182,63 @@ failure without another blind query, repair or safely adapt the executor under
 tests if needed, and obtain a fresh exact preview through the intended execution
 path before seeking deletion approval. Treat the current token as review
 evidence only; do not race its expiration.
+
+## Linked-CLI Repair and Fresh Exact Preview
+
+At **2026-09-04T03:48:31.159651Z**, the CLI transport blocker was resolved
+without changing the executor or the database. The local repository had
+`supabase/.temp/linked-project.json` but lacked the CLI-required
+`supabase/.temp/project-ref`, so even `select now()` failed before reaching
+Postgres with `Cannot find project ref`. The supported command
+`npx --yes supabase link --project-ref htoaytcsjrdyyzcwxjfg --yes` rebuilt the
+ignored local link metadata. A minimal linked SELECT then succeeded.
+
+The physical-backup inventory was rechecked before the exact preview. The
+latest listed physical backup remained `COMPLETED` at
+`2026-09-03T05:43:13.129Z`; PITR remained disabled. The executor's own
+linked-CLI path then completed the full exact SELECT in about 24 seconds and
+wrote:
+
+`data/research/retention/prepared-delete-propline-2026-06-12-2026-09-04-cli.json`
+
+The fresh CLI-backed evidence is:
+
+- raw snapshots: `11,888`
+- logical raw bytes: `5,111,272`
+- raw groups / exact compact groups: `218 / 218`
+- mismatched, missing, unexpected, and duplicate groups: `0`
+- every source-anomaly count: `0`
+- preview SQL SHA-256:
+  `dd6a38b3a62012b4c13365978a38d663e584cdae13af37e9e57bd7f8fa0f8e6c`
+- delete SQL SHA-256:
+  `cc424e6ac576c37513aff421cfe5d97a3b2d833f2ff6e9b20d813b39435a9676`
+- preview report SHA-256:
+  `0edbc2c15baefca85026df34b3fa197e8fe889f41ca98e3f458b77d4da47556f`
+- approval token:
+  `5e98f3da561f46657a9c8e27c23268843480dbde592e31280719a7899fb49cb8`
+- token expiration: `2026-09-05T03:48:31.159651Z`
+
+The source state is byte-for-byte identical to the earlier connected-SQL
+preview's source-state object. The report still states
+`deletion_approved=false` and `retention_execution_closed=true`; both deletion
+environment gates remained unset and zero rows were deleted. The executor
+source hash remains
+`95ae71e9e69f218832ec58e889a32148294453a5b7010912a576f546272323e6`.
+The full focused retention suite still passes `239` tests.
+
+The exact proposed command, **not executed**, is now transport-ready:
+
+```bash
+ALLOW_MARKET_SNAPSHOT_DELETE=true \
+APPROVED_PREPARED_MARKET_SNAPSHOT_DELETE_TOKEN=5e98f3da561f46657a9c8e27c23268843480dbde592e31280719a7899fb49cb8 \
+python3 scripts/retire_prepared_market_snapshots.py execute \
+  --preview-report data/research/retention/prepared-delete-propline-2026-06-12-2026-09-04-cli.json \
+  --output data/research/retention/prepared-delete-result-propline-2026-06-12-2026-09-04-cli.json \
+  --execute \
+  --run-linked-delete
+```
+
+Do not run it without Tyler's separate approval of this exact provider, date,
+token, and command. If the token expires, discard the proposed command,
+reconfirm the then-latest completed backup, and generate a new exact preview.
+Never infer deletion approval from the transport-repair approval.

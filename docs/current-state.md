@@ -1,6 +1,6 @@
 # Current State
 
-Last updated: 2026-09-02
+Last updated: 2026-09-03
 
 ## Read Order
 
@@ -464,6 +464,32 @@ path. Treat the current token as review evidence only. After transport proof,
 require a new backup check and exact preview/token rather than racing the
 current expiration. Automatic loops, BoltOdds, webhooks, post-July-26 rows,
 vacuum, and reclamation remain closed.
+
+### September 3 linked-CLI repair and fresh exact preview
+
+Tyler approved diagnosis and repair of the preview transport, not deletion.
+The failure occurred before Postgres: the repo retained
+`supabase/.temp/linked-project.json` but lacked the ignored
+`supabase/.temp/project-ref` required by the CLI. The supported `supabase link`
+command restored only local link metadata. A minimal linked SELECT then passed,
+the backup inventory reconfirmed a `COMPLETED` physical backup at
+`2026-09-03T05:43:13.129Z` with PITR disabled, and the executor's own
+linked-CLI path completed the full exact preview in about 24 seconds.
+
+The new immutable report is
+`data/research/retention/prepared-delete-propline-2026-06-12-2026-09-04-cli.json`
+at SHA-256 `0edbc2c1...`. It reconfirms `11,888` raw rows / `5,111,272`
+logical bytes / `218` exact compact groups, with zero coverage blockers or
+source anomalies and no drift from the prior fallback preview. Token
+`5e98f3da...` is bound to the same delete SQL hash `cc424e6a...` and expires at
+`2026-09-05T03:48:31.159651Z`. The focused retention suite remains `239`
+passing tests. The report is still `deletion_approved=false` /
+`retention_execution_closed=true`; both deletion environment gates stayed
+unset and zero rows were deleted. The next gate is Tyler's separate approval
+or rejection of this exact PropLine `2026-06-12` token and command. If it
+expires, recheck backup status and generate a new preview. Automatic loops,
+other partitions/providers, webhooks, post-July-26 rows, vacuum, and
+reclamation remain closed.
 
 ### August 24 webhook retention gate and August 19 history repair
 
