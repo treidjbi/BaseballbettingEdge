@@ -323,6 +323,13 @@ execute it. Physical usage remained `70.93%` after DELETE, so do not infer
 reclamation and do not vacuum without a separate recovery/locking review and
 approval.
 
+After separate exact approval, `tranche-v2-002` also completed all five
+partitions with zero errors or retries: `106,972` rows removed and `2,494`
+compact groups preserved. The next packet (`tranche-v2-003`) is previewed but
+closed at token `7f9ef77d...`. Its September 4 backup and successful prior
+packets do not authorize execution. Physical usage remained `70.94%`; keep
+vacuum/reclamation and every later packet behind their own review and gate.
+
 As of Tyler's 2026-08-27 cost decision, active-provider compaction should be
 operated manually instead of through another paid Render cron. Review storage
 and exact compact coverage approximately every seven days, once at season end,

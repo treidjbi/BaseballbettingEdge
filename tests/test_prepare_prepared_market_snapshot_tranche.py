@@ -192,6 +192,20 @@ def test_tranche_v2_001_postcheck_sql_is_select_only_and_exact():
     assert "physical" not in sql.lower()
 
 
+def test_tranche_v2_002_postcheck_sql_is_select_only_and_exact():
+    sql = Path(
+        "scripts/supabase_prepared_tranche_v2_002_postcheck.sql"
+    ).read_text(encoding="utf-8")
+
+    executor.bounded_sql.assert_select_only(sql)
+    assert "prepared_tranche_v2_002_postcheck_v1" in sql
+    assert "('therundown', date '2026-07-24', 28400::bigint, 736::bigint)" in sql
+    assert "('propline', date '2026-07-22', 40326::bigint, 668::bigint)" in sql
+    assert "('therundown', date '2026-07-22', 14790::bigint, 532::bigint)" in sql
+    assert "raw_state.raw_snapshot_rows = 0" in sql
+    assert "physical" not in sql.lower()
+
+
 def test_prepare_tranche_queries_every_partition_read_only_before_writing(tmp_path):
     calls: list[tuple[str, str, bool]] = []
 

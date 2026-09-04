@@ -607,6 +607,29 @@ passes `597` tests. No v2-002 result exists and its five commands remain the
 next hard approval gate. Other tranches, webhooks,
 BoltOdds, post-July-26 data, vacuum, and reclamation remain closed.
 
+Tyler then approved exact `tranche-v2-002` token `0173b9ee...`. A newer
+completed physical backup at `2026-09-04T05:28:27.760000+00:00` was confirmed
+immediately before execution. All five partitions—TheRundown July 24, both
+providers July 23, and both providers July 22—completed sequentially and
+exactly: `106,972` raw rows / `55,918,412` logical bytes removed, zero target
+rows remaining, and all `2,494` compact groups preserving all `106,972`
+observations. There was no mutation/postcheck error, retry, vacuum, or
+reclamation. The independent SELECT-only postcheck passed and the aggregate
+record is
+`data/research/retention/prepared-tranche-v2-002-2026-09-04/tranche-execution-result.json`.
+
+The physical read remained essentially flat at `6,093,565,075` bytes / `70.94%`
+and `market_snapshots` at `4,153,729,024` bytes. Reversible preparation of
+`tranche-v2-003` then passed for both providers July 21, both providers July
+20, and PropLine July 19: `185,966` rows / `98,671,846` logical bytes / `3,084`
+exact groups, zero hard anomalies, and `9,700` fully preserved informational
+cross-date rows. The packet binds the September 4 backup; report SHA is
+`ce3d6cc1...`, token is `7f9ef77d...`, and expiry is
+`2026-09-05T05:41:17.676708+00:00`. The retention-focused Python 3.11 suite
+passes `598` tests. No v2-003 result exists. Its five commands are the next
+exact hard gate; later tranches, webhooks, BoltOdds, post-July-26 data, vacuum,
+and reclamation remain closed.
+
 ### August 24 webhook retention gate and August 19 history repair
 
 The recent `734`-row PropLine webhook watch item is processor-capacity debt,

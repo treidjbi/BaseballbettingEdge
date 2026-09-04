@@ -241,3 +241,47 @@ exists and no v2-002 command ran. The full retention-focused Python 3.11 suite
 passes `597` tests. This exact packet is the next hard gate;
 later tranches, webhooks, BoltOdds, post-July-26 rows, vacuum, and reclamation
 remain closed.
+
+## Approved Descending Tranche v2-002 Execution
+
+Tyler approved exact packet token
+`0173b9ee8a99a7d073256a30b283f66a37b21fe05c3f49973774ab4abf9bf328`.
+Immediately before the first write, backup inventory showed a newer
+`COMPLETED` physical backup at `2026-09-04T05:28:27.760000+00:00`, after both
+the prior tranche and the v2-002 preview; the packet-bound September 3 backup
+also remained completed. PITR remained disabled. All five v2-002 commands ran
+once and sequentially:
+
+1. TheRundown July 24 confirmed `28,400` deleted rows / `736` groups.
+2. PropLine July 23 confirmed `10,138` deleted rows / `208` groups.
+3. TheRundown July 23 confirmed `13,318` deleted rows / `350` groups.
+4. PropLine July 22 confirmed `40,326` deleted rows / `668` groups.
+5. TheRundown July 22 confirmed `14,790` deleted rows / `532` groups.
+
+The packet removed exactly `106,972` raw rows / `55,918,412` logical bytes
+while preserving all `2,494` compact groups representing every removed
+observation. Every result has `status=confirmed`, zero target raw rows, no
+mutation or postcheck error, no retry, and no vacuum. The independent
+SELECT-only query `scripts/supabase_prepared_tranche_v2_002_postcheck.sql`
+returned `all_confirmed=true`; the aggregate execution record is
+`data/research/retention/prepared-tranche-v2-002-2026-09-04/tranche-execution-result.json`.
+
+The post-execution physical read was `6,093,565,075` database bytes (`70.94%`
+of the included 8 GiB) and `4,153,729,024` bytes for `market_snapshots`.
+Physical files remain essentially flat under ongoing writes and MVCC; no
+vacuum or reclamation step was authorized.
+
+Reversible preparation then produced `tranche-v2-003`, covering both providers
+July 21, both providers July 20, and PropLine July 19. Its exact previews bind
+`185,966` rows / `98,671,846` logical bytes / `3,084` compact groups. Every
+hard anomaly is zero, and all `9,700` informational cross-date rows are fully
+preserved. The completed September 4 backup is bound into the packet. Report
+SHA-256 is
+`ce3d6cc1f46f43c81cee4976b87284e25236952ac5f4b72ed9a7a17be73c0bef`,
+approval token is
+`7f9ef77d7b7ffc8d13ca2ad10a9096dcfd2f7e71de057ffb49303f25d386a3e4`,
+and expiry is `2026-09-05T05:41:17.676708+00:00`. No v2-003 result exists and
+none of its commands ran. The retention-focused Python 3.11 suite passes `598`
+tests. This exact packet is the next hard gate; later
+tranches, webhooks, BoltOdds, post-July-26 rows, vacuum, and reclamation remain
+closed.

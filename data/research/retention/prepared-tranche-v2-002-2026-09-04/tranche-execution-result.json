@@ -1,0 +1,99 @@
+{
+  "execution_record_version": 1,
+  "scope_id": "prepared_active_provider_descending_tranche_execution_v1",
+  "tranche_id": "tranche-v2-002",
+  "tranche_report_path": "data/research/retention/prepared-tranche-v2-002-2026-09-04/tranche-report.json",
+  "tranche_report_sha256": "3cd26eeb65759a4d9a82b85c88421660028ddcf420f9a8cb56297c42c3527982",
+  "approved_tranche_token": "0173b9ee8a99a7d073256a30b283f66a37b21fe05c3f49973774ab4abf9bf328",
+  "packet_bound_backup_completed_at": "2026-09-03T05:43:13.129000+00:00",
+  "pre_execution_latest_completed_backup_at": "2026-09-04T05:28:27.760000+00:00",
+  "execution_started_at": "2026-09-04T05:33:50.688041+00:00",
+  "execution_completed_at": "2026-09-04T05:38:06.906696+00:00",
+  "recorded_at": "2026-09-04T05:39:09+00:00",
+  "status": "confirmed",
+  "partition_count": 5,
+  "deleted_rows": 106972,
+  "deleted_logical_bytes": 55918412,
+  "compact_group_count": 2494,
+  "represented_snapshot_rows": 106972,
+  "remaining_raw_snapshot_rows": 0,
+  "automatic_retry_attempted": false,
+  "vacuum_attempted": false,
+  "mutation_errors": [],
+  "postcheck_errors": [],
+  "partitions": [
+    {
+      "ordinal": 1,
+      "provider": "therundown",
+      "slate_date": "2026-07-24",
+      "deleted_rows": 28400,
+      "compact_group_count": 736,
+      "represented_snapshot_rows": 28400,
+      "result_path": "data/research/retention/prepared-tranche-v2-002-2026-09-04/result-01-therundown-2026-07-24.json",
+      "result_sha256": "a22438af7f35194bfcbdc4ba2be394c7b87d16e6ad12e158c1594de23bd674a4"
+    },
+    {
+      "ordinal": 2,
+      "provider": "propline",
+      "slate_date": "2026-07-23",
+      "deleted_rows": 10138,
+      "compact_group_count": 208,
+      "represented_snapshot_rows": 10138,
+      "result_path": "data/research/retention/prepared-tranche-v2-002-2026-09-04/result-02-propline-2026-07-23.json",
+      "result_sha256": "5b3b1829f830dda83c06e2a4642a63739cb51d2b9b53724cc511833584c5ef08"
+    },
+    {
+      "ordinal": 3,
+      "provider": "therundown",
+      "slate_date": "2026-07-23",
+      "deleted_rows": 13318,
+      "compact_group_count": 350,
+      "represented_snapshot_rows": 13318,
+      "result_path": "data/research/retention/prepared-tranche-v2-002-2026-09-04/result-03-therundown-2026-07-23.json",
+      "result_sha256": "2af1439be2f30835bf259382e94ca7549fc0bb1f2cccd3aed74c7b0646345701"
+    },
+    {
+      "ordinal": 4,
+      "provider": "propline",
+      "slate_date": "2026-07-22",
+      "deleted_rows": 40326,
+      "compact_group_count": 668,
+      "represented_snapshot_rows": 40326,
+      "result_path": "data/research/retention/prepared-tranche-v2-002-2026-09-04/result-04-propline-2026-07-22.json",
+      "result_sha256": "81d969784bf802b9fbe741f6938f9a647928149ba42f743d0a91333fd5a9b37c"
+    },
+    {
+      "ordinal": 5,
+      "provider": "therundown",
+      "slate_date": "2026-07-22",
+      "deleted_rows": 14790,
+      "compact_group_count": 532,
+      "represented_snapshot_rows": 14790,
+      "result_path": "data/research/retention/prepared-tranche-v2-002-2026-09-04/result-05-therundown-2026-07-22.json",
+      "result_sha256": "fe2141812aebf13e7f4bd5f32582aada7f1abd54d52d0dab1dffe0e7b4453924"
+    }
+  ],
+  "independent_postcheck": {
+    "query_path": "scripts/supabase_prepared_tranche_v2_002_postcheck.sql",
+    "query_sha256": "72b9763eb913bb0e8d2f3894f404053a2ab4bdace614a5a6ef859b165b9aa460",
+    "select_only_contract_confirmed": true,
+    "all_confirmed": true,
+    "confirmed_before": "2026-09-04T05:39:09+00:00"
+  },
+  "post_execution_storage": {
+    "database_bytes": 6093565075,
+    "database_size": "5811 MB",
+    "pct_of_pro_included_8gb": "70.94",
+    "market_snapshots_total_bytes": 4153729024,
+    "market_snapshots_total_size": "3961 MB",
+    "measured_before": "2026-09-04T05:39:09+00:00",
+    "physical_reclamation_authorized": false,
+    "note": "DELETE does not guarantee immediate physical file shrinkage; no vacuum or reclamation step was run."
+  },
+  "next_gate": {
+    "deletion_approved": false,
+    "automatic_execution_enabled": false,
+    "vacuum_allowed": false,
+    "note": "Any later tranche requires a fresh exact packet token and separate approval."
+  }
+}
