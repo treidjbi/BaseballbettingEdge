@@ -1,0 +1,98 @@
+{
+  "execution_record_version": 1,
+  "scope_id": "prepared_active_provider_descending_tranche_execution_v1",
+  "tranche_id": "tranche-v2-001",
+  "tranche_report_path": "data/research/retention/prepared-tranche-v2-001-2026-09-04/tranche-report.json",
+  "tranche_report_sha256": "11749a7820747e37e4b9762fb56fdfeb5c56bef8efc4f34a7810328262bdc051",
+  "approved_tranche_token": "180cc86f27f621ddc5b31adf15d2473f99976251eea55db102517f10abaa46d0",
+  "backup_completed_at": "2026-09-03T05:43:13.129000+00:00",
+  "execution_started_at": "2026-09-04T05:10:44.040207+00:00",
+  "execution_completed_at": "2026-09-04T05:16:14.300501+00:00",
+  "recorded_at": "2026-09-04T05:21:25+00:00",
+  "status": "confirmed",
+  "partition_count": 5,
+  "deleted_rows": 157839,
+  "deleted_logical_bytes": 83680587,
+  "compact_group_count": 3293,
+  "represented_snapshot_rows": 157839,
+  "remaining_raw_snapshot_rows": 0,
+  "automatic_retry_attempted": false,
+  "vacuum_attempted": false,
+  "mutation_errors": [],
+  "postcheck_errors": [],
+  "partitions": [
+    {
+      "ordinal": 1,
+      "provider": "propline",
+      "slate_date": "2026-07-26",
+      "deleted_rows": 28554,
+      "compact_group_count": 658,
+      "represented_snapshot_rows": 28554,
+      "result_path": "data/research/retention/prepared-tranche-v2-001-2026-09-04/result-01-propline-2026-07-26.json",
+      "result_sha256": "88dc3931eefcb9f016e736f8d82cdc0237fbc258f1e6d365c3aeb95c65b5474a"
+    },
+    {
+      "ordinal": 2,
+      "provider": "therundown",
+      "slate_date": "2026-07-26",
+      "deleted_rows": 19248,
+      "compact_group_count": 668,
+      "represented_snapshot_rows": 19248,
+      "result_path": "data/research/retention/prepared-tranche-v2-001-2026-09-04/result-02-therundown-2026-07-26.json",
+      "result_sha256": "0d1c2923454d26fdf5953b24811d53d9d16263a3342d654474c8bbc801f0b13e"
+    },
+    {
+      "ordinal": 3,
+      "provider": "propline",
+      "slate_date": "2026-07-25",
+      "deleted_rows": 38092,
+      "compact_group_count": 590,
+      "represented_snapshot_rows": 38092,
+      "result_path": "data/research/retention/prepared-tranche-v2-001-2026-09-04/result-03-propline-2026-07-25.json",
+      "result_sha256": "96f0003e3c68ef3e80d60b833c4e8d19480d51f4892af443949f6d0d0a5f0e12"
+    },
+    {
+      "ordinal": 4,
+      "provider": "therundown",
+      "slate_date": "2026-07-25",
+      "deleted_rows": 26155,
+      "compact_group_count": 753,
+      "represented_snapshot_rows": 26155,
+      "result_path": "data/research/retention/prepared-tranche-v2-001-2026-09-04/result-04-therundown-2026-07-25.json",
+      "result_sha256": "5edc60e23943f007851ba9e4b7f51ee090b13cd8f982e016178ca16b79b5e68f"
+    },
+    {
+      "ordinal": 5,
+      "provider": "propline",
+      "slate_date": "2026-07-24",
+      "deleted_rows": 45790,
+      "compact_group_count": 624,
+      "represented_snapshot_rows": 45790,
+      "result_path": "data/research/retention/prepared-tranche-v2-001-2026-09-04/result-05-propline-2026-07-24.json",
+      "result_sha256": "d1ed028d2493c02b137a3038a52eff9396d5654ffbaf7eae2411b222429841f4"
+    }
+  ],
+  "independent_postcheck": {
+    "query_path": "scripts/supabase_prepared_tranche_v2_001_postcheck.sql",
+    "query_sha256": "a8279d78775cb3bf0e3dfdf296bec4ad7c5f1a8e3d629aed5ac026366364cd8d",
+    "select_only_contract_confirmed": true,
+    "all_confirmed": true,
+    "confirmed_before": "2026-09-04T05:21:25+00:00"
+  },
+  "post_execution_storage": {
+    "database_bytes": 6092729491,
+    "database_size": "5810 MB",
+    "pct_of_pro_included_8gb": "70.93",
+    "market_snapshots_total_bytes": 4153589760,
+    "market_snapshots_total_size": "3961 MB",
+    "measured_before": "2026-09-04T05:21:25+00:00",
+    "physical_reclamation_authorized": false,
+    "note": "DELETE does not guarantee immediate physical file shrinkage; no vacuum or reclamation step was run."
+  },
+  "next_gate": {
+    "deletion_approved": false,
+    "automatic_execution_enabled": false,
+    "vacuum_allowed": false,
+    "note": "Any later tranche requires a fresh exact packet token and separate approval."
+  }
+}

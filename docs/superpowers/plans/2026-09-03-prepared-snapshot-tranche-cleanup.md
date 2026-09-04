@@ -197,3 +197,47 @@ No result file exists, both deletion environment gates remained unset, and no
 row was deleted during the redesign or replacement preview. The next action is
 the new hard gate: approve or reject this exact v2 packet and its five embedded
 commands. Execution must remain sequential and stop on any unexpected state.
+
+## Approved Descending Tranche v2-001 Execution
+
+Tyler approved exact packet token
+`180cc86f27f621ddc5b31adf15d2473f99976251eea55db102517f10abaa46d0`
+and directed execution to continue through the packet while every result stayed
+exact. All five commands ran once, sequentially, in the approved order:
+
+1. PropLine July 26 confirmed `28,554` deleted rows / `658` groups.
+2. TheRundown July 26 confirmed `19,248` deleted rows / `668` groups.
+3. PropLine July 25 confirmed `38,092` deleted rows / `590` groups.
+4. TheRundown July 25 confirmed `26,155` deleted rows / `753` groups.
+5. PropLine July 24 confirmed `45,790` deleted rows / `624` groups.
+
+The packet therefore removed exactly `157,839` raw rows / `83,680,587`
+logical bytes while retaining all `3,293` compact groups representing all
+`157,839` observations. Every immutable result has `status=confirmed`, zero
+target raw rows, no mutation or postcheck error, no automatic retry, and no
+vacuum. The aggregate execution record is
+`data/research/retention/prepared-tranche-v2-001-2026-09-04/tranche-execution-result.json`.
+The independent SELECT-only query
+`scripts/supabase_prepared_tranche_v2_001_postcheck.sql` also returned
+`all_confirmed=true`. One earlier independent ad hoc SELECT exhausted temporary
+CLI login retries without executing; the durable file-based SELECT then
+authenticated and passed, so there was no uncertain write or repeated deletion.
+
+The post-execution physical read was `6,092,729,491` database bytes (`70.93%`
+of the included 8 GiB) and `4,153,589,760` bytes for `market_snapshots`.
+Ongoing writes and MVCC mean DELETE did not immediately reduce physical files;
+vacuum and reclamation remain unapproved.
+
+Reversible preparation then produced `tranche-v2-002`, covering TheRundown July
+24 and both providers July 23-22. Its five exact previews bind `106,972` rows /
+`55,918,412` logical bytes / `2,494` compact groups. All hard anomalies are
+zero, and all `16,887` informational cross-date rows are preserved. The packet
+report SHA-256 is
+`3cd26eeb65759a4d9a82b85c88421660028ddcf420f9a8cb56297c42c3527982`,
+its exact approval token is
+`0173b9ee8a99a7d073256a30b283f66a37b21fe05c3f49973774ab4abf9bf328`,
+and it expires at `2026-09-05T05:24:57.679806+00:00`. No v2-002 result file
+exists and no v2-002 command ran. The full retention-focused Python 3.11 suite
+passes `597` tests. This exact packet is the next hard gate;
+later tranches, webhooks, BoltOdds, post-July-26 rows, vacuum, and reclamation
+remain closed.

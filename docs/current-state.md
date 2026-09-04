@@ -586,6 +586,27 @@ approval or rejection of this exact replacement token and its five sequential
 commands. Other tranches, webhooks, BoltOdds, post-July-26 data, vacuum, and
 reclamation remain closed.
 
+Tyler approved exact `tranche-v2-001` token `180cc86f...` and all five commands
+then confirmed sequentially: PropLine/TheRundown July 26, PropLine/TheRundown
+July 25, and PropLine July 24. The immutable results and an independent
+SELECT-only postcheck agree that exactly `157,839` raw rows / `83,680,587`
+logical bytes were removed, zero target rows remain, and all `3,293` compact
+groups still represent all `157,839` observations. There was no mutation or
+postcheck error, retry, vacuum, or reclamation. The aggregate record is
+`data/research/retention/prepared-tranche-v2-001-2026-09-04/tranche-execution-result.json`.
+
+The post-execution physical read was `6,092,729,491` database bytes (`70.93%`
+of 8 GiB) and `4,153,589,760` bytes for `market_snapshots`; expected MVCC and
+ongoing writes mean physical size has not fallen. Reversible preparation of
+`tranche-v2-002` then passed for TheRundown July 24 and both providers July
+23-22: `106,972` rows / `55,918,412` logical bytes / `2,494` exact groups,
+zero hard anomalies, and `16,887` fully preserved informational cross-date
+rows. Its report SHA is `3cd26eeb...`, exact token is `0173b9ee...`, and expiry
+is `2026-09-05T05:24:57.679806+00:00`. The retention-focused Python 3.11 suite
+passes `597` tests. No v2-002 result exists and its five commands remain the
+next hard approval gate. Other tranches, webhooks,
+BoltOdds, post-July-26 data, vacuum, and reclamation remain closed.
+
 ### August 24 webhook retention gate and August 19 history repair
 
 The recent `734`-row PropLine webhook watch item is processor-capacity debt,

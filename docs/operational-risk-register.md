@@ -314,6 +314,15 @@ sequential within each approved packet; descending order does not authorize
 automatic execution, another packet, a retry after uncertainty, vacuum, or
 reclamation.
 
+The first approved descending packet (`tranche-v2-001`) completed all five
+partitions exactly on September 3 Phoenix time: `157,839` rows were removed and
+independent postcheck evidence retained `3,293` compact groups representing
+every row. The next packet (`tranche-v2-002`) is previewed but closed at token
+`0173b9ee...`; successful completion of the prior packet is not authority to
+execute it. Physical usage remained `70.93%` after DELETE, so do not infer
+reclamation and do not vacuum without a separate recovery/locking review and
+approval.
+
 As of Tyler's 2026-08-27 cost decision, active-provider compaction should be
 operated manually instead of through another paid Render cron. Review storage
 and exact compact coverage approximately every seven days, once at season end,
