@@ -1374,3 +1374,10 @@ It supplies the missing availability/attribution rules without rewriting Gate C
 or V2 records. No capture is active and no new prospective start is set. Next
 is an offline validator/acceptance packet; storage and runner integration
 remain separately scoped.
+
+The [subsequent offline validator review](../../research/2026-09-04-forward-evidence-validator-review.md)
+closes that acceptance step with 357 passing relevant tests and zero formal
+credit. The existing V2 proof format rejects a reproduced negative weak-proxy
+score; its impact on live rows is unmeasured. Review that proof-format issue
+before capture integration. Historical source files and this dataset's gates
+remain unchanged.

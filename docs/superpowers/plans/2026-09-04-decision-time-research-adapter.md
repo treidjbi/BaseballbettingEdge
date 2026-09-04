@@ -103,3 +103,11 @@ The next bounded step is an offline envelope validator and synthetic acceptance
 packet, including the contract's negative cases. Capture/runner integration,
 physical hosted sink and release remain separate decisions. This update is
 documentation only; the adapter and its saved evidence are unchanged.
+
+### Subsequent offline validator implementation
+
+The approved [forward-evidence validator](2026-09-04-forward-evidence-validator.md)
+is complete with synthetic acceptance and unchanged historical exclusions.
+It grants no formal credit and changes no existing adapter/runtime behavior.
+The linked review identifies the existing negative-score proof-format blocker
+to resolve before a capture proposal; real capture and activation remain unset.

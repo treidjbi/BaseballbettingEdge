@@ -1,0 +1,1352 @@
+{
+  "accepted_input_cases": 8,
+  "case_count": 20,
+  "case_reports": {
+    "against_path_a": {
+      "formal_prospective_credit": 0,
+      "limits": [
+        "Internal receipt consistency only; persistence times are not externally authenticated",
+        "Synthetic activation declarations never activate capture or an audit",
+        "Eligible inputs do not establish baseline reconciliation, diversity, profitability or promotion"
+      ],
+      "manifest_reasons": [],
+      "mode": "offline_validation_only",
+      "records": [
+        {
+          "agreement": "market_against_model",
+          "capture_context": [
+            {
+              "identity": {
+                "game_identity": "2915850ca0bf6e3497ab52fcecc6c58f396e88e3d08d5e465f4e508435c3c1e0",
+                "game_time": "2026-09-06T20:40:00+00:00",
+                "lock_id": "synthetic-lock",
+                "normalized_pitcher": "synthetic pitcher",
+                "side": "over",
+                "slate_date": "2026-09-06"
+              },
+              "status": "captured"
+            }
+          ],
+          "decision_digest": "521cd98b238b1943342276075cb1fa99eab77768f216e129a30bcaf1807fe327",
+          "eligible_input_candidate": true,
+          "formal_prospective_credit": false,
+          "frozen_proof_reasons": [
+            "strong_base_selective_lean",
+            "market_anchor_not_matched",
+            "preclose_not_supported",
+            "reentry_predicate_false",
+            "no_drag_rejected",
+            "consensus_core_not_selected",
+            "reentry_expansion_not_selected"
+          ],
+          "identity": {
+            "normalized_pitcher": "synthetic pitcher",
+            "side": "over",
+            "slate_date": "2026-09-06"
+          },
+          "outcome_context": {
+            "execution_costs": "not_established",
+            "final_clv": "no_clv_edge",
+            "recorded_pnl": -1,
+            "result": "loss"
+          },
+          "path_b_bucket": "path_a_or_unknown",
+          "preclose_label": "weak_preclose_clv_proxy",
+          "pregame_valid": true,
+          "reasons": [],
+          "selector_match": true
+        }
+      ],
+      "schema": "forward_pregame_evidence_v1",
+      "summary": {
+        "eligible_input_candidates": 1,
+        "exclusions": {},
+        "missing_capture": 0,
+        "orphan_attachments": 0,
+        "pregame_valid": 1,
+        "records": 1
+      }
+    },
+    "book_conflict": {
+      "formal_prospective_credit": 0,
+      "limits": [
+        "Internal receipt consistency only; persistence times are not externally authenticated",
+        "Synthetic activation declarations never activate capture or an audit",
+        "Eligible inputs do not establish baseline reconciliation, diversity, profitability or promotion"
+      ],
+      "manifest_reasons": [],
+      "mode": "offline_validation_only",
+      "records": [
+        {
+          "capture_context": [
+            {
+              "identity": {
+                "game_identity": "2915850ca0bf6e3497ab52fcecc6c58f396e88e3d08d5e465f4e508435c3c1e0",
+                "game_time": "2026-09-06T20:40:00+00:00",
+                "lock_id": "synthetic-lock",
+                "normalized_pitcher": "synthetic pitcher",
+                "side": "over",
+                "slate_date": "2026-09-06"
+              },
+              "status": "captured"
+            }
+          ],
+          "decision_digest": "7bb354cbf86c17e5e8b1fc0411ec6111a67225c4c34eb2ed02c6b3f5c20705fc",
+          "eligible_input_candidate": false,
+          "formal_prospective_credit": false,
+          "frozen_proof_reasons": [
+            "strong_base_selective_lean",
+            "market_anchor_not_matched",
+            "preclose_v2_confirmed",
+            "reentry_predicate_false",
+            "no_drag_rejected",
+            "consensus_core_not_selected",
+            "reentry_expansion_not_selected"
+          ],
+          "identity": {
+            "normalized_pitcher": "synthetic pitcher",
+            "side": "over",
+            "slate_date": "2026-09-06"
+          },
+          "outcome_context": {},
+          "pregame_valid": false,
+          "reasons": [
+            "attachment_quote_mismatch",
+            "lock_quote_mismatch"
+          ],
+          "selector_match": true
+        }
+      ],
+      "schema": "forward_pregame_evidence_v1",
+      "summary": {
+        "eligible_input_candidates": 0,
+        "exclusions": {
+          "attachment_quote_mismatch": 1,
+          "lock_quote_mismatch": 1
+        },
+        "missing_capture": 0,
+        "orphan_attachments": 0,
+        "pregame_valid": 0,
+        "records": 1
+      }
+    },
+    "conflicting_retry": {
+      "formal_prospective_credit": 0,
+      "limits": [
+        "Internal receipt consistency only; persistence times are not externally authenticated",
+        "Synthetic activation declarations never activate capture or an audit",
+        "Eligible inputs do not establish baseline reconciliation, diversity, profitability or promotion"
+      ],
+      "manifest_reasons": [],
+      "mode": "offline_validation_only",
+      "records": [
+        {
+          "capture_context": [
+            {
+              "identity": {
+                "game_identity": "2915850ca0bf6e3497ab52fcecc6c58f396e88e3d08d5e465f4e508435c3c1e0",
+                "game_time": "2026-09-06T20:40:00+00:00",
+                "lock_id": "synthetic-lock",
+                "normalized_pitcher": "synthetic pitcher",
+                "side": "over",
+                "slate_date": "2026-09-06"
+              },
+              "status": "captured"
+            }
+          ],
+          "decision_digest": null,
+          "eligible_input_candidate": false,
+          "formal_prospective_credit": false,
+          "frozen_proof_reasons": [],
+          "identity": {
+            "normalized_pitcher": "synthetic pitcher",
+            "side": "over",
+            "slate_date": "2026-09-06"
+          },
+          "outcome_context": {},
+          "pregame_valid": false,
+          "reasons": [
+            "conflicting_retry"
+          ],
+          "selector_match": null
+        }
+      ],
+      "schema": "forward_pregame_evidence_v1",
+      "summary": {
+        "eligible_input_candidates": 0,
+        "exclusions": {
+          "conflicting_retry": 1
+        },
+        "missing_capture": 0,
+        "orphan_attachments": 0,
+        "pregame_valid": 0,
+        "records": 1
+      }
+    },
+    "identical_retry": {
+      "formal_prospective_credit": 0,
+      "limits": [
+        "Internal receipt consistency only; persistence times are not externally authenticated",
+        "Synthetic activation declarations never activate capture or an audit",
+        "Eligible inputs do not establish baseline reconciliation, diversity, profitability or promotion"
+      ],
+      "manifest_reasons": [],
+      "mode": "offline_validation_only",
+      "records": [
+        {
+          "agreement": "market_with_model",
+          "capture_context": [
+            {
+              "identity": {
+                "game_identity": "2915850ca0bf6e3497ab52fcecc6c58f396e88e3d08d5e465f4e508435c3c1e0",
+                "game_time": "2026-09-06T20:40:00+00:00",
+                "lock_id": "synthetic-lock",
+                "normalized_pitcher": "synthetic pitcher",
+                "side": "over",
+                "slate_date": "2026-09-06"
+              },
+              "status": "captured"
+            }
+          ],
+          "decision_digest": "3acd47352a462a8bdc61db90ee22a5ba18e10b500ccfc494650fc6a3ff68d2a1",
+          "eligible_input_candidate": true,
+          "formal_prospective_credit": false,
+          "frozen_proof_reasons": [
+            "strong_base_selective_lean",
+            "market_anchor_not_matched",
+            "preclose_v2_confirmed",
+            "reentry_predicate_false",
+            "no_drag_rejected",
+            "consensus_core_not_selected",
+            "reentry_expansion_not_selected"
+          ],
+          "identity": {
+            "normalized_pitcher": "synthetic pitcher",
+            "side": "over",
+            "slate_date": "2026-09-06"
+          },
+          "outcome_context": {
+            "execution_costs": "not_established",
+            "final_clv": "no_clv_edge",
+            "recorded_pnl": -1,
+            "result": "loss"
+          },
+          "path_b_bucket": "path_b_no_real_splits",
+          "preclose_label": "strong_preclose_clv_proxy",
+          "pregame_valid": true,
+          "reasons": [],
+          "selector_match": true
+        }
+      ],
+      "schema": "forward_pregame_evidence_v1",
+      "summary": {
+        "eligible_input_candidates": 1,
+        "exclusions": {},
+        "missing_capture": 0,
+        "orphan_attachments": 0,
+        "pregame_valid": 1,
+        "records": 1
+      }
+    },
+    "inactive": {
+      "formal_prospective_credit": 0,
+      "limits": [
+        "Internal receipt consistency only; persistence times are not externally authenticated",
+        "Synthetic activation declarations never activate capture or an audit",
+        "Eligible inputs do not establish baseline reconciliation, diversity, profitability or promotion"
+      ],
+      "manifest_reasons": [
+        "activation_unset"
+      ],
+      "mode": "offline_validation_only",
+      "records": [
+        {
+          "agreement": "market_with_model",
+          "capture_context": [
+            {
+              "identity": {
+                "game_identity": "2915850ca0bf6e3497ab52fcecc6c58f396e88e3d08d5e465f4e508435c3c1e0",
+                "game_time": "2026-09-06T20:40:00+00:00",
+                "lock_id": "synthetic-lock",
+                "normalized_pitcher": "synthetic pitcher",
+                "side": "over",
+                "slate_date": "2026-09-06"
+              },
+              "status": "captured"
+            }
+          ],
+          "decision_digest": "b184e2113ecb704d4ff66e6d605c86ed11a94f546691068f85bd351676763738",
+          "eligible_input_candidate": false,
+          "formal_prospective_credit": false,
+          "frozen_proof_reasons": [
+            "strong_base_selective_lean",
+            "market_anchor_not_matched",
+            "preclose_v2_confirmed",
+            "reentry_predicate_false",
+            "no_drag_rejected",
+            "consensus_core_not_selected",
+            "reentry_expansion_not_selected"
+          ],
+          "identity": {
+            "normalized_pitcher": "synthetic pitcher",
+            "side": "over",
+            "slate_date": "2026-09-06"
+          },
+          "outcome_context": {
+            "execution_costs": "not_established",
+            "final_clv": "no_clv_edge",
+            "recorded_pnl": -1,
+            "result": "loss"
+          },
+          "path_b_bucket": "path_b_no_real_splits",
+          "preclose_label": "strong_preclose_clv_proxy",
+          "pregame_valid": true,
+          "reasons": [],
+          "selector_match": true
+        }
+      ],
+      "schema": "forward_pregame_evidence_v1",
+      "summary": {
+        "eligible_input_candidates": 0,
+        "exclusions": {},
+        "missing_capture": 0,
+        "orphan_attachments": 0,
+        "pregame_valid": 1,
+        "records": 1
+      }
+    },
+    "known_no_lineup": {
+      "formal_prospective_credit": 0,
+      "limits": [
+        "Internal receipt consistency only; persistence times are not externally authenticated",
+        "Synthetic activation declarations never activate capture or an audit",
+        "Eligible inputs do not establish baseline reconciliation, diversity, profitability or promotion"
+      ],
+      "manifest_reasons": [],
+      "mode": "offline_validation_only",
+      "records": [
+        {
+          "agreement": "market_with_model",
+          "capture_context": [
+            {
+              "identity": {
+                "game_identity": "2915850ca0bf6e3497ab52fcecc6c58f396e88e3d08d5e465f4e508435c3c1e0",
+                "game_time": "2026-09-06T20:40:00+00:00",
+                "lock_id": "synthetic-lock",
+                "normalized_pitcher": "synthetic pitcher",
+                "side": "over",
+                "slate_date": "2026-09-06"
+              },
+              "status": "captured"
+            }
+          ],
+          "decision_digest": "1464e2a9775a3608ed0e1b9736827952934f1fddac65165ea3db179677b51d08",
+          "eligible_input_candidate": true,
+          "formal_prospective_credit": false,
+          "frozen_proof_reasons": [
+            "strong_base_selective_lean",
+            "market_anchor_not_matched",
+            "preclose_v2_confirmed",
+            "reentry_predicate_false",
+            "no_drag_rejected",
+            "consensus_core_not_selected",
+            "reentry_expansion_not_selected"
+          ],
+          "identity": {
+            "normalized_pitcher": "synthetic pitcher",
+            "side": "over",
+            "slate_date": "2026-09-06"
+          },
+          "outcome_context": {
+            "execution_costs": "not_established",
+            "final_clv": "no_clv_edge",
+            "recorded_pnl": -1,
+            "result": "loss"
+          },
+          "path_b_bucket": "path_b_no_real_splits",
+          "preclose_label": "strong_preclose_clv_proxy",
+          "pregame_valid": true,
+          "reasons": [],
+          "selector_match": true
+        }
+      ],
+      "schema": "forward_pregame_evidence_v1",
+      "summary": {
+        "eligible_input_candidates": 1,
+        "exclusions": {},
+        "missing_capture": 0,
+        "orphan_attachments": 0,
+        "pregame_valid": 1,
+        "records": 1
+      }
+    },
+    "late_snapshot_receipt": {
+      "formal_prospective_credit": 0,
+      "limits": [
+        "Internal receipt consistency only; persistence times are not externally authenticated",
+        "Synthetic activation declarations never activate capture or an audit",
+        "Eligible inputs do not establish baseline reconciliation, diversity, profitability or promotion"
+      ],
+      "manifest_reasons": [],
+      "mode": "offline_validation_only",
+      "records": [
+        {
+          "capture_context": [
+            {
+              "identity": {
+                "game_identity": "2915850ca0bf6e3497ab52fcecc6c58f396e88e3d08d5e465f4e508435c3c1e0",
+                "game_time": "2026-09-06T20:40:00+00:00",
+                "lock_id": "synthetic-lock",
+                "normalized_pitcher": "synthetic pitcher",
+                "side": "over",
+                "slate_date": "2026-09-06"
+              },
+              "status": "captured"
+            }
+          ],
+          "decision_digest": "a810b77791047553c05eadf54b841f2667fea98a08402030651353dedec1b2f5",
+          "eligible_input_candidate": false,
+          "formal_prospective_credit": false,
+          "frozen_proof_reasons": [
+            "strong_base_selective_lean",
+            "market_anchor_not_matched",
+            "preclose_v2_confirmed",
+            "reentry_predicate_false",
+            "no_drag_rejected",
+            "consensus_core_not_selected",
+            "reentry_expansion_not_selected"
+          ],
+          "identity": {
+            "normalized_pitcher": "synthetic pitcher",
+            "side": "over",
+            "slate_date": "2026-09-06"
+          },
+          "outcome_context": {
+            "execution_costs": "not_established",
+            "final_clv": "no_clv_edge",
+            "recorded_pnl": -1,
+            "result": "loss"
+          },
+          "pregame_valid": false,
+          "reasons": [
+            "snapshot_receipt_after_lock"
+          ],
+          "selector_match": true
+        }
+      ],
+      "schema": "forward_pregame_evidence_v1",
+      "summary": {
+        "eligible_input_candidates": 0,
+        "exclusions": {
+          "snapshot_receipt_after_lock": 1
+        },
+        "missing_capture": 0,
+        "orphan_attachments": 0,
+        "pregame_valid": 0,
+        "records": 1
+      }
+    },
+    "missing_capture": {
+      "formal_prospective_credit": 0,
+      "limits": [
+        "Internal receipt consistency only; persistence times are not externally authenticated",
+        "Synthetic activation declarations never activate capture or an audit",
+        "Eligible inputs do not establish baseline reconciliation, diversity, profitability or promotion"
+      ],
+      "manifest_reasons": [
+        "orphan_attachment"
+      ],
+      "mode": "offline_validation_only",
+      "records": [
+        {
+          "capture_context": [
+            {
+              "identity": {
+                "game_identity": "2915850ca0bf6e3497ab52fcecc6c58f396e88e3d08d5e465f4e508435c3c1e0",
+                "game_time": "2026-09-06T20:40:00+00:00",
+                "lock_id": "synthetic-lock",
+                "normalized_pitcher": "synthetic pitcher",
+                "side": "over",
+                "slate_date": "2026-09-06"
+              },
+              "reasons": [
+                "capture_failed"
+              ],
+              "status": "failed"
+            }
+          ],
+          "decision_digest": null,
+          "eligible_input_candidate": false,
+          "formal_prospective_credit": false,
+          "frozen_proof_reasons": [],
+          "identity": {
+            "normalized_pitcher": "synthetic pitcher",
+            "side": "over",
+            "slate_date": "2026-09-06"
+          },
+          "outcome_context": {},
+          "pregame_valid": false,
+          "reasons": [
+            "missing_capture"
+          ],
+          "selector_match": null
+        }
+      ],
+      "schema": "forward_pregame_evidence_v1",
+      "summary": {
+        "eligible_input_candidates": 0,
+        "exclusions": {
+          "missing_capture": 1
+        },
+        "missing_capture": 1,
+        "orphan_attachments": 4,
+        "pregame_valid": 0,
+        "records": 1
+      }
+    },
+    "missing_path_b": {
+      "formal_prospective_credit": 0,
+      "limits": [
+        "Internal receipt consistency only; persistence times are not externally authenticated",
+        "Synthetic activation declarations never activate capture or an audit",
+        "Eligible inputs do not establish baseline reconciliation, diversity, profitability or promotion"
+      ],
+      "manifest_reasons": [],
+      "mode": "offline_validation_only",
+      "records": [
+        {
+          "capture_context": [
+            {
+              "identity": {
+                "game_identity": "2915850ca0bf6e3497ab52fcecc6c58f396e88e3d08d5e465f4e508435c3c1e0",
+                "game_time": "2026-09-06T20:40:00+00:00",
+                "lock_id": "synthetic-lock",
+                "normalized_pitcher": "synthetic pitcher",
+                "side": "over",
+                "slate_date": "2026-09-06"
+              },
+              "status": "captured"
+            }
+          ],
+          "decision_digest": "fe76c9577909cd805c952ca32649a027258b88ff83868a747f3cae4889d12359",
+          "eligible_input_candidate": false,
+          "formal_prospective_credit": false,
+          "frozen_proof_reasons": [
+            "strong_base_selective_lean",
+            "market_anchor_not_matched",
+            "preclose_v2_confirmed",
+            "reentry_predicate_false",
+            "no_drag_rejected",
+            "consensus_core_not_selected",
+            "reentry_expansion_not_selected"
+          ],
+          "identity": {
+            "normalized_pitcher": "synthetic pitcher",
+            "side": "over",
+            "slate_date": "2026-09-06"
+          },
+          "outcome_context": {
+            "execution_costs": "not_established",
+            "final_clv": "no_clv_edge",
+            "recorded_pnl": -1,
+            "result": "loss"
+          },
+          "pregame_valid": false,
+          "reasons": [
+            "path_b_incomplete"
+          ],
+          "selector_match": true
+        }
+      ],
+      "schema": "forward_pregame_evidence_v1",
+      "summary": {
+        "eligible_input_candidates": 0,
+        "exclusions": {
+          "path_b_incomplete": 1
+        },
+        "missing_capture": 0,
+        "orphan_attachments": 0,
+        "pregame_valid": 0,
+        "records": 1
+      }
+    },
+    "mixed_market": {
+      "formal_prospective_credit": 0,
+      "limits": [
+        "Internal receipt consistency only; persistence times are not externally authenticated",
+        "Synthetic activation declarations never activate capture or an audit",
+        "Eligible inputs do not establish baseline reconciliation, diversity, profitability or promotion"
+      ],
+      "manifest_reasons": [],
+      "mode": "offline_validation_only",
+      "records": [
+        {
+          "agreement": "market_mixed",
+          "capture_context": [
+            {
+              "identity": {
+                "game_identity": "2915850ca0bf6e3497ab52fcecc6c58f396e88e3d08d5e465f4e508435c3c1e0",
+                "game_time": "2026-09-06T20:40:00+00:00",
+                "lock_id": "synthetic-lock",
+                "normalized_pitcher": "synthetic pitcher",
+                "side": "over",
+                "slate_date": "2026-09-06"
+              },
+              "status": "captured"
+            }
+          ],
+          "decision_digest": "ed0ab3d2100919b45e44ee849982bdbb6b99f4b1c5017a35ae90f846b16e44a2",
+          "eligible_input_candidate": true,
+          "formal_prospective_credit": false,
+          "frozen_proof_reasons": [
+            "strong_base_selective_lean",
+            "market_anchor_not_matched",
+            "preclose_v2_confirmed",
+            "reentry_predicate_false",
+            "no_drag_rejected",
+            "consensus_core_not_selected",
+            "reentry_expansion_not_selected"
+          ],
+          "identity": {
+            "normalized_pitcher": "synthetic pitcher",
+            "side": "over",
+            "slate_date": "2026-09-06"
+          },
+          "outcome_context": {
+            "execution_costs": "not_established",
+            "final_clv": "no_clv_edge",
+            "recorded_pnl": -1,
+            "result": "loss"
+          },
+          "path_b_bucket": "path_b_no_real_splits",
+          "preclose_label": "strong_preclose_clv_proxy",
+          "pregame_valid": true,
+          "reasons": [],
+          "selector_match": true
+        }
+      ],
+      "schema": "forward_pregame_evidence_v1",
+      "summary": {
+        "eligible_input_candidates": 1,
+        "exclusions": {},
+        "missing_capture": 0,
+        "orphan_attachments": 0,
+        "pregame_valid": 1,
+        "records": 1
+      }
+    },
+    "mixed_splits": {
+      "formal_prospective_credit": 0,
+      "limits": [
+        "Internal receipt consistency only; persistence times are not externally authenticated",
+        "Synthetic activation declarations never activate capture or an audit",
+        "Eligible inputs do not establish baseline reconciliation, diversity, profitability or promotion"
+      ],
+      "manifest_reasons": [],
+      "mode": "offline_validation_only",
+      "records": [
+        {
+          "agreement": "market_with_model",
+          "capture_context": [
+            {
+              "identity": {
+                "game_identity": "2915850ca0bf6e3497ab52fcecc6c58f396e88e3d08d5e465f4e508435c3c1e0",
+                "game_time": "2026-09-06T20:40:00+00:00",
+                "lock_id": "synthetic-lock",
+                "normalized_pitcher": "synthetic pitcher",
+                "side": "over",
+                "slate_date": "2026-09-06"
+              },
+              "status": "captured"
+            }
+          ],
+          "decision_digest": "3b558f6267de31f5c5018f6966c55b4cc31d5cb4791075e8631138a4b8a2c128",
+          "eligible_input_candidate": true,
+          "formal_prospective_credit": false,
+          "frozen_proof_reasons": [
+            "strong_base_selective_lean",
+            "market_anchor_not_matched",
+            "preclose_v2_confirmed",
+            "reentry_predicate_false",
+            "no_drag_rejected",
+            "consensus_core_not_selected",
+            "reentry_expansion_not_selected"
+          ],
+          "identity": {
+            "normalized_pitcher": "synthetic pitcher",
+            "side": "over",
+            "slate_date": "2026-09-06"
+          },
+          "outcome_context": {
+            "execution_costs": "not_established",
+            "final_clv": "no_clv_edge",
+            "recorded_pnl": -1,
+            "result": "loss"
+          },
+          "path_b_bucket": "path_b_real_or_mixed",
+          "preclose_label": "strong_preclose_clv_proxy",
+          "pregame_valid": true,
+          "reasons": [],
+          "selector_match": true
+        }
+      ],
+      "schema": "forward_pregame_evidence_v1",
+      "summary": {
+        "eligible_input_candidates": 1,
+        "exclusions": {},
+        "missing_capture": 0,
+        "orphan_attachments": 0,
+        "pregame_valid": 1,
+        "records": 1
+      }
+    },
+    "negative_proxy_existing_v2_limit": {
+      "formal_prospective_credit": 0,
+      "limits": [
+        "Internal receipt consistency only; persistence times are not externally authenticated",
+        "Synthetic activation declarations never activate capture or an audit",
+        "Eligible inputs do not establish baseline reconciliation, diversity, profitability or promotion"
+      ],
+      "manifest_reasons": [],
+      "mode": "offline_validation_only",
+      "records": [
+        {
+          "capture_context": [
+            {
+              "identity": {
+                "game_identity": "2915850ca0bf6e3497ab52fcecc6c58f396e88e3d08d5e465f4e508435c3c1e0",
+                "game_time": "2026-09-06T20:40:00+00:00",
+                "lock_id": "synthetic-lock",
+                "normalized_pitcher": "synthetic pitcher",
+                "side": "over",
+                "slate_date": "2026-09-06"
+              },
+              "status": "captured"
+            }
+          ],
+          "decision_digest": "9524324e191e86802f84b04ccbd986e75cd856f74149a47b904990416eda3cfd",
+          "eligible_input_candidate": false,
+          "formal_prospective_credit": false,
+          "frozen_proof_reasons": [
+            "evaluation_proof_invalid"
+          ],
+          "identity": {
+            "normalized_pitcher": "synthetic pitcher",
+            "side": "over",
+            "slate_date": "2026-09-06"
+          },
+          "outcome_context": {
+            "execution_costs": "not_established",
+            "final_clv": "no_clv_edge",
+            "recorded_pnl": -1,
+            "result": "loss"
+          },
+          "pregame_valid": false,
+          "reasons": [
+            "frozen_preclose_pending"
+          ],
+          "selector_match": null
+        }
+      ],
+      "schema": "forward_pregame_evidence_v1",
+      "summary": {
+        "eligible_input_candidates": 0,
+        "exclusions": {
+          "frozen_preclose_pending": 1
+        },
+        "missing_capture": 0,
+        "orphan_attachments": 0,
+        "pregame_valid": 0,
+        "records": 1
+      }
+    },
+    "neutral_market": {
+      "formal_prospective_credit": 0,
+      "limits": [
+        "Internal receipt consistency only; persistence times are not externally authenticated",
+        "Synthetic activation declarations never activate capture or an audit",
+        "Eligible inputs do not establish baseline reconciliation, diversity, profitability or promotion"
+      ],
+      "manifest_reasons": [],
+      "mode": "offline_validation_only",
+      "records": [
+        {
+          "agreement": "market_no_signal",
+          "capture_context": [
+            {
+              "identity": {
+                "game_identity": "2915850ca0bf6e3497ab52fcecc6c58f396e88e3d08d5e465f4e508435c3c1e0",
+                "game_time": "2026-09-06T20:40:00+00:00",
+                "lock_id": "synthetic-lock",
+                "normalized_pitcher": "synthetic pitcher",
+                "side": "over",
+                "slate_date": "2026-09-06"
+              },
+              "status": "captured"
+            }
+          ],
+          "decision_digest": "9526ca813f3ca002452e43b6e532efbc657d35ef568172d068f37bca0525789a",
+          "eligible_input_candidate": true,
+          "formal_prospective_credit": false,
+          "frozen_proof_reasons": [
+            "strong_base_selective_lean",
+            "market_anchor_not_matched",
+            "preclose_not_supported",
+            "reentry_predicate_false",
+            "no_drag_rejected",
+            "consensus_core_not_selected",
+            "reentry_expansion_not_selected"
+          ],
+          "identity": {
+            "normalized_pitcher": "synthetic pitcher",
+            "side": "over",
+            "slate_date": "2026-09-06"
+          },
+          "outcome_context": {
+            "execution_costs": "not_established",
+            "final_clv": "no_clv_edge",
+            "recorded_pnl": -1,
+            "result": "loss"
+          },
+          "path_b_bucket": "path_b_no_real_splits",
+          "preclose_label": "medium_preclose_clv_proxy",
+          "pregame_valid": true,
+          "reasons": [],
+          "selector_match": true
+        }
+      ],
+      "schema": "forward_pregame_evidence_v1",
+      "summary": {
+        "eligible_input_candidates": 1,
+        "exclusions": {},
+        "missing_capture": 0,
+        "orphan_attachments": 0,
+        "pregame_valid": 1,
+        "records": 1
+      }
+    },
+    "page_cap": {
+      "formal_prospective_credit": 0,
+      "limits": [
+        "Internal receipt consistency only; persistence times are not externally authenticated",
+        "Synthetic activation declarations never activate capture or an audit",
+        "Eligible inputs do not establish baseline reconciliation, diversity, profitability or promotion"
+      ],
+      "manifest_reasons": [],
+      "mode": "offline_validation_only",
+      "records": [
+        {
+          "capture_context": [
+            {
+              "identity": {
+                "game_identity": "2915850ca0bf6e3497ab52fcecc6c58f396e88e3d08d5e465f4e508435c3c1e0",
+                "game_time": "2026-09-06T20:40:00+00:00",
+                "lock_id": "synthetic-lock",
+                "normalized_pitcher": "synthetic pitcher",
+                "side": "over",
+                "slate_date": "2026-09-06"
+              },
+              "status": "captured"
+            }
+          ],
+          "decision_digest": "57dd9c82d2677712dddaf9a6e0bd3744647a46235d4fee005553f19139d446cd",
+          "eligible_input_candidate": false,
+          "formal_prospective_credit": false,
+          "frozen_proof_reasons": [
+            "strong_base_selective_lean",
+            "market_anchor_not_matched",
+            "preclose_v2_confirmed",
+            "reentry_predicate_false",
+            "no_drag_rejected",
+            "consensus_core_not_selected",
+            "reentry_expansion_not_selected"
+          ],
+          "identity": {
+            "normalized_pitcher": "synthetic pitcher",
+            "side": "over",
+            "slate_date": "2026-09-06"
+          },
+          "outcome_context": {
+            "execution_costs": "not_established",
+            "final_clv": "no_clv_edge",
+            "recorded_pnl": -1,
+            "result": "loss"
+          },
+          "pregame_valid": false,
+          "reasons": [
+            "market_read_incomplete"
+          ],
+          "selector_match": true
+        }
+      ],
+      "schema": "forward_pregame_evidence_v1",
+      "summary": {
+        "eligible_input_candidates": 0,
+        "exclusions": {
+          "market_read_incomplete": 1
+        },
+        "missing_capture": 0,
+        "orphan_attachments": 0,
+        "pregame_valid": 0,
+        "records": 1
+      }
+    },
+    "timing_after_30": {
+      "formal_prospective_credit": 0,
+      "limits": [
+        "Internal receipt consistency only; persistence times are not externally authenticated",
+        "Synthetic activation declarations never activate capture or an audit",
+        "Eligible inputs do not establish baseline reconciliation, diversity, profitability or promotion"
+      ],
+      "manifest_reasons": [],
+      "mode": "offline_validation_only",
+      "records": [
+        {
+          "capture_context": [
+            {
+              "identity": {
+                "game_identity": "6f78c95b3cbba66581ab7a2784d314c98c0a423f27b9ca66660fb49a77528c3b",
+                "game_time": "2026-09-06T20:40:00.006000+00:00",
+                "lock_id": "synthetic-lock",
+                "normalized_pitcher": "synthetic pitcher",
+                "side": "over",
+                "slate_date": "2026-09-06"
+              },
+              "status": "captured"
+            }
+          ],
+          "decision_digest": "1b703a57d2f31f9d4f205cd5fa338eeaaa1eb281e2da9e2007d5b12a598501df",
+          "eligible_input_candidate": false,
+          "formal_prospective_credit": false,
+          "frozen_proof_reasons": [
+            "strong_base_selective_lean",
+            "market_anchor_not_matched",
+            "preclose_v2_confirmed",
+            "reentry_predicate_false",
+            "no_drag_rejected",
+            "consensus_core_not_selected",
+            "reentry_expansion_not_selected"
+          ],
+          "identity": {
+            "normalized_pitcher": "synthetic pitcher",
+            "side": "over",
+            "slate_date": "2026-09-06"
+          },
+          "outcome_context": {
+            "execution_costs": "not_established",
+            "final_clv": "no_clv_edge",
+            "recorded_pnl": -1,
+            "result": "loss"
+          },
+          "pregame_valid": false,
+          "reasons": [
+            "not_pre_30"
+          ],
+          "selector_match": true
+        }
+      ],
+      "schema": "forward_pregame_evidence_v1",
+      "summary": {
+        "eligible_input_candidates": 0,
+        "exclusions": {
+          "not_pre_30": 1
+        },
+        "missing_capture": 0,
+        "orphan_attachments": 0,
+        "pregame_valid": 0,
+        "records": 1
+      }
+    },
+    "timing_at_15": {
+      "formal_prospective_credit": 0,
+      "limits": [
+        "Internal receipt consistency only; persistence times are not externally authenticated",
+        "Synthetic activation declarations never activate capture or an audit",
+        "Eligible inputs do not establish baseline reconciliation, diversity, profitability or promotion"
+      ],
+      "manifest_reasons": [],
+      "mode": "offline_validation_only",
+      "records": [
+        {
+          "capture_context": [
+            {
+              "identity": {
+                "game_identity": "de5c4c5bcb819578e92576527db74c48d8d120685b56f90f82984f5287959731",
+                "game_time": "2026-09-06T20:25:00+00:00",
+                "lock_id": "synthetic-lock",
+                "normalized_pitcher": "synthetic pitcher",
+                "side": "over",
+                "slate_date": "2026-09-06"
+              },
+              "status": "captured"
+            }
+          ],
+          "decision_digest": "f3fef8bf0b9d543227dd8932c13dff43537c1a86147589bfd2802b91d9fafd2c",
+          "eligible_input_candidate": false,
+          "formal_prospective_credit": false,
+          "frozen_proof_reasons": [
+            "strong_base_selective_lean",
+            "market_anchor_not_matched",
+            "preclose_v2_confirmed",
+            "reentry_predicate_false",
+            "no_drag_rejected",
+            "consensus_core_not_selected",
+            "reentry_expansion_not_selected"
+          ],
+          "identity": {
+            "normalized_pitcher": "synthetic pitcher",
+            "side": "over",
+            "slate_date": "2026-09-06"
+          },
+          "outcome_context": {},
+          "pregame_valid": false,
+          "reasons": [
+            "close_attribution_missing",
+            "not_pre_30"
+          ],
+          "selector_match": true
+        }
+      ],
+      "schema": "forward_pregame_evidence_v1",
+      "summary": {
+        "eligible_input_candidates": 0,
+        "exclusions": {
+          "close_attribution_missing": 1,
+          "not_pre_30": 1
+        },
+        "missing_capture": 0,
+        "orphan_attachments": 0,
+        "pregame_valid": 0,
+        "records": 1
+      }
+    },
+    "toward_path_b_fallback": {
+      "formal_prospective_credit": 0,
+      "limits": [
+        "Internal receipt consistency only; persistence times are not externally authenticated",
+        "Synthetic activation declarations never activate capture or an audit",
+        "Eligible inputs do not establish baseline reconciliation, diversity, profitability or promotion"
+      ],
+      "manifest_reasons": [],
+      "mode": "offline_validation_only",
+      "records": [
+        {
+          "agreement": "market_with_model",
+          "capture_context": [
+            {
+              "identity": {
+                "game_identity": "2915850ca0bf6e3497ab52fcecc6c58f396e88e3d08d5e465f4e508435c3c1e0",
+                "game_time": "2026-09-06T20:40:00+00:00",
+                "lock_id": "synthetic-lock",
+                "normalized_pitcher": "synthetic pitcher",
+                "side": "over",
+                "slate_date": "2026-09-06"
+              },
+              "status": "captured"
+            }
+          ],
+          "decision_digest": "3acd47352a462a8bdc61db90ee22a5ba18e10b500ccfc494650fc6a3ff68d2a1",
+          "eligible_input_candidate": true,
+          "formal_prospective_credit": false,
+          "frozen_proof_reasons": [
+            "strong_base_selective_lean",
+            "market_anchor_not_matched",
+            "preclose_v2_confirmed",
+            "reentry_predicate_false",
+            "no_drag_rejected",
+            "consensus_core_not_selected",
+            "reentry_expansion_not_selected"
+          ],
+          "identity": {
+            "normalized_pitcher": "synthetic pitcher",
+            "side": "over",
+            "slate_date": "2026-09-06"
+          },
+          "outcome_context": {
+            "execution_costs": "not_established",
+            "final_clv": "no_clv_edge",
+            "recorded_pnl": -1,
+            "result": "loss"
+          },
+          "path_b_bucket": "path_b_no_real_splits",
+          "preclose_label": "strong_preclose_clv_proxy",
+          "pregame_valid": true,
+          "reasons": [],
+          "selector_match": true
+        }
+      ],
+      "schema": "forward_pregame_evidence_v1",
+      "summary": {
+        "eligible_input_candidates": 1,
+        "exclusions": {},
+        "missing_capture": 0,
+        "orphan_attachments": 0,
+        "pregame_valid": 1,
+        "records": 1
+      }
+    },
+    "unconsumed": {
+      "formal_prospective_credit": 0,
+      "limits": [
+        "Internal receipt consistency only; persistence times are not externally authenticated",
+        "Synthetic activation declarations never activate capture or an audit",
+        "Eligible inputs do not establish baseline reconciliation, diversity, profitability or promotion"
+      ],
+      "manifest_reasons": [],
+      "mode": "offline_validation_only",
+      "records": [
+        {
+          "agreement": "market_with_model",
+          "capture_context": [
+            {
+              "identity": {
+                "game_identity": "2915850ca0bf6e3497ab52fcecc6c58f396e88e3d08d5e465f4e508435c3c1e0",
+                "game_time": "2026-09-06T20:40:00+00:00",
+                "lock_id": "synthetic-lock",
+                "normalized_pitcher": "synthetic pitcher",
+                "side": "over",
+                "slate_date": "2026-09-06"
+              },
+              "status": "captured"
+            }
+          ],
+          "decision_digest": "3acd47352a462a8bdc61db90ee22a5ba18e10b500ccfc494650fc6a3ff68d2a1",
+          "eligible_input_candidate": false,
+          "formal_prospective_credit": false,
+          "frozen_proof_reasons": [
+            "strong_base_selective_lean",
+            "market_anchor_not_matched",
+            "preclose_v2_confirmed",
+            "reentry_predicate_false",
+            "no_drag_rejected",
+            "consensus_core_not_selected",
+            "reentry_expansion_not_selected"
+          ],
+          "identity": {
+            "normalized_pitcher": "synthetic pitcher",
+            "side": "over",
+            "slate_date": "2026-09-06"
+          },
+          "outcome_context": {},
+          "path_b_bucket": "path_b_no_real_splits",
+          "preclose_label": "strong_preclose_clv_proxy",
+          "pregame_valid": true,
+          "reasons": [
+            "missing_consumption"
+          ],
+          "selector_match": true
+        }
+      ],
+      "schema": "forward_pregame_evidence_v1",
+      "summary": {
+        "eligible_input_candidates": 0,
+        "exclusions": {
+          "missing_consumption": 1
+        },
+        "missing_capture": 0,
+        "orphan_attachments": 0,
+        "pregame_valid": 1,
+        "records": 1
+      }
+    },
+    "under_real_splits": {
+      "formal_prospective_credit": 0,
+      "limits": [
+        "Internal receipt consistency only; persistence times are not externally authenticated",
+        "Synthetic activation declarations never activate capture or an audit",
+        "Eligible inputs do not establish baseline reconciliation, diversity, profitability or promotion"
+      ],
+      "manifest_reasons": [],
+      "mode": "offline_validation_only",
+      "records": [
+        {
+          "agreement": "market_with_model",
+          "capture_context": [
+            {
+              "identity": {
+                "game_identity": "2915850ca0bf6e3497ab52fcecc6c58f396e88e3d08d5e465f4e508435c3c1e0",
+                "game_time": "2026-09-06T20:40:00+00:00",
+                "lock_id": "synthetic-lock",
+                "normalized_pitcher": "synthetic pitcher",
+                "side": "under",
+                "slate_date": "2026-09-06"
+              },
+              "status": "captured"
+            }
+          ],
+          "decision_digest": "df00f446eb09bf5eba7b401e9e31b0a3ea96a53278bda1f6047333477811ea91",
+          "eligible_input_candidate": true,
+          "formal_prospective_credit": false,
+          "frozen_proof_reasons": [
+            "strong_base_selective_lean",
+            "market_anchor_not_matched",
+            "preclose_v2_confirmed",
+            "reentry_predicate_false",
+            "no_drag_rejected",
+            "consensus_core_not_selected",
+            "reentry_expansion_not_selected"
+          ],
+          "identity": {
+            "normalized_pitcher": "synthetic pitcher",
+            "side": "under",
+            "slate_date": "2026-09-06"
+          },
+          "outcome_context": {
+            "execution_costs": "not_established",
+            "final_clv": "no_clv_edge",
+            "recorded_pnl": -1,
+            "result": "loss"
+          },
+          "path_b_bucket": "path_b_real_or_mixed",
+          "preclose_label": "strong_preclose_clv_proxy",
+          "pregame_valid": true,
+          "reasons": [],
+          "selector_match": true
+        }
+      ],
+      "schema": "forward_pregame_evidence_v1",
+      "summary": {
+        "eligible_input_candidates": 1,
+        "exclusions": {},
+        "missing_capture": 0,
+        "orphan_attachments": 0,
+        "pregame_valid": 1,
+        "records": 1
+      }
+    },
+    "unknown_seed": {
+      "formal_prospective_credit": 0,
+      "limits": [
+        "Internal receipt consistency only; persistence times are not externally authenticated",
+        "Synthetic activation declarations never activate capture or an audit",
+        "Eligible inputs do not establish baseline reconciliation, diversity, profitability or promotion"
+      ],
+      "manifest_reasons": [],
+      "mode": "offline_validation_only",
+      "records": [
+        {
+          "agreement": "market_with_model",
+          "capture_context": [
+            {
+              "identity": {
+                "game_identity": "2915850ca0bf6e3497ab52fcecc6c58f396e88e3d08d5e465f4e508435c3c1e0",
+                "game_time": "2026-09-06T20:40:00+00:00",
+                "lock_id": "synthetic-lock",
+                "normalized_pitcher": "synthetic pitcher",
+                "side": "over",
+                "slate_date": "2026-09-06"
+              },
+              "status": "captured"
+            }
+          ],
+          "decision_digest": "3acd47352a462a8bdc61db90ee22a5ba18e10b500ccfc494650fc6a3ff68d2a1",
+          "eligible_input_candidate": false,
+          "formal_prospective_credit": false,
+          "frozen_proof_reasons": [
+            "strong_base_selective_lean",
+            "market_anchor_not_matched",
+            "preclose_v2_confirmed",
+            "reentry_predicate_false",
+            "no_drag_rejected",
+            "consensus_core_not_selected",
+            "reentry_expansion_not_selected"
+          ],
+          "identity": {
+            "normalized_pitcher": "synthetic pitcher",
+            "side": "over",
+            "slate_date": "2026-09-06"
+          },
+          "outcome_context": {},
+          "path_b_bucket": "path_b_no_real_splits",
+          "preclose_label": "strong_preclose_clv_proxy",
+          "pregame_valid": true,
+          "reasons": [
+            "seed_not_original"
+          ],
+          "selector_match": true
+        }
+      ],
+      "schema": "forward_pregame_evidence_v1",
+      "summary": {
+        "eligible_input_candidates": 0,
+        "exclusions": {
+          "seed_not_original": 1
+        },
+        "missing_capture": 0,
+        "orphan_attachments": 0,
+        "pregame_valid": 1,
+        "records": 1
+      }
+    }
+  },
+  "factory_sha256": "5e3cd3f68c2712327da93359d8b426e45df8d6a603ca3c525bb0adb8828b4571",
+  "formal_prospective_credit": 0,
+  "legacy_adapter": {
+    "formal_prospective_credit": 0,
+    "manifest_reasons": [
+      "legacy_or_wrong_schema"
+    ],
+    "mode": "offline_validation_only",
+    "records": [],
+    "summary": {
+      "legacy_rows_rejected": 352
+    }
+  },
+  "legacy_frozen": {
+    "formal_prospective_credit": 0,
+    "manifest_reasons": [
+      "legacy_or_wrong_schema"
+    ],
+    "mode": "offline_validation_only",
+    "records": [],
+    "summary": {
+      "legacy_rows_rejected": 327
+    }
+  },
+  "mode": "synthetic_acceptance_only",
+  "negative_score_probe": {
+    "label": "weak_preclose_clv_proxy",
+    "positive_reasons": [
+      "movement_toward_pick",
+      "early_lock_window",
+      "low_volatility"
+    ],
+    "risk_reasons": [
+      "high_edge_clv_risk",
+      "model_edge_not_clv_proxy",
+      "plus_price_clv_risk",
+      "single_book_support",
+      "high_ev_clv_risk"
+    ],
+    "score": -1
+  },
+  "real_capture_active": false,
+  "source_hashes": {
+    "docs/research/evidence/2026-09-04-decision-time-adapter/frozen-source.json.gz": "e079f7aa691299834f30c94fafafe4e0b69ff83788cabb6134c092b229612f35",
+    "docs/research/evidence/2026-09-04-decision-time-adapter/run/packet.json.gz": "c49ab2d001cf219e8e0ef80fe2bd37a180562a0f2732c2833a1325aa0153df7a"
+  },
+  "unchanged_adapter_summary": {
+    "archive_selector_matches": 23,
+    "exclusion_counts": {
+      "archive_lock_book_mismatch": 15,
+      "closed_history_outcome_unavailable": 8,
+      "frozen_selector_inputs_unavailable": 2,
+      "missing_frozen": 25,
+      "missing_gate_c": 1,
+      "missing_lock": 22,
+      "unconsumed_lock": 1
+    },
+    "formal_prospective_credit": 0,
+    "frozen_selector_matches": 23,
+    "input_rows_in_window": {
+      "frozen": 327,
+      "gate_c": 351,
+      "lock": 330
+    },
+    "linked": 309,
+    "linked_selector_matches": 19,
+    "records": 352,
+    "validated_decision_inputs": 325
+  },
+  "validator_sha256": "ec0e1271ab29051e486f60b24fe7926b51d6a04ec7f2b980b22bd6cf8bb752a7"
+}

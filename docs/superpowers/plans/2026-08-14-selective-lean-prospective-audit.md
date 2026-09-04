@@ -140,3 +140,13 @@ gates are unchanged. Exact pregame attribution includes weak/against/neutral
 and known fallback states; completeness is not a new favorable-signal filter.
 No legacy audit code or formal counter changed. Next is offline validator
 acceptance before a separately scoped capture/integration proposal.
+
+### Subsequent offline acceptance complete
+
+The [validator review](../../research/2026-09-04-forward-evidence-validator-review.md)
+records 76 new passing tests and 20 synthetic scenarios, with zero real or
+formal prospective credit. The unchanged V2 proof format rejects a reproduced
+negative weak-proxy score; that pending case stays excluded. Review a scoped
+proof-format repair before capture integration. This audit, its existing date
+constant, baselines, scoring, count/diversity gates and historical rows remain
+unchanged.

@@ -1,0 +1,8 @@
+Command: .venv/bin/python -m pytest tests/test_forward_pregame_evidence_validator.py tests/test_decision_time_research_adapter.py tests/test_alternative_pick_evaluation_proof_v2.py tests/test_alternative_pick_preclose_v2.py tests/test_alternative_pick_selector_v2.py tests/test_pitcher_k_outcome_dataset.py tests/test_selective_lean_prospective_audit.py tests/test_repair_missing_locked_picks.py -q
+
+........................................................................ [ 20%]
+........................................................................ [ 40%]
+........................................................................ [ 60%]
+........................................................................ [ 80%]
+.....................................................................    [100%]
+357 passed in 0.55s
