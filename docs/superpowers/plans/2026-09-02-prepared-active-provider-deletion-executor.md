@@ -242,3 +242,44 @@ Do not run it without Tyler's separate approval of this exact provider, date,
 token, and command. If the token expires, discard the proposed command,
 reconfirm the then-latest completed backup, and generate a new exact preview.
 Never infer deletion approval from the transport-repair approval.
+
+## First Approved Single-Partition Deletion
+
+At **2026-09-04T03:59:23.010559Z**, Tyler explicitly approved the exact
+PropLine `2026-06-12` token and command shown above to begin clearing space.
+All preflight checks passed immediately before execution: the repository and
+report were unchanged, the report SHA-256 was `0edbc2c1...`, the executor
+SHA-256 was `95ae71e9...`, the token was unexpired, the result path did not
+exist, the linked project ref was exact, and the physical backup at
+`2026-09-03T05:43:13.129Z` still reported `COMPLETED` with PITR disabled.
+
+The executor ran exactly once. Its mandatory immediate preview matched the
+approved source state, the cardinality-gated statement returned `11,888`
+deleted rows, and its postcheck returned:
+
+- raw snapshot rows: `0`
+- compact groups: `218`
+- compact represented snapshots: `11,888`
+- automatic retry attempted: `false`
+- vacuum attempted: `false`
+
+An independent read-only linked-CLI query reconfirmed the same `0 / 218 /
+11,888` post-state. The immutable result is:
+
+`data/research/retention/prepared-delete-result-propline-2026-06-12-2026-09-04-cli.json`
+
+Its SHA-256 is
+`379021fcb78aa4eff3b25aae3fc633bf0963cb1273ecda11cd9084a14fee5dd3`.
+The removed source rows accounted for `5,111,272` logical bytes, about
+`4.87 MiB`. An immediate read reported database size `6,089,518,227` bytes and
+`market_snapshots` total relation size `4,152,672,256` bytes: about
+`5,807.42 MiB` / `70.89%` of the included `8 GiB`, with `market_snapshots` at
+about `3,960.30 MiB`. Do not interpret the deletion as an immediate
+physical-file reduction: no vacuum or reclamation was authorized or attempted,
+and normal PostgreSQL maintenance may reuse the dead space over time.
+
+Treat the executed token as consumed. This approval does not extend to a
+second provider/date partition, an automatic loop, vacuum, reclamation,
+webhooks, BoltOdds, or post-July-26 data. Before proposing another partition,
+review this result, reconfirm the then-current backup, generate a fresh exact
+preview/token for one target, and obtain Tyler's separate approval.

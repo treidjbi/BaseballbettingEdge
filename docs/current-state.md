@@ -491,6 +491,29 @@ expires, recheck backup status and generate a new preview. Automatic loops,
 other partitions/providers, webhooks, post-July-26 rows, vacuum, and
 reclamation remain closed.
 
+### September 3 first approved prepared-partition deletion
+
+Tyler explicitly approved the exact PropLine `2026-06-12` token and command.
+At `2026-09-04T03:59:23.010559Z`, the executor ran once: its immediate preview
+matched the approved state, the cardinality-gated statement deleted exactly
+`11,888` raw `market_snapshots` rows (`5,111,272` logical bytes, about
+`4.87 MiB`), and its postcheck confirmed zero target raw rows while all `218`
+compact groups still represented all `11,888` observations. A separate
+read-only linked-CLI query reconfirmed the same post-state. The result is
+`data/research/retention/prepared-delete-result-propline-2026-06-12-2026-09-04-cli.json`
+at SHA-256 `379021fc...`, with `status=confirmed`, no mutation or postcheck
+error, no automatic retry, and no vacuum.
+
+An immediate size read reported `6,089,518,227` database bytes and
+`4,152,672,256` total bytes for `market_snapshots`: about `5,807.42 MiB` /
+`70.89%` of the included `8 GiB`, with the table at about `3,960.30 MiB`.
+Physical files need not shrink immediately after DELETE, and no
+vacuum/reclamation was authorized.
+Treat the executed token as consumed. Every other provider/date partition,
+automatic loop, webhooks, BoltOdds, post-July-26 data, vacuum, and reclamation
+remain closed. The next partition, if any, requires a new backup confirmation,
+fresh one-partition preview/token, and separate exact approval.
+
 ### August 24 webhook retention gate and August 19 history repair
 
 The recent `734`-row PropLine webhook watch item is processor-capacity debt,
