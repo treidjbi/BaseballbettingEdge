@@ -1,0 +1,93 @@
+{
+  "approval_expires_at": "2026-09-05T16:52:09.414494+00:00",
+  "approval_token": "8c2faf83d040a44162a0a91f42c7fbfc520d98f9e063a413df06ecbb9c9e5639",
+  "automatic_execution_enabled": false,
+  "backup_completed_at": "2026-09-04T05:28:27.760000+00:00",
+  "deletion_approved": false,
+  "generated_at": "2026-09-04T16:52:09.414494+00:00",
+  "partition_count": 5,
+  "partitions": [
+    {
+      "compact_group_count": 643,
+      "delete_sql_sha256": "1e9174ed4364285dc2794a454691aff6b80f5dadc8391c788c1257ac5d3e4273",
+      "ordinal": 1,
+      "preview_approval_token": "a7786c142685ef8efc86829e1329c713bacf3300ed17af78b490bcd7d3345246",
+      "preview_report_path": "data/research/retention/prepared-tranche-v2-014-2026-09-04/preview-01-therundown-2026-06-20.json",
+      "preview_report_sha256": "9fc89031e3b3dbf9d4414cc0f1a7894f1262a40401d77b8e98a144fe3ca04e7d",
+      "provider": "therundown",
+      "raw_logical_bytes": 12280780,
+      "raw_snapshot_rows": 24004,
+      "result_path": "data/research/retention/prepared-tranche-v2-014-2026-09-04/result-01-therundown-2026-06-20.json",
+      "slate_date": "2026-06-20"
+    },
+    {
+      "compact_group_count": 190,
+      "delete_sql_sha256": "186221bb3cc57cd163f60cdef604eaa51034462524477bd586777bfbd466fc9f",
+      "ordinal": 2,
+      "preview_approval_token": "a20016cf60d3f4793b7cbe7a169e90b47cd7a8b35bfabeb3e5d3d892d21f90ee",
+      "preview_report_path": "data/research/retention/prepared-tranche-v2-014-2026-09-04/preview-02-propline-2026-06-19.json",
+      "preview_report_sha256": "4b6be2a52ec9dc0787f9f47d513b7172fe9bedbf6b9ba01e23944d9ed5a0fde7",
+      "provider": "propline",
+      "raw_logical_bytes": 6964182,
+      "raw_snapshot_rows": 14606,
+      "result_path": "data/research/retention/prepared-tranche-v2-014-2026-09-04/result-02-propline-2026-06-19.json",
+      "slate_date": "2026-06-19"
+    },
+    {
+      "compact_group_count": 477,
+      "delete_sql_sha256": "5775c18b743e76f69efb50afae2f3c85d9f0e48a172e27e7eb8e67e2139b4514",
+      "ordinal": 3,
+      "preview_approval_token": "a0a34ff2f79d6c61fba79a0ca408b8069576d3b5b74941ffa1ca84070b114152",
+      "preview_report_path": "data/research/retention/prepared-tranche-v2-014-2026-09-04/preview-03-therundown-2026-06-19.json",
+      "preview_report_sha256": "83f56d7ccf1beacbfd138702cb957beb837678a4319a9548d6751d9e9bb60afc",
+      "provider": "therundown",
+      "raw_logical_bytes": 11666281,
+      "raw_snapshot_rows": 22821,
+      "result_path": "data/research/retention/prepared-tranche-v2-014-2026-09-04/result-03-therundown-2026-06-19.json",
+      "slate_date": "2026-06-19"
+    },
+    {
+      "compact_group_count": 112,
+      "delete_sql_sha256": "f0871047192dbd8c1ab7181fd7aef7ff7478ea8500bd9a70dc6835fd9fbd07de",
+      "ordinal": 4,
+      "preview_approval_token": "d908136130eb8bd30ff5bc32f9281619ca467713c07af535c9fbbeafc0773dea",
+      "preview_report_path": "data/research/retention/prepared-tranche-v2-014-2026-09-04/preview-04-propline-2026-06-18.json",
+      "preview_report_sha256": "90ae224949273c3246589d7805c2df1635848a9f18250875fff6dd4ea0b5615b",
+      "provider": "propline",
+      "raw_logical_bytes": 3759490,
+      "raw_snapshot_rows": 7962,
+      "result_path": "data/research/retention/prepared-tranche-v2-014-2026-09-04/result-04-propline-2026-06-18.json",
+      "slate_date": "2026-06-18"
+    },
+    {
+      "compact_group_count": 288,
+      "delete_sql_sha256": "686467dd9f9f93bd8fa3592eb6790d7f324dacb49cfdc99d80a07ecbfa42fcf1",
+      "ordinal": 5,
+      "preview_approval_token": "1467571e38e9c58b7dc909ee647f88aae41692bb1881875b98366ac15235912d",
+      "preview_report_path": "data/research/retention/prepared-tranche-v2-014-2026-09-04/preview-05-therundown-2026-06-18.json",
+      "preview_report_sha256": "f3ef9e5185b7090e564f937612483304f770cccda55a075c0915dbf9e01fc2fd",
+      "provider": "therundown",
+      "raw_logical_bytes": 5679069,
+      "raw_snapshot_rows": 11153,
+      "result_path": "data/research/retention/prepared-tranche-v2-014-2026-09-04/result-05-therundown-2026-06-18.json",
+      "slate_date": "2026-06-18"
+    }
+  ],
+  "proposed_commands": [
+    "ALLOW_MARKET_SNAPSHOT_DELETE=true APPROVED_PREPARED_MARKET_SNAPSHOT_DELETE_TOKEN=a7786c142685ef8efc86829e1329c713bacf3300ed17af78b490bcd7d3345246 python3 scripts/retire_prepared_market_snapshots.py execute --preview-report data/research/retention/prepared-tranche-v2-014-2026-09-04/preview-01-therundown-2026-06-20.json --output data/research/retention/prepared-tranche-v2-014-2026-09-04/result-01-therundown-2026-06-20.json --execute --run-linked-delete",
+    "ALLOW_MARKET_SNAPSHOT_DELETE=true APPROVED_PREPARED_MARKET_SNAPSHOT_DELETE_TOKEN=a20016cf60d3f4793b7cbe7a169e90b47cd7a8b35bfabeb3e5d3d892d21f90ee python3 scripts/retire_prepared_market_snapshots.py execute --preview-report data/research/retention/prepared-tranche-v2-014-2026-09-04/preview-02-propline-2026-06-19.json --output data/research/retention/prepared-tranche-v2-014-2026-09-04/result-02-propline-2026-06-19.json --execute --run-linked-delete",
+    "ALLOW_MARKET_SNAPSHOT_DELETE=true APPROVED_PREPARED_MARKET_SNAPSHOT_DELETE_TOKEN=a0a34ff2f79d6c61fba79a0ca408b8069576d3b5b74941ffa1ca84070b114152 python3 scripts/retire_prepared_market_snapshots.py execute --preview-report data/research/retention/prepared-tranche-v2-014-2026-09-04/preview-03-therundown-2026-06-19.json --output data/research/retention/prepared-tranche-v2-014-2026-09-04/result-03-therundown-2026-06-19.json --execute --run-linked-delete",
+    "ALLOW_MARKET_SNAPSHOT_DELETE=true APPROVED_PREPARED_MARKET_SNAPSHOT_DELETE_TOKEN=d908136130eb8bd30ff5bc32f9281619ca467713c07af535c9fbbeafc0773dea python3 scripts/retire_prepared_market_snapshots.py execute --preview-report data/research/retention/prepared-tranche-v2-014-2026-09-04/preview-04-propline-2026-06-18.json --output data/research/retention/prepared-tranche-v2-014-2026-09-04/result-04-propline-2026-06-18.json --execute --run-linked-delete",
+    "ALLOW_MARKET_SNAPSHOT_DELETE=true APPROVED_PREPARED_MARKET_SNAPSHOT_DELETE_TOKEN=1467571e38e9c58b7dc909ee647f88aae41692bb1881875b98366ac15235912d python3 scripts/retire_prepared_market_snapshots.py execute --preview-report data/research/retention/prepared-tranche-v2-014-2026-09-04/preview-05-therundown-2026-06-18.json --output data/research/retention/prepared-tranche-v2-014-2026-09-04/result-05-therundown-2026-06-18.json --execute --run-linked-delete"
+  ],
+  "queue_sha256": "896e11ecad59b1b3fb217583bbaace0c1878c6527efffce435776d700c4cf2e7",
+  "retention_execution_closed": true,
+  "scope_id": "prepared_active_provider_descending_tranches_v2",
+  "source_scope_id": "prepared_active_provider_scope_v1",
+  "total_compact_groups": 1710,
+  "total_raw_logical_bytes": 40349802,
+  "total_raw_snapshot_rows": 80546,
+  "tranche_id": "tranche-v2-014",
+  "tranche_version": 2,
+  "vacuum_allowed": false
+}

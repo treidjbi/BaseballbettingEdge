@@ -1,6 +1,6 @@
 # Current State
 
-Last updated: 2026-09-03
+Last updated: 2026-09-04
 
 ## Read Order
 
@@ -658,6 +658,42 @@ Refreshing those derived groups is the recommended fix, but it writes another
 table and therefore needs explicit approval before execution. Until then,
 v2-005, every later partition, and reclamation are stopped; do not bypass the
 lineage gate or skip/reorder the queue.
+
+### September 4 prepared-snapshot cleanup completion
+
+Tyler approved the exact 17-group July 15 lineage repair. It ran once, rebuilt
+only those existing TheRundown compact groups from `1,306` to `1,323`
+represented observations, and left zero mismatches without mutating raw rows.
+The unchanged v2-005 gate then passed, and standing authority carried the
+fixed descending queue through v2-016 one provider/date command at a time.
+
+All `82` approved partitions are now complete: exactly `1,816,265` raw
+`market_snapshots` rows / `947,935,885` logical bytes were deleted, while all
+`36,507` compact groups still represent all `1,816,265` observations. Every
+immutable result is confirmed, with no mutation/postcheck error and no retry.
+The final independent scope query found zero raw rows across all `82`
+partitions and exact compact totals. Evidence is consolidated in
+`data/research/retention/prepared-active-provider-deletion-execution-2026-09-04.json`.
+
+The September 4 physical backup at `2026-09-04T05:28:27.760Z` remains
+`COMPLETED`; PITR is disabled. A live reclamation preflight found no active
+writer, lock, waiter, or long transaction, and one ordinary online
+`VACUUM (ANALYZE)` completed. Postcheck dead tuples are zero; a normal live
+writer resumed afterward without waiting. The database remains
+`6,134,090,899` bytes (`5,850 MB`, `71.41%`) and `market_snapshots` remains
+`4,168,032,256` bytes (`3,975 MB`): the freed capacity is reusable internally,
+not physically returned to the filesystem. `VACUUM FULL` and `pg_repack` were
+not attempted because only `2,455,843,693` bytes of nominal headroom remained,
+`0.589` times the relation size, and an exclusive rewrite was not operationally
+safe. The fixed cleanup is complete. Webhooks, unprepared/newer dates, other
+providers/tables, and automatic retention remain separate closed gates.
+
+This is the current operating-board override for the affected lanes:
+
+| Lane | Confirmed evidence | Next decision / blocker |
+| --- | --- | --- |
+| Tracking / data collection / history | The fixed prepared scope is complete at `82/82` partitions, `1,816,265` deleted raw rows, `947,935,885` logical bytes, and `36,507` exact retained compact groups. Ordinary vacuum completed and estimated dead tuples are zero. | Return to periodic size and coverage observation. Any new raw or webhook cleanup requires a new bounded scope. Physical shrink remains blocked by rewrite headroom and lock risk. |
+| Pipeline / infrastructure | No provider, model, artifact, scheduler, notification, lock, dashboard, or source-of-truth behavior changed. The normal market-snapshot writer resumed without waiting after vacuum. | Continue ordinary production observation. Do not deploy or reconfigure services for this completed cleanup. |
 
 ### August 24 webhook retention gate and August 19 history repair
 

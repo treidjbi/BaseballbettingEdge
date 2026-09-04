@@ -378,3 +378,49 @@ v2-005 gate and resume the fixed descending queue. That upsert targets
 raw-deletion authorization. Do not execute it without one explicit approval.
 Do not weaken or bypass the lineage gate, skip/reorder the blocked queue, or
 start reclamation while this approval is pending.
+
+## Approved Lineage Repair, Queue Completion, and Reclamation
+
+Tyler explicitly approved the exact 17-group July 15 lineage repair and then
+directed the fixed descending queue to continue through completion while every
+gate stayed exact. The repair ran once against only those existing
+TheRundown July 15 compact groups. It updated all 17 groups to represent the
+full 1,323 source observations, left zero mismatched groups, and did not update
+or delete any raw snapshot. A fresh v2-005 preview then passed unchanged.
+
+Tranches v2-005 through v2-016 were prepared from fresh linked reads and
+executed one provider/date at a time. All 59 commands ran once and returned
+`status=confirmed`; every target postcheck found zero raw rows and the exact
+expected compact-group and represented-row counts. Together with the three
+initial confirmed partitions and v2-001 through v2-004, the complete approved
+scope removed exactly `1,816,265` raw rows / `947,935,885` logical bytes from
+all `82` fixed partitions while retaining `36,507` compact groups representing
+all `1,816,265` observations. There was no mutation or postcheck error and no
+automatic retry. The independent final 82-partition query returned
+`all_confirmed=true`, zero nonzero raw partitions, and the same compact totals.
+The consolidated immutable record is
+`data/research/retention/prepared-active-provider-deletion-execution-2026-09-04.json`.
+
+Backup inventory was rechecked after the queue: the September 4 physical
+backup at `2026-09-04T05:28:27.760Z` remains `COMPLETED`; PITR remains
+disabled. The reclamation preflight found no active session, writer, relation
+lock, waiting lock, or transaction older than five minutes. An ordinary online
+`VACUUM (ANALYZE) public.market_snapshots` then completed once. Its postcheck
+reports zero estimated dead tuples and one manual vacuum. A normal live writer
+resumed afterward with no waiting lock or long transaction.
+
+The ordinary vacuum made deleted capacity reusable inside PostgreSQL but did
+not shrink the physical relation: the database remains `6,134,090,899` bytes
+(`5,850 MB`, `71.41%` of the nominal 8 GiB allowance), and
+`market_snapshots` remains `4,168,032,256` bytes (`3,975 MB`). A physical
+rewrite was deliberately not attempted. Nominal headroom was only
+`2,455,843,693` bytes, or `0.589` times the relation size, which is not enough
+to safely support `VACUUM FULL` or `pg_repack`; `VACUUM FULL` would also take
+an `ACCESS EXCLUSIVE` lock. Do not force a rewrite. Reconsider physical shrink
+only with substantially more working disk, a fresh backup, an explicit low-
+impact window, and a new live writer/lock proof.
+
+This completes the fixed prepared-snapshot cleanup. It does not authorize
+webhook deletion, BoltOdds or The Odds API cleanup, post-July-26 or otherwise
+unprepared snapshots, another table, or an automatic retention policy. Future
+raw cleanup requires a new bounded scope and current compact/recovery evidence.

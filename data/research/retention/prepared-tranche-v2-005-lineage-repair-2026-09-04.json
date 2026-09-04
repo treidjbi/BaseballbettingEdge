@@ -1,0 +1,64 @@
+{
+  "repair_version": 1,
+  "scope": {
+    "provider": "therundown",
+    "source_slate_date": "2026-07-15",
+    "late_observed_at": "2026-07-16T13:10:41.076339Z",
+    "affected_compact_groups": 17
+  },
+  "approval": {
+    "approved_by": "Tyler",
+    "approved_on": "2026-09-04",
+    "scope_expansion_approved": false,
+    "raw_deletion_approved_by_repair": false
+  },
+  "backup": {
+    "completed_at": "2026-09-04T05:28:27.760Z",
+    "is_physical_backup": true,
+    "status": "COMPLETED",
+    "pitr_enabled": false
+  },
+  "prestate": {
+    "unpreserved_source_rows": 17,
+    "affected_group_count": 17,
+    "source_rows_in_affected_groups": 1323,
+    "existing_group_count": 17,
+    "old_represented_rows": 1306,
+    "rebuilt_represented_rows": 1323,
+    "rows_to_upsert": 17,
+    "unpreserved_rows_sha256": "435501093251177170e5def7f3d8bfde5085c35b67d265cd184c79a9aa4988c9",
+    "existing_rows_sha256": "95d756156996d9b732f106f12e0c90dfd603de074597ad0f45ace87aecc418a3",
+    "rebuilt_rows_sha256": "debd07cfce0c8ab203dbc590f75c0582ba18675750c76861cca16b124c3863be"
+  },
+  "mutation": {
+    "executed_at": "2026-09-04T15:45:22Z",
+    "source_state_matches": true,
+    "candidate_groups": 17,
+    "upserted_groups": 17,
+    "raw_rows_updated": 0,
+    "raw_rows_deleted": 0,
+    "automatic_retry_attempted": false
+  },
+  "postcheck": {
+    "all_confirmed": true,
+    "late_source_rows": 17,
+    "preserved_late_source_rows": 17,
+    "affected_group_count": 17,
+    "existing_group_count": 17,
+    "source_rows_in_affected_groups": 1323,
+    "current_represented_rows": 1323,
+    "mismatched_groups": 0,
+    "current_rows_sha256": "debd07cfce0c8ab203dbc590f75c0582ba18675750c76861cca16b124c3863be",
+    "v2_005_foreign_unpreserved_rows": 0,
+    "v2_005_target_unpreserved_cross_date_rows": 0
+  },
+  "query_contracts": {
+    "preview_path": "scripts/supabase_prepared_tranche_v2_005_lineage_repair_preview.sql",
+    "preview_sha256": "6710a5d421eacb0ed2f71620661ed35b96901aa28024cc007b052d7ad2754b10",
+    "repair_path": "scripts/supabase_prepared_tranche_v2_005_lineage_repair.sql",
+    "repair_sha256": "6aafbd26b3c3fa4144f6a9a034e7848db28a2c26487b3e56f2a084bd24a8af88",
+    "postcheck_path": "scripts/supabase_prepared_tranche_v2_005_lineage_repair_postcheck.sql",
+    "postcheck_sha256": "455287c6b5d516ff55ba8f9f037ff0c6c2abdbe79ea586d0129eed821cddd017"
+  },
+  "status": "confirmed"
+}

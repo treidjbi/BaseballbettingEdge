@@ -1,0 +1,22 @@
+{
+  "approval_token": "7f95a78bc603e78f39d2372b0c7b31cc3136690d39d369e90184d630a96bd911",
+  "automatic_retry_attempted": false,
+  "delete_sql_sha256": "a0437d09981d6591df331b360e2dc05f005307e44b49dc93bf43d539c5d39ba2",
+  "deleted_rows": 3570,
+  "executed_at": "2026-09-04T15:47:59.815903+00:00",
+  "execution_version": 1,
+  "mutation_error": null,
+  "postcheck": {
+    "compact_group_count": 44,
+    "provider": "propline",
+    "raw_snapshot_rows": 0,
+    "represented_snapshot_rows": 3570,
+    "slate_date": "2026-07-16"
+  },
+  "postcheck_error": null,
+  "provider": "propline",
+  "scope_id": "prepared_active_provider_scope_v1",
+  "slate_date": "2026-07-16",
+  "status": "confirmed",
+  "vacuum_attempted": false
+}

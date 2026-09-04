@@ -1,0 +1,94 @@
+{
+  "execution_record_version": 1,
+  "scope_id": "prepared_active_provider_scope_execution_v1",
+  "status": "confirmed",
+  "approved_scope": {
+    "providers": ["propline", "therundown"],
+    "date_windows": [
+      ["2026-06-12", "2026-06-30"],
+      ["2026-07-02", "2026-07-12"],
+      ["2026-07-16", "2026-07-26"]
+    ],
+    "partition_count": 82,
+    "deleted_rows": 1816265,
+    "deleted_logical_bytes": 947935885,
+    "compact_group_count": 36507,
+    "represented_snapshot_rows": 1816265,
+    "remaining_raw_snapshot_rows": 0
+  },
+  "execution": {
+    "first_partition_executed_at": "2026-09-04T03:59:23.010559+00:00",
+    "last_partition_executed_at": "2026-09-04T17:06:19.238553+00:00",
+    "partition_result_count": 82,
+    "automatic_retry_attempted": false,
+    "mutation_errors": [],
+    "postcheck_errors": [],
+    "result_hash_basis": "sorted relative result path, tab, sha256, newline",
+    "result_set_sha256": "ca23590999be3916dc1f7cd97b42553d23f2f7da40b5c3d1e79e54660be83ca0"
+  },
+  "backup": {
+    "latest_completed_physical_backup_at": "2026-09-04T05:28:27.760Z",
+    "status_reconfirmed_after_deletion": "COMPLETED",
+    "pitr_enabled": false
+  },
+  "lineage_repair": {
+    "scope_id": "prepared_tranche_v2_005_lineage_repair_v1",
+    "affected_groups": 17,
+    "represented_snapshot_rows": 1323,
+    "mismatched_groups_after_repair": 0,
+    "evidence_path": "data/research/retention/prepared-tranche-v2-005-lineage-repair-2026-09-04.json"
+  },
+  "initial_partitions": {
+    "partition_count": 3,
+    "deleted_rows": 30858,
+    "deleted_logical_bytes": 14302754,
+    "compact_group_count": 866
+  },
+  "tranche_v2_totals": {
+    "partition_count": 79,
+    "deleted_rows": 1785407,
+    "deleted_logical_bytes": 933633131,
+    "compact_group_count": 35641
+  },
+  "tranches": [
+    {"tranche_id":"tranche-v2-001","report_sha256":"11749a7820747e37e4b9762fb56fdfeb5c56bef8efc4f34a7810328262bdc051","partition_count":5,"deleted_rows":157839,"deleted_logical_bytes":83680587,"compact_group_count":3293},
+    {"tranche_id":"tranche-v2-002","report_sha256":"3cd26eeb65759a4d9a82b85c88421660028ddcf420f9a8cb56297c42c3527982","partition_count":5,"deleted_rows":106972,"deleted_logical_bytes":55918412,"compact_group_count":2494},
+    {"tranche_id":"tranche-v2-003","report_sha256":"ce3d6cc1f46f43c81cee4976b87284e25236952ac5f4b72ed9a7a17be73c0bef","partition_count":5,"deleted_rows":185966,"deleted_logical_bytes":98671846,"compact_group_count":3084},
+    {"tranche_id":"tranche-v2-004","report_sha256":"9bd5432591488efafdaa6d1e4b85f69bcf371942f41c9e5f7271d8d2eb17c6fa","partition_count":5,"deleted_rows":161926,"deleted_logical_bytes":85053654,"compact_group_count":3060},
+    {"tranche_id":"tranche-v2-005","report_sha256":"9f11e5afea0363f88f1da79e769ef11bead9e133efbc7299a3709b63361ff5ea","partition_count":5,"deleted_rows":87421,"deleted_logical_bytes":46499369,"compact_group_count":1853},
+    {"tranche_id":"tranche-v2-006","report_sha256":"a3875274bf39b01c34d000109398240e812662d4b416bc2af9bcbd49ae76e8af","partition_count":5,"deleted_rows":153940,"deleted_logical_bytes":81062628,"compact_group_count":2959},
+    {"tranche_id":"tranche-v2-007","report_sha256":"a5cb2e2d5c05e0350d253d6d67d95140c7df75ea06489e9cd92d103404aaeb61","partition_count":5,"deleted_rows":162856,"deleted_logical_bytes":86193344,"compact_group_count":2884},
+    {"tranche_id":"tranche-v2-008","report_sha256":"90b27e6f90332de597138d26053f458f1e07b18e6cd05345e07ccf911052deb1","partition_count":5,"deleted_rows":147941,"deleted_logical_bytes":77877273,"compact_group_count":2974},
+    {"tranche_id":"tranche-v2-009","report_sha256":"44b564e8d88db6ad5413faac61805fe5b92daa9eec911d1115fa6eaefd6711e4","partition_count":5,"deleted_rows":74292,"deleted_logical_bytes":39108020,"compact_group_count":1432},
+    {"tranche_id":"tranche-v2-010","report_sha256":"ada08e9349959ee9fd09db1bae4d3801ae893b1368b8d411a1bce5b03cd08469","partition_count":5,"deleted_rows":87720,"deleted_logical_bytes":45539560,"compact_group_count":1932},
+    {"tranche_id":"tranche-v2-011","report_sha256":"429ac114f2848572667caa3c55c227a656067bd7b175c9dce5cab43bf03e2e6e","partition_count":5,"deleted_rows":83402,"deleted_logical_bytes":43684978,"compact_group_count":1697},
+    {"tranche_id":"tranche-v2-012","report_sha256":"af36830ca93293bd1d218dbb3bde8dce458d67c0b4313bd972a18cb21b4e9257","partition_count":5,"deleted_rows":86239,"deleted_logical_bytes":44746331,"compact_group_count":1856},
+    {"tranche_id":"tranche-v2-013","report_sha256":"e495736f2fc7e893caf37d68231cb85dc4727fcb9207827adcda6de23c51d385","partition_count":5,"deleted_rows":75444,"deleted_logical_bytes":39217172,"compact_group_count":1511},
+    {"tranche_id":"tranche-v2-014","report_sha256":"dd2c0804a42c70fc11acc17c5262e0d8c28dda0f5b4392a8fc380c89a81c1c8b","partition_count":5,"deleted_rows":80546,"deleted_logical_bytes":40349802,"compact_group_count":1710},
+    {"tranche_id":"tranche-v2-015","report_sha256":"ed0b6ec3f2ccc13a8e9f3ada498356616080123375d00e422b9e5f73ea47d3b1","partition_count":5,"deleted_rows":79116,"deleted_logical_bytes":38869860,"compact_group_count":1423},
+    {"tranche_id":"tranche-v2-016","report_sha256":"11c3faa0c1e645eeaae1db19a25edfdbbdcaa83dc4b52138a1a4eb0af11bd471","partition_count":4,"deleted_rows":53787,"deleted_logical_bytes":27160295,"compact_group_count":1479}
+  ],
+  "final_scope_postcheck": {
+    "query_path": "scripts/supabase_prepared_scope_final_postcheck.sql",
+    "query_sha256": "3f7f8dcb495731a961db4bdbad72a058fce3468b967cc13bdf74fc419e4abe51",
+    "select_only_contract_confirmed": true,
+    "all_confirmed": true,
+    "partition_count": 82,
+    "remaining_raw_snapshot_rows": 0,
+    "compact_group_count": 36507,
+    "represented_snapshot_rows": 1816265
+  },
+  "reclamation": {
+    "method": "VACUUM (ANALYZE) public.market_snapshots",
+    "status": "completed",
+    "automatic_retry_attempted": false,
+    "post_vacuum_dead_rows": 0,
+    "post_vacuum_database_bytes": 6134090899,
+    "post_vacuum_market_snapshots_total_bytes": 4168032256,
+    "reusable_space_reclaimed": true,
+    "physical_file_shrink_attempted": false,
+    "physical_file_shrink_reason": "Nominal 8 GB headroom was 2455843693 bytes versus a 4168032256-byte relation; a rewrite was not safely supportable.",
+    "preflight_query_path": "scripts/supabase_market_snapshots_reclamation_preflight.sql",
+    "preflight_query_sha256": "a071b2d201f5385df81b0f23b8b2e7444a007c18dfd725477b70dcc8ffa1482b"
+  }
+}

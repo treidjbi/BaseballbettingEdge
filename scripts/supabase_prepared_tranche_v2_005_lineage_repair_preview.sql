@@ -20,15 +20,8 @@ with observed_mismatches as (
     and ms.observed_at < timestamptz '2026-07-17 00:00:00 America/Phoenix'
     and mpr.slate_date is distinct from
         (ms.observed_at at time zone 'America/Phoenix')::date
-), affected_keys as (
-  select distinct
-    slate_date,
-    provider,
-    book_key,
-    normalized_player_name,
-    market_key,
-    side,
-    line
+), unpreserved_rows as (
+  select mismatch.*
   from observed_mismatches mismatch
   where not exists (
     select 1
@@ -44,6 +37,16 @@ with observed_mismatches as (
       and cmlm.source_snapshot_ids ? mismatch.id::text
       and mismatch.observed_at between cmlm.first_seen_at and cmlm.last_seen_at
   )
+), affected_keys as (
+  select distinct
+    slate_date,
+    provider,
+    book_key,
+    normalized_player_name,
+    market_key,
+    side,
+    line
+  from unpreserved_rows
 ), raw_rows as (
   select
     affected_keys.slate_date,
@@ -152,21 +155,7 @@ with observed_mismatches as (
    and cmlm.line::numeric = rebuilt.line
 )
 select
-  (select count(*)::bigint from observed_mismatches mismatch
-   where not exists (
-     select 1
-     from public.compact_market_line_movements cmlm
-     where cmlm.slate_date = mismatch.slate_date
-       and cmlm.provider = mismatch.provider
-       and cmlm.book_key = mismatch.book_key
-       and cmlm.normalized_player_name = mismatch.normalized_player_name
-       and cmlm.market_key = mismatch.market_key
-       and cmlm.side = mismatch.side
-       and cmlm.line::numeric = mismatch.line
-       and jsonb_typeof(cmlm.source_snapshot_ids) = 'array'
-       and cmlm.source_snapshot_ids ? mismatch.id::text
-       and mismatch.observed_at between cmlm.first_seen_at and cmlm.last_seen_at
-   )) as unpreserved_source_rows,
+  (select count(*)::bigint from unpreserved_rows) as unpreserved_source_rows,
   (select count(*)::bigint from affected_keys) as affected_group_count,
   (select count(*)::bigint from raw_rows) as source_rows_in_affected_groups,
   count(*)::bigint as rebuilt_group_count,
@@ -209,5 +198,86 @@ select
        or old_odds_move_count is distinct from odds_move_count
        or old_snapshot_count is distinct from snapshot_count
        or old_source_snapshot_ids is distinct from source_snapshot_ids
-  )::bigint as rows_to_upsert
+  )::bigint as rows_to_upsert,
+  encode(extensions.digest(coalesce((
+    select string_agg(
+      jsonb_build_array(
+        id,
+        observed_at,
+        slate_date,
+        provider,
+        book_key,
+        normalized_player_name,
+        market_key,
+        side,
+        line
+      )::text,
+      E'\n' order by id::text
+    )
+    from unpreserved_rows
+  ), ''), 'sha256'), 'hex') as unpreserved_rows_sha256,
+  encode(extensions.digest(coalesce((
+    select string_agg(
+      jsonb_build_array(
+        slate_date,
+        provider,
+        book_key,
+        normalized_player_name,
+        player_name,
+        market_key,
+        side,
+        line,
+        first_seen_at,
+        last_seen_at,
+        first_odds,
+        last_odds,
+        min_odds,
+        max_odds,
+        odds_move_count,
+        snapshot_count,
+        source_snapshot_ids
+      )::text,
+      E'\n' order by
+        slate_date,
+        provider,
+        book_key,
+        normalized_player_name,
+        market_key,
+        side,
+        line
+    )
+    from rebuilt
+  ), ''), 'sha256'), 'hex') as rebuilt_rows_sha256,
+  encode(extensions.digest(coalesce((
+    select string_agg(
+      jsonb_build_array(
+        slate_date,
+        provider,
+        book_key,
+        normalized_player_name,
+        old_player_name,
+        market_key,
+        side,
+        line,
+        old_first_seen_at,
+        old_last_seen_at,
+        old_first_odds,
+        old_last_odds,
+        old_min_odds,
+        old_max_odds,
+        old_odds_move_count,
+        old_snapshot_count,
+        old_source_snapshot_ids
+      )::text,
+      E'\n' order by
+        slate_date,
+        provider,
+        book_key,
+        normalized_player_name,
+        market_key,
+        side,
+        line
+    )
+    from comparison
+  ), ''), 'sha256'), 'hex') as existing_rows_sha256
 from comparison;

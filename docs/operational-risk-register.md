@@ -352,6 +352,21 @@ groups after a fresh SELECT and separate approval; do not weaken the gate,
 delete the foreign raw rows, rebuild the full table, or infer another-table
 write authority from the raw-deletion approval.
 
+The exact 17-group repair was separately approved and completed once, after
+which the unchanged gate passed and all remaining fixed v2 partitions
+completed sequentially. The final 82-partition proof reports zero target raw
+rows and retains `36,507` compact groups representing all `1,816,265` deleted
+observations; no command was retried. An ordinary online vacuum completed after
+a clear writer/lock preflight and reduced estimated dead tuples to zero, so the
+deleted capacity is reusable internally. Physical size did not fall. Do not
+run `VACUUM FULL` or `pg_repack` under the current conditions: the 3,975 MB
+relation has only 2,342 MB of nominal 8 GiB headroom, and a rewrite would add
+unsafe working-disk and lock risk. Revisit physical shrink only with more
+working disk, a fresh completed backup, a bounded maintenance window, and a
+new writer/lock proof. The completed prepared scope grants no authority over
+webhooks, newer or unprepared snapshots, other providers/tables, or automatic
+retention.
+
 As of Tyler's 2026-08-27 cost decision, active-provider compaction should be
 operated manually instead of through another paid Render cron. Review storage
 and exact compact coverage approximately every seven days, once at season end,
