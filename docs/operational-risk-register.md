@@ -341,6 +341,17 @@ lock and write impact, a completed backup, and bounded target scope. If those
 operational gates do not pass, record the blocker and leave reclamation
 unexecuted.
 
+The v2-005 preparation exercised that stop rule. Its TheRundown July 16
+observed-day anomaly count includes `17` late observations from July 15 runs;
+their existing compact groups do not yet include the final poll. The intended
+July 16 target itself is exact and all `3,842` of its cross-date rows are
+preserved, but the standing contract still treats the foreign unpreserved
+lineage as a blocker. Keep the delete queue and reclamation stopped. The
+recommended repair is an exact upsert of only the `17` existing July 15 compact
+groups after a fresh SELECT and separate approval; do not weaken the gate,
+delete the foreign raw rows, rebuild the full table, or infer another-table
+write authority from the raw-deletion approval.
+
 As of Tyler's 2026-08-27 cost decision, active-provider compaction should be
 operated manually instead of through another paid Render cron. Review storage
 and exact compact coverage approximately every seven days, once at season end,

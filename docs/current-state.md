@@ -642,6 +642,23 @@ only if live bloat, disk-headroom, writer and lock, backup, and production-
 impact checks make the chosen vacuum or repack method safe; do not force an
 exclusive rewrite when those gates fail.
 
+That standing path completed v2-003 and v2-004 exactly, bringing the bounded
+total to `643,561` deleted raw rows / `337,627,253` logical bytes and `12,797`
+retained compact groups, with `1,172,704` rows left in the frozen prepared
+scope. All results through v2-004 are confirmed with exact postchecks, no
+retry, and no vacuum.
+
+Preparation of v2-005 then stopped before any packet file or deletion because
+the TheRundown July 16 preview reported `17` unpreserved cross-date rows. The
+actual deletion candidate is complete: `8,196` rows / `145` compact groups,
+and all `3,842` of its next-day rows are preserved. The blocker is a final
+July 16 poll attached to July 15 provider runs. Exactly `17` existing July 15
+compact groups are stale, representing `1,306` rows instead of `1,323`.
+Refreshing those derived groups is the recommended fix, but it writes another
+table and therefore needs explicit approval before execution. Until then,
+v2-005, every later partition, and reclamation are stopped; do not bypass the
+lineage gate or skip/reorder the queue.
+
 ### August 24 webhook retention gate and August 19 history repair
 
 The recent `734`-row PropLine webhook watch item is processor-capacity debt,

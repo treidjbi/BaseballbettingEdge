@@ -315,3 +315,66 @@ dead tuples or bloat, relation and database size, current writers and locks,
 available disk headroom, and the latest completed backup. Use only a method
 whose lock, headroom, and production-impact gates pass; otherwise stop and
 report the exact maintenance blocker rather than forcing a table rewrite.
+
+## Standing-Authority Execution Through v2-004
+
+Under the standing authorization, `tranche-v2-003` and `tranche-v2-004` were
+prepared from fresh linked reads, bound to the completed September 4 physical
+backup, and executed one provider/date command at a time. Every immutable
+result was inspected before continuing.
+
+- v2-003 removed `185,966` rows / `98,671,846` logical bytes and retained
+  `3,084` exact compact groups across both providers July 21, both providers
+  July 20, and PropLine July 19.
+- v2-004 removed `161,926` rows / `85,053,654` logical bytes and retained
+  `3,060` exact compact groups across TheRundown July 19, both providers July
+  18, and both providers July 17.
+- Every result has `status=confirmed`, zero target raw rows, the exact expected
+  represented-row count, no mutation or postcheck error, no retry, and no
+  vacuum.
+
+Across the original first deletion, the two confirmed commands from stopped
+tranche 001, and descending tranches v2-001 through v2-004, the bounded process
+has removed `643,561` raw rows / `337,627,253` logical bytes while retaining
+`12,797` compact groups. `1,172,704` rows remain in the frozen prepared scope.
+
+## v2-005 Cross-Date Lineage Stop
+
+The SELECT-only builder attempted `tranche-v2-005` in its fixed order:
+PropLine July 16, TheRundown July 16, PropLine July 12, TheRundown July 12, and
+PropLine July 11. PropLine July 16 passed. TheRundown July 16 then failed the
+existing hard gate with `17` unpreserved cross-date lineage rows. The builder
+exited before writing a packet directory. No v2-005 partition was deleted, no
+write was retried, and reclamation did not begin.
+
+Two bounded linked SELECTs isolated the cause:
+
+- The actual TheRundown July 16 deletion candidate contains `8,196` raw rows
+  represented by `145` exact compact groups. All `3,842` target rows observed
+  on the following Phoenix date are individually preserved; target
+  unpreserved cross-date rows are zero.
+- The `17` blocking rows belong to TheRundown provider runs dated July 15 and
+  were observed together on July 16. They are excluded from the July 16
+  run-date deletion candidate. Their `17` compact groups exist but predate the
+  final poll: current lineage represents `1,306` rows across those groups,
+  while a fresh rebuild represents `1,323`.
+- A repair would upsert exactly those `17` existing July 15 compact groups.
+  All 17 change `last_seen_at`, `snapshot_count`, and `source_snapshot_ids`;
+  one also changes `last_odds` and `odds_move_count`. No compact group is
+  missing, and first-seen, first-odds, minimum-odds, maximum-odds, and player
+  name remain unchanged.
+
+The diagnostic queries are
+`scripts/supabase_prepared_tranche_v2_005_lineage_diagnostic.sql`,
+`scripts/supabase_prepared_tranche_v2_005_target_lineage_proof.sql`, and
+`scripts/supabase_prepared_tranche_v2_005_lineage_repair_preview.sql`. They are
+SELECT-only. Backup inventory still shows the latest physical backup at
+`2026-09-04T05:28:27.760Z` as `COMPLETED`; PITR remains disabled.
+
+The safest resolution is to preserve the late July 15 observations by
+rebuilding only those 17 derived compact groups, then rerun the unchanged
+v2-005 gate and resume the fixed descending queue. That upsert targets
+`compact_market_line_movements`, another table, so it is outside the standing
+raw-deletion authorization. Do not execute it without one explicit approval.
+Do not weaken or bypass the lineage gate, skip/reorder the blocked queue, or
+start reclamation while this approval is pending.
