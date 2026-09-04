@@ -630,6 +630,18 @@ passes `598` tests. No v2-003 result exists. Its five commands are the next
 exact hard gate; later tranches, webhooks, BoltOdds, post-July-26 data, vacuum,
 and reclamation remain closed.
 
+Tyler has now authorized continuing through every remaining partition already
+frozen in descending queue v2 without pausing for tranche-by-tranche approval,
+so long as every fresh backup, exact preview and token, compact-preservation,
+cardinality, and postcheck gate passes. This is not permission to run an
+uninspected range: commands remain single-provider/date and sequential, each
+immutable result is inspected, and any uncertain or unexpected state stops the
+run without retry. Webhooks, other providers and tables, and newer dates remain
+out of scope. Reclamation is authorized after the final prepared partition
+only if live bloat, disk-headroom, writer and lock, backup, and production-
+impact checks make the chosen vacuum or repack method safe; do not force an
+exclusive rewrite when those gates fail.
+
 ### August 24 webhook retention gate and August 19 history repair
 
 The recent `734`-row PropLine webhook watch item is processor-capacity debt,

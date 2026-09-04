@@ -330,6 +330,17 @@ closed at token `7f9ef77d...`. Its September 4 backup and successful prior
 packets do not authorize execution. Physical usage remained `70.94%`; keep
 vacuum/reclamation and every later packet behind their own review and gate.
 
+Tyler subsequently gave standing authority to finish only the already frozen
+v2 prepared queue without pausing at each tranche. Do not interpret that as a
+range-delete loop or weaker validation: build a fresh exact packet, verify its
+backup and token and immutable previews, run one provider/date executor at a
+time, inspect each result, and stop without retry on uncertainty. Post-queue
+space reclamation is also authorized in principle, but `VACUUM FULL` or an
+online repack still requires current proof of adequate working disk, acceptable
+lock and write impact, a completed backup, and bounded target scope. If those
+operational gates do not pass, record the blocker and leave reclamation
+unexecuted.
+
 As of Tyler's 2026-08-27 cost decision, active-provider compaction should be
 operated manually instead of through another paid Render cron. Review storage
 and exact compact coverage approximately every seven days, once at season end,

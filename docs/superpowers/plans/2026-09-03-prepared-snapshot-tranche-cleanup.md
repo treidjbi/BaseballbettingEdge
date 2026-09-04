@@ -285,3 +285,33 @@ none of its commands ran. The retention-focused Python 3.11 suite passes `598`
 tests. This exact packet is the next hard gate; later
 tranches, webhooks, BoltOdds, post-July-26 rows, vacuum, and reclamation remain
 closed.
+
+## Standing Remaining-Queue Authorization
+
+On September 3 Phoenix time, after reviewing the exact v2-003 packet, Tyler
+explicitly directed the cleanup to continue through the remaining fixed v2
+prepared-snapshot queue without pausing for approval at each tranche, provided
+the safety gates keep passing. This standing authorization changes the
+interaction cadence only. Every tranche must still be prepared from a fresh
+linked SELECT, bind a completed physical backup and a 24-hour token, stay
+within the fixed queue and tranche caps, and execute one provider/date command
+at a time. Inspect each immutable result before continuing. Stop immediately
+on an expired or tampered packet, backup failure, coverage or lineage blocker,
+source-state drift, timeout or uncertain write, cardinality or postcheck
+mismatch, result-file conflict, or any other unexpected state. Never retry an
+uncertain write.
+
+The authorization covers only the remaining prepared PropLine/TheRundown
+partitions already frozen in queue v2. It does not cover webhooks, BoltOdds,
+The Odds API, newer or unprepared dates, another table, a provider, model, or
+notification change, or any expansion of the fixed scope.
+
+Tyler also authorized space reclamation after the prepared queue finishes.
+That instruction is subject to a separate live safety proof because ordinary
+`VACUUM` generally makes dead space reusable without shrinking the relation,
+while `VACUUM FULL` rewrites the table under an `ACCESS EXCLUSIVE` lock and
+requires extra working disk. After the final delete, measure remaining rows,
+dead tuples or bloat, relation and database size, current writers and locks,
+available disk headroom, and the latest completed backup. Use only a method
+whose lock, headroom, and production-impact gates pass; otherwise stop and
+report the exact maintenance blocker rather than forcing a table rewrite.

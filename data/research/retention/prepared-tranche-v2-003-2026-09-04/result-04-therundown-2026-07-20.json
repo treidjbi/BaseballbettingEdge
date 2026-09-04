@@ -1,0 +1,22 @@
+{
+  "approval_token": "2ea92d59cc85861aba4ea532c3c7bf016327041d54569d50c04badc3bd9baab9",
+  "automatic_retry_attempted": false,
+  "delete_sql_sha256": "80ee65821bca7df763aeb22d19391e2582b1e1865dc7b73978ce9ca322c7422c",
+  "deleted_rows": 24502,
+  "executed_at": "2026-09-04T05:55:38.778003+00:00",
+  "execution_version": 1,
+  "mutation_error": null,
+  "postcheck": {
+    "compact_group_count": 586,
+    "provider": "therundown",
+    "raw_snapshot_rows": 0,
+    "represented_snapshot_rows": 24502,
+    "slate_date": "2026-07-20"
+  },
+  "postcheck_error": null,
+  "provider": "therundown",
+  "scope_id": "prepared_active_provider_scope_v1",
+  "slate_date": "2026-07-20",
+  "status": "confirmed",
+  "vacuum_attempted": false
+}
