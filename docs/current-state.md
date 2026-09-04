@@ -563,6 +563,29 @@ replacement ordering/packet contract, generate fresh exact previews, and use
 a new hard-gate token. All remaining partitions, webhooks, BoltOdds,
 post-July-26 data, vacuum, and reclamation remain closed.
 
+Tyler approved the reversible replacement design. A bounded dependency proof
+over all `1,785,407` remaining prepared raw rows found `1,579,245` observations
+on their run date, `206,162` exactly one day after it, and zero before it or
+more than one day after. Queue v2 therefore runs slate dates descending, which
+places every potentially affected following date earlier in the queue. It
+excludes all three confirmed deletions and freezes `79` partitions in `16`
+tranches; queue v1 remains stopped history.
+
+The completed physical backup at `2026-09-03T05:43:13.129000+00:00` was
+reconfirmed; PITR remains disabled. Replacement packet `tranche-v2-001` passed
+fresh exact previews for both providers July 26, both providers July 25, and
+PropLine July 24: `157,839` raw rows / `83,680,587` logical bytes (about
+`79.80 MiB`) / `3,293` compact groups. Hard blockers are zero, including zero
+unpreserved cross-date rows. The packet report SHA is `11749a78...`, token is
+`180cc86f...`, and expiry is `2026-09-05T04:58:55.853993+00:00`.
+
+The descending-order proof and focused suite (`253` passing tests) validate
+the redesign. No result file exists, both deletion environment gates stayed
+unset, and no row was deleted while preparing v2. The next hard gate is Tyler's
+approval or rejection of this exact replacement token and its five sequential
+commands. Other tranches, webhooks, BoltOdds, post-July-26 data, vacuum, and
+reclamation remain closed.
+
 ### August 24 webhook retention gate and August 19 history repair
 
 The recent `734`-row PropLine webhook watch item is processor-capacity debt,

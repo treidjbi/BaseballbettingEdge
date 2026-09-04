@@ -21,26 +21,69 @@ sys.path.insert(0, str(ROOT))
 from scripts import retire_prepared_market_snapshots as executor  # noqa: E402
 
 
-QUEUE_VERSION = 1
-TRANCHE_VERSION = 1
-TRANCHE_SCOPE_ID = "prepared_active_provider_tranches_v1"
+QUEUE_VERSION = 2
+TRANCHE_VERSION = 2
+TRANCHE_SCOPE_ID = "prepared_active_provider_descending_tranches_v2"
 MAX_PARTITIONS_PER_TRANCHE = 5
 MAX_TRANCHE_RAW_SNAPSHOT_ROWS = 250000
 MAX_TRANCHE_RAW_LOGICAL_BYTES = 150 * 1024 * 1024
-QUEUE_ORDER = "slate_date_ascending_then_propline_before_therundown"
-CONFIRMED_COMPLETION = {
-    "provider": "propline",
-    "slate_date": "2026-06-12",
-    "deleted_rows": 11888,
-    "raw_logical_bytes": 5111272,
-    "result_path": (
-        "data/research/retention/"
-        "prepared-delete-result-propline-2026-06-12-2026-09-04-cli.json"
-    ),
-    "result_sha256": (
-        "379021fcb78aa4eff3b25aae3fc633bf0963cb1273ecda11cd9084a14fee5dd3"
-    ),
-}
+QUEUE_ORDER = "slate_date_descending_then_propline_before_therundown"
+ORDERING_PROOF_PATH = (
+    "data/research/retention/"
+    "prepared-snapshot-descending-order-proof-2026-09-04.json"
+)
+ORDERING_PROOF_SHA256 = (
+    "0432ab48bec69875f5e67a6a645899cef378340d93bcc425c9ce6448c0e14584"
+)
+ORDERING_PROOF_SCOPE_ID = "prepared_active_provider_descending_order_proof_v1"
+ORDERING_PROOF_QUERY_PATH = "scripts/supabase_prepared_snapshot_ordering_proof.sql"
+ORDERING_PROOF_QUERY_SHA256 = (
+    "af23d219250180df26ddef31bdbc5135bfda71ca5e6e85197b012db3333587c3"
+)
+CONFIRMED_COMPLETIONS = (
+    {
+        "provider": "propline",
+        "slate_date": "2026-06-12",
+        "deleted_rows": 11888,
+        "raw_logical_bytes": 5111272,
+        "compact_group_count": 218,
+        "result_path": (
+            "data/research/retention/"
+            "prepared-delete-result-propline-2026-06-12-2026-09-04-cli.json"
+        ),
+        "result_sha256": (
+            "379021fcb78aa4eff3b25aae3fc633bf0963cb1273ecda11cd9084a14fee5dd3"
+        ),
+    },
+    {
+        "provider": "therundown",
+        "slate_date": "2026-06-12",
+        "deleted_rows": 10104,
+        "raw_logical_bytes": 5163024,
+        "compact_group_count": 456,
+        "result_path": (
+            "data/research/retention/prepared-tranche-001-2026-09-04/"
+            "result-01-therundown-2026-06-12.json"
+        ),
+        "result_sha256": (
+            "74ed85cb904eb9a6a2d74421f3f8dbf4d80aecc6af05468d0011ccba5b8ccde3"
+        ),
+    },
+    {
+        "provider": "propline",
+        "slate_date": "2026-06-13",
+        "deleted_rows": 8866,
+        "raw_logical_bytes": 4028458,
+        "compact_group_count": 192,
+        "result_path": (
+            "data/research/retention/prepared-tranche-001-2026-09-04/"
+            "result-02-propline-2026-06-13.json"
+        ),
+        "result_sha256": (
+            "205bd4549ff319dc2a41538f303166152549fb5aa7666f54aa89e7c82075878f"
+        ),
+    },
+)
 ORIGINAL_PARTITION_COUNT = 82
 ORIGINAL_RAW_SNAPSHOT_ROWS = 1816265
 ORIGINAL_RAW_LOGICAL_BYTES = 947935885
@@ -50,36 +93,130 @@ def sha256_file(path: Path) -> str:
     return hashlib.sha256(path.read_bytes()).hexdigest()
 
 
-def _validate_confirmed_completion() -> None:
-    path = _load_path(str(CONFIRMED_COMPLETION["result_path"]))
-    if not path.is_file() or sha256_file(path) != CONFIRMED_COMPLETION["result_sha256"]:
-        raise ValueError("confirmed completion result is missing or changed")
+def _validate_confirmed_completions() -> None:
+    keys: list[tuple[str, str]] = []
+    for completion in CONFIRMED_COMPLETIONS:
+        path = _load_path(str(completion["result_path"]))
+        if not path.is_file() or sha256_file(path) != completion["result_sha256"]:
+            raise ValueError("confirmed completion result is missing or changed")
+        try:
+            result = json.loads(path.read_text(encoding="utf-8"))
+        except (json.JSONDecodeError, OSError) as exc:
+            raise ValueError("confirmed completion result is invalid") from exc
+        expected = {
+            "provider": completion["provider"],
+            "slate_date": completion["slate_date"],
+            "deleted_rows": completion["deleted_rows"],
+            "status": "confirmed",
+            "mutation_error": None,
+            "postcheck_error": None,
+            "automatic_retry_attempted": False,
+            "vacuum_attempted": False,
+        }
+        if any(result.get(field) != value for field, value in expected.items()):
+            raise ValueError("confirmed completion result is invalid")
+        postcheck = result.get("postcheck")
+        if not isinstance(postcheck, dict) or any((
+            postcheck.get("provider") != completion["provider"],
+            postcheck.get("slate_date") != completion["slate_date"],
+            postcheck.get("raw_snapshot_rows") != 0,
+            postcheck.get("compact_group_count")
+            != completion["compact_group_count"],
+            postcheck.get("represented_snapshot_rows")
+            != completion["deleted_rows"],
+        )):
+            raise ValueError("confirmed completion result is invalid")
+        keys.append((completion["provider"], completion["slate_date"]))
+    if len(keys) != len(set(keys)):
+        raise ValueError("confirmed completion results are duplicated")
+
+
+def load_ordering_proof() -> dict[str, Any]:
+    path = _load_path(ORDERING_PROOF_PATH)
+    if not path.is_file() or sha256_file(path) != ORDERING_PROOF_SHA256:
+        raise ValueError("ordering proof is missing or changed")
     try:
-        result = json.loads(path.read_text(encoding="utf-8"))
+        proof = json.loads(path.read_text(encoding="utf-8"))
     except (json.JSONDecodeError, OSError) as exc:
-        raise ValueError("confirmed completion result is invalid") from exc
-    expected = {
-        "provider": CONFIRMED_COMPLETION["provider"],
-        "slate_date": CONFIRMED_COMPLETION["slate_date"],
-        "deleted_rows": CONFIRMED_COMPLETION["deleted_rows"],
-        "status": "confirmed",
-        "automatic_retry_attempted": False,
-        "vacuum_attempted": False,
-    }
-    if any(result.get(field) != value for field, value in expected.items()):
-        raise ValueError("confirmed completion result is invalid")
+        raise ValueError("ordering proof is invalid") from exc
+    if not isinstance(proof, dict):
+        raise ValueError("ordering proof is invalid")
+    return proof
+
+
+def validate_ordering_proof(proof: dict[str, Any]) -> None:
+    if (
+        proof.get("proof_version") != 1
+        or proof.get("scope_id") != ORDERING_PROOF_SCOPE_ID
+        or proof.get("query_path") != ORDERING_PROOF_QUERY_PATH
+        or proof.get("query_sha256") != ORDERING_PROOF_QUERY_SHA256
+        or proof.get("ordering_safe") is not True
+        or proof.get("deletion_approved") is not False
+        or proof.get("retention_execution_closed") is not True
+    ):
+        raise ValueError("ordering proof is invalid")
+    query_path = _load_path(ORDERING_PROOF_QUERY_PATH)
+    if (
+        not query_path.is_file()
+        or sha256_file(query_path) != ORDERING_PROOF_QUERY_SHA256
+    ):
+        raise ValueError("ordering proof is invalid")
+    executor.parse_timestamp(str(proof.get("queried_at") or ""), "queried_at")
+    providers = proof.get("providers")
+    if not isinstance(providers, list) or [
+        item.get("provider") for item in providers if isinstance(item, dict)
+    ] != ["propline", "therundown"]:
+        raise ValueError("ordering proof is invalid")
+    count_fields = (
+        "remaining_raw_rows",
+        "rows_observed_before_run_date",
+        "rows_observed_on_run_date",
+        "rows_observed_after_run_date",
+    )
+    for item in providers:
+        if any(
+            isinstance(item.get(field), bool)
+            or not isinstance(item.get(field), int)
+            or item[field] < 0
+            for field in count_fields
+        ):
+            raise ValueError("ordering proof is invalid")
+        if item["remaining_raw_rows"] != (
+            item["rows_observed_before_run_date"]
+            + item["rows_observed_on_run_date"]
+            + item["rows_observed_after_run_date"]
+        ):
+            raise ValueError("ordering proof is invalid")
+        if (
+            item["rows_observed_before_run_date"] != 0
+            or item.get("min_day_offset") != 0
+            or item.get("max_day_offset") != 1
+        ):
+            raise ValueError("ordering proof is invalid")
+    for field in count_fields:
+        if proof.get(field) != sum(item[field] for item in providers):
+            raise ValueError("ordering proof is invalid")
+    if (
+        proof["remaining_raw_rows"]
+        != ORIGINAL_RAW_SNAPSHOT_ROWS
+        - sum(item["deleted_rows"] for item in CONFIRMED_COMPLETIONS)
+        or proof["rows_observed_before_run_date"] != 0
+        or proof.get("min_day_offset") != 0
+        or proof.get("max_day_offset") != 1
+    ):
+        raise ValueError("ordering proof is invalid")
 
 
 def _remaining_partitions() -> list[tuple[str, str]]:
-    completed = (
-        CONFIRMED_COMPLETION["provider"],
-        CONFIRMED_COMPLETION["slate_date"],
-    )
+    completed = {
+        (item["provider"], item["slate_date"])
+        for item in CONFIRMED_COMPLETIONS
+    }
     values: list[tuple[str, str]] = []
-    for slate_date in sorted(executor.PREPARED_DATES):
+    for slate_date in sorted(executor.PREPARED_DATES, reverse=True):
         for provider in executor.PREPARED_PROVIDERS:
             key = (provider, slate_date.isoformat())
-            if key != completed:
+            if key not in completed:
                 values.append(key)
     return values
 
@@ -91,7 +228,7 @@ def _tranche_definitions() -> list[dict[str, Any]]:
         number = offset // MAX_PARTITIONS_PER_TRANCHE + 1
         result.append(
             {
-                "tranche_id": f"tranche-{number:03d}",
+                "tranche_id": f"tranche-v2-{number:03d}",
                 "partitions": [
                     {"provider": provider, "slate_date": slate_date}
                     for provider, slate_date in remaining[
@@ -112,21 +249,26 @@ def _queue_basis() -> dict[str, Any]:
         "maximum_partitions_per_tranche": MAX_PARTITIONS_PER_TRANCHE,
         "maximum_raw_snapshot_rows_per_tranche": MAX_TRANCHE_RAW_SNAPSHOT_ROWS,
         "maximum_raw_logical_bytes_per_tranche": MAX_TRANCHE_RAW_LOGICAL_BYTES,
+        "ordering_proof_path": ORDERING_PROOF_PATH,
+        "ordering_proof_sha256": ORDERING_PROOF_SHA256,
         "original_partition_count": ORIGINAL_PARTITION_COUNT,
-        "completed_partitions": [CONFIRMED_COMPLETION],
+        "completed_partitions": list(CONFIRMED_COMPLETIONS),
         "remaining_partition_count": len(_remaining_partitions()),
         "remaining_expected_raw_snapshot_rows": (
-            ORIGINAL_RAW_SNAPSHOT_ROWS - CONFIRMED_COMPLETION["deleted_rows"]
+            ORIGINAL_RAW_SNAPSHOT_ROWS
+            - sum(item["deleted_rows"] for item in CONFIRMED_COMPLETIONS)
         ),
         "remaining_expected_raw_logical_bytes": (
-            ORIGINAL_RAW_LOGICAL_BYTES - CONFIRMED_COMPLETION["raw_logical_bytes"]
+            ORIGINAL_RAW_LOGICAL_BYTES
+            - sum(item["raw_logical_bytes"] for item in CONFIRMED_COMPLETIONS)
         ),
         "tranches": _tranche_definitions(),
     }
 
 
 def build_queue_manifest(*, generated_at: datetime | None = None) -> dict[str, Any]:
-    _validate_confirmed_completion()
+    _validate_confirmed_completions()
+    validate_ordering_proof(load_ordering_proof())
     generated = (generated_at or datetime.now(timezone.utc)).astimezone(timezone.utc)
     basis = _queue_basis()
     return {

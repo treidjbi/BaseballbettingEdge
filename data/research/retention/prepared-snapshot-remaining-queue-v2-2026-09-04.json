@@ -1,0 +1,448 @@
+{
+  "automatic_execution_enabled": false,
+  "completed_partitions": [
+    {
+      "compact_group_count": 218,
+      "deleted_rows": 11888,
+      "provider": "propline",
+      "raw_logical_bytes": 5111272,
+      "result_path": "data/research/retention/prepared-delete-result-propline-2026-06-12-2026-09-04-cli.json",
+      "result_sha256": "379021fcb78aa4eff3b25aae3fc633bf0963cb1273ecda11cd9084a14fee5dd3",
+      "slate_date": "2026-06-12"
+    },
+    {
+      "compact_group_count": 456,
+      "deleted_rows": 10104,
+      "provider": "therundown",
+      "raw_logical_bytes": 5163024,
+      "result_path": "data/research/retention/prepared-tranche-001-2026-09-04/result-01-therundown-2026-06-12.json",
+      "result_sha256": "74ed85cb904eb9a6a2d74421f3f8dbf4d80aecc6af05468d0011ccba5b8ccde3",
+      "slate_date": "2026-06-12"
+    },
+    {
+      "compact_group_count": 192,
+      "deleted_rows": 8866,
+      "provider": "propline",
+      "raw_logical_bytes": 4028458,
+      "result_path": "data/research/retention/prepared-tranche-001-2026-09-04/result-02-propline-2026-06-13.json",
+      "result_sha256": "205bd4549ff319dc2a41538f303166152549fb5aa7666f54aa89e7c82075878f",
+      "slate_date": "2026-06-13"
+    }
+  ],
+  "deletion_approved": false,
+  "generated_at": "2026-09-04T04:57:36.288352+00:00",
+  "maximum_partitions_per_tranche": 5,
+  "maximum_raw_logical_bytes_per_tranche": 157286400,
+  "maximum_raw_snapshot_rows_per_tranche": 250000,
+  "ordering_proof_path": "data/research/retention/prepared-snapshot-descending-order-proof-2026-09-04.json",
+  "ordering_proof_sha256": "0432ab48bec69875f5e67a6a645899cef378340d93bcc425c9ce6448c0e14584",
+  "original_partition_count": 82,
+  "queue_order": "slate_date_descending_then_propline_before_therundown",
+  "queue_sha256": "896e11ecad59b1b3fb217583bbaace0c1878c6527efffce435776d700c4cf2e7",
+  "queue_version": 2,
+  "remaining_expected_raw_logical_bytes": 933633131,
+  "remaining_expected_raw_snapshot_rows": 1785407,
+  "remaining_partition_count": 79,
+  "retention_execution_closed": true,
+  "scope_id": "prepared_active_provider_descending_tranches_v2",
+  "source_scope_id": "prepared_active_provider_scope_v1",
+  "tranches": [
+    {
+      "partitions": [
+        {
+          "provider": "propline",
+          "slate_date": "2026-07-26"
+        },
+        {
+          "provider": "therundown",
+          "slate_date": "2026-07-26"
+        },
+        {
+          "provider": "propline",
+          "slate_date": "2026-07-25"
+        },
+        {
+          "provider": "therundown",
+          "slate_date": "2026-07-25"
+        },
+        {
+          "provider": "propline",
+          "slate_date": "2026-07-24"
+        }
+      ],
+      "tranche_id": "tranche-v2-001"
+    },
+    {
+      "partitions": [
+        {
+          "provider": "therundown",
+          "slate_date": "2026-07-24"
+        },
+        {
+          "provider": "propline",
+          "slate_date": "2026-07-23"
+        },
+        {
+          "provider": "therundown",
+          "slate_date": "2026-07-23"
+        },
+        {
+          "provider": "propline",
+          "slate_date": "2026-07-22"
+        },
+        {
+          "provider": "therundown",
+          "slate_date": "2026-07-22"
+        }
+      ],
+      "tranche_id": "tranche-v2-002"
+    },
+    {
+      "partitions": [
+        {
+          "provider": "propline",
+          "slate_date": "2026-07-21"
+        },
+        {
+          "provider": "therundown",
+          "slate_date": "2026-07-21"
+        },
+        {
+          "provider": "propline",
+          "slate_date": "2026-07-20"
+        },
+        {
+          "provider": "therundown",
+          "slate_date": "2026-07-20"
+        },
+        {
+          "provider": "propline",
+          "slate_date": "2026-07-19"
+        }
+      ],
+      "tranche_id": "tranche-v2-003"
+    },
+    {
+      "partitions": [
+        {
+          "provider": "therundown",
+          "slate_date": "2026-07-19"
+        },
+        {
+          "provider": "propline",
+          "slate_date": "2026-07-18"
+        },
+        {
+          "provider": "therundown",
+          "slate_date": "2026-07-18"
+        },
+        {
+          "provider": "propline",
+          "slate_date": "2026-07-17"
+        },
+        {
+          "provider": "therundown",
+          "slate_date": "2026-07-17"
+        }
+      ],
+      "tranche_id": "tranche-v2-004"
+    },
+    {
+      "partitions": [
+        {
+          "provider": "propline",
+          "slate_date": "2026-07-16"
+        },
+        {
+          "provider": "therundown",
+          "slate_date": "2026-07-16"
+        },
+        {
+          "provider": "propline",
+          "slate_date": "2026-07-12"
+        },
+        {
+          "provider": "therundown",
+          "slate_date": "2026-07-12"
+        },
+        {
+          "provider": "propline",
+          "slate_date": "2026-07-11"
+        }
+      ],
+      "tranche_id": "tranche-v2-005"
+    },
+    {
+      "partitions": [
+        {
+          "provider": "therundown",
+          "slate_date": "2026-07-11"
+        },
+        {
+          "provider": "propline",
+          "slate_date": "2026-07-10"
+        },
+        {
+          "provider": "therundown",
+          "slate_date": "2026-07-10"
+        },
+        {
+          "provider": "propline",
+          "slate_date": "2026-07-09"
+        },
+        {
+          "provider": "therundown",
+          "slate_date": "2026-07-09"
+        }
+      ],
+      "tranche_id": "tranche-v2-006"
+    },
+    {
+      "partitions": [
+        {
+          "provider": "propline",
+          "slate_date": "2026-07-08"
+        },
+        {
+          "provider": "therundown",
+          "slate_date": "2026-07-08"
+        },
+        {
+          "provider": "propline",
+          "slate_date": "2026-07-07"
+        },
+        {
+          "provider": "therundown",
+          "slate_date": "2026-07-07"
+        },
+        {
+          "provider": "propline",
+          "slate_date": "2026-07-06"
+        }
+      ],
+      "tranche_id": "tranche-v2-007"
+    },
+    {
+      "partitions": [
+        {
+          "provider": "therundown",
+          "slate_date": "2026-07-06"
+        },
+        {
+          "provider": "propline",
+          "slate_date": "2026-07-05"
+        },
+        {
+          "provider": "therundown",
+          "slate_date": "2026-07-05"
+        },
+        {
+          "provider": "propline",
+          "slate_date": "2026-07-04"
+        },
+        {
+          "provider": "therundown",
+          "slate_date": "2026-07-04"
+        }
+      ],
+      "tranche_id": "tranche-v2-008"
+    },
+    {
+      "partitions": [
+        {
+          "provider": "propline",
+          "slate_date": "2026-07-03"
+        },
+        {
+          "provider": "therundown",
+          "slate_date": "2026-07-03"
+        },
+        {
+          "provider": "propline",
+          "slate_date": "2026-07-02"
+        },
+        {
+          "provider": "therundown",
+          "slate_date": "2026-07-02"
+        },
+        {
+          "provider": "propline",
+          "slate_date": "2026-06-30"
+        }
+      ],
+      "tranche_id": "tranche-v2-009"
+    },
+    {
+      "partitions": [
+        {
+          "provider": "therundown",
+          "slate_date": "2026-06-30"
+        },
+        {
+          "provider": "propline",
+          "slate_date": "2026-06-29"
+        },
+        {
+          "provider": "therundown",
+          "slate_date": "2026-06-29"
+        },
+        {
+          "provider": "propline",
+          "slate_date": "2026-06-28"
+        },
+        {
+          "provider": "therundown",
+          "slate_date": "2026-06-28"
+        }
+      ],
+      "tranche_id": "tranche-v2-010"
+    },
+    {
+      "partitions": [
+        {
+          "provider": "propline",
+          "slate_date": "2026-06-27"
+        },
+        {
+          "provider": "therundown",
+          "slate_date": "2026-06-27"
+        },
+        {
+          "provider": "propline",
+          "slate_date": "2026-06-26"
+        },
+        {
+          "provider": "therundown",
+          "slate_date": "2026-06-26"
+        },
+        {
+          "provider": "propline",
+          "slate_date": "2026-06-25"
+        }
+      ],
+      "tranche_id": "tranche-v2-011"
+    },
+    {
+      "partitions": [
+        {
+          "provider": "therundown",
+          "slate_date": "2026-06-25"
+        },
+        {
+          "provider": "propline",
+          "slate_date": "2026-06-24"
+        },
+        {
+          "provider": "therundown",
+          "slate_date": "2026-06-24"
+        },
+        {
+          "provider": "propline",
+          "slate_date": "2026-06-23"
+        },
+        {
+          "provider": "therundown",
+          "slate_date": "2026-06-23"
+        }
+      ],
+      "tranche_id": "tranche-v2-012"
+    },
+    {
+      "partitions": [
+        {
+          "provider": "propline",
+          "slate_date": "2026-06-22"
+        },
+        {
+          "provider": "therundown",
+          "slate_date": "2026-06-22"
+        },
+        {
+          "provider": "propline",
+          "slate_date": "2026-06-21"
+        },
+        {
+          "provider": "therundown",
+          "slate_date": "2026-06-21"
+        },
+        {
+          "provider": "propline",
+          "slate_date": "2026-06-20"
+        }
+      ],
+      "tranche_id": "tranche-v2-013"
+    },
+    {
+      "partitions": [
+        {
+          "provider": "therundown",
+          "slate_date": "2026-06-20"
+        },
+        {
+          "provider": "propline",
+          "slate_date": "2026-06-19"
+        },
+        {
+          "provider": "therundown",
+          "slate_date": "2026-06-19"
+        },
+        {
+          "provider": "propline",
+          "slate_date": "2026-06-18"
+        },
+        {
+          "provider": "therundown",
+          "slate_date": "2026-06-18"
+        }
+      ],
+      "tranche_id": "tranche-v2-014"
+    },
+    {
+      "partitions": [
+        {
+          "provider": "propline",
+          "slate_date": "2026-06-17"
+        },
+        {
+          "provider": "therundown",
+          "slate_date": "2026-06-17"
+        },
+        {
+          "provider": "propline",
+          "slate_date": "2026-06-16"
+        },
+        {
+          "provider": "therundown",
+          "slate_date": "2026-06-16"
+        },
+        {
+          "provider": "propline",
+          "slate_date": "2026-06-15"
+        }
+      ],
+      "tranche_id": "tranche-v2-015"
+    },
+    {
+      "partitions": [
+        {
+          "provider": "therundown",
+          "slate_date": "2026-06-15"
+        },
+        {
+          "provider": "propline",
+          "slate_date": "2026-06-14"
+        },
+        {
+          "provider": "therundown",
+          "slate_date": "2026-06-14"
+        },
+        {
+          "provider": "therundown",
+          "slate_date": "2026-06-13"
+        }
+      ],
+      "tranche_id": "tranche-v2-016"
+    }
+  ],
+  "vacuum_allowed": false
+}

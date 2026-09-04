@@ -1,0 +1,36 @@
+{
+  "deletion_approved": false,
+  "max_day_offset": 1,
+  "min_day_offset": 0,
+  "ordering_safe": true,
+  "proof_version": 1,
+  "providers": [
+    {
+      "max_day_offset": 1,
+      "min_day_offset": 0,
+      "provider": "propline",
+      "remaining_raw_rows": 985983,
+      "rows_observed_after_run_date": 7500,
+      "rows_observed_before_run_date": 0,
+      "rows_observed_on_run_date": 978483
+    },
+    {
+      "max_day_offset": 1,
+      "min_day_offset": 0,
+      "provider": "therundown",
+      "remaining_raw_rows": 799424,
+      "rows_observed_after_run_date": 198662,
+      "rows_observed_before_run_date": 0,
+      "rows_observed_on_run_date": 600762
+    }
+  ],
+  "queried_at": "2026-09-04T04:55:35+00:00",
+  "query_path": "scripts/supabase_prepared_snapshot_ordering_proof.sql",
+  "query_sha256": "af23d219250180df26ddef31bdbc5135bfda71ca5e6e85197b012db3333587c3",
+  "remaining_raw_rows": 1785407,
+  "retention_execution_closed": true,
+  "rows_observed_after_run_date": 206162,
+  "rows_observed_before_run_date": 0,
+  "rows_observed_on_run_date": 1579245,
+  "scope_id": "prepared_active_provider_descending_order_proof_v1"
+}

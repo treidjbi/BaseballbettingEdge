@@ -306,6 +306,14 @@ September 3 tranche stopped on exactly this gate after two confirmed commands.
 Do not retry or continue the old packet. Any replacement ordering or token
 contract requires tests, fresh previews, and a new exact approval.
 
+The approved replacement uses a live, hash-bound dependency proof plus a
+descending run-date queue. The proof must show every remaining observation has
+a day offset of zero or positive one and zero rows have a negative offset. If
+that proof changes, the queue must fail closed. Keep provider/date execution
+sequential within each approved packet; descending order does not authorize
+automatic execution, another packet, a retry after uncertainty, vacuum, or
+reclamation.
+
 As of Tyler's 2026-08-27 cost decision, active-provider compaction should be
 operated manually instead of through another paid Render cron. Review storage
 and exact compact coverage approximately every seven days, once at season end,

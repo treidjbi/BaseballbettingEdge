@@ -143,3 +143,57 @@ a later precomputed token even though that later target partition is intact.
 Do not retry tranche 001 or run commands four or five. Before further deletion,
 review and test a replacement ordering/packet contract, generate fresh exact
 previews, and obtain approval for the replacement token.
+
+## Approved Descending-Queue Replacement
+
+Tyler approved the reversible redesign after the tranche 001 stop. A bounded
+linked SELECT over every remaining prepared provider/run row proved the
+dependency direction:
+
+- `1,785,407` raw rows remain in the prepared scope;
+- `1,579,245` were observed on their provider run date;
+- `206,162` were observed exactly one day after their run date; and
+- zero were observed before their run date or more than one day after it.
+
+The proof query is
+`scripts/supabase_prepared_snapshot_ordering_proof.sql`. Its sanitized output
+is
+`data/research/retention/prepared-snapshot-descending-order-proof-2026-09-04.json`
+at SHA-256
+`0432ab48bec69875f5e67a6a645899cef378340d93bcc425c9ce6448c0e14584`.
+Because deletions can change only the same or following observed date,
+processing run dates newest-first prevents a deletion from changing any later
+precomputed preview in the queue.
+
+Queue v2 excludes all three confirmed partitions and contains `79` remaining
+partitions in `16` tranches. It orders slate dates descending and retains
+PropLine before TheRundown on the same date. Its canonical queue hash is
+`896e11ecad59b1b3fb217583bbaace0c1878c6527efffce435776d700c4cf2e7`;
+the queue artifact is
+`data/research/retention/prepared-snapshot-remaining-queue-v2-2026-09-04.json`.
+Queue v1 and tranche 001 remain immutable stopped history and must not be
+resumed.
+
+The latest completed physical backup was reconfirmed at
+`2026-09-03T05:43:13.129000+00:00`; PITR remains disabled. Replacement packet
+`tranche-v2-001` passed all five exact linked previews:
+
+1. PropLine July 26: `28,554` rows / `15,430,914` bytes / `658` groups.
+2. TheRundown July 26: `19,248` rows / `9,842,584` bytes / `668` groups.
+3. PropLine July 25: `38,092` rows / `20,410,532` bytes / `590` groups.
+4. TheRundown July 25: `26,155` rows / `13,362,471` bytes / `753` groups.
+5. PropLine July 24: `45,790` rows / `24,634,086` bytes / `624` groups.
+
+The packet totals `157,839` rows / `83,680,587` logical bytes (about
+`79.80 MiB`) / `3,293` exact compact groups. All hard anomalies are zero; the
+TheRundown July 26 and July 25 informational cross-date counts (`8,425` and
+`7,902`) are fully preserved. The packet report SHA-256 is
+`11749a7820747e37e4b9762fb56fdfeb5c56bef8efc4f34a7810328262bdc051`,
+its approval token is
+`180cc86f27f621ddc5b31adf15d2473f99976251eea55db102517f10abaa46d0`,
+and it expires at `2026-09-05T04:58:55.853993+00:00`.
+
+No result file exists, both deletion environment gates remained unset, and no
+row was deleted during the redesign or replacement preview. The next action is
+the new hard gate: approve or reject this exact v2 packet and its five embedded
+commands. Execution must remain sequential and stop on any unexpected state.
