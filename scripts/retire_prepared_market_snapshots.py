@@ -78,6 +78,14 @@ _ANOMALY_FIELDS = (
     "unpreserved_slate_date_mismatch_rows",
     "unknown_provider_rows",
 )
+_BLOCKING_ANOMALY_FIELDS = (
+    "rows_missing_run_id",
+    "rows_missing_run_row",
+    "rows_missing_group_key",
+    "provider_run_mismatch_rows",
+    "unpreserved_slate_date_mismatch_rows",
+    "unknown_provider_rows",
+)
 _FORBIDDEN_MUTATION_SQL = re.compile(
     r"\b(insert|update|truncate|drop|alter|create|grant|revoke|vacuum|"
     r"reindex|merge|call|copy|do)\b",
@@ -126,7 +134,7 @@ def validate_scope(provider: str, slate_date: str) -> tuple[str, str]:
 def parse_timestamp(value: str, label: str) -> datetime:
     if not isinstance(value, str) or not value.strip():
         raise ValueError(f"{label} must be a timezone-aware timestamp")
-    normalized = value.strip().replace("Z", "+00:00")
+    normalized = audit._normalize_iso_timestamp(value.strip())
     try:
         parsed = datetime.fromisoformat(normalized)
     except ValueError as exc:
@@ -171,7 +179,7 @@ def _validate_exact_payload(
         "snapshot_count_mismatch_count",
     )):
         raise ValueError("exact compact coverage is required")
-    if any(anomalies[field] != 0 for field in _ANOMALY_FIELDS):
+    if any(anomalies[field] != 0 for field in _BLOCKING_ANOMALY_FIELDS):
         raise ValueError("source anomalies block prepared deletion")
     return coverage, anomalies
 
@@ -244,9 +252,16 @@ def _validate_report_source_state(value: Any) -> Mapping[str, Any]:
     if any(
         isinstance(anomalies[field], bool)
         or not isinstance(anomalies[field], int)
-        or anomalies[field] != 0
+        or anomalies[field] < 0
         for field in _ANOMALY_FIELDS
     ):
+        raise ValueError("preview source anomalies are invalid")
+    if anomalies["slate_date_mismatch_rows"] != (
+        anomalies["preserved_slate_date_mismatch_rows"]
+        + anomalies["unpreserved_slate_date_mismatch_rows"]
+    ):
+        raise ValueError("preview source anomalies are invalid")
+    if any(anomalies[field] != 0 for field in _BLOCKING_ANOMALY_FIELDS):
         raise ValueError("preview source anomalies are invalid")
     return value
 

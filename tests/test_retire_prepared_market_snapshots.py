@@ -179,6 +179,41 @@ def test_preview_report_rejects_stale_backup_or_nonexact_coverage():
         make_report(payload)
 
 
+def test_preview_report_accepts_fully_preserved_cross_date_lineage():
+    payload = valid_payload()
+    payload["source_anomalies"][0].update({
+        "slate_date_mismatch_rows": 2,
+        "preserved_slate_date_mismatch_rows": 2,
+        "unpreserved_slate_date_mismatch_rows": 0,
+    })
+
+    report = make_report(payload)
+
+    assert report["source_state"]["source_anomalies"] == {
+        "rows_missing_run_id": 0,
+        "rows_missing_run_row": 0,
+        "rows_missing_group_key": 0,
+        "provider_run_mismatch_rows": 0,
+        "slate_date_mismatch_rows": 2,
+        "preserved_slate_date_mismatch_rows": 2,
+        "unpreserved_slate_date_mismatch_rows": 0,
+        "unknown_provider_rows": 0,
+    }
+    executor.validate_preview_report(report, now=NOW)
+
+
+def test_preview_report_rejects_unpreserved_cross_date_lineage():
+    payload = valid_payload()
+    payload["source_anomalies"][0].update({
+        "slate_date_mismatch_rows": 1,
+        "preserved_slate_date_mismatch_rows": 0,
+        "unpreserved_slate_date_mismatch_rows": 1,
+    })
+
+    with pytest.raises(ValueError, match="source anomalies block"):
+        make_report(payload)
+
+
 def test_delete_sql_is_one_exact_cardinality_gated_partition():
     report = make_report()
     sql = executor.build_delete_sql(report)

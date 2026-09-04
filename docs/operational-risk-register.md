@@ -288,6 +288,16 @@ cardinality-gated statement, performs a postcheck, never retries an uncertain
 write, refuses to overwrite its local result ledger, and never vacuums. Its
 implementation approval did not authorize a production preview or deletion.
 
+For v2 cross-date lineage, nonzero `slate_date_mismatch_rows` is informational
+only when the preservation equation is valid, all such rows are counted in
+`preserved_slate_date_mismatch_rows`, and
+`unpreserved_slate_date_mismatch_rows=0`. Keep those counts visible and bound
+into the preview token. Any unpreserved lineage, missing linkage/group key,
+provider/run mismatch, unknown provider, or compact-coverage mismatch remains
+a hard blocker. The controlled-tranche packet builder may collect at most five
+independent previews for review, but it has no execute path and does not weaken
+the single-partition mutation/postcheck contract.
+
 As of Tyler's 2026-08-27 cost decision, active-provider compaction should be
 operated manually instead of through another paid Render cron. Review storage
 and exact compact coverage approximately every seven days, once at season end,

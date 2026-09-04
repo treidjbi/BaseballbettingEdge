@@ -606,6 +606,19 @@ def test_validate_chunk_payload_rejects_missing_null_or_reversed_required_timest
         audit.validate_chunk_payload(payload, chunk)
 
 
+def test_nullable_timestamp_accepts_postgres_variable_fraction_precision():
+    assert audit._normalize_iso_timestamp(
+        "2026-06-14T02:01:02.36986+00:00"
+    ) == "2026-06-14T02:01:02.369860+00:00"
+    parsed = audit._parse_nullable_timestamp(
+        {"observed_at": "2026-06-14T02:01:02.36986+00:00"},
+        "observed_at",
+    )
+
+    assert parsed is not None
+    assert parsed.isoformat() == "2026-06-14T02:01:02.369860+00:00"
+
+
 def test_validate_chunk_payload_rejects_nonnull_raw_timestamp_for_zero_partition():
     chunk = audit.ChunkSpec("propline", date(2026, 5, 1), date(2026, 5, 1))
     payload = valid_payload(chunk)

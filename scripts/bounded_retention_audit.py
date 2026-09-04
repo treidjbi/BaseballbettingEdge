@@ -32,6 +32,11 @@ QUERY_CONTRACT_VERSION = "supabase-db-query-linked-json-v1"
 RUNNER_VERSION = "3"
 TIMEZONE = "America/Phoenix"
 _CLI_VERSION_PATTERN = re.compile(r"\d+\.\d+\.\d+(?:[-+][0-9A-Za-z.-]+)?")
+_ISO_TIMESTAMP_PATTERN = re.compile(
+    r"^(?P<prefix>\d{4}-\d{2}-\d{2}[T ]\d{2}:\d{2}:\d{2})"
+    r"(?:\.(?P<fraction>\d+))?"
+    r"(?P<timezone>Z|[+-]\d{2}:\d{2})$"
+)
 
 _COVERAGE_COUNTS = (
     "raw_snapshot_rows",
@@ -359,6 +364,23 @@ def _reject_unknown_fields(
         )
 
 
+def _normalize_iso_timestamp(value: str) -> str:
+    """Normalize PostgreSQL ISO timestamps for older supported Python runtimes."""
+    match = _ISO_TIMESTAMP_PATTERN.fullmatch(value)
+    if match is None:
+        return value
+    fraction = match.group("fraction")
+    if fraction is not None and len(fraction) > 6:
+        return value
+    normalized_fraction = ""
+    if fraction is not None:
+        normalized_fraction = f".{fraction.ljust(6, '0')}"
+    timezone_suffix = match.group("timezone")
+    if timezone_suffix == "Z":
+        timezone_suffix = "+00:00"
+    return f"{match.group('prefix')}{normalized_fraction}{timezone_suffix}"
+
+
 def _parse_nullable_timestamp(record: dict[str, Any], field: str) -> datetime | None:
     if field not in record:
         raise ValueError(f"required timestamp field is missing: {field}")
@@ -368,7 +390,7 @@ def _parse_nullable_timestamp(record: dict[str, Any], field: str) -> datetime | 
     if not isinstance(value, str):
         raise ValueError(f"timestamp field is invalid: {field}")
     try:
-        parsed = datetime.fromisoformat(value)
+        parsed = datetime.fromisoformat(_normalize_iso_timestamp(value))
     except ValueError as exc:
         raise ValueError(f"timestamp field is invalid: {field}") from exc
     if parsed.tzinfo is None or parsed.utcoffset() is None:

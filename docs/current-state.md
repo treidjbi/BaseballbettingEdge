@@ -514,6 +514,34 @@ automatic loop, webhooks, BoltOdds, post-July-26 data, vacuum, and reclamation
 remain closed. The next partition, if any, requires a new backup confirmation,
 fresh one-partition preview/token, and separate exact approval.
 
+### September 3 controlled-tranche preparation overlay
+
+Tyler approved continuing through reversible implementation, tests, current
+backup checks, and SELECT-only previews, with the next database deletion kept
+as the hard approval gate. The remaining prepared scope is frozen at `81`
+partitions in `17` deterministic tranches; it cannot expand as time passes.
+
+The first five-partition packet passed fresh linked reads for TheRundown June
+12, both providers June 13, and both providers June 14. It binds `57,232` raw
+rows / `28,436,544` logical bytes (about `27.12 MiB`) to `1,790` exact compact
+groups. TheRundown June 13 and June 14 contain `12,828` cross-date observations
+in total; every one is preserved by compact lineage and every hard anomaly is
+zero. A portability fix normalizes PostgreSQL fractional-second timestamps for
+the Mac system Python, and the prepared executor now follows the controlling
+v2 rule that fully preserved cross-date lineage is visible but not blocking.
+Unpreserved lineage still fails closed.
+
+The completed physical backup remains
+`2026-09-03T05:43:13.129000+00:00`; PITR remains disabled. The packet at
+`data/research/retention/prepared-tranche-001-2026-09-04/tranche-report.json`
+has SHA-256 `7915ab4e...`, token `9c607b89...`, and expiry
+`2026-09-05T04:30:19.830245+00:00`. All `251` focused retention tests and
+packet validation pass. No result file exists, both deletion environment gates
+remain unset, and no row was deleted during this preparation. The next decision
+is approval or rejection of that exact token and its five sequential embedded
+commands. Automatic execution, retries after uncertain writes, other tranches,
+webhooks, BoltOdds, post-July-26 data, vacuum, and reclamation remain closed.
+
 ### August 24 webhook retention gate and August 19 history repair
 
 The recent `734`-row PropLine webhook watch item is processor-capacity debt,
