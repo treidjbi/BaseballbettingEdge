@@ -1,7 +1,8 @@
 # BBE companion operating brief
 
 As of September 4, 2026; operations evidence captured at 21:38Z (14:38 Phoenix),
-with the Alt review at 21:58–22:01Z and lineage follow-up beginning 22:24Z.
+with the Alt review at 21:58–22:01Z, lineage follow-up beginning 22:24Z,
+and completed offline adapter validation using frozen records captured 22:48Z.
 Read after AGENTS.md and current-state. This is a navigation and decision
 summary; the linked dated plans retain every detailed gate.
 
@@ -26,7 +27,7 @@ operating costs are absent. No candidate has established fully costed profit.
 | Pipeline / infrastructure | Keep ordinary operation; review repairs only on failure | Natural-run artifact/served hashes, grading freshness, due/consumed locks, sender outcomes | Stale/missing publication, unconsumed lock, repeated timeout or send error |
 | Model | Alt V2 paired review complete; both promotion paths retired, frozen controls retained | Any reopening needs a material evidence correction or separately reviewed new frozen hypothesis and future holdout; other candidates need current hosted attribution/diversity | Reconciled evidence changes the conclusion or a separately reviewed research proposal; no automatic restart on count growth |
 | UI | Keep display/comparison behavior; review usability independently | Current mobile/desktop interaction and candidate/artifact/lock proof | Incorrect freeze, stale-state confusion or contract mismatch |
-| Tracking / history | Lineage diagnosis complete; review a research-only decision-time adapter | Exact consumed-lock joins, frozen selector inputs, official-provider reader, pregame agreement/proxy proof; preserve book conflicts | Complete reviewed evidence contract; Kumar separately needs consumption proof or a new recovery policy |
+| Tracking / history | Offline adapter implemented; review a forward-only pregame evidence contract | Agreement, mature Preclose, frozen Path B and recovery provenance; preserve exact book conflicts and baselines | Reviewed contract with passing pregame examples and negative tests before separate runner integration; Kumar still needs consumption proof or a reviewed recovery policy |
 
 Current research treatment:
 
@@ -39,11 +40,11 @@ Current research treatment:
 - **Market-anchor downside:** keep shadow; July paired 48-row +0.763u cap
   delta is thin/one-sided. August 25–26 five-row delta is -1.804u. Neither is
   actual enforced profit.
-- **Selective LEAN:** still zero eligible in the bounded current preview.
-  Lock-only enrichment fixes 20/23 matches but leaves provider-reader,
-  agreement and proxy gaps. Archive and frozen rule matches overlap only
-  21/23; require decision-time inputs before any credit. Pause repetitive
-  promotion readouts while these structural gaps persist.
+- **Selective LEAN:** offline adapter validates 19 linked matches from 23
+  frozen rule matches; **zero formal credit**. Four book conflicts remain.
+  Archive/frozen matches overlap 21/23. Preclose is pending throughout; frozen
+  agreement and Path B remain missing. The scheduled audit is unchanged.
+  Pause repetitive promotion readouts while these structural gaps persist.
 - **CLV:** process KPI only, 33/100 exact targets across two slates. No complete
   14-slate window; do not repeatedly run without its explicit close packet.
 - **No-drag:** promotion path retired after 75 prospective rows lost 4.883u.
@@ -61,6 +62,7 @@ production re-seed.
 [Detailed assessments, candidate contracts, costs and work recommendations](research/2026-09-04-operating-and-research-assessment.md)
 · [Completed Alt V2 paired decision and required slices](research/2026-09-04-alt-v2-paired-decision.md)
 · [Resolved Gate C provenance and current linkage decision](research/2026-09-04-research-lineage-decision.md)
+· [Completed offline adapter, exclusions and next evidence contract](research/2026-09-04-decision-time-adapter-review.md)
 · [Captured primary evidence and SQL](research/evidence/2026-09-04-operating-review/read-only-evidence.json)
 · [Reproducible checks](research/evidence/2026-09-04-operating-review/evidence-checks.ipynb)
 · [Current operating record](current-state.md)

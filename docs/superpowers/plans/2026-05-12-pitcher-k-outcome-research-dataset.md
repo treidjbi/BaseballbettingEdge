@@ -1356,3 +1356,14 @@ identifier alone or overwrite the historical corpus with this bounded build.
 The packet proposes a research-only decision-time adapter for separate
 implementation review. No builder, scheduler, source, model, staking,
 notification, retention, dataset-promotion gate or production setting changed.
+
+### Subsequent approved offline implementation
+
+The [decision-time adapter contract](2026-09-04-decision-time-research-adapter.md)
+is now implemented on a separate feature branch. Its
+[review](../../research/2026-09-04-decision-time-adapter-review.md) validates
+309 linked records from 352 bounded identities, including 19 linked frozen
+selective-LEAN matches and zero formal credit. It emits a separate nested
+packet; the canonical builder, dataset and runner remain unchanged. The next
+decision is the forward-only pregame evidence contract, with all original
+sample/diversity, baseline and no-back-credit requirements preserved.

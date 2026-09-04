@@ -118,3 +118,15 @@ sample/diversity and timing rules. Recommend pausing repeated promotion
 readouts until a separately reviewed decision-time adapter and evidence
 contract can satisfy the gaps. No audit code, runner, collector, production
 behavior or formal prospective count was changed by the preview.
+
+### Subsequent standalone adapter validation
+
+Tyler approved the [offline adapter implementation](2026-09-04-decision-time-research-adapter.md).
+The [completed review](../../research/2026-09-04-decision-time-adapter-review.md)
+finds 23 frozen rule matches, 19 with complete linkage, and zero formal credit.
+The adapter's explicit official-provider reader does not change this audit's
+legacy reader. All captured Preclose proofs remain pending; frozen agreement
+and Path B attribution remain absent. The original 103-row nomination baseline,
+fingerprint, sample/diversity requirements and no-back-credit rules still
+control. Next is a forward-only evidence contract before separately scoped
+integration; no scheduled audit or collector changed.

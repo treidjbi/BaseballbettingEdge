@@ -1,0 +1,278 @@
+{
+  "fixture_kind": "synthetic; generated from existing V2 proof-builder test helpers; not observed research evidence",
+  "frozen": {
+    "candidate_identity": "419027dce2d64803a527e60ff939af79296ccd720bc4ca0ce0961bc0aa8a0233",
+    "slate_date": "2026-07-22",
+    "normalized_pitcher": "tarik skubal",
+    "side": "over",
+    "model_k_line": 6.5,
+    "game_time": "2026-07-22T23:00:00+00:00",
+    "line_source_provider": "therundown",
+    "official_binding_key": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+    "source_artifact_path": "dashboard/data/processed/today.json",
+    "source_artifact_generated_at": "2026-07-22T20:05:00+00:00",
+    "source_artifact_sha256": "babe69562475b2abbabb667b841515da0f741f53978334448b02ebe1a3481877",
+    "source_artifact_byte_sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+    "id": "synthetic-frozen",
+    "evaluation_proof": {
+      "schema_version": "v2",
+      "bundle_id": "pregame_alternative_pick_methodology_v2",
+      "selector_fingerprint": "23bacff0fa923685ae52c5a9cfbadfb9f5902fb64d91759cfe9b4b1169a221c4",
+      "candidate": {
+        "candidate_identity": "419027dce2d64803a527e60ff939af79296ccd720bc4ca0ce0961bc0aa8a0233",
+        "slate_date": "2026-07-22",
+        "normalized_pitcher": "tarik skubal",
+        "side": "over",
+        "model_k_line": 6.5,
+        "game_time": "2026-07-22T23:00:00+00:00",
+        "line_source_provider": "therundown",
+        "official_binding_key": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd"
+      },
+      "artifact": {
+        "source_artifact_path": "dashboard/data/processed/today.json",
+        "source_artifact_generated_at": "2026-07-22T20:05:00+00:00",
+        "source_artifact_sha256": "babe69562475b2abbabb667b841515da0f741f53978334448b02ebe1a3481877",
+        "source_artifact_byte_sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+      },
+      "bindings": {
+        "propline": {
+          "role": "sidecar",
+          "provider_event_id": "pl-event",
+          "current_line_ids": [
+            "202"
+          ],
+          "seed_observation_tokens": [
+            "propline:snapshot-001"
+          ],
+          "binding_key": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+          "window_started_at": "2026-07-22T19:56:00+00:00",
+          "mature": true
+        },
+        "therundown": {
+          "role": "official",
+          "provider_event_id": "tr-event",
+          "current_line_ids": [
+            "101"
+          ],
+          "seed_observation_tokens": [
+            "therundown:snapshot-000"
+          ],
+          "binding_key": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+          "window_started_at": "2026-07-22T19:55:00+00:00",
+          "mature": true
+        }
+      },
+      "freshness": {
+        "propline": {
+          "freshness_status": "fresh",
+          "latest_snapshot_at": "2026-07-22T20:00:05+00:00"
+        },
+        "therundown": {
+          "freshness_status": "fresh",
+          "latest_snapshot_at": "2026-07-22T20:00:05+00:00"
+        }
+      },
+      "normalized_inputs": {
+        "side": "over",
+        "official_verdict": "FIRE 1u",
+        "source_fire_verdict": "FIRE 1u",
+        "pitcher": "tarik skubal",
+        "game_time": "2026-07-22T23:00:00+00:00",
+        "k_line": 6.5,
+        "line_bucket": "6.5",
+        "odds": -120,
+        "official_book": "fanduel",
+        "price_sign": "minus",
+        "bet_timing_window": "pre_30",
+        "model_market_relationship": "model_agrees_with_favorite",
+        "model_no_vig_gap": 0.031,
+        "edge": 0.035,
+        "adjusted_ev": 0.09,
+        "adjusted_ev_error": null,
+        "quality_gate_level": "clean",
+        "opportunity_bucket": "normal",
+        "leash_risk_bucket": "normal",
+        "pitcher_archetype_bucket": "standard",
+        "large_edge_skepticism_flag": false,
+        "is_opener": false,
+        "starter_mismatch": false,
+        "last_pitch_count": 95,
+        "days_since_last_start": 5,
+        "workload_input_status": "complete",
+        "anchor_labels": [
+          "market_anchor_strict"
+        ],
+        "anchor_metadata_malformed": false,
+        "observed_at": "2026-07-22T20:10:00+00:00"
+      },
+      "preclose": {
+        "qualifying_observation_count": 6,
+        "decisive_observation_tokens": [
+          "therundown:snapshot-000",
+          "therundown:snapshot-005"
+        ],
+        "full_ordered_token_sha256": "d523cc3921bade3d976db5e6cd9db3c2ebadfe71e5c6fb283de06222d0087f9c",
+        "direction_change_pivot_tokens": [],
+        "latest_ladder_observation_tokens": [
+          "therundown:snapshot-005"
+        ],
+        "ladder_observation_token_sha256": "d523cc3921bade3d976db5e6cd9db3c2ebadfe71e5c6fb283de06222d0087f9c",
+        "first_observed_at": "2026-07-22T20:00:00+00:00",
+        "last_observed_at": "2026-07-22T20:00:05+00:00",
+        "freshness_status": "fresh",
+        "book_count": 2,
+        "books_seen": [
+          "draftkings",
+          "fanduel"
+        ],
+        "toward_pick_count": 2,
+        "away_from_pick_count": 0,
+        "side_price_movement": "with_side",
+        "broad_confirmation": false,
+        "reversal_book_count": 0,
+        "volatile_book_count": 0,
+        "best_is_off_market": false,
+        "score": 11,
+        "label": "strong_preclose_clv_proxy",
+        "positive_reasons": [
+          "movement_toward_pick",
+          "moderate_low_edge_market_validation",
+          "thin_or_price_only_no_vig_gap",
+          "minus_price_market_support",
+          "clean_quality",
+          "early_lock_window",
+          "low_volatility",
+          "moderate_ev_market_validation"
+        ],
+        "risk_reasons": [],
+        "reason_codes": []
+      },
+      "decision": {
+        "support": "true",
+        "drag_core": "false",
+        "no_drag": "true",
+        "family_states": {
+          "base": {
+            "state": "agree",
+            "reason_codes": [
+              "strong_base_strict_runtime_core"
+            ]
+          },
+          "anchor": {
+            "state": "agree",
+            "reason_codes": [
+              "market_anchor_v2_confirmed"
+            ]
+          },
+          "preclose": {
+            "state": "agree",
+            "reason_codes": [
+              "preclose_v2_confirmed"
+            ]
+          },
+          "reentry": {
+            "state": "disagree",
+            "reason_codes": [
+              "reentry_predicate_false"
+            ]
+          }
+        },
+        "consensus_core": "true",
+        "reentry_expansion": "false",
+        "selected_lane": "consensus_core",
+        "selection_status": "selected",
+        "family_count": 3,
+        "maximum_family_count": 3,
+        "decisive_families": [
+          "base",
+          "anchor",
+          "preclose"
+        ],
+        "preclose_required_for_selected_lane": false,
+        "reason_codes": [
+          "consensus_core_selected"
+        ]
+      }
+    },
+    "bundle_id": "pregame_alternative_pick_methodology_v2",
+    "selector_fingerprint": "23bacff0fa923685ae52c5a9cfbadfb9f5902fb64d91759cfe9b4b1169a221c4",
+    "selector_id": "no_drag_distinct_family_consensus_core_v2",
+    "checkpoint": "frozen_pregame",
+    "locked_at": "2026-07-22T20:10:00+00:00",
+    "observed_at": "2026-07-22T20:10:00+00:00",
+    "frozen_at": "2026-07-22T20:10:00+00:00",
+    "inserted_at": "2026-07-22T20:11:00+00:00",
+    "official_book": "fanduel",
+    "official_odds": -120,
+    "official_verdict": "FIRE 1u",
+    "lock_artifact_sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+    "selection_status": "selected",
+    "lane": "consensus_core",
+    "family_states": {
+      "base": {
+        "state": "agree",
+        "reason_codes": [
+          "strong_base_strict_runtime_core"
+        ]
+      },
+      "anchor": {
+        "state": "agree",
+        "reason_codes": [
+          "market_anchor_v2_confirmed"
+        ]
+      },
+      "preclose": {
+        "state": "agree",
+        "reason_codes": [
+          "preclose_v2_confirmed"
+        ]
+      },
+      "reentry": {
+        "state": "disagree",
+        "reason_codes": [
+          "reentry_predicate_false"
+        ]
+      }
+    },
+    "family_count": 3,
+    "evidence_observation_ids": [
+      "therundown:snapshot-000",
+      "therundown:snapshot-005"
+    ],
+    "evidence_observation_count": 6,
+    "evidence_first_observed_at": "2026-07-22T20:00:00+00:00",
+    "evidence_last_observed_at": "2026-07-22T20:00:05+00:00",
+    "evidence_freshness_status": "fresh"
+  },
+  "lock": {
+    "slate_date": "2026-07-22",
+    "normalized_pitcher": "tarik skubal",
+    "side": "over",
+    "game_time": "2026-07-22T23:00:00+00:00",
+    "id": "synthetic-lock",
+    "locked_at": "2026-07-22T20:10:00+00:00",
+    "consumed_at": "2026-07-22T20:11:00+00:00",
+    "locked_book": "fanduel",
+    "locked_odds": -120,
+    "locked_verdict": "FIRE 1u",
+    "locked_k_line": 6.5,
+    "source_artifact_path": "dashboard/data/processed/today.json",
+    "source_artifact_sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+  },
+  "gate_c": {
+    "slate_date": "2026-07-22",
+    "normalized_pitcher": "tarik skubal",
+    "side": "over",
+    "game_time": "2026-07-22T23:00:00+00:00",
+    "is_tracked_pick": true,
+    "dataset_key": "synthetic-archive",
+    "bet_time_at": "2026-07-22T20:10:00+00:00",
+    "bet_time_book": "fanduel",
+    "bet_time_line": 6.5,
+    "bet_time_odds": -120,
+    "display_verdict": "FIRE 1u",
+    "result": "loss",
+    "pick_history_pnl": -1,
+    "source_artifact_path": "synthetic/close.json"
+  }
+}

@@ -1,0 +1,77 @@
+{
+  "adapter_sha256": "a65993233640006a7abb1b1b930cf1ed1327210fe61e2af593c749e5035dd166",
+  "archive_frozen_overlap": 21,
+  "archive_only": [
+    [
+      "2026-08-21",
+      "randy vasquez",
+      "under"
+    ],
+    [
+      "2026-09-02",
+      "justin hagenman",
+      "over"
+    ]
+  ],
+  "frozen_only": [
+    [
+      "2026-08-29",
+      "erick fedde",
+      "over"
+    ],
+    [
+      "2026-08-30",
+      "mason adams",
+      "over"
+    ]
+  ],
+  "frozen_selector_book_conflicts": [
+    {
+      "normalized_pitcher": "daniel lynch iv",
+      "side": "under",
+      "slate_date": "2026-08-23"
+    },
+    {
+      "normalized_pitcher": "tomoyuki sugano",
+      "side": "over",
+      "slate_date": "2026-08-23"
+    },
+    {
+      "normalized_pitcher": "erick fedde",
+      "side": "over",
+      "slate_date": "2026-08-29"
+    },
+    {
+      "normalized_pitcher": "anthony molina",
+      "side": "over",
+      "slate_date": "2026-08-31"
+    }
+  ],
+  "linked_selector_dates": 13,
+  "linked_selector_pitchers": 18,
+  "packet_uncompressed_sha256": "2fe7c4a0538fa472d761b30a2793cd5ff3edbe84d59536663c64471cafcbceea",
+  "source_capture": "2026-09-04 22:48:48.251902+00",
+  "summary": {
+    "archive_selector_matches": 23,
+    "exclusion_counts": {
+      "archive_lock_book_mismatch": 15,
+      "closed_history_outcome_unavailable": 8,
+      "frozen_selector_inputs_unavailable": 2,
+      "missing_frozen": 25,
+      "missing_gate_c": 1,
+      "missing_lock": 22,
+      "unconsumed_lock": 1
+    },
+    "formal_prospective_credit": 0,
+    "frozen_selector_matches": 23,
+    "input_rows_in_window": {
+      "frozen": 327,
+      "gate_c": 351,
+      "lock": 330
+    },
+    "linked": 309,
+    "linked_selector_matches": 19,
+    "records": 352,
+    "validated_decision_inputs": 325
+  }
+}
