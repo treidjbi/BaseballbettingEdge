@@ -121,3 +121,55 @@ The approval may be retried only after a later physical backup reports
 `COMPLETED`. Recheck the backup inventory first; do not assume the next scheduled
 backup completed. Then rerun only the same PropLine `2026-06-12` SELECT-only
 preview. Deletion remains separately gated.
+
+## First Successful Exact Preview
+
+At **2026-09-04T01:36:27.853637Z**, the separately approved SELECT-only preview
+completed for PropLine `2026-06-12`. Supabase first reconfirmed the completed
+physical backup at `2026-09-03T05:43:13.129Z`; it is newer than the review
+packet. PITR remains disabled.
+
+Two attempts through the local linked-CLI boundary returned code `1` with the
+generic `subprocess_failed` classification and produced no report. They were not
+looped. The documented Supabase connected-SQL fallback then ran the exact same
+generated SELECT-only SQL and returned a complete payload. The executor's
+existing validator accepted it and wrote:
+
+`data/research/retention/prepared-delete-propline-2026-06-12-2026-09-03.json`
+
+The immutable preview evidence is:
+
+- raw snapshots: `11,888`
+- logical raw bytes: `5,111,272`
+- raw groups / exact compact groups: `218 / 218`
+- mismatched, missing, unexpected, and duplicate groups: `0`
+- every source-anomaly count: `0`
+- preview SQL SHA-256:
+  `dd6a38b3a62012b4c13365978a38d663e584cdae13af37e9e57bd7f8fa0f8e6c`
+- delete SQL SHA-256:
+  `cc424e6ac576c37513aff421cfe5d97a3b2d833f2ff6e9b20d813b39435a9676`
+- preview report SHA-256:
+  `2f9016da53968ca397e83af0e7a082ae06ed3b6d7a8c81b64f0b3b96f433d436`
+- approval token:
+  `feba1b620c4ed27fded9cb62e486da9cf55d6d9241e5c3375571a016f274b09b`
+- token expiration: `2026-09-05T01:36:27.853637Z`
+
+The report still states `deletion_approved=false` and
+`retention_execution_closed=true`. No environment gate was set and zero rows
+were deleted.
+
+The exact proposed command, not executed, is:
+
+```bash
+ALLOW_MARKET_SNAPSHOT_DELETE=true \
+APPROVED_PREPARED_MARKET_SNAPSHOT_DELETE_TOKEN=feba1b620c4ed27fded9cb62e486da9cf55d6d9241e5c3375571a016f274b09b \
+python3 scripts/retire_prepared_market_snapshots.py execute \
+  --preview-report data/research/retention/prepared-delete-propline-2026-06-12-2026-09-03.json \
+  --output data/research/retention/prepared-delete-result-propline-2026-06-12-2026-09-03.json \
+  --execute \
+  --run-linked-delete
+```
+
+Do not run it without Tyler's separate approval of this provider, date, token,
+and command. If the token expires, discard the proposed command and generate a
+new exact preview after rechecking backup status.

@@ -442,6 +442,25 @@ rows were deleted. Recheck for a later `COMPLETED` backup before retrying the
 same SELECT-only preview; do not assume a scheduled backup succeeded. Deletion,
 execution environment gates, loops, vacuum, and reclamation remain closed.
 
+### September 3 first exact-preview completion
+
+The later physical backup at `2026-09-03T05:43:13.129Z` was confirmed
+`COMPLETED`, and Tyler approved the same exact SELECT-only preview for PropLine
+`2026-06-12`. Two local linked-CLI attempts returned code `1` and no usable
+report; no further CLI retry occurred. The connected Supabase SQL fallback ran
+the identical generated SELECT, and the executor validator accepted `11,888`
+raw rows / `5,111,272` logical bytes represented by `218` exact compact groups,
+with zero mismatched, missing, unexpected, duplicate, or source-anomaly counts.
+The immutable preview report is
+`data/research/retention/prepared-delete-propline-2026-06-12-2026-09-03.json`
+at SHA-256 `2f9016da...`. Its token `feba1b62...` and delete SQL hash
+`cc424e6a...` expire at `2026-09-05T01:36:27.853637Z`. The report remains
+`deletion_approved=false` / `retention_execution_closed=true`; no environment
+gate was set and zero rows were deleted. The next decision is Tyler's separate
+approval or rejection of that exact provider/date/token/command. If the token
+expires first, require a new backup check and exact preview. Automatic loops,
+BoltOdds, webhooks, post-July-26 rows, vacuum, and reclamation remain closed.
+
 ### August 24 webhook retention gate and August 19 history repair
 
 The recent `734`-row PropLine webhook watch item is processor-capacity debt,

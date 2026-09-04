@@ -4,8 +4,7 @@ Review date: **2026-09-02**
 
 ## Decision
 
-**EXACT EXECUTOR IMPLEMENTED; FIRST SELECT-ONLY PREVIEW APPROVED BUT BLOCKED ON
-BACKUP FRESHNESS; DELETION NOT APPROVED.**
+**FIRST EXACT SELECT-ONLY PREVIEW PASSED; DELETION NOT APPROVED.**
 
 The completed manual compaction interval remains valid for the exact historical
 PropLine/TheRundown dates below. Current read-only Supabase counts still match
@@ -151,6 +150,28 @@ gate therefore failed closed before the partition query. No preview report or
 token was generated and no deletion gate opened. Retry only after a later
 physical backup is confirmed `COMPLETED`; do not infer completion from the
 daily schedule.
+
+On September 3 Phoenix time, a later physical backup was confirmed `COMPLETED`
+at `2026-09-03T05:43:13.129Z`. Tyler then approved the same PropLine
+`2026-06-12` preview. The local CLI boundary returned two code-1 failures and
+no report, so it was not retried again. The connected Supabase SQL fallback ran
+the same SELECT-only query, and the executor validator accepted a complete,
+exact payload: `11,888` raw rows / `5,111,272` logical bytes represented by
+`218` exact compact groups, with zero coverage blockers and zero source
+anomalies.
+
+The validated report is
+`data/research/retention/prepared-delete-propline-2026-06-12-2026-09-03.json`
+at SHA-256
+`2f9016da53968ca397e83af0e7a082ae06ed3b6d7a8c81b64f0b3b96f433d436`.
+Its approval token is
+`feba1b620c4ed27fded9cb62e486da9cf55d6d9241e5c3375571a016f274b09b`,
+its delete SQL hash is
+`cc424e6ac576c37513aff421cfe5d97a3b2d833f2ff6e9b20d813b39435a9676`,
+and it expires at `2026-09-05T01:36:27.853637Z`. The report retains
+`deletion_approved=false` and `retention_execution_closed=true`. Zero rows were
+deleted. Tyler must separately approve the exact token and command before any
+write.
 
 Retired BoltOdds May 7-June 16 remains a separate candidate and must not be
 silently combined with this active-provider tranche.
