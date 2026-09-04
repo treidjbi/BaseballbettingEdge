@@ -109,3 +109,37 @@ The next action is the hard gate: Tyler must approve or reject this exact
 tranche token and its five embedded commands. If it expires, recheck the
 backup and rebuild the packet. Approval must still be executed sequentially,
 with each immutable result inspected before the next command.
+
+## First-Tranche Execution Stop
+
+Tyler approved the exact tranche token. Execution began sequentially on
+September 3 Phoenix time (September 4 UTC).
+
+1. TheRundown June 12 confirmed deletion of exactly `10,104` raw rows /
+   `5,163,024` logical bytes. Its postcheck retained `456` compact groups
+   representing all `10,104` observations.
+2. PropLine June 13 confirmed deletion of exactly `8,866` raw rows /
+   `4,028,458` logical bytes. Its postcheck retained `192` compact groups
+   representing all `8,866` observations.
+3. TheRundown June 13 stopped before mutation because its mandatory fresh
+   preview no longer exactly matched the approved report. Target rows, bytes,
+   and compact groups were unchanged at `23,731`, `12,119,175`, and `612`,
+   but the informational cross-date counters changed from `5,522` preserved
+   mismatches to zero after the approved TheRundown June 12 rows were removed.
+
+The third command wrote no result because it failed before the mutation path.
+A fresh SELECT confirmed all `23,731` target rows still exist. Commands four
+and five were not attempted. No command was retried and no vacuum ran. The
+two confirmed results removed `18,970` rows / `9,191,482` logical bytes (about
+`8.77 MiB`) while preserving `648` compact groups. The sanitized stop record
+is `data/research/retention/prepared-tranche-001-2026-09-04/tranche-execution-stop.json`
+at SHA-256
+`7efe6957cb7e2c29f0872cb3f54f1db5312d97ef8b5cadb7c5f00e7acffd44e9`.
+
+The root cause is an interaction between chronological execution and the
+date-scoped informational anomaly counters: deleting one run date can remove
+cross-date observations counted on the following observed date, invalidating
+a later precomputed token even though that later target partition is intact.
+Do not retry tranche 001 or run commands four or five. Before further deletion,
+review and test a replacement ordering/packet contract, generate fresh exact
+previews, and obtain approval for the replacement token.

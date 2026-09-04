@@ -1,0 +1,76 @@
+{
+  "automatic_retry_attempted": false,
+  "blocked_partition": {
+    "approved_source_state": {
+      "compact_group_count": 612,
+      "preserved_slate_date_mismatch_rows": 5522,
+      "raw_logical_bytes": 12119175,
+      "raw_snapshot_rows": 23731,
+      "slate_date_mismatch_rows": 5522,
+      "unpreserved_slate_date_mismatch_rows": 0
+    },
+    "fresh_source_state": {
+      "compact_group_count": 612,
+      "preserved_slate_date_mismatch_rows": 0,
+      "raw_logical_bytes": 12119175,
+      "raw_snapshot_rows": 23731,
+      "slate_date_mismatch_rows": 0,
+      "unpreserved_slate_date_mismatch_rows": 0
+    },
+    "mutation_attempted": false,
+    "ordinal": 3,
+    "provider": "therundown",
+    "reason": "fresh_source_state_changed",
+    "result_file_written": false,
+    "slate_date": "2026-06-13"
+  },
+  "confirmed_partitions": [
+    {
+      "compact_group_count": 456,
+      "deleted_rows": 10104,
+      "logical_bytes": 5163024,
+      "ordinal": 1,
+      "provider": "therundown",
+      "result_path": "data/research/retention/prepared-tranche-001-2026-09-04/result-01-therundown-2026-06-12.json",
+      "result_sha256": "74ed85cb904eb9a6a2d74421f3f8dbf4d80aecc6af05468d0011ccba5b8ccde3",
+      "slate_date": "2026-06-12"
+    },
+    {
+      "compact_group_count": 192,
+      "deleted_rows": 8866,
+      "logical_bytes": 4028458,
+      "ordinal": 2,
+      "provider": "propline",
+      "result_path": "data/research/retention/prepared-tranche-001-2026-09-04/result-02-propline-2026-06-13.json",
+      "result_sha256": "205bd4549ff319dc2a41538f303166152549fb5aa7666f54aa89e7c82075878f",
+      "slate_date": "2026-06-13"
+    }
+  ],
+  "confirmed_total_compact_groups": 648,
+  "confirmed_total_deleted_rows": 18970,
+  "confirmed_total_logical_bytes": 9191482,
+  "database_size_after_stop": {
+    "database_bytes": 6091336851,
+    "market_snapshots_total_bytes": 4153278464,
+    "pct_of_pro_included_8gb": 70.91
+  },
+  "not_attempted_partitions": [
+    {
+      "ordinal": 4,
+      "provider": "propline",
+      "slate_date": "2026-06-14"
+    },
+    {
+      "ordinal": 5,
+      "provider": "therundown",
+      "slate_date": "2026-06-14"
+    }
+  ],
+  "packet_sha256": "7915ab4e5280b392d59404f44d166087036615870a1d17255c650ea3df47be38",
+  "status": "stopped_pre_mutation_source_state_drift",
+  "stopped_at": "2026-09-04T04:44:50+00:00",
+  "tranche_approval_token": "9c607b896349aac403869efe25c4e701bbe2adb71f5233aea554f35c48445636",
+  "tranche_id": "tranche-001",
+  "vacuum_attempted": false,
+  "version": 1
+}

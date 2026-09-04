@@ -542,6 +542,27 @@ is approval or rejection of that exact token and its five sequential embedded
 commands. Automatic execution, retries after uncertain writes, other tranches,
 webhooks, BoltOdds, post-July-26 data, vacuum, and reclamation remain closed.
 
+Tyler approved tranche 001. The first two commands confirmed deletion of
+`10,104` TheRundown June 12 rows and `8,866` PropLine June 13 rows: `18,970`
+rows / `9,191,482` logical bytes total, with `648` compact groups still
+representing every removed observation. The third command, TheRundown June 13,
+failed closed before mutation because its informational preserved cross-date
+counter changed from `5,522` to zero after the prior TheRundown date was
+deleted. A fresh SELECT retained the approved `23,731` target rows,
+`12,119,175` bytes, and `612` exact compact groups; no result file was written.
+Commands four and five were not attempted, and there was no retry or vacuum.
+
+This exposes a chronological packet-design interaction rather than lost
+coverage: anomaly counters are keyed by observed date, so removing one run
+date can legitimately change the following date's informational counters.
+Tranche 001 is stopped and must not be resumed from its old token. The
+post-stop physical read was `6,091,336,851` database bytes (`70.91%` of 8 GiB)
+and `4,153,278,464` bytes for `market_snapshots`; ongoing writes and MVCC mean
+physical size has not fallen. Before another deletion, review and test a
+replacement ordering/packet contract, generate fresh exact previews, and use
+a new hard-gate token. All remaining partitions, webhooks, BoltOdds,
+post-July-26 data, vacuum, and reclamation remain closed.
+
 ### August 24 webhook retention gate and August 19 history repair
 
 The recent `734`-row PropLine webhook watch item is processor-capacity debt,

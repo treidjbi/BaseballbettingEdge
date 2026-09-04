@@ -298,6 +298,14 @@ a hard blocker. The controlled-tranche packet builder may collect at most five
 independent previews for review, but it has no execute path and does not weaken
 the single-partition mutation/postcheck contract.
 
+Do not precompute an ascending multi-date execution packet when a provider has
+preserved cross-date lineage. The anomaly rows are keyed to observed date, so
+deleting an earlier run date can change the following date's informational
+counter and correctly invalidate its source-state token before mutation. The
+September 3 tranche stopped on exactly this gate after two confirmed commands.
+Do not retry or continue the old packet. Any replacement ordering or token
+contract requires tests, fresh previews, and a new exact approval.
+
 As of Tyler's 2026-08-27 cost decision, active-provider compaction should be
 operated manually instead of through another paid Render cron. Review storage
 and exact compact coverage approximately every seven days, once at season end,
