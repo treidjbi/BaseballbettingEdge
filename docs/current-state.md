@@ -12,9 +12,12 @@ For any new work in this repo:
    for the active gate index and to separate operational/display surfaces from
    still-closed production promotion gates.
 4. Read the newest active dated plans that match the task:
+   - `docs/superpowers/specs/2026-09-04-forward-pregame-evidence-contract.md`
+     for the defined forward-only attribution contract; capture inactive,
+     activation unset, offline validator acceptance next
    - `docs/superpowers/plans/2026-09-04-decision-time-research-adapter.md`
-     for the completed standalone offline linkage adapter and remaining
-     forward-only evidence contract; no runner integration or credit granted
+     for the completed standalone offline linkage adapter and its validation;
+     no runner integration or credit granted
    - `docs/superpowers/plans/2026-06-10-profit-rescue-and-strict-provider-readiness.md`
      for the downgrade-only FIRE exposure rescue canary and the read-only
      strict-provider readiness report
@@ -393,7 +396,7 @@ jobs, data collection, production behavior, or any promotion gate.
 | Pipeline / infrastructure | Watch: current publication is fresh; September 3 locks are 12/12 consumed. GitHub grading remains unsafe without hydration repair. | Continue ordinary natural-run observation. Investigate missing/stale artifacts, unconsumed locks, repeat timeouts or sender failures; no repair or deployment follows from this review. |
 | Model | No new promotion justified. The [formal Alt V2 paired review](research/2026-09-04-alt-v2-paired-decision.md) is complete: 113/113 validated freezes, 49-63 with one void, -24.889187u. Consensus is -11.089692u and Re-entry -13.799495u versus same-window mainline FIRE -9.085141u. Both V2 promotion paths are retired; frozen controls remain. | Pause recurring promotion scoreboards and hindsight subset searches as a research-attention recommendation only. Reopen on a material evidence correction or a separately reviewed new frozen hypothesis/future holdout. Existing Alt runtime/display stays unchanged; other candidates retain their own attribution/diversity gates. |
 | UI | Existing live-market and Alt V2 comparison behavior remains unchanged. No fresh mobile interaction was performed for this review. | Revisit on contract/freeze mismatch or user confusion; assess display usefulness separately from predictive value. |
-| Tracking / data collection / history | The approved [offline decision-time adapter](research/2026-09-04-decision-time-adapter-review.md) is implemented on a feature branch: 352 bounded identities, 309 linked records, 23 frozen selective-LEAN rule matches, 19 linked matches and zero formal credit. All 327 captured Preclose proofs remain pending; archive/frozen matches overlap 21/23. Historical Gate C hashes are explained by CRLF, and original files remain preserved. Cleanup remains 82/82 complete; last storage read ~71.52%. Kumar's lock remains unconsumed and excluded. | Review a forward-only pregame evidence contract for agreement, mature Preclose, frozen Path B and recovery provenance before separately scoped runner integration. Revisit on a reviewed contract with passing pregame examples and negative tests; count growth alone is insufficient. Preserve book conflicts, baselines and no-back-credit rules. Kumar separately needs consumption proof or a reviewed recovery policy. No production, history, retention or scheduler change. |
+| Tracking / data collection / history | The approved [offline decision-time adapter](research/2026-09-04-decision-time-adapter-review.md) is implemented on a feature branch: 352 bounded identities, 309 linked records, 23 frozen selective-LEAN rule matches, 19 linked matches and zero formal credit. All 327 captured Preclose proofs remain pending; archive/frozen matches overlap 21/23. Historical Gate C hashes are explained by CRLF, and original files remain preserved. Cleanup remains 82/82 complete; last storage read ~71.52%. Kumar's lock remains unconsumed and excluded. | The [forward-only evidence contract](superpowers/specs/2026-09-04-forward-pregame-evidence-contract.md) is defined: capture inactive, activation unset, zero back-credit. Next is an offline envelope validator and synthetic acceptance packet covering exact availability, agreement/Preclose, Path B and original-seed provenance. Revisit after offline acceptance for a bounded capture/integration proposal; count growth alone is insufficient. Preserve book conflicts, baselines and original review gates. Kumar remains excluded. No production, history, retention or scheduler change. |
 
 The existing BBE Operations Brief reads this board; carry these decisions
 forward through this linked companion without changing its automation settings.

@@ -89,3 +89,17 @@ not independent reconstruction of served/issuer bytes.
 Next decision is a forward-only evidence contract for missing pregame agreement,
 Preclose maturity, Path B and recovery provenance before any separately scoped
 runner integration. No live or historical data change was made.
+
+## Subsequent approved contract definition
+
+Tyler approved defining the forward-only pregame evidence contract. The
+[completed contract](../specs/2026-09-04-forward-pregame-evidence-contract.md)
+now controls prospective availability, exact agreement/Preclose reuse, frozen
+Path B, original-seed provenance and a separate immutable evidence envelope.
+It preserves the selector, baselines and review gates. Capture is inactive and
+activation fields remain unset; no old adapter row receives credit.
+
+The next bounded step is an offline envelope validator and synthetic acceptance
+packet, including the contract's negative cases. Capture/runner integration,
+physical hosted sink and release remain separate decisions. This update is
+documentation only; the adapter and its saved evidence are unchanged.

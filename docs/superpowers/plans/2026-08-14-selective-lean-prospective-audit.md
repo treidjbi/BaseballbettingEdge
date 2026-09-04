@@ -130,3 +130,13 @@ and Path B attribution remain absent. The original 103-row nomination baseline,
 fingerprint, sample/diversity requirements and no-back-credit rules still
 control. Next is a forward-only evidence contract before separately scoped
 integration; no scheduled audit or collector changed.
+
+### Forward-only evidence contract defined
+
+The [September 4 contract](../specs/2026-09-04-forward-pregame-evidence-contract.md)
+now specifies the separate future evidence version. Activation remains unset;
+the original August 15 boundary, nomination baselines, fingerprint and review
+gates are unchanged. Exact pregame attribution includes weak/against/neutral
+and known fallback states; completeness is not a new favorable-signal filter.
+No legacy audit code or formal counter changed. Next is offline validator
+acceptance before a separately scoped capture/integration proposal.

@@ -1367,3 +1367,10 @@ selective-LEAN matches and zero formal credit. It emits a separate nested
 packet; the canonical builder, dataset and runner remain unchanged. The next
 decision is the forward-only pregame evidence contract, with all original
 sample/diversity, baseline and no-back-credit requirements preserved.
+
+The subsequent approved definition is now recorded in the
+[forward-only pregame evidence contract](../specs/2026-09-04-forward-pregame-evidence-contract.md).
+It supplies the missing availability/attribution rules without rewriting Gate C
+or V2 records. No capture is active and no new prospective start is set. Next
+is an offline validator/acceptance packet; storage and runner integration
+remain separately scoped.
