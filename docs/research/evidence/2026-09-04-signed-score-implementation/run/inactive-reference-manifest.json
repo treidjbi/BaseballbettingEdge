@@ -1,0 +1,51 @@
+{
+  "activation": {
+    "activated_at": null,
+    "capture_sink": null,
+    "first_unobserved_slate": null,
+    "implementation_commit": null,
+    "review_ref": null
+  },
+  "baselines": {
+    "current_provider": {
+      "losses": 28,
+      "pnl": 2.999676,
+      "roi": 0.053566,
+      "rows": 56,
+      "wins": 28
+    },
+    "historical": {
+      "losses": 48,
+      "pnl": 11.415935,
+      "roi": 0.110834,
+      "rows": 103,
+      "wins": 55
+    }
+  },
+  "contract_sha256": "dac648b46e5fad8754dd31f66cdd0f89631097930f666c5295f830882f80c8bd",
+  "dependencies": {
+    "analytics/diagnostics/decision_time_research_adapter.py": "a65993233640006a7abb1b1b930cf1ed1327210fe61e2af593c749e5035dd166",
+    "analytics/diagnostics/forward_pregame_evidence_validator.py": "ec0e1271ab29051e486f60b24fe7926b51d6a04ec7f2b980b22bd6cf8bb752a7",
+    "analytics/diagnostics/gate_f_preclose_clv_proxy_lab.py": "ee6c1294c9103d99d2aa4d06dbb9bad7e8bcbbb34504c38526c275450c35453f",
+    "analytics/diagnostics/market_price_outcome_audit.py": "b27f4e10e425ff00b573aab0cba76c671ac5ec1b8cc0f167dece09e54e6b7288",
+    "analytics/diagnostics/pitcher_k_outcome_dataset.py": "ee8dca32c7a86c5e3295ef03887b74750586ac9868a90c176ca5145487e1e44a",
+    "analytics/diagnostics/selective_lean_prospective_audit.py": "e19ede879e57b531006b1bf27fb98b0381a19f3fa682726b23e3a446bf06274c",
+    "analytics/diagnostics/strong_base_decision_lab.py": "534fe3d6c420253e61ed1dd7f7115f7c8b9068d84c09e3398c014af582481a70",
+    "market_infra/alternative_pick_evaluation_proof_v2.py": "f1df3dd95da719e12965dfd38bb311809677a2215ba7da0d3a6c7ee2d0bf55c6",
+    "market_infra/alternative_pick_preclose_v2.py": "13a4313849f079ef5f8779a5abff057c86b909d320c68cdf9b669e9e84dca683",
+    "market_infra/alternative_pick_selection_state.py": "6cf65e0320d858a5f7add6707cd4ee392b57a1b5da4db5301a0b4511a852358f",
+    "market_infra/alternative_pick_selector.py": "c2363f6cff54f2ac49a274fd7a815fbc9001b812389f5128f5038c17bb94eaee",
+    "market_infra/alternative_pick_selector_manifest_v1.json": "30405ecdb6044e12748b4fd5d9275a1867e9c8a8412cc59cfced39f4f95a5ff2",
+    "market_infra/alternative_pick_selector_manifest_v2.json": "2b1fb1eee231c27a647081b4b9e53ece48089ee3df07d66c653807b51f5164ee",
+    "market_infra/alternative_pick_selector_v2.py": "7641a8e9324f069f00fe00160b9564f5e63f7fd974c09a2516f9180c15a06ec3",
+    "market_infra/current_market_lines.py": "3ecfeca07ef269b3c123031528305295b39df8d570f4b81b921787ff18b84f62",
+    "market_infra/live_market_display.py": "c9ca3eba559f044ed93bf25b3b688cf7ff4679c98f8f7bac17ea084d76cebe7d",
+    "market_infra/provider_freshness.py": "4e23b9b7ba24043003de80dd2d11520798ba94db642b7faa2d6ac29307fe7516",
+    "market_infra/published_artifacts.py": "a6968313322ab09435bbf08544200524543738a483c4d7acdee1f23d4400bc3d",
+    "pipeline/name_utils.py": "d71fa2e003dac0dbf69d21e989144f6f7d982d894bbd0a03a6dc554fc8a12239"
+  },
+  "mode": "offline_validation_only",
+  "schema": "forward_pregame_evidence_v1",
+  "selector_fingerprint": "4e00a180e35fe75dc8889d47065a25c4351cb37ac55664eb42f01b77c07fd13a",
+  "stale_after_seconds": 900
+}

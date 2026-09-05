@@ -70,3 +70,26 @@ or rewriting already preserved evidence.
 Retain this one-time compatibility packet. Pause repeated negative-score probes
 unless the proposed implementation, source hashes or proof contract changes.
 Other operating lanes retain their own triggers in the companion brief.
+
+## Approved implementation follow-up
+
+Tyler approved the paired implementation after this review. The exact patch is
+implemented on the feature branch at `b08284fd`; no merge or deployment occurred.
+[Acceptance](../../research/2026-09-04-signed-score-implementation.md) records
+539 Python passes, 27 PostgreSQL behavior tests skipped for missing local binaries,
+and 124 Node passes. Signed proofs round-trip through builder/serializer and the
+mocked full endpoint; all malformed-count and semantic exclusions remain strict.
+
+A new inactive manifest and 20-scenario packet were issued, with nine synthetic
+input candidates and zero formal credit. Both reader hashes and the implementation
+commit are pinned. Old packet files are byte-identical; their old dependency hash
+correctly fails against the new code. All 327 historical proofs remain pending.
+Scoring/selector/contract bytes are unchanged. No production setting, history,
+capture sink or activation changed.
+
+The [bounded capture proposal](2026-09-04-bounded-forward-capture-proposal.md)
+now controls the next work: an offline feasibility prototype with explicit
+acquisition and original-seed receipts, full inventory, unchanged by-lock replay
+and measured limits. Runtime timestamps currently precede polling/reads, so an
+after-the-fact hook cannot establish by-lock availability. Do not build or activate
+a hosted collector until the proposal's feasibility and persistence gates pass.

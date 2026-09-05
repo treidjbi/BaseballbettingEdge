@@ -1,0 +1,763 @@
+TAP version 13
+# Subtest: alternative-picks preserves reviewed signed proofs and rejects malformed scores and counts
+    # Subtest: away_from_pick_count_boolean
+    ok 1 - away_from_pick_count_boolean
+      ---
+      duration_ms: 25.935625
+      type: 'test'
+      ...
+    # Subtest: away_from_pick_count_fractional
+    ok 2 - away_from_pick_count_fractional
+      ---
+      duration_ms: 0.457375
+      type: 'test'
+      ...
+    # Subtest: away_from_pick_count_missing
+    ok 3 - away_from_pick_count_missing
+      ---
+      duration_ms: 0.345
+      type: 'test'
+      ...
+    # Subtest: away_from_pick_count_negative
+    ok 4 - away_from_pick_count_negative
+      ---
+      duration_ms: 0.325
+      type: 'test'
+      ...
+    # Subtest: away_from_pick_count_nonnumeric
+    ok 5 - away_from_pick_count_nonnumeric
+      ---
+      duration_ms: 0.342916
+      type: 'test'
+      ...
+    # Subtest: book_count_boolean
+    ok 6 - book_count_boolean
+      ---
+      duration_ms: 0.296541
+      type: 'test'
+      ...
+    # Subtest: book_count_fractional
+    ok 7 - book_count_fractional
+      ---
+      duration_ms: 0.261333
+      type: 'test'
+      ...
+    # Subtest: book_count_missing
+    ok 8 - book_count_missing
+      ---
+      duration_ms: 0.266458
+      type: 'test'
+      ...
+    # Subtest: book_count_negative
+    ok 9 - book_count_negative
+      ---
+      duration_ms: 0.272208
+      type: 'test'
+      ...
+    # Subtest: book_count_nonnumeric
+    ok 10 - book_count_nonnumeric
+      ---
+      duration_ms: 0.32525
+      type: 'test'
+      ...
+    # Subtest: negative
+    ok 11 - negative
+      ---
+      duration_ms: 0.742083
+      type: 'test'
+      ...
+    # Subtest: positive
+    ok 12 - positive
+      ---
+      duration_ms: 0.288334
+      type: 'test'
+      ...
+    # Subtest: qualifying_observation_count_boolean
+    ok 13 - qualifying_observation_count_boolean
+      ---
+      duration_ms: 0.294792
+      type: 'test'
+      ...
+    # Subtest: qualifying_observation_count_fractional
+    ok 14 - qualifying_observation_count_fractional
+      ---
+      duration_ms: 0.206292
+      type: 'test'
+      ...
+    # Subtest: qualifying_observation_count_missing
+    ok 15 - qualifying_observation_count_missing
+      ---
+      duration_ms: 0.1665
+      type: 'test'
+      ...
+    # Subtest: qualifying_observation_count_negative
+    ok 16 - qualifying_observation_count_negative
+      ---
+      duration_ms: 0.178
+      type: 'test'
+      ...
+    # Subtest: qualifying_observation_count_nonnumeric
+    ok 17 - qualifying_observation_count_nonnumeric
+      ---
+      duration_ms: 0.146791
+      type: 'test'
+      ...
+    # Subtest: reversal_book_count_boolean
+    ok 18 - reversal_book_count_boolean
+      ---
+      duration_ms: 0.15
+      type: 'test'
+      ...
+    # Subtest: reversal_book_count_fractional
+    ok 19 - reversal_book_count_fractional
+      ---
+      duration_ms: 0.145875
+      type: 'test'
+      ...
+    # Subtest: reversal_book_count_missing
+    ok 20 - reversal_book_count_missing
+      ---
+      duration_ms: 0.143417
+      type: 'test'
+      ...
+    # Subtest: reversal_book_count_negative
+    ok 21 - reversal_book_count_negative
+      ---
+      duration_ms: 0.179541
+      type: 'test'
+      ...
+    # Subtest: reversal_book_count_nonnumeric
+    ok 22 - reversal_book_count_nonnumeric
+      ---
+      duration_ms: 0.141083
+      type: 'test'
+      ...
+    # Subtest: score_boolean
+    ok 23 - score_boolean
+      ---
+      duration_ms: 0.269834
+      type: 'test'
+      ...
+    # Subtest: score_fractional
+    ok 24 - score_fractional
+      ---
+      duration_ms: 0.167958
+      type: 'test'
+      ...
+    # Subtest: score_missing
+    ok 25 - score_missing
+      ---
+      duration_ms: 0.148542
+      type: 'test'
+      ...
+    # Subtest: score_nonnumeric
+    ok 26 - score_nonnumeric
+      ---
+      duration_ms: 0.139916
+      type: 'test'
+      ...
+    # Subtest: score_numeric_string
+    ok 27 - score_numeric_string
+      ---
+      duration_ms: 0.131708
+      type: 'test'
+      ...
+    # Subtest: score_wrong_positive
+    ok 28 - score_wrong_positive
+      ---
+      duration_ms: 0.225875
+      type: 'test'
+      ...
+    # Subtest: score_wrong_signed
+    ok 29 - score_wrong_signed
+      ---
+      duration_ms: 0.196167
+      type: 'test'
+      ...
+    # Subtest: score_wrong_zero
+    ok 30 - score_wrong_zero
+      ---
+      duration_ms: 0.2275
+      type: 'test'
+      ...
+    # Subtest: tampered_freshness_status
+    ok 31 - tampered_freshness_status
+      ---
+      duration_ms: 0.166209
+      type: 'test'
+      ...
+    # Subtest: tampered_label
+    ok 32 - tampered_label
+      ---
+      duration_ms: 0.549
+      type: 'test'
+      ...
+    # Subtest: tampered_last_observed_at
+    ok 33 - tampered_last_observed_at
+      ---
+      duration_ms: 0.140958
+      type: 'test'
+      ...
+    # Subtest: tampered_positive_reasons
+    ok 34 - tampered_positive_reasons
+      ---
+      duration_ms: 0.167583
+      type: 'test'
+      ...
+    # Subtest: tampered_reason_codes
+    ok 35 - tampered_reason_codes
+      ---
+      duration_ms: 0.145417
+      type: 'test'
+      ...
+    # Subtest: tampered_risk_reasons
+    ok 36 - tampered_risk_reasons
+      ---
+      duration_ms: 0.166375
+      type: 'test'
+      ...
+    # Subtest: toward_pick_count_boolean
+    ok 37 - toward_pick_count_boolean
+      ---
+      duration_ms: 0.142792
+      type: 'test'
+      ...
+    # Subtest: toward_pick_count_fractional
+    ok 38 - toward_pick_count_fractional
+      ---
+      duration_ms: 0.151292
+      type: 'test'
+      ...
+    # Subtest: toward_pick_count_missing
+    ok 39 - toward_pick_count_missing
+      ---
+      duration_ms: 0.1225
+      type: 'test'
+      ...
+    # Subtest: toward_pick_count_negative
+    ok 40 - toward_pick_count_negative
+      ---
+      duration_ms: 0.122458
+      type: 'test'
+      ...
+    # Subtest: toward_pick_count_nonnumeric
+    ok 41 - toward_pick_count_nonnumeric
+      ---
+      duration_ms: 0.115959
+      type: 'test'
+      ...
+    # Subtest: volatile_book_count_boolean
+    ok 42 - volatile_book_count_boolean
+      ---
+      duration_ms: 0.146
+      type: 'test'
+      ...
+    # Subtest: volatile_book_count_fractional
+    ok 43 - volatile_book_count_fractional
+      ---
+      duration_ms: 0.148459
+      type: 'test'
+      ...
+    # Subtest: volatile_book_count_missing
+    ok 44 - volatile_book_count_missing
+      ---
+      duration_ms: 0.125917
+      type: 'test'
+      ...
+    # Subtest: volatile_book_count_negative
+    ok 45 - volatile_book_count_negative
+      ---
+      duration_ms: 0.123708
+      type: 'test'
+      ...
+    # Subtest: volatile_book_count_nonnumeric
+    ok 46 - volatile_book_count_nonnumeric
+      ---
+      duration_ms: 0.122292
+      type: 'test'
+      ...
+    # Subtest: zero
+    ok 47 - zero
+      ---
+      duration_ms: 0.197125
+      type: 'test'
+      ...
+    # Subtest: nan
+    ok 48 - nan
+      ---
+      duration_ms: 0.122708
+      type: 'test'
+      ...
+    # Subtest: positive_infinity
+    ok 49 - positive_infinity
+      ---
+      duration_ms: 0.116584
+      type: 'test'
+      ...
+    # Subtest: negative_infinity
+    ok 50 - negative_infinity
+      ---
+      duration_ms: 0.121416
+      type: 'test'
+      ...
+    1..50
+ok 1 - alternative-picks preserves reviewed signed proofs and rejects malformed scores and counts
+  ---
+  duration_ms: 39.39325
+  type: 'test'
+  ...
+# Subtest: alternative-picks handles OPTIONS and rejects non-GET requests
+ok 2 - alternative-picks handles OPTIONS and rejects non-GET requests
+  ---
+  duration_ms: 0.037792
+  type: 'test'
+  ...
+# Subtest: alternative-picks returns a stable unavailable payload without configuration
+ok 3 - alternative-picks returns a stable unavailable payload without configuration
+  ---
+  duration_ms: 0.589125
+  type: 'test'
+  ...
+# Subtest: alternative-picks computes Phoenix today server-side and never queries a caller supplied historical slate
+ok 4 - alternative-picks computes Phoenix today server-side and never queries a caller supplied historical slate
+  ---
+  duration_ms: 0.062125
+  type: 'test'
+  ...
+# Subtest: alternative-picks uses canonical today first and returns only a fully linked frozen row after artifact advance
+ok 5 - alternative-picks uses canonical today first and returns only a fully linked frozen row after artifact advance
+  ---
+  duration_ms: 0.478042
+  type: 'test'
+  ...
+# Subtest: alternative-picks keeps current V2 provisional rows visible across publisher hash normalization
+ok 6 - alternative-picks keeps current V2 provisional rows visible across publisher hash normalization
+  ---
+  duration_ms: 0.554958
+  type: 'test'
+  ...
+# Subtest: alternative-picks preserves the Task 2 logical-artifact and exact-fetch lock-path contract
+ok 7 - alternative-picks preserves the Task 2 logical-artifact and exact-fetch lock-path contract
+  ---
+  duration_ms: 0.210417
+  type: 'test'
+  ...
+# Subtest: alternative-picks rejects foreign selectors, bad fingerprints, untyped values, and unsafe display text
+ok 8 - alternative-picks rejects foreign selectors, bad fingerprints, untyped values, and unsafe display text
+  ---
+  duration_ms: 1.50625
+  type: 'test'
+  ...
+# Subtest: alternative-picks accepts null-lane supporting rows while keeping selected lane identity strict
+ok 9 - alternative-picks accepts null-lane supporting rows while keeping selected lane identity strict
+  ---
+  duration_ms: 1.238875
+  type: 'test'
+  ...
+# Subtest: alternative-picks maps canonical full MLB team names to safe display codes
+ok 10 - alternative-picks maps canonical full MLB team names to safe display codes
+  ---
+  duration_ms: 0.178833
+  type: 'test'
+  ...
+# Subtest: alternative-picks distinguishes a healthy no-qualifier row from waiting on current evidence
+ok 11 - alternative-picks distinguishes a healthy no-qualifier row from waiting on current evidence
+  ---
+  duration_ms: 0.268459
+  type: 'test'
+  ...
+# Subtest: alternative-picks requires every declared provider posture and an approved publication source
+ok 12 - alternative-picks requires every declared provider posture and an approved publication source
+  ---
+  duration_ms: 0.581208
+  type: 'test'
+  ...
+# Subtest: alternative-picks suppresses frozen rows for every lock-link mismatch
+ok 13 - alternative-picks suppresses frozen rows for every lock-link mismatch
+  ---
+  duration_ms: 2.362375
+  type: 'test'
+  ...
+# Subtest: alternative-picks rejects malformed/unapproved canonical artifacts and sanitizes read failures
+ok 14 - alternative-picks rejects malformed/unapproved canonical artifacts and sanitizes read failures
+  ---
+  duration_ms: 0.877625
+  type: 'test'
+  ...
+# Subtest: alternative-picks defaults an unversioned request to v1
+ok 15 - alternative-picks defaults an unversioned request to v1
+  ---
+  duration_ms: 0.127458
+  type: 'test'
+  ...
+# Subtest: alternative-picks serves explicit bundle_version v1 and v2 independently
+ok 16 - alternative-picks serves explicit bundle_version v1 and v2 independently
+  ---
+  duration_ms: 0.419542
+  type: 'test'
+  ...
+# Subtest: alternative-picks rejects unsupported explicit bundle versions
+ok 17 - alternative-picks rejects unsupported explicit bundle versions
+  ---
+  duration_ms: 0.051291
+  type: 'test'
+  ...
+# Subtest: alternative-picks includes bundle and fingerprint on ready empty and unavailable payloads
+ok 18 - alternative-picks includes bundle and fingerprint on ready empty and unavailable payloads
+  ---
+  duration_ms: 0.155
+  type: 'test'
+  ...
+# Subtest: alternative-picks filters Supabase by the selected bundle
+ok 19 - alternative-picks filters Supabase by the selected bundle
+  ---
+  duration_ms: 0.34675
+  type: 'test'
+  ...
+# Subtest: alternative-picks rejects missing malformed oversized or cross-row v2 proof
+ok 20 - alternative-picks rejects missing malformed oversized or cross-row v2 proof
+  ---
+  duration_ms: 0.644208
+  type: 'test'
+  ...
+# Subtest: alternative-picks rejects mixed selector identity family logic and artifact hashes
+ok 21 - alternative-picks rejects mixed selector identity family logic and artifact hashes
+  ---
+  duration_ms: 0.40075
+  type: 'test'
+  ...
+# Subtest: alternative-picks rejects every canonical-python-invalid nested v2 proof mutation
+ok 22 - alternative-picks rejects every canonical-python-invalid nested v2 proof mutation
+  ---
+  duration_ms: 0.821417
+  type: 'test'
+  ...
+# Subtest: alternative-picks rejects empty or duplicate provider binding identifiers
+ok 23 - alternative-picks rejects empty or duplicate provider binding identifiers
+  ---
+  duration_ms: 0.5345
+  type: 'test'
+  ...
+# Subtest: alternative-picks enforces the canonical 30720 byte application proof ceiling
+ok 24 - alternative-picks enforces the canonical 30720 byte application proof ceiling
+  ---
+  duration_ms: 0.588916
+  type: 'test'
+  ...
+# Subtest: alternative-picks requires decisive families to exactly match agreeing family order
+ok 25 - alternative-picks requires decisive families to exactly match agreeing family order
+  ---
+  duration_ms: 0.455916
+  type: 'test'
+  ...
+# Subtest: alternative-picks accepts the complete canonical v2 proof fixture
+ok 26 - alternative-picks accepts the complete canonical v2 proof fixture
+  ---
+  duration_ms: 0.202083
+  type: 'test'
+  ...
+# Subtest: alternative-picks v2 proof binds complete workload inputs
+ok 27 - alternative-picks v2 proof binds complete workload inputs
+  ---
+  duration_ms: 0.209917
+  type: 'test'
+  ...
+# Subtest: alternative-picks rejects negative workload integers labeled missing even with another null workload value
+    # Subtest: last_pitch_count
+    ok 1 - last_pitch_count
+      ---
+      duration_ms: 0.196208
+      type: 'test'
+      ...
+    # Subtest: days_since_last_start
+    ok 2 - days_since_last_start
+      ---
+      duration_ms: 0.176708
+      type: 'test'
+      ...
+    1..2
+ok 28 - alternative-picks rejects negative workload integers labeled missing even with another null workload value
+  ---
+  duration_ms: 0.441542
+  type: 'test'
+  ...
+# Subtest: alternative-picks accepts negative workload integers labeled malformed with aligned pending state
+    # Subtest: last_pitch_count
+    ok 1 - last_pitch_count
+      ---
+      duration_ms: 0.2185
+      type: 'test'
+      ...
+    # Subtest: days_since_last_start
+    ok 2 - days_since_last_start
+      ---
+      duration_ms: 0.213583
+      type: 'test'
+      ...
+    1..2
+ok 29 - alternative-picks accepts negative workload integers labeled malformed with aligned pending state
+  ---
+  duration_ms: 0.49025
+  type: 'test'
+  ...
+# Subtest: alternative-picks rejects Python-invalid normalized scalar types per row
+    # Subtest: adjusted_ev
+    ok 1 - adjusted_ev
+      ---
+      duration_ms: 0.164
+      type: 'test'
+      ...
+    # Subtest: model_no_vig_gap
+    ok 2 - model_no_vig_gap
+      ---
+      duration_ms: 0.143958
+      type: 'test'
+      ...
+    # Subtest: source_fire_verdict
+    ok 3 - source_fire_verdict
+      ---
+      duration_ms: 0.169208
+      type: 'test'
+      ...
+    1..3
+ok 30 - alternative-picks rejects Python-invalid normalized scalar types per row
+  ---
+  duration_ms: 0.560584
+  type: 'test'
+  ...
+# Subtest: alternative-picks rejects nullable or confused normalized Boolean proof inputs
+    # Subtest: large_edge_skepticism_flag null
+    ok 1 - large_edge_skepticism_flag null
+      ---
+      duration_ms: 0.164833
+      type: 'test'
+      ...
+    # Subtest: anchor_metadata_malformed null
+    ok 2 - anchor_metadata_malformed null
+      ---
+      duration_ms: 0.135375
+      type: 'test'
+      ...
+    # Subtest: large_edge_skepticism_flag integer
+    ok 3 - large_edge_skepticism_flag integer
+      ---
+      duration_ms: 0.147875
+      type: 'test'
+      ...
+    # Subtest: anchor_metadata_malformed string
+    ok 4 - anchor_metadata_malformed string
+      ---
+      duration_ms: 0.140625
+      type: 'test'
+      ...
+    1..4
+ok 31 - alternative-picks rejects nullable or confused normalized Boolean proof inputs
+  ---
+  duration_ms: 0.674041
+  type: 'test'
+  ...
+# Subtest: alternative-picks enforces the canonical normalized integer contract for odds
+    # Subtest: fractional number
+    ok 1 - fractional number
+      ---
+      duration_ms: 0.447458
+      type: 'test'
+      ...
+    # Subtest: numeric string
+    ok 2 - numeric string
+      ---
+      duration_ms: 0.208208
+      type: 'test'
+      ...
+    1..2
+ok 32 - alternative-picks enforces the canonical normalized integer contract for odds
+  ---
+  duration_ms: 0.723709
+  type: 'test'
+  ...
+# Subtest: alternative-picks suppresses one unexpected v2 proof exception without hiding valid rows
+ok 33 - alternative-picks suppresses one unexpected v2 proof exception without hiding valid rows
+  ---
+  duration_ms: 0.282709
+  type: 'test'
+  ...
+# Subtest: alternative-picks sanitizes v2 proof without provider identifiers
+ok 34 - alternative-picks sanitizes v2 proof without provider identifiers
+  ---
+  duration_ms: 0.309125
+  type: 'test'
+  ...
+# Subtest: alternative-picks allows selected v2 with pending nonessential preclose and zero observations
+ok 35 - alternative-picks allows selected v2 with pending nonessential preclose and zero observations
+  ---
+  duration_ms: 0.26825
+  type: 'test'
+  ...
+# Subtest: alternative-picks allows a structurally valid fail-closed v2 diagnostic row
+ok 36 - alternative-picks allows a structurally valid fail-closed v2 diagnostic row
+  ---
+  duration_ms: 0.715667
+  type: 'test'
+  ...
+# Subtest: alternative-picks keeps old client to new endpoint on the v1 contract
+ok 37 - alternative-picks keeps old client to new endpoint on the v1 contract
+  ---
+  duration_ms: 0.141416
+  type: 'test'
+  ...
+# Subtest: alternative-picks preserves the serialized v1 row key order and reason position
+ok 38 - alternative-picks preserves the serialized v1 row key order and reason position
+  ---
+  duration_ms: 0.138208
+  type: 'test'
+  ...
+# Subtest: alternative-picks rejects complete workload proofs whose raw values contradict derived buckets
+    # Subtest: opener
+    ok 1 - opener
+      ---
+      duration_ms: 0.161083
+      type: 'test'
+      ...
+    # Subtest: pitch count
+    ok 2 - pitch count
+      ---
+      duration_ms: 0.146583
+      type: 'test'
+      ...
+    # Subtest: short opportunity
+    ok 3 - short opportunity
+      ---
+      duration_ms: 0.14675
+      type: 'test'
+      ...
+    # Subtest: orphan opener archetype
+    ok 4 - orphan opener archetype
+      ---
+      duration_ms: 0.125459
+      type: 'test'
+      ...
+    # Subtest: orphan short-leash archetype
+    ok 5 - orphan short-leash archetype
+      ---
+      duration_ms: 0.124834
+      type: 'test'
+      ...
+    1..5
+ok 39 - alternative-picks rejects complete workload proofs whose raw values contradict derived buckets
+  ---
+  duration_ms: 0.814292
+  type: 'test'
+  ...
+# Subtest: alternative-picks rejects extra normalized keys and whitespace with Python parity
+    # Subtest: extra key
+    ok 1 - extra key
+      ---
+      duration_ms: 0.162083
+      type: 'test'
+      ...
+    # Subtest: padded text
+    ok 2 - padded text
+      ---
+      duration_ms: 0.129125
+      type: 'test'
+      ...
+    # Subtest: padded anchor label
+    ok 3 - padded anchor label
+      ---
+      duration_ms: 0.141375
+      type: 'test'
+      ...
+    1..3
+ok 40 - alternative-picks rejects extra normalized keys and whitespace with Python parity
+  ---
+  duration_ms: 0.5085
+  type: 'test'
+  ...
+# Subtest: alternative-picks accepts complete workload proofs when raw values and derived buckets agree
+    # Subtest: opener
+    ok 1 - opener
+      ---
+      duration_ms: 0.192042
+      type: 'test'
+      ...
+    # Subtest: starter mismatch
+    ok 2 - starter mismatch
+      ---
+      duration_ms: 0.164208
+      type: 'test'
+      ...
+    # Subtest: pitch count
+    ok 3 - pitch count
+      ---
+      duration_ms: 0.172583
+      type: 'test'
+      ...
+    # Subtest: short rest
+    ok 4 - short rest
+      ---
+      duration_ms: 0.172167
+      type: 'test'
+      ...
+    # Subtest: zero rest
+    ok 5 - zero rest
+      ---
+      duration_ms: 0.179167
+      type: 'test'
+      ...
+    # Subtest: short opportunity
+    ok 6 - short opportunity
+      ---
+      duration_ms: 0.19575
+      type: 'test'
+      ...
+    1..6
+ok 41 - alternative-picks accepts complete workload proofs when raw values and derived buckets agree
+  ---
+  duration_ms: 1.192459
+  type: 'test'
+  ...
+# Subtest: alternative-picks v2 prefers one valid frozen row over the same provisional candidate
+ok 42 - alternative-picks v2 prefers one valid frozen row over the same provisional candidate
+  ---
+  duration_ms: 0.357125
+  type: 'test'
+  ...
+# Subtest: alternative-picks v2 does not let an invalid frozen row suppress a valid provisional row
+ok 43 - alternative-picks v2 does not let an invalid frozen row suppress a valid provisional row
+  ---
+  duration_ms: 0.223625
+  type: 'test'
+  ...
+# Subtest: alternative-picks v2 suppresses same-priority conflicting public rows for one candidate
+ok 44 - alternative-picks v2 suppresses same-priority conflicting public rows for one candidate
+  ---
+  duration_ms: 0.304834
+  type: 'test'
+  ...
+# Subtest: alternative-picks v2 rejects PASS even when the proof and row agree
+ok 45 - alternative-picks v2 rejects PASS even when the proof and row agree
+  ---
+  duration_ms: 0.160583
+  type: 'test'
+  ...
+# Subtest: alternative-picks v1 preserves PASS and does not coalesce checkpoints
+ok 46 - alternative-picks v1 preserves PASS and does not coalesce checkpoints
+  ---
+  duration_ms: 0.170417
+  type: 'test'
+  ...
+# Subtest: alternative-picks v2 omits raw top-level reasons but retains sanitized decision evidence
+ok 47 - alternative-picks v2 omits raw top-level reasons but retains sanitized decision evidence
+  ---
+  duration_ms: 0.2345
+  type: 'test'
+  ...
+1..47
+# tests 124
+# suites 0
+# pass 124
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 140.953542
