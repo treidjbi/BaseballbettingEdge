@@ -666,8 +666,9 @@ function precloseContractValid(preclose, bindings) {
       && preclose.reason_codes.length > 0
       && preclose.positive_reasons.length === 0 && preclose.risk_reasons.length === 0;
   }
-  const integers = ['book_count', 'toward_pick_count', 'away_from_pick_count', 'reversal_book_count', 'volatile_book_count', 'score'];
-  if (count < 2 || integers.some(field => integer(preclose[field]) == null || integer(preclose[field]) < 0)
+  const integers = ['book_count', 'toward_pick_count', 'away_from_pick_count', 'reversal_book_count', 'volatile_book_count'];
+  if (count < 2 || integer(preclose.score) == null
+      || integers.some(field => integer(preclose[field]) == null || integer(preclose[field]) < 0)
       || typeof preclose.broad_confirmation !== 'boolean'
       || typeof preclose.best_is_off_market !== 'boolean'
       || !['with_side', 'against_side', 'neutral'].includes(preclose.side_price_movement)

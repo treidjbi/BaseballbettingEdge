@@ -241,12 +241,12 @@ def test_known_coverage_and_both_sides(coverage,side):
     assert r['pregame_valid'] and r['eligible_input_candidate'],r
 
 
-def test_existing_negative_score_proof_limit_stays_excluded():
-    p=build_case(edge=.21,probability=.65,adjusted_ev=.4,allow_pending=True)
-    r=result(p)['records'][0]
-    assert not r['eligible_input_candidate']
-    assert 'frozen_preclose_pending' in r['reasons']
-    assert 'evaluation_proof_invalid' in r['frozen_proof_reasons']
+def test_complete_negative_score_is_known_weak_evidence_without_formal_credit():
+    p=build_case(edge=.21,probability=.65,adjusted_ev=.4)
+    report=result(p); r=report['records'][0]
+    assert r['eligible_input_candidate'], r
+    assert p['envelopes'][0]['preclose']==dict(status='known',label='weak_preclose_clv_proxy',score=-1)
+    assert report['formal_prospective_credit']==0
 
 
 def test_extra_outcome_fields_cannot_enter_frozen_envelope():
