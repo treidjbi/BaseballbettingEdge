@@ -27,7 +27,7 @@ operating costs are absent. No candidate has established fully costed profit.
 | Pipeline / infrastructure | Keep ordinary operation; review repairs only on failure | Natural-run artifact/served hashes, grading freshness, due/consumed locks, sender outcomes | Stale/missing publication, unconsumed lock, repeated timeout or send error |
 | Model | Alt V2 paired review complete; both promotion paths retired, frozen controls retained | Any reopening needs a material evidence correction or separately reviewed new frozen hypothesis and future holdout; other candidates need current hosted attribution/diversity | Reconciled evidence changes the conclusion or a separately reviewed research proposal; no automatic restart on count growth |
 | UI | Keep display/comparison behavior; review usability independently | Current mobile/desktop interaction and candidate/artifact/lock proof | Incorrect freeze, stale-state confusion or contract mismatch |
-| Tracking / history | Paired proof repair accepted on feature branch; next is offline capture feasibility | Actual by-lock acquisition and original-seed receipts, unchanged exact-proof replay, complete inventory/reads and measured size/time | Prototype demonstrates usable pregame evidence within bounds; hosted sink and activation remain closed, Kumar excluded |
+| Tracking / history | Offline prototype complete; stop before hosted capture and pause repeated historical runs | Genuine by-lock acquisition and original ungraded seed witnesses; any passive instrumentation must preserve lock times/inputs | New source evidence or separately reviewed instrumentation resolves provenance; hosted sink/activation closed, Kumar excluded |
 
 Current research treatment:
 
@@ -51,9 +51,11 @@ Current research treatment:
   Python and 124 Node passes; 27 PostgreSQL tests skipped for missing binaries.
   A new inactive manifest admits nine of 20 synthetic input scenarios; zero
   formal credit. All 327 old proofs stay pending and old packets are preserved.
-  No merge/deployment occurred. The capture proposal requires actual acquisition
-  receipts: the runtime clock is set before polling/reads and proves no later
-  input was available by the lock. Original-seed provenance also remains open.
+  No merge/deployment occurred. The offline capture prototype now passes 207
+  combined tests. It inventories all 12 September 3 opportunities but finds zero
+  complete inputs: Preclose remains pending and pregame receipts/seed witnesses
+  are absent. All 12 locks record consumption; this is a provenance gap. Stop
+  before hosted capture. Actual acquisition cannot use the earlier runtime clock.
 - **CLV:** process KPI only, 33/100 exact targets across two slates. No complete
   14-slate window; do not repeatedly run without its explicit close packet.
 - **No-drag:** promotion path retired after 75 prospective rows lost 4.883u.
@@ -62,7 +64,7 @@ Current research treatment:
 
 Retain daily operational/integrity deltas and bounded candidate eligibility.
 Keep signed-score packets as regression references; repeat only for code or
-contract drift. Capture feasibility is the next decision, not another score probe.
+contract drift. Pause historical capture replays until source/provenance changes.
 Recommend pausing routine Alt promotion scoreboards, post-hoc subset searches,
 redundant historical scoreboards and broad overlapping
 searches. Retire completed cleanup/repair reminders and old BoltOdds cutover
@@ -77,7 +79,7 @@ production re-seed.
 · [Defined forward-only contract and acceptance cases](superpowers/specs/2026-09-04-forward-pregame-evidence-contract.md)
 · [Completed validator acceptance](research/2026-09-04-forward-evidence-validator-review.md)
 · [Paired signed-score implementation and new manifest](research/2026-09-04-signed-score-implementation.md)
-· [Bounded capture proposal and feasibility gate](superpowers/plans/2026-09-04-bounded-forward-capture-proposal.md)
+· [Completed offline capture prototype and stop decision](research/2026-09-04-forward-capture-feasibility.md)
 · [Captured primary evidence and SQL](research/evidence/2026-09-04-operating-review/read-only-evidence.json)
 · [Reproducible checks](research/evidence/2026-09-04-operating-review/evidence-checks.ipynb)
 · [Current operating record](current-state.md)

@@ -1,0 +1,1923 @@
+{
+  "case_count": 17,
+  "case_reports": {
+    "against": {
+      "attempt_reasons": [],
+      "caveat": "Local assertions only; source inventory, acquisition times and ordinary seed provenance are not externally authenticated",
+      "decision": "no_live_feasibility_established",
+      "evidence_kind": "synthetic",
+      "formal_prospective_credit": 0,
+      "limits": {
+        "candidates": 32,
+        "envelope_bytes": 4194304,
+        "input_bytes": 67108864,
+        "output_bytes": 67108864,
+        "page_size": 1000,
+        "snapshot_pages": 5
+      },
+      "records": [
+        {
+          "envelope_bytes": 14601,
+          "identity": {
+            "normalized_pitcher": "synthetic pitcher",
+            "side": "over",
+            "slate_date": "2026-09-06"
+          },
+          "internally_complete": true,
+          "pregame_internal_valid": true,
+          "reasons": [],
+          "seed_internal_valid": true,
+          "selector_match": true,
+          "source_sha256": {
+            "capture": "e5978bea765b566d0bfffaf125b5df017ca67c2e8de74a856ddda9d97d5153e1",
+            "frozen": "857f628be47f629ac5104d82bee198aacafb4f114de55a0fec1fcbcf887846ae",
+            "lock": "ae46573829d8ed86841cdc62302d237ac40e85bc49c8e05df7b7d1e411f39045"
+          }
+        }
+      ],
+      "schema": "forward_capture_feasibility_v1",
+      "slate_date": "2026-09-06",
+      "source_bundle_sha256": "edee9ec8453ce6871fb406b2f194226b1b179afeb421ed1a75722fceb4c9d046",
+      "source_scope": {
+        "complete": true,
+        "frozen_count": 1,
+        "lock_count": 1
+      },
+      "summary": {
+        "exclusions": {},
+        "internally_complete_inputs": 1,
+        "known_rule_matches": 1,
+        "opportunities": 1,
+        "pregame_internal_valid": 1,
+        "seed_internal_valid": 1
+      },
+      "trusted_live_feasible": false
+    },
+    "candidate_33_cap": {
+      "attempt_reasons": [
+        "candidate_cap_exceeded"
+      ],
+      "caveat": "Local assertions only; source inventory, acquisition times and ordinary seed provenance are not externally authenticated",
+      "decision": "no_live_feasibility_established",
+      "evidence_kind": "synthetic",
+      "formal_prospective_credit": 0,
+      "limits": {
+        "candidates": 32,
+        "envelope_bytes": 4194304,
+        "input_bytes": 67108864,
+        "output_bytes": 67108864,
+        "page_size": 1000,
+        "snapshot_pages": 5
+      },
+      "records": [
+        {
+          "envelope_bytes": 0,
+          "identity": {
+            "normalized_pitcher": "synthetic pitcher",
+            "side": "over",
+            "slate_date": "2026-09-06"
+          },
+          "internally_complete": false,
+          "pregame_internal_valid": false,
+          "reasons": [
+            "attempt_incomplete"
+          ],
+          "seed_internal_valid": false,
+          "selector_match": true,
+          "source_sha256": {
+            "capture": "acda1203cbb4a0e24d7f8bfd0505e5c8545aeed7d6a663dbb71baa3df5fe015c",
+            "frozen": "cb35e0b1c9a2ce9328ea092ad11f2269b5076da61761a62d878c47a444d8b6df",
+            "lock": "ae46573829d8ed86841cdc62302d237ac40e85bc49c8e05df7b7d1e411f39045"
+          }
+        },
+        {
+          "envelope_bytes": 0,
+          "identity": {
+            "normalized_pitcher": "synthetic pitcher 0",
+            "side": "over",
+            "slate_date": "2026-09-06"
+          },
+          "internally_complete": false,
+          "pregame_internal_valid": false,
+          "reasons": [
+            "attempt_incomplete",
+            "missing_capture",
+            "missing_consumption",
+            "missing_frozen",
+            "missing_seed"
+          ],
+          "seed_internal_valid": false,
+          "selector_match": null,
+          "source_sha256": {
+            "lock": "fcb3299fe71c1eb5f550aaebeb0bac3e1fb203f352ecc38f2dfdf95dea022e5a"
+          }
+        },
+        {
+          "envelope_bytes": 0,
+          "identity": {
+            "normalized_pitcher": "synthetic pitcher 1",
+            "side": "over",
+            "slate_date": "2026-09-06"
+          },
+          "internally_complete": false,
+          "pregame_internal_valid": false,
+          "reasons": [
+            "attempt_incomplete",
+            "missing_capture",
+            "missing_consumption",
+            "missing_frozen",
+            "missing_seed"
+          ],
+          "seed_internal_valid": false,
+          "selector_match": null,
+          "source_sha256": {
+            "lock": "11ff6e3bb191ffca9d783f5004766524080cd92ce05eee7b3f3f57195899d483"
+          }
+        },
+        {
+          "envelope_bytes": 0,
+          "identity": {
+            "normalized_pitcher": "synthetic pitcher 10",
+            "side": "over",
+            "slate_date": "2026-09-06"
+          },
+          "internally_complete": false,
+          "pregame_internal_valid": false,
+          "reasons": [
+            "attempt_incomplete",
+            "missing_capture",
+            "missing_consumption",
+            "missing_frozen",
+            "missing_seed"
+          ],
+          "seed_internal_valid": false,
+          "selector_match": null,
+          "source_sha256": {
+            "lock": "bd433aad96672b60ff3156c9432347ca04f293ef8c8e99bf0f6bd33c3e501f2b"
+          }
+        },
+        {
+          "envelope_bytes": 0,
+          "identity": {
+            "normalized_pitcher": "synthetic pitcher 11",
+            "side": "over",
+            "slate_date": "2026-09-06"
+          },
+          "internally_complete": false,
+          "pregame_internal_valid": false,
+          "reasons": [
+            "attempt_incomplete",
+            "missing_capture",
+            "missing_consumption",
+            "missing_frozen",
+            "missing_seed"
+          ],
+          "seed_internal_valid": false,
+          "selector_match": null,
+          "source_sha256": {
+            "lock": "b7402de357f83e03bf2ceaf3844f9cecfae610e70f19554cc62f0adbbf0b7bbc"
+          }
+        },
+        {
+          "envelope_bytes": 0,
+          "identity": {
+            "normalized_pitcher": "synthetic pitcher 12",
+            "side": "over",
+            "slate_date": "2026-09-06"
+          },
+          "internally_complete": false,
+          "pregame_internal_valid": false,
+          "reasons": [
+            "attempt_incomplete",
+            "missing_capture",
+            "missing_consumption",
+            "missing_frozen",
+            "missing_seed"
+          ],
+          "seed_internal_valid": false,
+          "selector_match": null,
+          "source_sha256": {
+            "lock": "01bfed57e9f6d6badf1e719181f1715c8a58944729a23a74fb2270ca1981e46d"
+          }
+        },
+        {
+          "envelope_bytes": 0,
+          "identity": {
+            "normalized_pitcher": "synthetic pitcher 13",
+            "side": "over",
+            "slate_date": "2026-09-06"
+          },
+          "internally_complete": false,
+          "pregame_internal_valid": false,
+          "reasons": [
+            "attempt_incomplete",
+            "missing_capture",
+            "missing_consumption",
+            "missing_frozen",
+            "missing_seed"
+          ],
+          "seed_internal_valid": false,
+          "selector_match": null,
+          "source_sha256": {
+            "lock": "c8a179b058dc92209ffaa048f38a853f1dacf083f4bdd166753bf5bfddadfb52"
+          }
+        },
+        {
+          "envelope_bytes": 0,
+          "identity": {
+            "normalized_pitcher": "synthetic pitcher 14",
+            "side": "over",
+            "slate_date": "2026-09-06"
+          },
+          "internally_complete": false,
+          "pregame_internal_valid": false,
+          "reasons": [
+            "attempt_incomplete",
+            "missing_capture",
+            "missing_consumption",
+            "missing_frozen",
+            "missing_seed"
+          ],
+          "seed_internal_valid": false,
+          "selector_match": null,
+          "source_sha256": {
+            "lock": "a87f7270db7aca91e61f0f0106a1170ab2db3ce8e08fd95c6a7754822d40d729"
+          }
+        },
+        {
+          "envelope_bytes": 0,
+          "identity": {
+            "normalized_pitcher": "synthetic pitcher 15",
+            "side": "over",
+            "slate_date": "2026-09-06"
+          },
+          "internally_complete": false,
+          "pregame_internal_valid": false,
+          "reasons": [
+            "attempt_incomplete",
+            "missing_capture",
+            "missing_consumption",
+            "missing_frozen",
+            "missing_seed"
+          ],
+          "seed_internal_valid": false,
+          "selector_match": null,
+          "source_sha256": {
+            "lock": "ba44b0e47ace5b11350b67b7bff57107071675d681b6af96e9a740139e5adbdc"
+          }
+        },
+        {
+          "envelope_bytes": 0,
+          "identity": {
+            "normalized_pitcher": "synthetic pitcher 16",
+            "side": "over",
+            "slate_date": "2026-09-06"
+          },
+          "internally_complete": false,
+          "pregame_internal_valid": false,
+          "reasons": [
+            "attempt_incomplete",
+            "missing_capture",
+            "missing_consumption",
+            "missing_frozen",
+            "missing_seed"
+          ],
+          "seed_internal_valid": false,
+          "selector_match": null,
+          "source_sha256": {
+            "lock": "02181ee087f810375e51a1d56746687c3f5e1a43e1f76b84ba98bea29451dfa4"
+          }
+        },
+        {
+          "envelope_bytes": 0,
+          "identity": {
+            "normalized_pitcher": "synthetic pitcher 17",
+            "side": "over",
+            "slate_date": "2026-09-06"
+          },
+          "internally_complete": false,
+          "pregame_internal_valid": false,
+          "reasons": [
+            "attempt_incomplete",
+            "missing_capture",
+            "missing_consumption",
+            "missing_frozen",
+            "missing_seed"
+          ],
+          "seed_internal_valid": false,
+          "selector_match": null,
+          "source_sha256": {
+            "lock": "a94e0f07a5d74a5a04c8ce85b86ff59117d327adfb44cccc54256e8fbf406976"
+          }
+        },
+        {
+          "envelope_bytes": 0,
+          "identity": {
+            "normalized_pitcher": "synthetic pitcher 18",
+            "side": "over",
+            "slate_date": "2026-09-06"
+          },
+          "internally_complete": false,
+          "pregame_internal_valid": false,
+          "reasons": [
+            "attempt_incomplete",
+            "missing_capture",
+            "missing_consumption",
+            "missing_frozen",
+            "missing_seed"
+          ],
+          "seed_internal_valid": false,
+          "selector_match": null,
+          "source_sha256": {
+            "lock": "e3eefb5ba3be1b64e12efbd43fbb81fd18df0c02433b9f07953af47cdf63f9a7"
+          }
+        },
+        {
+          "envelope_bytes": 0,
+          "identity": {
+            "normalized_pitcher": "synthetic pitcher 19",
+            "side": "over",
+            "slate_date": "2026-09-06"
+          },
+          "internally_complete": false,
+          "pregame_internal_valid": false,
+          "reasons": [
+            "attempt_incomplete",
+            "missing_capture",
+            "missing_consumption",
+            "missing_frozen",
+            "missing_seed"
+          ],
+          "seed_internal_valid": false,
+          "selector_match": null,
+          "source_sha256": {
+            "lock": "c3340448b1993259ef1f5f067f738d7c84b9e66feb68ca2217c4e4e475fc10f0"
+          }
+        },
+        {
+          "envelope_bytes": 0,
+          "identity": {
+            "normalized_pitcher": "synthetic pitcher 2",
+            "side": "over",
+            "slate_date": "2026-09-06"
+          },
+          "internally_complete": false,
+          "pregame_internal_valid": false,
+          "reasons": [
+            "attempt_incomplete",
+            "missing_capture",
+            "missing_consumption",
+            "missing_frozen",
+            "missing_seed"
+          ],
+          "seed_internal_valid": false,
+          "selector_match": null,
+          "source_sha256": {
+            "lock": "eaa7f510cdff46570a7ab06ce6780918b5c233a261902bbf2f6f30dc54d28f91"
+          }
+        },
+        {
+          "envelope_bytes": 0,
+          "identity": {
+            "normalized_pitcher": "synthetic pitcher 20",
+            "side": "over",
+            "slate_date": "2026-09-06"
+          },
+          "internally_complete": false,
+          "pregame_internal_valid": false,
+          "reasons": [
+            "attempt_incomplete",
+            "missing_capture",
+            "missing_consumption",
+            "missing_frozen",
+            "missing_seed"
+          ],
+          "seed_internal_valid": false,
+          "selector_match": null,
+          "source_sha256": {
+            "lock": "f143604c0599a53ab6157d25a366c5dc1840dbcdc80fdeb2ffd3cc909701e3c5"
+          }
+        },
+        {
+          "envelope_bytes": 0,
+          "identity": {
+            "normalized_pitcher": "synthetic pitcher 21",
+            "side": "over",
+            "slate_date": "2026-09-06"
+          },
+          "internally_complete": false,
+          "pregame_internal_valid": false,
+          "reasons": [
+            "attempt_incomplete",
+            "missing_capture",
+            "missing_consumption",
+            "missing_frozen",
+            "missing_seed"
+          ],
+          "seed_internal_valid": false,
+          "selector_match": null,
+          "source_sha256": {
+            "lock": "1e2282b5eb0e92ecf16aede2382d7bbd78f72851860c15c6af58a48960e99039"
+          }
+        },
+        {
+          "envelope_bytes": 0,
+          "identity": {
+            "normalized_pitcher": "synthetic pitcher 22",
+            "side": "over",
+            "slate_date": "2026-09-06"
+          },
+          "internally_complete": false,
+          "pregame_internal_valid": false,
+          "reasons": [
+            "attempt_incomplete",
+            "missing_capture",
+            "missing_consumption",
+            "missing_frozen",
+            "missing_seed"
+          ],
+          "seed_internal_valid": false,
+          "selector_match": null,
+          "source_sha256": {
+            "lock": "f2c724f86d8fb4c0dbd09dc3f546c623cb736cea41e0da92912c01c1463724fc"
+          }
+        },
+        {
+          "envelope_bytes": 0,
+          "identity": {
+            "normalized_pitcher": "synthetic pitcher 23",
+            "side": "over",
+            "slate_date": "2026-09-06"
+          },
+          "internally_complete": false,
+          "pregame_internal_valid": false,
+          "reasons": [
+            "attempt_incomplete",
+            "missing_capture",
+            "missing_consumption",
+            "missing_frozen",
+            "missing_seed"
+          ],
+          "seed_internal_valid": false,
+          "selector_match": null,
+          "source_sha256": {
+            "lock": "244c7692673b756b540718ea881c163785d8dbcbe0ace0ad77679ef265f4331f"
+          }
+        },
+        {
+          "envelope_bytes": 0,
+          "identity": {
+            "normalized_pitcher": "synthetic pitcher 24",
+            "side": "over",
+            "slate_date": "2026-09-06"
+          },
+          "internally_complete": false,
+          "pregame_internal_valid": false,
+          "reasons": [
+            "attempt_incomplete",
+            "missing_capture",
+            "missing_consumption",
+            "missing_frozen",
+            "missing_seed"
+          ],
+          "seed_internal_valid": false,
+          "selector_match": null,
+          "source_sha256": {
+            "lock": "cd3b424d0d34e42bd785281bc31a2855cebc8bc70de7a590b2d4dfcdf3151e13"
+          }
+        },
+        {
+          "envelope_bytes": 0,
+          "identity": {
+            "normalized_pitcher": "synthetic pitcher 25",
+            "side": "over",
+            "slate_date": "2026-09-06"
+          },
+          "internally_complete": false,
+          "pregame_internal_valid": false,
+          "reasons": [
+            "attempt_incomplete",
+            "missing_capture",
+            "missing_consumption",
+            "missing_frozen",
+            "missing_seed"
+          ],
+          "seed_internal_valid": false,
+          "selector_match": null,
+          "source_sha256": {
+            "lock": "2a6fcf7bd71f8baa34a45e9666f8834777e7567629849c56adb6a5eddfb9622c"
+          }
+        },
+        {
+          "envelope_bytes": 0,
+          "identity": {
+            "normalized_pitcher": "synthetic pitcher 26",
+            "side": "over",
+            "slate_date": "2026-09-06"
+          },
+          "internally_complete": false,
+          "pregame_internal_valid": false,
+          "reasons": [
+            "attempt_incomplete",
+            "missing_capture",
+            "missing_consumption",
+            "missing_frozen",
+            "missing_seed"
+          ],
+          "seed_internal_valid": false,
+          "selector_match": null,
+          "source_sha256": {
+            "lock": "19301f6166565a786b49e68bfc3d7de92b785eecc584f44fae7b424ae67efd6f"
+          }
+        },
+        {
+          "envelope_bytes": 0,
+          "identity": {
+            "normalized_pitcher": "synthetic pitcher 27",
+            "side": "over",
+            "slate_date": "2026-09-06"
+          },
+          "internally_complete": false,
+          "pregame_internal_valid": false,
+          "reasons": [
+            "attempt_incomplete",
+            "missing_capture",
+            "missing_consumption",
+            "missing_frozen",
+            "missing_seed"
+          ],
+          "seed_internal_valid": false,
+          "selector_match": null,
+          "source_sha256": {
+            "lock": "b7ce8982d60932bf042b441854fd9d750bc07238cdd82a6330748c4b3db46ed7"
+          }
+        },
+        {
+          "envelope_bytes": 0,
+          "identity": {
+            "normalized_pitcher": "synthetic pitcher 28",
+            "side": "over",
+            "slate_date": "2026-09-06"
+          },
+          "internally_complete": false,
+          "pregame_internal_valid": false,
+          "reasons": [
+            "attempt_incomplete",
+            "missing_capture",
+            "missing_consumption",
+            "missing_frozen",
+            "missing_seed"
+          ],
+          "seed_internal_valid": false,
+          "selector_match": null,
+          "source_sha256": {
+            "lock": "eada62fea698a1e6b8e4d0eb3cf0c1daa645a7d705a44635c966ea9ccb07803b"
+          }
+        },
+        {
+          "envelope_bytes": 0,
+          "identity": {
+            "normalized_pitcher": "synthetic pitcher 29",
+            "side": "over",
+            "slate_date": "2026-09-06"
+          },
+          "internally_complete": false,
+          "pregame_internal_valid": false,
+          "reasons": [
+            "attempt_incomplete",
+            "missing_capture",
+            "missing_consumption",
+            "missing_frozen",
+            "missing_seed"
+          ],
+          "seed_internal_valid": false,
+          "selector_match": null,
+          "source_sha256": {
+            "lock": "9bb3172ea8ee9a41d072cd8f34f8c905d5def6ad5fb8f9e529b894629b81a539"
+          }
+        },
+        {
+          "envelope_bytes": 0,
+          "identity": {
+            "normalized_pitcher": "synthetic pitcher 3",
+            "side": "over",
+            "slate_date": "2026-09-06"
+          },
+          "internally_complete": false,
+          "pregame_internal_valid": false,
+          "reasons": [
+            "attempt_incomplete",
+            "missing_capture",
+            "missing_consumption",
+            "missing_frozen",
+            "missing_seed"
+          ],
+          "seed_internal_valid": false,
+          "selector_match": null,
+          "source_sha256": {
+            "lock": "f6b45dd9ad0ddee3d5b63a87500e534845013a8204e568b96f8f6ed72afb5f8e"
+          }
+        },
+        {
+          "envelope_bytes": 0,
+          "identity": {
+            "normalized_pitcher": "synthetic pitcher 30",
+            "side": "over",
+            "slate_date": "2026-09-06"
+          },
+          "internally_complete": false,
+          "pregame_internal_valid": false,
+          "reasons": [
+            "attempt_incomplete",
+            "missing_capture",
+            "missing_consumption",
+            "missing_frozen",
+            "missing_seed"
+          ],
+          "seed_internal_valid": false,
+          "selector_match": null,
+          "source_sha256": {
+            "lock": "63634304cfe6124d8af24682629423cd16cfaf81c443002408db69fab64fc26a"
+          }
+        },
+        {
+          "envelope_bytes": 0,
+          "identity": {
+            "normalized_pitcher": "synthetic pitcher 31",
+            "side": "over",
+            "slate_date": "2026-09-06"
+          },
+          "internally_complete": false,
+          "pregame_internal_valid": false,
+          "reasons": [
+            "attempt_incomplete",
+            "missing_capture",
+            "missing_consumption",
+            "missing_frozen",
+            "missing_seed"
+          ],
+          "seed_internal_valid": false,
+          "selector_match": null,
+          "source_sha256": {
+            "lock": "c3d50515ed9fd08438c66b22e5c072ca04a205698358634830699227fdab9ae3"
+          }
+        },
+        {
+          "envelope_bytes": 0,
+          "identity": {
+            "normalized_pitcher": "synthetic pitcher 4",
+            "side": "over",
+            "slate_date": "2026-09-06"
+          },
+          "internally_complete": false,
+          "pregame_internal_valid": false,
+          "reasons": [
+            "attempt_incomplete",
+            "missing_capture",
+            "missing_consumption",
+            "missing_frozen",
+            "missing_seed"
+          ],
+          "seed_internal_valid": false,
+          "selector_match": null,
+          "source_sha256": {
+            "lock": "651e14b3023ef719911d40590c17816db1192b2ad6a7c5dd68f5a6d654594f95"
+          }
+        },
+        {
+          "envelope_bytes": 0,
+          "identity": {
+            "normalized_pitcher": "synthetic pitcher 5",
+            "side": "over",
+            "slate_date": "2026-09-06"
+          },
+          "internally_complete": false,
+          "pregame_internal_valid": false,
+          "reasons": [
+            "attempt_incomplete",
+            "missing_capture",
+            "missing_consumption",
+            "missing_frozen",
+            "missing_seed"
+          ],
+          "seed_internal_valid": false,
+          "selector_match": null,
+          "source_sha256": {
+            "lock": "83810fd8ce9249d3236c8233cdf5263928054c708100bf6544419fd837d806df"
+          }
+        },
+        {
+          "envelope_bytes": 0,
+          "identity": {
+            "normalized_pitcher": "synthetic pitcher 6",
+            "side": "over",
+            "slate_date": "2026-09-06"
+          },
+          "internally_complete": false,
+          "pregame_internal_valid": false,
+          "reasons": [
+            "attempt_incomplete",
+            "missing_capture",
+            "missing_consumption",
+            "missing_frozen",
+            "missing_seed"
+          ],
+          "seed_internal_valid": false,
+          "selector_match": null,
+          "source_sha256": {
+            "lock": "0d4d99f02ec0ae7b32d3ea8ab345af13ed6fb271e516cebbe3853640ae9a86fa"
+          }
+        },
+        {
+          "envelope_bytes": 0,
+          "identity": {
+            "normalized_pitcher": "synthetic pitcher 7",
+            "side": "over",
+            "slate_date": "2026-09-06"
+          },
+          "internally_complete": false,
+          "pregame_internal_valid": false,
+          "reasons": [
+            "attempt_incomplete",
+            "missing_capture",
+            "missing_consumption",
+            "missing_frozen",
+            "missing_seed"
+          ],
+          "seed_internal_valid": false,
+          "selector_match": null,
+          "source_sha256": {
+            "lock": "d7713bfe1dcbabd5947f5f91cb116188c60c18237fa6db576702c22f8b5135c0"
+          }
+        },
+        {
+          "envelope_bytes": 0,
+          "identity": {
+            "normalized_pitcher": "synthetic pitcher 8",
+            "side": "over",
+            "slate_date": "2026-09-06"
+          },
+          "internally_complete": false,
+          "pregame_internal_valid": false,
+          "reasons": [
+            "attempt_incomplete",
+            "missing_capture",
+            "missing_consumption",
+            "missing_frozen",
+            "missing_seed"
+          ],
+          "seed_internal_valid": false,
+          "selector_match": null,
+          "source_sha256": {
+            "lock": "521ec69f4607e4d42632e60ecc15072e5f3f24f2964abe843bf170e2c8e83b5f"
+          }
+        },
+        {
+          "envelope_bytes": 0,
+          "identity": {
+            "normalized_pitcher": "synthetic pitcher 9",
+            "side": "over",
+            "slate_date": "2026-09-06"
+          },
+          "internally_complete": false,
+          "pregame_internal_valid": false,
+          "reasons": [
+            "attempt_incomplete",
+            "missing_capture",
+            "missing_consumption",
+            "missing_frozen",
+            "missing_seed"
+          ],
+          "seed_internal_valid": false,
+          "selector_match": null,
+          "source_sha256": {
+            "lock": "601ab40d0bce9ad88a5d6955c2e27cef1939f59f509ba69736fb7034632c9e0c"
+          }
+        }
+      ],
+      "schema": "forward_capture_feasibility_v1",
+      "slate_date": "2026-09-06",
+      "source_bundle_sha256": "2e98028604f23ad3d3b71148ae36e9823a5233c4ec4c1ab5d602e226fe4b44a6",
+      "source_scope": {
+        "complete": true,
+        "frozen_count": 1,
+        "lock_count": 33
+      },
+      "summary": {
+        "exclusions": {
+          "attempt_incomplete": 33,
+          "missing_capture": 32,
+          "missing_consumption": 32,
+          "missing_frozen": 32,
+          "missing_seed": 32
+        },
+        "internally_complete_inputs": 0,
+        "known_rule_matches": 1,
+        "opportunities": 33,
+        "pregame_internal_valid": 0,
+        "seed_internal_valid": 0
+      },
+      "trusted_live_feasible": false
+    },
+    "conflicting_retry": {
+      "attempt_reasons": [],
+      "caveat": "Local assertions only; source inventory, acquisition times and ordinary seed provenance are not externally authenticated",
+      "decision": "no_live_feasibility_established",
+      "evidence_kind": "synthetic",
+      "formal_prospective_credit": 0,
+      "limits": {
+        "candidates": 32,
+        "envelope_bytes": 4194304,
+        "input_bytes": 67108864,
+        "output_bytes": 67108864,
+        "page_size": 1000,
+        "snapshot_pages": 5
+      },
+      "records": [
+        {
+          "envelope_bytes": 0,
+          "identity": {
+            "normalized_pitcher": "synthetic pitcher",
+            "side": "over",
+            "slate_date": "2026-09-06"
+          },
+          "internally_complete": false,
+          "pregame_internal_valid": false,
+          "reasons": [
+            "conflicting_capture"
+          ],
+          "seed_internal_valid": false,
+          "selector_match": true,
+          "source_sha256": {
+            "frozen": "cb35e0b1c9a2ce9328ea092ad11f2269b5076da61761a62d878c47a444d8b6df",
+            "lock": "ae46573829d8ed86841cdc62302d237ac40e85bc49c8e05df7b7d1e411f39045"
+          }
+        }
+      ],
+      "schema": "forward_capture_feasibility_v1",
+      "slate_date": "2026-09-06",
+      "source_bundle_sha256": "3c45bd43aa132c3e23fb9d741392664f6c3ac84c011375fb1332d5794c30de48",
+      "source_scope": {
+        "complete": true,
+        "frozen_count": 1,
+        "lock_count": 1
+      },
+      "summary": {
+        "exclusions": {
+          "conflicting_capture": 1
+        },
+        "internally_complete_inputs": 0,
+        "known_rule_matches": 1,
+        "opportunities": 1,
+        "pregame_internal_valid": 0,
+        "seed_internal_valid": 0
+      },
+      "trusted_live_feasible": false
+    },
+    "envelope_byte_cap": {
+      "attempt_reasons": [
+        "envelope_cap_exceeded"
+      ],
+      "caveat": "Local assertions only; source inventory, acquisition times and ordinary seed provenance are not externally authenticated",
+      "decision": "no_live_feasibility_established",
+      "evidence_kind": "synthetic",
+      "formal_prospective_credit": 0,
+      "limits": {
+        "candidates": 32,
+        "envelope_bytes": 4194304,
+        "input_bytes": 67108864,
+        "output_bytes": 67108864,
+        "page_size": 1000,
+        "snapshot_pages": 5
+      },
+      "records": [
+        {
+          "envelope_bytes": 4208926,
+          "identity": {
+            "normalized_pitcher": "synthetic pitcher",
+            "side": "over",
+            "slate_date": "2026-09-06"
+          },
+          "internally_complete": false,
+          "pregame_internal_valid": false,
+          "reasons": [
+            "attempt_incomplete",
+            "envelope_cap_exceeded"
+          ],
+          "seed_internal_valid": false,
+          "selector_match": true,
+          "source_sha256": {
+            "capture": "148d777d51416b793abd287afff082ea3cd197cc7a6f064aad1380e24b57279e",
+            "frozen": "cb35e0b1c9a2ce9328ea092ad11f2269b5076da61761a62d878c47a444d8b6df",
+            "lock": "ae46573829d8ed86841cdc62302d237ac40e85bc49c8e05df7b7d1e411f39045"
+          }
+        }
+      ],
+      "schema": "forward_capture_feasibility_v1",
+      "slate_date": "2026-09-06",
+      "source_bundle_sha256": "a035322d09dd6ea62ba7fafdfebbb28f0967ae0d1771ee4d595d2401ea118097",
+      "source_scope": {
+        "complete": true,
+        "frozen_count": 1,
+        "lock_count": 1
+      },
+      "summary": {
+        "exclusions": {
+          "attempt_incomplete": 1,
+          "envelope_cap_exceeded": 1
+        },
+        "internally_complete_inputs": 0,
+        "known_rule_matches": 1,
+        "opportunities": 1,
+        "pregame_internal_valid": 0,
+        "seed_internal_valid": 0
+      },
+      "trusted_live_feasible": false
+    },
+    "exact_replay_mismatch": {
+      "attempt_reasons": [],
+      "caveat": "Local assertions only; source inventory, acquisition times and ordinary seed provenance are not externally authenticated",
+      "decision": "no_live_feasibility_established",
+      "evidence_kind": "synthetic",
+      "formal_prospective_credit": 0,
+      "limits": {
+        "candidates": 32,
+        "envelope_bytes": 4194304,
+        "input_bytes": 67108864,
+        "output_bytes": 67108864,
+        "page_size": 1000,
+        "snapshot_pages": 5
+      },
+      "records": [
+        {
+          "envelope_bytes": 14560,
+          "identity": {
+            "normalized_pitcher": "synthetic pitcher",
+            "side": "over",
+            "slate_date": "2026-09-06"
+          },
+          "internally_complete": false,
+          "pregame_internal_valid": false,
+          "reasons": [
+            "market_or_decision_replay_mismatch"
+          ],
+          "seed_internal_valid": true,
+          "selector_match": true,
+          "source_sha256": {
+            "capture": "79fceceb3cfa77b36ec3c8252fe29efd5ea884e351a2fffeb9fde231cb67dc0a",
+            "frozen": "cb35e0b1c9a2ce9328ea092ad11f2269b5076da61761a62d878c47a444d8b6df",
+            "lock": "ae46573829d8ed86841cdc62302d237ac40e85bc49c8e05df7b7d1e411f39045"
+          }
+        }
+      ],
+      "schema": "forward_capture_feasibility_v1",
+      "slate_date": "2026-09-06",
+      "source_bundle_sha256": "51174888a90a9ffa572324d12b235fe7f4467efc4c641942a685120ece464450",
+      "source_scope": {
+        "complete": true,
+        "frozen_count": 1,
+        "lock_count": 1
+      },
+      "summary": {
+        "exclusions": {
+          "market_or_decision_replay_mismatch": 1
+        },
+        "internally_complete_inputs": 0,
+        "known_rule_matches": 1,
+        "opportunities": 1,
+        "pregame_internal_valid": 0,
+        "seed_internal_valid": 1
+      },
+      "trusted_live_feasible": false
+    },
+    "full_last_page": {
+      "attempt_reasons": [],
+      "caveat": "Local assertions only; source inventory, acquisition times and ordinary seed provenance are not externally authenticated",
+      "decision": "no_live_feasibility_established",
+      "evidence_kind": "synthetic",
+      "formal_prospective_credit": 0,
+      "limits": {
+        "candidates": 32,
+        "envelope_bytes": 4194304,
+        "input_bytes": 67108864,
+        "output_bytes": 67108864,
+        "page_size": 1000,
+        "snapshot_pages": 5
+      },
+      "records": [
+        {
+          "envelope_bytes": 14610,
+          "identity": {
+            "normalized_pitcher": "synthetic pitcher",
+            "side": "over",
+            "slate_date": "2026-09-06"
+          },
+          "internally_complete": false,
+          "pregame_internal_valid": false,
+          "reasons": [
+            "snapshot_page_cap_reached"
+          ],
+          "seed_internal_valid": true,
+          "selector_match": true,
+          "source_sha256": {
+            "capture": "4e4cc6a0cdc08206c18133eadab1ad0bcd20ec1357035b70c093e81ac21dda88",
+            "frozen": "cb35e0b1c9a2ce9328ea092ad11f2269b5076da61761a62d878c47a444d8b6df",
+            "lock": "ae46573829d8ed86841cdc62302d237ac40e85bc49c8e05df7b7d1e411f39045"
+          }
+        }
+      ],
+      "schema": "forward_capture_feasibility_v1",
+      "slate_date": "2026-09-06",
+      "source_bundle_sha256": "ce9ffcc79e7e6f3818f7c021d270d8ac7517b5cd5715ab17292c99ff3e4fa35f",
+      "source_scope": {
+        "complete": true,
+        "frozen_count": 1,
+        "lock_count": 1
+      },
+      "summary": {
+        "exclusions": {
+          "snapshot_page_cap_reached": 1
+        },
+        "internally_complete_inputs": 0,
+        "known_rule_matches": 1,
+        "opportunities": 1,
+        "pregame_internal_valid": 0,
+        "seed_internal_valid": 1
+      },
+      "trusted_live_feasible": false
+    },
+    "historical_september_3": {
+      "attempt_reasons": [],
+      "caveat": "Local assertions only; source inventory, acquisition times and ordinary seed provenance are not externally authenticated",
+      "decision": "no_live_feasibility_established",
+      "evidence_kind": "historical",
+      "formal_prospective_credit": 0,
+      "limits": {
+        "candidates": 32,
+        "envelope_bytes": 4194304,
+        "input_bytes": 67108864,
+        "output_bytes": 67108864,
+        "page_size": 1000,
+        "snapshot_pages": 5
+      },
+      "records": [
+        {
+          "envelope_bytes": 0,
+          "identity": {
+            "normalized_pitcher": "blade tidwell",
+            "side": "under",
+            "slate_date": "2026-09-03"
+          },
+          "internally_complete": false,
+          "pregame_internal_valid": false,
+          "reasons": [
+            "frozen_preclose_pending",
+            "missing_capture",
+            "missing_consumption",
+            "missing_seed"
+          ],
+          "seed_internal_valid": false,
+          "selector_match": false,
+          "source_sha256": {
+            "frozen": "50b82a18de52ab5d9b00306c412c4d1aaefdae7c9a2c334047865581ab8c9969",
+            "lock": "a1f228e695a34b855eb6b341a1f78d2ad3c7d26cf54fe80c8b6944a9de718482"
+          }
+        },
+        {
+          "envelope_bytes": 0,
+          "identity": {
+            "normalized_pitcher": "brandon young",
+            "side": "under",
+            "slate_date": "2026-09-03"
+          },
+          "internally_complete": false,
+          "pregame_internal_valid": false,
+          "reasons": [
+            "frozen_preclose_pending",
+            "missing_capture",
+            "missing_consumption",
+            "missing_seed"
+          ],
+          "seed_internal_valid": false,
+          "selector_match": false,
+          "source_sha256": {
+            "frozen": "fdf7ed5e1d1fc466d126e178fe4ffe5325a3e353fccf55a9e5162aed5c5d2d7d",
+            "lock": "8d837342ae042dad8e4690f13cd33ec7f139fc7040f64d2b63a1407d26531885"
+          }
+        },
+        {
+          "envelope_bytes": 0,
+          "identity": {
+            "normalized_pitcher": "cal quantrill",
+            "side": "over",
+            "slate_date": "2026-09-03"
+          },
+          "internally_complete": false,
+          "pregame_internal_valid": false,
+          "reasons": [
+            "frozen_preclose_pending",
+            "missing_capture",
+            "missing_consumption",
+            "missing_seed"
+          ],
+          "seed_internal_valid": false,
+          "selector_match": true,
+          "source_sha256": {
+            "frozen": "9cf4b5263f282e512279277c6de18a6a8561affc5227b15662f5a1c413ca00a1",
+            "lock": "2784c6cf8c8a58e3968c2f345ba7b6fc048f21d93b88e783467b0ddd40ae3953"
+          }
+        },
+        {
+          "envelope_bytes": 0,
+          "identity": {
+            "normalized_pitcher": "jake bennett",
+            "side": "under",
+            "slate_date": "2026-09-03"
+          },
+          "internally_complete": false,
+          "pregame_internal_valid": false,
+          "reasons": [
+            "frozen_preclose_pending",
+            "missing_capture",
+            "missing_consumption",
+            "missing_seed"
+          ],
+          "seed_internal_valid": false,
+          "selector_match": false,
+          "source_sha256": {
+            "frozen": "75e549643eca1d50f17e148b2882297359a7bca9a9dd636f7d3189c9c79d4cc6",
+            "lock": "cac72915deb126665c6d61ffd80ff1185f6b3869521c363fbff028cbd2e24a4e"
+          }
+        },
+        {
+          "envelope_bytes": 0,
+          "identity": {
+            "normalized_pitcher": "jose soriano",
+            "side": "over",
+            "slate_date": "2026-09-03"
+          },
+          "internally_complete": false,
+          "pregame_internal_valid": false,
+          "reasons": [
+            "frozen_preclose_pending",
+            "missing_capture",
+            "missing_consumption",
+            "missing_seed"
+          ],
+          "seed_internal_valid": false,
+          "selector_match": false,
+          "source_sha256": {
+            "frozen": "a1ab4b54066e382202f30ddaa0903ad1c09a20dcb6a57297e5cb5e4a5a81ca1d",
+            "lock": "d113230cf99abea775f0c2cd263b9694b92fbe5b68a3e074b7e33cf298c82ba3"
+          }
+        },
+        {
+          "envelope_bytes": 0,
+          "identity": {
+            "normalized_pitcher": "kevin gausman",
+            "side": "under",
+            "slate_date": "2026-09-03"
+          },
+          "internally_complete": false,
+          "pregame_internal_valid": false,
+          "reasons": [
+            "frozen_preclose_pending",
+            "missing_capture",
+            "missing_consumption",
+            "missing_seed"
+          ],
+          "seed_internal_valid": false,
+          "selector_match": false,
+          "source_sha256": {
+            "frozen": "3721f92a3563f447735e9b2952ffd19035bf0b2f9b1ac6d00df7aad43169dc05",
+            "lock": "80fab28eff587f5128855087177924e059afe9dace110482b884214a1c643ffe"
+          }
+        },
+        {
+          "envelope_bytes": 0,
+          "identity": {
+            "normalized_pitcher": "luis castillo",
+            "side": "under",
+            "slate_date": "2026-09-03"
+          },
+          "internally_complete": false,
+          "pregame_internal_valid": false,
+          "reasons": [
+            "frozen_preclose_pending",
+            "missing_capture",
+            "missing_consumption",
+            "missing_seed"
+          ],
+          "seed_internal_valid": false,
+          "selector_match": false,
+          "source_sha256": {
+            "frozen": "51fba5905ef81ca7a4ffe00b926e30cb1ab74846b41d8c08f8ddb60d92e90b60",
+            "lock": "f9b3e145b269ace3f7255d10e66bb2519dc5d7928ebbebbc9063a72d8d603851"
+          }
+        },
+        {
+          "envelope_bytes": 0,
+          "identity": {
+            "normalized_pitcher": "michael wacha",
+            "side": "over",
+            "slate_date": "2026-09-03"
+          },
+          "internally_complete": false,
+          "pregame_internal_valid": false,
+          "reasons": [
+            "frozen_preclose_pending",
+            "missing_capture",
+            "missing_consumption",
+            "missing_seed"
+          ],
+          "seed_internal_valid": false,
+          "selector_match": false,
+          "source_sha256": {
+            "frozen": "e33952a5691c2c2ab260ccf4d3dec4839b0c01af5bf613de4a162d1530da562f",
+            "lock": "5e403f3036181923a68b98d19402c06c0778dbad9da08ff7977af7daf17fada8"
+          }
+        },
+        {
+          "envelope_bytes": 0,
+          "identity": {
+            "normalized_pitcher": "sandy alcantara",
+            "side": "over",
+            "slate_date": "2026-09-03"
+          },
+          "internally_complete": false,
+          "pregame_internal_valid": false,
+          "reasons": [
+            "frozen_preclose_pending",
+            "missing_capture",
+            "missing_consumption",
+            "missing_seed"
+          ],
+          "seed_internal_valid": false,
+          "selector_match": false,
+          "source_sha256": {
+            "frozen": "b12eacce88849166589c2a948089a4d6e8a96dca1c61562fd5fdeb517edb7860",
+            "lock": "40b510ad8a628a35aa82b43b733596b8f31790e794539ccb6612a76462d8b927"
+          }
+        },
+        {
+          "envelope_bytes": 0,
+          "identity": {
+            "normalized_pitcher": "shane mcclanahan",
+            "side": "under",
+            "slate_date": "2026-09-03"
+          },
+          "internally_complete": false,
+          "pregame_internal_valid": false,
+          "reasons": [
+            "frozen_preclose_pending",
+            "missing_capture",
+            "missing_consumption",
+            "missing_seed"
+          ],
+          "seed_internal_valid": false,
+          "selector_match": false,
+          "source_sha256": {
+            "frozen": "272853e90210f6fc089a40b56939e79cc61c89fa52ab4c3dde761dd9c9606b41",
+            "lock": "c8f018c404caa934b7ee8b2f35a58af40fd110bc5b7c467f3e5618a9177ee856"
+          }
+        },
+        {
+          "envelope_bytes": 0,
+          "identity": {
+            "normalized_pitcher": "tanner bibee",
+            "side": "over",
+            "slate_date": "2026-09-03"
+          },
+          "internally_complete": false,
+          "pregame_internal_valid": false,
+          "reasons": [
+            "frozen_preclose_pending",
+            "missing_capture",
+            "missing_consumption",
+            "missing_seed"
+          ],
+          "seed_internal_valid": false,
+          "selector_match": false,
+          "source_sha256": {
+            "frozen": "13dcc7bdceacf216c99d3e772c924307d22483ea6e86d5003a195063c65b188e",
+            "lock": "38a20b841b9aa8bef916ce5d592bd3d10516d6232a91cb567755b510377baf55"
+          }
+        },
+        {
+          "envelope_bytes": 0,
+          "identity": {
+            "normalized_pitcher": "tarik skubal",
+            "side": "under",
+            "slate_date": "2026-09-03"
+          },
+          "internally_complete": false,
+          "pregame_internal_valid": false,
+          "reasons": [
+            "frozen_preclose_pending",
+            "missing_capture",
+            "missing_consumption",
+            "missing_seed"
+          ],
+          "seed_internal_valid": false,
+          "selector_match": false,
+          "source_sha256": {
+            "frozen": "2925b604f84db0b9516f0e300289ab2c51cf96b118652d8c27f9ad2ae41331a6",
+            "lock": "118a960d7d7cf0569a122f40a54f02ab14c0b9711be6dde529f566a0ce214e42"
+          }
+        }
+      ],
+      "schema": "forward_capture_feasibility_v1",
+      "slate_date": "2026-09-03",
+      "source_bundle_sha256": "bf51cb1823731e2677e4a964e744536342b970a52555707272dba1aaae782716",
+      "source_scope": {
+        "complete": true,
+        "frozen_count": 12,
+        "lock_count": 12
+      },
+      "summary": {
+        "exclusions": {
+          "frozen_preclose_pending": 12,
+          "missing_capture": 12,
+          "missing_consumption": 12,
+          "missing_seed": 12
+        },
+        "internally_complete_inputs": 0,
+        "known_rule_matches": 1,
+        "opportunities": 12,
+        "pregame_internal_valid": 0,
+        "seed_internal_valid": 0
+      },
+      "trusted_live_feasible": false
+    },
+    "identical_retry": {
+      "attempt_reasons": [],
+      "caveat": "Local assertions only; source inventory, acquisition times and ordinary seed provenance are not externally authenticated",
+      "decision": "no_live_feasibility_established",
+      "evidence_kind": "synthetic",
+      "formal_prospective_credit": 0,
+      "limits": {
+        "candidates": 32,
+        "envelope_bytes": 4194304,
+        "input_bytes": 67108864,
+        "output_bytes": 67108864,
+        "page_size": 1000,
+        "snapshot_pages": 5
+      },
+      "records": [
+        {
+          "envelope_bytes": 14600,
+          "identity": {
+            "normalized_pitcher": "synthetic pitcher",
+            "side": "over",
+            "slate_date": "2026-09-06"
+          },
+          "internally_complete": true,
+          "pregame_internal_valid": true,
+          "reasons": [],
+          "seed_internal_valid": true,
+          "selector_match": true,
+          "source_sha256": {
+            "capture": "acda1203cbb4a0e24d7f8bfd0505e5c8545aeed7d6a663dbb71baa3df5fe015c",
+            "frozen": "cb35e0b1c9a2ce9328ea092ad11f2269b5076da61761a62d878c47a444d8b6df",
+            "lock": "ae46573829d8ed86841cdc62302d237ac40e85bc49c8e05df7b7d1e411f39045"
+          }
+        }
+      ],
+      "schema": "forward_capture_feasibility_v1",
+      "slate_date": "2026-09-06",
+      "source_bundle_sha256": "eb3daa72ec071c525182d07de909871a99a6ea9933575ef09e5b0e258c20653e",
+      "source_scope": {
+        "complete": true,
+        "frozen_count": 1,
+        "lock_count": 1
+      },
+      "summary": {
+        "exclusions": {},
+        "internally_complete_inputs": 1,
+        "known_rule_matches": 1,
+        "opportunities": 1,
+        "pregame_internal_valid": 1,
+        "seed_internal_valid": 1
+      },
+      "trusted_live_feasible": false
+    },
+    "known_no_lineup": {
+      "attempt_reasons": [],
+      "caveat": "Local assertions only; source inventory, acquisition times and ordinary seed provenance are not externally authenticated",
+      "decision": "no_live_feasibility_established",
+      "evidence_kind": "synthetic",
+      "formal_prospective_credit": 0,
+      "limits": {
+        "candidates": 32,
+        "envelope_bytes": 4194304,
+        "input_bytes": 67108864,
+        "output_bytes": 67108864,
+        "page_size": 1000,
+        "snapshot_pages": 5
+      },
+      "records": [
+        {
+          "envelope_bytes": 14599,
+          "identity": {
+            "normalized_pitcher": "synthetic pitcher",
+            "side": "over",
+            "slate_date": "2026-09-06"
+          },
+          "internally_complete": true,
+          "pregame_internal_valid": true,
+          "reasons": [],
+          "seed_internal_valid": true,
+          "selector_match": true,
+          "source_sha256": {
+            "capture": "aea778c659518d2172c771e802affdeaaea96982e6492587f21e773f97c31a2a",
+            "frozen": "8299b959833d59afc212fc4ce3a0c29d9332942dd6460386f27f5b183238b2cc",
+            "lock": "b292f7d04905bc89b5c854870b8580d469e6e95c4d09325a1d346bb05b621078"
+          }
+        }
+      ],
+      "schema": "forward_capture_feasibility_v1",
+      "slate_date": "2026-09-06",
+      "source_bundle_sha256": "291bf6758fc833d49c367332a3404e79524f432a0f7dd3ea8e116130601cc572",
+      "source_scope": {
+        "complete": true,
+        "frozen_count": 1,
+        "lock_count": 1
+      },
+      "summary": {
+        "exclusions": {},
+        "internally_complete_inputs": 1,
+        "known_rule_matches": 1,
+        "opportunities": 1,
+        "pregame_internal_valid": 1,
+        "seed_internal_valid": 1
+      },
+      "trusted_live_feasible": false
+    },
+    "late_receipt_early_event": {
+      "attempt_reasons": [],
+      "caveat": "Local assertions only; source inventory, acquisition times and ordinary seed provenance are not externally authenticated",
+      "decision": "no_live_feasibility_established",
+      "evidence_kind": "synthetic",
+      "formal_prospective_credit": 0,
+      "limits": {
+        "candidates": 32,
+        "envelope_bytes": 4194304,
+        "input_bytes": 67108864,
+        "output_bytes": 67108864,
+        "page_size": 1000,
+        "snapshot_pages": 5
+      },
+      "records": [
+        {
+          "envelope_bytes": 14600,
+          "identity": {
+            "normalized_pitcher": "synthetic pitcher",
+            "side": "over",
+            "slate_date": "2026-09-06"
+          },
+          "internally_complete": false,
+          "pregame_internal_valid": false,
+          "reasons": [
+            "snapshot_receipt_after_lock"
+          ],
+          "seed_internal_valid": true,
+          "selector_match": true,
+          "source_sha256": {
+            "capture": "0d8709a7747a22b5cd70454d74a346e2b0a777642cdf130ada2b39386bf676b4",
+            "frozen": "cb35e0b1c9a2ce9328ea092ad11f2269b5076da61761a62d878c47a444d8b6df",
+            "lock": "ae46573829d8ed86841cdc62302d237ac40e85bc49c8e05df7b7d1e411f39045"
+          }
+        }
+      ],
+      "schema": "forward_capture_feasibility_v1",
+      "slate_date": "2026-09-06",
+      "source_bundle_sha256": "b7da8e88dd6048b775ba1f0448f136f45f9593a9796e4ccb8f927c29aa8a6aaf",
+      "source_scope": {
+        "complete": true,
+        "frozen_count": 1,
+        "lock_count": 1
+      },
+      "summary": {
+        "exclusions": {
+          "snapshot_receipt_after_lock": 1
+        },
+        "internally_complete_inputs": 0,
+        "known_rule_matches": 1,
+        "opportunities": 1,
+        "pregame_internal_valid": 0,
+        "seed_internal_valid": 1
+      },
+      "trusted_live_feasible": false
+    },
+    "missing_capture": {
+      "attempt_reasons": [],
+      "caveat": "Local assertions only; source inventory, acquisition times and ordinary seed provenance are not externally authenticated",
+      "decision": "no_live_feasibility_established",
+      "evidence_kind": "synthetic",
+      "formal_prospective_credit": 0,
+      "limits": {
+        "candidates": 32,
+        "envelope_bytes": 4194304,
+        "input_bytes": 67108864,
+        "output_bytes": 67108864,
+        "page_size": 1000,
+        "snapshot_pages": 5
+      },
+      "records": [
+        {
+          "envelope_bytes": 0,
+          "identity": {
+            "normalized_pitcher": "synthetic pitcher",
+            "side": "over",
+            "slate_date": "2026-09-06"
+          },
+          "internally_complete": false,
+          "pregame_internal_valid": false,
+          "reasons": [
+            "missing_capture"
+          ],
+          "seed_internal_valid": false,
+          "selector_match": true,
+          "source_sha256": {
+            "frozen": "cb35e0b1c9a2ce9328ea092ad11f2269b5076da61761a62d878c47a444d8b6df",
+            "lock": "ae46573829d8ed86841cdc62302d237ac40e85bc49c8e05df7b7d1e411f39045"
+          }
+        }
+      ],
+      "schema": "forward_capture_feasibility_v1",
+      "slate_date": "2026-09-06",
+      "source_bundle_sha256": "ab50408e340728a6606bb246d39f0601f0ffa28f792b2c3001dd7c5fde08fe18",
+      "source_scope": {
+        "complete": true,
+        "frozen_count": 1,
+        "lock_count": 1
+      },
+      "summary": {
+        "exclusions": {
+          "missing_capture": 1
+        },
+        "internally_complete_inputs": 0,
+        "known_rule_matches": 1,
+        "opportunities": 1,
+        "pregame_internal_valid": 0,
+        "seed_internal_valid": 0
+      },
+      "trusted_live_feasible": false
+    },
+    "missing_seed": {
+      "attempt_reasons": [],
+      "caveat": "Local assertions only; source inventory, acquisition times and ordinary seed provenance are not externally authenticated",
+      "decision": "no_live_feasibility_established",
+      "evidence_kind": "synthetic",
+      "formal_prospective_credit": 0,
+      "limits": {
+        "candidates": 32,
+        "envelope_bytes": 4194304,
+        "input_bytes": 67108864,
+        "output_bytes": 67108864,
+        "page_size": 1000,
+        "snapshot_pages": 5
+      },
+      "records": [
+        {
+          "envelope_bytes": 14600,
+          "identity": {
+            "normalized_pitcher": "synthetic pitcher",
+            "side": "over",
+            "slate_date": "2026-09-06"
+          },
+          "internally_complete": false,
+          "pregame_internal_valid": true,
+          "reasons": [
+            "missing_seed"
+          ],
+          "seed_internal_valid": false,
+          "selector_match": true,
+          "source_sha256": {
+            "capture": "acda1203cbb4a0e24d7f8bfd0505e5c8545aeed7d6a663dbb71baa3df5fe015c",
+            "frozen": "cb35e0b1c9a2ce9328ea092ad11f2269b5076da61761a62d878c47a444d8b6df",
+            "lock": "ae46573829d8ed86841cdc62302d237ac40e85bc49c8e05df7b7d1e411f39045"
+          }
+        }
+      ],
+      "schema": "forward_capture_feasibility_v1",
+      "slate_date": "2026-09-06",
+      "source_bundle_sha256": "4bd4596faaca036556f871af6cbf0f1c23f8ef778977f18a4731eaa42b6b0037",
+      "source_scope": {
+        "complete": true,
+        "frozen_count": 1,
+        "lock_count": 1
+      },
+      "summary": {
+        "exclusions": {
+          "missing_seed": 1
+        },
+        "internally_complete_inputs": 0,
+        "known_rule_matches": 1,
+        "opportunities": 1,
+        "pregame_internal_valid": 1,
+        "seed_internal_valid": 0
+      },
+      "trusted_live_feasible": false
+    },
+    "mixed_market": {
+      "attempt_reasons": [],
+      "caveat": "Local assertions only; source inventory, acquisition times and ordinary seed provenance are not externally authenticated",
+      "decision": "no_live_feasibility_established",
+      "evidence_kind": "synthetic",
+      "formal_prospective_credit": 0,
+      "limits": {
+        "candidates": 32,
+        "envelope_bytes": 4194304,
+        "input_bytes": 67108864,
+        "output_bytes": 67108864,
+        "page_size": 1000,
+        "snapshot_pages": 5
+      },
+      "records": [
+        {
+          "envelope_bytes": 16977,
+          "identity": {
+            "normalized_pitcher": "synthetic pitcher",
+            "side": "over",
+            "slate_date": "2026-09-06"
+          },
+          "internally_complete": true,
+          "pregame_internal_valid": true,
+          "reasons": [],
+          "seed_internal_valid": true,
+          "selector_match": true,
+          "source_sha256": {
+            "capture": "5465ba9f04c4ff0963dbe52a1c0e77c9ab6d6839ec42c7e668ce2c37bd27c326",
+            "frozen": "018e827191fb40ff716e7af682cad88e01f655301c3debd5e6660d1e8eb9d2b5",
+            "lock": "18af106b1ed185f3c3b42421407c1177eb049d24a275683f1c628245324818d8"
+          }
+        }
+      ],
+      "schema": "forward_capture_feasibility_v1",
+      "slate_date": "2026-09-06",
+      "source_bundle_sha256": "56e53d4f43cbd24db22a3a31a6bfdbfa03ceafcd349ca85e80b4c08c9e142aa3",
+      "source_scope": {
+        "complete": true,
+        "frozen_count": 1,
+        "lock_count": 1
+      },
+      "summary": {
+        "exclusions": {},
+        "internally_complete_inputs": 1,
+        "known_rule_matches": 1,
+        "opportunities": 1,
+        "pregame_internal_valid": 1,
+        "seed_internal_valid": 1
+      },
+      "trusted_live_feasible": false
+    },
+    "neutral": {
+      "attempt_reasons": [],
+      "caveat": "Local assertions only; source inventory, acquisition times and ordinary seed provenance are not externally authenticated",
+      "decision": "no_live_feasibility_established",
+      "evidence_kind": "synthetic",
+      "formal_prospective_credit": 0,
+      "limits": {
+        "candidates": 32,
+        "envelope_bytes": 4194304,
+        "input_bytes": 67108864,
+        "output_bytes": 67108864,
+        "page_size": 1000,
+        "snapshot_pages": 5
+      },
+      "records": [
+        {
+          "envelope_bytes": 14572,
+          "identity": {
+            "normalized_pitcher": "synthetic pitcher",
+            "side": "over",
+            "slate_date": "2026-09-06"
+          },
+          "internally_complete": true,
+          "pregame_internal_valid": true,
+          "reasons": [],
+          "seed_internal_valid": true,
+          "selector_match": true,
+          "source_sha256": {
+            "capture": "50dfd8e5b1de5ad8ea25f7597d08811695f57ea056637a21afaf92b30f67cd1b",
+            "frozen": "66a6f40706eec559abebf1a952c157cc6124c0c97f298da7532575fc3725ea3d",
+            "lock": "ae46573829d8ed86841cdc62302d237ac40e85bc49c8e05df7b7d1e411f39045"
+          }
+        }
+      ],
+      "schema": "forward_capture_feasibility_v1",
+      "slate_date": "2026-09-06",
+      "source_bundle_sha256": "9ec74d18848b09885473e67a8cfce12b2f05a8c70ab241988d82b73531d02dbb",
+      "source_scope": {
+        "complete": true,
+        "frozen_count": 1,
+        "lock_count": 1
+      },
+      "summary": {
+        "exclusions": {},
+        "internally_complete_inputs": 1,
+        "known_rule_matches": 1,
+        "opportunities": 1,
+        "pregame_internal_valid": 1,
+        "seed_internal_valid": 1
+      },
+      "trusted_live_feasible": false
+    },
+    "recovered_seed": {
+      "attempt_reasons": [],
+      "caveat": "Local assertions only; source inventory, acquisition times and ordinary seed provenance are not externally authenticated",
+      "decision": "no_live_feasibility_established",
+      "evidence_kind": "synthetic",
+      "formal_prospective_credit": 0,
+      "limits": {
+        "candidates": 32,
+        "envelope_bytes": 4194304,
+        "input_bytes": 67108864,
+        "output_bytes": 67108864,
+        "page_size": 1000,
+        "snapshot_pages": 5
+      },
+      "records": [
+        {
+          "envelope_bytes": 14600,
+          "identity": {
+            "normalized_pitcher": "synthetic pitcher",
+            "side": "over",
+            "slate_date": "2026-09-06"
+          },
+          "internally_complete": false,
+          "pregame_internal_valid": true,
+          "reasons": [
+            "seed_not_original"
+          ],
+          "seed_internal_valid": false,
+          "selector_match": true,
+          "source_sha256": {
+            "capture": "acda1203cbb4a0e24d7f8bfd0505e5c8545aeed7d6a663dbb71baa3df5fe015c",
+            "frozen": "cb35e0b1c9a2ce9328ea092ad11f2269b5076da61761a62d878c47a444d8b6df",
+            "lock": "ae46573829d8ed86841cdc62302d237ac40e85bc49c8e05df7b7d1e411f39045"
+          }
+        }
+      ],
+      "schema": "forward_capture_feasibility_v1",
+      "slate_date": "2026-09-06",
+      "source_bundle_sha256": "28f4e9d759df3701194da4439e687de0ea0b764512184f5a0cfcc8afa5bb9285",
+      "source_scope": {
+        "complete": true,
+        "frozen_count": 1,
+        "lock_count": 1
+      },
+      "summary": {
+        "exclusions": {
+          "seed_not_original": 1
+        },
+        "internally_complete_inputs": 0,
+        "known_rule_matches": 1,
+        "opportunities": 1,
+        "pregame_internal_valid": 1,
+        "seed_internal_valid": 0
+      },
+      "trusted_live_feasible": false
+    },
+    "strong_fallback": {
+      "attempt_reasons": [],
+      "caveat": "Local assertions only; source inventory, acquisition times and ordinary seed provenance are not externally authenticated",
+      "decision": "no_live_feasibility_established",
+      "evidence_kind": "synthetic",
+      "formal_prospective_credit": 0,
+      "limits": {
+        "candidates": 32,
+        "envelope_bytes": 4194304,
+        "input_bytes": 67108864,
+        "output_bytes": 67108864,
+        "page_size": 1000,
+        "snapshot_pages": 5
+      },
+      "records": [
+        {
+          "envelope_bytes": 14600,
+          "identity": {
+            "normalized_pitcher": "synthetic pitcher",
+            "side": "over",
+            "slate_date": "2026-09-06"
+          },
+          "internally_complete": true,
+          "pregame_internal_valid": true,
+          "reasons": [],
+          "seed_internal_valid": true,
+          "selector_match": true,
+          "source_sha256": {
+            "capture": "acda1203cbb4a0e24d7f8bfd0505e5c8545aeed7d6a663dbb71baa3df5fe015c",
+            "frozen": "cb35e0b1c9a2ce9328ea092ad11f2269b5076da61761a62d878c47a444d8b6df",
+            "lock": "ae46573829d8ed86841cdc62302d237ac40e85bc49c8e05df7b7d1e411f39045"
+          }
+        }
+      ],
+      "schema": "forward_capture_feasibility_v1",
+      "slate_date": "2026-09-06",
+      "source_bundle_sha256": "9cfdcfab0dd3b92c7a5802cd8ff32439d60b597b2187976a244053f406e1277a",
+      "source_scope": {
+        "complete": true,
+        "frozen_count": 1,
+        "lock_count": 1
+      },
+      "summary": {
+        "exclusions": {},
+        "internally_complete_inputs": 1,
+        "known_rule_matches": 1,
+        "opportunities": 1,
+        "pregame_internal_valid": 1,
+        "seed_internal_valid": 1
+      },
+      "trusted_live_feasible": false
+    },
+    "weak_negative": {
+      "attempt_reasons": [],
+      "caveat": "Local assertions only; source inventory, acquisition times and ordinary seed provenance are not externally authenticated",
+      "decision": "no_live_feasibility_established",
+      "evidence_kind": "synthetic",
+      "formal_prospective_credit": 0,
+      "limits": {
+        "candidates": 32,
+        "envelope_bytes": 4194304,
+        "input_bytes": 67108864,
+        "output_bytes": 67108864,
+        "page_size": 1000,
+        "snapshot_pages": 5
+      },
+      "records": [
+        {
+          "envelope_bytes": 14551,
+          "identity": {
+            "normalized_pitcher": "synthetic pitcher",
+            "side": "over",
+            "slate_date": "2026-09-06"
+          },
+          "internally_complete": true,
+          "pregame_internal_valid": true,
+          "reasons": [],
+          "seed_internal_valid": true,
+          "selector_match": true,
+          "source_sha256": {
+            "capture": "7e2d0427fc6bebff662c905b5e1bb4299ab84974d77461668722106ef8918791",
+            "frozen": "0f0592f7691529ef6d5ea3606c22e04f2945cc3a7650c531e5d990dd07f2196c",
+            "lock": "7c1dc86c9a39a14efaaf2c79da86c7045a13e39d5a46b126696bf7ea0f49bd4e"
+          }
+        }
+      ],
+      "schema": "forward_capture_feasibility_v1",
+      "slate_date": "2026-09-06",
+      "source_bundle_sha256": "216664728722a48c59c138647bb677088ec5e31b931e8954b0b1b8a306e8e4d7",
+      "source_scope": {
+        "complete": true,
+        "frozen_count": 1,
+        "lock_count": 1
+      },
+      "summary": {
+        "exclusions": {},
+        "internally_complete_inputs": 1,
+        "known_rule_matches": 1,
+        "opportunities": 1,
+        "pregame_internal_valid": 1,
+        "seed_internal_valid": 1
+      },
+      "trusted_live_feasible": false
+    }
+  },
+  "formal_prospective_credit": 0,
+  "historical_source": {
+    "frozen_export_captured_at": "2026-09-04 22:48:48.251902+00",
+    "interpretation": "Exact one-slate filtering of complete preserved exports; no receipt or timestamp inferred",
+    "lock_export_captured_at": "2026-09-04 22:25:16.326135+00",
+    "lock_rows_with_recorded_consumed_at": 12,
+    "original_file_sha256": {
+      "docs/research/evidence/2026-09-04-decision-time-adapter/frozen-source.json.gz": "e079f7aa691299834f30c94fafafe4e0b69ff83788cabb6134c092b229612f35",
+      "docs/research/evidence/2026-09-04-research-lineage/compact-and-lock-source.json.gz": "d8dd28b48e1bc29d42eda539c49604234c16404efa50f3a486162bf544db0960"
+    },
+    "slate": "2026-09-03"
+  },
+  "implementation_sha256": {
+    "analytics/diagnostics/forward_capture_feasibility.py": "8b96d3363ca7f497b457f5e4c9f28c0f32bef5ce0f08c4a06e547de860b7a4c8",
+    "tests/forward_capture_factory.py": "957e39091e986e93367cc16c1416b971e999f79c121cd6a72c07ec3cb0d2da5f"
+  },
+  "internally_complete_synthetic_cases": 7,
+  "mode": "offline_feasibility_acceptance",
+  "old_evidence_files_verified": 41,
+  "previous_acceptance": {
+    "accepted": 9,
+    "case_count": 20,
+    "credit": 0
+  },
+  "prior_implementation_file_sha256": {
+    "docs/research/evidence/2026-09-04-signed-score-implementation/README.md": "ec43a6f14e690b4ecb56b46ea5c90d6b111defd9ccddb53d26723edd909f0f00",
+    "docs/research/evidence/2026-09-04-signed-score-implementation/node-tests.txt": "ffb38acff7238de8968ec06948b42135499087ecb5b02fd5c204208dd5d9f400",
+    "docs/research/evidence/2026-09-04-signed-score-implementation/python-tests.txt": "f259d4f06036fcd99f6942f0c63d5d0d4c01193934fd706313937cc82f652008",
+    "docs/research/evidence/2026-09-04-signed-score-implementation/reproduce.py": "fec99abcf6fb75f1c1021c4ed8ef3e0f93d44144b47ade1af3aed6d7c545871c",
+    "docs/research/evidence/2026-09-04-signed-score-implementation/run/acceptance.json": "038ee3e06abe5dfe91d3788e047d271320f1d71bfe74b6763447b2cbb4cc508f",
+    "docs/research/evidence/2026-09-04-signed-score-implementation/run/inactive-reference-manifest.json": "adea6d3cb422d3cb1f91ca3bc25b849907438c892442a8774f20c2500e3e3948",
+    "docs/research/evidence/2026-09-04-signed-score-implementation/run/synthetic-inputs.json.gz": "40af82c7fb27524dcb5577e118637601b4ed0a2ce576d548d3787dcf341a5c9d"
+  },
+  "synthetic_cases": 16,
+  "trusted_live_feasible": false
+}

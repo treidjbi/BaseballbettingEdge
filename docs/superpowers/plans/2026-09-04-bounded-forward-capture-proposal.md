@@ -1,7 +1,7 @@
 # Bounded forward-capture proposal
 
-Date: September 4, 2026. **Proposal prepared; no collector, sink or activation
-implemented.** The paired proof-format repair is accepted on the feature branch
+Date: September 4, 2026. **Current: offline prototype complete; hosted capture
+closed.** See the completion and stop decision below. The original proposal follows. The paired proof-format repair is accepted on the feature branch
 at `b08284fd`; [acceptance evidence](../../research/2026-09-04-signed-score-implementation.md)
 does not authorize deployment. The [frozen contract](../specs/2026-09-04-forward-pregame-evidence-contract.md)
 continues to control eligibility, timing, baselines and every research gate.
@@ -134,3 +134,34 @@ write behavior, budget and failure isolation pass. Revisit predictive promotion
 only at the original sample/diversity/after-cost gates; this engineering work
 creates no new predictive result. Routine signed-score repair probes can now
 stop except for regression or source drift.
+
+## Approved prototype completion and stop decision
+
+Tyler approved the offline prototype after the paired implementation acceptance.
+It is implemented in `analytics/diagnostics/forward_capture_feasibility.py` with
+the [source profile and evidence](../../research/evidence/2026-09-04-forward-capture-feasibility/README.md).
+The [result](../../research/2026-09-04-forward-capture-feasibility.md) records
+35 focused / 207 combined passing tests and 17 acceptance scenarios: seven of
+16 synthetic cases pass internal checks, while the historical September 3 run
+accounts for all 12 opportunities and yields zero complete inputs. All 12 locks
+record consumption, but no required pregame receipt or original-seed witness was
+supplied; all 12 frozen Preclose proofs are pending. These are historical gaps,
+not 12 new operational consumption failures. All 41 checked earlier evidence
+files remain byte-identical.
+
+The approved local caps, complete inventory, exact source replay, null activation,
+strict seed/run provenance, no-network behavior and atomic completion are in place.
+Additional source-profile detail requires a page-count/exhaustion audit and an
+ordinary ungraded lock-witness event bound to a run. Those are provenance checks,
+not new betting selection filters or changes to the frozen research contract.
+
+**The feasibility gate for hosted capture has not passed. Stop before adding
+hosted storage, migrations, collection or scheduling.** Retain this prototype as
+a regression/reference tool; pause repeated historical runs while the inputs are
+unchanged. The next meaningful decision is a separately reviewed passive receipt
+instrumentation design or a material source correction that supplies actual by-lock
+availability and original pregame seed provenance. It must preserve official lock
+times and decision inputs; if exact replay still cannot pass, keep those rows
+excluded and stop. Any hosted pilot still needs authenticated immutable receipts,
+live resource measurements, permissions and rollback approval. Capture remains
+inactive; real activation unset; formal credit zero; no production change.
