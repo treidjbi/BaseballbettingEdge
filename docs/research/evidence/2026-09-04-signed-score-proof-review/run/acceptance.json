@@ -1,0 +1,1070 @@
+{
+  "formal_prospective_credit": 0,
+  "historical": {
+    "credit": 0,
+    "preclose_pending": 327,
+    "rows": 327,
+    "valid_after": 327,
+    "valid_before": 327
+  },
+  "historical_source_sha256": "e079f7aa691299834f30c94fafafe4e0b69ff83788cabb6134c092b229612f35",
+  "invalid_shared_cases": 44,
+  "javascript": {
+    "nonfinite": {
+      "nan": {
+        "baseline": false,
+        "proposed": false
+      },
+      "negative_infinity": {
+        "baseline": false,
+        "proposed": false
+      },
+      "positive_infinity": {
+        "baseline": false,
+        "proposed": false
+      }
+    },
+    "results": {
+      "away_from_pick_count_boolean": {
+        "baseline": false,
+        "proposed": false
+      },
+      "away_from_pick_count_fractional": {
+        "baseline": false,
+        "proposed": false
+      },
+      "away_from_pick_count_missing": {
+        "baseline": false,
+        "proposed": false
+      },
+      "away_from_pick_count_negative": {
+        "baseline": false,
+        "proposed": false
+      },
+      "away_from_pick_count_nonnumeric": {
+        "baseline": false,
+        "proposed": false
+      },
+      "book_count_boolean": {
+        "baseline": false,
+        "proposed": false
+      },
+      "book_count_fractional": {
+        "baseline": false,
+        "proposed": false
+      },
+      "book_count_missing": {
+        "baseline": false,
+        "proposed": false
+      },
+      "book_count_negative": {
+        "baseline": false,
+        "proposed": false
+      },
+      "book_count_nonnumeric": {
+        "baseline": false,
+        "proposed": false
+      },
+      "negative": {
+        "baseline": false,
+        "proposed": true
+      },
+      "positive": {
+        "baseline": true,
+        "proposed": true
+      },
+      "qualifying_observation_count_boolean": {
+        "baseline": false,
+        "proposed": false
+      },
+      "qualifying_observation_count_fractional": {
+        "baseline": false,
+        "proposed": false
+      },
+      "qualifying_observation_count_missing": {
+        "baseline": false,
+        "proposed": false
+      },
+      "qualifying_observation_count_negative": {
+        "baseline": false,
+        "proposed": false
+      },
+      "qualifying_observation_count_nonnumeric": {
+        "baseline": false,
+        "proposed": false
+      },
+      "reversal_book_count_boolean": {
+        "baseline": false,
+        "proposed": false
+      },
+      "reversal_book_count_fractional": {
+        "baseline": false,
+        "proposed": false
+      },
+      "reversal_book_count_missing": {
+        "baseline": false,
+        "proposed": false
+      },
+      "reversal_book_count_negative": {
+        "baseline": false,
+        "proposed": false
+      },
+      "reversal_book_count_nonnumeric": {
+        "baseline": false,
+        "proposed": false
+      },
+      "score_boolean": {
+        "baseline": false,
+        "proposed": false
+      },
+      "score_fractional": {
+        "baseline": false,
+        "proposed": false
+      },
+      "score_missing": {
+        "baseline": false,
+        "proposed": false
+      },
+      "score_nonnumeric": {
+        "baseline": false,
+        "proposed": false
+      },
+      "score_numeric_string": {
+        "baseline": false,
+        "proposed": false
+      },
+      "score_wrong_positive": {
+        "baseline": false,
+        "proposed": false
+      },
+      "score_wrong_signed": {
+        "baseline": false,
+        "proposed": false
+      },
+      "score_wrong_zero": {
+        "baseline": false,
+        "proposed": false
+      },
+      "tampered_freshness_status": {
+        "baseline": false,
+        "proposed": false
+      },
+      "tampered_label": {
+        "baseline": false,
+        "proposed": false
+      },
+      "tampered_last_observed_at": {
+        "baseline": false,
+        "proposed": false
+      },
+      "tampered_positive_reasons": {
+        "baseline": false,
+        "proposed": false
+      },
+      "tampered_reason_codes": {
+        "baseline": false,
+        "proposed": false
+      },
+      "tampered_risk_reasons": {
+        "baseline": false,
+        "proposed": false
+      },
+      "toward_pick_count_boolean": {
+        "baseline": false,
+        "proposed": false
+      },
+      "toward_pick_count_fractional": {
+        "baseline": false,
+        "proposed": false
+      },
+      "toward_pick_count_missing": {
+        "baseline": false,
+        "proposed": false
+      },
+      "toward_pick_count_negative": {
+        "baseline": false,
+        "proposed": false
+      },
+      "toward_pick_count_nonnumeric": {
+        "baseline": false,
+        "proposed": false
+      },
+      "volatile_book_count_boolean": {
+        "baseline": false,
+        "proposed": false
+      },
+      "volatile_book_count_fractional": {
+        "baseline": false,
+        "proposed": false
+      },
+      "volatile_book_count_missing": {
+        "baseline": false,
+        "proposed": false
+      },
+      "volatile_book_count_negative": {
+        "baseline": false,
+        "proposed": false
+      },
+      "volatile_book_count_nonnumeric": {
+        "baseline": false,
+        "proposed": false
+      },
+      "zero": {
+        "baseline": true,
+        "proposed": true
+      }
+    }
+  },
+  "mode": "unapplied_counterfactual_format_review",
+  "prior_acceptance": {
+    "accepted_input_cases": 8,
+    "case_count": 20,
+    "formal_prospective_credit": 0
+  },
+  "production_changed": false,
+  "proposal_sha256": "ecefd22cdebe2ca037b666e84cad8a2ba6170fd1d5f32fc1ed5f421ce58c0825",
+  "python_baseline": {
+    "away_from_pick_count_boolean": {
+      "reasons": [
+        "evaluation_proof_preclose_state_invalid"
+      ],
+      "valid": false
+    },
+    "away_from_pick_count_fractional": {
+      "reasons": [
+        "evaluation_proof_preclose_state_invalid"
+      ],
+      "valid": false
+    },
+    "away_from_pick_count_missing": {
+      "reasons": [
+        "evaluation_proof_preclose_state_invalid"
+      ],
+      "valid": false
+    },
+    "away_from_pick_count_negative": {
+      "reasons": [
+        "evaluation_proof_preclose_state_invalid"
+      ],
+      "valid": false
+    },
+    "away_from_pick_count_nonnumeric": {
+      "reasons": [
+        "evaluation_proof_preclose_state_invalid"
+      ],
+      "valid": false
+    },
+    "book_count_boolean": {
+      "reasons": [
+        "evaluation_proof_preclose_state_invalid"
+      ],
+      "valid": false
+    },
+    "book_count_fractional": {
+      "reasons": [
+        "evaluation_proof_preclose_state_invalid"
+      ],
+      "valid": false
+    },
+    "book_count_missing": {
+      "reasons": [
+        "evaluation_proof_preclose_state_invalid"
+      ],
+      "valid": false
+    },
+    "book_count_negative": {
+      "reasons": [
+        "evaluation_proof_preclose_state_invalid",
+        "evaluation_proof_semantics_mismatch"
+      ],
+      "valid": false
+    },
+    "book_count_nonnumeric": {
+      "reasons": [
+        "evaluation_proof_preclose_state_invalid"
+      ],
+      "valid": false
+    },
+    "negative": {
+      "reasons": [
+        "evaluation_proof_preclose_state_invalid"
+      ],
+      "valid": false
+    },
+    "positive": {
+      "reasons": [],
+      "valid": true
+    },
+    "qualifying_observation_count_boolean": {
+      "reasons": [
+        "evaluation_proof_count_invalid",
+        "evaluation_proof_preclose_state_invalid",
+        "evaluation_proof_row_evidence_count_mismatch"
+      ],
+      "valid": false
+    },
+    "qualifying_observation_count_fractional": {
+      "reasons": [
+        "evaluation_proof_count_invalid",
+        "evaluation_proof_preclose_state_invalid",
+        "evaluation_proof_row_evidence_count_mismatch"
+      ],
+      "valid": false
+    },
+    "qualifying_observation_count_missing": {
+      "reasons": [
+        "evaluation_proof_count_invalid",
+        "evaluation_proof_preclose_state_invalid",
+        "evaluation_proof_row_evidence_count_mismatch"
+      ],
+      "valid": false
+    },
+    "qualifying_observation_count_negative": {
+      "reasons": [
+        "evaluation_proof_count_invalid",
+        "evaluation_proof_preclose_state_invalid",
+        "evaluation_proof_row_evidence_count_mismatch"
+      ],
+      "valid": false
+    },
+    "qualifying_observation_count_nonnumeric": {
+      "reasons": [
+        "evaluation_proof_count_invalid",
+        "evaluation_proof_preclose_state_invalid",
+        "evaluation_proof_row_evidence_count_mismatch"
+      ],
+      "valid": false
+    },
+    "reversal_book_count_boolean": {
+      "reasons": [
+        "evaluation_proof_preclose_state_invalid"
+      ],
+      "valid": false
+    },
+    "reversal_book_count_fractional": {
+      "reasons": [
+        "evaluation_proof_preclose_state_invalid",
+        "evaluation_proof_semantics_mismatch"
+      ],
+      "valid": false
+    },
+    "reversal_book_count_missing": {
+      "reasons": [
+        "evaluation_proof_preclose_state_invalid"
+      ],
+      "valid": false
+    },
+    "reversal_book_count_negative": {
+      "reasons": [
+        "evaluation_proof_preclose_state_invalid",
+        "evaluation_proof_semantics_mismatch"
+      ],
+      "valid": false
+    },
+    "reversal_book_count_nonnumeric": {
+      "reasons": [
+        "evaluation_proof_preclose_state_invalid"
+      ],
+      "valid": false
+    },
+    "score_boolean": {
+      "reasons": [
+        "evaluation_proof_preclose_state_invalid",
+        "evaluation_proof_semantics_mismatch"
+      ],
+      "valid": false
+    },
+    "score_fractional": {
+      "reasons": [
+        "evaluation_proof_preclose_state_invalid",
+        "evaluation_proof_semantics_mismatch"
+      ],
+      "valid": false
+    },
+    "score_missing": {
+      "reasons": [
+        "evaluation_proof_preclose_state_invalid",
+        "evaluation_proof_semantics_mismatch"
+      ],
+      "valid": false
+    },
+    "score_nonnumeric": {
+      "reasons": [
+        "evaluation_proof_preclose_state_invalid",
+        "evaluation_proof_semantics_mismatch"
+      ],
+      "valid": false
+    },
+    "score_numeric_string": {
+      "reasons": [
+        "evaluation_proof_preclose_state_invalid",
+        "evaluation_proof_semantics_mismatch"
+      ],
+      "valid": false
+    },
+    "score_wrong_positive": {
+      "reasons": [
+        "evaluation_proof_semantics_mismatch"
+      ],
+      "valid": false
+    },
+    "score_wrong_signed": {
+      "reasons": [
+        "evaluation_proof_preclose_state_invalid",
+        "evaluation_proof_semantics_mismatch"
+      ],
+      "valid": false
+    },
+    "score_wrong_zero": {
+      "reasons": [
+        "evaluation_proof_semantics_mismatch"
+      ],
+      "valid": false
+    },
+    "tampered_freshness_status": {
+      "reasons": [
+        "evaluation_proof_preclose_state_invalid",
+        "evaluation_proof_semantics_mismatch",
+        "evaluation_proof_row_evidence_freshness_mismatch"
+      ],
+      "valid": false
+    },
+    "tampered_label": {
+      "reasons": [
+        "evaluation_proof_preclose_state_invalid",
+        "evaluation_proof_semantics_mismatch"
+      ],
+      "valid": false
+    },
+    "tampered_last_observed_at": {
+      "reasons": [
+        "evaluation_proof_preclose_state_invalid",
+        "evaluation_proof_row_evidence_last_mismatch"
+      ],
+      "valid": false
+    },
+    "tampered_positive_reasons": {
+      "reasons": [
+        "evaluation_proof_preclose_state_invalid",
+        "evaluation_proof_semantics_mismatch"
+      ],
+      "valid": false
+    },
+    "tampered_reason_codes": {
+      "reasons": [
+        "evaluation_proof_preclose_state_invalid"
+      ],
+      "valid": false
+    },
+    "tampered_risk_reasons": {
+      "reasons": [
+        "evaluation_proof_preclose_state_invalid",
+        "evaluation_proof_semantics_mismatch"
+      ],
+      "valid": false
+    },
+    "toward_pick_count_boolean": {
+      "reasons": [
+        "evaluation_proof_preclose_state_invalid"
+      ],
+      "valid": false
+    },
+    "toward_pick_count_fractional": {
+      "reasons": [
+        "evaluation_proof_preclose_state_invalid"
+      ],
+      "valid": false
+    },
+    "toward_pick_count_missing": {
+      "reasons": [
+        "evaluation_proof_preclose_state_invalid"
+      ],
+      "valid": false
+    },
+    "toward_pick_count_negative": {
+      "reasons": [
+        "evaluation_proof_preclose_state_invalid",
+        "evaluation_proof_semantics_mismatch"
+      ],
+      "valid": false
+    },
+    "toward_pick_count_nonnumeric": {
+      "reasons": [
+        "evaluation_proof_preclose_state_invalid"
+      ],
+      "valid": false
+    },
+    "volatile_book_count_boolean": {
+      "reasons": [
+        "evaluation_proof_preclose_state_invalid"
+      ],
+      "valid": false
+    },
+    "volatile_book_count_fractional": {
+      "reasons": [
+        "evaluation_proof_preclose_state_invalid",
+        "evaluation_proof_semantics_mismatch"
+      ],
+      "valid": false
+    },
+    "volatile_book_count_missing": {
+      "reasons": [
+        "evaluation_proof_preclose_state_invalid"
+      ],
+      "valid": false
+    },
+    "volatile_book_count_negative": {
+      "reasons": [
+        "evaluation_proof_preclose_state_invalid",
+        "evaluation_proof_semantics_mismatch"
+      ],
+      "valid": false
+    },
+    "volatile_book_count_nonnumeric": {
+      "reasons": [
+        "evaluation_proof_preclose_state_invalid"
+      ],
+      "valid": false
+    },
+    "zero": {
+      "reasons": [],
+      "valid": true
+    }
+  },
+  "python_baseline_nonfinite": {
+    "nan": {
+      "reasons": [
+        "evaluation_proof_not_json"
+      ],
+      "valid": false
+    },
+    "negative_infinity": {
+      "reasons": [
+        "evaluation_proof_not_json"
+      ],
+      "valid": false
+    },
+    "positive_infinity": {
+      "reasons": [
+        "evaluation_proof_not_json"
+      ],
+      "valid": false
+    }
+  },
+  "python_nonfinite": {
+    "nan": {
+      "reasons": [
+        "evaluation_proof_not_json"
+      ],
+      "valid": false
+    },
+    "negative_infinity": {
+      "reasons": [
+        "evaluation_proof_not_json"
+      ],
+      "valid": false
+    },
+    "positive_infinity": {
+      "reasons": [
+        "evaluation_proof_not_json"
+      ],
+      "valid": false
+    }
+  },
+  "python_proposed": {
+    "away_from_pick_count_boolean": {
+      "reasons": [
+        "evaluation_proof_preclose_state_invalid"
+      ],
+      "valid": false
+    },
+    "away_from_pick_count_fractional": {
+      "reasons": [
+        "evaluation_proof_preclose_state_invalid"
+      ],
+      "valid": false
+    },
+    "away_from_pick_count_missing": {
+      "reasons": [
+        "evaluation_proof_preclose_state_invalid"
+      ],
+      "valid": false
+    },
+    "away_from_pick_count_negative": {
+      "reasons": [
+        "evaluation_proof_preclose_state_invalid"
+      ],
+      "valid": false
+    },
+    "away_from_pick_count_nonnumeric": {
+      "reasons": [
+        "evaluation_proof_preclose_state_invalid"
+      ],
+      "valid": false
+    },
+    "book_count_boolean": {
+      "reasons": [
+        "evaluation_proof_preclose_state_invalid"
+      ],
+      "valid": false
+    },
+    "book_count_fractional": {
+      "reasons": [
+        "evaluation_proof_preclose_state_invalid"
+      ],
+      "valid": false
+    },
+    "book_count_missing": {
+      "reasons": [
+        "evaluation_proof_preclose_state_invalid"
+      ],
+      "valid": false
+    },
+    "book_count_negative": {
+      "reasons": [
+        "evaluation_proof_preclose_state_invalid",
+        "evaluation_proof_semantics_mismatch"
+      ],
+      "valid": false
+    },
+    "book_count_nonnumeric": {
+      "reasons": [
+        "evaluation_proof_preclose_state_invalid"
+      ],
+      "valid": false
+    },
+    "negative": {
+      "reasons": [],
+      "valid": true
+    },
+    "positive": {
+      "reasons": [],
+      "valid": true
+    },
+    "qualifying_observation_count_boolean": {
+      "reasons": [
+        "evaluation_proof_count_invalid",
+        "evaluation_proof_preclose_state_invalid",
+        "evaluation_proof_row_evidence_count_mismatch"
+      ],
+      "valid": false
+    },
+    "qualifying_observation_count_fractional": {
+      "reasons": [
+        "evaluation_proof_count_invalid",
+        "evaluation_proof_preclose_state_invalid",
+        "evaluation_proof_row_evidence_count_mismatch"
+      ],
+      "valid": false
+    },
+    "qualifying_observation_count_missing": {
+      "reasons": [
+        "evaluation_proof_count_invalid",
+        "evaluation_proof_preclose_state_invalid",
+        "evaluation_proof_row_evidence_count_mismatch"
+      ],
+      "valid": false
+    },
+    "qualifying_observation_count_negative": {
+      "reasons": [
+        "evaluation_proof_count_invalid",
+        "evaluation_proof_preclose_state_invalid",
+        "evaluation_proof_row_evidence_count_mismatch"
+      ],
+      "valid": false
+    },
+    "qualifying_observation_count_nonnumeric": {
+      "reasons": [
+        "evaluation_proof_count_invalid",
+        "evaluation_proof_preclose_state_invalid",
+        "evaluation_proof_row_evidence_count_mismatch"
+      ],
+      "valid": false
+    },
+    "reversal_book_count_boolean": {
+      "reasons": [
+        "evaluation_proof_preclose_state_invalid"
+      ],
+      "valid": false
+    },
+    "reversal_book_count_fractional": {
+      "reasons": [
+        "evaluation_proof_preclose_state_invalid",
+        "evaluation_proof_semantics_mismatch"
+      ],
+      "valid": false
+    },
+    "reversal_book_count_missing": {
+      "reasons": [
+        "evaluation_proof_preclose_state_invalid"
+      ],
+      "valid": false
+    },
+    "reversal_book_count_negative": {
+      "reasons": [
+        "evaluation_proof_preclose_state_invalid",
+        "evaluation_proof_semantics_mismatch"
+      ],
+      "valid": false
+    },
+    "reversal_book_count_nonnumeric": {
+      "reasons": [
+        "evaluation_proof_preclose_state_invalid"
+      ],
+      "valid": false
+    },
+    "score_boolean": {
+      "reasons": [
+        "evaluation_proof_preclose_state_invalid",
+        "evaluation_proof_semantics_mismatch"
+      ],
+      "valid": false
+    },
+    "score_fractional": {
+      "reasons": [
+        "evaluation_proof_preclose_state_invalid",
+        "evaluation_proof_semantics_mismatch"
+      ],
+      "valid": false
+    },
+    "score_missing": {
+      "reasons": [
+        "evaluation_proof_preclose_state_invalid",
+        "evaluation_proof_semantics_mismatch"
+      ],
+      "valid": false
+    },
+    "score_nonnumeric": {
+      "reasons": [
+        "evaluation_proof_preclose_state_invalid",
+        "evaluation_proof_semantics_mismatch"
+      ],
+      "valid": false
+    },
+    "score_numeric_string": {
+      "reasons": [
+        "evaluation_proof_semantics_mismatch"
+      ],
+      "valid": false
+    },
+    "score_wrong_positive": {
+      "reasons": [
+        "evaluation_proof_semantics_mismatch"
+      ],
+      "valid": false
+    },
+    "score_wrong_signed": {
+      "reasons": [
+        "evaluation_proof_semantics_mismatch"
+      ],
+      "valid": false
+    },
+    "score_wrong_zero": {
+      "reasons": [
+        "evaluation_proof_semantics_mismatch"
+      ],
+      "valid": false
+    },
+    "tampered_freshness_status": {
+      "reasons": [
+        "evaluation_proof_preclose_state_invalid",
+        "evaluation_proof_semantics_mismatch",
+        "evaluation_proof_row_evidence_freshness_mismatch"
+      ],
+      "valid": false
+    },
+    "tampered_label": {
+      "reasons": [
+        "evaluation_proof_semantics_mismatch"
+      ],
+      "valid": false
+    },
+    "tampered_last_observed_at": {
+      "reasons": [
+        "evaluation_proof_preclose_state_invalid",
+        "evaluation_proof_row_evidence_last_mismatch"
+      ],
+      "valid": false
+    },
+    "tampered_positive_reasons": {
+      "reasons": [
+        "evaluation_proof_semantics_mismatch"
+      ],
+      "valid": false
+    },
+    "tampered_reason_codes": {
+      "reasons": [
+        "evaluation_proof_preclose_state_invalid"
+      ],
+      "valid": false
+    },
+    "tampered_risk_reasons": {
+      "reasons": [
+        "evaluation_proof_semantics_mismatch"
+      ],
+      "valid": false
+    },
+    "toward_pick_count_boolean": {
+      "reasons": [
+        "evaluation_proof_preclose_state_invalid"
+      ],
+      "valid": false
+    },
+    "toward_pick_count_fractional": {
+      "reasons": [
+        "evaluation_proof_preclose_state_invalid"
+      ],
+      "valid": false
+    },
+    "toward_pick_count_missing": {
+      "reasons": [
+        "evaluation_proof_preclose_state_invalid"
+      ],
+      "valid": false
+    },
+    "toward_pick_count_negative": {
+      "reasons": [
+        "evaluation_proof_preclose_state_invalid",
+        "evaluation_proof_semantics_mismatch"
+      ],
+      "valid": false
+    },
+    "toward_pick_count_nonnumeric": {
+      "reasons": [
+        "evaluation_proof_preclose_state_invalid"
+      ],
+      "valid": false
+    },
+    "volatile_book_count_boolean": {
+      "reasons": [
+        "evaluation_proof_preclose_state_invalid"
+      ],
+      "valid": false
+    },
+    "volatile_book_count_fractional": {
+      "reasons": [
+        "evaluation_proof_preclose_state_invalid",
+        "evaluation_proof_semantics_mismatch"
+      ],
+      "valid": false
+    },
+    "volatile_book_count_missing": {
+      "reasons": [
+        "evaluation_proof_preclose_state_invalid"
+      ],
+      "valid": false
+    },
+    "volatile_book_count_negative": {
+      "reasons": [
+        "evaluation_proof_preclose_state_invalid",
+        "evaluation_proof_semantics_mismatch"
+      ],
+      "valid": false
+    },
+    "volatile_book_count_nonnumeric": {
+      "reasons": [
+        "evaluation_proof_preclose_state_invalid"
+      ],
+      "valid": false
+    },
+    "zero": {
+      "reasons": [],
+      "valid": true
+    }
+  },
+  "real_capture_active": false,
+  "score_roundtrips": {
+    "negative": {
+      "decision": {
+        "consensus_core": "false",
+        "decisive_families": [
+          "base"
+        ],
+        "drag_core": "true",
+        "family_count": 1,
+        "family_states": {
+          "anchor": {
+            "reason_codes": [
+              "market_anchor_not_matched"
+            ],
+            "state": "disagree"
+          },
+          "base": {
+            "reason_codes": [
+              "strong_base_selective_lean"
+            ],
+            "state": "agree"
+          },
+          "preclose": {
+            "reason_codes": [
+              "preclose_not_supported"
+            ],
+            "state": "disagree"
+          },
+          "reentry": {
+            "reason_codes": [
+              "reentry_predicate_false"
+            ],
+            "state": "disagree"
+          }
+        },
+        "maximum_family_count": 1,
+        "no_drag": "false",
+        "preclose_required_for_selected_lane": false,
+        "reason_codes": [
+          "strong_base_selective_lean",
+          "market_anchor_not_matched",
+          "preclose_not_supported",
+          "reentry_predicate_false",
+          "no_drag_rejected",
+          "consensus_core_not_selected",
+          "reentry_expansion_not_selected"
+        ],
+        "reentry_expansion": "false",
+        "selected_lane": null,
+        "selection_status": "not_selected",
+        "support": "true"
+      },
+      "forward_summary": {
+        "eligible_input_candidates": 1,
+        "exclusions": {},
+        "missing_capture": 0,
+        "orphan_attachments": 0,
+        "pregame_valid": 1,
+        "records": 1
+      },
+      "label": "weak_preclose_clv_proxy",
+      "score": -1
+    },
+    "positive": {
+      "decision": {
+        "consensus_core": "false",
+        "decisive_families": [
+          "base",
+          "preclose"
+        ],
+        "drag_core": "true",
+        "family_count": 2,
+        "family_states": {
+          "anchor": {
+            "reason_codes": [
+              "market_anchor_not_matched"
+            ],
+            "state": "disagree"
+          },
+          "base": {
+            "reason_codes": [
+              "strong_base_selective_lean"
+            ],
+            "state": "agree"
+          },
+          "preclose": {
+            "reason_codes": [
+              "preclose_v2_confirmed"
+            ],
+            "state": "agree"
+          },
+          "reentry": {
+            "reason_codes": [
+              "reentry_predicate_false"
+            ],
+            "state": "disagree"
+          }
+        },
+        "maximum_family_count": 2,
+        "no_drag": "false",
+        "preclose_required_for_selected_lane": false,
+        "reason_codes": [
+          "strong_base_selective_lean",
+          "market_anchor_not_matched",
+          "preclose_v2_confirmed",
+          "reentry_predicate_false",
+          "no_drag_rejected",
+          "consensus_core_not_selected",
+          "reentry_expansion_not_selected"
+        ],
+        "reentry_expansion": "false",
+        "selected_lane": null,
+        "selection_status": "not_selected",
+        "support": "true"
+      },
+      "forward_summary": {
+        "eligible_input_candidates": 1,
+        "exclusions": {},
+        "missing_capture": 0,
+        "orphan_attachments": 0,
+        "pregame_valid": 1,
+        "records": 1
+      },
+      "label": "strong_preclose_clv_proxy",
+      "score": 7
+    },
+    "zero": {
+      "decision": {
+        "consensus_core": "false",
+        "decisive_families": [
+          "base"
+        ],
+        "drag_core": "true",
+        "family_count": 1,
+        "family_states": {
+          "anchor": {
+            "reason_codes": [
+              "market_anchor_not_matched"
+            ],
+            "state": "disagree"
+          },
+          "base": {
+            "reason_codes": [
+              "strong_base_selective_lean"
+            ],
+            "state": "agree"
+          },
+          "preclose": {
+            "reason_codes": [
+              "preclose_not_supported"
+            ],
+            "state": "disagree"
+          },
+          "reentry": {
+            "reason_codes": [
+              "reentry_predicate_false"
+            ],
+            "state": "disagree"
+          }
+        },
+        "maximum_family_count": 1,
+        "no_drag": "false",
+        "preclose_required_for_selected_lane": false,
+        "reason_codes": [
+          "strong_base_selective_lean",
+          "market_anchor_not_matched",
+          "preclose_not_supported",
+          "reentry_predicate_false",
+          "no_drag_rejected",
+          "consensus_core_not_selected",
+          "reentry_expansion_not_selected"
+        ],
+        "reentry_expansion": "false",
+        "selected_lane": null,
+        "selection_status": "not_selected",
+        "support": "true"
+      },
+      "forward_summary": {
+        "eligible_input_candidates": 1,
+        "exclusions": {},
+        "missing_capture": 0,
+        "orphan_attachments": 0,
+        "pregame_valid": 1,
+        "records": 1
+      },
+      "label": "weak_preclose_clv_proxy",
+      "score": 0
+    }
+  },
+  "shared_json_cases": 47,
+  "source_sha256": {
+    "market_infra/alternative_pick_evaluation_proof_v2.py": "20dc51d598267d6319cb4cc2fee95c46b77c36319f7456bfb21a829bab616a07",
+    "netlify/functions/alternative-picks.mjs": "21239ab5fc46d0e0d16f0e3ae397c6e9e45bdae7cd38b810c845b25c275306c1"
+  }
+}

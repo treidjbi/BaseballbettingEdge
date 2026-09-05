@@ -62,3 +62,12 @@ review before capture integration, preserving signed scoring math while keeping
 counts and all other proof constraints strict. Any capture proposal must also
 address bounded-read completeness, immutable receipt provenance, the actual
 source mappings and resource use. No real sink or activation is approved or set.
+
+## Subsequent scoped review
+
+The [signed-score review](2026-09-04-signed-score-proof-repair-review.md) is now
+complete. It found the same restriction in Python and JavaScript and verified
+an unapplied paired patch in memory: 47 shared cases plus three nonfinite cases
+per reader. Historical proofs and this original acceptance remain unchanged.
+That plan controls the proposed repair; next is paired implementation acceptance
+before the bounded capture proposal. No runtime source or activation changed.

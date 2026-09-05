@@ -27,7 +27,7 @@ operating costs are absent. No candidate has established fully costed profit.
 | Pipeline / infrastructure | Keep ordinary operation; review repairs only on failure | Natural-run artifact/served hashes, grading freshness, due/consumed locks, sender outcomes | Stale/missing publication, unconsumed lock, repeated timeout or send error |
 | Model | Alt V2 paired review complete; both promotion paths retired, frozen controls retained | Any reopening needs a material evidence correction or separately reviewed new frozen hypothesis and future holdout; other candidates need current hosted attribution/diversity | Reconciled evidence changes the conclusion or a separately reviewed research proposal; no automatic restart on count growth |
 | UI | Keep display/comparison behavior; review usability independently | Current mobile/desktop interaction and candidate/artifact/lock proof | Incorrect freeze, stale-state confusion or contract mismatch |
-| Tracking / history | Offline validator accepted; review the existing negative-score proof-format rejection before capture integration | Signed-score round-trip proof with strict count checks; then trusted source receipts, seed mapping, bounded reads, resource use and rollback | Scoped proof-format acceptance plus a bounded capture proposal; capture inactive, activation unset, Kumar excluded |
+| Tracking / history | Paired Python/JavaScript proof-format review complete; next is implementation acceptance | Unapplied patch passes 47 shared cases plus nonfinite exclusions; implementation needs regression suites and a new manifest, then trusted receipts, seed mapping, complete reads, measured use and rollback | Reviewed paired implementation and bounded capture proposal; capture inactive, activation unset, Kumar excluded |
 
 Current research treatment:
 
@@ -47,9 +47,10 @@ Current research treatment:
   Pause repetitive promotion readouts while these structural gaps persist. The
   new evidence contract preserves the selector and gates, requires affirmative
   pregame availability and seed provenance, and grants no historical back-credit.
-  Offline validation now passes 76 new tests. A synthetic -1/weak proxy score
-  exposes an existing V2 proof-format rejection; its effect on live rows is
-  unknown and it remains excluded. No scoring math was changed.
+  Offline validation passes 76 new tests. The signed-score review now confirms
+  both Python and JavaScript reject complete -1/weak proofs. An unapplied paired
+  patch passes isolated checks; runtime remains unchanged. All 327 old proofs
+  stay pending. Live affected-row counts remain unknown; zero formal credit.
 - **CLV:** process KPI only, 33/100 exact targets across two slates. No complete
   14-slate window; do not repeatedly run without its explicit close packet.
 - **No-drag:** promotion path retired after 75 prospective rows lost 4.883u.
@@ -57,6 +58,8 @@ Current research treatment:
   +0.0540 K paired MAE lift did not establish betting improvement.
 
 Retain daily operational/integrity deltas and bounded candidate eligibility.
+Keep the signed-score packet as a one-time reference; repeat it only for
+implementation acceptance or source/contract drift.
 Recommend pausing routine Alt promotion scoreboards, post-hoc subset searches,
 redundant historical scoreboards and broad overlapping
 searches. Retire completed cleanup/repair reminders and old BoltOdds cutover
@@ -69,7 +72,8 @@ production re-seed.
 · [Resolved Gate C provenance and current linkage decision](research/2026-09-04-research-lineage-decision.md)
 · [Completed offline adapter and exclusions](research/2026-09-04-decision-time-adapter-review.md)
 · [Defined forward-only contract and acceptance cases](superpowers/specs/2026-09-04-forward-pregame-evidence-contract.md)
-· [Completed validator acceptance and proof-format blocker](research/2026-09-04-forward-evidence-validator-review.md)
+· [Completed validator acceptance](research/2026-09-04-forward-evidence-validator-review.md)
+· [Paired signed-score review and unapplied patch](research/2026-09-04-signed-score-proof-review.md)
 · [Captured primary evidence and SQL](research/evidence/2026-09-04-operating-review/read-only-evidence.json)
 · [Reproducible checks](research/evidence/2026-09-04-operating-review/evidence-checks.ipynb)
 · [Current operating record](current-state.md)
