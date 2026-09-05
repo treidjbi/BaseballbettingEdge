@@ -27,7 +27,7 @@ operating costs are absent. No candidate has established fully costed profit.
 | Pipeline / infrastructure | Keep ordinary operation; review repairs only on failure | Natural-run artifact/served hashes, grading freshness, due/consumed locks, sender outcomes | Stale/missing publication, unconsumed lock, repeated timeout or send error |
 | Model | Alt V2 paired review complete; both promotion paths retired, frozen controls retained | Any reopening needs a material evidence correction or separately reviewed new frozen hypothesis and future holdout; other candidates need current hosted attribution/diversity | Reconciled evidence changes the conclusion or a separately reviewed research proposal; no automatic restart on count growth |
 | UI | Keep display/comparison behavior; review usability independently | Current mobile/desktop interaction and candidate/artifact/lock proof | Incorrect freeze, stale-state confusion or contract mismatch |
-| Tracking / history | Offline prototype complete; stop before hosted capture and pause repeated historical runs | Genuine by-lock acquisition and original ungraded seed witnesses; any passive instrumentation must preserve lock times/inputs | New source evidence or separately reviewed instrumentation resolves provenance; hosted sink/activation closed, Kumar excluded |
+| Tracking / history | Passive receipt review complete; defer instrumentation and hosted work | Complete authenticated by-lock inputs that reproduce the full proof, plus original seed continuity | Material source correction or explicitly commissioned runtime/evidence-version redesign; capture inactive, Kumar excluded |
 
 Current research treatment:
 
@@ -55,7 +55,10 @@ Current research treatment:
   combined tests. It inventories all 12 September 3 opportunities but finds zero
   complete inputs: Preclose remains pending and pregame receipts/seed witnesses
   are absent. All 12 locks record consumption; this is a provenance gap. Stop
-  before hosted capture. Actual acquisition cannot use the earlier runtime clock.
+  before hosted capture. The passive receipt review confirms that later market
+  reads fail the current by-lock requirement even when event times are earlier.
+  Eight synthetic boundary cases verify the exclusions. Artifact/seed hooks are
+  feasible pieces, but do not resolve market timing; defer implementation.
 - **CLV:** process KPI only, 33/100 exact targets across two slates. No complete
   14-slate window; do not repeatedly run without its explicit close packet.
 - **No-drag:** promotion path retired after 75 prospective rows lost 4.883u.
@@ -80,6 +83,7 @@ production re-seed.
 · [Completed validator acceptance](research/2026-09-04-forward-evidence-validator-review.md)
 · [Paired signed-score implementation and new manifest](research/2026-09-04-signed-score-implementation.md)
 · [Completed offline capture prototype and stop decision](research/2026-09-04-forward-capture-feasibility.md)
+· [Passive receipt source review and implementation deferral](research/2026-09-04-passive-receipt-review.md)
 · [Captured primary evidence and SQL](research/evidence/2026-09-04-operating-review/read-only-evidence.json)
 · [Reproducible checks](research/evidence/2026-09-04-operating-review/evidence-checks.ipynb)
 · [Current operating record](current-state.md)

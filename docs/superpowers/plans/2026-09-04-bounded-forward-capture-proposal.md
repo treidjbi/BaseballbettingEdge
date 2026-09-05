@@ -1,7 +1,8 @@
 # Bounded forward-capture proposal
 
 Date: September 4, 2026. **Current: offline prototype complete; hosted capture
-closed.** See the completion and stop decision below. The original proposal follows. The paired proof-format repair is accepted on the feature branch
+closed; passive receipt review complete, instrumentation implementation deferred.**
+See the completion and passive-review decisions below. The original proposal follows. The paired proof-format repair is accepted on the feature branch
 at `b08284fd`; [acceptance evidence](../../research/2026-09-04-signed-score-implementation.md)
 does not authorize deployment. The [frozen contract](../specs/2026-09-04-forward-pregame-evidence-contract.md)
 continues to control eligibility, timing, baselines and every research gate.
@@ -165,3 +166,32 @@ times and decision inputs; if exact replay still cannot pass, keep those rows
 excluded and stop. Any hosted pilot still needs authenticated immutable receipts,
 live resource measurements, permissions and rollback approval. Capture remains
 inactive; real activation unset; formal credit zero; no production change.
+
+## Completed passive receipt review
+
+The [source review and eight synthetic boundary cases](../../research/2026-09-04-passive-receipt-review.md)
+resolve the proposed instrumentation question: **do not implement end-of-cycle
+receipt capture as an eligibility fix or proceed to a hosted pilot.** The current
+runtime obtains heartbeat, snapshot and current-line reads after the clock used
+for `locked_at`. The existing validator also requires the completed read and
+binding/window receipts by that cutoff. Recording their actual later times
+correctly excludes them, even if snapshot event times are earlier. Disabling
+polling would not remove the later reads. This is an evidence-contract/runtime
+sequencing mismatch, not a demonstrated operational lock failure.
+
+Artifact byte capture before the existing clock is feasible in the normal loader
+path. Affirmative seed provenance is also instrumentable, but requires a committed
+original insert witness, continuity across hydration, an exact ungraded locked-row
+witness after consumption, and separate publication acknowledgment. Neither piece
+alone resolves the market timing barrier. Existing consumption timestamps are not
+publication receipts; no operational change or repair follows from that distinction.
+
+Retain the offline tools and source packet; pause additional instrumentation,
+historical replay and hosted design work while this barrier persists. Revisit only
+if a materially different source supplies authenticated complete by-lock inputs
+that reproduce the full unchanged proof, or Tyler separately opens a bounded
+runtime/evidence-version redesign. Such a redesign must explicitly address timing,
+population changes, seed continuity and a new future holdout; it is outside this
+review and cannot silently amend the frozen contract or back-credit old rows.
+No new recurring diagnostic, capture, sink, migration, activation, production
+setting, retention or notification behavior is introduced.

@@ -1,0 +1,268 @@
+{
+  "case_count": 8,
+  "cases": {
+    "internally_valid_control": {
+      "exclusions": {},
+      "internally_complete_inputs": 1,
+      "known_rule_matches": 1,
+      "opportunities": 1,
+      "pregame_internal_valid": 1,
+      "seed_internal_valid": 1
+    },
+    "late_current_lines": {
+      "exclusions": {
+        "current_lines_receipt_after_lock": 1
+      },
+      "internally_complete_inputs": 0,
+      "known_rule_matches": 1,
+      "opportunities": 1,
+      "pregame_internal_valid": 0,
+      "seed_internal_valid": 1
+    },
+    "late_heartbeats": {
+      "exclusions": {
+        "heartbeat_receipt_after_lock": 1
+      },
+      "internally_complete_inputs": 0,
+      "known_rule_matches": 1,
+      "opportunities": 1,
+      "pregame_internal_valid": 0,
+      "seed_internal_valid": 1
+    },
+    "late_read": {
+      "exclusions": {
+        "read_receipt_after_lock": 1
+      },
+      "internally_complete_inputs": 0,
+      "known_rule_matches": 1,
+      "opportunities": 1,
+      "pregame_internal_valid": 0,
+      "seed_internal_valid": 1
+    },
+    "late_snapshots": {
+      "exclusions": {
+        "snapshot_receipt_after_lock": 1
+      },
+      "internally_complete_inputs": 0,
+      "known_rule_matches": 1,
+      "opportunities": 1,
+      "pregame_internal_valid": 0,
+      "seed_internal_valid": 1
+    },
+    "late_windows": {
+      "exclusions": {
+        "window_receipt_after_lock": 1
+      },
+      "internally_complete_inputs": 0,
+      "known_rule_matches": 1,
+      "opportunities": 1,
+      "pregame_internal_valid": 0,
+      "seed_internal_valid": 1
+    },
+    "missing_seed": {
+      "exclusions": {
+        "missing_seed": 1
+      },
+      "internally_complete_inputs": 0,
+      "known_rule_matches": 1,
+      "opportunities": 1,
+      "pregame_internal_valid": 1,
+      "seed_internal_valid": 0
+    },
+    "recovered_seed": {
+      "exclusions": {
+        "seed_not_original": 1
+      },
+      "internally_complete_inputs": 0,
+      "known_rule_matches": 1,
+      "opportunities": 1,
+      "pregame_internal_valid": 1,
+      "seed_internal_valid": 0
+    }
+  },
+  "conclusion": "passive_end_of_cycle_receipts_do_not_resolve_by_lock_eligibility",
+  "evidence_kind": "synthetic_and_static_source_review",
+  "formal_credit": 0,
+  "production_invoked": false,
+  "source_commit": "9a1c81c1",
+  "sources": {
+    "analytics/diagnostics/forward_capture_feasibility.py": {
+      "line_ranges": [
+        [
+          1,
+          79
+        ]
+      ],
+      "sha256": "8b96d3363ca7f497b457f5e4c9f28c0f32bef5ce0f08c4a06e547de860b7a4c8"
+    },
+    "analytics/diagnostics/forward_pregame_evidence_validator.py": {
+      "line_ranges": [
+        [
+          149,
+          155
+        ],
+        [
+          280,
+          313
+        ]
+      ],
+      "sha256": "ec0e1271ab29051e486f60b24fe7926b51d6a04ec7f2b980b22bd6cf8bb752a7"
+    },
+    "docs/superpowers/specs/2026-09-04-forward-pregame-evidence-contract.md": {
+      "line_ranges": [
+        [
+          61,
+          84
+        ]
+      ],
+      "sha256": "dac648b46e5fad8754dd31f66cdd0f89631097930f666c5295f830882f80c8bd"
+    },
+    "market_infra/alternative_pick_preclose_v2.py": {
+      "line_ranges": [
+        [
+          944,
+          952
+        ],
+        [
+          996,
+          1018
+        ]
+      ],
+      "sha256": "13a4313849f079ef5f8779a5abff057c86b909d320c68cdf9b669e9e84dca683"
+    },
+    "market_infra/alternative_pick_recording_v2.py": {
+      "line_ranges": [
+        [
+          414,
+          441
+        ],
+        [
+          487,
+          540
+        ],
+        [
+          565,
+          579
+        ]
+      ],
+      "sha256": "621a5859ffc0ac342c3bec6f12f960a16f5bfb3df4af1044f545101de6604c07"
+    },
+    "market_infra/operational_locks.py": {
+      "line_ranges": [
+        [
+          172,
+          179
+        ]
+      ],
+      "sha256": "060377bd10c104ceb21bb58f542b5b48b7ac0818d4c760b0b14d56a693f310c4"
+    },
+    "market_infra/supabase_writer.py": {
+      "line_ranges": [
+        [
+          146,
+          155
+        ]
+      ],
+      "sha256": "e69bd8b288b6717e909c3cbeca16d6e9f36f5c5f294754b0d622505bc9bf4836"
+    },
+    "pipeline/fetch_results.py": {
+      "line_ranges": [
+        [
+          272,
+          296
+        ],
+        [
+          355,
+          362
+        ],
+        [
+          407,
+          414
+        ],
+        [
+          697,
+          720
+        ]
+      ],
+      "sha256": "b55a33da73bf1ac44c730cca994a7d9c58446bad568414d81731b0de1ac6d7a0"
+    },
+    "pipeline/run_pipeline.py": {
+      "line_ranges": [
+        [
+          1099,
+          1110
+        ],
+        [
+          1160,
+          1185
+        ],
+        [
+          2196,
+          2206
+        ],
+        [
+          2227,
+          2228
+        ]
+      ],
+      "sha256": "b55218c0311803f0bf7e562ac7a9f48fd12bc51ee037341a9c0e1d8c3144fd7c"
+    },
+    "scripts/build_live_events_to_supabase.py": {
+      "line_ranges": [
+        [
+          953,
+          976
+        ],
+        [
+          1660,
+          1700
+        ],
+        [
+          1749,
+          1755
+        ],
+        [
+          1932,
+          1988
+        ]
+      ],
+      "sha256": "3706bdcc13178bcfe1886f9ea76bee8058355ed3a84e3bf9752eb78164b765cf"
+    },
+    "scripts/run_render_pipeline_mode.py": {
+      "line_ranges": [
+        [
+          367,
+          400
+        ]
+      ],
+      "sha256": "cf65fe6346bb4c3940db647c149a2c8354598d9d5f0541899c679dc617cd2e58"
+    },
+    "scripts/shadow_therundown_mainline_to_supabase.py": {
+      "line_ranges": [
+        [
+          335,
+          350
+        ],
+        [
+          404,
+          408
+        ]
+      ],
+      "sha256": "1d2ac88af11da06a2245708644d4217605eead5738ef22aa332cd6e3367eb996"
+    },
+    "tests/forward_capture_factory.py": {
+      "line_ranges": [
+        [
+          1,
+          29
+        ]
+      ],
+      "sha256": "957e39091e986e93367cc16c1416b971e999f79c121cd6a72c07ec3cb0d2da5f"
+    },
+    "tests/forward_evidence_factory.py": {
+      "line_ranges": [],
+      "sha256": "5e3cd3f68c2712327da93359d8b426e45df8d6a603ca3c525bb0adb8828b4571"
+    }
+  },
+  "trusted_live_feasible": false
+}
