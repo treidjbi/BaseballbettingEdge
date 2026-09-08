@@ -1,6 +1,6 @@
 # Current State
 
-Last updated: 2026-09-04
+Last updated: 2026-09-08
 
 ## Read Order
 
@@ -12,6 +12,9 @@ For any new work in this repo:
    for the active gate index and to separate operational/display surfaces from
    still-closed production promotion gates.
 4. Read the newest active dated plans that match the task:
+   - `docs/superpowers/plans/2026-09-08-season-end-freeze-and-provider-shutdown.md`
+     for the final regular-season evidence freeze, provider-calling Render
+     shutdown, compact-history finalization, and offseason handoff
    - `docs/superpowers/plans/2026-06-10-profit-rescue-and-strict-provider-readiness.md`
      for the downgrade-only FIRE exposure rescue canary and the read-only
      strict-provider readiness report
@@ -374,6 +377,25 @@ Use this board to keep the active workstreams visible without turning every
 new idea into a separate source of truth. The BBE Operations Brief should
 summarize these lanes daily and call out only the next decision or blocker for
 each lane.
+
+### September 8 season-end preparation overlay
+
+Tyler approved preparation and a read-only rehearsal, not an immediate
+production shutdown. The controlling plan is
+`docs/superpowers/plans/2026-09-08-season-end-freeze-and-provider-shutdown.md`;
+the evidence report is
+`docs/research/2026-09-08-season-end-read-only-preflight.md`.
+
+| Lane | Current reviewed state | Next decision / evidence / trigger |
+| --- | --- | --- |
+| Pipeline / infrastructure | Normal regular-season production remains unchanged. The six provider-calling Render services are identified for post-final-slate suspension; grading, lock, and research remain temporarily separate. | After the September 27 slate is final and final-day locks/notifications are accounted for, resolve live service IDs/settings and seek fresh approval to suspend preview, full, three refresh services, and `bbe-live-layer` before the next preview. Postseason polling is off by default. |
+| Model | The full temporary research rehearsal completed, but the two scaffold candidates remain negative and no model promotion is justified. | Preserve the existing live model through the season. After final grading, run the full season-end packet with required slices; any 2027 behavior change needs a separate child canary. |
+| UI | The dashboard and artifact API are not provider pollers and can remain available as a read-only archive. | After shutdown, verify the final September 27 artifact remains readable. Leave the scheduled sender as a no-op unless a separate code/deploy decision changes it. |
+| Tracking / data collection / history | Read-only staging produced `4,822` Gate C rows, `2,534` tracked side rows, `2,444/2,444` pick-history reconciliation, zero duplicate keys, `5,301` compact pick-evidence rows, `6,542` live-display rows, and an `11,843`-row agreement tracker. The first unbounded public-history attempt returned HTTP 502; staged canonical history succeeded. September 1-7 has `366,227` eligible raw active-provider snapshots versus `126,134` represented by compact rows, a `240,093`-row gap; raw evidence remains preserved. | Monitor storage/coverage weekly. After polling stops and final grading passes, freeze the research dataset, then run preview-first compact-only finalization under separate approval. No raw or webhook deletion follows automatically. |
+
+Preparation/rehearsal did not change providers, schedules, deployments,
+notifications, locks, artifacts, calibration, model behavior, retention, or
+database contents.
 
 ### September 4 operating and research review
 

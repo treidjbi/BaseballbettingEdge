@@ -78,6 +78,14 @@ This master plan should not be executed as one giant task. It defines child work
 
 - Tasks 1-6: completed scaffold as of 2026-06-23.
 - Task 7: deferred until the 2026 regular season is fully graded and season-end artifacts are frozen.
+- September 8 preflight: the read-only, temporary-output rehearsal completed at
+  `4,822` Gate C rows, `2,444/2,444` pick-history reconciliation, and zero
+  duplicate dataset keys after staging canonical history and compact market
+  evidence. The public unbounded history path first returned HTTP 502, so the
+  final freeze must use the bounded staged-history path and fail-fast row-count
+  checks. This is plumbing proof only; Task 7 remains deferred. See
+  `docs/research/2026-09-08-season-end-read-only-preflight.md` and
+  `docs/superpowers/plans/2026-09-08-season-end-freeze-and-provider-shutdown.md`.
 - Final review note: decision-packet canary candidates now require explicit slice metadata (`bad_slices` or `bad_slice_count`) and explicit parseable test metrics (`test_rows` and `test_pnl`). Missing slice metadata blocks as `blocked_missing_slices`; missing test metrics that would otherwise promote block as `blocked_missing_test_metrics`.
 
 ## Task 1: Create The Next-Season Feature Catalog
@@ -956,6 +964,12 @@ git commit -m "feat: add next season model decision packet"
 - Produces: a Tyler decision list, not live behavior.
 
 **Status:** Deferred until the 2026 regular season is fully graded and the season-end artifacts are frozen. Do not draft child canary plans from the scaffold-only packet.
+
+Before running the commands below, follow the September 8 shutdown/freeze plan:
+stage canonical bounded history and compact market inputs, build and review the
+entire chain in a temporary directory with fail-fast behavior, and only then
+write the canonical outputs. Do not use the public unbounded full-history
+response as the sole history path.
 
 - [ ] **Step 1: Freeze season-end artifacts**
 
