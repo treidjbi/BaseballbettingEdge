@@ -926,6 +926,7 @@ function WhyPills({
   const oppVs = (oppK - 0.227) / 0.227 * 100;
   stats.push({
     icon: Icon.users,
+    lbl: "OPP K%",
     v: `${(oppK * 100).toFixed(0)}%`,
     tone: (side.direction === "OVER" ? oppVs > 0 : oppVs < 0) ? "pos" : "neg",
     title: `Opponent K-rate ${(oppK * 100).toFixed(1)}% (${oppVs >= 0 ? "+" : ""}${oppVs.toFixed(0)}% vs avg)`
@@ -935,6 +936,7 @@ function WhyPills({
   const k9Delta = k9Recent - k9Season;
   stats.push({
     icon: Icon.ball,
+    lbl: "K/9",
     v: k9Recent.toFixed(1),
     tone: (side.direction === "OVER" ? k9Delta > 0 : k9Delta < 0) ? "pos" : "neg",
     title: `Recent K/9 ${k9Recent.toFixed(1)} (${k9Delta >= 0 ? "+" : ""}${k9Delta.toFixed(1)} vs season ${k9Season.toFixed(1)})`
@@ -942,6 +944,7 @@ function WhyPills({
   if (p.ump_k_adj && Math.abs(p.ump_k_adj) > 0.05) {
     stats.push({
       icon: Icon.ump,
+      lbl: "UMP",
       v: `${p.ump_k_adj > 0 ? "+" : ""}${p.ump_k_adj.toFixed(2)}`,
       tone: (side.direction === "OVER" ? p.ump_k_adj > 0 : p.ump_k_adj < 0) ? "pos" : "neg",
       title: `Umpire K-adjustment ${p.ump_k_adj > 0 ? "+" : ""}${p.ump_k_adj.toFixed(2)} K/g`
@@ -955,11 +958,15 @@ function WhyPills({
     className: `v2-stat ${s.tone}`,
     title: s.title
   }, s.icon, /*#__PURE__*/React.createElement("span", {
+    className: "l"
+  }, s.lbl), /*#__PURE__*/React.createElement("span", {
     className: "v"
   }, s.v))), steam && /*#__PURE__*/React.createElement("span", {
     className: `v2-stat ${steam.steamWith ? "pos" : "neg"}`,
     title: `Steam ${steam.steamWith ? "with" : "against"} the pick, ${steam.cents}¢`
   }, steam.steamWith ? Icon.up : Icon.down, /*#__PURE__*/React.createElement("span", {
+    className: "l"
+  }, "STEAM"), /*#__PURE__*/React.createElement("span", {
     className: "v"
   }, steam.cents, "\xA2")));
 }
