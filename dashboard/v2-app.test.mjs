@@ -170,15 +170,12 @@ test("manual alternate book selection retains live provenance without automatic 
 });
 
 test("Alt Picks labels singular counts and canonical endpoint book keys", () => {
-  const { altCountLabel, altCandidateStatusCopy, altBookTitle } = loadTicketHelpers();
+  const { altCountLabel, altBookTitle } = loadTicketHelpers();
   assert.equal(typeof altCountLabel, "function");
   assert.equal(altCountLabel(1, "candidate"), "1 candidate");
   assert.equal(altCountLabel(2, "candidate"), "2 candidates");
   assert.equal(altCountLabel(1, "observation"), "1 observation");
   assert.equal(altCountLabel(3, "observation"), "3 observations");
-  assert.equal(typeof altCandidateStatusCopy, "function");
-  assert.equal(altCandidateStatusCopy(1), "1 candidate remains not selected or pending");
-  assert.equal(altCandidateStatusCopy(2), "2 candidates remain not selected or pending");
   assert.equal(typeof altBookTitle, "function");
   assert.deepEqual(
     ["fanduel", "draftkings", "betmgm", "betrivers", "kalshi", "caesars", "thescore", "thescore_bet"].map(altBookTitle),
@@ -204,13 +201,13 @@ test("Alt Picks zero-selected copy distinguishes completed no-qualifier rows fro
   ]);
 
   assert.match(allNotSelected.title, /No alternative qualifiers/);
-  assert.match(allNotSelected.sub, /Evidence is healthy/);
+  assert.match(allNotSelected.sub, /Evidence looks good/);
   for (const copy of [pendingOnly, mixed]) {
-    assert.equal(copy.title, "Alternative evaluation still pending.");
+    assert.equal(copy.title, "Still evaluating alternatives.");
     assert.doesNotMatch(copy.sub, /Evidence is healthy/);
   }
-  assert.match(pendingOnly.sub, /2 candidates are awaiting complete family evidence/);
-  assert.match(mixed.sub, /1 candidate is awaiting complete family evidence/);
+  assert.match(pendingOnly.sub, /2 candidates are waiting on more evidence/);
+  assert.match(mixed.sub, /1 candidate is waiting on more evidence/);
 });
 
 test("Alt Picks selected proof copy distinguishes confirmed families from pending Preclose", () => {
@@ -222,13 +219,13 @@ test("Alt Picks selected proof copy distinguishes confirmed families from pendin
   };
   assert.equal(
     altSelectionProofCopy({ selection_status: "selected", family_count: 2, family_states }),
-    "Selected with 2 confirmed families; Preclose still pending.",
+    "Selected \u2014 2 of 4 evidence checks passed; Preclose still waiting.",
   );
   assert.equal(
     altSelectionProofCopy({
       selection_status: "selected", family_count: 3,
       family_states: { ...family_states, preclose: { state: "agree" } },
     }),
-    "Selected with 3 confirmed families.",
+    "Selected \u2014 3 of 4 evidence checks passed.",
   );
 });

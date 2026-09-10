@@ -2624,22 +2624,19 @@ function altCountLabel(value, noun) {
   const count = Number.isFinite(value) ? Math.max(0, Math.trunc(value)) : 0;
   return `${count} ${noun}${count === 1 ? "" : "s"}`;
 }
-function altCandidateStatusCopy(value) {
-  const count = Number.isFinite(value) ? Math.max(0, Math.trunc(value)) : 0;
-  return `${altCountLabel(count, "candidate")} ${count === 1 ? "remains" : "remain"} not selected or pending`;
-}
 function altZeroSelectedCopy(rows) {
   const supporting = Array.isArray(rows) ? rows : [];
   const pendingCount = supporting.filter(row => row?.selection_status === "pending").length;
   if (pendingCount > 0) {
     return {
-      title: "Alternative evaluation still pending.",
-      sub: `${altCountLabel(pendingCount, "candidate")} ${pendingCount === 1 ? "is" : "are"} awaiting complete family evidence.`
+      title: "Still evaluating alternatives.",
+      sub: `${altCountLabel(pendingCount, "candidate")} ${pendingCount === 1 ? "is" : "are"} waiting on more evidence.`
     };
   }
+  const total = supporting.length;
   return {
     title: "No alternative qualifiers on this slate.",
-    sub: `Evidence is healthy; ${altCandidateStatusCopy(supporting.length)}.`
+    sub: total === 0 ? "Evidence looks good; nothing was close." : `Evidence looks good; ${altCountLabel(total, "candidate")} didn't qualify.`
   };
 }
 function altBookTitle(value) {
@@ -2664,12 +2661,21 @@ function familyTitle(value) {
     reentry: "Re-entry"
   }[value] || String(value || "");
 }
+function familyStateLabel(state) {
+  return {
+    agree: "passed",
+    disagree: "rejected",
+    pending: "waiting"
+  }[state] || String(state || "");
+}
 function altSelectionProofCopy(row) {
-  const pending = Object.entries(row.family_states).filter(([, vote]) => vote.state === "pending").map(([name]) => name);
+  const states = row.family_states || {};
+  const total = Object.keys(states).length || 4;
+  const pending = Object.entries(states).filter(([, vote]) => vote.state === "pending").map(([name]) => name);
   if (row.selection_status === "selected" && pending.length) {
-    return `Selected with ${row.family_count} confirmed families; ${familyTitle(pending[0])} still pending.`;
+    return `Selected \u2014 ${row.family_count} of ${total} evidence checks passed; ${familyTitle(pending[0])} still waiting.`;
   }
-  return `Selected with ${row.family_count} confirmed families.`;
+  return `Selected \u2014 ${row.family_count} of ${total} evidence checks passed.`;
 }
 function AltPickSheet({
   row,
@@ -2690,7 +2696,7 @@ function AltPickSheet({
     className: "v2-alt-sheet",
     role: "dialog",
     "aria-modal": "true",
-    "aria-label": "Alternative pick evidence",
+    "aria-label": "Alternative pick details",
     onClick: event => event.stopPropagation()
   }, /*#__PURE__*/React.createElement("div", {
     className: "v2-alt-sheet-head"
@@ -2699,14 +2705,14 @@ function AltPickSheet({
     onClick: onClose
   }, "Close")), /*#__PURE__*/React.createElement("div", {
     className: "v2-alt-sheet-grid"
-  }, /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("span", null, "Official pick"), /*#__PURE__*/React.createElement("b", null, row.side, " ", row.model_k_line, " K \xB7 ", fmtOdds(row.official_odds), " ", altBookTitle(row.official_book))), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("span", null, "Official verdict"), /*#__PURE__*/React.createElement("b", null, row.official_verdict || "—")), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("span", null, "Alternative lane"), /*#__PURE__*/React.createElement("b", null, row.lane === "consensus_core" ? "Consensus Core" : "Re-entry Expansion")), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("span", null, "Freeze"), /*#__PURE__*/React.createElement("b", null, window.V2AltPicks?.formatFreezeLabel(row) || "Provisional"))), /*#__PURE__*/React.createElement("div", {
+  }, /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("span", null, "Official pick"), /*#__PURE__*/React.createElement("b", null, row.side, " ", row.model_k_line, " K \xB7 ", fmtOdds(row.official_odds), " ", altBookTitle(row.official_book))), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("span", null, "Official verdict"), /*#__PURE__*/React.createElement("b", null, row.official_verdict || "—")), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("span", null, "Trial group"), /*#__PURE__*/React.createElement("b", null, row.lane === "consensus_core" ? "Consensus Core" : "Re-entry Expansion")), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("span", null, "Freeze"), /*#__PURE__*/React.createElement("b", null, window.V2AltPicks?.formatFreezeLabel(row) || "Provisional"))), /*#__PURE__*/React.createElement("div", {
     className: "v2-alt-sheet-evidence"
   }, Object.entries(row.family_states).map(([key, value]) => /*#__PURE__*/React.createElement("span", {
     key: key,
     className: `v2-alt-chip ${value.state}`
-  }, familyLabels[key], " \xB7 ", value.state))), /*#__PURE__*/React.createElement("p", {
+  }, familyLabels[key], " \xB7 ", familyStateLabel(value.state)))), /*#__PURE__*/React.createElement("p", {
     className: "v2-alt-selection-proof"
-  }, altSelectionProofCopy(row)), /*#__PURE__*/React.createElement("p", null, "Freshness: ", row.evidence_freshness_status || "unknown", " \xB7 ", altCountLabel(row.evidence_observation_count, "observation")), /*#__PURE__*/React.createElement("p", null, "Artifact: ", row.source_artifact_generated_at ? fmtTime(row.source_artifact_generated_at) : "not reported", row.artifact_advanced_after_freeze ? " · advanced after freeze" : "")));
+  }, altSelectionProofCopy(row)), /*#__PURE__*/React.createElement("p", null, "Evidence: ", row.evidence_freshness_status || "unknown", " \xB7 ", altCountLabel(row.evidence_observation_count, "observation")), /*#__PURE__*/React.createElement("p", null, "Source data: ", row.source_artifact_generated_at ? fmtTime(row.source_artifact_generated_at) : "time unavailable", row.artifact_advanced_after_freeze ? " · advanced after freeze" : "")));
 }
 function AltPickCard({
   row,
@@ -2734,21 +2740,21 @@ function AltPickCard({
     className: "v2-alt-official"
   }, /*#__PURE__*/React.createElement("span", null, "Official pick"), /*#__PURE__*/React.createElement("b", null, row.side, " ", row.model_k_line, " K \xB7 ", fmtOdds(row.official_odds), " ", altBookTitle(row.official_book)), /*#__PURE__*/React.createElement("small", null, row.official_verdict || "Official verdict unavailable")), /*#__PURE__*/React.createElement("div", {
     className: "v2-alt-lane"
-  }, /*#__PURE__*/React.createElement("span", null, "Alternative lane"), /*#__PURE__*/React.createElement("b", null, lane)), /*#__PURE__*/React.createElement("div", {
+  }, /*#__PURE__*/React.createElement("span", null, "Trial group"), /*#__PURE__*/React.createElement("b", null, lane)), /*#__PURE__*/React.createElement("div", {
     className: "v2-alt-chips"
   }, Object.entries(row.family_states).map(([key, value]) => /*#__PURE__*/React.createElement("span", {
     key: key,
     className: `v2-alt-chip ${value.state}`
-  }, familyLabels[key], " \xB7 ", value.state))), /*#__PURE__*/React.createElement("div", {
+  }, familyLabels[key], " \xB7 ", familyStateLabel(value.state)))), /*#__PURE__*/React.createElement("div", {
     className: "v2-alt-selection-proof"
   }, altSelectionProofCopy(row)), /*#__PURE__*/React.createElement("div", {
     className: "v2-alt-provenance"
-  }, row.evidence_freshness_status || "unknown", " evidence \xB7 ", altCountLabel(row.evidence_observation_count, "observation"), " \xB7 ", row.source_artifact_generated_at ? fmtTime(row.source_artifact_generated_at) : "artifact time unavailable")));
+  }, "Evidence ", row.evidence_freshness_status || "unknown", " \xB7 ", altCountLabel(row.evidence_observation_count, "observation"), " \xB7 ", row.source_artifact_generated_at ? fmtTime(row.source_artifact_generated_at) : "source data time unavailable")));
 }
 function supportingReason(row) {
   const safeCodes = [...(Array.isArray(row.reason_codes) ? row.reason_codes : []), ...Object.values(row.family_states || {}).flatMap(family => Array.isArray(family?.reason_codes) ? family.reason_codes : [])].filter(code => typeof code === "string" && /^[a-z0-9_ -]{1,80}$/i.test(code.trim())).map(code => code.trim().replace(/[_-]+/g, " "));
   if (safeCodes.length) return safeCodes.slice(0, 2).map(code => code.charAt(0).toUpperCase() + code.slice(1)).join(" · ");
-  return row.selection_status === "pending" ? "Awaiting complete family evidence." : "Did not meet the alternative selection criteria.";
+  return row.selection_status === "pending" ? "Waiting on more evidence." : "Didn't meet the alternative criteria.";
 }
 function AltSupportingCandidate({
   row
@@ -2769,7 +2775,7 @@ function AltSupportingCandidate({
   }, Object.entries(row.family_states).map(([key, value]) => /*#__PURE__*/React.createElement("span", {
     key: key,
     className: `v2-alt-chip ${value.state}`
-  }, familyLabels[key], " \xB7 ", value.state))), /*#__PURE__*/React.createElement("p", null, supportingReason(row)));
+  }, familyLabels[key], " \xB7 ", familyStateLabel(value.state)))), /*#__PURE__*/React.createElement("p", null, supportingReason(row)));
 }
 function AltPicksTab() {
   const [state, setState] = useState({
@@ -2820,7 +2826,7 @@ function AltPicksTab() {
     className: "v2-wordmark"
   }, "Alt Picks"), /*#__PURE__*/React.createElement("div", {
     className: "v2-subtitle"
-  }, "Prospective comparison \xB7 ", state.slate_date || window.V2_CURRENT_DATE || "Phoenix current slate"))), /*#__PURE__*/React.createElement("div", {
+  }, "Alternative method trial \xB7 ", state.slate_date || window.V2_CURRENT_DATE || "Phoenix current slate"))), /*#__PURE__*/React.createElement("div", {
     className: "v2-header-actions"
   }, /*#__PURE__*/React.createElement("button", {
     className: "v2-icon-btn",
@@ -2830,7 +2836,7 @@ function AltPicksTab() {
     className: "v2-alt-wrap"
   }, /*#__PURE__*/React.createElement("div", {
     className: "v2-alt-summary"
-  }, /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("b", null, selected), /*#__PURE__*/React.createElement("span", null, "selected")), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("b", null, provisional), /*#__PURE__*/React.createElement("span", null, "provisional")), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("b", null, frozen), /*#__PURE__*/React.createElement("span", null, "frozen")), /*#__PURE__*/React.createElement("p", null, "Read-only same-day methodology comparison. Official picks are unchanged.")), state.status === "loading" && /*#__PURE__*/React.createElement("div", {
+  }, /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("b", null, selected), /*#__PURE__*/React.createElement("span", null, "selected")), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("b", null, provisional), /*#__PURE__*/React.createElement("span", null, "provisional")), /*#__PURE__*/React.createElement("div", null, /*#__PURE__*/React.createElement("b", null, frozen), /*#__PURE__*/React.createElement("span", null, "frozen")), /*#__PURE__*/React.createElement("p", null, "Trialing an alternative selection method on today's slate. Official picks are unaffected.")), state.status === "loading" && /*#__PURE__*/React.createElement("div", {
     className: "v2-state"
   }, /*#__PURE__*/React.createElement("div", {
     className: "ttl"
@@ -2872,7 +2878,7 @@ function AltPicksTab() {
     onOpen: setDetail
   }))), state.status === "ready" && supporting.length > 0 && /*#__PURE__*/React.createElement("details", {
     className: "v2-alt-collapsed"
-  }, /*#__PURE__*/React.createElement("summary", null, "Not selected and pending (", supporting.length, ")"), /*#__PURE__*/React.createElement("p", null, "Pending family evidence cannot qualify a card. Review the family chips for the short reason."), /*#__PURE__*/React.createElement("div", {
+  }, /*#__PURE__*/React.createElement("summary", null, "Didn't qualify (", supporting.length, ")"), /*#__PURE__*/React.createElement("p", null, "The chips on each card show which evidence checks passed."), /*#__PURE__*/React.createElement("div", {
     className: "v2-alt-supporting-list"
   }, supporting.map(row => /*#__PURE__*/React.createElement(AltSupportingCandidate, {
     key: `${row.pitcher}-${row.side}-${row.checkpoint}`,
