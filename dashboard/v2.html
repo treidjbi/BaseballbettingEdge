@@ -500,6 +500,17 @@ body { display: flex; flex-direction: column; }
   letter-spacing: .02em;
 }
 .v2-why-pill.pos { color: var(--pos); border-color: color-mix(in oklab, var(--pos) 35%, var(--border)); background: color-mix(in oklab, var(--pos) 7%, var(--surface)); }
+
+/* ── Boot skeleton (first-render loading state) ─────────── */
+.boot-skeleton { max-width: 480px; margin: 0 auto; padding: 14px; display: flex; flex-direction: column; gap: 10px; }
+.boot-bar, .boot-card { border-radius: 8px; background: linear-gradient(90deg, var(--surface) 25%, var(--border) 50%, var(--surface) 75%); background-size: 200% 100%; animation: boot-shimmer 1.2s infinite; }
+.boot-bar { height: 18px; }
+.boot-title { height: 26px; width: 60%; }
+.boot-card { height: 120px; }
+@keyframes boot-shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
+
+/* ── Reasoning pill labels ───────────────────────────────── */
+.v2-stat .l { font-size: 9px; font-weight: 700; letter-spacing: .06em; opacity: .65; text-transform: uppercase; }
 .v2-why-pill.neg { color: var(--neg); border-color: color-mix(in oklab, var(--neg) 35%, var(--border)); background: color-mix(in oklab, var(--neg) 7%, var(--surface)); }
 .v2-why-pill .v { font-weight: 700; }
 .v2-why-pill .l { opacity: .7; font-weight: 500; }
@@ -1820,7 +1831,15 @@ body { display: flex; flex-direction: column; }
 </style>
 </head>
 <body data-theme="light">
-  <div id="root"></div>
+  <div id="root">
+    <div class="boot-skeleton" aria-hidden="true">
+      <div class="boot-bar boot-title"></div>
+      <div class="boot-bar"></div>
+      <div class="boot-card"></div>
+      <div class="boot-card"></div>
+      <div class="boot-card"></div>
+    </div>
+  </div>
   <script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
   <script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
   <!-- v2-app.js is compiled from v2-app.jsx. Recompile before committing JSX changes. -->

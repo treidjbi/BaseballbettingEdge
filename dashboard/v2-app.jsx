@@ -660,6 +660,7 @@ function WhyPills({ p, side }) {
   const oppVs = ((oppK - 0.227) / 0.227) * 100;
   stats.push({
     icon: Icon.users,
+    lbl: "OPP K%",
     v: `${(oppK * 100).toFixed(0)}%`,
     tone: (side.direction === "OVER" ? oppVs > 0 : oppVs < 0) ? "pos" : "neg",
     title: `Opponent K-rate ${(oppK * 100).toFixed(1)}% (${oppVs >= 0 ? "+" : ""}${oppVs.toFixed(0)}% vs avg)`
@@ -669,6 +670,7 @@ function WhyPills({ p, side }) {
   const k9Delta = k9Recent - k9Season;
   stats.push({
     icon: Icon.ball,
+    lbl: "K/9",
     v: k9Recent.toFixed(1),
     tone: (side.direction === "OVER" ? k9Delta > 0 : k9Delta < 0) ? "pos" : "neg",
     title: `Recent K/9 ${k9Recent.toFixed(1)} (${k9Delta >= 0 ? "+" : ""}${k9Delta.toFixed(1)} vs season ${k9Season.toFixed(1)})`
@@ -676,6 +678,7 @@ function WhyPills({ p, side }) {
   if (p.ump_k_adj && Math.abs(p.ump_k_adj) > 0.05) {
     stats.push({
       icon: Icon.ump,
+      lbl: "UMP",
       v: `${p.ump_k_adj > 0 ? "+" : ""}${(p.ump_k_adj).toFixed(2)}`,
       tone: (side.direction === "OVER" ? p.ump_k_adj > 0 : p.ump_k_adj < 0) ? "pos" : "neg",
       title: `Umpire K-adjustment ${p.ump_k_adj > 0 ? "+" : ""}${p.ump_k_adj.toFixed(2)} K/g`
@@ -687,12 +690,14 @@ function WhyPills({ p, side }) {
       {stats.map((s, i) => (
         <span key={i} className={`v2-stat ${s.tone}`} title={s.title}>
           {s.icon}
+          <span className="l">{s.lbl}</span>
           <span className="v">{s.v}</span>
         </span>
       ))}
       {steam && (
         <span className={`v2-stat ${steam.steamWith ? "pos" : "neg"}`} title={`Steam ${steam.steamWith ? "with" : "against"} the pick, ${steam.cents}¢`}>
           {steam.steamWith ? Icon.up : Icon.down}
+          <span className="l">STEAM</span>
           <span className="v">{steam.cents}¢</span>
         </span>
       )}
@@ -2281,23 +2286,19 @@ function altCountLabel(value, noun) {
   return `${count} ${noun}${count === 1 ? "" : "s"}`;
 }
 
-function altCandidateStatusCopy(value) {
-  const count = Number.isFinite(value) ? Math.max(0, Math.trunc(value)) : 0;
-  return `${altCountLabel(count, "candidate")} ${count === 1 ? "remains" : "remain"} not selected or pending`;
-}
-
 function altZeroSelectedCopy(rows) {
   const supporting = Array.isArray(rows) ? rows : [];
   const pendingCount = supporting.filter((row) => row?.selection_status === "pending").length;
   if (pendingCount > 0) {
     return {
-      title: "Alternative evaluation still pending.",
-      sub: `${altCountLabel(pendingCount, "candidate")} ${pendingCount === 1 ? "is" : "are"} awaiting complete family evidence.`,
+      title: "Still evaluating alternatives.",
+      sub: `${altCountLabel(pendingCount, "candidate")} ${pendingCount === 1 ? "is" : "are"} waiting on more evidence.`,
     };
   }
+  const total = supporting.length;
   return {
     title: "No alternative qualifiers on this slate.",
-    sub: `Evidence is healthy; ${altCandidateStatusCopy(supporting.length)}.`,
+    sub: total === 0 ? "Evidence looks good; nothing was close." : `Evidence looks good; ${altCountLabel(total, "candidate")} didn't qualify.`,
   };
 }
 
@@ -2314,14 +2315,20 @@ function familyTitle(value) {
   return { base: "Base", anchor: "Anchor", preclose: "Preclose", reentry: "Re-entry" }[value] || String(value || "");
 }
 
+function familyStateLabel(state) {
+  return { agree: "passed", disagree: "rejected", pending: "waiting" }[state] || String(state || "");
+}
+
 function altSelectionProofCopy(row) {
-  const pending = Object.entries(row.family_states)
+  const states = row.family_states || {};
+  const total = Object.keys(states).length || 4;
+  const pending = Object.entries(states)
     .filter(([, vote]) => vote.state === "pending")
     .map(([name]) => name);
   if (row.selection_status === "selected" && pending.length) {
-    return `Selected with ${row.family_count} confirmed families; ${familyTitle(pending[0])} still pending.`;
+    return `Selected — ${row.family_count} of ${total} evidence checks passed; ${familyTitle(pending[0])} still waiting.`;
   }
-  return `Selected with ${row.family_count} confirmed families.`;
+  return `Selected — ${row.family_count} of ${total} evidence checks passed.`;
 }
 
 function AltPickSheet({ row, onClose }) {
@@ -2329,20 +2336,20 @@ function AltPickSheet({ row, onClose }) {
   const familyLabels = { base: "Base", anchor: "Anchor", preclose: "Preclose", reentry: "Re-entry" };
   return (
     <div className="v2-alt-sheet-backdrop" role="presentation" onClick={onClose}>
-      <section className="v2-alt-sheet" role="dialog" aria-modal="true" aria-label="Alternative pick evidence" onClick={(event) => event.stopPropagation()}>
+      <section className="v2-alt-sheet" role="dialog" aria-modal="true" aria-label="Alternative pick details" onClick={(event) => event.stopPropagation()}>
         <div className="v2-alt-sheet-head"><div><b>{row.pitcher}</b><small>{ab(row.team)} vs {ab(row.opp_team)}</small></div><button type="button" onClick={onClose}>Close</button></div>
         <div className="v2-alt-sheet-grid">
           <div><span>Official pick</span><b>{row.side} {row.model_k_line} K · {fmtOdds(row.official_odds)} {altBookTitle(row.official_book)}</b></div>
           <div><span>Official verdict</span><b>{row.official_verdict || "—"}</b></div>
-          <div><span>Alternative lane</span><b>{row.lane === "consensus_core" ? "Consensus Core" : "Re-entry Expansion"}</b></div>
+          <div><span>Trial group</span><b>{row.lane === "consensus_core" ? "Consensus Core" : "Re-entry Expansion"}</b></div>
           <div><span>Freeze</span><b>{window.V2AltPicks?.formatFreezeLabel(row) || "Provisional"}</b></div>
         </div>
         <div className="v2-alt-sheet-evidence">
-          {Object.entries(row.family_states).map(([key, value]) => <span key={key} className={`v2-alt-chip ${value.state}`}>{familyLabels[key]} · {value.state}</span>)}
+          {Object.entries(row.family_states).map(([key, value]) => <span key={key} className={`v2-alt-chip ${value.state}`}>{familyLabels[key]} · {familyStateLabel(value.state)}</span>)}
         </div>
         <p className="v2-alt-selection-proof">{altSelectionProofCopy(row)}</p>
-        <p>Freshness: {row.evidence_freshness_status || "unknown"} · {altCountLabel(row.evidence_observation_count, "observation")}</p>
-        <p>Artifact: {row.source_artifact_generated_at ? fmtTime(row.source_artifact_generated_at) : "not reported"}{row.artifact_advanced_after_freeze ? " · advanced after freeze" : ""}</p>
+        <p>Evidence: {row.evidence_freshness_status || "unknown"} · {altCountLabel(row.evidence_observation_count, "observation")}</p>
+        <p>Source data: {row.source_artifact_generated_at ? fmtTime(row.source_artifact_generated_at) : "time unavailable"}{row.artifact_advanced_after_freeze ? " · advanced after freeze" : ""}</p>
       </section>
     </div>
   );
@@ -2359,12 +2366,12 @@ function AltPickCard({ row, onOpen }) {
           <span className="v2-alt-freeze">{window.V2AltPicks?.formatFreezeLabel(row) || "Provisional"}</span>
         </div>
         <div className="v2-alt-official"><span>Official pick</span><b>{row.side} {row.model_k_line} K · {fmtOdds(row.official_odds)} {altBookTitle(row.official_book)}</b><small>{row.official_verdict || "Official verdict unavailable"}</small></div>
-        <div className="v2-alt-lane"><span>Alternative lane</span><b>{lane}</b></div>
+        <div className="v2-alt-lane"><span>Trial group</span><b>{lane}</b></div>
         <div className="v2-alt-chips">
-          {Object.entries(row.family_states).map(([key, value]) => <span key={key} className={`v2-alt-chip ${value.state}`}>{familyLabels[key]} · {value.state}</span>)}
+          {Object.entries(row.family_states).map(([key, value]) => <span key={key} className={`v2-alt-chip ${value.state}`}>{familyLabels[key]} · {familyStateLabel(value.state)}</span>)}
         </div>
         <div className="v2-alt-selection-proof">{altSelectionProofCopy(row)}</div>
-        <div className="v2-alt-provenance">{row.evidence_freshness_status || "unknown"} evidence · {altCountLabel(row.evidence_observation_count, "observation")} · {row.source_artifact_generated_at ? fmtTime(row.source_artifact_generated_at) : "artifact time unavailable"}</div>
+        <div className="v2-alt-provenance">Evidence {row.evidence_freshness_status || "unknown"} · {altCountLabel(row.evidence_observation_count, "observation")} · {row.source_artifact_generated_at ? fmtTime(row.source_artifact_generated_at) : "source data time unavailable"}</div>
       </button>
     </article>
   );
@@ -2377,7 +2384,7 @@ function supportingReason(row) {
   ].filter((code) => typeof code === "string" && /^[a-z0-9_ -]{1,80}$/i.test(code.trim()))
     .map((code) => code.trim().replace(/[_-]+/g, " "));
   if (safeCodes.length) return safeCodes.slice(0, 2).map((code) => code.charAt(0).toUpperCase() + code.slice(1)).join(" · ");
-  return row.selection_status === "pending" ? "Awaiting complete family evidence." : "Did not meet the alternative selection criteria.";
+  return row.selection_status === "pending" ? "Waiting on more evidence." : "Didn't meet the alternative criteria.";
 }
 
 function AltSupportingCandidate({ row }) {
@@ -2387,7 +2394,7 @@ function AltSupportingCandidate({ row }) {
     <article className="v2-alt-supporting-candidate">
       <div className="v2-alt-supporting-primary"><b>{row.pitcher}</b><span>{row.side} {row.model_k_line} K · {status}</span></div>
       <div className="v2-alt-supporting-chips">
-        {Object.entries(row.family_states).map(([key, value]) => <span key={key} className={`v2-alt-chip ${value.state}`}>{familyLabels[key]} · {value.state}</span>)}
+        {Object.entries(row.family_states).map(([key, value]) => <span key={key} className={`v2-alt-chip ${value.state}`}>{familyLabels[key]} · {familyStateLabel(value.state)}</span>)}
       </div>
       <p>{supportingReason(row)}</p>
     </article>
@@ -2421,9 +2428,9 @@ function AltPicksTab() {
   const zeroSelectedCopy = altZeroSelectedCopy(supporting);
   return (
     <>
-      <div className="v2-header"><div className="v2-header-row"><div className="v2-brand"><div className="v2-kmark">K</div><div><div className="v2-wordmark">Alt Picks</div><div className="v2-subtitle">Prospective comparison · {state.slate_date || window.V2_CURRENT_DATE || "Phoenix current slate"}</div></div></div><div className="v2-header-actions"><button className="v2-icon-btn" title="Theme" onClick={() => window.__v2Theme?.toggleTheme()}>{window.__v2Theme?.theme === "dark" ? Icon.sun : Icon.moon}</button></div></div></div>
+      <div className="v2-header"><div className="v2-header-row"><div className="v2-brand"><div className="v2-kmark">K</div><div><div className="v2-wordmark">Alt Picks</div><div className="v2-subtitle">Alternative method trial · {state.slate_date || window.V2_CURRENT_DATE || "Phoenix current slate"}</div></div></div><div className="v2-header-actions"><button className="v2-icon-btn" title="Theme" onClick={() => window.__v2Theme?.toggleTheme()}>{window.__v2Theme?.theme === "dark" ? Icon.sun : Icon.moon}</button></div></div></div>
       <main className="v2-alt-wrap">
-        <div className="v2-alt-summary"><div><b>{selected}</b><span>selected</span></div><div><b>{provisional}</b><span>provisional</span></div><div><b>{frozen}</b><span>frozen</span></div><p>Read-only same-day methodology comparison. Official picks are unchanged.</p></div>
+        <div className="v2-alt-summary"><div><b>{selected}</b><span>selected</span></div><div><b>{provisional}</b><span>provisional</span></div><div><b>{frozen}</b><span>frozen</span></div><p>Trialing an alternative selection method on today's slate. Official picks are unaffected.</p></div>
         {state.status === "loading" && <div className="v2-state"><div className="ttl">Loading alternative evidence</div><div className="sub">Checking the current Phoenix slate.</div></div>}
         {state.status === "unavailable" && <div className="v2-state v2-alt-unavailable"><div className="ttl">Alternative methodology unavailable.</div><div className="sub">Retrying automatically. Main picks are unaffected.</div></div>}
         {state.status === "ready" && state.refresh_status === "retrying" && <div className="v2-state v2-alt-retrying"><div className="sub">Last update retained; retrying current evidence.</div></div>}
@@ -2431,7 +2438,7 @@ function AltPicksTab() {
         {state.status === "ready" && rows.length > 0 && selected === 0 && <div className="v2-state v2-alt-empty"><div className="ttl">{zeroSelectedCopy.title}</div><div className="sub">{zeroSelectedCopy.sub}</div></div>}
         {state.status === "ready" && core.length > 0 && <section className="v2-alt-group"><h2>Consensus Core</h2>{core.map((row) => <AltPickCard key={`${row.pitcher}-${row.side}-${row.checkpoint}`} row={row} onOpen={setDetail} />)}</section>}
         {state.status === "ready" && expansion.length > 0 && <section className="v2-alt-group"><h2>Re-entry Expansion</h2>{expansion.map((row) => <AltPickCard key={`${row.pitcher}-${row.side}-${row.checkpoint}`} row={row} onOpen={setDetail} />)}</section>}
-        {state.status === "ready" && supporting.length > 0 && <details className="v2-alt-collapsed"><summary>Not selected and pending ({supporting.length})</summary><p>Pending family evidence cannot qualify a card. Review the family chips for the short reason.</p><div className="v2-alt-supporting-list">{supporting.map((row) => <AltSupportingCandidate key={`${row.pitcher}-${row.side}-${row.checkpoint}`} row={row} />)}</div></details>}
+        {state.status === "ready" && supporting.length > 0 && <details className="v2-alt-collapsed"><summary>Didn't qualify ({supporting.length})</summary><p>The chips on each card show which evidence checks passed.</p><div className="v2-alt-supporting-list">{supporting.map((row) => <AltSupportingCandidate key={`${row.pitcher}-${row.side}-${row.checkpoint}`} row={row} />)}</div></details>}
       </main>
       <AltPickSheet row={detail} onClose={() => setDetail(null)} />
     </>
