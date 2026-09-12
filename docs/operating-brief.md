@@ -1,5 +1,12 @@
 # BBE companion operating brief
 
+September 12 operations delta: recurring Disk IO warnings now have a confirmed
+active query mismatch. Carry the [webhook investigation](research/2026-09-12-webhook-disk-io-investigation.md)
+forward: review `eq.false` to `is.false` against the existing partial index,
+then verify natural-cycle IO after an approved release. No production repair
+or upgrade has occurred; remaining IO budget is unverified. The earlier
+operations snapshot below is historical.
+
 As of September 4, 2026; operations evidence captured at 21:38Z (14:38 Phoenix),
 with the Alt review at 21:58–22:01Z and lineage follow-up beginning 22:24Z.
 Read after AGENTS.md and current-state. This is a navigation and decision

@@ -1,6 +1,19 @@
 # Current State
 
-Last updated: 2026-09-08
+Last updated: 2026-09-12
+
+## September 12 pipeline / infrastructure investigation overlay
+
+The [Disk IO investigation](research/2026-09-12-webhook-disk-io-investigation.md)
+confirms ongoing avoidable webhook-inbox read pressure: three natural equality
+reads consumed about 21.6 seconds and 228,111 shared block reads between
+12:53Z and 13:21Z. The valid August partial index requires `processed IS FALSE`,
+while the application still sends `eq.false`. The matching predicate uses the
+index; the existing predicate plans a parallel table scan. Pipeline lane next
+decision: review the narrowly scoped `is.false` reader repair and its release
+verification. Supabase is responsive; exact remaining burst budget is unknown.
+No runtime, database, retention, scheduler or model change was made. Other lane
+decisions below remain independent.
 
 ## Read Order
 
