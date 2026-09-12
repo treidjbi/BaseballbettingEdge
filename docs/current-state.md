@@ -10,9 +10,12 @@ after confirming PropLine was already downgraded to Hobby because webhooks
 were unused. Both Render webhook flags are saved false. The release removes
 webhook activation from the live entrypoint and replaces the receiver with a
 no-write acknowledgement. Polling, mainline alerts and locks remain active;
-historical data is preserved. Next verification: deployed endpoint, a natural
-live-layer cycle with webhooks skipped, and equality-query counters no longer
-growing. This supersedes older webhook enablement and inbox-optimization claims.
+historical data is preserved. Verified: production receiver ignores deliveries, Render built merge
+371504b0, and the natural 13:30Z cycle skipped webhooks while both providers
+completed polling. Equality-query counters stayed unchanged through 13:36Z.
+Zero missed/started-unlocked rows were observed before games; a newly due lock
+and actual alert delivery were not exercised. Monitor ordinary subsequent
+cycles and IO-budget recovery. This supersedes older webhook enablement and inbox-optimization claims.
 
 ## Read Order
 

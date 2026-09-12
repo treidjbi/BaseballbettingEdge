@@ -1,7 +1,8 @@
 # BBE companion operating brief
 
 September 12 delta: webhook retirement is approved and both Render flags are
-saved false. Carry forward the [retirement verification](superpowers/plans/2026-09-12-propline-webhook-retirement.md);
+saved false. PR #49 is deployed; the 13:30Z cycle skipped webhooks while both
+providers polled successfully and the old query counter stopped growing. Carry forward the [retirement verification](superpowers/plans/2026-09-12-propline-webhook-retirement.md);
 stop recommending webhook index repair or promotion. Historical rows remain.
 Polling, mainline price alerts and locks stay active.
 
