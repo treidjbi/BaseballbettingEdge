@@ -2,6 +2,18 @@
 
 Last updated: 2026-09-04
 
+
+## September 12 webhook retirement overlay
+
+Pipeline / infrastructure: Tyler approved [webhook retirement](superpowers/plans/2026-09-12-propline-webhook-retirement.md)
+after confirming PropLine was already downgraded to Hobby because webhooks
+were unused. Both Render webhook flags are saved false. The release removes
+webhook activation from the live entrypoint and replaces the receiver with a
+no-write acknowledgement. Polling, mainline alerts and locks remain active;
+historical data is preserved. Next verification: deployed endpoint, a natural
+live-layer cycle with webhooks skipped, and equality-query counters no longer
+growing. This supersedes older webhook enablement and inbox-optimization claims.
+
 ## Read Order
 
 For any new work in this repo:

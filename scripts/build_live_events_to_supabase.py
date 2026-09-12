@@ -2055,11 +2055,10 @@ def main() -> int:
         artifact_source=artifact_source,
         build_market_lines=_env_flag("LIVE_BUILD_MARKET_LINES", default=True),
         compact_market_lines=_env_flag("LIVE_COMPACT_MARKET_SNAPSHOTS", default=True),
-        process_propline_webhooks=_env_flag("LIVE_PROCESS_PROPLINE_WEBHOOKS", default=True),
-        send_propline_webhook_movement_notifications=_env_flag(
-            "LIVE_SEND_PROPLINE_WEBHOOK_MOVEMENT_NOTIFICATIONS",
-            default=False,
-        ),
+        # Retired September 12: old environment flags must not restart inbox IO.
+        # Historical processor helpers remain available for offline research tests.
+        process_propline_webhooks=False,
+        send_propline_webhook_movement_notifications=False,
         propline_webhook_limit=_env_int(
             "LIVE_PROCESS_PROPLINE_WEBHOOK_LIMIT",
             default=DEFAULT_PROPLINE_WEBHOOK_LIMIT,
