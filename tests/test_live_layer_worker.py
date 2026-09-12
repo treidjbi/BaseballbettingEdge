@@ -4849,3 +4849,20 @@ def test_render_entrypoint_rejects_date_argument_when_remote_artifact_date_diffe
 
     assert build_live_events_to_supabase.main() == 2
     assert "does not match artifact date" in capsys.readouterr().err
+
+
+def test_main_retires_webhooks_even_with_old_flags(monkeypatch):
+    worker = build_live_events_to_supabase
+    monkeypatch.setattr(sys, "argv", ["worker"])
+    for key in ("LIVE_PROCESS_PROPLINE_WEBHOOKS", "LIVE_SEND_PROPLINE_WEBHOOK_MOVEMENT_NOTIFICATIONS"):
+        monkeypatch.setenv(key, "true")
+    monkeypatch.setenv("SUPABASE_URL", "https://example.invalid")
+    monkeypatch.setenv("SUPABASE_SERVICE_ROLE_KEY", "test")
+    monkeypatch.setenv("PROPLINE_API_KEY", "test")
+    monkeypatch.setattr(worker, "_load_artifact", lambda *a, **kw: ({"date": "2026-09-12"}, "hash", "test"))
+    with patch.object(worker, "run", side_effect=RuntimeError("captured run")) as run:
+        with pytest.raises(RuntimeError, match="captured run"):
+            worker.main()
+    assert run.call_args.kwargs["process_propline_webhooks"] is False
+    assert run.call_args.kwargs["send_propline_webhook_movement_notifications"] is False
+    assert run.call_args.kwargs["poll_propline"] is True

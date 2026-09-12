@@ -1,5 +1,11 @@
 # BBE companion operating brief
 
+September 12 delta: webhook retirement is approved and both Render flags are
+saved false. Carry forward the [retirement verification](superpowers/plans/2026-09-12-propline-webhook-retirement.md);
+stop recommending webhook index repair or promotion. Historical rows remain.
+Polling, mainline price alerts and locks stay active.
+
+
 As of September 4, 2026; operations evidence captured at 21:38Z (14:38 Phoenix),
 with the Alt review at 21:58–22:01Z and lineage follow-up beginning 22:24Z.
 Read after AGENTS.md and current-state. This is a navigation and decision

@@ -1,3 +1,13 @@
+## September 12 webhook retirement update
+
+Tyler confirmed the earlier downgrade to Hobby because webhooks were unused
+and approved retirement. Both Render webhook flags are saved false. The
+[controlling plan](superpowers/plans/2026-09-12-propline-webhook-retirement.md)
+retires entrypoint activation and inbox writes while retaining historical data.
+Risk: legacy flags or receiver restoration could recreate unnecessary IO.
+Keep polling, mainline notifications and lock production independent. Earlier
+webhook promotion instructions below are historical.
+
 # Operational Risk Register
 
 Last updated: 2026-09-02

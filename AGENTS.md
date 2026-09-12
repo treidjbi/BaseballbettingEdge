@@ -82,6 +82,16 @@ For 2026-05-24 local setup testing through Git, use the branch
 `test/local-cloud-setup` and keep both Mac and Windows clones synced through
 GitHub rather than copying files manually.
 
+## PropLine webhook retirement — 2026-09-12
+
+Tyler approved retiring the webhook runtime after downgrading PropLine to
+Hobby. Do not re-enable LIVE_PROCESS_PROPLINE_WEBHOOKS or
+LIVE_SEND_PROPLINE_WEBHOOK_MOVEMENT_NOTIFICATIONS. The receiver acknowledges
+residual deliveries without writing; preserve historical webhook data and
+research helpers. Polling and mainline best-price alerts remain active.
+See docs/superpowers/plans/2026-09-12-propline-webhook-retirement.md for release
+and verification status. This supersedes historical webhook promotion text.
+
 ## Current State
 
 As of 2026-06-17, the repo is still in the clean post-Phase-C evaluation
