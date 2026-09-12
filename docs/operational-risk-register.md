@@ -1,3 +1,11 @@
+## September 12 completed inbox cleanup
+
+Tyler separately approved the raw webhook inbox purge after an independent
+archive/restore check. All 727,311 rows are in the private local archive listed
+in the retirement plan. The guarded truncate reclaimed 733.20 MiB and retained
+the schema; live polling/history tables were untouched. Preserve the archive.
+This supersedes older raw-inbox retention gates only for this completed scope.
+
 ## September 12 webhook retirement update
 
 Tyler confirmed the earlier downgrade to Hobby because webhooks were unused

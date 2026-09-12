@@ -3,7 +3,8 @@
 September 12 delta: webhook retirement is approved and both Render flags are
 saved false. PR #49 is deployed; the 13:30Z cycle skipped webhooks while both
 providers polled successfully and the old query counter stopped growing. Carry forward the [retirement verification](superpowers/plans/2026-09-12-propline-webhook-retirement.md);
-stop recommending webhook index repair or promotion. Historical rows remain.
+stop recommending webhook index repair or promotion. Historical inbox rows were subsequently archived and restore-tested, then
+cleared under separate approval: 733.20 MiB reclaimed, database about 5.21 GiB.
 Polling, mainline price alerts and locks stay active.
 
 

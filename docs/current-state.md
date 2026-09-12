@@ -3,6 +3,16 @@
 Last updated: 2026-09-04
 
 
+## September 12 archived webhook inbox cleanup
+
+Tracking / history: Tyler separately approved clearing the retired raw inbox.
+All 727,311 rows were archived locally and restored successfully before an
+exact-scope guarded truncate. The inbox is empty; 733.20 MiB was reclaimed,
+and database size fell to about 5.21 GiB. Preserve the archive and recovery
+instructions; other raw snapshots, movement history and picks were outside
+scope. [Controlling plan and receipt](superpowers/plans/2026-09-12-propline-webhook-retirement.md).
+Next decision: ordinary storage/IO observation; no broader deletion follows.
+
 ## September 12 webhook retirement overlay
 
 Pipeline / infrastructure: Tyler approved [webhook retirement](superpowers/plans/2026-09-12-propline-webhook-retirement.md)

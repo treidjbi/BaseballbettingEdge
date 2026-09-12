@@ -56,3 +56,39 @@ not yet measured; historical storage is unchanged.
 The PropLine dashboard offers no webhook controls on Hobby; upstream subscription
 active=false has not been independently verified. The retired receiver prevents
 future inbox writes regardless of residual upstream configuration.
+
+## Separately approved inbox cleanup — completed September 12
+
+After retirement, Tyler approved a recoverable, webhook-inbox-only cleanup.
+This supersedes the earlier no-deletion scope only for the retired raw inbox.
+The latest completed physical backup was 1651459386, inserted at
+2026-09-12T05:39:32.056Z; PITR was disabled. A separate custom pg_dump archive
+was created at:
+
+`/Users/tyler/Documents/Codex/Backups/BaseballBettingEdge/2026-09-12-webhook-inbox/inbox.dump`
+
+The 67,161,418-byte archive was restored successfully into an isolated local
+PostgreSQL 17 container. Its exact count (727,311), row fingerprint sum
+(419543915638217971468961), and received range (May 5 through September 9)
+matched production. Archive SHA256:
+`f2b58a1f331e2ccd2f98cf520ba7a71bc5b73e424e2a49ec15a3758ba05e7f0e`.
+The archive and manifest are private local files outside Git; the sanitized
+manifest and execution receipt are tracked under
+`data/research/retention/webhook-inbox-2026-09-12/`.
+
+Dependency checks found zero incoming foreign keys, dependent rewrite rules,
+or user triggers. The 13:41Z natural cycle still skipped webhooks. Execution
+used a two-second lock timeout and 30-second statement timeout, repeated the
+exact count/fingerprint and dependency checks while holding the inbox lock,
+and ran TRUNCATE ONLY ... CONTINUE IDENTITY RESTRICT with no CASCADE.
+
+The successful receipt at 13:42:54Z reported zero remaining rows and a
+32,768-byte table footprint, down from 768,843,776 bytes: 768,811,008 bytes
+(733.20 MiB) reclaimed from the inbox. Database size decreased from
+6,359,125,139 to 5,590,379,667 bytes (about 5.92 to 5.21 GiB). Independent
+13:43:21Z verification confirmed the empty inbox, both critical published
+artifacts, and the continued presence of market_snapshots and
+line_movement_events. No other table was truncated or altered; no VACUUM FULL
+or production restore was run. Recovery instructions accompany the archive.
+Keep the archive; any production restoration or other-table cleanup requires
+its own scope. Raw payloads are no longer retained in the production inbox.

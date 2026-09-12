@@ -1,0 +1,32 @@
+{
+  "project_ref": "htoaytcsjrdyyzcwxjfg",
+  "table": "public.propline_webhook_deliveries",
+  "archive_format": "PostgreSQL custom dump",
+  "archive_bytes": 67161418,
+  "archive_sha256": "f2b58a1f331e2ccd2f98cf520ba7a71bc5b73e424e2a49ec15a3758ba05e7f0e",
+  "production_row_count": 727311,
+  "production_row_fingerprint_sum": "419543915638217971468961",
+  "first_received": "2026-05-05T21:02:27.313983Z",
+  "last_received": "2026-09-09T05:15:36.991980Z",
+  "physical_backup_id": 1651459386,
+  "physical_backup_inserted_at": "2026-09-12T05:39:32.056Z",
+  "physical_backup_status": "COMPLETED",
+  "local_restore_verified": true,
+  "restored_check": {
+    "row_count": 727311,
+    "first_received": "2026-05-05T21:02:27.313983+00:00",
+    "last_received": "2026-09-09T05:15:36.99198+00:00",
+    "row_fingerprint_sum": "419543915638217971468961"
+  },
+  "cleanup_result": {
+    "checked_at": "2026-09-12 13:42:54.062459+00",
+    "database_bytes": 5590379667,
+    "inbox_bytes": 32768,
+    "remaining_rows": 0
+  },
+  "production_before": {
+    "database_bytes": 6359125139,
+    "inbox_bytes": 768843776
+  },
+  "reclaimed_table_bytes": 768811008
+}
