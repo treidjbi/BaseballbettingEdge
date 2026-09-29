@@ -687,13 +687,44 @@ def _run_preview(tomorrow_str: str) -> None:
         return
 
     if not props:
-        log.warning("No K props posted yet for %s — preview skipped", tomorrow_str)
+        try:
+            existing_preview = json.loads(PREVIEW_PATH.read_text(encoding="utf-8"))
+        except Exception:
+            existing_preview = {}
+        existing_lines = existing_preview.get("lines")
+        if (
+            existing_preview.get("date") == tomorrow_str
+            and isinstance(existing_lines, dict)
+            and existing_lines
+        ):
+            log.warning(
+                "No K props posted for %s — preserving %d same-date preview lines",
+                tomorrow_str,
+                len(existing_lines),
+            )
+            return
+
+        preview = {
+            "date": tomorrow_str,
+            "fetched_at": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
+            "props_available": False,
+            "lines": {},
+        }
+        PREVIEW_PATH.parent.mkdir(parents=True, exist_ok=True)
+        with open(PREVIEW_PATH, "w") as f:
+            json.dump(preview, f, indent=2)
+        _write_dated_archive_only([], tomorrow_str, props_available=False)
+        log.warning(
+            "No K props posted for %s — wrote explicit empty preview contract",
+            tomorrow_str,
+        )
         return
 
     # 1. Save opening-baseline snapshot used by tomorrow's 6am full run
     preview = {
         "date":       tomorrow_str,
         "fetched_at": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
+        "props_available": True,
         "lines": {
             p["pitcher"]: {
                 "k_line":          p["k_line"],
@@ -1225,6 +1256,7 @@ def _write_steam(pitchers: list, run_date_str: str) -> None:
         existing["snapshots"].append({"t": now_iso, "pitchers": pitcher_snap})
 
     existing["archive_dates"] = sorted(archive_dates)
+    existing["props_available"] = bool(pitchers)
     existing["updated_at"] = now_iso
 
     try:
@@ -1872,6 +1904,7 @@ def run(date_str: str, run_type: str = "full") -> None:
         log.warning("No K props returned — props may not be posted yet")
         if not _has_valid_output(date_str):
             _write_output(date_str, [], props_available=False)
+            _write_steam([], date_str)
         return
 
     # Overlay 7pm preview lines as opening odds so movement between 7pm and

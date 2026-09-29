@@ -2043,11 +2043,13 @@ def test_run_records_feature_build_failures_in_connection_health(tmp_path):
 
 
 def test_run_writes_empty_output_when_no_props(tmp_path):
-    """run() should write today.json with props_available=False when no odds returned."""
+    """run() should publish explicit empty today and steam contracts."""
     import run_pipeline
     out_path = tmp_path / "today.json"
+    steam_path = tmp_path / "steam.json"
 
     with patch.object(run_pipeline, "OUTPUT_PATH", out_path), \
+         patch.object(run_pipeline, "STEAM_PATH", steam_path), \
          patch("run_pipeline.fetch_odds", return_value=[]):
         run_pipeline.run("2026-04-01")
 
@@ -2055,6 +2057,11 @@ def test_run_writes_empty_output_when_no_props(tmp_path):
     data = json.loads(out_path.read_text())
     assert data["props_available"] is False
     assert data["pitchers"] == []
+    steam = json.loads(steam_path.read_text())
+    assert steam["date"] == "2026-04-01"
+    assert steam["props_available"] is False
+    assert steam["snapshots"] == []
+    assert steam["archive_dates"] == []
 
 
 def test_run_does_not_write_empty_output_when_odds_fetch_fails(tmp_path):
@@ -2302,6 +2309,7 @@ def test_preview_run_writes_dated_archive_and_preview_json(tmp_path):
     assert preview_path.exists(), "preview_lines.json not written"
     preview_data = json.loads(preview_path.read_text())
     assert preview_data["date"] == "2026-04-12"
+    assert preview_data["props_available"] is True
     assert "Tomorrow Pitcher" in preview_data["lines"]
 
     # Dated archive must exist
@@ -2313,6 +2321,55 @@ def test_preview_run_writes_dated_archive_and_preview_json(tmp_path):
 
     # today.json must NOT have been created/overwritten
     assert not today_path.exists(), "Preview run must not touch today.json"
+
+
+def test_preview_run_writes_explicit_empty_contract_when_no_props(tmp_path):
+    """A valid empty market must replace stale preview state for the new date."""
+    import run_pipeline
+    today_path = tmp_path / "today.json"
+    preview_path = tmp_path / "preview_lines.json"
+    preview_path.write_text(json.dumps({
+        "date": "2026-04-11",
+        "props_available": True,
+        "lines": {"Yesterday Pitcher": {"k_line": 5.5}},
+    }))
+
+    with patch.object(run_pipeline, "OUTPUT_PATH", today_path), \
+         patch.object(run_pipeline, "PREVIEW_PATH", preview_path), \
+         patch("run_pipeline.fetch_odds", return_value=[]):
+        run_pipeline._run_preview("2026-04-12")
+
+    preview = json.loads(preview_path.read_text())
+    assert preview["date"] == "2026-04-12"
+    assert preview["props_available"] is False
+    assert preview["lines"] == {}
+
+    dated = json.loads((tmp_path / "2026-04-12.json").read_text())
+    assert dated["date"] == "2026-04-12"
+    assert dated["props_available"] is False
+    assert dated["pitchers"] == []
+    assert not today_path.exists()
+
+
+def test_preview_run_preserves_good_same_date_lines_on_empty_retry(tmp_path):
+    """A transient empty retry must not erase an already-good preview baseline."""
+    import run_pipeline
+    today_path = tmp_path / "today.json"
+    preview_path = tmp_path / "preview_lines.json"
+    original = {
+        "date": "2026-04-12",
+        "props_available": True,
+        "lines": {"Tomorrow Pitcher": {"k_line": 5.5}},
+    }
+    preview_path.write_text(json.dumps(original))
+
+    with patch.object(run_pipeline, "OUTPUT_PATH", today_path), \
+         patch.object(run_pipeline, "PREVIEW_PATH", preview_path), \
+         patch("run_pipeline.fetch_odds", return_value=[]):
+        run_pipeline._run_preview("2026-04-12")
+
+    assert json.loads(preview_path.read_text()) == original
+    assert not (tmp_path / "2026-04-12.json").exists()
 
 
 def test_preview_run_does_not_touch_today_json_when_it_exists(tmp_path):
@@ -2819,6 +2876,7 @@ def test_write_steam_creates_file_with_one_snapshot(tmp_path):
 
     data = json.loads(steam_path.read_text())
     assert data["date"] == "2026-04-21"
+    assert data["props_available"] is True
     assert len(data["snapshots"]) == 1
     snap = data["snapshots"][0]
     assert "Gerrit Cole" in snap["pitchers"]
