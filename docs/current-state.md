@@ -1,6 +1,34 @@
 # Current State
 
-Last updated: 2026-09-04
+Last updated: 2026-09-28
+
+
+## September 28 season-end action overlay
+
+Pipeline / infrastructure: September 27 grading, locks, and notifications are
+complete, and September 28 is a valid zero-pick artifact. Provider polling is
+still active every 10 minutes but produces zero BBE targets. The
+[`2026-09-28` decision packet](superpowers/plans/2026-09-28-season-end-offseason-decision.md)
+recommends separately approving suspension of only the six provider-calling
+Render services after exact inventory; grading, lock, research, Netlify,
+Supabase, provider accounts, and every promotion/retention gate remain
+unchanged. No service was suspended by this overlay.
+
+UI / artifact contracts: branch `codex/season-end-empty-day-contracts`
+publishes explicit dated empty preview/steam contracts and lets Alt V2 return
+`ready` with zero candidates for a trusted canonical `props_available=false`
+slate. It preserves a good same-date preview on an empty retry and keeps
+postureless non-empty artifacts fail-closed. This is tested implementation,
+not a production deployment.
+
+Tracking / cost: live TheRundown headers now report a 25,000,000 monthly
+datapoint allowance, superseding the older 5,000,000 observation in the cost
+ledger. Current storage is about 66.40% of nominal 8 GiB. Retention deletion,
+vacuum/rewrite, provider cancellation, and capacity reassignment remain closed.
+
+Model: no gate changed. Confidence/profit-rescue remain bounded, Path B remains
+the live input canary, market-shrink/market-anchor remain shadow, and both Alt
+V2 promotion paths remain retired.
 
 
 ## September 12 archived webhook inbox cleanup

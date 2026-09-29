@@ -56,7 +56,7 @@ worker cost in the steady-state view.
 
 | Service | Current / likely cost | What it does | Current decision | Main cost risk |
 | --- | ---: | --- | --- | --- |
-| TheRundown | ~$49-$50/mo Starter; 5M data points/month confirmed 2026-06-12 | Direct fallback odds for scheduled artifacts; 10-minute mainline live-layer polling for provider evidence/usage tracking | Keep as direct fallback and mainline evidence source inside the non-strict TheRundown+PropLine official mode | Data-point overage if polling broadens beyond mainline; 60-second delay; no WebSocket on Starter |
+| TheRundown | ~$49-$50/mo Starter; live headers reported 25M data points/month on 2026-09-28 (the earlier 5M observation is historical) | Direct fallback odds for scheduled artifacts; 10-minute mainline live-layer polling for provider evidence/usage tracking | Keep as direct fallback and mainline evidence source inside the non-strict TheRundown+PropLine official mode | Data-point overage if polling broadens beyond mainline; 60-second delay; no WebSocket on Starter |
 | PropLine | ~$40/mo now; possible ~$80/mo tier | Curated official-line supplement, fallback odds, polling movement evidence, and supported-book webhook movement alerts | Approved 2026-06-24 as part of non-strict `therundown_propline` official mode; webhook notifications remain movement-only behind flag | Duplicate alerts/noise if webhooks and polling disagree; stale webhook notification rows if queue freshness drifts; unclear upgrade ROI |
 | BoltOdds | $99/mo Starter during trial; verify stopped/canceled externally | Historical WebSocket live market movement evidence | Retired from active runtime on 2026-06-17; do not reopen without a new Tyler decision | Accidental restart, stale rows being read as current, or continued billing |
 | The Odds API | Free/limited fallback currently | FD/DK fallback when TheRundown/PropLine leave gaps | Keep conservative fallback only | Credit burn if called event-by-event too broadly |
@@ -81,8 +81,21 @@ Use TheRundown for official scheduled artifacts:
 
 Do not broaden TheRundown polling beyond mainline without explicit cost
 approval and data-point header tracking. Tyler approved the 10-minute mainline
-Render live-layer path on 2026-06-14 because the 5M Starter cap leaves enough
-headroom when `main_line=true` stays scoped.
+Render live-layer path on 2026-06-14 because the then-observed 5M Starter cap
+left enough headroom when `main_line=true` stayed scoped. Current headers show
+more headroom, but that is not authority to expand BBE polling or use the shared
+account for a new provider workload.
+
+2026-09-28 live-header reconciliation:
+
+- `X-Datapoints-Limit=25000000`, `X-Datapoints-Period=monthly`, and
+  `X-Tier=starter` were returned by completed production live-layer requests.
+- The latest reviewed cycle reported `578264` used and `24421736` remaining,
+  with the same 2 requests/second limit, 60-second delay, and no WebSocket
+  access.
+- Treat 25M as the current observed account allowance and the June 12 5M value
+  below as historical measurement context. Continue recording live headers;
+  do not infer a permanent contract guarantee from one observed billing cycle.
 
 2026-06-12 measurement on Tyler's Starter account:
 
