@@ -1,0 +1,49 @@
+{
+  "source_sha256": "4b44d70d1bcae23be35354ec9ea9b84886f62642c4900fd56c4e65817748a8cd",
+  "side_rows": 5488,
+  "pitcher_dates": 2744,
+  "tracked_research_side_rows": 2893,
+  "dates": [
+    "2026-04-28",
+    "2026-09-27"
+  ],
+  "overall_projection": {
+    "n": 2744,
+    "actual_mean": 4.926020408163265,
+    "model_mean": 4.966435860058309,
+    "model_bias": 0.04041545189504373,
+    "model_mae": 1.8762026239067056,
+    "model_rmse": 2.3485243024965508,
+    "line_mean": 4.832725947521866,
+    "line_bias": -0.09329446064139942,
+    "line_mae": 1.7849854227405249,
+    "line_rmse": 2.2098375334395626,
+    "shrink15_mean": 4.946379373177843,
+    "shrink15_bias": 0.020358965014577124,
+    "shrink15_mae": 1.843875,
+    "shrink15_rmse": 2.305749911964288,
+    "shrink25_mean": 4.933008381924198,
+    "shrink25_bias": 0.006987973760932934,
+    "shrink25_mae": 1.8245772594752188,
+    "shrink25_rmse": 2.281272129370681,
+    "shrink35_mean": 4.9196373906705535,
+    "shrink35_bias": -0.006383017492711363,
+    "shrink35_mae": 1.8077853498542273,
+    "shrink35_rmse": 2.260149617514195
+  },
+  "challenger_paired_n": 1605,
+  "challenger_mae": {
+    "current_lambda": 1.8896473520249222,
+    "would_lambda": 1.8338542056074767
+  },
+  "non_null_fields": {
+    "line_movement": 0,
+    "market_agreement_label": 0,
+    "side_price_movement": 5488,
+    "bet_time_at": 2684,
+    "opening_odds": 5488,
+    "actual_ks": 5488,
+    "projected_ks": 5488
+  },
+  "tracked_cross_book": 187
+}

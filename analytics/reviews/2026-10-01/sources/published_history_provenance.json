@@ -1,0 +1,10 @@
+{
+  "publication": "2026-10-01 15:08:12.959809+00",
+  "published_sha256": "c39b896b39b7edea958a2964da91dbf974adc15e1980acfeb882ae75877c85bf",
+  "file_sha256": "8bf31bab45755358caae6092936116e81fb8c0ddd42adfb622f12b2efc833741",
+  "rows": 4102,
+  "source": "published_pipeline_artifacts/picks_history",
+  "freeze_hash_match": false,
+  "caveat": "Later October 1 publication than freeze; compare all headline populations before treating results as reconciled. No data mutation or regrading.",
+  "query": "SELECT published_at, payload_sha256, payload FROM public.published_pipeline_artifacts WHERE artifact_key = 'picks_history' LIMIT 1;"
+}

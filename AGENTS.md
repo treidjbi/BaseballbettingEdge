@@ -10,6 +10,17 @@ A restart requires explicit new authorization and a reviewed restart plan.
 This overrides older active schedules/provider instructions below. See
 `docs/superpowers/plans/2026-09-28-season-end-offseason-decision.md`.
 
+## Future provider direction — 2026-10-01
+
+Tyler reports PropLine canceled and chooses TheRundown as the only future odds
+provider. This supersedes older mixed-provider and fallback approvals below.
+All collection remains dormant. Before a separately approved restart, remove
+forced `therundown_propline` selection and key-triggered PropLine/The Odds API
+fallback activation; verify target-book coverage and a finite usage budget.
+Keep historical provider evidence. Do not call canceled providers or infer
+permission to increase TheRundown polling. MLB/statistical inputs are a separate
+restart decision; "TheRundown-only" here refers to odds providers.
+
 ## Source Of Truth
 
 This file is the canonical agent entrypoint for the repo.

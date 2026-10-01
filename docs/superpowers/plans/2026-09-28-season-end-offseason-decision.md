@@ -1,5 +1,26 @@
 # 2026 Season-End And Offseason Decision
 
+## October 1 architecture and results review — latest research overlay
+
+Tyler reports PropLine canceled and requires TheRundown-only future odds.
+This overrides old mixed-provider approvals; it does not authorize restart.
+The [architecture review](../../research/2026-10-01-architecture-review.md)
+recommends retaining the core separation and considering six operational jobs
+instead of eight after consolidating refresh schedules with safeguards.
+Remove forced mixed-provider mode and key-triggered fallbacks before restart;
+reconcile deployed versions and explicitly decide frozen calibration policy.
+
+The [results review](../../research/2026-10-01-results-review.md) reconciles
+clean published FIRE to -45.026171u / 797 settled, at flat 1u risk, not actual
+account stakes. The [projection and movement review](../../research/2026-10-01-projection-movement-review.md)
+finds model MAE 1.8762 vs line 1.7850 over 2,744 pitcher-dates and substantial
+selected-side probability optimism. Final-artifact timing and incomplete
+same-market movement provenance prevent a production selection/CLV claim.
+No model promotion follows. Next offline work is decision-time reconstruction,
+accepted-bet reconciliation, explicit would-bet calibration/shrink comparisons,
+and timestamped movement tests. User chose an interactive local report.
+Sources, tables and reproduction scripts: `analytics/reviews/2026-10-01/`.
+
 ## October 1 full dormancy directive — controlling overlay
 
 Tyler explicitly requested no more grading, API pulling, or automatic data work;

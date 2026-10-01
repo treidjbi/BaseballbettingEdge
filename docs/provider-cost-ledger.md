@@ -1,3 +1,10 @@
+## October 1 offseason direction
+
+Tyler reports PropLine canceled. Future odds-provider design is TheRundown-only;
+prior PropLine budget/fallback recommendations below are historical. All BBE
+collection is suspended. Cancellation/billing was user-reported, not independently
+checked here. No new provider calls, plan changes or cadence increases authorized.
+
 # Provider Cost Ledger
 
 Last updated: 2026-07-22

@@ -2,6 +2,25 @@
 
 Last updated: 2026-10-01
 
+## October 1 review handoff — current four-lane board
+
+| Lane | Reviewed stage | Next decision / blocker |
+| --- | --- | --- |
+| Pipeline / infrastructure | Dormant. Core structure sound; 8 operational jobs, 2 research jobs, 1 retired worker. PropLine canceled per Tyler; future odds TheRundown-only. | Implement and offline-test provider exclusions and deployed-version parity before any separately approved restart. Six operational jobs is a proposed consolidation target. |
+| Model | Offline review complete: clean FIRE -45.03u at flat 1u; projection MAE 1.876 vs line 1.785; selected research confidence optimistic. | Reconstruct original decisions and compare calibrated/shrink would-bet policies chronologically. No promotion or recalibration authorized. |
+| UI | Local interactive season review with period/tier/month/week/team filters and 2,744 game drilldown. Production remains dormant. | Review findings; no production UI change deployed. |
+| Tracking / history | Preserved later October 1 published history; 2,777/2,777 clean settled matches. Source hash differs from initial freeze receipt, headline totals reconcile. | Actual-stake ledger and season-wide executable movement/CLV still incomplete. Preserve historical providers for research only. |
+
+This board supersedes older provider posture and next-action summaries below.
+Controlling detail: [season-end plan](superpowers/plans/2026-09-28-season-end-offseason-decision.md).
+Reviews: [architecture](research/2026-10-01-architecture-review.md),
+[results](research/2026-10-01-results-review.md),
+[projection / movement](research/2026-10-01-projection-movement-review.md).
+Report project: `/Users/tyler/Documents/Codex/BBE-2026-Season-Review`;
+preview: `http://127.0.0.1:4187/`. Authored content and snapshot builder are
+preserved under `analytics/reviews/2026-10-01/report/`.
+
+
 
 ## October 1 full offseason dormancy — latest instruction
 
