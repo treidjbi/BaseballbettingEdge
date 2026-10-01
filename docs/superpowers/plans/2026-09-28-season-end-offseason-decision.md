@@ -19,7 +19,12 @@ BoltOdds already suspended. This session suspended and verified these four:
 All 11 BBE Render services are suspended. BBE Operations Brief automation
 `sync-baseballbettingedge-repo` is PAUSED, preserving its existing prompt.
 The Netlify scheduled sender is replaced by an unscheduled no-network dormant
-response. Deployment verification is recorded below when complete.
+response. Production deploy `6abe83f00cc497e8c1d138aa` is live; its public sender returns
+`{"status":"offseason_dormant","sent":0}`. The Git-triggered deploy was canceled
+by the build-ignore check, so this release used the authenticated linked CLI.
+All 17 notification tests passed, including a network-forbidden dormant-handler
+check. Supabase read-only extension inventory returned no pg_cron extension.
+No database records were changed by this shutdown.
 GitHub workflows contain no active schedule triggers and no queued/running
 workflow was reported in the current run listing. Manual dispatch is prohibited
 without a new explicit restart/repair request. Preserve data and shared provider

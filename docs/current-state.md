@@ -11,7 +11,7 @@ now records the expanded shutdown and ordered offline 2027 diagnosis queue.
 
 | Lane | Current state | Next step |
 | --- | --- | --- |
-| Pipeline / infrastructure | All 11 BBE Render services verified suspended; Operations Brief paused; Netlify sender schedule removed in source, deployment verification pending. | Verify sender release; then no runs, grading, dispatches or collection without explicit restart approval. |
+| Pipeline / infrastructure | All 11 BBE Render services verified suspended; Operations Brief paused; Netlify sender schedule removed and production deploy `6abe83f00cc497e8c1d138aa` verified dormant. | No runs, grading, dispatches or collection without explicit restart approval. |
 | Model | October 1 freeze through September 27 preserved; all promotion gates closed. | Offline paired projection/price/selection diagnosis, then a separately reviewed 2027 protocol. |
 | UI | Existing dashboard and historical results retained. | Read-only review; no new slate expected. |
 | Tracking / history | Collection stopped; frozen evidence retained. Actual season account PnL remains unreconciled. | Reconcile existing external accepted-bet ledger; no API backfills or retention deletion. |
