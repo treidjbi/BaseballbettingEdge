@@ -82,6 +82,7 @@ function canonicalArtifact(overrides = {}) {
     generated_at: '2026-07-21T20:00:00Z',
     source: 'render_pipeline',
     payload_date: '2026-07-21',
+    payload_props_available: true,
     payload_pitchers: [{ odds_source: 'therundown_propline', market_source_mode: 'therundown_propline' }],
     payload: {
       date: '2026-07-21',
@@ -626,6 +627,43 @@ test('alternative-picks requires every declared provider posture and an approved
     try { assert.equal((await responseJson(event())).json.status, 'unavailable'); }
     finally { fake.restore(); restoreEnv(); }
   }
+});
+
+test('alternative-picks treats a trustworthy explicit empty slate as ready', async () => {
+  configure();
+  const artifact = canonicalArtifact({
+    payload_odds_source: null,
+    payload_provider_posture: null,
+    payload_props_available: false,
+    payload_pitchers: [],
+  });
+  const fake = installFetch({ artifact });
+  try {
+    const response = await responseJson(event({ bundle_version: 'v2' }));
+    assert.equal(response.json.status, 'ready');
+    assert.equal(response.json.error, null);
+    assert.deepEqual(response.json.rows, []);
+    assert.deepEqual(response.json.counts, {
+      provisional: 0, frozen: 0, selected: 0, pending: 0,
+    });
+  } finally { fake.restore(); restoreEnv(); }
+});
+
+test('alternative-picks rejects postureless empty artifacts that claim props were available', async () => {
+  configure();
+  const artifact = canonicalArtifact({
+    payload_odds_source: null,
+    payload_provider_posture: null,
+    payload_props_available: true,
+    payload_pitchers: [],
+  });
+  const fake = installFetch({ artifact });
+  try {
+    const response = await responseJson(event({ bundle_version: 'v2' }));
+    assert.equal(response.json.status, 'unavailable');
+    assert.equal(response.json.error, 'canonical_artifact_unavailable');
+    assert.deepEqual(response.json.rows, []);
+  } finally { fake.restore(); restoreEnv(); }
 });
 
 test('alternative-picks suppresses frozen rows for every lock-link mismatch', async () => {

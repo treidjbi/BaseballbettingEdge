@@ -98,6 +98,7 @@ const CANONICAL_SELECT = [
   'payload_date:payload->>date',
   'payload_odds_source:payload->>odds_source',
   'payload_provider_posture:payload->>provider_posture',
+  'payload_props_available:payload->props_available',
   'payload_pitchers:payload->pitchers',
   'artifact_path:metadata->>artifact_path',
 ].join(',');
@@ -902,8 +903,13 @@ function validCanonical(row, slateDate) {
     }
   }
   const declaredPostures = postures.map(normalizePosture).filter(Boolean);
-  const approvedPosture = declaredPostures.length > 0
-    && declaredPostures.every(posture => APPROVED_POSTURES.has(posture));
+  const approvedEmptySlate = Array.isArray(row.payload_pitchers)
+    && row.payload_pitchers.length === 0
+    && row.payload_props_available === false;
+  const approvedPosture = approvedEmptySlate || (
+    declaredPostures.length > 0
+    && declaredPostures.every(posture => APPROVED_POSTURES.has(posture))
+  );
   if (text(row.artifact_key) !== CANONICAL_ARTIFACT_KEY
       || validDate(row.slate_date) !== slateDate
       || validDate(row.payload_date) !== slateDate
