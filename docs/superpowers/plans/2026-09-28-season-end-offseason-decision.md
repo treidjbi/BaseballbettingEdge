@@ -1,9 +1,11 @@
 # 2026 Season-End And Offseason Decision
 
-**Status:** Decision-ready review. Empty-day contract repairs are implemented
-and tested on `codex/season-end-empty-day-contracts`; no production deployment,
-Render suspension, provider-account change, database write, retention action,
-or model promotion has occurred.
+**Status:** Decision A executed on 2026-10-01. The empty-day contract repairs
+are merged, the Netlify Alt V2 contract is deployed, and exactly the six
+approved provider-calling Render services are suspended. Two former live-layer
+windows passed with no provider runs, usage increase, artifact publication, or
+notification event. No provider-account change, database write, retention
+action, model promotion, or additional service suspension occurred.
 
 **Decision date:** 2026-09-28 Phoenix time.
 
@@ -49,7 +51,7 @@ calls are healthy but have no BBE decision value in the offseason.
 
 ## Decision A — Provider-Calling Render Services
 
-**Recommendation: YES, suspend after exact live inventory.**
+**Recommendation: EXECUTED.**
 
 Suspend only:
 
@@ -80,11 +82,46 @@ This action releases BBE polling capacity only. It does not cancel PropLine or
 TheRundown, rotate keys, change provider order, or authorize another project's
 use of the released capacity.
 
+### October 1 execution receipt
+
+The authenticated Render inventory matched the approved target exactly:
+
+| Service | Service ID | Branch / deployed commit | Schedule UTC | Auto-deploy | Final state |
+| --- | --- | --- | --- | --- | --- |
+| `bbe-pipeline-preview` | `crn-d8as4l1akrks738ngep0` | `main` / `a12fa98879d860c367569056db0b8fb4db463c0d` | `17 7 * * *` | off | suspended by Tyler |
+| `bbe-pipeline-full` | `crn-d8as4r8g4nts73b5f510` | `main` / `a12fa98879d860c367569056db0b8fb4db463c0d` | `17 13 * * *` | off | suspended by Tyler |
+| `bbe-pipeline-refresh-day` | `crn-d8asbonavr4c73drnrhg` | `main` / `a12fa98879d860c367569056db0b8fb4db463c0d` | `7,37 15-23 * * *` | off | suspended by Tyler |
+| `bbe-pipeline-refresh-evening` | `crn-d8asbrel51nc73ahmh60` | `main` / `a12fa98879d860c367569056db0b8fb4db463c0d` | `7,37 0 * * *` | off | suspended by Tyler |
+| `bbe-pipeline-refresh-final` | `crn-d8asbv0jo6nc7381gma0` | `main` / `a12fa98879d860c367569056db0b8fb4db463c0d` | `7 1 * * *` | off | suspended by Tyler |
+| `bbe-live-layer` | `crn-d7tpb19o3t8c739p3qig` | `main` / `0299493fff63cc8bd642f1c718a2c605b6c7b3ce` | `*/10 * * * *` | on commit | suspended by Tyler |
+
+The project inventory then showed all six as `Suspended by you`.
+`bbe-pipeline-grading`, `bbe-pipeline-lock`,
+`bbe-gate-c-post-grading-review`, and
+`bbe-pipeline-shadow-runner-hosted` remained unsuspended. The retired
+`bbe-boltodds-shadow-worker` remained separately suspended.
+
+Read-only Supabase checkpoints at `2026-10-01T15:41:29Z` and
+`2026-10-01T15:51:33Z`, covering the former 08:40 and 08:50 Phoenix windows,
+proved:
+
+- zero new PropLine or TheRundown `market_provider_runs` after the
+  `15:36:00Z` cutoff;
+- the latest provider run remained at `15:30:48Z`;
+- PropLine and TheRundown daily request counts remained `28` each, with the
+  same `15:30:54Z` update timestamp;
+- zero new published pipeline artifacts;
+- zero new notification events, including zero actionable events; and
+- HTTP 200 reads for `dated_slate:2026-09-27` and
+  `dated_slate:2026-09-28` through the production Netlify artifact function.
+
 ## Decision B — Remaining Seasonal Jobs
 
-**Recommendation: HOLD temporarily.**
+**Recommendation: HOLD unless separately approved.**
 
-Keep these available until the final research freeze and reconciliation pass:
+The final research freeze and reconciliation pass is complete, but Decision A
+did not authorize these services. Keep them available until Tyler separately
+chooses an offseason posture:
 
 ```text
 bbe-pipeline-grading
@@ -138,7 +175,8 @@ authorized.
 
 ## Decision E — Empty-Day Contracts
 
-The implementation branch makes three bounded changes:
+The merged and production-deployed Netlify contract plus the merged pipeline
+code make three bounded changes:
 
 1. Preview runs publish a dated empty `preview_lines` contract with
    `props_available=false` instead of republishing an older date. A transient
@@ -150,11 +188,11 @@ The implementation branch makes three bounded changes:
    `props_available=false` and zero pitchers as `ready` with zero candidates.
    Postureless artifacts that claim props were available still fail closed.
 
-The Netlify function and pipeline tests must pass before merge. Merge/deploy is
-separate from provider suspension. Because Render cron auto-deploy is off, a
-merged pipeline change will not affect those services until a separately
-approved Render redeploy; if the callers are suspended first, defer that
-redeploy to the next-season restart plan.
+The focused Netlify and pipeline tests passed before merge. Netlify production
+deploy `6abe7622c429c5921a017519` now serves the Alt V2 empty-slate contract.
+The five suspended pipeline jobs remain on pre-merge commit `a12fa988`; their
+auto-deploy setting is off. Defer their merged pipeline-code deployment to a
+separately approved next-season restart plan rather than resuming them now.
 
 ## Decision F — Offseason Cost Posture
 
@@ -172,7 +210,8 @@ redeploy to the next-season restart plan.
 
 This review does not authorize:
 
-- any Render suspension until Tyler approves the exact six-service action;
+- any additional Render suspension or any resumption; the six-service Decision
+  A receipt exhausts Tyler's approval;
 - suspension of grading, lock, or research jobs;
 - provider cancellation, plan change, key rotation, or capacity reassignment;
 - retention deletion, vacuum, compaction write, or database rewrite;
@@ -182,9 +221,9 @@ This review does not authorize:
 
 ## Exact Next Approval
 
-The next independently reversible step is:
-
-> Approve a read-only Render inventory followed by suspension of only the six
-> provider-calling services listed in Decision A, then verify two absent polling
-> windows. Keep grading, lock, research, Netlify, Supabase, provider accounts,
-> and every model/retention gate unchanged.
+No immediate production action is required. Any later suspension of grading,
+lock, research, or the hosted shadow runner requires a new exact-scope
+approval. Any 2027 restart requires a separate plan that explicitly inventories
+and resumes the intended services, deploys the merged pipeline code where
+needed, and revalidates provider, artifact, notification, lock, and cost
+posture before games.
