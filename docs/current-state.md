@@ -16,12 +16,12 @@ now records the expanded shutdown and ordered offline 2027 diagnosis queue.
 | UI | Existing dashboard and historical results retained. | Read-only review; no new slate expected. |
 | Tracking / history | Collection stopped; frozen evidence retained. Actual season account PnL remains unreconciled. | Reconcile existing external accepted-bet ledger; no API backfills or retention deletion. |
 
-Branch review: [October 1 closeout inventory](research/2026-10-01-branch-closeout-review.md)
-accounts for all 15 remote non-main branches. Twelve have no remaining merge
-work; the others contain superseded documentation, preserved research evidence,
-and one confirmed signed-Preclose reader defect to port separately. Hosted
-capture remains deferred and is not a March restart prerequisite. No branch
-code was merged or deployed by this review.
+Branch closeout: [October 1 receipt and archive inventory](research/2026-10-01-branch-closeout-review.md).
+Tyler-approved cleanup is complete: only main remains locally and on GitHub;
+16 remotely verified archive tags preserve all former branch tips. The paired
+signed-Preclose reader fix is integrated and tested (174 Python / 143 JavaScript
+passes), intentionally undeployed until a separately reviewed release. Hosted
+capture remains deferred, not an unfinished March task. No operational restart.
 
 Earlier overlays below are historical wherever they conflict with this directive.
 

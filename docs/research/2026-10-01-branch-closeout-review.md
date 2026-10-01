@@ -1,5 +1,31 @@
 # October 1 branch closeout review
 
+## Approved closeout executed
+
+Tyler approved the proposed closeout on October 1. The isolated paired-reader
+repair from b08284fd is now integrated into main's source with self-contained
+synthetic regression fixtures. Python: 174 passed; JavaScript: 143 passed.
+Both negative-score regressions failed before the repair and passed afterward.
+No experimental collector, validator runtime, model change or schedule was merged.
+The fix is intentionally **not deployed**; include it in the reviewed 2027 release.
+
+All 15 remote non-main branches and five local non-main branches have been
+removed after exact-SHA archive verification. Only main remains. Sixteen
+annotated archive tags preserve all former tips, including local-only setup:
+`archive/2026-10-01/<original-branch-name>`. The
+[archive manifest](2026-10-01-branch-archive-manifest.json) records full commit
+IDs and tag names. Remote deletion used expected-tip leases in one atomic push.
+
+Historical repair receipts, preflight reports, research code and frozen evidence
+remain recoverable directly from those tags. For example:
+`git show archive/2026-10-01/codex/retention-nine-partition-repair:docs/superpowers/plans/2026-08-18-bounded-retention-audit.md`.
+A future read-only inspection should use git show or an isolated checkout of the
+archive tag; do not restore obsolete operating instructions over current main.
+
+**Branch backlog: closed.** Remaining offseason work is model/results review and
+an explicit 2027 restart/release decision. Hosted capture remains deferred.
+The inventory and findings below are the preserved pre-closeout audit.
+
 ## Decision
 
 Shutdown is complete. This is an offline branch/content review, not permission
@@ -84,7 +110,8 @@ Review any later deployment separately from the offline code repair.
 
 1. Decide the 2027 model/selection protocol from frozen offline comparisons;
    no 2026 retrospective winner is automatically a live rule.
-2. Resolve the signed-score reader defect before reusing Alt/research proofs.
+2. Signed-score repair is integrated and tested; deploy it with the reviewed
+   2027 release before reusing Alt/research proofs.
 3. Inventory exact deployed revisions and service settings before any restart.
    Five pipeline jobs were left at a12fa988 with auto-deploy off; merged
    empty-preview/steam code must be deliberately deployed and verified then.

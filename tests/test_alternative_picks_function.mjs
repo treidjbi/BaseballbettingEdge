@@ -1408,3 +1408,36 @@ test('alternative-picks v2 omits raw top-level reasons but retains sanitized dec
     assert.equal(JSON.stringify(response.json).includes('internal_database_probe'), false);
   } finally { fake.restore(); restoreEnv(); }
 });
+
+test('alternative-picks preserves reviewed signed proofs and rejects malformed scores and counts', async t => {
+  const rows = JSON.parse(readFileSync(new URL(
+    './fixtures/signed_preclose_proof_review.json', import.meta.url,
+  )));
+  for (const [label, value] of [['nan', NaN], ['positive_infinity', Infinity], ['negative_infinity', -Infinity]]) {
+    rows[label] = structuredClone(rows.negative);
+    rows[label].evaluation_proof.preclose.score = value;
+  }
+  for (const [name, fixture] of Object.entries(rows)) {
+    await t.test(name, async () => {
+      const state = { ...structuredClone(fixture), checkpoint: 'provisional', reason_codes: [],
+        frozen_at: null, locked_at: null, lock_artifact_sha256: null };
+      const artifact = canonicalArtifact({
+        slate_date: state.slate_date, payload_date: state.slate_date,
+        generated_at: state.source_artifact_generated_at,
+        payload_sha256: state.source_artifact_sha256,
+        payload: { date: state.slate_date, generated_at: state.source_artifact_generated_at,
+          pitchers: [{ odds_source: 'therundown', market_source_mode: 'therundown' }] },
+      });
+      configure();
+      globalThis.__alternativePicksNow = state.observed_at;
+      const fake = installFetch({ artifact, stateRows: [state], directStateRows: true });
+      try {
+        const response = await responseJson(event({ bundle_version: 'v2' }));
+        const valid = ['negative', 'zero', 'positive'].includes(name);
+        assert.equal(response.statusCode, 200);
+        assert.equal(response.json.rows.length, Number(valid), name);
+        if (valid) assert.equal(response.json.rows[0].selection_status, 'not_selected');
+      } finally { fake.restore(); restoreEnv(); }
+    });
+  }
+});

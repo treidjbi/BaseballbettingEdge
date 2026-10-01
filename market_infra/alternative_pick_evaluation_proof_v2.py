@@ -576,13 +576,14 @@ def _preclose_state_valid(preclose: Mapping[str, Any]) -> bool:
         field: _integer(preclose.get(field))
         for field in (
             "book_count", "toward_pick_count", "away_from_pick_count",
-            "reversal_book_count", "volatile_book_count", "score",
+            "reversal_book_count", "volatile_book_count",
         )
     }
     first = _iso(preclose.get("first_observed_at"))
     last = _iso(preclose.get("last_observed_at"))
     books_seen = preclose.get("books_seen")
-    if any(value is None or value < 0 for value in integers.values()):
+    if (any(value is None or value < 0 for value in integers.values())
+            or _integer(preclose.get("score")) is None):
         return False
     return all((
         count >= 2,
