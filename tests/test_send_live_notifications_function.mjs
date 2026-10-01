@@ -15,9 +15,7 @@ import {
 import sendLiveNotificationsNow, {
   config as httpConfig,
 } from '../netlify/functions/send-live-notifications-now.mjs';
-import sendLiveNotificationsScheduled, {
-  config as scheduledConfig,
-} from '../netlify/functions/send-live-notifications.mjs';
+import * as dormantSender from '../netlify/functions/send-live-notifications.mjs';
 
 const notificationTestState = globalThis.__bbeNotificationTestState ??= {
   webPush: {
@@ -532,153 +530,19 @@ test('handler falls back to known Supabase project URL when env URL is missing',
   }
 });
 
-test('scheduled handler can dry-run without notify secret header', async () => {
+test('offseason sender has no schedule and performs no network or push work', async () => {
   const originalFetch = globalThis.fetch;
-  const originalEnv = {
-    NOTIFY_SECRET: process.env.NOTIFY_SECRET,
-    SUPABASE_URL: process.env.SUPABASE_URL,
-    SUPABASE_SERVICE_ROLE_KEY: process.env.SUPABASE_SERVICE_ROLE_KEY,
-    LIVE_NOTIFICATIONS_ENABLED: process.env.LIVE_NOTIFICATIONS_ENABLED,
-  };
-  delete process.env.NOTIFY_SECRET;
-  process.env.SUPABASE_URL = 'https://example.supabase.co';
-  process.env.SUPABASE_SERVICE_ROLE_KEY = 'service-key';
-  process.env.LIVE_NOTIFICATIONS_ENABLED = 'false';
-
-  globalThis.fetch = async () => new Response(JSON.stringify([{
-    id: 'event-1',
-    event_type: 'line_moved_against_us',
-    title: 'Line Moved Against Us',
-    body: 'Tarik Skubal OVER moved against us',
-    dedupe_key: 'event-1-key',
-  }]), {
-    status: 200,
-    headers: { 'Content-Type': 'application/json' },
-  });
-
+  resetNotificationTestState();
+  globalThis.fetch = async () => { throw new Error('Offseason network access forbidden'); };
   try {
-    const response = await sendLiveNotificationsScheduled(new Request('https://example.test/.netlify/functions/send-live-notifications', {
-      method: 'POST',
-      body: JSON.stringify({ next_run: '2026-05-06T20:10:00Z' }),
-    }));
-    const payload = await response.json();
-
-    assert.equal(response.status, 200);
-    assert.equal(payload.mode, 'dry_run');
-    assert.equal(payload.pending, 1);
-    assert.equal(scheduledConfig.schedule, '*/10 * * * *');
-  } finally {
-    globalThis.fetch = originalFetch;
-    for (const [key, value] of Object.entries(originalEnv)) {
-      if (value === undefined) delete process.env[key];
-      else process.env[key] = value;
+    assert.equal(dormantSender.config?.schedule, undefined);
+    for (const method of ['GET', 'POST']) {
+      const response = await dormantSender.default(new Request('https://example.test/sender', { method }));
+      assert.equal(response.status, 200);
+      assert.deepEqual(await response.json(), { status: 'offseason_dormant', sent: 0 });
     }
-  }
-});
-
-test('scheduled function dry-runs without notify secret when Run now sends an empty body', async () => {
-  const originalFetch = globalThis.fetch;
-  const originalEnv = {
-    NOTIFY_SECRET: process.env.NOTIFY_SECRET,
-    SUPABASE_URL: process.env.SUPABASE_URL,
-    SUPABASE_SERVICE_ROLE_KEY: process.env.SUPABASE_SERVICE_ROLE_KEY,
-    LIVE_NOTIFICATIONS_ENABLED: process.env.LIVE_NOTIFICATIONS_ENABLED,
-  };
-  delete process.env.NOTIFY_SECRET;
-  process.env.SUPABASE_URL = 'https://example.supabase.co';
-  process.env.SUPABASE_SERVICE_ROLE_KEY = 'service-key';
-  process.env.LIVE_NOTIFICATIONS_ENABLED = 'false';
-
-  globalThis.fetch = async () => new Response(JSON.stringify([{
-    id: 'event-1',
-    event_type: 'new_fire_pick',
-    title: 'New FIRE Pick',
-    body: 'Tarik Skubal FIRE 1u OVER 6.5 Ks',
-    dedupe_key: 'event-1-key',
-  }]), {
-    status: 200,
-    headers: { 'Content-Type': 'application/json' },
-  });
-
-  try {
-    const response = await sendLiveNotificationsScheduled(new Request('https://example.test/.netlify/functions/send-live-notifications', {
-      method: 'POST',
-      body: '',
-    }));
-    const payload = await response.json();
-
-    assert.equal(response.status, 200);
-    assert.equal(payload.mode, 'dry_run');
-    assert.equal(payload.pending, 1);
-  } finally {
-    globalThis.fetch = originalFetch;
-    for (const [key, value] of Object.entries(originalEnv)) {
-      if (value === undefined) delete process.env[key];
-      else process.env[key] = value;
-    }
-  }
-});
-
-test('scheduled function dry-runs when Run now uses GET', async () => {
-  const originalFetch = globalThis.fetch;
-  const originalEnv = {
-    NOTIFY_SECRET: process.env.NOTIFY_SECRET,
-    SUPABASE_URL: process.env.SUPABASE_URL,
-    SUPABASE_SERVICE_ROLE_KEY: process.env.SUPABASE_SERVICE_ROLE_KEY,
-    LIVE_NOTIFICATIONS_ENABLED: process.env.LIVE_NOTIFICATIONS_ENABLED,
-  };
-  delete process.env.NOTIFY_SECRET;
-  process.env.SUPABASE_URL = 'https://example.supabase.co';
-  process.env.SUPABASE_SERVICE_ROLE_KEY = 'service-key';
-  process.env.LIVE_NOTIFICATIONS_ENABLED = 'false';
-
-  globalThis.fetch = async () => new Response(JSON.stringify([{
-    id: 'event-1',
-    event_type: 'pick_upgraded',
-    title: 'Pick Upgraded',
-    body: 'Miles Mikolas FIRE 1u UNDER 3.5 Ks',
-    dedupe_key: 'event-1-key',
-  }]), {
-    status: 200,
-    headers: { 'Content-Type': 'application/json' },
-  });
-
-  try {
-    const response = await sendLiveNotificationsScheduled(new Request('https://example.test/.netlify/functions/send-live-notifications', {
-      method: 'GET',
-    }));
-    const payload = await response.json();
-
-    assert.equal(response.status, 200);
-    assert.equal(payload.mode, 'dry_run');
-    assert.equal(payload.pending, 1);
-  } finally {
-    globalThis.fetch = originalFetch;
-    for (const [key, value] of Object.entries(originalEnv)) {
-      if (value === undefined) delete process.env[key];
-      else process.env[key] = value;
-    }
-  }
-});
-
-test('scheduled public sender rejects smoke checks', async () => {
-  const originalFetch = globalThis.fetch;
-  let fetchCalled = false;
-  globalThis.fetch = async () => {
-    fetchCalled = true;
-    return new Response('[]', { status: 200 });
-  };
-
-  try {
-    const response = await sendLiveNotificationsScheduled(new Request('https://example.test/.netlify/functions/send-live-notifications', {
-      method: 'POST',
-      body: JSON.stringify({ smoke_check: true }),
-    }));
-    const payload = await response.json();
-
-    assert.equal(response.status, 401);
-    assert.equal(payload.error, 'Unauthorized');
-    assert.equal(fetchCalled, false);
+    assert.equal(notificationTestState.webPush.sendNotificationCalls.length, 0);
+    assert.equal(notificationTestState.blobs.listCalls, 0);
   } finally {
     globalThis.fetch = originalFetch;
   }

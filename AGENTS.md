@@ -1,5 +1,15 @@
 # AGENTS.md — BaseballBettingEdge
 
+## Offseason dormancy — 2026-10-01
+
+Tyler requested that BBE remain dormant from a data perspective: no grading,
+provider/API pulls, scheduled research, locks, notifications, or manual pipeline
+runs. All 11 BBE Render services are suspended and the Operations Brief is
+paused. Review existing frozen results offline for 2027; preserve history.
+A restart requires explicit new authorization and a reviewed restart plan.
+This overrides older active schedules/provider instructions below. See
+`docs/superpowers/plans/2026-09-28-season-end-offseason-decision.md`.
+
 ## Source Of Truth
 
 This file is the canonical agent entrypoint for the repo.

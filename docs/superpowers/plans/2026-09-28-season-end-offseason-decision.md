@@ -1,5 +1,66 @@
 # 2026 Season-End And Offseason Decision
 
+## October 1 full dormancy directive — controlling overlay
+
+Tyler explicitly requested no more grading, API pulling, or automatic data work;
+existing results are for offline review and 2027 diagnosis. This supersedes the
+narrow six-service approval and HOLD language below. No restart is authorized.
+
+The authenticated Render project inventory showed the six provider callers and
+BoltOdds already suspended. This session suspended and verified these four:
+
+| Service | ID | Verified state |
+| --- | --- | --- |
+| bbe-pipeline-grading | crn-d8as4pdckfvc73dgpme0 | Suspended by you |
+| bbe-pipeline-lock | crn-d8dgp6q8qa3s739n80s0 | Suspended by you |
+| bbe-gate-c-post-grading-review | crn-d8mpcb0g4nts73fq5bv0 | Suspended by you |
+| bbe-pipeline-shadow-runner-hosted | crn-d89jpvdckfvc738nfla0 | Suspended by you |
+
+All 11 BBE Render services are suspended. BBE Operations Brief automation
+`sync-baseballbettingedge-repo` is PAUSED, preserving its existing prompt.
+The Netlify scheduled sender is replaced by an unscheduled no-network dormant
+response. Deployment verification is recorded below when complete.
+GitHub workflows contain no active schedule triggers and no queued/running
+workflow was reported in the current run listing. Manual dispatch is prohibited
+without a new explicit restart/repair request. Preserve data and shared provider
+accounts. Read-only dashboard/history access remains available.
+
+### Offline 2027 diagnosis queue
+
+Use the October 1 research freeze unchanged. Do not rebuild it from live APIs.
+1. Establish the accepted-bet ledger and actual stake definition; published
+   model exposure and the incomplete July 27 accepted-bet table cannot explain
+   the user-reported approximately -57u.
+2. Decompose losses into projection calibration, price/juice, side/line, and
+   selection/exposure. Compare paired identical populations and time windows.
+3. Test market shrink 15/25/35 against current model and market-only baselines
+   on frozen data. Projection MAE improvement alone is insufficient: reconstruct
+   explicit would-bet decisions and report turnover, price, risk and ROI.
+4. Treat moderate-edge and retained-FIRE positives as exploratory hypotheses.
+   Use chronological holdouts and stability slices; 2026 has already informed
+   discovery and cannot become an untouched confirmation set retroactively.
+5. Audit decision-time provenance before designing a 2027 prospective test.
+   Preserve the unmerged decision-time adapter branch; its passive-receipt
+   review blocks hosted capture because by-lock proof/seed continuity is absent.
+6. Draft a separately reviewed 2027 protocol only after the offline comparisons:
+   frozen candidate, realistic available prices, fixed stakes, loss/exposure
+   limits, minimum sample, and explicit stop/reject criteria. No live promotion.
+
+### Git closeout audit
+
+Mac canonical clone: clean main, synced to origin at audit; no stashes or extra
+worktrees, no open PRs. Two local branches retain unique committed/pushed work:
+`codex/research-decision-time-adapter` (8 commits, offline evidence tooling and
+review; paused at timing barrier), and `codex/season-end-runbook` (2 historical
+documentation commits). Neither is uncommitted work. Preserve both; do not merge
+stale operating-board text or discard evidence as routine branch cleanup.
+Seven remote branches are not ancestors of main (which can include already
+cherry-picked/superseded work): aug20-history-repair, no-drag-strict-runtime-decision,
+research-decision-time-adapter, retention-nine-partition-repair, season-end-runbook,
+strict-runtime-model-market-slice, supabase-pressure-repairs (all under codex/).
+These require content reconciliation before deletion; there are no open PRs.
+
+
 **Status:** Decision A executed on 2026-10-01. The empty-day contract repairs
 are merged, the Netlify Alt V2 contract is deployed, and exactly the six
 approved provider-calling Render services are suspended. Two former live-layer
