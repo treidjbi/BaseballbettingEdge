@@ -1,18 +1,18 @@
 # Market Anchored K Shadow Rebuild
 
-Generated at: `2026-06-17T17:54:15.301538+00:00`
+Generated at: `2026-10-01T14:57:59.733667+00:00`
 
 Shadow-only: this report does not change live lambda, verdicts, thresholds, staking, provider order, notifications, locks, retention, calibration, dashboard artifacts, or source-of-truth behavior.
 
 ## Executive Read
 
-- Total source rows: `2020`
-- Clean official-close side rows analyzed: `2020`
-- Clean tracked rows analyzed: `1050`
-- Official-close market count: `1010`
-- Current FIRE tracked selector: `557` rows, `275-282`, `-37.67`, `-6.8%` ROI.
-- Market-anchor core tracked selector: `528` rows, `288-240`, `-14.55`, `-2.8%` ROI.
-- Market-anchor strict tracked selector: `164` rows, `97-67`, `+3.16`, `+1.9%` ROI.
+- Total source rows: `5488`
+- Clean official-close side rows analyzed: `5488`
+- Clean tracked rows analyzed: `2893`
+- Official-close market count: `2744`
+- Current FIRE tracked selector: `797` rows, `408-389`, `-43.34`, `-5.4%` ROI.
+- Market-anchor core tracked selector: `1628` rows, `877-751`, `-74.41`, `-4.6%` ROI.
+- Market-anchor strict tracked selector: `468` rows, `276-192`, `+7.95`, `+1.7%` ROI.
 
 ## Rebuild Shape
 
@@ -25,55 +25,55 @@ Shadow-only: this report does not change live lambda, verdicts, thresholds, stak
 
 | Projection | Rows | Mean Error | MAE | RMSE | Side W-L | Side Accuracy |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: |
-| `current_model` | 1010 | -0.153 | 1.829 | 2.289 | 539-465 | +53.7% |
-| `market_implied` | 1010 | -0.077 | 1.719 | 2.152 | 578-432 | +57.2% |
-| `market_anchor` | 1010 | -0.095 | 1.730 | 2.164 | 572-438 | +56.6% |
+| `current_model` | 2744 | -0.040 | 1.876 | 2.349 | 1428-1303 | +52.3% |
+| `market_implied` | 2744 | -0.042 | 1.744 | 2.176 | 1543-1201 | +56.2% |
+| `market_anchor` | 2744 | -0.042 | 1.755 | 2.189 | 1517-1227 | +55.3% |
 
 ## Tracked-Market Projection Scoreboard
 
 | Projection | Rows | Mean Error | MAE | RMSE | Side W-L | Side Accuracy |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: |
-| `current_model` | 1010 | -0.153 | 1.829 | 2.289 | 539-465 | +53.7% |
-| `market_implied` | 1010 | -0.077 | 1.719 | 2.152 | 578-432 | +57.2% |
-| `market_anchor` | 1010 | -0.095 | 1.730 | 2.164 | 572-438 | +56.6% |
+| `current_model` | 2744 | -0.040 | 1.876 | 2.349 | 1428-1303 | +52.3% |
+| `market_implied` | 2744 | -0.042 | 1.744 | 2.176 | 1543-1201 | +56.2% |
+| `market_anchor` | 2744 | -0.042 | 1.755 | 2.189 | 1517-1227 | +55.3% |
 
 ## Tracked-Pick Selector Scoreboard
 
 | Selector | Rows | W-L | PnL | ROI |
 | --- | ---: | ---: | ---: | ---: |
-| `current_action_fire` | 557 | 275-282 | -37.67 | -6.8% |
-| `market_price_only_favorite` | 492 | 278-214 | -10.29 | -2.1% |
-| `market_anchor_side_agrees` | 597 | 332-265 | -6.29 | -1.1% |
-| `market_anchor_core` | 528 | 288-240 | -14.55 | -2.8% |
-| `market_anchor_strict` | 164 | 97-67 | +3.16 | +1.9% |
+| `current_action_fire` | 797 | 408-389 | -43.34 | -5.4% |
+| `market_price_only_favorite` | 1426 | 799-627 | -52.74 | -3.7% |
+| `market_anchor_side_agrees` | 1767 | 957-810 | -75.17 | -4.2% |
+| `market_anchor_core` | 1628 | 877-751 | -74.41 | -4.6% |
+| `market_anchor_strict` | 468 | 276-192 | +7.95 | +1.7% |
 
 ## Theoretical Official-Close Selector Scoreboard
 
 | Selector | Rows | W-L | PnL | ROI |
 | --- | ---: | ---: | ---: | ---: |
-| `current_action_fire` | 557 | 275-282 | -37.67 | -6.8% |
-| `market_price_only_favorite` | 975 | 555-420 | -21.84 | -2.2% |
-| `market_anchor_side_agrees` | 1010 | 572-438 | -9.30 | -0.9% |
-| `market_anchor_core` | 546 | 298-248 | -14.58 | -2.7% |
-| `market_anchor_strict` | 169 | 99-70 | +1.77 | +1.1% |
+| `current_action_fire` | 797 | 408-389 | -43.34 | -5.4% |
+| `market_price_only_favorite` | 2657 | 1505-1152 | -76.00 | -2.9% |
+| `market_anchor_side_agrees` | 2744 | 1517-1227 | -96.63 | -3.5% |
+| `market_anchor_core` | 1649 | 890-759 | -72.47 | -4.4% |
+| `market_anchor_strict` | 473 | 278-195 | +6.56 | +1.4% |
 
 ## Market-Anchor Core Slice Risks
 
-- `market_anchor_core` `side=under`: 229 rows, -17.58, -7.7% ROI.
-- `market_anchor_core` `line_bucket=5.5`: 146 rows, -15.94, -10.9% ROI.
-- `market_anchor_core` `model_market_relationship=model_agrees_with_favorite`: 391 rows, -13.43, -3.4% ROI.
-- `market_anchor_core` `price_sign=minus`: 469 rows, -10.64, -2.3% ROI.
-- `market_anchor_core` `quality_gate_level=capped`: 235 rows, -10.02, -4.3% ROI.
-- `market_anchor_core` `quality_gate_level=unknown`: 14 rows, -5.19, -37.1% ROI.
-- `market_anchor_core` `price_sign=plus`: 59 rows, -3.91, -6.6% ROI.
-- `market_anchor_core` `model_market_relationship=unknown`: 22 rows, -3.13, -14.2% ROI.
+- `market_anchor_core` `model_market_relationship=model_agrees_with_favorite`: 1228 rows, -56.15, -4.6% ROI.
+- `market_anchor_core` `price_sign=minus`: 1447 rows, -55.08, -3.8% ROI.
+- `market_anchor_core` `quality_gate_level=capped`: 780 rows, -52.24, -6.7% ROI.
+- `market_anchor_core` `side=under`: 771 rows, -39.33, -5.1% ROI.
+- `market_anchor_core` `line_bucket=4.5`: 573 rows, -38.68, -6.8% ROI.
+- `market_anchor_core` `side=over`: 857 rows, -35.08, -4.1% ROI.
+- `market_anchor_core` `line_bucket=5.5`: 418 rows, -24.66, -5.9% ROI.
+- `market_anchor_core` `model_market_relationship=model_fades_favorite`: 343 rows, -21.75, -6.3% ROI.
 
 ## Market-Anchor Strict Slice Risks
 
 - `market_anchor_strict` `quality_gate_level=unknown`: 9 rows, -3.91, -43.4% ROI.
-- `market_anchor_strict` `side=under`: 96 rows, -1.85, -1.9% ROI.
-- `market_anchor_strict` `line_bucket=2.5-3.5`: 19 rows, -1.55, -8.2% ROI.
-- `market_anchor_strict` `line_bucket=6.5`: 18 rows, -0.55, -3.0% ROI.
+- `market_anchor_strict` `line_bucket=4.5`: 157 rows, -2.06, -1.3% ROI.
+- `market_anchor_strict` `line_bucket=6.5`: 62 rows, -1.11, -1.8% ROI.
+- `market_anchor_strict` `side=under`: 284 rows, -0.57, -0.2% ROI.
 
 ## Read Rule
 

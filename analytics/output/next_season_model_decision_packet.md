@@ -4,18 +4,18 @@ Research-only. This packet does not change live behavior.
 
 ## Source Status
 
-- Candidate lab: loaded (`analytics\output\next_season_candidate_model_lab.md`, rows=2)
-- Seasonal audit: available (`analytics\output\seasonal_k_environment_audit.md`)
-- Bet-selection synthesis: available (`analytics\output\bet_selection_edge_synthesis.md`)
-- Gate F report: available (`analytics\output\gate_f_projection_challenger_shadow_report.md`)
-- Market agreement tracker: available (`analytics\output\market_agreement_tracker.md`)
+- Candidate lab: loaded (`analytics/output/next_season_candidate_model_lab.md`, rows=2)
+- Seasonal audit: available (`analytics/output/seasonal_k_environment_audit.md`)
+- Bet-selection synthesis: available (`analytics/output/bet_selection_edge_synthesis.md`)
+- Gate F report: available (`analytics/output/gate_f_projection_challenger_shadow_report.md`)
+- Market agreement tracker: available (`analytics/output/market_agreement_tracker.md`)
 
 ## Candidate Decisions
 
 | Candidate | Decision | Rows | PnL |
 | --- | --- | ---: | ---: |
-| `model_agrees_with_favorite` | `blocked_negative_pnl` | 934 | -50.63 |
-| `clean_quality_only` | `blocked_negative_pnl` | 1050 | -69.23 |
+| `model_agrees_with_favorite` | `blocked_negative_pnl` | 2704 | -156.69 |
+| `clean_quality_only` | `blocked_negative_pnl` | 2788 | -180.36 |
 
 ## Allowed offseason decisions
 

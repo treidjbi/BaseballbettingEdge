@@ -955,9 +955,9 @@ git commit -m "feat: add next season model decision packet"
 - Consumes: outputs from Tasks 1-6.
 - Produces: a Tyler decision list, not live behavior.
 
-**Status:** Deferred until the 2026 regular season is fully graded and the season-end artifacts are frozen. Do not draft child canary plans from the scaffold-only packet.
+**Status:** Season-end freeze completed 2026-10-01. No child canary is approved by this review. The frozen evidence supports a later market-shrink plan discussion, but Tyler must select the exact candidate in a separate decision before a child plan is drafted.
 
-- [ ] **Step 1: Freeze season-end artifacts**
+- [x] **Step 1: Freeze season-end artifacts**
 
 Run after the 2026 regular season and grading are complete:
 
@@ -971,7 +971,7 @@ python analytics/diagnostics/next_season_model_decision_packet.py
 
 Expected: every command exits `0`; no production artifact is published; outputs are written only under `analytics/output/` and `data/research/gate_c/`.
 
-- [ ] **Step 2: Review required slices**
+- [x] **Step 2: Review required slices**
 
 For every candidate in the decision packet, manually verify these slices exist in the packet or source reports:
 
@@ -995,7 +995,7 @@ rolling window
 
 Expected: candidates missing any required slice stay `watch_more`.
 
-- [ ] **Step 3: Add season-end review section**
+- [x] **Step 3: Add season-end review section**
 
 Append to this plan:
 
@@ -1016,7 +1016,27 @@ Append to this plan:
 - Tyler decision:
 ```
 
-- [ ] **Step 4: Draft only approved child plans**
+## Season-End Review — 2026-10-01
+
+- Season rows: `5,488` Gate C pitcher-market rows from `2026-04-28` through `2026-09-27`.
+- Graded pitcher-market rows: `5,488`; every row has a result and actual strikeouts.
+- Tracked pick rows: `2,893` research rows; the published history reconciliation is `2,777 / 2,777` settled picks, with zero unmatched and zero duplicate dataset keys.
+- Accepted-bet matched rows: `345 / 351`; six remain unmatched. The structured log ends July 27 and grades to `-2.547867u` on `422u` settled risk, so it cannot reconcile Tyler's approximately `-57u` full-season result.
+- Best projection candidate: market shrink. The 15%, 25%, and 35% variants clear the frozen Gate F holdout standards on `745` rows; `market_shrink_25` improves MAE by `0.070 K` and RMSE by `0.094 K` in the Gate F packet. This opens a separate plan discussion only.
+- Best selection candidate: none. Both generic next-season selectors are blocked by negative test PnL. The retrospective market-anchor strict selector is positive, but its prospective canary is negative overall and concentrated.
+- Best timing candidate: CLV remains a process KPI. Beat-close-price rows were positive while worse-than-close rows were materially negative, but final accepted-bet execution CLV is incomplete.
+- Strongest negative brake: high-edge and model-fades-favorite contexts remain substantially negative. Market-shrink's production-linked metadata also has negative tracked PnL and no would-verdict values despite its projection-MAE improvement.
+- Seasonality finding: early-season UNDER was positive; late-season OVER and UNDER were both negative. Treat this as selection-biased context, not a calendar rule.
+- Candidates to drop: `high_line_temper`, `leash_cap`, and runtime use of hindsight-only handedness adjustment.
+- Candidates to draft as child canary plans: none yet. Market shrink is eligible for Tyler to choose for a separate plan, but no production plan follows automatically from this freeze.
+- Tyler decision: preserve the freeze, hold every live gate, and separately choose whether one market-shrink weight deserves a next-season canary-plan draft.
+
+The durable narrative and accepted-bet caveat are in
+[`docs/research/2026-10-01-season-end-research-freeze.md`](../../research/2026-10-01-season-end-research-freeze.md).
+
+- [x] **Step 4: Draft only approved child plans**
+
+No child plan was drafted because this review does not contain Tyler approval for a specific candidate. This is the required fail-closed result, not missing work.
 
 For each Tyler-approved candidate, create a separate child plan. Each child plan must have:
 
@@ -1026,7 +1046,7 @@ For each Tyler-approved candidate, create a separate child plan. Each child plan
 - exact pass/fail metrics;
 - no staking/provider/notification/dashboard source changes unless the child plan is specifically about that lane.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```powershell
 git add docs/superpowers/plans/2026-06-23-next-season-k-model-rebuild-master-plan.md analytics/output/seasonal_k_environment_audit.md analytics/output/season_end_model_rebuild_dataset_summary.md analytics/output/next_season_candidate_model_lab.md analytics/output/next_season_model_decision_packet.md

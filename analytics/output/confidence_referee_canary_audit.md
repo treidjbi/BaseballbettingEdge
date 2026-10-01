@@ -6,23 +6,24 @@ Shadow-only: this report does not change live picks, locks, thresholds, staking,
 
 ## Summary
 
-- Total rows: `1662`
-- Rows with referee metadata: `164`
-- Applied caps: `14`
+- Total rows: `5488`
+- Rows with referee metadata: `3942`
+- Applied caps: `643`
 
 ## Mode Counts
 
-- `enforce`: `70`
+- `enforce`: `3848`
 - `shadow`: `94`
 
 ## Relationship Counts
 
-- `model_agrees_with_favorite`: `77`
-- `model_fades_favorite`: `79`
-- `unknown`: `8`
+- `model_agrees_with_favorite`: `1909`
+- `model_fades_favorite`: `1909`
+- `unknown`: `124`
 
 ## Applied Cap Transitions
 
-- `FIRE 1u -> LEAN`: `6`
+- `FIRE 1u -> LEAN`: `283`
 - `FIRE 2u -> FIRE 1u`: `1`
-- `FIRE 2u -> LEAN`: `7`
+- `FIRE 2u -> LEAN`: `358`
+- `PASS -> PASS`: `1`

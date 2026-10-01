@@ -1,13 +1,13 @@
 # Bet Selection And Edge Synthesis
 
-Generated at: `2026-06-10T04:22:06.062349+00:00`
+Generated at: `2026-10-01T15:00:30.014755+00:00`
 
 Shadow-only: this report does not change live lambda, verdicts, thresholds, staking, provider order, notifications, locks, retention, calibration, or dashboard source-of-truth.
 
 ## Executive Read
 
-- Total source rows: `1662`
-- Clean tracked win/loss rows analyzed: `854`
+- Total source rows: `5488`
+- Clean tracked win/loss rows analyzed: `2893`
 - Useful next decision: use this as Gate E research evidence for which bet-selection contexts deserve deeper Gate F challenger testing.
 - Bill James-style component thinking is reflected here as a diagnostic frame: do not judge edge from ERA/surface outcomes; compare strikeout skill, workload, market price, no-vig gap, CLV, and postgame opportunity separately.
 
@@ -20,97 +20,92 @@ Shadow-only: this report does not change live lambda, verdicts, thresholds, stak
 
 | Bucket | Rows | FIRE | LEAN | W-L | PnL | ROI | Beat close price | Beat close line |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
-| `FIRE 1u` | 412 | 412 | 0 | 206-206 | -23.89 | -5.8% | 47 | 5 |
-| `LEAN` | 318 | 0 | 318 | 167-151 | -2.19 | -0.7% | 73 | 11 |
-| `FIRE 2u` | 124 | 124 | 0 | 59-65 | -10.17 | -8.2% | 11 | 0 |
+| `LEAN` | 1980 | 0 | 1980 | 973-1007 | -142.70 | -7.2% | 258 | 14 |
+| `FIRE 1u` | 665 | 665 | 0 | 346-319 | -31.05 | -4.7% | 69 | 7 |
+| `FIRE 2u` | 132 | 132 | 0 | 62-70 | -12.28 | -9.3% | 11 | 1 |
+| `PASS` | 116 | 0 | 0 | 61-55 | -1.28 | -1.1% | 0 | 0 |
 
 ## Side
 
 | Bucket | Rows | FIRE | LEAN | W-L | PnL | ROI | Beat close price | Beat close line |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
-| `under` | 473 | 305 | 168 | 235-238 | -28.90 | -6.1% | 72 | 10 |
-| `over` | 381 | 231 | 150 | 197-184 | -7.35 | -1.9% | 59 | 6 |
+| `under` | 1623 | 315 | 1257 | 811-812 | -118.11 | -7.3% | 186 | 14 |
+| `over` | 1270 | 482 | 723 | 631-639 | -69.21 | -5.5% | 152 | 8 |
 
 ## Edge Buckets
 
 | Bucket | Rows | FIRE | LEAN | W-L | PnL | ROI | Beat close price | Beat close line |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
-| `edge_6_plus` | 425 | 359 | 66 | 209-216 | -32.75 | -7.7% | 30 | 4 |
-| `edge_lt_2` | 222 | 56 | 166 | 119-103 | +4.29 | +1.9% | 86 | 8 |
-| `edge_2_to_4` | 111 | 40 | 71 | 60-51 | +2.90 | +2.6% | 6 | 3 |
-| `edge_4_to_6` | 96 | 81 | 15 | 44-52 | -10.69 | -11.1% | 9 | 1 |
+| `edge_6_plus` | 1565 | 542 | 1023 | 744-821 | -166.56 | -10.6% | 134 | 7 |
+| `edge_lt_2` | 562 | 63 | 383 | 286-276 | -20.73 | -3.7% | 148 | 11 |
+| `edge_2_to_4` | 403 | 51 | 352 | 215-188 | -4.61 | -1.1% | 27 | 3 |
+| `edge_4_to_6` | 363 | 141 | 222 | 197-166 | +4.58 | +1.3% | 29 | 1 |
 
 ## EV Buckets
 
 | Bucket | Rows | FIRE | LEAN | W-L | PnL | ROI | Beat close price | Beat close line |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
-| `adj_ev_6_to_17` | 368 | 314 | 54 | 185-183 | -17.55 | -4.8% | 43 | 9 |
-| `adj_ev_17_plus` | 268 | 221 | 47 | 128-140 | -19.79 | -7.4% | 29 | 1 |
-| `adj_ev_lt_6` | 218 | 1 | 217 | 119-99 | +1.09 | +0.5% | 59 | 6 |
+| `adj_ev_6_to_17` | 1090 | 479 | 611 | 558-532 | -49.90 | -4.6% | 112 | 9 |
+| `adj_ev_17_plus` | 1026 | 313 | 713 | 478-548 | -109.36 | -10.7% | 104 | 4 |
+| `adj_ev_lt_6` | 777 | 5 | 656 | 406-371 | -28.05 | -3.6% | 122 | 9 |
 
 ## Edge By EV
 
 | Bucket | Rows | FIRE | LEAN | W-L | PnL | ROI | Beat close price | Beat close line |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
-| `edge_6_plus | adj_ev_17_plus` | 254 | 213 | 41 | 121-133 | -20.25 | -8.0% | 22 | 1 |
-| `edge_6_plus | adj_ev_6_to_17` | 166 | 146 | 20 | 85-81 | -13.34 | -8.0% | 7 | 3 |
-| `edge_lt_2 | adj_ev_lt_6` | 146 | 1 | 145 | 79-67 | +1.61 | +1.1% | 56 | 4 |
-| `edge_4_to_6 | adj_ev_6_to_17` | 91 | 80 | 11 | 42-49 | -9.58 | -10.5% | 7 | 1 |
-| `edge_lt_2 | adj_ev_6_to_17` | 65 | 48 | 17 | 34-31 | +1.11 | +1.7% | 25 | 4 |
-| `edge_2_to_4 | adj_ev_lt_6` | 64 | 0 | 64 | 35-29 | -2.27 | -3.5% | 2 | 2 |
-| `edge_2_to_4 | adj_ev_6_to_17` | 46 | 40 | 6 | 24-22 | +4.26 | +9.3% | 4 | 1 |
+| `edge_6_plus | adj_ev_17_plus` | 1011 | 305 | 706 | 471-540 | -108.83 | -10.8% | 97 | 4 |
+| `edge_6_plus | adj_ev_6_to_17` | 531 | 236 | 295 | 263-268 | -53.31 | -10.0% | 34 | 3 |
+| `edge_lt_2 | adj_ev_lt_6` | 475 | 4 | 355 | 243-232 | -18.61 | -3.9% | 110 | 7 |
+| `edge_4_to_6 | adj_ev_6_to_17` | 345 | 140 | 205 | 189-156 | +7.01 | +2.0% | 27 | 1 |
+| `edge_2_to_4 | adj_ev_lt_6` | 264 | 0 | 264 | 145-119 | -5.61 | -2.1% | 9 | 2 |
+| `edge_2_to_4 | adj_ev_6_to_17` | 138 | 51 | 87 | 69-69 | +0.08 | +0.1% | 18 | 1 |
+| `edge_lt_2 | adj_ev_6_to_17` | 76 | 52 | 24 | 37-39 | -3.68 | -4.9% | 33 | 4 |
+| `edge_6_plus | adj_ev_lt_6` | 23 | 1 | 22 | 10-13 | -4.41 | -19.2% | 3 | 0 |
+| `edge_4_to_6 | adj_ev_lt_6` | 15 | 0 | 15 | 8-7 | +0.57 | +3.8% | 0 | 0 |
 | `edge_lt_2 | adj_ev_17_plus` | 11 | 7 | 4 | 6-5 | +1.56 | +14.2% | 5 | 0 |
-| `edge_6_plus | adj_ev_lt_6` | 5 | 0 | 5 | 3-2 | +0.84 | +16.9% | 1 | 0 |
-| `edge_4_to_6 | adj_ev_lt_6` | 3 | 0 | 3 | 2-1 | +0.90 | +29.8% | 0 | 0 |
-| `edge_4_to_6 | adj_ev_17_plus` | 2 | 1 | 1 | 0-2 | -2.00 | -100.0% | 2 | 0 |
+| `edge_4_to_6 | adj_ev_17_plus` | 3 | 1 | 2 | 0-3 | -3.00 | -100.0% | 2 | 0 |
 | `edge_2_to_4 | adj_ev_17_plus` | 1 | 0 | 1 | 1-0 | +0.91 | +90.9% | 0 | 0 |
 
 ## Candidate Labels
 
 | Bucket | Rows | FIRE | LEAN | W-L | PnL | ROI | Beat close price | Beat close line |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
-| `baseline_watch` | 344 | 168 | 176 | 180-164 | -11.94 | -3.5% | 0 | 0 |
-| `high_edge_skeptic` | 326 | 262 | 64 | 160-166 | -20.18 | -6.2% | 24 | 4 |
-| `clv_supported` | 101 | 24 | 77 | 56-45 | +7.44 | +7.4% | 92 | 9 |
-| `fire_under_watch` | 58 | 58 | 0 | 22-36 | -10.69 | -18.4% | 13 | 3 |
-| `moderate_edge_clean_context` | 25 | 24 | 1 | 14-11 | -0.89 | -3.5% | 2 | 0 |
+| `baseline_watch` | 1273 | 277 | 880 | 661-612 | -51.94 | -4.1% | 0 | 0 |
+| `high_edge_skeptic` | 1244 | 371 | 873 | 581-663 | -131.65 | -10.6% | 107 | 7 |
+| `clv_supported` | 222 | 37 | 185 | 120-102 | +3.58 | +1.6% | 210 | 12 |
+| `moderate_edge_clean_context` | 94 | 52 | 42 | 58-36 | +5.38 | +5.7% | 8 | 0 |
+| `fire_under_watch` | 60 | 60 | 0 | 22-38 | -12.69 | -21.1% | 13 | 3 |
 
 ## Model Market Relationship
 
 | Bucket | Rows | FIRE | LEAN | W-L | PnL | ROI | Beat close price | Beat close line |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
-| `model_fades_favorite` | 425 | 260 | 165 | 192-233 | -31.79 | -7.5% | 66 | 15 |
-| `model_agrees_with_favorite` | 399 | 253 | 146 | 224-175 | -4.95 | -1.2% | 63 | 1 |
-| `unknown` | 30 | 23 | 7 | 16-14 | +0.49 | +1.6% | 2 | 0 |
+| `model_agrees_with_favorite` | 1431 | 481 | 887 | 789-642 | -58.27 | -4.1% | 176 | 3 |
+| `model_fades_favorite` | 1371 | 275 | 1045 | 602-769 | -134.82 | -9.8% | 155 | 18 |
+| `unknown` | 91 | 41 | 48 | 51-40 | +5.77 | +6.3% | 7 | 1 |
 
 ## No-Vig Labels
 
 | Bucket | Rows | FIRE | LEAN | W-L | PnL | ROI | Beat close price | Beat close line |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
-| `no_vig_confirmed_edge` | 695 | 484 | 211 | 351-344 | -34.31 | -4.9% | 62 | 8 |
-| `no_vig_no_edge` | 63 | 19 | 44 | 34-29 | +1.15 | +1.8% | 29 | 1 |
-| `no_vig_thin_edge` | 57 | 19 | 38 | 28-29 | +0.46 | +0.8% | 21 | 4 |
-| `no_vig_price_only_edge` | 39 | 14 | 25 | 19-20 | -3.56 | -9.1% | 19 | 3 |
+| `no_vig_confirmed_edge` | 2518 | 739 | 1776 | 1254-1264 | -174.61 | -6.9% | 225 | 11 |
+| `no_vig_no_edge` | 211 | 22 | 83 | 105-106 | -12.92 | -6.1% | 49 | 4 |
+| `no_vig_thin_edge` | 105 | 20 | 81 | 53-52 | +1.92 | +1.8% | 37 | 4 |
+| `no_vig_price_only_edge` | 59 | 16 | 40 | 30-29 | -1.71 | -2.9% | 27 | 3 |
 
 ## CLV Labels
 
 | Bucket | Rows | FIRE | LEAN | W-L | PnL | ROI | Beat close price | Beat close line |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
-| `clv_neutral_or_unknown` | 599 | 409 | 190 | 292-307 | -50.00 | -8.3% | 0 | 0 |
-| `beat_close_price` | 131 | 58 | 73 | 75-56 | +13.82 | +10.5% | 131 | 0 |
-| `worse_than_close_price` | 108 | 64 | 44 | 56-52 | -4.26 | -3.9% | 0 | 0 |
-| `beat_close_line` | 16 | 5 | 11 | 9-7 | +4.19 | +26.2% | 0 | 16 |
+| `clv_neutral_or_unknown` | 2272 | 625 | 1531 | 1122-1150 | -170.22 | -7.5% | 0 | 0 |
+| `beat_close_price` | 338 | 80 | 258 | 187-151 | +15.82 | +4.7% | 338 | 0 |
+| `worse_than_close_price` | 261 | 84 | 177 | 121-140 | -37.64 | -14.4% | 0 | 0 |
+| `beat_close_line` | 22 | 8 | 14 | 12-10 | +4.72 | +21.5% | 0 | 22 |
 
 ## Opportunity By Actual Outing
 
 | Bucket | Rows | FIRE | LEAN | W-L | PnL | ROI | Beat close price | Beat close line |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
-| `normal | normal_outing` | 420 | 248 | 172 | 209-211 | -19.54 | -4.7% | 68 | 11 |
-| `normal | short_outing` | 141 | 79 | 62 | 81-60 | +13.08 | +9.3% | 20 | 3 |
-| `normal | deep_outing` | 135 | 86 | 49 | 63-72 | -19.58 | -14.5% | 19 | 0 |
-| `deep_starter | normal_outing` | 55 | 39 | 16 | 31-24 | +3.61 | +6.6% | 13 | 1 |
-| `short_leash | normal_outing` | 32 | 27 | 5 | 17-15 | -0.37 | -1.1% | 4 | 1 |
-| `short_leash | deep_outing` | 30 | 25 | 5 | 14-16 | -3.69 | -12.3% | 2 | 0 |
-| `deep_starter | short_outing` | 28 | 23 | 5 | 9-19 | -11.17 | -39.9% | 1 | 0 |
-| `deep_starter | deep_outing` | 9 | 5 | 4 | 5-4 | +0.54 | +6.0% | 3 | 0 |
-| `short_leash | short_outing` | 4 | 4 | 0 | 3-1 | +0.88 | +21.9% | 1 | 0 |
+| `normal | actual_outing_unknown` | 2260 | 611 | 1560 | 1128-1132 | -143.62 | -6.3% | 273 | 20 |
+| `deep_starter | actual_outing_unknown` | 331 | 128 | 185 | 166-165 | -16.57 | -5.0% | 39 | 1 |
+| `short_leash | actual_outing_unknown` | 302 | 58 | 235 | 148-154 | -27.13 | -9.0% | 26 | 1 |

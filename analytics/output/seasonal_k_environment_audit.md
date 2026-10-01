@@ -7,13 +7,21 @@ Warning: app picks are selection-biased; validate against MLB-wide starter K/sta
 ## Monthly Actual K Snapshot
 - `2026-03`: n=110, avg_actual_ks=5.109
 - `2026-04`: n=610, avg_actual_ks=4.7
-- `2026-05`: n=605, avg_actual_ks=4.988
+- `2026-05`: n=651, avg_actual_ks=4.977
+- `2026-06`: n=613, avg_actual_ks=4.971
+- `2026-07`: n=471, avg_actual_ks=5.081
+- `2026-08`: n=538, avg_actual_ks=4.809
+- `2026-09`: n=439, avg_actual_ks=4.79
 
 ## Side By Regime
 - `early_season | over`: rows=305, 144-161, pnl=-27.7
 - `early_season | under`: rows=415, 229-186, pnl=20.12
-- `spring_midseason | over`: rows=275, 154-121, pnl=16.82
-- `spring_midseason | under`: rows=330, 173-157, pnl=-7.92
+- `late_season | over`: rows=243, 120-123, pnl=-14.47
+- `late_season | under`: rows=196, 101-95, pnl=-11.85
+- `spring_midseason | over`: rows=447, 228-219, pnl=-11.63
+- `spring_midseason | under`: rows=538, 273-265, pnl=-28.55
+- `summer_midseason | over`: rows=491, 241-250, pnl=-37.58
+- `summer_midseason | under`: rows=797, 397-400, pnl=-62.49
 
 ## Decision Rule
 

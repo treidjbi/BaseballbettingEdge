@@ -6,12 +6,12 @@ Shadow-only: this report does not change live lambda, verdicts, thresholds, stak
 
 | Candidate | Status | Reason | Rows | MAE Delta | RMSE Delta | Side Accuracy Delta | Positive Rolling Windows | Bad Slices | FIRE 2u Degradation |
 | --- | --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | --- |
-| `market_shrink_15` | `blocked_mae_lift_too_small` | holdout MAE lift < 0.025 | 227 | -0.010 | -0.015 | +0.000 | 2 | 0 | no |
-| `market_shrink_25` | `blocked_mae_lift_too_small` | holdout MAE lift < 0.025 | 227 | -0.015 | -0.021 | +0.000 | 2 | 0 | no |
-| `market_shrink_35` | `blocked_mae_lift_too_small` | holdout MAE lift < 0.025 | 227 | -0.017 | -0.024 | +0.000 | 2 | 0 | no |
-| `high_line_temper` | `blocked_mae_lift_too_small` | holdout MAE lift < 0.025 | 227 | -0.005 | +0.000 | +0.003 | 1 | 1 | no |
-| `leash_cap` | `blocked_mae_lift_too_small` | holdout MAE lift < 0.025 | 227 | +0.006 | +0.004 | -0.007 | 0 | 2 | no |
-| `handedness_bucket_adjust` | `blocked_hindsight_only` | candidate uses hindsight-only inputs | 227 | +0.001 | +0.001 | +0.000 | 1 | 0 | no |
+| `market_shrink_15` | `promotion_plan_candidate` | Gate F shadow standards passed | 745 | -0.044 | -0.060 | +0.000 | 25 | 0 | no |
+| `market_shrink_25` | `promotion_plan_candidate` | Gate F shadow standards passed | 745 | -0.070 | -0.094 | +0.000 | 25 | 0 | no |
+| `market_shrink_35` | `promotion_plan_candidate` | Gate F shadow standards passed | 745 | -0.094 | -0.125 | +0.000 | 25 | 0 | no |
+| `high_line_temper` | `blocked_mae_lift_too_small` | holdout MAE lift < 0.025 | 745 | -0.003 | -0.005 | -0.001 | 18 | 1 | no |
+| `leash_cap` | `blocked_mae_lift_too_small` | holdout MAE lift < 0.025 | 745 | +0.016 | +0.026 | -0.009 | 1 | 5 | no |
+| `handedness_bucket_adjust` | `blocked_hindsight_only` | candidate uses hindsight-only inputs | 745 | +0.000 | +0.000 | +0.000 | 26 | 0 | no |
 
 ## Read Rule
 

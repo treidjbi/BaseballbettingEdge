@@ -1,6 +1,21 @@
 # Current State
 
-Last updated: 2026-09-28
+Last updated: 2026-10-01
+
+
+## October 1 season-end execution overlay
+
+This is the freshest Four-Lane Operating Board. It supersedes the September 28
+branch/deployment and research-freeze next steps without changing any live
+model, provider, staking, notification, lock, source-of-truth, or retention
+gate.
+
+| Lane | Current reviewed state | Next decision / blocker |
+| --- | --- | --- |
+| Pipeline / infrastructure | PR #50 merged to `main` as `b953ccb8`. Netlify production deploy `6abe7622c429c5921a017519` is ready and Alt V2 now returns `ready` with zero candidates for the trusted October 1 empty slate. Render cron auto-deploy remains off, so the pipeline preview/steam code is merged but not deployed to Render; production `preview_lines` is still dated May 30 and `steam` September 27. The six provider-calling services still require an authenticated exact inventory before suspension. | Tyler must complete the existing Render/GitHub sign-in handoff. Then record exact service IDs/settings, suspend only preview, full, three refresh services, and live layer, and prove two absent polling windows. Decide whether to deploy the merged pipeline empty-contract code now or defer it to the next-season restart; do not broaden the target. |
+| Model | The [season-end research freeze](research/2026-10-01-season-end-research-freeze.md) is complete through September 27: `5,488` Gate C rows, `2,893` tracked research rows, zero duplicate keys, and `2,777/2,777` published settled-pick reconciliation. The generic next-season selectors are blocked by negative PnL. Market-shrink 15/25/35 clear the frozen projection holdout standards, but the production-linked selection rows are negative and contain no would-verdict values. Market-anchor strict is positive only in the retrospective rebuild; its prospective audit is negative overall. | Hold Gate C/D/E/F/12E and every live behavior gate. Tyler may separately choose one market-shrink weight for a bounded next-season canary-plan draft; no child plan is approved yet. Keep market-anchor shadow and preserve current bounded confidence/profit-rescue/Path B modes. |
+| UI | The empty-slate Alt V2 contract is live and verified at production with status `ready`, zero rows, zero selected/pending/frozen counts, and no error. The stale preview/steam payloads remain a pipeline-deploy issue rather than a Netlify-function issue. | No UI change. Reverify the full empty-state after the Render pipeline deployment decision and retain ordinary next-slate mobile/live-book checks for 2027. |
+| Tracking / data collection / history | The linked Supabase history publication has `4,102` rows and is frozen in the Gate C manifest by timestamp and SHA-256. The structured accepted-bet table has `351` unique rows but ends July 27; `345` matched rows grade to `-2.547867u`, six are unmatched, and this cannot reconcile Tyler's approximately `-57u` result. Database retention and spend-cap rules are unchanged. | Preserve all evidence. Treat approximately `-57u` as user-reported and unreconciled until the controlling external/accepted-bet ledger is available. Do not delete, vacuum, rewrite, or call published history PnL account PnL. |
 
 
 ## September 28 season-end action overlay
