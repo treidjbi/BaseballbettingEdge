@@ -1,0 +1,924 @@
+/* global React, ReactDOM */
+const { useState, useMemo } = React;
+
+const ABBR = {
+  "Arizona Diamondbacks":"ARI","Atlanta Braves":"ATL","Baltimore Orioles":"BAL",
+  "Boston Red Sox":"BOS","Chicago Cubs":"CHC","Chicago White Sox":"CWS",
+  "Cincinnati Reds":"CIN","Cleveland Guardians":"CLE","Colorado Rockies":"COL",
+  "Detroit Tigers":"DET","Houston Astros":"HOU","Kansas City Royals":"KC",
+  "Los Angeles Angels":"LAA","Los Angeles Dodgers":"LAD","Miami Marlins":"MIA",
+  "Milwaukee Brewers":"MIL","Minnesota Twins":"MIN","New York Mets":"NYM",
+  "New York Yankees":"NYY","Oakland Athletics":"OAK","Philadelphia Phillies":"PHI",
+  "Pittsburgh Pirates":"PIT","San Diego Padres":"SD","San Francisco Giants":"SF",
+  "Seattle Mariners":"SEA","St. Louis Cardinals":"STL","Tampa Bay Rays":"TB",
+  "Texas Rangers":"TEX","Toronto Blue Jays":"TOR","Washington Nationals":"WSH",
+  "Athletics":"OAK"
+};
+const ab = n => ABBR[n] || n;
+const fmtOdds = n => n == null ? "—" : (n > 0 ? `+${n}` : `${n}`);
+const fmtTime = iso => {
+  if (!iso) return "";
+  const d = new Date(iso);
+  return d.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" });
+};
+
+// ── Tiny inline icons (no external font/web component) ──
+const Icon = {
+  users: <svg viewBox="0 0 16 16" width="13" height="13" fill="currentColor" aria-hidden="true"><circle cx="5" cy="5.5" r="2.3"/><circle cx="11" cy="5.5" r="2"/><path d="M1 13.5c0-2.2 1.8-3.8 4-3.8s4 1.6 4 3.8v.5H1v-.5z"/><path d="M9.2 14c.1-.3.1-.6.1-1 0-1.4-.7-2.6-1.7-3.3.4-.1.8-.2 1.3-.2 2 0 3.5 1.4 3.5 3.3V14H9.2z"/></svg>,
+  ball:  <svg viewBox="0 0 16 16" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="1.4" aria-hidden="true"><circle cx="8" cy="8" r="6.2"/><path d="M3.5 4.5c1.3 1.4 2.1 3.2 2.1 5.3 0 1-.2 2-.5 2.9M12.5 4.5c-1.3 1.4-2.1 3.2-2.1 5.3 0 1 .2 2 .5 2.9"/></svg>,
+  ump:   <svg viewBox="0 0 16 16" width="13" height="13" fill="currentColor" aria-hidden="true"><circle cx="8" cy="5" r="2.4"/><path d="M3 14c0-2.4 2.2-4.3 5-4.3s5 1.9 5 4.3v.5H3V14z"/></svg>,
+  up:    <svg viewBox="0 0 10 10" width="10" height="10" fill="currentColor" aria-hidden="true"><path d="M5 1.5L9 8H1z"/></svg>,
+  down:  <svg viewBox="0 0 10 10" width="10" height="10" fill="currentColor" aria-hidden="true"><path d="M5 8.5L1 2h8z"/></svg>,
+  live:  <svg viewBox="0 0 8 8" width="8" height="8" fill="currentColor" aria-hidden="true"><circle cx="4" cy="4" r="4"/></svg>,
+  bell:  <svg viewBox="0 0 16 16" width="15" height="15" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M3.5 12h9l-1.2-1.6V7.2a3.3 3.3 0 0 0-2.6-3.3v-.4a.7.7 0 0 0-1.4 0v.4A3.3 3.3 0 0 0 4.7 7.2v3.2z"/><path d="M6.5 13.5a1.5 1.5 0 0 0 3 0"/></svg>,
+  moon:  <svg viewBox="0 0 16 16" width="15" height="15" fill="currentColor"><path d="M8 1.5A6.5 6.5 0 1 0 14.5 8 5 5 0 0 1 8 1.5z"/></svg>,
+  sun:   <svg viewBox="0 0 16 16" width="15" height="15" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"><circle cx="8" cy="8" r="2.8" fill="currentColor"/><path d="M8 1v1.5M8 13.5V15M1 8h1.5M13.5 8H15M3 3l1 1M12 12l1 1M13 3l-1 1M4 12l-1 1"/></svg>,
+  refresh:<svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M14 3v4h-4"/><path d="M13.5 7A6 6 0 1 0 14 10"/></svg>,
+  picks: <svg viewBox="0 0 20 20" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="1.6"><circle cx="10" cy="10" r="7.5"/><path d="M4.5 5.8c1.6 1.7 2.6 4 2.6 6.6 0 1.2-.2 2.4-.6 3.5M15.5 5.8c-1.6 1.7-2.6 4-2.6 6.6 0 1.2.2 2.4.6 3.5"/></svg>,
+  steam: <svg viewBox="0 0 20 20" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round"><path d="M5 14l4-4 3 3 4-5"/><path d="M13 8h3v3"/></svg>,
+  results:<svg viewBox="0 0 20 20" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round"><rect x="3.5" y="9" width="3.5" height="7.5" rx=".6"/><rect x="8.5" y="5" width="3.5" height="11.5" rx=".6"/><rect x="13.5" y="11" width="3.5" height="5.5" rx=".6"/></svg>,
+};
+
+function bestSide(p) {
+  if (p.ev_over.adj_ev >= p.ev_under.adj_ev) {
+    return { ...p.ev_over, direction: "OVER",  odds: p.best_over_odds,  opening: p.opening_over_odds };
+  }
+  return   { ...p.ev_under, direction: "UNDER", odds: p.best_under_odds, opening: p.opening_under_odds };
+}
+function verdictClass(v, dir) {
+  if (v && v.startsWith("FIRE")) return dir === "OVER" ? "fire-over" : "fire";
+  if (v === "LEAN") return "lean";
+  return "pass";
+}
+function centsMove(o, c) {
+  if (o == null || c == null) return 0;
+  const same = (o > 0 && c > 0) || (o < 0 && c < 0);
+  if (same) return Math.abs(c - o);
+  return (Math.abs(o) - 100) + (Math.abs(c) - 100);
+}
+function sideCheaper(o, c) {
+  const ip = x => x < 0 ? Math.abs(x) / (Math.abs(x) + 100) : 100 / (x + 100);
+  return ip(c) < ip(o);
+}
+function steamInfo(p, dir) {
+  const isOver = dir === "OVER";
+  const o = isOver ? p.opening_over_odds : p.opening_under_odds;
+  const c = isOver ? p.best_over_odds    : p.best_under_odds;
+  const cents = centsMove(o, c);
+  if (!cents) return null;
+  return { cents, steamWith: !sideCheaper(o, c) };
+}
+
+// ── Verdict badge (big, two-line) ──
+function VerdictBadge({ side }) {
+  const v = side.verdict;
+  if (v === "PASS") {
+    return <div className="v2-verdict pass">PASS</div>;
+  }
+  const cls = verdictClass(v, side.direction);
+  const isOver = side.direction === "OVER";
+  const dirArrow = isOver ? Icon.up : Icon.down;
+  const label = v === "LEAN" ? "LEAN" : v.replace("FIRE ", "").toUpperCase(); // "1U" / "2U" / "LEAN"
+  return (
+    <div className={`v2-verdict ${cls}`}>
+      <span className="dir">{dirArrow} {side.direction}</span>
+      <span className="label">{v === "LEAN" ? "LEAN" : `FIRE \u00B7 ${label}`}</span>
+    </div>
+  );
+}
+
+// ── Projection bar — shows line vs lambda ──
+function ProjBar({ line, lambda }) {
+  // Scale: min/max around line ± 3
+  const lo = line - 3;
+  const hi = line + 3;
+  const cl = x => Math.max(0, Math.min(1, (x - lo) / (hi - lo)));
+  return (
+    <div className="v2-projbar">
+      <div className="line" style={{ left: `${cl(line) * 100}%` }} />
+      <div className="proj" style={{ left: `${cl(lambda) * 100}%` }} />
+    </div>
+  );
+}
+
+// ── "Why" pill row ──
+function WhyPills({ p, side }) {
+  const stats = [];
+  const oppK = p.opp_k_rate;
+  const oppVs = ((oppK - 0.227) / 0.227) * 100;
+  stats.push({
+    icon: Icon.users,
+    v: `${(oppK * 100).toFixed(0)}%`,
+    tone: (side.direction === "OVER" ? oppVs > 0 : oppVs < 0) ? "pos" : "neg",
+    title: `Opponent K-rate ${(oppK * 100).toFixed(1)}% (${oppVs >= 0 ? "+" : ""}${oppVs.toFixed(0)}% vs avg)`
+  });
+  const k9Recent = p.recent_k9;
+  const k9Season = p.season_k9;
+  const k9Delta = k9Recent - k9Season;
+  stats.push({
+    icon: Icon.ball,
+    v: k9Recent.toFixed(1),
+    tone: (side.direction === "OVER" ? k9Delta > 0 : k9Delta < 0) ? "pos" : "neg",
+    title: `Recent K/9 ${k9Recent.toFixed(1)} (${k9Delta >= 0 ? "+" : ""}${k9Delta.toFixed(1)} vs season ${k9Season.toFixed(1)})`
+  });
+  if (p.ump_k_adj && Math.abs(p.ump_k_adj) > 0.05) {
+    stats.push({
+      icon: Icon.ump,
+      v: `${p.ump_k_adj > 0 ? "+" : ""}${(p.ump_k_adj).toFixed(2)}`,
+      tone: (side.direction === "OVER" ? p.ump_k_adj > 0 : p.ump_k_adj < 0) ? "pos" : "neg",
+      title: `Umpire K-adjustment ${p.ump_k_adj > 0 ? "+" : ""}${p.ump_k_adj.toFixed(2)} K/g`
+    });
+  }
+  const steam = steamInfo(p, side.direction);
+  return (
+    <div className="v2-why v2-why-compact">
+      {stats.map((s, i) => (
+        <span key={i} className={`v2-stat ${s.tone}`} title={s.title}>
+          {s.icon}
+          <span className="v">{s.v}</span>
+        </span>
+      ))}
+      {steam && (
+        <span className={`v2-stat ${steam.steamWith ? "pos" : "neg"}`} title={`Steam ${steam.steamWith ? "with" : "against"} the pick, ${steam.cents}¢`}>
+          {steam.steamWith ? Icon.up : Icon.down}
+          <span className="v">{steam.cents}¢</span>
+        </span>
+      )}
+    </div>
+  );
+}
+
+// ── Pick card ──
+function PickCard({ p, onOpen }) {
+  const side = bestSide(p);
+  const cls = verdictClass(side.verdict, side.direction);
+  const started = p.game_state !== "pregame";
+  const cardMod = started ? "final" : (side.verdict === "PASS" ? "pass" : cls);
+
+  return (
+    <article
+      className={`v2-card ${cardMod}`}
+      onClick={() => onOpen && onOpen(p)}
+      role="button" tabIndex={0}
+      onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") onOpen && onOpen(p); }}
+    >
+      <div className="v2-card-top">
+        <div className="v2-teamblock">
+          <div className="v2-matchup">
+            <span>{ab(p.team)}</span>
+            <span className="vs">vs</span>
+            <span>{ab(p.opp_team)}</span>
+            <span className="time">
+              {p.game_state === "in_progress" ? (
+                <span style={{display:"inline-flex",gap:5,alignItems:"center"}}>
+                  <span className="v2-livedot"/>LIVE
+                </span>
+              ) : fmtTime(p.game_time)}
+            </span>
+          </div>
+          <div className="v2-pitcher-name">
+            {p.pitcher}
+            <span className="v2-pitcher-throws">{p.pitcher_throws}HP</span>
+          </div>
+        </div>
+        <VerdictBadge side={side} />
+      </div>
+
+      <div className="v2-line">
+        <div className="v2-line-cell">
+          <div className="v2-line-label">Line · {side.direction}</div>
+          <div className="v2-line-value">{p.k_line}<span style={{fontSize:14,opacity:.5}}> K</span></div>
+          <div className="v2-line-sub mono">{fmtOdds(side.odds)} · FanDuel</div>
+        </div>
+        <div className="v2-line-cell">
+          <div className="v2-line-label">Projection</div>
+          <div className="v2-line-value">{p.lambda.toFixed(2)}</div>
+          <ProjBar line={p.k_line} lambda={p.lambda} />
+        </div>
+        <div className="v2-line-cell">
+          <div className="v2-line-label">EV · Win%</div>
+          <div className={`v2-line-value ${side.adj_ev > 0 ? "pos" : "neg"}`}>
+            {side.adj_ev > 0 ? "+" : ""}{(side.adj_ev * 100).toFixed(1)}%
+          </div>
+          <div className="v2-line-sub mono">p = {(side.win_prob * 100).toFixed(1)}%</div>
+        </div>
+      </div>
+
+      <WhyPills p={p} side={side} />
+    </article>
+  );
+}
+
+// ── Date scroller ──
+function DateBar({ active, onChange }) {
+  const dates = [
+    { d: "13", dow: "Mon", past: true, result: "loss" },
+    { d: "14", dow: "Tue", past: true, result: "win" },
+    { d: "15", dow: "Wed", past: true, result: "win" },
+    { d: "16", dow: "Thu", today: true },
+    { d: "17", dow: "Fri" },
+    { d: "18", dow: "Sat" },
+    { d: "19", dow: "Sun" }
+  ];
+  return (
+    <div className="v2-datebar">
+      {dates.map((x, i) => {
+        let cls = "v2-datepill";
+        if (x.today) cls += " today";
+        if (x.result === "win") cls += " past-win";
+        if (x.result === "loss") cls += " past-loss";
+        return (
+          <div key={i} className={cls}>
+            <span className="dow">{x.dow}</span>
+            <span className="d">{x.d}</span>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+// ── Pick detail sheet ──
+function PickDetail({ p, onClose }) {
+  if (!p) return null;
+  const sideOver = { ...p.ev_over, direction: "OVER", odds: p.best_over_odds, opening: p.opening_over_odds };
+  const sideUnder = { ...p.ev_under, direction: "UNDER", odds: p.best_under_odds, opening: p.opening_under_odds };
+  const best = bestSide(p);
+  const steam = steamInfo(p, best.direction);
+
+  // ESC to close
+  React.useEffect(() => {
+    const h = (e) => { if (e.key === "Escape") onClose(); };
+    window.addEventListener("keydown", h);
+    document.body.style.overflow = "hidden";
+    return () => { window.removeEventListener("keydown", h); document.body.style.overflow = ""; };
+  }, [onClose]);
+  const SideCard = ({ s }) => {
+    const picked = s.direction === best.direction;
+    const pos = s.adj_ev > 0;
+    return (
+      <div className={`v2-side-card ${picked ? "picked" : ""}`}>
+        {picked && <span className="badge-mini">PICK</span>}
+        <div className="dir">{s.direction} {p.k_line}</div>
+        <div className="odds">{fmtOdds(s.odds)} · open {fmtOdds(s.opening)}</div>
+        <div className={`ev ${pos ? "pos" : "neg"}`}>
+          {pos ? "+" : ""}{(s.adj_ev * 100).toFixed(1)}%
+        </div>
+        <div className="wp">p = {(s.win_prob * 100).toFixed(1)}%</div>
+      </div>
+    );
+  };
+
+  // Line movement: fake a 12-step history from open → current
+  const moveSteps = 12;
+  const delta = (p.k_line - p.opening_line);
+  const bars = Array.from({ length: moveSteps }, (_, i) => {
+    const t = i / (moveSteps - 1);
+    // small noise + drift
+    const noise = (Math.sin(i * 1.3) * 0.15) - (i * 0.02);
+    const v = 0.5 + (delta * 0.4 * t) + noise;
+    return Math.max(0.15, Math.min(1, v));
+  });
+
+  // Stat deltas vs league average (rough thresholds)
+  const LEAGUE_K = 0.22;
+  const LEAGUE_K9 = 8.5;
+  const oppDelta = (p.opp_k_rate - LEAGUE_K) * 100;
+  const k9Delta = p.recent_k9 - LEAGUE_K9;
+  const ump = p.ump_k_adj;
+
+  // Whether each stat supports the pick direction
+  const supportsUnder = best.direction === "UNDER";
+  const oppSupports = supportsUnder ? oppDelta > 0 : oppDelta < 0;
+  const k9Supports = supportsUnder ? k9Delta < 0 : k9Delta > 0;
+  const umpSupports = supportsUnder ? ump < 0 : ump > 0;
+
+  // State flags
+  const isLive = p.game_state === "in_progress";
+  const isFinal = p.game_state === "final";
+  const isPass = best.verdict === "PASS";
+  const live = p.live;
+  const result = p.result;
+
+  return ReactDOM.createPortal(
+    <>
+      <div className="v2-sheet-backdrop" onClick={onClose} />
+      <div className="v2-sheet" role="dialog" aria-modal="true">
+        <div className="v2-sheet-grip" />
+        <div className="v2-sheet-head">
+          <div>
+            <div className="meta">
+              {ab(p.team)} vs {ab(p.opp_team)} · {isLive ? "LIVE" : isFinal ? "FINAL" : fmtTime(p.game_time)}
+            </div>
+            <div className="pitcher">
+              {p.pitcher}<span className="throws">{p.pitcher_throws}HP</span>
+            </div>
+          </div>
+          <button className="v2-sheet-close" onClick={onClose} aria-label="Close">
+            <svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M3 3l10 10M13 3L3 13"/></svg>
+          </button>
+        </div>
+
+        {/* ── LIVE state: current K progress ── */}
+        {isLive && live && (
+          <div className="v2-sheet-state v2-sheet-live">
+            <div className="state-head">
+              <span className="pulse" />
+              <span className="state-lbl">LIVE · {live.innings} IP · {live.pitches} pitches</span>
+            </div>
+            <div className="live-k">
+              <span className="live-k-num">{live.current_k}</span>
+              <span className="live-k-sep">/</span>
+              <span className="live-k-line">{p.k_line}</span>
+              <span className="live-k-lbl">K</span>
+            </div>
+            <div className="live-meta">
+              Projected final: <b>{live.proj_final_k.toFixed(1)} K</b>
+              <span className={`live-verdict ${live.proj_final_k > p.k_line ? "over" : "under"}`}>
+                {live.proj_final_k > p.k_line ? "→ OVER pace" : "→ UNDER pace"}
+              </span>
+            </div>
+          </div>
+        )}
+
+        {/* ── FINAL state: result ── */}
+        {isFinal && result && (
+          <div className={`v2-sheet-state v2-sheet-final outcome-${result.outcome}`}>
+            <div className="state-head">
+              <span className="state-lbl">FINAL · {result.final_k} K</span>
+            </div>
+            {result.outcome === "pass" ? (
+              <>
+                <div className="final-outcome">NO BET</div>
+                <div className="final-meta">
+                  Model found no edge on either side. Line closed at {p.k_line}, final {result.final_k} K
+                  {result.final_k > p.k_line ? " · OVER hit" : result.final_k < p.k_line ? " · UNDER hit" : " · push"}.
+                </div>
+              </>
+            ) : (
+              <>
+                <div className="final-outcome">
+                  {result.outcome === "win" ? "WIN" : result.outcome === "loss" ? "LOSS" : "PUSH"}
+                  <span className={`final-units ${result.units_won >= 0 ? "pos" : "neg"}`}>
+                    {result.units_won >= 0 ? "+" : ""}{result.units_won.toFixed(2)}u
+                  </span>
+                </div>
+                <div className="final-meta">
+                  {result.side_taken?.toUpperCase()} {result.line_at_bet} @ {fmtOdds(result.odds_at_bet)} · {result.units_risked}u risked
+                </div>
+              </>
+            )}
+          </div>
+        )}
+
+        {/* ── PASS (pregame): no edge ── */}
+        {isPass && !isLive && !isFinal && (
+          <div className="v2-sheet-state v2-sheet-pass">
+            <div className="state-head">
+              <span className="state-lbl">NO EDGE</span>
+            </div>
+            <div className="pass-copy">
+              Model projection ({p.lambda.toFixed(2)} K) is too close to the line ({p.k_line}) on both sides.
+              Skipping this one.
+            </div>
+          </div>
+        )}
+
+        <div className="v2-sheet-section">
+          <div className="h">Sides · EV comparison</div>
+          <div className="v2-sides">
+            <SideCard s={sideOver} />
+            <SideCard s={sideUnder} />
+          </div>
+        </div>
+
+        <div className="v2-sheet-section">
+          <div className="h">Projection</div>
+          <div className="v2-stat-row">
+            <span className="lbl">Line (K)</span>
+            <span className="val">{p.k_line}</span>
+          </div>
+          <div className="v2-stat-row">
+            <span className="lbl">Model λ</span>
+            <span className="val">{p.lambda.toFixed(2)}</span>
+          </div>
+          <div className="v2-stat-row">
+            <span className="lbl">Edge</span>
+            <span className={`val ${p.lambda > p.k_line ? "pos" : "neg"}`}>
+              {p.lambda > p.k_line ? "+" : ""}{(p.lambda - p.k_line).toFixed(2)} K
+            </span>
+          </div>
+          <div className="v2-stat-row">
+            <span className="lbl">Expected IP</span>
+            <span className="val">{p.avg_ip.toFixed(1)}</span>
+          </div>
+        </div>
+
+        <div className="v2-sheet-section">
+          <div className="h">Why this pick</div>
+          <div className="v2-stat-row">
+            <span className="lbl">{Icon.users} Opp. K-rate (bats)</span>
+            <span className={`val ${oppSupports ? "pos" : "neg"}`}>
+              {(p.opp_k_rate * 100).toFixed(1)}%
+              <span className="delta">{oppDelta >= 0 ? "+" : ""}{oppDelta.toFixed(1)} vs lg</span>
+            </span>
+          </div>
+          <div className="v2-stat-row">
+            <span className="lbl">{Icon.ball} Recent K/9 (L5)</span>
+            <span className={`val ${k9Supports ? "pos" : "neg"}`}>
+              {p.recent_k9.toFixed(1)}
+              <span className="delta">{k9Delta >= 0 ? "+" : ""}{k9Delta.toFixed(1)} vs lg</span>
+            </span>
+          </div>
+          <div className="v2-stat-row">
+            <span className="lbl">Season K/9</span>
+            <span className="val">{p.season_k9.toFixed(1)}</span>
+          </div>
+          <div className="v2-stat-row">
+            <span className="lbl">Career K/9</span>
+            <span className="val">{p.career_k9.toFixed(1)}</span>
+          </div>
+          {ump !== 0 && (
+            <div className="v2-stat-row">
+              <span className="lbl">Umpire K adj.</span>
+              <span className={`val ${umpSupports ? "pos" : "neg"}`}>
+                {ump > 0 ? "+" : ""}{ump.toFixed(2)}
+              </span>
+            </div>
+          )}
+        </div>
+
+        <div className="v2-sheet-section">
+          <div className="h">Line movement · {steam.cents > 0 ? `${steam.cents}¢ ${steam.direction === "UNDER" ? "↑" : "↑"} ${best.direction}` : "No steam"}</div>
+          <div className="v2-stat-row">
+            <span className="lbl">Opening line</span>
+            <span className="val">{p.opening_line} · {fmtOdds(p.opening_over_odds)}/{fmtOdds(p.opening_under_odds)}</span>
+          </div>
+          <div className="v2-stat-row">
+            <span className="lbl">Current line</span>
+            <span className="val">{p.k_line} · {fmtOdds(p.best_over_odds)}/{fmtOdds(p.best_under_odds)}</span>
+          </div>
+          <div className="v2-linemove">
+            {bars.map((v, i) => (
+              <div
+                key={i}
+                className={`v2-linemove-bar ${i >= moveSteps - 3 ? "hot" : ""}`}
+                style={{ height: `${v * 100}%` }}
+              />
+            ))}
+          </div>
+          <div style={{fontSize:11, color:"var(--ink-dim)", marginTop:6, fontFamily:"JetBrains Mono, monospace"}}>
+            open → now · 12h window
+          </div>
+        </div>
+
+        <div className="v2-sheet-section">
+          <div className="h">Model confidence</div>
+          <div className="v2-stat-row">
+            <span className="lbl">Verdict</span>
+            <span className="val">{best.verdict}</span>
+          </div>
+          <div className="v2-stat-row">
+            <span className="lbl">Movement confidence</span>
+            <span className="val">{(best.movement_conf * 100).toFixed(0)}%</span>
+          </div>
+          <div className="v2-stat-row">
+            <span className="lbl">Raw EV</span>
+            <span className="val">{best.ev > 0 ? "+" : ""}{(best.ev * 100).toFixed(1)}%</span>
+          </div>
+          <div className="v2-stat-row">
+            <span className="lbl">Adjusted EV</span>
+            <span className={`val ${best.adj_ev > 0 ? "pos" : "neg"}`}>
+              {best.adj_ev > 0 ? "+" : ""}{(best.adj_ev * 100).toFixed(1)}%
+            </span>
+          </div>
+        </div>
+
+        <div className="v2-sheet-actions">
+          <button className="v2-btn-ghost" onClick={onClose}>Close</button>
+          {isLive && (
+            <button className="v2-btn-primary" disabled style={{opacity:.55, cursor:"not-allowed"}}>
+              Live · Track in-game
+            </button>
+          )}
+          {isFinal && result?.outcome !== "pass" && (
+            <button className="v2-btn-primary">
+              View grade details
+              <span className="v2-btn-arrow">→</span>
+            </button>
+          )}
+          {isFinal && result?.outcome === "pass" && (
+            <button className="v2-btn-primary" disabled style={{opacity:.55, cursor:"not-allowed"}}>
+              No bet placed
+            </button>
+          )}
+          {!isLive && !isFinal && !isPass && (
+            <button className="v2-btn-primary">
+              Bet {best.direction} {p.k_line} on FanDuel
+              <span className="v2-btn-arrow">↗</span>
+            </button>
+          )}
+          {!isLive && !isFinal && isPass && (
+            <button className="v2-btn-primary" disabled style={{opacity:.55, cursor:"not-allowed"}}>
+              No actionable edge
+            </button>
+          )}
+        </div>
+      </div>
+    </>,
+    document.body
+  );
+}
+
+// ── Empty / loading / error states ──
+function EmptyState({ filter }) {
+  const messages = {
+    ALL:  { ttl: "No slate today", sub: "MLB is off. Check back tomorrow — the next slate posts around 9 AM ET." },
+    FIRE: { ttl: "No FIRE picks", sub: "Model didn't find any 1u+ edges in today's slate. That's a signal, not a bug — skip days are a strategy." },
+    LEAN: { ttl: "No leans", sub: "Nothing between +2% and +5% EV right now." },
+    LIVE: { ttl: "No games live", sub: "First pitch hasn't dropped yet. Live picks will appear here during games." }
+  };
+  const m = messages[filter] || messages.ALL;
+  return (
+    <div className="v2-state">
+      <div className="glyph">
+        <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" strokeWidth="1.5"><circle cx="12" cy="12" r="9"/><path d="M8 14s1.5 2 4 2 4-2 4-2" strokeLinecap="round"/><circle cx="9" cy="10" r="1" fill="currentColor"/><circle cx="15" cy="10" r="1" fill="currentColor"/></svg>
+      </div>
+      <div className="ttl">{m.ttl}</div>
+      <div className="sub">{m.sub}</div>
+    </div>
+  );
+}
+
+function LoadingState() {
+  return (
+    <div className="v2-cards" style={{paddingTop: 12}}>
+      <div className="v2-section-h" style={{margin: "0 18px 8px"}}>
+        <span className="v2-skel" style={{display:"inline-block", width: 90, height: 11}} />
+      </div>
+      {[0,1,2].map(i => (
+        <div key={i} className="v2-skel-card">
+          <div style={{display:"flex", justifyContent:"space-between"}}>
+            <div className="v2-skel" style={{width: "40%", height: 14}} />
+            <div className="v2-skel" style={{width: 60, height: 36, borderRadius: 4}} />
+          </div>
+          <div className="v2-skel" style={{width: "55%", height: 22}} />
+          <div style={{display:"flex", gap:10, marginTop:6}}>
+            <div className="v2-skel" style={{flex:1, height: 50}} />
+            <div className="v2-skel" style={{flex:1, height: 50}} />
+            <div className="v2-skel" style={{flex:1, height: 50}} />
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function ErrorState({ onRetry }) {
+  return (
+    <div className="v2-state">
+      <div className="glyph" style={{background:"color-mix(in oklab, var(--neg) 18%, transparent)", color:"var(--neg)"}}>
+        <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"><path d="M12 7v6M12 17h.01"/><circle cx="12" cy="12" r="9.5"/></svg>
+      </div>
+      <div className="ttl">Couldn't load today's slate</div>
+      <div className="sub">The odds feed didn't respond. Data may be stale.</div>
+      <div className="err-detail">ODDS_API: 504 · fetched 2m ago</div>
+      <div style={{marginTop: 22}}>
+        <button className="v2-btn-ghost" style={{padding:"10px 22px"}} onClick={onRetry}>
+          Retry
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// ── Tab: Picks ──
+function PicksTab({ pitchersOverride }) {
+  const [filter, setFilter] = useState("ALL");
+  const [detail, setDetail] = useState(null);
+  const pitchers = pitchersOverride ?? window.V2_DATA.pitchers;
+  const filtered = useMemo(() => {
+    if (filter === "ALL") return pitchers;
+    if (filter === "FIRE") return pitchers.filter(p => bestSide(p).verdict.startsWith("FIRE"));
+    if (filter === "LEAN") return pitchers.filter(p => bestSide(p).verdict === "LEAN");
+    if (filter === "LIVE") return pitchers.filter(p => p.game_state === "in_progress");
+    return pitchers;
+  }, [filter]);
+
+  const counts = {
+    FIRE: pitchers.filter(p => bestSide(p).verdict.startsWith("FIRE")).length,
+    LEAN: pitchers.filter(p => bestSide(p).verdict === "LEAN").length,
+    LIVE: pitchers.filter(p => p.game_state === "in_progress").length,
+    ALL: pitchers.length
+  };
+  const chips = [
+    ["ALL", "All"], ["FIRE", "Fire"], ["LEAN", "Lean"], ["LIVE", "Live"]
+  ];
+
+  const upcoming = filtered.filter(p => p.game_state === "pregame");
+  const live = filtered.filter(p => p.game_state !== "pregame");
+
+  // Best of the day
+  const fires = pitchers.filter(p => bestSide(p).verdict.startsWith("FIRE"));
+
+  return (
+    <>
+      <div className="v2-header">
+        <div className="v2-header-row">
+          <div className="v2-brand">
+            <div className="v2-kmark">K</div>
+            <div>
+              <div className="v2-wordmark">Betting Edge</div>
+              <div className="v2-subtitle">Updated 1:09 PM · 7 props</div>
+            </div>
+          </div>
+          <div className="v2-header-actions">
+            <button className="v2-icon-btn active" title="Notifications">
+              {Icon.bell}
+            </button>
+            <button className="v2-icon-btn" title="Refresh">
+              {Icon.refresh}
+            </button>
+            <button className="v2-icon-btn" title="Theme" onClick={() => window.__v2Theme?.toggleTheme()}>
+              {window.__v2Theme?.theme === "dark" ? Icon.sun : Icon.moon}
+            </button>
+          </div>
+        </div>
+        <DateBar />
+      </div>
+
+      <div className="v2-digest">
+        <div className="v2-digest-count">{fires.length}</div>
+        <div className="v2-digest-body">
+          <div className="v2-digest-title">Fire picks today</div>
+          <div className="v2-digest-sub">
+            {fires.length} actionable · avg EV +{(
+              fires.reduce((s,p)=>s+bestSide(p).adj_ev,0)/fires.length*100
+            ).toFixed(1)}% · 1 pregame
+          </div>
+        </div>
+        <svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" style={{color:"var(--ink-dim)"}}><path d="M6 3l5 5-5 5"/></svg>
+      </div>
+
+      <div className="v2-chipbar">
+        {chips.map(([k, l]) => (
+          <button
+            key={k}
+            className={`v2-chip ${filter === k ? "active" : ""}`}
+            onClick={() => setFilter(k)}
+          >
+            {l} <span className="n">{counts[k]}</span>
+          </button>
+        ))}
+      </div>
+
+      <div className="v2-cards">
+        {upcoming.length > 0 && (
+          <div className="v2-section-h">Upcoming</div>
+        )}
+        {upcoming.map((p, i) => <PickCard key={"u"+i} p={p} onOpen={setDetail} />)}
+
+        {live.length > 0 && (
+          <div className="v2-section-h">Live & Final</div>
+        )}
+        {live.map((p, i) => <PickCard key={"l"+i} p={p} onOpen={setDetail} />)}
+
+        {filtered.length === 0 && <EmptyState filter={filter} />}
+      </div>
+      {detail && <PickDetail p={detail} onClose={() => setDetail(null)} />}
+    </>
+  );
+}
+
+// ── Tab: Performance ──
+function PerfTab() {
+  const d = window.V2_PERF;
+  const maxAbsRoi = Math.max(...d.rows.map(r => Math.abs(r.roi)));
+
+  return (
+    <>
+      <div className="v2-header">
+        <div className="v2-header-row">
+          <div className="v2-brand">
+            <div className="v2-kmark">K</div>
+            <div>
+              <div className="v2-wordmark">Performance</div>
+              <div className="v2-subtitle">Season · 171 graded picks</div>
+            </div>
+          </div>
+          <div className="v2-header-actions">
+            <button className="v2-icon-btn"><svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"><path d="M2 4h12M4 8h8M6 12h4"/></svg></button>
+          </div>
+        </div>
+      </div>
+
+      <div className="v2-perf-hero">
+        <div className={`v2-perf-units ${d.total_units >= 0 ? "pos" : "neg"}`}>
+          {d.total_units >= 0 ? "+" : ""}{d.total_units.toFixed(1)}u
+        </div>
+        <div className="v2-perf-sub">
+          Net units · {d.record} · ROI {d.total_roi >= 0 ? "+" : ""}{d.total_roi.toFixed(1)}%
+        </div>
+        <div className="v2-perf-meta">
+          <div>
+            <div className="lbl">Best tier</div>
+            <div className="val">F2u UNDER</div>
+          </div>
+          <div>
+            <div className="lbl">Win rate</div>
+            <div className="val">50.3%</div>
+          </div>
+          <div>
+            <div className="lbl">Last calib.</div>
+            <div className="val">Apr 16</div>
+          </div>
+        </div>
+      </div>
+
+      <div className="v2-tier">
+        <div className="v2-section-h" style={{margin:"16px 0 4px"}}>By tier</div>
+        {d.rows.map((r, i) => {
+          const isFire = r.verdict.startsWith("FIRE");
+          const isFire2 = r.verdict === "FIRE 2u";
+          const badgeCls = isFire
+            ? (r.side === "over" ? "fire-over" : "fire")
+            : (r.side === "over" ? "lean-over" : "lean-under");
+          const roiPct = r.roi;
+          const pct = Math.min(1, Math.abs(roiPct) / Math.max(maxAbsRoi, 1));
+          return (
+            <div key={i} className="v2-tier-row">
+              <div className={`v2-tier-badge ${badgeCls}`}>
+                {r.verdict === "FIRE 1u" ? "F1u" : r.verdict === "FIRE 2u" ? "F2u" : "LEAN"}
+                <span className="s">{r.side.toUpperCase()}</span>
+              </div>
+              <div className="v2-tier-bar-wrap">
+                <div className="v2-tier-bar-head">
+                  <span>{r.picks} picks · {r.wins}-{r.losses}</span>
+                  <span className="wr">{(r.win_pct * 100).toFixed(1)}%</span>
+                </div>
+                <div className="v2-tier-bar">
+                  <div className="break" style={{left:"50%"}}/>
+                  {roiPct >= 0 ? (
+                    <div className="fill pos" style={{left:"50%", width: `${pct * 50}%`}}/>
+                  ) : (
+                    <div className="fill neg" style={{right:"50%", width: `${pct * 50}%`, left:"auto"}}/>
+                  )}
+                </div>
+              </div>
+              <div className={`v2-tier-roi ${roiPct >= 0 ? "pos" : "neg"}`}>
+                {roiPct >= 0 ? "+" : ""}{roiPct.toFixed(1)}%
+                <span className="n">ROI</span>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </>
+  );
+}
+
+// ── Tab: Steam ──
+function SteamTab() {
+  const d = window.V2_STEAM;
+  const [filter, setFilter] = useState("ALL");
+  const filtered = useMemo(() => {
+    if (filter === "OVER") return d.rows.filter(r => r.direction === "over");
+    if (filter === "UNDER") return d.rows.filter(r => r.direction === "under");
+    if (filter === "MINE") return d.rows.filter(r => r.my_pick);
+    return d.rows;
+  }, [filter]);
+
+  const totalMoved = d.rows.length;
+  const avgCents = Math.round(d.rows.reduce((s, r) => s + r.cents, 0) / d.rows.length);
+
+  return (
+    <>
+      <div className="v2-header">
+        <div className="v2-header-row">
+          <div className="v2-brand">
+            <div className="v2-kmark">K</div>
+            <div>
+              <div className="v2-wordmark">Steam</div>
+              <div className="v2-subtitle">Line movement · last 12h</div>
+            </div>
+          </div>
+          <div className="v2-header-actions">
+            <button className="v2-icon-btn" title="Refresh">{Icon.refresh}</button>
+          </div>
+        </div>
+      </div>
+
+      <div className="v2-steam-hero">
+        <div>
+          <div className="n">{totalMoved}</div>
+        </div>
+        <div style={{flex:1}}>
+          <div className="lbl">Active moves</div>
+          <div className="ttl">{avgCents}¢ avg · 2 align with my picks</div>
+        </div>
+      </div>
+
+      <div className="v2-steam-filter">
+        {[["ALL","All"],["OVER","Over ↑"],["UNDER","Under ↑"],["MINE","My picks"]].map(([k,l]) => (
+          <button
+            key={k}
+            className={`f ${filter === k ? "active" : ""}`}
+            onClick={() => setFilter(k)}
+          >{l}</button>
+        ))}
+      </div>
+
+      <div style={{paddingBottom: 90}}>
+        {filtered.map((r, i) => (
+          <div key={i} className="v2-steam-row">
+            <div className={`v2-steam-dir ${r.direction === "over" ? "up" : "down"}`}>
+              {r.direction === "over" ? "OV" : "UN"}
+            </div>
+            <div>
+              <div className="v2-steam-name">{r.pitcher}</div>
+              <div className="v2-steam-meta">
+                {r.team} vs {r.opp} · {r.k_line} K · {r.books_moved}/{r.books_total} books · {r.note}
+                {r.my_pick && <span style={{color:"var(--accent)", marginLeft:6}}>· {r.my_pick}</span>}
+              </div>
+            </div>
+            <div className="v2-steam-delta" style={{color: r.direction === "over" ? "var(--pos)" : "var(--neg)"}}>
+              {r.cents}¢
+              <span className="t">{r.direction === "over" ? "↑ OVER" : "↑ UNDER"}</span>
+            </div>
+          </div>
+        ))}
+        {filtered.length === 0 && (
+          <div className="v2-state"><div className="ttl">No movement</div><div className="sub">No books have moved in this category.</div></div>
+        )}
+      </div>
+    </>
+  );
+}
+
+// ── Root app ──
+function App() {
+  const [tab, setTab] = useState("picks");
+  const [appState, setAppState] = useState(() => {
+    const u = new URLSearchParams(location.search);
+    return u.get("state") || "ready";
+  });
+  const [theme, setTheme] = useState(() => {
+    try { return localStorage.getItem("v2-theme") || "light"; } catch { return "light"; }
+  });
+  React.useEffect(() => {
+    document.body.setAttribute("data-theme", theme);
+    try { localStorage.setItem("v2-theme", theme); } catch {}
+  }, [theme]);
+  const toggleTheme = () => setTheme(t => t === "dark" ? "light" : "dark");
+  window.__v2Theme = { theme, toggleTheme };
+
+  const renderPicks = () => {
+    if (appState === "loading") return (<>
+      <div className="v2-header"><div className="v2-header-row">
+        <div className="v2-brand"><div className="v2-kmark">K</div>
+          <div><div className="v2-wordmark">Betting Edge</div>
+          <div className="v2-subtitle">Loading slate…</div></div></div>
+      </div></div>
+      <LoadingState />
+    </>);
+    if (appState === "error") return (<>
+      <div className="v2-header"><div className="v2-header-row">
+        <div className="v2-brand"><div className="v2-kmark">K</div>
+          <div><div className="v2-wordmark">Betting Edge</div>
+          <div className="v2-subtitle" style={{color:"var(--neg)"}}>Connection error</div></div></div>
+      </div></div>
+      <ErrorState onRetry={() => setAppState("ready")} />
+    </>);
+    if (appState === "empty") return <PicksTab pitchersOverride={[]} />;
+    return <PicksTab />;
+  };
+
+  return (
+    <>
+      {tab === "picks" && renderPicks()}
+      {tab === "perf" && <PerfTab />}
+      {tab === "watch" && <SteamTab />}
+      <nav className="v2-tabbar">
+        {[
+          ["picks", Icon.picks,   "Picks",   4],
+          ["watch", Icon.steam,   "Steam",   null],
+          ["perf",  Icon.results, "Results", null]
+        ].map(([k, ic, l, badge]) => (
+          <button
+            key={k}
+            className={`v2-tab ${tab === k ? "active" : ""}`}
+            onClick={() => setTab(k)}
+          >
+            {ic}
+            <span>{l}</span>
+            {badge != null && <span className="v2-tab-badge">{badge}</span>}
+            {tab === k && <span className="v2-tab-dot active" style={{background:"var(--accent)"}}/>}
+          </button>
+        ))}
+      </nav>
+    </>
+  );
+}
+
+const root = ReactDOM.createRoot(document.getElementById("root"));
+root.render(<App/>);

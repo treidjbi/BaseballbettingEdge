@@ -1,0 +1,499 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Betting Edge — Design Review</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Oswald:wght@500;600;700&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet"/>
+<style>
+  html, body { margin: 0; height: 100%; font-family: 'Inter', sans-serif; background: #f0eee9; color: #1a1a1a; }
+  #root { width: 100%; height: 100vh; }
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<script type="text/babel" src="design-canvas.jsx"></script>
+<script type="text/babel">
+
+const PHONE_W = 400, PHONE_H = 820;
+
+function PhoneBezel({ src, initScript }) {
+  return (
+    <div style={{
+      width: PHONE_W + 16, height: PHONE_H + 16,
+      background: '#1a1a1a', borderRadius: 42, padding: 8,
+      boxShadow: '0 20px 60px rgba(0,0,0,0.18), 0 4px 12px rgba(0,0,0,0.08)',
+      position: 'relative',
+    }}>
+      <iframe
+        src={src}
+        onLoad={(e) => { if (initScript) { try { initScript(e.target); } catch {} } }}
+        style={{
+          width: PHONE_W, height: PHONE_H,
+          border: 'none', borderRadius: 34, background: '#fff',
+          display: 'block',
+        }}
+      />
+    </div>
+  );
+}
+
+function Callout({ n, title, desc, top, left, color = '#c6321f', pointTo = 'left' }) {
+  return (
+    <div style={{
+      position: 'absolute', top, left,
+      width: 260, zIndex: 10,
+    }}>
+      <div style={{
+        display: 'flex', gap: 10, alignItems: 'flex-start',
+      }}>
+        <div style={{
+          width: 24, height: 24, borderRadius: 12, flexShrink: 0,
+          background: color, color: '#fff',
+          display: 'grid', placeItems: 'center',
+          fontSize: 12, fontWeight: 700, fontFamily: 'JetBrains Mono, monospace',
+          boxShadow: '0 2px 6px rgba(0,0,0,0.15)',
+        }}>{n}</div>
+        <div style={{ paddingTop: 2 }}>
+          <div style={{
+            fontSize: 13, fontWeight: 600, color: '#1a1a1a',
+            lineHeight: 1.25, marginBottom: 3,
+          }}>{title}</div>
+          <div style={{
+            fontSize: 12, color: '#5a5448', lineHeight: 1.45,
+          }}>{desc}</div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function Pin({ n, top, left, color = '#c6321f' }) {
+  return (
+    <div style={{
+      position: 'absolute', top, left, zIndex: 11,
+      width: 22, height: 22, borderRadius: 11,
+      background: color, color: '#fff',
+      display: 'grid', placeItems: 'center',
+      fontSize: 11, fontWeight: 700, fontFamily: 'JetBrains Mono, monospace',
+      boxShadow: '0 2px 8px rgba(0,0,0,0.25), 0 0 0 3px rgba(255,255,255,0.8)',
+      transform: 'translate(-50%, -50%)',
+    }}>{n}</div>
+  );
+}
+
+function Root() {
+  const currentIssues = [
+    { n: 1, title: 'Weak verdict hierarchy', desc: 'FIRE pills sit small in the corner; PASS cards occupy full weight. A user scanning for action has to read every card.' },
+    { n: 2, title: 'Dated chrome', desc: 'Barber-stripe card header + cream paper body + stadium-dark nav feels like three different products stapled together.' },
+    { n: 3, title: '3-column stat block buries the pick', desc: 'Line / Proj K / EV get equal visual weight, but EV and direction are the only things that drive a bet decision.' },
+    { n: 4, title: 'Reasoning is hidden', desc: 'OPP K% badge shows "+7% vs avg" but you can\'t tell why the model likes this side without tapping into nothing — there is no detail view.' },
+    { n: 5, title: 'Date dropdown is slow', desc: 'Changing days = click, scroll, find date. No sense of yesterday\'s result before you switch.' },
+    { n: 6, title: 'Steam hides in Watchlist tab', desc: 'The most time-sensitive data (line movement) lives one tap away, not on the card itself.' },
+  ];
+
+  const v2Wins = [
+    { n: 1, title: 'Fire badge dominates the card', desc: 'Two-line chip — direction arrow on top, FIRE 2u label below, color-coded by side (red = UNDER, navy = OVER). Left border echoes the tier.' },
+    { n: 2, title: 'Daily digest hero', desc: '"5 fire picks today · avg EV +9.6%" gives an at-a-glance read before any scrolling.' },
+    { n: 3, title: 'Projection visualized, not just tabulated', desc: 'A tiny bar plots line vs. λ-projection so you feel the edge, not just read it as 7.5 → 8.42.' },
+    { n: 4, title: 'Why-pills surface the model', desc: 'OPP K% / K/9 / UMP each show value + delta + tone, so the "reasoning" is literally on the card.' },
+    { n: 5, title: 'Week-at-a-glance date strip', desc: 'Swipe pills replace dropdown; past days show a win/loss dot so you can skim calibration in motion.' },
+    { n: 6, title: 'Steam inline', desc: 'Steam ¢ sits in the why-row on every card; no tab switch needed.' },
+  ];
+
+  return (
+    <DesignCanvas>
+      {/* ── Header ── */}
+      <div style={{ padding: '20px 60px 0' }}>
+        <div style={{
+          fontSize: 11, fontFamily: 'JetBrains Mono, monospace',
+          letterSpacing: '.1em', textTransform: 'uppercase',
+          color: '#8a7e65', marginBottom: 6,
+        }}>Design review · Apr 17, 2026</div>
+        <div style={{
+          fontSize: 36, fontWeight: 600, letterSpacing: -0.8,
+          color: '#1a1a1a', lineHeight: 1.1, marginBottom: 10,
+        }}>BaseballBettingEdge — what to improve</div>
+        <div style={{
+          fontSize: 15, color: '#5a5448', maxWidth: 720, lineHeight: 1.5,
+        }}>
+          The dashboard works — it's clearly a real pitcher-K prop tool with calibrated model output.
+          What it's missing is <strong>hierarchy</strong> (which picks matter right now?),
+          <strong> explanation</strong> (why this side?), and a <strong>single visual voice</strong>.
+          Below: the live app on the left, a concrete redesign on the right, with six specific changes.
+        </div>
+      </div>
+
+      {/* ── Section 1: side by side ── */}
+      <DCSection
+        title="1. Side-by-side — Picks screen"
+        subtitle="Same data (Apr 16 slate) rendered two ways. Both phones are scrollable."
+      >
+        <DCArtboard label="Current — dashboard/index.html" width={PHONE_W + 16} height={PHONE_H + 16}>
+          <PhoneBezel src="current/index.html" />
+        </DCArtboard>
+
+        {/* Issue callouts column */}
+        <div style={{ width: 300, paddingTop: 8, flexShrink: 0 }}>
+          <div style={{
+            fontFamily: 'Oswald, sans-serif', fontSize: 13, fontWeight: 600,
+            letterSpacing: '.08em', textTransform: 'uppercase',
+            color: '#8a7e65', marginBottom: 16,
+          }}>What's working against you</div>
+          {currentIssues.map((c, i) => (
+            <div key={i} style={{ marginBottom: 16 }}>
+              <Callout {...c} top={0} left={0} />
+              <div style={{ height: 54 }}/>
+            </div>
+          ))}
+        </div>
+
+        <DCArtboard label="Proposed — v2 redesign" width={PHONE_W + 16} height={PHONE_H + 16}>
+          <PhoneBezel src="v2/v2.html" />
+        </DCArtboard>
+
+        {/* Wins column */}
+        <div style={{ width: 300, paddingTop: 8, flexShrink: 0 }}>
+          <div style={{
+            fontFamily: 'Oswald, sans-serif', fontSize: 13, fontWeight: 600,
+            letterSpacing: '.08em', textTransform: 'uppercase',
+            color: '#1e8549', marginBottom: 16,
+          }}>What v2 changes</div>
+          {v2Wins.map((c, i) => (
+            <div key={i} style={{ marginBottom: 16 }}>
+              <Callout {...c} top={0} left={0} color="#1e8549" />
+              <div style={{ height: 54 }}/>
+            </div>
+          ))}
+        </div>
+
+        <DCPostIt top={-80} left={20} rotate={-3} width={230}>
+          Pick screens are the whole product — scroll both, then talk about which card you trust more at a glance.
+        </DCPostIt>
+      </DCSection>
+
+      {/* ── Section 2: card anatomy ── */}
+      <DCSection
+        title="2. Card anatomy — before vs after"
+        subtitle="Why the redesigned card earns its space. Same pitcher (Max Fried, FIRE 2u UNDER)."
+      >
+        <DCArtboard label="Current card" width={370} height={230} style={{ padding: 20, background: '#f5f0e8' }}>
+          <div style={{
+            background: '#faf6ee', border: '1px solid #d0c8b8', borderRadius: 4,
+            overflow: 'hidden',
+          }}>
+            <div style={{
+              background: 'repeating-linear-gradient(45deg, #1a1a1a, #1a1a1a 2px, #222 2px, #222 8px)',
+              padding: '9px 12px',
+              display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+            }}>
+              <div>
+                <div style={{ color: '#f5f0e8', fontFamily: 'Oswald', fontWeight: 700, fontSize: 17 }}>Max Fried</div>
+                <div style={{ color: '#aaa', fontSize: 11, marginTop: 2 }}>NYY vs LAA</div>
+              </div>
+              <div style={{
+                background: '#c0392b', color: '#fff',
+                padding: '3px 10px', borderRadius: 3,
+                fontSize: 11, fontFamily: 'IBM Plex Mono, monospace',
+                fontWeight: 800, letterSpacing: '.04em',
+              }}>↓ FIRE 2u UNDER</div>
+            </div>
+            <div style={{
+              display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)',
+              padding: '10px 12px', borderBottom: '1px solid #d0c8b8', gap: 4,
+              textAlign: 'center',
+            }}>
+              <div>
+                <div style={{ fontSize: 10, fontWeight: 700, color: '#888', textTransform: 'uppercase', letterSpacing: '.07em' }}>Line</div>
+                <div style={{ fontFamily: 'IBM Plex Mono, monospace', fontWeight: 700, fontSize: 17 }}>6.5</div>
+                <div style={{ fontFamily: 'IBM Plex Mono, monospace', fontSize: 10, color: '#888' }}>-132</div>
+              </div>
+              <div>
+                <div style={{ fontSize: 10, fontWeight: 700, color: '#c0392b', textTransform: 'uppercase', letterSpacing: '.07em' }}>Proj K</div>
+                <div style={{ fontFamily: 'IBM Plex Mono, monospace', fontWeight: 700, fontSize: 17 }}>5.26</div>
+                <div style={{ fontFamily: 'IBM Plex Mono, monospace', fontSize: 10, color: '#888' }}>vs line 6.5</div>
+              </div>
+              <div>
+                <div style={{ fontSize: 10, fontWeight: 700, color: '#888', textTransform: 'uppercase', letterSpacing: '.07em' }}>EV</div>
+                <div style={{ fontFamily: 'IBM Plex Mono, monospace', fontWeight: 700, fontSize: 17, color: '#27ae60' }}>13.2%</div>
+                <div style={{ fontFamily: 'IBM Plex Mono, monospace', fontSize: 10, color: '#888' }}>p=0.724</div>
+              </div>
+            </div>
+            <div style={{ padding: '7px 12px', display: 'flex', gap: 6, alignItems: 'center', flexWrap: 'wrap' }}>
+              <span style={{ fontSize: 10, fontFamily: 'monospace', padding: '2px 7px', borderRadius: 3, background: '#e8f5e9', color: '#27ae60', border: '1px solid #c8e6c9', fontWeight: 700 }}>OPP K% +11% vs avg</span>
+              <span style={{ fontSize: 10, color: '#888', marginLeft: 'auto' }}>10:35 AM PDT</span>
+            </div>
+          </div>
+          <Pin n={1} top={45} left={310}/>
+          <Pin n={3} top={125} left={190}/>
+          <Pin n={4} top={195} left={130}/>
+        </DCArtboard>
+
+        <div style={{ width: 60, paddingTop: 80, flexShrink: 0, textAlign: 'center', color: '#8a7e65' }}>
+          <div style={{ fontSize: 30 }}>→</div>
+        </div>
+
+        <DCArtboard label="Proposed card" width={370} height={260} style={{ padding: 20, background: '#f6f5f2' }}>
+          <div style={{
+            background: '#fff', border: '1px solid #e4e0d6', borderRadius: 10,
+            overflow: 'hidden', position: 'relative',
+            boxShadow: '0 1px 3px rgba(0,0,0,0.04)',
+          }}>
+            <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: 4, background: '#c6321f' }}/>
+            <div style={{ padding: '12px 14px 8px', display: 'flex', gap: 10, alignItems: 'flex-start' }}>
+              <div style={{ flex: 1 }}>
+                <div style={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 11, fontWeight: 700, color: '#7a7366', letterSpacing: '.04em', display: 'flex', gap: 6, alignItems: 'center' }}>
+                  <span>NYY</span><span style={{ opacity: 0.5, fontWeight: 400 }}>vs</span><span>LAA</span>
+                  <span style={{ marginLeft: 'auto', display: 'inline-flex', gap: 5, alignItems: 'center' }}>
+                    <span style={{ width: 7, height: 7, borderRadius: '50%', background: '#1e8549', display: 'inline-block' }}/>
+                    LIVE
+                  </span>
+                </div>
+                <div style={{ fontFamily: 'Oswald, sans-serif', fontWeight: 600, fontSize: 19, marginTop: 3, lineHeight: 1.1 }}>
+                  Max Fried
+                  <span style={{ fontSize: 11, color: '#7a7366', marginLeft: 6, fontFamily: 'JetBrains Mono, monospace' }}>RHP</span>
+                </div>
+              </div>
+              <div style={{
+                padding: '7px 10px 6px', borderRadius: 6,
+                background: '#c6321f', color: '#fff',
+                fontFamily: 'Oswald, sans-serif', textTransform: 'uppercase',
+                display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3,
+                minWidth: 82, lineHeight: 1, boxShadow: '0 0 0 3px rgba(198,50,31,0.15)',
+              }}>
+                <span style={{ fontSize: 10, opacity: 0.9, letterSpacing: '.06em', fontWeight: 500 }}>▼ UNDER</span>
+                <span style={{ fontSize: 14, fontWeight: 700 }}>FIRE 2U</span>
+              </div>
+            </div>
+            <div style={{
+              display: 'grid', gridTemplateColumns: '1.3fr 1fr 1fr',
+              padding: '10px 14px 12px', borderTop: '1px dashed #e4e0d6',
+            }}>
+              <div style={{ paddingRight: 12 }}>
+                <div style={{ fontSize: 10, textTransform: 'uppercase', color: '#7a7366', fontFamily: 'Oswald, sans-serif', fontWeight: 600, letterSpacing: '.08em' }}>Line · UNDER</div>
+                <div style={{ fontFamily: 'JetBrains Mono, monospace', fontWeight: 700, fontSize: 20, letterSpacing: '-0.02em' }}>6.5<span style={{ fontSize: 14, opacity: 0.5 }}> K</span></div>
+                <div style={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 10.5, color: '#7a7366', marginTop: 2 }}>-132 · FanDuel</div>
+              </div>
+              <div style={{ borderLeft: '1px solid #e4e0d6', paddingLeft: 12, paddingRight: 12 }}>
+                <div style={{ fontSize: 10, textTransform: 'uppercase', color: '#7a7366', fontFamily: 'Oswald, sans-serif', fontWeight: 600, letterSpacing: '.08em' }}>Projection</div>
+                <div style={{ fontFamily: 'JetBrains Mono, monospace', fontWeight: 700, fontSize: 20 }}>5.26</div>
+                <div style={{ marginTop: 6, height: 3, background: '#e4e0d6', borderRadius: 2, position: 'relative' }}>
+                  <div style={{ position: 'absolute', top: -2, bottom: -2, width: 2, background: '#3a3a3a', left: '71%' }}/>
+                  <div style={{ position: 'absolute', top: -2, bottom: -2, width: 6, borderRadius: 3, background: '#c6321f', left: '37%', transform: 'translateX(-3px)' }}/>
+                </div>
+              </div>
+              <div style={{ borderLeft: '1px solid #e4e0d6', paddingLeft: 12 }}>
+                <div style={{ fontSize: 10, textTransform: 'uppercase', color: '#7a7366', fontFamily: 'Oswald, sans-serif', fontWeight: 600, letterSpacing: '.08em' }}>EV · Win%</div>
+                <div style={{ fontFamily: 'JetBrains Mono, monospace', fontWeight: 700, fontSize: 20, color: '#1e8549' }}>+13.2%</div>
+                <div style={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 10.5, color: '#7a7366', marginTop: 2 }}>p = 72.4%</div>
+              </div>
+            </div>
+            <div style={{ padding: '8px 14px 12px', display: 'flex', gap: 5, flexWrap: 'wrap', background: '#f0eee9', borderTop: '1px solid #e4e0d6' }}>
+              <span style={{ fontSize: 10.5, fontWeight: 600, fontFamily: 'JetBrains Mono, monospace', padding: '3px 7px', borderRadius: 4, background: '#eef9f1', border: '1px solid #b8e0c4', color: '#1e8549' }}>
+                <span style={{ opacity: 0.7, fontWeight: 500 }}>OPP K% </span>25.2%<span style={{ opacity: 0.7, fontWeight: 500 }}> +11%</span>
+              </span>
+              <span style={{ fontSize: 10.5, fontWeight: 600, fontFamily: 'JetBrains Mono, monospace', padding: '3px 7px', borderRadius: 4, background: '#fdecea', border: '1px solid #f5c6c6', color: '#c6321f' }}>
+                <span style={{ opacity: 0.7, fontWeight: 500 }}>K/9 </span>5.68<span style={{ opacity: 0.7, fontWeight: 500 }}> -0.8 vs szn</span>
+              </span>
+              <span style={{ marginLeft: 'auto', fontSize: 10.5, fontFamily: 'JetBrains Mono, monospace', fontWeight: 700, color: '#1e8549', padding: '2px 6px', borderRadius: 4, background: 'rgba(30,133,73,0.1)' }}>
+                ▲ steam 13¢
+              </span>
+            </div>
+          </div>
+          <Pin n={1} top={50} left={325} color="#1e8549"/>
+          <Pin n={3} top={150} left={200} color="#1e8549"/>
+          <Pin n={4} top={225} left={170} color="#1e8549"/>
+          <Pin n={6} top={225} left={330} color="#1e8549"/>
+        </DCArtboard>
+
+        <DCPostIt top={-80} left={50} rotate={-2} width={220}>
+          Notice: the new card is ~30px taller but reads faster. Hierarchy does the work, not density.
+        </DCPostIt>
+      </DCSection>
+
+      {/* ── Section 3: Performance tab ── */}
+      <DCSection
+        title="3. Performance tab"
+        subtitle="From flat data table → hero metric + horizontal bar comparison per tier."
+      >
+        <DCArtboard label="Current — Performance tab" width={PHONE_W + 16} height={PHONE_H + 16}>
+          <PhoneBezel
+            src="current/index.html"
+            initScript={(iframe) => {
+              setTimeout(() => {
+                try {
+                  const doc = iframe.contentDocument;
+                  const btns = doc.querySelectorAll('.nav-btn');
+                  if (btns[2]) btns[2].click();
+                } catch {}
+              }, 1200);
+            }}
+          />
+        </DCArtboard>
+
+        <DCArtboard label="Proposed — Performance tab" width={PHONE_W + 16} height={PHONE_H + 16}>
+          <PhoneBezel
+            src="v2/v2.html"
+            initScript={(iframe) => {
+              setTimeout(() => {
+                try {
+                  const doc = iframe.contentDocument;
+                  const btns = doc.querySelectorAll('.v2-tab');
+                  if (btns[2]) btns[2].click();
+                } catch {}
+              }, 1500);
+            }}
+          />
+        </DCArtboard>
+
+        <div style={{ width: 340, paddingTop: 8, flexShrink: 0 }}>
+          <div style={{
+            fontFamily: 'Oswald, sans-serif', fontSize: 13, fontWeight: 600,
+            letterSpacing: '.08em', textTransform: 'uppercase',
+            color: '#8a7e65', marginBottom: 16,
+          }}>Performance-tab changes</div>
+
+          {[
+            { n: 'A', title: 'Hero number', desc: 'Net units is the metric that matters. It deserves to be 48px and on a dark slab — not one of four equal strip cells.' },
+            { n: 'B', title: 'Bar-per-tier', desc: 'Diverging center-zero bars let you spot which tier drags (FIRE 2u OVER at -28.5%) vs carries (UNDER at +24%) in one glance.' },
+            { n: 'C', title: 'Badge shape matches pick screen', desc: 'F2u / F1u / LEAN badges reuse the same color system from cards — one visual language across tabs.' },
+            { n: 'D', title: 'Compact vs exhaustive', desc: 'Dropped Picks/Win%/Units/ROI/EV seven-col table. Kept record + win-rate + ROI in the row; deeper stats move to a tap-into-tier detail.' },
+            { n: 'E', title: 'Calibration log', desc: 'Kept the "last calibrated / 171 picks" metadata in the hero — no need for a separate meta card.' },
+          ].map((c, i) => (
+            <div key={i} style={{ marginBottom: 16 }}>
+              <Callout n={c.n} title={c.title} desc={c.desc} top={0} left={0} color="#1e8549"/>
+              <div style={{ height: 54 }}/>
+            </div>
+          ))}
+        </div>
+      </DCSection>
+
+      {/* ── Section 4: system changes ── */}
+      <DCSection
+        title="4. System-level changes"
+        subtitle="The things that propagate everywhere, not just one screen."
+      >
+        <DCArtboard label="Type ladder" width={440} height={320} style={{ padding: 28, background: '#fff' }}>
+          <div style={{ fontSize: 11, color: '#7a7366', fontFamily: 'Oswald, sans-serif', letterSpacing: '.08em', textTransform: 'uppercase', marginBottom: 18 }}>Three fonts, three jobs</div>
+          <div style={{ marginBottom: 18 }}>
+            <div style={{ fontSize: 10, color: '#aaa', marginBottom: 3 }}>OSWALD — labels, verdicts, section heads</div>
+            <div style={{ fontFamily: 'Oswald, sans-serif', fontWeight: 700, fontSize: 22, letterSpacing: '-0.01em' }}>FIRE 2u · PERFORMANCE · BETTING EDGE</div>
+          </div>
+          <div style={{ marginBottom: 18 }}>
+            <div style={{ fontSize: 10, color: '#aaa', marginBottom: 3 }}>INTER — body text, UI copy, pitcher names</div>
+            <div style={{ fontFamily: 'Inter, sans-serif', fontWeight: 500, fontSize: 18 }}>Spencer Strider (ATL vs MIA) — live</div>
+          </div>
+          <div>
+            <div style={{ fontSize: 10, color: '#aaa', marginBottom: 3 }}>JETBRAINS MONO — odds, EV, numerics, metadata</div>
+            <div style={{ fontFamily: 'JetBrains Mono, monospace', fontWeight: 700, fontSize: 18 }}>7.5K · -115 · EV +10.4% · λ=8.42</div>
+          </div>
+          <div style={{
+            marginTop: 20, paddingTop: 16, borderTop: '1px solid #e4e0d6',
+            fontSize: 12, color: '#5a5448', lineHeight: 1.5,
+          }}>
+            Current dashboard uses <strong>Oswald for body copy</strong> — it's a condensed display face, so long-form UI text looks clamped. Moving body to Inter and keeping Oswald for <strong>labels + verdicts</strong> restores the "stadium scoreboard" feeling without sacrificing readability.
+          </div>
+        </DCArtboard>
+
+        <DCArtboard label="Color roles" width={420} height={320} style={{ padding: 28, background: '#fff' }}>
+          <div style={{ fontSize: 11, color: '#7a7366', fontFamily: 'Oswald, sans-serif', letterSpacing: '.08em', textTransform: 'uppercase', marginBottom: 18 }}>Two-tone verdict system</div>
+          {[
+            { bg: '#c6321f', label: 'FIRE UNDER', desc: 'K-prop misses are the dominant winning tier (+24% ROI) — gets the brand red.' },
+            { bg: '#1e3a5f', label: 'FIRE OVER', desc: 'Directional OVER bets get deep dugout blue to disambiguate at a glance.' },
+            { bg: 'transparent', border: '#b96b00', color: '#b96b00', label: 'LEAN (either side)', desc: 'Outlined warn tone. Visually "tracked but not played".' },
+            { bg: '#efece4', color: '#7a7366', label: 'PASS', desc: 'Neutral chip — card opacity drops to .55 so the eye skips it.' },
+            { bg: '#1e8549', label: 'Positive delta / win', desc: 'Green only for performance outcomes and positive EV deltas.' },
+          ].map((c, i) => (
+            <div key={i} style={{ display: 'flex', gap: 12, marginBottom: 10, alignItems: 'center' }}>
+              <div style={{
+                width: 90, padding: '6px 10px', textAlign: 'center',
+                background: c.bg, color: c.color || '#fff',
+                border: c.border ? `1.5px solid ${c.border}` : 'none',
+                borderRadius: 6, fontFamily: 'Oswald, sans-serif', fontWeight: 700,
+                fontSize: 12, letterSpacing: '.04em', textTransform: 'uppercase',
+              }}>{c.label}</div>
+              <div style={{ flex: 1, fontSize: 12, color: '#5a5448', lineHeight: 1.4 }}>{c.desc}</div>
+            </div>
+          ))}
+        </DCArtboard>
+
+        <DCArtboard label="Density & rhythm" width={400} height={320} style={{ padding: 28, background: '#fff' }}>
+          <div style={{ fontSize: 11, color: '#7a7366', fontFamily: 'Oswald, sans-serif', letterSpacing: '.08em', textTransform: 'uppercase', marginBottom: 14 }}>Spacing scale</div>
+          {[
+            ['4', 'Intra-row gaps (pills, icon gaps)'],
+            ['8', 'Stat-row internal padding'],
+            ['14', 'Card padding (was 10)'],
+            ['18', 'Page gutter (was 16)'],
+            ['10', 'Card-to-card vertical gap'],
+          ].map(([px, label], i) => (
+            <div key={i} style={{ display: 'flex', gap: 14, alignItems: 'center', marginBottom: 10 }}>
+              <div style={{ width: 30, fontFamily: 'JetBrains Mono, monospace', fontWeight: 700, fontSize: 13, color: '#c6321f' }}>{px}px</div>
+              <div style={{ flex: 1, height: 1, background: '#e4e0d6', position: 'relative' }}>
+                <div style={{ position: 'absolute', left: 0, top: -5, width: parseInt(px), height: 10, background: '#c6321f', borderRadius: 1 }}/>
+              </div>
+              <div style={{ width: 200, fontSize: 12, color: '#5a5448' }}>{label}</div>
+            </div>
+          ))}
+          <div style={{ marginTop: 16, paddingTop: 14, borderTop: '1px solid #e4e0d6', fontSize: 12, color: '#5a5448', lineHeight: 1.5 }}>
+            Current dashboard cards are <strong>9px padded</strong> inside a cream bg — tight but visually busy.
+            Moving to 14/18 with more whitespace + a single surface color (white on off-white) gives each card room to breathe.
+          </div>
+        </DCArtboard>
+      </DCSection>
+
+      {/* ── Section 5: next steps ── */}
+      <DCSection
+        title="5. If you want to ship just three things"
+        subtitle="Ordered by impact-to-effort ratio."
+      >
+        <DCArtboard label="" width={1200} height={320} style={{ padding: 36, background: '#fff' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 36 }}>
+            {[
+              {
+                n: 1,
+                title: 'Promote the verdict',
+                effort: 'Half-day',
+                desc: 'Replace the small pill with the two-line FIRE badge + left border accent. Change nothing else. Biggest hierarchy win per line of code.',
+                color: '#c6321f',
+              },
+              {
+                n: 2,
+                title: 'Add the why-pills row',
+                effort: '1 day',
+                desc: 'Surface OPP K%, K/9 delta, steam inline on every card. Makes the model feel transparent; reduces "why this pick?" questions.',
+                color: '#1e3a5f',
+              },
+              {
+                n: 3,
+                title: 'Date-strip instead of dropdown',
+                effort: '1 day',
+                desc: 'Week-at-a-glance pills with win/loss dots. Dropdown → lateral swipe. Also exposes calibration trend in motion.',
+                color: '#1e8549',
+              },
+            ].map(s => (
+              <div key={s.n} style={{
+                padding: 24, borderRadius: 10,
+                border: `1px solid #e4e0d6`,
+                borderTop: `4px solid ${s.color}`,
+                background: '#fafaf7',
+              }}>
+                <div style={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 11, color: s.color, fontWeight: 700, marginBottom: 8 }}>STEP {s.n} · {s.effort}</div>
+                <div style={{ fontFamily: 'Oswald, sans-serif', fontWeight: 600, fontSize: 22, marginBottom: 10, color: '#1a1a1a' }}>{s.title}</div>
+                <div style={{ fontSize: 13, color: '#5a5448', lineHeight: 1.5 }}>{s.desc}</div>
+              </div>
+            ))}
+          </div>
+        </DCArtboard>
+      </DCSection>
+    </DesignCanvas>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<Root />);
+</script>
+</body>
+</html>

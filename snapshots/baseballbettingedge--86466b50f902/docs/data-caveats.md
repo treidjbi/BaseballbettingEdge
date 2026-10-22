@@ -1,0 +1,272 @@
+# Data caveats for picks_history.json
+
+## 2026-03-25 to 2026-04-23 — lineup_used dead-signal window
+
+For the full lifetime of `lineup_used` through 2026-04-23, **602/602 stored
+picks have `lineup_used = False`**. Zero picks ever saw per-batter lineup
+K% signal at decision time.
+
+### Root cause
+
+`pipeline/fetch_lineups.py` hit `/schedule?hydrate=lineups` and tried to
+filter the hydrated player list by the `battingOrder` field. That field
+does not exist on the schedule hydrate payload — it only lives on
+`/game/{pk}/boxscore` as `teams.{away,home}.battingOrder` (ordered ID
+list) plus per-player entries in `teams.{away,home}.players`. The filter
+therefore matched zero players, the function returned `None` on every
+call, and `build_features` fell back to the team-aggregate
+`stats["opp_k_rate"]` as the opposing K% estimate.
+
+Verified live 2026-04-23 against Cardinals @ Marlins 2026-04-22
+(`game_pk=823878`) that the schedule hydrate returns nine position
+players with no `battingOrder` key, and the boxscore carries the
+ordered list + per-player info.
+
+### Remediation (2026-04-23, Task A5)
+
+`fetch_lineups` rewritten to do two calls: `/schedule` → `(gamePk,
+side_key)`, then `/game/{pk}/boxscore` → ordered batter dicts. Signature
+unchanged (`fetch_lineups(date_str, team_name) -> list[dict] | None`),
+graceful-None behavior preserved on every error path. Smoke-tested live
+— all five probe teams for 2026-04-22 returned 9 batters.
+
+### Impact on stored fields
+
+- **`lineup_used` pre-fix:** `False` on 100% of picks. Accurate — the
+  model actually used the team-aggregate fallback.
+- **`opp_k_rate` used at decision time pre-fix:** team-aggregate from
+  `fetch_stats`, not per-batter Bayesian-regressed. This is the value
+  the model actually consumed, so `lambda` is internally consistent.
+- **Handedness-sliced analytics pre-fix:** any per-batter signal
+  (`fetch_batter_stats`, the `PLATOON_K_DELTA` table in
+  `build_features.calc_lineup_k_rate`) never fired, because the
+  function was always called with `lineup=None`.
+
+### Why historical rows were NOT backfilled
+
+Same A3 precedent as the ump_k_adj window:
+
+1. **Stored `lambda` reflects lineup=None code path.** Recomputing
+   `opp_k_rate` from real lineups today would desync stored record from
+   stored lambda and corrupt residual-based calibration.
+2. **`lambda_bias` is valid as-is.** Residuals = `actual_ks -
+   stored_lambda`; `lambda_bias` (~-0.55 and converging) absorbs the
+   systematic offset from the team-aggregate fallback. Self-healing via
+   normal calibration once real lineup data starts flowing.
+
+No `formula_change_date` bump — model formula is unchanged; only the
+input source quality improves.
+
+### Implication for analytics
+
+- `lineup_used` false-rate should collapse from 100% to a small
+  residual (morning-run pregame-pending games) starting 2026-04-24.
+- Per-batter handedness analytics (Path A platoon delta, Path B
+  per-batter splits when enabled) only become measurable post-fix.
+
+## 2026-04-01 to 2026-04-23 — ump_k_adj dead-signal window
+
+A latent wiring bug kept the umpire signal completely silent for 22 days
+*after* the 2026-04-17 source cutover. Symptoms and root cause:
+
+- **601/601 stored picks** across 2026-03-25 → 2026-04-23 have
+  `ump_k_adj == 0.0` exactly. Zero nonzero, zero null.
+- Live `fetch_umpires(enriched_props, date_str)` returned real nonzero
+  deltas the whole time (verified 2026-04-23: 14/18 nonzero on-day).
+
+### Root cause
+
+On 2026-04-01, commit `79bf3dc` (*"fix: resolve team/opp_team from MLB
+schedule instead of odds API (home pitcher swap bug)"*) moved `team`/
+`opp_team` resolution out of `fetch_odds` and into `fetch_stats`, because
+TheRundown's participant list has no per-pitcher home/away flag.
+`fetch_odds` since then emits `team=""` and `opp_team=""`; `fetch_stats`
+populates them later onto the *built record*. But `fetch_umpires` reads
+`prop["team"]` / `prop["opp_team"]` and is called *between* `fetch_stats`
+and `build_pitcher_record`, against the raw `props` list — which had
+empty strings. Every team-substring match failed, every pitcher silently
+hit `result[pitcher] = 0.0`. No exception, no warning — just a dead
+signal for 22 days.
+
+Remediated 2026-04-23 by backfilling `team`/`opp_team` onto props from
+`stats_map` before `fetch_umpires` runs. See root-cause write-up in
+`docs/superpowers/plans/2026-04-16-model-audit-and-gaps.md` (Task A3.7).
+
+### Impact on stored fields
+
+- **`ump_k_adj` in picks_history 2026-04-01 → fix-date:** `0.0`
+  everywhere. This is accurate — the model saw a neutral ump signal
+  because the wiring was broken.
+- **`lambda` in picks_history for this window:** computed with
+  ump contribution = 0. Residual calibration uses
+  `residual = actual_ks - stored_lambda`, so `lambda_bias` convergence
+  is unaffected by the bug (0 was the value the model actually used).
+
+### Why historical rows were NOT backfilled
+
+Two independent reasons, either sufficient on its own:
+
+1. **`career_k_rates.json` coverage has drifted during the window.**
+   Task A3b (2026-04-20) expanded the table from ~30 umps to ~87.
+   Applying today's coverage to old picks would fabricate deltas the
+   model never could have produced — counterfactual, not historical.
+2. **Lambda was scored against ump_k_adj=0.** Retroactively writing a
+   nonzero `ump_k_adj` without recomputing `lambda` would desync the
+   stored record; recomputing `lambda` would corrupt residual-based
+   calibration (`raw_lambda` is the baseline for convergence).
+
+`data_complete` already filters degraded rows out of calibration going
+forward (split filter, commit `89e3e4f`). Historical rows stay
+grandfathered.
+
+### Implication for analytics
+
+- Ump-signal analytics should treat 2026-04-01 → fix-date as a
+  dead-signal window. Any slice of `ump_k_adj` effectiveness against
+  pre-fix residuals will show zero correlation (by construction).
+- Post-fix picks should show the real signal. The B6 feature-
+  contribution audit in the plan catches this kind of dormant feature.
+
+## 2026-04-17 — ump.news to MLB Stats API cutover
+
+Prior to 2026-04-17, the pipeline scraped `www.ump.news` for HP umpire
+assignments. That domain has been NXDOMAIN for the entire season (see
+`analytics/diagnostics/a3_ump_adj.py` and the old
+`pipeline/fetch_umpires.py` header). Every scrape raised, the warn-and-
+return-empty path ran, and `fetch_umpires` returned `0.0` for every
+pitcher. Net result: **100% (447/447) of historical picks have
+`ump_k_adj == 0.0` exactly.**
+
+On 2026-04-17 we swapped the source to the MLB Stats API schedule
+endpoint with `hydrate=officials`
+(`statsapi.mlb.com/api/v1/schedule?sportId=1&date={date}&hydrate=officials`)
+and fixed a latent logic bug: `ump_ok` was previously `True` whenever
+`fetch_umpires` didn't raise, even if every returned value was 0. After
+2026-04-17, `ump_ok` is `True` only when at least one pitcher got a
+real (nonzero) ump adjustment.
+
+### Impact on stored fields
+
+- **`ump_k_adj` in picks_history (pre-cutover):** 0.0 everywhere. This
+  is accurate — the model saw a neutral ump signal because the source
+  was dead.
+- **`data_complete` in picks_history (pre-cutover):** `True` for rows
+  that met the other-source checks (swstr_ok, etc.) even though the
+  ump input was silently absent. **These rows were not rewritten.**
+- **`data_complete` post-cutover:** reflects the corrected logic. On
+  days where officials aren't posted yet or no HP ump is in the local
+  career-rates table, `data_complete` will be `False`.
+
+### Why the historical rows were not rewritten
+
+Calibration uses `residual = actual_ks - stored_lambda`. Because
+`ump_k_adj = 0` contributes 0 to `lambda`, residuals are identical
+whether the pre-cutover `data_complete` flag said the pick had a real
+ump signal or not. `lambda_bias` (~-0.55 and actively converging) is
+therefore valid regardless of the flag bug; rewriting flags would only
+reshape the `n` in the data_complete-filtered subset without changing
+any calibrated parameter.
+
+### Follow-up resolved: career_k_rates.json expansion (2026-04-20)
+
+Originally noted: the pre-expansion table held 30 umps (including
+retired names) against 62 live 2026 HP umps → ~21% match.
+
+On 2026-04-20 we ran `scripts/seed_umpire_career_rates.py` against
+the 2024-03-28 → 2025-10-01 regular-season window. The seeder pulls
+every Final game's HP umpire via the `/schedule?hydrate=officials`
+endpoint and per-game strikeout totals via `/game/{pk}/boxscore`,
+then computes `delta = ump_mean_K_per_game - league_mean_K_per_game`.
+Filter: `--min-games 20` to drop small-sample noise.
+
+Result:
+- 4,855 games aggregated, 96 unique HP umps seen
+- 87 umps met the n≥20 filter and were written to `career_k_rates.json`
+- League mean K/game across the window: 16.855
+- Delta range: -1.40 (Shane Livensparger) to +1.93 (Ron Kulpa)
+- Live 2026 match rate: 22% (11/51) → 94% (59/63 umps in the past week)
+- Still missing (4): Felix Neon, Jen Pawol, Tyler Jones, Willie Traynor —
+  likely AAA call-ups without enough 2024-25 MLB HP games to survive the
+  min-games filter. They'll populate as their sample sizes grow.
+
+Scale note: pre-expansion hand-curated deltas ranged ±0.52. Seeder-
+derived deltas range ~±1.9 — wider because the hand-curated file was
+conservatively scaled by the original author. This is **not** a unit
+change — both are in "K per game vs league average." The calibrated
+`ump_scale` parameter in `data/params.json` (currently 1.0) will shrink
+to compensate during phase-2 calibration as more ump-signal residuals
+land in the dataset. This is the same self-healing behavior that handles
+any source-signal change.
+
+## 2026-04-11 to 2026-04-17 — pitcher_throws bug window
+
+A bug in `pipeline/fetch_stats.py` (fixed by commit `0407846`) caused the MLB
+`/schedule` endpoint's `hydrate=probablePitcher` to silently fail to return
+`pitchHand`. Every pitcher's `pitcher_throws` was forced to `"R"`.
+
+### Impact
+- **Model lambda at decision time:** computed with `pitcher_throws = "R"` for
+  every pick in this window, regardless of actual handedness. The stored
+  `lambda` field reflects this.
+- **Platoon delta:** `calc_lineup_k_rate` applied the R-vs-lineup platoon
+  delta uniformly. For LHPs facing lineups with above-average R/L split, this
+  nudged `lambda` a few tenths of a K off.
+- **Calibration:** `lambda_bias` has been converging against residuals
+  computed from the (mis-handed) `lambda`. This is fine — calibration uses
+  residual = actual − stored_lambda, which doesn't depend on pitcher_throws.
+
+### Remediation
+- **Fix:** commit `0407846` added a `/people/{id}` fallback.
+- **Historical None rows (pre-2026-04-11):** backfilled in commit `517f473`
+  via `/people/search`.
+- **Post-cutover "R" rows (this window):** rewritten to correct handedness
+  in commit `8463f8e` via
+  `analytics/diagnostics/a1_rewrite_post_cutover_throws.py`. The stored
+  `lambda` for these rows was NOT recomputed — it still reflects the value
+  the model produced at decision time (with R-assumed platoon delta).
+
+### Implication for analytics
+- `pitcher_throws` in `picks_history.json` is now correct for the full
+  history. Slicing by handedness (RHP vs LHP ROI, platoon-delta analytics)
+  can treat the full dataset uniformly.
+- BUT: `lambda` for picks in this window was computed with R-assumption.
+  If an analysis recomputes lambda from inputs (rare), it should note this
+  discrepancy. Most analytics only read the stored `lambda`, which is fine.
+
+## 2026-04-08 to 2026-04-27 — SwStr delta neutral window
+
+From the 2026-04-08 formula-change date through the 2026-04-27 deploy,
+`career_swstr_pct` was null across the board, so `swstr_delta_k9` stayed at
+`0.0` for every stored pick even though current-season `swstr_pct` was present.
+
+### Root cause
+
+`pipeline/fetch_statcast.py` tried to build the "career" baseline from one
+multi-season FanGraphs window instead of averaging the three prior seasons
+season-by-season. The aggregate window did not yield a usable per-pitcher
+baseline for Phase B, so downstream code saw `career_swstr_pct = None` and
+treated the SwStr adjustment as neutral.
+
+### Impact on stored fields
+
+- **`career_swstr_pct` in picks_history for this window:** `null`
+  everywhere. Accurate — the pipeline failed open and stored "career
+  baseline unavailable."
+- **`swstr_delta_k9` / `lambda` in picks_history for this window:**
+  computed with neutral SwStr delta. Residual calibration remains internally
+  consistent because the stored `lambda` reflects the value actually used at
+  decision time.
+
+### Why historical rows were NOT backfilled
+
+Same precedent as the other dead-signal windows above: rewriting
+`career_swstr_pct` or `swstr_delta_k9` without recomputing `lambda` would
+desync stored inputs from stored outputs, and recomputing `lambda` would
+invalidate residual-based calibration. Historical picks stay as-scored.
+
+### Implication for analytics
+
+- Treat 2026-04-08 -> 2026-04-27 as a SwStr dead-signal / neutral-delta
+  window when slicing Phase B behavior.
+- Post-deploy picks are the first rows where `career_swstr_pct` and
+  non-neutral SwStr deltas should be expected to appear.

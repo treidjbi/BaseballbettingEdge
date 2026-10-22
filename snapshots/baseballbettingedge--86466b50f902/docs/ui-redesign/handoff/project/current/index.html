@@ -1,0 +1,1451 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>BaseballBettingEdge</title>
+  <link rel="manifest" href="/manifest.json">
+  <meta name="theme-color" content="#0d1929">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;700&family=Oswald:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <script src="https://unpkg.com/@phosphor-icons/web@2.1.1"></script>
+  <style>
+    :root {
+      --bg:        #f5f0e8;
+      --surface:   #faf6ee;
+      --border:    #d0c8b8;
+      --ink:       #1a1a1a;
+      --ink-dim:   #888888;
+      --fire:      #c0392b;
+      --positive:  #27ae60;
+      --tab-h:     58px;
+    }
+
+    [data-theme='dark'] {
+      --bg:      #0d1929;
+      --surface: #132035;
+      --border:  #1e3050;
+      --ink:     #f0ede6;
+      --ink-dim: #6b7f99;
+    }
+
+    /* ── Dark mode targeted overrides ───────────────────────── */
+    [data-theme='dark'] #top-bar { background: #080f1a; border-bottom-color: #1e3050; }
+    [data-theme='dark'] #nav { background: #080f1a; border-top-color: #1e3050; }
+    [data-theme='dark'] .nav-btn { color: #6b7f99; }
+    [data-theme='dark'] .card-header {
+      background: repeating-linear-gradient(45deg, #080f1a, #080f1a 2px, #0d1929 2px, #0d1929 8px);
+    }
+    [data-theme='dark'] .pitcher-card {
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.05), 0 1px 3px rgba(0,0,0,0.3);
+    }
+    [data-theme='dark'] .pitcher-name { color: #f0ede6; }
+    [data-theme='dark'] .pitcher-matchup { color: #6b7f99; }
+    [data-theme='dark'] .adj-pos { background: #0d2b1a; border-color: #1a5c35; }
+    [data-theme='dark'] .adj-neg { background: #2b0d0d; border-color: #5c1a1a; }
+    [data-theme='dark'] .adj-neutral { background: #132035; border-color: #1e3050; color: #6b7f99; }
+    [data-theme='dark'] .verdict-pass { background: #1e3050; color: #6b7f99; }
+    [data-theme='dark'] .badge-live  { background: #0d2b1a !important; color: #27ae60 !important; border-color: #1a5c35 !important; }
+    [data-theme='dark'] .badge-final { background: #132035 !important; color: #6b7f99 !important; border-color: #1e3050 !important; }
+    [data-theme='dark'] .result-win  { background: #1a5c35; color: #4ade80; }
+    [data-theme='dark'] .result-loss { background: #5c1a1a; color: #f87171; }
+    [data-theme='dark'] .result-push { background: #1e3050; color: #6b7f99; }
+    [data-theme='dark'] .banner-info { background: #0d2b1a; border-bottom-color: #1a5c35; color: #f0ede6; }
+    [data-theme='dark'] .banner-warn { background: #2b1f0d; border-bottom-color: #5c3d1a; color: #f0ede6; }
+    [data-theme='dark'] #date-select { border-color: #1e3050; color: #f0ede6; }
+    [data-theme='dark'] #date-select:focus { border-color: #6b7f99; }
+    [data-theme='dark'] .nav-btn.active { color: #f0ede6; }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    html, body {
+      height: 100%;
+      background: var(--bg);
+      color: var(--ink);
+      font-family: 'Oswald', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      font-size: 15px;
+      overflow-x: hidden;
+    }
+
+    body { display: flex; flex-direction: column; }
+
+    /* ── Top bar ─────────────────────────────────────────── */
+    #top-bar {
+      display: flex;
+      flex-direction: column;
+      border-bottom: 2px solid var(--ink);
+      background: var(--ink);
+    }
+    #top-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 10px 16px;
+    }
+    #title-date {
+      display: flex;
+      flex-direction: row;
+      align-items: center;
+      gap: 10px;
+      white-space: nowrap;
+    }
+    .k-mark {
+      flex-shrink: 0;
+    }
+    .wordmark-bottom {
+      color: #ffffff;
+      font-family: 'Oswald', sans-serif;
+      font-size: 16px;
+      font-weight: 700;
+      letter-spacing: .06em;
+      text-transform: uppercase;
+      line-height: 1;
+    }
+    .badge-ok {
+      background: #27ae60;
+      color: #fff;
+      padding: 2px 10px;
+      border-radius: 3px;
+      font-size: 11px;
+      font-weight: 700;
+      font-family: monospace;
+    }
+    .badge-warn {
+      background: #e67e22;
+      color: #fff;
+      padding: 2px 10px;
+      border-radius: 3px;
+      font-size: 11px;
+      font-weight: 700;
+      font-family: monospace;
+    }
+    /* ── Top-right cluster ───────────────────────────────────── */
+    #top-right {
+      display: flex;
+      align-items: center;
+    }
+
+    /* ── Theme toggle ──────────────────────────────────────── */
+    #theme-toggle {
+      background: none;
+      border: none;
+      cursor: pointer;
+      font-size: 18px;
+      padding: 0;
+      line-height: 1;
+      color: #fff;
+    }
+
+    /* Freshness badge — scoped overrides for relocated badge under wordmark */
+    #freshness-badge .badge-ok,
+    #freshness-badge .badge-warn { font-size: 10px; padding: 1px 6px; }
+
+    /* ── Date selector ──────────────────────────────────────── */
+    #date-row {
+      display: none;   /* shown by JS when dates exist */
+      flex: 1;
+      justify-content: center;
+      margin: 0 16px;
+    }
+    #date-select {
+      background: transparent;
+      color: var(--bg);
+      border: 1px solid #555;
+      border-radius: 4px;
+      padding: 3px 6px;
+      font-size: 11px;
+      font-weight: 700;
+      font-family: 'IBM Plex Mono', 'Courier New', monospace;
+      cursor: pointer;
+      letter-spacing: .03em;
+    }
+    #date-select:focus { outline: none; border-color: #888; }
+    #date-select option { background: #222; color: #fff; }
+    #date-select::-webkit-calendar-picker-indicator { filter: invert(1); cursor: pointer; }
+
+    /* ── Banners ─────────────────────────────────────────── */
+    .banner-info {
+      background: #d5e8d4;
+      color: #1a1a1a;
+      padding: 8px 16px;
+      font-size: 13px;
+      border-bottom: 1px solid #a8c8a8;
+    }
+    .banner-warn {
+      background: #fff3cd;
+      color: #856404;
+      padding: 8px 16px;
+      font-size: 13px;
+      border-bottom: 1px solid #ffd666;
+    }
+
+    /* ── Layout ──────────────────────────────────────────── */
+    #content {
+      flex: 1;
+      overflow-y: auto;
+      padding-bottom: calc(var(--tab-h) + 8px);
+    }
+    .tab-panel { display: none; padding: 12px 16px; }
+    .tab-panel.active { display: block; }
+
+    /* ── Bottom nav ──────────────────────────────────────── */
+    #nav {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      height: var(--tab-h);
+      background: var(--ink);
+      display: flex;
+      border-top: 2px solid #333;
+      z-index: 100;
+    }
+    .nav-btn {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 2px;
+      background: none;
+      border: none;
+      color: #888;
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: .05em;
+      cursor: pointer;
+      text-transform: uppercase;
+    }
+    .nav-btn.active { color: var(--bg); border-top: 2px solid var(--fire); padding-top: 2px; }
+    .nav-btn span { font-family: 'Oswald', sans-serif; letter-spacing: .08em; }
+    .nav-icon { font-size: 20px; line-height: 1; }
+
+    /* ── Verdict badges ──────────────────────────────────── */
+    .verdict-badge {
+      padding: 3px 10px;
+      border-radius: 3px;
+      font-size: 11px;
+      font-weight: 800;
+      font-family: 'IBM Plex Mono', 'Courier New', monospace;
+      letter-spacing: .04em;
+      white-space: nowrap;
+    }
+    @keyframes fire-pulse {
+      0%,100% { box-shadow: 0 0 6px rgba(192,57,43,0.4); }
+      50%      { box-shadow: 0 0 12px rgba(192,57,43,0.7); }
+    }
+    @keyframes fire-pulse-blue {
+      0%,100% { box-shadow: 0 0 6px rgba(30,58,95,0.4); }
+      50%      { box-shadow: 0 0 12px rgba(147,197,253,0.5); }
+    }
+    .verdict-fire {
+      background: var(--fire);
+      color: #fff;
+      box-shadow: 0 0 8px rgba(192,57,43,0.5);
+      animation: fire-pulse 2s ease-in-out infinite;
+    }
+    .verdict-fire-over {
+      background: #1e3a5f;
+      color: #93c5fd;
+      box-shadow: 0 0 8px rgba(30,58,95,0.5);
+      animation: fire-pulse-blue 2s ease-in-out infinite;
+    }
+    .verdict-lean   { background: transparent; border: 1px solid #e67e22; color: #e67e22; }
+    .verdict-pass   { background: #ccc; color: #555; }
+
+    /* ── Result badges (graded past dates) ───────────────── */
+    .result-badge {
+      display: inline-block;
+      font-size: 11px;
+      font-weight: 800;
+      font-family: 'IBM Plex Mono', 'Courier New', monospace;
+      padding: 3px 8px;
+      border-radius: 3px;
+      margin-left: 6px;
+      letter-spacing: .04em;
+    }
+    .result-win  { background: #27ae60; color: #fff; }
+    .result-loss { background: #c0392b; color: #fff; }
+    .result-push { background: #999; color: #fff; }
+
+    .grading-summary {
+      font-family: 'IBM Plex Mono', 'Courier New', monospace;
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--ink);
+      margin-bottom: 12px;
+    }
+
+    /* ── Pitcher card ────────────────────────────────────── */
+    .pitcher-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      margin-bottom: 12px;
+      overflow: hidden;
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.8), 0 1px 3px rgba(0,0,0,0.08);
+    }
+    .card-header {
+      background: repeating-linear-gradient(45deg, #1a1a1a, #1a1a1a 2px, #222 2px, #222 8px);
+      padding: 9px 12px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .card-header-left {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+      min-width: 0;
+    }
+    .pitcher-name {
+      color: var(--bg);
+      font-family: 'Oswald', sans-serif;
+      font-weight: 700;
+      font-size: 17px;
+      letter-spacing: .02em;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .pitcher-matchup {
+      color: #aaa;
+      font-size: 11px;
+      white-space: nowrap;
+    }
+
+    /* stats grid */
+    .stats-row {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      padding: 10px 12px;
+      border-bottom: 1px solid var(--border);
+      gap: 4px;
+    }
+    .stat-cell { text-align: center; }
+    .stats-row .stat-cell:first-child { border-right: 1px solid var(--border); padding-right: 8px; }
+    .stat-label {
+      font-size: 10px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: .07em;
+      color: var(--ink-dim);
+      margin-bottom: 3px;
+    }
+    .stats-row .stat-cell:nth-child(2) .stat-label { color: var(--fire); }
+    .stat-value {
+      font-family: 'IBM Plex Mono', 'Courier New', monospace;
+      font-weight: 700;
+      font-size: 17px;
+      color: var(--ink);
+    }
+    .stat-sub {
+      font-family: 'IBM Plex Mono', 'Courier New', monospace;
+      font-size: 10px;
+      color: var(--ink-dim);
+      margin-top: 2px;
+    }
+    .val-pos { color: var(--positive); }
+    .val-neg { color: var(--ink-dim); }
+
+    /* adj row */
+    .adj-row {
+      padding: 7px 12px;
+      display: flex;
+      gap: 6px;
+      align-items: center;
+      flex-wrap: wrap;
+      min-width: 0;
+    }
+    .adj-badge {
+      font-size: 10px;
+      font-weight: 700;
+      padding: 2px 7px;
+      border-radius: 3px;
+      font-family: monospace;
+    }
+    .adj-pos     { background: #e8f5e9; color: #27ae60; border: 1px solid #c8e6c9; }
+    .adj-neg     { background: #fdecea; color: #c0392b; border: 1px solid #f5c6c6; }
+    .adj-neutral { background: #f5f5f5; color: #888;    border: 1px solid #ddd;    }
+
+    .game-time {
+      font-size: 10px;
+      color: var(--ink-dim);
+      margin-left: auto;
+      flex-shrink: 0;
+      white-space: nowrap;
+    }
+
+    .steam-with    { color: #27ae60;      font-weight: 700; font-family: monospace; font-size: 11px; }
+    .steam-against { color: var(--fire);   font-weight: 700; font-family: monospace; font-size: 11px; }
+
+    .card-pass        { opacity: 0.52; }
+    .card-in-progress { opacity: 0.78; }
+    .card-final       { opacity: 0.55; }
+
+    /* ── Game state badges (shown in adj row for started games) ── */
+    .badge-live  { background: #e8f5e9; color: #27ae60; border-color: #c8e6c9; }
+    .badge-final { background: #f0f0f0; color: #888;    border-color: #ddd;    }
+
+    /* ── Divider between upcoming and started sections ────────── */
+    .game-divider {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin: 20px 0 14px;
+      color: var(--ink-dim);
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: .08em;
+    }
+    .game-divider::before,
+    .game-divider::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: var(--border);
+    }
+
+    .show-all-row {
+      font-size: 12px;
+      color: var(--ink-dim);
+      margin-bottom: 10px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .show-all-row input { cursor: pointer; }
+
+    /* ── Watchlist ───────────────────────────────────────── */
+    .watchlist-hd {
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: .08em;
+      color: var(--ink-dim);
+      margin-bottom: 10px;
+    }
+    .watch-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: 10px 12px;
+      margin-bottom: 8px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .watch-left {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+      min-width: 0;
+    }
+    .watch-mid {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      gap: 2px;
+      font-family: monospace;
+      font-size: 12px;
+      color: var(--ink-dim);
+    }
+
+    .empty {
+      color: var(--ink-dim);
+      font-size: 13px;
+      padding: 20px 0;
+      text-align: center;
+    }
+
+    /* ── Section header (date) ───────────────────────────── */
+    .section-date {
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: .08em;
+      color: var(--ink-dim);
+      margin-bottom: 12px;
+      padding-bottom: 6px;
+      border-bottom: 2px solid var(--fire);
+      width: fit-content;
+      padding-right: 16px;
+    }
+
+    /* ── Performance tab ─────────────────────────────────────────── */
+    .perf-strip { display: flex; background: var(--surface); border-bottom: 1px solid var(--border); padding: 12px 0; }
+    .perf-strip-block { flex: 1; display: flex; flex-direction: column; align-items: center; padding: 0 4px; position: relative; }
+    .perf-strip-block + .perf-strip-block::before { content: ''; position: absolute; left: 0; top: 10%; bottom: 10%; width: 1px; background: var(--border); }
+    .perf-strip-label { font-size: 10px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--ink-dim); font-family: 'Oswald', sans-serif; font-weight: 700; margin-bottom: 4px; }
+    .perf-strip-value { font-size: 22px; font-weight: 700; font-family: 'IBM Plex Mono', monospace; color: var(--ink); line-height: 1; }
+    .perf-strip-sub { font-size: 10px; color: var(--ink-dim); font-family: 'IBM Plex Mono', monospace; margin-top: 2px; }
+    .perf-strip-value.pos { color: var(--positive); }
+    .perf-strip-value.neg { color: var(--fire); }
+    .perf-filters { display: flex; gap: 6px; padding: 10px 16px; background: var(--bg); border-bottom: 1px solid var(--border); overflow-x: auto; -webkit-overflow-scrolling: touch; }
+    .perf-filter-btn { padding: 5px 12px; border-radius: 20px; font-size: 11px; font-weight: 700; font-family: 'Oswald', sans-serif; text-transform: uppercase; letter-spacing: 0.06em; border: 1px solid var(--border); background: var(--surface); color: var(--ink-dim); cursor: pointer; white-space: nowrap; }
+    .perf-filter-btn.active { background: rgba(192,57,43,0.10); border-color: var(--fire); color: var(--fire); }
+    .perf-filter-btn.active[data-filter="LEAN"] { background: rgba(230,126,34,0.10); border-color: #e67e22; color: #e67e22; }
+    .perf-flex-table { width: 100%; }
+    .perf-flex-row { display: flex; align-items: center; min-height: 44px; border-bottom: 1px solid var(--border); padding: 0 4px; }
+    .perf-flex-row.perf-header-row { min-height: auto; padding: 8px 4px; background: var(--bg); position: sticky; top: 0; z-index: 1; }
+    .perf-row-alt { background: rgba(0,0,0,0.03); }
+    [data-theme='dark'] .perf-row-alt { background: rgba(255,255,255,0.025); }
+    .perf-col-verdict { width: 22%; padding: 0 6px 0 4px; }
+    .perf-col-side    { width: 12%; text-align: center; padding-right: 6px; }
+    .perf-col-picks   { width: 8%;  text-align: center; padding-right: 6px; }
+    .perf-col-winpct  { width: 12%; text-align: right; padding-right: 6px; }
+    .perf-col-units   { width: 16%; text-align: right; padding-right: 6px; min-width: 48px; }
+    .perf-col-roi     { width: 16%; text-align: right; padding-right: 6px; min-width: 48px; }
+    .perf-col-avgev   { width: 14%; text-align: right; padding-right: 6px; flex-shrink: 0; }
+    .perf-header-row div { font-size: 11px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--ink-dim); font-family: 'Oswald', sans-serif; font-weight: 700; }
+    .perf-header-row .perf-col-avgev { font-size: 11px; color: var(--ink-dim); font-weight: 700; }
+    .perf-verdict-badge { display: inline-block; font-size: 11px; font-weight: 800; font-family: 'IBM Plex Mono', monospace; text-transform: uppercase; letter-spacing: 0.03em; padding: 2px 6px; border-radius: 10px; line-height: 1.4; white-space: nowrap; }
+    .perf-flex-row:not(.perf-header-row) .perf-verdict-badge { font-size: 10px; padding: 2px 5px; }
+    .pvb-fire { background: rgba(192,57,43,0.12); border: 1px solid var(--fire); color: var(--fire); animation: fire-pulse 2s ease-in-out infinite; }
+    .pvb-fire-over { background: rgba(30,58,95,0.12); border: 1px solid #1e3a5f; color: #93c5fd; animation: fire-pulse-blue 2s ease-in-out infinite; }
+    .pvb-lean { background: transparent; border: 1px solid #e67e22; color: #e67e22; }
+    .pvb-pass { background: #ccc; color: #555; border: 1px solid #bbb; }
+    .perf-side { font-size: 12px; font-weight: 500; font-family: 'Oswald', sans-serif; color: var(--ink); }
+    .perf-num  { font-family: 'IBM Plex Mono', monospace; font-size: 13px; color: var(--ink); }
+    .perf-picks  { font-weight: 500; }
+    .perf-winpct { font-weight: 600; }
+    .perf-units  { font-weight: 700; }
+    .perf-roi    { font-weight: 700; }
+    .perf-avgev  { font-weight: 500; font-size: 12px; color: var(--ink-dim); }
+    .perf-num.pos { color: var(--positive); }
+    .perf-num.neg { color: var(--fire); }
+    .perf-lam { font-size: 0.9rem; color: var(--ink); margin: 0.5rem 0; }
+    .perf-cal { font-size: 0.82rem; color: var(--ink-dim); margin-top: 0.5rem; }
+    .perf-notes { margin-top: 20px; border: 1px solid var(--border); border-radius: 6px; padding: 0.75rem 1rem; background: var(--surface-alt, var(--surface)); }
+    .perf-notes-title { font-size: 0.8rem; font-weight: 600; color: var(--ink-dim); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.5rem; }
+    .perf-notes ul { margin: 0; padding-left: 1.2rem; }
+    .perf-notes li { font-size: 0.85rem; color: var(--ink); margin-bottom: 0.25rem; line-height: 1.4; }
+    .perf-empty { color: var(--ink-dim); padding: 2rem 0; text-align: center; }
+    .perf-footer { padding: 0 16px 16px; }
+
+    #refresh-btn {
+      background: transparent;
+      border: 1px solid #4a9eff;
+      color: #4a9eff;
+      padding: 4px 12px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 13px;
+      font-family: inherit;
+      margin-right: 8px;
+    }
+    #refresh-btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+    #refresh-btn.running {
+      color: #888;
+      border-color: #888;
+    }
+    #notify-btn {
+      background: transparent;
+      border: 1px solid var(--border);
+      color: var(--ink-dim);
+      width: 32px;
+      height: 32px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 16px;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      margin-right: 8px;
+      padding: 0;
+    }
+    #notify-btn.active {
+      border-color: #4a9eff;
+      color: #4a9eff;
+    }
+  </style>
+  <script>
+  (function() {
+    var saved = 'light';
+    try { saved = localStorage.getItem('theme') || 'light'; } catch(e) {}
+    document.documentElement.setAttribute('data-theme', saved);
+    document.addEventListener('DOMContentLoaded', function() {
+      document.getElementById('theme-toggle').innerHTML =
+        saved === 'dark' ? '<i class="ph-bold ph-sun"></i>' : '<i class="ph-bold ph-moon"></i>';
+    });
+  })();
+  </script>
+</head>
+<body>
+
+  <!-- Top bar -->
+  <div id="top-bar">
+    <div id="top-row">
+      <div id="title-date">
+        <svg class="k-mark" width="28" height="28" viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <circle cx="14" cy="14" r="12" stroke="var(--fire)" stroke-width="2"/>
+          <text x="14" y="19" text-anchor="middle" font-family="Oswald, sans-serif" font-weight="700" font-size="14" fill="#fff">K</text>
+        </svg>
+        <div>
+          <span class="wordmark-bottom">Betting Edge</span>
+          <span id="freshness-badge" style="display:block;font-size:10px;color:#6b7f99;font-family:'IBM Plex Mono',monospace;margin-top:1px"></span>
+        </div>
+      </div>
+      <div id="date-row">
+        <input type="date" id="date-select" onchange="onDateChange(this.value)" />
+      </div>
+      <div id="top-right">
+        <button id="notify-btn" onclick="toggleNotifications()" title="Enable push notifications">
+          <i class="ph-bold ph-bell" id="notify-icon"></i>
+        </button>
+        <button id="refresh-btn" onclick="triggerRefresh()" title="Re-run pipeline to update lines and lineups">
+          ↻ Refresh
+        </button>
+        <button id="theme-toggle" onclick="toggleTheme()" title="Day game / Night game"></button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Freshness banner (conditionally shown) -->
+  <div id="freshness-banner" style="display:none"></div>
+
+  <!-- Main content -->
+  <div id="content">
+    <div id="panel-props" class="tab-panel active"></div>
+    <div id="panel-watch" class="tab-panel"></div>
+    <div id="panel-perf" class="tab-panel"></div>
+  </div>
+
+  <!-- Bottom nav -->
+  <nav id="nav">
+    <button class="nav-btn active" onclick="switchTab('props', this)">
+      <i class="ph-bold ph-baseball nav-icon"></i>
+      <span>Picks</span>
+    </button>
+    <button class="nav-btn" onclick="switchTab('watch', this)">
+      <i class="ph-bold ph-eye nav-icon"></i>
+      <span>Watchlist</span>
+    </button>
+    <button class="nav-btn" onclick="switchTab('perf', this)">
+      <i class="ph-bold ph-chart-bar nav-icon"></i>
+      <span>Performance</span>
+    </button>
+  </nav>
+
+<script>
+  // ── XSS escape helper ────────────────────────────────────
+  function esc(str) {
+    return String(str ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+
+  // ── Team abbreviation lookup ──────────────────────────────
+  const MLB_ABBR = {
+    "Arizona Diamondbacks":"ARI","Atlanta Braves":"ATL","Baltimore Orioles":"BAL",
+    "Boston Red Sox":"BOS","Chicago Cubs":"CHC","Chicago White Sox":"CWS",
+    "Cincinnati Reds":"CIN","Cleveland Guardians":"CLE","Colorado Rockies":"COL",
+    "Detroit Tigers":"DET","Houston Astros":"HOU","Kansas City Royals":"KC",
+    "Los Angeles Angels":"LAA","Los Angeles Dodgers":"LAD","Miami Marlins":"MIA",
+    "Milwaukee Brewers":"MIL","Minnesota Twins":"MIN","New York Mets":"NYM",
+    "New York Yankees":"NYY","Oakland Athletics":"OAK","Philadelphia Phillies":"PHI",
+    "Pittsburgh Pirates":"PIT","San Diego Padres":"SD","San Francisco Giants":"SF",
+    "Seattle Mariners":"SEA","St. Louis Cardinals":"STL","Tampa Bay Rays":"TB",
+    "Texas Rangers":"TEX","Toronto Blue Jays":"TOR","Washington Nationals":"WSH",
+    "Athletics":"OAK"
+  };
+  function abbr(name) { return MLB_ABBR[name] || name; }
+
+  // ── Theme toggle ───────────────────────────────────────────
+  function toggleTheme() {
+    const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+    const next = isDark ? 'light' : 'dark';
+    document.documentElement.setAttribute('data-theme', next);
+    document.getElementById('theme-toggle').innerHTML =
+      next === 'dark' ? '<i class="ph-bold ph-sun"></i>' : '<i class="ph-bold ph-moon"></i>';
+    try { localStorage.setItem('theme', next); } catch(e) {}
+  }
+
+  // ── Config ────────────────────────────────────────────────
+  const IS_LOCAL              = location.hostname === 'localhost' || location.hostname === '127.0.0.1' || location.protocol === 'file:';
+  const RAW_BASE              = IS_LOCAL
+    ? 'data/processed'
+    : 'https://raw.githubusercontent.com/treidjbi/baseballbettingedge/main/dashboard/data/processed';
+  const INDEX_URL             = `${RAW_BASE}/index.json`;
+  const TODAY_URL             = `${RAW_BASE}/today.json`;
+  const STALE_HOURS           = 6;
+  const STEAM_LABEL_THRESHOLD = 0.75;  // show ↓steam when movement_conf ≤ this value
+  const PERF_URL = IS_LOCAL
+    ? '../data/performance.json'
+    : 'https://raw.githubusercontent.com/treidjbi/baseballbettingedge/main/dashboard/data/performance.json';
+
+  // ── App date (Phoenix-aware) ──────────────────────────────
+  /** Returns the current slate date in Phoenix time (UTC-7, no DST).
+   *  Stays on today until 9pm Phoenix, then advances to tomorrow so
+   *  the evening preview lines are visible as they post. */
+  function getAppDate() {
+    const nowPhoenix = new Date(Date.now() - 7 * 60 * 60 * 1000);
+    if (nowPhoenix.getUTCHours() >= 21) {
+      nowPhoenix.setUTCDate(nowPhoenix.getUTCDate() + 1);
+    }
+    return nowPhoenix.toISOString().slice(0, 10);
+  }
+
+  // ── Boot ──────────────────────────────────────────────────
+  document.addEventListener('DOMContentLoaded', boot);
+
+  async function boot() {
+    initNotifications(); // non-blocking — registers SW and shows bell if supported
+    const today = getAppDate();
+    // Always default the date picker to today
+    document.getElementById('date-select').value = today;
+    try {
+      const res = await fetch(INDEX_URL + '?t=' + Date.now());
+      if (!res.ok) throw new Error('no index');
+      const index = await res.json();
+      const dates = Array.isArray(index.dates) ? index.dates : [];
+      populateDateSelector(dates);
+    } catch (e) {
+      // index.json not found — still show the date picker with no min bound
+      document.getElementById('date-row').style.display = 'block';
+    }
+    await loadDate(today);
+  }
+
+  function populateDateSelector(dates) {
+    const sel = document.getElementById('date-select');
+    const row = document.getElementById('date-row');
+    // Set the earliest available date as the minimum (dates are descending, so last = oldest)
+    if (dates && dates.length > 0) {
+      sel.min = dates[dates.length - 1];
+    }
+    // Set max to tomorrow so users can see lines the night before they post
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    sel.max = tomorrow.toISOString().slice(0, 10);
+    // Always show the date picker so user can explore any date
+    row.style.display = 'block';
+  }
+
+  async function loadDate(dateStr) {
+    // Clear any existing banners
+    const banner = document.getElementById('freshness-banner');
+    banner.style.display = 'none';
+
+    const today    = getAppDate();
+    const isPast   = !!(dateStr && dateStr < today);
+    const isFuture = !!(dateStr && dateStr > today);
+    // Always load by explicit date file; fall back to today.json only if no dateStr
+    const url = dateStr ? `${RAW_BASE}/${dateStr}.json` : TODAY_URL;
+
+    try {
+      const res  = await fetch(url + '?t=' + Date.now());
+      if (!res.ok) throw new Error('HTTP ' + res.status);
+      const data = await res.json();
+      renderAll(data, isPast);
+    } catch (e) {
+      let msg, emptyMsg;
+      if (isFuture) {
+        msg      = 'No data yet for this date — check back once lines post.';
+        emptyMsg = "Lines aren't posted yet for this date. Check back closer to game time.";
+      } else if (isPast) {
+        msg      = 'No historical data for this date.';
+        emptyMsg = 'No data available for this date.';
+      } else {
+        msg      = 'Could not load data — check network or pipeline status. (' + e.message + ')';
+        emptyMsg = 'No data available.';
+      }
+      showBanner(msg, isFuture ? 'info' : (isPast ? 'info' : 'warn'));
+      document.getElementById('panel-props').innerHTML = `<p class="empty">${emptyMsg}</p>`;
+      document.getElementById('panel-watch').innerHTML = '';
+    }
+  }
+
+  function onDateChange(dateStr) {
+    loadDate(dateStr);
+  }
+
+  function renderAll(data, isPast = false) {
+    setFreshness(data.generated_at, isPast);
+
+    if (!data.props_available || !data.pitchers || data.pitchers.length === 0) {
+      if (isPast) {
+        showBanner('No props were available for this date.', 'info');
+        document.getElementById('panel-props').innerHTML =
+          '<p class="empty">No props were available for this date.</p>';
+        document.getElementById('panel-watch').innerHTML =
+          '<p class="empty">No movement data for this date.</p>';
+      } else {
+        showBanner('Props not yet posted — check back after 10am ET.', 'info');
+        document.getElementById('panel-props').innerHTML =
+          '<p class="empty">No props available yet for today.</p>';
+        document.getElementById('panel-watch').innerHTML =
+          '<p class="empty">No movement data yet.</p>';
+      }
+      return;
+    }
+
+    renderProps(data.pitchers, isPast);
+    renderWatchlist(data.pitchers);
+  }
+
+  // ── Freshness ─────────────────────────────────────────────
+  function setFreshness(generatedAt, isPast) {
+    if (!generatedAt) return;
+    const gen   = new Date(generatedAt);
+    const now   = new Date();
+    const hrs   = (now - gen) / 36e5;
+    const badge = document.getElementById('freshness-badge');
+
+    if (isPast) {
+      // Past date — show date + time, no stale warning
+      const dateLabel = gen.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+      const timeLabel = gen.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+      badge.innerHTML = '<span class="badge-ok">' + dateLabel + ' · ' + timeLabel + '</span>';
+    } else if (hrs > STALE_HOURS) {
+      badge.innerHTML = '<span class="badge-warn">Data may be outdated</span>';
+      showBanner('Pipeline may have failed — data is more than 6 hours old.', 'warn');
+    } else {
+      const time = gen.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+      badge.innerHTML = '<span class="badge-ok">Updated ' + time + '</span>';
+    }
+  }
+
+  function showBanner(msg, type) {
+    const el = document.getElementById('freshness-banner');
+    el.textContent = msg;
+    el.className   = 'banner-' + type;
+    el.style.display = 'block';
+  }
+
+  // ── Helpers ───────────────────────────────────────────────
+  function verdictClass(verdict, direction) {
+    if (verdict && verdict.startsWith('FIRE')) return direction === 'OVER' ? 'verdict-fire-over' : 'verdict-fire';
+    if (verdict === 'LEAN')                    return 'verdict-lean';
+    return 'verdict-pass';
+  }
+
+  /**
+   * Returns the side (OVER or UNDER) with the higher adjusted EV for a pitcher.
+   * Uses adj_ev (movement-confidence-adjusted) for selection so steam on one side
+   * can flip the recommendation. Used to pick which side to display on the card badge.
+   */
+  function bestSide(p) {
+    if (p.ev_over.adj_ev >= p.ev_under.adj_ev) {
+      return { verdict:   p.ev_over.verdict,
+               ev:        p.ev_over.adj_ev,
+               rawEv:     p.ev_over.ev,
+               winProb:   p.ev_over.win_prob,
+               conf:      p.ev_over.movement_conf,
+               direction: 'OVER',
+               odds:      p.best_over_odds,
+               result:    p.ev_over.result };
+    } else {
+      return { verdict:   p.ev_under.verdict,
+               ev:        p.ev_under.adj_ev,
+               rawEv:     p.ev_under.ev,
+               winProb:   p.ev_under.win_prob,
+               conf:      p.ev_under.movement_conf,
+               direction: 'UNDER',
+               odds:      p.best_under_odds,
+               result:    p.ev_under.result };
+    }
+  }
+
+  /** Badge label: 'PASS', '↓ LEAN UNDER', '↑ FIRE 2u OVER', etc. */
+  function badgeLabel(side) {
+    if (side.verdict === 'PASS') return 'PASS';
+    const arrow = side.direction === 'OVER' ? '↑' : '↓';
+    return `${arrow} ${side.verdict} ${side.direction}`;
+  }
+
+  function fmtOdds(n) {
+    if (n == null) return '—';
+    return n > 0 ? '+' + n : String(n);
+  }
+
+  function fmtTime(iso) {
+    if (!iso) return '';
+    try {
+      return new Date(iso).toLocaleTimeString('en-US', {
+        hour: 'numeric', minute: '2-digit', timeZoneName: 'short'
+      });
+    } catch { return iso; }
+  }
+
+  /**
+   * Zero-crossing-aware cents-moved calculation.
+   * Treats +100 and -100 as the same point (even money).
+   * Returns absolute magnitude (always >= 0).
+   */
+  function calcCentsMove(opening, current) {
+    if (opening == null || current == null) return 0;
+    const sameSign = (opening > 0 && current > 0) || (opening < 0 && current < 0);
+    if (sameSign) return Math.abs(current - opening);
+    // Crosses even money: distance from each side to the +100/-100 boundary
+    return (Math.abs(opening) - 100) + (Math.abs(current) - 100);
+  }
+
+  /**
+   * Did this side get cheaper (less favored by the book)?
+   * Uses implied probability: cheaper = lower implied prob.
+   * Returns true if the side got cheaper, false if more expensive.
+   */
+  function sideGotCheaper(opening, current) {
+    if (opening == null || current == null) return false;
+    function impliedProb(odds) {
+      return odds < 0
+        ? Math.abs(odds) / (Math.abs(odds) + 100)
+        : 100 / (odds + 100);
+    }
+    return impliedProb(current) < impliedProb(opening);
+  }
+
+  /**
+   * Core steam computation shared by steamHtml and steamLabel.
+   * Returns { cents, steamWith, biggerIsOver } or null if no movement.
+   */
+  function _steamCore(p, modelDir) {
+    // Always track the model's recommended side — we want to know whether
+    // the market is moving with or against our specific pick direction.
+    const isOver    = modelDir === 'OVER';
+    const openOdds  = isOver ? p.opening_over_odds  : p.opening_under_odds;
+    const currOdds  = isOver ? p.best_over_odds      : p.best_under_odds;
+    const cents     = calcCentsMove(openOdds, currOdds);
+    if (cents === 0) return null;
+
+    // Model side got more expensive = market agrees = steam with.
+    const cheaper   = sideGotCheaper(openOdds, currOdds);
+    const steamWith = !cheaper;
+
+    return { cents, steamWith, biggerIsOver: isOver };
+  }
+
+  /**
+   * Compact steam indicator for the Picks tab.
+   * Green ↑N = movement supports model's side.
+   * Red ↓N = movement against model's side.
+   */
+  function steamHtml(p, modelDir) {
+    const core = _steamCore(p, modelDir);
+    if (!core) return '';
+    const arrow = core.steamWith ? '↑' : '↓';
+    const cls   = core.steamWith ? 'steam-with' : 'steam-against';
+    return ` <span class="${cls}">${arrow}${core.cents}</span>`;
+  }
+
+  /**
+   * Full steam label for the Watchlist tab.
+   * Returns e.g. "Steam with ↑26" (green) or "Steam against ↓16" (red).
+   * Also returns metadata for the card layout.
+   */
+  function steamLabel(p, modelDir) {
+    const core = _steamCore(p, modelDir);
+    if (!core) return null;
+    return {
+      cents: core.cents,
+      steamWith: core.steamWith,
+      biggerIsOver: core.biggerIsOver,
+      html: `<span class="${core.steamWith ? 'steam-with' : 'steam-against'}">${core.steamWith ? 'Steam with' : 'Steam against'} ${core.steamWith ? '↑' : '↓'}${core.cents}</span>`
+    };
+  }
+
+  function adjBadge(label, actual, avg) {
+    const pct  = ((actual - avg) / avg * 100).toFixed(0);
+    const sign = pct > 0 ? '+' : '';
+    const cls  = pct > 0 ? 'adj-pos' : (pct < 0 ? 'adj-neg' : 'adj-neutral');
+    return `<span class="adj-badge ${cls}">${label} ${sign}${pct}% vs avg</span>`;
+  }
+
+  // ── Props tab ─────────────────────────────────────────────
+
+  /** Derive game state from the server-computed field or fall back to time-based estimate. */
+  function getGameState(p) {
+    if (p.game_state) return p.game_state;
+    if (!p.game_time) return 'pregame';
+    const elapsed = Date.now() - new Date(p.game_time).getTime();
+    if (elapsed < 0)           return 'pregame';
+    if (elapsed < 4 * 36e5)   return 'in_progress';
+    return 'final';
+  }
+
+  /** Render a single pitcher card for the given game state. */
+  function renderCard(p, gameState) {
+    const side    = bestSide(p);
+    const isPass  = side.verdict === 'PASS';
+    const started = gameState !== 'pregame';
+
+    const umpHtml = p.ump_k_adj !== 0
+      ? `<span class="adj-badge ${p.ump_k_adj > 0 ? 'adj-pos' : 'adj-neg'}">UMP ${p.ump_k_adj > 0 ? '+' : ''}${p.ump_k_adj}</span>`
+      : '';
+
+    // Steam only meaningful pre-game; suppress after lock
+    const steamIndicator = started ? '' : steamHtml(p, side.direction);
+
+    // EV left-border accent only for upcoming picks
+    const evBorder = !started && side.ev >= 0.25 ? 'border-left:3px solid var(--fire)'
+                   : !started && side.ev >= 0.15 ? 'border-left:3px solid #e67e22'
+                   : '';
+
+    // State badge shown in adj-row for started games
+    const stateBadge = started
+      ? `<span class="adj-badge ${gameState === 'in_progress' ? 'badge-live' : 'badge-final'}">${gameState === 'in_progress' ? '● LIVE' : 'FINAL'}</span>`
+      : '';
+
+    // Card opacity class — PASS cards in upcoming section get card-pass
+    const cardCls = started
+      ? (gameState === 'in_progress' ? 'card-in-progress' : 'card-final')
+      : (isPass ? 'card-pass' : '');
+
+    // PASS hiding only applies to upcoming section (data-pass attr)
+    const passAttr = (!started && isPass) ? ' data-pass="1"' : '';
+
+    // EV sub-label: suppress steam annotation for locked games
+    const evSub = !started && side.conf != null && side.conf <= STEAM_LABEL_THRESHOLD
+      ? `↓steam (raw ${(side.rawEv * 100).toFixed(1)}%)`
+      : 'p=' + side.winProb;
+
+    return `
+    <div class="pitcher-card${cardCls ? ' ' + cardCls : ''}"${passAttr}${evBorder ? ` style="${evBorder}"` : ''}>
+      <div class="card-header">
+        <div class="card-header-left">
+          <span class="pitcher-name">${esc(p.pitcher)}</span>
+          <span class="pitcher-matchup">${abbr(p.team)} vs ${abbr(p.opp_team)}</span>
+        </div>
+        <span class="verdict-badge ${verdictClass(side.verdict, side.direction)}">${badgeLabel(side)}</span>${side.result ? `<span class="result-badge result-${side.result}">${side.result === 'win' ? 'W' : side.result === 'loss' ? 'L' : 'P'}</span>` : ''}
+      </div>
+      <div class="stats-row">
+        <div class="stat-cell">
+          <div class="stat-label">Line</div>
+          <div class="stat-value">${p.k_line}</div>
+          <div class="stat-sub">${fmtOdds(side.odds)}${steamIndicator}</div>
+        </div>
+        <div class="stat-cell">
+          <div class="stat-label">Proj K</div>
+          <div class="stat-value">${p.lambda}</div>
+          <div class="stat-sub">${p.actual_ks != null ? `Actual: ${p.actual_ks}` : `vs line ${p.k_line}`}</div>
+        </div>
+        <div class="stat-cell">
+          <div class="stat-label">EV</div>
+          <div class="stat-value ${side.ev > 0 ? 'val-pos' : 'val-neg'}">${(side.ev * 100).toFixed(1)}%</div>
+          <div class="stat-sub">${evSub}</div>
+        </div>
+      </div>
+      <div class="adj-row">
+        ${adjBadge('OPP K%', p.opp_k_rate, 0.227)}
+        ${umpHtml}
+        ${stateBadge}
+        <span class="game-time">${fmtTime(p.game_time)}</span>
+      </div>
+    </div>`;
+  }
+
+  function renderProps(pitchers, isPast = false) {
+    const el = document.getElementById('panel-props');
+
+    // Split into upcoming and started, each sorted by game time
+    const byTime = (a, b) => (a.game_time || '').localeCompare(b.game_time || '');
+    const upcoming = pitchers.filter(p => getGameState(p) === 'pregame').sort(byTime);
+    const started  = pitchers.filter(p => getGameState(p) !== 'pregame').sort(byTime);
+
+    const hasAction  = upcoming.some(p => bestSide(p).verdict !== 'PASS');
+    const passCount  = upcoming.filter(p => bestSide(p).verdict === 'PASS').length;
+
+    let html = '';
+
+    // Date / count header
+    if (pitchers.length > 0) {
+      html += `<div class="section-date">${pitchers.length} pitcher${pitchers.length !== 1 ? 's' : ''}${isPast ? '' : ' today'}</div>`;
+    }
+
+    // Grading summary for past dates with results
+    if (isPast) {
+      const results = pitchers
+        .map(p => bestSide(p))
+        .filter(s => s.result && s.verdict !== 'PASS')
+        .map(s => s.result);
+      if (results.length > 0) {
+        const wins = results.filter(r => r === 'win').length;
+        const losses = results.filter(r => r === 'loss').length;
+        const pushes = results.filter(r => r === 'push').length;
+        html += `<div class="grading-summary">${wins}W \u2013 ${losses}L${pushes ? ` \u2013 ${pushes}P` : ''}</div>`;
+      }
+    }
+
+    // PASS toggle — only relevant for the upcoming section
+    if (hasAction && upcoming.length > 0) {
+      html += `<div class="show-all-row">
+        <label>
+          <input type="checkbox" id="show-all" onchange="togglePassCards()">
+          Show PASS verdicts${passCount > 0 ? ` (${passCount})` : ''}
+        </label>
+      </div>`;
+    }
+
+    // ── Upcoming section ──────────────────────────────────────
+    for (const p of upcoming) {
+      html += renderCard(p, 'pregame');
+    }
+
+    // ── Divider ───────────────────────────────────────────────
+    if (started.length > 0) {
+      html += `<div class="game-divider"><span>In Progress / Final</span></div>`;
+    }
+
+    // ── Started section (locked snapshots, read-only display) ─
+    for (const p of started) {
+      html += renderCard(p, getGameState(p));
+    }
+
+    el.innerHTML = html || '<p class="empty">No props available.</p>';
+
+    // Hide PASS cards by default if there are actionable upcoming verdicts
+    if (hasAction) togglePassCards();
+  }
+
+  function togglePassCards() {
+    const show = document.getElementById('show-all')?.checked;
+    document.querySelectorAll('[data-pass="1"]').forEach(el => {
+      el.style.display = show ? 'block' : 'none';
+    });
+  }
+
+  // ── Watchlist tab ─────────────────────────────────────────
+  function renderWatchlist(pitchers) {
+    const el = document.getElementById('panel-watch');
+
+    // Filter: FIRE/LEAN only, pre-game only, with non-zero movement on model's side
+    const movers = [...pitchers]
+      .map(p => {
+        const side = bestSide(p);
+        const steam = steamLabel(p, side.direction);
+        return { p, side, steam };
+      })
+      .filter(({ p, side, steam }) =>
+        side.verdict !== 'PASS' &&
+        getGameState(p) === 'pregame' &&
+        steam != null && steam.cents > 0
+      )
+      .sort((a, b) => b.steam.cents - a.steam.cents);
+
+    if (!movers.length) {
+      el.innerHTML = '<p class="empty">No steam moves yet — check back once lines update.</p>';
+      return;
+    }
+
+    let html = '<div class="watchlist-hd">Steam moves today</div>';
+    for (const { p, side, steam } of movers) {
+      // Show odds for the side with the bigger move
+      const openOdds = steam.biggerIsOver ? p.opening_over_odds : p.opening_under_odds;
+      const currOdds = steam.biggerIsOver ? p.best_over_odds : p.best_under_odds;
+      html += `
+      <div class="watch-card">
+        <div class="watch-left">
+          <span class="pitcher-name" style="color:var(--ink)">${esc(p.pitcher)}</span>
+          <span class="pitcher-matchup" style="color:var(--ink-dim)">${abbr(p.team)} vs ${abbr(p.opp_team)}</span>
+        </div>
+        <div class="watch-mid">
+          <span style="font-size:10px;text-transform:uppercase;letter-spacing:.05em">${side.direction} (${p.k_line}K)</span>
+          <span>${fmtOdds(openOdds)} → ${fmtOdds(currOdds)}</span>
+          ${steam.html}
+        </div>
+        <span class="verdict-badge ${verdictClass(side.verdict, side.direction)}">${badgeLabel(side)}</span>
+      </div>`;
+    }
+
+    el.innerHTML = html;
+  }
+
+  // ── Tab switching ─────────────────────────────────────────
+  function switchTab(name, btn) {
+    document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+    document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+    document.getElementById('panel-' + name).classList.add('active');
+    btn.classList.add('active');
+    if (name === 'perf' && !window._perfLoaded) {
+      loadPerformance();
+      window._perfLoaded = true;
+    }
+  }
+
+  // ── Performance tab ───────────────────────────────────────
+  async function loadPerformance() {
+    const el = document.getElementById('panel-perf');
+    try {
+      const resp = await fetch(PERF_URL + '?t=' + Date.now());
+      if (!resp.ok) throw new Error('not found');
+      const data = await resp.json();
+      renderPerformance(data, el);
+    } catch {
+      el.innerHTML = '<p class="perf-empty">Performance data not yet available.</p>';
+    }
+  }
+
+  function perfVerdictBadge(verdict, side) {
+    const v = (verdict || '').toUpperCase();
+    const isOver = (side || '').toUpperCase() === 'OVER';
+    let cls = 'pvb-pass';
+    if (v.startsWith('FIRE')) cls = isOver ? 'pvb-fire-over' : 'pvb-fire';
+    else if (v === 'LEAN') cls = 'pvb-lean';
+    return `<span class="perf-verdict-badge ${cls}">${esc(verdict)}</span>`;
+  }
+
+  function renderPerformance(data, el) {
+    if (!data || !Array.isArray(data.rows)) {
+      el.innerHTML = '<p class="perf-empty">Performance data not yet available.</p>';
+      return;
+    }
+
+    // Build footer content (unchanged section)
+    const la = data.lambda_accuracy;
+    const lambdaRow = la && la.avg_predicted != null
+      ? `<p class="perf-lam">Model predicted <strong>${la.avg_predicted.toFixed(2)}</strong> avg Ks &mdash; actual was <strong>${la.avg_actual.toFixed(2)}</strong> (bias: ${la.bias >= 0 ? '+' : ''}${la.bias.toFixed(2)})</p>`
+      : '';
+    const calNote = data.last_calibrated
+      ? `<p class="perf-cal">Last recalibrated ${esc(data.last_calibrated.slice(0, 10))} &mdash; n=${data.calibration_sample} picks</p>`
+      : `<p class="perf-cal">Tracking ${data.total_picks} pick${data.total_picks !== 1 ? 's' : ''} &mdash; accuracy stats unlock at 30 graded results</p>`;
+    const notes = Array.isArray(data.calibration_notes) ? data.calibration_notes.slice(0, 10) : [];
+    const notesBox = notes.length > 0
+      ? `<div class="perf-notes"><div class="perf-notes-title">Model Calibration Log</div><ul>${notes.map(n => `<li>${esc(n)}</li>`).join('')}</ul></div>`
+      : '';
+
+    el.innerHTML = `
+      <div id="perf-strip-wrap"></div>
+      <div class="perf-filters">
+        <button class="perf-filter-btn active" data-filter="ALL">ALL</button>
+        <button class="perf-filter-btn" data-filter="FIRE 2u">FIRE 2u</button>
+        <button class="perf-filter-btn" data-filter="FIRE 1u">FIRE 1u</button>
+        <button class="perf-filter-btn" data-filter="LEAN">LEAN</button>
+      </div>
+      <div id="perf-table-wrap"></div>
+      <div class="perf-footer">${lambdaRow}${calNote}${notesBox}</div>
+    `;
+
+    function buildAggregate(rows) {
+      let totalPicks = 0, totalWins = 0, totalUnits = 0;
+      rows.forEach(r => {
+        if (r.picks > 0) {
+          totalPicks += r.picks;
+          if (r.win_pct != null) totalWins += Math.round(r.picks * r.win_pct);
+          if (r.roi != null) totalUnits += (r.roi / 100) * r.picks;
+        }
+      });
+      const totalLosses = totalPicks - totalWins;
+      const hasData = totalPicks > 0;
+      const aggWinPct = hasData ? (totalWins / totalPicks * 100).toFixed(1) + '%' : '—';
+      const aggUnits  = hasData ? (totalUnits >= 0 ? '+' : '') + totalUnits.toFixed(1) + 'u' : '—';
+      const aggROI    = hasData ? (totalUnits >= 0 ? '+' : '') + (totalUnits / totalPicks * 100).toFixed(1) + '%' : '—';
+      const posCls = hasData && totalUnits > 0 ? 'pos' : '';
+      const negCls = hasData && totalUnits < 0 ? 'neg' : '';
+      return `<div class="perf-strip">
+        <div class="perf-strip-block">
+          <div class="perf-strip-label">Record</div>
+          <div class="perf-strip-value">${hasData ? totalWins + '-' + totalLosses : '—'}</div>
+          <div class="perf-strip-sub">${totalPicks} picks</div>
+        </div>
+        <div class="perf-strip-block">
+          <div class="perf-strip-label">Win %</div>
+          <div class="perf-strip-value">${aggWinPct}</div>
+        </div>
+        <div class="perf-strip-block">
+          <div class="perf-strip-label">Net Units</div>
+          <div class="perf-strip-value ${posCls || negCls}">${aggUnits}</div>
+        </div>
+        <div class="perf-strip-block">
+          <div class="perf-strip-label">ROI</div>
+          <div class="perf-strip-value ${posCls || negCls}">${aggROI}</div>
+        </div>
+      </div>`;
+    }
+
+    function buildTable(rows) {
+      const rowsHtml = rows.map((r, i) => {
+        const side = esc(r.side.charAt(0).toUpperCase() + r.side.slice(1));
+        const altCls = i % 2 === 1 ? 'perf-row-alt' : '';
+        if (r.picks === 0) {
+          return `<div class="perf-flex-row ${altCls}">
+            <div class="perf-col-verdict">${perfVerdictBadge(r.verdict, r.side)}</div>
+            <div class="perf-col-side perf-side">${side}</div>
+            <div class="perf-col-picks perf-num perf-picks" style="color:var(--ink-dim)">0</div>
+            <div class="perf-col-winpct perf-num" style="color:var(--ink-dim)">—</div>
+            <div class="perf-col-units perf-num perf-units" style="color:var(--ink-dim)">—</div>
+            <div class="perf-col-roi perf-num perf-roi" style="color:var(--ink-dim)">—</div>
+            <div class="perf-col-avgev perf-num perf-avgev">—</div>
+          </div>`;
+        }
+        const winPct   = r.win_pct != null ? (r.win_pct * 100).toFixed(1) + '%' : '—';
+        const roiVal   = r.roi != null ? (r.roi >= 0 ? '+' : '') + r.roi.toFixed(1) + '%' : '—';
+        const avgEv    = r.avg_ev != null ? (r.avg_ev * 100).toFixed(1) + '%' : '—';
+        const unitsRaw = r.roi != null ? (r.roi / 100) * r.picks : null;
+        const units    = unitsRaw != null ? (unitsRaw >= 0 ? '+' : '') + unitsRaw.toFixed(1) + 'u' : '—';
+        const uCls = unitsRaw != null ? (unitsRaw > 0 ? 'pos' : unitsRaw < 0 ? 'neg' : '') : '';
+        const rCls = r.roi != null ? (r.roi > 0 ? 'pos' : r.roi < 0 ? 'neg' : '') : '';
+        return `<div class="perf-flex-row ${altCls}">
+          <div class="perf-col-verdict">${perfVerdictBadge(r.verdict, r.side)}</div>
+          <div class="perf-col-side perf-side">${side}</div>
+          <div class="perf-col-picks perf-num perf-picks">${r.picks}</div>
+          <div class="perf-col-winpct perf-num perf-winpct">${winPct}</div>
+          <div class="perf-col-units perf-num perf-units ${uCls}">${units}</div>
+          <div class="perf-col-roi perf-num perf-roi ${rCls}">${roiVal}</div>
+          <div class="perf-col-avgev perf-num perf-avgev">${avgEv}</div>
+        </div>`;
+      }).join('') || `<div style="padding:16px;color:var(--ink-dim);text-align:center;font-size:13px">No data for this tier</div>`;
+
+      return `<div class="perf-flex-table">
+        <div class="perf-flex-row perf-header-row">
+          <div class="perf-col-verdict">Verdict</div>
+          <div class="perf-col-side" style="text-align:center">Side</div>
+          <div class="perf-col-picks" style="text-align:center">Picks</div>
+          <div class="perf-col-winpct" style="text-align:right">Win %</div>
+          <div class="perf-col-units" style="text-align:right">Units</div>
+          <div class="perf-col-roi" style="text-align:right">ROI</div>
+          <div class="perf-col-avgev" style="text-align:right">EV</div>
+        </div>
+        ${rowsHtml}
+      </div>`;
+    }
+
+    function applyFilter(filter) {
+      const rows = filter === 'ALL' ? data.rows : data.rows.filter(r => r.verdict === filter);
+      document.getElementById('perf-strip-wrap').innerHTML = buildAggregate(rows);
+      document.getElementById('perf-table-wrap').innerHTML = buildTable(rows);
+    }
+
+    el.querySelectorAll('.perf-filter-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        el.querySelectorAll('.perf-filter-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        applyFilter(btn.dataset.filter);
+      });
+    });
+
+    applyFilter('ALL');
+  }
+
+  async function triggerRefresh() {
+    const btn = document.getElementById('refresh-btn');
+    btn.disabled = true;
+    btn.classList.add('running');
+    btn.textContent = '⟳ Running… (~3 min)';
+
+    try {
+      const res = await fetch('/.netlify/functions/trigger-pipeline', { method: 'POST' });
+      const data = await res.json();
+      if (data.status === 'triggered') {
+        btn.textContent = '✓ Triggered';
+      } else {
+        btn.textContent = '✗ Failed';
+        setTimeout(() => { btn.textContent = '↻ Refresh'; btn.disabled = false; btn.classList.remove('running'); }, 5000);
+        return;
+      }
+    } catch (e) {
+      btn.textContent = '✗ Error';
+      setTimeout(() => { btn.textContent = '↻ Refresh'; btn.disabled = false; btn.classList.remove('running'); }, 5000);
+      return;
+    }
+
+    // Re-enable after 3 minutes
+    setTimeout(() => {
+      btn.textContent = '↻ Refresh';
+      btn.disabled = false;
+      btn.classList.remove('running');
+    }, 3 * 60 * 1000);
+  }
+
+  // ── Push Notifications ────────────────────────────────────────
+  let swRegistration = null;
+
+  async function initNotifications() {
+    if (!('serviceWorker' in navigator) || !('PushManager' in window)) return;
+
+    try {
+      swRegistration = await navigator.serviceWorker.register('/sw.js');
+    } catch (err) {
+      console.warn('SW registration failed:', err);
+      return;
+    }
+
+    const btn = document.getElementById('notify-btn');
+    btn.style.display = 'flex';
+
+    const existing = await swRegistration.pushManager.getSubscription();
+    updateNotifyBtn(existing != null);
+  }
+
+  function updateNotifyBtn(subscribed) {
+    const btn = document.getElementById('notify-btn');
+    const icon = document.getElementById('notify-icon');
+    if (subscribed) {
+      btn.classList.add('active');
+      btn.title = 'Notifications on — click to disable';
+      icon.className = 'ph-bold ph-bell-ringing';
+    } else {
+      btn.classList.remove('active');
+      btn.title = 'Enable push notifications';
+      icon.className = 'ph-bold ph-bell';
+    }
+  }
+
+  async function toggleNotifications() {
+    if (!swRegistration) return;
+
+    const existing = await swRegistration.pushManager.getSubscription();
+
+    if (existing) {
+      await existing.unsubscribe();
+      fetch('/.netlify/functions/save-subscription', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ endpoint: existing.endpoint }),
+      }).catch(() => {});
+      updateNotifyBtn(false);
+      return;
+    }
+
+    if (Notification.permission === 'denied') {
+      alert('Notifications are blocked. Please allow them in your browser settings.');
+      return;
+    }
+
+    // Fetch public VAPID key from server
+    let vapidPublicKey;
+    try {
+      const res = await fetch('/.netlify/functions/save-subscription');
+      vapidPublicKey = (await res.json()).vapidPublicKey;
+    } catch (err) {
+      console.error('Could not fetch VAPID key:', err);
+      return;
+    }
+
+    const permission = await Notification.requestPermission();
+    if (permission !== 'granted') return;
+
+    let subscription;
+    try {
+      subscription = await swRegistration.pushManager.subscribe({
+        userVisibleOnly: true,
+        applicationServerKey: urlBase64ToUint8Array(vapidPublicKey),
+      });
+    } catch (err) {
+      console.error('Push subscribe failed:', err);
+      return;
+    }
+
+    fetch('/.netlify/functions/save-subscription', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(subscription),
+    }).catch(() => {});
+
+    updateNotifyBtn(true);
+  }
+
+  function urlBase64ToUint8Array(b64) {
+    const padding = '='.repeat((4 - b64.length % 4) % 4);
+    const base64 = (b64 + padding).replace(/-/g, '+').replace(/_/g, '/');
+    const raw = atob(base64);
+    return Uint8Array.from([...raw].map((c) => c.charCodeAt(0)));
+  }
+</script>
+</body>
+</html>

@@ -1,0 +1,219 @@
+name: Shadow Market Infrastructure
+
+on:
+  workflow_dispatch:
+    inputs:
+      date:
+        description: "Optional YYYY-MM-DD slate date; defaults to today's Phoenix date"
+        required: false
+        type: string
+      capture_therundown_mainline:
+        description: "Poll TheRundown mainline and write normalized market snapshots to Supabase"
+        required: false
+        type: boolean
+        default: true
+      capture_propline:
+        description: "Poll PropLine and write normalized market snapshots to Supabase"
+        required: false
+        type: boolean
+        default: true
+      capture_artifacts:
+        description: "Copy selected JSON artifacts to Supabase artifact_snapshots"
+        required: false
+        type: boolean
+        default: true
+      build_market_lines:
+        description: "Build shadow current/official market line tables from captured snapshots"
+        required: false
+        type: boolean
+        default: true
+      run_cutover_compare:
+        description: "Run the provider cutover shadow comparison report"
+        required: false
+        type: boolean
+        default: false
+      run_executable_market_shadow:
+        description: "Run shadow best-executable book/line/side EV audit for Monday cutover review"
+        required: false
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: shadow-market-infra-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  shadow-capture:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+          cache-dependency-path: pipeline/requirements.txt
+
+      - name: Install dependencies
+        run: pip install -r pipeline/requirements.txt
+
+      - name: Resolve slate date
+        id: slate
+        run: |
+          SLATE_DATE="${{ github.event.inputs.date }}"
+          if [ -z "$SLATE_DATE" ]; then
+            SLATE_DATE=$(TZ=America/Phoenix date +%Y-%m-%d)
+          fi
+          echo "date=$SLATE_DATE" >> "$GITHUB_OUTPUT"
+          echo "Shadow slate date: $SLATE_DATE"
+
+      - name: Resolve capture flags
+        id: capture
+        run: |
+          CAPTURE_THERUNDOWN_MAINLINE="${{ github.event.inputs.capture_therundown_mainline }}"
+          CAPTURE_PROPLINE="${{ github.event.inputs.capture_propline }}"
+          CAPTURE_ARTIFACTS="${{ github.event.inputs.capture_artifacts }}"
+          BUILD_MARKET_LINES="${{ github.event.inputs.build_market_lines }}"
+          RUN_CUTOVER_COMPARE="${{ github.event.inputs.run_cutover_compare }}"
+          RUN_EXECUTABLE_MARKET_SHADOW="${{ github.event.inputs.run_executable_market_shadow }}"
+
+          if [ -z "$CAPTURE_THERUNDOWN_MAINLINE" ]; then
+            CAPTURE_THERUNDOWN_MAINLINE="true"
+          fi
+          if [ -z "$CAPTURE_PROPLINE" ]; then
+            CAPTURE_PROPLINE="true"
+          fi
+          if [ -z "$CAPTURE_ARTIFACTS" ]; then
+            CAPTURE_ARTIFACTS="true"
+          fi
+          if [ -z "$BUILD_MARKET_LINES" ]; then
+            BUILD_MARKET_LINES="true"
+          fi
+          if [ -z "$RUN_CUTOVER_COMPARE" ]; then
+            RUN_CUTOVER_COMPARE="false"
+          fi
+          if [ -z "$RUN_EXECUTABLE_MARKET_SHADOW" ]; then
+            RUN_EXECUTABLE_MARKET_SHADOW="false"
+          fi
+
+          echo "capture_therundown_mainline=$CAPTURE_THERUNDOWN_MAINLINE" >> "$GITHUB_OUTPUT"
+          echo "capture_propline=$CAPTURE_PROPLINE" >> "$GITHUB_OUTPUT"
+          echo "capture_artifacts=$CAPTURE_ARTIFACTS" >> "$GITHUB_OUTPUT"
+          echo "build_market_lines=$BUILD_MARKET_LINES" >> "$GITHUB_OUTPUT"
+          echo "run_cutover_compare=$RUN_CUTOVER_COMPARE" >> "$GITHUB_OUTPUT"
+          echo "run_executable_market_shadow=$RUN_EXECUTABLE_MARKET_SHADOW" >> "$GITHUB_OUTPUT"
+          echo "Capture TheRundown mainline: $CAPTURE_THERUNDOWN_MAINLINE"
+          echo "Capture PropLine: $CAPTURE_PROPLINE"
+          echo "Capture artifacts: $CAPTURE_ARTIFACTS"
+          echo "Build market lines: $BUILD_MARKET_LINES"
+          echo "Run cutover compare: $RUN_CUTOVER_COMPARE"
+          echo "Run executable market shadow: $RUN_EXECUTABLE_MARKET_SHADOW"
+
+      - name: Validate shadow secrets
+        env:
+          CAPTURE_THERUNDOWN_MAINLINE: ${{ steps.capture.outputs.capture_therundown_mainline }}
+          CAPTURE_PROPLINE: ${{ steps.capture.outputs.capture_propline }}
+          CAPTURE_ARTIFACTS: ${{ steps.capture.outputs.capture_artifacts }}
+          BUILD_MARKET_LINES: ${{ steps.capture.outputs.build_market_lines }}
+          RUN_CUTOVER_COMPARE: ${{ steps.capture.outputs.run_cutover_compare }}
+          RUN_EXECUTABLE_MARKET_SHADOW: ${{ steps.capture.outputs.run_executable_market_shadow }}
+          PROPLINE_API_KEY: ${{ secrets.PROPLINE_API_KEY }}
+          RUNDOWN_API_KEY: ${{ secrets.RUNDOWN_API_KEY }}
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: |
+          missing=0
+          if [ "$CAPTURE_THERUNDOWN_MAINLINE" = "true" ] || [ "$CAPTURE_PROPLINE" = "true" ] || [ "$CAPTURE_ARTIFACTS" = "true" ] || [ "$BUILD_MARKET_LINES" = "true" ] || [ "$RUN_CUTOVER_COMPARE" = "true" ] || [ "$RUN_EXECUTABLE_MARKET_SHADOW" = "true" ]; then
+            if [ -z "$SUPABASE_URL" ]; then
+              echo "Missing SUPABASE_URL secret"
+              missing=1
+            fi
+            if [ -z "$SUPABASE_SERVICE_ROLE_KEY" ]; then
+              echo "Missing SUPABASE_SERVICE_ROLE_KEY secret"
+              missing=1
+            fi
+          fi
+          if [ "$CAPTURE_PROPLINE" = "true" ] && [ -z "$PROPLINE_API_KEY" ]; then
+            echo "Missing PROPLINE_API_KEY secret"
+            missing=1
+          fi
+          if [ -z "$RUNDOWN_API_KEY" ] && { [ "$CAPTURE_THERUNDOWN_MAINLINE" = "true" ] || [ "$RUN_CUTOVER_COMPARE" = "true" ]; }; then
+            echo "Missing RUNDOWN_API_KEY secret"
+            missing=1
+          fi
+          exit "$missing"
+
+      - name: Shadow TheRundown mainline to Supabase
+        if: ${{ steps.capture.outputs.capture_therundown_mainline == 'true' }}
+        env:
+          RUNDOWN_API_KEY: ${{ secrets.RUNDOWN_API_KEY }}
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          THERUNDOWN_MAINLINE_SHADOW_FAIL_ON_ERROR: "false"
+        run: python scripts/shadow_therundown_mainline_to_supabase.py "${{ steps.slate.outputs.date }}"
+
+      - name: Shadow PropLine to Supabase
+        if: ${{ steps.capture.outputs.capture_propline == 'true' }}
+        env:
+          PROPLINE_API_KEY: ${{ secrets.PROPLINE_API_KEY }}
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          PROPLINE_SHADOW_FAIL_ON_ERROR: "false"
+        run: python scripts/shadow_propline_to_supabase.py "${{ steps.slate.outputs.date }}"
+
+      - name: Shadow artifacts to Supabase
+        if: ${{ steps.capture.outputs.capture_artifacts == 'true' }}
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: |
+          python scripts/shadow_artifacts_to_supabase.py \
+            "dashboard/data/processed/today.json" \
+            "dashboard/data/processed/${{ steps.slate.outputs.date }}.json" \
+            "dashboard/data/processed/steam.json" \
+            "dashboard/data/performance.json" \
+            "data/picks_history.json" \
+            "data/preview_lines.json" \
+            "data/params.json"
+
+      - name: Build shadow current and official market lines
+        if: ${{ steps.capture.outputs.build_market_lines == 'true' }}
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: |
+          python scripts/build_current_market_lines_to_supabase.py --date "${{ steps.slate.outputs.date }}"
+          python scripts/build_official_market_lines_to_supabase.py --date "${{ steps.slate.outputs.date }}"
+          python scripts/compact_market_snapshots.py --date "${{ steps.slate.outputs.date }}"
+
+      - name: Provider cutover shadow compare
+        if: ${{ steps.capture.outputs.run_cutover_compare == 'true' }}
+        env:
+          RUNDOWN_API_KEY: ${{ secrets.RUNDOWN_API_KEY }}
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: |
+          python analytics/diagnostics/provider_cutover_shadow_compare.py --date "${{ steps.slate.outputs.date }}" --provider-min-props 1
+          cat "analytics/output/provider_cutover_shadow_compare_${{ steps.slate.outputs.date }}.md"
+
+      - name: Best executable market shadow audit
+        if: ${{ steps.capture.outputs.run_executable_market_shadow == 'true' }}
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: |
+          MODEL_URL="https://raw.githubusercontent.com/treidjbi/BaseballbettingEdge/main/dashboard/data/processed/today.json"
+          PHOENIX_TODAY=$(TZ=America/Phoenix date +%Y-%m-%d)
+          if [ "${{ steps.slate.outputs.date }}" != "$PHOENIX_TODAY" ]; then
+            MODEL_URL="https://raw.githubusercontent.com/treidjbi/BaseballbettingEdge/main/dashboard/data/processed/${{ steps.slate.outputs.date }}.json"
+          fi
+          python analytics/diagnostics/executable_market_shadow_audit.py \
+            --date "${{ steps.slate.outputs.date }}" \
+            --model-json-url "$MODEL_URL" \
+            --top 20

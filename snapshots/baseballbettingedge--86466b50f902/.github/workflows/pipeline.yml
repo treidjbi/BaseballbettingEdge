@@ -1,0 +1,258 @@
+name: Baseball Pipeline
+
+on:
+  workflow_dispatch:        # manual trigger for testing
+    inputs:
+      mode:
+        description: "Run mode"
+        type: choice
+        required: false
+        default: pipeline
+        options:
+          - pipeline
+          - preview
+          - grading
+          - propline_probe
+          - lock
+      date:
+        description: "Optional YYYY-MM-DD game date for manual runs/probes"
+        required: false
+        type: string
+
+permissions:
+  contents: write           # allows the bot to commit + push output files
+
+# Prevent two runs from writing picks_history.json simultaneously.
+# cancel-in-progress: false queues the newer run instead of discarding it,
+# so no scheduled run is silently dropped.
+concurrency:
+  group: pipeline-run
+  cancel-in-progress: false
+
+jobs:
+  run-pipeline:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          persist-credentials: true
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+          cache-dependency-path: pipeline/requirements.txt
+
+      - name: Install dependencies
+        run: pip install -r pipeline/requirements.txt
+
+      - name: Run pipeline
+        env:
+          RUNDOWN_API_KEY: ${{ secrets.RUNDOWN_API_KEY }}
+          ODDS_API_KEY: ${{ secrets.ODDS_API_KEY }}
+          PROPLINE_API_KEY: ${{ secrets.PROPLINE_API_KEY }}
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          OFFICIAL_MARKET_SOURCE: ${{ vars.OFFICIAL_MARKET_SOURCE }}
+          ENABLE_BOLTODDS_PIPELINE_SOURCE: ${{ vars.ENABLE_BOLTODDS_PIPELINE_SOURCE }}
+          OFFICIAL_MARKET_STRICT: ${{ vars.OFFICIAL_MARKET_STRICT }}
+          OFFICIAL_MARKET_MIN_PROPS: ${{ vars.OFFICIAL_MARKET_MIN_PROPS }}
+          ENABLE_SUPABASE_LOCK_CONSUMER: ${{ vars.ENABLE_SUPABASE_LOCK_CONSUMER }}
+          SUPABASE_LOCK_CONSUMER_STRICT: ${{ vars.SUPABASE_LOCK_CONSUMER_STRICT }}
+          ENABLE_GITHUB_FALLBACK_LOCKING: ${{ vars.ENABLE_GITHUB_FALLBACK_LOCKING }}
+        run: |
+          SCHEDULE="${{ github.event.schedule }}"
+          TODAY=$(TZ=America/Phoenix date +%Y-%m-%d)
+          MODE="${{ github.event.inputs.mode }}"
+          INPUT_DATE="${{ github.event.inputs.date }}"
+
+          if [ -n "$INPUT_DATE" ]; then
+            TODAY="$INPUT_DATE"
+          fi
+
+          if [ "$MODE" = "propline_probe" ]; then
+            python scripts/probe_propline_books.py "$TODAY"
+            exit 0
+          fi
+
+          if [ "$MODE" = "preview" ]; then
+            python pipeline/run_pipeline.py $TODAY --run-type preview
+            exit 0
+          fi
+
+          if [ "$MODE" = "grading" ]; then
+            python pipeline/run_pipeline.py $TODAY --run-type grading
+            exit 0
+          fi
+
+          if [ "$MODE" = "lock" ]; then
+            python pipeline/run_pipeline.py $TODAY --run-type lock
+            exit 0
+          fi
+
+          if [ "$SCHEDULE" = "17 7 * * *" ]; then
+            # 12:17am Phoenix — preview: fetch today's lines as opening baseline
+            # At midnight we've already rolled into the game day, so TODAY is correct
+            python pipeline/run_pipeline.py $TODAY --run-type preview
+
+          elif [ "$SCHEDULE" = "17 10 * * *" ]; then
+            # 3:17am Phoenix — grading: grade previous day's picks + calibrate
+            python pipeline/run_pipeline.py $TODAY --run-type grading
+
+          elif [ "$SCHEDULE" = "7 15 * * *" ] || \
+               [ "$SCHEDULE" = "37 15 * * *" ] || \
+               [ "$SCHEDULE" = "7 16 * * *" ] || \
+               [ "$SCHEDULE" = "37 16 * * *" ] || \
+               [ "$SCHEDULE" = "7 17 * * *" ] || \
+               [ "$SCHEDULE" = "37 17 * * *" ] || \
+               [ "$SCHEDULE" = "7 18 * * *" ] || \
+               [ "$SCHEDULE" = "37 18 * * *" ] || \
+               [ "$SCHEDULE" = "7 19 * * *" ] || \
+               [ "$SCHEDULE" = "37 19 * * *" ] || \
+               [ "$SCHEDULE" = "7 20 * * *" ] || \
+               [ "$SCHEDULE" = "37 20 * * *" ] || \
+               [ "$SCHEDULE" = "7 21 * * *" ] || \
+               [ "$SCHEDULE" = "37 21 * * *" ] || \
+               [ "$SCHEDULE" = "7 22 * * *" ] || \
+               [ "$SCHEDULE" = "37 22 * * *" ] || \
+               [ "$SCHEDULE" = "7 23 * * *" ] || \
+               [ "$SCHEDULE" = "37 23 * * *" ] || \
+               [ "$SCHEDULE" = "7 0 * * *" ] || \
+               [ "$SCHEDULE" = "37 0 * * *" ] || \
+               [ "$SCHEDULE" = "7 1 * * *" ]; then
+            # 8:07am–6:07pm Phoenix (every 30 min) — full refresh: fresh odds + lineups,
+            # update unlocked picks with latest verdict/EV, then lock T-30min picks
+            python pipeline/run_pipeline.py $TODAY
+
+          else
+            # 6am Phoenix — full: finalize today's picks (uses midnight preview lines as opening)
+            python pipeline/run_pipeline.py $TODAY
+          fi
+
+      - name: Commit pipeline output
+        if: ${{ github.event_name != 'workflow_dispatch' || github.event.inputs.mode != 'propline_probe' }}
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          SCHEDULE="${{ github.event.schedule }}"
+          MODE="${{ github.event.inputs.mode }}"
+          RUN_TYPE="full"
+          if [ "$MODE" = "lock" ]; then
+            RUN_TYPE="lock"
+          elif [ "$MODE" = "preview" ]; then
+            RUN_TYPE="preview"
+          elif [ "$MODE" = "grading" ]; then
+            RUN_TYPE="grading"
+          elif [ "$SCHEDULE" = "17 7 * * *" ]; then
+            RUN_TYPE="preview"
+          elif [ "$SCHEDULE" = "17 10 * * *" ]; then
+            RUN_TYPE="grading"
+          fi
+
+          if [ "$RUN_TYPE" = "grading" ]; then
+            git add dashboard/data/processed/[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9].json 2>/dev/null || true
+            test -f dashboard/data/performance.json && git add dashboard/data/performance.json || true
+            test -f data/picks_history.json        && git add data/picks_history.json        || true
+            test -f data/params.json               && git add data/params.json               || true
+          else
+            git add dashboard/data/processed/
+            test -f dashboard/data/performance.json && git add dashboard/data/performance.json || true
+            test -f data/picks_history.json        && git add data/picks_history.json        || true
+            test -f data/params.json               && git add data/params.json               || true
+            test -f data/preview_lines.json        && git add data/preview_lines.json        || true
+            git add data/batter_splits_*.json 2>/dev/null || true
+          fi
+          git diff --staged --quiet || git commit -m "chore: pipeline update $(date -u +%Y-%m-%dT%H:%M:%SZ)"
+          # Retry push up to 4 times with exponential backoff (2 / 4 / 8 / 16 s).
+          # The concurrency group above prevents overlapping runs, but a transient
+          # network hiccup can still fail a push; retrying keeps picks_history.json
+          # from going stale on the remote.
+          for attempt in 1 2 3 4; do
+            git pull --rebase && git push && break
+            if [ "$attempt" = "4" ]; then
+              echo "ERROR: git push failed after 4 attempts — picks_history.json may be stale on remote" >&2
+              exit 1
+            fi
+            echo "Push attempt $attempt failed; retrying in $((2 ** attempt))s..."
+            sleep $((2 ** attempt))
+          done
+
+      - name: Publish artifacts to Supabase
+        if: ${{ vars.ENABLE_SUPABASE_ARTIFACT_PUBLISH == 'true' && (github.event_name != 'workflow_dispatch' || github.event.inputs.mode != 'propline_probe') }}
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: |
+          SCHEDULE="${{ github.event.schedule }}"
+          MODE="${{ github.event.inputs.mode }}"
+          TODAY=$(TZ=America/Phoenix date +%Y-%m-%d)
+          INPUT_DATE="${{ github.event.inputs.date }}"
+          if [ -n "$INPUT_DATE" ]; then
+            TODAY="$INPUT_DATE"
+          fi
+          RUN_TYPE="full"
+          if [ "$MODE" = "lock" ]; then
+            RUN_TYPE="lock"
+          elif [ "$MODE" = "preview" ]; then
+            RUN_TYPE="preview"
+          elif [ "$MODE" = "grading" ]; then
+            RUN_TYPE="grading"
+          elif [ "$SCHEDULE" = "17 7 * * *" ]; then
+            RUN_TYPE="preview"
+          elif [ "$SCHEDULE" = "17 10 * * *" ]; then
+            RUN_TYPE="grading"
+          fi
+          export PIPELINE_RUN_TYPE="$RUN_TYPE"
+          PUBLISH_DATE="$TODAY"
+          ARTIFACT_SCOPE="all"
+          if [ "$RUN_TYPE" = "grading" ]; then
+            PUBLISH_DATE=$(TZ=America/Phoenix date -d "$TODAY -1 day" +%Y-%m-%d)
+            ARTIFACT_SCOPE="grading"
+          fi
+          ARTIFACT_COMMIT_SHA=$(git rev-parse HEAD)
+
+          python scripts/publish_pipeline_artifacts_to_supabase.py \
+            --date "$PUBLISH_DATE" \
+            --source github_actions \
+            --source-run-id "${{ github.run_id }}" \
+            --source-commit-sha "$ARTIFACT_COMMIT_SHA" \
+            --scope "$ARTIFACT_SCOPE" \
+            --execute
+
+      - name: Send push notifications
+        if: ${{ success() && (github.event_name != 'workflow_dispatch' || github.event.inputs.mode != 'propline_probe') }}
+        env:
+          NOTIFY_SECRET: ${{ secrets.NOTIFY_SECRET }}
+          NETLIFY_SITE_URL: ${{ secrets.NETLIFY_SITE_URL }}
+          ENABLE_GITHUB_LEGACY_NOTIFICATIONS: ${{ vars.ENABLE_GITHUB_LEGACY_NOTIFICATIONS }}
+        run: |
+          LEGACY_NOTIFICATIONS="$(printf '%s' "${ENABLE_GITHUB_LEGACY_NOTIFICATIONS:-true}" | tr '[:upper:]' '[:lower:]')"
+          if [ "$LEGACY_NOTIFICATIONS" = "false" ] || [ "$LEGACY_NOTIFICATIONS" = "0" ] || [ "$LEGACY_NOTIFICATIONS" = "no" ] || [ "$LEGACY_NOTIFICATIONS" = "off" ]; then
+            echo "GitHub legacy notifications disabled — live notification layer is primary"
+            exit 0
+          fi
+          # Skip if secrets not configured yet
+          if [ -z "$NOTIFY_SECRET" ] || [ -z "$NETLIFY_SITE_URL" ]; then
+            echo "Push notifications not configured — skipping (set NOTIFY_SECRET and NETLIFY_SITE_URL secrets to enable)"
+            exit 0
+          fi
+          SCHEDULE="${{ github.event.schedule }}"
+          MODE="${{ github.event.inputs.mode }}"
+          if [ "$MODE" = "grading" ] || [ "$SCHEDULE" = "17 10 * * *" ]; then
+            RUN_TYPE="grading"
+          elif [ "$MODE" = "preview" ] || [ "$SCHEDULE" = "17 7 * * *" ]; then
+            RUN_TYPE="preview"
+          else
+            RUN_TYPE="full"
+          fi
+          curl -sf -X POST \
+            -H "x-notify-secret: $NOTIFY_SECRET" \
+            -H "Content-Type: application/json" \
+            -d "{\"runType\":\"$RUN_TYPE\"}" \
+            "$NETLIFY_SITE_URL/.netlify/functions/send-notifications" \
+            && echo "Notifications sent" \
+            || echo "Notification call failed (non-fatal)"

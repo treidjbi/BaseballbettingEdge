@@ -1,0 +1,1071 @@
+import pytest
+import sys
+import os
+import json
+import tempfile
+from unittest.mock import patch
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'pipeline'))
+
+from build_features import (
+    american_to_implied,
+    calc_lambda,
+    calc_ev,
+    calc_edge,
+    calc_verdict,
+    calc_price_delta,
+    blend_k9,
+    calc_rest_k9_delta,
+    calc_swstr_delta_k9,
+    calc_lineup_k_rate,
+    calc_lineup_k_rate_details,
+    calc_movement_confidence,
+    bayesian_opp_k,
+    is_opener,
+    OPENER_NOTE,
+    build_pitcher_record,
+    platoon_k_delta,
+    PLATOON_K_DELTA,
+    LEAGUE_AVG_K_RATE,
+    LEAGUE_AVG_SWSTR,
+)
+
+
+class TestAmericanToImplied:
+    def test_minus_110(self):
+        assert abs(american_to_implied(-110) - 0.5238) < 0.001
+
+    def test_plus_100(self):
+        assert abs(american_to_implied(100) - 0.5) < 0.001
+
+    def test_minus_200(self):
+        assert abs(american_to_implied(-200) - 0.6667) < 0.001
+
+    def test_plus_150(self):
+        assert abs(american_to_implied(150) - 0.4) < 0.001
+
+
+class TestBlendK9:
+    def test_early_season_leans_on_career(self):
+        # 9 IP → w_season=0.15, w_recent=0.2, w_career=0.65 → 0.15*9 + 0.2*9 + 0.65*7 = 7.70
+        result = blend_k9(season_k9=9.0, recent_k9=9.0, career_k9=7.0, ip=9)
+        assert abs(result - 7.70) < 0.05
+
+    def test_full_season_leans_on_season(self):
+        # 90 IP → w_season=0.7 (capped), w_recent=0.2, w_career=0.1 → 0.7*10 + 0.2*9 + 0.1*8 = 9.6
+        result = blend_k9(season_k9=10.0, recent_k9=9.0, career_k9=8.0, ip=90)
+        assert abs(result - 9.6) < 0.05
+
+    def test_rookie_career_fallback(self):
+        result = blend_k9(season_k9=8.0, recent_k9=8.0, career_k9=8.0, ip=18)
+        assert abs(result - 8.0) < 0.05
+
+    def test_weights_sum_to_one(self):
+        result = blend_k9(season_k9=10.0, recent_k9=8.0, career_k9=6.0, ip=30)
+        assert 6.0 <= result <= 10.0
+
+
+class TestCalcLambda:
+    def test_neutral_conditions(self):
+        lam = calc_lambda(blended_k9=9.0, expected_innings=5.5, opp_k_rate=0.227, ump_k_adj=0)
+        assert abs(lam - 5.5) < 0.01  # 9.0 * 5.5 / 9 = 5.5
+
+    def test_high_k_opponent_inflates_lambda(self):
+        # Pass opp_games_played=162 so Bayesian blend trusts observed data
+        lam = calc_lambda(blended_k9=9.0, expected_innings=5.5, opp_k_rate=0.255,
+                          ump_k_adj=0, opp_games_played=162)
+        assert lam > 5.5
+
+    def test_low_k_opponent_deflates_lambda(self):
+        # Pass opp_games_played=162 so Bayesian blend trusts observed data
+        lam = calc_lambda(blended_k9=9.0, expected_innings=5.5, opp_k_rate=0.200,
+                          ump_k_adj=0, opp_games_played=162)
+        assert lam < 5.5
+
+    def test_positive_ump_adj_raises_lambda(self):
+        lam_no_ump = calc_lambda(9.0, 5.5, 0.227, 0)
+        lam_with_ump = calc_lambda(9.0, 5.5, 0.227, 0.4)
+        assert lam_with_ump > lam_no_ump
+
+    def test_park_factor_above_one_boosts_lambda_multiplicatively(self):
+        lam_neutral = calc_lambda(9.0, 5.5, 0.227, 0.0, park_factor=1.0)
+        lam_hitter = calc_lambda(9.0, 5.5, 0.227, 0.0, park_factor=1.2)
+        assert lam_hitter == pytest.approx(lam_neutral * 1.2)
+
+    def test_park_factor_default_is_neutral(self):
+        lam_default = calc_lambda(9.0, 5.5, 0.227, 0.0)
+        lam_explicit = calc_lambda(9.0, 5.5, 0.227, 0.0, park_factor=1.0)
+        assert lam_default == pytest.approx(lam_explicit)
+
+
+class TestCalcEV:
+    def test_positive_ev_when_expected_profit_is_positive(self):
+        ev = calc_ev(win_prob=0.572, odds=-112)
+        assert ev > 0
+
+    def test_negative_ev_when_expected_profit_is_negative(self):
+        ev = calc_ev(win_prob=0.40, odds=-110)
+        assert ev < 0
+
+    def test_zero_ev_at_breakeven(self):
+        ev = calc_ev(win_prob=0.5238, odds=-110)
+        assert abs(ev) < 0.002
+
+    def test_plus_money_ev_uses_payout_not_probability_gap(self):
+        ev = calc_ev(win_prob=0.55, odds=120)
+        assert abs(ev - 0.21) < 0.001
+
+
+class TestCalcEdge:
+    def test_edge_is_probability_gap(self):
+        edge = calc_edge(win_prob=0.55, odds=-110)
+        assert abs(edge - (0.55 - american_to_implied(-110))) < 0.0001
+
+
+class TestCalcVerdict:
+    def test_pass(self):
+        assert calc_verdict(0.005) == "PASS"
+
+    def test_pass_negative(self):
+        assert calc_verdict(-0.05) == "PASS"
+
+    def test_lean(self):
+        assert calc_verdict(0.02) == "LEAN"
+
+    def test_lean_mid_band(self):
+        assert calc_verdict(0.04) == "LEAN"
+
+    def test_fire_1u(self):
+        assert calc_verdict(0.08) == "FIRE 1u"
+
+    def test_fire_2u(self):
+        assert calc_verdict(0.18) == "FIRE 2u"
+
+    def test_band_boundaries(self):
+        assert calc_verdict(0.0199) == "PASS"
+        assert calc_verdict(0.02) == "LEAN"
+        assert calc_verdict(0.06) == "FIRE 1u"
+        assert calc_verdict(0.17) == "FIRE 2u"
+
+
+class TestIsOpener:
+    def test_true_with_two_short_recent_starts(self):
+        assert is_opener([1.0, 2.0]) is True
+
+    def test_false_with_empty_list(self):
+        assert is_opener([]) is False
+
+    def test_false_with_only_one_short_start(self):
+        assert is_opener([1.0]) is False
+
+    def test_false_when_mean_meets_threshold(self):
+        assert is_opener([2.5, 2.5, 2.5]) is False
+
+
+class TestCalcPriceDelta:
+    def test_juice_moved_to_over(self):
+        delta = calc_price_delta(current_odds=-135, opening_odds=-110)
+        assert delta == -25
+
+    def test_juice_moved_to_under(self):
+        delta = calc_price_delta(current_odds=-100, opening_odds=-110)
+        assert delta == 10
+
+    def test_no_movement(self):
+        assert calc_price_delta(-110, -110) == 0
+
+
+class TestCalcSwstrDeltaK9:
+    def test_at_career_norm_returns_zero(self):
+        assert calc_swstr_delta_k9(0.110, 0.110, 10) == 0.0
+
+    def test_no_career_returns_zero(self):
+        assert calc_swstr_delta_k9(0.150, None, 10) == 0.0
+
+    def test_zero_starts_returns_zero(self):
+        assert calc_swstr_delta_k9(0.150, 0.110, 0) == 0.0
+
+    def test_above_career_positive_delta(self):
+        # current 13%, career 11%, 10 starts → (0.02 * 30) * (10/20) = 0.30
+        result = calc_swstr_delta_k9(0.13, 0.11, 10)
+        assert abs(result - 0.30) < 0.001
+
+    def test_below_career_negative_delta(self):
+        result = calc_swstr_delta_k9(0.09, 0.11, 10)
+        assert result < 0.0
+
+    def test_dampening_increases_with_starts(self):
+        delta_3  = calc_swstr_delta_k9(0.13, 0.11, 3)
+        delta_20 = calc_swstr_delta_k9(0.13, 0.11, 20)
+        assert delta_20 > delta_3   # more starts → less dampening → larger delta
+
+    def test_custom_scale(self):
+        # scale=50: (0.02 * 50) * (10/20) = 0.50
+        result = calc_swstr_delta_k9(0.13, 0.11, 10, swstr_k9_scale=50.0)
+        assert abs(result - 0.50) < 0.001
+
+
+class TestCalcRestK9Delta:
+    def test_missing_data_returns_zero(self):
+        assert calc_rest_k9_delta(None, None) == 0.0
+
+    def test_short_rest_penalty(self):
+        assert calc_rest_k9_delta(3, 100) == pytest.approx(-0.3)
+
+    def test_high_pitch_count_penalty(self):
+        assert calc_rest_k9_delta(5, 111) == pytest.approx(-0.2)
+
+    def test_penalties_stack_additively(self):
+        assert calc_rest_k9_delta(3, 112) == pytest.approx(-0.5)
+
+    def test_neutral_when_thresholds_do_not_fire(self):
+        assert calc_rest_k9_delta(4, 110) == 0.0
+
+
+class TestCalcLambdaSwstrDelta:
+    def test_zero_delta_unchanged(self):
+        lam_no_delta = calc_lambda(9.0, 5.5, 0.227, 0, swstr_delta_k9=0.0)
+        lam_default  = calc_lambda(9.0, 5.5, 0.227, 0)
+        assert abs(lam_no_delta - lam_default) < 0.001
+
+    def test_positive_delta_inflates_lambda(self):
+        lam_base = calc_lambda(9.0, 5.5, 0.227, 0, swstr_delta_k9=0.0)
+        lam_high = calc_lambda(9.0, 5.5, 0.227, 0, swstr_delta_k9=0.5)
+        assert lam_high > lam_base
+
+    def test_negative_delta_deflates_lambda(self):
+        lam_base = calc_lambda(9.0, 5.5, 0.227, 0, swstr_delta_k9=0.0)
+        lam_low  = calc_lambda(9.0, 5.5, 0.227, 0, swstr_delta_k9=-0.5)
+        assert lam_low < lam_base
+
+    def test_delta_does_not_scale_ump_contribution(self):
+        # ump contribution is additive and independent of the swstr delta
+        lam_no_ump   = calc_lambda(9.0, 5.5, 0.227, 0.0, swstr_delta_k9=0.5)
+        lam_with_ump = calc_lambda(9.0, 5.5, 0.227, 0.4, swstr_delta_k9=0.5)
+        ump_contribution = lam_with_ump - lam_no_ump
+        assert abs(ump_contribution - (0.4 * 5.5 / 9)) < 0.01
+
+
+class TestBuildPitcherRecord:
+    """Integration test for build_pitcher_record — exercises all fallback paths."""
+
+    BASE_ODDS = {
+        "pitcher": "Test Pitcher", "team": "NYY", "opp_team": "BOS",
+        "game_time": "2026-04-01T23:05:00Z",
+        "k_line": 7.5, "opening_line": 7.5,
+        "best_over_book": "FanDuel", "best_over_odds": -110, "best_under_odds": -110,
+        "opening_over_odds": -110, "opening_under_odds": -110,
+    }
+    BASE_STATS = {
+        "season_k9": 9.0, "recent_k9": 9.0, "career_k9": 9.0,
+        "starts_count": 5, "innings_pitched_season": 30.0,
+        "avg_ip_last5": 6.0, "recent_start_ips": [6.0, 6.0, 6.0, 6.0, 6.0], "opp_k_rate": 0.227,
+    }
+
+    def test_returns_expected_keys(self):
+        from build_features import build_pitcher_record
+        rec = build_pitcher_record(self.BASE_ODDS, self.BASE_STATS, ump_k_adj=0.0)
+        for key in ["pitcher", "lambda", "avg_ip", "swstr_pct", "park_factor", "ev_over", "ev_under"]:
+            assert key in rec, f"Missing key: {key}"
+
+    def test_preserves_under_side_book(self):
+        from build_features import build_pitcher_record
+        odds = {
+            **self.BASE_ODDS,
+            "best_over_book": "FanDuel",
+            "best_under_book": "BetMGM",
+        }
+        rec = build_pitcher_record(odds, self.BASE_STATS, ump_k_adj=0.0)
+        assert rec["best_over_book"] == "FanDuel"
+        assert rec["best_under_book"] == "BetMGM"
+
+    def test_preserves_odds_source_metadata(self):
+        from build_features import build_pitcher_record
+        odds = {
+            **self.BASE_ODDS,
+            "odds_source": "therundown+the_odds+propline",
+            "the_odds_event_id": "event-123",
+            "propline_event_id": "pl-event-123",
+            "market_source_mode": "boltodds_propline",
+            "line_source_provider": "boltodds",
+            "source_snapshot_ids": [11, 12],
+            "source_current_market_line_ids": [21],
+            "official_market_line_id": 88,
+            "provider_coverage": {"fanduel": {"provider": "boltodds"}},
+            "provider_arbitration_reasons": ["fresh_complete_supported_line"],
+        }
+        rec = build_pitcher_record(odds, self.BASE_STATS, ump_k_adj=0.0)
+        assert rec["odds_source"] == "therundown+the_odds+propline"
+        assert rec["the_odds_event_id"] == "event-123"
+        assert rec["propline_event_id"] == "pl-event-123"
+        assert rec["market_source_mode"] == "boltodds_propline"
+        assert rec["line_source_provider"] == "boltodds"
+        assert rec["source_snapshot_ids"] == [11, 12]
+        assert rec["source_current_market_line_ids"] == [21]
+        assert rec["official_market_line_id"] == 88
+        assert rec["provider_coverage"] == {"fanduel": {"provider": "boltodds"}}
+        assert rec["provider_arbitration_reasons"] == ["fresh_complete_supported_line"]
+
+    def test_uses_avg_ip_last5_not_constant(self):
+        from build_features import build_pitcher_record, load_params
+        rec = build_pitcher_record(self.BASE_ODDS, self.BASE_STATS, ump_k_adj=0.0)
+        # At 9.0 K/9, neutral conditions, 6.0 IP → raw_lambda = 6.0.
+        # applied_lambda = raw_lambda + lambda_bias (from params), so assert
+        # against the bias-adjusted expectation rather than the raw value.
+        params = load_params()
+        expected_lam = 6.0 + params.get("lambda_bias", 0.0)
+        assert abs(rec["lambda"] - expected_lam) < 0.05
+        assert rec["avg_ip"] == 6.0
+
+    def test_fallback_to_constant_when_avg_ip_missing(self):
+        from build_features import build_pitcher_record, EXPECTED_INNINGS
+        stats = {**self.BASE_STATS}
+        del stats["avg_ip_last5"]
+        rec = build_pitcher_record(self.BASE_ODDS, stats, ump_k_adj=0.0)
+        assert rec["avg_ip"] == EXPECTED_INNINGS   # 5.5
+
+    def test_rookie_career_fallback(self):
+        from build_features import build_pitcher_record
+        stats = {**self.BASE_STATS, "career_k9": None, "starts_count": 2}
+        rec = build_pitcher_record(self.BASE_ODDS, stats, ump_k_adj=0.0)
+        assert rec["lambda"] > 0
+
+    def test_swstr_above_career_raises_lambda(self):
+        # Pitcher at 15% SwStr% vs 11% career baseline → positive delta → higher lambda
+        from build_features import build_pitcher_record
+        rec_neutral = build_pitcher_record(
+            self.BASE_ODDS, self.BASE_STATS, ump_k_adj=0.0,
+            swstr_data={"swstr_pct": 0.110, "career_swstr_pct": 0.110}
+        )
+        rec_high = build_pitcher_record(
+            self.BASE_ODDS, self.BASE_STATS, ump_k_adj=0.0,
+            swstr_data={"swstr_pct": 0.150, "career_swstr_pct": 0.110}
+        )
+        assert rec_high["lambda"] > rec_neutral["lambda"]
+
+    def test_swstr_at_career_no_adjustment(self):
+        # Pitcher exactly at their career norm → zero delta → same lambda as no swstr data
+        from build_features import build_pitcher_record
+        rec_no_data = build_pitcher_record(self.BASE_ODDS, self.BASE_STATS, ump_k_adj=0.0)
+        rec_at_norm = build_pitcher_record(
+            self.BASE_ODDS, self.BASE_STATS, ump_k_adj=0.0,
+            swstr_data={"swstr_pct": 0.120, "career_swstr_pct": 0.120}
+        )
+        assert abs(rec_at_norm["lambda"] - rec_no_data["lambda"]) < 0.01
+
+    def test_swstr_no_career_no_adjustment(self):
+        # No career baseline available (rookie) → zero delta → same as neutral
+        from build_features import build_pitcher_record
+        rec_no_data  = build_pitcher_record(self.BASE_ODDS, self.BASE_STATS, ump_k_adj=0.0)
+        rec_no_career = build_pitcher_record(
+            self.BASE_ODDS, self.BASE_STATS, ump_k_adj=0.0,
+            swstr_data={"swstr_pct": 0.150, "career_swstr_pct": None}
+        )
+        assert abs(rec_no_career["lambda"] - rec_no_data["lambda"]) < 0.01
+
+    def test_rest_penalty_reduces_lambda_and_surfaces_breadcrumbs(self):
+        from build_features import build_pitcher_record
+        rested_stats = {
+            **self.BASE_STATS,
+            "days_since_last_start": 5,
+            "last_pitch_count": 95,
+        }
+        taxed_stats = {
+            **self.BASE_STATS,
+            "days_since_last_start": 3,
+            "last_pitch_count": 112,
+        }
+        rec_rested = build_pitcher_record(self.BASE_ODDS, rested_stats, ump_k_adj=0.0)
+        rec_taxed = build_pitcher_record(self.BASE_ODDS, taxed_stats, ump_k_adj=0.0)
+        assert rec_taxed["raw_lambda"] < rec_rested["raw_lambda"]
+        assert rec_taxed["days_since_last_start"] == 3
+        assert rec_taxed["last_pitch_count"] == 112
+        assert rec_taxed["rest_k9_delta"] == pytest.approx(-0.5)
+
+    def test_verdict_and_win_prob_present(self):
+        from build_features import build_pitcher_record
+        rec = build_pitcher_record(self.BASE_ODDS, self.BASE_STATS, ump_k_adj=0.0)
+        assert rec["ev_over"]["verdict"] in ("PASS", "LEAN", "FIRE 1u", "FIRE 2u")
+        assert 0 <= rec["ev_over"]["win_prob"] <= 1
+
+    def test_opener_marks_metadata_without_overwriting_raw_ev(self):
+        from build_features import build_pitcher_record
+        stats = {**self.BASE_STATS, "recent_start_ips": [1.0, 2.0, 2.0]}
+        rec = build_pitcher_record(self.BASE_ODDS, stats, ump_k_adj=0.0)
+        assert rec["is_opener"] is True
+        assert rec["avg_ip"] == pytest.approx(1.67, rel=0.01)
+        assert rec["opener_note"] == OPENER_NOTE
+        assert rec["ev_over"]["verdict"] in ("PASS", "LEAN", "FIRE 1u", "FIRE 2u")
+        assert rec["ev_under"]["verdict"] in ("PASS", "LEAN", "FIRE 1u", "FIRE 2u")
+        assert rec["ev_over"]["adj_ev"] != 0.0 or rec["ev_under"]["adj_ev"] != 0.0
+
+    def test_build_pitcher_record_exposes_quality_gate_metadata_inputs(self):
+        from build_features import build_pitcher_record
+        lineup = [{"name": f"Batter {i}", "bats": "R"} for i in range(1, 10)]
+        batter_stats = {f"batter {i}": {"vs_R": 0.22, "vs_L": 0.22} for i in range(1, 10)}
+
+        rec = build_pitcher_record(
+            self.BASE_ODDS,
+            {**self.BASE_STATS, "recent_start_ips": [6.0, 5.0, 6.0, 5.0, 6.0]},
+            ump_k_adj=0.0,
+            lineup=lineup,
+            batter_stats=batter_stats,
+        )
+
+        assert rec["recent_start_count"] == 5
+        assert rec["lineup_count"] == 9
+
+    def test_non_opener_leaves_verdict_logic_unchanged(self):
+        from build_features import build_pitcher_record, calc_verdict
+        rec = build_pitcher_record(self.BASE_ODDS, self.BASE_STATS, ump_k_adj=0.0)
+        assert rec["is_opener"] is False
+        assert rec["opener_note"] is None
+        assert rec["ev_over"]["verdict"] == calc_verdict(rec["ev_over"]["adj_ev"])
+        assert rec["ev_under"]["verdict"] == calc_verdict(rec["ev_under"]["adj_ev"])
+        assert rec["ev_over"]["adj_ev"] != 0.0
+        assert rec["ev_under"]["adj_ev"] != 0.0
+
+    def test_movement_confidence_applied(self):
+        """
+        When the over line moves from -125 (opening) to -110 (current),
+        price_delta_over = -110 - (-125) = +15 → conf_over = 0.75.
+        adj_ev_over should equal round(raw_ev_over * 0.75, 4).
+        The under has no movement → conf_under = 1.0, adj_ev_under == ev_under.
+
+        Task A2: source must be 'preview' for the haircut to apply — a
+        within-day 'first_seen' opening is not a valid baseline for overnight
+        movement comparison.
+        """
+        from build_features import build_pitcher_record
+        odds = {
+            **self.BASE_ODDS,
+            "opening_over_odds": -125,   # over was -125 at open
+            "best_over_odds":    -110,   # over moved to -110 (cheaper) → delta = +15
+            "opening_under_odds": -110,  # under unchanged
+            "best_under_odds":    -110,
+            "opening_odds_source": "preview",
+        }
+        rec = build_pitcher_record(odds, self.BASE_STATS, ump_k_adj=0.0)
+
+        raw_ev_over = rec["ev_over"]["ev"]
+        assert abs(rec["ev_over"]["movement_conf"] - 0.75) < 0.001
+        assert abs(rec["ev_over"]["adj_ev"] - round(raw_ev_over * 0.75, 4)) < 0.0002
+
+        # Under: no movement → no haircut
+        raw_ev_under = rec["ev_under"]["ev"]
+        assert abs(rec["ev_under"]["movement_conf"] - 1.0) < 0.001
+        assert rec["ev_under"]["adj_ev"] == raw_ev_under
+
+        # Verdict must be based on adj_ev, not raw ev
+        from build_features import calc_verdict
+        assert rec["ev_over"]["verdict"] == calc_verdict(rec["ev_over"]["adj_ev"])
+        assert rec["ev_under"]["verdict"] == calc_verdict(rec["ev_under"]["adj_ev"])
+
+    def test_win_prob_over_plus_under_sum_to_one_half_line(self):
+        """For half-point lines, over + under should sum to 1.0 (no push mass)."""
+        from build_features import build_pitcher_record
+        odds = {**self.BASE_ODDS, "k_line": 7.5}
+        rec = build_pitcher_record(odds, self.BASE_STATS, ump_k_adj=0.0)
+        total = rec["ev_over"]["win_prob"] + rec["ev_under"]["win_prob"]
+        assert abs(total - 1.0) < 0.001
+
+    def test_win_prob_over_plus_under_sum_to_one_integer_line(self):
+        """For integer lines, over + under should sum to < 1.0 (push mass exists)."""
+        from build_features import build_pitcher_record
+        from scipy.stats import poisson
+        import math
+        odds = {**self.BASE_ODDS, "k_line": 7.0}
+        rec = build_pitcher_record(odds, self.BASE_STATS, ump_k_adj=0.0)
+        total = rec["ev_over"]["win_prob"] + rec["ev_under"]["win_prob"]
+        # They should sum to < 1.0 (push probability is the gap)
+        assert total < 1.0
+        # And specifically the gap should equal P(X == 7) at the applied lambda
+        lam = rec["lambda"]
+        push_prob = poisson.pmf(7, lam)
+        assert abs((1.0 - total) - push_prob) < 0.002
+
+    def test_team_from_stats_overrides_empty_string_from_odds(self):
+        """When stats contains team/opp_team (from MLB schedule), build_pitcher_record
+        should output those values, not the empty strings from fetch_odds."""
+        from build_features import build_pitcher_record
+        odds = {**self.BASE_ODDS, "team": "", "opp_team": ""}
+        stats = {**self.BASE_STATS, "team": "Boston Red Sox", "opp_team": "New York Yankees"}
+        rec = build_pitcher_record(odds, stats, ump_k_adj=0.0)
+        assert rec["team"] == "Boston Red Sox"
+        assert rec["opp_team"] == "New York Yankees"
+
+    def test_opp_games_played_affects_lambda(self):
+        """opp_games_played=0 (no data) should produce same lambda as league avg opp.
+        opp_games_played=162 with high K% team should produce higher lambda."""
+        from build_features import build_pitcher_record
+        stats_no_games = {**self.BASE_STATS, "opp_k_rate": 0.30, "opp_games_played": 0}
+        stats_full_season = {**self.BASE_STATS, "opp_k_rate": 0.30, "opp_games_played": 162}
+        rec_no = build_pitcher_record(self.BASE_ODDS, stats_no_games, ump_k_adj=0.0)
+        rec_full = build_pitcher_record(self.BASE_ODDS, stats_full_season, ump_k_adj=0.0)
+        # With 162 games of 0.30 K%, lambda should be higher than with 0 games (league avg)
+        assert rec_full["lambda"] > rec_no["lambda"]
+
+    def test_park_factor_is_carried_and_changes_lambda(self):
+        from build_features import build_pitcher_record
+        rec_neutral = build_pitcher_record(self.BASE_ODDS, self.BASE_STATS, ump_k_adj=0.0)
+        rec_boosted = build_pitcher_record(
+            self.BASE_ODDS, self.BASE_STATS, ump_k_adj=0.0, park_factor=1.1
+        )
+        assert rec_neutral["park_factor"] == pytest.approx(1.0)
+        assert rec_boosted["park_factor"] == pytest.approx(1.1)
+        assert rec_boosted["raw_lambda"] > rec_neutral["raw_lambda"]
+
+    # ---------------------------------------------------------------------
+    # Task A7: phantom starter guard — build_pitcher_record emits
+    # `starter_mismatch` when the MLB probablePitcher fetched by fetch_stats
+    # doesn't match the odds pitcher name. Real-world trigger: TheRundown
+    # keeps the prop market live after the team announces a pitcher swap
+    # (Chad Patrick / Martin Perez, 2026-04-22).
+    # ---------------------------------------------------------------------
+    def test_starter_mismatch_false_when_probable_matches(self):
+        """Happy path: stats.probable_name == odds.pitcher → starter_mismatch=False."""
+        from build_features import build_pitcher_record
+        stats = {**self.BASE_STATS, "probable_name": "Test Pitcher"}
+        rec = build_pitcher_record(self.BASE_ODDS, stats, ump_k_adj=0.0)
+        assert rec["starter_mismatch"] is False
+
+    def test_starter_mismatch_true_when_probable_differs(self):
+        """Phantom case: MLB's probable disagrees with the odds pitcher → True."""
+        from build_features import build_pitcher_record
+        stats = {**self.BASE_STATS, "probable_name": "Zack Littell"}
+        odds = {**self.BASE_ODDS, "pitcher": "Martin Perez"}
+        rec = build_pitcher_record(odds, stats, ump_k_adj=0.0)
+        assert rec["starter_mismatch"] is True
+
+    def test_starter_mismatch_false_when_probable_name_missing(self):
+        """probable_name absent from stats (older stats_map entries, preview path)
+        → default to False rather than a false-positive mismatch."""
+        from build_features import build_pitcher_record
+        stats = {**self.BASE_STATS}  # no probable_name key
+        rec = build_pitcher_record(self.BASE_ODDS, stats, ump_k_adj=0.0)
+        assert rec["starter_mismatch"] is False
+
+    def test_starter_mismatch_accent_insensitive(self):
+        """Name normalization handles accents so José Berríos == Jose Berrios."""
+        from build_features import build_pitcher_record
+        stats = {**self.BASE_STATS, "probable_name": "José Berríos"}
+        odds = {**self.BASE_ODDS, "pitcher": "Jose Berrios"}
+        rec = build_pitcher_record(odds, stats, ump_k_adj=0.0)
+        assert rec["starter_mismatch"] is False
+
+
+class TestCalcMovementConfidence:
+    # Task A2: these tests exercise the decay curve and therefore pass
+    # opening_odds_source="preview" so the haircut actually applies. Tests
+    # that specifically cover the source-gating behaviour live further down
+    # in this class.
+
+    def test_negative_delta_no_penalty(self):
+        # Movement in our favour — no penalty
+        assert calc_movement_confidence(-15, opening_odds_source="preview") == 1.0
+
+    def test_zero_delta_no_penalty(self):
+        assert calc_movement_confidence(0, opening_odds_source="preview") == 1.0
+
+    def test_below_noise_floor_no_penalty(self):
+        assert calc_movement_confidence(5, opening_odds_source="preview") == 1.0
+
+    def test_at_noise_floor_no_penalty(self):
+        # Exactly at noise_floor (10) → still 1.0
+        assert calc_movement_confidence(10, opening_odds_source="preview") == 1.0
+
+    def test_midpoint_decay(self):
+        # delta=20 is halfway between noise_floor=10 and full_fade=30 → 0.50
+        assert abs(calc_movement_confidence(20, opening_odds_source="preview") - 0.50) < 0.001
+
+    def test_quarter_decay(self):
+        # delta=15 → (15-10)/(30-10) = 5/20 = 0.25 penalty → 0.75
+        assert abs(calc_movement_confidence(15, opening_odds_source="preview") - 0.75) < 0.001
+
+    def test_three_quarter_decay(self):
+        # delta=25 → (25-10)/(30-10) = 15/20 = 0.75 penalty → 0.25
+        assert abs(calc_movement_confidence(25, opening_odds_source="preview") - 0.25) < 0.001
+
+    def test_at_full_fade(self):
+        assert calc_movement_confidence(30, opening_odds_source="preview") == 0.0
+
+    def test_above_full_fade_clamped(self):
+        # Anything beyond full_fade is still 0.0
+        assert calc_movement_confidence(40, opening_odds_source="preview") == 0.0
+
+    # ── Task A2: source-gated haircut ─────────────────────────────────────────
+    # Movement_conf is only meaningful when the opening baseline is a true
+    # overnight opening (tagged 'preview' after the 7pm merge). For within-day
+    # 'first_seen' openings (and legacy None rows), we must not apply any
+    # haircut — otherwise we're comparing current odds to a baseline that's
+    # hours old instead of a day old, which was the original 4/8 semantic bug.
+
+    def test_movement_confidence_returns_1_when_source_is_first_seen(self):
+        # Large adverse delta that would normally zero out the signal
+        assert calc_movement_confidence(40, opening_odds_source="first_seen") == 1.0
+
+    def test_movement_confidence_returns_1_when_source_is_none(self):
+        # Legacy row (no source tag) — must not get haircut
+        assert calc_movement_confidence(40, opening_odds_source=None) == 1.0
+
+    def test_movement_confidence_returns_1_when_source_is_empty_string(self):
+        # Guard against a future `if not source:` refactor — "" is falsy but
+        # the gate checks `!= "preview"`, which is the correct invariant.
+        # Locks in the explicit-equality contract.
+        assert calc_movement_confidence(40, opening_odds_source="") == 1.0
+
+    def test_movement_confidence_applies_haircut_when_source_is_preview(self):
+        # Same large adverse delta, but now source is the overnight baseline —
+        # haircut applies (delta=40 > full_fade=30 → 0.0)
+        assert calc_movement_confidence(40, opening_odds_source="preview") == 0.0
+
+    def test_movement_confidence_preview_midpoint_decay_unchanged(self):
+        # Existing midpoint logic still holds when source is 'preview'
+        result = calc_movement_confidence(20, opening_odds_source="preview")
+        assert abs(result - 0.50) < 0.001
+
+
+class TestBayesianOppK:
+    def test_zero_games_returns_league_avg(self):
+        # No data → full regression to mean
+        assert bayesian_opp_k(0.40, 0) == pytest.approx(LEAGUE_AVG_K_RATE)
+
+    def test_negative_games_returns_league_avg(self):
+        # Guard against bad data
+        assert bayesian_opp_k(0.40, -5) == pytest.approx(LEAGUE_AVG_K_RATE)
+
+    def test_early_season_extreme_high_regressed(self):
+        # 8 games, extreme 45% K rate (OPP K% +145% territory)
+        # With prior=50: (8*0.45 + 50*0.227) / 58 = (3.6 + 11.35) / 58 ≈ 0.2578
+        result = bayesian_opp_k(0.45, 8)
+        assert result < 0.27   # well below observed 0.45
+        assert result > LEAGUE_AVG_K_RATE  # still slightly above average
+
+    def test_early_season_extreme_low_regressed(self):
+        # Low opp K% team gets pulled up toward average (symmetric)
+        result = bayesian_opp_k(0.15, 8)
+        assert result > 0.20   # pulled up toward 0.227
+        assert result < LEAGUE_AVG_K_RATE  # still slightly below average
+
+    def test_mid_season_partial_trust(self):
+        # 81 games: (81*0.30 + 50*0.227) / 131 ≈ 0.274
+        result = bayesian_opp_k(0.30, 81)
+        assert 0.265 < result < 0.285
+
+    def test_full_season_dominates(self):
+        # 162 games, prior=50: (162*0.30 + 50*0.227) / 212 ≈ 0.2828
+        # Observed data dominates — result clearly above league avg (0.227)
+        result = bayesian_opp_k(0.30, 162)
+        assert result > 0.275  # well above league avg, trending toward observed 0.30
+
+    def test_league_avg_obs_unchanged(self):
+        # If observed == league avg, result should equal league avg regardless of games
+        assert bayesian_opp_k(LEAGUE_AVG_K_RATE, 8) == pytest.approx(LEAGUE_AVG_K_RATE)
+        assert bayesian_opp_k(LEAGUE_AVG_K_RATE, 162) == pytest.approx(LEAGUE_AVG_K_RATE)
+
+
+# -- load_params tests --
+
+class TestLoadParams:
+    def test_missing_file_returns_defaults(self):
+        with patch("build_features.PARAMS_PATH", "/nonexistent/path/params.json"):
+            from build_features import load_params
+            p = load_params()
+        assert p["lambda_bias"] == 0.0
+        assert p["ump_scale"] == 1.0
+        assert "ev_thresholds" not in p  # thresholds are now static constants, not in params
+
+    def test_malformed_file_returns_defaults(self):
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False) as f:
+            f.write("not json{{{")
+            path = f.name
+        with patch("build_features.PARAMS_PATH", path):
+            from build_features import load_params
+            p = load_params()
+        os.unlink(path)
+        assert p["lambda_bias"] == 0.0
+
+    def test_valid_file_overrides_defaults(self):
+        data = {"lambda_bias": 0.3, "ump_scale": 0.8,
+                "weight_season_cap": 0.65, "weight_recent": 0.25}
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False) as f:
+            json.dump(data, f)
+            path = f.name
+        with patch("build_features.PARAMS_PATH", path):
+            from build_features import load_params
+            p = load_params()
+        os.unlink(path)
+        assert p["lambda_bias"] == 0.3
+        assert p["ump_scale"] == 0.8
+
+    def test_partial_file_merges_with_defaults(self):
+        data = {"lambda_bias": 0.5}
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False) as f:
+            json.dump(data, f)
+            path = f.name
+        with patch("build_features.PARAMS_PATH", path):
+            from build_features import load_params
+            p = load_params()
+        os.unlink(path)
+        assert p["lambda_bias"] == 0.5
+        assert p["ump_scale"] == 1.0  # default intact
+
+    def test_ev_thresholds_not_in_params(self):
+        """ev_thresholds are static constants, never loaded from params file."""
+        data = {"ev_thresholds": {"fire2": 0.99}}  # should be ignored
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False) as f:
+            json.dump(data, f)
+            path = f.name
+        with patch("build_features.PARAMS_PATH", path):
+            from build_features import load_params
+            p = load_params()
+        os.unlink(path)
+        # ev_thresholds from file is ignored — it may appear as a stale key
+        # but the pipeline never reads it; calc_verdict uses module constants
+        from build_features import EDGE_FIRE_1U
+        assert EDGE_FIRE_1U == 0.17
+
+
+# -- blend_k9 weight params tests --
+
+class TestBlendK9Params:
+    def test_custom_season_cap_applied(self):
+        # With cap=0.5: w_season=min(90/60, 0.5)=0.5, w_recent=0.2, w_career=0.3
+        result = blend_k9(10.0, 9.0, 8.0, ip=90, weight_season_cap=0.5, weight_recent=0.2)
+        expected = 0.5 * 10.0 + 0.2 * 9.0 + 0.3 * 8.0  # 5.0+1.8+2.4=9.2
+        assert abs(result - expected) < 0.01
+
+    def test_custom_recent_weight_applied(self):
+        result = blend_k9(10.0, 9.0, 8.0, ip=0, weight_season_cap=0.70, weight_recent=0.30)
+        # w_season=0, w_recent=0.30, w_career=0.70
+        expected = 0.0 * 10.0 + 0.30 * 9.0 + 0.70 * 8.0  # 0+2.7+5.6=8.3
+        assert abs(result - expected) < 0.01
+
+    def test_w_career_never_negative(self):
+        # weight_season_cap=0.8, weight_recent=0.3 → sum>1 at high IP, career should be 0 not negative
+        result = blend_k9(10.0, 9.0, 8.0, ip=90, weight_season_cap=0.8, weight_recent=0.3)
+        assert result >= 0
+
+
+# -- calc_verdict threshold params tests --
+
+class TestCalcVerdictThresholds:
+    def test_static_thresholds(self):
+        """EV ROI thresholds are fixed: LEAN 2-6%, FIRE 1u 6-17%, FIRE 2u 17%+."""
+        assert calc_verdict(0.005) == "PASS"
+        assert calc_verdict(0.02) == "LEAN"
+        assert calc_verdict(0.08) == "FIRE 1u"
+        assert calc_verdict(0.18) == "FIRE 2u"
+        # Boundary tests
+        assert calc_verdict(0.0199) == "PASS"      # just under 2% → PASS
+        assert calc_verdict(0.06) == "FIRE 1u"     # exactly 6% → FIRE 1u
+        assert calc_verdict(0.17) == "FIRE 2u"     # exactly 17% → FIRE 2u
+        assert calc_verdict(0.1699) == "FIRE 1u"   # just under 17% → FIRE 1u
+
+
+# -- build_pitcher_record output fields --
+
+SAMPLE_ODDS = {
+    "pitcher": "Test Pitcher", "team": "Test Team", "opp_team": "Opp Team",
+    "game_time": "2026-04-01T17:05:00Z", "k_line": 6.5,
+    "opening_line": 6.5, "best_over_book": "FD",
+    "best_over_odds": -115, "best_under_odds": -105,
+    "opening_over_odds": -110, "opening_under_odds": -110,
+}
+SAMPLE_STATS = {
+    "season_k9": 9.0, "recent_k9": 9.0, "career_k9": 8.0,
+    "innings_pitched_season": 30.0, "avg_ip_last5": 5.5,
+    "recent_start_ips": [5.5, 5.5, 5.5, 5.5, 5.5],
+    "opp_k_rate": 0.227, "opp_games_played": 20, "starts_count": 5,
+}
+
+
+def test_market_shrink_shadow_preserves_lambda_and_adds_metadata(monkeypatch):
+    from build_features import build_pitcher_record
+
+    monkeypatch.setenv("MARKET_SHRINK_PROJECTION_MODE", "shadow")
+    monkeypatch.setenv("MARKET_SHRINK_PROJECTION_CANDIDATE", "market_shrink_25")
+
+    rec = build_pitcher_record(SAMPLE_ODDS, SAMPLE_STATS, 0.0)
+
+    assert rec["lambda"] == rec["model_lambda"]
+    assert rec["projection_challenger"]["mode"] == "shadow"
+    assert rec["projection_challenger"]["candidate"] == "market_shrink_25"
+    assert rec["projection_challenger"]["applied"] is False
+    assert rec["projection_challenger"]["would_lambda"] != rec["lambda"]
+    assert rec["ev_over"]["projection_challenger"]["mode"] == "shadow"
+    assert rec["ev_under"]["projection_challenger"]["mode"] == "shadow"
+
+
+def test_market_shrink_shadow_preserves_live_outputs_exactly(monkeypatch):
+    from build_features import build_pitcher_record
+
+    monkeypatch.setenv("MARKET_SHRINK_PROJECTION_CANDIDATE", "market_shrink_25")
+    monkeypatch.delenv("MARKET_SHRINK_PROJECTION_MODE", raising=False)
+    off_rec = build_pitcher_record(SAMPLE_ODDS, SAMPLE_STATS, 0.0)
+
+    monkeypatch.setenv("MARKET_SHRINK_PROJECTION_MODE", "shadow")
+    shadow_rec = build_pitcher_record(SAMPLE_ODDS, SAMPLE_STATS, 0.0)
+
+    assert shadow_rec["projection_challenger"]["mode"] == "shadow"
+    assert shadow_rec["projection_challenger"]["applied"] is False
+    assert shadow_rec["projection_challenger"]["would_lambda"] != shadow_rec["lambda"]
+    assert shadow_rec["lambda"] == off_rec["lambda"]
+
+    live_fields = ["win_prob", "edge", "ev", "adj_ev", "verdict"]
+    for side in ["ev_over", "ev_under"]:
+        for field in live_fields:
+            assert shadow_rec[side][field] == off_rec[side][field]
+
+
+def test_market_shrink_enforce_replaces_selected_lambda(monkeypatch):
+    from build_features import build_pitcher_record
+
+    monkeypatch.setenv("MARKET_SHRINK_PROJECTION_MODE", "enforce")
+    monkeypatch.setenv("MARKET_SHRINK_PROJECTION_CANDIDATE", "market_shrink_25")
+
+    rec = build_pitcher_record(SAMPLE_ODDS, SAMPLE_STATS, 0.0)
+
+    assert rec["projection_challenger"]["applied"] is True
+    assert rec["lambda"] == round(rec["projection_challenger"]["selected_lambda"], 2)
+    assert rec["lambda"] != rec["model_lambda"]
+
+
+class TestBuildPitcherRecordFields:
+    def test_raw_lambda_and_lambda_present(self):
+        rec = build_pitcher_record(SAMPLE_ODDS, SAMPLE_STATS, 0.0)
+        assert "raw_lambda" in rec
+        assert "lambda" in rec
+
+    def test_raw_lambda_equals_lambda_when_no_bias(self):
+        with patch("build_features.PARAMS_PATH", "/nonexistent"):
+            rec = build_pitcher_record(SAMPLE_ODDS, SAMPLE_STATS, 0.0)
+        assert rec["raw_lambda"] == rec["lambda"]
+
+    def test_lambda_bias_applied_to_lambda_not_raw(self):
+        data = {"lambda_bias": 0.5}
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False) as f:
+            json.dump(data, f); path = f.name
+        with patch("build_features.PARAMS_PATH", path):
+            rec = build_pitcher_record(SAMPLE_ODDS, SAMPLE_STATS, 0.0)
+        os.unlink(path)
+        assert abs(rec["lambda"] - (rec["raw_lambda"] + 0.5)) < 0.01
+
+    def test_k9_components_in_output(self):
+        rec = build_pitcher_record(SAMPLE_ODDS, SAMPLE_STATS, 0.0)
+        assert "season_k9" in rec
+        assert "recent_k9" in rec
+        assert "career_k9" in rec
+
+    def test_ump_scale_applied(self):
+        data = {"ump_scale": 0.0}
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False) as f:
+            json.dump(data, f); path = f.name
+        with patch("build_features.PARAMS_PATH", path):
+            rec_scaled = build_pitcher_record(SAMPLE_ODDS, SAMPLE_STATS, 1.0)
+        with patch("build_features.PARAMS_PATH", "/nonexistent"):
+            rec_default = build_pitcher_record(SAMPLE_ODDS, SAMPLE_STATS, 1.0)
+        os.unlink(path)
+        assert rec_scaled["raw_lambda"] < rec_default["raw_lambda"]
+
+
+# ── Lineup K rate tests ────────────────────────────────────────────────────
+
+# Keys match production: fetch_batter_stats._build_lookup normalizes names
+# (accent-stripped + lowercased) so calc_lineup_k_rate can do its own normalize()
+# on incoming batter names and match them reliably across APIs.
+SAMPLE_BATTER_STATS = {
+    "aaron judge":  {"vs_R": 0.280, "vs_L": 0.210},
+    "mookie betts": {"vs_R": 0.150, "vs_L": 0.115},
+}
+
+SAMPLE_LINEUP = [
+    {"name": "Aaron Judge",  "bats": "R"},
+    {"name": "Mookie Betts", "bats": "R"},
+]
+
+
+class TestCalcLineupKRate:
+    def test_none_lineup_returns_none(self):
+        assert calc_lineup_k_rate(None, SAMPLE_BATTER_STATS, "R") is None
+
+    def test_empty_lineup_returns_none(self):
+        assert calc_lineup_k_rate([], SAMPLE_BATTER_STATS, "R") is None
+
+    def test_righty_pitcher_uses_vs_r_split_with_platoon(self):
+        # RHB vs RHP adds PLATOON_K_DELTA[("R","R")] per batter.
+        result = calc_lineup_k_rate(SAMPLE_LINEUP, SAMPLE_BATTER_STATS, "R")
+        rr = PLATOON_K_DELTA[("R", "R")]
+        expected = ((0.280 + rr) + (0.150 + rr)) / 2
+        assert result is not None
+        assert abs(result - expected) < 0.001
+
+    def test_lefty_pitcher_uses_vs_l_split_with_platoon(self):
+        # RHB vs LHP adds PLATOON_K_DELTA[("R","L")] per batter.
+        result = calc_lineup_k_rate(SAMPLE_LINEUP, SAMPLE_BATTER_STATS, "L")
+        rl = PLATOON_K_DELTA[("R", "L")]
+        expected = ((0.210 + rl) + (0.115 + rl)) / 2
+        assert result is not None
+        assert abs(result - expected) < 0.001
+
+    def test_unknown_batter_uses_league_avg_with_platoon(self):
+        lineup = [{"name": "Unknown Batter", "bats": "R"}]
+        result = calc_lineup_k_rate(lineup, SAMPLE_BATTER_STATS, "R")
+        expected = LEAGUE_AVG_K_RATE + PLATOON_K_DELTA[("R", "R")]
+        assert abs(result - expected) < 0.001
+
+    def test_return_value_is_unregressed_raw_mean(self):
+        """Return value must NOT be Bayesian-regressed — calc_lambda handles that."""
+        lineup = [{"name": "Aaron Judge", "bats": "R"}]
+        result = calc_lineup_k_rate(lineup, SAMPLE_BATTER_STATS, "R")
+        # Raw vs_R split + platoon delta, no regression toward league avg.
+        expected = 0.280 + PLATOON_K_DELTA[("R", "R")]
+        assert abs(result - expected) < 0.001
+
+    def test_lefty_batter_vs_righty_pitcher_gets_platoon_advantage(self):
+        lineup = [{"name": "Aaron Judge", "bats": "L"}]
+        result = calc_lineup_k_rate(lineup, SAMPLE_BATTER_STATS, "R")
+        expected = 0.280 + PLATOON_K_DELTA[("L", "R")]
+        assert abs(result - expected) < 0.001
+        # sanity: L-vs-R is a platoon advantage (negative delta)
+        assert PLATOON_K_DELTA[("L", "R")] < 0
+
+    def test_switch_hitter_vs_righty_treated_as_lefty(self):
+        lineup = [{"name": "Aaron Judge", "bats": "S"}]
+        result = calc_lineup_k_rate(lineup, SAMPLE_BATTER_STATS, "R")
+        expected = 0.280 + PLATOON_K_DELTA[("L", "R")]
+        assert abs(result - expected) < 0.001
+
+    def test_switch_hitter_vs_lefty_treated_as_righty(self):
+        lineup = [{"name": "Aaron Judge", "bats": "S"}]
+        result = calc_lineup_k_rate(lineup, SAMPLE_BATTER_STATS, "L")
+        expected = 0.210 + PLATOON_K_DELTA[("R", "L")]
+        assert abs(result - expected) < 0.001
+
+    def test_missing_bats_field_gets_neutral_delta(self):
+        lineup = [{"name": "Aaron Judge"}]  # no "bats" key
+        result = calc_lineup_k_rate(lineup, SAMPLE_BATTER_STATS, "R")
+        # Neutral delta = raw split, no platoon adjustment.
+        assert abs(result - 0.280) < 0.001
+
+    def test_path_b_uses_real_mlbam_split_without_extra_platoon_delta(self):
+        lineup = [{"name": "Mookie Betts", "bats": "R", "mlbam_id": 605141}]
+        batter_stats = {
+            "mookie betts": {"vs_R": 0.135, "vs_L": 0.135},
+            "mlbam:605141": {
+                "split_source": "batter_splits_cache",
+                "vs_R": {"pa": 80, "so": 12, "k_rate": 0.15},
+                "vs_L": {"pa": 20, "so": 2, "k_rate": 0.10},
+            },
+        }
+
+        details = calc_lineup_k_rate_details(lineup, batter_stats, "R", handedness_mode="path_b")
+
+        assert details["rate"] == pytest.approx(0.15)
+        assert details["real_split_count"] == 1
+        assert details["path_a_fallback_count"] == 0
+        assert details["split_source"] == "real_split_cache"
+
+    def test_path_b_falls_back_to_path_a_when_needed_split_missing(self):
+        lineup = [{"name": "Mookie Betts", "bats": "R", "mlbam_id": 605141}]
+        batter_stats = {
+            "mookie betts": {"vs_R": 0.135, "vs_L": 0.135},
+            "mlbam:605141": {
+                "split_source": "batter_splits_cache",
+                "vs_L": {"pa": 20, "so": 2, "k_rate": 0.10},
+            },
+        }
+
+        details = calc_lineup_k_rate_details(lineup, batter_stats, "R", handedness_mode="path_b")
+
+        assert details["rate"] == pytest.approx(0.135 + PLATOON_K_DELTA[("R", "R")])
+        assert details["real_split_count"] == 0
+        assert details["path_a_fallback_count"] == 1
+        assert details["split_source"] == "path_a"
+
+    def test_build_pitcher_record_surfaces_handedness_canary_metadata(self, monkeypatch):
+        monkeypatch.setenv("BATTER_HANDEDNESS_MODE", "path_b")
+        lineup = [{"name": "Mookie Betts", "bats": "R", "mlbam_id": 605141}]
+        batter_stats = {
+            "mookie betts": {"vs_R": 0.135, "vs_L": 0.135},
+            "mlbam:605141": {
+                "split_source": "batter_splits_cache",
+                "vs_R": {"pa": 80, "so": 12, "k_rate": 0.15},
+            },
+        }
+
+        record = build_pitcher_record(
+            SAMPLE_ODDS,
+            {**SAMPLE_STATS, "throws": "R"},
+            0.0,
+            lineup=lineup,
+            batter_stats=batter_stats,
+        )
+
+        assert record["batter_handedness_mode"] == "path_b"
+        assert record["lineup_split_source"] == "real_split_cache"
+        assert record["lineup_real_split_count"] == 1
+        assert record["lineup_path_a_fallback_count"] == 0
+
+
+class TestPlatoonKDelta:
+    def test_all_four_hand_matchups_return_table_values(self):
+        for (b, p), delta in PLATOON_K_DELTA.items():
+            assert platoon_k_delta(b, p) == delta
+
+    def test_switch_hitter_vs_righty_uses_left_delta(self):
+        assert platoon_k_delta("S", "R") == PLATOON_K_DELTA[("L", "R")]
+
+    def test_switch_hitter_vs_lefty_uses_right_delta(self):
+        assert platoon_k_delta("S", "L") == PLATOON_K_DELTA[("R", "L")]
+
+    def test_unknown_hand_returns_zero(self):
+        assert platoon_k_delta("", "R") == 0.0
+        assert platoon_k_delta("X", "R") == 0.0
+
+    def test_platoon_advantage_sign_conventions(self):
+        # Opposite-hand matchups should favor the batter (negative K delta).
+        assert PLATOON_K_DELTA[("R", "L")] < 0
+        assert PLATOON_K_DELTA[("L", "R")] < 0
+        # Same-hand matchups should favor the pitcher (positive K delta).
+        assert PLATOON_K_DELTA[("R", "R")] > 0
+        assert PLATOON_K_DELTA[("L", "L")] > 0
+
+
+class TestBuildPitcherRecordLineup:
+    def test_build_pitcher_record_lineup_used_false_without_lineup(self):
+        """build_pitcher_record without lineup params should have lineup_used=False."""
+        record = build_pitcher_record(SAMPLE_ODDS, SAMPLE_STATS, 0.0)
+        assert record["lineup_used"] is False
+
+    def test_build_pitcher_record_lineup_used_true_with_lineup(self):
+        """build_pitcher_record with lineup params should have lineup_used=True."""
+        stats = {**SAMPLE_STATS, "throws": "R"}
+        record = build_pitcher_record(
+            SAMPLE_ODDS, stats, 0.0,
+            lineup=SAMPLE_LINEUP, batter_stats=SAMPLE_BATTER_STATS
+        )
+        assert record["lineup_used"] is True
+
+    def test_build_pitcher_record_lineup_changes_opp_k_rate(self):
+        """EV should differ when lineup provides different K rate than team average."""
+        stats = {**SAMPLE_STATS, "throws": "R", "opp_k_rate": 0.227}
+        # Lineup with very high K batters
+        high_k_lineup = [{"name": "Aaron Judge", "bats": "R"}]  # 0.280 vs R
+        record_with_lineup = build_pitcher_record(
+            SAMPLE_ODDS, stats, 0.0, swstr_data=None,
+            lineup=high_k_lineup, batter_stats=SAMPLE_BATTER_STATS
+        )
+        record_without = build_pitcher_record(SAMPLE_ODDS, stats, 0.0)
+        assert record_with_lineup["lambda"] != record_without["lambda"]
+
+    def test_build_pitcher_record_includes_pitcher_throws(self):
+        """pitcher_throws should be present and reflect stats['throws']."""
+        stats = {**SAMPLE_STATS, "throws": "L"}
+        rec = build_pitcher_record(SAMPLE_ODDS, stats, ump_k_adj=0.0)
+        assert rec["pitcher_throws"] == "L"
+
+    def test_build_pitcher_record_throws_defaults_to_R_when_missing(self):
+        """pitcher_throws should default to 'R' when throws key is absent."""
+        stats = {k: v for k, v in SAMPLE_STATS.items() if k != "throws"}
+        rec = build_pitcher_record(SAMPLE_ODDS, stats, ump_k_adj=0.0)
+        assert rec["pitcher_throws"] == "R"

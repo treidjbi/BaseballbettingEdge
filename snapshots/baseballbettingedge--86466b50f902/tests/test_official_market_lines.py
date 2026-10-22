@@ -1,0 +1,485 @@
+from datetime import datetime, timedelta, timezone
+
+from market_infra.official_market_lines import choose_official_lines, retire_missing_official_lines
+
+
+NOW = datetime(2026, 5, 13, 19, 0, tzinfo=timezone.utc)
+
+
+def _line(
+    line_id,
+    *,
+    provider="therundown",
+    book_key="fanduel",
+    book_name="FanDuel",
+    player="Jose Berrios",
+    normalized_player="jose berrios",
+    line=5.5,
+    over_odds=-110,
+    under_odds=-110,
+    freshness_seconds=60,
+    is_complete=True,
+    quality_flags=None,
+    game_time="2026-05-13T23:05:00Z",
+):
+    last_seen_at = (NOW - timedelta(seconds=freshness_seconds)).isoformat()
+    return {
+        "id": line_id,
+        "slate_date": "2026-05-13",
+        "provider": provider,
+        "book_key": book_key,
+        "book_name": book_name,
+        "player_name": player,
+        "normalized_player_name": normalized_player,
+        "market_key": "pitcher_strikeouts",
+        "game_time": game_time,
+        "line": line,
+        "over_odds": over_odds,
+        "under_odds": under_odds,
+        "freshness_seconds": freshness_seconds,
+        "last_seen_at": last_seen_at,
+        "is_complete": is_complete,
+        "quality_flags": quality_flags or [],
+    }
+
+
+def _heartbeat(
+    *,
+    provider="boltodds",
+    slate_date="2026-05-13",
+    observed_seconds=30,
+    last_message_seconds=20,
+    books_seen=None,
+    event="message",
+):
+    return {
+        "provider": provider,
+        "mode": "shadow_stream",
+        "slate_date": slate_date,
+        "observed_at": (NOW - timedelta(seconds=observed_seconds)).isoformat(),
+        "last_message_at": (NOW - timedelta(seconds=last_message_seconds)).isoformat(),
+        "books_seen": books_seen if books_seen is not None else ["fanduel"],
+        "metadata": {"event": event},
+    }
+
+
+def test_therundown_fanduel_beats_propline_and_retired_boltodds_when_fresh():
+    official_rows, decision_rows = choose_official_lines(
+        [
+            _line(1, provider="propline", over_odds=-105),
+            _line(2, provider="boltodds", over_odds=-115),
+            _line(3, provider="therundown", over_odds=-120),
+        ],
+        NOW,
+    )
+
+    assert len(official_rows) == 1
+    official = official_rows[0]
+    assert official["selected_provider"] == "therundown"
+    assert official["ref_book_key"] == "fanduel"
+    assert official["game_time"] == "2026-05-13T23:05:00Z"
+    assert official["ref_over_odds"] == -120
+    assert official["book_odds"]["FanDuel"]["provider"] == "therundown"
+    assert "therundown_primary" in official["arbitration_reasons"]
+    assert decision_rows[0]["decision"] == "use"
+
+
+def test_propline_draftkings_is_used_when_boltodds_has_no_draftkings():
+    official_rows, _ = choose_official_lines(
+        [
+            _line(1, provider="boltodds", book_key="betmgm", book_name="BetMGM"),
+            _line(
+                2,
+                provider="propline",
+                book_key="draftkings",
+                book_name="DraftKings",
+                over_odds=100,
+                under_odds=-120,
+            ),
+        ],
+        NOW,
+    )
+
+    official = official_rows[0]
+    assert official["ref_book_key"] == "draftkings"
+    assert official["selected_provider"] == "propline"
+    assert official["book_odds"]["DraftKings"]["provider"] == "propline"
+    assert "propline_draftkings" in official["arbitration_reasons"]
+
+
+def test_stale_boltodds_is_rejected_in_favor_of_fresh_propline():
+    official_rows, decision_rows = choose_official_lines(
+        [
+            _line(1, provider="boltodds", freshness_seconds=1800, quality_flags=["stale"]),
+            _line(2, provider="propline", freshness_seconds=90, over_odds=-102),
+        ],
+        NOW,
+        stale_after_seconds=900,
+    )
+
+    official = official_rows[0]
+    assert official["selected_provider"] == "propline"
+    assert official["ref_over_odds"] == -102
+    assert decision_rows[0]["stale_candidate_count"] == 1
+
+
+def test_unchanged_boltodds_line_can_be_held_by_fresh_websocket_heartbeat():
+    official_rows, decision_rows = choose_official_lines(
+        [
+            _line(1, provider="boltodds", freshness_seconds=1800, quality_flags=["stale"]),
+        ],
+        NOW,
+        stale_after_seconds=900,
+        provider_heartbeats=[_heartbeat()],
+    )
+
+    official = official_rows[0]
+    assert official["ready_for_pipeline"] is True
+    assert official["selected_provider"] == "boltodds"
+    assert official["ref_book_key"] == "fanduel"
+    assert "provider_heartbeat_hold:boltodds" in official["arbitration_reasons"]
+    assert decision_rows[0]["decision"] == "use"
+    assert decision_rows[0]["stale_candidate_count"] == 0
+
+
+def test_stale_boltodds_line_is_rejected_when_websocket_heartbeat_is_stale():
+    official_rows, decision_rows = choose_official_lines(
+        [
+            _line(1, provider="boltodds", freshness_seconds=1800, quality_flags=["stale"]),
+        ],
+        NOW,
+        stale_after_seconds=900,
+        provider_heartbeats=[_heartbeat(observed_seconds=1200, last_message_seconds=1200)],
+    )
+
+    assert official_rows[0]["ready_for_pipeline"] is False
+    assert decision_rows[0]["decision"] == "skip"
+    assert decision_rows[0]["stale_candidate_count"] == 1
+
+
+def test_fresh_websocket_heartbeat_does_not_hold_incomplete_boltodds_line():
+    official_rows, decision_rows = choose_official_lines(
+        [
+            _line(
+                1,
+                provider="boltodds",
+                freshness_seconds=1800,
+                under_odds=None,
+                is_complete=False,
+                quality_flags=["missing_under", "stale"],
+            ),
+        ],
+        NOW,
+        stale_after_seconds=900,
+        provider_heartbeats=[_heartbeat()],
+    )
+
+    assert official_rows[0]["ready_for_pipeline"] is False
+    assert decision_rows[0]["decision"] == "skip"
+    assert decision_rows[0]["reasons"] == ["no_complete_line"]
+
+
+def test_fresh_websocket_heartbeat_only_holds_books_seen_on_the_feed():
+    official_rows, decision_rows = choose_official_lines(
+        [
+            _line(1, provider="boltodds", freshness_seconds=1800, quality_flags=["stale"]),
+        ],
+        NOW,
+        stale_after_seconds=900,
+        provider_heartbeats=[_heartbeat(books_seen=["betmgm"])],
+    )
+
+    assert official_rows[0]["ready_for_pipeline"] is False
+    assert decision_rows[0]["decision"] == "skip"
+    assert decision_rows[0]["stale_candidate_count"] == 1
+
+
+def test_only_kalshi_is_skipped_because_it_is_not_supported():
+    official_rows, decision_rows = choose_official_lines(
+        [
+            _line(1, book_key="kalshi", book_name="Kalshi"),
+        ],
+        NOW,
+    )
+
+    assert len(official_rows) == 1
+    assert official_rows[0]["ready_for_pipeline"] is False
+    assert official_rows[0]["quality_flags"] == ["not_ready_for_pipeline", "no_supported_rows"]
+    assert decision_rows == [{
+        "slate_date": "2026-05-13",
+        "normalized_player_name": "jose berrios",
+        "market_key": "pitcher_strikeouts",
+        "selected_provider": None,
+        "selected_book_key": None,
+        "selected_line": None,
+        "decision": "skip",
+        "reasons": ["no_supported_rows"],
+        "candidate_count": 0,
+        "stale_candidate_count": 0,
+        "missing_book_keys": ["fanduel", "draftkings", "betmgm", "betrivers", "caesars"],
+        "source_line_ids": [],
+    }]
+
+
+def test_one_sided_over_line_is_skipped():
+    official_rows, decision_rows = choose_official_lines(
+        [
+            _line(1, under_odds=None, is_complete=False, quality_flags=["missing_under"]),
+        ],
+        NOW,
+    )
+
+    assert len(official_rows) == 1
+    assert official_rows[0]["ready_for_pipeline"] is False
+    assert official_rows[0]["ref_book_key"] is None
+    assert decision_rows[0]["decision"] == "skip"
+    assert decision_rows[0]["reasons"] == ["no_complete_line"]
+    assert decision_rows[0]["candidate_count"] == 1
+
+
+def test_cross_book_line_conflicts_fail_closed_instead_of_using_ref_priority():
+    official_rows, decision_rows = choose_official_lines(
+        [
+            _line(1, book_key="fanduel", book_name="FanDuel", line=5.5),
+            _line(2, book_key="draftkings", book_name="DraftKings", provider="propline", line=6.5),
+        ],
+        NOW,
+    )
+
+    official = official_rows[0]
+    assert official["ready_for_pipeline"] is False
+    assert official["ref_book_key"] is None
+    assert official["quality_flags"] == ["not_ready_for_pipeline", "cross_book_line_conflict"]
+    assert "cross_book_line_conflict" in official["arbitration_reasons"]
+    assert decision_rows[0]["decision"] == "skip"
+    assert decision_rows[0]["reasons"] == ["cross_book_line_conflict"]
+    assert decision_rows[0]["source_line_ids"] == [1, 2]
+
+
+def test_same_book_ladder_uses_fallback_provider_when_retired_provider_has_conflict():
+    official_rows, decision_rows = choose_official_lines(
+        [
+            _line(1, provider="boltodds", book_key="fanduel", book_name="FanDuel", line=5.5, quality_flags=["line_conflict"]),
+            _line(2, provider="boltodds", book_key="fanduel", book_name="FanDuel", line=6.5, quality_flags=["line_conflict"]),
+            _line(3, provider="propline", book_key="fanduel", book_name="FanDuel", line=5.5),
+        ],
+        NOW,
+    )
+
+    official = official_rows[0]
+    assert official["ready_for_pipeline"] is True
+    assert official["selected_provider"] == "propline"
+    assert official["ref_line"] == 5.5
+    assert official["book_odds"]["FanDuel"]["current_market_line_id"] == 3
+    assert decision_rows[0]["decision"] == "use"
+    assert decision_rows[0]["source_line_ids"] == [3]
+
+
+def test_same_book_ladder_selects_line_supported_by_another_book():
+    official_rows, decision_rows = choose_official_lines(
+        [
+            _line(1, provider="boltodds", book_key="fanduel", book_name="FanDuel", line=5.5, quality_flags=["line_conflict"]),
+            _line(2, provider="boltodds", book_key="fanduel", book_name="FanDuel", line=6.5, quality_flags=["line_conflict"]),
+            _line(3, provider="boltodds", book_key="betmgm", book_name="BetMGM", line=5.5),
+        ],
+        NOW,
+    )
+
+    official = official_rows[0]
+    assert official["ready_for_pipeline"] is True
+    assert official["ref_book_key"] == "fanduel"
+    assert official["ref_line"] == 5.5
+    assert official["book_odds"]["FanDuel"]["current_market_line_id"] == 1
+    assert official["book_odds"]["BetMGM"]["current_market_line_id"] == 3
+    assert "mainline_cross_book_support:fanduel:5.5" in official["arbitration_reasons"]
+    assert decision_rows[0]["source_line_ids"] == [1, 3]
+
+
+def test_same_book_ladder_without_support_fails_closed_as_ambiguous_mainline():
+    official_rows, decision_rows = choose_official_lines(
+        [
+            _line(1, provider="boltodds", book_key="fanduel", book_name="FanDuel", line=5.5, quality_flags=["line_conflict"]),
+            _line(2, provider="boltodds", book_key="fanduel", book_name="FanDuel", line=6.5, quality_flags=["line_conflict"]),
+        ],
+        NOW,
+    )
+
+    assert official_rows[0]["ready_for_pipeline"] is False
+    assert official_rows[0]["arbitration_reasons"] == ["ambiguous_mainline"]
+    assert "ambiguous_mainline" in official_rows[0]["quality_flags"]
+    assert decision_rows[0]["decision"] == "skip"
+    assert decision_rows[0]["reasons"] == ["ambiguous_mainline"]
+    assert decision_rows[0]["source_line_ids"] == [1, 2]
+
+
+def test_decisions_explain_selected_missing_and_stale_inputs():
+    _, decision_rows = choose_official_lines(
+        [
+            _line(1, provider="therundown", book_key="fanduel", book_name="FanDuel"),
+            _line(
+                2,
+                provider="propline",
+                book_key="draftkings",
+                book_name="DraftKings",
+                freshness_seconds=2000,
+                quality_flags=["stale"],
+            ),
+        ],
+        NOW,
+    )
+
+    decision = decision_rows[0]
+    assert decision["decision"] == "use"
+    assert decision["selected_provider"] == "therundown"
+    assert decision["selected_book_key"] == "fanduel"
+    assert decision["selected_line"] == 5.5
+    assert "selected_ref_book:fanduel" in decision["reasons"]
+    assert "selected_provider:therundown" in decision["reasons"]
+    assert "missing_books:draftkings,betmgm,betrivers,caesars" in decision["reasons"]
+    assert decision["stale_candidate_count"] == 1
+    assert decision["source_line_ids"] == [1]
+
+
+def test_official_line_uses_non_ref_game_time_when_ref_provider_lacks_it():
+    official_rows, _ = choose_official_lines(
+        [
+            _line(1, book_key="fanduel", book_name="FanDuel", provider="boltodds", game_time=""),
+            _line(2, book_key="draftkings", book_name="DraftKings", provider="propline"),
+        ],
+        NOW,
+    )
+
+    assert official_rows[0]["ref_book_key"] == "fanduel"
+    assert official_rows[0]["game_time"] == "2026-05-13T23:05:00Z"
+
+
+def test_official_line_without_any_game_time_is_not_ready():
+    official_rows, decision_rows = choose_official_lines(
+        [
+            _line(1, book_key="fanduel", book_name="FanDuel", game_time="   "),
+            _line(2, book_key="draftkings", book_name="DraftKings", provider="propline", game_time=""),
+        ],
+        NOW,
+    )
+
+    assert len(official_rows) == 1
+    assert official_rows[0]["ready_for_pipeline"] is False
+    assert official_rows[0]["quality_flags"] == ["not_ready_for_pipeline", "missing_game_time"]
+    assert decision_rows[0]["decision"] == "skip"
+    assert decision_rows[0]["reasons"] == ["missing_game_time"]
+
+
+def test_the_odds_is_blocked_unless_emergency_mode_is_enabled():
+    current_rows = [
+        _line(1, provider="the_odds", book_key="fanduel", book_name="FanDuel"),
+    ]
+
+    blocked_rows, blocked_decisions = choose_official_lines(current_rows, NOW)
+    assert blocked_rows[0]["ready_for_pipeline"] is False
+    assert blocked_decisions[0]["decision"] == "skip"
+
+    emergency_rows, emergency_decisions = choose_official_lines(
+        current_rows,
+        NOW,
+        allow_the_odds_emergency=True,
+    )
+    assert emergency_rows[0]["ready_for_pipeline"] is True
+    assert emergency_rows[0]["selected_provider"] == "the_odds"
+    assert emergency_decisions[0]["decision"] == "use"
+
+
+def test_the_odds_emergency_is_limited_to_fanduel_and_draftkings():
+    official_rows, decision_rows = choose_official_lines(
+        [
+            _line(1, provider="the_odds", book_key="betmgm", book_name="BetMGM"),
+        ],
+        NOW,
+        allow_the_odds_emergency=True,
+    )
+
+    assert official_rows[0]["ready_for_pipeline"] is False
+    assert decision_rows[0]["decision"] == "skip"
+
+
+def test_draftkings_keeps_propline_even_if_retired_boltodds_flag_is_enabled():
+    current_rows = [
+        _line(1, provider="boltodds", book_key="draftkings", book_name="DraftKings", over_odds=-130),
+        _line(2, provider="propline", book_key="draftkings", book_name="DraftKings", over_odds=-105),
+    ]
+
+    default_rows, _ = choose_official_lines(current_rows, NOW)
+    assert default_rows[0]["selected_provider"] == "propline"
+    assert default_rows[0]["ref_over_odds"] == -105
+
+    enabled_rows, _ = choose_official_lines(
+        current_rows,
+        NOW,
+        boltodds_draftkings_enabled=True,
+    )
+    assert enabled_rows[0]["selected_provider"] == "propline"
+    assert enabled_rows[0]["ref_over_odds"] == -105
+
+
+def test_missing_freshness_is_not_treated_as_fresh():
+    row = _line(1)
+    row.pop("freshness_seconds")
+    row.pop("last_seen_at")
+
+    official_rows, decision_rows = choose_official_lines([row], NOW)
+
+    assert official_rows[0]["ready_for_pipeline"] is False
+    assert decision_rows[0]["decision"] == "skip"
+    assert decision_rows[0]["stale_candidate_count"] == 1
+
+
+def test_freshness_is_recomputed_from_last_seen_at():
+    row = _line(1, freshness_seconds=60)
+    row["freshness_seconds"] = 60
+    row["last_seen_at"] = "2026-05-13T18:00:00+00:00"
+
+    official_rows, decision_rows = choose_official_lines([row], NOW, stale_after_seconds=900)
+
+    assert official_rows[0]["ready_for_pipeline"] is False
+    assert decision_rows[0]["decision"] == "skip"
+    assert decision_rows[0]["stale_candidate_count"] == 1
+
+
+def test_retire_missing_official_lines_marks_existing_ready_rows_inactive():
+    retired_rows, decision_rows = retire_missing_official_lines(
+        official_rows=[],
+        existing_official_rows=[{
+            "slate_date": "2026-05-13",
+            "normalized_player_name": "jose berrios",
+            "player_name": "Jose Berrios",
+            "market_key": "pitcher_strikeouts",
+            "ready_for_pipeline": True,
+            "current_market_line_ids": [123],
+        }],
+        now_utc=NOW,
+    )
+
+    assert len(retired_rows) == 1
+    assert retired_rows[0]["ready_for_pipeline"] is False
+    assert retired_rows[0]["arbitration_reasons"] == ["missing_from_current_market_lines"]
+    assert retired_rows[0]["current_market_line_ids"] == [123]
+    assert decision_rows[0]["decision"] == "skip"
+    assert decision_rows[0]["source_line_ids"] == [123]
+
+
+def test_retire_missing_official_lines_keeps_rows_seen_in_current_build():
+    official_rows, _ = choose_official_lines([_line(1)], NOW)
+
+    retired_rows, decision_rows = retire_missing_official_lines(
+        official_rows=official_rows,
+        existing_official_rows=[{
+            "slate_date": "2026-05-13",
+            "normalized_player_name": "jose berrios",
+            "player_name": "Jose Berrios",
+            "market_key": "pitcher_strikeouts",
+            "ready_for_pipeline": True,
+        }],
+        now_utc=NOW,
+    )
+
+    assert retired_rows == []
+    assert decision_rows == []

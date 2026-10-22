@@ -1,0 +1,1175 @@
+# AGENTS.md — BaseballBettingEdge
+
+## Offseason dormancy — 2026-10-01
+
+Tyler requested that BBE remain dormant from a data perspective: no grading,
+provider/API pulls, scheduled research, locks, notifications, or manual pipeline
+runs. All 11 BBE Render services are suspended and the Operations Brief is
+paused. Review existing frozen results offline for 2027; preserve history.
+A restart requires explicit new authorization and a reviewed restart plan.
+This overrides older active schedules/provider instructions below. See
+`docs/superpowers/plans/2026-09-28-season-end-offseason-decision.md`.
+
+## Future provider direction — 2026-10-01
+
+Tyler reports PropLine canceled and chooses TheRundown as the only future odds
+provider. This supersedes older mixed-provider and fallback approvals below.
+All collection remains dormant. Before a separately approved restart, remove
+forced `therundown_propline` selection and key-triggered PropLine/The Odds API
+fallback activation; verify target-book coverage and a finite usage budget.
+Keep historical provider evidence. Do not call canceled providers or infer
+permission to increase TheRundown polling. MLB/statistical inputs are a separate
+restart decision; "TheRundown-only" here refers to odds providers.
+
+## Source Of Truth
+
+This file is the canonical agent entrypoint for the repo.
+
+For new work, read files in this order:
+
+1. `AGENTS.md`
+2. `docs/current-state.md`
+3. the active dated plan referenced there
+
+For the first Mac session after the 2026-08-28 Windows-to-Mac transfer, read
+`docs/handoffs/2026-08-28-windows-to-mac-transfer.md` immediately after this
+file and before `docs/current-state.md`. After the transfer acceptance checks
+pass, resume the normal read order above.
+
+`CLAUDE.md` may exist for compatibility, but `AGENTS.md` is the source of truth
+going forward.
+
+## Operating Board Update Policy
+
+The four active lanes are tracked in `docs/current-state.md`:
+
+- pipeline / infrastructure
+- model
+- UI
+- tracking / data collection / history
+
+When work meaningfully changes a lane's stage, next decision, blocker,
+promotion status, or controlling plan, update the handoff docs before ending
+the session:
+
+1. Update the controlling dated plan first when detailed rules, gates, or
+   promotion standards changed.
+2. Update the Four-Lane Operating Board in `docs/current-state.md` with the
+   current stage and next decision/blocker.
+3. Update `AGENTS.md` only for global rules, read-order changes, or durable
+   operating policies.
+4. Update the BBE Operations Brief automation memory when the daily brief should
+   carry the change forward.
+
+Do not spread detailed rules across multiple docs. The board is a summary and
+coordination surface; controlling plans remain the source for implementation
+details. Never treat progress in one lane as approval to promote another lane.
+
+## Machine / Git Hygiene Policy
+
+This repo is worked on from more than one computer. Do not leave surprise local
+state behind.
+
+At the start of every session:
+
+1. Confirm which computer/clone is being used.
+2. Use the local clone for that computer. Trust `git rev-parse --show-toplevel`
+   and `git remote -v` over sidebar labels or path casing:
+   - Tyler's MacBook Air:
+     `/Users/tyler/Documents/Codex/2026-05-02/pull-my-repos/BaseballbettingEdge`
+   - Windows: use the Windows local clone opened in GitHub Desktop, then
+     verify the repo root and remote before editing.
+   - Expected `origin`: `https://github.com/treidjbi/BaseballbettingEdge.git`
+3. Check the current branch and working tree before making edits.
+4. Pull the current branch from GitHub before starting meaningful work.
+
+During work:
+
+- Prefer a named test/feature branch for experimental local setup work.
+- Keep commits small and explain what changed.
+- Do not mix unrelated cleanup with feature/debugging changes.
+- Do not leave untracked setup files, generated artifacts, or scratch files in
+  the repo unless they are intentional and documented.
+
+Before ending a session:
+
+1. Check `git status`.
+2. Commit intentional changes.
+3. Push the current branch to GitHub.
+4. If anything cannot be committed or pushed, clearly report the exact branch,
+   untracked/modified files, and the next action needed.
+
+For 2026-05-24 local setup testing through Git, use the branch
+`test/local-cloud-setup` and keep both Mac and Windows clones synced through
+GitHub rather than copying files manually.
+
+## PropLine webhook retirement — 2026-09-12
+
+Tyler approved retiring the webhook runtime after downgrading PropLine to
+Hobby. Do not re-enable LIVE_PROCESS_PROPLINE_WEBHOOKS or
+LIVE_SEND_PROPLINE_WEBHOOK_MOVEMENT_NOTIFICATIONS. The receiver acknowledges
+residual deliveries without writing; preserve historical webhook data and
+research helpers. Polling and mainline best-price alerts remain active.
+See docs/superpowers/plans/2026-09-12-propline-webhook-retirement.md for release
+and verification status. This supersedes historical webhook promotion text.
+
+## Current State
+
+As of 2026-06-17, the repo is still in the clean post-Phase-C evaluation
+regime, and the provider posture is the low-cost TheRundown + PropLine path.
+TheRundown remains the official book-of-record source, PropLine remains the
+fallback/live-movement sidecar, and BoltOdds is retired from active runtime
+unless Tyler explicitly reopens a separate provider trial.
+
+- Treat `2026-04-28+` as the clean evaluation regime.
+- The current model-facing track is `bet-selection-first`, using shadow
+  diagnostics before any live threshold, staking, formula, or provider change.
+- Use the evaluation diagnostics in `analytics/diagnostics/e1` through `e5`,
+  plus `analytics/diagnostics/bet_conversion_shadow_audit.py`,
+  `analytics/diagnostics/market_price_outcome_audit.py`, and
+  `analytics/diagnostics/live_market_outcome_audit.py`, and
+  `analytics/diagnostics/pitcher_k_outcome_dataset.py`, and
+  `analytics/diagnostics/k_projection_shadow_lab.py`.
+- `k_projection_shadow_lab.py` reuses the compact pitcher outcome dataset to
+  compare current lambda against transparent challenger projections. Treat it
+  as shadow evidence only; it must not change live projection math without a
+  separate approval/promotion plan.
+- Read `docs/current-state.md` for the freshest operating state, then the
+  newest dated plan that matches the task. For provider production, line
+  movement, Supabase market-state, or live-notification work, start from the
+  current provider posture in this file and `docs/current-state.md`: TheRundown
+  remains the official artifact source, PropLine is fallback/live-movement
+  sidecar, and BoltOdds is retired unless Tyler explicitly opens a new provider
+  trial. Use
+  `docs/superpowers/plans/2026-05-13-boltodds-propline-official-provider-cutover.md`
+  only as historical provider-arbitration context.
+- For model-facing Gate C, confidence-referee, batter-handedness, opportunity/
+  leash, or K-projection challenger work, start with
+  `docs/superpowers/plans/2026-05-12-pitcher-k-outcome-research-dataset.md`.
+- For future dashboard UI work that uses live-market price tracking after the
+  operational/provider production switch is approved, start
+  with
+  `docs/superpowers/plans/2026-05-20-live-market-decision-ui.md`. That plan is
+  display-only until Tyler separately approves implementation and promotion.
+- Keep the four active lanes visible in `docs/current-state.md`:
+  pipeline/infrastructure, model, UI, and tracking/data collection/history.
+  Use that operating board to keep recommendations scoped, and do not treat
+  progress in one lane as approval to promote another lane.
+- Read `docs/provider-cost-ledger.md` before recommending new providers,
+  provider upgrades, higher polling cadence, or always-on infrastructure.
+- Read `docs/operational-risk-register.md` before changing provider behavior,
+  notification behavior, retention, live workers, or source-of-truth rules.
+- Read `docs/research/market-tracker-map.md` before adding new PropLine,
+  Supabase, or market-research trackers so existing raw/compact evidence is
+  reused instead of duplicated.
+- Preserve the dated plans in `docs/superpowers/plans/` as historical context
+  so future work does not repeat earlier mistakes.
+- Artifact-exit posture as of 2026-05-30: Tyler approved the scheduler/artifact
+  cutover. Render cron services now run preview, grading, full, refresh, and
+  lock modes and publish live Supabase artifact keys consumed by Netlify
+  `get-artifact`. GitHub Actions `pipeline.yml` keeps manual
+  `workflow_dispatch` rollback only; scheduled triggers are disabled.
+
+### Current provider posture
+
+As of 2026-06-17, Tyler chose the low-cost production posture:
+
+- TheRundown remains the official book-of-record source for scheduled preview,
+  full, refresh, grading, and dashboard artifacts.
+- PropLine remains target-book fallback, DraftKings coverage source when
+  needed, and live-movement sidecar.
+- The Odds API remains capped emergency FanDuel/DraftKings fallback only.
+- BoltOdds is retired from active runtime; Render worker
+  `bbe-boltodds-shadow-worker` was suspended via Render API on 2026-06-17.
+  `render.yaml` is intentionally non-deploying (`services: []`) so a Render
+  Blueprint sync cannot recreate the old worker.
+
+Do not revive BoltOdds, enable `OFFICIAL_MARKET_SOURCE=boltodds_propline`, or
+set `ENABLE_BOLTODDS_PIPELINE_SOURCE=true` unless Tyler explicitly approves a
+new provider trial. The historical Render `--provider-rehearsal` path also
+fails closed unless `ALLOW_BOLTODDS_PROVIDER_REHEARSAL=true` is set after that
+fresh approval. Official artifacts should remain TheRundown with PropLine
+fallback/sidecar evidence.
+
+As of the 2026-05-13 cutover branch work, `current_market_lines`,
+`market_opening_baselines`, and `official_market_lines` builders exist as
+provider rehearsal infrastructure only. They fail closed for incomplete
+provider state and for stale provider state when the provider heartbeat is not
+fresh. Historical BoltOdds rows can remain useful for research, but they are
+not an active runtime source after the 2026-06-17 suspension.
+
+The provider pipeline adapter also exists, but it is double gated:
+`OFFICIAL_MARKET_SOURCE=boltodds_propline` plus
+`ENABLE_BOLTODDS_PIPELINE_SOURCE=true`. Leave both unset/false unless Tyler
+explicitly approves a new provider trial.
+
+If Tyler explicitly opens a new provider trial, use
+`analytics/diagnostics/provider_cutover_shadow_compare.py` as historical
+rehearsal tooling to adapt, not as an active promotion mandate.
+
+The historical BoltOdds + PropLine cutover plan previously synthesized the
+production-facing parts of:
+
+- `docs/superpowers/plans/2026-05-13-boltodds-production-line-movement.md`
+- `docs/superpowers/plans/2026-05-07-boltodds-starter-trial.md`
+- `docs/superpowers/plans/2026-05-06-live-layer-event-system.md`
+- `docs/superpowers/plans/2026-05-05-propline-fallback-and-model-signal-plan.md`
+- `docs/superpowers/plans/2026-05-01-propline-supabase-market-infrastructure.md`
+
+Keep those older plans for implementation history and code snippets only. They
+do not control current provider promotion, official odds-source behavior,
+Supabase market-state behavior, or live-notification promotion after the
+2026-06-17 BoltOdds retirement. Any future provider trial needs a fresh Tyler
+approval and current plan.
+
+## What This Project Does
+
+MLB pitcher strikeout prop betting model. Fetches daily K props from TheRundown API, combines with pitcher stats (MLB Stats API), swinging-strike rates (FanGraphs/PyBaseball), umpire tendencies (MLB officials + cached career rates), and opposing lineup K rates to produce a Poisson-based expected strikeout (lambda) for each pitcher. Computes probability edge plus expected ROI against book odds and outputs verdicts (PASS / LEAN / FIRE 1u / FIRE 2u).
+
+Results are displayed on a static dashboard hosted on Netlify with push notification support.
+
+## Architecture
+
+```
+pipeline/           Python data pipeline (runs on Render cron; GitHub manual rollback)
+  run_pipeline.py     Orchestrator — entry point, run types: full | grading | preview | lock
+  fetch_odds.py       TheRundown API v2 — K prop lines (market_id=19)
+  fetch_stats.py      MLB Stats API — pitcher season/recent/career K/9, avg IP, team data
+  fetch_statcast.py   PyBaseball/FanGraphs — swinging strike rates (SwStr%)
+  fetch_umpires.py    MLB Stats API officials + cached career rates — HP umpire K rate adjustments
+  fetch_lineups.py    Confirmed lineups
+  fetch_batter_stats.py  FanGraphs — batter K% splits (vs L/R)
+  build_features.py   Joins all data → computes lambda, edge, EV ROI, verdicts
+  calibrate.py        Auto-calibrates params (lambda_bias, ump_scale, blend weights, swstr_k9_scale)
+  fetch_results.py    Seeds picks into SQLite, fetches box scores, grades results
+  backfill_results.py Backfill historical results
+  name_utils.py       Pitcher/batter name normalization (accent stripping)
+
+dashboard/          Static frontend (single index.html, deployed to Netlify)
+  index.html          Full SPA — pitcher cards, performance tab, dark mode, PWA
+  sw.js               Service worker for push notifications
+  manifest.json       PWA manifest
+  data/processed/     Pipeline output (today.json, YYYY-MM-DD.json archives, index.json)
+
+netlify/functions/  Serverless functions
+  send-notifications.mjs   Push notification dispatch + game-time reminders
+  send-live-notifications.mjs  Scheduled live notification sender
+  send-live-notifications-now.mjs  Authenticated manual live sender
+  propline-webhook.mjs  Shadow PropLine webhook receiver
+  save-subscription.mjs    Save push subscription endpoints
+  trigger-pipeline.js      Manual pipeline trigger
+
+market_infra/       Supabase shadow/live-market helpers
+  live_events.py       Live pick state, line-movement events, reminders
+  prop_snapshot.py     PropLine snapshot normalization helpers
+  provider_audit.py    Provider overlap/coverage diagnostics
+  supabase_writer.py   Supabase REST writer
+
+scripts/            Operational scripts
+  shadow_propline_to_supabase.py  PropLine shadow polling writer
+  build_live_events_to_supabase.py  Render live-layer event builder
+
+data/               Shared data files
+  params.json           Calibrated model parameters (lambda_bias, weights, etc.)
+  picks_history.json    All picks with results (JSON, committed by pipeline)
+  preview_lines.json    Midnight preview opening lines for the upcoming game day
+  processed/            (gitignored intermediate data)
+  umpires/              Umpire data cache
+
+tests/              pytest test suite
+```
+
+## Pipeline Schedule (Render Cron)
+
+All times America/Phoenix (UTC-7, no DST):
+- **12:17 AM** — Preview: fetch current-day opening lines → `preview_lines.json`.
+  At midnight we've just rolled into the game day, so the run uses TODAY's
+  date. Later start time (vs. the prior 7 PM) gives more pitchers time to
+  be announced, which improves coverage. The `:17` minute avoids GitHub's
+  top-of-hour schedule queue.
+- **3:17 AM** — Grading: grade yesterday's picks + calibrate `params.json`
+- **6:17 AM** — Full run: finalize today's picks (uses preview lines as opening baseline)
+- **8:07 AM–6:07 PM every 30 min** — Refresh: fetch fresh odds/lineups, update unlocked picks, lock T-30min
+
+- **Every 10 minutes at :02/:12/:22/:32/:42/:52** - Lock mode consumes
+  Supabase operational lock rows after the live layer has had a chance to write
+  them.
+
+### GitHub manual rollback expectations
+
+GitHub scheduled workflows are disabled after the 2026-05-30 Render scheduler
+cutover. Manual `workflow_dispatch` remains available for preview, grading,
+full/refresh, lock, and PropLine probe modes.
+
+For health checks, focus first on Render run completion, Supabase
+`published_pipeline_artifacts`, Netlify `get-artifact`, and lock cron
+consumption. Use manual GitHub dispatch only as rollback or stale-artifact
+repair, then verify the repaired artifact path before trusting it.
+
+Known grading exception as of 2026-09-02: do not dispatch GitHub
+`pipeline.yml` with `mode=grading`. After artifact exit, the Git checkout no
+longer hydrates current history before grading; approved repair run
+`33650131043` selected stale May 30 rows instead of September 1 and stopped
+before push/publication only because `index.json` was left unstaged. The
+hydrated Render `bbe-pipeline-grading` service is the immediate grading repair
+path. A future GitHub grading fallback needs a separate hydration repair and
+proof; staging `index.json` alone is unsafe. Other GitHub manual modes remain
+rollback-only and still require artifact verification.
+
+## Key Commands
+
+```bash
+# Install dependencies
+pip install -r pipeline/requirements.txt
+
+# Run pipeline (requires RUNDOWN_API_KEY env var)
+python pipeline/run_pipeline.py 2026-04-15
+python pipeline/run_pipeline.py 2026-04-15 --run-type grading
+python pipeline/run_pipeline.py 2026-04-16 --run-type preview
+
+# Run tests
+python -m pytest tests/ -v
+
+# Run a single test file
+python -m pytest tests/test_build_features.py -v
+```
+
+## Environment Variables / Secrets
+
+- `RUNDOWN_API_KEY` — TheRundown API key (required for fetch_odds)
+- `ODDS_API_KEY` — The Odds API key (fallback-only odds provider; GitHub
+  secret added 2026-05-01)
+- `PROPLINE_API_KEY` — PropLine API key (weekend fallback/shadow provider;
+  GitHub secret added 2026-05-01)
+- `BOLTODDS_API_KEY` — historical BoltOdds Starter trial key. Do not use or
+  restore the BoltOdds worker unless Tyler explicitly reopens a provider trial.
+- `OFFICIAL_MARKET_SOURCE` — official provider selector. Current/default
+  production remains `therundown`; `boltodds_propline` is retired/closed unless
+  Tyler explicitly opens a new provider trial.
+- `ENABLE_BOLTODDS_PIPELINE_SOURCE` — retired provider-trial safety flag; keep
+  false unless Tyler explicitly reopens BoltOdds.
+- `ENABLE_BOLTODDS_LIVE_NOTIFICATIONS` — retired provider-trial notification
+  flag; keep false unless Tyler explicitly reopens BoltOdds.
+- `VAPID_PUBLIC_KEY` / `VAPID_PRIVATE_KEY` / `VAPID_SUBJECT` — Web Push keys
+- `NOTIFY_SECRET` — Push notification auth secret (Netlify function)
+- `NETLIFY_SITE_URL` — Netlify site URL for notification endpoint
+
+## TheRundown API (Odds Provider)
+
+- **Plan**: Starter ($49/mo)
+- **Quota**: 2,000,000 data points/month, then $0.002/pt overage
+- **Rate limit**: 2 req/sec, 60-second data delay
+- **Coverage**: All 15+ bookmakers, all periods & markets, best lines, 7-day odds history
+- **Not included**: WebSocket streaming, +EV calculations
+- **Auth**: `X-TheRundown-Key` header
+- Pipeline throttles at 0.55s between calls to stay under 2 req/sec
+
+### TheRundown live-polling cost guardrail
+
+TheRundown Starter is the official book-of-record odds source for scheduled
+preview/full/refresh/grading-adjacent artifacts. PropLine is the approved
+fallback/live-movement sidecar. BoltOdds is retired from active runtime. Do
+**not** design new high-frequency live polling around TheRundown without an
+explicit cost/usage review.
+
+Known limit context:
+
+- Current plan allows 2,000,000 data points/month, then overage billing.
+- TheRundown's own usage estimator can exceed Starter for MLB player props
+  when polling multiple books every 15 minutes on normal slates.
+- The plan has no WebSocket streaming, so frequent polling is the expensive
+  path.
+
+For the live layer, default to:
+
+- Read TheRundown-derived picks from `today.json` as the book-of-record model
+  state.
+- Use PropLine polling/webhooks for fallback and line-movement evidence.
+- Do not increase TheRundown polling cadence beyond the existing pipeline
+  schedule unless Tyler explicitly approves the spend/risk tradeoff.
+
+## Live Notification Layer
+
+The live notification layer is separate from the official pipeline.
+
+- **Render cron**: `bbe-live-layer`, every 10 minutes.
+- **Source artifact**: fetches the fresh Netlify/Supabase dashboard artifact;
+  do not rely on stale baked Render checkout files.
+- **Market source**: polls PropLine only when `PROPLINE_API_KEY` is present.
+- **Supabase tables**: `market_snapshots`, `live_pick_state`,
+  `notification_events`, `line_movement_events`, `market_pick_evidence`,
+  `live_market_display_state`, `shadow_notification_candidates`, and
+  `game_reminder_state`.
+- **Shadow provider-state rebuild**: the Render live-layer entrypoint can
+  refresh `current_market_lines`, `official_market_lines`,
+  `provider_arbitration_decisions`, `provider_request_usage_daily`, and
+  `compact_market_line_movements` when `LIVE_BUILD_MARKET_LINES` is enabled
+  (default on for the script entrypoint). It uses freshness guards
+  (`LIVE_MARKET_LINE_BUILD_MIN_INTERVAL_SECONDS`, default `600`, and
+  `LIVE_MARKET_COMPACTION_MIN_INTERVAL_SECONDS`, default `1800`) so a fresh
+  manual shadow-market build is not immediately duplicated. GitHub
+  `shadow-market-infra` is manual-only after the 2026-06-17 BoltOdds retirement.
+  This is shadow infrastructure only; it does not make PropLine, BoltOdds, or
+  `official_market_lines` production.
+- **Netlify sender**: scheduled `send-live-notifications` every 10 minutes.
+- **Manual sender**: `/api/send-live-notifications-now` with `NOTIFY_SECRET`.
+
+This layer may create notification events, but it must not update dashboard
+artifacts, grading, picks history, calibration, model outputs, or production
+provider order.
+
+PropLine webhook movement notifications are approved only for the reviewed
+line/price movement class. Keep BoltOdds-sourced notification sends disabled;
+continue using `shadow_notification_candidates` for future would-have-sent
+evidence before promoting any new notification class.
+
+`market_pick_evidence` is a shadow-only per-pick/provider rollup for model vs.
+market learning. Active defaults read TheRundown/PropLine evidence and exclude
+retired BoltOdds unless an explicit historical/provider-trial path requests it.
+It summarizes whether live market snapshots moved toward or away from the pick
+and whether the current number got better or worse to bet now. It must not drive
+live picks, locks, thresholds, staking, provider order, or notification sends
+without Tyler's explicit approval.
+
+`live_market_outcome_audit.py` is the shadow-only post-slate bridge from
+BoltOdds/PropLine market evidence to graded outcomes. It can read exported
+`market_pick_evidence`, `live_market_display_state`, and raw `market_snapshots`
+rows, rebuild pregame checkpoints such as pre-30/pre-15/pre-5 from raw
+snapshots, and join them to `data/picks_history.json`. It is for learning which
+movement contexts win; it must not change live picks, thresholds, staking,
+provider order, notifications, or calibration.
+
+`shadow_notification_candidates` is a shadow-only would-have-sent tracker. It
+records which PropLine/BoltOdds market-evidence states would qualify for future
+alerts and why they were suppressed, including single-book BetRivers noise and
+reversal/volatility flags. These rows must never be sent as push notifications
+without a separate promotion decision.
+
+`live_market_display_state` is a shadow-only app-ready summary of live provider
+snapshots. It turns raw BoltOdds/PropLine rows into market consensus, best
+actionable book, off-market book, movement sequence, freshness, and
+actionable-state fields. It is display/evaluation evidence only; it must not
+change official picks, locks, thresholds, staking, provider order, or
+notification sends without Tyler's explicit approval.
+
+After the Supabase operational/provider switch is stable, revisit the live
+notification coordinator plan:
+`docs/superpowers/plans/2026-05-20-live-notification-coordinator.md`. It covers
+deduping GitHub/live-layer pushes, grouped start-window reminders, lock batches,
+late-reminder suppression, and the eventual reduction of GitHub
+`send-notifications` to fallback/artifact-health mode. Do not change
+notification behavior until that plan is explicitly approved for implementation.
+
+Current note: `NOTIFY_SECRET` rotation after screenshot exposure was completed
+on 2026-05-07. Future checks should focus on sender health, queue counts, and
+delivery outcomes.
+
+## The Odds API (Fallback Odds Provider)
+
+The Odds API is available as a fallback source when TheRundown is degraded or
+missing critical pitcher strikeout coverage. It is **not** the primary odds
+feed and should not replace TheRundown for normal scheduled runs without a
+specific decision.
+
+- **Current trial**: free weekend fallback for FanDuel / DraftKings only,
+  starting 2026-05-01. Check the next scheduled review on **Monday 2026-05-04**
+  before deciding whether to migrate fully.
+- **Plan**: free / limited fallback only
+- **Quota**: 500 credits/month
+- **Secret**: `ODDS_API_KEY`
+- **Host**: `https://api.the-odds-api.com`
+- **Docs**: `https://the-odds-api.com/liveapi/guides/v4/`
+- **MLB sport key**: `baseball_mlb`
+- **Pitcher strikeout market key**: `pitcher_strikeouts`
+- **Bookmaker keys tested live 2026-05-01**: `fanduel`, `draftkings`
+- **Possible full-switch target books**: if the weekend trial works and we
+  decide to migrate, start with only DraftKings, FanDuel, BetMGM, and Caesars
+  rather than all available US books.
+- **Important quota behavior**: event-level player-prop calls cost credits.
+  A 2026-05-01 probe for one MLB event, two books, and one market cost 1
+  credit. Do not loop every event on every refresh unless TheRundown is
+  actually failing.
+
+Known-good event-level probe shape:
+
+```text
+GET /v4/sports/baseball_mlb/events/{eventId}/odds
+  ?apiKey=...
+  &bookmakers=fanduel,draftkings
+  &markets=pitcher_strikeouts
+  &oddsFormat=american
+```
+
+The response shape is event-first:
+`bookmakers[] -> markets[] -> outcomes[]`, where pitcher props use
+`outcome.name` as `Over` / `Under`, `outcome.description` as the pitcher name,
+`outcome.point` as the K line, and `outcome.price` as American odds.
+
+Use this provider conservatively:
+
+- First try TheRundown.
+- Only call The Odds API when TheRundown returns no usable target-book K props,
+  misses FanDuel/DraftKings coverage, or has a confirmed provider outage.
+- Only call The Odds API after the PropLine fallback errors, rate-limits, has
+  no usable coverage, or still leaves missing FanDuel/DraftKings coverage.
+- While on the 500-credit free plan, do not broaden The Odds calls beyond the
+  FD/DK fallback without an explicit decision; a full weekend can burn through
+  the free quota quickly.
+- Prefer one event or one slate diagnostic pass before adding it to scheduled
+  production fallback behavior.
+- Preserve source metadata if wired into pipeline output (`odds_source`,
+  `bookmaker_key`, response quota headers) so TheRundown and fallback rows can
+  be audited separately.
+
+## PropLine API (May 2026 Fallback / DraftKings Provider)
+
+PropLine is the active low-cost fallback, DraftKings coverage source when
+needed, and live-movement provider. As of Tyler's 2026-06-24 approval,
+live Render preview/full runs may use the explicit non-strict
+`therundown_propline` official mode: curated `official_market_lines` first,
+direct TheRundown fallback, `ENABLE_THERUNDOWN_PROPLINE_PIPELINE_SOURCE=true`,
+and `OFFICIAL_MARKET_STRICT=false`. PropLine webhooks remain movement/timing
+evidence only; they must not replace production odds, picks, model behavior,
+locks, staking, thresholds, or dashboard source-of-truth without a separate
+review.
+
+- **Plan under test**: paid PropLine polling, with a likely downgrade target of
+  Hobby if real request usage stays safely under 5,000 requests/day. Webhook
+  entitlement is not confirmed until PropLine support or the API allows
+  subscription creation.
+- **Secret**: `PROPLINE_API_KEY`
+- **Host**: `https://api.prop-line.com`
+- **Auth**: `X-API-Key` header
+- **MLB sport key**: `baseball_mlb`
+- **Pitcher strikeout market key**: `pitcher_strikeouts`
+- **PropLine polling/fallback target books**: DraftKings, FanDuel, BetRivers,
+  Kalshi. Ignore Bovada, Pinnacle, PrizePicks, Polymarket, and other non-user
+  books unless the user explicitly changes the supported-book list.
+- **PropLine webhook live-alert supported/actionable books**: FanDuel,
+  DraftKings, BetMGM, BetRivers, Kalshi, Caesars, and theScore/scorebet. This
+  live-alert allow-list is intentionally broader than the polling/fallback
+  target set and still only applies to movement notifications, not official
+  odds-source selection.
+- **Manual probe**: use GitHub Actions `workflow_dispatch` with
+  `mode=propline_probe` and an optional `date=YYYY-MM-DD`. It prints returned
+  book keys/counts only; it must never print the API key.
+- **Current fallback order**: TheRundown primary → PropLine target-book
+  fallback → The Odds FD/DK fallback only if PropLine errors/rate-limits/has
+  no usable coverage or still leaves missing FanDuel/DraftKings coverage.
+- **Current checkpoint**: as of 2026-06-24, PropLine is approved as part of the
+  non-strict TheRundown+PropLine official provider mode for live preview/full
+  Render runs, with direct TheRundown fallback and strict mode closed. Use
+  current-state, the provider cost ledger, and request-usage accounting before
+  downgrading PropLine, changing strictness, changing notification classes, or
+  changing TheRundown's fallback role.
+- **Current evidence as of 2026-05-19**: polling is useful for fallback,
+  partial-provider, and live-movement evidence. Real signed PropLine
+  `line_movement` webhook deliveries now appear in
+  `propline_webhook_deliveries`; they remain shadow-only. PropLine's
+  2026-05-19 payload fix adds `bookmaker_key`, `bookmaker_title`, `market_id`,
+  and `outcome_id` to `line_movement` and `resolution` deliveries. The
+  processor stores those fields when present and keeps a legacy neutral fallback
+  for rows without a sportsbook key. Webhook evidence processing may use a
+  longer inbox lookback for audit rows, but webhook movement notifications must
+  apply their own freshness gate before queueing. Do not use PropLine webhook
+  rows for production odds, picks, model inputs, staking, or provider promotion
+  without a separate review.
+
+The response shape mirrors The Odds enough to share parser logic:
+`bookmakers[] -> markets[] -> outcomes[]`, where pitcher props use
+`outcome.name` as `Over` / `Under`, `outcome.description` as the pitcher name,
+`outcome.point` as the K line, and `outcome.price` as American odds.
+
+May trial review checklist:
+
+- Which target books actually came back live?
+- How many listed MLB probable pitchers were covered?
+- How many records were same-line vs. line-conflict with TheRundown?
+- Did PropLine return useful Kalshi/BetRivers coverage?
+- Did 10-minute shadow polling catch useful line movement, and how much GitHub
+  schedule jitter was observed?
+- Did the paid plan stay within request/rate limits?
+- Did `odds_source` / `propline_event_id` make provider attribution auditable?
+- Would PropLine have changed any model decisions, line locks, or movement
+  confidence outcomes versus TheRundown alone?
+
+## BoltOdds API (Retired Shadow WebSocket Trial)
+
+BoltOdds is historical trial context only after Tyler's 2026-06-17 decision to
+kill the worker and stay on the TheRundown + PropLine path. Do not restart the
+Render worker, restore BoltOdds flags, or use BoltOdds rows for production
+behavior without a separate approval.
+
+- **Branch**: `main`; `codex/boltodds-starter-trial` is historical trial context only
+- **Render worker**: `bbe-boltodds-shadow-worker` suspended via Render API on
+  2026-06-17; `render.yaml` is intentionally non-deploying so Blueprint sync
+  cannot recreate it.
+- **Plan under test**: retired Starter trial.
+- **Secret**: `BOLTODDS_API_KEY` is historical/retired.
+- **Host / docs endpoint family**: `https://spro.agency/api` and
+  `wss://spro.agency/api`
+- **Purpose**: historical MLB pitcher strikeout market movement evidence for
+  research and migration-risk analysis only.
+- **Production impact**: none today. Do not wire BoltOdds into
+  `pipeline/run_pipeline.py`, `today.json`, grading, picks history,
+  calibration, or push notifications unless Tyler explicitly approves a new
+  provider trial and a new promotion plan.
+
+Starter discovery/probe status as of 2026-05-07:
+
+- Useful target books seen: FanDuel, BetMGM, BetRivers, Kalshi, Caesars.
+- DraftKings is listed by BoltOdds but returned zero authenticated market rows
+  during checks.
+- theScore Bet was missing.
+- This is enough to run the trial because FanDuel, BetMGM, BetRivers, Kalshi,
+  and Caesars can test live movement coverage.
+
+May 13, 2026 worker fix:
+
+- The persistent worker previously latched onto one `today.json` at startup.
+- The deployed worker must run from `main` so the stale-slate rotation fix and
+  provider-runtime hardening fixes are present.
+
+Review BoltOdds on evidence, not promise:
+
+- heartbeat freshness and worker uptime
+- websocket message counts and reconnect behavior
+- normalized snapshot rows by target book
+- stale-feed and row-volume risk
+- whether movement would have changed timing, confidence, or notifications
+- whether Starter is enough before considering Pro spend
+
+## Tech Stack
+
+- **Python 3.11** — pipeline
+- **Libraries**: requests, beautifulsoup4, scipy (Poisson), pybaseball, pytz, numpy
+- **SQLite** — ephemeral results DB (`data/results.db`, gitignored), rebuilt each run from `picks_history.json`
+- **Render cron** - scheduled pipeline runs
+- **GitHub Actions** - manual pipeline rollback and probes
+- **Netlify** — static dashboard hosting + serverless functions
+- **Single-file HTML dashboard** — vanilla JS, no build step, IBM Plex Mono + Oswald fonts
+
+## API Wiring Notes
+
+These are the API-shape details that have caused real bugs in this repo.
+Read this before debugging any data-source issue.
+
+### TheRundown v2 (`pipeline/fetch_odds.py`)
+
+- Response shape is `events[] -> markets[] -> participants[] -> lines[] -> prices{book_id}`.
+- Pitcher strikeout props live at `market_id=19`.
+- `fetch_odds` intentionally leaves `team=""` and `opp_team=""`. TheRundown
+  does not provide a per-prop team mapping we trust enough to stamp those
+  fields directly, so `fetch_stats` resolves them later against MLB probables.
+- `line["value"]` is a string like `"Over 7.5"` / `"Under 7.5"` and is parsed
+  into `(direction, line_val)`.
+- `price_delta` means `current - opening`, so reconstructed opening odds are
+  `current - price_delta`.
+- Ref-book selection is **priority-based**, not best-price-based. Current
+  priority is FanDuel -> BetMGM -> DraftKings -> theScore Bet -> Kalshi.
+- `fetch_odds` requests only affiliate IDs `19,22,23,24,25` from TheRundown.
+- Option B is live: if no target book exists, the prop is skipped rather than
+  falling back to an unknown book.
+- `book_odds` is the tracked per-book snapshot used for `steam.json`.
+- `opening_odds_source` starts as `"first_seen"` in `fetch_odds`; promotion to
+  `"preview"` only happens later in `run_pipeline._apply_preview_openings()`.
+
+### MLB Stats API probable starters (`pipeline/fetch_stats.py`)
+
+- `fetch_stats(date_str, pitcher_names)` returns a **2-tuple**:
+  `(stats_by_name, probables_by_team)`.
+- `stats_by_name` is keyed by the original TheRundown pitcher name so
+  `stats_map.get(odds["pitcher"])` still works after normalization.
+- `probables_by_team` exists to catch scratch / phantom cases where MLB's
+  current probable no longer matches the odds pitcher (`starter_mismatch`).
+- `probables_by_team` values are lists of probable names, not a single string,
+  because doubleheaders can put the same team on the slate twice.
+- `/schedule?hydrate=probablePitcher,team` does **not** reliably include
+  `pitchHand`. When it is missing, the code must fall back to `/people/{id}`.
+- `recent_start_ips` comes from pitcher `gameLog`, but it is **not** the raw
+  last 5 appearances. The fetch widens the lookback, filters to
+  `gamesStarted > 0`, then keeps the last 5 true starts so mixed relief usage
+  does not poison opener detection.
+- Started game logs should be sorted newest-first by split date before the
+  recent-start slice is taken. Do not trust the raw MLB API row order.
+- `recent_k9` is the aggregate K/9 across that recent true-start slice, not the
+  first game-log row's K/9.
+- `park_team` is the venue breadcrumb used for park-factor lookup. For home
+  starters it is their own team name; for away starters it is the opponent's
+  home team name.
+- Name matching between TheRundown and MLB must stay accent-insensitive.
+  `name_utils.normalize()` is load-bearing here.
+
+### MLB Stats API lineups (`pipeline/fetch_lineups.py`)
+
+- The lineup flow is a **two-call** flow:
+  1. `/schedule` to find `gamePk` and whether the requested team is `away` or `home`
+  2. `/game/{gamePk}/boxscore` to get the actual ordered lineup
+- Do **not** expect usable batting-order data from schedule hydrate.
+  `battingOrder` lives on `boxscore.teams.{away|home}.battingOrder`.
+- Batter details live under `boxscore.teams.{away|home}.players["ID{player_id}"]`.
+- Returned lineup shape is `[{"name": ..., "bats": ...}, ...]` in batting order.
+- Empty `battingOrder` is a normal pregame state and should return `None`.
+
+### MLB Stats API officials / umpires (`pipeline/fetch_umpires.py`)
+
+- `ump.news` is dead. Live source is now
+  `/schedule?sportId=1&date=YYYY-MM-DD&hydrate=officials`.
+- Home-plate umpire is found by scanning each game's `officials[]` for
+  `officialType == "Home Plate"`.
+- The assignment map is built from the away-team abbreviation, then later
+  matched back to props using both `team` and `opp_team` because both starters
+  face the same HP umpire.
+- `career_k_rates.json` is the second half of the umpire signal. Missing ump in
+  that file still resolves to `0.0`, even if officials were fetched correctly.
+- `today.json` distinguishes confirmed-but-unrated umpires from true TBA via
+  per-record `umpire` and `umpire_has_rating`. Confirmed-but-unrated umpires
+  stay neutral (`ump_k_adj=0.0`) and show up under
+  `ump_diagnostics.missing_career_rate_umpires`.
+- Team-name reverse lookup is substring-based through `ABBR_TO_NAME_SUBSTR`;
+  if a team-name format changes, ump matching can silently die.
+
+### FanGraphs / PyBaseball batter K data (`pipeline/fetch_batter_stats.py`)
+
+- Aggregate batter K% is live.
+- True handedness splits are in **collection-only** mode. The pipeline can
+  cache Baseball-Reference platoon split samples in
+  `data/batter_splits_YYYY.json`, but projection still uses aggregate K% for
+  both `vs_R` and `vs_L` plus the league-average platoon adjustment in
+  `build_features.calc_lineup_k_rate`.
+- Current caller contract is:
+  `{normalized_batter_name: {"vs_R": float, "vs_L": float}}`
+- Do not promote collected real splits into `vs_R` / `vs_L` projection inputs
+  until the soak review confirms coverage and adds Bayesian split regression.
+- Detailed Path A / Path B handedness rules live in
+  `docs/superpowers/plans/2026-05-12-pitcher-k-outcome-research-dataset.md`.
+
+### FanGraphs / PyBaseball SwStr (`pipeline/fetch_statcast.py`)
+
+- Current-season SwStr% comes from the FanGraphs leaderboard JSON endpoint
+  (`https://www.fangraphs.com/api/leaders/major-league/data`), not the old
+  legacy `pitching_stats()` scrape path.
+- Career baseline is the 3-season window before the current season.
+- That baseline is the mean of the three prior seasons fetched
+  season-by-season, not one combined multi-year scrape.
+- Values are normalized to decimals (`0.134`, not `13.4`).
+- Missing pitcher or source failure should degrade to league-average
+  `LEAGUE_AVG_SWSTR`, not break the pipeline.
+- If `career_swstr_pct` suddenly goes null across the board, check
+  `pipeline/fetch_statcast.py` before trusting Phase B bias slices.
+- Live production confirmation: the repaired transport was verified end-to-end
+  on 2026-04-27. Fresh workflow-stored rows from that date forward are the
+  first post-fix SwStr-live calibration era.
+
+### Park factors (`data/park_factors.json`, `pipeline/team_codes.py`)
+
+- Park factors live in `data/park_factors.json` under a nested `factors` dict.
+  Metadata at the file root is part of the contract; do not flatten it.
+- The pipeline stores full MLB team names in the live stats payload, so
+  `pipeline/team_codes.py` is the canonical name→code mapping for park-factor
+  resolution.
+- `TEAM_NAME_TO_CODE` intentionally includes a few historical / alias names
+  (`Oakland Athletics`, `Anaheim Angels`, etc.) so upstream label drift
+  degrades to the right code instead of silently defaulting to neutral.
+- `run_pipeline._resolve_park_factor()` must fail safe to `1.0` when a venue
+  name is missing, unknown, or mapped to an invalid factor (missing, non-finite,
+  or <= 0). Log a warning and keep the run alive.
+- Current provenance note: FanGraphs research is recorded in the file; the
+  planned Baseball Savant cross-check is still pending and should be treated as
+  a data-refresh follow-up, not as a live-run blocker.
+
+## Model Overview
+
+1. Blend pitcher K/9: weighted mix of season, recent (last 5 starts), and career K/9
+2. SwStr% delta: additive K/9 adjustment based on current vs career swinging strike rate
+3. Opponent K%: Bayesian-regressed team/lineup strikeout rate
+4. Umpire adjustment: HP umpire career K rate delta
+5. Lambda = (adjusted_K/9 × opp_K_factor × innings/9) + ump_adjustment + lambda_bias
+6. Poisson CDF → over/under win probabilities → probability edge + EV ROI vs book odds → verdict
+
+### Opener handling
+
+- `build_features.is_opener()` flags likely opener / bullpen games when the
+  recent-start IP sample averages below `2.5` innings across at least `2`
+  starts.
+- Openers are forward-only metadata in `today.json` via `is_opener` and
+  `opener_note`.
+- When opener is true, both sides are forced to `PASS` and adjusted EV is
+  zeroed so verdict-driven and adj-EV-driven UI paths stay neutral.
+- Raw EV / win probability still remain on the record for inspection; the
+  actionable suppression happens through verdict + adjusted EV.
+
+### Park-factor handling
+
+- `calc_lambda(..., park_factor=1.0)` applies park factor multiplicatively to
+  the rate-driven portion of lambda before the additive umpire term.
+- Park factor is a forward-only signal. Do not backfill historical rows with it.
+- Unknown venues should show up as `park_factor=1.0` plus a warning, not as a
+  hard pipeline failure.
+
+### Rest / workload handling
+
+- `fetch_stats.py` now exposes `days_since_last_start` and `last_pitch_count`
+  from the latest true start in the MLB game log.
+- Rest for UTC-shifted games must be computed from the actual schedule block
+  date, not blindly from the original `date_str` request.
+- `calc_rest_k9_delta()` is intentionally conservative:
+  - `<4` days since last start => `-0.3` K/9
+  - `>110` pitches in the last start => `-0.2` K/9
+  - penalties stack
+  - missing data stays neutral
+- `rest_k9_delta` is forward-only metadata in the record output and is applied
+  to the blended K/9 before lambda.
+
+### Data warnings / degraded-source visibility
+
+- `today.json` now includes a top-level `data_warnings` array. Empty array means
+  clean run; the dashboard should hide the warning UI in that case.
+- `run_pipeline.collect_data_warnings()` is the pure warning contract. Prefer
+  testing there instead of broad orchestration mocks when changing warning text
+  or counting logic.
+- Units matter:
+  - HP ump coverage warnings are counted in scheduled `games`
+  - lineup and batter-split warnings are counted in opposing `lineups`
+- Lineup warning denominators should only count pitchers that actually reached
+  the lineup-fetch path. Do not blame a dropped `fetch_stats` row on
+  `fetch_lineups`.
+- SwStr warnings should distinguish partial degradation from a full neutral
+  fallback. Losing only the career baseline means the current SwStr value is
+  still live and only the delta is zeroed.
+
+### EV / Edge Semantics
+
+- `ev_*["edge"]` is the probability gap: model win probability minus implied probability.
+- `ev_*["ev"]` is expected ROI on a 1.0u risked stake.
+- `ev_*["adj_ev"]` is the movement-confidence-adjusted EV ROI used for ranking and verdict display.
+
+### Verdict Thresholds
+
+Thresholds live in `pipeline/build_features.py` (`EDGE_PASS`, `EDGE_LEAN`, `EDGE_FIRE_1U`):
+
+- **PASS** — EV ROI < 2% (no bet)
+- **LEAN** — EV ROI 2–6% (tracked, not staked)
+- **FIRE 1u** — EV ROI 6–17% (1-unit play)
+- **FIRE 2u** — EV ROI ≥ 17% (2-unit play, truly elite edge)
+
+### Input quality gates
+
+The implementation plan is
+`docs/superpowers/plans/2026-04-29-input-quality-gates-and-data-maturity.md`.
+
+Contract:
+
+- Add per-pitcher `input_quality_flags`, `projection_safe`,
+  `quality_gate_level`, `quality_gate_reasons`, `verdict_cap_reason`, and
+  `data_maturity`.
+- Preserve raw model output via side-level `raw_verdict` and `raw_adj_ev`.
+- Treat side-level `verdict` as the actionable betting decision after gates.
+- Severe flags force actionable PASS while preserving the raw projection for
+  audit. Severe flags include opener, starter mismatch, unresolved probable,
+  missing game time, missing pitcher K profile, malformed line/odds, invalid
+  lambda inputs, and missing team/opponent mapping.
+- Soft flags cap conviction. One meaningful soft flag caps at `FIRE 1u`; two
+  or more cap at `LEAN`. Soft flags include projected/partial lineup, unrated
+  or thin-sample umpire, missing career SwStr baseline, neutral park fallback,
+  first-seen opening, thin recent-start sample, and partial movement history.
+- `FIRE 2u` should require clean major data, not just a large EV number.
+- New pitchers, umpires, lineups, and market feeds graduate through explicit
+  maturity states instead of being trusted all at once.
+- The quality-gate audit lives at
+  `analytics/diagnostics/e5_quality_gate_audit.py` and should be included in
+  the weekly review.
+
+## Calibration
+
+`calibrate.py` runs during the grading step:
+- **Phase 1 (n>=30)**: lambda_bias — corrects systematic over/under-prediction
+- **Phase 2 (n>=60)**: ump_scale, K/9 blend weights (season_cap, recent), swstr_k9_scale
+- Parameters saved to `data/params.json` with calibration notes
+- Only uses current-season picks after any `formula_change_date`
+- Current live boundary: `formula_change_date = 2026-04-28` marks the first
+  clean post-ROI / post-SwStr-live calibration era. This preserves historical
+  picks/results for analysis while preventing calibration from learning across
+  the dead-SwStr window and the 2026-04-27 EV-semantics transition slate.
+
+## Data Flow
+
+```
+TheRundown API → fetch_odds → props[]
+MLB Stats API  → fetch_stats → (stats_map{}, probables_by_team{})
+FanGraphs      → fetch_swstr → swstr_map{}
+MLB Stats API  → fetch_umpires (hydrate=officials) → ump_map{}
+MLB Stats API  → fetch_lineups (/schedule → /game/{pk}/boxscore) → lineup[]
+FanGraphs      → fetch_batter_stats → batter_stats{}
+                    ↓
+              build_features.build_pitcher_record()
+                    ↓
+              today.json + YYYY-MM-DD.json archives
+                    ↓
+              seed_picks → SQLite → picks_history.json
+                    ↓
+              fetch_results (box scores) → grade → calibrate
+```
+
+## Dashboard Status Override (2026-04-24)
+
+The v2 rollout is complete. Treat the older "In-Flight Work: V2 Dashboard UI"
+section below as historical rollout context, not current status.
+
+- **v2 is the default UI** via `/` and `dashboard/v2.html`
+- **v1 is the legacy fallback** via `/legacy` and `dashboard/index.html`
+- The compatibility warning still matters: `today.json` must remain backward-
+  compatible with both dashboards unless the legacy path is intentionally retired
+
+## In-Flight Work: V2 Dashboard UI
+
+A v2 dashboard UI landed on main 2026-04-17 (commit `4bb54a8`) and is being
+rewired live. It coexists with the v1 dashboard:
+
+- **v1 (default):** `dashboard/index.html` — still the default URL, still served
+  as the fallback through every phase of the v2 rollout. Do **not** break it.
+- **v2 (preview):** `dashboard/v2.html` + `dashboard/v2-app.jsx` +
+  `dashboard/v2-data.js` — served at `/v2.html`. The adapter `v2-data.js` reads
+  a specific field list from `today.json` (see the rollout plan below).
+
+**Constraint on any pipeline change:** `today.json` / per-pitcher record schema
+must stay backward-compatible with BOTH v1 and v2 through the full rollout.
+The v2 adapter reads (non-exhaustive): `pitcher, team, opp_team,
+pitcher_throws, game_time, k_line, opening_line, best_over_odds,
+best_under_odds, opening_over_odds, opening_under_odds, lambda, avg_ip,
+opp_k_rate, ump_k_adj, season_k9, recent_k9, career_k9, ev_over, ev_under,
+game_state, best_over_book, swstr_pct, swstr_delta_k9, data_complete`. Renaming
+or removing any of these = breaking v2. Adding new nullable fields is safe.
+
+**Where to look before changing pipeline output:**
+- Rollout plan: [docs/superpowers/plans/2026-04-17-v2-ui-rollout.md](docs/superpowers/plans/2026-04-17-v2-ui-rollout.md)
+- Deferred pipeline wishlist (things v2 would like but doesn't block on):
+  [docs/ui-redesign/deferred-pipeline-work.md](docs/ui-redesign/deferred-pipeline-work.md)
+- V2 adapter source of truth for field dependencies: [dashboard/v2-data.js](dashboard/v2-data.js)
+
+If a pipeline change you're making adds, renames, or changes the semantics of
+any of the listed fields — stop and cross-reference the rollout plan + adapter
+before shipping.
+
+## Important Patterns
+
+- **Locked snapshots**: Once a game starts, its card data is frozen in today.json. Post-start API runs don't overwrite pre-game snapshots.
+- **Pick seeding**: `INSERT OR IGNORE` — first-seen line is locked in. Subsequent runs update unlocked picks only.
+- **Ephemeral DB**: SQLite DB is rebuilt from `picks_history.json` each run (GitHub Actions runners are stateless).
+- **Graceful degradation**: Each data source can fail independently. SwStr%, umpires, lineups all fall back to neutral values. `data_complete` now reflects pitcher-level completeness (not just slate-level success) and excludes degraded picks from calibration.
+- **User-visible degradation**: silent failures should also surface in
+  `today.json.data_warnings` so the dashboard can warn without requiring a CI-log read.
+- **Movement confidence**: Line movement against bet side applies a 0–1 haircut to EV (noise_floor=10pts, full_fade=30pts).
+
+**Additional pattern notes (2026-04-24):**
+
+- `opening_*_odds` and `opening_odds_source` are not interchangeable.
+  `"preview"` means overnight baseline from `preview_lines.json`;
+  `"first_seen"` means reconstructed within-day opening from TheRundown
+  `price_delta`.
+- `lineup_used`, `data_complete`, `opp_k_rate`, `swstr_delta_k9`, current odds,
+  and similar fields should refresh on unlocked rows. Once `locked_at` is set,
+  they freeze.
+- `tracked_picks` in `today.json` / dated archives is the dashboard-facing
+  mirror of `picks_history.json`. V2 pick counts and grading summaries should
+  prefer these tracked/locked rows over recomputing actionable picks from the
+  latest pitcher-card verdicts.
+- If a module uses `/schedule` plus a second MLB endpoint (`/people/{id}`,
+  `/game/{pk}/boxscore`), that is usually because the first endpoint looked
+  sufficient but omitted a load-bearing field in production.
+
+## Data Caveats (historical data quirks)
+
+Before slicing `data/picks_history.json` or writing analytics that recompute
+features from stored inputs, check [docs/data-caveats.md](docs/data-caveats.md).
+Known windows where stored fields do not match what a clean rerun would produce:
+
+- **2026-04-11 → 2026-04-17 — `pitcher_throws` bug window.** MLB `/schedule`
+  hydrate silently failed to return `pitchHand`, so every pitcher at decision
+  time was treated as RHP. The stored `pitcher_throws` field has since been
+  corrected for the full history (commits `0407846`, `517f473`, `8463f8e`),
+  but `lambda` for picks in this window was computed with the R-assumption and
+  was **not** recomputed. Calibration is unaffected (residuals use stored
+  lambda, not pitcher_throws). Handedness-sliced analytics can treat the full
+  dataset uniformly; input-replay analytics should note the discrepancy.
+
+See `docs/data-caveats.md` for the full remediation trail and guidance per
+analysis type.
+
+## Data-Volume Reminders
+
+Check these whenever you read this file and compare the trigger to current state
+(`data/params.json` `sample_size`, today's date, etc). If a trigger has been met,
+surface the reminder to the user as a suggested next step.
+
+### Batter Handedness / Confidence-Referee Gate
+
+The controlling plan is
+`docs/superpowers/plans/2026-05-12-pitcher-k-outcome-research-dataset.md`.
+
+Summary: Path A is live and uses aggregate batter K% plus the league-average
+platoon adjustment. Real per-batter `vs_R` / `vs_L` splits remain
+collection-only. Do not wire real splits into live projection math, change
+confidence-referee labels into live verdict behavior, or bump
+`formula_change_date` unless the May 12 plan's Path B and Gate F checks pass.
+Keep the daily Gate C read anchored to the 2026-04-28+ clean regime, with the
+immediate 2026-04-08 through 2026-04-27 pre-bump window used only as context
+for bucket inversions, not as permission to roll back live behavior.
+
+### Umpire career_k_rates - Periodic Current-Season Check
+
+**Current state (as of 2026-04-21):** `data/umpires/career_k_rates.json` holds
+per-umpire K-per-game deltas vs. league average for ~87 HP umpires (up from
+30 after Task A3b expansion on 2026-04-20, ~94% post-4/8 sample match). The
+seed script [scripts/seed_umpire_career_rates.py](scripts/seed_umpire_career_rates.py)
+derives deltas empirically from MLB Stats API boxscores (schedule + boxscore
+per game, aggregated per umpire, subtracted from league mean). `fetch_umpires.py`
+reads the cached JSON at pipeline time.
+
+These deltas drift slowly — a single season of calls adds maybe ±0.1 K/game
+to a veteran umpire's career average — but they do drift, and new umpires
+appear in-season.
+
+**Trigger to run a current-season check:** Whenever **any** of the following is
+true:
+
+- The current month is **May**, **July**, or **September** (quarterly cadence
+  roughly aligned with calls-per-year turnover)
+- A pipeline log shows a run matched <85% of umpires in the last 30 days
+  (analytics: check `ump_k_adj == 0` rate on staked-only picks)
+- A new season has started and career_k_rates was last seeded in the prior
+  season (check `data/umpires/career_k_rates.json` mtime)
+
+**Default action: current-season side-file audit, not a full re-seed**
+
+The 2026-04-20 A3b seed already derived the production file from the
+2024-03-28 -> 2025-10-01 regular-season window: 4,855 games, 96 unique HP
+umpires, and 87 umpires kept after the sample filter. Do **not** rerun that
+whole historical window just because the calendar hits May/July/September.
+
+Instead, first run a **2026 YTD side-file check** to identify new active HP
+umpires and obvious match-rate drift:
+
+```bash
+mkdir -p analytics/output/seeds
+python scripts/seed_umpire_career_rates.py \
+    --start 2026-03-26 --end $(date +%F) \
+    --min-games 1 \
+    --output analytics/output/seeds/career_k_rates_2026_ytd.json
+```
+
+Then compare name sets only:
+
+- names in `analytics/output/seeds/career_k_rates_2026_ytd.json`
+- names in `data/umpires/career_k_rates.json`
+- names surfaced by `ump_diagnostics.missing_career_rate_umpires`
+- recent live HP assignments with neutral `ump_k_adj == 0`
+
+Use `--min-games 1` here because the goal is name discovery; early in the
+season, no umpire may have reached 10 HP games yet.
+
+**Do not promote short-window YTD deltas straight into production.** YTD deltas
+are too noisy for veteran umpires and should only answer: "Are there new active
+umpires missing from the production file?"
+
+**When to do a production re-seed**
+
+The seeder is **replace-semantics**, not additive — it re-derives deltas from
+scratch for the given window. Only run a wide production re-seed if the
+current-season audit shows meaningful production impact, such as:
+
+- new active HP umpires are repeatedly missing from `career_k_rates.json`
+- the last-30-day live umpire match rate falls below ~85%
+- enough new-season data has accumulated that production drift is worth the
+  multi-hour recompute
+
+```bash
+# Production re-seed fallback: wide multi-season window only.
+python scripts/seed_umpire_career_rates.py \
+    --start 2024-03-28 --end $(date +%F) --output data/umpires/career_k_rates.json
+
+# Wrong: short YTD-only window written to production.
+# Validated 2026-04-21: median |shift| = 1.76 K/game on a 32-day run,
+# which was small-sample noise, not real career drift.
+```
+
+- Wide windows run in hours; resumable via `analytics/output/seed_progress.json`
+- Safe to run in the background — no pipeline side effects, writes a single
+  JSON at the end
+- After completion, diff the JSON vs. the prior version. Commit the update
+  if any career K/game delta shifted by **≥0.1** or if new umpires were added.
+  Shifts below that threshold are below the noise floor of `ump_scale` and
+  not worth a commit.
+- For new / thin-sample umpires surfaced by
+  `ump_diagnostics.missing_career_rate_umpires`, track the name immediately but
+  keep the model adjustment neutral until a wide-window seed can include enough
+  games. Do not promote short-window YTD deltas straight into production.
+
+**Do NOT bump `formula_change_date`** — career_k_rates updates do not change
+the model formula; `lambda_bias` self-heals through normal calibration.
+
+### End-of-Season Infrastructure Review (prep for 2027+)
+
+**Trigger:** When the current season is over (roughly October or whenever
+`params.json.updated_at` has gone 30+ days without change), remind the user
+to do an infrastructure/scale review before the 2027 season starts.
+
+**Topics to walk through:**
+
+1. **`picks_history.json` size.** At end of season, compare size vs repo
+   comfort. If > ~10 MB and still growing, evaluate: (a) split by season
+   (`data/picks_history_2026.json`, `..._2027.json`) or (b) migrate to a
+   committed SQLite or Parquet file (faster load, smaller diff).
+2. **Per-day archive directory.** `dashboard/data/processed/YYYY-MM-DD.json`
+   will have ~180 files per season. Evaluate whether to gzip archives, move
+   old seasons to a subfolder, or serve from an object store.
+3. **Pipeline runtime.** Measure typical full-run wall time. If GitHub
+   Actions minutes or TheRundown API quota are getting tight, consider
+   caching unchanged data between the 30-min refreshes or batching fetches.
+4. **Park-factor provenance.** Refresh `data/park_factors.json`, confirm team
+   aliases still match live upstream names, and finish or refresh the Savant
+   cross-check before the next season.
+5. **Calibration window.** Re-evaluate whether `formula_change_date`-based
+   filtering is still the right approach, or whether multi-season rolling
+   calibration would be more stable.
+6. **Line shopping / book coverage.** Check if TheRundown's best-line data
+   is still sufficient vs. pulling per-book explicitly for EV optimization.
+7. **Notifications / PWA.** Audit subscription counts and delivery rates
+   via Netlify function logs — clean up dead endpoints.
+8. **Dashboard.** Decide if the single-file HTML is still the right call
+   or if a build step (Vite/Astro) is worth the complexity for next season.
+
+Goal: spend a deliberate day planning scale improvements while there's no
+active season pressure, rather than patching mid-season.
+
+## Local analytics deep-dive
+
+`analytics/performance.py` is a standalone local tool for slicing
+`picks_history.json` beyond the dashboard's performance tab. Not part of
+the pipeline. Setup: `pip install -r analytics/requirements.txt`. Run:
+`python analytics/performance.py` (optional `--since YYYY-MM-DD` /
+`--min-ev 0.06`). Prints tables to the console and saves plots to the
+gitignored `analytics/output/`. See [analytics/README.md](analytics/README.md).
+
+## Testing Notes
+
+- Tests use `unittest.mock` extensively to mock API calls
+- `build_features` functions are pure (no I/O) for easy testing
+- Test files mirror pipeline modules: `test_build_features.py`, `test_calibrate.py`, etc.
+- For external data bugs, the tests are often the clearest payload-contract
+  reference. Check `tests/test_fetch_odds.py`, `tests/test_fetch_stats.py`,
+  `tests/test_fetch_lineups.py`, `tests/test_fetch_umpires.py`, and
+  `tests/test_fetch_batter_stats.py` before assuming an endpoint works the way
+  its docs suggest.
+- Run full suite: `python -m pytest tests/ -v`
+
+## End-of-Season Evaluation Notes
+
+### Lambda Bias Architecture (evaluate after 2026 season)
+
+The current `lambda_bias` is a single calibrated offset that tries to handle both systematic model error and in-season K rate drift. A more durable long-term fix would be separating these into two distinct corrections:
+
+- **Static bias offset** — calibrated annually from the prior season's aggregate model error. Set once before Opening Day and held fixed.
+- **Dynamic seasonal adjustment** — follows actual league K/9 trends week over week (e.g. a rolling delta vs. the season-opening baseline). Captures real shifts in run environment, umpire squeeze trends, or rule changes mid-season.
+
+Splitting them would make calibration more interpretable and reduce the risk of the dynamic signal contaminating the static correction (or vice versa).

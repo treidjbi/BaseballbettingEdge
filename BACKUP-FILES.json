@@ -1,0 +1,2470 @@
+{
+  "BACKUP-MANIFEST.json": {
+    "bytes": 99423,
+    "sha256": "9bdb1c957ce462bb24a66ac80856a36fca67c0a3ec4b2d32f73c31c6e88a912d"
+  },
+  "README.md": {
+    "bytes": 933,
+    "sha256": "1603d255f0fb5dc5550a3d66b0b16f1d0fb81cec0f1aa5e2d3b861da0e877523"
+  },
+  "SPORTS-WORK-INDEX.md": {
+    "bytes": 2261,
+    "sha256": "307882f1582e871ad0a499473b2ed179096c1cad22187d6ba419d089584bd2c2"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/.github/workflows/live-layer-proof.yml": {
+    "bytes": 1511,
+    "sha256": "06709b29b8e8e5dfbbe9b3f58abd59ac2873f92e152ca4d3205723343e1fab20"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/.github/workflows/lock-ledger-monitor.yml": {
+    "bytes": 2256,
+    "sha256": "32e5f08e2cb4571cd9c42c98e1d2899ef5527b11f2897b26d4169e9649d39be3"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/.github/workflows/pipeline.yml": {
+    "bytes": 11267,
+    "sha256": "cf1d10a156089f26bd13489532eea4568ee89dd58441cdd71426860eb686b544"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/.github/workflows/shadow-market-infra.yml": {
+    "bytes": 9797,
+    "sha256": "4fb1b7968aab60b58390df7f8fd6f7e2068e16fd6707b810eacc39a737f2f17b"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/.gitignore": {
+    "bytes": 218,
+    "sha256": "b57bcaff62cffc0d63ff7b1aff550a03f36edbceda95e03f64b523f718c9050a"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/AGENTS.md": {
+    "bytes": 61255,
+    "sha256": "8df995a57c3771ee5a30624b60775150e7635983a7a9c5279887c74bbcf9dac5"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/CLAUDE.md": {
+    "bytes": 526,
+    "sha256": "248b6eea6f452a35ab09432a3d71fbef3f10504d02b33e02d3b0be88f4a01660"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/analytics/README.md": {
+    "bytes": 2277,
+    "sha256": "fb3580a0ac7336c289332c74506f4db27059c424a310475ffe4504fb0e9457d8"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/analytics/diagnostics/a1_backfill_throws.py": {
+    "bytes": 3796,
+    "sha256": "4761c6493207b231507d45e9daf0f2d252ed8a31509efa8a3216c3f6c151b35d"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/analytics/diagnostics/a1_pitcher_throws.py": {
+    "bytes": 2950,
+    "sha256": "2ac0e5a5f0918280a4d62f1e1da722afc123920fdec13e030d58661f96362996"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/analytics/diagnostics/a1_rewrite_post_cutover_throws.py": {
+    "bytes": 7307,
+    "sha256": "e01ea000a87b852af9debef3f8a8afb8491f951deed472f2973c1245a4c85f6b"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/analytics/diagnostics/a2_opening_odds.py": {
+    "bytes": 5877,
+    "sha256": "a549177390336e953f1f54f9f779e6dfb84c98c8d080042ebd9903fa6ab648f7"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/analytics/diagnostics/a3_ump_adj.py": {
+    "bytes": 9000,
+    "sha256": "ada1722ca80bada3dd3a33ea85ee7de2fed500b3c3b264878eb85555aff3309b"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/analytics/diagnostics/a3b_source_spike.py": {
+    "bytes": 6744,
+    "sha256": "a0d137a145cdd8911fdf12014ae52665493fa3e6e5b2a339322fe24dd2de82c0"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/analytics/diagnostics/actual_opportunity_backfill.py": {
+    "bytes": 13211,
+    "sha256": "a5535f02278c296b1a5e8e0bc544c4abcd83b4354b7494f9c1d3ef8366fd910d"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/analytics/diagnostics/alternative_pick_v2_historical_comparator.py": {
+    "bytes": 11420,
+    "sha256": "1421177fcdcae9ab0e977ae9d7cef02c75663f4696074a1fe50ece746e692b2c"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/analytics/diagnostics/b5_swstr_activation.py": {
+    "bytes": 2673,
+    "sha256": "be1d0c35bdae5a6e980fd16afc2ce86c90f32c3dc6361de126f5927f7f23d363"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/analytics/diagnostics/batter_handedness_shadow_audit.py": {
+    "bytes": 15194,
+    "sha256": "d31e152a19d72d9a23db2ac3658d202d9c47c6699aa3054e45427e919aca5f22"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/analytics/diagnostics/bet_conversion_shadow_audit.py": {
+    "bytes": 8922,
+    "sha256": "0f8c017462842504c27e2ee2054f40ebd1150621ac2024abfb96f69fd1609e75"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/analytics/diagnostics/bet_selection_edge_synthesis.py": {
+    "bytes": 12876,
+    "sha256": "d1fdf40b55aa4d0b04c6703a116f21fa2266d90a580a93257d2869f1838ae170"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/analytics/diagnostics/boltodds_migration_risk_audit.py": {
+    "bytes": 18162,
+    "sha256": "fe3bbbdd3991bfc5f16f968974510ea1ca8734d70c2a7e7b6c98da91162dd87f"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/analytics/diagnostics/boltodds_trial_audit.py": {
+    "bytes": 6380,
+    "sha256": "2fb013afbeff8488c372e280c777ea85e63450325f8fee4d2be607daea1e793a"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/analytics/diagnostics/c3_rest_data_probe.py": {
+    "bytes": 3145,
+    "sha256": "9c3a689f6ac87c0a5808a3f0fb8cb882e2ac7ea6c74d53849bfef3004055608f"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/analytics/diagnostics/clv_official_close_packet.py": {
+    "bytes": 19229,
+    "sha256": "fc1d0bfb45fb487239a1f322d48a9ea65bee06f7dc9b492d1d5f82375096225b"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/analytics/diagnostics/clv_process_target_validation.py": {
+    "bytes": 38088,
+    "sha256": "3105df5469f995b93c33113ce302e5170d2fe27c1703b0d602bb74098322b1fc"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/analytics/diagnostics/confidence_referee_canary_audit.py": {
+    "bytes": 5530,
+    "sha256": "0ec7732a1a80735365ef60af504dff5a87c3ef074878a1a3472c073be476d498"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/analytics/diagnostics/confidence_referee_shadow_report.py": {
+    "bytes": 15491,
+    "sha256": "2c418e86f3584b9eb93a77bd36e96ed8ab97f33166455c9e28efc9ea9e4bb9e6"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/analytics/diagnostics/d_connection_health.py": {
+    "bytes": 4685,
+    "sha256": "3ae31efcd3dafebeb507d02337f8da269d6fe05ff53c80dceb94330ff4367d6d"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/analytics/diagnostics/d_preview_health.py": {
+    "bytes": 7134,
+    "sha256": "18cbdfc7d835b58ef762858eb7130af4b946479a6b50517cf4b7c531216c50d7"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/analytics/diagnostics/e1_regime_map.py": {
+    "bytes": 5209,
+    "sha256": "9141a695e6fa4fe6d4466ffeff02b1af5607846fe24542b00d7e3e19a44ba743"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/analytics/diagnostics/e2_storage_integrity.py": {
+    "bytes": 10935,
+    "sha256": "cb7f193af4a9a25e1a98fb619b35d9655d056fa15e1894c01f025e40afdfcf66"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/analytics/diagnostics/e3_projection_audit.py": {
+    "bytes": 7396,
+    "sha256": "8cb0748da1b0268166e50fd4afc5c55e0ca6d9f79808459dfb8d7cb2ad2c3bdd"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/analytics/diagnostics/e4_bet_selection_audit.py": {
+    "bytes": 7391,
+    "sha256": "a5351fec9c8a16f4843297204483143c096db636d4d03946487ecd992fa5ad52"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/analytics/diagnostics/e5_quality_gate_audit.py": {
+    "bytes": 7717,
+    "sha256": "fc14296bf05bbc9d15e71a8a9ebea604938aacbbe274037b117e193e22679b11"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/analytics/diagnostics/executable_market_shadow_audit.py": {
+    "bytes": 19725,
+    "sha256": "ff78b21b794264d67b3d9b0cadff9359a69bf9b9b9bc88a522d865264b230ee9"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/analytics/diagnostics/gate_c_holdout_shadow_lab.py": {
+    "bytes": 20194,
+    "sha256": "9e80ed5505485b1c426a7ca3ee42f0b87004a8d0dc5ff6f2c23b1717af148995"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/analytics/diagnostics/gate_ef_candidate_shadow_lab.py": {
+    "bytes": 13869,
+    "sha256": "64a21589d7caab66d42c53bd79afd9f6a430efd5a20339827166e89ccfb2d589"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/analytics/diagnostics/gate_f_fire_reentry_lab.py": {
+    "bytes": 17234,
+    "sha256": "0bd7bee03bb121280180ffe1e1ec7799fdd7532911770b91692bb289408370fd"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/analytics/diagnostics/gate_f_preclose_clv_proxy_lab.py": {
+    "bytes": 17977,
+    "sha256": "ee6c1294c9103d99d2aa4d06dbb9bad7e8bcbbb34504c38526c275450c35453f"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/analytics/diagnostics/gate_f_projection_challenger_shadow_report.py": {
+    "bytes": 12711,
+    "sha256": "c7896babaf9383a08e9162e065c8d2b5955e3032d4b185baea0eeec4eba37c7b"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/analytics/diagnostics/historical_lineup_handedness_backfill.py": {
+    "bytes": 13021,
+    "sha256": "81cac6050e43ff2730f5032efe9d8b6d56f2bd7d716f163a952beb4ffd6d66aa"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/analytics/diagnostics/k_projection_shadow_lab.py": {
+    "bytes": 16345,
+    "sha256": "77f6205929ae7c600562c1ca3b036619e226455938f8d90fbc6d694d39fdefe9"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/analytics/diagnostics/line_movement_shadow_audit.py": {
+    "bytes": 3289,
+    "sha256": "19451736cdbe30481bc2447a759bc9c3e637c1454b4b3ae7974b903160bf4f79"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/analytics/diagnostics/live_market_outcome_audit.py": {
+    "bytes": 20829,
+    "sha256": "21944241f3a0f93c8a8f97e9633798878f1c3179d2a48c2253729d4e5f9a41d9"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/analytics/diagnostics/mainline_movement_pattern_audit.py": {
+    "bytes": 25265,
+    "sha256": "1188962acae2ccffb24bdf656939752d85183059adb46c217c647d76eef67032"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/analytics/diagnostics/market_agreement_tracker.py": {
+    "bytes": 21949,
+    "sha256": "089844a02ace1e12c6380f3ca85c2e11b9c8ef338dabd77b8516ca9b0ac68872"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/analytics/diagnostics/market_anchor_downside_counterfactual_audit.py": {
+    "bytes": 19161,
+    "sha256": "30c3769cd7d26363a300a10f457006be568f8464e3e3749b0ec2a9353d8350ba"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/analytics/diagnostics/market_anchor_selector_canary_audit.py": {
+    "bytes": 18494,
+    "sha256": "3faac192ecaa8a223c2c7d1bfe463ce0804d388c4ae2cfbc03925e3214b89728"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/analytics/diagnostics/market_anchored_k_shadow_rebuild.py": {
+    "bytes": 24239,
+    "sha256": "6816c51a70938e72db39055b2889cb75a7296ea64a22362ab03fe9c061b83b98"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/analytics/diagnostics/market_evidence_shadow_audit.py": {
+    "bytes": 4979,
+    "sha256": "7c910da64dfff3923e509bce7da416951b329a1f024e553ac272dd23fbfb744b"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/analytics/diagnostics/market_favorite_confidence_referee_shadow_lab.py": {
+    "bytes": 11515,
+    "sha256": "388ecee4b1bfb49c46c99f706b313dc09c295fbb1ee0e602de36a5ce7618c10d"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/analytics/diagnostics/market_price_outcome_audit.py": {
+    "bytes": 38539,
+    "sha256": "b27f4e10e425ff00b573aab0cba76c671ac5ec1b8cc0f167dece09e54e6b7288"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/analytics/diagnostics/market_shrink_projection_canary_audit.py": {
+    "bytes": 17399,
+    "sha256": "98e8ba55d4ecd4213c37b8780ca11bcac852cbceb42924ab71021f3c9a8680f2"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/analytics/diagnostics/model_replay_shadow_audit.py": {
+    "bytes": 5436,
+    "sha256": "93703bfe1687d960337f847585d145efd0a81093cf7b69cbd3f6817567686763"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/analytics/diagnostics/next_season_candidate_model_lab.py": {
+    "bytes": 6305,
+    "sha256": "a313e028273b779bdea748d23a197ccffa8ef0ffe890d605d73da084826ec6a0"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/analytics/diagnostics/next_season_model_decision_packet.py": {
+    "bytes": 10400,
+    "sha256": "01578d598674bcd61a6d8594635d895f646256a9d590171269864feca679587c"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/analytics/diagnostics/no_drag_composite_canary_audit.py": {
+    "bytes": 31958,
+    "sha256": "b31b3ef558c721ce03a9d1cec05952c46ab12c2593ad1a3233037189b0ebbcc6"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/analytics/diagnostics/pitcher_k_outcome_dataset.py": {
+    "bytes": 88667,
+    "sha256": "ee8dca32c7a86c5e3295ef03887b74750586ac9868a90c176ca5145487e1e44a"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/analytics/diagnostics/pre_c_swstr_confirmation.py": {
+    "bytes": 4202,
+    "sha256": "b61adeac2b17fc3508f20e0d16e395509427b4636b31d01bf8836cb316a0a50e"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/analytics/diagnostics/pre_post_428_model_review.py": {
+    "bytes": 17870,
+    "sha256": "1a51e662fe0e30cd8163fb44da2bc6ead0a1b25cc19402a89639a547fbf142ae"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/analytics/diagnostics/profit_rescue_audit.py": {
+    "bytes": 10186,
+    "sha256": "d4e479210efae8f643c6444c6bfe00510d835935f486d0a43c877d0248957897"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/analytics/diagnostics/propline_webhook_usage_audit.py": {
+    "bytes": 22563,
+    "sha256": "4522e0ec7fe39e56f8af9ca1d0f27612ff551b6cee3abddcda51457e70d646b1"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/analytics/diagnostics/provider_cutover_shadow_compare.py": {
+    "bytes": 42799,
+    "sha256": "9e7f87d25efc95372365dc7544e9ebceffc077d4112bc9780b10d685643116dd"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/analytics/diagnostics/provider_value_decision_audit.py": {
+    "bytes": 20683,
+    "sha256": "0863bc3d30da6bf1d048fdb99078c5905095852ac5fa4ec7e5feebbb018ac427"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/analytics/diagnostics/season_end_model_rebuild_dataset.py": {
+    "bytes": 8221,
+    "sha256": "099460cf1b76ba757ef57756898dfb8c04602446a35d576d1c84aef5b5ec0899"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/analytics/diagnostics/seasonal_k_environment_audit.py": {
+    "bytes": 3981,
+    "sha256": "82cc63a8ed2582c643376e3020bc403ea71e1a41010c64b210dd80e6741c4e61"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/analytics/diagnostics/selective_lean_prospective_audit.py": {
+    "bytes": 23974,
+    "sha256": "e19ede879e57b531006b1bf27fb98b0381a19f3fa682726b23e3a446bf06274c"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/analytics/diagnostics/shadow_notification_candidate_audit.py": {
+    "bytes": 6448,
+    "sha256": "c249d91d97871316184516312cfb7a44ebc527530bd4352f72836475d2a30fc1"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/analytics/diagnostics/shadow_signal_synthesis_lab.py": {
+    "bytes": 22928,
+    "sha256": "4bfd895399bbef2b2f4abec789607bad43a1e4714f14047aefb7fab084b7013e"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/analytics/diagnostics/source_fallback_health.py": {
+    "bytes": 3480,
+    "sha256": "3adf84ec7ab1f759f3d80771ceabc1f61642cb222b62f7e994b649c0e6b16ea8"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/analytics/diagnostics/strict_runtime_core_canary_audit.py": {
+    "bytes": 26864,
+    "sha256": "8bc861234e3babb370256cd11e7521dbcf3beebfe59137fae24b6da3d0538d31"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/analytics/diagnostics/strong_base_decision_lab.py": {
+    "bytes": 23588,
+    "sha256": "534fe3d6c420253e61ed1dd7f7115f7c8b9068d84c09e3398c014af582481a70"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/analytics/diagnostics/strong_base_fire_policy_matrix.py": {
+    "bytes": 22268,
+    "sha256": "f35802ce0a0960b80cf8e5c13ef3e02ac11148cd1aadd52fd88324acde35dd97"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/analytics/diagnostics/strong_base_portfolio_simulator.py": {
+    "bytes": 15350,
+    "sha256": "89aa25d44b900c2e27369f6ebcef687ad9caf1a2845a3b73420ea0785b033bbf"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/analytics/diagnostics/therundown_fetch_audit.py": {
+    "bytes": 7593,
+    "sha256": "f2a1bc0b1702aa7b7b021826161870f25df7aa1c9c056e4f63918340be0fab23"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/analytics/diagnostics/ump_diag_utils.py": {
+    "bytes": 548,
+    "sha256": "5f9b8fb76864f2a177f7f1b90f9d11aef2cd3b6e9f75fdb8d27aa9f797365e85"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/analytics/diagnostics/workload_no_vig_ev_audit.py": {
+    "bytes": 13099,
+    "sha256": "c51206b9ec12fb322b1f44b34e5ee4229dcb257afdff156a1d88063991539472"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/analytics/performance.py": {
+    "bytes": 22319,
+    "sha256": "28520c52bfe131444b9e820a41bf40bac419c6b1472c26c7472409991ef6b6ab"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/analytics/requirements.txt": {
+    "bytes": 28,
+    "sha256": "028fada5c239e022b32742d4f0f65286d3cc67a33b287765c3faeee65064a893"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/analytics/reviews/2026-10-01/README.md": {
+    "bytes": 1984,
+    "sha256": "7cf8338ca6f308b5920923e033f17302a0d80582160415ae80d7392bac337e89"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/analytics/reviews/2026-10-01/projection/review.py": {
+    "bytes": 5832,
+    "sha256": "7e155da6b2674aa26a7c5579fa857a1af671abe36b0baf20dcad5c9d03111dcc"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/analytics/reviews/2026-10-01/report/ReportContent.jsx": {
+    "bytes": 12089,
+    "sha256": "3ad0aa2ef763d619745dd686178355739bc363090ddb52e011c9e89eb8d717df"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/analytics/reviews/2026-10-01/report/build_snapshot.py": {
+    "bytes": 1575,
+    "sha256": "7dc3c6658adf72c23fa64aa325cece735b9be761b23a26db096035a41a9a73f4"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/analytics/reviews/2026-10-01/report/review.css": {
+    "bytes": 171,
+    "sha256": "faa2c6a681396f366230fed3b4e27ab68c325836276e72b33e7dbac6d007ad83"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/analytics/reviews/2026-10-01/results/analyze_results.py": {
+    "bytes": 6345,
+    "sha256": "b328e236c2cd80b56b70e44875da29110130504e74861cce6bfbf14ffa850c7f"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/dashboard/icon.svg": {
+    "bytes": 335,
+    "sha256": "1d067fdebf2b3b744bf4c6b83d628a840b75685b0045f6128cd6be407aab4fc6"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/dashboard/index.html": {
+    "bytes": 62645,
+    "sha256": "918028490942a3f8d63833c0cda0234049fe282bb502064ea27e931ab3198afa"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/dashboard/sw.js": {
+    "bytes": 1112,
+    "sha256": "e2d94bf3295a07367037ef19c694290d99eb286c9c2c212e0b8c916316387512"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/dashboard/v2-alt-picks.js": {
+    "bytes": 14935,
+    "sha256": "6f6249f5214d9ea068c4928d56a30c0c1d1bc4386d0680a70fa8f25701baa3fc"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/dashboard/v2-alt-picks.test.mjs": {
+    "bytes": 19510,
+    "sha256": "6d89ca0efa9f433022225e59bcb83402b4f345cd941ded3ed037dbaaeaaa5510"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/dashboard/v2-app.js": {
+    "bytes": 132342,
+    "sha256": "94d8e68b9eafc1659435cce0755df9890089c29b60dc0b0c8f9a420e05ee2808"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/dashboard/v2-app.jsx": {
+    "bytes": 116019,
+    "sha256": "3837b1ee836c9c4c4c2325a5fea41404b03c87756b1fd19f8501e041611e66b8"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/dashboard/v2-app.test.mjs": {
+    "bytes": 9383,
+    "sha256": "1617bf4e2a516024f984a4c9412998e6204f2d7afcbb9dd576d8b43089a671d2"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/dashboard/v2-data.js": {
+    "bytes": 28507,
+    "sha256": "47ffc6c0ecfce2f8c8b7d14ea12bb69177677297326bfb0ce561f64f6a377489"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/dashboard/v2-data.test.mjs": {
+    "bytes": 36331,
+    "sha256": "44fd190a46720e791bb62263fa46e8cc9c221b8cf615e400be923c7cbe423e14"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/dashboard/v2-factor-details.js": {
+    "bytes": 12458,
+    "sha256": "d9ab7db33076217f18d050b85d9f804a7e1c1451e4dc59508f6848e8c180fa39"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/dashboard/v2-factor-details.test.mjs": {
+    "bytes": 5125,
+    "sha256": "3ebb0adc9bb93e6b5d2aca5a882d0de892912c81e5986e51a7b22ec8f37e2bcd"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/dashboard/v2-movement-helpers.js": {
+    "bytes": 3718,
+    "sha256": "15563caa70e3de46418c4bf3944281b4b206eac97ad7c9585ab8fccb90d7ef0d"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/dashboard/v2-movement-helpers.test.mjs": {
+    "bytes": 4062,
+    "sha256": "8ac90302ed5b0c31e226f51df86b90ab329ab2ea5b397fee0532576fcede0cab"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/dashboard/v2.html": {
+    "bytes": 64116,
+    "sha256": "12cf4bf2352757b958f9bf98becb4cbebbad60e4dafd8599a679a078f27cd841"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/docs/boltodds-starter-trial.md": {
+    "bytes": 9872,
+    "sha256": "669a7fefe0b3bd4d90c7669d2c820c0b974f17bf760356050cb2359c2fe19e86"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/docs/current-state.md": {
+    "bytes": 203579,
+    "sha256": "b6d31140f9ef8680f13173e6eaa4b3619f4fa6893729292a661a47ca42cf4bad"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/docs/data-caveats.md": {
+    "bytes": 13154,
+    "sha256": "d450c6ec6f4de074b056423bd18b5581109406e5e3e47e06e08cd9d5613d052c"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/docs/handoffs/2026-08-28-windows-to-mac-transfer.md": {
+    "bytes": 29036,
+    "sha256": "a351ffbe3469326e2542f8a97dbd94d96573e466c5c5f548f19db0b701ca37f9"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/docs/local-cloud-project.md": {
+    "bytes": 3558,
+    "sha256": "211a9aabc5c427f92013c6bd410d5b320f3e00d0eadc145060599744c55b6d72"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/docs/operating-brief.md": {
+    "bytes": 6546,
+    "sha256": "bd1d2cf041d30bc7c4d4f6d7e9716e06efc846f4ce5ca07842cd9d7d46e157ae"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/docs/operational-risk-register.md": {
+    "bytes": 43355,
+    "sha256": "6786a3f71b7989efc760f8300451c71a3323d334ef8a22da424bc107ab99cfc1"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/docs/propline-webhook-followup.md": {
+    "bytes": 7844,
+    "sha256": "368741a89ae4f4eefcc5d5046a95fb5b73ed994cdb9511dee6c946cd2c310d51"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/docs/provider-cost-ledger.md": {
+    "bytes": 17739,
+    "sha256": "8f08eb909e51dfb2d165c2e39a5900038995ffd5a17b7fbd9e28941408dffafe"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/docs/research/2026-07-24-market-anchor-shadow-review.md": {
+    "bytes": 4684,
+    "sha256": "5b9673f2d314031168698bc763cf5fa5541e8372110359ab3e572774358fb73f"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/docs/research/2026-07-24-market-shrink-shadow-review.md": {
+    "bytes": 5452,
+    "sha256": "31af023e25211475ce8c337d43336bee8b6e03e3e504f75683e1d289444b28e8"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/docs/research/2026-07-27-retention-decision-checkpoint.md": {
+    "bytes": 3776,
+    "sha256": "f5a41a943aa62ac986c6e62676436045c564eec4ee9dc66243dc6c608a8c3aa9"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/docs/research/2026-07-27-shadow-model-review-checkpoint.md": {
+    "bytes": 4155,
+    "sha256": "2d766859741b01a3e17e650f0e2b67c269c91dfbc059d0bd37148f6bdf0f2411"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/docs/research/2026-07-28-artifact-publisher-timeout-resilience-review.md": {
+    "bytes": 6108,
+    "sha256": "da39ec48b781c2ac5efc3a14cb396929dcd44e0add04dde853adb28b0706b638"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/docs/research/2026-07-28-no-drag-strict-runtime-core-review-packet.md": {
+    "bytes": 8528,
+    "sha256": "3a9d9cddc77313b80c682e46f71544bf5ab6422cda7502ed62c5b9c0335de5a9"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/docs/research/2026-07-29-research-candidate-plan-map.md": {
+    "bytes": 5649,
+    "sha256": "2b339d9ed283148400186f19e00a3a1c56e4123b7b4fc40f23d13f7c6dd90fd5"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/docs/research/2026-07-30-umpire-ytd-name-audit.md": {
+    "bytes": 2740,
+    "sha256": "a7c530280d08549426e169b302cf431a395b3c31754f42afa8858d3f46293ba9"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/docs/research/2026-08-10-no-drag-strict-runtime-decision.md": {
+    "bytes": 8855,
+    "sha256": "c6281fb6e9305983c1f03970bd38f3d6aa0b0198ac13bd3bc8903123d4e1748f"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/docs/research/2026-08-21-boltodds-retention-closure-preflight.md": {
+    "bytes": 8489,
+    "sha256": "bdc548a3a7c6152ebe8b78f292935bedfff92398aae0c94b1226bda3973ed3ba"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/docs/research/2026-08-27-clv-close-packet-dry-run.md": {
+    "bytes": 5408,
+    "sha256": "a850b6f807d26d1fa33feef92c789c3abe99fe17ca1da99e3348dadcb917f23e"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/docs/research/2026-09-02-prepared-active-provider-deletion-review.md": {
+    "bytes": 8404,
+    "sha256": "b1c1c854ffb2ab23209f7bba054608fdde18b821b932c26a1b340d4b48b906ff"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/docs/research/2026-09-04-alt-v2-paired-decision.md": {
+    "bytes": 16754,
+    "sha256": "c50c6adfb5d85dd0e782cfa3dd31ddc052205ec1e804d1881723103867bea64f"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/docs/research/2026-09-04-operating-and-research-assessment.md": {
+    "bytes": 35156,
+    "sha256": "043f8866dc22b264eb1ed059af1f51d46ab31b279eec5bbec1c5579324036d47"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/docs/research/2026-09-04-research-lineage-decision.md": {
+    "bytes": 13159,
+    "sha256": "75b6619f27a8b260857b66f5290b0bbe3b5e7d8da109b173132a0db1d0c18cb0"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/docs/research/2026-10-01-architecture-review.md": {
+    "bytes": 8173,
+    "sha256": "88679ccb34f1931aa879a4f2ba11ada7cdd5a91375781279c0fc33265f9bcaee"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/docs/research/2026-10-01-branch-closeout-review.md": {
+    "bytes": 9726,
+    "sha256": "7b042c68f4fd56b63d12f8f9d5d238f3dcd2bd4d382f33aff6d0a9fc0ed88ad2"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/docs/research/2026-10-01-projection-movement-review.md": {
+    "bytes": 10489,
+    "sha256": "235320d05e418ad1e01b8337146b3ce9fe96b88ac4d21df4e50667d4f2e455cb"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/docs/research/2026-10-01-season-end-research-freeze.md": {
+    "bytes": 7344,
+    "sha256": "f48871d9390e8316232bcae8243ad5cbfabf956da0e76ec9e20b9220c4896d55"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/docs/research/all-star-break-operations-packet.md": {
+    "bytes": 6792,
+    "sha256": "161f6b8069c309da4fd8f8f10a23636c79c30323c23e58d1f42547f5a9b68976"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/docs/research/clv-process-target-review.md": {
+    "bytes": 4760,
+    "sha256": "9f9078d798d1f1cda78f7e6391fd973229b67fe05583a0ab432f9373a36ae760"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/docs/research/market-anchor-downside-review-packet.md": {
+    "bytes": 2549,
+    "sha256": "bd14679622a7d38c1e00a725c1d3243ac9f397d6f90b64067e9beebb6deb145e"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/docs/research/market-shrink-retirement-review.md": {
+    "bytes": 4708,
+    "sha256": "802924efe828c16df6300656f6c60cf89a952fcfb73d10ba744a052a06150bf0"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/docs/research/market-tracker-map.md": {
+    "bytes": 16240,
+    "sha256": "5765d09ec3b617a2716d5201c07fa7e8d95346625f7fad6c1714d1b46f15aa31"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/docs/research/next-season-k-model-candidate-families.md": {
+    "bytes": 1904,
+    "sha256": "3a927a5d08737892b9b9df78b0e5e19d4c892a6ea61972dc49ab746463f701a6"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/docs/research/next-season-k-model-feature-catalog.md": {
+    "bytes": 3153,
+    "sha256": "efff082f16dbcabeca008e5256f45ff0ee8007dcd985248463664358f3a2aa50"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/docs/research/no-drag-composite-prospective-canary-packet.md": {
+    "bytes": 1882,
+    "sha256": "652db6fc939ba7c61847825e39eac0299779e2d51c551b8c52d2f028a3d1bf8d"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/docs/research/pitcher-k-outcome-dataset.md": {
+    "bytes": 6135,
+    "sha256": "59e7d6284337c7419537344187c3d25d0f17136f4f45902d6bcdd32b5c040a84"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/docs/research/positive-unit-producer-decision-packet.md": {
+    "bytes": 12194,
+    "sha256": "1e6c3c54b6ea1a3d563343848fb0ee78ae87bc31e61aa051c6f0e6c116caac34"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/docs/research/selective-lean-preclose-review.md": {
+    "bytes": 3219,
+    "sha256": "8d5c35858e745c22f00ecb523581ae8e26edafb8fffe2ecab8c2c3fe8f09ae4d"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/docs/research/strict-runtime-core-selective-lean-canary-packet.md": {
+    "bytes": 8882,
+    "sha256": "33d44ef39646203d750203ec74b1ce90823a864ab0eb3b66763e576a6911c8b0"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/docs/research/strong-base-fire-policy-shortlist.md": {
+    "bytes": 2636,
+    "sha256": "d9c9c6fcbe16dcfe910db29178519dfc026ffea18dbc04d2a2961224aa5e5b3c"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/docs/superpowers/plans/2026-03-24-baseballbettingedge.md": {
+    "bytes": 53929,
+    "sha256": "c0c0c834ff5d2f45dced138afbc4c5e0a09713b6a73daf63b0e9a9d91fa34f96"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/docs/superpowers/plans/2026-03-24-lambda-v2.md": {
+    "bytes": 23446,
+    "sha256": "6971e0095327990aa57e9973cdc946e5428329fe8b6788b59a0444d6f4796405"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/docs/superpowers/plans/2026-03-25-date-browser.md": {
+    "bytes": 18949,
+    "sha256": "e1ecbad5d71cd5a5acef2ca4469c7731f5d90a823a37076868ba893b62299599"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/docs/superpowers/plans/2026-03-25-line-movement-confidence.md": {
+    "bytes": 19199,
+    "sha256": "0aa2446a6cc0e39b54dbfdc2e1df293415fca32824da4160e3a2ee5a315e0a0a"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/docs/superpowers/plans/2026-04-01-code-review-fixes.md": {
+    "bytes": 50490,
+    "sha256": "02661b2c10ab0cd4f872570fd4882bffef4e666850cd587378e9bd3f15e6eea6"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/docs/superpowers/plans/2026-04-02-dashboard-ux-fixes.md": {
+    "bytes": 22163,
+    "sha256": "71eac607e5e644afc6ab2c1117d87bfe00e8ad7393a2f7e33e3df2d382e4657c"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/docs/superpowers/plans/2026-04-03-performance-tab-fix.md": {
+    "bytes": 30413,
+    "sha256": "b93b8f710f6d13b0f9a0100160760d506912d33dffc055f1bc514baf6b3a9cf4"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/docs/superpowers/plans/2026-04-06-night-game-mode.md": {
+    "bytes": 16257,
+    "sha256": "6752a069a9894e7f83033d7a03e4ae3bb551a03983cf735f234c43fbb368ecc6"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/docs/superpowers/plans/2026-04-08-lineup-aware-ev-line-locking.md": {
+    "bytes": 57996,
+    "sha256": "3f25f5813c50c446517200adaafef1f01cc2ad75ec967bc5fcfebd7ab460ba8a"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/docs/superpowers/plans/2026-04-08-steam-display.md": {
+    "bytes": 15479,
+    "sha256": "13b0cf46078d9e614c8be95729e4d05e7ef0a441272deb15571f9021baa3534d"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/docs/superpowers/plans/2026-04-10-pipeline-data-completeness.md": {
+    "bytes": 32180,
+    "sha256": "57bb72750d52ada30270bd492db54c410eb99d2b763d668362eac58f84a05983"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/docs/superpowers/plans/2026-04-16-model-audit-and-gaps.md": {
+    "bytes": 146339,
+    "sha256": "70cdebf0dfa4830bcbbd44f1ea2950f153f512a3e04fb5de0aa68e6b15ad859f"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/docs/superpowers/plans/2026-04-17-v2-ui-rollout.md": {
+    "bytes": 18719,
+    "sha256": "14ffcdf4c8535eaeaf83b0ae2afca2d136b6ade4eb68690ce7ae9c09dbc31d95"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/docs/superpowers/plans/2026-04-21-steam-feed.md": {
+    "bytes": 9485,
+    "sha256": "b51f54f1ff86dd3099d60106a481a1bea7f67962b8b0b82a5d4fc31d106f3c1f"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/docs/superpowers/plans/2026-04-23-phase-a-soak-checkpoint.md": {
+    "bytes": 9669,
+    "sha256": "cdefd721290f018400c2241476cece90543c77bb10e30b65b2c5f919b1fadcaf"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/docs/superpowers/plans/2026-04-27-bucketed-lambda-calibration.md": {
+    "bytes": 917,
+    "sha256": "34e460cc0f0b174d0ff506a92e1e723d19df3f21a4b555dfbf366b77aa626d83"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/docs/superpowers/plans/2026-04-27-post-phase-c-live-check.md": {
+    "bytes": 7996,
+    "sha256": "2558c70220bd0d5122f8589efc9113bdba99906650088d2efc6d21eb2514c01d"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/docs/superpowers/plans/2026-04-27-post-phase-c-model-evaluation.md": {
+    "bytes": 20252,
+    "sha256": "a7d61c3f417e790bef51f88b83975457ce009a64a73cd68f8ce50dd08a43287d"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/docs/superpowers/plans/2026-04-27-pre-phase-c-cleanup.md": {
+    "bytes": 17431,
+    "sha256": "83fc72c9e2987887224a97f6c81a10d23651681fcf65a58e71b8473c6d23619a"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/docs/superpowers/plans/2026-04-27-swstr-signal-repair-and-rebaseline.md": {
+    "bytes": 18600,
+    "sha256": "919edf165daab5ada5251ce7a8ffbeafe2c687b12cc68c83e5cd72b67a63a426"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/docs/superpowers/plans/2026-04-28-one-week-evaluation-cadence.md": {
+    "bytes": 19549,
+    "sha256": "edca90a9225e1049a81e3011bbbb347c03e9273c04aeb307b4c3094881090bc9"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/docs/superpowers/plans/2026-04-28-pipeline-stability-and-data-integrity-hotfix.md": {
+    "bytes": 2315,
+    "sha256": "c82ee18204c70f07501e23d5a8fc71f6c7cc6521a3d1b254440f9b25935d3dd5"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/docs/superpowers/plans/2026-04-28-v2-factor-details.md": {
+    "bytes": 11853,
+    "sha256": "57be45d628d890118865a0b40716c551a44b687148075a15f47f40c666452964"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/docs/superpowers/plans/2026-04-28-v2-line-movement-and-card-cues.md": {
+    "bytes": 15642,
+    "sha256": "9785c199b9cf19637d426e161228e363db9a83c8c781ccf9820adb43667b9bf3"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/docs/superpowers/plans/2026-04-29-input-quality-gates-and-data-maturity.md": {
+    "bytes": 25406,
+    "sha256": "6fe4703ec8b04e991eb978fc54a4f08364fb6bb6cd84b92e4c2ba89e12473954"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/docs/superpowers/plans/2026-04-30-doubleheader-probables.md": {
+    "bytes": 5772,
+    "sha256": "e79a5a9d9fd392f95cf527dffe1dfdd8c96ea44a5d3d4ff02389bb460916af1c"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/docs/superpowers/plans/2026-05-01-propline-supabase-market-infrastructure.md": {
+    "bytes": 39054,
+    "sha256": "f60fa5ebb93bbfbf935378d04bc5f1d1043de25521d3af487a6acbb0d473d0da"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/docs/superpowers/plans/2026-05-04-post-soak-model-growth-roadmap.md": {
+    "bytes": 16067,
+    "sha256": "7667b620034c9cd9ec641b1d68b2fa0b26840a21ca8fd4b3faeb0bdeb963c191"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/docs/superpowers/plans/2026-05-05-propline-fallback-and-model-signal-plan.md": {
+    "bytes": 32581,
+    "sha256": "bbfbea27d48d0fc264f05a3df764e3699043d47bad9f0443453debbdaab7ad2f"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/docs/superpowers/plans/2026-05-06-live-layer-event-system.md": {
+    "bytes": 65647,
+    "sha256": "c0df2ab362de35f2556fdb91517935babf4a1e8c26d2839db35c155c42faa23d"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/docs/superpowers/plans/2026-05-07-bet-conversion-shadow-audit.md": {
+    "bytes": 13677,
+    "sha256": "2fd528aa405d084d3be468c8eae8f0330bda6ceef6226a6694bb449fcb6f1711"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/docs/superpowers/plans/2026-05-07-boltodds-starter-trial.md": {
+    "bytes": 93898,
+    "sha256": "9bec6389f8328cdf586cdff66be9318e8c15934d532a3fe0e2df35c089bdfc3e"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/docs/superpowers/plans/2026-05-12-pitcher-k-outcome-research-dataset.md": {
+    "bytes": 59040,
+    "sha256": "4fd2f4e748e8e5386a69bc5090ce69a5ca5b3e84d788f56be8615e5c8ba7ea2e"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/docs/superpowers/plans/2026-05-13-boltodds-production-line-movement.md": {
+    "bytes": 18024,
+    "sha256": "c78a4b4db9e29c2c6751cd339458131c97e78b36106423b392fa14c9cb26b81d"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/docs/superpowers/plans/2026-05-13-boltodds-propline-official-provider-cutover.md": {
+    "bytes": 65352,
+    "sha256": "9c4d141516c6a27bdffff32be7bee547039608e1ebc6ee094352e977d4d81f70"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/docs/superpowers/plans/2026-05-18-supabase-migration-history-alignment.md": {
+    "bytes": 2980,
+    "sha256": "272c416629ce836a7a6a4bd3037856e476d67596590c08155ebbd13ff7583822"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/docs/superpowers/plans/2026-05-19-supabase-operational-foundation.md": {
+    "bytes": 47451,
+    "sha256": "94d0ee0dae71533929b5e5b220208ec313c1958b3592e66ab2bab9e6845bd76f"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/docs/superpowers/plans/2026-05-20-live-market-decision-ui.md": {
+    "bytes": 29043,
+    "sha256": "d9a838cf37f414924a282a8a46184d760e75927a88a2b821b148301790cb59e0"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/docs/superpowers/plans/2026-05-20-live-notification-coordinator.md": {
+    "bytes": 20800,
+    "sha256": "0ddde9c9d395bd4873dba159fb784b51c9bdfb1928f5e1fcd69dd1d7692d16ad"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/docs/superpowers/plans/2026-05-22-github-artifact-exit.md": {
+    "bytes": 64860,
+    "sha256": "c8b01dc941fd63b142dcded7da88fb500cceb9e210b34ca14600139d71fd072e"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/docs/superpowers/plans/2026-05-29-gate-ef-under-fire-conversion-shadow-plan.md": {
+    "bytes": 32522,
+    "sha256": "6a92e1be8bb96817a50e1cf0a76a46a8709d7c53f1f1c71e23a9e3ab21c32745"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/docs/superpowers/plans/2026-06-03-gate-f-projection-challenger-shadow-plan.md": {
+    "bytes": 22318,
+    "sha256": "5c2710cd6b9b009a53f1193757fbd717853dfc7149824aee96ab6bf7a1c9ed56"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/docs/superpowers/plans/2026-06-03-market-favorite-confidence-referee-shadow-plan.md": {
+    "bytes": 27024,
+    "sha256": "644991e89371401736bbb05a9588fbfc71f2243885a5a176f9c5bf8c64e96f12"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/docs/superpowers/plans/2026-06-04-live-notification-digest-coordinator.md": {
+    "bytes": 24437,
+    "sha256": "73fb0771e69587ea734384034ca180d974e8fbba280c3b9777bb8c22f7b725ea"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/docs/superpowers/plans/2026-06-05-market-favorite-confidence-referee-production-canary.md": {
+    "bytes": 33302,
+    "sha256": "44e0961ca845b8ad8ee032b09637b013c0580241d32211cef4c5ced705505f29"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/docs/superpowers/plans/2026-06-07-batter-handedness-path-b-canary.md": {
+    "bytes": 4189,
+    "sha256": "6c6c08e6e5322d4528445e2785d55e1293e011c33dcb5b61f2488879cf692dc5"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/docs/superpowers/plans/2026-06-07-market-agreement-tracker.md": {
+    "bytes": 8025,
+    "sha256": "9141792fe3c96d7eba4cb76999aae934b5098970ade3910eb9cc57a6a19379fe"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/docs/superpowers/plans/2026-06-08-workload-no-vig-k-projection-ev-synthesis.md": {
+    "bytes": 29240,
+    "sha256": "923b277acdc8482214d379af826ee2ee9a3eac5748194989e77620855eeea386"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/docs/superpowers/plans/2026-06-09-active-gates-and-soak-synthesis.md": {
+    "bytes": 34879,
+    "sha256": "12ace6fffc63678a8ebfb2f9039a8ce5e355ff675a52ec870cc0dbb156ceb3bd"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/docs/superpowers/plans/2026-06-10-gate-f-fire-reentry-selection-lab.md": {
+    "bytes": 6356,
+    "sha256": "02b75f4de0b4eeb1a2839add334514fa1428d2d13ee4e64c23d0f81d8bfdc54b"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/docs/superpowers/plans/2026-06-10-gate-f-preclose-clv-proxy-lab.md": {
+    "bytes": 9111,
+    "sha256": "e735c08a803a02206fa7b37dc39334966a61f2ef10a5ad1d2326e7762bb9e7e5"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/docs/superpowers/plans/2026-06-10-profit-rescue-and-strict-provider-readiness.md": {
+    "bytes": 5717,
+    "sha256": "d7fb60d450bde0453507fee509442e7052bed776a80e8720b7f3aa274e781143"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/docs/superpowers/plans/2026-06-13-market-anchored-k-shadow-rebuild.md": {
+    "bytes": 11016,
+    "sha256": "28700808574bd7b72f02a28b6696b041c8b6eb2b80fcbb93a12dc822ab70a7be"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/docs/superpowers/plans/2026-06-16-market-anchored-v2-selector-shadow-canary.md": {
+    "bytes": 53549,
+    "sha256": "e5f6ae6f22d222f2f0d6a550a63085d20660bd397fe5ca0a84a5a067d6e57edf"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/docs/superpowers/plans/2026-06-19-therundown-propline-official-provider-and-webhook-evaluation.md": {
+    "bytes": 28881,
+    "sha256": "62bb703c606d6c225babbeb30593ea5323fad288dcb0738902061200cf74f90f"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/docs/superpowers/plans/2026-06-22-market-shrink-projection-production-canary.md": {
+    "bytes": 37039,
+    "sha256": "99abf5e4ff841aec366514bafb758bee76f843ce3a7870608fdc7dc20cf54ba1"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/docs/superpowers/plans/2026-06-23-next-season-k-model-rebuild-master-plan.md": {
+    "bytes": 45988,
+    "sha256": "9d2c02ecd60660e8b2566263eeb53fae51511ec1375aaccc28e62cb1a8939d0f"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/docs/superpowers/plans/2026-07-07-mainline-best-price-notification-policy.md": {
+    "bytes": 43324,
+    "sha256": "0a593da8e17c1567a6c179727747dda3bf3dc8faa02a1b1244479f33ef79bd87"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/docs/superpowers/plans/2026-07-07-strong-base-decision-system.md": {
+    "bytes": 21385,
+    "sha256": "1377429552caa1cf65e639e10bf0114e21031f1c2246098f7aa5c023515e7191"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/docs/superpowers/plans/2026-07-17-decision-integrity-and-ready-to-bet-shadow.md": {
+    "bytes": 55504,
+    "sha256": "87217de2e7ae28cac8d856214cf1814ab6fb2a107f828741484e16bd1dc812a4"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/docs/superpowers/plans/2026-07-21-no-drag-composite-prospective-canary.md": {
+    "bytes": 52294,
+    "sha256": "e12593bc8ec5537e6a72f0b09ce43cf5007d3a2f457a5b1eeeda8ec3757bfe50"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/docs/superpowers/plans/2026-07-21-pregame-alternative-pick-methodology.md": {
+    "bytes": 32755,
+    "sha256": "f59186b20f764fc63cfd72d9e192ec62eb76cfe894b5b0882846c4a613594911"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/docs/superpowers/plans/2026-07-22-alt-picks-dependency-aware-v2.md": {
+    "bytes": 99610,
+    "sha256": "03bd51eb295eab153de7a79b0cb9d42f80042d74de741dc1938b234a8fe7c270"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/docs/superpowers/plans/2026-07-22-alt-picks-evidence-binding-repair.md": {
+    "bytes": 9556,
+    "sha256": "64b1991d8cade009a78b15e3184d7ea49f0dd0fa1b7dc3cefd725e1e56b9fb5b"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/docs/superpowers/plans/2026-07-22-boltodds-retirement-test-cleanup.md": {
+    "bytes": 5976,
+    "sha256": "5b0ec885861f5fcd97dcd7c634fdd8e4533851e4b2af87deaad1b94592a1aae4"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/docs/superpowers/plans/2026-07-23-alt-picks-v2-final-contract-repairs.md": {
+    "bytes": 24909,
+    "sha256": "d53af028c8fdcb6bc9a71bf4ec92a6d2401d6cd1427153c1184dca8078055948"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/docs/superpowers/plans/2026-07-23-research-evidence-reconciliation-and-market-anchor-review.md": {
+    "bytes": 32811,
+    "sha256": "987e56c50f109cdce080775afc9391cc1ae1df8cf03dee52b38de8f738cf16a8"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/docs/superpowers/plans/2026-07-24-alt-picks-ui-recovery.md": {
+    "bytes": 18027,
+    "sha256": "1ef09dbe522c77f2cc4f62c48f0c49a1d03f5657193ee956fe536d84720f9aee"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/docs/superpowers/plans/2026-07-27-operations-action-items.md": {
+    "bytes": 14021,
+    "sha256": "94844380c343a0f32bc9206c431287faabfcea52286c36246b9f00514835c749"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/docs/superpowers/plans/2026-07-28-four-action-operations-follow-through.md": {
+    "bytes": 3722,
+    "sha256": "8cc5a469f51a52b638a845f11a4036c0d59d24bb3bec4bf081959a1bb0f008a3"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/docs/superpowers/plans/2026-07-29-clv-process-target-validation.md": {
+    "bytes": 10428,
+    "sha256": "8e8a04e97b35c5f4ab4a8724067b685dfbfa0b8cc5440be4efac0bf3be1622ec"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/docs/superpowers/plans/2026-07-29-market-anchor-downside-review.md": {
+    "bytes": 6027,
+    "sha256": "54c021c801b18f24d10eb534c04ec6b5387f2288c4f549e933c247e97b24f41f"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/docs/superpowers/plans/2026-07-29-market-shrink-retirement-decision.md": {
+    "bytes": 4473,
+    "sha256": "5b030cd4ae9f237d6ba1555623caa49fe8ab7817035b7f016435462a22f41ca7"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/docs/superpowers/plans/2026-07-29-no-drag-and-strict-runtime-prospective-review.md": {
+    "bytes": 7872,
+    "sha256": "98cdd79028ac70330e0242523b9f1d25b5890993463a0d0cc3c90f99145e402e"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/docs/superpowers/plans/2026-07-29-selective-lean-preclose-research-funnel.md": {
+    "bytes": 4913,
+    "sha256": "56fd80dae1e771b80a25cbfb66ca722e4e44a548b507ab32af0e28016eb87713"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/docs/superpowers/plans/2026-07-29-strong-base-fire-policy-shadow-matrix.md": {
+    "bytes": 6020,
+    "sha256": "49a987d914fd8f74603bccd4e1d0f021889e4227ee1f506cfc4bd6114ede4cc8"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/docs/superpowers/plans/2026-08-14-selective-lean-prospective-audit.md": {
+    "bytes": 5227,
+    "sha256": "930833c010822807f8c7ad7fb47ac2fed8eedb68aa3674837769c4cb7f09f3ef"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/docs/superpowers/plans/2026-08-14-supabase-pressure-repairs.md": {
+    "bytes": 10704,
+    "sha256": "832e0ba09808097958f6a4e8b0cc56e88bb29e671a94e9b1e31a82cca0024610"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/docs/superpowers/plans/2026-08-18-bounded-retention-audit.md": {
+    "bytes": 98783,
+    "sha256": "86d51b62ab655fda6406ea0a4e9f7ec28fd5a9e340c41a43fcfb22c9039ef9f8"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/docs/superpowers/plans/2026-08-18-season-retention-foundation.md": {
+    "bytes": 65774,
+    "sha256": "df142a5302c8b3f43000a01702f5a568237b9aa4a4bfdcdbe36247e180c6d76d"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/docs/superpowers/plans/2026-08-20-retention-compaction-and-historical-extras.md": {
+    "bytes": 47353,
+    "sha256": "c69a819ec81f2fb1409a36378ae5736745fbfe5abe9faae782330c139707d879"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/docs/superpowers/plans/2026-08-25-active-provider-compaction-finalizer.md": {
+    "bytes": 16657,
+    "sha256": "87e5bdca22ef7a7463694ce14a8de288b26a2cea1b76db0a358df900edb2cd74"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/docs/superpowers/plans/2026-08-26-daily-active-provider-compaction-finalizer.md": {
+    "bytes": 72475,
+    "sha256": "cbe365a3f8de7835dba2490a10b4c4f2810edafbd84e06ffab83d60661c97af1"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/docs/superpowers/plans/2026-08-27-manual-active-provider-compaction-intervals.md": {
+    "bytes": 19664,
+    "sha256": "b1611ed04892d8df267de6392d17f1cc5df2ce5d53cc94ccca55a9f7c5a5e0be"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/docs/superpowers/plans/2026-09-02-prepared-active-provider-deletion-executor.md": {
+    "bytes": 13143,
+    "sha256": "1a262ae0ba3a76ab70f9beba5a9a700457949d802999ee1a8437913768b14718"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/docs/superpowers/plans/2026-09-03-prepared-snapshot-tranche-cleanup.md": {
+    "bytes": 23338,
+    "sha256": "3cb9d2fdfa5efdb5084cf211c8b6bce0d23deb3776cad95248b589c767e1d04d"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/docs/superpowers/plans/2026-09-12-propline-webhook-retirement.md": {
+    "bytes": 5485,
+    "sha256": "f2a10bb69962f62a20ca5720f3a86ce8a75452d69e1616523f626349bdb11854"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/docs/superpowers/plans/2026-09-28-season-end-offseason-decision.md": {
+    "bytes": 16315,
+    "sha256": "21249b4e0873527e3d140741bf4cd3d0d440c12d84f5205f30a85407664d8d74"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/docs/superpowers/specs/2026-03-24-baseballbettingedge-design.md": {
+    "bytes": 9943,
+    "sha256": "48294b7aea80e46d465e4430d237ce8f16ad0a1b20b50d73cc964c511f89a665"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/docs/superpowers/specs/2026-03-25-date-browser-design.md": {
+    "bytes": 3918,
+    "sha256": "769003396a6f54c216939453a31a521bb18a41ee9d40a0fcdfb6ac605b68a48d"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/docs/superpowers/specs/2026-03-25-line-movement-confidence-design.md": {
+    "bytes": 10404,
+    "sha256": "ac80223c99dcca34869b97348ff6865cd6ea5fb2ffe13341603dc6b1cf1dcab5"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/docs/superpowers/specs/2026-03-27-decouple-netlify-deploys.md": {
+    "bytes": 3368,
+    "sha256": "a9042efca38305b488ddb686ff9d64edc1d3637dce7a41a695011871937a27e2"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/docs/superpowers/specs/2026-04-01-performance-tab-over-under.md": {
+    "bytes": 7064,
+    "sha256": "1b92362efb0ae82901123fefd13d2976a5a8986986500e5b6340a56bd0eec71f"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/docs/superpowers/specs/2026-04-06-night-game-mode-design.md": {
+    "bytes": 11526,
+    "sha256": "1fe538698ba36f832f34cb4ab78f5b413bb7c5a4c3dc16dc23ed244d3c7dec47"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/docs/superpowers/specs/2026-04-08-lineup-aware-ev-and-line-locking-design.md": {
+    "bytes": 18494,
+    "sha256": "131dff3ad42f8792f0d425f5d3138580bd78f1903113ca0fe40171989f951432"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/docs/superpowers/specs/2026-04-08-steam-display-design.md": {
+    "bytes": 5610,
+    "sha256": "99388394f81cae84d53c9e99ba10f9e72621cca49f43d9340b753c57f3c54fdf"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/docs/superpowers/specs/2026-04-28-v2-factor-details-design.md": {
+    "bytes": 6723,
+    "sha256": "8e486d9f2f5853282763454410b97547d8f1883ca97fb607b62ee634e36c5a4a"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/docs/superpowers/specs/2026-04-28-v2-line-movement-and-card-cues-design.md": {
+    "bytes": 5765,
+    "sha256": "f47cc00595bcdb69859fb183814667b2539377b56f8259e069e89341a64b9ef4"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/docs/superpowers/specs/2026-06-07-batter-handedness-path-b-canary-design.md": {
+    "bytes": 2294,
+    "sha256": "dc777fa8f569163f942ee86451e11915ac55e898a14b604a2f9b3c0c775cb4ce"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/docs/superpowers/specs/2026-06-07-market-agreement-tracker-design.md": {
+    "bytes": 3389,
+    "sha256": "3a2ee74cc339e51ba58be6a84e55db13775fd20cddfa0b146bdf25e2cb389fd0"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/docs/superpowers/specs/2026-07-17-decision-integrity-and-ready-to-bet-shadow-design.md": {
+    "bytes": 12111,
+    "sha256": "d172193f67ecdbfbfec46ad16a4a27f3642bb56cf5ed097632200bc22e49d462"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/docs/superpowers/specs/2026-07-21-no-drag-composite-prospective-canary-design.md": {
+    "bytes": 13262,
+    "sha256": "133fede58f2b97c6aabcf2ed969b7679933a321c96ad4bf16677a626ae17622a"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/docs/superpowers/specs/2026-07-21-pregame-alternative-pick-methodology-design.md": {
+    "bytes": 29578,
+    "sha256": "7e3ce1390c7ec5244e6fedb1f627664349c4043e6cff1fb19c51ab70d1b83c28"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/docs/superpowers/specs/2026-07-22-alt-picks-dependency-aware-v2-design.md": {
+    "bytes": 39693,
+    "sha256": "6709f50769ae866be3c76f036a8b7bcb5c3d305f9e0e38d0af0fcb99f893654c"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/docs/superpowers/specs/2026-07-22-boltodds-retirement-test-cleanup-design.md": {
+    "bytes": 3011,
+    "sha256": "1fd21e2d843b1d10c79b0b76897718bfce89d36fe00d81f71b293030995201b4"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/docs/superpowers/specs/2026-07-23-research-evidence-reconciliation-and-market-anchor-review-design.md": {
+    "bytes": 17593,
+    "sha256": "6591f503ee0e3826045a20e4e150272682c0b1fb0ff1dd02311aacdcfdf8e005"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/docs/superpowers/specs/2026-07-24-alt-picks-ui-recovery-design.md": {
+    "bytes": 10121,
+    "sha256": "2ca320be772db432e5308470c87b37a8a25c9031bb8bf73712d5a60b19e4d67f"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/docs/superpowers/specs/2026-08-14-selective-lean-prospective-audit-design.md": {
+    "bytes": 4035,
+    "sha256": "414f1e943a7ca8c0bde35d424cb4d282e8137f8536a46dd0828dd42931aae817"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/docs/superpowers/specs/2026-08-18-bounded-retention-audit-design.md": {
+    "bytes": 21216,
+    "sha256": "bb55a1825faccece0a4998cb4fee80eb8d71f6a93c6812bc3f9f1f747c312d1f"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/docs/superpowers/specs/2026-08-18-season-retention-foundation-design.md": {
+    "bytes": 17707,
+    "sha256": "c85318d6d16268f6a5f6e879ee1407fa271cc854aba252e7570a402daaad6e47"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/docs/superpowers/specs/2026-08-20-retention-compaction-and-historical-extras-design.md": {
+    "bytes": 12391,
+    "sha256": "e3dc040b7557996bc2a69d889381bed71a14dee837293b0654291efbf3c5b0cc"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/docs/superpowers/specs/2026-08-26-daily-active-provider-compaction-finalizer-design.md": {
+    "bytes": 17528,
+    "sha256": "a1c196c9e9baacfd2c9eda0c1804600284dbe900262f28875ea551473c7cb792"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/docs/superpowers/specs/2026-08-27-manual-active-provider-compaction-intervals-design.md": {
+    "bytes": 3461,
+    "sha256": "26bcf40cb088115f04c62272642863eae240a9a83132deb38bf6ee85cc6559fd"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/docs/ui-redesign/deferred-pipeline-work.md": {
+    "bytes": 5788,
+    "sha256": "0110054f4dee68e45d3a7bfda043edb3859250f92ddfe4260c7e44de66348ebd"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/docs/ui-redesign/handoff/README.md": {
+    "bytes": 1636,
+    "sha256": "c8e504ea42ef2e420bd27a580105558848e6e73ce9c6c6ed6fe94165446a7535"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/docs/ui-redesign/handoff/project/current/index.html": {
+    "bytes": 59543,
+    "sha256": "6400fecb5c328d963861ec1d0b11657dfe117081037afe77403ca29ca841abea"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/docs/ui-redesign/handoff/project/design-canvas.jsx": {
+    "bytes": 10393,
+    "sha256": "3fc2600126c0cad84ef6008c8bd9b7819741ce2fc91056d708ad35f2f99e160d"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/docs/ui-redesign/handoff/project/design-review.html": {
+    "bytes": 28617,
+    "sha256": "d621cc200f8d2035a5de9d91ffc7a47afe3929cc6336bdd1e969e73cc2bebe51"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/docs/ui-redesign/handoff/project/v2/HANDOFF.md": {
+    "bytes": 9599,
+    "sha256": "c759d403bf2678b8728fd46350de3b5402de1fa85f86365d057c64b1eb91b63f"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/docs/ui-redesign/handoff/project/v2/v2-app.jsx": {
+    "bytes": 38928,
+    "sha256": "635387d71f83990e90ecb18bc696d46498e908190586b8d283923582d25b1708"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/docs/ui-redesign/handoff/project/v2/v2-data.js": {
+    "bytes": 7948,
+    "sha256": "5ed9b4aed7aff9ec43d363f63b5100438217c9ce952c6cd75ae3c5da7699b9f1"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/docs/ui-redesign/handoff/project/v2/v2.html": {
+    "bytes": 32104,
+    "sha256": "fb45eebbea81453f49adb07786e9f83f967114fb767c1ee664b36e78d2f70f4d"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/docs/ui-redesign/v2-ui-review-2026-04-25.md": {
+    "bytes": 2721,
+    "sha256": "e1ebb5160c9a5f7e1b396fa9ca7b93c7d32e1ccbc4c1dbf718acc3809d0f4066"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/market_infra/__init__.py": {
+    "bytes": 1,
+    "sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/market_infra/alternative_pick_evaluation_proof_v2.py": {
+    "bytes": 61138,
+    "sha256": "f1df3dd95da719e12965dfd38bb311809677a2215ba7da0d3a6c7ee2d0bf55c6"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/market_infra/alternative_pick_preclose_v2.py": {
+    "bytes": 44409,
+    "sha256": "13a4313849f079ef5f8779a5abff057c86b909d320c68cdf9b669e9e84dca683"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/market_infra/alternative_pick_recording_v2.py": {
+    "bytes": 26726,
+    "sha256": "621a5859ffc0ac342c3bec6f12f960a16f5bfb3df4af1044f545101de6604c07"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/market_infra/alternative_pick_selection_state.py": {
+    "bytes": 36787,
+    "sha256": "6cf65e0320d858a5f7add6707cd4ee392b57a1b5da4db5301a0b4511a852358f"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/market_infra/alternative_pick_selection_v2.py": {
+    "bytes": 4105,
+    "sha256": "5b21bb3127d9e03e8fde427cf5f07c395a5493659369f7e7f7d5ab1dfc47417f"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/market_infra/alternative_pick_selector.py": {
+    "bytes": 33405,
+    "sha256": "c2363f6cff54f2ac49a274fd7a815fbc9001b812389f5128f5038c17bb94eaee"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/market_infra/alternative_pick_selector_v2.py": {
+    "bytes": 30923,
+    "sha256": "7641a8e9324f069f00fe00160b9564f5e63f7fd974c09a2516f9180c15a06ec3"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/market_infra/artifact_snapshot.py": {
+    "bytes": 1851,
+    "sha256": "0d9f5c89270eeead8e1fb71b7e1ca90977dc3a7fecfc702a764220f808ab2f58"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/market_infra/boltodds_client.py": {
+    "bytes": 3422,
+    "sha256": "acb77eaca45bb6fe44d411af3eff1edfa8eff5a3f4770f713883a5ee635c9bb6"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/market_infra/boltodds_snapshot.py": {
+    "bytes": 5766,
+    "sha256": "1d01c23e69894b1200a2d2e560ffd6e8634014d4b14fa628b4cf6fdafbbb8fe0"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/market_infra/current_market_lines.py": {
+    "bytes": 11202,
+    "sha256": "3ecfeca07ef269b3c123031528305295b39df8d570f4b81b921787ff18b84f62"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/market_infra/live_events.py": {
+    "bytes": 32373,
+    "sha256": "95b3f34c10bf3d602e240b7ef29fc063e01b7c365d40a4d5e322e9718d2a56f8"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/market_infra/live_feed_health.py": {
+    "bytes": 1581,
+    "sha256": "c0c9755db1b1ba43273bd4fbf291ee3c51f6387438370913ac79beea8029d1a9"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/market_infra/live_market_display.py": {
+    "bytes": 31228,
+    "sha256": "c9ca3eba559f044ed93bf25b3b688cf7ff4679c98f8f7bac17ea084d76cebe7d"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/market_infra/mainline_price_notifications.py": {
+    "bytes": 10626,
+    "sha256": "81e4815174d457e1a0b4adbea26674602bf587493f8e1d1eeffcf167612cd7da"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/market_infra/market_evidence.py": {
+    "bytes": 16440,
+    "sha256": "4b054e9fa2dbe1a320b7e4b1c837bcac28b10a75cf19e03390996908319d4619"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/market_infra/market_snapshot_compaction.py": {
+    "bytes": 4846,
+    "sha256": "d38d890139c71d3035e3b3b2b480bc6dbfc90700e6594331258d89b79b98a75d"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/market_infra/notification_coordinator.py": {
+    "bytes": 11001,
+    "sha256": "36b9750aaf4f58587d051afb49d23818fe3d36d6c2ebb729be60cc5541194bb5"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/market_infra/official_market_lines.py": {
+    "bytes": 35571,
+    "sha256": "dee18193e66ded42022cbdb32eae0103ba7020008d57a967e8b089777159241d"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/market_infra/operational_locks.py": {
+    "bytes": 6770,
+    "sha256": "060377bd10c104ceb21bb58f542b5b48b7ac0818d4c760b0b14d56a693f310c4"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/market_infra/prop_snapshot.py": {
+    "bytes": 3613,
+    "sha256": "006479f9240f96f077e82544cd84f19d590aa4f794c6dcfe369160a6c783de23"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/market_infra/provider_audit.py": {
+    "bytes": 7771,
+    "sha256": "291225b79e1568e614eb9aa2f18cf63649750c969ee0a48fa4ba5db5a47089b2"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/market_infra/provider_freshness.py": {
+    "bytes": 6225,
+    "sha256": "4e23b9b7ba24043003de80dd2d11520798ba94db642b7faa2d6ac29307fe7516"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/market_infra/provider_usage.py": {
+    "bytes": 5209,
+    "sha256": "5f151e8b6b9ba27b55f63d50ac33b8d62483803f25a2afa47f7dff0df7a140b0"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/market_infra/published_artifacts.py": {
+    "bytes": 3438,
+    "sha256": "a6968313322ab09435bbf08544200524543738a483c4d7acdee1f23d4400bc3d"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/market_infra/ready_to_bet_shadow.py": {
+    "bytes": 12323,
+    "sha256": "4ad5f9a304bcadbec1a25a7cdbc7d1525685144fe7bd847c06b17a740d84c56e"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/market_infra/shadow_notification_candidates.py": {
+    "bytes": 8187,
+    "sha256": "8de01c67999fac41bb0d553e858d471dd4814d6d26bc79747f3432b9cf81ea16"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/market_infra/shadow_pipeline_timing.py": {
+    "bytes": 9827,
+    "sha256": "4238ac9abe13977122b3e374e7cb50ff7014737b3d4c87929b980c24f170b3fb"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/market_infra/supabase_writer.py": {
+    "bytes": 9121,
+    "sha256": "e69bd8b288b6717e909c3cbeca16d6e9f36f5c5f294754b0d622505bc9bf4836"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/market_infra/therundown_snapshot.py": {
+    "bytes": 5291,
+    "sha256": "c178b0698f64ca2a7285ba725519d9a76a2fb0c6c47c85733cdb91dfd94b870e"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/netlify/functions/_shared/accepted-bets.mjs": {
+    "bytes": 8224,
+    "sha256": "3f4b3a1c29e24148443f287560cbc5c72d2457e8e15f3277dc290c3c77bedd46"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/netlify/functions/_shared/live-notification-sender.mjs": {
+    "bytes": 14329,
+    "sha256": "0db9d89e92327f20fa1c7ef1ec8e7cfb99cafd91e5f4403c4791e521a0458a41"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/netlify/functions/accepted-bets.mjs": {
+    "bytes": 223,
+    "sha256": "57ca456d66af1bc5257bf908996d9701b395dce14f5be37b6b4e58f1aa8a2223"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/netlify/functions/alternative-picks.mjs": {
+    "bytes": 56034,
+    "sha256": "46be6f73d59f100747c630ef099b4080b5445dcd77c05e9bb36ff46630b9539b"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/netlify/functions/get-artifact.mjs": {
+    "bytes": 3395,
+    "sha256": "d1935007e01f73c8a9b2ccb628db1ae99e059d6ddaaa080aa819223395436dae"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/netlify/functions/live-market-display.mjs": {
+    "bytes": 8131,
+    "sha256": "65c60c67e28f4e34da756f4141459a2c74cb14fcc3cc225c10abaa00074d49ed"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/netlify/functions/package-lock.json": {
+    "bytes": 7188,
+    "sha256": "4ba976f769678b5dcbc48020884f5a8eeb90c5ffdb8cf8855f6202d25f7c22d0"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/netlify/functions/package.json": {
+    "bytes": 141,
+    "sha256": "8d5b3b4c5f8842ac830677c93a88cc1b9871291dc4aeece07960db4966f9846b"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/netlify/functions/propline-webhook.mjs": {
+    "bytes": 555,
+    "sha256": "75ecc0cded5e9617b2476e9cd7381ff26e2929e55c6634e1f00a9e35850382d1"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/netlify/functions/save-subscription.mjs": {
+    "bytes": 2717,
+    "sha256": "2f53fcb845d4f78195fa5be9e753fde8084eb201c03f0535d0a247fea0b4bdd5"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/netlify/functions/send-live-notifications-now.mjs": {
+    "bytes": 286,
+    "sha256": "8a4c025b895d72fcf27d46edec4f379d391ee55a66ae996a20b546635766097c"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/netlify/functions/send-live-notifications.mjs": {
+    "bytes": 369,
+    "sha256": "a143ca96d613774f705ace7f1790dcecee6cb3e07a619729f35731122d945cae"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/netlify/functions/send-notifications.mjs": {
+    "bytes": 13209,
+    "sha256": "5f3fecfa60d130e8e280fa18e219293a7cd951ca6ce4e7d6f1d4df85d8679697"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/netlify/functions/trigger-pipeline.js": {
+    "bytes": 3119,
+    "sha256": "bb1fc483d1a9764f792d45204c8e34c822ca5dffc6aadd42b84ea2997c74c9a8"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/netlify.toml": {
+    "bytes": 1333,
+    "sha256": "5ab14087fc7ce5f51acdbad61211785d688c158f9e5957e04ea49fda26236ddd"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/pipeline/__init__.py": {
+    "bytes": 0,
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/pipeline/backfill_results.py": {
+    "bytes": 8468,
+    "sha256": "2f159fc222411991a589158b60de2a47c5abcee68b2f9eaae392e56b7241ca37"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/pipeline/build_features.py": {
+    "bytes": 26653,
+    "sha256": "1f5202d49d2114ce02b17c7a63996fe26f49e466fca3b5cb1f200c1ccda2e846"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/pipeline/calibrate.py": {
+    "bytes": 26957,
+    "sha256": "510e974c48a7763c1d9fd835b1819d3b17539074f44a9ea0c64bee11c8972778"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/pipeline/confidence_referee.py": {
+    "bytes": 5503,
+    "sha256": "1028ab5adbebfb7f1c0aba6096af0eaf59f682554d11e57617023871636b4768"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/pipeline/fangraphs_cache.py": {
+    "bytes": 3252,
+    "sha256": "995bd22ae7c9ed74ab67e804b6633b7374a0967af5b295a44c6f22e6ff2bea71"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/pipeline/fetch_batter_stats.py": {
+    "bytes": 14203,
+    "sha256": "041694280935cbadcc50e5c41c3940cfc5e427da82c468c0bef73d336e27daad"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/pipeline/fetch_lineups.py": {
+    "bytes": 5148,
+    "sha256": "bdd8b35706273a88cce1e593dd27ddb8fb18255737abd05b3d9f2a4c6cfaef71"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/pipeline/fetch_odds.py": {
+    "bytes": 31208,
+    "sha256": "8d9105c4ee9e627980b2d785beb24786f4f483a228d6177d49049328256e2bcb"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/pipeline/fetch_provider_market_odds.py": {
+    "bytes": 10871,
+    "sha256": "e218dbe2f5c5afab60075d83c649753997edd3e99699b765d6cdfe141634af9f"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/pipeline/fetch_results.py": {
+    "bytes": 42460,
+    "sha256": "b55a33da73bf1ac44c730cca994a7d9c58446bad568414d81731b0de1ac6d7a0"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/pipeline/fetch_statcast.py": {
+    "bytes": 12470,
+    "sha256": "5709ca9d5ab8dd193240d552b8497663964d3f96feba54bc21995e2f5b5dddea"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/pipeline/fetch_stats.py": {
+    "bytes": 18620,
+    "sha256": "96f1a75049151047893f8366611c8cbcd47884d2d5e378c5540e1c94d870c187"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/pipeline/fetch_umpires.py": {
+    "bytes": 11872,
+    "sha256": "7fbfd97b9dd0532a7bc663a43138d3b2e7e2350243049a51fe75d866350a3258"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/pipeline/market_anchor_selector.py": {
+    "bytes": 8829,
+    "sha256": "35fe12030420c2eafc038437b740b88608f9c58564ffa61190b7b50983229477"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/pipeline/name_utils.py": {
+    "bytes": 1312,
+    "sha256": "d71fa2e003dac0dbf69d21e989144f6f7d982d894bbd0a03a6dc554fc8a12239"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/pipeline/profit_rescue_referee.py": {
+    "bytes": 2898,
+    "sha256": "71405fc6e2f55768ddadc4054c2445e1ba1857a04298e879ec8399060c31138b"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/pipeline/projection_challenger.py": {
+    "bytes": 2779,
+    "sha256": "3e38c4ecd620fd2b4fa19ffe203884a570e140db7ac16d3900e364a7ca016171"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/pipeline/quality_gates.py": {
+    "bytes": 10958,
+    "sha256": "5c2b4474b6a957a4b7ce1e3b32180d768aee8b69a57af5bdd77cd0e54c607218"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/pipeline/requirements.txt": {
+    "bytes": 99,
+    "sha256": "ca0be4628b7a2307589fcffa24ab2725305646126ac01def3b79523f51be4012"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/pipeline/run_pipeline.py": {
+    "bytes": 95685,
+    "sha256": "00d826f1c336167107198c56261920ec0be1b4ebbb55e24aad85ab761a799562"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/pipeline/team_codes.py": {
+    "bytes": 1313,
+    "sha256": "247212bf07372a93e2cd6c544a65ce8f1cdb8dbedb9dc0fe886d25c92c021c5f"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/render/pipeline-runner.md": {
+    "bytes": 4401,
+    "sha256": "bb41d59aac6b6de825ec6bc72d241b988373319e4ff3a0165d6a13632ed7b7a2"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/render.yaml": {
+    "bytes": 195,
+    "sha256": "c793de53d4ff43c2f510389bae9b26b51adafb8d61805d8f396231e1ab4c3dc3"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/scripts/audit_supabase_row_volume.py": {
+    "bytes": 1433,
+    "sha256": "1886b43c83547126c6a3bcbbfbe31fdddf94764b420da91229503ba560ef243c"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/scripts/backfill_compact_market_movements_via_cli.py": {
+    "bytes": 8706,
+    "sha256": "c457b3033d3f450710383e485ebf9603fdd5e8f49a3837f4a831bfae7fb8ee19"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/scripts/boltodds_ws_worker.py": {
+    "bytes": 29559,
+    "sha256": "bff1f5641f1738f1e0c399f2192f86474fa854610efaef8fdcc5dab86660c5c4"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/scripts/bounded_retention_audit.py": {
+    "bytes": 65428,
+    "sha256": "11747d90a09e2bdd06a5e094c16602a0ed79660e908a6da889161666c78ed60e"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/scripts/build_active_provider_compaction_preview_manifest.py": {
+    "bytes": 11113,
+    "sha256": "5318d4927790e5b956dc18a67db3a396681e70d4c55b05a15a93a01a53771a4f"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/scripts/build_current_market_lines_to_supabase.py": {
+    "bytes": 14467,
+    "sha256": "28c891dc7edeb1c069b0d12fb079c6e38ee8ad1aa98b6fb6ec3339d19a3af84a"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/scripts/build_live_events_to_supabase.py": {
+    "bytes": 84899,
+    "sha256": "7938756ca5730d32a899dfd33bc94d6442fcc731bd7b35406774b4a4b45dc2ce"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/scripts/build_official_market_lines_to_supabase.py": {
+    "bytes": 8136,
+    "sha256": "bd7b87791a13c99da95a51e190fe8af411654a2b8e9815f056f1297dc62adde4"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/scripts/build_pitcher_k_outcome_dataset.py": {
+    "bytes": 17740,
+    "sha256": "05a3986a82cc1948c00c95aa59330db66a2227d832c0e49d6a8f0249a97a5e2d"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/scripts/build_retention_season_manifests.py": {
+    "bytes": 17239,
+    "sha256": "470d29623ba731e78e514c3cd84c2028a4a0ccf0c3f6664a94837d3663de7f97"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/scripts/build_season_retention_readiness.py": {
+    "bytes": 85980,
+    "sha256": "a1f41acae15aca0173742dc38377ce676f4333fd809c48193b56ccb64a641c15"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/scripts/check_alternative_pick_v2_activation_window.py": {
+    "bytes": 3853,
+    "sha256": "781b6458c0c52bf010bd8950a8e54d5224b34754e0f8ef626e5e93a74e9f929a"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/scripts/compact_market_snapshots.py": {
+    "bytes": 6459,
+    "sha256": "b347b1934901f322a9fd93056aa817be2c92dd707cc69aa93723a4f0cbe968c7"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/scripts/compare_supabase_artifacts.py": {
+    "bytes": 5980,
+    "sha256": "2c037a72a321befe771aa7236932d8bc9486f583671500dac8b06b221cdeb291"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/scripts/create_propline_webhook_subscription.py": {
+    "bytes": 2631,
+    "sha256": "f789316d9a3196b3e31ed8164aa681e2b113cab69d1a678bece23a98e744a908"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/scripts/deploy_render_pipeline_crons.py": {
+    "bytes": 6003,
+    "sha256": "ccbe231f2d5703bff60bb54db64c6c5aa23ccb3c3a02e17871f8f63a5a5f899c"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/scripts/export_market_agreement_inputs.py": {
+    "bytes": 11542,
+    "sha256": "73fbbc77e7bc3f0c48fa8489b12ed4d3929cafcb19bdaeefa510f65cc00c7fe0"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/scripts/monitor_lock_ledger.py": {
+    "bytes": 7052,
+    "sha256": "aa1ec78e959de90b56ef47ca21303f05823208421cf44305fc25eb124e4bb6c5"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/scripts/prepare_prepared_market_snapshot_tranche.py": {
+    "bytes": 23250,
+    "sha256": "4bae9f089ec45cea7bcea63bd040f4bca04eae12d6aa60e0b5d3285630e15d48"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/scripts/probe_boltodds_markets.py": {
+    "bytes": 4802,
+    "sha256": "3b1159d80e45c707f24b98ff2bc7d499bc48858a2cace4e6027a84aee0654135"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/scripts/probe_propline_books.py": {
+    "bytes": 3232,
+    "sha256": "ad559c78fabe8bb9d027f3ab04df37c65e67799b8ee59ab0a5789e79a0b45047"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/scripts/process_propline_webhooks.py": {
+    "bytes": 11271,
+    "sha256": "be51d2953298f3bba7a67bf56734d3980cad326ca28ef9f18f73f2dcf1e3ec2d"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/scripts/publish_pipeline_artifacts_to_supabase.py": {
+    "bytes": 7898,
+    "sha256": "4d0316487d25c7e7e805247905f0912edd8b7e6e37e4d3ff82306acf4aa54401"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/scripts/repair_compact_market_snapshot_partition.py": {
+    "bytes": 35265,
+    "sha256": "91e300c911065041ad520087893188b65430fac4514b606453a33544dc0c8e66"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/scripts/repair_missing_locked_picks.py": {
+    "bytes": 30449,
+    "sha256": "1048325501b2226d6f75f5395ffd3aa42639b45c98c3cf575f91e22b35ed2ae3"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/scripts/repair_stale_pass_picks.py": {
+    "bytes": 9647,
+    "sha256": "af86ccc95523749d3cfd422c619807f7a7dae5cfaaafc0a99d72540606b3860e"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/scripts/retention_bounded_sql.py": {
+    "bytes": 48135,
+    "sha256": "c159d0e2076f6a0b21e7ee0c539a371b679d30fb23ff974f5a802299e9f10230"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/scripts/retire_market_snapshots.py": {
+    "bytes": 8903,
+    "sha256": "0612e0159e7f224c80132b1f4327f5210cdf9acf8f6e058631646b4b36e6c4c0"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/scripts/retire_prepared_market_snapshots.py": {
+    "bytes": 28756,
+    "sha256": "87df40ad2b1640ec363d22bceac175b23f8e0052f8311ddf7188b0d5c7c10d52"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/scripts/run_daily_active_provider_compaction_finalizer.py": {
+    "bytes": 21948,
+    "sha256": "ae3535e241ac96bdd5d22aa61c950402ef146b5cd420d624bb202b40daaf36e1"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/scripts/run_post_grading_shadow_reports.py": {
+    "bytes": 25590,
+    "sha256": "10dfd2899fdd7f3da0217c8dfd566571eebfdd73ed528c9e61c68eff032f0d80"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/scripts/run_render_pipeline_mode.py": {
+    "bytes": 14281,
+    "sha256": "cf65fe6346bb4c3940db647c149a2c8354598d9d5f0541899c679dc617cd2e58"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/scripts/seed_umpire_career_rates.py": {
+    "bytes": 9904,
+    "sha256": "672c7eb9a1ee8cdd2efc985d49a3c8ba68e59765b9b531aeed0ec6584706e048"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/scripts/shadow_artifacts_to_supabase.py": {
+    "bytes": 2124,
+    "sha256": "cc893a822d18cb58c12c92f7bffb612703934ecf7ee0f89a356b4ffafd14d09b"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/scripts/shadow_propline_to_supabase.py": {
+    "bytes": 13577,
+    "sha256": "5189ca42a90ebbbaea09125d7970db462145a96bd2b46a9b78b47a347597f8c9"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/scripts/shadow_therundown_mainline_to_supabase.py": {
+    "bytes": 19650,
+    "sha256": "1d2ac88af11da06a2245708644d4217605eead5738ef22aa332cd6e3367eb996"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/scripts/smoke_live_notifications_sender.mjs": {
+    "bytes": 1145,
+    "sha256": "0eb5732b56ef89821e800823bed1e431be2b77af7c9c26d1b775230b67412fa8"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/scripts/supabase_market_snapshots_reclamation_preflight.sql": {
+    "bytes": 3905,
+    "sha256": "a071b2d201f5385df81b0f23b8b2e7444a007c18dfd725477b70dcc8ffa1482b"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/scripts/supabase_prepared_market_snapshot_deletion_preview.sql": {
+    "bytes": 4182,
+    "sha256": "561b7033f8ee904076588a969fbe7324c457f56131dfca50804c37064ecdca6c"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/scripts/supabase_prepared_scope_final_postcheck.sql": {
+    "bytes": 2520,
+    "sha256": "3f7f8dcb495731a961db4bdbad72a058fce3468b967cc13bdf74fc419e4abe51"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/scripts/supabase_prepared_snapshot_ordering_proof.sql": {
+    "bytes": 2725,
+    "sha256": "af23d219250180df26ddef31bdbc5135bfda71ca5e6e85197b012db3333587c3"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/scripts/supabase_prepared_tranche_v2_001_postcheck.sql": {
+    "bytes": 2841,
+    "sha256": "a8279d78775cb3bf0e3dfdf296bec4ad7c5f1a8e3d629aed5ac026366364cd8d"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/scripts/supabase_prepared_tranche_v2_002_postcheck.sql": {
+    "bytes": 2843,
+    "sha256": "72b9763eb913bb0e8d2f3894f404053a2ab4bdace614a5a6ef859b165b9aa460"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/scripts/supabase_prepared_tranche_v2_003_postcheck.sql": {
+    "bytes": 2007,
+    "sha256": "a32e1372a291e5329e0dc9cda886a05e52f241f15e555d6ce8cd8167b133cd36"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/scripts/supabase_prepared_tranche_v2_004_postcheck.sql": {
+    "bytes": 2009,
+    "sha256": "c1fe167dbffc41a6d2a63328602c38d07b868abb1c0089edf5198d6db6a106d9"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/scripts/supabase_prepared_tranche_v2_005_lineage_diagnostic.sql": {
+    "bytes": 4614,
+    "sha256": "7b246145c62531d985576639456f8d4ce96a0b8aff29acceed92613513208523"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/scripts/supabase_prepared_tranche_v2_005_lineage_repair.sql": {
+    "bytes": 11806,
+    "sha256": "6aafbd26b3c3fa4144f6a9a034e7848db28a2c26487b3e56f2a084bd24a8af88"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/scripts/supabase_prepared_tranche_v2_005_lineage_repair_postcheck.sql": {
+    "bytes": 8972,
+    "sha256": "455287c6b5d516ff55ba8f9f037ff0c6c2abdbe79ea586d0129eed821cddd017"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/scripts/supabase_prepared_tranche_v2_005_lineage_repair_preview.sql": {
+    "bytes": 9610,
+    "sha256": "6710a5d421eacb0ed2f71620661ed35b96901aa28024cc007b052d7ad2754b10"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/scripts/supabase_prepared_tranche_v2_005_postcheck.sql": {
+    "bytes": 2837,
+    "sha256": "991e055dfa34109f99696c77f023df044838b99ac5be764538c93eff84185ab7"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/scripts/supabase_prepared_tranche_v2_005_target_lineage_proof.sql": {
+    "bytes": 4484,
+    "sha256": "c9b3a13e4f0fcebf3f35c3d140385f74e675c093b76c4421f4cf68da1378f8a4"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/scripts/supabase_prepared_tranche_v2_006_postcheck.sql": {
+    "bytes": 2432,
+    "sha256": "0cd4bfb8bb34947605fe9d8c6c4a85d3d977fa0361b8144d7fa34373a48c4f1f"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/scripts/supabase_prepared_tranche_v2_007_postcheck.sql": {
+    "bytes": 2417,
+    "sha256": "a46f7b9074f617fbb88283686e2c2684989790507a5f4641661b4ebc1f6919e4"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/scripts/supabase_prepared_tranche_v2_008_postcheck.sql": {
+    "bytes": 2419,
+    "sha256": "360e835cf47e4178b44f894138712ed3fda9daefc63b1343a43895eccdfd99f4"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/scripts/supabase_prepared_tranche_v2_009_postcheck.sql": {
+    "bytes": 2416,
+    "sha256": "832e78256563812cdffc1ef8fb27d5da3e3872e4c0f89938d35e7d82271988d1"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/scripts/supabase_prepared_tranche_v2_010_postcheck.sql": {
+    "bytes": 2419,
+    "sha256": "383ad1e0c30dcdfdddd433f5c2cede366b8b78233ed27ea6c8f4b5c755ec4e80"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/scripts/supabase_prepared_tranche_v2_011_postcheck.sql": {
+    "bytes": 2416,
+    "sha256": "2a07e48370c69bdd3f8847b7843736db680025630cbca7aeb121004dff420c27"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/scripts/supabase_prepared_tranche_v2_012_postcheck.sql": {
+    "bytes": 2419,
+    "sha256": "c59f2d6cf899f5d34c5bbd76784be0da2ba60e8d8224f8dd4c24119c89e4af09"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/scripts/supabase_prepared_tranche_v2_013_postcheck.sql": {
+    "bytes": 2416,
+    "sha256": "335126c6bc0abcdb9ba66fce946057c50c22df687734f1c3471c572be469f503"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/scripts/supabase_prepared_tranche_v2_014_postcheck.sql": {
+    "bytes": 2418,
+    "sha256": "c9ff98cbda04f985e5f82ab17acf31915ddbc73ab8d3097dbd57fd57516f0678"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/scripts/supabase_prepared_tranche_v2_015_postcheck.sql": {
+    "bytes": 2416,
+    "sha256": "f1d46dc40513c95c7bbd58ce9ab453adb2ff8eb641a98a31a5c6e174119767bc"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/scripts/supabase_prepared_tranche_v2_016_postcheck.sql": {
+    "bytes": 2352,
+    "sha256": "a5e505cfd2893fde32e7707497a9a973d370acb3c5a9485b22b3cfaa1090406d"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/scripts/supabase_retention_exact_coverage.sql": {
+    "bytes": 14438,
+    "sha256": "4f752466624405a615d9c6b723c30899af60d991a8973e7c82b692f19470c113"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/scripts/supabase_retention_readiness.sql": {
+    "bytes": 10638,
+    "sha256": "0a1fdf28aa21fa87b2a48661e0253c3bb6c8293b67719ea6f628eb50bd45ea45"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/scripts/supabase_retention_season_counts.sql": {
+    "bytes": 2969,
+    "sha256": "058f840d75dfd8689f9c3be48bf8679b77f2fb544b49a10bf8ed40cb35e39d35"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/scripts/supabase_row_volume_guardrail.sql": {
+    "bytes": 4140,
+    "sha256": "66c915f91ad812f8616eb067043042e566f8cb12c9e7868f95fbb2402bbcc98d"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/scripts/supabase_storage_guardrail.sql": {
+    "bytes": 1510,
+    "sha256": "aa4c49087051429010215b06cae14e331a4edbef0cb5ae179432b005ef934652"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/scripts/supabase_strict_provider_readiness.sql": {
+    "bytes": 15761,
+    "sha256": "bad2fddf23ab3ab30614e70991e7dcbcc6cfb4842bd0782d5128640d07ed997a"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/scripts/update_render_service_env.py": {
+    "bytes": 7073,
+    "sha256": "e037939588ce1cf9a1c5031f0122e2ec68693e2cb3614b6dc8992c16d5ed5114"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/supabase/config.toml": {
+    "bytes": 15080,
+    "sha256": "53550bf8eb7b5b16e7fa41b97d5601b099cbe3a55e7eecef506e75195909b380"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/supabase/functions/propline-webhook/README.md": {
+    "bytes": 644,
+    "sha256": "5e89f3000b89452b5b74ff7b704b3a82d6f27d4e7afab2bc141d454f221da296"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/supabase/functions/propline-webhook/index.ts": {
+    "bytes": 3059,
+    "sha256": "b0a57eb37afb268048d3800adbb897956041a4ac553a553476fb547db95680ec"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/supabase/migrations/20260501203809_market_infrastructure.sql": {
+    "bytes": 5975,
+    "sha256": "251306c783bc800638808f88ea6709ba8288727ce7537b7a295252bb911c0c30"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/supabase/migrations/20260501210516_market_infrastructure_fk_indexes.sql": {
+    "bytes": 206,
+    "sha256": "537c4bb0634ecf228ce0e5d147a4dd7f1346e0053ffdee08840d1d2cf9f037bf"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/supabase/migrations/20260506_live_layer_events.sql": {
+    "bytes": 4862,
+    "sha256": "2939c5db8e284c83bba26c70872b09b4ae2328a187bd0664954bed890dcc0f4b"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/supabase/migrations/20260507210334_boltodds_shadow_trial.sql": {
+    "bytes": 2367,
+    "sha256": "bdbdea664b2a672c3fa74432347eae1effb9d50ca6cb1b4ed7f32e1bd85d5686"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/supabase/migrations/20260507210435_boltodds_heartbeat_run_id_index.sql": {
+    "bytes": 106,
+    "sha256": "b937aa6d2cef07593888b2df6f9ad46f7ea9e25f0f6531494a7734d1313c0e55"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/supabase/migrations/20260508173221_market_pick_evidence.sql": {
+    "bytes": 2547,
+    "sha256": "0952463f48365858950813e8e68b177735ab18d3dbd61b1d2ff35b11a9175444"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/supabase/migrations/20260508174842_shadow_notification_candidates.sql": {
+    "bytes": 2808,
+    "sha256": "4dd4ad63cd30cbe1dd2773fbd2cac89a4450f20ccc83b74ad43ddf4e25fa3c8a"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/supabase/migrations/20260508180728_accepted_bets_log.sql": {
+    "bytes": 1391,
+    "sha256": "de356aba8cdf6e419048df520fdd46bd7bf39bf1614b2a679fec2cf621a364ea"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/supabase/migrations/20260512205206_live_market_display_state.sql": {
+    "bytes": 3402,
+    "sha256": "002b4899b5e6310b63a09ce1583f0c33da670e04aa3ceb9c830056a84d4a66ff"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/supabase/migrations/20260512213255_readonly_shadow_table_policies.sql": {
+    "bytes": 842,
+    "sha256": "005d9318110afb94dad5432baefde2a3909ccefe0fc0e432b17a49e13cc9edb6"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/supabase/migrations/20260514160903_provider_cutover_market_state.sql": {
+    "bytes": 11297,
+    "sha256": "cd28c7b68c7feeac738b1904d27874efd44f47c11253eee9ccedbedf8705ab0b"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/supabase/migrations/20260514183125_shadow_pipeline_timing.sql": {
+    "bytes": 3880,
+    "sha256": "df50fe834c19618663f8b3b69dfa792e8b5631681cadd0488443046a31680c2a"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/supabase/migrations/20260516152159_add_shadow_provider_movement_comparisons.sql": {
+    "bytes": 11420,
+    "sha256": "7ec397e6f24888fcc6749f8621c588a6b9131bea68edf1512dfb39c4daf707fe"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/supabase/migrations/20260516152310_normalize_boltodds_strikeouts_in_shadow_movement_tracking.sql": {
+    "bytes": 8886,
+    "sha256": "b32b64465286bcead503b0c568c50ac3302536a60cfc85cf2b2d845448c0dc2c"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/supabase/migrations/20260516152344_lock_down_shadow_movement_refresh_function.sql": {
+    "bytes": 518,
+    "sha256": "5e430c8ebc6ec97c1170bb49b440b455d499fec3f7ec68a0cee237ea4b8c675c"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/supabase/migrations/20260518174018_market_state_write_guards.sql": {
+    "bytes": 4832,
+    "sha256": "68693ee5d6568e0e706cd5109e0a64d81f9355803dde16f8cd9cb42d0cd33c2e"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/supabase/migrations/20260518174322_market_state_write_guards_tighten_churn.sql": {
+    "bytes": 4386,
+    "sha256": "d7fba1e62e66668b9f7872632da84d403a804513d2ad02ae6e91b3017f8241e7"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/supabase/migrations/20260518174819_market_state_write_guards_fail_closed_legacy_selected.sql": {
+    "bytes": 1718,
+    "sha256": "62b78cf1d2d8b923d632e68f6b7f07f63ff31ec7a97c2d077f47ed8db230b7d9"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/supabase/migrations/20260518175106_market_state_write_guard_search_path.sql": {
+    "bytes": 514,
+    "sha256": "9d3ae67f405365e29690ac97e8a798a192906f8b47e7a0dcd26f301b3e74262f"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/supabase/migrations/20260518175711_market_state_write_guard_ignore_legacy_updates.sql": {
+    "bytes": 1881,
+    "sha256": "cc01a864140e5d9713f196d0c6d67461e605f3417053423a94f9a1eea2f8a503"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/supabase/migrations/20260518180629_market_state_write_guard_block_legacy_selected_marker.sql": {
+    "bytes": 1861,
+    "sha256": "6362faaf5ffb682e40e76368ea5db7fa6428d4e9d676dd568db8c3c6fea3b79f"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/supabase/migrations/20260518181008_market_state_write_guard_current_throttle_10_min.sql": {
+    "bytes": 1697,
+    "sha256": "1cf28eb7b1b9fa5777fd7f501c148f8a4b490f5953a00cbce3c0b7dc521a22fa"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/supabase/migrations/20260518181547_market_state_write_guard_block_legacy_decisions.sql": {
+    "bytes": 1189,
+    "sha256": "23da0adcce4b5399d94cd33033e4d032dcbc397557b788581948096063cd51a7"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/supabase/migrations/20260518213238_provider_runtime_hardening.sql": {
+    "bytes": 883,
+    "sha256": "acd88bfe2d2ac11df9ff55cf0891bfac33a1bacb1442789d8e72e68c244c41cd"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/supabase/migrations/20260519201848_operational_pick_locks.sql": {
+    "bytes": 1951,
+    "sha256": "be1447c9ccfb801f1e5d9e3fa6952453de0f63489889ae848423e027c7ffd96e"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/supabase/migrations/20260522_published_pipeline_artifacts.sql": {
+    "bytes": 3042,
+    "sha256": "d3a2b12c91c540523e5d3cf50d8bf4376da0b9801a92d60dd8815a8e287627e9"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/supabase/migrations/20260604172500_notification_digest_event_types.sql": {
+    "bytes": 757,
+    "sha256": "5b34776cbd8767a6205613b13714148c57389aa6c4017f66b1e9d6306e3083da"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/supabase/migrations/20260605015138_allow_fangraphs_cache_artifact_type.sql": {
+    "bytes": 457,
+    "sha256": "ec16c9faba824b22c7366e54e4983b1bc8d48172cdc9a59d596e2cf69767e602"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/supabase/migrations/20260607215613_accepted_bet_correction_source.sql": {
+    "bytes": 386,
+    "sha256": "475c0145347f7b9a71380761b57b9eb5074c5362e9b281356c912fb51bb11f3f"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/supabase/migrations/20260619192355_allow_therundown_market_pick_evidence_provider.sql": {
+    "bytes": 845,
+    "sha256": "7c9cc5d1a0f53aedff35e1307f6b6eb34466c74915bdcd0239def00158dd6880"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/supabase/migrations/20260707190000_mainline_price_notification_event_type.sql": {
+    "bytes": 820,
+    "sha256": "2e55cb289bce205b432d7834a98b7e2b47d901d9eb1db190bb561c4667f4e7db"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/supabase/migrations/20260708170000_allow_combined_live_market_display_provider.sql": {
+    "bytes": 304,
+    "sha256": "0757642dd0290c4a23acb5981ae91aa7b422f50801892385d4ac8b19bd766d3b"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/supabase/migrations/20260717181500_ready_to_bet_shadow_candidate.sql": {
+    "bytes": 798,
+    "sha256": "0bbb24c5a6b06530fbe2d810057b5a5992227f6110631ce27cac44dc799d0769"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/supabase/migrations/20260721222627_alternative_pick_selection_state.sql": {
+    "bytes": 6028,
+    "sha256": "3a0970b7b2967e2fa68c7900dba6ac5f209790740e18d14db45441e67e1a6414"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/supabase/migrations/20260722230000_alternative_pick_v2_evaluation_proof.sql": {
+    "bytes": 6042,
+    "sha256": "21a9a5d0367834c5b5032d687c07d561fd63f894b6dfdff74fac543f9b5499c6"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/supabase/migrations/20260723210000_alternative_pick_selection_least_privilege.sql": {
+    "bytes": 936,
+    "sha256": "f38903067c2022c4a61ad9795d9c97cdf12749339d452065bebfc2a97aee181d"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/supabase/migrations/20260814175128_optimize_propline_webhook_inbox.sql": {
+    "bytes": 338,
+    "sha256": "d1569b4ddd2c92e71d9e38e4105e8ccf7d3ea0eb0454cad197ced9698af3b980"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/tests/__init__.py": {
+    "bytes": 0,
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/tests/test_a3_ump_diag.py": {
+    "bytes": 919,
+    "sha256": "6dfd154a295a66a3c18856acd270679e44d85e508eb111c5c7c1291923987ec5"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/tests/test_accepted_bets_function.mjs": {
+    "bytes": 8733,
+    "sha256": "623118af4e52f2ad26be97a9cdffbcac7f5ad1e8d8e7ecf7beb775fccd53632d"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/tests/test_actual_opportunity_backfill.py": {
+    "bytes": 3964,
+    "sha256": "2325494725009d0bcff1c1ecf3c378e699d32d2acded187558b4e66bae5dcb56"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/tests/test_alternative_pick_evaluation_proof_v2.py": {
+    "bytes": 37638,
+    "sha256": "6bc9e0c36321d811fd1d3b09695d0a8ce7924c74bb48dc41f2e3da2d10530c03"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/tests/test_alternative_pick_live_layer_v2.py": {
+    "bytes": 24949,
+    "sha256": "a719ec45c7a40f56f18630b12a67dc0a1179912331bce14a5477146fe12c6f4d"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/tests/test_alternative_pick_preclose_v2.py": {
+    "bytes": 39547,
+    "sha256": "1f2c3e0d50931d424d159fcef7ea259fc999be5c4119d75dcd0b355fa72d8a6b"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/tests/test_alternative_pick_selection_schema.py": {
+    "bytes": 3569,
+    "sha256": "33be7a90824f432279d5e4fa06519e0b2f0e75a76d39ba35433c0e9a26af71b3"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/tests/test_alternative_pick_selection_state.py": {
+    "bytes": 36361,
+    "sha256": "62e0aa22e902427f8dec5354e7cda9e4078dc914254b9250c73f352489218837"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/tests/test_alternative_pick_selection_v2.py": {
+    "bytes": 13652,
+    "sha256": "7304d50d3e704abdb9b66360764f3269f41466d28fe913bfc8f9d094497ec011"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/tests/test_alternative_pick_selection_v2_fixtures.py": {
+    "bytes": 4137,
+    "sha256": "df86aeb17a5a91bff6b5702338b46acef16fb0399c55d095d2115d23fbdf9518"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/tests/test_alternative_pick_selection_v2_schema.py": {
+    "bytes": 18780,
+    "sha256": "98a84c98461cf99ccffdf369211a08953e34f44ac81d42a98d3f696bde80b8ab"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/tests/test_alternative_pick_selector.py": {
+    "bytes": 14839,
+    "sha256": "0d4d579fe4b79831fe913f9bc490ef2cd3421afa5eedc98d756e3651ec516409"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/tests/test_alternative_pick_selector_v2.py": {
+    "bytes": 21499,
+    "sha256": "ef3e4a3bbfd780191263e79e6575ac835258fe08bcad3e81f8a23ad1cac9cd80"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/tests/test_alternative_pick_v2_activation_window.py": {
+    "bytes": 3569,
+    "sha256": "0caca7bacfdb141b4e1b43c1f34e921a6f785aa2e658d76a3aacee4b0890f21c"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/tests/test_alternative_pick_v2_historical_comparator.py": {
+    "bytes": 2264,
+    "sha256": "d34a187fdf9d87360be19016971b50ff12b20a9d155ee6126d9a56bb39de8e94"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/tests/test_alternative_picks_function.mjs": {
+    "bytes": 61400,
+    "sha256": "3ede3d397131a80a455b8e5178abababe2d64f47685868869f806807f09d0852"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/tests/test_audit_supabase_row_volume.py": {
+    "bytes": 2313,
+    "sha256": "0189dae39e6d80701a85f87ceac319dc6c6d04f32bc35c4cae67d226fa7bcf54"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/tests/test_backfill_compact_market_movements_via_cli.py": {
+    "bytes": 3087,
+    "sha256": "ce681a6abcaa5af00d2cbfbb0e6ca72d4ff9ee8dc2ecc97a473a5f64b34e0f75"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/tests/test_batter_handedness_shadow_audit.py": {
+    "bytes": 4112,
+    "sha256": "b596e3c6405968ecb4676e58c2b61154bb17dee2473183f1dfbc688a72a66640"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/tests/test_bet_conversion_shadow_audit.py": {
+    "bytes": 2959,
+    "sha256": "a2cba848417307ec473a43898f5e19c798a4b062ce250b5d70adec83b68d0d77"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/tests/test_bet_selection_edge_synthesis.py": {
+    "bytes": 3772,
+    "sha256": "570fd34e97fa74074bb8c80bd5e77d7f6d63041fe77e668dcf1010c75a313258"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/tests/test_boltodds_migration_risk_audit.py": {
+    "bytes": 13199,
+    "sha256": "881f2b6ddfe42340f9a0ffef38ec113f69248bffd7423e809c62ad5a7ff760ac"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/tests/test_boltodds_retirement.py": {
+    "bytes": 1267,
+    "sha256": "ba47a75e62b1027fabf5df022efca8b7affef5321443d8c353c2d8464d597771"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/tests/test_boltodds_schema.py": {
+    "bytes": 3694,
+    "sha256": "2343b9f926371ba2d52a7184ed0c8cf2a950a8a12d8bf938da9e3f8b9ce74ffb"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/tests/test_boltodds_trial_audit.py": {
+    "bytes": 8771,
+    "sha256": "a8c457307f96d886b78932f9f9490261830b3690f974d5a52c0242fbcffeb227"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/tests/test_bounded_retention_audit.py": {
+    "bytes": 88214,
+    "sha256": "8052651d8c0a161b8faa95f023f31074df1baddc9ecabd58ff6900211d841816"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/tests/test_build_active_provider_compaction_preview_manifest.py": {
+    "bytes": 5636,
+    "sha256": "f42463af96bcb709b8133f62dae2d4022ac8f68909b7af55bfcc2c93672015f5"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/tests/test_build_current_market_lines_to_supabase.py": {
+    "bytes": 12852,
+    "sha256": "efde1bdee368747562087b6707542591a4ebf8473d729dd822586d937319e018"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/tests/test_build_features.py": {
+    "bytes": 48129,
+    "sha256": "525fe9b81129db4da2915cc01dbdc1f88e30bf74684d03120db2131ecfd4440d"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/tests/test_build_official_market_lines_to_supabase.py": {
+    "bytes": 7308,
+    "sha256": "81fe0696d59f38aac867211c32e4c2cb295024ee06e0805c6cff7a7b8371f8b0"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/tests/test_build_pitcher_k_outcome_dataset.py": {
+    "bytes": 14742,
+    "sha256": "f65eacf1807d8f18ca26105ef4522d8cea6fd03e9bd57927cd0ec942c1d20827"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/tests/test_build_retention_season_manifests.py": {
+    "bytes": 8220,
+    "sha256": "fb8bd7347453bedb73ac8a654c60eae704181f1e80d50784e1c1def76dc9c328"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/tests/test_build_season_retention_readiness.py": {
+    "bytes": 75378,
+    "sha256": "26c7fb9ecdf08c321a747a1a2dd2dfc231be9862d750202b7327c73a891a7c4a"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/tests/test_calibrate.py": {
+    "bytes": 26457,
+    "sha256": "5c16595cbcf144fba2b22083131ed1163877257d2437cbd1d7e123c258c4fb38"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/tests/test_clv_official_close_packet.py": {
+    "bytes": 10575,
+    "sha256": "4cf1deb53b72416cf2c6d6e1c897dfb7d8106a635672b274fb48469ca121be2d"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/tests/test_clv_process_target_validation.py": {
+    "bytes": 36689,
+    "sha256": "02ca8ee19988c931cbe0818543900921b342e74712783231bac4bc7606de58d9"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/tests/test_compact_market_snapshots_script.py": {
+    "bytes": 10919,
+    "sha256": "c07bc195ac415511b647f02b6c240f4b8542d2927e2ca59e04dd5556b49d75d2"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/tests/test_compare_supabase_artifacts.py": {
+    "bytes": 1623,
+    "sha256": "e835eceb9a80686da520fc30b3aed53c8956dfc92062de9813412e30cc7c1410"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/tests/test_confidence_referee.py": {
+    "bytes": 4341,
+    "sha256": "3efcd461f377a80e4eba953731bba0cd86c1c95a7b9a70e4621cbb22e9bfdddf"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/tests/test_confidence_referee_canary_audit.py": {
+    "bytes": 3978,
+    "sha256": "a9e55eb50707c89fee4783cab16f6d2ae0100564ab675b24c96d392eb2d28ee6"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/tests/test_confidence_referee_shadow_report.py": {
+    "bytes": 4410,
+    "sha256": "17f8a271b079c0cb240fb2f218e9c6933c97282e8f699b5fd886c88e862e4c23"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/tests/test_connection_health.py": {
+    "bytes": 2488,
+    "sha256": "bcbcac438cf6f9d4ecf7a24155172306313c8575076ba0cbb79b9051126101c5"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/tests/test_current_market_lines.py": {
+    "bytes": 7935,
+    "sha256": "d0d273995a6815c26e09adb01dcbe592890ea2152d82115e1973db51b939ea99"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/tests/test_daily_active_provider_compaction_finalizer.py": {
+    "bytes": 42807,
+    "sha256": "8104b6414233c64a2d48109ed86f4ad68d5b87d3dc83281da90818f4761007f9"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/tests/test_dashboard_accepted_bet_log.py": {
+    "bytes": 7563,
+    "sha256": "6dd152346741cf8b785b508fec3be65c921f75759684dc92a14ece5d0a75194b"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/tests/test_dashboard_alt_picks_ui.py": {
+    "bytes": 6014,
+    "sha256": "701a9a7fff19cce8a7a83df405123c476c9df45c71741801d234da70cf41d1ee"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/tests/test_dashboard_perf_payload.py": {
+    "bytes": 3591,
+    "sha256": "5e6d973f24d6d4c95ae1ae39729507c98a96f6447910ae305fe846bfb37d432b"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/tests/test_deploy_render_pipeline_crons.py": {
+    "bytes": 4729,
+    "sha256": "c81d1f4895b7b4d205bbb5addb35765992c86129079fed1ebde7e0bd3ea4ea7d"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/tests/test_e1_regime_map.py": {
+    "bytes": 2889,
+    "sha256": "e0a6cf48825f0dbf6a71282788798903c187d22260fc87c920261563a3900d67"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/tests/test_e2_storage_integrity.py": {
+    "bytes": 1882,
+    "sha256": "3a1cd45127bd05b9bc929e1c85f94425721c9aa58655a66725f412e0f6b0d565"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/tests/test_e3_projection_audit.py": {
+    "bytes": 2787,
+    "sha256": "30fe7922eff2ed5a69d68f6a4a71f971a6c402964291fbae71e3fc1ff6ef0561"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/tests/test_e4_bet_selection_audit.py": {
+    "bytes": 5241,
+    "sha256": "b78d9656e5c662973750f77f9475433f583d843940165943542c43216c801a41"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/tests/test_e5_quality_gate_audit.py": {
+    "bytes": 3774,
+    "sha256": "572996558dcfa3e1fc4000cc62bc2d4170aad8abdf35d23f6160adc17470e066"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/tests/test_executable_market_shadow_audit.py": {
+    "bytes": 5283,
+    "sha256": "17e08fd3b72c8d1b4e05de142a1bb0121b1a266da8a2fb947e20dab9cfa06e15"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/tests/test_export_market_agreement_inputs.py": {
+    "bytes": 11314,
+    "sha256": "cd7b63a5f97bf231d1954ea4a93c34aa48658d9ce5dbcfef7890a9fcfe1c087b"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/tests/test_fetch_batter_stats.py": {
+    "bytes": 10502,
+    "sha256": "90a0e625faa276c670d44e0461b134ae127faa62676d3da0ad2980899296a0e1"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/tests/test_fetch_lineups.py": {
+    "bytes": 5992,
+    "sha256": "8e9dd8b193845c751e7e2c97b4189c86e1f3d71d7e1995fc60320d12aac139fe"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/tests/test_fetch_odds.py": {
+    "bytes": 47234,
+    "sha256": "218e704376044672216a64287f45741875abd8adb99b52d46467a3544232dcce"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/tests/test_fetch_provider_market_odds.py": {
+    "bytes": 8203,
+    "sha256": "5072cef936981a30e516e372f7f5b8a6ead835d54fe41d4831b6611284b7ecca"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/tests/test_fetch_results.py": {
+    "bytes": 91578,
+    "sha256": "ba956f4ccd550839ddda5dea4057334a080874151c6444fa6bc6b2ee1fd3e627"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/tests/test_fetch_statcast.py": {
+    "bytes": 10981,
+    "sha256": "c3f6151a4183e898a068a756b9c7ad9173f8ce7f9c40538b25c955bcecf05c89"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/tests/test_fetch_stats.py": {
+    "bytes": 30859,
+    "sha256": "5bc34f1cc49d5a5b3df90c41ad0f9c42404c1a37cad03da4fc793feb441ac594"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/tests/test_fetch_umpires.py": {
+    "bytes": 18503,
+    "sha256": "d33958ecabf2d125b5fb93431c27f1bd7b8902e5a041ca2b941ab2a1d623dbe0"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/tests/test_gate_c_holdout_shadow_lab.py": {
+    "bytes": 4660,
+    "sha256": "ffa2143158d5c4ee1605be07c4f8491be40eb7fe5c128b46f19d2acef81022b6"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/tests/test_gate_ef_candidate_shadow_lab.py": {
+    "bytes": 12395,
+    "sha256": "94dba76eea8f4a250274096079ccef54cd327e1368630d810f264e403cdd5492"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/tests/test_gate_f_fire_reentry_lab.py": {
+    "bytes": 5388,
+    "sha256": "91519f4a96f1654ef81f635056a706238cf005cc1aa56eb4f694bab522ca97e7"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/tests/test_gate_f_preclose_clv_proxy_lab.py": {
+    "bytes": 6166,
+    "sha256": "789e13479d585fbbbc0c9cf60760f1ab918e04a5e076e815abfb26fc3998428a"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/tests/test_gate_f_projection_challenger_shadow_report.py": {
+    "bytes": 2293,
+    "sha256": "6f847c187546b5f9767ac2e01719b5261d5050b2547b136990d902fc78bcb7c4"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/tests/test_get_artifact_function.mjs": {
+    "bytes": 4694,
+    "sha256": "494ffefd19c8cf0dd878b8ae5c1fca42b8a9713ad155a862ec0fe867cd431534"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/tests/test_historical_lineup_handedness_backfill.py": {
+    "bytes": 3661,
+    "sha256": "4e45042caa22fdc97024f867465f57a5724958bf8e7a393fc7395a38d71900b0"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/tests/test_k_projection_shadow_lab.py": {
+    "bytes": 5189,
+    "sha256": "e938055c68ebcb6b88bc98211ff74f5edcbde0775ce6e4ddddfff486d8641cfe"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/tests/test_line_movement_shadow_audit.py": {
+    "bytes": 2977,
+    "sha256": "2d1f0a03c552fd20190dbdc1cc7b1a2da38917afd4477bbb29a006c14ff6b926"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/tests/test_live_layer_proof_workflow.py": {
+    "bytes": 1004,
+    "sha256": "f5addaf490f58dc9562fbf99ff5aa439701bfe94462a92d2a775f3e9af816553"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/tests/test_live_layer_schema.py": {
+    "bytes": 10862,
+    "sha256": "d1f6f0564dbe60a9c29f99f7edfa35f31ba320012567fbb0aea16fdb404c9ab9"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/tests/test_live_layer_worker.py": {
+    "bytes": 196512,
+    "sha256": "fdbc25c676e6b1e145cbe77b55840e2e32045d7030fc7ec39f3e9aa03bc348e7"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/tests/test_live_market_display_function.mjs": {
+    "bytes": 8369,
+    "sha256": "d4b77a3616712f45e3cafeead7601accb8dda5ef4614925c9390eb83817f32b5"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/tests/test_live_market_outcome_audit.py": {
+    "bytes": 5465,
+    "sha256": "79981ee46740ca2d60350a2c7a0007fa1090f0e0bc58536d77bde3712a67dd35"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/tests/test_lock_ledger_monitor.py": {
+    "bytes": 4331,
+    "sha256": "d5a45a256a615d11543fae74b4ff617ab8607f69146bcb0d91ef804f39d16c31"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/tests/test_lock_ledger_monitor_workflow.py": {
+    "bytes": 979,
+    "sha256": "cbc6de7ce129578bf922f0e5ced9f6eac0ff504000364d480f25c6649ae6dff7"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/tests/test_mainline_movement_pattern_audit.py": {
+    "bytes": 6529,
+    "sha256": "f9093ea794eb1b63dabe24c3eb892fc0c21800f9080954904399e76c7a5686ce"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/tests/test_mainline_price_notifications.py": {
+    "bytes": 6833,
+    "sha256": "a3eb36f17cb3156cdc7314d7a6c32e8d1a8bc74e2c441e605d5fa2094eb82baf"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/tests/test_market_agreement_tracker.py": {
+    "bytes": 8137,
+    "sha256": "d4838a95a32c5d92ba5c2791110691a763959c49f0b43db2c693b46fd11b742d"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/tests/test_market_anchor_downside_counterfactual_audit.py": {
+    "bytes": 6318,
+    "sha256": "4f218dd46b74eb689309f1644c93e549ca87bef2070632fac930f510302290f7"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/tests/test_market_anchor_selector.py": {
+    "bytes": 3784,
+    "sha256": "37c825f5264d31010c866998476bb618cfa0af891ece036a8c041a59631e4eaa"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/tests/test_market_anchor_selector_canary_audit.py": {
+    "bytes": 8031,
+    "sha256": "972b4506c6c0c51024eeabcecdc896181460cd8c843cf7535c6f7b22610abf55"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/tests/test_market_anchored_k_shadow_rebuild.py": {
+    "bytes": 3877,
+    "sha256": "38a272af58137fa24dd5cbdbf15a5880840f479b7049430dea411291dfb96f46"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/tests/test_market_evidence_shadow_audit.py": {
+    "bytes": 2496,
+    "sha256": "f2e21eab9cedc0a64eb5b1c88aaa591f75662826fa455d3118ecf461fdf03fea"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/tests/test_market_favorite_confidence_referee_shadow_lab.py": {
+    "bytes": 3878,
+    "sha256": "d2fcda722ede3b2db43c7713f3bd41cf4173219d7a44be6ced1d4780a2c59fd5"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/tests/test_market_infra_artifact_snapshot.py": {
+    "bytes": 2127,
+    "sha256": "0e3e11964a59c75e2707f11ad9eafb76b9c34f7334bd255b5379b9f2b8d62435"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/tests/test_market_infra_boltodds_client.py": {
+    "bytes": 4696,
+    "sha256": "b0ad5eb399279af6e291f0fd6be2ab2c442dd63367e56418e795dc1bf18cb401"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/tests/test_market_infra_boltodds_snapshot.py": {
+    "bytes": 11889,
+    "sha256": "061af002847f133ca2a8242ab11451933e02c53eb841fac1fa8cf8d1c4da1cb1"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/tests/test_market_infra_live_events.py": {
+    "bytes": 22500,
+    "sha256": "9dad863abec91121e7c019e9322573a8f1858977b1bb58dd9242035a747e8a30"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/tests/test_market_infra_live_market_display.py": {
+    "bytes": 8576,
+    "sha256": "9f7df716ace1f5ffdb71d5bac80a398dd1b692909dd9d68c6cdc0f26e0d3db7e"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/tests/test_market_infra_market_evidence.py": {
+    "bytes": 11546,
+    "sha256": "be7fab60f62f2af8edf9726b3297550cccc2d1e12340a1aed6d5f412ee7c0ce3"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/tests/test_market_infra_prop_snapshot.py": {
+    "bytes": 2752,
+    "sha256": "34d077eb34b9a206229258c7ee8d5e01030e524fb4184ca64bbdeaff5af07c0a"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/tests/test_market_infra_provider_audit.py": {
+    "bytes": 5497,
+    "sha256": "d95b1c510eca38c752289079f890985c9c8005df186f47b259a0ab9919217184"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/tests/test_market_infra_shadow_notification_candidates.py": {
+    "bytes": 6152,
+    "sha256": "c691836077e2be22915df5e9d39a37bb0103630a28838cc99f201d7b8b721f9b"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/tests/test_market_infra_supabase_writer.py": {
+    "bytes": 16551,
+    "sha256": "53572297776edf6d60a0291077b524b73f49c00edf14777a045746160feeeace"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/tests/test_market_price_outcome_audit.py": {
+    "bytes": 12524,
+    "sha256": "a129fa41097245b3ea310c8e1de6fd9db9325370a54869c467872b1424959e1f"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/tests/test_market_shrink_projection_canary_audit.py": {
+    "bytes": 8372,
+    "sha256": "e446ead835b196e6c8ca0bd87a9f22d2dc19bb1915ee4bec18c2b9ea8311c35e"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/tests/test_market_snapshot_compaction.py": {
+    "bytes": 4630,
+    "sha256": "37d2181aa51a76313d6219516e3f96cf5d295c89715d950abb94b68f77fd5c00"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/tests/test_model_replay_shadow_audit.py": {
+    "bytes": 3057,
+    "sha256": "c0431f3b2e75ef950daa24fef95aed0db276ae3feb1c60fadf0e8289748af93a"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/tests/test_next_season_candidate_model_lab.py": {
+    "bytes": 4159,
+    "sha256": "3e4a1937995e3f9e6683afe7cfca65e4111babc344d7c3ef8e54073336290a12"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/tests/test_next_season_model_decision_packet.py": {
+    "bytes": 4692,
+    "sha256": "6679759c83632c36fdd04654d5b465eb225c7aee57926b6bc22417ae0717f71b"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/tests/test_no_drag_composite_canary_audit.py": {
+    "bytes": 29656,
+    "sha256": "e53c160b342e51647c26fa0c68cff32f084538068fd9c7b1c802564b0b85159e"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/tests/test_notification_coordinator.py": {
+    "bytes": 6274,
+    "sha256": "994a51d2f90352cd61de42e1f8495e36d8d77e9acb76ced6a3d5d35afe403976"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/tests/test_official_market_lines.py": {
+    "bytes": 17691,
+    "sha256": "04f693c893859af68929568b786aa952d644136cbe9c29b6315667d2c44bcf2f"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/tests/test_operational_locks.py": {
+    "bytes": 5852,
+    "sha256": "682171eeb6e8f535186f74c48fb25771a201ac90c4899965975260b4dfa43c2e"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/tests/test_operational_pick_locks_schema.py": {
+    "bytes": 1720,
+    "sha256": "55808a830e23e7266649889911ea72998d96fe7c9e73df7f0cc9f4af406462df"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/tests/test_park_factors.py": {
+    "bytes": 1405,
+    "sha256": "74e5b6ad30ccc7b85063e83db74454ab8bf5dd7a43821221384d817904161792"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/tests/test_pipeline_workflow_contract.py": {
+    "bytes": 6994,
+    "sha256": "13f3b609675cef65a8b9dd8a0754007044bd3cd167919673ad7bf00384ccd7a0"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/tests/test_pitcher_k_outcome_dataset.py": {
+    "bytes": 51724,
+    "sha256": "c257f2293b4c5cd574dfe06db620a399cc2d303ef43b8ff044da2dd50ba012ec"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/tests/test_pitcher_k_outcome_dataset_contract.py": {
+    "bytes": 7427,
+    "sha256": "61e41ac30877ec29702189204bd712cdf2cc93de0497d8a570c63ea8fadd0a9d"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/tests/test_post_grading_shadow_reports.py": {
+    "bytes": 43305,
+    "sha256": "dcda51d32ee9a3ec4dc305f3808505d060d5760729a156a6250d720d97057ed6"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/tests/test_pre_post_428_model_review.py": {
+    "bytes": 3103,
+    "sha256": "39b92cb50add1f23dac98b912e794c36a8cfdcea0affdfb9fc19b4b9dfe23727"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/tests/test_prepare_prepared_market_snapshot_tranche.py": {
+    "bytes": 13963,
+    "sha256": "a34effba9a1d6bdc797060e58ae68a72edb9ef5c101748c827ecd1f65f33faed"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/tests/test_prepared_market_snapshot_deletion_preview_sql.py": {
+    "bytes": 2159,
+    "sha256": "48c8e39fd0da7a0224ca7f9a0e00cde312785541b474c8fd8768a3cfc179ab45"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/tests/test_prepared_tranche_v2_005_lineage_repair_sql.py": {
+    "bytes": 3072,
+    "sha256": "c6165c113a3fbf1ef1062da3f212a6cdf58025eada69d94fa9332c97a52c12bd"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/tests/test_probe_boltodds_markets.py": {
+    "bytes": 8319,
+    "sha256": "026c01c304ac0811f1b45f52ed1b649d2e58b46d651d2ad4c1b0a8d341d77ad6"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/tests/test_process_propline_webhooks.py": {
+    "bytes": 10790,
+    "sha256": "e1d7c046a86effe00179bcc4e3021b7faac465e1de82e2754192e6564ca8430f"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/tests/test_profit_rescue_audit.py": {
+    "bytes": 3111,
+    "sha256": "f956d1817774f91507496de9d556083b5a7fe3c1f403a8791920964ed150c81b"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/tests/test_profit_rescue_referee.py": {
+    "bytes": 4122,
+    "sha256": "1bdb81d8d2db5478481a414e3b40d116d2cfb08a23d9a9a3da7f0e4f353fd256"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/tests/test_projection_challenger.py": {
+    "bytes": 2346,
+    "sha256": "fc567b92fc3c8b381919c338f830bfe11c2cc8ee941c141689b83d574aa1780a"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/tests/test_propline_webhook_function.mjs": {
+    "bytes": 971,
+    "sha256": "6d03297f90feae9e269f7a2315fcd0f7e6f7e6aeb8565a9d2d6ef96ec4f72994"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/tests/test_propline_webhook_inbox_index_migration.py": {
+    "bytes": 580,
+    "sha256": "1436b37e8c95ea31c44716f6338788a587fd933230912e70c795351ca22da295"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/tests/test_propline_webhook_usage_audit.py": {
+    "bytes": 10924,
+    "sha256": "e7a48d01268c41b5e95ab2ef35c95b625a58ae64d0af09720e6e909e4471ecb8"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/tests/test_provider_cutover_shadow_compare.py": {
+    "bytes": 29713,
+    "sha256": "f6174dfad1e03310c9a89d52a63ded9466201c8a4c0f612ca09f996f4514e011"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/tests/test_provider_usage.py": {
+    "bytes": 3829,
+    "sha256": "a5138b36919cf5a39b2ef0055169deb1cf7838fafb8c47b864ab8f51dabb93b7"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/tests/test_publish_pipeline_artifacts.py": {
+    "bytes": 16626,
+    "sha256": "b1562d84821ad314c361ec5b28440694a9d786f1c678bf94e2918a520de148b2"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/tests/test_published_artifacts.py": {
+    "bytes": 3033,
+    "sha256": "5ab5fe5df8f8e45db34b68301571aeac5d1e94ed2b5168bde3a4f97c3c00246d"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/tests/test_published_artifacts_schema.py": {
+    "bytes": 2337,
+    "sha256": "804dcac44c51628cd1e8ba06c41312970ccee441753762220269ae4e6966a55a"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/tests/test_quality_gates.py": {
+    "bytes": 10809,
+    "sha256": "33354f10771c423adc5004d9763390adac31e6bb996f58bddbf39d3def400bda"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/tests/test_ready_to_bet_shadow.py": {
+    "bytes": 9012,
+    "sha256": "e2ca4cf62691a9c46584e30a21ebdaae6e4fadc0c61c47ff132f08bc2887e59e"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/tests/test_render_pipeline_entrypoint.py": {
+    "bytes": 16608,
+    "sha256": "4accb4b53ff9784087162acac10c7fcba94a0ae4d136cf221da6a234e2ab3990"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/tests/test_repair_compact_market_snapshot_partition.py": {
+    "bytes": 37373,
+    "sha256": "caa3d606aae4f9a077e55f979a411f3ab2f2b47f57e84023d73cc628ec9ec05f"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/tests/test_repair_missing_locked_picks.py": {
+    "bytes": 13473,
+    "sha256": "5f0990d7316b06e5af3399a13dda1fb300433006de877ded9ced837d209a87d1"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/tests/test_repair_stale_pass_picks.py": {
+    "bytes": 2976,
+    "sha256": "0bf8f33f4c506be5ba8fbced8d3169fbc7c68788c58c1c17bc39d0a2ab746382"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/tests/test_retention_bounded_sql.py": {
+    "bytes": 21400,
+    "sha256": "71b5f81f62623c699933a9670284890a83906b06140848d55de7c9ace6aea749"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/tests/test_retire_market_snapshots.py": {
+    "bytes": 6956,
+    "sha256": "3bc816b599eedcf906d29114dee6e4748ec17d35bc3396affba98e4ebf86fced"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/tests/test_retire_prepared_market_snapshots.py": {
+    "bytes": 13900,
+    "sha256": "60d311c19e698a20f3dc4f716be7856d7b544cc30edfb07845b67686a50bf9f3"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/tests/test_run_pipeline.py": {
+    "bytes": 128666,
+    "sha256": "d017f16c6030cc53f2adf1128c7cd691ab74a8cec756900e94aceed64e457ea7"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/tests/test_season_end_model_rebuild_dataset.py": {
+    "bytes": 3365,
+    "sha256": "dd53791878863e2484fa0bc843f6a1fc784db178b67c7bde2fd1ba8eb9e4d362"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/tests/test_seasonal_k_environment_audit.py": {
+    "bytes": 3103,
+    "sha256": "919ae3eb12faccf504ac45716f3ec35b96063d3cfbed6789a212b3de9b46a1a9"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/tests/test_seed_umpire_career_rates.py": {
+    "bytes": 656,
+    "sha256": "6d8679d8c2e80090ed3acfb0ab0d8cf78f61319089c8cc9d62f4ac03e4840d18"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/tests/test_selective_lean_prospective_audit.py": {
+    "bytes": 7263,
+    "sha256": "31e8b960a056fcdebd2df33929efe2a99504b7d1373f1da45471df5503a55491"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/tests/test_send_live_notifications_function.mjs": {
+    "bytes": 25406,
+    "sha256": "fe624d156bea09f4ae1c497b028bae8f3e8aec8ac0bcc5defc8c9a380ad92ca9"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/tests/test_shadow_market_workflow.py": {
+    "bytes": 2244,
+    "sha256": "44251f98e0fe263b840f953b0b14c143e52e04d691d444c0c22f7429dcb52149"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/tests/test_shadow_notification_candidate_audit.py": {
+    "bytes": 4103,
+    "sha256": "e1454cf8b4ad8a38ec01ce285c821116b3a6c283d76856b78a14226a0b6fae93"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/tests/test_shadow_pipeline_timing.py": {
+    "bytes": 4871,
+    "sha256": "472526c4b06515f4a357a2e22ec104b1fbfec88aab11ad6f1e8a1feee0e22d12"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/tests/test_shadow_pipeline_timing_schema.py": {
+    "bytes": 1294,
+    "sha256": "c21145044c4e6e98e06c152823db748676ac9de52f599c675cbb1d59c2360243"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/tests/test_shadow_propline_to_supabase.py": {
+    "bytes": 9118,
+    "sha256": "1869c40b91a825661cd74c471987f42378d533fd67a3005d1e2105cf94d2010d"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/tests/test_shadow_signal_synthesis_lab.py": {
+    "bytes": 5472,
+    "sha256": "34baf0a15db230e28cf570551c1fecf2c9569e78df77be655a04d4b72c87b4b8"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/tests/test_shadow_therundown_mainline_to_supabase.py": {
+    "bytes": 8178,
+    "sha256": "ecb83b1afe4f97a59e86b54878391d4c82e124346efe1415d1c5e4d8e8d312c9"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/tests/test_signed_score_proof_roundtrip.py": {
+    "bytes": 999,
+    "sha256": "050367d9b2f5c65bded4387880c35d0ed2c5d13769dd28c6c4f70582a859f081"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/tests/test_source_fallback_health.py": {
+    "bytes": 2325,
+    "sha256": "30761cf4c8b23c9040fa11c4ee477a26b221f16a97d7fb106cd661027400f245"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/tests/test_strict_runtime_core_canary_audit.py": {
+    "bytes": 14168,
+    "sha256": "0a55f04a131ee663808f526e808db7c35f8d98f3363cda30f2dc9ac949d13b59"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/tests/test_strong_base_decision_lab.py": {
+    "bytes": 5796,
+    "sha256": "42dc86c05443951a0384d1f3d587a5f07aa061d4b7ecd0cb61ffb11cac58476c"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/tests/test_strong_base_fire_policy_matrix.py": {
+    "bytes": 6683,
+    "sha256": "eb827ccb86d98f48fffe841fdf444ff01d2c3b0bd13f1fda7fad895495ae1f77"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/tests/test_strong_base_portfolio_simulator.py": {
+    "bytes": 4555,
+    "sha256": "26471660f0d1457b16e06a21997054c4599d99054a7cf3d85b5c480aa4b17336"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/tests/test_supabase_retention_readiness_sql.py": {
+    "bytes": 1968,
+    "sha256": "5b690fdcb71a08f2d45d277f1e31806ba91a893e7924eff457c1ff82e7cd1f32"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/tests/test_supabase_row_volume_guardrail_sql.py": {
+    "bytes": 1754,
+    "sha256": "4e59785285f56bc7f4e7ffd7c6ac260de74a797c216ee5e1b2f8a37350b31640"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/tests/test_supabase_strict_provider_readiness_sql.py": {
+    "bytes": 2240,
+    "sha256": "b2f8dfcec27fd240da9d750c90e08ff12e5b577bf4cd05ed4a3cd4159ad7606f"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/tests/test_therundown_alt_v2_contract.py": {
+    "bytes": 3997,
+    "sha256": "f70df815c69b994cb336e32b725287e6ec68da991b473efdf641205be5b1512b"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/tests/test_therundown_fetch_audit.py": {
+    "bytes": 3138,
+    "sha256": "30e8761fb5afe8b66cc94eeffbd75a263d5c8b073966e4dcbe3429a641c97f7e"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/tests/test_therundown_snapshot.py": {
+    "bytes": 4020,
+    "sha256": "9d42faf6a1b04f7d75d688034bd4aeed85dc46b4e7354d0646405deddb6454c8"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/tests/test_trigger_pipeline_function.mjs": {
+    "bytes": 2575,
+    "sha256": "29f2a5b7c8184be1e5e5c150a8cdf1c7094bdc59a41a29f1d2059393e69c51b1"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/tests/test_update_render_service_env.py": {
+    "bytes": 4584,
+    "sha256": "a740ec5091eafdfe516a6d0bf5473c649d33fac497717f82595079cdb388ce93"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/tests/test_workflow_schedule.py": {
+    "bytes": 843,
+    "sha256": "6140190d0858344456f1d3b134171345c9eee3baaabcd5f38dadf9d20579010c"
+  },
+  "snapshots/baseballbettingedge--86466b50f902/tests/test_workload_no_vig_ev_audit.py": {
+    "bytes": 7246,
+    "sha256": "07229ee1a5564041b3704f7ee2ea9cfb9ce01267f4ae5eebb42aa4fcf93f8dbb"
+  },
+  "snapshots/baseballbettingedge--working-changes/AGENTS.md": {
+    "bytes": 62683,
+    "sha256": "bf13f1f48eade2d42b8ce19252b519600a5c0b8f79e5825d435135a1769d7148"
+  }
+}

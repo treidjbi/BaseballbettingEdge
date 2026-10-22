@@ -1,0 +1,2218 @@
+{
+  "targetRepository": "treidjbi/BaseballbettingEdge",
+  "branch": "backup/sports-local-20261022",
+  "mode": "INACTIVE_SOURCE_ARCHIVE_NOT_A_RELEASE",
+  "sourceHistoryIncluded": false,
+  "snapshots": [
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "sourceCommit": "86466b50f902f314430a19610bd8f9796370e866",
+      "sourceBranch": "main",
+      "aliases": [
+        "$CODEX_PROJECTS/2026-05-02/pull-my-repos/BaseballbettingEdge"
+      ],
+      "workingChanges": true
+    },
+    {
+      "snapshot": "baseballbettingedge--working-changes",
+      "sourceCommit": "86466b50f902f314430a19610bd8f9796370e866",
+      "sourceBranch": "main",
+      "aliases": [
+        "$CODEX_PROJECTS/2026-05-02/pull-my-repos/BaseballbettingEdge"
+      ],
+      "workingChangesOnly": true
+    }
+  ],
+  "exclusions": [
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": ".env.example",
+      "reason": "environment_dependency_generated_private_or_saved_data"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": ".gitattributes",
+      "reason": "binary_or_unreviewed_file_type"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": ".python-version",
+      "reason": "binary_or_unreviewed_file_type"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": ".superpowers/sdd/final-fix-2-report.md",
+      "reason": "environment_dependency_generated_private_or_saved_data"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": ".superpowers/sdd/final-fix-report.md",
+      "reason": "environment_dependency_generated_private_or_saved_data"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "analytics/output/bet_selection_edge_synthesis.md",
+      "reason": "environment_dependency_generated_private_or_saved_data"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "analytics/output/confidence_referee_canary_audit.md",
+      "reason": "environment_dependency_generated_private_or_saved_data"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "analytics/output/gate_c_holdout_shadow_lab.md",
+      "reason": "environment_dependency_generated_private_or_saved_data"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "analytics/output/gate_ef_candidate_shadow_lab.md",
+      "reason": "environment_dependency_generated_private_or_saved_data"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "analytics/output/gate_f_fire_reentry_lab.md",
+      "reason": "environment_dependency_generated_private_or_saved_data"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "analytics/output/gate_f_preclose_clv_proxy_lab.md",
+      "reason": "environment_dependency_generated_private_or_saved_data"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "analytics/output/gate_f_projection_challenger_shadow_report.md",
+      "reason": "environment_dependency_generated_private_or_saved_data"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "analytics/output/k_projection_shadow_lab.md",
+      "reason": "environment_dependency_generated_private_or_saved_data"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "analytics/output/mainline_movement_pattern_audit_2026-06-24.json",
+      "reason": "environment_dependency_generated_private_or_saved_data"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "analytics/output/mainline_movement_pattern_audit_2026-06-24.md",
+      "reason": "environment_dependency_generated_private_or_saved_data"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "analytics/output/market_agreement_tracker.md",
+      "reason": "environment_dependency_generated_private_or_saved_data"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "analytics/output/market_anchor_selector_canary_audit.md",
+      "reason": "environment_dependency_generated_private_or_saved_data"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "analytics/output/market_anchored_k_shadow_rebuild.md",
+      "reason": "environment_dependency_generated_private_or_saved_data"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "analytics/output/market_favorite_confidence_referee_shadow_lab.md",
+      "reason": "environment_dependency_generated_private_or_saved_data"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "analytics/output/market_shrink_projection_canary_audit.md",
+      "reason": "environment_dependency_generated_private_or_saved_data"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "analytics/output/next_season_candidate_model_lab.md",
+      "reason": "environment_dependency_generated_private_or_saved_data"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "analytics/output/next_season_model_decision_packet.md",
+      "reason": "environment_dependency_generated_private_or_saved_data"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "analytics/output/profit_rescue_audit.md",
+      "reason": "environment_dependency_generated_private_or_saved_data"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "analytics/output/propline_webhook_usage_audit_2026-06-19.json",
+      "reason": "environment_dependency_generated_private_or_saved_data"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "analytics/output/propline_webhook_usage_audit_2026-06-19.md",
+      "reason": "environment_dependency_generated_private_or_saved_data"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "analytics/output/provider_cutover_shadow_compare_2026-06-19.json",
+      "reason": "environment_dependency_generated_private_or_saved_data"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "analytics/output/provider_cutover_shadow_compare_2026-06-19.md",
+      "reason": "environment_dependency_generated_private_or_saved_data"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "analytics/output/season_end_model_rebuild_dataset_summary.md",
+      "reason": "environment_dependency_generated_private_or_saved_data"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "analytics/output/seasonal_k_environment_audit.md",
+      "reason": "environment_dependency_generated_private_or_saved_data"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "analytics/output/strict_provider_readiness.md",
+      "reason": "environment_dependency_generated_private_or_saved_data"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "analytics/output/strong_base_decision_lab.md",
+      "reason": "environment_dependency_generated_private_or_saved_data"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "analytics/output/strong_base_portfolio_simulator.md",
+      "reason": "environment_dependency_generated_private_or_saved_data"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "analytics/output/workload_no_vig_ev_audit.md",
+      "reason": "environment_dependency_generated_private_or_saved_data"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "analytics/reviews/2026-10-01/projection/calibration_all_over.csv",
+      "reason": "binary_or_unreviewed_file_type"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "analytics/reviews/2026-10-01/projection/calibration_tracked_exact_line_side.csv",
+      "reason": "binary_or_unreviewed_file_type"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "analytics/reviews/2026-10-01/projection/calibration_tracked_line.csv",
+      "reason": "binary_or_unreviewed_file_type"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "analytics/reviews/2026-10-01/projection/calibration_tracked_monthly.csv",
+      "reason": "binary_or_unreviewed_file_type"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "analytics/reviews/2026-10-01/projection/calibration_tracked_probability.csv",
+      "reason": "binary_or_unreviewed_file_type"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "analytics/reviews/2026-10-01/projection/calibration_tracked_side.csv",
+      "reason": "binary_or_unreviewed_file_type"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "analytics/reviews/2026-10-01/projection/clv_label.csv",
+      "reason": "binary_or_unreviewed_file_type"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "analytics/reviews/2026-10-01/projection/clv_same_book.csv",
+      "reason": "binary_or_unreviewed_file_type"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "analytics/reviews/2026-10-01/projection/monthly_price_movement.csv",
+      "reason": "binary_or_unreviewed_file_type"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "analytics/reviews/2026-10-01/projection/pitcher_game_comparison.csv",
+      "reason": "binary_or_unreviewed_file_type"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "analytics/reviews/2026-10-01/projection/pitcher_game_comparison.json",
+      "reason": "saved_data_or_fixture_requires_explicit_review"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "analytics/reviews/2026-10-01/projection/price_movement.csv",
+      "reason": "binary_or_unreviewed_file_type"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "analytics/reviews/2026-10-01/projection/projection_line.csv",
+      "reason": "binary_or_unreviewed_file_type"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "analytics/reviews/2026-10-01/projection/projection_monthly.csv",
+      "reason": "binary_or_unreviewed_file_type"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "analytics/reviews/2026-10-01/projection/projection_opponent.csv",
+      "reason": "binary_or_unreviewed_file_type"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "analytics/reviews/2026-10-01/projection/projection_overall.csv",
+      "reason": "binary_or_unreviewed_file_type"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "analytics/reviews/2026-10-01/projection/projection_pitcher_team.csv",
+      "reason": "binary_or_unreviewed_file_type"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "analytics/reviews/2026-10-01/projection/projection_weekly.csv",
+      "reason": "binary_or_unreviewed_file_type"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "analytics/reviews/2026-10-01/projection/summary.json",
+      "reason": "saved_data_or_fixture_requires_explicit_review"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "analytics/reviews/2026-10-01/results/all_published_all_month.csv",
+      "reason": "binary_or_unreviewed_file_type"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "analytics/reviews/2026-10-01/results/all_published_all_month_side.csv",
+      "reason": "binary_or_unreviewed_file_type"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "analytics/reviews/2026-10-01/results/all_published_all_opponent_team.csv",
+      "reason": "binary_or_unreviewed_file_type"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "analytics/reviews/2026-10-01/results/all_published_all_pitcher_team.csv",
+      "reason": "binary_or_unreviewed_file_type"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "analytics/reviews/2026-10-01/results/all_published_all_side.csv",
+      "reason": "binary_or_unreviewed_file_type"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "analytics/reviews/2026-10-01/results/all_published_all_week.csv",
+      "reason": "binary_or_unreviewed_file_type"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "analytics/reviews/2026-10-01/results/all_published_fire_month.csv",
+      "reason": "binary_or_unreviewed_file_type"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "analytics/reviews/2026-10-01/results/all_published_fire_month_side.csv",
+      "reason": "binary_or_unreviewed_file_type"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "analytics/reviews/2026-10-01/results/all_published_fire_opponent_team.csv",
+      "reason": "binary_or_unreviewed_file_type"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "analytics/reviews/2026-10-01/results/all_published_fire_pitcher_team.csv",
+      "reason": "binary_or_unreviewed_file_type"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "analytics/reviews/2026-10-01/results/all_published_fire_side.csv",
+      "reason": "binary_or_unreviewed_file_type"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "analytics/reviews/2026-10-01/results/all_published_fire_week.csv",
+      "reason": "binary_or_unreviewed_file_type"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "analytics/reviews/2026-10-01/results/all_published_lean_month.csv",
+      "reason": "binary_or_unreviewed_file_type"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "analytics/reviews/2026-10-01/results/all_published_lean_month_side.csv",
+      "reason": "binary_or_unreviewed_file_type"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "analytics/reviews/2026-10-01/results/all_published_lean_opponent_team.csv",
+      "reason": "binary_or_unreviewed_file_type"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "analytics/reviews/2026-10-01/results/all_published_lean_pitcher_team.csv",
+      "reason": "binary_or_unreviewed_file_type"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "analytics/reviews/2026-10-01/results/all_published_lean_side.csv",
+      "reason": "binary_or_unreviewed_file_type"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "analytics/reviews/2026-10-01/results/all_published_lean_week.csv",
+      "reason": "binary_or_unreviewed_file_type"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "analytics/reviews/2026-10-01/results/clean_regime_all_month.csv",
+      "reason": "binary_or_unreviewed_file_type"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "analytics/reviews/2026-10-01/results/clean_regime_all_month_side.csv",
+      "reason": "binary_or_unreviewed_file_type"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "analytics/reviews/2026-10-01/results/clean_regime_all_opponent_team.csv",
+      "reason": "binary_or_unreviewed_file_type"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "analytics/reviews/2026-10-01/results/clean_regime_all_pitcher_team.csv",
+      "reason": "binary_or_unreviewed_file_type"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "analytics/reviews/2026-10-01/results/clean_regime_all_side.csv",
+      "reason": "binary_or_unreviewed_file_type"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "analytics/reviews/2026-10-01/results/clean_regime_all_week.csv",
+      "reason": "binary_or_unreviewed_file_type"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "analytics/reviews/2026-10-01/results/clean_regime_fire_month.csv",
+      "reason": "binary_or_unreviewed_file_type"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "analytics/reviews/2026-10-01/results/clean_regime_fire_month_side.csv",
+      "reason": "binary_or_unreviewed_file_type"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "analytics/reviews/2026-10-01/results/clean_regime_fire_opponent_team.csv",
+      "reason": "binary_or_unreviewed_file_type"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "analytics/reviews/2026-10-01/results/clean_regime_fire_pitcher_team.csv",
+      "reason": "binary_or_unreviewed_file_type"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "analytics/reviews/2026-10-01/results/clean_regime_fire_side.csv",
+      "reason": "binary_or_unreviewed_file_type"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "analytics/reviews/2026-10-01/results/clean_regime_fire_week.csv",
+      "reason": "binary_or_unreviewed_file_type"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "analytics/reviews/2026-10-01/results/clean_regime_lean_month.csv",
+      "reason": "binary_or_unreviewed_file_type"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "analytics/reviews/2026-10-01/results/clean_regime_lean_month_side.csv",
+      "reason": "binary_or_unreviewed_file_type"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "analytics/reviews/2026-10-01/results/clean_regime_lean_opponent_team.csv",
+      "reason": "binary_or_unreviewed_file_type"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "analytics/reviews/2026-10-01/results/clean_regime_lean_pitcher_team.csv",
+      "reason": "binary_or_unreviewed_file_type"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "analytics/reviews/2026-10-01/results/clean_regime_lean_side.csv",
+      "reason": "binary_or_unreviewed_file_type"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "analytics/reviews/2026-10-01/results/clean_regime_lean_week.csv",
+      "reason": "binary_or_unreviewed_file_type"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "analytics/reviews/2026-10-01/results/results_summary.json",
+      "reason": "saved_data_or_fixture_requires_explicit_review"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "analytics/reviews/2026-10-01/sources/published_history.json",
+      "reason": "large_generated_or_unreviewed"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "analytics/reviews/2026-10-01/sources/published_history_provenance.json",
+      "reason": "saved_data_or_fixture_requires_explicit_review"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "dashboard/data/performance.json",
+      "reason": "environment_dependency_generated_private_or_saved_data"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "dashboard/data/processed/2026-03-25.json",
+      "reason": "environment_dependency_generated_private_or_saved_data"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "dashboard/data/processed/2026-03-26.json",
+      "reason": "environment_dependency_generated_private_or_saved_data"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "dashboard/data/processed/2026-03-27.json",
+      "reason": "environment_dependency_generated_private_or_saved_data"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "dashboard/data/processed/2026-03-28.json",
+      "reason": "environment_dependency_generated_private_or_saved_data"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "dashboard/data/processed/2026-03-29.json",
+      "reason": "environment_dependency_generated_private_or_saved_data"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "dashboard/data/processed/2026-03-30.json",
+      "reason": "environment_dependency_generated_private_or_saved_data"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "dashboard/data/processed/2026-03-31.json",
+      "reason": "environment_dependency_generated_private_or_saved_data"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "dashboard/data/processed/2026-04-01.json",
+      "reason": "environment_dependency_generated_private_or_saved_data"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "dashboard/data/processed/2026-04-02.json",
+      "reason": "environment_dependency_generated_private_or_saved_data"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "dashboard/data/processed/2026-04-03.json",
+      "reason": "environment_dependency_generated_private_or_saved_data"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "dashboard/data/processed/2026-04-04.json",
+      "reason": "environment_dependency_generated_private_or_saved_data"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "dashboard/data/processed/2026-04-05.json",
+      "reason": "environment_dependency_generated_private_or_saved_data"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "dashboard/data/processed/2026-04-06.json",
+      "reason": "environment_dependency_generated_private_or_saved_data"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "dashboard/data/processed/2026-04-07.json",
+      "reason": "environment_dependency_generated_private_or_saved_data"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "dashboard/data/processed/2026-04-08.json",
+      "reason": "environment_dependency_generated_private_or_saved_data"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "dashboard/data/processed/2026-04-09.json",
+      "reason": "environment_dependency_generated_private_or_saved_data"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "dashboard/data/processed/2026-04-10.json",
+      "reason": "environment_dependency_generated_private_or_saved_data"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "dashboard/data/processed/2026-04-11.json",
+      "reason": "environment_dependency_generated_private_or_saved_data"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "dashboard/data/processed/2026-04-12.json",
+      "reason": "environment_dependency_generated_private_or_saved_data"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "dashboard/data/processed/2026-04-13.json",
+      "reason": "environment_dependency_generated_private_or_saved_data"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "dashboard/data/processed/2026-04-14.json",
+      "reason": "environment_dependency_generated_private_or_saved_data"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "dashboard/data/processed/2026-04-15.json",
+      "reason": "environment_dependency_generated_private_or_saved_data"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "dashboard/data/processed/2026-04-16.json",
+      "reason": "environment_dependency_generated_private_or_saved_data"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "dashboard/data/processed/2026-04-17.json",
+      "reason": "environment_dependency_generated_private_or_saved_data"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "dashboard/data/processed/2026-04-18.json",
+      "reason": "environment_dependency_generated_private_or_saved_data"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "dashboard/data/processed/2026-04-19.json",
+      "reason": "environment_dependency_generated_private_or_saved_data"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "dashboard/data/processed/2026-04-20.json",
+      "reason": "environment_dependency_generated_private_or_saved_data"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "dashboard/data/processed/2026-04-21.json",
+      "reason": "environment_dependency_generated_private_or_saved_data"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "dashboard/data/processed/2026-04-22.json",
+      "reason": "environment_dependency_generated_private_or_saved_data"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "dashboard/data/processed/2026-04-23.json",
+      "reason": "environment_dependency_generated_private_or_saved_data"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "dashboard/data/processed/2026-04-24.json",
+      "reason": "environment_dependency_generated_private_or_saved_data"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "dashboard/data/processed/2026-04-25.json",
+      "reason": "environment_dependency_generated_private_or_saved_data"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "dashboard/data/processed/2026-04-26.json",
+      "reason": "environment_dependency_generated_private_or_saved_data"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "dashboard/data/processed/2026-04-27.json",
+      "reason": "environment_dependency_generated_private_or_saved_data"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "dashboard/data/processed/2026-04-28.json",
+      "reason": "environment_dependency_generated_private_or_saved_data"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "dashboard/data/processed/2026-04-29.json",
+      "reason": "environment_dependency_generated_private_or_saved_data"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "dashboard/data/processed/2026-04-30.json",
+      "reason": "environment_dependency_generated_private_or_saved_data"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "dashboard/data/processed/2026-05-01.json",
+      "reason": "environment_dependency_generated_private_or_saved_data"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "dashboard/data/processed/2026-05-02.json",
+      "reason": "environment_dependency_generated_private_or_saved_data"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "dashboard/data/processed/2026-05-03.json",
+      "reason": "environment_dependency_generated_private_or_saved_data"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "dashboard/data/processed/2026-05-04.json",
+      "reason": "environment_dependency_generated_private_or_saved_data"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "dashboard/data/processed/2026-05-05.json",
+      "reason": "environment_dependency_generated_private_or_saved_data"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "dashboard/data/processed/2026-05-06.json",
+      "reason": "environment_dependency_generated_private_or_saved_data"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "dashboard/data/processed/2026-05-07.json",
+      "reason": "environment_dependency_generated_private_or_saved_data"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "dashboard/data/processed/2026-05-08.json",
+      "reason": "environment_dependency_generated_private_or_saved_data"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "dashboard/data/processed/2026-05-09.json",
+      "reason": "environment_dependency_generated_private_or_saved_data"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "dashboard/data/processed/2026-05-10.json",
+      "reason": "environment_dependency_generated_private_or_saved_data"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "dashboard/data/processed/2026-05-11.json",
+      "reason": "environment_dependency_generated_private_or_saved_data"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "dashboard/data/processed/2026-05-12.json",
+      "reason": "environment_dependency_generated_private_or_saved_data"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "dashboard/data/processed/2026-05-13.json",
+      "reason": "environment_dependency_generated_private_or_saved_data"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "dashboard/data/processed/2026-05-14.json",
+      "reason": "environment_dependency_generated_private_or_saved_data"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "dashboard/data/processed/2026-05-15.json",
+      "reason": "environment_dependency_generated_private_or_saved_data"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "dashboard/data/processed/2026-05-16.json",
+      "reason": "environment_dependency_generated_private_or_saved_data"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "dashboard/data/processed/2026-05-17.json",
+      "reason": "environment_dependency_generated_private_or_saved_data"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "dashboard/data/processed/2026-05-18.json",
+      "reason": "environment_dependency_generated_private_or_saved_data"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "dashboard/data/processed/2026-05-19.json",
+      "reason": "environment_dependency_generated_private_or_saved_data"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "dashboard/data/processed/2026-05-20.json",
+      "reason": "environment_dependency_generated_private_or_saved_data"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "dashboard/data/processed/2026-05-21.json",
+      "reason": "environment_dependency_generated_private_or_saved_data"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "dashboard/data/processed/2026-05-22.json",
+      "reason": "environment_dependency_generated_private_or_saved_data"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "dashboard/data/processed/2026-05-23.json",
+      "reason": "environment_dependency_generated_private_or_saved_data"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "dashboard/data/processed/2026-05-24.json",
+      "reason": "environment_dependency_generated_private_or_saved_data"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "dashboard/data/processed/2026-05-25.json",
+      "reason": "environment_dependency_generated_private_or_saved_data"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "dashboard/data/processed/2026-05-26.json",
+      "reason": "environment_dependency_generated_private_or_saved_data"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "dashboard/data/processed/2026-05-27.json",
+      "reason": "environment_dependency_generated_private_or_saved_data"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "dashboard/data/processed/2026-05-28.json",
+      "reason": "environment_dependency_generated_private_or_saved_data"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "dashboard/data/processed/2026-05-29.json",
+      "reason": "environment_dependency_generated_private_or_saved_data"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "dashboard/data/processed/2026-05-30.json",
+      "reason": "environment_dependency_generated_private_or_saved_data"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "dashboard/data/processed/index.json",
+      "reason": "environment_dependency_generated_private_or_saved_data"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "dashboard/data/processed/steam.json",
+      "reason": "environment_dependency_generated_private_or_saved_data"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "dashboard/data/processed/today.json",
+      "reason": "environment_dependency_generated_private_or_saved_data"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "dashboard/manifest.json",
+      "reason": "saved_data_or_fixture_requires_explicit_review"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "data/batter_splits_2026.json",
+      "reason": "environment_dependency_generated_private_or_saved_data"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "data/params.json",
+      "reason": "environment_dependency_generated_private_or_saved_data"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "data/park_factors.json",
+      "reason": "environment_dependency_generated_private_or_saved_data"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "data/picks_history.json",
+      "reason": "environment_dependency_generated_private_or_saved_data"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "data/preview_lines.json",
+      "reason": "environment_dependency_generated_private_or_saved_data"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "data/processed/.gitkeep",
+      "reason": "environment_dependency_generated_private_or_saved_data"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "data/processed/today.json",
+      "reason": "environment_dependency_generated_private_or_saved_data"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "data/research/gate_c/README.md",
+      "reason": "environment_dependency_generated_private_or_saved_data"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "data/research/gate_c/pitcher_k_outcome_dataset.jsonl",
+      "reason": "environment_dependency_generated_private_or_saved_data"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "data/research/gate_c/pitcher_k_outcome_dataset_manifest.json",
+      "reason": "environment_dependency_generated_private_or_saved_data"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "data/research/gate_c/pitcher_k_outcome_dataset_summary.md",
+      "reason": "environment_dependency_generated_private_or_saved_data"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "data/research/retention/pins-2026-05-07-2026-06-16.json",
+      "reason": "environment_dependency_generated_private_or_saved_data"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "data/research/retention/prepared-active-provider-deletion-execution-2026-09-04.json",
+      "reason": "environment_dependency_generated_private_or_saved_data"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "data/research/retention/prepared-active-provider-deletion-preview-2026-09-02.json",
+      "reason": "environment_dependency_generated_private_or_saved_data"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "data/research/retention/prepared-delete-backup-check-2026-09-02.json",
+      "reason": "environment_dependency_generated_private_or_saved_data"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "data/research/retention/prepared-delete-propline-2026-06-12-2026-09-03.json",
+      "reason": "environment_dependency_generated_private_or_saved_data"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "data/research/retention/prepared-delete-propline-2026-06-12-2026-09-04-cli.json",
+      "reason": "environment_dependency_generated_private_or_saved_data"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "data/research/retention/prepared-delete-result-propline-2026-06-12-2026-09-04-cli.json",
+      "reason": "environment_dependency_generated_private_or_saved_data"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "data/research/retention/prepared-snapshot-descending-order-proof-2026-09-04.json",
+      "reason": "environment_dependency_generated_private_or_saved_data"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "data/research/retention/prepared-snapshot-remaining-queue-2026-09-04.json",
+      "reason": "environment_dependency_generated_private_or_saved_data"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "data/research/retention/prepared-snapshot-remaining-queue-v2-2026-09-04.json",
+      "reason": "environment_dependency_generated_private_or_saved_data"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "data/research/retention/prepared-tranche-001-2026-09-04/preview-01-therundown-2026-06-12.json",
+      "reason": "environment_dependency_generated_private_or_saved_data"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "data/research/retention/prepared-tranche-001-2026-09-04/preview-02-propline-2026-06-13.json",
+      "reason": "environment_dependency_generated_private_or_saved_data"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "data/research/retention/prepared-tranche-001-2026-09-04/preview-03-therundown-2026-06-13.json",
+      "reason": "environment_dependency_generated_private_or_saved_data"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "data/research/retention/prepared-tranche-001-2026-09-04/preview-04-propline-2026-06-14.json",
+      "reason": "environment_dependency_generated_private_or_saved_data"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "data/research/retention/prepared-tranche-001-2026-09-04/preview-05-therundown-2026-06-14.json",
+      "reason": "environment_dependency_generated_private_or_saved_data"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "data/research/retention/prepared-tranche-001-2026-09-04/result-01-therundown-2026-06-12.json",
+      "reason": "environment_dependency_generated_private_or_saved_data"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "data/research/retention/prepared-tranche-001-2026-09-04/result-02-propline-2026-06-13.json",
+      "reason": "environment_dependency_generated_private_or_saved_data"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "data/research/retention/prepared-tranche-001-2026-09-04/tranche-execution-stop.json",
+      "reason": "environment_dependency_generated_private_or_saved_data"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "data/research/retention/prepared-tranche-001-2026-09-04/tranche-report.json",
+      "reason": "environment_dependency_generated_private_or_saved_data"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "data/research/retention/prepared-tranche-v2-001-2026-09-04/preview-01-propline-2026-07-26.json",
+      "reason": "environment_dependency_generated_private_or_saved_data"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "data/research/retention/prepared-tranche-v2-001-2026-09-04/preview-02-therundown-2026-07-26.json",
+      "reason": "environment_dependency_generated_private_or_saved_data"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "data/research/retention/prepared-tranche-v2-001-2026-09-04/preview-03-propline-2026-07-25.json",
+      "reason": "environment_dependency_generated_private_or_saved_data"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "data/research/retention/prepared-tranche-v2-001-2026-09-04/preview-04-therundown-2026-07-25.json",
+      "reason": "environment_dependency_generated_private_or_saved_data"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "data/research/retention/prepared-tranche-v2-001-2026-09-04/preview-05-propline-2026-07-24.json",
+      "reason": "environment_dependency_generated_private_or_saved_data"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "data/research/retention/prepared-tranche-v2-001-2026-09-04/result-01-propline-2026-07-26.json",
+      "reason": "environment_dependency_generated_private_or_saved_data"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "data/research/retention/prepared-tranche-v2-001-2026-09-04/result-02-therundown-2026-07-26.json",
+      "reason": "environment_dependency_generated_private_or_saved_data"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "data/research/retention/prepared-tranche-v2-001-2026-09-04/result-03-propline-2026-07-25.json",
+      "reason": "environment_dependency_generated_private_or_saved_data"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "data/research/retention/prepared-tranche-v2-001-2026-09-04/result-04-therundown-2026-07-25.json",
+      "reason": "environment_dependency_generated_private_or_saved_data"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "data/research/retention/prepared-tranche-v2-001-2026-09-04/result-05-propline-2026-07-24.json",
+      "reason": "environment_dependency_generated_private_or_saved_data"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "data/research/retention/prepared-tranche-v2-001-2026-09-04/tranche-execution-result.json",
+      "reason": "environment_dependency_generated_private_or_saved_data"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "data/research/retention/prepared-tranche-v2-001-2026-09-04/tranche-report.json",
+      "reason": "environment_dependency_generated_private_or_saved_data"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "data/research/retention/prepared-tranche-v2-002-2026-09-04/preview-01-therundown-2026-07-24.json",
+      "reason": "environment_dependency_generated_private_or_saved_data"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "data/research/retention/prepared-tranche-v2-002-2026-09-04/preview-02-propline-2026-07-23.json",
+      "reason": "environment_dependency_generated_private_or_saved_data"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "data/research/retention/prepared-tranche-v2-002-2026-09-04/preview-03-therundown-2026-07-23.json",
+      "reason": "environment_dependency_generated_private_or_saved_data"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "data/research/retention/prepared-tranche-v2-002-2026-09-04/preview-04-propline-2026-07-22.json",
+      "reason": "environment_dependency_generated_private_or_saved_data"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "data/research/retention/prepared-tranche-v2-002-2026-09-04/preview-05-therundown-2026-07-22.json",
+      "reason": "environment_dependency_generated_private_or_saved_data"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "data/research/retention/prepared-tranche-v2-002-2026-09-04/result-01-therundown-2026-07-24.json",
+      "reason": "environment_dependency_generated_private_or_saved_data"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "data/research/retention/prepared-tranche-v2-002-2026-09-04/result-02-propline-2026-07-23.json",
+      "reason": "environment_dependency_generated_private_or_saved_data"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "data/research/retention/prepared-tranche-v2-002-2026-09-04/result-03-therundown-2026-07-23.json",
+      "reason": "environment_dependency_generated_private_or_saved_data"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "data/research/retention/prepared-tranche-v2-002-2026-09-04/result-04-propline-2026-07-22.json",
+      "reason": "environment_dependency_generated_private_or_saved_data"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "data/research/retention/prepared-tranche-v2-002-2026-09-04/result-05-therundown-2026-07-22.json",
+      "reason": "environment_dependency_generated_private_or_saved_data"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "data/research/retention/prepared-tranche-v2-002-2026-09-04/tranche-execution-result.json",
+      "reason": "environment_dependency_generated_private_or_saved_data"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "data/research/retention/prepared-tranche-v2-002-2026-09-04/tranche-report.json",
+      "reason": "environment_dependency_generated_private_or_saved_data"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "data/research/retention/prepared-tranche-v2-003-2026-09-04/preview-01-propline-2026-07-21.json",
+      "reason": "environment_dependency_generated_private_or_saved_data"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "data/research/retention/prepared-tranche-v2-003-2026-09-04/preview-02-therundown-2026-07-21.json",
+      "reason": "environment_dependency_generated_private_or_saved_data"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "data/research/retention/prepared-tranche-v2-003-2026-09-04/preview-03-propline-2026-07-20.json",
+      "reason": "environment_dependency_generated_private_or_saved_data"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "data/research/retention/prepared-tranche-v2-003-2026-09-04/preview-04-therundown-2026-07-20.json",
+      "reason": "environment_dependency_generated_private_or_saved_data"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "data/research/retention/prepared-tranche-v2-003-2026-09-04/preview-05-propline-2026-07-19.json",
+      "reason": "environment_dependency_generated_private_or_saved_data"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "data/research/retention/prepared-tranche-v2-003-2026-09-04/result-01-propline-2026-07-21.json",
+      "reason": "environment_dependency_generated_private_or_saved_data"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "data/research/retention/prepared-tranche-v2-003-2026-09-04/result-02-therundown-2026-07-21.json",
+      "reason": "environment_dependency_generated_private_or_saved_data"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "data/research/retention/prepared-tranche-v2-003-2026-09-04/result-03-propline-2026-07-20.json",
+      "reason": "environment_dependency_generated_private_or_saved_data"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "data/research/retention/prepared-tranche-v2-003-2026-09-04/result-04-therundown-2026-07-20.json",
+      "reason": "environment_dependency_generated_private_or_saved_data"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "data/research/retention/prepared-tranche-v2-003-2026-09-04/result-05-propline-2026-07-19.json",
+      "reason": "environment_dependency_generated_private_or_saved_data"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "data/research/retention/prepared-tranche-v2-003-2026-09-04/tranche-report.json",
+      "reason": "environment_dependency_generated_private_or_saved_data"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "data/research/retention/prepared-tranche-v2-004-2026-09-04/preview-01-therundown-2026-07-19.json",
+      "reason": "environment_dependency_generated_private_or_saved_data"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "data/research/retention/prepared-tranche-v2-004-2026-09-04/preview-02-propline-2026-07-18.json",
+      "reason": "environment_dependency_generated_private_or_saved_data"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "data/research/retention/prepared-tranche-v2-004-2026-09-04/preview-03-therundown-2026-07-18.json",
+      "reason": "environment_dependency_generated_private_or_saved_data"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "data/research/retention/prepared-tranche-v2-004-2026-09-04/preview-04-propline-2026-07-17.json",
+      "reason": "environment_dependency_generated_private_or_saved_data"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "data/research/retention/prepared-tranche-v2-004-2026-09-04/preview-05-therundown-2026-07-17.json",
+      "reason": "environment_dependency_generated_private_or_saved_data"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "data/research/retention/prepared-tranche-v2-004-2026-09-04/result-01-therundown-2026-07-19.json",
+      "reason": "environment_dependency_generated_private_or_saved_data"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "data/research/retention/prepared-tranche-v2-004-2026-09-04/result-02-propline-2026-07-18.json",
+      "reason": "environment_dependency_generated_private_or_saved_data"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "data/research/retention/prepared-tranche-v2-004-2026-09-04/result-03-therundown-2026-07-18.json",
+      "reason": "environment_dependency_generated_private_or_saved_data"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "data/research/retention/prepared-tranche-v2-004-2026-09-04/result-04-propline-2026-07-17.json",
+      "reason": "environment_dependency_generated_private_or_saved_data"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "data/research/retention/prepared-tranche-v2-004-2026-09-04/result-05-therundown-2026-07-17.json",
+      "reason": "environment_dependency_generated_private_or_saved_data"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "data/research/retention/prepared-tranche-v2-004-2026-09-04/tranche-report.json",
+      "reason": "environment_dependency_generated_private_or_saved_data"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "data/research/retention/prepared-tranche-v2-005-2026-09-04/preview-01-propline-2026-07-16.json",
+      "reason": "environment_dependency_generated_private_or_saved_data"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "data/research/retention/prepared-tranche-v2-005-2026-09-04/preview-02-therundown-2026-07-16.json",
+      "reason": "environment_dependency_generated_private_or_saved_data"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "data/research/retention/prepared-tranche-v2-005-2026-09-04/preview-03-propline-2026-07-12.json",
+      "reason": "environment_dependency_generated_private_or_saved_data"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "data/research/retention/prepared-tranche-v2-005-2026-09-04/preview-04-therundown-2026-07-12.json",
+      "reason": "environment_dependency_generated_private_or_saved_data"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "data/research/retention/prepared-tranche-v2-005-2026-09-04/preview-05-propline-2026-07-11.json",
+      "reason": "environment_dependency_generated_private_or_saved_data"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "data/research/retention/prepared-tranche-v2-005-2026-09-04/result-01-propline-2026-07-16.json",
+      "reason": "environment_dependency_generated_private_or_saved_data"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "data/research/retention/prepared-tranche-v2-005-2026-09-04/result-02-therundown-2026-07-16.json",
+      "reason": "environment_dependency_generated_private_or_saved_data"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "data/research/retention/prepared-tranche-v2-005-2026-09-04/result-03-propline-2026-07-12.json",
+      "reason": "environment_dependency_generated_private_or_saved_data"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "data/research/retention/prepared-tranche-v2-005-2026-09-04/result-04-therundown-2026-07-12.json",
+      "reason": "environment_dependency_generated_private_or_saved_data"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "data/research/retention/prepared-tranche-v2-005-2026-09-04/result-05-propline-2026-07-11.json",
+      "reason": "environment_dependency_generated_private_or_saved_data"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "data/research/retention/prepared-tranche-v2-005-2026-09-04/tranche-report.json",
+      "reason": "environment_dependency_generated_private_or_saved_data"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "data/research/retention/prepared-tranche-v2-005-lineage-repair-2026-09-04.json",
+      "reason": "environment_dependency_generated_private_or_saved_data"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "data/research/retention/prepared-tranche-v2-006-2026-09-04/preview-01-therundown-2026-07-11.json",
+      "reason": "environment_dependency_generated_private_or_saved_data"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "data/research/retention/prepared-tranche-v2-006-2026-09-04/preview-02-propline-2026-07-10.json",
+      "reason": "environment_dependency_generated_private_or_saved_data"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "data/research/retention/prepared-tranche-v2-006-2026-09-04/preview-03-therundown-2026-07-10.json",
+      "reason": "environment_dependency_generated_private_or_saved_data"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "data/research/retention/prepared-tranche-v2-006-2026-09-04/preview-04-propline-2026-07-09.json",
+      "reason": "environment_dependency_generated_private_or_saved_data"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "data/research/retention/prepared-tranche-v2-006-2026-09-04/preview-05-therundown-2026-07-09.json",
+      "reason": "environment_dependency_generated_private_or_saved_data"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "data/research/retention/prepared-tranche-v2-006-2026-09-04/result-01-therundown-2026-07-11.json",
+      "reason": "environment_dependency_generated_private_or_saved_data"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "data/research/retention/prepared-tranche-v2-006-2026-09-04/result-02-propline-2026-07-10.json",
+      "reason": "environment_dependency_generated_private_or_saved_data"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "data/research/retention/prepared-tranche-v2-006-2026-09-04/result-03-therundown-2026-07-10.json",
+      "reason": "environment_dependency_generated_private_or_saved_data"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "data/research/retention/prepared-tranche-v2-006-2026-09-04/result-04-propline-2026-07-09.json",
+      "reason": "environment_dependency_generated_private_or_saved_data"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "data/research/retention/prepared-tranche-v2-006-2026-09-04/result-05-therundown-2026-07-09.json",
+      "reason": "environment_dependency_generated_private_or_saved_data"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "data/research/retention/prepared-tranche-v2-006-2026-09-04/tranche-report.json",
+      "reason": "environment_dependency_generated_private_or_saved_data"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "data/research/retention/prepared-tranche-v2-007-2026-09-04/preview-01-propline-2026-07-08.json",
+      "reason": "environment_dependency_generated_private_or_saved_data"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "data/research/retention/prepared-tranche-v2-007-2026-09-04/preview-02-therundown-2026-07-08.json",
+      "reason": "environment_dependency_generated_private_or_saved_data"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "data/research/retention/prepared-tranche-v2-007-2026-09-04/preview-03-propline-2026-07-07.json",
+      "reason": "environment_dependency_generated_private_or_saved_data"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "data/research/retention/prepared-tranche-v2-007-2026-09-04/preview-04-therundown-2026-07-07.json",
+      "reason": "environment_dependency_generated_private_or_saved_data"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "data/research/retention/prepared-tranche-v2-007-2026-09-04/preview-05-propline-2026-07-06.json",
+      "reason": "environment_dependency_generated_private_or_saved_data"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "data/research/retention/prepared-tranche-v2-007-2026-09-04/result-01-propline-2026-07-08.json",
+      "reason": "environment_dependency_generated_private_or_saved_data"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "data/research/retention/prepared-tranche-v2-007-2026-09-04/result-02-therundown-2026-07-08.json",
+      "reason": "environment_dependency_generated_private_or_saved_data"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "data/research/retention/prepared-tranche-v2-007-2026-09-04/result-03-propline-2026-07-07.json",
+      "reason": "environment_dependency_generated_private_or_saved_data"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "data/research/retention/prepared-tranche-v2-007-2026-09-04/result-04-therundown-2026-07-07.json",
+      "reason": "environment_dependency_generated_private_or_saved_data"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "data/research/retention/prepared-tranche-v2-007-2026-09-04/result-05-propline-2026-07-06.json",
+      "reason": "environment_dependency_generated_private_or_saved_data"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "data/research/retention/prepared-tranche-v2-007-2026-09-04/tranche-report.json",
+      "reason": "environment_dependency_generated_private_or_saved_data"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "data/research/retention/prepared-tranche-v2-008-2026-09-04/preview-01-therundown-2026-07-06.json",
+      "reason": "environment_dependency_generated_private_or_saved_data"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "data/research/retention/prepared-tranche-v2-008-2026-09-04/preview-02-propline-2026-07-05.json",
+      "reason": "environment_dependency_generated_private_or_saved_data"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "data/research/retention/prepared-tranche-v2-008-2026-09-04/preview-03-therundown-2026-07-05.json",
+      "reason": "environment_dependency_generated_private_or_saved_data"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "data/research/retention/prepared-tranche-v2-008-2026-09-04/preview-04-propline-2026-07-04.json",
+      "reason": "environment_dependency_generated_private_or_saved_data"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "data/research/retention/prepared-tranche-v2-008-2026-09-04/preview-05-therundown-2026-07-04.json",
+      "reason": "environment_dependency_generated_private_or_saved_data"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "data/research/retention/prepared-tranche-v2-008-2026-09-04/result-01-therundown-2026-07-06.json",
+      "reason": "environment_dependency_generated_private_or_saved_data"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "data/research/retention/prepared-tranche-v2-008-2026-09-04/result-02-propline-2026-07-05.json",
+      "reason": "environment_dependency_generated_private_or_saved_data"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "data/research/retention/prepared-tranche-v2-008-2026-09-04/result-03-therundown-2026-07-05.json",
+      "reason": "environment_dependency_generated_private_or_saved_data"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "data/research/retention/prepared-tranche-v2-008-2026-09-04/result-04-propline-2026-07-04.json",
+      "reason": "environment_dependency_generated_private_or_saved_data"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "data/research/retention/prepared-tranche-v2-008-2026-09-04/result-05-therundown-2026-07-04.json",
+      "reason": "environment_dependency_generated_private_or_saved_data"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "data/research/retention/prepared-tranche-v2-008-2026-09-04/tranche-report.json",
+      "reason": "environment_dependency_generated_private_or_saved_data"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "data/research/retention/prepared-tranche-v2-009-2026-09-04/preview-01-propline-2026-07-03.json",
+      "reason": "environment_dependency_generated_private_or_saved_data"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "data/research/retention/prepared-tranche-v2-009-2026-09-04/preview-02-therundown-2026-07-03.json",
+      "reason": "environment_dependency_generated_private_or_saved_data"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "data/research/retention/prepared-tranche-v2-009-2026-09-04/preview-03-propline-2026-07-02.json",
+      "reason": "environment_dependency_generated_private_or_saved_data"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "data/research/retention/prepared-tranche-v2-009-2026-09-04/preview-04-therundown-2026-07-02.json",
+      "reason": "environment_dependency_generated_private_or_saved_data"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "data/research/retention/prepared-tranche-v2-009-2026-09-04/preview-05-propline-2026-06-30.json",
+      "reason": "environment_dependency_generated_private_or_saved_data"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "data/research/retention/prepared-tranche-v2-009-2026-09-04/result-01-propline-2026-07-03.json",
+      "reason": "environment_dependency_generated_private_or_saved_data"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "data/research/retention/prepared-tranche-v2-009-2026-09-04/result-02-therundown-2026-07-03.json",
+      "reason": "environment_dependency_generated_private_or_saved_data"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "data/research/retention/prepared-tranche-v2-009-2026-09-04/result-03-propline-2026-07-02.json",
+      "reason": "environment_dependency_generated_private_or_saved_data"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "data/research/retention/prepared-tranche-v2-009-2026-09-04/result-04-therundown-2026-07-02.json",
+      "reason": "environment_dependency_generated_private_or_saved_data"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "data/research/retention/prepared-tranche-v2-009-2026-09-04/result-05-propline-2026-06-30.json",
+      "reason": "environment_dependency_generated_private_or_saved_data"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "data/research/retention/prepared-tranche-v2-009-2026-09-04/tranche-report.json",
+      "reason": "environment_dependency_generated_private_or_saved_data"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "data/research/retention/prepared-tranche-v2-010-2026-09-04/preview-01-therundown-2026-06-30.json",
+      "reason": "environment_dependency_generated_private_or_saved_data"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "data/research/retention/prepared-tranche-v2-010-2026-09-04/preview-02-propline-2026-06-29.json",
+      "reason": "environment_dependency_generated_private_or_saved_data"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "data/research/retention/prepared-tranche-v2-010-2026-09-04/preview-03-therundown-2026-06-29.json",
+      "reason": "environment_dependency_generated_private_or_saved_data"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "data/research/retention/prepared-tranche-v2-010-2026-09-04/preview-04-propline-2026-06-28.json",
+      "reason": "environment_dependency_generated_private_or_saved_data"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "data/research/retention/prepared-tranche-v2-010-2026-09-04/preview-05-therundown-2026-06-28.json",
+      "reason": "environment_dependency_generated_private_or_saved_data"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "data/research/retention/prepared-tranche-v2-010-2026-09-04/result-01-therundown-2026-06-30.json",
+      "reason": "environment_dependency_generated_private_or_saved_data"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "data/research/retention/prepared-tranche-v2-010-2026-09-04/result-02-propline-2026-06-29.json",
+      "reason": "environment_dependency_generated_private_or_saved_data"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "data/research/retention/prepared-tranche-v2-010-2026-09-04/result-03-therundown-2026-06-29.json",
+      "reason": "environment_dependency_generated_private_or_saved_data"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "data/research/retention/prepared-tranche-v2-010-2026-09-04/result-04-propline-2026-06-28.json",
+      "reason": "environment_dependency_generated_private_or_saved_data"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "data/research/retention/prepared-tranche-v2-010-2026-09-04/result-05-therundown-2026-06-28.json",
+      "reason": "environment_dependency_generated_private_or_saved_data"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "data/research/retention/prepared-tranche-v2-010-2026-09-04/tranche-report.json",
+      "reason": "environment_dependency_generated_private_or_saved_data"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "data/research/retention/prepared-tranche-v2-011-2026-09-04/preview-01-propline-2026-06-27.json",
+      "reason": "environment_dependency_generated_private_or_saved_data"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "data/research/retention/prepared-tranche-v2-011-2026-09-04/preview-02-therundown-2026-06-27.json",
+      "reason": "environment_dependency_generated_private_or_saved_data"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "data/research/retention/prepared-tranche-v2-011-2026-09-04/preview-03-propline-2026-06-26.json",
+      "reason": "environment_dependency_generated_private_or_saved_data"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "data/research/retention/prepared-tranche-v2-011-2026-09-04/preview-04-therundown-2026-06-26.json",
+      "reason": "environment_dependency_generated_private_or_saved_data"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "data/research/retention/prepared-tranche-v2-011-2026-09-04/preview-05-propline-2026-06-25.json",
+      "reason": "environment_dependency_generated_private_or_saved_data"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "data/research/retention/prepared-tranche-v2-011-2026-09-04/result-01-propline-2026-06-27.json",
+      "reason": "environment_dependency_generated_private_or_saved_data"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "data/research/retention/prepared-tranche-v2-011-2026-09-04/result-02-therundown-2026-06-27.json",
+      "reason": "environment_dependency_generated_private_or_saved_data"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "data/research/retention/prepared-tranche-v2-011-2026-09-04/result-03-propline-2026-06-26.json",
+      "reason": "environment_dependency_generated_private_or_saved_data"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "data/research/retention/prepared-tranche-v2-011-2026-09-04/result-04-therundown-2026-06-26.json",
+      "reason": "environment_dependency_generated_private_or_saved_data"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "data/research/retention/prepared-tranche-v2-011-2026-09-04/result-05-propline-2026-06-25.json",
+      "reason": "environment_dependency_generated_private_or_saved_data"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "data/research/retention/prepared-tranche-v2-011-2026-09-04/tranche-report.json",
+      "reason": "environment_dependency_generated_private_or_saved_data"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "data/research/retention/prepared-tranche-v2-012-2026-09-04/preview-01-therundown-2026-06-25.json",
+      "reason": "environment_dependency_generated_private_or_saved_data"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "data/research/retention/prepared-tranche-v2-012-2026-09-04/preview-02-propline-2026-06-24.json",
+      "reason": "environment_dependency_generated_private_or_saved_data"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "data/research/retention/prepared-tranche-v2-012-2026-09-04/preview-03-therundown-2026-06-24.json",
+      "reason": "environment_dependency_generated_private_or_saved_data"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "data/research/retention/prepared-tranche-v2-012-2026-09-04/preview-04-propline-2026-06-23.json",
+      "reason": "environment_dependency_generated_private_or_saved_data"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "data/research/retention/prepared-tranche-v2-012-2026-09-04/preview-05-therundown-2026-06-23.json",
+      "reason": "environment_dependency_generated_private_or_saved_data"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "data/research/retention/prepared-tranche-v2-012-2026-09-04/result-01-therundown-2026-06-25.json",
+      "reason": "environment_dependency_generated_private_or_saved_data"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "data/research/retention/prepared-tranche-v2-012-2026-09-04/result-02-propline-2026-06-24.json",
+      "reason": "environment_dependency_generated_private_or_saved_data"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "data/research/retention/prepared-tranche-v2-012-2026-09-04/result-03-therundown-2026-06-24.json",
+      "reason": "environment_dependency_generated_private_or_saved_data"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "data/research/retention/prepared-tranche-v2-012-2026-09-04/result-04-propline-2026-06-23.json",
+      "reason": "environment_dependency_generated_private_or_saved_data"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "data/research/retention/prepared-tranche-v2-012-2026-09-04/result-05-therundown-2026-06-23.json",
+      "reason": "environment_dependency_generated_private_or_saved_data"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "data/research/retention/prepared-tranche-v2-012-2026-09-04/tranche-report.json",
+      "reason": "environment_dependency_generated_private_or_saved_data"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "data/research/retention/prepared-tranche-v2-013-2026-09-04/preview-01-propline-2026-06-22.json",
+      "reason": "environment_dependency_generated_private_or_saved_data"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "data/research/retention/prepared-tranche-v2-013-2026-09-04/preview-02-therundown-2026-06-22.json",
+      "reason": "environment_dependency_generated_private_or_saved_data"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "data/research/retention/prepared-tranche-v2-013-2026-09-04/preview-03-propline-2026-06-21.json",
+      "reason": "environment_dependency_generated_private_or_saved_data"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "data/research/retention/prepared-tranche-v2-013-2026-09-04/preview-04-therundown-2026-06-21.json",
+      "reason": "environment_dependency_generated_private_or_saved_data"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "data/research/retention/prepared-tranche-v2-013-2026-09-04/preview-05-propline-2026-06-20.json",
+      "reason": "environment_dependency_generated_private_or_saved_data"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "data/research/retention/prepared-tranche-v2-013-2026-09-04/result-01-propline-2026-06-22.json",
+      "reason": "environment_dependency_generated_private_or_saved_data"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "data/research/retention/prepared-tranche-v2-013-2026-09-04/result-02-therundown-2026-06-22.json",
+      "reason": "environment_dependency_generated_private_or_saved_data"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "data/research/retention/prepared-tranche-v2-013-2026-09-04/result-03-propline-2026-06-21.json",
+      "reason": "environment_dependency_generated_private_or_saved_data"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "data/research/retention/prepared-tranche-v2-013-2026-09-04/result-04-therundown-2026-06-21.json",
+      "reason": "environment_dependency_generated_private_or_saved_data"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "data/research/retention/prepared-tranche-v2-013-2026-09-04/result-05-propline-2026-06-20.json",
+      "reason": "environment_dependency_generated_private_or_saved_data"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "data/research/retention/prepared-tranche-v2-013-2026-09-04/tranche-report.json",
+      "reason": "environment_dependency_generated_private_or_saved_data"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "data/research/retention/prepared-tranche-v2-014-2026-09-04/preview-01-therundown-2026-06-20.json",
+      "reason": "environment_dependency_generated_private_or_saved_data"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "data/research/retention/prepared-tranche-v2-014-2026-09-04/preview-02-propline-2026-06-19.json",
+      "reason": "environment_dependency_generated_private_or_saved_data"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "data/research/retention/prepared-tranche-v2-014-2026-09-04/preview-03-therundown-2026-06-19.json",
+      "reason": "environment_dependency_generated_private_or_saved_data"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "data/research/retention/prepared-tranche-v2-014-2026-09-04/preview-04-propline-2026-06-18.json",
+      "reason": "environment_dependency_generated_private_or_saved_data"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "data/research/retention/prepared-tranche-v2-014-2026-09-04/preview-05-therundown-2026-06-18.json",
+      "reason": "environment_dependency_generated_private_or_saved_data"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "data/research/retention/prepared-tranche-v2-014-2026-09-04/result-01-therundown-2026-06-20.json",
+      "reason": "environment_dependency_generated_private_or_saved_data"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "data/research/retention/prepared-tranche-v2-014-2026-09-04/result-02-propline-2026-06-19.json",
+      "reason": "environment_dependency_generated_private_or_saved_data"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "data/research/retention/prepared-tranche-v2-014-2026-09-04/result-03-therundown-2026-06-19.json",
+      "reason": "environment_dependency_generated_private_or_saved_data"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "data/research/retention/prepared-tranche-v2-014-2026-09-04/result-04-propline-2026-06-18.json",
+      "reason": "environment_dependency_generated_private_or_saved_data"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "data/research/retention/prepared-tranche-v2-014-2026-09-04/result-05-therundown-2026-06-18.json",
+      "reason": "environment_dependency_generated_private_or_saved_data"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "data/research/retention/prepared-tranche-v2-014-2026-09-04/tranche-report.json",
+      "reason": "environment_dependency_generated_private_or_saved_data"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "data/research/retention/prepared-tranche-v2-015-2026-09-04/preview-01-propline-2026-06-17.json",
+      "reason": "environment_dependency_generated_private_or_saved_data"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "data/research/retention/prepared-tranche-v2-015-2026-09-04/preview-02-therundown-2026-06-17.json",
+      "reason": "environment_dependency_generated_private_or_saved_data"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "data/research/retention/prepared-tranche-v2-015-2026-09-04/preview-03-propline-2026-06-16.json",
+      "reason": "environment_dependency_generated_private_or_saved_data"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "data/research/retention/prepared-tranche-v2-015-2026-09-04/preview-04-therundown-2026-06-16.json",
+      "reason": "environment_dependency_generated_private_or_saved_data"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "data/research/retention/prepared-tranche-v2-015-2026-09-04/preview-05-propline-2026-06-15.json",
+      "reason": "environment_dependency_generated_private_or_saved_data"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "data/research/retention/prepared-tranche-v2-015-2026-09-04/result-01-propline-2026-06-17.json",
+      "reason": "environment_dependency_generated_private_or_saved_data"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "data/research/retention/prepared-tranche-v2-015-2026-09-04/result-02-therundown-2026-06-17.json",
+      "reason": "environment_dependency_generated_private_or_saved_data"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "data/research/retention/prepared-tranche-v2-015-2026-09-04/result-03-propline-2026-06-16.json",
+      "reason": "environment_dependency_generated_private_or_saved_data"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "data/research/retention/prepared-tranche-v2-015-2026-09-04/result-04-therundown-2026-06-16.json",
+      "reason": "environment_dependency_generated_private_or_saved_data"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "data/research/retention/prepared-tranche-v2-015-2026-09-04/result-05-propline-2026-06-15.json",
+      "reason": "environment_dependency_generated_private_or_saved_data"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "data/research/retention/prepared-tranche-v2-015-2026-09-04/tranche-report.json",
+      "reason": "environment_dependency_generated_private_or_saved_data"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "data/research/retention/prepared-tranche-v2-016-2026-09-04/preview-01-therundown-2026-06-15.json",
+      "reason": "environment_dependency_generated_private_or_saved_data"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "data/research/retention/prepared-tranche-v2-016-2026-09-04/preview-02-propline-2026-06-14.json",
+      "reason": "environment_dependency_generated_private_or_saved_data"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "data/research/retention/prepared-tranche-v2-016-2026-09-04/preview-03-therundown-2026-06-14.json",
+      "reason": "environment_dependency_generated_private_or_saved_data"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "data/research/retention/prepared-tranche-v2-016-2026-09-04/preview-04-therundown-2026-06-13.json",
+      "reason": "environment_dependency_generated_private_or_saved_data"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "data/research/retention/prepared-tranche-v2-016-2026-09-04/result-01-therundown-2026-06-15.json",
+      "reason": "environment_dependency_generated_private_or_saved_data"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "data/research/retention/prepared-tranche-v2-016-2026-09-04/result-02-propline-2026-06-14.json",
+      "reason": "environment_dependency_generated_private_or_saved_data"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "data/research/retention/prepared-tranche-v2-016-2026-09-04/result-03-therundown-2026-06-14.json",
+      "reason": "environment_dependency_generated_private_or_saved_data"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "data/research/retention/prepared-tranche-v2-016-2026-09-04/result-04-therundown-2026-06-13.json",
+      "reason": "environment_dependency_generated_private_or_saved_data"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "data/research/retention/prepared-tranche-v2-016-2026-09-04/tranche-report.json",
+      "reason": "environment_dependency_generated_private_or_saved_data"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "data/research/retention/season-evidence-2026-05-07-2026-06-16.json",
+      "reason": "environment_dependency_generated_private_or_saved_data"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "data/research/retention/webhook-inbox-2026-09-12/archive-manifest.json",
+      "reason": "environment_dependency_generated_private_or_saved_data"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "data/research/retention/webhook-inbox-2026-09-12/execute.sql",
+      "reason": "environment_dependency_generated_private_or_saved_data"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "data/research/retention/webhook-inbox-2026-09-12/execution-result.json",
+      "reason": "environment_dependency_generated_private_or_saved_data"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "data/umpires/career_k_rates.json",
+      "reason": "environment_dependency_generated_private_or_saved_data"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "docs/research/2026-10-01-branch-archive-manifest.json",
+      "reason": "saved_data_or_fixture_requires_explicit_review"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "docs/research/2026-10-01-results-review.md",
+      "reason": "private_operational_or_paper_document"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "docs/research/evidence/2026-09-04-alt-v2-decision/README.md",
+      "reason": "environment_dependency_generated_private_or_saved_data"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "docs/research/evidence/2026-09-04-alt-v2-decision/analysis.json",
+      "reason": "environment_dependency_generated_private_or_saved_data"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "docs/research/evidence/2026-09-04-alt-v2-decision/archive-context.json",
+      "reason": "environment_dependency_generated_private_or_saved_data"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "docs/research/evidence/2026-09-04-alt-v2-decision/bounded-close-snapshots.json",
+      "reason": "environment_dependency_generated_private_or_saved_data"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "docs/research/evidence/2026-09-04-alt-v2-decision/bounded-history.json",
+      "reason": "environment_dependency_generated_private_or_saved_data"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "docs/research/evidence/2026-09-04-alt-v2-decision/comparison-universe.json",
+      "reason": "environment_dependency_generated_private_or_saved_data"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "docs/research/evidence/2026-09-04-alt-v2-decision/decision-checks.ipynb",
+      "reason": "environment_dependency_generated_private_or_saved_data"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "docs/research/evidence/2026-09-04-alt-v2-decision/official-close-packet.json",
+      "reason": "environment_dependency_generated_private_or_saved_data"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "docs/research/evidence/2026-09-04-alt-v2-decision/reproduce.py",
+      "reason": "environment_dependency_generated_private_or_saved_data"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "docs/research/evidence/2026-09-04-alt-v2-decision/required-slices.md",
+      "reason": "environment_dependency_generated_private_or_saved_data"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "docs/research/evidence/2026-09-04-alt-v2-decision/row-level-analysis.json",
+      "reason": "environment_dependency_generated_private_or_saved_data"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "docs/research/evidence/2026-09-04-alt-v2-decision/selected-lock-proofs.json",
+      "reason": "environment_dependency_generated_private_or_saved_data"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "docs/research/evidence/2026-09-04-alt-v2-decision/verification.json",
+      "reason": "environment_dependency_generated_private_or_saved_data"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "docs/research/evidence/2026-09-04-operating-review/alt-summary.json",
+      "reason": "environment_dependency_generated_private_or_saved_data"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "docs/research/evidence/2026-09-04-operating-review/check_evidence.py",
+      "reason": "environment_dependency_generated_private_or_saved_data"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "docs/research/evidence/2026-09-04-operating-review/evidence-checks.ipynb",
+      "reason": "environment_dependency_generated_private_or_saved_data"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "docs/research/evidence/2026-09-04-operating-review/read-only-evidence.json",
+      "reason": "environment_dependency_generated_private_or_saved_data"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "docs/research/evidence/2026-09-04-operating-review/verification.json",
+      "reason": "environment_dependency_generated_private_or_saved_data"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "docs/research/evidence/2026-09-04-research-lineage/README.md",
+      "reason": "environment_dependency_generated_private_or_saved_data"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "docs/research/evidence/2026-09-04-research-lineage/analysis.json",
+      "reason": "environment_dependency_generated_private_or_saved_data"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "docs/research/evidence/2026-09-04-research-lineage/bounded-gate-c.jsonl.gz",
+      "reason": "environment_dependency_generated_private_or_saved_data"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "docs/research/evidence/2026-09-04-research-lineage/compact-and-lock-source.json.gz",
+      "reason": "environment_dependency_generated_private_or_saved_data"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "docs/research/evidence/2026-09-04-research-lineage/frozen-candidate-proof.json",
+      "reason": "environment_dependency_generated_private_or_saved_data"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "docs/research/evidence/2026-09-04-research-lineage/kumar-source.json",
+      "reason": "environment_dependency_generated_private_or_saved_data"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "docs/research/evidence/2026-09-04-research-lineage/lineage-checks.ipynb",
+      "reason": "environment_dependency_generated_private_or_saved_data"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "docs/research/evidence/2026-09-04-research-lineage/mlb-kumar-boxscore.json",
+      "reason": "environment_dependency_generated_private_or_saved_data"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "docs/research/evidence/2026-09-04-research-lineage/mlb-schedule.json",
+      "reason": "environment_dependency_generated_private_or_saved_data"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "docs/research/evidence/2026-09-04-research-lineage/reproduce.py",
+      "reason": "environment_dependency_generated_private_or_saved_data"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "docs/research/evidence/2026-09-04-research-lineage/selector-disagreements.json",
+      "reason": "environment_dependency_generated_private_or_saved_data"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "docs/research/evidence/2026-09-04-research-lineage/served-artifacts.json.gz",
+      "reason": "environment_dependency_generated_private_or_saved_data"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "docs/research/evidence/2026-09-04-research-lineage/transport-sample.json",
+      "reason": "environment_dependency_generated_private_or_saved_data"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "docs/research/evidence/2026-09-04-research-lineage/verification.json",
+      "reason": "environment_dependency_generated_private_or_saved_data"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "docs/superpowers/plans/2026-03-30-results-tracking-calibration.md",
+      "reason": "private_operational_or_paper_document"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "docs/superpowers/specs/2026-03-30-results-tracking-calibration-design.md",
+      "reason": "private_operational_or_paper_document"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "docs/ui-redesign/handoff/project/current/data/performance.json",
+      "reason": "environment_dependency_generated_private_or_saved_data"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "docs/ui-redesign/handoff/project/current/data/processed/2026-04-15.json",
+      "reason": "environment_dependency_generated_private_or_saved_data"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "docs/ui-redesign/handoff/project/current/data/processed/index.json",
+      "reason": "environment_dependency_generated_private_or_saved_data"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "docs/ui-redesign/handoff/project/current/data/processed/today.json",
+      "reason": "environment_dependency_generated_private_or_saved_data"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "docs/ui-redesign/handoff/project/debug/01-after.png",
+      "reason": "binary_or_unreviewed_file_type"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "docs/ui-redesign/handoff/project/debug/01-v2-reload.png",
+      "reason": "binary_or_unreviewed_file_type"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "docs/ui-redesign/handoff/project/debug/02-after.png",
+      "reason": "binary_or_unreviewed_file_type"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "docs/ui-redesign/handoff/project/debug/02-v2-reload.png",
+      "reason": "binary_or_unreviewed_file_type"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "docs/ui-redesign/handoff/project/debug/after-latest.png",
+      "reason": "binary_or_unreviewed_file_type"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "docs/ui-redesign/handoff/project/debug/latest.png",
+      "reason": "binary_or_unreviewed_file_type"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "docs/ui-redesign/handoff/project/debug/v2-closeup.png",
+      "reason": "binary_or_unreviewed_file_type"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "docs/ui-redesign/handoff/project/debug/v2-fixed.png",
+      "reason": "binary_or_unreviewed_file_type"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "docs/ui-redesign/handoff/project/debug/v2-live.png",
+      "reason": "binary_or_unreviewed_file_type"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "docs/ui-redesign/handoff/project/debug/v2-live2.png",
+      "reason": "binary_or_unreviewed_file_type"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "docs/ui-redesign/handoff/project/debug/v2-why-row.png",
+      "reason": "binary_or_unreviewed_file_type"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "docs/ui-redesign/handoff/project/v2/screens/01-01-picks.png",
+      "reason": "binary_or_unreviewed_file_type"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "docs/ui-redesign/handoff/project/v2/screens/02-01-picks.png",
+      "reason": "binary_or_unreviewed_file_type"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "docs/ui-redesign/handoff/project/v2/screens/picks.png",
+      "reason": "binary_or_unreviewed_file_type"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "docs/ui-redesign/handoff/project/v2/screens/picks2.png",
+      "reason": "binary_or_unreviewed_file_type"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "market_infra/alternative_pick_selector_manifest_v1.json",
+      "reason": "saved_data_or_fixture_requires_explicit_review"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "market_infra/alternative_pick_selector_manifest_v2.json",
+      "reason": "saved_data_or_fixture_requires_explicit_review"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "netlify/functions/.gitkeep",
+      "reason": "binary_or_unreviewed_file_type"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "requirements-live.txt",
+      "reason": "saved_data_or_fixture_requires_explicit_review"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "tests/fixtures/alternative_pick_selection_v2/legacy_official_close_parity.json.gz",
+      "reason": "binary_or_unreviewed_file_type"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "tests/fixtures/alternative_pick_selection_v2/manifest.json",
+      "reason": "saved_data_or_fixture_requires_explicit_review"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "tests/fixtures/alternative_pick_selection_v2/synthetic_mature_preclose.json",
+      "reason": "saved_data_or_fixture_requires_explicit_review"
+    },
+    {
+      "snapshot": "baseballbettingedge--86466b50f902",
+      "path": "tests/fixtures/signed_preclose_proof_review.json",
+      "reason": "saved_data_or_fixture_requires_explicit_review"
+    }
+  ]
+}

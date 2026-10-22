@@ -1,0 +1,11 @@
+# Sports local-work backup, October 22 2026
+
+This is an inactive source archive, not a production release or a merged application. Original source revisions and aliases are recorded in BACKUP-MANIFEST.json; source histories are not uploaded by this snapshot. Current and superseded variants remain separate. Do not execute archived installers/recovery commands.
+
+Last verified shared-score runtime revision was 210e4021336a43e37bed3edabb1a3238eabe3cfe. Collection was globally disabled after an NBA identity-conflict stop. New local envelope repair pins are worker1d7575c6bb17328cb47ed133fbf2799826bee949 and readerf79849da5b2772259c364d1805571b8bab4ed9a2. Source regressions:436 worker,34 reader checks,39 saved-function tests; independent source/package reviews passed. These facts are dated, not current runtime attestation or deployment approval.
+
+Production recovery requires a new specific approval, fresh actual-process/control/publication preflight and resolution of the publishing hold. NBA upcoming cards were separately published; NBA odds/movement remain unfinished. NHL collection remains off, with access/enrollment/qualification work local. The failed certificate attempt must not be retried and its residue must not be altered. CBB source presence does not establish usable sportsbook markets; baseball remains dormant. Original apps, pregame cutoffs, saved data, notification behavior and history must be preserved. Deferred consensus/main-line audit, projections and ranking are separate workstreams.
+
+Full non-published operational handoff starts at $CODEX_PROJECTS/2026-10-16/task/START-HERE.md. It contains local evidence paths and separate approval boundaries. Its private operational records are intentionally not copied here.
+
+Remote backup pushes require CURRENT GitHub/Netlify/Render branch and preview trigger evidence. No settings changes or publishing bypass are authorized. No deployment branch is moved. Credentials, environment files, raw saved provider responses, personal data, generated outputs/dependencies and unreviewed data fixtures are excluded; per-path omissions are recorded. Excluded originals remain in place. Some tests require those excluded fixtures before they can run; this is not a full reproducibility claim.
